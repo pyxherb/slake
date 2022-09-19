@@ -1,0 +1,17 @@
+root = true
+
+[*]
+insert_final_newline = true
+charset = utf-8
+tab_width = 4
+indent_size = 4
+indent_style = tab
+trim_trailing_whitespace = true
+
+[{*.{md,txt,rst,rest},README.*}]
+indent_size = 4
+indent_style = space
+trim_trailing_whitespace = false
+
+[{*.{bat,cmd}}]
+end_of_line = crlf

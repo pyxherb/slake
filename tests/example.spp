@@ -1,0 +1,27 @@
+SIMPORT "std"
+ENTRY main
+
+PUB Base
+CLASS Base
+	VAR a
+ENDCLASS
+
+PUB Base$@
+Base$@:
+	PUSH 0
+	POP a
+	RET
+
+PUB Base$~
+Base$~:
+	RET
+
+PUB main
+main:
+	ENTER
+
+	PUSH 0
+	POP %RR
+
+	LEAVE
+	RET

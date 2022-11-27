@@ -1,26 +1,26 @@
 ///
-/// @file vzx.h
+/// @file spx.h
 /// @author CodesBuilder (2602783536@qq.com)
-/// @brief Definitions for Vizard Executable (VZX) format.
+/// @brief Definitions for Swampeak Executable (SPX) format.
 /// @version 0.1
 /// @date 2022-09-18
 ///
-/// @copyright Copyright (c) 2022 Vizard Contributors
+/// @copyright Copyright (c) 2022 Swampeak Contributors
 ///
-#ifndef _VIZARD_VZRT_FMT_VZX_H_
-#define _VIZARD_VZRT_FMT_VZX_H_
+#ifndef _SWAMPEAK_FMT_SPX_H_
+#define _SWAMPEAK_FMT_SPX_H_
 
 #include <cstdint>
 
-namespace Vz {
+namespace Swampeak {
 	namespace Fmt {
-		namespace Vzx {
+		namespace SPX {
 			///
 			/// @brief IMage Header (IMH)
 			///
 			struct ImgHeader final {
 				// Magic number
-				constexpr static std::uint8_t MAG0 = 'V', MAG1 = 'z', MAG2 = 'E', MAG3 = 'x';
+				constexpr static std::uint8_t MAG0 = 'P', MAG1 = 'e', MAG2 = 'a', MAG3 = 'K';
 
 				// Flags
 				constexpr static std::uint8_t
@@ -50,7 +50,7 @@ namespace Vz {
 			};
 
 			enum class ValueType : std::uint8_t {
-				NUL = 0,  // null, also represents `void'
+				NUL = 0,  // null, also used to represent `void'
 				I8,		  // i8
 				I16,	  // i16
 				I32,	  // i32
@@ -62,7 +62,8 @@ namespace Vz {
 				STRING,	  // string
 				ARRAY,	  // array
 				MAP,	  // map
-				UUID	  // UUID
+				UUID,	  // UUID
+				OBJECT	  // Object
 			};
 
 			///
@@ -95,6 +96,12 @@ namespace Vz {
 				ValueType keyType : 5;	  // Key data type
 				ValueType valueType : 5;  // Value data type
 				std::uint32_t len : 30;	  // Entry count
+			};
+
+			struct ClassDesc final {
+				const char nameFirst, nameLast;
+				std::uint32_t nameHash;
+				std::uint16_t nameLen;
 			};
 		}
 	}

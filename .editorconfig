@@ -12,6 +12,7 @@ trim_trailing_whitespace = true
 indent_size = 4
 indent_style = space
 trim_trailing_whitespace = false
+end_of_line = lf
 
 [{*.{bat,cmd}}]
 end_of_line = crlf

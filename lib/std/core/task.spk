@@ -1,0 +1,21 @@
+///
+/// @description
+/// Task module for Swampeak Standard Library.
+///
+/// @author Swampeak Contributors
+///
+
+pub enum State : u8 {
+	DEAD = -1,
+	ALIVE,
+	DONE
+}
+
+pub class Task {
+	pub native fn getState(utask task): @State = {9303c808-bf24-4a18-888b-fa285f32e8d2};
+	pub native fn kill(utask task) = {e12b0c1f-9fec-4313-ad30-48cffaf5f6df};
+	pub native const utask CURRENT = {ee05864a-e056-44d4-964c-0006c01294cc};
+
+	pub native fn @() = {bffdd682-e5e4-4df5-bcfc-aa14d61cb32e};
+	pub native fn ~() = {1e58c47a-3164-40b6-b218-3a237a422e4b};
+}

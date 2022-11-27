@@ -1,8 +1,8 @@
 //
 // Inline switch DEMO script
-// Copyright (C) 2022 Vizard Contributors
+// Copyright (C) 2022 Swampeak Contributors
 //
-pub i32 @nv1 = {B1DBA396-17A5-44C8-9F41-EBFF3776B92C};
+pub native i32 nv1 = {B1DBA396-17A5-44C8-9F41-EBFF3776B92C};
 
 pub fn main() : i32 {
 	return nv1 => { 0: "A", 1: "B", default: "C" };

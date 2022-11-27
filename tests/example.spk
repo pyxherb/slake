@@ -1,0 +1,8 @@
+import {
+	std = @"std"
+}
+
+fn main() {
+	a + b * c + d / e;
+	return 0;
+}

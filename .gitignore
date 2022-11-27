@@ -5,13 +5,14 @@ CMakeFiles/
 CMakeScripts/
 _deps
 
-*.vzx
+*.spx
 
 # Development artifacts
 .vs/
 .vscode/
 .idea/
 CMakePresets.json
+CMakeSettings.json
 *.user
 
 # Runtime artifacts

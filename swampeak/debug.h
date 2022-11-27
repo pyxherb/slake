@@ -1,5 +1,5 @@
-#ifndef _SLAKE_BASE_DEBUG_H
-#define _SLAKE_BASE_DEBUG_H
+#ifndef _SWAMPEAK_DEBUG_H_
+#define _SWAMPEAK_DEBUG_H_
 
 #if defined(DEBUG) || defined(_DEBUG) || defined(DBG)
 	#ifdef _WIN32
@@ -9,15 +9,15 @@
 		#include <cstdlib>
 
 		// Memory leak detection
-		#define malloc(x) _malloc_dbg(x, _NORMAL_BLOCK, __FILE__, __LINE__)
-		#define free(x) _free_dbg(x, _NORMAL_BLOCK)
+		#define malloc(n) _malloc_dbg(n, _NORMAL_BLOCK, __FILE__, __LINE__)
+		#define free(n) _free_dbg(n, _NORMAL_BLOCK)
 		#define __DBG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)
 		#define new __DBG_NEW
 
 	#endif
 #endif
 
-namespace Vzc {
+namespace Swampeak {
 	namespace Debug {
 		void inline setupMemoryLeakDetector() {
 #if defined(_MSC_VER) && (defined(DEBUG) || defined(_DEBUG) || defined(DBG))

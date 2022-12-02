@@ -20,7 +20,7 @@ namespace SpkC {
 			VAR_DEF
 		};
 
-		class Instruction : public IToken {
+		class Instruction {
 		public:
 			virtual inline ~Instruction() {}
 			virtual inline InstructionType getType() { return InstructionType::NONE; }
@@ -35,8 +35,7 @@ namespace SpkC {
 				this->expr = expr;
 				this->next = next;
 			}
-			virtual inline ~ExprInstruction() {
-			}
+			virtual inline ~ExprInstruction() {}
 			virtual inline InstructionType getType() override { return InstructionType::EXPR; }
 		};
 
@@ -47,8 +46,7 @@ namespace SpkC {
 			inline ReturnInstruction(std::shared_ptr<Expr> expr) {
 				this->expr = expr;
 			}
-			virtual inline ~ReturnInstruction() {
-			}
+			virtual inline ~ReturnInstruction() {}
 			virtual inline InstructionType getType() override { return InstructionType::RETURN; }
 		};
 
@@ -62,8 +60,7 @@ namespace SpkC {
 				this->thenBlock = thenBlock;
 				this->elseBlock = elseBlock;
 			}
-			virtual inline ~IfInstruction() {
-			}
+			virtual inline ~IfInstruction() {}
 			virtual inline InstructionType getType() override { return InstructionType::RETURN; }
 		};
 
@@ -76,14 +73,14 @@ namespace SpkC {
 				this->condition = condition;
 				this->execBlock = execBlock;
 			}
-			virtual inline ~WhileInstruction() {
-			}
+			virtual inline ~WhileInstruction() {}
 			virtual inline InstructionType getType() override { return InstructionType::WHILE; }
 		};
 
 		class ContinueInstruction : public Instruction {
 		public:
 			inline ContinueInstruction() {}
+			virtual inline ~ContinueInstruction() {}
 			virtual inline InstructionType getType() override { return InstructionType::CONTINUE; }
 		};
 
@@ -98,13 +95,11 @@ namespace SpkC {
 			std::vector<std::shared_ptr<Instruction>> ins;
 
 			inline CodeBlock() {}
-			virtual inline ~CodeBlock() {
-			}
-
+			virtual inline ~CodeBlock() {}
 			virtual inline InstructionType getType() override { return InstructionType::BREAK; }
 		};
 
-		class VarDecl final : public IToken {
+		class VarDecl final {
 		public:
 			std::string name;
 			std::shared_ptr<Expr> initValue;
@@ -113,11 +108,10 @@ namespace SpkC {
 				this->name = name;
 				this->initValue = initValue;
 			}
-			~VarDecl() {
-			}
+			virtual ~VarDecl() {}
 		};
 
-		struct VarDeclList final : public IToken {
+		struct VarDeclList final {
 			std::vector<std::shared_ptr<VarDecl>> decls;
 
 			std::shared_ptr<VarDecl> operator[](std::string name) {
@@ -140,8 +134,7 @@ namespace SpkC {
 				this->typeName = typeName;
 				this->declList = declList;
 			}
-			virtual inline ~VarDefInstruction() {
-			}
+			virtual inline ~VarDefInstruction() {}
 			virtual inline InstructionType getType() override { return InstructionType::VAR_DEF; }
 		};
 
@@ -157,8 +150,7 @@ namespace SpkC {
 				this->endExpr = endExpr;
 				this->execBlock = execBlock;
 			}
-			virtual inline ~ForInstruction() {
-			}
+			virtual inline ~ForInstruction() {}
 			virtual inline InstructionType getType() override { return InstructionType::FOR; }
 		};
 	}

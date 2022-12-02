@@ -23,7 +23,7 @@ namespace SpkC {
 			MAP,
 			CUSTOM
 		};
-		class TypeName : public IToken {
+		class TypeName {
 		public:
 			EvalType typeName = EvalType::NONE;
 

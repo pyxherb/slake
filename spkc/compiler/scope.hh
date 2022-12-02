@@ -15,7 +15,7 @@ namespace SpkC {
 		extern std::shared_ptr<Enum> currentEnum;
 		extern std::shared_ptr<Class> currentClass;
 
-		class ParamDecl final : public IToken {
+		class ParamDecl final {
 		public:
 			std::string name;
 			std::shared_ptr<TypeName> typeName;
@@ -30,7 +30,7 @@ namespace SpkC {
 			}
 		};
 
-		struct ParamDeclList final : public IToken {
+		struct ParamDeclList final {
 			std::vector<std::shared_ptr<ParamDecl>> decls;
 
 			inline ParamDeclList() {}
@@ -100,7 +100,7 @@ namespace SpkC {
 			}
 		};
 
-		struct ImplList final : IToken {
+		struct ImplList final {
 			std::vector<std::shared_ptr<TypeName>> impls;
 		};
 
@@ -124,10 +124,9 @@ namespace SpkC {
 			}
 		};
 
-		extern int refCount;
 		class Scope final {
 		public:
-			std::shared_ptr<Scope> parent;
+			std::weak_ptr<Scope> parent;
 			std::map<std::string, std::shared_ptr<FnDef>> fnDefs;
 			std::map<std::string, std::shared_ptr<ImportItem>> imports;
 			std::map<std::string, std::shared_ptr<Class>> classes, interfaces;
@@ -156,11 +155,9 @@ namespace SpkC {
 			}
 
 			inline Scope(std::shared_ptr<Scope> parent = std::shared_ptr<Scope>()) {
-				refCount++;
-				this->parent = parent;
+				this->parent = std::weak_ptr<Scope>(parent);
 			}
 			inline ~Scope() {
-				refCount--;
 			}
 		};
 

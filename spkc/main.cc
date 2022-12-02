@@ -3,13 +3,13 @@
 #include <cstdio>
 #include <cstring>
 #include <fstream>
-#include <stdexcept>
-
 #include <spkparse.hh>
+#include <stdexcept>
 
 extern std::FILE* yyin;
 extern int yylineno;
-extern YYLTYPE yylloc;
+SpkC::Syntax::parser::location_type yylloc;
+std::shared_ptr<SpkC::Syntax::parser> yyparser;
 int yylex_destroy(void);
 
 static void msgPrintf(const char* msg, ...) noexcept {
@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
 		}
 
 		FILE* fp;
-		if (!(fp = fopen(srcPath.c_str(), "rb"))) {
+		if (!(fp = std::fopen(srcPath.c_str(), "rb"))) {
 			msgPrintf("Error opening file `%s'", srcPath.c_str());
 			return ENOENT;
 		}
@@ -50,17 +50,31 @@ int main(int argc, char** argv) {
 		SpkC::Syntax::currentScope = rootScope;
 
 		yyin = fp;
-		auto parseResult = yyparse();
+		yyparser = std::make_shared<SpkC::Syntax::parser>();
+		auto parseResult = yyparser->parse();
 
-		yylex_destroy();
 		fclose(fp);
 
 		if (parseResult) {
+			rootScope.reset();
+			currentScope.reset();
+			currentEnum.reset();
+			currentClass.reset();
+			yylex_destroy();
+
+			yyparser.reset();
 			return -1;
 		}
 
-		for (auto &i : SpkC::Syntax::currentScope->imports)
+		for (auto& i : SpkC::Syntax::currentScope->imports)
 			printf("%s = %c\"%s\"", i.first.c_str(), i.second->searchInSystemPath ? '@' : '\0', i.second->path.c_str());
+
+		rootScope.reset();
+		currentScope.reset();
+		currentEnum.reset();
+		currentClass.reset();
+		yylex_destroy();
+		yyparser.reset();
 	} catch (std::bad_alloc) {
 		msgPuts("Out of memory");
 		return ENOMEM;
@@ -71,13 +85,6 @@ int main(int argc, char** argv) {
 	return 0;
 }
 
-void yyerror(const char* fmt, ...) {
-	va_list args;
-	va_start(args, fmt);
-
-	std::fprintf(stderr, "Error at %d, %d: ", yylloc.last_line, yylloc.last_column);
-	std::vfprintf(stderr, fmt, args);
-	putc('\n', stderr);
-
-	va_end(args);
+void SpkC::Syntax::parser::error(const SpkC::Syntax::parser::location_type& loc, const std::string& msg) {
+	std::fprintf(stderr, "Error at %d,%d: %s\n", loc.begin.line, loc.begin.column, msg.c_str());
 }

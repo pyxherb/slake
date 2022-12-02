@@ -6,8 +6,8 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <memory>
 
-#include "../syntax/token.hh"
 #include "modifier.hh"
 
 namespace SpkC {
@@ -27,7 +27,7 @@ namespace SpkC {
 			ARRAY
 		};
 
-		class Expr : public IToken {
+		class Expr {
 		public:
 			virtual inline ~Expr() {}
 			virtual inline ExprType getType() { return ExprType::NONE; }
@@ -47,7 +47,7 @@ namespace SpkC {
 			virtual inline ~InlineSwitchExpr() {}
 		};
 
-		class InlineSwitchCase final : public IToken {
+		class InlineSwitchCase final {
 		public:
 			std::shared_ptr<Expr> condition, x;
 
@@ -55,13 +55,13 @@ namespace SpkC {
 				this->condition = condition;
 				this->x = x;
 			}
+			virtual inline ~InlineSwitchCase() {}
 		};
 
-		struct InlineSwitchCaseList final : public IToken {
+		struct InlineSwitchCaseList final {
 			std::vector<std::shared_ptr<InlineSwitchCase>> cases;
 
-			inline ~InlineSwitchCaseList() {
-			}
+			virtual inline ~InlineSwitchCaseList() {}
 		};
 
 		enum class UnaryOp : int {
@@ -83,8 +83,7 @@ namespace SpkC {
 				this->x = x;
 				this->op = op;
 			}
-			virtual inline ~UnaryOpExpr() {
-			}
+			virtual inline ~UnaryOpExpr() {}
 			virtual inline ExprType getType() { return ExprType::UNARY; }
 		};
 
@@ -126,8 +125,7 @@ namespace SpkC {
 				this->y = y;
 				this->op = op;
 			}
-			virtual inline ~BinaryOpExpr() {
-			}
+			virtual inline ~BinaryOpExpr() {}
 			virtual inline ExprType getType() { return ExprType::BINARY; }
 		};
 
@@ -137,8 +135,7 @@ namespace SpkC {
 
 			inline TernaryOpExpr(std::shared_ptr<Expr> condition, std::shared_ptr<Expr> x, std::shared_ptr<Expr> y) {
 			}
-			virtual inline ~TernaryOpExpr() {
-			}
+			virtual inline ~TernaryOpExpr() {}
 			virtual inline ExprType getType() { return ExprType::TERNARY; }
 		};
 
@@ -151,16 +148,14 @@ namespace SpkC {
 				this->name = name;
 				this->next = next;
 			}
-			virtual inline ~RefExpr() {
-			}
+			virtual inline ~RefExpr() {}
 			virtual inline ExprType getType() { return ExprType::REF; }
 		};
 
-		struct ArgList final : public IToken {
+		struct ArgList final {
 			std::vector<std::shared_ptr<Expr>> args;
 
-			inline ~ArgList() {
-			}
+			virtual inline ~ArgList() {}
 		};
 
 		class CallExpr : public Expr {
@@ -174,8 +169,7 @@ namespace SpkC {
 				this->args = args;
 				this->isAsync = isAsync;
 			}
-			virtual inline ~CallExpr() {
-			}
+			virtual inline ~CallExpr() {}
 
 			virtual inline ExprType getType() override { return ExprType::CALL; }
 		};
@@ -187,8 +181,7 @@ namespace SpkC {
 			inline AwaitExpr(std::shared_ptr<Expr> target) {
 				this->target = target;
 			}
-			virtual inline ~AwaitExpr() {
-			}
+			virtual inline ~AwaitExpr() {}
 
 			virtual inline ExprType getType() override { return ExprType::AWAIT; }
 		};
@@ -200,7 +193,8 @@ namespace SpkC {
 			LT_ULONG,
 			LT_FLOAT,
 			LT_DOUBLE,
-			LT_STRING
+			LT_STRING,
+			LT_NULL
 		};
 
 		class LiteralExpr : public Expr {
@@ -211,18 +205,21 @@ namespace SpkC {
 			virtual LiteralType getLiteralType() = 0;
 		};
 
-		class NullLiteralExpr : public Expr {
+		class NullLiteralExpr : public LiteralExpr {
 		public:
 			virtual inline ~NullLiteralExpr() {}
+			virtual LiteralType getLiteralType() override { return LiteralType::LT_NULL; };
 		};
 
 		template <typename T, int LT>
-		class SimpleLiteralExpr : public Expr {
+		class SimpleLiteralExpr : public LiteralExpr {
 		public:
 			T data;
 
 			inline SimpleLiteralExpr(T data) { this->data = data; }
 			virtual inline ~SimpleLiteralExpr() {}
+
+			virtual LiteralType getLiteralType() override { return (LiteralType)LT; };
 
 			inline SimpleLiteralExpr<T, LT>& operator=(T& data) {
 				this->data = data;
@@ -240,14 +237,14 @@ namespace SpkC {
 		using DoubleLiteralExpr = SimpleLiteralExpr<double, LT_DOUBLE>;
 		using StringLiteralExpr = SimpleLiteralExpr<std::string, LT_STRING>;
 
-		class ExprPair : public IToken,
-						 public std::pair<std::shared_ptr<Expr>, std::shared_ptr<Expr>> {
+		class ExprPair : public std::pair<std::shared_ptr<Expr>, std::shared_ptr<Expr>> {
 		public:
 			inline ExprPair() : pair() {}
 			inline ExprPair(std::shared_ptr<Expr> first, std::shared_ptr<Expr> second) : pair(first, second) {}
+			virtual inline ~ExprPair() {}
 		};
 
-		struct PairList final : public IToken {
+		struct PairList final {
 			std::vector<std::shared_ptr<ExprPair>> pairs;
 		};
 
@@ -258,8 +255,7 @@ namespace SpkC {
 			inline MapExpr(std::shared_ptr<PairList> pairs) {
 				this->pairs = pairs;
 			}
-			virtual inline ~MapExpr() {
-			}
+			virtual inline ~MapExpr() {}
 
 			virtual inline ExprType getType() override { return ExprType::MAP; }
 		};

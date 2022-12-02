@@ -8,44 +8,51 @@
 /// @copyright Copyright (C) 2022 Swampeak Project
 ///
 %{
-#include <syntax/token.hh>
+#include <spkparse.hh>
 #include <compiler/common.hh>
 #include <cstdio>
 #include <cstdarg>
 
-int yylex();
-void yyerror(const char* fmt, ...);
+SpkC::Syntax::parser::symbol_type yylex();
 
-using namespace SpkC::Syntax;
 using std::static_pointer_cast;
 using std::make_shared;
 using std::shared_ptr;
-
-int yydebug = 1;
 %}
 
 %code requires {
-#include <syntax/token.hh>
 #include <compiler/common.hh>
 #include <cstdio>
 #include <cstdarg>
 
-void yyerror(const char* fmt, ...);
+using namespace SpkC::Syntax;
+}
+%code provides {
+extern SpkC::Syntax::parser::location_type yylloc;
+extern std::shared_ptr<SpkC::Syntax::parser> yyparser;
 }
 
-%define parse.error verbose
 %locations
+%language "c++"
+%define api.namespace {SpkC::Syntax}
+%define api.token.constructor
+%define api.value.type variant
 
-%token T_ID
+%define parse.assert
+%define parse.trace
+%define parse.error detailed
+%define parse.lac full
+
+%token <std::string> T_ID
 %token T_VARARG "..."
 
-%token L_INT
-%token L_UINT
-%token L_LONG
-%token L_ULONG
-%token L_FLOAT
-%token L_DOUBLE
-%token L_STRING
+%token <int> L_INT "integer literal"
+%token <unsigned int> L_UINT "unsigned integer literal"
+%token <long long> L_LONG "long integer literal"
+%token <unsigned long long> L_ULONG "unsigned long long integer literal"
+%token <float> L_FLOAT "single precision FP literal"
+%token <double> L_DOUBLE "double precision FP literal"
+%token <std::string> L_STRING
 
 %token KW_ASYNC "async"
 %token KW_AWAIT "await"
@@ -84,6 +91,18 @@ void yyerror(const char* fmt, ...);
 %token TN_STRING "string"
 %token TN_AUTO "auto"
 
+%token OP_ADD "+"
+%token OP_SUB "-"
+%token OP_MUL "*"
+%token OP_DIV "/"
+%token OP_MOD "%"
+%token OP_AND "&"
+%token OP_OR "|"
+%token OP_XOR "^"
+%token OP_REV "~"
+%token OP_NOT "!"
+%token OP_TERNARY "?"
+%token OP_ASSIGN "="
 %token OP_ASSIGN_ADD "+="
 %token OP_ASSIGN_SUB "-="
 %token OP_ASSIGN_MUL "*="
@@ -104,24 +123,73 @@ void yyerror(const char* fmt, ...);
 %token OP_INLINE_SW "=>"
 %token OP_WRAP "->"
 
-%right '=' "+=" "-=" "*=" "/=" "%=" "&=" "|=" "^=" "~="
-%right '?' "=>"
+%token T_AT "@"
+%token T_LPARENTHESE "("
+%token T_RPARENTHESE ")"
+%token T_LBRACKET "["
+%token T_RBRACKET "]"
+%token T_LBRACE "{"
+%token T_RBRACE "}"
+%token T_COMMA ","
+%token T_COLON ":"
+%token T_SEMICOLON ";"
+%token T_DOT "."
+
+%right "=" "+=" "-=" "*=" "/=" "%=" "&=" "|=" "^=" "~="
+%right "?" "=>"
 %left "||"
 %left "&&"
-%left '|'
-%left '^'
-%left '&'
+%left "|"
+%left "^"
+%left "&"
 %left "==" "!="
-%left '<' "<=" '>' ">="
-%left '+' '-'
-%left '*' '/' '%'
-%precedence '!' OP_NEG "++" "--"
-%nonassoc '(' ')'
+%left "<" "<=" ">" ">="
+%left "+" "-"
+%left "*" "/" "%"
+%precedence "!" OP_NEG "++" "--"
+%nonassoc "(" ")"
 
 %precedence Call
 %precedence Await
 
 %expect 0
+
+%type <AccessModifier> AccessModifier
+%type <StorageModifier> StorageModifier
+%type <std::shared_ptr<TypeName>> TypeName
+%type <std::shared_ptr<TypeName>> ReturnType
+%type <std::shared_ptr<TypeName>> InheritSlot
+%type <std::shared_ptr<ImplList>> ImplementTypeNameList
+%type <std::shared_ptr<ImplList>> ImplList
+%type <std::shared_ptr<ParamDecl>> ParamDecl
+%type <std::shared_ptr<ParamDeclList>> ParamDecls
+%type <std::shared_ptr<ParamDeclList>> ParamDeclList
+%type <std::shared_ptr<VarDefInstruction>> VarDef
+%type <std::shared_ptr<VarDeclList>> VarDecls
+%type <std::shared_ptr<VarDecl>> VarDecl
+%type <std::shared_ptr<CodeBlock>> Instructions
+%type <std::shared_ptr<Instruction>> Instruction
+%type <std::shared_ptr<IfInstruction>> IfBlock
+%type <std::shared_ptr<WhileInstruction>> WhileBlock
+%type <std::shared_ptr<Instruction>> ElseBlock
+%type <std::shared_ptr<CodeBlock>> CodeBlock
+%type <std::shared_ptr<Expr>> Expr
+%type <std::shared_ptr<RefExpr>> Ref
+%type <std::shared_ptr<MapExpr>> MapExpr
+%type <std::shared_ptr<PairList>> PairList
+%type <std::shared_ptr<PairList>> Pairs
+%type <std::shared_ptr<ExprPair>> Pair
+%type <std::shared_ptr<UnaryOpExpr>> UnaryOpExpr
+%type <std::shared_ptr<BinaryOpExpr>> BinaryOpExpr
+%type <std::shared_ptr<TernaryOpExpr>> TernaryOpExpr
+%type <std::shared_ptr<InlineSwitchExpr>> InlineSwitchExpr
+%type <std::shared_ptr<InlineSwitchCase>> InlineSwitchCase
+%type <std::shared_ptr<InlineSwitchCaseList>> InlineSwitchCases
+%type <std::shared_ptr<CallExpr>> CallExpr
+%type <std::shared_ptr<AwaitExpr>> AwaitExpr
+%type <std::shared_ptr<ArgList>> Args
+%type <std::shared_ptr<ArgList>> ArgList
+%type <std::shared_ptr<LiteralExpr>> Literal
 
 %%
 
@@ -136,7 +204,7 @@ Stmt Stmts
 Stmt:
 FnDef
 | ImportBlock
-| VarDef ';'
+| VarDef ";"
 | Class
 | Interface
 | Enum
@@ -147,23 +215,16 @@ FnDef
 //
 AccessModifier:
 "pub" AccessModifier {
-	if(!$$)
-		$$ = make_shared<Token<AccessModifier>>(0);
-	static_pointer_cast<Token<AccessModifier>>($$)->data |= ACCESS_PUB;
+	$$ |= ACCESS_PUB;
 }
 | "final" AccessModifier {
-	if(!$$)
-		$$ = make_shared<Token<AccessModifier>>(0);
-	static_pointer_cast<Token<AccessModifier>>($$)->data |= ACCESS_FINAL;
+	$$ |= ACCESS_FINAL;
 }
-| %empty {
-	if(!$$)
-		$$ = make_shared<Token<AccessModifier>>(0);
-}
+| %empty {}
 ;
 
 StorageModifier:
-"const" StorageModifier { static_pointer_cast<Token<StorageModifier>>($$) |= STORAGE_CONST; }
+"const" StorageModifier { $$ |= STORAGE_CONST; }
 | %empty {}
 ;
 
@@ -171,41 +232,41 @@ StorageModifier:
 // Enumeration
 //
 Enum:
-AccessModifier "enum" T_ID ':' TypeName '{' {
-	auto name = static_pointer_cast<Token<std::string>>($3);
+AccessModifier "enum" T_ID ":" TypeName "{" {
+	auto name = $3;
 
-	if(currentScope->getEnum(name->data))
-		yyerror("Redefinition of enumeration `%s`", name->data.c_str());
+	if(currentScope->getEnum(name))
+		this->error(yylloc, "Redefinition of enumeration `" + name + "`");
 	else {
 		currentEnum = make_shared<Enum>(
-			static_pointer_cast<Token<AccessModifier>>($1)->data,
-			static_pointer_cast<TypeName>($5)
+			$1,
+			$5
 		);
-		currentScope->enums[name->data] = currentEnum;
+		currentScope->enums[name] = currentEnum;
 	}
-} EnumPairs '}' {
+} EnumPairs "}" {
 	currentEnum = shared_ptr<Enum>();
 }
 ;
 
 EnumPairs:
-EnumPair ',' EnumPairs
+EnumPair "," EnumPairs
 | EnumPair
 ;
 EnumPair:
 T_ID {
-	auto name = static_pointer_cast<Token<std::string>>($1)->data;
+	auto name = $1;
 	if(currentEnum->pairs.count(name))
-		yyerror("Redefinition of enumeration constant `%s`", name.c_str());
+		this->error(yylloc, "Redefinition of enumeration constant `" + name + "`");
 	else
 		currentEnum->pairs[name] = shared_ptr<Expr>();
 }
-| T_ID '=' Expr {
-	auto name = static_pointer_cast<Token<std::string>>($1)->data;
+| T_ID "=" Expr {
+	auto name = $1;
 	if(currentEnum->pairs.count(name))
-		yyerror("Redefinition of enumeration constant `%s`", name.c_str());
+		this->error(yylloc, "Redefinition of enumeration constant `" + name + "`");
 	else
-		currentEnum->pairs[name] = static_pointer_cast<Expr>($3);
+		currentEnum->pairs[name] = $3;
 }
 ;
 
@@ -214,42 +275,42 @@ T_ID {
 //
 Class:
 AccessModifier "class" T_ID InheritSlot ImplList {
-	auto name = static_pointer_cast<Token<std::string>>($3)->data;
+	auto name = $3;
 	auto curClass = make_shared<Class>(
-		static_pointer_cast<Token<AccessModifier>>($1)->data,
+		$1,
 		make_shared<Scope>(currentScope),
-		static_pointer_cast<TypeName>($4),
-		static_pointer_cast<ImplList>($5)
+		$4,
+		$5
 	);
 
 	if(currentScope->getClass(name))
-		yyerror("Redefinition of type `%s`", name.c_str());
+		this->error(yylloc, "Redefinition of type `" + name + "`");
 
 	currentScope->classes[name] = curClass;
 	currentScope = curClass->scope;
-} '{' Stmts '}' {
-	currentScope = currentScope->parent;
+} "{" Stmts "}" {
+	currentScope = currentScope->parent.lock();
 }
 ;
 
 InheritSlot:
-%empty { $$ = shared_ptr<IToken>(); }
-| '(' TypeName ')' { $$ = $2; }
+%empty { $$ = shared_ptr<TypeName>(); }
+| "(" TypeName ")" { $$ = $2; }
 ;
 
 ImplList:
-%empty { $$ = shared_ptr<IToken>(); }
-| ':' ImplementTypeNameList { $$ = $2; }
+%empty { $$ = shared_ptr<ImplList>(); }
+| ":" ImplementTypeNameList { $$ = $2; }
 ;
 
 ImplementTypeNameList:
 TypeName {
 	$$ = make_shared<ImplList>();
-	static_pointer_cast<ImplList>($$)->impls.push_back(static_pointer_cast<TypeName>($1));
+	$$->impls.push_back($1);
 }
-| ImplementTypeNameList ',' TypeName {
+| ImplementTypeNameList "," TypeName {
 	$$ = $1;
-	static_pointer_cast<ImplList>($$)->impls.push_back(static_pointer_cast<TypeName>($3));
+	$$->impls.push_back($3);
 }
 ;
 
@@ -259,19 +320,19 @@ TypeName {
 Interface:
 AccessModifier "interface" T_ID InheritSlot {
 	auto curClass = make_shared<Class>(
-		static_pointer_cast<Token<AccessModifier>>($1)->data,
+		$1,
 		make_shared<Scope>(currentScope),
-		static_pointer_cast<TypeName>($4)
+		$4
 	);
-	auto name = static_pointer_cast<Token<std::string>>($3)->data;
+	auto name = $3;
 
 	if(currentScope->getClass(name))
-		yyerror("Redefinition of type `%s`", name.c_str());
+		this->error(yylloc, "Redefinition of type `" + name + "`");
 
 	currentScope->classes[name] = curClass;
 	currentScope = curClass->scope;
-} '{' InterfaceStmts '}' {
-	currentScope = currentScope->parent;
+} "{" InterfaceStmts "}" {
+	currentScope = currentScope->parent.lock();
 }
 ;
 
@@ -285,29 +346,29 @@ FnDecl
 ;
 
 FnDecl:
-"fn" T_ID '(' ParamDecls ')' ReturnType ';' {
-	auto name = static_pointer_cast<Token<std::string>>($2)->data;
+"fn" T_ID "(" ParamDecls ")" ReturnType ";" {
+	auto name = $2;
 
 	if(currentScope->getFn(name))
-		yyerror("Redefinition of function `%s`", name.c_str());
+		this->error(yylloc, "Redefinition of function `" + name + "`");
 	else
 		currentScope->fnDefs[name] = make_shared<FnDef>(
 			ACCESS_PUB,
-			static_pointer_cast<ParamDeclList>($4),
-			static_pointer_cast<TypeName>($6)
+			$4,
+			$6
 		);
 }
-| "fn" T_ID '(' ParamDecls ')' ReturnType CodeBlock {
-	auto name = static_pointer_cast<Token<std::string>>($2)->data;
+| "fn" T_ID "(" ParamDecls ")" ReturnType CodeBlock {
+	auto name = $2;
 
 	if(currentScope->getFn(name))
-		yyerror("Redefinition of function `%s`", name.c_str());
+		this->error(yylloc, "Redefinition of function `" + name + "`");
 	else
 		currentScope->fnDefs[name] = make_shared<FnDef>(
 			ACCESS_PUB,
-			static_pointer_cast<ParamDeclList>($4),
-			static_pointer_cast<TypeName>($6),
-			static_pointer_cast<CodeBlock>($7)
+			$4,
+			$6,
+			$7
 		);
 }
 ;
@@ -316,32 +377,32 @@ FnDecl:
 // Import
 //
 ImportBlock:
-"import" '{' Imports '}'
+"import" "{" Imports "}"
 ;
 
 Imports:
-Import ',' Imports
+Import "," Imports
 | Import
 ;
 
 Import:
-T_ID '=' L_STRING {
-	auto name = static_pointer_cast<Token<std::string>>($1)->data;
-	auto path = static_pointer_cast<Token<std::string>>($3)->data;
+T_ID "=" L_STRING {
+	auto name = $1;
+	auto path = $3;
 
 	// Redefinition check
 	if(currentScope->getImport(path))
-		yyerror("Redefinition of import `%s`", path.c_str());
+		this->error(yylloc, "Redefinition of import item `" + name + "`");
 	else
 		currentScope->imports[name] = make_shared<ImportItem>(path);
 }
-| T_ID '=' '@' L_STRING {
-	auto name = static_pointer_cast<Token<std::string>>($1)->data;
-	auto path = static_pointer_cast<Token<std::string>>($4)->data;
+| T_ID "=" "@" L_STRING {
+	auto name = $1;
+	auto path = $4;
 
 	// Redefinition check
 	if(currentScope->getImport(path))
-		yyerror("Redefinition of import `%s`", path.c_str());
+		this->error(yylloc, "Redefinition of import item `" + name + "`");
 	else
 		currentScope->imports[path] = make_shared<ImportItem>(name, true);
 }
@@ -351,85 +412,85 @@ T_ID '=' L_STRING {
 // Function
 //
 FnDef:
-AccessModifier "fn" T_ID '(' ParamDecls ')' ReturnType CodeBlock {
-	auto name = static_pointer_cast<Token<std::string>>($3)->data;
+AccessModifier "fn" T_ID "(" ParamDecls ")" ReturnType CodeBlock {
+	auto name = $3;
 
 	if(currentScope->getFn(name))
-		yyerror("Redefinition of function `%s`", name.c_str());
+		this->error(yylloc, "Redefinition of function `" + name + "`");
 	else
 		currentScope->fnDefs[name] = make_shared<FnDef>(
-			static_pointer_cast<Token<AccessModifier>>($1)->data,
-			static_pointer_cast<ParamDeclList>($5),
-			static_pointer_cast<TypeName>($7),
-			static_pointer_cast<CodeBlock>($8)
+			$1,
+			$5,
+			$7,
+			$8
 		);
 }
-| AccessModifier "fn" '@' '(' ParamDecls ')' CodeBlock {
+| AccessModifier "fn" "@" "(" ParamDecls ")" CodeBlock {
 	if(currentScope->getFn("@"))
-		yyerror("Redefinition of constructor");
+		this->error(yylloc, "Redefinition of constructor");
 	else
 		currentScope->fnDefs["@"] = make_shared<FnDef>(
-			static_pointer_cast<Token<AccessModifier>>($1)->data,
-			static_pointer_cast<ParamDeclList>($5),
+			$1,
+			$5,
 			shared_ptr<TypeName>(),
-			static_pointer_cast<CodeBlock>($7)
+			$7
 		);
 }
-| AccessModifier "fn" '~' '(' ParamDecls ')' CodeBlock {
+| AccessModifier "fn" "~" "(" ParamDecls ")" CodeBlock {
 	if(currentScope->getFn("~"))
-		yyerror("Redefinition of constructor");
+		this->error(yylloc, "Redefinition of constructor");
 	else
 		currentScope->fnDefs["~"] = make_shared<FnDef>(
-			static_pointer_cast<Token<AccessModifier>>($1)->data,
-			static_pointer_cast<ParamDeclList>($5),
+			$1,
+			$5,
 			shared_ptr<TypeName>(),
-			static_pointer_cast<CodeBlock>($7)
+			$7
 		);
 }
 ;
 
 ReturnType:
-%empty { $$ = shared_ptr<IToken>(); }
-| ':' TypeName { $$ = $2; }
+%empty { $$ = shared_ptr<TypeName>(); }
+| ":" TypeName { $$ = $2; }
 ;
 
 //
 // Parameters
 //
 ParamDecls:
-%empty { $$ = shared_ptr<IToken>(); }
+%empty { $$ = shared_ptr<ParamDeclList>(); }
 | ParamDeclList { $$ = $1; }
 ;
 
 ParamDeclList:
 ParamDecl {
 	$$ = make_shared<ParamDeclList>();
-	auto decl = static_pointer_cast<ParamDecl>($1);
+	auto decl = $1;
 
-	static_pointer_cast<ParamDeclList>($$)->decls.push_back(decl);
+	$$->decls.push_back(decl);
 }
-| ParamDeclList ',' ParamDecl {
+| ParamDeclList "," ParamDecl {
 	$$ = $1;
-	auto decl = static_pointer_cast<ParamDecl>($3);
+	auto decl = $3;
 
-	if ((*static_pointer_cast<ParamDeclList>($$))[decl->name])
-		yyerror("Redefinition of parameter `%s`", decl->name.c_str());
+	if ((*$$)[decl->name])
+		this->error(yylloc, "Redefinition of parameter `" + decl->name + "`");
 	else
-		static_pointer_cast<ParamDeclList>($$)->decls.push_back(decl);
+		$$->decls.push_back(decl);
 }
 ;
 
 ParamDecl:
 TypeName T_ID {
-	auto type = static_pointer_cast<TypeName>($1);
-	auto name = static_pointer_cast<Token<std::string>>($2)->data;
+	auto type = $1;
+	auto name = $2;
 
 	$$ = make_shared<ParamDecl>(name, type);
 }
-| TypeName T_ID '=' Expr {
-	auto type = static_pointer_cast<TypeName>($1);
-	auto name = static_pointer_cast<Token<std::string>>($2)->data;
-	auto initValue = static_pointer_cast<Expr>($4);
+| TypeName T_ID "=" Expr {
+	auto type = $1;
+	auto name = $2;
+	auto initValue = $4;
 
 	$$ = make_shared<ParamDecl>(name, type, initValue);
 }
@@ -440,37 +501,37 @@ TypeName T_ID {
 //
 VarDef:
 AccessModifier TypeName VarDecls {
-	auto type = static_pointer_cast<TypeName>($2);
-	auto varDecls = static_pointer_cast<VarDeclList>($3);
-	$$ = make_shared<VarDefInstruction>(static_pointer_cast<Token<AccessModifier>>($1)->data, type, varDecls);
+	auto type = $2;
+	auto varDecls = $3;
+	$$ = make_shared<VarDefInstruction>($1, type, varDecls);
 }
 ;
 VarDecls:
 VarDecl {
-	auto decl = static_pointer_cast<VarDecl>($1);
+	auto decl = $1;
 
 	$$ = make_shared<VarDeclList>();
-	static_pointer_cast<VarDeclList>($$)->decls.push_back(decl);
+	$$->decls.push_back(decl);
 }
-| VarDecls ',' VarDecl {
+| VarDecls "," VarDecl {
 	$$ = $1;
-	auto decl = static_pointer_cast<VarDecl>($3);
+	auto decl = $3;
 
-	if ((*static_pointer_cast<VarDeclList>($$))[decl->name])
-		yyerror("Redefinition of variable `%s`", decl->name.c_str());
+	if ((*$$)[decl->name])
+		this->error(yylloc, "Redefinition of variable `" + decl->name + "`");
 	else
-		static_pointer_cast<VarDeclList>($$)->decls.push_back(decl);
+		$$->decls.push_back(decl);
 }
 ;
 VarDecl:
 T_ID {
-	auto name = static_pointer_cast<Token<std::string>>($1)->data;
+	auto name = $1;
 
 	$$ = make_shared<VarDecl>(name);
 }
-| T_ID '=' Expr {
-	auto name = static_pointer_cast<Token<std::string>>($1)->data;
-	auto initValue = static_pointer_cast<Expr>($3);
+| T_ID "=" Expr {
+	auto name = $1;
+	auto initValue = $3;
 
 	$$ = make_shared<VarDecl>(name, initValue);
 }
@@ -482,42 +543,42 @@ T_ID {
 Instructions:
 Instruction {
 	$$ = make_shared<CodeBlock>();
-	static_pointer_cast<CodeBlock>($$)->ins.push_back(static_pointer_cast<Instruction>($1));
+	$$->ins.push_back($1);
 }
 | Instructions Instruction {
 	$$ = $1;
-	static_pointer_cast<CodeBlock>($$)->ins.push_back(static_pointer_cast<Instruction>($2));
+	$$->ins.push_back($2);
 }
 ;
 
 Instruction:
-Expr ';' { $$ = make_shared<ExprInstruction>(static_pointer_cast<Expr>($1)); }
-| Expr ',' Instruction {
+Expr ";" { $$ = make_shared<ExprInstruction>($1); }
+| Expr "," Instruction {
 	$$ = make_shared<ExprInstruction>(
-		static_pointer_cast<Expr>($1),
-		static_pointer_cast<Instruction>($3)
+		$1,
+		$3
 	);
 }
-| "return" Expr ';' { $$ = make_shared<ReturnInstruction>(static_pointer_cast<Expr>($2)); }
-| "continue" ';' { $$ = make_shared<ContinueInstruction>(); }
-| "break" ';' { $$ = make_shared<BreakInstruction>(); }
+| "return" Expr ";" { $$ = make_shared<ReturnInstruction>($2); }
+| "continue" ";" { $$ = make_shared<ContinueInstruction>(); }
+| "break" ";" { $$ = make_shared<BreakInstruction>(); }
 | IfBlock { $$ = $1; }
-| VarDef ';' { $$ = $1; }
+| VarDef ";" { $$ = $1; }
 ;
 
 IfBlock:
-"if" '(' Expr ')' CodeBlock {
+"if" "(" Expr ")" CodeBlock {
 	$$ = make_shared<IfInstruction>(
-		static_pointer_cast<Expr>($3),
-		static_pointer_cast<CodeBlock>($5),
+		$3,
+		$5,
 		shared_ptr<Instruction>()
 	);
 }
-| "if" '(' Expr ')' CodeBlock ElseBlock {
+| "if" "(" Expr ")" CodeBlock ElseBlock {
 	$$ = make_shared<IfInstruction>(
-		static_pointer_cast<Expr>($3),
-		static_pointer_cast<CodeBlock>($5),
-		static_pointer_cast<Instruction>($6)
+		$3,
+		$5,
+		$6
 	);
 }
 ;
@@ -528,23 +589,23 @@ ElseBlock:
 ;
 
 CodeBlock:
-'{' Instructions '}' { $$ = $2; }
+"{" Instructions "}" { $$ = $2; }
 ;
 
 WhileBlock:
-"while" '(' Expr ')' CodeBlock {
+"while" "(" Expr ")" CodeBlock {
 	$$ = new WhileInstruction($3, $5);
 }
 ;
 
 ForBlock:
-"for" '(' VarDef ';' Expr ';' Expr ')' CodeBlock {
+"for" "(" VarDef ";" Expr ";" Expr ")" CodeBlock {
 
 }
 ;
 
 TimesBlock:
-"times" '(' Expr ')' CodeBlock {
+"times" "(" Expr ")" CodeBlock {
 
 }
 
@@ -552,7 +613,7 @@ TimesBlock:
 // Expression
 //
 Expr:
-'(' Expr ')' { $$ = $2; }
+"(" Expr ")" { $$ = $2; }
 | Literal { $$ = $1; }
 | UnaryOpExpr { $$ = $1; }
 | BinaryOpExpr { $$ = $1; }
@@ -565,30 +626,30 @@ Expr:
 ;
 
 MapExpr:
-'[' PairList ']' {
-	$$ = make_shared<MapExpr>(static_pointer_cast<PairList>($2));
+"[" PairList "]" {
+	$$ = make_shared<MapExpr>($2);
 }
 ;
 
 PairList:
-%empty { $$ = shared_ptr<IToken>(); }
+%empty { $$ = shared_ptr<PairList>(); }
 | Pairs { $$ = $1; }
 ;
 
 Pairs:
 Pair {
 	$$ = make_shared<PairList>();
-	static_pointer_cast<PairList>($$)->pairs.push_back(static_pointer_cast<ExprPair>($1));
+	$$->pairs.push_back($1);
 }
-| Pairs ',' Pair {
+| Pairs "," Pair {
 	$$ = $1;
-	static_pointer_cast<PairList>($$)->pairs.push_back(static_pointer_cast<ExprPair>($3));
+	$$->pairs.push_back($3);
 }
 ;
 
 Pair:
-Expr ':' Expr {
-	$$ = make_shared<ExprPair>(static_pointer_cast<Expr>($1), static_pointer_cast<Expr>($3));
+Expr ":" Expr {
+	$$ = make_shared<ExprPair>($1, $3);
 }
 ;
 
@@ -605,150 +666,150 @@ TypeName:
 |"double" { $$ = make_shared<TypeName>(EvalType::DOUBLE); }
 |"string" { $$ = make_shared<TypeName>(EvalType::STRING); }
 |"auto" { $$ = make_shared<TypeName>(EvalType::AUTO); }
-|'@' Ref { $$ = make_shared<CustomTypeName>(static_pointer_cast<RefExpr>($2)); }
-| TypeName '[' TypeName ']' {}
-| TypeName '[' ']' {}
+|"@" Ref { $$ = make_shared<CustomTypeName>($2); }
+| TypeName "[" TypeName "]" {}
+| TypeName "[" "]" {}
 ;
 
 UnaryOpExpr:
-'!' Expr %prec '!' { $$ = make_shared<UnaryOpExpr>(UnaryOp::NOT, static_pointer_cast<Expr>($2));}
-| '-' Expr %prec OP_NEG { $$ = make_shared<UnaryOpExpr>(UnaryOp::NEG, static_pointer_cast<Expr>($2));}
-| "++" Expr { $$ = make_shared<UnaryOpExpr>(UnaryOp::INC_F, static_pointer_cast<Expr>($2));}
-| "--" Expr { $$ = make_shared<UnaryOpExpr>(UnaryOp::DEC_F, static_pointer_cast<Expr>($2));}
+"!" Expr %prec "!" { $$ = make_shared<UnaryOpExpr>(UnaryOp::NOT, $2);}
+| "-" Expr %prec OP_NEG { $$ = make_shared<UnaryOpExpr>(UnaryOp::NEG, $2);}
+| "++" Expr { $$ = make_shared<UnaryOpExpr>(UnaryOp::INC_F, $2);}
+| "--" Expr { $$ = make_shared<UnaryOpExpr>(UnaryOp::DEC_F, $2);}
 ;
 
 BinaryOpExpr:
-Expr '+' Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::ADD, static_pointer_cast<Expr>($1), static_pointer_cast<Expr>($3)); }
-| Expr '-' Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::SUB, static_pointer_cast<Expr>($1), static_pointer_cast<Expr>($3)); }
-| Expr '*' Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::MUL, static_pointer_cast<Expr>($1), static_pointer_cast<Expr>($3)); }
-| Expr '/' Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::DIV, static_pointer_cast<Expr>($1), static_pointer_cast<Expr>($3)); }
-| Expr '%' Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::MOD, static_pointer_cast<Expr>($1), static_pointer_cast<Expr>($3)); }
-| Expr '&' Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::AND, static_pointer_cast<Expr>($1), static_pointer_cast<Expr>($3)); }
-| Expr '|' Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::OR, static_pointer_cast<Expr>($1), static_pointer_cast<Expr>($3)); }
-| Expr '^' Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::XOR, static_pointer_cast<Expr>($1), static_pointer_cast<Expr>($3)); }
-| Expr "&&" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::LAND, static_pointer_cast<Expr>($1), static_pointer_cast<Expr>($3)); }
-| Expr "||" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::LOR, static_pointer_cast<Expr>($1), static_pointer_cast<Expr>($3)); }
-| Expr "==" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::EQ, static_pointer_cast<Expr>($1), static_pointer_cast<Expr>($3)); }
-| Expr "!=" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::NEQ, static_pointer_cast<Expr>($1), static_pointer_cast<Expr>($3)); }
-| Expr "<=" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::LTEQ, static_pointer_cast<Expr>($1), static_pointer_cast<Expr>($3)); }
-| Expr ">=" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::GTEQ, static_pointer_cast<Expr>($1), static_pointer_cast<Expr>($3)); }
-| Expr '=' Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::ASSIGN, static_pointer_cast<Expr>($1), static_pointer_cast<Expr>($3)); }
-| Expr "+=" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::ADD_ASSIGN, static_pointer_cast<Expr>($1), static_pointer_cast<Expr>($3)); }
-| Expr "-=" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::SUB_ASSIGN, static_pointer_cast<Expr>($1), static_pointer_cast<Expr>($3)); }
-| Expr "*=" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::MUL_ASSIGN, static_pointer_cast<Expr>($1), static_pointer_cast<Expr>($3)); }
-| Expr "/=" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::DIV_ASSIGN, static_pointer_cast<Expr>($1), static_pointer_cast<Expr>($3)); }
-| Expr "%=" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::MOD_ASSIGN, static_pointer_cast<Expr>($1), static_pointer_cast<Expr>($3)); }
-| Expr "&=" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::AND_ASSIGN, static_pointer_cast<Expr>($1), static_pointer_cast<Expr>($3)); }
-| Expr "|=" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::OR_ASSIGN, static_pointer_cast<Expr>($1), static_pointer_cast<Expr>($3)); }
-| Expr "^=" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::XOR_ASSIGN, static_pointer_cast<Expr>($1), static_pointer_cast<Expr>($3)); }
+Expr "+" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::ADD, $1, $3); }
+| Expr "-" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::SUB, $1, $3); }
+| Expr "*" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::MUL, $1, $3); }
+| Expr "/" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::DIV, $1, $3); }
+| Expr "%" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::MOD, $1, $3); }
+| Expr "&" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::AND, $1, $3); }
+| Expr "|" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::OR, $1, $3); }
+| Expr "^" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::XOR, $1, $3); }
+| Expr "&&" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::LAND, $1, $3); }
+| Expr "||" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::LOR, $1, $3); }
+| Expr "==" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::EQ, $1, $3); }
+| Expr "!=" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::NEQ, $1, $3); }
+| Expr "<=" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::LTEQ, $1, $3); }
+| Expr ">=" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::GTEQ, $1, $3); }
+| Expr "=" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::ASSIGN, $1, $3); }
+| Expr "+=" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::ADD_ASSIGN, $1, $3); }
+| Expr "-=" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::SUB_ASSIGN, $1, $3); }
+| Expr "*=" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::MUL_ASSIGN, $1, $3); }
+| Expr "/=" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::DIV_ASSIGN, $1, $3); }
+| Expr "%=" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::MOD_ASSIGN, $1, $3); }
+| Expr "&=" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::AND_ASSIGN, $1, $3); }
+| Expr "|=" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::OR_ASSIGN, $1, $3); }
+| Expr "^=" Expr { $$ = make_shared<BinaryOpExpr>(BinaryOp::XOR_ASSIGN, $1, $3); }
 ;
 
 TernaryOpExpr:
-Expr '?' Expr ':' Expr %prec '?' {
+Expr "?" Expr ":" Expr %prec "?" {
 	$$ = make_shared<TernaryOpExpr>(
-		static_pointer_cast<Expr>($1),
-		static_pointer_cast<Expr>($3),
-		static_pointer_cast<Expr>($5)
+		$1,
+		$3,
+		$5
 	);
 }
 ;
 
 InlineSwitchExpr:
-Expr "=>" '{' InlineSwitchCases '}' {
+Expr "=>" "{" InlineSwitchCases "}" {
 	$$ = make_shared<InlineSwitchExpr>(
-		static_pointer_cast<Expr>($1),
-		static_pointer_cast<InlineSwitchCaseList>($4)
+		$1,
+		$4
 	);
 }
 ;
 InlineSwitchCases:
 InlineSwitchCase {
 	$$ = make_shared<InlineSwitchCaseList>();
-	static_pointer_cast<InlineSwitchCaseList>($$)->cases.push_back(
-		static_pointer_cast<InlineSwitchCase>($1)
+	$$->cases.push_back(
+		$1
 	);
 }
-| InlineSwitchCases ',' InlineSwitchCase {
+| InlineSwitchCases "," InlineSwitchCase {
 	$$ = $1;
-	static_pointer_cast<InlineSwitchCaseList>($$)->cases.push_back(
-		static_pointer_cast<InlineSwitchCase>($3)
+	$$->cases.push_back(
+		$3
 	);
 }
 ;
 InlineSwitchCase:
-Expr ':' Expr {
+Expr ":" Expr {
 	$$ = make_shared<InlineSwitchCase>(
-		static_pointer_cast<Expr>($1),
-		static_pointer_cast<Expr>($3)
+		$1,
+		$3
 	);
 }
-| "default" ':' Expr {
+| "default" ":" Expr {
 	$$ = make_shared<InlineSwitchCase>(
 		shared_ptr<Expr>(),
-		static_pointer_cast<Expr>($3)
+		$3
 	);
 }
 ;
 
 CallExpr:
-Expr '(' Args ')' %prec Call {
+Expr "(" Args ")" %prec Call {
 	$$ = make_shared<CallExpr>(
-		static_pointer_cast<Expr>($1),
-		static_pointer_cast<ArgList>($3)
+		$1,
+		$3
 	);
 }
-| Expr '(' Args ')' "async" %prec Call {
+| Expr "(" Args ")" "async" %prec Call {
 	$$ = make_shared<CallExpr>(
-		static_pointer_cast<Expr>($1),
-		static_pointer_cast<ArgList>($3),
+		$1,
+		$3,
 		true
 	);
 }
 ;
 
 AwaitExpr:
-"await" Expr %prec Await { $$ = make_shared<AwaitExpr>(static_pointer_cast<Expr>($2)); }
+"await" Expr %prec Await { $$ = make_shared<AwaitExpr>($2); }
 ;
 
 Args:
-%empty { $$ = shared_ptr<IToken>(); }
+%empty { $$ = shared_ptr<ArgList>(); }
 | ArgList { $$ = $1; }
 ;
 
 ArgList:
 Expr {
 	$$ = make_shared<ArgList>();
-	static_pointer_cast<ArgList>($$)->args.push_back(static_pointer_cast<Expr>($1));
+	$$->args.push_back($1);
 }
-| Args ',' Expr {
+| Args "," Expr {
 	$$ = $1;
-	static_pointer_cast<ArgList>($$)->args.push_back(static_pointer_cast<Expr>($3));
+	$$->args.push_back($3);
 }
 ;
 
 Literal:
-L_INT { $$ = make_shared<IntLiteralExpr>(static_pointer_cast<Token<int>>($1)->data); }
-| L_UINT { $$ = make_shared<UIntLiteralExpr>(static_pointer_cast<Token<unsigned int>>($1)->data); }
-| L_LONG { $$ = make_shared<LongLiteralExpr>(static_pointer_cast<Token<long long>>($1)->data); }
-| L_ULONG { $$ = make_shared<ULongLiteralExpr>(static_pointer_cast<Token<unsigned long long>>($1)->data); }
-| L_FLOAT { $$ = make_shared<FloatLiteralExpr>(static_pointer_cast<Token<float>>($1)->data); }
-| L_DOUBLE { $$ = make_shared<DoubleLiteralExpr>(static_pointer_cast<Token<double>>($1)->data); }
+L_INT { $$ = make_shared<IntLiteralExpr>($1); }
+| L_UINT { $$ = make_shared<UIntLiteralExpr>($1); }
+| L_LONG { $$ = make_shared<LongLiteralExpr>($1); }
+| L_ULONG { $$ = make_shared<ULongLiteralExpr>($1); }
+| L_FLOAT { $$ = make_shared<FloatLiteralExpr>($1); }
+| L_DOUBLE { $$ = make_shared<DoubleLiteralExpr>($1); }
 | "null" { $$ = make_shared<NullLiteralExpr>(); }
-| L_STRING { $$ = make_shared<StringLiteralExpr>(static_pointer_cast<Token<std::string>>($1)->data); }
+| L_STRING { $$ = make_shared<StringLiteralExpr>($1); }
 ;
 
 Ref:
-"self" '.' Ref {
-	$$ = make_shared<RefExpr>("", static_pointer_cast<RefExpr>($3));
+"self" "." Ref {
+	$$ = make_shared<RefExpr>("", $3);
 }
-| T_ID '.' Ref {
-	auto name = static_pointer_cast<Token<std::string>>($1)->data;
-	$$ = make_shared<RefExpr>(name, static_pointer_cast<RefExpr>($3));
+| T_ID "." Ref {
+	auto name = $1;
+	$$ = make_shared<RefExpr>(name, $3);
 }
 | "self" {
 	$$ = make_shared<RefExpr>("");
 }
 | T_ID {
-	auto name = static_pointer_cast<Token<std::string>>($1)->data;
+	auto name = $1;
 	$$ = make_shared<RefExpr>(name);
 };

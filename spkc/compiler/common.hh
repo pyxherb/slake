@@ -19,7 +19,7 @@ namespace SpkC {
 					auto x = std::static_pointer_cast<InlineSwitchExpr>(expr);
 					if (!isConstExpr(x->condition))
 						return false;
-					for (auto &i : x->caseList->cases)
+					for (auto &i : *(x->caseList))
 						if ((!isConstExpr(i->condition)) ||
 							(!isConstExpr(i->x)))
 							return false;

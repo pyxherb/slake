@@ -33,20 +33,6 @@ namespace SpkC {
 			virtual inline ExprType getType() { return ExprType::NONE; }
 		};
 
-		struct InlineSwitchCaseList;
-
-		class InlineSwitchExpr : public Expr {
-		public:
-			std::shared_ptr<Expr> condition;
-			std::shared_ptr<InlineSwitchCaseList> caseList;
-
-			inline InlineSwitchExpr(std::shared_ptr<Expr> condition, std::shared_ptr<InlineSwitchCaseList> caseList) {
-				this->condition = condition;
-				this->caseList = caseList;
-			}
-			virtual inline ~InlineSwitchExpr() {}
-		};
-
 		class InlineSwitchCase final {
 		public:
 			std::shared_ptr<Expr> condition, x;
@@ -58,10 +44,18 @@ namespace SpkC {
 			virtual inline ~InlineSwitchCase() {}
 		};
 
-		struct InlineSwitchCaseList final {
-			std::vector<std::shared_ptr<InlineSwitchCase>> cases;
+		using InlineSwitchCaseList = std::vector<std::shared_ptr<InlineSwitchCase>>;
 
-			virtual inline ~InlineSwitchCaseList() {}
+		class InlineSwitchExpr : public Expr {
+		public:
+			std::shared_ptr<Expr> condition;
+			std::shared_ptr<InlineSwitchCaseList> caseList;
+
+			inline InlineSwitchExpr(std::shared_ptr<Expr> condition, std::shared_ptr<InlineSwitchCaseList> caseList) {
+				this->condition = condition;
+				this->caseList = caseList;
+			}
+			virtual inline ~InlineSwitchExpr() {}
 		};
 
 		enum class UnaryOp : int {
@@ -152,11 +146,7 @@ namespace SpkC {
 			virtual inline ExprType getType() { return ExprType::REF; }
 		};
 
-		struct ArgList final {
-			std::vector<std::shared_ptr<Expr>> args;
-
-			virtual inline ~ArgList() {}
-		};
+		using ArgList = std::vector<std::shared_ptr<Expr>>;
 
 		class CallExpr : public Expr {
 		public:
@@ -244,9 +234,7 @@ namespace SpkC {
 			virtual inline ~ExprPair() {}
 		};
 
-		struct PairList final {
-			std::vector<std::shared_ptr<ExprPair>> pairs;
-		};
+		using PairList = std::vector<std::shared_ptr<ExprPair>>;
 
 		class MapExpr : public Expr {
 		public:

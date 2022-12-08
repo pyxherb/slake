@@ -29,9 +29,9 @@ namespace SpkC {
 		class ExprInstruction : public Instruction {
 		public:
 			std::shared_ptr<Expr> expr;
-			std::shared_ptr<Instruction> next;
+			std::shared_ptr<ExprInstruction> next;
 
-			inline ExprInstruction(std::shared_ptr<Expr> expr, std::shared_ptr<Instruction> next = std::shared_ptr<Instruction>()) {
+			inline ExprInstruction(std::shared_ptr<Expr> expr, std::shared_ptr<ExprInstruction> next = std::shared_ptr<ExprInstruction>()) {
 				this->expr = expr;
 				this->next = next;
 			}
@@ -96,7 +96,7 @@ namespace SpkC {
 
 			inline CodeBlock() {}
 			virtual inline ~CodeBlock() {}
-			virtual inline InstructionType getType() override { return InstructionType::BREAK; }
+			virtual inline InstructionType getType() override { return InstructionType::CODEBLOCK; }
 		};
 
 		class VarDecl final {
@@ -140,11 +140,12 @@ namespace SpkC {
 
 		class ForInstruction : public Instruction {
 		public:
-			std::shared_ptr<VarDeclList> varDecl;
-			std::shared_ptr<Expr> condition, endExpr;
+			std::shared_ptr<VarDefInstruction> varDecl;
+			std::shared_ptr<Expr> condition;
+			std::shared_ptr<ExprInstruction> endExpr;
 			std::shared_ptr<Instruction> execBlock;
 
-			inline ForInstruction(std::shared_ptr<VarDeclList> varDecl, std::shared_ptr<Expr> condition, std::shared_ptr<Expr> endExpr, std::shared_ptr<Instruction> execBlock) {
+			inline ForInstruction(std::shared_ptr<VarDefInstruction> varDecl, std::shared_ptr<Expr> condition, std::shared_ptr<ExprInstruction> endExpr, std::shared_ptr<Instruction> execBlock) {
 				this->varDecl = varDecl;
 				this->condition = condition;
 				this->endExpr = endExpr;
@@ -152,6 +153,46 @@ namespace SpkC {
 			}
 			virtual inline ~ForInstruction() {}
 			virtual inline InstructionType getType() override { return InstructionType::FOR; }
+		};
+
+		class TimesInstruction : public Instruction {
+		public:
+			std::shared_ptr<Expr> timesExpr;
+			std::shared_ptr<Instruction> execBlock;
+
+			inline TimesInstruction(std::shared_ptr<Expr> timesExpr, std::shared_ptr<Instruction> execBlock) {
+				this->timesExpr = timesExpr;
+				this->execBlock = execBlock;
+			}
+			virtual inline ~TimesInstruction() {}
+			virtual inline InstructionType getType() override { return InstructionType::TIMES; }
+		};
+		
+		class SwitchCase final {
+		public:
+			std::shared_ptr<Expr> condition;
+			std::shared_ptr<Instruction> x;
+
+			inline SwitchCase(std::shared_ptr<Expr> condition, std::shared_ptr<Instruction> x) {
+				this->condition = condition;
+				this->x = x;
+			}
+			virtual inline ~SwitchCase() {}
+		};
+
+		using SwitchCaseList = std::vector<std::shared_ptr<SwitchCase>>;
+
+		class SwitchInstruction : public Instruction {
+		public:
+			std::shared_ptr<Expr> condition;
+			std::shared_ptr<SwitchCaseList> caseList;
+
+			inline SwitchInstruction(std::shared_ptr<Expr> condition, std::shared_ptr<SwitchCaseList> caseList) {
+				this->condition = condition;
+				this->caseList = caseList;
+			}
+			virtual inline ~SwitchInstruction() {}
+			virtual inline InstructionType getType() override { return InstructionType::SWITCH; }
 		};
 	}
 }

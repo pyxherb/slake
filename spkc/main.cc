@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
 	}*/
 
 	try {
-		std::string srcPath = "D:/repos/thngine/assets/thngine/scripts/thngine/player.spk";
+		std::string srcPath = "D:/repos/thngine/assets/thngine/scripts/thngine/et.spk";
 		std::string outPath = "a.out";
 		for (int i = 2; i < argc; i++) {
 		}

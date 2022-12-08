@@ -62,6 +62,7 @@ extern std::shared_ptr<SpkC::Syntax::parser> yyparser;
 %token KW_CONST "const"
 %token KW_CONTINUE "continue"
 %token KW_DEFAULT "default"
+%token KW_DELETE "delete"
 %token KW_ELSE "else"
 %token KW_ENUM "enum"
 %token KW_FINAL "final"
@@ -70,6 +71,7 @@ extern std::shared_ptr<SpkC::Syntax::parser> yyparser;
 %token KW_IF "if"
 %token KW_IMPORT "import"
 %token KW_INTERFACE "interface"
+%token KW_NEW "new"
 %token KW_NULL "null"
 %token KW_PUB "pub"
 %token KW_RETURN "return"
@@ -169,8 +171,17 @@ extern std::shared_ptr<SpkC::Syntax::parser> yyparser;
 %type <std::shared_ptr<VarDecl>> VarDecl
 %type <std::shared_ptr<CodeBlock>> Instructions
 %type <std::shared_ptr<Instruction>> Instruction
+%type <std::shared_ptr<ExprInstruction>> ExprInstruction
 %type <std::shared_ptr<IfInstruction>> IfBlock
+%type <std::shared_ptr<SwitchInstruction>> SwitchInstruction
+%type <std::shared_ptr<SwitchCase>> SwitchCase
+%type <std::shared_ptr<SwitchCaseList>> SwitchCases
+%type <std::shared_ptr<ForInstruction>> ForBlock
+%type <std::shared_ptr<VarDefInstruction>> OptionalVarDef
+%type <std::shared_ptr<Expr>> OptionalExpr
+%type <std::shared_ptr<ExprInstruction>> OptionalExprInstruction
 %type <std::shared_ptr<WhileInstruction>> WhileBlock
+%type <std::shared_ptr<TimesInstruction>> TimesBlock
 %type <std::shared_ptr<Instruction>> ElseBlock
 %type <std::shared_ptr<CodeBlock>> CodeBlock
 %type <std::shared_ptr<Expr>> Expr
@@ -214,12 +225,8 @@ FnDef
 // Modifiers
 //
 AccessModifier:
-"pub" AccessModifier {
-	$$ |= ACCESS_PUB;
-}
-| "final" AccessModifier {
-	$$ |= ACCESS_FINAL;
-}
+"pub" AccessModifier { $$ |= ACCESS_PUB; }
+| "final" AccessModifier { $$ |= ACCESS_FINAL; }
 | %empty {}
 ;
 
@@ -233,16 +240,11 @@ StorageModifier:
 //
 Enum:
 AccessModifier "enum" T_ID ":" TypeName "{" {
-	auto name = $3;
-
-	if(currentScope->getEnum(name))
-		this->error(yylloc, "Redefinition of enumeration `" + name + "`");
+	if(currentScope->getEnum($3))
+		this->error(yylloc, "Redefinition of enumeration `" + $3 + "`");
 	else {
-		currentEnum = make_shared<Enum>(
-			$1,
-			$5
-		);
-		currentScope->enums[name] = currentEnum;
+		currentEnum = make_shared<Enum>($1, $5);
+		currentScope->enums[$3] = currentEnum;
 	}
 } EnumPairs "}" {
 	currentEnum = shared_ptr<Enum>();
@@ -255,18 +257,16 @@ EnumPair "," EnumPairs
 ;
 EnumPair:
 T_ID {
-	auto name = $1;
-	if(currentEnum->pairs.count(name))
-		this->error(yylloc, "Redefinition of enumeration constant `" + name + "`");
+	if(currentEnum->pairs.count($1))
+		this->error(yylloc, "Redefinition of enumeration constant `" + $1 + "`");
 	else
-		currentEnum->pairs[name] = shared_ptr<Expr>();
+		currentEnum->pairs[$1] = shared_ptr<Expr>();
 }
 | T_ID "=" Expr {
-	auto name = $1;
-	if(currentEnum->pairs.count(name))
-		this->error(yylloc, "Redefinition of enumeration constant `" + name + "`");
+	if(currentEnum->pairs.count($1))
+		this->error(yylloc, "Redefinition of enumeration constant `" + $1 + "`");
 	else
-		currentEnum->pairs[name] = $3;
+		currentEnum->pairs[$1] = $3;
 }
 ;
 
@@ -275,18 +275,12 @@ T_ID {
 //
 Class:
 AccessModifier "class" T_ID InheritSlot ImplList {
-	auto name = $3;
-	auto curClass = make_shared<Class>(
-		$1,
-		make_shared<Scope>(currentScope),
-		$4,
-		$5
-	);
+	auto curClass = make_shared<Class>($1, make_shared<Scope>(currentScope), $4, $5);
 
-	if(currentScope->getClass(name))
-		this->error(yylloc, "Redefinition of type `" + name + "`");
+	if(currentScope->getClass($3))
+		this->error(yylloc, "Redefinition of type `" + $3 + "`");
 
-	currentScope->classes[name] = curClass;
+	currentScope->classes[$3] = curClass;
 	currentScope = curClass->scope;
 } "{" Stmts "}" {
 	currentScope = currentScope->parent.lock();
@@ -324,12 +318,11 @@ AccessModifier "interface" T_ID InheritSlot {
 		make_shared<Scope>(currentScope),
 		$4
 	);
-	auto name = $3;
 
-	if(currentScope->getClass(name))
-		this->error(yylloc, "Redefinition of type `" + name + "`");
+	if(currentScope->getClass($3))
+		this->error(yylloc, "Redefinition of type `" + $3 + "`");
 
-	currentScope->classes[name] = curClass;
+	currentScope->classes[$3] = curClass;
 	currentScope = curClass->scope;
 } "{" InterfaceStmts "}" {
 	currentScope = currentScope->parent.lock();
@@ -347,29 +340,16 @@ FnDecl
 
 FnDecl:
 "fn" T_ID "(" ParamDecls ")" ReturnType ";" {
-	auto name = $2;
-
-	if(currentScope->getFn(name))
-		this->error(yylloc, "Redefinition of function `" + name + "`");
+	if(currentScope->getFn($2))
+		this->error(yylloc, "Redefinition of function `" + $2 + "`");
 	else
-		currentScope->fnDefs[name] = make_shared<FnDef>(
-			ACCESS_PUB,
-			$4,
-			$6
-		);
+		currentScope->fnDefs[$2] = make_shared<FnDef>(ACCESS_PUB, $4, $6);
 }
 | "fn" T_ID "(" ParamDecls ")" ReturnType CodeBlock {
-	auto name = $2;
-
-	if(currentScope->getFn(name))
-		this->error(yylloc, "Redefinition of function `" + name + "`");
+	if(currentScope->getFn($2))
+		this->error(yylloc, "Redefinition of function `" + $2 + "`");
 	else
-		currentScope->fnDefs[name] = make_shared<FnDef>(
-			ACCESS_PUB,
-			$4,
-			$6,
-			$7
-		);
+		currentScope->fnDefs[$2] = make_shared<FnDef>(ACCESS_PUB, $4, $6, $7);
 }
 ;
 
@@ -387,24 +367,18 @@ Import "," Imports
 
 Import:
 T_ID "=" L_STRING {
-	auto name = $1;
-	auto path = $3;
-
 	// Redefinition check
-	if(currentScope->getImport(path))
-		this->error(yylloc, "Redefinition of import item `" + name + "`");
+	if(currentScope->getImport($3))
+		this->error(yylloc, "Redefinition of import item `" + $1 + "`");
 	else
-		currentScope->imports[name] = make_shared<ImportItem>(path);
+		currentScope->imports[$1] = make_shared<ImportItem>($3);
 }
 | T_ID "=" "@" L_STRING {
-	auto name = $1;
-	auto path = $4;
-
 	// Redefinition check
-	if(currentScope->getImport(path))
-		this->error(yylloc, "Redefinition of import item `" + name + "`");
+	if(currentScope->getImport($4))
+		this->error(yylloc, "Redefinition of import item `" + $1 + "`");
 	else
-		currentScope->imports[path] = make_shared<ImportItem>(name, true);
+		currentScope->imports[$1] = make_shared<ImportItem>($4);
 }
 ;
 
@@ -413,39 +387,22 @@ T_ID "=" L_STRING {
 //
 FnDef:
 AccessModifier "fn" T_ID "(" ParamDecls ")" ReturnType CodeBlock {
-	auto name = $3;
-
-	if(currentScope->getFn(name))
-		this->error(yylloc, "Redefinition of function `" + name + "`");
+	if(currentScope->getFn($3))
+		this->error(yylloc, "Redefinition of function `" + $3 + "`");
 	else
-		currentScope->fnDefs[name] = make_shared<FnDef>(
-			$1,
-			$5,
-			$7,
-			$8
-		);
+		currentScope->fnDefs[$3] = make_shared<FnDef>($1, $5, $7, $8);
 }
 | AccessModifier "fn" "@" "(" ParamDecls ")" CodeBlock {
 	if(currentScope->getFn("@"))
 		this->error(yylloc, "Redefinition of constructor");
 	else
-		currentScope->fnDefs["@"] = make_shared<FnDef>(
-			$1,
-			$5,
-			shared_ptr<TypeName>(),
-			$7
-		);
+		currentScope->fnDefs["@"] = make_shared<FnDef>($1, $5, shared_ptr<TypeName>(), $7);
 }
 | AccessModifier "fn" "~" "(" ParamDecls ")" CodeBlock {
 	if(currentScope->getFn("~"))
 		this->error(yylloc, "Redefinition of constructor");
 	else
-		currentScope->fnDefs["~"] = make_shared<FnDef>(
-			$1,
-			$5,
-			shared_ptr<TypeName>(),
-			$7
-		);
+		currentScope->fnDefs["~"] = make_shared<FnDef>($1, $5, shared_ptr<TypeName>(), $7);
 }
 ;
 
@@ -465,34 +422,23 @@ ParamDecls:
 ParamDeclList:
 ParamDecl {
 	$$ = make_shared<ParamDeclList>();
-	auto decl = $1;
-
-	$$->decls.push_back(decl);
+	$$->decls.push_back($1);
 }
 | ParamDeclList "," ParamDecl {
 	$$ = $1;
-	auto decl = $3;
-
-	if ((*$$)[decl->name])
-		this->error(yylloc, "Redefinition of parameter `" + decl->name + "`");
+	if ((*$$)[$3->name])
+		this->error(yylloc, "Redefinition of parameter `" + $3->name + "`");
 	else
-		$$->decls.push_back(decl);
+		$$->decls.push_back($3);
 }
 ;
 
 ParamDecl:
 TypeName T_ID {
-	auto type = $1;
-	auto name = $2;
-
-	$$ = make_shared<ParamDecl>(name, type);
+	$$ = make_shared<ParamDecl>($2, $1);
 }
 | TypeName T_ID "=" Expr {
-	auto type = $1;
-	auto name = $2;
-	auto initValue = $4;
-
-	$$ = make_shared<ParamDecl>(name, type, initValue);
+	$$ = make_shared<ParamDecl>($2, $1, $4);
 }
 ;
 
@@ -501,40 +447,25 @@ TypeName T_ID {
 //
 VarDef:
 AccessModifier TypeName VarDecls {
-	auto type = $2;
-	auto varDecls = $3;
-	$$ = make_shared<VarDefInstruction>($1, type, varDecls);
+	$$ = make_shared<VarDefInstruction>($1, $2, $3);
 }
 ;
 VarDecls:
 VarDecl {
-	auto decl = $1;
-
 	$$ = make_shared<VarDeclList>();
-	$$->decls.push_back(decl);
+	$$->decls.push_back($1);
 }
 | VarDecls "," VarDecl {
 	$$ = $1;
-	auto decl = $3;
-
-	if ((*$$)[decl->name])
-		this->error(yylloc, "Redefinition of variable `" + decl->name + "`");
+	if ((*$$)[$3->name])
+		this->error(yylloc, "Redefinition of variable `" + $3->name + "`");
 	else
-		$$->decls.push_back(decl);
+		$$->decls.push_back($3);
 }
 ;
 VarDecl:
-T_ID {
-	auto name = $1;
-
-	$$ = make_shared<VarDecl>(name);
-}
-| T_ID "=" Expr {
-	auto name = $1;
-	auto initValue = $3;
-
-	$$ = make_shared<VarDecl>(name, initValue);
-}
+T_ID { $$ = make_shared<VarDecl>($1); }
+| T_ID "=" Expr { $$ = make_shared<VarDecl>($1, $3); }
 ;
 
 //
@@ -552,34 +483,29 @@ Instruction {
 ;
 
 Instruction:
-Expr ";" { $$ = make_shared<ExprInstruction>($1); }
-| Expr "," Instruction {
-	$$ = make_shared<ExprInstruction>(
-		$1,
-		$3
-	);
-}
+ExprInstruction ";" { $$ = $1; }
 | "return" Expr ";" { $$ = make_shared<ReturnInstruction>($2); }
 | "continue" ";" { $$ = make_shared<ContinueInstruction>(); }
 | "break" ";" { $$ = make_shared<BreakInstruction>(); }
 | IfBlock { $$ = $1; }
+| ForBlock { $$ = $1; }
+| WhileBlock { $$ = $1; }
+| TimesBlock { $$ = $1; }
 | VarDef ";" { $$ = $1; }
+| SwitchInstruction { $$ = $1; }
+;
+
+ExprInstruction:
+Expr "," ExprInstruction { $$ = make_shared<ExprInstruction>($1, $3); }
+| Expr { $$ = make_shared<ExprInstruction>($1); }
 ;
 
 IfBlock:
 "if" "(" Expr ")" CodeBlock {
-	$$ = make_shared<IfInstruction>(
-		$3,
-		$5,
-		shared_ptr<Instruction>()
-	);
+	$$ = make_shared<IfInstruction>($3, $5, shared_ptr<Instruction>());
 }
 | "if" "(" Expr ")" CodeBlock ElseBlock {
-	$$ = make_shared<IfInstruction>(
-		$3,
-		$5,
-		$6
-	);
+	$$ = make_shared<IfInstruction>($3, $5, $6);
 }
 ;
 
@@ -592,22 +518,50 @@ CodeBlock:
 "{" Instructions "}" { $$ = $2; }
 ;
 
-WhileBlock:
-"while" "(" Expr ")" CodeBlock {
-	$$ = new WhileInstruction($3, $5);
+SwitchInstruction:
+"switch" "(" Expr ")" "{" SwitchCases "}" {
+	$$ = make_shared<SwitchInstruction>($3, $6);
 }
+;
+
+SwitchCases:
+SwitchCase {
+	$$ = make_shared<SwitchCaseList>();
+	$$->push_back($1);
+}
+| SwitchCases "," SwitchCase {
+	$$ = $1;
+	$$->push_back($3);
+}
+;
+SwitchCase:
+"case" Expr ":" Instruction { $$ = make_shared<SwitchCase>($2, $4); }
+| "default" ":" Instruction { $$ = make_shared<SwitchCase>(shared_ptr<Expr>(), $3); }
 ;
 
 ForBlock:
-"for" "(" VarDef ";" Expr ";" Expr ")" CodeBlock {
+"for" "(" OptionalVarDef ";" OptionalExpr ";" OptionalExprInstruction ")" CodeBlock { $$ = make_shared<ForInstruction>($3, $5, $7, $9); }
+;
 
-}
+OptionalVarDef:
+%empty { $$ = shared_ptr<VarDefInstruction>(); }
+| VarDef { $$ = $1; }
+;
+OptionalExpr:
+%empty { $$ = shared_ptr<Expr>(); }
+| Expr { $$ = $1; }
+;
+OptionalExprInstruction:
+%empty { $$ = shared_ptr<ExprInstruction>(); }
+| ExprInstruction { $$ = $1; }
+;
+
+WhileBlock:
+"while" "(" Expr ")" CodeBlock { $$ = make_shared<WhileInstruction>($3, $5); }
 ;
 
 TimesBlock:
-"times" "(" Expr ")" CodeBlock {
-
-}
+"times" "(" Expr ")" CodeBlock { $$ = make_shared<TimesInstruction>($3, $5); }
 
 //
 // Expression
@@ -639,11 +593,11 @@ PairList:
 Pairs:
 Pair {
 	$$ = make_shared<PairList>();
-	$$->pairs.push_back($1);
+	$$->push_back($1);
 }
 | Pairs "," Pair {
 	$$ = $1;
-	$$->pairs.push_back($3);
+	$$->push_back($3);
 }
 ;
 
@@ -716,55 +670,27 @@ Expr "?" Expr ":" Expr %prec "?" {
 
 InlineSwitchExpr:
 Expr "=>" "{" InlineSwitchCases "}" {
-	$$ = make_shared<InlineSwitchExpr>(
-		$1,
-		$4
-	);
+	$$ = make_shared<InlineSwitchExpr>($1, $4);
 }
 ;
 InlineSwitchCases:
 InlineSwitchCase {
 	$$ = make_shared<InlineSwitchCaseList>();
-	$$->cases.push_back(
-		$1
-	);
+	$$->push_back($1);
 }
 | InlineSwitchCases "," InlineSwitchCase {
 	$$ = $1;
-	$$->cases.push_back(
-		$3
-	);
+	$$->push_back($3);
 }
 ;
 InlineSwitchCase:
-Expr ":" Expr {
-	$$ = make_shared<InlineSwitchCase>(
-		$1,
-		$3
-	);
-}
-| "default" ":" Expr {
-	$$ = make_shared<InlineSwitchCase>(
-		shared_ptr<Expr>(),
-		$3
-	);
-}
+Expr ":" Expr { $$ = make_shared<InlineSwitchCase>($1, $3); }
+| "default" ":" Expr { $$ = make_shared<InlineSwitchCase>(shared_ptr<Expr>(), $3); }
 ;
 
 CallExpr:
-Expr "(" Args ")" %prec Call {
-	$$ = make_shared<CallExpr>(
-		$1,
-		$3
-	);
-}
-| Expr "(" Args ")" "async" %prec Call {
-	$$ = make_shared<CallExpr>(
-		$1,
-		$3,
-		true
-	);
-}
+Expr "(" Args ")" %prec Call { $$ = make_shared<CallExpr>($1, $3); }
+| Expr "(" Args ")" "async" %prec Call { $$ = make_shared<CallExpr>($1, $3, true); }
 ;
 
 AwaitExpr:
@@ -779,11 +705,11 @@ Args:
 ArgList:
 Expr {
 	$$ = make_shared<ArgList>();
-	$$->args.push_back($1);
+	$$->push_back($1);
 }
 | Args "," Expr {
 	$$ = $1;
-	$$->args.push_back($3);
+	$$->push_back($3);
 }
 ;
 

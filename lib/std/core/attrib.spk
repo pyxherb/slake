@@ -1,9 +1,0 @@
-///
-/// @description
-/// Attributes for Swampeak Standard Library.
-///
-/// @author Swampeak Contributors
-///
-
-/// @description Hint the optimizer that do not remove the resources.
-pub attribute NoRemove: {d9a05631-5c29-4593-ab42-197d438b9a3a} {}

@@ -1,7 +1,7 @@
-Swampeak Language
+Slake Language
 =================
 
-Documentation for Swanpeak runtime.
+Documentation for Slake runtime.
 
 .. toctree::
     :maxdepth: 2

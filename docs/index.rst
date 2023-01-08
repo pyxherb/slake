@@ -1,4 +1,4 @@
-Welcome to Swampeak's documentation!
+Welcome to Slake's documentation!
 ====================================
 
 .. toctree::

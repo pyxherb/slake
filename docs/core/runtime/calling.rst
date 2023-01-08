@@ -7,7 +7,7 @@ Introduction
 ------------
 
 Calling convention specifies details during calling functions.
-This documentation describes the calling conventions used in Swampeak programs.
+This documentation describes the calling conventions used in Slake programs.
 
 Conventions
 -----------

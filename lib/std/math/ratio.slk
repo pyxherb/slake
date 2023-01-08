@@ -1,0 +1,18 @@
+pub interface IRatio<T> {
+	@T -> numerator;
+	@T -> denominator;
+}
+
+pub class Ratio<T>: IRatio<@T> {
+	@T _num, _den;
+
+	pub @T -> numerator {
+		self { return _num; }
+		= { _num = num; }
+	}
+
+	pub @T -> denominator {
+		self { return _den; }
+		= { _den = den; }
+	}
+}

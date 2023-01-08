@@ -1,0 +1,13 @@
+pub interface IMap<K, V> {
+	bool has(@K key);
+	@V [](@K key);
+}
+
+class HashMapNode<K,V> {
+	@K key
+	@V value;
+}
+
+pub class BasicMap<K, V>: IMap<@K, @V> {
+	pub override @V [](@K key);
+}

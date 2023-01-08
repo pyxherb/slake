@@ -17,9 +17,9 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'Swampeak'
-copyright = '2022, Swampeak Project'
-author = 'Swampeak Project'
+project = 'Slake'
+copyright = '2022, Slake Project'
+author = 'Slake Project'
 
 
 # -- General configuration ---------------------------------------------------

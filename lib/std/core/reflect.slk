@@ -1,0 +1,39 @@
+///
+///
+///
+pub class Module {
+	pub native string -> name;
+	pub native Module[] -> imports;
+}
+
+///
+///
+///
+pub class Attribute {
+	pub native string -> name;
+	pub native @Type[] -> getParamTypes;
+	pub native object[] -> getArgs;
+}
+
+///
+///
+///
+pub class Type {
+	pub native string -> name;
+	pub native @Fn -> constructor;
+	pub native @Fn -> destructor;
+	pub native @Fn[string] -> destructor;
+}
+
+///
+/// @intro
+///
+/// @end
+///
+pub class Fn {
+	pub native fn getName() : string;
+	pub native fn getType(): @Type;
+	pub native fn getParamTypes(): @Type[];
+	pub native fn call(object[] args): object;
+	pub native fn callWithSelf(object& o, object[] args): object;
+}

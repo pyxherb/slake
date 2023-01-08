@@ -6,7 +6,7 @@ Interface
 Overview
 --------
 
-Interface is one of core concepts of Object-Orinted Programming (OOP) in Swampeak.
+Interface is one of core concepts of Object-Orinted Programming (OOP) in Slake.
 
 Syntax
 ------

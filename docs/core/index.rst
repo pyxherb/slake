@@ -1,7 +1,7 @@
-Swampeak Core
+Slake Core
 =============
 
-Documentation for Swanpeak core features.
+Documentation for Slake core features.
 
 .. toctree::
     :maxdepth: 2

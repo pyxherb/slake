@@ -3,7 +3,7 @@ Opcodes
 
 .. contents::
 
-This documentation details opcodes for Swampeak interpreter.
+This documentation details opcodes for Slake interpreter.
 
 Operand Types
 -------------

@@ -14,18 +14,13 @@
 
 Slake::Compiler::parser::symbol_type yylex();
 
-using std::static_pointer_cast;
-using std::make_shared;
-using std::shared_ptr;
-
 %}
 
 %code requires {
 #include <compiler/compiler.hh>
-#include <cstdio>
 #include <cstdarg>
-
 }
+
 %code provides {
 extern Slake::Compiler::parser::location_type yylloc;
 extern std::shared_ptr<Slake::Compiler::parser> yyparser;
@@ -48,10 +43,11 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %token <int> L_INT "integer literal"
 %token <unsigned int> L_UINT "unsigned integer literal"
 %token <long long> L_LONG "long integer literal"
-%token <unsigned long long> L_ULONG "unsigned long long integer literal"
+%token <unsigned long long> L_ULONG "unsigned long integer literal"
 %token <float> L_FLOAT "single precision FP literal"
 %token <double> L_DOUBLE "double precision FP literal"
-%token <std::string> L_STRING
+%token <std::string> L_STRING "string literal"
+%token <Slake::Base::UUID> L_UUID "UUID"
 
 %token KW_ASYNC "async"
 %token KW_AWAIT "await"
@@ -62,38 +58,48 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %token KW_CONST "const"
 %token KW_CONTINUE "continue"
 %token KW_DEFAULT "default"
+%token KW_DELETE "delete"
 %token KW_ELSE "else"
 %token KW_ENUM "enum"
+%token KW_FALSE "false"
 %token KW_FINAL "final"
+%token KW_FINALLY "finally"
 %token KW_FN "fn"
 %token KW_FOR "for"
 %token KW_IF "if"
-%token KW_IMPORT "import"
-%token KW_INTERFACE "interface"
+%token KW_NATIVE "native"
 %token KW_NEW "new"
 %token KW_NULL "null"
+%token KW_OVERRIDE "override"
 %token KW_OPERATOR "operator"
 %token KW_PUB "pub"
 %token KW_RETURN "return"
-%token KW_SELF "self"
+%token KW_STATIC "static"
+%token KW_STRUCT "struct"
 %token KW_SWITCH "switch"
+%token KW_THIS "this"
 %token KW_THROW "throw"
 %token KW_TIMES "times"
 %token KW_TRAIT "trait"
+%token KW_TRUE "true"
 %token KW_TRY "try"
+%token KW_USE "use"
 %token KW_WHILE "while"
 
 %token TN_I8 "i8"
 %token TN_I16 "i16"
 %token TN_I32 "i32"
 %token TN_I64 "i64"
+%token TN_ISIZE "isize"
 %token TN_U8 "u8"
 %token TN_U16 "u16"
 %token TN_U32 "u32"
 %token TN_U64 "u64"
+%token TN_USIZE "usize"
 %token TN_FLOAT "float"
 %token TN_DOUBLE "double"
 %token TN_STRING "string"
+%token TN_BOOL "bool"
 %token TN_AUTO "auto"
 %token TN_VOID "void"
 
@@ -118,16 +124,27 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %token OP_ASSIGN_OR "|="
 %token OP_ASSIGN_XOR "^="
 %token OP_ASSIGN_REV "~="
+%token OP_ASSIGN_LSHIFT ">>="
+%token OP_ASSIGN_RSHIFT "<<="
+%token OP_ASSIGN_ACCESS ".="
 %token OP_EQ "=="
 %token OP_NEQ "!="
+%token OP_STRICTEQ "==="
+%token OP_STRICTNEQ "!=="
+%token OP_LT "<"
+%token OP_GT ">"
 %token OP_LTEQ "<="
 %token OP_GTEQ ">="
+%token OP_RSHIFT ">>"
+%token OP_LSHIFT "<<"
 %token OP_LAND "&&"
 %token OP_LOR "||"
 %token OP_INC "++"
 %token OP_DEC "--"
 %token OP_INLINE_SW "=>"
 %token OP_WRAP "->"
+%token OP_DOLLAR "$"
+%token OP_DIRECTIVE "#"
 
 %token T_AT "@"
 %token T_LPARENTHESE "("
@@ -141,7 +158,7 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %token T_SEMICOLON ";"
 %token T_DOT "."
 
-%right "=" "+=" "-=" "*=" "/=" "%=" "&=" "|=" "^=" "~="
+%right "=" "+=" "-=" "*=" "/=" "%=" "&=" "|=" "^=" "~=" "<<=" ">>="
 %right "?" "=>"
 %left "||"
 %left "&&"
@@ -149,61 +166,63 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %left "^"
 %left "&"
 %left "==" "!="
+%left "<<" ">>"
 %left "<" "<=" ">" ">="
 %left "+" "-"
 %left "*" "/" "%"
-%precedence "!" OP_NEG "++" "--"
-%nonassoc "(" ")"
+%precedence "!" OP_NEG
+%precedence "++" "--"
+%nonassoc "(" ")" "[" "]"
 
 %precedence Call
 %precedence Await
 
+%precedence ForwardUnaryOp
+%precedence BackwardUnaryOp
+
 %expect 0
 
 %type <AccessModifier> AccessModifier
-%type <StorageModifier> StorageModifier
-%type <std::shared_ptr<TypeName>> TypeName
-%type <std::shared_ptr<TypeName>> InheritSlot
-%type <std::shared_ptr<ImplList>> ImplementTypeNameList
-%type <std::shared_ptr<ImplList>> ImplList
+%type <std::shared_ptr<TypeName>> TypeName InheritSlot
+%type <std::shared_ptr<ImplList>> ImplementTypeNameList ImplList
 %type <std::shared_ptr<ParamDecl>> ParamDecl
-%type <std::shared_ptr<ParamDeclList>> ParamDecls
-%type <std::shared_ptr<ParamDeclList>> ParamDeclList
+%type <std::shared_ptr<ParamDeclList>> ParamDecls ParamDeclList
 %type <std::shared_ptr<VarDefStmt>> VarDef
-%type <std::shared_ptr<VarDeclList>> VarDecls
-%type <std::shared_ptr<VarDecl>> VarDecl
-%type <std::shared_ptr<CodeBlock>> Stmts
-%type <std::shared_ptr<Stmt>> Stmt
-%type <std::shared_ptr<ExprStmt>> ExprStmt
+%type <VarDeclList> VarDecls NativeVarDecls
+%type <std::shared_ptr<VarDecl>> VarDecl NativeVarDecl
+%type <std::shared_ptr<CodeBlock>> Stmts CodeBlock
+%type <std::shared_ptr<Stmt>> Stmt ElseBlock
+%type <std::shared_ptr<ExprStmt>> ExprStmt OptionalExprStmt
 %type <std::shared_ptr<IfStmt>> IfBlock
 %type <std::shared_ptr<SwitchStmt>> SwitchStmt
 %type <std::shared_ptr<SwitchCase>> SwitchCase
 %type <std::shared_ptr<SwitchCaseList>> SwitchCases
 %type <std::shared_ptr<ForStmt>> ForBlock
 %type <std::shared_ptr<VarDefStmt>> OptionalVarDef
-%type <std::shared_ptr<Expr>> OptionalExpr
-%type <std::shared_ptr<ExprStmt>> OptionalExprStmt
+%type <std::shared_ptr<Expr>> Expr OptionalExpr
 %type <std::shared_ptr<WhileStmt>> WhileBlock
 %type <std::shared_ptr<TimesStmt>> TimesBlock
-%type <std::shared_ptr<Stmt>> ElseBlock
-%type <std::shared_ptr<CodeBlock>> CodeBlock
-%type <std::shared_ptr<Expr>> Expr
-%type <std::shared_ptr<RefExpr>> Ref
+%type <std::shared_ptr<CastExpr>> CastExpr RawCastExpr
+%type <std::shared_ptr<NewExpr>> NewExpr
+%type <std::shared_ptr<RefExpr>> Ref TypeNameRef
 %type <std::shared_ptr<MapExpr>> MapExpr
-%type <std::shared_ptr<PairList>> PairList
-%type <std::shared_ptr<PairList>> Pairs
+%type <std::shared_ptr<PairList>> PairList Pairs
 %type <std::shared_ptr<ExprPair>> Pair
+%type <std::shared_ptr<SubscriptOpExpr>> SubscriptOpExpr
 %type <std::shared_ptr<UnaryOpExpr>> UnaryOpExpr
 %type <std::shared_ptr<BinaryOpExpr>> BinaryOpExpr
 %type <std::shared_ptr<TernaryOpExpr>> TernaryOpExpr
 %type <std::shared_ptr<InlineSwitchExpr>> InlineSwitchExpr
+%type <std::shared_ptr<ArrayExpr>> ArrayExpr
+%type <std::vector<std::shared_ptr<Expr>>> Exprs ExprList
 %type <std::shared_ptr<InlineSwitchCase>> InlineSwitchCase
 %type <std::shared_ptr<InlineSwitchCaseList>> InlineSwitchCases
 %type <std::shared_ptr<CallExpr>> CallExpr
 %type <std::shared_ptr<AwaitExpr>> AwaitExpr
-%type <std::shared_ptr<ArgList>> Args
-%type <std::shared_ptr<ArgList>> ArgList
+%type <std::shared_ptr<ArgList>> Args ArgList
 %type <std::shared_ptr<LiteralExpr>> Literal
+%type <std::string> OperatorName GenericParam
+%type <std::vector<std::string>> GenericParamList GenericParams
 
 %%
 
@@ -211,17 +230,26 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 // Program
 //
 Program:
-ProgramStmt Program
+ProgramStmts
+| %empty
+;
+
+ProgramStmts:
+ProgramStmt ProgramStmts
 | ProgramStmt
 ;
 
 ProgramStmt:
 FnDef
 | ImportBlock
-| VarDef ";"
+| VarDef ";" {
+	currentScope->defineVars($1);
+}
 | Class
-| Interface
+| Struct
+| Trait
 | Enum
+| AliasDef ";"
 ;
 
 //
@@ -230,11 +258,10 @@ FnDef
 AccessModifier:
 "pub" AccessModifier { $$ |= ACCESS_PUB; }
 | "final" AccessModifier { $$ |= ACCESS_FINAL; }
-| %empty {}
-;
-
-StorageModifier:
-"const" StorageModifier { $$ |= STORAGE_CONST; }
+| "const" AccessModifier { $$ |= ACCESS_CONST; }
+| "volatile" AccessModifier { $$ |= ACCESS_VOLATILE; }
+| "override" AccessModifier { $$ |= ACCESS_OVERRIDE; }
+| "static" AccessModifier { $$ |= ACCESS_STATIC; }
 | %empty {}
 ;
 
@@ -246,11 +273,11 @@ AccessModifier "enum" T_ID ":" TypeName "{" {
 	if(currentScope->types.count($3))
 		this->error(yylloc, "Redefinition of type `" + $3 + "`");
 	else {
-		currentEnum = make_shared<EnumType>($1, $3, $5);
+		currentEnum = std::make_shared<EnumType>(@1, $1, $3, $5);
 		currentScope->types[$3] = currentEnum;
 	}
 } EnumPairs "}" {
-	currentEnum = shared_ptr<EnumType>();
+	currentEnum.reset();
 }
 ;
 
@@ -264,8 +291,8 @@ T_ID {
 		this->error(yylloc, "Redefinition of enumeration constant `" + $1 + "`");
 	else {
 		if(currentEnum->pairs.size()) {
-			currentEnum->pairs[$1]=calcConstExpr(
-				make_shared<UnaryOpExpr>(
+			currentEnum->pairs[$1] = evalConstExpr(
+				std::make_shared<UnaryOpExpr>(
 					(currentEnum->pairs.rbegin())->second->getLocation(),
 					UnaryOp::INC_F,
 					(currentEnum->pairs.rbegin())->second
@@ -273,7 +300,7 @@ T_ID {
 			);
 		}
 		else
-			currentEnum->pairs[$1] = make_shared<IntLiteralExpr>(@1, 0);
+			currentEnum->pairs[$1] = std::make_shared<IntLiteralExpr>(@1, 0);
 	}
 }
 | T_ID "=" Expr {
@@ -288,8 +315,8 @@ T_ID {
 // Class
 //
 Class:
-AccessModifier "class" T_ID InheritSlot ImplList {
-	auto curClass = make_shared<ClassType>($1, make_shared<Scope>(currentScope), $4, $3, $5);
+AccessModifier "class" T_ID GenericParamList InheritSlot ImplList {
+	auto curClass = std::make_shared<ClassType>(@1, $1, std::make_shared<Scope>(currentScope), $5, $3, $4, $6);
 
 	if(currentScope->types.count($3))
 		this->error(yylloc, "Redefinition of type `" + $3 + "`");
@@ -302,18 +329,18 @@ AccessModifier "class" T_ID InheritSlot ImplList {
 ;
 
 InheritSlot:
-%empty { $$ = shared_ptr<TypeName>(); }
+%empty { }
 | "(" TypeName ")" { $$ = $2; }
 ;
 
 ImplList:
-%empty { $$ = shared_ptr<ImplList>(); }
+%empty { $$ = std::make_shared<ImplList>(); }
 | ":" ImplementTypeNameList { $$ = $2; }
 ;
 
 ImplementTypeNameList:
 TypeName {
-	$$ = make_shared<ImplList>();
+	$$ = std::make_shared<ImplList>();
 	$$->impls.push_back($1);
 }
 | ImplementTypeNameList "," TypeName {
@@ -322,16 +349,64 @@ TypeName {
 }
 ;
 
+GenericParamList:
+"<" GenericParams ">" { $$ = $2; }
+| %empty {}
+;
+
+GenericParams:
+GenericParam { $$.push_back($1); }
+| GenericParams GenericParam {
+	if(std::any_of($1.begin(), $1.end(), [this](decltype($2) &x)->bool { return x == $2; }))
+		this->error(yylloc, "Redefinition of generic parameter `" + $2 + "`");
+	$$ = $1;
+	$$.push_back($2);
+}
+;
+
+GenericParam:
+T_ID { $$ = $1; }
+;
+
 //
-// Interface
+// Structure
 //
-Interface:
-AccessModifier "interface" T_ID InheritSlot {
-	auto curType = make_shared<InterfaceType>(
+Struct:
+AccessModifier "struct" T_ID "{" {
+	if(currentScope->types.count($3))
+		this->error(yylloc, "Redefinition of type `" + $3 + "`");
+	else {
+		currentStruct = std::make_shared<StructType>(@1, $1, $3);
+		currentScope->types[$3] = currentStruct;
+	}
+} StructStmts "}" {
+	currentStruct.reset();
+}
+;
+
+StructStmts:
+StructStmt StructStmts
+| StructStmt
+;
+
+StructStmt:
+VarDef ";" {
+	currentStruct->addMembers($1);
+}
+;
+
+//
+// Trait
+//
+Trait:
+AccessModifier "trait" T_ID GenericParamList InheritSlot {
+	auto curType = std::make_shared<TraitType>(
+		@1,
 		$1,
-		make_shared<Scope>(currentScope),
-		$4,
-		$3
+		std::make_shared<Scope>(currentScope),
+		$5,
+		$3,
+		$4
 	);
 
 	if(currentScope->types.count($3))
@@ -339,17 +414,22 @@ AccessModifier "interface" T_ID InheritSlot {
 
 	currentScope->types[$3] = curType;
 	currentScope = curType->scope;
-} "{" InterfaceStmts "}" {
+} "{" TraitProgram "}" {
 	currentScope = currentScope->parent.lock();
 }
 ;
 
-InterfaceStmts:
-InterfaceStmt InterfaceStmts
-| InterfaceStmt
+TraitProgram:
+TraitStmts
+| %empty
 ;
 
-InterfaceStmt:
+TraitStmts:
+TraitStmt TraitStmts
+| TraitStmt
+;
+
+TraitStmt:
 FnDecl
 ;
 
@@ -358,11 +438,27 @@ TypeName T_ID "(" ParamDecls ")" ";" {
 	if(currentScope->fnDefs.count($2))
 		this->error(yylloc, "Redefinition of function `" + $2 + "`");
 	else
-		currentScope->fnDefs[$2] = make_shared<FnDef>($1->getLocation(), ACCESS_PUB, $4, $1);
+		currentScope->fnDefs[$2] = std::make_shared<FnDef>(@1, ACCESS_PUB, $4, $1, std::shared_ptr<CodeBlock>(), $2);
 }
-| TypeName "operator" OperatorName "(" ParamDecls ")" ';' {
+| TypeName "operator" OperatorName "(" ParamDecls ")" ";" {
+	if(currentScope->fnDefs.count($3)) {
+		this->error(yylloc, "Redefinition of operator " + $3);
+	}
+	else
+		currentScope->fnDefs[$3] = std::make_shared<FnDef>(@1, ACCESS_PUB, $5, $1, std::shared_ptr<CodeBlock>(), "operator" + $3);
 }
-| "operator" TypeName ';' {
+| "operator" TypeName ";" {
+}
+| NativeFnDecl {}
+;
+
+NativeFnDecl:
+AccessModifier "native" TypeName T_ID "(" ParamDecls ")" "=" L_UUID ";" {
+	if(currentScope->fnDefs.count($4)) {
+		this->error(yylloc, "Redefinition of function " + $4);
+	}
+	else
+		currentScope->fnDefs[$4] = std::make_shared<FnDef>(@1, $1, $6, $3, $9, $4);
 }
 ;
 
@@ -370,7 +466,7 @@ TypeName T_ID "(" ParamDecls ")" ";" {
 // Import
 //
 ImportBlock:
-"import" "{" Imports "}"
+"use" "{" Imports "}"
 ;
 
 Imports:
@@ -379,19 +475,12 @@ Import "," Imports
 ;
 
 Import:
-T_ID "=" L_STRING {
+T_ID "=" Ref {
 	// Redefinition check
-	if(currentScope->imports.count($3))
+	if(currentScope->imports.count($1))
 		this->error(yylloc, "Redefinition of import item `" + $1 + "`");
 	else
-		currentScope->imports[$1] = make_shared<ImportItem>(@1, $3);
-}
-| T_ID "=" "@" L_STRING {
-	// Redefinition check
-	if(currentScope->imports.count($4))
-		this->error(yylloc, "Redefinition of import item `" + $1 + "`");
-	else
-		currentScope->imports[$1] = make_shared<ImportItem>(@1, $4);
+		currentScope->imports[$1] = std::make_shared<ImportItem>(@1, $3);
 }
 ;
 
@@ -403,55 +492,63 @@ AccessModifier TypeName T_ID "(" ParamDecls ")" CodeBlock {
 	if(currentScope->fnDefs.count($3))
 		this->error(yylloc, "Redefinition of function `" + $3 + "`");
 	else
-		currentScope->fnDefs[$3] = make_shared<FnDef>(@1, $1, $5, $2, $7, $3);
+		currentScope->fnDefs[$3] = std::make_shared<FnDef>(@1, $1, $5, $2, $7, $3);
 }
-| AccessModifier "new" "(" ParamDecls ")" CodeBlock {
+| AccessModifier TypeName "operator" OperatorName "(" ParamDecls ")" CodeBlock {
+	if(currentScope->fnDefs.count($4)) {
+		this->error(yylloc, "Redefinition of operator " + $4);
+	}
+	else
+		currentScope->fnDefs[$4] = std::make_shared<FnDef>(@1, $1, $6, std::shared_ptr<TypeName>(), $8, "operator" + $4);
+}
+| AccessModifier "operator" "new" "(" ParamDecls ")" CodeBlock {
 	if(currentScope->fnDefs.count("new"))
 		this->error(yylloc, "Redefinition of constructor");
 	else
-		currentScope->fnDefs["new"] = make_shared<FnDef>(@1, $1, $4, shared_ptr<TypeName>(), $6, "new");
+		currentScope->fnDefs["new"] = std::make_shared<FnDef>(@1, $1, $5, std::shared_ptr<TypeName>(), $7, "operator new");
 }
-| AccessModifier "~" "(" ParamDecls ")" CodeBlock {
+| AccessModifier "operator" "delete" "(" ")" CodeBlock {
 	if(currentScope->fnDefs.count("delete"))
-		this->error(yylloc, "Redefinition of constructor");
+		this->error(yylloc, "Redefinition of destructor");
 	else
-		currentScope->fnDefs["delete"] = make_shared<FnDef>(@1, $1, $4, shared_ptr<TypeName>(), $6, "delete");
-}
-| AccessModifier TypeName "operator" OperatorName "(" ParamDecls ")" CodeBlock {
+		currentScope->fnDefs["delete"] = std::make_shared<FnDef>(@1, $1, std::make_shared<ParamDeclList>(), std::shared_ptr<TypeName>(), $6, "operator delete");
 }
 | AccessModifier "operator" TypeName CodeBlock {
 }
+| NativeFnDecl {}
 ;
 
 OperatorName:
-"+" {}
-| "-" {}
-| "*" {}
-| "/" {}
-| "%" {}
-| "&" {}
-| "|" {}
-| "^" {}
-| "&&" {}
-| "||" {}
-| "~" {}
-| "!" {}
-| "=" {}
-| "+=" {}
-| "-=" {}
-| "*=" {}
-| "/=" {}
-| "%=" {}
-| "&=" {}
-| "|=" {}
-| "^=" {}
-| "~=" {}
-| "==" {}
-| "!=" {}
-| ">" {}
-| "<" {}
-| ">=" {}
-| "<=" {}
+"+" { $$ = "+"; }
+| "-" { $$ = "-"; }
+| "*" { $$ = "*"; }
+| "/" { $$ = "/"; }
+| "%" { $$ = "%"; }
+| "&" { $$ = "&"; }
+| "|" { $$ = "|"; }
+| "^" { $$ = "^"; }
+| "&&" { $$ = "&&"; }
+| "||" { $$ = "||"; }
+| "~" { $$ = "~"; }
+| "!" { $$ = "!"; }
+| "=" { $$ = "="; }
+| "+=" { $$ = "+="; }
+| "-=" { $$ = "-="; }
+| "*=" { $$ = "*="; }
+| "/=" { $$ = "/="; }
+| "%=" { $$ = "%="; }
+| "&=" { $$ = "&="; }
+| "|=" { $$ = "|="; }
+| "^=" { $$ = "^="; }
+| "~=" { $$ = "~="; }
+| "==" { $$ = "=="; }
+| "!=" { $$ = "!="; }
+| ">" { $$ = ">"; }
+| "<" { $$ = "<"; }
+| ">=" { $$ = ">="; }
+| "<=" { $$ = "<="; }
+| "[" "]" { $$ = "[]"; }
+| "(" ")" { $$ = "()"; }
 ;
 
 //
@@ -460,28 +557,35 @@ OperatorName:
 ParamDecls:
 %empty { $$ = std::make_shared<ParamDeclList>(); }
 | ParamDeclList { $$ = $1; }
+| ParamDeclList "," "..." {
+	$$->push_back(std::make_shared<ParamDecl>(@3, "...", std::make_shared<ArrayTypeName>(@3, std::make_shared<TypeName>(@3, EvalType::ANY))));
+}
+| "..." {
+	$$ = std::make_shared<ParamDeclList>();
+	$$->push_back(std::make_shared<ParamDecl>(@1, "...", std::make_shared<ArrayTypeName>(@1, std::make_shared<TypeName>(@1, EvalType::ANY))));
+}
 ;
 
 ParamDeclList:
 ParamDecl {
-	$$ = make_shared<ParamDeclList>();
-	$$->decls.push_back($1);
+	$$ = std::make_shared<ParamDeclList>();
+	$$->push_back($1);
 }
 | ParamDeclList "," ParamDecl {
 	$$ = $1;
 	if ((*$$)[$3->name])
 		this->error(yylloc, "Redefinition of parameter `" + $3->name + "`");
 	else
-		$$->decls.push_back($3);
+		$$->push_back($3);
 }
 ;
 
 ParamDecl:
 TypeName T_ID {
-	$$ = make_shared<ParamDecl>($1->getLocation(), $2, $1);
+	$$ = std::make_shared<ParamDecl>(@1, $2, $1);
 }
 | TypeName T_ID "=" Expr {
-	$$ = make_shared<ParamDecl>($1->getLocation(), $2, $1, $4);
+	$$ = std::make_shared<ParamDecl>(@1, $2, $1, $4);
 }
 ;
 
@@ -490,25 +594,45 @@ TypeName T_ID {
 //
 VarDef:
 AccessModifier TypeName VarDecls {
-	$$ = make_shared<VarDefStmt>($1, $2, $3);
+	$$ = std::make_shared<VarDefStmt>($1, $2, $3);
+}
+| AccessModifier "native" TypeName NativeVarDecls {
+	$$ = std::make_shared<VarDefStmt>($1, $3, $4, true);
 }
 ;
 VarDecls:
-VarDecl {
-	$$ = make_shared<VarDeclList>();
-	$$->decls.push_back($1);
-}
+VarDecl { $$.push_back($1); }
 | VarDecls "," VarDecl {
 	$$ = $1;
-	if ((*$$)[$3->name])
+	if ($$[$3->name])
 		this->error(yylloc, "Redefinition of variable `" + $3->name + "`");
 	else
-		$$->decls.push_back($3);
+		$$.push_back($3);
 }
 ;
 VarDecl:
-T_ID { $$ = make_shared<VarDecl>($1); }
-| T_ID "=" Expr { $$ = make_shared<VarDecl>($1, $3); }
+T_ID { $$ = std::make_shared<VarDecl>(@1, $1); }
+| T_ID "=" Expr { $$ = std::make_shared<VarDecl>(@1, $1, $3); }
+| T_ID "[" Expr "]" { $$ = std::make_shared<VarDecl>(@1, $1); }
+| T_ID "[" Expr "]" "=" Expr { $$ = std::make_shared<VarDecl>(@1, $1, $6); }
+;
+NativeVarDecls:
+NativeVarDecl { $$.push_back($1); }
+| NativeVarDecls NativeVarDecl {
+	$$ = $1;
+	$$.push_back($2);
+}
+;
+NativeVarDecl:
+T_ID "=" L_UUID { $$ = std::make_shared<VarDecl>(@1, $1, std::make_shared<UUIDLiteralExpr>(@3, $3)); }
+| T_ID { $$ = std::make_shared<VarDecl>(@1, $1, std::shared_ptr<Expr>()); }
+;
+
+AliasDef:
+"pub" "use" VarDecls {
+}
+| "use" VarDecls {
+}
 ;
 
 //
@@ -516,7 +640,7 @@ T_ID { $$ = make_shared<VarDecl>($1); }
 //
 Stmts:
 Stmt {
-	$$ = make_shared<CodeBlock>();
+	$$ = std::make_shared<CodeBlock>(@1);
 	$$->ins.push_back($1);
 }
 | Stmts Stmt {
@@ -527,16 +651,17 @@ Stmt {
 
 Stmt:
 ExprStmt ";" { $$ = $1; }
-| "return" ";" { $$ = make_shared<ReturnStmt>(); }
-| "return" Expr ";" { $$ = make_shared<ReturnStmt>($2); }
-| "continue" ";" { $$ = make_shared<ContinueStmt>(); }
-| "break" ";" { $$ = make_shared<BreakStmt>(); }
+| "return" ";" { $$ = std::make_shared<ReturnStmt>(@1); }
+| "return" Expr ";" { $$ = std::make_shared<ReturnStmt>(@1, $2); }
+| "continue" ";" { $$ = std::make_shared<ContinueStmt>(@1); }
+| "break" ";" { $$ = std::make_shared<BreakStmt>(@1); }
 | IfBlock { $$ = $1; }
 | ForBlock { $$ = $1; }
 | WhileBlock { $$ = $1; }
 | TimesBlock { $$ = $1; }
 | VarDef ";" { $$ = $1; }
 | SwitchStmt { $$ = $1; }
+| TryBlock {}
 ;
 
 TryBlock:
@@ -556,22 +681,22 @@ CatchBlock:
 ;
 
 FinalBlock:
-"final" CodeBlock {
+"finally" CodeBlock {
 }
 | %empty {}
 ;
 
 ExprStmt:
-Expr "," ExprStmt { $$ = make_shared<ExprStmt>($1, $3); }
-| Expr { $$ = make_shared<ExprStmt>($1); }
+Expr "," ExprStmt { $$ = std::make_shared<ExprStmt>($1, $3); }
+| Expr { $$ = std::make_shared<ExprStmt>($1); }
 ;
 
 IfBlock:
 "if" "(" Expr ")" CodeBlock {
-	$$ = make_shared<IfStmt>($3, $5, shared_ptr<Stmt>());
+	$$ = std::make_shared<IfStmt>(@1, $3, $5, std::shared_ptr<Stmt>());
 }
 | "if" "(" Expr ")" CodeBlock ElseBlock {
-	$$ = make_shared<IfStmt>($3, $5, $6);
+	$$ = std::make_shared<IfStmt>(@1, $3, $5, $6);
 }
 ;
 
@@ -582,17 +707,18 @@ ElseBlock:
 
 CodeBlock:
 "{" Stmts "}" { $$ = $2; }
+| "{" "}" { $$ = std::make_shared<CodeBlock>(@1); }
 ;
 
 SwitchStmt:
 "switch" "(" Expr ")" "{" SwitchCases "}" {
-	$$ = make_shared<SwitchStmt>($3, $6);
+	$$ = std::make_shared<SwitchStmt>(@1, $3, $6);
 }
 ;
 
 SwitchCases:
 SwitchCase {
-	$$ = make_shared<SwitchCaseList>();
+	$$ = std::make_shared<SwitchCaseList>();
 	$$->push_back($1);
 }
 | SwitchCases SwitchCase {
@@ -601,33 +727,33 @@ SwitchCase {
 }
 ;
 SwitchCase:
-"case" Expr ":" Stmt { $$ = make_shared<SwitchCase>($2, $4); }
-| "default" ":" Stmt { $$ = make_shared<SwitchCase>(shared_ptr<Expr>(), $3); }
+"case" Expr ":" Stmt { $$ = std::make_shared<SwitchCase>(@1, $2, $4); }
+| "default" ":" Stmt { $$ = std::make_shared<SwitchCase>(@1, std::shared_ptr<Expr>(), $3); }
 ;
 
 ForBlock:
-"for" "(" OptionalVarDef ";" OptionalExpr ";" OptionalExprStmt ")" CodeBlock { $$ = make_shared<ForStmt>($3, $5, $7, $9); }
+"for" "(" OptionalVarDef ";" OptionalExpr ";" OptionalExprStmt ")" CodeBlock { $$ = std::make_shared<ForStmt>(@1, $3, $5, $7, $9); }
 ;
 
 OptionalVarDef:
-%empty { $$ = shared_ptr<VarDefStmt>(); }
+%empty { }
 | VarDef { $$ = $1; }
 ;
 OptionalExpr:
-%empty { $$ = shared_ptr<Expr>(); }
+%empty { }
 | Expr { $$ = $1; }
 ;
 OptionalExprStmt:
-%empty { $$ = shared_ptr<ExprStmt>(); }
+%empty { }
 | ExprStmt { $$ = $1; }
 ;
 
 WhileBlock:
-"while" "(" Expr ")" CodeBlock { $$ = make_shared<WhileStmt>($3, $5); }
+"while" "(" Expr ")" CodeBlock { $$ = std::make_shared<WhileStmt>(@1, $3, $5); }
 ;
 
 TimesBlock:
-"times" "(" Expr ")" CodeBlock { $$ = make_shared<TimesStmt>($3, $5); }
+"times" "(" Expr ")" CodeBlock { $$ = std::make_shared<TimesStmt>(@1, $3, $5); }
 
 //
 // Expression
@@ -635,6 +761,7 @@ TimesBlock:
 Expr:
 "(" Expr ")" { $$ = $2; }
 | Literal { $$ = $1; }
+| SubscriptOpExpr { $$ = $1; }
 | UnaryOpExpr { $$ = $1; }
 | BinaryOpExpr { $$ = $1; }
 | TernaryOpExpr { $$ = $1; }
@@ -643,22 +770,60 @@ Expr:
 | CallExpr { $$ = $1; }
 | AwaitExpr { $$ = $1; }
 | MapExpr { $$ = $1; }
+| NewExpr { $$ = $1; }
+| CastExpr { $$ = $1; }
+| RawCastExpr { $$ = $1; }
+| "..." { $$ = std::make_shared<RefExpr>(@1, "..."); }
+;
+
+ArrayExpr:
+"{" Exprs "}" { $$ = std::make_shared<ArrayExpr>(@1, $2); }
+;
+
+Exprs:
+ExprList { $$ = $1; }
+| %empty {}
+;
+
+ExprList:
+Expr { $$.push_back($1); }
+| ExprList Expr {
+	$$ = $1;
+	$$.push_back($2);
+}
+;
+
+CastExpr:
+"(" TypeName ")" Expr { $$ = std::make_shared<CastExpr>(@1, $2, $4); }
+;
+
+RawCastExpr:
+"<" TypeName ">" "(" Expr ")" { $$ = std::make_shared<CastExpr>(@1, $2, $5); }
+;
+
+NewExpr:
+"new" TypeName "(" Args ")" { $$ = std::make_shared<NewExpr>(@1, $2, $4); }
 ;
 
 MapExpr:
-"[" PairList "]" {
-	$$ = make_shared<MapExpr>(@1, $2);
+"{" PairList "}" {
+	$$ = std::make_shared<MapExpr>(@1, $2);
+}
+;
+
+Closure:
+TypeName "(" ParamDecls ")" CodeBlock {
 }
 ;
 
 PairList:
-%empty { $$ = shared_ptr<PairList>(); }
+%empty { }
 | Pairs { $$ = $1; }
 ;
 
 Pairs:
 Pair {
-	$$ = make_shared<PairList>();
+	$$ = std::make_shared<PairList>();
 	$$->push_back($1);
 }
 | Pairs "," Pair {
@@ -669,73 +834,106 @@ Pair {
 
 Pair:
 Expr ":" Expr {
-	$$ = make_shared<ExprPair>($1->getLocation(), $1, $3);
+	$$ = std::make_shared<ExprPair>(@1, $1, $3);
 }
 ;
 
+GenericArgs:
+"<" TypeNameList ">" {}
+| %empty {}
+;
+
+TypeNameList:
+TypeName {}
+| TypeNameList TypeName {}
+;
+
 TypeName:
-"i8" { $$ = make_shared<TypeName>(@1, EvalType::I8); }
-|"i16" { $$ = make_shared<TypeName>(@1, EvalType::I16); }
-|"i32" { $$ = make_shared<TypeName>(@1, EvalType::I32); }
-|"i64" { $$ = make_shared<TypeName>(@1, EvalType::I64); }
-|"u8" { $$ = make_shared<TypeName>(@1, EvalType::U8); }
-|"u16" { $$ = make_shared<TypeName>(@1, EvalType::U16); }
-|"u32" { $$ = make_shared<TypeName>(@1, EvalType::U32); }
-|"u64" { $$ = make_shared<TypeName>(@1, EvalType::U64); }
-|"float" { $$ = make_shared<TypeName>(@1, EvalType::FLOAT); }
-|"double" { $$ = make_shared<TypeName>(@1, EvalType::DOUBLE); }
-|"string" { $$ = make_shared<TypeName>(@1, EvalType::STRING); }
-|"auto" { $$ = make_shared<TypeName>(@1, EvalType::AUTO); }
-|"void" { $$ = make_shared<TypeName>(@1, EvalType::NONE); }
-|"@" Ref { $$ = make_shared<CustomTypeName>(@1, $2); }
-| TypeName "[" "]" {}
+"i8" { $$ = std::make_shared<TypeName>(@1, EvalType::I8); }
+|"i16" { $$ = std::make_shared<TypeName>(@1, EvalType::I16); }
+|"i32" { $$ = std::make_shared<TypeName>(@1, EvalType::I32); }
+|"i64" { $$ = std::make_shared<TypeName>(@1, EvalType::I64); }
+|"isize" { $$ = std::make_shared<TypeName>(@1, EvalType::ISIZE); }
+|"u8" { $$ = std::make_shared<TypeName>(@1, EvalType::U8); }
+|"u16" { $$ = std::make_shared<TypeName>(@1, EvalType::U16); }
+|"u32" { $$ = std::make_shared<TypeName>(@1, EvalType::U32); }
+|"u64" { $$ = std::make_shared<TypeName>(@1, EvalType::U64); }
+|"usize" { $$ = std::make_shared<TypeName>(@1, EvalType::USIZE); }
+|"float" { $$ = std::make_shared<TypeName>(@1, EvalType::FLOAT); }
+|"double" { $$ = std::make_shared<TypeName>(@1, EvalType::DOUBLE); }
+|"string" { $$ = std::make_shared<TypeName>(@1, EvalType::STRING); }
+|"auto" { $$ = std::make_shared<TypeName>(@1, EvalType::AUTO); }
+|"bool" { $$ = std::make_shared<TypeName>(@1, EvalType::U8); }
+|"void" { $$ = std::make_shared<TypeName>(@1, EvalType::NONE); }
+|"@" TypeNameRef { $$ = std::make_shared<CustomTypeName>(@1, $2, currentScope); }
+| TypeName "[" "]" { $$ = std::make_shared<ArrayTypeName>(@1, $1); }
+| "@" "[" TypeName ":" TypeName "]" {}
+| TypeName "->" "(" ParamDecls ")" {
+	auto typeName = std::make_shared<FnTypeName>(@1, $1);
+	$$ = typeName;
+	if ($4)
+		for (auto &i : *$4)
+			typeName->argTypes.push_back(i->typeName);
+}
+;
+
+SubscriptOpExpr:
+Expr "[" Expr "]" { $$ = std::make_shared<SubscriptOpExpr>(@1, $1, $3); }
 ;
 
 UnaryOpExpr:
-"!" Expr %prec "!" { $$ = make_shared<UnaryOpExpr>(@1, UnaryOp::NOT, $2);}
-| "-" Expr %prec OP_NEG { $$ = make_shared<UnaryOpExpr>(@1, UnaryOp::NEG, $2);}
-| "++" Expr { $$ = make_shared<UnaryOpExpr>(@1, UnaryOp::INC_F, $2);}
-| "--" Expr { $$ = make_shared<UnaryOpExpr>(@1, UnaryOp::DEC_F, $2);}
+"!" Expr %prec "!" { $$ = std::make_shared<UnaryOpExpr>(@1, UnaryOp::NOT, $2);}
+| "-" Expr %prec OP_NEG { $$ = std::make_shared<UnaryOpExpr>(@1, UnaryOp::NEG, $2);}
+| "++" Expr %prec ForwardUnaryOp { $$ = std::make_shared<UnaryOpExpr>(@1, UnaryOp::INC_F, $2);}
+| "--" Expr %prec ForwardUnaryOp { $$ = std::make_shared<UnaryOpExpr>(@1, UnaryOp::DEC_F, $2);}
+| Expr "++" %prec BackwardUnaryOp { $$ = std::make_shared<UnaryOpExpr>(@1, UnaryOp::INC_B, $1);}
+| Expr "--" %prec BackwardUnaryOp { $$ = std::make_shared<UnaryOpExpr>(@1, UnaryOp::DEC_B, $1);}
 ;
 
 BinaryOpExpr:
-Expr "+" Expr { $$ = make_shared<BinaryOpExpr>($1->getLocation(), BinaryOp::ADD, $1, $3); }
-| Expr "-" Expr { $$ = make_shared<BinaryOpExpr>($1->getLocation(), BinaryOp::SUB, $1, $3); }
-| Expr "*" Expr { $$ = make_shared<BinaryOpExpr>($1->getLocation(), BinaryOp::MUL, $1, $3); }
-| Expr "/" Expr { $$ = make_shared<BinaryOpExpr>($1->getLocation(), BinaryOp::DIV, $1, $3); }
-| Expr "%" Expr { $$ = make_shared<BinaryOpExpr>($1->getLocation(), BinaryOp::MOD, $1, $3); }
-| Expr "&" Expr { $$ = make_shared<BinaryOpExpr>($1->getLocation(), BinaryOp::AND, $1, $3); }
-| Expr "|" Expr { $$ = make_shared<BinaryOpExpr>($1->getLocation(), BinaryOp::OR, $1, $3); }
-| Expr "^" Expr { $$ = make_shared<BinaryOpExpr>($1->getLocation(), BinaryOp::XOR, $1, $3); }
-| Expr "&&" Expr { $$ = make_shared<BinaryOpExpr>($1->getLocation(), BinaryOp::LAND, $1, $3); }
-| Expr "||" Expr { $$ = make_shared<BinaryOpExpr>($1->getLocation(), BinaryOp::LOR, $1, $3); }
-| Expr "==" Expr { $$ = make_shared<BinaryOpExpr>($1->getLocation(), BinaryOp::EQ, $1, $3); }
-| Expr "!=" Expr { $$ = make_shared<BinaryOpExpr>($1->getLocation(), BinaryOp::NEQ, $1, $3); }
-| Expr "<=" Expr { $$ = make_shared<BinaryOpExpr>($1->getLocation(), BinaryOp::LTEQ, $1, $3); }
-| Expr ">=" Expr { $$ = make_shared<BinaryOpExpr>($1->getLocation(), BinaryOp::GTEQ, $1, $3); }
-| Expr "=" Expr { $$ = make_shared<BinaryOpExpr>($1->getLocation(), BinaryOp::ASSIGN, $1, $3); }
-| Expr "+=" Expr { $$ = make_shared<BinaryOpExpr>($1->getLocation(), BinaryOp::ADD_ASSIGN, $1, $3); }
-| Expr "-=" Expr { $$ = make_shared<BinaryOpExpr>($1->getLocation(), BinaryOp::SUB_ASSIGN, $1, $3); }
-| Expr "*=" Expr { $$ = make_shared<BinaryOpExpr>($1->getLocation(), BinaryOp::MUL_ASSIGN, $1, $3); }
-| Expr "/=" Expr { $$ = make_shared<BinaryOpExpr>($1->getLocation(), BinaryOp::DIV_ASSIGN, $1, $3); }
-| Expr "%=" Expr { $$ = make_shared<BinaryOpExpr>($1->getLocation(), BinaryOp::MOD_ASSIGN, $1, $3); }
-| Expr "&=" Expr { $$ = make_shared<BinaryOpExpr>($1->getLocation(), BinaryOp::AND_ASSIGN, $1, $3); }
-| Expr "|=" Expr { $$ = make_shared<BinaryOpExpr>($1->getLocation(), BinaryOp::OR_ASSIGN, $1, $3); }
-| Expr "^=" Expr { $$ = make_shared<BinaryOpExpr>($1->getLocation(), BinaryOp::XOR_ASSIGN, $1, $3); }
+Expr "+" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::ADD, $1, $3); }
+| Expr "-" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::SUB, $1, $3); }
+| Expr "*" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::MUL, $1, $3); }
+| Expr "/" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::DIV, $1, $3); }
+| Expr "%" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::MOD, $1, $3); }
+| Expr "&" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::AND, $1, $3); }
+| Expr "|" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::OR, $1, $3); }
+| Expr "^" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::XOR, $1, $3); }
+| Expr "&&" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::LAND, $1, $3); }
+| Expr "||" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::LOR, $1, $3); }
+| Expr "==" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::EQ, $1, $3); }
+| Expr "!=" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::NEQ, $1, $3); }
+| Expr "<<" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::LSHIFT, $1, $3); }
+| Expr ">>" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::RSHIFT, $1, $3); }
+| Expr "<" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::LT, $1, $3); }
+| Expr ">" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::GT, $1, $3); }
+| Expr "<=" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::LTEQ, $1, $3); }
+| Expr ">=" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::GTEQ, $1, $3); }
+| Expr "=" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::ASSIGN, $1, $3); }
+| Expr "+=" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::ADD_ASSIGN, $1, $3); }
+| Expr "-=" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::SUB_ASSIGN, $1, $3); }
+| Expr "*=" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::MUL_ASSIGN, $1, $3); }
+| Expr "/=" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::DIV_ASSIGN, $1, $3); }
+| Expr "%=" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::MOD_ASSIGN, $1, $3); }
+| Expr "&=" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::AND_ASSIGN, $1, $3); }
+| Expr "|=" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::OR_ASSIGN, $1, $3); }
+| Expr "^=" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::XOR_ASSIGN, $1, $3); }
+| Expr "<<=" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::LSHIFT_ASSIGN, $1, $3); }
+| Expr ">>=" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::RSHIFT_ASSIGN, $1, $3); }
 ;
 
 TernaryOpExpr:
-Expr "?" Expr ":" Expr %prec "?" { $$ = make_shared<TernaryOpExpr>($1->getLocation(), $1, $3, $5); }
+Expr "?" Expr ":" Expr %prec "?" { $$ = std::make_shared<TernaryOpExpr>(@1, $1, $3, $5); }
 ;
 
 InlineSwitchExpr:
 Expr "=>" "{" InlineSwitchCases "}" {
-	$$ = make_shared<InlineSwitchExpr>($1->getLocation(), $1, $4);
+	$$ = std::make_shared<InlineSwitchExpr>(@1, $1, $4);
 }
 ;
 InlineSwitchCases:
 InlineSwitchCase {
-	$$ = make_shared<InlineSwitchCaseList>();
+	$$ = std::make_shared<InlineSwitchCaseList>();
 	$$->push_back($1);
 }
 | InlineSwitchCases "," InlineSwitchCase {
@@ -744,27 +942,27 @@ InlineSwitchCase {
 }
 ;
 InlineSwitchCase:
-Expr ":" Expr { $$ = make_shared<InlineSwitchCase>($1->getLocation(), $1, $3); }
-| "default" ":" Expr { $$ = make_shared<InlineSwitchCase>(@1, shared_ptr<Expr>(), $3); }
+Expr ":" Expr { $$ = std::make_shared<InlineSwitchCase>(@1, $1, $3); }
+| "default" ":" Expr { $$ = std::make_shared<InlineSwitchCase>(@1, std::shared_ptr<Expr>(), $3); }
 ;
 
 CallExpr:
-Expr "(" Args ")" %prec Call { $$ = make_shared<CallExpr>($1->getLocation(), $1, $3); }
-| Expr "(" Args ")" "async" %prec Call { $$ = make_shared<CallExpr>($1->getLocation(), $1, $3, true); }
+Expr "(" Args ")" %prec Call { $$ = std::make_shared<CallExpr>(@1, $1, $3); }
+| Expr "(" Args ")" "async" %prec Call { $$ = std::make_shared<CallExpr>(@1, $1, $3, true); }
 ;
 
 AwaitExpr:
-"await" Expr %prec Await { $$ = make_shared<AwaitExpr>(@1, $2); }
+"await" Expr %prec Await { $$ = std::make_shared<AwaitExpr>(@1, $2); }
 ;
 
 Args:
-%empty { $$ = shared_ptr<ArgList>(); }
+%empty { $$ = std::make_shared<ArgList>(); }
 | ArgList { $$ = $1; }
 ;
 
 ArgList:
 Expr {
-	$$ = make_shared<ArgList>();
+	$$ = std::make_shared<ArgList>();
 	$$->push_back($1);
 }
 | Args "," Expr {
@@ -774,28 +972,35 @@ Expr {
 ;
 
 Literal:
-L_INT { $$ = make_shared<IntLiteralExpr>(@1, $1); }
-| L_UINT { $$ = make_shared<UIntLiteralExpr>(@1, $1); }
-| L_LONG { $$ = make_shared<LongLiteralExpr>(@1, $1); }
-| L_ULONG { $$ = make_shared<ULongLiteralExpr>(@1, $1); }
-| L_FLOAT { $$ = make_shared<FloatLiteralExpr>(@1, $1); }
-| L_DOUBLE { $$ = make_shared<DoubleLiteralExpr>(@1, $1); }
-| "null" { $$ = make_shared<NullLiteralExpr>(@1); }
-| L_STRING { $$ = make_shared<StringLiteralExpr>(@1, $1); }
+L_INT { $$ = std::make_shared<IntLiteralExpr>(@1, $1); }
+| L_UINT { $$ = std::make_shared<UIntLiteralExpr>(@1, $1); }
+| L_LONG { $$ = std::make_shared<LongLiteralExpr>(@1, $1); }
+| L_ULONG { $$ = std::make_shared<ULongLiteralExpr>(@1, $1); }
+| L_FLOAT { $$ = std::make_shared<FloatLiteralExpr>(@1, $1); }
+| L_DOUBLE { $$ = std::make_shared<DoubleLiteralExpr>(@1, $1); }
+| L_STRING { $$ = std::make_shared<StringLiteralExpr>(@1, $1); }
+| "true" { $$ = std::make_shared<IntLiteralExpr>(@1, 1); }
+| "false" { $$ = std::make_shared<IntLiteralExpr>(@1, 0); }
+| "null" { $$ = std::make_shared<NullLiteralExpr>(@1); }
 ;
 
 Ref:
-"self" "." Ref {
-	$$ = make_shared<RefExpr>(@1, "", $3);
-}
-| T_ID "." Ref {
-	auto name = $1;
-	$$ = make_shared<RefExpr>(@1, name, $3);
-}
-| "self" {
-	$$ = make_shared<RefExpr>(@1, "");
-}
-| T_ID {
-	auto name = $1;
-	$$ = make_shared<RefExpr>(@1, name);
-};
+"this" "." Ref { $$ = std::make_shared<RefExpr>(@1, "this", $3); }
+| "this" { $$ = std::make_shared<RefExpr>(@1, "this"); }
+| T_ID "." Ref { $$ = std::make_shared<RefExpr>(@1, $1, $3); }
+| T_ID { $$ = std::make_shared<RefExpr>(@1, $1);}
+;
+
+TypeNameRef:
+"this" "." TypeNameRef { $$ = std::make_shared<RefExpr>(@1, "", $3); }
+| "this" { $$ = std::make_shared<RefExpr>(@1, ""); }
+| "@" "." TypeNameRef { $$ = std::make_shared<RefExpr>(@1, "@", $3); }
+| "@" { $$ = std::make_shared<RefExpr>(@1, "@"); }
+| T_ID GenericArgs "." Ref { $$ = std::make_shared<RefExpr>(@1, $1, $4); }
+| T_ID GenericArgs { $$ = std::make_shared<RefExpr>(@1, $1); }
+;
+
+%%
+
+Slake::Compiler::parser::location_type yylloc;
+std::shared_ptr<Slake::Compiler::parser> yyparser;

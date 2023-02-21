@@ -53,8 +53,14 @@ yylloc.step();
 "|="		return parser::make_OP_ASSIGN_OR(yylloc);
 "^="		return parser::make_OP_ASSIGN_XOR(yylloc);
 "~="		return parser::make_OP_ASSIGN_REV(yylloc);
+"<<="		return parser::make_OP_ASSIGN_LSHIFT(yylloc);
+">>="		return parser::make_OP_ASSIGN_RSHIFT(yylloc);
 "=="		return parser::make_OP_EQ(yylloc);
 "!="		return parser::make_OP_NEQ(yylloc);
+"<<"		return parser::make_OP_LSHIFT(yylloc);
+">>"		return parser::make_OP_RSHIFT(yylloc);
+"<"			return parser::make_OP_LT(yylloc);
+">"			return parser::make_OP_GT(yylloc);
 "<="		return parser::make_OP_LTEQ(yylloc);
 ">="		return parser::make_OP_GTEQ(yylloc);
 "&&"		return parser::make_OP_LAND(yylloc);
@@ -63,6 +69,8 @@ yylloc.step();
 "--"		return parser::make_OP_DEC(yylloc);
 "=>"		return parser::make_OP_INLINE_SW(yylloc);
 "->"		return parser::make_OP_WRAP(yylloc);
+"$"			return parser::make_OP_DOLLAR(yylloc);
+"#"			return parser::make_OP_DIRECTIVE(yylloc);
 
 "async"		return parser::make_KW_ASYNC(yylloc);
 "await"		return parser::make_KW_AWAIT(yylloc);
@@ -72,37 +80,49 @@ yylloc.step();
 "class"		return parser::make_KW_CLASS(yylloc);
 "const"		return parser::make_KW_CONST(yylloc);
 "continue"	return parser::make_KW_CONTINUE(yylloc);
+"delete"	return parser::make_KW_DELETE(yylloc);
 "default"	return parser::make_KW_DEFAULT(yylloc);
 "else"		return parser::make_KW_ELSE(yylloc);
 "enum"		return parser::make_KW_ENUM(yylloc);
+"false"		return parser::make_KW_FALSE(yylloc);
 "fn"		return parser::make_KW_FN(yylloc);
 "for"		return parser::make_KW_FOR(yylloc);
+"final"		return parser::make_KW_FINAL(yylloc);
+"finally"	return parser::make_KW_FINALLY(yylloc);
 "if"		return parser::make_KW_IF(yylloc);
-"import"	return parser::make_KW_IMPORT(yylloc);
-"interface"	return parser::make_KW_INTERFACE(yylloc);
+"native"	return parser::make_KW_NATIVE(yylloc);
 "new"		return parser::make_KW_NEW(yylloc);
 "null"		return parser::make_KW_NULL(yylloc);
+"override"	return parser::make_KW_OVERRIDE(yylloc);
 "operator"	return parser::make_KW_OPERATOR(yylloc);
 "pub"		return parser::make_KW_PUB(yylloc);
 "return"	return parser::make_KW_RETURN(yylloc);
-"self"		return parser::make_KW_SELF(yylloc);
+"static"	return parser::make_KW_STATIC(yylloc);
+"struct"	return parser::make_KW_STRUCT(yylloc);
 "switch"	return parser::make_KW_SWITCH(yylloc);
+"this"		return parser::make_KW_THIS(yylloc);
 "throw"		return parser::make_KW_THROW(yylloc);
 "times"		return parser::make_KW_TIMES(yylloc);
+"trait"		return parser::make_KW_TRAIT(yylloc);
+"true"		return parser::make_KW_TRUE(yylloc);
 "try"		return parser::make_KW_TRY(yylloc);
+"use"		return parser::make_KW_USE(yylloc);
 "while"		return parser::make_KW_WHILE(yylloc);
 
 "i8"		return parser::make_TN_I8(yylloc);
 "i16"		return parser::make_TN_I16(yylloc);
 "i32"		return parser::make_TN_I32(yylloc);
 "i64"		return parser::make_TN_I64(yylloc);
+"isize"		return parser::make_TN_ISIZE(yylloc);
 "u8"		return parser::make_TN_U8(yylloc);
 "u16"		return parser::make_TN_U16(yylloc);
 "u32"		return parser::make_TN_U32(yylloc);
 "u64"		return parser::make_TN_U64(yylloc);
+"usize"		return parser::make_TN_USIZE(yylloc);
 "float"		return parser::make_TN_FLOAT(yylloc);
 "double"	return parser::make_TN_DOUBLE(yylloc);
 "string"	return parser::make_TN_STRING(yylloc);
+"bool"		return parser::make_TN_BOOL(yylloc);
 "auto"		return parser::make_TN_AUTO(yylloc);
 "void"		return parser::make_TN_VOID(yylloc);
 
@@ -115,7 +135,13 @@ yylloc.step();
 <LINE_COMMENT>\n	BEGIN(INITIAL); yylloc.lines(yyleng); yylloc.step();
 <LINE_COMMENT>.*	yylloc.step();
 
-[a-zA-Z_][a-zA-Z0-9_]* return parser::make_T_ID(yytext, yylloc);
+[a-zA-Z_][a-zA-Z0-9_]* {
+	if (std::strlen(yytext) > 255) {
+		yyparser->error(yylloc, "identifier is too long");
+		return parser::make_YYerror(yylloc);
+	}
+	return parser::make_T_ID(yytext, yylloc);
+}
 
 [-]?[0-9]+ return parser::make_L_INT(strtol(yytext, nullptr, 10), yylloc);
 [-]?[0-9]+[uU] return parser::make_L_UINT(strtoul(yytext, nullptr, 10), yylloc);
@@ -125,14 +151,16 @@ yylloc.step();
 [-]?[0-9]+(\.([0-9]*f)|f) return parser::make_L_FLOAT(strtof(yytext, nullptr), yylloc);
 [-]?[0-9]+(\.[0-9]*) return parser::make_L_DOUBLE(strtod(yytext, nullptr), yylloc);
 
--0[xX][0-9]+ return parser::make_L_INT(strtol(yytext, nullptr, 16), yylloc);
-0[xX][0-9]+ return parser::make_L_UINT(strtoul(yytext, nullptr, 16), yylloc);
--0[xX][0-9]+[lL] return parser::make_L_LONG(strtoll(yytext, nullptr, 16), yylloc);
-0[xX][0-9]+[lL] return parser::make_L_ULONG(strtoull(yytext, nullptr, 16), yylloc);
+-0[xX][0-9a-fA-F]+ return parser::make_L_INT(strtol(yytext, nullptr, 16), yylloc);
+0[xX][0-9a-fA-F]+ return parser::make_L_UINT(strtoul(yytext, nullptr, 16), yylloc);
+-0[xX][0-9a-fA-F]+[lL] return parser::make_L_LONG(strtoll(yytext, nullptr, 16), yylloc);
+0[xX][0-9a-fA-F]+[lL] return parser::make_L_ULONG(strtoull(yytext, nullptr, 16), yylloc);
+[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12} return parser::make_L_UUID(Slake::Base::UUID::parse(yytext), yylloc);
 
 \" {
 	BEGIN(STRING);
-	yylval.move(parser::make_L_STRING("", yylloc));
+	auto tmpSymbol = parser::make_L_STRING("", yylloc);
+	yylval.move(tmpSymbol);
 	yylloc.step();
 }
 <STRING>[^\"\n\\]+ {

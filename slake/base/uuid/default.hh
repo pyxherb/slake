@@ -1,4 +1,3 @@
-
 #ifndef _SLAKE_BASE_UUID_DEFAULT_HH_
 #define _SLAKE_BASE_UUID_DEFAULT_HH_
 
@@ -13,7 +12,7 @@ namespace Slake {
 			///
 			/// @param node Node member of the UUID.
 			///
-			void uuidGetMacAddr(std::uint8_t node[6]) {
+			inline void uuidGetMacAddr(std::uint8_t node[6]) {
 				auto gen = std::random_device();
 				// If not, generate a random sequence instead
 				*(std::uint32_t*)node = gen();

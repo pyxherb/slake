@@ -11,7 +11,7 @@ namespace Slake {
 		Addr_t execCur;
 		Addr_t curStackFrame;
 		std::deque<Addr_t> callingStack;
-		std::deque<std::shared_ptr<IValue>> dataStack;
+		std::deque<std::shared_ptr<Value>> dataStack;
 	};
 }
 

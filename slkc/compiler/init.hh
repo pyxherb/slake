@@ -6,10 +6,11 @@
 namespace Slake {
 	namespace Compiler {
 		inline void deinit() {
-			currentInterface.reset();
+			currentTrait.reset();
 			currentClass.reset();
 			currentEnum.reset();
 			currentScope.reset();
+			currentStruct.reset();
 		}
 	}
 }

@@ -23,28 +23,22 @@
 
 namespace Slake {
 	namespace Base {
-		class UUID final {
-		public:
-			std::uint32_t timeLow;
+		struct UUID final {
+			std::uint32_t timeLow = 0;
+			std::uint16_t timeMid = 0, timeHiAndVer = 0;
+			std::uint8_t clockSeqHiAndReserved = 0, clockSeqLow = 0, node[6] = { 0 };
 
-			std::uint16_t timeMid;
-			std::uint16_t timeHiAndVer;
-
-			std::uint8_t clockSeqHiAndReserved, clockSeqLow;
-
-			std::uint8_t node[6];
-
-			inline bool operator==(UUID& x) {
+			inline bool operator==(UUID& x) const {
 				return (timeLow == x.timeLow) &&
 					   (timeMid == x.timeMid) &&
 					   (timeHiAndVer == x.timeHiAndVer) &&
 					   (clockSeqHiAndReserved == x.clockSeqHiAndReserved) &&
 					   (clockSeqLow == x.clockSeqLow) &&
 					   ((*(std::uint32_t*)node) == (*(std::uint32_t*)x.node)) &&
-					   ((*(std::uint32_t*)(node + 4)) == (*(std::uint32_t*)(x.node + 4)));
+					   ((*(std::uint16_t*)(node + 4)) == (*(std::uint16_t*)(x.node + 4)));
 			}
 
-			inline bool operator<(UUID& x) {
+			inline bool operator<(UUID& x) const {
 				if (timeLow >= x.timeLow)
 					return false;
 				if (timeMid >= x.timeMid)
@@ -57,12 +51,12 @@ namespace Slake {
 					return false;
 				if (((*(std::uint32_t*)node) >= (*(std::uint32_t*)x.node)))
 					return false;
-				if (((*(std::uint32_t*)(node + 4)) >= (*(std::uint32_t*)(x.node + 4))))
+				if (((*(std::uint16_t*)(node + 4)) >= (*(std::uint16_t*)(x.node + 4))))
 					return false;
 				return true;
 			}
 
-			inline bool operator>(UUID& x) {
+			inline bool operator>(UUID& x) const {
 				if (timeLow <= x.timeLow)
 					return false;
 				if (timeMid <= x.timeMid)
@@ -75,7 +69,7 @@ namespace Slake {
 					return false;
 				if (((*(std::uint32_t*)node) <= (*(std::uint32_t*)x.node)))
 					return false;
-				if (((*(std::uint32_t*)(node + 4)) <= (*(std::uint32_t*)(x.node + 4))))
+				if (((*(std::uint16_t*)(node + 4)) <= (*(std::uint16_t*)(x.node + 4))))
 					return false;
 				return true;
 			}
@@ -83,9 +77,6 @@ namespace Slake {
 			static inline UUID parse(std::string s) {
 				UUID uuid;
 
-				// 8-4-4-4-12
-				if (s.length() == 38)
-					s = s.substr(1, 36);
 				if (s.length() != 36)
 					throw std::invalid_argument("Error parsing UUID");
 
@@ -158,19 +149,25 @@ namespace Slake {
 			static inline UUID uuid5();
 
 			inline UUID& operator=(UUID& x) {
-				timeLow=x.timeLow;
-				timeMid=x.timeMid;
-				timeHiAndVer=x.timeHiAndVer;
-				clockSeqHiAndReserved=x.clockSeqHiAndReserved;
-				clockSeqLow=x.clockSeqLow;
-				std::memcpy(node,x.node,sizeof(node));
+				timeLow = x.timeLow;
+				timeMid = x.timeMid;
+				timeHiAndVer = x.timeHiAndVer;
+				clockSeqHiAndReserved = x.clockSeqHiAndReserved;
+				clockSeqLow = x.clockSeqLow;
+				std::memcpy(node, x.node, sizeof(node));
+
+				return *this;
+			}
+
+			inline operator bool() {
+				return (timeLow || timeMid || timeHiAndVer || clockSeqHiAndReserved || clockSeqLow || *(uint32_t*)node || *(uint16_t*)(node + 4));
 			}
 		};
 	}
 }
 
 namespace std {
-	std::string to_string(Slake::Base::UUID& uuid) {
+	inline string to_string(const Slake::Base::UUID& uuid) {
 		char s[37];
 		sprintf(
 			s,
@@ -181,7 +178,7 @@ namespace std {
 			uuid.clockSeqHiAndReserved,
 			uuid.clockSeqLow,
 			uuid.node[0], uuid.node[1], uuid.node[2], uuid.node[3], uuid.node[4], uuid.node[5]);
-		return std::string(s);
+		return s;
 	}
 }
 

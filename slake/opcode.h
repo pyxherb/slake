@@ -13,9 +13,12 @@ namespace Slake {
 		STORE,	 // Store a value from stack
 		LLOAD,	 // Load a value from local variable area
 		LSTORE,	 // Store a value into local variable area
+		EXPAND,	 // Expand stack pointer
+		SHRINK,	 // Shrink stack pointer
 
 		ENTER,	// Enter frame
 		LEAVE,	// Leave frame
+		LBASE,	// Set local frame base
 
 		ADD,   // Add
 		SUB,   // Subtract
@@ -33,17 +36,28 @@ namespace Slake {
 		GT,	   // Greater than
 		LTEQ,  // Less than or equal
 		GTEQ,  // Greater than or equal
-		NOT,   // NOT
-		LNOT,  // Logical NOT
+		REV,   // Bitwise NOT
+		NOT,   // Logical NOT
+		INC,   // Increase
+		DEC,   // Decrease
+		NEG,   // Negate
+		LSH,   // Left shift
+		RSH,   // Right shift
 
 		JMP,  // Jump
 		JT,	  // Jump if true
 		JF,	  // Jump if false
 
-		CALL,  // Call
-		RET,   // Return
+		CALL,	  // Call
+		ACALL,	  // Asynchronous Call
+		RET,	  // Return
+		SYSCALL,  // System call
+		ASYSCALL,  // Asynchronous System call
 
-		SYSCALL	 // System call
+		THROW,	 // Throw an exception
+		PUSHXH,	 // Push an exception handler
+
+		ABORT  // Abort
 	};
 }
 

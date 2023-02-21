@@ -1,7 +1,12 @@
 #ifndef _SLKC_COMPILER_BASE_HH
 #define _SLKC_COMPILER_BASE_HH
 
+#include <slake/debug.h>
+
 #include <location.hh>
+#include <slake/base/uuid.hh>
+
+#pragma clang diagnostic ignored "-Wc++17-extensions"
 
 namespace Slake {
 	namespace Compiler {
@@ -26,6 +31,11 @@ namespace Slake {
 
 			virtual std::string toString() const = 0;
 		};
+
+		extern int indentLevel;
+		inline std::string genIndentStr() {
+			return std::string(indentLevel, '\t');
+		}
 	}
 }
 

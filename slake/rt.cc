@@ -9,17 +9,22 @@ using namespace Slake;
 
 class SlakeFn : public Fn {
 public:
-	std::deque<Instruction> body;
+	std::deque<Instruction*> body;
 };
 
 class SlakeModule : public Module {
 protected:
+	std::unordered_map<std::string, Fn*> _functions;
+
 public:
 	inline SlakeModule() {
 	}
 	virtual inline ~SlakeModule() {}
 
-	virtual const std::shared_ptr<Fn> getFn(std::string name) override {
+	virtual const Fn* getFn(std::string name) override {
+		if (_functions.count(name))
+			return _functions[name];
+		return nullptr;
 	}
 
 	virtual void registerNativeVar(std::string name, const NativeVarRegistry& registry) override {
@@ -28,22 +33,30 @@ public:
 	}
 };
 
+struct ExecContext final {
+	SlakeModule* mod;
+	SlakeFn* fn;
+	std::uint32_t curIns;
+
+	inline ExecContext() {}
+	inline ExecContext(SlakeModule* mod, SlakeFn* fn, std::uint32_t curIns) : mod(mod), fn(fn), curIns(curIns) {}
+};
+
 class SlakeContext {
 public:
-	std::shared_ptr<SlakeModule> mod;
-	std::shared_ptr<SlakeFn> fn;
-	std::uint32_t currentIns = 0;
-	std::deque<std::shared_ptr<Value>> stack;
+	ExecContext execContext;
+	std::deque<Value*> stack;
+	std::deque<ExecContext> callingStack;
 	std::vector<std::uint32_t> stackFrameBases;
 
-	inline SlakeContext(std::shared_ptr<SlakeModule> mod, std::shared_ptr<SlakeFn> fn) {
+	inline SlakeContext(SlakeModule* mod, SlakeFn* fn) {
 	}
 	virtual inline ~SlakeContext() {}
 };
 
 class SlakeRuntime : public Runtime {
 public:
-	std::unordered_map<std::string, std::shared_ptr<Module>> modules;
+	std::unordered_map<std::string, Module*> modules;
 
 	inline void checkOperandCount(std::shared_ptr<Instruction> ins, std::uint8_t max) {
 		assert(max <= 3);
@@ -93,13 +106,17 @@ public:
 				checkOperandType(ins, ValueType::I32);
 				context->stack.pop_back();
 				break;
+			case Opcode::EXPAND:
+				break;
+			case Opcode::SHRINK:
+				break;
 			default:
 				throw InvalidOpcodeError("Invalid opcode " + std::to_string((std::uint8_t)ins->opcode));
 		}
 	}
 };
 
-std::shared_ptr<Module> Slake::loadModule(const void* src, std::size_t size) {
+Module* Slake::loadModule(const void* src, std::size_t size) {
 	std::shared_ptr<SlakeModule> mod;
 	std::stringbuf s;
 	s.pubsetbuf((char*)src, size);
@@ -111,9 +128,9 @@ std::shared_ptr<Module> Slake::loadModule(const void* src, std::size_t size) {
 			(ih.magic[1] != SlxFmt::IMH_MAGIC[1]) ||
 			(ih.magic[2] != SlxFmt::IMH_MAGIC[2]) ||
 			(ih.magic[3] != SlxFmt::IMH_MAGIC[3]))
-			return std::shared_ptr<Module>();
+			return nullptr;
 		if (ih.fmtVer != 0)
-			return std::shared_ptr<Module>();
+			return nullptr;
 		mod = std::make_shared<SlakeModule>();
 	}
 }

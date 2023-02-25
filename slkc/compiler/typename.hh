@@ -7,7 +7,7 @@
 
 namespace Slake {
 	namespace Compiler {
-		enum class EvalType : int {
+		enum class TypeNameKind : int {
 			NONE = 0,
 			ANY,
 			I8,
@@ -33,9 +33,9 @@ namespace Slake {
 		class TypeName : public BasicLocated,
 						 public IStringifiable {
 		public:
-			EvalType typeName = EvalType::NONE;
+			TypeNameKind typeName = TypeNameKind::NONE;
 
-			inline TypeName(location loc, EvalType typeName) : BasicLocated(loc) {
+			inline TypeName(location loc, TypeNameKind typeName) : BasicLocated(loc) {
 				this->typeName = typeName;
 			}
 			virtual inline ~TypeName() {}
@@ -46,43 +46,43 @@ namespace Slake {
 
 			virtual inline std::string toString() const override {
 				switch (typeName) {
-					case EvalType::NONE:
+					case TypeNameKind::NONE:
 						return "void";
-					case EvalType::I8:
+					case TypeNameKind::I8:
 						return "i8";
-					case EvalType::I16:
+					case TypeNameKind::I16:
 						return "i16";
-					case EvalType::I32:
+					case TypeNameKind::I32:
 						return "i32";
-					case EvalType::I64:
+					case TypeNameKind::I64:
 						return "i64";
-					case EvalType::U8:
+					case TypeNameKind::U8:
 						return "u8";
-					case EvalType::U16:
+					case TypeNameKind::U16:
 						return "u16";
-					case EvalType::U32:
+					case TypeNameKind::U32:
 						return "u32";
-					case EvalType::U64:
+					case TypeNameKind::U64:
 						return "u64";
-					case EvalType::FLOAT:
+					case TypeNameKind::FLOAT:
 						return "float";
-					case EvalType::DOUBLE:
+					case TypeNameKind::DOUBLE:
 						return "double";
-					case EvalType::STRING:
+					case TypeNameKind::STRING:
 						return "string";
-					case EvalType::BOOL:
+					case TypeNameKind::BOOL:
 						return "bool";
-					case EvalType::AUTO:
+					case TypeNameKind::AUTO:
 						return "auto";
-					case EvalType::ANY:
+					case TypeNameKind::ANY:
 						return "any";
-					case EvalType::ARRAY:
+					case TypeNameKind::ARRAY:
 						return "(Array)";
-					case EvalType::MAP:
+					case TypeNameKind::MAP:
 						return "(Map)";
-					case EvalType::FN:
+					case TypeNameKind::FN:
 						return "(Function)";
-					case EvalType::CUSTOM:
+					case TypeNameKind::CUSTOM:
 						return "(User-defined)";
 				}
 				return "(Unknwon type)";
@@ -96,7 +96,7 @@ namespace Slake {
 			std::shared_ptr<RefExpr> typeRef;
 			std::weak_ptr<Scope> scope;	 // Scope where the type name constructed
 
-			inline CustomTypeName(location loc, std::shared_ptr<RefExpr> typeRef, std::shared_ptr<Scope> scope) : TypeName(loc, EvalType::CUSTOM) {
+			inline CustomTypeName(location loc, std::shared_ptr<RefExpr> typeRef, std::shared_ptr<Scope> scope) : TypeName(loc, TypeNameKind::CUSTOM) {
 				this->typeRef = typeRef;
 				this->scope = scope;
 			}
@@ -109,7 +109,7 @@ namespace Slake {
 		public:
 			std::shared_ptr<TypeName> type;
 
-			inline ArrayTypeName(location loc, std::shared_ptr<TypeName> type) : TypeName(loc, EvalType::ARRAY) {
+			inline ArrayTypeName(location loc, std::shared_ptr<TypeName> type) : TypeName(loc, TypeNameKind::ARRAY) {
 				this->type = type;
 			}
 			virtual inline ~ArrayTypeName() {}
@@ -125,19 +125,17 @@ namespace Slake {
 			std::vector<std::shared_ptr<TypeName>> argTypes;
 			Base::UUID uuid;
 
-			inline FnTypeName(location loc, std::shared_ptr<TypeName> resultType, Base::UUID uuid = Base::UUID()) : TypeName(loc, EvalType::FN) {
+			inline FnTypeName(location loc, std::shared_ptr<TypeName> resultType, Base::UUID uuid = Base::UUID()) : TypeName(loc, TypeNameKind::FN) {
 				this->resultType = resultType;
 				this->uuid = uuid;
 			}
-
 			virtual inline ~FnTypeName() {}
+			inline bool isNative() noexcept {
+				return uuid;
+			}
 
 			virtual inline std::string toString() const override {
 				return "fn" + std::to_string(*resultType);
-			}
-
-			inline bool isNative() noexcept {
-				return uuid;
 			}
 		};
 

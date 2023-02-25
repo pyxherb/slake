@@ -1,89 +1,104 @@
 #include <slkparse.hh>
 
 using namespace Slake;
+using namespace Slake::Compiler;
+
+template <typename T>
+static void _writeValue(const T &value, std::fstream &fs) {
+	fs.write((char *)&value, sizeof(value));
+}
+template <typename T>
+static void _writeValue(const T &&value, std::fstream &fs) {
+	T v = value;
+	_writeValue(v, fs);
+}
+template <typename T>
+static void _writeValue(const T &value, std::streamsize size, std::fstream &fs) {
+	fs.write((char *)&value, size);
+}
+
+static std::unordered_map<LiteralType, Slake::SlxFmt::ValueType> _lt2vtMap = {
+	{ Compiler::LT_INT, SlxFmt::ValueType::I32 },
+	{ Compiler::LT_UINT, SlxFmt::ValueType::U32 },
+	{ Compiler::LT_LONG, SlxFmt::ValueType::I64 },
+	{ Compiler::LT_ULONG, SlxFmt::ValueType::U64 },
+	{ Compiler::LT_FLOAT, SlxFmt::ValueType::FLOAT },
+	{ Compiler::LT_DOUBLE, SlxFmt::ValueType::DOUBLE },
+	{ Compiler::LT_BOOL, SlxFmt::ValueType::BOOL },
+	{ Compiler::LT_STRING, SlxFmt::ValueType::STRING },
+	{ Compiler::LT_NULL, SlxFmt::ValueType::NONE },
+	{ Compiler::LT_UUID, SlxFmt::ValueType::UUID }
+};
+
+static std::unordered_map<LiteralType, TypeNameKind> _lt2tnKindMap = {
+	{ Compiler::LT_INT, TypeNameKind::I32 },
+	{ Compiler::LT_UINT, TypeNameKind::U32 },
+	{ Compiler::LT_LONG, TypeNameKind::I64 },
+	{ Compiler::LT_ULONG, TypeNameKind::U64 },
+	{ Compiler::LT_FLOAT, TypeNameKind::FLOAT },
+	{ Compiler::LT_DOUBLE, TypeNameKind::DOUBLE },
+	{ Compiler::LT_BOOL, TypeNameKind::BOOL },
+	{ Compiler::LT_STRING, TypeNameKind::STRING },
+	{ Compiler::LT_NULL, TypeNameKind::NONE }
+};
 
 static void writeValueDesc(std::shared_ptr<Compiler::Expr> src, std::fstream &fs) {
-	SlxFmt::ValueDesc vd;
+	SlxFmt::ValueDesc vd = {};
 	switch (src->getType()) {
 		case Compiler::ExprType::LITERAL: {
 			auto literalExpr = std::static_pointer_cast<Compiler::LiteralExpr>(src);
+			vd.type = _lt2vtMap.at(literalExpr->getLiteralType());
+			_writeValue(vd, fs);
 			switch (literalExpr->getLiteralType()) {
 				case Compiler::LT_INT: {
 					auto expr = std::static_pointer_cast<Compiler::IntLiteralExpr>(literalExpr);
-					vd.type = SlxFmt::ValueType::I32;
-					fs.write((char *)&vd, sizeof(vd));
-					fs.write((char *)&(expr->data), sizeof(expr->data));
+					_writeValue(expr->data, fs);
 					break;
 				}
 				case Compiler::LT_UINT: {
 					auto expr = std::static_pointer_cast<Compiler::UIntLiteralExpr>(literalExpr);
-					vd.type = SlxFmt::ValueType::U32;
-					fs.write((char *)&vd, sizeof(vd));
-					fs.write((char *)&(expr->data), sizeof(expr->data));
+					_writeValue(expr->data, fs);
 					break;
 				}
 				case Compiler::LT_LONG: {
 					auto expr = std::static_pointer_cast<Compiler::LongLiteralExpr>(literalExpr);
-					vd.type = SlxFmt::ValueType::I64;
-					fs.write((char *)&vd, sizeof(vd));
-					fs.write((char *)&(expr->data), sizeof(expr->data));
+					_writeValue(expr->data, fs);
 					break;
 				}
 				case Compiler::LT_ULONG: {
 					auto expr = std::static_pointer_cast<Compiler::ULongLiteralExpr>(literalExpr);
-					vd.type = SlxFmt::ValueType::U64;
-					fs.write((char *)&vd, sizeof(vd));
-					fs.write((char *)&(expr->data), sizeof(expr->data));
+					_writeValue(expr->data, fs);
 					break;
 				}
 				case Compiler::LT_FLOAT: {
 					auto expr = std::static_pointer_cast<Compiler::FloatLiteralExpr>(literalExpr);
-					vd.type = SlxFmt::ValueType::FLOAT;
-					fs.write((char *)&vd, sizeof(vd));
-					fs.write((char *)&(expr->data), sizeof(expr->data));
+					_writeValue(expr->data, fs);
 					break;
 				}
 				case Compiler::LT_DOUBLE: {
 					auto expr = std::static_pointer_cast<Compiler::DoubleLiteralExpr>(literalExpr);
-					vd.type = SlxFmt::ValueType::DOUBLE;
-					fs.write((char *)&vd, sizeof(vd));
-					fs.write((char *)&(expr->data), sizeof(expr->data));
+					_writeValue(expr->data, fs);
 					break;
 				}
 				case Compiler::LT_BOOL: {
 					auto expr = std::static_pointer_cast<Compiler::BoolLiteralExpr>(literalExpr);
-					vd.type = SlxFmt::ValueType::BOOL;
-					fs.write((char *)&vd, sizeof(vd));
-					fs.write((char *)&(expr->data), sizeof(expr->data));
+					_writeValue(expr->data, fs);
 					break;
 				}
 				case Compiler::LT_STRING: {
 					auto expr = std::static_pointer_cast<Compiler::StringLiteralExpr>(literalExpr);
-					vd.type = SlxFmt::ValueType::STRING;
-					fs.write((char *)&vd, sizeof(vd));
-					{
-						std::uint32_t sz = expr->data.size();
-						fs.write((char *)&sz, sizeof(sz));
-					}
-					fs.write(expr->data.c_str(), (std::streamsize)expr->data.size());
-					break;
-				}
-				case Compiler::LT_NULL: {
-					vd.type = SlxFmt::ValueType::NONE;
-					fs.write((char *)&vd, sizeof(vd));
+					_writeValue(expr->data.size(), fs);
+					_writeValue(expr->data.c_str(), (std::streamsize)expr->data.size(), fs);
 					break;
 				}
 				case Compiler::LT_UUID: {
 					auto expr = std::static_pointer_cast<Compiler::UUIDLiteralExpr>(literalExpr);
-					vd.type = SlxFmt::ValueType::UUID;
-					fs.write((char *)&vd, sizeof(vd));
-
-					fs.write((char *)&expr->data.timeLow, sizeof(expr->data.timeLow));
-					fs.write((char *)&expr->data.timeMid, sizeof(expr->data.timeMid));
-					fs.write((char *)&expr->data.timeHiAndVer, sizeof(expr->data.timeHiAndVer));
-					fs.write((char *)&expr->data.clockSeqLow, sizeof(expr->data.clockSeqLow));
-					fs.write((char *)&expr->data.clockSeqHiAndReserved, sizeof(expr->data.clockSeqHiAndReserved));
-					fs.write((char *)expr->data.node, sizeof(expr->data.node));
+					_writeValue(expr->data.timeLow, fs);
+					_writeValue(expr->data.timeMid, fs);
+					_writeValue(expr->data.timeHiAndVer, fs);
+					_writeValue(expr->data.clockSeqLow, fs);
+					_writeValue(expr->data.clockSeqHiAndReserved, fs);
+					_writeValue(expr->data.node, fs);
 					break;
 				}
 			}
@@ -92,23 +107,23 @@ static void writeValueDesc(std::shared_ptr<Compiler::Expr> src, std::fstream &fs
 		case Compiler::ExprType::REF: {
 			auto expr = std::static_pointer_cast<Compiler::RefExpr>(src);
 			vd.type = SlxFmt::ValueType::REF;
-			fs.write((char *)&vd, sizeof(vd));
+			_writeValue(vd, fs);
 
-			for (auto i = expr; i; i = i->next) {
-				SlxFmt::ScopeRefDesc srd;
+			for (auto &i = expr; i; i = i->next) {
+				SlxFmt::ScopeRefDesc srd = { 0 };
 				srd.type = SlxFmt::ScopeRefType::MEMBER;
 				if (i->next)
 					srd.hasNext = true;
 				srd.lenName = i->name.length();
-				fs.write((char *)&srd, sizeof(srd));
-				fs.write(i->name.c_str(), (std::streamsize)i->name.size());
+				_writeValue(srd, fs);
+				_writeValue(*(i->name.c_str()), i->name.length(), fs);
 			}
 			break;
 		}
 		case Compiler::ExprType::ARRAY: {
 			auto expr = std::static_pointer_cast<Compiler::ArrayExpr>(src);
 			vd.type = SlxFmt::ValueType::ARRAY;
-			fs.write((char *)&vd, sizeof(vd));
+			_writeValue(vd, fs);
 
 			fs << (std::uint32_t)expr->elements.size();
 			for (auto &i : expr->elements) {
@@ -130,151 +145,120 @@ static void writeValueDesc(std::shared_ptr<Compiler::Expr> src, std::fstream &fs
 /// @param isRecusring Set to false by default, set if we are recursing.
 /// @return Type of the expression, null if unknown.
 std::shared_ptr<Compiler::TypeName> Compiler::evalExprType(std::shared_ptr<State> state, std::shared_ptr<Expr> expr, bool isRecursing) {
+	auto &fn = state->fnDefs[state->currentFn];
+	// assert(fn);
 	switch (expr->getType()) {
 		case ExprType::LITERAL: {
-			auto l = std::static_pointer_cast<LiteralExpr>(expr);
-			switch (l->getLiteralType()) {
-				case LT_INT:
-					return std::make_shared<TypeName>(expr->getLocation(), EvalType::I32);
-				case LT_UINT:
-					return std::make_shared<TypeName>(expr->getLocation(), EvalType::U32);
-				case LT_LONG:
-					return std::make_shared<TypeName>(expr->getLocation(), EvalType::I64);
-				case LT_ULONG:
-					return std::make_shared<TypeName>(expr->getLocation(), EvalType::U64);
-				case LT_FLOAT:
-					return std::make_shared<TypeName>(expr->getLocation(), EvalType::FLOAT);
-				case LT_DOUBLE:
-					return std::make_shared<TypeName>(expr->getLocation(), EvalType::DOUBLE);
-				case LT_STRING:
-					return std::make_shared<TypeName>(expr->getLocation(), EvalType::STRING);
-				case LT_NULL:
-					return std::make_shared<TypeName>(expr->getLocation(), EvalType::NONE);
-				case LT_BOOL:
-					return std::make_shared<TypeName>(expr->getLocation(), EvalType::BOOL);
-				case LT_UUID:
-					throw parser::syntax_error(expr->getLocation(), "Unevaluatable literal type");
-			}
-			throw std::logic_error("Invalid literal type detected");
+			auto literalType = std::static_pointer_cast<LiteralExpr>(expr)->getLiteralType();
+			if (!_lt2tnKindMap.count(literalType))
+				throw parser::syntax_error(expr->getLocation(), "Unevaluatable literal type");
+			return std::make_shared<TypeName>(expr->getLocation(), _lt2tnKindMap.at(literalType));
 		}
 		case ExprType::REF: {
 			auto ref = std::static_pointer_cast<RefExpr>(expr);
 			std::shared_ptr<TypeName> refType;	// Type of current referenced object
 
 			// Check if current reference is not terminal.
-			if (ref->next) {
-				{
-					auto &vars = state->fnDefs[state->currentFn]->localVars;
-					if (vars.count(ref->name)) {
-						refType = vars[ref->name].type;
-						goto succeed;
-					}
-				}
-				{
-					auto v = state->scope->getVar(ref->name);
-					if (v) {
-						refType = v->typeName;
-						goto succeed;
-					}
-				}
-				{
-					auto item = state->scope->getEnumItem(ref);
-					if (item) {
-						refType = evalExprType(state, item);
-						goto succeed;
-					}
-				}
-				{
-					auto fn = state->scope->getFn(ref->name);
-					if (fn) {
-						auto fnType = std::make_shared<FnTypeName>(expr->getLocation(), fn->returnTypeName);
-						for (auto &i : *(fn->params))
-							fnType->argTypes.push_back(i->typeName);
-						refType = fnType;
-						goto succeed;
-					}
-				}
-				{
-					auto t = state->scope->getType(ref->name);
-					if (t) {
-						switch (t->getKind()) {
-							case Type::Kind::CLASS: {
-								auto ct = std::static_pointer_cast<ClassType>(t);
-								refType = std::make_shared<CustomTypeName>(ref->getLocation(), std::make_shared<RefExpr>(ref->getLocation(), ref->name), state->scope);
-								goto succeed;
-							}
-							case Type::Kind::TRAIT: {
-								auto ct = std::static_pointer_cast<TraitType>(t);
-								refType = std::make_shared<CustomTypeName>(ref->getLocation(), std::make_shared<RefExpr>(ref->getLocation(), ref->name), state->scope);
-								goto succeed;
-							}
-						}
-					}
-				}
-			succeed:
-				if (refType) {
-					switch (refType->typeName) {
-						case EvalType::CUSTOM: {
-							auto t = std::static_pointer_cast<CustomTypeName>(refType);
-							auto sc = t->scope.lock();
-
-							auto type = t->scope.lock()->getType(t->typeRef);
-							auto s = std::make_shared<State>();
-							if (type) {
-								switch (type->getKind()) {
-									case Type::Kind::CLASS:
-										s->scope = std::static_pointer_cast<ClassType>(type)->scope;
-										break;
-									case Type::Kind::TRAIT:
-										s->scope = std::static_pointer_cast<TraitType>(type)->scope;
-										break;
-								}
-							} else {
-								throw parser::syntax_error(ref->getLocation(), "Type was not defined");
-							}
-							return evalExprType(s, ref->next, true);
-						}
-					}
-				}
-			} else {
+			if (!ref->next) {
 				if (!isRecursing) {
 					auto &vars = state->fnDefs[state->currentFn]->localVars;
 					if (vars.count(ref->name))
 						return vars[ref->name].type;
 				}
-				{
-					auto v = state->scope->getVar(ref->name);
-					if (v)
+			} else
+			{
+				auto &vars = state->fnDefs[state->currentFn]->localVars;
+				if (vars.count(ref->name)) {
+					refType = vars[ref->name].type;
+					goto succeed;
+				}
+			}
+			{
+				auto v = state->scope->getVar(ref->name);
+				if (v) {
+					if (ref->next) {
+						refType = v->typeName;
+						goto succeed;
+					} else
 						return v->typeName;
 				}
-				{
-					auto item = state->scope->getEnumItem(ref);
-					if (item)
+			}
+			{
+				auto item = state->scope->getEnumItem(ref);
+				if (item) {
+					if (ref->next) {
+						refType = evalExprType(state, item);
+						goto succeed;
+					} else
 						return evalExprType(state, item);
 				}
-				{
-					auto fn = state->scope->getFn(ref->name);
-					if (fn) {
-						auto fnType = std::make_shared<FnTypeName>(expr->getLocation(), fn->returnTypeName);
-						for (auto i : *(fn->params))
-							fnType->argTypes.push_back(i->typeName);
+			}
+			{
+				auto fn = state->scope->getFn(ref->name);
+				if (fn) {
+					auto fnType = std::make_shared<FnTypeName>(expr->getLocation(), fn->returnTypeName);
+					for (auto &i : *(fn->params))
+						fnType->argTypes.push_back(i->typeName);
+					if (!ref->next)
 						return fnType;
+					refType = fnType;
+					goto succeed;
+				}
+			}
+			if (ref->next) {
+				auto t = state->scope->getType(ref->name);
+				if (t) {
+					switch (t->getKind()) {
+						case Type::Kind::CLASS: {
+							auto ct = std::static_pointer_cast<ClassType>(t);
+							refType = std::make_shared<CustomTypeName>(ref->getLocation(), std::make_shared<RefExpr>(ref->getLocation(), ref->name), state->scope);
+							goto succeed;
+						}
+						case Type::Kind::TRAIT: {
+							auto ct = std::static_pointer_cast<TraitType>(t);
+							refType = std::make_shared<CustomTypeName>(ref->getLocation(), std::make_shared<RefExpr>(ref->getLocation(), ref->name), state->scope);
+							goto succeed;
+						}
 					}
 				}
 			}
 			throw parser::syntax_error(ref->getLocation(), "`" + ref->name + "' was not defined");
+		succeed:
+			switch (refType->typeName) {
+				case TypeNameKind::CUSTOM: {
+					auto t = std::static_pointer_cast<CustomTypeName>(refType);
+					auto sc = t->scope.lock();
+
+					auto type = t->scope.lock()->getType(t->typeRef);
+					auto s = std::make_shared<State>();
+					if (type) {
+						switch (type->getKind()) {
+							case Type::Kind::CLASS:
+								s->scope = std::static_pointer_cast<ClassType>(type)->scope;
+								break;
+							case Type::Kind::TRAIT:
+								s->scope = std::static_pointer_cast<TraitType>(type)->scope;
+								break;
+						}
+					} else {
+						throw parser::syntax_error(ref->getLocation(), "Type was not defined");
+					}
+					s->currentFn = state->currentFn;
+					return evalExprType(s, ref->next, true);
+				}
+			}
 		}
 		case ExprType::CALL: {
 			auto e = std::static_pointer_cast<CallExpr>(expr);
 			if (e->isAsync)
-				return std::make_shared<TypeName>(expr->getLocation(), EvalType::U32);
+				return std::make_shared<TypeName>(expr->getLocation(), TypeNameKind::U32);
 			auto exprType = evalExprType(state, e->target);
-			if (exprType->typeName != EvalType::FN)
+			if (exprType->typeName != TypeNameKind::FN)
 				throw parser::syntax_error(e->target->getLocation(), "Expression is not callable");
 			return exprType;
 		}
 		case ExprType::AWAIT:
-			return std::make_shared<TypeName>(expr->getLocation(), EvalType::ANY);
+			return std::make_shared<TypeName>(expr->getLocation(), TypeNameKind::ANY);
 		case ExprType::NEW:
 			return std::static_pointer_cast<NewExpr>(expr)->type;
 		case ExprType::TERNARY: {
@@ -282,7 +266,7 @@ std::shared_ptr<Compiler::TypeName> Compiler::evalExprType(std::shared_ptr<State
 			auto xType = evalExprType(state, e->x), yType = evalExprType(state, e->y);
 
 			// Check if the condition expression is boolean.
-			if (!isConvertible(xType, std::make_shared<TypeName>(expr->getLocation(), EvalType::BOOL)))
+			if (!isConvertible(xType, std::make_shared<TypeName>(expr->getLocation(), TypeNameKind::BOOL)))
 				throw parser::syntax_error(e->x->getLocation(), "Expecting a boolean expression");
 
 			// Check if the expressions have the same type.
@@ -298,7 +282,7 @@ std::shared_ptr<Compiler::TypeName> Compiler::evalExprType(std::shared_ptr<State
 				case BinaryOp::LSHIFT_ASSIGN:
 				case BinaryOp::RSHIFT:
 				case BinaryOp::RSHIFT_ASSIGN:
-					if (!isConvertible(std::make_shared<TypeName>(yType->getLocation(), EvalType::U32), yType))
+					if (!isConvertible(std::make_shared<TypeName>(yType->getLocation(), TypeNameKind::U32), yType))
 						throw parser::syntax_error(e->y->getLocation(), "Incompatible expression types");
 					break;
 				default:
@@ -318,8 +302,8 @@ void Slake::Compiler::writeIns(Opcode opcode, std::fstream &fs, std::initializer
 		writeValueDesc(i, fs);
 }
 
-void Slake::Compiler::compileExpr(std::shared_ptr<Expr> expr, std::shared_ptr<State> s, std::string fnName, bool isRecursing) {
-	auto &fn = s->fnDefs[fnName];
+void Slake::Compiler::compileExpr(std::shared_ptr<Expr> expr, std::shared_ptr<State> s, bool isRecursing) {
+	auto &fn = s->fnDefs[s->currentFn];
 	assert(fn);
 	switch (expr->getType()) {
 		case ExprType::LITERAL: {
@@ -327,17 +311,17 @@ void Slake::Compiler::compileExpr(std::shared_ptr<Expr> expr, std::shared_ptr<St
 			break;
 		}
 		case ExprType::TERNARY: {
-			auto falseLabel = "$TOP_FALSE_" + std::to_string(s->fnDefs[fnName]->body.size()),
-				 endLabel = "$TOP_END_" + std::to_string(s->fnDefs[fnName]->body.size());
+			auto falseLabel = "$TOP_FALSE_" + std::to_string(fn->body.size()),
+				 endLabel = "$TOP_END_" + std::to_string(fn->body.size());
 
 			auto e = std::static_pointer_cast<TernaryOpExpr>(expr);
-			compileExpr(e->condition, s, fnName);
+			compileExpr(e->condition, s);
 
 			fn->body.push_back({ Opcode::JF, { std::make_shared<LabelExpr>(falseLabel) } });
-			compileExpr(e->x, s, fnName);  // True branch.
+			compileExpr(e->x, s);  // True branch.
 			fn->body.push_back({ Opcode::JMP, { std::make_shared<LabelExpr>(endLabel) } });
 			fn->insertLabel(falseLabel);
-			compileExpr(e->y, s, fnName);  // False branch.
+			compileExpr(e->y, s);  // False branch.
 			fn->insertLabel(endLabel);
 		}
 		case ExprType::UNARY: {
@@ -359,14 +343,14 @@ void Slake::Compiler::compileExpr(std::shared_ptr<Expr> expr, std::shared_ptr<St
 				default:
 					throw Compiler::parser::syntax_error(expr->getLocation(), "Invalid operator detected");
 			}
-			compileExpr(e->x, s, fnName);
-			fn->body.push_back({ Opcode::NEG, {} });
+			compileExpr(e->x, s);
+			fn->body.push_back({ opcode, {} });
 			break;
 		}
 		case ExprType::BINARY: {
 			auto e = std::static_pointer_cast<BinaryOpExpr>(expr);
-			compileExpr(e->y, s, fnName);
-			compileExpr(e->x, s, fnName);
+			compileExpr(e->y, s);
+			compileExpr(e->x, s);
 
 			Opcode opcode;
 
@@ -455,7 +439,7 @@ void Slake::Compiler::compileExpr(std::shared_ptr<Expr> expr, std::shared_ptr<St
 		case ExprType::CALL: {
 			auto calle = std::static_pointer_cast<CallExpr>(expr);
 			auto t = std::static_pointer_cast<FnTypeName>(evalExprType(s, calle->target));
-			if (t->typeName != EvalType::FN)
+			if (t->typeName != TypeNameKind::FN)
 				throw parser::syntax_error(calle->target->getLocation(), "Expression is not callable");
 
 			Opcode opcode = Opcode::CALL;
@@ -475,8 +459,8 @@ void Slake::Compiler::compileExpr(std::shared_ptr<Expr> expr, std::shared_ptr<St
 				fn->body.push_back({ opcode, { ce } });
 			else {
 				for (auto &i : *(calle->args))
-					compileExpr(i, s, fnName);
-				compileExpr(calle->target, s, fnName);
+					compileExpr(i, s);
+				compileExpr(calle->target, s);
 				fn->body.push_back({ opcode, {} });
 			}
 
@@ -488,10 +472,10 @@ void Slake::Compiler::compileExpr(std::shared_ptr<Expr> expr, std::shared_ptr<St
 				if (fn->localVars.count(ref->name)) {
 					fn->body.push_back({ Opcode::LLOAD, { std::make_shared<UIntLiteralExpr>(ref->getLocation(), fn->localVars[ref->name].stackPos) } });
 					if (ref->next) {
-						auto scope = s->scope;
-						auto localVarType = fn->localVars[ref->name].type;
+						std::shared_ptr<Scope> scope = s->scope;
+						auto &localVarType = fn->localVars[ref->name].type;
 						switch (localVarType->typeName) {
-							case EvalType::CUSTOM: {
+							case TypeNameKind::CUSTOM: {
 								auto tn = std::static_pointer_cast<CustomTypeName>(localVarType);
 								auto t = Scope::getCustomType(tn);
 								if (!t) {
@@ -506,7 +490,7 @@ void Slake::Compiler::compileExpr(std::shared_ptr<Expr> expr, std::shared_ptr<St
 							default:
 								throw Compiler::parser::syntax_error(expr->getLocation(), "Accessing member `" + ref->name + "' with unsupported type");
 						}
-						compileExpr(ref->next, s, fnName, true);
+						compileExpr(ref->next, s, true);
 						s->scope = scope;
 					}
 					break;
@@ -540,8 +524,8 @@ void Slake::Compiler::compileExpr(std::shared_ptr<Expr> expr, std::shared_ptr<St
 	}
 }
 
-void Compiler::compileStmt(std::shared_ptr<Compiler::Stmt> src, std::shared_ptr<State> s, std::string fnName) {
-	auto &fn = s->fnDefs[fnName];
+void Compiler::compileStmt(std::shared_ptr<Compiler::Stmt> src, std::shared_ptr<State> s) {
+	auto &fn = s->fnDefs[s->currentFn];
 	assert(fn);
 
 	switch (src->getType()) {
@@ -554,7 +538,7 @@ void Compiler::compileStmt(std::shared_ptr<Compiler::Stmt> src, std::shared_ptr<
 			fn->body.push_back({ Opcode::ENTER, { std::make_shared<LabelExpr>(endLabel) } });
 
 			for (auto &i : stmt->ins)
-				compileStmt(i, s, fnName);
+				compileStmt(i, s);
 
 			fn->insertLabel(endLabel);
 
@@ -563,28 +547,28 @@ void Compiler::compileStmt(std::shared_ptr<Compiler::Stmt> src, std::shared_ptr<
 		}
 		case StmtType::IF: {
 			auto stmt = std::static_pointer_cast<Compiler::IfStmt>(src);
-			compileExpr(stmt->condition, s, fnName);
+			compileExpr(stmt->condition, s);
 
-			auto falseLabel = "$IF_FALSE_" + std::to_string(s->fnDefs[fnName]->body.size()),
-				 endLabel = "$IF_END_" + std::to_string(s->fnDefs[fnName]->body.size());
+			auto falseLabel = "$IF_FALSE_" + std::to_string(fn->body.size()),
+				 endLabel = "$IF_END_" + std::to_string(fn->body.size());
 
-			compileExpr(stmt->condition, s, fnName);
+			compileExpr(stmt->condition, s);
 
 			fn->body.push_back({ Opcode::JF, { std::make_shared<LabelExpr>(falseLabel) } });
-			compileStmt(stmt->thenBlock, s, fnName);  // True branch.
+			compileStmt(stmt->thenBlock, s);  // True branch.
 			fn->body.push_back({ Opcode::JMP, { std::make_shared<LabelExpr>(endLabel) } });
 			fn->insertLabel(falseLabel);
-			compileStmt(stmt->elseBlock, s, fnName);  // False branch.
+			compileStmt(stmt->elseBlock, s);  // False branch.
 			fn->insertLabel(endLabel);
 			break;
 		}
 		case StmtType::FOR: {
 			auto stmt = std::static_pointer_cast<Compiler::ForStmt>(src);
-			compileExpr(stmt->condition, s, fnName);
+			compileExpr(stmt->condition, s);
 
-			auto conditionLabel = "$FOR_END_" + std::to_string(s->fnDefs[fnName]->body.size()),
-				 bodyLabel = "$FOR_BODY_" + std::to_string(s->fnDefs[fnName]->body.size()),
-				 endLabel = "$FOR_END_" + std::to_string(s->fnDefs[fnName]->body.size());
+			auto conditionLabel = "$FOR_END_" + std::to_string(fn->body.size()),
+				 bodyLabel = "$FOR_BODY_" + std::to_string(fn->body.size()),
+				 endLabel = "$FOR_END_" + std::to_string(fn->body.size());
 
 			s->enterLoop();
 			fn->body.push_back({ Opcode::ENTER, { std::make_shared<LabelExpr>(endLabel) } });
@@ -596,10 +580,10 @@ void Compiler::compileStmt(std::shared_ptr<Compiler::Stmt> src, std::shared_ptr<
 			fn->body.push_back({ Opcode::JMP, { std::make_shared<LabelExpr>(conditionLabel) } });
 
 			fn->insertLabel(bodyLabel);
-			compileStmt(stmt->execBlock, s, fnName);
+			compileStmt(stmt->execBlock, s);
 
 			fn->insertLabel(conditionLabel);
-			compileExpr(stmt->condition, s, fnName);
+			compileExpr(stmt->condition, s);
 			fn->body.push_back({ Opcode::JT, { std::make_shared<LabelExpr>(bodyLabel) } });
 
 			fn->insertLabel(endLabel);
@@ -609,43 +593,43 @@ void Compiler::compileStmt(std::shared_ptr<Compiler::Stmt> src, std::shared_ptr<
 		}
 		case StmtType::WHILE: {
 			auto stmt = std::static_pointer_cast<Compiler::WhileStmt>(src);
-			compileExpr(stmt->condition, s, fnName);
+			compileExpr(stmt->condition, s);
 
-			auto conditionLabel = "$WHILE_END_" + std::to_string(s->fnDefs[fnName]->body.size()),
-				 bodyLabel = "$WHILE_BODY_" + std::to_string(s->fnDefs[fnName]->body.size()),
-				 endLabel = "$WHILE_END_" + std::to_string(s->fnDefs[fnName]->body.size());
+			auto conditionLabel = "$WHILE_END_" + std::to_string(fn->body.size()),
+				 bodyLabel = "$WHILE_BODY_" + std::to_string(fn->body.size()),
+				 endLabel = "$WHILE_END_" + std::to_string(fn->body.size());
 
 			s->enterLoop();
 			fn->body.push_back({ Opcode::JMP, { std::make_shared<LabelExpr>(conditionLabel) } });
 
 			fn->insertLabel(bodyLabel);
-			compileStmt(stmt->execBlock, s, fnName);
+			compileStmt(stmt->execBlock, s);
 
 			fn->insertLabel(conditionLabel);
-			compileExpr(stmt->condition, s, fnName);
+			compileExpr(stmt->condition, s);
 			fn->body.push_back({ Opcode::JT, { std::make_shared<LabelExpr>(bodyLabel) } });
 			s->leaveLoop();
 		}
 		case StmtType::TIMES: {
 			auto stmt = std::static_pointer_cast<Compiler::TimesStmt>(src);
-			auto conditionLabel = "$TIMES_END_" + std::to_string(s->fnDefs[fnName]->body.size()),
-				 bodyLabel = "$TIMES_BODY_" + std::to_string(s->fnDefs[fnName]->body.size()),
-				 endLabel = "$TIMES_END_" + std::to_string(s->fnDefs[fnName]->body.size()),
-				 counterName = "$TIMES_CNT_" + std::to_string(s->fnDefs[fnName]->body.size());
+			auto conditionLabel = "$TIMES_END_" + std::to_string(fn->body.size()),
+				 bodyLabel = "$TIMES_BODY_" + std::to_string(fn->body.size()),
+				 endLabel = "$TIMES_END_" + std::to_string(fn->body.size()),
+				 counterName = "$TIMES_CNT_" + std::to_string(fn->body.size());
 
 			s->enterLoop();
 			fn->body.push_back({ Opcode::ENTER, {} });
 
 			fn->localVars[counterName] = LocalVar(s->stackCur, evalExprType(s, stmt->timesExpr));
-			compileExpr(stmt->timesExpr, s, fnName);
+			compileExpr(stmt->timesExpr, s);
 
 			fn->body.push_back({ Opcode::JMP, { std::make_shared<LabelExpr>(conditionLabel) } });
 
 			fn->insertLabel(bodyLabel);
-			compileStmt(stmt->execBlock, s, fnName);
+			compileStmt(stmt->execBlock, s);
 
 			fn->insertLabel(conditionLabel);
-			compileExpr(std::make_shared<RefExpr>(stmt->getLocation(), counterName), s, fnName);
+			compileExpr(std::make_shared<RefExpr>(stmt->getLocation(), counterName), s);
 			fn->body.push_back({ Opcode::JT, { std::make_shared<LabelExpr>(bodyLabel) } });
 
 			fn->insertLabel(endLabel);
@@ -656,7 +640,7 @@ void Compiler::compileStmt(std::shared_ptr<Compiler::Stmt> src, std::shared_ptr<
 		case StmtType::EXPR: {
 			auto stmt = std::static_pointer_cast<Compiler::ExprStmt>(src);
 			for (auto &i = stmt; i; i = i->next) {
-				compileExpr(stmt->expr, s, fnName);
+				compileExpr(stmt->expr, s);
 				SlxFmt::InsHeader ih = { Opcode::POP, 0 };
 			}
 			break;
@@ -688,7 +672,7 @@ void Compiler::compileStmt(std::shared_ptr<Compiler::Stmt> src, std::shared_ptr<
 			auto conditionName = "$SW_COND_" + std::to_string(fn->body.size()),
 				 endLabel = "$SW_END_" + std::to_string(fn->body.size());
 
-			compileExpr(stmt->condition, s, fnName);
+			compileExpr(stmt->condition, s);
 			fn->localVars[conditionName] = LocalVar(s->stackCur, evalExprType(s, stmt->condition));
 
 			s->enterSwitch();
@@ -703,12 +687,12 @@ void Compiler::compileStmt(std::shared_ptr<Compiler::Stmt> src, std::shared_ptr<
 						std::to_string(stmt->getLocation().begin.column) + "_" +
 						"END_ " + std::to_string(j);
 
-					compileExpr(i->condition, s, fnName);
+					compileExpr(i->condition, s);
 					fn->body.push_back({ Opcode::LLOAD, { std::make_shared<UIntLiteralExpr>(i->getLocation(), fn->localVars[conditionName].stackPos) } });
 					fn->body.push_back({ Opcode::EQ, {} });
 					fn->body.push_back({ Opcode::JF, { std::make_shared<LabelExpr>(caseEndLabel) } });
 
-					compileStmt(i->x, s, fnName);
+					compileStmt(i->x, s);
 					fn->body.push_back(
 						{ Opcode::JMP,
 							{ std::make_shared<LabelExpr>("$SW_" +
@@ -729,7 +713,7 @@ void Compiler::compileStmt(std::shared_ptr<Compiler::Stmt> src, std::shared_ptr<
 			if (stmt->accessModifier & ((~ACCESS_CONST) | (~ACCESS_VOLATILE)) || (stmt->isNative))
 				throw parser::syntax_error(stmt->getLocation(), "Invalid modifier combination");
 
-			if (stmt->typeName->typeName == EvalType::CUSTOM) {
+			if (stmt->typeName->typeName == TypeNameKind::CUSTOM) {
 				auto t = std::static_pointer_cast<CustomTypeName>(stmt->typeName);
 				auto type = s->scope->getType(t->typeRef);
 			}
@@ -740,7 +724,7 @@ void Compiler::compileStmt(std::shared_ptr<Compiler::Stmt> src, std::shared_ptr<
 					if (!expr)
 						fn->body.push_back(Ins(Opcode::PUSH, { expr }));
 					else
-						compileExpr(i->initValue, s, fnName);
+						compileExpr(i->initValue, s);
 				} else
 					fn->body.push_back(Ins(Opcode::PUSH, { std::make_shared<NullLiteralExpr>(stmt->getLocation()) }));
 			}
@@ -814,7 +798,7 @@ void Compiler::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTo
 					auto &fn = state->fnDefs[i.first];
 					fn->localVars[j->name] = LocalVar((std::uint32_t)(state->stackCur++), j->typeName);
 				}
-				compileStmt(i.second->execBlock, state, i.first);
+				compileStmt(i.second->execBlock, state);
 			}
 
 			//
@@ -874,10 +858,18 @@ void Compiler::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTo
 
 					ctd.lenName = i.first.length();
 					ctd.lenImpls = t->impls->impls.size();
+					ctd.nGenericParams = t->genericParams.size();
 					if (t->parent) {
-						if (t->parent->typeName == EvalType::CUSTOM) {
-							auto tn = std::static_pointer_cast<CustomTypeName>(t->parent);
-						}
+						if (t->parent->typeName == TypeNameKind::CUSTOM)
+							throw Compiler::parser::syntax_error(i.second->getLocation(), "Invalid parent type");
+						auto tn = std::static_pointer_cast<CustomTypeName>(t->parent);
+						writeValueDesc(tn->typeRef, fs);
+					}
+					for (auto &j : t->impls->impls) {
+						if (j->typeName != TypeNameKind::CUSTOM)
+							throw Compiler::parser::syntax_error(i.second->getLocation(), "Invalid parent type");
+						auto tn = std::static_pointer_cast<CustomTypeName>(j);
+						writeValueDesc(tn->typeRef, fs);
 					}
 					fs.write((char *)&ctd, sizeof(ctd));
 

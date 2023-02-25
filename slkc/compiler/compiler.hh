@@ -120,8 +120,8 @@ namespace Slake {
 			fs.write((char*)&ih, sizeof(ih));
 		}
 		void writeIns(Opcode opcode, std::fstream& fs, std::initializer_list<std::shared_ptr<Expr>> operands = {});
-		void compileExpr(std::shared_ptr<Expr> expr, std::shared_ptr<State> s, std::string fnName, bool isRecursing = false);
-		void compileStmt(std::shared_ptr<Compiler::Stmt> src, std::shared_ptr<State> s, std::string fnName);
+		void compileExpr(std::shared_ptr<Expr> expr, std::shared_ptr<State> s, bool isRecursing = false);
+		void compileStmt(std::shared_ptr<Compiler::Stmt> src, std::shared_ptr<State> s);
 		void compile(std::shared_ptr<Scope> scope, std::fstream& fs, bool isTopLevel = true);
 	}
 }

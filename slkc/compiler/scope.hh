@@ -352,7 +352,7 @@ namespace Slake {
 			}
 
 			static inline std::shared_ptr<Type> getCustomType(std::shared_ptr<TypeName> typeName) {
-				if (typeName->typeName != EvalType::CUSTOM)
+				if (typeName->typeName != TypeNameKind::CUSTOM)
 					return std::shared_ptr<Type>();
 				auto tn = std::static_pointer_cast<CustomTypeName>(typeName);
 				return tn->scope.lock()->getType(tn->typeRef);

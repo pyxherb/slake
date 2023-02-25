@@ -7,8 +7,8 @@
 ///
 /// @copyright Copyright (c) 2022 Slake Contributors
 ///
-#ifndef _SLAKE_UUID_H_
-#define _SLAKE_UUID_H_
+#ifndef _SLAKE_BASE_UUID_H_
+#define _SLAKE_BASE_UUID_H_
 
 #include <chrono>
 #include <cstdint>

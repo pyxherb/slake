@@ -4,10 +4,11 @@
 #include <functional>
 #include <slake/base/uuid.hh>
 #include <unordered_map>
+#include <deque>
 
-#include "context.h"
 #include "opcode.h"
 #include "value.h"
+#include "base/resptr.h"
 
 namespace Slake {
 	class InvalidOpcodeError : public std::runtime_error {
@@ -31,13 +32,13 @@ namespace Slake {
 	using NativeFn = std::function<void()>;
 
 	struct NativeVarRegistry final {
-		std::function<void(std::shared_ptr<Value> value)> read;
-		std::function<void(std::shared_ptr<Value> value)> write;
+		std::function<void(Value* value)> read;
+		std::function<void(Value* value)> write;
 	};
 
 	struct Instruction final {
 		Opcode opcode;
-		std::shared_ptr<Value> operands[3];
+		Value* operands[3];
 
 		inline bool getOperandCount() {
 			for (std::uint8_t i=0;i<4;i++)
@@ -79,7 +80,7 @@ namespace Slake {
 		Class& operator=(Class&) = delete;
 		Class& operator=(Class&&) = delete;
 
-		virtual const std::shared_ptr<Fn> getFn(std::string name) = 0;
+		virtual const Fn* getFn(std::string name) = 0;
 		virtual void registerNativeFn(std::string name, const NativeFn fn) = 0;
 		virtual void unregisterNativeFn(std::string name) = 0;
 
@@ -97,7 +98,7 @@ namespace Slake {
 
 		virtual inline ~Module() {}
 
-		virtual const std::shared_ptr<Fn> getFn(std::string name) = 0;
+		virtual const Fn* getFn(std::string name) = 0;
 
 		virtual void registerNativeVar(std::string name, const NativeVarRegistry& registry) = 0;
 		virtual void unregisterNativeVar(std::string name) = 0;
@@ -112,10 +113,10 @@ namespace Slake {
 
 		virtual inline ~Runtime() {}
 
-		virtual std::shared_ptr<Module> getModule(std::string name) = 0;
+		virtual Module* getModule(std::string name) = 0;
 	};
 
-	std::shared_ptr<Module> loadModule(const void* src, std::size_t size);
+	Module* loadModule(const void* src, std::size_t size);
 }
 
 #endif

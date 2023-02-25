@@ -5,8 +5,6 @@
 #include <mutex>
 #include <unordered_set>
 
-#include "types.h"
-
 namespace Slake {
 	class Object;
 	extern std::unordered_set<Object*> _objectPool;
@@ -14,33 +12,13 @@ namespace Slake {
 
 	class Object {
 	protected:
-		std::uint32_t _uniqueId;
-		static std::uint32_t _allocCounter;	   // Used for unique IDs.
-		static std::mutex _allocCounterMutex;  // Used for allocation counter.
-
 		// For object manager.
 		std::size_t _refCount = 0;
 		std::mutex _refCountMutex;
 
 	public:
-		inline Object() {
-			_allocCounterMutex.lock();
-			_uniqueId = _allocCounter++;
-			_allocCounterMutex.unlock();
-
-			_objectPoolMutex.lock();
-			_objectPool.insert(this);
-			_objectPoolMutex.unlock();
-		}
+		inline Object() {}
 		virtual inline ~Object() {
-			_allocCounterMutex.lock();
-			_objectPool.insert(this);
-			_allocCounterMutex.unlock();
-		}
-
-		inline std::uint32_t getUniqueId() const { return _uniqueId; }
-		virtual inline bool operator==(std::uint32_t uniqueId) const {
-			return uniqueId == _uniqueId;
 		}
 		std::size_t getRefCount() const { return _refCount; }
 		inline void incRef() {
@@ -54,33 +32,6 @@ namespace Slake {
 			_refCountMutex.unlock();
 			if (!_refCount)
 				delete this;
-		}
-	};
-
-	class ObjectRef final {
-	protected:
-		Object* _object;
-		std::uint32_t _uniqueId;
-
-	public:
-		inline ObjectRef(Object* object) {
-			_object = object;
-			_uniqueId = object->getUniqueId();
-		}
-		inline ~ObjectRef() {}
-		std::uint32_t getUniqueId() const { return _uniqueId; }
-		bool isValid() const {
-			return (_objectPool.count(_object)) && (_object->getUniqueId() == _uniqueId);
-		}
-		const Object* operator->() const {
-			if (isValid())
-				return _object;
-			throw std::logic_error("Dangling reference detected, the object may have been released");
-		}
-		Object* operator->() {
-			if (isValid())
-				return _object;
-			throw std::logic_error("Dangling reference detected, the object may have been released");
 		}
 	};
 
@@ -145,7 +96,7 @@ namespace Slake {
 
 		virtual inline ~ScopeRefValue() {
 		}
-		virtual ValueType getType() const {
+		virtual inline ValueType getType() const {
 			return ValueType::SCOPE_REF;
 		}
 	};

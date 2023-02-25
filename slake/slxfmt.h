@@ -86,10 +86,7 @@ namespace Slake {
 			std::uint8_t flags;			  // Flags
 			std::uint8_t nGenericParams;  // Number of generic parameters
 			std::uint8_t lenName;		  // Length of name
-			std::uint32_t nMembers;		  // Number of methods
-			std::uint32_t nMethods;		  // Number of members
-			std::uint16_t lenParentRef;	  // Length of parent class' name
-			std::uint16_t lenImpls;		  // Length of implemented interfaces
+			std::uint8_t lenImpls;		  // Length of implemented interface list
 		};
 		constexpr static std::uint8_t
 			CTD_PUB = 0x01,	  // Public

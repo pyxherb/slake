@@ -558,11 +558,11 @@ ParamDecls:
 %empty { $$ = std::make_shared<ParamDeclList>(); }
 | ParamDeclList { $$ = $1; }
 | ParamDeclList "," "..." {
-	$$->push_back(std::make_shared<ParamDecl>(@3, "...", std::make_shared<ArrayTypeName>(@3, std::make_shared<TypeName>(@3, EvalType::ANY))));
+	$$->push_back(std::make_shared<ParamDecl>(@3, "...", std::make_shared<ArrayTypeName>(@3, std::make_shared<TypeName>(@3, TypeNameKind::ANY))));
 }
 | "..." {
 	$$ = std::make_shared<ParamDeclList>();
-	$$->push_back(std::make_shared<ParamDecl>(@1, "...", std::make_shared<ArrayTypeName>(@1, std::make_shared<TypeName>(@1, EvalType::ANY))));
+	$$->push_back(std::make_shared<ParamDecl>(@1, "...", std::make_shared<ArrayTypeName>(@1, std::make_shared<TypeName>(@1, TypeNameKind::ANY))));
 }
 ;
 
@@ -849,22 +849,22 @@ TypeName {}
 ;
 
 TypeName:
-"i8" { $$ = std::make_shared<TypeName>(@1, EvalType::I8); }
-|"i16" { $$ = std::make_shared<TypeName>(@1, EvalType::I16); }
-|"i32" { $$ = std::make_shared<TypeName>(@1, EvalType::I32); }
-|"i64" { $$ = std::make_shared<TypeName>(@1, EvalType::I64); }
-|"isize" { $$ = std::make_shared<TypeName>(@1, EvalType::ISIZE); }
-|"u8" { $$ = std::make_shared<TypeName>(@1, EvalType::U8); }
-|"u16" { $$ = std::make_shared<TypeName>(@1, EvalType::U16); }
-|"u32" { $$ = std::make_shared<TypeName>(@1, EvalType::U32); }
-|"u64" { $$ = std::make_shared<TypeName>(@1, EvalType::U64); }
-|"usize" { $$ = std::make_shared<TypeName>(@1, EvalType::USIZE); }
-|"float" { $$ = std::make_shared<TypeName>(@1, EvalType::FLOAT); }
-|"double" { $$ = std::make_shared<TypeName>(@1, EvalType::DOUBLE); }
-|"string" { $$ = std::make_shared<TypeName>(@1, EvalType::STRING); }
-|"auto" { $$ = std::make_shared<TypeName>(@1, EvalType::AUTO); }
-|"bool" { $$ = std::make_shared<TypeName>(@1, EvalType::U8); }
-|"void" { $$ = std::make_shared<TypeName>(@1, EvalType::NONE); }
+"i8" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::I8); }
+|"i16" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::I16); }
+|"i32" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::I32); }
+|"i64" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::I64); }
+|"isize" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::ISIZE); }
+|"u8" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::U8); }
+|"u16" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::U16); }
+|"u32" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::U32); }
+|"u64" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::U64); }
+|"usize" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::USIZE); }
+|"float" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::FLOAT); }
+|"double" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::DOUBLE); }
+|"string" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::STRING); }
+|"auto" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::AUTO); }
+|"bool" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::U8); }
+|"void" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::NONE); }
 |"@" TypeNameRef { $$ = std::make_shared<CustomTypeName>(@1, $2, currentScope); }
 | TypeName "[" "]" { $$ = std::make_shared<ArrayTypeName>(@1, $1); }
 | "@" "[" TypeName ":" TypeName "]" {}

@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <fstream>
 #include <stdexcept>
-#include <compiler/expr.hh>
+#include <compiler/compiler.hh>
 
 namespace Slake {
 	namespace Decompiler {
@@ -29,7 +29,7 @@ namespace Slake {
 			std::unordered_map<std::uint32_t, std::string> labelNames;
 		};
 
-		std::string readValue(std::fstream& fs);
+		std::shared_ptr<Compiler::Expr> readValue(std::fstream& fs);
 		void decompileScope(std::fstream& fs);
 		void decompile(std::fstream& fs);
 	}

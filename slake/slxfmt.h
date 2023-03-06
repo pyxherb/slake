@@ -67,7 +67,8 @@ namespace Slake {
 			BOOL,		 // Boolean
 			ARRAY,		 // Array
 			OBJECT,		 // Object
-			REF			 // Reference
+			REF,		 // Reference
+			REG			 // Register
 		};
 
 		/// @brief Value Descriptor (VD)
@@ -86,7 +87,7 @@ namespace Slake {
 			std::uint8_t flags;			  // Flags
 			std::uint8_t nGenericParams;  // Number of generic parameters
 			std::uint8_t lenName;		  // Length of name
-			std::uint8_t lenImpls;		  // Length of implemented interface list
+			std::uint8_t lenImpls;		  // Number of implemented interfaces
 		};
 		constexpr static std::uint8_t
 			CTD_PUB = 0x01,	  // Public
@@ -105,8 +106,8 @@ namespace Slake {
 			std::uint8_t nGenericParams;  // Number of generic parameters
 			std::uint8_t flags;			  // Flags
 			std::uint8_t lenName;		  // Length of name
-			std::uint8_t reserved;
-			std::uint32_t lenBody;	// Length of body
+			std::uint8_t nParams;		  // Number of parameters, only used by compilers
+			std::uint32_t lenBody;		  // Length of body
 		};
 		constexpr static std::uint8_t
 			FND_PUB = 0x01,		  // Public

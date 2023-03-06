@@ -1,10 +1,12 @@
-Slake Language
-=================
+Slake Runtime
+=============
 
 Documentation for Slake runtime.
 
 .. toctree::
     :maxdepth: 2
-    :numbered: 2
 
     opcode
+    slxfmt
+    callconv
+    ref

@@ -1,5 +1,5 @@
-Calling Convention
-==================
+Calling Conventions
+===================
 
 .. contents::
 
@@ -23,7 +23,8 @@ The arguments will be pushed from the right to the left.
 innercall
 ~~~~~~~~~
 
-**innercall** is a kind of calling convention for internal functions (e.g. private functions).
+**innercall** is a kind of calling convention for internal functions
+(e.g. private functions).
 
 syscall
 ~~~~~~~

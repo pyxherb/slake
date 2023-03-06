@@ -1,0 +1,12 @@
+pub enum SeekMode : u8 {
+	SET = 0,
+	END,
+	CUR
+}
+
+pub interface IStream {
+	byte[] read(usize nBytes);
+	usize getSize();
+	void seek(@SeekMode mode, isize off);
+	isize tell();
+}

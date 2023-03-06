@@ -33,19 +33,19 @@ namespace Slake {
 		class TypeName : public BasicLocated,
 						 public IStringifiable {
 		public:
-			TypeNameKind typeName = TypeNameKind::NONE;
+			TypeNameKind kind = TypeNameKind::NONE;
 
-			inline TypeName(location loc, TypeNameKind typeName) : BasicLocated(loc) {
-				this->typeName = typeName;
+			inline TypeName(location loc, TypeNameKind kind) : BasicLocated(loc) {
+				this->kind = kind;
 			}
 			virtual inline ~TypeName() {}
 
 			virtual bool operator==(const TypeName& x) const {
-				return typeName == x.typeName;
+				return kind == x.kind;
 			}
 
 			virtual inline std::string toString() const override {
-				switch (typeName) {
+				switch (kind) {
 					case TypeNameKind::NONE:
 						return "void";
 					case TypeNameKind::I8:
@@ -123,16 +123,9 @@ namespace Slake {
 		public:
 			std::shared_ptr<TypeName> resultType;
 			std::vector<std::shared_ptr<TypeName>> argTypes;
-			Base::UUID uuid;
 
-			inline FnTypeName(location loc, std::shared_ptr<TypeName> resultType, Base::UUID uuid = Base::UUID()) : TypeName(loc, TypeNameKind::FN) {
-				this->resultType = resultType;
-				this->uuid = uuid;
-			}
+			inline FnTypeName(location loc, std::shared_ptr<TypeName> resultType) : TypeName(loc, TypeNameKind::FN), resultType(resultType) {}
 			virtual inline ~FnTypeName() {}
-			inline bool isNative() noexcept {
-				return uuid;
-			}
 
 			virtual inline std::string toString() const override {
 				return "fn" + std::to_string(*resultType);

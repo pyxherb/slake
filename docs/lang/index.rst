@@ -1,12 +1,12 @@
 Slake Language
-=================
+==============
 
-Documentation for Slake language features.
+Documentations for Slake language.
 
 .. toctree::
     :maxdepth: 2
-    :numbered: 2
 
-    class
     function
+    switch
+    class
     interface

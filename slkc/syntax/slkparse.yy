@@ -47,10 +47,10 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %token <float> L_FLOAT "single precision FP literal"
 %token <double> L_DOUBLE "double precision FP literal"
 %token <std::string> L_STRING "string literal"
-%token <Slake::Base::UUID> L_UUID "UUID"
 
 %token KW_ASYNC "async"
 %token KW_AWAIT "await"
+%token KW_BASE "base"
 %token KW_BREAK "break"
 %token KW_CASE "case"
 %token KW_CATCH "catch"
@@ -84,6 +84,7 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %token KW_TRUE "true"
 %token KW_TRY "try"
 %token KW_USE "use"
+%token KW_VAR "var"
 %token KW_WHILE "while"
 
 %token TN_I8 "i8"
@@ -124,8 +125,8 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %token OP_ASSIGN_OR "|="
 %token OP_ASSIGN_XOR "^="
 %token OP_ASSIGN_REV "~="
-%token OP_ASSIGN_LSHIFT ">>="
-%token OP_ASSIGN_RSHIFT "<<="
+%token OP_ASSIGN_LSH ">>="
+%token OP_ASSIGN_RSH "<<="
 %token OP_ASSIGN_ACCESS ".="
 %token OP_EQ "=="
 %token OP_NEQ "!="
@@ -135,14 +136,15 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %token OP_GT ">"
 %token OP_LTEQ "<="
 %token OP_GTEQ ">="
-%token OP_RSHIFT ">>"
-%token OP_LSHIFT "<<"
+%token OP_RSH ">>"
+%token OP_LSH "<<"
 %token OP_LAND "&&"
 %token OP_LOR "||"
 %token OP_INC "++"
 %token OP_DEC "--"
-%token OP_INLINE_SW "=>"
+%token OP_MATCH "=>"
 %token OP_WRAP "->"
+%token OP_SCOPE "::"
 %token OP_DOLLAR "$"
 %token OP_DIRECTIVE "#"
 
@@ -174,11 +176,11 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %precedence "++" "--"
 %nonassoc "(" ")" "[" "]"
 
-%precedence Call
-%precedence Await
+%precedence AwaitPrec
+%precedence CallPrec
 
-%precedence ForwardUnaryOp
-%precedence BackwardUnaryOp
+%precedence ForwardUnaryOpPrec
+%precedence BackwardUnaryOpPrec
 
 %expect 0
 
@@ -202,9 +204,9 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %type <std::shared_ptr<Expr>> Expr OptionalExpr
 %type <std::shared_ptr<WhileStmt>> WhileBlock
 %type <std::shared_ptr<TimesStmt>> TimesBlock
-%type <std::shared_ptr<CastExpr>> CastExpr RawCastExpr
+%type <std::shared_ptr<CastExpr>> CastExpr
 %type <std::shared_ptr<NewExpr>> NewExpr
-%type <std::shared_ptr<RefExpr>> Ref TypeNameRef
+%type <std::shared_ptr<RefExpr>> Ref RefBody
 %type <std::shared_ptr<MapExpr>> MapExpr
 %type <std::shared_ptr<PairList>> PairList Pairs
 %type <std::shared_ptr<ExprPair>> Pair
@@ -212,11 +214,11 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %type <std::shared_ptr<UnaryOpExpr>> UnaryOpExpr
 %type <std::shared_ptr<BinaryOpExpr>> BinaryOpExpr
 %type <std::shared_ptr<TernaryOpExpr>> TernaryOpExpr
-%type <std::shared_ptr<InlineSwitchExpr>> InlineSwitchExpr
+%type <std::shared_ptr<MatchExpr>> MatchExpr
 %type <std::shared_ptr<ArrayExpr>> ArrayExpr
 %type <std::vector<std::shared_ptr<Expr>>> Exprs ExprList
-%type <std::shared_ptr<InlineSwitchCase>> InlineSwitchCase
-%type <std::shared_ptr<InlineSwitchCaseList>> InlineSwitchCases
+%type <MatchCase> MatchCase
+%type <MatchCaseList> MatchCases
 %type <std::shared_ptr<CallExpr>> CallExpr
 %type <std::shared_ptr<AwaitExpr>> AwaitExpr
 %type <std::shared_ptr<ArgList>> Args ArgList
@@ -296,7 +298,8 @@ T_ID {
 					(currentEnum->pairs.rbegin())->second->getLocation(),
 					UnaryOp::INC_F,
 					(currentEnum->pairs.rbegin())->second
-				)
+				),
+				std::make_shared<State>(currentScope)
 			);
 		}
 		else
@@ -434,18 +437,18 @@ FnDecl
 ;
 
 FnDecl:
-TypeName T_ID "(" ParamDecls ")" ";" {
+TypeName T_ID GenericParamList "(" ParamDecls ")" ";" {
 	if(currentScope->fnDefs.count($2))
 		this->error(yylloc, "Redefinition of function `" + $2 + "`");
 	else
-		currentScope->fnDefs[$2] = std::make_shared<FnDef>(@1, ACCESS_PUB, $4, $1, std::shared_ptr<CodeBlock>(), $2);
+		currentScope->fnDefs[$2] = std::make_shared<FnDef>(@1, ACCESS_PUB, $5, $1, std::shared_ptr<CodeBlock>(), $2);
 }
-| TypeName "operator" OperatorName "(" ParamDecls ")" ";" {
+| TypeName "operator" OperatorName GenericParamList "(" ParamDecls ")" ";" {
 	if(currentScope->fnDefs.count($3)) {
 		this->error(yylloc, "Redefinition of operator " + $3);
 	}
 	else
-		currentScope->fnDefs[$3] = std::make_shared<FnDef>(@1, ACCESS_PUB, $5, $1, std::shared_ptr<CodeBlock>(), "operator" + $3);
+		currentScope->fnDefs[$3] = std::make_shared<FnDef>(@1, ACCESS_PUB, $6, $1, std::shared_ptr<CodeBlock>(), "operator" + $3);
 }
 | "operator" TypeName ";" {
 }
@@ -453,12 +456,12 @@ TypeName T_ID "(" ParamDecls ")" ";" {
 ;
 
 NativeFnDecl:
-AccessModifier "native" TypeName T_ID "(" ParamDecls ")" "=" L_UUID ";" {
+AccessModifier "native" TypeName T_ID "(" ParamDecls ")" ";" {
 	if(currentScope->fnDefs.count($4)) {
 		this->error(yylloc, "Redefinition of function " + $4);
 	}
 	else
-		currentScope->fnDefs[$4] = std::make_shared<FnDef>(@1, $1, $6, $3, $9, $4);
+		currentScope->fnDefs[$4] = std::make_shared<FnDef>(@1, $1, $6, $3, std::shared_ptr<CodeBlock>(), $4);
 }
 ;
 
@@ -488,18 +491,18 @@ T_ID "=" Ref {
 // Function
 //
 FnDef:
-AccessModifier TypeName T_ID "(" ParamDecls ")" CodeBlock {
+AccessModifier TypeName T_ID GenericParamList "(" ParamDecls ")" CodeBlock {
 	if(currentScope->fnDefs.count($3))
 		this->error(yylloc, "Redefinition of function `" + $3 + "`");
 	else
-		currentScope->fnDefs[$3] = std::make_shared<FnDef>(@1, $1, $5, $2, $7, $3);
+		currentScope->fnDefs[$3] = std::make_shared<FnDef>(@1, $1, $6, $2, $8, $3);
 }
-| AccessModifier TypeName "operator" OperatorName "(" ParamDecls ")" CodeBlock {
+| AccessModifier TypeName "operator" OperatorName GenericParamList "(" ParamDecls ")" CodeBlock {
 	if(currentScope->fnDefs.count($4)) {
 		this->error(yylloc, "Redefinition of operator " + $4);
 	}
 	else
-		currentScope->fnDefs[$4] = std::make_shared<FnDef>(@1, $1, $6, std::shared_ptr<TypeName>(), $8, "operator" + $4);
+		currentScope->fnDefs[$4] = std::make_shared<FnDef>(@1, $1, $7, std::shared_ptr<TypeName>(), $9, "operator" + $4);
 }
 | AccessModifier "operator" "new" "(" ParamDecls ")" CodeBlock {
 	if(currentScope->fnDefs.count("new"))
@@ -584,9 +587,6 @@ ParamDecl:
 TypeName T_ID {
 	$$ = std::make_shared<ParamDecl>(@1, $2, $1);
 }
-| TypeName T_ID "=" Expr {
-	$$ = std::make_shared<ParamDecl>(@1, $2, $1, $4);
-}
 ;
 
 //
@@ -624,8 +624,7 @@ NativeVarDecl { $$.push_back($1); }
 }
 ;
 NativeVarDecl:
-T_ID "=" L_UUID { $$ = std::make_shared<VarDecl>(@1, $1, std::make_shared<UUIDLiteralExpr>(@3, $3)); }
-| T_ID { $$ = std::make_shared<VarDecl>(@1, $1, std::shared_ptr<Expr>()); }
+T_ID { $$ = std::make_shared<VarDecl>(@1, $1, std::shared_ptr<Expr>()); }
 ;
 
 AliasDef:
@@ -759,20 +758,19 @@ TimesBlock:
 // Expression
 //
 Expr:
-"(" Expr ")" { $$ = $2; }
+Ref { $$ = $1; }
 | Literal { $$ = $1; }
-| SubscriptOpExpr { $$ = $1; }
-| UnaryOpExpr { $$ = $1; }
-| BinaryOpExpr { $$ = $1; }
-| TernaryOpExpr { $$ = $1; }
-| InlineSwitchExpr { $$ = $1; }
-| Ref { $$ = $1; }
-| CallExpr { $$ = $1; }
-| AwaitExpr { $$ = $1; }
 | MapExpr { $$ = $1; }
 | NewExpr { $$ = $1; }
 | CastExpr { $$ = $1; }
-| RawCastExpr { $$ = $1; }
+| SubscriptOpExpr { $$ = $1; }
+| "(" Expr ")" { $$ = $2; }
+| UnaryOpExpr { $$ = $1; }
+| BinaryOpExpr { $$ = $1; }
+| TernaryOpExpr { $$ = $1; }
+| MatchExpr { $$ = $1; }
+| CallExpr { $$ = $1; }
+| AwaitExpr { $$ = $1; }
 | "..." { $$ = std::make_shared<RefExpr>(@1, "..."); }
 ;
 
@@ -794,10 +792,6 @@ Expr { $$.push_back($1); }
 ;
 
 CastExpr:
-"(" TypeName ")" Expr { $$ = std::make_shared<CastExpr>(@1, $2, $4); }
-;
-
-RawCastExpr:
 "<" TypeName ">" "(" Expr ")" { $$ = std::make_shared<CastExpr>(@1, $2, $5); }
 ;
 
@@ -839,13 +833,13 @@ Expr ":" Expr {
 ;
 
 GenericArgs:
-"<" TypeNameList ">" {}
+"$" "<" TypeNameList ">" {}
 | %empty {}
 ;
 
 TypeNameList:
 TypeName {}
-| TypeNameList TypeName {}
+| TypeNameList "," TypeName {}
 ;
 
 TypeName:
@@ -865,9 +859,9 @@ TypeName:
 |"auto" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::AUTO); }
 |"bool" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::U8); }
 |"void" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::NONE); }
-|"@" TypeNameRef { $$ = std::make_shared<CustomTypeName>(@1, $2, currentScope); }
+| "@" Ref { $$ = std::make_shared<CustomTypeName>(@1, $2, currentScope); }
 | TypeName "[" "]" { $$ = std::make_shared<ArrayTypeName>(@1, $1); }
-| "@" "[" TypeName ":" TypeName "]" {}
+| TypeName "[" TypeName "]" {}
 | TypeName "->" "(" ParamDecls ")" {
 	auto typeName = std::make_shared<FnTypeName>(@1, $1);
 	$$ = typeName;
@@ -884,10 +878,10 @@ Expr "[" Expr "]" { $$ = std::make_shared<SubscriptOpExpr>(@1, $1, $3); }
 UnaryOpExpr:
 "!" Expr %prec "!" { $$ = std::make_shared<UnaryOpExpr>(@1, UnaryOp::NOT, $2);}
 | "-" Expr %prec OP_NEG { $$ = std::make_shared<UnaryOpExpr>(@1, UnaryOp::NEG, $2);}
-| "++" Expr %prec ForwardUnaryOp { $$ = std::make_shared<UnaryOpExpr>(@1, UnaryOp::INC_F, $2);}
-| "--" Expr %prec ForwardUnaryOp { $$ = std::make_shared<UnaryOpExpr>(@1, UnaryOp::DEC_F, $2);}
-| Expr "++" %prec BackwardUnaryOp { $$ = std::make_shared<UnaryOpExpr>(@1, UnaryOp::INC_B, $1);}
-| Expr "--" %prec BackwardUnaryOp { $$ = std::make_shared<UnaryOpExpr>(@1, UnaryOp::DEC_B, $1);}
+| "++" Expr %prec ForwardUnaryOpPrec { $$ = std::make_shared<UnaryOpExpr>(@1, UnaryOp::INC_F, $2);}
+| "--" Expr %prec ForwardUnaryOpPrec { $$ = std::make_shared<UnaryOpExpr>(@1, UnaryOp::DEC_F, $2);}
+| Expr "++" %prec BackwardUnaryOpPrec { $$ = std::make_shared<UnaryOpExpr>(@1, UnaryOp::INC_B, $1);}
+| Expr "--" %prec BackwardUnaryOpPrec { $$ = std::make_shared<UnaryOpExpr>(@1, UnaryOp::DEC_B, $1);}
 ;
 
 BinaryOpExpr:
@@ -903,8 +897,8 @@ Expr "+" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::ADD, $1, $3); 
 | Expr "||" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::LOR, $1, $3); }
 | Expr "==" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::EQ, $1, $3); }
 | Expr "!=" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::NEQ, $1, $3); }
-| Expr "<<" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::LSHIFT, $1, $3); }
-| Expr ">>" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::RSHIFT, $1, $3); }
+| Expr "<<" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::LSH, $1, $3); }
+| Expr ">>" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::RSH, $1, $3); }
 | Expr "<" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::LT, $1, $3); }
 | Expr ">" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::GT, $1, $3); }
 | Expr "<=" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::LTEQ, $1, $3); }
@@ -918,41 +912,40 @@ Expr "+" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::ADD, $1, $3); 
 | Expr "&=" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::AND_ASSIGN, $1, $3); }
 | Expr "|=" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::OR_ASSIGN, $1, $3); }
 | Expr "^=" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::XOR_ASSIGN, $1, $3); }
-| Expr "<<=" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::LSHIFT_ASSIGN, $1, $3); }
-| Expr ">>=" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::RSHIFT_ASSIGN, $1, $3); }
+| Expr "<<=" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::LSH_ASSIGN, $1, $3); }
+| Expr ">>=" Expr { $$ = std::make_shared<BinaryOpExpr>(@1, BinaryOp::RSH_ASSIGN, $1, $3); }
 ;
 
 TernaryOpExpr:
 Expr "?" Expr ":" Expr %prec "?" { $$ = std::make_shared<TernaryOpExpr>(@1, $1, $3, $5); }
 ;
 
-InlineSwitchExpr:
-Expr "=>" "{" InlineSwitchCases "}" {
-	$$ = std::make_shared<InlineSwitchExpr>(@1, $1, $4);
+MatchExpr:
+Expr "=>" "{" MatchCases "}" {
+	$$ = std::make_shared<MatchExpr>(@1, $1, $4);
 }
 ;
-InlineSwitchCases:
-InlineSwitchCase {
-	$$ = std::make_shared<InlineSwitchCaseList>();
-	$$->push_back($1);
+MatchCases:
+MatchCase {
+	$$.push_back($1);
 }
-| InlineSwitchCases "," InlineSwitchCase {
+| MatchCases "," MatchCase {
 	$$ = $1;
-	$$->push_back($3);
+	$$.push_back($3);
 }
 ;
-InlineSwitchCase:
-Expr ":" Expr { $$ = std::make_shared<InlineSwitchCase>(@1, $1, $3); }
-| "default" ":" Expr { $$ = std::make_shared<InlineSwitchCase>(@1, std::shared_ptr<Expr>(), $3); }
+MatchCase:
+Expr ":" Expr { $$.first = $1, $$.second = $3; }
+| "default" ":" Expr { $$.second = $3; }
 ;
 
 CallExpr:
-Expr "(" Args ")" %prec Call { $$ = std::make_shared<CallExpr>(@1, $1, $3); }
-| Expr "(" Args ")" "async" %prec Call { $$ = std::make_shared<CallExpr>(@1, $1, $3, true); }
+Expr "(" Args ")" %prec CallPrec { $$ = std::make_shared<CallExpr>(@1, $1, $3); }
+| Expr "(" Args ")" "async" %prec CallPrec { $$ = std::make_shared<CallExpr>(@1, $1, $3, true); }
 ;
 
 AwaitExpr:
-"await" Expr %prec Await { $$ = std::make_shared<AwaitExpr>(@1, $2); }
+"await" Expr %prec AwaitPrec { $$ = std::make_shared<AwaitExpr>(@1, $2); }
 ;
 
 Args:
@@ -984,20 +977,17 @@ L_INT { $$ = std::make_shared<IntLiteralExpr>(@1, $1); }
 | "null" { $$ = std::make_shared<NullLiteralExpr>(@1); }
 ;
 
-Ref:
-"this" "." Ref { $$ = std::make_shared<RefExpr>(@1, "this", $3); }
-| "this" { $$ = std::make_shared<RefExpr>(@1, "this"); }
-| T_ID "." Ref { $$ = std::make_shared<RefExpr>(@1, $1, $3); }
-| T_ID { $$ = std::make_shared<RefExpr>(@1, $1);}
+RefBody:
+T_ID GenericArgs "." RefBody { $$ = std::make_shared<RefExpr>(@1, $1, $4); }
+| T_ID GenericArgs { $$ = std::make_shared<RefExpr>(@1, $1); }
 ;
 
-TypeNameRef:
-"this" "." TypeNameRef { $$ = std::make_shared<RefExpr>(@1, "", $3); }
-| "this" { $$ = std::make_shared<RefExpr>(@1, ""); }
-| "@" "." TypeNameRef { $$ = std::make_shared<RefExpr>(@1, "@", $3); }
-| "@" { $$ = std::make_shared<RefExpr>(@1, "@"); }
-| T_ID GenericArgs "." Ref { $$ = std::make_shared<RefExpr>(@1, $1, $4); }
-| T_ID GenericArgs { $$ = std::make_shared<RefExpr>(@1, $1); }
+Ref:
+"this" "." RefBody { $$ = std::make_shared<RefExpr>(@1, "this", $3); }
+| "this" { $$ = std::make_shared<RefExpr>(@1, "this"); }
+| "::" RefBody { $$ = std::make_shared<RefExpr>(@1, "", $2); }
+| "base" "." RefBody { $$ = std::make_shared<RefExpr>(@1, "base", $3); }
+| RefBody { $$ = $1; }
 ;
 
 %%

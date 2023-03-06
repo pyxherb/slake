@@ -1,0 +1,85 @@
+///
+/// @description
+/// Class for threads.
+/// @end
+///
+pub class Thread {
+	u32 _id;
+
+	/// @brief Current thread.
+	pub static native @Thread current;
+
+	/// @brief Maximum number of concurrent threads supported by hardware. 0 if not computable.
+	pub static const native u32 hardwareConcurrency;
+
+	/// @brief Yield and switch to an other thread.
+	pub static native void yield();
+
+	/// @brief Thread states.
+	enum State : u8 {
+		READY = 0,
+		RUNNING,
+		SUSPENDED,
+		DONE,
+		DEAD
+	}
+
+	static native u32 _createThread(...);
+	static native @State _getThreadState(u32 id);
+	static native void _freeThread(u32 id);
+	static native void _killThread(u32 id);
+	static native void _suspendThread(u32 id, bool suspended);
+	static native void _joinThread(u32 id);
+	static native void _runThread(u32 id);
+
+	pub operator new(...) { _id = _createThread(...); }
+	pub operator delete() { _freeThread(_id); }
+
+	pub @State getState() { return _getThreadState(_id); }
+	pub void kill() { _killThread(_id); }
+	pub void suspend() { _suspendThread(_id, true); }
+	pub void resume() { _suspendThread(_id, false); }
+	pub void join() { _joinThread(_id); }
+	pub void run() { _runThread(_id); }
+}
+
+pub trait ILock {
+	void lock();
+	void unlock();
+	bool isLocked();
+}
+
+class Mutex : @ILock {
+	bool _locked = false;
+
+	pub void lock() {
+		while(_locked) {
+			Thread.yield();
+		}
+		_locked = true;
+	}
+	pub void unlock() { _locked = false; }
+	pub bool isLocked() { return _locked; }
+}
+
+class LockGuard {
+	@ILock _lock;
+	pub operator new(@ILock lock) {
+		_lock = lock;
+		_lock.lock();
+	}
+	pub operator delete() {
+		_lock.unlock();
+	}
+}
+
+struct A {
+	i32 x;
+}
+
+void test(){
+	@ILock lock;
+	lock.lock();
+	while(true){
+	}
+}

@@ -24,9 +24,6 @@ Consider a person wants to send a mail to another one via a carrier:
 
 .. code::
 
-    import {
-        std = @"std"
-    }
     pub interface IOrigin {
         fn send(@IReceiver& destination);
     }
@@ -39,7 +36,7 @@ Consider a person wants to send a mail to another one via a carrier:
     }
 
     pub class Sender : @IOrigin {
-        fn send(@IReceiver& destination) {
+        void send(@IReceiver& destination) {
             destination.receive(information, 123456);
         }
     }
@@ -47,7 +44,7 @@ Consider a person wants to send a mail to another one via a carrier:
     pub class Receiver : @IDestination {
         pub int information;
 
-        fn receive(int information) {
+        void receive(int information) {
             self.information = information;
         }
     }
@@ -55,15 +52,15 @@ Consider a person wants to send a mail to another one via a carrier:
     pub class Carrier : @IMedium {
         int information;
 
-        fn send(@IReceiver& destination) {
+        void send(@IReceiver& destination) {
             destination.receive(information, information);
         }
-        fn receive(int information) {
+        void receive(int information) {
             self.information = information;
         }
     }
 
-    pub fn main() {
+    pub void main() {
         @IOrigin sender = new @Sender();
         @IDestination receiver = new @Receiver();
         @IMedium carrier = new @Carrier();
@@ -71,7 +68,7 @@ Consider a person wants to send a mail to another one via a carrier:
         sender::send(carrier);
         carrier::send(receiver);
 
-        std::print(receiver::information);
+        std.print(receiver::information);
     }
 
 In this example, we use 2 interfaces: ``IOrigin`` and ``IDestination`` to
@@ -82,7 +79,7 @@ others.
 
 As you see, the sender is an origin and the receiver is a destination.
 Because the carrier can receive information but can also transmit,
-the carrier is an origin (transmitter), is also a destination (receiver).
+the carrier is an origin (transmitter), and it is also a destination (receiver).
 
 The example should output::
 

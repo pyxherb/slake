@@ -9,8 +9,8 @@ std::string Slake::Compiler::CustomTypeName::toString() const {
 /// @param t2 Type 2.
 /// @return True if equal, false otherwise.
 bool Slake::Compiler::isSameType(std::shared_ptr<TypeName> t1, std::shared_ptr<TypeName> t2) {
-	if (t1->typeName == t2->typeName) {
-		switch (t1->typeName) {
+	if (t1->kind == t2->kind) {
+		switch (t1->kind) {
 			case TypeNameKind::FN: {
 				auto fnType1 = std::static_pointer_cast<FnTypeName>(t1), fnType2 = std::static_pointer_cast<FnTypeName>(t2);
 				if (fnType1->resultType != fnType2->resultType)
@@ -40,7 +40,7 @@ bool Slake::Compiler::isSameType(std::shared_ptr<TypeName> t1, std::shared_ptr<T
 bool Slake::Compiler::isConvertible(std::shared_ptr<TypeName> t1, std::shared_ptr<TypeName> t2) {
 	if (isSameType(t1, t2))
 		return true;
-	switch (t1->typeName) {
+	switch (t1->kind) {
 		case TypeNameKind::I8:
 		case TypeNameKind::I16:
 		case TypeNameKind::I32:
@@ -52,7 +52,7 @@ bool Slake::Compiler::isConvertible(std::shared_ptr<TypeName> t1, std::shared_pt
 		case TypeNameKind::FLOAT:
 		case TypeNameKind::DOUBLE:
 		case TypeNameKind::BOOL:
-			switch (t1->typeName) {
+			switch (t1->kind) {
 				case TypeNameKind::I8:
 				case TypeNameKind::I16:
 				case TypeNameKind::I32:
@@ -78,7 +78,7 @@ bool Slake::Compiler::isConvertible(std::shared_ptr<TypeName> t1, std::shared_pt
 /// @param t2 Type to check.
 /// @return True if T1 is base class of T2, false otherwise.
 bool Slake::Compiler::isBaseOf(std::shared_ptr<TypeName> t1, std::shared_ptr<TypeName> t2) {
-	if (t2->typeName == TypeNameKind::CUSTOM) {
+	if (t2->kind == TypeNameKind::CUSTOM) {
 		auto type1 = std::static_pointer_cast<CustomTypeName>(t1)->scope.lock()->getType(std::static_pointer_cast<CustomTypeName>(t1)->typeRef),
 			 type2 = std::static_pointer_cast<CustomTypeName>(t2)->scope.lock()->getType(std::static_pointer_cast<CustomTypeName>(t2)->typeRef);
 		switch (type2->getKind()) {

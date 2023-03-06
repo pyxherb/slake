@@ -1,4 +1,4 @@
-pub interface IRatio<T> {
+pub trait IRatio<T> {
 	@T -> numerator;
 	@T -> denominator;
 }

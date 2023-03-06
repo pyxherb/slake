@@ -4,14 +4,14 @@
 #include <functional>
 #include <memory>
 #include <slake/base/byteord.hh>
-#include <slake/base/uuid.hh>
 #include <vector>
 
-#include "modifier.hh"
 #include "typename.hh"
 
 namespace Slake {
 	namespace Compiler {
+		class Expr;
+
 		enum class UnaryOp : int {
 			NEG = 0,  //-x
 			NOT,	  //! x
@@ -33,8 +33,8 @@ namespace Slake {
 			XOR,	  // x^y
 			LAND,	  // x&&y
 			LOR,	  // x||y
-			LSHIFT,	  // x<<y
-			RSHIFT,	  // x>>y
+			LSH,	  // x<<y
+			RSH,	  // x>>y
 			EQ,		  // x==y
 			NEQ,	  // x!=y
 			GTEQ,	  // x>=y
@@ -53,8 +53,8 @@ namespace Slake {
 			AND_ASSIGN,			  // x&=y
 			OR_ASSIGN,			  // x|=y
 			XOR_ASSIGN,			  // x^=y
-			LSHIFT_ASSIGN,		  // x<<=y
-			RSHIFT_ASSIGN,		  // x>>=y
+			LSH_ASSIGN,		  // x<<=y
+			RSH_ASSIGN,		  // x>>=y
 
 			ASSIGN_MAX
 		};
@@ -62,92 +62,16 @@ namespace Slake {
 		inline bool isAssignment(BinaryOp op) noexcept {
 			return (op >= BinaryOp::ASSIGN) && (op <= BinaryOp::ASSIGN_MAX);
 		}
+		
+	using MatchCase = std::pair<std::shared_ptr<Expr>, std::shared_ptr<Expr>>;
 	}
 }
 
 namespace std {
-	inline string to_string(Slake::Compiler::UnaryOp op) {
-		switch (op) {
-			case Slake::Compiler::UnaryOp::INC_F:
-			case Slake::Compiler::UnaryOp::INC_B:
-				return "++";
-			case Slake::Compiler::UnaryOp::DEC_F:
-			case Slake::Compiler::UnaryOp::DEC_B:
-				return "--";
-			case Slake::Compiler::UnaryOp::NEG:
-				return "-";
-			case Slake::Compiler::UnaryOp::NOT:
-				return "!";
-			case Slake::Compiler::UnaryOp::REV:
-				return "~";
-		}
-		throw std::invalid_argument("Invalid unary operator");
-	}
+	string to_string(Slake::Compiler::UnaryOp op);
+	string to_string(Slake::Compiler::BinaryOp op);
 
-	inline string to_string(Slake::Compiler::BinaryOp op) {
-		switch (op) {
-			case Slake::Compiler::BinaryOp::ADD:
-				return "+";
-			case Slake::Compiler::BinaryOp::SUB:
-				return "-";
-			case Slake::Compiler::BinaryOp::MUL:
-				return "*";
-			case Slake::Compiler::BinaryOp::DIV:
-				return "/";
-			case Slake::Compiler::BinaryOp::MOD:
-				return "%";
-			case Slake::Compiler::BinaryOp::AND:
-				return "&";
-			case Slake::Compiler::BinaryOp::OR:
-				return "|";
-			case Slake::Compiler::BinaryOp::XOR:
-				return "^";
-			case Slake::Compiler::BinaryOp::LAND:
-				return "&&";
-			case Slake::Compiler::BinaryOp::LOR:
-				return "||";
-			case Slake::Compiler::BinaryOp::EQ:
-				return "==";
-			case Slake::Compiler::BinaryOp::NEQ:
-				return "!=";
-			case Slake::Compiler::BinaryOp::LSHIFT:
-				return "<<";
-			case Slake::Compiler::BinaryOp::RSHIFT:
-				return ">>";
-			case Slake::Compiler::BinaryOp::GTEQ:
-				return ">=";
-			case Slake::Compiler::BinaryOp::LTEQ:
-				return "<=";
-			case Slake::Compiler::BinaryOp::GT:
-				return ">";
-			case Slake::Compiler::BinaryOp::LT:
-				return "<";
-			case Slake::Compiler::BinaryOp::ASSIGN:
-				return "=";
-			case Slake::Compiler::BinaryOp::ADD_ASSIGN:
-				return "+=";
-			case Slake::Compiler::BinaryOp::SUB_ASSIGN:
-				return "-=";
-			case Slake::Compiler::BinaryOp::MUL_ASSIGN:
-				return "*=";
-			case Slake::Compiler::BinaryOp::DIV_ASSIGN:
-				return "/=";
-			case Slake::Compiler::BinaryOp::MOD_ASSIGN:
-				return "%=";
-			case Slake::Compiler::BinaryOp::AND_ASSIGN:
-				return "&=";
-			case Slake::Compiler::BinaryOp::OR_ASSIGN:
-				return "|=";
-			case Slake::Compiler::BinaryOp::XOR_ASSIGN:
-				return "^=";
-			case Slake::Compiler::BinaryOp::LSHIFT_ASSIGN:
-				return "<<=";
-			case Slake::Compiler::BinaryOp::RSHIFT_ASSIGN:
-				return ">>=";
-			default:
-				throw invalid_argument("Invalid binary operator");
-		}
-	}
+	string to_string(Slake::Compiler::MatchCase c);
 }
 
 namespace Slake {
@@ -162,13 +86,13 @@ namespace Slake {
 			REF,
 			NEW,
 			LITERAL,
-			INLINE_SW,
+			MATCH,
 			CALL,
 			AWAIT,
 			TYPENAME,
 			MAP,
 			ARRAY,
-			UUID,
+
 			// Interal types
 			LABEL
 		};
@@ -188,37 +112,26 @@ namespace Slake {
 			virtual inline ExprType getType() { return t; }
 		};
 
-		class InlineSwitchCase final : public BasicLocated, public IStringifiable {
-		public:
-			std::shared_ptr<Expr> condition, x;
+		using MatchCaseList = std::vector<MatchCase>;
 
-			inline InlineSwitchCase(location loc, std::shared_ptr<Expr> condition, std::shared_ptr<Expr> x) : BasicLocated(loc), condition(condition), x(x) {}
-			virtual inline ~InlineSwitchCase() {}
-			virtual inline std::string toString() const override {
-				return std::to_string(*condition) + " : " + std::to_string(*x);
-			}
-		};
-
-		using InlineSwitchCaseList = std::vector<std::shared_ptr<InlineSwitchCase>>;
-
-		class InlineSwitchExpr : public TypedExpr<ExprType::INLINE_SW> {
+		class MatchExpr : public TypedExpr<ExprType::MATCH> {
 		public:
 			std::shared_ptr<Expr> condition;
-			std::shared_ptr<InlineSwitchCaseList> caseList;
+			MatchCaseList caseList;
 
-			inline InlineSwitchExpr(location loc, std::shared_ptr<Expr> condition, std::shared_ptr<InlineSwitchCaseList> caseList) : TypedExpr(loc) {
+			inline MatchExpr(location loc, std::shared_ptr<Expr> condition, MatchCaseList caseList) : TypedExpr(loc) {
 				this->condition = condition;
 				this->caseList = caseList;
 			}
-			virtual inline ~InlineSwitchExpr() {}
+			virtual inline ~MatchExpr() {}
 
 			virtual inline std::string toString() const override {
 				std::string s = std::to_string(*condition) + "=> {";
 
-				auto i = caseList->begin();
-				s = std::to_string((**i));
-				while (i != caseList->end())
-					s += ", " + std::to_string((**i));
+				auto i = caseList.begin();
+				s = std::to_string(*(i->first));
+				while (i != caseList.end())
+					s += ", " + std::to_string(*(*i).first);
 
 				s += " }";
 				return s;
@@ -352,7 +265,6 @@ namespace Slake {
 			LT_FLOAT,
 			LT_DOUBLE,
 			LT_STRING,
-			LT_UUID,
 			LT_NULL,
 			LT_BOOL
 		};
@@ -524,9 +436,9 @@ namespace Slake {
 							return std::make_shared<SimpleLiteralExpr<T, LT>>(getLocation(), data | yVal);
 						case BinaryOp::XOR:
 							return std::make_shared<SimpleLiteralExpr<T, LT>>(getLocation(), data ^ yVal);
-						case BinaryOp::LSHIFT:
+						case BinaryOp::LSH:
 							return std::make_shared<SimpleLiteralExpr<T, LT>>(getLocation(), Base::getByteOrder() ? Base::swapByteOrder(Base::swapByteOrder(data) << yVal) : data << yVal);
-						case BinaryOp::RSHIFT:
+						case BinaryOp::RSH:
 							return std::make_shared<SimpleLiteralExpr<T, LT>>(getLocation(), Base::getByteOrder() ? Base::swapByteOrder(Base::swapByteOrder(data) >> yVal) : data >> yVal);
 						default:
 							return std::shared_ptr<LiteralExpr>();
@@ -540,10 +452,6 @@ namespace Slake {
 					if (y->getLiteralType() != LT_STRING)
 						return std::shared_ptr<LiteralExpr>();
 					return std::make_shared<SimpleLiteralExpr<bool, LT_BOOL>>(getLocation(), data == (std::static_pointer_cast<SimpleLiteralExpr<std::string, LT_STRING>>(y)->data));
-				} else if constexpr (std::is_same<T, Base::UUID>::value) {
-					if (y->getLiteralType() != LT_UUID)
-						return std::shared_ptr<LiteralExpr>();
-					return std::make_shared<SimpleLiteralExpr<bool, LT_BOOL>>(getLocation(), data == (std::static_pointer_cast<SimpleLiteralExpr<Base::UUID, LT_UUID>>(y)->data));
 				} else if constexpr (std::is_arithmetic<T>::value) {
 					T yVal;
 					switch (y->getLiteralType()) {
@@ -599,8 +507,8 @@ namespace Slake {
 					case BinaryOp::AND:
 					case BinaryOp::OR:
 					case BinaryOp::XOR:
-					case BinaryOp::LSHIFT:
-					case BinaryOp::RSHIFT:
+					case BinaryOp::LSH:
+					case BinaryOp::RSH:
 						return _execBitwiseBinaryOp(op, y);
 					case BinaryOp::LAND:
 					case BinaryOp::LOR:
@@ -632,7 +540,6 @@ namespace Slake {
 		using DoubleLiteralExpr = SimpleLiteralExpr<double, LT_DOUBLE>;
 		using BoolLiteralExpr = SimpleLiteralExpr<bool, LT_BOOL>;
 		using StringLiteralExpr = SimpleLiteralExpr<std::string, LT_STRING>;
-		using UUIDLiteralExpr = SimpleLiteralExpr<Base::UUID, LT_UUID>;
 
 		class ExprPair : public Expr,
 						 public std::pair<std::shared_ptr<Expr>, std::shared_ptr<Expr>> {

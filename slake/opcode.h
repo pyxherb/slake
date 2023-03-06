@@ -18,7 +18,6 @@ namespace Slake {
 
 		ENTER,	// Enter frame
 		LEAVE,	// Leave frame
-		LBASE,	// Set local frame base
 
 		ADD,   // Add
 		SUB,   // Subtract
@@ -36,23 +35,27 @@ namespace Slake {
 		GT,	   // Greater than
 		LTEQ,  // Less than or equal
 		GTEQ,  // Greater than or equal
-		REV,   // Bitwise NOT
-		NOT,   // Logical NOT
-		INC,   // Increase
-		DEC,   // Decrease
-		NEG,   // Negate
 		LSH,   // Left shift
 		RSH,   // Right shift
+
+		REV,  // Bitwise NOT
+		NOT,  // Logical NOT
+		INC,  // Increase
+		DEC,  // Decrease
+		NEG,  // Negate
 
 		JMP,  // Jump
 		JT,	  // Jump if true
 		JF,	  // Jump if false
 
-		CALL,	  // Call
-		ACALL,	  // Asynchronous Call
-		RET,	  // Return
-		SYSCALL,  // System call
+		CALL,	   // Call
+		ACALL,	   // Asynchronous Call
+		RET,	   // Return
+		SYSCALL,   // System call
 		ASYSCALL,  // Asynchronous System call
+
+		LRET,  // Load return value
+		SRET,  // Store return value
 
 		THROW,	 // Throw an exception
 		PUSHXH,	 // Push an exception handler

@@ -18,4 +18,6 @@ pub class Task {
 
 	pub native fn @() = {bffdd682-e5e4-4df5-bcfc-aa14d61cb32e};
 	pub native fn ~() = {1e58c47a-3164-40b6-b218-3a237a422e4b};
+
+	pub native void registerScheduleWatcher(@fn<void ()> watcherFn);
 }

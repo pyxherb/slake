@@ -1,14 +1,14 @@
 #ifndef _SLAKE_RT_H_
 #define _SLAKE_RT_H_
 
+#include <deque>
 #include <functional>
 #include <slake/base/uuid.hh>
 #include <unordered_map>
-#include <deque>
 
-#include "opcode.h"
-#include "value.h"
 #include "base/resptr.h"
+#include "object.h"
+#include "opcode.h"
 
 namespace Slake {
 	class InvalidOpcodeError : public std::runtime_error {
@@ -29,42 +29,91 @@ namespace Slake {
 		virtual inline ~UncaughtExceptionError() {}
 	};
 
-	using NativeFn = std::function<void()>;
+	class AbortedError : public std::runtime_error {
+	public:
+		inline AbortedError(std::string msg) : runtime_error(msg){};
+		virtual inline ~AbortedError() {}
+	};
 
-	struct NativeVarRegistry final {
-		std::function<void(Value* value)> read;
-		std::function<void(Value* value)> write;
+	class FrameBoundaryExceededError : public std::runtime_error {
+	public:
+		inline FrameBoundaryExceededError(std::string msg) : runtime_error(msg){};
+		virtual inline ~FrameBoundaryExceededError() {}
+	};
+
+	class StackOverflowError : public std::runtime_error {
+	public:
+		inline StackOverflowError(std::string msg) : runtime_error(msg){};
+		virtual inline ~StackOverflowError() {}
 	};
 
 	struct Instruction final {
 		Opcode opcode;
-		Value* operands[3];
+		Object* operands[3];
 
-		inline bool getOperandCount() {
-			for (std::uint8_t i=0;i<4;i++)
-				if (!operands[i])
-					return i;
-			throw std::logic_error("Error counting operands");
+		inline std::uint8_t getOperandCount() {
+			if (!operands[0])
+				return 0;
+			if (!operands[1])
+				return 1;
+			if (!operands[2])
+				return 2;
+			return 3;
 		}
 	};
 
-	using FnFlags = std::uint16_t;
+	using VarFlags = std::uint8_t;
+	constexpr static VarFlags
+		VAR_PUB = 0x01,
+		VAR_FINAL = 0x02,
+		VAR_STATIC = 0x04,
+		VAR_NATIVE = 0x08;
+
+	class Var {
+	protected:
+		Object* _value;
+
+	public:
+		inline Var() {}
+		virtual inline ~Var() {}
+
+		virtual ObjectRef<> getValue() = 0;
+		virtual const ObjectRef<> getValue() const = 0;
+		virtual void setValue(ObjectRef<> value) = 0;
+
+		virtual VarFlags getFlags() const = 0;
+		inline bool isPublic() const { return getFlags() & VAR_PUB; }
+	};
+
+	using FnFlags = std::uint8_t;
 	constexpr static FnFlags
-		FN_PUB = 0x0001,
-		FN_FINAL = 0x0002,
-		FN_OVERRIDE = 0x0004,
-		FN_STATIC = 0x0008,
-		FN_NATIVE = 0x0010;
+		FN_PUB = 0x01,
+		FN_FINAL = 0x02,
+		FN_OVERRIDE = 0x04,
+		FN_STATIC = 0x08,
+		FN_NATIVE = 0x10;
 
 	class Fn {
-	public:
-		inline Fn() {}
-		virtual inline ~Fn() {}
+	protected:
+		FnFlags _flags;
+		union {
+			struct {
+				Instruction* _body;
+				std::uint32_t _nIns;
+			} normal;
+			std::function<void()> native;
+		} _body;
 
-		virtual std::size_t getInsCount() const = 0;
-		virtual const Instruction& getIns(std::size_t i) const = 0;
-		virtual std::string getName() const = 0;
-		virtual FnFlags getFlags() const = 0;
+	public:
+		Fn(FnFlags flags, std::size_t nIns = 0);
+		virtual ~Fn();
+
+		std::uint32_t getInsCount() const;
+		const Instruction* getBody() const;
+		Instruction* getBody();
+		const std::function<void()>& getNativeBody() const;
+		std::function<void()>& getNativeBody();
+		FnFlags getFlags() const;
 
 		inline bool isPublic() const { return getFlags() & FN_PUB; }
 		inline bool isFinal() const { return getFlags() & FN_FINAL; }
@@ -80,15 +129,26 @@ namespace Slake {
 		Class& operator=(Class&) = delete;
 		Class& operator=(Class&&) = delete;
 
-		virtual const Fn* getFn(std::string name) = 0;
-		virtual void registerNativeFn(std::string name, const NativeFn fn) = 0;
-		virtual void unregisterNativeFn(std::string name) = 0;
+		virtual const Var* getVar(std::string name) const = 0;
+		virtual Var* getVar(std::string name) = 0;
+		virtual void addVar(std::string name, Fn* fn) = 0;
+		virtual void forEachVar(std::function<Fn*> callback) = 0;
 
-		virtual void registerNativeVar(std::string name, const NativeVarRegistry& registry) = 0;
-		virtual void unregisterNativeVar(std::string name) = 0;
+		virtual const Fn* getFn(std::string name) const = 0;
+		virtual Fn* getFn(std::string name) = 0;
+		virtual void addFn(std::string name, Fn* fn) = 0;
+		virtual void forEachFn(std::function<Fn*> callback) = 0;
+
+		virtual const Fn* getMethod(std::string name) const = 0;
+		virtual Fn* getMethod(std::string name) = 0;
+		virtual void addMethod(std::string name, Fn* fn) = 0;
+		virtual void forEachMethod(std::function<Fn*> callback) = 0;
 	};
 
 	class Module {
+	protected:
+		std::unordered_map<std::string, Fn*> _functions, _vars;
+
 	public:
 		inline Module() {}
 		Module(Module&) = delete;
@@ -98,13 +158,14 @@ namespace Slake {
 
 		virtual inline ~Module() {}
 
-		virtual const Fn* getFn(std::string name) = 0;
-
-		virtual void registerNativeVar(std::string name, const NativeVarRegistry& registry) = 0;
-		virtual void unregisterNativeVar(std::string name) = 0;
+		virtual const Fn* getFn(std::string name);
+		virtual const Var* getVar(std::string name);
 	};
 
 	class Runtime {
+	protected:
+		std::unordered_map<std::string, Module*> modules;
+
 	public:
 		Runtime(Runtime&) = delete;
 		Runtime(Runtime&&) = delete;
@@ -114,6 +175,8 @@ namespace Slake {
 		virtual inline ~Runtime() {}
 
 		virtual Module* getModule(std::string name) = 0;
+		void execIns(Context* context, Instruction* ins);
+		Object* resolveRef(RefValue* ref, Module* mod = nullptr);
 	};
 
 	Module* loadModule(const void* src, std::size_t size);

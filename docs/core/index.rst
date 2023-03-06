@@ -1,11 +1,9 @@
 Slake Core
-=============
+==========
 
-Documentation for Slake core features.
+Documentations for Slake core components.
 
 .. toctree::
     :maxdepth: 2
-    :numbered: 2
 
     runtime/index
-    coroutine

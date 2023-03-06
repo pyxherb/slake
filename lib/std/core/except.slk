@@ -1,3 +1,13 @@
 interface IException {
+	operator string();
+}
 
+class BasicException(IException) {
+	final string _msg;
+	operator new(string msg) { _msg = msg; }
+	operator string() { return _msg; }
+}
+
+class LogicalError(@BasicException) {
+	operator new(string msg) { @(msg) }
 }

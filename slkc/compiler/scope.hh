@@ -75,7 +75,6 @@ namespace Slake {
 			std::shared_ptr<ParamDeclList> params;
 			std::shared_ptr<TypeName> returnTypeName;
 			std::shared_ptr<CodeBlock> execBlock;
-			Base::UUID uuid;
 			std::string name;
 
 			inline FnDef(
@@ -84,23 +83,13 @@ namespace Slake {
 				std::shared_ptr<ParamDeclList> params,
 				std::shared_ptr<TypeName> returnTypeName,
 				std::shared_ptr<CodeBlock> execBlock = std::shared_ptr<CodeBlock>(),
-				std::string name = "(Anonymous)") : IAccessModified(accessModifier), BasicLocated(loc) {
-				this->params = params;
-				this->returnTypeName = returnTypeName;
-				this->execBlock = execBlock;
-				this->name = name;
-			}
-			inline FnDef(
-				location loc,
-				AccessModifier accessModifier,
-				std::shared_ptr<ParamDeclList> params,
-				std::shared_ptr<TypeName> returnTypeName,
-				Base::UUID uuid,
-				std::string name = "(Anonymous)") : IAccessModified(accessModifier), BasicLocated(loc) {
-				this->params = params;
-				this->returnTypeName = returnTypeName;
-				this->uuid = uuid;
-				this->name = name;
+				std::string name = "(Anonymous)")
+				: IAccessModified(accessModifier),
+				  BasicLocated(loc),
+				  params(params),
+				  returnTypeName(returnTypeName),
+				  execBlock(execBlock),
+				  name(name) {
 			}
 			virtual inline ~FnDef() {}
 
@@ -109,18 +98,13 @@ namespace Slake {
 				s += execBlock ? std::to_string(*execBlock) + "\n" : ";\n";
 				return s;
 			}
-			inline bool isNative() {
-				return uuid;
-			}
 		};
 
 		struct ImportItem final : public BasicLocated {
 		public:
 			std::shared_ptr<RefExpr> path;
 
-			inline ImportItem(location loc, std::shared_ptr<RefExpr> path, bool searchInSystemPath = false) : BasicLocated(loc) {
-				this->path = path;
-			}
+			inline ImportItem(location loc, std::shared_ptr<RefExpr> path) : BasicLocated(loc), path(path) {}
 			inline ~ImportItem() {}
 		};
 
@@ -189,12 +173,13 @@ namespace Slake {
 				std::shared_ptr<TypeName> parent,
 				std::string name = "(Anonymous)",
 				std::vector<std::string> genericParams = {},
-				std::shared_ptr<ImplList> impls = std::shared_ptr<ImplList>()) : Type(loc, accessModifier) {
-				this->scope = scope;
-				this->parent = parent;
-				this->impls = impls;
-				this->genericParams = genericParams;
-				this->name = name;
+				std::shared_ptr<ImplList> impls = std::shared_ptr<ImplList>())
+				: Type(loc, accessModifier),
+				  scope(scope),
+				  parent(parent),
+				  impls(impls),
+				  genericParams(genericParams),
+				  name(name) {
 			}
 			virtual inline ~BasicClassType() {}
 
@@ -317,8 +302,7 @@ namespace Slake {
 			std::unordered_map<std::string, std::shared_ptr<Type>> types;
 			std::unordered_map<std::string, std::shared_ptr<VarDefItem>> vars;
 
-			inline Scope(std::shared_ptr<Scope> parent = std::shared_ptr<Scope>()) {
-				this->parent = std::weak_ptr<Scope>(parent);
+			inline Scope(std::shared_ptr<Scope> parent = std::shared_ptr<Scope>()) : parent(parent) {
 			}
 			inline ~Scope() {
 			}
@@ -352,7 +336,7 @@ namespace Slake {
 			}
 
 			static inline std::shared_ptr<Type> getCustomType(std::shared_ptr<TypeName> typeName) {
-				if (typeName->typeName != TypeNameKind::CUSTOM)
+				if (typeName->kind != TypeNameKind::CUSTOM)
 					return std::shared_ptr<Type>();
 				auto tn = std::static_pointer_cast<CustomTypeName>(typeName);
 				return tn->scope.lock()->getType(tn->typeRef);

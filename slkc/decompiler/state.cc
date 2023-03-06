@@ -99,6 +99,7 @@ void Slake::Decompiler::decompileScope(std::fstream& fs) {
 		fs.read(&(name[0]), i.lenName);
 		printf("VAR %s = %s;\n", name.c_str(), std::to_string(*readValue(fs)).c_str());
 	}
+	std::uint8_t indentLevel = 0;
 
 	for (SlxFmt::FnDesc i = { 0 };;) {
 		fs.read((char*)&i, sizeof(i));
@@ -117,6 +118,7 @@ void Slake::Decompiler::decompileScope(std::fstream& fs) {
 				ins.operands.push_back(readValue(fs));
 			insList.push_back(ins);
 			switch (ih.opcode) {
+				case Opcode::ENTER:
 				case Opcode::JMP:
 				case Opcode::JT:
 				case Opcode::JF:
@@ -127,12 +129,29 @@ void Slake::Decompiler::decompileScope(std::fstream& fs) {
 		for (auto j : insList) {
 			if (s->labelNames.count(k))
 				printf("%s:\n", s->labelNames[k].c_str());
+			printf("%s", std::string('\t', indentLevel).c_str());
 			if (mnemonics.count(j.opcode))
 				printf("\t%s ", mnemonics[j.opcode]);
 			else
 				printf("\t0x%02x ", (std::uint32_t)j.opcode);
-			for (std::uint8_t l = 0; l < j.operands.size(); l++)
+			for (std::uint8_t l = 0; l < j.operands.size(); l++) {
+				switch (j.opcode) {
+					case Opcode::ENTER:
+					case Opcode::JMP:
+					case Opcode::JT:
+					case Opcode::JF:
+						if (j.operands[l]->getType() == Compiler::ExprType::LITERAL &&
+							std::static_pointer_cast<Compiler::LiteralExpr>(j.operands[l])->getLiteralType() == Compiler::LiteralType::LT_UINT) {
+							auto addr = std::static_pointer_cast<Compiler::UIntLiteralExpr>(j.operands[l])->data;
+							if (s->labelNames.count(addr)) {
+								printf("%s%s", s->labelNames[addr].c_str(), l && (l < j.operands.size()) ? "," : "");
+								continue;
+							}
+						}
+						break;
+				}
 				printf("%s%s", std::to_string(*j.operands[l]).c_str(), l && (l < j.operands.size()) ? "," : "");
+			}
 			putchar('\n');
 			k++;
 		}

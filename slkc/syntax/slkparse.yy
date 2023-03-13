@@ -128,6 +128,7 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %token OP_ASSIGN_LSH ">>="
 %token OP_ASSIGN_RSH "<<="
 %token OP_ASSIGN_ACCESS ".="
+%token OP_XCHG "<=>"
 %token OP_EQ "=="
 %token OP_NEQ "!="
 %token OP_STRICTEQ "==="
@@ -172,15 +173,19 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %left "<" "<=" ">" ">="
 %left "+" "-"
 %left "*" "/" "%"
-%precedence "!" OP_NEG
+%precedence "!" NegatePrec
 %precedence "++" "--"
 %nonassoc "(" ")" "[" "]"
+%left "."
 
 %precedence AwaitPrec
 %precedence CallPrec
 
 %precedence ForwardUnaryOpPrec
 %precedence BackwardUnaryOpPrec
+
+%precedence RefPrec
+%precedence StaticRefPrec
 
 %expect 0
 
@@ -190,9 +195,9 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %type <std::shared_ptr<ParamDecl>> ParamDecl
 %type <std::shared_ptr<ParamDeclList>> ParamDecls ParamDeclList
 %type <std::shared_ptr<VarDefStmt>> VarDef
-%type <VarDeclList> VarDecls NativeVarDecls
+%type <VarDeclList> VarDecls NativeVarDecls Aliases
 %type <std::shared_ptr<VarDecl>> VarDecl NativeVarDecl
-%type <std::shared_ptr<CodeBlock>> Stmts CodeBlock
+%type <std::shared_ptr<CodeBlock>> Stmts CodeBlock FinallyBlock
 %type <std::shared_ptr<Stmt>> Stmt ElseBlock
 %type <std::shared_ptr<ExprStmt>> ExprStmt OptionalExprStmt
 %type <std::shared_ptr<IfStmt>> IfBlock
@@ -206,7 +211,7 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %type <std::shared_ptr<TimesStmt>> TimesBlock
 %type <std::shared_ptr<CastExpr>> CastExpr
 %type <std::shared_ptr<NewExpr>> NewExpr
-%type <std::shared_ptr<RefExpr>> Ref RefBody
+%type <std::shared_ptr<RefExpr>> Ref RefBody StaticRef StaticRefBody
 %type <std::shared_ptr<MapExpr>> MapExpr
 %type <std::shared_ptr<PairList>> PairList Pairs
 %type <std::shared_ptr<ExprPair>> Pair
@@ -225,6 +230,9 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %type <std::shared_ptr<LiteralExpr>> Literal
 %type <std::string> OperatorName GenericParam
 %type <std::vector<std::string>> GenericParamList GenericParams
+%type <std::vector<std::shared_ptr<CatchBlock>>> CatchList
+%type <std::shared_ptr<TryStmt>> TryStmt
+%type <std::shared_ptr<CatchBlock>> CatchBlock
 
 %%
 
@@ -469,22 +477,7 @@ AccessModifier "native" TypeName T_ID "(" ParamDecls ")" ";" {
 // Import
 //
 ImportBlock:
-"use" "{" Imports "}"
-;
-
-Imports:
-Import "," Imports
-| Import
-;
-
-Import:
-T_ID "=" Ref {
-	// Redefinition check
-	if(currentScope->imports.count($1))
-		this->error(yylloc, "Redefinition of import item `" + $1 + "`");
-	else
-		currentScope->imports[$1] = std::make_shared<ImportItem>(@1, $3);
-}
+"use" "{" Aliases "}"
 ;
 
 //
@@ -508,13 +501,13 @@ AccessModifier TypeName T_ID GenericParamList "(" ParamDecls ")" CodeBlock {
 	if(currentScope->fnDefs.count("new"))
 		this->error(yylloc, "Redefinition of constructor");
 	else
-		currentScope->fnDefs["new"] = std::make_shared<FnDef>(@1, $1, $5, std::shared_ptr<TypeName>(), $7, "operator new");
+		currentScope->fnDefs["new"] = std::make_shared<FnDef>(@1, $1, $5, std::make_shared<TypeName>(@1, TypeNameKind::NONE), $7, "operator new");
 }
 | AccessModifier "operator" "delete" "(" ")" CodeBlock {
 	if(currentScope->fnDefs.count("delete"))
 		this->error(yylloc, "Redefinition of destructor");
 	else
-		currentScope->fnDefs["delete"] = std::make_shared<FnDef>(@1, $1, std::make_shared<ParamDeclList>(), std::shared_ptr<TypeName>(), $6, "operator delete");
+		currentScope->fnDefs["delete"] = std::make_shared<FnDef>(@1, $1, std::make_shared<ParamDeclList>(), std::make_shared<TypeName>(@1, TypeNameKind::NONE), $6, "operator delete");
 }
 | AccessModifier "operator" TypeName CodeBlock {
 }
@@ -628,10 +621,15 @@ T_ID { $$ = std::make_shared<VarDecl>(@1, $1, std::shared_ptr<Expr>()); }
 ;
 
 AliasDef:
-"pub" "use" VarDecls {
+"pub" "use" Aliases {
 }
-| "use" VarDecls {
+| "use" Aliases {
 }
+;
+
+Aliases:
+T_ID "=" StaticRef "," Aliases {}
+| T_ID "=" StaticRef {}
 ;
 
 //
@@ -660,28 +658,22 @@ ExprStmt ";" { $$ = $1; }
 | TimesBlock { $$ = $1; }
 | VarDef ";" { $$ = $1; }
 | SwitchStmt { $$ = $1; }
-| TryBlock {}
+| TryStmt {}
 ;
 
-TryBlock:
-"try" CodeBlock CatchList FinalBlock {
-}
+TryStmt:
+"try" CodeBlock CatchList FinallyBlock { $$ = std::make_shared<TryStmt>(@1, $2, $3, $4); }
 ;
-
 CatchList:
-CatchBlock {}
-| CatchList CatchBlock {
-}
+CatchBlock { $$.push_back($1); }
+| CatchList CatchBlock { $$ = $1, $$.push_back($2); }
 ;
-
 CatchBlock:
-"catch" "(" TypeName T_ID ")" CodeBlock {
-}
+"catch" "(" TypeName T_ID ")" CodeBlock { $$=std::make_shared<CatchBlock>(@1, $6, $4, $3); }
+| "catch" "(" "..." ")" CodeBlock { $$=std::make_shared<CatchBlock>(@1, $5); }
 ;
-
-FinalBlock:
-"finally" CodeBlock {
-}
+FinallyBlock:
+"finally" CodeBlock { $$ = $2; }
 | %empty {}
 ;
 
@@ -833,8 +825,7 @@ Expr ":" Expr {
 ;
 
 GenericArgs:
-"$" "<" TypeNameList ">" {}
-| %empty {}
+"<" TypeNameList ">" {}
 ;
 
 TypeNameList:
@@ -857,11 +848,12 @@ TypeName:
 |"double" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::DOUBLE); }
 |"string" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::STRING); }
 |"auto" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::AUTO); }
-|"bool" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::U8); }
+|"bool" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::BOOL); }
 |"void" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::NONE); }
-| "@" Ref { $$ = std::make_shared<CustomTypeName>(@1, $2, currentScope); }
+| "@" StaticRef { $$ = std::make_shared<CustomTypeName>(@1, $2, currentScope); }
 | TypeName "[" "]" { $$ = std::make_shared<ArrayTypeName>(@1, $1); }
 | TypeName "[" TypeName "]" {}
+| TypeName "&" {}
 | TypeName "->" "(" ParamDecls ")" {
 	auto typeName = std::make_shared<FnTypeName>(@1, $1);
 	$$ = typeName;
@@ -877,7 +869,7 @@ Expr "[" Expr "]" { $$ = std::make_shared<SubscriptOpExpr>(@1, $1, $3); }
 
 UnaryOpExpr:
 "!" Expr %prec "!" { $$ = std::make_shared<UnaryOpExpr>(@1, UnaryOp::NOT, $2);}
-| "-" Expr %prec OP_NEG { $$ = std::make_shared<UnaryOpExpr>(@1, UnaryOp::NEG, $2);}
+| "-" Expr %prec NegatePrec { $$ = std::make_shared<UnaryOpExpr>(@1, UnaryOp::NEG, $2);}
 | "++" Expr %prec ForwardUnaryOpPrec { $$ = std::make_shared<UnaryOpExpr>(@1, UnaryOp::INC_F, $2);}
 | "--" Expr %prec ForwardUnaryOpPrec { $$ = std::make_shared<UnaryOpExpr>(@1, UnaryOp::DEC_F, $2);}
 | Expr "++" %prec BackwardUnaryOpPrec { $$ = std::make_shared<UnaryOpExpr>(@1, UnaryOp::INC_B, $1);}
@@ -978,15 +970,28 @@ L_INT { $$ = std::make_shared<IntLiteralExpr>(@1, $1); }
 ;
 
 RefBody:
-T_ID GenericArgs "." RefBody { $$ = std::make_shared<RefExpr>(@1, $1, $4); }
+T_ID "." RefBody { $$ = std::make_shared<RefExpr>(@1, $1, $3); }
+| T_ID %prec RefPrec { $$ = std::make_shared<RefExpr>(@1, $1); }
+;
+
+StaticRefBody:
+T_ID "::" StaticRefBody { $$ = std::make_shared<RefExpr>(@1, $1, $3); }
+| T_ID %prec StaticRefPrec { $$ = std::make_shared<RefExpr>(@1, $1); }
+| T_ID GenericArgs "::" StaticRefBody { $$ = std::make_shared<RefExpr>(@1, $1, $4); }
 | T_ID GenericArgs { $$ = std::make_shared<RefExpr>(@1, $1); }
+;
+
+StaticRef:
+"::" StaticRefBody { $$ = std::make_shared<RefExpr>(@1, "", $2); }
+| "base" "::" StaticRefBody { $$ = std::make_shared<RefExpr>(@1, "base", $3); }
+| StaticRefBody { $$ = $1; }
 ;
 
 Ref:
 "this" "." RefBody { $$ = std::make_shared<RefExpr>(@1, "this", $3); }
 | "this" { $$ = std::make_shared<RefExpr>(@1, "this"); }
-| "::" RefBody { $$ = std::make_shared<RefExpr>(@1, "", $2); }
 | "base" "." RefBody { $$ = std::make_shared<RefExpr>(@1, "base", $3); }
+| StaticRef "." RefBody { $$ = $1, $$->next = $3; }
 | RefBody { $$ = $1; }
 ;
 

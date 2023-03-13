@@ -1,4 +1,4 @@
-#include "state.hh"
+#include "decompiler.hh"
 
 #include <string>
 
@@ -90,16 +90,79 @@ std::shared_ptr<Compiler::Expr> Slake::Decompiler::readValue(std::fstream& fs) {
 	}
 }
 
-void Slake::Decompiler::decompileScope(std::fstream& fs) {
+void toTypeName(std::fstream& fs, SlxFmt::ValueType& vt) {
+	switch (vt) {
+		case SlxFmt::ValueType::I8:
+			printf("i8");
+			break;
+		case SlxFmt::ValueType::I16:
+			printf("i16");
+			break;
+		case SlxFmt::ValueType::I32:
+			printf("i32");
+			break;
+		case SlxFmt::ValueType::I64:
+			printf("i64");
+			break;
+		case SlxFmt::ValueType::U8:
+			printf("u8");
+			break;
+		case SlxFmt::ValueType::U16:
+			printf("u16");
+			break;
+		case SlxFmt::ValueType::U32:
+			printf("u32");
+			break;
+		case SlxFmt::ValueType::U64:
+			printf("u64");
+			break;
+		case SlxFmt::ValueType::FLOAT:
+			printf("float");
+			break;
+		case SlxFmt::ValueType::DOUBLE:
+			printf("double");
+			break;
+		case SlxFmt::ValueType::STRING:
+			printf("string");
+			break;
+		case SlxFmt::ValueType::OBJECT: {
+			SlxFmt::ValueDesc vd;
+			fs.read((char*)&vd, sizeof(vd));
+
+			auto ref = std::make_shared<Compiler::RefExpr>(Compiler::location(), "");
+			SlxFmt::ScopeRefDesc i = { 0 };
+			auto& j = ref;
+			do {
+				i = _readValue<SlxFmt::ScopeRefDesc>(fs);
+				std::string name(i.lenName + 1, '\0');
+				fs.read(&(name[0]), i.lenName);
+				j->next = std::make_shared<Compiler::RefExpr>(Compiler::location(), name + (i.hasNext ? "." : ""));
+				j = j->next;
+			} while (i.hasNext);
+			printf("@%s", std::to_string(*ref).c_str());
+			break;
+		}
+		case SlxFmt::ValueType::NONE:
+			printf("any");
+			break;
+	}
+}
+
+void Slake::Decompiler::decompileScope(std::fstream& fs, std::uint8_t indentLevel) {
 	for (SlxFmt::VarDesc i = { 0 };;) {
 		fs.read((char*)&i, sizeof(i));
 		if (!(i.lenName))
 			break;
 		std::string name(i.lenName, '\0');
 		fs.read(&(name[0]), i.lenName);
-		printf("VAR %s = %s;\n", name.c_str(), std::to_string(*readValue(fs)).c_str());
+
+		printf("%s", std::string(indentLevel, '\t').c_str());
+
+		if (i.flags & SlxFmt::VAD_INIT)
+			printf("any %s = %s;\n", name.c_str(), std::to_string(*readValue(fs)).c_str());
+		else
+			printf("any %s;\n", name.c_str());
 	}
-	std::uint8_t indentLevel = 0;
 
 	for (SlxFmt::FnDesc i = { 0 };;) {
 		fs.read((char*)&i, sizeof(i));
@@ -107,7 +170,17 @@ void Slake::Decompiler::decompileScope(std::fstream& fs) {
 			break;
 		std::string name(i.lenName, '\0');
 		fs.read(&(name[0]), i.lenName);
-		printf("FN %s:\n", name.c_str());
+
+		printf("%sany %s(", std::string(indentLevel, '\t').c_str(), name.c_str());
+
+		for (auto j = 0; j < i.nParams; j++) {
+			SlxFmt::ValueType vt = SlxFmt::ValueType::NONE;
+			fs.read((char*)&vt, sizeof(vt));
+			toTypeName(fs, vt);
+			if (j + 1 < i.nParams)
+				printf(", ");
+		}
+		puts(") {");
 
 		std::shared_ptr<State> s = std::make_shared<State>();
 		std::list<Compiler::Ins> insList;
@@ -118,22 +191,31 @@ void Slake::Decompiler::decompileScope(std::fstream& fs) {
 				ins.operands.push_back(readValue(fs));
 			insList.push_back(ins);
 			switch (ih.opcode) {
-				case Opcode::ENTER:
 				case Opcode::JMP:
 				case Opcode::JT:
 				case Opcode::JF:
 					s->labelNames[j + 1] = name + "_" + std::to_string(j + 1);
+					break;
+				case Opcode::ENTER:
+					s->labelNames[j + 1] = name + "_blkend_" + std::to_string(j + 1);
 			}
 		}
+
 		std::size_t k = 0;
 		for (auto j : insList) {
 			if (s->labelNames.count(k))
-				printf("%s:\n", s->labelNames[k].c_str());
-			printf("%s", std::string('\t', indentLevel).c_str());
+				printf("%s%s:\n", std::string(indentLevel, '\t').c_str(), s->labelNames[k].c_str());
+
+			if (j.opcode == Opcode::LEAVE)
+				indentLevel--;
+			printf("%s", std::string(indentLevel, '\t').c_str());
+			if (j.opcode == Opcode::ENTER)
+				indentLevel++;
+
 			if (mnemonics.count(j.opcode))
-				printf("\t%s ", mnemonics[j.opcode]);
+				printf("\tasm %s ", mnemonics[j.opcode]);
 			else
-				printf("\t0x%02x ", (std::uint32_t)j.opcode);
+				printf("\tasm 0x%02x ", (std::uint32_t)j.opcode);
 			for (std::uint8_t l = 0; l < j.operands.size(); l++) {
 				switch (j.opcode) {
 					case Opcode::ENTER:
@@ -155,6 +237,64 @@ void Slake::Decompiler::decompileScope(std::fstream& fs) {
 			putchar('\n');
 			k++;
 		}
+
+		printf("%s}\n", std::string(indentLevel, '\t').c_str());
+	}
+
+	for (SlxFmt::ClassTypeDesc i = { 0 };;) {
+		fs.read((char*)&i, sizeof(i));
+		if (!(i.lenName))
+			break;
+		std::string name(i.lenName, '\0');
+		fs.read(&(name[0]), i.lenName);
+
+		printf("%s", std::string(indentLevel, '\t').c_str());
+
+		if (i.flags & SlxFmt::CTD_PUB)
+			printf("pub ");
+		if (i.flags & SlxFmt::CTD_FINAL)
+			printf("final ");
+		printf("%s %s", i.flags & SlxFmt::CTD_TRAIT ? "trait" : "class", name.c_str());
+		if (i.flags & SlxFmt::CTD_DERIVED) {
+			printf(": ");
+
+			SlxFmt::ValueDesc vd;
+			fs.read((char*)&vd, sizeof(vd));
+
+			auto ref = std::make_shared<Compiler::RefExpr>(Compiler::location(), "");
+			SlxFmt::ScopeRefDesc i = { 0 };
+			auto& j = ref;
+			do {
+				i = _readValue<SlxFmt::ScopeRefDesc>(fs);
+				std::string name(i.lenName + 1, '\0');
+				fs.read(&(name[0]), i.lenName);
+				j->next = std::make_shared<Compiler::RefExpr>(Compiler::location(), name + (i.hasNext ? "." : ""));
+				j = j->next;
+			} while (i.hasNext);
+			printf("@%s", std::to_string(*ref).c_str());
+		}
+		puts(" {");
+
+		decompileScope(fs, indentLevel + 1);
+
+		printf("%s}\n", std::string(indentLevel, '\t').c_str());
+	}
+
+	for (SlxFmt::StructTypeDesc i = { 0 };;) {
+		fs.read((char*)&i, sizeof(i));
+		if (!(i.lenName))
+			break;
+		std::string name(i.lenName, '\0');
+		fs.read(&(name[0]), i.lenName);
+
+		printf("%s", std::string(indentLevel, '\t').c_str());
+
+		if (i.flags & SlxFmt::STD_PUB)
+			printf("pub ");
+		printf("struct %s", name.c_str());
+		puts(" {");
+
+		printf("%s}\n", std::string(indentLevel, '\t').c_str());
 	}
 }
 

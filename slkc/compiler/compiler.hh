@@ -61,6 +61,7 @@ namespace Slake {
 			std::shared_ptr<Scope> scope;
 			std::uint32_t stackCur = 0, nContinueLevel = 0, nBreakLevel = 0;
 			std::string currentFn;
+			bool returned = false;
 
 			inline void enterLoop() noexcept {
 				nContinueLevel++, nBreakLevel++;

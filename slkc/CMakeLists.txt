@@ -1,5 +1,3 @@
-set(CXX_STANDARD 17)
-
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
 

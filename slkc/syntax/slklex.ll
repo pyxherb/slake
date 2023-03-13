@@ -55,6 +55,8 @@ yylloc.step();
 "~="		return parser::make_OP_ASSIGN_REV(yylloc);
 "<<="		return parser::make_OP_ASSIGN_LSH(yylloc);
 ">>="		return parser::make_OP_ASSIGN_RSH(yylloc);
+".="		return parser::make_OP_ASSIGN_ACCESS(yylloc);
+"<=>"		return parser::make_OP_XCHG(yylloc);
 "=="		return parser::make_OP_EQ(yylloc);
 "!="		return parser::make_OP_NEQ(yylloc);
 "<<"		return parser::make_OP_LSH(yylloc);

@@ -16,15 +16,12 @@ namespace Slake {
 		public:
 			std::string name;
 			std::shared_ptr<TypeName> typeName;
-			std::shared_ptr<Expr> initValue;
 
 			ParamDecl(location loc,
 				std::string name,
-				std::shared_ptr<TypeName> typeName,
-				std::shared_ptr<Expr> initValue = std::shared_ptr<Expr>()) : BasicLocated(loc) {
+				std::shared_ptr<TypeName> typeName) : BasicLocated(loc) {
 				this->name = name;
 				this->typeName = typeName;
-				this->initValue = initValue;
 			}
 			inline ~ParamDecl() {}
 
@@ -32,8 +29,6 @@ namespace Slake {
 				if (name == "...")
 					return "...";
 				std::string s = std::to_string(*typeName) + " " + name;
-				if (initValue)
-					s += " = " + std::to_string(*initValue);
 				return s;
 			}
 		};
@@ -408,6 +403,14 @@ namespace Slake {
 			}
 
 			void defineVars(std::shared_ptr<VarDefStmt> varDecls);
+
+			inline std::shared_ptr<RefExpr> tryResolve(std::shared_ptr<Scope> scope) {
+				if (scope.get() == this) {
+					return std::make_shared<RefExpr>(location(), "");
+				}
+				if (!scope->parent.expired())
+					return tryResolve(scope->parent.lock());
+			}
 		};
 
 		extern std::shared_ptr<Scope> currentScope;

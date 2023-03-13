@@ -1,4 +1,4 @@
-#include <decompiler/state.hh>
+#include <decompiler/decompiler.hh>
 #include <slkparse.hh>
 
 class ArgumentError : public std::runtime_error {

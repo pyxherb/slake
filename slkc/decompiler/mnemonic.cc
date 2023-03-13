@@ -7,6 +7,7 @@ std::unordered_map<Opcode, const char*> Decompiler::mnemonics = {
 	{ Opcode::PUSH, "PUSH" },
 	{ Opcode::POP, "POP" },
 	{ Opcode::LOAD, "LOAD" },
+	{ Opcode::RLOAD, "RLOAD" },
 	{ Opcode::STORE, "STORE" },
 	{ Opcode::LLOAD, "LLOAD" },
 	{ Opcode::LSTORE, "LSTORE" },
@@ -46,7 +47,6 @@ std::unordered_map<Opcode, const char*> Decompiler::mnemonics = {
 	{ Opcode::SYSCALL, "SYSCALL" },
 	{ Opcode::ASYSCALL, "ASYSCALL" },
 	{ Opcode::LRET, "LRET" },
-	{ Opcode::SRET, "SRET" },
 	{ Opcode::THROW, "THROW" },
 	{ Opcode::PUSHXH, "PUSHXH" },
 	{ Opcode::ABORT, "ABORT" }

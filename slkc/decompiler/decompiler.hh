@@ -1,11 +1,12 @@
-#ifndef _SLKC_DECOMPILER_STATE_HH
-#define _SLKC_DECOMPILER_STATE_HH
+#ifndef _SLKC_DECOMPILER_DECOMPILER_HH
+#define _SLKC_DECOMPILER_DECOMPILER_HH
 
 #include <slake/slxfmt.h>
-#include <unordered_map>
+
+#include <compiler/compiler.hh>
 #include <fstream>
 #include <stdexcept>
-#include <compiler/compiler.hh>
+#include <unordered_map>
 
 namespace Slake {
 	namespace Decompiler {
@@ -30,7 +31,7 @@ namespace Slake {
 		};
 
 		std::shared_ptr<Compiler::Expr> readValue(std::fstream& fs);
-		void decompileScope(std::fstream& fs);
+		void decompileScope(std::fstream& fs, std::uint8_t indentLevel = 0);
 		void decompile(std::fstream& fs);
 	}
 }

@@ -17,7 +17,10 @@ namespace Slake {
 			CONTINUE,
 			BREAK,
 			CODEBLOCK,
-			VAR_DEF
+			VAR_DEF,
+			TRY,
+			CATCH,
+			FINALLY
 		};
 
 		class Stmt : public IStringifiable {
@@ -274,6 +277,51 @@ namespace Slake {
 			}
 			virtual inline ~SwitchStmt() {}
 			virtual inline StmtType getType() override { return StmtType::SWITCH; }
+		};
+
+		class CatchBlock : public BasicLocated, public IStringifiable {
+		public:
+			std::shared_ptr<CodeBlock> body;
+			std::shared_ptr<TypeName> typeName;
+			std::string name;
+
+			inline CatchBlock(location loc, std::shared_ptr<CodeBlock> body, std::string name = "", std::shared_ptr<TypeName> typeName = std::shared_ptr<TypeName>())
+				: BasicLocated(loc),
+				  body(body),
+				  name(name),
+				  typeName(typeName) {}
+			virtual inline ~CatchBlock() {}
+
+			virtual inline std::string toString() const override {
+				return "catch (" + (typeName ? std::to_string(*typeName) + " " + name : "...") + ") " + std::to_string(*body);
+			}
+		};
+
+		class TryStmt : public Stmt,
+						public BasicLocated {
+		public:
+			std::shared_ptr<CodeBlock> body;
+			std::vector<std::shared_ptr<CatchBlock>> catchList;
+			std::shared_ptr<CodeBlock> finallyBlock;
+
+			inline TryStmt(
+				location loc,
+				std::shared_ptr<CodeBlock> body,
+				std::vector<std::shared_ptr<CatchBlock>> catchList,
+				std::shared_ptr<CodeBlock> finallyBlock = std::shared_ptr<CodeBlock>())
+				: BasicLocated(loc), body(body), catchList(catchList), finallyBlock(finallyBlock) {}
+			virtual inline ~TryStmt() {}
+			virtual inline StmtType getType() override { return StmtType::TRY; }
+
+			virtual inline std::string toString() const override {
+				std::string s = "try " + std::to_string(*body) + " ";
+				for (auto& i : catchList) {
+					s += std::to_string(*i) + " ";
+				}
+				if (finallyBlock)
+					s += std::to_string(*finallyBlock);
+				return s;
+			}
 		};
 	}
 }

@@ -102,6 +102,7 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %token TN_STRING "string"
 %token TN_BOOL "bool"
 %token TN_AUTO "auto"
+%token TN_ANY "any"
 %token TN_VOID "void"
 
 %token OP_ADD "+"
@@ -327,7 +328,7 @@ T_ID {
 //
 Class:
 AccessModifier "class" T_ID GenericParamList InheritSlot ImplList {
-	auto curClass = std::make_shared<ClassType>(@1, $1, std::make_shared<Scope>(currentScope), $5, $3, $4, $6);
+	auto curClass = std::make_shared<ClassType>(@1, $1, std::make_shared<Scope>($3, currentScope), $5, $3, $4, $6);
 
 	if(currentScope->types.count($3))
 		this->error(yylloc, "Redefinition of type `" + $3 + "`");
@@ -414,7 +415,7 @@ AccessModifier "trait" T_ID GenericParamList InheritSlot {
 	auto curType = std::make_shared<TraitType>(
 		@1,
 		$1,
-		std::make_shared<Scope>(currentScope),
+		std::make_shared<Scope>($3, currentScope),
 		$5,
 		$3,
 		$4
@@ -466,7 +467,7 @@ TypeName T_ID GenericParamList "(" ParamDecls ")" ";" {
 NativeFnDecl:
 AccessModifier "native" TypeName T_ID "(" ParamDecls ")" ";" {
 	if(currentScope->fnDefs.count($4)) {
-		this->error(yylloc, "Redefinition of function " + $4);
+		this->error(yylloc, "Redefinition of function `" + $4 + "'");
 	}
 	else
 		currentScope->fnDefs[$4] = std::make_shared<FnDef>(@1, $1, $6, $3, std::shared_ptr<CodeBlock>(), $4);
@@ -850,10 +851,11 @@ TypeName:
 |"auto" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::AUTO); }
 |"bool" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::BOOL); }
 |"void" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::NONE); }
+|"any" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::ANY); }
 | "@" StaticRef { $$ = std::make_shared<CustomTypeName>(@1, $2, currentScope); }
 | TypeName "[" "]" { $$ = std::make_shared<ArrayTypeName>(@1, $1); }
-| TypeName "[" TypeName "]" {}
-| TypeName "&" {}
+| TypeName "[" TypeName "]" { $$ = std::make_shared<MapTypeName>(@1, $3, $1); }
+| TypeName "&" { $$ = std::make_shared<RefTypeName>(@1, $1); }
 | TypeName "->" "(" ParamDecls ")" {
 	auto typeName = std::make_shared<FnTypeName>(@1, $1);
 	$$ = typeName;

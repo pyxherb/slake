@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include "base.hh"
+#include "misc.hh"
 
 namespace Slake {
 	namespace Compiler {
@@ -27,6 +27,7 @@ namespace Slake {
 			BOOL,
 			MAP,
 			FN,
+			REF,
 			AUTO,
 			CUSTOM
 		};
@@ -116,6 +117,34 @@ namespace Slake {
 
 			virtual inline std::string toString() const override {
 				return std::to_string(*type) + "[]";
+			}
+		};
+
+		class RefTypeName : public TypeName {
+		public:
+			std::shared_ptr<TypeName> type;
+
+			inline RefTypeName(location loc, std::shared_ptr<TypeName> type) : TypeName(loc, TypeNameKind::REF) {
+				this->type = type;
+			}
+			virtual inline ~RefTypeName() {}
+
+			virtual inline std::string toString() const override {
+				return std::to_string(*type) + "&";
+			}
+		};
+
+		class MapTypeName : public TypeName {
+		public:
+			std::shared_ptr<TypeName> keyType, valueType;
+
+			inline MapTypeName(location loc, std::shared_ptr<TypeName> keyType, std::shared_ptr<TypeName> valueType)
+				: TypeName(loc, TypeNameKind::MAP), keyType(keyType), valueType(valueType) {
+			}
+			virtual inline ~MapTypeName() {}
+
+			virtual inline std::string toString() const override {
+				return std::to_string(*valueType) + "[" + std::to_string(*keyType) + "]";
 			}
 		};
 

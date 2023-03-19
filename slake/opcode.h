@@ -10,6 +10,7 @@ namespace Slake {
 		PUSH,	 // Push an immediate value
 		POP,	 // Pop a value
 		LOAD,	 // Load a value onto stack
+		RLOAD,	 // Load a value onto stack by a reference
 		STORE,	 // Store a value from stack
 		LLOAD,	 // Load a value from local variable area
 		LSTORE,	 // Store a value into local variable area
@@ -48,14 +49,16 @@ namespace Slake {
 		JT,	  // Jump if true
 		JF,	  // Jump if false
 
-		CALL,	   // Call
+		CALL,	   // Call, sets local base
 		ACALL,	   // Asynchronous Call
 		RET,	   // Return
 		SYSCALL,   // System call
 		ASYSCALL,  // Asynchronous System call
 
 		LRET,  // Load return value
-		SRET,  // Store return value
+
+		LREG,  // Load register
+		SREG,  // Save register
 
 		THROW,	 // Throw an exception
 		PUSHXH,	 // Push an exception handler

@@ -1,5 +1,5 @@
-#ifndef _SLAKE_VALUE_H_
-#define _SLAKE_VALUE_H_
+#ifndef _SLAKE_OBJECT_H_
+#define _SLAKE_OBJECT_H_
 
 #include <memory>
 #include <mutex>
@@ -17,6 +17,7 @@ namespace Slake {
 		I64,
 		FLOAT,
 		DOUBLE,
+		BOOL,
 		STRING,
 		FN,
 		OBJECT,
@@ -36,7 +37,7 @@ namespace Slake {
 		std::uint32_t getRefCount();
 	};
 
-	template <typename T, int VT>
+	template <typename T, ValueType VT>
 	class LiteralObject : public Object {
 	protected:
 		T _value;
@@ -49,65 +50,84 @@ namespace Slake {
 		virtual inline void setValue(T& value) { _value = value; }
 	};
 
-	using I8Object = LiteralObject<std::int8_t, (int)ValueType::I8>;
-	using I16Object = LiteralObject<std::int16_t, (int)ValueType::I16>;
-	using I32Object = LiteralObject<std::int32_t, (int)ValueType::I32>;
-	using I64Object = LiteralObject<std::int64_t, (int)ValueType::I64>;
-	using U8Object = LiteralObject<std::uint8_t, (int)ValueType::U8>;
-	using U16Object = LiteralObject<std::uint16_t, (int)ValueType::U16>;
-	using U32Object = LiteralObject<std::uint32_t, (int)ValueType::U32>;
-	using U64Object = LiteralObject<std::uint64_t, (int)ValueType::U64>;
-	using StringObject = LiteralObject<std::string, (int)ValueType::STRING>;
+	using I8Object = LiteralObject<std::int8_t, ValueType::I8>;
+	using I16Object = LiteralObject<std::int16_t, ValueType::I16>;
+	using I32Object = LiteralObject<std::int32_t, ValueType::I32>;
+	using I64Object = LiteralObject<std::int64_t, ValueType::I64>;
+	using U8Object = LiteralObject<std::uint8_t, ValueType::U8>;
+	using U16Object = LiteralObject<std::uint16_t, ValueType::U16>;
+	using U32Object = LiteralObject<std::uint32_t, ValueType::U32>;
+	using U64Object = LiteralObject<std::uint64_t, ValueType::U64>;
+	using FloatObject = LiteralObject<float, ValueType::FLOAT>;
+	using DoubleObject = LiteralObject<double, ValueType::FLOAT>;
+	using BoolObject = LiteralObject<bool, ValueType::BOOL>;
+	using StringObject = LiteralObject<std::string, ValueType::STRING>;
 
-	class ObjectValue : public Object {
+	class ClassObject : public Object {
 	public:
-		virtual inline ~ObjectValue() {}
+		virtual inline ~ClassObject() {}
 
 		virtual inline ValueType getType() const override { return ValueType::OBJECT; }
 		virtual Object* getMember(std::string name) = 0;
 	};
 
-	class RefValue final : public Object {
+	class RefObject final : public Object {
 	public:
 		std::string name;
-		RefValue* next;
+		RefObject* next;
 
-		inline RefValue(std::string name, RefValue* next) : name(name), next(next) {
-		}
-		virtual inline ~RefValue() {
-		}
-		virtual inline ValueType getType() const {
-			return ValueType::SCOPE_REF;
-		}
+		RefObject(std::string name, RefObject* next);
+		virtual ~RefObject();
+		virtual inline ValueType getType() const override { return ValueType::SCOPE_REF; }
 	};
 
 	template <typename T = Object>
 	class ObjectRef final {
-	protected:
+	public:
 		T* _value;
 
-	public:
-		inline ObjectRef(ObjectRef& x) : _value(x->_value) {
-			_value->incRefCount();
+		inline ObjectRef(const ObjectRef<T>& x) : _value(x._value) {
+			if (_value)
+				_value->incRefCount();
 		}
-		inline ObjectRef(T* value) : _value(value) {
-			_value->incRefCount();
+		inline ObjectRef(const ObjectRef<T>&& x) : _value(x._value) {
+			if (_value)
+				_value->incRefCount();
+		}
+		inline ObjectRef(T* value = nullptr) : _value(value) {
+			if (_value)
+				_value->incRefCount();
 		}
 		inline ~ObjectRef() {
-			_value->decRefCount();
-			if (!_value->getRefCount())
-				delete _value;
+			if (_value)
+				_value->decRefCount();
 		}
 		inline T* operator*() { return _value; }
 		inline const T* operator*() const { return _value; }
 		inline const T* operator->() const { return _value; }
 		inline T* operator->() { return _value; }
 
+		template <typename T1 = T>
+		T1* get() { return (T1*)_value; }
+		template <typename T1 = T>
+		const T1* get() const { return (T1*)_value; }
+
 		inline ObjectRef& operator=(const ObjectRef& x) {
+			if (_value)
+				_value->decRefCount();
 			this->_value = x._value;
 			_value->incRefCount();
 		}
 		inline ObjectRef& operator=(const ObjectRef&& x) {
+			if (_value)
+				_value->decRefCount();
+			this->_value = x._value;
+			_value->incRefCount();
+		}
+		template <typename T1>
+		inline ObjectRef& operator=(const ObjectRef<T1>&& x) {
+			if (_value)
+				_value->decRefCount();
 			this->_value = x._value;
 			_value->incRefCount();
 		}

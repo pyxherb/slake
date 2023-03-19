@@ -1,2 +1,2 @@
-file(GLOB SRC *.h *.hpp *.hh *.c *.cpp *.cc)
+file(GLOB_RECURSE SRC *.h *.hh *.c *.cc)
 target_sources(slkc PRIVATE ${SRC})

@@ -194,7 +194,7 @@ namespace Slake {
 
 		class RefExpr : public TypedExpr<ExprType::REF> {
 		public:
-			std::string name;  // Empty if referenced to self
+			std::string name;
 			std::shared_ptr<RefExpr> next;
 			bool isTopLevel;
 
@@ -208,8 +208,8 @@ namespace Slake {
 				return s;
 			}
 
-			virtual inline std::size_t subrefCount() {
-				return 1 + (next ? next->subrefCount() : 0);
+			virtual inline std::size_t levelLeft() {
+				return 1 + (next ? next->levelLeft() : 0);
 			}
 		};
 

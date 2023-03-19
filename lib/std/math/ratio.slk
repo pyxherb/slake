@@ -7,12 +7,12 @@ pub class Ratio<T>: IRatio<@T> {
 	@T _num, _den;
 
 	pub @T -> numerator {
-		self { return _num; }
+		this { return _num; }
 		= { _num = num; }
 	}
 
 	pub @T -> denominator {
-		self { return _den; }
+		this { return _den; }
 		= { _den = den; }
 	}
 }

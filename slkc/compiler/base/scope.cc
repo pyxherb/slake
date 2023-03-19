@@ -10,6 +10,8 @@ std::shared_ptr<ClassType> Slake::Compiler::currentClass;
 std::shared_ptr<TraitType> Slake::Compiler::currentTrait;
 std::shared_ptr<StructType> Slake::Compiler::currentStruct;
 
+int Slake::Compiler::indentLevel = 0;
+
 void Slake::Compiler::Scope::defineVars(std::shared_ptr<VarDefStmt> varDecls) {
 	for (auto i : varDecls->declList) {
 		if (vars.count(i->name))
@@ -25,9 +27,17 @@ void Slake::Compiler::StructType::addMembers(std::shared_ptr<VarDefStmt> varDecl
 	if (varDecls->accessModifier & ~(ACCESS_PUB))
 		throw parser::syntax_error(varDecls->getLocation(), "Invalid modifier combination");
 	for (auto &i : varDecls->declList) {
-		if (_varIndices.count(i->name))
+		if (varIndices.count(i->name))
 			throw parser::syntax_error(varDecls->getLocation(), "Redefinition of member `" + i->name + "'");
-		_vars.push_back(std::make_shared<VarDefItem>(i->getLocation(), ACCESS_PUB, varDecls->typeName, i->initValue));
-		_varIndices[i->name] = _vars.size() - 1;
+		vars.push_back(std::make_shared<VarDefItem>(i->getLocation(), ACCESS_PUB, varDecls->typeName, i->initValue));
+		varIndices[i->name] = vars.size() - 1;
 	}
+}
+
+void Slake::Compiler::deinit() {
+	currentTrait.reset();
+	currentClass.reset();
+	currentEnum.reset();
+	currentScope.reset();
+	currentStruct.reset();
 }

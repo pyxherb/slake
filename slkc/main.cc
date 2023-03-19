@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
 					return ENOENT;
 				}
 
-				auto rootScope = std::make_shared<Slake::Compiler::Scope>();
+				auto rootScope = std::make_shared<Slake::Compiler::Scope>("");
 				Slake::Compiler::currentScope = rootScope;
 				yyparser = std::make_shared<Slake::Compiler::parser>();
 

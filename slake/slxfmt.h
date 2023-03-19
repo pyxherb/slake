@@ -50,25 +50,25 @@ namespace Slake {
 		};
 
 		enum class ValueType : std::uint8_t {
-			NONE = 0,	 // None
-			ANY = NONE,	 // Note that the compiler recongizes them as different types, but the runtime does not.
-			I8,			 // i8
-			I16,		 // i16
-			I32,		 // i32
-			I64,		 // i64
-			U8,			 // u8
-			U16,		 // u16
-			U32,		 // u32
-			U64,		 // u64
-			FLOAT,		 // Float
-			DOUBLE,		 // Double
-			STRING,		 // String
-			UUID,		 // UUID
-			BOOL,		 // Boolean
-			ARRAY,		 // Array
-			OBJECT,		 // Object
-			REF,		 // Reference
-			REG			 // Register
+			NONE = 0,	// None
+			ANY,		// Any
+			I8,			// i8
+			I16,		// i16
+			I32,		// i32
+			I64,		// i64
+			U8,			// u8
+			U16,		// u16
+			U32,		// u32
+			U64,		// u64
+			FLOAT,		// Float
+			DOUBLE,		// Double
+			STRING,		// String
+			BOOL,		// Boolean
+			ARRAY,		// Array
+			MAP,		// Map
+			OBJECT,		// Object
+			OBJECTREF,	// Object reference
+			REF,		// Reference
 		};
 
 		/// @brief Value Descriptor (VD)
@@ -87,11 +87,13 @@ namespace Slake {
 			std::uint8_t flags;			  // Flags
 			std::uint8_t nGenericParams;  // Number of generic parameters
 			std::uint8_t lenName;		  // Length of name
-			std::uint8_t lenImpls;		  // Number of implemented interfaces
+			std::uint8_t nImpls;		  // Number of implemented interfaces
 		};
 		constexpr static std::uint8_t
-			CTD_PUB = 0x01,	  // Public
-			CTD_FINAL = 0x02  // Final
+			CTD_PUB = 0x01,		 // Public
+			CTD_FINAL = 0x02,	 // Final
+			CTD_DERIVED = 0x40,	 // Is derived from parent
+			CTD_TRAIT = 0x80	 // As a trait
 			;
 
 		/// @brief Structure Type Descriptor (STD)
@@ -100,21 +102,30 @@ namespace Slake {
 			std::uint8_t lenName;	 // Length of name
 			std::uint32_t nMembers;	 // Number of members
 		};
+		struct StructMemberDesc final {
+			ValueType type : 5;		   // Data Type
+			std::uint8_t flags : 3;	   // Flags
+			std::uint8_t lenName : 8;  // Name length
+		};
+		constexpr static std::uint8_t
+			STD_PUB = 0x01	// Public
+			;
 
 		/// @brief Function Descriptor (FND)
 		struct FnDesc final {
-			std::uint8_t nGenericParams;  // Number of generic parameters
-			std::uint8_t flags;			  // Flags
-			std::uint8_t lenName;		  // Length of name
-			std::uint8_t nParams;		  // Number of parameters, only used by compilers
-			std::uint32_t lenBody;		  // Length of body
+			std::uint8_t flags : 8;			  // Flags
+			std::uint16_t lenName : 16;		  // Length of name
+			std::uint8_t nGenericParams : 8;  // Number of generic parameters
+			std::uint8_t nParams : 8;		  // Number of parameters, only used by compilers
+			std::uint32_t lenBody : 24;		  // Length of body
 		};
 		constexpr static std::uint8_t
 			FND_PUB = 0x01,		  // Public
 			FND_FINAL = 0x02,	  // Final
 			FND_OVERRIDE = 0x04,  // Override
 			FND_STATIC = 0x08,	  // Static
-			FND_NATIVE = 0x10	  // Native
+			FND_NATIVE = 0x10,	  // Native
+			FND_VARG = 0x80		  // Variable arguments
 			;
 
 		/// @brief Variable Descriptonr (VAD)

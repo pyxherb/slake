@@ -3,10 +3,9 @@
 
 #include <deque>
 #include <functional>
-#include <slake/base/uuid.hh>
 #include <unordered_map>
+#include <string>
 
-#include "base/resptr.h"
 #include "object.h"
 #include "opcode.h"
 
@@ -39,6 +38,12 @@ namespace Slake {
 	public:
 		inline FrameBoundaryExceededError(std::string msg) : runtime_error(msg){};
 		virtual inline ~FrameBoundaryExceededError() {}
+	};
+
+	class FrameError : public std::runtime_error {
+	public:
+		inline FrameError(std::string msg) : runtime_error(msg){};
+		virtual inline ~FrameError() {}
 	};
 
 	class StackOverflowError : public std::runtime_error {
@@ -96,13 +101,8 @@ namespace Slake {
 	class Fn {
 	protected:
 		FnFlags _flags;
-		union {
-			struct {
-				Instruction* _body;
-				std::uint32_t _nIns;
-			} normal;
-			std::function<void()> native;
-		} _body;
+		Instruction* _body;
+		std::uint32_t _nIns;
 
 	public:
 		Fn(FnFlags flags, std::size_t nIns = 0);
@@ -111,14 +111,15 @@ namespace Slake {
 		std::uint32_t getInsCount() const;
 		const Instruction* getBody() const;
 		Instruction* getBody();
-		const std::function<void()>& getNativeBody() const;
-		std::function<void()>& getNativeBody();
 		FnFlags getFlags() const;
 
 		inline bool isPublic() const { return getFlags() & FN_PUB; }
 		inline bool isFinal() const { return getFlags() & FN_FINAL; }
 		inline bool isOverriden() const { return getFlags() & FN_FINAL; }
 		inline bool isNative() const { return getFlags() & FN_FINAL; }
+
+		Fn& operator=(const Fn&) = delete;
+		Fn& operator=(const Fn&&) = delete;
 	};
 
 	class Class {
@@ -162,9 +163,76 @@ namespace Slake {
 		virtual const Var* getVar(std::string name);
 	};
 
+	struct ExecContext final {
+		Module* mod;
+		Fn* fn;
+		std::uint32_t curIns;
+		Object* gpRegs[8];
+
+		inline ExecContext() {}
+		inline ExecContext(Module* mod, Fn* fn, std::uint32_t curIns) : mod(mod), fn(fn), curIns(curIns) {}
+	};
+
+	struct Frame final {
+		std::vector<ExecContext> exceptHandlers;
+		std::uint32_t stackBase, exitOff;
+
+		inline Frame(std::uint32_t stackBase, std::uint32_t exitOff = 0) : stackBase(stackBase), exitOff(exitOff) {
+		}
+	};
+
+	class Context {
+	public:
+		ExecContext execContext;
+		std::deque<ObjectRef<>> dataStack;
+		std::deque<Frame> frames;
+		std::deque<ExecContext> callingStack;
+		std::uint32_t stackBase;
+
+		inline Context(ExecContext execContext) : execContext(execContext), stackBase(0) {}
+		virtual inline ~Context() {}
+
+		inline ObjectRef<> lload(std::uint32_t off) {
+			if (off >= dataStack.size() - stackBase)
+				throw FrameBoundaryExceededError("Frame boundary exceeded");
+			return dataStack.at(stackBase + off);
+		}
+
+		inline void push(ObjectRef<>& ref) {
+			if (dataStack.size() > 0x100000)
+				throw StackOverflowError("Stack overflowed");
+			dataStack.push_back(ref);
+		}
+
+		inline void push(ObjectRef<>&& ref) {
+			push(ref);
+		}
+
+		inline Slake::ObjectRef<> pop() {
+			if ((dataStack.size() - 1) < stackBase)
+				throw FrameBoundaryExceededError("Frame boundary exceeded");
+			auto v = dataStack.back();
+			dataStack.pop_back();
+			return v;
+		}
+
+		inline void expand(std::uint32_t n) {
+			if ((n += dataStack.size()) > 0x100000)
+				throw StackOverflowError("Stack overflowed");
+			dataStack.resize(n);
+		}
+
+		inline void shrink(std::uint32_t n) {
+			if (n > dataStack.size() || (n = dataStack.size() - n) < stackBase)
+				throw StackOverflowError("Stack overflowed");
+			dataStack.resize(n);
+		}
+	};
+
 	class Runtime {
 	protected:
 		std::unordered_map<std::string, Module*> modules;
+		void execIns(Context* context, Instruction* ins);
 
 	public:
 		Runtime(Runtime&) = delete;
@@ -175,8 +243,7 @@ namespace Slake {
 		virtual inline ~Runtime() {}
 
 		virtual Module* getModule(std::string name) = 0;
-		void execIns(Context* context, Instruction* ins);
-		Object* resolveRef(RefValue* ref, Module* mod = nullptr);
+		Object* resolveRef(RefObject* ref, Module* mod = nullptr);
 	};
 
 	Module* loadModule(const void* src, std::size_t size);

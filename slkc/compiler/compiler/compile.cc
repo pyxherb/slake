@@ -1,381 +1,11 @@
+#include "compile.hh"
+
 #include <slkparse.hh>
+
+#include "utils.hh"
 
 using namespace Slake;
 using namespace Compiler;
-
-void Slake::Compiler::deinit() {
-	currentTrait.reset();
-	currentClass.reset();
-	currentEnum.reset();
-	currentScope.reset();
-	currentStruct.reset();
-}
-
-template <typename T>
-static void _writeValue(const T &value, std::fstream &fs) {
-	fs.write((char *)&value, sizeof(value));
-}
-template <typename T>
-static void _writeValue(const T &&value, std::fstream &fs) {
-	T v = value;
-	_writeValue(v, fs);
-}
-template <typename T>
-static void _writeValue(const T &value, std::streamsize size, std::fstream &fs) {
-	fs.write((char *)&value, size);
-}
-
-static std::unordered_map<LiteralType, SlxFmt::ValueType> _lt2vtMap = {
-	{ LT_INT, SlxFmt::ValueType::I32 },
-	{ LT_UINT, SlxFmt::ValueType::U32 },
-	{ LT_LONG, SlxFmt::ValueType::I64 },
-	{ LT_ULONG, SlxFmt::ValueType::U64 },
-	{ LT_FLOAT, SlxFmt::ValueType::FLOAT },
-	{ LT_DOUBLE, SlxFmt::ValueType::DOUBLE },
-	{ LT_BOOL, SlxFmt::ValueType::BOOL },
-	{ LT_STRING, SlxFmt::ValueType::STRING },
-	{ LT_NULL, SlxFmt::ValueType::NONE }
-};
-
-static std::unordered_map<LiteralType, TypeNameKind> _lt2tnKindMap = {
-	{ LT_INT, TypeNameKind::I32 },
-	{ LT_UINT, TypeNameKind::U32 },
-	{ LT_LONG, TypeNameKind::I64 },
-	{ LT_ULONG, TypeNameKind::U64 },
-	{ LT_FLOAT, TypeNameKind::FLOAT },
-	{ LT_DOUBLE, TypeNameKind::DOUBLE },
-	{ LT_BOOL, TypeNameKind::BOOL },
-	{ LT_STRING, TypeNameKind::STRING },
-	{ LT_NULL, TypeNameKind::NONE }
-};
-
-static std::unordered_map<TypeNameKind, SlxFmt::ValueType> _tnKind2vtMap = {
-	{ TypeNameKind::I8, SlxFmt::ValueType::I8 },
-	{ TypeNameKind::I16, SlxFmt::ValueType::I16 },
-	{ TypeNameKind::I32, SlxFmt::ValueType::I32 },
-	{ TypeNameKind::I64, SlxFmt::ValueType::I64 },
-	{ TypeNameKind::U8, SlxFmt::ValueType::U8 },
-	{ TypeNameKind::U16, SlxFmt::ValueType::U16 },
-	{ TypeNameKind::U32, SlxFmt::ValueType::U32 },
-	{ TypeNameKind::U64, SlxFmt::ValueType::U64 },
-	{ TypeNameKind::FLOAT, SlxFmt::ValueType::FLOAT },
-	{ TypeNameKind::DOUBLE, SlxFmt::ValueType::DOUBLE },
-	{ TypeNameKind::BOOL, SlxFmt::ValueType::BOOL },
-	{ TypeNameKind::STRING, SlxFmt::ValueType::STRING },
-	{ TypeNameKind::NONE, SlxFmt::ValueType::NONE },
-	{ TypeNameKind::CUSTOM, SlxFmt::ValueType::OBJECT },
-	{ TypeNameKind::ARRAY, SlxFmt::ValueType::ARRAY }
-};
-
-static std::unordered_map<UnaryOp, Opcode> _unaryOp2opcodeMap = {
-	{ UnaryOp::INC_F, Opcode::INC },
-	{ UnaryOp::INC_B, Opcode::INC },
-	{ UnaryOp::DEC_F, Opcode::DEC },
-	{ UnaryOp::DEC_B, Opcode::DEC },
-	{ UnaryOp::NEG, Opcode::NEG },
-	{ UnaryOp::NOT, Opcode::NOT },
-	{ UnaryOp::REV, Opcode::REV }
-};
-
-static std::unordered_map<BinaryOp, Opcode> _binaryOp2opcodeMap = {
-	{ BinaryOp::ADD, Opcode::ADD },
-	{ BinaryOp::SUB, Opcode::SUB },
-	{ BinaryOp::MUL, Opcode::MUL },
-	{ BinaryOp::DIV, Opcode::DIV },
-	{ BinaryOp::MOD, Opcode::MOD },
-	{ BinaryOp::AND, Opcode::AND },
-	{ BinaryOp::OR, Opcode::OR },
-	{ BinaryOp::XOR, Opcode::XOR },
-	{ BinaryOp::LAND, Opcode::LAND },
-	{ BinaryOp::LOR, Opcode::LOR },
-	{ BinaryOp::LSH, Opcode::LSH },
-	{ BinaryOp::RSH, Opcode::RSH },
-	{ BinaryOp::EQ, Opcode::EQ },
-	{ BinaryOp::NEQ, Opcode::NEQ },
-	{ BinaryOp::GTEQ, Opcode::GTEQ },
-	{ BinaryOp::LTEQ, Opcode::LTEQ },
-	{ BinaryOp::GT, Opcode::GT },
-	{ BinaryOp::LT, Opcode::LT },
-	{ BinaryOp::ADD_ASSIGN, Opcode::ADD },
-	{ BinaryOp::SUB_ASSIGN, Opcode::SUB },
-	{ BinaryOp::MUL_ASSIGN, Opcode::MUL },
-	{ BinaryOp::DIV_ASSIGN, Opcode::DIV },
-	{ BinaryOp::MOD_ASSIGN, Opcode::MOD },
-	{ BinaryOp::AND_ASSIGN, Opcode::AND },
-	{ BinaryOp::OR_ASSIGN, Opcode::OR },
-	{ BinaryOp::XOR_ASSIGN, Opcode::XOR },
-	{ BinaryOp::LSH_ASSIGN, Opcode::LSH },
-	{ BinaryOp::RSH_ASSIGN, Opcode::RSH }
-};
-
-static void writeValueDesc(std::shared_ptr<State> s, std::shared_ptr<Expr> src, std::fstream &fs) {
-	SlxFmt::ValueDesc vd = {};
-	switch (src->getType()) {
-		case ExprType::LITERAL: {
-			auto literalExpr = std::static_pointer_cast<LiteralExpr>(src);
-			vd.type = _lt2vtMap.at(literalExpr->getLiteralType());
-			_writeValue(vd, fs);
-			switch (literalExpr->getLiteralType()) {
-				case LT_INT:
-					_writeValue(std::static_pointer_cast<IntLiteralExpr>(literalExpr)->data, fs);
-					break;
-				case LT_UINT:
-					_writeValue(std::static_pointer_cast<UIntLiteralExpr>(literalExpr)->data, fs);
-					break;
-				case LT_LONG:
-					_writeValue(std::static_pointer_cast<LongLiteralExpr>(literalExpr)->data, fs);
-					break;
-				case LT_ULONG:
-					_writeValue(std::static_pointer_cast<ULongLiteralExpr>(literalExpr)->data, fs);
-					break;
-				case LT_FLOAT:
-					_writeValue(std::static_pointer_cast<FloatLiteralExpr>(literalExpr)->data, fs);
-					break;
-				case LT_DOUBLE:
-					_writeValue(std::static_pointer_cast<DoubleLiteralExpr>(literalExpr)->data, fs);
-					break;
-				case LT_BOOL: {
-					auto expr = std::static_pointer_cast<BoolLiteralExpr>(literalExpr);
-					_writeValue(expr->data, fs);
-					break;
-				}
-				case LT_STRING: {
-					auto expr = std::static_pointer_cast<StringLiteralExpr>(literalExpr);
-					_writeValue(expr->data.size(), fs);
-					_writeValue(expr->data.c_str(), (std::streamsize)expr->data.size(), fs);
-					break;
-				}
-			}
-			break;
-		}
-		case ExprType::REF: {
-			auto expr = std::static_pointer_cast<RefExpr>(src);
-			vd.type = SlxFmt::ValueType::REF;
-			_writeValue(vd, fs);
-
-			for (auto &i = expr; i; i = i->next) {
-				SlxFmt::ScopeRefDesc srd = { 0 };
-				srd.type = SlxFmt::ScopeRefType::MEMBER;
-				if (i->next)
-					srd.hasNext = true;
-				srd.lenName = i->name.length();
-				_writeValue(srd, fs);
-				_writeValue(*(i->name.c_str()), i->name.length(), fs);
-			}
-			break;
-		}
-		case ExprType::ARRAY: {
-			auto expr = std::static_pointer_cast<ArrayExpr>(src);
-			vd.type = SlxFmt::ValueType::ARRAY;
-			_writeValue(vd, fs);
-
-			fs << (std::uint32_t)expr->elements.size();
-			for (auto &i : expr->elements) {
-				auto constExpr = evalConstExpr(i, s);
-				if (!constExpr)
-					throw parser::syntax_error(i->getLocation(), "Expression cannot be evaluated in compile time");
-				writeValueDesc(s, constExpr, fs);
-			}
-			break;
-		}
-		default:
-			throw parser::syntax_error(src->getLocation(), "Expression cannot be evaluated in compile time");
-	}
-}
-
-/// @brief Evaluate type of an expression.
-/// @param state State for the expression.
-/// @param expr Expression to evaluate.
-/// @param isRecusring Set to false by default, set if we are recursing. DO NOT use local variables in the state if set.
-/// @return Type of the expression, null if unknown.
-std::shared_ptr<TypeName> Compiler::evalExprType(std::shared_ptr<State> s, std::shared_ptr<Expr> expr, bool isRecursing) {
-	auto &fn = s->fnDefs[s->currentFn];
-	// assert(fn);
-	switch (expr->getType()) {
-		case ExprType::LITERAL: {
-			auto literalType = std::static_pointer_cast<LiteralExpr>(expr)->getLiteralType();
-			if (!_lt2tnKindMap.count(literalType))
-				throw parser::syntax_error(expr->getLocation(), "Unevaluatable literal type");
-			return std::make_shared<TypeName>(expr->getLocation(), _lt2tnKindMap.at(literalType));
-		}
-		case ExprType::REF: {
-			auto ref = std::static_pointer_cast<RefExpr>(expr);
-			if (!isRecursing) {
-				if (fn->lvars.count(ref->name)) {
-					if (ref->next) {
-						std::shared_ptr<Scope> scope = s->scope;
-						switch (fn->lvars[ref->name].type->kind) {
-							case TypeNameKind::CUSTOM: {
-								auto t = Scope::getCustomType(std::static_pointer_cast<CustomTypeName>(fn->lvars[ref->name].type));
-								if (!t)
-									throw parser::syntax_error(expr->getLocation(), "Type was not defined");
-								if (!t->getScope())
-									throw parser::syntax_error(expr->getLocation(), "Accessing member `" + ref->name + "' with unsupported type");
-								s->scope = t->getScope();
-								break;
-							}
-							default:
-								throw parser::syntax_error(expr->getLocation(), "Accessing member `" + ref->name + "' with unsupported type");
-						}
-						auto refType = evalExprType(s, ref->next, true);
-						s->scope = scope;
-						return refType;
-					}
-					return fn->lvars[ref->name].type;
-				}
-			}
-			{
-				auto v = s->scope->getVar(ref->name);
-				if (v) {
-					if (ref->next) {
-						std::shared_ptr<Scope> scope = s->scope;
-						switch (v->typeName->kind) {
-							case TypeNameKind::CUSTOM: {
-								auto tn = std::static_pointer_cast<CustomTypeName>(v->typeName);
-								auto t = Scope::getCustomType(tn);
-								if (!t) {
-									throw parser::syntax_error(expr->getLocation(), "Type was not defined");
-								}
-								auto scope = t->getScope();
-								if (!scope)
-									throw parser::syntax_error(expr->getLocation(), "Accessing member `" + ref->name + "' with unsupported type");
-								s->scope = scope;
-								break;
-							}
-							default:
-								throw parser::syntax_error(expr->getLocation(), "Accessing member `" + ref->name + "' with unsupported type");
-						}
-						auto refType = evalExprType(s, ref->next, true);
-						s->scope = scope;
-						return refType;
-					}
-					return v->typeName;
-				}
-			}
-			{
-				auto e = s->scope->getEnumItem(ref);
-				if (e)
-					return evalExprType(s, e, true);
-			}
-			{
-				auto fn = s->scope->getFn(ref->name);
-				if (fn) {
-					auto fnType = std::make_shared<FnTypeName>(expr->getLocation(), fn->returnTypeName);
-					for (auto &i : *(fn->params))
-						fnType->argTypes.push_back(i->typeName);
-					if (ref->next)
-						throw parser::syntax_error(expr->getLocation(), "Accessing member `" + ref->next->name + "' with unsupported type");
-					return fnType;
-				}
-			}
-			{
-				auto t = s->scope->getType(ref->name);
-				if (t) {
-					if (!ref->next)
-						throw parser::syntax_error(expr->getLocation(), "Unexpected type name");
-					std::shared_ptr<Scope> scope = s->scope;
-					s->scope = t->getScope();
-					auto refType = evalExprType(s, ref->next, true);
-					s->scope = scope;
-					return refType;
-				}
-			}
-			throw parser::syntax_error(expr->getLocation(), "Undefined identifier: `" + ref->name + "'");
-		}
-		case ExprType::CALL: {
-			auto e = std::static_pointer_cast<CallExpr>(expr);
-			if (e->isAsync)
-				return std::make_shared<TypeName>(expr->getLocation(), TypeNameKind::U32);
-			auto exprType = evalExprType(s, e->target);
-			if (exprType->kind != TypeNameKind::FN)
-				throw parser::syntax_error(e->target->getLocation(), "Expression is not callable");
-			return std::static_pointer_cast<FnTypeName>(exprType)->resultType;
-		}
-		case ExprType::AWAIT:
-			return std::make_shared<TypeName>(expr->getLocation(), TypeNameKind::ANY);
-		case ExprType::NEW:
-			return std::static_pointer_cast<NewExpr>(expr)->type;
-		case ExprType::TERNARY: {
-			auto e = std::static_pointer_cast<TernaryOpExpr>(expr);
-			auto xType = evalExprType(s, e->x), yType = evalExprType(s, e->y);
-
-			// Check if the condition expression is boolean.
-			if (!isConvertible(xType, std::make_shared<TypeName>(expr->getLocation(), TypeNameKind::BOOL)))
-				throw parser::syntax_error(e->x->getLocation(), "Expecting a boolean expression");
-
-			// Check if the expressions have the same type.
-			if (!isSameType(xType, yType))
-				throw parser::syntax_error(e->x->getLocation(), "Operands for ternary operation have different types");
-			return xType;
-		}
-		case ExprType::BINARY: {
-			auto e = std::static_pointer_cast<BinaryOpExpr>(expr);
-			auto xType = evalExprType(s, e->x), yType = evalExprType(s, e->y);
-			switch (e->op) {
-				case BinaryOp::LSH:
-				case BinaryOp::LSH_ASSIGN:
-				case BinaryOp::RSH:
-				case BinaryOp::RSH_ASSIGN:
-					if (!isConvertible(std::make_shared<TypeName>(yType->getLocation(), TypeNameKind::U32), yType))
-						throw parser::syntax_error(e->y->getLocation(), "Incompatible expression types");
-					break;
-				default:
-					if (!isConvertible(xType, yType))
-						throw parser::syntax_error(e->y->getLocation(), "Incompatible expression types");
-			}
-			return xType;
-		}
-	}
-	return std::shared_ptr<TypeName>();
-}
-
-std::shared_ptr<Expr> Slake::Compiler::evalConstExpr(std::shared_ptr<Expr> expr, std::shared_ptr<State> s) {
-	switch (expr->getType()) {
-		case ExprType::LITERAL:
-			return expr;
-		case ExprType::UNARY: {
-			std::shared_ptr<UnaryOpExpr> opExpr = std::static_pointer_cast<UnaryOpExpr>(expr);
-			switch (opExpr->x->getType()) {
-				case ExprType::LITERAL:
-					return std::static_pointer_cast<LiteralExpr>(opExpr->x)->execUnaryOp(opExpr->op);
-				case ExprType::REF: {
-					auto ref = std::static_pointer_cast<RefExpr>(opExpr->x);
-					//
-					// Variable and function are both not evaluatable at compile time.
-					//
-					if ((currentScope->getVar(ref->name)) || (currentScope->getFn(ref->name)))
-						return std::shared_ptr<Expr>();
-					{
-						auto x = currentScope->getEnumItem(ref);
-						if (x)
-							return evalConstExpr(x, s);
-					}
-					break;
-				}
-			}
-			break;
-		}
-		case ExprType::BINARY: {
-			std::shared_ptr<BinaryOpExpr> opExpr = std::static_pointer_cast<BinaryOpExpr>(expr);
-			auto x = evalConstExpr(opExpr->x, s);
-			if ((!x) || (x->getType() != ExprType::LITERAL))
-				return std::shared_ptr<Expr>();
-			auto y = evalConstExpr(opExpr->y, s);
-			if ((!y) || (y->getType() != ExprType::LITERAL))
-				return std::shared_ptr<Expr>();
-			return std::static_pointer_cast<LiteralExpr>(opExpr->x)->execBinaryOp(opExpr->op, std::static_pointer_cast<LiteralExpr>(opExpr->y));
-		}
-		default:
-			return std::shared_ptr<Expr>();
-	}
-}
-
-void Compiler::writeIns(std::shared_ptr<State> s, Opcode opcode, std::fstream &fs, std::initializer_list<std::shared_ptr<Expr>> operands) {
-	assert(operands.size() <= 3);
-	_writeValue(SlxFmt::InsHeader{ opcode, (std::uint8_t)operands.size() }, fs);
-	for (auto &i : operands)
-		writeValueDesc(s, i, fs);
-}
 
 void Slake::Compiler::compileLeftExpr(std::shared_ptr<Expr> expr, std::shared_ptr<State> s, bool isRecursing) {
 	auto &fn = s->fnDefs[s->currentFn];
@@ -413,7 +43,7 @@ void Compiler::compileRightExpr(std::shared_ptr<Expr> expr, std::shared_ptr<Stat
 			Opcode opcode;
 			if (!_unaryOp2opcodeMap.count(e->op))
 				throw parser::syntax_error(expr->getLocation(), "Invalid operator detected");
-			opcode = _unaryOp2opcodeMap[e->op];
+			opcode = _unaryOp2opcodeMap.at(e->op);
 			compileRightExpr(e->x, s);
 			if (isSuffixUnaryOp(e->op)) {
 				compileRightExpr(e->x, s);
@@ -428,7 +58,7 @@ void Compiler::compileRightExpr(std::shared_ptr<Expr> expr, std::shared_ptr<Stat
 
 			Opcode opcode;
 			if (_binaryOp2opcodeMap.count(e->op)) {
-				opcode = _binaryOp2opcodeMap[e->op];
+				opcode = _binaryOp2opcodeMap.at(e->op);
 				fn->insertIns({ opcode, {} });
 			} else if (e->op != BinaryOp::ASSIGN)
 				throw parser::syntax_error(e->getLocation(), "Invalid operator detected");
@@ -470,6 +100,7 @@ void Compiler::compileRightExpr(std::shared_ptr<Expr> expr, std::shared_ptr<Stat
 			//
 			if (!(isRecursing) && fn->lvars.count(ref->name)) {
 				fn->insertIns({ Opcode::LLOAD, { std::make_shared<UIntLiteralExpr>(ref->getLocation(), fn->lvars[ref->name].stackPos) } });
+
 				if (ref->next) {
 					auto savedScope = s->scope;
 
@@ -491,6 +122,13 @@ void Compiler::compileRightExpr(std::shared_ptr<Expr> expr, std::shared_ptr<Stat
 				break;
 			}
 			if (evalExprType(s, ref)) {
+				if (!isRecursing) {
+					auto fullRef = s->scope->resolve();
+					if (fullRef) {
+						fullRef->next = ref;
+						ref = fullRef;
+					}
+				}
 				fn->insertIns({ isRecursing ? Opcode::RLOAD : Opcode::LOAD, { ref } });
 				break;
 			}
@@ -720,13 +358,46 @@ void Compiler::compileStmt(std::shared_ptr<Stmt> src, std::shared_ptr<State> s) 
 						fn->insertIns(Ins(Opcode::PUSH, { expr }));
 					else
 						compileRightExpr(i->initValue, s);
-				} else
+				} else if (stmt->accessModifier & ACCESS_CONST)
 					fn->insertIns(Ins(Opcode::PUSH, { std::make_shared<NullLiteralExpr>(stmt->getLocation()) }));
+				else
+					throw parser::syntax_error(i->getLocation(), "Constants must be initialized");
 			}
 			break;
 		}
 		default:
 			throw std::logic_error("Invalid statement type detected");
+	}
+}
+
+void writeParamType(std::shared_ptr<State> s, std::fstream &fs, std::shared_ptr<TypeName> j) {
+	_writeValue(_tnKind2vtMap.at(j->kind), fs);
+	switch (j->kind) {
+		case TypeNameKind::REF: {
+			auto tn = std::static_pointer_cast<RefTypeName>(j);
+			writeParamType(s, fs, tn->type);
+			break;
+		}
+		case TypeNameKind::ARRAY: {
+			auto tn = std::static_pointer_cast<ArrayTypeName>(j);
+			writeParamType(s, fs, tn->type);
+			break;
+		}
+		case TypeNameKind::MAP: {
+			auto tn = std::static_pointer_cast<MapTypeName>(j);
+			writeParamType(s, fs, tn->keyType);
+			writeParamType(s, fs, tn->valueType);
+			break;
+		}
+		case TypeNameKind::CUSTOM: {
+			auto tn = std::static_pointer_cast<CustomTypeName>(j);
+			auto t = Scope::getCustomType(tn);
+			if (!t)
+				throw parser::syntax_error(tn->getLocation(), "Type `" + std::to_string(*tn) + "' was not defined");
+			// ! FIXME
+			writeValueDesc(s, tn->typeRef, fs);
+			break;
+		}
 	}
 }
 
@@ -762,6 +433,9 @@ void Compiler::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTo
 				vad.flags |= SlxFmt::VAD_INIT;
 			fs.write((char *)&vad, sizeof(vad));
 			fs.write(i.first.c_str(), i.first.length());
+
+			writeParamType(s, fs, i.second->typeName);
+
 			if (i.second->initValue) {
 				writeValueDesc(s, i.second->initValue, fs);
 			}
@@ -819,18 +493,10 @@ void Compiler::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTo
 				_writeValue(*(i.first.c_str()), i.first.length(), fs);
 			}
 
-			for (auto j : *(i.second->params)) {
-				_writeValue(_tnKind2vtMap.at(j->typeName->kind), fs);
-				if (j->typeName->kind == TypeNameKind::CUSTOM) {
-					auto tn = std::static_pointer_cast<CustomTypeName>(j->typeName);
-					auto t = Scope::getCustomType(tn);
-					if (!t)
-						throw parser::syntax_error(tn->getLocation(), "Type `" + std::to_string(*tn) + "' was not defined");
+			writeParamType(s, fs, i.second->returnTypeName);
 
-					// ! FIXME
-					writeValueDesc(s, tn->typeRef, fs);
-				}
-			}
+			for (auto j : *(i.second->params))
+				writeParamType(s, fs, j->typeName);
 
 			//
 			// Write for each instructions.
@@ -871,7 +537,7 @@ void Compiler::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTo
 						ctd.flags |= SlxFmt::CTD_FINAL;
 
 					ctd.lenName = i.first.length();
-					ctd.lenImpls = t->impls->impls.size();
+					ctd.nImpls = t->impls->impls.size();
 					ctd.nGenericParams = t->genericParams.size();
 					_writeValue(ctd, fs);
 					_writeValue(*(i.first.c_str()), (std::streamsize)i.first.size(), fs);
@@ -928,6 +594,21 @@ void Compiler::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTo
 				continue;
 			auto t = std::static_pointer_cast<StructType>(i.second);
 			SlxFmt::StructTypeDesc std = { 0 };
+			std.nMembers = t->vars.size();
+			std.lenName = i.first.size();
+			fs.write((char *)&std, sizeof(std));
+			_writeValue(*(i.first.c_str()), (std::streamsize)i.first.size(), fs);
+
+			for (auto j : t->varIndices) {
+				SlxFmt::StructMemberDesc smd = {};
+				auto item = t->vars[j.second];
+				if (item->typeName->kind == TypeNameKind::CUSTOM)
+					throw parser::syntax_error(item->typeName->getLocation(), "Non-literal types are not acceptable");
+				smd.type = _tnKind2vtMap.at(item->typeName->kind);
+				smd.lenName = j.first.size();
+				_writeValue(smd, fs);
+				_writeValue(*(j.first.c_str()), (std::streamsize)j.first.size(), fs);
+			}
 		}
 		SlxFmt::StructTypeDesc std = { 0 };
 		fs.write((char *)&std, sizeof(std));

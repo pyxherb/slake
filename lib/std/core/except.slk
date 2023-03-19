@@ -1,13 +1,28 @@
-interface IException {
+pub interface Exception {
 	operator string();
 }
 
-class BasicException(IException) {
+pub class BasicException(@Exception) {
 	final string _msg;
 	operator new(string msg) { _msg = msg; }
 	operator string() { return _msg; }
 }
 
-class LogicalError(@BasicException) {
-	operator new(string msg) { @(msg) }
+pub class LogicalError(@BasicException) {
+	operator new(string msg) { base(msg) }
+}
+
+pub class DivideByZeroError(@BasicException) {
+}
+
+pub class CriticalError(@BasicException) {
+}
+
+pub class OutOfMemoryError(@BasicException) {
+}
+
+pub class InvalidOpcodeError(@BasicException) {
+}
+
+pub class InvalidOperandsError(@BasicException) {
 }

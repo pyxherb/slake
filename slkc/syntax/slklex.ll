@@ -130,6 +130,7 @@ yylloc.step();
 "bool"		return parser::make_TN_BOOL(yylloc);
 "auto"		return parser::make_TN_AUTO(yylloc);
 "void"		return parser::make_TN_VOID(yylloc);
+"any"		return parser::make_TN_ANY(yylloc);
 
 "/*"				BEGIN(COMMENT); yylloc.step();
 <COMMENT>"*/"		BEGIN(INITIAL); yylloc.step();

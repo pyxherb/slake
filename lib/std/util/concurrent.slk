@@ -62,7 +62,7 @@ class Mutex : @ILock {
 	pub bool isLocked() { return _locked; }
 }
 
-class LockGuard {
+pub class LockGuard {
 	@ILock _lock;
 	pub operator new(@ILock lock) {
 		_lock = lock;
@@ -70,16 +70,5 @@ class LockGuard {
 	}
 	pub operator delete() {
 		_lock.unlock();
-	}
-}
-
-struct A {
-	i32 x;
-}
-
-void test(){
-	@ILock lock;
-	lock.lock();
-	while(true){
 	}
 }

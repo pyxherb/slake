@@ -253,12 +253,10 @@ namespace Slake {
 		};
 
 		class StructType final : public Type {
-		private:
-			std::unordered_map<std::string, std::size_t> _varIndices;
-			std::vector<std::shared_ptr<VarDefItem>> _vars;
-
 		public:
 			std::string name;
+			std::unordered_map<std::string, std::size_t> varIndices;
+			std::vector<std::shared_ptr<VarDefItem>> vars;
 
 			inline StructType(location loc, AccessModifier accessModifier, std::string name) : Type(loc, accessModifier) {
 				this->name = name;
@@ -268,19 +266,19 @@ namespace Slake {
 			virtual inline Kind getKind() override { return Kind::STRUCT; }
 
 			inline std::shared_ptr<VarDefItem> getMember(std::string name) {
-				if (!_varIndices.count(name))
+				if (!varIndices.count(name))
 					return std::shared_ptr<VarDefItem>();
-				return _vars[_varIndices[name]];
+				return vars[varIndices[name]];
 			}
 			void addMembers(std::shared_ptr<VarDefStmt> varDecls);
-			inline const std::vector<std::shared_ptr<VarDefItem>>& getMembers() { return _vars; }
+			inline const std::vector<std::shared_ptr<VarDefItem>>& getMembers() { return vars; }
 
 			virtual inline std::string toString() const override {
 				std::string s = genIndentStr() + "struct " + name + " {\n";
 
 				indentLevel++;
-				for (auto& i : _varIndices)
-					s += genIndentStr() + std::to_string(*_vars[i.second]->typeName) + " " + i.first + ";\n";
+				for (auto& i : varIndices)
+					s += genIndentStr() + std::to_string(*vars[i.second]->typeName) + " " + i.first + ";\n";
 				indentLevel--;
 
 				s += genIndentStr() + "}";
@@ -296,8 +294,9 @@ namespace Slake {
 			std::unordered_map<std::string, std::shared_ptr<ImportItem>> imports;
 			std::unordered_map<std::string, std::shared_ptr<Type>> types;
 			std::unordered_map<std::string, std::shared_ptr<VarDefItem>> vars;
+			std::string name;
 
-			inline Scope(std::shared_ptr<Scope> parent = std::shared_ptr<Scope>()) : parent(parent) {
+			inline Scope(std::string name, std::shared_ptr<Scope> parent = std::shared_ptr<Scope>()) : name(name), parent(parent) {
 			}
 			inline ~Scope() {
 			}
@@ -404,12 +403,15 @@ namespace Slake {
 
 			void defineVars(std::shared_ptr<VarDefStmt> varDecls);
 
-			inline std::shared_ptr<RefExpr> tryResolve(std::shared_ptr<Scope> scope) {
-				if (scope.get() == this) {
-					return std::make_shared<RefExpr>(location(), "");
-				}
-				if (!scope->parent.expired())
-					return tryResolve(scope->parent.lock());
+			inline std::shared_ptr<RefExpr> _resolve(std::shared_ptr<RefExpr> ref) {
+				if (!parent.expired())
+					return parent.lock()->_resolve(std::make_shared<RefExpr>(location(), name, ref));
+				// Top level scope has no name, return anyway.
+				return ref;
+			}
+
+			inline std::shared_ptr<RefExpr> resolve() {
+				return _resolve(std::shared_ptr<RefExpr>());
 			}
 		};
 
@@ -418,6 +420,8 @@ namespace Slake {
 		extern std::shared_ptr<ClassType> currentClass;
 		extern std::shared_ptr<TraitType> currentTrait;
 		extern std::shared_ptr<StructType> currentStruct;
+
+		void deinit();
 	}
 }
 

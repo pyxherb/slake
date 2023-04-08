@@ -69,8 +69,9 @@ bool Slake::Compiler::isConvertible(std::shared_ptr<TypeName> t1, std::shared_pt
 			}
 		case TypeNameKind::CUSTOM:
 			return isBaseOf(t2, t1) || isBaseOf(t1, t2);
+		default:
+			return false;
 	}
-	return false;
 }
 
 /// @brief Check if a type is base of another one.
@@ -92,7 +93,10 @@ bool Slake::Compiler::isBaseOf(std::shared_ptr<TypeName> t1, std::shared_ptr<Typ
 				if (!isBaseOf(t1, t->parent)) {
 					// If not, check if type 1 was implemented by type2.
 					for (auto &i : t->impls->impls) {
-						if (ct1->scope.lock()->getType(ct1->typeRef) == t)
+						if (i->kind != TypeNameKind::CUSTOM)
+							throw std::logic_error("Only custom types can be derived");
+						auto itn = std::static_pointer_cast<CustomTypeName>(i);
+						if (ct1->scope.lock()->getType(ct1->typeRef) == itn->scope.lock()->getType(itn->typeRef))
 							return true;
 					}
 					return false;
@@ -104,20 +108,19 @@ bool Slake::Compiler::isBaseOf(std::shared_ptr<TypeName> t1, std::shared_ptr<Typ
 				return isSameType(t->typeName, t1);
 			}
 			case Type::Kind::TRAIT: {
-				auto t = std::static_pointer_cast<TraitType>(type2);
-				if (type1->getKind()!=Type::Kind::TRAIT)
+				if (type1->getKind() != Type::Kind::TRAIT)
 					return false;
-				auto ct1 = std::static_pointer_cast<TraitType>(type1);
-				for (auto &i : t->impls->impls) {
-					if (ct1 == t)
-						return true;
-				}
+				auto ct1 = std::static_pointer_cast<TraitType>(type1), ct2 = std::static_pointer_cast<TraitType>(type2);
+				if (ct1 == ct2 || ct1->parent == t2)
+					return true;
+				return isBaseOf(ct1->parent, t2);
 				break;
 			}
 			case Type::Kind::STRUCT:
 				return false;
+			default:
+				return true;
 		}
-		return true;
 	}
 	return false;
 }

@@ -23,12 +23,12 @@ std::shared_ptr<TypeName> Compiler::evalExprType(std::shared_ptr<State> s, std::
 		case ExprType::REF: {
 			auto ref = std::static_pointer_cast<RefExpr>(expr);
 			if (!isRecursing) {
-				if (fn->lvars.count(ref->name)) {
+				if (s->context.lvars.count(ref->name)) {
 					if (ref->next) {
 						std::shared_ptr<Scope> scope = s->scope;
-						switch (fn->lvars[ref->name].type->kind) {
+						switch (s->context.lvars[ref->name].type->kind) {
 							case TypeNameKind::CUSTOM: {
-								auto t = Scope::getCustomType(std::static_pointer_cast<CustomTypeName>(fn->lvars[ref->name].type));
+								auto t = Scope::getCustomType(std::static_pointer_cast<CustomTypeName>(s->context.lvars[ref->name].type));
 								if (!t)
 									throw parser::syntax_error(expr->getLocation(), "Type was not defined");
 								if (!t->getScope())
@@ -43,7 +43,7 @@ std::shared_ptr<TypeName> Compiler::evalExprType(std::shared_ptr<State> s, std::
 						s->scope = scope;
 						return refType;
 					}
-					return fn->lvars[ref->name].type;
+					return s->context.lvars[ref->name].type;
 				}
 			}
 			{

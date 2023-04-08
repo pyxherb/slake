@@ -185,12 +185,10 @@ namespace Slake {
 		public:
 			std::shared_ptr<TypeName> typeName;
 			VarDeclList declList;
-			bool isNative;
 
-			inline VarDefStmt(AccessModifier accessModifier, std::shared_ptr<TypeName> typeName, VarDeclList declList, bool isNative = false) : IAccessModified(accessModifier) {
+			inline VarDefStmt(AccessModifier accessModifier, std::shared_ptr<TypeName> typeName, VarDeclList declList) : IAccessModified(accessModifier) {
 				this->typeName = typeName;
 				this->declList = declList;
-				this->isNative = isNative;
 			}
 			virtual inline ~VarDefStmt() {}
 			virtual inline StmtType getType() override { return StmtType::VAR_DEF; }
@@ -288,8 +286,8 @@ namespace Slake {
 			inline CatchBlock(location loc, std::shared_ptr<CodeBlock> body, std::string name = "", std::shared_ptr<TypeName> typeName = std::shared_ptr<TypeName>())
 				: BasicLocated(loc),
 				  body(body),
-				  name(name),
-				  typeName(typeName) {}
+				  typeName(typeName),
+				  name(name) {}
 			virtual inline ~CatchBlock() {}
 
 			virtual inline std::string toString() const override {

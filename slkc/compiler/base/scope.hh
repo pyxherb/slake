@@ -70,6 +70,7 @@ namespace Slake {
 			std::shared_ptr<ParamDeclList> params;
 			std::shared_ptr<TypeName> returnTypeName;
 			std::shared_ptr<CodeBlock> execBlock;
+			std::vector<std::string> genericParams;
 			std::string name;
 
 			inline FnDef(
@@ -78,12 +79,14 @@ namespace Slake {
 				std::shared_ptr<ParamDeclList> params,
 				std::shared_ptr<TypeName> returnTypeName,
 				std::shared_ptr<CodeBlock> execBlock = std::shared_ptr<CodeBlock>(),
-				std::string name = "(Anonymous)")
+				std::string name = "(Anonymous)",
+				std::vector<std::string> genericParams = std::vector<std::string>())
 				: IAccessModified(accessModifier),
 				  BasicLocated(loc),
 				  params(params),
 				  returnTypeName(returnTypeName),
 				  execBlock(execBlock),
+				  genericParams(genericParams),
 				  name(name) {
 			}
 			virtual inline ~FnDef() {}
@@ -93,14 +96,6 @@ namespace Slake {
 				s += execBlock ? std::to_string(*execBlock) + "\n" : ";\n";
 				return s;
 			}
-		};
-
-		struct ImportItem final : public BasicLocated {
-		public:
-			std::shared_ptr<RefExpr> path;
-
-			inline ImportItem(location loc, std::shared_ptr<RefExpr> path) : BasicLocated(loc), path(path) {}
-			inline ~ImportItem() {}
 		};
 
 		struct VarDefItem final : public BasicLocated, public IAccessModified {
@@ -166,7 +161,7 @@ namespace Slake {
 				AccessModifier accessModifier,
 				std::shared_ptr<Scope> scope,
 				std::shared_ptr<TypeName> parent,
-				std::string name = "(Anonymous)",
+				std::string name,
 				std::vector<std::string> genericParams = {},
 				std::shared_ptr<ImplList> impls = std::shared_ptr<ImplList>())
 				: Type(loc, accessModifier),
@@ -287,17 +282,20 @@ namespace Slake {
 			}
 		};
 
+		/// @brief Class which represents a single scope.
+		/// @note Do not confuse with the concept `scope' in reference values.
 		class Scope final : public IStringifiable {
 		public:
 			std::weak_ptr<Scope> parent;
 			std::unordered_map<std::string, std::shared_ptr<FnDef>> fnDefs;
-			std::unordered_map<std::string, std::shared_ptr<ImportItem>> imports;
+			std::unordered_map<std::string, std::shared_ptr<RefExpr>> imports;
 			std::unordered_map<std::string, std::shared_ptr<Type>> types;
 			std::unordered_map<std::string, std::shared_ptr<VarDefItem>> vars;
 			std::string name;
 
-			inline Scope(std::string name, std::shared_ptr<Scope> parent = std::shared_ptr<Scope>()) : name(name), parent(parent) {
-			}
+			inline Scope(std::string name,
+				std::shared_ptr<Scope> parent = std::shared_ptr<Scope>())
+				: parent(parent), name(name) {}
 			inline ~Scope() {
 			}
 
@@ -306,7 +304,7 @@ namespace Slake {
 				if (imports.size()) {
 					s += "import {\n";
 					for (auto& i : imports)
-						s += "\t" + i.first + " = " + std::to_string(*(i.second->path)) + ",\n";
+						s += "\t" + i.first + " = " + std::to_string(*(i.second)) + ",\n";
 					s += "}";
 				}
 				for (auto& i : fnDefs)
@@ -405,7 +403,7 @@ namespace Slake {
 
 			inline std::shared_ptr<RefExpr> _resolve(std::shared_ptr<RefExpr> ref) {
 				if (!parent.expired())
-					return parent.lock()->_resolve(std::make_shared<RefExpr>(location(), name, ref));
+					return parent.lock()->_resolve(std::make_shared<RefExpr>(location(), name, true, ref));
 				// Top level scope has no name, return anyway.
 				return ref;
 			}

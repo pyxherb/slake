@@ -3,7 +3,7 @@
 
 #include <functional>
 #include <memory>
-#include <slake/base/byteord.hh>
+#include <slake/util/byteord.hh>
 #include <vector>
 
 #include "typename.hh"
@@ -53,8 +53,8 @@ namespace Slake {
 			AND_ASSIGN,			  // x&=y
 			OR_ASSIGN,			  // x|=y
 			XOR_ASSIGN,			  // x^=y
-			LSH_ASSIGN,		  // x<<=y
-			RSH_ASSIGN,		  // x>>=y
+			LSH_ASSIGN,			  // x<<=y
+			RSH_ASSIGN,			  // x>>=y
 
 			ASSIGN_MAX
 		};
@@ -62,8 +62,8 @@ namespace Slake {
 		inline bool isAssignment(BinaryOp op) noexcept {
 			return (op >= BinaryOp::ASSIGN) && (op <= BinaryOp::ASSIGN_MAX);
 		}
-		
-	using MatchCase = std::pair<std::shared_ptr<Expr>, std::shared_ptr<Expr>>;
+
+		using MatchCase = std::pair<std::shared_ptr<Expr>, std::shared_ptr<Expr>>;
 	}
 }
 
@@ -196,15 +196,19 @@ namespace Slake {
 		public:
 			std::string name;
 			std::shared_ptr<RefExpr> next;
-			bool isTopLevel;
+			bool isStatic;
 
-			inline RefExpr(location loc, std::string name, std::shared_ptr<RefExpr> next = std::shared_ptr<RefExpr>()) : TypedExpr(loc), name(name), next(next) {}
+			inline RefExpr(
+				location loc,
+				std::string name,
+				bool isStatic,
+				std::shared_ptr<RefExpr> next = std::shared_ptr<RefExpr>()) : TypedExpr(loc), name(name), next(next), isStatic(isStatic) {}
 			virtual inline ~RefExpr() {}
 
 			virtual inline std::string toString() const override {
 				std::string s = name;
 				if (next)
-					s += "." + std::to_string(*next);
+					s += (isStatic ? "::" : ".") + std::to_string(*next);
 				return s;
 			}
 
@@ -437,9 +441,9 @@ namespace Slake {
 						case BinaryOp::XOR:
 							return std::make_shared<SimpleLiteralExpr<T, LT>>(getLocation(), data ^ yVal);
 						case BinaryOp::LSH:
-							return std::make_shared<SimpleLiteralExpr<T, LT>>(getLocation(), Base::getByteOrder() ? Base::swapByteOrder(Base::swapByteOrder(data) << yVal) : data << yVal);
+							return std::make_shared<SimpleLiteralExpr<T, LT>>(getLocation(), Util::getByteOrder() ? Util::swapByteOrder(Util::swapByteOrder(data) << yVal) : data << yVal);
 						case BinaryOp::RSH:
-							return std::make_shared<SimpleLiteralExpr<T, LT>>(getLocation(), Base::getByteOrder() ? Base::swapByteOrder(Base::swapByteOrder(data) >> yVal) : data >> yVal);
+							return std::make_shared<SimpleLiteralExpr<T, LT>>(getLocation(), Util::getByteOrder() ? Util::swapByteOrder(Util::swapByteOrder(data) >> yVal) : data >> yVal);
 						default:
 							return std::shared_ptr<LiteralExpr>();
 					}

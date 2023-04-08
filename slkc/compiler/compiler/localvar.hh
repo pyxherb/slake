@@ -23,6 +23,8 @@ namespace Slake {
 
 			inline LocalVar(std::uint32_t stackPos, std::shared_ptr<TypeName> type) : stackPos(stackPos), type(type) {}
 			inline LocalVar() {}
+			inline LocalVar(const LocalVar& x) { *this = x; }
+			inline LocalVar(const LocalVar&& x) { *this = x; }
 		};
 	}
 }

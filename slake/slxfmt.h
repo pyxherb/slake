@@ -22,6 +22,8 @@
 
 namespace Slake {
 	namespace SlxFmt {
+		constexpr static std::uint8_t GENERIC_PARAM_MAX = 16;
+
 		///
 		/// @brief IMage Header (IMH)
 		///
@@ -29,6 +31,7 @@ namespace Slake {
 			std::uint8_t magic[4];	   // Magic number
 			std::uint8_t flags;		   // Flags
 			std::uint8_t fmtVer;	   // Format version
+			std::uint8_t nImports;	   // Number of imported modules
 			std::uint8_t reserved[2];  // Reserved
 		};
 		constexpr static std::uint8_t IMH_MAGIC[4] = { 'S', 'L', 'A', 'X' };
@@ -50,25 +53,24 @@ namespace Slake {
 		};
 
 		enum class ValueType : std::uint8_t {
-			NONE = 0,	// None
-			ANY,		// Any
-			I8,			// i8
-			I16,		// i16
-			I32,		// i32
-			I64,		// i64
-			U8,			// u8
-			U16,		// u16
-			U32,		// u32
-			U64,		// u64
-			FLOAT,		// Float
-			DOUBLE,		// Double
-			STRING,		// String
-			BOOL,		// Boolean
-			ARRAY,		// Array
-			MAP,		// Map
-			OBJECT,		// Object
-			OBJECTREF,	// Object reference
-			REF,		// Reference
+			NONE = 0,  // None
+			ANY,	   // Any
+			I8,		   // i8
+			I16,	   // i16
+			I32,	   // i32
+			I64,	   // i64
+			U8,		   // u8
+			U16,	   // u16
+			U32,	   // u32
+			U64,	   // u64
+			FLOAT,	   // Float
+			DOUBLE,	   // Double
+			STRING,	   // String
+			BOOL,	   // Boolean
+			ARRAY,	   // Array
+			MAP,	   // Map
+			OBJECT,	   // Object
+			REF,	   // Reference
 		};
 
 		/// @brief Value Descriptor (VD)
@@ -141,18 +143,14 @@ namespace Slake {
 			VAD_INIT = 0x80		// Initialized
 			;
 
-		enum class ScopeRefType : std::uint8_t {
-			MEMBER = 0,
-			TYPE,
-			MODULE
-		};
-
+		constexpr static std::uint8_t
+			SRD_NEXT = 0x01,
+			SRD_STATIC = 0x02;
 		/// @brief Scope Reference Descriptor (SRD)
 		struct ScopeRefDesc final {
 			std::uint8_t lenName : 8;
-			ScopeRefType type : 4;
-			bool hasNext : 1;
-			std::uint8_t reserved : 3;
+			std::uint8_t flags : 4;
+			std::uint8_t nGenericArgs : 4;
 		};
 	}
 }

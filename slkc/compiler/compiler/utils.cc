@@ -1,6 +1,8 @@
 #include "utils.hh"
-#include "expr.hh"
+
 #include <slkparse.hh>
+
+#include "expr.hh"
 
 using namespace Slake;
 using namespace Slake::Compiler;
@@ -9,10 +11,10 @@ void Slake::Compiler::writeIns(std::shared_ptr<State> s, Opcode opcode, std::fst
 	assert(operands.size() <= 3);
 	_writeValue(SlxFmt::InsHeader{ opcode, (std::uint8_t)operands.size() }, fs);
 	for (auto &i : operands)
-		writeValueDesc(s, i, fs);
+		writeValue(s, i, fs);
 }
 
-void Slake::Compiler::writeValueDesc(std::shared_ptr<State> s, std::shared_ptr<Expr> src, std::fstream &fs) {
+void Slake::Compiler::writeValue(std::shared_ptr<State> s, std::shared_ptr<Expr> src, std::fstream &fs) {
 	SlxFmt::ValueDesc vd = {};
 	switch (src->getType()) {
 		case ExprType::LITERAL: {
@@ -39,8 +41,7 @@ void Slake::Compiler::writeValueDesc(std::shared_ptr<State> s, std::shared_ptr<E
 					_writeValue(std::static_pointer_cast<DoubleLiteralExpr>(literalExpr)->data, fs);
 					break;
 				case LT_BOOL: {
-					auto expr = std::static_pointer_cast<BoolLiteralExpr>(literalExpr);
-					_writeValue(expr->data, fs);
+					_writeValue(std::static_pointer_cast<BoolLiteralExpr>(literalExpr)->data, fs);
 					break;
 				}
 				case LT_STRING: {
@@ -59,9 +60,8 @@ void Slake::Compiler::writeValueDesc(std::shared_ptr<State> s, std::shared_ptr<E
 
 			for (auto &i = expr; i; i = i->next) {
 				SlxFmt::ScopeRefDesc srd = { 0 };
-				srd.type = SlxFmt::ScopeRefType::MEMBER;
 				if (i->next)
-					srd.hasNext = true;
+					srd.flags |= SlxFmt::SRD_NEXT;
 				srd.lenName = i->name.length();
 				_writeValue(srd, fs);
 				_writeValue(*(i->name.c_str()), i->name.length(), fs);
@@ -78,7 +78,7 @@ void Slake::Compiler::writeValueDesc(std::shared_ptr<State> s, std::shared_ptr<E
 				auto constExpr = evalConstExpr(i, s);
 				if (!constExpr)
 					throw parser::syntax_error(i->getLocation(), "Expression cannot be evaluated in compile time");
-				writeValueDesc(s, constExpr, fs);
+				writeValue(s, constExpr, fs);
 			}
 			break;
 		}
@@ -127,7 +127,6 @@ const std::unordered_map<TypeNameKind, SlxFmt::ValueType> Slake::Compiler::_tnKi
 	{ TypeNameKind::NONE, SlxFmt::ValueType::NONE },
 	{ TypeNameKind::ANY, SlxFmt::ValueType::ANY },
 	{ TypeNameKind::CUSTOM, SlxFmt::ValueType::OBJECT },
-	{ TypeNameKind::REF, SlxFmt::ValueType::OBJECTREF },
 	{ TypeNameKind::ARRAY, SlxFmt::ValueType::ARRAY },
 	{ TypeNameKind::MAP, SlxFmt::ValueType::MAP }
 };

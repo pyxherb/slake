@@ -1,28 +1,76 @@
+/// @intro
+/// Interface for all exceptions.
+/// @end
+///
+/// @since 1.0
 pub interface Exception {
 	operator string();
 }
 
-pub class BasicException(@Exception) {
+/// @intro
+/// Basic class for exceptions defined in standard library.
+/// @end
+///
+/// @since 1.0
+class BasicException(@Exception) {
 	final string _msg;
 	operator new(string msg) { _msg = msg; }
 	operator string() { return _msg; }
 }
 
+/// @intro
+/// Logical error class.
+/// @end
+///
+/// @since 1.0
 pub class LogicalError(@BasicException) {
 	operator new(string msg) { base(msg) }
 }
 
+/// @intro
+/// Exception class which raises when dividing by 0.
+/// @end
+///
+/// @since 1.0
 pub class DivideByZeroError(@BasicException) {
 }
 
+/// @intro
+/// Basic exception class for critical error (e.g. out of memory).
+/// @end
+///
+/// @since 1.0
 pub class CriticalError(@BasicException) {
 }
 
+/// @intro
+/// Exception class which raises when error allocating memory spaces.
+/// @end
+///
+/// @see {std::core::except::CriticalError}
+///
+/// @since 1.0
 pub class OutOfMemoryError(@BasicException) {
 }
 
+/// @intro
+/// Exception class which raises when the runtime executed an instruction with
+/// invalid opcode.
+/// @end
+///
+/// @see {std::core::except::CriticalError}
+///
+/// @since 1.0
 pub class InvalidOpcodeError(@BasicException) {
 }
 
-pub class InvalidOperandsError(@BasicException) {
+/// @intro
+/// Exception class which raises when the runtime executed an instruction with
+/// invalid operands.
+/// @end
+///
+/// @see {std::core::except::CriticalError}
+///
+/// @since 1.0
+pub class InvalidOperandsError(@CriticalError) {
 }

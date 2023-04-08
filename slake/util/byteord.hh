@@ -1,10 +1,10 @@
-#ifndef _SLAKE_BASE_BYTEORD_HH_
-#define _SLAKE_BASE_BYTEORD_HH_
+#ifndef _SLAKE_UTIL_BYTEORD_HH_
+#define _SLAKE_UTIL_BYTEORD_HH_
 
 #include <cstdint>
 
 namespace Slake {
-	namespace Base {
+	namespace Util {
 		/// @brief Get byte order in target machine.
 		/// @return Whether the byte order is big-endian.
 		/// @retval true The machine is big-endian.

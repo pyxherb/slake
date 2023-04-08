@@ -20,7 +20,7 @@ namespace Slake {
 		inline void _writeValue(const T &value, std::streamsize size, std::fstream &fs) {
 			fs.write((char *)&value, size);
 		}
-		void writeValueDesc(std::shared_ptr<State> s, std::shared_ptr<Expr> src, std::fstream &fs);
+		void writeValue(std::shared_ptr<State> s, std::shared_ptr<Expr> src, std::fstream &fs);
 		void writeIns(std::shared_ptr<State> s, Opcode opcode, std::fstream &fs, std::initializer_list<std::shared_ptr<Expr>> operands = {});
 
 		extern const std::unordered_map<LiteralType, SlxFmt::ValueType> _lt2vtMap;

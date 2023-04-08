@@ -1,0 +1,9 @@
+pub void test() {
+	i32 a;
+}
+
+pub i32 main() {
+	test();
+	i32 a = 1;
+	return a + 3;
+}

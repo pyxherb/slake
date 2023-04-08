@@ -44,8 +44,6 @@ std::unordered_map<Opcode, const char*> Decompiler::mnemonics = {
 	{ Opcode::CALL, "CALL" },
 	{ Opcode::ACALL, "ACALL" },
 	{ Opcode::RET, "RET" },
-	{ Opcode::SYSCALL, "SYSCALL" },
-	{ Opcode::ASYSCALL, "ASYSCALL" },
 	{ Opcode::LRET, "LRET" },
 	{ Opcode::THROW, "THROW" },
 	{ Opcode::PUSHXH, "PUSHXH" },

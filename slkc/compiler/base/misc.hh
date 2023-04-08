@@ -1,7 +1,7 @@
 #ifndef _SLKC_COMPILER_BASE_HH
 #define _SLKC_COMPILER_BASE_HH
 
-#include <slake/debug.h>
+#include <slake/util/debug.h>
 
 #include <location.hh>
 #include <cstdint>
@@ -44,7 +44,8 @@ namespace Slake {
 			ACCESS_OVERRIDE = 0x04,
 			ACCESS_CONST = 0x08,
 			ACCESS_VOLATILE = 0x10,
-			ACCESS_STATIC = 0x20;
+			ACCESS_STATIC = 0x20,
+			ACCESS_NATIVE = 0x40;
 
 		class IAccessModified {
 		public:

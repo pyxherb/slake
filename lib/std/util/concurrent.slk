@@ -1,46 +1,59 @@
-///
-/// @description
-/// Class for threads.
-/// @end
-///
-pub class Thread {
-	u32 _id;
+use {
+	except = std::core::except
+}
 
+/// @intro
+/// Class for thread manupulation, each instance represents a single thread.
+/// @end
+pub class Thread {
 	/// @brief Current thread.
 	pub static native @Thread current;
 
-	/// @brief Maximum number of concurrent threads supported by hardware. 0 if not computable.
+	/// @intro
+	/// Maximum number of concurrent threads supported by hardware, 0 if
+	/// incomputable.
+	/// @end
+	/// @since 1.0
 	pub static const native u32 hardwareConcurrency;
+	
+	/// @brief State of the thread.
+	pub const native @State state;
+	/// @brief Internal ID of the thread.
+	pub const native u32 id;
 
-	/// @brief Yield and switch to an other thread.
+	/// @brief Yield and switch to another thread immediately.
+	/// @since 1.0
 	pub static native void yield();
 
-	/// @brief Thread states.
+	/// @brief States of threads.
+	/// @since 1.0
 	enum State : u8 {
 		READY = 0,
 		RUNNING,
 		SUSPENDED,
-		DONE,
+		STOPPED,
 		DEAD
 	}
 
-	static native u32 _createThread(...);
-	static native @State _getThreadState(u32 id);
-	static native void _freeThread(u32 id);
-	static native void _killThread(u32 id);
-	static native void _suspendThread(u32 id, bool suspended);
-	static native void _joinThread(u32 id);
-	static native void _runThread(u32 id);
+	/// @param{proc} A callable object that will be used as the thread routine.
+	/// @param{...} Arguments to the procedure.
+	pub native operator new(any proc, ...);
+	pub native operator delete();
 
-	pub operator new(...) { _id = _createThread(...); }
-	pub operator delete() { _freeThread(_id); }
+	/// @brief Kill the thread.
+	pub native void kill();
 
-	pub @State getState() { return _getThreadState(_id); }
-	pub void kill() { _killThread(_id); }
-	pub void suspend() { _suspendThread(_id, true); }
-	pub void resume() { _suspendThread(_id, false); }
-	pub void join() { _joinThread(_id); }
-	pub void run() { _runThread(_id); }
+	/// @brief Suspend the thread.
+	pub native void suspend();
+	
+	/// @brief Resume the thread.
+	pub native void resume();
+	
+	/// @brief Join the thread to current thread.
+	pub native void join();
+
+	/// @brief Run the thread.
+	pub native void run();
 }
 
 pub trait ILock {

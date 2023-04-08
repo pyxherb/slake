@@ -1,0 +1,11 @@
+pub @T gcd<T>(@T a, @T b) {
+	if(a > b)
+		a <=> b;
+	// stub code
+}
+
+pub @T lcm<T>(@T a, @T b) {
+	if(a < b)
+		a <=> b;
+	// stub code
+}

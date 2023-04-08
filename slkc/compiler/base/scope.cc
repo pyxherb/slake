@@ -16,9 +16,6 @@ void Slake::Compiler::Scope::defineVars(std::shared_ptr<VarDefStmt> varDecls) {
 	for (auto i : varDecls->declList) {
 		if (vars.count(i->name))
 			throw parser::syntax_error(i->getLocation(), "Redefinition of variable `" + i->name + "'");
-		if (varDecls->isNative)
-			if ((!(i->initValue)) && (varDecls->accessModifier & ACCESS_STATIC))
-				throw parser::syntax_error(i->getLocation(), "UUID for Static native variables is required");
 		vars[i->name] = std::make_shared<VarDefItem>(i->getLocation(), varDecls->accessModifier, varDecls->typeName, i->initValue);
 	}
 }

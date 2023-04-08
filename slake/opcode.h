@@ -49,16 +49,13 @@ namespace Slake {
 		JT,	  // Jump if true
 		JF,	  // Jump if false
 
-		CALL,	   // Call, sets local base
-		ACALL,	   // Asynchronous Call
-		RET,	   // Return
-		SYSCALL,   // System call
-		ASYSCALL,  // Asynchronous System call
+		PUSHARG,  // Push an argument
+
+		CALL,	// Call and sets base for local addressing
+		ACALL,	// Asynchronous Call
+		RET,	// Return
 
 		LRET,  // Load return value
-
-		LREG,  // Load register
-		SREG,  // Save register
 
 		THROW,	 // Throw an exception
 		PUSHXH,	 // Push an exception handler

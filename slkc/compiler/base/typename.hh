@@ -27,7 +27,6 @@ namespace Slake {
 			BOOL,
 			MAP,
 			FN,
-			REF,
 			AUTO,
 			CUSTOM
 		};
@@ -92,10 +91,12 @@ namespace Slake {
 
 		class RefExpr;
 		class Scope;
+		//class Type;
 		class CustomTypeName : public TypeName {
 		public:
 			std::shared_ptr<RefExpr> typeRef;
 			std::weak_ptr<Scope> scope;	 // Scope where the type name constructed
+			//std::weak_ptr<Type> cachedType;
 
 			inline CustomTypeName(location loc, std::shared_ptr<RefExpr> typeRef, std::shared_ptr<Scope> scope) : TypeName(loc, TypeNameKind::CUSTOM) {
 				this->typeRef = typeRef;
@@ -117,20 +118,6 @@ namespace Slake {
 
 			virtual inline std::string toString() const override {
 				return std::to_string(*type) + "[]";
-			}
-		};
-
-		class RefTypeName : public TypeName {
-		public:
-			std::shared_ptr<TypeName> type;
-
-			inline RefTypeName(location loc, std::shared_ptr<TypeName> type) : TypeName(loc, TypeNameKind::REF) {
-				this->type = type;
-			}
-			virtual inline ~RefTypeName() {}
-
-			virtual inline std::string toString() const override {
-				return std::to_string(*type) + "&";
 			}
 		};
 

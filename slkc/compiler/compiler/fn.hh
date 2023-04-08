@@ -16,7 +16,6 @@ namespace Slake {
 		struct Fn {
 			std::vector<Ins> body;
 			std::unordered_map<std::string, std::uint32_t> labels;
-			std::unordered_map<std::string, LocalVar> lvars;
 
 			inline void insertLabel(std::string name) { labels[name] = body.size(); };
 			inline std::uint32_t getLabel(std::string name) { return labels.at(name); }

@@ -6,7 +6,7 @@
 
 using namespace Slake;
 
-static const char* _ctrlCharNames[] = {
+static const char *_ctrlCharNames[] = {
 	"0", "x01", "x02", "x03", "x04", "x05", "x06",
 	"a", "b", "v", "n", "v", "f", "r",
 	"x0e", "x0f", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x18", "x19", "x1a",
@@ -14,15 +14,15 @@ static const char* _ctrlCharNames[] = {
 };
 
 template <typename T>
-static T _readValue(std::fstream& fs) {
+static T _readValue(std::fstream &fs) {
 	T value;
-	fs.read((char*)&value, sizeof(value));
+	fs.read((char *)&value, sizeof(value));
 	return value;
 }
 
-std::shared_ptr<Compiler::Expr> Slake::Decompiler::readValue(std::fstream& fs) {
+std::shared_ptr<Compiler::Expr> Slake::Decompiler::readValue(std::fstream &fs) {
 	SlxFmt::ValueDesc i = {};
-	fs.read((char*)&i, sizeof(i));
+	fs.read((char *)&i, sizeof(i));
 	switch (i.type) {
 		case SlxFmt::ValueType::NONE:
 			return std::make_shared<Compiler::NullLiteralExpr>(Compiler::location());
@@ -73,15 +73,15 @@ std::shared_ptr<Compiler::Expr> Slake::Decompiler::readValue(std::fstream& fs) {
 			return std::make_shared<Compiler::StringLiteralExpr>(Compiler::location(), s);
 		}
 		case SlxFmt::ValueType::REF: {
-			auto ref = std::make_shared<Compiler::RefExpr>(Compiler::location(), "");
+			auto ref = std::make_shared<Compiler::RefExpr>(Compiler::location(), "", false);
 
 			SlxFmt::ScopeRefDesc i = { 0 };
-			for (auto j = ref; ; j->next = std::make_shared<Compiler::RefExpr>(Compiler::location(), ""), j = j->next) {
+			for (auto j = ref;; j->next = std::make_shared<Compiler::RefExpr>(Compiler::location(), "", i.flags & SlxFmt::SRD_STATIC), j = j->next) {
 				i = _readValue<SlxFmt::ScopeRefDesc>(fs);
 				std::string name(i.lenName, '\0');
 				fs.read(&(name[0]), i.lenName);
 				j->name = name;
-				if (!i.hasNext)
+				if (!i.flags & SlxFmt::SRD_NEXT)
 					break;
 			};
 			return ref;
@@ -91,7 +91,7 @@ std::shared_ptr<Compiler::Expr> Slake::Decompiler::readValue(std::fstream& fs) {
 	}
 }
 
-std::string readTypeName(std::fstream& fs, SlxFmt::ValueType vt) {
+std::string readTypeName(std::fstream &fs, SlxFmt::ValueType vt) {
 	switch (vt) {
 		case SlxFmt::ValueType::I8:
 			return "i8";
@@ -100,7 +100,7 @@ std::string readTypeName(std::fstream& fs, SlxFmt::ValueType vt) {
 		case SlxFmt::ValueType::I32:
 			return "i32";
 		case SlxFmt::ValueType::I64:
-			return "64";
+			return "i64";
 		case SlxFmt::ValueType::U8:
 			return "u8";
 		case SlxFmt::ValueType::U16:
@@ -119,24 +119,25 @@ std::string readTypeName(std::fstream& fs, SlxFmt::ValueType vt) {
 			std::string s;
 
 			SlxFmt::ValueDesc vd;
-			fs.read((char*)&vd, sizeof(vd));
+			fs.read((char *)&vd, sizeof(vd));
 
-			auto ref = std::make_shared<Compiler::RefExpr>(Compiler::location(), "");
+			auto ref = std::make_shared<Compiler::RefExpr>(Compiler::location(), "", false);
 			SlxFmt::ScopeRefDesc i = { 0 };
-			auto& j = ref;
-			do {
+
+			for (auto j = ref;; j->next = std::make_shared<Compiler::RefExpr>(Compiler::location(), "", i.flags & SlxFmt::SRD_STATIC), j = j->next) {
 				i = _readValue<SlxFmt::ScopeRefDesc>(fs);
-				std::string name(i.lenName + 1, '\0');
+				std::string name(i.lenName, '\0');
 				fs.read(&(name[0]), i.lenName);
-				j->next = std::make_shared<Compiler::RefExpr>(Compiler::location(), name + (i.hasNext ? "." : ""));
-				j = j->next;
-			} while (i.hasNext);
+				j->name = name;
+				if (!i.flags & SlxFmt::SRD_NEXT)
+					break;
+			};
 			return "@" + std::to_string(*ref);
 		}
-		case SlxFmt::ValueType::OBJECTREF:
-			return readTypeName(fs, _readValue<SlxFmt::ValueType>(fs)) + "&";
 		case SlxFmt::ValueType::ANY:
 			return "any";
+		case SlxFmt::ValueType::BOOL:
+			return "bool";
 		case SlxFmt::ValueType::NONE:
 			return "void";
 		case SlxFmt::ValueType::ARRAY:
@@ -148,9 +149,9 @@ std::string readTypeName(std::fstream& fs, SlxFmt::ValueType vt) {
 	}
 }
 
-void Slake::Decompiler::decompileScope(std::fstream& fs, std::uint8_t indentLevel) {
+void Slake::Decompiler::decompileScope(std::fstream &fs, std::uint8_t indentLevel) {
 	for (SlxFmt::VarDesc i = { 0 };;) {
-		fs.read((char*)&i, sizeof(i));
+		fs.read((char *)&i, sizeof(i));
 		if (!(i.lenName))
 			break;
 		std::string name(i.lenName, '\0');
@@ -167,14 +168,15 @@ void Slake::Decompiler::decompileScope(std::fstream& fs, std::uint8_t indentLeve
 		if (i.flags & SlxFmt::VAD_NATIVE)
 			printf("native ");
 
+		auto tn = readTypeName(fs, _readValue<SlxFmt::ValueType>(fs));
 		if (i.flags & SlxFmt::VAD_INIT)
-			printf("%s %s = %s;\n", readTypeName(fs, _readValue<SlxFmt::ValueType>(fs)).c_str(), name.c_str(), std::to_string(*readValue(fs)).c_str());
+			printf("%s %s = %s;\n", tn.c_str(), name.c_str(), std::to_string(*readValue(fs)).c_str());
 		else
-			printf("%s %s;\n", readTypeName(fs, _readValue<SlxFmt::ValueType>(fs)).c_str(), name.c_str());
+			printf("%s %s;\n", tn.c_str(), name.c_str());
 	}
 
 	for (SlxFmt::FnDesc i = { 0 };;) {
-		fs.read((char*)&i, sizeof(i));
+		fs.read((char *)&i, sizeof(i));
 		if (!(i.lenName))
 			break;
 		std::string name(i.lenName, '\0');
@@ -193,11 +195,26 @@ void Slake::Decompiler::decompileScope(std::fstream& fs, std::uint8_t indentLeve
 		if (i.flags & SlxFmt::FND_NATIVE)
 			printf("native ");
 
-		printf("%s %s(", readTypeName(fs, _readValue<SlxFmt::ValueType>(fs)).c_str(), name.c_str());
+		printf("%s %s", readTypeName(fs, _readValue<SlxFmt::ValueType>(fs)).c_str(), name.c_str());
+
+		if (i.nGenericParams) {
+			putchar('<');
+			for (auto j = 0; j < i.nGenericParams; j++) {
+				if (j)
+					printf(", ");
+				std::uint32_t lenGenericParamName = _readValue<std::uint32_t>(fs);
+				std::string name(lenGenericParamName, '\0');
+				fs.read(&(name[0]), lenGenericParamName);
+				printf("%s", name.c_str());
+			}
+			putchar('>');
+		}
+
+		putchar('(');
 
 		for (auto j = 0; j < i.nParams; j++) {
 			SlxFmt::ValueType vt = SlxFmt::ValueType::NONE;
-			fs.read((char*)&vt, sizeof(vt));
+			fs.read((char *)&vt, sizeof(vt));
 			printf("%s", readTypeName(fs, vt).c_str());
 			if (j + 1 < i.nParams)
 				printf(", ");
@@ -225,7 +242,11 @@ void Slake::Decompiler::decompileScope(std::fstream& fs, std::uint8_t indentLeve
 					s->labelNames[j + 1] = name + "_" + std::to_string(j + 1);
 					break;
 				case Opcode::ENTER:
-					s->labelNames[j + 1] = name + "_blkend_" + std::to_string(j + 1);
+					if (ins.operands[0]->getType() == Compiler::ExprType::LITERAL) {
+						auto o = std::static_pointer_cast<Compiler::UIntLiteralExpr>(ins.operands[0]);
+						if (o->getLiteralType() == Compiler::LiteralType::LT_UINT)
+							s->labelNames[o->data] = name + "_blkend_" + std::to_string(*o);
+					}
 			}
 		}
 
@@ -234,11 +255,7 @@ void Slake::Decompiler::decompileScope(std::fstream& fs, std::uint8_t indentLeve
 			if (s->labelNames.count(k))
 				printf("%s%s:\n", std::string(indentLevel, '\t').c_str(), s->labelNames[k].c_str());
 
-			if (j.opcode == Opcode::LEAVE)
-				indentLevel--;
 			printf("%s", std::string(indentLevel, '\t').c_str());
-			if (j.opcode == Opcode::ENTER)
-				indentLevel++;
 
 			if (mnemonics.count(j.opcode))
 				printf("\tasm %s ", mnemonics[j.opcode]);
@@ -270,7 +287,7 @@ void Slake::Decompiler::decompileScope(std::fstream& fs, std::uint8_t indentLeve
 	}
 
 	for (SlxFmt::ClassTypeDesc i = { 0 };;) {
-		fs.read((char*)&i, sizeof(i));
+		fs.read((char *)&i, sizeof(i));
 		if (!(i.lenName))
 			break;
 		std::string name(i.lenName, '\0');
@@ -284,22 +301,27 @@ void Slake::Decompiler::decompileScope(std::fstream& fs, std::uint8_t indentLeve
 			printf("final ");
 		printf("%s %s", i.flags & SlxFmt::CTD_TRAIT ? "trait" : "class", name.c_str());
 		if (i.flags & SlxFmt::CTD_DERIVED) {
-			printf(": ");
-
 			SlxFmt::ValueDesc vd;
-			fs.read((char*)&vd, sizeof(vd));
+			fs.read((char *)&vd, sizeof(vd));
 
-			auto ref = std::make_shared<Compiler::RefExpr>(Compiler::location(), "");
+			auto ref = std::make_shared<Compiler::RefExpr>(Compiler::location(), "", false);
 			SlxFmt::ScopeRefDesc i = { 0 };
-			auto& j = ref;
-			do {
+
+			for (auto j = ref;; j->next = std::make_shared<Compiler::RefExpr>(Compiler::location(), "", i.flags & SlxFmt::SRD_STATIC), j = j->next) {
 				i = _readValue<SlxFmt::ScopeRefDesc>(fs);
-				std::string name(i.lenName + 1, '\0');
+				std::string name(i.lenName, '\0');
 				fs.read(&(name[0]), i.lenName);
-				j->next = std::make_shared<Compiler::RefExpr>(Compiler::location(), name + (i.hasNext ? "." : ""));
-				j = j->next;
-			} while (i.hasNext);
-			printf("@%s", std::to_string(*ref).c_str());
+				j->name = name;
+				if (!i.flags & SlxFmt::SRD_NEXT)
+					break;
+			};
+			printf("(@%s)", std::to_string(*ref).c_str());
+		}
+		if (i.nImpls) {
+			printf(" : ");
+			for (auto j = i.nImpls; j; j--) {
+				printf("%s%s", readTypeName(fs, _readValue<SlxFmt::ValueType>(fs)).c_str(), j - 1 ? ", " : "");
+			}
 		}
 		puts(" {");
 
@@ -309,7 +331,7 @@ void Slake::Decompiler::decompileScope(std::fstream& fs, std::uint8_t indentLeve
 	}
 
 	for (SlxFmt::StructTypeDesc i = { 0 };;) {
-		fs.read((char*)&i, sizeof(i));
+		fs.read((char *)&i, sizeof(i));
 		if (!(i.lenName))
 			break;
 		std::string name(i.lenName, '\0');
@@ -326,7 +348,7 @@ void Slake::Decompiler::decompileScope(std::fstream& fs, std::uint8_t indentLeve
 
 		while (i.nMembers--) {
 			SlxFmt::StructMemberDesc smd;
-			fs.read((char*)&smd, sizeof(smd));
+			fs.read((char *)&smd, sizeof(smd));
 			std::string memberName(smd.lenName, '\0');
 			fs.read(&(memberName[0]), smd.lenName);
 
@@ -345,9 +367,9 @@ void Slake::Decompiler::decompileScope(std::fstream& fs, std::uint8_t indentLeve
 }
 
 
-void Slake::Decompiler::decompile(std::fstream& fs) {
+void Slake::Decompiler::decompile(std::fstream &fs) {
 	SlxFmt::ImgHeader ih;
-	fs.read((char*)&ih, sizeof(ih));
+	fs.read((char *)&ih, sizeof(ih));
 	if ((ih.magic[0] != SlxFmt::IMH_MAGIC[0]) ||
 		(ih.magic[1] != SlxFmt::IMH_MAGIC[1]) ||
 		(ih.magic[2] != SlxFmt::IMH_MAGIC[2]) ||
@@ -355,5 +377,16 @@ void Slake::Decompiler::decompile(std::fstream& fs) {
 		throw DecompileError("Bad SLX magic");
 	if (ih.fmtVer != 0)
 		throw DecompileError("Bad SLX format version");
+
+	if (ih.nImports) {
+		puts("use {");
+		for (std::uint8_t i = 0; i < ih.nImports; i++) {
+			auto len = _readValue<std::uint32_t>(fs);
+			std::string name(len, '\0');
+			fs.read(&(name[0]), len);
+			printf("\t%s = %s\n", name.c_str(), std::to_string(*readValue(fs)).c_str());
+		}
+		puts("}");
+	}
 	decompileScope(fs);
 }

@@ -28,7 +28,8 @@ IndentPPDirectives: BeforeHash
 IndentWidth: 4
 MaxEmptyLinesToKeep: 10
 NamespaceIndentation: All
-PointerAlignment: Left
+DerivePointerAlignment: false
+PointerAlignment: Right
 SortUsingDeclarations: true
 SpaceAfterCStyleCast: false
 SpaceBeforeAssignmentOperators: true

@@ -58,7 +58,7 @@ CmdLineAction cmdLineActions[] = {
 };
 
 int main(int argc, char** argv) {
-	Slake::Debug::setupMemoryLeakDetector();
+	Slake::Util::setupMemoryLeakDetector();
 
 	try {
 		try {

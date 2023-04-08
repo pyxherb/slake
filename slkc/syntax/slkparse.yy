@@ -19,11 +19,17 @@ Slake::Compiler::parser::symbol_type yylex();
 %code requires {
 #include <compiler/compiler.hh>
 #include <cstdarg>
+
+#pragma push_macro("new")
+
+#undef new
 }
 
 %code provides {
 extern Slake::Compiler::parser::location_type yylloc;
 extern std::shared_ptr<Slake::Compiler::parser> yyparser;
+
+#pragma pop_macro("new")
 }
 
 %locations
@@ -185,8 +191,8 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %precedence ForwardUnaryOpPrec
 %precedence BackwardUnaryOpPrec
 
-%precedence RefPrec
 %precedence StaticRefPrec
+%precedence RefPrec
 
 %expect 0
 
@@ -212,7 +218,7 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %type <std::shared_ptr<TimesStmt>> TimesBlock
 %type <std::shared_ptr<CastExpr>> CastExpr
 %type <std::shared_ptr<NewExpr>> NewExpr
-%type <std::shared_ptr<RefExpr>> Ref RefBody StaticRef StaticRefBody
+%type <std::shared_ptr<RefExpr>> Ref RefBody StaticRef StaticRefBody StaticRefTail
 %type <std::shared_ptr<MapExpr>> MapExpr
 %type <std::shared_ptr<PairList>> PairList Pairs
 %type <std::shared_ptr<ExprPair>> Pair
@@ -267,12 +273,36 @@ FnDef
 // Modifiers
 //
 AccessModifier:
-"pub" AccessModifier { $$ |= ACCESS_PUB; }
-| "final" AccessModifier { $$ |= ACCESS_FINAL; }
-| "const" AccessModifier { $$ |= ACCESS_CONST; }
-| "volatile" AccessModifier { $$ |= ACCESS_VOLATILE; }
-| "override" AccessModifier { $$ |= ACCESS_OVERRIDE; }
-| "static" AccessModifier { $$ |= ACCESS_STATIC; }
+"pub" AccessModifier {
+	if($$ & ACCESS_PUB)
+		this->error(yylloc, "Duplicated modifier");
+	$$ |= ACCESS_PUB;
+}
+| "final" AccessModifier {
+	if($$ & ACCESS_FINAL)
+		this->error(yylloc, "Duplicated modifier");
+	$$ |= ACCESS_FINAL;
+}
+| "const" AccessModifier {
+	if($$ & ACCESS_CONST)
+		this->error(yylloc, "Duplicated modifier");
+	$$ |= ACCESS_CONST;
+}
+| "volatile" AccessModifier {
+	if($$ & ACCESS_VOLATILE)
+		this->error(yylloc, "Duplicated modifier");
+	$$ |= ACCESS_VOLATILE;
+}
+| "override" AccessModifier {
+	if($$ & ACCESS_OVERRIDE)
+		this->error(yylloc, "Duplicated modifier");
+	$$ |= ACCESS_OVERRIDE;
+}
+| "static" AccessModifier {
+	if($$ & ACCESS_STATIC)
+		this->error(yylloc, "Duplicated modifier");
+	$$ |= ACCESS_STATIC;
+}
 | %empty {}
 ;
 
@@ -450,14 +480,14 @@ TypeName T_ID GenericParamList "(" ParamDecls ")" ";" {
 	if(currentScope->fnDefs.count($2))
 		this->error(yylloc, "Redefinition of function `" + $2 + "`");
 	else
-		currentScope->fnDefs[$2] = std::make_shared<FnDef>(@1, ACCESS_PUB, $5, $1, std::shared_ptr<CodeBlock>(), $2);
+		currentScope->fnDefs[$2] = std::make_shared<FnDef>(@1, ACCESS_PUB, $5, $1, std::shared_ptr<CodeBlock>(), $2, $3);
 }
 | TypeName "operator" OperatorName GenericParamList "(" ParamDecls ")" ";" {
 	if(currentScope->fnDefs.count($3)) {
 		this->error(yylloc, "Redefinition of operator " + $3);
 	}
 	else
-		currentScope->fnDefs[$3] = std::make_shared<FnDef>(@1, ACCESS_PUB, $6, $1, std::shared_ptr<CodeBlock>(), "operator" + $3);
+		currentScope->fnDefs[$3] = std::make_shared<FnDef>(@1, ACCESS_PUB, $6, $1, std::shared_ptr<CodeBlock>(), "operator" + $3, $4);
 }
 | "operator" TypeName ";" {
 }
@@ -465,12 +495,33 @@ TypeName T_ID GenericParamList "(" ParamDecls ")" ";" {
 ;
 
 NativeFnDecl:
-AccessModifier "native" TypeName T_ID "(" ParamDecls ")" ";" {
+AccessModifier "native" TypeName T_ID GenericParamList "(" ParamDecls ")" ";" {
 	if(currentScope->fnDefs.count($4)) {
 		this->error(yylloc, "Redefinition of function `" + $4 + "'");
 	}
 	else
-		currentScope->fnDefs[$4] = std::make_shared<FnDef>(@1, $1, $6, $3, std::shared_ptr<CodeBlock>(), $4);
+		currentScope->fnDefs[$4] = std::make_shared<FnDef>(@1, $1 | ACCESS_NATIVE, $7, $3, std::shared_ptr<CodeBlock>(), $4, $5);
+}
+| AccessModifier "native" TypeName "operator" OperatorName GenericParamList "(" ParamDecls ")" ";" {
+	if(currentScope->fnDefs.count($5)) {
+		this->error(yylloc, "Redefinition of operator " + $5);
+	}
+	else
+		currentScope->fnDefs[$5] = std::make_shared<FnDef>(@1, $1 | ACCESS_NATIVE, $8, $3, std::shared_ptr<CodeBlock>(), "operator" + $5, $6);
+}
+| AccessModifier "native" "operator" "new" "(" ParamDecls ")" ";" {
+	if(currentScope->fnDefs.count("delete")) {
+		this->error(yylloc, "Redefinition of destructor");
+	}
+	else
+		currentScope->fnDefs["delete"] = std::make_shared<FnDef>(@1, $1 | ACCESS_NATIVE, $6, std::make_shared<TypeName>(@1, TypeNameKind::NONE), std::shared_ptr<CodeBlock>(), "new");
+}
+| AccessModifier "native" "operator" "delete" "(" ParamDecls ")" ";" {
+	if(currentScope->fnDefs.count("new")) {
+		this->error(yylloc, "Redefinition of constructor");
+	}
+	else
+		currentScope->fnDefs["new"] = std::make_shared<FnDef>(@1, $1 | ACCESS_NATIVE, $6, std::make_shared<TypeName>(@1, TypeNameKind::NONE), std::shared_ptr<CodeBlock>(), "delete");
 }
 ;
 
@@ -478,7 +529,7 @@ AccessModifier "native" TypeName T_ID "(" ParamDecls ")" ";" {
 // Import
 //
 ImportBlock:
-"use" "{" Aliases "}"
+"use" "{" ImportAliases "}"
 ;
 
 //
@@ -489,14 +540,14 @@ AccessModifier TypeName T_ID GenericParamList "(" ParamDecls ")" CodeBlock {
 	if(currentScope->fnDefs.count($3))
 		this->error(yylloc, "Redefinition of function `" + $3 + "`");
 	else
-		currentScope->fnDefs[$3] = std::make_shared<FnDef>(@1, $1, $6, $2, $8, $3);
+		currentScope->fnDefs[$3] = std::make_shared<FnDef>(@1, $1, $6, $2, $8, $3, $4);
 }
 | AccessModifier TypeName "operator" OperatorName GenericParamList "(" ParamDecls ")" CodeBlock {
 	if(currentScope->fnDefs.count($4)) {
 		this->error(yylloc, "Redefinition of operator " + $4);
 	}
 	else
-		currentScope->fnDefs[$4] = std::make_shared<FnDef>(@1, $1, $7, std::shared_ptr<TypeName>(), $9, "operator" + $4);
+		currentScope->fnDefs[$4] = std::make_shared<FnDef>(@1, $1, $7, std::shared_ptr<TypeName>(), $9, "operator" + $4, $5);
 }
 | AccessModifier "operator" "new" "(" ParamDecls ")" CodeBlock {
 	if(currentScope->fnDefs.count("new"))
@@ -555,6 +606,7 @@ ParamDecls:
 %empty { $$ = std::make_shared<ParamDeclList>(); }
 | ParamDeclList { $$ = $1; }
 | ParamDeclList "," "..." {
+	$$ = $1;
 	$$->push_back(std::make_shared<ParamDecl>(@3, "...", std::make_shared<ArrayTypeName>(@3, std::make_shared<TypeName>(@3, TypeNameKind::ANY))));
 }
 | "..." {
@@ -591,7 +643,8 @@ AccessModifier TypeName VarDecls {
 	$$ = std::make_shared<VarDefStmt>($1, $2, $3);
 }
 | AccessModifier "native" TypeName NativeVarDecls {
-	$$ = std::make_shared<VarDefStmt>($1, $3, $4, true);
+	$$ = std::make_shared<VarDefStmt>($1, $3, $4);
+	$$->accessModifier |= ACCESS_NATIVE;
 }
 ;
 VarDecls:
@@ -631,6 +684,19 @@ AliasDef:
 Aliases:
 T_ID "=" StaticRef "," Aliases {}
 | T_ID "=" StaticRef {}
+;
+
+ImportAliases:
+T_ID "=" StaticRef "," ImportAliases {
+	if(currentScope->imports.count($1))
+		this->error(yylloc, "Import item `" + $3->name + "` already exists");
+	currentScope->imports[$1] = $3;
+}
+| T_ID "=" StaticRef {
+	if(currentScope->imports.count($1))
+		this->error(yylloc, "Import item `" + $3->name + "` already exists");
+	currentScope->imports[$1] = $3;
+}
 ;
 
 //
@@ -764,7 +830,7 @@ Ref { $$ = $1; }
 | MatchExpr { $$ = $1; }
 | CallExpr { $$ = $1; }
 | AwaitExpr { $$ = $1; }
-| "..." { $$ = std::make_shared<RefExpr>(@1, "..."); }
+| "..." { $$ = std::make_shared<RefExpr>(@1, "...", false); }
 ;
 
 ArrayExpr:
@@ -853,9 +919,9 @@ TypeName:
 |"void" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::NONE); }
 |"any" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::ANY); }
 | "@" StaticRef { $$ = std::make_shared<CustomTypeName>(@1, $2, currentScope); }
+| "@" T_ID { $$ = std::make_shared<CustomTypeName>(@1, std::make_shared<RefExpr>(@2, $2, true), currentScope); }
 | TypeName "[" "]" { $$ = std::make_shared<ArrayTypeName>(@1, $1); }
 | TypeName "[" TypeName "]" { $$ = std::make_shared<MapTypeName>(@1, $3, $1); }
-| TypeName "&" { $$ = std::make_shared<RefTypeName>(@1, $1); }
 | TypeName "->" "(" ParamDecls ")" {
 	auto typeName = std::make_shared<FnTypeName>(@1, $1);
 	$$ = typeName;
@@ -972,27 +1038,32 @@ L_INT { $$ = std::make_shared<IntLiteralExpr>(@1, $1); }
 ;
 
 RefBody:
-T_ID "." RefBody { $$ = std::make_shared<RefExpr>(@1, $1, $3); }
-| T_ID %prec RefPrec { $$ = std::make_shared<RefExpr>(@1, $1); }
+T_ID "." RefBody { $$ = std::make_shared<RefExpr>(@1, $1, false, $3); }
+| T_ID %prec RefPrec { $$ = std::make_shared<RefExpr>(@1, $1, false); }
+;
+
+StaticRefTail:
+"::" T_ID { $$ = std::make_shared<RefExpr>(@1, $2, true); }
+| "::" T_ID GenericArgs { $$ = std::make_shared<RefExpr>(@1, $2, true); }
 ;
 
 StaticRefBody:
-T_ID "::" StaticRefBody { $$ = std::make_shared<RefExpr>(@1, $1, $3); }
-| T_ID %prec StaticRefPrec { $$ = std::make_shared<RefExpr>(@1, $1); }
-| T_ID GenericArgs "::" StaticRefBody { $$ = std::make_shared<RefExpr>(@1, $1, $4); }
-| T_ID GenericArgs { $$ = std::make_shared<RefExpr>(@1, $1); }
+T_ID "::" StaticRefBody { $$ = std::make_shared<RefExpr>(@1, $1, true, $3); }
+| T_ID GenericArgs "::" StaticRefBody { $$ = std::make_shared<RefExpr>(@1, $1, true, $4); }
+| T_ID StaticRefTail { $$ = std::make_shared<RefExpr>(@1, $1, true, $2); }
+| T_ID GenericArgs StaticRefTail { $$ = std::make_shared<RefExpr>(@1, $1, true, $3); }
 ;
 
 StaticRef:
-"::" StaticRefBody { $$ = std::make_shared<RefExpr>(@1, "", $2); }
-| "base" "::" StaticRefBody { $$ = std::make_shared<RefExpr>(@1, "base", $3); }
+"::" StaticRefBody { $$ = std::make_shared<RefExpr>(@1, "", true, $2); }
+| "base" "::" StaticRefBody { $$ = std::make_shared<RefExpr>(@1, "base", true, $3); }
 | StaticRefBody { $$ = $1; }
 ;
 
 Ref:
-"this" "." RefBody { $$ = std::make_shared<RefExpr>(@1, "this", $3); }
-| "this" { $$ = std::make_shared<RefExpr>(@1, "this"); }
-| "base" "." RefBody { $$ = std::make_shared<RefExpr>(@1, "base", $3); }
+"this" "." RefBody { $$ = std::make_shared<RefExpr>(@1, "this", false, $3); }
+| "this" { $$ = std::make_shared<RefExpr>(@1, "this", false); }
+| "base" "." RefBody { $$ = std::make_shared<RefExpr>(@1, "base", false, $3); }
 | StaticRef "." RefBody { $$ = $1, $$->next = $3; }
 | RefBody { $$ = $1; }
 ;

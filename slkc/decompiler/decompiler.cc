@@ -86,6 +86,17 @@ std::shared_ptr<Compiler::Expr> Slake::Decompiler::readValue(std::fstream &fs) {
 			};
 			return ref;
 		}
+		case SlxFmt::ValueType::ARRAY: {
+			SlxFmt::ArrayDesc ard;
+			ard = _readValue<SlxFmt::ArrayDesc>(fs);
+
+			std::vector<std::shared_ptr<Compiler::Expr>> members;
+			while (ard.nMembers) {
+				members.push_back(readValue(fs));
+			}
+
+			return std::make_shared<Compiler::ArrayExpr>(Compiler::location(), members);
+		}
 		default:
 			throw Decompiler::DecompileError("Invalid value type: " + std::to_string((std::uint8_t)i.type));
 	}
@@ -242,7 +253,7 @@ void Slake::Decompiler::decompileScope(std::fstream &fs, std::uint8_t indentLeve
 					s->labelNames[j + 1] = name + "_" + std::to_string(j + 1);
 					break;
 				case Opcode::ENTER:
-					if (ins.operands[0]->getType() == Compiler::ExprType::LITERAL) {
+					if (ins.operands[0]->getExprKind() == Compiler::ExprKind::LITERAL) {
 						auto o = std::static_pointer_cast<Compiler::UIntLiteralExpr>(ins.operands[0]);
 						if (o->getLiteralType() == Compiler::LiteralType::LT_UINT)
 							s->labelNames[o->data] = name + "_blkend_" + std::to_string(*o);
@@ -267,7 +278,7 @@ void Slake::Decompiler::decompileScope(std::fstream &fs, std::uint8_t indentLeve
 					case Opcode::JMP:
 					case Opcode::JT:
 					case Opcode::JF:
-						if (j.operands[l]->getType() == Compiler::ExprType::LITERAL &&
+						if (j.operands[l]->getExprKind() == Compiler::ExprKind::LITERAL &&
 							std::static_pointer_cast<Compiler::LiteralExpr>(j.operands[l])->getLiteralType() == Compiler::LiteralType::LT_UINT) {
 							auto addr = std::static_pointer_cast<Compiler::UIntLiteralExpr>(j.operands[l])->data;
 							if (s->labelNames.count(addr)) {

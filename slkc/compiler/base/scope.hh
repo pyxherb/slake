@@ -96,6 +96,10 @@ namespace Slake {
 				s += execBlock ? std::to_string(*execBlock) + "\n" : ";\n";
 				return s;
 			}
+
+			inline bool hasVarArg() {
+				return params->empty() ? false : params->back()->name == "...";
+			}
 		};
 
 		struct VarDefItem final : public BasicLocated, public IAccessModified {

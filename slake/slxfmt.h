@@ -152,6 +152,16 @@ namespace Slake {
 			std::uint8_t flags : 4;
 			std::uint8_t nGenericArgs : 4;
 		};
+
+		// @brief Array Descriptor (ARD)
+		struct ArrayDesc final {
+			std::uint32_t nMembers;
+		};
+
+		// @brief Array Descriptor (MPD)
+		struct MapDesc final {
+			std::uint32_t nPairs;
+		};
 	}
 }
 

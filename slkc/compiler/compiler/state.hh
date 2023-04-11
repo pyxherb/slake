@@ -36,6 +36,7 @@ namespace Slake {
 			std::unordered_map<std::string, std::shared_ptr<Fn>> fnDefs;
 			std::unordered_map<std::string, std::shared_ptr<RefExpr>> imports;
 			std::shared_ptr<Scope> scope;
+			std::shared_ptr<TypeName> desiredType;
 			Context context;
 			std::string currentFn;
 

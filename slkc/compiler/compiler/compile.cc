@@ -7,10 +7,15 @@
 using namespace Slake;
 using namespace Compiler;
 
+void Slake::Compiler::compileArg(std::shared_ptr<Expr> expr, std::shared_ptr<State> s) {
+	compileRightExpr(expr, s);
+	s->fnDefs[s->currentFn]->insertIns({ Opcode::PUSHARG, {} });
+}
+
 void Slake::Compiler::compileLeftExpr(std::shared_ptr<Expr> expr, std::shared_ptr<State> s, bool isRecursing) {
 	auto &fn = s->fnDefs[s->currentFn];
 	assert(fn);
-	switch (expr->getType()) {
+	switch (expr->getExprKind()) {
 		default:
 			throw parser::syntax_error(expr->getLocation(), "Expected left value");
 	}
@@ -19,12 +24,14 @@ void Slake::Compiler::compileLeftExpr(std::shared_ptr<Expr> expr, std::shared_pt
 void Compiler::compileRightExpr(std::shared_ptr<Expr> expr, std::shared_ptr<State> s, bool isRecursing) {
 	auto &fn = s->fnDefs[s->currentFn];
 	assert(fn);
-	switch (expr->getType()) {
-		case ExprType::LITERAL: {
+	switch (expr->getExprKind()) {
+		case ExprKind::LITERAL:
+		case ExprKind::ARRAY:
+		case ExprKind::MAP: {
 			fn->insertIns(Ins(Opcode::PUSH, { expr }));
 			break;
 		}
-		case ExprType::TERNARY: {
+		case ExprKind::TERNARY: {
 			auto falseLabel = "$TOP_FALSE_" + std::to_string(fn->body.size()),
 				 endLabel = "$TOP_END_" + std::to_string(fn->body.size());
 
@@ -38,7 +45,7 @@ void Compiler::compileRightExpr(std::shared_ptr<Expr> expr, std::shared_ptr<Stat
 			compileRightExpr(e->y, s);	// False branch.
 			fn->insertLabel(endLabel);
 		}
-		case ExprType::UNARY: {
+		case ExprKind::UNARY: {
 			auto e = std::static_pointer_cast<UnaryOpExpr>(expr);
 			Opcode opcode;
 			if (!_unaryOp2opcodeMap.count(e->op))
@@ -51,7 +58,7 @@ void Compiler::compileRightExpr(std::shared_ptr<Expr> expr, std::shared_ptr<Stat
 			fn->insertIns({ opcode, {} });
 			break;
 		}
-		case ExprType::BINARY: {
+		case ExprKind::BINARY: {
 			auto e = std::static_pointer_cast<BinaryOpExpr>(expr);
 			compileRightExpr(e->y, s);
 			compileRightExpr(e->x, s);
@@ -71,7 +78,7 @@ void Compiler::compileRightExpr(std::shared_ptr<Expr> expr, std::shared_ptr<Stat
 
 			break;
 		}
-		case ExprType::CALL: {
+		case ExprKind::CALL: {
 			auto calle = std::static_pointer_cast<CallExpr>(expr);
 			auto t = std::static_pointer_cast<FnTypeName>(evalExprType(s, calle->target));
 			if (t->kind != TypeNameKind::FN)
@@ -90,9 +97,11 @@ void Compiler::compileRightExpr(std::shared_ptr<Expr> expr, std::shared_ptr<Stat
 				fn->insertIns({ opcode, {} });
 			}
 
+			fn->insertIns({ Opcode::LRET, {} });
+
 			break;
 		}
-		case ExprType::REF: {
+		case ExprKind::REF: {
 			auto ref = std::static_pointer_cast<RefExpr>(expr);
 
 			//
@@ -146,6 +155,115 @@ void Compiler::compileRightExpr(std::shared_ptr<Expr> expr, std::shared_ptr<Stat
 				break;
 			}
 			throw parser::syntax_error(expr->getLocation(), "`" + ref->name + "' was undefined");
+		}
+		case ExprKind::NEW: {
+			auto newExpr = std::static_pointer_cast<NewExpr>(expr);
+
+			switch (newExpr->type->kind) {
+				case TypeNameKind::CUSTOM: {
+					auto customTypeName = std::static_pointer_cast<CustomTypeName>(newExpr->type);	// Class type name
+					auto customType = customTypeName->resolveType();
+					if (!customType)
+						throw parser::syntax_error(customTypeName->getLocation(), "Type `" + std::to_string(*customType) + "' not found");
+
+					// Check if the type is constructible.
+					auto constructor = customType->getScope()->getFn("new");
+					if (!constructor)
+						throw parser::syntax_error(customTypeName->getLocation(), "Type `" + std::to_string(*customType) + "' is not constructible");
+
+
+					auto nExprArgs = newExpr->args->size(), nConstructorArgs = constructor->params->size();
+
+					if (constructor->hasVarArg()) {
+						if (nExprArgs < nConstructorArgs - 1) {
+							throw parser::syntax_error(newExpr->args->front()->getLocation(), "Too few arguments");
+						}
+					} else {
+						if (nExprArgs > nConstructorArgs)
+							throw parser::syntax_error(newExpr->args->front()->getLocation(), "Too many arguments");
+						if (nExprArgs < nConstructorArgs) {
+							throw parser::syntax_error(newExpr->args->front()->getLocation(), "Too few arguments");
+						}
+					}
+
+					std::uint8_t j = 0;	 // Index of current argument of the new expression.
+					for (auto i : *(newExpr->args)) {
+						auto type = evalExprType(s, i);
+
+						if ((!constructor->hasVarArg()) || (j < nConstructorArgs - 1)) {
+							if (!isSameType((*constructor->params).at(j)->typeName, type))
+								throw parser::syntax_error(i->getLocation(), "Incompatible argument type");
+						}
+
+						compileArg(i, s);
+						j++;
+					}
+					fn->insertIns({ Opcode::NEW, { customTypeName->typeRef } });
+					break;
+				}
+				case TypeNameKind::ARRAY: {
+					auto nArgs = newExpr->args->size();
+					auto typeName = std::static_pointer_cast<ArrayTypeName>(newExpr->type);
+					if (nArgs == 1) {
+						auto arg = newExpr->args->front();
+						auto argType = evalExprType(s, arg);
+
+						if (!(isConvertible(argType, std::make_shared<TypeName>(location(), TypeNameKind::USIZE)) ||
+								argType->kind == TypeNameKind::ARRAY))
+							throw parser::syntax_error(arg->getLocation(), "Incompatible argument type");
+
+						compileArg(arg, s);
+					} else if (nArgs == 2) {
+						auto size = newExpr->args->front();
+						auto sizeType = evalExprType(s, size);
+						if (!isConvertible(sizeType, std::make_shared<TypeName>(location(), TypeNameKind::USIZE)))
+							throw parser::syntax_error(size->getLocation(), "Incompatible argument type");
+
+						compileArg(size, s);
+
+						auto initValue = newExpr->args->at(1);
+						auto initValueType = evalExprType(s, initValue);
+
+						if (isConvertible(initValueType, typeName->type))
+							;
+						else if (initValueType->kind == TypeNameKind::ARRAY) {
+							for (auto i : *(newExpr->args)) {
+								if (!isConvertible(typeName->type, evalExprType(s, i)))
+									throw parser::syntax_error(newExpr->args->front()->getLocation(), "Incompatible argument type");
+							}
+						} else
+							throw parser::syntax_error(initValue->getLocation(), "Incompatible argument type");
+
+						compileArg(initValue, s);
+					} else if (nArgs >= 3)
+						throw parser::syntax_error(newExpr->args->front()->getLocation(), "Too many arguments");
+					break;
+				}
+				case TypeNameKind::MAP: {
+					auto nArgs = newExpr->args->size();
+					if (nArgs > 1)
+						throw parser::syntax_error(newExpr->args->front()->getLocation(), "Too many arguments");
+
+					if (nArgs) {
+						auto initValue = std::static_pointer_cast<MapExpr>(newExpr->args->front());
+						auto initValueType = std::static_pointer_cast<MapTypeName>(evalExprType(s, initValue));
+						if (initValueType->kind != TypeNameKind::MAP)
+							throw parser::syntax_error(initValue->getLocation(), "Incompatible argument type");
+
+						for (auto i : *(initValue->pairs)) {
+							if (!isConvertible(initValueType->keyType, evalExprType(s, i->first)))
+								throw parser::syntax_error(newExpr->args->front()->getLocation(), "Incompatible key type");
+							if (!isConvertible(initValueType->valueType, evalExprType(s, i->second)))
+								throw parser::syntax_error(newExpr->args->front()->getLocation(), "Incompatible value type");
+						}
+						compileArg(initValue, s);
+					}
+					break;
+				}
+				default:
+					throw parser::syntax_error(newExpr->type->getLocation(), "Type `" + std::to_string(*newExpr->type) + "' is not constructible");
+			}
+			break;
 		}
 		default:
 			throw std::logic_error("Invalid expression type detected");
@@ -372,13 +490,13 @@ void Compiler::compileStmt(std::shared_ptr<Stmt> src, std::shared_ptr<State> s) 
 
 			if (stmt->typeName->kind == TypeNameKind::CUSTOM) {
 				auto t = std::static_pointer_cast<CustomTypeName>(stmt->typeName);
-				auto type = s->scope->getType(t->typeRef);
+				auto type = t->resolveType();
 			}
 			for (auto &i : stmt->declList) {
 				s->context.lvars[stmt->declList[i->name]->name] = LocalVar((std::uint32_t)(s->context.stackCur++), stmt->typeName);
 				if (i->initValue) {
 					auto expr = evalConstExpr(i->initValue, s);
-					if (!expr)
+					if (expr)
 						fn->insertIns(Ins(Opcode::PUSH, { expr }));
 					else
 						compileRightExpr(i->initValue, s);
@@ -543,7 +661,7 @@ void Compiler::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTo
 				SlxFmt::InsHeader ih(k.opcode, k.operands.size());
 				_writeValue(ih, fs);
 				for (auto &l : k.operands) {
-					if (l->getType() == ExprType::LABEL) {
+					if (l->getExprKind() == ExprKind::LABEL) {
 						writeValue(
 							s,
 							std::make_shared<UIntLiteralExpr>(l->getLocation(),

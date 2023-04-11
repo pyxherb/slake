@@ -76,7 +76,7 @@ namespace std {
 
 namespace Slake {
 	namespace Compiler {
-		enum class ExprType : int {
+		enum class ExprKind : int {
 			NONE = 0,
 			UNARY,
 			BINARY,
@@ -101,20 +101,20 @@ namespace Slake {
 		public:
 			inline Expr(location loc) : BasicLocated(loc) {}
 			virtual inline ~Expr() {}
-			virtual inline ExprType getType() { return ExprType::NONE; }
+			virtual inline ExprKind getExprKind() { return ExprKind::NONE; }
 		};
 
-		template <ExprType t>
+		template <ExprKind t>
 		class TypedExpr : public Expr {
 		public:
 			inline TypedExpr(location loc) : Expr(loc) {}
 			virtual inline ~TypedExpr() {}
-			virtual inline ExprType getType() { return t; }
+			virtual inline ExprKind getExprKind() { return t; }
 		};
 
 		using MatchCaseList = std::vector<MatchCase>;
 
-		class MatchExpr : public TypedExpr<ExprType::MATCH> {
+		class MatchExpr : public TypedExpr<ExprKind::MATCH> {
 		public:
 			std::shared_ptr<Expr> condition;
 			MatchCaseList caseList;
@@ -148,7 +148,7 @@ namespace Slake {
 			}
 		}
 
-		class UnaryOpExpr : public TypedExpr<ExprType::UNARY> {
+		class UnaryOpExpr : public TypedExpr<ExprKind::UNARY> {
 		public:
 			std::shared_ptr<Expr> x;
 			UnaryOp op;
@@ -163,7 +163,7 @@ namespace Slake {
 			}
 		};
 
-		class BinaryOpExpr : public TypedExpr<ExprType::BINARY> {
+		class BinaryOpExpr : public TypedExpr<ExprKind::BINARY> {
 		public:
 			std::shared_ptr<Expr> x, y;
 			BinaryOp op;
@@ -176,7 +176,7 @@ namespace Slake {
 			}
 		};
 
-		class TernaryOpExpr : public TypedExpr<ExprType::TERNARY> {
+		class TernaryOpExpr : public TypedExpr<ExprKind::TERNARY> {
 		public:
 			std::shared_ptr<Expr> condition, x, y;
 
@@ -192,7 +192,7 @@ namespace Slake {
 			}
 		};
 
-		class RefExpr : public TypedExpr<ExprType::REF> {
+		class RefExpr : public TypedExpr<ExprKind::REF> {
 		public:
 			std::string name;
 			std::shared_ptr<RefExpr> next;
@@ -231,7 +231,7 @@ namespace Slake {
 			}
 		};
 
-		class CallExpr : public TypedExpr<ExprType::CALL> {
+		class CallExpr : public TypedExpr<ExprKind::CALL> {
 		public:
 			std::shared_ptr<Expr> target;
 			std::shared_ptr<ArgList> args;
@@ -249,7 +249,7 @@ namespace Slake {
 			}
 		};
 
-		class AwaitExpr : public TypedExpr<ExprType::AWAIT> {
+		class AwaitExpr : public TypedExpr<ExprKind::AWAIT> {
 		public:
 			std::shared_ptr<Expr> target;
 
@@ -273,7 +273,7 @@ namespace Slake {
 			LT_BOOL
 		};
 
-		class LiteralExpr : public TypedExpr<ExprType::LITERAL> {
+		class LiteralExpr : public TypedExpr<ExprKind::LITERAL> {
 		public:
 			inline LiteralExpr(location loc) : TypedExpr(loc) {}
 			virtual inline ~LiteralExpr() {}
@@ -559,7 +559,7 @@ namespace Slake {
 
 		using PairList = std::vector<std::shared_ptr<ExprPair>>;
 
-		class MapExpr : public TypedExpr<ExprType::MAP> {
+		class MapExpr : public TypedExpr<ExprKind::MAP> {
 		public:
 			std::shared_ptr<PairList> pairs;
 
@@ -579,7 +579,7 @@ namespace Slake {
 			}
 		};
 
-		class NewExpr : public TypedExpr<ExprType::NEW> {
+		class NewExpr : public TypedExpr<ExprKind::NEW> {
 		public:
 			std::shared_ptr<TypeName> type;
 			std::shared_ptr<ArgList> args;
@@ -592,7 +592,7 @@ namespace Slake {
 			}
 		};
 
-		class SubscriptOpExpr : public TypedExpr<ExprType::SUBSCRIPT> {
+		class SubscriptOpExpr : public TypedExpr<ExprKind::SUBSCRIPT> {
 		public:
 			std::shared_ptr<Expr> target;
 			std::shared_ptr<Expr> subscription;
@@ -605,7 +605,7 @@ namespace Slake {
 			}
 		};
 
-		class CastExpr : public TypedExpr<ExprType::CAST> {
+		class CastExpr : public TypedExpr<ExprKind::CAST> {
 		public:
 			std::shared_ptr<Expr> target;
 			std::shared_ptr<TypeName> type;
@@ -620,7 +620,7 @@ namespace Slake {
 			}
 		};
 
-		class ArrayExpr : public TypedExpr<ExprType::ARRAY> {
+		class ArrayExpr : public TypedExpr<ExprKind::ARRAY> {
 		public:
 			std::vector<std::shared_ptr<Expr>> elements;
 
@@ -628,9 +628,20 @@ namespace Slake {
 				this->elements = elements;
 			}
 			virtual inline ~ArrayExpr() {}
+
+			virtual inline std::string toString() const override {
+				std::string s = "{";
+
+				auto i = elements.begin();
+				while (i != elements.end())
+					s += (i != elements.begin() ? ", " : "") + std::to_string(**i++);
+
+				s += " }";
+				return s;
+			}
 		};
 
-		class LabelExpr : public TypedExpr<ExprType::LABEL> {
+		class LabelExpr : public TypedExpr<ExprKind::LABEL> {
 		public:
 			std::string label;
 

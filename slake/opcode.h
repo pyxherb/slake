@@ -55,6 +55,8 @@ namespace Slake {
 		ACALL,	// Asynchronous Call
 		RET,	// Return
 
+		NEW,  // New
+
 		LRET,  // Load return value
 
 		THROW,	 // Throw an exception

@@ -489,6 +489,12 @@ void Slake::Runtime::execIns(Context *context, Instruction &ins) {
 			context->callingStack.pop_back();
 			break;
 		}
+		case Opcode::LRET: {
+			_checkOperandCount(ins, 0);
+
+			context->dataStack.push_back(context->retValue);
+			break;
+		}
 		case Opcode::THROW: {
 			_checkOperandCount(ins, 0, 1);
 			break;

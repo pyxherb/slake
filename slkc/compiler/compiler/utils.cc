@@ -16,8 +16,8 @@ void Slake::Compiler::writeIns(std::shared_ptr<State> s, Opcode opcode, std::fst
 
 void Slake::Compiler::writeValue(std::shared_ptr<State> s, std::shared_ptr<Expr> src, std::fstream &fs) {
 	SlxFmt::ValueDesc vd = {};
-	switch (src->getType()) {
-		case ExprType::LITERAL: {
+	switch (src->getExprKind()) {
+		case ExprKind::LITERAL: {
 			auto literalExpr = std::static_pointer_cast<LiteralExpr>(src);
 			vd.type = _lt2vtMap.at(literalExpr->getLiteralType());
 			_writeValue(vd, fs);
@@ -53,7 +53,7 @@ void Slake::Compiler::writeValue(std::shared_ptr<State> s, std::shared_ptr<Expr>
 			}
 			break;
 		}
-		case ExprType::REF: {
+		case ExprKind::REF: {
 			auto expr = std::static_pointer_cast<RefExpr>(src);
 			vd.type = SlxFmt::ValueType::REF;
 			_writeValue(vd, fs);
@@ -68,12 +68,15 @@ void Slake::Compiler::writeValue(std::shared_ptr<State> s, std::shared_ptr<Expr>
 			}
 			break;
 		}
-		case ExprType::ARRAY: {
+		case ExprKind::ARRAY: {
 			auto expr = std::static_pointer_cast<ArrayExpr>(src);
 			vd.type = SlxFmt::ValueType::ARRAY;
 			_writeValue(vd, fs);
 
-			fs << (std::uint32_t)expr->elements.size();
+			SlxFmt::ArrayDesc ard;
+			ard.nMembers = expr->elements.size();
+			_writeValue(ard, fs);
+
 			for (auto &i : expr->elements) {
 				auto constExpr = evalConstExpr(i, s);
 				if (!constExpr)

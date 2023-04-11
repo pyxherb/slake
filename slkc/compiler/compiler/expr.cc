@@ -1,6 +1,8 @@
 #include "expr.hh"
-#include "utils.hh"
+
 #include <slkparse.hh>
+
+#include "utils.hh"
 
 using namespace Slake;
 using namespace Slake::Compiler;
@@ -13,14 +15,14 @@ using namespace Slake::Compiler;
 std::shared_ptr<TypeName> Compiler::evalExprType(std::shared_ptr<State> s, std::shared_ptr<Expr> expr, bool isRecursing) {
 	auto &fn = s->fnDefs[s->currentFn];
 	// assert(fn);
-	switch (expr->getType()) {
-		case ExprType::LITERAL: {
+	switch (expr->getExprKind()) {
+		case ExprKind::LITERAL: {
 			auto literalType = std::static_pointer_cast<LiteralExpr>(expr)->getLiteralType();
 			if (!_lt2tnKindMap.count(literalType))
 				throw parser::syntax_error(expr->getLocation(), "Unevaluatable literal type");
 			return std::make_shared<TypeName>(expr->getLocation(), _lt2tnKindMap.at(literalType));
 		}
-		case ExprType::REF: {
+		case ExprKind::REF: {
 			auto ref = std::static_pointer_cast<RefExpr>(expr);
 			if (!isRecursing) {
 				if (s->context.lvars.count(ref->name)) {
@@ -104,7 +106,7 @@ std::shared_ptr<TypeName> Compiler::evalExprType(std::shared_ptr<State> s, std::
 			}
 			throw parser::syntax_error(expr->getLocation(), "Undefined identifier: `" + ref->name + "'");
 		}
-		case ExprType::CALL: {
+		case ExprKind::CALL: {
 			auto e = std::static_pointer_cast<CallExpr>(expr);
 			if (e->isAsync)
 				return std::make_shared<TypeName>(expr->getLocation(), TypeNameKind::U32);
@@ -113,11 +115,11 @@ std::shared_ptr<TypeName> Compiler::evalExprType(std::shared_ptr<State> s, std::
 				throw parser::syntax_error(e->target->getLocation(), "Expression is not callable");
 			return std::static_pointer_cast<FnTypeName>(exprType)->resultType;
 		}
-		case ExprType::AWAIT:
+		case ExprKind::AWAIT:
 			return std::make_shared<TypeName>(expr->getLocation(), TypeNameKind::ANY);
-		case ExprType::NEW:
+		case ExprKind::NEW:
 			return std::static_pointer_cast<NewExpr>(expr)->type;
-		case ExprType::TERNARY: {
+		case ExprKind::TERNARY: {
 			auto e = std::static_pointer_cast<TernaryOpExpr>(expr);
 			auto xType = evalExprType(s, e->x), yType = evalExprType(s, e->y);
 
@@ -130,7 +132,7 @@ std::shared_ptr<TypeName> Compiler::evalExprType(std::shared_ptr<State> s, std::
 				throw parser::syntax_error(e->x->getLocation(), "Operands for ternary operation have different types");
 			return xType;
 		}
-		case ExprType::BINARY: {
+		case ExprKind::BINARY: {
 			auto e = std::static_pointer_cast<BinaryOpExpr>(expr);
 			auto xType = evalExprType(s, e->x), yType = evalExprType(s, e->y);
 			switch (e->op) {
@@ -147,20 +149,85 @@ std::shared_ptr<TypeName> Compiler::evalExprType(std::shared_ptr<State> s, std::
 			}
 			return xType;
 		}
+		case ExprKind::ARRAY: {
+			auto e = std::static_pointer_cast<ArrayExpr>(expr);
+
+			if (e->elements.empty())
+				return std::make_shared<ArrayTypeName>(e->getLocation(), std::make_shared<TypeName>(e->getLocation(), TypeNameKind::ANY));
+
+			std::shared_ptr<ArrayTypeName> type;
+			if (s->desiredType) {
+				assert(s->desiredType->kind == TypeNameKind::ARRAY);
+				type = std::static_pointer_cast<ArrayTypeName>(s->desiredType);
+			} else
+				type = std::make_shared<ArrayTypeName>(e->getLocation(),std::shared_ptr<TypeName>());
+
+			for (auto i : e->elements) {
+				if (!type->type) {
+					type->type = evalExprType(s, i);
+					if (type->type->kind == TypeNameKind::NONE)
+						type->type.reset();
+				}
+				if (!isConvertible(evalExprType(s, i), type->type))
+					throw parser::syntax_error(i->getLocation(), "Incompatible member type");
+			}
+			return type;
+		}
+		case ExprKind::MAP: {
+			auto e = std::static_pointer_cast<MapExpr>(expr);
+
+			if (!e->pairs)
+				return std::make_shared<MapTypeName>(
+					e->getLocation(),
+					std::make_shared<TypeName>(e->getLocation(), TypeNameKind::ANY),
+					std::make_shared<TypeName>(e->getLocation(), TypeNameKind::ANY));
+
+			std::shared_ptr<MapTypeName> type;
+			if (s->desiredType) {
+				assert(s->desiredType->kind == TypeNameKind::MAP);
+				type = std::static_pointer_cast<MapTypeName>(s->desiredType);
+			}
+			type = std::make_shared<MapTypeName>(e->getLocation(), std::shared_ptr<TypeName>(), std::shared_ptr<TypeName>());
+
+			for (auto i : *e->pairs) {
+				if (!type->keyType) {
+					type->keyType = evalExprType(s, i->first);
+					if (type->kind == TypeNameKind::NONE)
+						type->keyType.reset();
+				}
+				if (!type->valueType) {
+					type->valueType = evalExprType(s, i->second);
+					if (type->kind == TypeNameKind::NONE)
+						type->valueType.reset();
+				}
+
+				if (!isConvertible(evalExprType(s, i->first), type->keyType))
+					throw parser::syntax_error(i->first->getLocation(), "Incompatible key type");
+				if (!isConvertible(evalExprType(s, i->second), type->valueType))
+					throw parser::syntax_error(i->second->getLocation(), "Incompatible value type");
+			}
+
+			if (!type->keyType)
+				type->keyType = std::make_shared<TypeName>(e->getLocation(), TypeNameKind::NONE);
+			if (!type->valueType)
+				type->valueType = std::make_shared<TypeName>(e->getLocation(), TypeNameKind::NONE);
+
+			return type;
+		}
 	}
-	return std::shared_ptr<TypeName>();
+	throw std::logic_error("Unable to evaluate expression type");
 }
 
 std::shared_ptr<Expr> Slake::Compiler::evalConstExpr(std::shared_ptr<Expr> expr, std::shared_ptr<State> s) {
-	switch (expr->getType()) {
-		case ExprType::LITERAL:
+	switch (expr->getExprKind()) {
+		case ExprKind::LITERAL:
 			return expr;
-		case ExprType::UNARY: {
+		case ExprKind::UNARY: {
 			std::shared_ptr<UnaryOpExpr> opExpr = std::static_pointer_cast<UnaryOpExpr>(expr);
-			switch (opExpr->x->getType()) {
-				case ExprType::LITERAL:
+			switch (opExpr->x->getExprKind()) {
+				case ExprKind::LITERAL:
 					return std::static_pointer_cast<LiteralExpr>(opExpr->x)->execUnaryOp(opExpr->op);
-				case ExprType::REF: {
+				case ExprKind::REF: {
 					auto ref = std::static_pointer_cast<RefExpr>(opExpr->x);
 					//
 					// Variable and function are both not evaluatable at compile time.
@@ -177,13 +244,13 @@ std::shared_ptr<Expr> Slake::Compiler::evalConstExpr(std::shared_ptr<Expr> expr,
 			}
 			break;
 		}
-		case ExprType::BINARY: {
+		case ExprKind::BINARY: {
 			std::shared_ptr<BinaryOpExpr> opExpr = std::static_pointer_cast<BinaryOpExpr>(expr);
 			auto x = evalConstExpr(opExpr->x, s);
-			if ((!x) || (x->getType() != ExprType::LITERAL))
+			if ((!x) || (x->getExprKind() != ExprKind::LITERAL))
 				return std::shared_ptr<Expr>();
 			auto y = evalConstExpr(opExpr->y, s);
-			if ((!y) || (y->getType() != ExprType::LITERAL))
+			if ((!y) || (y->getExprKind() != ExprKind::LITERAL))
 				return std::shared_ptr<Expr>();
 			return std::static_pointer_cast<LiteralExpr>(opExpr->x)->execBinaryOp(opExpr->op, std::static_pointer_cast<LiteralExpr>(opExpr->y));
 		}

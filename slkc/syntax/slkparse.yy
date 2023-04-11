@@ -197,7 +197,7 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %expect 0
 
 %type <AccessModifier> AccessModifier
-%type <std::shared_ptr<TypeName>> TypeName InheritSlot
+%type <std::shared_ptr<TypeName>> TypeName InheritSlot LiteralTypeName CustomTypeName FnTypeName ArrayTypeName MapTypeName
 %type <std::shared_ptr<ImplList>> ImplementTypeNameList ImplList
 %type <std::shared_ptr<ParamDecl>> ParamDecl
 %type <std::shared_ptr<ParamDeclList>> ParamDecls ParamDeclList
@@ -510,18 +510,18 @@ AccessModifier "native" TypeName T_ID GenericParamList "(" ParamDecls ")" ";" {
 		currentScope->fnDefs[$5] = std::make_shared<FnDef>(@1, $1 | ACCESS_NATIVE, $8, $3, std::shared_ptr<CodeBlock>(), "operator" + $5, $6);
 }
 | AccessModifier "native" "operator" "new" "(" ParamDecls ")" ";" {
-	if(currentScope->fnDefs.count("delete")) {
-		this->error(yylloc, "Redefinition of destructor");
-	}
-	else
-		currentScope->fnDefs["delete"] = std::make_shared<FnDef>(@1, $1 | ACCESS_NATIVE, $6, std::make_shared<TypeName>(@1, TypeNameKind::NONE), std::shared_ptr<CodeBlock>(), "new");
-}
-| AccessModifier "native" "operator" "delete" "(" ParamDecls ")" ";" {
 	if(currentScope->fnDefs.count("new")) {
 		this->error(yylloc, "Redefinition of constructor");
 	}
 	else
-		currentScope->fnDefs["new"] = std::make_shared<FnDef>(@1, $1 | ACCESS_NATIVE, $6, std::make_shared<TypeName>(@1, TypeNameKind::NONE), std::shared_ptr<CodeBlock>(), "delete");
+		currentScope->fnDefs["new"] = std::make_shared<FnDef>(@1, $1 | ACCESS_NATIVE, $6, std::make_shared<TypeName>(@1, TypeNameKind::NONE), std::shared_ptr<CodeBlock>(), "operator new");
+}
+| AccessModifier "native" "operator" "delete" "(" ParamDecls ")" ";" {
+	if(currentScope->fnDefs.count("delete")) {
+		this->error(yylloc, "Redefinition of destructor");
+	}
+	else
+		currentScope->fnDefs["delete"] = std::make_shared<FnDef>(@1, $1 | ACCESS_NATIVE, $6, std::make_shared<TypeName>(@1, TypeNameKind::NONE), std::shared_ptr<CodeBlock>(), "operator delete");
 }
 ;
 
@@ -819,6 +819,7 @@ TimesBlock:
 Expr:
 Ref { $$ = $1; }
 | Literal { $$ = $1; }
+| ArrayExpr { $$ = $1; }
 | MapExpr { $$ = $1; }
 | NewExpr { $$ = $1; }
 | CastExpr { $$ = $1; }
@@ -844,9 +845,9 @@ ExprList { $$ = $1; }
 
 ExprList:
 Expr { $$.push_back($1); }
-| ExprList Expr {
+| ExprList "," Expr {
 	$$ = $1;
-	$$.push_back($2);
+	$$.push_back($3);
 }
 ;
 
@@ -859,7 +860,7 @@ NewExpr:
 ;
 
 MapExpr:
-"{" PairList "}" {
+"[" PairList "]" {
 	$$ = std::make_shared<MapExpr>(@1, $2);
 }
 ;
@@ -901,6 +902,14 @@ TypeName {}
 ;
 
 TypeName:
+LiteralTypeName { $$ = $1; }
+| CustomTypeName { $$ = $1; }
+| FnTypeName  { $$ = $1; }
+| ArrayTypeName { $$ = $1; }
+| MapTypeName { $$ = $1; }
+;
+
+LiteralTypeName:
 "i8" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::I8); }
 |"i16" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::I16); }
 |"i32" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::I32); }
@@ -918,17 +927,29 @@ TypeName:
 |"bool" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::BOOL); }
 |"void" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::NONE); }
 |"any" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::ANY); }
-| "@" StaticRef { $$ = std::make_shared<CustomTypeName>(@1, $2, currentScope); }
+;
+
+CustomTypeName:
+"@" StaticRef { $$ = std::make_shared<CustomTypeName>(@1, $2, currentScope); }
 | "@" T_ID { $$ = std::make_shared<CustomTypeName>(@1, std::make_shared<RefExpr>(@2, $2, true), currentScope); }
-| TypeName "[" "]" { $$ = std::make_shared<ArrayTypeName>(@1, $1); }
-| TypeName "[" TypeName "]" { $$ = std::make_shared<MapTypeName>(@1, $3, $1); }
-| TypeName "->" "(" ParamDecls ")" {
+;
+
+FnTypeName:
+TypeName "->" "(" ParamDecls ")" {
 	auto typeName = std::make_shared<FnTypeName>(@1, $1);
 	$$ = typeName;
 	if ($4)
 		for (auto &i : *$4)
 			typeName->argTypes.push_back(i->typeName);
 }
+;
+
+ArrayTypeName:
+TypeName "[" "]" { $$ = std::make_shared<ArrayTypeName>(@1, $1); }
+;
+
+MapTypeName:
+TypeName "[" TypeName "]" { $$ = std::make_shared<MapTypeName>(@1, $3, $1); }
 ;
 
 SubscriptOpExpr:

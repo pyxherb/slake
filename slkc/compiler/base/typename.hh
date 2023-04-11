@@ -91,18 +91,22 @@ namespace Slake {
 
 		class RefExpr;
 		class Scope;
-		//class Type;
+		class Type;
 		class CustomTypeName : public TypeName {
+		protected:
+			std::weak_ptr<Type> _cachedType;
+
 		public:
 			std::shared_ptr<RefExpr> typeRef;
 			std::weak_ptr<Scope> scope;	 // Scope where the type name constructed
-			//std::weak_ptr<Type> cachedType;
 
 			inline CustomTypeName(location loc, std::shared_ptr<RefExpr> typeRef, std::shared_ptr<Scope> scope) : TypeName(loc, TypeNameKind::CUSTOM) {
 				this->typeRef = typeRef;
 				this->scope = scope;
 			}
 			virtual inline ~CustomTypeName() {}
+
+			std::shared_ptr<Type> resolveType();
 
 			virtual std::string toString() const override;
 		};

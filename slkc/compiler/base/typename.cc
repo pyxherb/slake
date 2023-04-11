@@ -4,6 +4,15 @@ std::string Slake::Compiler::CustomTypeName::toString() const {
 	return "@" + std::to_string(*typeRef);
 }
 
+std::shared_ptr<Slake::Compiler::Type> Slake::Compiler::CustomTypeName::resolveType() {
+	if (!_cachedType.expired())
+		return _cachedType.lock();
+	auto result = scope.lock()->getType(typeRef);
+	if (result)
+		_cachedType = result;
+	return result;
+}
+
 /// @brief Check if type 1 and type 2 are the same type.
 /// @param t1 Type 1.
 /// @param t2 Type 2.

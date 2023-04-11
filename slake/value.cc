@@ -15,7 +15,7 @@ Type::~Type() {
 			if (exData.array)
 				delete exData.array;
 			break;
-		case ValueType::REF:
+		case ValueType::OBJECT:
 			if (exData.deferred)
 				exData.deferred->decHostRefCount();
 			break;

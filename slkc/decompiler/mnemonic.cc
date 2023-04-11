@@ -2,7 +2,7 @@
 
 using namespace Slake;
 
-std::unordered_map<Opcode, const char*> Decompiler::mnemonics = {
+std::unordered_map<Opcode, const char *> Decompiler::mnemonics = {
 	{ Opcode::NOP, "NOP" },
 	{ Opcode::PUSH, "PUSH" },
 	{ Opcode::POP, "POP" },
@@ -44,6 +44,7 @@ std::unordered_map<Opcode, const char*> Decompiler::mnemonics = {
 	{ Opcode::CALL, "CALL" },
 	{ Opcode::ACALL, "ACALL" },
 	{ Opcode::RET, "RET" },
+	{ Opcode::NEW, "NEW" },
 	{ Opcode::LRET, "LRET" },
 	{ Opcode::THROW, "THROW" },
 	{ Opcode::PUSHXH, "PUSHXH" },

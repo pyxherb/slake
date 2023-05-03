@@ -33,9 +33,13 @@ namespace Slake {
 
 	class AccessModified {
 	private:
-		AccessModifier _modifier;
+		AccessModifier _modifier = 0;
 
 	public:
+		AccessModified() = delete;
+		AccessModified(const AccessModified &) = delete;
+		AccessModified(const AccessModified &&) = delete;
+
 		inline AccessModified(AccessModifier modifier = 0) : _modifier(modifier) {}
 		virtual inline ~AccessModified() {}
 		inline AccessModifier getAccess() noexcept { return _modifier; }
@@ -105,17 +109,9 @@ namespace Slake {
 
 		inline Type(const Type &x) { *this = x; }
 		inline Type(const Type &&x) { *this = x; }
-
 		inline Type(ValueType valueType) : valueType(valueType) {}
-
-		inline Type(ValueType valueType, Value *type) : valueType(valueType) {
-			exData.customType = type;
-		}
-
-		inline Type(ValueType valueType, Type type) : valueType(valueType) {
-			exData.array = new Type(type);
-		}
-
+		inline Type(ValueType valueType, Value *classObject) : valueType(valueType) { exData.customType = classObject; }
+		inline Type(ValueType valueType, Type elementType) : valueType(valueType) { exData.array = new Type(elementType); }
 		Type(RefValue *ref);
 
 		inline Type(Type k, Type v) : valueType(ValueType::MAP) {
@@ -124,9 +120,9 @@ namespace Slake {
 
 		~Type();
 
-		bool isDeferred();
+		bool isDeferred() noexcept;
 
-		inline bool operator==(const Type &&x) {
+		inline bool operator==(const Type &&x) noexcept {
 			if (x.valueType != valueType)
 				return false;
 			switch (x.valueType) {
@@ -143,20 +139,28 @@ namespace Slake {
 			return true;
 		}
 
-		inline bool operator==(const Type &x) {
+		inline bool operator==(const Type &x) noexcept {
 			return *this == std::move(x);
 		}
 
-		inline bool operator!=(const Type &&x) { return !(*this == x); }
-		inline bool operator!=(const Type &x) { return !(*this == x); }
+		inline bool operator!=(const Type &&x) noexcept { return !(*this == x); }
+		inline bool operator!=(const Type &x) noexcept { return !(*this == x); }
 
-		inline Type &operator=(const Type &&x) {
-			valueType = x.valueType;
-			std::memcpy(&exData, &(x.exData), sizeof(exData));
+		inline bool operator==(ValueType x) noexcept {
+			return this->valueType == x;
+		}
+		inline bool operator!=(ValueType x) noexcept {
+			return this->valueType != x;
 		}
 
-		inline Type &operator=(const Type &x) {
-			*this = std::move(x);
+		inline Type &operator=(const Type &&x) noexcept {
+			valueType = x.valueType;
+			std::memcpy(&exData, &(x.exData), sizeof(exData));
+			return *this;
+		}
+
+		inline Type &operator=(const Type &x) noexcept {
+			return *this = std::move(x);
 		}
 	};
 
@@ -224,13 +228,13 @@ namespace Slake {
 			return ValueRef<T1>((T1 *)_value);
 		}
 
-		inline operator bool() {
+		inline operator bool() const {
 			return _value;
 		}
 	};
 
 	using ValueFlags = std::uint8_t;
-	constexpr static ValueFlags VF_WALKED = 0x01;
+	constexpr static ValueFlags VF_GCWALKED = 0x01;
 
 	class Value {
 	private:
@@ -238,7 +242,7 @@ namespace Slake {
 		// The garbage collector will never release it if its host reference count is not 0.
 		std::atomic_uint32_t _hostRefCount;
 		Runtime *_rt;
-		ValueFlags flags;
+		ValueFlags flags = 0;
 
 		friend class Runtime;
 
@@ -342,34 +346,16 @@ namespace Slake {
 	using BoolValue = LiteralValue<bool, ValueType::BOOL>;
 	using StringValue = LiteralValue<std::string, ValueType::STRING>;
 
-	class ClassValue : public MemberValue {
-	protected:
-		std::unordered_map<std::string, MemberValue *> _members;
-
-	public:
-		inline ClassValue(Runtime *rt, AccessModifier access, Value *parent) : MemberValue(rt, access, parent) {}
-		virtual inline ~ClassValue() {}
-
-		virtual inline Type getType() const override { return ValueType::CLASS; }
-
-		virtual inline Value *getMember(std::string name) override { return _members.at(name); }
-		virtual inline const Value *getMember(std::string name) const override { return _members.at(name); }
-
-		virtual inline void addMember(std::string name, MemberValue *value) {
-			if (_members.count(name))
-				delete _members[name];
-			_members[name] = value;
-			value->incRefCount();
-		}
-
-		ClassValue &operator=(const ClassValue &) = delete;
-		ClassValue &operator=(const ClassValue &&) = delete;
-	};
-
 	class ObjectValue : public Value {
 	protected:
 		std::unordered_map<std::string, MemberValue *> _members;
 		Value *const _type;
+		inline void addMember(std::string name, MemberValue *value) {
+			value->incRefCount();
+			_members[name] = value;
+		}
+
+		friend class Runtime;
 
 	public:
 		inline ObjectValue(Runtime *rt, Value *type) : Value(rt), _type(type) {}
@@ -377,9 +363,11 @@ namespace Slake {
 
 		virtual inline Type getType() const override { return Type(ValueType::OBJECT, _type); }
 
-		virtual inline Value *getMember(std::string name) override { return _members.at(name); }
+		virtual inline Value *getMember(std::string name) override { return _members.count(name) ? _members.at(name) : nullptr; }
 		virtual inline const Value *getMember(std::string name) const override { return _members.at(name); }
 
+		ObjectValue(ObjectValue &) = delete;
+		ObjectValue(ObjectValue &&) = delete;
 		ObjectValue &operator=(const ObjectValue &) = delete;
 		ObjectValue &operator=(const ObjectValue &&) = delete;
 	};
@@ -406,10 +394,9 @@ namespace Slake {
 
 	class RefValue final : public Value {
 	public:
-		std::string name;
-		ValueRef<RefValue> next;
+		std::vector<std::string> scopes;
 
-		inline RefValue(Runtime *rt, std::string name, ValueRef<RefValue> next) : Value(rt), name(name), next(next) {
+		inline RefValue(Runtime *rt) : Value(rt) {
 		}
 		virtual inline ~RefValue() {}
 		virtual inline Type getType() const override { return ValueType::REF; }
@@ -420,14 +407,14 @@ namespace Slake {
 
 	class VarValue final : public MemberValue {
 	protected:
-		Value *value;
-		const Type type;
+		ValueRef<> value;
+		const Type type = Type(ValueType::ANY);
 
 	public:
 		inline VarValue(Runtime *rt, AccessModifier access, Type type, Value *parent)
 			: MemberValue(rt, access, parent), type(type) {}
 
-		virtual inline ~VarValue() { delete value; }
+		virtual inline ~VarValue() {}
 		virtual inline Type getType() const override { return ValueType::VAR; }
 		inline Type getVarType() const { return type; }
 
@@ -438,10 +425,11 @@ namespace Slake {
 			return value ? value->getMember(name) : nullptr;
 		}
 
-		Value *getValue() { return value; }
+		Value *getValue() { return *value; }
 		void setValue(Value *value) {
-			if (value->getType() != type)
-				throw this->value = value;
+			// if (value->getType() != type)
+			//	throw std::runtime_error("Mismatched types");
+			this->value = value;
 		}
 
 		VarValue &operator=(const VarValue &) = delete;
@@ -530,18 +518,18 @@ namespace Slake {
 
 	class FnValue final : public MemberValue {
 	protected:
-		Instruction *_body;
-		std::uint32_t _nIns;
+		Instruction *const _body;
+		const std::uint32_t _nIns;
 
 		friend class Runtime;
 
 	public:
 		inline FnValue(Runtime *rt, std::uint32_t nIns, AccessModifier access, Value *parent)
 			: _nIns(nIns),
+			  _body(new Instruction[nIns]),
 			  MemberValue(rt, access, parent) {
 			if (!nIns)
 				throw std::invalid_argument("Invalid instruction count");
-			_body = new Instruction[nIns]{};
 		}
 		virtual inline ~FnValue() { delete[] _body; }
 
@@ -576,31 +564,47 @@ namespace Slake {
 		NativeFnValue &operator=(const NativeFnValue &&) = delete;
 	};
 
-	class ModuleValue final : public Value {
+	class ModuleValue : public MemberValue {
 	protected:
-		std::unordered_map<std::string, MemberValue *> _members;
+		std::unordered_map<std::string, Value *> _members;
 
 	public:
-		inline ModuleValue(Runtime *rt) : Value(rt) {
+		inline ModuleValue(Runtime *rt, AccessModifier access, Value *parent) : MemberValue(rt, access, parent) {
 		}
 		virtual inline ~ModuleValue() {
 			for (auto i : _members)
 				delete i.second;
 		}
 
-		virtual inline Value *getMember(std::string name) override { return _members.at(name); }
-		virtual inline const Value *getMember(std::string name) const override { return _members.at(name); }
+		virtual inline Value *getMember(std::string name) override { return _members.count(name) ? _members.at(name) : nullptr; }
+		virtual inline const Value *getMember(std::string name) const override { return _members.count(name) ? _members.at(name) : nullptr; }
 		virtual inline Type getType() const override { return ValueType::MOD; }
 
 		virtual inline void addMember(std::string name, MemberValue *value) {
 			if (_members.count(name))
 				delete _members[name];
-			_members[name] = value;
 			value->incRefCount();
+			_members[name] = value;
 		}
 
 		ModuleValue &operator=(const ModuleValue &) = delete;
 		ModuleValue &operator=(const ModuleValue &&) = delete;
+	};
+
+	class ClassValue : public ModuleValue {
+	protected:
+		std::vector<Type> _traits;
+
+		friend class Runtime;
+
+	public:
+		inline ClassValue(Runtime *rt, AccessModifier access, Value *parent) : ModuleValue(rt, access, parent) {}
+		virtual inline ~ClassValue() {}
+
+		virtual inline Type getType() const override { return ValueType::CLASS; }
+
+		ClassValue &operator=(const ClassValue &) = delete;
+		ClassValue &operator=(const ClassValue &&) = delete;
 	};
 }
 

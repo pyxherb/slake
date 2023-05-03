@@ -12,8 +12,8 @@ using namespace Slake;
 template <typename TD, typename TS>
 static TD _checkOperandRange(ValueRef<> v) {
 	auto value = (LiteralValue<TS, getValueType<TS>()> *)*v;
-	if (value->getValue() > std::numeric_limits<TD>::max() ||
-		value->getValue() < std::numeric_limits<TD>::min())
+	if ((TD)value->getValue() > std::numeric_limits<TD>::max() ||
+		(TD)value->getValue() < std::numeric_limits<TD>::min())
 		throw InvalidOperandsError("Invalid operand value");
 	return (TD)value->getValue();
 }
@@ -200,7 +200,8 @@ static Value *_execUnaryOp(ValueRef<> x, Opcode opcode) {
 					throw InvalidOperandsError("Binary operation with incompatible types");
 			case Opcode::NOT:
 				return new BoolValue(rt, !_x->getValue());
-			case Opcode::INC:
+			case Opcode::INCF:
+			case Opcode::INCB:
 				if constexpr (std::is_integral<T>::value)
 					return new LiteralValue<T, getValueType<T>()>(rt, _x->getValue() + 1);
 				else if constexpr (std::is_same<T, float>::value)
@@ -209,7 +210,8 @@ static Value *_execUnaryOp(ValueRef<> x, Opcode opcode) {
 					return new LiteralValue<T, getValueType<T>()>(rt, _x->getValue() + 1.0);
 				else
 					throw InvalidOperandsError("Binary operation with incompatible types");
-			case Opcode::DEC:
+			case Opcode::DECF:
+			case Opcode::DECB:
 				if constexpr (std::is_integral<T>::value)
 					return new LiteralValue<T, getValueType<T>()>(rt, _x->getValue() - 1);
 				else if constexpr (std::is_same<T, float>::value)
@@ -220,13 +222,50 @@ static Value *_execUnaryOp(ValueRef<> x, Opcode opcode) {
 					throw InvalidOperandsError("Binary operation with incompatible types");
 			case Opcode::NEG:
 				return new LiteralValue<T, getValueType<T>()>(rt, -_x->getValue());
-			default:
-				throw InvalidOperandsError("Binary operation with incompatible types");
 		}
+	}
+	throw InvalidOperandsError("Binary operation with incompatible types");
+}
+
+/// @brief Create a new class instance.
+/// @param cls Class for instance creation.
+/// @return Created instance of the class.
+ObjectValue *Slake::Runtime::_newClassInstance(ClassValue *cls) {
+	ObjectValue *instance = new ObjectValue(this, (MemberValue *)cls);
+	for (auto i : cls->_members) {
+		switch (i.second->getType().valueType) {
+			case ValueType::VAR: {
+				auto newVar = new VarValue(this, ((VarValue *)i.second)->getAccess(), ((VarValue *)i.second)->getVarType(), instance);
+				instance->addMember(i.first, newVar);
+				break;
+			}
+			case ValueType::FN: {
+				if (!((FnValue *)i.second)->isStatic())
+					instance->addMember(i.first, (MemberValue *)i.second);
+				break;
+			}
+		}
+	}
+	return instance;
+}
+
+void Slake::Runtime::_callFn(Context *context, FnValue *fn) {
+	if (fn->isNative()) {
+		context->retValue = fn->call((uint8_t)context->execContext.args.size(), &context->execContext.args.front());
+	} else {
+		context->callingStack.push_back(context->execContext);
+
+		context->execContext.curIns = 0;
+		context->execContext.fn = fn;
+		context->frames.push_back(Frame(context->stackBase, context->frames.back().exitOff));
+		return;
 	}
 }
 
-void Slake::Runtime::execIns(Context *context, Instruction &ins) {
+/// @brief Execute a single instruction.
+/// @param context Context for execution.
+/// @param ins Instruction to execute.
+void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 	switch (ins.opcode) {
 		case Opcode::NOP:
 			break;
@@ -247,15 +286,74 @@ void Slake::Runtime::execIns(Context *context, Instruction &ins) {
 			} else {
 				_checkOperandCount(ins, 1);
 				_checkOperandType(ins, ValueType::REF);
-				context->push(ins.operands[0]);
+				context->push(resolveRef(ins.operands[0]));
 			}
 			break;
-		case Opcode::LSTORE:
-		case Opcode::STORE:
-			_checkOperandCount(ins, 0, 1);
-			_checkOperandType(ins, ValueType::I32);
-			context->dataStack.pop_back();
+		case Opcode::RLOAD: {
+			_checkOperandCount(ins, 1);
+			_checkOperandType(ins, ValueType::REF);
+
+			ValueRef<> v = context->pop();
+			if (!v)
+				throw InvalidOperandsError("Invalid operand combination");
+
+			if (!(v = resolveRef((RefValue *)*(ins.operands[0]), *v)))
+				throw ResourceNotFoundError("No such resource");
+			context->push(v);
 			break;
+		}
+		case Opcode::LSTORE: {
+			_checkOperandCount(ins, 0, 1);
+
+			ValueRef<I32Value> x(nullptr);
+			if (!ins.getOperandCount())
+				x = (I32Value *)*(context->pop());
+			else
+				x = ins.operands[0];
+
+			if (x->getType() != ValueType::I32)
+				throw InvalidOperandsError("Invalid operand combination");
+
+			context->dataStack[context->frames.back().stackBase] = context->pop();
+			break;
+		}
+		case Opcode::STORE: {
+			_checkOperandCount(ins, 0, 1);
+
+			ValueRef<> x;
+			if (!ins.getOperandCount())
+				x = (VarValue *)*(context->pop());
+			else
+				x = ins.operands[0];
+
+			if (!x)
+				throw InvalidOperandsError("Invalid operand combination");
+
+			if (x->getType() == ValueType::REF) {
+				x = (VarValue *)resolveRef((RefValue *)*x, *(context->execContext.pThis));
+
+				if ((!x) || (x->getType() != ValueType::VAR)) {
+					if ((!(x = (VarValue *)resolveRef((RefValue *)*x, nullptr))) || (x->getType() != ValueType::VAR))
+						throw ResourceNotFoundError("No such variable");
+				}
+
+				if ((((VarValue *)*x)->getAccess() & ACCESS_CONST))
+					throw AccessViolationError("Cannot store to a constant");
+			}
+
+			// TODO: Implement the type checker.
+			((VarValue *)*x)->setValue(*(context->dataStack.back()));
+			break;
+		}
+		case Opcode::LVALUE: {
+			_checkOperandCount(ins, 0);
+
+			auto v = context->pop();
+			if (v->getType() != ValueType::VAR)
+				throw InvalidOperandsError("Invalid operand combination");
+			context->push(((VarValue *)*v)->getValue());
+			break;
+		}
 		case Opcode::EXPAND: {
 			_checkOperandCount(ins, 0, 1);
 			std::uint32_t n = _getOperandAsAddress(ins.operands[0]);
@@ -306,6 +404,11 @@ void Slake::Runtime::execIns(Context *context, Instruction &ins) {
 			else
 				x = ins.operands[0], y = ins.operands[1];
 
+			if (!x)
+				throw NullRefError("");
+			if (!y)
+				throw NullRefError("");
+
 			switch (x->getType().valueType) {
 				case ValueType::I8:
 					context->push(_execBinaryOp<std::int8_t>(x, y, ins.opcode));
@@ -345,56 +448,86 @@ void Slake::Runtime::execIns(Context *context, Instruction &ins) {
 			}
 			break;
 		}
+		case Opcode::INCF:
+		case Opcode::DECF:
+		case Opcode::INCB:
+		case Opcode::DECB:
 		case Opcode::REV:
 		case Opcode::NOT:
-		case Opcode::INC:
-		case Opcode::DEC:
 		case Opcode::NEG: {
 			_checkOperandCount(ins, 1);
 
 			ValueRef<> x;
+			ValueRef<VarValue> v;
+
 			if (!ins.getOperandCount())
 				x = context->pop();
 			else
 				x = ins.operands[0];
 
+			if (!x)
+				throw NullRefError("");
+
+			switch (ins.opcode) {
+				case Opcode::INCB:
+				case Opcode::DECB:
+				case Opcode::INCF:
+				case Opcode::DECF:
+					if (x->getType() != ValueType::VAR)
+						throw InvalidOperandsError("Invalid binary operation for operands");
+
+					switch (ins.opcode) {
+						case Opcode::INCB:
+						case Opcode::DECB:
+							context->push(((VarValue *)*x)->getValue());
+					}
+
+					v = x;
+					x = v->getValue();
+			}
+
+			Value *value;
 			switch (x->getType().valueType) {
 				case ValueType::I8:
-					context->push(_execUnaryOp<std::int8_t>(x, ins.opcode));
+					value = _execUnaryOp<std::int8_t>(x, ins.opcode);
 					break;
 				case ValueType::I16:
-					context->push(_execUnaryOp<std::int16_t>(x, ins.opcode));
+					value = _execUnaryOp<std::int16_t>(x, ins.opcode);
 					break;
 				case ValueType::I32:
-					context->push(_execUnaryOp<std::int32_t>(x, ins.opcode));
+					value = _execUnaryOp<std::int32_t>(x, ins.opcode);
 					break;
 				case ValueType::I64:
-					context->push(_execUnaryOp<std::int64_t>(x, ins.opcode));
+					value = _execUnaryOp<std::int64_t>(x, ins.opcode);
 					break;
 				case ValueType::U8:
-					context->push(_execUnaryOp<std::uint8_t>(x, ins.opcode));
+					value = _execUnaryOp<std::uint8_t>(x, ins.opcode);
 					break;
 				case ValueType::U16:
-					context->push(_execUnaryOp<std::uint16_t>(x, ins.opcode));
+					value = _execUnaryOp<std::uint16_t>(x, ins.opcode);
 					break;
 				case ValueType::U32:
-					context->push(_execUnaryOp<std::uint32_t>(x, ins.opcode));
+					value = _execUnaryOp<std::uint32_t>(x, ins.opcode);
 					break;
 				case ValueType::U64:
-					context->push(_execUnaryOp<std::uint64_t>(x, ins.opcode));
+					value = _execUnaryOp<std::uint64_t>(x, ins.opcode);
 					break;
 				case ValueType::FLOAT:
-					context->push(_execUnaryOp<float>(x, ins.opcode));
+					value = _execUnaryOp<float>(x, ins.opcode);
 					break;
 				case ValueType::DOUBLE:
-					context->push(_execUnaryOp<double>(x, ins.opcode));
+					value = _execUnaryOp<double>(x, ins.opcode);
 					break;
 				case ValueType::STRING:
-					context->push(_execUnaryOp<std::string>(x, ins.opcode));
+					value = _execUnaryOp<std::string>(x, ins.opcode);
 					break;
 				default:
 					throw InvalidOperandsError("Invalid binary operation for operands");
 			}
+			context->push(value);
+
+			if (v)
+				v->setValue(value);
 			break;
 		}
 		case Opcode::JMP: {
@@ -427,6 +560,43 @@ void Slake::Runtime::execIns(Context *context, Instruction &ins) {
 			} else if (ins.opcode == Opcode::JF)
 				context->execContext.curIns = x->getValue();
 			break;
+		} /*
+		case Opcode::CAST: {
+		}*/
+		case Opcode::SARG: {
+			_checkOperandCount(ins, 0, 1);
+
+			ValueRef<> x = ins.getOperandCount() ? ins.operands[0] : context->pop();
+			context->execContext.args.push_back(x);
+			break;
+		}
+		case Opcode::LARG: {
+			_checkOperandCount(ins, 0, 1);
+			ValueRef<> x = ins.getOperandCount() ? ins.operands[0] : context->pop();
+
+			if (x->getType() != ValueType::U32)
+				throw InvalidOperandsError("Invalid operand type");
+
+			context->push(context->execContext.args.at(((U32Value *)*x)->getValue()));
+			break;
+		}
+		case Opcode::LTHIS: {
+			_checkOperandCount(ins, 0);
+
+			context->push(context->execContext.pThis);
+			break;
+		}
+		case Opcode::STHIS: {
+			_checkOperandCount(ins, 0, 1);
+
+			ValueRef<> x;
+			if (!ins.getOperandCount())
+				x = context->pop();
+			else
+				x = ins.operands[0];
+
+			context->execContext.pThis = x;
+			break;
 		}
 		case Opcode::CALL: {
 			_checkOperandCount(ins, 0, 1);
@@ -437,24 +607,19 @@ void Slake::Runtime::execIns(Context *context, Instruction &ins) {
 			else
 				x = ins.operands[0];
 
-			MemberValue *fn = (MemberValue *)resolveRef((RefValue *)*x, *(context->execContext.scopeValue));
-			if ((!fn) || (fn->getType() != ValueType::FN)) {
-				auto fn = resolveRef((RefValue *)*x);
+			FnValue *fn = (FnValue *)*x;
+			if (fn->getType() != ValueType::FN) {
+				fn = (FnValue *)resolveRef((RefValue *)*x, *(context->execContext.scopeValue));
+				if ((!fn) || (fn->getType() != ValueType::FN)) {
+					auto fn = resolveRef((RefValue *)*x);
 
-				if ((!fn) || (fn->getType() != ValueType::FN))
-					throw InvalidOperandsError("No such function or method");
+					if ((!fn) || (fn->getType() != ValueType::FN))
+						throw ResourceNotFoundError("No such function or method");
+				}
 			}
 
-			if (fn->isNative()) {
-				context->retValue = fn->call((uint8_t)context->execContext.args.size(), &context->execContext.args.front());
-			} else {
-				context->callingStack.push_back(context->execContext);
-
-				context->execContext.curIns = 0;
-				context->execContext.fn = (FnValue *)fn;
-				return;
-			}
-			break;
+			_callFn(context, fn);
+			return;
 		}
 		case Opcode::ACALL: {
 			_checkOperandCount(ins, 0, 1);
@@ -470,7 +635,7 @@ void Slake::Runtime::execIns(Context *context, Instruction &ins) {
 				auto fn = resolveRef((RefValue *)*x);
 
 				if ((!fn) || (fn->getType() != ValueType::FN))
-					throw InvalidOperandsError("No such method");
+					throw ResourceNotFoundError("No such method");
 			}
 			break;
 		}
@@ -488,6 +653,30 @@ void Slake::Runtime::execIns(Context *context, Instruction &ins) {
 			context->execContext = context->callingStack.back();
 			context->callingStack.pop_back();
 			break;
+		}
+		case Opcode::NEW: {
+			_checkOperandCount(ins, 1);
+
+			MemberValue *cls = (MemberValue *)resolveRef(ins.operands[0], *(context->execContext.scopeValue));
+			if ((!cls) || cls->getType() != ValueType::CLASS) {
+				cls = (MemberValue *)resolveRef(ins.operands[0]);
+				if ((!cls) || cls->getType() != ValueType::CLASS) {
+					throw ResourceNotFoundError("Class not found");
+				}
+			}
+
+			auto instance = _newClassInstance((ClassValue *)cls);
+			context->push(instance);
+
+			auto savedThis = context->execContext.pThis;
+
+			FnValue *constructor = (FnValue *)cls->getMember("new");
+			if (constructor && constructor->getType() == ValueType::FN)
+				_callFn(context, constructor);
+
+			context->execContext.pThis = instance;
+
+			return;
 		}
 		case Opcode::LRET: {
 			_checkOperandCount(ins, 0);
@@ -520,10 +709,14 @@ void Slake::Runtime::execIns(Context *context, Instruction &ins) {
 }
 
 Value *Slake::Runtime::resolveRef(ValueRef<RefValue> ref, Value *v) {
+	if (!ref)
+		return nullptr;
+
 	if (!v)
 		v = _rootValue;
-	for (auto i = ref; i; i = i->next)
-		if (!(v = v->getMember(i->name)))
+	for (auto i : ref->scopes) {
+		if (!(v = v->getMember(i)))
 			return nullptr;
+	}
 	return v;
 }

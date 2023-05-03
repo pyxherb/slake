@@ -20,7 +20,7 @@ pub class MT19937RandomContext : @RandomContext<u32> {
 			for (u16 i = 0; i < 624; i++) {
 				n = (_states[i] & 0x800000000) + (_states[i % 624] & 0x7fffffff);
 				_states[i] = (n >> 1) ^ _states[(i + 397) % 624];
-				
+
 				if (n & 1) {
 					_states[i] = _states[i] ^ 0x9908b0df;
 				}
@@ -31,5 +31,6 @@ pub class MT19937RandomContext : @RandomContext<u32> {
 		n ^= ((n << 7) & 0x9d2c5680);
 		n ^= ((n << 15) & 0xefc60000);
 		n ^= (n >> 18);
+		return n;
 	}
 }

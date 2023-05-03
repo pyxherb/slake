@@ -3,13 +3,15 @@
 %top {
 #include <slkparse.hh>
 
-Slake::Compiler::parser::symbol_type yylval;
-
 #define YY_USER_ACTION yylloc.columns(yyleng);
 #define YY_DECL Slake::Compiler::parser::symbol_type yylex()
 
 using namespace Slake::Compiler;
 }
+
+%{
+Slake::Compiler::parser::symbol_type yylval;
+%}
 
 %x COMMENT LINE_COMMENT STRING ESCAPE
 
@@ -113,6 +115,7 @@ yylloc.step();
 "use"		return parser::make_KW_USE(yylloc);
 "var"		return parser::make_KW_VAR(yylloc);
 "while"		return parser::make_KW_WHILE(yylloc);
+"yield"		return parser::make_KW_YIELD(yylloc);
 
 "i8"		return parser::make_TN_I8(yylloc);
 "i16"		return parser::make_TN_I16(yylloc);

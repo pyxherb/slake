@@ -5,7 +5,7 @@
 
 namespace Slake {
 	namespace Util {
-		/// @brief Get byte order in target machine.
+		/// @brief Get byte order on target machine.
 		/// @return Whether the byte order is big-endian.
 		/// @retval true The machine is big-endian.
 		/// @retval false The machine is little-endian.

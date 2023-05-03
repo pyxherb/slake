@@ -11,8 +11,9 @@
 
 %{
 #include <slkparse.hh>
+#include <slklex.h>
 
-Slake::Compiler::parser::symbol_type yylex();
+YY_DECL;
 
 %}
 
@@ -92,6 +93,7 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %token KW_USE "use"
 %token KW_VAR "var"
 %token KW_WHILE "while"
+%token KW_YIELD "yield"
 
 %token TN_I8 "i8"
 %token TN_I16 "i16"
@@ -330,20 +332,7 @@ EnumPair:
 T_ID {
 	if(currentEnum->pairs.count($1))
 		this->error(yylloc, "Redefinition of enumeration constant `" + $1 + "`");
-	else {
-		if(currentEnum->pairs.size()) {
-			currentEnum->pairs[$1] = evalConstExpr(
-				std::make_shared<UnaryOpExpr>(
-					(currentEnum->pairs.rbegin())->second->getLocation(),
-					UnaryOp::INC_F,
-					(currentEnum->pairs.rbegin())->second
-				),
-				std::make_shared<State>(currentScope)
-			);
-		}
-		else
-			currentEnum->pairs[$1] = std::make_shared<IntLiteralExpr>(@1, 0);
-	}
+	currentEnum->pairs[$1] = std::make_shared<IntLiteralExpr>(@1, 0);
 }
 | T_ID "=" Expr {
 	if(currentEnum->pairs.count($1))
@@ -765,6 +754,7 @@ ElseBlock:
 
 CodeBlock:
 "{" Stmts "}" { $$ = $2; }
+| "{" Stmts Expr "}" {  }
 | "{" "}" { $$ = std::make_shared<CodeBlock>(@1); }
 ;
 
@@ -831,6 +821,7 @@ Ref { $$ = $1; }
 | MatchExpr { $$ = $1; }
 | CallExpr { $$ = $1; }
 | AwaitExpr { $$ = $1; }
+| ClosureExpr {}
 | "..." { $$ = std::make_shared<RefExpr>(@1, "...", false); }
 ;
 
@@ -865,8 +856,10 @@ MapExpr:
 }
 ;
 
-Closure:
-TypeName "(" ParamDecls ")" CodeBlock {
+ClosureExpr:
+"fn" "(" ParamDecls ")" "->" TypeName CodeBlock {
+}
+| "fn" "(" ParamDecls ")" "async" "->" TypeName CodeBlock {
 }
 ;
 
@@ -936,7 +929,7 @@ CustomTypeName:
 
 FnTypeName:
 TypeName "->" "(" ParamDecls ")" {
-	auto typeName = std::make_shared<FnTypeName>(@1, $1);
+	auto typeName = std::make_shared<FnTypeName>(@1, $1, true);
 	$$ = typeName;
 	if ($4)
 		for (auto &i : *$4)

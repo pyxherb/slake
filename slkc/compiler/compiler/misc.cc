@@ -1,20 +1,49 @@
-#include "utils.hh"
+#include "misc.hh"
 
 #include <slkparse.hh>
-
-#include "expr.hh"
 
 using namespace Slake;
 using namespace Slake::Compiler;
 
-void Slake::Compiler::writeIns(std::shared_ptr<State> s, Opcode opcode, std::fstream &fs, std::initializer_list<std::shared_ptr<Expr>> operands) {
+void State::compileArg(std::shared_ptr<Expr> expr) {
+	compileRightExpr(expr);
+	fnDefs[currentFn]->insertIns({ Opcode::SARG, {} });
+}
+
+void State::compileTypeName(std::fstream &fs, std::shared_ptr<TypeName> j) {
+	_writeValue(_tnKind2vtMap.at(j->kind), fs);
+	switch (j->kind) {
+		case TypeNameKind::ARRAY: {
+			auto tn = std::static_pointer_cast<ArrayTypeName>(j);
+			compileTypeName(fs, tn->type);
+			break;
+		}
+		case TypeNameKind::MAP: {
+			auto tn = std::static_pointer_cast<MapTypeName>(j);
+			compileTypeName(fs, tn->keyType);
+			compileTypeName(fs, tn->valueType);
+			break;
+		}
+		case TypeNameKind::CUSTOM: {
+			auto tn = std::static_pointer_cast<CustomTypeName>(j);
+			auto t = Scope::getCustomType(tn);
+			if (!t)
+				throw parser::syntax_error(tn->getLocation(), "Type `" + std::to_string(*tn) + "' was not defined");
+			// ! FIXME
+			writeValue(tn->typeRef, fs);
+			break;
+		}
+	}
+}
+
+void State::writeIns(Opcode opcode, std::fstream &fs, std::initializer_list<std::shared_ptr<Expr>> operands) {
 	assert(operands.size() <= 3);
 	_writeValue(SlxFmt::InsHeader{ opcode, (std::uint8_t)operands.size() }, fs);
 	for (auto &i : operands)
-		writeValue(s, i, fs);
+		writeValue(i, fs);
 }
 
-void Slake::Compiler::writeValue(std::shared_ptr<State> s, std::shared_ptr<Expr> src, std::fstream &fs) {
+void State::writeValue(std::shared_ptr<Expr> src, std::fstream &fs) {
 	SlxFmt::ValueDesc vd = {};
 	switch (src->getExprKind()) {
 		case ExprKind::LITERAL: {
@@ -78,10 +107,10 @@ void Slake::Compiler::writeValue(std::shared_ptr<State> s, std::shared_ptr<Expr>
 			_writeValue(ard, fs);
 
 			for (auto &i : expr->elements) {
-				auto constExpr = evalConstExpr(i, s);
+				auto constExpr = evalConstExpr(i);
 				if (!constExpr)
 					throw parser::syntax_error(i->getLocation(), "Expression cannot be evaluated in compile time");
-				writeValue(s, constExpr, fs);
+				writeValue(constExpr, fs);
 			}
 			break;
 		}
@@ -135,10 +164,10 @@ const std::unordered_map<TypeNameKind, SlxFmt::ValueType> Slake::Compiler::_tnKi
 };
 
 const std::unordered_map<UnaryOp, Opcode> Slake::Compiler::_unaryOp2opcodeMap = {
-	{ UnaryOp::INC_F, Opcode::INC },
-	{ UnaryOp::INC_B, Opcode::INC },
-	{ UnaryOp::DEC_F, Opcode::DEC },
-	{ UnaryOp::DEC_B, Opcode::DEC },
+	{ UnaryOp::INC_F, Opcode::INCF },
+	{ UnaryOp::INC_B, Opcode::INCB },
+	{ UnaryOp::DEC_F, Opcode::DECF },
+	{ UnaryOp::DEC_B, Opcode::DECB },
 	{ UnaryOp::NEG, Opcode::NEG },
 	{ UnaryOp::NOT, Opcode::NOT },
 	{ UnaryOp::REV, Opcode::REV }

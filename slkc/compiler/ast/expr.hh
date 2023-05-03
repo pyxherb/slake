@@ -1,5 +1,5 @@
-#ifndef _SLKC_COMPILER_EXPR_HH
-#define _SLKC_COMPILER_EXPR_HH
+#ifndef _SLKC_COMPILER_AST_EXPR_HH
+#define _SLKC_COMPILER_AST_EXPR_HH
 
 #include <functional>
 #include <memory>
@@ -217,6 +217,15 @@ namespace Slake {
 			}
 		};
 
+		inline std::shared_ptr<RefExpr> copyRef(std::shared_ptr<RefExpr> expr) {
+			std::shared_ptr<RefExpr> root = std::make_shared<RefExpr>(expr->getLocation(), expr->name, expr->isStatic), i = expr->next, j = root;
+			while (i) {
+				j->next = std::make_shared<RefExpr>(i->getLocation(), i->name, i->isStatic);
+				i = i->next, j = j->next;
+			}
+			return root;
+		}
+
 		class ArgList : public std::vector<std::shared_ptr<Expr>>, public IStringifiable {
 		public:
 			std::string toString() const {
@@ -297,13 +306,13 @@ namespace Slake {
 		public:
 			T data;
 
-			inline SimpleLiteralExpr(location loc, T& data) : LiteralExpr(loc), data(data) {}
-			inline SimpleLiteralExpr(location loc, T&& data) : LiteralExpr(loc), data(data) {}
+			inline SimpleLiteralExpr(location loc, T &data) : LiteralExpr(loc), data(data) {}
+			inline SimpleLiteralExpr(location loc, T &&data) : LiteralExpr(loc), data(data) {}
 			virtual inline ~SimpleLiteralExpr() {}
 			virtual inline LiteralType getLiteralType() override { return (LiteralType)LT; };
 
-			inline SimpleLiteralExpr<T, LT>& operator=(T& data) { this->data = data; }
-			inline SimpleLiteralExpr<T, LT>& operator=(T&& data) { this->data = data; }
+			inline SimpleLiteralExpr<T, LT> &operator=(T &data) { this->data = data; }
+			inline SimpleLiteralExpr<T, LT> &operator=(T &&data) { this->data = data; }
 
 			inline std::shared_ptr<LiteralExpr> _execNegateUnaryOp() {
 				if constexpr (std::is_signed<T>::value)

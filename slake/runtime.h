@@ -1,5 +1,5 @@
-#ifndef _SLAKE_RT_H_
-#define _SLAKE_RT_H_
+#ifndef _SLAKE_RUNTIME_H_
+#define _SLAKE_RUNTIME_H_
 
 #include <deque>
 #include <functional>
@@ -21,6 +21,18 @@ namespace Slake {
 	public:
 		inline InvalidOperandsError(std::string msg) : runtime_error(msg){};
 		virtual inline ~InvalidOperandsError() {}
+	};
+
+	class ResourceNotFoundError : public std::runtime_error {
+	public:
+		inline ResourceNotFoundError(std::string msg) : runtime_error(msg){};
+		virtual inline ~ResourceNotFoundError() {}
+	};
+
+	class AccessViolationError : public std::runtime_error {
+	public:
+		inline AccessViolationError(std::string msg) : runtime_error(msg){};
+		virtual inline ~AccessViolationError() {}
 	};
 
 	class UncaughtExceptionError : public std::runtime_error {
@@ -59,11 +71,18 @@ namespace Slake {
 		virtual inline ~LoaderError() {}
 	};
 
+	class NullRefError : public std::runtime_error {
+	public:
+		inline NullRefError(std::string msg) : runtime_error(msg){};
+		virtual inline ~NullRefError() {}
+	};
+
 	struct ExecContext final {
 		ValueRef<> scopeValue;
 		ValueRef<FnValue> fn;
 		std::uint32_t curIns = 0;
 		std::vector<ValueRef<>> args;
+		ValueRef<> pThis;
 
 		inline ExecContext() {}
 		inline ExecContext(ValueRef<> scopeValue, ValueRef<FnValue> fn, std::uint32_t curIns) : scopeValue(scopeValue), fn(fn), curIns(curIns) {
@@ -95,8 +114,7 @@ namespace Slake {
 
 	using ContextFlag = std::uint8_t;
 	constexpr static ContextFlag CTXT_YIELD = 0x01;
-	class Context {
-	public:
+	struct Context final {
 		ExecContext execContext;
 		std::deque<ValueRef<>> dataStack;
 		std::deque<Frame> frames;
@@ -129,26 +147,37 @@ namespace Slake {
 		}
 
 		inline void expand(std::uint32_t n) {
-			if ((n += dataStack.size()) > 0x100000)
+			if ((n += (std::uint32_t)dataStack.size()) > 0x100000)
 				throw StackOverflowError("Stack overflowed");
 			dataStack.resize(n);
 		}
 
 		inline void shrink(std::uint32_t n) {
-			if (n > dataStack.size() || (n = dataStack.size() - n) < stackBase)
+			if (n > ((std::uint32_t)dataStack.size()) || (n = ((std::uint32_t)dataStack.size()) - n) < stackBase)
 				throw StackOverflowError("Stack overflowed");
 			dataStack.resize(n);
 		}
 	};
 
+	using RuntimeFlags = std::uint16_t;
+	constexpr static RuntimeFlags
+		RT_NOJIT = 0x01,  // No JIT
+		RT_DEBUG = 0x02	  // Enable Debugging
+		;
+
 	class Runtime final {
 	private:
-		void loadScope(ModuleValue *mod, std::istream &fs);
+		void _loadScope(ModuleValue *mod, std::istream &fs);
 
-	protected:
 		RootValue *_rootValue;
 		std::unordered_set<Value *> _createdValues;
-		void execIns(Context *context, Instruction &ins);
+		RuntimeFlags _flags;
+
+		void _execIns(Context *context, Instruction &ins);
+		void _gc();
+		ObjectValue *_newClassInstance(ClassValue *cls);
+
+		void _callFn(Context *context, FnValue *fn);
 
 		friend class Value;
 		friend class FnValue;
@@ -159,7 +188,7 @@ namespace Slake {
 		Runtime &operator=(Runtime &) = delete;
 		Runtime &operator=(Runtime &&) = delete;
 
-		inline Runtime() {
+		inline Runtime(RuntimeFlags flags = 0) : _flags(flags) {
 			_rootValue = new RootValue(this);
 			_rootValue->incRefCount();
 		}

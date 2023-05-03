@@ -13,6 +13,23 @@ static T _read(std::istream &fs) {
 	return value;
 }
 
+RefValue *readRef(Runtime *rt, std::istream &fs) {
+	auto ref = std::make_unique<RefValue>(rt);
+
+	SlxFmt::ScopeRefDesc i = { 0 };
+	while (true) {
+		i = _read<SlxFmt::ScopeRefDesc>(fs);
+		std::string name(i.lenName, '\0');
+		fs.read(&(name[0]), i.lenName);
+
+		ref->scopes.push_back(name);
+		if (!(i.flags & SlxFmt::SRD_NEXT))
+			break;
+	};
+
+	return ref.release();
+}
+
 Value *readValue(Runtime *rt, std::istream &fs) {
 	SlxFmt::ValueDesc i = {};
 	fs.read((char *)&i, sizeof(i));
@@ -48,19 +65,7 @@ Value *readValue(Runtime *rt, std::istream &fs) {
 			return new StringValue(rt, s);
 		}
 		case SlxFmt::ValueType::REF: {
-			auto ref = std::make_unique<RefValue>(rt, "", nullptr);
-
-			SlxFmt::ScopeRefDesc i = { 0 };
-			for (auto j = ref.get();; j->next = new RefValue(rt, "", nullptr), j = *(j->next)) {
-				i = _read<SlxFmt::ScopeRefDesc>(fs);
-				std::string name(i.lenName, '\0');
-				fs.read(&(name[0]), i.lenName);
-				j->name = name;
-				if (!(i.flags & SlxFmt::SRD_NEXT))
-					break;
-			};
-
-			return ref.release();
+			return readRef(rt, fs);
 		}
 		default:
 			throw new LoaderError("Invalid value type detected");
@@ -91,27 +96,8 @@ Type readTypeName(Runtime *rt, std::istream &fs, SlxFmt::ValueType vt) {
 			return ValueType::DOUBLE;
 		case SlxFmt::ValueType::STRING:
 			return ValueType::STRING;
-		case SlxFmt::ValueType::OBJECT: {
-			std::string s;
-
-			SlxFmt::ValueDesc vd;
-			fs.read((char *)&vd, sizeof(vd));
-
-			auto ref = std::make_unique<RefValue>(rt, "", nullptr);
-
-			SlxFmt::ScopeRefDesc i = { 0 };
-
-			for (auto j = ref.get();; j->next = new RefValue(rt, "", nullptr), j = *(j->next)) {
-				i = _read<SlxFmt::ScopeRefDesc>(fs);
-				std::string name(i.lenName, '\0');
-				fs.read(&(name[0]), i.lenName);
-				j->name = name;
-				if (!(i.flags & SlxFmt::SRD_NEXT))
-					break;
-			};
-
-			return ref.release();
-		}
+		case SlxFmt::ValueType::OBJECT:
+			return readRef(rt, fs);
 		case SlxFmt::ValueType::ANY:
 			return ValueType::ANY;
 		case SlxFmt::ValueType::BOOL:
@@ -129,7 +115,7 @@ Type readTypeName(Runtime *rt, std::istream &fs, SlxFmt::ValueType vt) {
 	}
 }
 
-void Slake::Runtime::loadScope(ModuleValue *mod, std::istream &fs) {
+void Slake::Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 	Runtime *const rt = mod->getRuntime();
 
 	for (SlxFmt::VarDesc i = { 0 };;) {
@@ -158,7 +144,7 @@ void Slake::Runtime::loadScope(ModuleValue *mod, std::istream &fs) {
 
 			var->setValue(v.release());
 		}
-		var.release();
+		mod->addMember(name, var.release());
 	}
 
 	for (SlxFmt::FnDesc i = { 0 };;) {
@@ -204,7 +190,6 @@ void Slake::Runtime::loadScope(ModuleValue *mod, std::istream &fs) {
 		if (i.flags & SlxFmt::FND_VARG)
 			/* stub */;
 
-		fn->_nIns = i.lenBody;
 		for (std::uint32_t j = 0; j < i.lenBody; j++) {
 			SlxFmt::InsHeader ih = _read<SlxFmt::InsHeader>(fs);
 			fn->_body[j].opcode = ih.opcode;
@@ -229,29 +214,29 @@ void Slake::Runtime::loadScope(ModuleValue *mod, std::istream &fs) {
 		if (i.flags & SlxFmt::CTD_FINAL)
 			access |= ACCESS_FINAL;
 
+		RefValue *parent;
+
 		if (i.flags & SlxFmt::CTD_DERIVED) {
 			SlxFmt::ValueDesc vd;
 			fs.read((char *)&vd, sizeof(vd));
 
-			auto ref = std::make_unique<RefValue>(rt, "", nullptr);
 			SlxFmt::ScopeRefDesc i = { 0 };
-
-			for (auto j = ref.get();; j->next = new RefValue(rt, "", nullptr), j = *(j->next)) {
-				i = _read<SlxFmt::ScopeRefDesc>(fs);
-				std::string name(i.lenName, '\0');
-				fs.read(&(name[0]), i.lenName);
-				j->name = name;
-				if (!(i.flags & SlxFmt::SRD_NEXT))
-					break;
-			};
+			parent = (RefValue *)readValue(rt, fs);
 		}
+
+		std::unique_ptr<ClassValue> value = std::make_unique<ClassValue>(rt, access, parent);
+
 		if (i.nImpls) {
 			for (auto j = i.nImpls; j; j--) {
 				auto tn = readTypeName(rt, fs, _read<SlxFmt::ValueType>(fs));
+				if (tn.valueType != ValueType::CLASS)
+					throw LoaderError("Incompatible value type for traits");
+				value->_traits.push_back(tn);
 			}
 		}
 
-		loadScope(mod, fs);
+		_loadScope(value.get(), fs);
+		mod->addMember(name, value.release());
 	}
 
 	for (SlxFmt::StructTypeDesc i = { 0 };;) {
@@ -280,7 +265,7 @@ void Slake::Runtime::loadScope(ModuleValue *mod, std::istream &fs) {
 
 
 void Slake::Runtime::loadModule(std::string name, std::istream &fs) {
-	std::unique_ptr<ModuleValue> mod = std::make_unique<ModuleValue>(this);
+	std::unique_ptr<ModuleValue> mod = std::make_unique<ModuleValue>(this, ACCESS_PUB, _rootValue);
 
 	SlxFmt::ImgHeader ih;
 	fs.read((char *)&ih, sizeof(ih));
@@ -301,7 +286,7 @@ void Slake::Runtime::loadModule(std::string name, std::istream &fs) {
 		}
 	}
 
-	loadScope(mod.get(), fs);
+	_loadScope(mod.get(), fs);
 	_rootValue->addMember(name, mod.release());
 }
 

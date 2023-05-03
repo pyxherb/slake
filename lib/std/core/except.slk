@@ -24,7 +24,7 @@ class BasicException(@Exception) {
 ///
 /// @since 1.0
 pub class LogicalError(@BasicException) {
-	operator new(string msg) { base(msg) }
+	operator new(string msg) { base(msg); }
 }
 
 /// @intro

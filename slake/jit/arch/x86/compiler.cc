@@ -114,4 +114,6 @@ Slake::ICodePage *Slake::compileFn(FnValue *fn) {
 	std::memcpy(codePage->getPtr(), enterIns, sizeof(enterIns));
 	// Leave instructions
 	std::memcpy(&(((char *)codePage->getPtr())[size + sizeof(enterIns)]), leaveIns, sizeof(leaveIns));
+
+	return codePage;
 }

@@ -1,10 +1,10 @@
-#ifndef _SLKC_COMPILER_BASE_HH
-#define _SLKC_COMPILER_BASE_HH
+#ifndef _SLKC_COMPILER_AST_HH
+#define _SLKC_COMPILER_AST_HH
 
 #include <slake/util/debug.h>
 
-#include <location.hh>
 #include <cstdint>
+#include <location.hh>
 
 #pragma clang diagnostic ignored "-Wc++17-extensions"
 
@@ -52,16 +52,24 @@ namespace Slake {
 			AccessModifier accessModifier;
 			inline IAccessModified(AccessModifier accessModifier) { this->accessModifier = accessModifier; }
 			virtual inline ~IAccessModified() {}
+
+			inline bool isPublic() noexcept { return accessModifier & ACCESS_PUB; }
+			inline bool isFinal() noexcept { return accessModifier & ACCESS_FINAL; }
+			inline bool isOverride() noexcept { return accessModifier & ACCESS_OVERRIDE; }
+			inline bool isConst() noexcept { return accessModifier & ACCESS_CONST; }
+			inline bool isVolatile() noexcept { return accessModifier & ACCESS_VOLATILE; }
+			inline bool isStatic() noexcept { return accessModifier & ACCESS_STATIC; }
+			inline bool isNative() noexcept { return accessModifier & ACCESS_NATIVE; }
 		};
 	}
 }
 
 namespace std {
-	inline std::string to_string(const Slake::Compiler::IStringifiable& s) {
+	inline std::string to_string(const Slake::Compiler::IStringifiable &s) {
 		return s.toString();
 	}
 
-	inline std::string to_string(const Slake::Compiler::IStringifiable&& s) {
+	inline std::string to_string(const Slake::Compiler::IStringifiable &&s) {
 		return s.toString();
 	}
 }

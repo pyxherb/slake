@@ -29,9 +29,9 @@ Type::~Type() {
 }
 
 
-bool Type::isDeferred() {
+bool Type::isDeferred() noexcept {
 	return valueType == ValueType::OBJECT &&
-		   ((MemberValue *)exData.customType)->getType() == ValueType::REF;
+		   ((Value *)exData.customType)->getType() == ValueType::REF;
 }
 
 Value::Value(Runtime *rt) : _rt(rt) {
@@ -44,11 +44,12 @@ Value::~Value() {
 
 ValueRef<> Slake::FnValue::call(std::uint8_t nArgs, ValueRef<> *args) {
 	std::unique_ptr<Context> context = std::make_unique<Context>(ExecContext(_parent, this, 0));
+	context->frames.push_back(Frame(0, UINT32_MAX - 1));
 	context->callingStack.push_back(ExecContext(_parent, this, UINT32_MAX - 1));
 	while (context->execContext.curIns != UINT32_MAX) {
 		if (context->execContext.curIns >= _nIns)
 			throw std::runtime_error("Out of function body");
-		getRuntime()->execIns(context.get(), context->execContext.fn->_body[context->execContext.curIns]);
+		getRuntime()->_execIns(context.get(), context->execContext.fn->_body[context->execContext.curIns]);
 	}
 	return context->retValue;
 }

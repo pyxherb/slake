@@ -1,5 +1,15 @@
+#include <slklex.h>
+
 #include <decompiler/decompiler.hh>
 #include <slkparse.hh>
+
+using namespace Slake;
+#define printmsg(msg, ...) std::printf("slkc: " msg, ##__VA_ARGS__)
+#define msgputs(msg) std::printf("slkc: %s\n", msg)
+
+void parser::error(const Slake::Compiler::parser::location_type &loc, const std::string &msg) {
+	std::fprintf(stderr, "Error at %d,%d: %s\n", loc.begin.line, loc.begin.column, msg.c_str());
+}
 
 class ArgumentError : public std::runtime_error {
 public:
@@ -7,21 +17,7 @@ public:
 	virtual inline ~ArgumentError() {}
 };
 
-extern std::FILE* yyin;
-int yylex_destroy(void);
-
-#define printmsg(msg, ...) std::printf("slkc: " msg, ##__VA_ARGS__)
-#define msgputs(msg) std::printf("slkc: %s\n", msg)
-
-static void syntaxError(const Slake::Compiler::parser::location_type& loc, const std::string& msg) {
-	std::fprintf(stderr, "Error at %d,%d: %s\n", loc.begin.line, loc.begin.column, msg.c_str());
-}
-
-void Slake::Compiler::parser::error(const Slake::Compiler::parser::location_type& loc, const std::string& msg) {
-	syntaxError(loc, msg);
-}
-
-static inline char* fetchArg(int argc, char** argv, int& i) {
+static inline char *fetchArg(int argc, char **argv, int &i) {
 	if (i >= argc)
 		throw ArgumentError("Missing arguments");
 	return argv[i++];
@@ -36,28 +32,24 @@ std::string srcPath = "", outPath = "";
 AppAction action = ACT_COMPILE;
 
 struct CmdLineAction {
-	const char** options;
-	void (*fn)(int argc, char** argv, int& i);
+	const char *options;
+	void (*fn)(int argc, char **argv, int &i);
 };
 
 CmdLineAction cmdLineActions[] = {
-	{ (const char*[]){
-		  "-I",
-		  "--include",
-		  nullptr },
-		[](int argc, char** argv, int& i) {
+	{ "-I\0"
+	  "--include\0",
+		[](int argc, char **argv, int &i) {
 			std::string path = fetchArg(argc, argv, i);
 		} },
-	{ (const char*[]){
-		  "-d",
-		  "--dump",
-		  nullptr },
-		[](int argc, char** argv, int& i) {
+	{ "-d\0"
+	  "--dump\0",
+		[](int argc, char **argv, int &i) {
 			action = ACT_DUMP;
 		} }
 };
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
 	Slake::Util::setupMemoryLeakDetector();
 
 	try {
@@ -66,8 +58,8 @@ int main(int argc, char** argv) {
 				std::string arg = fetchArg(argc, argv, i);
 
 				for (std::uint16_t j = 0; j < sizeof(cmdLineActions) / sizeof(cmdLineActions[0]); j++) {
-					for (auto k = cmdLineActions[j].options; *k; k++)
-						if (!std::strcmp(*k, arg.c_str())) {
+					for (auto k = cmdLineActions[j].options; *k; k += std::strlen(k))
+						if (!std::strcmp(k, arg.c_str())) {
 							cmdLineActions[j].fn(argc, argv, i);
 							goto succeed;
 						}
@@ -75,7 +67,7 @@ int main(int argc, char** argv) {
 			succeed:
 				srcPath = arg;
 			}
-		} catch (ArgumentError& e) {
+		} catch (ArgumentError &e) {
 			msgputs(e.what());
 			return EINVAL;
 		}
@@ -131,10 +123,11 @@ int main(int argc, char** argv) {
 					}
 					fs.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
 
-					Slake::Compiler::compile(rootScope, fs);
+					std::unique_ptr<State> state = std::make_unique<State>();
+					state->compile(rootScope, fs);
 					fs.close();
 				} catch (Slake::Compiler::parser::syntax_error e) {
-					syntaxError(e.location, e.what());
+					yyparser->error(e.location, e.what());
 				}
 				cleaner();
 				break;
@@ -154,8 +147,7 @@ int main(int argc, char** argv) {
 
 				try {
 					Slake::Decompiler::decompile(fs);
-				}
-				catch (Slake::Decompiler::DecompileError e) {
+				} catch (Slake::Decompiler::DecompileError e) {
 					printf("%s\n", e.what());
 				}
 

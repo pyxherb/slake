@@ -10,23 +10,30 @@ namespace Slake {
 		enum class TypeNameKind : int {
 			NONE = 0,
 			ANY,
+
 			I8,
 			I16,
 			I32,
 			ISIZE = I32,
 			I64,
+
 			U8,
 			U16,
 			U32,
 			USIZE = U32,
 			U64,
+
 			FLOAT,
 			DOUBLE,
+
 			STRING,
-			ARRAY,
 			BOOL,
+
+			ARRAY,
 			MAP,
+
 			FN,
+
 			AUTO,
 			CUSTOM
 		};
@@ -35,12 +42,11 @@ namespace Slake {
 		public:
 			TypeNameKind kind = TypeNameKind::NONE;
 
-			inline TypeName(location loc, TypeNameKind kind) : BasicLocated(loc) {
-				this->kind = kind;
+			inline TypeName(location loc, TypeNameKind kind) : BasicLocated(loc), kind(kind) {
 			}
 			virtual inline ~TypeName() {}
 
-			virtual bool operator==(const TypeName& x) const {
+			virtual bool operator==(const TypeName &x) const {
 				return kind == x.kind;
 			}
 
@@ -88,6 +94,9 @@ namespace Slake {
 				return "(Unknwon type)";
 			}
 		};
+
+		enum class UnaryOp : int;
+		enum class BinaryOp : int;
 
 		class RefExpr;
 		class Scope;
@@ -143,8 +152,9 @@ namespace Slake {
 		public:
 			std::shared_ptr<TypeName> resultType;
 			std::vector<std::shared_ptr<TypeName>> argTypes;
+			bool isStatic;
 
-			inline FnTypeName(location loc, std::shared_ptr<TypeName> resultType) : TypeName(loc, TypeNameKind::FN), resultType(resultType) {}
+			inline FnTypeName(location loc, std::shared_ptr<TypeName> resultType, bool isStatic) : TypeName(loc, TypeNameKind::FN), resultType(resultType), isStatic(isStatic) {}
 			virtual inline ~FnTypeName() {}
 
 			virtual inline std::string toString() const override {
@@ -152,10 +162,19 @@ namespace Slake {
 			}
 		};
 
+		bool isLiteralType(std::shared_ptr<TypeName> t);
+		bool isScalarType(std::shared_ptr<TypeName> t);
+		bool isIntegralType(std::shared_ptr<TypeName> t);
+		bool isSignedType(std::shared_ptr<TypeName> t);
+		bool isFloatingPointType(std::shared_ptr<TypeName> t);
+		bool isArithmeticType(std::shared_ptr<TypeName> t);
+
 		bool isSameType(std::shared_ptr<TypeName> t1, std::shared_ptr<TypeName> t2);
 		bool isConvertible(std::shared_ptr<TypeName> t1, std::shared_ptr<TypeName> t2);
 		bool isBaseOf(std::shared_ptr<TypeName> t1, std::shared_ptr<TypeName> t2);
 		bool isDerivedFrom(std::shared_ptr<TypeName> t1, std::shared_ptr<TypeName> t2);
+		bool hasOperator(std::shared_ptr<TypeName> t, UnaryOp op);
+		bool hasOperator(std::shared_ptr<TypeName> t, BinaryOp op);
 	}
 }
 

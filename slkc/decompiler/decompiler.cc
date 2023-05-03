@@ -81,7 +81,7 @@ std::shared_ptr<Compiler::Expr> Slake::Decompiler::readValue(std::fstream &fs) {
 				std::string name(i.lenName, '\0');
 				fs.read(&(name[0]), i.lenName);
 				j->name = name;
-				if (!i.flags & SlxFmt::SRD_NEXT)
+				if (!(i.flags & SlxFmt::SRD_NEXT))
 					break;
 			};
 			return ref;
@@ -140,7 +140,7 @@ std::string readTypeName(std::fstream &fs, SlxFmt::ValueType vt) {
 				std::string name(i.lenName, '\0');
 				fs.read(&(name[0]), i.lenName);
 				j->name = name;
-				if (!i.flags & SlxFmt::SRD_NEXT)
+				if (!(i.flags & SlxFmt::SRD_NEXT))
 					break;
 			};
 			return "@" + std::to_string(*ref);
@@ -323,7 +323,7 @@ void Slake::Decompiler::decompileScope(std::fstream &fs, std::uint8_t indentLeve
 				std::string name(i.lenName, '\0');
 				fs.read(&(name[0]), i.lenName);
 				j->name = name;
-				if (!i.flags & SlxFmt::SRD_NEXT)
+				if (!(i.flags & SlxFmt::SRD_NEXT))
 					break;
 			};
 			printf("(@%s)", std::to_string(*ref).c_str());

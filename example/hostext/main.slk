@@ -1,9 +1,17 @@
-pub void test() {
-	i32 a;
+class A {
+	i32 data;
+
+	pub operator new(i32 n) {
+		data = n;
+	}
+
+	pub i32 inc() {
+		return ++data;
+	}
 }
 
 pub i32 main() {
-	test();
-	i32 a = 1;
-	return a + 3;
+	@A a = new @A(123);
+	a.inc();
+	return a.inc();
 }

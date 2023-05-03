@@ -7,13 +7,18 @@ namespace Slake {
 	enum class Opcode : std::uint8_t {
 		NOP = 0,  // No operation
 
-		PUSH,	 // Push an immediate value
-		POP,	 // Pop a value
-		LOAD,	 // Load a value onto stack
-		RLOAD,	 // Load a value onto stack by a reference
-		STORE,	 // Store a value from stack
+		PUSH,  // Push an immediate value
+		POP,   // Pop a value
+
+		LOAD,	// Load a value onto stack
+		RLOAD,	// Load a value onto stack by an existing reference
+		STORE,	// Store a value from stack
+
 		LLOAD,	 // Load a value from local variable area
 		LSTORE,	 // Store a value into local variable area
+
+		LVALUE,	 // Load value of a variable
+
 		EXPAND,	 // Expand stack pointer
 		SHRINK,	 // Shrink stack pointer
 
@@ -39,17 +44,25 @@ namespace Slake {
 		LSH,   // Left shift
 		RSH,   // Right shift
 
-		REV,  // Bitwise NOT
-		NOT,  // Logical NOT
-		INC,  // Increase
-		DEC,  // Decrease
-		NEG,  // Negate
+		REV,   // Bitwise NOT
+		NOT,   // Logical NOT
+		INCF,  // Forward Increase
+		DECF,  // Forward Decrease
+		INCB,  // Backward Increase
+		DECB,  // Backward Decrease
+		NEG,   // Negate
 
 		JMP,  // Jump
 		JT,	  // Jump if true
 		JF,	  // Jump if false
 
-		PUSHARG,  // Push an argument
+		CAST,  // Cast
+
+		SARG,  // Store an argument
+		LARG,  // Push an argument
+
+		LTHIS,	// Load this
+		STHIS,	// Store this
 
 		CALL,	// Call and sets base for local addressing
 		ACALL,	// Asynchronous Call

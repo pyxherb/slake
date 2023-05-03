@@ -1,558 +1,24 @@
-#include "compile.hh"
-
 #include <slkparse.hh>
 
-#include "utils.hh"
+#include "misc.hh"
 
 using namespace Slake;
 using namespace Compiler;
 
-void Slake::Compiler::compileArg(std::shared_ptr<Expr> expr, std::shared_ptr<State> s) {
-	compileRightExpr(expr, s);
-	s->fnDefs[s->currentFn]->insertIns({ Opcode::PUSHARG, {} });
-}
-
-void Slake::Compiler::compileLeftExpr(std::shared_ptr<Expr> expr, std::shared_ptr<State> s, bool isRecursing) {
-	auto &fn = s->fnDefs[s->currentFn];
-	assert(fn);
-	switch (expr->getExprKind()) {
-		default:
-			throw parser::syntax_error(expr->getLocation(), "Expected left value");
-	}
-}
-
-void Compiler::compileRightExpr(std::shared_ptr<Expr> expr, std::shared_ptr<State> s, bool isRecursing) {
-	auto &fn = s->fnDefs[s->currentFn];
-	assert(fn);
-	switch (expr->getExprKind()) {
-		case ExprKind::LITERAL:
-		case ExprKind::ARRAY:
-		case ExprKind::MAP: {
-			fn->insertIns(Ins(Opcode::PUSH, { expr }));
-			break;
-		}
-		case ExprKind::TERNARY: {
-			auto falseLabel = "$TOP_FALSE_" + std::to_string(fn->body.size()),
-				 endLabel = "$TOP_END_" + std::to_string(fn->body.size());
-
-			auto e = std::static_pointer_cast<TernaryOpExpr>(expr);
-			compileRightExpr(e->condition, s);
-
-			fn->insertIns({ Opcode::JF, { std::make_shared<LabelExpr>(falseLabel) } });
-			compileRightExpr(e->x, s);	// True branch.
-			fn->insertIns({ Opcode::JMP, { std::make_shared<LabelExpr>(endLabel) } });
-			fn->insertLabel(falseLabel);
-			compileRightExpr(e->y, s);	// False branch.
-			fn->insertLabel(endLabel);
-		}
-		case ExprKind::UNARY: {
-			auto e = std::static_pointer_cast<UnaryOpExpr>(expr);
-			Opcode opcode;
-			if (!_unaryOp2opcodeMap.count(e->op))
-				throw parser::syntax_error(expr->getLocation(), "Invalid operator detected");
-			opcode = _unaryOp2opcodeMap.at(e->op);
-			compileRightExpr(e->x, s);
-			if (isSuffixUnaryOp(e->op)) {
-				compileRightExpr(e->x, s);
-			}
-			fn->insertIns({ opcode, {} });
-			break;
-		}
-		case ExprKind::BINARY: {
-			auto e = std::static_pointer_cast<BinaryOpExpr>(expr);
-			compileRightExpr(e->y, s);
-			compileRightExpr(e->x, s);
-
-			Opcode opcode;
-			if (_binaryOp2opcodeMap.count(e->op)) {
-				opcode = _binaryOp2opcodeMap.at(e->op);
-				fn->insertIns({ opcode, {} });
-			} else if (e->op != BinaryOp::ASSIGN)
-				throw parser::syntax_error(e->getLocation(), "Invalid operator detected");
-
-			if (isAssignment(e->op)) {
-				auto x = evalConstExpr(e->x, s);
-				// Convert to direct operation if it is evaluatable.
-				fn->insertIns({ Opcode::STORE, { x ? x : e->x } });
-			}
-
-			break;
-		}
-		case ExprKind::CALL: {
-			auto calle = std::static_pointer_cast<CallExpr>(expr);
-			auto t = std::static_pointer_cast<FnTypeName>(evalExprType(s, calle->target));
-			if (t->kind != TypeNameKind::FN)
-				throw parser::syntax_error(calle->target->getLocation(), "Expression is not callable");
-
-			Opcode opcode = Opcode::CALL;
-			opcode = calle->isAsync ? Opcode::ACALL : Opcode::CALL;
-
-			auto ce = evalConstExpr(calle->target, s);
-			if (ce)
-				fn->insertIns({ opcode, { ce } });
-			else {
-				for (auto &i : *(calle->args))
-					compileRightExpr(i, s);
-				compileRightExpr(calle->target, s);
-				fn->insertIns({ opcode, {} });
-			}
-
-			fn->insertIns({ Opcode::LRET, {} });
-
-			break;
-		}
-		case ExprKind::REF: {
-			auto ref = std::static_pointer_cast<RefExpr>(expr);
-
-			//
-			// Local variables are unavailable if the flag was set.
-			//
-			if (!(isRecursing) && s->context.lvars.count(ref->name)) {
-				fn->insertIns({ Opcode::LLOAD, { std::make_shared<UIntLiteralExpr>(ref->getLocation(), s->context.lvars[ref->name].stackPos) } });
-
-				if (ref->next) {
-					auto savedScope = s->scope;
-
-					auto &lvarType = s->context.lvars[ref->name].type;
-					if (lvarType->kind != TypeNameKind::CUSTOM)
-						throw parser::syntax_error(expr->getLocation(), "Accessing member `" + ref->name + "' with unsupported type");
-					{
-						auto t = Scope::getCustomType(std::static_pointer_cast<CustomTypeName>(lvarType));
-						if (!t)
-							throw parser::syntax_error(expr->getLocation(), "Type was not defined");
-						if (!t->getScope())
-							throw parser::syntax_error(expr->getLocation(), "Accessing member `" + ref->name + "' with unsupported type");
-						s->scope = t->getScope();
-					}
-					compileRightExpr(ref->next, s, true);
-
-					s->scope = savedScope;
-				}
-				break;
-			}
-			if (evalExprType(s, ref)) {
-				bool isStatic = ref->isStatic;
-				if (!isRecursing) {
-					if (ref->name == "_lock")
-						printf("");
-
-					if ((!isStatic) && (!s->context.lvars.count(ref->name))) {
-						auto v = s->scope->getVar(ref->name);
-						if (v && v->accessModifier & ACCESS_STATIC)
-							isStatic = true;
-					}
-
-					if (isStatic) {
-						auto fullRef = s->scope->resolve();
-						if (fullRef) {
-							fullRef->next = ref;
-							ref = fullRef;
-						}
-					} else if (!s->scope->parent.expired())
-						ref = std::make_shared<RefExpr>(ref->getLocation(), "this", false, ref);
-				}
-				fn->insertIns({ isRecursing ? Opcode::RLOAD : Opcode::LOAD, { ref } });
-				break;
-			}
-			throw parser::syntax_error(expr->getLocation(), "`" + ref->name + "' was undefined");
-		}
-		case ExprKind::NEW: {
-			auto newExpr = std::static_pointer_cast<NewExpr>(expr);
-
-			switch (newExpr->type->kind) {
-				case TypeNameKind::CUSTOM: {
-					auto customTypeName = std::static_pointer_cast<CustomTypeName>(newExpr->type);	// Class type name
-					auto customType = customTypeName->resolveType();
-					if (!customType)
-						throw parser::syntax_error(customTypeName->getLocation(), "Type `" + std::to_string(*customType) + "' not found");
-
-					// Check if the type is constructible.
-					auto constructor = customType->getScope()->getFn("new");
-					if (!constructor)
-						throw parser::syntax_error(customTypeName->getLocation(), "Type `" + std::to_string(*customType) + "' is not constructible");
-
-
-					auto nExprArgs = newExpr->args->size(), nConstructorArgs = constructor->params->size();
-
-					if (constructor->hasVarArg()) {
-						if (nExprArgs < nConstructorArgs - 1) {
-							throw parser::syntax_error(newExpr->args->front()->getLocation(), "Too few arguments");
-						}
-					} else {
-						if (nExprArgs > nConstructorArgs)
-							throw parser::syntax_error(newExpr->args->front()->getLocation(), "Too many arguments");
-						if (nExprArgs < nConstructorArgs) {
-							throw parser::syntax_error(newExpr->args->front()->getLocation(), "Too few arguments");
-						}
-					}
-
-					std::uint8_t j = 0;	 // Index of current argument of the new expression.
-					for (auto i : *(newExpr->args)) {
-						auto type = evalExprType(s, i);
-
-						if ((!constructor->hasVarArg()) || (j < nConstructorArgs - 1)) {
-							if (!isSameType((*constructor->params).at(j)->typeName, type))
-								throw parser::syntax_error(i->getLocation(), "Incompatible argument type");
-						}
-
-						compileArg(i, s);
-						j++;
-					}
-					fn->insertIns({ Opcode::NEW, { customTypeName->typeRef } });
-					break;
-				}
-				case TypeNameKind::ARRAY: {
-					auto nArgs = newExpr->args->size();
-					auto typeName = std::static_pointer_cast<ArrayTypeName>(newExpr->type);
-					if (nArgs == 1) {
-						auto arg = newExpr->args->front();
-						auto argType = evalExprType(s, arg);
-
-						if (!(isConvertible(argType, std::make_shared<TypeName>(location(), TypeNameKind::USIZE)) ||
-								argType->kind == TypeNameKind::ARRAY))
-							throw parser::syntax_error(arg->getLocation(), "Incompatible argument type");
-
-						compileArg(arg, s);
-					} else if (nArgs == 2) {
-						auto size = newExpr->args->front();
-						auto sizeType = evalExprType(s, size);
-						if (!isConvertible(sizeType, std::make_shared<TypeName>(location(), TypeNameKind::USIZE)))
-							throw parser::syntax_error(size->getLocation(), "Incompatible argument type");
-
-						compileArg(size, s);
-
-						auto initValue = newExpr->args->at(1);
-						auto initValueType = evalExprType(s, initValue);
-
-						if (isConvertible(initValueType, typeName->type))
-							;
-						else if (initValueType->kind == TypeNameKind::ARRAY) {
-							for (auto i : *(newExpr->args)) {
-								if (!isConvertible(typeName->type, evalExprType(s, i)))
-									throw parser::syntax_error(newExpr->args->front()->getLocation(), "Incompatible argument type");
-							}
-						} else
-							throw parser::syntax_error(initValue->getLocation(), "Incompatible argument type");
-
-						compileArg(initValue, s);
-					} else if (nArgs >= 3)
-						throw parser::syntax_error(newExpr->args->front()->getLocation(), "Too many arguments");
-					break;
-				}
-				case TypeNameKind::MAP: {
-					auto nArgs = newExpr->args->size();
-					if (nArgs > 1)
-						throw parser::syntax_error(newExpr->args->front()->getLocation(), "Too many arguments");
-
-					if (nArgs) {
-						auto initValue = std::static_pointer_cast<MapExpr>(newExpr->args->front());
-						auto initValueType = std::static_pointer_cast<MapTypeName>(evalExprType(s, initValue));
-						if (initValueType->kind != TypeNameKind::MAP)
-							throw parser::syntax_error(initValue->getLocation(), "Incompatible argument type");
-
-						for (auto i : *(initValue->pairs)) {
-							if (!isConvertible(initValueType->keyType, evalExprType(s, i->first)))
-								throw parser::syntax_error(newExpr->args->front()->getLocation(), "Incompatible key type");
-							if (!isConvertible(initValueType->valueType, evalExprType(s, i->second)))
-								throw parser::syntax_error(newExpr->args->front()->getLocation(), "Incompatible value type");
-						}
-						compileArg(initValue, s);
-					}
-					break;
-				}
-				default:
-					throw parser::syntax_error(newExpr->type->getLocation(), "Type `" + std::to_string(*newExpr->type) + "' is not constructible");
-			}
-			break;
-		}
-		default:
-			throw std::logic_error("Invalid expression type detected");
-	}
-}
-
-void Compiler::compileStmt(std::shared_ptr<Stmt> src, std::shared_ptr<State> s) {
-	assert(s->fnDefs.count(s->currentFn));
-	auto &fn = s->fnDefs[s->currentFn];
-
-	switch (src->getType()) {
-		case StmtType::CODEBLOCK: {
-			auto ctxt = s->context;
-
-			auto stmt = std::static_pointer_cast<CodeBlock>(src);
-			auto state = std::make_shared<State>();
-			state->scope = s->scope;
-
-			std::string endLabel = "$BLK_" + std::to_string(fn->body.size());
-			fn->insertIns({ Opcode::ENTER, { std::make_shared<LabelExpr>(endLabel) } });
-
-			for (auto &i : stmt->ins)
-				compileStmt(i, s);
-
-			fn->insertLabel(endLabel);
-
-			fn->insertIns({ Opcode::LEAVE, {} });
-
-			ctxt.returned = s->context.returned;
-			s->context = ctxt;
-			break;
-		}
-		case StmtType::IF: {
-			auto stmt = std::static_pointer_cast<IfStmt>(src);
-			compileRightExpr(stmt->condition, s);
-
-			auto falseLabel = "$IF_FALSE_" + std::to_string(fn->body.size()),
-				 endLabel = "$IF_END_" + std::to_string(fn->body.size());
-
-			compileRightExpr(stmt->condition, s);
-
-			fn->insertIns({ Opcode::JF, { std::make_shared<LabelExpr>(falseLabel) } });
-
-			// True branch.
-			compileStmt(stmt->thenBlock, s);
-			fn->insertIns({ Opcode::JMP, { std::make_shared<LabelExpr>(endLabel) } });
-
-			// False branch.
-			fn->insertLabel(falseLabel);
-			compileStmt(stmt->elseBlock, s);
-
-			fn->insertLabel(endLabel);
-			break;
-		}
-		case StmtType::FOR: {
-			auto ctxt = s->context;
-
-			auto stmt = std::static_pointer_cast<ForStmt>(src);
-			compileRightExpr(stmt->condition, s);
-
-			auto conditionLabel = "$FOR_END_" + std::to_string(fn->body.size()),
-				 bodyLabel = "$FOR_BODY_" + std::to_string(fn->body.size()),
-				 endLabel = "$FOR_END_" + std::to_string(fn->body.size());
-
-			s->enterLoop();
-			fn->insertIns({ Opcode::ENTER, { std::make_shared<LabelExpr>(endLabel) } });
-
-			for (auto &i : stmt->varDecl->declList) {
-				s->context.lvars[i->name] = LocalVar(s->context.stackCur, stmt->varDecl->typeName);
-			}
-
-			fn->insertIns({ Opcode::JMP, { std::make_shared<LabelExpr>(conditionLabel) } });
-
-			fn->insertLabel(bodyLabel);
-			compileStmt(stmt->execBlock, s);
-
-			fn->insertLabel(conditionLabel);
-			compileRightExpr(stmt->condition, s);
-			fn->insertIns({ Opcode::JT, { std::make_shared<LabelExpr>(bodyLabel) } });
-
-			fn->insertLabel(endLabel);
-			fn->insertIns({ Opcode::LEAVE, {} });
-			s->leaveLoop();
-
-			s->context = ctxt;
-			break;
-		}
-		case StmtType::WHILE: {
-			auto stmt = std::static_pointer_cast<WhileStmt>(src);
-			auto conditionLabel = "$WHILE_END_" + std::to_string(fn->body.size()),
-				 bodyLabel = "$WHILE_BODY_" + std::to_string(fn->body.size()),
-				 endLabel = "$WHILE_END_" + std::to_string(fn->body.size());
-
-			s->enterLoop();
-			fn->insertIns({ Opcode::JMP, { std::make_shared<LabelExpr>(conditionLabel) } });
-
-			fn->insertLabel(bodyLabel);
-			compileStmt(stmt->execBlock, s);
-
-			fn->insertLabel(conditionLabel);
-			compileRightExpr(stmt->condition, s);
-			fn->insertIns({ Opcode::JT, { std::make_shared<LabelExpr>(bodyLabel) } });
-			s->leaveLoop();
-			break;
-		}
-		case StmtType::TIMES: {
-			auto stmt = std::static_pointer_cast<TimesStmt>(src);
-			auto conditionLabel = "$TIMES_END_" + std::to_string(fn->body.size()),
-				 bodyLabel = "$TIMES_BODY_" + std::to_string(fn->body.size()),
-				 endLabel = "$TIMES_END_" + std::to_string(fn->body.size()),
-				 counterName = "$TIMES_CNT_" + std::to_string(fn->body.size());
-
-			s->enterLoop();
-			fn->insertIns({ Opcode::ENTER, {} });
-
-			s->context.lvars[counterName] = LocalVar(s->context.stackCur, evalExprType(s, stmt->timesExpr));
-			compileRightExpr(stmt->timesExpr, s);
-
-			fn->insertIns({ Opcode::JMP, { std::make_shared<LabelExpr>(conditionLabel) } });
-
-			fn->insertLabel(bodyLabel);
-			compileStmt(stmt->execBlock, s);
-
-			fn->insertLabel(conditionLabel);
-			compileRightExpr(std::make_shared<RefExpr>(stmt->getLocation(), counterName, false), s);
-			fn->insertIns({ Opcode::JT, { std::make_shared<LabelExpr>(bodyLabel) } });
-
-			fn->insertLabel(endLabel);
-			fn->insertIns({ Opcode::LEAVE, {} });
-			s->leaveLoop();
-			break;
-		}
-		case StmtType::EXPR: {
-			auto stmt = std::static_pointer_cast<ExprStmt>(src);
-			for (auto &i = stmt; i; i = i->next) {
-				compileRightExpr(stmt->expr, s);
-				SlxFmt::InsHeader ih = { Opcode::POP, 0 };
-			}
-			break;
-		}
-		case StmtType::CONTINUE: {
-			auto stmt = std::static_pointer_cast<ContinueStmt>(src);
-			if (!s->context.nContinueLevel)
-				throw parser::syntax_error(stmt->getLocation(), "Unexpected continue statement");
-			fn->insertIns({ Opcode::LEAVE, {} });
-			break;
-		}
-		case StmtType::BREAK: {
-			auto stmt = std::static_pointer_cast<ContinueStmt>(src);
-			if (!s->context.nBreakLevel)
-				throw parser::syntax_error(stmt->getLocation(), "Unexpected break statement");
-			fn->insertIns({ Opcode::LEAVE, {} });
-			break;
-		}
-		case StmtType::RETURN: {
-			auto stmt = std::static_pointer_cast<ReturnStmt>(src);
-
-			if (!stmt->expr) {
-				if (s->scope->fnDefs[s->currentFn]->returnTypeName->kind != TypeNameKind::NONE)
-					throw parser::syntax_error(stmt->expr->getLocation(), "Missing return value");
-			} else if (s->scope->fnDefs[s->currentFn]->returnTypeName->kind == TypeNameKind::NONE)
-				throw parser::syntax_error(stmt->expr->getLocation(), "Unexpected return value");
-
-			auto type = evalExprType(s, stmt->expr);
-			if ((!isConvertible(s->scope->fnDefs[s->currentFn]->returnTypeName, type)))
-				throw parser::syntax_error(stmt->expr->getLocation(), "Incompatible expression type");
-
-			auto e = evalConstExpr(stmt->expr, s);
-			if (e) {
-				fn->insertIns(Ins{ Opcode::RET, { e } });
-			} else {
-				compileRightExpr(stmt->expr, s);
-				fn->insertIns(Ins{ Opcode::RET, {} });
-			}
-
-			s->context.returned = true;
-			break;
-		}
-		case StmtType::SWITCH: {
-			auto stmt = std::static_pointer_cast<SwitchStmt>(src);
-			auto conditionName = "$SW_COND_" + std::to_string(fn->body.size()),
-				 endLabel = "$SW_END_" + std::to_string(fn->body.size());
-
-			compileRightExpr(stmt->condition, s);
-			s->context.lvars[conditionName] = LocalVar(s->context.stackCur, evalExprType(s, stmt->condition));
-
-			s->enterSwitch();
-			fn->insertIns({ Opcode::ENTER, { std::make_shared<LabelExpr>(endLabel) } });
-
-			{
-				std::size_t j = 0;
-				for (auto &i : *stmt->caseList) {
-					auto caseEndLabel =
-						"$SW_" +
-						std::to_string(stmt->getLocation().begin.line) + "_" +
-						std::to_string(stmt->getLocation().begin.column) + "_" +
-						"END_ " + std::to_string(j);
-
-					compileRightExpr(i->condition, s);
-					fn->insertIns({ Opcode::LLOAD, { std::make_shared<UIntLiteralExpr>(i->getLocation(), s->context.lvars[conditionName].stackPos) } });
-					fn->insertIns({ Opcode::EQ, {} });
-					fn->insertIns({ Opcode::JF, { std::make_shared<LabelExpr>(caseEndLabel) } });
-
-					compileStmt(i->x, s);
-					fn->insertIns(
-						{ Opcode::JMP,
-							{ std::make_shared<LabelExpr>("$SW_" +
-														  std::to_string(stmt->getLocation().begin.line) + "_" +
-														  std::to_string(stmt->getLocation().begin.column) + "_" +
-														  "END_ " + std::to_string(++j)) } });
-
-					fn->insertLabel(caseEndLabel);
-				}
-			}
-
-			fn->insertIns({ Opcode::LEAVE, {} });
-			s->leaveSwitch();
-			break;
-		}
-		case StmtType::VAR_DEF: {
-			auto stmt = std::static_pointer_cast<VarDefStmt>(src);
-			if (stmt->accessModifier & (~(ACCESS_CONST | ACCESS_VOLATILE | ACCESS_NATIVE)))
-				throw parser::syntax_error(stmt->getLocation(), "Invalid modifier combination");
-
-			if (stmt->typeName->kind == TypeNameKind::CUSTOM) {
-				auto t = std::static_pointer_cast<CustomTypeName>(stmt->typeName);
-				auto type = t->resolveType();
-			}
-			for (auto &i : stmt->declList) {
-				s->context.lvars[stmt->declList[i->name]->name] = LocalVar((std::uint32_t)(s->context.stackCur++), stmt->typeName);
-				if (i->initValue) {
-					auto expr = evalConstExpr(i->initValue, s);
-					if (expr)
-						fn->insertIns(Ins(Opcode::PUSH, { expr }));
-					else
-						compileRightExpr(i->initValue, s);
-				} else if (stmt->accessModifier & ACCESS_CONST)
-					throw parser::syntax_error(i->getLocation(), "Constants must be initialized");
-				else
-					fn->insertIns(Ins(Opcode::PUSH, { std::make_shared<NullLiteralExpr>(stmt->getLocation()) }));
-			}
-			break;
-		}
-		default:
-			throw std::logic_error("Invalid statement type detected");
-	}
-}
-
-void writeTypeName(std::shared_ptr<State> s, std::fstream &fs, std::shared_ptr<TypeName> j) {
-	_writeValue(_tnKind2vtMap.at(j->kind), fs);
-	switch (j->kind) {
-		case TypeNameKind::ARRAY: {
-			auto tn = std::static_pointer_cast<ArrayTypeName>(j);
-			writeTypeName(s, fs, tn->type);
-			break;
-		}
-		case TypeNameKind::MAP: {
-			auto tn = std::static_pointer_cast<MapTypeName>(j);
-			writeTypeName(s, fs, tn->keyType);
-			writeTypeName(s, fs, tn->valueType);
-			break;
-		}
-		case TypeNameKind::CUSTOM: {
-			auto tn = std::static_pointer_cast<CustomTypeName>(j);
-			auto t = Scope::getCustomType(tn);
-			if (!t)
-				throw parser::syntax_error(tn->getLocation(), "Type `" + std::to_string(*tn) + "' was not defined");
-			// ! FIXME
-			writeValue(s, tn->typeRef, fs);
-			break;
-		}
-	}
-}
-
-void Compiler::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTopLevel) {
-	auto s = std::make_shared<State>();
-	s->scope = scope;
+void State::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTopLevel) {
+	this->scope = scope;  // Set up scope of the state.
 
 	if (isTopLevel) {
 		SlxFmt::ImgHeader ih = { 0 };
 		std::memcpy(ih.magic, SlxFmt::IMH_MAGIC, sizeof(ih.magic));
-		ih.nImports = scope->imports.size();
+		ih.nImports = (std::uint8_t)scope->imports.size();
 		ih.fmtVer = 0;
 		fs.write((char *)&ih, sizeof(ih));
 
 		for (auto i : scope->imports) {
 			_writeValue((std::uint32_t)(i.first.length()), fs);
 			_writeValue(*(i.first.c_str()), (std::streamsize)i.first.length(), fs);
-			writeValue(s, i.second, fs);
+			writeValue(i.second, fs);
 		}
 	}
 
@@ -562,17 +28,17 @@ void Compiler::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTo
 	{
 		for (auto &i : scope->vars) {
 			SlxFmt::VarDesc vad = { 0 };
-			vad.lenName = i.first.length();
+			vad.lenName = (std::uint8_t)i.first.length();
 
 			if (i.second->accessModifier & ~(ACCESS_PUB | ACCESS_FINAL | ACCESS_STATIC | ACCESS_NATIVE))
 				throw parser::syntax_error(i.second->getLocation(), "Invalid modifier combination");
-			if (i.second->accessModifier & ACCESS_PUB)
+			if (i.second->isPublic())
 				vad.flags |= SlxFmt::VAD_PUB;
-			if (i.second->accessModifier & ACCESS_FINAL)
+			if (i.second->isFinal())
 				vad.flags |= SlxFmt::VAD_FINAL;
-			if (i.second->accessModifier & ACCESS_STATIC)
+			if (i.second->isStatic())
 				vad.flags |= SlxFmt::VAD_STATIC;
-			if (i.second->accessModifier & ACCESS_NATIVE)
+			if (i.second->isNative())
 				vad.flags |= SlxFmt::VAD_NATIVE;
 
 			if (i.second->initValue)
@@ -581,13 +47,13 @@ void Compiler::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTo
 			fs.write((char *)&vad, sizeof(vad));
 			fs.write(i.first.c_str(), i.first.length());
 
-			writeTypeName(s, fs, i.second->typeName);
+			compileTypeName(fs, i.second->typeName);
 
 			if (i.second->initValue) {
-				auto e = evalConstExpr(i.second->initValue, s);
+				auto e = evalConstExpr(i.second->initValue);
 				if (!e)
 					throw parser::syntax_error(i.second->initValue->getLocation(), "Expression cannot be evaluated in compile-time");
-				writeValue(s, e, fs);
+				writeValue(e, fs);
 			}
 		}
 		{
@@ -605,42 +71,42 @@ void Compiler::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTo
 				if (i.second->accessModifier & (ACCESS_FINAL | ACCESS_STATIC | ACCESS_OVERRIDE | ACCESS_NATIVE))
 					throw parser::syntax_error(i.second->getLocation(), "Invalid modifier combination");
 
-			s->currentFn = i.first;						  // Set up current function name of the state.
-			s->scope = scope;							  // Set up scope of the state.
-			s->fnDefs[i.first] = std::make_shared<Fn>();  // Create a new, empty function.
+			currentFn = i.first;					   // Set up current function name of the state.
+			fnDefs[i.first] = std::make_shared<Fn>();  // Create a new empty function.
 
 			// Compile the function if is a definition.
 			if (i.second->execBlock) {
-				auto ctxt = s->context;
+				auto ctxt = context;
 				for (auto &j : *(i.second->params))
-					s->context.lvars[j->name] = LocalVar((std::uint32_t)(s->context.stackCur++), j->typeName);
-				compileStmt(i.second->execBlock, s);
-				ctxt.returned = s->context.returned;
+					context.lvars[j->name] = LocalVar((std::uint32_t)(context.lvars.size()), j->typeName, true);
+
+				for (auto &i : std::static_pointer_cast<CodeBlock>(i.second->execBlock)->ins)
+					compileStmt(i);
 
 				// Check if current branch has any return statement.
-				if (!s->context.returned) {
+				if (!context.returned) {
 					if (i.second->returnTypeName->kind != TypeNameKind::NONE)
 						throw parser::syntax_error(location(i.second->execBlock->getLocation().end), "Must return a value");
-					s->fnDefs[i.first]->insertIns(Ins(Opcode::RET, { std::make_shared<NullLiteralExpr>(i.second->getLocation()) }));
+					fnDefs[i.first]->insertIns(Ins(Opcode::RET, { std::make_shared<NullLiteralExpr>(i.second->getLocation()) }));
 				}
-				s->context = ctxt;
+				context = ctxt;
 			}
 
 			// Write the function descriptor (FND).
 			{
 				SlxFmt::FnDesc fnd = { 0 };
-				if (i.second->accessModifier & ACCESS_PUB)
+				if (i.second->isPublic())
 					fnd.flags |= SlxFmt::FND_PUB;
-				if (i.second->accessModifier & ACCESS_FINAL)
+				if (i.second->isFinal())
 					fnd.flags |= SlxFmt::FND_FINAL;
-				if (i.second->accessModifier & ACCESS_STATIC)
+				if (i.second->isStatic())
 					fnd.flags |= SlxFmt::FND_STATIC;
-				if (i.second->accessModifier & ACCESS_OVERRIDE)
+				if (i.second->isOverride())
 					fnd.flags |= SlxFmt::FND_OVERRIDE;
-				if (i.second->accessModifier & ACCESS_NATIVE)
+				if (i.second->isNative())
 					fnd.flags |= SlxFmt::FND_NATIVE;
 				fnd.lenName = i.first.length();
-				fnd.lenBody = s->fnDefs[s->currentFn]->body.size();
+				fnd.lenBody = fnDefs[currentFn]->body.size();
 				fnd.nParams = i.second->params->size();
 				_writeValue(fnd, fs);
 				_writeValue(*(i.first.c_str()), i.first.length(), fs);
@@ -651,24 +117,23 @@ void Compiler::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTo
 				_writeValue(*(j.c_str()), (std::streamsize)j.size(), fs);
 			}
 
-			writeTypeName(s, fs, i.second->returnTypeName);
+			compileTypeName(fs, i.second->returnTypeName);
 
 			for (auto j : *(i.second->params))
-				writeTypeName(s, fs, j->typeName);
+				compileTypeName(fs, j->typeName);
 
 			// Write for each instructions.
-			for (auto &k : s->fnDefs[s->currentFn]->body) {
-				SlxFmt::InsHeader ih(k.opcode, k.operands.size());
+			for (auto &k : fnDefs[currentFn]->body) {
+				SlxFmt::InsHeader ih(k.opcode, (std::uint8_t)k.operands.size());
 				_writeValue(ih, fs);
 				for (auto &l : k.operands) {
 					if (l->getExprKind() == ExprKind::LABEL) {
 						writeValue(
-							s,
 							std::make_shared<UIntLiteralExpr>(l->getLocation(),
-								s->fnDefs[s->currentFn]->labels[std::static_pointer_cast<LabelExpr>(l)->label]),
+								fnDefs[currentFn]->labels[std::static_pointer_cast<LabelExpr>(l)->label]),
 							fs);
 					} else
-						writeValue(s, l, fs);
+						writeValue(l, fs);
 				}
 			}
 		}
@@ -687,14 +152,14 @@ void Compiler::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTo
 					if (i.second->accessModifier & ~(ACCESS_PUB | ACCESS_FINAL))
 						throw parser::syntax_error(i.second->getLocation(), "Invalid modifier combination");
 
-					if (i.second->accessModifier & ACCESS_PUB)
+					if (i.second->isPublic())
 						ctd.flags |= SlxFmt::CTD_PUB;
-					if (i.second->accessModifier & ACCESS_FINAL)
+					if (i.second->isFinal())
 						ctd.flags |= SlxFmt::CTD_FINAL;
 
-					ctd.lenName = i.first.length();
-					ctd.nImpls = t->impls->impls.size();
-					ctd.nGenericParams = t->genericParams.size();
+					ctd.lenName = (std::uint8_t)i.first.length();
+					ctd.nImpls = (std::uint8_t)t->impls->impls.size();
+					ctd.nGenericParams = (std::uint8_t)t->genericParams.size();
 					_writeValue(ctd, fs);
 					_writeValue(*(i.first.c_str()), (std::streamsize)i.first.size(), fs);
 
@@ -704,7 +169,7 @@ void Compiler::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTo
 						if (t->parent->kind != TypeNameKind::CUSTOM)
 							throw parser::syntax_error(i.second->getLocation(), "Invalid parent type");
 						auto tn = std::static_pointer_cast<CustomTypeName>(t->parent);
-						writeTypeName(s, fs, tn);
+						compileTypeName(fs, tn);
 					}
 
 					// Write references to implemented interfaces.
@@ -712,7 +177,7 @@ void Compiler::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTo
 						if (j->kind != TypeNameKind::CUSTOM)
 							throw parser::syntax_error(i.second->getLocation(), "Invalid parent type");
 						auto tn = std::static_pointer_cast<CustomTypeName>(j);
-						writeTypeName(s, fs, tn);
+						compileTypeName(fs, tn);
 					}
 
 					compile(std::static_pointer_cast<ClassType>(i.second)->scope, fs, false);
@@ -721,11 +186,14 @@ void Compiler::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTo
 				case Type::Kind::TRAIT: {
 					auto t = std::static_pointer_cast<TraitType>(i.second);
 					SlxFmt::ClassTypeDesc ctd = { 0 };
+
 					if (t->accessModifier & ~ACCESS_PUB)
 						throw parser::syntax_error(i.second->getLocation(), "Invalid modifier combination");
-					ctd.flags |= SlxFmt::CTD_TRAIT | t->accessModifier & ACCESS_PUB ? SlxFmt::CTD_PUB : 0;
-					ctd.lenName = i.first.length();
-					ctd.nGenericParams = t->genericParams.size();
+
+					ctd.flags |= SlxFmt::CTD_TRAIT | (t->isPublic() ? SlxFmt::CTD_PUB : 0);
+					ctd.lenName = (std::uint8_t)i.first.length();
+					ctd.nGenericParams = (std::uint8_t)t->genericParams.size();
+
 					_writeValue(ctd, fs);
 					_writeValue(*(i.first.c_str()), (std::streamsize)i.first.size(), fs);
 
@@ -734,7 +202,7 @@ void Compiler::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTo
 						if (t->parent->kind != TypeNameKind::CUSTOM)
 							throw parser::syntax_error(i.second->getLocation(), "Invalid parent type");
 						auto tn = std::static_pointer_cast<CustomTypeName>(t->parent);
-						writeValue(s, tn->typeRef, fs);
+						writeValue(tn->typeRef, fs);
 					}
 
 					compile(std::static_pointer_cast<TraitType>(i.second)->scope, fs, false);
@@ -754,7 +222,7 @@ void Compiler::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTo
 			auto t = std::static_pointer_cast<StructType>(i.second);
 			SlxFmt::StructTypeDesc std = { 0 };
 			std.nMembers = t->vars.size();
-			std.lenName = i.first.size();
+			std.lenName = (std::uint8_t)i.first.size();
 			fs.write((char *)&std, sizeof(std));
 			_writeValue(*(i.first.c_str()), (std::streamsize)i.first.size(), fs);
 

@@ -60,7 +60,7 @@ namespace Slake {
 		};
 
 		inline bool isAssignment(BinaryOp op) noexcept {
-			return (op >= BinaryOp::ASSIGN) && (op <= BinaryOp::ASSIGN_MAX);
+			return (op >= BinaryOp::ASSIGN_MIN) && (op < BinaryOp::ASSIGN_MAX);
 		}
 
 		using MatchCase = std::pair<std::shared_ptr<Expr>, std::shared_ptr<Expr>>;

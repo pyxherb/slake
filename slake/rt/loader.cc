@@ -96,8 +96,11 @@ Type readTypeName(Runtime *rt, std::istream &fs, SlxFmt::ValueType vt) {
 			return ValueType::DOUBLE;
 		case SlxFmt::ValueType::STRING:
 			return ValueType::STRING;
-		case SlxFmt::ValueType::OBJECT:
+		case SlxFmt::ValueType::OBJECT: {
+			SlxFmt::ValueDesc vd;
+			fs.read((char *)&vd, sizeof(vd));
 			return readRef(rt, fs);
+		}
 		case SlxFmt::ValueType::ANY:
 			return ValueType::ANY;
 		case SlxFmt::ValueType::BOOL:

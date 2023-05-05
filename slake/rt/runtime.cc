@@ -235,13 +235,16 @@ ObjectValue *Slake::Runtime::_newClassInstance(ClassValue *cls) {
 	for (auto i : cls->_members) {
 		switch (i.second->getType().valueType) {
 			case ValueType::VAR: {
-				auto newVar = new VarValue(this, ((VarValue *)i.second)->getAccess(), ((VarValue *)i.second)->getVarType(), instance);
+				auto newVar = new VarValue(
+					this,
+					((VarValue *)*(i.second))->getAccess(),
+					((VarValue *)*(i.second))->getVarType(), instance);
 				instance->addMember(i.first, newVar);
 				break;
 			}
 			case ValueType::FN: {
-				if (!((FnValue *)i.second)->isStatic())
-					instance->addMember(i.first, (MemberValue *)i.second);
+				if (!((FnValue *)*(i.second))->isStatic())
+					instance->addMember(i.first, (MemberValue *)*(i.second));
 				break;
 			}
 		}
@@ -341,8 +344,11 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 					throw AccessViolationError("Cannot store to a constant");
 			}
 
+			if (x->getType() != ValueType::VAR)
+				throw InvalidOperandsError("Only can store to a variable");
+
 			// TODO: Implement the type checker.
-			((VarValue *)*x)->setValue(*(context->dataStack.back()));
+			((VarValue *)*x)->setValue(*context->pop());
 			break;
 		}
 		case Opcode::LVALUE: {

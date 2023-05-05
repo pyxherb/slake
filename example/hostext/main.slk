@@ -1,17 +1,12 @@
 class A {
-	i32 data;
-
-	pub operator new(i32 n) {
-		data = n;
-	}
-
-	pub i32 inc() {
-		return ++data;
+	pub @A next;
+	pub operator new() {
 	}
 }
 
 pub i32 main() {
-	@A a = new @A(123);
-	a.inc();
-	return a.inc();
+	@A a = new @A(), b = new @A();
+	a.next = b;
+	b.next = a;
+	return 0;
 }

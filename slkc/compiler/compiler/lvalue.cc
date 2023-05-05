@@ -70,7 +70,7 @@ void State::compileLeftExpr(std::shared_ptr<Expr> expr, bool isRecursing) {
 							throw parser::syntax_error(expr->getLocation(), "Accessing member `" + ref->name + "' with unsupported type");
 						scope = t->getScope();
 					}
-					compileRightExpr(ref->next, true);
+					compileLeftExpr(ref->next, true);
 
 					scope = savedScope;
 				}

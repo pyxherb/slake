@@ -348,10 +348,9 @@ namespace Slake {
 
 	class ObjectValue : public Value {
 	protected:
-		std::unordered_map<std::string, MemberValue *> _members;
+		std::unordered_map<std::string, ValueRef<MemberValue>> _members;
 		Value *const _type;
 		inline void addMember(std::string name, MemberValue *value) {
-			value->incRefCount();
 			_members[name] = value;
 		}
 
@@ -359,12 +358,13 @@ namespace Slake {
 
 	public:
 		inline ObjectValue(Runtime *rt, Value *type) : Value(rt), _type(type) {}
-		virtual inline ~ObjectValue() {}
+		virtual inline ~ObjectValue() {
+		}
 
 		virtual inline Type getType() const override { return Type(ValueType::OBJECT, _type); }
 
-		virtual inline Value *getMember(std::string name) override { return _members.count(name) ? _members.at(name) : nullptr; }
-		virtual inline const Value *getMember(std::string name) const override { return _members.at(name); }
+		virtual inline Value *getMember(std::string name) override { return _members.count(name) ? *(_members.at(name)) : nullptr; }
+		virtual inline const Value *getMember(std::string name) const override { return *(_members.at(name)); }
 
 		ObjectValue(ObjectValue &) = delete;
 		ObjectValue(ObjectValue &&) = delete;
@@ -469,7 +469,7 @@ namespace Slake {
 
 	class RootValue final : public Value {
 	protected:
-		std::unordered_map<std::string, Value *> _members;
+		std::unordered_map<std::string, ValueRef<>> _members;
 
 	public:
 		using Iterator = decltype(_members)::iterator;
@@ -478,23 +478,18 @@ namespace Slake {
 			: Value(rt) {}
 
 		virtual inline ~RootValue() {
-			for (auto i : _members)
-				delete i.second;
 		}
 		virtual inline Type getType() const override { return ValueType::MAP; }
 
 		virtual inline Value *getMember(std::string name) override {
-			return _members.count(name) ? _members.at(name) : nullptr;
+			return _members.count(name) ? *(_members.at(name)) : nullptr;
 		}
 		virtual inline const Value *getMember(std::string name) const override {
-			return _members.count(name) ? _members.at(name) : nullptr;
+			return _members.count(name) ? *(_members.at(name)) : nullptr;
 		}
 
 		virtual inline void addMember(std::string name, Value *value) {
-			if (_members.count(name))
-				delete _members[name];
 			_members[name] = value;
-			value->incRefCount();
 		}
 
 		inline Iterator begin() { return _members.begin(); }
@@ -566,24 +561,18 @@ namespace Slake {
 
 	class ModuleValue : public MemberValue {
 	protected:
-		std::unordered_map<std::string, Value *> _members;
+		std::unordered_map<std::string, ValueRef<>> _members;
 
 	public:
 		inline ModuleValue(Runtime *rt, AccessModifier access, Value *parent) : MemberValue(rt, access, parent) {
 		}
-		virtual inline ~ModuleValue() {
-			for (auto i : _members)
-				delete i.second;
-		}
+		virtual inline ~ModuleValue() {}
 
-		virtual inline Value *getMember(std::string name) override { return _members.count(name) ? _members.at(name) : nullptr; }
-		virtual inline const Value *getMember(std::string name) const override { return _members.count(name) ? _members.at(name) : nullptr; }
+		virtual inline Value *getMember(std::string name) override { return _members.count(name) ? *(_members.at(name)) : nullptr; }
+		virtual inline const Value *getMember(std::string name) const override { return _members.count(name) ? *(_members.at(name)) : nullptr; }
 		virtual inline Type getType() const override { return ValueType::MOD; }
 
 		virtual inline void addMember(std::string name, MemberValue *value) {
-			if (_members.count(name))
-				delete _members[name];
-			value->incRefCount();
 			_members[name] = value;
 		}
 

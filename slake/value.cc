@@ -6,7 +6,6 @@ using namespace Slake;
 
 Type::Type(RefValue *ref) : valueType(ValueType::OBJECT) {
 	exData.deferred = ref;
-	ref->incHostRefCount();
 }
 
 Type::~Type() {
@@ -17,7 +16,6 @@ Type::~Type() {
 			break;
 		case ValueType::OBJECT:
 			if (exData.deferred)
-				exData.deferred->decHostRefCount();
 			break;
 		case ValueType::MAP:
 			if (exData.map.k)
@@ -52,4 +50,8 @@ ValueRef<> Slake::FnValue::call(std::uint8_t nArgs, ValueRef<> *args) {
 		getRuntime()->_execIns(context.get(), context->execContext.fn->_body[context->execContext.curIns]);
 	}
 	return context->retValue;
+}
+
+void Slake::Value::reportSizeToRuntime(long size) {
+	_rt->szInUse += size;
 }

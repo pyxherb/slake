@@ -222,10 +222,10 @@ bool Slake::Compiler::isBaseOf(std::shared_ptr<TypeName> t1, std::shared_ptr<Typ
 				auto t = std::static_pointer_cast<EnumType>(type1);
 				return isSameType(t->typeName, t1);
 			}
-			case Type::Kind::TRAIT: {
-				if (type1->getKind() != Type::Kind::TRAIT)
+			case Type::Kind::INTERFACE: {
+				if (type1->getKind() != Type::Kind::INTERFACE)
 					return false;
-				auto ct1 = std::static_pointer_cast<TraitType>(type1), ct2 = std::static_pointer_cast<TraitType>(type2);
+				auto ct1 = std::static_pointer_cast<InterfaceType>(type1), ct2 = std::static_pointer_cast<InterfaceType>(type2);
 				if (ct1 == ct2 || ct1->parent == t2)
 					return true;
 				return isBaseOf(ct1->parent, t2);
@@ -259,8 +259,8 @@ bool Slake::Compiler::hasOperator(std::shared_ptr<TypeName> t, UnaryOp op) {
 					if (ct->getScope()->getFn(std::to_string(op)))
 						return true;
 				}
-				case Type::Kind::TRAIT: {
-					auto ct = std::static_pointer_cast<TraitType>(tn);
+				case Type::Kind::INTERFACE: {
+					auto ct = std::static_pointer_cast<InterfaceType>(tn);
 					if (ct->getScope()->getFn(std::to_string(op)))
 						return true;
 				}
@@ -357,8 +357,8 @@ bool Slake::Compiler::hasOperator(std::shared_ptr<TypeName> t, BinaryOp op) {
 					if (ct->getScope()->getFn(std::to_string(op)))
 						return true;
 				}
-				case Type::Kind::TRAIT: {
-					auto ct = std::static_pointer_cast<TraitType>(tn);
+				case Type::Kind::INTERFACE: {
+					auto ct = std::static_pointer_cast<InterfaceType>(tn);
 					if (ct->getScope()->getFn(std::to_string(op)))
 						return true;
 				}

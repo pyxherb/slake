@@ -310,7 +310,7 @@ void Slake::Decompiler::decompileScope(std::fstream &fs, std::uint8_t indentLeve
 			printf("pub ");
 		if (i.flags & SlxFmt::CTD_FINAL)
 			printf("final ");
-		printf("%s %s", i.flags & SlxFmt::CTD_TRAIT ? "trait" : "class", name.c_str());
+		printf("%s %s", i.flags & SlxFmt::CTD_INTERFACE ? "interface" : "class", name.c_str());
 		if (i.flags & SlxFmt::CTD_DERIVED) {
 			SlxFmt::ValueDesc vd;
 			fs.read((char *)&vd, sizeof(vd));

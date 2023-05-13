@@ -235,11 +235,12 @@ ObjectValue *Slake::Runtime::_newClassInstance(ClassValue *cls) {
 	for (auto i : cls->_members) {
 		switch (i.second->getType().valueType) {
 			case ValueType::VAR: {
-				auto newVar = new VarValue(
-					this,
-					((VarValue *)*(i.second))->getAccess(),
-					((VarValue *)*(i.second))->getVarType(), instance);
-				instance->addMember(i.first, newVar);
+				instance->addMember(
+					i.first,
+					new VarValue(
+						this,
+						((VarValue *)*(i.second))->getAccess(),
+						((VarValue *)*(i.second))->getVarType(), instance));
 				break;
 			}
 			case ValueType::FN: {
@@ -269,6 +270,9 @@ void Slake::Runtime::_callFn(Context *context, FnValue *fn) {
 /// @param context Context for execution.
 /// @param ins Instruction to execute.
 void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
+	while (isInGc)
+		std::this_thread::yield();
+
 	switch (ins.opcode) {
 		case Opcode::NOP:
 			break;
@@ -492,7 +496,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 					x = v->getValue();
 			}
 
-			Value *value;
+			ValueRef<> value;
 			switch (x->getType().valueType) {
 				case ValueType::I8:
 					value = _execUnaryOp<std::int8_t>(x, ins.opcode);
@@ -533,7 +537,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			context->push(value);
 
 			if (v)
-				v->setValue(value);
+				v->setValue(*value);
 			break;
 		}
 		case Opcode::JMP: {
@@ -613,7 +617,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			else
 				x = ins.operands[0];
 
-			FnValue *fn = (FnValue *)*x;
+			ValueRef<FnValue> fn = (FnValue *)*x;
 			if (fn->getType() != ValueType::FN) {
 				fn = (FnValue *)resolveRef((RefValue *)*x, *(context->execContext.scopeValue));
 				if ((!fn) || (fn->getType() != ValueType::FN)) {
@@ -624,7 +628,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 				}
 			}
 
-			_callFn(context, fn);
+			_callFn(context, *fn);
 			return;
 		}
 		case Opcode::ACALL: {
@@ -636,9 +640,9 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			else
 				x = ins.operands[0];
 
-			auto fn = resolveRef((RefValue *)*x, *(context->execContext.scopeValue));
+			ValueRef<> fn = resolveRef((RefValue *)*x, *(context->execContext.scopeValue));
 			if ((!fn) || (fn->getType() != ValueType::FN)) {
-				auto fn = resolveRef((RefValue *)*x);
+				ValueRef<> fn = resolveRef((RefValue *)*x);
 
 				if ((!fn) || (fn->getType() != ValueType::FN))
 					throw ResourceNotFoundError("No such method");
@@ -663,7 +667,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 		case Opcode::NEW: {
 			_checkOperandCount(ins, 1);
 
-			MemberValue *cls = (MemberValue *)resolveRef(ins.operands[0], *(context->execContext.scopeValue));
+			ValueRef<MemberValue> cls = (MemberValue *)resolveRef(ins.operands[0], *(context->execContext.scopeValue));
 			if ((!cls) || cls->getType() != ValueType::CLASS) {
 				cls = (MemberValue *)resolveRef(ins.operands[0]);
 				if ((!cls) || cls->getType() != ValueType::CLASS) {
@@ -671,7 +675,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 				}
 			}
 
-			auto instance = _newClassInstance((ClassValue *)cls);
+			auto instance = _newClassInstance((ClassValue *)*cls);
 			context->push(instance);
 
 			auto savedThis = context->execContext.pThis;
@@ -711,6 +715,8 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 		default:
 			throw InvalidOpcodeError("Invalid opcode " + std::to_string((std::uint8_t)ins.opcode));
 	}
+	if (szInUse > (szLastGcMemUsed << 1))
+		gc();
 	context->execContext.curIns++;
 }
 

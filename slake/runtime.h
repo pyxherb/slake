@@ -85,12 +85,12 @@ namespace Slake {
 		ValueRef<> pThis;
 
 		inline ExecContext() {}
-		inline ExecContext(ValueRef<> scopeValue, ValueRef<FnValue> fn, std::uint32_t curIns) : scopeValue(scopeValue), fn(fn), curIns(curIns) {
+		inline ExecContext(ValueRef<>&& scopeValue, ValueRef<FnValue>&& fn, std::uint32_t curIns) : scopeValue(scopeValue), fn(fn), curIns(curIns) {
 		}
-		inline ExecContext(const ExecContext &x) { *this = x; }
-		inline ExecContext(const ExecContext &&x) { *this = x; }
+		inline ExecContext(const ExecContext &&x) noexcept { *this = x; }
+		inline ExecContext(const ExecContext &x) noexcept { *this = std::move(x); }
 
-		inline ExecContext &operator=(const ExecContext &&x) {
+		inline ExecContext &operator=(const ExecContext &&x) noexcept {
 			scopeValue = x.scopeValue;
 			fn = x.fn;
 			curIns = x.curIns;
@@ -135,13 +135,13 @@ namespace Slake {
 		inline void push(ValueRef<> v) {
 			if (dataStack.size() > 0x100000)
 				throw StackOverflowError("Stack overflowed");
-			dataStack.push_back(v);
+			dataStack.push_back(*v);
 		}
 
 		inline ValueRef<> pop() {
 			if (dataStack.size() == stackBase)
 				throw FrameBoundaryExceededError("Frame boundary exceeded");
-			auto v = dataStack.back();
+			ValueRef<> v = dataStack.back();
 			dataStack.pop_back();
 			return v;
 		}
@@ -171,13 +171,21 @@ namespace Slake {
 
 		RootValue *_rootValue;
 		std::unordered_set<Value *> _createdValues;
-		RuntimeFlags _flags;
+		RuntimeFlags _flags = 0;
+
+		std::size_t szInUse = 0, szLastGcMemUsed = 0;
+
+		constexpr static uint8_t RTI_LASTGCSTAT = 0x01;
+		uint8_t _internalFlags = RTI_LASTGCSTAT;
 
 		void _execIns(Context *context, Instruction &ins);
-		void _gc();
+
+		void _gcWalk(Value *i, uint8_t gcStat);
 		ObjectValue *_newClassInstance(ClassValue *cls);
 
 		void _callFn(Context *context, FnValue *fn);
+
+		bool isInGc = false;
 
 		friend class Value;
 		friend class FnValue;
@@ -190,10 +198,10 @@ namespace Slake {
 
 		inline Runtime(RuntimeFlags flags = 0) : _flags(flags) {
 			_rootValue = new RootValue(this);
-			_rootValue->incRefCount();
 		}
 		virtual inline ~Runtime() {
 			// All values were managed by the root value.
+			gc();
 			delete _rootValue;
 		}
 
@@ -202,6 +210,8 @@ namespace Slake {
 		virtual void loadModule(std::string name, std::istream &fs);
 		virtual void loadModule(std::string name, const void *buf, std::size_t size);
 		inline RootValue *getRootValue() { return _rootValue; }
+
+		void gc();
 	};
 }
 

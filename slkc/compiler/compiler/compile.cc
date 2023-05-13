@@ -141,7 +141,7 @@ void State::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTopLe
 		_writeValue(fnd, fs);
 	}
 
-	// Write CTD for each class/trait.
+	// Write CTD for each class/interface.
 	{
 		for (auto i : scope->types) {
 			switch (i.second->getKind()) {
@@ -183,14 +183,14 @@ void State::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTopLe
 					compile(std::static_pointer_cast<ClassType>(i.second)->scope, fs, false);
 					break;
 				}
-				case Type::Kind::TRAIT: {
-					auto t = std::static_pointer_cast<TraitType>(i.second);
+				case Type::Kind::INTERFACE: {
+					auto t = std::static_pointer_cast<InterfaceType>(i.second);
 					SlxFmt::ClassTypeDesc ctd = { 0 };
 
 					if (t->accessModifier & ~ACCESS_PUB)
 						throw parser::syntax_error(i.second->getLocation(), "Invalid modifier combination");
 
-					ctd.flags |= SlxFmt::CTD_TRAIT | (t->isPublic() ? SlxFmt::CTD_PUB : 0);
+					ctd.flags |= SlxFmt::CTD_INTERFACE | (t->isPublic() ? SlxFmt::CTD_PUB : 0);
 					ctd.lenName = (std::uint8_t)i.first.length();
 					ctd.nGenericParams = (std::uint8_t)t->genericParams.size();
 
@@ -205,7 +205,7 @@ void State::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTopLe
 						writeValue(tn->typeRef, fs);
 					}
 
-					compile(std::static_pointer_cast<TraitType>(i.second)->scope, fs, false);
+					compile(std::static_pointer_cast<InterfaceType>(i.second)->scope, fs, false);
 					break;
 				}
 			}

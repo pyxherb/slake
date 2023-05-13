@@ -7,7 +7,7 @@ using namespace Slake::Compiler;
 std::shared_ptr<Scope> Slake::Compiler::currentScope;
 std::shared_ptr<EnumType> Slake::Compiler::currentEnum;
 std::shared_ptr<ClassType> Slake::Compiler::currentClass;
-std::shared_ptr<TraitType> Slake::Compiler::currentTrait;
+std::shared_ptr<InterfaceType> Slake::Compiler::currentInterface;
 std::shared_ptr<StructType> Slake::Compiler::currentStruct;
 
 int Slake::Compiler::indentLevel = 0;
@@ -32,7 +32,7 @@ void Slake::Compiler::StructType::addMembers(std::shared_ptr<VarDefStmt> varDecl
 }
 
 void Slake::Compiler::deinit() {
-	currentTrait.reset();
+	currentInterface.reset();
 	currentClass.reset();
 	currentEnum.reset();
 	currentScope.reset();

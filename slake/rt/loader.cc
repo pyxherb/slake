@@ -217,7 +217,7 @@ void Slake::Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 		if (i.flags & SlxFmt::CTD_FINAL)
 			access |= ACCESS_FINAL;
 
-		RefValue *parent;
+		RefValue *parent = nullptr;
 
 		if (i.flags & SlxFmt::CTD_DERIVED) {
 			SlxFmt::ValueDesc vd;
@@ -233,8 +233,8 @@ void Slake::Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 			for (auto j = i.nImpls; j; j--) {
 				auto tn = readTypeName(rt, fs, _read<SlxFmt::ValueType>(fs));
 				if (tn.valueType != ValueType::CLASS)
-					throw LoaderError("Incompatible value type for traits");
-				value->_traits.push_back(tn);
+					throw LoaderError("Incompatible value type for interfaces");
+				value->_interfaces.push_back(tn);
 			}
 		}
 

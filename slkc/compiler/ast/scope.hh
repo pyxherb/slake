@@ -138,7 +138,7 @@ namespace Slake {
 		public:
 			enum class Kind : std::uint8_t {
 				CLASS = 0,
-				TRAIT,
+				INTERFACE,
 				ENUM,
 				STRUCT
 			};
@@ -186,8 +186,8 @@ namespace Slake {
 					case Kind::CLASS:
 						s += "class ";
 						break;
-					case Kind::TRAIT:
-						s += "trait ";
+					case Kind::INTERFACE:
+						s += "interface ";
 						break;
 					default:
 						s += "(Class Type) ";
@@ -221,7 +221,7 @@ namespace Slake {
 		};
 
 		using ClassType = BasicClassType<Type::Kind::CLASS>;
-		using TraitType = BasicClassType<Type::Kind::TRAIT>;
+		using InterfaceType = BasicClassType<Type::Kind::INTERFACE>;
 
 		class EnumType final : public Type {
 		public:
@@ -345,8 +345,8 @@ namespace Slake {
 						switch (type->getKind()) {
 							case Type::Kind::CLASS:
 								return std::static_pointer_cast<ClassType>(types[ref->name])->scope->getType(ref->next);
-							case Type::Kind::TRAIT:
-								return std::static_pointer_cast<TraitType>(types[ref->name])->scope->getType(ref->next);
+							case Type::Kind::INTERFACE:
+								return std::static_pointer_cast<InterfaceType>(types[ref->name])->scope->getType(ref->next);
 							default:
 								return std::shared_ptr<Type>();
 						}
@@ -394,8 +394,8 @@ namespace Slake {
 					switch (type->getKind()) {
 						case Type::Kind::CLASS:
 							return std::static_pointer_cast<ClassType>(types[ref->name])->scope->getEnumItem(ref->next);
-						case Type::Kind::TRAIT:
-							return std::static_pointer_cast<TraitType>(types[ref->name])->scope->getEnumItem(ref->next);
+						case Type::Kind::INTERFACE:
+							return std::static_pointer_cast<InterfaceType>(types[ref->name])->scope->getEnumItem(ref->next);
 						default:
 							return std::shared_ptr<Expr>();
 					}
@@ -420,7 +420,7 @@ namespace Slake {
 		extern std::shared_ptr<Scope> currentScope;
 		extern std::shared_ptr<EnumType> currentEnum;
 		extern std::shared_ptr<ClassType> currentClass;
-		extern std::shared_ptr<TraitType> currentTrait;
+		extern std::shared_ptr<InterfaceType> currentInterface;
 		extern std::shared_ptr<StructType> currentStruct;
 
 		void deinit();

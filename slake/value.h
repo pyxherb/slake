@@ -54,6 +54,8 @@ namespace Slake {
 	};
 
 	enum class ValueType : std::uint8_t {
+		NONE,
+
 		// Literals
 		U8,
 		U16,
@@ -82,10 +84,10 @@ namespace Slake {
 
 		// Following types are only used for variables.
 		ANY,
-		NONE,
 
 		// Internal types
 		REF,
+		ROOT,
 
 		INVALID = 0xff
 	};
@@ -107,6 +109,7 @@ namespace Slake {
 			} map;
 		} exData;
 
+		inline Type() : valueType(ValueType::NONE) {}
 		inline Type(const Type &x) { *this = x; }
 		inline Type(const Type &&x) { *this = x; }
 		inline Type(ValueType valueType) : valueType(valueType) {}
@@ -121,6 +124,10 @@ namespace Slake {
 		~Type();
 
 		bool isDeferred() noexcept;
+
+		inline operator bool() noexcept {
+			return valueType != ValueType::NONE;
+		}
 
 		inline bool operator==(const Type &&x) noexcept {
 			if (x.valueType != valueType)
@@ -162,30 +169,60 @@ namespace Slake {
 		inline Type &operator=(const Type &x) noexcept {
 			return *this = std::move(x);
 		}
+
+		inline Value *resolveCustomType() {
+			if (valueType == ValueType::CLASS || valueType == ValueType::STRUCT)
+				return exData.customType;
+			return nullptr;
+		}
 	};
 
-	template <typename T = Value>
+	template <typename T = Value, bool isHostRef = true>
 	class ValueRef final {
 	public:
 		T *_value;
 
 		inline void release() {
-			if (_value)
-				_value->decHostRefCount();
+			if (_value) {
+				if constexpr (isHostRef) {
+					_value->decHostRefCount();
+				} else {
+					_value->decRefCount();
+				}
+			}
 			_value = nullptr;
 		}
 
-		inline ValueRef(const ValueRef<T> &x) : _value(x._value) {
-			if (_value)
-				_value->incHostRefCount();
+		inline void discard() {
+			_value = nullptr;
 		}
-		inline ValueRef(const ValueRef<T> &&x) : _value(x._value) {
-			if (_value)
-				_value->incHostRefCount();
+
+		inline ValueRef(const ValueRef<T, isHostRef> &x) : _value(x._value) {
+			if (x._value) {
+				if constexpr (isHostRef) {
+					_value->incHostRefCount();
+				} else {
+					_value->incRefCount();
+				}
+			}
+		}
+		inline ValueRef(const ValueRef<T, isHostRef> &&x) : _value(x._value) {
+			if (x._value) {
+				if constexpr (isHostRef) {
+					_value->incHostRefCount();
+				} else {
+					_value->incRefCount();
+				}
+			}
 		}
 		inline ValueRef(T *value = nullptr) : _value(value) {
-			if (_value)
-				_value->incHostRefCount();
+			if (_value) {
+				if constexpr (isHostRef) {
+					_value->incHostRefCount();
+				} else {
+					_value->incRefCount();
+				}
+			}
 		}
 		inline ~ValueRef() {
 			release();
@@ -200,32 +237,48 @@ namespace Slake {
 		template <typename T1 = T>
 		const T1 *get() const { return (T1 *)_value; }
 
-		inline ValueRef &operator=(const ValueRef &x) {
-			if (_value)
-				_value->decHostRefCount();
-			if ((_value = x._value))
-				_value->incHostRefCount();
+		inline ValueRef &operator=(const ValueRef<T, isHostRef> &x) {
+			return *this = std::move(x);
+		}
+		inline ValueRef &operator=(const ValueRef<T, isHostRef> &&x) {
+			if (_value) {
+				if constexpr (isHostRef) {
+					_value->decHostRefCount();
+				} else {
+					_value->decRefCount();
+				}
+			}
+			if ((_value = x._value)) {
+				if constexpr (isHostRef) {
+					_value->incHostRefCount();
+				} else {
+					_value->incRefCount();
+				}
+			}
 			return *this;
 		}
-		inline ValueRef &operator=(const ValueRef &&x) {
-			if (_value)
-				_value->decHostRefCount();
-			if ((_value = x._value))
-				_value->incHostRefCount();
-			return *this;
-		}
-		template <typename T1>
-		inline ValueRef &operator=(const ValueRef<T1> &&x) {
-			if (_value)
-				_value->decHostRefCount();
-			if ((_value = x._value))
-				_value->incHostRefCount();
+		template <typename T1, bool isHostRef1>
+		inline ValueRef &operator=(const ValueRef<T1, isHostRef1> &&x) {
+			if (_value) {
+				if constexpr (isHostRef) {
+					_value->decHostRefCount();
+				} else {
+					_value->decRefCount();
+				}
+			}
+			if ((_value = x._value)) {
+				if constexpr (isHostRef) {
+					_value->incHostRefCount();
+				} else {
+					_value->incRefCount();
+				}
+			}
 			return *this;
 		}
 
-		template <typename T1>
-		inline operator ValueRef<T1>() {
-			return ValueRef<T1>((T1 *)_value);
+		template <typename T1, bool isHostRef1>
+		inline operator ValueRef<T1, isHostRef1>() {
+			return ValueRef<T1, isHostRef1>((T1 *)_value);
 		}
 
 		inline operator bool() const {
@@ -234,17 +287,47 @@ namespace Slake {
 	};
 
 	using ValueFlags = std::uint8_t;
-	constexpr static ValueFlags VF_GCWALKED = 0x01;
+	constexpr static ValueFlags VF_GCSTAT = 0x01;
+
+	class ValueIterator {
+	public:
+		inline ValueIterator() {}
+		inline ValueIterator(const ValueIterator &x) { *this = x; }
+		inline ValueIterator(const ValueIterator &&x) { *this = x; }
+
+		virtual inline ValueIterator &operator++() { return *this; }
+		virtual inline ValueIterator &&operator++(int) { return std::move(*this); }
+		virtual inline ValueIterator &operator--() { return *this; }
+		virtual inline ValueIterator &&operator--(int) { return std::move(*this); }
+		virtual inline Value *operator*() { return nullptr; };
+
+		virtual inline bool operator==(const ValueIterator &&) const { return true; };
+		inline bool operator==(const ValueIterator &x) const {
+			return *this == std::move(x);
+		}
+		virtual inline bool operator!=(const ValueIterator &&) const { return false; };
+		inline bool operator!=(const ValueIterator &x) const {
+			return *this != std::move(x);
+		}
+
+		virtual inline ValueIterator &operator=(const ValueIterator &&) { return *this; }
+		virtual inline ValueIterator &operator=(const ValueIterator &x) {
+			return *this = std::move(x);
+		}
+	};
 
 	class Value {
 	private:
-		std::atomic_uint32_t _refCount;
+		std::uint32_t _refCount = 0;
 		// The garbage collector will never release it if its host reference count is not 0.
-		std::atomic_uint32_t _hostRefCount;
+		std::uint32_t _hostRefCount = 0;
 		Runtime *_rt;
 		ValueFlags flags = 0;
 
 		friend class Runtime;
+
+	protected:
+		void reportSizeToRuntime(long size);
 
 	public:
 		Value(Runtime *rt);
@@ -263,12 +346,15 @@ namespace Slake {
 		}
 		inline void incHostRefCount() { _hostRefCount++; }
 		inline void decHostRefCount() {
-			if (!(_refCount || --_hostRefCount))
+			if (!(--_hostRefCount || _refCount))
 				delete this;
 		}
 		inline std::uint32_t getRefCount() { return _refCount; }
 		inline std::uint32_t getHostRefCount() { return _hostRefCount; }
 		inline Runtime *getRuntime() noexcept { return _rt; }
+
+		virtual inline ValueIterator &begin() { return ValueIterator(); }
+		virtual inline ValueIterator &end() { return ValueIterator(); }
 
 		Value &operator=(const Value &) = delete;
 		Value &operator=(const Value &&) = delete;
@@ -276,7 +362,7 @@ namespace Slake {
 
 	class MemberValue : public Value, public AccessModified {
 	protected:
-		Value *_parent;
+		Value* _parent;
 
 	public:
 		inline MemberValue(Runtime *rt, AccessModifier access, Value *parent) : Value(rt), AccessModified(access), _parent(parent) {}
@@ -284,18 +370,28 @@ namespace Slake {
 	};
 
 	template <typename T, ValueType VT>
-	class LiteralValue : public Value {
+	class LiteralValue final : public Value {
 	protected:
 		T _value;
 
 	public:
-		inline LiteralValue(Runtime *rt, T value) : Value(rt), _value(value) {}
+		inline LiteralValue(Runtime *rt, T value) : Value(rt), _value(value) {
+			reportSizeToRuntime(sizeof(*this));
+			if constexpr (std::is_same<T, std::string>::value) {
+				reportSizeToRuntime(value.size());
+			}
+		}
 		virtual inline ~LiteralValue() {}
 
 		virtual inline Type getType() const override { return VT; }
 
 		virtual inline const T &getValue() const { return _value; }
-		virtual inline void setValue(T &value) { _value = value; }
+		virtual inline void setValue(T &value) {
+			if constexpr (std::is_same<T, std::string>::value) {
+				reportSizeToRuntime(((long)value.size()) - (long)_value.size());
+			}
+			_value = value;
+		}
 
 		LiteralValue &operator=(const LiteralValue &) = delete;
 		LiteralValue &operator=(const LiteralValue &&) = delete;
@@ -346,25 +442,82 @@ namespace Slake {
 	using BoolValue = LiteralValue<bool, ValueType::BOOL>;
 	using StringValue = LiteralValue<std::string, ValueType::STRING>;
 
-	class ObjectValue : public Value {
+	class ObjectValue final : public Value {
 	protected:
-		std::unordered_map<std::string, ValueRef<MemberValue>> _members;
+		std::unordered_map<std::string, MemberValue *> _members;
 		Value *const _type;
+
 		inline void addMember(std::string name, MemberValue *value) {
+			value->incRefCount();
 			_members[name] = value;
 		}
+
+		class MyValueIterator : public ValueIterator {
+		protected:
+			decltype(_members)::iterator it;
+
+		public:
+			inline MyValueIterator(decltype(it) &&it) : it(it) {}
+			inline MyValueIterator(decltype(it) &it) : it(it) {}
+			inline MyValueIterator(MyValueIterator &&x) : it(x.it) {}
+			inline MyValueIterator(MyValueIterator &x) : it(x.it) {}
+			virtual inline ValueIterator &operator++() override {
+				++it;
+				return *this;
+			}
+			virtual inline ValueIterator &&operator++(int) override {
+				auto o = *this;
+				++it;
+				return std::move(o);
+			}
+			virtual inline ValueIterator &operator--() override {
+				--it;
+				return *this;
+			}
+			virtual inline ValueIterator &&operator--(int) override {
+				auto o = *this;
+				--it;
+				return std::move(o);
+			}
+			virtual inline Value *operator*() override {
+				return it->second;
+			}
+
+			virtual inline bool operator==(const ValueIterator &&) const override { return true; }
+			virtual inline bool operator!=(const ValueIterator &&) const override { return false; }
+
+			virtual inline ValueIterator &operator=(const ValueIterator &&x) override {
+				return *this = (const MyValueIterator &&)x;
+			}
+
+			inline MyValueIterator &operator=(const MyValueIterator &&x) {
+				it = x.it;
+				return *this;
+			}
+			inline MyValueIterator &operator=(const MyValueIterator &x) {
+				return *this = std::move(x);
+			}
+		};
 
 		friend class Runtime;
 
 	public:
-		inline ObjectValue(Runtime *rt, Value *type) : Value(rt), _type(type) {}
+		inline ObjectValue(Runtime *rt, Value *type) : Value(rt), _type(type) {
+			reportSizeToRuntime(sizeof(*this));
+		}
 		virtual inline ~ObjectValue() {
+			if (!getRefCount())
+				for (auto i : _members)
+					i.second->decRefCount();
 		}
 
 		virtual inline Type getType() const override { return Type(ValueType::OBJECT, _type); }
 
-		virtual inline Value *getMember(std::string name) override { return _members.count(name) ? *(_members.at(name)) : nullptr; }
-		virtual inline const Value *getMember(std::string name) const override { return *(_members.at(name)); }
+		virtual inline Value *getMember(std::string name) override { return _members.count(name) ? _members.at(name) : nullptr; }
+		virtual inline const Value *getMember(std::string name) const override { return _members.at(name); }
+
+		virtual inline ValueIterator &begin() override { return MyValueIterator(_members.begin()); }
+		virtual inline ValueIterator &end() override { return MyValueIterator(_members.end()); }
 
 		ObjectValue(ObjectValue &) = delete;
 		ObjectValue(ObjectValue &&) = delete;
@@ -374,19 +527,20 @@ namespace Slake {
 
 	class StructValue : public MemberValue {
 	protected:
-		std::unordered_map<std::string, MemberValue *> _members;
+		std::unordered_map<std::string, ValueRef<MemberValue, false>> _members;
 
 	public:
 		inline StructValue(Runtime *rt, AccessModifier access, Value *parent) : MemberValue(rt, access, parent) {
+			reportSizeToRuntime(sizeof(*this));
 		}
 		virtual inline ~StructValue() {}
 
 		virtual inline Type getType() const override { return ValueType::STRUCT; }
 
 		virtual inline Value *getMember(std::string name) override {
-			return _members.at(name);
+			return *(_members.at(name));
 		}
-		virtual inline const Value *getMember(std::string name) const override { return _members.at(name); }
+		virtual inline const Value *getMember(std::string name) const override { return *(_members.at(name)); }
 
 		ObjectValue &operator=(const ObjectValue &) = delete;
 		ObjectValue &operator=(const ObjectValue &&) = delete;
@@ -397,6 +551,7 @@ namespace Slake {
 		std::vector<std::string> scopes;
 
 		inline RefValue(Runtime *rt) : Value(rt) {
+			reportSizeToRuntime(sizeof(*this));
 		}
 		virtual inline ~RefValue() {}
 		virtual inline Type getType() const override { return ValueType::REF; }
@@ -407,12 +562,14 @@ namespace Slake {
 
 	class VarValue final : public MemberValue {
 	protected:
-		ValueRef<> value;
+		ValueRef<Slake::Value, false> value;
 		const Type type = Type(ValueType::ANY);
 
 	public:
 		inline VarValue(Runtime *rt, AccessModifier access, Type type, Value *parent)
-			: MemberValue(rt, access, parent), type(type) {}
+			: MemberValue(rt, access, parent), type(type) {
+			reportSizeToRuntime(sizeof(*this));
+		}
 
 		virtual inline ~VarValue() {}
 		virtual inline Type getType() const override { return ValueType::VAR; }
@@ -425,7 +582,7 @@ namespace Slake {
 			return value ? value->getMember(name) : nullptr;
 		}
 
-		Value *getValue() { return *value; }
+		ValueRef<> getValue() { return value; }
 		void setValue(Value *value) {
 			// if (value->getType() != type)
 			//	throw std::runtime_error("Mismatched types");
@@ -438,18 +595,67 @@ namespace Slake {
 
 	class ArrayValue final : public Value {
 	protected:
-		std::deque<Value *> values;
+		std::deque<ValueRef<Value, false>> values;
 		const Type type;
 
-	public:
-		using Iterator = decltype(values)::iterator;
+		class MyValueIterator : public ValueIterator {
+		protected:
+			decltype(values)::iterator it;
 
+		public:
+			inline MyValueIterator(decltype(it) &&it) : it(it) {}
+			inline MyValueIterator(decltype(it) &it) : it(it) {}
+			inline MyValueIterator(MyValueIterator &&x) : it(x.it) {}
+			inline MyValueIterator(MyValueIterator &x) : it(x.it) {}
+			virtual inline ValueIterator &operator++() override {
+				++it;
+				return *this;
+			}
+			virtual inline ValueIterator &&operator++(int) override {
+				auto o = *this;
+				++it;
+				return std::move(o);
+			}
+			virtual inline ValueIterator &operator--() override {
+				--it;
+				return *this;
+			}
+			virtual inline ValueIterator &&operator--(int) override {
+				auto o = *this;
+				--it;
+				return std::move(o);
+			}
+			virtual inline Value *operator*() override {
+				return **it;
+			}
+
+			virtual inline bool operator==(const ValueIterator &&) const override { return true; }
+			virtual inline bool operator!=(const ValueIterator &&) const override { return false; }
+
+			virtual inline ValueIterator &operator=(const ValueIterator &&x) override {
+				return *this = (const MyValueIterator &&)x;
+			}
+
+			inline MyValueIterator &operator=(const MyValueIterator &&x) {
+				it = x.it;
+				return *this;
+			}
+			inline MyValueIterator &operator=(const MyValueIterator &x) {
+				return *this = std::move(x);
+			}
+		};
+
+		friend class Runtime;
+
+	public:
 		inline ArrayValue(Runtime *rt, Type type)
-			: Value(rt), type(type) {}
+			: Value(rt), type(type) {
+			reportSizeToRuntime(sizeof(*this));
+		}
 
 		virtual inline ~ArrayValue() {
 			for (auto i : values)
-				delete i;
+				delete *i;
 		}
 		virtual inline Type getType() const override { return ValueType::ARRAY; }
 		inline Type getVarType() const { return type; }
@@ -457,11 +663,11 @@ namespace Slake {
 		Value *operator[](std::uint32_t i) {
 			if (i >= values.size())
 				throw std::out_of_range("Out of array range");
-			return values[i];
+			return *(values[i]);
 		}
 
-		inline Iterator begin() { return values.begin(); }
-		inline Iterator end() { return values.end(); }
+		virtual inline ValueIterator &begin() override { return MyValueIterator(values.begin()); }
+		virtual inline ValueIterator &end() override { return MyValueIterator(values.end()); }
 
 		VarValue &operator=(const VarValue &) = delete;
 		VarValue &operator=(const VarValue &&) = delete;
@@ -469,17 +675,66 @@ namespace Slake {
 
 	class RootValue final : public Value {
 	protected:
-		std::unordered_map<std::string, ValueRef<>> _members;
+		std::unordered_map<std::string, ValueRef<Value, false>> _members;
+
+		class MyValueIterator : public ValueIterator {
+		protected:
+			decltype(_members)::iterator it;
+
+		public:
+			inline MyValueIterator(decltype(it) &&it) : it(it) {}
+			inline MyValueIterator(decltype(it) &it) : it(it) {}
+			inline MyValueIterator(MyValueIterator &&x) : it(x.it) {}
+			inline MyValueIterator(MyValueIterator &x) : it(x.it) {}
+			virtual inline ValueIterator &operator++() override {
+				++it;
+				return *this;
+			}
+			virtual inline ValueIterator &&operator++(int) override {
+				auto o = *this;
+				++it;
+				return std::move(o);
+			}
+			virtual inline ValueIterator &operator--() override {
+				--it;
+				return *this;
+			}
+			virtual inline ValueIterator &&operator--(int) override {
+				auto o = *this;
+				--it;
+				return std::move(o);
+			}
+			virtual inline Value *operator*() override {
+				return *(it->second);
+			}
+
+			virtual inline bool operator==(const ValueIterator &&) const override { return true; }
+			virtual inline bool operator!=(const ValueIterator &&) const override { return false; }
+
+			virtual inline ValueIterator &operator=(const ValueIterator &&x) override {
+				return *this = (const MyValueIterator &&)x;
+			}
+
+			virtual inline MyValueIterator &operator=(const MyValueIterator &&x) {
+				it = x.it;
+				return *this;
+			}
+			inline MyValueIterator &operator=(const MyValueIterator &x) {
+				return *this = std::move(x);
+			}
+		};
+
+		friend class Runtime;
 
 	public:
-		using Iterator = decltype(_members)::iterator;
-
 		inline RootValue(Runtime *rt)
-			: Value(rt) {}
+			: Value(rt) {
+			reportSizeToRuntime(sizeof(*this));
+		}
 
 		virtual inline ~RootValue() {
 		}
-		virtual inline Type getType() const override { return ValueType::MAP; }
+		virtual inline Type getType() const override { return ValueType::ROOT; }
 
 		virtual inline Value *getMember(std::string name) override {
 			return _members.count(name) ? *(_members.at(name)) : nullptr;
@@ -492,8 +747,8 @@ namespace Slake {
 			_members[name] = value;
 		}
 
-		inline Iterator begin() { return _members.begin(); }
-		inline Iterator end() { return _members.end(); }
+		virtual inline ValueIterator &begin() override { return MyValueIterator(_members.begin()); }
+		virtual inline ValueIterator &end() override { return MyValueIterator(_members.end()); }
 
 		RootValue &operator=(const RootValue &) = delete;
 		RootValue &operator=(const RootValue &&) = delete;
@@ -525,6 +780,7 @@ namespace Slake {
 			  MemberValue(rt, access, parent) {
 			if (!nIns)
 				throw std::invalid_argument("Invalid instruction count");
+			reportSizeToRuntime(sizeof(*this) + sizeof(Instruction) * nIns);
 		}
 		virtual inline ~FnValue() { delete[] _body; }
 
@@ -547,6 +803,7 @@ namespace Slake {
 	public:
 		inline NativeFnValue(Runtime *rt, NativeFnCallback body, AccessModifier access = 0, Value *parent = nullptr)
 			: MemberValue(rt, access | ACCESS_NATIVE, parent), _body(body) {
+			reportSizeToRuntime(sizeof(*this));
 		}
 		virtual inline ~NativeFnValue() {}
 
@@ -561,10 +818,60 @@ namespace Slake {
 
 	class ModuleValue : public MemberValue {
 	protected:
-		std::unordered_map<std::string, ValueRef<>> _members;
+		std::unordered_map<std::string, ValueRef<Value, false>> _members;
+
+		class MyValueIterator : public ValueIterator {
+		protected:
+			decltype(_members)::iterator it;
+
+		public:
+			inline MyValueIterator(decltype(it) &&it) : it(it) {}
+			inline MyValueIterator(decltype(it) &it) : it(it) {}
+			inline MyValueIterator(MyValueIterator &&x) : it(x.it) {}
+			inline MyValueIterator(MyValueIterator &x) : it(x.it) {}
+			virtual inline ValueIterator &operator++() override {
+				++it;
+				return *this;
+			}
+			virtual inline ValueIterator &&operator++(int) override {
+				auto o = *this;
+				++it;
+				return std::move(o);
+			}
+			virtual inline ValueIterator &operator--() override {
+				--it;
+				return *this;
+			}
+			virtual inline ValueIterator &&operator--(int) override {
+				auto o = *this;
+				--it;
+				return std::move(o);
+			}
+			virtual inline Value *operator*() override {
+				return *(it->second);
+			}
+
+			virtual inline bool operator==(const ValueIterator &&) const override { return true; }
+			virtual inline bool operator!=(const ValueIterator &&) const override { return false; }
+
+			virtual inline ValueIterator &operator=(const ValueIterator &&x) override {
+				return *this = (const MyValueIterator &&)x;
+			}
+
+			inline MyValueIterator &operator=(const MyValueIterator &&x) {
+				it = x.it;
+				return *this;
+			}
+			inline MyValueIterator &operator=(const MyValueIterator &x) {
+				return *this = std::move(x);
+			}
+		};
+
+		friend class Runtime;
 
 	public:
 		inline ModuleValue(Runtime *rt, AccessModifier access, Value *parent) : MemberValue(rt, access, parent) {
+			reportSizeToRuntime(sizeof(*this));
 		}
 		virtual inline ~ModuleValue() {}
 
@@ -576,18 +883,25 @@ namespace Slake {
 			_members[name] = value;
 		}
 
+		virtual inline ValueIterator &begin() override { return MyValueIterator(_members.begin()); }
+		virtual inline ValueIterator &end() override { return MyValueIterator(_members.end()); }
+
 		ModuleValue &operator=(const ModuleValue &) = delete;
 		ModuleValue &operator=(const ModuleValue &&) = delete;
 	};
 
 	class ClassValue : public ModuleValue {
 	protected:
-		std::vector<Type> _traits;
+		Type _parentClass;
+		std::vector<Type> _interfaces;
 
 		friend class Runtime;
 
 	public:
-		inline ClassValue(Runtime *rt, AccessModifier access, Value *parent) : ModuleValue(rt, access, parent) {}
+		inline ClassValue(Runtime *rt, AccessModifier access, Value *parent, Type parentClass = Type())
+			: ModuleValue(rt, access, parent), _parentClass(parentClass) {
+			reportSizeToRuntime(sizeof(*this) - sizeof(ModuleValue));
+		}
 		virtual inline ~ClassValue() {}
 
 		virtual inline Type getType() const override { return ValueType::CLASS; }

@@ -92,10 +92,10 @@ namespace Slake {
 			std::uint8_t nImpls;		  // Number of implemented interfaces
 		};
 		constexpr static std::uint8_t
-			CTD_PUB = 0x01,		 // Public
-			CTD_FINAL = 0x02,	 // Final
-			CTD_DERIVED = 0x40,	 // Is derived from parent
-			CTD_TRAIT = 0x80	 // As a trait
+			CTD_PUB = 0x01,		  // Public
+			CTD_FINAL = 0x02,	  // Final
+			CTD_DERIVED = 0x40,	  // Is derived from parent
+			CTD_INTERFACE = 0x80  // As a interface
 			;
 
 		/// @brief Structure Type Descriptor (STD)

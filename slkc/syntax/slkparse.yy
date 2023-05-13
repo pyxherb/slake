@@ -74,6 +74,7 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %token KW_FN "fn"
 %token KW_FOR "for"
 %token KW_IF "if"
+%token KW_INTERFACE "interface"
 %token KW_NATIVE "native"
 %token KW_NEW "new"
 %token KW_NULL "null"
@@ -266,6 +267,7 @@ FnDef
 }
 | Class
 | Struct
+| Interface
 | Trait
 | Enum
 | AliasDef ";"
@@ -427,11 +429,11 @@ VarDef ";" {
 ;
 
 //
-// Trait
+// Interface
 //
-Trait:
-AccessModifier "trait" T_ID GenericParamList InheritSlot {
-	auto curType = std::make_shared<TraitType>(
+Interface:
+AccessModifier "interface" T_ID GenericParamList InheritSlot {
+	auto curType = std::make_shared<InterfaceType>(
 		@1,
 		$1,
 		std::make_shared<Scope>($3, currentScope),
@@ -445,23 +447,31 @@ AccessModifier "trait" T_ID GenericParamList InheritSlot {
 
 	currentScope->types[$3] = curType;
 	currentScope = curType->scope;
-} "{" TraitProgram "}" {
+} "{" InterfaceProgram "}" {
 	currentScope = currentScope->parent.lock();
 }
 ;
 
-TraitProgram:
-TraitStmts
+InterfaceProgram:
+InterfaceStmts
 | %empty
 ;
 
-TraitStmts:
-TraitStmt TraitStmts
-| TraitStmt
+InterfaceStmts:
+InterfaceStmt InterfaceStmts
+| InterfaceStmt
 ;
 
-TraitStmt:
+InterfaceStmt:
 FnDecl
+;
+
+//
+// Trait
+//
+Trait:
+AccessModifier "trait" T_ID GenericParamList InheritSlot {
+}
 ;
 
 FnDecl:

@@ -109,7 +109,7 @@ yylloc.step();
 "this"		return parser::make_KW_THIS(yylloc);
 "throw"		return parser::make_KW_THROW(yylloc);
 "times"		return parser::make_KW_TIMES(yylloc);
-"trait"		return parser::make_KW_TRAIT(yylloc);
+"interface"	return parser::make_KW_INTERFACE(yylloc);
 "true"		return parser::make_KW_TRUE(yylloc);
 "try"		return parser::make_KW_TRY(yylloc);
 "use"		return parser::make_KW_USE(yylloc);

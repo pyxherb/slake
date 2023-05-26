@@ -1,0 +1,8 @@
+pub trait Iterable<T> {
+	@T next();
+	@T cur();
+}
+
+pub trait BidirIterable<T>(@Iterator<T>) {
+	@T last();
+}

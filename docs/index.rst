@@ -8,6 +8,7 @@ Welcome to Slake's documentation!
 
    core/index
    lang/index
+   slakedoc/index
 
 Indices and tables
 ==================

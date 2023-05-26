@@ -22,37 +22,37 @@
 
 namespace Slake {
 	namespace SlxFmt {
-		constexpr static std::uint8_t GENERIC_PARAM_MAX = 16;
+		constexpr static uint8_t GENERIC_PARAM_MAX = 16;
 
 		///
 		/// @brief IMage Header (IMH)
 		///
 		struct ImgHeader final {
-			std::uint8_t magic[4];	   // Magic number
-			std::uint8_t flags;		   // Flags
-			std::uint8_t fmtVer;	   // Format version
-			std::uint8_t nImports;	   // Number of imported modules
-			std::uint8_t reserved[2];  // Reserved
+			uint8_t magic[4];	   // Magic number
+			uint8_t flags;		   // Flags
+			uint8_t fmtVer;	   // Format version
+			uint8_t nImports;	   // Number of imported modules
+			uint8_t reserved[2];  // Reserved
 		};
-		constexpr static std::uint8_t IMH_MAGIC[4] = { 'S', 'L', 'A', 'X' };
+		constexpr static uint8_t IMH_MAGIC[4] = { 'S', 'L', 'A', 'X' };
 
 		///
 		/// @brief Instruction Header (IH)
 		///
 		struct InsHeader final {
 			Opcode opcode : 6;			 // Operation code
-			std::uint8_t nOperands : 2;	 // Number of operands
+			uint8_t nOperands : 2;	 // Number of operands
 
-			inline InsHeader() {}
-			inline InsHeader(Opcode opcode, std::uint8_t nOperands) {
-				assert((std::uint8_t)opcode < (1 << 6));
+			inline InsHeader() : opcode(Opcode::NOP), nOperands(0) {}
+			inline InsHeader(Opcode opcode, uint8_t nOperands) {
+				assert((uint8_t)opcode < (1 << 6));
 				assert(nOperands < 4);
 				this->opcode = opcode;
 				this->nOperands = nOperands;
 			}
 		};
 
-		enum class ValueType : std::uint8_t {
+		enum class ValueType : uint8_t {
 			NONE = 0,  // None
 			ANY,	   // Any
 			I8,		   // i8
@@ -76,22 +76,22 @@ namespace Slake {
 		/// @brief Value Descriptor (VD)
 		struct ValueDesc final {
 			ValueType type : 5;		 // Data Type
-			std::uint8_t flags : 3;	 // Flags
+			uint8_t flags : 3;	 // Flags
 		};
 
 		/// @brief Extra attribute for strings
 		struct StringExAttr final {
-			std::uint32_t len;	// Length in bytes
+			uint32_t len;	// Length in bytes
 		};
 
 		/// @brief Class Type Descriptor (CTD)
 		struct ClassTypeDesc final {
-			std::uint8_t flags;			  // Flags
-			std::uint8_t nGenericParams;  // Number of generic parameters
-			std::uint8_t lenName;		  // Length of name
-			std::uint8_t nImpls;		  // Number of implemented interfaces
+			uint8_t flags;			  // Flags
+			uint8_t nGenericParams;  // Number of generic parameters
+			uint8_t lenName;		  // Length of name
+			uint8_t nImpls;		  // Number of implemented interfaces
 		};
-		constexpr static std::uint8_t
+		constexpr static uint8_t
 			CTD_PUB = 0x01,		  // Public
 			CTD_FINAL = 0x02,	  // Final
 			CTD_DERIVED = 0x40,	  // Is derived from parent
@@ -100,28 +100,28 @@ namespace Slake {
 
 		/// @brief Structure Type Descriptor (STD)
 		struct StructTypeDesc final {
-			std::uint8_t flags;		 // Flags
-			std::uint8_t lenName;	 // Length of name
-			std::uint32_t nMembers;	 // Number of members
+			uint8_t flags;		 // Flags
+			uint8_t lenName;	 // Length of name
+			uint32_t nMembers;	 // Number of members
 		};
 		struct StructMemberDesc final {
 			ValueType type : 5;		   // Data Type
-			std::uint8_t flags : 3;	   // Flags
-			std::uint8_t lenName : 8;  // Name length
+			uint8_t flags : 3;	   // Flags
+			uint8_t lenName : 8;  // Name length
 		};
-		constexpr static std::uint8_t
+		constexpr static uint8_t
 			STD_PUB = 0x01	// Public
 			;
 
 		/// @brief Function Descriptor (FND)
 		struct FnDesc final {
-			std::uint8_t flags : 8;			  // Flags
-			std::uint16_t lenName : 16;		  // Length of name
-			std::uint8_t nGenericParams : 8;  // Number of generic parameters
-			std::uint8_t nParams : 8;		  // Number of parameters, only used by compilers
-			std::uint32_t lenBody : 24;		  // Length of body
+			uint8_t flags : 8;			  // Flags
+			uint16_t lenName : 16;		  // Length of name
+			uint8_t nGenericParams : 8;  // Number of generic parameters
+			uint8_t nParams : 8;		  // Number of parameters, only used by compilers
+			uint32_t lenBody : 24;		  // Length of body
 		};
-		constexpr static std::uint8_t
+		constexpr static uint8_t
 			FND_PUB = 0x01,		  // Public
 			FND_FINAL = 0x02,	  // Final
 			FND_OVERRIDE = 0x04,  // Override
@@ -132,10 +132,10 @@ namespace Slake {
 
 		/// @brief Variable Descriptonr (VAD)
 		struct VarDesc final {
-			std::uint8_t lenName;
-			std::uint8_t flags;
+			uint8_t lenName;
+			uint8_t flags;
 		};
-		constexpr static std::uint8_t
+		constexpr static uint8_t
 			VAD_PUB = 0x01,		// Public
 			VAD_FINAL = 0x02,	// Final
 			VAD_STATIC = 0x04,	// Static
@@ -143,24 +143,24 @@ namespace Slake {
 			VAD_INIT = 0x80		// Initialized
 			;
 
-		constexpr static std::uint8_t
+		constexpr static uint8_t
 			SRD_NEXT = 0x01,
 			SRD_STATIC = 0x02;
 		/// @brief Scope Reference Descriptor (SRD)
 		struct ScopeRefDesc final {
-			std::uint8_t lenName : 8;
-			std::uint8_t flags : 4;
-			std::uint8_t nGenericArgs : 4;
+			uint8_t lenName : 8;
+			uint8_t flags : 4;
+			uint8_t nGenericArgs : 4;
 		};
 
 		// @brief Array Descriptor (ARD)
 		struct ArrayDesc final {
-			std::uint32_t nMembers;
+			uint32_t nMembers;
 		};
 
 		// @brief Array Descriptor (MPD)
 		struct MapDesc final {
-			std::uint32_t nPairs;
+			uint32_t nPairs;
 		};
 	}
 }

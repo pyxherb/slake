@@ -56,7 +56,7 @@ pub class Thread {
 	pub native void run();
 }
 
-pub trait ILock {
+pub interface ILock {
 	void lock();
 	void unlock();
 	bool isLocked();

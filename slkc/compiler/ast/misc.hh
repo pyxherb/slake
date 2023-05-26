@@ -37,7 +37,7 @@ namespace Slake {
 			return std::string(indentLevel, '\t');
 		}
 
-		using AccessModifier = std::uint8_t;
+		using AccessModifier = uint8_t;
 		constexpr AccessModifier
 			ACCESS_PUB = 0x01,
 			ACCESS_FINAL = 0x02,

@@ -228,7 +228,7 @@ void State::compileStmt(std::shared_ptr<Stmt> src) {
 				auto type = t->resolveType();
 			}
 			for (auto &i : stmt->declList) {
-				context.lvars[stmt->declList[i->name]->name] = LocalVar((std::uint32_t)(context.stackCur++), stmt->typeName);
+				context.lvars[stmt->declList[i->name]->name] = LocalVar((uint32_t)(context.stackCur++), stmt->typeName);
 				if (i->initValue) {
 					auto expr = evalConstExpr(i->initValue);
 					if (expr)

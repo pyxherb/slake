@@ -16,6 +16,7 @@ Type::~Type() {
 			break;
 		case ValueType::OBJECT:
 			if (exData.deferred)
+				break;
 			break;
 		case ValueType::MAP:
 			if (exData.map.k)
@@ -40,8 +41,10 @@ Value::~Value() {
 	_rt->_createdValues.erase(this);
 }
 
-ValueRef<> Slake::FnValue::call(std::uint8_t nArgs, ValueRef<> *args) {
-	std::unique_ptr<Context> context = std::make_unique<Context>(ExecContext(_parent, this, 0));
+ValueRef<> Slake::FnValue::call(uint8_t nArgs, ValueRef<> *args) {
+	std::shared_ptr<Context> context = std::make_unique<Context>(ExecContext(_parent, this, 0));
+	getRuntime()->threadCurrentContexts[std::this_thread::get_id()] = context;
+
 	context->frames.push_back(Frame(0, UINT32_MAX - 1));
 	context->callingStack.push_back(ExecContext(_parent, this, UINT32_MAX - 1));
 	while (context->execContext.curIns != UINT32_MAX) {
@@ -49,7 +52,21 @@ ValueRef<> Slake::FnValue::call(std::uint8_t nArgs, ValueRef<> *args) {
 			throw std::runtime_error("Out of function body");
 		getRuntime()->_execIns(context.get(), context->execContext.fn->_body[context->execContext.curIns]);
 	}
+
+	getRuntime()->threadCurrentContexts.erase(std::this_thread::get_id());
 	return context->retValue;
+}
+
+std::string Slake::FnValue::toString() const {
+	std::string s = Value::toString() + ",\"instructions\":[";
+
+	for (size_t i = 0; i < _nIns; i++) {
+		s += (i ? "," : "") + std::to_string(_body[i]);
+	}
+
+	s += "]";
+
+	return s;
 }
 
 void Slake::Value::reportSizeToRuntime(long size) {

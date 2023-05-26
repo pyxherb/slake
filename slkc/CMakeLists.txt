@@ -23,3 +23,5 @@ if(WIN32)
     target_link_libraries(slkc PRIVATE ws2_32)
 endif()
 add_subdirectory("decompiler")
+
+set_property(TARGET slkc PROPERTY CXX_STANDARD 17)

@@ -136,7 +136,7 @@ namespace Slake {
 					 public IStringifiable,
 					 public BasicLocated {
 		public:
-			enum class Kind : std::uint8_t {
+			enum class Kind : uint8_t {
 				CLASS = 0,
 				INTERFACE,
 				ENUM,

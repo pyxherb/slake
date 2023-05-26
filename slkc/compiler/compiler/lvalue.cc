@@ -6,6 +6,8 @@ using namespace Slake;
 using namespace Slake::Compiler;
 
 void State::compileLeftExpr(std::shared_ptr<Expr> expr, bool isRecursing) {
+	assert(expr);
+
 	auto &fn = fnDefs[currentFn];
 	assert(fn);
 	switch (expr->getExprKind()) {

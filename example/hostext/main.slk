@@ -4,9 +4,19 @@ class A {
 	}
 }
 
+native void println(string s);
+
+i32 test(i32 a, i32 b) {
+	return a + b;
+}
+
 pub i32 main() {
 	@A a = new @A(), b = new @A();
 	a.next = b;
 	b.next = a;
+
+	println("a");
+	println("b");
+	println("c");
 	return 0;
 }

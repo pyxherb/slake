@@ -2,19 +2,22 @@ Interface
 =========
 
 .. contents::
+.. SPDX-License-Identifier: GFDL-1.3-only OR CC-BY-SA-4.0
 
 Overview
 --------
 
 Interface is one of core concepts of Object-Orinted Programming (OOP) in Slake.
+A class must inherit a interface explicitly to declare that it is compatible to
+the interface.
 
 Syntax
 ------
 
 .. code::
 
-    <Access Modifier> interface <Name> : [Parent Interfaces] {
-        <Methods>
+    [Access Modifiers]* [native] interface <Name> : [Parent Interfaces] {
+        <Members>
     }
 
 Example

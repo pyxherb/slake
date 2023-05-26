@@ -18,24 +18,24 @@ static TD _checkOperandRange(ValueRef<> v) {
 	return (TD)value->getValue();
 }
 
-static std::uint32_t _getOperandAsAddress(ValueRef<> v) {
+static uint32_t _getOperandAsAddress(ValueRef<> v) {
 	switch (v->getType().valueType) {
 		case ValueType::I8:
-			return _checkOperandRange<std::uint32_t, std::int8_t>(v);
+			return _checkOperandRange<uint32_t, std::int8_t>(v);
 		case ValueType::I16:
-			return _checkOperandRange<std::uint32_t, std::int16_t>(v);
+			return _checkOperandRange<uint32_t, std::int16_t>(v);
 		case ValueType::I32:
-			return _checkOperandRange<std::uint32_t, std::int32_t>(v);
+			return _checkOperandRange<uint32_t, std::int32_t>(v);
 		case ValueType::I64:
-			return _checkOperandRange<std::uint32_t, std::int64_t>(v);
+			return _checkOperandRange<uint32_t, std::int64_t>(v);
 		case ValueType::U8:
-			return _checkOperandRange<std::uint32_t, std::uint8_t>(v);
+			return _checkOperandRange<uint32_t, uint8_t>(v);
 		case ValueType::U16:
-			return _checkOperandRange<std::uint32_t, std::uint16_t>(v);
+			return _checkOperandRange<uint32_t, uint16_t>(v);
 		case ValueType::U32:
 			return ((U32Value *)*v)->getValue();
 		case ValueType::U64:
-			return _checkOperandRange<std::uint32_t, std::uint64_t>(v);
+			return _checkOperandRange<uint32_t, uint64_t>(v);
 		default:
 			throw InvalidOperandsError("Invalid operand combination");
 	}
@@ -54,12 +54,12 @@ static void _checkOperandType(
 		throw InvalidOperandsError("Invalid operand combination");
 }
 
-static void _checkOperandCount(Instruction &ins, std::uint8_t n) {
+static void _checkOperandCount(Instruction &ins, uint8_t n) {
 	if (ins.getOperandCount() > n)
 		throw InvalidOperandsError("Invalid operand count");
 }
 
-static void _checkOperandCount(Instruction &ins, std::uint8_t min, std::uint8_t max) {
+static void _checkOperandCount(Instruction &ins, uint8_t min, uint8_t max) {
 	auto n = ins.getOperandCount();
 	if (n < min || n > max)
 		throw InvalidOperandsError("Invalid operand count");
@@ -134,10 +134,10 @@ static Value *_execBinaryOp(ValueRef<> x, ValueRef<> y, Opcode opcode) {
 					if constexpr (std::is_integral<T>::value)
 						return new LiteralValue<T, getValueType<T>()>(rt, _x->getValue() << ((U32Value *)*y)->getValue());
 					else if constexpr (std::is_same<T, float>::value) {
-						auto result = (*(std::uint32_t *)(&_x->getValue())) << ((U32Value *)*y)->getValue();
+						auto result = (*(uint32_t *)(&_x->getValue())) << ((U32Value *)*y)->getValue();
 						return new LiteralValue<T, getValueType<T>()>(rt, *(float *)(&result));
 					} else if constexpr (std::is_same<T, double>::value) {
-						auto result = (*(std::uint64_t *)(&_x->getValue())) << ((U32Value *)*y)->getValue();
+						auto result = (*(uint64_t *)(&_x->getValue())) << ((U32Value *)*y)->getValue();
 						return new LiteralValue<T, getValueType<T>()>(rt, *(double *)(&result));
 					} else
 						throw InvalidOperandsError("Binary operation with incompatible types");
@@ -145,10 +145,10 @@ static Value *_execBinaryOp(ValueRef<> x, ValueRef<> y, Opcode opcode) {
 					if constexpr (std::is_integral<T>::value)
 						return new LiteralValue<T, getValueType<T>()>(rt, _x->getValue() >> ((U32Value *)*y)->getValue());
 					else if constexpr (std::is_same<T, float>::value) {
-						auto result = (*(std::uint32_t *)(&_x->getValue())) >> ((U32Value *)*y)->getValue();
+						auto result = (*(uint32_t *)(&_x->getValue())) >> ((U32Value *)*y)->getValue();
 						return new LiteralValue<T, getValueType<T>()>(rt, *(float *)(&result));
 					} else if constexpr (std::is_same<T, double>::value) {
-						auto result = (*(std::uint64_t *)(&_x->getValue())) >> ((U32Value *)*y)->getValue();
+						auto result = (*(uint64_t *)(&_x->getValue())) >> ((U32Value *)*y)->getValue();
 						return new LiteralValue<T, getValueType<T>()>(rt, *(double *)(&result));
 					} else
 						throw InvalidOperandsError("Binary operation with incompatible types");
@@ -191,10 +191,10 @@ static Value *_execUnaryOp(ValueRef<> x, Opcode opcode) {
 				if constexpr (std::is_integral<T>::value)
 					return new LiteralValue<T, getValueType<T>()>(rt, ~(_x->getValue()));
 				else if constexpr (std::is_same<T, float>::value) {
-					auto result = ~(*(std::uint32_t *)(rt, &_x->getValue()));
+					auto result = ~(*(uint32_t *)(rt, &_x->getValue()));
 					return new LiteralValue<T, getValueType<T>()>(rt, *((float *)&result));
 				} else if constexpr (std::is_same<T, double>::value) {
-					auto result = ~(*(std::uint64_t *)(rt, &_x->getValue()));
+					auto result = ~(*(uint64_t *)(rt, &_x->getValue()));
 					return new LiteralValue<T, getValueType<T>()>(rt, *((double *)&result));
 				} else
 					throw InvalidOperandsError("Binary operation with incompatible types");
@@ -240,7 +240,8 @@ ObjectValue *Slake::Runtime::_newClassInstance(ClassValue *cls) {
 					new VarValue(
 						this,
 						((VarValue *)*(i.second))->getAccess(),
-						((VarValue *)*(i.second))->getVarType(), instance));
+						((VarValue *)*(i.second))->getVarType(),
+						instance));
 				break;
 			}
 			case ValueType::FN: {
@@ -366,19 +367,19 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 		}
 		case Opcode::EXPAND: {
 			_checkOperandCount(ins, 0, 1);
-			std::uint32_t n = _getOperandAsAddress(ins.operands[0]);
+			uint32_t n = _getOperandAsAddress(ins.operands[0]);
 			context->expand(n);
 			break;
 		}
 		case Opcode::SHRINK: {
 			_checkOperandCount(ins, 0, 1);
-			std::uint32_t n = _getOperandAsAddress(ins.operands[0]);
+			uint32_t n = _getOperandAsAddress(ins.operands[0]);
 			context->shrink(n);
 			break;
 		}
 		case Opcode::ENTER: {
 			_checkOperandCount(ins, 1);
-			context->frames.push_back(Frame(context->dataStack.size(), _getOperandAsAddress(ins.operands[0])));
+			context->frames.push_back(Frame(context->dataStack.size(), (uint32_t) _getOperandAsAddress(ins.operands[0])));
 			break;
 		}
 		case Opcode::LEAVE: {
@@ -433,16 +434,16 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 					context->push(_execBinaryOp<std::int64_t>(x, y, ins.opcode));
 					break;
 				case ValueType::U8:
-					context->push(_execBinaryOp<std::uint8_t>(x, y, ins.opcode));
+					context->push(_execBinaryOp<uint8_t>(x, y, ins.opcode));
 					break;
 				case ValueType::U16:
-					context->push(_execBinaryOp<std::uint16_t>(x, y, ins.opcode));
+					context->push(_execBinaryOp<uint16_t>(x, y, ins.opcode));
 					break;
 				case ValueType::U32:
-					context->push(_execBinaryOp<std::uint32_t>(x, y, ins.opcode));
+					context->push(_execBinaryOp<uint32_t>(x, y, ins.opcode));
 					break;
 				case ValueType::U64:
-					context->push(_execBinaryOp<std::uint64_t>(x, y, ins.opcode));
+					context->push(_execBinaryOp<uint64_t>(x, y, ins.opcode));
 					break;
 				case ValueType::FLOAT:
 					context->push(_execBinaryOp<float>(x, y, ins.opcode));
@@ -511,16 +512,16 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 					value = _execUnaryOp<std::int64_t>(x, ins.opcode);
 					break;
 				case ValueType::U8:
-					value = _execUnaryOp<std::uint8_t>(x, ins.opcode);
+					value = _execUnaryOp<uint8_t>(x, ins.opcode);
 					break;
 				case ValueType::U16:
-					value = _execUnaryOp<std::uint16_t>(x, ins.opcode);
+					value = _execUnaryOp<uint16_t>(x, ins.opcode);
 					break;
 				case ValueType::U32:
-					value = _execUnaryOp<std::uint32_t>(x, ins.opcode);
+					value = _execUnaryOp<uint32_t>(x, ins.opcode);
 					break;
 				case ValueType::U64:
-					value = _execUnaryOp<std::uint64_t>(x, ins.opcode);
+					value = _execUnaryOp<uint64_t>(x, ins.opcode);
 					break;
 				case ValueType::FLOAT:
 					value = _execUnaryOp<float>(x, ins.opcode);
@@ -628,8 +629,14 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 				}
 			}
 
-			_callFn(context, *fn);
-			return;
+			if (fn->isNative()) {
+				((NativeFnValue *)*fn)->call((uint8_t)context->execContext.args.size(), &(context->execContext.args[0]));
+				context->execContext.args.clear();
+				break;
+			} else {
+				_callFn(context, *fn);
+				return;
+			}
 		}
 		case Opcode::ACALL: {
 			_checkOperandCount(ins, 0, 1);
@@ -713,7 +720,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 		case Opcode::ABORT:
 			throw UncaughtExceptionError("Execution aborted");
 		default:
-			throw InvalidOpcodeError("Invalid opcode " + std::to_string((std::uint8_t)ins.opcode));
+			throw InvalidOpcodeError("Invalid opcode " + std::to_string((uint8_t)ins.opcode));
 	}
 	if (szInUse > (szLastGcMemUsed << 1))
 		gc();

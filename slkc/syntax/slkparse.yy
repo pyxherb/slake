@@ -7,6 +7,8 @@
 ///
 /// @copyright Copyright (C) 2022 Slake Project
 ///
+/// SPDX-License-Identifier: LGPL-3.0-only
+///
 %require "3.2"
 
 %{
@@ -279,32 +281,32 @@ FnDef
 AccessModifier:
 "pub" AccessModifier {
 	if($$ & ACCESS_PUB)
-		this->error(yylloc, "Duplicated modifier");
+		this->error(@1, "Duplicated modifier");
 	$$ |= ACCESS_PUB;
 }
 | "final" AccessModifier {
 	if($$ & ACCESS_FINAL)
-		this->error(yylloc, "Duplicated modifier");
+		this->error(@1, "Duplicated modifier");
 	$$ |= ACCESS_FINAL;
 }
 | "const" AccessModifier {
 	if($$ & ACCESS_CONST)
-		this->error(yylloc, "Duplicated modifier");
+		this->error(@1, "Duplicated modifier");
 	$$ |= ACCESS_CONST;
 }
 | "volatile" AccessModifier {
 	if($$ & ACCESS_VOLATILE)
-		this->error(yylloc, "Duplicated modifier");
+		this->error(@1, "Duplicated modifier");
 	$$ |= ACCESS_VOLATILE;
 }
 | "override" AccessModifier {
 	if($$ & ACCESS_OVERRIDE)
-		this->error(yylloc, "Duplicated modifier");
+		this->error(@1, "Duplicated modifier");
 	$$ |= ACCESS_OVERRIDE;
 }
 | "static" AccessModifier {
 	if($$ & ACCESS_STATIC)
-		this->error(yylloc, "Duplicated modifier");
+		this->error(@1, "Duplicated modifier");
 	$$ |= ACCESS_STATIC;
 }
 | %empty {}
@@ -316,7 +318,7 @@ AccessModifier:
 Enum:
 AccessModifier "enum" T_ID ":" TypeName "{" {
 	if(currentScope->types.count($3))
-		this->error(yylloc, "Redefinition of type `" + $3 + "`");
+		this->error(@3, "Redefinition of type `" + $3 + "`");
 	else {
 		currentEnum = std::make_shared<EnumType>(@1, $1, $3, $5);
 		currentScope->types[$3] = currentEnum;
@@ -333,12 +335,12 @@ EnumPair "," EnumPairs
 EnumPair:
 T_ID {
 	if(currentEnum->pairs.count($1))
-		this->error(yylloc, "Redefinition of enumeration constant `" + $1 + "`");
+		this->error(@1, "Redefinition of enumeration constant `" + $1 + "`");
 	currentEnum->pairs[$1] = std::make_shared<IntLiteralExpr>(@1, 0);
 }
 | T_ID "=" Expr {
 	if(currentEnum->pairs.count($1))
-		this->error(yylloc, "Redefinition of enumeration constant `" + $1 + "`");
+		this->error(@1, "Redefinition of enumeration constant `" + $1 + "`");
 	else
 		currentEnum->pairs[$1] = $3;
 }
@@ -352,7 +354,7 @@ AccessModifier "class" T_ID GenericParamList InheritSlot ImplList {
 	auto curClass = std::make_shared<ClassType>(@1, $1, std::make_shared<Scope>($3, currentScope), $5, $3, $4, $6);
 
 	if(currentScope->types.count($3))
-		this->error(yylloc, "Redefinition of type `" + $3 + "`");
+		this->error(@3, "Redefinition of type `" + $3 + "`");
 
 	currentScope->types[$3] = curClass;
 	currentScope = curClass->scope;
@@ -391,7 +393,7 @@ GenericParams:
 GenericParam { $$.push_back($1); }
 | GenericParams GenericParam {
 	if(std::any_of($1.begin(), $1.end(), [this](decltype($2) &x)->bool { return x == $2; }))
-		this->error(yylloc, "Redefinition of generic parameter `" + $2 + "`");
+		this->error(@2, "Redefinition of generic parameter `" + $2 + "`");
 	$$ = $1;
 	$$.push_back($2);
 }
@@ -407,13 +409,16 @@ T_ID { $$ = $1; }
 Struct:
 AccessModifier "struct" T_ID "{" {
 	if(currentScope->types.count($3))
-		this->error(yylloc, "Redefinition of type `" + $3 + "`");
+		this->error(@3, "Redefinition of type `" + $3 + "`");
 	else {
 		currentStruct = std::make_shared<StructType>(@1, $1, $3);
 		currentScope->types[$3] = currentStruct;
 	}
 } StructStmts "}" {
 	currentStruct.reset();
+}
+| AccessModifier "struct" T_ID "{" "}" {
+	this->error(@4, "Missing member definitions");
 }
 ;
 
@@ -443,7 +448,7 @@ AccessModifier "interface" T_ID GenericParamList InheritSlot {
 	);
 
 	if(currentScope->types.count($3))
-		this->error(yylloc, "Redefinition of type `" + $3 + "`");
+		this->error(@3, "Redefinition of type `" + $3 + "`");
 
 	currentScope->types[$3] = curType;
 	currentScope = curType->scope;
@@ -477,13 +482,13 @@ AccessModifier "trait" T_ID GenericParamList InheritSlot {
 FnDecl:
 TypeName T_ID GenericParamList "(" ParamDecls ")" ";" {
 	if(currentScope->fnDefs.count($2))
-		this->error(yylloc, "Redefinition of function `" + $2 + "`");
+		this->error(@2, "Redefinition of function `" + $2 + "`");
 	else
 		currentScope->fnDefs[$2] = std::make_shared<FnDef>(@1, ACCESS_PUB, $5, $1, std::shared_ptr<CodeBlock>(), $2, $3);
 }
 | TypeName "operator" OperatorName GenericParamList "(" ParamDecls ")" ";" {
 	if(currentScope->fnDefs.count($3)) {
-		this->error(yylloc, "Redefinition of operator " + $3);
+		this->error(@2, "Redefinition of operator " + $3);
 	}
 	else
 		currentScope->fnDefs[$3] = std::make_shared<FnDef>(@1, ACCESS_PUB, $6, $1, std::shared_ptr<CodeBlock>(), "operator" + $3, $4);
@@ -495,29 +500,32 @@ TypeName T_ID GenericParamList "(" ParamDecls ")" ";" {
 
 NativeFnDecl:
 AccessModifier "native" TypeName T_ID GenericParamList "(" ParamDecls ")" ";" {
+	if(currentScope->parent.expired())
+		$1 |= ACCESS_STATIC;
+
 	if(currentScope->fnDefs.count($4)) {
-		this->error(yylloc, "Redefinition of function `" + $4 + "'");
+		this->error(@4, "Redefinition of function `" + $4 + "'");
 	}
 	else
 		currentScope->fnDefs[$4] = std::make_shared<FnDef>(@1, $1 | ACCESS_NATIVE, $7, $3, std::shared_ptr<CodeBlock>(), $4, $5);
 }
 | AccessModifier "native" TypeName "operator" OperatorName GenericParamList "(" ParamDecls ")" ";" {
 	if(currentScope->fnDefs.count($5)) {
-		this->error(yylloc, "Redefinition of operator " + $5);
+		this->error(@5, "Redefinition of operator " + $5);
 	}
 	else
 		currentScope->fnDefs[$5] = std::make_shared<FnDef>(@1, $1 | ACCESS_NATIVE, $8, $3, std::shared_ptr<CodeBlock>(), "operator" + $5, $6);
 }
 | AccessModifier "native" "operator" "new" "(" ParamDecls ")" ";" {
 	if(currentScope->fnDefs.count("new")) {
-		this->error(yylloc, "Redefinition of constructor");
+		this->error(@1, "Redefinition of constructor");
 	}
 	else
 		currentScope->fnDefs["new"] = std::make_shared<FnDef>(@1, $1 | ACCESS_NATIVE, $6, std::make_shared<TypeName>(@1, TypeNameKind::NONE), std::shared_ptr<CodeBlock>(), "operator new");
 }
 | AccessModifier "native" "operator" "delete" "(" ParamDecls ")" ";" {
 	if(currentScope->fnDefs.count("delete")) {
-		this->error(yylloc, "Redefinition of destructor");
+		this->error(@1, "Redefinition of destructor");
 	}
 	else
 		currentScope->fnDefs["delete"] = std::make_shared<FnDef>(@1, $1 | ACCESS_NATIVE, $6, std::make_shared<TypeName>(@1, TypeNameKind::NONE), std::shared_ptr<CodeBlock>(), "operator delete");
@@ -537,26 +545,26 @@ ImportBlock:
 FnDef:
 AccessModifier TypeName T_ID GenericParamList "(" ParamDecls ")" CodeBlock {
 	if(currentScope->fnDefs.count($3))
-		this->error(yylloc, "Redefinition of function `" + $3 + "`");
+		this->error(@3, "Redefinition of function `" + $3 + "`");
 	else
 		currentScope->fnDefs[$3] = std::make_shared<FnDef>(@1, $1, $6, $2, $8, $3, $4);
 }
 | AccessModifier TypeName "operator" OperatorName GenericParamList "(" ParamDecls ")" CodeBlock {
 	if(currentScope->fnDefs.count($4)) {
-		this->error(yylloc, "Redefinition of operator " + $4);
+		this->error(@4, "Redefinition of operator " + $4);
 	}
 	else
 		currentScope->fnDefs[$4] = std::make_shared<FnDef>(@1, $1, $7, std::shared_ptr<TypeName>(), $9, "operator" + $4, $5);
 }
 | AccessModifier "operator" "new" "(" ParamDecls ")" CodeBlock {
 	if(currentScope->fnDefs.count("new"))
-		this->error(yylloc, "Redefinition of constructor");
+		this->error(@1, "Redefinition of constructor");
 	else
 		currentScope->fnDefs["new"] = std::make_shared<FnDef>(@1, $1, $5, std::make_shared<TypeName>(@1, TypeNameKind::NONE), $7, "operator new");
 }
 | AccessModifier "operator" "delete" "(" ")" CodeBlock {
 	if(currentScope->fnDefs.count("delete"))
-		this->error(yylloc, "Redefinition of destructor");
+		this->error(@1, "Redefinition of destructor");
 	else
 		currentScope->fnDefs["delete"] = std::make_shared<FnDef>(@1, $1, std::make_shared<ParamDeclList>(), std::make_shared<TypeName>(@1, TypeNameKind::NONE), $6, "operator delete");
 }
@@ -622,7 +630,7 @@ ParamDecl {
 | ParamDeclList "," ParamDecl {
 	$$ = $1;
 	if ((*$$)[$3->name])
-		this->error(yylloc, "Redefinition of parameter `" + $3->name + "`");
+		this->error(@3, "Redefinition of parameter `" + $3->name + "`");
 	else
 		$$->push_back($3);
 }
@@ -651,7 +659,7 @@ VarDecl { $$.push_back($1); }
 | VarDecls "," VarDecl {
 	$$ = $1;
 	if ($$[$3->name])
-		this->error(yylloc, "Redefinition of variable `" + $3->name + "`");
+		this->error(@3, "Redefinition of variable `" + $3->name + "`");
 	else
 		$$.push_back($3);
 }
@@ -688,12 +696,12 @@ T_ID "=" StaticRef "," Aliases {}
 ImportAliases:
 T_ID "=" StaticRef "," ImportAliases {
 	if(currentScope->imports.count($1))
-		this->error(yylloc, "Import item `" + $3->name + "` already exists");
+		this->error(@1, "Redefinition of import item `" + $3->name + "`");
 	currentScope->imports[$1] = $3;
 }
 | T_ID "=" StaticRef {
 	if(currentScope->imports.count($1))
-		this->error(yylloc, "Import item `" + $3->name + "` already exists");
+		this->error(@1, "Redefinition of import item `" + $3->name + "`");
 	currentScope->imports[$1] = $3;
 }
 ;

@@ -382,13 +382,13 @@ namespace Slake {
 							yVal = (T)std::static_pointer_cast<SimpleLiteralExpr<std::int32_t, LT_INT>>(y)->data;
 							break;
 						case LT_UINT:
-							yVal = (T)std::static_pointer_cast<SimpleLiteralExpr<std::uint32_t, LT_UINT>>(y)->data;
+							yVal = (T)std::static_pointer_cast<SimpleLiteralExpr<uint32_t, LT_UINT>>(y)->data;
 							break;
 						case LT_LONG:
 							yVal = (T)std::static_pointer_cast<SimpleLiteralExpr<std::int64_t, LT_LONG>>(y)->data;
 							break;
 						case LT_ULONG:
-							yVal = (T)std::static_pointer_cast<SimpleLiteralExpr<std::uint64_t, LT_ULONG>>(y)->data;
+							yVal = (T)std::static_pointer_cast<SimpleLiteralExpr<uint64_t, LT_ULONG>>(y)->data;
 							break;
 						case LT_FLOAT:
 							yVal = (T)std::static_pointer_cast<SimpleLiteralExpr<float, LT_FLOAT>>(y)->data;
@@ -431,13 +431,13 @@ namespace Slake {
 							yVal = (T)std::static_pointer_cast<SimpleLiteralExpr<std::int32_t, LT_INT>>(y)->data;
 							break;
 						case LT_UINT:
-							yVal = (T)std::static_pointer_cast<SimpleLiteralExpr<std::uint32_t, LT_UINT>>(y)->data;
+							yVal = (T)std::static_pointer_cast<SimpleLiteralExpr<uint32_t, LT_UINT>>(y)->data;
 							break;
 						case LT_LONG:
 							yVal = (T)std::static_pointer_cast<SimpleLiteralExpr<std::int64_t, LT_LONG>>(y)->data;
 							break;
 						case LT_ULONG:
-							yVal = (T)std::static_pointer_cast<SimpleLiteralExpr<std::uint64_t, LT_ULONG>>(y)->data;
+							yVal = (T)std::static_pointer_cast<SimpleLiteralExpr<uint64_t, LT_ULONG>>(y)->data;
 							break;
 						default:
 							return std::shared_ptr<LiteralExpr>();
@@ -472,13 +472,13 @@ namespace Slake {
 							yVal = (T)std::static_pointer_cast<SimpleLiteralExpr<std::int32_t, LT_INT>>(y)->data;
 							break;
 						case LT_UINT:
-							yVal = (T)std::static_pointer_cast<SimpleLiteralExpr<std::uint32_t, LT_UINT>>(y)->data;
+							yVal = (T)std::static_pointer_cast<SimpleLiteralExpr<uint32_t, LT_UINT>>(y)->data;
 							break;
 						case LT_LONG:
 							yVal = (T)std::static_pointer_cast<SimpleLiteralExpr<std::int64_t, LT_LONG>>(y)->data;
 							break;
 						case LT_ULONG:
-							yVal = (T)std::static_pointer_cast<SimpleLiteralExpr<std::uint64_t, LT_ULONG>>(y)->data;
+							yVal = (T)std::static_pointer_cast<SimpleLiteralExpr<uint64_t, LT_ULONG>>(y)->data;
 							break;
 						case LT_FLOAT:
 							yVal = (T)std::static_pointer_cast<SimpleLiteralExpr<float, LT_FLOAT>>(y)->data;
@@ -539,7 +539,7 @@ namespace Slake {
 
 			virtual inline std::string toString() const override {
 				if constexpr (std::is_convertible<T, std::string>::value)
-					return data;
+					return "\"" + data + "\"";
 				else
 					return std::to_string(data);
 			}

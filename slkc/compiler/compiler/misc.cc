@@ -38,7 +38,7 @@ void State::compileTypeName(std::fstream &fs, std::shared_ptr<TypeName> j) {
 
 void State::writeIns(Opcode opcode, std::fstream &fs, std::initializer_list<std::shared_ptr<Expr>> operands) {
 	assert(operands.size() <= 3);
-	_writeValue(SlxFmt::InsHeader{ opcode, (std::uint8_t)operands.size() }, fs);
+	_writeValue(SlxFmt::InsHeader{ opcode, (uint8_t)operands.size() }, fs);
 	for (auto &i : operands)
 		writeValue(i, fs);
 }
@@ -75,8 +75,8 @@ void State::writeValue(std::shared_ptr<Expr> src, std::fstream &fs) {
 				}
 				case LT_STRING: {
 					auto expr = std::static_pointer_cast<StringLiteralExpr>(literalExpr);
-					_writeValue(expr->data.size(), fs);
-					_writeValue(expr->data.c_str(), (std::streamsize)expr->data.size(), fs);
+					_writeValue((uint32_t)expr->data.size(), fs);
+					_writeValue(*(expr->data.c_str()), (std::streamsize)expr->data.size(), fs);
 					break;
 				}
 			}

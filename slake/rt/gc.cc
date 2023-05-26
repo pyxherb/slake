@@ -43,8 +43,14 @@ void Slake::Runtime::_gcWalk(Value *v, uint8_t gcStat) {
 		}
 		case ValueType::STRUCT:
 			break;
-		case ValueType::VAR:
+		case ValueType::VAR: {
+			VarValue *value = (VarValue *)v;
+
+			auto v = value->getValue();
+			if (v)
+				_gcWalk(*v, gcStat);
 			break;
+		}
 		case ValueType::MOD: {
 			ModuleValue *value = (ModuleValue *)v;
 
@@ -62,11 +68,33 @@ void Slake::Runtime::_gcWalk(Value *v, uint8_t gcStat) {
 	}
 }
 
+void Slake::Runtime::_gcWalkForExecContext(ExecContext &ctxt, uint8_t gcStat) {
+	for (auto i : ctxt.args)
+		_gcWalk(*i, gcStat);
+	_gcWalk(*ctxt.fn, gcStat);
+	if (ctxt.pThis)
+		_gcWalk(*ctxt.pThis, gcStat);
+	if (ctxt.scopeValue)
+		_gcWalk(*ctxt.scopeValue, gcStat);
+}
+
 void Slake::Runtime::gc() {
 	isInGc = true;
 
 	uint8_t gcStat = _internalFlags & RTI_LASTGCSTAT ? 1 : 0;
-	_gcWalk(_rootValue, gcStat);
+	if (_rootValue)
+		_gcWalk(_rootValue, gcStat);
+
+	for (auto i : threadCurrentContexts) {
+		auto &ctxt = i.second;
+		if (ctxt->retValue)
+			_gcWalk(*ctxt->retValue, gcStat);
+		_gcWalkForExecContext(ctxt->execContext, gcStat);
+		for (auto j : ctxt->callingStack)
+			_gcWalkForExecContext(j, gcStat);
+		for (auto j : ctxt->dataStack)
+			_gcWalk(*j, gcStat);
+	}
 
 	for (auto i = _createdValues.begin(); i != _createdValues.end();) {
 		if ((((*i)->flags & VF_GCSTAT ? 1 : 0) != gcStat) && (!((*i)->_hostRefCount)))
@@ -76,9 +104,9 @@ void Slake::Runtime::gc() {
 	}
 
 	if (gcStat)
-		_internalFlags |= RTI_LASTGCSTAT;
-	else
 		_internalFlags &= ~RTI_LASTGCSTAT;
+	else
+		_internalFlags |= RTI_LASTGCSTAT;
 
 	szLastGcMemUsed = szInUse;
 	isInGc = false;

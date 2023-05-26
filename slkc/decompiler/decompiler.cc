@@ -35,13 +35,13 @@ std::shared_ptr<Compiler::Expr> Slake::Decompiler::readValue(std::fstream &fs) {
 		case SlxFmt::ValueType::I64:
 			return std::make_shared<Compiler::LongLiteralExpr>(Compiler::location(), _readValue<std::int64_t>(fs));
 		case SlxFmt::ValueType::U8:
-			return std::make_shared<Compiler::UIntLiteralExpr>(Compiler::location(), _readValue<std::uint8_t>(fs));
+			return std::make_shared<Compiler::UIntLiteralExpr>(Compiler::location(), _readValue<uint8_t>(fs));
 		case SlxFmt::ValueType::U16:
-			return std::make_shared<Compiler::UIntLiteralExpr>(Compiler::location(), _readValue<std::uint16_t>(fs));
+			return std::make_shared<Compiler::UIntLiteralExpr>(Compiler::location(), _readValue<uint16_t>(fs));
 		case SlxFmt::ValueType::U32:
-			return std::make_shared<Compiler::UIntLiteralExpr>(Compiler::location(), _readValue<std::uint32_t>(fs));
+			return std::make_shared<Compiler::UIntLiteralExpr>(Compiler::location(), _readValue<uint32_t>(fs));
 		case SlxFmt::ValueType::U64:
-			return std::make_shared<Compiler::ULongLiteralExpr>(Compiler::location(), _readValue<std::uint64_t>(fs));
+			return std::make_shared<Compiler::ULongLiteralExpr>(Compiler::location(), _readValue<uint64_t>(fs));
 		case SlxFmt::ValueType::BOOL:
 			return std::make_shared<Compiler::BoolLiteralExpr>(Compiler::location(), _readValue<bool>(fs));
 		case SlxFmt::ValueType::FLOAT:
@@ -49,10 +49,10 @@ std::shared_ptr<Compiler::Expr> Slake::Decompiler::readValue(std::fstream &fs) {
 		case SlxFmt::ValueType::DOUBLE:
 			return std::make_shared<Compiler::DoubleLiteralExpr>(Compiler::location(), _readValue<double>(fs));
 		case SlxFmt::ValueType::STRING: {
-			auto len = _readValue<std::uint32_t>(fs);
+			auto len = _readValue<uint32_t>(fs);
 			std::string rs(len + 1, '\0'), s;
 			fs.read(&(rs[0]), len);
-			while (rs.size()) {
+			while (rs.size() - 1) {
 				auto c = rs[0];
 				if (c == '\\')
 					s += c;
@@ -61,7 +61,7 @@ std::shared_ptr<Compiler::Expr> Slake::Decompiler::readValue(std::fstream &fs) {
 				if (std::isprint(c))
 					s += c;
 				else if (std::iscntrl(c) && c != '\xff')
-					s += _ctrlCharNames[c];
+					s += "\\", s += _ctrlCharNames[c];
 				else {
 					char esc[5];
 					std::sprintf(esc, "\\x%02x", (int)c);
@@ -98,7 +98,7 @@ std::shared_ptr<Compiler::Expr> Slake::Decompiler::readValue(std::fstream &fs) {
 			return std::make_shared<Compiler::ArrayExpr>(Compiler::location(), members);
 		}
 		default:
-			throw Decompiler::DecompileError("Invalid value type: " + std::to_string((std::uint8_t)i.type));
+			throw Decompiler::DecompileError("Invalid value type: " + std::to_string((uint8_t)i.type));
 	}
 }
 
@@ -156,11 +156,11 @@ std::string readTypeName(std::fstream &fs, SlxFmt::ValueType vt) {
 		case SlxFmt::ValueType::MAP:
 			return readTypeName(fs, _readValue<SlxFmt::ValueType>(fs)) + "[" + readTypeName(fs, _readValue<SlxFmt::ValueType>(fs)) + "]";
 		default:
-			throw std::logic_error("Invalid value type: " + std::to_string((std::uint8_t)vt));
+			throw std::logic_error("Invalid value type: " + std::to_string((uint8_t)vt));
 	}
 }
 
-void Slake::Decompiler::decompileScope(std::fstream &fs, std::uint8_t indentLevel) {
+void Slake::Decompiler::decompileScope(std::fstream &fs, uint8_t indentLevel) {
 	for (SlxFmt::VarDesc i = { 0 };;) {
 		fs.read((char *)&i, sizeof(i));
 		if (!(i.lenName))
@@ -213,7 +213,7 @@ void Slake::Decompiler::decompileScope(std::fstream &fs, std::uint8_t indentLeve
 			for (auto j = 0; j < i.nGenericParams; j++) {
 				if (j)
 					printf(", ");
-				std::uint32_t lenGenericParamName = _readValue<std::uint32_t>(fs);
+				uint32_t lenGenericParamName = _readValue<uint32_t>(fs);
 				std::string name(lenGenericParamName, '\0');
 				fs.read(&(name[0]), lenGenericParamName);
 				printf("%s", name.c_str());
@@ -240,12 +240,15 @@ void Slake::Decompiler::decompileScope(std::fstream &fs, std::uint8_t indentLeve
 
 		std::shared_ptr<State> s = std::make_shared<State>();
 		std::list<Compiler::Ins> insList;
-		for (std::uint32_t j = 0; j < i.lenBody; j++) {
+
+		// Read for each instruction.
+		for (uint32_t j = 0; j < i.lenBody; j++) {
 			SlxFmt::InsHeader ih = _readValue<SlxFmt::InsHeader>(fs);
 			Compiler::Ins ins(ih.opcode, {});
-			for (std::uint8_t k = 0; k < ih.nOperands; k++)
+			for (uint8_t k = 0; k < ih.nOperands; k++)
 				ins.operands.push_back(readValue(fs));
 			insList.push_back(ins);
+
 			switch (ih.opcode) {
 				case Opcode::JMP:
 				case Opcode::JT:
@@ -271,8 +274,8 @@ void Slake::Decompiler::decompileScope(std::fstream &fs, std::uint8_t indentLeve
 			if (mnemonics.count(j.opcode))
 				printf("\tasm %s ", mnemonics[j.opcode]);
 			else
-				printf("\tasm 0x%02x ", (std::uint32_t)j.opcode);
-			for (std::uint8_t l = 0; l < j.operands.size(); l++) {
+				printf("\tasm 0x%02x ", (uint32_t)j.opcode);
+			for (uint8_t l = 0; l < j.operands.size(); l++) {
 				switch (j.opcode) {
 					case Opcode::ENTER:
 					case Opcode::JMP:
@@ -391,8 +394,8 @@ void Slake::Decompiler::decompile(std::fstream &fs) {
 
 	if (ih.nImports) {
 		puts("use {");
-		for (std::uint8_t i = 0; i < ih.nImports; i++) {
-			auto len = _readValue<std::uint32_t>(fs);
+		for (uint8_t i = 0; i < ih.nImports; i++) {
+			auto len = _readValue<uint32_t>(fs);
 			std::string name(len, '\0');
 			fs.read(&(name[0]), len);
 			printf("\t%s = %s\n", name.c_str(), std::to_string(*readValue(fs)).c_str());

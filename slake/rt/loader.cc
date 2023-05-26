@@ -45,13 +45,13 @@ Value *readValue(Runtime *rt, std::istream &fs) {
 		case SlxFmt::ValueType::I64:
 			return new I64Value(rt, _read<std::int64_t>(fs));
 		case SlxFmt::ValueType::U8:
-			return new U8Value(rt, _read<std::uint8_t>(fs));
+			return new U8Value(rt, _read<uint8_t>(fs));
 		case SlxFmt::ValueType::U16:
-			return new U16Value(rt, _read<std::uint16_t>(fs));
+			return new U16Value(rt, _read<uint16_t>(fs));
 		case SlxFmt::ValueType::U32:
-			return new U32Value(rt, _read<std::uint32_t>(fs));
+			return new U32Value(rt, _read<uint32_t>(fs));
 		case SlxFmt::ValueType::U64:
-			return new U64Value(rt, _read<std::uint64_t>(fs));
+			return new U64Value(rt, _read<uint64_t>(fs));
 		case SlxFmt::ValueType::BOOL:
 			return new BoolValue(rt, _read<bool>(fs));
 		case SlxFmt::ValueType::FLOAT:
@@ -59,8 +59,8 @@ Value *readValue(Runtime *rt, std::istream &fs) {
 		case SlxFmt::ValueType::DOUBLE:
 			return new DoubleValue(rt, _read<double>(fs));
 		case SlxFmt::ValueType::STRING: {
-			auto len = _read<std::uint32_t>(fs);
-			std::string s(len + 1, '\0');
+			auto len = _read<uint32_t>(fs);
+			std::string s(len, '\0');
 			fs.read(&(s[0]), len);
 			return new StringValue(rt, s);
 		}
@@ -154,6 +154,7 @@ void Slake::Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 		fs.read((char *)&i, sizeof(i));
 		if (!(i.lenName))
 			break;
+
 		std::string name(i.lenName, '\0');
 		fs.read(&(name[0]), i.lenName);
 
@@ -166,23 +167,15 @@ void Slake::Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 			access |= ACCESS_FINAL;
 		if (i.flags & SlxFmt::FND_OVERRIDE)
 			access |= ACCESS_OVERRIDE;
-		if (i.flags & SlxFmt::FND_NATIVE)
-			access |= ACCESS_NATIVE;
-
-		std::unique_ptr<FnValue> fn = std::make_unique<FnValue>(
-			rt,
-			(std::uint32_t)i.lenBody,  // Code trick for avoiding referencing to the bit-field.
-			access,
-			mod);
+		//if (i.flags & SlxFmt::FND_NATIVE)
+		//	access |= ACCESS_NATIVE;
 
 		auto resultType = _read<SlxFmt::ValueType>(fs);
 
-		if (i.nGenericParams) {
-			for (auto j = 0; j < i.nGenericParams; j++) {
-				std::uint32_t lenGenericParamName = _read<std::uint32_t>(fs);
-				std::string name(lenGenericParamName, '\0');
-				fs.read(&(name[0]), lenGenericParamName);
-			}
+		for (auto j = 0; j < i.nGenericParams; j++) {
+			uint32_t lenGenericParamName = _read<uint32_t>(fs);
+			std::string name(lenGenericParamName, '\0');
+			fs.read(&(name[0]), lenGenericParamName);
 		}
 
 		for (auto j = 0; j < i.nParams; j++) {
@@ -193,15 +186,20 @@ void Slake::Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 		if (i.flags & SlxFmt::FND_VARG)
 			/* stub */;
 
-		for (std::uint32_t j = 0; j < i.lenBody; j++) {
-			SlxFmt::InsHeader ih = _read<SlxFmt::InsHeader>(fs);
-			fn->_body[j].opcode = ih.opcode;
-			fn->_body[j].nOperands = ih.nOperands;
-			for (std::uint8_t k = 0; k < ih.nOperands; k++)
-				fn->_body[j].operands[k] = readValue(rt, fs);
-		}
+		if (i.lenBody) {
+			std::unique_ptr<FnValue> fn(
+				new FnValue(rt, (uint32_t)i.lenBody, access, mod));
 
-		mod->addMember(name, fn.release());
+			for (uint32_t j = 0; j < i.lenBody; j++) {
+				SlxFmt::InsHeader ih = _read<SlxFmt::InsHeader>(fs);
+				fn->_body[j].opcode = ih.opcode;
+				fn->_body[j].nOperands = ih.nOperands;
+				for (uint8_t k = 0; k < ih.nOperands; k++)
+					fn->_body[j].operands[k] = readValue(rt, fs);
+			}
+
+			mod->addMember(name, fn.release());
+		}
 	}
 
 	for (SlxFmt::ClassTypeDesc i = { 0 };;) {
@@ -267,7 +265,7 @@ void Slake::Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 }
 
 
-void Slake::Runtime::loadModule(std::string name, std::istream &fs) {
+ValueRef<ModuleValue> Slake::Runtime::loadModule(std::istream &fs) {
 	std::unique_ptr<ModuleValue> mod = std::make_unique<ModuleValue>(this, ACCESS_PUB, _rootValue);
 
 	SlxFmt::ImgHeader ih;
@@ -280,8 +278,8 @@ void Slake::Runtime::loadModule(std::string name, std::istream &fs) {
 	if (ih.fmtVer != 0)
 		throw LoaderError("Bad SLX format version");
 	if (ih.nImports) {
-		for (std::uint8_t i = 0; i < ih.nImports; i++) {
-			auto len = _read<std::uint32_t>(fs);
+		for (uint8_t i = 0; i < ih.nImports; i++) {
+			auto len = _read<uint32_t>(fs);
 			std::string name(len, '\0');
 			fs.read(&(name[0]), len);
 
@@ -290,10 +288,10 @@ void Slake::Runtime::loadModule(std::string name, std::istream &fs) {
 	}
 
 	_loadScope(mod.get(), fs);
-	_rootValue->addMember(name, mod.release());
+	return mod.release();
 }
 
-void Slake::Runtime::loadModule(std::string name, const void *buf, std::size_t size) {
+ValueRef<ModuleValue> Slake::Runtime::loadModule(const void *buf, std::size_t size) {
 	Util::InputMemStream fs(buf, size);
-	loadModule(name, fs);
+	return loadModule(fs);
 }

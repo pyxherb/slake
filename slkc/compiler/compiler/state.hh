@@ -8,7 +8,7 @@
 namespace Slake {
 	namespace Compiler {
 		struct LocalVar {
-			std::uint32_t stackPos;
+			uint32_t stackPos;
 			std::shared_ptr<TypeName> type;
 			bool isParam = false;
 
@@ -23,7 +23,7 @@ namespace Slake {
 				return *this;
 			}
 
-			inline LocalVar(std::uint32_t stackPos, std::shared_ptr<TypeName> type, bool isParam = false) : stackPos(stackPos), type(type), isParam(isParam) {}
+			inline LocalVar(uint32_t stackPos, std::shared_ptr<TypeName> type, bool isParam = false) : stackPos(stackPos), type(type), isParam(isParam) {}
 			inline LocalVar() {}
 			inline LocalVar(const LocalVar &x) { *this = x; }
 			inline LocalVar(const LocalVar &&x) { *this = x; }
@@ -38,10 +38,10 @@ namespace Slake {
 
 		struct Fn {
 			std::vector<Ins> body;
-			std::unordered_map<std::string, std::uint32_t> labels;
+			std::unordered_map<std::string, uint32_t> labels;
 
-			inline void insertLabel(std::string name) { labels[name] = (std::uint32_t)body.size(); };
-			inline std::uint32_t getLabel(std::string name) { return labels.at(name); }
+			inline void insertLabel(std::string name) { labels[name] = (uint32_t)body.size(); };
+			inline uint32_t getLabel(std::string name) { return labels.at(name); }
 
 			inline void insertIns(const Ins &ins) {
 				body.push_back(ins);
@@ -55,7 +55,7 @@ namespace Slake {
 
 		struct Context {
 			std::unordered_map<std::string, LocalVar> lvars;
-			std::uint32_t stackCur = 0, nContinueLevel = 0, nBreakLevel = 0;
+			uint32_t stackCur = 0, nContinueLevel = 0, nBreakLevel = 0;
 			bool returned = false;
 
 			inline Context() {}

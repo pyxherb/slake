@@ -11,12 +11,12 @@ void State::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTopLe
 	if (isTopLevel) {
 		SlxFmt::ImgHeader ih = { 0 };
 		std::memcpy(ih.magic, SlxFmt::IMH_MAGIC, sizeof(ih.magic));
-		ih.nImports = (std::uint8_t)scope->imports.size();
+		ih.nImports = (uint8_t)scope->imports.size();
 		ih.fmtVer = 0;
 		fs.write((char *)&ih, sizeof(ih));
 
 		for (auto i : scope->imports) {
-			_writeValue((std::uint32_t)(i.first.length()), fs);
+			_writeValue((uint32_t)(i.first.length()), fs);
 			_writeValue(*(i.first.c_str()), (std::streamsize)i.first.length(), fs);
 			writeValue(i.second, fs);
 		}
@@ -28,7 +28,7 @@ void State::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTopLe
 	{
 		for (auto &i : scope->vars) {
 			SlxFmt::VarDesc vad = { 0 };
-			vad.lenName = (std::uint8_t)i.first.length();
+			vad.lenName = (uint8_t)i.first.length();
 
 			if (i.second->accessModifier & ~(ACCESS_PUB | ACCESS_FINAL | ACCESS_STATIC | ACCESS_NATIVE))
 				throw parser::syntax_error(i.second->getLocation(), "Invalid modifier combination");
@@ -68,7 +68,7 @@ void State::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTopLe
 			if (i.second->accessModifier & ~(ACCESS_PUB | ACCESS_FINAL | ACCESS_STATIC | ACCESS_OVERRIDE | ACCESS_NATIVE))
 				throw parser::syntax_error(i.second->getLocation(), "Invalid modifier combination");
 			if (isTopLevel)
-				if (i.second->accessModifier & (ACCESS_FINAL | ACCESS_STATIC | ACCESS_OVERRIDE | ACCESS_NATIVE))
+				if (i.second->accessModifier & ~(ACCESS_PUB | ACCESS_FINAL | ACCESS_STATIC | ACCESS_OVERRIDE | ACCESS_NATIVE))
 					throw parser::syntax_error(i.second->getLocation(), "Invalid modifier combination");
 
 			currentFn = i.first;					   // Set up current function name of the state.
@@ -78,7 +78,7 @@ void State::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTopLe
 			if (i.second->execBlock) {
 				auto ctxt = context;
 				for (auto &j : *(i.second->params))
-					context.lvars[j->name] = LocalVar((std::uint32_t)(context.lvars.size()), j->typeName, true);
+					context.lvars[j->name] = LocalVar((uint32_t)(context.lvars.size()), j->typeName, true);
 
 				for (auto &i : std::static_pointer_cast<CodeBlock>(i.second->execBlock)->ins)
 					compileStmt(i);
@@ -113,7 +113,7 @@ void State::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTopLe
 			}
 
 			for (auto j : i.second->genericParams) {
-				_writeValue((std::uint32_t)j.size(), fs);
+				_writeValue((uint32_t)j.size(), fs);
 				_writeValue(*(j.c_str()), (std::streamsize)j.size(), fs);
 			}
 
@@ -124,7 +124,7 @@ void State::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTopLe
 
 			// Write for each instructions.
 			for (auto &k : fnDefs[currentFn]->body) {
-				SlxFmt::InsHeader ih(k.opcode, (std::uint8_t)k.operands.size());
+				SlxFmt::InsHeader ih(k.opcode, (uint8_t)k.operands.size());
 				_writeValue(ih, fs);
 				for (auto &l : k.operands) {
 					if (l->getExprKind() == ExprKind::LABEL) {
@@ -157,9 +157,9 @@ void State::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTopLe
 					if (i.second->isFinal())
 						ctd.flags |= SlxFmt::CTD_FINAL;
 
-					ctd.lenName = (std::uint8_t)i.first.length();
-					ctd.nImpls = (std::uint8_t)t->impls->impls.size();
-					ctd.nGenericParams = (std::uint8_t)t->genericParams.size();
+					ctd.lenName = (uint8_t)i.first.length();
+					ctd.nImpls = (uint8_t)t->impls->impls.size();
+					ctd.nGenericParams = (uint8_t)t->genericParams.size();
 					_writeValue(ctd, fs);
 					_writeValue(*(i.first.c_str()), (std::streamsize)i.first.size(), fs);
 
@@ -191,8 +191,8 @@ void State::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTopLe
 						throw parser::syntax_error(i.second->getLocation(), "Invalid modifier combination");
 
 					ctd.flags |= SlxFmt::CTD_INTERFACE | (t->isPublic() ? SlxFmt::CTD_PUB : 0);
-					ctd.lenName = (std::uint8_t)i.first.length();
-					ctd.nGenericParams = (std::uint8_t)t->genericParams.size();
+					ctd.lenName = (uint8_t)i.first.length();
+					ctd.nGenericParams = (uint8_t)t->genericParams.size();
 
 					_writeValue(ctd, fs);
 					_writeValue(*(i.first.c_str()), (std::streamsize)i.first.size(), fs);
@@ -222,7 +222,7 @@ void State::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTopLe
 			auto t = std::static_pointer_cast<StructType>(i.second);
 			SlxFmt::StructTypeDesc std = { 0 };
 			std.nMembers = t->vars.size();
-			std.lenName = (std::uint8_t)i.first.size();
+			std.lenName = (uint8_t)i.first.size();
 			fs.write((char *)&std, sizeof(std));
 			_writeValue(*(i.first.c_str()), (std::streamsize)i.first.size(), fs);
 

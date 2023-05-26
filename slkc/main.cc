@@ -23,7 +23,7 @@ static inline char *fetchArg(int argc, char **argv, int &i) {
 	return argv[i++];
 }
 
-enum AppAction : std::uint8_t {
+enum AppAction : uint8_t {
 	ACT_COMPILE = 0,
 	ACT_DUMP
 };
@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
 			for (int i = 1; i < argc;) {
 				std::string arg = fetchArg(argc, argv, i);
 
-				for (std::uint16_t j = 0; j < sizeof(cmdLineActions) / sizeof(cmdLineActions[0]); j++) {
+				for (uint16_t j = 0; j < sizeof(cmdLineActions) / sizeof(cmdLineActions[0]); j++) {
 					for (auto k = cmdLineActions[j].options; *k; k += std::strlen(k))
 						if (!std::strcmp(k, arg.c_str())) {
 							cmdLineActions[j].fn(argc, argv, i);

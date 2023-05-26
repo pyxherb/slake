@@ -13,24 +13,24 @@ namespace Slake {
 #ifdef __BYTE_ORDER__
 			return __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__;
 #else
-			std::uint16_t value = 0xff00;
-			return *((std::uint8_t*)&value);
+			uint16_t value = 0xff00;
+			return *((uint8_t*)&value);
 #endif
 		}
 
-		constexpr inline std::uint16_t swapByteOrder(std::uint16_t n) {
+		constexpr inline uint16_t swapByteOrder(uint16_t n) {
 			return (n & 0xff << 8) | (n >> 8);
 		}
-		constexpr inline std::uint16_t swapByteOrder(std::int16_t n) {
+		constexpr inline uint16_t swapByteOrder(std::int16_t n) {
 			return (n & 0xff << 8) | (n >> 8);
 		}
-		constexpr inline std::uint32_t swapByteOrder(std::uint32_t n) {
+		constexpr inline uint32_t swapByteOrder(uint32_t n) {
 			return (n & 0xff << 24) | (n & 0xff00 << 8) | (n & 0xff0000 >> 8) | (n >> 24);
 		}
-		constexpr inline std::uint32_t swapByteOrder(std::int32_t n) {
+		constexpr inline uint32_t swapByteOrder(std::int32_t n) {
 			return (n & 0xff << 24) | (n & 0xff00 << 8) | (n & 0xff0000 >> 8) | (n >> 24);
 		}
-		constexpr inline std::uint64_t swapByteOrder(std::uint64_t n) {
+		constexpr inline uint64_t swapByteOrder(uint64_t n) {
 			return ((n & 0xffull) << 56) |
 				   ((n & 0xff00ull) << 40) |
 				   ((n & 0xff0000ull) << 24) |
@@ -40,7 +40,7 @@ namespace Slake {
 				   ((n & 0xff000000000000ull) >> 40) |
 				   ((n & 0xff00000000000000ull) >> 56);
 		}
-		constexpr inline std::uint64_t swapByteOrder(std::int64_t n) {
+		constexpr inline uint64_t swapByteOrder(std::int64_t n) {
 			return ((n & 0xffull) << 56) |
 				   ((n & 0xff00ull) << 40) |
 				   ((n & 0xff0000ull) << 24) |

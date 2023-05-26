@@ -1,9 +1,9 @@
-pub trait IRatio<T> {
+pub interface TRatio<T> {
 	@T -> numerator;
 	@T -> denominator;
 }
 
-pub class Ratio<T>: IRatio<@T> {
+pub class Ratio<T>: TRatio<@T> {
 	@T _num, _den;
 
 	pub @T -> numerator {

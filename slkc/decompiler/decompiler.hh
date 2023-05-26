@@ -27,11 +27,11 @@ namespace Slake {
 		};
 
 		struct State {
-			std::unordered_map<std::uint32_t, std::string> labelNames;
+			std::unordered_map<uint32_t, std::string> labelNames;
 		};
 
 		std::shared_ptr<Compiler::Expr> readValue(std::fstream& fs);
-		void decompileScope(std::fstream& fs, std::uint8_t indentLevel = 0);
+		void decompileScope(std::fstream& fs, uint8_t indentLevel = 0);
 		void decompile(std::fstream& fs);
 	}
 }

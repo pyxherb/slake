@@ -1,8 +1,8 @@
-pub trait RandomContext<T> {
+pub interface TRandomContext<T> {
 	@T next();
 }
 
-pub class MT19937RandomContext : @RandomContext<u32> {
+pub class MT19937RandomContext : @TRandomContext<u32> {
 	u32 _seed, _last;
 	u32 _states = new u32[](624);
 	u16 _i = 0;

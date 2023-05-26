@@ -6,6 +6,8 @@ using namespace Slake;
 using namespace Slake::Compiler;
 
 void State::compileRightExpr(std::shared_ptr<Expr> expr, bool isRecursing) {
+	assert(expr);
+
 	auto &fn = fnDefs[currentFn];
 	assert(fn);
 	switch (expr->getExprKind()) {
@@ -82,8 +84,7 @@ void State::compileRightExpr(std::shared_ptr<Expr> expr, bool isRecursing) {
 			if (t->kind != TypeNameKind::FN)
 				throw parser::syntax_error(calle->target->getLocation(), "Expression is not callable");
 
-			Opcode opcode = Opcode::CALL;
-			opcode = calle->isAsync ? Opcode::ACALL : Opcode::CALL;
+			Opcode opcode = calle->isAsync ? Opcode::ACALL : Opcode::CALL;
 
 			if (!t->isStatic) {
 				evalExprType(calle);
@@ -109,7 +110,6 @@ void State::compileRightExpr(std::shared_ptr<Expr> expr, bool isRecursing) {
 
 			fn->insertIns({ Opcode::LRET, {} });
 
-			calleeParent.reset();
 			break;
 		}
 		case ExprKind::REF: {
@@ -199,7 +199,7 @@ void State::compileRightExpr(std::shared_ptr<Expr> expr, bool isRecursing) {
 						}
 					}
 
-					std::uint8_t j = 0;	 // Index of current argument of the new expression.
+					uint8_t j = 0;	 // Index of current argument of the new expression.
 					for (auto i : *(newExpr->args)) {
 						auto type = evalExprType(i);
 

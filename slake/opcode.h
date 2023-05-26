@@ -4,7 +4,7 @@
 #include <cstdint>
 
 namespace Slake {
-	enum class Opcode : std::uint8_t {
+	enum class Opcode : uint8_t {
 		NOP = 0,  // No operation
 
 		PUSH,  // Push an immediate value

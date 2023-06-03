@@ -375,7 +375,7 @@ namespace Slake {
 			};
 
 			inline std::shared_ptr<LiteralExpr> _execArithmeticBinaryOp(BinaryOp op, std::shared_ptr<LiteralExpr> y) {
-				if constexpr (std::is_arithmetic<T>::value) {
+				if constexpr (std::is_arithmetic<T>::value && !std::is_same<T, bool>::value) {
 					T yVal;
 					switch (y->getLiteralType()) {
 						case LT_INT:
@@ -424,7 +424,7 @@ namespace Slake {
 			}
 
 			inline std::shared_ptr<LiteralExpr> _execBitwiseBinaryOp(BinaryOp op, std::shared_ptr<LiteralExpr> y) {
-				if constexpr (std::is_integral<T>::value) {
+				if constexpr(std::is_integral<T>::value&&!std::is_same<T,bool>::value) {
 					T yVal;
 					switch (y->getLiteralType()) {
 						case LT_INT:

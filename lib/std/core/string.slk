@@ -1,3 +1,5 @@
+module std::core::string;
+
 pub interface TStringifiable {
 	operator string;
 }

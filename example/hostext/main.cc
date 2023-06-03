@@ -12,7 +12,7 @@ Slake::ValueRef<> println(Slake::Runtime *rt, uint8_t nArgs, Slake::ValueRef<> *
 	return Slake::ValueRef<>();
 }
 
-Slake::ValueRef<Slake::ModuleValue> fsModuleSearcher(Slake::Runtime *rt, Slake::RefValue *ref) {
+Slake::ValueRef<Slake::ModuleValue> fsModuleLoader(Slake::Runtime *rt, Slake::RefValue *ref) {
 	std::string path;
 	for (size_t i = 0; i < ref->scopes.size(); i++) {
 		path += ref->scopes[i];
@@ -24,7 +24,7 @@ Slake::ValueRef<Slake::ModuleValue> fsModuleSearcher(Slake::Runtime *rt, Slake::
 	fs.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
 	fs.open(path, std::ios_base::binary);
 
-	auto mod = rt->loadModule(fs);
+	auto mod = rt->loadModule(fs, ref->scopes.back());
 
 	fs.close();
 
@@ -33,19 +33,26 @@ Slake::ValueRef<Slake::ModuleValue> fsModuleSearcher(Slake::Runtime *rt, Slake::
 
 int main(int argc, char **argv) {
 	Slake::Util::setupMemoryLeakDetector();
-	Slake::Runtime *rt = new Slake::Runtime();
+	Slake::Runtime *rt = new Slake::Runtime(Slake::RT_DEBUG | Slake::RT_GCDBG);
 
 	auto fs = std::ifstream();
 	fs.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
 	fs.open("main.slx", std::ios_base::in | std::ios_base::binary);
 
-	rt->setModuleSearcher(fsModuleSearcher);
+	rt->setModuleLoader(fsModuleLoader);
 
-	rt->getRootValue()->addMember("main",*(rt->loadModule(fs)));
+	rt->getRootValue()->addMember("main", *(rt->loadModule(fs, "main")));
 
-	rt->getRootValue()->addMember("println", new Slake::NativeFnValue(rt, println, Slake::ACCESS_PUB, rt->getRootValue()));
+	rt->getRootValue()->addMember(
+		"println",
+		new Slake::NativeFnValue(
+			rt,
+			println,
+			Slake::ACCESS_PUB,
+			Slake::ValueType::NONE,
+			rt->getRootValue()));
 
-	//std::printf("%s\n", std::to_string(rt).c_str());
+	// std::printf("%s\n", std::to_string(rt).c_str());
 
 	Slake::ValueRef<> v;
 

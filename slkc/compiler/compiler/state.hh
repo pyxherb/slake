@@ -89,7 +89,7 @@ namespace Slake {
 
 			std::shared_ptr<TypeName> desiredType;
 			std::shared_ptr<Expr> calleeParent;
-			bool isLastResolvedVar = false;
+			bool isLastResolvedRefVar = false;// Is last resolved 
 
 			inline State(std::shared_ptr<Scope> scope = std::shared_ptr<Scope>()) : scope(scope) {}
 
@@ -119,7 +119,7 @@ namespace Slake {
 			inline void clearTempAttribs() {
 				desiredType.reset();
 				calleeParent.reset();
-				isLastResolvedVar = false;
+				isLastResolvedRefVar = false;
 			}
 		};
 	}

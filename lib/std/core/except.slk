@@ -1,3 +1,5 @@
+module std::core::except;
+
 /// @intro
 /// Interface for all exceptions.
 /// @end

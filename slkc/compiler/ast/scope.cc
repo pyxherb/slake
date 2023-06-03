@@ -4,13 +4,8 @@
 
 using namespace Slake::Compiler;
 
-std::shared_ptr<Scope> Slake::Compiler::currentScope;
-std::shared_ptr<EnumType> Slake::Compiler::currentEnum;
-std::shared_ptr<ClassType> Slake::Compiler::currentClass;
-std::shared_ptr<InterfaceType> Slake::Compiler::currentInterface;
-std::shared_ptr<StructType> Slake::Compiler::currentStruct;
-
 int Slake::Compiler::indentLevel = 0;
+std::shared_ptr<Scope> Slake::Compiler::currentScope;
 
 void Slake::Compiler::Scope::defineVars(std::shared_ptr<VarDefStmt> varDecls) {
 	for (auto i : varDecls->declList) {
@@ -32,9 +27,5 @@ void Slake::Compiler::StructType::addMembers(std::shared_ptr<VarDefStmt> varDecl
 }
 
 void Slake::Compiler::deinit() {
-	currentInterface.reset();
-	currentClass.reset();
-	currentEnum.reset();
 	currentScope.reset();
-	currentStruct.reset();
 }

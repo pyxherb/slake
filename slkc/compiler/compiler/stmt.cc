@@ -135,7 +135,9 @@ void State::compileStmt(std::shared_ptr<Stmt> src) {
 			auto stmt = std::static_pointer_cast<ExprStmt>(src);
 			for (auto &i = stmt; i; i = i->next) {
 				compileRightExpr(stmt->expr);
-				fn->insertIns({ Opcode::POP, {} });
+				if (stmt->expr->getExprKind() != ExprKind::BINARY ||
+					(!isAssignment(std::static_pointer_cast<BinaryOpExpr>(stmt->expr)->op)))
+					fn->insertIns({ Opcode::POP, {} });
 			}
 			break;
 		}

@@ -1,3 +1,5 @@
+module std::core::task;
+
 ///
 /// @description
 /// Task module for Slake Standard Library.

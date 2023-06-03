@@ -23,8 +23,8 @@ namespace Slake {
 			USIZE = U32,
 			U64,
 
-			FLOAT,
-			DOUBLE,
+			F32,
+			F64,
 
 			STRING,
 			BOOL,
@@ -70,10 +70,10 @@ namespace Slake {
 						return "u32";
 					case TypeNameKind::U64:
 						return "u64";
-					case TypeNameKind::FLOAT:
-						return "float";
-					case TypeNameKind::DOUBLE:
-						return "double";
+					case TypeNameKind::F32:
+						return "f32";
+					case TypeNameKind::F64:
+						return "f64";
 					case TypeNameKind::STRING:
 						return "string";
 					case TypeNameKind::BOOL:

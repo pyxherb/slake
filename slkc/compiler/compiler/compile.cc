@@ -221,7 +221,7 @@ void State::compile(std::shared_ptr<Scope> scope, std::fstream &fs, bool isTopLe
 				continue;
 			auto t = std::static_pointer_cast<StructType>(i.second);
 			SlxFmt::StructTypeDesc std = { 0 };
-			std.nMembers = t->vars.size();
+			std.nMembers = (uint32_t)t->vars.size();
 			std.lenName = (uint8_t)i.first.size();
 			fs.write((char *)&std, sizeof(std));
 			_writeValue(*(i.first.c_str()), (std::streamsize)i.first.size(), fs);

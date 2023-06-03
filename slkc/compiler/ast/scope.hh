@@ -297,6 +297,11 @@ namespace Slake {
 			std::unordered_map<std::string, std::shared_ptr<VarDefItem>> vars;
 			std::string name;
 
+			std::shared_ptr<EnumType> currentEnum;
+			std::shared_ptr<ClassType> currentClass;
+			std::shared_ptr<InterfaceType> currentInterface;
+			std::shared_ptr<StructType> currentStruct;
+
 			inline Scope(std::string name,
 				std::shared_ptr<Scope> parent = std::shared_ptr<Scope>())
 				: parent(parent), name(name) {}
@@ -418,10 +423,6 @@ namespace Slake {
 		};
 
 		extern std::shared_ptr<Scope> currentScope;
-		extern std::shared_ptr<EnumType> currentEnum;
-		extern std::shared_ptr<ClassType> currentClass;
-		extern std::shared_ptr<InterfaceType> currentInterface;
-		extern std::shared_ptr<StructType> currentStruct;
 
 		void deinit();
 	}

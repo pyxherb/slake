@@ -50,11 +50,11 @@ std::unordered_map<Opcode, const char *> Decompiler::mnemonics = {
 	{ Opcode::DECB, "DECB" },
 	{ Opcode::NEG, "NEG" },
 
+	{ Opcode::AT, "AT" },
+
 	{ Opcode::JMP, "JMP" },
 	{ Opcode::JT, "JT" },
 	{ Opcode::JF, "JF" },
-
-	{ Opcode::CAST, "CAST" },
 
 	{ Opcode::SARG, "SARG" },
 	{ Opcode::LARG, "LARG" },
@@ -73,5 +73,18 @@ std::unordered_map<Opcode, const char *> Decompiler::mnemonics = {
 	{ Opcode::THROW, "THROW" },
 	{ Opcode::PUSHXH, "PUSHXH" },
 
-	{ Opcode::ABORT, "ABORT" }
+	{ Opcode::ABORT, "ABORT" },
+
+	{ Opcode::CASTI8, "CASTI8" },
+	{ Opcode::CASTI16, "CASTI16" },
+	{ Opcode::CASTI32, "CASTI32" },
+	{ Opcode::CASTI64, "CASTI64" },
+	{ Opcode::CASTU8, "CASTU8" },
+	{ Opcode::CASTU16, "CASTU16" },
+	{ Opcode::CASTU32, "CASTU32" },
+	{ Opcode::CASTU64, "CASTU64" },
+	{ Opcode::CASTF32, "CASTF32" },
+	{ Opcode::CASTF64, "CASTF64" },
+
+	{ Opcode::TYPEOF, "TYPEOF" }
 };

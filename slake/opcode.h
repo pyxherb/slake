@@ -4,7 +4,7 @@
 #include <cstdint>
 
 namespace Slake {
-	enum class Opcode : uint8_t {
+	enum class Opcode : uint16_t {
 		NOP = 0,  // No operation
 
 		PUSH,  // Push an immediate value
@@ -52,11 +52,11 @@ namespace Slake {
 		DECB,  // Backward Decrease
 		NEG,   // Negate
 
+		AT,	 // Subscript
+
 		JMP,  // Jump
 		JT,	  // Jump if true
 		JF,	  // Jump if false
-
-		CAST,  // Cast
 
 		SARG,  // Store an argument
 		LARG,  // Push an argument
@@ -75,7 +75,24 @@ namespace Slake {
 		THROW,	 // Throw an exception
 		PUSHXH,	 // Push an exception handler
 
-		ABORT  // Abort
+		ABORT,	// Abort
+
+		CASTI8,	   // Cast to i8
+		CASTI16,   // Cast to i16
+		CASTI32,   // Cast to i32
+		CASTI64,   // Cast to i64
+		CASTU8,	   // Cast to u8
+		CASTU16,   // Cast to u16
+		CASTU32,   // Cast to u32
+		CASTU64,   // Cast to u64
+		CASTF32,   // Cast to f32
+		CASTF64,   // Cast to f64
+		CASTBOOL,  // Cast to boolean
+		CASTOBJ,   // Cast to object
+
+		TYPEOF,	 // Get type of an object
+
+		OPCODE_MAX
 	};
 }
 

@@ -1,13 +1,13 @@
 #ifndef _SLAKE_RUNTIME_H_
 #define _SLAKE_RUNTIME_H_
 
-#include <deque>
-#include <functional>
 #include <sstream>
-#include <string>
-#include <unordered_map>
+#include <thread>
+#include <unordered_set>
 
-#include "opcode.h"
+#include "except.h"
+#include "generated/config.h"
+#include "util/debug.h"
 #include "value.h"
 
 namespace std {
@@ -15,111 +15,72 @@ namespace std {
 }
 
 namespace Slake {
-	struct MinorFrame {
-		std::vector<uint32_t> exceptHandlers;
-	};
-
-	struct MajorFrame {
-		ValueRef<> scopeValue;
-		ValueRef<FnValue> curFn;
-		uint32_t curIns = 0;
-		std::vector<ValueRef<>> argStack;
-		ValueRef<> thisReg;
-	};
-
-	struct XContext {
-		std::vector<MajorFrame> frames;
-	};
-
-	struct ExecContext final {
-		ValueRef<> scopeValue;
-		ValueRef<FnValue> fn;
-		uint32_t curIns = 0;
-		std::vector<ValueRef<>> args;
-		ValueRef<> pThis;
-
-		inline ExecContext() {}
-		inline ExecContext(ValueRef<> &&scopeValue, ValueRef<FnValue> &&fn, uint32_t curIns) : scopeValue(scopeValue), fn(fn), curIns(curIns) {
-		}
-		inline ExecContext(const ExecContext &&x) noexcept { *this = x; }
-		inline ExecContext(const ExecContext &x) noexcept { *this = x; }
-
-		inline ExecContext &operator=(const ExecContext &&x) noexcept {
-			scopeValue = x.scopeValue;
-			fn = x.fn;
-			curIns = x.curIns;
-			args = x.args;
-			return *this;
-		}
-
-		inline ExecContext &operator=(const ExecContext &x) {
-			*this = std::move(x);
-			return *this;
-		}
-	};
-
-	struct Frame final {
-		std::vector<uint32_t> exceptHandlers;
-		uint32_t stackBase, exitOff;
-
-		inline Frame(uint32_t stackBase, uint32_t exitOff = 0) : stackBase(stackBase), exitOff(exitOff) {
-		}
-	};
-
-	using ContextFlag = uint8_t;
-	constexpr static ContextFlag CTXT_YIELD = 0x01;
-	struct Context final {
-		ExecContext execContext;
-		std::deque<ValueRef<>> dataStack;
-		std::deque<Frame> frames;
-		std::deque<ExecContext> callingStack;
-		ValueRef<> retValue;
+	/// @brief Minor frames are created by ENTER instruction and destroyed by
+	/// leave instruction.
+	struct MinorFrame final {
+		std::vector<uint32_t> exceptHandlers;  // Exception handlers
+		uint32_t exitOff;					   // Offset of instruction to jump when leaving unexpectedly
 		uint32_t stackBase;
+	};
 
-		inline Context(ExecContext execContext) : execContext(execContext), stackBase(0) {}
-		virtual inline ~Context() {
-		}
+	/// @brief Each major frame represents a single calling frame.
+	struct MajorFrame final {
+		ValueRef<> scopeValue;				  // Scope value.
+		ValueRef<FnValue> curFn;			  // Current function
+		uint32_t curIns = 0;				  // Offset of current instruction in function body
+		std::vector<ValueRef<>> argStack;	  // Argument stack
+		std::vector<ValueRef<>> dataStack;	  // Data stack
+		ValueRef<> thisObject;				  // `this' object
+		ValueRef<> returnValue;				  // Return value
+		std::vector<MinorFrame> minorFrames;  // Minor frames
 
 		inline ValueRef<> lload(uint32_t off) {
-			if (off >= dataStack.size() - stackBase)
-				throw FrameBoundaryExceededError("Frame boundary exceeded");
-			return dataStack.at((size_t)stackBase + off);
+			if (off >= dataStack.size())
+				throw FrameBoundaryExceededError("Frame top exceeded");
+			return dataStack.at(off);
 		}
 
 		inline void push(ValueRef<> v) {
-			if (dataStack.size() > 0x100000)
+			if (dataStack.size() > STACK_MAX)
 				throw StackOverflowError("Stack overflowed");
 			dataStack.push_back(*v);
 		}
 
 		inline ValueRef<> pop() {
-			if (dataStack.size() == stackBase)
-				throw FrameBoundaryExceededError("Frame boundary exceeded");
+			if (!dataStack.size())
+				throw FrameBoundaryExceededError("Frame bottom exceeded");
 			ValueRef<> v = dataStack.back();
 			dataStack.pop_back();
 			return v;
 		}
 
 		inline void expand(uint32_t n) {
-			if ((n += (uint32_t)dataStack.size()) > 0x100000)
+			if ((n += (uint32_t)dataStack.size()) > STACK_MAX)
 				throw StackOverflowError("Stack overflowed");
 			dataStack.resize(n);
 		}
 
 		inline void shrink(uint32_t n) {
-			if (n > ((uint32_t)dataStack.size()) || (n = ((uint32_t)dataStack.size()) - n) < stackBase)
+			if (n > ((uint32_t)dataStack.size()))
 				throw StackOverflowError("Stack overflowed");
 			dataStack.resize(n);
 		}
 	};
 
+	struct Context final {
+		std::vector<MajorFrame> majorFrames;  // Major frames, aka calling frames
+	};
+
 	using RuntimeFlags = uint16_t;
 	constexpr static RuntimeFlags
-		RT_NOJIT = 0x01,  // No JIT
-		RT_DEBUG = 0x02	  // Enable Debugging
-		;
+		// No JIT, do not set unless you want to debug the JIT engine.
+		RT_NOJIT = 0x01,
+		// Enable Debugging, set for module debugging.
+		RT_DEBUG = 0x02,
+		// GC Debugging, do not set unless you want to debug the garbage collector.
+		RT_GCDBG = 0x04;
 
-	using ModuleSearcherFn = std::function<ValueRef<ModuleValue>(Runtime *rt, RefValue *ref)>;
+	using ModuleLoaderFn = std::function<ValueRef<ModuleValue>(Runtime *rt, RefValue *ref)>;
 
 	inline ValueRef<RefValue> parseRef(Runtime *rt, std::string ref) {
 		ValueRef<RefValue> v(new RefValue(rt));
@@ -153,22 +114,20 @@ namespace Slake {
 		std::unordered_set<Value *> _createdValues;
 		RuntimeFlags _flags = 0;
 
-		std::size_t szInUse = 0, szLastGcMemUsed = 0;
+		constexpr static uint8_t RT_LASTGCSTAT = 0x01;
+		uint8_t _internalFlags = RT_LASTGCSTAT;
 
-		constexpr static uint8_t RTI_LASTGCSTAT = 0x01;
-		uint8_t _internalFlags = RTI_LASTGCSTAT;
+		bool _isInGc = false;
+		std::size_t _szMemInUse = 0, _szMemUsedAfterLastGc = 0;
+
+		ModuleLoaderFn _moduleSearcher;
 
 		void _execIns(Context *context, Instruction &ins);
 
 		void _gcWalk(Value *i, uint8_t gcStat);
-		void _gcWalkForExecContext(ExecContext &ctxt, uint8_t gcStat);
 		ObjectValue *_newClassInstance(ClassValue *cls);
 
 		void _callFn(Context *context, FnValue *fn);
-
-		bool isInGc = false;
-
-		ModuleSearcherFn _moduleSearcher;
 
 		friend class Value;
 		friend class FnValue;
@@ -189,24 +148,37 @@ namespace Slake {
 			// All values were managed by the root value.
 			delete _rootValue;
 			_rootValue = nullptr;
-			gc();
+			if (_flags & RT_GCDBG) {
+				gc();
+			} else {
+				while (_createdValues.size())
+					delete *_createdValues.begin();
+			}
 		}
 
 		virtual Value *resolveRef(ValueRef<RefValue>, Value *v = nullptr);
 
-		virtual ValueRef<ModuleValue> loadModule(std::istream &fs);
-		virtual ValueRef<ModuleValue> loadModule(const void *buf, std::size_t size);
+		virtual ValueRef<ModuleValue> loadModule(std::istream &fs, std::string name);
+		virtual ValueRef<ModuleValue> loadModule(const void *buf, std::size_t size, std::string name);
 		inline RootValue *getRootValue() { return _rootValue; }
 
-		inline void setModuleSearcher(ModuleSearcherFn searcher) { _moduleSearcher = searcher; }
-		inline ModuleSearcherFn getModuleSearcher() { return _moduleSearcher; }
+		inline void setModuleLoader(ModuleLoaderFn searcher) { _moduleSearcher = searcher; }
+		inline ModuleLoaderFn getModuleLoader() { return _moduleSearcher; }
+
+		inline std::string resolveName(MemberValue *v) {
+			std::string s;
+			do {
+				s = v->getName() + (s.empty() ? "::" + s : "");
+			} while ((Value*)(v = (MemberValue *)v->getParent()) != _rootValue);
+		}
 
 		void gc();
 	};
 }
 
 namespace std {
-	inline std::string to_string(Slake::ExecContext &&ctxt) {
+	/*
+	inline std::string to_string(Slake::MinorFrame &&ctxt) {
 		std::string s = "{\"curFn\":" + std::to_string((uintptr_t)*ctxt.fn) +
 						",\"curIns\":" + std::to_string(ctxt.curIns) +
 						",\"pThis\":" + std::to_string((uintptr_t)*ctxt.pThis) +
@@ -247,16 +219,16 @@ namespace std {
 
 		return s;
 	}
-	inline std::string to_string(Slake::Context& ctxt) {
+	inline std::string to_string(Slake::Context &ctxt) {
 		return to_string(move(ctxt));
-	}
+	}*/
 
 	inline std::string to_string(Slake::Runtime &&rt) {
 		std::string s =
 			"{\"rootValue\":" + std::to_string((uintptr_t)rt._rootValue) +
-			",\"inGc\":" + std::to_string(rt.isInGc) +
-			",\"szInUse\":" + std::to_string(rt.szInUse) +
-			",\"szLastGcUsed\":" + std::to_string(rt.szLastGcMemUsed) +
+			",\"inGc\":" + std::to_string(rt._isInGc) +
+			",\"_szMemInUse\":" + std::to_string(rt._szMemInUse) +
+			",\"szLastGcUsed\":" + std::to_string(rt._szMemUsedAfterLastGc) +
 			",\"flags\":" + std::to_string(rt._flags) +
 			",\"moduleSearcherType\":\"" + rt._moduleSearcher.target_type().name() + "\"";
 

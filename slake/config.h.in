@@ -1,0 +1,10 @@
+#ifndef _SLAKE_CONFIG_H_
+#define _SLAKE_CONFIG_H_
+
+#include <cstdint>
+
+namespace Slake {
+	constexpr uint32_t STACK_MAX = @SLAKE_STACK_MAX@;
+}
+
+#endif

@@ -1,30 +1,68 @@
-///
-///
-///
-pub class Module {
-	pub const native string name;
-	pub const native @Module[] imports;
+module std::core::reflect;
+
+pub native class Type {
 }
 
-///
-///
-///
-pub class Attribute {
-	pub const native string name;
-	pub const native @Type[] paramTypes;
-	pub const native any[] args;
+pub native class Attribute {
+	pub const string name;
+	pub const any[] args;
 }
 
-pub class Var {
-	pub const native string name;
+pub native class Module {
+	pub const string name;
+	pub const @Module[] imports;
 }
 
-///
-///
-///
-pub class Type {
+pub native class Var {
+	pub const string name;
+}
+
+pub native class Class {
+	/// @brief Name of the class.
+	pub const string name;
+	
+	/// @brief Members of the class.
+	pub const any[] members;
+
+	/// @brief Interfaces implemented by the class.
+	pub const @Interface[] interfaces;
+	
+	/// @brief Parent of the class.
+	pub const @Class parent;
+	
+	pub native any newInstance(...);
+}
+
+pub native class Interface {
+	/// @brief Name of the interface.
 	pub const native string name;
-	pub const native @Fn[string] methods;
+	
+	/// @brief Methods declared by the interface.
+	pub const @Fn[string] methods;
+	
+	/// @brief Parent of the interface.
+	pub const @Interface parent;
+}
+
+pub native class Trait {
+	/// @brief Name of the trait.
+	pub const native string name;
+
+	/// @brief Members of the interface.
+	pub const any[] members;
+	
+	/// @brief Parent of the trait.
+	pub const @Trait parent;
+}
+
+pub native class Struct {
+	/// @brief Name of the structure.
+	pub const native string name;
+	
+	/// @brief Members of the interface.
+	pub const @Var[string] members;
+	
+	pub native any newInstance(...);
 }
 
 ///
@@ -32,10 +70,19 @@ pub class Type {
 ///
 /// @end
 ///
-pub class Fn {
-	pub const native string name;
-	pub const native @Type type;
-	pub const native @Type[] paramTypes;
+pub native class Fn {
+	/// @brief Name of the function.
+	pub const string name;
+	
+	/// @brief Return type.
+	pub const @Type returnType;
+	
+	/// @brief Parameter types.
+	pub const @Type[] paramTypes;
+	
+	/// @brief Whether the function is implemented or not.
+	pub const bool isImplemented;
+
 	pub native any call(any[] args);
 	pub native any callInstantiated(any& thisObject, any[] args);
 }

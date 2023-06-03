@@ -26,6 +26,11 @@ YY_DECL;
 #pragma push_macro("new")
 
 #undef new
+
+struct AccessAndTypeName {
+	Slake::Compiler::AccessModifier access;
+	std::shared_ptr<Slake::Compiler::TypeName> typeName;
+};
 }
 
 %code provides {
@@ -77,6 +82,7 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %token KW_FOR "for"
 %token KW_IF "if"
 %token KW_INTERFACE "interface"
+%token KW_MODULE "module"
 %token KW_NATIVE "native"
 %token KW_NEW "new"
 %token KW_NULL "null"
@@ -93,6 +99,7 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %token KW_TRAIT "trait"
 %token KW_TRUE "true"
 %token KW_TRY "try"
+%token KW_TYPEOF "typeof"
 %token KW_USE "use"
 %token KW_VAR "var"
 %token KW_WHILE "while"
@@ -108,8 +115,8 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %token TN_U32 "u32"
 %token TN_U64 "u64"
 %token TN_USIZE "usize"
-%token TN_FLOAT "float"
-%token TN_DOUBLE "double"
+%token TN_F32 "f32"
+%token TN_F64 "f64"
 %token TN_STRING "string"
 %token TN_BOOL "bool"
 %token TN_AUTO "auto"
@@ -143,8 +150,8 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %token OP_XCHG "<=>"
 %token OP_EQ "=="
 %token OP_NEQ "!="
-%token OP_STRICTEQ "==="
-%token OP_STRICTNEQ "!=="
+%token OP_SEQ "==="
+%token OP_SNEQ "!=="
 %token OP_LT "<"
 %token OP_GT ">"
 %token OP_LTEQ "<="
@@ -245,6 +252,7 @@ extern std::shared_ptr<Slake::Compiler::parser> yyparser;
 %type <std::vector<std::shared_ptr<CatchBlock>>> CatchList
 %type <std::shared_ptr<TryStmt>> TryStmt
 %type <std::shared_ptr<CatchBlock>> CatchBlock
+%type <AccessAndTypeName> AccessAndTypeName
 
 %%
 
@@ -273,6 +281,8 @@ FnDef
 | Trait
 | Enum
 | AliasDef ";"
+| ModuleDecl ";"
+| AccessorDef ";"
 ;
 
 //
@@ -320,11 +330,11 @@ AccessModifier "enum" T_ID ":" TypeName "{" {
 	if(currentScope->types.count($3))
 		this->error(@3, "Redefinition of type `" + $3 + "`");
 	else {
-		currentEnum = std::make_shared<EnumType>(@1, $1, $3, $5);
-		currentScope->types[$3] = currentEnum;
+		currentScope->currentEnum = std::make_shared<EnumType>(@1, $1, $3, $5);
+		currentScope->types[$3] = currentScope->currentEnum;
 	}
 } EnumPairs "}" {
-	currentEnum.reset();
+	currentScope->currentEnum.reset();
 }
 ;
 
@@ -334,15 +344,15 @@ EnumPair "," EnumPairs
 ;
 EnumPair:
 T_ID {
-	if(currentEnum->pairs.count($1))
+	if(currentScope->currentEnum->pairs.count($1))
 		this->error(@1, "Redefinition of enumeration constant `" + $1 + "`");
-	currentEnum->pairs[$1] = std::make_shared<IntLiteralExpr>(@1, 0);
+	currentScope->currentEnum->pairs[$1] = std::make_shared<IntLiteralExpr>(@1, 0);
 }
 | T_ID "=" Expr {
-	if(currentEnum->pairs.count($1))
+	if(currentScope->currentEnum->pairs.count($1))
 		this->error(@1, "Redefinition of enumeration constant `" + $1 + "`");
 	else
-		currentEnum->pairs[$1] = $3;
+		currentScope->currentEnum->pairs[$1] = $3;
 }
 ;
 
@@ -411,11 +421,11 @@ AccessModifier "struct" T_ID "{" {
 	if(currentScope->types.count($3))
 		this->error(@3, "Redefinition of type `" + $3 + "`");
 	else {
-		currentStruct = std::make_shared<StructType>(@1, $1, $3);
-		currentScope->types[$3] = currentStruct;
+		currentScope->currentStruct = std::make_shared<StructType>(@1, $1, $3);
+		currentScope->types[$3] = currentScope->currentStruct;
 	}
 } StructStmts "}" {
-	currentStruct.reset();
+	currentScope->currentStruct.reset();
 }
 | AccessModifier "struct" T_ID "{" "}" {
 	this->error(@4, "Missing member definitions");
@@ -429,7 +439,7 @@ StructStmt StructStmts
 
 StructStmt:
 VarDef ";" {
-	currentStruct->addMembers($1);
+	currentScope->currentStruct->addMembers($1);
 }
 ;
 
@@ -540,21 +550,29 @@ ImportBlock:
 ;
 
 //
+// Module declaration
+//
+ModuleDecl:
+"module" StaticRef {
+}
+;
+
+//
 // Function
 //
 FnDef:
-AccessModifier TypeName T_ID GenericParamList "(" ParamDecls ")" CodeBlock {
-	if(currentScope->fnDefs.count($3))
-		this->error(@3, "Redefinition of function `" + $3 + "`");
+AccessAndTypeName T_ID GenericParamList "(" ParamDecls ")" CodeBlock {
+	if(currentScope->fnDefs.count($2))
+		this->error(@1, "Redefinition of function `" + $2 + "`");
 	else
-		currentScope->fnDefs[$3] = std::make_shared<FnDef>(@1, $1, $6, $2, $8, $3, $4);
+		currentScope->fnDefs[$2] = std::make_shared<FnDef>(@1, $1.access, $5, $1.typeName, $7, $2, $3);
 }
-| AccessModifier TypeName "operator" OperatorName GenericParamList "(" ParamDecls ")" CodeBlock {
-	if(currentScope->fnDefs.count($4)) {
-		this->error(@4, "Redefinition of operator " + $4);
+| AccessAndTypeName "operator" OperatorName GenericParamList "(" ParamDecls ")" CodeBlock {
+	if(currentScope->fnDefs.count($3)) {
+		this->error(@3, "Redefinition of operator " + $3);
 	}
 	else
-		currentScope->fnDefs[$4] = std::make_shared<FnDef>(@1, $1, $7, std::shared_ptr<TypeName>(), $9, "operator" + $4, $5);
+		currentScope->fnDefs[$3] = std::make_shared<FnDef>(@1, $1.access, $6, $1.typeName, $8, "operator" + $3, $4);
 }
 | AccessModifier "operator" "new" "(" ParamDecls ")" CodeBlock {
 	if(currentScope->fnDefs.count("new"))
@@ -645,15 +663,23 @@ TypeName T_ID {
 //
 // Variable
 //
+AccessAndTypeName:
+AccessModifier TypeName {
+	$$.access = $1;
+	$$.typeName = $2;
+}
+;
+
 VarDef:
-AccessModifier TypeName VarDecls {
-	$$ = std::make_shared<VarDefStmt>($1, $2, $3);
+AccessAndTypeName VarDecls {
+	$$ = std::make_shared<VarDefStmt>($1.access, $1.typeName, $2);
 }
 | AccessModifier "native" TypeName NativeVarDecls {
 	$$ = std::make_shared<VarDefStmt>($1, $3, $4);
 	$$->accessModifier |= ACCESS_NATIVE;
 }
 ;
+
 VarDecls:
 VarDecl { $$.push_back($1); }
 | VarDecls "," VarDecl {
@@ -664,12 +690,14 @@ VarDecl { $$.push_back($1); }
 		$$.push_back($3);
 }
 ;
+
 VarDecl:
 T_ID { $$ = std::make_shared<VarDecl>(@1, $1); }
 | T_ID "=" Expr { $$ = std::make_shared<VarDecl>(@1, $1, $3); }
 | T_ID "[" Expr "]" { $$ = std::make_shared<VarDecl>(@1, $1); }
 | T_ID "[" Expr "]" "=" Expr { $$ = std::make_shared<VarDecl>(@1, $1, $6); }
 ;
+
 NativeVarDecls:
 NativeVarDecl { $$.push_back($1); }
 | NativeVarDecls NativeVarDecl {
@@ -677,10 +705,23 @@ NativeVarDecl { $$.push_back($1); }
 	$$.push_back($2);
 }
 ;
+
 NativeVarDecl:
 T_ID { $$ = std::make_shared<VarDecl>(@1, $1, std::shared_ptr<Expr>()); }
 ;
 
+//
+// Accessor
+//
+AccessorDef:
+AccessAndTypeName T_ID "->" "{" {
+} "}" {
+}
+;
+
+//
+// Alias
+//
 AliasDef:
 "pub" "use" Aliases {
 }
@@ -918,6 +959,7 @@ LiteralTypeName { $$ = $1; }
 | FnTypeName  { $$ = $1; }
 | ArrayTypeName { $$ = $1; }
 | MapTypeName { $$ = $1; }
+| SetTypeName {}
 ;
 
 LiteralTypeName:
@@ -931,8 +973,8 @@ LiteralTypeName:
 |"u32" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::U32); }
 |"u64" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::U64); }
 |"usize" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::USIZE); }
-|"float" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::FLOAT); }
-|"double" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::DOUBLE); }
+|"f32" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::F32); }
+|"f64" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::F64); }
 |"string" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::STRING); }
 |"auto" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::AUTO); }
 |"bool" { $$ = std::make_shared<TypeName>(@1, TypeNameKind::BOOL); }
@@ -961,6 +1003,10 @@ TypeName "[" "]" { $$ = std::make_shared<ArrayTypeName>(@1, $1); }
 
 MapTypeName:
 TypeName "[" TypeName "]" { $$ = std::make_shared<MapTypeName>(@1, $3, $1); }
+;
+
+SetTypeName:
+"@" "{" TypeName "}" {}
 ;
 
 SubscriptOpExpr:

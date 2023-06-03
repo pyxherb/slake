@@ -31,8 +31,8 @@ Overview
 
     * Floating Point Types
 
-      * `float`
-      * `double`
+      * `f32`
+      * `f64`
 
     * `bool`
 

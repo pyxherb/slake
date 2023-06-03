@@ -44,9 +44,9 @@ std::shared_ptr<Compiler::Expr> Slake::Decompiler::readValue(std::fstream &fs) {
 			return std::make_shared<Compiler::ULongLiteralExpr>(Compiler::location(), _readValue<uint64_t>(fs));
 		case SlxFmt::ValueType::BOOL:
 			return std::make_shared<Compiler::BoolLiteralExpr>(Compiler::location(), _readValue<bool>(fs));
-		case SlxFmt::ValueType::FLOAT:
+		case SlxFmt::ValueType::F32:
 			return std::make_shared<Compiler::FloatLiteralExpr>(Compiler::location(), _readValue<float>(fs));
-		case SlxFmt::ValueType::DOUBLE:
+		case SlxFmt::ValueType::F64:
 			return std::make_shared<Compiler::DoubleLiteralExpr>(Compiler::location(), _readValue<double>(fs));
 		case SlxFmt::ValueType::STRING: {
 			auto len = _readValue<uint32_t>(fs);
@@ -120,10 +120,10 @@ std::string readTypeName(std::fstream &fs, SlxFmt::ValueType vt) {
 			return "u32";
 		case SlxFmt::ValueType::U64:
 			return "u64";
-		case SlxFmt::ValueType::FLOAT:
-			return "float";
-		case SlxFmt::ValueType::DOUBLE:
-			return "double";
+		case SlxFmt::ValueType::F32:
+			return "f32";
+		case SlxFmt::ValueType::F64:
+			return "f64";
 		case SlxFmt::ValueType::STRING:
 			return "string";
 		case SlxFmt::ValueType::OBJECT: {
@@ -265,7 +265,7 @@ void Slake::Decompiler::decompileScope(std::fstream &fs, uint8_t indentLevel) {
 		}
 
 		std::size_t k = 0;
-		for (auto j : insList) {
+		for (auto &j : insList) {
 			if (s->labelNames.count(k))
 				printf("%s%s:\n", std::string(indentLevel, '\t').c_str(), s->labelNames[k].c_str());
 

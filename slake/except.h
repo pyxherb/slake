@@ -11,6 +11,14 @@ namespace Slake {
 		virtual inline ~MismatchedTypeError() {}
 	};
 
+	/// @brief Raises when incompatible types were detected.
+	class IncompatibleTypeError : public std::runtime_error {
+	public:
+		inline IncompatibleTypeError(std::string msg) : runtime_error(msg){};
+		virtual inline ~IncompatibleTypeError() {}
+	};
+
+
 	/// @brief Raises when executing instructions with invalid opcode.
 	class InvalidOpcodeError : public std::runtime_error {
 	public:
@@ -53,6 +61,12 @@ namespace Slake {
 	public:
 		inline FrameBoundaryExceededError(std::string msg) : runtime_error(msg){};
 		virtual inline ~FrameBoundaryExceededError() {}
+	};
+
+	class InvalidSubscriptionError : public std::runtime_error {
+	public:
+		inline InvalidSubscriptionError(std::string msg) : runtime_error(msg){};
+		virtual inline ~InvalidSubscriptionError() {}
 	};
 
 	class FrameError : public std::runtime_error {

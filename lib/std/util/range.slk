@@ -1,3 +1,5 @@
+module std::util::range;
+
 class Range<T>: @iter::BidirIterable<T> {
 	@T begin, end;
 	@T->(usize n) stepper;

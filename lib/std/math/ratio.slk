@@ -1,3 +1,5 @@
+module std::math::ratio;
+
 pub interface TRatio<T> {
 	@T -> numerator;
 	@T -> denominator;

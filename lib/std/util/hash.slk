@@ -1,3 +1,5 @@
+module std::util::hash;
+
 pub trait IHashable<T> {
 	@T hash();
 }

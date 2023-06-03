@@ -6,8 +6,6 @@
 #include <cstdint>
 #include <location.hh>
 
-#pragma clang diagnostic ignored "-Wc++17-extensions"
-
 namespace Slake {
 	namespace Compiler {
 		class ILocated {

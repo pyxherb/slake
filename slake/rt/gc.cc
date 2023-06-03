@@ -13,13 +13,13 @@ void Slake::Runtime::_gcWalk(Value *v, uint8_t gcStat) {
 	switch (v->getType().valueType) {
 		case ValueType::OBJECT: {
 			auto value = (ObjectValue *)v;
-			for (auto i : value->_members)
+			for (auto &i : value->_members)
 				_gcWalk(i.second, gcStat);
 			_gcWalk(value->_type, gcStat);
 			break;
 		}
 		case ValueType::ARRAY:
-			for (auto i : ((ArrayValue *)v)->values)
+			for (auto &i : ((ArrayValue *)v)->values)
 				_gcWalk(*i, gcStat);
 			break;
 		case ValueType::MAP:
@@ -36,8 +36,8 @@ void Slake::Runtime::_gcWalk(Value *v, uint8_t gcStat) {
 					_gcWalk(p, gcStat);
 			}
 
-			for (auto i : value->_members)
-				_gcWalk(*(i.second), gcStat);
+			for (auto &i : value->_members)
+				_gcWalk(i.second, gcStat);
 
 			break;
 		}
@@ -57,57 +57,67 @@ void Slake::Runtime::_gcWalk(Value *v, uint8_t gcStat) {
 			if (value->_parent)
 				_gcWalk(value->_parent, gcStat);
 
-			for (auto i : value->_members)
-				_gcWalk(*(i.second), gcStat);
+			for (auto &i : value->_members)
+				_gcWalk(i.second, gcStat);
 			break;
 		}
 		case ValueType::ROOT:
-			for (auto i : ((RootValue *)v)->_members)
+			for (auto &i : ((RootValue *)v)->_members)
 				_gcWalk(*(i.second), gcStat);
 			break;
 	}
 }
 
-void Slake::Runtime::_gcWalkForExecContext(ExecContext &ctxt, uint8_t gcStat) {
-	for (auto i : ctxt.args)
-		_gcWalk(*i, gcStat);
-	_gcWalk(*ctxt.fn, gcStat);
-	if (ctxt.pThis)
-		_gcWalk(*ctxt.pThis, gcStat);
-	if (ctxt.scopeValue)
-		_gcWalk(*ctxt.scopeValue, gcStat);
-}
-
 void Slake::Runtime::gc() {
-	isInGc = true;
+	_isInGc = true;
 
-	uint8_t gcStat = _internalFlags & RTI_LASTGCSTAT ? 1 : 0;
+	uint8_t gcStat = _internalFlags & RT_LASTGCSTAT ? 1 : 0;
 	if (_rootValue)
 		_gcWalk(_rootValue, gcStat);
 
-	for (auto i : threadCurrentContexts) {
+	// Walk contexts for each thread.
+	for (auto &i : threadCurrentContexts) {
 		auto &ctxt = i.second;
-		if (ctxt->retValue)
-			_gcWalk(*ctxt->retValue, gcStat);
-		_gcWalkForExecContext(ctxt->execContext, gcStat);
-		for (auto j : ctxt->callingStack)
-			_gcWalkForExecContext(j, gcStat);
-		for (auto j : ctxt->dataStack)
-			_gcWalk(*j, gcStat);
+		// Walk for each major frames.
+		for (auto &j : ctxt->majorFrames) {
+			_gcWalk(*j.curFn, gcStat);
+			if (j.scopeValue)
+				_gcWalk(*j.scopeValue, gcStat);
+			if (j.returnValue)
+				_gcWalk(*j.returnValue, gcStat);
+			if (j.thisObject)
+				_gcWalk(*j.thisObject, gcStat);
+			for (auto &k : j.argStack)
+				_gcWalk(*k, gcStat);
+			for (auto &k : j.dataStack)
+				_gcWalk(*k, gcStat);
+			// Walking for minor frames are currently unneeded.
+		}
 	}
 
-	for (auto i = _createdValues.begin(); i != _createdValues.end();) {
-		if ((((*i)->flags & VF_GCSTAT ? 1 : 0) != gcStat) && (!((*i)->_hostRefCount)))
-			delete *(i++);
-		else
-			++i;
+	
+	if (_rootValue) {
+		for (auto i = _createdValues.begin(); i != _createdValues.end();) {
+			if ((((*i)->flags & VF_GCSTAT ? 1 : 0) != gcStat) && (!((*i)->_hostRefCount)))
+				delete *(i++);
+			else
+				++i;
+		}
+	} else {
+		while (!_createdValues.empty()) {
+			auto i = _createdValues.begin();
+			if ((((*i)->flags & VF_GCSTAT ? 1 : 0) != gcStat) && (!((*i)->_hostRefCount)))
+				delete *i;
+			else
+				_createdValues.erase(i);
+		}
 	}
 
 	if (gcStat)
-		_internalFlags &= ~RTI_LASTGCSTAT;
+		_internalFlags &= ~RT_LASTGCSTAT;
 	else
-		_internalFlags |= RTI_LASTGCSTAT;
+		_internalFlags |= RT_LASTGCSTAT;
 
-	szLastGcMemUsed = szInUse;
-	isInGc = false;
+	_szMemUsedAfterLastGc = _szMemInUse;
+	_isInGc = false;
 }

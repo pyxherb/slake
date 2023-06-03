@@ -1,3 +1,5 @@
+module std::util::iter;
+
 pub trait Iterable<T> {
 	@T next();
 	@T cur();

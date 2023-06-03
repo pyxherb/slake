@@ -54,10 +54,10 @@ Value *readValue(Runtime *rt, std::istream &fs) {
 			return new U64Value(rt, _read<uint64_t>(fs));
 		case SlxFmt::ValueType::BOOL:
 			return new BoolValue(rt, _read<bool>(fs));
-		case SlxFmt::ValueType::FLOAT:
-			return new FloatValue(rt, _read<float>(fs));
-		case SlxFmt::ValueType::DOUBLE:
-			return new DoubleValue(rt, _read<double>(fs));
+		case SlxFmt::ValueType::F32:
+			return new F32Value(rt, _read<float>(fs));
+		case SlxFmt::ValueType::F64:
+			return new F64Value(rt, _read<double>(fs));
 		case SlxFmt::ValueType::STRING: {
 			auto len = _read<uint32_t>(fs);
 			std::string s(len, '\0');
@@ -90,10 +90,10 @@ Type readTypeName(Runtime *rt, std::istream &fs, SlxFmt::ValueType vt) {
 			return ValueType::U32;
 		case SlxFmt::ValueType::U64:
 			return ValueType::U64;
-		case SlxFmt::ValueType::FLOAT:
-			return ValueType::FLOAT;
-		case SlxFmt::ValueType::DOUBLE:
-			return ValueType::DOUBLE;
+		case SlxFmt::ValueType::F32:
+			return ValueType::F32;
+		case SlxFmt::ValueType::F64:
+			return ValueType::F64;
 		case SlxFmt::ValueType::STRING:
 			return ValueType::STRING;
 		case SlxFmt::ValueType::OBJECT: {
@@ -167,7 +167,7 @@ void Slake::Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 			access |= ACCESS_FINAL;
 		if (i.flags & SlxFmt::FND_OVERRIDE)
 			access |= ACCESS_OVERRIDE;
-		//if (i.flags & SlxFmt::FND_NATIVE)
+		// if (i.flags & SlxFmt::FND_NATIVE)
 		//	access |= ACCESS_NATIVE;
 
 		auto resultType = _read<SlxFmt::ValueType>(fs);
@@ -178,17 +178,20 @@ void Slake::Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 			fs.read(&(name[0]), lenGenericParamName);
 		}
 
+		Type returnType;
+
 		for (auto j = 0; j < i.nParams; j++) {
 			SlxFmt::ValueType vt = SlxFmt::ValueType::NONE;
 			fs.read((char *)&vt, sizeof(vt));
-			auto tn = readTypeName(rt, fs, vt);
+			returnType = readTypeName(rt, fs, vt);
 		}
+
 		if (i.flags & SlxFmt::FND_VARG)
 			/* stub */;
 
 		if (i.lenBody) {
 			std::unique_ptr<FnValue> fn(
-				new FnValue(rt, (uint32_t)i.lenBody, access, mod));
+				new FnValue(rt, (uint32_t)i.lenBody, access, returnType, mod));
 
 			for (uint32_t j = 0; j < i.lenBody; j++) {
 				SlxFmt::InsHeader ih = _read<SlxFmt::InsHeader>(fs);
@@ -225,7 +228,7 @@ void Slake::Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 			parent = (RefValue *)readValue(rt, fs);
 		}
 
-		std::unique_ptr<ClassValue> value = std::make_unique<ClassValue>(rt, access, parent);
+		std::unique_ptr<ClassValue> value = std::make_unique<ClassValue>(rt, access, parent, name);
 
 		if (i.nImpls) {
 			for (auto j = i.nImpls; j; j--) {
@@ -265,8 +268,8 @@ void Slake::Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 }
 
 
-ValueRef<ModuleValue> Slake::Runtime::loadModule(std::istream &fs) {
-	std::unique_ptr<ModuleValue> mod = std::make_unique<ModuleValue>(this, ACCESS_PUB, _rootValue);
+ValueRef<ModuleValue> Slake::Runtime::loadModule(std::istream &fs, std::string name) {
+	std::unique_ptr<ModuleValue> mod = std::make_unique<ModuleValue>(this, ACCESS_PUB, _rootValue, name);
 
 	SlxFmt::ImgHeader ih;
 	fs.read((char *)&ih, sizeof(ih));
@@ -291,7 +294,7 @@ ValueRef<ModuleValue> Slake::Runtime::loadModule(std::istream &fs) {
 	return mod.release();
 }
 
-ValueRef<ModuleValue> Slake::Runtime::loadModule(const void *buf, std::size_t size) {
+ValueRef<ModuleValue> Slake::Runtime::loadModule(const void *buf, std::size_t size, std::string name) {
 	Util::InputMemStream fs(buf, size);
-	return loadModule(fs);
+	return loadModule(fs, name);
 }

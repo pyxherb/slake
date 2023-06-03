@@ -4,6 +4,7 @@ build/
 CMakeFiles/
 CMakeScripts/
 _deps
+generated/
 
 *.slx
 

@@ -28,10 +28,10 @@ namespace Slake {
 		/// @brief IMage Header (IMH)
 		///
 		struct ImgHeader final {
-			uint8_t magic[4];	   // Magic number
-			uint8_t flags;		   // Flags
-			uint8_t fmtVer;	   // Format version
-			uint8_t nImports;	   // Number of imported modules
+			uint8_t magic[4];	  // Magic number
+			uint8_t flags;		  // Flags
+			uint8_t fmtVer;		  // Format version
+			uint8_t nImports;	  // Number of imported modules
 			uint8_t reserved[2];  // Reserved
 		};
 		constexpr static uint8_t IMH_MAGIC[4] = { 'S', 'L', 'A', 'X' };
@@ -40,8 +40,8 @@ namespace Slake {
 		/// @brief Instruction Header (IH)
 		///
 		struct InsHeader final {
-			Opcode opcode : 6;			 // Operation code
-			uint8_t nOperands : 2;	 // Number of operands
+			Opcode opcode : 14;		// Operation code
+			uint8_t nOperands : 2;	// Number of operands
 
 			inline InsHeader() : opcode(Opcode::NOP), nOperands(0) {}
 			inline InsHeader(Opcode opcode, uint8_t nOperands) {
@@ -63,8 +63,8 @@ namespace Slake {
 			U16,	   // u16
 			U32,	   // u32
 			U64,	   // u64
-			FLOAT,	   // Float
-			DOUBLE,	   // Double
+			F32,	   // f32
+			F64,	   // f64
 			STRING,	   // String
 			BOOL,	   // Boolean
 			ARRAY,	   // Array
@@ -75,21 +75,21 @@ namespace Slake {
 
 		/// @brief Value Descriptor (VD)
 		struct ValueDesc final {
-			ValueType type : 5;		 // Data Type
+			ValueType type : 5;	 // Data Type
 			uint8_t flags : 3;	 // Flags
 		};
 
 		/// @brief Extra attribute for strings
 		struct StringExAttr final {
-			uint32_t len;	// Length in bytes
+			uint32_t len;  // Length in bytes
 		};
 
 		/// @brief Class Type Descriptor (CTD)
 		struct ClassTypeDesc final {
-			uint8_t flags;			  // Flags
-			uint8_t nGenericParams;  // Number of generic parameters
-			uint8_t lenName;		  // Length of name
-			uint8_t nImpls;		  // Number of implemented interfaces
+			uint8_t flags;			 // Flags
+			uint8_t nGenericParams;	 // Number of generic parameters
+			uint8_t lenName;		 // Length of name
+			uint8_t nImpls;			 // Number of implemented interfaces
 		};
 		constexpr static uint8_t
 			CTD_PUB = 0x01,		  // Public
@@ -100,13 +100,13 @@ namespace Slake {
 
 		/// @brief Structure Type Descriptor (STD)
 		struct StructTypeDesc final {
-			uint8_t flags;		 // Flags
-			uint8_t lenName;	 // Length of name
-			uint32_t nMembers;	 // Number of members
+			uint8_t flags;		// Flags
+			uint8_t lenName;	// Length of name
+			uint32_t nMembers;	// Number of members
 		};
 		struct StructMemberDesc final {
-			ValueType type : 5;		   // Data Type
-			uint8_t flags : 3;	   // Flags
+			ValueType type : 5;	  // Data Type
+			uint8_t flags : 3;	  // Flags
 			uint8_t lenName : 8;  // Name length
 		};
 		constexpr static uint8_t
@@ -115,11 +115,11 @@ namespace Slake {
 
 		/// @brief Function Descriptor (FND)
 		struct FnDesc final {
-			uint8_t flags : 8;			  // Flags
-			uint16_t lenName : 16;		  // Length of name
-			uint8_t nGenericParams : 8;  // Number of generic parameters
-			uint8_t nParams : 8;		  // Number of parameters, only used by compilers
-			uint32_t lenBody : 24;		  // Length of body
+			uint8_t flags : 8;			 // Flags
+			uint16_t lenName : 16;		 // Length of name
+			uint8_t nGenericParams : 8;	 // Number of generic parameters
+			uint8_t nParams : 8;		 // Number of parameters, only used by compilers
+			uint32_t lenBody : 24;		 // Length of body
 		};
 		constexpr static uint8_t
 			FND_PUB = 0x01,		  // Public

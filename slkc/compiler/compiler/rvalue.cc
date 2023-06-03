@@ -51,10 +51,6 @@ void State::compileRightExpr(std::shared_ptr<Expr> expr, bool isRecursing) {
 					compileRightExpr(e->x);
 			}
 
-			if (isSuffixUnaryOp(e->op)) {
-				compileRightExpr(e->x);
-			}
-
 			fn->insertIns({ opcode, {} });
 			break;
 		}
@@ -162,7 +158,7 @@ void State::compileRightExpr(std::shared_ptr<Expr> expr, bool isRecursing) {
 						fn->insertIns({ Opcode::LTHIS, {} }), isRecursing = true;
 				}
 				fn->insertIns({ isRecursing ? Opcode::RLOAD : Opcode::LOAD, { ref } });
-				if (isLastResolvedVar)
+				if (isLastResolvedRefVar)
 					fn->insertIns({ Opcode::LVALUE, {} });
 				break;
 			}

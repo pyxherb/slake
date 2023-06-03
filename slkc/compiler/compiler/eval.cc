@@ -8,8 +8,8 @@ using namespace Slake::Compiler;
 /// @brief Evaluate type of an expression.
 /// @param state State for the expression.
 /// @param expr Expression to evaluate.
-/// @param isRecusring Set to false by default, set if we are recursing. DO NOT use local variables in the state if set.
-/// @return Type of the expression, null if unknown.
+/// @param isRecusring Set to false by default, set if we are recursing. DO NOT use local variables if set.
+/// @return Type of the expression, nullptr if unknown.
 std::shared_ptr<TypeName> State::evalExprType(std::shared_ptr<Expr> expr, bool isRecursing) {
 	auto &fn = fnDefs[currentFn];
 	// assert(fn);
@@ -50,7 +50,7 @@ std::shared_ptr<TypeName> State::evalExprType(std::shared_ptr<Expr> expr, bool i
 			{
 				auto v = scope->getVar(ref->name);
 				if (v) {
-					isLastResolvedVar = true;
+					isLastResolvedRefVar = true;
 					if (ref->next) {
 						std::shared_ptr<Scope> s = scope;
 						switch (v->typeName->kind) {

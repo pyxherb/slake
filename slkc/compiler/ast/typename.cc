@@ -25,8 +25,8 @@ bool Slake::Compiler::isLiteralType(std::shared_ptr<TypeName> t) {
 		case TypeNameKind::U16:
 		case TypeNameKind::U32:
 		case TypeNameKind::U64:
-		case TypeNameKind::FLOAT:
-		case TypeNameKind::DOUBLE:
+		case TypeNameKind::F32:
+		case TypeNameKind::F64:
 		case TypeNameKind::STRING:
 		case TypeNameKind::BOOL:
 		case TypeNameKind::ARRAY:
@@ -47,8 +47,8 @@ bool Slake::Compiler::isScalarType(std::shared_ptr<TypeName> t) {
 		case TypeNameKind::U16:
 		case TypeNameKind::U32:
 		case TypeNameKind::U64:
-		case TypeNameKind::FLOAT:
-		case TypeNameKind::DOUBLE:
+		case TypeNameKind::F32:
+		case TypeNameKind::F64:
 		case TypeNameKind::STRING:
 		case TypeNameKind::BOOL:
 			return true;
@@ -80,8 +80,8 @@ bool Slake::Compiler::isSignedType(std::shared_ptr<TypeName> t) {
 		case TypeNameKind::I16:
 		case TypeNameKind::I32:
 		case TypeNameKind::I64:
-		case TypeNameKind::FLOAT:
-		case TypeNameKind::DOUBLE:
+		case TypeNameKind::F32:
+		case TypeNameKind::F64:
 			return true;
 		default:
 			return false;
@@ -90,8 +90,8 @@ bool Slake::Compiler::isSignedType(std::shared_ptr<TypeName> t) {
 
 bool Slake::Compiler::isFloatingPointType(std::shared_ptr<TypeName> t) {
 	switch (t->kind) {
-		case TypeNameKind::FLOAT:
-		case TypeNameKind::DOUBLE:
+		case TypeNameKind::F32:
+		case TypeNameKind::F64:
 			return true;
 		default:
 			return false;
@@ -108,8 +108,8 @@ bool Slake::Compiler::isArithmeticType(std::shared_ptr<TypeName> t) {
 		case TypeNameKind::U16:
 		case TypeNameKind::U32:
 		case TypeNameKind::U64:
-		case TypeNameKind::FLOAT:
-		case TypeNameKind::DOUBLE:
+		case TypeNameKind::F32:
+		case TypeNameKind::F64:
 		case TypeNameKind::STRING:
 		case TypeNameKind::BOOL:
 			return true;
@@ -163,8 +163,8 @@ bool Slake::Compiler::isConvertible(std::shared_ptr<TypeName> t1, std::shared_pt
 		case TypeNameKind::U16:
 		case TypeNameKind::U32:
 		case TypeNameKind::U64:
-		case TypeNameKind::FLOAT:
-		case TypeNameKind::DOUBLE:
+		case TypeNameKind::F32:
+		case TypeNameKind::F64:
 		case TypeNameKind::BOOL:
 			switch (t2->kind) {
 				case TypeNameKind::I8:
@@ -175,8 +175,8 @@ bool Slake::Compiler::isConvertible(std::shared_ptr<TypeName> t1, std::shared_pt
 				case TypeNameKind::U16:
 				case TypeNameKind::U32:
 				case TypeNameKind::U64:
-				case TypeNameKind::FLOAT:
-				case TypeNameKind::DOUBLE:
+				case TypeNameKind::F32:
+				case TypeNameKind::F64:
 				case TypeNameKind::BOOL:
 					return true;
 				default:
@@ -282,8 +282,8 @@ bool Slake::Compiler::hasOperator(std::shared_ptr<TypeName> t, UnaryOp op) {
 				default:;
 			}
 		}
-		case TypeNameKind::FLOAT:
-		case TypeNameKind::DOUBLE: {
+		case TypeNameKind::F32:
+		case TypeNameKind::F64: {
 			switch (op) {
 				case UnaryOp::INC_F:
 				case UnaryOp::INC_B:
@@ -316,8 +316,8 @@ bool Slake::Compiler::hasOperator(std::shared_ptr<TypeName> t, BinaryOp op) {
 		case TypeNameKind::U16:
 		case TypeNameKind::U32:
 		case TypeNameKind::U64:
-		case TypeNameKind::FLOAT:
-		case TypeNameKind::DOUBLE:
+		case TypeNameKind::F32:
+		case TypeNameKind::F64:
 			return true;
 		case TypeNameKind::BOOL: {
 			switch (op) {

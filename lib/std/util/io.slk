@@ -1,4 +1,4 @@
-module std::util::io;
+module std.util.io;
 
 pub enum SeekMode : u8 {
 	SET = 0,

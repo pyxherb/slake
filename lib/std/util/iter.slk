@@ -1,4 +1,4 @@
-module std::util::iter;
+module std.util.iter;
 
 pub trait Iterable<T> {
 	@T next();

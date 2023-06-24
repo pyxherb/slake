@@ -1,0 +1,104 @@
+.access native
+.fndecl void println ...
+
+.access pub
+.class WrappedI32
+	.var i32 _data
+
+	.fn void new
+		LTHIS;
+		RLOAD _data;
+		STORE 0;
+
+		SARG "WrappedI32 constructed";
+		CALL println;
+	.end
+
+	.fn void delete
+		SARG "WrappedI32 destructed";
+		CALL println;
+	.end
+
+	.fn i32 incf
+		LTHIS;
+		RLOAD _data;
+
+		INCF;
+		LVALUE;
+		RET;
+	.end
+
+	.fn i32 incb
+		LTHIS;
+		RLOAD _data;
+
+		INCB;
+		RET;
+	.end
+	
+	.fn i32 decf
+		LTHIS;
+		RLOAD _data;
+
+		DECF;
+		LVALUE;
+		RET;
+	.end
+
+	.fn i32 decb
+		LTHIS;
+		RLOAD _data;
+
+		DECB;
+		RET;
+	.end
+	
+	.fn i32 add i32
+		LTHIS;
+		RLOAD _data;
+		LVALUE;
+
+		LARG 0;
+		ADD;
+
+		LTHIS;
+		RLOAD _data;
+		STORE;
+
+		LTHIS;
+		RLOAD _data;
+		LVALUE;
+
+		RET;
+	.end
+	
+	.fn i32 sub i32
+		LTHIS;
+		RLOAD _data;
+		LVALUE;
+
+		LARG 0;
+		SUB;
+
+		LTHIS;
+		RLOAD _data;
+		STORE;
+
+		LTHIS;
+		RLOAD _data;
+		LVALUE;
+
+		RET;
+	.end
+.end
+
+.fn i32 main
+	LVARI32 0;
+
+	LLOAD 0;
+	INCF;
+
+	LLOAD 0;
+	LVALUE;
+	RET;
+.end

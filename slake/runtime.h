@@ -25,19 +25,19 @@ namespace Slake {
 
 	/// @brief Each major frame represents a single calling frame.
 	struct MajorFrame final {
-		ValueRef<> scopeValue;				  // Scope value.
-		ValueRef<FnValue> curFn;			  // Current function
-		uint32_t curIns = 0;				  // Offset of current instruction in function body
-		std::vector<ValueRef<>> argStack;	  // Argument stack
-		std::vector<ValueRef<>> dataStack;	  // Data stack
-		ValueRef<> thisObject;				  // `this' object
-		ValueRef<> returnValue;				  // Return value
-		std::vector<MinorFrame> minorFrames;  // Minor frames
+		ValueRef<> scopeValue;						// Scope value.
+		ValueRef<FnValue> curFn;					// Current function
+		uint32_t curIns = 0;						// Offset of current instruction in function body
+		std::vector<ValueRef<>> argStack;			// Argument stack
+		std::vector<ValueRef<>> nextArgStack;		// Next Argument stack
+		std::vector<ValueRef<>> dataStack;			// Data stack
+		std::vector<ValueRef<VarValue>> localVars;	// Local variables
+		ValueRef<> thisObject;						// `this' object
+		ValueRef<> returnValue;						// Return value
+		std::vector<MinorFrame> minorFrames;		// Minor frames
 
 		inline ValueRef<> lload(uint32_t off) {
-			if (off >= dataStack.size())
-				throw FrameBoundaryExceededError("Frame top exceeded");
-			return dataStack.at(off);
+			return localVars.at(off);
 		}
 
 		inline void push(ValueRef<> v) {
@@ -69,6 +69,10 @@ namespace Slake {
 
 	struct Context final {
 		std::vector<MajorFrame> majorFrames;  // Major frames, aka calling frames
+
+		inline MajorFrame &getCurFrame() {
+			return majorFrames.back();
+		}
 	};
 
 	using RuntimeFlags = uint16_t;
@@ -111,11 +115,8 @@ namespace Slake {
 		void _loadScope(ModuleValue *mod, std::istream &fs);
 
 		RootValue *_rootValue;
-		std::unordered_set<Value *> _createdValues;
+		std::unordered_set<Value *> _createdValues, _extraGcTargets;
 		RuntimeFlags _flags = 0;
-
-		constexpr static uint8_t RT_LASTGCSTAT = 0x01;
-		uint8_t _internalFlags = RT_LASTGCSTAT;
 
 		bool _isInGc = false;
 		std::size_t _szMemInUse = 0, _szMemUsedAfterLastGc = 0;
@@ -124,17 +125,21 @@ namespace Slake {
 
 		void _execIns(Context *context, Instruction &ins);
 
-		void _gcWalk(Value *i, uint8_t gcStat);
+		void _gcWalk(Value *i);
 		ObjectValue *_newClassInstance(ClassValue *cls);
 
 		void _callFn(Context *context, FnValue *fn);
+		VarValue* _addLocalVar(MajorFrame& frame, Type type);
 
 		friend class Value;
 		friend class FnValue;
+		friend class ObjectValue;
+		friend class ValueRef<ObjectValue>;
 		friend std::string std::to_string(Runtime &&);
 
 	public:
-		std::unordered_map<std::thread::id, std::shared_ptr<Context>> threadCurrentContexts;
+		std::unordered_map<std::thread::id, std::shared_ptr<Context>> currentContexts;
+		std::unordered_set<std::thread::id> destructingThreads;
 
 		Runtime(Runtime &) = delete;
 		Runtime(Runtime &&) = delete;
@@ -143,23 +148,28 @@ namespace Slake {
 
 		inline Runtime(RuntimeFlags flags = 0) : _flags(flags) {
 			_rootValue = new RootValue(this);
+			_rootValue->incRefCount();
 		}
 		virtual inline ~Runtime() {
-			// All values were managed by the root value.
-			delete _rootValue;
-			_rootValue = nullptr;
-			if (_flags & RT_GCDBG) {
-				gc();
-			} else {
-				while (_createdValues.size())
-					delete *_createdValues.begin();
+			gc();
+
+			// Execute destructors for all destructible objects.
+			destructingThreads.insert(std::this_thread::get_id());
+			for (auto i : _createdValues) {
+				auto d = i->getMember("delete");
+				if (d && i->getType() == ValueType::OBJECT)
+					d->call(0, nullptr);
 			}
+			destructingThreads.erase(std::this_thread::get_id());
+
+			while (_createdValues.size())
+				delete *_createdValues.begin();
 		}
 
 		virtual Value *resolveRef(ValueRef<RefValue>, Value *v = nullptr);
 
-		virtual ValueRef<ModuleValue> loadModule(std::istream &fs, std::string name);
-		virtual ValueRef<ModuleValue> loadModule(const void *buf, std::size_t size, std::string name);
+		virtual ValueRef<ModuleValue> loadModule(std::istream &fs, std::string name = "");
+		virtual ValueRef<ModuleValue> loadModule(const void *buf, std::size_t size, std::string name = "");
 		inline RootValue *getRootValue() { return _rootValue; }
 
 		inline void setModuleLoader(ModuleLoaderFn searcher) { _moduleSearcher = searcher; }
@@ -169,7 +179,14 @@ namespace Slake {
 			std::string s;
 			do {
 				s = v->getName() + (s.empty() ? "::" + s : "");
-			} while ((Value*)(v = (MemberValue *)v->getParent()) != _rootValue);
+			} while ((Value *)(v = (MemberValue *)v->getParent()) != _rootValue);
+			return s;
+		}
+
+		inline std::shared_ptr<Context> getCurContext() {
+			return currentContexts.count(std::this_thread::get_id())
+					   ? currentContexts.at(std::this_thread::get_id())
+					   : throw std::logic_error("Current thread is not executing Slake functions");
 		}
 
 		void gc();

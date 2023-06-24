@@ -3,6 +3,7 @@
 
 #include <slake/type.h>
 
+#include <atomic>
 #include <stdexcept>
 #include <string>
 
@@ -111,40 +112,13 @@ namespace Slake {
 	};
 
 	using ValueFlags = uint8_t;
-	constexpr static ValueFlags VF_GCSTAT = 0x01;
-
-	class ValueIterator {
-	public:
-		inline ValueIterator() {}
-		inline ValueIterator(const ValueIterator &x) noexcept { *this = x; }
-		inline ValueIterator(const ValueIterator &&x) noexcept { *this = x; }
-
-		virtual inline ValueIterator &operator++() { return *this; }
-		virtual inline ValueIterator &&operator++(int) { return std::move(*this); }
-		virtual inline ValueIterator &operator--() { return *this; }
-		virtual inline ValueIterator &&operator--(int) { return std::move(*this); }
-		virtual inline Value *operator*() { return nullptr; };
-
-		virtual inline bool operator==(const ValueIterator &&) const { return true; };
-		inline bool operator==(const ValueIterator &x) const {
-			return *this == std::move(x);
-		}
-		virtual inline bool operator!=(const ValueIterator &&) const { return false; };
-		inline bool operator!=(const ValueIterator &x) const {
-			return *this != std::move(x);
-		}
-
-		virtual inline ValueIterator &operator=(const ValueIterator &&) noexcept { return *this; }
-		virtual inline ValueIterator &operator=(const ValueIterator &x) noexcept {
-			return *this = std::move(x);
-		}
-	};
+	constexpr static ValueFlags VF_WALKED = 0x01;
 
 	class Value {
-	private:
-		uint32_t _refCount = 0;
+	protected:
+		std::atomic_uint32_t _refCount = 0;
 		// The garbage collector will never release it if its host reference count is not 0.
-		uint32_t _hostRefCount = 0;
+		std::atomic_uint32_t _hostRefCount = 0;
 		Runtime *_rt;
 		ValueFlags flags = 0;
 
@@ -158,27 +132,29 @@ namespace Slake {
 		virtual ~Value();
 		virtual Type getType() const = 0;
 
-		virtual Value *getMember(std::string name) { return nullptr; };
-		virtual const Value *getMember(std::string name) const { return nullptr; }
+		virtual MemberValue *getMember(std::string name) { return nullptr; };
+		virtual const MemberValue *getMember(std::string name) const { return nullptr; }
+
+		inline MemberValue *operator[](std::string name) { return getMember(name); }
+		inline const MemberValue *operator[](std::string name) const { return getMember(name); }
 
 		virtual ValueRef<> call(uint8_t nArgs, ValueRef<> *args) { return nullptr; }
+
+		virtual inline void whenRefBecomeZero() { delete this; }
 
 		inline void incRefCount() { _refCount++; }
 		inline void decRefCount() {
 			if ((!--_refCount) && (!_hostRefCount))
-				delete this;
+				whenRefBecomeZero();
 		}
 		inline void incHostRefCount() { _hostRefCount++; }
 		inline void decHostRefCount() {
 			if ((!--_hostRefCount) && (!_refCount))
-				delete this;
+				whenRefBecomeZero();
 		}
 		inline uint32_t getRefCount() { return _refCount; }
 		inline uint32_t getHostRefCount() { return _hostRefCount; }
 		inline Runtime *getRuntime() const noexcept { return _rt; }
-
-		virtual inline ValueIterator begin() { return ValueIterator(); }
-		virtual inline ValueIterator end() { return ValueIterator(); }
 
 		virtual inline std::string toString() const {
 			return "\"refCount\":" + std::to_string(_refCount) +

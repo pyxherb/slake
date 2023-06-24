@@ -1,90 +1,109 @@
-#include "mnemonic.hh"
+#include "mnemonic.h"
+
+#define MNEMONIC_ENTRY(m) \
+	{ Opcode::m, #m }
 
 using namespace Slake;
 
-std::unordered_map<Opcode, const char *> Decompiler::mnemonics = {
-	{ Opcode::NOP, "NOP" },
+std::unordered_map<Opcode, std::string> Decompiler::mnemonics = {
+	MNEMONIC_ENTRY(NOP),
 
-	{ Opcode::PUSH, "PUSH" },
-	{ Opcode::POP, "POP" },
+	MNEMONIC_ENTRY(PUSH),
+	MNEMONIC_ENTRY(POP),
 
-	{ Opcode::LOAD, "LOAD" },
-	{ Opcode::RLOAD, "RLOAD" },
-	{ Opcode::STORE, "STORE" },
+	MNEMONIC_ENTRY(LOAD),
+	MNEMONIC_ENTRY(RLOAD),
+	MNEMONIC_ENTRY(STORE),
 
-	{ Opcode::LLOAD, "LLOAD" },
-	{ Opcode::LSTORE, "LSTORE" },
+	MNEMONIC_ENTRY(LVAR),
+	MNEMONIC_ENTRY(LVARI8),
+	MNEMONIC_ENTRY(LVARI16),
+	MNEMONIC_ENTRY(LVARI32),
+	MNEMONIC_ENTRY(LVARI64),
+	MNEMONIC_ENTRY(LVARU8),
+	MNEMONIC_ENTRY(LVARU16),
+	MNEMONIC_ENTRY(LVARU32),
+	MNEMONIC_ENTRY(LVARU64),
+	MNEMONIC_ENTRY(LVARF32),
+	MNEMONIC_ENTRY(LVARF64),
+	MNEMONIC_ENTRY(LVARBOOL),
+	MNEMONIC_ENTRY(LVAROBJ),
 
-	{ Opcode::LVALUE, "LVALUE" },
+	MNEMONIC_ENTRY(LLOAD),
+	MNEMONIC_ENTRY(LSTORE),
 
-	{ Opcode::EXPAND, "EXPAND" },
-	{ Opcode::SHRINK, "SHRINK" },
+	MNEMONIC_ENTRY(LVALUE),
 
-	{ Opcode::ENTER, "ENTER" },
-	{ Opcode::LEAVE, "LEAVE" },
+	MNEMONIC_ENTRY(EXPAND),
+	MNEMONIC_ENTRY(SHRINK),
 
-	{ Opcode::ADD, "ADD" },
-	{ Opcode::SUB, "SUB" },
-	{ Opcode::MUL, "MUL" },
-	{ Opcode::DIV, "DIV" },
-	{ Opcode::MOD, "MOD" },
-	{ Opcode::AND, "AND" },
-	{ Opcode::OR, "OR" },
-	{ Opcode::XOR, "XOR" },
-	{ Opcode::LAND, "LAND" },
-	{ Opcode::LOR, "LOR" },
-	{ Opcode::EQ, "EQ" },
-	{ Opcode::NEQ, "NEQ" },
-	{ Opcode::LT, "LT" },
-	{ Opcode::GT, "GT" },
-	{ Opcode::LTEQ, "LTEQ" },
-	{ Opcode::GTEQ, "GTEQ" },
-	{ Opcode::LSH, "LSH" },
-	{ Opcode::RSH, "RSH" },
-	
-	{ Opcode::REV, "REV" },
-	{ Opcode::NOT, "NOT" },
-	{ Opcode::INCF, "INCF" },
-	{ Opcode::DECF, "DECF" },
-	{ Opcode::INCB, "INCB" },
-	{ Opcode::DECB, "DECB" },
-	{ Opcode::NEG, "NEG" },
+	MNEMONIC_ENTRY(ENTER),
+	MNEMONIC_ENTRY(LEAVE),
 
-	{ Opcode::AT, "AT" },
+	MNEMONIC_ENTRY(ADD),
+	MNEMONIC_ENTRY(SUB),
+	MNEMONIC_ENTRY(MUL),
+	MNEMONIC_ENTRY(DIV),
+	MNEMONIC_ENTRY(MOD),
+	MNEMONIC_ENTRY(AND),
+	MNEMONIC_ENTRY(OR),
+	MNEMONIC_ENTRY(XOR),
+	MNEMONIC_ENTRY(LAND),
+	MNEMONIC_ENTRY(LOR),
+	MNEMONIC_ENTRY(EQ),
+	MNEMONIC_ENTRY(NEQ),
+	MNEMONIC_ENTRY(LT),
+	MNEMONIC_ENTRY(GT),
+	MNEMONIC_ENTRY(LTEQ),
+	MNEMONIC_ENTRY(GTEQ),
+	MNEMONIC_ENTRY(LSH),
+	MNEMONIC_ENTRY(RSH),
 
-	{ Opcode::JMP, "JMP" },
-	{ Opcode::JT, "JT" },
-	{ Opcode::JF, "JF" },
+	MNEMONIC_ENTRY(REV),
+	MNEMONIC_ENTRY(NOT),
+	MNEMONIC_ENTRY(INCF),
+	MNEMONIC_ENTRY(DECF),
+	MNEMONIC_ENTRY(INCB),
+	MNEMONIC_ENTRY(DECB),
+	MNEMONIC_ENTRY(NEG),
 
-	{ Opcode::SARG, "SARG" },
-	{ Opcode::LARG, "LARG" },
+	MNEMONIC_ENTRY(AT),
 
-	{ Opcode::LTHIS, "LTHIS" },
-	{ Opcode::STHIS, "STHIS" },
+	MNEMONIC_ENTRY(JMP),
+	MNEMONIC_ENTRY(JT),
+	MNEMONIC_ENTRY(JF),
 
-	{ Opcode::CALL, "CALL" },
-	{ Opcode::ACALL, "ACALL" },
-	{ Opcode::RET, "RET" },
+	MNEMONIC_ENTRY(SARG),
+	MNEMONIC_ENTRY(LARG),
 
-	{ Opcode::NEW, "NEW" },
+	MNEMONIC_ENTRY(LTHIS),
+	MNEMONIC_ENTRY(STHIS),
 
-	{ Opcode::LRET, "LRET" },
+	MNEMONIC_ENTRY(CALL),
+	MNEMONIC_ENTRY(ACALL),
+	MNEMONIC_ENTRY(RET),
 
-	{ Opcode::THROW, "THROW" },
-	{ Opcode::PUSHXH, "PUSHXH" },
+	MNEMONIC_ENTRY(NEW),
 
-	{ Opcode::ABORT, "ABORT" },
+	MNEMONIC_ENTRY(LRET),
 
-	{ Opcode::CASTI8, "CASTI8" },
-	{ Opcode::CASTI16, "CASTI16" },
-	{ Opcode::CASTI32, "CASTI32" },
-	{ Opcode::CASTI64, "CASTI64" },
-	{ Opcode::CASTU8, "CASTU8" },
-	{ Opcode::CASTU16, "CASTU16" },
-	{ Opcode::CASTU32, "CASTU32" },
-	{ Opcode::CASTU64, "CASTU64" },
-	{ Opcode::CASTF32, "CASTF32" },
-	{ Opcode::CASTF64, "CASTF64" },
+	MNEMONIC_ENTRY(THROW),
+	MNEMONIC_ENTRY(PUSHXH),
 
-	{ Opcode::TYPEOF, "TYPEOF" }
+	MNEMONIC_ENTRY(ABORT),
+
+	MNEMONIC_ENTRY(CASTI8),
+	MNEMONIC_ENTRY(CASTI16),
+	MNEMONIC_ENTRY(CASTI32),
+	MNEMONIC_ENTRY(CASTI64),
+	MNEMONIC_ENTRY(CASTU8),
+	MNEMONIC_ENTRY(CASTU16),
+	MNEMONIC_ENTRY(CASTU32),
+	MNEMONIC_ENTRY(CASTU64),
+	MNEMONIC_ENTRY(CASTF32),
+	MNEMONIC_ENTRY(CASTF64),
+	MNEMONIC_ENTRY(CASTBOOL),
+	MNEMONIC_ENTRY(CASTOBJ),
+
+	MNEMONIC_ENTRY(TYPEOF)
 };

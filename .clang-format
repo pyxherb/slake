@@ -22,7 +22,6 @@ BreakBeforeBraces: Custom
 ColumnLimit: 0
 Cpp11BracedListStyle: false
 FixNamespaceComments: false
-IncludeBlocks: Regroup
 IndentCaseLabels: true
 IndentPPDirectives: BeforeHash
 IndentWidth: 4
@@ -41,3 +40,5 @@ Standard: c++11
 SpacesInSquareBrackets: false
 TabWidth: 4
 UseTab: true
+IncludeBlocks: Regroup
+SortIncludes: Never

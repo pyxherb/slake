@@ -16,10 +16,10 @@ namespace Slake {
 
 		virtual inline Type getType() const override { return ValueType::STRUCT; }
 
-		virtual inline Value *getMember(std::string name) override {
+		virtual inline MemberValue *getMember(std::string name) override {
 			return *(_members.at(name));
 		}
-		virtual inline const Value *getMember(std::string name) const override { return *(_members.at(name)); }
+		virtual inline const MemberValue *getMember(std::string name) const override { return *(_members.at(name)); }
 
 		ObjectValue &operator=(const ObjectValue &) = delete;
 		ObjectValue &operator=(const ObjectValue &&) = delete;

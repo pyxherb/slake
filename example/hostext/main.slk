@@ -1,14 +1,37 @@
-class A {
+module org.pyxherb.main<@a>;
+
+class Base {
 	pub i32 data = 0;
-	pub operator new() {
+	
+	operator new(i32 a) {
+		println("Base Constructed");
 	}
 
-	pub operator delete() {
+	operator delete() {
+		println("Base Destructed");
+	}
+}
+
+class Derived(@Base) {
+	pub i32 data = 0;
+	
+	operator new(i32 a) {
+		base.new(a * 2);
+		println("Derived Constructed");
+	}
+
+	operator delete() {
+		println("Derived Destructed");
+	}
+
+	pub void printMembers() {
+		println("Base data: ", base.data);
+		println("Derived data: ", data);
 	}
 }
 
 pub i32 main() {
-	@A a = new @A();
-	a.data++;
+	@Base a = new @Base(123);
+
 	return ++a.data;
 }

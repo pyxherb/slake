@@ -1,8 +1,8 @@
-#include "decompiler.hh"
+#include "decompiler.h"
 
 #include <string>
 
-#include "mnemonic.hh"
+#include "mnemonic.h"
 
 using namespace Slake;
 
@@ -13,394 +13,167 @@ static const char *_ctrlCharNames[] = {
 	"x1b", "x1c", "x1d", "x1e", "x1f"
 };
 
-template <typename T>
-static T _readValue(std::fstream &fs) {
-	T value;
-	fs.read((char *)&value, sizeof(value));
-	return value;
+void Slake::Decompiler::decompile(std::istream &fs, std::ostream &os) {
+	auto rt = std::make_unique<Slake::Runtime>();
+	rt->getRootValue()->addMember("main", *(rt->loadModule(fs, "main")));
+	for (auto &i : *rt->getRootValue())
+		decompileValue(rt.get(), *i.second, os);
 }
 
-std::shared_ptr<Compiler::Expr> Slake::Decompiler::readValue(std::fstream &fs) {
-	SlxFmt::ValueDesc i = {};
-	fs.read((char *)&i, sizeof(i));
-	switch (i.type) {
-		case SlxFmt::ValueType::NONE:
-			return std::make_shared<Compiler::NullLiteralExpr>(Compiler::location());
-		case SlxFmt::ValueType::I8:
-			return std::make_shared<Compiler::IntLiteralExpr>(Compiler::location(), _readValue<std::int8_t>(fs));
-		case SlxFmt::ValueType::I16:
-			return std::make_shared<Compiler::IntLiteralExpr>(Compiler::location(), _readValue<std::int16_t>(fs));
-		case SlxFmt::ValueType::I32:
-			return std::make_shared<Compiler::IntLiteralExpr>(Compiler::location(), _readValue<std::int32_t>(fs));
-		case SlxFmt::ValueType::I64:
-			return std::make_shared<Compiler::LongLiteralExpr>(Compiler::location(), _readValue<std::int64_t>(fs));
-		case SlxFmt::ValueType::U8:
-			return std::make_shared<Compiler::UIntLiteralExpr>(Compiler::location(), _readValue<uint8_t>(fs));
-		case SlxFmt::ValueType::U16:
-			return std::make_shared<Compiler::UIntLiteralExpr>(Compiler::location(), _readValue<uint16_t>(fs));
-		case SlxFmt::ValueType::U32:
-			return std::make_shared<Compiler::UIntLiteralExpr>(Compiler::location(), _readValue<uint32_t>(fs));
-		case SlxFmt::ValueType::U64:
-			return std::make_shared<Compiler::ULongLiteralExpr>(Compiler::location(), _readValue<uint64_t>(fs));
-		case SlxFmt::ValueType::BOOL:
-			return std::make_shared<Compiler::BoolLiteralExpr>(Compiler::location(), _readValue<bool>(fs));
-		case SlxFmt::ValueType::F32:
-			return std::make_shared<Compiler::FloatLiteralExpr>(Compiler::location(), _readValue<float>(fs));
-		case SlxFmt::ValueType::F64:
-			return std::make_shared<Compiler::DoubleLiteralExpr>(Compiler::location(), _readValue<double>(fs));
-		case SlxFmt::ValueType::STRING: {
-			auto len = _readValue<uint32_t>(fs);
-			std::string rs(len + 1, '\0'), s;
-			fs.read(&(rs[0]), len);
-			while (rs.size() - 1) {
-				auto c = rs[0];
-				if (c == '\\')
-					s += c;
-				if (c == '\"')
-					s += '\\';
-				if (std::isprint(c))
-					s += c;
-				else if (std::iscntrl(c) && c != '\xff')
-					s += "\\", s += _ctrlCharNames[c];
-				else {
-					char esc[5];
-					std::sprintf(esc, "\\x%02x", (int)c);
-					s += esc;
+void Slake::Decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &os, int indentLevel) {
+	switch (value->getType().valueType) {
+		case ValueType::I8:
+			os << to_string(((I8Value *)value)->getValue());
+			break;
+		case ValueType::I16:
+			os << to_string(((I16Value *)value)->getValue());
+			break;
+		case ValueType::I32:
+			os << to_string(((I32Value *)value)->getValue());
+			break;
+		case ValueType::I64:
+			os << to_string(((I64Value *)value)->getValue());
+			break;
+		case ValueType::U8:
+			os << to_string(((U8Value *)value)->getValue());
+			break;
+		case ValueType::U16:
+			os << to_string(((U16Value *)value)->getValue());
+			break;
+		case ValueType::U32:
+			os << to_string(((U32Value *)value)->getValue());
+			break;
+		case ValueType::U64:
+			os << to_string(((U64Value *)value)->getValue());
+			break;
+		case ValueType::F32:
+			os << to_string(((F32Value *)value)->getValue());
+			break;
+		case ValueType::F64:
+			os << to_string(((F64Value *)value)->getValue());
+			break;
+		case ValueType::BOOL:
+			os << ((BoolValue *)value)->getValue() ? "true" : "false";
+			break;
+		case ValueType::FN: {
+			auto v = (FnValue *)value;
+			if (v->getAccess())
+				os << std::string(indentLevel, '\t') << ".access " << accessToString(v->getAccess()) << "\n";
+			os << std::string(indentLevel, '\t');
+			os << ".fn "
+			   << getTypeName(rt, v->getReturnType()) << " "
+			   << v->getName();
+			for (auto &i : v->getParamTypes())
+				os << " " << getTypeName(rt, i);
+			os << "\n";
+
+			for (size_t i = 0; i < v->getInsCount(); ++i) {
+				auto ins = &(v->getBody()[i]);
+				os << std::string(indentLevel + 1, '\t');
+
+				if (mnemonics.count(ins->opcode))
+					os << mnemonics.at(ins->opcode);
+				else
+					os << (uint16_t)ins->opcode;
+
+				for (size_t j = 0; j < ins->nOperands; j++) {
+					os << (j ? ", " : " ");
+					decompileValue(rt, *ins->operands[j], os, indentLevel);
 				}
-				rs.erase(rs.begin());
-				rs.shrink_to_fit();
+
+				os << ";\n";
 			}
-			return std::make_shared<Compiler::StringLiteralExpr>(Compiler::location(), s);
+			os << std::string(indentLevel, '\t') << ".end\n";
+			break;
 		}
-		case SlxFmt::ValueType::REF: {
-			auto ref = std::make_shared<Compiler::RefExpr>(Compiler::location(), "", false);
+		case ValueType::MOD: {
+			auto v = (ModuleValue *)value;
+			os << std::string(indentLevel, '\t') << ".module " << v->getName() << "\n";
 
-			SlxFmt::ScopeRefDesc i = { 0 };
-			for (auto j = ref;; j->next = std::make_shared<Compiler::RefExpr>(Compiler::location(), "", i.flags & SlxFmt::SRD_STATIC), j = j->next) {
-				i = _readValue<SlxFmt::ScopeRefDesc>(fs);
-				std::string name(i.lenName, '\0');
-				fs.read(&(name[0]), i.lenName);
-				j->name = name;
-				if (!(i.flags & SlxFmt::SRD_NEXT))
-					break;
-			};
-			return ref;
+			for (auto &i : *v)
+				decompileValue(rt, i.second, os, indentLevel + 1);
+
+			os << std::string(indentLevel, '\t') << ".end"
+			   << "\n";
+			break;
 		}
-		case SlxFmt::ValueType::ARRAY: {
-			SlxFmt::ArrayDesc ard;
-			ard = _readValue<SlxFmt::ArrayDesc>(fs);
-
-			std::vector<std::shared_ptr<Compiler::Expr>> members;
-			while (ard.nMembers) {
-				members.push_back(readValue(fs));
-			}
-
-			return std::make_shared<Compiler::ArrayExpr>(Compiler::location(), members);
+		case ValueType::VAR: {
+			break;
 		}
-		default:
-			throw Decompiler::DecompileError("Invalid value type: " + std::to_string((uint8_t)i.type));
+		case ValueType::CLASS: {
+			break;
+		}
+		case ValueType::INTERFACE: {
+			break;
+		}
+		case ValueType::TRAIT: {
+			break;
+		}
+		case ValueType::STRUCT: {
+			break;
+		}
 	}
 }
 
-std::string readTypeName(std::fstream &fs, SlxFmt::ValueType vt) {
-	switch (vt) {
-		case SlxFmt::ValueType::I8:
+std::string Slake::Decompiler::getTypeName(Runtime *rt, Type type) {
+	switch (type.valueType) {
+		case ValueType::I8:
 			return "i8";
-		case SlxFmt::ValueType::I16:
+		case ValueType::I16:
 			return "i16";
-		case SlxFmt::ValueType::I32:
+		case ValueType::I32:
 			return "i32";
-		case SlxFmt::ValueType::I64:
+		case ValueType::I64:
 			return "i64";
-		case SlxFmt::ValueType::U8:
+		case ValueType::U8:
 			return "u8";
-		case SlxFmt::ValueType::U16:
+		case ValueType::U16:
 			return "u16";
-		case SlxFmt::ValueType::U32:
+		case ValueType::U32:
 			return "u32";
-		case SlxFmt::ValueType::U64:
+		case ValueType::U64:
 			return "u64";
-		case SlxFmt::ValueType::F32:
+		case ValueType::F32:
 			return "f32";
-		case SlxFmt::ValueType::F64:
+		case ValueType::F64:
 			return "f64";
-		case SlxFmt::ValueType::STRING:
+		case ValueType::STRING:
 			return "string";
-		case SlxFmt::ValueType::OBJECT: {
-			std::string s;
-
-			SlxFmt::ValueDesc vd;
-			fs.read((char *)&vd, sizeof(vd));
-
-			auto ref = std::make_shared<Compiler::RefExpr>(Compiler::location(), "", false);
-			SlxFmt::ScopeRefDesc i = { 0 };
-
-			for (auto j = ref;; j->next = std::make_shared<Compiler::RefExpr>(Compiler::location(), "", i.flags & SlxFmt::SRD_STATIC), j = j->next) {
-				i = _readValue<SlxFmt::ScopeRefDesc>(fs);
-				std::string name(i.lenName, '\0');
-				fs.read(&(name[0]), i.lenName);
-				j->name = name;
-				if (!(i.flags & SlxFmt::SRD_NEXT))
-					break;
-			};
-			return "@" + std::to_string(*ref);
-		}
-		case SlxFmt::ValueType::ANY:
-			return "any";
-		case SlxFmt::ValueType::BOOL:
+		case ValueType::BOOL:
 			return "bool";
-		case SlxFmt::ValueType::NONE:
+		case ValueType::ARRAY:
+			return getTypeName(rt, *(type.exData.array)) + "[]";
+		case ValueType::OBJECT:
+			return rt->resolveName((MemberValue *)type.exData.customType) + "[]";
+		case ValueType::ANY:
+			return "any";
+		case ValueType::NONE:
 			return "void";
-		case SlxFmt::ValueType::ARRAY:
-			return readTypeName(fs, _readValue<SlxFmt::ValueType>(fs)) + "[]";
-		case SlxFmt::ValueType::MAP:
-			return readTypeName(fs, _readValue<SlxFmt::ValueType>(fs)) + "[" + readTypeName(fs, _readValue<SlxFmt::ValueType>(fs)) + "]";
 		default:
-			throw std::logic_error("Invalid value type: " + std::to_string((uint8_t)vt));
+			throw DecompileError("Unrecognized type");
 	}
 }
 
-void Slake::Decompiler::decompileScope(std::fstream &fs, uint8_t indentLevel) {
-	for (SlxFmt::VarDesc i = { 0 };;) {
-		fs.read((char *)&i, sizeof(i));
-		if (!(i.lenName))
-			break;
-		std::string name(i.lenName, '\0');
-		fs.read(&(name[0]), i.lenName);
-
-		printf("%s", std::string(indentLevel, '\t').c_str());
-
-		if (i.flags & SlxFmt::VAD_PUB)
-			printf("pub ");
-		if (i.flags & SlxFmt::VAD_STATIC)
-			printf("static ");
-		if (i.flags & SlxFmt::VAD_FINAL)
-			printf("final ");
-		if (i.flags & SlxFmt::VAD_NATIVE)
-			printf("native ");
-
-		auto tn = readTypeName(fs, _readValue<SlxFmt::ValueType>(fs));
-		if (i.flags & SlxFmt::VAD_INIT)
-			printf("%s %s = %s;\n", tn.c_str(), name.c_str(), std::to_string(*readValue(fs)).c_str());
-		else
-			printf("%s %s;\n", tn.c_str(), name.c_str());
-	}
-
-	for (SlxFmt::FnDesc i = { 0 };;) {
-		fs.read((char *)&i, sizeof(i));
-		if (!(i.lenName))
-			break;
-		std::string name(i.lenName, '\0');
-		fs.read(&(name[0]), i.lenName);
-
-		printf("%s", std::string(indentLevel, '\t').c_str());
-
-		if (i.flags & SlxFmt::FND_PUB)
-			printf("pub ");
-		if (i.flags & SlxFmt::FND_STATIC)
-			printf("static ");
-		if (i.flags & SlxFmt::FND_FINAL)
-			printf("final ");
-		if (i.flags & SlxFmt::FND_OVERRIDE)
-			printf("override ");
-		if (i.flags & SlxFmt::FND_NATIVE)
-			printf("native ");
-
-		printf("%s %s", readTypeName(fs, _readValue<SlxFmt::ValueType>(fs)).c_str(), name.c_str());
-
-		if (i.nGenericParams) {
-			putchar('<');
-			for (auto j = 0; j < i.nGenericParams; j++) {
-				if (j)
-					printf(", ");
-				uint32_t lenGenericParamName = _readValue<uint32_t>(fs);
-				std::string name(lenGenericParamName, '\0');
-				fs.read(&(name[0]), lenGenericParamName);
-				printf("%s", name.c_str());
-			}
-			putchar('>');
-		}
-
-		putchar('(');
-
-		for (auto j = 0; j < i.nParams; j++) {
-			SlxFmt::ValueType vt = SlxFmt::ValueType::NONE;
-			fs.read((char *)&vt, sizeof(vt));
-			printf("%s", readTypeName(fs, vt).c_str());
-			if (j + 1 < i.nParams)
-				printf(", ");
-		}
-		if (i.flags & SlxFmt::FND_VARG)
-			printf(", ...");
-		if (!i.lenBody) {
-			puts(");");
-			continue;
-		}
-		puts(") {");
-
-		std::shared_ptr<State> s = std::make_shared<State>();
-		std::list<Compiler::Ins> insList;
-
-		// Read for each instruction.
-		for (uint32_t j = 0; j < i.lenBody; j++) {
-			SlxFmt::InsHeader ih = _readValue<SlxFmt::InsHeader>(fs);
-			Compiler::Ins ins(ih.opcode, {});
-			for (uint8_t k = 0; k < ih.nOperands; k++)
-				ins.operands.push_back(readValue(fs));
-			insList.push_back(ins);
-
-			switch (ih.opcode) {
-				case Opcode::JMP:
-				case Opcode::JT:
-				case Opcode::JF:
-					s->labelNames[j + 1] = name + "_" + std::to_string(j + 1);
-					break;
-				case Opcode::ENTER:
-					if (ins.operands[0]->getExprKind() == Compiler::ExprKind::LITERAL) {
-						auto o = std::static_pointer_cast<Compiler::UIntLiteralExpr>(ins.operands[0]);
-						if (o->getLiteralType() == Compiler::LiteralType::LT_UINT)
-							s->labelNames[o->data] = name + "_blkend_" + std::to_string(*o);
-					}
-			}
-		}
-
-		std::size_t k = 0;
-		for (auto &j : insList) {
-			if (s->labelNames.count(k))
-				printf("%s%s:\n", std::string(indentLevel, '\t').c_str(), s->labelNames[k].c_str());
-
-			printf("%s", std::string(indentLevel, '\t').c_str());
-
-			if (mnemonics.count(j.opcode))
-				printf("\tasm %s ", mnemonics[j.opcode]);
-			else
-				printf("\tasm 0x%02x ", (uint32_t)j.opcode);
-			for (uint8_t l = 0; l < j.operands.size(); l++) {
-				switch (j.opcode) {
-					case Opcode::ENTER:
-					case Opcode::JMP:
-					case Opcode::JT:
-					case Opcode::JF:
-						if (j.operands[l]->getExprKind() == Compiler::ExprKind::LITERAL &&
-							std::static_pointer_cast<Compiler::LiteralExpr>(j.operands[l])->getLiteralType() == Compiler::LiteralType::LT_UINT) {
-							auto addr = std::static_pointer_cast<Compiler::UIntLiteralExpr>(j.operands[l])->data;
-							if (s->labelNames.count(addr)) {
-								printf("%s%s", s->labelNames[addr].c_str(), l && (l < j.operands.size()) ? "," : "");
-								continue;
-							}
-						}
-						break;
-				}
-				printf("%s%s", std::to_string(*j.operands[l]).c_str(), l && (l < j.operands.size()) ? "," : "");
-			}
-			putchar('\n');
-			k++;
-		}
-
-		printf("%s}\n", std::string(indentLevel, '\t').c_str());
-	}
-
-	for (SlxFmt::ClassTypeDesc i = { 0 };;) {
-		fs.read((char *)&i, sizeof(i));
-		if (!(i.lenName))
-			break;
-		std::string name(i.lenName, '\0');
-		fs.read(&(name[0]), i.lenName);
-
-		printf("%s", std::string(indentLevel, '\t').c_str());
-
-		if (i.flags & SlxFmt::CTD_PUB)
-			printf("pub ");
-		if (i.flags & SlxFmt::CTD_FINAL)
-			printf("final ");
-		printf("%s %s", i.flags & SlxFmt::CTD_INTERFACE ? "interface" : "class", name.c_str());
-		if (i.flags & SlxFmt::CTD_DERIVED) {
-			SlxFmt::ValueDesc vd;
-			fs.read((char *)&vd, sizeof(vd));
-
-			auto ref = std::make_shared<Compiler::RefExpr>(Compiler::location(), "", false);
-			SlxFmt::ScopeRefDesc i = { 0 };
-
-			for (auto j = ref;; j->next = std::make_shared<Compiler::RefExpr>(Compiler::location(), "", i.flags & SlxFmt::SRD_STATIC), j = j->next) {
-				i = _readValue<SlxFmt::ScopeRefDesc>(fs);
-				std::string name(i.lenName, '\0');
-				fs.read(&(name[0]), i.lenName);
-				j->name = name;
-				if (!(i.flags & SlxFmt::SRD_NEXT))
-					break;
-			};
-			printf("(@%s)", std::to_string(*ref).c_str());
-		}
-		if (i.nImpls) {
-			printf(" : ");
-			for (auto j = i.nImpls; j; j--) {
-				printf("%s%s", readTypeName(fs, _readValue<SlxFmt::ValueType>(fs)).c_str(), j - 1 ? ", " : "");
-			}
-		}
-		puts(" {");
-
-		decompileScope(fs, indentLevel + 1);
-
-		printf("%s}\n", std::string(indentLevel, '\t').c_str());
-	}
-
-	for (SlxFmt::StructTypeDesc i = { 0 };;) {
-		fs.read((char *)&i, sizeof(i));
-		if (!(i.lenName))
-			break;
-		std::string name(i.lenName, '\0');
-		fs.read(&(name[0]), i.lenName);
-
-		printf("%s", std::string(indentLevel, '\t').c_str());
-
-		if (i.flags & SlxFmt::STD_PUB)
-			printf("pub ");
-		printf("struct %s", name.c_str());
-		puts(" {");
-
-		indentLevel++;
-
-		while (i.nMembers--) {
-			SlxFmt::StructMemberDesc smd;
-			fs.read((char *)&smd, sizeof(smd));
-			std::string memberName(smd.lenName, '\0');
-			fs.read(&(memberName[0]), smd.lenName);
-
-			printf("%s", std::string(indentLevel, '\t').c_str());
-			{
-				auto t = smd.type;
-				readTypeName(fs, t);
-			}
-			printf(" %s;\n", memberName.c_str());
-		}
-
-		indentLevel--;
-
-		printf("%s}\n", std::string(indentLevel, '\t').c_str());
-	}
+std::string Slake::Decompiler::refToString(shared_ptr<RefValue> ref) {
+	string s;
+	for (size_t i = 0; i < ref->scopes.size(); i++)
+		s += (i ? "." : "") + ref->scopes[i];
+	return s;
 }
 
+std::string Slake::Decompiler::accessToString(AccessModifier access) {
+	std::string s;
 
-void Slake::Decompiler::decompile(std::fstream &fs) {
-	SlxFmt::ImgHeader ih;
-	fs.read((char *)&ih, sizeof(ih));
-	if ((ih.magic[0] != SlxFmt::IMH_MAGIC[0]) ||
-		(ih.magic[1] != SlxFmt::IMH_MAGIC[1]) ||
-		(ih.magic[2] != SlxFmt::IMH_MAGIC[2]) ||
-		(ih.magic[3] != SlxFmt::IMH_MAGIC[3]))
-		throw DecompileError("Bad SLX magic");
-	if (ih.fmtVer != 0)
-		throw DecompileError("Bad SLX format version");
+	if (access & ACCESS_PUB)
+		s += "pub ";
+	if (access & ACCESS_NATIVE)
+		s += "native ";
+	if (access & ACCESS_STATIC)
+		s += "static ";
+	if (access & ACCESS_FINAL)
+		s += "final ";
+	if (access & ACCESS_OVERRIDE)
+		s += "override ";
 
-	if (ih.nImports) {
-		puts("use {");
-		for (uint8_t i = 0; i < ih.nImports; i++) {
-			auto len = _readValue<uint32_t>(fs);
-			std::string name(len, '\0');
-			fs.read(&(name[0]), len);
-			printf("\t%s = %s\n", name.c_str(), std::to_string(*readValue(fs)).c_str());
-		}
-		puts("}");
-	}
-	decompileScope(fs);
+	return s;
 }

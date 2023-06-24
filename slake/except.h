@@ -33,6 +33,12 @@ namespace Slake {
 		virtual inline ~InvalidOperandsError() {}
 	};
 
+	class InvalidArgumentsError : public std::runtime_error {
+	public:
+		inline InvalidArgumentsError(std::string msg) : runtime_error(msg){};
+		virtual inline ~InvalidArgumentsError() {}
+	};
+
 	class ResourceNotFoundError : public std::runtime_error {
 	public:
 		inline ResourceNotFoundError(std::string msg) : runtime_error(msg){};

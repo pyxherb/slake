@@ -1,4 +1,4 @@
-module std::util::fp;
+module std.util.fp;
 
 pub u8 getExponent(f32 x) {
 	return (u8)((<u32>(x) & 0x7f800000) >> 22);

@@ -1,27 +1,30 @@
-find_package(BISON REQUIRED)
-find_package(FLEX REQUIRED)
+find_package(ANTLR REQUIRED)
 
-include_directories(${FLEX_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${ANTLR_INCLUDE_DIRS})
 
-bison_target(
-    slkparse
-    syntax/slkparse.yy ${CMAKE_CURRENT_BINARY_DIR}/slkparse.cc
-    COMPILE_FLAGS)
-flex_target(
-    slklex
-    syntax/slklex.ll ${CMAKE_CURRENT_BINARY_DIR}/slklex.cc
-    COMPILE_FLAGS
-    "--header-file=${CMAKE_CURRENT_BINARY_DIR}/slklex.h --nounistd")
+antlr_target(SlakeLexer syntax/SlakeLexer.g4 LEXER)
+antlr_target(SlakeParser syntax/SlakeParser.g4 PARSER
+            DEPENDS_ANTLR SlakeLexer
+            COMPILE_FLAGS -visitor -no-listener -lib ${ANTLR_SlakeLexer_OUTPUT_DIR})
+
+include_directories(${ANTLR_SlakeLexer_OUTPUT_DIR})
+include_directories(${ANTLR_SlakeParser_OUTPUT_DIR})
 
 file(GLOB SRC *.h *.hh *.c *.cc)
 add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
-add_executable(slkc ${SRC} ${BISON_slkparse_OUTPUT_SOURCE} ${FLEX_slklex_OUTPUTS})
+add_executable(slkc
+    ${SRC}
+    ${ANTLR_SlakeLexer_CXX_OUTPUTS}
+    ${ANTLR_SlakeParser_CXX_OUTPUTS})
+
+target_link_libraries(slkc PRIVATE ${ANTLR_LINK_LIBRARIES} slake)
+set_property(TARGET slkc PROPERTY CXX_STANDARD 17)
 
 add_subdirectory("compiler")
+add_subdirectory("decompiler")
 add_subdirectory("lsp")
+
 if(WIN32)
     target_link_libraries(slkc PRIVATE ws2_32)
 endif()
-add_subdirectory("decompiler")
-
-set_property(TARGET slkc PROPERTY CXX_STANDARD 17)
+#add_subdirectory("decompiler")

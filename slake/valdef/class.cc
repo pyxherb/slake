@@ -5,7 +5,7 @@ using namespace Slake;
 
 bool ClassValue::hasImplemented(const InterfaceValue *pInterface) const {
 	// Check if the class has implemented the interface.
-	for (auto &i : _interfaces) {
+	for (auto &i : implInterfaces) {
 		assert(i.exData.customType->getType() == ValueType::INTERFACE);
 		auto j = (InterfaceValue *)i.exData.customType;
 		if (j == pInterface)

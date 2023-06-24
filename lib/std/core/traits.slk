@@ -1,0 +1,127 @@
+module std.core.traits;
+
+pub trait Add<T, Result> {
+	@Result operator+(@T other);
+}
+
+pub trait Sub<T, Result> {
+	@Result operator-(@T other);
+}
+
+pub trait Mul<T, Result> {
+	@Result operator*(@T other);
+}
+
+pub trait Div<T, Result> {
+	@Result operator/(@T other);
+}
+
+pub trait Mod<T, Result> {
+	@Result operator%(@T other);
+}
+
+pub trait BitAnd<T, Result> {
+	@Result operator&(@T other);
+}
+
+pub trait BitOr<T, Result> {
+	@Result operator|(@T other);
+}
+
+pub trait Xor<T, Result> {
+	@Result operator^(@T other);
+}
+
+pub trait And<T, Result> {
+	@Result operator&&(@T other);
+}
+
+pub trait Or<T, Result> {
+	@Result operator||(@T other);
+}
+
+pub trait Rev<T, Result> {
+	@Result operator~();
+}
+
+pub trait Not<T, Result> {
+	@Result operator!();
+}
+
+pub trait Assign<T, Result> {
+	@Result operator=(@T other);
+}
+
+pub trait AddAssign<T, Result> {
+	@Result operator+=(@T other);
+}
+
+pub trait SubAssign<T, Result> {
+	@Result operator-=(@T other);
+}
+
+pub trait MulAssign<T, Result> {
+	@Result operator*=(@T other);
+}
+
+pub trait DivAssign<T, Result> {
+	@Result operator/=(@T other);
+}
+
+pub trait ModAssign<T, Result> {
+	@Result operator%=(@T other);
+}
+
+pub trait BitAndAssign<T, Result> {
+	@Result operator&=(@T other);
+}
+
+pub trait BitOrAssign<T, Result> {
+	@Result operator|=(@T other);
+}
+
+pub trait BitXorAssign<T, Result> {
+	@Result operator^=(@T other);
+}
+
+pub trait RevAssign<T, Result> {
+	@Result operator~=(@T other);
+}
+
+pub trait Eq<T, Result> {
+	@Result operator==(@T other);
+}
+
+pub trait NotEq<T, Result> {
+	@Result operator!=(@T other);
+}
+
+pub trait Gt<T, Result> {
+	@Result operator>(@T other);
+}
+
+pub trait Lt<T, Result> {
+	@Result operator<(@T other);
+}
+
+pub trait GtEq<T, Result> {
+	@Result operator>=(@T other);
+}
+
+pub trait LtEq<T, Result> {
+	@Result operator<=(@T other);
+}
+
+pub trait GtEq<T, Result> {
+	@Result operator>=(@T other);
+}
+
+pub trait Subscript<T, Result> {
+	@Result operator[](@T other);
+}
+
+pub trait Comparable<T, Result>
+	: @Gt<T, Result>, @Lt<T, Result>,
+	  @GtEq<T, Result>, @LtEq<T, Result>,
+	  @Eq, @NotEq<T, Result> {
+}

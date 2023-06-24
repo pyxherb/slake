@@ -1,5 +1,5 @@
 file(GLOB SRC *.h *.hh *.c *.cc)
-add_library(slake ${SRC})
+add_library(slake ${SRC} "lib/core.h")
 
 set_property(TARGET slake PROPERTY CXX_STANDARD 17)
 
@@ -10,7 +10,8 @@ add_subdirectory("lib")
 add_subdirectory("dbg")
 add_subdirectory("valdef")
 
-set(SLAKE_STACK_MAX 1048576 CACHE STRING "Maximum stack size")
+set(SLAKE_STACK_MAX 1048576 CACHE STRING "Maximum stack size for Slake runtime")
+set(SLAKE_ENABLE_DEBUGGER 1048576 CACHE STRING "Enable debugger for runtime debugging")
 
 configure_file(
     config.h.in

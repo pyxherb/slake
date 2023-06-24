@@ -1,90 +1,64 @@
 #ifndef _SLAKE_VALDEF_OBJECT_H_
 #define _SLAKE_VALDEF_OBJECT_H_
 
-#include "member.h"
 #include <unordered_map>
+
+#include "member.h"
 
 namespace Slake {
 	class ObjectValue final : public Value {
 	protected:
 		std::unordered_map<std::string, MemberValue *> _members;
 		Value *const _type;
+		ObjectValue *_parent = nullptr;
 
 		inline void addMember(std::string name, MemberValue *value) {
-			value->incRefCount();
-			if (_members.count(name))
-				_members[name]->decRefCount();
+			if (_members.count(name)) {
+				_members.at(name)->unbind();
+				_members.at(name)->decRefCount();
+			}
 			_members[name] = value;
+			value->incRefCount();
+			value->bind(this, name);
 		}
 
-		class MyValueIterator : public ValueIterator {
-		protected:
-			decltype(_members)::iterator it;
-
-		public:
-			inline MyValueIterator(decltype(it) &&it) : it(it) {}
-			inline MyValueIterator(decltype(it) &it) : it(it) {}
-			inline MyValueIterator(MyValueIterator &&x) noexcept : it(x.it) {}
-			inline MyValueIterator(MyValueIterator &x) noexcept : it(x.it) {}
-			virtual inline ValueIterator &operator++() override {
-				++it;
-				return *this;
-			}
-			virtual inline ValueIterator &&operator++(int) override {
-				auto o = *this;
-				++it;
-				return std::move(o);
-			}
-			virtual inline ValueIterator &operator--() override {
-				--it;
-				return *this;
-			}
-			virtual inline ValueIterator &&operator--(int) override {
-				auto o = *this;
-				--it;
-				return std::move(o);
-			}
-			virtual inline Value *operator*() override {
-				return it->second;
-			}
-
-			virtual inline bool operator==(const ValueIterator &&) const override { return true; }
-			virtual inline bool operator!=(const ValueIterator &&) const override { return false; }
-
-			virtual inline ValueIterator &operator=(const ValueIterator &&x) noexcept override {
-				return *this = (const MyValueIterator &&)x;
-			}
-
-			inline MyValueIterator &operator=(const MyValueIterator &&x) noexcept {
-				it = x.it;
-				return *this;
-			}
-			inline MyValueIterator &operator=(const MyValueIterator &x) noexcept {
-				return *this = std::move(x);
-			}
-		};
+		inline void _releaseMembers() {
+			if (!getRefCount())
+				for (auto i : _members) {
+					i.second->unbind();
+					i.second->decRefCount();
+				}
+		}
 
 		friend class Runtime;
 
 	public:
-		inline ObjectValue(Runtime *rt, Value *type) : Value(rt), _type(type) {
+		inline ObjectValue(Runtime *rt, Value *type, ObjectValue *parent = nullptr)
+			: Value(rt), _type(type), _parent(parent) {
 			reportSizeToRuntime(sizeof(*this));
 		}
+
+		/// @brief Delete the object and execute its destructor (if exists).
+		///
+		/// @note Do not delete objects directly.
 		virtual inline ~ObjectValue() {
-			if (!getRefCount())
-				for (auto i : _members)
-					i.second->decRefCount();
+			_releaseMembers();
 		}
 
 		virtual inline Type getType() const override { return Type(ValueType::OBJECT, _type); }
 
-		virtual inline Value *getMember(std::string name) override {
-			return _members.count(name) ? _members.at(name) : nullptr;
+		virtual inline MemberValue *getMember(std::string name) override {
+			if (_members.count(name))
+				return _members.at(name);
+			return _parent ? _parent->getMember(name) : nullptr;
 		}
-		virtual inline const Value *getMember(std::string name) const override { return _members.at(name); }
+		virtual inline const MemberValue *getMember(std::string name) const override {
+			if (_members.count(name))
+				return _members.at(name);
+			return _parent ? _parent->getMember(name) : nullptr;
+		}
 
-		virtual inline ValueIterator begin() override { return MyValueIterator(_members.begin()); }
-		virtual inline ValueIterator end() override { return MyValueIterator(_members.end()); }
+		virtual void whenRefBecomeZero() override;
 
 		ObjectValue(ObjectValue &) = delete;
 		ObjectValue(ObjectValue &&) = delete;

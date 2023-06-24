@@ -10,53 +10,6 @@ namespace Slake {
 		std::deque<ValueRef<Value, false>> values;
 		const Type type;
 
-		class MyValueIterator : public ValueIterator {
-		protected:
-			decltype(values)::iterator it;
-
-		public:
-			inline MyValueIterator(decltype(it) &&it) : it(it) {}
-			inline MyValueIterator(decltype(it) &it) : it(it) {}
-			inline MyValueIterator(MyValueIterator &&x) noexcept : it(x.it) {}
-			inline MyValueIterator(MyValueIterator &x) noexcept : it(x.it) {}
-			virtual inline ValueIterator &operator++() override {
-				++it;
-				return *this;
-			}
-			virtual inline ValueIterator &&operator++(int) override {
-				auto o = *this;
-				++it;
-				return std::move(o);
-			}
-			virtual inline ValueIterator &operator--() override {
-				--it;
-				return *this;
-			}
-			virtual inline ValueIterator &&operator--(int) override {
-				auto o = *this;
-				--it;
-				return std::move(o);
-			}
-			virtual inline Value *operator*() override {
-				return **it;
-			}
-
-			virtual inline bool operator==(const ValueIterator &&) const override { return true; }
-			virtual inline bool operator!=(const ValueIterator &&) const override { return false; }
-
-			virtual inline ValueIterator &operator=(const ValueIterator &&x) noexcept override {
-				return *this = (const MyValueIterator &&)x;
-			}
-
-			inline MyValueIterator &operator=(const MyValueIterator &&x) noexcept {
-				it = x.it;
-				return *this;
-			}
-			inline MyValueIterator &operator=(const MyValueIterator &x) noexcept {
-				return *this = std::move(x);
-			}
-		};
-
 		friend class Runtime;
 
 	public:
@@ -79,9 +32,6 @@ namespace Slake {
 		}
 
 		size_t getSize() { return values.size(); }
-
-		virtual inline ValueIterator begin() override { return MyValueIterator(values.begin()); }
-		virtual inline ValueIterator end() override { return MyValueIterator(values.end()); }
 
 		virtual inline std::string toString() const override {
 			std::string s = Value::toString() + ",\"values\":[";

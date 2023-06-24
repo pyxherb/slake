@@ -7,8 +7,8 @@ Module
 Module Declaration
 ------------------
 
-Module declaration specifies name of current module.
-Name of current module will be appended to name of all resources in the module
+Module declaration declares scope name of current module.
+Scope name of current module will be appended to all identifiers in the module
 during the compilation.
 
 For example:
@@ -21,5 +21,11 @@ For example:
         return 0;
     }
 
-The function `main` will be renamed to `org::example::main`, the module name
+The function `main` will be renamed as `org::example::main`, the scope name
 `org::example` will be appended to the function name `main`.
+
+Module declaration is optional and the scope name of current module will be the
+global scope if not set.
+
+Module declaration can appear once only in a single module and must be the
+first statement.

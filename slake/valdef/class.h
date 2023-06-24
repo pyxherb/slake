@@ -38,14 +38,13 @@ namespace Slake {
 	class InterfaceValue;
 
 	class ClassValue : public BasicClassValue {
-	protected:
-		std::vector<Type> _interfaces;
+	public:
+		std::vector<Type> implInterfaces;//Implemented interfaces
 
 		friend class Runtime;
 		friend bool Slake::isConvertible(Type a, Type b);
 
-	public:
-		inline ClassValue(Runtime *rt, AccessModifier access, Value *parent, std::string name, Type parentClass = Type())
+		inline ClassValue(Runtime *rt, AccessModifier access, Type parentClass = Type(), Value *parent = nullptr, std::string name = "")
 			: BasicClassValue(rt, access, parent, name, parentClass) {
 			reportSizeToRuntime(sizeof(*this) - sizeof(BasicClassValue));
 		}
@@ -68,7 +67,7 @@ namespace Slake {
 		friend bool Slake::isConvertible(Type a, Type b);
 
 	public:
-		inline InterfaceValue(Runtime *rt, AccessModifier access, Value *parent, std::string name, Type parentClass = Type())
+		inline InterfaceValue(Runtime *rt, AccessModifier access, Type parentClass = Type(), Value *parent = nullptr, std::string name = "")
 			: BasicClassValue(rt, access, parent, name, parentClass) {
 			reportSizeToRuntime(sizeof(*this) - sizeof(BasicClassValue));
 		}
@@ -83,6 +82,7 @@ namespace Slake {
 				default:
 					throw std::logic_error("Unacceptable member type");
 			}
+			value->bind(this, name);
 		}
 
 		virtual inline Type getType() const override { return ValueType::INTERFACE; }
@@ -103,8 +103,8 @@ namespace Slake {
 		friend class ClassValue;
 
 	public:
-		inline TraitValue(Runtime *rt, AccessModifier access, Value *parent, std::string name, Type parentClass = Type())
-			: InterfaceValue(rt, access, parent, name, parentClass) {
+		inline TraitValue(Runtime *rt, AccessModifier access, Type parentClass = Type(), Value *parent = nullptr, std::string name = "")
+			: InterfaceValue(rt, access, parentClass, parent, name) {
 			reportSizeToRuntime(sizeof(*this) - sizeof(InterfaceValue));
 		}
 		virtual inline ~TraitValue() {}

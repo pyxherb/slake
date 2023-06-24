@@ -1,4 +1,4 @@
-module std::core::task;
+module std.core.task;
 
 ///
 /// @description

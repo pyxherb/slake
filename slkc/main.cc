@@ -1,15 +1,10 @@
-#include <slklex.h>
+#include "compiler/compiler.h"
+#include "decompiler/decompiler.h"
 
-#include <decompiler/decompiler.hh>
-#include <slkparse.hh>
+#include <filesystem>
+#include <fstream>
 
-using namespace Slake;
-#define printmsg(msg, ...) std::printf("slkc: " msg, ##__VA_ARGS__)
-#define msgputs(msg) std::printf("slkc: %s\n", msg)
-
-void parser::error(const Slake::Compiler::parser::location_type &loc, const std::string &msg) {
-	std::fprintf(stderr, "Error at %d,%d: %s\n", loc.begin.line, loc.begin.column, msg.c_str());
-}
+#include <slake/util/debug.h>
 
 class ArgumentError : public std::runtime_error {
 public:
@@ -29,7 +24,9 @@ enum AppAction : uint8_t {
 };
 
 std::string srcPath = "", outPath = "";
+
 AppAction action = ACT_COMPILE;
+std::vector<std::string> modulePaths;
 
 struct CmdLineAction {
 	const char *options;
@@ -68,16 +65,17 @@ int main(int argc, char **argv) {
 				srcPath = arg;
 			}
 		} catch (ArgumentError &e) {
-			msgputs(e.what());
+			fprintf(stderr, "Error: %s", e.what());
 			return EINVAL;
 		}
 
 		switch (action) {
 			case ACT_COMPILE: {
 				if (!srcPath.length()) {
-					msgputs("Missing input file");
+					perror("Error: Missing input file");
 					return EINVAL;
 				}
+
 				if (!outPath.length()) {
 					auto i = srcPath.find_last_of('.');
 					if (i == srcPath.npos) {
@@ -87,69 +85,26 @@ int main(int argc, char **argv) {
 					}
 				}
 
-				// Because the LEXER requires a C-styled file stream,
-				// We didn't use file I/O classes for C++.
-				if (!(yyin = std::fopen(srcPath.c_str(), "rb"))) {
-					printmsg("Error opening file `%s'", srcPath.c_str());
-					return ENOENT;
-				}
+				std::ifstream fs(srcPath, std::ios::binary);
+				antlr4::ANTLRInputStream is(fs);
 
-				auto rootScope = std::make_shared<Slake::Compiler::Scope>("");
-				Slake::Compiler::currentScope = rootScope;
-				yyparser = std::make_shared<Slake::Compiler::parser>();
+				SlakeLexer lexer(&is);
+				antlr4::CommonTokenStream tokens(&lexer);
 
-				auto cleaner = []() {
-					Slake::Compiler::deinit();
-					yylex_destroy();
-					yyparser.reset();
-				};
+				SlakeParser parser(&tokens);
+				auto tree = parser.prog();
 
-				try {
-					auto parseResult = yyparser->parse();
+				printf("%s\n", tree->toStringTree(&parser).c_str());
 
-					fclose(yyin);
-
-					if (parseResult) {
-						cleaner();
-						return -1;
-					}
-
-					// printf("%s\n", std::to_string(*Slake::Compiler::currentScope).c_str());
-
-					std::fstream fs(outPath, std::ios::out | std::ios::binary);
-					if (!fs.is_open()) {
-						printmsg("Error opening file `%s'\n", srcPath.c_str());
-						break;
-					}
-					fs.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
-
-					std::unique_ptr<State> state = std::make_unique<State>();
-					state->compile(rootScope, fs);
-					fs.close();
-				} catch (Slake::Compiler::parser::syntax_error e) {
-					yyparser->error(e.location, e.what());
-				}
-				cleaner();
+				Slake::Compiler::AstVisitor visitor;
+				visitor.visit(tree);
+				fs.close();
 				break;
 			}
 			case ACT_DUMP: {
-				if (!srcPath.length()) {
-					msgputs("Missing input file");
-					return EINVAL;
-				}
+				std::ifstream fs(srcPath, std::ios::binary);
 
-				std::fstream fs(srcPath, std::ios::in | std::ios::binary);
-				if (!fs.is_open()) {
-					printmsg("Error opening file `%s'\n", srcPath.c_str());
-					break;
-				}
-				fs.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
-
-				try {
-					Slake::Decompiler::decompile(fs);
-				} catch (Slake::Decompiler::DecompileError e) {
-					printf("%s\n", e.what());
-				}
+				Slake::Decompiler::decompile(fs, std::cout);
 
 				fs.close();
 				break;
@@ -157,10 +112,8 @@ int main(int argc, char **argv) {
 			default:
 				assert(false);
 		}
-
-
 	} catch (std::bad_alloc) {
-		msgputs("Out of memory");
+		perror("Out of memory");
 		return ENOMEM;
 	}
 

@@ -1,4 +1,4 @@
-module std::math::rand;
+module std.math.rand;
 
 pub interface TRandomContext<T> {
 	@T next();

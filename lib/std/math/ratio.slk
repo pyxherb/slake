@@ -1,4 +1,4 @@
-module std::math::ratio;
+module std.math.ratio;
 
 pub interface TRatio<T> {
 	@T -> numerator;

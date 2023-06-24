@@ -16,14 +16,14 @@ static T _read(std::istream &fs) {
 RefValue *readRef(Runtime *rt, std::istream &fs) {
 	auto ref = std::make_unique<RefValue>(rt);
 
-	SlxFmt::ScopeRefDesc i = { 0 };
+	SlxFmt::RefScopeDesc i = { 0 };
 	while (true) {
-		i = _read<SlxFmt::ScopeRefDesc>(fs);
+		i = _read<SlxFmt::RefScopeDesc>(fs);
 		std::string name(i.lenName, '\0');
 		fs.read(&(name[0]), i.lenName);
 
 		ref->scopes.push_back(name);
-		if (!(i.flags & SlxFmt::SRD_NEXT))
+		if (!(i.flags & SlxFmt::RSD_NEXT))
 			break;
 	};
 
@@ -96,11 +96,8 @@ Type readTypeName(Runtime *rt, std::istream &fs, SlxFmt::ValueType vt) {
 			return ValueType::F64;
 		case SlxFmt::ValueType::STRING:
 			return ValueType::STRING;
-		case SlxFmt::ValueType::OBJECT: {
-			SlxFmt::ValueDesc vd;
-			fs.read((char *)&vd, sizeof(vd));
+		case SlxFmt::ValueType::OBJECT:
 			return readRef(rt, fs);
-		}
 		case SlxFmt::ValueType::ANY:
 			return ValueType::ANY;
 		case SlxFmt::ValueType::BOOL:
@@ -121,14 +118,15 @@ Type readTypeName(Runtime *rt, std::istream &fs, SlxFmt::ValueType vt) {
 void Slake::Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 	Runtime *const rt = mod->getRuntime();
 
-	for (SlxFmt::VarDesc i = { 0 };;) {
+	uint32_t nItemsToRead;
+
+	nItemsToRead = _read<uint32_t>(fs);
+	for (SlxFmt::VarDesc i = { 0 }; nItemsToRead--;) {
 		std::unique_ptr<VarValue> var;
 
 		fs.read((char *)&i, sizeof(i));
-		if (!(i.lenName))
-			break;
 		std::string name(i.lenName, '\0');
-		fs.read(&(name[0]), i.lenName);
+		fs.read(name.data(), i.lenName);
 
 		AccessModifier access = 0;
 		if (i.flags & SlxFmt::VAD_PUB)
@@ -141,7 +139,7 @@ void Slake::Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 			access |= ACCESS_NATIVE;
 
 		auto tn = readTypeName(rt, fs, _read<SlxFmt::ValueType>(fs));
-		var = std::make_unique<VarValue>(rt, access, tn, mod);
+		var = std::make_unique<VarValue>(rt, access, tn, mod, name);
 		if (i.flags & SlxFmt::VAD_INIT) {
 			std::unique_ptr<Value> v(readValue(rt, fs));
 
@@ -150,13 +148,11 @@ void Slake::Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 		mod->addMember(name, var.release());
 	}
 
-	for (SlxFmt::FnDesc i = { 0 };;) {
+	nItemsToRead = _read<uint32_t>(fs);
+	for (SlxFmt::FnDesc i = { 0 }; nItemsToRead--;) {
 		fs.read((char *)&i, sizeof(i));
-		if (!(i.lenName))
-			break;
-
 		std::string name(i.lenName, '\0');
-		fs.read(&(name[0]), i.lenName);
+		fs.read(name.data(), i.lenName);
 
 		AccessModifier access = 0;
 		if (i.flags & SlxFmt::FND_PUB)
@@ -172,11 +168,12 @@ void Slake::Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 
 		auto resultType = _read<SlxFmt::ValueType>(fs);
 
+		/*
 		for (auto j = 0; j < i.nGenericParams; j++) {
 			uint32_t lenGenericParamName = _read<uint32_t>(fs);
 			std::string name(lenGenericParamName, '\0');
 			fs.read(&(name[0]), lenGenericParamName);
-		}
+		}*/
 
 		Type returnType;
 
@@ -191,7 +188,7 @@ void Slake::Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 
 		if (i.lenBody) {
 			std::unique_ptr<FnValue> fn(
-				new FnValue(rt, (uint32_t)i.lenBody, access, returnType, mod));
+				new FnValue(rt, (uint32_t)i.lenBody, access, returnType));
 
 			for (uint32_t j = 0; j < i.lenBody; j++) {
 				SlxFmt::InsHeader ih = _read<SlxFmt::InsHeader>(fs);
@@ -205,12 +202,11 @@ void Slake::Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 		}
 	}
 
-	for (SlxFmt::ClassTypeDesc i = { 0 };;) {
+	nItemsToRead = _read<uint32_t>(fs);
+	for (SlxFmt::ClassTypeDesc i = { 0 }; nItemsToRead--;) {
 		fs.read((char *)&i, sizeof(i));
-		if (!(i.lenName))
-			break;
 		std::string name(i.lenName, '\0');
-		fs.read(&(name[0]), i.lenName);
+		fs.read(name.data(), i.lenName);
 
 		AccessModifier access = 0;
 		if (i.flags & SlxFmt::CTD_PUB)
@@ -221,21 +217,17 @@ void Slake::Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 		RefValue *parent = nullptr;
 
 		if (i.flags & SlxFmt::CTD_DERIVED) {
-			SlxFmt::ValueDesc vd;
-			fs.read((char *)&vd, sizeof(vd));
-
-			SlxFmt::ScopeRefDesc i = { 0 };
-			parent = (RefValue *)readValue(rt, fs);
+			readRef(rt, fs);
 		}
 
-		std::unique_ptr<ClassValue> value = std::make_unique<ClassValue>(rt, access, parent, name);
+		std::unique_ptr<ClassValue> value = std::make_unique<ClassValue>(rt, access);
 
 		if (i.nImpls) {
 			for (auto j = i.nImpls; j; j--) {
 				auto tn = readTypeName(rt, fs, _read<SlxFmt::ValueType>(fs));
 				if (tn.valueType != ValueType::CLASS)
 					throw LoaderError("Incompatible value type for interfaces");
-				value->_interfaces.push_back(tn);
+				value->implInterfaces.push_back(tn);
 			}
 		}
 
@@ -243,10 +235,9 @@ void Slake::Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 		mod->addMember(name, value.release());
 	}
 
-	for (SlxFmt::StructTypeDesc i = { 0 };;) {
+	nItemsToRead = _read<uint32_t>(fs);
+	for (SlxFmt::StructTypeDesc i = { 0 }; nItemsToRead--;) {
 		fs.read((char *)&i, sizeof(i));
-		if (!(i.lenName))
-			break;
 		std::string name(i.lenName, '\0');
 		fs.read(&(name[0]), i.lenName);
 
@@ -269,7 +260,7 @@ void Slake::Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 
 
 ValueRef<ModuleValue> Slake::Runtime::loadModule(std::istream &fs, std::string name) {
-	std::unique_ptr<ModuleValue> mod = std::make_unique<ModuleValue>(this, ACCESS_PUB, _rootValue, name);
+	std::unique_ptr<ModuleValue> mod = std::make_unique<ModuleValue>(this, ACCESS_PUB, nullptr, name);
 
 	SlxFmt::ImgHeader ih;
 	fs.read((char *)&ih, sizeof(ih));
@@ -280,14 +271,13 @@ ValueRef<ModuleValue> Slake::Runtime::loadModule(std::istream &fs, std::string n
 		throw LoaderError("Bad SLX magic");
 	if (ih.fmtVer != 0)
 		throw LoaderError("Bad SLX format version");
-	if (ih.nImports) {
-		for (uint8_t i = 0; i < ih.nImports; i++) {
-			auto len = _read<uint32_t>(fs);
-			std::string name(len, '\0');
-			fs.read(&(name[0]), len);
 
-			std::unique_ptr<Value> ref(readValue(this, fs));
-		}
+	for (uint8_t i = 0; i < ih.nImports; i++) {
+		auto len = _read<uint32_t>(fs);
+		std::string name(len, '\0');
+		fs.read(&(name[0]), len);
+
+		std::unique_ptr<Value> ref(readValue(this, fs));
 	}
 
 	_loadScope(mod.get(), fs);

@@ -1,10 +1,12 @@
 #ifndef _SLAKE_VALDEF_FN_H_
 #define _SLAKE_VALDEF_FN_H_
 
-#include "member.h"
 #include <slake/opcode.h>
-#include <vector>
+
 #include <functional>
+#include <vector>
+
+#include "member.h"
 
 namespace Slake {
 	struct Instruction final {
@@ -28,29 +30,38 @@ namespace Slake {
 		friend class ClassValue;
 
 	public:
-		inline BasicFnValue(Runtime *rt, AccessModifier access, Type returnType, Value *parent) : MemberValue(rt, access, parent) {
+		inline BasicFnValue(
+			Runtime *rt,
+			AccessModifier access,
+			Type returnType,
+			Value *parent,
+			std::string name)
+			: MemberValue(rt, access, parent, name) {
 		}
 		virtual inline ~BasicFnValue() {}
 
 		virtual inline Type getType() const override { return ValueType::FN; }
+		virtual inline Type getReturnType() const { return _returnType; }
 
 		BasicFnValue &operator=(const BasicFnValue &) = delete;
 		BasicFnValue &operator=(const BasicFnValue &&) = delete;
 	};
 
-	class FnValue final : public BasicFnValue {
+	class FnValue : public BasicFnValue {
 	protected:
 		Instruction *const _body;
 		const uint32_t _nIns;
+		std::vector<Type> _paramTypes;
 
 		friend class Runtime;
-		friend class ClassValue;
+
+		friend class ObjectValue;
 
 	public:
-		inline FnValue(Runtime *rt, uint32_t nIns, AccessModifier access, Type returnType, Value *parent)
+		inline FnValue(Runtime *rt, uint32_t nIns, AccessModifier access, Type returnType, Value *parent = nullptr, std::string name = "")
 			: _nIns(nIns),
 			  _body(new Instruction[nIns]),
-			  BasicFnValue(rt, access, returnType, parent) {
+			  BasicFnValue(rt, access, returnType, parent, name) {
 			if (!nIns)
 				throw std::invalid_argument("Invalid instruction count");
 			reportSizeToRuntime(sizeof(*this) + sizeof(Instruction) * nIns);
@@ -62,6 +73,10 @@ namespace Slake {
 		inline Instruction *getBody() noexcept { return _body; }
 
 		virtual ValueRef<> call(uint8_t nArgs, ValueRef<> *args) override;
+
+		inline const decltype(_paramTypes) getParamTypes() const {
+			return _paramTypes;
+		}
 
 		virtual std::string toString() const override;
 
@@ -76,8 +91,8 @@ namespace Slake {
 		friend class ClassValue;
 
 	public:
-		inline NativeFnValue(Runtime *rt, NativeFnCallback body, AccessModifier access, Type returnType, Value *parent = nullptr)
-			: BasicFnValue(rt, access | ACCESS_NATIVE, returnType, parent), _body(body) {
+		inline NativeFnValue(Runtime *rt, NativeFnCallback body, AccessModifier access, Type returnType, std::string name = "", Value *parent = nullptr)
+			: BasicFnValue(rt, access | ACCESS_NATIVE, returnType, parent, name), _body(body) {
 			reportSizeToRuntime(sizeof(*this));
 		}
 		virtual inline ~NativeFnValue() {}

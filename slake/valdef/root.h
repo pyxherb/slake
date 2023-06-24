@@ -2,59 +2,13 @@
 #define _SLAKE_VALDEF_ROOT_H_
 
 #include "base.h"
+#include "member.h"
 #include <unordered_map>
 
 namespace Slake {
 	class RootValue final : public Value {
 	protected:
-		std::unordered_map<std::string, ValueRef<Value, false>> _members;
-
-		class MyValueIterator : public ValueIterator {
-		protected:
-			decltype(_members)::iterator it;
-
-		public:
-			inline MyValueIterator(decltype(it) &&it) : it(it) {}
-			inline MyValueIterator(decltype(it) &it) : it(it) {}
-			inline MyValueIterator(MyValueIterator &&x) noexcept : it(x.it) {}
-			inline MyValueIterator(MyValueIterator &x) noexcept : it(x.it) {}
-			virtual inline ValueIterator &operator++() override {
-				++it;
-				return *this;
-			}
-			virtual inline ValueIterator &&operator++(int) override {
-				auto o = *this;
-				++it;
-				return std::move(o);
-			}
-			virtual inline ValueIterator &operator--() override {
-				--it;
-				return *this;
-			}
-			virtual inline ValueIterator &&operator--(int) override {
-				auto o = *this;
-				--it;
-				return std::move(o);
-			}
-			virtual inline Value *operator*() override {
-				return *(it->second);
-			}
-
-			virtual inline bool operator==(const ValueIterator &&) const override { return true; }
-			virtual inline bool operator!=(const ValueIterator &&) const override { return false; }
-
-			virtual inline ValueIterator &operator=(const ValueIterator &&x) noexcept override {
-				return *this = (const MyValueIterator &&)x;
-			}
-
-			virtual inline MyValueIterator &operator=(const MyValueIterator &&x) {
-				it = x.it;
-				return *this;
-			}
-			inline MyValueIterator &operator=(const MyValueIterator &x) {
-				return *this = std::move(x);
-			}
-		};
+		std::unordered_map<std::string, ValueRef<MemberValue, false>> _members;
 
 		friend class Runtime;
 
@@ -68,19 +22,19 @@ namespace Slake {
 		}
 		virtual inline Type getType() const override { return ValueType::ROOT; }
 
-		virtual inline Value *getMember(std::string name) override {
+		virtual inline MemberValue *getMember(std::string name) override {
 			return _members.count(name) ? *(_members.at(name)) : nullptr;
 		}
-		virtual inline const Value *getMember(std::string name) const override {
+		virtual inline const MemberValue *getMember(std::string name) const override {
 			return _members.count(name) ? *(_members.at(name)) : nullptr;
 		}
 
-		virtual inline void addMember(std::string name, Value *value) {
+		virtual inline void addMember(std::string name, MemberValue *value) {
+			if (_members.count(name))
+				_members.at(name)->unbind();
 			_members[name] = value;
+			value->bind(this, name);
 		}
-
-		virtual inline ValueIterator begin() override { return MyValueIterator(_members.begin()); }
-		virtual inline ValueIterator end() override { return MyValueIterator(_members.end()); }
 
 		virtual inline std::string toString() const override {
 			std::string s = Value::toString() + ",\"members\":{";
@@ -93,6 +47,11 @@ namespace Slake {
 
 			return s;
 		}
+
+		inline decltype(_members)::iterator begin() { return _members.begin(); }
+		inline decltype(_members)::iterator end() { return _members.end(); }
+		inline decltype(_members)::const_iterator begin() const { return _members.begin(); }
+		inline decltype(_members)::const_iterator end() const { return _members.end(); }
 
 		RootValue &operator=(const RootValue &) = delete;
 		RootValue &operator=(const RootValue &&) = delete;

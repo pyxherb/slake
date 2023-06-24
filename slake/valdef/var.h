@@ -10,8 +10,8 @@ namespace Slake {
 		const Type type = Type(ValueType::ANY);
 
 	public:
-		inline VarValue(Runtime *rt, AccessModifier access, Type type, Value *parent)
-			: MemberValue(rt, access, parent), type(type) {
+		inline VarValue(Runtime *rt, AccessModifier access, Type type, Value *parent = nullptr, std::string name = "")
+			: MemberValue(rt, access, parent, name), type(type) {
 			reportSizeToRuntime(sizeof(*this));
 		}
 
@@ -19,10 +19,10 @@ namespace Slake {
 		virtual inline Type getType() const override { return ValueType::VAR; }
 		inline Type getVarType() const { return type; }
 
-		virtual inline Value *getMember(std::string name) override {
+		virtual inline MemberValue *getMember(std::string name) override {
 			return value ? value->getMember(name) : nullptr;
 		}
-		virtual inline const Value *getMember(std::string name) const override {
+		virtual inline const MemberValue *getMember(std::string name) const override {
 			return value ? value->getMember(name) : nullptr;
 		}
 

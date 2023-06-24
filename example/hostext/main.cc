@@ -5,11 +5,14 @@
 
 Slake::ValueRef<> println(Slake::Runtime *rt, uint8_t nArgs, Slake::ValueRef<> *args) {
 	using namespace Slake;
+
 	StringValue *v = (StringValue *)*(args[0]);
+
 	if (v->getType() != ValueType::STRING)
 		throw std::runtime_error("Invalid argument type");
+
 	puts(v->getValue().c_str());
-	return Slake::ValueRef<>();
+	return {};
 }
 
 Slake::ValueRef<Slake::ModuleValue> fsModuleLoader(Slake::Runtime *rt, Slake::RefValue *ref) {
@@ -41,7 +44,8 @@ int main(int argc, char **argv) {
 
 	rt->setModuleLoader(fsModuleLoader);
 
-	rt->getRootValue()->addMember("main", *(rt->loadModule(fs, "main")));
+	auto mod = rt->loadModule(fs, "main");
+	rt->getRootValue()->addMember("main", *mod);
 
 	rt->getRootValue()->addMember(
 		"println",
@@ -50,6 +54,7 @@ int main(int argc, char **argv) {
 			println,
 			Slake::ACCESS_PUB,
 			Slake::ValueType::NONE,
+			"println",
 			rt->getRootValue()));
 
 	// std::printf("%s\n", std::to_string(rt).c_str());
@@ -57,17 +62,22 @@ int main(int argc, char **argv) {
 	Slake::ValueRef<> v;
 
 	v = rt->getRootValue()->getMember("main")->getMember("main")->call(0, nullptr);
+	printf("%d\n", ((Slake::ValueRef<Slake::I32Value>)v)->getValue());
+
+	v = rt->getRootValue()->getMember("main")->getMember("main")->call(0, nullptr);
+	printf("%d\n", ((Slake::ValueRef<Slake::I32Value>)v)->getValue());
+
+	v = rt->getRootValue()->getMember("main")->getMember("main")->call(0, nullptr);
+	printf("%d\n", ((Slake::ValueRef<Slake::I32Value>)v)->getValue());
+
 	/*
 	try {
 		v = rt->getRootValue()->getMember("main")->getMember("main")->call(0, nullptr);
 	} catch (...) {
 		std::printf("Dumping state:\n%s\n", std::to_string(*rt).c_str());
-		std::printf("Dumping context:\n%s\n", std::to_string(*(rt->threadCurrentContexts.at(std::this_thread::get_id()))).c_str());
+		std::printf("Dumping context:\n%s\n", std::to_string(*(rt->currentContexts.at(std::this_thread::get_id()))).c_str());
 		std::rethrow_exception(std::current_exception());
 	}*/
-
-	assert(v && v->getType().valueType == Slake::ValueType::I32);
-	printf("%d\n", ((Slake::ValueRef<Slake::I32Value>)v)->getValue());
 
 	v.release();
 

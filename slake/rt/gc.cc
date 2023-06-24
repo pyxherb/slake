@@ -1,26 +1,22 @@
 #include "../runtime.h"
 
-void Slake::Runtime::_gcWalk(Value *v, uint8_t gcStat) {
-	uint8_t valueStat = v->flags & VF_GCSTAT ? 1 : 0;
-	if (valueStat == gcStat)
+void Slake::Runtime::_gcWalk(Value *v) {
+	if (v->flags & VF_WALKED)
 		return;
 
-	if (gcStat)
-		v->flags |= VF_GCSTAT;
-	else
-		v->flags &= ~VF_GCSTAT;
+	v->flags |= VF_WALKED;
 
 	switch (v->getType().valueType) {
 		case ValueType::OBJECT: {
 			auto value = (ObjectValue *)v;
 			for (auto &i : value->_members)
-				_gcWalk(i.second, gcStat);
-			_gcWalk(value->_type, gcStat);
+				_gcWalk(i.second);
+			_gcWalk(value->_type);
 			break;
 		}
 		case ValueType::ARRAY:
 			for (auto &i : ((ArrayValue *)v)->values)
-				_gcWalk(*i, gcStat);
+				_gcWalk(*i);
 			break;
 		case ValueType::MAP:
 			break;
@@ -28,16 +24,16 @@ void Slake::Runtime::_gcWalk(Value *v, uint8_t gcStat) {
 			ClassValue *const value = (ClassValue *)v;
 
 			if (value->_parent)
-				_gcWalk(value->_parent, gcStat);
+				_gcWalk(value->_parent);
 
 			{
 				auto p = value->_parentClass.resolveCustomType();
 				if (p)
-					_gcWalk(p, gcStat);
+					_gcWalk(p);
 			}
 
 			for (auto &i : value->_members)
-				_gcWalk(i.second, gcStat);
+				_gcWalk(i.second);
 
 			break;
 		}
@@ -48,22 +44,22 @@ void Slake::Runtime::_gcWalk(Value *v, uint8_t gcStat) {
 
 			auto v = value->getValue();
 			if (v)
-				_gcWalk(*v, gcStat);
+				_gcWalk(*v);
 			break;
 		}
 		case ValueType::MOD: {
 			ModuleValue *value = (ModuleValue *)v;
 
 			if (value->_parent)
-				_gcWalk(value->_parent, gcStat);
+				_gcWalk(value->_parent);
 
 			for (auto &i : value->_members)
-				_gcWalk(i.second, gcStat);
+				_gcWalk(i.second);
 			break;
 		}
 		case ValueType::ROOT:
 			for (auto &i : ((RootValue *)v)->_members)
-				_gcWalk(*(i.second), gcStat);
+				_gcWalk(*(i.second));
 			break;
 	}
 }
@@ -71,52 +67,77 @@ void Slake::Runtime::_gcWalk(Value *v, uint8_t gcStat) {
 void Slake::Runtime::gc() {
 	_isInGc = true;
 
-	uint8_t gcStat = _internalFlags & RT_LASTGCSTAT ? 1 : 0;
 	if (_rootValue)
-		_gcWalk(_rootValue, gcStat);
+		_gcWalk(_rootValue);
 
 	// Walk contexts for each thread.
-	for (auto &i : threadCurrentContexts) {
+	for (auto &i : currentContexts) {
 		auto &ctxt = i.second;
 		// Walk for each major frames.
 		for (auto &j : ctxt->majorFrames) {
-			_gcWalk(*j.curFn, gcStat);
+			_gcWalk(*j.curFn);
 			if (j.scopeValue)
-				_gcWalk(*j.scopeValue, gcStat);
+				_gcWalk(*j.scopeValue);
 			if (j.returnValue)
-				_gcWalk(*j.returnValue, gcStat);
+				_gcWalk(*j.returnValue);
 			if (j.thisObject)
-				_gcWalk(*j.thisObject, gcStat);
+				_gcWalk(*j.thisObject);
 			for (auto &k : j.argStack)
-				_gcWalk(*k, gcStat);
+				_gcWalk(*k);
 			for (auto &k : j.dataStack)
-				_gcWalk(*k, gcStat);
+				_gcWalk(*k);
 			// Walking for minor frames are currently unneeded.
 		}
 	}
 
-	
+
+	std::unordered_set<Value *> gcTargets;
+	gcTargets.swap(_extraGcTargets);
+
 	if (_rootValue) {
-		for (auto i = _createdValues.begin(); i != _createdValues.end();) {
-			if ((((*i)->flags & VF_GCSTAT ? 1 : 0) != gcStat) && (!((*i)->_hostRefCount)))
-				delete *(i++);
-			else
-				++i;
+		// Scan for GC targets
+		for (auto i = _createdValues.begin(); i != _createdValues.end(); ++i) {
+			if ((!((*i)->flags & VF_WALKED)) && (!((*i)->_hostRefCount)))
+				gcTargets.insert(*i);
+		}
+
+		// Execute destructors for all destructible objects.
+		destructingThreads.insert(std::this_thread::get_id());
+		for (auto i : gcTargets) {
+			if (_createdValues.count(i)) {
+				auto d = i->getMember("delete");
+				if (d && i->getType() == ValueType::OBJECT)
+					d->call(0, nullptr);
+			}
+		}
+		destructingThreads.erase(std::this_thread::get_id());
+
+		for (auto i : gcTargets) {
+			if (_createdValues.count(i))
+				delete i;
 		}
 	} else {
+		destructingThreads.insert(std::this_thread::get_id());
+		for (auto i : _createdValues) {
+			if (_createdValues.count(i)) {
+				auto d = i->getMember("delete");
+				if (d && i->getType() == ValueType::OBJECT)
+					d->call(0, nullptr);
+			}
+		}
+		destructingThreads.erase(std::this_thread::get_id());
+
 		while (!_createdValues.empty()) {
 			auto i = _createdValues.begin();
-			if ((((*i)->flags & VF_GCSTAT ? 1 : 0) != gcStat) && (!((*i)->_hostRefCount)))
+			if (!((*i)->_hostRefCount)) {
 				delete *i;
-			else
+			} else
 				_createdValues.erase(i);
 		}
 	}
 
-	if (gcStat)
-		_internalFlags &= ~RT_LASTGCSTAT;
-	else
-		_internalFlags |= RT_LASTGCSTAT;
+	for (auto i : _createdValues)
+		i->flags &= ~VF_WALKED;
 
 	_szMemUsedAfterLastGc = _szMemInUse;
 	_isInGc = false;

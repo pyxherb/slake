@@ -14,6 +14,20 @@ namespace Slake {
 		RLOAD,	// Load a value onto stack by an existing reference
 		STORE,	// Store a value from stack
 
+		LVAR,	   // Create a new local variable
+		LVARI8,	   // Create a new i8 local variable
+		LVARI16,   // Create a new i16 local variable
+		LVARI32,   // Create a new i32 local variable
+		LVARI64,   // Create a new i64 local variable
+		LVARU8,	   // Create a new u8 local variable
+		LVARU16,   // Create a new u16 local variable
+		LVARU32,   // Create a new u32 local variable
+		LVARU64,   // Create a new u64 local variable
+		LVARF32,   // Create a new f32 local variable
+		LVARF64,   // Create a new f64 local variable
+		LVARBOOL,  // Create a new boolean local variable
+		LVAROBJ,   // Create a new object local variable
+
 		LLOAD,	 // Load a value from local variable area
 		LSTORE,	 // Store a value into local variable area
 

@@ -1,4 +1,4 @@
-module std::core::except;
+module std.core.except;
 
 /// @intro
 /// Interface for all exceptions.
@@ -10,23 +10,12 @@ pub interface Exception {
 }
 
 /// @intro
-/// Basic class for exceptions defined in standard library.
-/// @end
-///
-/// @since 1.0
-class BasicException(@Exception) {
-	final string _msg;
-	operator new(string msg) { _msg = msg; }
-	operator string() { return _msg; }
-}
-
-/// @intro
 /// Logical error class.
 /// @end
 ///
 /// @since 1.0
-pub class LogicalError(@BasicException) {
-	operator new(string msg) { base(msg); }
+pub native class LogicalError: @IException {
+	native operator new(string msg);
 }
 
 /// @intro
@@ -34,25 +23,17 @@ pub class LogicalError(@BasicException) {
 /// @end
 ///
 /// @since 1.0
-pub class DivideByZeroError(@BasicException) {
-}
-
-/// @intro
-/// Basic exception class for critical error (e.g. out of memory).
-/// @end
-///
-/// @since 1.0
-pub class CriticalError(@BasicException) {
+pub native class DivideByZeroError: @IException {
+	native operator new(string msg);
 }
 
 /// @intro
 /// Exception class which raises when error allocating memory spaces.
 /// @end
 ///
-/// @see {std::core::except::CriticalError}
-///
 /// @since 1.0
-pub class OutOfMemoryError(@BasicException) {
+pub native class OutOfMemoryError: @IException {
+	native operator new(string msg);
 }
 
 /// @intro
@@ -60,10 +41,9 @@ pub class OutOfMemoryError(@BasicException) {
 /// invalid opcode.
 /// @end
 ///
-/// @see {std::core::except::CriticalError}
-///
 /// @since 1.0
-pub class InvalidOpcodeError(@BasicException) {
+pub native class InvalidOpcodeError: @IException {
+	native operator new(string msg);
 }
 
 /// @intro
@@ -71,8 +51,7 @@ pub class InvalidOpcodeError(@BasicException) {
 /// invalid operands.
 /// @end
 ///
-/// @see {std::core::except::CriticalError}
-///
 /// @since 1.0
-pub class InvalidOperandsError(@CriticalError) {
+pub native class InvalidOperandsError: @IException {
+	native operator new(string msg);
 }

@@ -1,0 +1,47 @@
+{
+	"instructions": [
+		{
+			"opcode": 0,
+			"mnemonic": "nop",
+			"operands": [
+				[
+				]
+			]
+		},
+		{
+			"opcode": 1,
+			"mnemonic": "push",
+			"operands": [ "v" ]
+		},
+		{
+			"opcode": 2,
+			"mnemonic": "pop",
+			"operands": [ "" ]
+		},
+		{
+			"opcode": 3,
+			"mnemonic": "load",
+			"operands": [ "r", "R" ]
+		},
+		{
+			"opcode": 4,
+			"mnemonic": "lload",
+			"operands": [ "i", "I" ]
+		},
+		{
+			"opcode": 5,
+			"mnemonic": "rload",
+			"operands": [ "Rr" ]
+		},
+		{
+			"opcode": 6,
+			"mnemonic": "lstore",
+			"operands": [ "i", "I" ]
+		},
+		{
+			"opcode": 7,
+			"mnemonic": "rload",
+			"operands": [ "r" ]
+		}
+	]
+}

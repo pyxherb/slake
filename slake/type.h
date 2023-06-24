@@ -36,8 +36,9 @@ namespace Slake {
 
 		ANY,  // Any
 
-		REF,   // Reference
-		ROOT,  // Root value
+		REF,		  // Reference
+		GENERIC_ARG,  // Generic argument
+		ROOT,		  // Root value
 
 		INVALID = 0xff	// Invalid
 	};
@@ -84,10 +85,11 @@ namespace Slake {
 			Type *array;		 // Element type of the array
 			RefValue *deferred;	 // Reference to the type object
 			struct {
-				Type *k;  // Key type
-				Type *v;  // Value type
-			} map;		  // Extra data for maps
-		} exData = {};	  // Extra data
+				Type *k;		 // Key type
+				Type *v;		 // Value type
+			} map;				 // Extra data for maps
+			uint8_t genericArg;	 // Index in generic arguments
+		} exData = {};			 // Extra data
 
 		inline Type() noexcept : valueType(ValueType::NONE) {}
 		inline Type(const Type &x) noexcept { *this = x; }

@@ -1,4 +1,4 @@
-module std::core::reflect;
+module std.core.reflect;
 
 pub native class Type {
 }

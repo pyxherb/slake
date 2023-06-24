@@ -53,24 +53,25 @@ namespace Slake {
 		};
 
 		enum class ValueType : uint8_t {
-			NONE = 0,  // None
-			ANY,	   // Any
-			I8,		   // i8
-			I16,	   // i16
-			I32,	   // i32
-			I64,	   // i64
-			U8,		   // u8
-			U16,	   // u16
-			U32,	   // u32
-			U64,	   // u64
-			F32,	   // f32
-			F64,	   // f64
-			STRING,	   // String
-			BOOL,	   // Boolean
-			ARRAY,	   // Array
-			MAP,	   // Map
-			OBJECT,	   // Object
-			REF,	   // Reference
+			NONE = 0,	  // None
+			ANY,		  // Any
+			I8,			  // i8
+			I16,		  // i16
+			I32,		  // i32
+			I64,		  // i64
+			U8,			  // u8
+			U16,		  // u16
+			U32,		  // u32
+			U64,		  // u64
+			F32,		  // f32
+			F64,		  // f64
+			STRING,		  // String
+			BOOL,		  // Boolean (false)
+			ARRAY,		  // Array
+			MAP,		  // Map
+			OBJECT,		  // Object
+			REF,		  // Reference
+			GENERIC_ARG,  // Generic argument
 		};
 
 		/// @brief Value Descriptor (VD)
@@ -144,13 +145,29 @@ namespace Slake {
 			;
 
 		constexpr static uint8_t
-			SRD_NEXT = 0x01,
-			SRD_STATIC = 0x02;
-		/// @brief Scope Reference Descriptor (SRD)
-		struct ScopeRefDesc final {
-			uint8_t lenName : 8;
+			RSD_NEXT = 0x01;
+		/// @brief Reference Scope Descriptor (RSD)
+		struct RefScopeDesc final {
+			uint16_t lenName : 8;
 			uint8_t flags : 4;
 			uint8_t nGenericArgs : 4;
+		};
+
+		/// @brief Generic Parameter Descriptor (GPD)
+		struct GenericParamDesc final {
+			uint8_t lenName;
+			uint8_t nQualifier;
+		};
+
+		enum class GenericQualifierType : uint8_t {
+			EXTENDS = 0,  // Derived from a class
+			IMPLEMENTS,	  // Implemented an interface
+			COMPATIBLE,	  // Compatible to a trait
+		};
+
+		struct GenericQualifier final {
+			GenericQualifierType type : 3;
+			uint8_t nConditions : 5;
 		};
 
 		// @brief Array Descriptor (ARD)
@@ -161,6 +178,20 @@ namespace Slake {
 		// @brief Array Descriptor (MPD)
 		struct MapDesc final {
 			uint32_t nPairs;
+		};
+
+		// @brief Variable Debugging Descriptor (VDD)
+		struct VarDebugDesc final {
+			uint32_t line : 24;
+			uint8_t nLine : 8;
+		};
+
+		// @brief Function Statement Descriptor (FSD)
+		struct FnStmtDesc final {
+			uint32_t offIns : 24;
+			uint8_t nIns : 8;
+			uint32_t line : 24;
+			uint8_t nLine : 8;
 		};
 	}
 }

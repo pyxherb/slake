@@ -1,4 +1,4 @@
-module std::util::range;
+module std.util.range;
 
 class Range<T>: @iter::BidirIterable<T> {
 	@T begin, end;

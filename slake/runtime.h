@@ -146,25 +146,8 @@ namespace Slake {
 		Runtime &operator=(Runtime &) = delete;
 		Runtime &operator=(Runtime &&) = delete;
 
-		inline Runtime(RuntimeFlags flags = 0) : _flags(flags) {
-			_rootValue = new RootValue(this);
-			_rootValue->incRefCount();
-		}
-		virtual inline ~Runtime() {
-			gc();
-
-			// Execute destructors for all destructible objects.
-			destructingThreads.insert(std::this_thread::get_id());
-			for (auto i : _createdValues) {
-				auto d = i->getMember("delete");
-				if (d && i->getType() == ValueType::OBJECT)
-					d->call(0, nullptr);
-			}
-			destructingThreads.erase(std::this_thread::get_id());
-
-			while (_createdValues.size())
-				delete *_createdValues.begin();
-		}
+		Runtime(RuntimeFlags flags = 0);
+		virtual ~Runtime();
 
 		virtual Value *resolveRef(ValueRef<RefValue>, Value *v = nullptr);
 
@@ -178,7 +161,12 @@ namespace Slake {
 		inline std::string resolveName(MemberValue *v) {
 			std::string s;
 			do {
-				s = v->getName() + (s.empty() ? "::" + s : "");
+				switch (v->getType().valueType) {
+					case ValueType::OBJECT:
+						v = (MemberValue*)((ObjectValue *)v)->getType().exData.customType;
+						break;
+				}
+				s = v->getName() + (s.empty() ? "" : "." + s);
 			} while ((Value *)(v = (MemberValue *)v->getParent()) != _rootValue);
 			return s;
 		}

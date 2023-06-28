@@ -10,5 +10,6 @@ void StdLib::load(Runtime *rt) {
 	auto root = rt->getRootValue();
 
 	root->addMember("std", modStd = new ModuleValue(rt, ACCESS_PUB));
-	Core::load(rt);
+	//Core::load(rt);
+	Util::load(rt);
 }

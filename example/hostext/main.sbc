@@ -1,104 +1,77 @@
 .access native
 .fndecl void println ...
 
-.access pub
-.class WrappedI32
-	.var i32 _data
+.class A
+	.var i32 data
+	.var i32 testData
+	
+	.fn void new
+		PUSH 514;
+
+		LTHIS;
+		RLOAD data;
+
+		STORE;
+
+		PUSH 1919810;
+		LTHIS;
+		RLOAD testData;
+		STORE;
+
+		RET null;
+	.end
+.end
+
+.class B .extends A
+	.var i32 data
 
 	.fn void new
-		LTHIS;
-		RLOAD _data;
-		STORE 0;
+		LOAD base;
+		MCALL base.new;
 
-		SARG "WrappedI32 constructed";
-		CALL println;
-	.end
-
-	.fn void delete
-		SARG "WrappedI32 destructed";
-		CALL println;
-	.end
-
-	.fn i32 incf
-		LTHIS;
-		RLOAD _data;
-
-		INCF;
-		LVALUE;
-		RET;
-	.end
-
-	.fn i32 incb
-		LTHIS;
-		RLOAD _data;
-
-		INCB;
-		RET;
-	.end
-	
-	.fn i32 decf
-		LTHIS;
-		RLOAD _data;
-
-		DECF;
-		LVALUE;
-		RET;
-	.end
-
-	.fn i32 decb
-		LTHIS;
-		RLOAD _data;
-
-		DECB;
-		RET;
-	.end
-	
-	.fn i32 add i32
-		LTHIS;
-		RLOAD _data;
-		LVALUE;
-
-		LARG 0;
-		ADD;
+		PUSH 114;
 
 		LTHIS;
-		RLOAD _data;
+		RLOAD data;
+
 		STORE;
 
-		LTHIS;
-		RLOAD _data;
-		LVALUE;
-
-		RET;
+		RET null;
 	.end
-	
-	.fn i32 sub i32
-		LTHIS;
-		RLOAD _data;
-		LVALUE;
+.end
 
-		LARG 0;
-		SUB;
+.class C .extends B
+	.var i32 testData
+
+	.fn void new
+		LOAD base;
+		MCALL base.new;
+
+		PUSH 114514;
 
 		LTHIS;
-		RLOAD _data;
+		RLOAD testData;
+
 		STORE;
 
-		LTHIS;
-		RLOAD _data;
-		LVALUE;
-
-		RET;
+		RET null;
 	.end
 .end
 
 .fn i32 main
-	LVARI32 0;
+	LVAROBJ A;
 
-	LLOAD 0;
-	INCF;
+	NEW C;
+	LSTORE 0U;
 
-	LLOAD 0;
-	LVALUE;
+	PUSH "Hello, world!";
+	SARG;
+	CALL println;
+
+	PUSH 1.14f;
+	SARG;
+	CALL std.util.math.sin;
+	LRET;
+
 	RET;
 .end

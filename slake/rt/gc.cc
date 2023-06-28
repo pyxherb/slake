@@ -12,6 +12,8 @@ void Slake::Runtime::_gcWalk(Value *v) {
 			for (auto &i : value->_members)
 				_gcWalk(i.second);
 			_gcWalk(value->_type);
+			if (value->_parent)
+				_gcWalk(*value->_parent);
 			break;
 		}
 		case ValueType::ARRAY:

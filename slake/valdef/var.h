@@ -2,12 +2,14 @@
 #define _SLAKE_VALDEF_VAR_H_
 
 #include "member.h"
+#include <slake/except.h>
+#include <slake/type.h>
 
 namespace Slake {
 	class VarValue final : public MemberValue {
 	protected:
 		ValueRef<Slake::Value, false> value;
-		const Type type = Type(ValueType::ANY);
+		const Type type = ValueType::ANY;
 
 	public:
 		inline VarValue(Runtime *rt, AccessModifier access, Type type, Value *parent = nullptr, std::string name = "")
@@ -28,8 +30,8 @@ namespace Slake {
 
 		ValueRef<> getValue() { return value; }
 		void setValue(Value *value) {
-			// if (value->getType() != type)
-			//	throw std::runtime_error("Mismatched types");
+			if (!isCompatible(type, value->getType()))
+				throw MismatchedTypeError("Mismatched types");
 			this->value = value;
 		}
 

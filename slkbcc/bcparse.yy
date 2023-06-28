@@ -65,7 +65,6 @@ extern std::deque<std::shared_ptr<Slake::Assembler::Scope>> savedScopes;
 %token <double> L_F64 "f64 literal"
 %token <string> L_STRING "string literal"
 
-%token KW_BASE "base"
 %token KW_CONST "const"
 %token KW_END "end"
 %token KW_FALSE "false"
@@ -129,7 +128,7 @@ extern std::deque<std::shared_ptr<Slake::Assembler::Scope>> savedScopes;
 %type <shared_ptr<Operand>> Literal Operand
 %type <shared_ptr<ArrayOperand>> Array
 %type <shared_ptr<MapOperand>> Map
-%type <shared_ptr<Ref>> Ref RefBody InheritSlot
+%type <shared_ptr<Ref>> Ref InheritSlot
 %type <string> OperatorName
 %type <uint16_t> AccessModifier
 %type <deque<shared_ptr<TypeName>>> GenericArgs TypeNameList
@@ -259,8 +258,14 @@ FnDecl
 // Miscellaneous
 
 VarDef:
-".var" TypeName T_ID {}
-| ".var" TypeName T_ID Literal {}
+".var" TypeName T_ID {
+	curScope->vars[$3] = make_shared<Var>(@1, curAccess, $2);
+	curAccess = 0;
+}
+| ".var" TypeName T_ID Literal {
+	curScope->vars[$3] = make_shared<Var>(@1, curAccess, $2, $4);
+	curAccess = 0;
+}
 ;
 
 Access:
@@ -515,22 +520,15 @@ L_I8 { $$ = make_shared<I8Operand>(@1, $1); }
 | "null" { $$ = make_shared<NullOperand>(@1); }
 ;
 
-RefBody:
+Ref:
 T_ID GenericArgs {
 	$$ = make_shared<Ref>();
 	$$->scopes.push_back(make_shared<RefScope>(@1, $1, $2));
 }
-| RefBody "." T_ID GenericArgs  {
-	$$->scopes = $1->scopes;
+| Ref "." T_ID GenericArgs {
+	$$ = $1;
 	$$->scopes.push_back(make_shared<RefScope>(@3, $3, $4));
 }
-;
-
-Ref:
-"base" "." RefBody {
-	$3->scopes.push_front(make_shared<RefScope>(@1, "base"));
-}
-| RefBody { $$ = $1; }
 ;
 
 %%

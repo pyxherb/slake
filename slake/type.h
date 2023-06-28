@@ -105,7 +105,7 @@ namespace Slake {
 
 		~Type();
 
-		bool isDeferred() noexcept;
+		bool isLoadingDeferred() noexcept;
 
 		inline operator bool() noexcept {
 			return valueType != ValueType::NONE;
@@ -164,8 +164,9 @@ namespace Slake {
 	class TraitValue;
 
 	bool hasImplemented(ClassValue *c, InterfaceValue *i);
-	bool isCompatibleWith(ClassValue *c, TraitValue *t);
+	bool isComplyWith(ClassValue *c, TraitValue *t);
 	bool isConvertible(Type a, Type b);
+	bool isCompatible(Type a, Type b);
 }
 
 namespace std {

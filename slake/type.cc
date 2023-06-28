@@ -28,9 +28,16 @@ Type::~Type() {
 }
 
 
-bool Type::isDeferred() noexcept {
-	return valueType == ValueType::OBJECT &&
-		   ((Value *)exData.customType)->getType() == ValueType::REF;
+bool Type::isLoadingDeferred() noexcept {
+	switch (valueType) {
+		case ValueType::CLASS:
+		case ValueType::INTERFACE:
+		case ValueType::TRAIT:
+		case ValueType::STRUCT:
+			return ((Value *)exData.customType)->getType() == ValueType::REF;
+		default:
+			return false;
+	}
 }
 
 /// @brief Check if a type can be converted into another type.
@@ -127,7 +134,70 @@ bool Slake::isConvertible(Type src, Type dest) {
 				dest.exData.customType != src.exData.customType)
 				return false;
 			return true;
+		case ValueType::ANY:
 		case ValueType::NONE:
+			return true;
+		default:
+			return false;
+	}
+}
+
+/// @brief
+/// @param a Type of the variable
+/// @param b Type of the value
+/// @return
+bool Slake::isCompatible(Type a, Type b) {
+	switch (a.valueType) {
+		case ValueType::I8:
+		case ValueType::I16:
+		case ValueType::I32:
+		case ValueType::I64:
+		case ValueType::U8:
+		case ValueType::U16:
+		case ValueType::U32:
+		case ValueType::U64:
+		case ValueType::F32:
+		case ValueType::F64:
+		case ValueType::BOOL:
+		case ValueType::STRING:
+			return a.valueType == b.valueType;
+		case ValueType::OBJECT: {
+			switch (b.valueType) {
+				case ValueType::OBJECT:
+					for (auto i = ((ClassValue*)b.exData.customType); i; i = (ClassValue*)i->getParent()) {
+						if (i == b.exData.customType)
+							return true;
+					}
+					return false;
+				case ValueType::NONE:
+					return true;
+				default:
+					return false;
+			}
+		}
+		case ValueType::STRUCTOBJ: {
+			switch (b.valueType) {
+				case ValueType::STRUCTOBJ:
+					return a.exData.customType == b.exData.customType;
+				case ValueType::NONE:
+					return true;
+				default:
+					return false;
+			}
+		}
+		case ValueType::FN: {
+			switch (b.valueType) {
+				case ValueType::FN: {
+					// stub
+					return false;
+				}
+				case ValueType::NONE:
+					return true;
+				default:
+					return false;
+			}
+		}
+		case ValueType::ANY:
 			return true;
 		default:
 			return false;

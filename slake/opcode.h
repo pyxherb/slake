@@ -76,11 +76,12 @@ namespace Slake {
 		LARG,  // Push an argument
 
 		LTHIS,	// Load this
-		STHIS,	// Store this
 
-		CALL,	// Call and sets base for local addressing
-		ACALL,	// Asynchronous Call
-		RET,	// Return
+		CALL,	 // Call
+		MCALL,	 // Method Call
+		ACALL,	 // Asynchronous Call
+		AMCALL,	 // Asynchronous Method Call
+		RET,	 // Return
 
 		NEW,  // New
 

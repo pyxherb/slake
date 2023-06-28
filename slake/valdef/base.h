@@ -117,7 +117,7 @@ namespace Slake {
 	class Value {
 	protected:
 		std::atomic_uint32_t _refCount = 0;
-		// The garbage collector will never release it if its host reference count is not 0.
+		// The value will never be freed if its host reference count is not 0.
 		std::atomic_uint32_t _hostRefCount = 0;
 		Runtime *_rt;
 		ValueFlags flags = 0;

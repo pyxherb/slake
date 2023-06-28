@@ -216,11 +216,10 @@ void Slake::Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 
 		RefValue *parent = nullptr;
 
-		if (i.flags & SlxFmt::CTD_DERIVED) {
-			readRef(rt, fs);
-		}
-
 		std::unique_ptr<ClassValue> value = std::make_unique<ClassValue>(rt, access);
+
+		if (i.flags & SlxFmt::CTD_DERIVED)
+			value->_parentClass = Type(ValueType::CLASS, readRef(rt, fs));
 
 		if (i.nImpls) {
 			for (auto j = i.nImpls; j; j--) {

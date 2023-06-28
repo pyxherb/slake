@@ -6,6 +6,7 @@ ValueRef<> FnValue::call(uint8_t nArgs, ValueRef<> *args) {
 	bool isDestructing = _rt->destructingThreads.count(std::this_thread::get_id());
 	std::shared_ptr<Context> context = std::make_shared<Context>(), savedContext;
 
+	// Save previous context
 	if (_rt->currentContexts.count(std::this_thread::get_id()))
 		savedContext = _rt->currentContexts.at(std::this_thread::get_id());
 
@@ -13,16 +14,11 @@ ValueRef<> FnValue::call(uint8_t nArgs, ValueRef<> *args) {
 
 	{
 		auto frame = MajorFrame();
-		frame.curFn = this;
+		frame.curFn = this;	 // The garbage collector does not check if curFn is nullptr.
 		frame.curIns = UINT32_MAX - 1;
 		context->majorFrames.push_back(frame);
 
 		frame = MajorFrame();
-		{
-			auto minorFrame = MinorFrame();
-			minorFrame.exitOff = UINT32_MAX - 1;
-			frame.minorFrames.push_back(minorFrame);
-		}
 		frame.curFn = this;
 		frame.curIns = 0;
 		frame.scopeValue = _parent;
@@ -30,9 +26,10 @@ ValueRef<> FnValue::call(uint8_t nArgs, ValueRef<> *args) {
 	}
 
 	while (context->majorFrames.back().curIns != UINT32_MAX) {
-		if (context->majorFrames.back().curIns >= _nIns)
-			throw std::runtime_error("Out of function body");
+		if (context->majorFrames.back().curIns >= context->majorFrames.back().curFn->_nIns)
+			throw OutOfFnBodyError("Out of function body");
 
+		// Pause if the runtime is in GC
 		while (getRuntime()->_isInGc && !isDestructing)
 			std::this_thread::yield();
 
@@ -42,6 +39,7 @@ ValueRef<> FnValue::call(uint8_t nArgs, ValueRef<> *args) {
 			_rt->gc();
 	}
 
+	// Restore previous context
 	if (savedContext)
 		_rt->currentContexts[std::this_thread::get_id()] = savedContext;
 	else

@@ -83,7 +83,7 @@ void Slake::Decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 
 				os << ";\n";
 			}
-			os << std::string(indentLevel, '\t') << ".end\n";
+			os << std::string(indentLevel, '\t') << ".end\n\n";
 			break;
 		}
 		case ValueType::MOD: {
@@ -94,13 +94,23 @@ void Slake::Decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 				decompileValue(rt, i.second, os, indentLevel + 1);
 
 			os << std::string(indentLevel, '\t') << ".end"
-			   << "\n";
+			   << "\n\n";
 			break;
 		}
 		case ValueType::VAR: {
+			VarValue *v = (VarValue *)value;
+			os << std::string(indentLevel, '\t') << ".var " << getTypeName(rt, v->getVarType()) << "\n\n";
 			break;
 		}
 		case ValueType::CLASS: {
+			ClassValue *v = (ClassValue *)value;
+			os << std::string(indentLevel, '\t') << ".class " << v->getName() << "\n";
+
+			for (auto &i : *v)
+				decompileValue(rt, i.second, os, indentLevel + 1);
+
+			os << std::string(indentLevel, '\t') << ".end"
+			   << "\n\n";
 			break;
 		}
 		case ValueType::INTERFACE: {

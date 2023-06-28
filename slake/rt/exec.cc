@@ -259,57 +259,19 @@ static Value *_execUnaryOp(ValueRef<> x, Opcode opcode) {
 	throw InvalidOperandsError("Binary operation with incompatible types");
 }
 
-/// @brief Create a new class instance.
-/// @param cls Class for instance creation.
-/// @return Created instance of the class.
-ObjectValue *Slake::Runtime::_newClassInstance(ClassValue *cls) {
-	ObjectValue *instance = new ObjectValue(this, (MemberValue *)cls);
-
-	if (cls->_parentClass.valueType == ValueType::CLASS)
-		instance->_parent = _newClassInstance((ClassValue *)cls->_parentClass.exData.customType);
-
-	for (auto i : cls->_members) {
-		switch (i.second->getType().valueType) {
-			case ValueType::VAR: {
-				ValueRef<VarValue> var = new VarValue(
-					this,
-					((VarValue *)i.second)->getAccess(),
-					((VarValue *)i.second)->getVarType(),
-					instance,
-					i.first);
-
-				// Set value of the variable with the initial value
-				auto initValue = ((VarValue *)i.second)->getValue();
-				if (initValue)
-					var->setValue(*initValue);
-
-				instance->addMember(i.first, *var);
-				break;
-			}
-			case ValueType::FN: {
-				if (!((FnValue *)i.second)->isStatic())
-					instance->addMember(i.first, (MemberValue *)i.second);
-				break;
-			}
-		}
-	}
-	return instance;
-}
-
 void Slake::Runtime::_callFn(Context *context, FnValue *fn) {
 	auto &curFrame = context->majorFrames.back();
-	auto frame = MajorFrame();
+	MajorFrame frame;
 	frame.curIns = 0;
 	frame.curFn = fn;
-	frame.thisObject = curFrame.thisObject;
-	curFrame.argStack.swap(frame.nextArgStack);
+	frame.argStack.swap(curFrame.nextArgStack);
 
 	context->majorFrames.push_back(frame);
 	return;
 }
 
 VarValue *Slake::Runtime::_addLocalVar(MajorFrame &frame, Type type) {
-	auto v = new VarValue(this, ACCESS_PUB, ValueType::ANY);
+	auto v = new VarValue(this, ACCESS_PUB, type);
 	frame.localVars.push_back(v);
 	return v;
 }
@@ -843,18 +805,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			curMajorFrame.push(curMajorFrame.thisObject);
 			break;
 		}
-		case Opcode::STHIS: {
-			_checkOperandCount(ins, 0, 1);
-
-			ValueRef<> x;
-			if (!ins.getOperandCount())
-				x = curMajorFrame.pop();
-			else
-				x = ins.operands[0];
-
-			curMajorFrame.thisObject = x;
-			break;
-		}
+		case Opcode::MCALL:
 		case Opcode::CALL: {
 			_checkOperandCount(ins, 0, 1);
 
@@ -866,22 +817,39 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 
 			ValueRef<FnValue> fn = (FnValue *)*x;
 			if (fn->getType() != ValueType::FN) {
-				fn = (FnValue *)resolveRef((RefValue *)*x, *(curMajorFrame.scopeValue));
+				fn = (FnValue *)resolveRef((RefValue *)*x, *(curMajorFrame.thisObject));
 				if ((!fn) || (fn->getType() != ValueType::FN)) {
-					auto fn = resolveRef((RefValue *)*x);
+					fn = (FnValue *)resolveRef((RefValue *)*x, *(curMajorFrame.scopeValue));
+					if ((!fn) || (fn->getType() != ValueType::FN)) {
+						auto fn = resolveRef((RefValue *)*x);
 
-					if ((!fn) || (fn->getType() != ValueType::FN))
-						throw ResourceNotFoundError("No such function or method");
+						if ((!fn) || (fn->getType() != ValueType::FN))
+							throw ResourceNotFoundError("No such function or method");
+					}
 				}
 			}
 
 			if (fn->isNative()) {
-				((NativeFnValue *)*fn)->call((uint8_t)curMajorFrame.nextArgStack.size(), curMajorFrame.nextArgStack.size() ? &(curMajorFrame.nextArgStack[0]) : nullptr);
+				if (ins.opcode == Opcode::MCALL)
+					curMajorFrame.scopeValue = (curMajorFrame.thisObject = curMajorFrame.pop());
+
+				curMajorFrame.returnValue = ((NativeFnValue *)*fn)->call(
+					(uint8_t)curMajorFrame.nextArgStack.size(),
+					curMajorFrame.nextArgStack.size() ? &(curMajorFrame.nextArgStack[0]) : nullptr
+				);
 				curMajorFrame.nextArgStack.clear();
 			} else {
+				auto v = curMajorFrame.pop();
+
 				_callFn(context, *fn);
+
+				auto &newCurFrame = context->getCurFrame();
+
+				if (ins.opcode == Opcode::MCALL)
+					newCurFrame.scopeValue = (newCurFrame.thisObject = v);
 				return;
 			}
+
 			break;
 		}
 		case Opcode::ACALL: {
@@ -932,14 +900,13 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 					ObjectValue *instance = _newClassInstance((ClassValue *)*cls);
 					curMajorFrame.push(instance);
 
-					Slake::ValueRef<> savedThis = curMajorFrame.thisObject;
-
 					FnValue *constructor = (FnValue *)cls->getMember("new");
 					if (constructor && constructor->getType() == ValueType::FN) {
 						_callFn(context, constructor);
 						context->majorFrames.back().thisObject = instance;
 						return;
 					}
+					break;
 				}
 				case ValueType::STRUCT: {
 					// TODO:Implement it
@@ -1053,45 +1020,4 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			throw InvalidOpcodeError("Invalid opcode " + std::to_string((uint8_t)ins.opcode));
 	}
 	curMajorFrame.curIns++;
-}
-
-Value *Slake::Runtime::resolveRef(ValueRef<RefValue> ref, Value *v) {
-	if (!ref)
-		return nullptr;
-
-	MemberValue *value = (MemberValue *)v;
-
-	if ((!v) && !(v = _rootValue))
-		return nullptr;
-
-	while (value && value->getParent()) {
-		value = (MemberValue *)v;
-		for (auto i : ref->scopes) {
-			if (!(v = v->getMember(i)))
-				break;
-		}
-		if (v)
-			return v;
-
-		switch (value->getType().valueType) {
-			case ValueType::MOD:
-			case ValueType::CLASS:
-			case ValueType::STRUCT:
-				v = (MemberValue *)value->getParent();
-				break;
-			case ValueType::OBJECT: {
-				auto t = ((ObjectValue *)value)->getType();
-				switch (t.valueType) {
-					case ValueType::OBJECT:
-						v = t.exData.customType;
-						break;
-				}
-				break;
-			}
-			default:
-				return nullptr;
-		}
-	}
-
-	return nullptr;
 }

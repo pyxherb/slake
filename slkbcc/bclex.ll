@@ -34,7 +34,6 @@ yylloc.step();
 "."			return parser::make_T_DOT(yylloc);
 "..."		return parser::make_T_VARARG(yylloc);
 
-"base"		return parser::make_KW_BASE(yylloc);
 "const"		return parser::make_KW_CONST(yylloc);
 "false"		return parser::make_KW_FALSE(yylloc);
 "final"		return parser::make_KW_FINAL(yylloc);

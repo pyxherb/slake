@@ -10,7 +10,7 @@ namespace Slake {
 	protected:
 		std::unordered_map<std::string, MemberValue *> _members;
 		Value *const _type;
-		ObjectValue *_parent = nullptr;
+		ValueRef<ObjectValue> _parent;
 
 		inline void addMember(std::string name, MemberValue *value) {
 			if (_members.count(name)) {

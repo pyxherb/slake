@@ -6,9 +6,19 @@ pub enum SeekMode : u8 {
 	CUR
 }
 
-pub interface IStream {
-	byte[] read(usize nBytes);
+pub interface IBasicStream {
 	usize size();
 	void seek(@SeekMode mode, isize off);
 	isize tell();
+}
+
+pub interface IInputStream : @IBasicStream {
+	byte[] read(usize nBytes);
+}
+
+pub interface IOutputStream : @IBasicStream {
+	usize write(byte[] data);
+}
+
+pub interface IStream : @IInputStream, @IOutputStream {
 }

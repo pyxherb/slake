@@ -4,104 +4,115 @@
 #include <stdexcept>
 
 namespace Slake {
-	/// @brief Raises when mismatched types were detected.
-	class MismatchedTypeError : public std::runtime_error {
+	class RuntimeExecError : public std::runtime_error {
 	public:
-		inline MismatchedTypeError(std::string msg) : runtime_error(msg){};
+		inline RuntimeExecError(std::string msg) : runtime_error(msg){};
+		virtual inline ~RuntimeExecError() {}
+	};
+
+	class OutOfFnBodyError : public RuntimeExecError {
+	public:
+		inline OutOfFnBodyError(std::string msg) : RuntimeExecError(msg){};
+		virtual inline ~OutOfFnBodyError() {}
+	};
+
+	/// @brief Raises when mismatched types were detected.
+	class MismatchedTypeError : public RuntimeExecError {
+	public:
+		inline MismatchedTypeError(std::string msg) : RuntimeExecError(msg){};
 		virtual inline ~MismatchedTypeError() {}
 	};
 
 	/// @brief Raises when incompatible types were detected.
-	class IncompatibleTypeError : public std::runtime_error {
+	class IncompatibleTypeError : public RuntimeExecError {
 	public:
-		inline IncompatibleTypeError(std::string msg) : runtime_error(msg){};
+		inline IncompatibleTypeError(std::string msg) : RuntimeExecError(msg){};
 		virtual inline ~IncompatibleTypeError() {}
 	};
 
-
 	/// @brief Raises when executing instructions with invalid opcode.
-	class InvalidOpcodeError : public std::runtime_error {
+	class InvalidOpcodeError : public RuntimeExecError {
 	public:
-		inline InvalidOpcodeError(std::string msg) : runtime_error(msg){};
+		inline InvalidOpcodeError(std::string msg) : RuntimeExecError(msg){};
 		virtual inline ~InvalidOpcodeError() {}
 	};
 
 	/// @brief Raises when executing instructions with invalid operand combination.
-	class InvalidOperandsError : public std::runtime_error {
+	class InvalidOperandsError : public RuntimeExecError {
 	public:
-		inline InvalidOperandsError(std::string msg) : runtime_error(msg){};
+		inline InvalidOperandsError(std::string msg) : RuntimeExecError(msg){};
 		virtual inline ~InvalidOperandsError() {}
 	};
 
-	class InvalidArgumentsError : public std::runtime_error {
+	class InvalidArgumentsError : public RuntimeExecError {
 	public:
-		inline InvalidArgumentsError(std::string msg) : runtime_error(msg){};
+		inline InvalidArgumentsError(std::string msg = "Invalid arguments") : RuntimeExecError(msg){};
 		virtual inline ~InvalidArgumentsError() {}
 	};
 
-	class ResourceNotFoundError : public std::runtime_error {
+	class ResourceNotFoundError : public RuntimeExecError {
 	public:
-		inline ResourceNotFoundError(std::string msg) : runtime_error(msg){};
+		inline ResourceNotFoundError(std::string msg) : RuntimeExecError(msg){};
 		virtual inline ~ResourceNotFoundError() {}
 	};
 
-	class AccessViolationError : public std::runtime_error {
+	class AccessViolationError : public RuntimeExecError {
 	public:
-		inline AccessViolationError(std::string msg) : runtime_error(msg){};
+		inline AccessViolationError(std::string msg) : RuntimeExecError(msg){};
 		virtual inline ~AccessViolationError() {}
 	};
 
-	class UncaughtExceptionError : public std::runtime_error {
+	class UncaughtExceptionError : public RuntimeExecError {
 	public:
-		inline UncaughtExceptionError(std::string msg) : runtime_error(msg){};
+		inline UncaughtExceptionError(std::string msg) : RuntimeExecError(msg){};
 		virtual inline ~UncaughtExceptionError() {}
 	};
 
-	class AbortedError : public std::runtime_error {
+	class AbortedError : public RuntimeExecError {
 	public:
-		inline AbortedError(std::string msg) : runtime_error(msg){};
+		inline AbortedError(std::string msg) : RuntimeExecError(msg){};
 		virtual inline ~AbortedError() {}
 	};
 
-	class FrameBoundaryExceededError : public std::runtime_error {
+	class FrameBoundaryExceededError : public RuntimeExecError {
 	public:
-		inline FrameBoundaryExceededError(std::string msg) : runtime_error(msg){};
+		inline FrameBoundaryExceededError(std::string msg) : RuntimeExecError(msg){};
 		virtual inline ~FrameBoundaryExceededError() {}
 	};
 
-	class InvalidSubscriptionError : public std::runtime_error {
+	class InvalidSubscriptionError : public RuntimeExecError {
 	public:
-		inline InvalidSubscriptionError(std::string msg) : runtime_error(msg){};
+		inline InvalidSubscriptionError(std::string msg) : RuntimeExecError(msg){};
 		virtual inline ~InvalidSubscriptionError() {}
 	};
 
-	class FrameError : public std::runtime_error {
+	class FrameError : public RuntimeExecError {
 	public:
-		inline FrameError(std::string msg) : runtime_error(msg){};
+		inline FrameError(std::string msg) : RuntimeExecError(msg){};
 		virtual inline ~FrameError() {}
 	};
 
-	class StackOverflowError : public std::runtime_error {
+	class StackOverflowError : public RuntimeExecError {
 	public:
-		inline StackOverflowError(std::string msg) : runtime_error(msg){};
+		inline StackOverflowError(std::string msg) : RuntimeExecError(msg){};
 		virtual inline ~StackOverflowError() {}
 	};
 
-	class LoaderError : public std::runtime_error {
+	class LoaderError : public RuntimeExecError {
 	public:
-		inline LoaderError(std::string msg) : runtime_error(msg){};
+		inline LoaderError(std::string msg) : RuntimeExecError(msg){};
 		virtual inline ~LoaderError() {}
 	};
 
-	class NullRefError : public std::runtime_error {
+	class NullRefError : public RuntimeExecError {
 	public:
-		inline NullRefError(std::string msg) : runtime_error(msg){};
+		inline NullRefError(std::string msg = "Null reference detected") : RuntimeExecError(msg){};
 		virtual inline ~NullRefError() {}
 	};
 
-	class RefParseError : public std::runtime_error {
+	class RefParseError : public RuntimeExecError {
 	public:
-		inline RefParseError(std::string msg) : runtime_error(msg){};
+		inline RefParseError(std::string msg) : RuntimeExecError(msg){};
 		virtual inline ~RefParseError() {}
 	};
 }

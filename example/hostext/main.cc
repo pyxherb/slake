@@ -1,4 +1,5 @@
 #include <slake/runtime.h>
+#include <slake/lib/std.h>
 
 #include <cassert>
 #include <fstream>
@@ -43,6 +44,7 @@ int main(int argc, char **argv) {
 	fs.open("main.slx", std::ios_base::in | std::ios_base::binary);
 
 	rt->setModuleLoader(fsModuleLoader);
+	Slake::StdLib::load(rt);
 
 	auto mod = rt->loadModule(fs, "main");
 	rt->getRootValue()->addMember("main", *mod);
@@ -61,14 +63,18 @@ int main(int argc, char **argv) {
 
 	Slake::ValueRef<> v;
 
-	v = rt->getRootValue()->getMember("main")->getMember("main")->call(0, nullptr);
-	printf("%d\n", ((Slake::ValueRef<Slake::I32Value>)v)->getValue());
+	try {
+		v = rt->getRootValue()->getMember("main")->getMember("main")->call(0, nullptr);
 
-	v = rt->getRootValue()->getMember("main")->getMember("main")->call(0, nullptr);
-	printf("%d\n", ((Slake::ValueRef<Slake::I32Value>)v)->getValue());
-
-	v = rt->getRootValue()->getMember("main")->getMember("main")->call(0, nullptr);
-	printf("%d\n", ((Slake::ValueRef<Slake::I32Value>)v)->getValue());
+		printf("%f\n", ((Slake::ValueRef<Slake::F32Value>)v)->getValue());
+	} catch (Slake::RuntimeExecError e) {
+		auto ctxt = rt->currentContexts.at(std::this_thread::get_id());
+		printf("RuntimeExecError: %s\n", e.what());
+		printf("Traceback:\n");
+		for (auto i = ctxt->majorFrames.rbegin(); i != ctxt->majorFrames.rend(); ++i) {
+			printf("\t%s: 0x%08x\n", rt->resolveName(*(i->curFn)).c_str(), i->curIns);
+		}
+	}
 
 	/*
 	try {

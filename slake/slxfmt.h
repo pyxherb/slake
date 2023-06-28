@@ -24,6 +24,8 @@ namespace Slake {
 	namespace SlxFmt {
 		constexpr static uint8_t GENERIC_PARAM_MAX = 16;
 
+		constexpr static uint8_t IMH_MODNAME = 0x01;
+
 		///
 		/// @brief IMage Header (IMH)
 		///

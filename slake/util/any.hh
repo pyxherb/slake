@@ -5,8 +5,8 @@
 #include <functional>
 #include <type_traits>
 
-namespace Slake {
-	namespace Util {
+namespace slake {
+	namespace util {
 		class Any {
 		protected:
 			void *_data;

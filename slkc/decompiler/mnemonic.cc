@@ -3,7 +3,7 @@
 #define MNEMONIC_ENTRY(m) \
 	{ Opcode::m, #m }
 
-using namespace Slake;
+using namespace slake;
 
 std::unordered_map<Opcode, std::string> Decompiler::mnemonics = {
 	MNEMONIC_ENTRY(NOP),

@@ -3,7 +3,7 @@
 
 #include "base.h"
 
-namespace Slake {
+namespace slake {
 	template <typename T, ValueType VT>
 	class LiteralValue final : public Value {
 	protected:
@@ -11,17 +11,17 @@ namespace Slake {
 
 	public:
 		inline LiteralValue(Runtime *rt, T value) : Value(rt), _value(value) {
-			reportSizeToRuntime(sizeof(*this));
+			reportSizeToRuntime(sizeof(*this) - sizeof(Value));
 			if constexpr (std::is_same<T, std::string>::value) {
 				reportSizeToRuntime((long)value.size());
 			}
 		}
-		virtual inline ~LiteralValue() {}
+		virtual ~LiteralValue() = default;
 
 		virtual inline Type getType() const override { return VT; }
 
-		virtual inline const T &getValue() const { return _value; }
-		virtual inline void setValue(T &value) {
+		virtual inline const T &getData() const { return _value; }
+		virtual inline void setData(T &value) {
 			if constexpr (std::is_same<T, std::string>::value) {
 				reportSizeToRuntime(((long)value.size()) - (long)_value.size());
 			}
@@ -35,15 +35,8 @@ namespace Slake {
 
 		LiteralValue &operator=(const LiteralValue &) = delete;
 		LiteralValue &operator=(const LiteralValue &&) = delete;
-
-		virtual inline std::string toString() const override {
-			if constexpr (std::is_same<T, std::string>::value)
-				return Value::toString() + ",\"value\":\"" + _value + "\"";
-			else
-				return Value::toString() + ",\"value\":" + std::to_string(_value);
-		}
 	};
-	
+
 
 	using I8Value = LiteralValue<std::int8_t, ValueType::I8>;
 	using I16Value = LiteralValue<std::int16_t, ValueType::I16>;

@@ -3,8 +3,8 @@
 
 #include <slake/runtime.h>
 
-namespace Slake {
-	namespace StdLib {
+namespace slake {
+	namespace stdlib {
 		extern ModuleValue *modStd;
 		void load(Runtime *rt);
 	}

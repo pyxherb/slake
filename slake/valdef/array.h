@@ -4,7 +4,7 @@
 #include "base.h"
 #include <deque>
 
-namespace Slake {
+namespace slake {
 	class ArrayValue final : public Value {
 	protected:
 		std::deque<ValueRef<Value, false>> values;
@@ -15,7 +15,7 @@ namespace Slake {
 	public:
 		inline ArrayValue(Runtime *rt, Type type)
 			: Value(rt), type(type) {
-			reportSizeToRuntime(sizeof(*this));
+			reportSizeToRuntime(sizeof(*this) - sizeof(Value));
 		}
 
 		virtual inline ~ArrayValue() {
@@ -32,16 +32,6 @@ namespace Slake {
 		}
 
 		size_t getSize() { return values.size(); }
-
-		virtual inline std::string toString() const override {
-			std::string s = Value::toString() + ",\"values\":[";
-
-			for (size_t i = 0; i != values.size(); ++i) {
-				s += (i ? "," : "") + values[i];
-			}
-
-			s += "[";
-		}
 
 		ArrayValue &operator=(const ArrayValue &) = delete;
 		ArrayValue &operator=(const ArrayValue &&) = delete;

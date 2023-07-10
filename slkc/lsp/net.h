@@ -3,7 +3,7 @@
 
 #include <stdexcept>
 
-namespace Slake {
+namespace slake {
 	namespace Server {
 		class Socket {
 		protected:

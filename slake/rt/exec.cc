@@ -1,6 +1,7 @@
 #include "../runtime.h"
+#include <cmath>
 
-using namespace Slake;
+using namespace slake;
 
 /// @brief Check if value of a value object is in range of specified type.
 /// @tparam TD Destination type.
@@ -10,10 +11,10 @@ using namespace Slake;
 template <typename TD, typename TS>
 static TD _checkOperandRange(ValueRef<> v) {
 	auto value = (LiteralValue<TS, getValueType<TS>()> *)*v;
-	if ((TD)value->getValue() > std::numeric_limits<TD>::max() ||
-		(TD)value->getValue() < std::numeric_limits<TD>::min())
+	if ((TD)value->getData() > std::numeric_limits<TD>::max() ||
+		(TD)value->getData() < std::numeric_limits<TD>::min())
 		throw InvalidOperandsError("Invalid operand value");
-	return (TD)value->getValue();
+	return (TD)value->getData();
 }
 
 static uint32_t _getOperandAsAddress(ValueRef<> v) {
@@ -31,7 +32,7 @@ static uint32_t _getOperandAsAddress(ValueRef<> v) {
 		case ValueType::U16:
 			return _checkOperandRange<uint32_t, uint16_t>(v);
 		case ValueType::U32:
-			return ((U32Value *)*v)->getValue();
+			return ((U32Value *)*v)->getData();
 		case ValueType::U64:
 			return _checkOperandRange<uint32_t, uint64_t>(v);
 		default:
@@ -70,27 +71,27 @@ static Value *_castToLiteralValue(Runtime *rt, Value *x) {
 		return x;
 	switch (x->getType().valueType) {
 		case ValueType::I8:
-			return new T(rt, (LT)(((I8Value *)x)->getValue()));
+			return new T(rt, (LT)(((I8Value *)x)->getData()));
 		case ValueType::I16:
-			return new T(rt, (LT)(((I16Value *)x)->getValue()));
+			return new T(rt, (LT)(((I16Value *)x)->getData()));
 		case ValueType::I32:
-			return new T(rt, (LT)(((I32Value *)x)->getValue()));
+			return new T(rt, (LT)(((I32Value *)x)->getData()));
 		case ValueType::I64:
-			return new T(rt, (LT)(((I64Value *)x)->getValue()));
+			return new T(rt, (LT)(((I64Value *)x)->getData()));
 		case ValueType::U8:
-			return new T(rt, (LT)(((U8Value *)x)->getValue()));
+			return new T(rt, (LT)(((U8Value *)x)->getData()));
 		case ValueType::U16:
-			return new T(rt, (LT)(((U16Value *)x)->getValue()));
+			return new T(rt, (LT)(((U16Value *)x)->getData()));
 		case ValueType::U32:
-			return new T(rt, (LT)(((U32Value *)x)->getValue()));
+			return new T(rt, (LT)(((U32Value *)x)->getData()));
 		case ValueType::U64:
-			return new T(rt, (LT)(((U64Value *)x)->getValue()));
+			return new T(rt, (LT)(((U64Value *)x)->getData()));
 		case ValueType::F32:
-			return new T(rt, (LT)(((F32Value *)x)->getValue()));
+			return new T(rt, (LT)(((F32Value *)x)->getData()));
 		case ValueType::F64:
-			return new T(rt, (LT)(((F64Value *)x)->getValue()));
+			return new T(rt, (LT)(((F64Value *)x)->getData()));
 		case ValueType::BOOL:
-			return new T(rt, (LT)(((BoolValue *)x)->getValue()));
+			return new T(rt, (LT)(((BoolValue *)x)->getData()));
 		default:
 			throw IncompatibleTypeError("Invalid type conversion");
 	}
@@ -113,73 +114,73 @@ static Value *_execBinaryOp(ValueRef<> x, ValueRef<> y, Opcode opcode) {
 
 			switch (opcode) {
 				case Opcode::ADD:
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getValue() + ((LiteralValue<T, getValueType<T>()> *)*y)->getValue());
+					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() + ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
 				case Opcode::SUB:
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getValue() - ((LiteralValue<T, getValueType<T>()> *)*y)->getValue());
+					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() - ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
 				case Opcode::MUL:
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getValue() * ((LiteralValue<T, getValueType<T>()> *)*y)->getValue());
+					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() * ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
 				case Opcode::DIV:
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getValue() / ((LiteralValue<T, getValueType<T>()> *)*y)->getValue());
+					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() / ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
 				case Opcode::MOD: {
 					T result;
 					if constexpr (std::is_same<T, float>::value)
-						result = std::fmodf(_x->getValue(), ((LiteralValue<T, getValueType<T>()> *)*y)->getValue());
+						result = fmodf(_x->getData(), ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
 					else if constexpr (std::is_same<T, double>::value)
-						result = std::fmod(_x->getValue(), ((LiteralValue<T, getValueType<T>()> *)*y)->getValue());
+						result = fmod(_x->getData(), ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
 					else
-						result = _x->getValue() % ((LiteralValue<T, getValueType<T>()> *)*y)->getValue();
+						result = _x->getData() % ((LiteralValue<T, getValueType<T>()> *)*y)->getData();
 					return new LiteralValue<T, getValueType<T>()>(rt, result);
 				}
 				case Opcode::AND:
 					if constexpr (std::is_integral<T>::value)
-						return new LiteralValue<T, getValueType<T>()>(rt, _x->getValue() & ((LiteralValue<T, getValueType<T>()> *)*y)->getValue());
+						return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() & ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
 					else
 						throw InvalidOperandsError("Binary operation with incompatible types");
 				case Opcode::OR:
 					if constexpr (std::is_integral<T>::value)
-						return new LiteralValue<T, getValueType<T>()>(rt, _x->getValue() | ((LiteralValue<T, getValueType<T>()> *)*y)->getValue());
+						return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() | ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
 					else
 						throw InvalidOperandsError("Binary operation with incompatible types");
 				case Opcode::XOR:
 					if constexpr (std::is_integral<T>::value)
-						return new LiteralValue<T, getValueType<T>()>(rt, _x->getValue() ^ ((LiteralValue<T, getValueType<T>()> *)*y)->getValue());
+						return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() ^ ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
 					else
 						throw InvalidOperandsError("Binary operation with incompatible types");
 				case Opcode::LAND:
-					return new BoolValue(rt, _x->getValue() && ((LiteralValue<T, getValueType<T>()> *)*y)->getValue());
+					return new BoolValue(rt, _x->getData() && ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
 				case Opcode::LOR:
-					return new BoolValue(rt, _x->getValue() || ((LiteralValue<T, getValueType<T>()> *)*y)->getValue());
+					return new BoolValue(rt, _x->getData() || ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
 				case Opcode::EQ:
-					return new BoolValue(rt, _x->getValue() == ((LiteralValue<T, getValueType<T>()> *)*y)->getValue());
+					return new BoolValue(rt, _x->getData() == ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
 				case Opcode::NEQ:
-					return new BoolValue(rt, _x->getValue() != ((LiteralValue<T, getValueType<T>()> *)*y)->getValue());
+					return new BoolValue(rt, _x->getData() != ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
 				case Opcode::LT:
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getValue() < ((LiteralValue<T, getValueType<T>()> *)*y)->getValue());
+					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() < ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
 				case Opcode::GT:
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getValue() > ((LiteralValue<T, getValueType<T>()> *)*y)->getValue());
+					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() > ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
 				case Opcode::LTEQ:
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getValue() <= ((LiteralValue<T, getValueType<T>()> *)*y)->getValue());
+					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() <= ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
 				case Opcode::GTEQ:
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getValue() >= ((LiteralValue<T, getValueType<T>()> *)*y)->getValue());
+					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() >= ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
 				case Opcode::LSH:
 					if constexpr (std::is_integral<T>::value)
-						return new LiteralValue<T, getValueType<T>()>(rt, _x->getValue() << ((U32Value *)*y)->getValue());
+						return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() << ((U32Value *)*y)->getData());
 					else if constexpr (std::is_same<T, float>::value) {
-						auto result = (*(uint32_t *)(&_x->getValue())) << ((U32Value *)*y)->getValue();
+						auto result = (*(uint32_t *)(&_x->getData())) << ((U32Value *)*y)->getData();
 						return new LiteralValue<T, getValueType<T>()>(rt, *(float *)(&result));
 					} else if constexpr (std::is_same<T, double>::value) {
-						auto result = (*(uint64_t *)(&_x->getValue())) << ((U32Value *)*y)->getValue();
+						auto result = (*(uint64_t *)(&_x->getData())) << ((U32Value *)*y)->getData();
 						return new LiteralValue<T, getValueType<T>()>(rt, *(double *)(&result));
 					} else
 						throw InvalidOperandsError("Binary operation with incompatible types");
 				case Opcode::RSH:
 					if constexpr (std::is_integral<T>::value)
-						return new LiteralValue<T, getValueType<T>()>(rt, _x->getValue() >> ((U32Value *)*y)->getValue());
+						return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() >> ((U32Value *)*y)->getData());
 					else if constexpr (std::is_same<T, float>::value) {
-						auto result = (*(uint32_t *)(&_x->getValue())) >> ((U32Value *)*y)->getValue();
+						auto result = (*(uint32_t *)(&_x->getData())) >> ((U32Value *)*y)->getData();
 						return new LiteralValue<T, getValueType<T>()>(rt, *(float *)(&result));
 					} else if constexpr (std::is_same<T, double>::value) {
-						auto result = (*(uint64_t *)(&_x->getValue())) >> ((U32Value *)*y)->getValue();
+						auto result = (*(uint64_t *)(&_x->getData())) >> ((U32Value *)*y)->getData();
 						return new LiteralValue<T, getValueType<T>()>(rt, *(double *)(&result));
 					} else
 						throw InvalidOperandsError("Binary operation with incompatible types");
@@ -191,20 +192,20 @@ static Value *_execBinaryOp(ValueRef<> x, ValueRef<> y, Opcode opcode) {
 		// String
 		switch (opcode) {
 			case Opcode::ADD:
-				return new LiteralValue<T, ValueType::STRING>(rt, _x->getValue() + ((LiteralValue<T, getValueType<T>()> *)*y)->getValue());
+				return new LiteralValue<T, ValueType::STRING>(rt, _x->getData() + ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
 			case Opcode::EQ:
-				return new BoolValue(rt, _x->getValue() == ((LiteralValue<T, getValueType<T>()> *)*y)->getValue());
+				return new BoolValue(rt, _x->getData() == ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
 			case Opcode::NEQ:
-				return new BoolValue(rt, _x->getValue() != ((LiteralValue<T, getValueType<T>()> *)*y)->getValue());
+				return new BoolValue(rt, _x->getData() != ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
 			default:
 				throw InvalidOperandsError("Binary operation with incompatible types");
 		}
 	} else {
 		switch (opcode) {
 			case Opcode::EQ:
-				return new BoolValue(rt, _x->getValue() == ((LiteralValue<T, getValueType<T>()> *)*y)->getValue());
+				return new BoolValue(rt, _x->getData() == ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
 			case Opcode::NEQ:
-				return new BoolValue(rt, _x->getValue() != ((LiteralValue<T, getValueType<T>()> *)*y)->getValue());
+				return new BoolValue(rt, _x->getData() != ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
 			default:
 				throw InvalidOperandsError("Binary operation with incompatible types");
 		}
@@ -220,46 +221,46 @@ static Value *_execUnaryOp(ValueRef<> x, Opcode opcode) {
 		switch (opcode) {
 			case Opcode::REV:
 				if constexpr (std::is_integral<T>::value)
-					return new LiteralValue<T, getValueType<T>()>(rt, ~(_x->getValue()));
+					return new LiteralValue<T, getValueType<T>()>(rt, ~(_x->getData()));
 				else if constexpr (std::is_same<T, float>::value) {
-					auto result = ~(*(uint32_t *)(rt, &_x->getValue()));
+					auto result = ~(*(uint32_t *)(rt, &_x->getData()));
 					return new LiteralValue<T, getValueType<T>()>(rt, *((float *)&result));
 				} else if constexpr (std::is_same<T, double>::value) {
-					auto result = ~(*(uint64_t *)(rt, &_x->getValue()));
+					auto result = ~(*(uint64_t *)(rt, &_x->getData()));
 					return new LiteralValue<T, getValueType<T>()>(rt, *((double *)&result));
 				}
 				throw InvalidOperandsError("Binary operation with incompatible types");
 			case Opcode::NOT:
-				return new BoolValue(rt, !_x->getValue());
+				return new BoolValue(rt, !_x->getData());
 			case Opcode::INCF:
 			case Opcode::INCB:
 				if constexpr (std::is_integral<T>::value)
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getValue() + 1);
+					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() + 1);
 				else if constexpr (std::is_same<T, float>::value)
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getValue() + 1.0f);
+					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() + 1.0f);
 				else if constexpr (std::is_same<T, double>::value)
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getValue() + 1.0);
+					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() + 1.0);
 				throw InvalidOperandsError("Binary operation with incompatible types");
 			case Opcode::DECF:
 			case Opcode::DECB:
 				if constexpr (std::is_integral<T>::value)
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getValue() - 1);
+					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() - 1);
 				else if constexpr (std::is_same<T, float>::value)
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getValue() - 1.0f);
+					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() - 1.0f);
 				else if constexpr (std::is_same<T, double>::value)
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getValue() - 1.0);
+					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() - 1.0);
 				throw InvalidOperandsError("Binary operation with incompatible types");
 			case Opcode::NEG:
 				if constexpr (std::is_signed<T>::value)
-					return new LiteralValue<T, getValueType<T>()>(rt, -_x->getValue());
+					return new LiteralValue<T, getValueType<T>()>(rt, -_x->getData());
 				else
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getValue());
+					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData());
 		}
 	}
 	throw InvalidOperandsError("Binary operation with incompatible types");
 }
 
-void Slake::Runtime::_callFn(Context *context, FnValue *fn) {
+void slake::Runtime::_callFn(Context *context, FnValue *fn) {
 	auto &curFrame = context->majorFrames.back();
 	MajorFrame frame;
 	frame.curIns = 0;
@@ -270,7 +271,7 @@ void Slake::Runtime::_callFn(Context *context, FnValue *fn) {
 	return;
 }
 
-VarValue *Slake::Runtime::_addLocalVar(MajorFrame &frame, Type type) {
+VarValue *slake::Runtime::_addLocalVar(MajorFrame &frame, Type type) {
 	auto v = new VarValue(this, ACCESS_PUB, type);
 	frame.localVars.push_back(v);
 	return v;
@@ -279,7 +280,7 @@ VarValue *Slake::Runtime::_addLocalVar(MajorFrame &frame, Type type) {
 /// @brief Execute a single instruction.
 /// @param context Context for execution.
 /// @param ins Instruction to execute.
-void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
+void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 	auto &curMajorFrame = context->majorFrames.back();
 
 	switch (ins.opcode) {
@@ -301,7 +302,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			else
 				x = ins.operands[0];
 
-			_addLocalVar(curMajorFrame, ValueType::ANY)->setValue(*x);
+			_addLocalVar(curMajorFrame, ValueType::ANY)->setData(*x);
 			break;
 		}
 		case Opcode::LVARI8: {
@@ -312,7 +313,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			else
 				x = ins.operands[0];
 
-			_addLocalVar(curMajorFrame, ValueType::I8)->setValue(*x);
+			_addLocalVar(curMajorFrame, ValueType::I8)->setData(*x);
 			break;
 		}
 		case Opcode::LVARI16: {
@@ -323,7 +324,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			else
 				x = ins.operands[0];
 
-			_addLocalVar(curMajorFrame, ValueType::I16)->setValue(*x);
+			_addLocalVar(curMajorFrame, ValueType::I16)->setData(*x);
 			break;
 		}
 		case Opcode::LVARI32: {
@@ -334,7 +335,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			else
 				x = ins.operands[0];
 
-			_addLocalVar(curMajorFrame, ValueType::I32)->setValue(*x);
+			_addLocalVar(curMajorFrame, ValueType::I32)->setData(*x);
 			break;
 		}
 		case Opcode::LVARI64: {
@@ -345,7 +346,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			else
 				x = ins.operands[0];
 
-			_addLocalVar(curMajorFrame, ValueType::I64)->setValue(*x);
+			_addLocalVar(curMajorFrame, ValueType::I64)->setData(*x);
 			break;
 		}
 		case Opcode::LVARU8: {
@@ -356,7 +357,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			else
 				x = ins.operands[0];
 
-			_addLocalVar(curMajorFrame, ValueType::U8)->setValue(*x);
+			_addLocalVar(curMajorFrame, ValueType::U8)->setData(*x);
 			break;
 		}
 		case Opcode::LVARU16: {
@@ -367,7 +368,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			else
 				x = ins.operands[0];
 
-			_addLocalVar(curMajorFrame, ValueType::U16)->setValue(*x);
+			_addLocalVar(curMajorFrame, ValueType::U16)->setData(*x);
 			break;
 		}
 		case Opcode::LVARU32: {
@@ -378,7 +379,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			else
 				x = ins.operands[0];
 
-			_addLocalVar(curMajorFrame, ValueType::U32)->setValue(*x);
+			_addLocalVar(curMajorFrame, ValueType::U32)->setData(*x);
 			break;
 		}
 		case Opcode::LVARU64: {
@@ -389,7 +390,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			else
 				x = ins.operands[0];
 
-			_addLocalVar(curMajorFrame, ValueType::U64)->setValue(*x);
+			_addLocalVar(curMajorFrame, ValueType::U64)->setData(*x);
 			break;
 		}
 		case Opcode::LVARF32: {
@@ -400,7 +401,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			else
 				x = ins.operands[0];
 
-			_addLocalVar(curMajorFrame, ValueType::F32)->setValue(*x);
+			_addLocalVar(curMajorFrame, ValueType::F32)->setData(*x);
 			break;
 		}
 		case Opcode::LVARF64: {
@@ -411,7 +412,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			else
 				x = ins.operands[0];
 
-			_addLocalVar(curMajorFrame, ValueType::F64)->setValue(*x);
+			_addLocalVar(curMajorFrame, ValueType::F64)->setData(*x);
 			break;
 		}
 		case Opcode::LVARBOOL: {
@@ -422,14 +423,17 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			else
 				x = ins.operands[0];
 
-			_addLocalVar(curMajorFrame, ValueType::BOOL)->setValue(*x);
+			_addLocalVar(curMajorFrame, ValueType::BOOL)->setData(*x);
 			break;
 		}
 		case Opcode::LVAROBJ: {
 			_checkOperandCount(ins, 1);
 			_checkOperandType(ins, ValueType::REF);
 
-			_addLocalVar(curMajorFrame, (RefValue *)*ins.operands[0]);
+			Type type = (RefValue *)*ins.operands[0];
+			type.loadDeferredType(this);
+
+			_addLocalVar(curMajorFrame, type);
 			break;
 		}
 		case Opcode::LLOAD:
@@ -459,7 +463,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 				throw InvalidOperandsError("Invalid operand combination");
 
 			if (!(v = resolveRef((RefValue *)*(ins.operands[0]), *v))) {
-				throw ResourceNotFoundError("No such resource");
+				throw NotFoundError("No such resource", ins.operands[0]);
 			}
 			curMajorFrame.push(v);
 			break;
@@ -476,7 +480,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			if (x->getType() != ValueType::I32)
 				throw InvalidOperandsError("Invalid operand combination");
 
-			curMajorFrame.localVars.at(x->getValue()) = (VarValue *)*curMajorFrame.pop();
+			curMajorFrame.localVars.at(x->getData())->setData(*curMajorFrame.pop());
 			break;
 		}
 		case Opcode::STORE: {
@@ -496,7 +500,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 
 				if ((!x) || (x->getType() != ValueType::VAR)) {
 					if ((!(x = (VarValue *)resolveRef((RefValue *)*x, nullptr))) || (x->getType() != ValueType::VAR))
-						throw ResourceNotFoundError("No such variable");
+						throw NotFoundError("No such variable", x);
 				}
 
 				if ((((VarValue *)*x)->getAccess() & ACCESS_CONST))
@@ -507,7 +511,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 				throw InvalidOperandsError("Only can store to a variable");
 
 			// TODO: Implement the type checker.
-			((VarValue *)*x)->setValue(*curMajorFrame.pop());
+			((VarValue *)*x)->setData(*curMajorFrame.pop());
 			break;
 		}
 		case Opcode::LVALUE: {
@@ -516,7 +520,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			auto v = curMajorFrame.pop();
 			if (v->getType() != ValueType::VAR)
 				throw InvalidOperandsError("Invalid operand combination");
-			curMajorFrame.push(((VarValue *)*v)->getValue());
+			curMajorFrame.push(((VarValue *)*v)->getData());
 			break;
 		}
 		case Opcode::EXPAND: {
@@ -647,11 +651,11 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 					switch (ins.opcode) {
 						case Opcode::INCB:
 						case Opcode::DECB:
-							curMajorFrame.push(((VarValue *)*x)->getValue());
+							curMajorFrame.push(((VarValue *)*x)->getData());
 					}
 
 					v = x;
-					x = v->getValue();
+					x = v->getData();
 			}
 
 
@@ -700,11 +704,11 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			switch (ins.opcode) {
 				case Opcode::INCB:
 				case Opcode::DECB:
-					v->setValue(*value);
+					v->setData(*value);
 					break;
 				case Opcode::INCF:
 				case Opcode::DECF:
-					v->setValue(*value);
+					v->setData(*value);
 				default:
 					curMajorFrame.push(value);
 			}
@@ -729,7 +733,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 					if (i->getType() != ValueType::U32)
 						throw InvalidOperandsError("Invalid argument for subscription");
 
-					auto index = ((I32Value *)*i)->getValue();
+					auto index = ((I32Value *)*i)->getData();
 					if (_x->getSize() <= index)
 						throw InvalidSubscriptionError("Out of array range");
 
@@ -745,7 +749,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 					break;
 				}
 				default:
-					throw InvalidOperandsError("Subscription was not supported by the operand");
+					throw InvalidOperandsError("Subscription is not supported by the operand");
 			}
 			break;
 		}
@@ -756,7 +760,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			if (x->getType() != ValueType::U32)
 				throw InvalidOperandsError("Invalid operand type");
 
-			curMajorFrame.curIns = x->getValue();
+			curMajorFrame.curIns = x->getData();
 			break;
 		}
 		case Opcode::JT:
@@ -767,17 +771,17 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			if (x->getType() != ValueType::U32)
 				throw InvalidOperandsError("Invalid operand type");
 
-			curMajorFrame.curIns = x->getValue();
+			curMajorFrame.curIns = x->getData();
 
 			ValueRef<BoolValue> v = curMajorFrame.pop();
 			if (v->getType() != ValueType::BOOL)
 				throw InvalidOperandsError("Invalid operand type");
 
-			if (v->getValue()) {
+			if (v->getData()) {
 				if (ins.opcode == Opcode::JT)
-					curMajorFrame.curIns = x->getValue();
+					curMajorFrame.curIns = x->getData();
 			} else if (ins.opcode == Opcode::JF)
-				curMajorFrame.curIns = x->getValue();
+				curMajorFrame.curIns = x->getData();
 			break;
 		} /*
 		case Opcode::CAST: {
@@ -796,7 +800,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			if (x->getType() != ValueType::U32)
 				throw InvalidOperandsError("Invalid operand type");
 
-			curMajorFrame.push(curMajorFrame.argStack.at(((U32Value *)*x)->getValue()));
+			curMajorFrame.push(curMajorFrame.argStack.at(((U32Value *)*x)->getData()));
 			break;
 		}
 		case Opcode::LTHIS: {
@@ -824,7 +828,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 						auto fn = resolveRef((RefValue *)*x);
 
 						if ((!fn) || (fn->getType() != ValueType::FN))
-							throw ResourceNotFoundError("No such function or method");
+							throw NotFoundError("No such function or method", x);
 					}
 				}
 			}
@@ -866,7 +870,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 				ValueRef<> fn = resolveRef((RefValue *)*x);
 
 				if ((!fn) || (fn->getType() != ValueType::FN))
-					throw ResourceNotFoundError("No such method");
+					throw NotFoundError("No such method", x);
 			}
 			break;
 		}
@@ -891,7 +895,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			if (!cls) {
 				cls = (MemberValue *)resolveRef(ins.operands[0]);
 				if (!cls) {
-					throw ResourceNotFoundError("Class not found");
+					throw NotFoundError("Class not found", ins.operands[0]);
 				}
 			}
 
@@ -942,7 +946,7 @@ void Slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			else
 				x = ins.operands[0];
 
-			curMajorFrame.minorFrames.back().exceptHandlers.push_back(((I32Value *)*x)->getValue());
+			curMajorFrame.minorFrames.back().exceptHandlers.push_back(((I32Value *)*x)->getData());
 			break;
 		}
 		case Opcode::ABORT:

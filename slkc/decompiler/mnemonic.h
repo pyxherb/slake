@@ -3,8 +3,9 @@
 
 #include <unordered_map>
 #include <slake/opcode.h>
+#include <string>
 
-namespace Slake {
+namespace slake {
 	namespace Decompiler {
 		using namespace std;
 		extern unordered_map<Opcode, std::string> mnemonics;

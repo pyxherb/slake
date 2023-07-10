@@ -3,16 +3,16 @@
 
 #include "object.h"
 
-namespace Slake {
+namespace slake {
 	class StructValue : public MemberValue {
 	protected:
 		std::unordered_map<std::string, ValueRef<MemberValue, false>> _members;
 
 	public:
-		inline StructValue(Runtime *rt, AccessModifier access, Value *parent, std::string name) : MemberValue(rt, access, parent, name) {
-			reportSizeToRuntime(sizeof(*this));
+		inline StructValue(Runtime *rt, AccessModifier access) : MemberValue(rt, access) {
+			reportSizeToRuntime(sizeof(*this) - sizeof(MemberValue));
 		}
-		virtual inline ~StructValue() {}
+		virtual ~StructValue() = default;
 
 		virtual inline Type getType() const override { return ValueType::STRUCT; }
 

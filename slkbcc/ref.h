@@ -5,8 +5,8 @@
 #include <string>
 #include <deque>
 
-namespace Slake {
-	namespace Assembler {
+namespace slake {
+	namespace bcc {
 		class RefScope : public ILocated {
 		private:
 			location _loc;

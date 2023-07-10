@@ -39,7 +39,7 @@ Pseudo-Code
         LET value = RESOLVE(ref);
 
         IF value == NULL:
-            THROW ResourceNotFoundError
+            THROW NotFoundError
 
         PUSH(value)
     END

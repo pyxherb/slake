@@ -1,8 +1,21 @@
 #include <slake/runtime.h>
 
-using namespace Slake;
+using namespace slake;
 
-ValueRef<> FnValue::call(uint8_t nArgs, ValueRef<> *args) {
+Type BasicFnValue::getType() const { return ValueType::FN; }
+Type BasicFnValue::getReturnType() const { return _returnType; }
+
+FnValue::~FnValue() {
+	// Because the runtime will release all values, so we fill the body with 0
+	// due to references do not release their held object.
+	if (_rt->_flags & _RT_DELETING)
+		memset((void *)_body, 0, sizeof(Instruction) * _nIns);
+
+	if (_body)
+		delete[] _body;
+}
+
+ValueRef<> FnValue::call(uint8_t nArgs, ValueRef<> *args) const {
 	bool isDestructing = _rt->destructingThreads.count(std::this_thread::get_id());
 	std::shared_ptr<Context> context = std::make_shared<Context>(), savedContext;
 
@@ -50,14 +63,6 @@ ValueRef<> FnValue::call(uint8_t nArgs, ValueRef<> *args) {
 	return context->majorFrames.back().returnValue;
 }
 
-std::string FnValue::toString() const {
-	std::string s = Value::toString() + ",\"instructions\":[";
-
-	for (size_t i = 0; i < _nIns; i++) {
-		s += (i ? "," : "") + std::to_string(_body[i]);
-	}
-
-	s += "]";
-
-	return s;
+ValueRef<> NativeFnValue::call(uint8_t nArgs, ValueRef<> *args) const {
+	return _body(getRuntime(), nArgs, args);
 }

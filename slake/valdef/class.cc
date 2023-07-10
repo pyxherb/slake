@@ -1,41 +1,54 @@
-#include <slake/type.h>
-#include <slake/value.h>
+#include <slake/runtime.h>
 
-using namespace Slake;
+using namespace slake;
+
+bool ClassValue::_isAbstract() const {
+	for (auto i : _members) {
+		switch (i.second->getType().valueType) {
+			case ValueType::FN:
+				if (((FnValue *)i.second)->isAbstract())
+					return true;
+				break;
+		}
+	}
+
+	return false;
+}
+
+bool ClassValue::isAbstract() const {
+	if (!(_flags & _CLS_ABSTRACT_INITED)) {
+		if (_isAbstract())
+			_flags |= _CLS_ABSTRACT;
+
+		_flags |= _CLS_ABSTRACT_INITED;
+	}
+	return _flags & _CLS_ABSTRACT;
+}
 
 bool ClassValue::hasImplemented(const InterfaceValue *pInterface) const {
-	// Check if the class has implemented the interface.
 	for (auto &i : implInterfaces) {
-		assert(i.exData.customType->getType() == ValueType::INTERFACE);
-		auto j = (InterfaceValue *)i.exData.customType;
-		if (j == pInterface)
-			return true;
+		i.loadDeferredType(_rt);
 
-		// Check if parents of the interface implements the input interface.
-		for (auto k = (InterfaceValue *)j->_parent;
-			 k; k = (InterfaceValue *)k->_parentClass.exData.customType) {
-			if (k == pInterface)
-				return true;
-		}
+		if (((InterfaceValue *)*(i.getCustomTypeExData()))->isDerivedFrom(pInterface))
+			return true;
 	}
 	return false;
 }
 
-/// @brief Check if the class is compatible with a trait.
-/// @param t Trait to check.
-/// @return true if compatible, false otherwise.
 bool ClassValue::isCompatibleWith(const TraitValue *t) const {
 	for (auto &i : t->_members) {
-		MemberValue *v = nullptr;  // Corresponding member of this class.
+		const MemberValue *v = nullptr;	 // Corresponding member in this class.
 
 		// Check if corresponding member presents.
-		if (!_members.count(i.first)) {
+		if (!(v = getMember(i.first))) {
 			// Scan for parents if the member was not found.
-			for (auto j = (ClassValue *)_parentClass.exData.customType;
-				 j; j = (ClassValue *)j->_parentClass.exData.customType) {
-				// Continue if the member still does not present.
-				if (!(v = (MemberValue *)j->getMember(i.first)))
+			auto j = this;
+			while (j->parentClass) {
+				if (!(v = (MemberValue *)j->getMember(i.first))) {
+					j->parentClass.loadDeferredType(_rt);
+					j = (ClassValue*)*j->parentClass.getCustomTypeExData();
 					continue;
+				}
 				goto found;
 			}
 			return false;
@@ -63,12 +76,12 @@ bool ClassValue::isCompatibleWith(const TraitValue *t) const {
 					return false;
 
 				// Check for parameter number.
-				if (f->_params.size() != g->_params.size())
+				if (f->_paramTypes.size() != g->_paramTypes.size())
 					return false;
 
 				// Check for parameter types.
-				for (size_t i = 0; i < f->_params.size(); ++i) {
-					if (f->_params[i] != g->_params[i])
+				for (size_t i = 0; i < f->_paramTypes.size(); ++i) {
+					if (f->_paramTypes[i] != g->_paramTypes[i])
 						return false;
 				}
 
@@ -77,5 +90,33 @@ bool ClassValue::isCompatibleWith(const TraitValue *t) const {
 		}
 	}
 
+	if (t->parents.size()) {
+		for (auto i : t->parents) {
+			i.loadDeferredType(_rt);
+			if (!isCompatibleWith((TraitValue *)*(i.getCustomTypeExData()))) {
+				return false;
+			}
+		}
+	}
+
 	return true;
+}
+
+bool InterfaceValue::isDerivedFrom(const InterfaceValue *pInterface) const {
+	if (pInterface == this)
+		return true;
+
+	for (auto &i : parents) {
+		i.loadDeferredType(_rt);
+
+		InterfaceValue *interface = (InterfaceValue *)*(i.getCustomTypeExData());
+
+		if (interface->getType() != ValueType::INTERFACE)
+			throw IncompatibleTypeError("Referenced type value is not an interface");
+
+		if (interface->isDerivedFrom(pInterface))
+			return true;
+	}
+
+	return false;
 }

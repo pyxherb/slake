@@ -6,8 +6,8 @@
 #include <unordered_map>
 #include <antlr4-runtime.h>
 
-namespace Slake {
-	namespace Compiler {
+namespace slake {
+	namespace slkc {
 		using namespace std;
 
 		class AstNode {

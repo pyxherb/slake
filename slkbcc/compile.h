@@ -3,8 +3,8 @@
 
 #include "scope.h"
 
-namespace Slake {
-	namespace Assembler {
+namespace slake {
+	namespace bcc {
 		void compile(std::ostream &fs);
 		void compileScope(std::ostream &fs, shared_ptr<Scope> scope);
 		void compileOperand(std::ostream &fs, shared_ptr<Operand> operand);

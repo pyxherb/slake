@@ -6,40 +6,25 @@
 
 #include "base.h"
 
-namespace Slake {
+namespace slake {
 	class MemberValue : public Value, public AccessModified {
 	protected:
-		Value *_parent;
+		Value *_parent = nullptr;
 		std::string _name;
 
-		friend bool Slake::isConvertible(Type a, Type b);
+		friend bool slake::isConvertible(Type a, Type b);
 
 	public:
-		inline MemberValue(Runtime *rt, AccessModifier access, Value *parent = nullptr, std::string name = "")
-			: Value(rt), AccessModified(access), _parent(parent), _name(name) {
-			if (_parent)
-				_parent->incRefCount();
-		}
-		virtual inline ~MemberValue() {
-			if (!getRefCount() && _parent)
-				_parent->decRefCount();
-		}
+		MemberValue(Runtime *rt, AccessModifier access);
+		virtual ~MemberValue();
 
-		inline std::string getName() const { return _name; }
-		inline const Value *getParent() const { return _parent; }
+		std::string getName() const;
 
-		inline void bind(Value *parent, std::string name) {
-			_parent = parent, _name = name;
-		}
-		inline void unbind() {
-			assert(_parent);
-			_parent = nullptr;
-			_name.clear();
-		}
+		const Value *getParent() const;
+		Value *getParent();
 
-		virtual inline std::string toString() const override {
-			return Value::toString() + ",\"parent\":" + std::to_string((uintptr_t)_parent);
-		}
+		void bind(Value *parent, std::string name);
+		void unbind();
 	};
 }
 

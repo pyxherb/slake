@@ -2,14 +2,14 @@
 #include "core.h"
 #include "util.h"
 
-using namespace Slake;
+using namespace slake;
 
-ModuleValue *StdLib::modStd;
+ModuleValue *stdlib::modStd;
 
-void StdLib::load(Runtime *rt) {
+void stdlib::load(Runtime *rt) {
 	auto root = rt->getRootValue();
 
 	root->addMember("std", modStd = new ModuleValue(rt, ACCESS_PUB));
 	//Core::load(rt);
-	Util::load(rt);
+	util::load(rt);
 }

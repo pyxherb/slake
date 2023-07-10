@@ -1,5 +1,5 @@
 #
-# This file was adopted from ANTLR C++ runtime.
+# This file was originally adopted from ANTLR C++ runtime.
 #
 # Copyright (c) 2012-2022 The ANTLR Project. All rights reserved.
 #
@@ -21,7 +21,7 @@
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR
+# A PARTICULAR PURPOSE ARE DISCLAIMED.	IN NO EVENT SHALL THE REGENTS OR
 # CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
 # EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
 # PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
@@ -35,130 +35,139 @@
 find_package(Java QUIET COMPONENTS Runtime)
 
 if(NOT ANTLR_EXECUTABLE)
-  find_program(ANTLR_EXECUTABLE
-               NAMES antlr.jar antlr4.jar antlr-4.jar antlr-4.13.0-complete.jar)
+	find_program(ANTLR_EXECUTABLE
+					NAMES antlr4
+					HINTS /usr/bin/)
 endif()
 
-if(ANTLR_EXECUTABLE AND Java_JAVA_EXECUTABLE)
-  execute_process(
-      COMMAND ${Java_JAVA_EXECUTABLE} -jar ${ANTLR_EXECUTABLE}
-      OUTPUT_VARIABLE ANTLR_COMMAND_OUTPUT
-      ERROR_VARIABLE ANTLR_COMMAND_ERROR
-      RESULT_VARIABLE ANTLR_COMMAND_RESULT
-      OUTPUT_STRIP_TRAILING_WHITESPACE)
+if(NOT ANTLR_EXECUTABLE)
+	find_file(ANTLR_EXECUTABLE
+			NAMES antlr.jar antlr4.jar antlr-4.jar antlr-4.13.0-complete.jar
+			HINTS /usr/share/java/
+			REQUIRED)
+	set(ANTLR_EXECUTABLE ${Java_JAVA_EXECUTABLE} -jar ${ANTLR_EXECUTABLE})
+endif()
 
-  if(ANTLR_COMMAND_RESULT EQUAL 0)
-    string(REGEX MATCH "Version [0-9]+(\\.[0-9]+)*" ANTLR_VERSION ${ANTLR_COMMAND_OUTPUT})
-    string(REPLACE "Version " "" ANTLR_VERSION ${ANTLR_VERSION})
-  else()
-    message(
-        SEND_ERROR
-        "Command '${Java_JAVA_EXECUTABLE} -jar ${ANTLR_EXECUTABLE}' "
-        "failed with the output '${ANTLR_COMMAND_ERROR}'")
-  endif()
+if(ANTLR_EXECUTABLE)
+	execute_process(
+			COMMAND ${ANTLR_EXECUTABLE}
+			OUTPUT_VARIABLE ANTLR_COMMAND_OUTPUT
+			ERROR_VARIABLE ANTLR_COMMAND_ERROR
+			RESULT_VARIABLE ANTLR_COMMAND_RESULT
+			OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-  macro(ANTLR_TARGET Name InputFile)
-    set(ANTLR_OPTIONS LEXER PARSER LISTENER VISITOR)
-    set(ANTLR_ONE_VALUE_ARGS PACKAGE OUTPUT_DIRECTORY DEPENDS_ANTLR)
-    set(ANTLR_MULTI_VALUE_ARGS COMPILE_FLAGS DEPENDS)
-    cmake_parse_arguments(ANTLR_TARGET
-                          "${ANTLR_OPTIONS}"
-                          "${ANTLR_ONE_VALUE_ARGS}"
-                          "${ANTLR_MULTI_VALUE_ARGS}"
-                          ${ARGN})
+	if(ANTLR_COMMAND_RESULT EQUAL 0)
+		string(REGEX MATCH "Version [0-9]+(\\.[0-9]+)*" ANTLR_VERSION ${ANTLR_COMMAND_OUTPUT})
+		string(REPLACE "Version " "" ANTLR_VERSION ${ANTLR_VERSION})
+	else()
+		message(SEND_ERROR
+				"Command '${Java_JAVA_EXECUTABLE} -jar ${ANTLR_EXECUTABLE}' "
+				"failed with the output '${ANTLR_COMMAND_ERROR}'")
+	endif()
 
-    set(ANTLR_${Name}_INPUT ${InputFile})
+	macro(ANTLR_TARGET Name InputFile)
+		set(ANTLR_OPTIONS LEXER PARSER LISTENER VISITOR)
+		set(ANTLR_ONE_VALUE_ARGS PACKAGE OUTPUT_DIRECTORY DEPENDS_ANTLR)
+		set(ANTLR_MULTI_VALUE_ARGS COMPILE_FLAGS DEPENDS)
+		cmake_parse_arguments(ANTLR_TARGET
+							"${ANTLR_OPTIONS}"
+							"${ANTLR_ONE_VALUE_ARGS}"
+							"${ANTLR_MULTI_VALUE_ARGS}"
+							${ARGN})
 
-    get_filename_component(ANTLR_INPUT ${InputFile} NAME_WE)
+		set(ANTLR_${Name}_INPUT ${InputFile})
 
-    if(ANTLR_TARGET_OUTPUT_DIRECTORY)
-      set(ANTLR_${Name}_OUTPUT_DIR ${ANTLR_TARGET_OUTPUT_DIRECTORY})
-    else()
-      set(ANTLR_${Name}_OUTPUT_DIR
-          ${CMAKE_CURRENT_BINARY_DIR}/antlr4cpp_generated_src/${ANTLR_INPUT})
-    endif()
+		get_filename_component(ANTLR_INPUT ${InputFile} NAME_WE)
 
-    unset(ANTLR_${Name}_CXX_OUTPUTS)
+		if(ANTLR_TARGET_OUTPUT_DIRECTORY)
+			set(ANTLR_${Name}_OUTPUT_DIR ${ANTLR_TARGET_OUTPUT_DIRECTORY})
+		else()
+			set(ANTLR_${Name}_OUTPUT_DIR
+				${CMAKE_CURRENT_BINARY_DIR}/antlr4cpp_generated_src/${ANTLR_INPUT})
+		endif()
 
-    if((ANTLR_TARGET_LEXER AND NOT ANTLR_TARGET_PARSER) OR
-       (ANTLR_TARGET_PARSER AND NOT ANTLR_TARGET_LEXER))
-      list(APPEND ANTLR_${Name}_CXX_OUTPUTS
-           ${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}.h
-           ${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}.cpp)
-      set(ANTLR_${Name}_OUTPUTS
-          ${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}.interp
-          ${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}.tokens)
-    else()
-      list(APPEND ANTLR_${Name}_CXX_OUTPUTS
-           ${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}Lexer.h
-           ${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}Lexer.cpp
-           ${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}Parser.h
-           ${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}Parser.cpp)
-      list(APPEND ANTLR_${Name}_OUTPUTS
-           ${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}Lexer.interp
-           ${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}Lexer.tokens)
-    endif()
+		unset(ANTLR_${Name}_CXX_OUTPUTS)
 
-    if(ANTLR_TARGET_LISTENER)
-      list(APPEND ANTLR_${Name}_CXX_OUTPUTS
-           ${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}BaseListener.h
-           ${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}BaseListener.cpp
-           ${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}Listener.h
-           ${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}Listener.cpp)
-      list(APPEND ANTLR_TARGET_COMPILE_FLAGS -listener)
-    endif()
+		if((ANTLR_TARGET_LEXER AND NOT ANTLR_TARGET_PARSER) OR
+			 (ANTLR_TARGET_PARSER AND NOT ANTLR_TARGET_LEXER))
+			list(APPEND ANTLR_${Name}_CXX_OUTPUTS
+				${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}.h
+				${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}.cpp)
+			set(ANTLR_${Name}_OUTPUTS
+				${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}.interp
+				${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}.tokens)
+		else()
+			list(APPEND ANTLR_${Name}_CXX_OUTPUTS
+				${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}Lexer.h
+				${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}Lexer.cpp
+				${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}Parser.h
+				${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}Parser.cpp)
+			list(APPEND ANTLR_${Name}_OUTPUTS
+				${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}Lexer.interp
+				${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}Lexer.tokens)
+		endif()
 
-    if(ANTLR_TARGET_VISITOR)
-      list(APPEND ANTLR_${Name}_CXX_OUTPUTS
-           ${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}BaseVisitor.h
-           ${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}BaseVisitor.cpp
-           ${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}Visitor.h
-           ${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}Visitor.cpp)
-      list(APPEND ANTLR_TARGET_COMPILE_FLAGS -visitor)
-    endif()
+		if(ANTLR_TARGET_LISTENER)
+			list(APPEND ANTLR_${Name}_CXX_OUTPUTS
+				${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}BaseListener.h
+				${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}BaseListener.cpp
+				${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}Listener.h
+				${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}Listener.cpp)
+			list(APPEND ANTLR_TARGET_COMPILE_FLAGS -listener)
+		endif()
 
-    if(ANTLR_TARGET_PACKAGE)
-      list(APPEND ANTLR_TARGET_COMPILE_FLAGS -package ${ANTLR_TARGET_PACKAGE})
-    endif()
+		if(ANTLR_TARGET_VISITOR)
+			list(APPEND ANTLR_${Name}_CXX_OUTPUTS
+				${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}BaseVisitor.h
+				${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}BaseVisitor.cpp
+				${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}Visitor.h
+				${ANTLR_${Name}_OUTPUT_DIR}/${ANTLR_INPUT}Visitor.cpp)
+			list(APPEND ANTLR_TARGET_COMPILE_FLAGS -visitor)
+		endif()
 
-    list(APPEND ANTLR_${Name}_OUTPUTS ${ANTLR_${Name}_CXX_OUTPUTS})
+		if(ANTLR_TARGET_PACKAGE)
+			list(APPEND ANTLR_TARGET_COMPILE_FLAGS -package ${ANTLR_TARGET_PACKAGE})
+		endif()
 
-    if(ANTLR_TARGET_DEPENDS_ANTLR)
-      if(ANTLR_${ANTLR_TARGET_DEPENDS_ANTLR}_INPUT)
-        list(APPEND ANTLR_TARGET_DEPENDS
-             ${ANTLR_${ANTLR_TARGET_DEPENDS_ANTLR}_INPUT})
-        list(APPEND ANTLR_TARGET_DEPENDS
-             ${ANTLR_${ANTLR_TARGET_DEPENDS_ANTLR}_OUTPUTS})
-      else()
-        message(SEND_ERROR
-                "ANTLR target '${ANTLR_TARGET_DEPENDS_ANTLR}' not found")
-      endif()
-    endif()
+		list(APPEND ANTLR_${Name}_OUTPUTS ${ANTLR_${Name}_CXX_OUTPUTS})
 
-    add_custom_command(
-        OUTPUT ${ANTLR_${Name}_OUTPUTS}
-        COMMAND ${Java_JAVA_EXECUTABLE} -jar ${ANTLR_EXECUTABLE}
-                ${InputFile}
-                -o ${ANTLR_${Name}_OUTPUT_DIR}
-                -no-listener
-                -Dlanguage=Cpp
-                ${ANTLR_TARGET_COMPILE_FLAGS}
-        DEPENDS ${InputFile}
-                ${ANTLR_TARGET_DEPENDS}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMENT "Building ${Name} with ANTLR ${ANTLR_VERSION}")
-  endmacro(ANTLR_TARGET)
+		if(ANTLR_TARGET_DEPENDS_ANTLR)
+			if(ANTLR_${ANTLR_TARGET_DEPENDS_ANTLR}_INPUT)
+				list(APPEND ANTLR_TARGET_DEPENDS
+					${ANTLR_${ANTLR_TARGET_DEPENDS_ANTLR}_INPUT})
+				list(APPEND ANTLR_TARGET_DEPENDS
+					${ANTLR_${ANTLR_TARGET_DEPENDS_ANTLR}_OUTPUTS})
+			else()
+				message(SEND_ERROR "ANTLR target '${ANTLR_TARGET_DEPENDS_ANTLR}' not found")
+			endif()
+		endif()
 
-endif(ANTLR_EXECUTABLE AND Java_JAVA_EXECUTABLE)
+		add_custom_command(
+				OUTPUT ${ANTLR_${Name}_OUTPUTS}
+				COMMAND ${ANTLR_EXECUTABLE}
+				${InputFile}
+				-o ${ANTLR_${Name}_OUTPUT_DIR}
+				-no-listener
+				-Dlanguage=Cpp
+				${ANTLR_TARGET_COMPILE_FLAGS}
+				DEPENDS ${InputFile}
+				${ANTLR_TARGET_DEPENDS}
+				WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+				COMMENT "Building ${Name} with ANTLR ${ANTLR_VERSION}")
+	endmacro(ANTLR_TARGET)
+endif()
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
-    ANTLR
-    REQUIRED_VARS ANTLR_EXECUTABLE Java_JAVA_EXECUTABLE
-    VERSION_VAR ANTLR_VERSION)
+		ANTLR
+		REQUIRED_VARS ANTLR_EXECUTABLE Java_JAVA_EXECUTABLE
+		VERSION_VAR ANTLR_VERSION)
 
-find_path(ANTLR_INCLUDE_DIRS HINTS antlr4-runtime.h REQUIRED)
-find_path(ANTLR_LIBPATH HINTS antlr4-runtime-static.lib REQUIRED)
+find_path(
+	ANTLR_INCLUDE_DIRS
+	NAMES antlr4-runtime.h
+	REQUIRED)
+find_library(ANTLR_LIBPATH NAMES antlr4-runtime-static antlr4-runtime REQUIRED)
 
 add_compile_definitions(ANTLR4CPP_STATIC)
-set(ANTLR_LINK_LIBRARIES ${ANTLR_LIBPATH}/antlr4-runtime-static.lib)
+set(ANTLR_LINK_LIBRARIES ${ANTLR_LIBPATH})

@@ -1,9 +1,10 @@
 #include "compile.h"
 #include <slake/slxfmt.h>
 #include <bcparse.hh>
+#include <cstring>
 
-using namespace Slake;
-using namespace Slake::Assembler;
+using namespace slake;
+using namespace slake::bcc;
 
 template <typename T>
 static void _write(std::ostream &fs, const T &value) {
@@ -21,11 +22,11 @@ static void _write(std::ostream &fs, const T *ptr, size_t size) {
 	fs.write((const char *)ptr, size);
 }
 
-void Assembler::compile(std::ostream &fs) {
+void bcc::compile(std::ostream &fs) {
 	{
-		SlxFmt::ImgHeader ih = {};
+		slxfmt::ImgHeader ih = {};
 
-		memcpy(ih.magic, SlxFmt::IMH_MAGIC, sizeof(ih.magic));
+		memcpy(ih.magic, slxfmt::IMH_MAGIC, sizeof(ih.magic));
 		ih.fmtVer = 0;
 		ih.nImports = 0;
 
@@ -35,21 +36,24 @@ void Assembler::compile(std::ostream &fs) {
 	compileScope(fs, rootScope);
 }
 
-void Assembler::compileScope(std::ostream &fs, shared_ptr<Scope> scope) {
+void bcc::compileScope(std::ostream &fs, shared_ptr<Scope> scope) {
+	//
+	// Compile variables.
+	//
 	_write(fs, (uint32_t)scope->vars.size());
 	for (auto &i : scope->vars) {
-		SlxFmt::VarDesc vad = {};
+		slxfmt::VarDesc vad = {};
 
 		if (i.second->access & ACCESS_PUB)
-			vad.flags |= SlxFmt::VAD_PUB;
+			vad.flags |= slxfmt::VAD_PUB;
 		if (i.second->access & ACCESS_STATIC)
-			vad.flags |= SlxFmt::VAD_STATIC;
+			vad.flags |= slxfmt::VAD_STATIC;
 		if (i.second->access & ACCESS_FINAL)
-			vad.flags |= SlxFmt::VAD_FINAL;
+			vad.flags |= slxfmt::VAD_FINAL;
 		if (i.second->access & ACCESS_NATIVE)
-			vad.flags |= SlxFmt::VAD_NATIVE;
+			vad.flags |= slxfmt::VAD_NATIVE;
 		if (i.second->initValue)
-			vad.flags |= SlxFmt::VAD_INIT;
+			vad.flags |= slxfmt::VAD_INIT;
 
 		vad.lenName = i.first.length();
 		_write(fs, vad);
@@ -61,23 +65,26 @@ void Assembler::compileScope(std::ostream &fs, shared_ptr<Scope> scope) {
 			compileOperand(fs, i.second->initValue);
 	}
 
+	//
+	// Compile functions.
+	//
 	_write(fs, (uint32_t)scope->funcs.size());
 	for (auto &i : scope->funcs) {
-		SlxFmt::FnDesc fnd = {};
+		slxfmt::FnDesc fnd = {};
 
 		if (i.second->access & ACCESS_PUB)
-			fnd.flags |= SlxFmt::FND_PUB;
+			fnd.flags |= slxfmt::FND_PUB;
 		if (i.second->access & ACCESS_STATIC)
-			fnd.flags |= SlxFmt::FND_STATIC;
-		if (i.second->access & ACCESS_FINAL)
-			fnd.flags |= SlxFmt::FND_FINAL;
+			fnd.flags |= slxfmt::FND_STATIC;
 		if (i.second->access & ACCESS_NATIVE)
-			fnd.flags |= SlxFmt::FND_NATIVE;
+			fnd.flags |= slxfmt::FND_NATIVE;
 		if (i.second->access & ACCESS_OVERRIDE)
-			fnd.flags |= SlxFmt::FND_OVERRIDE;
+			fnd.flags |= slxfmt::FND_OVERRIDE;
+		if (i.second->access & ACCESS_FINAL)
+			fnd.flags |= slxfmt::FND_FINAL;
 
 		if (i.second->params.isVariadic)
-			fnd.flags |= SlxFmt::FND_VARG;
+			fnd.flags |= slxfmt::FND_VARG;
 
 		fnd.lenName = (uint16_t)i.first.length();
 		fnd.lenBody = (uint32_t)i.second->body.size();
@@ -92,7 +99,7 @@ void Assembler::compileScope(std::ostream &fs, shared_ptr<Scope> scope) {
 			compileTypeName(fs, j);
 
 		for (auto &j : i.second->body) {
-			SlxFmt::InsHeader ih;
+			slxfmt::InsHeader ih;
 			ih.opcode = j->opcode;
 
 			if (j->operands.size() > 3)
@@ -113,16 +120,19 @@ void Assembler::compileScope(std::ostream &fs, shared_ptr<Scope> scope) {
 		}
 	}
 
-	_write(fs, (uint32_t)(scope->classes.size() + scope->interfaces.size()));
+	//
+	// Compile classes.
+	//
+	_write(fs, (uint32_t)scope->classes.size());
 	for (auto &i : scope->classes) {
-		SlxFmt::ClassTypeDesc ctd = {};
+		slxfmt::ClassTypeDesc ctd = {};
 
 		if (i.second->access & ACCESS_PUB)
-			ctd.flags |= SlxFmt::CTD_PUB;
+			ctd.flags |= slxfmt::CTD_PUB;
 		if (i.second->access & ACCESS_FINAL)
-			ctd.flags |= SlxFmt::CTD_FINAL;
+			ctd.flags |= slxfmt::CTD_FINAL;
 		if (i.second->parent)
-			ctd.flags |= SlxFmt::CTD_DERIVED;
+			ctd.flags |= slxfmt::CTD_DERIVED;
 		ctd.nImpls = i.second->impls.size();
 		ctd.lenName = i.first.length();
 
@@ -137,118 +147,144 @@ void Assembler::compileScope(std::ostream &fs, shared_ptr<Scope> scope) {
 		compileScope(fs, i.second->scope);
 	}
 
+	//
+	// Compile interfaces.
+	//
+	_write(fs, (uint32_t)scope->interfaces.size());
 	for (auto &i : scope->interfaces) {
-		SlxFmt::ClassTypeDesc ctd = {};
+		slxfmt::InterfaceTypeDesc ctd = {};
 
 		if (i.second->access & ACCESS_PUB)
-			ctd.flags |= SlxFmt::CTD_PUB;
-		if (i.second->access & ACCESS_FINAL)
-			ctd.flags |= SlxFmt::CTD_FINAL;
-		if (i.second->parent)
-			ctd.flags |= SlxFmt::CTD_DERIVED;
-		ctd.flags |= SlxFmt::CTD_INTERFACE;
+			ctd.flags |= slxfmt::ITD_PUB;
+
+		ctd.nParents = (uint8_t)i.second->parents.size();
 
 		ctd.lenName = i.first.length();
 
 		_write(fs, ctd);
 		_write(fs, i.first.data(), i.first.length());
 
-		if (i.second->parent)
-			compileRef(fs, i.second->parent);
+		for(auto j:i.second->parents) {
+			compileRef(fs, j);
+		}
 
 		compileScope(fs, i.second->scope);
 	}
 
+	//
+	// Compile traits
+	//
+	_write(fs, (uint32_t)scope->traits.size());
+	for (auto &i : scope->traits) {
+		slxfmt::TraitTypeDesc ctd = {};
+
+		if (i.second->access & ACCESS_PUB)
+			ctd.flags |= slxfmt::TTD_PUB;
+
+		ctd.nParents = (uint8_t)i.second->parents.size();
+
+		ctd.lenName = i.first.length();
+
+		_write(fs, ctd);
+		_write(fs, i.first.data(), i.first.length());
+
+		for(auto j:i.second->parents) {
+			compileRef(fs, j);
+		}
+
+		compileScope(fs, i.second->scope);
+	}
+	// Compile Structures
 	_write(fs, (uint32_t)0);
 }
 
-void Assembler::compileOperand(std::ostream &fs, shared_ptr<Operand> operand) {
-	SlxFmt::ValueDesc vd = {};
+void bcc::compileOperand(std::ostream &fs, shared_ptr<Operand> operand) {
+	slxfmt::ValueDesc vd = {};
 	switch (operand->getOperandType()) {
 		case OperandType::NONE: {
-			vd.type = SlxFmt::ValueType::NONE;
+			vd.type = slxfmt::ValueType::NONE;
 			_write(fs, vd);
 			break;
 		}
 		case OperandType::I8: {
-			vd.type = SlxFmt::ValueType::I8;
+			vd.type = slxfmt::ValueType::I8;
 			_write(fs, vd);
 
 			_write(fs, static_pointer_cast<I8Operand>(operand)->data);
 			break;
 		}
 		case OperandType::I16: {
-			vd.type = SlxFmt::ValueType::I16;
+			vd.type = slxfmt::ValueType::I16;
 			_write(fs, vd);
 
 			_write(fs, static_pointer_cast<I16Operand>(operand)->data);
 			break;
 		}
 		case OperandType::I32: {
-			vd.type = SlxFmt::ValueType::I32;
+			vd.type = slxfmt::ValueType::I32;
 			_write(fs, vd);
 
 			_write(fs, static_pointer_cast<I32Operand>(operand)->data);
 			break;
 		}
 		case OperandType::I64: {
-			vd.type = SlxFmt::ValueType::I64;
+			vd.type = slxfmt::ValueType::I64;
 			_write(fs, vd);
 
 			_write(fs, static_pointer_cast<I64Operand>(operand)->data);
 			break;
 		}
 		case OperandType::U8: {
-			vd.type = SlxFmt::ValueType::U8;
+			vd.type = slxfmt::ValueType::U8;
 			_write(fs, vd);
 
 			_write(fs, static_pointer_cast<U8Operand>(operand)->data);
 			break;
 		}
 		case OperandType::U16: {
-			vd.type = SlxFmt::ValueType::U16;
+			vd.type = slxfmt::ValueType::U16;
 			_write(fs, vd);
 
 			_write(fs, static_pointer_cast<U16Operand>(operand)->data);
 			break;
 		}
 		case OperandType::U32: {
-			vd.type = SlxFmt::ValueType::U32;
+			vd.type = slxfmt::ValueType::U32;
 			_write(fs, vd);
 
 			_write(fs, static_pointer_cast<U32Operand>(operand)->data);
 			break;
 		}
 		case OperandType::U64: {
-			vd.type = SlxFmt::ValueType::U64;
+			vd.type = slxfmt::ValueType::U64;
 			_write(fs, vd);
 
 			_write(fs, static_pointer_cast<U64Operand>(operand)->data);
 			break;
 		}
 		case OperandType::F32: {
-			vd.type = SlxFmt::ValueType::F32;
+			vd.type = slxfmt::ValueType::F32;
 			_write(fs, vd);
 
 			_write(fs, static_pointer_cast<F32Operand>(operand)->data);
 			break;
 		}
 		case OperandType::F64: {
-			vd.type = SlxFmt::ValueType::F64;
+			vd.type = slxfmt::ValueType::F64;
 			_write(fs, vd);
 
 			_write(fs, static_pointer_cast<F64Operand>(operand)->data);
 			break;
 		}
 		case OperandType::BOOL: {
-			vd.type = SlxFmt::ValueType::BOOL;
+			vd.type = slxfmt::ValueType::BOOL;
 			_write(fs, vd);
 
 			_write(fs, static_pointer_cast<BoolOperand>(operand)->data);
 			break;
 		}
 		case OperandType::STRING: {
-			vd.type = SlxFmt::ValueType::STRING;
+			vd.type = slxfmt::ValueType::STRING;
 			_write(fs, vd);
 
 			auto &s = static_pointer_cast<StringOperand>(operand)->data;
@@ -258,7 +294,7 @@ void Assembler::compileOperand(std::ostream &fs, shared_ptr<Operand> operand) {
 			break;
 		}
 		case OperandType::REF: {
-			vd.type = SlxFmt::ValueType::REF;
+			vd.type = slxfmt::ValueType::REF;
 			_write(fs, vd);
 
 			compileRef(fs, static_pointer_cast<RefOperand>(operand)->data);
@@ -269,14 +305,14 @@ void Assembler::compileOperand(std::ostream &fs, shared_ptr<Operand> operand) {
 	}
 }
 
-void Assembler::compileRef(std::ostream &fs, shared_ptr<Ref> ref) {
+void bcc::compileRef(std::ostream &fs, shared_ptr<Ref> ref) {
 	for (size_t i = 0; i < ref->scopes.size(); ++i) {
-		SlxFmt::RefScopeDesc rsd = {};
+		slxfmt::RefScopeDesc rsd = {};
 
 		auto &scope = ref->scopes[i];
 
 		if (i + 1 < ref->scopes.size())
-			rsd.flags |= SlxFmt::RSD_NEXT;
+			rsd.flags |= slxfmt::RSD_NEXT;
 
 		rsd.lenName = scope->name.size();
 		// rsd.nGenericArgs = scope->genericArgs.size();
@@ -285,71 +321,71 @@ void Assembler::compileRef(std::ostream &fs, shared_ptr<Ref> ref) {
 	}
 }
 
-void Assembler::compileTypeName(std::ostream &fs, shared_ptr<TypeName> typeName) {
+void bcc::compileTypeName(std::ostream &fs, shared_ptr<TypeName> typeName) {
 	switch (typeName->type) {
 		case TYPE_I8: {
-			_write(fs, SlxFmt::ValueType::I8);
+			_write(fs, slxfmt::ValueType::I8);
 			break;
 		}
 		case TYPE_I16: {
-			_write(fs, SlxFmt::ValueType::I16);
+			_write(fs, slxfmt::ValueType::I16);
 			break;
 		}
 		case TYPE_I32: {
-			_write(fs, SlxFmt::ValueType::I32);
+			_write(fs, slxfmt::ValueType::I32);
 			break;
 		}
 		case TYPE_I64: {
-			_write(fs, SlxFmt::ValueType::I64);
+			_write(fs, slxfmt::ValueType::I64);
 			break;
 		}
 		case TYPE_U8: {
-			_write(fs, SlxFmt::ValueType::U8);
+			_write(fs, slxfmt::ValueType::U8);
 			break;
 		}
 		case TYPE_U16: {
-			_write(fs, SlxFmt::ValueType::U16);
+			_write(fs, slxfmt::ValueType::U16);
 			break;
 		}
 		case TYPE_U32: {
-			_write(fs, SlxFmt::ValueType::U32);
+			_write(fs, slxfmt::ValueType::U32);
 			break;
 		}
 		case TYPE_U64: {
-			_write(fs, SlxFmt::ValueType::U64);
+			_write(fs, slxfmt::ValueType::U64);
 			break;
 		}
 		case TYPE_F32: {
-			_write(fs, SlxFmt::ValueType::F32);
+			_write(fs, slxfmt::ValueType::F32);
 			break;
 		}
 		case TYPE_F64: {
-			_write(fs, SlxFmt::ValueType::F64);
+			_write(fs, slxfmt::ValueType::F64);
 			break;
 		}
 		case TYPE_BOOL: {
-			_write(fs, SlxFmt::ValueType::BOOL);
+			_write(fs, slxfmt::ValueType::BOOL);
 			break;
 		}
 		case TYPE_STRING: {
-			_write(fs, SlxFmt::ValueType::STRING);
+			_write(fs, slxfmt::ValueType::STRING);
 			break;
 		}
 		case TYPE_VOID: {
-			_write(fs, SlxFmt::ValueType::NONE);
+			_write(fs, slxfmt::ValueType::NONE);
 			break;
 		}
 		case TYPE_ANY: {
-			_write(fs, SlxFmt::ValueType::ANY);
+			_write(fs, slxfmt::ValueType::ANY);
 			break;
 		}
 		case TYPE_ARRAY: {
-			_write(fs, SlxFmt::ValueType::ARRAY);
+			_write(fs, slxfmt::ValueType::ARRAY);
 			compileTypeName(fs, static_pointer_cast<ArrayTypeName>(typeName)->elementType);
 			break;
 		}
 		case TYPE_MAP: {
-			_write(fs, SlxFmt::ValueType::MAP);
+			_write(fs, slxfmt::ValueType::MAP);
 			compileTypeName(fs, static_pointer_cast<MapTypeName>(typeName)->keyType);
 			compileTypeName(fs, static_pointer_cast<MapTypeName>(typeName)->valueType);
 			break;
@@ -359,7 +395,7 @@ void Assembler::compileTypeName(std::ostream &fs, shared_ptr<TypeName> typeName)
 			break;
 		}
 		case TYPE_CUSTOM: {
-			_write(fs, SlxFmt::ValueType::OBJECT);
+			_write(fs, slxfmt::ValueType::OBJECT);
 			compileRef(fs, static_pointer_cast<CustomTypeName>(typeName)->ref);
 			break;
 		}

@@ -5,15 +5,19 @@
 #include "class.h"
 #include "interface.h"
 #include "fn.h"
+#include "trait.h"
 
-namespace Slake {
-	namespace Assembler {
+namespace slake {
+	namespace bcc {
 		class Scope {
 		public:
 			unordered_map<string, shared_ptr<Var>> vars;
 			unordered_map<string, shared_ptr<Class>> classes;
 			unordered_map<string, shared_ptr<Interface>> interfaces;
+			unordered_map<string, shared_ptr<Trait>> traits;
 			unordered_map<string, shared_ptr<Fn>> funcs;
+
+			AccessModifier curAccess = 0;
 
 			Scope() = default;
 			virtual ~Scope() = default;

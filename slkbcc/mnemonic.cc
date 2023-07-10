@@ -3,9 +3,9 @@
 #define MNEMONIC_ENTRY(m) \
 	{ #m, Opcode::m }
 
-using namespace Slake;
+using namespace slake;
 
-std::unordered_map<std::string, Opcode> Assembler::mnemonics = {
+std::unordered_map<std::string, Opcode> bcc::mnemonics = {
 	MNEMONIC_ENTRY(NOP),
 
 	MNEMONIC_ENTRY(PUSH),

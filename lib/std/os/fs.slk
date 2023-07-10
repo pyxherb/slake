@@ -1,0 +1,9 @@
+module std.os.fs;
+
+class Path {
+	pub native operator new(string path);
+
+	pub native string getRootName();
+	pub native string getRootDir();
+	pub native string getBody();
+}

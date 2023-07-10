@@ -8,8 +8,19 @@ Documentations for Slake language.
 .. toctree::
     :maxdepth: 2
 
-    function
+    function    
     switch
+    
+    type
+    
     class
     interface
-    type
+    trait
+    
+    operator
+    accessor
+    generic
+
+    module
+
+    naming

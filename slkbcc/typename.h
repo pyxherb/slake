@@ -6,8 +6,8 @@
 #include <memory>
 #include <deque>
 
-namespace Slake {
-	namespace Assembler {
+namespace slake {
+	namespace bcc {
 		using namespace std;
 
 		enum Type : uint8_t {

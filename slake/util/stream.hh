@@ -4,8 +4,8 @@
 #include <cstdint>
 #include <istream>
 
-namespace Slake {
-	namespace Util {
+namespace slake {
+	namespace util {
 		class InputMemStream : virtual private std::streambuf,
 							   virtual public std::istream {
 		private:
@@ -19,7 +19,7 @@ namespace Slake {
 				  _size(size) {
 				setbuf((char *)src, size);
 			}
-			virtual inline ~InputMemStream() {}
+			virtual ~InputMemStream() = default;
 		};
 	}
 }

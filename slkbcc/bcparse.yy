@@ -16,7 +16,7 @@
 #include <bclex.h>
 
 YY_DECL;
-using namespace Slake::Assembler;
+using namespace slake::bcc;
 
 %}
 
@@ -30,18 +30,17 @@ using namespace Slake::Assembler;
 }
 
 %code provides {
-extern Slake::Assembler::parser::location_type yylloc;
-extern std::shared_ptr<Slake::Assembler::parser> yyparser;
-extern Slake::AccessModifier curAccess;
+extern slake::bcc::parser::location_type yylloc;
+extern std::shared_ptr<slake::bcc::parser> yyparser;
 extern std::unordered_map<std::string, uint32_t> curLabels;
-extern std::deque<std::shared_ptr<Slake::Assembler::Scope>> savedScopes;
+extern std::deque<std::shared_ptr<slake::bcc::Scope>> savedScopes;
 
 #pragma pop_macro("new")
 }
 
 %locations
 %language "c++"
-%define api.namespace {Slake::Assembler}
+%define api.namespace {slake::bcc}
 %define api.token.constructor
 %define api.value.type variant
 
@@ -90,7 +89,7 @@ extern std::deque<std::shared_ptr<Slake::Assembler::Scope>> savedScopes;
 %token D_ALIAS ".alias"
 %token D_VAR ".var"
 %token D_EXTENDS ".extends"
-%token D_IMPLEMENTS ".implements"
+%token D_IMPL ".impl"
 %token D_COMPLIES ".complies"
 
 %token TN_I8 "i8"
@@ -107,7 +106,6 @@ extern std::deque<std::shared_ptr<Slake::Assembler::Scope>> savedScopes;
 %token TN_F64 "f64"
 %token TN_STRING "string"
 %token TN_BOOL "bool"
-%token TN_AUTO "auto"
 %token TN_ANY "any"
 %token TN_VOID "void"
 
@@ -130,13 +128,13 @@ extern std::deque<std::shared_ptr<Slake::Assembler::Scope>> savedScopes;
 %type <shared_ptr<MapOperand>> Map
 %type <shared_ptr<Ref>> Ref InheritSlot
 %type <string> OperatorName
-%type <uint16_t> AccessModifier
 %type <deque<shared_ptr<TypeName>>> GenericArgs TypeNameList
 %type <shared_ptr<TypeName>> TypeName LiteralTypeName CustomTypeName FnTypeName ArrayTypeName MapTypeName
 %type <ParamDeclList> Params _Params
 %type <deque<shared_ptr<Instruction>>> Instructions
 %type <shared_ptr<Instruction>> Instruction
 %type <deque<shared_ptr<Operand>>> Operands _Operands
+%type <deque<shared_ptr<Ref>>> ImplList _ImplList ExtendList
 
 %expect 0
 
@@ -168,9 +166,9 @@ ModuleDecl
 
 ClassDef:
 ".class" T_ID InheritSlot ImplList {
-	auto curClass = make_shared<Class>(@1, curAccess, $3);
+	auto curClass = make_shared<Class>(@1, curScope->curAccess, $3);
 	curScope->classes[$2] = curClass;
-	curAccess = 0;
+	curScope->curAccess = 0;
 
 	savedScopes.push_back(curScope);
 	curScope = curClass->scope;
@@ -186,13 +184,23 @@ InheritSlot:
 ;
 
 ImplList:
-%empty
-| ".implements" _ImplList {}
+%empty {}
+| ".impl" _ImplList { $$ = $2; }
 ;
 
 _ImplList:
-Ref "," _ImplList {}
-| Ref {}
+Ref "," _ImplList {
+	$$ = $3;
+	$$.push_front($1);
+}
+| Ref {
+	$$.push_front($1);
+}
+;
+
+ExtendList:
+%empty {}
+| ".extends" _ImplList { $$ = $2; }
 ;
 
 ComplyDecls:
@@ -217,11 +225,17 @@ FnDef
 ;
 
 // Interface
-
 InterfaceDef:
-".interface" T_ID InheritSlot {
-	curAccess = 0;
+".interface" T_ID ExtendList {
+	auto curInterface = make_shared<Interface>(@1, curScope->curAccess, $3);
+	curScope->interfaces[$2] = curInterface;
+	curScope->curAccess = 0;
+
+	savedScopes.push_back(curScope);
+	curScope = curInterface->scope;
 } InterfaceStmts ".end" {
+	curScope = savedScopes.back();
+	savedScopes.pop_back();
 }
 ;
 
@@ -238,9 +252,16 @@ FnDecl
 // Trait
 
 TraitDef:
-".trait" T_ID InheritSlot ImplList {
-	curAccess = 0;
+".trait" T_ID ExtendList {
+	auto curTrait = make_shared<Trait>(@1, curScope->curAccess, $3);
+	curScope->traits[$2] = curTrait;
+	curScope->curAccess = 0;
+
+	savedScopes.push_back(curScope);
+	curScope = curTrait->scope;
 } TraitStmts ".end" {
+	curScope = savedScopes.back();
+	savedScopes.pop_back();
 }
 ;
 
@@ -259,26 +280,26 @@ FnDecl
 
 VarDef:
 ".var" TypeName T_ID {
-	curScope->vars[$3] = make_shared<Var>(@1, curAccess, $2);
-	curAccess = 0;
+	curScope->vars[$3] = make_shared<Var>(@1, curScope->curAccess, $2);
+	curScope->curAccess = 0;
 }
 | ".var" TypeName T_ID Literal {
-	curScope->vars[$3] = make_shared<Var>(@1, curAccess, $2, $4);
-	curAccess = 0;
+	curScope->vars[$3] = make_shared<Var>(@1, curScope->curAccess, $2, $4);
+	curScope->curAccess = 0;
 }
 ;
 
 Access:
-".access" AccessModifier { curAccess = $2; }
+".access" AccessModifier
 ;
 
 AccessModifier:
-"pub" AccessModifier { $$ |= ACCESS_PUB; }
-| "static" AccessModifier { $$ |= ACCESS_STATIC; }
-| "final" AccessModifier { $$ |= ACCESS_FINAL; }
-| "const" AccessModifier { $$ |= ACCESS_CONST; }
-| "native" AccessModifier { $$ |= ACCESS_NATIVE; }
-| "override" AccessModifier { $$ |= ACCESS_OVERRIDE; }
+"pub" AccessModifier { curScope->curAccess |= ACCESS_PUB; }
+| "static" AccessModifier { curScope->curAccess |= ACCESS_STATIC; }
+| "final" AccessModifier { curScope->curAccess |= ACCESS_FINAL; }
+| "const" AccessModifier { curScope->curAccess |= ACCESS_CONST; }
+| "native" AccessModifier { curScope->curAccess |= ACCESS_NATIVE; }
+| "override" AccessModifier { curScope->curAccess |= ACCESS_OVERRIDE; }
 | %empty {}
 ;
 
@@ -286,14 +307,14 @@ FnDef:
 ".fn" TypeName T_ID Params Instructions ".end" {
 	if(curScope->funcs.count($3))
 		error(@3, "Dulplicated function entry `" + $3 + "'");
-	curScope->funcs[$3] = make_shared<Fn>(@1, curAccess, $2, $4, $5);
-	curAccess = 0;
+	curScope->funcs[$3] = make_shared<Fn>(@1, curScope->curAccess, $2, $4, $5);
+	curScope->curAccess = 0;
 }
 | ".fn" TypeName "operator" OperatorName Params Instructions ".end" {
 	if(curScope->funcs.count($4))
 		error(@4, "Dulplicated function entry `" + $4 + "'");
-	curScope->funcs[$4] = make_shared<Fn>(@1, curAccess, $2, $5, $6);
-	curAccess = 0;
+	curScope->funcs[$4] = make_shared<Fn>(@1, curScope->curAccess, $2, $5, $6);
+	curScope->curAccess = 0;
 }
 ;
 
@@ -301,14 +322,14 @@ FnDecl:
 ".fndecl" TypeName T_ID Params {
 	if(curScope->funcs.count($3))
 		error(@3, "Dulplicated function entry `" + $3 + "'");
-	curScope->funcs[$3] = make_shared<Fn>(@1, curAccess, $2, $4);
-	curAccess = 0;
+	curScope->funcs[$3] = make_shared<Fn>(@1, curScope->curAccess, $2, $4);
+	curScope->curAccess = 0;
 }
 | ".fndecl" TypeName "operator" OperatorName Params {
 	if(curScope->funcs.count($4))
 		error(@3, "Dulplicated function entry `" + $4 + "'");
-	curScope->funcs[$4] = make_shared<Fn>(@1, curAccess, $2, $5);
-	curAccess = 0;
+	curScope->funcs[$4] = make_shared<Fn>(@1, curScope->curAccess, $2, $5);
+	curScope->curAccess = 0;
 }
 ;
 
@@ -446,6 +467,15 @@ Literal ":" Literal {
 }
 ;
 
+GenericParams:
+GenericParam {}
+| GenericParams "," GenericParam {}
+;
+
+GenericParam:
+T_ID InheritSlot ImplList ComplyDecls {}
+;
+
 GenericArgs:
 %empty {}
 |"<" TypeNameList ">" { $$ = $2; }
@@ -533,8 +563,7 @@ T_ID GenericArgs {
 
 %%
 
-Slake::Assembler::parser::location_type yylloc;
-shared_ptr<Slake::Assembler::parser> yyparser;
-Slake::AccessModifier curAccess = 0;
+slake::bcc::parser::location_type yylloc;
+shared_ptr<slake::bcc::parser> yyparser;
 unordered_map<string, uint32_t> curLabels;
 deque<shared_ptr<Scope>> savedScopes;

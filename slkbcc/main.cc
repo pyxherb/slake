@@ -2,18 +2,18 @@
 #include <bclex.h>
 #include <fstream>
 
-using namespace Slake;
+using namespace slake;
 #define printmsg(msg, ...) std::printf("slkbcc: " msg, ##__VA_ARGS__)
 #define msgputs(msg) std::printf("slkbcc: %s\n", msg)
 
-void Assembler::parser::error(const Assembler::parser::location_type &loc, const std::string &msg) {
+void bcc::parser::error(const bcc::parser::location_type &loc, const std::string &msg) {
 	std::fprintf(stderr, "Error at %d,%d: %s\n", loc.begin.line, loc.begin.column, msg.c_str());
 }
 
 class ArgumentError : public std::runtime_error {
 public:
 	inline ArgumentError(std::string msg) : runtime_error(msg){};
-	virtual inline ~ArgumentError() {}
+	virtual ~ArgumentError() = default;
 };
 
 static inline char *fetchArg(int argc, char **argv, int &i) {
@@ -23,7 +23,7 @@ static inline char *fetchArg(int argc, char **argv, int &i) {
 }
 
 std::string srcPath = "", outPath = "";
-std::vector<std::string> modulePaths;
+std::deque<std::string> modulePaths;
 
 struct CmdLineAction {
 	const char *options;
@@ -39,7 +39,7 @@ CmdLineAction cmdLineActions[] = {
 };
 
 int main(int argc, char **argv) {
-	Slake::Util::setupMemoryLeakDetector();
+	slake::util::setupMemoryLeakDetector();
 
 	try {
 		try {
@@ -47,8 +47,8 @@ int main(int argc, char **argv) {
 				std::string arg = fetchArg(argc, argv, i);
 
 				for (uint16_t j = 0; j < sizeof(cmdLineActions) / sizeof(cmdLineActions[0]); j++) {
-					for (auto k = cmdLineActions[j].options; *k; k += std::strlen(k))
-						if (!std::strcmp(k, arg.c_str())) {
+					for (auto k = cmdLineActions[j].options; *k; k += strlen(k))
+						if (!strcmp(k, arg.c_str())) {
 							cmdLineActions[j].fn(argc, argv, i);
 							goto succeed;
 						}
@@ -81,9 +81,9 @@ int main(int argc, char **argv) {
 			return ENOENT;
 		}
 
-		yyparser = std::make_shared<Assembler::parser>();
+		yyparser = std::make_shared<bcc::parser>();
 
-		rootScope = make_shared<Assembler::Scope>();
+		rootScope = make_shared<bcc::Scope>();
 		curScope = rootScope;
 
 		auto cleaner = []() {
@@ -102,8 +102,6 @@ int main(int argc, char **argv) {
 				return -1;
 			}
 
-			// printf("%s\n", std::to_string(*Slake::Compiler::currentScope).c_str());
-
 			std::fstream fs(outPath, std::ios::out | std::ios::binary);
 			if (!fs.is_open()) {
 				printmsg("Error opening file `%s'\n", srcPath.c_str());
@@ -111,10 +109,10 @@ int main(int argc, char **argv) {
 			}
 			fs.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
 
-			Slake::Assembler::compile(fs);
+			slake::bcc::compile(fs);
 
 			fs.close();
-		} catch (Slake::Assembler::parser::syntax_error e) {
+		} catch (slake::bcc::parser::syntax_error e) {
 			yyparser->error(e.location, e.what());
 		}
 		fclose(yyin);

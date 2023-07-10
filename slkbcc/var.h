@@ -3,8 +3,8 @@
 
 #include "operand.h"
 
-namespace Slake {
-	namespace Assembler {
+namespace slake {
+	namespace bcc {
 		class Var : public ILocated {
 		private:
 			location _loc;

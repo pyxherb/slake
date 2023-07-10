@@ -2,12 +2,13 @@
 #define _SLKBCC_MNEMONIC_HH_
 
 #include <unordered_map>
+#include <string>
 #include <slake/opcode.h>
 
-namespace Slake {
-	namespace Assembler {
+namespace slake {
+	namespace bcc {
 		using namespace std;
-		extern unordered_map<std::string, Opcode> mnemonics;
+		extern unordered_map<string, Opcode> mnemonics;
 	}
 }
 

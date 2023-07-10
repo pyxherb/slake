@@ -6,6 +6,12 @@ Reference
 Slake Runtime uses the mechanism called Referencing to locate variables,
 functions and variables, etc.
 
+Concepts
+--------
+
+* **Absolute Reference** is unique and unambiguous, the same absolute reference will always be resolved to the same resource at the same time.
+* **Relative Reference** is depending on the context, resolve the same reference with different context may get different result.
+
 Resolving
 ---------
 

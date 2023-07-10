@@ -3,8 +3,8 @@
 
 #include <cstdint>
 
-namespace Slake {
-	namespace Util {
+namespace slake {
+	namespace util {
 		/// @brief Get byte order on target machine.
 		/// @return Whether the byte order is big-endian.
 		/// @retval true The machine is big-endian.

@@ -3,8 +3,8 @@
 
 #include <slake/runtime.h>
 
-namespace Slake {
-	namespace StdLib {
+namespace slake {
+	namespace stdlib {
 		namespace Core {
 			namespace Except {
 				extern ModuleValue *modExcept;

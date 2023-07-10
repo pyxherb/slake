@@ -7,6 +7,7 @@ Generic
 
 Overview
 --------
+
 Generic makes your codes can be applied to different types.
 
 The runtime will compare the first scope with name of generic parameters when

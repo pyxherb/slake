@@ -1,0 +1,33 @@
+module std.util.math;
+
+pub @T gcd<T>(@T a, @T b) {
+	if(a > b)
+		a <=> b;
+	// stub code
+}
+
+pub @T lcm<T>(@T a, @T b) {
+	if(a < b)
+		a <=> b;
+	// stub code
+}
+
+pub native f64 sin(f64 x);
+pub native f32 sin(f32 x);
+pub native f64 sinFast(f64 x);
+pub native f32 sinFast(f32 x);
+
+pub native f64 cos(f64 x);
+pub native f32 cos(f32 x);
+pub native f64 cosFast(f64 x);
+pub native f32 cosFast(f32 x);
+
+pub native f64 tan(f64 x);
+pub native f32 tan(f32 x);
+pub native f64 tanFast(f64 x);
+pub native f32 tanFast(f32 x);
+
+pub native f64 sqrt(f64 x);
+pub native f32 sqrt(f32 x);
+pub native f64 sqrtFast(f64 x);
+pub native f32 sqrtFast(f32 x);

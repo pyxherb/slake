@@ -2,34 +2,35 @@
 #define _SLAKE_VALDEF_REF_H_
 
 #include "base.h"
-#include <vector>
+#include <deque>
 
-namespace Slake {
+namespace slake {
 	class RefValue final : public Value {
 	public:
-		std::vector<std::string> scopes;
+		std::deque<std::string> scopes;
+		std::deque<Type> genericArgs;
 
 		inline RefValue(Runtime *rt) : Value(rt) {
-			reportSizeToRuntime(sizeof(*this));
+			reportSizeToRuntime(sizeof(*this) - sizeof(Value));
 		}
-		virtual inline ~RefValue() {}
+		virtual ~RefValue() = default;
 		virtual inline Type getType() const override { return ValueType::REF; }
 
 		RefValue &operator=(const RefValue &) = delete;
 		RefValue &operator=(const RefValue &&) = delete;
-
-		virtual inline std::string toString() const override {
-			std::string s = Value::toString() + ",\"scopes\":[";
-
-			for (size_t i = 0; i != scopes.size(); ++i) {
-				s += (i ? ",\"" : "\"") + scopes[i] + "\"";
-			}
-
-			s += "]";
-
-			return s;
-		}
 	};
+}
+
+namespace std {
+	inline string to_string(slake::RefValue *ref) {
+		string s;
+		for (size_t i = 0; i < ref->scopes.size(); ++i) {
+			if (i)
+				s += ".";
+			s += ref->scopes[i];
+		}
+		return s;
+	}
 }
 
 #endif

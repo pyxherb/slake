@@ -1,22 +1,22 @@
 #include <slake/runtime.h>
 
-using namespace Slake;
+using namespace slake;
 
-Value *Runtime::resolveRef(ValueRef<RefValue> ref, Value *v) {
+Value *Runtime::resolveRef(ValueRef<RefValue> ref, Value *scopeValue) const {
 	if (!ref)
 		return nullptr;
 
-	if ((!v))
-		if (!(v = _rootValue))
+	if ((!scopeValue))
+		if (!(scopeValue = _rootValue))
 			return nullptr;
 
-	MemberValue *value = (MemberValue *)v;
+	MemberValue *value = (MemberValue *)scopeValue;
 
 	while (value && value->getParent()) {
-		value = (MemberValue *)v;
+		value = (MemberValue *)scopeValue;
 
 		for (auto &i : ref->scopes) {
-			if (!v)
+			if (!scopeValue)
 				goto fail;
 
 			if (i == "base") {
@@ -24,31 +24,31 @@ Value *Runtime::resolveRef(ValueRef<RefValue> ref, Value *v) {
 					case ValueType::MOD:
 					case ValueType::CLASS:
 					case ValueType::STRUCT:
-						v = (MemberValue *)value->getParent();
+						scopeValue = (MemberValue *)value->getParent();
 						break;
 					case ValueType::OBJECT:
-						v = *((ObjectValue *)value)->_parent;
+						scopeValue = *((ObjectValue *)value)->_parent;
 						break;
 					default:
 						goto fail;
 				}
-			} else if (!(v = v->getMember(i)))
+			} else if (!(scopeValue = scopeValue->getMember(i)))
 				break;
 		}
 
-		if (v)
-			return v;
+		if (scopeValue)
+			return scopeValue;
 
 	fail:
 		switch (value->getType().valueType) {
 			case ValueType::MOD:
 			case ValueType::CLASS:
 			case ValueType::STRUCT:
-				v = (MemberValue *)value->getParent();
+				scopeValue = (MemberValue *)value->getParent();
 				break;
 			case ValueType::OBJECT: {
 				auto t = ((ObjectValue *)value)->getType();
-				v = t.exData.customType;
+				scopeValue = *t.getCustomTypeExData();
 				break;
 			}
 			default:

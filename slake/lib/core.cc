@@ -2,23 +2,23 @@
 
 #include "std.h"
 
-using namespace Slake;
-using namespace Slake::StdLib::Core;
+using namespace slake;
+using namespace slake::stdlib::Core;
 
-ModuleValue *StdLib::Core::modCore;
+ModuleValue *stdlib::Core::modCore;
 
-ModuleValue *StdLib::Core::Except::modExcept;
-InterfaceValue *StdLib::Core::Except::typeIException;
-ClassValue *StdLib::Core::Except::exLogicalError;
-ClassValue *StdLib::Core::Except::exDivideByZeroError;
-ClassValue *StdLib::Core::Except::exOutOfMemoryError;
-ClassValue *StdLib::Core::Except::exInvalidOpcodeError;
-ClassValue *StdLib::Core::Except::exInvalidOperandsError;
+ModuleValue *stdlib::Core::Except::modExcept;
+InterfaceValue *stdlib::Core::Except::typeIException;
+ClassValue *stdlib::Core::Except::exLogicalError;
+ClassValue *stdlib::Core::Except::exDivideByZeroError;
+ClassValue *stdlib::Core::Except::exOutOfMemoryError;
+ClassValue *stdlib::Core::Except::exInvalidOpcodeError;
+ClassValue *stdlib::Core::Except::exInvalidOperandsError;
 
 static ValueRef<> _exceptionConstructor(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
 	if (nArgs != 1)
 		throw InvalidArgumentsError("Invalid arguments");
-	((VarValue *)(**rt->getCurContext()->getCurFrame().thisObject)["_msg"])->setValue(*args[0]);
+	((VarValue *)(*rt->getCurContext()->getCurFrame().thisObject)->getMember("_msg"))->setData(*args[0]);
 	return {};
 }
 
@@ -36,7 +36,7 @@ static void _initExceptionClass(Runtime *rt, ClassValue *ex) {
 			ValueType::NONE));
 }
 
-void StdLib::Core::Except::load(Runtime *rt) {
+void stdlib::Core::Except::load(Runtime *rt) {
 	modCore->addMember("except",
 		modExcept = new ModuleValue(rt, ACCESS_PUB));
 
@@ -77,7 +77,7 @@ void StdLib::Core::Except::load(Runtime *rt) {
 	}
 }
 
-void StdLib::Core::load(Runtime *rt) {
+void stdlib::Core::load(Runtime *rt) {
 	auto root = rt->getRootValue();
 
 	modStd->addMember(

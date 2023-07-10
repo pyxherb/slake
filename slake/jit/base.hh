@@ -3,10 +3,10 @@
 
 #include <cstddef>
 
-namespace Slake {
+namespace slake {
 	class ICodePage {
 	public:
-		virtual inline ~ICodePage() {}
+		virtual ~ICodePage() = default;
 		virtual std::size_t getSize() = 0;
 		virtual void *getPtr() = 0;
 		virtual void firm() = 0;

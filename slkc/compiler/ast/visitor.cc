@@ -4,184 +4,184 @@
 using namespace antlr4;
 using namespace antlrcpp;
 
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, Prog) {
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, Prog) {
 	return visitChildren(context);
 }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, ProgFnDecl) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, ProgFnDef) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, ProgClassDef) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, ProgVarDef) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, ProgFnDecl) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, ProgFnDef) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, ProgClassDef) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, ProgVarDef) { return Any(); }
 
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, Imports) {
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, Imports) {
 	return Any();
 }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, ModuleDecl) {
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, ModuleDecl) {
 	visitChildren(context);
 
 	return Any();
 }
 
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, FnDecl) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, FnDef) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, FnDecl) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, FnDef) { return Any(); }
 
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, ExprStmt) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, VarDefStmt) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, BreakStmt) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, ContinueStmt) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, ForStmt) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, WhileStmt) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, TimesStmt) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, ReturnStmt) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, IfStmt) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, TryStmt) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, SwitchStmt) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, ExprStmt) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, VarDefStmt) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, BreakStmt) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, ContinueStmt) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, ForStmt) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, WhileStmt) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, TimesStmt) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, ReturnStmt) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, IfStmt) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, TryStmt) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, SwitchStmt) { return Any(); }
 
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, ForIns) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, WhileIns) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, TimesIns) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, ReturnIns) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, IfIns) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, TryIns) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, CatchBlock) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, ForIns) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, WhileIns) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, TimesIns) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, ReturnIns) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, IfIns) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, TryIns) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, CatchBlock) { return Any(); }
 
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, SwitchIns) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, SwitchCase) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, SwitchIns) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, SwitchCase) { return Any(); }
 
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, VarDecl) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, VarDef) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, VarDefEntry) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, VarDecl) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, VarDef) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, VarDefEntry) { return Any(); }
 
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, AccessModifiers) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, Access) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, AccessModifiers) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, Access) { return Any(); }
 
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, ClassDef) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, ClassStmts) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, ClassDef) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, ClassStmts) { return Any(); }
 
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, GenericParams) {
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, GenericParams) {
 	for (size_t i = 1; i < context->children.size(); i += 2) {
 
 	}
 
 	return Any();
 }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, GenericParam) {
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, GenericParam) {
 	return Any();
 }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, BaseSpec) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, TraitSpec) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, InterfaceSpec) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, BaseSpec) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, TraitSpec) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, InterfaceSpec) { return Any(); }
 
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, InheritSlot) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, ImplementList) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, InheritSlot) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, ImplementList) { return Any(); }
 
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, OperatorDecl) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, OperatorDef) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, OperatorDecl) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, OperatorDef) { return Any(); }
 
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, ConstructorDecl) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, ConstructorDef) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, ConstructorDecl) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, ConstructorDef) { return Any(); }
 
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, DestructorDecl) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, DestructorDef) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, DestructorDecl) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, DestructorDef) { return Any(); }
 
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, InterfaceDef) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, InterfaceStmts) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, InterfaceDef) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, InterfaceStmts) { return Any(); }
 
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, TraitDef) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, TraitStmts) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, TraitDef) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, TraitStmts) { return Any(); }
 
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, OperatorName) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, OperatorName) { return Any(); }
 
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, CodeBlock) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, CodeBlock) { return Any(); }
 
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, Args) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, Args) { return Any(); }
 
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, WrappedExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, RefExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, LiteralExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, ArrayExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, MapExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, ClosureExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, CallExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, AwaitExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, NewExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, NewArrayExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, NewMapExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, MatchExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, CastExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, TypeofExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, TypeTypeofExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, SubscriptExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, ForwardIncDecExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, BackwardIncDecExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, NotExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, MulDivExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, AddSubExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, LtGtExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, ShiftExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, EqExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, AndExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, XorExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, OrExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, LogicalAndExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, LogicalOrExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, TernaryExpr) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, AssignExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, WrappedExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, RefExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, LiteralExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, ArrayExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, MapExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, ClosureExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, CallExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, AwaitExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, NewExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, NewArrayExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, NewMapExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, MatchExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, CastExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, TypeofExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, TypeTypeofExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, SubscriptExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, ForwardIncDecExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, BackwardIncDecExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, NotExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, MulDivExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, AddSubExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, LtGtExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, ShiftExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, EqExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, AndExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, XorExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, OrExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, LogicalAndExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, LogicalOrExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, TernaryExpr) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, AssignExpr) { return Any(); }
 
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, Array) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, Map) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, Pair) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, Array) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, Map) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, Pair) { return Any(); }
 
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, I8) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, I16) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, I32) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, I64) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, U8) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, U16) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, U32) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, U64) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, F32) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, F64) { return Any(); }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, String) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, I8) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, I16) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, I32) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, I64) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, U8) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, U16) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, U32) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, U64) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, F32) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, F64) { return Any(); }
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, String) { return Any(); }
 
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, Scope) {
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, Scope) {
 	RefScope scope{ context->name->toString() };
 	auto a = context->gArgs;
 	return Any();
 }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, NormalRef) {
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, NormalRef) {
 	Ref ref;
 	for (size_t i = 0; i < context->children.size(); i += 2) {
 		visit(context->children[i]);
 	}
 	return Any();
 }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, ThisRef) {
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, ThisRef) {
 	Ref ref{ { "this" } };
 	return ref;
 }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, NewRef) {
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, NewRef) {
 	Ref ref{
 		{ context->children[0]->getText() },
 		{ "new" }
 	};
 	return ref;
 }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, FnTypeName) {
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, FnTypeName) {
 	return Any();
 }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, ArrayTypeName) {
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, ArrayTypeName) {
 	return Any();
 }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, MapTypeName) {
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, MapTypeName) {
 	return Any();
 }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, AdoptPrimitiveTypeName) {
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, AdoptPrimitiveTypeName) {
 	return visit(context->children[0]);
 }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, AdoptCustomTypeName) {
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, AdoptCustomTypeName) {
 	return visit(context->children[0]);
 }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, PrimitiveTypeName) {
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, PrimitiveTypeName) {
 	switch (context->name->getType()) {
 		case SlakeParser::TN_I8:
 			return make_shared<TypeName>(TYPE_I8);
@@ -217,12 +217,12 @@ VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, PrimitiveTypeName) {
 
 	throw logic_error("Unrecognized primitive type");
 }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, CustomTypeName) {
-	return make_shared<CustomTypeName>(any_cast<shared_ptr<Ref>>(visit(context->ref())));
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, CustomTypeName) {
+	return make_shared<CustomTypeName>(visit(context->ref()).as<shared_ptr<Ref>>());
 }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, GenericArgs) {
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, GenericArgs) {
 	return Any();
 }
-VISIT_METHOD_IMPL(Slake::Compiler::AstVisitor, Params) {
+VISIT_METHOD_IMPL(slake::slkc::AstVisitor, Params) {
 	return Any();
 }

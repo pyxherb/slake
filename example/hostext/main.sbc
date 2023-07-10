@@ -1,10 +1,22 @@
 .access native
-.fndecl void println ...
+.fndecl void print ...
 
-.class A
+.interface IBaseA
+	.fndecl void testA
+.end
+
+.interface IBaseB
+	.fndecl void testB
+.end
+
+.interface IDerived .extends main.IBaseA, main.IBaseB
+	.fndecl void test string
+.end
+
+.class A .impl main.IDerived
 	.var i32 data
 	.var i32 testData
-	
+
 	.fn void new
 		PUSH 514;
 
@@ -22,12 +34,14 @@
 	.end
 .end
 
-.class B .extends A
+.class B .extends main.A
 	.var i32 data
 
 	.fn void new
 		LOAD base;
-		MCALL base.new;
+		LOAD base;
+		RLOAD new;
+		MCALL;
 
 		PUSH 114;
 
@@ -40,12 +54,14 @@
 	.end
 .end
 
-.class C .extends B
+.class C .extends main.B
 	.var i32 testData
 
 	.fn void new
 		LOAD base;
-		MCALL base.new;
+		LOAD base;
+		RLOAD new;
+		MCALL;
 
 		PUSH 114514;
 
@@ -56,22 +72,58 @@
 
 		RET null;
 	.end
+
+	.access pub
+	.fn void test string
+		RET null;
+	.end
+
+	.access pub
+	.fn void testA
+		RET null;
+	.end
+
+	.access pub
+	.fn void testB
+		RET null;
+	.end
+.end
+
+.trait TBaseA
+	.fndecl void testA
+.end
+
+.trait TBaseB
+	.fndecl void testB
+.end
+
+.trait TDerived .extends main.TBaseA, main.TBaseB
+	.fndecl void test string
 .end
 
 .fn i32 main
-	LVAROBJ A;
+	LVAROBJ main.TDerived;
 
 	NEW C;
 	LSTORE 0U;
 
-	PUSH "Hello, world!";
+	PUSH 10.89;
 	SARG;
-	CALL println;
-
-	PUSH 1.14f;
-	SARG;
-	CALL std.util.math.sin;
+	CALL std.util.math.sqrt$f64;
 	LRET;
+	SARG;
+	PUSH "\n";
+	SARG;
+	CALL print;
 
-	RET;
+	PUSH 10.89;
+	SARG;
+	CALL std.util.math.sqrtFast$f64;
+	LRET;
+	SARG;
+	PUSH "\n";
+	SARG;
+	CALL print;
+
+	RET null;
 .end

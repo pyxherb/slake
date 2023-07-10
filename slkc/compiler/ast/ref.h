@@ -3,8 +3,8 @@
 
 #include "node.h"
 
-namespace Slake {
-	namespace Compiler {
+namespace slake {
+	namespace slkc {
 		class TypeName;
 
 		struct RefScope {

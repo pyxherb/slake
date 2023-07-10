@@ -5,19 +5,19 @@
 #include <slake/except.h>
 #include <slake/type.h>
 
-namespace Slake {
+namespace slake {
 	class VarValue final : public MemberValue {
 	protected:
-		ValueRef<Slake::Value, false> value;
+		ValueRef<slake::Value, false> value;
 		const Type type = ValueType::ANY;
 
 	public:
-		inline VarValue(Runtime *rt, AccessModifier access, Type type, Value *parent = nullptr, std::string name = "")
-			: MemberValue(rt, access, parent, name), type(type) {
-			reportSizeToRuntime(sizeof(*this));
+		inline VarValue(Runtime *rt, AccessModifier access, Type type)
+			: MemberValue(rt, access), type(type) {
+			reportSizeToRuntime(sizeof(*this) - sizeof(MemberValue));
 		}
 
-		virtual inline ~VarValue() {}
+		virtual ~VarValue() = default;
 		virtual inline Type getType() const override { return ValueType::VAR; }
 		inline Type getVarType() const { return type; }
 
@@ -28,8 +28,8 @@ namespace Slake {
 			return value ? value->getMember(name) : nullptr;
 		}
 
-		ValueRef<> getValue() { return value; }
-		void setValue(Value *value) {
+		ValueRef<> getData() { return value; }
+		void setData(Value *value) {
 			if (!isCompatible(type, value->getType()))
 				throw MismatchedTypeError("Mismatched types");
 			this->value = value;
@@ -37,10 +37,6 @@ namespace Slake {
 
 		VarValue &operator=(const VarValue &) = delete;
 		VarValue &operator=(const VarValue &&) = delete;
-
-		virtual inline std::string toString() const override {
-			return MemberValue::toString() + ",\"value\":" + (value ? "{" + std::to_string((uintptr_t)value) + "}" : "null");
-		}
 	};
 }
 

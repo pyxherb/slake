@@ -8,14 +8,14 @@
 #include <stdexcept>
 #include <unordered_map>
 
-namespace Slake {
+namespace slake {
 	namespace Decompiler {
 		using namespace std;
 
 		class DecompileError : public std::runtime_error {
 		public:
 			inline DecompileError(std::string msg) : runtime_error(msg) {}
-			virtual inline ~DecompileError() {}
+			virtual ~DecompileError() = default;
 		};
 
 		enum class DecompileState {

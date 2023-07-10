@@ -2,9 +2,12 @@
 #define _SLAKE_TYPE_H_
 
 #include <cstdint>
+#include <cstring>
 #include <string>
+#include <variant>
+#include "valdef/base.h"
 
-namespace Slake {
+namespace slake {
 	enum class ValueType : uint8_t {
 		NONE,  // None, aka `null'
 
@@ -75,60 +78,63 @@ namespace Slake {
 			static_assert(!std::is_same<T, T>::value);
 	}
 
+	class Runtime;
 	class Value;
 	class RefValue;
+	class MemberValue;
 
 	struct Type final {
 		ValueType valueType;  // Value type
-		union {
-			Value *customType;	 // Pointer to the type object
-			Type *array;		 // Element type of the array
-			RefValue *deferred;	 // Reference to the type object
-			struct {
-				Type *k;		 // Key type
-				Type *v;		 // Value type
-			} map;				 // Extra data for maps
-			uint8_t genericArg;	 // Index in generic arguments
-		} exData = {};			 // Extra data
+		mutable std::variant<std::monostate, ValueRef<>, Type *, std::pair<Type *, Type *>, uint8_t> exData;
 
 		inline Type() noexcept : valueType(ValueType::NONE) {}
 		inline Type(const Type &x) noexcept { *this = x; }
 		inline Type(const Type &&x) noexcept { *this = x; }
 		inline Type(ValueType valueType) noexcept : valueType(valueType) {}
-		inline Type(ValueType valueType, Value *classObject) noexcept : valueType(valueType) { exData.customType = classObject; }
-		inline Type(ValueType valueType, Type elementType) : valueType(valueType) { exData.array = new Type(elementType); }
+		inline Type(ValueType valueType, Value *classObject) noexcept : valueType(valueType) {
+			exData = classObject;
+		}
+		inline Type(ValueType valueType, Type elementType) : valueType(valueType) {
+			exData = elementType;
+		}
 		Type(RefValue *ref);
 
 		inline Type(Type k, Type v) : valueType(ValueType::MAP) {
-			exData.map.k = new Type(k), exData.map.v = new Type(v);
+			exData = std::pair<Type *, Type *>(new Type(k), new Type(v));
 		}
 
 		~Type();
 
-		bool isLoadingDeferred() noexcept;
+		inline ValueRef<> getCustomTypeExData() const { return std::get<ValueRef<>>(exData); }
+		inline Type getArrayExData() const { return *std::get<Type *>(exData); }
+		inline std::pair<Type *, Type *> getMapExData() const { return std::get<std::pair<Type *, Type *>>(exData); }
+		inline uint8_t getGenericArgExData() const { return std::get<uint8_t>(exData); }
 
-		inline operator bool() noexcept {
+		bool isLoadingDeferred() const noexcept;
+		void loadDeferredType(const Runtime *rt) const;
+
+		inline operator bool() const noexcept {
 			return valueType != ValueType::NONE;
 		}
 
-		inline bool operator==(const Type &&x) noexcept {
+		inline bool operator==(const Type &&x) const noexcept {
 			if (x.valueType != valueType)
 				return false;
 			switch (x.valueType) {
 				case ValueType::CLASS:
 				case ValueType::STRUCT:
 				case ValueType::OBJECT:
-					return exData.customType == x.exData.customType;
+					return getCustomTypeExData() == x.getCustomTypeExData();
 				case ValueType::ARRAY:
-					return exData.array == x.exData.array;
+					return getArrayExData() == x.getArrayExData();
 				case ValueType::MAP:
-					return (exData.map.k == x.exData.map.k) &&
-						   (exData.map.v == x.exData.map.v);
+					return *(getMapExData().first) == *(x.getMapExData().first) &&
+						   *(getMapExData().second) == *(x.getMapExData().second);
 			}
 			return true;
 		}
 
-		inline bool operator==(const Type &x) noexcept {
+		inline bool operator==(const Type &x) const noexcept {
 			return *this == std::move(x);
 		}
 
@@ -144,7 +150,7 @@ namespace Slake {
 
 		inline Type &operator=(const Type &&x) noexcept {
 			valueType = x.valueType;
-			std::memcpy(&exData, &(x.exData), sizeof(exData));
+			exData = x.exData;
 			return *this;
 		}
 
@@ -154,7 +160,7 @@ namespace Slake {
 
 		inline Value *resolveCustomType() {
 			if (valueType == ValueType::CLASS || valueType == ValueType::STRUCT)
-				return exData.customType;
+				return (Value *)*getCustomTypeExData();
 			return nullptr;
 		}
 	};
@@ -167,46 +173,14 @@ namespace Slake {
 	bool isComplyWith(ClassValue *c, TraitValue *t);
 	bool isConvertible(Type a, Type b);
 	bool isCompatible(Type a, Type b);
+
+	class Runtime;
 }
 
 namespace std {
-	inline std::string to_string(Slake::Type &&type) {
-		std::string s = "{\"valueType\":" + std::to_string((uint8_t)type.valueType);
-
-		switch (type.valueType) {
-			case Slake::ValueType::ARRAY: {
-				s += ",\"elementType\":" + std::to_string(*type.exData.array);
-				break;
-			}
-			case Slake::ValueType::STRUCT:
-			case Slake::ValueType::CLASS:
-			case Slake::ValueType::OBJECT: {
-				s += ",\"typeValue\":" + std::to_string((uintptr_t)type.exData.customType);
-				break;
-			}
-			case Slake::ValueType::FN: {
-				// Unimplemented yet
-				break;
-			}
-			case Slake::ValueType::VAR: {
-				// Unimplemented yet
-				break;
-			}
-			case Slake::ValueType::MAP: {
-				s += ",\"keyType\":" + std::to_string(*type.exData.map.k);
-				s += ",\"valueType\":" + std::to_string(*type.exData.map.v);
-				break;
-			}
-		}
-		s += "}";
-
-		return s;
-	}
-	inline std::string to_string(Slake::Type &type) {
-		return to_string(move(type));
-	}
-	inline std::string to_string(Slake::Type *type) {
-		return to_string(*type);
+	string to_string(slake::Type &&type, slake::Runtime *rt);
+	inline string to_string(slake::Type &type, slake::Runtime *rt) {
+		return to_string(move(type), rt);
 	}
 }
 

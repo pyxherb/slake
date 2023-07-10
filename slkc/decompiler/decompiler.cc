@@ -4,7 +4,7 @@
 
 #include "mnemonic.h"
 
-using namespace Slake;
+using namespace slake;
 
 static const char *_ctrlCharNames[] = {
 	"0", "x01", "x02", "x03", "x04", "x05", "x06",
@@ -13,47 +13,47 @@ static const char *_ctrlCharNames[] = {
 	"x1b", "x1c", "x1d", "x1e", "x1f"
 };
 
-void Slake::Decompiler::decompile(std::istream &fs, std::ostream &os) {
-	auto rt = std::make_unique<Slake::Runtime>();
+void slake::Decompiler::decompile(std::istream &fs, std::ostream &os) {
+	auto rt = std::make_unique<slake::Runtime>();
 	rt->getRootValue()->addMember("main", *(rt->loadModule(fs, "main")));
 	for (auto &i : *rt->getRootValue())
 		decompileValue(rt.get(), *i.second, os);
 }
 
-void Slake::Decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &os, int indentLevel) {
+void slake::Decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &os, int indentLevel) {
 	switch (value->getType().valueType) {
 		case ValueType::I8:
-			os << to_string(((I8Value *)value)->getValue());
+			os << to_string(((I8Value *)value)->getData());
 			break;
 		case ValueType::I16:
-			os << to_string(((I16Value *)value)->getValue());
+			os << to_string(((I16Value *)value)->getData());
 			break;
 		case ValueType::I32:
-			os << to_string(((I32Value *)value)->getValue());
+			os << to_string(((I32Value *)value)->getData());
 			break;
 		case ValueType::I64:
-			os << to_string(((I64Value *)value)->getValue());
+			os << to_string(((I64Value *)value)->getData());
 			break;
 		case ValueType::U8:
-			os << to_string(((U8Value *)value)->getValue());
+			os << to_string(((U8Value *)value)->getData());
 			break;
 		case ValueType::U16:
-			os << to_string(((U16Value *)value)->getValue());
+			os << to_string(((U16Value *)value)->getData());
 			break;
 		case ValueType::U32:
-			os << to_string(((U32Value *)value)->getValue());
+			os << to_string(((U32Value *)value)->getData());
 			break;
 		case ValueType::U64:
-			os << to_string(((U64Value *)value)->getValue());
+			os << to_string(((U64Value *)value)->getData());
 			break;
 		case ValueType::F32:
-			os << to_string(((F32Value *)value)->getValue());
+			os << to_string(((F32Value *)value)->getData());
 			break;
 		case ValueType::F64:
-			os << to_string(((F64Value *)value)->getValue());
+			os << to_string(((F64Value *)value)->getData());
 			break;
 		case ValueType::BOOL:
-			os << ((BoolValue *)value)->getValue() ? "true" : "false";
+			os << ((BoolValue *)value)->getData() ? "true" : "false";
 			break;
 		case ValueType::FN: {
 			auto v = (FnValue *)value;
@@ -125,7 +125,7 @@ void Slake::Decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 	}
 }
 
-std::string Slake::Decompiler::getTypeName(Runtime *rt, Type type) {
+std::string slake::Decompiler::getTypeName(Runtime *rt, Type type) {
 	switch (type.valueType) {
 		case ValueType::I8:
 			return "i8";
@@ -152,9 +152,9 @@ std::string Slake::Decompiler::getTypeName(Runtime *rt, Type type) {
 		case ValueType::BOOL:
 			return "bool";
 		case ValueType::ARRAY:
-			return getTypeName(rt, *(type.exData.array)) + "[]";
+			return getTypeName(rt, type.getArrayExData()) + "[]";
 		case ValueType::OBJECT:
-			return rt->resolveName((MemberValue *)type.exData.customType) + "[]";
+			return rt->resolveName((MemberValue *)*type.getCustomTypeExData()) + "[]";
 		case ValueType::ANY:
 			return "any";
 		case ValueType::NONE:
@@ -164,14 +164,14 @@ std::string Slake::Decompiler::getTypeName(Runtime *rt, Type type) {
 	}
 }
 
-std::string Slake::Decompiler::refToString(shared_ptr<RefValue> ref) {
+std::string slake::Decompiler::refToString(shared_ptr<RefValue> ref) {
 	string s;
 	for (size_t i = 0; i < ref->scopes.size(); i++)
 		s += (i ? "." : "") + ref->scopes[i];
 	return s;
 }
 
-std::string Slake::Decompiler::accessToString(AccessModifier access) {
+std::string slake::Decompiler::accessToString(AccessModifier access) {
 	std::string s;
 
 	if (access & ACCESS_PUB)

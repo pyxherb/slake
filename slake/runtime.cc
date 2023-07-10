@@ -1,6 +1,6 @@
 #include "runtime.h"
 
-using namespace Slake;
+using namespace slake;
 
 Runtime::Runtime(RuntimeFlags flags) : _flags(flags) {
 	_rootValue = new RootValue(this);
@@ -19,6 +19,32 @@ Runtime::~Runtime() {
 	}
 	destructingThreads.erase(std::this_thread::get_id());
 
+	delete _rootValue;
+
+	_flags |= _RT_DELETING;
+
 	while (_createdValues.size())
 		delete *_createdValues.begin();
+}
+
+std::string Runtime::getMangledFnName(std::string name, std::deque<Type> params) {
+	std::string s = name;
+
+	for (auto i : params)
+		s += "$" + std::to_string(i, this);
+
+	return s;
+}
+
+std::string Runtime::resolveName(const MemberValue *v) const {
+	std::string s;
+	do {
+		switch (v->getType().valueType) {
+			case ValueType::OBJECT:
+				v = (const MemberValue *)*((ObjectValue *)v)->getType().getCustomTypeExData();
+				break;
+		}
+		s = v->getName() + (s.empty() ? "" : "." + s);
+	} while ((Value *)(v = (const MemberValue *)v->getParent()) != _rootValue);
+	return s;
 }

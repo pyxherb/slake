@@ -3,7 +3,7 @@
 
 #include <cstddef>
 
-namespace Slake {
+namespace slake {
 	class DebugStream {
 
 	};

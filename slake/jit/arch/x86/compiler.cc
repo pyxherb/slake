@@ -107,8 +107,8 @@ uint8_t leaveIns[] = {
 	0xc3		 // ret
 };
 
-Slake::ICodePage *Slake::compileFn(FnValue *fn) {
-	Slake::ICodePage *codePage;
+slake::ICodePage *slake::compileFn(FnValue *fn) {
+	slake::ICodePage *codePage;
 	std::size_t size;
 	// Enter instructions
 	std::memcpy(codePage->getPtr(), enterIns, sizeof(enterIns));

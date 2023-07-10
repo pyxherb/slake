@@ -2,9 +2,9 @@
 
 #include <slake/runtime.h>
 
-using namespace Slake;
+using namespace slake;
 
-void ObjectValue::whenRefBecomeZero() {
+void ObjectValue::onRefZero() {
 	if (getMember("delete"))
 		_rt->_extraGcTargets.insert(this);
 	else

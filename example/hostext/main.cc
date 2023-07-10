@@ -3,20 +3,58 @@
 
 #include <cassert>
 #include <fstream>
+#include <iostream>
 
-Slake::ValueRef<> println(Slake::Runtime *rt, uint8_t nArgs, Slake::ValueRef<> *args) {
-	using namespace Slake;
+slake::ValueRef<> print(slake::Runtime *rt, uint8_t nArgs, slake::ValueRef<> *args) {
+	using namespace slake;
 
-	StringValue *v = (StringValue *)*(args[0]);
+	for(uint8_t i=0;i<nArgs;++i) {
+		switch(args[i]->getType().valueType) {
+			case ValueType::I8:
+				printf("%hhd", ((I8Value*)*args[i])->getData());
+				break;
+			case ValueType::I16:
+				printf("%hd", ((I16Value*)*args[i])->getData());
+				break;
+			case ValueType::I32:
+				printf("%d", ((I32Value*)*args[i])->getData());
+				break;
+			case ValueType::I64:
+				printf("%lld", ((I64Value*)*args[i])->getData());
+				break;
+			case ValueType::U8:
+				printf("%hhu", ((U8Value*)*args[i])->getData());
+				break;
+			case ValueType::U16:
+				printf("%hu", ((U16Value*)*args[i])->getData());
+				break;
+			case ValueType::U32:
+				printf("%u", ((U32Value*)*args[i])->getData());
+				break;
+			case ValueType::U64:
+				printf("%llu", ((U64Value*)*args[i])->getData());
+				break;
+			case ValueType::F32:
+				std::cout<<((F32Value*)*args[i])->getData();
+				break;
+			case ValueType::F64:
+				std::cout<<((F64Value*)*args[i])->getData();
+				break;
+			case ValueType::BOOL:
+				fputs(((BoolValue*)*args[i])->getData() ? "true" : "false" ,stdout);
+				break;
+			case ValueType::STRING:
+				fputs(((StringValue*)*args[i])->getData().c_str(), stdout);
+				break;
+			default:
+				throw std::runtime_error("In*args[i]alid argument type");
+		}
+	}
 
-	if (v->getType() != ValueType::STRING)
-		throw std::runtime_error("Invalid argument type");
-
-	puts(v->getValue().c_str());
 	return {};
 }
 
-Slake::ValueRef<Slake::ModuleValue> fsModuleLoader(Slake::Runtime *rt, Slake::RefValue *ref) {
+slake::ValueRef<slake::ModuleValue> fsModuleLoader(slake::Runtime *rt, slake::RefValue *ref) {
 	std::string path;
 	for (size_t i = 0; i < ref->scopes.size(); i++) {
 		path += ref->scopes[i];
@@ -35,58 +73,59 @@ Slake::ValueRef<Slake::ModuleValue> fsModuleLoader(Slake::Runtime *rt, Slake::Re
 	return mod;
 }
 
+void printTraceback(slake::Runtime *rt) {
+	auto ctxt = rt->currentContexts.at(std::this_thread::get_id());
+	printf("Traceback:\n");
+	for (auto i = ctxt->majorFrames.rbegin(); i != ctxt->majorFrames.rend(); ++i) {
+		printf("\t%s: 0x%08x\n", rt->resolveName(*(i->curFn)).c_str(), i->curIns);
+	}
+}
+
 int main(int argc, char **argv) {
-	Slake::Util::setupMemoryLeakDetector();
-	Slake::Runtime *rt = new Slake::Runtime(Slake::RT_DEBUG | Slake::RT_GCDBG);
+	slake::util::setupMemoryLeakDetector();
 
-	auto fs = std::ifstream();
-	fs.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
-	fs.open("main.slx", std::ios_base::in | std::ios_base::binary);
+	std::unique_ptr<slake::Runtime> rt = std::make_unique<slake::Runtime>(slake::RT_DEBUG | slake::RT_GCDBG);
 
-	rt->setModuleLoader(fsModuleLoader);
-	Slake::StdLib::load(rt);
-
-	auto mod = rt->loadModule(fs, "main");
-	rt->getRootValue()->addMember("main", *mod);
-
-	rt->getRootValue()->addMember(
-		"println",
-		new Slake::NativeFnValue(
-			rt,
-			println,
-			Slake::ACCESS_PUB,
-			Slake::ValueType::NONE,
-			"println",
-			rt->getRootValue()));
-
-	// std::printf("%s\n", std::to_string(rt).c_str());
-
-	Slake::ValueRef<> v;
-
+	slake::ValueRef<slake::ModuleValue> mod;
 	try {
-		v = rt->getRootValue()->getMember("main")->getMember("main")->call(0, nullptr);
+		auto fs = std::ifstream();
+		fs.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
+		fs.open("main.slx", std::ios_base::in | std::ios_base::binary);
 
-		printf("%f\n", ((Slake::ValueRef<Slake::F32Value>)v)->getValue());
-	} catch (Slake::RuntimeExecError e) {
-		auto ctxt = rt->currentContexts.at(std::this_thread::get_id());
-		printf("RuntimeExecError: %s\n", e.what());
-		printf("Traceback:\n");
-		for (auto i = ctxt->majorFrames.rbegin(); i != ctxt->majorFrames.rend(); ++i) {
-			printf("\t%s: 0x%08x\n", rt->resolveName(*(i->curFn)).c_str(), i->curIns);
-		}
+		rt->setModuleLoader(fsModuleLoader);
+		slake::stdlib::load(rt.get());
+
+		mod = rt->loadModule(fs, "main");
+		rt->getRootValue()->addMember("main", *mod);
+	} catch (std::ios::failure e) {
+		printf("Error loading main module\n");
+		return -1;
 	}
 
-	/*
+	rt->getRootValue()->addMember(
+		"print",
+		new slake::NativeFnValue(
+			rt.get(),
+			print,
+			slake::ACCESS_PUB,
+			slake::ValueType::NONE));
+
+	slake::ValueRef<> result;
+
 	try {
-		v = rt->getRootValue()->getMember("main")->getMember("main")->call(0, nullptr);
-	} catch (...) {
-		std::printf("Dumping state:\n%s\n", std::to_string(*rt).c_str());
-		std::printf("Dumping context:\n%s\n", std::to_string(*(rt->currentContexts.at(std::this_thread::get_id()))).c_str());
-		std::rethrow_exception(std::current_exception());
-	}*/
+		rt->getRootValue()->getMember("main")->getMember("main")->call(0, nullptr);
+	} catch (slake::NotFoundError e) {
+		printf("NotFoundError: %s, ref = %s\n", e.what(), std::to_string(*e.ref).c_str());
+		printTraceback(rt.get());
+	} catch (slake::RuntimeExecError e) {
+		auto ctxt = rt->currentContexts.at(std::this_thread::get_id());
+		printf("RuntimeExecError: %s\n", e.what());
+		printTraceback(rt.get());
+	}
 
-	v.release();
+	result.release();
+	mod.release();
 
-	delete rt;
+	rt.release();
 	return 0;
 }

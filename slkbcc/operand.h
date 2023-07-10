@@ -3,8 +3,8 @@
 
 #include "ref.h"
 
-namespace Slake {
-	namespace Assembler {
+namespace slake {
+	namespace bcc {
 		enum class OperandType : uint8_t {
 			NONE,
 			I8,
@@ -58,7 +58,7 @@ namespace Slake {
 				return OT;
 			}
 		};
-		
+
 		using I8Operand = LiteralOperand<int8_t, OperandType::I8>;
 		using I16Operand = LiteralOperand<int16_t, OperandType::I16>;
 		using I32Operand = LiteralOperand<int32_t, OperandType::I32>;

@@ -4,8 +4,8 @@
 #include <location.hh>
 #include <slake/access.h>
 
-namespace Slake {
-	namespace Assembler {
+namespace slake {
+	namespace bcc {
 		using namespace std;
 
 		class ILocated {

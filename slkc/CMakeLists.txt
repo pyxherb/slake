@@ -2,8 +2,8 @@ find_package(ANTLR REQUIRED)
 
 include_directories(${ANTLR_INCLUDE_DIRS})
 
-antlr_target(SlakeLexer syntax/SlakeLexer.g4 LEXER)
-antlr_target(SlakeParser syntax/SlakeParser.g4 PARSER
+antlr_target(SlakeLexer SlakeLexer.g4 LEXER)
+antlr_target(SlakeParser SlakeParser.g4 PARSER
             DEPENDS_ANTLR SlakeLexer
             COMPILE_FLAGS -visitor -no-listener -lib ${ANTLR_SlakeLexer_OUTPUT_DIR})
 

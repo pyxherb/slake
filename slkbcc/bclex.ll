@@ -4,13 +4,13 @@
 #include <bcparse.hh>
 
 #define YY_USER_ACTION yylloc.columns(yyleng);
-#define YY_DECL Slake::Assembler::parser::symbol_type yylex()
+#define YY_DECL slake::bcc::parser::symbol_type yylex()
 
-using namespace Slake::Assembler;
+using namespace slake::bcc;
 }
 
 %{
-Slake::Assembler::parser::symbol_type yylval;
+slake::bcc::parser::symbol_type yylval;
 %}
 
 %x LINE_COMMENT STRING ESCAPE
@@ -58,7 +58,7 @@ yylloc.step();
 ".alias"		return parser::make_D_ALIAS(yylloc);
 ".var"			return parser::make_D_VAR(yylloc);
 ".extends"		return parser::make_D_EXTENDS(yylloc);
-".implements"	return parser::make_D_IMPLEMENTS(yylloc);
+".impl"			return parser::make_D_IMPL(yylloc);
 ".complies"		return parser::make_D_COMPLIES(yylloc);
 
 "i8"		return parser::make_TN_I8(yylloc);
@@ -75,7 +75,6 @@ yylloc.step();
 "f64"		return parser::make_TN_F64(yylloc);
 "string"	return parser::make_TN_STRING(yylloc);
 "bool"		return parser::make_TN_BOOL(yylloc);
-"auto"		return parser::make_TN_AUTO(yylloc);
 "void"		return parser::make_TN_VOID(yylloc);
 "any"		return parser::make_TN_ANY(yylloc);
 
@@ -83,8 +82,8 @@ yylloc.step();
 <LINE_COMMENT>\n	BEGIN(INITIAL); yylloc.lines(yyleng); yylloc.step();
 <LINE_COMMENT>.*	yylloc.step();
 
-[a-zA-Z_][a-zA-Z0-9_]* {
-	if (std::strlen(yytext) > 255) {
+[a-zA-Z_][a-zA-Z0-9_@$]* {
+	if (strlen(yytext) > 255) {
 		yyparser->error(yylloc, "identifier is too long");
 		return parser::make_YYerror(yylloc);
 	}
@@ -167,7 +166,7 @@ yylloc.step();
 	return parser::make_YYerror(yylloc);
 }
 <STRING>\" {
-	Slake::Assembler::parser::symbol_type value;
+	slake::bcc::parser::symbol_type value;
 	value.move(yylval);
 
 	BEGIN(INITIAL);

@@ -7,71 +7,77 @@
 #include "module.h"
 #include "var.h"
 
-namespace Slake {
-	class BasicClassValue : public ModuleValue {
-	protected:
-		Type _parentClass;
+namespace slake {
+	/// @brief Type for storing class flags.
+	using ClassFlags = uint16_t;
 
-		friend class Runtime;
-
-	public:
-		inline BasicClassValue(Runtime *rt, AccessModifier access, Value *parent, std::string name, Type parentClass = Type())
-			: ModuleValue(rt, access, parent, name), _parentClass(parentClass) {
-			reportSizeToRuntime(sizeof(*this) - sizeof(ModuleValue));
-		}
-		virtual inline ~BasicClassValue() {}
-
-		virtual inline Type getType() const override { return ValueType::CLASS; }
-		virtual inline Type getParentType() const { return _parentClass; }
-		virtual inline void setParentType(Type parent) { _parentClass = parent; }
-
-		virtual inline std::string toString() const override {
-			std::string s = ModuleValue::toString();
-
-			return s;
-		}
-
-		BasicClassValue &operator=(const BasicClassValue &) = delete;
-		BasicClassValue &operator=(const BasicClassValue &&) = delete;
-	};
+	constexpr static ClassFlags
+		_CLS_ABSTRACT = 0x4000,			// Set if the class is abstract
+		_CLS_ABSTRACT_INITED = 0x8000;	// The class has checked if itself is abstract
 
 	class InterfaceValue;
 
-	class ClassValue : public BasicClassValue {
-	public:
-		std::vector<Type> implInterfaces;//Implemented interfaces
+	class ClassValue : public ModuleValue {
+	private:
+		mutable ClassFlags _flags;
 
 		friend class Runtime;
-		friend bool Slake::isConvertible(Type a, Type b);
+		friend bool slake::isConvertible(Type a, Type b);
 
-		inline ClassValue(Runtime *rt, AccessModifier access, Type parentClass = Type(), Value *parent = nullptr, std::string name = "")
-			: BasicClassValue(rt, access, parent, name, parentClass) {
-			reportSizeToRuntime(sizeof(*this) - sizeof(BasicClassValue));
+		/// @brief Actually check if the class is abstract.
+		/// @return true if the class is abstract, false otherwise.
+		bool _isAbstract() const;
+
+	public:
+		Type parentClass;
+		std::deque<Type> implInterfaces;  // Implemented interfaces
+
+		inline ClassValue(Runtime *rt, AccessModifier access, Type parentClass = Type())
+			: ModuleValue(rt, access), parentClass(parentClass) {
+			reportSizeToRuntime(sizeof(*this) - sizeof(ModuleValue));
 		}
-		virtual inline ~ClassValue() {}
+		virtual ~ClassValue() = default;
 
-		virtual inline std::string toString() const override {
-			std::string s = BasicClassValue::toString();
+		virtual inline Type getType() const override { return ValueType::CLASS; }
+		virtual inline Type getParentType() const { return parentClass; }
+		virtual inline void setParentType(Type parent) { parentClass = parent; }
 
-			return s;
-		}
+		/// @brief Check if the class is abstract.
+		///
+		/// @return true if abstract, false otherwise.
+		bool isAbstract() const;
 
+		/// @brief Check if the class has implemented the interface.
+		///
+		/// @param[in] pInterface Interface to check.
+		///
+		/// @return true if implemented, false otherwise.
 		bool hasImplemented(const InterfaceValue *pInterface) const;
+
+		/// @brief Check if the class is compatible with a trait.
+		/// @param[in] t Trait to check.
+		///
+		/// @return true if compatible, false otherwise.
 		bool isCompatibleWith(const TraitValue *t) const;
+
+		ClassValue &operator=(const ClassValue &) = delete;
+		ClassValue &operator=(const ClassValue &&) = delete;
 	};
 
-	class InterfaceValue : public BasicClassValue {
+	class InterfaceValue : public ModuleValue {
 	protected:
 		friend class Runtime;
 		friend class ClassValue;
-		friend bool Slake::isConvertible(Type a, Type b);
+		friend bool slake::isConvertible(Type a, Type b);
 
 	public:
-		inline InterfaceValue(Runtime *rt, AccessModifier access, Type parentClass = Type(), Value *parent = nullptr, std::string name = "")
-			: BasicClassValue(rt, access, parent, name, parentClass) {
-			reportSizeToRuntime(sizeof(*this) - sizeof(BasicClassValue));
+		std::deque<Type> parents;
+
+		inline InterfaceValue(Runtime *rt, AccessModifier access, std::deque<Type> parents = {})
+			: ModuleValue(rt, access), parents(parents) {
+			reportSizeToRuntime(sizeof(*this) - sizeof(ModuleValue));
 		}
-		virtual inline ~InterfaceValue() {}
+		virtual ~InterfaceValue() = default;
 
 		virtual inline void addMember(std::string name, MemberValue *value) override {
 			switch (value->getType().valueType) {
@@ -87,11 +93,10 @@ namespace Slake {
 
 		virtual inline Type getType() const override { return ValueType::INTERFACE; }
 
-		virtual inline std::string toString() const override {
-			std::string s = BasicClassValue::toString();
-
-			return s;
-		}
+		/// @brief Check if the interface is derived from specified interface
+		/// @param pInterface Interface to check.
+		/// @return true if the interface is derived from specified interface, false otherwise.
+		virtual bool isDerivedFrom(const InterfaceValue *pInterface) const;
 
 		InterfaceValue &operator=(const InterfaceValue &) = delete;
 		InterfaceValue &operator=(const InterfaceValue &&) = delete;
@@ -103,17 +108,13 @@ namespace Slake {
 		friend class ClassValue;
 
 	public:
-		inline TraitValue(Runtime *rt, AccessModifier access, Type parentClass = Type(), Value *parent = nullptr, std::string name = "")
-			: InterfaceValue(rt, access, parentClass, parent, name) {
+		inline TraitValue(Runtime *rt, AccessModifier access, std::deque<Type> parents = {})
+			: InterfaceValue(rt, access, parents) {
 			reportSizeToRuntime(sizeof(*this) - sizeof(InterfaceValue));
 		}
-		virtual inline ~TraitValue() {}
+		virtual ~TraitValue() = default;
 
 		virtual inline Type getType() const override { return ValueType::TRAIT; }
-
-		virtual inline std::string toString() const override {
-			return BasicClassValue::toString();
-		}
 
 		TraitValue &operator=(const TraitValue &) = delete;
 		TraitValue &operator=(const TraitValue &&) = delete;

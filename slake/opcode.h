@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-namespace Slake {
+namespace slake {
 	enum class Opcode : uint16_t {
 		NOP = 0,  // No operation
 

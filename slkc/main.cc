@@ -9,7 +9,7 @@
 class ArgumentError : public std::runtime_error {
 public:
 	inline ArgumentError(std::string msg) : runtime_error(msg){};
-	virtual inline ~ArgumentError() {}
+	virtual ~ArgumentError() = default;
 };
 
 static inline char *fetchArg(int argc, char **argv, int &i) {
@@ -26,7 +26,7 @@ enum AppAction : uint8_t {
 std::string srcPath = "", outPath = "";
 
 AppAction action = ACT_COMPILE;
-std::vector<std::string> modulePaths;
+std::deque<std::string> modulePaths;
 
 struct CmdLineAction {
 	const char *options;
@@ -47,7 +47,7 @@ CmdLineAction cmdLineActions[] = {
 };
 
 int main(int argc, char **argv) {
-	Slake::Util::setupMemoryLeakDetector();
+	slake::util::setupMemoryLeakDetector();
 
 	try {
 		try {
@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
 
 				printf("%s\n", tree->toStringTree(&parser).c_str());
 
-				Slake::Compiler::AstVisitor visitor;
+				slake::slkc::AstVisitor visitor;
 				visitor.visit(tree);
 				fs.close();
 				break;
@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
 			case ACT_DUMP: {
 				std::ifstream fs(srcPath, std::ios::binary);
 
-				Slake::Decompiler::decompile(fs, std::cout);
+				slake::Decompiler::decompile(fs, std::cout);
 
 				fs.close();
 				break;

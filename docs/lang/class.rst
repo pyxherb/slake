@@ -10,6 +10,6 @@ Definition
 
 .. code::
 
-    [Access Modifier]* [native] class <Name> [Generic Parameters] (<Parent Class>) [: <Implemented Interfaces>] {
+    [AccessModifier]* class <Name> [GenericParameters] (<ParentClass>) [: <ImplementedInterfaces>] {
         <Members>
     }

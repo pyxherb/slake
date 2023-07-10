@@ -3,8 +3,8 @@
 
 #include "node.h"
 
-namespace Slake {
-	namespace Compiler {
+namespace slake {
+	namespace slkc {
 		class Scope {
 		public:
 			weak_ptr<AstNode> parent;

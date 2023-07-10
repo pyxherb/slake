@@ -6,7 +6,7 @@ include_directories(${FLEX_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CUR
 bison_target(
     bcparse
     bcparse.yy ${CMAKE_CURRENT_BINARY_DIR}/bcparse.cc
-    COMPILE_FLAGS -Wcex)
+    COMPILE_FLAGS)
 flex_target(
     bclex
     bclex.ll ${CMAKE_CURRENT_BINARY_DIR}/bclex.cc

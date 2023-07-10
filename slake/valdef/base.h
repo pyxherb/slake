@@ -1,15 +1,14 @@
 #ifndef _SLAKE_VALDEF_BASE_H_
 #define _SLAKE_VALDEF_BASE_H_
 
-#include <slake/type.h>
-
 #include <atomic>
 #include <stdexcept>
 #include <string>
 
-namespace Slake {
+namespace slake {
 	class Runtime;
 	class MemberValue;
+	class Value;
 
 	template <typename T = Value, bool isHostRef = true>
 	class ValueRef final {
@@ -114,72 +113,81 @@ namespace Slake {
 	using ValueFlags = uint8_t;
 	constexpr static ValueFlags VF_WALKED = 0x01;
 
+	struct Type;
 	class Value {
 	protected:
-		std::atomic_uint32_t _refCount = 0;
+		mutable std::atomic_uint32_t _refCount = 0;
+
 		// The value will never be freed if its host reference count is not 0.
-		std::atomic_uint32_t _hostRefCount = 0;
+		mutable std::atomic_uint32_t _hostRefCount = 0;
+
 		Runtime *_rt;
-		ValueFlags flags = 0;
+
+		ValueFlags _flags = 0;
+
+		void reportSizeToRuntime(long size);
+
+		/// @brief This method will be executed when the reference count becomes zero, the default action is delete the value.
+		virtual void onRefZero();
 
 		friend class Runtime;
 
-	protected:
-		void reportSizeToRuntime(long size);
-
 	public:
+		/// @brief The basic constructor.
+		/// @param rt Runtime which the value belongs to.
 		Value(Runtime *rt);
 		virtual ~Value();
+
+		/// @brief Get type of the value.
+		/// @return Type of the value.
 		virtual Type getType() const = 0;
 
-		virtual MemberValue *getMember(std::string name) { return nullptr; };
-		virtual const MemberValue *getMember(std::string name) const { return nullptr; }
+		/// @brief Get a single member of the value.
+		/// @param name Name of the member to get.
+		/// @return Pointer to the member, nullptr if not found.
+		virtual MemberValue *getMember(std::string name);
 
-		inline MemberValue *operator[](std::string name) { return getMember(name); }
-		inline const MemberValue *operator[](std::string name) const { return getMember(name); }
+		/// @brief Get a single member of the value.
+		/// @param name Name of the member to get.
+		/// @return Pointer to the member, nullptr if not found.
+		virtual const MemberValue *getMember(std::string name) const;
 
-		virtual ValueRef<> call(uint8_t nArgs, ValueRef<> *args) { return nullptr; }
+		inline MemberValue* operator[](std::string name) {
+			return getMember(name);
+		}
+		inline const MemberValue* operator[](std::string name) const {
+			return getMember(name);
+		}
 
-		virtual inline void whenRefBecomeZero() { delete this; }
+		/// @brief Call the value as callable.
+		/// @param nArgs Number of arguments.
+		/// @param args Pointer to linear-arranged arguments.
+		/// @return Result of the calling.
+		virtual ValueRef<> call(uint8_t nArgs, ValueRef<> *args) const;
 
-		inline void incRefCount() { _refCount++; }
-		inline void decRefCount() {
+		/// @brief Dulplicate the value if supported.
+		/// @return Copy of the value.
+		virtual Value *copy() const;
+
+		inline void incRefCount() const { _refCount++; }
+		inline void decRefCount() const {
 			if ((!--_refCount) && (!_hostRefCount))
-				whenRefBecomeZero();
+				const_cast<Value*>(this)->onRefZero();
 		}
-		inline void incHostRefCount() { _hostRefCount++; }
-		inline void decHostRefCount() {
+		inline void incHostRefCount() const { _hostRefCount++; }
+		inline void decHostRefCount() const {
 			if ((!--_hostRefCount) && (!_refCount))
-				whenRefBecomeZero();
+				const_cast<Value*>(this)->onRefZero();
 		}
-		inline uint32_t getRefCount() { return _refCount; }
-		inline uint32_t getHostRefCount() { return _hostRefCount; }
+		inline uint32_t getRefCount() const { return _refCount; }
+		inline uint32_t getHostRefCount() const { return _hostRefCount; }
 		inline Runtime *getRuntime() const noexcept { return _rt; }
-
-		virtual inline std::string toString() const {
-			return "\"refCount\":" + std::to_string(_refCount) +
-				   ",\"hostRefCount\":" + std::to_string(_hostRefCount) +
-				   ",\"flags\":" + std::to_string(flags) +
-				   ",\"rt\":" + std::to_string((uintptr_t)_rt);
-		}
-
-		virtual inline Value *copy() const { throw std::logic_error("Not implemented yet"); }
 
 		Value &operator=(const Value &) = delete;
 		Value &operator=(const Value &&) = delete;
 	};
 }
 
-namespace std {
-	inline std::string to_string(const Slake::Value &&value) {
-		return "{\"type\":" + std::to_string(value.getType()) + "," + value.toString() + "}";
-	}
-	inline std::string to_string(const Slake::Value &value) {
-		return to_string(move(value));
-	}
-	inline std::string to_string(const Slake::Value *value) {
-		return to_string(*value);
-	}
-}
+#include <slake/type.h>
 
 #endif

@@ -5,7 +5,7 @@
 #include "member.h"
 #include <unordered_map>
 
-namespace Slake {
+namespace slake {
 	class RootValue final : public Value {
 	protected:
 		std::unordered_map<std::string, ValueRef<MemberValue, false>> _members;
@@ -15,7 +15,7 @@ namespace Slake {
 	public:
 		inline RootValue(Runtime *rt)
 			: Value(rt) {
-			reportSizeToRuntime(sizeof(*this));
+			reportSizeToRuntime(sizeof(*this) - sizeof(Value));
 		}
 
 		virtual inline ~RootValue() {
@@ -34,18 +34,6 @@ namespace Slake {
 				_members.at(name)->unbind();
 			_members[name] = value;
 			value->bind(this, name);
-		}
-
-		virtual inline std::string toString() const override {
-			std::string s = Value::toString() + ",\"members\":{";
-
-			for (auto i = _members.begin(); i != _members.end(); ++i) {
-				s += (i != _members.begin() ? ",\"" : "\"") + i->first + "\":" + std::to_string((uintptr_t)i->second);
-			}
-
-			s += "}";
-
-			return s;
 		}
 
 		inline decltype(_members)::iterator begin() { return _members.begin(); }

@@ -4,14 +4,15 @@
 #include <SlakeLexer.h>
 #include <SlakeParser.h>
 #include <SlakeParserVisitor.h>
+#include <any>
 #include "scope.h"
 #include "module.h"
 
 #define VISIT_METHOD_DECL(name) virtual antlrcpp::Any visit##name(SlakeParser::name##Context *context) override
 #define VISIT_METHOD_IMPL(cls, name) antlrcpp::Any cls::visit##name(SlakeParser::name##Context *context)
 
-namespace Slake {
-	namespace Compiler {
+namespace slake {
+	namespace slkc {
 		class AstVisitor : public SlakeParserVisitor {
 		private:
 			shared_ptr<Scope> curScope;
@@ -20,7 +21,7 @@ namespace Slake {
 		public:
 			inline AstVisitor() {
 			}
-			virtual inline ~AstVisitor() {}
+			virtual ~AstVisitor() = default;
 
 			VISIT_METHOD_DECL(Prog);
 			VISIT_METHOD_DECL(ProgFnDecl);

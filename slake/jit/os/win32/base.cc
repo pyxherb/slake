@@ -5,7 +5,7 @@
 
 #include <Windows.h>
 
-class Win32CodePage : public Slake::ICodePage {
+class Win32CodePage : public slake::ICodePage {
 public:
 	char *ptr;
 	std::size_t size;
@@ -35,6 +35,6 @@ public:
 	}
 };
 
-Slake::ICodePage *Slake::genCodePage(std::size_t size) {
+slake::ICodePage *slake::genCodePage(std::size_t size) {
 	return new Win32CodePage(size);
 }

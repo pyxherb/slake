@@ -18,8 +18,8 @@
 	#endif
 #endif
 
-namespace Slake {
-	namespace Util {
+namespace slake {
+	namespace util {
 		void inline setupMemoryLeakDetector() {
 #if defined(DEBUG) || defined(_DEBUG) || defined(DBG)
 	#ifdef _MSC_VER

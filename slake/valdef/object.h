@@ -5,11 +5,11 @@
 
 #include "member.h"
 
-namespace Slake {
+namespace slake {
 	class ObjectValue final : public Value {
 	protected:
 		std::unordered_map<std::string, MemberValue *> _members;
-		Value *const _type;
+		ClassValue* _class;
 		ValueRef<ObjectValue> _parent;
 
 		inline void addMember(std::string name, MemberValue *value) {
@@ -23,7 +23,7 @@ namespace Slake {
 		}
 
 		inline void _releaseMembers() {
-			if (!getRefCount())
+			if (!_refCount)
 				for (auto i : _members) {
 					i.second->unbind();
 					i.second->decRefCount();
@@ -33,9 +33,9 @@ namespace Slake {
 		friend class Runtime;
 
 	public:
-		inline ObjectValue(Runtime *rt, Value *type, ObjectValue *parent = nullptr)
-			: Value(rt), _type(type), _parent(parent) {
-			reportSizeToRuntime(sizeof(*this));
+		inline ObjectValue(Runtime *rt, ClassValue* cls, ObjectValue *parent = nullptr)
+			: Value(rt), _class(cls), _parent(parent) {
+			reportSizeToRuntime(sizeof(*this) - sizeof(Value));
 		}
 
 		/// @brief Delete the object and execute its destructor (if exists).
@@ -45,7 +45,7 @@ namespace Slake {
 			_releaseMembers();
 		}
 
-		virtual inline Type getType() const override { return Type(ValueType::OBJECT, _type); }
+		virtual inline Type getType() const override { return Type(ValueType::OBJECT, (Value*)_class); }
 
 		virtual inline MemberValue *getMember(std::string name) override {
 			if (_members.count(name))
@@ -58,24 +58,12 @@ namespace Slake {
 			return _parent ? _parent->getMember(name) : nullptr;
 		}
 
-		virtual void whenRefBecomeZero() override;
+		virtual void onRefZero() override;
 
 		ObjectValue(ObjectValue &) = delete;
 		ObjectValue(ObjectValue &&) = delete;
 		ObjectValue &operator=(const ObjectValue &) = delete;
 		ObjectValue &operator=(const ObjectValue &&) = delete;
-
-		virtual inline std::string toString() const override {
-			std::string s = Value::toString() + ",\"classtype\":" + std::to_string((uintptr_t)_type) + ",\"members\":{";
-
-			for (auto i = _members.begin(); i != _members.end(); ++i) {
-				s += (i != _members.begin() ? ",\"" : "\"") + i->first + "\":" + std::to_string((uintptr_t)i->second);
-			}
-
-			s += "}";
-
-			return s;
-		}
 	};
 }
 

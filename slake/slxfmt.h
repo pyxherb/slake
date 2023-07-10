@@ -20,14 +20,14 @@
 	#pragma pack(1)
 #endif
 
-namespace Slake {
-	namespace SlxFmt {
+namespace slake {
+	namespace slxfmt {
 		constexpr static uint8_t GENERIC_PARAM_MAX = 16;
 
 		constexpr static uint8_t IMH_MODNAME = 0x01;
 
 		///
-		/// @brief IMage Header (IMH)
+		/// @brief Image Header (IMH)
 		///
 		struct ImgHeader final {
 			uint8_t magic[4];	  // Magic number
@@ -36,7 +36,7 @@ namespace Slake {
 			uint8_t nImports;	  // Number of imported modules
 			uint8_t reserved[2];  // Reserved
 		};
-		constexpr static uint8_t IMH_MAGIC[4] = { 'S', 'L', 'A', 'X' };
+		constexpr static uint8_t IMH_MAGIC[] = { 'S', 'L', 'A', 'X' };
 
 		///
 		/// @brief Instruction Header (IH)
@@ -82,23 +82,44 @@ namespace Slake {
 			uint8_t flags : 3;	 // Flags
 		};
 
-		/// @brief Extra attribute for strings
-		struct StringExAttr final {
-			uint32_t len;  // Length in bytes
-		};
-
 		/// @brief Class Type Descriptor (CTD)
 		struct ClassTypeDesc final {
-			uint8_t flags;			 // Flags
-			uint8_t nGenericParams;	 // Number of generic parameters
-			uint8_t lenName;		 // Length of name
-			uint8_t nImpls;			 // Number of implemented interfaces
+			/// @brief Flags
+			uint8_t flags;
+			/// @brief Number of generic parameters
+			uint8_t nGenericParams;
+			/// @brief Length of class name
+			uint8_t lenName;
+			/// @brief Number of implemented interfaces (for classes), or number of parents (interfaces).
+			uint8_t nImpls;
 		};
 		constexpr static uint8_t
-			CTD_PUB = 0x01,		  // Public
-			CTD_FINAL = 0x02,	  // Final
-			CTD_DERIVED = 0x40,	  // Is derived from parent
-			CTD_INTERFACE = 0x80  // As a interface
+			CTD_PUB = 0x01,		// Public
+			CTD_FINAL = 0x02,	// Final
+			CTD_DERIVED = 0x40	// Is a derived type
+			;
+
+		/// @brief Interface Type Descriptor (ITD)
+		struct InterfaceTypeDesc final {
+			uint8_t flags;
+			uint8_t nGenericParams;
+			uint8_t lenName;
+			uint8_t nParents;
+		};
+		constexpr static uint8_t
+			ITD_PUB = 0x01	// Public
+			;
+
+		// Trait Type Descriptor (TTD)
+		struct TraitTypeDesc final {
+			uint8_t flags;
+			uint8_t nGenericParams;
+			uint8_t lenName;
+			uint8_t nParents;
+		};
+
+		constexpr static uint8_t
+			TTD_PUB = 0x01	// Public
 			;
 
 		/// @brief Structure Type Descriptor (STD)

@@ -1,6 +1,6 @@
 #include "scope.h"
 
-using namespace Slake::Assembler;
+using namespace slake::bcc;
 
-shared_ptr<Scope> Slake::Assembler::rootScope, Slake::Assembler::curScope;
-shared_ptr<Ref> Slake::Assembler::moduleName;
+shared_ptr<Scope> slake::bcc::rootScope, slake::bcc::curScope;
+shared_ptr<Ref> slake::bcc::moduleName;

@@ -3,8 +3,8 @@
 
 #include "operand.h"
 
-namespace Slake {
-	namespace Assembler {
+namespace slake {
+	namespace bcc {
 		class Scope;
 
 		class Class : public ILocated {

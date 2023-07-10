@@ -4,14 +4,14 @@
 #include <slake/opcode.h>
 
 #include <functional>
-#include <vector>
+#include <deque>
 
 #include "member.h"
 
-namespace Slake {
+namespace slake {
 	struct Instruction final {
 		Opcode opcode = (Opcode)0xff;
-		ValueRef<> operands[3] = { nullptr };
+		ValueRef<> operands[3] = {};
 		uint8_t nOperands = 0;
 
 		inline uint8_t getOperandCount() {
@@ -23,7 +23,7 @@ namespace Slake {
 
 	class BasicFnValue : public MemberValue {
 	protected:
-		std::vector<Type> _params;
+		std::vector<Type> _paramTypes;
 		Type _returnType;
 
 		friend class Runtime;
@@ -33,15 +33,19 @@ namespace Slake {
 		inline BasicFnValue(
 			Runtime *rt,
 			AccessModifier access,
-			Type returnType,
-			Value *parent,
-			std::string name)
-			: MemberValue(rt, access, parent, name) {
+			Type returnType)
+			: MemberValue(rt, access) {
 		}
-		virtual inline ~BasicFnValue() {}
+		virtual ~BasicFnValue() = default;
 
-		virtual inline Type getType() const override { return ValueType::FN; }
-		virtual inline Type getReturnType() const { return _returnType; }
+		virtual Type getType() const override;
+		virtual Type getReturnType() const;
+
+		inline const decltype(_paramTypes) getParamTypes() const {
+			return _paramTypes;
+		}
+
+		virtual bool isAbstract() const = 0;
 
 		BasicFnValue &operator=(const BasicFnValue &) = delete;
 		BasicFnValue &operator=(const BasicFnValue &&) = delete;
@@ -49,36 +53,34 @@ namespace Slake {
 
 	class FnValue : public BasicFnValue {
 	protected:
-		Instruction *const _body;
+		Instruction *_body = nullptr;
 		const uint32_t _nIns;
-		std::vector<Type> _paramTypes;
 
 		friend class Runtime;
 
 		friend class ObjectValue;
 
+		friend struct FnComparator;
+
 	public:
-		inline FnValue(Runtime *rt, uint32_t nIns, AccessModifier access, Type returnType, Value *parent = nullptr, std::string name = "")
+		inline FnValue(Runtime *rt, uint32_t nIns, AccessModifier access, Type returnType)
 			: _nIns(nIns),
-			  _body(new Instruction[nIns]),
-			  BasicFnValue(rt, access, returnType, parent, name) {
-			if (!nIns)
-				throw std::invalid_argument("Invalid instruction count");
+			  BasicFnValue(rt, access, returnType) {
+			if (nIns)
+				_body = new Instruction[nIns];
 			reportSizeToRuntime(sizeof(*this) + sizeof(Instruction) * nIns);
 		}
-		virtual inline ~FnValue() { delete[] _body; }
+		virtual ~FnValue();
 
 		inline uint32_t getInsCount() const noexcept { return _nIns; }
 		inline const Instruction *getBody() const noexcept { return _body; }
 		inline Instruction *getBody() noexcept { return _body; }
 
-		virtual ValueRef<> call(uint8_t nArgs, ValueRef<> *args) override;
+		virtual ValueRef<> call(uint8_t nArgs, ValueRef<> *args) const override;
 
-		inline const decltype(_paramTypes) getParamTypes() const {
-			return _paramTypes;
+		virtual bool isAbstract() const override {
+			return _nIns == 0;
 		}
-
-		virtual std::string toString() const override;
 
 		FnValue &operator=(const FnValue &) = delete;
 		FnValue &operator=(const FnValue &&) = delete;
@@ -92,37 +94,20 @@ namespace Slake {
 
 	public:
 		inline NativeFnValue(Runtime *rt, NativeFnCallback body, AccessModifier access, Type returnType, std::string name = "", Value *parent = nullptr)
-			: BasicFnValue(rt, access | ACCESS_NATIVE, returnType, parent, name), _body(body) {
+			: BasicFnValue(rt, access | ACCESS_NATIVE, returnType), _body(body) {
 			reportSizeToRuntime(sizeof(*this));
 		}
-		virtual inline ~NativeFnValue() {}
+		virtual ~NativeFnValue() = default;
 
 		inline const NativeFnCallback getBody() const noexcept { return _body; }
 
-		virtual ValueRef<> call(uint8_t nArgs, ValueRef<> *args) override { return _body(getRuntime(), nArgs, args); }
+		virtual ValueRef<> call(uint8_t nArgs, ValueRef<> *args) const override;
 
-		virtual inline std::string toString() const override {
-			std::string s = Value::toString() + ",\"callbackType\":\"" + _body.target_type().name() + "\"";
-			return s;
-		}
+		virtual bool isAbstract() const override { return (bool)_body; }
 
 		NativeFnValue &operator=(const NativeFnValue &) = delete;
 		NativeFnValue &operator=(const NativeFnValue &&) = delete;
 	};
-}
-
-namespace std {
-	inline std::string to_string(const Slake::Instruction &&ins) {
-		std::string s = "{\"opcode\":" + std::to_string((uint8_t)ins.opcode) + ",\"operands\":[";
-		for (size_t i = 0; i < ins.nOperands; i++) {
-			s += (i ? "," : "") + ins.operands[i];
-		}
-		s += "]}";
-		return s;
-	}
-	inline std::string to_string(const Slake::Instruction &ins) {
-		return to_string(move(ins));
-	}
 }
 
 #endif

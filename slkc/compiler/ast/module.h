@@ -3,8 +3,8 @@
 
 #include "ref.h"
 
-namespace Slake {
-	namespace Compiler {
+namespace slake {
+	namespace slkc {
 		class ModuleNode : public AstNode {
 		public:
 			shared_ptr<Ref> moduleName;

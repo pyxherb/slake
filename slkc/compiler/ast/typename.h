@@ -5,8 +5,8 @@
 
 #include "ref.h"
 
-namespace Slake {
-	namespace Compiler {
+namespace slake {
+	namespace slkc {
 		enum Type : uint8_t {
 			TYPE_I8,
 			TYPE_I16,

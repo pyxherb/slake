@@ -5,8 +5,8 @@
 #include <slake/opcode.h>
 #include <unordered_map>
 
-namespace Slake {
-	namespace Assembler {
+namespace slake {
+	namespace bcc {
 		class Instruction final : public ILocated {
 		protected:
 			location _loc;
@@ -37,7 +37,7 @@ namespace Slake {
 			shared_ptr<TypeName> returnType;
 			ParamDeclList params;
 			deque<shared_ptr<Instruction>> body;
-			AccessModifier access;
+			AccessModifier access = 0;
 			unordered_map<string, uint32_t> labels;
 
 			inline Fn(
@@ -49,7 +49,8 @@ namespace Slake {
 				: _loc(loc),
 				  returnType(returnType),
 				  params(params),
-				  body(body) {}
+				  body(body),
+				  access(access) {}
 			virtual ~Fn() = default;
 
 			virtual inline location getLocation() const override { return _loc; }

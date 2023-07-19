@@ -83,6 +83,14 @@ namespace slake {
 		virtual ~FrameBoundaryExceededError() = default;
 	};
 
+	class InvalidLocalVarIndexError : public RuntimeExecError {
+	public:
+		const uint32_t index;
+
+		inline InvalidLocalVarIndexError(std::string msg, uint32_t index) : RuntimeExecError(msg), index(index){};
+		virtual ~InvalidLocalVarIndexError() = default;
+	};
+
 	class InvalidSubscriptionError : public RuntimeExecError {
 	public:
 		inline InvalidSubscriptionError(std::string msg) : RuntimeExecError(msg){};

@@ -31,7 +31,8 @@ namespace slake {
 			TYPE_ARRAY,
 			TYPE_MAP,
 			TYPE_FN,
-			TYPE_CUSTOM
+			TYPE_CUSTOM,
+			TYPE_GENERIC
 		};
 
 		class Ref;
@@ -68,10 +69,10 @@ namespace slake {
 
 		class MapTypeName : public TypeName {
 		public:
-			shared_ptr<TypeName> keyType, valueType;
+			shared_ptr<TypeName> keyType, type;
 
-			inline MapTypeName(location loc, shared_ptr<TypeName> keyType, shared_ptr<TypeName> valueType)
-				: TypeName(loc, TYPE_MAP), keyType(keyType), valueType(valueType) {}
+			inline MapTypeName(location loc, shared_ptr<TypeName> keyType, shared_ptr<TypeName> type)
+				: TypeName(loc, TYPE_MAP), keyType(keyType), type(type) {}
 			virtual ~MapTypeName() = default;
 		};
 
@@ -83,6 +84,14 @@ namespace slake {
 			inline FnTypeName(location loc, shared_ptr<TypeName> returnType, deque<shared_ptr<TypeName>> params = {})
 				: TypeName(loc, TYPE_FN), returnType(returnType), params(params) {}
 			virtual ~FnTypeName() = default;
+		};
+
+		class GenericTypeName : public TypeName {
+		public:
+			uint8_t index;
+
+			inline GenericTypeName(location loc, uint8_t index) : TypeName(loc, TYPE_GENERIC), index(index) {}
+			virtual ~GenericTypeName() = default;
 		};
 	}
 }

@@ -18,22 +18,22 @@ ClassValue *stdlib::Core::Except::exInvalidOperandsError;
 static ValueRef<> _exceptionConstructor(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
 	if (nArgs != 1)
 		throw InvalidArgumentsError("Invalid arguments");
-	((VarValue *)(*rt->getCurContext()->getCurFrame().thisObject)->getMember("_msg"))->setData(*args[0]);
+	((VarValue *)(*rt->getActiveContext()->getCurFrame().thisObject)->getMember("_msg"))->setData(*args[0]);
 	return {};
 }
 
 static void _initExceptionClass(Runtime *rt, ClassValue *ex) {
 	using namespace Except;
 
-	ex->implInterfaces.push_back(Type(ValueType::INTERFACE, typeIException));
-	ex->addMember("_msg", new VarValue(rt, 0, ValueType::STRING));
+	ex->implInterfaces.push_back(Type(TypeId::INTERFACE, typeIException));
+	ex->addMember("_msg", new VarValue(rt, 0, TypeId::STRING));
 	ex->addMember(
 		"new",
 		new NativeFnValue(
 			rt,
 			_exceptionConstructor,
 			ACCESS_PUB,
-			ValueType::NONE));
+			TypeId::NONE));
 }
 
 void stdlib::Core::Except::load(Runtime *rt) {
@@ -47,7 +47,7 @@ void stdlib::Core::Except::load(Runtime *rt) {
 			typeIException = new InterfaceValue(rt, ACCESS_PUB));
 		{
 			typeIException->addMember("operator@string",
-				new FnValue(rt, 0, ACCESS_PUB, ValueType::STRING));
+				new FnValue(rt, 0, ACCESS_PUB, TypeId::STRING));
 		}
 
 		// Set up exception `LogicalError'

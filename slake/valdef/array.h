@@ -8,7 +8,7 @@ namespace slake {
 	class ArrayValue final : public Value {
 	protected:
 		std::deque<ValueRef<Value, false>> values;
-		const Type type;
+		Type type;
 
 		friend class Runtime;
 
@@ -22,7 +22,7 @@ namespace slake {
 			for (auto i : values)
 				delete *i;
 		}
-		virtual inline Type getType() const override { return ValueType::ARRAY; }
+		virtual inline Type getType() const override { return TypeId::ARRAY; }
 		inline Type getVarType() const { return type; }
 
 		Value *operator[](uint32_t i) {

@@ -9,41 +9,41 @@ slake::ValueRef<> print(slake::Runtime *rt, uint8_t nArgs, slake::ValueRef<> *ar
 	using namespace slake;
 
 	for(uint8_t i=0;i<nArgs;++i) {
-		switch(args[i]->getType().valueType) {
-			case ValueType::I8:
+		switch(args[i]->getType().typeId) {
+			case TypeId::I8:
 				printf("%hhd", ((I8Value*)*args[i])->getData());
 				break;
-			case ValueType::I16:
+			case TypeId::I16:
 				printf("%hd", ((I16Value*)*args[i])->getData());
 				break;
-			case ValueType::I32:
+			case TypeId::I32:
 				printf("%d", ((I32Value*)*args[i])->getData());
 				break;
-			case ValueType::I64:
-				printf("%lld", ((I64Value*)*args[i])->getData());
+			case TypeId::I64:
+				std::cout<<((I64Value*)*args[i])->getData();
 				break;
-			case ValueType::U8:
+			case TypeId::U8:
 				printf("%hhu", ((U8Value*)*args[i])->getData());
 				break;
-			case ValueType::U16:
+			case TypeId::U16:
 				printf("%hu", ((U16Value*)*args[i])->getData());
 				break;
-			case ValueType::U32:
+			case TypeId::U32:
 				printf("%u", ((U32Value*)*args[i])->getData());
 				break;
-			case ValueType::U64:
+			case TypeId::U64:
 				printf("%llu", ((U64Value*)*args[i])->getData());
 				break;
-			case ValueType::F32:
+			case TypeId::F32:
 				std::cout<<((F32Value*)*args[i])->getData();
 				break;
-			case ValueType::F64:
+			case TypeId::F64:
 				std::cout<<((F64Value*)*args[i])->getData();
 				break;
-			case ValueType::BOOL:
+			case TypeId::BOOL:
 				fputs(((BoolValue*)*args[i])->getData() ? "true" : "false" ,stdout);
 				break;
-			case ValueType::STRING:
+			case TypeId::STRING:
 				fputs(((StringValue*)*args[i])->getData().c_str(), stdout);
 				break;
 			default:
@@ -54,11 +54,11 @@ slake::ValueRef<> print(slake::Runtime *rt, uint8_t nArgs, slake::ValueRef<> *ar
 	return {};
 }
 
-slake::ValueRef<slake::ModuleValue> fsModuleLoader(slake::Runtime *rt, slake::RefValue *ref) {
+slake::ValueRef<slake::ModuleValue> fsModuleLocator(slake::Runtime *rt, slake::RefValue *ref) {
 	std::string path;
-	for (size_t i = 0; i < ref->scopes.size(); i++) {
-		path += ref->scopes[i];
-		if (i + 1 < ref->scopes.size())
+	for (size_t i = 0; i < ref->entries.size(); ++i) {
+		path += ref->entries[i].name;
+		if (i + 1 < ref->entries.size())
 			path += "/";
 	}
 
@@ -66,7 +66,7 @@ slake::ValueRef<slake::ModuleValue> fsModuleLoader(slake::Runtime *rt, slake::Re
 	fs.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
 	fs.open(path, std::ios_base::binary);
 
-	auto mod = rt->loadModule(fs, ref->scopes.back());
+	auto mod = rt->loadModule(fs);
 
 	fs.close();
 
@@ -74,7 +74,7 @@ slake::ValueRef<slake::ModuleValue> fsModuleLoader(slake::Runtime *rt, slake::Re
 }
 
 void printTraceback(slake::Runtime *rt) {
-	auto ctxt = rt->currentContexts.at(std::this_thread::get_id());
+	auto ctxt = rt->activeContexts.at(std::this_thread::get_id());
 	printf("Traceback:\n");
 	for (auto i = ctxt->majorFrames.rbegin(); i != ctxt->majorFrames.rend(); ++i) {
 		printf("\t%s: 0x%08x\n", rt->resolveName(*(i->curFn)).c_str(), i->curIns);
@@ -92,11 +92,10 @@ int main(int argc, char **argv) {
 		fs.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
 		fs.open("main.slx", std::ios_base::in | std::ios_base::binary);
 
-		rt->setModuleLoader(fsModuleLoader);
+		rt->setModuleLocator(fsModuleLocator);
 		slake::stdlib::load(rt.get());
 
-		mod = rt->loadModule(fs, "main");
-		rt->getRootValue()->addMember("main", *mod);
+		mod = rt->loadModule(fs);
 	} catch (std::ios::failure e) {
 		printf("Error loading main module\n");
 		return -1;
@@ -108,17 +107,17 @@ int main(int argc, char **argv) {
 			rt.get(),
 			print,
 			slake::ACCESS_PUB,
-			slake::ValueType::NONE));
+			slake::TypeId::NONE));
 
 	slake::ValueRef<> result;
 
 	try {
-		rt->getRootValue()->getMember("main")->getMember("main")->call(0, nullptr);
+		mod->getMember("main")->call(0, nullptr);
 	} catch (slake::NotFoundError e) {
 		printf("NotFoundError: %s, ref = %s\n", e.what(), std::to_string(*e.ref).c_str());
 		printTraceback(rt.get());
 	} catch (slake::RuntimeExecError e) {
-		auto ctxt = rt->currentContexts.at(std::this_thread::get_id());
+		auto ctxt = rt->activeContexts.at(std::this_thread::get_id());
 		printf("RuntimeExecError: %s\n", e.what());
 		printTraceback(rt.get());
 	}

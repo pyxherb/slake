@@ -7,6 +7,7 @@
 #include <deque>
 
 #include "member.h"
+#include "generic.h"
 
 namespace slake {
 	struct Instruction final {
@@ -23,8 +24,9 @@ namespace slake {
 
 	class BasicFnValue : public MemberValue {
 	protected:
-		std::vector<Type> _paramTypes;
-		Type _returnType;
+		GenericParamList genericParams;
+		std::deque<Type> paramTypes;
+		Type returnType;
 
 		friend class Runtime;
 		friend class ClassValue;
@@ -41,20 +43,32 @@ namespace slake {
 		virtual Type getType() const override;
 		virtual Type getReturnType() const;
 
-		inline const decltype(_paramTypes) getParamTypes() const {
-			return _paramTypes;
+		inline const GenericParamList getGenericParams() const {
+			return genericParams;
+		}
+
+		inline const std::deque<Type> getParamTypes() const {
+			return paramTypes;
 		}
 
 		virtual bool isAbstract() const = 0;
 
-		BasicFnValue &operator=(const BasicFnValue &) = delete;
+		inline BasicFnValue &operator=(const BasicFnValue &x) {
+			((MemberValue &)*this) = (MemberValue &)x;
+
+			genericParams = x.genericParams;
+			paramTypes = x.paramTypes;
+			returnType = x.returnType;
+
+			return *this;
+		}
 		BasicFnValue &operator=(const BasicFnValue &&) = delete;
 	};
 
 	class FnValue : public BasicFnValue {
 	protected:
-		Instruction *_body = nullptr;
-		const uint32_t _nIns;
+		Instruction *body = nullptr;
+		uint32_t nIns;
 
 		friend class Runtime;
 
@@ -64,48 +78,88 @@ namespace slake {
 
 	public:
 		inline FnValue(Runtime *rt, uint32_t nIns, AccessModifier access, Type returnType)
-			: _nIns(nIns),
+			: nIns(nIns),
 			  BasicFnValue(rt, access, returnType) {
 			if (nIns)
-				_body = new Instruction[nIns];
+				body = new Instruction[nIns];
 			reportSizeToRuntime(sizeof(*this) + sizeof(Instruction) * nIns);
 		}
 		virtual ~FnValue();
 
-		inline uint32_t getInsCount() const noexcept { return _nIns; }
-		inline const Instruction *getBody() const noexcept { return _body; }
-		inline Instruction *getBody() noexcept { return _body; }
+		inline uint32_t getInsCount() const noexcept { return nIns; }
+		inline const Instruction *getBody() const noexcept { return body; }
+		inline Instruction *getBody() noexcept { return body; }
 
 		virtual ValueRef<> call(uint8_t nArgs, ValueRef<> *args) const override;
 
 		virtual bool isAbstract() const override {
-			return _nIns == 0;
+			return nIns == 0;
 		}
 
-		FnValue &operator=(const FnValue &) = delete;
+		Value *duplicate() const override;
+
+		inline FnValue &operator=(const FnValue &x) {
+			((BasicFnValue &)*this) = (BasicFnValue &)x;
+
+			// Delete existing function body.
+			if (body) {
+				delete[] body;
+				body = nullptr;
+			}
+
+			// Copy the function body if the source function is not abstract.
+			if (x.body) {
+				body = new Instruction[x.nIns];
+
+				// Copy each instruction.
+				for (size_t i = 0; i < x.nIns; ++i) {
+					// Duplicate current instruction from the source function.
+					auto ins = x.body[i];
+
+					// Copy each operand.
+					for (size_t j = 0; j < ins.nOperands; ++j) {
+						auto &operand = ins.operands[j];
+						if (operand)
+							operand = operand->duplicate();
+					}
+
+					// Move current instruction into the function body.
+					body[i] = ins;
+				}
+			}
+			nIns = x.nIns;
+
+			return *this;
+		}
 		FnValue &operator=(const FnValue &&) = delete;
 	};
 
 	using NativeFnCallback = std::function<ValueRef<>(Runtime *rt, uint8_t nArgs, ValueRef<> *args)>;
 	class NativeFnValue final : public BasicFnValue {
 	protected:
-		NativeFnCallback _body;
+		NativeFnCallback body;
 		friend class ClassValue;
 
 	public:
-		inline NativeFnValue(Runtime *rt, NativeFnCallback body, AccessModifier access, Type returnType, std::string name = "", Value *parent = nullptr)
-			: BasicFnValue(rt, access | ACCESS_NATIVE, returnType), _body(body) {
+		inline NativeFnValue(Runtime *rt, NativeFnCallback body, AccessModifier access, Type returnType)
+			: BasicFnValue(rt, access | ACCESS_NATIVE, returnType), body(body) {
 			reportSizeToRuntime(sizeof(*this));
 		}
 		virtual ~NativeFnValue() = default;
 
-		inline const NativeFnCallback getBody() const noexcept { return _body; }
+		inline const NativeFnCallback getBody() const noexcept { return body; }
 
 		virtual ValueRef<> call(uint8_t nArgs, ValueRef<> *args) const override;
 
-		virtual bool isAbstract() const override { return (bool)_body; }
+		virtual bool isAbstract() const override { return (bool)body; }
 
-		NativeFnValue &operator=(const NativeFnValue &) = delete;
+		Value *duplicate() const override;
+
+		inline NativeFnValue &operator=(const NativeFnValue &x) {
+			((BasicFnValue &)*this) = (BasicFnValue &)x;
+			body = x.body;
+			return *this;
+		}
 		NativeFnValue &operator=(const NativeFnValue &&) = delete;
 	};
 }

@@ -8,6 +8,7 @@ Value::Value(Runtime *rt) : _rt(rt) {
 }
 
 Value::~Value() {
+	_rt->invalidateGenericCache(this);
 	_rt->_createdValues.erase(this);
 }
 
@@ -22,8 +23,8 @@ ValueRef<> Value::call(uint8_t nArgs, ValueRef<> *args) const {
 	return nullptr;
 }
 
-Value *Value::copy() const {
-	throw std::logic_error("Not implemented yet");
+Value *Value::duplicate() const {
+	throw std::logic_error("duplicate method was not implemented by the value class");
 }
 
 void Value::onRefZero() {

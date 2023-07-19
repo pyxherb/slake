@@ -1,5 +1,18 @@
 module std.core.reflect;
 
+pub native class RefEntry {
+	pub string name;
+	pub Type[] genericArgs;
+}
+
+pub native class Ref {
+	RefEntry entries[];
+}
+
+pub native class Module {
+	Ref[] name;
+}
+
 pub native class Type {
 }
 
@@ -20,26 +33,26 @@ pub native class Var {
 pub native class Class {
 	/// @brief Name of the class.
 	pub const string name;
-	
+
 	/// @brief Members of the class.
 	pub const any[] members;
 
 	/// @brief Interfaces implemented by the class.
 	pub const @Interface[] interfaces;
-	
+
 	/// @brief Parent of the class.
 	pub const @Class parent;
-	
+
 	pub native any newInstance(...);
 }
 
 pub native class Interface {
 	/// @brief Name of the interface.
 	pub const native string name;
-	
+
 	/// @brief Methods declared by the interface.
 	pub const @Fn[string] methods;
-	
+
 	/// @brief Parent of the interface.
 	pub const @Interface parent;
 }
@@ -50,7 +63,7 @@ pub native class Trait {
 
 	/// @brief Members of the interface.
 	pub const any[] members;
-	
+
 	/// @brief Parent of the trait.
 	pub const @Trait parent;
 }
@@ -58,10 +71,10 @@ pub native class Trait {
 pub native class Struct {
 	/// @brief Name of the structure.
 	pub const native string name;
-	
+
 	/// @brief Members of the interface.
 	pub const @Var[string] members;
-	
+
 	pub native any newInstance(...);
 }
 
@@ -73,13 +86,13 @@ pub native class Struct {
 pub native class Fn {
 	/// @brief Name of the function.
 	pub const string name;
-	
+
 	/// @brief Return type.
 	pub const @Type returnType;
-	
+
 	/// @brief Parameter types.
 	pub const @Type[] paramTypes;
-	
+
 	/// @brief Whether the function is implemented or not.
 	pub const bool isImplemented;
 

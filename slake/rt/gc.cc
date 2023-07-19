@@ -1,13 +1,56 @@
 #include "../runtime.h"
 
-void slake::Runtime::_gcWalk(Value *v) {
+using namespace slake;
+
+void Runtime::_gcWalk(Type &type) {
+	switch (type.typeId) {
+		case TypeId::OBJECT:
+		case TypeId::CLASS:
+		case TypeId::INTERFACE:
+		case TypeId::TRAIT:
+		case TypeId::STRUCT:
+			_gcWalk(*type.getCustomTypeExData());
+			break;
+		case TypeId::ARRAY:
+			_gcWalk(type.getArrayExData());
+			break;
+		case TypeId::MAP: {
+			_gcWalk(*type.getMapExData().first);
+			_gcWalk(*type.getMapExData().second);
+			break;
+		}
+		case TypeId::VAR:
+		case TypeId::MOD:
+		case TypeId::ROOT:
+		case TypeId::I8:
+		case TypeId::I16:
+		case TypeId::I32:
+		case TypeId::I64:
+		case TypeId::U8:
+		case TypeId::U16:
+		case TypeId::U32:
+		case TypeId::U64:
+		case TypeId::F32:
+		case TypeId::F64:
+		case TypeId::BOOL:
+		case TypeId::FN:
+		case TypeId::REF:
+		case TypeId::NONE:
+		case TypeId::GENERIC_ARG:
+			break;
+		default:
+			throw std::logic_error("Unhandled value type");
+	}
+}
+
+void Runtime::_gcWalk(Value *v) {
 	if (v->_flags & VF_WALKED)
 		return;
 
 	v->_flags |= VF_WALKED;
 
-	switch (v->getType().valueType) {
-		case ValueType::OBJECT: {
+	switch (v->getType().typeId) {
+		case TypeId::OBJECT: {
 			auto value = (ObjectValue *)v;
 			for (auto &i : value->_members)
 				_gcWalk(i.second);
@@ -16,13 +59,13 @@ void slake::Runtime::_gcWalk(Value *v) {
 				_gcWalk(*value->_parent);
 			break;
 		}
-		case ValueType::ARRAY:
+		case TypeId::ARRAY:
 			for (auto &i : ((ArrayValue *)v)->values)
 				_gcWalk(*i);
 			break;
-		case ValueType::MAP:
+		case TypeId::MAP:
 			break;
-		case ValueType::CLASS: {
+		case TypeId::CLASS: {
 			ClassValue *const value = (ClassValue *)v;
 
 			if (value->_parent)
@@ -37,15 +80,23 @@ void slake::Runtime::_gcWalk(Value *v) {
 			for (auto &i : value->_members)
 				_gcWalk(i.second);
 
+			value->parentClass.loadDeferredType(this);
+			_gcWalk(value->parentClass);
+
+			for (auto &i : value->implInterfaces) {
+				i.loadDeferredType(this);
+				_gcWalk(i);
+			}
+
 			break;
 		}
-		case ValueType::INTERFACE: {
+		case TypeId::INTERFACE: {
 			InterfaceValue *const value = (InterfaceValue *)v;
 
 			if (value->_parent)
 				_gcWalk(value->_parent);
 
-			for (auto i : value->parents) {
+			for (auto &i : value->parents) {
 				i.loadDeferredType(this);
 				_gcWalk(*i.getCustomTypeExData());
 			}
@@ -55,13 +106,13 @@ void slake::Runtime::_gcWalk(Value *v) {
 
 			break;
 		}
-		case ValueType::TRAIT: {
+		case TypeId::TRAIT: {
 			TraitValue *const value = (TraitValue *)v;
 
 			if (value->_parent)
 				_gcWalk(value->_parent);
 
-			for (auto i : value->parents) {
+			for (auto &i : value->parents) {
 				i.loadDeferredType(this);
 				_gcWalk(*i.getCustomTypeExData());
 			}
@@ -71,17 +122,22 @@ void slake::Runtime::_gcWalk(Value *v) {
 
 			break;
 		}
-		case ValueType::STRUCT:
+		case TypeId::STRUCT:
 			break;
-		case ValueType::VAR: {
+		case TypeId::VAR: {
 			VarValue *value = (VarValue *)v;
+
+			_gcWalk(value->type);
 
 			auto v = value->getData();
 			if (v)
 				_gcWalk(*v);
+
+			if (value->_parent)
+				_gcWalk(value->_parent);
 			break;
 		}
-		case ValueType::MOD: {
+		case TypeId::MOD: {
 			ModuleValue *value = (ModuleValue *)v;
 
 			if (value->_parent)
@@ -91,37 +147,75 @@ void slake::Runtime::_gcWalk(Value *v) {
 				_gcWalk(i.second);
 			break;
 		}
-		case ValueType::ROOT:
+		case TypeId::ROOT:
 			for (auto &i : ((RootValue *)v)->_members)
 				_gcWalk(*(i.second));
 			break;
-		case ValueType::I8:
-		case ValueType::I16:
-		case ValueType::I32:
-		case ValueType::I64:
-		case ValueType::U8:
-		case ValueType::U16:
-		case ValueType::U32:
-		case ValueType::U64:
-		case ValueType::F32:
-		case ValueType::F64:
-		case ValueType::BOOL:
-		case ValueType::FN:
-		case ValueType::REF:
+		case TypeId::FN: {
+			auto basicFn = (BasicFnValue *)v;
+
+			if (basicFn->_parent)
+				_gcWalk(basicFn->_parent);
+
+			_gcWalk(basicFn->returnType);
+			for (auto &i : basicFn->paramTypes)
+				_gcWalk(i);
+
+			if (!((BasicFnValue *)v)->isNative()) {
+				auto value = (FnValue *)basicFn;
+				for (size_t i = 0; i < value->nIns; ++i) {
+					auto &ins = value->body[i];
+					for (size_t j = 0; j < ins.nOperands; ++j) {
+						auto operand = *ins.operands[j];
+						if (operand)
+							_gcWalk(operand);
+					}
+				}
+			}
+			break;
+		}
+		case TypeId::TYPENAME: {
+			auto value = (TypeNameValue *)v;
+
+			_gcWalk(value->_data);
+			break;
+		}
+		case TypeId::REF: {
+			auto value = (RefValue *)v;
+
+			for (auto &i : value->entries)
+				for (auto &j : i.genericArgs) {
+					_gcWalk(j);
+				}
+			break;
+		}
+		case TypeId::I8:
+		case TypeId::I16:
+		case TypeId::I32:
+		case TypeId::I64:
+		case TypeId::U8:
+		case TypeId::U16:
+		case TypeId::U32:
+		case TypeId::U64:
+		case TypeId::F32:
+		case TypeId::F64:
+		case TypeId::BOOL:
+		case TypeId::STRING:
 			break;
 		default:
+			auto t = v->getType().typeId;
 			throw std::logic_error("Unhandled value type");
 	}
 }
 
-void slake::Runtime::gc() {
-	_isInGc = true;
+void Runtime::gc() {
+	_flags |= _RT_INGC;
 
 	if (_rootValue)
 		_gcWalk(_rootValue);
 
 	// Walk contexts for each thread.
-	for (auto &i : currentContexts) {
+	for (auto &i : activeContexts) {
 		auto &ctxt = i.second;
 		// Walk for each major frames.
 		for (auto &j : ctxt->majorFrames) {
@@ -134,7 +228,11 @@ void slake::Runtime::gc() {
 				_gcWalk(*j.thisObject);
 			for (auto &k : j.argStack)
 				_gcWalk(*k);
+			for (auto &k : j.nextArgStack)
+				_gcWalk(*k);
 			for (auto &k : j.dataStack)
+				_gcWalk(*k);
+			for (auto &k : j.localVars)
 				_gcWalk(*k);
 			// for(auto &k:j.minorFrames) {}
 		}
@@ -146,7 +244,8 @@ void slake::Runtime::gc() {
 	if (_rootValue) {
 		// Scan for GC targets
 		for (auto i = _createdValues.begin(); i != _createdValues.end(); ++i) {
-			if ((!((*i)->_flags & VF_WALKED)) && (!((*i)->_hostRefCount)))
+			auto type = (*i)->getType();
+			if ((!((*i)->_flags & VF_WALKED)) && (!((*i)->hostRefCount)))
 				unreachableValues.insert(*i);
 		}
 
@@ -155,7 +254,7 @@ void slake::Runtime::gc() {
 		for (auto i : unreachableValues) {
 			if (_createdValues.count(i)) {
 				auto d = i->getMember("delete");
-				if (d && i->getType() == ValueType::OBJECT)
+				if (d && i->getType() == TypeId::OBJECT)
 					d->call(0, nullptr);
 			}
 		}
@@ -170,7 +269,7 @@ void slake::Runtime::gc() {
 		for (auto i : _createdValues) {
 			if (_createdValues.count(i)) {
 				auto d = i->getMember("delete");
-				if (d && i->getType() == ValueType::OBJECT)
+				if (d && i->getType() == TypeId::OBJECT)
 					d->call(0, nullptr);
 			}
 		}
@@ -178,7 +277,7 @@ void slake::Runtime::gc() {
 
 		while (!_createdValues.empty()) {
 			auto i = _createdValues.begin();
-			if (!((*i)->_hostRefCount)) {
+			if (!((*i)->hostRefCount)) {
 				delete *i;
 			} else
 				_createdValues.erase(i);
@@ -189,5 +288,5 @@ void slake::Runtime::gc() {
 		i->_flags &= ~VF_WALKED;
 
 	_szMemUsedAfterLastGc = _szMemInUse;
-	_isInGc = false;
+	_flags &= ~_RT_INGC;
 }

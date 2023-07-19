@@ -34,6 +34,10 @@ yylloc.step();
 "."			return parser::make_T_DOT(yylloc);
 "..."		return parser::make_T_VARARG(yylloc);
 
+"+"		return parser::make_OP_ADD(yylloc);
+"<"		return parser::make_OP_LT(yylloc);
+">"		return parser::make_OP_GT(yylloc);
+
 "const"		return parser::make_KW_CONST(yylloc);
 "false"		return parser::make_KW_FALSE(yylloc);
 "final"		return parser::make_KW_FINAL(yylloc);
@@ -59,7 +63,7 @@ yylloc.step();
 ".var"			return parser::make_D_VAR(yylloc);
 ".extends"		return parser::make_D_EXTENDS(yylloc);
 ".impl"			return parser::make_D_IMPL(yylloc);
-".complies"		return parser::make_D_COMPLIES(yylloc);
+".consist"		return parser::make_D_CONSIST(yylloc);
 
 "i8"		return parser::make_TN_I8(yylloc);
 "i16"		return parser::make_TN_I16(yylloc);
@@ -82,7 +86,7 @@ yylloc.step();
 <LINE_COMMENT>\n	BEGIN(INITIAL); yylloc.lines(yyleng); yylloc.step();
 <LINE_COMMENT>.*	yylloc.step();
 
-[a-zA-Z_][a-zA-Z0-9_@$]* {
+[a-zA-Z_][a-zA-Z0-9_@$?]* {
 	if (strlen(yytext) > 255) {
 		yyparser->error(yylloc, "identifier is too long");
 		return parser::make_YYerror(yylloc);

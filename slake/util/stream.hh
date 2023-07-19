@@ -10,7 +10,7 @@ namespace slake {
 							   virtual public std::istream {
 		private:
 			const void *_src;
-			std::size_t _size;
+			size_t _size;
 
 		public:
 			inline InputMemStream(const void *src, std::streamsize size)

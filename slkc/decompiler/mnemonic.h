@@ -8,7 +8,7 @@
 namespace slake {
 	namespace Decompiler {
 		using namespace std;
-		extern unordered_map<Opcode, std::string> mnemonics;
+		extern map<Opcode, std::string> mnemonics;
 	}
 }
 

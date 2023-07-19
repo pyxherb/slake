@@ -4,8 +4,8 @@ using namespace slake;
 
 bool ClassValue::_isAbstract() const {
 	for (auto i : _members) {
-		switch (i.second->getType().valueType) {
-			case ValueType::FN:
+		switch (i.second->getType().typeId) {
+			case TypeId::FN:
 				if (((FnValue *)i.second)->isAbstract())
 					return true;
 				break;
@@ -35,7 +35,7 @@ bool ClassValue::hasImplemented(const InterfaceValue *pInterface) const {
 	return false;
 }
 
-bool ClassValue::isCompatibleWith(const TraitValue *t) const {
+bool ClassValue::consistsOf(const TraitValue *t) const {
 	for (auto &i : t->_members) {
 		const MemberValue *v = nullptr;	 // Corresponding member in this class.
 
@@ -46,7 +46,7 @@ bool ClassValue::isCompatibleWith(const TraitValue *t) const {
 			while (j->parentClass) {
 				if (!(v = (MemberValue *)j->getMember(i.first))) {
 					j->parentClass.loadDeferredType(_rt);
-					j = (ClassValue*)*j->parentClass.getCustomTypeExData();
+					j = (ClassValue *)*j->parentClass.getCustomTypeExData();
 					continue;
 				}
 				goto found;
@@ -54,34 +54,34 @@ bool ClassValue::isCompatibleWith(const TraitValue *t) const {
 			return false;
 		}
 	found:
-		if (v->getType().valueType != i.second->getType().valueType)
+		if (v->getType().typeId != i.second->getType().typeId)
 			return false;
 
 		// The class is incompatible if any corresponding member is private.
 		if (!v->isPublic())
 			return false;
 
-		switch (v->getType().valueType) {
-			case ValueType::VAR: {
+		switch (v->getType().typeId) {
+			case TypeId::VAR: {
 				// Check for variable type.
 				if (((VarValue *)v)->getVarType() != ((VarValue *)i.second)->getVarType())
 					return false;
 				break;
 			}
-			case ValueType::FN: {
+			case TypeId::FN: {
 				FnValue *f = (FnValue *)v, *g = (FnValue *)i.second;
 
 				// Check for return type.
-				if (f->_returnType != g->_returnType)
+				if (f->returnType != g->returnType)
 					return false;
 
 				// Check for parameter number.
-				if (f->_paramTypes.size() != g->_paramTypes.size())
+				if (f->paramTypes.size() != g->paramTypes.size())
 					return false;
 
 				// Check for parameter types.
-				for (size_t i = 0; i < f->_paramTypes.size(); ++i) {
-					if (f->_paramTypes[i] != g->_paramTypes[i])
+				for (size_t i = 0; i < f->paramTypes.size(); ++i) {
+					if (f->paramTypes[i] != g->paramTypes[i])
 						return false;
 				}
 
@@ -91,9 +91,9 @@ bool ClassValue::isCompatibleWith(const TraitValue *t) const {
 	}
 
 	if (t->parents.size()) {
-		for (auto i : t->parents) {
+		for (auto &i : t->parents) {
 			i.loadDeferredType(_rt);
-			if (!isCompatibleWith((TraitValue *)*(i.getCustomTypeExData()))) {
+			if (!consistsOf((TraitValue *)*(i.getCustomTypeExData()))) {
 				return false;
 			}
 		}
@@ -111,7 +111,7 @@ bool InterfaceValue::isDerivedFrom(const InterfaceValue *pInterface) const {
 
 		InterfaceValue *interface = (InterfaceValue *)*(i.getCustomTypeExData());
 
-		if (interface->getType() != ValueType::INTERFACE)
+		if (interface->getType() != TypeId::INTERFACE)
 			throw IncompatibleTypeError("Referenced type value is not an interface");
 
 		if (interface->isDerivedFrom(pInterface))
@@ -119,4 +119,11 @@ bool InterfaceValue::isDerivedFrom(const InterfaceValue *pInterface) const {
 	}
 
 	return false;
+}
+
+Value *ClassValue::duplicate() const {
+	ClassValue *v = new ClassValue(_rt, 0, {});
+	*v = *this;
+
+	return (Value *)v;
 }

@@ -10,3 +10,11 @@ void ObjectValue::onRefZero() {
 	else
 		delete this;
 }
+
+Value* ObjectValue::duplicate() const {
+	ObjectValue* v = new ObjectValue(_rt, _class);
+
+	*v = *this;
+
+	return (Value *)v;
+}

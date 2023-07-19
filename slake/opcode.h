@@ -14,19 +14,7 @@ namespace slake {
 		RLOAD,	// Load a value onto stack by an existing reference
 		STORE,	// Store a value from stack
 
-		LVAR,	   // Create a new local variable
-		LVARI8,	   // Create a new i8 local variable
-		LVARI16,   // Create a new i16 local variable
-		LVARI32,   // Create a new i32 local variable
-		LVARI64,   // Create a new i64 local variable
-		LVARU8,	   // Create a new u8 local variable
-		LVARU16,   // Create a new u16 local variable
-		LVARU32,   // Create a new u32 local variable
-		LVARU64,   // Create a new u64 local variable
-		LVARF32,   // Create a new f32 local variable
-		LVARF64,   // Create a new f64 local variable
-		LVARBOOL,  // Create a new boolean local variable
-		LVAROBJ,   // Create a new object local variable
+		LVAR,  // Create a new local variable
 
 		LLOAD,	 // Load a value from local variable area
 		LSTORE,	 // Store a value into local variable area
@@ -72,8 +60,8 @@ namespace slake {
 		JT,	  // Jump if true
 		JF,	  // Jump if false
 
-		SARG,  // Store an argument
-		LARG,  // Push an argument
+		PUSHARG,  // Push an value into the argument stack
+		LARG,	  // Load an argument
 
 		LTHIS,	// Load this
 
@@ -92,18 +80,7 @@ namespace slake {
 
 		ABORT,	// Abort
 
-		CASTI8,	   // Cast to i8
-		CASTI16,   // Cast to i16
-		CASTI32,   // Cast to i32
-		CASTI64,   // Cast to i64
-		CASTU8,	   // Cast to u8
-		CASTU16,   // Cast to u16
-		CASTU32,   // Cast to u32
-		CASTU64,   // Cast to u64
-		CASTF32,   // Cast to f32
-		CASTF64,   // Cast to f64
-		CASTBOOL,  // Cast to boolean
-		CASTOBJ,   // Cast to object
+		CAST,  // Cast
 
 		TYPEOF,	 // Get type of an object
 

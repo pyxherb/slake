@@ -1,5 +1,4 @@
 #include <slake/runtime.h>
-#include <slake/slxfmt.h>
 
 #include <memory>
 #include <slake/util/stream.hh>
@@ -21,16 +20,21 @@ static T _read(std::istream &fs) {
 /// @param rt Runtime for the new value.
 /// @param fs Stream to be read.
 /// @return Reference value loaded from the stream.
-static RefValue *_loadRef(Runtime *rt, std::istream &fs) {
-	auto ref = std::make_unique<RefValue>(rt);
+RefValue *Runtime::_loadRef(std::istream &fs) {
+	auto ref = std::make_unique<RefValue>(this);
 
-	slxfmt::RefScopeDesc i = { 0 };
+	slxfmt::RefEntryDesc i = { 0 };
 	while (true) {
-		i = _read<slxfmt::RefScopeDesc>(fs);
-		std::string name(i.lenName, '\0');
-		fs.read(&(name[0]), i.lenName);
+		i = _read<slxfmt::RefEntryDesc>(fs);
 
-		ref->scopes.push_back(name);
+		std::string name(i.lenName, '\0');
+		fs.read(name.data(), i.lenName);
+
+		GenericArgList genericArgs;
+		for (size_t j = i.nGenericArgs; j; --j)
+			genericArgs.push_back(_loadType(fs, _read<slxfmt::Type>(fs)));
+
+		ref->entries.push_back(RefEntry(name, genericArgs));
 		if (!(i.flags & slxfmt::RSD_NEXT))
 			break;
 	};
@@ -42,45 +46,46 @@ static RefValue *_loadRef(Runtime *rt, std::istream &fs) {
 /// @param rt Runtime for the new value.
 /// @param fs Stream to be read.
 /// @return Value loaded from the stream.
-static Value *_loadValue(Runtime *rt, std::istream &fs) {
+Value *Runtime::_loadValue(std::istream &fs) {
 	slxfmt::ValueDesc i = {};
 	fs.read((char *)&i, sizeof(i));
 	switch (i.type) {
-		case slxfmt::ValueType::NONE:
+		case slxfmt::Type::NONE:
 			return nullptr;
-		case slxfmt::ValueType::I8:
-			return new I8Value(rt, _read<std::int8_t>(fs));
-		case slxfmt::ValueType::I16:
-			return new I16Value(rt, _read<std::int16_t>(fs));
-		case slxfmt::ValueType::I32:
-			return new I32Value(rt, _read<std::int32_t>(fs));
-		case slxfmt::ValueType::I64:
-			return new I64Value(rt, _read<std::int64_t>(fs));
-		case slxfmt::ValueType::U8:
-			return new U8Value(rt, _read<uint8_t>(fs));
-		case slxfmt::ValueType::U16:
-			return new U16Value(rt, _read<uint16_t>(fs));
-		case slxfmt::ValueType::U32:
-			return new U32Value(rt, _read<uint32_t>(fs));
-		case slxfmt::ValueType::U64:
-			return new U64Value(rt, _read<uint64_t>(fs));
-		case slxfmt::ValueType::BOOL:
-			return new BoolValue(rt, _read<bool>(fs));
-		case slxfmt::ValueType::F32:
-			return new F32Value(rt, _read<float>(fs));
-		case slxfmt::ValueType::F64:
-			return new F64Value(rt, _read<double>(fs));
-		case slxfmt::ValueType::STRING: {
+		case slxfmt::Type::I8:
+			return new I8Value(this, _read<std::int8_t>(fs));
+		case slxfmt::Type::I16:
+			return new I16Value(this, _read<std::int16_t>(fs));
+		case slxfmt::Type::I32:
+			return new I32Value(this, _read<std::int32_t>(fs));
+		case slxfmt::Type::I64:
+			return new I64Value(this, _read<std::int64_t>(fs));
+		case slxfmt::Type::U8:
+			return new U8Value(this, _read<uint8_t>(fs));
+		case slxfmt::Type::U16:
+			return new U16Value(this, _read<uint16_t>(fs));
+		case slxfmt::Type::U32:
+			return new U32Value(this, _read<uint32_t>(fs));
+		case slxfmt::Type::U64:
+			return new U64Value(this, _read<uint64_t>(fs));
+		case slxfmt::Type::BOOL:
+			return new BoolValue(this, _read<bool>(fs));
+		case slxfmt::Type::F32:
+			return new F32Value(this, _read<float>(fs));
+		case slxfmt::Type::F64:
+			return new F64Value(this, _read<double>(fs));
+		case slxfmt::Type::STRING: {
 			auto len = _read<uint32_t>(fs);
 			std::string s(len, '\0');
 			fs.read(&(s[0]), len);
-			return new StringValue(rt, s);
+			return new StringValue(this, s);
 		}
-		case slxfmt::ValueType::REF: {
-			return _loadRef(rt, fs);
-		}
+		case slxfmt::Type::REF:
+			return _loadRef(fs);
+		case slxfmt::Type::TYPENAME:
+			return new TypeNameValue(this, _loadType(fs, _read<slxfmt::Type>(fs)));
 		default:
-			throw new LoaderError("Invalid value type detected");
+			throw LoaderError("Invalid value type detected");
 	}
 }
 
@@ -89,55 +94,89 @@ static Value *_loadValue(Runtime *rt, std::istream &fs) {
 /// @param fs Stream to be read.
 /// @param vt Previous read value type.
 /// @return Loaded complete type name.
-static Type _loadTypeName(Runtime *rt, std::istream &fs, slxfmt::ValueType vt) {
+Type Runtime::_loadType(std::istream &fs, slxfmt::Type vt) {
 	switch (vt) {
-		case slxfmt::ValueType::I8:
-			return ValueType::I8;
-		case slxfmt::ValueType::I16:
-			return ValueType::I16;
-		case slxfmt::ValueType::I32:
-			return ValueType::I32;
-		case slxfmt::ValueType::I64:
-			return ValueType::I64;
-		case slxfmt::ValueType::U8:
-			return ValueType::U8;
-		case slxfmt::ValueType::U16:
-			return ValueType::U16;
-		case slxfmt::ValueType::U32:
-			return ValueType::U32;
-		case slxfmt::ValueType::U64:
-			return ValueType::U64;
-		case slxfmt::ValueType::F32:
-			return ValueType::F32;
-		case slxfmt::ValueType::F64:
-			return ValueType::F64;
-		case slxfmt::ValueType::STRING:
-			return ValueType::STRING;
-		case slxfmt::ValueType::OBJECT:
-			return _loadRef(rt, fs);
-		case slxfmt::ValueType::ANY:
-			return ValueType::ANY;
-		case slxfmt::ValueType::BOOL:
-			return ValueType::BOOL;
-		case slxfmt::ValueType::NONE:
-			return ValueType::NONE;
-		case slxfmt::ValueType::ARRAY:
-			return Type(_loadTypeName(rt, fs, _read<slxfmt::ValueType>(fs)));
-		case slxfmt::ValueType::MAP:
+		case slxfmt::Type::I8:
+			return TypeId::I8;
+		case slxfmt::Type::I16:
+			return TypeId::I16;
+		case slxfmt::Type::I32:
+			return TypeId::I32;
+		case slxfmt::Type::I64:
+			return TypeId::I64;
+		case slxfmt::Type::U8:
+			return TypeId::U8;
+		case slxfmt::Type::U16:
+			return TypeId::U16;
+		case slxfmt::Type::U32:
+			return TypeId::U32;
+		case slxfmt::Type::U64:
+			return TypeId::U64;
+		case slxfmt::Type::F32:
+			return TypeId::F32;
+		case slxfmt::Type::F64:
+			return TypeId::F64;
+		case slxfmt::Type::STRING:
+			return TypeId::STRING;
+		case slxfmt::Type::OBJECT:
+			return _loadRef(fs);
+		case slxfmt::Type::ANY:
+			return TypeId::ANY;
+		case slxfmt::Type::BOOL:
+			return TypeId::BOOL;
+		case slxfmt::Type::NONE:
+			return TypeId::NONE;
+		case slxfmt::Type::ARRAY:
+			return Type(_loadType(fs, _read<slxfmt::Type>(fs)));
+		case slxfmt::Type::MAP:
 			return Type(
-				_loadTypeName(rt, fs, _read<slxfmt::ValueType>(fs)),
-				_loadTypeName(rt, fs, _read<slxfmt::ValueType>(fs)));
+				_loadType(fs, _read<slxfmt::Type>(fs)),
+				_loadType(fs, _read<slxfmt::Type>(fs)));
+		case slxfmt::Type::TYPENAME:
+			return TypeId::TYPENAME;
+		case slxfmt::Type::GENERIC_ARG:
+			return Type(_read<uint8_t>(fs));
 		default:
-			throw new LoaderError("Invalid type name detected");
+			throw LoaderError("Invalid type ID");
 	}
+}
+
+GenericParam Runtime::_loadGenericParam(std::istream &fs) {
+	auto gpd = _read<slxfmt::GenericParamDesc>(fs);
+	std::string name(gpd.lenName, '\0');
+	fs.read(&(name[0]), gpd.lenName);
+
+	std::deque<GenericQualifier> qualifiers;
+
+	for (size_t k = 0; k < gpd.nQualifier; ++k) {
+		auto desc = _read<slxfmt::GenericQualifierDesc>(fs);
+
+		GenericFilter filter;
+		switch (desc.filter) {
+			case slxfmt::GenericFilter::EXTENDS:
+				filter = GenericFilter::EXTENDS;
+				break;
+			case slxfmt::GenericFilter::IMPLS:
+				filter = GenericFilter::IMPLS;
+				break;
+			case slxfmt::GenericFilter::CONSISTS_OF:
+				filter = GenericFilter::CONSISTS_OF;
+				break;
+			default:
+				throw LoaderError("Invalid generic filter");
+		}
+
+		GenericQualifier q(filter, _loadType(fs, _read<slxfmt::Type>(fs)));
+		qualifiers.push_back(q);
+	}
+
+	return GenericParam(name, qualifiers);
 }
 
 /// @brief Load a single scope.
 /// @param mod Module value which is treated as a scope.
 /// @param fs The input stream.
-static void _loadScope(ModuleValue *mod, std::istream &fs) {
-	Runtime *const rt = mod->getRuntime();
-
+void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 	uint32_t nItemsToRead;
 
 	//
@@ -162,13 +201,13 @@ static void _loadScope(ModuleValue *mod, std::istream &fs) {
 
 		std::unique_ptr<VarValue> var =
 			std::make_unique<VarValue>(
-				rt,
+				this,
 				access,
-				_loadTypeName(rt, fs, _read<slxfmt::ValueType>(fs)));
+				_loadType(fs, _read<slxfmt::Type>(fs)));
 
 		// Load initial value.
 		if (i.flags & slxfmt::VAD_INIT)
-			var->setData(_loadValue(rt, fs));
+			var->setData(_loadValue(fs));
 
 		mod->addMember(name, var.release());
 	}
@@ -195,17 +234,44 @@ static void _loadScope(ModuleValue *mod, std::istream &fs) {
 		// if (i.flags & slxfmt::FND_NATIVE)
 		//	access |= ACCESS_NATIVE;
 
-		/*
-		for (auto j = 0; j < i.nGenericParams; j++) {
-			uint32_t lenGenericParamName = _read<uint32_t>(fs);
-			std::string name(lenGenericParamName, '\0');
-			fs.read(&(name[0]), lenGenericParamName);
-		}*/
+		GenericParamList genericParams;
+		for (size_t j = 0; j < i.nGenericParams; ++j) {
+			auto gpd = _read<slxfmt::GenericParamDesc>(fs);
+			std::string name(gpd.lenName, '\0');
+			fs.read(&(name[0]), gpd.lenName);
 
-		std::unique_ptr<FnValue> fn = std::make_unique<FnValue>(rt, (uint32_t)i.lenBody, access, _loadTypeName(rt, fs, _read<slxfmt::ValueType>(fs)));
+			std::deque<GenericQualifier> qualifiers;
+
+			for (size_t k = 0; k < gpd.nQualifier; ++k) {
+				auto desc = _read<slxfmt::GenericQualifierDesc>(fs);
+
+				GenericFilter filter;
+				switch (desc.filter) {
+					case slxfmt::GenericFilter::EXTENDS:
+						filter = GenericFilter::EXTENDS;
+						break;
+					case slxfmt::GenericFilter::IMPLS:
+						filter = GenericFilter::IMPLS;
+						break;
+					case slxfmt::GenericFilter::CONSISTS_OF:
+						filter = GenericFilter::CONSISTS_OF;
+						break;
+					default:
+						throw LoaderError("Invalid generic filter");
+				}
+
+				GenericQualifier q(filter, _loadType(fs, _read<slxfmt::Type>(fs)));
+				qualifiers.push_back(q);
+			}
+
+			GenericParam param(name, qualifiers);
+			genericParams.push_back(param);
+		}
+
+		std::unique_ptr<FnValue> fn = std::make_unique<FnValue>(this, (uint32_t)i.lenBody, access, _loadType(fs, _read<slxfmt::Type>(fs)));
 
 		for (auto j = 0; j < i.nParams; j++) {
-			_loadTypeName(rt, fs, _read<slxfmt::ValueType>(fs));
+			_loadType(fs, _read<slxfmt::Type>(fs));
 		}
 
 		if (i.flags & slxfmt::FND_VARG)
@@ -219,7 +285,7 @@ static void _loadScope(ModuleValue *mod, std::istream &fs) {
 				body[j].opcode = ih.opcode;
 				body[j].nOperands = ih.nOperands;
 				for (uint8_t k = 0; k < ih.nOperands; k++)
-					body[j].operands[k] = _loadValue(rt, fs);
+					body[j].operands[k] = _loadValue(fs);
 			}
 		}
 		mod->addMember(name, fn.release());
@@ -241,15 +307,19 @@ static void _loadScope(ModuleValue *mod, std::istream &fs) {
 		if (i.flags & slxfmt::CTD_FINAL)
 			access |= ACCESS_FINAL;
 
-		std::unique_ptr<ClassValue> value = std::make_unique<ClassValue>(rt, access);
+		std::unique_ptr<ClassValue> value = std::make_unique<ClassValue>(this, access);
+
+		GenericParamList genericParams;
+		for (size_t j = 0; j < i.nGenericParams; ++j)
+			value->genericParams.push_back(_loadGenericParam(fs));
 
 		// Load reference to the parent class.
 		if (i.flags & slxfmt::CTD_DERIVED)
-			value->parentClass = Type(ValueType::CLASS, _loadRef(rt, fs));
+			value->parentClass = Type(TypeId::CLASS, _loadRef(fs));
 
 		// Load references to implemented interfaces.
 		for (auto j = i.nImpls; j; j--)
-			value->implInterfaces.push_back(_loadRef(rt, fs));
+			value->implInterfaces.push_back(_loadRef(fs));
 
 		_loadScope(value.get(), fs);
 
@@ -270,10 +340,10 @@ static void _loadScope(ModuleValue *mod, std::istream &fs) {
 		if (i.flags & slxfmt::ITD_PUB)
 			access |= ACCESS_PUB;
 
-		std::unique_ptr<InterfaceValue> value = std::make_unique<InterfaceValue>(rt, access);
+		std::unique_ptr<InterfaceValue> value = std::make_unique<InterfaceValue>(this, access);
 
 		for (auto j = i.nParents; j; j--)
-			value->parents.push_back(_loadRef(rt, fs));
+			value->parents.push_back(_loadRef(fs));
 
 		_loadScope(value.get(), fs);
 
@@ -294,10 +364,10 @@ static void _loadScope(ModuleValue *mod, std::istream &fs) {
 		if (i.flags & slxfmt::TTD_PUB)
 			access |= ACCESS_PUB;
 
-		std::unique_ptr<TraitValue> value = std::make_unique<TraitValue>(rt, access);
+		std::unique_ptr<TraitValue> value = std::make_unique<TraitValue>(this, access);
 
 		for (auto j = i.nParents; j; j--)
-			value->parents.push_back(_loadRef(rt, fs));
+			value->parents.push_back(_loadRef(fs));
 
 		_loadScope(value.get(), fs);
 
@@ -324,13 +394,13 @@ static void _loadScope(ModuleValue *mod, std::istream &fs) {
 
 			{
 				auto t = smd.type;
-				_loadTypeName(rt, fs, t);
+				_loadType(fs, t);
 			}
 		}
 	}
 }
 
-ValueRef<ModuleValue> slake::Runtime::loadModule(std::istream &fs, std::string name) {
+ValueRef<ModuleValue> slake::Runtime::loadModule(std::istream &fs) {
 	std::unique_ptr<ModuleValue> mod = std::make_unique<ModuleValue>(this, ACCESS_PUB);
 
 	slxfmt::ImgHeader ih;
@@ -340,19 +410,56 @@ ValueRef<ModuleValue> slake::Runtime::loadModule(std::istream &fs, std::string n
 	if (ih.fmtVer != 0)
 		throw LoaderError("Bad SLX format version");
 
+	if (ih.flags & slxfmt::IMH_MODNAME) {
+		auto modName = _loadRef(fs);
+
+		if (!modName->entries.size())
+			throw LoaderError("Module name is empty with module name flag set");
+
+		auto &entries = modName->entries;
+
+		ValueRef<> curValue = (Value *)_rootValue;
+
+		// Create parent modules.
+		for (size_t i = 0; i < entries.size() - 1; ++i) {
+			auto &name = entries[i].name;
+
+			if (!curValue->getMember(name)) {
+				// Create a new one if corresponding module does not present.
+				auto mod = new ModuleValue(this, ACCESS_PUB);
+
+				if (curValue->getType() == TypeId::ROOT)
+					((RootValue *)*curValue)->addMember(name, mod);
+				else
+					((ModuleValue *)*curValue)->addMember(name, mod);
+
+				curValue = (Value *)mod;
+			} else {
+				// Continue if the module presents.
+				curValue = curValue->getMember(name);
+			}
+		}
+
+		// Add current module.
+		if (curValue->getType() == TypeId::ROOT)
+			((RootValue *)*curValue)->addMember(entries.back().name, mod.get());
+		else
+			((ModuleValue *)*curValue)->addMember(entries.back().name, mod.get());
+	}
+
 	for (uint8_t i = 0; i < ih.nImports; i++) {
 		auto len = _read<uint32_t>(fs);
 		std::string name(len, '\0');
 		fs.read(&(name[0]), len);
 
-		std::unique_ptr<Value> ref(_loadValue(this, fs));
+		std::unique_ptr<Value> ref(_loadValue(fs));
 	}
 
 	_loadScope(mod.get(), fs);
 	return mod.release();
 }
 
-ValueRef<ModuleValue> slake::Runtime::loadModule(const void *buf, std::size_t size, std::string name) {
+ValueRef<ModuleValue> slake::Runtime::loadModule(const void *buf, size_t size) {
 	util::InputMemStream fs(buf, size);
-	return loadModule(fs, name);
+	return loadModule(fs);
 }

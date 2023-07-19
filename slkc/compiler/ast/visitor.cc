@@ -144,7 +144,7 @@ VISIT_METHOD_IMPL(slake::slkc::AstVisitor, F64) { return Any(); }
 VISIT_METHOD_IMPL(slake::slkc::AstVisitor, String) { return Any(); }
 
 VISIT_METHOD_IMPL(slake::slkc::AstVisitor, Scope) {
-	RefScope scope{ context->name->toString() };
+	RefEntry entry{ context->name->toString() };
 	auto a = context->gArgs;
 	return Any();
 }

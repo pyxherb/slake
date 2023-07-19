@@ -30,11 +30,10 @@ namespace slake {
 		/// @brief Image Header (IMH)
 		///
 		struct ImgHeader final {
-			uint8_t magic[4];	  // Magic number
-			uint8_t flags;		  // Flags
-			uint8_t fmtVer;		  // Format version
-			uint8_t nImports;	  // Number of imported modules
-			uint8_t reserved[2];  // Reserved
+			uint8_t magic[4];	// Magic number
+			uint8_t flags;		// Flags
+			uint8_t fmtVer;		// Format version
+			uint16_t nImports;	// Number of imported modules
 		};
 		constexpr static uint8_t IMH_MAGIC[] = { 'S', 'L', 'A', 'X' };
 
@@ -54,7 +53,7 @@ namespace slake {
 			}
 		};
 
-		enum class ValueType : uint8_t {
+		enum class Type : uint8_t {
 			NONE = 0,	  // None
 			ANY,		  // Any
 			I8,			  // i8
@@ -68,18 +67,19 @@ namespace slake {
 			F32,		  // f32
 			F64,		  // f64
 			STRING,		  // String
-			BOOL,		  // Boolean (false)
+			BOOL,		  // Boolean
 			ARRAY,		  // Array
 			MAP,		  // Map
 			OBJECT,		  // Object
 			REF,		  // Reference
+			TYPENAME,	  // Type name
 			GENERIC_ARG,  // Generic argument
 		};
 
 		/// @brief Value Descriptor (VD)
 		struct ValueDesc final {
-			ValueType type : 5;	 // Data Type
-			uint8_t flags : 3;	 // Flags
+			Type type : 5;		// Data Type
+			uint8_t flags : 3;	// Flags
 		};
 
 		/// @brief Class Type Descriptor (CTD)
@@ -129,7 +129,7 @@ namespace slake {
 			uint32_t nMembers;	// Number of members
 		};
 		struct StructMemberDesc final {
-			ValueType type : 5;	  // Data Type
+			Type type : 5;		  // Data Type
 			uint8_t flags : 3;	  // Flags
 			uint8_t lenName : 8;  // Name length
 		};
@@ -167,14 +167,14 @@ namespace slake {
 			VAD_INIT = 0x80		// Initialized
 			;
 
-		constexpr static uint8_t
-			RSD_NEXT = 0x01;
 		/// @brief Reference Scope Descriptor (RSD)
-		struct RefScopeDesc final {
+		struct RefEntryDesc final {
 			uint16_t lenName : 8;
 			uint8_t flags : 4;
 			uint8_t nGenericArgs : 4;
 		};
+		constexpr static uint8_t
+			RSD_NEXT = 0x01;
 
 		/// @brief Generic Parameter Descriptor (GPD)
 		struct GenericParamDesc final {
@@ -182,15 +182,16 @@ namespace slake {
 			uint8_t nQualifier;
 		};
 
-		enum class GenericQualifierType : uint8_t {
+		enum class GenericFilter : uint8_t {
 			EXTENDS = 0,  // Derived from a class
-			IMPLEMENTS,	  // Implemented an interface
-			COMPATIBLE,	  // Compatible to a trait
+			IMPLS,		  // Implements an interface
+			CONSISTS_OF,  // Consists of a trait
 		};
 
-		struct GenericQualifier final {
-			GenericQualifierType type : 3;
-			uint8_t nConditions : 5;
+		/// @brief Generic Qualifier Descriptor (GQD)
+		struct GenericQualifierDesc final {
+			GenericFilter filter : 4;
+			uint8_t flags : 4;
 		};
 
 		// @brief Array Descriptor (ARD)

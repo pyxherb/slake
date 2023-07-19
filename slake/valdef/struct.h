@@ -14,7 +14,7 @@ namespace slake {
 		}
 		virtual ~StructValue() = default;
 
-		virtual inline Type getType() const override { return ValueType::STRUCT; }
+		virtual inline Type getType() const override { return TypeId::STRUCT; }
 
 		virtual inline MemberValue *getMember(std::string name) override {
 			return *(_members.at(name));

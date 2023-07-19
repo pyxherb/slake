@@ -18,22 +18,22 @@ static TD _checkOperandRange(ValueRef<> v) {
 }
 
 static uint32_t _getOperandAsAddress(ValueRef<> v) {
-	switch (v->getType().valueType) {
-		case ValueType::I8:
+	switch (v->getType().typeId) {
+		case TypeId::I8:
 			return _checkOperandRange<uint32_t, std::int8_t>(v);
-		case ValueType::I16:
+		case TypeId::I16:
 			return _checkOperandRange<uint32_t, std::int16_t>(v);
-		case ValueType::I32:
+		case TypeId::I32:
 			return _checkOperandRange<uint32_t, std::int32_t>(v);
-		case ValueType::I64:
+		case TypeId::I64:
 			return _checkOperandRange<uint32_t, std::int64_t>(v);
-		case ValueType::U8:
+		case TypeId::U8:
 			return _checkOperandRange<uint32_t, uint8_t>(v);
-		case ValueType::U16:
+		case TypeId::U16:
 			return _checkOperandRange<uint32_t, uint16_t>(v);
-		case ValueType::U32:
+		case TypeId::U32:
 			return ((U32Value *)*v)->getData();
-		case ValueType::U64:
+		case TypeId::U64:
 			return _checkOperandRange<uint32_t, uint64_t>(v);
 		default:
 			throw InvalidOperandsError("Invalid operand combination");
@@ -42,14 +42,14 @@ static uint32_t _getOperandAsAddress(ValueRef<> v) {
 
 static void _checkOperandType(
 	Instruction &ins,
-	ValueType type0,
-	ValueType type1 = ValueType::ANY,
-	ValueType type2 = ValueType::ANY,
-	ValueType type3 = ValueType::ANY) {
+	TypeId type0,
+	TypeId type1 = TypeId::ANY,
+	TypeId type2 = TypeId::ANY,
+	TypeId type3 = TypeId::ANY) {
 	if (ins.operands[0]->getType() != type0 ||
-		(type1 != ValueType::ANY ? ins.operands[1]->getType() != type1 : false) ||
-		(type2 != ValueType::ANY ? ins.operands[2]->getType() != type2 : false) ||
-		(type3 != ValueType::ANY ? ins.operands[3]->getType() != type3 : false))
+		(type1 != TypeId::ANY ? ins.operands[1]->getType() != type1 : false) ||
+		(type2 != TypeId::ANY ? ins.operands[2]->getType() != type2 : false) ||
+		(type3 != TypeId::ANY ? ins.operands[3]->getType() != type3 : false))
 		throw InvalidOperandsError("Invalid operand combination");
 }
 
@@ -67,30 +67,30 @@ static void _checkOperandCount(Instruction &ins, uint8_t min, uint8_t max) {
 template <typename LT>
 static Value *_castToLiteralValue(Runtime *rt, Value *x) {
 	using T = LiteralValue<LT, getValueType<LT>()>;
-	if (getValueType<LT>() == x->getType().valueType)
+	if (getValueType<LT>() == x->getType().typeId)
 		return x;
-	switch (x->getType().valueType) {
-		case ValueType::I8:
+	switch (x->getType().typeId) {
+		case TypeId::I8:
 			return new T(rt, (LT)(((I8Value *)x)->getData()));
-		case ValueType::I16:
+		case TypeId::I16:
 			return new T(rt, (LT)(((I16Value *)x)->getData()));
-		case ValueType::I32:
+		case TypeId::I32:
 			return new T(rt, (LT)(((I32Value *)x)->getData()));
-		case ValueType::I64:
+		case TypeId::I64:
 			return new T(rt, (LT)(((I64Value *)x)->getData()));
-		case ValueType::U8:
+		case TypeId::U8:
 			return new T(rt, (LT)(((U8Value *)x)->getData()));
-		case ValueType::U16:
+		case TypeId::U16:
 			return new T(rt, (LT)(((U16Value *)x)->getData()));
-		case ValueType::U32:
+		case TypeId::U32:
 			return new T(rt, (LT)(((U32Value *)x)->getData()));
-		case ValueType::U64:
+		case TypeId::U64:
 			return new T(rt, (LT)(((U64Value *)x)->getData()));
-		case ValueType::F32:
+		case TypeId::F32:
 			return new T(rt, (LT)(((F32Value *)x)->getData()));
-		case ValueType::F64:
+		case TypeId::F64:
 			return new T(rt, (LT)(((F64Value *)x)->getData()));
-		case ValueType::BOOL:
+		case TypeId::BOOL:
 			return new T(rt, (LT)(((BoolValue *)x)->getData()));
 		default:
 			throw IncompatibleTypeError("Invalid type conversion");
@@ -99,89 +99,104 @@ static Value *_castToLiteralValue(Runtime *rt, Value *x) {
 
 template <typename T>
 static Value *_execBinaryOp(ValueRef<> x, ValueRef<> y, Opcode opcode) {
-	auto _x = (LiteralValue<T, getValueType<T>()> *)*x;
+	// Corresponding value type
+	using V = LiteralValue<T, getValueType<T>()>;
+
+	auto _x = (V *)*x;
 	auto rt = _x->getRuntime();
 
 	if constexpr (std::is_arithmetic<T>::value) {
 		if constexpr (std::is_same<T, bool>::value) {
 			// Boolean
+			switch (opcode) {
+				case Opcode::LAND: {
+					return new V(
+						rt,
+						_x->getData() + ((V *)*y)->getData());
+				}
+				case Opcode::LOR: {
+					return new V(rt, _x->getData() + ((V *)*y)->getData());
+				}
+				default:
+					throw InvalidOperandsError("Binary operation with incompatible types");
+			}
 		} else {
 			if (opcode == Opcode::LSH || opcode == Opcode::RSH) {
-				if (y->getType() != ValueType::U32)
+				if (y->getType() != TypeId::U32)
 					throw InvalidOperandsError("Binary operation with incompatible types");
 			} else if (_x->getType() != y->getType())
 				throw InvalidOperandsError("Binary operation with incompatible types");
 
 			switch (opcode) {
 				case Opcode::ADD:
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() + ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
+					return new V(rt, _x->getData() + ((V *)*y)->getData());
 				case Opcode::SUB:
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() - ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
+					return new V(rt, _x->getData() - ((V *)*y)->getData());
 				case Opcode::MUL:
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() * ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
+					return new V(rt, _x->getData() * ((V *)*y)->getData());
 				case Opcode::DIV:
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() / ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
+					return new V(rt, _x->getData() / ((V *)*y)->getData());
 				case Opcode::MOD: {
 					T result;
 					if constexpr (std::is_same<T, float>::value)
-						result = fmodf(_x->getData(), ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
+						result = fmodf(_x->getData(), ((V *)*y)->getData());
 					else if constexpr (std::is_same<T, double>::value)
-						result = fmod(_x->getData(), ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
+						result = fmod(_x->getData(), ((V *)*y)->getData());
 					else
-						result = _x->getData() % ((LiteralValue<T, getValueType<T>()> *)*y)->getData();
-					return new LiteralValue<T, getValueType<T>()>(rt, result);
+						result = _x->getData() % ((V *)*y)->getData();
+					return new V(rt, result);
 				}
 				case Opcode::AND:
 					if constexpr (std::is_integral<T>::value)
-						return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() & ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
+						return new V(rt, _x->getData() & ((V *)*y)->getData());
 					else
 						throw InvalidOperandsError("Binary operation with incompatible types");
 				case Opcode::OR:
 					if constexpr (std::is_integral<T>::value)
-						return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() | ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
+						return new V(rt, _x->getData() | ((V *)*y)->getData());
 					else
 						throw InvalidOperandsError("Binary operation with incompatible types");
 				case Opcode::XOR:
 					if constexpr (std::is_integral<T>::value)
-						return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() ^ ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
+						return new V(rt, _x->getData() ^ ((V *)*y)->getData());
 					else
 						throw InvalidOperandsError("Binary operation with incompatible types");
 				case Opcode::LAND:
-					return new BoolValue(rt, _x->getData() && ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
+					return new BoolValue(rt, _x->getData() && ((V *)*y)->getData());
 				case Opcode::LOR:
-					return new BoolValue(rt, _x->getData() || ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
+					return new BoolValue(rt, _x->getData() || ((V *)*y)->getData());
 				case Opcode::EQ:
-					return new BoolValue(rt, _x->getData() == ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
+					return new BoolValue(rt, _x->getData() == ((V *)*y)->getData());
 				case Opcode::NEQ:
-					return new BoolValue(rt, _x->getData() != ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
+					return new BoolValue(rt, _x->getData() != ((V *)*y)->getData());
 				case Opcode::LT:
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() < ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
+					return new V(rt, _x->getData() < ((V *)*y)->getData());
 				case Opcode::GT:
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() > ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
+					return new V(rt, _x->getData() > ((V *)*y)->getData());
 				case Opcode::LTEQ:
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() <= ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
+					return new V(rt, _x->getData() <= ((V *)*y)->getData());
 				case Opcode::GTEQ:
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() >= ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
+					return new V(rt, _x->getData() >= ((V *)*y)->getData());
 				case Opcode::LSH:
 					if constexpr (std::is_integral<T>::value)
-						return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() << ((U32Value *)*y)->getData());
+						return new V(rt, _x->getData() << ((U32Value *)*y)->getData());
 					else if constexpr (std::is_same<T, float>::value) {
 						auto result = (*(uint32_t *)(&_x->getData())) << ((U32Value *)*y)->getData();
-						return new LiteralValue<T, getValueType<T>()>(rt, *(float *)(&result));
+						return new V(rt, *(float *)(&result));
 					} else if constexpr (std::is_same<T, double>::value) {
 						auto result = (*(uint64_t *)(&_x->getData())) << ((U32Value *)*y)->getData();
-						return new LiteralValue<T, getValueType<T>()>(rt, *(double *)(&result));
+						return new V(rt, *(double *)(&result));
 					} else
 						throw InvalidOperandsError("Binary operation with incompatible types");
 				case Opcode::RSH:
 					if constexpr (std::is_integral<T>::value)
-						return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() >> ((U32Value *)*y)->getData());
+						return new V(rt, _x->getData() >> ((U32Value *)*y)->getData());
 					else if constexpr (std::is_same<T, float>::value) {
 						auto result = (*(uint32_t *)(&_x->getData())) >> ((U32Value *)*y)->getData();
-						return new LiteralValue<T, getValueType<T>()>(rt, *(float *)(&result));
+						return new V(rt, *(float *)(&result));
 					} else if constexpr (std::is_same<T, double>::value) {
 						auto result = (*(uint64_t *)(&_x->getData())) >> ((U32Value *)*y)->getData();
-						return new LiteralValue<T, getValueType<T>()>(rt, *(double *)(&result));
+						return new V(rt, *(double *)(&result));
 					} else
 						throw InvalidOperandsError("Binary operation with incompatible types");
 				default:
@@ -192,20 +207,20 @@ static Value *_execBinaryOp(ValueRef<> x, ValueRef<> y, Opcode opcode) {
 		// String
 		switch (opcode) {
 			case Opcode::ADD:
-				return new LiteralValue<T, ValueType::STRING>(rt, _x->getData() + ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
+				return new LiteralValue<T, TypeId::STRING>(rt, _x->getData() + ((V *)*y)->getData());
 			case Opcode::EQ:
-				return new BoolValue(rt, _x->getData() == ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
+				return new BoolValue(rt, _x->getData() == ((V *)*y)->getData());
 			case Opcode::NEQ:
-				return new BoolValue(rt, _x->getData() != ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
+				return new BoolValue(rt, _x->getData() != ((V *)*y)->getData());
 			default:
 				throw InvalidOperandsError("Binary operation with incompatible types");
 		}
 	} else {
 		switch (opcode) {
 			case Opcode::EQ:
-				return new BoolValue(rt, _x->getData() == ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
+				return new BoolValue(rt, _x->getData() == ((V *)*y)->getData());
 			case Opcode::NEQ:
-				return new BoolValue(rt, _x->getData() != ((LiteralValue<T, getValueType<T>()> *)*y)->getData());
+				return new BoolValue(rt, _x->getData() != ((V *)*y)->getData());
 			default:
 				throw InvalidOperandsError("Binary operation with incompatible types");
 		}
@@ -277,9 +292,6 @@ VarValue *slake::Runtime::_addLocalVar(MajorFrame &frame, Type type) {
 	return v;
 }
 
-/// @brief Execute a single instruction.
-/// @param context Context for execution.
-/// @param ins Instruction to execute.
 void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 	auto &curMajorFrame = context->majorFrames.back();
 
@@ -295,142 +307,10 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			curMajorFrame.pop();
 			break;
 		case Opcode::LVAR: {
-			_checkOperandCount(ins, 0, 1);
-			ValueRef<Value> x(nullptr);
-			if (!ins.getOperandCount())
-				x = (Value *)*(curMajorFrame.pop());
-			else
-				x = ins.operands[0];
+			_checkOperandCount(ins, 0, 2);
+			_checkOperandType(ins, TypeId::TYPENAME);
 
-			_addLocalVar(curMajorFrame, ValueType::ANY)->setData(*x);
-			break;
-		}
-		case Opcode::LVARI8: {
-			_checkOperandCount(ins, 0, 1);
-			ValueRef<Value> x(nullptr);
-			if (!ins.getOperandCount())
-				x = (Value *)*(curMajorFrame.pop());
-			else
-				x = ins.operands[0];
-
-			_addLocalVar(curMajorFrame, ValueType::I8)->setData(*x);
-			break;
-		}
-		case Opcode::LVARI16: {
-			_checkOperandCount(ins, 0, 1);
-			ValueRef<Value> x(nullptr);
-			if (!ins.getOperandCount())
-				x = (Value *)*(curMajorFrame.pop());
-			else
-				x = ins.operands[0];
-
-			_addLocalVar(curMajorFrame, ValueType::I16)->setData(*x);
-			break;
-		}
-		case Opcode::LVARI32: {
-			_checkOperandCount(ins, 0, 1);
-			ValueRef<Value> x(nullptr);
-			if (!ins.getOperandCount())
-				x = (Value *)*(curMajorFrame.pop());
-			else
-				x = ins.operands[0];
-
-			_addLocalVar(curMajorFrame, ValueType::I32)->setData(*x);
-			break;
-		}
-		case Opcode::LVARI64: {
-			_checkOperandCount(ins, 0, 1);
-			ValueRef<Value> x(nullptr);
-			if (!ins.getOperandCount())
-				x = (Value *)*(curMajorFrame.pop());
-			else
-				x = ins.operands[0];
-
-			_addLocalVar(curMajorFrame, ValueType::I64)->setData(*x);
-			break;
-		}
-		case Opcode::LVARU8: {
-			_checkOperandCount(ins, 0, 1);
-			ValueRef<Value> x(nullptr);
-			if (!ins.getOperandCount())
-				x = (Value *)*(curMajorFrame.pop());
-			else
-				x = ins.operands[0];
-
-			_addLocalVar(curMajorFrame, ValueType::U8)->setData(*x);
-			break;
-		}
-		case Opcode::LVARU16: {
-			_checkOperandCount(ins, 0, 1);
-			ValueRef<Value> x(nullptr);
-			if (!ins.getOperandCount())
-				x = (Value *)*(curMajorFrame.pop());
-			else
-				x = ins.operands[0];
-
-			_addLocalVar(curMajorFrame, ValueType::U16)->setData(*x);
-			break;
-		}
-		case Opcode::LVARU32: {
-			_checkOperandCount(ins, 0, 1);
-			ValueRef<Value> x(nullptr);
-			if (!ins.getOperandCount())
-				x = (Value *)*(curMajorFrame.pop());
-			else
-				x = ins.operands[0];
-
-			_addLocalVar(curMajorFrame, ValueType::U32)->setData(*x);
-			break;
-		}
-		case Opcode::LVARU64: {
-			_checkOperandCount(ins, 0, 1);
-			ValueRef<Value> x(nullptr);
-			if (!ins.getOperandCount())
-				x = (Value *)*(curMajorFrame.pop());
-			else
-				x = ins.operands[0];
-
-			_addLocalVar(curMajorFrame, ValueType::U64)->setData(*x);
-			break;
-		}
-		case Opcode::LVARF32: {
-			_checkOperandCount(ins, 0, 1);
-			ValueRef<Value> x(nullptr);
-			if (!ins.getOperandCount())
-				x = (Value *)*(curMajorFrame.pop());
-			else
-				x = ins.operands[0];
-
-			_addLocalVar(curMajorFrame, ValueType::F32)->setData(*x);
-			break;
-		}
-		case Opcode::LVARF64: {
-			_checkOperandCount(ins, 0, 1);
-			ValueRef<Value> x(nullptr);
-			if (!ins.getOperandCount())
-				x = (Value *)*(curMajorFrame.pop());
-			else
-				x = ins.operands[0];
-
-			_addLocalVar(curMajorFrame, ValueType::F64)->setData(*x);
-			break;
-		}
-		case Opcode::LVARBOOL: {
-			_checkOperandCount(ins, 0, 1);
-			ValueRef<Value> x(nullptr);
-			if (!ins.getOperandCount())
-				x = (Value *)*(curMajorFrame.pop());
-			else
-				x = ins.operands[0];
-
-			_addLocalVar(curMajorFrame, ValueType::BOOL)->setData(*x);
-			break;
-		}
-		case Opcode::LVAROBJ: {
-			_checkOperandCount(ins, 1);
-			_checkOperandType(ins, ValueType::REF);
-
-			Type type = (RefValue *)*ins.operands[0];
+			auto &type = ((TypeNameValue*)*ins.operands[0])->_data;
 			type.loadDeferredType(this);
 
 			_addLocalVar(curMajorFrame, type);
@@ -445,7 +325,7 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			break;
 		case Opcode::LOAD: {
 			_checkOperandCount(ins, 1);
-			_checkOperandType(ins, ValueType::REF);
+			_checkOperandType(ins, TypeId::REF);
 			auto v = resolveRef(ins.operands[0], *curMajorFrame.thisObject);
 			if (!v) {
 				if (!(v = resolveRef(ins.operands[0], *curMajorFrame.scopeValue)))
@@ -456,7 +336,7 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 		}
 		case Opcode::RLOAD: {
 			_checkOperandCount(ins, 1);
-			_checkOperandType(ins, ValueType::REF);
+			_checkOperandType(ins, TypeId::REF);
 
 			ValueRef<> v = curMajorFrame.pop();
 			if (!v)
@@ -471,15 +351,17 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 		case Opcode::LSTORE: {
 			_checkOperandCount(ins, 0, 1);
 
-			ValueRef<I32Value> x(nullptr);
+			ValueRef<U32Value> x(nullptr);
 			if (!ins.getOperandCount())
-				x = (I32Value *)*(curMajorFrame.pop());
+				x = (U32Value *)*(curMajorFrame.pop());
 			else
 				x = ins.operands[0];
 
-			if (x->getType() != ValueType::I32)
+			if (x->getType() != TypeId::U32)
 				throw InvalidOperandsError("Invalid operand combination");
 
+			if(x->getData()>=curMajorFrame.localVars.size())
+				throw InvalidLocalVarIndexError("Invalid local variable index", x->getData());
 			curMajorFrame.localVars.at(x->getData())->setData(*curMajorFrame.pop());
 			break;
 		}
@@ -495,11 +377,11 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			if (!x)
 				throw InvalidOperandsError("Invalid operand combination");
 
-			if (x->getType() == ValueType::REF) {
+			if (x->getType() == TypeId::REF) {
 				x = (VarValue *)resolveRef((RefValue *)*x, *(curMajorFrame.thisObject));
 
-				if ((!x) || (x->getType() != ValueType::VAR)) {
-					if ((!(x = (VarValue *)resolveRef((RefValue *)*x, nullptr))) || (x->getType() != ValueType::VAR))
+				if ((!x) || (x->getType() != TypeId::VAR)) {
+					if ((!(x = (VarValue *)resolveRef((RefValue *)*x))) || (x->getType() != TypeId::VAR))
 						throw NotFoundError("No such variable", x);
 				}
 
@@ -507,7 +389,7 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 					throw AccessViolationError("Cannot store to a constant");
 			}
 
-			if (x->getType() != ValueType::VAR)
+			if (x->getType() != TypeId::VAR)
 				throw InvalidOperandsError("Only can store to a variable");
 
 			// TODO: Implement the type checker.
@@ -518,7 +400,7 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			_checkOperandCount(ins, 0);
 
 			auto v = curMajorFrame.pop();
-			if (v->getType() != ValueType::VAR)
+			if (v->getType() != TypeId::VAR)
 				throw InvalidOperandsError("Invalid operand combination");
 			curMajorFrame.push(((VarValue *)*v)->getData());
 			break;
@@ -581,38 +463,38 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			if (!y)
 				throw NullRefError("");
 
-			switch (x->getType().valueType) {
-				case ValueType::I8:
+			switch (x->getType().typeId) {
+				case TypeId::I8:
 					curMajorFrame.push(_execBinaryOp<std::int8_t>(x, y, ins.opcode));
 					break;
-				case ValueType::I16:
+				case TypeId::I16:
 					curMajorFrame.push(_execBinaryOp<std::int16_t>(x, y, ins.opcode));
 					break;
-				case ValueType::I32:
+				case TypeId::I32:
 					curMajorFrame.push(_execBinaryOp<std::int32_t>(x, y, ins.opcode));
 					break;
-				case ValueType::I64:
+				case TypeId::I64:
 					curMajorFrame.push(_execBinaryOp<std::int64_t>(x, y, ins.opcode));
 					break;
-				case ValueType::U8:
+				case TypeId::U8:
 					curMajorFrame.push(_execBinaryOp<uint8_t>(x, y, ins.opcode));
 					break;
-				case ValueType::U16:
+				case TypeId::U16:
 					curMajorFrame.push(_execBinaryOp<uint16_t>(x, y, ins.opcode));
 					break;
-				case ValueType::U32:
+				case TypeId::U32:
 					curMajorFrame.push(_execBinaryOp<uint32_t>(x, y, ins.opcode));
 					break;
-				case ValueType::U64:
+				case TypeId::U64:
 					curMajorFrame.push(_execBinaryOp<uint64_t>(x, y, ins.opcode));
 					break;
-				case ValueType::F32:
+				case TypeId::F32:
 					curMajorFrame.push(_execBinaryOp<float>(x, y, ins.opcode));
 					break;
-				case ValueType::F64:
+				case TypeId::F64:
 					curMajorFrame.push(_execBinaryOp<double>(x, y, ins.opcode));
 					break;
-				case ValueType::STRING:
+				case TypeId::STRING:
 					curMajorFrame.push(_execBinaryOp<std::string>(x, y, ins.opcode));
 					break;
 				default:
@@ -645,7 +527,7 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 				case Opcode::DECB:
 				case Opcode::INCF:
 				case Opcode::DECF:
-					if (x->getType() != ValueType::VAR)
+					if (x->getType() != TypeId::VAR)
 						throw InvalidOperandsError("Invalid binary operation for operands");
 
 					switch (ins.opcode) {
@@ -658,43 +540,42 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 					x = v->getData();
 			}
 
-
 			if (!x)
 				throw NullRefError("");
 
 			ValueRef<> value;
-			switch (x->getType().valueType) {
-				case ValueType::I8:
+			switch (x->getType().typeId) {
+				case TypeId::I8:
 					value = _execUnaryOp<std::int8_t>(x, ins.opcode);
 					break;
-				case ValueType::I16:
+				case TypeId::I16:
 					value = _execUnaryOp<std::int16_t>(x, ins.opcode);
 					break;
-				case ValueType::I32:
+				case TypeId::I32:
 					value = _execUnaryOp<std::int32_t>(x, ins.opcode);
 					break;
-				case ValueType::I64:
+				case TypeId::I64:
 					value = _execUnaryOp<std::int64_t>(x, ins.opcode);
 					break;
-				case ValueType::U8:
+				case TypeId::U8:
 					value = _execUnaryOp<uint8_t>(x, ins.opcode);
 					break;
-				case ValueType::U16:
+				case TypeId::U16:
 					value = _execUnaryOp<uint16_t>(x, ins.opcode);
 					break;
-				case ValueType::U32:
+				case TypeId::U32:
 					value = _execUnaryOp<uint32_t>(x, ins.opcode);
 					break;
-				case ValueType::U64:
+				case TypeId::U64:
 					value = _execUnaryOp<uint64_t>(x, ins.opcode);
 					break;
-				case ValueType::F32:
+				case TypeId::F32:
 					value = _execUnaryOp<float>(x, ins.opcode);
 					break;
-				case ValueType::F64:
+				case TypeId::F64:
 					value = _execUnaryOp<double>(x, ins.opcode);
 					break;
-				case ValueType::STRING:
+				case TypeId::STRING:
 					value = _execUnaryOp<std::string>(x, ins.opcode);
 					break;
 				default:
@@ -726,11 +607,11 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 
 			x = curMajorFrame.pop();
 
-			switch (x->getType().valueType) {
-				case ValueType::ARRAY: {
+			switch (x->getType().typeId) {
+				case TypeId::ARRAY: {
 					ArrayValue *_x = (ArrayValue *)*x;
 
-					if (i->getType() != ValueType::U32)
+					if (i->getType() != TypeId::U32)
 						throw InvalidOperandsError("Invalid argument for subscription");
 
 					auto index = ((I32Value *)*i)->getData();
@@ -740,11 +621,11 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 					curMajorFrame.push((*_x)[index]);
 					break;
 				}
-				case ValueType::MAP: {
+				case TypeId::MAP: {
 					throw std::logic_error("Unimplemented yet");
 					break;
 				}
-				case ValueType::OBJECT: {
+				case TypeId::OBJECT: {
 					throw std::logic_error("Unimplemented yet");
 					break;
 				}
@@ -757,7 +638,7 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			_checkOperandCount(ins, 1);
 
 			ValueRef<U32Value> x = ins.operands[0];
-			if (x->getType() != ValueType::U32)
+			if (x->getType() != TypeId::U32)
 				throw InvalidOperandsError("Invalid operand type");
 
 			curMajorFrame.curIns = x->getData();
@@ -768,13 +649,13 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			_checkOperandCount(ins, 1);
 
 			ValueRef<U32Value> x = ins.operands[0];
-			if (x->getType() != ValueType::U32)
+			if (x->getType() != TypeId::U32)
 				throw InvalidOperandsError("Invalid operand type");
 
 			curMajorFrame.curIns = x->getData();
 
 			ValueRef<BoolValue> v = curMajorFrame.pop();
-			if (v->getType() != ValueType::BOOL)
+			if (v->getType() != TypeId::BOOL)
 				throw InvalidOperandsError("Invalid operand type");
 
 			if (v->getData()) {
@@ -783,10 +664,8 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			} else if (ins.opcode == Opcode::JF)
 				curMajorFrame.curIns = x->getData();
 			break;
-		} /*
-		case Opcode::CAST: {
-		}*/
-		case Opcode::SARG: {
+		}
+		case Opcode::PUSHARG: {
 			_checkOperandCount(ins, 0, 1);
 
 			ValueRef<> x = ins.getOperandCount() ? ins.operands[0] : curMajorFrame.pop();
@@ -797,7 +676,7 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			_checkOperandCount(ins, 0, 1);
 			ValueRef<> x = ins.getOperandCount() ? ins.operands[0] : curMajorFrame.pop();
 
-			if (x->getType() != ValueType::U32)
+			if (x->getType() != TypeId::U32)
 				throw InvalidOperandsError("Invalid operand type");
 
 			curMajorFrame.push(curMajorFrame.argStack.at(((U32Value *)*x)->getData()));
@@ -820,14 +699,14 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 				x = ins.operands[0];
 
 			ValueRef<FnValue> fn = (FnValue *)*x;
-			if (fn->getType() != ValueType::FN) {
+			if (fn->getType() != TypeId::FN) {
 				fn = (FnValue *)resolveRef((RefValue *)*x, *(curMajorFrame.thisObject));
-				if ((!fn) || (fn->getType() != ValueType::FN)) {
+				if ((!fn) || (fn->getType() != TypeId::FN)) {
 					fn = (FnValue *)resolveRef((RefValue *)*x, *(curMajorFrame.scopeValue));
-					if ((!fn) || (fn->getType() != ValueType::FN)) {
+					if ((!fn) || (fn->getType() != TypeId::FN)) {
 						auto fn = resolveRef((RefValue *)*x);
 
-						if ((!fn) || (fn->getType() != ValueType::FN))
+						if ((!fn) || (fn->getType() != TypeId::FN))
 							throw NotFoundError("No such function or method", x);
 					}
 				}
@@ -837,10 +716,7 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 				if (ins.opcode == Opcode::MCALL)
 					curMajorFrame.scopeValue = (curMajorFrame.thisObject = curMajorFrame.pop());
 
-				curMajorFrame.returnValue = ((NativeFnValue *)*fn)->call(
-					(uint8_t)curMajorFrame.nextArgStack.size(),
-					curMajorFrame.nextArgStack.size() ? &(curMajorFrame.nextArgStack[0]) : nullptr
-				);
+				curMajorFrame.returnValue = ((NativeFnValue *)*fn)->call((uint8_t)curMajorFrame.nextArgStack.size(), curMajorFrame.nextArgStack.size() ? &(curMajorFrame.nextArgStack[0]) : nullptr);
 				curMajorFrame.nextArgStack.clear();
 			} else {
 				auto v = curMajorFrame.pop();
@@ -866,10 +742,10 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 				x = ins.operands[0];
 
 			ValueRef<> fn = resolveRef((RefValue *)*x, *(curMajorFrame.scopeValue));
-			if ((!fn) || (fn->getType() != ValueType::FN)) {
+			if ((!fn) || (fn->getType() != TypeId::FN)) {
 				ValueRef<> fn = resolveRef((RefValue *)*x);
 
-				if ((!fn) || (fn->getType() != ValueType::FN))
+				if ((!fn) || (fn->getType() != TypeId::FN))
 					throw NotFoundError("No such method", x);
 			}
 			break;
@@ -885,38 +761,37 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 
 			context->majorFrames.pop_back();
 			context->majorFrames.back().returnValue = x;
-			context->majorFrames.back().curIns++;
+			++context->majorFrames.back().curIns;
 			break;
 		}
 		case Opcode::NEW: {
 			_checkOperandCount(ins, 1);
+			_checkOperandType(ins, TypeId::TYPENAME);
 
-			ValueRef<MemberValue> cls = (MemberValue *)resolveRef(ins.operands[0], *(curMajorFrame.scopeValue));
-			if (!cls) {
-				cls = (MemberValue *)resolveRef(ins.operands[0]);
-				if (!cls) {
-					throw NotFoundError("Class not found", ins.operands[0]);
-				}
-			}
+			Type &type = ((TypeNameValue*)*ins.operands[0])->_data;
+			type.loadDeferredType(this);
 
-			switch (cls->getType().valueType) {
-				case ValueType::CLASS: {
-					ObjectValue *instance = _newClassInstance((ClassValue *)*cls);
+			switch (type.typeId) {
+				case TypeId::OBJECT:
+				case TypeId::CLASS: {
+					ClassValue* cls = (ClassValue *)*type.getCustomTypeExData();
+					ObjectValue *instance = _newClassInstance(cls);
 					curMajorFrame.push(instance);
 
 					FnValue *constructor = (FnValue *)cls->getMember("new");
-					if (constructor && constructor->getType() == ValueType::FN) {
+					if (constructor && constructor->getType() == TypeId::FN) {
 						_callFn(context, constructor);
 						context->majorFrames.back().thisObject = instance;
 						return;
 					}
 					break;
 				}
-				case ValueType::STRUCT: {
+				case TypeId::STRUCT: {
 					// TODO:Implement it
+					break;
 				}
 				default:
-					throw InvalidOperandsError("Specified type cannot be instantiated");
+					throw InvalidOperandsError("Type cannot be instantiated");
 			}
 			break;
 		}
@@ -951,77 +826,59 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 		}
 		case Opcode::ABORT:
 			throw UncaughtExceptionError("Execution aborted");
-		case Opcode::CASTI8: {
-			_checkOperandCount(ins, 0);
-			curMajorFrame.push(_castToLiteralValue<int8_t>(this, *curMajorFrame.pop()));
-			break;
-		}
-		case Opcode::CASTI16: {
-			_checkOperandCount(ins, 0);
-			curMajorFrame.push(_castToLiteralValue<int16_t>(this, *curMajorFrame.pop()));
-			break;
-		}
-		case Opcode::CASTI32: {
-			_checkOperandCount(ins, 0);
-			curMajorFrame.push(_castToLiteralValue<int32_t>(this, *curMajorFrame.pop()));
-			break;
-		}
-		case Opcode::CASTI64: {
-			_checkOperandCount(ins, 0);
-			curMajorFrame.push(_castToLiteralValue<int64_t>(this, *curMajorFrame.pop()));
-			break;
-		}
-		case Opcode::CASTU8: {
-			_checkOperandCount(ins, 0);
-			curMajorFrame.push(_castToLiteralValue<uint8_t>(this, *curMajorFrame.pop()));
-			break;
-		}
-		case Opcode::CASTU16: {
-			_checkOperandCount(ins, 0);
-			curMajorFrame.push(_castToLiteralValue<uint16_t>(this, *curMajorFrame.pop()));
-			break;
-		}
-		case Opcode::CASTU32: {
-			_checkOperandCount(ins, 0);
-			curMajorFrame.push(_castToLiteralValue<uint32_t>(this, *curMajorFrame.pop()));
-			break;
-		}
-		case Opcode::CASTU64: {
-			_checkOperandCount(ins, 0);
-			curMajorFrame.push(_castToLiteralValue<uint64_t>(this, *curMajorFrame.pop()));
-			break;
-		}
-		case Opcode::CASTF32: {
-			_checkOperandCount(ins, 0);
-			curMajorFrame.push(_castToLiteralValue<float>(this, *curMajorFrame.pop()));
-			break;
-		}
-		case Opcode::CASTF64: {
-			_checkOperandCount(ins, 0);
-			curMajorFrame.push(_castToLiteralValue<float>(this, *curMajorFrame.pop()));
-			break;
-		}
-		case Opcode::CASTBOOL: {
-			_checkOperandCount(ins, 0);
-			curMajorFrame.push(_castToLiteralValue<bool>(this, *curMajorFrame.pop()));
-			break;
-		}
-		case Opcode::CASTOBJ: {
-			ValueRef<> x, type;
-			if (!ins.getOperandCount())
-				x = curMajorFrame.pop();
-			else
-				x = ins.operands[0];
+		case Opcode::CAST: {
+			_checkOperandCount(ins, 1);
+			_checkOperandType(ins, TypeId::TYPENAME);
 
-			if (!ins.getOperandCount())
-				x = curMajorFrame.pop();
-			else
-				x = ins.operands[1];
+			auto t = ((TypeNameValue*)*ins.operands[0])->getData();
 
+			ValueRef<> v;
+
+			switch(t.typeId) {
+				case TypeId::I8:
+					v = _castToLiteralValue<int8_t>(this, *curMajorFrame.pop());
+					break;
+				case TypeId::I16:
+					v = _castToLiteralValue<int16_t>(this, *curMajorFrame.pop());
+					break;
+				case TypeId::I32:
+					v = _castToLiteralValue<int32_t>(this, *curMajorFrame.pop());
+					break;
+				case TypeId::I64:
+					v = _castToLiteralValue<int64_t>(this, *curMajorFrame.pop());
+					break;
+				case TypeId::U8:
+					v = _castToLiteralValue<uint8_t>(this, *curMajorFrame.pop());
+					break;
+				case TypeId::U16:
+					v = _castToLiteralValue<uint16_t>(this, *curMajorFrame.pop());
+					break;
+				case TypeId::U32:
+					v = _castToLiteralValue<uint32_t>(this, *curMajorFrame.pop());
+					break;
+				case TypeId::U64:
+					v = _castToLiteralValue<uint64_t>(this, *curMajorFrame.pop());
+					break;
+				case TypeId::BOOL:
+					v = _castToLiteralValue<bool>(this, *curMajorFrame.pop());
+					break;
+				case TypeId::F32:
+					v = _castToLiteralValue<float>(this, *curMajorFrame.pop());
+					break;
+				case TypeId::F64:
+					v = _castToLiteralValue<double>(this, *curMajorFrame.pop());
+					break;
+				case TypeId::OBJECT:
+					/* stub */
+				default:
+					throw InvalidOperandsError("Invalid target type");
+			}
+
+			curMajorFrame.push(v);
 			break;
 		}
 		default:
 			throw InvalidOpcodeError("Invalid opcode " + std::to_string((uint8_t)ins.opcode));
 	}
-	curMajorFrame.curIns++;
+	++curMajorFrame.curIns;
 }

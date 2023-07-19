@@ -5,7 +5,7 @@
 
 using namespace slake;
 
-std::unordered_map<Opcode, std::string> Decompiler::mnemonics = {
+std::map<Opcode, std::string> Decompiler::mnemonics = {
 	MNEMONIC_ENTRY(NOP),
 
 	MNEMONIC_ENTRY(PUSH),
@@ -73,7 +73,7 @@ std::unordered_map<Opcode, std::string> Decompiler::mnemonics = {
 	MNEMONIC_ENTRY(JT),
 	MNEMONIC_ENTRY(JF),
 
-	MNEMONIC_ENTRY(SARG),
+	MNEMONIC_ENTRY(PUSHARG),
 	MNEMONIC_ENTRY(LARG),
 
 	MNEMONIC_ENTRY(LTHIS),

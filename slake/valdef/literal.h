@@ -4,32 +4,34 @@
 #include "base.h"
 
 namespace slake {
-	template <typename T, ValueType VT>
+	template <typename T, TypeId VT>
 	class LiteralValue final : public Value {
 	protected:
-		T _value;
+		T _data;
+		friend class Runtime;
 
 	public:
-		inline LiteralValue(Runtime *rt, T value) : Value(rt), _value(value) {
+		inline LiteralValue(Runtime *rt, T data) : Value(rt), _data(data) {
 			reportSizeToRuntime(sizeof(*this) - sizeof(Value));
 			if constexpr (std::is_same<T, std::string>::value) {
-				reportSizeToRuntime((long)value.size());
+				reportSizeToRuntime((long)data.size());
 			}
 		}
 		virtual ~LiteralValue() = default;
 
 		virtual inline Type getType() const override { return VT; }
 
-		virtual inline const T &getData() const { return _value; }
-		virtual inline void setData(T &value) {
+		virtual inline const T &getData() const { return _data; }
+		virtual inline void setData(T &data) {
 			if constexpr (std::is_same<T, std::string>::value) {
-				reportSizeToRuntime(((long)value.size()) - (long)_value.size());
+				reportSizeToRuntime(((long)data.size()) - (long)_data.size());
 			}
-			_value = value;
+			_data = data;
 		}
 
-		virtual inline Value *copy() const override {
-			decltype(this) v = new LiteralValue<T, VT>(getRuntime(), _value);
+		virtual inline Value *duplicate() const override {
+			decltype(this) v = new LiteralValue<T, VT>(getRuntime(), _data);
+			(Value&)*v = (const Value&)*this;
 			return (Value *)v;
 		}
 
@@ -38,18 +40,19 @@ namespace slake {
 	};
 
 
-	using I8Value = LiteralValue<std::int8_t, ValueType::I8>;
-	using I16Value = LiteralValue<std::int16_t, ValueType::I16>;
-	using I32Value = LiteralValue<std::int32_t, ValueType::I32>;
-	using I64Value = LiteralValue<std::int64_t, ValueType::I64>;
-	using U8Value = LiteralValue<uint8_t, ValueType::U8>;
-	using U16Value = LiteralValue<uint16_t, ValueType::U16>;
-	using U32Value = LiteralValue<uint32_t, ValueType::U32>;
-	using U64Value = LiteralValue<uint64_t, ValueType::U64>;
-	using F32Value = LiteralValue<float, ValueType::F32>;
-	using F64Value = LiteralValue<double, ValueType::F64>;
-	using BoolValue = LiteralValue<bool, ValueType::BOOL>;
-	using StringValue = LiteralValue<std::string, ValueType::STRING>;
+	using I8Value = LiteralValue<std::int8_t, TypeId::I8>;
+	using I16Value = LiteralValue<std::int16_t, TypeId::I16>;
+	using I32Value = LiteralValue<std::int32_t, TypeId::I32>;
+	using I64Value = LiteralValue<std::int64_t, TypeId::I64>;
+	using U8Value = LiteralValue<uint8_t, TypeId::U8>;
+	using U16Value = LiteralValue<uint16_t, TypeId::U16>;
+	using U32Value = LiteralValue<uint32_t, TypeId::U32>;
+	using U64Value = LiteralValue<uint64_t, TypeId::U64>;
+	using F32Value = LiteralValue<float, TypeId::F32>;
+	using F64Value = LiteralValue<double, TypeId::F64>;
+	using BoolValue = LiteralValue<bool, TypeId::BOOL>;
+	using StringValue = LiteralValue<std::string, TypeId::STRING>;
+	using TypeNameValue = LiteralValue<Type, TypeId::TYPENAME>;
 }
 
 #endif

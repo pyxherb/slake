@@ -8,13 +8,14 @@ ModuleValue::ModuleValue(Runtime *rt, AccessModifier access)
 }
 
 ModuleValue::~ModuleValue() {
-	if (!_refCount && !(_rt->_flags & _RT_DELETING))
+	if (!refCount && !(_rt->_flags & _RT_DELETING)) {
 		for (auto &i : _members)
 			i.second->decRefCount();
+	}
 }
 
 Type ModuleValue::getType() const {
-	return ValueType::MOD;
+	return TypeId::MOD;
 }
 
 void ModuleValue::addMember(std::string name, MemberValue *value) {
@@ -33,4 +34,12 @@ MemberValue *ModuleValue::getMember(std::string name) {
 
 const MemberValue *ModuleValue::getMember(std::string name) const {
 	return _members.count(name) ? _members.at(name) : nullptr;
+}
+
+Value *ModuleValue::duplicate() const {
+	ModuleValue* v = new ModuleValue(_rt, getAccess());
+
+	*v = *this;
+
+	return (Value *)v;
 }

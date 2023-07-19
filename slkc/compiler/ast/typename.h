@@ -7,7 +7,7 @@
 
 namespace slake {
 	namespace slkc {
-		enum Type : uint8_t {
+		enum TypeName : uint8_t {
 			TYPE_I8,
 			TYPE_I16,
 			TYPE_I32,
@@ -33,9 +33,9 @@ namespace slake {
 
 		class TypeName {
 		public:
-			const Type type;
+			const TypeName type;
 
-			inline TypeName(Type type) : type(type) {}
+			inline TypeName(TypeName type) : type(type) {}
 			virtual ~TypeName() = default;
 		};
 
@@ -58,10 +58,10 @@ namespace slake {
 
 		class MapTypeName : public TypeName {
 		public:
-			shared_ptr<TypeName> keyType, valueType;
+			shared_ptr<TypeName> keyType, type;
 
-			inline MapTypeName(shared_ptr<TypeName> keyType, shared_ptr<TypeName> valueType)
-				: TypeName(TYPE_MAP), keyType(keyType), valueType(valueType) {}
+			inline MapTypeName(shared_ptr<TypeName> keyType, shared_ptr<TypeName> type)
+				: TypeName(TYPE_MAP), keyType(keyType), type(type) {}
 			virtual ~MapTypeName() = default;
 		};
 

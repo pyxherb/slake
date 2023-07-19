@@ -105,6 +105,10 @@ namespace slake {
 			return ValueRef<T1, isHostRef1>((T1 *)_value);
 		}
 
+		inline bool operator<(const ValueRef<> rhs) const noexcept {
+			return _value < rhs._value;
+		}
+
 		inline operator bool() const {
 			return _value;
 		}
@@ -116,10 +120,10 @@ namespace slake {
 	struct Type;
 	class Value {
 	protected:
-		mutable std::atomic_uint32_t _refCount = 0;
+		mutable std::atomic_uint32_t refCount = 0;
 
 		// The value will never be freed if its host reference count is not 0.
-		mutable std::atomic_uint32_t _hostRefCount = 0;
+		mutable std::atomic_uint32_t hostRefCount = 0;
 
 		Runtime *_rt;
 
@@ -167,23 +171,28 @@ namespace slake {
 
 		/// @brief Dulplicate the value if supported.
 		/// @return Copy of the value.
-		virtual Value *copy() const;
+		virtual Value *duplicate() const;
 
-		inline void incRefCount() const { _refCount++; }
+		inline void incRefCount() const { ++refCount; }
 		inline void decRefCount() const {
-			if ((!--_refCount) && (!_hostRefCount))
+			if ((!--refCount) && (!hostRefCount))
 				const_cast<Value*>(this)->onRefZero();
 		}
-		inline void incHostRefCount() const { _hostRefCount++; }
+		inline void incHostRefCount() const { ++hostRefCount; }
 		inline void decHostRefCount() const {
-			if ((!--_hostRefCount) && (!_refCount))
+			if ((!--hostRefCount) && (!refCount))
 				const_cast<Value*>(this)->onRefZero();
 		}
-		inline uint32_t getRefCount() const { return _refCount; }
-		inline uint32_t getHostRefCount() const { return _hostRefCount; }
+		inline uint32_t getRefCount() const { return refCount; }
+		inline uint32_t getHostRefCount() const { return hostRefCount; }
 		inline Runtime *getRuntime() const noexcept { return _rt; }
 
-		Value &operator=(const Value &) = delete;
+		inline Value &operator=(const Value &x) {
+			_rt = x._rt;
+			_flags = x._flags & ~VF_WALKED;
+
+			return *this;
+		}
 		Value &operator=(const Value &&) = delete;
 	};
 }

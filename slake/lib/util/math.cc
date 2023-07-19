@@ -141,7 +141,7 @@ static ValueRef<> _sinFastImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
 	F64Value *x = (F64Value *)*args[0];
 
 	_nullRefCheck(x);
-	_typeCheck(x, ValueType::F64);
+	_typeCheck(x, TypeId::F64);
 
 	return new F64Value(rt, _sin_fast(x->getData()));
 }
@@ -152,7 +152,7 @@ static ValueRef<> _sinfFastImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
 	F32Value *x = (F32Value *)*args[0];
 
 	_nullRefCheck(x);
-	_typeCheck(x, ValueType::F32);
+	_typeCheck(x, TypeId::F32);
 
 	return new F32Value(rt, _sinf_fast(x->getData()));
 }
@@ -163,7 +163,7 @@ static ValueRef<> _cosFastImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
 	F64Value *x = (F64Value *)*args[0];
 
 	_nullRefCheck(x);
-	_typeCheck(x, ValueType::F64);
+	_typeCheck(x, TypeId::F64);
 
 	return new F64Value(rt, _cos_fast(x->getData()));
 }
@@ -174,7 +174,7 @@ static ValueRef<> _cosfFastImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
 	F32Value *x = (F32Value *)*args[0];
 
 	_nullRefCheck(x);
-	_typeCheck(x, ValueType::F32);
+	_typeCheck(x, TypeId::F32);
 
 	return new F32Value(rt, _cosf_fast(x->getData()));
 }
@@ -185,7 +185,7 @@ static ValueRef<> _tanFastImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
 	F64Value *x = (F64Value *)*args[0];
 
 	_nullRefCheck(x);
-	_typeCheck(x, ValueType::F64);
+	_typeCheck(x, TypeId::F64);
 
 	return new F64Value(rt, _tan_fast(x->getData()));
 }
@@ -196,7 +196,7 @@ static ValueRef<> _tanfFastImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
 	F32Value *x = (F32Value *)*args[0];
 
 	_nullRefCheck(x);
-	_typeCheck(x, ValueType::F32);
+	_typeCheck(x, TypeId::F32);
 
 	return new F32Value(rt, _tanf_fast(x->getData()));
 }
@@ -207,7 +207,7 @@ static ValueRef<> _sqrtFastImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
 	F64Value *x = (F64Value *)*args[0];
 
 	_nullRefCheck(x);
-	_typeCheck(x, ValueType::F64);
+	_typeCheck(x, TypeId::F64);
 
 	return new F64Value(rt, _sqrt_fast(x->getData()));
 }
@@ -218,7 +218,7 @@ static ValueRef<> _sqrtfFastImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
 	F32Value *x = (F32Value *)*args[0];
 
 	_nullRefCheck(x);
-	_typeCheck(x, ValueType::F32);
+	_typeCheck(x, TypeId::F32);
 
 	return new F32Value(rt, _sqrtf_fast(x->getData()));
 }
@@ -257,60 +257,60 @@ void stdlib::util::Math::load(Runtime *rt) {
 		modMath = new ModuleValue(rt, ACCESS_PUB));
 
 	modMath->addMember(
-		rt->getMangledFnName("sin", { ValueType::F32 }),
-		new NativeFnValue(rt, _sinImpl<float>, ACCESS_PUB, ValueType::F32));
+		rt->mangleName("sin", { TypeId::F32 }),
+		new NativeFnValue(rt, _sinImpl<float>, ACCESS_PUB, TypeId::F32));
 	modMath->addMember(
-		rt->getMangledFnName("sin", { ValueType::F64 }),
-		new NativeFnValue(rt, _sinImpl<double>, ACCESS_PUB, ValueType::F64));
+		rt->mangleName("sin", { TypeId::F64 }),
+		new NativeFnValue(rt, _sinImpl<double>, ACCESS_PUB, TypeId::F64));
 
 	modMath->addMember(
-		rt->getMangledFnName("sinFast", { ValueType::F32 }),
-		new NativeFnValue(rt, _sinfFastImpl, ACCESS_PUB, ValueType::F32));
+		rt->mangleName("sinFast", { TypeId::F32 }),
+		new NativeFnValue(rt, _sinfFastImpl, ACCESS_PUB, TypeId::F32));
 	modMath->addMember(
-		rt->getMangledFnName("sinFast", { ValueType::F64 }),
-		new NativeFnValue(rt, _sinFastImpl, ACCESS_PUB, ValueType::F64));
+		rt->mangleName("sinFast", { TypeId::F64 }),
+		new NativeFnValue(rt, _sinFastImpl, ACCESS_PUB, TypeId::F64));
 
 	modMath->addMember(
-		rt->getMangledFnName("cos", { ValueType::F32 }),
-		new NativeFnValue(rt, _cosImpl<float>, ACCESS_PUB, ValueType::F32));
+		rt->mangleName("cos", { TypeId::F32 }),
+		new NativeFnValue(rt, _cosImpl<float>, ACCESS_PUB, TypeId::F32));
 	modMath->addMember(
-		rt->getMangledFnName("cos", { ValueType::F64 }),
-		new NativeFnValue(rt, _cosImpl<double>, ACCESS_PUB, ValueType::F64));
+		rt->mangleName("cos", { TypeId::F64 }),
+		new NativeFnValue(rt, _cosImpl<double>, ACCESS_PUB, TypeId::F64));
 
 	modMath->addMember(
-		rt->getMangledFnName("cosFast", { ValueType::F32 }),
-		new NativeFnValue(rt, _cosfFastImpl, ACCESS_PUB, ValueType::F32));
+		rt->mangleName("cosFast", { TypeId::F32 }),
+		new NativeFnValue(rt, _cosfFastImpl, ACCESS_PUB, TypeId::F32));
 	modMath->addMember(
-		rt->getMangledFnName("cosFast", { ValueType::F64 }),
-		new NativeFnValue(rt, _cosFastImpl, ACCESS_PUB, ValueType::F64));
+		rt->mangleName("cosFast", { TypeId::F64 }),
+		new NativeFnValue(rt, _cosFastImpl, ACCESS_PUB, TypeId::F64));
 
 	modMath->addMember(
-		rt->getMangledFnName("tan", { ValueType::F32 }),
-		new NativeFnValue(rt, _tanImpl<float>, ACCESS_PUB, ValueType::F32));
+		rt->mangleName("tan", { TypeId::F32 }),
+		new NativeFnValue(rt, _tanImpl<float>, ACCESS_PUB, TypeId::F32));
 	modMath->addMember(
-		rt->getMangledFnName("tan", { ValueType::F64 }),
-		new NativeFnValue(rt, _tanImpl<double>, ACCESS_PUB, ValueType::F64));
+		rt->mangleName("tan", { TypeId::F64 }),
+		new NativeFnValue(rt, _tanImpl<double>, ACCESS_PUB, TypeId::F64));
 
 	modMath->addMember(
-		rt->getMangledFnName("tanFast", { ValueType::F32 }),
-		new NativeFnValue(rt, _tanfFastImpl, ACCESS_PUB, ValueType::F32));
+		rt->mangleName("tanFast", { TypeId::F32 }),
+		new NativeFnValue(rt, _tanfFastImpl, ACCESS_PUB, TypeId::F32));
 	modMath->addMember(
-		rt->getMangledFnName("tanFast", { ValueType::F64 }),
-		new NativeFnValue(rt, _tanFastImpl, ACCESS_PUB, ValueType::F64));
+		rt->mangleName("tanFast", { TypeId::F64 }),
+		new NativeFnValue(rt, _tanFastImpl, ACCESS_PUB, TypeId::F64));
 
 	modMath->addMember(
-		rt->getMangledFnName("sqrt", { ValueType::F32 }),
-		new NativeFnValue(rt, _sqrtImpl<float>, ACCESS_PUB, ValueType::F32));
+		rt->mangleName("sqrt", { TypeId::F32 }),
+		new NativeFnValue(rt, _sqrtImpl<float>, ACCESS_PUB, TypeId::F32));
 	modMath->addMember(
-		rt->getMangledFnName("sqrt", { ValueType::F64 }),
-		new NativeFnValue(rt, _sqrtImpl<double>, ACCESS_PUB, ValueType::F64));
+		rt->mangleName("sqrt", { TypeId::F64 }),
+		new NativeFnValue(rt, _sqrtImpl<double>, ACCESS_PUB, TypeId::F64));
 
 	modMath->addMember(
-		rt->getMangledFnName("sqrtFast", { ValueType::F32 }),
-		new NativeFnValue(rt, _sqrtfFastImpl, ACCESS_PUB, ValueType::F32));
+		rt->mangleName("sqrtFast", { TypeId::F32 }),
+		new NativeFnValue(rt, _sqrtfFastImpl, ACCESS_PUB, TypeId::F32));
 	modMath->addMember(
-		rt->getMangledFnName("sqrtFast", { ValueType::F64 }),
-		new NativeFnValue(rt, _sqrtFastImpl, ACCESS_PUB, ValueType::F64));
+		rt->mangleName("sqrtFast", { TypeId::F64 }),
+		new NativeFnValue(rt, _sqrtFastImpl, ACCESS_PUB, TypeId::F64));
 }
 
 static double _sin(double x) {

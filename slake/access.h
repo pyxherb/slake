@@ -24,7 +24,7 @@ namespace slake {
 
 		inline AccessModified(AccessModifier modifier = 0) : _modifier(modifier) {}
 		virtual ~AccessModified() = default;
-		inline AccessModifier getAccess() noexcept { return _modifier; }
+		inline AccessModifier getAccess() const noexcept { return _modifier; }
 		inline void setAccess(AccessModifier modifier) noexcept { _modifier = modifier; }
 
 		inline bool isPublic() const noexcept { return _modifier & ACCESS_PUB; }

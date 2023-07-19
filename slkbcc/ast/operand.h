@@ -22,7 +22,8 @@ namespace slake {
 			ARRAY,
 			MAP,
 			REF,
-			LABEL
+			LABEL,
+			TYPENAME
 		};
 
 		class Operand : public ILocated {
@@ -75,6 +76,7 @@ namespace slake {
 		using MapOperand = LiteralOperand<deque<pair<shared_ptr<Operand>, shared_ptr<Operand>>>, OperandType::MAP>;
 		using RefOperand = LiteralOperand<shared_ptr<Ref>, OperandType::REF>;
 		using LabelOperand = LiteralOperand<string, OperandType::LABEL>;
+		using TypeNameOperand = LiteralOperand<shared_ptr<TypeName>, OperandType::TYPENAME>;
 	}
 }
 

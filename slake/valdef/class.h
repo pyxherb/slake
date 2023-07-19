@@ -19,6 +19,7 @@ namespace slake {
 
 	class ClassValue : public ModuleValue {
 	private:
+		GenericParamList genericParams;
 		mutable ClassFlags _flags;
 
 		friend class Runtime;
@@ -32,13 +33,13 @@ namespace slake {
 		Type parentClass;
 		std::deque<Type> implInterfaces;  // Implemented interfaces
 
-		inline ClassValue(Runtime *rt, AccessModifier access, Type parentClass = Type())
+		inline ClassValue(Runtime *rt, AccessModifier access, Type parentClass = {})
 			: ModuleValue(rt, access), parentClass(parentClass) {
 			reportSizeToRuntime(sizeof(*this) - sizeof(ModuleValue));
 		}
 		virtual ~ClassValue() = default;
 
-		virtual inline Type getType() const override { return ValueType::CLASS; }
+		virtual inline Type getType() const override { return TypeId::CLASS; }
 		virtual inline Type getParentType() const { return parentClass; }
 		virtual inline void setParentType(Type parent) { parentClass = parent; }
 
@@ -54,13 +55,23 @@ namespace slake {
 		/// @return true if implemented, false otherwise.
 		bool hasImplemented(const InterfaceValue *pInterface) const;
 
-		/// @brief Check if the class is compatible with a trait.
+		/// @brief Check if the class consists of the trait.
 		/// @param[in] t Trait to check.
 		///
-		/// @return true if compatible, false otherwise.
-		bool isCompatibleWith(const TraitValue *t) const;
+		/// @return true if the class consists of the trait, false otherwise.
+		bool consistsOf(const TraitValue *t) const;
 
-		ClassValue &operator=(const ClassValue &) = delete;
+		virtual Value *duplicate() const override;
+
+		inline ClassValue &operator=(const ClassValue &x) {
+			((ModuleValue &)*this) = (ModuleValue &)x;
+
+			genericParams = x.genericParams;
+			_flags = x._flags;
+			implInterfaces = x.implInterfaces;
+
+			return *this;
+		}
 		ClassValue &operator=(const ClassValue &&) = delete;
 	};
 
@@ -80,9 +91,9 @@ namespace slake {
 		virtual ~InterfaceValue() = default;
 
 		virtual inline void addMember(std::string name, MemberValue *value) override {
-			switch (value->getType().valueType) {
-				case ValueType::FN:
-				case ValueType::VAR:
+			switch (value->getType().typeId) {
+				case TypeId::FN:
+				case TypeId::VAR:
 					ModuleValue::addMember(name, value);
 					break;
 				default:
@@ -91,7 +102,7 @@ namespace slake {
 			value->bind(this, name);
 		}
 
-		virtual inline Type getType() const override { return ValueType::INTERFACE; }
+		virtual inline Type getType() const override { return TypeId::INTERFACE; }
 
 		/// @brief Check if the interface is derived from specified interface
 		/// @param pInterface Interface to check.
@@ -114,7 +125,7 @@ namespace slake {
 		}
 		virtual ~TraitValue() = default;
 
-		virtual inline Type getType() const override { return ValueType::TRAIT; }
+		virtual inline Type getType() const override { return TypeId::TRAIT; }
 
 		TraitValue &operator=(const TraitValue &) = delete;
 		TraitValue &operator=(const TraitValue &&) = delete;

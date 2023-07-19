@@ -1,0 +1,6 @@
+.module mod
+
+.access pub
+.fn void test
+	RET null;
+.end

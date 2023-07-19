@@ -109,11 +109,11 @@ uint8_t leaveIns[] = {
 
 slake::ICodePage *slake::compileFn(FnValue *fn) {
 	slake::ICodePage *codePage;
-	std::size_t size;
+	size_t size;
 	// Enter instructions
-	std::memcpy(codePage->getPtr(), enterIns, sizeof(enterIns));
+	memcpy(codePage->getPtr(), enterIns, sizeof(enterIns));
 	// Leave instructions
-	std::memcpy(&(((char *)codePage->getPtr())[size + sizeof(enterIns)]), leaveIns, sizeof(leaveIns));
+	memcpy(&(((char *)codePage->getPtr())[size + sizeof(enterIns)]), leaveIns, sizeof(leaveIns));
 
 	return codePage;
 }

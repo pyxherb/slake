@@ -1,0 +1,130 @@
+.module main
+.access native
+.fndecl void print ...
+
+.interface IBaseA
+	.fndecl void testA
+.end
+
+.interface IBaseB
+	.fndecl void testB
+.end
+
+.interface IDerived .extends main.IBaseA, main.IBaseB
+	.fndecl void test string
+.end
+
+.class A .impl main.IDerived
+	.var i32 data
+	.var i32 testData
+
+	.fn void new
+		PUSH 514;
+
+		LTHIS;
+		RLOAD data;
+
+		STORE;
+
+		PUSH 1919810;
+		LTHIS;
+		RLOAD testData;
+		STORE;
+
+		RET null;
+	.end
+.end
+
+.class B .extends main.A
+	.var i32 data
+
+	.fn void new
+		LOAD base;
+		LOAD base;
+		RLOAD new;
+		MCALL;
+
+		PUSH 114;
+
+		LTHIS;
+		RLOAD data;
+
+		STORE;
+
+		RET null;
+	.end
+.end
+
+.class C .extends main.B
+	.var i32 testData
+
+	.fn void new
+		LOAD base;
+		LOAD base;
+		RLOAD new;
+		MCALL;
+
+		PUSH 114514;
+
+		LTHIS;
+		RLOAD testData;
+
+		STORE;
+
+		RET null;
+	.end
+
+	.access pub
+	.fn void test string
+		RET null;
+	.end
+
+	.access pub
+	.fn void testA
+		RET null;
+	.end
+
+	.access pub
+	.fn void testB
+		RET null;
+	.end
+.end
+
+.trait TBaseA
+	.fndecl void testA
+.end
+
+.trait TBaseB
+	.fndecl void testB
+.end
+
+.trait TDerived .extends main.TBaseA, main.TBaseB
+	.fndecl void test string
+.end
+
+.fn i32 main
+	LVAR @main.TDerived;
+
+	NEW @main.C;
+	LSTORE 0U;
+
+	PUSH 10.89;
+	PUSHARG;
+	CALL std.util.math.sqrt$f64;
+	LRET;
+	PUSHARG;
+	PUSH "\n";
+	PUSHARG;
+	CALL print;
+
+	PUSH 10.89;
+	PUSHARG;
+	CALL std.util.math.sqrtFast$f64;
+	LRET;
+	PUSHARG;
+	PUSH "\n";
+	PUSHARG;
+	CALL print;
+
+	RET null;
+.end

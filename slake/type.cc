@@ -4,17 +4,17 @@
 
 using namespace slake;
 
-Type::Type(RefValue *ref) : valueType(ValueType::OBJECT) {
-	exData = ValueRef<>((Value *)ref);
+Type::Type(RefValue *ref) : typeId(TypeId::OBJECT) {
+	exData = ValueRef<Value, false>((Value *)ref);
 }
 
 Type::~Type() {
-	switch(valueType) {
-		case ValueType::ARRAY:{
-			delete std::get<Type*>(exData);
+	switch (typeId) {
+		case TypeId::ARRAY: {
+			delete std::get<Type *>(exData);
 		}
-		case ValueType::MAP: {
-			auto pair = std::get<std::pair<Type*, Type*>>(exData);
+		case TypeId::MAP: {
+			auto pair = std::get<std::pair<Type *, Type *>>(exData);
 			delete pair.first;
 			delete pair.second;
 		}
@@ -22,14 +22,14 @@ Type::~Type() {
 }
 
 bool Type::isLoadingDeferred() const noexcept {
-	switch (valueType) {
-		case ValueType::CLASS:
-		case ValueType::INTERFACE:
-		case ValueType::TRAIT:
-		case ValueType::STRUCT:
-		case ValueType::OBJECT:
-		case ValueType::STRUCTOBJ:
-			return getCustomTypeExData()->getType() == ValueType::REF;
+	switch (typeId) {
+		case TypeId::CLASS:
+		case TypeId::INTERFACE:
+		case TypeId::TRAIT:
+		case TypeId::STRUCT:
+		case TypeId::OBJECT:
+		case TypeId::STRUCTOBJ:
+			return getCustomTypeExData()->getType() == TypeId::REF;
 		default:
 			return false;
 	}
@@ -44,7 +44,7 @@ void Type::loadDeferredType(const Runtime *rt) const {
 	if (!typeValue)
 		throw NotFoundError("Value referenced by the type was not found", ref);
 
-	exData = ValueRef<>((Value *)typeValue);
+	exData = ValueRef<Value, false>((Value *)typeValue);
 }
 
 /// @brief Check if a type can be converted into another type.
@@ -52,79 +52,79 @@ void Type::loadDeferredType(const Runtime *rt) const {
 /// @param dest Target type.
 /// @return true if convertible, false otherwise.
 bool slake::isConvertible(Type src, Type dest) {
-	switch (src.valueType) {
-		case ValueType::I8:
-		case ValueType::I16:
-		case ValueType::I32:
-		case ValueType::I64:
-		case ValueType::U8:
-		case ValueType::U16:
-		case ValueType::U32:
-		case ValueType::U64:
-		case ValueType::F32:
-		case ValueType::F64:
-		case ValueType::BOOL: {
-			switch (dest.valueType) {
-				case ValueType::I8:
-				case ValueType::I16:
-				case ValueType::I32:
-				case ValueType::I64:
-				case ValueType::U8:
-				case ValueType::U16:
-				case ValueType::U32:
-				case ValueType::U64:
-				case ValueType::F32:
-				case ValueType::F64:
-				case ValueType::BOOL:
+	switch (src.typeId) {
+		case TypeId::I8:
+		case TypeId::I16:
+		case TypeId::I32:
+		case TypeId::I64:
+		case TypeId::U8:
+		case TypeId::U16:
+		case TypeId::U32:
+		case TypeId::U64:
+		case TypeId::F32:
+		case TypeId::F64:
+		case TypeId::BOOL: {
+			switch (dest.typeId) {
+				case TypeId::I8:
+				case TypeId::I16:
+				case TypeId::I32:
+				case TypeId::I64:
+				case TypeId::U8:
+				case TypeId::U16:
+				case TypeId::U32:
+				case TypeId::U64:
+				case TypeId::F32:
+				case TypeId::F64:
+				case TypeId::BOOL:
 					return true;
 				default:
 					return false;
 			}
 		}
-		case ValueType::OBJECT: {
+		case TypeId::OBJECT: {
 			ClassValue *srcType = (ClassValue *)*src.getCustomTypeExData();
-			switch (dest.valueType) {
-				case ValueType::I8:
+			switch (dest.typeId) {
+				case TypeId::I8:
 					return srcType->getMember("operator@i8") ? true : false;
-				case ValueType::I16:
+				case TypeId::I16:
 					return srcType->getMember("operator@i16") ? true : false;
-				case ValueType::I32:
+				case TypeId::I32:
 					return srcType->getMember("operator@i32") ? true : false;
-				case ValueType::I64:
+				case TypeId::I64:
 					return srcType->getMember("operator@i64") ? true : false;
-				case ValueType::U8:
+				case TypeId::U8:
 					return srcType->getMember("operator@u8") ? true : false;
-				case ValueType::U16:
+				case TypeId::U16:
 					return srcType->getMember("operator@u16") ? true : false;
-				case ValueType::U32:
+				case TypeId::U32:
 					return srcType->getMember("operator@u32") ? true : false;
-				case ValueType::U64:
+				case TypeId::U64:
 					return srcType->getMember("operator@u64") ? true : false;
-				case ValueType::F32:
+				case TypeId::F32:
 					return srcType->getMember("operator@f32") ? true : false;
-				case ValueType::F64:
+				case TypeId::F64:
 					return srcType->getMember("operator@f64") ? true : false;
-				case ValueType::BOOL:
+				case TypeId::BOOL:
 					return srcType->getMember("operator@bool") ? true : false;
-				case ValueType::OBJECT: {
-					switch (dest.getCustomTypeExData()->getType().valueType) {
-						case ValueType::CLASS: {
+				case TypeId::OBJECT: {
+					switch (dest.getCustomTypeExData()->getType().typeId) {
+						case TypeId::CLASS: {
 							auto destType = (ClassValue *)*dest.getCustomTypeExData();
 							return srcType->getMember("operator@" + srcType->getRuntime()->resolveName(destType)) ? true : false;
 						}
-						case ValueType::INTERFACE: {
+						case TypeId::INTERFACE: {
 							auto destType = (InterfaceValue *)*dest.getCustomTypeExData();
 							if (srcType->hasImplemented(destType))
 								return true;
 							return false;
 						}
-						case ValueType::TRAIT: {
+						case TypeId::TRAIT: {
 							auto destType = (TraitValue *)*dest.getCustomTypeExData();
-							if (srcType->isCompatibleWith(destType))
+							if (srcType->consistsOf(destType))
 								return true;
 							return false;
 						}
-						case ValueType::STRUCT: {
+						case TypeId::STRUCT: {
 							auto destType = (StructValue *)*dest.getCustomTypeExData();
 							return srcType->getMember("operator@" + srcType->getRuntime()->resolveName(destType)) ? true : false;
 						}
@@ -136,13 +136,13 @@ bool slake::isConvertible(Type src, Type dest) {
 					return false;
 			}
 		}
-		case ValueType::STRUCTOBJ:
-			if (dest.valueType != ValueType::STRUCT ||
+		case TypeId::STRUCTOBJ:
+			if (dest.typeId != TypeId::STRUCT ||
 				dest.getCustomTypeExData() != src.getCustomTypeExData())
 				return false;
 			return true;
-		case ValueType::ANY:
-		case ValueType::NONE:
+		case TypeId::ANY:
+		case TypeId::NONE:
 			return true;
 		default:
 			return false;
@@ -154,51 +154,51 @@ bool slake::isConvertible(Type src, Type dest) {
 /// @param b Type of the value
 /// @return
 bool slake::isCompatible(Type a, Type b) {
-	switch (a.valueType) {
-		case ValueType::I8:
-		case ValueType::I16:
-		case ValueType::I32:
-		case ValueType::I64:
-		case ValueType::U8:
-		case ValueType::U16:
-		case ValueType::U32:
-		case ValueType::U64:
-		case ValueType::F32:
-		case ValueType::F64:
-		case ValueType::BOOL:
-		case ValueType::STRING:
-			return a.valueType == b.valueType;
-		case ValueType::OBJECT: {
-			switch (a.getCustomTypeExData()->getType().valueType) {
-				case ValueType::CLASS: {
-					switch (b.valueType) {
-						case ValueType::OBJECT:
+	switch (a.typeId) {
+		case TypeId::I8:
+		case TypeId::I16:
+		case TypeId::I32:
+		case TypeId::I64:
+		case TypeId::U8:
+		case TypeId::U16:
+		case TypeId::U32:
+		case TypeId::U64:
+		case TypeId::F32:
+		case TypeId::F64:
+		case TypeId::BOOL:
+		case TypeId::STRING:
+			return a.typeId == b.typeId;
+		case TypeId::OBJECT: {
+			switch (a.getCustomTypeExData()->getType().typeId) {
+				case TypeId::CLASS: {
+					switch (b.typeId) {
+						case TypeId::OBJECT:
 							for (auto i = ((ClassValue *)*b.getCustomTypeExData()); i; i = (ClassValue *)i->getParent()) {
 								if (i == *b.getCustomTypeExData())
 									return true;
 							}
 							return false;
-						case ValueType::NONE:
+						case TypeId::NONE:
 							return true;
 						default:
 							return false;
 					}
 				}
-				case ValueType::INTERFACE: {
-					switch (b.valueType) {
-						case ValueType::OBJECT:
+				case TypeId::INTERFACE: {
+					switch (b.typeId) {
+						case TypeId::OBJECT:
 							return ((ClassValue *)*b.getCustomTypeExData())->hasImplemented((InterfaceValue *)*a.getCustomTypeExData());
-						case ValueType::NONE:
+						case TypeId::NONE:
 							return true;
 						default:
 							return false;
 					}
 				}
-				case ValueType::TRAIT: {
-					switch (b.valueType) {
-						case ValueType::OBJECT:
-							return ((ClassValue *)*b.getCustomTypeExData())->isCompatibleWith((TraitValue *)*a.getCustomTypeExData());
-						case ValueType::NONE:
+				case TypeId::TRAIT: {
+					switch (b.typeId) {
+						case TypeId::OBJECT:
+							return ((ClassValue *)*b.getCustomTypeExData())->consistsOf((TraitValue *)*a.getCustomTypeExData());
+						case TypeId::NONE:
 							return true;
 						default:
 							return false;
@@ -208,71 +208,71 @@ bool slake::isCompatible(Type a, Type b) {
 					return false;
 			}
 		}
-		case ValueType::STRUCTOBJ: {
-			switch (b.valueType) {
-				case ValueType::STRUCTOBJ:
+		case TypeId::STRUCTOBJ: {
+			switch (b.typeId) {
+				case TypeId::STRUCTOBJ:
 					return a.getCustomTypeExData() == b.getCustomTypeExData();
-				case ValueType::NONE:
+				case TypeId::NONE:
 					return true;
 				default:
 					return false;
 			}
 		}
-		case ValueType::FN: {
-			switch (b.valueType) {
-				case ValueType::FN: {
+		case TypeId::FN: {
+			switch (b.typeId) {
+				case TypeId::FN: {
 					// stub
 					return false;
 				}
-				case ValueType::NONE:
+				case TypeId::NONE:
 					return true;
 				default:
 					return false;
 			}
 		}
-		case ValueType::ANY:
+		case TypeId::ANY:
 			return true;
 		default:
 			return false;
 	}
 }
 
-std::string std::to_string(slake::Type &&type, slake::Runtime *rt) {
-	switch (type.valueType) {
-		case ValueType::I8:
+std::string std::to_string(const slake::Type &&type, slake::Runtime *rt) {
+	switch (type.typeId) {
+		case TypeId::I8:
 			return "i8";
-		case ValueType::I16:
+		case TypeId::I16:
 			return "i16";
-		case ValueType::I32:
+		case TypeId::I32:
 			return "i32";
-		case ValueType::I64:
+		case TypeId::I64:
 			return "i64";
-		case ValueType::U8:
+		case TypeId::U8:
 			return "u8";
-		case ValueType::U16:
+		case TypeId::U16:
 			return "u16";
-		case ValueType::U32:
+		case TypeId::U32:
 			return "u32";
-		case ValueType::U64:
+		case TypeId::U64:
 			return "u64";
-		case ValueType::F32:
+		case TypeId::F32:
 			return "f32";
-		case ValueType::F64:
+		case TypeId::F64:
 			return "f64";
-		case ValueType::STRING:
+		case TypeId::STRING:
 			return "string";
-		case ValueType::BOOL:
+		case TypeId::BOOL:
 			return "bool";
-		case ValueType::ARRAY:
+		case TypeId::ARRAY:
 			return to_string(type.getArrayExData(), rt) + "[]";
-		case ValueType::OBJECT: {
+		case TypeId::OBJECT: {
 			if (type.isLoadingDeferred())
 				return std::to_string((RefValue *)*type.getCustomTypeExData());
 			return rt->resolveName((MemberValue *)*type.getCustomTypeExData());
 		}
-		case ValueType::ANY:
+		case TypeId::ANY:
 			return "any";
-		case ValueType::NONE:
+		case TypeId::NONE:
 			return "void";
 		default:
 			return "any";

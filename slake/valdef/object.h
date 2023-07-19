@@ -2,12 +2,15 @@
 #define _SLAKE_VALDEF_OBJECT_H_
 
 #include <unordered_map>
+#include <deque>
 
 #include "member.h"
+#include "generic.h"
 
 namespace slake {
 	class ObjectValue final : public Value {
 	protected:
+		GenericArgList _genericArgs;
 		std::unordered_map<std::string, MemberValue *> _members;
 		ClassValue* _class;
 		ValueRef<ObjectValue> _parent;
@@ -23,7 +26,7 @@ namespace slake {
 		}
 
 		inline void _releaseMembers() {
-			if (!_refCount)
+			if (!refCount)
 				for (auto i : _members) {
 					i.second->unbind();
 					i.second->decRefCount();
@@ -31,6 +34,7 @@ namespace slake {
 		}
 
 		friend class Runtime;
+		friend void walkForInstantiation(Value* v);
 
 	public:
 		inline ObjectValue(Runtime *rt, ClassValue* cls, ObjectValue *parent = nullptr)
@@ -40,12 +44,12 @@ namespace slake {
 
 		/// @brief Delete the object and execute its destructor (if exists).
 		///
-		/// @note Do not delete objects directly.
+		/// @note Never delete objects directly.
 		virtual inline ~ObjectValue() {
 			_releaseMembers();
 		}
 
-		virtual inline Type getType() const override { return Type(ValueType::OBJECT, (Value*)_class); }
+		virtual inline Type getType() const override { return Type(TypeId::OBJECT, (Value*)_class); }
 
 		virtual inline MemberValue *getMember(std::string name) override {
 			if (_members.count(name))
@@ -60,9 +64,20 @@ namespace slake {
 
 		virtual void onRefZero() override;
 
+		virtual Value *duplicate() const override;
+
 		ObjectValue(ObjectValue &) = delete;
 		ObjectValue(ObjectValue &&) = delete;
-		ObjectValue &operator=(const ObjectValue &) = delete;
+		inline ObjectValue &operator=(const ObjectValue &x) {
+			(Value&)*this = (const Value&)x;
+
+			_genericArgs = x._genericArgs;
+			for(auto i: x._members)
+				addMember(i.first, (MemberValue*)i.second->duplicate());
+			_class = x._class;
+
+			return *this;
+		}
 		ObjectValue &operator=(const ObjectValue &&) = delete;
 	};
 }

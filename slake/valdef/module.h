@@ -3,6 +3,7 @@
 
 #include "member.h"
 #include <unordered_map>
+#include <map>
 
 namespace slake {
 	class ModuleValue : public MemberValue {
@@ -30,7 +31,17 @@ namespace slake {
 		inline decltype(_members)::const_iterator begin() const noexcept { return _members.begin(); }
 		inline decltype(_members)::const_iterator end() const noexcept { return _members.end(); }
 
-		ModuleValue &operator=(const ModuleValue &) = delete;
+		virtual Value *duplicate() const override;
+
+		inline ModuleValue &operator=(const ModuleValue &x) {
+			((MemberValue &)*this) = (MemberValue &)x;
+
+			for (auto i : x._members) {
+				addMember(i.first, (MemberValue *)i.second->duplicate());
+			}
+
+			return *this;
+		}
 		ModuleValue &operator=(const ModuleValue &&) = delete;
 	};
 }

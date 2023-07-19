@@ -10,7 +10,7 @@ pub class MT19937RandomContext : @TRandomContext<u32> {
 	u16 _i = 0;
 
 	pub operator new(u32 seed) {
-		for(u16 i = 0; i < 624; i++) {
+		for(u16 i = 0; i < 624; ++i) {
 			_states[i] = 0x6c078965 * (_states[i] ^ (_states[i] >> 30)) + i;
 		}
 	}
@@ -19,7 +19,7 @@ pub class MT19937RandomContext : @TRandomContext<u32> {
 		u32 n;
 		// Retwist
 		if (!_i) {
-			for (u16 i = 0; i < 624; i++) {
+			for (u16 i = 0; i < 624; ++i) {
 				n = (_states[i] & 0x800000000) + (_states[i % 624] & 0x7fffffff);
 				_states[i] = (n >> 1) ^ _states[(i + 397) % 624];
 

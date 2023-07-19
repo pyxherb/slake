@@ -14,7 +14,7 @@ Runtime::~Runtime() {
 	destructingThreads.insert(std::this_thread::get_id());
 	for (auto i : _createdValues) {
 		auto d = i->getMember("delete");
-		if (d && i->getType() == ValueType::OBJECT)
+		if (d && i->getType() == TypeId::OBJECT)
 			d->call(0, nullptr);
 	}
 	destructingThreads.erase(std::this_thread::get_id());
@@ -27,11 +27,17 @@ Runtime::~Runtime() {
 		delete *_createdValues.begin();
 }
 
-std::string Runtime::getMangledFnName(std::string name, std::deque<Type> params) {
+std::string Runtime::mangleName(
+	std::string name,
+	std::deque<Type> params,
+	GenericArgList genericArgs) {
 	std::string s = name;
 
 	for (auto i : params)
 		s += "$" + std::to_string(i, this);
+
+	for (auto i : genericArgs)
+		s += "?" + std::to_string(i, this);
 
 	return s;
 }
@@ -39,8 +45,8 @@ std::string Runtime::getMangledFnName(std::string name, std::deque<Type> params)
 std::string Runtime::resolveName(const MemberValue *v) const {
 	std::string s;
 	do {
-		switch (v->getType().valueType) {
-			case ValueType::OBJECT:
+		switch (v->getType().typeId) {
+			case TypeId::OBJECT:
 				v = (const MemberValue *)*((ObjectValue *)v)->getType().getCustomTypeExData();
 				break;
 		}

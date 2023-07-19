@@ -1,4 +1,5 @@
 #include <slake/runtime.h>
+#include <slake/type.h>
 
 using namespace slake;
 
@@ -14,7 +15,19 @@ MemberValue::~MemberValue() {
 		_parent->decRefCount();
 }
 
-std::string MemberValue::getName() const { return _name; }
+std::string MemberValue::getName() const {
+	auto s = _name;
+	if (_genericArgs.size()) {
+		s += "<";
+		for (size_t i = 0; i < _genericArgs.size(); ++i) {
+			if (i)
+				s += ", ";
+			s += std::to_string(_genericArgs[i], _rt);
+		}
+		s += ">";
+	}
+	return s;
+}
 
 const Value *MemberValue::getParent() const { return _parent; }
 Value *MemberValue::getParent() { return _parent; }
@@ -24,8 +37,8 @@ void MemberValue::bind(Value *parent, std::string name) {
 }
 
 void MemberValue::unbind() {
-	if(!_parent)
-		throw std::logic_error("Unbinding with unbound member value");
+	if (!_parent)
+		throw std::logic_error("Unbinding an unbound member value");
 	_parent = nullptr;
 	_name.clear();
 }

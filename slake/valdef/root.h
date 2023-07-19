@@ -20,7 +20,7 @@ namespace slake {
 
 		virtual inline ~RootValue() {
 		}
-		virtual inline Type getType() const override { return ValueType::ROOT; }
+		virtual inline Type getType() const override { return TypeId::ROOT; }
 
 		virtual inline MemberValue *getMember(std::string name) override {
 			return _members.count(name) ? *(_members.at(name)) : nullptr;

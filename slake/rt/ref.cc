@@ -12,41 +12,51 @@ Value *Runtime::resolveRef(ValueRef<RefValue> ref, Value *scopeValue) const {
 
 	MemberValue *value = (MemberValue *)scopeValue;
 
-	while (value && value->getParent()) {
+	while (value) {
 		value = (MemberValue *)scopeValue;
 
-		for (auto &i : ref->scopes) {
+		for (auto &i : ref->entries) {
 			if (!scopeValue)
 				goto fail;
 
-			if (i == "base") {
-				switch (value->getType().valueType) {
-					case ValueType::MOD:
-					case ValueType::CLASS:
-					case ValueType::STRUCT:
+			if (i.name == "base") {
+				switch (value->getType().typeId) {
+					case TypeId::MOD:
+					case TypeId::CLASS:
+					case TypeId::STRUCT:
 						scopeValue = (MemberValue *)value->getParent();
 						break;
-					case ValueType::OBJECT:
+					case TypeId::OBJECT:
 						scopeValue = *((ObjectValue *)value)->_parent;
 						break;
 					default:
 						goto fail;
 				}
-			} else if (!(scopeValue = scopeValue->getMember(i)))
+			} else if (!(scopeValue = scopeValue->getMember(i.name))) {
 				break;
+			}
+
+			if (i.genericArgs.size()) {
+				for (auto &j : i.genericArgs)
+					j.loadDeferredType(this);
+
+				scopeValue = instantiateGenericValue(scopeValue, i.genericArgs);
+			}
 		}
 
 		if (scopeValue)
 			return scopeValue;
 
 	fail:
-		switch (value->getType().valueType) {
-			case ValueType::MOD:
-			case ValueType::CLASS:
-			case ValueType::STRUCT:
+		switch (value->getType().typeId) {
+			case TypeId::MOD:
+			case TypeId::CLASS:
+			case TypeId::STRUCT:
+				if(!value->getParent())
+					return nullptr;
 				scopeValue = (MemberValue *)value->getParent();
 				break;
-			case ValueType::OBJECT: {
+			case TypeId::OBJECT: {
 				auto t = ((ObjectValue *)value)->getType();
 				scopeValue = *t.getCustomTypeExData();
 				break;

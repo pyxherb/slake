@@ -15,7 +15,7 @@ void slake::Server::init() {
 	}
 #elif __linux__
 #else
-	throw std::logic_error("LSP server is not implemented yet");
+	throw std::logic_error("LSP server does not support your platform");
 #endif
 }
 

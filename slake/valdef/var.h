@@ -9,7 +9,9 @@ namespace slake {
 	class VarValue final : public MemberValue {
 	protected:
 		ValueRef<slake::Value, false> value;
-		const Type type = ValueType::ANY;
+		Type type = TypeId::ANY;
+
+		friend class Runtime;
 
 	public:
 		inline VarValue(Runtime *rt, AccessModifier access, Type type)
@@ -18,8 +20,10 @@ namespace slake {
 		}
 
 		virtual ~VarValue() = default;
-		virtual inline Type getType() const override { return ValueType::VAR; }
+		virtual inline Type getType() const override { return TypeId::VAR; }
 		inline Type getVarType() const { return type; }
+
+		virtual Value *duplicate() const override;
 
 		virtual inline MemberValue *getMember(std::string name) override {
 			return value ? value->getMember(name) : nullptr;
@@ -30,12 +34,18 @@ namespace slake {
 
 		ValueRef<> getData() { return value; }
 		void setData(Value *value) {
-			if (!isCompatible(type, value->getType()))
+			if (value && !isCompatible(type, value->getType()))
 				throw MismatchedTypeError("Mismatched types");
 			this->value = value;
 		}
 
-		VarValue &operator=(const VarValue &) = delete;
+		VarValue &operator=(const VarValue &x) {
+			((MemberValue &)*this) = (MemberValue &)x;
+			if (x.value)
+				value = x.value->duplicate();
+			type = x.type;
+			return *this;
+		}
 		VarValue &operator=(const VarValue &&) = delete;
 	};
 }

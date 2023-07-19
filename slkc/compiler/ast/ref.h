@@ -7,15 +7,15 @@ namespace slake {
 	namespace slkc {
 		class TypeName;
 
-		struct RefScope {
+		struct RefEntry {
 			string name;
 			deque<shared_ptr<TypeName>> genericArgs;
 
-			inline RefScope(string name, deque<shared_ptr<TypeName>> genericArgs = {})
+			inline RefEntry(string name, deque<shared_ptr<TypeName>> genericArgs = {})
 				: name(name), genericArgs(genericArgs) {}
 		};
 
-		using Ref = deque<RefScope>;
+		using Ref = deque<RefEntry>;
 	}
 }
 

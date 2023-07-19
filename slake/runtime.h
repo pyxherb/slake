@@ -4,7 +4,9 @@
 #include <sstream>
 #include <thread>
 #include <unordered_set>
+#include <set>
 #include <memory>
+#include <slake/slxfmt.h>
 
 #include "except.h"
 #include "generated/config.h"
@@ -23,7 +25,7 @@ namespace slake {
 	/// @brief Major frames which represent a single calling frame.
 	struct MajorFrame final {
 		ValueRef<> scopeValue;					   // Scope value.
-		ValueRef<const FnValue> curFn;				   // Current function
+		ValueRef<const FnValue> curFn;			   // Current function
 		uint32_t curIns = 0;					   // Offset of current instruction in function body
 		std::deque<ValueRef<>> argStack;		   // Argument stack
 		std::deque<ValueRef<>> nextArgStack;	   // Next Argument stack
@@ -34,6 +36,9 @@ namespace slake {
 		std::deque<MinorFrame> minorFrames;		   // Minor frames
 
 		inline ValueRef<> lload(uint32_t off) {
+			if (off >= localVars.size())
+				throw InvalidLocalVarIndexError("Invalid local variable index", off);
+
 			return localVars.at(off);
 		}
 
@@ -80,26 +85,97 @@ namespace slake {
 		RT_DEBUG = 0x0000002,
 		// GC Debugging, do not set unless you want to debug the garbage collector.
 		RT_GCDBG = 0x0000004,
+		// The runtime is in a GC cycle.
+		_RT_INGC = 0x40000000,
 		// The runtime is deleting by user.
 		_RT_DELETING = 0x80000000;
 
-	using ModuleLoaderFn = std::function<ValueRef<ModuleValue>(Runtime *rt, RefValue *ref)>;
+	using ModuleLocatorFn = std::function<ValueRef<ModuleValue>(Runtime *rt, RefValue *ref)>;
+
+	using LoadModuleFlags = uint8_t;
+	constexpr LoadModuleFlags
+		LMOD_NOMODNAME = 0x01;
 
 	class Runtime final {
 	private:
+		/// @brief Root value of the runtime.
 		RootValue *_rootValue;
-		std::unordered_set<Value *> _createdValues, _extraGcTargets;
+
+		/// @brief Contains all created values.
+		std::unordered_set<Value *> _createdValues;
+
+		/// @brief Extra target values for GC, all contained values will be released by the
+		/// garbage collector every GC cycle and this container will be cleared if the cycle
+		/// was completed.
+		std::unordered_set<Value *> _extraGcTargets;
+
+		struct GenericLookupEntry {
+			Value *originalValue;
+			GenericArgList genericArgs;
+		};
+		std::map<Value *, GenericLookupEntry> _genericCacheLookupTable;
+
+		using GenericCacheTable =
+			std::map<
+				GenericArgList,	 // Generic arguments.
+				Value *,		 // Cached instantiated value.
+				GenericArgListComparator>;
+
+		using GenericCacheDirectory = std::map<
+			const Value *,	// Original generic value.
+			GenericCacheTable>;
+
+		/// @brief Cached generic instances for generic values.
+		mutable GenericCacheDirectory _genericCacheDir;
+
+		inline void invalidateGenericCache(Value* i) {
+			if (_genericCacheLookupTable.count(i)) {
+				// Remove the value from generic cache if it is unreachable.
+				auto &lookupEntry = _genericCacheLookupTable.at(i);
+
+				auto &table = _genericCacheDir.at(lookupEntry.originalValue);
+				table.erase(lookupEntry.genericArgs);
+
+				if(!table.size())
+					_genericCacheLookupTable.erase(lookupEntry.originalValue);
+
+				_genericCacheLookupTable.erase(i);
+			}
+		}
+
+		/// @brief Runtime flags.
 		RuntimeFlags _flags = 0;
 
-		bool _isInGc = false;
-		std::size_t _szMemInUse = 0, _szMemUsedAfterLastGc = 0;
+		/// @brief Size of memory allocated for values.
+		size_t _szMemInUse = 0;
+		/// @brief Size of memory allocated for values after last GC cycle.
+		size_t _szMemUsedAfterLastGc = 0;
 
-		ModuleLoaderFn _moduleSearcher;
+		/// @brief Module locator for importing.
+		ModuleLocatorFn _moduleLocator;
 
+		RefValue *_loadRef(std::istream &fs);
+		Value *_loadValue(std::istream &fs);
+		Type _loadType(std::istream &fs, slxfmt::Type vt);
+		GenericParam _loadGenericParam(std::istream &fs);
+		void _loadScope(ModuleValue *mod, std::istream &fs);
+
+		/// @brief Execute a single instruction.
+		/// @param context Context for execution.
+		/// @param ins Instruction to be executed.
+		///
+		/// @note Opcode-callback map was not introduced because designated initialization
+		/// was not supported in ISO C++17.
 		void _execIns(Context *context, Instruction &ins);
 
+		void _gcWalk(Type &type);
 		void _gcWalk(Value *i);
+
+		void _instantiateGenericValue(Type &type, const GenericArgList &genericArgs) const;
+		void _instantiateGenericValue(Value *v, const GenericArgList &genericArgs) const;
+
 		ObjectValue *_newClassInstance(ClassValue *cls);
+		ObjectValue *_newGenericClassInstance(ClassValue *cls, GenericArgList &genericArgs);
 
 		void _callFn(Context *context, FnValue *fn);
 		VarValue *_addLocalVar(MajorFrame &frame, Type type);
@@ -112,7 +188,10 @@ namespace slake {
 		friend class ValueRef<ObjectValue>;
 
 	public:
-		std::unordered_map<std::thread::id, std::shared_ptr<Context>> currentContexts;
+		/// @brief Active context on threads.
+		std::map<std::thread::id, std::shared_ptr<Context>> activeContexts;
+
+		/// @brief Thread IDs of threads which are executing destructors.
 		std::unordered_set<std::thread::id> destructingThreads;
 
 		Runtime(Runtime &) = delete;
@@ -123,26 +202,37 @@ namespace slake {
 		Runtime(RuntimeFlags flags = 0);
 		virtual ~Runtime();
 
-		virtual Value *resolveRef(ValueRef<RefValue>, Value *scopeValue = nullptr) const;
+		Value *instantiateGenericValue(const Value *v, const std::deque<Type> &genericArgs) const;
 
-		virtual ValueRef<ModuleValue> loadModule(std::istream &fs, std::string name = "");
-		virtual ValueRef<ModuleValue> loadModule(const void *buf, std::size_t size, std::string name = "");
+		/// @brief Resolve a reference to referred value.
+		/// @param ref Reference to be resolved.
+		/// @param scopeValue Scope value for resolving.
+		/// @return Resolved value which is referred by the reference.
+		Value *resolveRef(ValueRef<RefValue> ref, Value *scopeValue = nullptr) const;
+
+		ValueRef<ModuleValue> loadModule(std::istream &fs);
+		ValueRef<ModuleValue> loadModule(const void *buf, size_t size);
+
 		inline RootValue *getRootValue() { return _rootValue; }
 
-		inline void setModuleLoader(ModuleLoaderFn searcher) { _moduleSearcher = searcher; }
-		inline ModuleLoaderFn getModuleLoader() { return _moduleSearcher; }
+		inline void setModuleLocator(ModuleLocatorFn locator) { _moduleLocator = locator; }
+		inline ModuleLocatorFn getModuleLocator() { return _moduleLocator; }
 
 		std::string resolveName(const MemberValue *v) const;
 
-		inline std::shared_ptr<Context> getCurContext() {
-			return currentContexts.count(std::this_thread::get_id())
-					   ? currentContexts.at(std::this_thread::get_id())
-					   : throw std::logic_error("Current thread is not handled by Slake runtime");
+		/// @brief Get active context on specified thread.
+		/// @param id ID of specified thread.
+		/// @return Active context on specified thread.
+		inline std::shared_ptr<Context> getActiveContext(std::thread::id id = std::this_thread::get_id()) {
+			return activeContexts.at(id);
 		}
 
 		void gc();
 
-		std::string getMangledFnName(std::string name, std::deque<Type> params);
+		std::string mangleName(
+			std::string name,
+			std::deque<Type> params,
+			GenericArgList genericArgs = {});
 	};
 }
 

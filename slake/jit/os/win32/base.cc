@@ -8,11 +8,11 @@
 class Win32CodePage : public slake::ICodePage {
 public:
 	char *ptr;
-	std::size_t size;
+	size_t size;
 	DWORD oldProtect;
 	bool firmed = false;
 
-	inline Win32CodePage(std::size_t size) : ptr(ptr), size(size) {
+	inline Win32CodePage(size_t size) : ptr(ptr), size(size) {
 		ptr = new char[size];
 		VirtualProtect(ptr, size, PAGE_READWRITE, &oldProtect);
 		FlushInstructionCache(GetCurrentProcess(), ptr, size);
@@ -21,7 +21,7 @@ public:
 		VirtualProtect(ptr, size, oldProtect, &oldProtect);
 		delete[] ptr;
 	}
-	virtual inline std::size_t getSize() override { return size; }
+	virtual inline size_t getSize() override { return size; }
 	virtual inline void *getPtr() override { return ptr; }
 
 	virtual void firm() override {
@@ -35,6 +35,6 @@ public:
 	}
 };
 
-slake::ICodePage *slake::genCodePage(std::size_t size) {
+slake::ICodePage *slake::genCodePage(size_t size) {
 	return new Win32CodePage(size);
 }

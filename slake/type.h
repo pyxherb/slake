@@ -3,12 +3,13 @@
 
 #include <cstdint>
 #include <cstring>
+#include <cassert>
 #include <string>
 #include <variant>
 #include "valdef/base.h"
 
 namespace slake {
-	enum class ValueType : uint8_t {
+	enum class TypeId : uint8_t {
 		NONE,  // None, aka `null'
 
 		U8,		 // Unsigned 8-bit integer
@@ -42,39 +43,40 @@ namespace slake {
 		REF,		  // Reference
 		GENERIC_ARG,  // Generic argument
 		ROOT,		  // Root value
+		TYPENAME,	  // Type name
 
 		INVALID = 0xff	// Invalid
 	};
 
 	template <typename T>
-	constexpr inline ValueType getValueType() {
+	constexpr inline TypeId getValueType() {
 		if constexpr (std::is_same<T, std::int8_t>::value)
-			return ValueType::I8;
+			return TypeId::I8;
 		else if constexpr (std::is_same<T, std::int16_t>::value)
-			return ValueType::I16;
+			return TypeId::I16;
 		else if constexpr (std::is_same<T, std::int32_t>::value)
-			return ValueType::I32;
+			return TypeId::I32;
 		else if constexpr (std::is_same<T, std::int64_t>::value)
-			return ValueType::I64;
+			return TypeId::I64;
 		else if constexpr (std::is_same<T, uint8_t>::value)
-			return ValueType::U8;
+			return TypeId::U8;
 		else if constexpr (std::is_same<T, uint16_t>::value)
-			return ValueType::U16;
+			return TypeId::U16;
 		else if constexpr (std::is_same<T, uint32_t>::value)
-			return ValueType::U32;
+			return TypeId::U32;
 		else if constexpr (std::is_same<T, uint64_t>::value)
-			return ValueType::U64;
+			return TypeId::U64;
 		else if constexpr (std::is_same<T, float>::value)
-			return ValueType::F32;
+			return TypeId::F32;
 		else if constexpr (std::is_same<T, double>::value)
-			return ValueType::F64;
+			return TypeId::F64;
 		else if constexpr (std::is_same<T, bool>::value)
-			return ValueType::BOOL;
+			return TypeId::BOOL;
 		else if constexpr (std::is_same<T, std::string>::value)
-			return ValueType::STRING;
+			return TypeId::STRING;
 		else
-			// We don't use `false' as the condition due to the compiler evaluates it
-			// prematurely.
+			// We didn't use false as the condition directly because some
+			// compilers will evaluate the condition prematurely.
 			static_assert(!std::is_same<T, T>::value);
 	}
 
@@ -84,29 +86,32 @@ namespace slake {
 	class MemberValue;
 
 	struct Type final {
-		ValueType valueType;  // Value type
-		mutable std::variant<std::monostate, ValueRef<>, Type *, std::pair<Type *, Type *>, uint8_t> exData;
+		TypeId typeId;	// Type ID
+		mutable std::variant<std::monostate, ValueRef<Value, false>, Type *, std::pair<Type *, Type *>, uint8_t> exData;
 
-		inline Type() noexcept : valueType(ValueType::NONE) {}
+		inline Type() noexcept : typeId(TypeId::NONE) {}
 		inline Type(const Type &x) noexcept { *this = x; }
 		inline Type(const Type &&x) noexcept { *this = x; }
-		inline Type(ValueType valueType) noexcept : valueType(valueType) {}
-		inline Type(ValueType valueType, Value *classObject) noexcept : valueType(valueType) {
+		inline Type(TypeId type) noexcept : typeId(type) {}
+		inline Type(TypeId type, Value *classObject) noexcept : typeId(type) {
 			exData = classObject;
 		}
-		inline Type(ValueType valueType, Type elementType) : valueType(valueType) {
+		inline Type(TypeId type, Type elementType) : typeId(type) {
 			exData = elementType;
+		}
+		inline Type(uint8_t idxGenericArg) : typeId(TypeId::GENERIC_ARG) {
+			exData = idxGenericArg;
 		}
 		Type(RefValue *ref);
 
-		inline Type(Type k, Type v) : valueType(ValueType::MAP) {
+		inline Type(Type k, Type v) : typeId(TypeId::MAP) {
 			exData = std::pair<Type *, Type *>(new Type(k), new Type(v));
 		}
 
 		~Type();
 
-		inline ValueRef<> getCustomTypeExData() const { return std::get<ValueRef<>>(exData); }
-		inline Type getArrayExData() const { return *std::get<Type *>(exData); }
+		inline ValueRef<> getCustomTypeExData() const { return *std::get<ValueRef<Value, false>>(exData); }
+		inline Type &getArrayExData() const { return *std::get<Type *>(exData); }
 		inline std::pair<Type *, Type *> getMapExData() const { return std::get<std::pair<Type *, Type *>>(exData); }
 		inline uint8_t getGenericArgExData() const { return std::get<uint8_t>(exData); }
 
@@ -114,52 +119,92 @@ namespace slake {
 		void loadDeferredType(const Runtime *rt) const;
 
 		inline operator bool() const noexcept {
-			return valueType != ValueType::NONE;
+			return typeId != TypeId::NONE;
 		}
 
-		inline bool operator==(const Type &&x) const noexcept {
-			if (x.valueType != valueType)
+		/// @brief The less than operator is required by containers such as map and set.
+		/// @param rhs Right-hand side operand.
+		/// @return true if lesser, false otherwise.
+		inline bool operator<(const Type &&rhs) const noexcept {
+			if (typeId < rhs.typeId)
+				return true;
+
+			switch (rhs.typeId) {
+				case TypeId::CLASS:
+				case TypeId::INTERFACE:
+				case TypeId::TRAIT:
+				case TypeId::STRUCT:
+				case TypeId::OBJECT:
+				case TypeId::STRUCTOBJ: {
+					auto lhsType = getCustomTypeExData(), rhsType = rhs.getCustomTypeExData();
+					assert(lhsType->getType() != TypeId::REF &&
+						   rhsType->getType() != TypeId::REF);
+
+					return *lhsType < *rhsType;
+				}
+				case TypeId::ARRAY:
+					return getArrayExData() < rhs.getArrayExData();
+				case TypeId::MAP:
+					return *(getMapExData().first) < *(rhs.getMapExData().first) &&
+						   *(getMapExData().second) < *(rhs.getMapExData().second);
+			}
+			return false;
+		}
+
+		inline bool operator==(const Type &&rhs) const noexcept {
+			if (rhs.typeId != typeId)
 				return false;
-			switch (x.valueType) {
-				case ValueType::CLASS:
-				case ValueType::STRUCT:
-				case ValueType::OBJECT:
-					return getCustomTypeExData() == x.getCustomTypeExData();
-				case ValueType::ARRAY:
-					return getArrayExData() == x.getArrayExData();
-				case ValueType::MAP:
-					return *(getMapExData().first) == *(x.getMapExData().first) &&
-						   *(getMapExData().second) == *(x.getMapExData().second);
+
+			switch (rhs.typeId) {
+				case TypeId::CLASS:
+				case TypeId::INTERFACE:
+				case TypeId::TRAIT:
+				case TypeId::STRUCT:
+				case TypeId::OBJECT:
+				case TypeId::STRUCTOBJ: {
+					auto lhsType = getCustomTypeExData(), rhsType = rhs.getCustomTypeExData();
+					assert(lhsType->getType() != TypeId::REF &&
+						rhsType->getType() != TypeId::REF);
+
+					return *lhsType == *rhsType;
+				}
+				case TypeId::ARRAY:
+					return getArrayExData() == rhs.getArrayExData();
+				case TypeId::MAP:
+					return *(getMapExData().first) == *(rhs.getMapExData().first) &&
+						   *(getMapExData().second) == *(rhs.getMapExData().second);
 			}
 			return true;
 		}
 
-		inline bool operator==(const Type &x) const noexcept {
-			return *this == std::move(x);
+		inline bool operator==(const Type &rhs) const noexcept {
+			return *this == std::move(rhs);
 		}
 
-		inline bool operator!=(const Type &&x) noexcept { return !(*this == x); }
-		inline bool operator!=(const Type &x) noexcept { return !(*this == x); }
+		inline bool operator!=(const Type &&rhs) noexcept { return !(*this == rhs); }
+		inline bool operator!=(const Type &rhs) noexcept { return !(*this == rhs); }
 
-		inline bool operator==(ValueType x) noexcept {
-			return this->valueType == x;
+		inline bool operator==(TypeId rhs) noexcept {
+			return this->typeId == rhs;
 		}
-		inline bool operator!=(ValueType x) noexcept {
-			return this->valueType != x;
+		inline bool operator!=(TypeId rhs) noexcept {
+			return this->typeId != rhs;
 		}
 
-		inline Type &operator=(const Type &&x) noexcept {
-			valueType = x.valueType;
-			exData = x.exData;
+		inline Type &operator=(const Type &&rhs) noexcept {
+			typeId = rhs.typeId;
+			exData = rhs.exData;
 			return *this;
 		}
 
-		inline Type &operator=(const Type &x) noexcept {
-			return *this = std::move(x);
+		inline Type &operator=(const Type &rhs) noexcept {
+			typeId = rhs.typeId;
+			exData = rhs.exData;
+			return *this;
 		}
 
 		inline Value *resolveCustomType() {
-			if (valueType == ValueType::CLASS || valueType == ValueType::STRUCT)
+			if (typeId == TypeId::CLASS || typeId == TypeId::STRUCT)
 				return (Value *)*getCustomTypeExData();
 			return nullptr;
 		}
@@ -170,7 +215,7 @@ namespace slake {
 	class TraitValue;
 
 	bool hasImplemented(ClassValue *c, InterfaceValue *i);
-	bool isComplyWith(ClassValue *c, TraitValue *t);
+	bool consistsOf(ClassValue *c, TraitValue *t);
 	bool isConvertible(Type a, Type b);
 	bool isCompatible(Type a, Type b);
 
@@ -178,8 +223,8 @@ namespace slake {
 }
 
 namespace std {
-	string to_string(slake::Type &&type, slake::Runtime *rt);
-	inline string to_string(slake::Type &type, slake::Runtime *rt) {
+	string to_string(const slake::Type &&type, slake::Runtime *rt);
+	inline string to_string(const slake::Type &type, slake::Runtime *rt) {
 		return to_string(move(type), rt);
 	}
 }

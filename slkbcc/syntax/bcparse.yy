@@ -90,7 +90,7 @@ extern std::deque<std::shared_ptr<slake::bcc::Scope>> savedScopes;
 %token D_VAR ".var"
 %token D_EXTENDS ".extends"
 %token D_IMPL ".impl"
-%token D_COMPLIES ".complies"
+%token D_CONSIST ".consist"
 
 %token TN_I8 "i8"
 %token TN_I16 "i16"
@@ -110,6 +110,8 @@ extern std::deque<std::shared_ptr<slake::bcc::Scope>> savedScopes;
 %token TN_VOID "void"
 
 %token OP_ADD "+"
+%token OP_LT "<"
+%token OP_GT ">"
 
 %token T_AT "@"
 %token T_LPARENTHESE "("
@@ -129,12 +131,14 @@ extern std::deque<std::shared_ptr<slake::bcc::Scope>> savedScopes;
 %type <shared_ptr<Ref>> Ref InheritSlot
 %type <string> OperatorName
 %type <deque<shared_ptr<TypeName>>> GenericArgs TypeNameList
-%type <shared_ptr<TypeName>> TypeName LiteralTypeName CustomTypeName FnTypeName ArrayTypeName MapTypeName
+%type <shared_ptr<TypeName>> TypeName LiteralTypeName CustomTypeName FnTypeName ArrayTypeName MapTypeName GenericTypeName
 %type <ParamDeclList> Params _Params
 %type <deque<shared_ptr<Instruction>>> Instructions
 %type <shared_ptr<Instruction>> Instruction
 %type <deque<shared_ptr<Operand>>> Operands _Operands
-%type <deque<shared_ptr<Ref>>> ImplList _ImplList ExtendList
+%type <deque<shared_ptr<Ref>>> ImplList _ImplList ExtendList ConsistList
+%type <deque<GenericParam>> GenericParams _GenericParams
+%type <GenericParam> GenericParam
 
 %expect 0
 
@@ -165,8 +169,8 @@ ModuleDecl
 // Class
 
 ClassDef:
-".class" T_ID InheritSlot ImplList {
-	auto curClass = make_shared<Class>(@1, curScope->curAccess, $3);
+".class" T_ID GenericParams InheritSlot ImplList {
+	auto curClass = make_shared<Class>(@1, curScope->curAccess, $3, $4, $5);
 	curScope->classes[$2] = curClass;
 	curScope->curAccess = 0;
 
@@ -188,6 +192,11 @@ ImplList:
 | ".impl" _ImplList { $$ = $2; }
 ;
 
+ConsistList:
+%empty {}
+| ".consist" _ImplList { $$ = $2; }
+;
+
 _ImplList:
 Ref "," _ImplList {
 	$$ = $3;
@@ -201,15 +210,6 @@ Ref "," _ImplList {
 ExtendList:
 %empty {}
 | ".extends" _ImplList { $$ = $2; }
-;
-
-ComplyDecls:
-ComplyDecl "," ComplyDecls {}
-| ComplyDecl {}
-;
-
-ComplyDecl:
-".complies" Ref {}
 ;
 
 ClassStmts:
@@ -386,6 +386,7 @@ Ref { $$ = make_shared<RefOperand>(@1, $1); }
 | "$" T_ID { $$ = make_shared<LabelOperand>(@1, $2); }
 | Array { $$ = $1; }
 | Map { $$ = $1; }
+| TypeName { $$ = make_shared<TypeNameOperand>(@1, $1); }
 ;
 
 //
@@ -468,12 +469,36 @@ Literal ":" Literal {
 ;
 
 GenericParams:
-GenericParam {}
-| GenericParams "," GenericParam {}
+"<" _GenericParams ">" { $$ = $2; }
+| %empty {}
+;
+
+_GenericParams:
+GenericParam { $$.push_back($1); }
+| GenericParams "," GenericParam { $$ = $1, $$.push_back($3); }
 ;
 
 GenericParam:
-T_ID InheritSlot ImplList ComplyDecls {}
+T_ID InheritSlot ImplList ConsistList {
+	$$.name = $1;
+	if ($2)
+		$$.qualifiers.push_back(
+			GenericQualifier(
+				make_shared<CustomTypeName>($2->getLocation(), $2),
+				slake::GenericFilter::EXTENDS));
+	for (auto i : $3)
+		$$.qualifiers.push_back(
+			GenericQualifier(
+				make_shared<CustomTypeName>(i->getLocation(), i),
+				slake::GenericFilter::IMPLS)
+		);
+	for (auto i : $4)
+		$$.qualifiers.push_back(
+			GenericQualifier(
+				make_shared<CustomTypeName>(i->getLocation(), i),
+				slake::GenericFilter::CONSISTS_OF)
+		);
+}
 ;
 
 GenericArgs:
@@ -492,6 +517,7 @@ TypeName { $$.push_back($1); }
 TypeName:
 LiteralTypeName { $$ = $1; }
 | CustomTypeName { $$ = $1; }
+| GenericTypeName { $$ = $1; }
 | FnTypeName  { $$ = $1; }
 | ArrayTypeName { $$ = $1; }
 | MapTypeName { $$ = $1; }
@@ -518,6 +544,14 @@ LiteralTypeName:
 
 CustomTypeName:
 "@" Ref { $$ = make_shared<CustomTypeName>(@1, $2); }
+;
+
+GenericTypeName:
+"@" L_I32 {
+	if ($2 > UINT8_MAX || $2 < 0)
+		error(@2, "Invalid index for generic argument");
+	$$ = make_shared<GenericTypeName>(@1, $2);
+}
 ;
 
 FnTypeName:
@@ -553,11 +587,11 @@ L_I8 { $$ = make_shared<I8Operand>(@1, $1); }
 Ref:
 T_ID GenericArgs {
 	$$ = make_shared<Ref>();
-	$$->scopes.push_back(make_shared<RefScope>(@1, $1, $2));
+	$$->entries.push_back(make_shared<RefEntry>(@1, $1, $2));
 }
 | Ref "." T_ID GenericArgs {
 	$$ = $1;
-	$$->scopes.push_back(make_shared<RefScope>(@3, $3, $4));
+	$$->entries.push_back(make_shared<RefEntry>(@3, $3, $4));
 }
 ;
 

@@ -10,12 +10,10 @@ Concepts
 --------
 
 * **Absolute Reference** is unique and unambiguous, the same absolute reference will always be resolved to the same resource at the same time.
-* **Relative Reference** is depending on the context, resolve the same reference with different context may get different result.
+* **Relative Reference** depends on the context, resolve the same reference with different context may get different result.
 
 Resolving
 ---------
-
-.. image:: img/refsolve.svg
 
 The reference resolver has two mode to resolve references just like the file
 system: relative and absolute.

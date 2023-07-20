@@ -11,7 +11,7 @@ Overview
 Trait is one of core concepts of Object-Orinted Programming (OOP) in Slake.
 
 Trait is similar to interface but does not require classes to declare that
-they are compatible to a trait, it just is a constraint to types.
+they have "implemented" the trait.
 
 
 Syntax

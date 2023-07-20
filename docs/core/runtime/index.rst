@@ -9,5 +9,5 @@ Documentation for Slake runtime.
     :maxdepth: 2
 
     slxfmt
-    callconv
     ref
+    fn

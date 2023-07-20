@@ -9,7 +9,7 @@ Module Declaration
 ------------------
 
 Module declaration declares name of current module.
-Scope name of current module will be appended to all identifiers in the module
+Name of current module will be appended to all identifiers in the module
 during the compilation.
 
 For example:
@@ -31,5 +31,5 @@ be set as empty (global scope for the runtime).
 Module declaration can appear once only in a single module and must be the
 first statement.
 
-If parent scope of a module does not present, the runtime will create a module
-object as the parent.
+If parent of a module does not present, the runtime will create a module object
+as its parent.

@@ -9,6 +9,7 @@ Welcome to Slake's documentation!
    core/index
    lang/index
    slakedoc/index
+   codestd/index
 
 Indices and tables
 ==================

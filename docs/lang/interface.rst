@@ -8,7 +8,7 @@ Overview
 --------
 
 Interface is one of core concepts of Object-Orinted Programming (OOP) in Slake.
-A class must inherit a interface explicitly to declare that it is compatible to
+A class must implement interface explicitly to declare that it is compatible to
 the interface.
 
 Syntax

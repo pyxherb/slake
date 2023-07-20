@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<!--
+	Copyright (C) 2023 Pyxherb <codesbuilder@163.com>, all rights reserved.
+	Logo of slake project.
+ -->
+
+<svg
+   width="32.523685mm"
+   height="31.242147mm"
+   viewBox="0 0 32.523685 31.242147"
+   version="1.1"
+   id="svg38297"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   sodipodi:docname="logo.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <title
+     id="title149">Slake logo</title>
+  <sodipodi:namedview
+     id="namedview38299"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="0.68595679"
+     inkscape:cx="53.939258"
+     inkscape:cy="166.19123"
+     inkscape:window-width="1850"
+     inkscape:window-height="1009"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs38294">
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient31540"
+       id="linearGradient31542"
+       x1="132.22313"
+       y1="163.78239"
+       x2="145.99016"
+       y2="163.78239"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient31540">
+      <stop
+         style="stop-color:#11659a;stop-opacity:1;"
+         offset="0"
+         id="stop31536" />
+      <stop
+         style="stop-color:#1781b5;stop-opacity:1;"
+         offset="1"
+         id="stop31538" />
+    </linearGradient>
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect1361-5"
+       is_visible="true"
+       lpeversion="1" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient31540"
+       id="linearGradient33902"
+       x1="133.14513"
+       y1="163.78239"
+       x2="145.48077"
+       y2="163.78239"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient34840"
+       id="linearGradient34842"
+       x1="124.33356"
+       y1="163.78239"
+       x2="133.94455"
+       y2="163.78239"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient34840">
+      <stop
+         style="stop-color:#1781b5;stop-opacity:1;"
+         offset="0"
+         id="stop34836" />
+      <stop
+         style="stop-color:#11659a;stop-opacity:1;"
+         offset="1"
+         id="stop34838" />
+    </linearGradient>
+  </defs>
+  <g
+     inkscape:label="图层 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-90.966729,-104.72178)">
+    <g
+       id="g38132"
+       transform="translate(-32.631726,-42.847644)">
+      <path
+         style="fill:none;fill-opacity:1;stroke:url(#linearGradient31542);stroke-width:2.64583;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+         d="m 145.48077,150.07612 -12.33564,13.70627 12.33564,13.70627"
+         id="path1232" />
+      <path
+         style="fill:none;fill-opacity:1;stroke:#1781b5;stroke-width:2.64583;stroke-dasharray:none;stroke-opacity:1"
+         d="m 145.48077,150.07612 c 0.9685,-0.75986 2.19557,-1.18378 3.42657,-1.18378 1.231,0 2.45807,0.42392 3.42657,1.18378 0.97571,0.76552 1.67651,1.85296 2.06451,3.03087 0.38799,1.17792 0.47298,2.44325 0.34505,3.67681 -0.25587,2.46711 -1.33277,4.76417 -2.40956,6.99859 -2.21762,4.60173 -4.50232,9.17114 -6.85314,13.70627"
+         id="path1359"
+         inkscape:path-effect="#path-effect1361-5"
+         inkscape:original-d="m 145.48077,150.07612 c 2.28575,0.001 4.57013,0.001 6.85314,0 2.28301,-0.001 0.001,9.13889 0,13.70627 -0.001,4.56739 -4.56739,9.13889 -6.85314,13.70627" />
+      <path
+         style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:1.37063;stroke-opacity:0"
+         d="m 133.14513,163.78239 h 12.33564"
+         id="path6242" />
+      <path
+         style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:1.37063;stroke-opacity:0"
+         d="m 133.14513,163.78239 h 12.33564"
+         id="path11586" />
+      <path
+         style="fill:none;fill-opacity:1;stroke:url(#linearGradient33902);stroke-width:2.64583;stroke-dasharray:none;stroke-opacity:1"
+         d="m 133.14513,163.78239 h 12.33564"
+         id="path11655" />
+      <path
+         style="fill:none;fill-opacity:1;stroke:url(#linearGradient34842);stroke-width:2.64583;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+         d="m 124.92137,150.07612 8.22376,13.70627 -8.22376,13.70627"
+         id="path34718" />
+      <path
+         style="fill:none;fill-opacity:1;stroke:#1781b5;stroke-width:2.64583;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+         d="m 124.92137,150.07612 h 20.5594 v 27.41254 h -20.5594"
+         id="path34931" />
+    </g>
+  </g>
+  <metadata
+     id="metadata147">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:title>Slake logo</dc:title>
+        <dc:date>2023/07/02</dc:date>
+        <dc:creator>
+          <cc:Agent>
+            <dc:title>Pyxherb&lt;codesbuilder@163.com&gt;</dc:title>
+          </cc:Agent>
+        </dc:creator>
+        <dc:rights>
+          <cc:Agent>
+            <dc:title>Copyright (C) 2023 Pyxherb&lt;codesbuilder@163.com&gt;</dc:title>
+          </cc:Agent>
+        </dc:rights>
+        <dc:description>Logo of Slake project</dc:description>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+</svg>

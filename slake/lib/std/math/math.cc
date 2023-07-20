@@ -1,4 +1,5 @@
-#include <slake/lib/util.h>
+#include <slake/lib/std.h>
+#include <slake/lib/std/math.h>
 
 #include <cmath>
 #include <thread>
@@ -60,10 +61,9 @@ double _slake_stdlib_sqrt_fast(double x);
 
 using namespace slake;
 using namespace slake::stdlib;
-using namespace slake::stdlib::util;
+using namespace slake::stdlib::math;
 
-ModuleValue *stdlib::util::modUtil = nullptr;
-ModuleValue *stdlib::util::Math::modMath = nullptr;
+ModuleValue *stdlib::math::modMath = nullptr;
 
 #define PI 3.141592653589793
 
@@ -252,8 +252,8 @@ static ValueRef<> _absImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
 // Native function callback implementations end
 //
 
-void stdlib::util::Math::load(Runtime *rt) {
-	modUtil->addMember("math",
+void stdlib::math::load(Runtime *rt) {
+	modStd->addMember("math",
 		modMath = new ModuleValue(rt, ACCESS_PUB));
 
 	modMath->addMember(

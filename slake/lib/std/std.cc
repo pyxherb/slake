@@ -1,6 +1,7 @@
-#include "std.h"
-#include "core.h"
-#include "util.h"
+#include <slake/lib/std.h>
+#include <slake/lib/core.h>
+#include <slake/lib/std/util.h>
+#include <slake/lib/std/math.h>
 
 using namespace slake;
 
@@ -10,6 +11,6 @@ void stdlib::load(Runtime *rt) {
 	auto root = rt->getRootValue();
 
 	root->addMember("std", modStd = new ModuleValue(rt, ACCESS_PUB));
-	//Core::load(rt);
+	math::load(rt);
 	util::load(rt);
 }

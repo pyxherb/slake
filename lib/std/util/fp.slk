@@ -1,9 +1,0 @@
-module std.util.fp;
-
-pub u8 getExponent(f32 x) {
-	return (u8)((<u32>(x) & 0x7f800000) >> 22);
-}
-
-pub u32 getMantissa(f32 x) {
-	return <u32>(x) & 0x7fffff;
-}

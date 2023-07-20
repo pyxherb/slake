@@ -6,5 +6,5 @@ pub trait Iterable<T> {
 }
 
 pub trait BidirIterable<T>(@Iterator<T>) {
-	@T last();
+	@T pre();
 }

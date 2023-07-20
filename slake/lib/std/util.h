@@ -6,10 +6,6 @@
 namespace slake {
 	namespace stdlib {
 		namespace util {
-			namespace Math {
-				extern ModuleValue *modMath;
-				void load(Runtime *rt);
-			}
 			extern ModuleValue *modUtil;
 
 			void load(Runtime *rt);

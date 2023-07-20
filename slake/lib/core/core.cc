@@ -1,19 +1,17 @@
-#include "core.h"
-
-#include "std.h"
+#include <slake/lib/core.h>
 
 using namespace slake;
-using namespace slake::stdlib::Core;
+using namespace slake::corelib;
 
-ModuleValue *stdlib::Core::modCore;
+ModuleValue *corelib::modCore;
 
-ModuleValue *stdlib::Core::Except::modExcept;
-InterfaceValue *stdlib::Core::Except::typeIException;
-ClassValue *stdlib::Core::Except::exLogicalError;
-ClassValue *stdlib::Core::Except::exDivideByZeroError;
-ClassValue *stdlib::Core::Except::exOutOfMemoryError;
-ClassValue *stdlib::Core::Except::exInvalidOpcodeError;
-ClassValue *stdlib::Core::Except::exInvalidOperandsError;
+ModuleValue *corelib::except::modExcept;
+InterfaceValue *corelib::except::typeIException;
+ClassValue *corelib::except::exLogicalError;
+ClassValue *corelib::except::exDivideByZeroError;
+ClassValue *corelib::except::exOutOfMemoryError;
+ClassValue *corelib::except::exInvalidOpcodeError;
+ClassValue *corelib::except::exInvalidOperandsError;
 
 static ValueRef<> _exceptionConstructor(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
 	if (nArgs != 1)
@@ -22,8 +20,8 @@ static ValueRef<> _exceptionConstructor(Runtime *rt, uint8_t nArgs, ValueRef<> *
 	return {};
 }
 
-static void _initExceptionClass(Runtime *rt, ClassValue *ex) {
-	using namespace Except;
+static void _initexceptionClass(Runtime *rt, ClassValue *ex) {
+	using namespace except;
 
 	ex->implInterfaces.push_back(Type(TypeId::INTERFACE, typeIException));
 	ex->addMember("_msg", new VarValue(rt, 0, TypeId::STRING));
@@ -36,14 +34,14 @@ static void _initExceptionClass(Runtime *rt, ClassValue *ex) {
 			TypeId::NONE));
 }
 
-void stdlib::Core::Except::load(Runtime *rt) {
+void corelib::except::load(Runtime *rt) {
 	modCore->addMember("except",
 		modExcept = new ModuleValue(rt, ACCESS_PUB));
 
 	// Set up module `except'
 	{
-		// Set up interface `IException'
-		modExcept->addMember("IException",
+		// Set up interface `Iexception'
+		modExcept->addMember("Iexception",
 			typeIException = new InterfaceValue(rt, ACCESS_PUB));
 		{
 			typeIException->addMember("operator@string",
@@ -53,35 +51,35 @@ void stdlib::Core::Except::load(Runtime *rt) {
 		// Set up exception `LogicalError'
 		modExcept->addMember("LogicalError",
 			exLogicalError = new ClassValue(rt, ACCESS_PUB));
-		_initExceptionClass(rt, exLogicalError);
+		_initexceptionClass(rt, exLogicalError);
 
 		// Set up exception `DivideByZeroError'
 		modExcept->addMember("DivideByZeroError",
 			exDivideByZeroError = new ClassValue(rt, ACCESS_PUB));
-		_initExceptionClass(rt, exDivideByZeroError);
+		_initexceptionClass(rt, exDivideByZeroError);
 
 		// Set up exception `OutOfMemoryError'
 		modExcept->addMember("OutOfMemoryError",
 			exOutOfMemoryError = new ClassValue(rt, ACCESS_PUB));
-		_initExceptionClass(rt, exOutOfMemoryError);
+		_initexceptionClass(rt, exOutOfMemoryError);
 
 		// Set up exception `InvalidOpcodeError'
 		modExcept->addMember("InvalidOpcodeError",
 			exInvalidOpcodeError = new ClassValue(rt, ACCESS_PUB));
-		_initExceptionClass(rt, exInvalidOpcodeError);
+		_initexceptionClass(rt, exInvalidOpcodeError);
 
 		// Set up exception `InvalidOperandsError'
 		modExcept->addMember("InvalidOperandsError",
 			exInvalidOperandsError = new ClassValue(rt, ACCESS_PUB));
-		_initExceptionClass(rt, exInvalidOperandsError);
+		_initexceptionClass(rt, exInvalidOperandsError);
 	}
 }
 
-void stdlib::Core::load(Runtime *rt) {
+void corelib::load(Runtime *rt) {
 	auto root = rt->getRootValue();
 
-	modStd->addMember(
+	root->addMember(
 		"core",
-		Core::modCore = new ModuleValue(rt, ACCESS_PUB));
-	Except::load(rt);
+		corelib::modCore = new ModuleValue(rt, ACCESS_PUB));
+	except::load(rt);
 }

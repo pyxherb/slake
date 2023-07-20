@@ -24,12 +24,21 @@
 	NEW @main.A<f64>;
 	LSTORE 0U;
 
+	# Argument #2
+	PUSH 9961f;
+	PUSHARG;
+	CALL std.math.sinFast$f32;
+	LRET;
+
+	# Argument #0
 	LLOAD 0U;
 	RLOAD data;
 	LVALUE;
 
-	PUSHARG;
-	PUSHARG "\n";
+	PUSHARG;		# Argument #0
+	PUSHARG ", ";	# Argument #1
+	PUSHARG;		# Argument #2
+	PUSHARG "\n";	# Argument #3
 	CALL print;
 
 	RET null;

@@ -125,3 +125,7 @@ pub trait Comparable<T, Result>
 	  @GtEq<T, Result>, @LtEq<T, Result>,
 	  @Eq, @NotEq<T, Result> {
 }
+
+pub trait Stringifiable {
+	operator string();
+}

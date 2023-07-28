@@ -75,8 +75,9 @@ namespace slake {
 
 		LRET,  // Load return value
 
-		THROW,	 // Throw an exception
-		PUSHXH,	 // Push an exception handler
+		THROW,	  // Throw an exception
+		PUSHXH,	  // Push an exception handler
+		LEXCEPT,  // Load current exception
 
 		ABORT,	// Abort
 

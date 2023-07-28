@@ -1,7 +1,7 @@
 #ifndef _SLKC_DECOMPILER_MNEMONIC_HH_
 #define _SLKC_DECOMPILER_MNEMONIC_HH_
 
-#include <unordered_map>
+#include <map>
 #include <slake/opcode.h>
 #include <string>
 

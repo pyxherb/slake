@@ -400,7 +400,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 	}
 }
 
-ValueRef<ModuleValue> slake::Runtime::loadModule(std::istream &fs) {
+ValueRef<ModuleValue> slake::Runtime::loadModule(std::istream &fs, LoadModuleFlags flags) {
 	std::unique_ptr<ModuleValue> mod = std::make_unique<ModuleValue>(this, ACCESS_PUB);
 
 	slxfmt::ImgHeader ih;
@@ -412,17 +412,14 @@ ValueRef<ModuleValue> slake::Runtime::loadModule(std::istream &fs) {
 
 	if (ih.flags & slxfmt::IMH_MODNAME) {
 		auto modName = _loadRef(fs);
-
 		if (!modName->entries.size())
-			throw LoaderError("Module name is empty with module name flag set");
-
-		auto &entries = modName->entries;
+			throw LoaderError("Empty module name with module name flag set");
 
 		ValueRef<> curValue = (Value *)_rootValue;
 
 		// Create parent modules.
-		for (size_t i = 0; i < entries.size() - 1; ++i) {
-			auto &name = entries[i].name;
+		for (size_t i = 0; i < modName->entries.size() - 1; ++i) {
+			auto &name = modName->entries[i].name;
 
 			if (!curValue->getMember(name)) {
 				// Create a new one if corresponding module does not present.
@@ -440,26 +437,41 @@ ValueRef<ModuleValue> slake::Runtime::loadModule(std::istream &fs) {
 			}
 		}
 
+		auto lastName = modName->entries.back().name;
 		// Add current module.
 		if (curValue->getType() == TypeId::ROOT)
-			((RootValue *)*curValue)->addMember(entries.back().name, mod.get());
-		else
-			((ModuleValue *)*curValue)->addMember(entries.back().name, mod.get());
+			((RootValue *)*curValue)->addMember(lastName, mod.get());
+		else {
+			auto moduleValue = (ModuleValue *)*curValue;
+
+			if (moduleValue->getMember(lastName)) {
+				if (flags & LMOD_RETIFEXISTS) {
+					if (moduleValue->getMember(lastName)->getType() != TypeId::MOD)
+						throw LoaderError(
+							"Value which corresponds to module name \"" + std::to_string(modName, this) + "\" was found, but is not a module");
+				}
+				if (flags & LMOD_NOCONFLICT)
+					throw LoaderError("Module \"" + std::to_string(modName, this) + "\" conflicted with existing value which is on the same path");
+			}
+
+			moduleValue->addMember(modName->entries.back().name, mod.get());
+		}
 	}
 
 	for (uint8_t i = 0; i < ih.nImports; i++) {
 		auto len = _read<uint32_t>(fs);
 		std::string name(len, '\0');
-		fs.read(&(name[0]), len);
+		fs.read(name.data(), len);
 
-		std::unique_ptr<Value> ref(_loadValue(fs));
+		std::unique_ptr<std::istream> moduleStream(_moduleLocator(this, _loadRef(fs)));
+		mod->addMember(name, (MemberValue*)new AliasValue(this, 0, *loadModule(*moduleStream.get(), LMOD_RETIFEXISTS)));
 	}
 
 	_loadScope(mod.get(), fs);
 	return mod.release();
 }
 
-ValueRef<ModuleValue> slake::Runtime::loadModule(const void *buf, size_t size) {
+ValueRef<ModuleValue> slake::Runtime::loadModule(const void *buf, size_t size, LoadModuleFlags flags) {
 	util::InputMemStream fs(buf, size);
-	return loadModule(fs);
+	return loadModule(fs, flags);
 }

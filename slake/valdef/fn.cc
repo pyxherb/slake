@@ -15,7 +15,7 @@ FnValue::~FnValue() {
 		delete[] body;
 }
 
-ValueRef<> FnValue::call(uint8_t nArgs, ValueRef<> *args) const {
+ValueRef<> FnValue::call(std::deque<ValueRef<>> args) const {
 	bool isDestructing = _rt->destructingThreads.count(std::this_thread::get_id());
 	std::shared_ptr<Context> context = std::make_shared<Context>(), savedContext;
 
@@ -63,8 +63,8 @@ ValueRef<> FnValue::call(uint8_t nArgs, ValueRef<> *args) const {
 	return context->majorFrames.back().returnValue;
 }
 
-ValueRef<> NativeFnValue::call(uint8_t nArgs, ValueRef<> *args) const {
-	return body(getRuntime(), nArgs, args);
+ValueRef<> NativeFnValue::call(std::deque<ValueRef<>> args) const {
+	return body(_rt, args);
 }
 
 Value *FnValue::duplicate() const {

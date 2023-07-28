@@ -38,7 +38,7 @@ namespace slake {
 }
 
 namespace std {
-	string to_string(slake::RefValue *ref);
+	string to_string(const slake::RefValue *ref);
 }
 
 #endif

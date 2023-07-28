@@ -9,7 +9,7 @@ Value *RefValue::duplicate() const {
 	return (Value *)v;
 }
 
-std::string std::to_string(slake::RefValue *ref) {
+std::string std::to_string(const slake::RefValue *ref) {
 	string s;
 	for (size_t i = 0; i < ref->entries.size(); ++i) {
 		auto scope = ref->entries[i];

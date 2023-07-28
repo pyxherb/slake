@@ -23,7 +23,7 @@ namespace slake {
 #ifndef NDEBUG
 		virtual inline void onRefZero() override {
 			if(_parent)
-				throw std::logic_error("References became zero when the member object is still bound to a parent object");
+				throw std::logic_error("References became zero during the member object is still bound to a parent object");
 			Value::onRefZero();
 		}
 #endif

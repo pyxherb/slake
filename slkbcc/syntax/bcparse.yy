@@ -124,6 +124,7 @@ extern std::deque<std::shared_ptr<slake::bcc::Scope>> savedScopes;
 %token T_COLON ":"
 %token T_SEMICOLON ";"
 %token T_DOT "."
+%token T_SHARP "#"
 
 %type <shared_ptr<Operand>> Literal Operand
 %type <shared_ptr<ArrayOperand>> Array
@@ -306,28 +307,30 @@ AccessModifier:
 FnDef:
 ".fn" TypeName T_ID Params Instructions ".end" {
 	if(curScope->funcs.count($3))
-		error(@3, "Dulplicated function entry `" + $3 + "'");
-	curScope->funcs[$3] = make_shared<Fn>(@1, curScope->curAccess, $2, $4, $5);
+		error(@3, "Duplicated function entry `" + $3 + "'");
+	curScope->funcs[$3] = make_shared<Fn>(@1, curScope->curAccess, $2, $4, $5, curLabels);
 	curScope->curAccess = 0;
+	curLabels.clear();
 }
 | ".fn" TypeName "operator" OperatorName Params Instructions ".end" {
 	if(curScope->funcs.count($4))
-		error(@4, "Dulplicated function entry `" + $4 + "'");
-	curScope->funcs[$4] = make_shared<Fn>(@1, curScope->curAccess, $2, $5, $6);
+		error(@4, "Duplicated function entry `" + $4 + "'");
+	curScope->funcs[$4] = make_shared<Fn>(@1, curScope->curAccess, $2, $5, $6, curLabels);
 	curScope->curAccess = 0;
+	curLabels.clear();
 }
 ;
 
 FnDecl:
 ".fndecl" TypeName T_ID Params {
 	if(curScope->funcs.count($3))
-		error(@3, "Dulplicated function entry `" + $3 + "'");
+		error(@3, "Duplicated function entry `" + $3 + "'");
 	curScope->funcs[$3] = make_shared<Fn>(@1, curScope->curAccess, $2, $4);
 	curScope->curAccess = 0;
 }
 | ".fndecl" TypeName "operator" OperatorName Params {
 	if(curScope->funcs.count($4))
-		error(@3, "Dulplicated function entry `" + $4 + "'");
+		error(@3, "Duplicated function entry `" + $4 + "'");
 	curScope->funcs[$4] = make_shared<Fn>(@1, curScope->curAccess, $2, $5);
 	curScope->curAccess = 0;
 }
@@ -347,13 +350,17 @@ TypeName "," _Params { $$.swap($3), $$.push_front($1); }
 Instructions:
 Instructions Instruction ";" { $$ = $1, $$.push_back($2); }
 | Instructions T_ID ":" Instruction ";" {
+	$$ = $1;
+
 	if (curLabels.count($2))
-		error(@2, "Dulplicated label `" + $2 + "'");
+		error(@2, "Duplicated label `" + $2 + "'");
 	curLabels[$2] = $$.size();
+
+	$$.push_back($4);
 }
 | T_ID ":" {
 	if (curLabels.count($1))
-		error(@1, "Dulplicated label `" + $1 + "'");
+		error(@1, "Duplicated label `" + $1 + "'");
 	curLabels[$1] = $$.size();
 }
 | Instruction ";" { $$.push_back($1); }
@@ -376,14 +383,14 @@ Operands:
 ;
 
 _Operands:
-Operand "," _Operands { $$.push_back($1); }
+Operand "," _Operands { $$ = $3, $$.push_front($1); }
 | Operand { $$.push_back($1); }
 ;
 
 Operand:
 Ref { $$ = make_shared<RefOperand>(@1, $1); }
 | Literal { $$ = $1; }
-| "$" T_ID { $$ = make_shared<LabelOperand>(@1, $2); }
+| "#" T_ID { $$ = make_shared<LabelOperand>(@1, $2); }
 | Array { $$ = $1; }
 | Map { $$ = $1; }
 | TypeName { $$ = make_shared<TypeNameOperand>(@1, $1); }
@@ -393,7 +400,9 @@ Ref { $$ = make_shared<RefOperand>(@1, $1); }
 // Import
 //
 ImportBlock:
-".import" T_ID Ref
+".import" T_ID Ref {
+	curScope->imports[$2] = $3;
+}
 ;
 
 //

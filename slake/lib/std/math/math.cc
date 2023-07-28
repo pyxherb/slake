@@ -77,14 +77,14 @@ static double _sqrt(double x);
 //
 
 #define _nArgCheck(op, n) \
-	if (!(nArgs op(n))) throw InvalidArgumentsError()
+	if (!(args.size() op(n))) throw InvalidArgumentsError()
 #define _nullRefCheck(x) \
 	if (!(x)) throw NullRefError()
 #define _typeCheck(x, t) \
 	if ((x)->getType() != (t)) throw InvalidArgumentsError()
 
 template <typename T>
-static ValueRef<> _sinImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
+static ValueRef<> _sinImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	using ValueType = LiteralValue<T, getValueType<T>()>;
 	_nArgCheck(==, 1);
 
@@ -97,7 +97,7 @@ static ValueRef<> _sinImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
 }
 
 template <typename T>
-static ValueRef<> _cosImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
+static ValueRef<> _cosImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	using ValueType = LiteralValue<T, getValueType<T>()>;
 	_nArgCheck(==, 1);
 
@@ -110,7 +110,7 @@ static ValueRef<> _cosImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
 }
 
 template <typename T>
-static ValueRef<> _tanImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
+static ValueRef<> _tanImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	using ValueType = LiteralValue<T, getValueType<T>()>;
 	_nArgCheck(==, 1);
 
@@ -123,7 +123,7 @@ static ValueRef<> _tanImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
 }
 
 template <typename T>
-static ValueRef<> _sqrtImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
+static ValueRef<> _sqrtImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	using ValueType = LiteralValue<T, getValueType<T>()>;
 	_nArgCheck(==, 1);
 
@@ -135,7 +135,7 @@ static ValueRef<> _sqrtImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
 	return new ValueType(rt, _sqrt(((ValueType *)x)->getData()));
 }
 
-static ValueRef<> _sinFastImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
+static ValueRef<> _sinFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	_nArgCheck(==, 1);
 
 	F64Value *x = (F64Value *)*args[0];
@@ -146,7 +146,7 @@ static ValueRef<> _sinFastImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
 	return new F64Value(rt, _sin_fast(x->getData()));
 }
 
-static ValueRef<> _sinfFastImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
+static ValueRef<> _sinfFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	_nArgCheck(==, 1);
 
 	F32Value *x = (F32Value *)*args[0];
@@ -157,7 +157,7 @@ static ValueRef<> _sinfFastImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
 	return new F32Value(rt, _sinf_fast(x->getData()));
 }
 
-static ValueRef<> _cosFastImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
+static ValueRef<> _cosFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	_nArgCheck(==, 1);
 
 	F64Value *x = (F64Value *)*args[0];
@@ -168,7 +168,7 @@ static ValueRef<> _cosFastImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
 	return new F64Value(rt, _cos_fast(x->getData()));
 }
 
-static ValueRef<> _cosfFastImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
+static ValueRef<> _cosfFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	_nArgCheck(==, 1);
 
 	F32Value *x = (F32Value *)*args[0];
@@ -179,7 +179,7 @@ static ValueRef<> _cosfFastImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
 	return new F32Value(rt, _cosf_fast(x->getData()));
 }
 
-static ValueRef<> _tanFastImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
+static ValueRef<> _tanFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	_nArgCheck(==, 1);
 
 	F64Value *x = (F64Value *)*args[0];
@@ -190,7 +190,7 @@ static ValueRef<> _tanFastImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
 	return new F64Value(rt, _tan_fast(x->getData()));
 }
 
-static ValueRef<> _tanfFastImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
+static ValueRef<> _tanfFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	_nArgCheck(==, 1);
 
 	F32Value *x = (F32Value *)*args[0];
@@ -201,7 +201,7 @@ static ValueRef<> _tanfFastImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
 	return new F32Value(rt, _tanf_fast(x->getData()));
 }
 
-static ValueRef<> _sqrtFastImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
+static ValueRef<> _sqrtFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	_nArgCheck(==, 1);
 
 	F64Value *x = (F64Value *)*args[0];
@@ -212,7 +212,7 @@ static ValueRef<> _sqrtFastImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
 	return new F64Value(rt, _sqrt_fast(x->getData()));
 }
 
-static ValueRef<> _sqrtfFastImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
+static ValueRef<> _sqrtfFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	_nArgCheck(==, 1);
 
 	F32Value *x = (F32Value *)*args[0];
@@ -224,7 +224,7 @@ static ValueRef<> _sqrtfFastImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
 }
 
 template <typename T>
-static ValueRef<> _absImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
+static ValueRef<> _absImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	using ValueType = LiteralValue<T, getValueType<T>()>;
 	_nArgCheck(==, 1);
 
@@ -238,11 +238,9 @@ static ValueRef<> _absImpl(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
 	if constexpr (std::is_same<T, float>::value) {
 		*(uint32_t *)&n &= ~0x800000;
 	} else if constexpr (std::is_same<T, double>::value) {
-		*(uint32_t *)&n &= ~0x8000000000000000;
+		*(uint32_t *)&n &= ~0x8000000000000000LL;
 	} else if constexpr (std::is_integral<T>::value && std::is_signed<T>::value) {
 		n = ~n + 1;
-	} else {
-		return n;
 	}
 
 	return new ValueType(rt, n);
@@ -343,14 +341,31 @@ static double _sqrt(double x) {
 	if (x < 0.0)
 		return NAN;
 
-	double sum = x, lastSum = NAN;
+	double sum = x, lastSum;
 
-	while (sum != lastSum) {
+	do {
 		lastSum = sum;
 
 		// sum[i+1] = (sum[i] + x/sum[i]) / n
 		sum = (sum + x / sum) * 0.5;
-	}
+	} while (sum != lastSum);
 
 	return sum;
+}
+
+static double _cbrt(double a) {
+	double result = a, lastResult;
+
+	do {
+		lastResult = result;
+
+		// f(x) = x^3 - a = 0
+		// f'(x) = 3x^2
+		// x -= (x^3-a)/(3x^2)^2
+		// x -= (x - a/x/x) / 81
+		// x -= (x - a/x/x) * (1 / 81)
+		result -= (result - a / (result * result)) * 0.012345679012345678;
+	} while (result != lastResult);
+
+	return result;
 }

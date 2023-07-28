@@ -40,6 +40,8 @@ namespace slake {
 
 		ANY,  // Any
 
+		ALIAS, // Alias
+
 		REF,		  // Reference
 		GENERIC_ARG,  // Generic argument
 		ROOT,		  // Root value

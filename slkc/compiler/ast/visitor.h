@@ -7,6 +7,7 @@
 #include <any>
 #include "scope.h"
 #include "module.h"
+#include "typename.h"
 
 #define VISIT_METHOD_DECL(name) virtual antlrcpp::Any visit##name(SlakeParser::name##Context *context) override
 #define VISIT_METHOD_IMPL(cls, name) antlrcpp::Any cls::visit##name(SlakeParser::name##Context *context)

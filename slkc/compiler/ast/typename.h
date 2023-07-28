@@ -7,7 +7,7 @@
 
 namespace slake {
 	namespace slkc {
-		enum TypeName : uint8_t {
+		enum Type : uint8_t {
 			TYPE_I8,
 			TYPE_I16,
 			TYPE_I32,
@@ -33,9 +33,9 @@ namespace slake {
 
 		class TypeName {
 		public:
-			const TypeName type;
+			const Type type;
 
-			inline TypeName(TypeName type) : type(type) {}
+			inline TypeName(Type type) : type(type) {}
 			virtual ~TypeName() = default;
 		};
 

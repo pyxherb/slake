@@ -19,7 +19,7 @@ const MemberValue *Value::getMember(std::string name) const {
 	return nullptr;
 }
 
-ValueRef<> Value::call(uint8_t nArgs, ValueRef<> *args) const {
+ValueRef<> Value::call(std::deque<ValueRef<>> args) const {
 	return nullptr;
 }
 

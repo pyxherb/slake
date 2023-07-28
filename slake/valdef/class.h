@@ -33,6 +33,7 @@ namespace slake {
 		Type parentClass;
 		std::deque<Type> implInterfaces;  // Implemented interfaces
 
+		inline ClassValue(const ClassValue *pre) : ModuleValue(pre->_rt, 0) { *this = *pre; }
 		inline ClassValue(Runtime *rt, AccessModifier access, Type parentClass = {})
 			: ModuleValue(rt, access), parentClass(parentClass) {
 			reportSizeToRuntime(sizeof(*this) - sizeof(ModuleValue));
@@ -104,12 +105,20 @@ namespace slake {
 
 		virtual inline Type getType() const override { return TypeId::INTERFACE; }
 
+		virtual Value *duplicate() const override;
+
 		/// @brief Check if the interface is derived from specified interface
 		/// @param pInterface Interface to check.
 		/// @return true if the interface is derived from specified interface, false otherwise.
-		virtual bool isDerivedFrom(const InterfaceValue *pInterface) const;
+		bool isDerivedFrom(const InterfaceValue *pInterface) const;
 
-		InterfaceValue &operator=(const InterfaceValue &) = delete;
+		InterfaceValue &operator=(const InterfaceValue &x) {
+			((ModuleValue &)*this) = (ModuleValue &)x;
+
+			parents = x.parents;
+
+			return *this;
+		}
 		InterfaceValue &operator=(const InterfaceValue &&) = delete;
 	};
 
@@ -127,7 +136,12 @@ namespace slake {
 
 		virtual inline Type getType() const override { return TypeId::TRAIT; }
 
-		TraitValue &operator=(const TraitValue &) = delete;
+		virtual Value *duplicate() const override;
+
+		TraitValue &operator=(const TraitValue &x) {
+			((InterfaceValue &)*this) = (InterfaceValue &)x;
+			return *this;
+		}
 		TraitValue &operator=(const TraitValue &&) = delete;
 	};
 }

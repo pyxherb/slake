@@ -45,11 +45,13 @@ namespace slake {
 				AccessModifier access,
 				shared_ptr<TypeName> returnType,
 				ParamDeclList params = {},
-				deque<shared_ptr<Instruction>> body = {})
+				deque<shared_ptr<Instruction>> body = {},
+				unordered_map<string, uint32_t> labels = {})
 				: _loc(loc),
 				  returnType(returnType),
 				  params(params),
 				  body(body),
+				  labels(labels),
 				  access(access) {}
 			virtual ~Fn() = default;
 

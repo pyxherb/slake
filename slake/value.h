@@ -1,6 +1,7 @@
 #ifndef _SLAKE_VALUE_H_
 #define _SLAKE_VALUE_H_
 
+#include "valdef/alias.h"
 #include "valdef/array.h"
 #include "valdef/base.h"
 #include "valdef/class.h"

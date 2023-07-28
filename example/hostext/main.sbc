@@ -2,15 +2,14 @@
 .access native
 .fndecl void print ...
 
-.class A<T>
+.class Exception
 	.access pub
-	.var @0 data
+	.var string msg
 
-	.fn void new
-		PUSH 114.514;
-
+	.fn void new string
+		LARG 0U;
 		LTHIS;
-		RLOAD data;
+		RLOAD msg;
 
 		STORE;
 
@@ -19,27 +18,32 @@
 .end
 
 .fn i32 main
-	LVAR @main.A<f64>;
+	ENTER;
 
-	NEW @main.A<f64>;
-	LSTORE 0U;
+	PUSHXH @main.Exception, #XH1;
+	PUSHXH any, #XHD;
 
-	# Argument #2
-	PUSH 9961f;
-	PUSHARG;
-	CALL std.math.sinFast$f32;
-	LRET;
+	PUSHARG "Message";
+	NEW @main.Exception;
+	THROW;
 
-	# Argument #0
-	LLOAD 0U;
-	RLOAD data;
-	LVALUE;
+	LEAVE;
+	JMP #scopeEnd;
 
-	PUSHARG;		# Argument #0
-	PUSHARG ", ";	# Argument #1
-	PUSHARG;		# Argument #2
-	PUSHARG "\n";	# Argument #3
-	CALL print;
+	// main.Exception
+	XH1:
+		LEXCEPT;
+		RLOAD msg;
+		LVALUE;
+		PUSHARG;
+		PUSHARG "\n";
+		CALL print;
+		JMP #scopeEnd;
 
+	// ...
+	XHD:
+		ABORT;
+
+scopeEnd:
 	RET null;
 .end

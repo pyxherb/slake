@@ -127,3 +127,17 @@ Value *ClassValue::duplicate() const {
 
 	return (Value *)v;
 }
+
+Value *InterfaceValue::duplicate() const {
+	InterfaceValue *v = new InterfaceValue(_rt, 0);
+	*v = *this;
+
+	return (Value *)v;
+}
+
+Value *TraitValue::duplicate() const {
+	TraitValue *v = new TraitValue(_rt, 0);
+	*v = *this;
+
+	return (Value *)v;
+}

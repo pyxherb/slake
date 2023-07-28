@@ -95,6 +95,13 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 						_instantiateGenericValue(((TypeNameValue *)*operand)->_data, genericArgs);
 				}
 			}
+			break;
+		}
+		case TypeId::ALIAS: {
+			AliasValue* value = (AliasValue*)v;
+
+			value->_src = instantiateGenericValue(*value->_src, genericArgs);
+			break;
 		}
 		case TypeId::ROOT:
 		case TypeId::I8:
@@ -128,8 +135,8 @@ Value *Runtime::instantiateGenericValue(const Value *v, const GenericArgList &ge
 
 	// Cache missed, instantiate the value.
 	auto value = v->duplicate();				   // Make a duplicate of the original value.
-	_instantiateGenericValue(value, genericArgs);  // Instantiate the value.
 	_genericCacheDir[v][genericArgs] = value;	   // Store the instance into the cache.
+	_instantiateGenericValue(value, genericArgs);  // Instantiate the value.
 
 	return value;
 }

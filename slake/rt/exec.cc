@@ -44,13 +44,19 @@ static void _checkOperandType(
 	Instruction &ins,
 	TypeId type0,
 	TypeId type1 = TypeId::ANY,
-	TypeId type2 = TypeId::ANY,
-	TypeId type3 = TypeId::ANY) {
-	if (ins.operands[0]->getType() != type0 ||
-		(type1 != TypeId::ANY ? ins.operands[1]->getType() != type1 : false) ||
-		(type2 != TypeId::ANY ? ins.operands[2]->getType() != type2 : false) ||
-		(type3 != TypeId::ANY ? ins.operands[3]->getType() != type3 : false))
-		throw InvalidOperandsError("Invalid operand combination");
+	TypeId type2 = TypeId::ANY) {
+	if ((!ins.operands[0]) || ins.operands[0]->getType() != type0)
+		goto mismatched;
+
+	if ((type1 != TypeId::ANY) && ((!ins.operands[1]) || ins.operands[1]->getType() != type1))
+		goto mismatched;
+
+	if ((type2 != TypeId::ANY) && ((!ins.operands[2]) || ins.operands[2]->getType() != type1))
+		goto mismatched;
+
+	return;
+mismatched:
+	throw InvalidOperandsError("Invalid operand combination");
 }
 
 static void _checkOperandCount(Instruction &ins, uint8_t n) {
@@ -310,7 +316,7 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			_checkOperandCount(ins, 0, 2);
 			_checkOperandType(ins, TypeId::TYPENAME);
 
-			auto &type = ((TypeNameValue*)*ins.operands[0])->_data;
+			auto &type = ((TypeNameValue *)*ins.operands[0])->_data;
 			type.loadDeferredType(this);
 
 			_addLocalVar(curMajorFrame, type);
@@ -360,7 +366,7 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			if (x->getType() != TypeId::U32)
 				throw InvalidOperandsError("Invalid operand combination");
 
-			if(x->getData()>=curMajorFrame.localVars.size())
+			if (x->getData() >= curMajorFrame.localVars.size())
 				throw InvalidLocalVarIndexError("Invalid local variable index", x->getData());
 			curMajorFrame.localVars.at(x->getData())->setData(*curMajorFrame.pop());
 			break;
@@ -418,9 +424,8 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			break;
 		}
 		case Opcode::ENTER: {
-			_checkOperandCount(ins, 1);
+			_checkOperandCount(ins, 0);
 			MinorFrame frame;
-			frame.exitOff = (uint32_t)_getOperandAsAddress(ins.operands[0]);
 			frame.stackBase = (uint32_t)curMajorFrame.dataStack.size();
 			curMajorFrame.minorFrames.push_back(frame);
 			break;
@@ -429,8 +434,7 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			_checkOperandCount(ins, 0);
 			if (curMajorFrame.minorFrames.size() < 2)
 				throw FrameError("Leaving the only frame");
-			curMajorFrame.dataStack.resize(curMajorFrame.minorFrames.back().stackBase);
-			curMajorFrame.minorFrames.pop_back();
+			curMajorFrame.leave();
 			break;
 		}
 		case Opcode::ADD:
@@ -538,6 +542,7 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 
 					v = x;
 					x = v->getData();
+					break;
 			}
 
 			if (!x)
@@ -642,7 +647,7 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 				throw InvalidOperandsError("Invalid operand type");
 
 			curMajorFrame.curIns = x->getData();
-			break;
+			return;
 		}
 		case Opcode::JT:
 		case Opcode::JF: {
@@ -663,7 +668,7 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 					curMajorFrame.curIns = x->getData();
 			} else if (ins.opcode == Opcode::JF)
 				curMajorFrame.curIns = x->getData();
-			break;
+			return;
 		}
 		case Opcode::PUSHARG: {
 			_checkOperandCount(ins, 0, 1);
@@ -675,11 +680,18 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 		case Opcode::LARG: {
 			_checkOperandCount(ins, 0, 1);
 			ValueRef<> x = ins.getOperandCount() ? ins.operands[0] : curMajorFrame.pop();
+			auto index = ((U32Value *)*x)->getData();
 
 			if (x->getType() != TypeId::U32)
 				throw InvalidOperandsError("Invalid operand type");
 
-			curMajorFrame.push(curMajorFrame.argStack.at(((U32Value *)*x)->getData()));
+			if (index < curMajorFrame.argStack.size())
+				curMajorFrame.push(curMajorFrame.argStack.at(index));
+			else
+				throw InvalidOperandsError(
+					"Loading argument with index " + std::to_string(index) +
+					" which is out of range");
+
 			break;
 		}
 		case Opcode::LTHIS: {
@@ -716,10 +728,12 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 				if (ins.opcode == Opcode::MCALL)
 					curMajorFrame.scopeValue = (curMajorFrame.thisObject = curMajorFrame.pop());
 
-				curMajorFrame.returnValue = ((NativeFnValue *)*fn)->call((uint8_t)curMajorFrame.nextArgStack.size(), curMajorFrame.nextArgStack.size() ? &(curMajorFrame.nextArgStack[0]) : nullptr);
+				curMajorFrame.returnValue = ((NativeFnValue *)*fn)->call(curMajorFrame.nextArgStack);
 				curMajorFrame.nextArgStack.clear();
 			} else {
-				auto v = curMajorFrame.pop();
+				ValueRef<> v;
+				if (ins.opcode == Opcode::MCALL)
+					v = curMajorFrame.pop();
 
 				_callFn(context, *fn);
 
@@ -768,13 +782,13 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			_checkOperandCount(ins, 1);
 			_checkOperandType(ins, TypeId::TYPENAME);
 
-			Type &type = ((TypeNameValue*)*ins.operands[0])->_data;
+			Type &type = ((TypeNameValue *)*ins.operands[0])->_data;
 			type.loadDeferredType(this);
 
 			switch (type.typeId) {
 				case TypeId::OBJECT:
 				case TypeId::CLASS: {
-					ClassValue* cls = (ClassValue *)*type.getCustomTypeExData();
+					ClassValue *cls = (ClassValue *)*type.getCustomTypeExData();
 					ObjectValue *instance = _newClassInstance(cls);
 					curMajorFrame.push(instance);
 
@@ -810,31 +824,69 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			else
 				x = ins.operands[0];
 
-			break;
+			std::string traceback;
+			for (auto i = context->majorFrames.rbegin(); i != context->majorFrames.rend(); ++i) {
+				traceback += "\t" + resolveName(*i->curFn) + ":" + std::to_string(i->curIns) + "\n";
+			}
+
+			while (context->majorFrames.size()) {
+				// Pass the exception to current level of major frames.
+				// Because curMajorFrame expires once we unwind a major frame,
+				// we use `context->majorFrames.back()` instead.
+				context->majorFrames.back().curExcept = x;
+
+				while (curMajorFrame.minorFrames.size()) {
+					bool found = _findAndDispatchExceptHandler(context);
+
+					// Leave current minor frame.
+					curMajorFrame.leave();
+
+					if (found) {
+						// Do not increase the current instruction offset,
+						// the offset has been set to offset to first instruction
+						// of the exception handler.
+						return;
+					}
+				}
+
+				// Unwind current major frame if no handler was matched.
+				context->majorFrames.pop_back();
+			}
+
+			throw UncaughtExceptionError(
+				"Uncaught exception:" + std::to_string(x->getType()) + "\n" +
+				"Traceback:\n" +
+				traceback);
 		}
 		case Opcode::PUSHXH: {
-			_checkOperandCount(ins, 0, 1);
+			_checkOperandCount(ins, 2);
+			_checkOperandType(ins, TypeId::TYPENAME, TypeId::U32);
 
-			ValueRef<> x;
-			if (!ins.getOperandCount())
-				x = curMajorFrame.pop();
-			else
-				x = ins.operands[0];
+			ExceptionHandler xh;
 
-			curMajorFrame.minorFrames.back().exceptHandlers.push_back(((I32Value *)*x)->getData());
+			((TypeNameValue *)*ins.operands[0])->_data.loadDeferredType(this);
+
+			xh.type = ((TypeNameValue *)*ins.operands[0])->getData();
+			xh.off = ((U32Value *)*ins.operands[1])->getData();
+
+			curMajorFrame.minorFrames.back().exceptHandlers.push_back(xh);
 			break;
 		}
+		case Opcode::LEXCEPT:
+			_checkOperandCount(ins, 0);
+			curMajorFrame.push(curMajorFrame.curExcept);
+			break;
 		case Opcode::ABORT:
 			throw UncaughtExceptionError("Execution aborted");
 		case Opcode::CAST: {
 			_checkOperandCount(ins, 1);
 			_checkOperandType(ins, TypeId::TYPENAME);
 
-			auto t = ((TypeNameValue*)*ins.operands[0])->getData();
+			auto t = ((TypeNameValue *)*ins.operands[0])->getData();
 
 			ValueRef<> v;
 
-			switch(t.typeId) {
+			switch (t.typeId) {
 				case TypeId::I8:
 					v = _castToLiteralValue<int8_t>(this, *curMajorFrame.pop());
 					break;

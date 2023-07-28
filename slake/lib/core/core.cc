@@ -13,8 +13,8 @@ ClassValue *corelib::except::exOutOfMemoryError;
 ClassValue *corelib::except::exInvalidOpcodeError;
 ClassValue *corelib::except::exInvalidOperandsError;
 
-static ValueRef<> _exceptionConstructor(Runtime *rt, uint8_t nArgs, ValueRef<> *args) {
-	if (nArgs != 1)
+static ValueRef<> _exceptionConstructor(Runtime *rt, std::deque<ValueRef<>> args) {
+	if (args.size() != 1)
 		throw InvalidArgumentsError("Invalid arguments");
 	((VarValue *)(*rt->getActiveContext()->getCurFrame().thisObject)->getMember("_msg"))->setData(*args[0]);
 	return {};

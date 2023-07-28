@@ -78,6 +78,7 @@ std::unordered_map<std::string, Opcode> bcc::mnemonics = {
 
 	MNEMONIC_ENTRY(THROW),
 	MNEMONIC_ENTRY(PUSHXH),
+	MNEMONIC_ENTRY(LEXCEPT),
 
 	MNEMONIC_ENTRY(ABORT),
 

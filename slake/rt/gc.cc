@@ -32,11 +32,14 @@ void Runtime::_gcWalk(Type &type) {
 		case TypeId::U64:
 		case TypeId::F32:
 		case TypeId::F64:
+		case TypeId::STRING:
 		case TypeId::BOOL:
 		case TypeId::FN:
 		case TypeId::REF:
 		case TypeId::NONE:
 		case TypeId::GENERIC_ARG:
+		case TypeId::ALIAS:
+		case TypeId::ANY:
 			break;
 		default:
 			throw std::logic_error("Unhandled value type");
@@ -189,6 +192,12 @@ void Runtime::_gcWalk(Value *v) {
 				}
 			break;
 		}
+		case TypeId::ALIAS: {
+			auto value = (AliasValue *)v;
+
+			_gcWalk(*value->_src);
+			break;
+		}
 		case TypeId::I8:
 		case TypeId::I16:
 		case TypeId::I32:
@@ -226,6 +235,8 @@ void Runtime::gc() {
 				_gcWalk(*j.returnValue);
 			if (j.thisObject)
 				_gcWalk(*j.thisObject);
+			if (j.curExcept)
+				_gcWalk(*j.curExcept);
 			for (auto &k : j.argStack)
 				_gcWalk(*k);
 			for (auto &k : j.nextArgStack)
@@ -234,7 +245,11 @@ void Runtime::gc() {
 				_gcWalk(*k);
 			for (auto &k : j.localVars)
 				_gcWalk(*k);
-			// for(auto &k:j.minorFrames) {}
+			for (auto &k : j.minorFrames) {
+				for (auto &l : k.exceptHandlers) {
+					_gcWalk(l.type);
+				}
+			}
 		}
 	}
 
@@ -255,7 +270,7 @@ void Runtime::gc() {
 			if (_createdValues.count(i)) {
 				auto d = i->getMember("delete");
 				if (d && i->getType() == TypeId::OBJECT)
-					d->call(0, nullptr);
+					d->call({});
 			}
 		}
 		destructingThreads.erase(std::this_thread::get_id());
@@ -270,7 +285,7 @@ void Runtime::gc() {
 			if (_createdValues.count(i)) {
 				auto d = i->getMember("delete");
 				if (d && i->getType() == TypeId::OBJECT)
-					d->call(0, nullptr);
+					d->call({});
 			}
 		}
 		destructingThreads.erase(std::this_thread::get_id());

@@ -14,11 +14,15 @@
 #include "value.h"
 
 namespace slake {
+	struct ExceptionHandler final {
+		Type type;
+		uint32_t off;
+	};
+
 	/// @brief Minor frames which are created by ENTER instructions and
 	/// destroyed by LEAVE instructions.
 	struct MinorFrame final {
-		std::deque<uint32_t> exceptHandlers;  // Exception handlers
-		uint32_t exitOff;					  // Offset of instruction to jump when leaving unexpectedly
+		std::deque<ExceptionHandler> exceptHandlers;  // Exception handlers
 		uint32_t stackBase;
 	};
 
@@ -34,6 +38,7 @@ namespace slake {
 		ValueRef<> thisObject;					   // `this' object
 		ValueRef<> returnValue;					   // Return value
 		std::deque<MinorFrame> minorFrames;		   // Minor frames
+		ValueRef<> curExcept;					   // Current exception
 
 		inline ValueRef<> lload(uint32_t off) {
 			if (off >= localVars.size())
@@ -67,6 +72,12 @@ namespace slake {
 				throw StackOverflowError("Stack overflowed");
 			dataStack.resize(n);
 		}
+
+		/// @brief Leave current minor frame.
+		inline void leave() {
+			dataStack.resize(minorFrames.back().stackBase);
+			minorFrames.pop_back();
+		}
 	};
 
 	struct Context final {
@@ -90,11 +101,17 @@ namespace slake {
 		// The runtime is deleting by user.
 		_RT_DELETING = 0x80000000;
 
-	using ModuleLocatorFn = std::function<ValueRef<ModuleValue>(Runtime *rt, RefValue *ref)>;
+	using ModuleLocatorFn = std::function<
+		std::unique_ptr<std::istream>(Runtime *rt, ValueRef<RefValue> ref)>;
 
 	using LoadModuleFlags = uint8_t;
 	constexpr LoadModuleFlags
-		LMOD_NOMODNAME = 0x01;
+		// Do not put the module onto the path where corresponds to the module name.
+		LMOD_NOMODNAME = 0x01,
+		// Return if module that corresponds to the module name exists.
+		LMOD_RETIFEXISTS = 0x02,
+		// Throw an exception if module that corresponds to the module name exists.
+		LMOD_NOCONFLICT = 0x04;
 
 	class Runtime final {
 	private:
@@ -128,7 +145,7 @@ namespace slake {
 		/// @brief Cached generic instances for generic values.
 		mutable GenericCacheDirectory _genericCacheDir;
 
-		inline void invalidateGenericCache(Value* i) {
+		inline void invalidateGenericCache(Value *i) {
 			if (_genericCacheLookupTable.count(i)) {
 				// Remove the value from generic cache if it is unreachable.
 				auto &lookupEntry = _genericCacheLookupTable.at(i);
@@ -136,7 +153,7 @@ namespace slake {
 				auto &table = _genericCacheDir.at(lookupEntry.originalValue);
 				table.erase(lookupEntry.genericArgs);
 
-				if(!table.size())
+				if (!table.size())
 					_genericCacheLookupTable.erase(lookupEntry.originalValue);
 
 				_genericCacheLookupTable.erase(i);
@@ -180,6 +197,8 @@ namespace slake {
 		void _callFn(Context *context, FnValue *fn);
 		VarValue *_addLocalVar(MajorFrame &frame, Type type);
 
+		bool _findAndDispatchExceptHandler(Context* context) const;
+
 		friend class Value;
 		friend class FnValue;
 		friend class ObjectValue;
@@ -210,8 +229,8 @@ namespace slake {
 		/// @return Resolved value which is referred by the reference.
 		Value *resolveRef(ValueRef<RefValue> ref, Value *scopeValue = nullptr) const;
 
-		ValueRef<ModuleValue> loadModule(std::istream &fs);
-		ValueRef<ModuleValue> loadModule(const void *buf, size_t size);
+		ValueRef<ModuleValue> loadModule(std::istream &fs, LoadModuleFlags flags);
+		ValueRef<ModuleValue> loadModule(const void *buf, size_t size, LoadModuleFlags flags);
 
 		inline RootValue *getRootValue() { return _rootValue; }
 
@@ -219,6 +238,7 @@ namespace slake {
 		inline ModuleLocatorFn getModuleLocator() { return _moduleLocator; }
 
 		std::string resolveName(const MemberValue *v) const;
+		std::string resolveName(const RefValue *v) const;
 
 		/// @brief Get active context on specified thread.
 		/// @param id ID of specified thread.

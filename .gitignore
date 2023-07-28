@@ -9,6 +9,12 @@ generated/
 *.slx
 .antlr/
 
+*.zip
+*.tar
+*.gz
+*.xz
+*.7z
+
 # Development artifacts
 .vs/
 .vscode/

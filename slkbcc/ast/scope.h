@@ -16,6 +16,7 @@ namespace slake {
 			unordered_map<string, shared_ptr<Interface>> interfaces;
 			unordered_map<string, shared_ptr<Trait>> traits;
 			unordered_map<string, shared_ptr<Fn>> funcs;
+			unordered_map<string, shared_ptr<Ref>> imports;
 
 			AccessModifier curAccess = 0;
 

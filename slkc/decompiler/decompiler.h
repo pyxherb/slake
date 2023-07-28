@@ -8,6 +8,8 @@
 #include <stdexcept>
 #include <unordered_map>
 
+#include "../compiler/compiler.h"
+
 namespace slake {
 	namespace Decompiler {
 		using namespace std;
@@ -25,8 +27,6 @@ namespace slake {
 
 		void decompile(std::istream &fs, std::ostream &os);
 		void decompileValue(Runtime* rt, Value *value, std::ostream &os, int indentLevel = 0);
-		std::string getTypeName(Runtime *rt, TypeName type);
-		std::string refToString(shared_ptr<RefValue> ref);
 		std::string accessToString(AccessModifier access);
 	}
 }

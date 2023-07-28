@@ -33,6 +33,7 @@ yylloc.step();
 "@"			return parser::make_T_AT(yylloc);
 "."			return parser::make_T_DOT(yylloc);
 "..."		return parser::make_T_VARARG(yylloc);
+"#"			return parser::make_T_SHARP(yylloc);
 
 "+"		return parser::make_OP_ADD(yylloc);
 "<"		return parser::make_OP_LT(yylloc);
@@ -82,7 +83,7 @@ yylloc.step();
 "void"		return parser::make_TN_VOID(yylloc);
 "any"		return parser::make_TN_ANY(yylloc);
 
-"#"					BEGIN(LINE_COMMENT); yylloc.step();
+"//"				BEGIN(LINE_COMMENT); yylloc.step();
 <LINE_COMMENT>\n	BEGIN(INITIAL); yylloc.lines(yyleng); yylloc.step();
 <LINE_COMMENT>.*	yylloc.step();
 

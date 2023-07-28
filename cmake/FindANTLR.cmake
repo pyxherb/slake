@@ -165,7 +165,7 @@ find_package_handle_standard_args(
 
 find_path(
 	ANTLR_INCLUDE_DIRS
-	NAMES antlr4-runtime.h
+	NAMES antlr4-runtime/antlr4-runtime.h
 	REQUIRED)
 find_library(ANTLR_LIBPATH NAMES antlr4-runtime-static antlr4-runtime REQUIRED)
 

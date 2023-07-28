@@ -4,6 +4,7 @@
 #include <atomic>
 #include <stdexcept>
 #include <string>
+#include <deque>
 
 namespace slake {
 	class Runtime;
@@ -167,7 +168,7 @@ namespace slake {
 		/// @param nArgs Number of arguments.
 		/// @param args Pointer to linear-arranged arguments.
 		/// @return Result of the calling.
-		virtual ValueRef<> call(uint8_t nArgs, ValueRef<> *args) const;
+		virtual ValueRef<> call(std::deque<ValueRef<>> args) const;
 
 		/// @brief Dulplicate the value if supported.
 		/// @return Copy of the value.

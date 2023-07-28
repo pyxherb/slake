@@ -15,7 +15,7 @@ Runtime::~Runtime() {
 	for (auto i : _createdValues) {
 		auto d = i->getMember("delete");
 		if (d && i->getType() == TypeId::OBJECT)
-			d->call(0, nullptr);
+			d->call({});
 	}
 	destructingThreads.erase(std::this_thread::get_id());
 
@@ -34,7 +34,7 @@ std::string Runtime::mangleName(
 	std::string s = name;
 
 	for (auto i : params)
-		s += "$" + std::to_string(i, this);
+		s += "#" + std::to_string(i, this);
 
 	for (auto i : genericArgs)
 		s += "?" + std::to_string(i, this);
@@ -53,4 +53,8 @@ std::string Runtime::resolveName(const MemberValue *v) const {
 		s = v->getName() + (s.empty() ? "" : "." + s);
 	} while ((Value *)(v = (const MemberValue *)v->getParent()) != _rootValue);
 	return s;
+}
+
+std::string Runtime::resolveName(const RefValue *v) const {
+	return std::to_string(v);
 }

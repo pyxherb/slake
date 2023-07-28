@@ -5,72 +5,69 @@
 #include <fstream>
 #include <iostream>
 
-slake::ValueRef<> print(slake::Runtime *rt, uint8_t nArgs, slake::ValueRef<> *args) {
+slake::ValueRef<> print(slake::Runtime *rt, std::deque<slake::ValueRef<>> args) {
 	using namespace slake;
 
-	for(uint8_t i=0;i<nArgs;++i) {
-		switch(args[i]->getType().typeId) {
+	for (uint8_t i = 0; i < args.size(); ++i) {
+		switch (args[i]->getType().typeId) {
 			case TypeId::I8:
-				printf("%hhd", ((I8Value*)*args[i])->getData());
+				printf("%hhd", ((I8Value *)*args[i])->getData());
 				break;
 			case TypeId::I16:
-				printf("%hd", ((I16Value*)*args[i])->getData());
+				printf("%hd", ((I16Value *)*args[i])->getData());
 				break;
 			case TypeId::I32:
-				printf("%d", ((I32Value*)*args[i])->getData());
+				printf("%d", ((I32Value *)*args[i])->getData());
 				break;
 			case TypeId::I64:
-				std::cout<<((I64Value*)*args[i])->getData();
+				std::cout << ((I64Value *)*args[i])->getData();
 				break;
 			case TypeId::U8:
-				printf("%hhu", ((U8Value*)*args[i])->getData());
+				printf("%hhu", ((U8Value *)*args[i])->getData());
 				break;
 			case TypeId::U16:
-				printf("%hu", ((U16Value*)*args[i])->getData());
+				printf("%hu", ((U16Value *)*args[i])->getData());
 				break;
 			case TypeId::U32:
-				printf("%u", ((U32Value*)*args[i])->getData());
+				printf("%u", ((U32Value *)*args[i])->getData());
 				break;
 			case TypeId::U64:
-				printf("%llu", ((U64Value*)*args[i])->getData());
+				printf("%lu", ((U64Value *)*args[i])->getData());
 				break;
 			case TypeId::F32:
-				std::cout<<((F32Value*)*args[i])->getData();
+				std::cout << ((F32Value *)*args[i])->getData();
 				break;
 			case TypeId::F64:
-				std::cout<<((F64Value*)*args[i])->getData();
+				std::cout << ((F64Value *)*args[i])->getData();
 				break;
 			case TypeId::BOOL:
-				fputs(((BoolValue*)*args[i])->getData() ? "true" : "false" ,stdout);
+				fputs(((BoolValue *)*args[i])->getData() ? "true" : "false", stdout);
 				break;
 			case TypeId::STRING:
-				fputs(((StringValue*)*args[i])->getData().c_str(), stdout);
+				fputs(((StringValue *)*args[i])->getData().c_str(), stdout);
 				break;
 			default:
-				throw std::runtime_error("In*args[i]alid argument type");
+				throw std::runtime_error("Invalid argument type");
 		}
 	}
 
 	return {};
 }
 
-slake::ValueRef<slake::ModuleValue> fsModuleLocator(slake::Runtime *rt, slake::RefValue *ref) {
+std::unique_ptr<std::istream> fsModuleLocator(slake::Runtime *rt, slake::ValueRef<slake::RefValue> ref) {
 	std::string path;
 	for (size_t i = 0; i < ref->entries.size(); ++i) {
 		path += ref->entries[i].name;
 		if (i + 1 < ref->entries.size())
 			path += "/";
 	}
+	path += ".slx";
 
-	std::ifstream fs;
-	fs.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
-	fs.open(path, std::ios_base::binary);
+	std::unique_ptr<std::ifstream> fs = std::make_unique<std::ifstream>();
+	fs->exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
+	fs->open(path, std::ios_base::binary);
 
-	auto mod = rt->loadModule(fs);
-
-	fs.close();
-
-	return mod;
+	return fs;
 }
 
 void printTraceback(slake::Runtime *rt) {
@@ -95,7 +92,7 @@ int main(int argc, char **argv) {
 		rt->setModuleLocator(fsModuleLocator);
 		slake::stdlib::load(rt.get());
 
-		mod = rt->loadModule(fs);
+		mod = rt->loadModule(fs, slake::LMOD_NOCONFLICT);
 	} catch (std::ios::failure e) {
 		printf("Error loading main module\n");
 		return -1;
@@ -112,7 +109,7 @@ int main(int argc, char **argv) {
 	slake::ValueRef<> result;
 
 	try {
-		mod->getMember("main")->call(0, nullptr);
+		mod->getMember("main")->call({});
 	} catch (slake::NotFoundError e) {
 		printf("NotFoundError: %s, ref = %s\n", e.what(), std::to_string(*e.ref).c_str());
 		printTraceback(rt.get());

@@ -1,6 +1,6 @@
 find_package(ANTLR REQUIRED)
 
-include_directories(${ANTLR_INCLUDE_DIRS})
+include_directories(${ANTLR_INCLUDE_DIRS}/antlr4-runtime)
 
 antlr_target(SlakeLexer SlakeLexer.g4 LEXER)
 antlr_target(SlakeParser SlakeParser.g4 PARSER

@@ -28,7 +28,7 @@ void bcc::compile(std::ostream &fs) {
 
 		memcpy(ih.magic, slxfmt::IMH_MAGIC, sizeof(ih.magic));
 		ih.fmtVer = 0;
-		ih.nImports = 0;
+		ih.nImports = (uint16_t)rootScope->imports.size();
 
 		if (moduleName)
 			ih.flags |= slxfmt::IMH_MODNAME;
@@ -38,6 +38,12 @@ void bcc::compile(std::ostream &fs) {
 
 	if (moduleName)
 		compileRef(fs, moduleName);
+
+	for (auto i : rootScope->imports) {
+		_write(fs, (uint32_t)i.first.size());
+		_write(fs, i.first.data(), i.first.length());
+		compileRef(fs, i.second);
+	}
 
 	compileScope(fs, rootScope);
 }
@@ -147,8 +153,8 @@ void bcc::compileScope(std::ostream &fs, shared_ptr<Scope> scope) {
 				if (k->getOperandType() == OperandType::LABEL) {
 					auto &label = static_pointer_cast<LabelOperand>(k)->data;
 					if (!i.second->labels.count(label))
-						throw parser::syntax_error(k->getLocation(), "Label not defined: `" + label + "'");
-					k = make_shared<I32Operand>(k->getLocation(), i.second->labels.at(label));
+						throw parser::syntax_error(k->getLocation(), "Label was not defined: `" + label + "'");
+					k = make_shared<U32Operand>(k->getLocation(), i.second->labels.at(label));
 				}
 				compileOperand(fs, k);
 			}

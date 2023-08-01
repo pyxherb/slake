@@ -23,7 +23,7 @@ ObjectValue *slake::Runtime::_newClassInstance(ClassValue *cls) {
 					((VarValue *)i.second)->getAccess(),
 					((VarValue *)i.second)->getVarType());
 
-				// Set value of the variable with the initial value
+				// Initialize the variable
 				auto initValue = ((VarValue *)i.second)->getData();
 				if (initValue)
 					var->setData(*initValue);
@@ -33,7 +33,7 @@ ObjectValue *slake::Runtime::_newClassInstance(ClassValue *cls) {
 			}
 			case TypeId::FN: {
 				if (!((FnValue *)i.second)->isStatic())
-					instance->addMember(i.first, (MemberValue *)i.second);
+					instance->addMember(i.first, (MemberValue *)i.second->duplicate());
 				break;
 			}
 		}

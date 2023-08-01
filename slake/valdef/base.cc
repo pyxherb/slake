@@ -23,6 +23,10 @@ ValueRef<> Value::call(std::deque<ValueRef<>> args) const {
 	return nullptr;
 }
 
+ValueRef<> Value::callAsync(std::deque<ValueRef<>> args) const {
+	throw std::logic_error("The value cannot be called asynchronously");
+}
+
 Value *Value::duplicate() const {
 	throw std::logic_error("duplicate method was not implemented by the value class");
 }

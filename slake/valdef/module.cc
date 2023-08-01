@@ -8,9 +8,11 @@ ModuleValue::ModuleValue(Runtime *rt, AccessModifier access)
 }
 
 ModuleValue::~ModuleValue() {
-	if (!refCount && !(_rt->_flags & _RT_DELETING)) {
-		for (auto &i : _members)
+	if ((!refCount) && !(_rt->_flags & _RT_DELETING)) {
+		for (auto &i : _members) {
+			i.second->unbind();
 			i.second->decRefCount();
+		}
 	}
 }
 

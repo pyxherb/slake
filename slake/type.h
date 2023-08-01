@@ -40,12 +40,13 @@ namespace slake {
 
 		ANY,  // Any
 
-		ALIAS, // Alias
+		ALIAS,	// Alias
 
 		REF,		  // Reference
 		GENERIC_ARG,  // Generic argument
 		ROOT,		  // Root value
 		TYPENAME,	  // Type name
+		CONTEXT,	  // Context
 
 		INVALID = 0xff	// Invalid
 	};
@@ -166,7 +167,7 @@ namespace slake {
 				case TypeId::STRUCTOBJ: {
 					auto lhsType = getCustomTypeExData(), rhsType = rhs.getCustomTypeExData();
 					assert(lhsType->getType() != TypeId::REF &&
-						rhsType->getType() != TypeId::REF);
+						   rhsType->getType() != TypeId::REF);
 
 					return *lhsType == *rhsType;
 				}

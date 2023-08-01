@@ -198,6 +198,12 @@ void Runtime::_gcWalk(Value *v) {
 			_gcWalk(*value->_src);
 			break;
 		}
+		case TypeId::CONTEXT: {
+			auto value = (ContextValue *)v;
+
+			_gcWalk(*value->_context);
+			break;
+		}
 		case TypeId::I8:
 		case TypeId::I16:
 		case TypeId::I32:
@@ -217,6 +223,33 @@ void Runtime::_gcWalk(Value *v) {
 	}
 }
 
+void Runtime::_gcWalk(Context& ctxt) {
+	for (auto &j : ctxt.majorFrames) {
+		_gcWalk(const_cast<FnValue *>(*j.curFn));
+		if (j.scopeValue)
+			_gcWalk(*j.scopeValue);
+		if (j.returnValue)
+			_gcWalk(*j.returnValue);
+		if (j.thisObject)
+			_gcWalk(*j.thisObject);
+		if (j.curExcept)
+			_gcWalk(*j.curExcept);
+		for (auto &k : j.argStack)
+			_gcWalk(*k);
+		for (auto &k : j.nextArgStack)
+			_gcWalk(*k);
+		for (auto &k : j.dataStack)
+			_gcWalk(*k);
+		for (auto &k : j.localVars)
+			_gcWalk(*k);
+		for (auto &k : j.minorFrames) {
+			for (auto &l : k.exceptHandlers) {
+				_gcWalk(l.type);
+			}
+		}
+	}
+}
+
 void Runtime::gc() {
 	_flags |= _RT_INGC;
 
@@ -224,34 +257,8 @@ void Runtime::gc() {
 		_gcWalk(_rootValue);
 
 	// Walk contexts for each thread.
-	for (auto &i : activeContexts) {
-		auto &ctxt = i.second;
-		// Walk for each major frames.
-		for (auto &j : ctxt->majorFrames) {
-			_gcWalk(const_cast<FnValue *>(*j.curFn));
-			if (j.scopeValue)
-				_gcWalk(*j.scopeValue);
-			if (j.returnValue)
-				_gcWalk(*j.returnValue);
-			if (j.thisObject)
-				_gcWalk(*j.thisObject);
-			if (j.curExcept)
-				_gcWalk(*j.curExcept);
-			for (auto &k : j.argStack)
-				_gcWalk(*k);
-			for (auto &k : j.nextArgStack)
-				_gcWalk(*k);
-			for (auto &k : j.dataStack)
-				_gcWalk(*k);
-			for (auto &k : j.localVars)
-				_gcWalk(*k);
-			for (auto &k : j.minorFrames) {
-				for (auto &l : k.exceptHandlers) {
-					_gcWalk(l.type);
-				}
-			}
-		}
-	}
+	for (auto &i : activeContexts)
+		_gcWalk(*i.second);
 
 	std::unordered_set<Value *> unreachableValues;
 	unreachableValues.swap(_extraGcTargets);

@@ -5,6 +5,7 @@
 #include "valdef/array.h"
 #include "valdef/base.h"
 #include "valdef/class.h"
+#include "valdef/context.h"
 #include "valdef/fn.h"
 #include "valdef/literal.h"
 #include "valdef/map.h"

@@ -18,7 +18,11 @@ namespace slake {
 			reportSizeToRuntime(sizeof(*this) - sizeof(Value));
 		}
 
-		virtual ~RootValue() = default;
+		virtual inline ~RootValue() {
+			for (auto &i : _members) {
+				i.second->unbind();
+			}
+		}
 		virtual inline Type getType() const override { return TypeId::ROOT; }
 
 		virtual inline MemberValue *getMember(std::string name) override {

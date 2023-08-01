@@ -746,24 +746,6 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 
 			break;
 		}
-		case Opcode::ACALL: {
-			_checkOperandCount(ins, 0, 1);
-
-			ValueRef<> x;
-			if (!ins.getOperandCount())
-				x = curMajorFrame.pop();
-			else
-				x = ins.operands[0];
-
-			ValueRef<> fn = resolveRef((RefValue *)*x, *(curMajorFrame.scopeValue));
-			if ((!fn) || (fn->getType() != TypeId::FN)) {
-				ValueRef<> fn = resolveRef((RefValue *)*x);
-
-				if ((!fn) || (fn->getType() != TypeId::FN))
-					throw NotFoundError("No such method", x);
-			}
-			break;
-		}
 		case Opcode::RET: {
 			_checkOperandCount(ins, 1);
 
@@ -776,6 +758,27 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			context->majorFrames.pop_back();
 			context->majorFrames.back().returnValue = x;
 			++context->majorFrames.back().curIns;
+			break;
+		}
+		case Opcode::ACALL:
+		case Opcode::AMCALL: {
+			_checkOperandCount(ins, 0, 1);
+			break;
+		}
+		case Opcode::YIELD: {
+			_checkOperandCount(ins, 0, 1);
+
+			ValueRef<> x;
+			if (!ins.getOperandCount())
+				x = curMajorFrame.pop();
+			else
+				x = ins.operands[0];
+
+			context->flags |= CTX_YIELDED;
+			curMajorFrame.returnValue = x;
+			break;
+		}
+		case Opcode::AWAIT: {
 			break;
 		}
 		case Opcode::NEW: {
@@ -824,24 +827,22 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 			else
 				x = ins.operands[0];
 
-			std::string traceback;
-			for (auto i = context->majorFrames.rbegin(); i != context->majorFrames.rend(); ++i) {
-				traceback += "\t" + resolveName(*i->curFn) + ":" + std::to_string(i->curIns) + "\n";
-			}
+			auto tmpContext = *context;
 
-			while (context->majorFrames.size()) {
+			while (tmpContext.majorFrames.size()) {
 				// Pass the exception to current level of major frames.
 				// Because curMajorFrame expires once we unwind a major frame,
 				// we use `context->majorFrames.back()` instead.
-				context->majorFrames.back().curExcept = x;
+				tmpContext.majorFrames.back().curExcept = x;
 
-				while (curMajorFrame.minorFrames.size()) {
-					bool found = _findAndDispatchExceptHandler(context);
+				while (tmpContext.majorFrames.back().minorFrames.size()) {
+					bool found = _findAndDispatchExceptHandler(&tmpContext);
 
 					// Leave current minor frame.
-					curMajorFrame.leave();
+					tmpContext.majorFrames.back().leave();
 
 					if (found) {
+						*context = tmpContext;
 						// Do not increase the current instruction offset,
 						// the offset has been set to offset to first instruction
 						// of the exception handler.
@@ -850,13 +851,11 @@ void slake::Runtime::_execIns(Context *context, Instruction &ins) {
 				}
 
 				// Unwind current major frame if no handler was matched.
-				context->majorFrames.pop_back();
+				tmpContext.majorFrames.pop_back();
 			}
 
-			throw UncaughtExceptionError(
-				"Uncaught exception:" + std::to_string(x->getType()) + "\n" +
-				"Traceback:\n" +
-				traceback);
+			curMajorFrame.curExcept = x;
+			throw UncaughtExceptionError("Uncaught exception: " + std::to_string(x->getType(), this));
 		}
 		case Opcode::PUSHXH: {
 			_checkOperandCount(ins, 2);

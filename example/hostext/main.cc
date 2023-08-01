@@ -109,7 +109,16 @@ int main(int argc, char **argv) {
 	slake::ValueRef<> result;
 
 	try {
-		mod->getMember("main")->call({});
+		slake::ValueRef<slake::ContextValue> context = (slake::ContextValue *)*(mod->getMember("main")->call({}));
+		printf("%d\n", ((slake::I32Value *)*context->getResult())->getData());
+		context->resume();
+		printf("%d\n", ((slake::I32Value *)*context->getResult())->getData());
+		context->resume();
+		printf("%d\n", ((slake::I32Value *)*context->getResult())->getData());
+		context->resume();
+		printf("%d\n", ((slake::I32Value *)*context->getResult())->getData());
+		context->resume();
+		printf("%d\n", ((slake::I32Value *)*context->getResult())->getData());
 	} catch (slake::NotFoundError e) {
 		printf("NotFoundError: %s, ref = %s\n", e.what(), std::to_string(*e.ref).c_str());
 		printTraceback(rt.get());
@@ -122,6 +131,6 @@ int main(int argc, char **argv) {
 	result.release();
 	mod.release();
 
-	rt.release();
+	rt.reset();
 	return 0;
 }

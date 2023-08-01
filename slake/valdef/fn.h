@@ -10,6 +10,8 @@
 #include "generic.h"
 
 namespace slake {
+	struct Context;
+
 	struct Instruction final {
 		Opcode opcode = (Opcode)0xff;
 		ValueRef<> operands[3] = {};
@@ -90,6 +92,7 @@ namespace slake {
 		inline const Instruction *getBody() const noexcept { return body; }
 		inline Instruction *getBody() noexcept { return body; }
 
+		ValueRef<> exec(std::shared_ptr<Context> context) const;
 		virtual ValueRef<> call(std::deque<ValueRef<>> args) const override;
 
 		virtual bool isAbstract() const override {

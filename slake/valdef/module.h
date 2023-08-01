@@ -21,7 +21,7 @@ namespace slake {
 
 		virtual Type getType() const override;
 
-		/// @brief Add member into the module.
+		/// @brief Add a member into the module.
 		/// @param name Name of the member.
 		/// @param value Member to be added.
 		virtual void addMember(std::string name, MemberValue *value);
@@ -36,7 +36,7 @@ namespace slake {
 		inline ModuleValue &operator=(const ModuleValue &x) {
 			((MemberValue &)*this) = (MemberValue &)x;
 
-			for (auto i : x._members) {
+			for (const auto &i : x._members) {
 				addMember(i.first, (MemberValue *)i.second->duplicate());
 			}
 

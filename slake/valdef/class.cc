@@ -63,7 +63,7 @@ bool ClassValue::consistsOf(const TraitValue *t) const {
 
 		switch (v->getType().typeId) {
 			case TypeId::VAR: {
-				// Check for variable type.
+				// Check variable type.
 				if (((VarValue *)v)->getVarType() != ((VarValue *)i.second)->getVarType())
 					return false;
 				break;
@@ -71,15 +71,15 @@ bool ClassValue::consistsOf(const TraitValue *t) const {
 			case TypeId::FN: {
 				FnValue *f = (FnValue *)v, *g = (FnValue *)i.second;
 
-				// Check for return type.
+				// Check return type.
 				if (f->returnType != g->returnType)
 					return false;
 
-				// Check for parameter number.
+				// Check parameter number.
 				if (f->paramTypes.size() != g->paramTypes.size())
 					return false;
 
-				// Check for parameter types.
+				// Check parameter types.
 				for (size_t i = 0; i < f->paramTypes.size(); ++i) {
 					if (f->paramTypes[i] != g->paramTypes[i])
 						return false;

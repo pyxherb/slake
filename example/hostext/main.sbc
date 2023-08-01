@@ -17,33 +17,31 @@
 	.end
 .end
 
-.fn i32 main
-	ENTER;
-
-	PUSHXH @main.Exception, #XH1;
-	PUSHXH any, #XHD;
-
+.fn void test
 	PUSHARG "Message";
 	NEW @main.Exception;
 	THROW;
+.end
 
-	LEAVE;
-	JMP #scopeEnd;
+.fn i32 main
+	PUSHARG "Entered main\n";
+	CALL print;
+	YIELD 0;
+	
+	PUSHARG "Yielded for once\n";
+	CALL print;
+	YIELD 1;
+	
+	PUSHARG "Yielded for twice\n";
+	CALL print;
+	YIELD 2;
+	
+	PUSHARG "Yielded for thrice\n";
+	CALL print;
+	YIELD 3;
+	
+	PUSHARG "Returning...\n";
+	CALL print;
 
-	// main.Exception
-	XH1:
-		LEXCEPT;
-		RLOAD msg;
-		LVALUE;
-		PUSHARG;
-		PUSHARG "\n";
-		CALL print;
-		JMP #scopeEnd;
-
-	// ...
-	XHD:
-		ABORT;
-
-scopeEnd:
-	RET null;
+	RET -1;
 .end

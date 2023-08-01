@@ -65,11 +65,14 @@ namespace slake {
 
 		LTHIS,	// Load this
 
-		CALL,	 // Call
-		MCALL,	 // Method Call
+		CALL,	// Call
+		MCALL,	// Method Call
+		RET,	// Return
+
 		ACALL,	 // Asynchronous Call
 		AMCALL,	 // Asynchronous Method Call
-		RET,	 // Return
+		YIELD,	 // Yield
+		AWAIT,	 // Await
 
 		NEW,  // New
 

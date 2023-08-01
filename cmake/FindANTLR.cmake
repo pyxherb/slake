@@ -41,11 +41,11 @@ if(NOT ANTLR_EXECUTABLE)
 endif()
 
 if(NOT ANTLR_EXECUTABLE)
-	find_file(ANTLR_EXECUTABLE
+	find_file(ANTLR_JAR
 			NAMES antlr.jar antlr4.jar antlr-4.jar antlr-4.13.0-complete.jar
 			HINTS /usr/share/java/
 			REQUIRED)
-	set(ANTLR_EXECUTABLE ${Java_JAVA_EXECUTABLE} -jar ${ANTLR_EXECUTABLE})
+	set(ANTLR_EXECUTABLE ${Java_JAVA_EXECUTABLE} -jar ${ANTLR_JAR} CACHE STRING "Command line for ANTLR executable" FORCE)
 endif()
 
 if(ANTLR_EXECUTABLE)
@@ -61,7 +61,7 @@ if(ANTLR_EXECUTABLE)
 		string(REPLACE "Version " "" ANTLR_VERSION ${ANTLR_VERSION})
 	else()
 		message(SEND_ERROR
-				"Command '${Java_JAVA_EXECUTABLE} -jar ${ANTLR_EXECUTABLE}' "
+				"Command '${ANTLR_EXECUTABLE}' "
 				"failed with the output '${ANTLR_COMMAND_ERROR}'")
 	endif()
 
@@ -163,11 +163,46 @@ find_package_handle_standard_args(
 		REQUIRED_VARS ANTLR_EXECUTABLE Java_JAVA_EXECUTABLE
 		VERSION_VAR ANTLR_VERSION)
 
-find_path(
-	ANTLR_INCLUDE_DIRS
-	NAMES antlr4-runtime/antlr4-runtime.h
-	REQUIRED)
-find_library(ANTLR_LIBPATH NAMES antlr4-runtime-static antlr4-runtime REQUIRED)
+set(ANTLR4_RUNTIME_INCLUDE_DIRS_FOUND FALSE)
+set(ANTLR4_RUNTIME_LIBPATH_FOUND FALSE)
+
+foreach(i ${CMAKE_SYSTEM_PREFIX_PATH})
+	if(ANTLR_INCLUDE_DIRS AND ANTLR_LIBPATH)
+		break()
+	endif()
+
+	if (NOT ANTLR_INCLUDE_DIRS)
+		message(CHECK_START "Finding ANTLR include directory: ${i}/LIBANTLR4/include")
+		find_path(
+			ANTLR_INCLUDE_DIRS
+			NAMES antlr4-runtime/antlr4-runtime.h
+			HINTS ${i}/LIBANTLR4/include)
+		
+		if (ANTLR_INCLUDE_DIRS)
+			message(CHECK_PASS "Found ANTLR include directory: ${ANTLR_INCLUDE_DIRS}")
+		endif()
+	endif()
+	
+	if (NOT ANTLR_LIBPATH)
+		message(CHECK_START "Finding ANTLR runtime library: ${i}/LIBANTLR4/lib")
+		find_library(
+			ANTLR_LIBPATH
+			NAMES antlr4-runtime-static antlr4-runtime
+			HINTS ${i}/LIBANTLR4/lib)
+
+		if (ANTLR_LIBPATH)
+			message(CHECK_PASS "Found ANTLR runtime library: ${ANTLR_LIBPATH}")
+		endif()
+	endif()
+endforeach()
+
+if(NOT ANTLR_INCLUDE_DIRS)
+	message(FATAL_ERROR "Antlr4 include directory was not found")
+endif()
+
+if(NOT ANTLR_LIBPATH)
+	message(FATAL_ERROR "Antlr4 runtime library was not found")
+endif()
 
 add_compile_definitions(ANTLR4CPP_STATIC)
 set(ANTLR_LINK_LIBRARIES ${ANTLR_LIBPATH})

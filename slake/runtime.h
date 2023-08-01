@@ -80,8 +80,18 @@ namespace slake {
 		}
 	};
 
+	using ContextFlags = uint8_t;
+	constexpr static ContextFlags
+		// Context execution has done (cannot be resumed).
+		CTX_DONE = 0x01,
+		// The context is asynchronous.
+		CTX_ASYNC = 0x02,
+		// Yielded
+		CTX_YIELDED = 0x04;
+
 	struct Context final {
 		std::deque<MajorFrame> majorFrames;	 // Major frames, aka calling frames
+		ContextFlags flags = 0;				 // Flags
 
 		inline MajorFrame &getCurFrame() {
 			return majorFrames.back();
@@ -182,11 +192,12 @@ namespace slake {
 		/// @param ins Instruction to be executed.
 		///
 		/// @note Opcode-callback map was not introduced because designated initialization
-		/// was not supported in ISO C++17.
+		/// was not introduced into ISO C++17.
 		void _execIns(Context *context, Instruction &ins);
 
 		void _gcWalk(Type &type);
 		void _gcWalk(Value *i);
+		void _gcWalk(Context &i);
 
 		void _instantiateGenericValue(Type &type, const GenericArgList &genericArgs) const;
 		void _instantiateGenericValue(Value *v, const GenericArgList &genericArgs) const;
@@ -197,7 +208,7 @@ namespace slake {
 		void _callFn(Context *context, FnValue *fn);
 		VarValue *_addLocalVar(MajorFrame &frame, Type type);
 
-		bool _findAndDispatchExceptHandler(Context* context) const;
+		bool _findAndDispatchExceptHandler(Context *context) const;
 
 		friend class Value;
 		friend class FnValue;
@@ -252,7 +263,21 @@ namespace slake {
 		std::string mangleName(
 			std::string name,
 			std::deque<Type> params,
-			GenericArgList genericArgs = {});
+			GenericArgList genericArgs,
+			bool isConst);
+
+		inline std::string mangleName(
+			std::string name,
+			std::deque<Type> params,
+			bool isConst) {
+			return mangleName(name, params, {}, isConst);
+		}
+		inline std::string mangleName(
+			std::string name,
+			std::deque<Type> params,
+			GenericArgList genericArgs = {}) {
+			return mangleName(name, params, {}, false);
+		}
 	};
 }
 

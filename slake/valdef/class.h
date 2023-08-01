@@ -20,7 +20,7 @@ namespace slake {
 	class ClassValue : public ModuleValue {
 	private:
 		GenericParamList genericParams;
-		mutable ClassFlags _flags;
+		mutable ClassFlags _flags = 0;
 
 		friend class Runtime;
 		friend bool slake::isConvertible(Type a, Type b);
@@ -100,7 +100,6 @@ namespace slake {
 				default:
 					throw std::logic_error("Unacceptable member type");
 			}
-			value->bind(this, name);
 		}
 
 		virtual inline Type getType() const override { return TypeId::INTERFACE; }

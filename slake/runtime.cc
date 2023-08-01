@@ -30,8 +30,12 @@ Runtime::~Runtime() {
 std::string Runtime::mangleName(
 	std::string name,
 	std::deque<Type> params,
-	GenericArgList genericArgs) {
+	GenericArgList genericArgs,
+	bool isConst) {
 	std::string s = name;
+
+	if (isConst)
+		s += "$const";
 
 	for (auto i : params)
 		s += "#" + std::to_string(i, this);

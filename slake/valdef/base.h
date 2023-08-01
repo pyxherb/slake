@@ -169,9 +169,10 @@ namespace slake {
 		/// @param args Pointer to linear-arranged arguments.
 		/// @return Result of the calling.
 		virtual ValueRef<> call(std::deque<ValueRef<>> args) const;
+		virtual ValueRef<> callAsync(std::deque<ValueRef<>> args) const;
 
 		/// @brief Dulplicate the value if supported.
-		/// @return Copy of the value.
+		/// @return Duplicate of the value.
 		virtual Value *duplicate() const;
 
 		inline void incRefCount() const { ++refCount; }

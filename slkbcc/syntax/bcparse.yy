@@ -7,7 +7,7 @@
 ///
 /// @copyright Copyright (C) 2022 Slake Project
 ///
-/// SPDX-License-Identifier: LGPL-3.0-only
+/// SPDX-License-Identifier: Apache-2.0
 ///
 %require "3.2"
 
@@ -80,7 +80,6 @@ extern std::deque<std::shared_ptr<slake::bcc::Scope>> savedScopes;
 %token D_CLASS ".class"
 %token D_INTERFACE ".interface"
 %token D_TRAIT ".trait"
-%token D_STRUCT ".struct"
 %token D_FN ".fn"
 %token D_FNDECL ".fndecl"
 %token D_END ".end"

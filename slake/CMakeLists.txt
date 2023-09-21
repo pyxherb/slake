@@ -1,5 +1,5 @@
 file(GLOB SRC *.h *.hh *.c *.cc)
-add_library(slake ${SRC} "lib/core.h")
+add_library(slake ${SRC} "valdef/operand.h")
 
 set_property(TARGET slake PROPERTY CXX_STANDARD 17)
 

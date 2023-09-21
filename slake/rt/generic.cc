@@ -64,8 +64,6 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 
 			break;
 		}
-		case TypeId::STRUCT:
-			break;
 		case TypeId::VAR: {
 			VarValue *value = (VarValue *)v;
 
@@ -89,7 +87,7 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 
 			for (size_t i = 0; i < value->nIns; ++i) {
 				auto &ins = value->body[i];
-				for (size_t j = 0; j < ins.nOperands; ++j) {
+				for (size_t j = 0; j < ins.operands.size(); ++j) {
 					auto &operand = ins.operands[j];
 					if (operand && operand->getType() == TypeId::TYPENAME)
 						_instantiateGenericValue(((TypeNameValue *)*operand)->_data, genericArgs);
@@ -116,6 +114,9 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 		case TypeId::F64:
 		case TypeId::BOOL:
 		case TypeId::REF:
+		case TypeId::REG_REF:
+		case TypeId::LVAR_REF:
+		case TypeId::ARG_REF:
 			break;
 		default:
 			throw std::logic_error("Unhandled value type");

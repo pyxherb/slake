@@ -35,7 +35,7 @@ namespace slake {
 
 			return *this;
 		}
-		AliasValue &operator=(const AliasValue &&) = delete;
+		AliasValue &operator=(AliasValue &&) = delete;
 	};
 
 	inline Value *unwrapAlias(Value *value) noexcept {

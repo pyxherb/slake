@@ -3,7 +3,7 @@
 <div align="center">
     <img src="./common/logo2.svg" alt="Slake logo"><br/>
     <big>Powerful object-oriented, type-safe programming language,</big>
-    <big>for embedding into applications.</big>
+    <big>designed for scripting and embedding.</big>
 </div>
 
 ## Introduction
@@ -18,11 +18,11 @@ for embedding into applications.
 ⏸: Paused/Postponed
 ❌: Cancelled
 
-* Bytecode Compiler 🕓
+* Bytecode Compiler ✅
   * Lexer ✅
-  * Parser 🕓
+  * Parser ✅
 
-* Core Compiler 🕓
+* Core Language Compiler 🕓
   * Lexer ✅
   * Parser ✅
   * Compiler 🕓
@@ -30,10 +30,10 @@ for embedding into applications.
 
 * Language Server 🕓
 
-* Core Language 🕓
+* Language Standard 🕓
   * Control Flow ✅
   * Exception ✅
-  * OOP Mechanism 🕓
+  * OOP Mechanism ✅
     * Class ✅
     * Interface ✅
     * Trait ✅
@@ -44,46 +44,46 @@ for embedding into applications.
   * Overloading ✅
 
 * Runtime Library 🕓
-  * Core (core) 🕓
-    * Coroutine (task) 🕓
+  * Core Library (core) 🕓
+    * Coroutine (coroutine) 🕓
     * Exceptions (except) 🕓
     * Reflection (reflect) 🕓
     * Traits (traits) 🕓
-  * Standard (std) 🕓
-    * Operating System
-      * File System (fs) 🕓
-    * Utilities
+  * Standard Library (std) 🕓
+    * I/O (io) 🕓
+      * Stream (stream) 🕓
+    * Mathematic Facilities (math) 🕓
+      * RNG Facilities (rand) 🕓
+    * Utilities (utils) 🕓
       * Concurrency (concurrent) 🕓
+      * File System (fs) 🕓
       * Hashing (hash) 🕓
-      * I/O (io) 🕓
       * Iterator (iterator) 🕓
-      * Mathematic Facilities (math) 🕓
-      * Random Number Generators (rand) 🕓
       * Range (range) 🕓
-      * Ratio (ratio) 🕓
+      * String Manipulating (str) 🕓
 
 * Runtime 🕓
-  * Built-in Compiler ❌
-  * Exception Mechanism 🕓
+  * Built-in Compiler 🕓
+  * Exception Mechanism ✅
   * Type Checker ✅
   * Interpreting ✅
-  * Generic 🕓
+  * Generic ✅
   * Overloading ✅
-  * OOP Mechanism 🕓
+  * OOP Mechanism ✅
     * Class Instantiation ✅
     * Class Inheritance ✅
     * Interface Implementing ✅
     * Trait Compatibility Checker ✅
   * Closure 🕓
-  * Coroutine 🕓
+  * Coroutine ✅
 
 ## Building
 
-To build Slake, you will need:
+To build Slake, you will always need:
 
 * CMake (version > 3.13)
-* Compiler with C++17 support
-* An implementation of C++17 standard library
+* A compiler with C++17 support
+* A C++17 standard library implementation
 
 ### Runtime
 

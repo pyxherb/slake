@@ -1,6 +1,14 @@
 %option noinput nounput noyywrap nounistd never-interactive
 
 %top {
+///
+/// @file bclex.ll
+/// @brief Lexical source file for slkbc
+///
+/// @copyright Copyright (C) 2022 Slake contributors
+///
+/// SPDX-License-Identifier: Apache-2.0
+///
 #include <bcparse.hh>
 
 #define YY_USER_ACTION yylloc.columns(yyleng);
@@ -34,6 +42,8 @@ yylloc.step();
 "."			return parser::make_T_DOT(yylloc);
 "..."		return parser::make_T_VARARG(yylloc);
 "#"			return parser::make_T_SHARP(yylloc);
+"$"			return parser::make_T_DOLLAR(yylloc);
+"%"			return parser::make_T_PERCENT(yylloc);
 
 "+"		return parser::make_OP_ADD(yylloc);
 "<"		return parser::make_OP_LT(yylloc);
@@ -54,7 +64,6 @@ yylloc.step();
 ".class"		return parser::make_D_CLASS(yylloc);
 ".interface"	return parser::make_D_INTERFACE(yylloc);
 ".trait"		return parser::make_D_TRAIT(yylloc);
-".struct"		return parser::make_D_STRUCT(yylloc);
 ".fn"			return parser::make_D_FN(yylloc);
 ".fndecl"		return parser::make_D_FNDECL(yylloc);
 ".end"			return parser::make_D_END(yylloc);
@@ -70,12 +79,10 @@ yylloc.step();
 "i16"		return parser::make_TN_I16(yylloc);
 "i32"		return parser::make_TN_I32(yylloc);
 "i64"		return parser::make_TN_I64(yylloc);
-"isize"		return parser::make_TN_ISIZE(yylloc);
 "u8"		return parser::make_TN_U8(yylloc);
 "u16"		return parser::make_TN_U16(yylloc);
 "u32"		return parser::make_TN_U32(yylloc);
 "u64"		return parser::make_TN_U64(yylloc);
-"usize"		return parser::make_TN_USIZE(yylloc);
 "f32"		return parser::make_TN_F32(yylloc);
 "f64"		return parser::make_TN_F64(yylloc);
 "string"	return parser::make_TN_STRING(yylloc);

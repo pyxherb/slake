@@ -15,5 +15,5 @@ ValueRef<> AliasValue::call(std::deque<ValueRef<>> args) const {
 }
 
 Value *AliasValue::duplicate() const {
-	return (Value *)new AliasValue(_rt, getAccess(),*_src);
+	return (Value *)new AliasValue(_rt, getAccess(), *_src);
 }

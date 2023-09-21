@@ -5,34 +5,8 @@ pub interface TRandomContext<T> {
 }
 
 pub class MT19937RandomContext : @TRandomContext<u32> {
-	u32 _seed, _last;
-	u32 _states = new u32[](624);
-	u16 _i = 0;
+	pub native operator new(u32 seed);
 
-	pub operator new(u32 seed) {
-		for(u16 i = 0; i < 624; ++i) {
-			_states[i] = 0x6c078965 * (_states[i] ^ (_states[i] >> 30)) + i;
-		}
-	}
-
-	pub u32 next() {
-		u32 n;
-		// Retwist
-		if (!_i) {
-			for (u16 i = 0; i < 624; ++i) {
-				n = (_states[i] & 0x800000000) + (_states[i % 624] & 0x7fffffff);
-				_states[i] = (n >> 1) ^ _states[(i + 397) % 624];
-
-				if (n & 1) {
-					_states[i] = _states[i] ^ 0x9908b0df;
-				}
-			}
-		}
-		n = _states[_i];
-		n ^= (n >> 11);
-		n ^= ((n << 7) & 0x9d2c5680);
-		n ^= ((n << 15) & 0xefc60000);
-		n ^= (n >> 18);
-		return n;
-	}
+	pub native u32 next();
+	pub native u32 getSeed();
 }

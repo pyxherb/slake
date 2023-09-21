@@ -51,6 +51,12 @@ namespace slake {
 		virtual ~InvalidArgumentsError() = default;
 	};
 
+	class InvalidRegisterError : public RuntimeExecError {
+	public:
+		inline InvalidRegisterError(std::string msg = "Invalid register") : RuntimeExecError(msg){};
+		virtual ~InvalidRegisterError() = default;
+	};
+
 	class NotFoundError : public RuntimeExecError {
 	public:
 		ValueRef<RefValue> ref;

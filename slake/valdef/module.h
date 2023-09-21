@@ -42,7 +42,7 @@ namespace slake {
 
 			return *this;
 		}
-		ModuleValue &operator=(const ModuleValue &&) = delete;
+		ModuleValue &operator=(ModuleValue &&) = delete;
 	};
 }
 

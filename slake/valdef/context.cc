@@ -16,3 +16,7 @@ ValueRef<> ContextValue::resume() {
 ValueRef<> ContextValue::getResult() {
 	return _context->majorFrames.back().returnValue;
 }
+
+bool ContextValue::isDone() {
+	return _context->flags & CTX_DONE;
+}

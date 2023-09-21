@@ -45,7 +45,7 @@ namespace slake {
 		inline decltype(_members)::const_iterator end() const { return _members.end(); }
 
 		RootValue &operator=(const RootValue &) = delete;
-		RootValue &operator=(const RootValue &&) = delete;
+		RootValue &operator=(RootValue &&) = delete;
 	};
 }
 

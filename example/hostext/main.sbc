@@ -2,46 +2,26 @@
 .access native
 .fndecl void print ...
 
-.class Exception
-	.access pub
-	.var string msg
-
-	.fn void new string
-		LARG 0U;
-		LTHIS;
-		RLOAD msg;
-
-		STORE;
-
-		RET null;
-	.end
-.end
-
-.fn void test
-	PUSHARG "Message";
-	NEW @main.Exception;
-	THROW;
-.end
-
 .fn i32 main
 	PUSHARG "Entered main\n";
-	CALL print;
+
+	LOAD %R0, print;
+	CALL %R0;
 	YIELD 0;
-	
-	PUSHARG "Yielded for once\n";
-	CALL print;
-	YIELD 1;
-	
-	PUSHARG "Yielded for twice\n";
-	CALL print;
-	YIELD 2;
-	
-	PUSHARG "Yielded for thrice\n";
-	CALL print;
-	YIELD 3;
-	
-	PUSHARG "Returning...\n";
-	CALL print;
+
+	LVAR i32;
+	STORE $0u, 0;
+	JMP #loopEnd;
+loopStart:
+	PUSHARG $0u;
+	PUSHARG "\n";
+	LOAD %R0, print;
+	CALL %R0;
+	ADD $0u, $0u, 1;
+
+loopEnd:
+	LT %R0, $0u, 100;
+	JT #loopStart, %R0;
 
 	RET -1;
 .end

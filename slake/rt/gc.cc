@@ -8,7 +8,6 @@ void Runtime::_gcWalk(Type &type) {
 		case TypeId::CLASS:
 		case TypeId::INTERFACE:
 		case TypeId::TRAIT:
-		case TypeId::STRUCT:
 			_gcWalk(*type.getCustomTypeExData());
 			break;
 		case TypeId::ARRAY:
@@ -40,6 +39,9 @@ void Runtime::_gcWalk(Type &type) {
 		case TypeId::GENERIC_ARG:
 		case TypeId::ALIAS:
 		case TypeId::ANY:
+		case TypeId::REG_REF:
+		case TypeId::LVAR_REF:
+		case TypeId::ARG_REF:
 			break;
 		default:
 			throw std::logic_error("Unhandled value type");
@@ -125,8 +127,6 @@ void Runtime::_gcWalk(Value *v) {
 
 			break;
 		}
-		case TypeId::STRUCT:
-			break;
 		case TypeId::VAR: {
 			VarValue *value = (VarValue *)v;
 
@@ -168,7 +168,7 @@ void Runtime::_gcWalk(Value *v) {
 				auto value = (FnValue *)basicFn;
 				for (size_t i = 0; i < value->nIns; ++i) {
 					auto &ins = value->body[i];
-					for (size_t j = 0; j < ins.nOperands; ++j) {
+					for (size_t j = 0; j < ins.operands.size(); ++j) {
 						auto operand = *ins.operands[j];
 						if (operand)
 							_gcWalk(operand);
@@ -216,6 +216,9 @@ void Runtime::_gcWalk(Value *v) {
 		case TypeId::F64:
 		case TypeId::BOOL:
 		case TypeId::STRING:
+		case TypeId::REG_REF:
+		case TypeId::LVAR_REF:
+		case TypeId::ARG_REF:
 			break;
 		default:
 			auto t = v->getType().typeId;
@@ -238,14 +241,15 @@ void Runtime::_gcWalk(Context& ctxt) {
 			_gcWalk(*k);
 		for (auto &k : j.nextArgStack)
 			_gcWalk(*k);
-		for (auto &k : j.dataStack)
-			_gcWalk(*k);
 		for (auto &k : j.localVars)
 			_gcWalk(*k);
 		for (auto &k : j.minorFrames) {
-			for (auto &l : k.exceptHandlers) {
+			for (auto &l : k.exceptHandlers)
 				_gcWalk(l.type);
-			}
+			for (auto &l : k.gpRegs)
+				_gcWalk(*l);
+			for (auto &l : k.tmpRegs)
+				_gcWalk(*l);
 		}
 	}
 }

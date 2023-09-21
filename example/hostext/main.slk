@@ -1,4 +1,4 @@
-module org.pyxherb.main<@a>;
+module main;
 
 class A<T1> {
 	class B<T2> {

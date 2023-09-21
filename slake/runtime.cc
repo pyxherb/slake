@@ -31,7 +31,7 @@ std::string Runtime::mangleName(
 	std::string name,
 	std::deque<Type> params,
 	GenericArgList genericArgs,
-	bool isConst) {
+	bool isConst) const {
 	std::string s = name;
 
 	if (isConst)
@@ -46,7 +46,7 @@ std::string Runtime::mangleName(
 	return s;
 }
 
-std::string Runtime::resolveName(const MemberValue *v) const {
+std::string Runtime::getFullName(const MemberValue *v) const {
 	std::string s;
 	do {
 		switch (v->getType().typeId) {
@@ -59,6 +59,6 @@ std::string Runtime::resolveName(const MemberValue *v) const {
 	return s;
 }
 
-std::string Runtime::resolveName(const RefValue *v) const {
+std::string Runtime::getFullName(const RefValue *v) const {
 	return std::to_string(v);
 }

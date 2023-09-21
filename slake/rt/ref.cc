@@ -23,7 +23,6 @@ Value *Runtime::resolveRef(ValueRef<RefValue> ref, Value *scopeValue) const {
 				switch (value->getType().typeId) {
 					case TypeId::MOD:
 					case TypeId::CLASS:
-					case TypeId::STRUCT:
 						scopeValue = (MemberValue *)value->getParent();
 						break;
 					case TypeId::OBJECT:
@@ -51,7 +50,6 @@ Value *Runtime::resolveRef(ValueRef<RefValue> ref, Value *scopeValue) const {
 		switch (value->getType().typeId) {
 			case TypeId::MOD:
 			case TypeId::CLASS:
-			case TypeId::STRUCT:
 				if(!value->getParent())
 					return nullptr;
 				scopeValue = (MemberValue *)value->getParent();

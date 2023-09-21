@@ -13,15 +13,8 @@ namespace slake {
 	struct Context;
 
 	struct Instruction final {
-		Opcode opcode = (Opcode)0xff;
-		ValueRef<> operands[3] = {};
-		uint8_t nOperands = 0;
-
-		inline uint8_t getOperandCount() {
-			return nOperands;
-		}
-		inline ~Instruction() {
-		}
+		Opcode opcode = (Opcode)0xffff;
+		std::deque<ValueRef<>> operands;
 	};
 
 	class BasicFnValue : public MemberValue {
@@ -64,7 +57,7 @@ namespace slake {
 
 			return *this;
 		}
-		BasicFnValue &operator=(const BasicFnValue &&) = delete;
+		BasicFnValue &operator=(BasicFnValue &&) = delete;
 	};
 
 	class FnValue : public BasicFnValue {
@@ -120,7 +113,7 @@ namespace slake {
 					auto ins = x.body[i];
 
 					// Copy each operand.
-					for (size_t j = 0; j < ins.nOperands; ++j) {
+					for (size_t j = 0; j < ins.operands.size(); ++j) {
 						auto &operand = ins.operands[j];
 						if (operand)
 							operand = operand->duplicate();
@@ -134,7 +127,7 @@ namespace slake {
 
 			return *this;
 		}
-		FnValue &operator=(const FnValue &&) = delete;
+		FnValue &operator=(FnValue &&) = delete;
 	};
 
 	using NativeFnCallback = std::function<ValueRef<>(Runtime *rt, std::deque<ValueRef<>> args)>;
@@ -163,7 +156,7 @@ namespace slake {
 			body = x.body;
 			return *this;
 		}
-		NativeFnValue &operator=(const NativeFnValue &&) = delete;
+		NativeFnValue &operator=(NativeFnValue &&) = delete;
 	};
 }
 

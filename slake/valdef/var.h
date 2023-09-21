@@ -8,7 +8,7 @@
 namespace slake {
 	class VarValue final : public MemberValue {
 	protected:
-		ValueRef<slake::Value, false> value;
+		mutable ValueRef<slake::Value, false> value;
 		Type type = TypeId::ANY;
 
 		friend class Runtime;
@@ -32,7 +32,7 @@ namespace slake {
 			return value ? value->getMember(name) : nullptr;
 		}
 
-		ValueRef<> getData() { return value; }
+		ValueRef<> getData() const { return value; }
 		void setData(Value *value) {
 			if (value && !isCompatible(type, value->getType()))
 				throw MismatchedTypeError("Mismatched types");
@@ -46,7 +46,7 @@ namespace slake {
 			type = x.type;
 			return *this;
 		}
-		VarValue &operator=(const VarValue &&) = delete;
+		VarValue &operator=(VarValue &&) = delete;
 	};
 }
 

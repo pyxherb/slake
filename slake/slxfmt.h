@@ -14,6 +14,7 @@
 #include <cstdint>
 
 #include "opcode.h"
+#include "reg.h"
 
 #ifdef _MSC_VER
 	#pragma pack(push)
@@ -74,6 +75,9 @@ namespace slake {
 			REF,		  // Reference
 			TYPENAME,	  // Type name
 			GENERIC_ARG,  // Generic argument
+			REG,		  // Register
+			LVAR,		  // Local variable
+			ARG,		  // Argument
 		};
 
 		/// @brief Value Descriptor (VD)
@@ -120,21 +124,6 @@ namespace slake {
 
 		constexpr static uint8_t
 			TTD_PUB = 0x01	// Public
-			;
-
-		/// @brief Structure Type Descriptor (STD)
-		struct StructTypeDesc final {
-			uint8_t flags;		// Flags
-			uint8_t lenName;	// Length of name
-			uint32_t nMembers;	// Number of members
-		};
-		struct StructMemberDesc final {
-			Type type : 5;		  // Data Type
-			uint8_t flags : 3;	  // Flags
-			uint8_t lenName : 8;  // Name length
-		};
-		constexpr static uint8_t
-			STD_PUB = 0x01	// Public
 			;
 
 		/// @brief Function Descriptor (FND)
@@ -216,6 +205,10 @@ namespace slake {
 			uint8_t nIns : 8;
 			uint32_t line : 24;
 			uint8_t nLine : 8;
+		};
+
+		struct RegDesc final {
+			RegId reg;
 		};
 	}
 }

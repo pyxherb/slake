@@ -23,6 +23,7 @@ namespace slake {
 
 		ValueRef<> resume();
 		ValueRef<> getResult();
+		bool isDone();
 
 		inline ContextValue &operator=(const ContextValue &x) {
 			((Value &)*this) = (Value &)x;

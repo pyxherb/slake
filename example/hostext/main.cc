@@ -11,28 +11,28 @@ slake::ValueRef<> print(slake::Runtime *rt, std::deque<slake::ValueRef<>> args) 
 	for (uint8_t i = 0; i < args.size(); ++i) {
 		switch (args[i]->getType().typeId) {
 			case TypeId::I8:
-				printf("%hhd", ((I8Value *)*args[i])->getData());
+				std::cout << ((I8Value *)*args[i])->getData();
 				break;
 			case TypeId::I16:
-				printf("%hd", ((I16Value *)*args[i])->getData());
+				std::cout << ((I16Value *)*args[i])->getData();
 				break;
 			case TypeId::I32:
-				printf("%d", ((I32Value *)*args[i])->getData());
+				std::cout << ((I32Value *)*args[i])->getData();
 				break;
 			case TypeId::I64:
 				std::cout << ((I64Value *)*args[i])->getData();
 				break;
 			case TypeId::U8:
-				printf("%hhu", ((U8Value *)*args[i])->getData());
+				std::cout << ((U8Value *)*args[i])->getData();
 				break;
 			case TypeId::U16:
-				printf("%hu", ((U16Value *)*args[i])->getData());
+				std::cout << ((U16Value *)*args[i])->getData();
 				break;
 			case TypeId::U32:
-				printf("%u", ((U32Value *)*args[i])->getData());
+				std::cout << ((U32Value *)*args[i])->getData();
 				break;
 			case TypeId::U64:
-				printf("%lu", ((U64Value *)*args[i])->getData());
+				std::cout << ((U64Value *)*args[i])->getData();
 				break;
 			case TypeId::F32:
 				std::cout << ((F32Value *)*args[i])->getData();
@@ -74,7 +74,7 @@ void printTraceback(slake::Runtime *rt) {
 	auto ctxt = rt->activeContexts.at(std::this_thread::get_id());
 	printf("Traceback:\n");
 	for (auto i = ctxt->majorFrames.rbegin(); i != ctxt->majorFrames.rend(); ++i) {
-		printf("\t%s: 0x%08x\n", rt->resolveName(*(i->curFn)).c_str(), i->curIns);
+		printf("\t%s: 0x%08x\n", rt->getFullName(*(i->curFn)).c_str(), i->curIns);
 	}
 }
 
@@ -111,14 +111,10 @@ int main(int argc, char **argv) {
 	try {
 		slake::ValueRef<slake::ContextValue> context = (slake::ContextValue *)*(mod->getMember("main")->call({}));
 		printf("%d\n", ((slake::I32Value *)*context->getResult())->getData());
-		context->resume();
-		printf("%d\n", ((slake::I32Value *)*context->getResult())->getData());
-		context->resume();
-		printf("%d\n", ((slake::I32Value *)*context->getResult())->getData());
-		context->resume();
-		printf("%d\n", ((slake::I32Value *)*context->getResult())->getData());
-		context->resume();
-		printf("%d\n", ((slake::I32Value *)*context->getResult())->getData());
+		while (!context->isDone()) {
+			context->resume();
+			printf("%d\n", ((slake::I32Value *)*context->getResult())->getData());
+		}
 	} catch (slake::NotFoundError e) {
 		printf("NotFoundError: %s, ref = %s\n", e.what(), std::to_string(*e.ref).c_str());
 		printTraceback(rt.get());

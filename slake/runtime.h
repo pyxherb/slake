@@ -23,7 +23,17 @@ namespace slake {
 	/// destroyed by LEAVE instructions.
 	struct MinorFrame final {
 		std::deque<ExceptionHandler> exceptHandlers;  // Exception handlers
-		uint32_t stackBase;
+
+		ValueRef<VarValue> tmpRegs[1];	// Temporary registers
+		ValueRef<VarValue> gpRegs[2];	// General-purposed registers
+
+		inline MinorFrame(Runtime *rt) {
+			for (size_t i = 0; i < std::size(tmpRegs); ++i)
+				tmpRegs[i] = new VarValue(rt, ACCESS_PUB, Type(TypeId::ANY));
+
+			for (size_t i = 0; i < std::size(gpRegs); ++i)
+				gpRegs[i] = new VarValue(rt, ACCESS_PUB, Type(TypeId::ANY));
+		}
 	};
 
 	/// @brief Major frames which represent a single calling frame.
@@ -31,14 +41,17 @@ namespace slake {
 		ValueRef<> scopeValue;					   // Scope value.
 		ValueRef<const FnValue> curFn;			   // Current function
 		uint32_t curIns = 0;					   // Offset of current instruction in function body
-		std::deque<ValueRef<>> argStack;		   // Argument stack
+		std::deque<ValueRef<VarValue>> argStack;   // Argument stack
 		std::deque<ValueRef<>> nextArgStack;	   // Next Argument stack
-		std::deque<ValueRef<>> dataStack;		   // Data stack
 		std::deque<ValueRef<VarValue>> localVars;  // Local variables
 		ValueRef<> thisObject;					   // `this' object
 		ValueRef<> returnValue;					   // Return value
 		std::deque<MinorFrame> minorFrames;		   // Minor frames
 		ValueRef<> curExcept;					   // Current exception
+
+		inline MajorFrame(Runtime* rt) {
+			minorFrames.push_back(MinorFrame(rt));
+		}
 
 		inline ValueRef<> lload(uint32_t off) {
 			if (off >= localVars.size())
@@ -47,35 +60,8 @@ namespace slake {
 			return localVars.at(off);
 		}
 
-		inline void push(ValueRef<> v) {
-			if (dataStack.size() > SLAKE_STACK_MAX)
-				throw StackOverflowError("Stack overflowed");
-			dataStack.push_back(*v);
-		}
-
-		inline ValueRef<> pop() {
-			if (!dataStack.size())
-				throw FrameBoundaryExceededError("Frame bottom exceeded");
-			ValueRef<> v = dataStack.back();
-			dataStack.pop_back();
-			return v;
-		}
-
-		inline void expand(uint32_t n) {
-			if ((n += (uint32_t)dataStack.size()) > SLAKE_STACK_MAX)
-				throw StackOverflowError("Stack overflowed");
-			dataStack.resize(n);
-		}
-
-		inline void shrink(uint32_t n) {
-			if (n > ((uint32_t)dataStack.size()))
-				throw StackOverflowError("Stack overflowed");
-			dataStack.resize(n);
-		}
-
 		/// @brief Leave current minor frame.
 		inline void leave() {
-			dataStack.resize(minorFrames.back().stackBase);
 			minorFrames.pop_back();
 		}
 	};
@@ -84,10 +70,8 @@ namespace slake {
 	constexpr static ContextFlags
 		// Context execution has done (cannot be resumed).
 		CTX_DONE = 0x01,
-		// The context is asynchronous.
-		CTX_ASYNC = 0x02,
 		// Yielded
-		CTX_YIELDED = 0x04;
+		CTX_YIELDED = 0x02;
 
 	struct Context final {
 		std::deque<MajorFrame> majorFrames;	 // Major frames, aka calling frames
@@ -104,11 +88,11 @@ namespace slake {
 		RT_NOJIT = 0x0000001,
 		// Enable Debugging, set for module debugging.
 		RT_DEBUG = 0x0000002,
-		// GC Debugging, do not set unless you want to debug the garbage collector.
+		// Enable GC Debugging, do not set unless you want to debug the garbage collector.
 		RT_GCDBG = 0x0000004,
 		// The runtime is in a GC cycle.
 		_RT_INGC = 0x40000000,
-		// The runtime is deleting by user.
+		// The runtime is destructing.
 		_RT_DELETING = 0x80000000;
 
 	using ModuleLocatorFn = std::function<
@@ -152,7 +136,7 @@ namespace slake {
 			const Value *,	// Original generic value.
 			GenericCacheTable>;
 
-		/// @brief Cached generic instances for generic values.
+		/// @brief Cached instances of generic values.
 		mutable GenericCacheDirectory _genericCacheDir;
 
 		inline void invalidateGenericCache(Value *i) {
@@ -193,7 +177,7 @@ namespace slake {
 		///
 		/// @note Opcode-callback map was not introduced because designated initialization
 		/// was not introduced into ISO C++17.
-		void _execIns(Context *context, Instruction &ins);
+		void _execIns(Context *context, Instruction ins);
 
 		void _gcWalk(Type &type);
 		void _gcWalk(Value *i);
@@ -217,6 +201,11 @@ namespace slake {
 		friend class ModuleValue;
 		friend class ValueRef<ObjectValue>;
 
+		void _dumpClass(ValueRef<ClassValue> cls, std::iostream &os) const;
+		void _dumpInterface(ValueRef<InterfaceValue> cls, std::iostream &os) const;
+		void _dumpFn(ValueRef<FnValue> cls, std::iostream &os) const;
+		void _dumpModule(ValueRef<ModuleValue> module, std::iostream &os) const;
+
 	public:
 		/// @brief Active context on threads.
 		std::map<std::thread::id, std::shared_ptr<Context>> activeContexts;
@@ -232,6 +221,10 @@ namespace slake {
 		Runtime(RuntimeFlags flags = 0);
 		virtual ~Runtime();
 
+		/// @brief Instantiate an generic value (e.g. generic class, etc).
+		/// @param v Value to be instantiated.
+		/// @param genericArgs Generic arguments for instantiation.
+		/// @return Instantiated value.
 		Value *instantiateGenericValue(const Value *v, const std::deque<Type> &genericArgs) const;
 
 		/// @brief Resolve a reference to referred value.
@@ -248,8 +241,8 @@ namespace slake {
 		inline void setModuleLocator(ModuleLocatorFn locator) { _moduleLocator = locator; }
 		inline ModuleLocatorFn getModuleLocator() { return _moduleLocator; }
 
-		std::string resolveName(const MemberValue *v) const;
-		std::string resolveName(const RefValue *v) const;
+		std::string getFullName(const MemberValue *v) const;
+		std::string getFullName(const RefValue *v) const;
 
 		/// @brief Get active context on specified thread.
 		/// @param id ID of specified thread.
@@ -258,24 +251,25 @@ namespace slake {
 			return activeContexts.at(id);
 		}
 
+		/// @brief Do a GC cycle.
 		void gc();
 
 		std::string mangleName(
 			std::string name,
 			std::deque<Type> params,
 			GenericArgList genericArgs,
-			bool isConst);
+			bool isConst) const;
 
 		inline std::string mangleName(
 			std::string name,
 			std::deque<Type> params,
-			bool isConst) {
+			bool isConst) const {
 			return mangleName(name, params, {}, isConst);
 		}
 		inline std::string mangleName(
 			std::string name,
 			std::deque<Type> params,
-			GenericArgList genericArgs = {}) {
+			GenericArgList genericArgs = {}) const {
 			return mangleName(name, params, {}, false);
 		}
 	};

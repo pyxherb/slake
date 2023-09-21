@@ -1,3 +1,4 @@
+[BITS 64]
 global _slake_stdlib_sinf_fast
 _slake_stdlib_sinf_fast:
 	endbr64

@@ -36,7 +36,7 @@ namespace slake {
 		}
 
 		LiteralValue &operator=(const LiteralValue &) = delete;
-		LiteralValue &operator=(const LiteralValue &&) = delete;
+		LiteralValue &operator=(LiteralValue &&) = delete;
 	};
 
 
@@ -52,6 +52,9 @@ namespace slake {
 	using F64Value = LiteralValue<double, TypeId::F64>;
 	using BoolValue = LiteralValue<bool, TypeId::BOOL>;
 	using StringValue = LiteralValue<std::string, TypeId::STRING>;
+	using WStringValue = LiteralValue<std::u32string, TypeId::WSTRING>;
+	using CharValue = LiteralValue<uint8_t, TypeId::CHAR>;
+	using WCharValue = LiteralValue<char32_t, TypeId::WCHAR>;
 	using TypeNameValue = LiteralValue<Type, TypeId::TYPENAME>;
 }
 

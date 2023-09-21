@@ -20,7 +20,7 @@ namespace slake {
 	public:
 		AccessModified() = delete;
 		AccessModified(const AccessModified &) = delete;
-		AccessModified(const AccessModified &&) = delete;
+		AccessModified(AccessModified &&) = delete;
 
 		inline AccessModified(AccessModifier modifier = 0) : _modifier(modifier) {}
 		virtual ~AccessModified() = default;

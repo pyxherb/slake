@@ -1,11 +1,8 @@
 ///
 /// @file bccparse.yy
-/// @author Pyxherb (codesbuilder@163.com)
-/// @brief Parser for Slake bytecode assembly
-/// @version 0.1
-/// @date 2022-11-21
+/// @brief Parser grammar file for slkbc.
 ///
-/// @copyright Copyright (C) 2022 Slake Project
+/// @copyright Copyright (C) 2022 Slake contributors
 ///
 /// SPDX-License-Identifier: Apache-2.0
 ///
@@ -95,12 +92,10 @@ extern std::deque<std::shared_ptr<slake::bcc::Scope>> savedScopes;
 %token TN_I16 "i16"
 %token TN_I32 "i32"
 %token TN_I64 "i64"
-%token TN_ISIZE "isize"
 %token TN_U8 "u8"
 %token TN_U16 "u16"
 %token TN_U32 "u32"
 %token TN_U64 "u64"
-%token TN_USIZE "usize"
 %token TN_F32 "f32"
 %token TN_F64 "f64"
 %token TN_STRING "string"
@@ -124,6 +119,8 @@ extern std::deque<std::shared_ptr<slake::bcc::Scope>> savedScopes;
 %token T_SEMICOLON ";"
 %token T_DOT "."
 %token T_SHARP "#"
+%token T_DOLLAR "$"
+%token T_PERCENT "%"
 
 %type <shared_ptr<Operand>> Literal Operand
 %type <shared_ptr<ArrayOperand>> Array
@@ -390,6 +387,9 @@ Operand:
 Ref { $$ = make_shared<RefOperand>(@1, $1); }
 | Literal { $$ = $1; }
 | "#" T_ID { $$ = make_shared<LabelOperand>(@1, $2); }
+| "$" L_U32 { $$ = make_shared<LocalVarOperand>(@1, $2); }
+| "%" T_ID { $$ = make_shared<RegOperand>(@1, $2); }
+| "[" L_U32 "]" { $$ = make_shared<ArgOperand>(@1, $2); }
 | Array { $$ = $1; }
 | Map { $$ = $1; }
 | TypeName { $$ = make_shared<TypeNameOperand>(@1, $1); }
@@ -536,12 +536,10 @@ LiteralTypeName:
 |"i16" { $$ = make_shared<TypeName>(@1, TYPE_I16); }
 |"i32" { $$ = make_shared<TypeName>(@1, TYPE_I32); }
 |"i64" { $$ = make_shared<TypeName>(@1, TYPE_I64); }
-|"isize" { $$ = make_shared<TypeName>(@1, TYPE_ISIZE); }
 |"u8" { $$ = make_shared<TypeName>(@1, TYPE_U8); }
 |"u16" { $$ = make_shared<TypeName>(@1, TYPE_U16); }
 |"u32" { $$ = make_shared<TypeName>(@1, TYPE_U32); }
 |"u64" { $$ = make_shared<TypeName>(@1, TYPE_U64); }
-|"usize" { $$ = make_shared<TypeName>(@1, TYPE_USIZE); }
 |"f32" { $$ = make_shared<TypeName>(@1, TYPE_F32); }
 |"f64" { $$ = make_shared<TypeName>(@1, TYPE_F64); }
 |"string" { $$ = make_shared<TypeName>(@1, TYPE_STRING); }

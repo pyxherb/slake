@@ -1,16 +1,46 @@
 module std.core.reflect;
 
+pub native class ExceptionHandler {
+	Type type;
+	u32 off;
+}
+
+pub native class MinorFrame {
+	@ExceptionHandler[] exceptionHandlers;
+	u32 base;
+}
+
+pub native class MajorFrame {
+	any scopeValue;
+	any curFn;
+	u32 curIns;
+	any[] argStack;
+	any[] nextArgStack;
+	any[] dataStack;
+	any[] localVars;
+	any thisReg;
+	any returnValue;
+	any curException;
+	@MinorFrame[] minorFrames;
+}
+
+pub native class Context {
+	pub native @MajorFrame[] majorFrames;
+
+	bool native isAsync();
+}
+
 pub native class RefEntry {
 	pub string name;
-	pub Type[] genericArgs;
+	pub @Type[] genericArgs;
 }
 
 pub native class Ref {
-	RefEntry entries[];
+	@RefEntry entries[];
 }
 
 pub native class Module {
-	Ref[] name;
+	@Ref[] name;
 }
 
 pub native class Type {
@@ -93,9 +123,8 @@ pub native class Fn {
 	/// @brief Parameter types.
 	pub const @Type[] paramTypes;
 
-	/// @brief Whether the function is implemented or not.
-	pub const bool isImplemented;
-
 	pub native any call(any[] args);
-	pub native any callInstantiated(any& thisObject, any[] args);
+	pub native any callInstantiated(any thisObject, any[] args);
+
+	pub native bool isNative();
 }

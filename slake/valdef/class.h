@@ -73,7 +73,7 @@ namespace slake {
 
 			return *this;
 		}
-		ClassValue &operator=(const ClassValue &&) = delete;
+		ClassValue &operator=(ClassValue &&) = delete;
 	};
 
 	class InterfaceValue : public ModuleValue {
@@ -118,7 +118,7 @@ namespace slake {
 
 			return *this;
 		}
-		InterfaceValue &operator=(const InterfaceValue &&) = delete;
+		InterfaceValue &operator=(InterfaceValue &&) = delete;
 	};
 
 	class TraitValue : public InterfaceValue {
@@ -141,7 +141,7 @@ namespace slake {
 			((InterfaceValue &)*this) = (InterfaceValue &)x;
 			return *this;
 		}
-		TraitValue &operator=(const TraitValue &&) = delete;
+		TraitValue &operator=(TraitValue &&) = delete;
 	};
 }
 

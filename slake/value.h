@@ -14,7 +14,7 @@
 #include "valdef/object.h"
 #include "valdef/ref.h"
 #include "valdef/root.h"
-#include "valdef/struct.h"
 #include "valdef/var.h"
+#include "valdef/operand.h"
 
 #endif

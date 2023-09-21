@@ -71,12 +71,12 @@ ValueRef<> FnValue::call(std::deque<ValueRef<>> args) const {
 	std::shared_ptr<Context> context = std::make_shared<Context>();
 
 	{
-		auto frame = MajorFrame();
+		auto frame = MajorFrame(_rt);
 		frame.curFn = this;	 // The garbage collector does not check if curFn is nullptr.
 		frame.curIns = UINT32_MAX - 1;
 		context->majorFrames.push_back(frame);
 
-		frame = MajorFrame();
+		frame = MajorFrame(_rt);
 		frame.curFn = this;
 		frame.curIns = 0;
 		frame.scopeValue = _parent;

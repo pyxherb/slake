@@ -1,0 +1,32 @@
+///
+/// @description
+/// Task module for Slake Standard Library.
+///
+/// @author Slake Project
+///
+module std.core.task;
+
+use {
+	reflect = base.reflect
+}
+use Context = reflect.Context;
+
+pub native enum State : u8 {
+	DEAD = -1,
+	ALIVE,
+	DONE
+}
+
+pub native class Coroutine {
+	pub const @State state;
+
+	pub native operator new(any fn, ...);
+	pub native operator delete();
+
+	pub native any resume();
+	pub native void kill();
+
+	pub native operator bool() const;
+
+	pub native const @Context getContext();
+}

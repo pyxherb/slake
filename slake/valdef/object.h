@@ -78,7 +78,7 @@ namespace slake {
 
 			return *this;
 		}
-		ObjectValue &operator=(const ObjectValue &&) = delete;
+		ObjectValue &operator=(ObjectValue &&) = delete;
 	};
 }
 

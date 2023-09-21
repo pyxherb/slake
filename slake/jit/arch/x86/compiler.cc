@@ -78,10 +78,10 @@ uint8_t genIns(
 		*(uint8_t *)(dest++) = opcode & 0xff00;
 	*(uint8_t *)(dest++) = opcode & 0xff;
 
-	*(uint8_t *)(dest++) = modRm;	// Mod R/M
+	*(uint8_t *)(dest++) = modRm;  // Mod R/M
 
 	if ((modRm & 0b111) == 0b100)
-		*(uint8_t *)(dest++) = sib;  // SIB
+		*(uint8_t *)(dest++) = sib;	 // SIB
 
 	// Displacement
 	if ((modRm >> 6) == MOD_DISP8)
@@ -98,12 +98,22 @@ uint8_t genIns(
 }
 
 uint8_t enterIns[] = {
+	0x53,  // push ebx
+	0x51,  // push ecx
+	0x56,  // push esi
+	0x57,  // push edi
+
 	0x55,		// push ebp
 	0x89, 0xe5	// mov ebp, esp
 };
 uint8_t leaveIns[] = {
 	0x89, 0xec,	 // mov esp, ebp
 	0x5d,		 // pop ebp
+
+	0x5f,		 // pop edi
+	0x5e,		 // pop esi
+	0x59,		 // pop ecx
+	0x5b,		 // pop ebx
 	0xc3		 // ret
 };
 

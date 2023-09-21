@@ -33,7 +33,7 @@ namespace slake {
 
 			return *this;
 		}
-		RefValue &operator=(const RefValue &&) = delete;
+		RefValue &operator=(RefValue &&) = delete;
 	};
 }
 

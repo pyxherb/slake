@@ -4,7 +4,7 @@
 
 using namespace slake;
 
-Type::Type(RefValue *ref) : typeId(TypeId::OBJECT) {
+Type::Type(RefValue *ref, TypeFlags flags) : typeId(TypeId::OBJECT), flags(flags) {
 	exData = ValueRef<Value, false>((Value *)ref);
 }
 
@@ -26,9 +26,7 @@ bool Type::isLoadingDeferred() const noexcept {
 		case TypeId::CLASS:
 		case TypeId::INTERFACE:
 		case TypeId::TRAIT:
-		case TypeId::STRUCT:
 		case TypeId::OBJECT:
-		case TypeId::STRUCTOBJ:
 			return getCustomTypeExData()->getType() == TypeId::REF;
 		default:
 			return false;
@@ -110,7 +108,7 @@ bool slake::isConvertible(Type src, Type dest) {
 					switch (dest.getCustomTypeExData()->getType().typeId) {
 						case TypeId::CLASS: {
 							auto destType = (ClassValue *)*dest.getCustomTypeExData();
-							return srcType->getMember("operator@" + srcType->getRuntime()->resolveName(destType)) ? true : false;
+							return srcType->getMember("operator@" + srcType->getRuntime()->getFullName(destType)) ? true : false;
 						}
 						case TypeId::INTERFACE: {
 							auto destType = (InterfaceValue *)*dest.getCustomTypeExData();
@@ -124,10 +122,6 @@ bool slake::isConvertible(Type src, Type dest) {
 								return true;
 							return false;
 						}
-						case TypeId::STRUCT: {
-							auto destType = (StructValue *)*dest.getCustomTypeExData();
-							return srcType->getMember("operator@" + srcType->getRuntime()->resolveName(destType)) ? true : false;
-						}
 						default:
 							return false;
 					}
@@ -136,11 +130,6 @@ bool slake::isConvertible(Type src, Type dest) {
 					return false;
 			}
 		}
-		case TypeId::STRUCTOBJ:
-			if (dest.typeId != TypeId::STRUCT ||
-				dest.getCustomTypeExData() != src.getCustomTypeExData())
-				return false;
-			return true;
 		case TypeId::ANY:
 		case TypeId::NONE:
 			return true;
@@ -208,16 +197,6 @@ bool slake::isCompatible(Type a, Type b) {
 					return false;
 			}
 		}
-		case TypeId::STRUCTOBJ: {
-			switch (b.typeId) {
-				case TypeId::STRUCTOBJ:
-					return a.getCustomTypeExData() == b.getCustomTypeExData();
-				case TypeId::NONE:
-					return true;
-				default:
-					return false;
-			}
-		}
 		case TypeId::FN: {
 			switch (b.typeId) {
 				case TypeId::FN: {
@@ -237,7 +216,7 @@ bool slake::isCompatible(Type a, Type b) {
 	}
 }
 
-std::string std::to_string(const slake::Type &&type, slake::Runtime *rt) {
+std::string std::to_string(const slake::Type &&type, const slake::Runtime *rt) {
 	switch (type.typeId) {
 		case TypeId::I8:
 			return "i8";
@@ -268,7 +247,7 @@ std::string std::to_string(const slake::Type &&type, slake::Runtime *rt) {
 		case TypeId::OBJECT: {
 			if (type.isLoadingDeferred())
 				return std::to_string((RefValue *)*type.getCustomTypeExData());
-			return rt->resolveName((MemberValue *)*type.getCustomTypeExData());
+			return rt->getFullName((MemberValue *)*type.getCustomTypeExData());
 		}
 		case TypeId::ANY:
 			return "any";

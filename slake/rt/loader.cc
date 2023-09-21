@@ -84,6 +84,12 @@ Value *Runtime::_loadValue(std::istream &fs) {
 			return _loadRef(fs);
 		case slxfmt::Type::TYPENAME:
 			return new TypeNameValue(this, _loadType(fs, _read<slxfmt::Type>(fs)));
+		case slxfmt::Type::REG:
+			return new RegRefValue(this, _read<RegId>(fs));
+		case slxfmt::Type::LVAR:
+			return new LocalVarRefValue(this, _read<uint32_t>(fs));
+		case slxfmt::Type::ARG:
+			return new ArgRefValue(this, _read<uint32_t>(fs));
 		default:
 			throw LoaderError("Invalid value type detected");
 	}
@@ -283,9 +289,8 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 			for (uint32_t j = 0; j < i.lenBody; j++) {
 				slxfmt::InsHeader ih = _read<slxfmt::InsHeader>(fs);
 				body[j].opcode = ih.opcode;
-				body[j].nOperands = ih.nOperands;
 				for (uint8_t k = 0; k < ih.nOperands; k++)
-					body[j].operands[k] = _loadValue(fs);
+					body[j].operands.push_back(_loadValue(fs));
 			}
 		}
 		mod->addMember(name, fn.release());
@@ -295,7 +300,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 	// Load classes.
 	//
 	nItemsToRead = _read<uint32_t>(fs);
-	for (slxfmt::ClassTypeDesc i = { 0 }; nItemsToRead--;) {
+	for (slxfmt::ClassTypeDesc i = {}; nItemsToRead--;) {
 		i = _read<slxfmt::ClassTypeDesc>(fs);
 
 		std::string name(i.lenName, '\0');
@@ -330,7 +335,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 	// Load interfaces.
 	//
 	nItemsToRead = _read<uint32_t>(fs);
-	for (slxfmt::InterfaceTypeDesc i = { 0 }; nItemsToRead--;) {
+	for (slxfmt::InterfaceTypeDesc i = {}; nItemsToRead--;) {
 		i = _read<slxfmt::InterfaceTypeDesc>(fs);
 
 		std::string name(i.lenName, '\0');
@@ -354,7 +359,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 	// Load traits.
 	//
 	nItemsToRead = _read<uint32_t>(fs);
-	for (slxfmt::TraitTypeDesc i = { 0 }; nItemsToRead--;) {
+	for (slxfmt::TraitTypeDesc i = {}; nItemsToRead--;) {
 		i = _read<slxfmt::TraitTypeDesc>(fs);
 
 		std::string name(i.lenName, '\0');
@@ -372,31 +377,6 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 		_loadScope(value.get(), fs);
 
 		mod->addMember(name, value.release());
-	}
-
-	//
-	// Load structures.
-	//
-	nItemsToRead = _read<uint32_t>(fs);
-	for (slxfmt::StructTypeDesc i = { 0 }; nItemsToRead--;) {
-		fs.read((char *)&i, sizeof(i));
-		std::string name(i.lenName, '\0');
-		fs.read(&(name[0]), i.lenName);
-
-		AccessModifier access = 0;
-		access |= ACCESS_PUB;
-
-		while (i.nMembers--) {
-			slxfmt::StructMemberDesc smd;
-			fs.read((char *)&smd, sizeof(smd));
-			std::string memberName(smd.lenName, '\0');
-			fs.read(&(memberName[0]), smd.lenName);
-
-			{
-				auto t = smd.type;
-				_loadType(fs, t);
-			}
-		}
 	}
 }
 
@@ -464,7 +444,7 @@ ValueRef<ModuleValue> slake::Runtime::loadModule(std::istream &fs, LoadModuleFla
 		fs.read(name.data(), len);
 
 		std::unique_ptr<std::istream> moduleStream(_moduleLocator(this, _loadRef(fs)));
-		mod->addMember(name, (MemberValue*)new AliasValue(this, 0, *loadModule(*moduleStream.get(), LMOD_RETIFEXISTS)));
+		mod->addMember(name, (MemberValue *)new AliasValue(this, 0, *loadModule(*moduleStream.get(), LMOD_RETIFEXISTS)));
 	}
 
 	_loadScope(mod.get(), fs);

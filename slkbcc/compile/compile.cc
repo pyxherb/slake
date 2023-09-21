@@ -6,13 +6,22 @@
 using namespace slake;
 using namespace slake::bcc;
 
+static const std::unordered_map<std::string, RegId> _regIdNameMap = {
+	{ "TMP0", RegId::TMP0 },
+	{ "R0", RegId::R0 },
+	{ "R1", RegId::R1 },
+	{ "RR", RegId::RR },
+	{ "RTHIS", RegId::RTHIS },
+	{ "RXCPT", RegId::RXCPT }
+};
+
 template <typename T>
 static void _write(std::ostream &fs, const T &value) {
 	fs.write((const char *)&value, sizeof(T));
 }
 
 template <typename T>
-static void _write(std::ostream &fs, const T &&value) {
+static void _write(std::ostream &fs, T &&value) {
 	const T v = value;
 	fs.write((const char *)&v, sizeof(T));
 }
@@ -240,8 +249,6 @@ void bcc::compileScope(std::ostream &fs, shared_ptr<Scope> scope) {
 
 		compileScope(fs, i.second->scope);
 	}
-	// Compile Structures
-	_write(fs, (uint32_t)0);
 }
 
 void bcc::compileOperand(std::ostream &fs, shared_ptr<Operand> operand) {
@@ -353,6 +360,30 @@ void bcc::compileOperand(std::ostream &fs, shared_ptr<Operand> operand) {
 			compileTypeName(fs, static_pointer_cast<TypeNameOperand>(operand)->data);
 			break;
 		}
+		case OperandType::REG: {
+			vd.type = slxfmt::Type::REG;
+			_write(fs, vd);
+
+			auto op = static_pointer_cast<RegOperand>(operand);
+
+			if (!_regIdNameMap.count(op->data))
+				throw parser::syntax_error(op->getLocation(), "Invalid register name");
+
+			_write(fs, _regIdNameMap.at(op->data));
+			break;
+		}
+		case OperandType::ARG:
+			vd.type = slxfmt::Type::REF;
+			_write(fs, vd);
+
+			_write(fs, static_pointer_cast<ArgOperand>(operand)->data);
+			break;
+		case OperandType::LVAR:
+			vd.type = slxfmt::Type::LVAR;
+			_write(fs, vd);
+
+			_write(fs, static_pointer_cast<LocalVarOperand>(operand)->data);
+			break;
 		default:
 			assert(false);
 	}

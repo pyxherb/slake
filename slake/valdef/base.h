@@ -169,7 +169,6 @@ namespace slake {
 		/// @param args Pointer to linear-arranged arguments.
 		/// @return Result of the calling.
 		virtual ValueRef<> call(std::deque<ValueRef<>> args) const;
-		virtual ValueRef<> callAsync(std::deque<ValueRef<>> args) const;
 
 		/// @brief Dulplicate the value if supported.
 		/// @return Duplicate of the value.
@@ -195,7 +194,7 @@ namespace slake {
 
 			return *this;
 		}
-		Value &operator=(const Value &&) = delete;
+		Value &operator=(Value &&) = delete;
 	};
 }
 

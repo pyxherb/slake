@@ -8,6 +8,9 @@ using namespace slake;
 std::unordered_map<std::string, Opcode> bcc::mnemonics = {
 	MNEMONIC_ENTRY(NOP),
 
+	MNEMONIC_ENTRY(PUSH),
+	MNEMONIC_ENTRY(POP),
+
 	MNEMONIC_ENTRY(LOAD),
 	MNEMONIC_ENTRY(RLOAD),
 	MNEMONIC_ENTRY(STORE),

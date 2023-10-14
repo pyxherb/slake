@@ -104,6 +104,7 @@ extern std::deque<std::shared_ptr<slake::bcc::Scope>> savedScopes;
 %token TN_VOID "void"
 
 %token OP_ADD "+"
+%token OP_MUL "*"
 %token OP_LT "<"
 %token OP_GT ">"
 
@@ -390,6 +391,9 @@ Ref { $$ = make_shared<RefOperand>(@1, $1); }
 | "$" L_U32 { $$ = make_shared<LocalVarOperand>(@1, $2); }
 | "%" T_ID { $$ = make_shared<RegOperand>(@1, $2); }
 | "[" L_U32 "]" { $$ = make_shared<ArgOperand>(@1, $2); }
+| "*" "$" L_U32 { $$ = make_shared<LocalVarOperand>(@1, $3), $$->dereferenced = true; }
+| "*" "%" T_ID { $$ = make_shared<RegOperand>(@1, $3), $$->dereferenced = true; }
+| "*" "[" L_U32 "]" { $$ = make_shared<ArgOperand>(@1, $3), $$->dereferenced = true; }
 | Array { $$ = $1; }
 | Map { $$ = $1; }
 | TypeName { $$ = make_shared<TypeNameOperand>(@1, $1); }

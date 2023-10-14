@@ -10,73 +10,66 @@ progStmt:
 	| access? classDef		# ProgClassDef
 	| access? varDef ';'	# ProgVarDef;
 
-imports: 'using' '{' ID '=' ref (',' ID '=' ref)* '}';
+imports: 'use' '{' importItem (',' importItem)* '}';
+importItem: ID '=' ref;
 
-params: ((typeName ID (',' typeName ID)*)? (',' '...')? | '...'?);
+params: ((paramDecl (',' paramDecl)*)? (',' '...')? | '...'?);
+paramDecl: 'const'? typeName ID;
 
 moduleDecl: 'module' ref ';';
 
-fnDecl: genericArgs? typeName ID '(' params ')';
-fnDef: fnDecl codeBlock;
-stmts:
-	expr ';'			# ExprStmt
-	| varDef ';'		# VarDefStmt
-	| 'break' ';'		# BreakStmt
-	| 'continue' ';'	# ContinueStmt
-	| forIns			# ForStmt
-	| whileIns			# WhileStmt
-	| timesIns			# TimesStmt
-	| returnIns ';'		# ReturnStmt
-	| ifIns				# IfStmt
-	| tryIns			# TryStmt
-	| switchIns			# SwitchStmt;
+fnDecl: genericParams? typeName ID '(' params ')';
+fnDef: fnDecl stmt;
+stmt:
+	expr ';'																# ExprStmt
+	| varDef ';'															# VarDefStmt
+	| 'break' ';'															# BreakStmt
+	| 'continue' ';'														# ContinueStmt
+	| 'for' '(' varDef? ';' condition = expr ';' endExpr = expr? ')' stmt	# ForStmt
+	| 'while' '(' expr ')' stmt												# WhileStmt
+	| 'return' expr? ';'													# ReturnStmt
+	| 'yield' expr? ';'														# YieldStmt
+	| 'if' varDef? '(' expr ')' stmt elseBranch?							# IfStmt
+	| 'try' stmt catchBlock+ finalBlock?									# TryStmt
+	| 'switch' '(' expr ')' '{' switchCase+ defaultBranch? '}'				# SwitchStmt
+	| codeBlock																# CodeBlockStmt;
 
-forIns: 'for' '(' varDef ';' expr ';' expr ')' codeBlock;
-whileIns: 'while' '(' expr ')' codeBlock;
-timesIns: 'times' '(' expr ')' codeBlock;
-returnIns: 'return' expr?;
-ifIns:
-	'if' '(' expr ')' codeBlock ('elif' '(' expr ')' codeBlock)? (
-		'else' codeBlock
-	)?;
+elseBranch: 'else' stmt;
 
-tryIns: 'try' codeBlock catchBlock+ ('final' codeBlock)?;
-catchBlock: 'catch' ('(' typeName ID ')')? codeBlock;
+catchBlock:
+	'catch' ('(' type = typeName varName = ID ')')? stmt;
+finalBlock: 'final' stmt;
 
-switchIns:
-	'switch' '(' expr ')' '{' switchCase+ (
-		'default' ':' codeBlock
-	)? '}';
-switchCase: 'case' expr ':' codeBlock?;
+switchCase: 'case' expr ':' stmt*;
+defaultBranch: 'default' ':' stmt*;
 
-varDecl: typeName ID (',' ID)*;
 varDef: typeName varDefEntry (',' varDefEntry)*;
 varDefEntry: ID ('=' expr)?;
 
 accessModifiers:
-	'pub'
-	| 'final'
-	| 'const'
-	| 'override'
-	| 'static'
-	| 'native';
+	'pub'			# PubAccess
+	| 'final'		# FinalAccess
+	| 'const'		# ConstAccess
+	| 'override'	# OverrideAccess
+	| 'static'		# StaticAccess
+	| 'native'		# NativeAccess;
 access: accessModifiers+;
 
 classDef:
 	'class' ID genericParams? inheritSlot? implementList? '{' classStmts* '}';
 classStmts:
-	access? fnDecl ';'
-	| access? fnDef
-	| access? operatorDecl ';'
-	| access? operatorDef
-	| access? constructorDecl ';'
-	| access? destructorDecl ';'
-	| access? constructorDef
-	| access? destructorDef
-	| access? varDecl ';'
-	| access? varDef ';';
+	access? fnDecl ';'				# ClassFnDecl
+	| access? fnDef					# ClassFnDef
+	| access? operatorDecl ';'		# ClassOperatorDecl
+	| access? operatorDef			# ClassOperatorDef
+	| access? constructorDecl ';'	# ClassConstructorDecl
+	| access? destructorDecl ';'	# ClassDestructorDecl
+	| access? constructorDef		# ClassConstructorDef
+	| access? destructorDef			# ClassDestructorDef
+	| access? varDef ';'			# ClassVarDef
+	| access? classDef				# ClassClassDef;
 
-genericParams: '<' genericParam+ '>';
+genericParams: '<' genericParam (',' genericParam)* '>';
 genericParam: ID baseSpec? traitSpec? interfaceSpec?;
 baseSpec: '(' typeName ')'; // Base class specifier
 traitSpec: '[' typeName (',' typeName)* ']'; // Trait specifier
@@ -97,44 +90,47 @@ destructorDef: destructorDecl codeBlock;
 
 interfaceDef:
 	'interface' ID inheritSlot '{' interfaceStmts* '}';
-interfaceStmts: fnDecl ';' | operatorDecl ';';
+interfaceStmts:
+	fnDecl ';'			# InterfaceFnDecl
+	| operatorDecl ';'	# InterfaceOperatorDecl;
 
 traitDef: 'trait' ID inheritSlot '{' traitStmts '}';
-traitStmts: fnDecl ';' | varDecl ';' | operatorDecl ';';
+traitStmts:
+	fnDecl ';'			# TraitFnDecl
+	| operatorDecl ';'	# TraitOperatorDecl;
 
 operatorName:
-	'+'
-	| '-'
-	| '*'
-	| '/'
-	| '%'
-	| '&'
-	| '|'
-	| '^'
-	| '&&'
-	| '||'
-	| '~'
-	| '!'
-	| '='
-	| '+='
-	| '-='
-	| '*='
-	| '/='
-	| '%='
-	| '&='
-	| '|='
-	| '^='
-	| '~='
-	| '=='
-	| '!='
-	| '>'
-	| '<'
-	| '>='
-	| '<='
-	| '[' ']'
-	| '(' ')';
+	'+'			# OperatorAdd
+	| '-'		# OperatorSub
+	| '*'		# OperatorMul
+	| '/'		# OperatorDiv
+	| '%'		# OperatorMod
+	| '&'		# OperatorAnd
+	| '|'		# OperatorOr
+	| '^'		# OperatorXor
+	| '&&'		# OperatorLAnd
+	| '||'		# OperatorLOr
+	| '~'		# OperatorRev
+	| '!'		# OperatorNot
+	| '='		# OperatorAssign
+	| '+='		# OperatorAddAssign
+	| '-='		# OperatorSubAssign
+	| '*='		# OperatorMulAssign
+	| '/='		# OperatorDivAssign
+	| '%='		# OperatorModAssign
+	| '&='		# OperatorAndAssign
+	| '|='		# OperatorOrAssign
+	| '^='		# OperatorXorAssign
+	| '=='		# OperatorEq
+	| '!='		# OperatorNeq
+	| '>'		# OperatorGt
+	| '<'		# OperatorLt
+	| '>='		# OperatorGtEq
+	| '<='		# OperatorLtEq
+	| '[' ']'	# OperatorSubscript
+	| '(' ')'	# OperatorCall;
 
-codeBlock: '{' stmts* '}';
+codeBlock: '{' stmt* '}';
 
 args: expr (',' expr)*;
 
@@ -144,7 +140,7 @@ expr:
 	| literal														# LiteralExpr
 	| array															# ArrayExpr
 	| map															# MapExpr
-	| typeName '(' params ')' codeBlock								# ClosureExpr
+	| typeName '(' params ')' ('[' expr+ ']')? '->' stmt			# ClosureExpr
 	| expr '(' args? ')' 'async'?									# CallExpr
 	| 'await' expr													# AwaitExpr
 	| 'new' typeName '(' args? ')'									# NewExpr
@@ -188,17 +184,36 @@ map: '[' (pair (',' pair)*)? ']';
 pair: expr ':' expr;
 
 literal:
-	L_I8		# I8
-	| L_I16		# I16
-	| L_I32		# I32
-	| L_I64		# I64
-	| L_U8		# U8
-	| L_U16		# U16
-	| L_U32		# U32
-	| L_U64		# U64
-	| L_F32		# F32
-	| L_F64		# F64
-	| L_STRING	# String;
+	intLiteral		# Int
+	| longLiteral	# Long
+	| uintLiteral	# UInt
+	| ulongLiteral	# ULong
+	| L_F32			# F32
+	| L_F64			# F64
+	| L_STRING		# String
+	| 'true'		# True
+	| 'false'		# False;
+
+intLiteral:
+	L_INT_BIN	# BinInt
+	| L_INT_OCT	# OctInt
+	| L_INT_DEC	# DecInt
+	| L_INT_HEX	# HexInt;
+longLiteral:
+	L_LONG_BIN		# BinLong
+	| L_LONG_OCT	# OctLong
+	| L_LONG_DEC	# DecLong
+	| L_LONG_HEX	# HexLong;
+uintLiteral:
+	L_UINT_BIN		# BinUInt
+	| L_UINT_OCT	# OctUInt
+	| L_UINT_DEC	# DecUInt
+	| L_UINT_HEX	# HexUInt;
+ulongLiteral:
+	L_ULONG_BIN		# BinULong
+	| L_ULONG_OCT	# OctULong
+	| L_ULONG_DEC	# DecULong
+	| L_ULONG_HEX	# HexULong;
 
 scope: name = ID gArgs = genericArgs?;
 

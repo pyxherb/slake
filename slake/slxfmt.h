@@ -76,8 +76,11 @@ namespace slake {
 			TYPENAME,	  // Type name
 			GENERIC_ARG,  // Generic argument
 			REG,		  // Register
+			REG_VALUE,	  // Register value
 			LVAR,		  // Local variable
+			LVAR_VALUE,	  // Local variable value
 			ARG,		  // Argument
+			ARG_VALUE,		  // Argument
 		};
 
 		/// @brief Value Descriptor (VD)

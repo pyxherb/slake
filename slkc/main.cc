@@ -6,6 +6,8 @@
 
 #include <slake/util/debug.h>
 
+using namespace slake::slkc;
+
 class ArgumentError : public std::runtime_error {
 public:
 	inline ArgumentError(std::string msg) : runtime_error(msg){};
@@ -35,7 +37,7 @@ struct CmdLineAction {
 
 CmdLineAction cmdLineActions[] = {
 	{ "-I\0"
-	  "--include\0",
+	  "--module-path\0",
 		[](int argc, char **argv, int &i) {
 			std::string path = fetchArg(argc, argv, i);
 		} },
@@ -72,7 +74,7 @@ int main(int argc, char **argv) {
 		switch (action) {
 			case ACT_COMPILE: {
 				if (!srcPath.length()) {
-					perror("Error: Missing input file");
+					puts("Error: Missing input file");
 					return EINVAL;
 				}
 
@@ -85,20 +87,20 @@ int main(int argc, char **argv) {
 					}
 				}
 
-				std::ifstream fs(srcPath, std::ios::binary);
-				antlr4::ANTLRInputStream is(fs);
+				std::ifstream is(srcPath, std::ios::binary);
+				std::ofstream os(outPath, std::ios::binary | std::ios::out);
 
-				SlakeLexer lexer(&is);
-				antlr4::CommonTokenStream tokens(&lexer);
+				std::unique_ptr<Compiler> compiler = std::make_unique<Compiler>();
 
-				SlakeParser parser(&tokens);
-				auto tree = parser.prog();
+				try {
+					compiler->compile(is, os);
+				} catch (FatalCompilationError e) {
+					printf("Error at %zd, %zd: %s\n", e.message.loc.line, e.message.loc.column, e.message.msg.c_str());
+					return -1;
+				}
 
-				printf("%s\n", tree->toStringTree(&parser).c_str());
-
-				slake::slkc::AstVisitor visitor;
-				visitor.visit(tree);
-				fs.close();
+				is.close();
+				os.close();
 				break;
 			}
 			case ACT_DUMP: {

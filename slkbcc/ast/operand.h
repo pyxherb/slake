@@ -35,6 +35,8 @@ namespace slake {
 			location _loc;
 
 		public:
+			bool dereferenced = false;
+
 			inline Operand(location loc) : _loc(loc) {}
 			virtual ~Operand() = default;
 			virtual OperandType getOperandType() const = 0;

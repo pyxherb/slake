@@ -25,7 +25,9 @@ namespace slake {
 		std::deque<ExceptionHandler> exceptHandlers;  // Exception handlers
 
 		ValueRef<VarValue> tmpRegs[1];	// Temporary registers
-		ValueRef<VarValue> gpRegs[2];	// General-purposed registers
+		ValueRef<VarValue> gpRegs[3];	// General-purposed registers
+
+		std::deque<ValueRef<>> dataStack;  // Data stack
 
 		inline MinorFrame(Runtime *rt) {
 			for (size_t i = 0; i < std::size(tmpRegs); ++i)
@@ -33,6 +35,20 @@ namespace slake {
 
 			for (size_t i = 0; i < std::size(gpRegs); ++i)
 				gpRegs[i] = new VarValue(rt, ACCESS_PUB, Type(TypeId::ANY));
+		}
+
+		inline void push(ValueRef<> v) {
+			if (dataStack.size() > SLAKE_STACK_MAX)
+				throw StackOverflowError("Stack overflowed");
+			dataStack.push_back(*v);
+		}
+
+		inline ValueRef<> pop() {
+			if (!dataStack.size())
+				throw FrameBoundaryExceededError("Frame bottom exceeded");
+			ValueRef<> v = dataStack.back();
+			dataStack.pop_back();
+			return v;
 		}
 	};
 
@@ -49,7 +65,7 @@ namespace slake {
 		std::deque<MinorFrame> minorFrames;		   // Minor frames
 		ValueRef<> curExcept;					   // Current exception
 
-		inline MajorFrame(Runtime* rt) {
+		inline MajorFrame(Runtime *rt) {
 			minorFrames.push_back(MinorFrame(rt));
 		}
 

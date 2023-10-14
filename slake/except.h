@@ -126,7 +126,7 @@ namespace slake {
 
 	class NullRefError : public RuntimeExecError {
 	public:
-		inline NullRefError(std::string msg = "Null reference detected") : RuntimeExecError(msg){};
+		inline NullRefError() : RuntimeExecError("Null reference detected"){};
 		virtual ~NullRefError() = default;
 	};
 }

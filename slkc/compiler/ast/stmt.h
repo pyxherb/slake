@@ -1,0 +1,327 @@
+///
+/// @file stmt.h
+/// @brief Header file which handles definitions about statements.
+///
+/// @copyright Copyright (c) 2023 Slake contributors
+///
+///
+#ifndef _SLKC_COMPILER_AST_STMT_H_
+#define _SLKC_COMPILER_AST_STMT_H_
+
+#include "astnode.h"
+#include "expr.h"
+#include "typename.h"
+
+namespace slake {
+	namespace slkc {
+		enum StmtType : uint8_t {
+			STMT_EXPR = 0,
+			STMT_VARDEF,
+			STMT_BREAK,
+			STMT_CONTINUE,
+			STMT_FOR,
+			STMT_WHILE,
+			STMT_RETURN,
+			STMT_YIELD,
+			STMT_IF,
+			STMT_TRY,
+			STMT_SWITCH,
+			STMT_CODEBLOCK
+		};
+
+		class StmtNode : public AstNode {
+		public:
+			virtual ~StmtNode() = default;
+
+			virtual inline NodeType getNodeType() const override { return AST_STMT; }
+
+			virtual StmtType getStmtType() const = 0;
+		};
+
+		template <StmtType st>
+		class SimpleStmtNode : public StmtNode {
+		private:
+			Location _loc;
+
+		public:
+			inline SimpleStmtNode(Location loc) : _loc(loc) {}
+			virtual ~SimpleStmtNode() = default;
+
+			virtual inline Location getLocation() const override { return _loc; }
+
+			virtual inline StmtType getStmtType() const override { return st; }
+		};
+
+		using BreakStmtNode = SimpleStmtNode<STMT_BREAK>;
+		using ContinueStmtNode = SimpleStmtNode<STMT_CONTINUE>;
+
+		class ExprStmtNode : public StmtNode {
+		public:
+			shared_ptr<ExprNode> expr;
+
+			inline ExprStmtNode(shared_ptr<ExprNode> expr) : expr(expr) {}
+			virtual ~ExprStmtNode() = default;
+
+			virtual inline Location getLocation() const override { return expr->getLocation(); }
+
+			virtual inline StmtType getStmtType() const override { return STMT_EXPR; }
+		};
+
+		struct VarDefEntry {
+			string name;
+			Location loc;
+			shared_ptr<ExprNode> initValue;
+
+			inline VarDefEntry() = default;
+			inline VarDefEntry(const VarDefEntry &) = default;
+			inline VarDefEntry(
+				Location loc,
+				string name,
+				shared_ptr<ExprNode> initValue)
+				: loc(loc), name(name), initValue(initValue) {}
+
+			inline VarDefEntry &operator=(const VarDefEntry &) = default;
+		};
+
+		class VarDefStmtNode : public StmtNode {
+		private:
+			Location _loc;
+
+		public:
+			unordered_map<string, VarDefEntry> varDefs;
+			shared_ptr<TypeNameNode> type;
+
+			inline VarDefStmtNode(Location loc, shared_ptr<TypeNameNode> type) : _loc(loc), type(type) {}
+			virtual ~VarDefStmtNode() = default;
+
+			virtual inline Location getLocation() const override { return _loc; }
+
+			virtual inline StmtType getStmtType() const override { return STMT_VARDEF; }
+		};
+
+		class BlockStmtNode : public StmtNode {
+		private:
+			Location _loc;
+
+		public:
+			deque<shared_ptr<StmtNode>> stmts;
+
+			inline BlockStmtNode(
+				Location loc,
+				deque<shared_ptr<StmtNode>> stmts)
+				: _loc(loc), stmts(stmts) {}
+			virtual ~BlockStmtNode() = default;
+
+			virtual inline Location getLocation() const override { return _loc; }
+
+			virtual inline StmtType getStmtType() const override { return STMT_CODEBLOCK; }
+		};
+
+		class ForStmtNode : public StmtNode {
+		private:
+			Location _loc;
+
+		public:
+			shared_ptr<VarDefStmtNode> varDefs;
+			shared_ptr<ExprNode> condition;
+			shared_ptr<ExprNode> endExpr;
+			shared_ptr<StmtNode> body;
+
+			inline ForStmtNode(
+				Location loc,
+				shared_ptr<VarDefStmtNode> varDefs,
+				shared_ptr<ExprNode> condition,
+				shared_ptr<ExprNode> endExpr,
+				shared_ptr<StmtNode> body)
+				: _loc(loc), varDefs(varDefs), condition(condition), body(body), endExpr(endExpr) {}
+			virtual ~ForStmtNode() = default;
+
+			virtual inline Location getLocation() const override { return _loc; }
+
+			virtual inline StmtType getStmtType() const override { return STMT_FOR; }
+		};
+
+		class WhileStmtNode : public StmtNode {
+		private:
+			Location _loc;
+
+		public:
+			shared_ptr<ExprNode> condition;
+			shared_ptr<StmtNode> body;
+
+			inline WhileStmtNode(
+				Location loc,
+				shared_ptr<ExprNode> condition,
+				shared_ptr<StmtNode> body)
+				: _loc(loc), body(body) {}
+			virtual ~WhileStmtNode() = default;
+
+			virtual inline Location getLocation() const override { return _loc; }
+
+			virtual inline StmtType getStmtType() const override { return STMT_WHILE; }
+		};
+
+		class ReturnStmtNode : public StmtNode {
+		private:
+			Location _loc;
+
+		public:
+			shared_ptr<ExprNode> returnValue;
+
+			inline ReturnStmtNode(
+				Location loc,
+				shared_ptr<ExprNode> returnValue)
+				: _loc(loc), returnValue(returnValue) {}
+			virtual ~ReturnStmtNode() = default;
+
+			virtual inline Location getLocation() const override { return _loc; }
+
+			virtual inline StmtType getStmtType() const override { return STMT_RETURN; }
+		};
+
+		class YieldStmtNode : public ReturnStmtNode {
+		public:
+			inline YieldStmtNode(
+				Location loc,
+				shared_ptr<ExprNode> returnValue)
+				: ReturnStmtNode(loc, returnValue) {}
+			virtual ~YieldStmtNode() = default;
+
+			virtual inline StmtType getStmtType() const override { return STMT_YIELD; }
+		};
+
+		class IfStmtNode : public StmtNode {
+		private:
+			Location _loc;
+
+		public:
+			shared_ptr<ExprNode> condition;
+			shared_ptr<VarDefStmtNode> varDefs;
+			shared_ptr<StmtNode> body;
+			shared_ptr<StmtNode> elseBranch;
+
+			inline IfStmtNode(
+				Location loc,
+				shared_ptr<ExprNode> condition,
+				shared_ptr<VarDefStmtNode> varDefs,
+				shared_ptr<StmtNode> body,
+				shared_ptr<StmtNode> elseBranch)
+				: _loc(loc),
+				  condition(condition),
+				  varDefs(varDefs),
+				  body(body),
+				  elseBranch(elseBranch) {
+			}
+			virtual ~IfStmtNode() = default;
+
+			virtual inline Location getLocation() const override { return _loc; }
+
+			virtual inline StmtType getStmtType() const override { return STMT_IF; }
+		};
+
+		struct CatchBlock {
+			Location loc;
+			shared_ptr<TypeNameNode> targetType;
+			string exceptionVarName;
+			shared_ptr<StmtNode> body;
+
+			inline CatchBlock(
+				Location loc,
+				shared_ptr<TypeNameNode> targetType,
+				string exceptionVarName,
+				shared_ptr<StmtNode> body)
+				: loc(loc),
+				  targetType(targetType),
+				  exceptionVarName(exceptionVarName),
+				  body(body) {}
+		};
+
+		struct FinalBlock {
+			Location loc;
+			shared_ptr<StmtNode> body;
+
+			FinalBlock() = default;
+			inline FinalBlock(Location loc, shared_ptr<StmtNode> body) : loc(loc), body(body) {}
+		};
+
+		class TryStmtNode : public StmtNode {
+		private:
+			Location _loc;
+
+		public:
+			shared_ptr<StmtNode> body;
+			deque<CatchBlock> catchBlocks;
+			FinalBlock finalBlock;
+
+			inline TryStmtNode(
+				Location loc,
+				shared_ptr<StmtNode> body,
+				deque<CatchBlock> catchBlocks,
+				FinalBlock finalBlock)
+				: _loc(loc),
+				  body(body),
+				  catchBlocks(catchBlocks),
+				  finalBlock(finalBlock) {
+			}
+			virtual ~TryStmtNode() = default;
+
+			virtual inline Location getLocation() const override { return _loc; }
+
+			virtual inline StmtType getStmtType() const override { return STMT_TRY; }
+		};
+
+		struct CodeBlock {
+			Location loc;
+			deque<shared_ptr<StmtNode>> stmts;
+		};
+
+		class CodeBlockStmtNode : public StmtNode {
+		public:
+			CodeBlock body;
+
+			inline CodeBlockStmtNode(CodeBlock body) : body(body) {}
+			virtual ~CodeBlockStmtNode() = default;
+
+			virtual inline Location getLocation() const override { return body.loc; }
+
+			virtual inline StmtType getStmtType() const override { return STMT_CODEBLOCK; }
+		};
+
+		struct SwitchCase {
+			Location loc;
+			shared_ptr<ExprNode> condition;
+			deque<shared_ptr<StmtNode>> body;
+
+			inline SwitchCase(
+				Location loc,
+				deque<shared_ptr<StmtNode>> body,
+				shared_ptr<ExprNode> condition = {})
+				: loc(loc),
+				  condition(condition),
+				  body(body) {
+			}
+		};
+
+		class SwitchStmtNode : public StmtNode {
+		private:
+			Location _loc;
+
+		public:
+			shared_ptr<ExprNode> expr;
+			deque<SwitchCase> cases;
+
+			inline SwitchStmtNode(
+				Location loc,
+				shared_ptr<ExprNode> expr,
+				deque<SwitchCase> cases)
+				: _loc(loc), expr(expr), cases(cases) {}
+			virtual ~SwitchStmtNode() = default;
+
+			virtual inline Location getLocation() const override { return _loc; }
+
+			virtual inline StmtType getStmtType() const override { return STMT_CODEBLOCK; }
+		};
+	}
+}
+
+#endif

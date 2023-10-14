@@ -1,8 +1,0 @@
-.module mod
-
-.access pub
-.fn void test
-	PUSHARG "Called test\n";
-	CALL print;
-	RET null;
-.end

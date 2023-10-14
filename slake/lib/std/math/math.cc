@@ -315,6 +315,8 @@ static double _sin(double x) {
 	if (std::isnan(x) || std::isinf(x))
 		return x;
 
+	x = fmod(x, 3.14159265358979323846 * 2);
+
 	double sum = x, lastSum = NAN;
 	double factorial = 1;  // n!
 	double power = x;	   // x ^ (2n + 1)

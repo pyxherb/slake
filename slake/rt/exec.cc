@@ -50,6 +50,9 @@ static void _checkOperandType(
 	for (size_t i = 0; i < ins.operands.size(); ++i) {
 		auto type = *(it++);
 
+		if (!ins.operands[i])
+			continue;
+
 		if (type == TypeId::ANY)
 			continue;
 
@@ -296,21 +299,20 @@ VarValue *slake::Runtime::_addLocalVar(MajorFrame &frame, Type type) {
 	return v;
 }
 
-static inline void _unwrapVarOperand(ValueRef<> &v) {
-	if (v->getType().typeId == TypeId::VAR)
-		v = ((VarValue *)*v)->getData();
-}
-
 void slake::Runtime::_execIns(Context *context, Instruction ins) {
 	auto &curMajorFrame = context->majorFrames.back();
 	auto &curMinorFrame = curMajorFrame.minorFrames.back();
 
 	for (auto &i : ins.operands) {
+		bool unwrapValue = false;
 		switch (i->getType().typeId) {
 			case TypeId::LVAR_REF:
+				unwrapValue = ((LocalVarRefValue *)*i)->unwrapValue;
 				i = curMajorFrame.lload(((LocalVarRefValue *)*i)->index);
 				break;
 			case TypeId::REG_REF: {
+				unwrapValue = ((RegRefValue *)*i)->unwrapValue;
+
 				switch (auto regId = ((RegRefValue *)*i)->reg; regId) {
 					case RegId::TMP0: {
 						auto index = (uint8_t)regId - (uint8_t)RegId::TMP0;
@@ -321,7 +323,8 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 						break;
 					}
 					case RegId::R0:
-					case RegId::R1: {
+					case RegId::R1:
+					case RegId::R2: {
 						auto index = (uint8_t)regId - (uint8_t)RegId::R0;
 						if (index > std::size(curMinorFrame.gpRegs))
 							throw InvalidRegisterError();
@@ -341,12 +344,18 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 					default:
 						throw InvalidRegisterError();
 				}
+
 				break;
 			}
 			case TypeId::ARG_REF:
+				unwrapValue = ((ArgRefValue *)*i)->unwrapValue;
+
 				i = curMajorFrame.argStack[((ArgRefValue *)*i)->index];
 				break;
 		}
+
+		if (unwrapValue)
+			i = ((VarValue *)(*i))->value;
 	}
 
 	switch (ins.opcode) {
@@ -362,10 +371,18 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_addLocalVar(curMajorFrame, type);
 			break;
 		}
+		case Opcode::PUSH:
+			_checkOperandCount(ins, 1);
+			curMinorFrame.push(ins.operands[0]);
+			break;
+		case Opcode::POP:
+			_checkOperandCount(ins, 1);
+			_checkOperandType(ins, { TypeId::VAR });
+
+			((VarValue *)*ins.operands[0])->setData(*curMinorFrame.pop());
+			break;
 		case Opcode::LOAD: {
 			_checkOperandCount(ins, 2);
-
-			_unwrapVarOperand(ins.operands[1]);
 
 			_checkOperandType(ins, { TypeId::VAR, TypeId::REF });
 
@@ -384,9 +401,6 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		case Opcode::RLOAD: {
 			_checkOperandCount(ins, 3);
 
-			_unwrapVarOperand(ins.operands[1]);
-			_unwrapVarOperand(ins.operands[2]);
-
 			_checkOperandType(ins, { TypeId::VAR, TypeId::ANY, TypeId::REF });
 
 			auto v = ins.operands[1];
@@ -401,8 +415,6 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		}
 		case Opcode::STORE: {
 			_checkOperandCount(ins, 2);
-
-			_unwrapVarOperand(ins.operands[1]);
 
 			_checkOperandType(ins, { TypeId::VAR, TypeId::ANY });
 
@@ -454,18 +466,15 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		case Opcode::LSH: {
 			_checkOperandCount(ins, 3);
 
-			_unwrapVarOperand(ins.operands[1]);
-			_unwrapVarOperand(ins.operands[2]);
-
 			_checkOperandType(ins, { TypeId::VAR, TypeId::ANY, TypeId::ANY });
 
 			ValueRef<> x(ins.operands[1]), y(ins.operands[2]);
 			ValueRef<VarValue> out(ins.operands[0]);
 
 			if (!x)
-				throw NullRefError("");
+				throw NullRefError();
 			if (!y)
-				throw NullRefError("");
+				throw NullRefError();
 
 			switch (x->getType().typeId) {
 				case TypeId::I8:
@@ -521,7 +530,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			ValueRef<VarValue> v;
 
 			if (!x)
-				throw NullRefError("");
+				throw NullRefError();
 
 			switch (ins.opcode) {
 				case Opcode::INCB:
@@ -542,14 +551,15 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 					v = x;
 					x = v->getData();
 					break;
-				default:
-					_unwrapVarOperand(x);
 			}
 
 			if (!x)
-				throw NullRefError("");
+				throw NullRefError();
 
 			ValueRef<> value;
+			if (v)
+				x = ((VarValue *)*x)->value;
+
 			switch (x->getType().typeId) {
 				case TypeId::I8:
 					value = _execUnaryOp<std::int8_t>(x, ins.opcode);
@@ -596,6 +606,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 				case Opcode::INCF:
 				case Opcode::DECF:
 					v->setData(*value);
+					break;
 				default:
 					((VarValue *)*ins.operands[0])->setData(*value);
 			}
@@ -603,9 +614,6 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		}
 		case Opcode::AT: {
 			_checkOperandCount(ins, 3);
-
-			_unwrapVarOperand(ins.operands[1]);
-			_unwrapVarOperand(ins.operands[2]);
 
 			_checkOperandType(ins, { TypeId::VAR, TypeId::ANY, TypeId::ANY });
 
@@ -641,8 +649,6 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		case Opcode::JMP: {
 			_checkOperandCount(ins, 1);
 
-			_unwrapVarOperand(ins.operands[0]);
-
 			_checkOperandType(ins, { TypeId::U32 });
 
 			curMajorFrame.curIns = ((U32Value *)*ins.operands[0])->getData();
@@ -669,25 +675,17 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		case Opcode::PUSHARG: {
 			_checkOperandCount(ins, 1);
 
-			_unwrapVarOperand(ins.operands[0]);
-
 			curMajorFrame.nextArgStack.push_back(ins.operands[0]);
 			break;
 		}
 		case Opcode::MCALL:
 		case Opcode::CALL: {
-			_unwrapVarOperand(ins.operands[0]);
-
 			if (ins.opcode == Opcode::MCALL) {
 				_checkOperandCount(ins, 2);
-
-				_unwrapVarOperand(ins.operands[0]);
-				_unwrapVarOperand(ins.operands[1]);
 
 				_checkOperandType(ins, { TypeId::FN, TypeId::ANY });
 			} else {
 				_checkOperandCount(ins, 1);
-				_unwrapVarOperand(ins.operands[0]);
 				_checkOperandType(ins, { TypeId::FN });
 			}
 
@@ -718,8 +716,6 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		case Opcode::RET: {
 			_checkOperandCount(ins, 1);
 
-			_unwrapVarOperand(ins.operands[0]);
-
 			ValueRef<> x = ins.operands[0];
 
 			context->majorFrames.pop_back();
@@ -734,8 +730,6 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		case Opcode::YIELD: {
 			_checkOperandCount(ins, 1);
 
-			_unwrapVarOperand(ins.operands[0]);
-
 			ValueRef<> x = ins.operands[0];
 
 			context->flags |= CTX_YIELDED;
@@ -747,8 +741,6 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		}
 		case Opcode::NEW: {
 			_checkOperandCount(ins, 2);
-
-			_unwrapVarOperand(ins.operands[1]);
 
 			_checkOperandType(ins, { TypeId::VAR, TypeId::TYPENAME });
 
@@ -777,8 +769,6 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		}
 		case Opcode::THROW: {
 			_checkOperandCount(ins, 1);
-
-			_unwrapVarOperand(ins.operands[0]);
 
 			ValueRef<> x = ins.operands[0];
 
@@ -831,8 +821,6 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			throw UncaughtExceptionError("Use chose to abort the execution");
 		case Opcode::CAST: {
 			_checkOperandCount(ins, 3);
-
-			_unwrapVarOperand(ins.operands[2]);
 
 			_checkOperandType(ins, { TypeId::VAR, TypeId::TYPENAME, TypeId::ANY });
 

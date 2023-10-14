@@ -5,23 +5,30 @@
 .fn i32 main
 	PUSHARG "Entered main\n";
 
+	PUSH 114514;
+
 	LOAD %R0, print;
-	CALL %R0;
+	CALL *%R0;
 	YIELD 0;
 
 	LVAR i32;
 	STORE $0u, 0;
 	JMP #loopEnd;
 loopStart:
-	PUSHARG $0u;
-	PUSHARG "\n";
+	PUSHARG "Yielded\n";
+
 	LOAD %R0, print;
-	CALL %R0;
-	ADD $0u, $0u, 1;
+	CALL *%R0;
+	YIELD *$0u;
+
+	ADD $0u, *$0u, 1;
 
 loopEnd:
-	LT %R0, $0u, 100;
-	JT #loopStart, %R0;
+	STORE %R0, *$0u;
+	LT %R0, *%R0, 100;
+	JT #loopStart, *%R0;
 
-	RET -1;
+	POP %R0;
+
+	RET *%R0;
 .end

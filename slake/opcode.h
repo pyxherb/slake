@@ -7,9 +7,12 @@ namespace slake {
 	enum class Opcode : uint16_t {
 		NOP = 0,  // No operation
 
-		LOAD,	// Load a value onto stack
-		RLOAD,	// Load a value onto stack by an existing reference
-		STORE,	// Store a value from stack
+		PUSH,  // Push an element into the stack.
+		POP,   // Pop an element from the stack.
+
+		LOAD,	// Load value of a variable.
+		RLOAD,	// Access and load corresponding member with an existing value.
+		STORE,	// Store a value into a variable.
 
 		LVAR,  // Create a new local variable
 
@@ -77,7 +80,7 @@ namespace slake {
 
 		TYPEOF,	 // Get type of an object
 
-		CONSTSW, // Constant switch
+		CONSTSW,  // Constant switch
 
 		OPCODE_MAX
 	};

@@ -1,22 +1,27 @@
-#ifndef _SLKC_COMPILER_REF_H_
-#define _SLKC_COMPILER_REF_H_
+#ifndef _SLKC_COMPILER_AST_REF_H_
+#define _SLKC_COMPILER_AST_REF_H_
 
-#include "node.h"
+#include "astnode.h"
 
 namespace slake {
 	namespace slkc {
-		class TypeName;
+		class TypeNameNode;
 
 		struct RefEntry {
+			Location loc;
 			string name;
-			deque<shared_ptr<TypeName>> genericArgs;
+			deque<shared_ptr<TypeNameNode>> genericArgs;
 
-			inline RefEntry(string name, deque<shared_ptr<TypeName>> genericArgs = {})
-				: name(name), genericArgs(genericArgs) {}
+			inline RefEntry(Location loc, string name, deque<shared_ptr<TypeNameNode>> genericArgs = {})
+				: loc(loc), name(name), genericArgs(genericArgs) {}
 		};
 
 		using Ref = deque<RefEntry>;
 	}
+}
+
+namespace std {
+	string to_string(const slake::slkc::Ref& ref);
 }
 
 #endif

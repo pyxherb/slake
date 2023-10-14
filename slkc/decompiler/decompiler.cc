@@ -16,7 +16,7 @@ void slake::Decompiler::decompile(std::istream &fs, std::ostream &os) {
 	auto rt = std::make_unique<slake::Runtime>();
 	auto mod = rt->loadModule(fs, 0);
 
-	auto modName = rt->resolveName(*mod);
+	auto modName = rt->getFullName(*mod);
 
 	for (auto &i : **mod)
 		decompileValue(rt.get(), i.second, os);
@@ -61,9 +61,18 @@ void slake::Decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 		case TypeId::BOOL:
 			os << ((BoolValue *)value)->getData() ? "true" : "false";
 			break;
-		case TypeId::STRING:
-			os << ((StringValue *)value)->getData();
+		case TypeId::STRING: {
+			os << '"';
+
+			for (auto i : ((StringValue *)value)->getData()) {
+				if (isprint(i))
+					os << i;
+				else
+					os << "\\" << _ctrlCharNames[i];
+			}
+			os <<'"';
 			break;
+		}
 		case TypeId::REF:
 			os << to_string((RefValue *)value);
 			break;
@@ -100,7 +109,7 @@ void slake::Decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 					else
 						os << (uint16_t)ins->opcode;
 
-					for (size_t j = 0; j < ins->nOperands; ++j) {
+					for (size_t j = 0; j < ins->operands.size(); ++j) {
 						os << (j ? ", " : " ");
 						decompileValue(rt, *ins->operands[j], os, indentLevel);
 					}
@@ -152,7 +161,25 @@ void slake::Decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 		case TypeId::TRAIT: {
 			break;
 		}
-		case TypeId::STRUCT: {
+		case TypeId::REG_REF: {
+			RegRefValue *v = (RegRefValue *)value;
+			if (v->unwrapValue)
+				os << "*";
+			os << "%" << std::to_string((uint8_t)v->reg);
+			break;
+		}
+		case TypeId::LVAR_REF: {
+			LocalVarRefValue *v = (LocalVarRefValue *)value;
+			if (v->unwrapValue)
+				os << "*";
+			os << "$" << std::to_string(v->index);
+			break;
+		}
+		case TypeId::ARG_REF: {
+			ArgRefValue *v = (ArgRefValue *)value;
+			if (v->unwrapValue)
+				os << "*";
+			os << "#" << std::to_string(v->index);
 			break;
 		}
 		default:

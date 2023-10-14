@@ -46,6 +46,7 @@ yylloc.step();
 "%"			return parser::make_T_PERCENT(yylloc);
 
 "+"		return parser::make_OP_ADD(yylloc);
+"*"		return parser::make_OP_MUL(yylloc);
 "<"		return parser::make_OP_LT(yylloc);
 ">"		return parser::make_OP_GT(yylloc);
 

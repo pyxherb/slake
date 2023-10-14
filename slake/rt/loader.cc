@@ -86,10 +86,16 @@ Value *Runtime::_loadValue(std::istream &fs) {
 			return new TypeNameValue(this, _loadType(fs, _read<slxfmt::Type>(fs)));
 		case slxfmt::Type::REG:
 			return new RegRefValue(this, _read<RegId>(fs));
+		case slxfmt::Type::REG_VALUE:
+			return new RegRefValue(this, _read<RegId>(fs), true);
 		case slxfmt::Type::LVAR:
 			return new LocalVarRefValue(this, _read<uint32_t>(fs));
+		case slxfmt::Type::LVAR_VALUE:
+			return new LocalVarRefValue(this, _read<uint32_t>(fs), true);
 		case slxfmt::Type::ARG:
 			return new ArgRefValue(this, _read<uint32_t>(fs));
+		case slxfmt::Type::ARG_VALUE:
+			return new ArgRefValue(this, _read<uint32_t>(fs), true);
 		default:
 			throw LoaderError("Invalid value type detected");
 	}
@@ -244,7 +250,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 		for (size_t j = 0; j < i.nGenericParams; ++j) {
 			auto gpd = _read<slxfmt::GenericParamDesc>(fs);
 			std::string name(gpd.lenName, '\0');
-			fs.read(&(name[0]), gpd.lenName);
+			fs.read(name.data(), gpd.lenName);
 
 			std::deque<GenericQualifier> qualifiers;
 

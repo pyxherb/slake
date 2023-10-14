@@ -361,7 +361,7 @@ void bcc::compileOperand(std::ostream &fs, shared_ptr<Operand> operand) {
 			break;
 		}
 		case OperandType::REG: {
-			vd.type = slxfmt::Type::REG;
+			vd.type = operand->dereferenced ? slxfmt::Type::REG_VALUE : slxfmt::Type::REG;
 			_write(fs, vd);
 
 			auto op = static_pointer_cast<RegOperand>(operand);
@@ -373,13 +373,13 @@ void bcc::compileOperand(std::ostream &fs, shared_ptr<Operand> operand) {
 			break;
 		}
 		case OperandType::ARG:
-			vd.type = slxfmt::Type::REF;
+			vd.type = operand->dereferenced ? slxfmt::Type::ARG_VALUE : slxfmt::Type::ARG;
 			_write(fs, vd);
 
 			_write(fs, static_pointer_cast<ArgOperand>(operand)->data);
 			break;
 		case OperandType::LVAR:
-			vd.type = slxfmt::Type::LVAR;
+			vd.type = operand->dereferenced ? slxfmt::Type::LVAR_VALUE : slxfmt::Type::LVAR;
 			_write(fs, vd);
 
 			_write(fs, static_pointer_cast<LocalVarOperand>(operand)->data);

@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
 
 	slake::ValueRef<slake::ModuleValue> mod;
 	try {
-		auto fs = std::ifstream();
+		std::ifstream fs;
 		fs.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
 		fs.open("main.slx", std::ios_base::in | std::ios_base::binary);
 
@@ -98,13 +98,7 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
-	rt->getRootValue()->addMember(
-		"print",
-		new slake::NativeFnValue(
-			rt.get(),
-			print,
-			slake::ACCESS_PUB,
-			slake::TypeId::NONE));
+	((slake::ModuleValue *)rt->getRootValue()->getMember("main"))->addMember("print", new slake::NativeFnValue(rt.get(), print, slake::ACCESS_PUB, slake::TypeId::NONE));
 
 	slake::ValueRef<> result;
 
@@ -113,7 +107,11 @@ int main(int argc, char **argv) {
 		printf("%d\n", ((slake::I32Value *)*context->getResult())->getData());
 		while (!context->isDone()) {
 			context->resume();
-			printf("%d\n", ((slake::I32Value *)*context->getResult())->getData());
+
+			auto result = *context->getResult();
+			assert(result->getType() == slake::TypeId::I32);
+
+			printf("%d\n", ((slake::I32Value *)result)->getData());
 		}
 	} catch (slake::NotFoundError e) {
 		printf("NotFoundError: %s, ref = %s\n", e.what(), std::to_string(*e.ref).c_str());

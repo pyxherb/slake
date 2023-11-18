@@ -246,8 +246,8 @@ std::string std::to_string(const slake::Type &&type, const slake::Runtime *rt) {
 			return to_string(type.getArrayExData(), rt) + "[]";
 		case TypeId::OBJECT: {
 			if (type.isLoadingDeferred())
-				return std::to_string((RefValue *)*type.getCustomTypeExData());
-			return rt->getFullName((MemberValue *)*type.getCustomTypeExData());
+				return "@" + std::to_string((RefValue *)*type.getCustomTypeExData());
+			return "@" + rt->getFullName((MemberValue *)*type.getCustomTypeExData());
 		}
 		case TypeId::ANY:
 			return "any";

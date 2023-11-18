@@ -367,8 +367,8 @@ Instruction:
 L_I32 Operands { $$ = make_shared<Instruction>(@1, (Opcode)$1, $2); }
 | L_U32 Operands { $$ = make_shared<Instruction>(@1, (Opcode)$1, $2); }
 | T_ID Operands {
-	if(mnemonics.count($1))
-		$$ = make_shared<Instruction>(@1, mnemonics.at($1), $2);
+	if(MNEMONIC_OPCODE_MAP.count($1))
+		$$ = make_shared<Instruction>(@1, MNEMONIC_OPCODE_MAP.at($1), $2);
 	else
 		error(@1, "Invalid mnemonic `" + $1 + "'");
 }
@@ -392,7 +392,6 @@ Ref { $$ = make_shared<RefOperand>(@1, $1); }
 | "%" T_ID { $$ = make_shared<RegOperand>(@1, $2); }
 | "[" L_U32 "]" { $$ = make_shared<ArgOperand>(@1, $2); }
 | "*" "$" L_U32 { $$ = make_shared<LocalVarOperand>(@1, $3), $$->dereferenced = true; }
-| "*" "%" T_ID { $$ = make_shared<RegOperand>(@1, $3), $$->dereferenced = true; }
 | "*" "[" L_U32 "]" { $$ = make_shared<ArgOperand>(@1, $3), $$->dereferenced = true; }
 | Array { $$ = $1; }
 | Map { $$ = $1; }

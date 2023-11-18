@@ -6,13 +6,16 @@
 using namespace slake;
 using namespace slake::bcc;
 
+#define REGID_ENTRY(name) \
+	{ #name, RegId::name }
+
 static const std::unordered_map<std::string, RegId> _regIdNameMap = {
-	{ "TMP0", RegId::TMP0 },
-	{ "R0", RegId::R0 },
-	{ "R1", RegId::R1 },
-	{ "RR", RegId::RR },
-	{ "RTHIS", RegId::RTHIS },
-	{ "RXCPT", RegId::RXCPT }
+	REGID_ENTRY(TMP0),
+	REGID_ENTRY(R0),
+	REGID_ENTRY(R1),
+	REGID_ENTRY(RR),
+	REGID_ENTRY(RTHIS),
+	REGID_ENTRY(RXCPT)
 };
 
 template <typename T>
@@ -361,7 +364,7 @@ void bcc::compileOperand(std::ostream &fs, shared_ptr<Operand> operand) {
 			break;
 		}
 		case OperandType::REG: {
-			vd.type = operand->dereferenced ? slxfmt::Type::REG_VALUE : slxfmt::Type::REG;
+			vd.type = slxfmt::Type::REG;
 			_write(fs, vd);
 
 			auto op = static_pointer_cast<RegOperand>(operand);

@@ -79,7 +79,7 @@ interfaceSpec:
 inheritSlot: '(' customTypeName ')';
 implementList: ':' (customTypeName (',' customTypeName)*)?;
 
-operatorDecl: typeName 'operator' operatorName '(' params ')';
+operatorDecl: genericParams? typeName 'operator' operatorName '(' params ')';
 operatorDef: operatorDecl codeBlock;
 
 constructorDecl: 'operator' 'new' '(' params ')';

@@ -8,7 +8,7 @@ namespace slake {
 	class LocalVarRefValue final : public Value {
 	public:
 		int32_t index;
-		bool unwrapValue;
+		const bool unwrapValue;
 
 		inline LocalVarRefValue(Runtime *rt, int32_t index, bool unwrapValue = false)
 			: Value(rt), index(index), unwrapValue(unwrapValue) {
@@ -31,9 +31,8 @@ namespace slake {
 	class RegRefValue final : public Value {
 	public:
 		RegId reg;
-		bool unwrapValue;
 
-		inline RegRefValue(Runtime *rt, RegId reg, bool unwrapValue = false) : Value(rt), reg(reg), unwrapValue(unwrapValue) {
+		inline RegRefValue(Runtime *rt, RegId reg) : Value(rt), reg(reg) {
 			reportSizeToRuntime(sizeof(*this) - sizeof(Value));
 		}
 

@@ -16,8 +16,8 @@ namespace slake {
 
 		class Scope {
 		public:
-			weak_ptr<AstNode> owner;	  // Owner of this scope
-			weak_ptr<AstNode> parent;  // Parent of the owner
+			AstNode *owner;			  // Owner of this scope
+			Scope *parent = nullptr;  // Parent scope
 			unordered_map<string, shared_ptr<MemberNode>> members;
 		};
 	}

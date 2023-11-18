@@ -12,6 +12,18 @@ static const char *_ctrlCharNames[] = {
 	"x1b", "x1c", "x1d", "x1e", "x1f"
 };
 
+#define REGID_ENTRY(name) \
+	{ RegId::name , #name }
+
+static const std::unordered_map<RegId, std::string> _regIdNameMap = {
+	REGID_ENTRY(TMP0),
+	REGID_ENTRY(R0),
+	REGID_ENTRY(R1),
+	REGID_ENTRY(RR),
+	REGID_ENTRY(RTHIS),
+	REGID_ENTRY(RXCPT)
+};
+
 void slake::Decompiler::decompile(std::istream &fs, std::ostream &os) {
 	auto rt = std::make_unique<slake::Runtime>();
 	auto mod = rt->loadModule(fs, 0);
@@ -77,7 +89,7 @@ void slake::Decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 			os << to_string((RefValue *)value);
 			break;
 		case TypeId::TYPENAME:
-			os << to_string(((TypeNameValue *)value)->getData());
+			os << to_string(((TypeNameValue *)value)->getData(), rt);
 			break;
 		case TypeId::FN: {
 			auto v = (FnValue *)value;
@@ -163,9 +175,7 @@ void slake::Decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 		}
 		case TypeId::REG_REF: {
 			RegRefValue *v = (RegRefValue *)value;
-			if (v->unwrapValue)
-				os << "*";
-			os << "%" << std::to_string((uint8_t)v->reg);
+			os << "%" << (_regIdNameMap.count(v->reg) ? _regIdNameMap.at(v->reg) : std::to_string((uint8_t)v->reg));
 			break;
 		}
 		case TypeId::LVAR_REF: {
@@ -179,7 +189,7 @@ void slake::Decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 			ArgRefValue *v = (ArgRefValue *)value;
 			if (v->unwrapValue)
 				os << "*";
-			os << "#" << std::to_string(v->index);
+			os << "[" << std::to_string(v->index) << "]";
 			break;
 		}
 		default:

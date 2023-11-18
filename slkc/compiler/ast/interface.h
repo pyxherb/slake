@@ -17,12 +17,16 @@ namespace slake {
 			inline InterfaceNode(
 				Location loc,
 				shared_ptr<Scope> scope = make_shared<Scope>())
-				: _loc(loc), scope(scope) {}
+				: _loc(loc), scope(scope) {
+				scope->owner = this;
+			}
 			virtual ~InterfaceNode() = default;
 
 			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual inline NodeType getNodeType() const override { return AST_INTERFACE; }
+
+			virtual Ref getName() const override { return Ref({ RefEntry({}, name, {}) }); }
 		};
 	}
 }

@@ -1,2 +1,2 @@
 file(GLOB SRC *.asm)
-target_sources(slake PRIVATE ${SRC})
+target_sources(slake PUBLIC ${SRC})

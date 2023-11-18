@@ -1,76 +1,97 @@
 #include "../compiler.h"
+#include <algorithm>
 
 using namespace slake::slkc;
 
-shared_ptr<AstNode> Compiler::resolveRef(const Ref &ref, Ref &staticPartOut, Ref &dynamicPartOut) {
+bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut) {
 	assert(ref.size());
 
+	// Try to resolve the first entry as a local variable.
 	if (context.localVars.count(ref[0].name) && (!ref[0].genericArgs.size())) {
 		auto newRef = ref;
 		newRef.pop_front();
 
 		auto localVar = context.localVars.at(ref[0].name);
 		if (!newRef.size())
-			return localVar;
-		if (auto scope = scopeOf(localVar->type); scope)
-			return _resolveRef(scope, newRef, staticPartOut, dynamicPartOut, false);
+			goto lvarSucceeded;
+
+		if (auto scope = scopeOf(localVar->type); scope) {
+			_resolveRef(scope.get(), newRef, partsOut);
+			goto lvarSucceeded;
+		}
+
+		if (false) {
+		lvarSucceeded:
+			partsOut.push_front({ Ref{ ref.front() }, localVar });
+			return true;
+		}
 	}
 
+	// Try to resolve the first entry as a parameter.
 	if (context.curFn->paramIndices.count(ref[0].name) && (!ref[0].genericArgs.size())) {
 		auto newRef = ref;
 		newRef.pop_front();
 
 		auto idxParam = context.curFn->paramIndices.at(ref[0].name);
+
 		if (!newRef.size())
-			return make_shared<ArgRefNode>(idxParam);
-		if (auto scope = scopeOf(context.curFn->params[idxParam].type); scope)
-			return _resolveRef(scope, newRef, staticPartOut, dynamicPartOut, false);
+			goto paramSucceeded;
+
+		if (auto scope = scopeOf(context.curFn->params[idxParam].type); scope) {
+			_resolveRef(scope.get(), newRef, partsOut);
+			goto paramSucceeded;
+		}
+
+		if (false) {
+		paramSucceeded:
+			partsOut.push_front({ Ref{ ref.front() }, make_shared<ArgRefNode>(idxParam) });
+			return true;
+		}
 	}
 
-	return _resolveRef(context.curScope, ref, staticPartOut, dynamicPartOut, false);
+	if (ref[0].name == "this") {
+		ref.pop_front();
+		auto result = _resolveRef(context.curScope.get(), ref, partsOut);
+		partsOut.push_front({ Ref{ ref.front() }, make_shared<RegRefNode>(RegId::RTHIS) });
+		return result;
+	}
+
+	return _resolveRef(context.curScope.get(), ref, partsOut);
 }
 
 /// @brief Resolve a reference with a scope.
 /// @param scope Scope for resolution.
 /// @param ref Reference to be resolved.
-/// @return Resolved if succeeded, nullptr otherwise.
-shared_ptr<AstNode> Compiler::_resolveRef(shared_ptr<Scope> scope, const Ref &ref, Ref &staticPartOut, Ref &dynamicPartOut, bool afterStaticPart) {
+/// @return true if succeeded, false otherwise.
+bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut) {
 	if (shared_ptr<MemberNode> m; scope->members.count(ref[0].name)) {
 		m = scope->members.at(ref[0].name);
 
 		auto newRef = ref;
 		newRef.pop_front();
+
 		if (!newRef.size()) {
-			if (afterStaticPart)
-				dynamicPartOut.push_back(ref.front());
-			else
-				staticPartOut.push_back(ref.front());
-			return m;
+			// All entries have been resolved, return true.
+			partsOut.push_front({ Ref{ ref.front() }, m });
+			return true;
 		}
 
-		bool prevAfterStaticPart = afterStaticPart;
-
-		switch (scope->owner.lock()->getNodeType()) {
-			case AST_CLASS:
-			case AST_INTERFACE:
-			case AST_TRAIT:
-				break;
-			case AST_VAR:
-			case AST_LOCAL_VAR:
-				afterStaticPart = true;
-				break;
-		}
-
-		if (auto result = _resolveRef(scope, newRef, staticPartOut, dynamicPartOut, afterStaticPart); result) {
-			(prevAfterStaticPart ? staticPartOut : dynamicPartOut).push_front(ref[0]);
-			return result;
+		if (_resolveRef(scope, newRef, partsOut)) {
+			switch (m->getNodeType()) {
+				case AST_VAR:
+					partsOut.push_front({ Ref{ ref.front() }, m });
+					break;
+				default:
+					partsOut.front().first.push_front(ref.front());
+			}
+			return true;
 		}
 	}
 
-	if (!scope->owner.expired()) {
-		switch (scope->owner.lock()->getNodeType()) {
+	if (scope->owner) {
+		switch (scope->owner->getNodeType()) {
 			case AST_CLASS: {
-				auto owner = static_pointer_cast<ClassNode>(scope->owner.lock());
+				ClassNode *owner = (ClassNode *)scope->owner;
 
 				// Resolve the parent class.
 				if (owner->parentClass) {
@@ -82,8 +103,8 @@ shared_ptr<AstNode> Compiler::_resolveRef(shared_ptr<Scope> scope, const Ref &re
 									MSG_ERROR,
 									"`" + to_string(owner->parentClass) + "' is not a class"));
 						}
-						if (auto m = _resolveRef(scopeOf(p), ref, staticPartOut, dynamicPartOut, afterStaticPart); m)
-							return m;
+						if (_resolveRef(scopeOf(p).get(), ref, partsOut))
+							return true;
 					} else {
 						// Error resolving the parent class - the reference is invalid.
 						throw FatalCompilationError(
@@ -104,8 +125,8 @@ shared_ptr<AstNode> Compiler::_resolveRef(shared_ptr<Scope> scope, const Ref &re
 									MSG_ERROR,
 									"`" + to_string(i) + "' is not an interface"));
 						}
-						if (auto m = _resolveRef(scopeOf(p), ref, staticPartOut, dynamicPartOut, afterStaticPart); m)
-							return m;
+						if (_resolveRef(scopeOf(p).get(), ref, partsOut))
+							return true;
 					} else {
 						// Error resolving the interface - the reference is invalid.
 						throw FatalCompilationError(
@@ -120,7 +141,7 @@ shared_ptr<AstNode> Compiler::_resolveRef(shared_ptr<Scope> scope, const Ref &re
 				break;
 			}
 			case AST_INTERFACE: {
-				auto owner = static_pointer_cast<InterfaceNode>(scope->owner.lock());
+				auto owner = (InterfaceNode *)scope->owner;
 
 				for (auto i : owner->parentInterfaces) {
 					if (auto p = resolveCustomType(i); p) {
@@ -131,8 +152,8 @@ shared_ptr<AstNode> Compiler::_resolveRef(shared_ptr<Scope> scope, const Ref &re
 									MSG_ERROR,
 									"`" + to_string(i) + "' is not an interface"));
 						}
-						if (auto m = _resolveRef(scopeOf(p), ref, staticPartOut, dynamicPartOut, afterStaticPart); m)
-							return m;
+						if (_resolveRef(scopeOf(p).get(), ref, partsOut))
+							return true;
 					} else {
 						// Error resolving the interface - the reference is invalid.
 						throw FatalCompilationError(
@@ -145,30 +166,53 @@ shared_ptr<AstNode> Compiler::_resolveRef(shared_ptr<Scope> scope, const Ref &re
 				break;
 			}
 			case AST_TRAIT: {
-				auto owner = static_pointer_cast<TraitNode>(scope->owner.lock());
+				auto owner = (TraitNode *)scope->owner;
 				break;
 			}
 			case AST_MODULE: {
 				// Resolve with the parent module.
-				auto owner = static_pointer_cast<ModuleNode>(scope->owner.lock());
+				auto owner = (ModuleNode *)scope->owner;
 				if (owner->parentModule.expired())
-					return shared_ptr<MemberNode>();
+					return false;
 
-				if (auto m = _resolveRef(owner->parentModule.lock()->scope, ref, staticPartOut, dynamicPartOut, afterStaticPart); m)
-					return m;
+				if (_resolveRef(owner->parentModule.lock()->scope.get(), ref, partsOut))
+					return true;
 
 				break;
 			}
 			case AST_VAR: {
-				auto owner = static_pointer_cast<VarNode>(scope->owner.lock());
-				if (owner->parent.expired())
-					return shared_ptr<MemberNode>();
+				auto owner = (VarNode *)scope->owner;
+				if (!owner->parent)
+					return false;
 
-				if (auto m = _resolveRef(scopeOf(owner->parent.lock()), ref, staticPartOut, dynamicPartOut, afterStaticPart); m)
-					return m;
+				if (_resolveRef(scopeOf(shared_ptr<AstNode>(owner->parent)).get(), ref, partsOut))
+					return false;
 			}
 		}
 	}
 
+	if (scope->parent)
+		return _resolveRef(scope->parent, ref, partsOut);
+
 	return {};
+}
+
+void Compiler::_getFullName(MemberNode *member, Ref &ref) {
+	auto name = member->getName();
+
+	name.insert(name.end(), ref.begin(), ref.end());
+	ref = name;
+
+	if (!member->parent)
+		return;
+
+	_getFullName(member->parent, ref);
+}
+
+slake::slkc::Ref Compiler::getFullName(shared_ptr<MemberNode> member) {
+	Ref ref;
+
+	_getFullName(member.get(), ref);
+
+	return ref;
 }

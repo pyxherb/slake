@@ -104,6 +104,7 @@ namespace slake {
 				_contextStack.push_back(context);
 			}
 			inline void popContext() {
+				_contextStack.back().isLastCallTargetStatic = context.isLastCallTargetStatic;
 				context = _contextStack.back();
 				_contextStack.pop_back();
 			}
@@ -125,7 +126,7 @@ namespace slake {
 			/// @return True if the register needs to be preserved and then restored later.
 			inline bool preserveRegister(RegId reg) {
 				if (context.preservedRegisters.count(reg)) {
-					context.curFn->insertIns(Opcode::PUSH, make_shared<RegRefNode>(reg, true));
+					context.curFn->insertIns(Opcode::PUSH, make_shared<RegRefNode>(reg));
 					context.preservedRegisters.erase(reg);
 					return true;
 				}
@@ -156,16 +157,20 @@ namespace slake {
 
 			bool areTypesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<TypeNameNode> dest);
 
-			shared_ptr<AstNode> _resolveRef(shared_ptr<Scope> scope, const RefEntry &ref, Ref &staticPartOut, Ref &dynamicPartOut, bool afterStaticPart);
-			shared_ptr<AstNode> _resolveRef(shared_ptr<Scope> scope, const Ref &ref, Ref &staticPartOut, Ref &dynamicPartOut, bool afterStaticPart);
+			bool _resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut);
 
-			shared_ptr<AstNode> resolveRef(const Ref &ref, Ref &staticPartOut, Ref &dynamicPartOut);
+			/// @brief Resolve a reference with current context.
+			/// @param ref Reference to be resolved.
+			/// @param refParts Divided minimum parts of the reference that can be loaded in a single time.
+			/// @param resolvedPartsOut Nodes referred by reference entries respectively.
+			bool resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut);
 
 			shared_ptr<Scope> scopeOf(shared_ptr<AstNode> node);
 			shared_ptr<AstNode> resolveCustomType(shared_ptr<CustomTypeNameNode> typeName);
 
 			bool isSameType(shared_ptr<TypeNameNode> x, shared_ptr<TypeNameNode> y);
 
+			void _getFullName(MemberNode *member, Ref &ref);
 			Ref getFullName(shared_ptr<MemberNode> member);
 
 			void compileExpr(shared_ptr<ExprNode> expr);
@@ -182,6 +187,8 @@ namespace slake {
 			void compileRef(std::ostream &fs, const Ref &ref);
 			void compileTypeName(std::ostream &fs, shared_ptr<TypeNameNode> typeName);
 			void compileValue(std::ostream &fs, shared_ptr<AstNode> expr);
+
+			bool isDynamicMember(shared_ptr<AstNode> member);
 
 			friend class AstVisitor;
 

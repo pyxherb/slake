@@ -1,6 +1,7 @@
 .module main
-.access native
-.fndecl void print ...
+
+// .access native
+// .fndecl void print ...
 
 .fn i32 main
 	PUSHARG "Entered main\n";
@@ -8,7 +9,7 @@
 	PUSH 114514;
 
 	LOAD %R0, print;
-	CALL *%R0;
+	CALL %R0;
 	YIELD 0;
 
 	LVAR i32;
@@ -17,18 +18,18 @@
 loopStart:
 	PUSHARG "Yielded\n";
 
-	LOAD %R0, print;
-	CALL *%R0;
+	LOAD %R0, main.print;
+	CALL %R0;
 	YIELD *$0u;
 
 	ADD $0u, *$0u, 1;
 
 loopEnd:
 	STORE %R0, *$0u;
-	LT %R0, *%R0, 100;
-	JT #loopStart, *%R0;
+	LT %R0, %R0, 100;
+	JT #loopStart, %R0;
 
 	POP %R0;
 
-	RET *%R0;
+	RET %R0;
 .end

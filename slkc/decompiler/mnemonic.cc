@@ -14,6 +14,7 @@ std::map<Opcode, std::string> Decompiler::mnemonics = {
 	MNEMONIC_ENTRY(LOAD),
 	MNEMONIC_ENTRY(RLOAD),
 	MNEMONIC_ENTRY(STORE),
+	MNEMONIC_ENTRY(ISTORE),
 
 	MNEMONIC_ENTRY(LVAR),
 

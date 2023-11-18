@@ -86,8 +86,6 @@ Value *Runtime::_loadValue(std::istream &fs) {
 			return new TypeNameValue(this, _loadType(fs, _read<slxfmt::Type>(fs)));
 		case slxfmt::Type::REG:
 			return new RegRefValue(this, _read<RegId>(fs));
-		case slxfmt::Type::REG_VALUE:
-			return new RegRefValue(this, _read<RegId>(fs), true);
 		case slxfmt::Type::LVAR:
 			return new LocalVarRefValue(this, _read<uint32_t>(fs));
 		case slxfmt::Type::LVAR_VALUE:

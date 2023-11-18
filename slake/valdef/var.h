@@ -6,6 +6,10 @@
 #include <slake/type.h>
 
 namespace slake {
+	using VarFlags = uint8_t;
+	constexpr static VarFlags
+		VAR_REG = 0x01;
+
 	class VarValue final : public MemberValue {
 	protected:
 		mutable ValueRef<slake::Value, false> value;
@@ -14,8 +18,10 @@ namespace slake {
 		friend class Runtime;
 
 	public:
-		inline VarValue(Runtime *rt, AccessModifier access, Type type)
-			: MemberValue(rt, access), type(type) {
+		VarFlags flags;
+
+		inline VarValue(Runtime *rt, AccessModifier access, Type type, VarFlags flags = 0)
+			: MemberValue(rt, access), type(type), flags(flags) {
 			reportSizeToRuntime(sizeof(*this) - sizeof(MemberValue));
 		}
 
@@ -32,7 +38,7 @@ namespace slake {
 			return value ? value->getMember(name) : nullptr;
 		}
 
-		ValueRef<> getData() const { return value; }
+		Value* getData() const { return *value; }
 		void setData(Value *value) {
 			if (value && !isCompatible(type, value->getType()))
 				throw MismatchedTypeError("Mismatched types");

@@ -2,6 +2,19 @@
 
 using namespace slake;
 
+MinorFrame::MinorFrame(Runtime *rt) {
+	for (size_t i = 0; i < std::size(tmpRegs); ++i)
+		tmpRegs[i] = new VarValue(rt, ACCESS_PUB, Type(TypeId::ANY), VAR_REG);
+
+	for (size_t i = 0; i < std::size(gpRegs); ++i)
+		gpRegs[i] = new VarValue(rt, ACCESS_PUB, Type(TypeId::ANY), VAR_REG);
+}
+
+MajorFrame::MajorFrame(Runtime *rt) {
+	thisObject = new VarValue(rt, ACCESS_PUB, Type(TypeId::ANY), VAR_REG);
+	minorFrames.push_back(MinorFrame(rt));
+}
+
 Runtime::Runtime(RuntimeFlags flags) : _flags(flags) {
 	_rootValue = new RootValue(this);
 	_rootValue->incRefCount();
@@ -24,7 +37,7 @@ Runtime::~Runtime() {
 	_flags |= _RT_DELETING;
 
 	while (_createdValues.size())
-		delete *_createdValues.begin();
+		delete *(_createdValues.begin());
 }
 
 std::string Runtime::mangleName(

@@ -94,7 +94,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 						Opcode::CAST,
 						make_shared<RegRefNode>(RegId::TMP0),
 						make_shared<BoolTypeNameNode>(s->condition->getLocation(), true), make_shared<RegRefNode>(RegId::TMP0));
-				context.curFn->insertIns(Opcode::JF, make_shared<LabelRefNode>(endLabel), make_shared<RegRefNode>(RegId::TMP0, true));
+				context.curFn->insertIns(Opcode::JF, make_shared<LabelRefNode>(endLabel), make_shared<RegRefNode>(RegId::TMP0));
 			} else {
 				context.curFn->insertIns(Opcode::JMP, make_shared<LabelRefNode>(endLabel));
 			}
@@ -136,9 +136,15 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 
 			compileStmt(s->body);
 
-			context.curFn->insertIns(Opcode::JF, make_shared<LabelRefNode>(endLabel), make_shared<RegRefNode>(RegId::TMP0, true));
-
 			context.curFn->insertLabel(endLabel);
+
+			compileExpr(s->condition, EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::TMP0));
+			if (evalExprType(s->condition)->getTypeId() != TYPE_BOOL)
+				context.curFn->insertIns(
+					Opcode::CAST,
+					make_shared<RegRefNode>(RegId::TMP0),
+					make_shared<BoolTypeNameNode>(s->condition->getLocation(), true), make_shared<RegRefNode>(RegId::TMP0));
+			context.curFn->insertIns(Opcode::JT, make_shared<LabelRefNode>(beginLabel), make_shared<RegRefNode>(RegId::TMP0));
 
 			popContext();
 
@@ -158,7 +164,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 					context.curFn->insertIns(Opcode::RET, e);
 				} else {
 					compileExpr(s->returnValue, EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::TMP0));
-					context.curFn->insertIns(Opcode::RET, make_shared<RegRefNode>(RegId::TMP0, true));
+					context.curFn->insertIns(Opcode::RET, make_shared<RegRefNode>(RegId::TMP0));
 				}
 			}
 
@@ -178,7 +184,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 					context.curFn->insertIns(Opcode::YIELD, e);
 				} else {
 					compileExpr(s->returnValue, EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::TMP0));
-					context.curFn->insertIns(Opcode::YIELD, make_shared<RegRefNode>(RegId::TMP0, true));
+					context.curFn->insertIns(Opcode::YIELD, make_shared<RegRefNode>(RegId::TMP0));
 				}
 			}
 
@@ -197,7 +203,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 					make_shared<RegRefNode>(RegId::TMP0),
 					make_shared<BoolTypeNameNode>(s->getLocation(), true), make_shared<RegRefNode>(RegId::TMP0));
 
-			context.curFn->insertIns(Opcode::JF, make_shared<LabelRefNode>(endLabel), make_shared<RegRefNode>(RegId::TMP0, true));
+			context.curFn->insertIns(Opcode::JF, make_shared<LabelRefNode>(endLabel), make_shared<RegRefNode>(RegId::TMP0));
 
 			compileStmt(s->body);
 
@@ -301,7 +307,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 
 				compileExpr(curCase.condition, EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::R1));
 				context.curFn->insertIns(Opcode::EQ, make_shared<RegRefNode>(RegId::TMP0), make_shared<RegRefNode>(RegId::R2), make_shared<RegRefNode>(RegId::R1));
-				context.curFn->insertIns(Opcode::JF, make_shared<LabelRefNode>(caseEndLabel), make_shared<RegRefNode>(RegId::TMP0, true));
+				context.curFn->insertIns(Opcode::JF, make_shared<LabelRefNode>(caseEndLabel), make_shared<RegRefNode>(RegId::TMP0));
 
 				compileStmt(make_shared<BlockStmtNode>(curCase.loc, curCase.body));
 

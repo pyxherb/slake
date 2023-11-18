@@ -31,14 +31,17 @@ void AstVisitor::_putDefinition(
 				MSG_ERROR,
 				"Redefinition of `" + name + "'"));
 	curScope->members[name] = member;
+	member->parent = (MemberNode*)curScope->owner;
 }
 
 void AstVisitor::_putFnDefinition(
 	Location locName,
 	string name,
 	FnOverloadingRegistry overloadingRegistry) {
-	if (!curScope->members.count(name))
+	if (!curScope->members.count(name)) {
 		curScope->members[name] = make_shared<FnNode>(name);
+		curScope->members[name]->parent = (MemberNode *)curScope->owner;
+	}
 
 	if (curScope->members.at(name)->getNodeType() != AST_FN) {
 		throw FatalCompilationError(
@@ -84,7 +87,12 @@ VISIT_METHOD_DECL(ProgFnDef) {
 	return visitChildren(context);
 }
 VISIT_METHOD_DECL(ProgClassDef) {
-	return visitChildren(context);
+	auto cls = any_cast<shared_ptr<ClassNode>>(visit(context->classDef()));
+
+	if (context->access())
+		cls->access = any_cast<AccessModifier>(visit(context->access()));
+
+	return Any();
 }
 VISIT_METHOD_DECL(ProgVarDef) {
 	return visitChildren(context);
@@ -342,7 +350,16 @@ VISIT_METHOD_DECL(ClassDef) {
 
 	_putDefinition(Location(context->ID()), name, cls);
 
-	return Any();
+	auto savedScope = curScope;
+	curScope = cls->scope;
+	curScope->parent = savedScope.get();
+
+	for (auto i : context->classStmts())
+		visit(i);
+
+	curScope = savedScope;
+
+	return cls;
 }
 VISIT_METHOD_DECL(ClassFnDecl) {
 	auto decl = any_cast<FnDecl>(visit(context->fnDecl()));
@@ -357,24 +374,86 @@ VISIT_METHOD_DECL(ClassFnDecl) {
 	return visitChildren(context);
 }
 VISIT_METHOD_DECL(ClassFnDef) {
-	auto decl = any_cast<shared_ptr<FnNode>>(visit(context->fnDef()));
+	auto decl = any_cast<FnDecl>(visit(context->fnDef()));
 	if (context->access())
-		decl->access = any_cast<AccessModifier>(visit(context->access()));
+		decl.overloadingRegistry.access = any_cast<AccessModifier>(visit(context->access()));
 
-	_putDefinition(
+	_putFnDefinition(
 		Location(context->fnDef()->fnDecl()->ID()),
-		decl->name,
-		decl);
+		decl.name,
+		decl.overloadingRegistry);
 
 	return visitChildren(context);
 }
-VISIT_METHOD_DECL(ClassOperatorDecl) { return Any(); }
-VISIT_METHOD_DECL(ClassOperatorDef) { return Any(); }
-VISIT_METHOD_DECL(ClassConstructorDecl) { return Any(); }
+VISIT_METHOD_DECL(ClassOperatorDecl) {
+	auto decl = any_cast<FnDecl>(visit(context->operatorDecl()));
+	if (context->access())
+		decl.overloadingRegistry.access = any_cast<AccessModifier>(visit(context->access()));
+
+	_putFnDefinition(
+		Location(context->operatorDecl()->KW_OPERATOR()),
+		decl.name,
+		decl.overloadingRegistry);
+
+	return visitChildren(context);
+}
+VISIT_METHOD_DECL(ClassOperatorDef) {
+	auto decl = any_cast<FnDecl>(visit(context->operatorDef()));
+	if (context->access())
+		decl.overloadingRegistry.access = any_cast<AccessModifier>(visit(context->access()));
+
+	_putFnDefinition(
+		Location(context->operatorDef()->operatorDecl()->KW_OPERATOR()),
+		decl.name,
+		decl.overloadingRegistry);
+
+	return visitChildren(context);
+}
+VISIT_METHOD_DECL(ClassConstructorDecl) {
+	auto decl = any_cast<FnDecl>(visit(context->constructorDecl()));
+	if (context->access())
+		decl.overloadingRegistry.access = any_cast<AccessModifier>(visit(context->access()));
+
+	_putFnDefinition(
+		Location(context->constructorDecl()->KW_OPERATOR()),
+		decl.name,
+		decl.overloadingRegistry);
+
+	return visitChildren(context);
+}
 VISIT_METHOD_DECL(ClassDestructorDecl) { return Any(); }
-VISIT_METHOD_DECL(ClassConstructorDef) { return Any(); }
+VISIT_METHOD_DECL(ClassConstructorDef) {
+	auto decl = any_cast<FnDecl>(visit(context->constructorDef()));
+	if (context->access())
+		decl.overloadingRegistry.access = any_cast<AccessModifier>(visit(context->access()));
+
+	_putFnDefinition(
+		Location(context->constructorDef()->constructorDecl()->KW_OPERATOR()),
+		decl.name,
+		decl.overloadingRegistry);
+
+	return visitChildren(context);
+}
 VISIT_METHOD_DECL(ClassDestructorDef) { return Any(); }
-VISIT_METHOD_DECL(ClassVarDef) { return Any(); }
+VISIT_METHOD_DECL(ClassVarDef) {
+	auto varDef = static_pointer_cast<VarDefStmtNode>(any_cast<shared_ptr<StmtNode>>(visit(context->varDef())));
+
+	for (auto i : varDef->varDefs) {
+		auto v = make_shared<VarNode>(
+			i.second.loc,
+			any_cast<AccessModifier>(visit(context->access())),
+			varDef->type,
+			i.first,
+			i.second.initValue);
+
+		_putDefinition(
+			v->getLocation(),
+			v->name,
+			v);
+	}
+
+	return Any();
+}
 VISIT_METHOD_DECL(ClassClassDef) { return Any(); }
 
 VISIT_METHOD_DECL(GenericParams) {
@@ -431,11 +510,50 @@ VISIT_METHOD_DECL(ImplementList) {
 	return typeNames;
 }
 
-VISIT_METHOD_DECL(OperatorDecl) { return Any(); }
-VISIT_METHOD_DECL(OperatorDef) { return Any(); }
+VISIT_METHOD_DECL(OperatorDecl) {
+	GenericParamList genericParams;
+	auto returnType = any_cast<shared_ptr<TypeNameNode>>(visit(context->typeName()));
+	auto name = "operator" + context->operatorName()->getText();
+	auto params = any_cast<deque<Param>>(visit(context->params()));
 
-VISIT_METHOD_DECL(ConstructorDecl) { return Any(); }
-VISIT_METHOD_DECL(ConstructorDef) { return Any(); }
+	Location loc;
+	if (context->genericParams()) {
+		loc = Location(context->getToken(SlakeParser::RuleGenericParams, 0));
+		genericParams = any_cast<GenericParamList>(visit(context->genericParams()));
+	} else {
+		loc = returnType->getLocation();
+	}
+
+	return FnDecl(
+		name,
+		FnOverloadingRegistry(
+			loc, returnType,
+			genericParams,
+			params));
+}
+VISIT_METHOD_DECL(OperatorDef) {
+	auto decl = any_cast<FnDecl>(visit(context->children[0]));
+	decl.overloadingRegistry.body = static_pointer_cast<BlockStmtNode>(any_cast<shared_ptr<StmtNode>>(visit(context->children[1])));
+	return decl;
+}
+
+VISIT_METHOD_DECL(ConstructorDecl) {
+	auto name = "new";
+	auto params = any_cast<deque<Param>>(visit(context->params()));
+
+	return FnDecl(
+		name,
+		FnOverloadingRegistry(
+			Location(context->KW_OPERATOR()),
+			make_shared<VoidTypeNameNode>(Location(context->KW_OPERATOR()), false),
+			{},
+			params));
+}
+VISIT_METHOD_DECL(ConstructorDef) {
+	auto decl = any_cast<FnDecl>(visit(context->constructorDecl()));
+	decl.overloadingRegistry.body = static_pointer_cast<BlockStmtNode>(any_cast<shared_ptr<StmtNode>>(visit(context->codeBlock())));
+	return decl;
+}
 
 VISIT_METHOD_DECL(DestructorDecl) { return Any(); }
 VISIT_METHOD_DECL(DestructorDef) { return Any(); }
@@ -1198,7 +1316,7 @@ VISIT_METHOD_DECL(GenericArgs) {
 }
 VISIT_METHOD_DECL(Params) {
 	deque<Param> params;
-	for (auto i : context->getTokens(SlakeParser::RuleParamDecl))
+	for (auto i : context->paramDecl())
 		params.push_back(any_cast<Param>(visit(i)));
 	if (context->VARARG()) {
 		auto varArg = context->VARARG();

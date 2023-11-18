@@ -1,11 +1,9 @@
 ///
-/// @file slx.h
-/// @author CodesBuilder (2602783536@qq.com)
+/// @file slxfmt.h
+/// @author CodesBuilder (codesbuilder@163.com)
 /// @brief Definitions for Slake Executable (SLX) format.
-/// @version 0.1
-/// @date 2022-09-18
 ///
-/// @copyright Copyright (c) 2022 Slake Contributors
+/// @copyright Copyright (c) 2022-2023 Slake Contributors
 ///
 #ifndef _SLAKE_SLXFMT_H_
 #define _SLAKE_SLXFMT_H_
@@ -25,7 +23,10 @@ namespace slake {
 	namespace slxfmt {
 		constexpr static uint8_t GENERIC_PARAM_MAX = 16;
 
-		constexpr static uint8_t IMH_MODNAME = 0x01;
+		constexpr static uint8_t
+			IMH_MODNAME = 0x01,	 // With module name
+			IMH_DBG = 0x02		 // With debugging information, e.g. source file name
+			;
 
 		///
 		/// @brief Image Header (IMH)
@@ -76,11 +77,10 @@ namespace slake {
 			TYPENAME,	  // Type name
 			GENERIC_ARG,  // Generic argument
 			REG,		  // Register
-			REG_VALUE,	  // Register value
 			LVAR,		  // Local variable
 			LVAR_VALUE,	  // Local variable value
 			ARG,		  // Argument
-			ARG_VALUE,		  // Argument
+			ARG_VALUE,	  // Argument
 		};
 
 		/// @brief Value Descriptor (VD)
@@ -143,8 +143,17 @@ namespace slake {
 			FND_OVERRIDE = 0x04,  // Override
 			FND_STATIC = 0x08,	  // Static
 			FND_NATIVE = 0x10,	  // Native
+			FND_DBG = 0x40,		  // With debugging information
 			FND_VARG = 0x80		  // Variable arguments
 			;
+
+		struct SrcInfoEntry {
+			uint32_t line;
+		};
+
+		struct LocalVarInfo {
+			uint32_t validLineStart, validLineEnd;
+		};
 
 		/// @brief Variable Descriptonr (VAD)
 		struct VarDesc final {

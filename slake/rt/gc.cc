@@ -132,9 +132,8 @@ void Runtime::_gcWalk(Value *v) {
 
 			_gcWalk(value->type);
 
-			auto v = value->getData();
-			if (v)
-				_gcWalk(*v);
+			if (auto v = value->getData(); v)
+				_gcWalk(v);
 
 			if (value->_parent)
 				_gcWalk(value->_parent);
@@ -226,15 +225,15 @@ void Runtime::_gcWalk(Value *v) {
 	}
 }
 
-void Runtime::_gcWalk(Context& ctxt) {
+void Runtime::_gcWalk(Context &ctxt) {
 	for (auto &j : ctxt.majorFrames) {
 		_gcWalk(const_cast<FnValue *>(*j.curFn));
 		if (j.scopeValue)
 			_gcWalk(*j.scopeValue);
 		if (j.returnValue)
 			_gcWalk(*j.returnValue);
-		if (j.thisObject)
-			_gcWalk(*j.thisObject);
+		if (auto v = j.thisObject->getData(); v)
+			_gcWalk(v);
 		if (j.curExcept)
 			_gcWalk(*j.curExcept);
 		for (auto &k : j.argStack)

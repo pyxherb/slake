@@ -2,6 +2,8 @@
 #define _SLAKE_OPCODE_H_
 
 #include <cstdint>
+#include <map>
+#include <string>
 
 namespace slake {
 	enum class Opcode : uint16_t {
@@ -10,9 +12,10 @@ namespace slake {
 		PUSH,  // Push an element into the stack.
 		POP,   // Pop an element from the stack.
 
-		LOAD,	// Load value of a variable.
-		RLOAD,	// Access and load corresponding member with an existing value.
-		STORE,	// Store a value into a variable.
+		LOAD,	 // Load value of a variable.
+		RLOAD,	 // Access and load corresponding member with an existing value.
+		STORE,	 // Store a value into a variable.
+		ISTORE,	 // Indirect store.
 
 		LVAR,  // Create a new local variable
 
@@ -84,6 +87,9 @@ namespace slake {
 
 		OPCODE_MAX
 	};
+
+	extern const std::map<Opcode, std::string> OPCODE_MNEMONIC_MAP;
+	extern const std::map<std::string, Opcode> MNEMONIC_OPCODE_MAP;
 }
 
 #endif

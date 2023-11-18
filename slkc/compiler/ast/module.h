@@ -3,10 +3,11 @@
 
 #include "ref.h"
 #include "scope.h"
+#include "member.h"
 
 namespace slake {
 	namespace slkc {
-		class ModuleNode : public AstNode {
+		class ModuleNode : public MemberNode {
 		private:
 			Location _loc;
 
@@ -19,12 +20,16 @@ namespace slake {
 			inline ModuleNode(
 				Location loc,
 				shared_ptr<Scope> scope = make_shared<Scope>())
-				: _loc(loc), scope(scope) {}
+				: MemberNode(ACCESS_PUB), _loc(loc), scope(scope) {
+				scope->owner = this;
+			}
 			virtual ~ModuleNode() = default;
 
 			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual inline NodeType getNodeType() const override { return AST_MODULE; }
+
+			virtual Ref getName() const override { return moduleName; }
 		};
 	}
 }

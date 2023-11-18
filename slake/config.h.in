@@ -3,7 +3,24 @@
 
 #include <cstdint>
 
-#define SLAKE_WITH_STDLIB @SLAKE_WITH_STDLIB@
+#if @SLAKE_WITH_STDLIB@==TRUE
+#define SLAKE_WITH_STDLIB true
+#else
+#define SLAKE_WITH_STDLIB false
+#endif
+
 #define SLAKE_STACK_MAX @SLAKE_STACK_MAX@
+
+#if @SLAKE_ENABLE_DEBUGGER@==TRUE
+#define SLAKE_ENABLE_DEBUGGER true
+#else
+#define SLAKE_ENABLE_DEBUGGER false
+#endif
+
+#if @SLAKE_WITH_STRICT_MODE@==TRUE
+#define SLAKE_WITH_STRICT_MODE true
+#else
+#define SLAKE_WITH_STRICT_MODE false
+#endif
 
 #endif

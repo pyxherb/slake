@@ -1,15 +1,30 @@
 module main;
 
+class Test {
+	pub i32 x;
+
+	pub operator new(i32 x) {
+		this.x = x;
+		return;
+	}
+
+	i32 getX() {
+		print("Fetched x: ", this.x, "\n");
+		return this.x;
+	}
+}
+
 pub native void print(...);
 
 pub i32 main() {
 	print("Entered main\n");
-	yield 0;
 
-	for(i32 i = 0; i<100; i += 1) {
+	@Test test = new @Test(100);
+
+	while(test.x = test.x - 1) {
 		print("Yielded\n");
-		yield i;
+		yield test.getX();
 	}
 
-	return 100;
+	return 114514;
 }

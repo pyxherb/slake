@@ -153,7 +153,7 @@ namespace slake {
 				Location loc,
 				shared_ptr<ExprNode> condition,
 				shared_ptr<StmtNode> body)
-				: _loc(loc), body(body) {}
+				: _loc(loc), condition(condition), body(body) {}
 			virtual ~WhileStmtNode() = default;
 
 			virtual inline Location getLocation() const override { return _loc; }

@@ -2,6 +2,10 @@
 
 using namespace slake;
 
+bool slake::_isRuntimeInDestruction(Runtime* runtime) {
+	return runtime->_flags & _RT_DELETING;
+}
+
 Value::Value(Runtime *rt) : _rt(rt) {
 	rt->_createdValues.insert(this);
 	reportSizeToRuntime(sizeof(*this));

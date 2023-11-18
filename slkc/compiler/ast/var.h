@@ -18,10 +18,11 @@ namespace slake {
 
 			inline VarNode(
 				Location loc,
+				AccessModifier access,
 				shared_ptr<TypeNameNode> type,
 				string name,
 				shared_ptr<ExprNode> initValue)
-				: MemberNode(AST_VAR),
+				: MemberNode(access),
 				  _loc(loc),
 				  type(type),
 				  name(name),
@@ -30,6 +31,9 @@ namespace slake {
 			virtual ~VarNode() = default;
 
 			virtual inline Location getLocation() const override { return _loc; }
+			virtual inline NodeType getNodeType() const override { return AST_VAR; }
+
+			virtual Ref getName() const override { return Ref({ RefEntry({}, name, {}) }); }
 		};
 
 		class LocalVarNode : public AstNode {

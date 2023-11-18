@@ -55,6 +55,8 @@ namespace slake {
 			}
 
 			virtual inline NodeType getNodeType() const override { return AST_FN; }
+
+			virtual Ref getName() const override { return Ref({ RefEntry({}, name, {}) }); }
 		};
 
 		struct Ins {
@@ -122,6 +124,8 @@ namespace slake {
 				insertIns({ opcode, { op1, op2, op3, op4 } });
 			}
 			inline void insertLabel(string name) { labels[name] = body.size(); }
+
+			virtual Ref getName() const override { return Ref({ RefEntry({}, name, {}) }); }
 		};
 
 		class LabelRefNode final : public AstNode {
@@ -141,9 +145,8 @@ namespace slake {
 		class RegRefNode final : public AstNode {
 		public:
 			RegId reg;
-			bool unwrapData;
 
-			inline RegRefNode(RegId reg, bool unwrapData = false) : reg(reg), unwrapData(unwrapData) {}
+			inline RegRefNode(RegId reg) : reg(reg) {}
 			virtual ~RegRefNode() = default;
 
 			virtual inline Location getLocation() const override {

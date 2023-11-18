@@ -24,56 +24,60 @@ static map<UnaryOp, UnaryOpRegistry> _unaryOpRegs = {
 
 struct BinaryOpRegistry {
 	slake::Opcode opcode;
-	bool isLvalueRhs;
+	bool isLhsLvalue;
+	bool isRhsLvalue;
 
 	inline BinaryOpRegistry(
 		slake::Opcode opcode,
-		bool isLvalueRhs)
+		bool isLhsLvalue,
+		bool isRhsLvalue)
 		: opcode(opcode),
-		  isLvalueRhs(isLvalueRhs) {}
+		  isLhsLvalue(isLhsLvalue),
+		  isRhsLvalue(isRhsLvalue) {}
 };
 
 static map<BinaryOp, BinaryOpRegistry> _binaryOpRegs = {
-	{ OP_ADD, { slake::Opcode::ADD, false } },
-	{ OP_SUB, { slake::Opcode::SUB, false } },
-	{ OP_MUL, { slake::Opcode::MUL, false } },
-	{ OP_DIV, { slake::Opcode::DIV, false } },
-	{ OP_MOD, { slake::Opcode::MOD, false } },
-	{ OP_AND, { slake::Opcode::AND, false } },
-	{ OP_OR, { slake::Opcode::OR, false } },
-	{ OP_XOR, { slake::Opcode::XOR, false } },
-	{ OP_LAND, { slake::Opcode::LAND, false } },
-	{ OP_LOR, { slake::Opcode::LOR, false } },
-	{ OP_LSH, { slake::Opcode::LSH, false } },
-	{ OP_RSH, { slake::Opcode::RSH, false } },
-	{ OP_SWAP, { slake::Opcode::SWAP, true } },
+	{ OP_ADD, { slake::Opcode::ADD, false, false } },
+	{ OP_SUB, { slake::Opcode::SUB, false, false } },
+	{ OP_MUL, { slake::Opcode::MUL, false, false } },
+	{ OP_DIV, { slake::Opcode::DIV, false, false } },
+	{ OP_MOD, { slake::Opcode::MOD, false, false } },
+	{ OP_AND, { slake::Opcode::AND, false, false } },
+	{ OP_OR, { slake::Opcode::OR, false, false } },
+	{ OP_XOR, { slake::Opcode::XOR, false, false } },
+	{ OP_LAND, { slake::Opcode::LAND, false, false } },
+	{ OP_LOR, { slake::Opcode::LOR, false, false } },
+	{ OP_LSH, { slake::Opcode::LSH, false, false } },
+	{ OP_RSH, { slake::Opcode::RSH, false, false } },
+	{ OP_SWAP, { slake::Opcode::SWAP, true, true } },
 
-	{ OP_ASSIGN, { slake::Opcode::NOP, false } },
-	{ OP_ASSIGN_ADD, { slake::Opcode::NOP, false } },
-	{ OP_ASSIGN_SUB, { slake::Opcode::NOP, false } },
-	{ OP_ASSIGN_MUL, { slake::Opcode::NOP, false } },
-	{ OP_ASSIGN_DIV, { slake::Opcode::NOP, false } },
-	{ OP_ASSIGN_MOD, { slake::Opcode::NOP, false } },
-	{ OP_ASSIGN_AND, { slake::Opcode::NOP, false } },
-	{ OP_ASSIGN_OR, { slake::Opcode::NOP, false } },
-	{ OP_ASSIGN_XOR, { slake::Opcode::NOP, false } },
-	{ OP_ASSIGN_LAND, { slake::Opcode::NOP, false } },
-	{ OP_ASSIGN_LOR, { slake::Opcode::NOP, false } },
-	{ OP_ASSIGN_LSH, { slake::Opcode::NOP, false } },
-	{ OP_ASSIGN_RSH, { slake::Opcode::NOP, false } },
+	{ OP_ASSIGN, { slake::Opcode::NOP, true, false } },
+	{ OP_ASSIGN_ADD, { slake::Opcode::NOP, true, false } },
+	{ OP_ASSIGN_SUB, { slake::Opcode::NOP, true, false } },
+	{ OP_ASSIGN_MUL, { slake::Opcode::NOP, true, false } },
+	{ OP_ASSIGN_DIV, { slake::Opcode::NOP, true, false } },
+	{ OP_ASSIGN_MOD, { slake::Opcode::NOP, true, false } },
+	{ OP_ASSIGN_AND, { slake::Opcode::NOP, true, false } },
+	{ OP_ASSIGN_OR, { slake::Opcode::NOP, true, false } },
+	{ OP_ASSIGN_XOR, { slake::Opcode::NOP, true, false } },
+	{ OP_ASSIGN_LAND, { slake::Opcode::NOP, true, false } },
+	{ OP_ASSIGN_LOR, { slake::Opcode::NOP, true, false } },
+	{ OP_ASSIGN_LSH, { slake::Opcode::NOP, true, false } },
+	{ OP_ASSIGN_RSH, { slake::Opcode::NOP, true, false } },
 
-	{ OP_EQ, { slake::Opcode::EQ, false } },
-	{ OP_NEQ, { slake::Opcode::NEQ, false } },
-	{ OP_STRICTEQ, { slake::Opcode::SEQ, false } },
-	{ OP_STRICTNEQ, { slake::Opcode::SNEQ, false } },
-	{ OP_LT, { slake::Opcode::LT, false } },
-	{ OP_GT, { slake::Opcode::GT, false } },
-	{ OP_LTEQ, { slake::Opcode::LTEQ, false } },
-	{ OP_GTEQ, { slake::Opcode::GTEQ, false } },
-	{ OP_SUBSCRIPT, { slake::Opcode::AT, false } }
+	{ OP_EQ, { slake::Opcode::EQ, false, false } },
+	{ OP_NEQ, { slake::Opcode::NEQ, false, false } },
+	{ OP_STRICTEQ, { slake::Opcode::SEQ, false, false } },
+	{ OP_STRICTNEQ, { slake::Opcode::SNEQ, false, false } },
+	{ OP_LT, { slake::Opcode::LT, false, false } },
+	{ OP_GT, { slake::Opcode::GT, false, false } },
+	{ OP_LTEQ, { slake::Opcode::LTEQ, false, false } },
+	{ OP_GTEQ, { slake::Opcode::GTEQ, false, false } },
+	{ OP_SUBSCRIPT, { slake::Opcode::AT, false, false } }
 };
 
 static map<BinaryOp, BinaryOp> _assignBinaryOpToOrdinaryBinaryOpMap = {
+	{ OP_ASSIGN, OP_ASSIGN },
 	{ OP_ASSIGN_ADD, OP_ADD },
 	{ OP_ASSIGN_SUB, OP_SUB },
 	{ OP_ASSIGN_MUL, OP_MUL },
@@ -441,6 +445,8 @@ static shared_ptr<ExprNode> _castLiteralExpr(
 			} else
 				return {};
 	}
+
+	return {};
 }
 
 static shared_ptr<ExprNode> _castLiteralExpr(shared_ptr<ExprNode> expr, Type targetType) {
@@ -460,6 +466,8 @@ static shared_ptr<ExprNode> _castLiteralExpr(shared_ptr<ExprNode> expr, Type tar
 		case EXPR_BOOL:
 			return _castLiteralExpr<bool>(static_pointer_cast<BoolLiteralExprNode>(expr), targetType);
 	}
+
+	return {};
 }
 
 shared_ptr<ExprNode> Compiler::evalConstExpr(shared_ptr<ExprNode> expr) {
@@ -732,14 +740,14 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 		}
 		case EXPR_REF: {
 			auto e = static_pointer_cast<RefExprNode>(expr);
-			Ref staticPart, dynamicPart;
+			deque<pair<Ref, shared_ptr<AstNode>>> resolvedParts;
 
-			if (auto m = resolveRef(e->ref, staticPart, dynamicPart); m) {
-				switch (m->getNodeType()) {
+			if (resolveRef(e->ref, resolvedParts)) {
+				switch (resolvedParts.back().second->getNodeType()) {
 					case AST_VAR:
-						return static_pointer_cast<VarNode>(m)->type;
+						return static_pointer_cast<VarNode>(resolvedParts.back().second)->type;
 					case AST_LOCAL_VAR:
-						return static_pointer_cast<LocalVarNode>(m)->type;
+						return static_pointer_cast<LocalVarNode>(resolvedParts.back().second)->type;
 					case AST_CLASS:
 					case AST_INTERFACE:
 					case AST_TRAIT:
@@ -780,10 +788,12 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 				_unaryOpRegs.at(e->op).lvalueOperand ? EvalPurpose::LVALUE : EvalPurpose::RVALUE,
 				make_shared<RegRefNode>(RegId::R0));
 			if (context.evalPurpose == EvalPurpose::STMT) {
-				if (_unaryOpRegs.at(e->op).lvalueOperand)
+				if (_unaryOpRegs.at(e->op).lvalueOperand) {
 					context.curFn->insertIns(_unaryOpRegs.at(e->op).opcode, make_shared<RegRefNode>(RegId::R0), make_shared<RegRefNode>(RegId::R0));
-			} else
-				context.curFn->insertIns(_unaryOpRegs.at(e->op).opcode, context.evalDest, make_shared<RegRefNode>(RegId::R0, _unaryOpRegs.at(e->op).lvalueOperand));
+				}
+			} else {
+				context.curFn->insertIns(_unaryOpRegs.at(e->op).opcode, context.evalDest, make_shared<RegRefNode>(RegId::R0));
+			}
 
 			if (restoreR0)
 				restoreRegister(RegId::R0);
@@ -795,10 +805,10 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 			bool restoreR0 = preserveRegister(RegId::R0),
 				 restoreR1 = preserveRegister(RegId::R1);
 
-			compileExpr(e->lhs, EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::R0));
+			compileExpr(e->lhs, _binaryOpRegs.at(e->op).isLhsLvalue ? EvalPurpose::LVALUE : EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::R0));
 
 			setRegisterPreserved(RegId::R0);
-			compileExpr(e->rhs, _binaryOpRegs.at(e->op).isLvalueRhs ? EvalPurpose::LVALUE : EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::R1));
+			compileExpr(e->rhs, _binaryOpRegs.at(e->op).isRhsLvalue ? EvalPurpose::LVALUE : EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::R1));
 			unsetRegisterPreserved(RegId::R0);
 
 			if (isAssignBinaryOp(e->op)) {
@@ -807,21 +817,20 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 					context.curFn->insertIns(
 						opcode,
 						make_shared<RegRefNode>(RegId::R1),
-						make_shared<RegRefNode>(RegId::R0, true),
-						make_shared<RegRefNode>(RegId::R1, true));
+						make_shared<RegRefNode>(RegId::R0),
+						make_shared<RegRefNode>(RegId::R1));
 
 				// LHS of the assignment expression.
-				compileExpr(e->lhs, EvalPurpose::LVALUE, make_shared<RegRefNode>(RegId::R0));
-				context.curFn->insertIns(Opcode::STORE, make_shared<RegRefNode>(RegId::R0, true), make_shared<RegRefNode>(RegId::R1, true));
+				context.curFn->insertIns(Opcode::ISTORE, make_shared<RegRefNode>(RegId::R0), make_shared<RegRefNode>(RegId::R1));
 
 				if ((context.evalPurpose != EvalPurpose::STMT) && (context.evalDest))
-					context.curFn->insertIns(Opcode::STORE, static_pointer_cast<RegRefNode>(context.evalDest), make_shared<RegRefNode>(RegId::R1, true));
+					context.curFn->insertIns(Opcode::STORE, static_pointer_cast<RegRefNode>(context.evalDest), make_shared<RegRefNode>(RegId::R1));
 			} else if (context.evalPurpose != EvalPurpose::STMT) {
 				context.curFn->insertIns(
 					_binaryOpRegs.at(e->op).opcode,
 					context.evalDest,
-					make_shared<RegRefNode>(RegId::R0, true),
-					make_shared<RegRefNode>(RegId::R1, !_binaryOpRegs.at(e->op).isLvalueRhs));
+					make_shared<RegRefNode>(RegId::R0),
+					make_shared<RegRefNode>(RegId::R1));
 			}
 
 			if (restoreR0)
@@ -847,7 +856,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 					make_shared<RegRefNode>(RegId::R0),
 					make_shared<BoolTypeNameNode>(e->getLocation(), true), make_shared<RegRefNode>(RegId::R0));
 
-			context.curFn->insertIns(Opcode::JF, make_shared<LabelRefNode>(falseBranchLabel), make_shared<RegRefNode>(RegId::R0, true));
+			context.curFn->insertIns(Opcode::JF, make_shared<LabelRefNode>(falseBranchLabel), make_shared<RegRefNode>(RegId::R0));
 
 			// Compile the true expression.
 			compileExpr(e->x, EvalPurpose::RVALUE, context.evalDest);
@@ -897,7 +906,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 
 				compileExpr(i.first, EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::TMP0));
 				context.curFn->insertIns(Opcode::EQ, make_shared<RegRefNode>(RegId::TMP0), make_shared<RegRefNode>(RegId::R2), make_shared<RegRefNode>(RegId::TMP0));
-				context.curFn->insertIns(Opcode::JF, make_shared<LabelRefNode>(caseEndLabel), make_shared<RegRefNode>(RegId::TMP0, true));
+				context.curFn->insertIns(Opcode::JF, make_shared<LabelRefNode>(caseEndLabel), make_shared<RegRefNode>(RegId::TMP0));
 
 				// Leave the minor stack that is created for the local variable.
 				compileExpr(i.second, context.evalPurpose, context.evalDest);
@@ -934,14 +943,28 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 						context.curFn->insertIns(Opcode::PUSHARG, ce);
 					else {
 						compileExpr(i, EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::TMP0));
-						context.curFn->insertIns(Opcode::PUSHARG, make_shared<RegRefNode>(RegId::TMP0, true));
+						context.curFn->insertIns(Opcode::PUSHARG, make_shared<RegRefNode>(RegId::TMP0));
 					}
 				}
 
 				compileExpr(e->target, EvalPurpose::CALL, make_shared<RegRefNode>(RegId::R0));
-				if (!context.isLastCallTargetStatic)
-					restoreRegister(RegId::RTHIS);
-				context.curFn->insertIns(e->isAsync ? Opcode::ACALL : Opcode::CALL, make_shared<RegRefNode>(RegId::R0, true));
+
+				if (context.isLastCallTargetStatic)
+					context.curFn->insertIns(
+						e->isAsync ? Opcode::ACALL : Opcode::CALL,
+						make_shared<RegRefNode>(RegId::R0));
+				else
+					context.curFn->insertIns(
+						e->isAsync ? Opcode::AMCALL : Opcode::MCALL,
+						make_shared<RegRefNode>(RegId::R0),
+						make_shared<RegRefNode>(RegId::TMP1));
+
+				if (context.evalPurpose != EvalPurpose::STMT) {
+					context.curFn->insertIns(
+						Opcode::STORE,
+						context.evalDest,
+						make_shared<RegRefNode>(RegId::RR));
+				}
 
 				if (restoreR0)
 					restoreRegister(RegId::R0);
@@ -975,7 +998,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 					context.curFn->insertIns(Opcode::PUSHARG, ce);
 				else {
 					compileExpr(i, EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::TMP0));
-					context.curFn->insertIns(Opcode::PUSHARG, make_shared<RegRefNode>(RegId::TMP0, true));
+					context.curFn->insertIns(Opcode::PUSHARG, make_shared<RegRefNode>(RegId::TMP0));
 				}
 			}
 
@@ -998,10 +1021,10 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 			auto e = static_pointer_cast<CastExprNode>(expr);
 
 			if (auto ce = evalConstExpr(e->target); ce) {
-				context.curFn->insertIns(Opcode::CAST, context.evalDest, ce, e->targetType);
+				context.curFn->insertIns(Opcode::CAST, context.evalDest, e->targetType, ce);
 			} else {
 				compileExpr(e->target, EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::TMP0));
-				context.curFn->insertIns(Opcode::CAST, context.evalDest, make_shared<RegRefNode>(RegId::TMP0), e->targetType);
+				context.curFn->insertIns(Opcode::CAST, context.evalDest, e->targetType, make_shared<RegRefNode>(RegId::TMP0));
 			}
 
 			break;
@@ -1009,23 +1032,58 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 		case EXPR_REF: {
 			auto e = static_pointer_cast<RefExprNode>(expr);
 
-			Ref staticPart, dynamicPart;
-			auto x = resolveRef(e->ref, staticPart, dynamicPart);
-			if (!x)
+			deque<pair<Ref, shared_ptr<AstNode>>> resolvedParts;
+			if (!resolveRef(e->ref, resolvedParts))
 				// The default case is already exist.
 				throw FatalCompilationError(
 					{ e->getLocation(),
 						MSG_ERROR,
 						"Identifier not found: `" + to_string(e->ref) + "'" });
 
+			if (context.evalPurpose == EvalPurpose::CALL) {
+				if (isDynamicMember(resolvedParts.back().second)) {
+					Ref thisRef = e->ref;
+					thisRef.pop_back();
+					compileExpr(
+						make_shared<RefExprNode>(thisRef),
+						EvalPurpose::RVALUE,
+						make_shared<RegRefNode>(RegId::TMP1));
+					context.isLastCallTargetStatic = false;
+				} else
+					context.isLastCallTargetStatic = true;
+			}
+
+			auto &x = resolvedParts.front().second;
 			switch (x->getNodeType()) {
 				case AST_LOCAL_VAR:
 					context.curFn->insertIns(
 						Opcode::STORE,
-						context.evalDest,
+						make_shared<RegRefNode>(RegId::TMP0),
 						make_shared<LocalVarRefNode>(
 							static_pointer_cast<LocalVarNode>(x)->index,
-							context.evalPurpose == EvalPurpose::RVALUE));
+							resolvedParts.size() > 1
+								? true
+								: context.evalPurpose == EvalPurpose::LVALUE));
+
+					resolvedParts.pop_front();
+					for (auto i : resolvedParts) {
+						context.curFn->insertIns(
+							Opcode::RLOAD,
+							make_shared<RegRefNode>(RegId::TMP0),
+							make_shared<RegRefNode>(RegId::TMP0),
+							make_shared<RefExprNode>(i.first));
+					}
+
+					if (context.evalPurpose == EvalPurpose::RVALUE)
+						context.curFn->insertIns(
+							Opcode::LVALUE,
+							make_shared<RegRefNode>(RegId::TMP0),
+							make_shared<RegRefNode>(RegId::TMP0));
+
+					context.curFn->insertIns(
+						Opcode::STORE,
+						context.evalDest,
+						make_shared<RegRefNode>(RegId::TMP0));
 					break;
 				case AST_ARG_REF:
 					static_pointer_cast<ArgRefNode>(x)->unwrapData = (context.evalPurpose == EvalPurpose::RVALUE);
@@ -1033,25 +1091,52 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 						Opcode::STORE,
 						context.evalDest, x);
 					break;
-				case AST_FN: {
-					context.curFn->insertIns(
-						Opcode::LOAD,
-						context.evalDest, make_shared<RefExprNode>(staticPart));
-
-					// Check if the target is static.
-					if (dynamicPart.size()) {
-						if (context.evalPurpose == EvalPurpose::CALL) {
-							preserveRegister(RegId::RTHIS);
-							context.isLastCallTargetStatic = false;
+				case AST_VAR:
+				case AST_FN:
+				case AST_REG_REF: {
+					switch (x->getNodeType()) {
+						case AST_VAR:
+							context.curFn->insertIns(
+								Opcode::LOAD,
+								make_shared<RegRefNode>(RegId::TMP0),
+								make_shared<RefExprNode>(resolvedParts.front().first));
+							break;
+						case AST_FN:
+							context.curFn->insertIns(
+								Opcode::LOAD,
+								make_shared<RegRefNode>(RegId::TMP0),
+								make_shared<RefExprNode>(resolvedParts.front().first));
+							break;
+						case AST_REG_REF:
 							context.curFn->insertIns(
 								Opcode::STORE,
-								make_shared<RegRefNode>(RegId::RTHIS), context.evalDest);
-						}
+								make_shared<RegRefNode>(RegId::TMP0),
+								x);
+							break;
+						default:
+							assert(false);
+					}
 
+					// Check if the target is static.
+					resolvedParts.pop_front();
+					for (auto i : resolvedParts) {
 						context.curFn->insertIns(
 							Opcode::RLOAD,
-							context.evalDest, make_shared<RefExprNode>(dynamicPart));
+							make_shared<RegRefNode>(RegId::TMP0),
+							make_shared<RegRefNode>(RegId::TMP0),
+							make_shared<RefExprNode>(i.first));
 					}
+
+					if (context.evalPurpose == EvalPurpose::RVALUE)
+						context.curFn->insertIns(
+							Opcode::LVALUE,
+							make_shared<RegRefNode>(RegId::TMP0),
+							make_shared<RegRefNode>(RegId::TMP0));
+
+					context.curFn->insertIns(
+						Opcode::STORE,
+						context.evalDest,
+						make_shared<RegRefNode>(RegId::TMP0));
 					break;
 				}
 				default:

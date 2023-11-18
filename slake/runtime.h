@@ -12,6 +12,7 @@
 #include "generated/config.h"
 #include "util/debug.h"
 #include "value.h"
+#include "dbg/adapter.h"
 
 namespace slake {
 	struct ExceptionHandler final {
@@ -24,18 +25,12 @@ namespace slake {
 	struct MinorFrame final {
 		std::deque<ExceptionHandler> exceptHandlers;  // Exception handlers
 
-		ValueRef<VarValue> tmpRegs[1];	// Temporary registers
-		ValueRef<VarValue> gpRegs[3];	// General-purposed registers
+		ValueRef<VarValue> tmpRegs[2];	// Temporary registers
+		ValueRef<VarValue> gpRegs[4];	// General-purposed registers
 
 		std::deque<ValueRef<>> dataStack;  // Data stack
 
-		inline MinorFrame(Runtime *rt) {
-			for (size_t i = 0; i < std::size(tmpRegs); ++i)
-				tmpRegs[i] = new VarValue(rt, ACCESS_PUB, Type(TypeId::ANY));
-
-			for (size_t i = 0; i < std::size(gpRegs); ++i)
-				gpRegs[i] = new VarValue(rt, ACCESS_PUB, Type(TypeId::ANY));
-		}
+		MinorFrame(Runtime *rt);
 
 		inline void push(ValueRef<> v) {
 			if (dataStack.size() > SLAKE_STACK_MAX)
@@ -60,20 +55,18 @@ namespace slake {
 		std::deque<ValueRef<VarValue>> argStack;   // Argument stack
 		std::deque<ValueRef<>> nextArgStack;	   // Next Argument stack
 		std::deque<ValueRef<VarValue>> localVars;  // Local variables
-		ValueRef<> thisObject;					   // `this' object
+		ValueRef<VarValue> thisObject;			   // `this' object
 		ValueRef<> returnValue;					   // Return value
 		std::deque<MinorFrame> minorFrames;		   // Minor frames
 		ValueRef<> curExcept;					   // Current exception
 
-		inline MajorFrame(Runtime *rt) {
-			minorFrames.push_back(MinorFrame(rt));
-		}
+		MajorFrame(Runtime *rt);
 
 		inline ValueRef<> lload(uint32_t off) {
 			if (off >= localVars.size())
 				throw InvalidLocalVarIndexError("Invalid local variable index", off);
 
-			return localVars.at(off);
+			return *localVars.at(off);
 		}
 
 		/// @brief Leave current minor frame.
@@ -106,6 +99,8 @@ namespace slake {
 		RT_DEBUG = 0x0000002,
 		// Enable GC Debugging, do not set unless you want to debug the garbage collector.
 		RT_GCDBG = 0x0000004,
+		// Enable strict mode
+		RT_STRICT = 0x00000008,
 		// The runtime is in a GC cycle.
 		_RT_INGC = 0x40000000,
 		// The runtime is destructing.
@@ -170,9 +165,6 @@ namespace slake {
 			}
 		}
 
-		/// @brief Runtime flags.
-		RuntimeFlags _flags = 0;
-
 		/// @brief Size of memory allocated for values.
 		size_t _szMemInUse = 0;
 		/// @brief Size of memory allocated for values after last GC cycle.
@@ -217,12 +209,10 @@ namespace slake {
 		friend class ModuleValue;
 		friend class ValueRef<ObjectValue>;
 
-		void _dumpClass(ValueRef<ClassValue> cls, std::iostream &os) const;
-		void _dumpInterface(ValueRef<InterfaceValue> cls, std::iostream &os) const;
-		void _dumpFn(ValueRef<FnValue> cls, std::iostream &os) const;
-		void _dumpModule(ValueRef<ModuleValue> module, std::iostream &os) const;
-
 	public:
+		/// @brief Runtime flags.
+		RuntimeFlags _flags = 0;
+
 		/// @brief Active context on threads.
 		std::map<std::thread::id, std::shared_ptr<Context>> activeContexts;
 
@@ -247,7 +237,7 @@ namespace slake {
 		/// @param ref Reference to be resolved.
 		/// @param scopeValue Scope value for resolving.
 		/// @return Resolved value which is referred by the reference.
-		Value *resolveRef(ValueRef<RefValue> ref, Value *scopeValue = nullptr) const;
+		Value *resolveRef(RefValue *ref, Value *scopeValue = nullptr) const;
 
 		ValueRef<ModuleValue> loadModule(std::istream &fs, LoadModuleFlags flags);
 		ValueRef<ModuleValue> loadModule(const void *buf, size_t size, LoadModuleFlags flags);

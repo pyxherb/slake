@@ -129,7 +129,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		if (i.second->initValue)
 			vad.flags |= slxfmt::VAD_INIT;
 
-		vad.lenName = i.first.length();
+		vad.lenName = (uint8_t)i.first.length();
 		_write(os, vad);
 		_write(os, i.first.data(), i.first.length());
 
@@ -150,18 +150,21 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 	for (auto &i : funcs) {
 		for (auto &j : i.second->overloadingRegistries) {
 			string mangledFnName = i.first;
-			bool hasVarArg = j.paramIndices.count("...");
 
-			for (size_t k = 0; k < j.params.size() - hasVarArg; ++k) {
-				mangledFnName += "@" + to_string(j.params[k].type);
-			}
+			if (i.first != "new") {
+				bool hasVarArg = j.paramIndices.count("...");
 
-			if (compiledFuncs.count(mangledFnName)) {
-				throw FatalCompilationError(
-					Message(
-						i.second->getLocation(),
-						MSG_ERROR,
-						"Duplicated function overloading"));
+				for (size_t k = 0; k < j.params.size() - hasVarArg; ++k) {
+					mangledFnName += "@" + to_string(j.params[k].type);
+				}
+
+				if (compiledFuncs.count(mangledFnName)) {
+					throw FatalCompilationError(
+						Message(
+							i.second->getLocation(),
+							MSG_ERROR,
+							"Duplicated function overloading"));
+				}
 			}
 
 			auto compiledFn = make_shared<CompiledFnNode>(j.loc, mangledFnName);
@@ -259,8 +262,8 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 			ctd.flags |= slxfmt::CTD_FINAL;
 		if (i.second->parentClass)
 			ctd.flags |= slxfmt::CTD_DERIVED;
-		ctd.nImpls = i.second->implInterfaces.size();
-		ctd.lenName = i.first.length();
+		ctd.nImpls = (uint8_t)i.second->implInterfaces.size();
+		ctd.lenName = (uint8_t)i.first.length();
 		// Unimplemented yet, leave this field blank.
 		// ctd.nGenericParams = (uint8_t)i.second->genericParams.size();
 		ctd.nGenericParams = 0;
@@ -290,7 +293,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 
 		ctd.nParents = (uint8_t)i.second->parentInterfaces.size();
 
-		ctd.lenName = i.first.length();
+		ctd.lenName = (uint8_t)i.first.length();
 
 		_write(os, ctd);
 		_write(os, i.first.data(), i.first.length());
@@ -311,7 +314,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 
 		ctd.nParents = (uint8_t)i.second->parentTraits.size();
 
-		ctd.lenName = i.first.length();
+		ctd.lenName = (uint8_t)i.first.length();
 
 		_write(os, ctd);
 		_write(os, i.first.data(), i.first.length());
@@ -399,7 +402,10 @@ void Compiler::compileTypeName(std::ostream &fs, shared_ptr<TypeNameNode> typeNa
 		}
 		case TYPE_CUSTOM: {
 			_write(fs, slxfmt::Type::OBJECT);
-			compileRef(fs, static_pointer_cast<CustomTypeNameNode>(typeName)->ref);
+
+			auto dest = resolveCustomType(static_pointer_cast<CustomTypeNameNode>(typeName));
+
+			compileRef(fs, getFullName(static_pointer_cast<MemberNode>(dest)));
 			break;
 		}
 		default:
@@ -444,7 +450,7 @@ void Compiler::compileValue(std::ostream &fs, shared_ptr<AstNode> value) {
 			break;
 		case AST_REG_REF: {
 			auto v = static_pointer_cast<RegRefNode>(value);
-			vd.type = v->unwrapData ? slxfmt::Type::REG_VALUE : slxfmt::Type::REG;
+			vd.type = slxfmt::Type::REG;
 			_write(fs, vd);
 
 			_write(fs, v->reg);

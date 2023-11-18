@@ -66,12 +66,14 @@ namespace slake {
 		uint32_t nIns;
 
 		friend class Runtime;
-
 		friend class ObjectValue;
-
 		friend struct FnComparator;
 
 	public:
+#if SLAKE_ENABLE_DEBUGGER
+		std::set<uint32_t> breakpoints;
+#endif
+
 		inline FnValue(Runtime *rt, uint32_t nIns, AccessModifier access, Type returnType)
 			: nIns(nIns),
 			  BasicFnValue(rt, access, returnType) {

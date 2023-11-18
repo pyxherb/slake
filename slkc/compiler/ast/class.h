@@ -26,14 +26,19 @@ namespace slake {
 				deque<shared_ptr<CustomTypeNameNode>> implInterfaces,
 				deque<GenericParam> genericParams)
 				: _loc(loc),
+				  name(name),
 				  parentClass(parentClass),
 				  implInterfaces(implInterfaces),
-				  genericParams(genericParams) {}
+				  genericParams(genericParams) {
+				scope->owner = this;
+			}
 			virtual ~ClassNode() = default;
 
 			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual inline NodeType getNodeType() const override { return AST_CLASS; }
+
+			virtual Ref getName() const override { return Ref({ RefEntry({}, name, {}) }); }
 		};
 	}
 }

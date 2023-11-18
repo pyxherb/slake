@@ -23,10 +23,9 @@ ObjectValue *slake::Runtime::_newClassInstance(ClassValue *cls) {
 					((VarValue *)i.second)->getAccess(),
 					((VarValue *)i.second)->getVarType());
 
-				// Initialize the variable
-				auto initValue = ((VarValue *)i.second)->getData();
-				if (initValue)
-					var->setData(*initValue);
+				// Initialize the variable if initial value is set
+				if (auto initValue = ((VarValue *)i.second)->getData(); initValue)
+					var->setData(initValue);
 
 				instance->addMember(i.first, *var);
 				break;
@@ -58,9 +57,8 @@ ObjectValue *slake::Runtime::_newGenericClassInstance(ClassValue *cls, std::dequ
 					((VarValue *)i.second)->getVarType());
 
 				// Set value of the variable with the initial value
-				auto initValue = ((VarValue *)i.second)->getData();
-				if (initValue)
-					var->setData(*initValue);
+				if (auto initValue = ((VarValue *)i.second)->getData(); initValue)
+					var->setData(initValue);
 
 				instance->addMember(i.first, *var);
 				break;

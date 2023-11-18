@@ -325,15 +325,15 @@ shared_ptr<AstNode> Compiler::resolveCustomType(shared_ptr<CustomTypeNameNode> t
 	if (typeName->resolved)
 		return typeName->resolvedDest;
 
-	Ref staticPart, dynamicPart;
+	deque<pair<Ref, shared_ptr<AstNode>>> resolvedParts;
 
-	if (auto d = resolveRef(typeName->ref, staticPart, dynamicPart); d) {
-		typeName->resolvedDest = d;
+	if (resolveRef(typeName->ref, resolvedParts)) {
+		typeName->resolvedDest = resolvedParts.back().second;
 		typeName->resolved = true;
-		return d;
+		return typeName->resolvedDest;
 	}
 
-	if (dynamicPart.size())
+	if (resolvedParts.size() > 1)
 		throw FatalCompilationError(
 			Message(
 				Location(typeName->getLocation()),

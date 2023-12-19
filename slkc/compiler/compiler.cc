@@ -272,7 +272,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		_write(os, i.first.data(), i.first.length());
 
 		if (i.second->parentClass)
-			compileRef(os, i.second->parentClass->ref);
+			compileRef(os, getFullName(static_pointer_cast<MemberNode>(resolveCustomType(i.second->parentClass))));
 
 		for (auto &j : i.second->implInterfaces)
 			compileRef(os, j->ref);

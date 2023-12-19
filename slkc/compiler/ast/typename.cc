@@ -2,7 +2,7 @@
 
 using namespace slake::slkc;
 
-string std::to_string(shared_ptr<slake::slkc::TypeNameNode> typeName) {
+string std::to_string(shared_ptr<slake::slkc::TypeNameNode> typeName, bool asOperatorName) {
 	string s = typeName->isConst ? "const " : "";
 	switch (typeName->getTypeId()) {
 		case TYPE_I8:
@@ -36,26 +36,26 @@ string std::to_string(shared_ptr<slake::slkc::TypeNameNode> typeName) {
 		case TYPE_ANY:
 			return s + "any";
 		case TYPE_ARRAY:
-			return s + to_string(static_pointer_cast<ArrayTypeNameNode>(typeName)->elementType) + "[]";
+			return s + to_string(static_pointer_cast<ArrayTypeNameNode>(typeName)->elementType, asOperatorName) + "[]";
 		case TYPE_MAP: {
 			auto t = static_pointer_cast<MapTypeNameNode>(typeName);
-			return s + to_string(t->keyType) + "[" + to_string(t->valueType) + "]";
+			return s + to_string(t->keyType, asOperatorName) + "[" + to_string(t->valueType, asOperatorName) + "]";
 		}
 		case TYPE_FN: {
 			auto t = static_pointer_cast<FnTypeNameNode>(typeName);
-			s += to_string(t->returnType) + " -> (";
+			s += to_string(t->returnType, asOperatorName) + " -> (";
 
 			for (size_t i = 0; i < t->paramTypes.size(); ++i) {
 				if (i)
 					s += ", ";
-				s += to_string(t->paramTypes[i]);
+				s += to_string(t->paramTypes[i], asOperatorName);
 			}
 
 			s += ")";
 			return s;
 		}
 		case TYPE_CUSTOM:
-			return "@" + to_string(static_pointer_cast<CustomTypeNameNode>(typeName));
+			return (asOperatorName ? "" : "@") + to_string(static_pointer_cast<CustomTypeNameNode>(typeName)->ref);
 		default:
 			throw std::logic_error("Unrecognized type");
 	}

@@ -14,12 +14,45 @@ class Test {
 	}
 }
 
+class Derived(@Test) {
+	pub i32 y;
+
+	pub operator new(i32 y) {
+		base.x = y * 2;
+		return;
+	}
+
+	i32 getY() {
+		print("Fetched y: ", this.y, "\n");
+		return this.y;
+	}
+}
+
+class AnotherDerived(@Derived) {
+	pub i32 z;
+
+	pub operator new(i32 z) {
+		base.x = x * 4;
+		base.y = z * 2;
+		return;
+	}
+
+	i32 getZ() {
+		print("Fetched z: ", this.z, "\n");
+		return this.y;
+	}
+}
+
+class Unrelated {
+}
+
 pub native void print(...);
 
 pub i32 main() {
 	print("Entered main\n");
 
-	@Test test = new @Test(100);
+	@Test test = new @AnotherDerived(100);
+	test = new @Derived(100);
 
 	while(test.x = test.x - 1) {
 		print("Yielded\n");

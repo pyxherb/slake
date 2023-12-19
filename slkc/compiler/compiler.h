@@ -86,9 +86,25 @@ namespace slake {
 				uint32_t breakScopeLevel = 0;
 				uint32_t continueScopeLevel = 0;
 				bool isLastCallTargetStatic = true;
+				std::set<AstNode *> resolvedOwners;
 
 				shared_ptr<AstNode> evalDest;
 				set<RegId> preservedRegisters;
+			};
+
+			struct ResolvedOwnersSaver {
+				std::set<AstNode *> resolvedOwners;
+				Context &context;
+				bool discarded = false;
+
+				inline ResolvedOwnersSaver(Context &context) : context(context), resolvedOwners(context.resolvedOwners) {}
+				inline ~ResolvedOwnersSaver() {
+					if (!discarded) context.resolvedOwners = resolvedOwners;
+				}
+
+				inline void discard() {
+					discarded = true;
+				}
 			};
 
 			shared_ptr<Scope> _rootScope;
@@ -144,6 +160,8 @@ namespace slake {
 
 			shared_ptr<TypeNameNode> evalExprType(shared_ptr<ExprNode> expr);
 
+			shared_ptr<ExprNode> castLiteralExpr(shared_ptr<ExprNode> expr, Type targetType);
+
 			bool isLiteralType(shared_ptr<TypeNameNode> typeName);
 			bool isNumericType(shared_ptr<TypeNameNode> typeName);
 			bool isDecimalType(shared_ptr<TypeNameNode> typeName);
@@ -158,6 +176,7 @@ namespace slake {
 			bool areTypesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<TypeNameNode> dest);
 
 			bool _resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut);
+			bool _resolveRefWithOwner(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut);
 
 			/// @brief Resolve a reference with current context.
 			/// @param ref Reference to be resolved.

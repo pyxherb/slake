@@ -39,7 +39,7 @@ bool Compiler::isLiteralType(shared_ptr<TypeNameNode> typeName) {
 }
 
 bool Compiler::isNumericType(shared_ptr<TypeNameNode> node) {
-	switch (node->getNodeType()) {
+	switch (node->getTypeId()) {
 		case TYPE_I8:
 		case TYPE_I16:
 		case TYPE_I32:
@@ -59,7 +59,7 @@ bool Compiler::isNumericType(shared_ptr<TypeNameNode> node) {
 }
 
 bool Compiler::isCompoundType(shared_ptr<TypeNameNode> node) {
-	switch (node->getNodeType()) {
+	switch (node->getTypeId()) {
 		case TYPE_ARRAY:
 		case TYPE_MAP:
 		case TYPE_FN:
@@ -240,14 +240,15 @@ bool Compiler::areTypesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<Type
 								do {
 									if (st == dt)
 										return true;
-									st = static_pointer_cast<ClassNode>(resolveCustomType(st->parentClass));
 
 									auto scope = scopeOf(st);
 									assert(scope);
 
-									if (scope->members.count("operator@" + to_string(dest)))
+									if (scope->members.count(string("operator") + (dest->getTypeId() == TYPE_CUSTOM ? "" : "@") + to_string(dest)))
 										return true;
-								} while (st);
+								} while (st->parentClass && (st = static_pointer_cast<ClassNode>(resolveCustomType(st->parentClass))));
+
+								break;
 							}
 							case AST_INTERFACE:
 								return _areTypesConvertible(static_pointer_cast<InterfaceNode>(srcType), dt);
@@ -319,6 +320,8 @@ bool Compiler::areTypesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<Type
 			return true;
 		return false;
 	}
+
+	return false;
 }
 
 shared_ptr<AstNode> Compiler::resolveCustomType(shared_ptr<CustomTypeNameNode> typeName) {

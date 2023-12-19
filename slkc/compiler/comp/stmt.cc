@@ -41,9 +41,21 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 
 				uint32_t index = (uint32_t)context.localVars.size();
 
+				auto initValueType = evalExprType(i.second.initValue);
+
 				context.curFn->insertIns(Opcode::LVAR, s->type);
-				if (i.second.initValue)
-					compileExpr(i.second.initValue, EvalPurpose::RVALUE, make_shared<LocalVarRefNode>(index));
+				if (i.second.initValue) {
+					if (!isSameType(s->type, initValueType)) {
+						if (!areTypesConvertible(initValueType, s->type))
+							throw FatalCompilationError(
+								{ i.second.initValue->getLocation(),
+									MSG_ERROR,
+									"Incompatible initial value type" });
+
+						compileExpr(make_shared<CastExprNode>(i.second.initValue->getLocation(), s->type, i.second.initValue), EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::TMP1));
+					} else
+						compileExpr(i.second.initValue, EvalPurpose::RVALUE, make_shared<LocalVarRefNode>(index));
+				}
 
 				context.localVars[i.first] = make_shared<LocalVarNode>(index, s->type);
 			}
@@ -51,10 +63,8 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 			break;
 		}
 		case STMT_BREAK:
-			if (!context.breakLabel.size()) {
-				messages.push_back({ stmt->getLocation(), MSG_ERROR, "Unexpected break statement" });
-				flags |= COMP_FAILED;
-			}
+			if (!context.breakLabel.size())
+				throw FatalCompilationError({ stmt->getLocation(), MSG_ERROR, "Unexpected break statement" });
 			if (context.breakScopeLevel < context.curScopeLevel)
 				context.curFn->insertIns(
 					Opcode::LEAVE,
@@ -62,10 +72,8 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 			context.curFn->insertIns(Opcode::JMP, make_shared<LabelRefNode>(context.breakLabel));
 			break;
 		case STMT_CONTINUE:
-			if (!context.continueLabel.size()) {
-				messages.push_back({ stmt->getLocation(), MSG_ERROR, "Unexpected continue statement" });
-				flags |= COMP_FAILED;
-			}
+			if (!context.continueLabel.size())
+				throw FatalCompilationError({ stmt->getLocation(), MSG_ERROR, "Unexpected continue statement" });
 			context.curFn->insertIns(Opcode::JMP, make_shared<LabelRefNode>(context.continueLabel));
 			break;
 		case STMT_FOR: {
@@ -153,17 +161,31 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 		case STMT_RETURN: {
 			auto s = static_pointer_cast<ReturnStmtNode>(stmt);
 
+			auto returnType = context.curFn->returnType;
+
 			if (!s->returnValue) {
-				if (context.curFn->returnType->getTypeId() != TYPE_VOID) {
-					messages.push_back({ stmt->getLocation(), MSG_ERROR, "Must return a value" });
-					flags |= COMP_FAILED;
-				} else
+				if (returnType->getTypeId() != TYPE_VOID)
+					throw FatalCompilationError({ stmt->getLocation(), MSG_ERROR, "Must return a value" });
+				else
 					context.curFn->insertIns(Opcode::RET, {});
 			} else {
 				if (auto e = evalConstExpr(s->returnValue); e) {
-					context.curFn->insertIns(Opcode::RET, e);
+					if (isSameType(evalExprType(e), returnType)) {
+						context.curFn->insertIns(Opcode::RET, e);
+					} else {
+						if (auto ce = castLiteralExpr(e, returnType->getTypeId()); ce) {
+							context.curFn->insertIns(Opcode::RET, ce);
+						} else {
+							compileExpr(make_shared<CastExprNode>(e->getLocation(), returnType, e), EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::TMP0));
+							context.curFn->insertIns(Opcode::RET, make_shared<RegRefNode>(RegId::TMP0));
+						}
+					}
 				} else {
-					compileExpr(s->returnValue, EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::TMP0));
+					if (isSameType(evalExprType(s->returnValue), returnType))
+						compileExpr(s->returnValue, EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::TMP0));
+					else
+						compileExpr(make_shared<CastExprNode>(s->returnValue->getLocation(), returnType, s->returnValue), EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::TMP0));
+
 					context.curFn->insertIns(Opcode::RET, make_shared<RegRefNode>(RegId::TMP0));
 				}
 			}
@@ -174,10 +196,9 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 			auto s = static_pointer_cast<YieldStmtNode>(stmt);
 
 			if (!s->returnValue) {
-				if (context.curFn->returnType->getTypeId() != TYPE_VOID) {
-					messages.push_back({ stmt->getLocation(), MSG_ERROR, "Must yield a value" });
-					flags |= COMP_FAILED;
-				} else
+				if (context.curFn->returnType->getTypeId() != TYPE_VOID)
+					throw FatalCompilationError({ stmt->getLocation(), MSG_ERROR, "Must yield a value" });
+				else
 					context.curFn->insertIns(Opcode::YIELD, {});
 			} else {
 				if (auto e = evalConstExpr(s->returnValue); e) {

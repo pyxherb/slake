@@ -6,6 +6,8 @@ using namespace slake::slkc;
 bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut) {
 	assert(ref.size());
 
+	ResolvedOwnersSaver resolvedOwnersSaver(context);
+
 	// Try to resolve the first entry as a local variable.
 	if (context.localVars.count(ref[0].name) && (!ref[0].genericArgs.size())) {
 		auto newRef = ref;
@@ -64,11 +66,17 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 /// @param ref Reference to be resolved.
 /// @return true if succeeded, false otherwise.
 bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut) {
-	if (shared_ptr<MemberNode> m; scope->members.count(ref[0].name)) {
-		m = scope->members.at(ref[0].name);
-
+	if (ref[0].name == "base") {
 		auto newRef = ref;
 		newRef.pop_front();
+		return _resolveRefWithOwner(scope, newRef, partsOut);
+	}
+
+	if (shared_ptr<MemberNode> m; scope->members.count(ref[0].name)) {
+		auto newRef = ref;
+		newRef.pop_front();
+
+		m = scope->members.at(ref[0].name);
 
 		if (!newRef.size()) {
 			// All entries have been resolved, return true.
@@ -88,12 +96,23 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 		}
 	}
 
-	if (scope->owner) {
+	if (_resolveRefWithOwner(scope, ref, partsOut))
+		return true;
+
+	if (scope->parent)
+		return _resolveRef(scope->parent, ref, partsOut);
+
+	return {};
+}
+
+bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut) {
+	if (scope->owner && (!context.resolvedOwners.count(scope->owner))) {
+		context.resolvedOwners.insert(scope->owner);
 		switch (scope->owner->getNodeType()) {
 			case AST_CLASS: {
 				ClassNode *owner = (ClassNode *)scope->owner;
 
-				// Resolve the parent class.
+				// Resolve with the parent class.
 				if (owner->parentClass) {
 					if (auto p = resolveCustomType(owner->parentClass); p) {
 						if (p->getNodeType() != AST_CLASS) {
@@ -115,7 +134,7 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 					}
 				}
 
-				// Resolve the interfaces.
+				// Resolve with the interfaces.
 				for (auto i : owner->implInterfaces) {
 					if (auto p = resolveCustomType(i); p) {
 						if (p->getNodeType() != AST_CLASS) {
@@ -137,7 +156,7 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 					}
 				}
 
-				// TODO: Check for generic arguments.
+				// TODO: Check the generic arguments.
 				break;
 			}
 			case AST_INTERFACE: {
@@ -191,10 +210,7 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 		}
 	}
 
-	if (scope->parent)
-		return _resolveRef(scope->parent, ref, partsOut);
-
-	return {};
+	return false;
 }
 
 void Compiler::_getFullName(MemberNode *member, Ref &ref) {

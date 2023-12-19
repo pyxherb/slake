@@ -339,7 +339,7 @@ VISIT_METHOD_DECL(ClassDef) {
 		Location(context->KW_CLASS()),
 		name,
 		context->inheritSlot()
-			? any_cast<shared_ptr<CustomTypeNameNode>>(visit(context->inheritSlot()))
+			? static_pointer_cast<CustomTypeNameNode>(any_cast<shared_ptr<TypeNameNode>>(visit(context->inheritSlot())))
 			: shared_ptr<CustomTypeNameNode>(),
 		context->implementList()
 			? any_cast<deque<shared_ptr<CustomTypeNameNode>>>(visit(context->implementList()))
@@ -1305,7 +1305,7 @@ VISIT_METHOD_DECL(PrimitiveTypeName) {
 }
 VISIT_METHOD_DECL(CustomTypeName) {
 	return static_pointer_cast<TypeNameNode>(make_shared<CustomTypeNameNode>(
-		Location(context->getToken(SlakeLexer::AT, 0)),
+		Location(context->ref()->getStart()),
 		any_cast<Ref>(visit(context->ref()))));
 }
 VISIT_METHOD_DECL(GenericArgs) {

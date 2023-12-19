@@ -141,7 +141,7 @@ namespace slake {
 }
 
 namespace std {
-	string to_string(shared_ptr<slake::slkc::TypeNameNode> typeName);
+	string to_string(shared_ptr<slake::slkc::TypeNameNode> typeName, bool asOperatorName = false);
 }
 
 #endif

@@ -389,9 +389,10 @@ Ref { $$ = make_shared<RefOperand>(@1, $1); }
 | Literal { $$ = $1; }
 | "#" T_ID { $$ = make_shared<LabelOperand>(@1, $2); }
 | "$" L_U32 { $$ = make_shared<LocalVarOperand>(@1, $2); }
-| "%" T_ID { $$ = make_shared<RegOperand>(@1, $2); }
+| "%" L_U32 { $$ = make_shared<RegOperand>(@1, $2); }
 | "[" L_U32 "]" { $$ = make_shared<ArgOperand>(@1, $2); }
 | "*" "$" L_U32 { $$ = make_shared<LocalVarOperand>(@1, $3), $$->dereferenced = true; }
+| "*" "%" L_U32 { $$ = make_shared<RegOperand>(@1, $3), $$->dereferenced = true; }
 | "*" "[" L_U32 "]" { $$ = make_shared<ArgOperand>(@1, $3), $$->dereferenced = true; }
 | Array { $$ = $1; }
 | Map { $$ = $1; }

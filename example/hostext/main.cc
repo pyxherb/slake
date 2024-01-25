@@ -74,7 +74,12 @@ void printTraceback(slake::Runtime *rt) {
 	auto ctxt = rt->activeContexts.at(std::this_thread::get_id());
 	printf("Traceback:\n");
 	for (auto i = ctxt->majorFrames.rbegin(); i != ctxt->majorFrames.rend(); ++i) {
-		printf("\t%s: 0x%08x\n", rt->getFullName(*(i->curFn)).c_str(), i->curIns);
+		printf("\t%s: 0x%08x", rt->getFullName(*(i->curFn)).c_str(), i->curIns);
+
+		if (auto sld = i->curFn->getSourceLocationInfo(i->curIns); sld) {
+			printf(" at %d:%d", sld->line, sld->column);
+		}
+		putchar('\n');
 	}
 }
 

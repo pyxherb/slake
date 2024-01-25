@@ -17,6 +17,16 @@ namespace slake {
 		};
 
 		using Ref = deque<RefEntry>;
+
+		class ThisRefNode : public AstNode {
+		public:
+			inline ThisRefNode() = default;
+			virtual ~ThisRefNode() = default;
+
+			virtual inline Location getLocation() const override { throw std::logic_error("Should not get location of a this reference"); }
+
+			virtual inline NodeType getNodeType() const override { return AST_THIS_REF; }
+		};
 	}
 }
 

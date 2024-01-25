@@ -157,17 +157,8 @@ if(ANTLR_EXECUTABLE)
 	endmacro(ANTLR_TARGET)
 endif()
 
-include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(
-		ANTLR
-		REQUIRED_VARS ANTLR_EXECUTABLE Java_JAVA_EXECUTABLE
-		VERSION_VAR ANTLR_VERSION)
-
-set(ANTLR4_RUNTIME_INCLUDE_DIRS_FOUND FALSE)
-set(ANTLR4_RUNTIME_LIBPATH_FOUND FALSE)
-
 foreach(i ${CMAKE_SYSTEM_PREFIX_PATH})
-	if(ANTLR_INCLUDE_DIRS AND ANTLR_LIBPATH)
+	if(ANTLR_INCLUDE_DIRS AND ANTLR_LINK_LIBRARIES)
 		break()
 	endif()
 
@@ -177,32 +168,30 @@ foreach(i ${CMAKE_SYSTEM_PREFIX_PATH})
 			ANTLR_INCLUDE_DIRS
 			NAMES antlr4-runtime/antlr4-runtime.h
 			HINTS ${i}/LIBANTLR4/include)
-		
+
 		if (ANTLR_INCLUDE_DIRS)
 			message(CHECK_PASS "Found ANTLR include directory: ${ANTLR_INCLUDE_DIRS}")
 		endif()
 	endif()
-	
-	if (NOT ANTLR_LIBPATH)
+
+	if (NOT ANTLR_LINK_LIBRARIES)
 		message(CHECK_START "Finding ANTLR runtime library: ${i}/LIBANTLR4/lib")
 		find_library(
-			ANTLR_LIBPATH
+			ANTLR_LINK_LIBRARIES
 			NAMES antlr4-runtime-static antlr4-runtime
 			HINTS ${i}/LIBANTLR4/lib)
 
-		if (ANTLR_LIBPATH)
-			message(CHECK_PASS "Found ANTLR runtime library: ${ANTLR_LIBPATH}")
+		if (ANTLR_LINK_LIBRARIES)
+			message(CHECK_PASS "Found ANTLR runtime library: ${ANTLR_LINK_LIBRARIES}")
 		endif()
 	endif()
 endforeach()
 
-if(NOT ANTLR_INCLUDE_DIRS)
-	message(FATAL_ERROR "Antlr4 include directory was not found")
-endif()
-
-if(NOT ANTLR_LIBPATH)
-	message(FATAL_ERROR "Antlr4 runtime library was not found")
-endif()
-
 add_compile_definitions(ANTLR4CPP_STATIC)
-set(ANTLR_LINK_LIBRARIES ${ANTLR_LIBPATH})
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(
+	ANTLR
+	REQUIRED_VARS ANTLR_EXECUTABLE Java_JAVA_EXECUTABLE ANTLR_INCLUDE_DIRS ANTLR_LINK_LIBRARIES
+	VERSION_VAR ANTLR_VERSION)
+	

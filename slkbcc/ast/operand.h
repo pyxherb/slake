@@ -2,7 +2,6 @@
 #define _SLKBCC_OPERAND_H_
 
 #include "ref.h"
-#include <slake/reg.h>
 
 namespace slake {
 	namespace bcc {
@@ -84,7 +83,7 @@ namespace slake {
 		using LabelOperand = LiteralOperand<string, OperandType::LABEL>;
 		using TypeNameOperand = LiteralOperand<shared_ptr<TypeName>, OperandType::TYPENAME>;
 		using LocalVarOperand = LiteralOperand<uint32_t, OperandType::LVAR>;
-		using RegOperand = LiteralOperand<std::string, OperandType::REG>;
+		using RegOperand = LiteralOperand<uint32_t, OperandType::REG>;
 		using ArgOperand = LiteralOperand<uint32_t, OperandType::ARG>;
 	}
 }

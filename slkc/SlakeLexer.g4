@@ -86,6 +86,7 @@ KW_OPERATOR: 'operator';
 KW_PUB: 'pub';
 KW_RETURN: 'return';
 KW_STATIC: 'static';
+KW_STRUCT: 'struct';
 KW_SWITCH: 'switch';
 KW_THIS: 'this';
 KW_THROW: 'throw';

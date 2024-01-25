@@ -25,9 +25,6 @@ namespace slake {
 	struct MinorFrame final {
 		std::deque<ExceptionHandler> exceptHandlers;  // Exception handlers
 
-		ValueRef<VarValue> tmpRegs[2];	// Temporary registers
-		ValueRef<VarValue> gpRegs[4];	// General-purposed registers
-
 		std::deque<ValueRef<>> dataStack;  // Data stack
 
 		MinorFrame(Runtime *rt);
@@ -55,7 +52,8 @@ namespace slake {
 		std::deque<ValueRef<VarValue>> argStack;   // Argument stack
 		std::deque<ValueRef<>> nextArgStack;	   // Next Argument stack
 		std::deque<ValueRef<VarValue>> localVars;  // Local variables
-		ValueRef<VarValue> thisObject;			   // `this' object
+		std::deque<ValueRef<VarValue>> regs;	   // Local registers
+		ValueRef<> thisObject;					   // `this' object
 		ValueRef<> returnValue;					   // Return value
 		std::deque<MinorFrame> minorFrames;		   // Minor frames
 		ValueRef<> curExcept;					   // Current exception
@@ -199,6 +197,7 @@ namespace slake {
 
 		void _callFn(Context *context, FnValue *fn);
 		VarValue *_addLocalVar(MajorFrame &frame, Type type);
+		VarValue *_addLocalReg(MajorFrame &frame);
 
 		bool _findAndDispatchExceptHandler(Context *context) const;
 

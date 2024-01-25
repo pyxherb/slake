@@ -45,6 +45,11 @@ CmdLineAction cmdLineActions[] = {
 	  "--dump\0",
 		[](int argc, char **argv, int &i) {
 			action = ACT_DUMP;
+		} },
+	{ "-l\0"
+	  "--no-source-location-info\0",
+		[](int argc, char **argv, int &i) {
+			slake::decompiler::decompilerFlags |= slake::decompiler::DECOMP_SRCLOCINFO;
 		} }
 };
 
@@ -106,7 +111,7 @@ int main(int argc, char **argv) {
 			case ACT_DUMP: {
 				std::ifstream fs(srcPath, std::ios::binary);
 
-				slake::Decompiler::decompile(fs, std::cout);
+				slake::decompiler::decompile(fs, std::cout);
 
 				fs.close();
 				break;

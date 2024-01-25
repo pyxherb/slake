@@ -12,12 +12,12 @@ namespace slake {
 		PUSH,  // Push an element into the stack.
 		POP,   // Pop an element from the stack.
 
-		LOAD,	 // Load value of a variable.
-		RLOAD,	 // Access and load corresponding member with an existing value.
-		STORE,	 // Store a value into a variable.
-		ISTORE,	 // Indirect store.
+		LOAD,	// Load value of a variable.
+		RLOAD,	// Access and load corresponding member with an existing value.
+		STORE,	// Store a value into a variable.
 
 		LVAR,  // Create a new local variable
+		REG,   // Create a new register
 
 		LVALUE,	 // Load value of a variable
 
@@ -66,10 +66,14 @@ namespace slake {
 		MCALL,	// Method Call
 		RET,	// Return
 
+		LRET,  // Load return value
+
 		ACALL,	 // Asynchronous Call
 		AMCALL,	 // Asynchronous Method Call
 		YIELD,	 // Yield
 		AWAIT,	 // Await
+
+		LTHIS,	// Load this register
 
 		NEW,  // New
 

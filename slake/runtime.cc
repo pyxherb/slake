@@ -3,15 +3,9 @@
 using namespace slake;
 
 MinorFrame::MinorFrame(Runtime *rt) {
-	for (size_t i = 0; i < std::size(tmpRegs); ++i)
-		tmpRegs[i] = new VarValue(rt, ACCESS_PUB, Type(TypeId::ANY), VAR_REG);
-
-	for (size_t i = 0; i < std::size(gpRegs); ++i)
-		gpRegs[i] = new VarValue(rt, ACCESS_PUB, Type(TypeId::ANY), VAR_REG);
 }
 
 MajorFrame::MajorFrame(Runtime *rt) {
-	thisObject = new VarValue(rt, ACCESS_PUB, Type(TypeId::ANY), VAR_REG);
 	minorFrames.push_back(MinorFrame(rt));
 }
 

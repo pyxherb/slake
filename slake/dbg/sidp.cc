@@ -18,7 +18,7 @@ using namespace slake;
 
 void SidpDebugAdapter::_sidpListenerThreadProc(SidpDebugAdapter *adapter, uint16_t port) {
 	SOCKET s;
-	if ((s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == INVALID_SOCKET)
+	if ((s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
 		throw std::runtime_error("Error creating socket");
 
 	sockaddr_in serverAddr = {};

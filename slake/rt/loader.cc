@@ -85,7 +85,9 @@ Value *Runtime::_loadValue(std::istream &fs) {
 		case slxfmt::Type::TYPENAME:
 			return new TypeNameValue(this, _loadType(fs, _read<slxfmt::Type>(fs)));
 		case slxfmt::Type::REG:
-			return new RegRefValue(this, _read<RegId>(fs));
+			return new RegRefValue(this, _read<uint32_t>(fs));
+		case slxfmt::Type::REG_VALUE:
+			return new RegRefValue(this, _read<uint32_t>(fs), true);
 		case slxfmt::Type::LVAR:
 			return new LocalVarRefValue(this, _read<uint32_t>(fs));
 		case slxfmt::Type::LVAR_VALUE:
@@ -297,6 +299,12 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 					body[j].operands.push_back(_loadValue(fs));
 			}
 		}
+
+		for(uint32_t j = 0 ; j < i.nSourceLocDescs ; ++j) {
+			slxfmt::SourceLocDesc sld = _read<slxfmt::SourceLocDesc>(fs);
+			fn->sourceLocDescs.push_back(sld);
+		}
+
 		mod->addMember(name, fn.release());
 	}
 

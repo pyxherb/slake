@@ -87,6 +87,8 @@ namespace slake {
 
 			shared_ptr<TypeNameNode> returnType;
 
+			deque<slxfmt::SourceLocDesc> srcLocDescs;
+
 			inline CompiledFnNode(Location loc, string name) : _loc(loc), name(name) {}
 			virtual ~CompiledFnNode() = default;
 
@@ -144,13 +146,14 @@ namespace slake {
 
 		class RegRefNode final : public AstNode {
 		public:
-			RegId reg;
+			uint32_t index;
+			bool unwrapData;
 
-			inline RegRefNode(RegId reg) : reg(reg) {}
+			inline RegRefNode(uint32_t index, bool unwrapData = false) : index(index), unwrapData(unwrapData) {}
 			virtual ~RegRefNode() = default;
 
 			virtual inline Location getLocation() const override {
-				throw std::logic_error("Should not get location of a label reference");
+				throw std::logic_error("Should not get location of a register reference");
 			}
 
 			virtual inline NodeType getNodeType() const override { return AST_REG_REF; }

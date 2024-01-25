@@ -21,8 +21,7 @@ moduleDecl: 'module' ref ';';
 fnDecl: genericParams? typeName ID '(' params ')';
 fnDef: fnDecl stmt;
 stmt:
-	expr ';'																# ExprStmt
-	| varDef ';'															# VarDefStmt
+	varDef ';'																# VarDefStmt
 	| 'break' ';'															# BreakStmt
 	| 'continue' ';'														# ContinueStmt
 	| 'for' '(' varDef? ';' condition = expr ';' endExpr = expr? ')' stmt	# ForStmt
@@ -32,7 +31,8 @@ stmt:
 	| 'if' varDef? '(' expr ')' stmt elseBranch?							# IfStmt
 	| 'try' stmt catchBlock+ finalBlock?									# TryStmt
 	| 'switch' '(' expr ')' '{' switchCase+ defaultBranch? '}'				# SwitchStmt
-	| codeBlock																# CodeBlockStmt;
+	| codeBlock																# CodeBlockStmt
+	| expr ';'																# ExprStmt;
 
 elseBranch: 'else' stmt;
 
@@ -248,6 +248,6 @@ primitiveTypeName:
 		| 'void'
 		| 'any'
 	);
-customTypeName: '@' ref;
+customTypeName: ref;
 
 genericArgs: '<' typeName (',' typeName)* '>';

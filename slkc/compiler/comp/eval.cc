@@ -1,4 +1,5 @@
 #include "../compiler.h"
+#include <cmath>
 
 using namespace slake::slkc;
 
@@ -401,14 +402,14 @@ shared_ptr<ExprNode> Compiler::evalConstExpr(shared_ptr<ExprNode> expr) {
 			auto e = static_pointer_cast<ArrayExprNode>(expr);
 			for (auto i : e->elements)
 				if (!evalConstExpr(i))
-					return false;
+					return {};
 			return e;
 		}
 		case EXPR_MAP: {
 			auto e = static_pointer_cast<MapExprNode>(expr);
 			for (auto i : e->pairs)
 				if ((!evalConstExpr(i.first)) || (!evalConstExpr(i.second)))
-					return false;
+					return {};
 			return e;
 		}
 		case EXPR_REF: {
@@ -417,7 +418,7 @@ shared_ptr<ExprNode> Compiler::evalConstExpr(shared_ptr<ExprNode> expr) {
 		case EXPR_CAST: {
 			auto e = static_pointer_cast<CastExprNode>(expr);
 			if (!isLiteralType(e->targetType))
-				return false;
+				return {};
 
 			switch (e->getExprType()) {
 				case EXPR_I32: {
@@ -567,7 +568,7 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 					case AST_LOCAL_VAR:
 						return static_pointer_cast<LocalVarNode>(resolvedParts.back().second)->type;
 					case AST_ARG_REF:
-						return context.curFn->params.at(static_pointer_cast<ArgRefNode>(resolvedParts.back().second)->index).type;
+						return curFn->params.at(static_pointer_cast<ArgRefNode>(resolvedParts.back().second)->index).type;
 					case AST_CLASS:
 					case AST_INTERFACE:
 					case AST_TRAIT:

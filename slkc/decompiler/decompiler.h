@@ -11,7 +11,7 @@
 #include "../compiler/compiler.h"
 
 namespace slake {
-	namespace Decompiler {
+	namespace decompiler {
 		using namespace std;
 
 		class DecompileError : public std::runtime_error {
@@ -24,6 +24,12 @@ namespace slake {
 			NORMAL = 0,
 			INLINE
 		};
+
+		using DecompilerFlags = uint32_t;
+		constexpr static DecompilerFlags
+			DECOMP_SRCLOCINFO = 0x00000001;
+
+		extern DecompilerFlags decompilerFlags;
 
 		void decompile(std::istream &fs, std::ostream &os);
 		void decompileValue(Runtime* rt, Value *value, std::ostream &os, int indentLevel = 0);

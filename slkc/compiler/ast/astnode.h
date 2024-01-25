@@ -26,11 +26,13 @@ namespace slake {
 			AST_COMPILED_FN,
 			AST_LABEL_REF,
 			AST_LOCAL_VAR,
+			AST_REG,
 			AST_ARG_REF,
 			AST_COMMENT,
 
+			AST_LVAR_REF,
 			AST_REG_REF,
-			AST_LVAR_REF
+			AST_THIS_REF
 		};
 
 		struct Location {

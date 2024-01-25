@@ -8,8 +8,9 @@
 
 	PUSH 114514;
 
-	LOAD %R0, print;
-	CALL %R0;
+	REG 1u;
+	LOAD %0u, print;
+	CALL *%0u;
 	YIELD 0;
 
 	LVAR i32;
@@ -18,18 +19,18 @@
 loopStart:
 	PUSHARG "Yielded\n";
 
-	LOAD %R0, main.print;
-	CALL %R0;
+	LOAD %0u, main.print;
+	CALL *%0u;
 	YIELD *$0u;
 
 	ADD $0u, *$0u, 1;
 
 loopEnd:
-	STORE %R0, *$0u;
-	LT %R0, %R0, 100;
-	JT #loopStart, %R0;
+	STORE %0u, *$0u;
+	LT %0u, *%0u, 100;
+	JT #loopStart, *%0u;
 
-	POP %R0;
+	POP %0u;
 
-	RET %R0;
+	RET *%0u;
 .end

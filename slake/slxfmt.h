@@ -12,7 +12,6 @@
 #include <cstdint>
 
 #include "opcode.h"
-#include "reg.h"
 
 #ifdef _MSC_VER
 	#pragma pack(push)
@@ -77,6 +76,7 @@ namespace slake {
 			TYPENAME,	  // Type name
 			GENERIC_ARG,  // Generic argument
 			REG,		  // Register
+			REG_VALUE,	  // Register value
 			LVAR,		  // Local variable
 			LVAR_VALUE,	  // Local variable value
 			ARG,		  // Argument
@@ -131,11 +131,12 @@ namespace slake {
 
 		/// @brief Function Descriptor (FND)
 		struct FnDesc final {
-			uint8_t flags : 8;			 // Flags
-			uint16_t lenName : 16;		 // Length of name
-			uint8_t nGenericParams : 8;	 // Number of generic parameters
-			uint8_t nParams : 8;		 // Number of parameters, only used by compilers
-			uint32_t lenBody : 24;		 // Length of body
+			uint8_t flags : 8;				// Flags
+			uint16_t lenName : 16;			// Length of name
+			uint8_t nGenericParams : 8;		// Number of generic parameters
+			uint8_t nParams : 8;			// Number of parameters, only used by compilers
+			uint32_t lenBody : 24;			// Length of body
+			uint32_t nSourceLocDescs : 32;	// Number of SLDs
 		};
 		constexpr static uint8_t
 			FND_PUB = 0x01,		  // Public
@@ -195,32 +196,18 @@ namespace slake {
 			uint8_t flags : 4;
 		};
 
-		// @brief Array Descriptor (ARD)
-		struct ArrayDesc final {
-			uint32_t nMembers;
-		};
-
-		// @brief Array Descriptor (MPD)
-		struct MapDesc final {
-			uint32_t nPairs;
-		};
-
 		// @brief Variable Debugging Descriptor (VDD)
 		struct VarDebugDesc final {
 			uint32_t line : 24;
 			uint8_t nLine : 8;
 		};
 
-		// @brief Function Statement Descriptor (FSD)
-		struct FnStmtDesc final {
+		// @brief Source Location Descriptor (SLD)
+		struct SourceLocDesc final {
 			uint32_t offIns : 24;
-			uint8_t nIns : 8;
+			uint32_t nIns : 16;
 			uint32_t line : 24;
-			uint8_t nLine : 8;
-		};
-
-		struct RegDesc final {
-			RegId reg;
+			uint32_t column : 24;
 		};
 	}
 }

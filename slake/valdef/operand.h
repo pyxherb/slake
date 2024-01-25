@@ -2,13 +2,12 @@
 #define _SLAKE_VALDEF_OPERAND_H_
 
 #include "base.h"
-#include "../reg.h"
 
 namespace slake {
 	class LocalVarRefValue final : public Value {
 	public:
 		int32_t index;
-		const bool unwrapValue;
+		bool unwrapValue;
 
 		inline LocalVarRefValue(Runtime *rt, int32_t index, bool unwrapValue = false)
 			: Value(rt), index(index), unwrapValue(unwrapValue) {
@@ -23,6 +22,7 @@ namespace slake {
 		LocalVarRefValue &operator=(const LocalVarRefValue &x) {
 			((Value &)*this) = (Value &)x;
 			index = x.index;
+			unwrapValue = x.unwrapValue;
 			return *this;
 		}
 		LocalVarRefValue &operator=(LocalVarRefValue &&) = delete;
@@ -30,9 +30,11 @@ namespace slake {
 
 	class RegRefValue final : public Value {
 	public:
-		RegId reg;
+		int32_t index;
+		bool unwrapValue;
 
-		inline RegRefValue(Runtime *rt, RegId reg) : Value(rt), reg(reg) {
+		inline RegRefValue(Runtime *rt, int32_t index, bool unwrapValue = false)
+			: Value(rt), index(index), unwrapValue(unwrapValue) {
 			reportSizeToRuntime(sizeof(*this) - sizeof(Value));
 		}
 
@@ -43,7 +45,8 @@ namespace slake {
 
 		RegRefValue &operator=(const RegRefValue &x) {
 			((Value &)*this) = (Value &)x;
-			reg = x.reg;
+			index = x.index;
+			unwrapValue = x.unwrapValue;
 			return *this;
 		}
 		RegRefValue &operator=(RegRefValue &&) = delete;

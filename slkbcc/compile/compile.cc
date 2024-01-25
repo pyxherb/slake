@@ -6,18 +6,6 @@
 using namespace slake;
 using namespace slake::bcc;
 
-#define REGID_ENTRY(name) \
-	{ #name, RegId::name }
-
-static const std::unordered_map<std::string, RegId> _regIdNameMap = {
-	REGID_ENTRY(TMP0),
-	REGID_ENTRY(R0),
-	REGID_ENTRY(R1),
-	REGID_ENTRY(RR),
-	REGID_ENTRY(RTHIS),
-	REGID_ENTRY(RXCPT)
-};
-
 template <typename T>
 static void _write(std::ostream &fs, const T &value) {
 	fs.write((const char *)&value, sizeof(T));
@@ -363,18 +351,12 @@ void bcc::compileOperand(std::ostream &fs, shared_ptr<Operand> operand) {
 			compileTypeName(fs, static_pointer_cast<TypeNameOperand>(operand)->data);
 			break;
 		}
-		case OperandType::REG: {
-			vd.type = slxfmt::Type::REG;
+		case OperandType::REG:
+			vd.type = operand->dereferenced ? slxfmt::Type::REG_VALUE : slxfmt::Type::REG;
 			_write(fs, vd);
 
-			auto op = static_pointer_cast<RegOperand>(operand);
-
-			if (!_regIdNameMap.count(op->data))
-				throw parser::syntax_error(op->getLocation(), "Invalid register name");
-
-			_write(fs, _regIdNameMap.at(op->data));
+			_write(fs, static_pointer_cast<RegOperand>(operand)->data);
 			break;
-		}
 		case OperandType::ARG:
 			vd.type = operand->dereferenced ? slxfmt::Type::ARG_VALUE : slxfmt::Type::ARG;
 			_write(fs, vd);

@@ -100,6 +100,14 @@ namespace slake {
 		virtual ~InvalidLocalVarIndexError() = default;
 	};
 
+	class InvalidRegisterIndexError : public RuntimeExecError {
+	public:
+		const uint32_t index;
+
+		inline InvalidRegisterIndexError(std::string msg, uint32_t index) : RuntimeExecError(msg), index(index){};
+		virtual ~InvalidRegisterIndexError() = default;
+	};
+
 	class InvalidSubscriptionError : public RuntimeExecError {
 	public:
 		inline InvalidSubscriptionError(std::string msg) : RuntimeExecError(msg){};

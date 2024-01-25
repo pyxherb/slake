@@ -14,7 +14,7 @@ class Test {
 	}
 }
 
-class Derived(@Test) {
+class Derived(Test) {
 	pub i32 y;
 
 	pub operator new(i32 y) {
@@ -28,11 +28,12 @@ class Derived(@Test) {
 	}
 }
 
-class AnotherDerived(@Derived) {
+class AnotherDerived(Derived) {
 	pub i32 z;
 
 	pub operator new(i32 z) {
-		base.x = x * 4;
+		this.z = z;
+		base.x = z * 4;
 		base.y = z * 2;
 		return;
 	}
@@ -51,8 +52,8 @@ pub native void print(...);
 pub i32 main() {
 	print("Entered main\n");
 
-	@Test test = new @AnotherDerived(100);
-	test = new @Derived(100);
+	Test test = new AnotherDerived(100);
+	test = new Derived(100);
 
 	while(test.x = test.x - 1) {
 		print("Yielded\n");

@@ -16,7 +16,7 @@ ClassValue *corelib::except::exInvalidOperandsError;
 static ValueRef<> _exceptionConstructor(Runtime *rt, std::deque<ValueRef<>> args) {
 	if (args.size() != 1)
 		throw InvalidArgumentsError("Invalid arguments");
-	((VarValue *)rt->getActiveContext()->getCurFrame().thisObject->getData()->getMember("_msg"))->setData(*args[0]);
+	((VarValue *)rt->getActiveContext()->getCurFrame().thisObject->getMember("_msg"))->setData(*args[0]);
 	return {};
 }
 

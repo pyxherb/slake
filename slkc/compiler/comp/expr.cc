@@ -93,8 +93,13 @@ static map<BinaryOp, BinaryOp> _assignBinaryOpToOrdinaryBinaryOpMap = {
 };
 
 void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
+	slxfmt::SourceLocDesc sld;
+	sld.offIns = curFn->body.size();
+	sld.line = expr->getLocation().line;
+	sld.column = expr->getLocation().column;
+
 	if (auto ce = evalConstExpr(expr); ce) {
-		context.curFn->insertIns(Opcode::STORE, context.evalDest, ce);
+		curFn->insertIns(Opcode::STORE, curMajorContext.curMinorContext.evalDest, ce);
 		return;
 	}
 
@@ -102,35 +107,37 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 		case EXPR_UNARY: {
 			auto e = static_pointer_cast<UnaryOpExprNode>(expr);
 
-			bool restoreR0 = preserveRegister(RegId::R0);
+			uint32_t lhsRegIndex = allocReg();
 
 			compileExpr(
 				e->x,
 				_unaryOpRegs.at(e->op).lvalueOperand ? EvalPurpose::LVALUE : EvalPurpose::RVALUE,
-				make_shared<RegRefNode>(RegId::R0));
-			if (context.evalPurpose == EvalPurpose::STMT) {
+				make_shared<RegRefNode>(lhsRegIndex));
+			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::STMT) {
 				if (_unaryOpRegs.at(e->op).lvalueOperand) {
-					context.curFn->insertIns(_unaryOpRegs.at(e->op).opcode, make_shared<RegRefNode>(RegId::R0), make_shared<RegRefNode>(RegId::R0));
+					curFn->insertIns(_unaryOpRegs.at(e->op).opcode, make_shared<RegRefNode>(lhsRegIndex), make_shared<RegRefNode>(lhsRegIndex));
 				}
 			} else {
-				context.curFn->insertIns(_unaryOpRegs.at(e->op).opcode, context.evalDest, make_shared<RegRefNode>(RegId::R0));
+				curFn->insertIns(_unaryOpRegs.at(e->op).opcode, curMajorContext.curMinorContext.evalDest, make_shared<RegRefNode>(lhsRegIndex, true));
 			}
 
-			if (restoreR0)
-				restoreRegister(RegId::R0);
 			break;
 		}
 		case EXPR_BINARY: {
 			auto e = static_pointer_cast<BinaryOpExprNode>(expr);
 
-			bool restoreR0 = preserveRegister(RegId::R0),
-				 restoreR1 = preserveRegister(RegId::R1);
+			uint32_t lhsRegIndex = allocReg(),
+					 rhsRegIndex = allocReg();
 
 			auto lhsType = evalExprType(e->lhs), rhsType = evalExprType(e->rhs);
 
-			compileExpr(e->lhs, _binaryOpRegs.at(e->op).isLhsLvalue ? EvalPurpose::LVALUE : EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::R0));
+			compileExpr(
+				e->lhs,
+				_binaryOpRegs.at(e->op).isLhsLvalue
+					? EvalPurpose::LVALUE
+					: EvalPurpose::RVALUE,
+				make_shared<RegRefNode>(lhsRegIndex));
 
-			setRegisterPreserved(RegId::R0);
 			if (!isSameType(lhsType, rhsType)) {
 				if (!areTypesConvertible(rhsType, lhsType))
 					throw FatalCompilationError(
@@ -138,75 +145,82 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 							MSG_ERROR,
 							"Incompatible initial value type" });
 
-				compileExpr(make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs), _binaryOpRegs.at(e->op).isRhsLvalue ? EvalPurpose::LVALUE : EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::R1));
+				compileExpr(
+					make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
+					_binaryOpRegs.at(e->op).isRhsLvalue
+						? EvalPurpose::LVALUE
+						: EvalPurpose::RVALUE,
+					make_shared<RegRefNode>(rhsRegIndex));
 			} else
-				compileExpr(e->rhs, _binaryOpRegs.at(e->op).isRhsLvalue ? EvalPurpose::LVALUE : EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::R1));
-			unsetRegisterPreserved(RegId::R0);
+				compileExpr(e->rhs, _binaryOpRegs.at(e->op).isRhsLvalue ? EvalPurpose::LVALUE : EvalPurpose::RVALUE, make_shared<RegRefNode>(rhsRegIndex));
 
 			if (isAssignBinaryOp(e->op)) {
 				// RHS of the assignment expression.
 				if (auto opcode = _binaryOpRegs.at(_assignBinaryOpToOrdinaryBinaryOpMap.at(e->op)).opcode; opcode != Opcode::NOP) {
-					context.curFn->insertIns(
-						Opcode::LVALUE,
-						make_shared<RegRefNode>(RegId::TMP0),
-						make_shared<RegRefNode>(RegId::R0));
-					context.curFn->insertIns(
+					uint32_t lhsValueRegIndex = allocReg();
+
+					curFn->insertIns(
+						Opcode::STORE,
+						make_shared<RegRefNode>(lhsValueRegIndex),
+						make_shared<RegRefNode>(lhsRegIndex, true));
+					curFn->insertIns(
 						opcode,
-						make_shared<RegRefNode>(RegId::R1),
-						make_shared<RegRefNode>(RegId::TMP0),
-						make_shared<RegRefNode>(RegId::R1));
+						make_shared<RegRefNode>(rhsRegIndex),
+						make_shared<RegRefNode>(lhsValueRegIndex, true),
+						make_shared<RegRefNode>(rhsRegIndex, true));
 				}
 
 				// LHS of the assignment expression.
-				context.curFn->insertIns(Opcode::ISTORE, make_shared<RegRefNode>(RegId::R0), make_shared<RegRefNode>(RegId::R1));
+				curFn->insertIns(Opcode::STORE, make_shared<RegRefNode>(lhsRegIndex, true), make_shared<RegRefNode>(rhsRegIndex, true));
 
-				if ((context.evalPurpose != EvalPurpose::STMT) && (context.evalDest))
-					context.curFn->insertIns(Opcode::STORE, static_pointer_cast<RegRefNode>(context.evalDest), make_shared<RegRefNode>(RegId::R1));
-			} else if (context.evalPurpose != EvalPurpose::STMT) {
-				context.curFn->insertIns(
+				if ((curMajorContext.curMinorContext.evalPurpose != EvalPurpose::STMT) && (curMajorContext.curMinorContext.evalDest))
+					curFn->insertIns(Opcode::STORE, curMajorContext.curMinorContext.evalDest, make_shared<RegRefNode>(rhsRegIndex, true));
+			} else if (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::STMT) {
+				curFn->insertIns(
 					_binaryOpRegs.at(e->op).opcode,
-					context.evalDest,
-					make_shared<RegRefNode>(RegId::R0),
-					make_shared<RegRefNode>(RegId::R1));
-			}
-
-			if (restoreR0)
-				restoreRegister(RegId::R0);
-			if (restoreR1)
-				restoreRegister(RegId::R1);
+					curMajorContext.curMinorContext.evalDest,
+					make_shared<RegRefNode>(lhsRegIndex, true),
+					make_shared<RegRefNode>(rhsRegIndex, true));
+			} else
+				curFn->insertIns(
+					_binaryOpRegs.at(e->op).opcode,
+					make_shared<RegRefNode>(lhsRegIndex),
+					make_shared<RegRefNode>(lhsRegIndex, true),
+					make_shared<RegRefNode>(rhsRegIndex, true));
 
 			break;
 		}
 		case EXPR_TERNARY: {
 			auto e = static_pointer_cast<TernaryOpExprNode>(expr);
 
+			uint32_t conditionRegIndex = allocReg();
+
 			auto loc = e->getLocation();
 			string falseBranchLabel = "$ternary_" + to_string(loc.line) + "_" + to_string(loc.column) + "_false",
 				   endLabel = "$ternary_" + to_string(loc.line) + "_" + to_string(loc.column) + "_end";
 
-			bool restoreR0 = preserveRegister(RegId::R0);
-
-			compileExpr(e->condition, EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::R0));
+			compileExpr(e->condition, EvalPurpose::RVALUE, make_shared<RegRefNode>(conditionRegIndex));
 			if (evalExprType(e->condition)->getTypeId() != TYPE_BOOL)
-				context.curFn->insertIns(
+				curFn->insertIns(
 					Opcode::CAST,
-					make_shared<RegRefNode>(RegId::R0),
-					make_shared<BoolTypeNameNode>(e->getLocation(), true), make_shared<RegRefNode>(RegId::R0));
+					make_shared<RegRefNode>(conditionRegIndex),
+					make_shared<BoolTypeNameNode>(e->getLocation(), true),
+					make_shared<RegRefNode>(conditionRegIndex, true));
 
-			context.curFn->insertIns(Opcode::JF, make_shared<LabelRefNode>(falseBranchLabel), make_shared<RegRefNode>(RegId::R0));
+			curFn->insertIns(
+				Opcode::JF,
+				make_shared<LabelRefNode>(falseBranchLabel),
+				make_shared<RegRefNode>(conditionRegIndex, true));
 
 			// Compile the true expression.
-			compileExpr(e->x, EvalPurpose::RVALUE, context.evalDest);
-			context.curFn->insertIns(Opcode::JMP, make_shared<LabelRefNode>(endLabel));
+			compileExpr(e->x, EvalPurpose::RVALUE, curMajorContext.curMinorContext.evalDest);
+			curFn->insertIns(Opcode::JMP, make_shared<LabelRefNode>(endLabel));
 
 			// Compile the false expression.
-			context.curFn->insertLabel(falseBranchLabel);
-			compileExpr(e->y, EvalPurpose::RVALUE, context.evalDest);
+			curFn->insertLabel(falseBranchLabel);
+			compileExpr(e->y, EvalPurpose::RVALUE, curMajorContext.curMinorContext.evalDest);
 
-			context.curFn->insertLabel(endLabel);
-
-			if (restoreR0)
-				restoreRegister(RegId::R0);
+			curFn->insertLabel(endLabel);
 
 			break;
 		}
@@ -220,11 +234,10 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 				   defaultLabel = labelPrefix + "_label",
 				   endLabel = labelPrefix + "_end";
 
-			bool restoreR2 = preserveRegister(RegId::R2);
+			uint32_t matcheeRegIndex = allocReg();
 
 			// Create a local variable to store result of the condition expression.
-			compileExpr(e->condition, EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::R2));
-			auto condVar = (context.localVars[condLocalVarName] = make_shared<LocalVarNode>(context.localVars.size(), make_shared<AnyTypeNameNode>(loc, false)));
+			compileExpr(e->condition, EvalPurpose::RVALUE, make_shared<RegRefNode>(matcheeRegIndex));
 
 			pair<shared_ptr<ExprNode>, shared_ptr<ExprNode>> defaultCase;
 
@@ -241,25 +254,27 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 					defaultCase = i;
 				}
 
-				compileExpr(i.first, EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::TMP0));
-				context.curFn->insertIns(Opcode::EQ, make_shared<RegRefNode>(RegId::TMP0), make_shared<RegRefNode>(RegId::R2), make_shared<RegRefNode>(RegId::TMP0));
-				context.curFn->insertIns(Opcode::JF, make_shared<LabelRefNode>(caseEndLabel), make_shared<RegRefNode>(RegId::TMP0));
+				uint32_t conditionRegIndex = allocReg();
+
+				compileExpr(i.first, EvalPurpose::RVALUE, make_shared<RegRefNode>(conditionRegIndex));
+				curFn->insertIns(
+					Opcode::EQ,
+					make_shared<RegRefNode>(conditionRegIndex),
+					make_shared<RegRefNode>(matcheeRegIndex, true),
+					make_shared<RegRefNode>(conditionRegIndex, true));
+				curFn->insertIns(Opcode::JF, make_shared<LabelRefNode>(caseEndLabel), make_shared<RegRefNode>(conditionRegIndex, true));
 
 				// Leave the minor stack that is created for the local variable.
-				compileExpr(i.second, context.evalPurpose, context.evalDest);
-				;
+				compileExpr(i.second, curMajorContext.curMinorContext.evalPurpose, curMajorContext.curMinorContext.evalDest);
 
-				context.curFn->insertLabel(caseEndLabel);
-				context.curFn->insertIns(Opcode::JMP, make_shared<LabelRefNode>(endLabel));
+				curFn->insertLabel(caseEndLabel);
+				curFn->insertIns(Opcode::JMP, make_shared<LabelRefNode>(endLabel));
 			}
 
 			if (defaultCase.second)
 				compileExpr(defaultCase.second);
 
-			context.curFn->insertLabel(endLabel);
-
-			if (restoreR2)
-				restoreRegister(RegId::R2);
+			curFn->insertLabel(endLabel);
 
 			break;
 		}
@@ -271,58 +286,52 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 			auto e = static_pointer_cast<CallExprNode>(expr);
 
 			if (auto ce = evalConstExpr(e); ce) {
-				context.curFn->insertIns(Opcode::CALL, ce);
+				curFn->insertIns(Opcode::CALL, ce);
 			} else {
-				bool restoreR0 = preserveRegister(RegId::R0);
+				uint32_t callTargetRegIndex = allocReg();
+				uint32_t tmpRegIndex = allocReg();
 
 				for (auto i : e->args) {
 					if (auto ce = evalConstExpr(i); ce)
-						context.curFn->insertIns(Opcode::PUSHARG, ce);
+						curFn->insertIns(Opcode::PUSHARG, ce);
 					else {
-						compileExpr(i, EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::TMP0));
-						context.curFn->insertIns(Opcode::PUSHARG, make_shared<RegRefNode>(RegId::TMP0));
+						compileExpr(i, EvalPurpose::RVALUE, make_shared<RegRefNode>(tmpRegIndex));
+						curFn->insertIns(Opcode::PUSHARG, make_shared<RegRefNode>(tmpRegIndex, true));
 					}
 				}
 
-				compileExpr(e->target, EvalPurpose::CALL, make_shared<RegRefNode>(RegId::R0));
+				compileExpr(e->target, EvalPurpose::CALL, make_shared<RegRefNode>(callTargetRegIndex), make_shared<RegRefNode>(tmpRegIndex));
 
-				if (context.isLastCallTargetStatic)
-					context.curFn->insertIns(
+				if (curMajorContext.curMinorContext.isLastCallTargetStatic)
+					curFn->insertIns(
 						e->isAsync ? Opcode::ACALL : Opcode::CALL,
-						make_shared<RegRefNode>(RegId::R0));
+						make_shared<RegRefNode>(callTargetRegIndex, true));
 				else
-					context.curFn->insertIns(
+					curFn->insertIns(
 						e->isAsync ? Opcode::AMCALL : Opcode::MCALL,
-						make_shared<RegRefNode>(RegId::R0),
-						make_shared<RegRefNode>(RegId::TMP1));
+						make_shared<RegRefNode>(callTargetRegIndex, true),
+						make_shared<RegRefNode>(tmpRegIndex));
 
-				if (context.evalPurpose != EvalPurpose::STMT) {
-					context.curFn->insertIns(
-						Opcode::STORE,
-						context.evalDest,
-						make_shared<RegRefNode>(RegId::RR));
+				if (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::STMT) {
+					curFn->insertIns(
+						Opcode::LRET,
+						curMajorContext.curMinorContext.evalDest);
 				}
-
-				if (restoreR0)
-					restoreRegister(RegId::R0);
 			}
 
 			break;
 		}
 		case EXPR_AWAIT: {
+			uint32_t awaitTargetRegIndex = allocReg();
+
 			auto e = static_pointer_cast<AwaitExprNode>(expr);
 
 			if (auto ce = evalConstExpr(e); ce) {
-				context.curFn->insertIns(Opcode::AWAIT, ce);
+				curFn->insertIns(Opcode::AWAIT, ce);
 			} else {
-				bool restoreR0 = preserveRegister(RegId::R0);
-
 				// TODO: Check if the target is a method.
-				compileExpr(e->target, context.evalPurpose, make_shared<RegRefNode>(RegId::R0));
-				context.curFn->insertIns(Opcode::AWAIT, make_shared<RegRefNode>(RegId::R0));
-
-				if (restoreR0)
-					restoreRegister(RegId::R0);
+				// compileExpr(e->target, curMajorContext.curMinorContext.evalPurpose, make_shared<RegRefNode>(RegId::R0));
+				// curFn->insertIns(Opcode::AWAIT, make_shared<RegRefNode>(RegId::R0));
 			}
 
 			break;
@@ -332,24 +341,27 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 
 			for (auto i : e->args) {
 				if (auto ce = evalConstExpr(i); ce)
-					context.curFn->insertIns(Opcode::PUSHARG, ce);
+					curFn->insertIns(Opcode::PUSHARG, ce);
 				else {
-					compileExpr(i, EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::TMP0));
-					context.curFn->insertIns(Opcode::PUSHARG, make_shared<RegRefNode>(RegId::TMP0));
+					uint32_t tmpRegIndex = allocReg();
+					compileExpr(i, EvalPurpose::RVALUE, make_shared<RegRefNode>(tmpRegIndex));
+					curFn->insertIns(Opcode::PUSHARG, make_shared<RegRefNode>(tmpRegIndex, true));
 				}
 			}
 
-			context.curFn->insertIns(Opcode::NEW, context.evalDest, e->type);
+			curFn->insertIns(Opcode::NEW, curMajorContext.curMinorContext.evalDest, e->type);
 			break;
 		}
 		case EXPR_TYPEOF: {
 			auto e = static_pointer_cast<TypeofExprNode>(expr);
 
 			if (auto ce = evalConstExpr(e->target); ce) {
-				context.curFn->insertIns(Opcode::TYPEOF, context.evalDest, ce);
+				curFn->insertIns(Opcode::TYPEOF, curMajorContext.curMinorContext.evalDest, ce);
 			} else {
-				compileExpr(e->target, EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::TMP0));
-				context.curFn->insertIns(Opcode::TYPEOF, context.evalDest, make_shared<RegRefNode>(RegId::TMP0));
+				uint32_t tmpRegIndex = allocReg();
+
+				compileExpr(e->target, EvalPurpose::RVALUE, make_shared<RegRefNode>(tmpRegIndex));
+				curFn->insertIns(Opcode::TYPEOF, curMajorContext.curMinorContext.evalDest, make_shared<RegRefNode>(tmpRegIndex));
 			}
 
 			break;
@@ -359,14 +371,16 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 
 			if (auto ce = evalConstExpr(e->target); ce) {
 				if (areTypesConvertible(evalExprType(ce), e->targetType)) {
-					context.curFn->insertIns(Opcode::CAST, context.evalDest, e->targetType, ce);
+					curFn->insertIns(Opcode::CAST, curMajorContext.curMinorContext.evalDest, e->targetType, ce);
 				} else {
 					throw FatalCompilationError({ e->getLocation(), MSG_ERROR, "Invalid type conversion" });
 				}
 			} else {
 				if (areTypesConvertible(evalExprType(e->target), e->targetType)) {
-					compileExpr(e->target, EvalPurpose::RVALUE, make_shared<RegRefNode>(RegId::TMP0));
-					context.curFn->insertIns(Opcode::CAST, context.evalDest, e->targetType, make_shared<RegRefNode>(RegId::TMP0));
+					uint32_t tmpRegIndex = allocReg();
+
+					compileExpr(e->target, EvalPurpose::RVALUE, make_shared<RegRefNode>(tmpRegIndex));
+					curFn->insertIns(Opcode::CAST, curMajorContext.curMinorContext.evalDest, e->targetType, make_shared<RegRefNode>(tmpRegIndex, true));
 				} else {
 					throw FatalCompilationError({ e->getLocation(), MSG_ERROR, "Invalid type conversion" });
 				}
@@ -385,78 +399,89 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 						MSG_ERROR,
 						"Identifier not found: `" + to_string(e->ref) + "'" });
 
-			if (context.evalPurpose == EvalPurpose::CALL) {
+			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::CALL) {
 				if (isDynamicMember(resolvedParts.back().second)) {
 					Ref thisRef = e->ref;
 					thisRef.pop_back();
 					compileExpr(
 						make_shared<RefExprNode>(thisRef),
 						EvalPurpose::RVALUE,
-						make_shared<RegRefNode>(RegId::TMP1));
-					context.isLastCallTargetStatic = false;
+						curMajorContext.curMinorContext.thisDest);
+					curMajorContext.curMinorContext.isLastCallTargetStatic = false;
 				} else
-					context.isLastCallTargetStatic = true;
+					curMajorContext.curMinorContext.isLastCallTargetStatic = true;
 			}
+
+			uint32_t tmpRegIndex = allocReg();
 
 			auto &x = resolvedParts.front().second;
 			switch (x->getNodeType()) {
 				case AST_LOCAL_VAR:
-					context.curFn->insertIns(
+					curFn->insertIns(
 						Opcode::STORE,
-						make_shared<RegRefNode>(RegId::TMP0),
+						make_shared<RegRefNode>(tmpRegIndex),
 						make_shared<LocalVarRefNode>(
 							static_pointer_cast<LocalVarNode>(x)->index,
 							resolvedParts.size() > 1
 								? true
-								: context.evalPurpose == EvalPurpose::LVALUE));
+								: curMajorContext.curMinorContext.evalPurpose != EvalPurpose::LVALUE));
 
 					resolvedParts.pop_front();
-					for (auto i : resolvedParts) {
-						context.curFn->insertIns(
-							Opcode::RLOAD,
-							make_shared<RegRefNode>(RegId::TMP0),
-							make_shared<RegRefNode>(RegId::TMP0),
-							make_shared<RefExprNode>(i.first));
+
+					if (resolvedParts.size()) {
+						for (auto i : resolvedParts) {
+							curFn->insertIns(
+								Opcode::RLOAD,
+								make_shared<RegRefNode>(tmpRegIndex),
+								make_shared<RegRefNode>(tmpRegIndex, true),
+								make_shared<RefExprNode>(i.first));
+						}
+
+						if (resolvedParts.back().second->getNodeType() == AST_VAR) {
+							if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RVALUE) {
+								curFn->insertIns(
+									Opcode::LVALUE,
+									make_shared<RegRefNode>(tmpRegIndex),
+									make_shared<RegRefNode>(tmpRegIndex, true));
+							}
+						}
 					}
 
-					if (context.evalPurpose == EvalPurpose::RVALUE)
-						context.curFn->insertIns(
-							Opcode::LVALUE,
-							make_shared<RegRefNode>(RegId::TMP0),
-							make_shared<RegRefNode>(RegId::TMP0));
-
-					context.curFn->insertIns(
+					curFn->insertIns(
 						Opcode::STORE,
-						context.evalDest,
-						make_shared<RegRefNode>(RegId::TMP0));
+						curMajorContext.curMinorContext.evalDest,
+						make_shared<RegRefNode>(tmpRegIndex, true));
 					break;
 				case AST_ARG_REF:
-					static_pointer_cast<ArgRefNode>(x)->unwrapData = (context.evalPurpose == EvalPurpose::RVALUE);
-					context.curFn->insertIns(
+					static_pointer_cast<ArgRefNode>(x)->unwrapData = (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RVALUE);
+					curFn->insertIns(
 						Opcode::STORE,
-						context.evalDest, x);
+						curMajorContext.curMinorContext.evalDest, x);
 					break;
 				case AST_VAR:
 				case AST_FN:
-				case AST_REG_REF: {
+				case AST_THIS_REF: {
 					switch (x->getNodeType()) {
-						case AST_VAR:
-							context.curFn->insertIns(
+						case AST_VAR: {
+							Ref ref;
+							_getFullName((VarNode *)resolvedParts.front().second.get(), ref);
+							curFn->insertIns(
 								Opcode::LOAD,
-								make_shared<RegRefNode>(RegId::TMP0),
-								make_shared<RefExprNode>(resolvedParts.front().first));
+								make_shared<RegRefNode>(tmpRegIndex),
+								make_shared<RefExprNode>(ref));
 							break;
-						case AST_FN:
-							context.curFn->insertIns(
+						}
+						case AST_FN: {
+							Ref ref;
+							_getFullName((FnNode *)resolvedParts.front().second.get(), ref);
+							curFn->insertIns(
 								Opcode::LOAD,
-								make_shared<RegRefNode>(RegId::TMP0),
-								make_shared<RefExprNode>(resolvedParts.front().first));
+								make_shared<RegRefNode>(tmpRegIndex),
+								make_shared<RefExprNode>(ref));
 							break;
-						case AST_REG_REF:
-							context.curFn->insertIns(
-								Opcode::STORE,
-								make_shared<RegRefNode>(RegId::TMP0),
-								x);
+						}
+						case AST_THIS_REF:
+							curFn->insertIns(Opcode::LTHIS, make_shared<RegRefNode>(tmpRegIndex));
 							break;
 						default:
 							assert(false);
@@ -465,23 +490,25 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 					// Check if the target is static.
 					resolvedParts.pop_front();
 					for (auto i : resolvedParts) {
-						context.curFn->insertIns(
+						curFn->insertIns(
 							Opcode::RLOAD,
-							make_shared<RegRefNode>(RegId::TMP0),
-							make_shared<RegRefNode>(RegId::TMP0),
+							make_shared<RegRefNode>(tmpRegIndex),
+							make_shared<RegRefNode>(tmpRegIndex, true),
 							make_shared<RefExprNode>(i.first));
 					}
 
-					if (context.evalPurpose == EvalPurpose::RVALUE)
-						context.curFn->insertIns(
-							Opcode::LVALUE,
-							make_shared<RegRefNode>(RegId::TMP0),
-							make_shared<RegRefNode>(RegId::TMP0));
+					if (resolvedParts.size()) {
+						if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RVALUE)
+							curFn->insertIns(
+								Opcode::LVALUE,
+								make_shared<RegRefNode>(tmpRegIndex),
+								make_shared<RegRefNode>(tmpRegIndex, true));
+					}
 
-					context.curFn->insertIns(
+					curFn->insertIns(
 						Opcode::STORE,
-						context.evalDest,
-						make_shared<RegRefNode>(RegId::TMP0));
+						curMajorContext.curMinorContext.evalDest,
+						make_shared<RegRefNode>(tmpRegIndex, true));
 					break;
 				}
 				default:
@@ -502,9 +529,12 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 		case EXPR_BOOL:
 		case EXPR_ARRAY:
 		case EXPR_MAP:
-			context.curFn->insertIns(Opcode::STORE, context.evalDest, expr);
+			curFn->insertIns(Opcode::STORE, curMajorContext.curMinorContext.evalDest, expr);
 			break;
 		default:
 			assert(false);
 	}
+
+	sld.nIns = curFn->body.size() - sld.offIns;
+	curFn->srcLocDescs.push_back(sld);
 }

@@ -232,8 +232,8 @@ void Runtime::_gcWalk(Context &ctxt) {
 			_gcWalk(*j.scopeValue);
 		if (j.returnValue)
 			_gcWalk(*j.returnValue);
-		if (auto v = j.thisObject->getData(); v)
-			_gcWalk(v);
+		if (j.thisObject)
+			_gcWalk(*j.thisObject);
 		if (j.curExcept)
 			_gcWalk(*j.curExcept);
 		for (auto &k : j.argStack)
@@ -242,13 +242,11 @@ void Runtime::_gcWalk(Context &ctxt) {
 			_gcWalk(*k);
 		for (auto &k : j.localVars)
 			_gcWalk(*k);
+		for (auto &k : j.regs)
+			_gcWalk(*k);
 		for (auto &k : j.minorFrames) {
 			for (auto &l : k.exceptHandlers)
 				_gcWalk(l.type);
-			for (auto &l : k.gpRegs)
-				_gcWalk(*l);
-			for (auto &l : k.tmpRegs)
-				_gcWalk(*l);
 		}
 	}
 }

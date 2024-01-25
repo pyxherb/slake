@@ -1,5 +1,4 @@
 #include "decompiler.h"
-#include "mnemonic.h"
 
 #include <string>
 
@@ -12,19 +11,9 @@ static const char *_ctrlCharNames[] = {
 	"x1b", "x1c", "x1d", "x1e", "x1f"
 };
 
-#define REGID_ENTRY(name) \
-	{ RegId::name , #name }
+decompiler::DecompilerFlags decompiler::decompilerFlags = 0;
 
-static const std::unordered_map<RegId, std::string> _regIdNameMap = {
-	REGID_ENTRY(TMP0),
-	REGID_ENTRY(R0),
-	REGID_ENTRY(R1),
-	REGID_ENTRY(RR),
-	REGID_ENTRY(RTHIS),
-	REGID_ENTRY(RXCPT)
-};
-
-void slake::Decompiler::decompile(std::istream &fs, std::ostream &os) {
+void slake::decompiler::decompile(std::istream &fs, std::ostream &os) {
 	auto rt = std::make_unique<slake::Runtime>();
 	auto mod = rt->loadModule(fs, 0);
 
@@ -34,7 +23,7 @@ void slake::Decompiler::decompile(std::istream &fs, std::ostream &os) {
 		decompileValue(rt.get(), i.second, os);
 }
 
-void slake::Decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &os, int indentLevel) {
+void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &os, int indentLevel) {
 	if (!value) {
 		os << "null";
 		return;
@@ -82,7 +71,7 @@ void slake::Decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 				else
 					os << "\\" << _ctrlCharNames[i];
 			}
-			os <<'"';
+			os << '"';
 			break;
 		}
 		case TypeId::REF:
@@ -109,15 +98,32 @@ void slake::Decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 				os << " " << std::to_string(i, rt);
 			os << "\n";
 
+			std::set<slxfmt::SourceLocDesc *> dumpedSourceLocationDescs;
+
 			// Dump instructions.
 			if (v->getInsCount()) {
 				for (size_t i = 0; i < v->getInsCount(); ++i) {
 					auto ins = &(v->getBody()[i]);
 
+					if (!(decompilerFlags & DECOMP_SRCLOCINFO)) {
+						for (auto &j : v->sourceLocDescs) {
+							if (dumpedSourceLocationDescs.count(&j))
+								continue;
+
+							if ((i > j.offIns) &
+								(i < j.offIns + j.nIns)) {
+								os << std::string(indentLevel + 1, '\t')
+								   << "// Source location=" << j.line << ":" << j.column << ", " << j.nIns << " instructions\n";
+
+								dumpedSourceLocationDescs.insert(&j);
+							}
+						}
+					}
+
 					os << std::string(indentLevel + 1, '\t');
 
-					if (mnemonics.count(ins->opcode))
-						os << mnemonics.at(ins->opcode);
+					if (slake::OPCODE_MNEMONIC_MAP.count(ins->opcode))
+						os << slake::OPCODE_MNEMONIC_MAP.at(ins->opcode);
 					else
 						os << (uint16_t)ins->opcode;
 
@@ -175,7 +181,9 @@ void slake::Decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 		}
 		case TypeId::REG_REF: {
 			RegRefValue *v = (RegRefValue *)value;
-			os << "%" << (_regIdNameMap.count(v->reg) ? _regIdNameMap.at(v->reg) : std::to_string((uint8_t)v->reg));
+			if (v->unwrapValue)
+				os << "*";
+			os << "%" << std::to_string(v->index);
 			break;
 		}
 		case TypeId::LVAR_REF: {
@@ -197,7 +205,7 @@ void slake::Decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 	}
 }
 
-std::string slake::Decompiler::accessToString(AccessModifier access) {
+std::string slake::decompiler::accessToString(AccessModifier access) {
 	std::string s;
 
 	if (access & ACCESS_PUB)

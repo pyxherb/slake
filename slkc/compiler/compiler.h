@@ -72,34 +72,54 @@ namespace slake {
 				CALL,	 // As target of the call
 			};
 
-			struct Context {
+			/// @brief Statement-level context
+			struct MinorContext {
 				shared_ptr<TypeNameNode> expectedType;
 				shared_ptr<Scope> curScope;
 				deque<shared_ptr<TypeNameNode>> genericArgs;
 				unordered_map<string, size_t> genericArgIndices;
-				shared_ptr<CompiledFnNode> curFn;
-				EvalPurpose evalPurpose;
-				unordered_map<string, shared_ptr<LocalVarNode>> localVars;
-				string breakLabel;
-				string continueLabel;
-				uint32_t curScopeLevel = 0;
 				uint32_t breakScopeLevel = 0;
 				uint32_t continueScopeLevel = 0;
+				string breakLabel, continueLabel;
+				EvalPurpose evalPurpose;
 				bool isLastCallTargetStatic = true;
 				std::set<AstNode *> resolvedOwners;
 
-				shared_ptr<AstNode> evalDest;
-				set<RegId> preservedRegisters;
+				shared_ptr<AstNode> evalDest, thisDest;
 			};
+
+			/// @brief Block-level context
+			struct MajorContext {
+				deque<MinorContext> savedMinorContexts;
+				MinorContext curMinorContext;
+
+				unordered_map<string, shared_ptr<LocalVarNode>> localVars;
+				uint32_t curRegCount;
+				uint32_t curScopeLevel = 0;
+
+				inline void pushMinorContext() {
+					savedMinorContexts.push_back(curMinorContext);
+				}
+
+				inline void popMinorContext() {
+					savedMinorContexts.back().isLastCallTargetStatic = curMinorContext.isLastCallTargetStatic;
+					curMinorContext = savedMinorContexts.back();
+					savedMinorContexts.pop_back();
+				}
+			};
+
+			MajorContext curMajorContext;
+			shared_ptr<CompiledFnNode> curFn;
 
 			struct ResolvedOwnersSaver {
 				std::set<AstNode *> resolvedOwners;
-				Context &context;
+				MinorContext &context;
 				bool discarded = false;
 
-				inline ResolvedOwnersSaver(Context &context) : context(context), resolvedOwners(context.resolvedOwners) {}
+				inline ResolvedOwnersSaver(MinorContext &context) : context(context), resolvedOwners(context.resolvedOwners) {}
 				inline ~ResolvedOwnersSaver() {
-					if (!discarded) context.resolvedOwners = resolvedOwners;
+					if (!discarded)
+						context.resolvedOwners = resolvedOwners;
 				}
 
 				inline void discard() {
@@ -110,50 +130,24 @@ namespace slake {
 			shared_ptr<Scope> _rootScope;
 			shared_ptr<ModuleNode> _targetModule;
 			unique_ptr<Runtime> _rt;
-			Context context;
-			deque<Context> _contextStack;
+			deque<MajorContext> _savedMajorContexts;
 			InsMap curInsMap;
 
 			static InsMap defaultInsMap;
 
-			inline void pushContext() {
-				_contextStack.push_back(context);
+			inline void pushMajorContext() {
+				_savedMajorContexts.push_back(curMajorContext);
 			}
-			inline void popContext() {
-				_contextStack.back().isLastCallTargetStatic = context.isLastCallTargetStatic;
-				context = _contextStack.back();
-				_contextStack.pop_back();
-			}
-
-			inline void setRegisterPreserved(RegId reg) {
-				if (context.preservedRegisters.count(reg))
-					throw std::logic_error("The register has already been set as preserved");
-				context.preservedRegisters.insert(reg);
+			inline void popMajorContext() {
+				curMajorContext = _savedMajorContexts.back();
+				_savedMajorContexts.pop_back();
 			}
 
-			inline void unsetRegisterPreserved(RegId reg) {
-				if (!context.preservedRegisters.count(reg))
-					throw std::logic_error("The register is not preserved");
-				context.preservedRegisters.erase(reg);
+			inline void pushMinorContext() {
+				curMajorContext.pushMinorContext();
 			}
-
-			/// @brief Insert instructions to preserve the register if needed.
-			/// @param reg Register to be preserved.
-			/// @return True if the register needs to be preserved and then restored later.
-			inline bool preserveRegister(RegId reg) {
-				if (context.preservedRegisters.count(reg)) {
-					context.curFn->insertIns(Opcode::PUSH, make_shared<RegRefNode>(reg));
-					context.preservedRegisters.erase(reg);
-					return true;
-				}
-				return false;
-			}
-
-			/// @brief Insert instructions to restore the register.
-			/// @param reg Register to be restored.
-			inline void restoreRegister(RegId reg) {
-				context.curFn->insertIns(Opcode::POP, make_shared<RegRefNode>(reg));
-				context.preservedRegisters.insert(reg);
+			inline void popMinorContext() {
+				curMajorContext.popMinorContext();
 			}
 
 			shared_ptr<ExprNode> evalConstExpr(shared_ptr<ExprNode> expr);
@@ -193,12 +187,15 @@ namespace slake {
 			Ref getFullName(shared_ptr<MemberNode> member);
 
 			void compileExpr(shared_ptr<ExprNode> expr);
-			inline void compileExpr(shared_ptr<ExprNode> expr, EvalPurpose evalPurpose, shared_ptr<AstNode> evalDest) {
-				pushContext();
-				context.evalPurpose = evalPurpose;
-				context.evalDest = evalDest;
+			inline void compileExpr(shared_ptr<ExprNode> expr, EvalPurpose evalPurpose, shared_ptr<AstNode> evalDest, shared_ptr<AstNode> thisDest = {}) {
+				pushMinorContext();
+
+				curMajorContext.curMinorContext.evalPurpose = evalPurpose;
+				curMajorContext.curMinorContext.evalDest = evalDest;
+				curMajorContext.curMinorContext.thisDest = thisDest;
 				compileExpr(expr);
-				popContext();
+
+				popMinorContext();
 			}
 			void compileStmt(shared_ptr<StmtNode> stmt);
 
@@ -208,6 +205,20 @@ namespace slake {
 			void compileValue(std::ostream &fs, shared_ptr<AstNode> expr);
 
 			bool isDynamicMember(shared_ptr<AstNode> member);
+
+			inline uint32_t allocLocalVar(string name, shared_ptr<TypeNameNode> type) {
+				uint32_t index = curMajorContext.localVars.size();
+
+				curMajorContext.localVars[name] = make_shared<LocalVarNode>(index, type);
+				curFn->insertIns(Opcode::LVAR, type);
+
+				return index;
+			}
+
+			inline uint32_t allocReg() {
+				curFn->insertIns(Opcode::REG, make_shared<U32LiteralExprNode>(Location(), 1));
+				return curMajorContext.curRegCount++;
+			}
 
 			friend class AstVisitor;
 

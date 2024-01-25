@@ -6,14 +6,14 @@ using namespace slake::slkc;
 bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut) {
 	assert(ref.size());
 
-	ResolvedOwnersSaver resolvedOwnersSaver(context);
+	ResolvedOwnersSaver resolvedOwnersSaver(curMajorContext.curMinorContext);
 
 	// Try to resolve the first entry as a local variable.
-	if (context.localVars.count(ref[0].name) && (!ref[0].genericArgs.size())) {
+	if (curMajorContext.localVars.count(ref[0].name) && (!ref[0].genericArgs.size())) {
 		auto newRef = ref;
 		newRef.pop_front();
 
-		auto localVar = context.localVars.at(ref[0].name);
+		auto localVar = curMajorContext.localVars.at(ref[0].name);
 		if (!newRef.size())
 			goto lvarSucceeded;
 
@@ -30,16 +30,16 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 	}
 
 	// Try to resolve the first entry as a parameter.
-	if (context.curFn->paramIndices.count(ref[0].name) && (!ref[0].genericArgs.size())) {
+	if (curFn->paramIndices.count(ref[0].name) && (!ref[0].genericArgs.size())) {
 		auto newRef = ref;
 		newRef.pop_front();
 
-		auto idxParam = context.curFn->paramIndices.at(ref[0].name);
+		auto idxParam = curFn->paramIndices.at(ref[0].name);
 
 		if (!newRef.size())
 			goto paramSucceeded;
 
-		if (auto scope = scopeOf(context.curFn->params[idxParam].type); scope) {
+		if (auto scope = scopeOf(curFn->params[idxParam].type); scope) {
 			_resolveRef(scope.get(), newRef, partsOut);
 			goto paramSucceeded;
 		}
@@ -53,12 +53,12 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 
 	if (ref[0].name == "this") {
 		ref.pop_front();
-		auto result = _resolveRef(context.curScope.get(), ref, partsOut);
-		partsOut.push_front({ Ref{ ref.front() }, make_shared<RegRefNode>(RegId::RTHIS) });
+		auto result = _resolveRef(curMajorContext.curMinorContext.curScope.get(), ref, partsOut);
+		partsOut.push_front({ Ref{ ref.front() }, make_shared<ThisRefNode>() });
 		return result;
 	}
 
-	return _resolveRef(context.curScope.get(), ref, partsOut);
+	return _resolveRef(curMajorContext.curMinorContext.curScope.get(), ref, partsOut);
 }
 
 /// @brief Resolve a reference with a scope.
@@ -106,8 +106,8 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 }
 
 bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut) {
-	if (scope->owner && (!context.resolvedOwners.count(scope->owner))) {
-		context.resolvedOwners.insert(scope->owner);
+	if (scope->owner && (!curMajorContext.curMinorContext.resolvedOwners.count(scope->owner))) {
+		curMajorContext.curMinorContext.resolvedOwners.insert(scope->owner);
 		switch (scope->owner->getNodeType()) {
 			case AST_CLASS: {
 				ClassNode *owner = (ClassNode *)scope->owner;

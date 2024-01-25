@@ -2,9 +2,11 @@
 #define _SLAKE_VALDEF_FN_H_
 
 #include <slake/opcode.h>
+#include <slake/slxfmt.h>
 
 #include <functional>
 #include <deque>
+#include <memory>
 
 #include "member.h"
 #include "generic.h"
@@ -70,6 +72,23 @@ namespace slake {
 		friend struct FnComparator;
 
 	public:
+		std::deque<slxfmt::SourceLocDesc> sourceLocDescs;
+
+		slxfmt::SourceLocDesc *getSourceLocationInfo(uint32_t offIns) {
+			for (auto &i : sourceLocDescs) {
+				if ((offIns >= i.offIns) &&
+					(offIns < i.offIns + i.nIns)) {
+					return &i;
+				}
+			}
+
+			return nullptr;
+		}
+
+		const slxfmt::SourceLocDesc *getSourceLocationInfo(uint32_t offIns) const {
+			return ((FnValue*)this)->getSourceLocationInfo(offIns);
+		}
+
 #if SLAKE_ENABLE_DEBUGGER
 		std::set<uint32_t> breakpoints;
 #endif

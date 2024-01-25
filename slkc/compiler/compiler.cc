@@ -175,9 +175,9 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 			compiledFn->genericParamIndices = j.genericParamIndices;
 			compiledFn->access = j.access;
 
-			context = Context();
-			context.curFn = compiledFn;
-			context.curScope = scope;
+			curMajorContext = MajorContext();
+			curFn = compiledFn;
+			curMajorContext.curMinorContext.curScope = scope;
 
 			if (j.body)
 				compileStmt(j.body);
@@ -211,6 +211,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		fnd.lenName = (uint16_t)i.first.length();
 		fnd.lenBody = (uint32_t)i.second->body.size();
 		fnd.nParams = (uint8_t)i.second->params.size() - hasVarArg;
+		fnd.nSourceLocDescs = (uint32_t)i.second->srcLocDescs.size();
 
 		_write(os, fnd);
 		_write(os, i.first.data(), i.first.length());
@@ -249,6 +250,10 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 				}
 				compileValue(os, k);
 			}
+		}
+
+		for(auto &j : i.second->srcLocDescs) {
+			_write(os, j);
 		}
 	}
 
@@ -448,14 +453,6 @@ void Compiler::compileValue(std::ostream &fs, shared_ptr<AstNode> value) {
 
 			compileTypeName(fs, static_pointer_cast<TypeNameNode>(value));
 			break;
-		case AST_REG_REF: {
-			auto v = static_pointer_cast<RegRefNode>(value);
-			vd.type = slxfmt::Type::REG;
-			_write(fs, vd);
-
-			_write(fs, v->reg);
-			break;
-		}
 		case AST_ARG_REF: {
 			auto v = static_pointer_cast<ArgRefNode>(value);
 			vd.type = v->unwrapData ? slxfmt::Type::ARG_VALUE : slxfmt::Type::ARG;
@@ -467,6 +464,14 @@ void Compiler::compileValue(std::ostream &fs, shared_ptr<AstNode> value) {
 		case AST_LVAR_REF: {
 			auto v = static_pointer_cast<LocalVarRefNode>(value);
 			vd.type = v->unwrapData ? slxfmt::Type::LVAR_VALUE : slxfmt::Type::LVAR;
+			_write(fs, vd);
+
+			_write(fs, v->index);
+			break;
+		}
+		case AST_REG_REF: {
+			auto v = static_pointer_cast<RegRefNode>(value);
+			vd.type = v->unwrapData ? slxfmt::Type::REG_VALUE : slxfmt::Type::REG;
 			_write(fs, vd);
 
 			_write(fs, v->index);

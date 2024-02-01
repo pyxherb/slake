@@ -137,11 +137,13 @@ namespace slake {
 
 			virtual inline Type getTypeId() const override { return TYPE_FN; }
 		};
+
+		class Compiler;
 	}
 }
 
 namespace std {
-	string to_string(shared_ptr<slake::slkc::TypeNameNode> typeName, bool asOperatorName = false);
+	string to_string(shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slkc::Compiler *compiler, bool asOperatorName = false);
 }
 
 #endif

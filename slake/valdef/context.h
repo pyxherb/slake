@@ -15,7 +15,7 @@ namespace slake {
 
 	public:
 		ContextValue(Runtime *rt, std::shared_ptr<Context> context);
-		virtual ~ContextValue() = default;
+		virtual ~ContextValue();
 
 		virtual inline Type getType() const override { return TypeId::CONTEXT; }
 

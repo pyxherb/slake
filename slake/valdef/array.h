@@ -13,22 +13,16 @@ namespace slake {
 		friend class Runtime;
 
 	public:
-		inline ArrayValue(Runtime *rt, Type type)
-			: Value(rt), type(type) {
-			reportSizeToRuntime(sizeof(*this) - sizeof(Value));
-		}
+		inline ArrayValue(Runtime *rt, Type type);
+		virtual ~ArrayValue();
 
-		virtual inline ~ArrayValue() {
-			for (auto i : values)
-				delete *i;
-		}
 		virtual inline Type getType() const override { return TypeId::ARRAY; }
 		inline Type getVarType() const { return type; }
 
 		inline Value *at(uint32_t i) {
 			if (i >= values.size())
 				throw std::out_of_range("Out of array range");
-			return *(values[i]);
+			return values[i].get();
 		}
 
 		size_t getSize() { return values.size(); }

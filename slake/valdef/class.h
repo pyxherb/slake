@@ -33,12 +33,8 @@ namespace slake {
 		Type parentClass;
 		std::deque<Type> implInterfaces;  // Implemented interfaces
 
-		inline ClassValue(const ClassValue *pre) : ModuleValue(pre->_rt, 0) { *this = *pre; }
-		inline ClassValue(Runtime *rt, AccessModifier access, Type parentClass = {})
-			: ModuleValue(rt, access), parentClass(parentClass) {
-			reportSizeToRuntime(sizeof(*this) - sizeof(ModuleValue));
-		}
-		virtual ~ClassValue() = default;
+		inline ClassValue(Runtime *rt, AccessModifier access, Type parentClass = {});
+		virtual ~ClassValue();
 
 		virtual inline Type getType() const override { return TypeId::CLASS; }
 		virtual inline Type getParentType() const { return parentClass; }
@@ -87,9 +83,9 @@ namespace slake {
 
 		inline InterfaceValue(Runtime *rt, AccessModifier access, std::deque<Type> parents = {})
 			: ModuleValue(rt, access), parents(parents) {
-			reportSizeToRuntime(sizeof(*this) - sizeof(ModuleValue));
+			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(ModuleValue));
 		}
-		virtual ~InterfaceValue() = default;
+		virtual ~InterfaceValue();
 
 		virtual inline void addMember(std::string name, MemberValue *value) override {
 			switch (value->getType().typeId) {
@@ -129,9 +125,9 @@ namespace slake {
 	public:
 		inline TraitValue(Runtime *rt, AccessModifier access, std::deque<Type> parents = {})
 			: InterfaceValue(rt, access, parents) {
-			reportSizeToRuntime(sizeof(*this) - sizeof(InterfaceValue));
+			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(InterfaceValue));
 		}
-		virtual ~TraitValue() = default;
+		virtual ~TraitValue();
 
 		virtual inline Type getType() const override { return TypeId::TRAIT; }
 

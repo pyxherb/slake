@@ -32,6 +32,8 @@ Runtime::~Runtime() {
 
 	while (_createdValues.size())
 		delete *(_createdValues.begin());
+
+	assert(!_szMemInUse);
 }
 
 std::string Runtime::mangleName(
@@ -45,7 +47,7 @@ std::string Runtime::mangleName(
 		s += "$const";
 
 	for (auto i : params)
-		s += "#" + std::to_string(i, this);
+		s += "$" + std::to_string(i, this);
 
 	for (auto i : genericArgs)
 		s += "?" + std::to_string(i, this);
@@ -58,7 +60,7 @@ std::string Runtime::getFullName(const MemberValue *v) const {
 	do {
 		switch (v->getType().typeId) {
 			case TypeId::OBJECT:
-				v = (const MemberValue *)*((ObjectValue *)v)->getType().getCustomTypeExData();
+				v = (const MemberValue *)((ObjectValue *)v)->getType().getCustomTypeExData().get();
 				break;
 		}
 		s = v->getName() + (s.empty() ? "" : "." + s);
@@ -68,4 +70,17 @@ std::string Runtime::getFullName(const MemberValue *v) const {
 
 std::string Runtime::getFullName(const RefValue *v) const {
 	return std::to_string(v);
+}
+
+std::deque<RefEntry> Runtime::getFullRef(const MemberValue* v) const {
+	std::deque<RefEntry> entries;
+	do {
+		switch (v->getType().typeId) {
+			case TypeId::OBJECT:
+				v = (const MemberValue *)((ObjectValue *)v)->getType().getCustomTypeExData().get();
+				break;
+		}
+		entries.push_back({ v->getName(), v->_genericArgs });
+	} while ((Value *)(v = (const MemberValue *)v->getParent()) != _rootValue);
+	return entries;
 }

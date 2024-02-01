@@ -88,7 +88,7 @@ static ValueRef<> _sinImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	using ValueType = LiteralValue<T, getValueType<T>()>;
 	_nArgCheck(==, 1);
 
-	Value *x = *args[0];
+	Value *x = args[0].get();
 
 	_nullRefCheck(x);
 	_typeCheck(x, getValueType<T>());
@@ -101,7 +101,7 @@ static ValueRef<> _cosImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	using ValueType = LiteralValue<T, getValueType<T>()>;
 	_nArgCheck(==, 1);
 
-	Value *x = *args[0];
+	Value *x = args[0].get();
 
 	_nullRefCheck(x);
 	_typeCheck(x, getValueType<T>());
@@ -114,7 +114,7 @@ static ValueRef<> _tanImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	using ValueType = LiteralValue<T, getValueType<T>()>;
 	_nArgCheck(==, 1);
 
-	Value *x = *args[0];
+	Value *x = args[0].get();
 
 	_nullRefCheck(x);
 	_typeCheck(x, getValueType<T>());
@@ -127,7 +127,7 @@ static ValueRef<> _sqrtImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	using ValueType = LiteralValue<T, getValueType<T>()>;
 	_nArgCheck(==, 1);
 
-	Value *x = *args[0];
+	Value *x = args[0].get();
 
 	_nullRefCheck(x);
 	_typeCheck(x, getValueType<T>());
@@ -138,7 +138,7 @@ static ValueRef<> _sqrtImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 static ValueRef<> _sinFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	_nArgCheck(==, 1);
 
-	F64Value *x = (F64Value *)*args[0];
+	F64Value *x = (F64Value *)args[0].get();
 
 	_nullRefCheck(x);
 	_typeCheck(x, TypeId::F64);
@@ -149,7 +149,7 @@ static ValueRef<> _sinFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 static ValueRef<> _sinfFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	_nArgCheck(==, 1);
 
-	F32Value *x = (F32Value *)*args[0];
+	F32Value *x = (F32Value *)args[0].get();
 
 	_nullRefCheck(x);
 	_typeCheck(x, TypeId::F32);
@@ -160,7 +160,7 @@ static ValueRef<> _sinfFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 static ValueRef<> _cosFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	_nArgCheck(==, 1);
 
-	F64Value *x = (F64Value *)*args[0];
+	F64Value *x = (F64Value *)args[0].get();
 
 	_nullRefCheck(x);
 	_typeCheck(x, TypeId::F64);
@@ -171,7 +171,7 @@ static ValueRef<> _cosFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 static ValueRef<> _cosfFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	_nArgCheck(==, 1);
 
-	F32Value *x = (F32Value *)*args[0];
+	F32Value *x = (F32Value *)args[0].get();
 
 	_nullRefCheck(x);
 	_typeCheck(x, TypeId::F32);
@@ -182,7 +182,7 @@ static ValueRef<> _cosfFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 static ValueRef<> _tanFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	_nArgCheck(==, 1);
 
-	F64Value *x = (F64Value *)*args[0];
+	F64Value *x = (F64Value *)args[0].get();
 
 	_nullRefCheck(x);
 	_typeCheck(x, TypeId::F64);
@@ -193,7 +193,7 @@ static ValueRef<> _tanFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 static ValueRef<> _tanfFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	_nArgCheck(==, 1);
 
-	F32Value *x = (F32Value *)*args[0];
+	F32Value *x = (F32Value *)args[0].get();
 
 	_nullRefCheck(x);
 	_typeCheck(x, TypeId::F32);
@@ -204,7 +204,7 @@ static ValueRef<> _tanfFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 static ValueRef<> _sqrtFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	_nArgCheck(==, 1);
 
-	F64Value *x = (F64Value *)*args[0];
+	F64Value *x = (F64Value *)args[0].get();
 
 	_nullRefCheck(x);
 	_typeCheck(x, TypeId::F64);
@@ -215,7 +215,7 @@ static ValueRef<> _sqrtFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 static ValueRef<> _sqrtfFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	_nArgCheck(==, 1);
 
-	F32Value *x = (F32Value *)*args[0];
+	F32Value *x = (F32Value *)args[0].get();
 
 	_nullRefCheck(x);
 	_typeCheck(x, TypeId::F32);
@@ -228,7 +228,7 @@ static ValueRef<> _absImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	using ValueType = LiteralValue<T, getValueType<T>()>;
 	_nArgCheck(==, 1);
 
-	Value *x = *args[0];
+	Value *x = args[0].get();
 
 	_nullRefCheck(x);
 	_typeCheck(x, getValueType<T>());

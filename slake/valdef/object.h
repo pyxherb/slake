@@ -21,7 +21,7 @@ namespace slake {
 	public:
 		inline ObjectValue(Runtime *rt, ClassValue* cls, ObjectValue *parent = nullptr)
 			: Value(rt), _class(cls), _parent(parent) {
-			reportSizeToRuntime(sizeof(*this) - sizeof(Value));
+			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Value));
 		}
 
 		/// @brief Delete the object and execute its destructor (if exists).
@@ -33,6 +33,8 @@ namespace slake {
 					i.second->unbind();
 					i.second->decRefCount();
 				}
+
+			reportSizeFreedToRuntime(sizeof(*this) - sizeof(Value));
 		}
 
 		virtual inline Type getType() const override { return Type(TypeId::OBJECT, (Value*)_class); }

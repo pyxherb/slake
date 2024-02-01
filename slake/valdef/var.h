@@ -20,12 +20,9 @@ namespace slake {
 	public:
 		VarFlags flags;
 
-		inline VarValue(Runtime *rt, AccessModifier access, Type type, VarFlags flags = 0)
-			: MemberValue(rt, access), type(type), flags(flags) {
-			reportSizeToRuntime(sizeof(*this) - sizeof(MemberValue));
-		}
+		VarValue(Runtime *rt, AccessModifier access, Type type, VarFlags flags = 0);
+		virtual ~VarValue();
 
-		virtual ~VarValue() = default;
 		virtual inline Type getType() const override { return TypeId::VAR; }
 		inline Type getVarType() const { return type; }
 
@@ -38,7 +35,7 @@ namespace slake {
 			return value ? value->getMember(name) : nullptr;
 		}
 
-		Value* getData() const { return *value; }
+		Value *getData() const { return value.get(); }
 		void setData(Value *value) {
 			if (value && !isCompatible(type, value->getType()))
 				throw MismatchedTypeError("Mismatched types");

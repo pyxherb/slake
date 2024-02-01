@@ -124,7 +124,7 @@ namespace slake {
 
 		~Type();
 
-		inline ValueRef<> getCustomTypeExData() const { return *std::get<ValueRef<Value, false>>(exData); }
+		inline ValueRef<> getCustomTypeExData() const { return std::get<ValueRef<Value, false>>(exData).get(); }
 		inline Type &getArrayExData() const { return *std::get<Type *>(exData); }
 		inline std::pair<Type *, Type *> getMapExData() const { return std::get<std::pair<Type *, Type *>>(exData); }
 		inline uint8_t getGenericArgExData() const { return std::get<uint8_t>(exData); }
@@ -149,7 +149,7 @@ namespace slake {
 					assert(lhsType->getType() != TypeId::REF &&
 						   rhsType->getType() != TypeId::REF);
 
-					return *lhsType < *rhsType;
+					return lhsType.get() < rhsType.get();
 				}
 				case TypeId::ARRAY:
 					return getArrayExData() < rhs.getArrayExData();
@@ -185,7 +185,7 @@ namespace slake {
 					assert(lhsType->getType() != TypeId::REF &&
 						   rhsType->getType() != TypeId::REF);
 
-					return *lhsType == *rhsType;
+					return lhsType.get() == rhsType.get();
 				}
 				case TypeId::ARRAY:
 					return getArrayExData() == rhs.getArrayExData();
@@ -220,7 +220,7 @@ namespace slake {
 
 		inline Value *resolveCustomType() {
 			if (typeId == TypeId::CLASS)
-				return (Value *)*getCustomTypeExData();
+				return (Value *)getCustomTypeExData().get();
 			return nullptr;
 		}
 	};

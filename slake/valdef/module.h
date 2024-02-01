@@ -7,12 +7,9 @@
 
 namespace slake {
 	class ModuleValue : public MemberValue {
-	protected:
+	public:
 		std::unordered_map<std::string, MemberValue *> _members;
 
-		friend class Runtime;
-
-	public:
 		ModuleValue(Runtime *rt, AccessModifier access);
 		virtual ~ModuleValue();
 

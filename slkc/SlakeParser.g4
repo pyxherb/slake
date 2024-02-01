@@ -136,6 +136,7 @@ args: expr (',' expr)*;
 
 expr:
 	'(' expr ')'													# WrappedExpr
+	| expr ('.' scope)+ 											# HeadedRefExpr
 	| ref															# RefExpr
 	| literal														# LiteralExpr
 	| array															# ArrayExpr
@@ -227,7 +228,7 @@ ref:
 typeName:
 	primitiveTypeName				# AdoptPrimitiveTypeName
 	| customTypeName				# AdoptCustomTypeName
-	| typeName '->' '(' params ')'	# FnTypeName
+	| '(' params ')' '->' typeName	# FnTypeName
 	| typeName '[' ']'				# ArrayTypeName
 	| typeName '[' typeName ']'		# MapTypeName;
 primitiveTypeName:

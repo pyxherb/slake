@@ -81,7 +81,7 @@ static Value *_execBinaryOp(ValueRef<> x, ValueRef<> y, Opcode opcode) {
 	// Corresponding value type
 	using V = LiteralValue<T, getValueType<T>()>;
 
-	auto _x = (V *)*x;
+	auto _x = (V *)x.get();
 	auto rt = _x->getRuntime();
 
 	if constexpr (std::is_arithmetic<T>::value) {
@@ -91,10 +91,10 @@ static Value *_execBinaryOp(ValueRef<> x, ValueRef<> y, Opcode opcode) {
 				case Opcode::LAND: {
 					return new V(
 						rt,
-						_x->getData() + ((V *)*y)->getData());
+						_x->getData() + ((V *)y.get())->getData());
 				}
 				case Opcode::LOR: {
-					return new V(rt, _x->getData() + ((V *)*y)->getData());
+					return new V(rt, _x->getData() + ((V *)y.get())->getData());
 				}
 				default:
 					throw InvalidOperandsError("Binary operation with incompatible types");
@@ -108,73 +108,73 @@ static Value *_execBinaryOp(ValueRef<> x, ValueRef<> y, Opcode opcode) {
 
 			switch (opcode) {
 				case Opcode::ADD:
-					return new V(rt, _x->getData() + ((V *)*y)->getData());
+					return new V(rt, _x->getData() + ((V *)y.get())->getData());
 				case Opcode::SUB:
-					return new V(rt, _x->getData() - ((V *)*y)->getData());
+					return new V(rt, _x->getData() - ((V *)y.get())->getData());
 				case Opcode::MUL:
-					return new V(rt, _x->getData() * ((V *)*y)->getData());
+					return new V(rt, _x->getData() * ((V *)y.get())->getData());
 				case Opcode::DIV:
-					return new V(rt, _x->getData() / ((V *)*y)->getData());
+					return new V(rt, _x->getData() / ((V *)y.get())->getData());
 				case Opcode::MOD: {
 					T result;
 					if constexpr (std::is_same<T, float>::value)
-						result = fmodf(_x->getData(), ((V *)*y)->getData());
+						result = fmodf(_x->getData(), ((V *)y.get())->getData());
 					else if constexpr (std::is_same<T, double>::value)
-						result = fmod(_x->getData(), ((V *)*y)->getData());
+						result = fmod(_x->getData(), ((V *)y.get())->getData());
 					else
-						result = _x->getData() % ((V *)*y)->getData();
+						result = _x->getData() % ((V *)y.get())->getData();
 					return new V(rt, result);
 				}
 				case Opcode::AND:
 					if constexpr (std::is_integral<T>::value)
-						return new V(rt, _x->getData() & ((V *)*y)->getData());
+						return new V(rt, _x->getData() & ((V *)y.get())->getData());
 					else
 						throw InvalidOperandsError("Binary operation with incompatible types");
 				case Opcode::OR:
 					if constexpr (std::is_integral<T>::value)
-						return new V(rt, _x->getData() | ((V *)*y)->getData());
+						return new V(rt, _x->getData() | ((V *)y.get())->getData());
 					else
 						throw InvalidOperandsError("Binary operation with incompatible types");
 				case Opcode::XOR:
 					if constexpr (std::is_integral<T>::value)
-						return new V(rt, _x->getData() ^ ((V *)*y)->getData());
+						return new V(rt, _x->getData() ^ ((V *)y.get())->getData());
 					else
 						throw InvalidOperandsError("Binary operation with incompatible types");
 				case Opcode::LAND:
-					return new BoolValue(rt, _x->getData() && ((V *)*y)->getData());
+					return new BoolValue(rt, _x->getData() && ((V *)y.get())->getData());
 				case Opcode::LOR:
-					return new BoolValue(rt, _x->getData() || ((V *)*y)->getData());
+					return new BoolValue(rt, _x->getData() || ((V *)y.get())->getData());
 				case Opcode::EQ:
-					return new BoolValue(rt, _x->getData() == ((V *)*y)->getData());
+					return new BoolValue(rt, _x->getData() == ((V *)y.get())->getData());
 				case Opcode::NEQ:
-					return new BoolValue(rt, _x->getData() != ((V *)*y)->getData());
+					return new BoolValue(rt, _x->getData() != ((V *)y.get())->getData());
 				case Opcode::LT:
-					return new BoolValue(rt, _x->getData() < ((V *)*y)->getData());
+					return new BoolValue(rt, _x->getData() < ((V *)y.get())->getData());
 				case Opcode::GT:
-					return new BoolValue(rt, _x->getData() > ((V *)*y)->getData());
+					return new BoolValue(rt, _x->getData() > ((V *)y.get())->getData());
 				case Opcode::LTEQ:
-					return new BoolValue(rt, _x->getData() <= ((V *)*y)->getData());
+					return new BoolValue(rt, _x->getData() <= ((V *)y.get())->getData());
 				case Opcode::GTEQ:
-					return new BoolValue(rt, _x->getData() >= ((V *)*y)->getData());
+					return new BoolValue(rt, _x->getData() >= ((V *)y.get())->getData());
 				case Opcode::LSH:
 					if constexpr (std::is_integral<T>::value)
-						return new V(rt, _x->getData() << ((U32Value *)*y)->getData());
+						return new V(rt, _x->getData() << ((U32Value *)y.get())->getData());
 					else if constexpr (std::is_same<T, float>::value) {
-						auto result = (*(uint32_t *)(&_x->getData())) << ((U32Value *)*y)->getData();
+						auto result = (*(uint32_t *)(&_x->getData())) << ((U32Value *)y.get())->getData();
 						return new V(rt, *(float *)(&result));
 					} else if constexpr (std::is_same<T, double>::value) {
-						auto result = (*(uint64_t *)(&_x->getData())) << ((U32Value *)*y)->getData();
+						auto result = (*(uint64_t *)(&_x->getData())) << ((U32Value *)y.get())->getData();
 						return new V(rt, *(double *)(&result));
 					} else
 						throw InvalidOperandsError("Binary operation with incompatible types");
 				case Opcode::RSH:
 					if constexpr (std::is_integral<T>::value)
-						return new V(rt, _x->getData() >> ((U32Value *)*y)->getData());
+						return new V(rt, _x->getData() >> ((U32Value *)y.get())->getData());
 					else if constexpr (std::is_same<T, float>::value) {
-						auto result = (*(uint32_t *)(&_x->getData())) >> ((U32Value *)*y)->getData();
+						auto result = (*(uint32_t *)(&_x->getData())) >> ((U32Value *)y.get())->getData();
 						return new V(rt, *(float *)(&result));
 					} else if constexpr (std::is_same<T, double>::value) {
-						auto result = (*(uint64_t *)(&_x->getData())) >> ((U32Value *)*y)->getData();
+						auto result = (*(uint64_t *)(&_x->getData())) >> ((U32Value *)y.get())->getData();
 						return new V(rt, *(double *)(&result));
 					} else
 						throw InvalidOperandsError("Binary operation with incompatible types");
@@ -186,20 +186,20 @@ static Value *_execBinaryOp(ValueRef<> x, ValueRef<> y, Opcode opcode) {
 		// String
 		switch (opcode) {
 			case Opcode::ADD:
-				return new LiteralValue<T, TypeId::STRING>(rt, _x->getData() + ((V *)*y)->getData());
+				return new LiteralValue<T, TypeId::STRING>(rt, _x->getData() + ((V *)y.get())->getData());
 			case Opcode::EQ:
-				return new BoolValue(rt, _x->getData() == ((V *)*y)->getData());
+				return new BoolValue(rt, _x->getData() == ((V *)y.get())->getData());
 			case Opcode::NEQ:
-				return new BoolValue(rt, _x->getData() != ((V *)*y)->getData());
+				return new BoolValue(rt, _x->getData() != ((V *)y.get())->getData());
 			default:
 				throw InvalidOperandsError("Binary operation with incompatible types");
 		}
 	} else {
 		switch (opcode) {
 			case Opcode::EQ:
-				return new BoolValue(rt, _x->getData() == ((V *)*y)->getData());
+				return new BoolValue(rt, _x->getData() == ((V *)y.get())->getData());
 			case Opcode::NEQ:
-				return new BoolValue(rt, _x->getData() != ((V *)*y)->getData());
+				return new BoolValue(rt, _x->getData() != ((V *)y.get())->getData());
 			default:
 				throw InvalidOperandsError("Binary operation with incompatible types");
 		}
@@ -208,7 +208,7 @@ static Value *_execBinaryOp(ValueRef<> x, ValueRef<> y, Opcode opcode) {
 
 template <typename T>
 static Value *_execUnaryOp(ValueRef<> x, Opcode opcode) {
-	auto _x = (LiteralValue<T, getValueType<T>()> *)*x;
+	auto _x = (LiteralValue<T, getValueType<T>()> *)x.get();
 	auto rt = _x->getRuntime();
 
 	if constexpr (std::is_arithmetic<T>::value) {
@@ -262,10 +262,11 @@ void slake::Runtime::_callFn(Context *context, FnValue *fn) {
 
 	for (size_t i = 0; i < curFrame.nextArgStack.size(); ++i) {
 		ValueRef<VarValue> argVar = new VarValue(this, ACCESS_PUB, i < fn->paramTypes.size() ? fn->paramTypes[i] : TypeId::ANY);
-		argVar->setData(*curFrame.nextArgStack[i]);
+		argVar->setData(curFrame.nextArgStack[i].get());
 		frame.argStack.push_back(argVar);
 	}
 
+	curFrame.nextArgStack.clear();
 	context->majorFrames.push_back(frame);
 	return;
 }
@@ -293,36 +294,36 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		bool unwrapValue = false;
 		switch (i->getType().typeId) {
 			case TypeId::LVAR_REF: {
-				unwrapValue = ((LocalVarRefValue *)*i)->unwrapValue;
+				unwrapValue = ((LocalVarRefValue *)i.get())->unwrapValue;
 
-				auto index = ((LocalVarRefValue *)*i)->index;
+				auto index = ((LocalVarRefValue *)i.get())->index;
 
 				if (index >= curMajorFrame.localVars.size())
 					throw InvalidLocalVarIndexError("Invalid local variable index", index);
 
-				i = *curMajorFrame.localVars.at(index);
+				i = curMajorFrame.localVars.at(index).get();
 				break;
 			}
 			case TypeId::REG_REF: {
-				unwrapValue = ((RegRefValue *)*i)->unwrapValue;
+				unwrapValue = ((RegRefValue *)i.get())->unwrapValue;
 
-				auto index = ((RegRefValue *)*i)->index;
+				auto index = ((RegRefValue *)i.get())->index;
 
 				if (index >= curMajorFrame.regs.size())
 					throw InvalidRegisterIndexError("Invalid register index", index);
 
-				i = *curMajorFrame.regs.at(index);
+				i = curMajorFrame.regs.at(index).get();
 				break;
 			}
 			case TypeId::ARG_REF:
-				unwrapValue = ((ArgRefValue *)*i)->unwrapValue;
+				unwrapValue = ((ArgRefValue *)i.get())->unwrapValue;
 
-				i = *curMajorFrame.argStack[((ArgRefValue *)*i)->index];
+				i = curMajorFrame.argStack[((ArgRefValue *)i.get())->index].get();
 				break;
 		}
 
 		if (unwrapValue)
-			i = *((VarValue *)(*i))->value;
+			i = ((VarValue *)i.get())->value.get();
 	}
 
 	switch (ins.opcode) {
@@ -332,7 +333,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_checkOperandCount(ins, 1);
 			_checkOperandType(ins, { TypeId::TYPENAME });
 
-			auto &type = ((TypeNameValue *)*ins.operands[0])->_data;
+			auto &type = ((TypeNameValue *)ins.operands[0].get())->_data;
 			type.loadDeferredType(this);
 
 			_addLocalVar(curMajorFrame, type);
@@ -342,7 +343,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_checkOperandCount(ins, 1);
 			_checkOperandType(ins, { TypeId::U32 });
 
-			uint32_t times = ((U32Value *)*ins.operands[0])->getData();
+			uint32_t times = ((U32Value *)ins.operands[0].get())->getData();
 			while (times--)
 				_addLocalReg(curMajorFrame);
 			break;
@@ -355,23 +356,23 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_checkOperandCount(ins, 1);
 			_checkOperandType(ins, { TypeId::VAR });
 
-			((VarValue *)*ins.operands[0])->setData(*curMinorFrame.pop());
+			((VarValue *)ins.operands[0].get())->setData(curMinorFrame.pop().get());
 			break;
 		case Opcode::LOAD: {
 			_checkOperandCount(ins, 2);
 
 			_checkOperandType(ins, { TypeId::VAR, TypeId::REF });
 
-			auto ref = *ins.operands[1];
-			auto v = resolveRef((RefValue *)ref, *curMajorFrame.thisObject);
+			auto ref = ins.operands[1].get();
+			auto v = resolveRef((RefValue *)ref, curMajorFrame.thisObject.get());
 			if (!v) {
-				if (!(v = resolveRef((RefValue *)ref, *curMajorFrame.scopeValue)))
+				if (!(v = resolveRef((RefValue *)ref, curMajorFrame.scopeValue.get())))
 					v = resolveRef((RefValue *)ref);
 			}
 
 			if (!v)
 				throw NotFoundError("No such member", (RefValue *)ref);
-			((VarValue *)*ins.operands[0])->setData(v);
+			((VarValue *)ins.operands[0].get())->setData(v);
 			break;
 		}
 		case Opcode::RLOAD: {
@@ -383,10 +384,10 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			if (!v)
 				throw NullRefError();
 
-			if (!(v = resolveRef((RefValue *)*(ins.operands[2]), *v))) {
-				throw NotFoundError("Member not found", (RefValue *)*ins.operands[2]);
+			if (!(v = resolveRef((RefValue *)ins.operands[2].get(), v.get()))) {
+				throw NotFoundError("Member not found", (RefValue *)ins.operands[2].get());
 			}
-			((VarValue *)*ins.operands[0])->setData(*v);
+			((VarValue *)ins.operands[0].get())->setData(v.get());
 			break;
 		}
 		case Opcode::STORE: {
@@ -394,12 +395,12 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 			_checkOperandType(ins, { TypeId::VAR, TypeId::ANY });
 
-			VarValue *x = (VarValue *)*ins.operands[0];
+			VarValue *x = (VarValue *)ins.operands[0].get();
 
 			if (!x)
 				throw NullRefError();
 
-			x->setData(*ins.operands[1]);
+			x->setData(ins.operands[1].get());
 			break;
 		}
 		case Opcode::LVALUE: {
@@ -407,7 +408,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 			_checkOperandType(ins, { TypeId::VAR, TypeId::VAR });
 
-			((VarValue *)*ins.operands[0])->setData(((VarValue *)*ins.operands[1])->getData());
+			((VarValue *)ins.operands[0].get())->setData(((VarValue *)ins.operands[1].get())->getData());
 			break;
 		}
 		case Opcode::ENTER: {
@@ -446,7 +447,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_checkOperandType(ins, { TypeId::VAR, TypeId::ANY, TypeId::ANY });
 
 			ValueRef<> x(ins.operands[1]), y(ins.operands[2]);
-			ValueRef<VarValue> out((VarValue *)*ins.operands[0]);
+			ValueRef<VarValue> out((VarValue *)ins.operands[0].get());
 
 			if (!x)
 				throw NullRefError();
@@ -504,7 +505,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_checkOperandType(ins, { TypeId::VAR, TypeId::ANY });
 
 			ValueRef<> x = ins.operands[1];	 // Value of the operand.
-			ValueRef<VarValue> varIn, varOut = (VarValue *)*ins.operands[0];
+			ValueRef<VarValue> varIn, varOut = (VarValue *)ins.operands[0].get();
 
 			if (!(x && varOut))
 				throw NullRefError();
@@ -520,11 +521,11 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 					switch (ins.opcode) {
 						case Opcode::INCB:
 						case Opcode::DECB:
-							((VarValue *)*varOut)->setData(((VarValue *)*x)->getData());
+							((VarValue *)varOut.get())->setData(((VarValue *)x.get())->getData());
 							break;
 					}
 
-					varIn = (VarValue *)*x;
+					varIn = (VarValue *)x.get();
 					x = varIn->getData();
 					break;
 			}
@@ -574,14 +575,14 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			switch (ins.opcode) {
 				case Opcode::INCB:
 				case Opcode::DECB:
-					varIn->setData(*value);
+					varIn->setData(value.get());
 					break;
 				case Opcode::INCF:
 				case Opcode::DECF:
-					varIn->setData(*value);
+					varIn->setData(value.get());
 					break;
 				default:
-					((VarValue *)*varOut)->setData(*value);
+					((VarValue *)varOut.get())->setData(value.get());
 			}
 			break;
 		}
@@ -594,16 +595,16 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 			switch (x->getType().typeId) {
 				case TypeId::ARRAY: {
-					ArrayValue *_x = (ArrayValue *)*x;
+					ArrayValue *array = (ArrayValue *)x.get();
 
 					if (i->getType() != TypeId::U32)
 						throw InvalidOperandsError("Invalid argument for subscription");
 
-					auto index = ((I32Value *)*i)->getData();
-					if (_x->getSize() <= index)
+					auto index = ((I32Value *)i.get())->getData();
+					if (array->getSize() <= index)
 						throw InvalidSubscriptionError("Out of array range");
 
-					((VarValue *)*ins.operands[0])->setData(_x->at(index));
+					((VarValue *)ins.operands[0].get())->setData(array->at(index));
 					break;
 				}
 				case TypeId::MAP: {
@@ -624,7 +625,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 			_checkOperandType(ins, { TypeId::U32 });
 
-			curMajorFrame.curIns = ((U32Value *)*ins.operands[0])->getData();
+			curMajorFrame.curIns = ((U32Value *)ins.operands[0].get())->getData();
 			return;
 		}
 		case Opcode::JT:
@@ -633,13 +634,13 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 			_checkOperandType(ins, { TypeId::U32, TypeId::BOOL });
 
-			if (((BoolValue *)*ins.operands[1])->getData()) {
+			if (((BoolValue *)ins.operands[1].get())->getData()) {
 				if (ins.opcode == Opcode::JT) {
-					curMajorFrame.curIns = ((U32Value *)*ins.operands[0])->getData();
+					curMajorFrame.curIns = ((U32Value *)ins.operands[0].get())->getData();
 					return;
 				}
 			} else if (ins.opcode == Opcode::JF) {
-				curMajorFrame.curIns = ((U32Value *)*ins.operands[0])->getData();
+				curMajorFrame.curIns = ((U32Value *)ins.operands[0].get())->getData();
 				return;
 			}
 
@@ -663,21 +664,24 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 				_checkOperandType(ins, { TypeId::FN });
 			}
 
-			ValueRef<FnValue> fn = (FnValue *)*ins.operands[0];
+			ValueRef<FnValue> fn = (FnValue *)ins.operands[0].get();
+
+			if (!fn)
+				throw NullRefError();
 
 			if (fn->isNative()) {
 				if (ins.opcode == Opcode::MCALL)
-					curMajorFrame.thisObject = *(curMajorFrame.scopeValue = *ins.operands[1]);
+					curMajorFrame.thisObject = (curMajorFrame.scopeValue = ins.operands[1].get()).get();
 
-				curMajorFrame.returnValue = ((NativeFnValue *)*fn)->call(curMajorFrame.nextArgStack);
+				curMajorFrame.returnValue = ((NativeFnValue *)fn.get())->call(curMajorFrame.nextArgStack);
 				curMajorFrame.nextArgStack.clear();
 			} else {
-				_callFn(context, *fn);
+				_callFn(context, fn.get());
 
 				auto &newCurFrame = context->getCurFrame();
 
 				if (ins.opcode == Opcode::MCALL)
-					newCurFrame.thisObject = *(newCurFrame.scopeValue = ins.operands[1]);
+					newCurFrame.thisObject = (newCurFrame.scopeValue = ins.operands[1]).get();
 				return;
 			}
 
@@ -697,7 +701,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_checkOperandCount(ins, 1);
 			_checkOperandType(ins, { TypeId::VAR });
 
-			((VarValue *)*ins.operands[0])->setData(*curMajorFrame.returnValue);
+			((VarValue *)ins.operands[0].get())->setData(curMajorFrame.returnValue.get());
 			break;
 		}
 		case Opcode::ACALL:
@@ -720,7 +724,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_checkOperandCount(ins, 1);
 			_checkOperandType(ins, { TypeId::VAR });
 
-			((VarValue *)*ins.operands[0])->setData(*curMajorFrame.thisObject);
+			((VarValue *)ins.operands[0].get())->setData(curMajorFrame.thisObject.get());
 			break;
 		}
 		case Opcode::NEW: {
@@ -728,15 +732,15 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 			_checkOperandType(ins, { TypeId::VAR, TypeId::TYPENAME });
 
-			Type &type = ((TypeNameValue *)*ins.operands[1])->_data;
+			Type &type = ((TypeNameValue *)ins.operands[1].get())->_data;
 			type.loadDeferredType(this);
 
 			switch (type.typeId) {
 				case TypeId::OBJECT:
 				case TypeId::CLASS: {
-					ClassValue *cls = (ClassValue *)*type.getCustomTypeExData();
+					ClassValue *cls = (ClassValue *)type.getCustomTypeExData().get();
 					ObjectValue *instance = _newClassInstance(cls);
-					((VarValue *)*ins.operands[0])->setData(instance);
+					((VarValue *)ins.operands[0].get())->setData(instance);
 
 					FnValue *constructor = (FnValue *)cls->getMember("new");
 					if (constructor && constructor->getType() == TypeId::FN) {
@@ -793,10 +797,10 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 			ExceptionHandler xh;
 
-			((TypeNameValue *)*ins.operands[0])->_data.loadDeferredType(this);
+			((TypeNameValue *)ins.operands[0].get())->_data.loadDeferredType(this);
 
-			xh.type = ((TypeNameValue *)*ins.operands[0])->getData();
-			xh.off = ((U32Value *)*ins.operands[1])->getData();
+			xh.type = ((TypeNameValue *)ins.operands[0].get())->getData();
+			xh.off = ((U32Value *)ins.operands[1].get())->getData();
 
 			curMajorFrame.minorFrames.back().exceptHandlers.push_back(xh);
 			break;
@@ -809,43 +813,43 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 			_checkOperandType(ins, { TypeId::VAR, TypeId::TYPENAME, TypeId::ANY });
 
-			auto t = ((TypeNameValue *)*ins.operands[1])->getData();
+			auto t = ((TypeNameValue *)ins.operands[1].get())->getData();
 
 			ValueRef<> v = ins.operands[2];
 
 			switch (t.typeId) {
 				case TypeId::I8:
-					v = _castToLiteralValue<int8_t>(this, *v);
+					v = _castToLiteralValue<int8_t>(this, v.get());
 					break;
 				case TypeId::I16:
-					v = _castToLiteralValue<int16_t>(this, *v);
+					v = _castToLiteralValue<int16_t>(this, v.get());
 					break;
 				case TypeId::I32:
-					v = _castToLiteralValue<int32_t>(this, *v);
+					v = _castToLiteralValue<int32_t>(this, v.get());
 					break;
 				case TypeId::I64:
-					v = _castToLiteralValue<int64_t>(this, *v);
+					v = _castToLiteralValue<int64_t>(this, v.get());
 					break;
 				case TypeId::U8:
-					v = _castToLiteralValue<uint8_t>(this, *v);
+					v = _castToLiteralValue<uint8_t>(this, v.get());
 					break;
 				case TypeId::U16:
-					v = _castToLiteralValue<uint16_t>(this, *v);
+					v = _castToLiteralValue<uint16_t>(this, v.get());
 					break;
 				case TypeId::U32:
-					v = _castToLiteralValue<uint32_t>(this, *v);
+					v = _castToLiteralValue<uint32_t>(this, v.get());
 					break;
 				case TypeId::U64:
-					v = _castToLiteralValue<uint64_t>(this, *v);
+					v = _castToLiteralValue<uint64_t>(this, v.get());
 					break;
 				case TypeId::BOOL:
-					v = _castToLiteralValue<bool>(this, *v);
+					v = _castToLiteralValue<bool>(this, v.get());
 					break;
 				case TypeId::F32:
-					v = _castToLiteralValue<float>(this, *v);
+					v = _castToLiteralValue<float>(this, v.get());
 					break;
 				case TypeId::F64:
-					v = _castToLiteralValue<double>(this, *v);
+					v = _castToLiteralValue<double>(this, v.get());
 					break;
 				case TypeId::OBJECT:
 					/* stub */
@@ -854,7 +858,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 					throw InvalidOperandsError("Invalid cast target type");
 			}
 
-			((VarValue *)*ins.operands[0])->setData(*v);
+			((VarValue *)ins.operands[0].get())->setData(v.get());
 			break;
 		}
 		default:

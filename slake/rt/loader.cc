@@ -418,9 +418,9 @@ ValueRef<ModuleValue> slake::Runtime::loadModule(std::istream &fs, LoadModuleFla
 				auto mod = new ModuleValue(this, ACCESS_PUB);
 
 				if (curValue->getType() == TypeId::ROOT)
-					((RootValue *)*curValue)->addMember(name, mod);
+					((RootValue *)curValue.get())->addMember(name, mod);
 				else
-					((ModuleValue *)*curValue)->addMember(name, mod);
+					((ModuleValue *)curValue.get())->addMember(name, mod);
 
 				curValue = (Value *)mod;
 			} else {
@@ -432,9 +432,9 @@ ValueRef<ModuleValue> slake::Runtime::loadModule(std::istream &fs, LoadModuleFla
 		auto lastName = modName->entries.back().name;
 		// Add current module.
 		if (curValue->getType() == TypeId::ROOT)
-			((RootValue *)*curValue)->addMember(lastName, mod.get());
+			((RootValue *)curValue.get())->addMember(lastName, mod.get());
 		else {
-			auto moduleValue = (ModuleValue *)*curValue;
+			auto moduleValue = (ModuleValue *)curValue.get();
 
 			if (moduleValue->getMember(lastName)) {
 				if (flags & LMOD_RETIFEXISTS) {
@@ -456,7 +456,7 @@ ValueRef<ModuleValue> slake::Runtime::loadModule(std::istream &fs, LoadModuleFla
 		fs.read(name.data(), len);
 
 		std::unique_ptr<std::istream> moduleStream(_moduleLocator(this, _loadRef(fs)));
-		mod->addMember(name, (MemberValue *)new AliasValue(this, 0, *loadModule(*moduleStream.get(), LMOD_RETIFEXISTS)));
+		mod->addMember(name, (MemberValue *)new AliasValue(this, 0, loadModule(*moduleStream.get(), LMOD_RETIFEXISTS).get()));
 	}
 
 	_loadScope(mod.get(), fs);

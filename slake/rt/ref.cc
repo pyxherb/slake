@@ -26,7 +26,7 @@ Value *Runtime::resolveRef(RefValue* ref, Value *scopeValue) const {
 						scopeValue = (MemberValue *)value->getParent();
 						break;
 					case TypeId::OBJECT:
-						scopeValue = *((ObjectValue *)value)->_parent;
+						scopeValue = ((ObjectValue *)value)->_parent.get();
 						break;
 					default:
 						goto fail;
@@ -56,7 +56,7 @@ Value *Runtime::resolveRef(RefValue* ref, Value *scopeValue) const {
 				break;
 			case TypeId::OBJECT: {
 				auto t = ((ObjectValue *)value)->getType();
-				scopeValue = *t.getCustomTypeExData();
+				scopeValue = t.getCustomTypeExData().get();
 				break;
 			}
 			default:

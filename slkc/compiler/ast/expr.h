@@ -7,11 +7,12 @@
 namespace slake {
 	namespace slkc {
 		enum ExprType : uint8_t {
-			EXPR_UNARY,	   // Unary operation
-			EXPR_BINARY,   // Binary operation
-			EXPR_TERNARY,  // Ternary operation
-			EXPR_MATCH,	   // Match
-			EXPR_REF,	   // Reference
+			EXPR_UNARY,		  // Unary operation
+			EXPR_BINARY,	  // Binary operation
+			EXPR_TERNARY,	  // Ternary operation
+			EXPR_MATCH,		  // Match
+			EXPR_HEADED_REF,  // Headed reference
+			EXPR_REF,		  // Reference
 
 			EXPR_I8,	  // i8 Literal
 			EXPR_I16,	  // i16 Literal
@@ -111,6 +112,19 @@ namespace slake {
 		inline bool isAssignBinaryOp(BinaryOp op) {
 			return (op >= OP_ASSIGN) && (op < OP_EQ);
 		}
+
+		class HeadedRefExprNode : public ExprNode {
+		public:
+			shared_ptr<ExprNode> head;
+			Ref ref;
+
+			inline HeadedRefExprNode(shared_ptr<ExprNode> head, Ref ref) : head(head), ref(ref) {}
+			virtual ~HeadedRefExprNode() = default;
+
+			virtual inline Location getLocation() const override { return head->getLocation(); }
+
+			virtual ExprType getExprType() const override { return EXPR_HEADED_REF; }
+		};
 
 		class UnaryOpExprNode : public ExprNode {
 		private:
@@ -220,7 +234,7 @@ namespace slake {
 			else
 				static_assert(!std::is_same_v<T, T>);
 		}
-		
+
 		using I8LiteralExprNode = LiteralExprNode<int8_t, EXPR_I8>;
 		using I16LiteralExprNode = LiteralExprNode<int16_t, EXPR_I16>;
 		using I32LiteralExprNode = LiteralExprNode<int32_t, EXPR_I32>;

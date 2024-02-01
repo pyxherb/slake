@@ -8,7 +8,7 @@ void Runtime::_gcWalk(Type &type) {
 		case TypeId::CLASS:
 		case TypeId::INTERFACE:
 		case TypeId::TRAIT:
-			_gcWalk(*type.getCustomTypeExData());
+			_gcWalk(type.getCustomTypeExData().get());
 			break;
 		case TypeId::ARRAY:
 			_gcWalk(type.getArrayExData());
@@ -61,12 +61,12 @@ void Runtime::_gcWalk(Value *v) {
 				_gcWalk(i.second);
 			_gcWalk(value->_class);
 			if (value->_parent)
-				_gcWalk(*value->_parent);
+				_gcWalk(value->_parent.get());
 			break;
 		}
 		case TypeId::ARRAY:
 			for (auto &i : ((ArrayValue *)v)->values)
-				_gcWalk(*i);
+				_gcWalk(i.get());
 			break;
 		case TypeId::MAP:
 			break;
@@ -103,7 +103,7 @@ void Runtime::_gcWalk(Value *v) {
 
 			for (auto &i : value->parents) {
 				i.loadDeferredType(this);
-				_gcWalk(*i.getCustomTypeExData());
+				_gcWalk(i.getCustomTypeExData().get());
 			}
 
 			for (auto &i : value->_members)
@@ -119,7 +119,7 @@ void Runtime::_gcWalk(Value *v) {
 
 			for (auto &i : value->parents) {
 				i.loadDeferredType(this);
-				_gcWalk(*i.getCustomTypeExData());
+				_gcWalk(i.getCustomTypeExData().get());
 			}
 
 			for (auto &i : value->_members)
@@ -151,7 +151,7 @@ void Runtime::_gcWalk(Value *v) {
 		}
 		case TypeId::ROOT:
 			for (auto &i : ((RootValue *)v)->_members)
-				_gcWalk(*(i.second));
+				_gcWalk(i.second.get());
 			break;
 		case TypeId::FN: {
 			auto basicFn = (BasicFnValue *)v;
@@ -168,7 +168,7 @@ void Runtime::_gcWalk(Value *v) {
 				for (size_t i = 0; i < value->nIns; ++i) {
 					auto &ins = value->body[i];
 					for (size_t j = 0; j < ins.operands.size(); ++j) {
-						auto operand = *ins.operands[j];
+						auto operand = ins.operands[j].get();
 						if (operand)
 							_gcWalk(operand);
 					}
@@ -194,7 +194,7 @@ void Runtime::_gcWalk(Value *v) {
 		case TypeId::ALIAS: {
 			auto value = (AliasValue *)v;
 
-			_gcWalk(*value->_src);
+			_gcWalk(value->_src.get());
 			break;
 		}
 		case TypeId::CONTEXT: {
@@ -227,23 +227,23 @@ void Runtime::_gcWalk(Value *v) {
 
 void Runtime::_gcWalk(Context &ctxt) {
 	for (auto &j : ctxt.majorFrames) {
-		_gcWalk(const_cast<FnValue *>(*j.curFn));
+		_gcWalk(const_cast<FnValue *>(j.curFn.get()));
 		if (j.scopeValue)
-			_gcWalk(*j.scopeValue);
+			_gcWalk(j.scopeValue.get());
 		if (j.returnValue)
-			_gcWalk(*j.returnValue);
+			_gcWalk(j.returnValue.get());
 		if (j.thisObject)
-			_gcWalk(*j.thisObject);
+			_gcWalk(j.thisObject.get());
 		if (j.curExcept)
-			_gcWalk(*j.curExcept);
+			_gcWalk(j.curExcept.get());
 		for (auto &k : j.argStack)
-			_gcWalk(*k);
+			_gcWalk(k.get());
 		for (auto &k : j.nextArgStack)
-			_gcWalk(*k);
+			_gcWalk(k.get());
 		for (auto &k : j.localVars)
-			_gcWalk(*k);
+			_gcWalk(k.get());
 		for (auto &k : j.regs)
-			_gcWalk(*k);
+			_gcWalk(k.get());
 		for (auto &k : j.minorFrames) {
 			for (auto &l : k.exceptHandlers)
 				_gcWalk(l.type);
@@ -261,15 +261,17 @@ void Runtime::gc() {
 	for (auto &i : activeContexts)
 		_gcWalk(*i.second);
 
-	std::unordered_set<Value *> unreachableValues;
+	std::set<Value *> unreachableValues;
 	unreachableValues.swap(_extraGcTargets);
 
 	if (_rootValue) {
-		// Scan for GC targets
+		// Scan for GC targets.
 		for (auto i = _createdValues.begin(); i != _createdValues.end(); ++i) {
 			auto type = (*i)->getType();
-			if ((!((*i)->_flags & VF_WALKED)) && (!((*i)->hostRefCount)))
-				unreachableValues.insert(*i);
+			if ((!(*i)->_flags & VF_WALKED)) {
+				if (!(*i)->hostRefCount)
+					unreachableValues.insert(*i);
+			}
 		}
 
 		// Execute destructors for all destructible objects.

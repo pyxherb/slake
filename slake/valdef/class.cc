@@ -2,6 +2,15 @@
 
 using namespace slake;
 
+inline slake::ClassValue::ClassValue(Runtime *rt, AccessModifier access, Type parentClass)
+	: ModuleValue(rt, access), parentClass(parentClass) {
+	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(ModuleValue));
+}
+
+ClassValue::~ClassValue() {
+	reportSizeFreedToRuntime(sizeof(*this) - sizeof(ModuleValue));
+}
+
 bool ClassValue::_isAbstract() const {
 	for (auto i : _members) {
 		switch (i.second->getType().typeId) {
@@ -29,7 +38,7 @@ bool ClassValue::hasImplemented(const InterfaceValue *pInterface) const {
 	for (auto &i : implInterfaces) {
 		i.loadDeferredType(_rt);
 
-		if (((InterfaceValue *)*(i.getCustomTypeExData()))->isDerivedFrom(pInterface))
+		if (((InterfaceValue *)i.getCustomTypeExData().get())->isDerivedFrom(pInterface))
 			return true;
 	}
 	return false;
@@ -46,7 +55,7 @@ bool ClassValue::consistsOf(const TraitValue *t) const {
 			while (j->parentClass) {
 				if (!(v = (MemberValue *)j->getMember(i.first))) {
 					j->parentClass.loadDeferredType(_rt);
-					j = (ClassValue *)*j->parentClass.getCustomTypeExData();
+					j = (ClassValue *)j->parentClass.getCustomTypeExData().get();
 					continue;
 				}
 				goto found;
@@ -93,7 +102,7 @@ bool ClassValue::consistsOf(const TraitValue *t) const {
 	if (t->parents.size()) {
 		for (auto &i : t->parents) {
 			i.loadDeferredType(_rt);
-			if (!consistsOf((TraitValue *)*(i.getCustomTypeExData()))) {
+			if (!consistsOf((TraitValue *)i.getCustomTypeExData().get())) {
 				return false;
 			}
 		}
@@ -109,7 +118,7 @@ bool InterfaceValue::isDerivedFrom(const InterfaceValue *pInterface) const {
 	for (auto &i : parents) {
 		i.loadDeferredType(_rt);
 
-		InterfaceValue *interface = (InterfaceValue *)*(i.getCustomTypeExData());
+		InterfaceValue *interface = (InterfaceValue *)i.getCustomTypeExData().get();
 
 		if (interface->getType() != TypeId::INTERFACE)
 			throw IncompatibleTypeError("Referenced type value is not an interface");
@@ -128,11 +137,19 @@ Value *ClassValue::duplicate() const {
 	return (Value *)v;
 }
 
+InterfaceValue::~InterfaceValue() {
+	reportSizeFreedToRuntime(sizeof(*this) - sizeof(ModuleValue));
+}
+
 Value *InterfaceValue::duplicate() const {
 	InterfaceValue *v = new InterfaceValue(_rt, 0);
 	*v = *this;
 
 	return (Value *)v;
+}
+
+TraitValue::~TraitValue() {
+	reportSizeFreedToRuntime(sizeof(*this) - sizeof(InterfaceValue));
 }
 
 Value *TraitValue::duplicate() const {

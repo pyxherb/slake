@@ -2,6 +2,15 @@
 
 using namespace slake;
 
+slake::RefValue::RefValue(Runtime *rt)
+	: Value(rt) {
+	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Value));
+}
+
+RefValue::~RefValue() {
+	reportSizeFreedToRuntime(sizeof(*this) - sizeof(Value));
+}
+
 Value *RefValue::duplicate() const {
 	RefValue *v = new RefValue(_rt);
 	*v = *this;

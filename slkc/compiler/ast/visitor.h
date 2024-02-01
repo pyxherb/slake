@@ -156,6 +156,7 @@ namespace slake {
 			VISIT_METHOD_DECL(Args);
 
 			VISIT_METHOD_DECL(WrappedExpr);
+			VISIT_METHOD_DECL(HeadedRefExpr);
 			VISIT_METHOD_DECL(RefExpr);
 			VISIT_METHOD_DECL(LiteralExpr);
 			VISIT_METHOD_DECL(ArrayExpr);

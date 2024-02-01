@@ -4,7 +4,7 @@ using namespace slake;
 
 ModuleValue::ModuleValue(Runtime *rt, AccessModifier access)
 	: MemberValue(rt, access) {
-	reportSizeToRuntime(sizeof(*this) - sizeof(MemberValue));
+	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(MemberValue));
 }
 
 ModuleValue::~ModuleValue() {
@@ -14,6 +14,8 @@ ModuleValue::~ModuleValue() {
 			i.second->decRefCount();
 		}
 	}
+
+	reportSizeFreedToRuntime(sizeof(*this) - sizeof(MemberValue));
 }
 
 Type ModuleValue::getType() const {

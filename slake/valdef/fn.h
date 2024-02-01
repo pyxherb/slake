@@ -34,8 +34,9 @@ namespace slake {
 			AccessModifier access,
 			Type returnType)
 			: MemberValue(rt, access) {
+			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(MemberValue));
 		}
-		virtual ~BasicFnValue() = default;
+		virtual ~BasicFnValue();
 
 		virtual Type getType() const override;
 		virtual Type getReturnType() const;
@@ -93,13 +94,7 @@ namespace slake {
 		std::set<uint32_t> breakpoints;
 #endif
 
-		inline FnValue(Runtime *rt, uint32_t nIns, AccessModifier access, Type returnType)
-			: nIns(nIns),
-			  BasicFnValue(rt, access, returnType) {
-			if (nIns)
-				body = new Instruction[nIns];
-			reportSizeToRuntime(sizeof(*this) + sizeof(Instruction) * nIns);
-		}
+		FnValue(Runtime *rt, uint32_t nIns, AccessModifier access, Type returnType);
 		virtual ~FnValue();
 
 		inline uint32_t getInsCount() const noexcept { return nIns; }
@@ -115,39 +110,7 @@ namespace slake {
 
 		Value *duplicate() const override;
 
-		inline FnValue &operator=(const FnValue &x) {
-			((BasicFnValue &)*this) = (BasicFnValue &)x;
-
-			// Delete existing function body.
-			if (body) {
-				delete[] body;
-				body = nullptr;
-			}
-
-			// Copy the function body if the source function is not abstract.
-			if (x.body) {
-				body = new Instruction[x.nIns];
-
-				// Copy each instruction.
-				for (size_t i = 0; i < x.nIns; ++i) {
-					// Duplicate current instruction from the source function.
-					auto ins = x.body[i];
-
-					// Copy each operand.
-					for (size_t j = 0; j < ins.operands.size(); ++j) {
-						auto &operand = ins.operands[j];
-						if (operand)
-							operand = operand->duplicate();
-					}
-
-					// Move current instruction into the function body.
-					body[i] = ins;
-				}
-			}
-			nIns = x.nIns;
-
-			return *this;
-		}
+		FnValue &operator=(const FnValue &x);
 		FnValue &operator=(FnValue &&) = delete;
 	};
 
@@ -158,11 +121,8 @@ namespace slake {
 		friend class ClassValue;
 
 	public:
-		inline NativeFnValue(Runtime *rt, NativeFnCallback body, AccessModifier access, Type returnType)
-			: BasicFnValue(rt, access | ACCESS_NATIVE, returnType), body(body) {
-			reportSizeToRuntime(sizeof(*this));
-		}
-		virtual ~NativeFnValue() = default;
+		NativeFnValue(Runtime *rt, NativeFnCallback body, AccessModifier access, Type returnType);
+		virtual ~NativeFnValue();
 
 		inline const NativeFnCallback getBody() const noexcept { return body; }
 

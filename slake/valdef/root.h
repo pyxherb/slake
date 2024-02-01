@@ -7,29 +7,27 @@
 
 namespace slake {
 	class RootValue final : public Value {
-	protected:
+	public:
 		std::unordered_map<std::string, ValueRef<MemberValue, false>> _members;
 
-		friend class Runtime;
-
-	public:
 		inline RootValue(Runtime *rt)
 			: Value(rt) {
-			reportSizeToRuntime(sizeof(*this) - sizeof(Value));
+			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Value));
 		}
 
 		virtual inline ~RootValue() {
 			for (auto &i : _members) {
 				i.second->unbind();
 			}
+			reportSizeFreedToRuntime(sizeof(*this) - sizeof(Value));
 		}
 		virtual inline Type getType() const override { return TypeId::ROOT; }
 
 		virtual inline MemberValue *getMember(std::string name) override {
-			return _members.count(name) ? *(_members.at(name)) : nullptr;
+			return _members.count(name) ? _members.at(name).get() : nullptr;
 		}
 		virtual inline const MemberValue *getMember(std::string name) const override {
-			return _members.count(name) ? *(_members.at(name)) : nullptr;
+			return _members.count(name) ? _members.at(name).get() : nullptr;
 		}
 
 		virtual inline void addMember(std::string name, MemberValue *value) {

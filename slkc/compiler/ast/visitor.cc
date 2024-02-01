@@ -28,10 +28,10 @@ void AstVisitor::_putDefinition(
 		throw FatalCompilationError(
 			Message(
 				locName,
-				MSG_ERROR,
+				MessageType::Error,
 				"Redefinition of `" + name + "'"));
 	curScope->members[name] = member;
-	member->parent = (MemberNode*)curScope->owner;
+	member->parent = (MemberNode *)curScope->owner;
 }
 
 void AstVisitor::_putFnDefinition(
@@ -47,7 +47,7 @@ void AstVisitor::_putFnDefinition(
 		throw FatalCompilationError(
 			Message(
 				locName,
-				MSG_ERROR,
+				MessageType::Error,
 				"Redefinition of `" + name + "'"));
 	} else {
 		static_pointer_cast<FnNode>(curScope->members.at(name))->overloadingRegistries.push_back(overloadingRegistry);
@@ -324,7 +324,7 @@ VISIT_METHOD_DECL(Access) {
 			compiler->messages.push_back(
 				Message(
 					Location{ i },
-					MSG_WARN,
+					MessageType::Warn,
 					"Duplicated modifier `" + _accessModifierNames.at(curAccess) + "'"));
 		} else
 			access |= curAccess;
@@ -616,9 +616,23 @@ VISIT_METHOD_DECL(Args) {
 }
 
 VISIT_METHOD_DECL(WrappedExpr) { return visit(context->expr()); }
+VISIT_METHOD_DECL(HeadedRefExpr) {
+	Ref ref;
+
+	for (size_t i = 2;
+		 i < context->children.size();
+		 i += 2) {
+		ref.push_back(any_cast<RefEntry>(visit(context->children[i])));
+	}
+
+	return static_pointer_cast<ExprNode>(
+		make_shared<HeadedRefExprNode>(
+			any_cast<shared_ptr<ExprNode>>(visit(context->expr())), ref));
+}
 VISIT_METHOD_DECL(RefExpr) {
-	return static_pointer_cast<ExprNode>(make_shared<RefExprNode>(
-		any_cast<Ref>(visit(context->ref()))));
+	return static_pointer_cast<ExprNode>(
+		make_shared<RefExprNode>(
+			any_cast<Ref>(visit(context->ref()))));
 }
 VISIT_METHOD_DECL(LiteralExpr) { return visit(context->literal()); }
 VISIT_METHOD_DECL(ArrayExpr) { return visit(context->array()); }
@@ -627,41 +641,46 @@ VISIT_METHOD_DECL(ClosureExpr) {
 	return Any();
 }
 VISIT_METHOD_DECL(CallExpr) {
-	return static_pointer_cast<ExprNode>(make_shared<CallExprNode>(
-		any_cast<shared_ptr<ExprNode>>(visit(context->expr())),
-		context->args()
-			? any_cast<deque<shared_ptr<ExprNode>>>(visit(context->args()))
-			: deque<shared_ptr<ExprNode>>{},
-		context->KW_ASYNC() != nullptr));
+	return static_pointer_cast<ExprNode>(
+		make_shared<CallExprNode>(
+			any_cast<shared_ptr<ExprNode>>(visit(context->expr())),
+			context->args()
+				? any_cast<deque<shared_ptr<ExprNode>>>(visit(context->args()))
+				: deque<shared_ptr<ExprNode>>{},
+			context->KW_ASYNC() != nullptr));
 }
 VISIT_METHOD_DECL(AwaitExpr) {
-	return static_pointer_cast<ExprNode>(make_shared<AwaitExprNode>(
-		Location{ context->KW_AWAIT() },
-		any_cast<shared_ptr<ExprNode>>(context->expr())));
+	return static_pointer_cast<ExprNode>(
+		make_shared<AwaitExprNode>(
+			Location{ context->KW_AWAIT() },
+			any_cast<shared_ptr<ExprNode>>(context->expr())));
 }
 VISIT_METHOD_DECL(NewExpr) {
-	return static_pointer_cast<ExprNode>(make_shared<NewExprNode>(
-		Location{ context->KW_NEW() },
-		any_cast<shared_ptr<TypeNameNode>>(visit(context->typeName())),
-		context->args()
-			? any_cast<deque<shared_ptr<ExprNode>>>(visit(context->args()))
-			: deque<shared_ptr<ExprNode>>{}));
+	return static_pointer_cast<ExprNode>(
+		make_shared<NewExprNode>(
+			Location{ context->KW_NEW() },
+			any_cast<shared_ptr<TypeNameNode>>(visit(context->typeName())),
+			context->args()
+				? any_cast<deque<shared_ptr<ExprNode>>>(visit(context->args()))
+				: deque<shared_ptr<ExprNode>>{}));
 }
 VISIT_METHOD_DECL(NewArrayExpr) {
-	return static_pointer_cast<ExprNode>(make_shared<NewExprNode>(
-		Location{ context->KW_NEW() },
-		any_cast<shared_ptr<TypeNameNode>>(visit(context->typeName())),
-		context->array()
-			? any_cast<deque<shared_ptr<ExprNode>>>(visit(context->array()))
-			: deque<shared_ptr<ExprNode>>{}));
+	return static_pointer_cast<ExprNode>(
+		make_shared<NewExprNode>(
+			Location{ context->KW_NEW() },
+			any_cast<shared_ptr<TypeNameNode>>(visit(context->typeName())),
+			context->array()
+				? any_cast<deque<shared_ptr<ExprNode>>>(visit(context->array()))
+				: deque<shared_ptr<ExprNode>>{}));
 }
 VISIT_METHOD_DECL(NewMapExpr) {
-	return static_pointer_cast<ExprNode>(make_shared<NewExprNode>(
-		Location{ context->KW_NEW() },
-		any_cast<shared_ptr<TypeNameNode>>(visit(context->typeName())),
-		context->map()
-			? any_cast<deque<shared_ptr<ExprNode>>>(visit(context->map()))
-			: deque<shared_ptr<ExprNode>>{}));
+	return static_pointer_cast<ExprNode>(
+		make_shared<NewExprNode>(
+			Location{ context->KW_NEW() },
+			any_cast<shared_ptr<TypeNameNode>>(visit(context->typeName())),
+			context->map()
+				? any_cast<deque<shared_ptr<ExprNode>>>(visit(context->map()))
+				: deque<shared_ptr<ExprNode>>{}));
 }
 VISIT_METHOD_DECL(MatchExpr) { return Any(); }
 VISIT_METHOD_DECL(CastExpr) {
@@ -725,8 +744,9 @@ VISIT_METHOD_DECL(MulDivExpr) {
 			throw std::logic_error("Unrecognized opeartion type");
 	}
 
-	return static_pointer_cast<ExprNode>(make_shared<BinaryOpExprNode>(
-		lhs->getLocation(), op, lhs, rhs));
+	return static_pointer_cast<ExprNode>(
+		make_shared<BinaryOpExprNode>(
+			lhs->getLocation(), op, lhs, rhs));
 }
 VISIT_METHOD_DECL(AddSubExpr) {
 	auto lhs = any_cast<shared_ptr<ExprNode>>(visit(context->expr()[0])),
@@ -745,8 +765,9 @@ VISIT_METHOD_DECL(AddSubExpr) {
 			throw std::logic_error("Unrecognized opeartion type");
 	}
 
-	return static_pointer_cast<ExprNode>(make_shared<BinaryOpExprNode>(
-		lhs->getLocation(), op, lhs, rhs));
+	return static_pointer_cast<ExprNode>(
+		make_shared<BinaryOpExprNode>(
+			lhs->getLocation(), op, lhs, rhs));
 }
 VISIT_METHOD_DECL(LtGtExpr) {
 	auto lhs = any_cast<shared_ptr<ExprNode>>(visit(context->expr()[0])),
@@ -771,8 +792,9 @@ VISIT_METHOD_DECL(LtGtExpr) {
 			throw std::logic_error("Unrecognized opeartion type");
 	}
 
-	return static_pointer_cast<ExprNode>(make_shared<BinaryOpExprNode>(
-		lhs->getLocation(), op, lhs, rhs));
+	return static_pointer_cast<ExprNode>(
+		make_shared<BinaryOpExprNode>(
+			lhs->getLocation(), op, lhs, rhs));
 }
 VISIT_METHOD_DECL(ShiftExpr) {
 	auto lhs = any_cast<shared_ptr<ExprNode>>(visit(context->expr()[0])),
@@ -791,8 +813,9 @@ VISIT_METHOD_DECL(ShiftExpr) {
 			throw std::logic_error("Unrecognized opeartion type");
 	}
 
-	return static_pointer_cast<ExprNode>(make_shared<BinaryOpExprNode>(
-		lhs->getLocation(), op, lhs, rhs));
+	return static_pointer_cast<ExprNode>(
+		make_shared<BinaryOpExprNode>(
+			lhs->getLocation(), op, lhs, rhs));
 }
 VISIT_METHOD_DECL(EqExpr) {
 	auto lhs = any_cast<shared_ptr<ExprNode>>(visit(context->expr()[0])),
@@ -811,50 +834,57 @@ VISIT_METHOD_DECL(EqExpr) {
 			throw std::logic_error("Unrecognized opeartion type");
 	}
 
-	return static_pointer_cast<ExprNode>(make_shared<BinaryOpExprNode>(
-		lhs->getLocation(), op, lhs, rhs));
+	return static_pointer_cast<ExprNode>(
+		make_shared<BinaryOpExprNode>(
+			lhs->getLocation(), op, lhs, rhs));
 }
 VISIT_METHOD_DECL(AndExpr) {
 	auto lhs = any_cast<shared_ptr<ExprNode>>(visit(context->expr()[0])),
 		 rhs = any_cast<shared_ptr<ExprNode>>(visit(context->expr()[1]));
 
-	return static_pointer_cast<ExprNode>(make_shared<BinaryOpExprNode>(
-		lhs->getLocation(), OP_AND, lhs, rhs));
+	return static_pointer_cast<ExprNode>(
+		make_shared<BinaryOpExprNode>(
+			lhs->getLocation(), OP_AND, lhs, rhs));
 }
 VISIT_METHOD_DECL(XorExpr) {
 	auto lhs = any_cast<shared_ptr<ExprNode>>(visit(context->expr()[0])),
 		 rhs = any_cast<shared_ptr<ExprNode>>(visit(context->expr()[1]));
 
-	return static_pointer_cast<ExprNode>(make_shared<BinaryOpExprNode>(
-		lhs->getLocation(), OP_XOR, lhs, rhs));
+	return static_pointer_cast<ExprNode>(
+		make_shared<BinaryOpExprNode>(
+			lhs->getLocation(), OP_XOR, lhs, rhs));
 }
 VISIT_METHOD_DECL(OrExpr) {
 	auto lhs = any_cast<shared_ptr<ExprNode>>(visit(context->expr()[0])),
 		 rhs = any_cast<shared_ptr<ExprNode>>(visit(context->expr()[1]));
 
-	return static_pointer_cast<ExprNode>(make_shared<BinaryOpExprNode>(
-		lhs->getLocation(), OP_OR, lhs, rhs));
+	return static_pointer_cast<ExprNode>(
+		make_shared<BinaryOpExprNode>(
+			lhs->getLocation(), OP_OR, lhs, rhs));
 }
 VISIT_METHOD_DECL(LogicalAndExpr) {
 	auto lhs = any_cast<shared_ptr<ExprNode>>(visit(context->expr()[0])),
 		 rhs = any_cast<shared_ptr<ExprNode>>(visit(context->expr()[1]));
 
-	return static_pointer_cast<ExprNode>(make_shared<BinaryOpExprNode>(
-		lhs->getLocation(), OP_LAND, lhs, rhs));
+	return static_pointer_cast<ExprNode>(
+		make_shared<BinaryOpExprNode>(
+			lhs->getLocation(), OP_LAND, lhs, rhs));
 }
 VISIT_METHOD_DECL(LogicalOrExpr) {
 	auto lhs = any_cast<shared_ptr<ExprNode>>(visit(context->expr()[0])),
 		 rhs = any_cast<shared_ptr<ExprNode>>(visit(context->expr()[1]));
 
-	return static_pointer_cast<ExprNode>(make_shared<BinaryOpExprNode>(
-		lhs->getLocation(), OP_LOR, lhs, rhs));
+	return static_pointer_cast<ExprNode>(
+		make_shared<BinaryOpExprNode>(
+			lhs->getLocation(), OP_LOR, lhs, rhs));
 }
 VISIT_METHOD_DECL(TernaryExpr) {
 	auto cond = any_cast<shared_ptr<ExprNode>>(visit(context->expr()[0])),
 		 x = any_cast<shared_ptr<ExprNode>>(visit(context->expr()[1])),
 		 y = any_cast<shared_ptr<ExprNode>>(visit(context->expr()[2]));
 
-	return static_pointer_cast<ExprNode>(make_shared<TernaryOpExprNode>(cond, x, y));
+	return static_pointer_cast<ExprNode>(
+		make_shared<TernaryOpExprNode>(cond, x, y));
 }
 VISIT_METHOD_DECL(AssignExpr) {
 	auto lhs = any_cast<shared_ptr<ExprNode>>(visit(context->expr()[0])),
@@ -883,8 +913,9 @@ VISIT_METHOD_DECL(AssignExpr) {
 	}
 #undef ASSIGN_OP_CASE
 
-	return static_pointer_cast<ExprNode>(make_shared<BinaryOpExprNode>(
-		lhs->getLocation(), op, lhs, rhs));
+	return static_pointer_cast<ExprNode>(
+		make_shared<BinaryOpExprNode>(
+			lhs->getLocation(), op, lhs, rhs));
 }
 
 VISIT_METHOD_DECL(Array) { return Any(); }
@@ -900,30 +931,34 @@ VISIT_METHOD_DECL(BinInt) {
 	// -0b
 	std::string s = context->getText().substr(3);
 
-	return static_pointer_cast<ExprNode>(make_shared<I32LiteralExprNode>(
-		Location(context->L_INT_BIN()),
-		-(int32_t)strtol(s.c_str(), nullptr, 2)));
+	return static_pointer_cast<ExprNode>(
+		make_shared<I32LiteralExprNode>(
+			Location(context->L_INT_BIN()),
+			-(int32_t)strtol(s.c_str(), nullptr, 2)));
 }
 VISIT_METHOD_DECL(OctInt) {
 	// -0
 	std::string s = context->getText().substr(2);
 
-	return static_pointer_cast<ExprNode>(make_shared<I32LiteralExprNode>(
-		Location(context->L_INT_OCT()),
-		-(int32_t)strtol(s.c_str(), nullptr, 8)));
+	return static_pointer_cast<ExprNode>(
+		make_shared<I32LiteralExprNode>(
+			Location(context->L_INT_OCT()),
+			-(int32_t)strtol(s.c_str(), nullptr, 8)));
 }
 VISIT_METHOD_DECL(DecInt) {
-	return static_pointer_cast<ExprNode>(make_shared<I32LiteralExprNode>(
-		Location(context->L_INT_DEC()),
-		(int32_t)strtol(context->getText().c_str(), nullptr, 10)));
+	return static_pointer_cast<ExprNode>(
+		make_shared<I32LiteralExprNode>(
+			Location(context->L_INT_DEC()),
+			(int32_t)strtol(context->getText().c_str(), nullptr, 10)));
 }
 VISIT_METHOD_DECL(HexInt) {
 	// -0x
 	std::string s = context->getText().substr(3);
 
-	return static_pointer_cast<ExprNode>(make_shared<I32LiteralExprNode>(
-		Location(context->L_INT_HEX()),
-		-(int32_t)strtol(s.c_str(), nullptr, 2)));
+	return static_pointer_cast<ExprNode>(
+		make_shared<I32LiteralExprNode>(
+			Location(context->L_INT_HEX()),
+			-(int32_t)strtol(s.c_str(), nullptr, 2)));
 }
 VISIT_METHOD_DECL(BinLong) {
 	// -0b
@@ -931,9 +966,10 @@ VISIT_METHOD_DECL(BinLong) {
 
 	s.pop_back();  // Long suffix
 
-	return static_pointer_cast<ExprNode>(make_shared<I64LiteralExprNode>(
-		Location(context->L_LONG_BIN()),
-		-(int64_t)strtoll(s.c_str(), nullptr, 2)));
+	return static_pointer_cast<ExprNode>(
+		make_shared<I64LiteralExprNode>(
+			Location(context->L_LONG_BIN()),
+			-(int64_t)strtoll(s.c_str(), nullptr, 2)));
 }
 VISIT_METHOD_DECL(OctLong) {
 	// -0
@@ -941,18 +977,20 @@ VISIT_METHOD_DECL(OctLong) {
 
 	s.pop_back();  // Long suffix
 
-	return static_pointer_cast<ExprNode>(make_shared<I64LiteralExprNode>(
-		Location(context->L_LONG_OCT()),
-		-(int64_t)strtoll(s.c_str(), nullptr, 8)));
+	return static_pointer_cast<ExprNode>(
+		make_shared<I64LiteralExprNode>(
+			Location(context->L_LONG_OCT()),
+			-(int64_t)strtoll(s.c_str(), nullptr, 8)));
 }
 VISIT_METHOD_DECL(DecLong) {
 	std::string s = context->getText();
 
 	s.pop_back();  // Long suffix
 
-	return static_pointer_cast<ExprNode>(make_shared<I64LiteralExprNode>(
-		Location(context->L_LONG_DEC()),
-		(int64_t)strtoll(s.c_str(), nullptr, 10)));
+	return static_pointer_cast<ExprNode>(
+		make_shared<I64LiteralExprNode>(
+			Location(context->L_LONG_DEC()),
+			(int64_t)strtoll(s.c_str(), nullptr, 10)));
 }
 VISIT_METHOD_DECL(HexLong) {
 	// -0x
@@ -960,9 +998,10 @@ VISIT_METHOD_DECL(HexLong) {
 
 	s.pop_back();  // Long suffix
 
-	return static_pointer_cast<ExprNode>(make_shared<I64LiteralExprNode>(
-		Location(context->L_LONG_HEX()),
-		-(int64_t)strtoll(s.c_str(), nullptr, 16)));
+	return static_pointer_cast<ExprNode>(
+		make_shared<I64LiteralExprNode>(
+			Location(context->L_LONG_HEX()),
+			-(int64_t)strtoll(s.c_str(), nullptr, 16)));
 }
 VISIT_METHOD_DECL(BinUInt) {
 	// 0b
@@ -970,9 +1009,10 @@ VISIT_METHOD_DECL(BinUInt) {
 
 	s.pop_back();  // Unsigend suffix
 
-	return static_pointer_cast<ExprNode>(make_shared<U32LiteralExprNode>(
-		Location(context->L_UINT_BIN()),
-		(uint32_t)strtoul(s.c_str(), nullptr, 2)));
+	return static_pointer_cast<ExprNode>(
+		make_shared<U32LiteralExprNode>(
+			Location(context->L_UINT_BIN()),
+			(uint32_t)strtoul(s.c_str(), nullptr, 2)));
 }
 VISIT_METHOD_DECL(OctUInt) {
 	// 0
@@ -980,18 +1020,20 @@ VISIT_METHOD_DECL(OctUInt) {
 
 	s.pop_back();  // Unsigend suffix
 
-	return static_pointer_cast<ExprNode>(make_shared<U32LiteralExprNode>(
-		Location(context->L_UINT_OCT()),
-		(uint32_t)strtoul(s.c_str(), nullptr, 8)));
+	return static_pointer_cast<ExprNode>(
+		make_shared<U32LiteralExprNode>(
+			Location(context->L_UINT_OCT()),
+			(uint32_t)strtoul(s.c_str(), nullptr, 8)));
 }
 VISIT_METHOD_DECL(DecUInt) {
 	std::string s = context->getText();
 
 	s.pop_back();  // Unsigned suffix
 
-	return static_pointer_cast<ExprNode>(make_shared<U32LiteralExprNode>(
-		Location(context->L_UINT_DEC()),
-		(uint32_t)strtoul(s.c_str(), nullptr, 10)));
+	return static_pointer_cast<ExprNode>(
+		make_shared<U32LiteralExprNode>(
+			Location(context->L_UINT_DEC()),
+			(uint32_t)strtoul(s.c_str(), nullptr, 10)));
 }
 VISIT_METHOD_DECL(HexUInt) {
 	// 0x
@@ -999,9 +1041,10 @@ VISIT_METHOD_DECL(HexUInt) {
 
 	s.pop_back();  // Unsigend suffix
 
-	return static_pointer_cast<ExprNode>(make_shared<U32LiteralExprNode>(
-		Location(context->L_UINT_HEX()),
-		(uint32_t)strtoul(s.c_str(), nullptr, 16)));
+	return static_pointer_cast<ExprNode>(
+		make_shared<U32LiteralExprNode>(
+			Location(context->L_UINT_HEX()),
+			(uint32_t)strtoul(s.c_str(), nullptr, 16)));
 }
 VISIT_METHOD_DECL(BinULong) {
 	// 0b
@@ -1009,7 +1052,8 @@ VISIT_METHOD_DECL(BinULong) {
 
 	s.resize(s.size() - 2);	 // Unsigned and long suffix
 
-	return (uint64_t)strtoll(s.c_str(), nullptr, 2);
+	return static_pointer_cast<ExprNode>(
+		make_shared<U64LiteralExprNode>(Location(context->L_ULONG_BIN()), (uint64_t)strtoll(s.c_str(), nullptr, 2)));
 }
 VISIT_METHOD_DECL(OctULong) {
 	// 0
@@ -1017,14 +1061,16 @@ VISIT_METHOD_DECL(OctULong) {
 
 	s.resize(s.size() - 2);	 // Unsigned and long suffix
 
-	return (uint64_t)strtoll(s.c_str(), nullptr, 8);
+	return static_pointer_cast<ExprNode>(
+		make_shared<U64LiteralExprNode>(Location(context->L_ULONG_OCT()), (uint64_t)strtoll(s.c_str(), nullptr, 8)));
 }
 VISIT_METHOD_DECL(DecULong) {
 	std::string s = context->getText();
 
 	s.resize(s.size() - 2);	 // Unsigned and long suffix
 
-	return (uint64_t)strtoul(s.c_str(), nullptr, 10);
+	return static_pointer_cast<ExprNode>(
+		make_shared<U64LiteralExprNode>(Location(context->L_ULONG_DEC()), (uint64_t)strtoul(s.c_str(), nullptr, 10)));
 }
 VISIT_METHOD_DECL(HexULong) {
 	// 0x
@@ -1032,19 +1078,22 @@ VISIT_METHOD_DECL(HexULong) {
 
 	s.resize(s.size() - 2);	 // Unsigned and long suffix
 
-	return (uint64_t)strtoul(s.c_str(), nullptr, 16);
+	return static_pointer_cast<ExprNode>(
+		make_shared<U64LiteralExprNode>(Location(context->L_ULONG_HEX()), (uint64_t)strtoul(s.c_str(), nullptr, 16)));
 }
 
 VISIT_METHOD_DECL(F32) {
 	std::string s = context->getText();
 
-	return strtof(s.c_str(), nullptr);
+	return static_pointer_cast<ExprNode>(
+		make_shared<F32LiteralExprNode>(Location(context->L_F32()), strtof(s.c_str(), nullptr)));
 }
 
 VISIT_METHOD_DECL(F64) {
 	std::string s = context->getText();
 
-	return strtod(s.c_str(), nullptr);
+	return static_pointer_cast<ExprNode>(
+		make_shared<F64LiteralExprNode>(Location(context->L_F64()), strtod(s.c_str(), nullptr)));
 }
 
 enum StringParseState : uint8_t {
@@ -1229,8 +1278,7 @@ VISIT_METHOD_DECL(NormalRef) {
 	for (;
 		 i < context->children.size();
 		 i += 2) {
-		auto curToken = context->children[i];
-		ref.push_back(any_cast<RefEntry>(visit(curToken)));
+		ref.push_back(any_cast<RefEntry>(visit(context->children[i])));
 	}
 	return ref;
 }

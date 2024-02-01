@@ -37,6 +37,7 @@ namespace slake {
 			}
 
 			inline bool isAbstract() { return !body; }
+			inline bool isVaridic() { return paramIndices.count("..."); }
 		};
 
 		class FnNode final : public MemberNode {

@@ -13,7 +13,7 @@ slake::slkc::FnOverloadingRegistry::FnOverloadingRegistry(
 			throw FatalCompilationError(
 				Message(
 					params[i].loc,
-					MSG_ERROR,
+					MessageType::Error,
 					"Redefinition of parameter `" + params[i].name + "'"));
 		}
 

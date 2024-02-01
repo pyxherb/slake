@@ -19,6 +19,7 @@ class Derived(Test) {
 
 	pub operator new(i32 y) {
 		base.x = y * 2;
+		this.x = y * 4;
 		return;
 	}
 
@@ -49,11 +50,25 @@ class Unrelated {
 
 pub native void print(...);
 
+pub void a(i32 x) {
+	print("a(i32)\n");
+
+	return;
+}
+
+pub void a(f32 x) {
+	print("a(f32)\n");
+	
+	return;
+}
+
 pub i32 main() {
 	print("Entered main\n");
 
-	Test test = new AnotherDerived(100);
-	test = new Derived(100);
+	a(123);
+	a(123.0f);
+
+	Test test = new Derived(100);
 
 	while(test.x = test.x - 1) {
 		print("Yielded\n");

@@ -12,14 +12,11 @@ namespace slake {
 		friend const Value *unwrapAlias(const Value *value) noexcept;
 
 	public:
-		inline AliasValue(Runtime *rt, AccessModifier access, Value *src)
-			: MemberValue(rt, access), _src(src) {
-			reportSizeToRuntime(sizeof(*this) - sizeof(MemberValue));
-		}
-		virtual ~AliasValue() = default;
+		AliasValue(Runtime *rt, AccessModifier access, Value *src);
+		virtual ~AliasValue();
 
 		virtual inline Type getType() const override { return TypeId::ALIAS; }
-		inline ValueRef<> getSource() const { return *_src; }
+		inline ValueRef<> getSource() const { return _src.get(); }
 
 		virtual MemberValue *getMember(std::string name) override;
 		virtual const MemberValue *getMember(std::string name) const override;
@@ -41,13 +38,13 @@ namespace slake {
 	inline Value *unwrapAlias(Value *value) noexcept {
 		if (value->getType() != TypeId::ALIAS)
 			return value;
-		return *((AliasValue *)value)->_src;
+		return ((AliasValue *)value)->_src.get();
 	}
 
 	inline const Value *unwrapAlias(const Value *value) noexcept {
 		if (value->getType() != TypeId::ALIAS)
 			return value;
-		return *((AliasValue *)value)->_src;
+		return ((AliasValue *)value)->_src.get();
 	}
 }
 

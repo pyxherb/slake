@@ -11,40 +11,40 @@ slake::ValueRef<> print(slake::Runtime *rt, std::deque<slake::ValueRef<>> args) 
 	for (uint8_t i = 0; i < args.size(); ++i) {
 		switch (args[i]->getType().typeId) {
 			case TypeId::I8:
-				std::cout << ((I8Value *)*args[i])->getData();
+				std::cout << ((I8Value *)args[i].get())->getData();
 				break;
 			case TypeId::I16:
-				std::cout << ((I16Value *)*args[i])->getData();
+				std::cout << ((I16Value *)args[i].get())->getData();
 				break;
 			case TypeId::I32:
-				std::cout << ((I32Value *)*args[i])->getData();
+				std::cout << ((I32Value *)args[i].get())->getData();
 				break;
 			case TypeId::I64:
-				std::cout << ((I64Value *)*args[i])->getData();
+				std::cout << ((I64Value *)args[i].get())->getData();
 				break;
 			case TypeId::U8:
-				std::cout << ((U8Value *)*args[i])->getData();
+				std::cout << ((U8Value *)args[i].get())->getData();
 				break;
 			case TypeId::U16:
-				std::cout << ((U16Value *)*args[i])->getData();
+				std::cout << ((U16Value *)args[i].get())->getData();
 				break;
 			case TypeId::U32:
-				std::cout << ((U32Value *)*args[i])->getData();
+				std::cout << ((U32Value *)args[i].get())->getData();
 				break;
 			case TypeId::U64:
-				std::cout << ((U64Value *)*args[i])->getData();
+				std::cout << ((U64Value *)args[i].get())->getData();
 				break;
 			case TypeId::F32:
-				std::cout << ((F32Value *)*args[i])->getData();
+				std::cout << ((F32Value *)args[i].get())->getData();
 				break;
 			case TypeId::F64:
-				std::cout << ((F64Value *)*args[i])->getData();
+				std::cout << ((F64Value *)args[i].get())->getData();
 				break;
 			case TypeId::BOOL:
-				fputs(((BoolValue *)*args[i])->getData() ? "true" : "false", stdout);
+				fputs(((BoolValue *)args[i].get())->getData() ? "true" : "false", stdout);
 				break;
 			case TypeId::STRING:
-				fputs(((StringValue *)*args[i])->getData().c_str(), stdout);
+				fputs(((StringValue *)args[i].get())->getData().c_str(), stdout);
 				break;
 			default:
 				throw std::runtime_error("Invalid argument type");
@@ -74,7 +74,7 @@ void printTraceback(slake::Runtime *rt) {
 	auto ctxt = rt->activeContexts.at(std::this_thread::get_id());
 	printf("Traceback:\n");
 	for (auto i = ctxt->majorFrames.rbegin(); i != ctxt->majorFrames.rend(); ++i) {
-		printf("\t%s: 0x%08x", rt->getFullName(*(i->curFn)).c_str(), i->curIns);
+		printf("\t%s: 0x%08x", rt->getFullName(i->curFn.get()).c_str(), i->curIns);
 
 		if (auto sld = i->curFn->getSourceLocationInfo(i->curIns); sld) {
 			printf(" at %d:%d", sld->line, sld->column);
@@ -108,18 +108,18 @@ int main(int argc, char **argv) {
 	slake::ValueRef<> result;
 
 	try {
-		slake::ValueRef<slake::ContextValue> context = (slake::ContextValue *)*(mod->getMember("main")->call({}));
-		printf("%d\n", ((slake::I32Value *)*context->getResult())->getData());
+		slake::ValueRef<slake::ContextValue> context = (slake::ContextValue *)mod->getMember("main")->call({}).get();
+		printf("%d\n", ((slake::I32Value *)context->getResult().get())->getData());
 		while (!context->isDone()) {
 			context->resume();
 
-			auto result = *context->getResult();
+			auto result = context->getResult();
 			assert(result->getType() == slake::TypeId::I32);
 
-			printf("%d\n", ((slake::I32Value *)result)->getData());
+			printf("%d\n", ((slake::I32Value *)result.get())->getData());
 		}
 	} catch (slake::NotFoundError e) {
-		printf("NotFoundError: %s, ref = %s\n", e.what(), std::to_string(*e.ref).c_str());
+		printf("NotFoundError: %s, ref = %s\n", e.what(), std::to_string(e.ref.get()).c_str());
 		printTraceback(rt.get());
 	} catch (slake::RuntimeExecError e) {
 		auto ctxt = rt->activeContexts.at(std::this_thread::get_id());

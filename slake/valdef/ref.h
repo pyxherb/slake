@@ -18,10 +18,9 @@ namespace slake {
 	public:
 		std::deque<RefEntry> entries;
 
-		inline RefValue(Runtime *rt) : Value(rt) {
-			reportSizeToRuntime(sizeof(*this) - sizeof(Value));
-		}
-		virtual ~RefValue() = default;
+		RefValue(Runtime *rt);
+		virtual ~RefValue();
+
 		virtual inline Type getType() const override { return TypeId::REF; }
 
 		virtual Value *duplicate() const override;

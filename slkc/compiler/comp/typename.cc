@@ -82,8 +82,8 @@ bool Compiler::isCompoundType(shared_ptr<TypeNameNode> node) {
 					throw FatalCompilationError(
 						Message(
 							t->ref[0].loc,
-							MSG_ERROR,
-							"`" + to_string(t->ref) + "' cannot be referenced as a type"));
+							MessageType::Error,
+							"`" + to_string(t->ref, this) + "' cannot be referenced as a type"));
 			}
 		}
 		default:
@@ -244,7 +244,7 @@ bool Compiler::areTypesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<Type
 									auto scope = scopeOf(st);
 									assert(scope);
 
-									if (scope->members.count(string("operator") + (dest->getTypeId() == TYPE_CUSTOM ? "" : "@") + to_string(dest)))
+									if (scope->members.count(string("operator") + (dest->getTypeId() == TYPE_CUSTOM ? "" : "@") + to_string(dest, this)))
 										return true;
 								} while (st->parentClass && (st = static_pointer_cast<ClassNode>(resolveCustomType(st->parentClass))));
 
@@ -279,7 +279,7 @@ bool Compiler::areTypesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<Type
 									auto scope = scopeOf(st);
 									assert(scope);
 
-									if (scope->members.count("operator@" + to_string(dest)))
+									if (scope->members.count("operator@" + to_string(dest, this)))
 										return true;
 								} while (st);
 							}
@@ -316,7 +316,7 @@ bool Compiler::areTypesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<Type
 
 		assert(scope);
 
-		if (scope->members.count("operator@" + to_string(dest)))
+		if (scope->members.count("operator@" + to_string(dest, this)))
 			return true;
 		return false;
 	}
@@ -340,14 +340,14 @@ shared_ptr<AstNode> Compiler::resolveCustomType(shared_ptr<CustomTypeNameNode> t
 		throw FatalCompilationError(
 			Message(
 				Location(typeName->getLocation()),
-				MSG_ERROR,
+				MessageType::Error,
 				"Expecting a static identifier"));
 
 	throw FatalCompilationError(
 		Message(
 			Location(typeName->getLocation()),
-			MSG_ERROR,
-			"`" + to_string(typeName->ref) + "' was not found"));
+			MessageType::Error,
+			"`" + to_string(typeName->ref, this) + "' was not found"));
 }
 
 bool Compiler::isSameType(shared_ptr<TypeNameNode> x, shared_ptr<TypeNameNode> y) {

@@ -6,11 +6,11 @@
 
 namespace slake {
 	namespace slkc {
-		enum MessageType {
-			MSG_INFO = 0,
-			MSG_NOTE,
-			MSG_WARN,
-			MSG_ERROR
+		enum class MessageType {
+			Info = 0,
+			Note,
+			Warn,
+			Error
 		};
 
 		struct Message {
@@ -23,7 +23,7 @@ namespace slake {
 			}
 		};
 
-		struct FatalCompilationError : public std::runtime_error {
+		class FatalCompilationError : public std::runtime_error {
 		public:
 			Message message;
 
@@ -69,10 +69,10 @@ namespace slake {
 				STMT,	 // As a statement
 				LVALUE,	 // As a lvalue
 				RVALUE,	 // As a rvalue
-				CALL,	 // As target of the call
+				CALL,	 // As the target of a call
 			};
 
-			/// @brief Statement-level context
+			/// @brief Statement level context
 			struct MinorContext {
 				shared_ptr<TypeNameNode> expectedType;
 				shared_ptr<Scope> curScope;
@@ -85,10 +85,12 @@ namespace slake {
 				bool isLastCallTargetStatic = true;
 				std::set<AstNode *> resolvedOwners;
 
+				deque<shared_ptr<TypeNameNode>> argTypes;
+
 				shared_ptr<AstNode> evalDest, thisDest;
 			};
 
-			/// @brief Block-level context
+			/// @brief Block level context
 			struct MajorContext {
 				deque<MinorContext> savedMinorContexts;
 				MinorContext curMinorContext;
@@ -178,13 +180,20 @@ namespace slake {
 			/// @param resolvedPartsOut Nodes referred by reference entries respectively.
 			bool resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut);
 
+			FnOverloadingRegistry *argDependentLookup(Location loc, FnNode *fn, const deque<shared_ptr<TypeNameNode>> &argTypes);
+
 			shared_ptr<Scope> scopeOf(shared_ptr<AstNode> node);
 			shared_ptr<AstNode> resolveCustomType(shared_ptr<CustomTypeNameNode> typeName);
 
 			bool isSameType(shared_ptr<TypeNameNode> x, shared_ptr<TypeNameNode> y);
 
+			string mangleName(
+				string name,
+				const deque<shared_ptr<TypeNameNode>> &argTypes,
+				bool isConst);
+
 			void _getFullName(MemberNode *member, Ref &ref);
-			Ref getFullName(shared_ptr<MemberNode> member);
+			Ref getFullName(MemberNode *member);
 
 			void compileExpr(shared_ptr<ExprNode> expr);
 			inline void compileExpr(shared_ptr<ExprNode> expr, EvalPurpose evalPurpose, shared_ptr<AstNode> evalDest, shared_ptr<AstNode> thisDest = {}) {
@@ -207,7 +216,14 @@ namespace slake {
 			bool isDynamicMember(shared_ptr<AstNode> member);
 
 			inline uint32_t allocLocalVar(string name, shared_ptr<TypeNameNode> type) {
-				uint32_t index = curMajorContext.localVars.size();
+				if (curMajorContext.localVars.size() > UINT32_MAX)
+					throw FatalCompilationError(
+						Message(
+							type->getLocation(),
+							MessageType::Error,
+							"Number limit of local variables exceeded"));
+
+				uint32_t index = (uint32_t)curMajorContext.localVars.size();
 
 				curMajorContext.localVars[name] = make_shared<LocalVarNode>(index, type);
 				curFn->insertIns(Opcode::LVAR, type);
@@ -220,7 +236,17 @@ namespace slake {
 				return curMajorContext.curRegCount++;
 			}
 
+			set<ModuleValue *> importedModules;
+
+			unique_ptr<ifstream> moduleLocator(Runtime *rt, ValueRef<RefValue> ref);
+			void importDefinitions(ModuleValue *mod);
+			void importDefinitions(Value* value);
+			shared_ptr<TypeNameNode> toTypeName(slake::Type runtimeType);
+
+			void mergeContinuousRegAllocs(shared_ptr<CompiledFnNode> fn);
+
 			friend class AstVisitor;
+			friend string std::to_string(shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slkc::Compiler *compiler, bool asOperatorName);
 
 		public:
 			deque<Message> messages;

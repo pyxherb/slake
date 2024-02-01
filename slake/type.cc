@@ -37,7 +37,7 @@ void Type::loadDeferredType(const Runtime *rt) const {
 	if (!isLoadingDeferred())
 		return;
 
-	auto ref = (RefValue *)*getCustomTypeExData();
+	auto ref = (RefValue *)getCustomTypeExData().get();
 	auto typeValue = rt->resolveRef(ref);
 	if (!typeValue)
 		throw NotFoundError("Value referenced by the type was not found", ref);
@@ -80,7 +80,7 @@ bool slake::isConvertible(Type src, Type dest) {
 			}
 		}
 		case TypeId::OBJECT: {
-			ClassValue *srcType = (ClassValue *)*src.getCustomTypeExData();
+			ClassValue *srcType = (ClassValue *)src.getCustomTypeExData().get();
 			switch (dest.typeId) {
 				case TypeId::I8:
 					return srcType->getMember("operator@i8") ? true : false;
@@ -107,17 +107,17 @@ bool slake::isConvertible(Type src, Type dest) {
 				case TypeId::OBJECT: {
 					switch (dest.getCustomTypeExData()->getType().typeId) {
 						case TypeId::CLASS: {
-							auto destType = (ClassValue *)*dest.getCustomTypeExData();
+							auto destType = (ClassValue *)dest.getCustomTypeExData().get();
 							return srcType->getMember("operator@" + srcType->getRuntime()->getFullName(destType)) ? true : false;
 						}
 						case TypeId::INTERFACE: {
-							auto destType = (InterfaceValue *)*dest.getCustomTypeExData();
+							auto destType = (InterfaceValue *)dest.getCustomTypeExData().get();
 							if (srcType->hasImplemented(destType))
 								return true;
 							return false;
 						}
 						case TypeId::TRAIT: {
-							auto destType = (TraitValue *)*dest.getCustomTypeExData();
+							auto destType = (TraitValue *)dest.getCustomTypeExData().get();
 							if (srcType->consistsOf(destType))
 								return true;
 							return false;
@@ -162,8 +162,8 @@ bool slake::isCompatible(Type a, Type b) {
 				case TypeId::CLASS: {
 					switch (b.typeId) {
 						case TypeId::OBJECT:
-							for (auto i = ((ClassValue *)*b.getCustomTypeExData()); i; i = (ClassValue *)i->getParent()) {
-								if (i == *b.getCustomTypeExData())
+							for (auto i = ((ClassValue *)b.getCustomTypeExData().get()); i; i = (ClassValue *)i->getParent()) {
+								if (i == b.getCustomTypeExData().get())
 									return true;
 							}
 							return false;
@@ -176,7 +176,7 @@ bool slake::isCompatible(Type a, Type b) {
 				case TypeId::INTERFACE: {
 					switch (b.typeId) {
 						case TypeId::OBJECT:
-							return ((ClassValue *)*b.getCustomTypeExData())->hasImplemented((InterfaceValue *)*a.getCustomTypeExData());
+							return ((ClassValue *)b.getCustomTypeExData().get())->hasImplemented((InterfaceValue *)a.getCustomTypeExData().get());
 						case TypeId::NONE:
 							return true;
 						default:
@@ -186,7 +186,7 @@ bool slake::isCompatible(Type a, Type b) {
 				case TypeId::TRAIT: {
 					switch (b.typeId) {
 						case TypeId::OBJECT:
-							return ((ClassValue *)*b.getCustomTypeExData())->consistsOf((TraitValue *)*a.getCustomTypeExData());
+							return ((ClassValue *)b.getCustomTypeExData().get())->consistsOf((TraitValue *)a.getCustomTypeExData().get());
 						case TypeId::NONE:
 							return true;
 						default:
@@ -246,8 +246,8 @@ std::string std::to_string(const slake::Type &&type, const slake::Runtime *rt) {
 			return to_string(type.getArrayExData(), rt) + "[]";
 		case TypeId::OBJECT: {
 			if (type.isLoadingDeferred())
-				return "@" + std::to_string((RefValue *)*type.getCustomTypeExData());
-			return "@" + rt->getFullName((MemberValue *)*type.getCustomTypeExData());
+				return "@" + std::to_string((RefValue *)type.getCustomTypeExData().get());
+			return "@" + rt->getFullName((MemberValue *)type.getCustomTypeExData().get());
 		}
 		case TypeId::ANY:
 			return "any";

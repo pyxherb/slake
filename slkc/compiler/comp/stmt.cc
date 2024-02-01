@@ -30,7 +30,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 
 				throw FatalCompilationError(
 					{ s->getLocation(),
-						MSG_ERROR,
+						MessageType::Error,
 						"No initializer was found, unable to deduce the type" });
 
 			initValueFound:;
@@ -40,7 +40,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 				if (curMajorContext.localVars.count(i.first))
 					throw FatalCompilationError(
 						{ i.second.loc,
-							MSG_ERROR,
+							MessageType::Error,
 							"Redefinition of local variable `" + i.first + "'" });
 
 				auto initValueType = evalExprType(i.second.initValue);
@@ -52,7 +52,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 						if (!areTypesConvertible(initValueType, s->type))
 							throw FatalCompilationError(
 								{ i.second.initValue->getLocation(),
-									MSG_ERROR,
+									MessageType::Error,
 									"Incompatible initial value type" });
 
 						compileExpr(make_shared<CastExprNode>(i.second.initValue->getLocation(), s->type, i.second.initValue), EvalPurpose::RVALUE, make_shared<LocalVarRefNode>(index));
@@ -65,7 +65,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 		}
 		case STMT_BREAK:
 			if (!curMajorContext.curMinorContext.breakLabel.empty())
-				throw FatalCompilationError({ stmt->getLocation(), MSG_ERROR, "Unexpected break statement" });
+				throw FatalCompilationError({ stmt->getLocation(), MessageType::Error, "Unexpected break statement" });
 			if (curMajorContext.curMinorContext.breakScopeLevel < curMajorContext.curScopeLevel)
 				curFn->insertIns(
 					Opcode::LEAVE,
@@ -74,7 +74,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 			break;
 		case STMT_CONTINUE:
 			if (!curMajorContext.curMinorContext.continueLabel.size())
-				throw FatalCompilationError({ stmt->getLocation(), MSG_ERROR, "Unexpected continue statement" });
+				throw FatalCompilationError({ stmt->getLocation(), MessageType::Error, "Unexpected continue statement" });
 			curFn->insertIns(Opcode::JMP, make_shared<LabelRefNode>(curMajorContext.curMinorContext.continueLabel));
 			break;
 		case STMT_FOR: {
@@ -166,7 +166,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 
 			if (!s->returnValue) {
 				if (returnType->getTypeId() != TYPE_VOID)
-					throw FatalCompilationError({ stmt->getLocation(), MSG_ERROR, "Must return a value" });
+					throw FatalCompilationError({ stmt->getLocation(), MessageType::Error, "Must return a value" });
 				else
 					curFn->insertIns(Opcode::RET, {});
 			} else {
@@ -202,7 +202,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 
 			if (!s->returnValue) {
 				if (curFn->returnType->getTypeId() != TYPE_VOID)
-					throw FatalCompilationError({ stmt->getLocation(), MSG_ERROR, "Must yield a value" });
+					throw FatalCompilationError({ stmt->getLocation(), MessageType::Error, "Must yield a value" });
 				else
 					curFn->insertIns(Opcode::YIELD, {});
 			} else {
@@ -325,7 +325,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 						// The default case is already exist.
 						throw FatalCompilationError(
 							{ curCase.loc,
-								MSG_ERROR,
+								MessageType::Error,
 								"Duplicated default case" });
 					defaultCase = &curCase;
 				}

@@ -39,7 +39,7 @@ class SlakeErrorListener : public antlr4::BaseErrorListener {
 		throw FatalCompilationError(
 			Message(
 				Location(line, charPositionInLine),
-				MSG_ERROR,
+				MessageType::Error,
 				msg));
 	}
 };
@@ -118,6 +118,27 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 	for (auto &i : vars) {
 		slxfmt::VarDesc vad = {};
 
+		//
+		// Check if the member will shadow member(s) from parent scopes.
+		//
+		switch (scope->owner->getNodeType()) {
+			case AST_CLASS: {
+				auto j = (ClassNode*)(scope->owner);
+
+				while (j->parentClass) {
+					j = (ClassNode*)resolveCustomType(j->parentClass).get();
+					if (j->scope->members.count(i.first))
+						throw FatalCompilationError(
+							Message(
+								i.second->getLocation(),
+								MessageType::Error,
+								"This member shadows members from parent classes"));
+				};
+
+				break;
+			}
+		}
+
 		if (i.second->access & ACCESS_PUB)
 			vad.flags |= slxfmt::VAD_PUB;
 		if (i.second->access & ACCESS_STATIC)
@@ -142,7 +163,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 				throw FatalCompilationError(
 					Message(
 						i.second->initValue->getLocation(),
-						MSG_ERROR,
+						MessageType::Error,
 						"Expecting a compiling-time expression"));
 		}
 	}
@@ -152,17 +173,21 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 			string mangledFnName = i.first;
 
 			if (i.first != "new") {
-				bool hasVarArg = j.paramIndices.count("...");
+				{
+					deque<shared_ptr<TypeNameNode>> argTypes;
 
-				for (size_t k = 0; k < j.params.size() - hasVarArg; ++k) {
-					mangledFnName += "@" + to_string(j.params[k].type);
+					for (auto &k : j.params) {
+						argTypes.push_back(k.type);
+					}
+
+					mangledFnName = mangleName(i.first, argTypes, false);
 				}
 
 				if (compiledFuncs.count(mangledFnName)) {
 					throw FatalCompilationError(
 						Message(
-							i.second->getLocation(),
-							MSG_ERROR,
+							j.loc,
+							MessageType::Error,
 							"Duplicated function overloading"));
 				}
 			}
@@ -188,6 +213,9 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 
 	_write(os, (uint32_t)compiledFuncs.size());
 	for (auto &i : compiledFuncs) {
+		// Do some optimizations first
+		mergeContinuousRegAllocs(i.second);
+
 		slxfmt::FnDesc fnd = {};
 		bool hasVarArg = false;
 
@@ -229,7 +257,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 				throw FatalCompilationError(
 					Message(
 						i.second->getLocation(),
-						MSG_ERROR,
+						MessageType::Error,
 						"Too many operands"));
 			ih.nOperands = (uint8_t)j.operands.size();
 
@@ -243,7 +271,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 							throw FatalCompilationError(
 								Message(
 									i.second->getLocation(),
-									MSG_ERROR,
+									MessageType::Error,
 									"Undefined label: " + static_pointer_cast<LabelRefNode>(k)->label));
 						k = make_shared<U32LiteralExprNode>(i.second->getLocation(), i.second->labels.at(label));
 					}
@@ -277,7 +305,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		_write(os, i.first.data(), i.first.length());
 
 		if (i.second->parentClass)
-			compileRef(os, getFullName(static_pointer_cast<MemberNode>(resolveCustomType(i.second->parentClass))));
+			compileRef(os, getFullName((MemberNode*)resolveCustomType(i.second->parentClass).get()));
 
 		for (auto &j : i.second->implInterfaces)
 			compileRef(os, j->ref);
@@ -410,7 +438,7 @@ void Compiler::compileTypeName(std::ostream &fs, shared_ptr<TypeNameNode> typeNa
 
 			auto dest = resolveCustomType(static_pointer_cast<CustomTypeNameNode>(typeName));
 
-			compileRef(fs, getFullName(static_pointer_cast<MemberNode>(dest)));
+			compileRef(fs, getFullName((MemberNode*)dest.get()));
 			break;
 		}
 		default:

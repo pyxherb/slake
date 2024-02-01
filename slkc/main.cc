@@ -1,5 +1,6 @@
 #include "compiler/compiler.h"
 #include "decompiler/decompiler.h"
+#include "lsp/lsp.h"
 
 #include <filesystem>
 #include <fstream>
@@ -22,13 +23,15 @@ static inline char *fetchArg(int argc, char **argv, int &i) {
 
 enum AppAction : uint8_t {
 	ACT_COMPILE = 0,
-	ACT_DUMP
+	ACT_DUMP,
+	ACT_LSP
 };
 
 std::string srcPath = "", outPath = "";
 
 AppAction action = ACT_COMPILE;
 std::deque<std::string> modulePaths;
+uint16_t lspServerPort = 8080;
 
 struct CmdLineAction {
 	const char *options;
@@ -50,6 +53,21 @@ CmdLineAction cmdLineActions[] = {
 	  "--no-source-location-info\0",
 		[](int argc, char **argv, int &i) {
 			slake::decompiler::decompilerFlags |= slake::decompiler::DECOMP_SRCLOCINFO;
+		} },
+	{ "-s\0"
+	  "--language-server\0",
+		[](int argc, char **argv, int &i) {
+			action = ACT_LSP;
+		} },
+	{ "-p\0"
+	  "--server-port",
+		[](int argc, char** argv, int& i) {
+			uint32_t port = strtoul(fetchArg(argc, argv, i), nullptr, 10);
+
+			if (port > UINT16_MAX)
+				throw ArgumentError("Invalid port number");
+
+			lspServerPort = port;
 		} }
 };
 
@@ -72,14 +90,14 @@ int main(int argc, char **argv) {
 				srcPath = arg;
 			}
 		} catch (ArgumentError &e) {
-			fprintf(stderr, "Error: %s", e.what());
+			fprintf(stderr, "Error: %s\n", e.what());
 			return EINVAL;
 		}
 
 		switch (action) {
 			case ACT_COMPILE: {
 				if (!srcPath.length()) {
-					puts("Error: Missing input file");
+					fputs("Error: Missing input file\n", stderr);
 					return EINVAL;
 				}
 
@@ -100,7 +118,7 @@ int main(int argc, char **argv) {
 				try {
 					compiler->compile(is, os);
 				} catch (FatalCompilationError e) {
-					printf("Error at %zd, %zd: %s\n", e.message.loc.line, e.message.loc.column, e.message.msg.c_str());
+					fprintf(stderr, "Error at %zd, %zd: %s\n", e.message.loc.line, e.message.loc.column, e.message.msg.c_str());
 					return -1;
 				}
 
@@ -116,6 +134,8 @@ int main(int argc, char **argv) {
 				fs.close();
 				break;
 			}
+			case ACT_LSP:
+				return slake::slkc::lsp::lspServerMain(lspServerPort);
 			default:
 				assert(false);
 		}

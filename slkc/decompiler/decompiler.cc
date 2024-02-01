@@ -17,9 +17,9 @@ void slake::decompiler::decompile(std::istream &fs, std::ostream &os) {
 	auto rt = std::make_unique<slake::Runtime>();
 	auto mod = rt->loadModule(fs, 0);
 
-	auto modName = rt->getFullName(*mod);
+	auto modName = rt->getFullName(mod.get());
 
-	for (auto &i : **mod)
+	for (auto &i : *mod.get())
 		decompileValue(rt.get(), i.second, os);
 }
 
@@ -129,7 +129,7 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 
 					for (size_t j = 0; j < ins->operands.size(); ++j) {
 						os << (j ? ", " : " ");
-						decompileValue(rt, *ins->operands[j], os, indentLevel);
+						decompileValue(rt, ins->operands[j].get(), os, indentLevel);
 					}
 
 					os << ";\n";

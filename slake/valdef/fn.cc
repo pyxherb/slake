@@ -5,14 +5,28 @@ using namespace slake;
 Type BasicFnValue::getType() const { return TypeId::FN; }
 Type BasicFnValue::getReturnType() const { return returnType; }
 
+BasicFnValue::~BasicFnValue() {
+	reportSizeFreedToRuntime(sizeof(*this) - sizeof(MemberValue));
+}
+
+slake::FnValue::FnValue(Runtime *rt, uint32_t nIns, AccessModifier access, Type returnType)
+	: nIns(nIns),
+	  BasicFnValue(rt, access, returnType) {
+	if (nIns)
+		body = new Instruction[nIns];
+	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(BasicFnValue) + sizeof(Instruction) * nIns);
+}
+
 FnValue::~FnValue() {
-	// Because the runtime will release all values, so we fill the body with 0
+	// Because the runtime will release all values, so we just fill the body with 0
 	// (because the references do not release their held object).
 	if (_rt->_flags & _RT_DELETING)
 		memset((void *)body, 0, sizeof(Instruction) * nIns);
 
 	if (body)
 		delete[] body;
+
+	reportSizeFreedToRuntime(sizeof(*this) - sizeof(BasicFnValue) + sizeof(Instruction) * nIns);
 }
 
 ValueRef<> FnValue::exec(std::shared_ptr<Context> context) const {
@@ -86,6 +100,15 @@ ValueRef<> FnValue::call(std::deque<ValueRef<>> args) const {
 	return exec(context);
 }
 
+slake::NativeFnValue::NativeFnValue(Runtime *rt, NativeFnCallback body, AccessModifier access, Type returnType)
+	: BasicFnValue(rt, access | ACCESS_NATIVE, returnType), body(body) {
+	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(BasicFnValue));
+}
+
+NativeFnValue::~NativeFnValue() {
+	reportSizeFreedToRuntime(sizeof(*this) - sizeof(BasicFnValue));
+}
+
 ValueRef<> NativeFnValue::call(std::deque<ValueRef<>> args) const {
 	return body(_rt, args);
 }
@@ -96,6 +119,46 @@ Value *FnValue::duplicate() const {
 	*v = *this;
 
 	return (Value *)v;
+}
+
+FnValue &slake::FnValue::operator=(const FnValue &x) {
+	((BasicFnValue &)*this) = (BasicFnValue &)x;
+
+	// Delete existing function body.
+	if (body) {
+		delete[] body;
+		body = nullptr;
+	}
+
+	// Copy the function body if the source function is not abstract.
+	if (x.body) {
+		body = new Instruction[x.nIns];
+
+		// Copy each instruction.
+		for (size_t i = 0; i < x.nIns; ++i) {
+			// Duplicate current instruction from the source function.
+			auto ins = x.body[i];
+
+			// Copy each operand.
+			for (size_t j = 0; j < ins.operands.size(); ++j) {
+				auto &operand = ins.operands[j];
+				if (operand)
+					operand = operand->duplicate();
+			}
+
+			// Move current instruction into the function body.
+			body[i] = ins;
+		}
+	}
+
+	if (nIns > x.nIns)
+		reportSizeFreedToRuntime(sizeof(Instruction) * (nIns - x.nIns));
+	else
+		reportSizeAllocatedToRuntime(sizeof(Instruction) * (x.nIns - nIns));
+
+	nIns = x.nIns;
+
+	return *this;
 }
 
 Value *NativeFnValue::duplicate() const {

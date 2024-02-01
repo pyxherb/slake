@@ -24,7 +24,4 @@ add_subdirectory("compiler")
 add_subdirectory("decompiler")
 add_subdirectory("lsp")
 
-if(WIN32)
-    target_link_libraries(slkc PRIVATE ws2_32)
-endif()
 #add_subdirectory("decompiler")

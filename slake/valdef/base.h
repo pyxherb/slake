@@ -70,8 +70,9 @@ namespace slake {
 		inline ~ValueRef() {
 			release();
 		}
-		inline T *operator*() { return _value; }
-		inline const T *operator*() const { return _value; }
+
+		inline const T *get() const { return _value; }
+		inline T *get() { return _value; }
 		inline const T *operator->() const { return _value; }
 		inline T *operator->() { return _value; }
 
@@ -98,8 +99,14 @@ namespace slake {
 			return *this;
 		}
 
-		inline bool operator<(const ValueRef<> rhs) const noexcept {
+		inline bool operator<(const ValueRef<T>& rhs) const noexcept {
 			return _value < rhs._value;
+		}
+		inline bool operator>(const ValueRef<T>& rhs) const noexcept {
+			return _value > rhs._value;
+		}
+		inline bool operator==(const ValueRef<T>& rhs) const noexcept {
+			return _value == rhs._value;
 		}
 
 		inline operator bool() const {
@@ -118,7 +125,8 @@ namespace slake {
 		// The value will never be freed if its host reference count is not 0.
 		mutable std::atomic_uint32_t hostRefCount = 0;
 
-		void reportSizeToRuntime(long size);
+		void reportSizeAllocatedToRuntime(size_t size);
+		void reportSizeFreedToRuntime(size_t size);
 
 		/// @brief This method will be executed when the reference count becomes zero, the default action is delete the value.
 		virtual void onRefZero();

@@ -9,14 +9,14 @@
 
 namespace slake {
 	class MemberValue : public Value, public AccessModified {
-	protected:
+	public:
 		Value *_parent = nullptr;
 		std::string _name;
-		GenericArgList _genericArgs;
 
 		friend bool slake::isConvertible(Type a, Type b);
 
-	public:
+		GenericArgList _genericArgs;
+
 		MemberValue(Runtime *rt, AccessModifier access);
 		virtual ~MemberValue();
 

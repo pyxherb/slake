@@ -9,12 +9,9 @@ namespace slake {
 		int32_t index;
 		bool unwrapValue;
 
-		inline LocalVarRefValue(Runtime *rt, int32_t index, bool unwrapValue = false)
-			: Value(rt), index(index), unwrapValue(unwrapValue) {
-			reportSizeToRuntime(sizeof(*this) - sizeof(Value));
-		}
+		LocalVarRefValue(Runtime *rt, int32_t index, bool unwrapValue = false);
+		virtual ~LocalVarRefValue();
 
-		virtual ~LocalVarRefValue() = default;
 		virtual inline Type getType() const override { return TypeId::LVAR_REF; }
 
 		virtual Value *duplicate() const override;
@@ -35,10 +32,10 @@ namespace slake {
 
 		inline RegRefValue(Runtime *rt, int32_t index, bool unwrapValue = false)
 			: Value(rt), index(index), unwrapValue(unwrapValue) {
-			reportSizeToRuntime(sizeof(*this) - sizeof(Value));
+			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Value));
 		}
 
-		virtual ~RegRefValue() = default;
+		virtual ~RegRefValue();
 		virtual inline Type getType() const override { return TypeId::REG_REF; }
 
 		virtual Value *duplicate() const override;
@@ -59,10 +56,10 @@ namespace slake {
 
 		inline ArgRefValue(Runtime *rt, uint32_t index, bool unwrapValue = false)
 			: Value(rt), index(index), unwrapValue(unwrapValue) {
-			reportSizeToRuntime(sizeof(*this) - sizeof(Value));
+			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Value));
 		}
 
-		virtual ~ArgRefValue() = default;
+		virtual ~ArgRefValue();
 		virtual inline Type getType() const override { return TypeId::ARG_REF; }
 
 		virtual Value *duplicate() const override;

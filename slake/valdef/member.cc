@@ -5,7 +5,7 @@ using namespace slake;
 
 MemberValue::MemberValue(Runtime *rt, AccessModifier access)
 	: Value(rt), AccessModified(access) {
-	reportSizeToRuntime(sizeof(*this) - sizeof(Value));
+	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Value));
 	if (_parent)
 		_parent->incRefCount();
 }
@@ -13,6 +13,7 @@ MemberValue::MemberValue(Runtime *rt, AccessModifier access)
 MemberValue::~MemberValue() {
 	if ((!getRefCount()) && !(_rt->_flags & _RT_DELETING) && _parent)
 		_parent->decRefCount();
+	reportSizeFreedToRuntime(sizeof(*this) - sizeof(Value));
 }
 
 std::string MemberValue::getName() const {

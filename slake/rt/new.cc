@@ -12,7 +12,7 @@ ObjectValue *slake::Runtime::_newClassInstance(ClassValue *cls) {
 
 	if (cls->parentClass.typeId == TypeId::CLASS) {
 		cls->parentClass.loadDeferredType(this);
-		instance->_parent = _newClassInstance((ClassValue *)*cls->parentClass.getCustomTypeExData());
+		instance->_parent = _newClassInstance((ClassValue *)cls->parentClass.getCustomTypeExData().get());
 	}
 
 	for (auto i : cls->_members) {
@@ -27,7 +27,7 @@ ObjectValue *slake::Runtime::_newClassInstance(ClassValue *cls) {
 				if (auto initValue = ((VarValue *)i.second)->getData(); initValue)
 					var->setData(initValue);
 
-				instance->addMember(i.first, *var);
+				instance->addMember(i.first, var.get());
 				break;
 			}
 			case TypeId::FN: {
@@ -45,7 +45,7 @@ ObjectValue *slake::Runtime::_newGenericClassInstance(ClassValue *cls, std::dequ
 
 	if (cls->parentClass.typeId == TypeId::CLASS) {
 		cls->parentClass.loadDeferredType(this);
-		instance->_parent = _newClassInstance((ClassValue *)*cls->parentClass.getCustomTypeExData());
+		instance->_parent = _newClassInstance((ClassValue *)cls->parentClass.getCustomTypeExData().get());
 	}
 
 	for (auto i : cls->_members) {
@@ -60,7 +60,7 @@ ObjectValue *slake::Runtime::_newGenericClassInstance(ClassValue *cls, std::dequ
 				if (auto initValue = ((VarValue *)i.second)->getData(); initValue)
 					var->setData(initValue);
 
-				instance->addMember(i.first, *var);
+				instance->addMember(i.first, var.get());
 				break;
 			}
 			case TypeId::FN: {

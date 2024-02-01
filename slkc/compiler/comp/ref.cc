@@ -69,7 +69,10 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 	if (ref[0].name == "base") {
 		auto newRef = ref;
 		newRef.pop_front();
-		return _resolveRefWithOwner(scope, newRef, partsOut);
+
+		bool result = _resolveRefWithOwner(scope, newRef, partsOut);
+		partsOut.push_front({ Ref{ ref.front() }, make_shared<BaseRefNode>() });
+		return result;
 	}
 
 	if (shared_ptr<MemberNode> m; scope->members.count(ref[0].name)) {
@@ -119,8 +122,8 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 							throw FatalCompilationError(
 								Message(
 									owner->parentClass->getLocation(),
-									MSG_ERROR,
-									"`" + to_string(owner->parentClass) + "' is not a class"));
+									MessageType::Error,
+									"`" + to_string(owner->parentClass, this) + "' is not a class"));
 						}
 						if (_resolveRef(scopeOf(p).get(), ref, partsOut))
 							return true;
@@ -129,8 +132,8 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 						throw FatalCompilationError(
 							Message(
 								owner->parentClass->getLocation(),
-								MSG_ERROR,
-								"Class `" + to_string(owner->parentClass) + "' was not found"));
+								MessageType::Error,
+								"Class `" + to_string(owner->parentClass, this) + "' was not found"));
 					}
 				}
 
@@ -141,8 +144,8 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 							throw FatalCompilationError(
 								Message(
 									i->getLocation(),
-									MSG_ERROR,
-									"`" + to_string(i) + "' is not an interface"));
+									MessageType::Error,
+									"`" + to_string(i, this) + "' is not an interface"));
 						}
 						if (_resolveRef(scopeOf(p).get(), ref, partsOut))
 							return true;
@@ -151,8 +154,8 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 						throw FatalCompilationError(
 							Message(
 								i->getLocation(),
-								MSG_ERROR,
-								"Interface `" + to_string(i) + "' was not found"));
+								MessageType::Error,
+								"Interface `" + to_string(i, this) + "' was not found"));
 					}
 				}
 
@@ -168,8 +171,8 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 							throw FatalCompilationError(
 								Message(
 									i->getLocation(),
-									MSG_ERROR,
-									"`" + to_string(i) + "' is not an interface"));
+									MessageType::Error,
+									"`" + to_string(i, this) + "' is not an interface"));
 						}
 						if (_resolveRef(scopeOf(p).get(), ref, partsOut))
 							return true;
@@ -178,8 +181,8 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 						throw FatalCompilationError(
 							Message(
 								i->getLocation(),
-								MSG_ERROR,
-								"Interface `" + to_string(i) + "' was not found"));
+								MessageType::Error,
+								"Interface `" + to_string(i, this) + "' was not found"));
 					}
 				}
 				break;
@@ -225,10 +228,10 @@ void Compiler::_getFullName(MemberNode *member, Ref &ref) {
 	_getFullName(member->parent, ref);
 }
 
-slake::slkc::Ref Compiler::getFullName(shared_ptr<MemberNode> member) {
+slake::slkc::Ref Compiler::getFullName(MemberNode *member) {
 	Ref ref;
 
-	_getFullName(member.get(), ref);
+	_getFullName(member, ref);
 
 	return ref;
 }

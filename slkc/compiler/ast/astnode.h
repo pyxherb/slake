@@ -32,7 +32,8 @@ namespace slake {
 
 			AST_LVAR_REF,
 			AST_REG_REF,
-			AST_THIS_REF
+			AST_THIS_REF,
+			AST_BASE_REF
 		};
 
 		struct Location {

@@ -12,19 +12,27 @@ namespace slake {
 
 	public:
 		inline LiteralValue(Runtime *rt, T data) : Value(rt), _data(data) {
-			reportSizeToRuntime(sizeof(*this) - sizeof(Value));
+			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Value));
 			if constexpr (std::is_same<T, std::string>::value) {
-				reportSizeToRuntime((long)data.size());
+				reportSizeAllocatedToRuntime(data.size());
 			}
 		}
-		virtual ~LiteralValue() = default;
+		virtual inline ~LiteralValue() {
+			if constexpr (std::is_same<T, std::string>::value) {
+				reportSizeFreedToRuntime(_data.size());
+			}
+			reportSizeFreedToRuntime(sizeof(*this) - sizeof(Value));
+		}
 
 		virtual inline Type getType() const override { return VT; }
 
 		virtual inline const T &getData() const { return _data; }
 		virtual inline void setData(T &data) {
 			if constexpr (std::is_same<T, std::string>::value) {
-				reportSizeToRuntime(((long)data.size()) - (long)_data.size());
+				if(data.size() < _data.size()) {
+					reportSizeFreedToRuntime(_data.size() - data.size());
+				} else
+					reportSizeAllocatedToRuntime(data.size() - _data.size());
 			}
 			_data = data;
 		}

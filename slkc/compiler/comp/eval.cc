@@ -290,9 +290,6 @@ static shared_ptr<ExprNode> _evalConstBinaryOpExpr(
 }
 
 shared_ptr<ExprNode> Compiler::evalConstExpr(shared_ptr<ExprNode> expr) {
-	// stub
-	return {};
-
 	switch (expr->getExprType()) {
 		case EXPR_I8:
 		case EXPR_I16:
@@ -574,16 +571,16 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 					case AST_TRAIT:
 						throw FatalCompilationError(
 							{ e->getLocation(),
-								MSG_ERROR,
-								"`" + to_string(e->ref) + "' is a type" });
+								MessageType::Error,
+								"`" + to_string(e->ref, this) + "' is a type" });
 					default:
 						assert(false);
 				}
 			} else {
 				throw FatalCompilationError(
 					{ e->getLocation(),
-						MSG_ERROR,
-						"Identifier not found: `" + to_string(e->ref) + "'" });
+						MessageType::Error,
+						"Identifier not found: `" + to_string(e->ref, this) + "'" });
 			}
 
 			break;

@@ -27,11 +27,23 @@ namespace slake {
 
 			virtual inline NodeType getNodeType() const override { return AST_THIS_REF; }
 		};
+
+		class BaseRefNode : public AstNode {
+		public:
+			inline BaseRefNode() = default;
+			virtual ~BaseRefNode() = default;
+
+			virtual inline Location getLocation() const override { throw std::logic_error("Should not get location of a this reference"); }
+
+			virtual inline NodeType getNodeType() const override { return AST_BASE_REF; }
+		};
+
+		class Compiler;
 	}
 }
 
 namespace std {
-	string to_string(const slake::slkc::Ref& ref);
+	string to_string(const slake::slkc::Ref& ref, slake::slkc::Compiler* compiler);
 }
 
 #endif

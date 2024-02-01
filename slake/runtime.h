@@ -32,7 +32,7 @@ namespace slake {
 		inline void push(ValueRef<> v) {
 			if (dataStack.size() > SLAKE_STACK_MAX)
 				throw StackOverflowError("Stack overflowed");
-			dataStack.push_back(*v);
+			dataStack.push_back(v.get());
 		}
 
 		inline ValueRef<> pop() {
@@ -64,7 +64,7 @@ namespace slake {
 			if (off >= localVars.size())
 				throw InvalidLocalVarIndexError("Invalid local variable index", off);
 
-			return *localVars.at(off);
+			return localVars.at(off).get();
 		}
 
 		/// @brief Leave current minor frame.
@@ -122,12 +122,12 @@ namespace slake {
 		RootValue *_rootValue;
 
 		/// @brief Contains all created values.
-		std::unordered_set<Value *> _createdValues;
+		std::set<Value *> _createdValues;
 
 		/// @brief Extra target values for GC, all contained values will be released by the
-		/// garbage collector every GC cycle and this container will be cleared if the cycle
+		/// garbage collector every GC cycle and this container will be cleared when the cycle
 		/// was completed.
-		std::unordered_set<Value *> _extraGcTargets;
+		std::set<Value *> _extraGcTargets;
 
 		struct GenericLookupEntry {
 			Value *originalValue;
@@ -232,7 +232,7 @@ namespace slake {
 		/// @return Instantiated value.
 		Value *instantiateGenericValue(const Value *v, const std::deque<Type> &genericArgs) const;
 
-		/// @brief Resolve a reference to referred value.
+		/// @brief Resolve a reference and get the referenced value.
 		/// @param ref Reference to be resolved.
 		/// @param scopeValue Scope value for resolving.
 		/// @return Resolved value which is referred by the reference.
@@ -248,6 +248,8 @@ namespace slake {
 
 		std::string getFullName(const MemberValue *v) const;
 		std::string getFullName(const RefValue *v) const;
+
+		std::deque<RefEntry> getFullRef(const MemberValue *v) const;
 
 		/// @brief Get active context on specified thread.
 		/// @param id ID of specified thread.

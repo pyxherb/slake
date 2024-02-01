@@ -6,6 +6,11 @@ ContextValue::ContextValue(
 	Runtime *rt,
 	std::shared_ptr<Context> context)
 	: Value(rt), _context(context) {
+	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Value));
+}
+
+ContextValue::~ContextValue() {
+	reportSizeFreedToRuntime(sizeof(*this) - sizeof(Value));
 }
 
 ValueRef<> ContextValue::resume() {

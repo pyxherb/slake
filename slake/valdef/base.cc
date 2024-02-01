@@ -8,12 +8,13 @@ bool slake::_isRuntimeInDestruction(Runtime* runtime) {
 
 Value::Value(Runtime *rt) : _rt(rt) {
 	rt->_createdValues.insert(this);
-	reportSizeToRuntime(sizeof(*this));
+	reportSizeAllocatedToRuntime(sizeof(*this));
 }
 
 Value::~Value() {
 	_rt->invalidateGenericCache(this);
 	_rt->_createdValues.erase(this);
+	reportSizeFreedToRuntime(sizeof(*this));
 }
 
 MemberValue *Value::getMember(std::string name) {
@@ -35,6 +36,11 @@ void Value::onRefZero() {
 	delete this;
 }
 
-void Value::reportSizeToRuntime(long size) {
+void Value::reportSizeAllocatedToRuntime(size_t size) {
 	_rt->_szMemInUse += size;
+}
+
+void Value::reportSizeFreedToRuntime(size_t size) {
+	assert(_rt->_szMemInUse >= size);
+	_rt->_szMemInUse -= size;
 }

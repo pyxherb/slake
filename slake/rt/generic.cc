@@ -24,7 +24,7 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 			_instantiateGenericValue(value->_class, genericArgs);
 
 			if (value->_parent)
-				_instantiateGenericValue(*value->_parent, genericArgs);
+				_instantiateGenericValue(value->_parent.get(), genericArgs);
 			break;
 		}
 		case TypeId::ARRAY: {
@@ -90,7 +90,7 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 				for (size_t j = 0; j < ins.operands.size(); ++j) {
 					auto &operand = ins.operands[j];
 					if (operand && operand->getType() == TypeId::TYPENAME)
-						_instantiateGenericValue(((TypeNameValue *)*operand)->_data, genericArgs);
+						_instantiateGenericValue(((TypeNameValue *)operand.get())->_data, genericArgs);
 				}
 			}
 			break;
@@ -98,7 +98,7 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 		case TypeId::ALIAS: {
 			AliasValue* value = (AliasValue*)v;
 
-			value->_src = instantiateGenericValue(*value->_src, genericArgs);
+			value->_src = instantiateGenericValue(value->_src.get(), genericArgs);
 			break;
 		}
 		case TypeId::ROOT:

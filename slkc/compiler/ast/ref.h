@@ -16,7 +16,27 @@ namespace slake {
 				: loc(loc), name(name), genericArgs(genericArgs) {}
 		};
 
+		struct ModuleRefEntry {
+			Location loc;
+			string name;
+
+			inline ModuleRefEntry(Location loc, string name)
+				: loc(loc), name(name) {}
+
+			inline bool operator<(const ModuleRefEntry&rhs) const {
+				if(name < rhs.name)
+					return true;
+				if(name > rhs.name)
+					return false;
+				return loc < rhs.loc;
+			}
+		};
+
 		using Ref = deque<RefEntry>;
+		using ModuleRef = deque<ModuleRefEntry>;
+
+		Ref toRegularRef(const ModuleRef &ref);
+		ModuleRef toModuleRef(const Ref &ref);
 
 		class ThisRefNode : public AstNode {
 		public:
@@ -43,7 +63,12 @@ namespace slake {
 }
 
 namespace std {
-	string to_string(const slake::slkc::Ref& ref, slake::slkc::Compiler* compiler);
+	string to_string(const slake::slkc::Ref &ref, slake::slkc::Compiler *compiler);
+	string to_string(const slake::slkc::ModuleRef &ref);
 }
+
+// For module loading.
+// We don't strictly compare them.
+bool operator<(slake::slkc::ModuleRef lhs, slake::slkc::ModuleRef rhs);
 
 #endif

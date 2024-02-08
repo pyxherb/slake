@@ -7,6 +7,8 @@
 
 #include <slake/util/debug.h>
 
+#include <config.h>
+
 using namespace slake::slkc;
 
 class ArgumentError : public std::runtime_error {
@@ -42,7 +44,7 @@ CmdLineAction cmdLineActions[] = {
 	{ "-I\0"
 	  "--module-path\0",
 		[](int argc, char **argv, int &i) {
-			std::string path = fetchArg(argc, argv, i);
+			modulePaths.push_back(fetchArg(argc, argv, i));
 		} },
 	{ "-d\0"
 	  "--dump\0",
@@ -54,6 +56,7 @@ CmdLineAction cmdLineActions[] = {
 		[](int argc, char **argv, int &i) {
 			slake::decompiler::decompilerFlags |= slake::decompiler::DECOMP_SRCLOCINFO;
 		} },
+#if SLKC_WITH_LSP_ENABLED
 	{ "-s\0"
 	  "--language-server\0",
 		[](int argc, char **argv, int &i) {
@@ -61,7 +64,7 @@ CmdLineAction cmdLineActions[] = {
 		} },
 	{ "-p\0"
 	  "--server-port",
-		[](int argc, char** argv, int& i) {
+		[](int argc, char **argv, int &i) {
 			uint32_t port = strtoul(fetchArg(argc, argv, i), nullptr, 10);
 
 			if (port > UINT16_MAX)
@@ -69,6 +72,7 @@ CmdLineAction cmdLineActions[] = {
 
 			lspServerPort = port;
 		} }
+#endif
 };
 
 int main(int argc, char **argv) {
@@ -80,14 +84,15 @@ int main(int argc, char **argv) {
 				std::string arg = fetchArg(argc, argv, i);
 
 				for (uint16_t j = 0; j < sizeof(cmdLineActions) / sizeof(cmdLineActions[0]); j++) {
-					for (auto k = cmdLineActions[j].options; *k; k += std::strlen(k))
-						if (!std::strcmp(k, arg.c_str())) {
+					for (auto k = cmdLineActions[j].options; *k; k += strlen(k))
+						if (!strcmp(k, arg.c_str())) {
 							cmdLineActions[j].fn(argc, argv, i);
 							goto succeed;
 						}
 				}
-			succeed:
+
 				srcPath = arg;
+			succeed:;
 			}
 		} catch (ArgumentError &e) {
 			fprintf(stderr, "Error: %s\n", e.what());
@@ -110,10 +115,17 @@ int main(int argc, char **argv) {
 					}
 				}
 
-				std::ifstream is(srcPath, std::ios::binary);
-				std::ofstream os(outPath, std::ios::binary | std::ios::out);
+				std::ifstream is;
+				std::ofstream os;
+
+				is.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
+				os.exceptions(std::ios::failbit | std::ios::badbit);
+
+				is.open(srcPath, std::ios::binary);
+				os.open(outPath, std::ios::binary);
 
 				std::unique_ptr<Compiler> compiler = std::make_unique<Compiler>();
+				compiler->modulePaths = modulePaths;
 
 				try {
 					compiler->compile(is, os);
@@ -134,8 +146,10 @@ int main(int argc, char **argv) {
 				fs.close();
 				break;
 			}
+#if SLKC_WITH_LSP_ENABLED
 			case ACT_LSP:
 				return slake::slkc::lsp::lspServerMain(lspServerPort);
+#endif
 			default:
 				assert(false);
 		}

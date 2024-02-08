@@ -48,6 +48,14 @@ namespace slake {
 			inline Location(antlr4::Token *node)
 				: line(node->getLine()), column(node->getCharPositionInLine()) {
 			}
+
+			inline bool operator<(Location loc) const {
+				if (line < loc.line)
+					return true;
+				if (line > loc.line)
+					return false;
+				return column < loc.column;
+			}
 		};
 
 		class AstNode {

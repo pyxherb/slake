@@ -33,7 +33,7 @@ namespace slake {
 			virtual inline Location getLocation() const override { return _loc; }
 			virtual inline NodeType getNodeType() const override { return AST_VAR; }
 
-			virtual Ref getName() const override { return Ref({ RefEntry({}, name, {}) }); }
+			virtual RefEntry getName() const override { return RefEntry({}, name, {}); }
 		};
 
 		class LocalVarNode : public AstNode {

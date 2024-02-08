@@ -3,16 +3,11 @@
 
 #include "typename.h"
 #include <slake/access.h>
+#include <slake/valdef/generic.h>
 #include <string>
 
 namespace slake {
 	namespace slkc {
-		enum GenericFilter : uint8_t {
-			GFLT_EXTENDS = 0,
-			GFLT_IMPLS,
-			GFLT_CONSISTSOF
-		};
-
 		struct GenericQualifier {
 			GenericFilter filter;
 			shared_ptr<TypeNameNode> type;

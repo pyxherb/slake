@@ -26,8 +26,9 @@ namespace slake {
 		std::deque<ExceptionHandler> exceptHandlers;  // Exception handlers
 
 		std::deque<ValueRef<>> dataStack;  // Data stack
+		uint32_t nLocalVars = 0, nRegs = 0;
 
-		MinorFrame(Runtime *rt);
+		MinorFrame(uint32_t nLocalVars, uint32_t nRegs);
 
 		inline void push(ValueRef<> v) {
 			if (dataStack.size() > SLAKE_STACK_MAX)
@@ -69,6 +70,8 @@ namespace slake {
 
 		/// @brief Leave current minor frame.
 		inline void leave() {
+			localVars.resize(minorFrames.back().nLocalVars);
+			regs.resize(minorFrames.back().nRegs);
 			minorFrames.pop_back();
 		}
 	};
@@ -111,10 +114,12 @@ namespace slake {
 	constexpr LoadModuleFlags
 		// Do not put the module onto the path where corresponds to the module name.
 		LMOD_NOMODNAME = 0x01,
-		// Return if module that corresponds to the module name exists.
-		LMOD_RETIFEXISTS = 0x02,
+		// Return directly if module with such name exists.
+		LMOD_NORELOAD = 0x02,
 		// Throw an exception if module that corresponds to the module name exists.
-		LMOD_NOCONFLICT = 0x04;
+		LMOD_NOCONFLICT = 0x04,
+		// Do not import modules automatically.
+		LMOD_NOIMPORT = 0x08;
 
 	class Runtime final {
 	private:

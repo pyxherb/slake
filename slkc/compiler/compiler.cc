@@ -44,6 +44,12 @@ class SlakeErrorListener : public antlr4::BaseErrorListener {
 	}
 };
 
+class PseudoOutputStream : public std::ostream {
+public:
+	inline PseudoOutputStream() : ostream() {}
+	virtual ~PseudoOutputStream() = default;
+};
+
 void Compiler::compile(std::istream &is, std::ostream &os) {
 	antlr4::ANTLRInputStream s(is);
 
@@ -72,16 +78,116 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 		os.write((char *)&ih, sizeof(ih));
 	}
 
-	if (_targetModule->moduleName.size())
-		compileRef(os, _targetModule->moduleName);
+	if (_targetModule->moduleName.size()) {
+		// Build supposed parent modules in the root scope.
+		auto scope = _rootScope;
+		for (size_t i = 0; i < _targetModule->moduleName.size(); ++i) {
+			string name = _targetModule->moduleName[i].name;
+			if (auto it = scope->members.find(name); it != scope->members.end()) {
+				switch (it->second->getNodeType()) {
+					case AST_CLASS:
+						scope = static_pointer_cast<ClassNode>(it->second)->scope;
+						break;
+					case AST_INTERFACE:
+						scope = static_pointer_cast<InterfaceNode>(it->second)->scope;
+						break;
+					case AST_TRAIT:
+						scope = static_pointer_cast<TraitNode>(it->second)->scope;
+						break;
+					case AST_MODULE:
+						scope = static_pointer_cast<ModuleNode>(it->second)->scope;
+						break;
+					default:
+						// I give up - such situations shouldn't be here.
+						assert(false);
+				}
+			} else {
+				if (i + 1 == _targetModule->moduleName.size()) {
+					(scope->members[name] = _targetModule)->bind((MemberNode *)scope->owner);
+					_targetModule->scope->parent = scope.get();
+				} else {
+					auto newMod = make_shared<ModuleNode>(Location());
+					(scope->members[name] = newMod)->bind((MemberNode *)scope->owner);
+					newMod->scope->parent = scope.get();
+				}
+			}
+		}
+
+		compileRef(os, toRegularRef(_targetModule->moduleName));
+	}
+
+	pushMajorContext();
 
 	for (auto i : _targetModule->imports) {
 		_write(os, (uint32_t)i.first.size());
 		_write(os, i.first.data(), i.first.length());
-		compileRef(os, i.second);
+		compileRef(os, toRegularRef(i.second));
+
+		importModule(i.first, i.second, _targetModule->scope);
 	}
 
+	popMajorContext();
+
 	compileScope(is, os, _targetModule->scope);
+}
+
+void Compiler::importModule(string name, const ModuleRef &ref, shared_ptr<Scope> scope) {
+	if (importedModules.count(ref))
+		return;
+	importedModules.insert(ref);
+
+	string path;
+
+	for (auto j : ref) {
+		path += "/" + j.name;
+	}
+
+	std::ifstream is;
+	for (auto j : modulePaths) {
+		is.open(j + path + ".slk");
+
+		if (is.good()) {
+			path = j + path + ".slk";
+
+			auto savedTargetModule = _targetModule;
+			PseudoOutputStream pseudoOs;
+			compile(is, pseudoOs);
+			_targetModule = savedTargetModule;
+
+			goto succeeded;
+		}
+
+		is.clear();
+
+		is.open(j + path + ".slx");
+
+		if (is.good()) {
+			path = j + path + ".slx";
+
+			try {
+				auto mod = _rt->loadModule(is, LMOD_NOIMPORT | LMOD_NORELOAD);
+
+				for (auto j : mod->imports)
+					importModule(j.first, toModuleRef(toAstRef(j.second->entries)), scope);
+
+				importDefinitions(_rootScope, {}, mod.get());
+
+				goto succeeded;
+			} catch (LoaderError e) {
+				printf("%s\n", e.what());
+			}
+		}
+
+		is.clear();
+	}
+
+	throw FatalCompilationError(
+		Message(
+			ref[0].loc,
+			MessageType::Error,
+			"Cannot find module " + std::to_string(ref)));
+
+succeeded:;
 }
 
 void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope> scope) {
@@ -109,6 +215,9 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 			case AST_TRAIT:
 				traits[i.first] = static_pointer_cast<TraitNode>(i.second);
 				break;
+			case AST_ALIAS:
+			case AST_MODULE:
+				break;
 			default:
 				assert(false);
 		}
@@ -123,10 +232,10 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		//
 		switch (scope->owner->getNodeType()) {
 			case AST_CLASS: {
-				auto j = (ClassNode*)(scope->owner);
+				auto j = (ClassNode *)(scope->owner);
 
 				while (j->parentClass) {
-					j = (ClassNode*)resolveCustomType(j->parentClass).get();
+					j = (ClassNode *)resolveCustomType(j->parentClass.get()).get();
 					if (j->scope->members.count(i.first))
 						throw FatalCompilationError(
 							Message(
@@ -213,8 +322,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 
 	_write(os, (uint32_t)compiledFuncs.size());
 	for (auto &i : compiledFuncs) {
-		// Do some optimizations first
-		mergeContinuousRegAllocs(i.second);
+		// TODO: Do some optimizations first
 
 		slxfmt::FnDesc fnd = {};
 		bool hasVarArg = false;
@@ -280,7 +388,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 			}
 		}
 
-		for(auto &j : i.second->srcLocDescs) {
+		for (auto &j : i.second->srcLocDescs) {
 			_write(os, j);
 		}
 	}
@@ -305,7 +413,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		_write(os, i.first.data(), i.first.length());
 
 		if (i.second->parentClass)
-			compileRef(os, getFullName((MemberNode*)resolveCustomType(i.second->parentClass).get()));
+			compileRef(os, getFullName((MemberNode *)resolveCustomType(i.second->parentClass.get()).get()));
 
 		for (auto &j : i.second->implInterfaces)
 			compileRef(os, j->ref);
@@ -436,9 +544,9 @@ void Compiler::compileTypeName(std::ostream &fs, shared_ptr<TypeNameNode> typeNa
 		case TYPE_CUSTOM: {
 			_write(fs, slxfmt::Type::OBJECT);
 
-			auto dest = resolveCustomType(static_pointer_cast<CustomTypeNameNode>(typeName));
+			auto dest = resolveCustomType((CustomTypeNameNode*)typeName.get());
 
-			compileRef(fs, getFullName((MemberNode*)dest.get()));
+			compileRef(fs, getFullName((MemberNode *)dest.get()));
 			break;
 		}
 		default:

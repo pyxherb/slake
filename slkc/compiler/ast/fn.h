@@ -57,7 +57,7 @@ namespace slake {
 
 			virtual inline NodeType getNodeType() const override { return AST_FN; }
 
-			virtual Ref getName() const override { return Ref({ RefEntry({}, name, {}) }); }
+			virtual RefEntry getName() const override { return RefEntry({}, name, {}); }
 		};
 
 		struct Ins {
@@ -128,7 +128,7 @@ namespace slake {
 			}
 			inline void insertLabel(string name) { labels[name] = body.size(); }
 
-			virtual Ref getName() const override { return Ref({ RefEntry({}, name, {}) }); }
+			virtual RefEntry getName() const override { return RefEntry({}, name, {}); }
 		};
 
 		class LabelRefNode final : public AstNode {

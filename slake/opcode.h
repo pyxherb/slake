@@ -16,8 +16,8 @@ namespace slake {
 		RLOAD,	// Access and load corresponding member with an existing value.
 		STORE,	// Store a value into a variable.
 
-		LVAR,  // Create a new local variable
-		REG,   // Create a new register
+		LVAR,	// Create a new local variable
+		REG,	// Create a new register
 
 		LVALUE,	 // Load value of a variable
 

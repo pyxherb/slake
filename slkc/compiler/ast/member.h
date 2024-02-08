@@ -15,16 +15,16 @@ namespace slake {
 				: access(access) {}
 			virtual ~MemberNode() = default;
 
-			void bind(shared_ptr<MemberNode> parent) {
+			void bind(MemberNode* parent) {
 				assert(!this->parent);
-				this->parent = parent.get();
+				this->parent = parent;
 			}
 
 			void unbind() {
 				parent = nullptr;
 			}
 
-			virtual Ref getName() const = 0;
+			virtual RefEntry getName() const = 0;
 		};
 	}
 }

@@ -96,8 +96,10 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 
 			curFn->insertLabel(beginLabel);
 
+			uint32_t tmpRegIndex;
+
 			if (s->condition) {
-				uint32_t tmpRegIndex = allocReg();
+				tmpRegIndex = allocReg();
 
 				compileExpr(s->condition, EvalPurpose::RVALUE, make_shared<RegRefNode>(tmpRegIndex));
 				if (evalExprType(s->condition)->getTypeId() != TYPE_BOOL)
@@ -137,9 +139,9 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 			curMajorContext.curMinorContext.breakLabel = endLabel;
 			curMajorContext.curMinorContext.continueLabel = beginLabel;
 
-			curFn->insertLabel(beginLabel);
-
 			uint32_t tmpRegIndex = allocReg();
+
+			curFn->insertLabel(beginLabel);
 
 			compileExpr(s->condition, EvalPurpose::RVALUE, make_shared<RegRefNode>(tmpRegIndex));
 			if (evalExprType(s->condition)->getTypeId() != TYPE_BOOL)
@@ -307,7 +309,8 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 			curMajorContext.curMinorContext.breakScopeLevel = curMajorContext.curScopeLevel;
 			curMajorContext.curMinorContext.breakLabel = endLabel;
 
-			uint32_t matcheeRegIndex = allocReg();
+			uint32_t matcheeRegIndex = allocReg(2);
+			uint32_t conditionRegIndex = matcheeRegIndex + 1;
 
 			compileExpr(s->expr, EvalPurpose::RVALUE, make_shared<RegRefNode>(matcheeRegIndex));
 
@@ -329,8 +332,6 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 								"Duplicated default case" });
 					defaultCase = &curCase;
 				}
-
-				uint32_t conditionRegIndex = allocReg();
 
 				compileExpr(curCase.condition, EvalPurpose::RVALUE, make_shared<RegRefNode>(conditionRegIndex));
 				curFn->insertIns(

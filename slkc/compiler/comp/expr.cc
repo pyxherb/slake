@@ -126,8 +126,8 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 		case EXPR_BINARY: {
 			auto e = static_pointer_cast<BinaryOpExprNode>(expr);
 
-			uint32_t lhsRegIndex = allocReg(),
-					 rhsRegIndex = allocReg();
+			uint32_t lhsRegIndex = allocReg(2);
+			uint32_t rhsRegIndex = lhsRegIndex + 1;
 
 			auto lhsType = evalExprType(e->lhs), rhsType = evalExprType(e->rhs);
 
@@ -187,7 +187,6 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 					make_shared<RegRefNode>(lhsRegIndex),
 					make_shared<RegRefNode>(lhsRegIndex, true),
 					make_shared<RegRefNode>(rhsRegIndex, true));
-
 			break;
 		}
 		case EXPR_TERNARY: {
@@ -221,7 +220,6 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 			compileExpr(e->y, EvalPurpose::RVALUE, curMajorContext.curMinorContext.evalDest);
 
 			curFn->insertLabel(endLabel);
-
 			break;
 		}
 		case EXPR_MATCH: {
@@ -285,6 +283,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 		case EXPR_CALL: {
 			auto e = static_pointer_cast<CallExprNode>(expr);
 
+			curMajorContext.curMinorContext.isArgTypesSet = true;
 			curMajorContext.curMinorContext.argTypes = {};
 
 			for (auto &i : e->args) {
@@ -294,8 +293,8 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 			if (auto ce = evalConstExpr(e); ce) {
 				curFn->insertIns(Opcode::CALL, ce);
 			} else {
-				uint32_t callTargetRegIndex = allocReg();
-				uint32_t tmpRegIndex = allocReg();
+				uint32_t callTargetRegIndex = allocReg(2);
+				uint32_t tmpRegIndex = callTargetRegIndex + 1;
 
 				for (auto i : e->args) {
 					if (auto ce = evalConstExpr(i); ce)
@@ -350,6 +349,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 					curFn->insertIns(Opcode::PUSHARG, ce);
 				else {
 					uint32_t tmpRegIndex = allocReg();
+
 					compileExpr(i, EvalPurpose::RVALUE, make_shared<RegRefNode>(tmpRegIndex));
 					curFn->insertIns(Opcode::PUSHARG, make_shared<RegRefNode>(tmpRegIndex, true));
 				}

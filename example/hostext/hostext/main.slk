@@ -1,4 +1,8 @@
-module main;
+module hostext;
+
+use {
+	externs = hostext.extfns
+}
 
 class Test {
 	pub i32 x;
@@ -9,7 +13,7 @@ class Test {
 	}
 
 	i32 getX() {
-		print("Fetched x: ", this.x, "\n");
+		hostext.extfns.print("Fetched x: ", this.x, "\n");
 		return this.x;
 	}
 }
@@ -24,7 +28,7 @@ class Derived(Test) {
 	}
 
 	i32 getY() {
-		print("Fetched y: ", this.y, "\n");
+		hostext.extfns.print("Fetched y: ", this.y, "\n");
 		return this.y;
 	}
 }
@@ -40,7 +44,7 @@ class AnotherDerived(Derived) {
 	}
 
 	i32 getZ() {
-		print("Fetched z: ", this.z, "\n");
+		hostext.extfns.print("Fetched z: ", this.z, "\n");
 		return this.y;
 	}
 }
@@ -48,30 +52,17 @@ class AnotherDerived(Derived) {
 class Unrelated {
 }
 
-pub native void print(...);
-
-pub void a(i32 x) {
-	print("a(i32)\n");
-
-	return;
-}
-
-pub void a(f32 x) {
-	print("a(f32)\n");
-	
-	return;
-}
-
 pub i32 main() {
-	print("Entered main\n");
+	hostext.extfns.print("Entered main\n");
 
-	a(123);
-	a(123.0f);
+	hostext.extfns.print(hostext.extfns.getSlakeBuildVersionInfo(0), "\n");
+	hostext.extfns.print(hostext.extfns.getSlakeBuildVersionInfo(1), "\n");
+	hostext.extfns.print(hostext.extfns.getSlakeBuildVersionInfo(2), "\n");
 
-	Test test = new Derived(100);
+	Test test = new Derived(50);
 
 	while(test.x = test.x - 1) {
-		print("Yielded\n");
+		hostext.extfns.print("Yielded\n");
 		yield test.getX();
 	}
 

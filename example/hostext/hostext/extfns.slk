@@ -1,0 +1,4 @@
+module hostext.extfns;
+
+pub void print(...);
+pub string getSlakeBuildVersionInfo(i32 selector);

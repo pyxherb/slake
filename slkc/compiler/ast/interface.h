@@ -26,7 +26,7 @@ namespace slake {
 
 			virtual inline NodeType getNodeType() const override { return AST_INTERFACE; }
 
-			virtual Ref getName() const override { return Ref({ RefEntry({}, name, {}) }); }
+			virtual RefEntry getName() const override { return RefEntry({}, name, {}); }
 		};
 	}
 }

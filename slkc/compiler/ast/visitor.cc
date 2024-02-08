@@ -99,21 +99,21 @@ VISIT_METHOD_DECL(ProgVarDef) {
 }
 
 VISIT_METHOD_DECL(Imports) {
-	for (auto i : context->getTokens(SlakeParser::RuleImportItem)) {
-		auto item = any_cast<pair<string, Ref>>(visit(i));
+	for (auto i : context->importItem()) {
+		auto item = any_cast<pair<string, ModuleRef>>(visit(i));
 		curModule->imports[item.first] = item.second;
 	}
 	return visitChildren(context);
 }
 
 VISIT_METHOD_DECL(ImportItem) {
-	return pair<string, Ref>(
-		any_cast<string>(context->ID()),
-		any_cast<Ref>(context->ref()));
+	return pair<string, ModuleRef>(
+		context->ID()->getText(),
+		any_cast<ModuleRef>(visit(context->moduleRef())));
 }
 
 VISIT_METHOD_DECL(ModuleDecl) {
-	curModule->moduleName = any_cast<Ref>(visit(context->children[1]));
+	curModule->moduleName = any_cast<ModuleRef>(visit(context->children[1]));
 	return visitChildren(context);
 }
 
@@ -482,7 +482,7 @@ VISIT_METHOD_DECL(GenericParam) {
 	return GenericParam(context->ID()->getText(), qualifiers);
 }
 VISIT_METHOD_DECL(BaseSpec) {
-	return GenericQualifier(GFLT_EXTENDS, any_cast<shared_ptr<TypeNameNode>>(visit(context->children[1])));
+	return GenericQualifier(GenericFilter::EXTENDS, any_cast<shared_ptr<TypeNameNode>>(visit(context->children[1])));
 }
 VISIT_METHOD_DECL(TraitSpec) {
 	deque<GenericQualifier> qualifiers;
@@ -490,14 +490,14 @@ VISIT_METHOD_DECL(TraitSpec) {
 	for (size_t i = 1; i < context->children.size(); i += 2) {
 		qualifiers.push_back(
 			GenericQualifier(
-				GFLT_CONSISTSOF,
+				GenericFilter::CONSISTS_OF,
 				any_cast<shared_ptr<TypeNameNode>>(visit(context->children[i]))));
 	}
 
 	return qualifiers;
 }
 VISIT_METHOD_DECL(InterfaceSpec) {
-	return GenericQualifier(GFLT_IMPLS, any_cast<shared_ptr<TypeNameNode>>(visit(context->children[1])));
+	return GenericQualifier(GenericFilter::IMPLS, any_cast<shared_ptr<TypeNameNode>>(visit(context->children[1])));
 }
 
 VISIT_METHOD_DECL(InheritSlot) {
@@ -1294,6 +1294,15 @@ VISIT_METHOD_DECL(NewRef) {
 	if (context->head)
 		ref.push_back({ Location(context->head), context->head->getText() });
 	ref.push_back({ Location(context->KW_NEW()), "new" });
+	return ref;
+}
+VISIT_METHOD_DECL(ModuleRef) {
+	ModuleRef ref;
+
+	for(auto i : context->ID()) {
+		ref.push_back(ModuleRefEntry(Location(i), i->getText()));
+	}
+
 	return ref;
 }
 VISIT_METHOD_DECL(FnTypeName) {

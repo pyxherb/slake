@@ -55,7 +55,7 @@ FnOverloadingRegistry *Compiler::argDependentLookup(Location loc, FnNode *fn, co
 			Message(
 				loc,
 				MessageType::Error,
-				"No matched function was found"));
+				"No matching function was found"));
 	}
 
 	return matchedRegistries.front();

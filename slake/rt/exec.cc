@@ -10,7 +10,7 @@ using namespace slake;
 /// @return Converted value.
 template <typename TD, typename TS>
 static TD _checkOperandRange(ValueRef<> v) {
-	auto value = (LiteralValue<TS, getValueType<TS>()> *)*v;
+	auto value = (LiteralValue<TS, getValueType<TS>()> *)v.get();
 	if ((TD)value->getData() > std::numeric_limits<TD>::max() ||
 		(TD)value->getData() < std::numeric_limits<TD>::min())
 		throw InvalidOperandsError("Invalid operand value");
@@ -413,7 +413,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		}
 		case Opcode::ENTER: {
 			_checkOperandCount(ins, 0);
-			MinorFrame frame(this);
+			MinorFrame frame(curMajorFrame.localVars.size(), curMajorFrame.regs.size());
 
 			curMajorFrame.minorFrames.push_back(frame);
 			break;

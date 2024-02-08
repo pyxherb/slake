@@ -76,10 +76,10 @@ namespace slake {
 		inline const T *operator->() const { return _value; }
 		inline T *operator->() { return _value; }
 
-		inline ValueRef &operator=(const ValueRef<T, isHostRef> &x) {
+		inline ValueRef<T, isHostRef> &operator=(const ValueRef<T, isHostRef> &x) {
 			return *this = std::move(x);
 		}
-		inline ValueRef &operator=(const ValueRef<T, isHostRef> &&x) noexcept {
+		inline ValueRef<T, isHostRef> &operator=(const ValueRef<T, isHostRef> &&x) noexcept {
 			if (_value) {
 				if constexpr (isHostRef) {
 					_value->decHostRefCount();
@@ -99,13 +99,33 @@ namespace slake {
 			return *this;
 		}
 
-		inline bool operator<(const ValueRef<T>& rhs) const noexcept {
+		inline ValueRef<T, isHostRef> &operator=(T *other) {
+			if (_value) {
+				if constexpr (isHostRef) {
+					_value->decHostRefCount();
+				} else {
+					_value->decRefCount();
+				}
+				_rt = nullptr;
+			}
+			if ((_value = other)) {
+				if constexpr (isHostRef) {
+					_value->incHostRefCount();
+				} else {
+					_value->incRefCount();
+				}
+				_rt = _value->_rt;
+			}
+			return *this;
+		}
+
+		inline bool operator<(const ValueRef<T> &rhs) const noexcept {
 			return _value < rhs._value;
 		}
-		inline bool operator>(const ValueRef<T>& rhs) const noexcept {
+		inline bool operator>(const ValueRef<T> &rhs) const noexcept {
 			return _value > rhs._value;
 		}
-		inline bool operator==(const ValueRef<T>& rhs) const noexcept {
+		inline bool operator==(const ValueRef<T> &rhs) const noexcept {
 			return _value == rhs._value;
 		}
 

@@ -19,7 +19,6 @@ namespace slake {
 
 	class ClassValue : public ModuleValue {
 	private:
-		GenericParamList genericParams;
 		mutable ClassFlags _flags = 0;
 
 		friend class Runtime;
@@ -30,10 +29,12 @@ namespace slake {
 		bool _isAbstract() const;
 
 	public:
+		GenericParamList genericParams;
+
 		Type parentClass;
 		std::deque<Type> implInterfaces;  // Implemented interfaces
 
-		inline ClassValue(Runtime *rt, AccessModifier access, Type parentClass = {});
+		ClassValue(Runtime *rt, AccessModifier access, Type parentClass = {});
 		virtual ~ClassValue();
 
 		virtual inline Type getType() const override { return TypeId::CLASS; }

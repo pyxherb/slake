@@ -86,6 +86,7 @@ namespace slake {
 				std::set<AstNode *> resolvedOwners;
 
 				deque<shared_ptr<TypeNameNode>> argTypes;
+				bool isArgTypesSet = false;
 
 				shared_ptr<AstNode> evalDest, thisDest;
 			};
@@ -129,7 +130,7 @@ namespace slake {
 				}
 			};
 
-			shared_ptr<Scope> _rootScope;
+			shared_ptr<Scope> _rootScope = make_shared<Scope>();
 			shared_ptr<ModuleNode> _targetModule;
 			unique_ptr<Runtime> _rt;
 			deque<MajorContext> _savedMajorContexts;
@@ -137,20 +138,11 @@ namespace slake {
 
 			static InsMap defaultInsMap;
 
-			inline void pushMajorContext() {
-				_savedMajorContexts.push_back(curMajorContext);
-			}
-			inline void popMajorContext() {
-				curMajorContext = _savedMajorContexts.back();
-				_savedMajorContexts.pop_back();
-			}
+			void pushMajorContext();
+			void popMajorContext();
 
-			inline void pushMinorContext() {
-				curMajorContext.pushMinorContext();
-			}
-			inline void popMinorContext() {
-				curMajorContext.popMinorContext();
-			}
+			void pushMinorContext();
+			void popMinorContext();
 
 			shared_ptr<ExprNode> evalConstExpr(shared_ptr<ExprNode> expr);
 
@@ -182,8 +174,8 @@ namespace slake {
 
 			FnOverloadingRegistry *argDependentLookup(Location loc, FnNode *fn, const deque<shared_ptr<TypeNameNode>> &argTypes);
 
-			shared_ptr<Scope> scopeOf(shared_ptr<AstNode> node);
-			shared_ptr<AstNode> resolveCustomType(shared_ptr<CustomTypeNameNode> typeName);
+			shared_ptr<Scope> scopeOf(AstNode* node);
+			shared_ptr<AstNode> resolveCustomType(CustomTypeNameNode* typeName);
 
 			bool isSameType(shared_ptr<TypeNameNode> x, shared_ptr<TypeNameNode> y);
 
@@ -215,35 +207,23 @@ namespace slake {
 
 			bool isDynamicMember(shared_ptr<AstNode> member);
 
-			inline uint32_t allocLocalVar(string name, shared_ptr<TypeNameNode> type) {
-				if (curMajorContext.localVars.size() > UINT32_MAX)
-					throw FatalCompilationError(
-						Message(
-							type->getLocation(),
-							MessageType::Error,
-							"Number limit of local variables exceeded"));
+			uint32_t allocLocalVar(string name, shared_ptr<TypeNameNode> type);
+			uint32_t allocReg(uint32_t nRegs = 1);
 
-				uint32_t index = (uint32_t)curMajorContext.localVars.size();
+			set<Value *> importedDefinitions;
+			set<ModuleRef> importedModules;
 
-				curMajorContext.localVars[name] = make_shared<LocalVarNode>(index, type);
-				curFn->insertIns(Opcode::LVAR, type);
-
-				return index;
-			}
-
-			inline uint32_t allocReg() {
-				curFn->insertIns(Opcode::REG, make_shared<U32LiteralExprNode>(Location(), 1));
-				return curMajorContext.curRegCount++;
-			}
-
-			set<ModuleValue *> importedModules;
-
-			unique_ptr<ifstream> moduleLocator(Runtime *rt, ValueRef<RefValue> ref);
-			void importDefinitions(ModuleValue *mod);
-			void importDefinitions(Value* value);
+			static unique_ptr<ifstream> moduleLocator(Runtime *rt, ValueRef<RefValue> ref);
+			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, BasicFnValue *value);
+			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, ModuleValue *value);
+			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, ClassValue *value);
+			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, InterfaceValue *value);
+			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, TraitValue *value);
+			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, Value* value);
+			void importModule(string name, const ModuleRef& ref, shared_ptr<Scope> scope);
 			shared_ptr<TypeNameNode> toTypeName(slake::Type runtimeType);
-
-			void mergeContinuousRegAllocs(shared_ptr<CompiledFnNode> fn);
+			Ref toAstRef(deque<slake::RefEntry> runtimeRefEntries);
+			slkc::GenericQualifier toAstGenericQualifier(slake::GenericQualifier qualifier);
 
 			friend class AstVisitor;
 			friend string std::to_string(shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slkc::Compiler *compiler, bool asOperatorName);

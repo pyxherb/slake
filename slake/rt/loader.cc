@@ -300,7 +300,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 			}
 		}
 
-		for(uint32_t j = 0 ; j < i.nSourceLocDescs ; ++j) {
+		for (uint32_t j = 0; j < i.nSourceLocDescs; ++j) {
 			slxfmt::SourceLocDesc sld = _read<slxfmt::SourceLocDesc>(fs);
 			fn->sourceLocDescs.push_back(sld);
 		}
@@ -437,7 +437,7 @@ ValueRef<ModuleValue> slake::Runtime::loadModule(std::istream &fs, LoadModuleFla
 			auto moduleValue = (ModuleValue *)curValue.get();
 
 			if (moduleValue->getMember(lastName)) {
-				if (flags & LMOD_RETIFEXISTS) {
+				if (flags & LMOD_NORELOAD) {
 					if (moduleValue->getMember(lastName)->getType() != TypeId::MOD)
 						throw LoaderError(
 							"Value which corresponds to module name \"" + std::to_string(modName, this) + "\" was found, but is not a module");
@@ -455,8 +455,16 @@ ValueRef<ModuleValue> slake::Runtime::loadModule(std::istream &fs, LoadModuleFla
 		std::string name(len, '\0');
 		fs.read(name.data(), len);
 
-		std::unique_ptr<std::istream> moduleStream(_moduleLocator(this, _loadRef(fs)));
-		mod->addMember(name, (MemberValue *)new AliasValue(this, 0, loadModule(*moduleStream.get(), LMOD_RETIFEXISTS).get()));
+		ValueRef<RefValue> moduleName = _loadRef(fs);
+
+		if (!(flags & LMOD_NOIMPORT)) {
+			std::unique_ptr<std::istream> moduleStream(_moduleLocator(this, moduleName));
+			if (!moduleStream)
+				throw LoaderError("Error finding module `" + std::to_string(moduleName) + "' for dependencies");
+			mod->addMember(name, (MemberValue *)new AliasValue(this, 0, loadModule(*moduleStream.get(), LMOD_NORELOAD).get()));
+		}
+
+		mod->imports[name] = moduleName;
 	}
 
 	_loadScope(mod.get(), fs);

@@ -17,7 +17,7 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 		if (!newRef.size())
 			goto lvarSucceeded;
 
-		if (auto scope = scopeOf(localVar->type); scope) {
+		if (auto scope = scopeOf(localVar->type.get()); scope) {
 			_resolveRef(scope.get(), newRef, partsOut);
 			goto lvarSucceeded;
 		}
@@ -39,7 +39,7 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 		if (!newRef.size())
 			goto paramSucceeded;
 
-		if (auto scope = scopeOf(curFn->params[idxParam].type); scope) {
+		if (auto scope = scopeOf(curFn->params[idxParam].type.get()); scope) {
 			_resolveRef(scope.get(), newRef, partsOut);
 			goto paramSucceeded;
 		}
@@ -87,15 +87,19 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 			return true;
 		}
 
-		if (_resolveRef(scope, newRef, partsOut)) {
-			switch (m->getNodeType()) {
-				case AST_VAR:
-					partsOut.push_front({ Ref{ ref.front() }, m });
-					break;
-				default:
-					partsOut.front().first.push_front(ref.front());
+		auto newScope = scopeOf(m.get());
+
+		if (m) {
+			if (_resolveRef(newScope.get(), newRef, partsOut)) {
+				switch (m->getNodeType()) {
+					case AST_VAR:
+						partsOut.push_front({ Ref{ ref.front() }, m });
+						break;
+					default:
+						partsOut.front().first.push_front(ref.front());
+				}
+				return true;
 			}
-			return true;
 		}
 	}
 
@@ -117,7 +121,7 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 
 				// Resolve with the parent class.
 				if (owner->parentClass) {
-					if (auto p = resolveCustomType(owner->parentClass); p) {
+					if (auto p = resolveCustomType(owner->parentClass.get()); p) {
 						if (p->getNodeType() != AST_CLASS) {
 							throw FatalCompilationError(
 								Message(
@@ -125,7 +129,7 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 									MessageType::Error,
 									"`" + to_string(owner->parentClass, this) + "' is not a class"));
 						}
-						if (_resolveRef(scopeOf(p).get(), ref, partsOut))
+						if (_resolveRef(scopeOf(p.get()).get(), ref, partsOut))
 							return true;
 					} else {
 						// Error resolving the parent class - the reference is invalid.
@@ -139,7 +143,7 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 
 				// Resolve with the interfaces.
 				for (auto i : owner->implInterfaces) {
-					if (auto p = resolveCustomType(i); p) {
+					if (auto p = resolveCustomType(i.get()); p) {
 						if (p->getNodeType() != AST_CLASS) {
 							throw FatalCompilationError(
 								Message(
@@ -147,7 +151,7 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 									MessageType::Error,
 									"`" + to_string(i, this) + "' is not an interface"));
 						}
-						if (_resolveRef(scopeOf(p).get(), ref, partsOut))
+						if (_resolveRef(scopeOf(p.get()).get(), ref, partsOut))
 							return true;
 					} else {
 						// Error resolving the interface - the reference is invalid.
@@ -166,7 +170,7 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 				auto owner = (InterfaceNode *)scope->owner;
 
 				for (auto i : owner->parentInterfaces) {
-					if (auto p = resolveCustomType(i); p) {
+					if (auto p = resolveCustomType(i.get()); p) {
 						if (p->getNodeType() != AST_CLASS) {
 							throw FatalCompilationError(
 								Message(
@@ -174,7 +178,7 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 									MessageType::Error,
 									"`" + to_string(i, this) + "' is not an interface"));
 						}
-						if (_resolveRef(scopeOf(p).get(), ref, partsOut))
+						if (_resolveRef(scopeOf(p.get()).get(), ref, partsOut))
 							return true;
 					} else {
 						// Error resolving the interface - the reference is invalid.
@@ -207,7 +211,7 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 				if (!owner->parent)
 					return false;
 
-				if (_resolveRef(scopeOf(shared_ptr<AstNode>(owner->parent)).get(), ref, partsOut))
+				if (_resolveRef(scopeOf((AstNode *)owner->parent).get(), ref, partsOut))
 					return false;
 			}
 		}
@@ -219,8 +223,7 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 void Compiler::_getFullName(MemberNode *member, Ref &ref) {
 	auto name = member->getName();
 
-	name.insert(name.end(), ref.begin(), ref.end());
-	ref = name;
+	ref.push_front(name);
 
 	if (!member->parent)
 		return;

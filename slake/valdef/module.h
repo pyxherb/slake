@@ -9,6 +9,7 @@ namespace slake {
 	class ModuleValue : public MemberValue {
 	public:
 		std::unordered_map<std::string, MemberValue *> _members;
+		std::unordered_map<std::string, ValueRef<RefValue>> imports;
 
 		ModuleValue(Runtime *rt, AccessModifier access);
 		virtual ~ModuleValue();

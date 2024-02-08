@@ -54,6 +54,19 @@ slake::ValueRef<> print(slake::Runtime *rt, std::deque<slake::ValueRef<>> args) 
 	return {};
 }
 
+slake::ValueRef<> getSlakeBuildVersionInfo(slake::Runtime *rt, std::deque<slake::ValueRef<>> args) {
+	using namespace slake;
+
+	switch(((I32Value*)args[0].get())->getData()) {
+		case 0:
+			return new StringValue(rt, __DATE__);
+		case 1:
+			return new StringValue(rt, __TIME__);
+		default:
+			return new StringValue(rt, __DATE__ " " __TIME__);
+	}
+}
+
 std::unique_ptr<std::istream> fsModuleLocator(slake::Runtime *rt, slake::ValueRef<slake::RefValue> ref) {
 	std::string path;
 	for (size_t i = 0; i < ref->entries.size(); ++i) {
@@ -92,7 +105,7 @@ int main(int argc, char **argv) {
 	try {
 		std::ifstream fs;
 		fs.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
-		fs.open("main.slx", std::ios_base::in | std::ios_base::binary);
+		fs.open("hostext/main.slx", std::ios_base::in | std::ios_base::binary);
 
 		rt->setModuleLocator(fsModuleLocator);
 		slake::stdlib::load(rt.get());
@@ -103,7 +116,8 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
-	((slake::ModuleValue *)rt->getRootValue()->getMember("main"))->addMember("print", new slake::NativeFnValue(rt.get(), print, slake::ACCESS_PUB, slake::TypeId::NONE));
+	((slake::ModuleValue *)((slake::ModuleValue *)rt->getRootValue()->getMember("hostext"))->getMember("extfns"))->addMember("print", new slake::NativeFnValue(rt.get(), print, slake::ACCESS_PUB, slake::TypeId::NONE));
+	((slake::ModuleValue *)((slake::ModuleValue *)rt->getRootValue()->getMember("hostext"))->getMember("extfns"))->addMember("getSlakeBuildVersionInfo$i32", new slake::NativeFnValue(rt.get(), getSlakeBuildVersionInfo, slake::ACCESS_PUB, slake::TypeId::NONE));
 
 	slake::ValueRef<> result;
 

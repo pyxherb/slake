@@ -471,7 +471,8 @@ shared_ptr<ExprNode> Compiler::evalConstExpr(shared_ptr<ExprNode> expr) {
 }
 
 shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
-	switch (expr->getExprType()) {
+	auto t = expr->getExprType();
+	switch (t) {
 		case EXPR_I8:
 			return make_shared<I8TypeNameNode>(Location(), true);
 		case EXPR_I16:
@@ -566,6 +567,36 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 						return static_pointer_cast<LocalVarNode>(resolvedParts.back().second)->type;
 					case AST_ARG_REF:
 						return curFn->params.at(static_pointer_cast<ArgRefNode>(resolvedParts.back().second)->index).type;
+					case AST_FN: {
+						shared_ptr<FnNode> fn = static_pointer_cast<FnNode>(resolvedParts.back().second);
+
+						if (fn->overloadingRegistries.size() == 1) {
+							shared_ptr<FnTypeNameNode> type;
+
+							deque<shared_ptr<TypeNameNode>> paramTypes;
+							for (auto i : fn->overloadingRegistries[0].params)
+								paramTypes.push_back(i.type);
+
+							type = make_shared<FnTypeNameNode>(fn->overloadingRegistries[0].returnType, paramTypes);
+							return type;
+						}
+
+						if (curMajorContext.curMinorContext.isArgTypesSet) {
+							auto &registry = *argDependentLookup(e->ref[0].loc, fn.get(), curMajorContext.curMinorContext.argTypes);
+
+							deque<shared_ptr<TypeNameNode>> paramTypes;
+							for (auto i : registry.params)
+								paramTypes.push_back(i.type);
+
+							return make_shared<FnTypeNameNode>(registry.returnType, paramTypes);
+						}
+
+						throw FatalCompilationError(
+							Message(
+								e->getLocation(),
+								MessageType::Error,
+								"No matching function was found"));
+					}
 					case AST_CLASS:
 					case AST_INTERFACE:
 					case AST_TRAIT:
@@ -587,6 +618,35 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 		}
 		case EXPR_NEW:
 			return static_pointer_cast<NewExprNode>(expr)->type;
+		case EXPR_CALL: {
+			auto e = static_pointer_cast<CallExprNode>(expr);
+
+			deque<shared_ptr<TypeNameNode>> argTypes;
+
+			for (auto &i : e->args) {
+				argTypes.push_back(evalExprType(i));
+			}
+
+			pushMinorContext();
+			curMajorContext.curMinorContext.isArgTypesSet = true;
+			curMajorContext.curMinorContext.argTypes = argTypes;
+
+			auto t = evalExprType(e->target);
+
+			popMinorContext();
+
+			switch (t->getTypeId()) {
+				case TYPE_FN:
+					return static_pointer_cast<FnTypeNameNode>(t)->returnType;
+				case TYPE_CUSTOM:
+					// stub
+				default:
+					throw FatalCompilationError(
+						{ e->getLocation(),
+							MessageType::Error,
+							"Expression is not callable" });
+			}
+		}
 	}
 	assert(false);
 }

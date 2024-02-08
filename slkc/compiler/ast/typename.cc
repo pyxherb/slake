@@ -56,7 +56,7 @@ string std::to_string(shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slk
 		}
 		case TYPE_CUSTOM: {
 			slake::slkc::Ref ref;
-			compiler->_getFullName((MemberNode *)compiler->resolveCustomType(static_pointer_cast<CustomTypeNameNode>(typeName)).get(), ref);
+			compiler->_getFullName((MemberNode *)compiler->resolveCustomType((CustomTypeNameNode*)typeName.get()).get(), ref);
 			return (asOperatorName ? "" : "@") + to_string(ref, compiler);
 		}
 		default:

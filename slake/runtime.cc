@@ -2,11 +2,11 @@
 
 using namespace slake;
 
-MinorFrame::MinorFrame(Runtime *rt) {
+MinorFrame::MinorFrame(uint32_t nLocalVars, uint32_t nRegs) : nLocalVars(nLocalVars), nRegs(nRegs) {
 }
 
 MajorFrame::MajorFrame(Runtime *rt) {
-	minorFrames.push_back(MinorFrame(rt));
+	minorFrames.push_back(MinorFrame(0, 0));
 }
 
 Runtime::Runtime(RuntimeFlags flags) : _flags(flags) {

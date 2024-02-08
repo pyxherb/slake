@@ -223,6 +223,7 @@ namespace slake {
 			VISIT_METHOD_DECL(NormalRef);
 			VISIT_METHOD_DECL(ThisRef);
 			VISIT_METHOD_DECL(NewRef);
+			VISIT_METHOD_DECL(ModuleRef);
 			VISIT_METHOD_DECL(FnTypeName);
 			VISIT_METHOD_DECL(ArrayTypeName);
 			VISIT_METHOD_DECL(MapTypeName);

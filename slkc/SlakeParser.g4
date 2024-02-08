@@ -11,12 +11,12 @@ progStmt:
 	| access? varDef ';'	# ProgVarDef;
 
 imports: 'use' '{' importItem (',' importItem)* '}';
-importItem: ID '=' ref;
+importItem: ID '=' moduleRef;
 
 params: ((paramDecl (',' paramDecl)*)? (',' '...')? | '...'?);
 paramDecl: 'const'? typeName ID;
 
-moduleDecl: 'module' ref ';';
+moduleDecl: 'module' moduleRef ';';
 
 fnDecl: genericParams? typeName ID '(' params ')';
 fnDef: fnDecl stmt;
@@ -224,6 +224,8 @@ ref:
 	)											# NormalRef
 	| head = 'this'								# ThisRef
 	| (head = 'this' | head = 'base') '.' 'new'	# NewRef;
+
+moduleRef: ID ('.' ID)*;
 
 typeName:
 	primitiveTypeName				# AdoptPrimitiveTypeName

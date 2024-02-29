@@ -18,6 +18,12 @@ shared_ptr<Scope> Compiler::scopeOf(AstNode* node) {
 				return scopeOf(resolveCustomType((CustomTypeNameNode*)t).get());
 			return {};
 		}
+		case AST_ALIAS: {
+			deque<pair<Ref, shared_ptr<AstNode>>> resolvedParts;
+
+			resolveRef(((AliasNode*)node)->target, resolvedParts);
+			return scopeOf(resolvedParts.back().second.get());
+		}
 		default:
 			return {};
 	}

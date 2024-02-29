@@ -124,6 +124,8 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 		compileRef(os, toRegularRef(i.second));
 
 		importModule(i.first, i.second, _targetModule->scope);
+
+		_targetModule->scope->members[i.first] = make_shared<AliasNode>(i.second[0].loc, i.first, toRegularRef(i.second));
 	}
 
 	popMajorContext();
@@ -544,7 +546,7 @@ void Compiler::compileTypeName(std::ostream &fs, shared_ptr<TypeNameNode> typeNa
 		case TYPE_CUSTOM: {
 			_write(fs, slxfmt::Type::OBJECT);
 
-			auto dest = resolveCustomType((CustomTypeNameNode*)typeName.get());
+			auto dest = resolveCustomType((CustomTypeNameNode *)typeName.get());
 
 			compileRef(fs, getFullName((MemberNode *)dest.get()));
 			break;

@@ -1,6 +1,5 @@
 #include "compiler/compiler.h"
 #include "decompiler/decompiler.h"
-#include "lsp/lsp.h"
 
 #include <filesystem>
 #include <fstream>
@@ -8,6 +7,10 @@
 #include <slake/util/debug.h>
 
 #include <config.h>
+
+#if SLKC_WITH_LSP_ENABLED
+	#include "lsp/lsp.h"
+#endif
 
 using namespace slake::slkc;
 
@@ -63,7 +66,7 @@ CmdLineAction cmdLineActions[] = {
 			action = ACT_LSP;
 		} },
 	{ "-p\0"
-	  "--server-port",
+	  "--server-port\0",
 		[](int argc, char **argv, int &i) {
 			uint32_t port = strtoul(fetchArg(argc, argv, i), nullptr, 10);
 
@@ -84,7 +87,7 @@ int main(int argc, char **argv) {
 				std::string arg = fetchArg(argc, argv, i);
 
 				for (uint16_t j = 0; j < sizeof(cmdLineActions) / sizeof(cmdLineActions[0]); j++) {
-					for (auto k = cmdLineActions[j].options; *k; k += strlen(k))
+					for (auto k = cmdLineActions[j].options; *k; k += strlen(k) + 1)
 						if (!strcmp(k, arg.c_str())) {
 							cmdLineActions[j].fn(argc, argv, i);
 							goto succeed;
@@ -147,8 +150,11 @@ int main(int argc, char **argv) {
 				break;
 			}
 #if SLKC_WITH_LSP_ENABLED
-			case ACT_LSP:
-				return slake::slkc::lsp::lspServerMain(lspServerPort);
+			case ACT_LSP: {
+				printf("Server started on local port %hd\n", lspServerPort);
+				slake::slkc::lsp::LspServer lspServer(lspServerPort);
+				return lspServer.run();
+			}
 #endif
 			default:
 				assert(false);

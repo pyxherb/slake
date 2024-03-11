@@ -7,6 +7,11 @@ use {
 class Test {
 	pub i32 x;
 
+	pub operator delete() {
+		hostext.extfns.print("Destructing Test...\n");
+		return;
+	}
+
 	pub operator new(i32 x) {
 		this.x = x;
 		return;
@@ -20,6 +25,11 @@ class Test {
 
 class Derived(Test) {
 	pub i32 y;
+
+	pub operator delete() {
+		hostext.extfns.print("Destructing Derived...\n");
+		return;
+	}
 
 	pub operator new(i32 y) {
 		base.x = y * 2;

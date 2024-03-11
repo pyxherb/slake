@@ -84,11 +84,11 @@ static double _sqrt(double x);
 	if ((x)->getType() != (t)) throw InvalidArgumentsError()
 
 template <typename T>
-static ValueRef<> _sinImpl(Runtime *rt, std::deque<ValueRef<>> args) {
+static ValueRef<> _sinImpl(Runtime *rt, std::deque<Value *> args) {
 	using ValueType = LiteralValue<T, getValueType<T>()>;
 	_nArgCheck(==, 1);
 
-	Value *x = args[0].get();
+	Value *x = args[0];
 
 	_nullRefCheck(x);
 	_typeCheck(x, getValueType<T>());
@@ -97,11 +97,11 @@ static ValueRef<> _sinImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 }
 
 template <typename T>
-static ValueRef<> _cosImpl(Runtime *rt, std::deque<ValueRef<>> args) {
+static ValueRef<> _cosImpl(Runtime *rt, std::deque<Value *> args) {
 	using ValueType = LiteralValue<T, getValueType<T>()>;
 	_nArgCheck(==, 1);
 
-	Value *x = args[0].get();
+	Value *x = args[0];
 
 	_nullRefCheck(x);
 	_typeCheck(x, getValueType<T>());
@@ -110,11 +110,11 @@ static ValueRef<> _cosImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 }
 
 template <typename T>
-static ValueRef<> _tanImpl(Runtime *rt, std::deque<ValueRef<>> args) {
+static ValueRef<> _tanImpl(Runtime *rt, std::deque<Value *> args) {
 	using ValueType = LiteralValue<T, getValueType<T>()>;
 	_nArgCheck(==, 1);
 
-	Value *x = args[0].get();
+	Value *x = args[0];
 
 	_nullRefCheck(x);
 	_typeCheck(x, getValueType<T>());
@@ -123,11 +123,11 @@ static ValueRef<> _tanImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 }
 
 template <typename T>
-static ValueRef<> _sqrtImpl(Runtime *rt, std::deque<ValueRef<>> args) {
+static ValueRef<> _sqrtImpl(Runtime *rt, std::deque<Value *> args) {
 	using ValueType = LiteralValue<T, getValueType<T>()>;
 	_nArgCheck(==, 1);
 
-	Value *x = args[0].get();
+	Value *x = args[0];
 
 	_nullRefCheck(x);
 	_typeCheck(x, getValueType<T>());
@@ -135,10 +135,10 @@ static ValueRef<> _sqrtImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	return new ValueType(rt, _sqrt(((ValueType *)x)->getData()));
 }
 
-static ValueRef<> _sinFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
+static ValueRef<> _sinFastImpl(Runtime *rt, std::deque<Value *> args) {
 	_nArgCheck(==, 1);
 
-	F64Value *x = (F64Value *)args[0].get();
+	F64Value *x = (F64Value *)args[0];
 
 	_nullRefCheck(x);
 	_typeCheck(x, TypeId::F64);
@@ -146,10 +146,10 @@ static ValueRef<> _sinFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	return new F64Value(rt, _sin_fast(x->getData()));
 }
 
-static ValueRef<> _sinfFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
+static ValueRef<> _sinfFastImpl(Runtime *rt, std::deque<Value *> args) {
 	_nArgCheck(==, 1);
 
-	F32Value *x = (F32Value *)args[0].get();
+	F32Value *x = (F32Value *)args[0];
 
 	_nullRefCheck(x);
 	_typeCheck(x, TypeId::F32);
@@ -157,10 +157,10 @@ static ValueRef<> _sinfFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	return new F32Value(rt, _sinf_fast(x->getData()));
 }
 
-static ValueRef<> _cosFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
+static ValueRef<> _cosFastImpl(Runtime *rt, std::deque<Value *> args) {
 	_nArgCheck(==, 1);
 
-	F64Value *x = (F64Value *)args[0].get();
+	F64Value *x = (F64Value *)args[0];
 
 	_nullRefCheck(x);
 	_typeCheck(x, TypeId::F64);
@@ -168,10 +168,10 @@ static ValueRef<> _cosFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	return new F64Value(rt, _cos_fast(x->getData()));
 }
 
-static ValueRef<> _cosfFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
+static ValueRef<> _cosfFastImpl(Runtime *rt, std::deque<Value *> args) {
 	_nArgCheck(==, 1);
 
-	F32Value *x = (F32Value *)args[0].get();
+	F32Value *x = (F32Value *)args[0];
 
 	_nullRefCheck(x);
 	_typeCheck(x, TypeId::F32);
@@ -179,10 +179,10 @@ static ValueRef<> _cosfFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	return new F32Value(rt, _cosf_fast(x->getData()));
 }
 
-static ValueRef<> _tanFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
+static ValueRef<> _tanFastImpl(Runtime *rt, std::deque<Value *> args) {
 	_nArgCheck(==, 1);
 
-	F64Value *x = (F64Value *)args[0].get();
+	F64Value *x = (F64Value *)args[0];
 
 	_nullRefCheck(x);
 	_typeCheck(x, TypeId::F64);
@@ -190,10 +190,10 @@ static ValueRef<> _tanFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	return new F64Value(rt, _tan_fast(x->getData()));
 }
 
-static ValueRef<> _tanfFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
+static ValueRef<> _tanfFastImpl(Runtime *rt, std::deque<Value *> args) {
 	_nArgCheck(==, 1);
 
-	F32Value *x = (F32Value *)args[0].get();
+	F32Value *x = (F32Value *)args[0];
 
 	_nullRefCheck(x);
 	_typeCheck(x, TypeId::F32);
@@ -201,10 +201,10 @@ static ValueRef<> _tanfFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	return new F32Value(rt, _tanf_fast(x->getData()));
 }
 
-static ValueRef<> _sqrtFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
+static ValueRef<> _sqrtFastImpl(Runtime *rt, std::deque<Value *> args) {
 	_nArgCheck(==, 1);
 
-	F64Value *x = (F64Value *)args[0].get();
+	F64Value *x = (F64Value *)args[0];
 
 	_nullRefCheck(x);
 	_typeCheck(x, TypeId::F64);
@@ -212,10 +212,10 @@ static ValueRef<> _sqrtFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 	return new F64Value(rt, _sqrt_fast(x->getData()));
 }
 
-static ValueRef<> _sqrtfFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
+static ValueRef<> _sqrtfFastImpl(Runtime *rt, std::deque<Value *> args) {
 	_nArgCheck(==, 1);
 
-	F32Value *x = (F32Value *)args[0].get();
+	F32Value *x = (F32Value *)args[0];
 
 	_nullRefCheck(x);
 	_typeCheck(x, TypeId::F32);
@@ -224,11 +224,11 @@ static ValueRef<> _sqrtfFastImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 }
 
 template <typename T>
-static ValueRef<> _absImpl(Runtime *rt, std::deque<ValueRef<>> args) {
+static ValueRef<> _absImpl(Runtime *rt, std::deque<Value *> args) {
 	using ValueType = LiteralValue<T, getValueType<T>()>;
 	_nArgCheck(==, 1);
 
-	Value *x = args[0].get();
+	Value *x = args[0];
 
 	_nullRefCheck(x);
 	_typeCheck(x, getValueType<T>());
@@ -251,62 +251,62 @@ static ValueRef<> _absImpl(Runtime *rt, std::deque<ValueRef<>> args) {
 //
 
 void stdlib::math::load(Runtime *rt) {
-	modStd->addMember("math",
+	modStd->scope->addMember("math",
 		modMath = new ModuleValue(rt, ACCESS_PUB));
 
-	modMath->addMember(
+	modMath->scope->addMember(
 		rt->mangleName("sin", { TypeId::F32 }),
 		new NativeFnValue(rt, _sinImpl<float>, ACCESS_PUB, TypeId::F32));
-	modMath->addMember(
+	modMath->scope->addMember(
 		rt->mangleName("sin", { TypeId::F64 }),
 		new NativeFnValue(rt, _sinImpl<double>, ACCESS_PUB, TypeId::F64));
 
-	modMath->addMember(
+	modMath->scope->addMember(
 		rt->mangleName("sinFast", { TypeId::F32 }),
 		new NativeFnValue(rt, _sinfFastImpl, ACCESS_PUB, TypeId::F32));
-	modMath->addMember(
+	modMath->scope->addMember(
 		rt->mangleName("sinFast", { TypeId::F64 }),
 		new NativeFnValue(rt, _sinFastImpl, ACCESS_PUB, TypeId::F64));
 
-	modMath->addMember(
+	modMath->scope->addMember(
 		rt->mangleName("cos", { TypeId::F32 }),
 		new NativeFnValue(rt, _cosImpl<float>, ACCESS_PUB, TypeId::F32));
-	modMath->addMember(
+	modMath->scope->addMember(
 		rt->mangleName("cos", { TypeId::F64 }),
 		new NativeFnValue(rt, _cosImpl<double>, ACCESS_PUB, TypeId::F64));
 
-	modMath->addMember(
+	modMath->scope->addMember(
 		rt->mangleName("cosFast", { TypeId::F32 }),
 		new NativeFnValue(rt, _cosfFastImpl, ACCESS_PUB, TypeId::F32));
-	modMath->addMember(
+	modMath->scope->addMember(
 		rt->mangleName("cosFast", { TypeId::F64 }),
 		new NativeFnValue(rt, _cosFastImpl, ACCESS_PUB, TypeId::F64));
 
-	modMath->addMember(
+	modMath->scope->addMember(
 		rt->mangleName("tan", { TypeId::F32 }),
 		new NativeFnValue(rt, _tanImpl<float>, ACCESS_PUB, TypeId::F32));
-	modMath->addMember(
+	modMath->scope->addMember(
 		rt->mangleName("tan", { TypeId::F64 }),
 		new NativeFnValue(rt, _tanImpl<double>, ACCESS_PUB, TypeId::F64));
 
-	modMath->addMember(
+	modMath->scope->addMember(
 		rt->mangleName("tanFast", { TypeId::F32 }),
 		new NativeFnValue(rt, _tanfFastImpl, ACCESS_PUB, TypeId::F32));
-	modMath->addMember(
+	modMath->scope->addMember(
 		rt->mangleName("tanFast", { TypeId::F64 }),
 		new NativeFnValue(rt, _tanFastImpl, ACCESS_PUB, TypeId::F64));
 
-	modMath->addMember(
+	modMath->scope->addMember(
 		rt->mangleName("sqrt", { TypeId::F32 }),
 		new NativeFnValue(rt, _sqrtImpl<float>, ACCESS_PUB, TypeId::F32));
-	modMath->addMember(
+	modMath->scope->addMember(
 		rt->mangleName("sqrt", { TypeId::F64 }),
 		new NativeFnValue(rt, _sqrtImpl<double>, ACCESS_PUB, TypeId::F64));
 
-	modMath->addMember(
+	modMath->scope->addMember(
 		rt->mangleName("sqrtFast", { TypeId::F32 }),
 		new NativeFnValue(rt, _sqrtfFastImpl, ACCESS_PUB, TypeId::F32));
-	modMath->addMember(
+	modMath->scope->addMember(
 		rt->mangleName("sqrtFast", { TypeId::F64 }),
 		new NativeFnValue(rt, _sqrtFastImpl, ACCESS_PUB, TypeId::F64));
 }

@@ -5,7 +5,7 @@
 using namespace slake;
 
 Type::Type(RefValue *ref, TypeFlags flags) : typeId(TypeId::OBJECT), flags(flags) {
-	exData = ValueRef<Value, false>((Value *)ref);
+	exData = (Value*)ref;
 }
 
 Type::~Type() {
@@ -37,12 +37,12 @@ void Type::loadDeferredType(const Runtime *rt) const {
 	if (!isLoadingDeferred())
 		return;
 
-	auto ref = (RefValue *)getCustomTypeExData().get();
+	auto ref = (RefValue *)getCustomTypeExData();
 	auto typeValue = rt->resolveRef(ref);
 	if (!typeValue)
 		throw NotFoundError("Value referenced by the type was not found", ref);
 
-	exData = ValueRef<Value, false>((Value *)typeValue);
+	exData = (Value *)typeValue;
 }
 
 /// @brief Check if a type can be converted into another type.
@@ -80,44 +80,44 @@ bool slake::isConvertible(Type src, Type dest) {
 			}
 		}
 		case TypeId::OBJECT: {
-			ClassValue *srcType = (ClassValue *)src.getCustomTypeExData().get();
+			ClassValue *srcType = (ClassValue *)src.getCustomTypeExData();
 			switch (dest.typeId) {
 				case TypeId::I8:
-					return srcType->getMember("operator@i8") ? true : false;
+					return memberOf(srcType, "operator@i8") ? true : false;
 				case TypeId::I16:
-					return srcType->getMember("operator@i16") ? true : false;
+					return memberOf(srcType, "operator@i16") ? true : false;
 				case TypeId::I32:
-					return srcType->getMember("operator@i32") ? true : false;
+					return memberOf(srcType, "operator@i32") ? true : false;
 				case TypeId::I64:
-					return srcType->getMember("operator@i64") ? true : false;
+					return memberOf(srcType, "operator@i64") ? true : false;
 				case TypeId::U8:
-					return srcType->getMember("operator@u8") ? true : false;
+					return memberOf(srcType, "operator@u8") ? true : false;
 				case TypeId::U16:
-					return srcType->getMember("operator@u16") ? true : false;
+					return memberOf(srcType, "operator@u16") ? true : false;
 				case TypeId::U32:
-					return srcType->getMember("operator@u32") ? true : false;
+					return memberOf(srcType, "operator@u32") ? true : false;
 				case TypeId::U64:
-					return srcType->getMember("operator@u64") ? true : false;
+					return memberOf(srcType, "operator@u64") ? true : false;
 				case TypeId::F32:
-					return srcType->getMember("operator@f32") ? true : false;
+					return memberOf(srcType, "operator@f32") ? true : false;
 				case TypeId::F64:
-					return srcType->getMember("operator@f64") ? true : false;
+					return memberOf(srcType, "operator@f64") ? true : false;
 				case TypeId::BOOL:
-					return srcType->getMember("operator@bool") ? true : false;
+					return memberOf(srcType, "operator@bool") ? true : false;
 				case TypeId::OBJECT: {
 					switch (dest.getCustomTypeExData()->getType().typeId) {
 						case TypeId::CLASS: {
-							auto destType = (ClassValue *)dest.getCustomTypeExData().get();
-							return srcType->getMember("operator@" + srcType->getRuntime()->getFullName(destType)) ? true : false;
+							auto destType = (ClassValue *)dest.getCustomTypeExData();
+							return memberOf(srcType, "operator@" + srcType->getRuntime()->getFullName(destType)) ? true : false;
 						}
 						case TypeId::INTERFACE: {
-							auto destType = (InterfaceValue *)dest.getCustomTypeExData().get();
+							auto destType = (InterfaceValue *)dest.getCustomTypeExData();
 							if (srcType->hasImplemented(destType))
 								return true;
 							return false;
 						}
 						case TypeId::TRAIT: {
-							auto destType = (TraitValue *)dest.getCustomTypeExData().get();
+							auto destType = (TraitValue *)dest.getCustomTypeExData();
 							if (srcType->consistsOf(destType))
 								return true;
 							return false;
@@ -162,8 +162,8 @@ bool slake::isCompatible(Type a, Type b) {
 				case TypeId::CLASS: {
 					switch (b.typeId) {
 						case TypeId::OBJECT:
-							for (auto i = ((ClassValue *)b.getCustomTypeExData().get()); i; i = (ClassValue *)i->getParent()) {
-								if (i == b.getCustomTypeExData().get())
+							for (auto i = ((ClassValue *)b.getCustomTypeExData()); i; i = (ClassValue *)i->getParent()) {
+								if (i == b.getCustomTypeExData())
 									return true;
 							}
 							return false;
@@ -176,7 +176,7 @@ bool slake::isCompatible(Type a, Type b) {
 				case TypeId::INTERFACE: {
 					switch (b.typeId) {
 						case TypeId::OBJECT:
-							return ((ClassValue *)b.getCustomTypeExData().get())->hasImplemented((InterfaceValue *)a.getCustomTypeExData().get());
+							return ((ClassValue *)b.getCustomTypeExData())->hasImplemented((InterfaceValue *)a.getCustomTypeExData());
 						case TypeId::NONE:
 							return true;
 						default:
@@ -186,7 +186,7 @@ bool slake::isCompatible(Type a, Type b) {
 				case TypeId::TRAIT: {
 					switch (b.typeId) {
 						case TypeId::OBJECT:
-							return ((ClassValue *)b.getCustomTypeExData().get())->consistsOf((TraitValue *)a.getCustomTypeExData().get());
+							return ((ClassValue *)b.getCustomTypeExData())->consistsOf((TraitValue *)a.getCustomTypeExData());
 						case TypeId::NONE:
 							return true;
 						default:
@@ -246,8 +246,8 @@ std::string std::to_string(const slake::Type &&type, const slake::Runtime *rt) {
 			return to_string(type.getArrayExData(), rt) + "[]";
 		case TypeId::OBJECT: {
 			if (type.isLoadingDeferred())
-				return "@" + std::to_string((RefValue *)type.getCustomTypeExData().get());
-			return "@" + rt->getFullName((MemberValue *)type.getCustomTypeExData().get());
+				return "@" + std::to_string((RefValue *)type.getCustomTypeExData());
+			return "@" + rt->getFullName((MemberValue *)type.getCustomTypeExData());
 		}
 		case TypeId::ANY:
 			return "any";

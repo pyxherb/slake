@@ -2,13 +2,25 @@
 
 using namespace slake;
 
+void Runtime::_gcWalk(Scope *scope) {
+	for (auto &i : scope->members) {
+		_gcWalk(i.second);
+	}
+
+	if (scope->owner)
+		_gcWalk(scope->owner);
+
+	if (scope->parent)
+		_gcWalk(scope->parent);
+}
+
 void Runtime::_gcWalk(Type &type) {
 	switch (type.typeId) {
 		case TypeId::OBJECT:
 		case TypeId::CLASS:
 		case TypeId::INTERFACE:
 		case TypeId::TRAIT:
-			_gcWalk(type.getCustomTypeExData().get());
+			_gcWalk(type.getCustomTypeExData());
 			break;
 		case TypeId::ARRAY:
 			_gcWalk(type.getArrayExData());
@@ -49,81 +61,62 @@ void Runtime::_gcWalk(Type &type) {
 }
 
 void Runtime::_gcWalk(Value *v) {
-	if (v->_flags & VF_WALKED)
+	if (_walkedValues.count(v))
 		return;
 
-	v->_flags |= VF_WALKED;
+	_walkedValues.insert(v);
+	_createdValues.erase(v);
 
-	switch (v->getType().typeId) {
+	switch (auto typeId = v->getType().typeId; typeId) {
 		case TypeId::OBJECT: {
 			auto value = (ObjectValue *)v;
-			for (auto &i : value->_members)
-				_gcWalk(i.second);
+			_gcWalk(value->scope.get());
 			_gcWalk(value->_class);
 			if (value->_parent)
-				_gcWalk(value->_parent.get());
+				_gcWalk(value->_parent);
 			break;
 		}
 		case TypeId::ARRAY:
 			for (auto &i : ((ArrayValue *)v)->values)
-				_gcWalk(i.get());
+				_gcWalk(i);
 			break;
 		case TypeId::MAP:
 			break;
-		case TypeId::CLASS: {
-			ClassValue *const value = (ClassValue *)v;
-
-			if (value->_parent)
-				_gcWalk(value->_parent);
-
-			{
-				auto p = value->parentClass.resolveCustomType();
-				if (p)
-					_gcWalk(p);
-			}
-
-			for (auto &i : value->_members)
-				_gcWalk(i.second);
-
-			value->parentClass.loadDeferredType(this);
-			_gcWalk(value->parentClass);
-
-			for (auto &i : value->implInterfaces) {
-				i.loadDeferredType(this);
-				_gcWalk(i);
-			}
-
-			break;
-		}
+		case TypeId::MOD:
+		case TypeId::CLASS:
+		case TypeId::TRAIT:
 		case TypeId::INTERFACE: {
-			InterfaceValue *const value = (InterfaceValue *)v;
+			if (((ModuleValue *)v)->_parent)
+				_gcWalk(((ModuleValue *)v)->_parent);
 
-			if (value->_parent)
-				_gcWalk(value->_parent);
+			_gcWalk(((ModuleValue *)v)->scope.get());
 
-			for (auto &i : value->parents) {
-				i.loadDeferredType(this);
-				_gcWalk(i.getCustomTypeExData().get());
-			}
-
-			for (auto &i : value->_members)
+			for (auto &i : ((ModuleValue *)v)->imports)
 				_gcWalk(i.second);
 
-			break;
-		}
-		case TypeId::TRAIT: {
-			TraitValue *const value = (TraitValue *)v;
-
-			if (value->_parent)
-				_gcWalk(value->_parent);
-
-			for (auto &i : value->parents) {
-				i.loadDeferredType(this);
-				_gcWalk(i.getCustomTypeExData().get());
+			switch (typeId) {
+				case TypeId::CLASS:
+					for (auto &i : ((ClassValue *)v)->implInterfaces) {
+						i.loadDeferredType(this);
+						_gcWalk(i);
+					}
+					((ClassValue *)v)->parentClass.loadDeferredType(this);
+					if (auto p = ((ClassValue *)v)->parentClass.resolveCustomType(); p)
+						_gcWalk(p);
+					break;
+				case TypeId::TRAIT:
+					for (auto &i : ((TraitValue *)v)->parents) {
+						i.loadDeferredType(this);
+						_gcWalk(i.getCustomTypeExData());
+					}
+					break;
+				case TypeId::INTERFACE:
+					for (auto &i : ((InterfaceValue *)v)->parents) {
+						i.loadDeferredType(this);
+						_gcWalk(i.getCustomTypeExData());
+					}
+					break;
 			}
-
-			for (auto &i : value->_members)
-				_gcWalk(i.second);
 
 			break;
 		}
@@ -139,19 +132,8 @@ void Runtime::_gcWalk(Value *v) {
 				_gcWalk(value->_parent);
 			break;
 		}
-		case TypeId::MOD: {
-			ModuleValue *value = (ModuleValue *)v;
-
-			if (value->_parent)
-				_gcWalk(value->_parent);
-
-			for (auto &i : value->_members)
-				_gcWalk(i.second);
-			break;
-		}
 		case TypeId::ROOT:
-			for (auto &i : ((RootValue *)v)->_members)
-				_gcWalk(i.second.get());
+			_gcWalk(((RootValue *)v)->scope.get());
 			break;
 		case TypeId::FN: {
 			auto basicFn = (BasicFnValue *)v;
@@ -167,10 +149,9 @@ void Runtime::_gcWalk(Value *v) {
 				auto value = (FnValue *)basicFn;
 				for (size_t i = 0; i < value->nIns; ++i) {
 					auto &ins = value->body[i];
-					for (size_t j = 0; j < ins.operands.size(); ++j) {
-						auto operand = ins.operands[j].get();
-						if (operand)
-							_gcWalk(operand);
+					for (auto j : ins.operands) {
+						if (j)
+							_gcWalk(j);
 					}
 				}
 			}
@@ -194,7 +175,7 @@ void Runtime::_gcWalk(Value *v) {
 		case TypeId::ALIAS: {
 			auto value = (AliasValue *)v;
 
-			_gcWalk(value->_src.get());
+			_gcWalk(value->src);
 			break;
 		}
 		case TypeId::CONTEXT: {
@@ -220,30 +201,29 @@ void Runtime::_gcWalk(Value *v) {
 		case TypeId::ARG_REF:
 			break;
 		default:
-			auto t = v->getType().typeId;
 			throw std::logic_error("Unhandled value type");
 	}
 }
 
 void Runtime::_gcWalk(Context &ctxt) {
 	for (auto &j : ctxt.majorFrames) {
-		_gcWalk(const_cast<FnValue *>(j.curFn.get()));
+		_gcWalk(const_cast<FnValue *>(j.curFn));
 		if (j.scopeValue)
-			_gcWalk(j.scopeValue.get());
+			_gcWalk(j.scopeValue);
 		if (j.returnValue)
-			_gcWalk(j.returnValue.get());
+			_gcWalk(j.returnValue);
 		if (j.thisObject)
-			_gcWalk(j.thisObject.get());
+			_gcWalk(j.thisObject);
 		if (j.curExcept)
-			_gcWalk(j.curExcept.get());
+			_gcWalk(j.curExcept);
 		for (auto &k : j.argStack)
-			_gcWalk(k.get());
+			_gcWalk(k);
 		for (auto &k : j.nextArgStack)
-			_gcWalk(k.get());
+			_gcWalk(k);
 		for (auto &k : j.localVars)
-			_gcWalk(k.get());
+			_gcWalk(k);
 		for (auto &k : j.regs)
-			_gcWalk(k.get());
+			_gcWalk(k);
 		for (auto &k : j.minorFrames) {
 			for (auto &l : k.exceptHandlers)
 				_gcWalk(l.type);
@@ -254,6 +234,9 @@ void Runtime::_gcWalk(Context &ctxt) {
 void Runtime::gc() {
 	_flags |= _RT_INGC;
 
+	bool foundDestructibleValues = false;
+
+rescan:
 	if (_rootValue)
 		_gcWalk(_rootValue);
 
@@ -261,56 +244,37 @@ void Runtime::gc() {
 	for (auto &i : activeContexts)
 		_gcWalk(*i.second);
 
-	std::set<Value *> unreachableValues;
-	unreachableValues.swap(_extraGcTargets);
-
-	if (_rootValue) {
-		// Scan for GC targets.
-		for (auto i = _createdValues.begin(); i != _createdValues.end(); ++i) {
-			auto type = (*i)->getType();
-			if ((!(*i)->_flags & VF_WALKED)) {
-				if (!(*i)->hostRefCount)
-					unreachableValues.insert(*i);
+	// Execute destructors for all destructible objects.
+	destructingThreads.insert(std::this_thread::get_id());
+	for (auto i : _createdValues) {
+		if (!i->hostRefCount) {
+			auto d = memberChainOf(i, "delete");
+			if (d.size() && i->getType() == TypeId::OBJECT && !(((ObjectValue*)i)->objectFlags & OBJECT_PARENT)) {
+				for(auto j : d) {
+					_destructedValues.insert(j.first->owner);
+					j.second->call({});
+				}
+				foundDestructibleValues = true;
 			}
-		}
-
-		// Execute destructors for all destructible objects.
-		destructingThreads.insert(std::this_thread::get_id());
-		for (auto i : unreachableValues) {
-			if (_createdValues.count(i)) {
-				auto d = i->getMember("delete");
-				if (d && i->getType() == TypeId::OBJECT)
-					d->call({});
-			}
-		}
-		destructingThreads.erase(std::this_thread::get_id());
-
-		for (auto i : unreachableValues) {
-			if (_createdValues.count(i))
-				delete i;
-		}
-	} else {
-		destructingThreads.insert(std::this_thread::get_id());
-		for (auto i : _createdValues) {
-			if (_createdValues.count(i)) {
-				auto d = i->getMember("delete");
-				if (d && i->getType() == TypeId::OBJECT)
-					d->call({});
-			}
-		}
-		destructingThreads.erase(std::this_thread::get_id());
-
-		while (!_createdValues.empty()) {
-			auto i = _createdValues.begin();
-			if (!((*i)->hostRefCount)) {
-				delete *i;
-			} else
-				_createdValues.erase(i);
 		}
 	}
+	destructingThreads.erase(std::this_thread::get_id());
 
-	for (auto i : _createdValues)
-		i->_flags &= ~VF_WALKED;
+	for (auto i : _createdValues) {
+		if(i->hostRefCount) {
+			_walkedValues.insert(i);
+		} else
+			delete i;
+	}
+
+	_createdValues.swap(_walkedValues);
+	_walkedValues.clear();
+	_destructedValues.clear();
+
+	if (foundDestructibleValues) {
+		foundDestructibleValues = false;
+		goto rescan;
+	}
 
 	_szMemUsedAfterLastGc = _szMemInUse;
 	_flags &= ~_RT_INGC;

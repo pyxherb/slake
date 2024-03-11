@@ -8,7 +8,5 @@ ArrayValue::ArrayValue(Runtime *rt, Type type)
 }
 
 ArrayValue::~ArrayValue() {
-	for (auto i : values)
-		delete i.get();
 	reportSizeFreedToRuntime(sizeof(*this) - sizeof(Value));
 }

@@ -10,28 +10,28 @@ Value *Runtime::resolveRef(RefValue* ref, Value *scopeValue) const {
 		if (!(scopeValue = _rootValue))
 			return nullptr;
 
-	MemberValue *value = (MemberValue *)scopeValue;
+	MemberValue *curValue = (MemberValue *)scopeValue;
 
-	while (value) {
-		value = (MemberValue *)scopeValue;
+	while (curValue) {
+		curValue = (MemberValue *)scopeValue;
 
 		for (auto &i : ref->entries) {
 			if (!scopeValue)
 				goto fail;
 
 			if (i.name == "base") {
-				switch (value->getType().typeId) {
+				switch (curValue->getType().typeId) {
 					case TypeId::MOD:
 					case TypeId::CLASS:
-						scopeValue = (MemberValue *)value->getParent();
+						scopeValue = (MemberValue *)curValue->getParent();
 						break;
 					case TypeId::OBJECT:
-						scopeValue = ((ObjectValue *)value)->_parent.get();
+						scopeValue = ((ObjectValue *)curValue)->_parent;
 						break;
 					default:
 						goto fail;
 				}
-			} else if (!(scopeValue = scopeValue->getMember(i.name))) {
+			} else if (!(scopeValue = memberOf(scopeValue, i.name))) {
 				break;
 			}
 
@@ -47,16 +47,16 @@ Value *Runtime::resolveRef(RefValue* ref, Value *scopeValue) const {
 			return scopeValue;
 
 	fail:
-		switch (value->getType().typeId) {
+		switch (curValue->getType().typeId) {
 			case TypeId::MOD:
 			case TypeId::CLASS:
-				if(!value->getParent())
+				if(!curValue->getParent())
 					return nullptr;
-				scopeValue = (MemberValue *)value->getParent();
+				scopeValue = (MemberValue *)curValue->getParent();
 				break;
 			case TypeId::OBJECT: {
-				auto t = ((ObjectValue *)value)->getType();
-				scopeValue = t.getCustomTypeExData().get();
+				auto t = ((ObjectValue *)curValue)->getType();
+				scopeValue = t.getCustomTypeExData();
 				break;
 			}
 			default:

@@ -44,6 +44,7 @@ startLineParseEnd:
 					case ':':
 						state = HttpMessageParseState::HeaderValueWhitespaces;
 						break;
+					case '\r':
 					case '\n':
 						if (curHeader.first.empty())
 							goto headersParseEnd;
@@ -61,6 +62,7 @@ startLineParseEnd:
 						++i;
 						++column;
 						break;
+					case '\r':
 					case '\n':
 						throw HttpParseError("Prematured end of line", line, column);
 					default:
@@ -218,7 +220,7 @@ versionWhitespaceParseEnd:
 			case '\n':
 				throw HttpParseError("Unexpected end of line", 0, i - 1);
 			default:
-				statusLine.statusCode += c;
+				((uint16_t &)statusLine.statusCode) += c;
 		}
 	}
 	throw HttpParseError("Prematured end of message", 0, i - 1);

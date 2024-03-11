@@ -100,8 +100,8 @@ namespace slake {
 
 	struct Type final {
 		TypeId typeId;	// Type ID
-		mutable std::variant<std::monostate, ValueRef<Value, false>, Type *, std::pair<Type *, Type *>, uint8_t> exData;
-		TypeFlags flags;
+		mutable std::variant<std::monostate, Value*, Type *, std::pair<Type *, Type *>, uint8_t> exData;
+		TypeFlags flags = 0;
 
 		inline Type() noexcept : typeId(TypeId::NONE) {}
 		inline Type(const Type &x) noexcept { *this = x; }
@@ -124,7 +124,7 @@ namespace slake {
 
 		~Type();
 
-		inline ValueRef<> getCustomTypeExData() const { return std::get<ValueRef<Value, false>>(exData).get(); }
+		inline Value* getCustomTypeExData() const { return std::get<Value*>(exData); }
 		inline Type &getArrayExData() const { return *std::get<Type *>(exData); }
 		inline std::pair<Type *, Type *> getMapExData() const { return std::get<std::pair<Type *, Type *>>(exData); }
 		inline uint8_t getGenericArgExData() const { return std::get<uint8_t>(exData); }
@@ -149,7 +149,7 @@ namespace slake {
 					assert(lhsType->getType() != TypeId::REF &&
 						   rhsType->getType() != TypeId::REF);
 
-					return lhsType.get() < rhsType.get();
+					return lhsType < rhsType;
 				}
 				case TypeId::ARRAY:
 					return getArrayExData() < rhs.getArrayExData();
@@ -185,7 +185,7 @@ namespace slake {
 					assert(lhsType->getType() != TypeId::REF &&
 						   rhsType->getType() != TypeId::REF);
 
-					return lhsType.get() == rhsType.get();
+					return lhsType == rhsType;
 				}
 				case TypeId::ARRAY:
 					return getArrayExData() == rhs.getArrayExData();
@@ -220,7 +220,7 @@ namespace slake {
 
 		inline Value *resolveCustomType() {
 			if (typeId == TypeId::CLASS)
-				return (Value *)getCustomTypeExData().get();
+				return (Value *)getCustomTypeExData();
 			return nullptr;
 		}
 	};

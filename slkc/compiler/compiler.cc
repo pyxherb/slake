@@ -46,7 +46,7 @@ class SlakeErrorListener : public antlr4::BaseErrorListener {
 
 class PseudoOutputStream : public std::ostream {
 public:
-	inline PseudoOutputStream() : ostream() {}
+	inline PseudoOutputStream() : ostream(nullptr) {}
 	virtual ~PseudoOutputStream() = default;
 };
 

@@ -1,10 +1,14 @@
 #ifndef _SLKC_CONFIG_H_IN_
 #define _SLKC_CONFIG_H_IN_
 
-#if @SLKC_WITH_LSP_ENABLED@==TRUE
-#define SLKC_WITH_LSP_ENABLED true
-#else
-#define SLKC_WITH_LSP_ENABLED false
+#ifndef TRUE
+#define TRUE true
 #endif
+
+#ifndef FALSE
+#define FALSE false
+#endif
+
+#define SLKC_WITH_LSP_ENABLED @SLKC_WITH_LSP_ENABLED@
 
 #endif

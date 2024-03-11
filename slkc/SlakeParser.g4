@@ -29,7 +29,7 @@ stmt:
 	| 'return' expr? ';'													# ReturnStmt
 	| 'yield' expr? ';'														# YieldStmt
 	| 'if' varDef? '(' expr ')' stmt elseBranch?							# IfStmt
-	| 'try' stmt catchBlock+ finalBlock?									# TryStmt
+	| 'try' '{' stmt '}' catchBlock+ finalBlock?							# TryStmt
 	| 'switch' '(' expr ')' '{' switchCase+ defaultBranch? '}'				# SwitchStmt
 	| codeBlock																# CodeBlockStmt
 	| expr ';'																# ExprStmt;
@@ -37,8 +37,8 @@ stmt:
 elseBranch: 'else' stmt;
 
 catchBlock:
-	'catch' ('(' type = typeName varName = ID ')')? stmt;
-finalBlock: 'final' stmt;
+	'catch' ('(' type = typeName varName = ID ')')? '{' stmt '}';
+finalBlock: 'final' '{' stmt '}';
 
 switchCase: 'case' expr ':' stmt*;
 defaultBranch: 'default' ':' stmt*;

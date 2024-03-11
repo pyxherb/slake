@@ -25,15 +25,15 @@ namespace slake {
 	struct MinorFrame final {
 		std::deque<ExceptionHandler> exceptHandlers;  // Exception handlers
 
-		std::deque<ValueRef<>> dataStack;  // Data stack
+		std::deque<Value *> dataStack;	// Data stack
 		uint32_t nLocalVars = 0, nRegs = 0;
 
 		MinorFrame(uint32_t nLocalVars, uint32_t nRegs);
 
-		inline void push(ValueRef<> v) {
+		inline void push(Value *v) {
 			if (dataStack.size() > SLAKE_STACK_MAX)
 				throw StackOverflowError("Stack overflowed");
-			dataStack.push_back(v.get());
+			dataStack.push_back(v);
 		}
 
 		inline ValueRef<> pop() {
@@ -47,25 +47,25 @@ namespace slake {
 
 	/// @brief Major frames which represent a single calling frame.
 	struct MajorFrame final {
-		ValueRef<> scopeValue;					   // Scope value.
-		ValueRef<const FnValue> curFn;			   // Current function
-		uint32_t curIns = 0;					   // Offset of current instruction in function body
-		std::deque<ValueRef<VarValue>> argStack;   // Argument stack
-		std::deque<ValueRef<>> nextArgStack;	   // Next Argument stack
-		std::deque<ValueRef<VarValue>> localVars;  // Local variables
-		std::deque<ValueRef<VarValue>> regs;	   // Local registers
-		ValueRef<> thisObject;					   // `this' object
-		ValueRef<> returnValue;					   // Return value
-		std::deque<MinorFrame> minorFrames;		   // Minor frames
-		ValueRef<> curExcept;					   // Current exception
+		Value *scopeValue = nullptr;		 // Scope value.
+		const FnValue *curFn = nullptr;		 // Current function.
+		uint32_t curIns = 0;				 // Offset of current instruction in function body.
+		std::deque<Value *> argStack;		 // Argument stack.
+		std::deque<Value *> nextArgStack;	 // Argument stack for next call.
+		std::deque<VarValue *> localVars;	 // Local variables.
+		std::deque<VarValue *> regs;		 // Local registers.
+		Value *thisObject = nullptr;		 // `this' object.
+		Value *returnValue = nullptr;		 // Return value.
+		std::deque<MinorFrame> minorFrames;	 // Minor frames.
+		Value *curExcept = nullptr;			 // Current exception.
 
 		MajorFrame(Runtime *rt);
 
-		inline ValueRef<> lload(uint32_t off) {
+		inline Value *lload(uint32_t off) {
 			if (off >= localVars.size())
 				throw InvalidLocalVarIndexError("Invalid local variable index", off);
 
-			return localVars.at(off).get();
+			return localVars.at(off);
 		}
 
 		/// @brief Leave current minor frame.
@@ -127,12 +127,7 @@ namespace slake {
 		RootValue *_rootValue;
 
 		/// @brief Contains all created values.
-		std::set<Value *> _createdValues;
-
-		/// @brief Extra target values for GC, all contained values will be released by the
-		/// garbage collector every GC cycle and this container will be cleared when the cycle
-		/// was completed.
-		std::set<Value *> _extraGcTargets;
+		std::set<Value *> _createdValues, _walkedValues, _destructedValues;
 
 		struct GenericLookupEntry {
 			Value *originalValue;
@@ -147,7 +142,7 @@ namespace slake {
 				GenericArgListComparator>;
 
 		using GenericCacheDirectory = std::map<
-			const Value *,	// Original generic value.
+			const Value *,	// Original uninstantiated generic value.
 			GenericCacheTable>;
 
 		/// @brief Cached instances of generic values.
@@ -190,6 +185,7 @@ namespace slake {
 		/// was not introduced into ISO C++17.
 		void _execIns(Context *context, Instruction ins);
 
+		void _gcWalk(Scope *scope);
 		void _gcWalk(Type &type);
 		void _gcWalk(Value *i);
 		void _gcWalk(Context &i);

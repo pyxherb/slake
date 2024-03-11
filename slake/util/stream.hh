@@ -9,13 +9,13 @@ namespace slake {
 		class InputMemStream : virtual private std::streambuf,
 							   virtual public std::istream {
 		private:
-			const void *_src;
+			const void *src;
 			size_t _size;
 
 		public:
 			inline InputMemStream(const void *src, std::streamsize size)
 				: basic_istream(this),
-				  _src(src),
+				  src(src),
 				  _size(size) {
 				setbuf((char *)src, size);
 			}

@@ -10,7 +10,7 @@ ModuleValue *stdlib::modStd;
 void stdlib::load(Runtime *rt) {
 	auto root = rt->getRootValue();
 
-	root->addMember("std", modStd = new ModuleValue(rt, ACCESS_PUB));
+	root->scope->addMember("std", modStd = new ModuleValue(rt, ACCESS_PUB));
 	math::load(rt);
 	util::load(rt);
 }

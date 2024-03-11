@@ -5,46 +5,46 @@
 #include <fstream>
 #include <iostream>
 
-slake::ValueRef<> print(slake::Runtime *rt, std::deque<slake::ValueRef<>> args) {
+slake::ValueRef<> print(slake::Runtime *rt, std::deque<slake::Value*> args) {
 	using namespace slake;
 
 	for (uint8_t i = 0; i < args.size(); ++i) {
 		switch (args[i]->getType().typeId) {
 			case TypeId::I8:
-				std::cout << ((I8Value *)args[i].get())->getData();
+				std::cout << ((I8Value *)args[i])->getData();
 				break;
 			case TypeId::I16:
-				std::cout << ((I16Value *)args[i].get())->getData();
+				std::cout << ((I16Value *)args[i])->getData();
 				break;
 			case TypeId::I32:
-				std::cout << ((I32Value *)args[i].get())->getData();
+				std::cout << ((I32Value *)args[i])->getData();
 				break;
 			case TypeId::I64:
-				std::cout << ((I64Value *)args[i].get())->getData();
+				std::cout << ((I64Value *)args[i])->getData();
 				break;
 			case TypeId::U8:
-				std::cout << ((U8Value *)args[i].get())->getData();
+				std::cout << ((U8Value *)args[i])->getData();
 				break;
 			case TypeId::U16:
-				std::cout << ((U16Value *)args[i].get())->getData();
+				std::cout << ((U16Value *)args[i])->getData();
 				break;
 			case TypeId::U32:
-				std::cout << ((U32Value *)args[i].get())->getData();
+				std::cout << ((U32Value *)args[i])->getData();
 				break;
 			case TypeId::U64:
-				std::cout << ((U64Value *)args[i].get())->getData();
+				std::cout << ((U64Value *)args[i])->getData();
 				break;
 			case TypeId::F32:
-				std::cout << ((F32Value *)args[i].get())->getData();
+				std::cout << ((F32Value *)args[i])->getData();
 				break;
 			case TypeId::F64:
-				std::cout << ((F64Value *)args[i].get())->getData();
+				std::cout << ((F64Value *)args[i])->getData();
 				break;
 			case TypeId::BOOL:
-				fputs(((BoolValue *)args[i].get())->getData() ? "true" : "false", stdout);
+				fputs(((BoolValue *)args[i])->getData() ? "true" : "false", stdout);
 				break;
 			case TypeId::STRING:
-				fputs(((StringValue *)args[i].get())->getData().c_str(), stdout);
+				fputs(((StringValue *)args[i])->getData().c_str(), stdout);
 				break;
 			default:
 				throw std::runtime_error("Invalid argument type");
@@ -54,10 +54,10 @@ slake::ValueRef<> print(slake::Runtime *rt, std::deque<slake::ValueRef<>> args) 
 	return {};
 }
 
-slake::ValueRef<> getSlakeBuildVersionInfo(slake::Runtime *rt, std::deque<slake::ValueRef<>> args) {
+slake::ValueRef<> getSlakeBuildVersionInfo(slake::Runtime *rt, std::deque<slake::Value*> args) {
 	using namespace slake;
 
-	switch(((I32Value*)args[0].get())->getData()) {
+	switch(((I32Value*)args[0])->getData()) {
 		case 0:
 			return new StringValue(rt, __DATE__);
 		case 1:
@@ -87,7 +87,7 @@ void printTraceback(slake::Runtime *rt) {
 	auto ctxt = rt->activeContexts.at(std::this_thread::get_id());
 	printf("Traceback:\n");
 	for (auto i = ctxt->majorFrames.rbegin(); i != ctxt->majorFrames.rend(); ++i) {
-		printf("\t%s: 0x%08x", rt->getFullName(i->curFn.get()).c_str(), i->curIns);
+		printf("\t%s: 0x%08x", rt->getFullName(i->curFn).c_str(), i->curIns);
 
 		if (auto sld = i->curFn->getSourceLocationInfo(i->curIns); sld) {
 			printf(" at %d:%d", sld->line, sld->column);
@@ -112,17 +112,15 @@ int main(int argc, char **argv) {
 
 		mod = rt->loadModule(fs, slake::LMOD_NOCONFLICT);
 	} catch (std::ios::failure e) {
-		printf("Error loading main module\n");
+		printf("Error loading main module: %s\n", e.what());
 		return -1;
 	}
 
-	((slake::ModuleValue *)((slake::ModuleValue *)rt->getRootValue()->getMember("hostext"))->getMember("extfns"))->addMember("print", new slake::NativeFnValue(rt.get(), print, slake::ACCESS_PUB, slake::TypeId::NONE));
-	((slake::ModuleValue *)((slake::ModuleValue *)rt->getRootValue()->getMember("hostext"))->getMember("extfns"))->addMember("getSlakeBuildVersionInfo$i32", new slake::NativeFnValue(rt.get(), getSlakeBuildVersionInfo, slake::ACCESS_PUB, slake::TypeId::NONE));
-
-	slake::ValueRef<> result;
+	((slake::ModuleValue *)((slake::ModuleValue *)rt->getRootValue()->scope->getMember("hostext"))->scope->getMember("extfns"))->scope->putMember("print", new slake::NativeFnValue(rt.get(), print, slake::ACCESS_PUB, slake::TypeId::NONE));
+	((slake::ModuleValue *)((slake::ModuleValue *)rt->getRootValue()->scope->getMember("hostext"))->scope->getMember("extfns"))->scope->putMember("getSlakeBuildVersionInfo$i32", new slake::NativeFnValue(rt.get(), getSlakeBuildVersionInfo, slake::ACCESS_PUB, slake::TypeId::NONE));
 
 	try {
-		slake::ValueRef<slake::ContextValue> context = (slake::ContextValue *)mod->getMember("main")->call({}).get();
+		slake::ValueRef<slake::ContextValue> context = (slake::ContextValue *)mod->scope->getMember("main")->call({}).get();
 		printf("%d\n", ((slake::I32Value *)context->getResult().get())->getData());
 		while (!context->isDone()) {
 			context->resume();
@@ -141,8 +139,7 @@ int main(int argc, char **argv) {
 		printTraceback(rt.get());
 	}
 
-	result.release();
-	mod.release();
+	mod.reset();
 
 	rt.reset();
 	return 0;

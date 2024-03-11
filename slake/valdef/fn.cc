@@ -19,12 +19,14 @@ slake::FnValue::FnValue(Runtime *rt, uint32_t nIns, AccessModifier access, Type 
 
 FnValue::~FnValue() {
 	// Because the runtime will release all values, so we just fill the body with 0
-	// (because the references do not release their held object).
+	// (because the references do not release objects they held).
 	if (_rt->_flags & _RT_DELETING)
 		memset((void *)body, 0, sizeof(Instruction) * nIns);
 
-	if (body)
+	if (body) {
 		delete[] body;
+		body = nullptr;
+	}
 
 	reportSizeFreedToRuntime(sizeof(*this) - sizeof(BasicFnValue) + sizeof(Instruction) * nIns);
 }
@@ -81,7 +83,7 @@ ValueRef<> FnValue::exec(std::shared_ptr<Context> context) const {
 	return context->majorFrames.back().returnValue;
 }
 
-ValueRef<> FnValue::call(std::deque<ValueRef<>> args) const {
+ValueRef<> FnValue::call(std::deque<Value *> args) const {
 	std::shared_ptr<Context> context = std::make_shared<Context>();
 
 	{
@@ -109,7 +111,7 @@ NativeFnValue::~NativeFnValue() {
 	reportSizeFreedToRuntime(sizeof(*this) - sizeof(BasicFnValue));
 }
 
-ValueRef<> NativeFnValue::call(std::deque<ValueRef<>> args) const {
+ValueRef<> NativeFnValue::call(std::deque<Value *> args) const {
 	return body(_rt, args);
 }
 

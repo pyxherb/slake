@@ -19,7 +19,7 @@ void slake::decompiler::decompile(std::istream &fs, std::ostream &os) {
 
 	auto modName = rt->getFullName(mod.get());
 
-	for (auto &i : *mod.get())
+	for (auto &i : mod->scope->members)
 		decompileValue(rt.get(), i.second, os);
 }
 
@@ -129,7 +129,7 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 
 					for (size_t j = 0; j < ins->operands.size(); ++j) {
 						os << (j ? ", " : " ");
-						decompileValue(rt, ins->operands[j].get(), os, indentLevel);
+						decompileValue(rt, ins->operands[j], os, indentLevel);
 					}
 
 					os << ";\n";
@@ -146,7 +146,7 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 			os << std::string(indentLevel, '\t')
 			   << ".module " << v->getName() << "\n";
 
-			for (auto &i : *v)
+			for (auto &i : v->scope->members)
 				decompileValue(rt, i.second, os, indentLevel + 1);
 
 			os << std::string(indentLevel, '\t')
@@ -165,7 +165,7 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 			os << std::string(indentLevel, '\t')
 			   << ".class " << v->getName() << "\n";
 
-			for (auto &i : *v)
+			for (auto &i : v->scope->members)
 				decompileValue(rt, i.second, os, indentLevel + 1);
 
 			os << std::string(indentLevel, '\t')

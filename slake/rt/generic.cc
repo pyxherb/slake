@@ -15,7 +15,7 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 		case TypeId::OBJECT: {
 			auto value = (ObjectValue *)v;
 
-			for (auto &i : value->_members)
+			for (auto &i : value->scope->members)
 				_instantiateGenericValue(i.second, genericArgs);
 
 			for (auto &i : value->_genericArgs)
@@ -24,7 +24,7 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 			_instantiateGenericValue(value->_class, genericArgs);
 
 			if (value->_parent)
-				_instantiateGenericValue(value->_parent.get(), genericArgs);
+				_instantiateGenericValue(value->_parent, genericArgs);
 			break;
 		}
 		case TypeId::ARRAY: {
@@ -41,7 +41,7 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 
 			value->_genericArgs = genericArgs;
 
-			for (auto &i : value->_members)
+			for (auto &i : value->scope->members)
 				_instantiateGenericValue(i.second, genericArgs);
 
 			break;
@@ -51,7 +51,7 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 
 			value->_genericArgs = genericArgs;
 
-			for (auto &i : value->_members)
+			for (auto &i : value->scope->members)
 				_instantiateGenericValue(i.second, genericArgs);
 
 			break;
@@ -59,7 +59,7 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 		case TypeId::TRAIT: {
 			TraitValue *const value = (TraitValue *)v;
 
-			for (auto &i : value->_members)
+			for (auto &i : value->scope->members)
 				_instantiateGenericValue(i.second, genericArgs);
 
 			break;
@@ -73,7 +73,7 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 		case TypeId::MOD: {
 			ModuleValue *value = (ModuleValue *)v;
 
-			for (auto &i : value->_members)
+			for (auto &i : value->scope->members)
 				_instantiateGenericValue(i.second, genericArgs);
 			break;
 		}
@@ -88,9 +88,9 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 			for (size_t i = 0; i < value->nIns; ++i) {
 				auto &ins = value->body[i];
 				for (size_t j = 0; j < ins.operands.size(); ++j) {
-					auto &operand = ins.operands[j];
+					auto operand = ins.operands[j];
 					if (operand && operand->getType() == TypeId::TYPENAME)
-						_instantiateGenericValue(((TypeNameValue *)operand.get())->_data, genericArgs);
+						_instantiateGenericValue(((TypeNameValue *)operand)->_data, genericArgs);
 				}
 			}
 			break;
@@ -98,7 +98,7 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 		case TypeId::ALIAS: {
 			AliasValue* value = (AliasValue*)v;
 
-			value->_src = instantiateGenericValue(value->_src.get(), genericArgs);
+			value->src = instantiateGenericValue(value->src, genericArgs);
 			break;
 		}
 		case TypeId::ROOT:

@@ -5,30 +5,22 @@
 
 namespace slake {
 	class AliasValue final : public MemberValue {
-	private:
-		mutable ValueRef<Value, false> _src;
-		friend class Runtime;
-		friend Value *unwrapAlias(Value *value) noexcept;
-		friend const Value *unwrapAlias(const Value *value) noexcept;
-
 	public:
+		mutable Value *src;
+
 		AliasValue(Runtime *rt, AccessModifier access, Value *src);
 		virtual ~AliasValue();
 
 		virtual inline Type getType() const override { return TypeId::ALIAS; }
-		inline ValueRef<> getSource() const { return _src.get(); }
 
-		virtual MemberValue *getMember(std::string name) override;
-		virtual const MemberValue *getMember(std::string name) const override;
-
-		virtual ValueRef<> call(std::deque<ValueRef<>> args) const override;
+		virtual ValueRef<> call(std::deque<Value *> args) const override;
 
 		virtual Value *duplicate() const override;
 
 		inline AliasValue &operator=(const AliasValue &x) {
 			((Value &)*this) = (Value &)x;
 
-			_src = x._src;
+			src = x.src;
 
 			return *this;
 		}
@@ -38,13 +30,13 @@ namespace slake {
 	inline Value *unwrapAlias(Value *value) noexcept {
 		if (value->getType() != TypeId::ALIAS)
 			return value;
-		return ((AliasValue *)value)->_src.get();
+		return ((AliasValue *)value)->src;
 	}
 
 	inline const Value *unwrapAlias(const Value *value) noexcept {
 		if (value->getType() != TypeId::ALIAS)
 			return value;
-		return ((AliasValue *)value)->_src.get();
+		return ((AliasValue *)value)->src;
 	}
 }
 

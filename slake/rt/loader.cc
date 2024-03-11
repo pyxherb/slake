@@ -221,7 +221,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 		if (i.flags & slxfmt::VAD_INIT)
 			var->setData(_loadValue(fs));
 
-		mod->addMember(name, var.release());
+		mod->scope->putMember(name, var.release());
 	}
 
 	//
@@ -305,7 +305,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 			fn->sourceLocDescs.push_back(sld);
 		}
 
-		mod->addMember(name, fn.release());
+		mod->scope->putMember(name, fn.release());
 	}
 
 	//
@@ -340,7 +340,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 
 		_loadScope(value.get(), fs);
 
-		mod->addMember(name, value.release());
+		mod->scope->putMember(name, value.release());
 	}
 
 	//
@@ -364,7 +364,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 
 		_loadScope(value.get(), fs);
 
-		mod->addMember(name, value.release());
+		mod->scope->putMember(name, value.release());
 	}
 
 	//
@@ -388,7 +388,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 
 		_loadScope(value.get(), fs);
 
-		mod->addMember(name, value.release());
+		mod->scope->putMember(name, value.release());
 	}
 }
 
@@ -413,32 +413,32 @@ ValueRef<ModuleValue> slake::Runtime::loadModule(std::istream &fs, LoadModuleFla
 		for (size_t i = 0; i < modName->entries.size() - 1; ++i) {
 			auto &name = modName->entries[i].name;
 
-			if (!curValue->getMember(name)) {
+			if (!memberOf(curValue.get(), name)) {
 				// Create a new one if corresponding module does not present.
 				auto mod = new ModuleValue(this, ACCESS_PUB);
 
 				if (curValue->getType() == TypeId::ROOT)
-					((RootValue *)curValue.get())->addMember(name, mod);
+					((RootValue *)curValue.get())->scope->putMember(name, mod);
 				else
-					((ModuleValue *)curValue.get())->addMember(name, mod);
+					((ModuleValue *)curValue.get())->scope->putMember(name, mod);
 
 				curValue = (Value *)mod;
 			} else {
 				// Continue if the module presents.
-				curValue = curValue->getMember(name);
+				curValue = memberOf(curValue.get(), name);
 			}
 		}
 
 		auto lastName = modName->entries.back().name;
 		// Add current module.
 		if (curValue->getType() == TypeId::ROOT)
-			((RootValue *)curValue.get())->addMember(lastName, mod.get());
+			((RootValue *)curValue.get())->scope->putMember(lastName, mod.get());
 		else {
 			auto moduleValue = (ModuleValue *)curValue.get();
 
-			if (moduleValue->getMember(lastName)) {
+			if (auto member = memberOf(moduleValue, lastName); member) {
 				if (flags & LMOD_NORELOAD) {
-					if (moduleValue->getMember(lastName)->getType() != TypeId::MOD)
+					if (member->getType() != TypeId::MOD)
 						throw LoaderError(
 							"Value which corresponds to module name \"" + std::to_string(modName, this) + "\" was found, but is not a module");
 				}
@@ -446,7 +446,7 @@ ValueRef<ModuleValue> slake::Runtime::loadModule(std::istream &fs, LoadModuleFla
 					throw LoaderError("Module \"" + std::to_string(modName, this) + "\" conflicted with existing value which is on the same path");
 			}
 
-			moduleValue->addMember(modName->entries.back().name, mod.get());
+			moduleValue->scope->putMember(modName->entries.back().name, mod.get());
 		}
 	}
 
@@ -461,10 +461,10 @@ ValueRef<ModuleValue> slake::Runtime::loadModule(std::istream &fs, LoadModuleFla
 			std::unique_ptr<std::istream> moduleStream(_moduleLocator(this, moduleName));
 			if (!moduleStream)
 				throw LoaderError("Error finding module `" + std::to_string(moduleName) + "' for dependencies");
-			mod->addMember(name, (MemberValue *)new AliasValue(this, 0, loadModule(*moduleStream.get(), LMOD_NORELOAD).get()));
+			mod->scope->putMember(name, (MemberValue *)new AliasValue(this, 0, loadModule(*moduleStream.get(), LMOD_NORELOAD).get()));
 		}
 
-		mod->imports[name] = moduleName;
+		mod->imports[name] = moduleName.get();
 	}
 
 	_loadScope(mod.get(), fs);

@@ -8,14 +8,16 @@ using namespace slake;
 ///
 /// @note This function normalizes loading-deferred types.
 ObjectValue *slake::Runtime::_newClassInstance(ClassValue *cls) {
-	ObjectValue *instance = new ObjectValue(this, cls);
+	ObjectValue *parent = nullptr;
 
 	if (cls->parentClass.typeId == TypeId::CLASS) {
 		cls->parentClass.loadDeferredType(this);
-		instance->_parent = _newClassInstance((ClassValue *)cls->parentClass.getCustomTypeExData().get());
+		parent = _newClassInstance((ClassValue *)cls->parentClass.getCustomTypeExData());
 	}
 
-	for (auto i : cls->_members) {
+	ObjectValue *instance = new ObjectValue(this, cls, parent);
+
+	for (auto i : cls->scope->members) {
 		switch (i.second->getType().typeId) {
 			case TypeId::VAR: {
 				ValueRef<VarValue> var = new VarValue(
@@ -27,12 +29,12 @@ ObjectValue *slake::Runtime::_newClassInstance(ClassValue *cls) {
 				if (auto initValue = ((VarValue *)i.second)->getData(); initValue)
 					var->setData(initValue);
 
-				instance->addMember(i.first, var.get());
+				instance->scope->addMember(i.first, var.get());
 				break;
 			}
 			case TypeId::FN: {
 				if (!((FnValue *)i.second)->isStatic())
-					instance->addMember(i.first, (MemberValue *)i.second->duplicate());
+					instance->scope->addMember(i.first, (MemberValue *)i.second->duplicate());
 				break;
 			}
 		}
@@ -41,14 +43,16 @@ ObjectValue *slake::Runtime::_newClassInstance(ClassValue *cls) {
 }
 
 ObjectValue *slake::Runtime::_newGenericClassInstance(ClassValue *cls, std::deque<Type> &genericArgs) {
-	ObjectValue *instance = new ObjectValue(this, cls);
+	ObjectValue *parent = nullptr;
 
 	if (cls->parentClass.typeId == TypeId::CLASS) {
 		cls->parentClass.loadDeferredType(this);
-		instance->_parent = _newClassInstance((ClassValue *)cls->parentClass.getCustomTypeExData().get());
+		parent = _newClassInstance((ClassValue *)cls->parentClass.getCustomTypeExData());
 	}
 
-	for (auto i : cls->_members) {
+	ObjectValue *instance = new ObjectValue(this, cls, parent);
+
+	for (auto i : cls->scope->members) {
 		switch (i.second->getType().typeId) {
 			case TypeId::VAR: {
 				ValueRef<VarValue> var = new VarValue(
@@ -60,12 +64,12 @@ ObjectValue *slake::Runtime::_newGenericClassInstance(ClassValue *cls, std::dequ
 				if (auto initValue = ((VarValue *)i.second)->getData(); initValue)
 					var->setData(initValue);
 
-				instance->addMember(i.first, var.get());
+				instance->scope->addMember(i.first, var.get());
 				break;
 			}
 			case TypeId::FN: {
 				if (!((FnValue *)i.second)->isStatic())
-					instance->addMember(i.first, (MemberValue *)i.second);
+					instance->scope->addMember(i.first, (MemberValue *)i.second);
 				break;
 			}
 		}

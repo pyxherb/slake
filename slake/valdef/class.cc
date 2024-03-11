@@ -12,7 +12,7 @@ ClassValue::~ClassValue() {
 }
 
 bool ClassValue::_isAbstract() const {
-	for (auto i : _members) {
+	for (auto i : scope->members) {
 		switch (i.second->getType().typeId) {
 			case TypeId::FN:
 				if (((FnValue *)i.second)->isAbstract())
@@ -38,24 +38,24 @@ bool ClassValue::hasImplemented(const InterfaceValue *pInterface) const {
 	for (auto &i : implInterfaces) {
 		i.loadDeferredType(_rt);
 
-		if (((InterfaceValue *)i.getCustomTypeExData().get())->isDerivedFrom(pInterface))
+		if (((InterfaceValue *)i.getCustomTypeExData())->isDerivedFrom(pInterface))
 			return true;
 	}
 	return false;
 }
 
 bool ClassValue::consistsOf(const TraitValue *t) const {
-	for (auto &i : t->_members) {
+	for (auto &i : t->scope->members) {
 		const MemberValue *v = nullptr;	 // Corresponding member in this class.
 
 		// Check if corresponding member presents.
-		if (!(v = getMember(i.first))) {
+		if (!(v = scope->getMember(i.first))) {
 			// Scan for parents if the member was not found.
-			auto j = this;
+			ClassValue* j = (ClassValue*)this;
 			while (j->parentClass) {
-				if (!(v = (MemberValue *)j->getMember(i.first))) {
+				if (!(v = (MemberValue *)memberOf(j, i.first))) {
 					j->parentClass.loadDeferredType(_rt);
-					j = (ClassValue *)j->parentClass.getCustomTypeExData().get();
+					j = (ClassValue *)j->parentClass.getCustomTypeExData();
 					continue;
 				}
 				goto found;
@@ -102,7 +102,7 @@ bool ClassValue::consistsOf(const TraitValue *t) const {
 	if (t->parents.size()) {
 		for (auto &i : t->parents) {
 			i.loadDeferredType(_rt);
-			if (!consistsOf((TraitValue *)i.getCustomTypeExData().get())) {
+			if (!consistsOf((TraitValue *)i.getCustomTypeExData())) {
 				return false;
 			}
 		}
@@ -118,7 +118,7 @@ bool InterfaceValue::isDerivedFrom(const InterfaceValue *pInterface) const {
 	for (auto &i : parents) {
 		i.loadDeferredType(_rt);
 
-		InterfaceValue *interface = (InterfaceValue *)i.getCustomTypeExData().get();
+		InterfaceValue *interface = (InterfaceValue *)i.getCustomTypeExData();
 
 		if (interface->getType() != TypeId::INTERFACE)
 			throw IncompatibleTypeError("Referenced type value is not an interface");

@@ -421,7 +421,18 @@ VISIT_METHOD_DECL(ClassConstructorDecl) {
 
 	return visitChildren(context);
 }
-VISIT_METHOD_DECL(ClassDestructorDecl) { return Any(); }
+VISIT_METHOD_DECL(ClassDestructorDecl) {
+	auto decl = any_cast<FnDecl>(visit(context->destructorDecl()));
+	if (context->access())
+		decl.overloadingRegistry.access = any_cast<AccessModifier>(visit(context->access()));
+
+	_putFnDefinition(
+		Location(context->destructorDecl()->KW_OPERATOR()),
+		decl.name,
+		decl.overloadingRegistry);
+
+	return visitChildren(context);
+}
 VISIT_METHOD_DECL(ClassConstructorDef) {
 	auto decl = any_cast<FnDecl>(visit(context->constructorDef()));
 	if (context->access())
@@ -434,7 +445,18 @@ VISIT_METHOD_DECL(ClassConstructorDef) {
 
 	return visitChildren(context);
 }
-VISIT_METHOD_DECL(ClassDestructorDef) { return Any(); }
+VISIT_METHOD_DECL(ClassDestructorDef) {
+	auto decl = any_cast<FnDecl>(visit(context->destructorDef()));
+	if (context->access())
+		decl.overloadingRegistry.access = any_cast<AccessModifier>(visit(context->access()));
+
+	_putFnDefinition(
+		Location(context->destructorDef()->destructorDecl()->KW_OPERATOR()),
+		decl.name,
+		decl.overloadingRegistry);
+
+	return visitChildren(context);
+}
 VISIT_METHOD_DECL(ClassVarDef) {
 	auto varDef = static_pointer_cast<VarDefStmtNode>(any_cast<shared_ptr<StmtNode>>(visit(context->varDef())));
 
@@ -555,8 +577,22 @@ VISIT_METHOD_DECL(ConstructorDef) {
 	return decl;
 }
 
-VISIT_METHOD_DECL(DestructorDecl) { return Any(); }
-VISIT_METHOD_DECL(DestructorDef) { return Any(); }
+VISIT_METHOD_DECL(DestructorDecl) {
+	auto name = "delete";
+
+	return FnDecl(
+		name,
+		FnOverloadingRegistry(
+			Location(context->KW_OPERATOR()),
+			make_shared<VoidTypeNameNode>(Location(context->KW_OPERATOR()), false),
+			{},
+			{}));
+}
+VISIT_METHOD_DECL(DestructorDef) {
+	auto decl = any_cast<FnDecl>(visit(context->destructorDecl()));
+	decl.overloadingRegistry.body = static_pointer_cast<BlockStmtNode>(any_cast<shared_ptr<StmtNode>>(visit(context->codeBlock())));
+	return decl;
+}
 
 VISIT_METHOD_DECL(InterfaceDef) { return Any(); }
 VISIT_METHOD_DECL(InterfaceFnDecl) { return Any(); }

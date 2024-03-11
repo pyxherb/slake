@@ -88,17 +88,6 @@ namespace slake {
 		}
 		virtual ~InterfaceValue();
 
-		virtual inline void addMember(std::string name, MemberValue *value) override {
-			switch (value->getType().typeId) {
-				case TypeId::FN:
-				case TypeId::VAR:
-					ModuleValue::addMember(name, value);
-					break;
-				default:
-					throw std::logic_error("Unacceptable member type");
-			}
-		}
-
 		virtual inline Type getType() const override { return TypeId::INTERFACE; }
 
 		virtual Value *duplicate() const override;

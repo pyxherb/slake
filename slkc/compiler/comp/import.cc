@@ -48,7 +48,7 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 
 	(scope->members[value->_name] = mod)->bind(parent.get());
 
-	for (auto i : value->_members)
+	for (auto i : value->scope->members)
 		importDefinitions(mod->scope, mod, i.second);
 }
 
@@ -93,7 +93,7 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 
 	(scope->members[value->_name] = cls)->bind(parent.get());
 
-	for (auto i : value->_members)
+	for (auto i : value->scope->members)
 		importDefinitions(cls->scope, cls, (Value *)i.second);
 }
 
@@ -111,7 +111,7 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 
 	(scope->members[value->_name] = interface)->bind(parent.get());
 
-	for (auto i : value->_members)
+	for (auto i : value->scope->members)
 		importDefinitions(scope, interface, (Value *)i.second);
 }
 
@@ -129,7 +129,7 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 
 	(scope->members[value->_name] = trait)->bind(parent.get());
 
-	for (auto i : value->_members)
+	for (auto i : value->scope->members)
 		importDefinitions(scope, trait, (Value *)i.second);
 }
 
@@ -143,8 +143,8 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 		case TypeId::ROOT: {
 			RootValue *v = (RootValue *)value;
 
-			for (auto i : v->_members)
-				importDefinitions(scope, parent, i.second.get());
+			for (auto i : v->scope->members)
+				importDefinitions(scope, parent, i.second);
 
 			break;
 		}
@@ -212,7 +212,7 @@ shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 		case TypeId::ANY:
 			return make_shared<AnyTypeNameNode>(Location{}, isConst);
 		case TypeId::TYPENAME: {
-			auto refs = _rt->getFullRef((MemberValue *)runtimeType.getCustomTypeExData().get());
+			auto refs = _rt->getFullRef((MemberValue *)runtimeType.getCustomTypeExData());
 			Ref ref;
 
 			for (auto &i : refs) {

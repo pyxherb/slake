@@ -1,5 +1,5 @@
-#ifndef _SLKC_COMPILER_AST_TYPENAME_H_
-#define _SLKC_COMPILER_AST_TYPENAME_H_
+#ifndef _SLKC_COMPILER_AST_COMMENT_H_
+#define _SLKC_COMPILER_AST_COMMENT_H_
 
 #include "ref.h"
 
@@ -17,7 +17,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return _loc; }
 
-			virtual inline NodeType getNodeType() const override { return AST_COMMENT; }
+			virtual inline NodeType getNodeType() const override { return NodeType::Comment; }
 		};
 	}
 }

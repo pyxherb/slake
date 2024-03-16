@@ -53,21 +53,21 @@ Value *slake::memberOf(Value *value, const std::string &name) {
 		return nullptr;
 
 	switch (auto type = value->getType(); type.typeId) {
-		case TypeId::OBJECT:
+		case TypeId::Object:
 			return ((ObjectValue *)value)->scope->getMember(name);
-		case TypeId::CLASS:
-		case TypeId::INTERFACE:
-		case TypeId::TRAIT:
-		case TypeId::MOD:
+		case TypeId::Class:
+		case TypeId::Interface:
+		case TypeId::Trait:
+		case TypeId::Module:
 			return ((ModuleValue *)value)->scope->getMember(name);
-		case TypeId::VAR:
+		case TypeId::Var:
 			return memberOf(((VarValue *)value)->getData(), name);
-		case TypeId::ALIAS:
+		case TypeId::Alias:
 			return memberOf(((AliasValue *)value)->src, name);
-		case TypeId::ROOT:
+		case TypeId::RootValue:
 			return ((RootValue *)value)->scope->getMember(name);
-		case TypeId::ARRAY:
-		case TypeId::MAP:
+		case TypeId::Array:
+		case TypeId::Map:
 		case TypeId::I8:
 		case TypeId::I16:
 		case TypeId::I32:
@@ -78,18 +78,18 @@ Value *slake::memberOf(Value *value, const std::string &name) {
 		case TypeId::U64:
 		case TypeId::F32:
 		case TypeId::F64:
-		case TypeId::STRING:
-		case TypeId::BOOL:
-		case TypeId::FN:
-		case TypeId::REF:
-		case TypeId::NONE:
-		case TypeId::GENERIC_ARG:
-		case TypeId::ANY:
-		case TypeId::REG_REF:
-		case TypeId::LVAR_REF:
-		case TypeId::ARG_REF:
-		case TypeId::TYPENAME:
-		case TypeId::CONTEXT:
+		case TypeId::String:
+		case TypeId::Bool:
+		case TypeId::Fn:
+		case TypeId::Ref:
+		case TypeId::None:
+		case TypeId::GenericArg:
+		case TypeId::Any:
+		case TypeId::RegRef:
+		case TypeId::LocalVarRef:
+		case TypeId::ArgRef:
+		case TypeId::TypeName:
+		case TypeId::Context:
 			return nullptr;
 		default:
 			throw std::logic_error("Unhandled value type");
@@ -101,21 +101,21 @@ std::deque<std::pair<Scope*, MemberValue*>> slake::memberChainOf(Value *value, c
 		return {};
 
 	switch (auto type = value->getType(); type.typeId) {
-		case TypeId::OBJECT:
+		case TypeId::Object:
 			return ((ObjectValue *)value)->scope->getMemberChain(name);
-		case TypeId::CLASS:
-		case TypeId::INTERFACE:
-		case TypeId::TRAIT:
-		case TypeId::MOD:
+		case TypeId::Class:
+		case TypeId::Interface:
+		case TypeId::Trait:
+		case TypeId::Module:
 			return ((ModuleValue *)value)->scope->getMemberChain(name);
-		case TypeId::VAR:
+		case TypeId::Var:
 			return memberChainOf(((VarValue *)value)->getData(), name);
-		case TypeId::ALIAS:
+		case TypeId::Alias:
 			return memberChainOf(((AliasValue *)value)->src, name);
-		case TypeId::ROOT:
+		case TypeId::RootValue:
 			return ((RootValue *)value)->scope->getMemberChain(name);
-		case TypeId::ARRAY:
-		case TypeId::MAP:
+		case TypeId::Array:
+		case TypeId::Map:
 		case TypeId::I8:
 		case TypeId::I16:
 		case TypeId::I32:
@@ -126,18 +126,18 @@ std::deque<std::pair<Scope*, MemberValue*>> slake::memberChainOf(Value *value, c
 		case TypeId::U64:
 		case TypeId::F32:
 		case TypeId::F64:
-		case TypeId::STRING:
-		case TypeId::BOOL:
-		case TypeId::FN:
-		case TypeId::REF:
-		case TypeId::NONE:
-		case TypeId::GENERIC_ARG:
-		case TypeId::ANY:
-		case TypeId::REG_REF:
-		case TypeId::LVAR_REF:
-		case TypeId::ARG_REF:
-		case TypeId::TYPENAME:
-		case TypeId::CONTEXT:
+		case TypeId::String:
+		case TypeId::Bool:
+		case TypeId::Fn:
+		case TypeId::Ref:
+		case TypeId::None:
+		case TypeId::GenericArg:
+		case TypeId::Any:
+		case TypeId::RegRef:
+		case TypeId::LocalVarRef:
+		case TypeId::ArgRef:
+		case TypeId::TypeName:
+		case TypeId::Context:
 			return {};
 		default:
 			throw std::logic_error("Unhandled value type");

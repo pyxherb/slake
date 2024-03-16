@@ -34,16 +34,16 @@ namespace slake {
 			virtual ~FatalCompilationError() = default;
 		};
 
-		enum OptimizationLevel : uint8_t {
-			OPTM_DISABLED = 0,	// Disable optimizations
-			OPTM_SAFE,			// Safe
-			OPTM_SPEED,			// Optimize for speed
-			OPTM_MEM			// Optimize for memory usage
+		enum class OptimizationLevel : uint8_t {
+			Disabled = 0,  // Disable optimizations
+			Safe,		   // Safe
+			Speed,		   // Optimize for speed
+			MemoryUsage	   // Optimize for memory usage
 		};
 
 		struct CompilerOptions {
 			// Optimization level
-			OptimizationLevel optimizationLevel = OPTM_DISABLED;
+			OptimizationLevel optimizationLevel = OptimizationLevel::Disabled;
 		};
 
 		using CompilerFlags = uint32_t;
@@ -66,10 +66,10 @@ namespace slake {
 		class Compiler {
 		private:
 			enum class EvalPurpose {
-				STMT,	 // As a statement
-				LVALUE,	 // As a lvalue
-				RVALUE,	 // As a rvalue
-				CALL,	 // As the target of a call
+				Stmt,	 // As a statement
+				LValue,	 // As a lvalue
+				RValue,	 // As a rvalue
+				Call,	 // As the target of a call
 			};
 
 			/// @brief Statement level context
@@ -174,8 +174,8 @@ namespace slake {
 
 			FnOverloadingRegistry *argDependentLookup(Location loc, FnNode *fn, const deque<shared_ptr<TypeNameNode>> &argTypes);
 
-			shared_ptr<Scope> scopeOf(AstNode* node);
-			shared_ptr<AstNode> resolveCustomType(CustomTypeNameNode* typeName);
+			shared_ptr<Scope> scopeOf(AstNode *node);
+			shared_ptr<AstNode> resolveCustomType(CustomTypeNameNode *typeName);
 
 			bool isSameType(shared_ptr<TypeNameNode> x, shared_ptr<TypeNameNode> y);
 
@@ -219,8 +219,8 @@ namespace slake {
 			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, ClassValue *value);
 			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, InterfaceValue *value);
 			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, TraitValue *value);
-			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, Value* value);
-			void importModule(string name, const ModuleRef& ref, shared_ptr<Scope> scope);
+			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, Value *value);
+			void importModule(string name, const ModuleRef &ref, shared_ptr<Scope> scope);
 			shared_ptr<TypeNameNode> toTypeName(slake::Type runtimeType);
 			Ref toAstRef(deque<slake::RefEntry> runtimeRefEntries);
 			slkc::GenericQualifier toAstGenericQualifier(slake::GenericQualifier qualifier);

@@ -16,23 +16,23 @@ void Runtime::_gcWalk(Scope *scope) {
 
 void Runtime::_gcWalk(Type &type) {
 	switch (type.typeId) {
-		case TypeId::OBJECT:
-		case TypeId::CLASS:
-		case TypeId::INTERFACE:
-		case TypeId::TRAIT:
+		case TypeId::Object:
+		case TypeId::Class:
+		case TypeId::Interface:
+		case TypeId::Trait:
 			_gcWalk(type.getCustomTypeExData());
 			break;
-		case TypeId::ARRAY:
+		case TypeId::Array:
 			_gcWalk(type.getArrayExData());
 			break;
-		case TypeId::MAP: {
+		case TypeId::Map: {
 			_gcWalk(*type.getMapExData().first);
 			_gcWalk(*type.getMapExData().second);
 			break;
 		}
-		case TypeId::VAR:
-		case TypeId::MOD:
-		case TypeId::ROOT:
+		case TypeId::Var:
+		case TypeId::Module:
+		case TypeId::RootValue:
 		case TypeId::I8:
 		case TypeId::I16:
 		case TypeId::I32:
@@ -43,17 +43,17 @@ void Runtime::_gcWalk(Type &type) {
 		case TypeId::U64:
 		case TypeId::F32:
 		case TypeId::F64:
-		case TypeId::STRING:
-		case TypeId::BOOL:
-		case TypeId::FN:
-		case TypeId::REF:
-		case TypeId::NONE:
-		case TypeId::GENERIC_ARG:
-		case TypeId::ALIAS:
-		case TypeId::ANY:
-		case TypeId::REG_REF:
-		case TypeId::LVAR_REF:
-		case TypeId::ARG_REF:
+		case TypeId::String:
+		case TypeId::Bool:
+		case TypeId::Fn:
+		case TypeId::Ref:
+		case TypeId::None:
+		case TypeId::GenericArg:
+		case TypeId::Alias:
+		case TypeId::Any:
+		case TypeId::RegRef:
+		case TypeId::LocalVarRef:
+		case TypeId::ArgRef:
 			break;
 		default:
 			throw std::logic_error("Unhandled value type");
@@ -68,7 +68,7 @@ void Runtime::_gcWalk(Value *v) {
 	_createdValues.erase(v);
 
 	switch (auto typeId = v->getType().typeId; typeId) {
-		case TypeId::OBJECT: {
+		case TypeId::Object: {
 			auto value = (ObjectValue *)v;
 			_gcWalk(value->scope.get());
 			_gcWalk(value->_class);
@@ -76,16 +76,16 @@ void Runtime::_gcWalk(Value *v) {
 				_gcWalk(value->_parent);
 			break;
 		}
-		case TypeId::ARRAY:
+		case TypeId::Array:
 			for (auto &i : ((ArrayValue *)v)->values)
 				_gcWalk(i);
 			break;
-		case TypeId::MAP:
+		case TypeId::Map:
 			break;
-		case TypeId::MOD:
-		case TypeId::CLASS:
-		case TypeId::TRAIT:
-		case TypeId::INTERFACE: {
+		case TypeId::Module:
+		case TypeId::Class:
+		case TypeId::Trait:
+		case TypeId::Interface: {
 			if (((ModuleValue *)v)->_parent)
 				_gcWalk(((ModuleValue *)v)->_parent);
 
@@ -95,7 +95,7 @@ void Runtime::_gcWalk(Value *v) {
 				_gcWalk(i.second);
 
 			switch (typeId) {
-				case TypeId::CLASS:
+				case TypeId::Class:
 					for (auto &i : ((ClassValue *)v)->implInterfaces) {
 						i.loadDeferredType(this);
 						_gcWalk(i);
@@ -104,13 +104,13 @@ void Runtime::_gcWalk(Value *v) {
 					if (auto p = ((ClassValue *)v)->parentClass.resolveCustomType(); p)
 						_gcWalk(p);
 					break;
-				case TypeId::TRAIT:
+				case TypeId::Trait:
 					for (auto &i : ((TraitValue *)v)->parents) {
 						i.loadDeferredType(this);
 						_gcWalk(i.getCustomTypeExData());
 					}
 					break;
-				case TypeId::INTERFACE:
+				case TypeId::Interface:
 					for (auto &i : ((InterfaceValue *)v)->parents) {
 						i.loadDeferredType(this);
 						_gcWalk(i.getCustomTypeExData());
@@ -120,7 +120,7 @@ void Runtime::_gcWalk(Value *v) {
 
 			break;
 		}
-		case TypeId::VAR: {
+		case TypeId::Var: {
 			VarValue *value = (VarValue *)v;
 
 			_gcWalk(value->type);
@@ -132,10 +132,10 @@ void Runtime::_gcWalk(Value *v) {
 				_gcWalk(value->_parent);
 			break;
 		}
-		case TypeId::ROOT:
+		case TypeId::RootValue:
 			_gcWalk(((RootValue *)v)->scope.get());
 			break;
-		case TypeId::FN: {
+		case TypeId::Fn: {
 			auto basicFn = (BasicFnValue *)v;
 
 			if (basicFn->_parent)
@@ -157,13 +157,13 @@ void Runtime::_gcWalk(Value *v) {
 			}
 			break;
 		}
-		case TypeId::TYPENAME: {
+		case TypeId::TypeName: {
 			auto value = (TypeNameValue *)v;
 
 			_gcWalk(value->_data);
 			break;
 		}
-		case TypeId::REF: {
+		case TypeId::Ref: {
 			auto value = (RefValue *)v;
 
 			for (auto &i : value->entries)
@@ -172,13 +172,13 @@ void Runtime::_gcWalk(Value *v) {
 				}
 			break;
 		}
-		case TypeId::ALIAS: {
+		case TypeId::Alias: {
 			auto value = (AliasValue *)v;
 
 			_gcWalk(value->src);
 			break;
 		}
-		case TypeId::CONTEXT: {
+		case TypeId::Context: {
 			auto value = (ContextValue *)v;
 
 			_gcWalk(*value->_context);
@@ -194,11 +194,11 @@ void Runtime::_gcWalk(Value *v) {
 		case TypeId::U64:
 		case TypeId::F32:
 		case TypeId::F64:
-		case TypeId::BOOL:
-		case TypeId::STRING:
-		case TypeId::REG_REF:
-		case TypeId::LVAR_REF:
-		case TypeId::ARG_REF:
+		case TypeId::Bool:
+		case TypeId::String:
+		case TypeId::RegRef:
+		case TypeId::LocalVarRef:
+		case TypeId::ArgRef:
 			break;
 		default:
 			throw std::logic_error("Unhandled value type");
@@ -249,7 +249,7 @@ rescan:
 	for (auto i : _createdValues) {
 		if (!i->hostRefCount) {
 			auto d = memberChainOf(i, "delete");
-			if (d.size() && i->getType() == TypeId::OBJECT && !(((ObjectValue*)i)->objectFlags & OBJECT_PARENT)) {
+			if (d.size() && i->getType() == TypeId::Object && !(((ObjectValue*)i)->objectFlags & OBJECT_PARENT)) {
 				for(auto j : d) {
 					_destructedValues.insert(j.first->owner);
 					j.second->call({});

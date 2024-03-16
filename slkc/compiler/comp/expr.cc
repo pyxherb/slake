@@ -14,12 +14,12 @@ struct UnaryOpRegistry {
 };
 
 static map<UnaryOp, UnaryOpRegistry> _unaryOpRegs = {
-	{ OP_NOT, { slake::Opcode::NOT, false } },
-	{ OP_REV, { slake::Opcode::REV, false } },
-	{ OP_INCF, { slake::Opcode::INCF, true } },
-	{ OP_DECF, { slake::Opcode::DECF, true } },
-	{ OP_INCB, { slake::Opcode::INCB, true } },
-	{ OP_DECB, { slake::Opcode::DECB, true } }
+	{ UnaryOp::LNot, { slake::Opcode::LNOT, false } },
+	{ UnaryOp::Not, { slake::Opcode::NOT, false } },
+	{ UnaryOp::IncF, { slake::Opcode::INCF, true } },
+	{ UnaryOp::DecF, { slake::Opcode::DECF, true } },
+	{ UnaryOp::IncB, { slake::Opcode::INCB, true } },
+	{ UnaryOp::DecB, { slake::Opcode::DECB, true } }
 };
 
 struct BinaryOpRegistry {
@@ -37,59 +37,55 @@ struct BinaryOpRegistry {
 };
 
 static map<BinaryOp, BinaryOpRegistry> _binaryOpRegs = {
-	{ OP_ADD, { slake::Opcode::ADD, false, false } },
-	{ OP_SUB, { slake::Opcode::SUB, false, false } },
-	{ OP_MUL, { slake::Opcode::MUL, false, false } },
-	{ OP_DIV, { slake::Opcode::DIV, false, false } },
-	{ OP_MOD, { slake::Opcode::MOD, false, false } },
-	{ OP_AND, { slake::Opcode::AND, false, false } },
-	{ OP_OR, { slake::Opcode::OR, false, false } },
-	{ OP_XOR, { slake::Opcode::XOR, false, false } },
-	{ OP_LAND, { slake::Opcode::LAND, false, false } },
-	{ OP_LOR, { slake::Opcode::LOR, false, false } },
-	{ OP_LSH, { slake::Opcode::LSH, false, false } },
-	{ OP_RSH, { slake::Opcode::RSH, false, false } },
-	{ OP_SWAP, { slake::Opcode::SWAP, true, true } },
+	{ BinaryOp::Add, { slake::Opcode::ADD, false, false } },
+	{ BinaryOp::Sub, { slake::Opcode::SUB, false, false } },
+	{ BinaryOp::Mul, { slake::Opcode::MUL, false, false } },
+	{ BinaryOp::Div, { slake::Opcode::DIV, false, false } },
+	{ BinaryOp::Mod, { slake::Opcode::MOD, false, false } },
+	{ BinaryOp::And, { slake::Opcode::AND, false, false } },
+	{ BinaryOp::Or, { slake::Opcode::OR, false, false } },
+	{ BinaryOp::Xor, { slake::Opcode::XOR, false, false } },
+	{ BinaryOp::LAnd, { slake::Opcode::LAND, false, false } },
+	{ BinaryOp::LOr, { slake::Opcode::LOR, false, false } },
+	{ BinaryOp::Lsh, { slake::Opcode::LSH, false, false } },
+	{ BinaryOp::Rsh, { slake::Opcode::RSH, false, false } },
+	{ BinaryOp::Swap, { slake::Opcode::SWAP, true, true } },
 
-	{ OP_ASSIGN, { slake::Opcode::NOP, true, false } },
-	{ OP_ASSIGN_ADD, { slake::Opcode::NOP, true, false } },
-	{ OP_ASSIGN_SUB, { slake::Opcode::NOP, true, false } },
-	{ OP_ASSIGN_MUL, { slake::Opcode::NOP, true, false } },
-	{ OP_ASSIGN_DIV, { slake::Opcode::NOP, true, false } },
-	{ OP_ASSIGN_MOD, { slake::Opcode::NOP, true, false } },
-	{ OP_ASSIGN_AND, { slake::Opcode::NOP, true, false } },
-	{ OP_ASSIGN_OR, { slake::Opcode::NOP, true, false } },
-	{ OP_ASSIGN_XOR, { slake::Opcode::NOP, true, false } },
-	{ OP_ASSIGN_LAND, { slake::Opcode::NOP, true, false } },
-	{ OP_ASSIGN_LOR, { slake::Opcode::NOP, true, false } },
-	{ OP_ASSIGN_LSH, { slake::Opcode::NOP, true, false } },
-	{ OP_ASSIGN_RSH, { slake::Opcode::NOP, true, false } },
+	{ BinaryOp::Assign, { slake::Opcode::NOP, true, false } },
+	{ BinaryOp::AssignAdd, { slake::Opcode::NOP, true, false } },
+	{ BinaryOp::AssignSub, { slake::Opcode::NOP, true, false } },
+	{ BinaryOp::AssignMul, { slake::Opcode::NOP, true, false } },
+	{ BinaryOp::AssignDiv, { slake::Opcode::NOP, true, false } },
+	{ BinaryOp::AssignMod, { slake::Opcode::NOP, true, false } },
+	{ BinaryOp::AssignAnd, { slake::Opcode::NOP, true, false } },
+	{ BinaryOp::AssignOr, { slake::Opcode::NOP, true, false } },
+	{ BinaryOp::AssignXor, { slake::Opcode::NOP, true, false } },
+	{ BinaryOp::AssignLsh, { slake::Opcode::NOP, true, false } },
+	{ BinaryOp::AssignRsh, { slake::Opcode::NOP, true, false } },
 
-	{ OP_EQ, { slake::Opcode::EQ, false, false } },
-	{ OP_NEQ, { slake::Opcode::NEQ, false, false } },
-	{ OP_STRICTEQ, { slake::Opcode::SEQ, false, false } },
-	{ OP_STRICTNEQ, { slake::Opcode::SNEQ, false, false } },
-	{ OP_LT, { slake::Opcode::LT, false, false } },
-	{ OP_GT, { slake::Opcode::GT, false, false } },
-	{ OP_LTEQ, { slake::Opcode::LTEQ, false, false } },
-	{ OP_GTEQ, { slake::Opcode::GTEQ, false, false } },
-	{ OP_SUBSCRIPT, { slake::Opcode::AT, false, false } }
+	{ BinaryOp::Eq, { slake::Opcode::EQ, false, false } },
+	{ BinaryOp::Neq, { slake::Opcode::NEQ, false, false } },
+	{ BinaryOp::StrictEq, { slake::Opcode::SEQ, false, false } },
+	{ BinaryOp::StrictNeq, { slake::Opcode::SNEQ, false, false } },
+	{ BinaryOp::Lt, { slake::Opcode::LT, false, false } },
+	{ BinaryOp::Gt, { slake::Opcode::GT, false, false } },
+	{ BinaryOp::LtEq, { slake::Opcode::LTEQ, false, false } },
+	{ BinaryOp::GtEq, { slake::Opcode::GTEQ, false, false } },
+	{ BinaryOp::Subscript, { slake::Opcode::AT, false, false } }
 };
 
 static map<BinaryOp, BinaryOp> _assignBinaryOpToOrdinaryBinaryOpMap = {
-	{ OP_ASSIGN, OP_ASSIGN },
-	{ OP_ASSIGN_ADD, OP_ADD },
-	{ OP_ASSIGN_SUB, OP_SUB },
-	{ OP_ASSIGN_MUL, OP_MUL },
-	{ OP_ASSIGN_DIV, OP_DIV },
-	{ OP_ASSIGN_MOD, OP_MOD },
-	{ OP_ASSIGN_AND, OP_AND },
-	{ OP_ASSIGN_OR, OP_OR },
-	{ OP_ASSIGN_XOR, OP_XOR },
-	{ OP_ASSIGN_LAND, OP_LAND },
-	{ OP_ASSIGN_LOR, OP_LOR },
-	{ OP_ASSIGN_LSH, OP_LSH },
-	{ OP_ASSIGN_RSH, OP_RSH }
+	{ BinaryOp::Assign, BinaryOp::Assign },
+	{ BinaryOp::AssignAdd, BinaryOp::Add },
+	{ BinaryOp::AssignSub, BinaryOp::Sub },
+	{ BinaryOp::AssignMul, BinaryOp::Mul },
+	{ BinaryOp::AssignDiv, BinaryOp::Div },
+	{ BinaryOp::AssignMod, BinaryOp::Mod },
+	{ BinaryOp::AssignAnd, BinaryOp::And },
+	{ BinaryOp::AssignOr, BinaryOp::Or },
+	{ BinaryOp::AssignXor, BinaryOp::Xor },
+	{ BinaryOp::AssignLsh, BinaryOp::Lsh },
+	{ BinaryOp::AssignRsh, BinaryOp::Rsh }
 };
 
 void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
@@ -104,16 +100,16 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 	}
 
 	switch (expr->getExprType()) {
-		case EXPR_UNARY: {
+		case ExprType::Unary: {
 			auto e = static_pointer_cast<UnaryOpExprNode>(expr);
 
 			uint32_t lhsRegIndex = allocReg();
 
 			compileExpr(
 				e->x,
-				_unaryOpRegs.at(e->op).lvalueOperand ? EvalPurpose::LVALUE : EvalPurpose::RVALUE,
+				_unaryOpRegs.at(e->op).lvalueOperand ? EvalPurpose::LValue : EvalPurpose::RValue,
 				make_shared<RegRefNode>(lhsRegIndex));
-			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::STMT) {
+			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::Stmt) {
 				if (_unaryOpRegs.at(e->op).lvalueOperand) {
 					curFn->insertIns(_unaryOpRegs.at(e->op).opcode, make_shared<RegRefNode>(lhsRegIndex), make_shared<RegRefNode>(lhsRegIndex));
 				}
@@ -123,7 +119,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 
 			break;
 		}
-		case EXPR_BINARY: {
+		case ExprType::Binary: {
 			auto e = static_pointer_cast<BinaryOpExprNode>(expr);
 
 			uint32_t lhsRegIndex = allocReg(2);
@@ -134,8 +130,8 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 			compileExpr(
 				e->lhs,
 				_binaryOpRegs.at(e->op).isLhsLvalue
-					? EvalPurpose::LVALUE
-					: EvalPurpose::RVALUE,
+					? EvalPurpose::LValue
+					: EvalPurpose::RValue,
 				make_shared<RegRefNode>(lhsRegIndex));
 
 			if (!isSameType(lhsType, rhsType)) {
@@ -148,11 +144,11 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 				compileExpr(
 					make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
 					_binaryOpRegs.at(e->op).isRhsLvalue
-						? EvalPurpose::LVALUE
-						: EvalPurpose::RVALUE,
+						? EvalPurpose::LValue
+						: EvalPurpose::RValue,
 					make_shared<RegRefNode>(rhsRegIndex));
 			} else
-				compileExpr(e->rhs, _binaryOpRegs.at(e->op).isRhsLvalue ? EvalPurpose::LVALUE : EvalPurpose::RVALUE, make_shared<RegRefNode>(rhsRegIndex));
+				compileExpr(e->rhs, _binaryOpRegs.at(e->op).isRhsLvalue ? EvalPurpose::LValue : EvalPurpose::RValue, make_shared<RegRefNode>(rhsRegIndex));
 
 			if (isAssignBinaryOp(e->op)) {
 				// RHS of the assignment expression.
@@ -173,9 +169,9 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 				// LHS of the assignment expression.
 				curFn->insertIns(Opcode::STORE, make_shared<RegRefNode>(lhsRegIndex, true), make_shared<RegRefNode>(rhsRegIndex, true));
 
-				if ((curMajorContext.curMinorContext.evalPurpose != EvalPurpose::STMT) && (curMajorContext.curMinorContext.evalDest))
+				if ((curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt) && (curMajorContext.curMinorContext.evalDest))
 					curFn->insertIns(Opcode::STORE, curMajorContext.curMinorContext.evalDest, make_shared<RegRefNode>(rhsRegIndex, true));
-			} else if (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::STMT) {
+			} else if (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt) {
 				curFn->insertIns(
 					_binaryOpRegs.at(e->op).opcode,
 					curMajorContext.curMinorContext.evalDest,
@@ -189,7 +185,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 					make_shared<RegRefNode>(rhsRegIndex, true));
 			break;
 		}
-		case EXPR_TERNARY: {
+		case ExprType::Ternary: {
 			auto e = static_pointer_cast<TernaryOpExprNode>(expr);
 
 			uint32_t conditionRegIndex = allocReg();
@@ -198,8 +194,8 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 			string falseBranchLabel = "$ternary_" + to_string(loc.line) + "_" + to_string(loc.column) + "_false",
 				   endLabel = "$ternary_" + to_string(loc.line) + "_" + to_string(loc.column) + "_end";
 
-			compileExpr(e->condition, EvalPurpose::RVALUE, make_shared<RegRefNode>(conditionRegIndex));
-			if (evalExprType(e->condition)->getTypeId() != TYPE_BOOL)
+			compileExpr(e->condition, EvalPurpose::RValue, make_shared<RegRefNode>(conditionRegIndex));
+			if (evalExprType(e->condition)->getTypeId() != Type::Bool)
 				curFn->insertIns(
 					Opcode::CAST,
 					make_shared<RegRefNode>(conditionRegIndex),
@@ -212,17 +208,17 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 				make_shared<RegRefNode>(conditionRegIndex, true));
 
 			// Compile the true expression.
-			compileExpr(e->x, EvalPurpose::RVALUE, curMajorContext.curMinorContext.evalDest);
+			compileExpr(e->x, EvalPurpose::RValue, curMajorContext.curMinorContext.evalDest);
 			curFn->insertIns(Opcode::JMP, make_shared<LabelRefNode>(endLabel));
 
 			// Compile the false expression.
 			curFn->insertLabel(falseBranchLabel);
-			compileExpr(e->y, EvalPurpose::RVALUE, curMajorContext.curMinorContext.evalDest);
+			compileExpr(e->y, EvalPurpose::RValue, curMajorContext.curMinorContext.evalDest);
 
 			curFn->insertLabel(endLabel);
 			break;
 		}
-		case EXPR_MATCH: {
+		case ExprType::Match: {
 			auto e = static_pointer_cast<MatchExprNode>(expr);
 
 			auto loc = e->getLocation();
@@ -235,7 +231,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 			uint32_t matcheeRegIndex = allocReg();
 
 			// Create a local variable to store result of the condition expression.
-			compileExpr(e->condition, EvalPurpose::RVALUE, make_shared<RegRefNode>(matcheeRegIndex));
+			compileExpr(e->condition, EvalPurpose::RValue, make_shared<RegRefNode>(matcheeRegIndex));
 
 			pair<shared_ptr<ExprNode>, shared_ptr<ExprNode>> defaultCase;
 
@@ -254,7 +250,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 
 				uint32_t conditionRegIndex = allocReg();
 
-				compileExpr(i.first, EvalPurpose::RVALUE, make_shared<RegRefNode>(conditionRegIndex));
+				compileExpr(i.first, EvalPurpose::RValue, make_shared<RegRefNode>(conditionRegIndex));
 				curFn->insertIns(
 					Opcode::EQ,
 					make_shared<RegRefNode>(conditionRegIndex),
@@ -276,11 +272,11 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 
 			break;
 		}
-		case EXPR_CLOSURE: {
+		case ExprType::Closure: {
 			auto e = static_pointer_cast<ClosureExprNode>(expr);
 			break;
 		}
-		case EXPR_CALL: {
+		case ExprType::Call: {
 			auto e = static_pointer_cast<CallExprNode>(expr);
 
 			curMajorContext.curMinorContext.isArgTypesSet = true;
@@ -300,12 +296,12 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 					if (auto ce = evalConstExpr(i); ce)
 						curFn->insertIns(Opcode::PUSHARG, ce);
 					else {
-						compileExpr(i, EvalPurpose::RVALUE, make_shared<RegRefNode>(tmpRegIndex));
+						compileExpr(i, EvalPurpose::RValue, make_shared<RegRefNode>(tmpRegIndex));
 						curFn->insertIns(Opcode::PUSHARG, make_shared<RegRefNode>(tmpRegIndex, true));
 					}
 				}
 
-				compileExpr(e->target, EvalPurpose::CALL, make_shared<RegRefNode>(callTargetRegIndex), make_shared<RegRefNode>(tmpRegIndex));
+				compileExpr(e->target, EvalPurpose::Call, make_shared<RegRefNode>(callTargetRegIndex), make_shared<RegRefNode>(tmpRegIndex));
 
 				if (curMajorContext.curMinorContext.isLastCallTargetStatic)
 					curFn->insertIns(
@@ -317,7 +313,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 						make_shared<RegRefNode>(callTargetRegIndex, true),
 						make_shared<RegRefNode>(tmpRegIndex));
 
-				if (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::STMT) {
+				if (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt) {
 					curFn->insertIns(
 						Opcode::LRET,
 						curMajorContext.curMinorContext.evalDest);
@@ -326,7 +322,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 
 			break;
 		}
-		case EXPR_AWAIT: {
+		case ExprType::Await: {
 			uint32_t awaitTargetRegIndex = allocReg();
 
 			auto e = static_pointer_cast<AwaitExprNode>(expr);
@@ -341,7 +337,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 
 			break;
 		}
-		case EXPR_NEW: {
+		case ExprType::New: {
 			auto e = static_pointer_cast<NewExprNode>(expr);
 
 			for (auto i : e->args) {
@@ -350,7 +346,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 				else {
 					uint32_t tmpRegIndex = allocReg();
 
-					compileExpr(i, EvalPurpose::RVALUE, make_shared<RegRefNode>(tmpRegIndex));
+					compileExpr(i, EvalPurpose::RValue, make_shared<RegRefNode>(tmpRegIndex));
 					curFn->insertIns(Opcode::PUSHARG, make_shared<RegRefNode>(tmpRegIndex, true));
 				}
 			}
@@ -358,7 +354,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 			curFn->insertIns(Opcode::NEW, curMajorContext.curMinorContext.evalDest, e->type);
 			break;
 		}
-		case EXPR_TYPEOF: {
+		case ExprType::Typeof: {
 			auto e = static_pointer_cast<TypeofExprNode>(expr);
 
 			if (auto ce = evalConstExpr(e->target); ce) {
@@ -366,13 +362,13 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 			} else {
 				uint32_t tmpRegIndex = allocReg();
 
-				compileExpr(e->target, EvalPurpose::RVALUE, make_shared<RegRefNode>(tmpRegIndex));
+				compileExpr(e->target, EvalPurpose::RValue, make_shared<RegRefNode>(tmpRegIndex));
 				curFn->insertIns(Opcode::TYPEOF, curMajorContext.curMinorContext.evalDest, make_shared<RegRefNode>(tmpRegIndex));
 			}
 
 			break;
 		}
-		case EXPR_CAST: {
+		case ExprType::Cast: {
 			auto e = static_pointer_cast<CastExprNode>(expr);
 
 			if (auto ce = evalConstExpr(e->target); ce) {
@@ -385,7 +381,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 				if (areTypesConvertible(evalExprType(e->target), e->targetType)) {
 					uint32_t tmpRegIndex = allocReg();
 
-					compileExpr(e->target, EvalPurpose::RVALUE, make_shared<RegRefNode>(tmpRegIndex));
+					compileExpr(e->target, EvalPurpose::RValue, make_shared<RegRefNode>(tmpRegIndex));
 					curFn->insertIns(Opcode::CAST, curMajorContext.curMinorContext.evalDest, e->targetType, make_shared<RegRefNode>(tmpRegIndex, true));
 				} else {
 					throw FatalCompilationError({ e->getLocation(), MessageType::Error, "Invalid type conversion" });
@@ -394,12 +390,12 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 
 			break;
 		}
-		case EXPR_HEADED_REF: {
+		case ExprType::HeadedRef: {
 			auto e = static_pointer_cast<HeadedRefExprNode>(expr);
 
 			break;
 		}
-		case EXPR_REF: {
+		case ExprType::Ref: {
 			auto e = static_pointer_cast<RefExprNode>(expr);
 
 			deque<pair<Ref, shared_ptr<AstNode>>> resolvedParts;
@@ -410,13 +406,13 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 						MessageType::Error,
 						"Identifier not found: `" + to_string(e->ref, this) + "'" });
 
-			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::CALL) {
+			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::Call) {
 				if (isDynamicMember(resolvedParts.back().second)) {
 					Ref thisRef = e->ref;
 					thisRef.pop_back();
 					compileExpr(
 						make_shared<RefExprNode>(thisRef),
-						EvalPurpose::RVALUE,
+						EvalPurpose::RValue,
 						curMajorContext.curMinorContext.thisDest);
 					curMajorContext.curMinorContext.isLastCallTargetStatic = false;
 				} else
@@ -427,7 +423,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 
 			auto &x = resolvedParts.front().second;
 			switch (x->getNodeType()) {
-				case AST_LOCAL_VAR:
+				case NodeType::LocalVar:
 					curFn->insertIns(
 						Opcode::STORE,
 						make_shared<RegRefNode>(tmpRegIndex),
@@ -435,7 +431,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 							static_pointer_cast<LocalVarNode>(x)->index,
 							resolvedParts.size() > 1
 								? true
-								: curMajorContext.curMinorContext.evalPurpose != EvalPurpose::LVALUE));
+								: curMajorContext.curMinorContext.evalPurpose != EvalPurpose::LValue));
 
 					resolvedParts.pop_front();
 
@@ -448,8 +444,8 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 								make_shared<RefExprNode>(i.first));
 						}
 
-						if (resolvedParts.back().second->getNodeType() == AST_VAR) {
-							if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RVALUE) {
+						if (resolvedParts.back().second->getNodeType() == NodeType::Var) {
+							if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RValue) {
 								curFn->insertIns(
 									Opcode::LVALUE,
 									make_shared<RegRefNode>(tmpRegIndex),
@@ -463,22 +459,22 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 						curMajorContext.curMinorContext.evalDest,
 						make_shared<RegRefNode>(tmpRegIndex, true));
 					break;
-				case AST_ARG_REF:
-					static_pointer_cast<ArgRefNode>(x)->unwrapData = (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RVALUE);
+				case NodeType::ArgRef:
+					static_pointer_cast<ArgRefNode>(x)->unwrapData = (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RValue);
 					curFn->insertIns(
 						Opcode::STORE,
 						curMajorContext.curMinorContext.evalDest, x);
 					break;
-				case AST_VAR:
-				case AST_FN:
-				case AST_THIS_REF:
-				case AST_BASE_REF: {
+				case NodeType::Var:
+				case NodeType::Fn:
+				case NodeType::ThisRef:
+				case NodeType::BaseRef: {
 					//
 					// Resolve the head of the reference.
 					// After that, we will use RLOAD instructions to load the members one by one.
 					//
 					switch (x->getNodeType()) {
-						case AST_VAR: {
+						case NodeType::Var: {
 							Ref ref = getFullName((VarNode *)x.get());
 							curFn->insertIns(
 								Opcode::LOAD,
@@ -486,7 +482,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 								make_shared<RefExprNode>(ref));
 							break;
 						}
-						case AST_FN: {
+						case NodeType::Fn: {
 							Ref ref;
 
 							FnNode *fn = (FnNode *)x.get();
@@ -494,7 +490,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 
 							FnOverloadingRegistry *overloadingRegistry = nullptr;
 
-							if ((resolvedParts.size() > 2) || (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::CALL)) {
+							if ((resolvedParts.size() > 2) || (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Call)) {
 								//
 								// Reference to a overloaded function is always ambiguous,
 								// because we cannot determine which overloading is the user wanted.
@@ -531,10 +527,10 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 								make_shared<RefExprNode>(ref));
 							break;
 						}
-						case AST_THIS_REF:
+						case NodeType::ThisRef:
 							curFn->insertIns(Opcode::LTHIS, make_shared<RegRefNode>(tmpRegIndex));
 							break;
-						case AST_BASE_REF:
+						case NodeType::BaseRef:
 							curFn->insertIns(Opcode::LOAD, make_shared<RegRefNode>(tmpRegIndex), make_shared<RefExprNode>(Ref{ RefEntry(e->getLocation(), "base") }));
 							break;
 						default:
@@ -557,7 +553,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 					//
 
 					if (resolvedParts.size()) {
-						if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RVALUE)
+						if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RValue)
 							curFn->insertIns(
 								Opcode::LVALUE,
 								make_shared<RegRefNode>(tmpRegIndex),
@@ -576,18 +572,18 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 
 			break;
 		}
-		case EXPR_I8:
-		case EXPR_I16:
-		case EXPR_I32:
-		case EXPR_I64:
-		case EXPR_U32:
-		case EXPR_U64:
-		case EXPR_F32:
-		case EXPR_F64:
-		case EXPR_STRING:
-		case EXPR_BOOL:
-		case EXPR_ARRAY:
-		case EXPR_MAP:
+		case ExprType::I8:
+		case ExprType::I16:
+		case ExprType::I32:
+		case ExprType::I64:
+		case ExprType::U32:
+		case ExprType::U64:
+		case ExprType::F32:
+		case ExprType::F64:
+		case ExprType::String:
+		case ExprType::Bool:
+		case ExprType::Array:
+		case ExprType::Map:
 			curFn->insertIns(Opcode::STORE, curMajorContext.curMinorContext.evalDest, expr);
 			break;
 		default:

@@ -40,10 +40,10 @@ slake::ValueRef<> print(slake::Runtime *rt, std::deque<slake::Value*> args) {
 			case TypeId::F64:
 				std::cout << ((F64Value *)args[i])->getData();
 				break;
-			case TypeId::BOOL:
+			case TypeId::Bool:
 				fputs(((BoolValue *)args[i])->getData() ? "true" : "false", stdout);
 				break;
-			case TypeId::STRING:
+			case TypeId::String:
 				fputs(((StringValue *)args[i])->getData().c_str(), stdout);
 				break;
 			default:
@@ -116,8 +116,8 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
-	((slake::ModuleValue *)((slake::ModuleValue *)rt->getRootValue()->scope->getMember("hostext"))->scope->getMember("extfns"))->scope->putMember("print", new slake::NativeFnValue(rt.get(), print, slake::ACCESS_PUB, slake::TypeId::NONE));
-	((slake::ModuleValue *)((slake::ModuleValue *)rt->getRootValue()->scope->getMember("hostext"))->scope->getMember("extfns"))->scope->putMember("getSlakeBuildVersionInfo$i32", new slake::NativeFnValue(rt.get(), getSlakeBuildVersionInfo, slake::ACCESS_PUB, slake::TypeId::NONE));
+	((slake::ModuleValue *)((slake::ModuleValue *)rt->getRootValue()->scope->getMember("hostext"))->scope->getMember("extfns"))->scope->putMember("print", new slake::NativeFnValue(rt.get(), print, slake::ACCESS_PUB, slake::TypeId::None));
+	((slake::ModuleValue *)((slake::ModuleValue *)rt->getRootValue()->scope->getMember("hostext"))->scope->getMember("extfns"))->scope->putMember("getSlakeBuildVersionInfo$i32", new slake::NativeFnValue(rt.get(), getSlakeBuildVersionInfo, slake::ACCESS_PUB, slake::TypeId::None));
 
 	try {
 		slake::ValueRef<slake::ContextValue> context = (slake::ContextValue *)mod->scope->getMember("main")->call({}).get();

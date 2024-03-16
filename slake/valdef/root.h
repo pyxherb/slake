@@ -17,7 +17,7 @@ namespace slake {
 		virtual inline ~RootValue() {
 			reportSizeFreedToRuntime(sizeof(*this) - sizeof(Value));
 		}
-		virtual inline Type getType() const override { return TypeId::ROOT; }
+		virtual inline Type getType() const override { return TypeId::RootValue; }
 
 		RootValue &operator=(const RootValue &) = delete;
 		RootValue &operator=(RootValue &&) = delete;

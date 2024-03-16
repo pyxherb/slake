@@ -9,7 +9,7 @@ using namespace slake::slkc;
 
 InsMap Compiler::defaultInsMap = {
 	INSMAP_ENTRY(NOP, {}),
-	INSMAP_ENTRY(PUSH, { TypeId::ANY })
+	INSMAP_ENTRY(PUSH, { TypeId::Any })
 };
 
 template <typename T>
@@ -85,16 +85,16 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 			string name = _targetModule->moduleName[i].name;
 			if (auto it = scope->members.find(name); it != scope->members.end()) {
 				switch (it->second->getNodeType()) {
-					case AST_CLASS:
+					case NodeType::Class:
 						scope = static_pointer_cast<ClassNode>(it->second)->scope;
 						break;
-					case AST_INTERFACE:
+					case NodeType::Interface:
 						scope = static_pointer_cast<InterfaceNode>(it->second)->scope;
 						break;
-					case AST_TRAIT:
+					case NodeType::Trait:
 						scope = static_pointer_cast<TraitNode>(it->second)->scope;
 						break;
-					case AST_MODULE:
+					case NodeType::Module:
 						scope = static_pointer_cast<ModuleNode>(it->second)->scope;
 						break;
 					default:
@@ -202,23 +202,23 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 
 	for (auto i : scope->members) {
 		switch (i.second->getNodeType()) {
-			case AST_VAR:
+			case NodeType::Var:
 				vars[i.first] = static_pointer_cast<VarNode>(i.second);
 				break;
-			case AST_FN:
+			case NodeType::Fn:
 				funcs[i.first] = static_pointer_cast<FnNode>(i.second);
 				break;
-			case AST_CLASS:
+			case NodeType::Class:
 				classes[i.first] = static_pointer_cast<ClassNode>(i.second);
 				break;
-			case AST_INTERFACE:
+			case NodeType::Interface:
 				interfaces[i.first] = static_pointer_cast<InterfaceNode>(i.second);
 				break;
-			case AST_TRAIT:
+			case NodeType::Trait:
 				traits[i.first] = static_pointer_cast<TraitNode>(i.second);
 				break;
-			case AST_ALIAS:
-			case AST_MODULE:
+			case NodeType::Alias:
+			case NodeType::Module:
 				break;
 			default:
 				assert(false);
@@ -233,7 +233,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		// Check if the member will shadow member(s) from parent scopes.
 		//
 		switch (scope->owner->getNodeType()) {
-			case AST_CLASS: {
+			case NodeType::Class: {
 				auto j = (ClassNode *)(scope->owner);
 
 				while (j->parentClass) {
@@ -375,7 +375,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 
 			for (auto &k : j.operands) {
 				if (k) {
-					if (k->getNodeType() == AST_LABEL_REF) {
+					if (k->getNodeType() == NodeType::LabelRef) {
 						auto &label = static_pointer_cast<LabelRefNode>(k)->label;
 						if (!i.second->labels.count(label))
 							throw FatalCompilationError(
@@ -472,79 +472,79 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 
 void Compiler::compileTypeName(std::ostream &fs, shared_ptr<TypeNameNode> typeName) {
 	switch (typeName->getTypeId()) {
-		case TYPE_I8: {
+		case Type::I8: {
 			_write(fs, slxfmt::Type::I8);
 			break;
 		}
-		case TYPE_I16: {
+		case Type::I16: {
 			_write(fs, slxfmt::Type::I16);
 			break;
 		}
-		case TYPE_I32: {
+		case Type::I32: {
 			_write(fs, slxfmt::Type::I32);
 			break;
 		}
-		case TYPE_I64: {
+		case Type::I64: {
 			_write(fs, slxfmt::Type::I64);
 			break;
 		}
-		case TYPE_U8: {
+		case Type::U8: {
 			_write(fs, slxfmt::Type::U8);
 			break;
 		}
-		case TYPE_U16: {
+		case Type::U16: {
 			_write(fs, slxfmt::Type::U16);
 			break;
 		}
-		case TYPE_U32: {
+		case Type::U32: {
 			_write(fs, slxfmt::Type::U32);
 			break;
 		}
-		case TYPE_U64: {
+		case Type::U64: {
 			_write(fs, slxfmt::Type::U64);
 			break;
 		}
-		case TYPE_F32: {
+		case Type::F32: {
 			_write(fs, slxfmt::Type::F32);
 			break;
 		}
-		case TYPE_F64: {
+		case Type::F64: {
 			_write(fs, slxfmt::Type::F64);
 			break;
 		}
-		case TYPE_BOOL: {
-			_write(fs, slxfmt::Type::BOOL);
+		case Type::Bool: {
+			_write(fs, slxfmt::Type::Bool);
 			break;
 		}
-		case TYPE_STRING: {
-			_write(fs, slxfmt::Type::STRING);
+		case Type::String: {
+			_write(fs, slxfmt::Type::String);
 			break;
 		}
-		case TYPE_VOID: {
-			_write(fs, slxfmt::Type::NONE);
+		case Type::Void: {
+			_write(fs, slxfmt::Type::None);
 			break;
 		}
-		case TYPE_ANY: {
-			_write(fs, slxfmt::Type::ANY);
+		case Type::Any: {
+			_write(fs, slxfmt::Type::Any);
 			break;
 		}
-		case TYPE_ARRAY: {
-			_write(fs, slxfmt::Type::ARRAY);
+		case Type::Array: {
+			_write(fs, slxfmt::Type::Array);
 			compileTypeName(fs, static_pointer_cast<ArrayTypeNameNode>(typeName)->elementType);
 			break;
 		}
-		case TYPE_MAP: {
-			_write(fs, slxfmt::Type::MAP);
+		case Type::Map: {
+			_write(fs, slxfmt::Type::Map);
 			compileTypeName(fs, static_pointer_cast<MapTypeNameNode>(typeName)->keyType);
 			compileTypeName(fs, static_pointer_cast<MapTypeNameNode>(typeName)->valueType);
 			break;
 		}
-		case TYPE_FN: {
+		case Type::Fn: {
 			// stub
 			break;
 		}
-		case TYPE_CUSTOM: {
-			_write(fs, slxfmt::Type::OBJECT);
+		case Type::Custom: {
+			_write(fs, slxfmt::Type::Object);
 
 			auto dest = resolveCustomType((CustomTypeNameNode *)typeName.get());
 
@@ -579,124 +579,124 @@ void Compiler::compileValue(std::ostream &fs, shared_ptr<AstNode> value) {
 	slxfmt::ValueDesc vd = {};
 
 	if (!value) {
-		vd.type = slxfmt::Type::NONE;
+		vd.type = slxfmt::Type::None;
 		_write(fs, vd);
 		return;
 	}
 
 	switch (value->getNodeType()) {
-		case AST_TYPENAME:
-			vd.type = slxfmt::Type::TYPENAME;
+		case NodeType::TypeName:
+			vd.type = slxfmt::Type::TypeName;
 			_write(fs, vd);
 
 			compileTypeName(fs, static_pointer_cast<TypeNameNode>(value));
 			break;
-		case AST_ARG_REF: {
+		case NodeType::ArgRef: {
 			auto v = static_pointer_cast<ArgRefNode>(value);
-			vd.type = v->unwrapData ? slxfmt::Type::ARG_VALUE : slxfmt::Type::ARG;
+			vd.type = v->unwrapData ? slxfmt::Type::ArgValue : slxfmt::Type::Arg;
 			_write(fs, vd);
 
 			_write(fs, v->index);
 			break;
 		}
-		case AST_LVAR_REF: {
+		case NodeType::LocalVarRef: {
 			auto v = static_pointer_cast<LocalVarRefNode>(value);
-			vd.type = v->unwrapData ? slxfmt::Type::LVAR_VALUE : slxfmt::Type::LVAR;
+			vd.type = v->unwrapData ? slxfmt::Type::LocalVarValue : slxfmt::Type::LocalVar;
 			_write(fs, vd);
 
 			_write(fs, v->index);
 			break;
 		}
-		case AST_REG_REF: {
+		case NodeType::RegRef: {
 			auto v = static_pointer_cast<RegRefNode>(value);
-			vd.type = v->unwrapData ? slxfmt::Type::REG_VALUE : slxfmt::Type::REG;
+			vd.type = v->unwrapData ? slxfmt::Type::RegValue : slxfmt::Type::Reg;
 			_write(fs, vd);
 
 			_write(fs, v->index);
 			break;
 		}
-		case AST_EXPR: {
+		case NodeType::Expr: {
 			shared_ptr<ExprNode> expr = static_pointer_cast<ExprNode>(value);
 			switch (expr->getExprType()) {
-				case EXPR_I8: {
+				case ExprType::I8: {
 					vd.type = slxfmt::Type::I8;
 					_write(fs, vd);
 
 					_write(fs, static_pointer_cast<I8LiteralExprNode>(expr)->data);
 					break;
 				}
-				case EXPR_I16: {
+				case ExprType::I16: {
 					vd.type = slxfmt::Type::I16;
 					_write(fs, vd);
 
 					_write(fs, static_pointer_cast<I16LiteralExprNode>(expr)->data);
 					break;
 				}
-				case EXPR_I32: {
+				case ExprType::I32: {
 					vd.type = slxfmt::Type::I32;
 					_write(fs, vd);
 
 					_write(fs, static_pointer_cast<I32LiteralExprNode>(expr)->data);
 					break;
 				}
-				case EXPR_I64: {
+				case ExprType::I64: {
 					vd.type = slxfmt::Type::I64;
 					_write(fs, vd);
 
 					_write(fs, static_pointer_cast<I64LiteralExprNode>(expr)->data);
 					break;
 				}
-				case EXPR_U8: {
+				case ExprType::U8: {
 					vd.type = slxfmt::Type::U8;
 					_write(fs, vd);
 
 					_write(fs, static_pointer_cast<U8LiteralExprNode>(expr)->data);
 					break;
 				}
-				case EXPR_U16: {
+				case ExprType::U16: {
 					vd.type = slxfmt::Type::U16;
 					_write(fs, vd);
 
 					_write(fs, static_pointer_cast<U16LiteralExprNode>(expr)->data);
 					break;
 				}
-				case EXPR_U32: {
+				case ExprType::U32: {
 					vd.type = slxfmt::Type::U32;
 					_write(fs, vd);
 
 					_write(fs, static_pointer_cast<U32LiteralExprNode>(expr)->data);
 					break;
 				}
-				case EXPR_U64: {
+				case ExprType::U64: {
 					vd.type = slxfmt::Type::U64;
 					_write(fs, vd);
 
 					_write(fs, static_pointer_cast<U64LiteralExprNode>(expr)->data);
 					break;
 				}
-				case EXPR_F32: {
+				case ExprType::F32: {
 					vd.type = slxfmt::Type::F32;
 					_write(fs, vd);
 
 					_write(fs, static_pointer_cast<F32LiteralExprNode>(expr)->data);
 					break;
 				}
-				case EXPR_F64: {
+				case ExprType::F64: {
 					vd.type = slxfmt::Type::F64;
 					_write(fs, vd);
 
 					_write(fs, static_pointer_cast<F64LiteralExprNode>(expr)->data);
 					break;
 				}
-				case EXPR_BOOL: {
-					vd.type = slxfmt::Type::BOOL;
+				case ExprType::Bool: {
+					vd.type = slxfmt::Type::Bool;
 					_write(fs, vd);
 
 					_write(fs, static_pointer_cast<BoolLiteralExprNode>(expr)->data);
 					break;
 				}
-				case EXPR_STRING: {
-					vd.type = slxfmt::Type::STRING;
+				case ExprType::String: {
+					vd.type = slxfmt::Type::String;
 					_write(fs, vd);
 
 					auto &s = static_pointer_cast<StringLiteralExprNode>(expr)->data;
@@ -705,8 +705,8 @@ void Compiler::compileValue(std::ostream &fs, shared_ptr<AstNode> value) {
 					_write(fs, s.data(), s.size());
 					break;
 				}
-				case EXPR_REF: {
-					vd.type = slxfmt::Type::REF;
+				case ExprType::Ref: {
+					vd.type = slxfmt::Type::Ref;
 					_write(fs, vd);
 
 					compileRef(fs, static_pointer_cast<RefExprNode>(expr)->ref);

@@ -6,9 +6,9 @@
 
 namespace slake {
 	enum class GenericFilter : uint8_t {
-		EXTENDS = 0,  // Derived from a class
-		IMPLS,		  // Implements an interace
-		CONSISTS_OF	  // Consists of a trait
+		Extends = 0,  // Derived from a class
+		Implements,	  // Implements an interace
+		HasTrait	  // Has a trait
 	};
 
 	struct GenericQualifier final {

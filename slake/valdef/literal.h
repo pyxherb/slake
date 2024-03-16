@@ -58,12 +58,12 @@ namespace slake {
 	using U64Value = LiteralValue<uint64_t, TypeId::U64>;
 	using F32Value = LiteralValue<float, TypeId::F32>;
 	using F64Value = LiteralValue<double, TypeId::F64>;
-	using BoolValue = LiteralValue<bool, TypeId::BOOL>;
-	using StringValue = LiteralValue<std::string, TypeId::STRING>;
-	using WStringValue = LiteralValue<std::u32string, TypeId::WSTRING>;
-	using CharValue = LiteralValue<uint8_t, TypeId::CHAR>;
-	using WCharValue = LiteralValue<char32_t, TypeId::WCHAR>;
-	using TypeNameValue = LiteralValue<Type, TypeId::TYPENAME>;
+	using BoolValue = LiteralValue<bool, TypeId::Bool>;
+	using StringValue = LiteralValue<std::string, TypeId::String>;
+	using WStringValue = LiteralValue<std::u32string, TypeId::WString>;
+	using CharValue = LiteralValue<uint8_t, TypeId::Char>;
+	using WCharValue = LiteralValue<char32_t, TypeId::WChar>;
+	using TypeNameValue = LiteralValue<Type, TypeId::TypeName>;
 }
 
 #endif

@@ -45,7 +45,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { throw std::logic_error("Should not get location of a this reference"); }
 
-			virtual inline NodeType getNodeType() const override { return AST_THIS_REF; }
+			virtual inline NodeType getNodeType() const override { return NodeType::ThisRef; }
 		};
 
 		class BaseRefNode : public AstNode {
@@ -55,7 +55,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { throw std::logic_error("Should not get location of a this reference"); }
 
-			virtual inline NodeType getNodeType() const override { return AST_BASE_REF; }
+			virtual inline NodeType getNodeType() const override { return NodeType::BaseRef; }
 		};
 
 		class Compiler;

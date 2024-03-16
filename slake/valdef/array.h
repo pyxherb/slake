@@ -13,7 +13,7 @@ namespace slake {
 		inline ArrayValue(Runtime *rt, Type type);
 		virtual ~ArrayValue();
 
-		virtual inline Type getType() const override { return TypeId::ARRAY; }
+		virtual inline Type getType() const override { return TypeId::Array; }
 
 		ArrayValue &operator=(const ArrayValue &) = delete;
 		ArrayValue &operator=(ArrayValue &&) = delete;

@@ -12,7 +12,7 @@ ModuleValue::~ModuleValue() {
 }
 
 Type ModuleValue::getType() const {
-	return TypeId::MOD;
+	return TypeId::Module;
 }
 
 Value *ModuleValue::duplicate() const {

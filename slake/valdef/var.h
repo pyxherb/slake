@@ -13,14 +13,14 @@ namespace slake {
 	class VarValue final : public MemberValue {
 	public:
 		mutable slake::Value* value = nullptr;
-		Type type = TypeId::ANY;
+		Type type = TypeId::Any;
 
 		VarFlags flags;
 
 		VarValue(Runtime *rt, AccessModifier access, Type type, VarFlags flags = 0);
 		virtual ~VarValue();
 
-		virtual inline Type getType() const override { return TypeId::VAR; }
+		virtual inline Type getType() const override { return TypeId::Var; }
 		inline Type getVarType() const { return type; }
 
 		virtual Value *duplicate() const override;

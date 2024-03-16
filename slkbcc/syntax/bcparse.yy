@@ -4,7 +4,7 @@
 ///
 /// @copyright Copyright (C) 2022 Slake contributors
 ///
-/// SPDX-License-Identifier: Apache-2.0
+/// SPDX-License-Identifier: LGPL-3.0-linking-exception
 ///
 %require "3.2"
 
@@ -86,7 +86,7 @@ extern std::deque<std::shared_ptr<slake::bcc::Scope>> savedScopes;
 %token D_VAR ".var"
 %token D_EXTENDS ".extends"
 %token D_IMPL ".impl"
-%token D_CONSIST ".consist"
+%token D_HASTRAIT ".hastrait"
 
 %token TN_I8 "i8"
 %token TN_I16 "i16"
@@ -134,7 +134,7 @@ extern std::deque<std::shared_ptr<slake::bcc::Scope>> savedScopes;
 %type <deque<shared_ptr<Instruction>>> Instructions
 %type <shared_ptr<Instruction>> Instruction
 %type <deque<shared_ptr<Operand>>> Operands _Operands
-%type <deque<shared_ptr<Ref>>> ImplList _ImplList ExtendList ConsistList
+%type <deque<shared_ptr<Ref>>> ImplList _ImplList ExtendList TraitList
 %type <deque<GenericParam>> GenericParams _GenericParams
 %type <GenericParam> GenericParam
 
@@ -190,9 +190,9 @@ ImplList:
 | ".impl" _ImplList { $$ = $2; }
 ;
 
-ConsistList:
+TraitList:
 %empty {}
-| ".consist" _ImplList { $$ = $2; }
+| ".hastrait" _ImplList { $$ = $2; }
 ;
 
 _ImplList:
@@ -491,24 +491,24 @@ GenericParam { $$.push_back($1); }
 ;
 
 GenericParam:
-T_ID InheritSlot ImplList ConsistList {
+T_ID InheritSlot ImplList TraitList {
 	$$.name = $1;
 	if ($2)
 		$$.qualifiers.push_back(
 			GenericQualifier(
 				make_shared<CustomTypeName>($2->getLocation(), $2),
-				slake::GenericFilter::EXTENDS));
+				slake::GenericFilter::Extends));
 	for (auto i : $3)
 		$$.qualifiers.push_back(
 			GenericQualifier(
 				make_shared<CustomTypeName>(i->getLocation(), i),
-				slake::GenericFilter::IMPLS)
+				slake::GenericFilter::Implements)
 		);
 	for (auto i : $4)
 		$$.qualifiers.push_back(
 			GenericQualifier(
 				make_shared<CustomTypeName>(i->getLocation(), i),
-				slake::GenericFilter::CONSISTS_OF)
+				slake::GenericFilter::HasTrait)
 		);
 }
 ;
@@ -536,20 +536,20 @@ LiteralTypeName { $$ = $1; }
 ;
 
 LiteralTypeName:
-"i8" { $$ = make_shared<TypeName>(@1, TYPE_I8); }
-|"i16" { $$ = make_shared<TypeName>(@1, TYPE_I16); }
-|"i32" { $$ = make_shared<TypeName>(@1, TYPE_I32); }
-|"i64" { $$ = make_shared<TypeName>(@1, TYPE_I64); }
-|"u8" { $$ = make_shared<TypeName>(@1, TYPE_U8); }
-|"u16" { $$ = make_shared<TypeName>(@1, TYPE_U16); }
-|"u32" { $$ = make_shared<TypeName>(@1, TYPE_U32); }
-|"u64" { $$ = make_shared<TypeName>(@1, TYPE_U64); }
-|"f32" { $$ = make_shared<TypeName>(@1, TYPE_F32); }
-|"f64" { $$ = make_shared<TypeName>(@1, TYPE_F64); }
-|"string" { $$ = make_shared<TypeName>(@1, TYPE_STRING); }
-|"bool" { $$ = make_shared<TypeName>(@1, TYPE_BOOL); }
-|"void" { $$ = make_shared<TypeName>(@1, TYPE_VOID); }
-|"any" { $$ = make_shared<TypeName>(@1, TYPE_ANY); }
+"i8" { $$ = make_shared<TypeName>(@1, Type::I8); }
+|"i16" { $$ = make_shared<TypeName>(@1, Type::I16); }
+|"i32" { $$ = make_shared<TypeName>(@1, Type::I32); }
+|"i64" { $$ = make_shared<TypeName>(@1, Type::I64); }
+|"u8" { $$ = make_shared<TypeName>(@1, Type::U8); }
+|"u16" { $$ = make_shared<TypeName>(@1, Type::U16); }
+|"u32" { $$ = make_shared<TypeName>(@1, Type::U32); }
+|"u64" { $$ = make_shared<TypeName>(@1, Type::U64); }
+|"f32" { $$ = make_shared<TypeName>(@1, Type::F32); }
+|"f64" { $$ = make_shared<TypeName>(@1, Type::F64); }
+|"string" { $$ = make_shared<TypeName>(@1, Type::String); }
+|"bool" { $$ = make_shared<TypeName>(@1, Type::Bool); }
+|"void" { $$ = make_shared<TypeName>(@1, Type::Void); }
+|"any" { $$ = make_shared<TypeName>(@1, Type::Any); }
 ;
 
 CustomTypeName:

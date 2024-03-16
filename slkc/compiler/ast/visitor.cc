@@ -43,7 +43,7 @@ void AstVisitor::_putFnDefinition(
 		curScope->members[name]->parent = (MemberNode *)curScope->owner;
 	}
 
-	if (curScope->members.at(name)->getNodeType() != AST_FN) {
+	if (curScope->members.at(name)->getNodeType() != NodeType::Fn) {
 		throw FatalCompilationError(
 			Message(
 				locName,
@@ -504,7 +504,7 @@ VISIT_METHOD_DECL(GenericParam) {
 	return GenericParam(context->ID()->getText(), qualifiers);
 }
 VISIT_METHOD_DECL(BaseSpec) {
-	return GenericQualifier(GenericFilter::EXTENDS, any_cast<shared_ptr<TypeNameNode>>(visit(context->children[1])));
+	return GenericQualifier(GenericFilter::Extends, any_cast<shared_ptr<TypeNameNode>>(visit(context->children[1])));
 }
 VISIT_METHOD_DECL(TraitSpec) {
 	deque<GenericQualifier> qualifiers;
@@ -512,23 +512,23 @@ VISIT_METHOD_DECL(TraitSpec) {
 	for (size_t i = 1; i < context->children.size(); i += 2) {
 		qualifiers.push_back(
 			GenericQualifier(
-				GenericFilter::CONSISTS_OF,
+				GenericFilter::HasTrait,
 				any_cast<shared_ptr<TypeNameNode>>(visit(context->children[i]))));
 	}
 
 	return qualifiers;
 }
 VISIT_METHOD_DECL(InterfaceSpec) {
-	return GenericQualifier(GenericFilter::IMPLS, any_cast<shared_ptr<TypeNameNode>>(visit(context->children[1])));
+	return GenericQualifier(GenericFilter::Implements, any_cast<shared_ptr<TypeNameNode>>(visit(context->children[1])));
 }
 
 VISIT_METHOD_DECL(InheritSlot) {
 	return visit(context->customTypeName());
 }
 VISIT_METHOD_DECL(ImplementList) {
-	deque<shared_ptr<TypeNameNode>> typeNames;
+	deque<shared_ptr<CustomTypeNameNode>> typeNames;
 	for (auto i : context->getTokens(SlakeParser::RuleImplementList))
-		typeNames.push_back(any_cast<shared_ptr<TypeNameNode>>(visit(i)));
+		typeNames.push_back(any_cast<shared_ptr<CustomTypeNameNode>>(visit(i)));
 	return typeNames;
 }
 
@@ -594,7 +594,31 @@ VISIT_METHOD_DECL(DestructorDef) {
 	return decl;
 }
 
-VISIT_METHOD_DECL(InterfaceDef) { return Any(); }
+VISIT_METHOD_DECL(InterfaceDef) {
+	string name = context->ID()->getText();
+	auto interface = make_shared<InterfaceNode>(
+		Location(context->KW_INTERFACE()),
+		name,
+		context->implementList()
+			? any_cast<deque<shared_ptr<CustomTypeNameNode>>>(visit(context->implementList()))
+			: deque<shared_ptr<CustomTypeNameNode>>(),
+		context->genericParams()
+			? any_cast<deque<GenericParam>>(visit(context->genericParams()))
+			: deque<GenericParam>());
+
+	_putDefinition(Location(context->ID()), name, interface);
+
+	auto savedScope = curScope;
+	curScope = interface->scope;
+	curScope->parent = savedScope.get();
+
+	for (auto i : context->interfaceStmts())
+		visit(i);
+
+	curScope = savedScope;
+
+	return interface;
+}
 VISIT_METHOD_DECL(InterfaceFnDecl) { return Any(); }
 VISIT_METHOD_DECL(InterfaceOperatorDecl) { return Any(); }
 
@@ -735,14 +759,14 @@ VISIT_METHOD_DECL(SubscriptExpr) {
 	auto lhs = any_cast<shared_ptr<ExprNode>>(visit(context->expr()[0])),
 		 rhs = any_cast<shared_ptr<ExprNode>>(visit(context->expr()[1]));
 
-	return static_pointer_cast<ExprNode>(make_shared<BinaryOpExprNode>(lhs->getLocation(), OP_SUBSCRIPT, lhs, rhs));
+	return static_pointer_cast<ExprNode>(make_shared<BinaryOpExprNode>(lhs->getLocation(), BinaryOp::Subscript, lhs, rhs));
 }
 VISIT_METHOD_DECL(ForwardIncDecExpr) {
 	return static_pointer_cast<ExprNode>(make_shared<UnaryOpExprNode>(
 		Location{ context->op },
 		context->op->getType() == SlakeParser::OP_INC
-			? OP_INCF
-			: OP_DECF,
+			? UnaryOp::IncF
+			: UnaryOp::DecF,
 		any_cast<shared_ptr<ExprNode>>(visit(context->expr()))));
 }
 VISIT_METHOD_DECL(BackwardIncDecExpr) {
@@ -750,14 +774,14 @@ VISIT_METHOD_DECL(BackwardIncDecExpr) {
 	return static_pointer_cast<ExprNode>(make_shared<UnaryOpExprNode>(
 		x->getLocation(),
 		context->op->getType() == SlakeParser::OP_INC
-			? OP_INCB
-			: OP_DECB,
+			? UnaryOp::IncB
+			: UnaryOp::DecB,
 		x));
 }
 VISIT_METHOD_DECL(NotExpr) {
 	return static_pointer_cast<ExprNode>(make_shared<UnaryOpExprNode>(
-		Location{ context->OP_NOT() },
-		OP_NOT,
+		Location{ context->OP_LNOT() },
+		UnaryOp::LNot,
 		any_cast<shared_ptr<ExprNode>>(visit(context->expr()))));
 }
 VISIT_METHOD_DECL(MulDivExpr) {
@@ -768,13 +792,13 @@ VISIT_METHOD_DECL(MulDivExpr) {
 
 	switch (context->op->getType()) {
 		case SlakeParser::OP_MUL:
-			op = OP_MUL;
+			op = BinaryOp::Mul;
 			break;
 		case SlakeParser::OP_DIV:
-			op = OP_DIV;
+			op = BinaryOp::Div;
 			break;
 		case SlakeParser::OP_MOD:
-			op = OP_MOD;
+			op = BinaryOp::Mod;
 			break;
 		default:
 			throw std::logic_error("Unrecognized opeartion type");
@@ -792,10 +816,10 @@ VISIT_METHOD_DECL(AddSubExpr) {
 
 	switch (context->op->getType()) {
 		case SlakeParser::OP_ADD:
-			op = OP_ADD;
+			op = BinaryOp::Add;
 			break;
 		case SlakeParser::OP_SUB:
-			op = OP_SUB;
+			op = BinaryOp::Sub;
 			break;
 		default:
 			throw std::logic_error("Unrecognized opeartion type");
@@ -813,16 +837,16 @@ VISIT_METHOD_DECL(LtGtExpr) {
 
 	switch (context->op->getType()) {
 		case SlakeParser::OP_LT:
-			op = OP_LT;
+			op = BinaryOp::Lt;
 			break;
 		case SlakeParser::OP_GT:
-			op = OP_GT;
+			op = BinaryOp::Gt;
 			break;
 		case SlakeParser::OP_LTEQ:
-			op = OP_LTEQ;
+			op = BinaryOp::LtEq;
 			break;
 		case SlakeParser::OP_GTEQ:
-			op = OP_GTEQ;
+			op = BinaryOp::GtEq;
 			break;
 		default:
 			throw std::logic_error("Unrecognized opeartion type");
@@ -840,10 +864,10 @@ VISIT_METHOD_DECL(ShiftExpr) {
 
 	switch (context->op->getType()) {
 		case SlakeParser::OP_LSH:
-			op = OP_LSH;
+			op = BinaryOp::Lsh;
 			break;
 		case SlakeParser::OP_RSH:
-			op = OP_RSH;
+			op = BinaryOp::Rsh;
 			break;
 		default:
 			throw std::logic_error("Unrecognized opeartion type");
@@ -861,10 +885,10 @@ VISIT_METHOD_DECL(EqExpr) {
 
 	switch (context->op->getType()) {
 		case SlakeParser::OP_EQ:
-			op = OP_EQ;
+			op = BinaryOp::Eq;
 			break;
 		case SlakeParser::OP_NEQ:
-			op = OP_NEQ;
+			op = BinaryOp::Neq;
 			break;
 		default:
 			throw std::logic_error("Unrecognized opeartion type");
@@ -880,7 +904,7 @@ VISIT_METHOD_DECL(AndExpr) {
 
 	return static_pointer_cast<ExprNode>(
 		make_shared<BinaryOpExprNode>(
-			lhs->getLocation(), OP_AND, lhs, rhs));
+			lhs->getLocation(), BinaryOp::And, lhs, rhs));
 }
 VISIT_METHOD_DECL(XorExpr) {
 	auto lhs = any_cast<shared_ptr<ExprNode>>(visit(context->expr()[0])),
@@ -888,7 +912,7 @@ VISIT_METHOD_DECL(XorExpr) {
 
 	return static_pointer_cast<ExprNode>(
 		make_shared<BinaryOpExprNode>(
-			lhs->getLocation(), OP_XOR, lhs, rhs));
+			lhs->getLocation(), BinaryOp::Xor, lhs, rhs));
 }
 VISIT_METHOD_DECL(OrExpr) {
 	auto lhs = any_cast<shared_ptr<ExprNode>>(visit(context->expr()[0])),
@@ -896,7 +920,7 @@ VISIT_METHOD_DECL(OrExpr) {
 
 	return static_pointer_cast<ExprNode>(
 		make_shared<BinaryOpExprNode>(
-			lhs->getLocation(), OP_OR, lhs, rhs));
+			lhs->getLocation(), BinaryOp::Or, lhs, rhs));
 }
 VISIT_METHOD_DECL(LogicalAndExpr) {
 	auto lhs = any_cast<shared_ptr<ExprNode>>(visit(context->expr()[0])),
@@ -904,7 +928,7 @@ VISIT_METHOD_DECL(LogicalAndExpr) {
 
 	return static_pointer_cast<ExprNode>(
 		make_shared<BinaryOpExprNode>(
-			lhs->getLocation(), OP_LAND, lhs, rhs));
+			lhs->getLocation(), BinaryOp::LAnd, lhs, rhs));
 }
 VISIT_METHOD_DECL(LogicalOrExpr) {
 	auto lhs = any_cast<shared_ptr<ExprNode>>(visit(context->expr()[0])),
@@ -912,7 +936,7 @@ VISIT_METHOD_DECL(LogicalOrExpr) {
 
 	return static_pointer_cast<ExprNode>(
 		make_shared<BinaryOpExprNode>(
-			lhs->getLocation(), OP_LOR, lhs, rhs));
+			lhs->getLocation(), BinaryOp::LOr, lhs, rhs));
 }
 VISIT_METHOD_DECL(TernaryExpr) {
 	auto cond = any_cast<shared_ptr<ExprNode>>(visit(context->expr()[0])),
@@ -928,26 +952,43 @@ VISIT_METHOD_DECL(AssignExpr) {
 
 	BinaryOp op;
 
-#define ASSIGN_OP_CASE(name) \
-	case SlakeParser::name:  \
-		op = name;           \
-		break
 	switch (context->op->getType()) {
-		ASSIGN_OP_CASE(OP_ASSIGN);
-		ASSIGN_OP_CASE(OP_ASSIGN_ADD);
-		ASSIGN_OP_CASE(OP_ASSIGN_SUB);
-		ASSIGN_OP_CASE(OP_ASSIGN_MUL);
-		ASSIGN_OP_CASE(OP_ASSIGN_DIV);
-		ASSIGN_OP_CASE(OP_ASSIGN_MOD);
-		ASSIGN_OP_CASE(OP_ASSIGN_AND);
-		ASSIGN_OP_CASE(OP_ASSIGN_OR);
-		ASSIGN_OP_CASE(OP_ASSIGN_XOR);
-		ASSIGN_OP_CASE(OP_ASSIGN_LSH);
-		ASSIGN_OP_CASE(OP_ASSIGN_RSH);
+		case SlakeParser::OP_ASSIGN:
+			op = BinaryOp::Assign;
+			break;
+		case SlakeParser::OP_ASSIGN_ADD:
+			op = BinaryOp::AssignAdd;
+			break;
+		case SlakeParser::OP_ASSIGN_SUB:
+			op = BinaryOp::AssignSub;
+			break;
+		case SlakeParser::OP_ASSIGN_MUL:
+			op = BinaryOp::AssignMul;
+			break;
+		case SlakeParser::OP_ASSIGN_DIV:
+			op = BinaryOp::AssignDiv;
+			break;
+		case SlakeParser::OP_ASSIGN_MOD:
+			op = BinaryOp::AssignMod;
+			break;
+		case SlakeParser::OP_ASSIGN_AND:
+			op = BinaryOp::AssignAnd;
+			break;
+		case SlakeParser::OP_ASSIGN_OR:
+			op = BinaryOp::AssignOr;
+			break;
+		case SlakeParser::OP_ASSIGN_XOR:
+			op = BinaryOp::AssignXor;
+			break;
+		case SlakeParser::OP_ASSIGN_LSH:
+			op = BinaryOp::AssignLsh;
+			break;
+		case SlakeParser::OP_ASSIGN_RSH:
+			op = BinaryOp::AssignRsh;
+			break;
 		default:
 			throw std::logic_error("Unrecognized opeartion type");
 	}
-#undef ASSIGN_OP_CASE
 
 	return static_pointer_cast<ExprNode>(
 		make_shared<BinaryOpExprNode>(
@@ -1132,18 +1173,18 @@ VISIT_METHOD_DECL(F64) {
 		make_shared<F64LiteralExprNode>(Location(context->L_F64()), strtod(s.c_str(), nullptr)));
 }
 
-enum StringParseState : uint8_t {
-	SPARSE_INITIAL = 0,
-	SPARSE_ESC,
-	SPARSE_OCT,
-	SPARSE_HEX,
-	SPARSE_UNICODE
+enum class StringParseState : uint8_t {
+	Initial = 0,
+	Escape,
+	OctEscape,
+	HexEscape,
+	UnicodeEscape
 };
 
 VISIT_METHOD_DECL(String) {
 	auto src = context->L_STRING()->getText();
 
-	StringParseState state = SPARSE_INITIAL;
+	StringParseState state = StringParseState::Initial;
 
 	std::string s;
 	union {
@@ -1160,55 +1201,55 @@ VISIT_METHOD_DECL(String) {
 	for (size_t i = 1; i < src.size() - 1; ++i) {
 		auto c = src[i];
 		switch (state) {
-			case SPARSE_INITIAL:
+			case StringParseState::Initial:
 				switch (c) {
 					case '\\':
-						state = SPARSE_ESC;
+						state = StringParseState::Escape;
 						break;
 					default:
 						s += c;
 				}
 				break;
-			case SPARSE_ESC:
+			case StringParseState::Escape:
 				switch (c) {
 					case '\'':
-						state = SPARSE_INITIAL;
+						state = StringParseState::Initial;
 						s += '\'';
 						break;
 					case '"':
-						state = SPARSE_INITIAL;
+						state = StringParseState::Initial;
 						s += '"';
 						break;
 					case '\\':
-						state = SPARSE_INITIAL;
+						state = StringParseState::Initial;
 						s += '\\';
 						break;
 					case 'a':
-						state = SPARSE_INITIAL;
+						state = StringParseState::Initial;
 						s += '\a';
 						break;
 					case 'b':
-						state = SPARSE_INITIAL;
+						state = StringParseState::Initial;
 						s += '\b';
 						break;
 					case 'f':
-						state = SPARSE_INITIAL;
+						state = StringParseState::Initial;
 						s += '\f';
 						break;
 					case 'n':
-						state = SPARSE_INITIAL;
+						state = StringParseState::Initial;
 						s += '\n';
 						break;
 					case 'r':
-						state = SPARSE_INITIAL;
+						state = StringParseState::Initial;
 						s += '\r';
 						break;
 					case 't':
-						state = SPARSE_INITIAL;
+						state = StringParseState::Initial;
 						s += '\t';
 						break;
 					case 'v':
-						state = SPARSE_INITIAL;
+						state = StringParseState::Initial;
 						s += '\v';
 						break;
 					case '0':
@@ -1219,26 +1260,26 @@ VISIT_METHOD_DECL(String) {
 					case '5':
 					case '6':
 					case '7':
-						state = SPARSE_OCT;
+						state = StringParseState::OctEscape;
 						stateData.esc.nCharsEscaped = 1;
 						stateData.esc.c = c - '0';
 						break;
 					case 'x':
 					case 'X':
-						state = SPARSE_HEX;
+						state = StringParseState::HexEscape;
 						stateData.esc = { 0 };
 						break;
 					case 'u':
 					case 'U':
-						state = SPARSE_UNICODE;
+						state = StringParseState::UnicodeEscape;
 						stateData.unicodeEsc = { 0 };
 						break;
 				}
 				break;
-			case SPARSE_OCT: {
+			case StringParseState::OctEscape: {
 				if ((stateData.esc.nCharsEscaped > 3) ||
 					(c < '0' || c > '7')) {
-					state = SPARSE_INITIAL;
+					state = StringParseState::Initial;
 					s += stateData.esc.c;
 					break;
 				}
@@ -1247,9 +1288,9 @@ VISIT_METHOD_DECL(String) {
 				++stateData.esc.nCharsEscaped;
 				break;
 			}
-			case SPARSE_HEX: {
+			case StringParseState::HexEscape: {
 				if ((stateData.esc.nCharsEscaped > 2)) {
-					state = SPARSE_INITIAL;
+					state = StringParseState::Initial;
 					s += stateData.esc.c;
 					break;
 				}
@@ -1258,9 +1299,9 @@ VISIT_METHOD_DECL(String) {
 				++stateData.esc.nCharsEscaped;
 				break;
 			}
-			case SPARSE_UNICODE: {
+			case StringParseState::UnicodeEscape: {
 				if ((stateData.unicodeEsc.nCharsEscaped > 4)) {
-					state = SPARSE_INITIAL;
+					state = StringParseState::Initial;
 					s += stateData.esc.c;
 					break;
 				}
@@ -1281,7 +1322,7 @@ VISIT_METHOD_DECL(False) {
 	return static_pointer_cast<ExprNode>(make_shared<BoolLiteralExprNode>(Location(context->KW_FALSE()), false));
 }
 
-VISIT_METHOD_DECL(Scope) {
+VISIT_METHOD_DECL(RefScope) {
 	RefEntry entry{
 		Location(context->name),
 		context->name->getText()
@@ -1335,7 +1376,7 @@ VISIT_METHOD_DECL(NewRef) {
 VISIT_METHOD_DECL(ModuleRef) {
 	ModuleRef ref;
 
-	for(auto i : context->ID()) {
+	for (auto i : context->ID()) {
 		ref.push_back(ModuleRefEntry(Location(i), i->getText()));
 	}
 

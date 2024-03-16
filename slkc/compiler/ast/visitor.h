@@ -219,7 +219,7 @@ namespace slake {
 			VISIT_METHOD_DECL(True);
 			VISIT_METHOD_DECL(False);
 
-			VISIT_METHOD_DECL(Scope);
+			VISIT_METHOD_DECL(RefScope);
 			VISIT_METHOD_DECL(NormalRef);
 			VISIT_METHOD_DECL(ThisRef);
 			VISIT_METHOD_DECL(NewRef);

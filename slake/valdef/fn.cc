@@ -2,7 +2,7 @@
 
 using namespace slake;
 
-Type BasicFnValue::getType() const { return TypeId::FN; }
+Type BasicFnValue::getType() const { return TypeId::Fn; }
 Type BasicFnValue::getReturnType() const { return returnType; }
 
 BasicFnValue::~BasicFnValue() {

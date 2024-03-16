@@ -55,7 +55,7 @@ namespace slake {
 				throw std::logic_error("Please get locations from the overloading registries");
 			}
 
-			virtual inline NodeType getNodeType() const override { return AST_FN; }
+			virtual inline NodeType getNodeType() const override { return NodeType::Fn; }
 
 			virtual RefEntry getName() const override { return RefEntry({}, name, {}); }
 		};
@@ -97,7 +97,7 @@ namespace slake {
 				return _loc;
 			}
 
-			virtual inline NodeType getNodeType() const override { return AST_FN; }
+			virtual inline NodeType getNodeType() const override { return NodeType::Fn; }
 
 			inline void insertIns(Ins ins) { body.push_back(ins); }
 			inline void insertIns(
@@ -142,7 +142,7 @@ namespace slake {
 				throw std::logic_error("Should not get location of a label reference");
 			}
 
-			virtual inline NodeType getNodeType() const override { return AST_LABEL_REF; }
+			virtual inline NodeType getNodeType() const override { return NodeType::LabelRef; }
 		};
 
 		class RegRefNode final : public AstNode {
@@ -157,7 +157,7 @@ namespace slake {
 				throw std::logic_error("Should not get location of a register reference");
 			}
 
-			virtual inline NodeType getNodeType() const override { return AST_REG_REF; }
+			virtual inline NodeType getNodeType() const override { return NodeType::RegRef; }
 		};
 
 		class LocalVarRefNode final : public AstNode {
@@ -172,7 +172,7 @@ namespace slake {
 				throw std::logic_error("Should not get location of a label reference");
 			}
 
-			virtual inline NodeType getNodeType() const override { return AST_LVAR_REF; }
+			virtual inline NodeType getNodeType() const override { return NodeType::LocalVarRef; }
 		};
 
 		class ArgRefNode final : public AstNode {
@@ -187,7 +187,7 @@ namespace slake {
 				throw std::logic_error("Should not get location of a label reference");
 			}
 
-			virtual inline NodeType getNodeType() const override { return AST_ARG_REF; }
+			virtual inline NodeType getNodeType() const override { return NodeType::ArgRef; }
 		};
 	}
 }

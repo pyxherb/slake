@@ -3,7 +3,7 @@
 using namespace slake;
 
 void slake::Runtime::_instantiateGenericValue(Type &type, const GenericArgList &genericArgs) const {
-	if (type.typeId == TypeId::GENERIC_ARG)
+	if (type.typeId == TypeId::GenericArg)
 		type = genericArgs[type.getGenericArgExData()];
 }
 
@@ -12,7 +12,7 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 	// Duplicate the value, scan for references to generic parameters and
 	// replace them with generic arguments.
 	switch (v->getType().typeId) {
-		case TypeId::OBJECT: {
+		case TypeId::Object: {
 			auto value = (ObjectValue *)v;
 
 			for (auto &i : value->scope->members)
@@ -27,16 +27,16 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 				_instantiateGenericValue(value->_parent, genericArgs);
 			break;
 		}
-		case TypeId::ARRAY: {
+		case TypeId::Array: {
 			auto value = (ArrayValue *)v;
 
 			_instantiateGenericValue(value->type, genericArgs);
 			break;
 		}
-		case TypeId::MAP: {
+		case TypeId::Map: {
 			break;
 		}
-		case TypeId::CLASS: {
+		case TypeId::Class: {
 			ClassValue *const value = (ClassValue *)v;
 
 			value->_genericArgs = genericArgs;
@@ -46,7 +46,7 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 
 			break;
 		}
-		case TypeId::INTERFACE: {
+		case TypeId::Interface: {
 			InterfaceValue *const value = (InterfaceValue *)v;
 
 			value->_genericArgs = genericArgs;
@@ -56,7 +56,7 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 
 			break;
 		}
-		case TypeId::TRAIT: {
+		case TypeId::Trait: {
 			TraitValue *const value = (TraitValue *)v;
 
 			for (auto &i : value->scope->members)
@@ -64,20 +64,20 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 
 			break;
 		}
-		case TypeId::VAR: {
+		case TypeId::Var: {
 			VarValue *value = (VarValue *)v;
 
 			_instantiateGenericValue(value->type, genericArgs);
 			break;
 		}
-		case TypeId::MOD: {
+		case TypeId::Module: {
 			ModuleValue *value = (ModuleValue *)v;
 
 			for (auto &i : value->scope->members)
 				_instantiateGenericValue(i.second, genericArgs);
 			break;
 		}
-		case TypeId::FN: {
+		case TypeId::Fn: {
 			FnValue *value = (FnValue *)v;
 
 			_instantiateGenericValue(value->returnType, genericArgs);
@@ -89,19 +89,19 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 				auto &ins = value->body[i];
 				for (size_t j = 0; j < ins.operands.size(); ++j) {
 					auto operand = ins.operands[j];
-					if (operand && operand->getType() == TypeId::TYPENAME)
+					if (operand && operand->getType() == TypeId::TypeName)
 						_instantiateGenericValue(((TypeNameValue *)operand)->_data, genericArgs);
 				}
 			}
 			break;
 		}
-		case TypeId::ALIAS: {
+		case TypeId::Alias: {
 			AliasValue* value = (AliasValue*)v;
 
 			value->src = instantiateGenericValue(value->src, genericArgs);
 			break;
 		}
-		case TypeId::ROOT:
+		case TypeId::RootValue:
 		case TypeId::I8:
 		case TypeId::I16:
 		case TypeId::I32:
@@ -112,11 +112,11 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 		case TypeId::U64:
 		case TypeId::F32:
 		case TypeId::F64:
-		case TypeId::BOOL:
-		case TypeId::REF:
-		case TypeId::REG_REF:
-		case TypeId::LVAR_REF:
-		case TypeId::ARG_REF:
+		case TypeId::Bool:
+		case TypeId::Ref:
+		case TypeId::RegRef:
+		case TypeId::LocalVarRef:
+		case TypeId::ArgRef:
 			break;
 		default:
 			throw std::logic_error("Unhandled value type");

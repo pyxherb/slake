@@ -10,27 +10,27 @@ namespace slake {
 	namespace bcc {
 		using namespace std;
 
-		enum Type : uint8_t {
-			TYPE_I8,
-			TYPE_I16,
-			TYPE_I32,
-			TYPE_I64,
-			TYPE_U8,
-			TYPE_U16,
-			TYPE_U32,
-			TYPE_U64,
-			TYPE_F32,
-			TYPE_F64,
-			TYPE_STRING,
-			TYPE_BOOL,
-			TYPE_AUTO,
-			TYPE_VOID,
-			TYPE_ANY,
-			TYPE_ARRAY,
-			TYPE_MAP,
-			TYPE_FN,
-			TYPE_CUSTOM,
-			TYPE_GENERIC
+		enum class Type : uint8_t {
+			I8,
+			I16,
+			I32,
+			I64,
+			U8,
+			U16,
+			U32,
+			U64,
+			F32,
+			F64,
+			String,
+			Bool,
+			Auto,
+			Void,
+			Any,
+			Array,
+			Map,
+			Fn,
+			Custom,
+			Generic
 		};
 
 		class Ref;
@@ -52,7 +52,7 @@ namespace slake {
 		public:
 			shared_ptr<Ref> ref;
 
-			inline CustomTypeName(location loc, shared_ptr<Ref> ref) : TypeName(loc, TYPE_CUSTOM), ref(ref) {}
+			inline CustomTypeName(location loc, shared_ptr<Ref> ref) : TypeName(loc, Type::Custom), ref(ref) {}
 			virtual ~CustomTypeName() = default;
 		};
 
@@ -61,7 +61,7 @@ namespace slake {
 			shared_ptr<TypeName> elementType;
 
 			inline ArrayTypeName(location loc, shared_ptr<TypeName> elementType)
-				: TypeName(loc, TYPE_ARRAY), elementType(elementType) {}
+				: TypeName(loc, Type::Array), elementType(elementType) {}
 			virtual ~ArrayTypeName() = default;
 		};
 
@@ -70,7 +70,7 @@ namespace slake {
 			shared_ptr<TypeName> keyType, type;
 
 			inline MapTypeName(location loc, shared_ptr<TypeName> keyType, shared_ptr<TypeName> type)
-				: TypeName(loc, TYPE_MAP), keyType(keyType), type(type) {}
+				: TypeName(loc, Type::Map), keyType(keyType), type(type) {}
 			virtual ~MapTypeName() = default;
 		};
 
@@ -80,7 +80,7 @@ namespace slake {
 			deque<shared_ptr<TypeName>> params;
 
 			inline FnTypeName(location loc, shared_ptr<TypeName> returnType, deque<shared_ptr<TypeName>> params = {})
-				: TypeName(loc, TYPE_FN), returnType(returnType), params(params) {}
+				: TypeName(loc, Type::Fn), returnType(returnType), params(params) {}
 			virtual ~FnTypeName() = default;
 		};
 
@@ -88,7 +88,7 @@ namespace slake {
 		public:
 			uint8_t index;
 
-			inline GenericTypeName(location loc, uint8_t index) : TypeName(loc, TYPE_GENERIC), index(index) {}
+			inline GenericTypeName(location loc, uint8_t index) : TypeName(loc, Type::Generic), index(index) {}
 			virtual ~GenericTypeName() = default;
 		};
 	}

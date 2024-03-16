@@ -41,7 +41,7 @@ namespace slake {
 			reportSizeFreedToRuntime(sizeof(*this) - sizeof(Value));
 		}
 
-		virtual inline Type getType() const override { return Type(TypeId::OBJECT, (Value *)_class); }
+		virtual inline Type getType() const override { return Type(TypeId::Object, (Value *)_class); }
 
 		virtual Value *duplicate() const override;
 

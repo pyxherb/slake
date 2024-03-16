@@ -4,23 +4,23 @@ using namespace slake::slkc;
 
 void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 	switch (stmt->getStmtType()) {
-		case STMT_EXPR: {
+		case StmtType::Expr: {
 			slxfmt::SourceLocDesc sld;
 			sld.offIns = curFn->body.size();
 			sld.line = stmt->getLocation().line;
 			sld.column = stmt->getLocation().column;
 
-			curMajorContext.curMinorContext.evalPurpose = EvalPurpose::STMT;
+			curMajorContext.curMinorContext.evalPurpose = EvalPurpose::Stmt;
 			compileExpr(static_pointer_cast<ExprStmtNode>(stmt)->expr);
 
 			sld.nIns = curFn->body.size() - sld.offIns;
 			curFn->srcLocDescs.push_back(sld);
 			break;
 		}
-		case STMT_VARDEF: {
+		case StmtType::VarDef: {
 			auto s = static_pointer_cast<VarDefStmtNode>(stmt);
 
-			if (s->type->getTypeId() == TYPE_AUTO) {
+			if (s->type->getTypeId() == Type::Auto) {
 				for (auto i : s->varDefs) {
 					if (i.second.initValue) {
 						s->type = evalExprType(i.second.initValue);
@@ -55,15 +55,15 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 									MessageType::Error,
 									"Incompatible initial value type" });
 
-						compileExpr(make_shared<CastExprNode>(i.second.initValue->getLocation(), s->type, i.second.initValue), EvalPurpose::RVALUE, make_shared<LocalVarRefNode>(index));
+						compileExpr(make_shared<CastExprNode>(i.second.initValue->getLocation(), s->type, i.second.initValue), EvalPurpose::RValue, make_shared<LocalVarRefNode>(index));
 					} else
-						compileExpr(i.second.initValue, EvalPurpose::RVALUE, make_shared<LocalVarRefNode>(index));
+						compileExpr(i.second.initValue, EvalPurpose::RValue, make_shared<LocalVarRefNode>(index));
 				}
 			}
 
 			break;
 		}
-		case STMT_BREAK:
+		case StmtType::Break:
 			if (!curMajorContext.curMinorContext.breakLabel.empty())
 				throw FatalCompilationError({ stmt->getLocation(), MessageType::Error, "Unexpected break statement" });
 			if (curMajorContext.curMinorContext.breakScopeLevel < curMajorContext.curScopeLevel)
@@ -72,12 +72,12 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 					make_shared<U32LiteralExprNode>(stmt->getLocation(), curMajorContext.curScopeLevel - curMajorContext.curMinorContext.breakScopeLevel));
 			curFn->insertIns(Opcode::JMP, make_shared<LabelRefNode>(curMajorContext.curMinorContext.breakLabel));
 			break;
-		case STMT_CONTINUE:
+		case StmtType::Continue:
 			if (!curMajorContext.curMinorContext.continueLabel.size())
 				throw FatalCompilationError({ stmt->getLocation(), MessageType::Error, "Unexpected continue statement" });
 			curFn->insertIns(Opcode::JMP, make_shared<LabelRefNode>(curMajorContext.curMinorContext.continueLabel));
 			break;
-		case STMT_FOR: {
+		case StmtType::For: {
 			auto s = static_pointer_cast<ForStmtNode>(stmt);
 
 			auto loc = s->getLocation();
@@ -101,8 +101,8 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 			if (s->condition) {
 				tmpRegIndex = allocReg();
 
-				compileExpr(s->condition, EvalPurpose::RVALUE, make_shared<RegRefNode>(tmpRegIndex));
-				if (evalExprType(s->condition)->getTypeId() != TYPE_BOOL)
+				compileExpr(s->condition, EvalPurpose::RValue, make_shared<RegRefNode>(tmpRegIndex));
+				if (evalExprType(s->condition)->getTypeId() != Type::Bool)
 					curFn->insertIns(
 						Opcode::CAST,
 						make_shared<RegRefNode>(tmpRegIndex),
@@ -115,7 +115,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 
 			compileStmt(s->body);
 
-			compileExpr(s->endExpr, EvalPurpose::STMT, {});
+			compileExpr(s->endExpr, EvalPurpose::Stmt, {});
 
 			curFn->insertIns(Opcode::JMP, make_shared<LabelRefNode>(beginLabel));
 
@@ -125,7 +125,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 			popMinorContext();
 			break;
 		}
-		case STMT_WHILE: {
+		case StmtType::While: {
 			auto s = static_pointer_cast<WhileStmtNode>(stmt);
 
 			auto loc = s->getLocation();
@@ -143,8 +143,8 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 
 			curFn->insertLabel(beginLabel);
 
-			compileExpr(s->condition, EvalPurpose::RVALUE, make_shared<RegRefNode>(tmpRegIndex));
-			if (evalExprType(s->condition)->getTypeId() != TYPE_BOOL)
+			compileExpr(s->condition, EvalPurpose::RValue, make_shared<RegRefNode>(tmpRegIndex));
+			if (evalExprType(s->condition)->getTypeId() != Type::Bool)
 				curFn->insertIns(
 					Opcode::CAST,
 					make_shared<RegRefNode>(tmpRegIndex),
@@ -161,13 +161,13 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 
 			break;
 		}
-		case STMT_RETURN: {
+		case StmtType::Return: {
 			auto s = static_pointer_cast<ReturnStmtNode>(stmt);
 
 			auto returnType = curFn->returnType;
 
 			if (!s->returnValue) {
-				if (returnType->getTypeId() != TYPE_VOID)
+				if (returnType->getTypeId() != Type::Void)
 					throw FatalCompilationError({ stmt->getLocation(), MessageType::Error, "Must return a value" });
 				else
 					curFn->insertIns(Opcode::RET, {});
@@ -181,7 +181,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 						} else {
 							uint32_t tmpRegIndex = allocReg();
 
-							compileExpr(make_shared<CastExprNode>(e->getLocation(), returnType, e), EvalPurpose::RVALUE, make_shared<RegRefNode>(tmpRegIndex));
+							compileExpr(make_shared<CastExprNode>(e->getLocation(), returnType, e), EvalPurpose::RValue, make_shared<RegRefNode>(tmpRegIndex));
 							curFn->insertIns(Opcode::RET, make_shared<RegRefNode>(tmpRegIndex, true));
 						}
 					}
@@ -189,9 +189,9 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 					uint32_t tmpRegIndex = allocReg();
 
 					if (isSameType(evalExprType(s->returnValue), returnType))
-						compileExpr(s->returnValue, EvalPurpose::RVALUE, make_shared<RegRefNode>(tmpRegIndex));
+						compileExpr(s->returnValue, EvalPurpose::RValue, make_shared<RegRefNode>(tmpRegIndex));
 					else
-						compileExpr(make_shared<CastExprNode>(s->returnValue->getLocation(), returnType, s->returnValue), EvalPurpose::RVALUE, make_shared<RegRefNode>(tmpRegIndex));
+						compileExpr(make_shared<CastExprNode>(s->returnValue->getLocation(), returnType, s->returnValue), EvalPurpose::RValue, make_shared<RegRefNode>(tmpRegIndex));
 
 					curFn->insertIns(Opcode::RET, make_shared<RegRefNode>(tmpRegIndex, true));
 				}
@@ -199,11 +199,11 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 
 			break;
 		}
-		case STMT_YIELD: {
+		case StmtType::Yield: {
 			auto s = static_pointer_cast<YieldStmtNode>(stmt);
 
 			if (!s->returnValue) {
-				if (curFn->returnType->getTypeId() != TYPE_VOID)
+				if (curFn->returnType->getTypeId() != Type::Void)
 					throw FatalCompilationError({ stmt->getLocation(), MessageType::Error, "Must yield a value" });
 				else
 					curFn->insertIns(Opcode::YIELD, {});
@@ -213,14 +213,14 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 				} else {
 					uint32_t tmpRegIndex = allocReg();
 
-					compileExpr(s->returnValue, EvalPurpose::RVALUE, make_shared<RegRefNode>(tmpRegIndex));
+					compileExpr(s->returnValue, EvalPurpose::RValue, make_shared<RegRefNode>(tmpRegIndex));
 					curFn->insertIns(Opcode::YIELD, make_shared<RegRefNode>(tmpRegIndex, true));
 				}
 			}
 
 			break;
 		}
-		case STMT_IF: {
+		case StmtType::If: {
 			auto s = static_pointer_cast<IfStmtNode>(stmt);
 			auto loc = s->getLocation();
 
@@ -228,8 +228,8 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 
 			uint32_t tmpRegIndex = allocReg();
 
-			compileExpr(s->condition, EvalPurpose::RVALUE, make_shared<RegRefNode>(tmpRegIndex));
-			if (evalExprType(s->condition)->getTypeId() != TYPE_BOOL)
+			compileExpr(s->condition, EvalPurpose::RValue, make_shared<RegRefNode>(tmpRegIndex));
+			if (evalExprType(s->condition)->getTypeId() != Type::Bool)
 				curFn->insertIns(
 					Opcode::CAST,
 					make_shared<RegRefNode>(tmpRegIndex),
@@ -247,7 +247,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 
 			break;
 		}
-		case STMT_TRY: {
+		case StmtType::Try: {
 			auto s = static_pointer_cast<TryStmtNode>(stmt);
 			auto loc = s->getLocation();
 
@@ -295,7 +295,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 
 			break;
 		}
-		case STMT_SWITCH: {
+		case StmtType::Switch: {
 			auto s = static_pointer_cast<SwitchStmtNode>(stmt);
 			auto loc = s->getLocation();
 
@@ -312,7 +312,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 			uint32_t matcheeRegIndex = allocReg(2);
 			uint32_t conditionRegIndex = matcheeRegIndex + 1;
 
-			compileExpr(s->expr, EvalPurpose::RVALUE, make_shared<RegRefNode>(matcheeRegIndex));
+			compileExpr(s->expr, EvalPurpose::RValue, make_shared<RegRefNode>(matcheeRegIndex));
 
 			SwitchCase *defaultCase = nullptr;
 
@@ -333,7 +333,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 					defaultCase = &curCase;
 				}
 
-				compileExpr(curCase.condition, EvalPurpose::RVALUE, make_shared<RegRefNode>(conditionRegIndex));
+				compileExpr(curCase.condition, EvalPurpose::RValue, make_shared<RegRefNode>(conditionRegIndex));
 				curFn->insertIns(
 					Opcode::EQ,
 					make_shared<RegRefNode>(conditionRegIndex),
@@ -357,7 +357,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 			popMinorContext();
 			break;
 		}
-		case STMT_CODEBLOCK: {
+		case StmtType::CodeBlock: {
 			auto s = static_pointer_cast<CodeBlockStmtNode>(stmt);
 
 			pushMajorContext();

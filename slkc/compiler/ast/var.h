@@ -31,7 +31,7 @@ namespace slake {
 			virtual ~VarNode() = default;
 
 			virtual inline Location getLocation() const override { return _loc; }
-			virtual inline NodeType getNodeType() const override { return AST_VAR; }
+			virtual inline NodeType getNodeType() const override { return NodeType::Var; }
 
 			virtual RefEntry getName() const override { return RefEntry({}, name, {}); }
 		};
@@ -47,7 +47,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { throw std::logic_error("Unsupported operation"); }
 
-			virtual inline NodeType getNodeType() const override { return AST_LOCAL_VAR; }
+			virtual inline NodeType getNodeType() const override { return NodeType::LocalVar; }
 		};
 	}
 }

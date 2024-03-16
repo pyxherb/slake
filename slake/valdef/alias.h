@@ -11,7 +11,7 @@ namespace slake {
 		AliasValue(Runtime *rt, AccessModifier access, Value *src);
 		virtual ~AliasValue();
 
-		virtual inline Type getType() const override { return TypeId::ALIAS; }
+		virtual inline Type getType() const override { return TypeId::Alias; }
 
 		virtual ValueRef<> call(std::deque<Value *> args) const override;
 
@@ -28,13 +28,13 @@ namespace slake {
 	};
 
 	inline Value *unwrapAlias(Value *value) noexcept {
-		if (value->getType() != TypeId::ALIAS)
+		if (value->getType() != TypeId::Alias)
 			return value;
 		return ((AliasValue *)value)->src;
 	}
 
 	inline const Value *unwrapAlias(const Value *value) noexcept {
-		if (value->getType() != TypeId::ALIAS)
+		if (value->getType() != TypeId::Alias)
 			return value;
 		return ((AliasValue *)value)->src;
 	}

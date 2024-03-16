@@ -21,7 +21,7 @@ namespace slake {
 		RefValue(Runtime *rt);
 		virtual ~RefValue();
 
-		virtual inline Type getType() const override { return TypeId::REF; }
+		virtual inline Type getType() const override { return TypeId::Ref; }
 
 		virtual Value *duplicate() const override;
 

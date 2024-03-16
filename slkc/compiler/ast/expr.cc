@@ -4,15 +4,15 @@ using namespace slake::slkc;
 
 std::string std::to_string(UnaryOp op) {
 	switch (op) {
-		case OP_NOT:
+		case UnaryOp::LNot:
 			return "!";
-		case OP_REV:
+		case UnaryOp::Not:
 			return "~";
-		case OP_INCF:
-		case OP_INCB:
+		case UnaryOp::IncF:
+		case UnaryOp::IncB:
 			return "--";
-		case OP_DECF:
-		case OP_DECB:
+		case UnaryOp::DecF:
+		case UnaryOp::DecB:
 			return "--";
 		default:
 			throw logic_error("Unrecognized operator type");
@@ -21,75 +21,71 @@ std::string std::to_string(UnaryOp op) {
 
 std::string std::to_string(BinaryOp op) {
 	switch (op) {
-		case OP_ADD:
+		case BinaryOp::Add:
 			return "+";
-		case OP_SUB:
+		case BinaryOp::Sub:
 			return "-";
-		case OP_MUL:
+		case BinaryOp::Mul:
 			return "*";
-		case OP_DIV:
+		case BinaryOp::Div:
 			return "/";
-		case OP_MOD:
+		case BinaryOp::Mod:
 			return "%";
-		case OP_AND:
+		case BinaryOp::And:
 			return "&";
-		case OP_OR:
+		case BinaryOp::Or:
 			return "|";
-		case OP_XOR:
+		case BinaryOp::Xor:
 			return "^";
-		case OP_LAND:
+		case BinaryOp::LAnd:
 			return "&&";
-		case OP_LOR:
+		case BinaryOp::LOr:
 			return "||";
-		case OP_LSH:
+		case BinaryOp::Lsh:
 			return "<<";
-		case OP_RSH:
+		case BinaryOp::Rsh:
 			return ">>";
-		case OP_SWAP:
+		case BinaryOp::Swap:
 			return "<=>";
-		case OP_ASSIGN:
+		case BinaryOp::Assign:
 			return "=";
-		case OP_ASSIGN_ADD:
+		case BinaryOp::AssignAdd:
 			return "+=";
-		case OP_ASSIGN_SUB:
+		case BinaryOp::AssignSub:
 			return "-=";
-		case OP_ASSIGN_MUL:
+		case BinaryOp::AssignMul:
 			return "*=";
-		case OP_ASSIGN_DIV:
+		case BinaryOp::AssignDiv:
 			return "/=";
-		case OP_ASSIGN_MOD:
+		case BinaryOp::AssignMod:
 			return "%=";
-		case OP_ASSIGN_AND:
+		case BinaryOp::AssignAnd:
 			return "&=";
-		case OP_ASSIGN_OR:
+		case BinaryOp::AssignOr:
 			return "|=";
-		case OP_ASSIGN_XOR:
+		case BinaryOp::AssignXor:
 			return "^=";
-		case OP_ASSIGN_LAND:
-			return "&&=";
-		case OP_ASSIGN_LOR:
-			return "||=";
-		case OP_ASSIGN_LSH:
+		case BinaryOp::AssignLsh:
 			return "<<=";
-		case OP_ASSIGN_RSH:
+		case BinaryOp::AssignRsh:
 			return ">>=";
-		case OP_EQ:
+		case BinaryOp::Eq:
 			return "==";
-		case OP_NEQ:
+		case BinaryOp::Neq:
 			return "!=";
-		case OP_STRICTEQ:
+		case BinaryOp::StrictEq:
 			return "===";
-		case OP_STRICTNEQ:
+		case BinaryOp::StrictNeq:
 			return "!==";
-		case OP_LT:
+		case BinaryOp::Lt:
 			return "<";
-		case OP_GT:
+		case BinaryOp::Gt:
 			return ">";
-		case OP_LTEQ:
+		case BinaryOp::LtEq:
 			return "<=";
-		case OP_GTEQ:
+		case BinaryOp::GtEq:
 			return ">=";
-		case OP_SUBSCRIPT:
+		case BinaryOp::Subscript:
 			return "[]";
 		default:
 			throw logic_error("Unrecognized operator type");

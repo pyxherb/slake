@@ -79,7 +79,8 @@ interfaceSpec:
 inheritSlot: '(' customTypeName ')';
 implementList: ':' (customTypeName (',' customTypeName)*)?;
 
-operatorDecl: genericParams? typeName 'operator' operatorName '(' params ')';
+operatorDecl:
+	genericParams? typeName 'operator' operatorName '(' params ')';
 operatorDef: operatorDecl codeBlock;
 
 constructorDecl: 'operator' 'new' '(' params ')';
@@ -89,12 +90,12 @@ destructorDecl: 'operator' 'delete' '(' ')';
 destructorDef: destructorDecl codeBlock;
 
 interfaceDef:
-	'interface' ID inheritSlot '{' interfaceStmts* '}';
+	'interface' ID genericParams? implementList? '{' interfaceStmts* '}';
 interfaceStmts:
 	fnDecl ';'			# InterfaceFnDecl
 	| operatorDecl ';'	# InterfaceOperatorDecl;
 
-traitDef: 'trait' ID inheritSlot '{' traitStmts '}';
+traitDef: 'trait' ID implementList '{' traitStmts '}';
 traitStmts:
 	fnDecl ';'			# TraitFnDecl
 	| operatorDecl ';'	# TraitOperatorDecl;
@@ -136,7 +137,7 @@ args: expr (',' expr)*;
 
 expr:
 	'(' expr ')'													# WrappedExpr
-	| expr ('.' scope)+ 											# HeadedRefExpr
+	| <assoc = left>expr ('.' refScope)+								# HeadedRefExpr
 	| ref															# RefExpr
 	| literal														# LiteralExpr
 	| array															# ArrayExpr
@@ -216,11 +217,11 @@ ulongLiteral:
 	| L_ULONG_DEC	# DecULong
 	| L_ULONG_HEX	# HexULong;
 
-scope: name = ID gArgs = genericArgs?;
+refScope: name = ID gArgs = genericArgs?;
 
 ref:
 	(head = 'this' '.' | head = 'base' '.' | head = '::')? (
-		scope ('.' scope)*
+		refScope ('.' refScope)*
 	)											# NormalRef
 	| head = 'this'								# ThisRef
 	| (head = 'this' | head = 'base') '.' 'new'	# NewRef;

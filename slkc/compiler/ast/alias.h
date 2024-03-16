@@ -21,7 +21,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return _loc; }
 
-			virtual inline NodeType getNodeType() const override { return AST_ALIAS; }
+			virtual inline NodeType getNodeType() const override { return NodeType::Alias; }
 
 			virtual inline RefEntry getName() const { return { _loc, name }; }
 		};

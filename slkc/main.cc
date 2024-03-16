@@ -26,15 +26,15 @@ static inline char *fetchArg(int argc, char **argv, int &i) {
 	return argv[i++];
 }
 
-enum AppAction : uint8_t {
-	ACT_COMPILE = 0,
-	ACT_DUMP,
-	ACT_LSP
+enum class AppAction : uint8_t {
+	Compile = 0,
+	Dump,
+	LspServer
 };
 
 std::string srcPath = "", outPath = "";
 
-AppAction action = ACT_COMPILE;
+AppAction action = AppAction::Compile;
 std::deque<std::string> modulePaths;
 uint16_t lspServerPort = 8080;
 
@@ -52,7 +52,7 @@ CmdLineAction cmdLineActions[] = {
 	{ "-d\0"
 	  "--dump\0",
 		[](int argc, char **argv, int &i) {
-			action = ACT_DUMP;
+			action = AppAction::Dump;
 		} },
 	{ "-l\0"
 	  "--no-source-location-info\0",
@@ -63,7 +63,7 @@ CmdLineAction cmdLineActions[] = {
 	{ "-s\0"
 	  "--language-server\0",
 		[](int argc, char **argv, int &i) {
-			action = ACT_LSP;
+			action = AppAction::LspServer;
 		} },
 	{ "-p\0"
 	  "--server-port\0",
@@ -103,7 +103,7 @@ int main(int argc, char **argv) {
 		}
 
 		switch (action) {
-			case ACT_COMPILE: {
+			case AppAction::Compile: {
 				if (!srcPath.length()) {
 					fputs("Error: Missing input file\n", stderr);
 					return EINVAL;
@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
 				os.close();
 				break;
 			}
-			case ACT_DUMP: {
+			case AppAction::Dump: {
 				std::ifstream fs(srcPath, std::ios::binary);
 
 				slake::decompiler::decompile(fs, std::cout);
@@ -150,7 +150,7 @@ int main(int argc, char **argv) {
 				break;
 			}
 #if SLKC_WITH_LSP_ENABLED
-			case ACT_LSP: {
+			case AppAction::LspServer: {
 				printf("Server started on local port %hd\n", lspServerPort);
 				slake::slkc::lsp::LspServer lspServer(lspServerPort);
 				return lspServer.run();

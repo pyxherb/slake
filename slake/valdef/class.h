@@ -37,7 +37,7 @@ namespace slake {
 		ClassValue(Runtime *rt, AccessModifier access, Type parentClass = {});
 		virtual ~ClassValue();
 
-		virtual inline Type getType() const override { return TypeId::CLASS; }
+		virtual inline Type getType() const override { return TypeId::Class; }
 		virtual inline Type getParentType() const { return parentClass; }
 		virtual inline void setParentType(Type parent) { parentClass = parent; }
 
@@ -53,11 +53,11 @@ namespace slake {
 		/// @return true if implemented, false otherwise.
 		bool hasImplemented(const InterfaceValue *pInterface) const;
 
-		/// @brief Check if the class consists of the trait.
+		/// @brief Check if the class has the trait.
 		/// @param[in] t Trait to check.
 		///
-		/// @return true if the class consists of the trait, false otherwise.
-		bool consistsOf(const TraitValue *t) const;
+		/// @return true if the class has the trait, false otherwise.
+		bool hasTrait(const TraitValue *t) const;
 
 		virtual Value *duplicate() const override;
 
@@ -88,7 +88,7 @@ namespace slake {
 		}
 		virtual ~InterfaceValue();
 
-		virtual inline Type getType() const override { return TypeId::INTERFACE; }
+		virtual inline Type getType() const override { return TypeId::Interface; }
 
 		virtual Value *duplicate() const override;
 
@@ -119,7 +119,7 @@ namespace slake {
 		}
 		virtual ~TraitValue();
 
-		virtual inline Type getType() const override { return TypeId::TRAIT; }
+		virtual inline Type getType() const override { return TypeId::Trait; }
 
 		virtual Value *duplicate() const override;
 

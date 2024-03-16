@@ -14,26 +14,26 @@
 
 namespace slake {
 	namespace slkc {
-		enum StmtType : uint8_t {
-			STMT_EXPR = 0,
-			STMT_VARDEF,
-			STMT_BREAK,
-			STMT_CONTINUE,
-			STMT_FOR,
-			STMT_WHILE,
-			STMT_RETURN,
-			STMT_YIELD,
-			STMT_IF,
-			STMT_TRY,
-			STMT_SWITCH,
-			STMT_CODEBLOCK
+		enum class StmtType : uint8_t {
+			Expr = 0,
+			VarDef,
+			Break,
+			Continue,
+			For,
+			While,
+			Return,
+			Yield,
+			If,
+			Try,
+			Switch,
+			CodeBlock
 		};
 
 		class StmtNode : public AstNode {
 		public:
 			virtual ~StmtNode() = default;
 
-			virtual inline NodeType getNodeType() const override { return AST_STMT; }
+			virtual inline NodeType getNodeType() const override { return NodeType::Stmt; }
 
 			virtual StmtType getStmtType() const = 0;
 		};
@@ -52,8 +52,8 @@ namespace slake {
 			virtual inline StmtType getStmtType() const override { return st; }
 		};
 
-		using BreakStmtNode = SimpleStmtNode<STMT_BREAK>;
-		using ContinueStmtNode = SimpleStmtNode<STMT_CONTINUE>;
+		using BreakStmtNode = SimpleStmtNode<StmtType::Break>;
+		using ContinueStmtNode = SimpleStmtNode<StmtType::Continue>;
 
 		class ExprStmtNode : public StmtNode {
 		public:
@@ -64,7 +64,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return expr->getLocation(); }
 
-			virtual inline StmtType getStmtType() const override { return STMT_EXPR; }
+			virtual inline StmtType getStmtType() const override { return StmtType::Expr; }
 		};
 
 		struct VarDefEntry {
@@ -96,7 +96,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return _loc; }
 
-			virtual inline StmtType getStmtType() const override { return STMT_VARDEF; }
+			virtual inline StmtType getStmtType() const override { return StmtType::VarDef; }
 		};
 
 		class BlockStmtNode : public StmtNode {
@@ -114,7 +114,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return _loc; }
 
-			virtual inline StmtType getStmtType() const override { return STMT_CODEBLOCK; }
+			virtual inline StmtType getStmtType() const override { return StmtType::CodeBlock; }
 		};
 
 		class ForStmtNode : public StmtNode {
@@ -138,7 +138,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return _loc; }
 
-			virtual inline StmtType getStmtType() const override { return STMT_FOR; }
+			virtual inline StmtType getStmtType() const override { return StmtType::For; }
 		};
 
 		class WhileStmtNode : public StmtNode {
@@ -158,7 +158,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return _loc; }
 
-			virtual inline StmtType getStmtType() const override { return STMT_WHILE; }
+			virtual inline StmtType getStmtType() const override { return StmtType::While; }
 		};
 
 		class ReturnStmtNode : public StmtNode {
@@ -176,7 +176,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return _loc; }
 
-			virtual inline StmtType getStmtType() const override { return STMT_RETURN; }
+			virtual inline StmtType getStmtType() const override { return StmtType::Return; }
 		};
 
 		class YieldStmtNode : public ReturnStmtNode {
@@ -187,7 +187,7 @@ namespace slake {
 				: ReturnStmtNode(loc, returnValue) {}
 			virtual ~YieldStmtNode() = default;
 
-			virtual inline StmtType getStmtType() const override { return STMT_YIELD; }
+			virtual inline StmtType getStmtType() const override { return StmtType::Yield; }
 		};
 
 		class IfStmtNode : public StmtNode {
@@ -216,7 +216,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return _loc; }
 
-			virtual inline StmtType getStmtType() const override { return STMT_IF; }
+			virtual inline StmtType getStmtType() const override { return StmtType::If; }
 		};
 
 		struct CatchBlock {
@@ -267,7 +267,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return _loc; }
 
-			virtual inline StmtType getStmtType() const override { return STMT_TRY; }
+			virtual inline StmtType getStmtType() const override { return StmtType::Try; }
 		};
 
 		struct CodeBlock {
@@ -284,7 +284,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return body.loc; }
 
-			virtual inline StmtType getStmtType() const override { return STMT_CODEBLOCK; }
+			virtual inline StmtType getStmtType() const override { return StmtType::CodeBlock; }
 		};
 
 		struct SwitchCase {
@@ -319,7 +319,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return _loc; }
 
-			virtual inline StmtType getStmtType() const override { return STMT_CODEBLOCK; }
+			virtual inline StmtType getStmtType() const override { return StmtType::CodeBlock; }
 		};
 	}
 }

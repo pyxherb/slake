@@ -21,11 +21,11 @@ Value *Runtime::resolveRef(RefValue* ref, Value *scopeValue) const {
 
 			if (i.name == "base") {
 				switch (curValue->getType().typeId) {
-					case TypeId::MOD:
-					case TypeId::CLASS:
+					case TypeId::Module:
+					case TypeId::Class:
 						scopeValue = (MemberValue *)curValue->getParent();
 						break;
-					case TypeId::OBJECT:
+					case TypeId::Object:
 						scopeValue = ((ObjectValue *)curValue)->_parent;
 						break;
 					default:
@@ -48,13 +48,13 @@ Value *Runtime::resolveRef(RefValue* ref, Value *scopeValue) const {
 
 	fail:
 		switch (curValue->getType().typeId) {
-			case TypeId::MOD:
-			case TypeId::CLASS:
+			case TypeId::Module:
+			case TypeId::Class:
 				if(!curValue->getParent())
 					return nullptr;
 				scopeValue = (MemberValue *)curValue->getParent();
 				break;
-			case TypeId::OBJECT: {
+			case TypeId::Object: {
 				auto t = ((ObjectValue *)curValue)->getType();
 				scopeValue = t.getCustomTypeExData();
 				break;

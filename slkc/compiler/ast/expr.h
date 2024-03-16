@@ -6,38 +6,38 @@
 
 namespace slake {
 	namespace slkc {
-		enum ExprType : uint8_t {
-			EXPR_UNARY,		  // Unary operation
-			EXPR_BINARY,	  // Binary operation
-			EXPR_TERNARY,	  // Ternary operation
-			EXPR_MATCH,		  // Match
-			EXPR_HEADED_REF,  // Headed reference
-			EXPR_REF,		  // Reference
+		enum class ExprType : uint8_t {
+			Unary,		// Unary operation
+			Binary,		// Binary operation
+			Ternary,	// Ternary operation
+			Match,		// Match
+			HeadedRef,	// Headed reference
+			Ref,		// Reference
 
-			EXPR_I8,	  // i8 Literal
-			EXPR_I16,	  // i16 Literal
-			EXPR_I32,	  // i32 Literal
-			EXPR_I64,	  // i64 Literal
-			EXPR_U8,	  // u8 Literal
-			EXPR_U16,	  // u16 Literal
-			EXPR_U32,	  // u32 Literal
-			EXPR_U64,	  // u64 Literal
-			EXPR_F32,	  // f32 Literal
-			EXPR_F64,	  // f64 Literal
-			EXPR_STRING,  // string Literal
-			EXPR_BOOL,	  // bool Literal
+			I8,		 // i8 Literal
+			I16,	 // i16 Literal
+			I32,	 // i32 Literal
+			I64,	 // i64 Literal
+			U8,		 // u8 Literal
+			U16,	 // u16 Literal
+			U32,	 // u32 Literal
+			U64,	 // u64 Literal
+			F32,	 // f32 Literal
+			F64,	 // f64 Literal
+			String,	 // string Literal
+			Bool,	 // bool Literal
 
-			EXPR_ARRAY,	 // Array
-			EXPR_MAP,	 // Map
+			Array,	// Array
+			Map,	// Map
 
-			EXPR_CLOSURE,  // Closure
+			Closure,  // Closure
 
-			EXPR_CALL,	 // Call
-			EXPR_AWAIT,	 // Await
+			Call,	// Call
+			Await,	// Await
 
-			EXPR_NEW,	  // New
-			EXPR_TYPEOF,  // Typeof
-			EXPR_CAST	  // Cast
+			New,	 // New
+			Typeof,	 // Typeof
+			Cast	 // Cast
 		};
 
 		class ExprNode : public AstNode {
@@ -46,22 +46,22 @@ namespace slake {
 
 			virtual ExprType getExprType() const = 0;
 
-			virtual inline NodeType getNodeType() const override { return AST_EXPR; }
+			virtual inline NodeType getNodeType() const override { return NodeType::Expr; }
 		};
 
-		enum UnaryOp : uint8_t {
-			OP_NOT,
-			OP_REV,
-			OP_INCF,
-			OP_DECF,
-			OP_INCB,
-			OP_DECB
+		enum class UnaryOp : uint8_t {
+			LNot,
+			Not,
+			IncF,
+			DecF,
+			IncB,
+			DecB
 		};
 
 		inline bool isForwardUnaryOp(UnaryOp op) {
 			switch (op) {
-				case OP_INCF:
-				case OP_DECF:
+				case UnaryOp::IncF:
+				case UnaryOp::DecF:
 					return true;
 				default:
 					return false;
@@ -69,48 +69,46 @@ namespace slake {
 		}
 		inline bool isBackwardUnaryOp(UnaryOp op) { return !isForwardUnaryOp(op); }
 
-		enum BinaryOp : uint8_t {
-			OP_ADD = 0,
-			OP_SUB,
-			OP_MUL,
-			OP_DIV,
-			OP_MOD,
-			OP_AND,
-			OP_OR,
-			OP_XOR,
-			OP_LAND,
-			OP_LOR,
-			OP_LSH,
-			OP_RSH,
-			OP_SWAP,
+		enum class BinaryOp : uint8_t {
+			Add = 0,
+			Sub,
+			Mul,
+			Div,
+			Mod,
+			And,
+			Or,
+			Xor,
+			LAnd,
+			LOr,
+			Lsh,
+			Rsh,
+			Swap,
 
-			OP_ASSIGN,
-			OP_ASSIGN_ADD,
-			OP_ASSIGN_SUB,
-			OP_ASSIGN_MUL,
-			OP_ASSIGN_DIV,
-			OP_ASSIGN_MOD,
-			OP_ASSIGN_AND,
-			OP_ASSIGN_OR,
-			OP_ASSIGN_XOR,
-			OP_ASSIGN_LAND,
-			OP_ASSIGN_LOR,
-			OP_ASSIGN_LSH,
-			OP_ASSIGN_RSH,
+			Assign,
+			AssignAdd,
+			AssignSub,
+			AssignMul,
+			AssignDiv,
+			AssignMod,
+			AssignAnd,
+			AssignOr,
+			AssignXor,
+			AssignLsh,
+			AssignRsh,
 
-			OP_EQ,
-			OP_NEQ,
-			OP_STRICTEQ,
-			OP_STRICTNEQ,
-			OP_LT,
-			OP_GT,
-			OP_LTEQ,
-			OP_GTEQ,
-			OP_SUBSCRIPT
+			Eq,
+			Neq,
+			StrictEq,
+			StrictNeq,
+			Lt,
+			Gt,
+			LtEq,
+			GtEq,
+			Subscript
 		};
 
 		inline bool isAssignBinaryOp(BinaryOp op) {
-			return (op >= OP_ASSIGN) && (op < OP_EQ);
+			return (op >= BinaryOp::Assign) && (op < BinaryOp::Eq);
 		}
 
 		class HeadedRefExprNode : public ExprNode {
@@ -123,7 +121,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return head->getLocation(); }
 
-			virtual ExprType getExprType() const override { return EXPR_HEADED_REF; }
+			virtual ExprType getExprType() const override { return ExprType::HeadedRef; }
 		};
 
 		class UnaryOpExprNode : public ExprNode {
@@ -140,7 +138,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return _loc; }
 
-			virtual ExprType getExprType() const override { return EXPR_UNARY; }
+			virtual ExprType getExprType() const override { return ExprType::Unary; }
 		};
 
 		class BinaryOpExprNode : public ExprNode {
@@ -157,7 +155,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return _loc; }
 
-			virtual ExprType getExprType() const override { return EXPR_BINARY; }
+			virtual ExprType getExprType() const override { return ExprType::Binary; }
 		};
 
 		class TernaryOpExprNode : public ExprNode {
@@ -170,7 +168,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return condition->getLocation(); }
 
-			virtual ExprType getExprType() const override { return EXPR_TERNARY; }
+			virtual ExprType getExprType() const override { return ExprType::Ternary; }
 		};
 
 		class MatchExprNode : public ExprNode {
@@ -186,7 +184,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return condition->getLocation(); }
 
-			virtual ExprType getExprType() const override { return EXPR_MATCH; }
+			virtual ExprType getExprType() const override { return ExprType::Match; }
 		};
 
 		template <typename T, ExprType xt>
@@ -208,45 +206,45 @@ namespace slake {
 		template <typename T>
 		constexpr ExprType getLiteralExprType() {
 			if constexpr (std::is_same_v<T, int8_t>)
-				return EXPR_I8;
+				return ExprType::I8;
 			else if constexpr (std::is_same_v<T, int16_t>)
-				return EXPR_I16;
+				return ExprType::I16;
 			else if constexpr (std::is_same_v<T, int32_t>)
-				return EXPR_I32;
+				return ExprType::I32;
 			else if constexpr (std::is_same_v<T, int64_t>)
-				return EXPR_I64;
+				return ExprType::I64;
 			else if constexpr (std::is_same_v<T, uint8_t>)
-				return EXPR_U8;
+				return ExprType::U8;
 			else if constexpr (std::is_same_v<T, uint16_t>)
-				return EXPR_U16;
+				return ExprType::U16;
 			else if constexpr (std::is_same_v<T, uint32_t>)
-				return EXPR_U32;
+				return ExprType::U32;
 			else if constexpr (std::is_same_v<T, uint64_t>)
-				return EXPR_U64;
+				return ExprType::U64;
 			else if constexpr (std::is_same_v<T, float>)
-				return EXPR_F32;
+				return ExprType::F32;
 			else if constexpr (std::is_same_v<T, double>)
-				return EXPR_F64;
+				return ExprType::F64;
 			else if constexpr (std::is_same_v<T, string>)
-				return EXPR_STRING;
+				return ExprType::String;
 			else if constexpr (std::is_same_v<T, bool>)
-				return EXPR_BOOL;
+				return ExprType::Bool;
 			else
 				static_assert(!std::is_same_v<T, T>);
 		}
 
-		using I8LiteralExprNode = LiteralExprNode<int8_t, EXPR_I8>;
-		using I16LiteralExprNode = LiteralExprNode<int16_t, EXPR_I16>;
-		using I32LiteralExprNode = LiteralExprNode<int32_t, EXPR_I32>;
-		using I64LiteralExprNode = LiteralExprNode<int64_t, EXPR_I64>;
-		using U8LiteralExprNode = LiteralExprNode<uint32_t, EXPR_U8>;
-		using U16LiteralExprNode = LiteralExprNode<uint32_t, EXPR_U16>;
-		using U32LiteralExprNode = LiteralExprNode<uint32_t, EXPR_U32>;
-		using U64LiteralExprNode = LiteralExprNode<uint64_t, EXPR_U64>;
-		using F32LiteralExprNode = LiteralExprNode<float, EXPR_F32>;
-		using F64LiteralExprNode = LiteralExprNode<double, EXPR_F64>;
-		using StringLiteralExprNode = LiteralExprNode<string, EXPR_STRING>;
-		using BoolLiteralExprNode = LiteralExprNode<bool, EXPR_BOOL>;
+		using I8LiteralExprNode = LiteralExprNode<int8_t, ExprType::I8>;
+		using I16LiteralExprNode = LiteralExprNode<int16_t, ExprType::I16>;
+		using I32LiteralExprNode = LiteralExprNode<int32_t, ExprType::I32>;
+		using I64LiteralExprNode = LiteralExprNode<int64_t, ExprType::I64>;
+		using U8LiteralExprNode = LiteralExprNode<uint32_t, ExprType::U8>;
+		using U16LiteralExprNode = LiteralExprNode<uint32_t, ExprType::U16>;
+		using U32LiteralExprNode = LiteralExprNode<uint32_t, ExprType::U32>;
+		using U64LiteralExprNode = LiteralExprNode<uint64_t, ExprType::U64>;
+		using F32LiteralExprNode = LiteralExprNode<float, ExprType::F32>;
+		using F64LiteralExprNode = LiteralExprNode<double, ExprType::F64>;
+		using StringLiteralExprNode = LiteralExprNode<string, ExprType::String>;
+		using BoolLiteralExprNode = LiteralExprNode<bool, ExprType::Bool>;
 
 		class RefExprNode : public ExprNode {
 		public:
@@ -258,7 +256,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return ref[0].loc; }
 
-			virtual ExprType getExprType() const override { return EXPR_REF; }
+			virtual ExprType getExprType() const override { return ExprType::Ref; }
 		};
 
 		class ArrayExprNode : public ExprNode {
@@ -273,7 +271,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return _loc; }
 
-			virtual ExprType getExprType() const override { return EXPR_ARRAY; }
+			virtual ExprType getExprType() const override { return ExprType::Array; }
 		};
 
 		class MapExprNode : public ExprNode {
@@ -289,7 +287,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return _loc; }
 
-			virtual ExprType getExprType() const override { return EXPR_MAP; }
+			virtual ExprType getExprType() const override { return ExprType::Map; }
 		};
 
 		struct Param {
@@ -338,7 +336,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return target->getLocation(); }
 
-			virtual ExprType getExprType() const override { return EXPR_CALL; }
+			virtual ExprType getExprType() const override { return ExprType::Call; }
 		};
 
 		class AwaitExprNode : public ExprNode {
@@ -353,7 +351,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return _loc; }
 
-			virtual ExprType getExprType() const override { return EXPR_AWAIT; }
+			virtual ExprType getExprType() const override { return ExprType::Await; }
 		};
 
 		class NewExprNode : public ExprNode {
@@ -370,7 +368,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return _loc; }
 
-			virtual ExprType getExprType() const override { return EXPR_NEW; }
+			virtual ExprType getExprType() const override { return ExprType::New; }
 		};
 
 		class TypeofExprNode : public ExprNode {
@@ -386,7 +384,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return _loc; }
 
-			virtual ExprType getExprType() const override { return EXPR_TYPEOF; }
+			virtual ExprType getExprType() const override { return ExprType::Typeof; }
 		};
 
 		class CastExprNode : public ExprNode {
@@ -406,7 +404,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return _loc; }
 
-			virtual ExprType getExprType() const override { return EXPR_CAST; }
+			virtual ExprType getExprType() const override { return ExprType::Cast; }
 		};
 	}
 }

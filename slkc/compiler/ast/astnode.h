@@ -11,29 +11,28 @@ namespace slake {
 	namespace slkc {
 		using namespace std;
 
-		enum NodeType : uint8_t {
-			AST_CLASS = 0,
-			AST_INTERFACE,
-			AST_TRAIT,
-			AST_FN,
-			AST_STMT,
-			AST_EXPR,
-			AST_TYPENAME,
-			AST_MODULE,
-			AST_ALIAS,
-			AST_VAR,
+		enum class NodeType : uint8_t {
+			Class = 0,
+			Interface,
+			Trait,
+			Fn,
+			Stmt,
+			Expr,
+			TypeName,
+			Module,
+			Alias,
+			Var,
 
-			AST_COMPILED_FN,
-			AST_LABEL_REF,
-			AST_LOCAL_VAR,
-			AST_REG,
-			AST_ARG_REF,
-			AST_COMMENT,
+			CompiledFn,
+			LabelRef,
+			LocalVar,
+			ArgRef,
+			Comment,
 
-			AST_LVAR_REF,
-			AST_REG_REF,
-			AST_THIS_REF,
-			AST_BASE_REF
+			LocalVarRef,
+			RegRef,
+			ThisRef,
+			BaseRef
 		};
 
 		struct Location {

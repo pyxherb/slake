@@ -11,20 +11,23 @@ namespace slake {
 
 		public:
 			string name;
-			shared_ptr<Scope> scope;
+			shared_ptr<Scope> scope = make_shared<Scope>();
 			deque<shared_ptr<CustomTypeNameNode>> parentInterfaces;  // Parent interfaces
+			deque<GenericParam> genericParams;
 
 			inline InterfaceNode(
 				Location loc,
-				shared_ptr<Scope> scope = make_shared<Scope>())
-				: _loc(loc), scope(scope) {
+				string name,
+				deque<shared_ptr<CustomTypeNameNode>> parentInterfaces,
+				deque<GenericParam> genericParams)
+				: _loc(loc), name(name), parentInterfaces(parentInterfaces), genericParams(genericParams) {
 				scope->owner = this;
 			}
 			virtual ~InterfaceNode() = default;
 
 			virtual inline Location getLocation() const override { return _loc; }
 
-			virtual inline NodeType getNodeType() const override { return AST_INTERFACE; }
+			virtual inline NodeType getNodeType() const override { return NodeType::Interface; }
 
 			virtual RefEntry getName() const override { return RefEntry({}, name, {}); }
 		};

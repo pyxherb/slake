@@ -55,32 +55,32 @@ namespace slake {
 		};
 
 		enum class Type : uint8_t {
-			NONE = 0,	  // None
-			ANY,		  // Any
-			I8,			  // i8
-			I16,		  // i16
-			I32,		  // i32
-			I64,		  // i64
-			U8,			  // u8
-			U16,		  // u16
-			U32,		  // u32
-			U64,		  // u64
-			F32,		  // f32
-			F64,		  // f64
-			STRING,		  // String
-			BOOL,		  // Boolean
-			ARRAY,		  // Array
-			MAP,		  // Map
-			OBJECT,		  // Object
-			REF,		  // Reference
-			TYPENAME,	  // Type name
-			GENERIC_ARG,  // Generic argument
-			REG,		  // Register
-			REG_VALUE,	  // Register value
-			LVAR,		  // Local variable
-			LVAR_VALUE,	  // Local variable value
-			ARG,		  // Argument
-			ARG_VALUE,	  // Argument
+			None = 0,		// None
+			Any,			// Any
+			I8,				// i8
+			I16,			// i16
+			I32,			// i32
+			I64,			// i64
+			U8,				// u8
+			U16,			// u16
+			U32,			// u32
+			U64,			// u64
+			F32,			// f32
+			F64,			// f64
+			String,			// String
+			Bool,			// Boolean
+			Array,			// Array
+			Map,			// Map
+			Object,			// Object
+			Ref,			// Reference
+			TypeName,		// Type name
+			GenericArg,		// Generic argument
+			Reg,			// Register
+			RegValue,		// Register value
+			LocalVar,		// Local variable
+			LocalVarValue,	// Local variable value
+			Arg,			// Argument
+			ArgValue,		// Argument
 		};
 
 		/// @brief Value Descriptor (VD)
@@ -185,9 +185,9 @@ namespace slake {
 		};
 
 		enum class GenericFilter : uint8_t {
-			EXTENDS = 0,  // Derived from a class
-			IMPLS,		  // Implements an interface
-			CONSISTS_OF,  // Consists of a trait
+			Extends = 0,  // Derived from a class
+			Implements,	  // Implements an interface
+			HasTrait,	  // Has a trait
 		};
 
 		/// @brief Generic Qualifier Descriptor (GQD)

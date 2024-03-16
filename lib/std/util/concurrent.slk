@@ -17,7 +17,7 @@ pub class Thread {
 	/// @end
 	/// @since 1.0
 	pub static const native u32 hardwareConcurrency;
-	
+
 	/// @brief State of the thread.
 	pub const native @State state;
 	/// @brief Internal ID of the thread.
@@ -30,11 +30,11 @@ pub class Thread {
 	/// @brief States of threads.
 	/// @since 1.0
 	enum State : u8 {
-		READY = 0,
-		RUNNING,
-		SUSPENDED,
-		STOPPED,
-		DEAD
+		Ready = 0,
+		Running,
+		Suspended,
+		Stopped,
+		Dead
 	}
 
 	/// @param{proc} A callable object that will be used as the thread routine.
@@ -47,10 +47,10 @@ pub class Thread {
 
 	/// @brief Suspend the thread.
 	pub native void suspend();
-	
+
 	/// @brief Resume the thread.
 	pub native void resume();
-	
+
 	/// @brief Join the thread to current thread.
 	pub native void join();
 

@@ -4,21 +4,21 @@ using namespace slake::slkc;
 
 shared_ptr<Scope> Compiler::scopeOf(AstNode* node) {
 	switch (node->getNodeType()) {
-		case AST_CLASS:
+		case NodeType::Class:
 			return ((ClassNode*)node)->scope;
-		case AST_INTERFACE:
+		case NodeType::Interface:
 			return ((InterfaceNode*)node)->scope;
-		case AST_TRAIT:
+		case NodeType::Trait:
 			return ((TraitNode*)node)->scope;
-		case AST_MODULE:
+		case NodeType::Module:
 			return ((ModuleNode*)node)->scope;
-		case AST_TYPENAME: {
+		case NodeType::TypeName: {
 			auto t = ((TypeNameNode*)node);
-			if (t->getTypeId()==TYPE_CUSTOM)
+			if (t->getTypeId()==Type::Custom)
 				return scopeOf(resolveCustomType((CustomTypeNameNode*)t).get());
 			return {};
 		}
-		case AST_ALIAS: {
+		case NodeType::Alias: {
 			deque<pair<Ref, shared_ptr<AstNode>>> resolvedParts;
 
 			resolveRef(((AliasNode*)node)->target, resolvedParts);

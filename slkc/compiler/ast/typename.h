@@ -8,38 +8,38 @@
 
 namespace slake {
 	namespace slkc {
-		enum Type : uint8_t {
-			TYPE_I8,
-			TYPE_I16,
-			TYPE_I32,
-			TYPE_I64,
+		enum class Type : uint8_t {
+			I8,
+			I16,
+			I32,
+			I64,
 
-			TYPE_U8,
-			TYPE_U16,
-			TYPE_U32,
-			TYPE_U64,
+			U8,
+			U16,
+			U32,
+			U64,
 
-			TYPE_F32,
-			TYPE_F64,
+			F32,
+			F64,
 
-			TYPE_STRING,
-			TYPE_CHAR,
+			String,
+			Char,
 
-			TYPE_WCHAR,
-			TYPE_WSTRING,
+			WChar,
+			WString,
 
-			TYPE_BOOL,
+			Bool,
 
-			TYPE_AUTO,
-			TYPE_VOID,
+			Auto,
+			Void,
 
-			TYPE_ANY,
+			Any,
 
-			TYPE_ARRAY,
-			TYPE_MAP,
-			TYPE_FN,
+			Array,
+			Map,
+			Fn,
 
-			TYPE_CUSTOM
+			Custom
 		};
 
 		class TypeNameNode : public AstNode {
@@ -56,7 +56,7 @@ namespace slake {
 
 			virtual inline Location getLocation() const override { return _loc; }
 
-			virtual inline NodeType getNodeType() const override { return AST_TYPENAME; }
+			virtual inline NodeType getNodeType() const override { return NodeType::TypeName; }
 
 			virtual inline Type getTypeId() const = 0;
 		};
@@ -71,21 +71,21 @@ namespace slake {
 			virtual inline Type getTypeId() const override { return TID; }
 		};
 
-		using I8TypeNameNode = SimpleTypeNameNode<TYPE_I8>;
-		using I16TypeNameNode = SimpleTypeNameNode<TYPE_I16>;
-		using I32TypeNameNode = SimpleTypeNameNode<TYPE_I32>;
-		using I64TypeNameNode = SimpleTypeNameNode<TYPE_I64>;
-		using U8TypeNameNode = SimpleTypeNameNode<TYPE_U8>;
-		using U16TypeNameNode = SimpleTypeNameNode<TYPE_U16>;
-		using U32TypeNameNode = SimpleTypeNameNode<TYPE_U32>;
-		using U64TypeNameNode = SimpleTypeNameNode<TYPE_U64>;
-		using F32TypeNameNode = SimpleTypeNameNode<TYPE_F32>;
-		using F64TypeNameNode = SimpleTypeNameNode<TYPE_F64>;
-		using StringTypeNameNode = SimpleTypeNameNode<TYPE_STRING>;
-		using BoolTypeNameNode = SimpleTypeNameNode<TYPE_BOOL>;
-		using AutoTypeNameNode = SimpleTypeNameNode<TYPE_AUTO>;
-		using VoidTypeNameNode = SimpleTypeNameNode<TYPE_VOID>;
-		using AnyTypeNameNode = SimpleTypeNameNode<TYPE_ANY>;
+		using I8TypeNameNode = SimpleTypeNameNode<Type::I8>;
+		using I16TypeNameNode = SimpleTypeNameNode<Type::I16>;
+		using I32TypeNameNode = SimpleTypeNameNode<Type::I32>;
+		using I64TypeNameNode = SimpleTypeNameNode<Type::I64>;
+		using U8TypeNameNode = SimpleTypeNameNode<Type::U8>;
+		using U16TypeNameNode = SimpleTypeNameNode<Type::U16>;
+		using U32TypeNameNode = SimpleTypeNameNode<Type::U32>;
+		using U64TypeNameNode = SimpleTypeNameNode<Type::U64>;
+		using F32TypeNameNode = SimpleTypeNameNode<Type::F32>;
+		using F64TypeNameNode = SimpleTypeNameNode<Type::F64>;
+		using StringTypeNameNode = SimpleTypeNameNode<Type::String>;
+		using BoolTypeNameNode = SimpleTypeNameNode<Type::Bool>;
+		using AutoTypeNameNode = SimpleTypeNameNode<Type::Auto>;
+		using VoidTypeNameNode = SimpleTypeNameNode<Type::Void>;
+		using AnyTypeNameNode = SimpleTypeNameNode<Type::Any>;
 
 		class CustomTypeNameNode : public TypeNameNode {
 		public:
@@ -97,7 +97,7 @@ namespace slake {
 				: TypeNameNode(loc, isConst), ref(ref) {}
 			virtual ~CustomTypeNameNode() = default;
 
-			virtual inline Type getTypeId() const override { return TYPE_CUSTOM; }
+			virtual inline Type getTypeId() const override { return Type::Custom; }
 		};
 
 		class ArrayTypeNameNode : public TypeNameNode {
@@ -108,7 +108,7 @@ namespace slake {
 				: TypeNameNode(elementType->getLocation(), isConst), elementType(elementType) {}
 			virtual ~ArrayTypeNameNode() = default;
 
-			virtual inline Type getTypeId() const override { return TYPE_ARRAY; }
+			virtual inline Type getTypeId() const override { return Type::Array; }
 		};
 
 		class MapTypeNameNode : public TypeNameNode {
@@ -119,7 +119,7 @@ namespace slake {
 				: TypeNameNode(keyType->getLocation(), isConst), keyType(keyType), valueType(valueType) {}
 			virtual ~MapTypeNameNode() = default;
 
-			virtual inline Type getTypeId() const override { return TYPE_MAP; }
+			virtual inline Type getTypeId() const override { return Type::Map; }
 		};
 
 		class FnTypeNameNode : public TypeNameNode {
@@ -135,7 +135,7 @@ namespace slake {
 				returnType(returnType), paramTypes(paramTypes) {}
 			virtual ~FnTypeNameNode() = default;
 
-			virtual inline Type getTypeId() const override { return TYPE_FN; }
+			virtual inline Type getTypeId() const override { return Type::Fn; }
 		};
 
 		class Compiler;

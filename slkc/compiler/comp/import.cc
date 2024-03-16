@@ -103,7 +103,11 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 
 	importedDefinitions.insert(value);
 
-	shared_ptr<InterfaceNode> interface = make_shared<InterfaceNode>(Location());
+	shared_ptr<InterfaceNode> interface = make_shared<InterfaceNode>(
+		Location(),
+		value->_name,
+		deque<shared_ptr<CustomTypeNameNode>>{},
+		deque<GenericParam>{});
 
 	for (auto i : value->parents) {
 		interface->parentInterfaces.push_back(static_pointer_cast<CustomTypeNameNode>(toTypeName(i)));
@@ -123,7 +127,7 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 
 	shared_ptr<TraitNode> trait = make_shared<TraitNode>(Location());
 
-	for(auto i : value->parents) {
+	for (auto i : value->parents) {
 		trait->parentTraits.push_back(static_pointer_cast<CustomTypeNameNode>(toTypeName(i))->ref);
 	}
 
@@ -140,7 +144,7 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 	importedDefinitions.insert(value);
 
 	switch (value->getType().typeId) {
-		case TypeId::ROOT: {
+		case TypeId::RootValue: {
 			RootValue *v = (RootValue *)value;
 
 			for (auto i : v->scope->members)
@@ -148,11 +152,11 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 
 			break;
 		}
-		case TypeId::FN:
+		case TypeId::Fn:
 			importDefinitions(scope, parent, (FnValue *)value);
-		case TypeId::MOD:
+		case TypeId::Module:
 			importDefinitions(scope, parent, (ModuleValue *)value);
-		case TypeId::VAR: {
+		case TypeId::Var: {
 			VarValue *v = (VarValue *)value;
 			shared_ptr<VarNode> var = make_shared<VarNode>(Location(), v->getAccess(), toTypeName(v->getVarType()), v->_name, shared_ptr<ExprNode>());
 
@@ -160,17 +164,17 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 			var->bind(parent.get());
 			break;
 		}
-		case TypeId::CLASS:
+		case TypeId::Class:
 			importDefinitions(scope, parent, (ClassValue *)value);
 			break;
-		case TypeId::INTERFACE:
+		case TypeId::Interface:
 			importDefinitions(scope, parent, (InterfaceValue *)value);
 			break;
-		case TypeId::TRAIT:
+		case TypeId::Trait:
 			importDefinitions(scope, parent, (TraitValue *)value);
 			break;
 			/*
-		case TypeId::ALIAS: {
+		case TypeId::Alias: {
 			AliasValue *v = (AliasValue *)value;
 		}*/
 		default:
@@ -203,15 +207,15 @@ shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 			return make_shared<F32TypeNameNode>(Location{}, isConst);
 		case TypeId::F64:
 			return make_shared<F64TypeNameNode>(Location{}, isConst);
-		case TypeId::STRING:
+		case TypeId::String:
 			return make_shared<StringTypeNameNode>(Location{}, isConst);
-		case TypeId::BOOL:
+		case TypeId::Bool:
 			return make_shared<BoolTypeNameNode>(Location{}, isConst);
-		case TypeId::NONE:
+		case TypeId::None:
 			return make_shared<VoidTypeNameNode>(Location{}, isConst);
-		case TypeId::ANY:
+		case TypeId::Any:
 			return make_shared<AnyTypeNameNode>(Location{}, isConst);
-		case TypeId::TYPENAME: {
+		case TypeId::TypeName: {
 			auto refs = _rt->getFullRef((MemberValue *)runtimeType.getCustomTypeExData());
 			Ref ref;
 
@@ -226,9 +230,9 @@ shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 
 			return make_shared<CustomTypeNameNode>(Location{}, ref, isConst);
 		}
-		case TypeId::ARRAY:
+		case TypeId::Array:
 			return make_shared<ArrayTypeNameNode>(toTypeName(runtimeType.getArrayExData()), isConst);
-		case TypeId::MAP: {
+		case TypeId::Map: {
 			auto exData = runtimeType.getMapExData();
 			return make_shared<MapTypeNameNode>(toTypeName(*exData.first), toTypeName(*exData.second), isConst);
 		}

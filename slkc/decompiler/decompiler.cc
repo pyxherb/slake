@@ -59,10 +59,10 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 		case TypeId::F64:
 			os << to_string(((F64Value *)value)->getData());
 			break;
-		case TypeId::BOOL:
+		case TypeId::Bool:
 			os << ((BoolValue *)value)->getData() ? "true" : "false";
 			break;
-		case TypeId::STRING: {
+		case TypeId::String: {
 			os << '"';
 
 			for (auto i : ((StringValue *)value)->getData()) {
@@ -74,13 +74,13 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 			os << '"';
 			break;
 		}
-		case TypeId::REF:
+		case TypeId::Ref:
 			os << to_string((RefValue *)value);
 			break;
-		case TypeId::TYPENAME:
+		case TypeId::TypeName:
 			os << to_string(((TypeNameValue *)value)->getData(), rt);
 			break;
-		case TypeId::FN: {
+		case TypeId::Fn: {
 			auto v = (FnValue *)value;
 
 			// Dump access of the function.
@@ -141,7 +141,7 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 				   << "\n";
 			break;
 		}
-		case TypeId::MOD: {
+		case TypeId::Module: {
 			auto v = (ModuleValue *)value;
 			os << std::string(indentLevel, '\t')
 			   << ".module " << v->getName() << "\n";
@@ -154,13 +154,13 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 			   << "\n\n";
 			break;
 		}
-		case TypeId::VAR: {
+		case TypeId::Var: {
 			VarValue *v = (VarValue *)value;
 			os << std::string(indentLevel, '\t')
 			   << ".var " << std::to_string(v->getVarType(), rt) << " " << v->getName() << "\n";
 			break;
 		}
-		case TypeId::CLASS: {
+		case TypeId::Class: {
 			ClassValue *v = (ClassValue *)value;
 			os << std::string(indentLevel, '\t')
 			   << ".class " << v->getName() << "\n";
@@ -173,27 +173,27 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 			   << "\n\n";
 			break;
 		}
-		case TypeId::INTERFACE: {
+		case TypeId::Interface: {
 			break;
 		}
-		case TypeId::TRAIT: {
+		case TypeId::Trait: {
 			break;
 		}
-		case TypeId::REG_REF: {
+		case TypeId::RegRef: {
 			RegRefValue *v = (RegRefValue *)value;
 			if (v->unwrapValue)
 				os << "*";
 			os << "%" << std::to_string(v->index);
 			break;
 		}
-		case TypeId::LVAR_REF: {
+		case TypeId::LocalVarRef: {
 			LocalVarRefValue *v = (LocalVarRefValue *)value;
 			if (v->unwrapValue)
 				os << "*";
 			os << "$" << std::to_string(v->index);
 			break;
 		}
-		case TypeId::ARG_REF: {
+		case TypeId::ArgRef: {
 			ArgRefValue *v = (ArgRefValue *)value;
 			if (v->unwrapValue)
 				os << "*";

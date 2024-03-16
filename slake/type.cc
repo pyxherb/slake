@@ -4,16 +4,16 @@
 
 using namespace slake;
 
-Type::Type(RefValue *ref, TypeFlags flags) : typeId(TypeId::OBJECT), flags(flags) {
+Type::Type(RefValue *ref, TypeFlags flags) : typeId(TypeId::Object), flags(flags) {
 	exData = (Value*)ref;
 }
 
 Type::~Type() {
 	switch (typeId) {
-		case TypeId::ARRAY: {
+		case TypeId::Array: {
 			delete std::get<Type *>(exData);
 		}
-		case TypeId::MAP: {
+		case TypeId::Map: {
 			auto pair = std::get<std::pair<Type *, Type *>>(exData);
 			delete pair.first;
 			delete pair.second;
@@ -23,11 +23,11 @@ Type::~Type() {
 
 bool Type::isLoadingDeferred() const noexcept {
 	switch (typeId) {
-		case TypeId::CLASS:
-		case TypeId::INTERFACE:
-		case TypeId::TRAIT:
-		case TypeId::OBJECT:
-			return getCustomTypeExData()->getType() == TypeId::REF;
+		case TypeId::Class:
+		case TypeId::Interface:
+		case TypeId::Trait:
+		case TypeId::Object:
+			return getCustomTypeExData()->getType() == TypeId::Ref;
 		default:
 			return false;
 	}
@@ -61,7 +61,7 @@ bool slake::isConvertible(Type src, Type dest) {
 		case TypeId::U64:
 		case TypeId::F32:
 		case TypeId::F64:
-		case TypeId::BOOL: {
+		case TypeId::Bool: {
 			switch (dest.typeId) {
 				case TypeId::I8:
 				case TypeId::I16:
@@ -73,13 +73,13 @@ bool slake::isConvertible(Type src, Type dest) {
 				case TypeId::U64:
 				case TypeId::F32:
 				case TypeId::F64:
-				case TypeId::BOOL:
+				case TypeId::Bool:
 					return true;
 				default:
 					return false;
 			}
 		}
-		case TypeId::OBJECT: {
+		case TypeId::Object: {
 			ClassValue *srcType = (ClassValue *)src.getCustomTypeExData();
 			switch (dest.typeId) {
 				case TypeId::I8:
@@ -102,23 +102,23 @@ bool slake::isConvertible(Type src, Type dest) {
 					return memberOf(srcType, "operator@f32") ? true : false;
 				case TypeId::F64:
 					return memberOf(srcType, "operator@f64") ? true : false;
-				case TypeId::BOOL:
+				case TypeId::Bool:
 					return memberOf(srcType, "operator@bool") ? true : false;
-				case TypeId::OBJECT: {
+				case TypeId::Object: {
 					switch (dest.getCustomTypeExData()->getType().typeId) {
-						case TypeId::CLASS: {
+						case TypeId::Class: {
 							auto destType = (ClassValue *)dest.getCustomTypeExData();
 							return memberOf(srcType, "operator@" + srcType->getRuntime()->getFullName(destType)) ? true : false;
 						}
-						case TypeId::INTERFACE: {
+						case TypeId::Interface: {
 							auto destType = (InterfaceValue *)dest.getCustomTypeExData();
 							if (srcType->hasImplemented(destType))
 								return true;
 							return false;
 						}
-						case TypeId::TRAIT: {
+						case TypeId::Trait: {
 							auto destType = (TraitValue *)dest.getCustomTypeExData();
-							if (srcType->consistsOf(destType))
+							if (srcType->hasTrait(destType))
 								return true;
 							return false;
 						}
@@ -130,8 +130,8 @@ bool slake::isConvertible(Type src, Type dest) {
 					return false;
 			}
 		}
-		case TypeId::ANY:
-		case TypeId::NONE:
+		case TypeId::Any:
+		case TypeId::None:
 			return true;
 		default:
 			return false;
@@ -154,40 +154,40 @@ bool slake::isCompatible(Type a, Type b) {
 		case TypeId::U64:
 		case TypeId::F32:
 		case TypeId::F64:
-		case TypeId::BOOL:
-		case TypeId::STRING:
+		case TypeId::Bool:
+		case TypeId::String:
 			return a.typeId == b.typeId;
-		case TypeId::OBJECT: {
+		case TypeId::Object: {
 			switch (a.getCustomTypeExData()->getType().typeId) {
-				case TypeId::CLASS: {
+				case TypeId::Class: {
 					switch (b.typeId) {
-						case TypeId::OBJECT:
+						case TypeId::Object:
 							for (auto i = ((ClassValue *)b.getCustomTypeExData()); i; i = (ClassValue *)i->getParent()) {
 								if (i == b.getCustomTypeExData())
 									return true;
 							}
 							return false;
-						case TypeId::NONE:
+						case TypeId::None:
 							return true;
 						default:
 							return false;
 					}
 				}
-				case TypeId::INTERFACE: {
+				case TypeId::Interface: {
 					switch (b.typeId) {
-						case TypeId::OBJECT:
+						case TypeId::Object:
 							return ((ClassValue *)b.getCustomTypeExData())->hasImplemented((InterfaceValue *)a.getCustomTypeExData());
-						case TypeId::NONE:
+						case TypeId::None:
 							return true;
 						default:
 							return false;
 					}
 				}
-				case TypeId::TRAIT: {
+				case TypeId::Trait: {
 					switch (b.typeId) {
-						case TypeId::OBJECT:
-							return ((ClassValue *)b.getCustomTypeExData())->consistsOf((TraitValue *)a.getCustomTypeExData());
-						case TypeId::NONE:
+						case TypeId::Object:
+							return ((ClassValue *)b.getCustomTypeExData())->hasTrait((TraitValue *)a.getCustomTypeExData());
+						case TypeId::None:
 							return true;
 						default:
 							return false;
@@ -197,19 +197,19 @@ bool slake::isCompatible(Type a, Type b) {
 					return false;
 			}
 		}
-		case TypeId::FN: {
+		case TypeId::Fn: {
 			switch (b.typeId) {
-				case TypeId::FN: {
+				case TypeId::Fn: {
 					// stub
 					return false;
 				}
-				case TypeId::NONE:
+				case TypeId::None:
 					return true;
 				default:
 					return false;
 			}
 		}
-		case TypeId::ANY:
+		case TypeId::Any:
 			return true;
 		default:
 			return false;
@@ -238,20 +238,20 @@ std::string std::to_string(const slake::Type &&type, const slake::Runtime *rt) {
 			return "f32";
 		case TypeId::F64:
 			return "f64";
-		case TypeId::STRING:
+		case TypeId::String:
 			return "string";
-		case TypeId::BOOL:
+		case TypeId::Bool:
 			return "bool";
-		case TypeId::ARRAY:
+		case TypeId::Array:
 			return to_string(type.getArrayExData(), rt) + "[]";
-		case TypeId::OBJECT: {
+		case TypeId::Object: {
 			if (type.isLoadingDeferred())
 				return "@" + std::to_string((RefValue *)type.getCustomTypeExData());
 			return "@" + rt->getFullName((MemberValue *)type.getCustomTypeExData());
 		}
-		case TypeId::ANY:
+		case TypeId::Any:
 			return "any";
-		case TypeId::NONE:
+		case TypeId::None:
 			return "void";
 		default:
 			return "any";

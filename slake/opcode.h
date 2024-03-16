@@ -16,8 +16,8 @@ namespace slake {
 		RLOAD,	// Access and load corresponding member with an existing value.
 		STORE,	// Store a value into a variable.
 
-		LVAR,	// Create a new local variable
-		REG,	// Create a new register
+		LVAR,  // Create a new local variable
+		REG,   // Create a new register
 
 		LVALUE,	 // Load value of a variable
 
@@ -46,8 +46,8 @@ namespace slake {
 		RSH,   // Right shift
 		SWAP,  // Swap
 
-		REV,   // Bitwise NOT
-		NOT,   // Logical NOT
+		NOT,   // Bitwise NOT
+		LNOT,  // Logical NOT
 		INCF,  // Forward Increase
 		DECF,  // Forward Decrease
 		INCB,  // Backward Increase

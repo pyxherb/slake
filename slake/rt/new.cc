@@ -10,7 +10,7 @@ using namespace slake;
 ObjectValue *slake::Runtime::_newClassInstance(ClassValue *cls) {
 	ObjectValue *parent = nullptr;
 
-	if (cls->parentClass.typeId == TypeId::CLASS) {
+	if (cls->parentClass.typeId == TypeId::Class) {
 		cls->parentClass.loadDeferredType(this);
 		parent = _newClassInstance((ClassValue *)cls->parentClass.getCustomTypeExData());
 	}
@@ -19,7 +19,7 @@ ObjectValue *slake::Runtime::_newClassInstance(ClassValue *cls) {
 
 	for (auto i : cls->scope->members) {
 		switch (i.second->getType().typeId) {
-			case TypeId::VAR: {
+			case TypeId::Var: {
 				ValueRef<VarValue> var = new VarValue(
 					this,
 					((VarValue *)i.second)->getAccess(),
@@ -32,7 +32,7 @@ ObjectValue *slake::Runtime::_newClassInstance(ClassValue *cls) {
 				instance->scope->addMember(i.first, var.get());
 				break;
 			}
-			case TypeId::FN: {
+			case TypeId::Fn: {
 				if (!((FnValue *)i.second)->isStatic())
 					instance->scope->addMember(i.first, (MemberValue *)i.second->duplicate());
 				break;
@@ -45,7 +45,7 @@ ObjectValue *slake::Runtime::_newClassInstance(ClassValue *cls) {
 ObjectValue *slake::Runtime::_newGenericClassInstance(ClassValue *cls, std::deque<Type> &genericArgs) {
 	ObjectValue *parent = nullptr;
 
-	if (cls->parentClass.typeId == TypeId::CLASS) {
+	if (cls->parentClass.typeId == TypeId::Class) {
 		cls->parentClass.loadDeferredType(this);
 		parent = _newClassInstance((ClassValue *)cls->parentClass.getCustomTypeExData());
 	}
@@ -54,7 +54,7 @@ ObjectValue *slake::Runtime::_newGenericClassInstance(ClassValue *cls, std::dequ
 
 	for (auto i : cls->scope->members) {
 		switch (i.second->getType().typeId) {
-			case TypeId::VAR: {
+			case TypeId::Var: {
 				ValueRef<VarValue> var = new VarValue(
 					this,
 					((VarValue *)i.second)->getAccess(),
@@ -67,7 +67,7 @@ ObjectValue *slake::Runtime::_newGenericClassInstance(ClassValue *cls, std::dequ
 				instance->scope->addMember(i.first, var.get());
 				break;
 			}
-			case TypeId::FN: {
+			case TypeId::Fn: {
 				if (!((FnValue *)i.second)->isStatic())
 					instance->scope->addMember(i.first, (MemberValue *)i.second);
 				break;

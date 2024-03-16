@@ -7,7 +7,7 @@
 ///
 /// @copyright Copyright (C) 2022 Slake contributors
 ///
-/// SPDX-License-Identifier: Apache-2.0
+/// SPDX-License-Identifier: LGPL-3.0-linking-exception
 ///
 #include <bcparse.hh>
 
@@ -74,7 +74,7 @@ yylloc.step();
 ".var"			return parser::make_D_VAR(yylloc);
 ".extends"		return parser::make_D_EXTENDS(yylloc);
 ".impl"			return parser::make_D_IMPL(yylloc);
-".consist"		return parser::make_D_CONSIST(yylloc);
+".hastrait"		return parser::make_D_HASTRAIT(yylloc);
 
 "i8"		return parser::make_TN_I8(yylloc);
 "i16"		return parser::make_TN_I16(yylloc);

@@ -92,7 +92,7 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 		if (m) {
 			if (_resolveRef(newScope.get(), newRef, partsOut)) {
 				switch (m->getNodeType()) {
-					case AST_VAR:
+					case NodeType::Var:
 						partsOut.push_front({ Ref{ ref.front() }, m });
 						break;
 					default:
@@ -116,13 +116,13 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 	if (scope->owner && (!curMajorContext.curMinorContext.resolvedOwners.count(scope->owner))) {
 		curMajorContext.curMinorContext.resolvedOwners.insert(scope->owner);
 		switch (scope->owner->getNodeType()) {
-			case AST_CLASS: {
+			case NodeType::Class: {
 				ClassNode *owner = (ClassNode *)scope->owner;
 
 				// Resolve with the parent class.
 				if (owner->parentClass) {
 					if (auto p = resolveCustomType(owner->parentClass.get()); p) {
-						if (p->getNodeType() != AST_CLASS) {
+						if (p->getNodeType() != NodeType::Class) {
 							throw FatalCompilationError(
 								Message(
 									owner->parentClass->getLocation(),
@@ -144,7 +144,7 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 				// Resolve with the interfaces.
 				for (auto i : owner->implInterfaces) {
 					if (auto p = resolveCustomType(i.get()); p) {
-						if (p->getNodeType() != AST_CLASS) {
+						if (p->getNodeType() != NodeType::Class) {
 							throw FatalCompilationError(
 								Message(
 									i->getLocation(),
@@ -166,12 +166,12 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 				// TODO: Check the generic arguments.
 				break;
 			}
-			case AST_INTERFACE: {
+			case NodeType::Interface: {
 				auto owner = (InterfaceNode *)scope->owner;
 
 				for (auto i : owner->parentInterfaces) {
 					if (auto p = resolveCustomType(i.get()); p) {
-						if (p->getNodeType() != AST_CLASS) {
+						if (p->getNodeType() != NodeType::Class) {
 							throw FatalCompilationError(
 								Message(
 									i->getLocation(),
@@ -191,11 +191,11 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 				}
 				break;
 			}
-			case AST_TRAIT: {
+			case NodeType::Trait: {
 				auto owner = (TraitNode *)scope->owner;
 				break;
 			}
-			case AST_MODULE: {
+			case NodeType::Module: {
 				// Resolve with the parent module.
 				auto owner = (ModuleNode *)scope->owner;
 				if (owner->parentModule.expired())
@@ -206,7 +206,7 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 
 				break;
 			}
-			case AST_VAR: {
+			case NodeType::Var: {
 				auto owner = (VarNode *)scope->owner;
 				if (!owner->parent)
 					return false;

@@ -14,7 +14,7 @@ ClassValue::~ClassValue() {
 bool ClassValue::_isAbstract() const {
 	for (auto i : scope->members) {
 		switch (i.second->getType().typeId) {
-			case TypeId::FN:
+			case TypeId::Fn:
 				if (((FnValue *)i.second)->isAbstract())
 					return true;
 				break;
@@ -44,7 +44,7 @@ bool ClassValue::hasImplemented(const InterfaceValue *pInterface) const {
 	return false;
 }
 
-bool ClassValue::consistsOf(const TraitValue *t) const {
+bool ClassValue::hasTrait(const TraitValue *t) const {
 	for (auto &i : t->scope->members) {
 		const MemberValue *v = nullptr;	 // Corresponding member in this class.
 
@@ -71,13 +71,13 @@ bool ClassValue::consistsOf(const TraitValue *t) const {
 			return false;
 
 		switch (v->getType().typeId) {
-			case TypeId::VAR: {
+			case TypeId::Var: {
 				// Check variable type.
 				if (((VarValue *)v)->getVarType() != ((VarValue *)i.second)->getVarType())
 					return false;
 				break;
 			}
-			case TypeId::FN: {
+			case TypeId::Fn: {
 				FnValue *f = (FnValue *)v, *g = (FnValue *)i.second;
 
 				// Check return type.
@@ -102,7 +102,7 @@ bool ClassValue::consistsOf(const TraitValue *t) const {
 	if (t->parents.size()) {
 		for (auto &i : t->parents) {
 			i.loadDeferredType(_rt);
-			if (!consistsOf((TraitValue *)i.getCustomTypeExData())) {
+			if (!hasTrait((TraitValue *)i.getCustomTypeExData())) {
 				return false;
 			}
 		}
@@ -120,7 +120,7 @@ bool InterfaceValue::isDerivedFrom(const InterfaceValue *pInterface) const {
 
 		InterfaceValue *interface = (InterfaceValue *)i.getCustomTypeExData();
 
-		if (interface->getType() != TypeId::INTERFACE)
+		if (interface->getType() != TypeId::Interface)
 			throw IncompatibleTypeError("Referenced type value is not an interface");
 
 		if (interface->isDerivedFrom(pInterface))

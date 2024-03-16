@@ -61,14 +61,14 @@ void bcc::compileGenericParam(std::ostream &fs, const GenericParam &param) {
 		slxfmt::GenericQualifierDesc gqd{};
 
 		switch (i.filter) {
-			case GenericFilter::EXTENDS:
-				gqd.filter = slxfmt::GenericFilter::EXTENDS;
+			case GenericFilter::Extends:
+				gqd.filter = slxfmt::GenericFilter::Extends;
 				break;
-			case GenericFilter::IMPLS:
-				gqd.filter = slxfmt::GenericFilter::IMPLS;
+			case GenericFilter::Implements:
+				gqd.filter = slxfmt::GenericFilter::Implements;
 				break;
-			case GenericFilter::CONSISTS_OF:
-				gqd.filter = slxfmt::GenericFilter::CONSISTS_OF;
+			case GenericFilter::HasTrait:
+				gqd.filter = slxfmt::GenericFilter::HasTrait;
 				break;
 		}
 
@@ -246,7 +246,7 @@ void bcc::compileOperand(std::ostream &fs, shared_ptr<Operand> operand) {
 	slxfmt::ValueDesc vd = {};
 	switch (operand->getOperandType()) {
 		case OperandType::NONE: {
-			vd.type = slxfmt::Type::NONE;
+			vd.type = slxfmt::Type::None;
 			_write(fs, vd);
 			break;
 		}
@@ -321,14 +321,14 @@ void bcc::compileOperand(std::ostream &fs, shared_ptr<Operand> operand) {
 			break;
 		}
 		case OperandType::BOOL: {
-			vd.type = slxfmt::Type::BOOL;
+			vd.type = slxfmt::Type::Bool;
 			_write(fs, vd);
 
 			_write(fs, static_pointer_cast<BoolOperand>(operand)->data);
 			break;
 		}
 		case OperandType::STRING: {
-			vd.type = slxfmt::Type::STRING;
+			vd.type = slxfmt::Type::String;
 			_write(fs, vd);
 
 			auto &s = static_pointer_cast<StringOperand>(operand)->data;
@@ -338,33 +338,33 @@ void bcc::compileOperand(std::ostream &fs, shared_ptr<Operand> operand) {
 			break;
 		}
 		case OperandType::REF: {
-			vd.type = slxfmt::Type::REF;
+			vd.type = slxfmt::Type::Ref;
 			_write(fs, vd);
 
 			compileRef(fs, static_pointer_cast<RefOperand>(operand)->data);
 			break;
 		}
 		case OperandType::TYPENAME: {
-			vd.type = slxfmt::Type::TYPENAME;
+			vd.type = slxfmt::Type::TypeName;
 			_write(fs, vd);
 
 			compileTypeName(fs, static_pointer_cast<TypeNameOperand>(operand)->data);
 			break;
 		}
 		case OperandType::REG:
-			vd.type = operand->dereferenced ? slxfmt::Type::REG_VALUE : slxfmt::Type::REG;
+			vd.type = operand->dereferenced ? slxfmt::Type::RegValue : slxfmt::Type::Reg;
 			_write(fs, vd);
 
 			_write(fs, static_pointer_cast<RegOperand>(operand)->data);
 			break;
 		case OperandType::ARG:
-			vd.type = operand->dereferenced ? slxfmt::Type::ARG_VALUE : slxfmt::Type::ARG;
+			vd.type = operand->dereferenced ? slxfmt::Type::ArgValue : slxfmt::Type::Arg;
 			_write(fs, vd);
 
 			_write(fs, static_pointer_cast<ArgOperand>(operand)->data);
 			break;
 		case OperandType::LVAR:
-			vd.type = operand->dereferenced ? slxfmt::Type::LVAR_VALUE : slxfmt::Type::LVAR;
+			vd.type = operand->dereferenced ? slxfmt::Type::LocalVarValue : slxfmt::Type::LocalVar;
 			_write(fs, vd);
 
 			_write(fs, static_pointer_cast<LocalVarOperand>(operand)->data);
@@ -395,84 +395,84 @@ void bcc::compileRef(std::ostream &fs, shared_ptr<Ref> ref) {
 
 void bcc::compileTypeName(std::ostream &fs, shared_ptr<TypeName> typeName) {
 	switch (typeName->type) {
-		case TYPE_I8: {
+		case Type::I8: {
 			_write(fs, slxfmt::Type::I8);
 			break;
 		}
-		case TYPE_I16: {
+		case Type::I16: {
 			_write(fs, slxfmt::Type::I16);
 			break;
 		}
-		case TYPE_I32: {
+		case Type::I32: {
 			_write(fs, slxfmt::Type::I32);
 			break;
 		}
-		case TYPE_I64: {
+		case Type::I64: {
 			_write(fs, slxfmt::Type::I64);
 			break;
 		}
-		case TYPE_U8: {
+		case Type::U8: {
 			_write(fs, slxfmt::Type::U8);
 			break;
 		}
-		case TYPE_U16: {
+		case Type::U16: {
 			_write(fs, slxfmt::Type::U16);
 			break;
 		}
-		case TYPE_U32: {
+		case Type::U32: {
 			_write(fs, slxfmt::Type::U32);
 			break;
 		}
-		case TYPE_U64: {
+		case Type::U64: {
 			_write(fs, slxfmt::Type::U64);
 			break;
 		}
-		case TYPE_F32: {
+		case Type::F32: {
 			_write(fs, slxfmt::Type::F32);
 			break;
 		}
-		case TYPE_F64: {
+		case Type::F64: {
 			_write(fs, slxfmt::Type::F64);
 			break;
 		}
-		case TYPE_BOOL: {
-			_write(fs, slxfmt::Type::BOOL);
+		case Type::Bool: {
+			_write(fs, slxfmt::Type::Bool);
 			break;
 		}
-		case TYPE_STRING: {
-			_write(fs, slxfmt::Type::STRING);
+		case Type::String: {
+			_write(fs, slxfmt::Type::String);
 			break;
 		}
-		case TYPE_VOID: {
-			_write(fs, slxfmt::Type::NONE);
+		case Type::Void: {
+			_write(fs, slxfmt::Type::None);
 			break;
 		}
-		case TYPE_ANY: {
-			_write(fs, slxfmt::Type::ANY);
+		case Type::Any: {
+			_write(fs, slxfmt::Type::Any);
 			break;
 		}
-		case TYPE_ARRAY: {
-			_write(fs, slxfmt::Type::ARRAY);
+		case Type::Array: {
+			_write(fs, slxfmt::Type::Array);
 			compileTypeName(fs, static_pointer_cast<ArrayTypeName>(typeName)->elementType);
 			break;
 		}
-		case TYPE_MAP: {
-			_write(fs, slxfmt::Type::MAP);
+		case Type::Map: {
+			_write(fs, slxfmt::Type::Map);
 			compileTypeName(fs, static_pointer_cast<MapTypeName>(typeName)->keyType);
 			compileTypeName(fs, static_pointer_cast<MapTypeName>(typeName)->type);
 			break;
 		}
-		case TYPE_FN: {
+		case Type::Fn: {
 			// stub
 			break;
 		}
-		case TYPE_CUSTOM: {
-			_write(fs, slxfmt::Type::OBJECT);
+		case Type::Custom: {
+			_write(fs, slxfmt::Type::Object);
 			compileRef(fs, static_pointer_cast<CustomTypeName>(typeName)->ref);
 			break;
 		}
-		case TYPE_GENERIC: {
-			_write(fs, slxfmt::Type::GENERIC_ARG);
+		case Type::Generic: {
+			_write(fs, slxfmt::Type::GenericArg);
 			_write(fs, static_pointer_cast<GenericTypeName>(typeName)->index);
 			break;
 		}

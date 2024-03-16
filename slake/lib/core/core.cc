@@ -23,15 +23,15 @@ static ValueRef<> _exceptionConstructor(Runtime *rt, std::deque<Value *> args) {
 static void _initExceptionClass(Runtime *rt, ClassValue *ex) {
 	using namespace except;
 
-	ex->implInterfaces.push_back(Type(TypeId::INTERFACE, typeIException));
-	ex->scope->addMember("_msg", new VarValue(rt, 0, TypeId::STRING));
+	ex->implInterfaces.push_back(Type(TypeId::Interface, typeIException));
+	ex->scope->addMember("_msg", new VarValue(rt, 0, TypeId::String));
 	ex->scope->addMember(
 		"new",
 		new NativeFnValue(
 			rt,
 			_exceptionConstructor,
 			ACCESS_PUB,
-			TypeId::NONE));
+			TypeId::None));
 }
 
 void corelib::except::load(Runtime *rt) {
@@ -45,7 +45,7 @@ void corelib::except::load(Runtime *rt) {
 			typeIException = new InterfaceValue(rt, ACCESS_PUB));
 		{
 			typeIException->scope->addMember("operator@string",
-				new FnValue(rt, 0, ACCESS_PUB, TypeId::STRING));
+				new FnValue(rt, 0, ACCESS_PUB, TypeId::String));
 		}
 
 		// Set up exception `LogicalError'

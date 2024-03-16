@@ -32,8 +32,8 @@ using namespace slake;
 		MNEMONIC_ENTRY(GTEQ),    \
 		MNEMONIC_ENTRY(LSH),     \
 		MNEMONIC_ENTRY(RSH),     \
-		MNEMONIC_ENTRY(REV),     \
 		MNEMONIC_ENTRY(NOT),     \
+		MNEMONIC_ENTRY(LNOT),    \
 		MNEMONIC_ENTRY(INCF),    \
 		MNEMONIC_ENTRY(DECF),    \
 		MNEMONIC_ENTRY(INCB),    \

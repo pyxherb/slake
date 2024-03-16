@@ -4,11 +4,11 @@ using namespace slake::slkc;
 
 bool Compiler::isDynamicMember(shared_ptr<AstNode> member) {
 	switch (member->getNodeType()) {
-		case AST_MODULE:
-		case AST_CLASS:
-		case AST_INTERFACE:
-		case AST_TRAIT:
-		case AST_ALIAS:
+		case NodeType::Module:
+		case NodeType::Class:
+		case NodeType::Interface:
+		case NodeType::Trait:
+		case NodeType::Alias:
 			return false;
 	}
 
@@ -16,7 +16,7 @@ bool Compiler::isDynamicMember(shared_ptr<AstNode> member) {
 
 	if (m->parent) {
 		switch (m->parent->getNodeType()) {
-			case AST_MODULE:
+			case NodeType::Module:
 				return false;
 			default:
 				return !(m->access & ACCESS_STATIC);

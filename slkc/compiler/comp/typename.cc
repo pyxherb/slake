@@ -6,32 +6,32 @@ bool Compiler::isLiteralType(shared_ptr<TypeNameNode> typeName) {
 	// stub
 	return false;
 
-	switch (typeName->getNodeType()) {
-		case TYPE_I8:
-		case TYPE_I16:
-		case TYPE_I32:
-		case TYPE_I64:
-		case TYPE_U8:
-		case TYPE_U16:
-		case TYPE_U32:
-		case TYPE_U64:
-		case TYPE_F32:
-		case TYPE_F64:
-		case TYPE_STRING:
-		case TYPE_BOOL:
+	switch (typeName->getTypeId()) {
+		case Type::I8:
+		case Type::I16:
+		case Type::I32:
+		case Type::I64:
+		case Type::U8:
+		case Type::U16:
+		case Type::U32:
+		case Type::U64:
+		case Type::F32:
+		case Type::F64:
+		case Type::String:
+		case Type::Bool:
 			return true;
-		case TYPE_ARRAY: {
+		case Type::Array: {
 			return isLiteralType(static_pointer_cast<ArrayTypeNameNode>(typeName));
 		}
-		case TYPE_MAP: {
+		case Type::Map: {
 			auto t = static_pointer_cast<MapTypeNameNode>(typeName);
 			return isLiteralType(t->keyType) && isLiteralType(t->valueType);
 		}
-		case TYPE_AUTO:
-		case TYPE_VOID:
-		case TYPE_ANY:
-		case TYPE_FN:
-		case TYPE_CUSTOM:
+		case Type::Auto:
+		case Type::Void:
+		case Type::Any:
+		case Type::Fn:
+		case Type::Custom:
 			return false;
 		default:
 			throw std::logic_error("Unrecognized type");
@@ -40,18 +40,18 @@ bool Compiler::isLiteralType(shared_ptr<TypeNameNode> typeName) {
 
 bool Compiler::isNumericType(shared_ptr<TypeNameNode> node) {
 	switch (node->getTypeId()) {
-		case TYPE_I8:
-		case TYPE_I16:
-		case TYPE_I32:
-		case TYPE_I64:
-		case TYPE_U8:
-		case TYPE_U16:
-		case TYPE_U32:
-		case TYPE_U64:
-		case TYPE_F32:
-		case TYPE_F64:
-		case TYPE_CHAR:
-		case TYPE_WCHAR:
+		case Type::I8:
+		case Type::I16:
+		case Type::I32:
+		case Type::I64:
+		case Type::U8:
+		case Type::U16:
+		case Type::U32:
+		case Type::U64:
+		case Type::F32:
+		case Type::F64:
+		case Type::Char:
+		case Type::WChar:
 			return true;
 		default:
 			return false;
@@ -60,19 +60,19 @@ bool Compiler::isNumericType(shared_ptr<TypeNameNode> node) {
 
 bool Compiler::isCompoundType(shared_ptr<TypeNameNode> node) {
 	switch (node->getTypeId()) {
-		case TYPE_ARRAY:
-		case TYPE_MAP:
-		case TYPE_FN:
+		case Type::Array:
+		case Type::Map:
+		case Type::Fn:
 			return true;
-		case TYPE_CUSTOM: {
+		case Type::Custom: {
 			auto t = static_pointer_cast<CustomTypeNameNode>(node);
 			auto dest = resolveCustomType(t.get());
 			switch (dest->getNodeType()) {
-				case AST_CLASS:
-				case AST_INTERFACE:
-				case AST_TRAIT:
+				case NodeType::Class:
+				case NodeType::Interface:
+				case NodeType::Trait:
 					return true;
-				case AST_ALIAS:
+				case NodeType::Alias:
 					return isCompoundType(
 						make_shared<CustomTypeNameNode>(
 							Location(t->getLocation()),
@@ -94,14 +94,14 @@ bool Compiler::isCompoundType(shared_ptr<TypeNameNode> node) {
 bool Compiler::_areTypesConvertible(shared_ptr<InterfaceNode> st, shared_ptr<ClassNode> dt) {
 	for (auto i : dt->implInterfaces) {
 		auto interface = static_pointer_cast<InterfaceNode>(resolveCustomType(i.get()));
-		assert(interface->getNodeType() == AST_INTERFACE);
+		assert(interface->getNodeType() == NodeType::Interface);
 
 		if (interface == st)
 			return true;
 
 		for (auto j : interface->parentInterfaces) {
 			auto jt = static_pointer_cast<InterfaceNode>(resolveCustomType(j.get()));
-			assert(jt->getNodeType() == AST_INTERFACE);
+			assert(jt->getNodeType() == NodeType::Interface);
 
 			if (_areTypesConvertible(jt, dt))
 				return true;
@@ -114,14 +114,14 @@ bool Compiler::_areTypesConvertible(shared_ptr<InterfaceNode> st, shared_ptr<Cla
 bool Compiler::_areTypesConvertible(shared_ptr<InterfaceNode> st, shared_ptr<InterfaceNode> dt) {
 	for (auto i : dt->parentInterfaces) {
 		auto interface = static_pointer_cast<InterfaceNode>(resolveCustomType(i.get()));
-		assert(interface->getNodeType() == AST_INTERFACE);
+		assert(interface->getNodeType() == NodeType::Interface);
 
 		if (interface == st)
 			return true;
 
 		for (auto j : interface->parentInterfaces) {
 			auto jt = static_pointer_cast<InterfaceNode>(resolveCustomType(j.get()));
-			assert(jt->getNodeType() == AST_INTERFACE);
+			assert(jt->getNodeType() == NodeType::Interface);
 
 			if (_areTypesConvertible(jt, dt))
 				return true;
@@ -151,7 +151,7 @@ bool Compiler::_areTypesConvertible(shared_ptr<MemberNode> st, shared_ptr<TraitN
 			return false;
 
 		switch (sm->getNodeType()) {
-			case AST_VAR: {
+			case NodeType::Var: {
 				auto smTyped = static_pointer_cast<VarNode>(sm);
 				auto dmTyped = static_pointer_cast<VarNode>(dm);
 
@@ -161,7 +161,7 @@ bool Compiler::_areTypesConvertible(shared_ptr<MemberNode> st, shared_ptr<TraitN
 
 				break;
 			}
-			case AST_FN: {
+			case NodeType::Fn: {
 				auto smTyped = static_pointer_cast<FnNode>(sm);
 				auto dmTyped = static_pointer_cast<FnNode>(dm);
 
@@ -180,11 +180,11 @@ bool Compiler::_areTypesConvertible(shared_ptr<MemberNode> st, shared_ptr<TraitN
 					}
 				}
 			}
-			case AST_CLASS:
-			case AST_INTERFACE:
-			case AST_TRAIT:
-			case AST_MODULE:
-			case AST_ALIAS:
+			case NodeType::Class:
+			case NodeType::Interface:
+			case NodeType::Trait:
+			case NodeType::Module:
+			case NodeType::Alias:
 				break;
 			default:
 				throw std::logic_error("Unrecognized member type");
@@ -199,42 +199,42 @@ bool Compiler::areTypesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<Type
 		return true;
 
 	switch (dest->getTypeId()) {
-		case TYPE_ANY:
+		case Type::Any:
 			return true;
-		case TYPE_I8:
-		case TYPE_I16:
-		case TYPE_I32:
-		case TYPE_I64:
-		case TYPE_U8:
-		case TYPE_U16:
-		case TYPE_U32:
-		case TYPE_U64:
-		case TYPE_F32:
-		case TYPE_F64:
-		case TYPE_CHAR:
-		case TYPE_WCHAR:
+		case Type::I8:
+		case Type::I16:
+		case Type::I32:
+		case Type::I64:
+		case Type::U8:
+		case Type::U16:
+		case Type::U32:
+		case Type::U64:
+		case Type::F32:
+		case Type::F64:
+		case Type::Char:
+		case Type::WChar:
 			if (isNumericType(src))
 				return true;
 			break;
-		case TYPE_BOOL:
+		case Type::Bool:
 			return true;
-		case TYPE_STRING:
-		case TYPE_WSTRING:
-		case TYPE_ARRAY:
-		case TYPE_MAP:
+		case Type::String:
+		case Type::WString:
+		case Type::Array:
+		case Type::Map:
 			break;
-		case TYPE_CUSTOM: {
+		case Type::Custom: {
 			auto destType = resolveCustomType((CustomTypeNameNode*)dest.get());
 
 			switch (destType->getNodeType()) {
-				case AST_CLASS: {
+				case NodeType::Class: {
 					auto dt = static_pointer_cast<ClassNode>(destType);
 
-					if (src->getTypeId() == TYPE_CUSTOM) {
+					if (src->getTypeId() == Type::Custom) {
 						auto srcType = resolveCustomType((CustomTypeNameNode*)src.get());
 
 						switch (srcType->getNodeType()) {
-							case AST_CLASS: {
+							case NodeType::Class: {
 								auto st = static_pointer_cast<ClassNode>(srcType);
 
 								do {
@@ -244,15 +244,15 @@ bool Compiler::areTypesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<Type
 									auto scope = scopeOf(st.get());
 									assert(scope);
 
-									if (scope->members.count(string("operator") + (dest->getTypeId() == TYPE_CUSTOM ? "" : "@") + to_string(dest, this)))
+									if (scope->members.count(string("operator") + (dest->getTypeId() == Type::Custom ? "" : "@") + to_string(dest, this)))
 										return true;
 								} while (st->parentClass && (st = static_pointer_cast<ClassNode>(resolveCustomType(st->parentClass.get()))));
 
 								break;
 							}
-							case AST_INTERFACE:
+							case NodeType::Interface:
 								return _areTypesConvertible(static_pointer_cast<InterfaceNode>(srcType), dt);
-							case AST_TRAIT:
+							case NodeType::Trait:
 								return _areTypesConvertible(dt, static_pointer_cast<TraitNode>(srcType));
 							default:
 								throw std::logic_error("Unresolved node type");
@@ -261,14 +261,14 @@ bool Compiler::areTypesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<Type
 
 					return false;
 				}
-				case AST_INTERFACE: {
+				case NodeType::Interface: {
 					auto dt = static_pointer_cast<InterfaceNode>(destType);
 
-					if (src->getTypeId() == TYPE_CUSTOM) {
+					if (src->getTypeId() == Type::Custom) {
 						auto srcType = resolveCustomType((CustomTypeNameNode*)src.get());
 
 						switch (srcType->getNodeType()) {
-							case AST_CLASS: {
+							case NodeType::Class: {
 								auto st = static_pointer_cast<ClassNode>(srcType);
 
 								do {
@@ -283,9 +283,9 @@ bool Compiler::areTypesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<Type
 										return true;
 								} while (st);
 							}
-							case AST_INTERFACE:
+							case NodeType::Interface:
 								return _areTypesConvertible(static_pointer_cast<InterfaceNode>(srcType), dt);
-							case AST_TRAIT:
+							case NodeType::Trait:
 								return _areTypesConvertible(dt, static_pointer_cast<TraitNode>(srcType));
 							default:
 								throw std::logic_error("Unresolved node type");
@@ -294,23 +294,23 @@ bool Compiler::areTypesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<Type
 
 					return false;
 				}
-				case AST_TRAIT: {
+				case NodeType::Trait: {
 					auto dt = static_pointer_cast<TraitNode>(destType);
 				}
-				case AST_ALIAS: {
+				case NodeType::Alias: {
 					auto dt = static_pointer_cast<AliasNode>(destType);
 				}
 			}
 			break;
 		}
-		case TYPE_FN:
+		case Type::Fn:
 			return false;
-		case TYPE_AUTO:
-		case TYPE_VOID:
+		case Type::Auto:
+		case Type::Void:
 			throw std::logic_error("Invalid destination type");
 	}
 
-	if (src->getTypeId() == TYPE_CUSTOM) {
+	if (src->getTypeId() == Type::Custom) {
 		auto t = static_pointer_cast<CustomTypeNameNode>(src);
 		auto scope = scopeOf(t.get());
 
@@ -355,20 +355,20 @@ bool Compiler::isSameType(shared_ptr<TypeNameNode> x, shared_ptr<TypeNameNode> y
 		return false;
 
 	switch (x->getTypeId()) {
-		case TYPE_CUSTOM: {
+		case Type::Custom: {
 			auto xDest = resolveCustomType((CustomTypeNameNode*)x.get()),
 				 yDest = resolveCustomType((CustomTypeNameNode*)y.get());
 
 			return xDest == yDest;
 		}
-		case TYPE_MAP:
+		case Type::Map:
 			return isSameType(
 					   static_pointer_cast<MapTypeNameNode>(x)->keyType,
 					   static_pointer_cast<MapTypeNameNode>(y)->keyType) &&
 				   isSameType(
 					   static_pointer_cast<MapTypeNameNode>(x)->valueType,
 					   static_pointer_cast<MapTypeNameNode>(y)->valueType);
-		case TYPE_ARRAY:
+		case Type::Array:
 			return isSameType(
 				static_pointer_cast<ArrayTypeNameNode>(x)->elementType,
 				static_pointer_cast<ArrayTypeNameNode>(y)->elementType);

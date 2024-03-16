@@ -45,7 +45,7 @@ std::string Runtime::getFullName(const MemberValue *v) const {
 	std::string s;
 	do {
 		switch (v->getType().typeId) {
-			case TypeId::OBJECT:
+			case TypeId::Object:
 				v = (const MemberValue *)((ObjectValue *)v)->getType().getCustomTypeExData();
 				break;
 		}
@@ -62,7 +62,7 @@ std::deque<RefEntry> Runtime::getFullRef(const MemberValue* v) const {
 	std::deque<RefEntry> entries;
 	do {
 		switch (v->getType().typeId) {
-			case TypeId::OBJECT:
+			case TypeId::Object:
 				v = (const MemberValue *)((ObjectValue *)v)->getType().getCustomTypeExData();
 				break;
 		}

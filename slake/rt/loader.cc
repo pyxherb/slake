@@ -50,7 +50,7 @@ Value *Runtime::_loadValue(std::istream &fs) {
 	slxfmt::ValueDesc i = {};
 	fs.read((char *)&i, sizeof(i));
 	switch (i.type) {
-		case slxfmt::Type::NONE:
+		case slxfmt::Type::None:
 			return nullptr;
 		case slxfmt::Type::I8:
 			return new I8Value(this, _read<std::int8_t>(fs));
@@ -68,33 +68,33 @@ Value *Runtime::_loadValue(std::istream &fs) {
 			return new U32Value(this, _read<uint32_t>(fs));
 		case slxfmt::Type::U64:
 			return new U64Value(this, _read<uint64_t>(fs));
-		case slxfmt::Type::BOOL:
+		case slxfmt::Type::Bool:
 			return new BoolValue(this, _read<bool>(fs));
 		case slxfmt::Type::F32:
 			return new F32Value(this, _read<float>(fs));
 		case slxfmt::Type::F64:
 			return new F64Value(this, _read<double>(fs));
-		case slxfmt::Type::STRING: {
+		case slxfmt::Type::String: {
 			auto len = _read<uint32_t>(fs);
 			std::string s(len, '\0');
 			fs.read(&(s[0]), len);
 			return new StringValue(this, s);
 		}
-		case slxfmt::Type::REF:
+		case slxfmt::Type::Ref:
 			return _loadRef(fs);
-		case slxfmt::Type::TYPENAME:
+		case slxfmt::Type::TypeName:
 			return new TypeNameValue(this, _loadType(fs, _read<slxfmt::Type>(fs)));
-		case slxfmt::Type::REG:
+		case slxfmt::Type::Reg:
 			return new RegRefValue(this, _read<uint32_t>(fs));
-		case slxfmt::Type::REG_VALUE:
+		case slxfmt::Type::RegValue:
 			return new RegRefValue(this, _read<uint32_t>(fs), true);
-		case slxfmt::Type::LVAR:
+		case slxfmt::Type::LocalVar:
 			return new LocalVarRefValue(this, _read<uint32_t>(fs));
-		case slxfmt::Type::LVAR_VALUE:
+		case slxfmt::Type::LocalVarValue:
 			return new LocalVarRefValue(this, _read<uint32_t>(fs), true);
-		case slxfmt::Type::ARG:
+		case slxfmt::Type::Arg:
 			return new ArgRefValue(this, _read<uint32_t>(fs));
-		case slxfmt::Type::ARG_VALUE:
+		case slxfmt::Type::ArgValue:
 			return new ArgRefValue(this, _read<uint32_t>(fs), true);
 		default:
 			throw LoaderError("Invalid value type detected");
@@ -128,25 +128,25 @@ Type Runtime::_loadType(std::istream &fs, slxfmt::Type vt) {
 			return TypeId::F32;
 		case slxfmt::Type::F64:
 			return TypeId::F64;
-		case slxfmt::Type::STRING:
-			return TypeId::STRING;
-		case slxfmt::Type::OBJECT:
+		case slxfmt::Type::String:
+			return TypeId::String;
+		case slxfmt::Type::Object:
 			return _loadRef(fs);
-		case slxfmt::Type::ANY:
-			return TypeId::ANY;
-		case slxfmt::Type::BOOL:
-			return TypeId::BOOL;
-		case slxfmt::Type::NONE:
-			return TypeId::NONE;
-		case slxfmt::Type::ARRAY:
+		case slxfmt::Type::Any:
+			return TypeId::Any;
+		case slxfmt::Type::Bool:
+			return TypeId::Bool;
+		case slxfmt::Type::None:
+			return TypeId::None;
+		case slxfmt::Type::Array:
 			return Type(_loadType(fs, _read<slxfmt::Type>(fs)));
-		case slxfmt::Type::MAP:
+		case slxfmt::Type::Map:
 			return Type(
 				_loadType(fs, _read<slxfmt::Type>(fs)),
 				_loadType(fs, _read<slxfmt::Type>(fs)));
-		case slxfmt::Type::TYPENAME:
-			return TypeId::TYPENAME;
-		case slxfmt::Type::GENERIC_ARG:
+		case slxfmt::Type::TypeName:
+			return TypeId::TypeName;
+		case slxfmt::Type::GenericArg:
 			return Type(_read<uint8_t>(fs));
 		default:
 			throw LoaderError("Invalid type ID");
@@ -165,14 +165,14 @@ GenericParam Runtime::_loadGenericParam(std::istream &fs) {
 
 		GenericFilter filter;
 		switch (desc.filter) {
-			case slxfmt::GenericFilter::EXTENDS:
-				filter = GenericFilter::EXTENDS;
+			case slxfmt::GenericFilter::Extends:
+				filter = GenericFilter::Extends;
 				break;
-			case slxfmt::GenericFilter::IMPLS:
-				filter = GenericFilter::IMPLS;
+			case slxfmt::GenericFilter::Implements:
+				filter = GenericFilter::Implements;
 				break;
-			case slxfmt::GenericFilter::CONSISTS_OF:
-				filter = GenericFilter::CONSISTS_OF;
+			case slxfmt::GenericFilter::HasTrait:
+				filter = GenericFilter::HasTrait;
 				break;
 			default:
 				throw LoaderError("Invalid generic filter");
@@ -259,14 +259,14 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 
 				GenericFilter filter;
 				switch (desc.filter) {
-					case slxfmt::GenericFilter::EXTENDS:
-						filter = GenericFilter::EXTENDS;
+					case slxfmt::GenericFilter::Extends:
+						filter = GenericFilter::Extends;
 						break;
-					case slxfmt::GenericFilter::IMPLS:
-						filter = GenericFilter::IMPLS;
+					case slxfmt::GenericFilter::Implements:
+						filter = GenericFilter::Implements;
 						break;
-					case slxfmt::GenericFilter::CONSISTS_OF:
-						filter = GenericFilter::CONSISTS_OF;
+					case slxfmt::GenericFilter::HasTrait:
+						filter = GenericFilter::HasTrait;
 						break;
 					default:
 						throw LoaderError("Invalid generic filter");
@@ -332,7 +332,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 
 		// Load reference to the parent class.
 		if (i.flags & slxfmt::CTD_DERIVED)
-			value->parentClass = Type(TypeId::CLASS, _loadRef(fs));
+			value->parentClass = Type(TypeId::Class, _loadRef(fs));
 
 		// Load references to implemented interfaces.
 		for (auto j = i.nImpls; j; j--)
@@ -417,7 +417,7 @@ ValueRef<ModuleValue> slake::Runtime::loadModule(std::istream &fs, LoadModuleFla
 				// Create a new one if corresponding module does not present.
 				auto mod = new ModuleValue(this, ACCESS_PUB);
 
-				if (curValue->getType() == TypeId::ROOT)
+				if (curValue->getType() == TypeId::RootValue)
 					((RootValue *)curValue.get())->scope->putMember(name, mod);
 				else
 					((ModuleValue *)curValue.get())->scope->putMember(name, mod);
@@ -431,14 +431,14 @@ ValueRef<ModuleValue> slake::Runtime::loadModule(std::istream &fs, LoadModuleFla
 
 		auto lastName = modName->entries.back().name;
 		// Add current module.
-		if (curValue->getType() == TypeId::ROOT)
+		if (curValue->getType() == TypeId::RootValue)
 			((RootValue *)curValue.get())->scope->putMember(lastName, mod.get());
 		else {
 			auto moduleValue = (ModuleValue *)curValue.get();
 
 			if (auto member = memberOf(moduleValue, lastName); member) {
 				if (flags & LMOD_NORELOAD) {
-					if (member->getType() != TypeId::MOD)
+					if (member->getType() != TypeId::Module)
 						throw LoaderError(
 							"Value which corresponds to module name \"" + std::to_string(modName, this) + "\" was found, but is not a module");
 				}

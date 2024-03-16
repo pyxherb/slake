@@ -12,7 +12,7 @@ namespace slake {
 		LocalVarRefValue(Runtime *rt, int32_t index, bool unwrapValue = false);
 		virtual ~LocalVarRefValue();
 
-		virtual inline Type getType() const override { return TypeId::LVAR_REF; }
+		virtual inline Type getType() const override { return TypeId::LocalVarRef; }
 
 		virtual Value *duplicate() const override;
 
@@ -36,7 +36,7 @@ namespace slake {
 		}
 
 		virtual ~RegRefValue();
-		virtual inline Type getType() const override { return TypeId::REG_REF; }
+		virtual inline Type getType() const override { return TypeId::RegRef; }
 
 		virtual Value *duplicate() const override;
 
@@ -60,7 +60,7 @@ namespace slake {
 		}
 
 		virtual ~ArgRefValue();
-		virtual inline Type getType() const override { return TypeId::ARG_REF; }
+		virtual inline Type getType() const override { return TypeId::ArgRef; }
 
 		virtual Value *duplicate() const override;
 

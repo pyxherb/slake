@@ -211,7 +211,23 @@ namespace slake {
 			uint32_t allocReg(uint32_t nRegs = 1);
 
 			set<Value *> importedDefinitions;
-			set<ModuleRef> importedModules;
+
+			struct ModuleRefComparator {
+				inline bool operator()(const Ref &lhs, const Ref &rhs) const {
+					if (lhs.size() < rhs.size())
+						return true;
+					if (lhs.size() > rhs.size())
+						return false;
+
+					for (size_t i = 0; i < lhs.size(); ++i) {
+						if (!(lhs[i].name < rhs[i].name))
+							return false;
+					}
+
+					return true;
+				}
+			};
+			set<Ref, ModuleRefComparator> importedModules;
 
 			static unique_ptr<ifstream> moduleLocator(Runtime *rt, ValueRef<RefValue> ref);
 			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, BasicFnValue *value);
@@ -220,7 +236,7 @@ namespace slake {
 			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, InterfaceValue *value);
 			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, TraitValue *value);
 			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, Value *value);
-			void importModule(string name, const ModuleRef &ref, shared_ptr<Scope> scope);
+			void importModule(string name, const Ref &ref, shared_ptr<Scope> scope);
 			shared_ptr<TypeNameNode> toTypeName(slake::Type runtimeType);
 			Ref toAstRef(deque<slake::RefEntry> runtimeRefEntries);
 			slkc::GenericQualifier toAstGenericQualifier(slake::GenericQualifier qualifier);

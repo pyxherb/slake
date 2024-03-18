@@ -3,7 +3,8 @@
 using namespace slake;
 
 ModuleValue::ModuleValue(Runtime *rt, AccessModifier access)
-	: MemberValue(rt, access), scope(std::make_unique<Scope>(this)) {
+	: MemberValue(rt, access) {
+	scope = new Scope(this);
 	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(MemberValue));
 }
 

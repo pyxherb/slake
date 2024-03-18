@@ -12,9 +12,9 @@ namespace slake {
 			Location _loc;
 
 		public:
-			ModuleRef moduleName;
+			Ref moduleName;
 			shared_ptr<Scope> scope;
-			unordered_map<string, ModuleRef> imports;
+			unordered_map<string, Ref> imports;
 			weak_ptr<ModuleNode> parentModule;
 
 			inline ModuleNode(
@@ -29,7 +29,7 @@ namespace slake {
 
 			virtual inline NodeType getNodeType() const override { return NodeType::Module; }
 
-			virtual RefEntry getName() const override { return toRegularRef(moduleName).back(); }
+			virtual RefEntry getName() const override { return moduleName.back(); }
 		};
 	}
 }

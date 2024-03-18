@@ -53,7 +53,7 @@ bool ClassValue::hasTrait(const TraitValue *t) const {
 			// Scan for parents if the member was not found.
 			ClassValue* j = (ClassValue*)this;
 			while (j->parentClass) {
-				if (!(v = (MemberValue *)memberOf(j, i.first))) {
+				if (!(v = (MemberValue *)j->getMember(i.first))) {
 					j->parentClass.loadDeferredType(_rt);
 					j = (ClassValue *)j->parentClass.getCustomTypeExData();
 					continue;

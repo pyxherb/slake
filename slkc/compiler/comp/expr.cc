@@ -311,7 +311,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 					curFn->insertIns(
 						e->isAsync ? Opcode::AMCALL : Opcode::MCALL,
 						make_shared<RegRefNode>(callTargetRegIndex, true),
-						make_shared<RegRefNode>(tmpRegIndex));
+						make_shared<RegRefNode>(tmpRegIndex, true));
 
 				if (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt) {
 					curFn->insertIns(

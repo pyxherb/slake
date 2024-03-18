@@ -83,32 +83,32 @@ bool slake::isConvertible(Type src, Type dest) {
 			ClassValue *srcType = (ClassValue *)src.getCustomTypeExData();
 			switch (dest.typeId) {
 				case TypeId::I8:
-					return memberOf(srcType, "operator@i8") ? true : false;
+					return srcType->getMember("operator@i8") ? true : false;
 				case TypeId::I16:
-					return memberOf(srcType, "operator@i16") ? true : false;
+					return srcType->getMember("operator@i16") ? true : false;
 				case TypeId::I32:
-					return memberOf(srcType, "operator@i32") ? true : false;
+					return srcType->getMember("operator@i32") ? true : false;
 				case TypeId::I64:
-					return memberOf(srcType, "operator@i64") ? true : false;
+					return srcType->getMember("operator@i64") ? true : false;
 				case TypeId::U8:
-					return memberOf(srcType, "operator@u8") ? true : false;
+					return srcType->getMember("operator@u8") ? true : false;
 				case TypeId::U16:
-					return memberOf(srcType, "operator@u16") ? true : false;
+					return srcType->getMember("operator@u16") ? true : false;
 				case TypeId::U32:
-					return memberOf(srcType, "operator@u32") ? true : false;
+					return srcType->getMember("operator@u32") ? true : false;
 				case TypeId::U64:
-					return memberOf(srcType, "operator@u64") ? true : false;
+					return srcType->getMember("operator@u64") ? true : false;
 				case TypeId::F32:
-					return memberOf(srcType, "operator@f32") ? true : false;
+					return srcType->getMember("operator@f32") ? true : false;
 				case TypeId::F64:
-					return memberOf(srcType, "operator@f64") ? true : false;
+					return srcType->getMember("operator@f64") ? true : false;
 				case TypeId::Bool:
-					return memberOf(srcType, "operator@bool") ? true : false;
+					return srcType->getMember("operator@bool") ? true : false;
 				case TypeId::Object: {
 					switch (dest.getCustomTypeExData()->getType().typeId) {
 						case TypeId::Class: {
 							auto destType = (ClassValue *)dest.getCustomTypeExData();
-							return memberOf(srcType, "operator@" + srcType->getRuntime()->getFullName(destType)) ? true : false;
+							return srcType->getMember("operator@" + srcType->getRuntime()->getFullName(destType)) ? true : false;
 						}
 						case TypeId::Interface: {
 							auto destType = (InterfaceValue *)dest.getCustomTypeExData();

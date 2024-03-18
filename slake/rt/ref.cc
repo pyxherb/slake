@@ -31,7 +31,7 @@ Value *Runtime::resolveRef(RefValue* ref, Value *scopeValue) const {
 					default:
 						goto fail;
 				}
-			} else if (!(scopeValue = memberOf(scopeValue, i.name))) {
+			} else if (!(scopeValue = scopeValue->getMember(i.name))) {
 				break;
 			}
 

@@ -413,7 +413,7 @@ ValueRef<ModuleValue> slake::Runtime::loadModule(std::istream &fs, LoadModuleFla
 		for (size_t i = 0; i < modName->entries.size() - 1; ++i) {
 			auto &name = modName->entries[i].name;
 
-			if (!memberOf(curValue.get(), name)) {
+			if (!curValue->getMember(name)) {
 				// Create a new one if corresponding module does not present.
 				auto mod = new ModuleValue(this, ACCESS_PUB);
 
@@ -425,7 +425,7 @@ ValueRef<ModuleValue> slake::Runtime::loadModule(std::istream &fs, LoadModuleFla
 				curValue = (Value *)mod;
 			} else {
 				// Continue if the module presents.
-				curValue = memberOf(curValue.get(), name);
+				curValue = curValue->getMember(name);
 			}
 		}
 
@@ -436,7 +436,7 @@ ValueRef<ModuleValue> slake::Runtime::loadModule(std::istream &fs, LoadModuleFla
 		else {
 			auto moduleValue = (ModuleValue *)curValue.get();
 
-			if (auto member = memberOf(moduleValue, lastName); member) {
+			if (auto member = moduleValue->getMember(lastName); member) {
 				if (flags & LMOD_NORELOAD) {
 					if (member->getType() != TypeId::Module)
 						throw LoaderError(

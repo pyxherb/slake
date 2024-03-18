@@ -67,10 +67,12 @@ void Runtime::_gcWalk(Value *v) {
 	_walkedValues.insert(v);
 	_createdValues.erase(v);
 
+	if (v->scope)
+		_gcWalk(v->scope);
+
 	switch (auto typeId = v->getType().typeId; typeId) {
 		case TypeId::Object: {
 			auto value = (ObjectValue *)v;
-			_gcWalk(value->scope.get());
 			_gcWalk(value->_class);
 			if (value->_parent)
 				_gcWalk(value->_parent);
@@ -88,8 +90,6 @@ void Runtime::_gcWalk(Value *v) {
 		case TypeId::Interface: {
 			if (((ModuleValue *)v)->_parent)
 				_gcWalk(((ModuleValue *)v)->_parent);
-
-			_gcWalk(((ModuleValue *)v)->scope.get());
 
 			for (auto &i : ((ModuleValue *)v)->imports)
 				_gcWalk(i.second);
@@ -133,7 +133,6 @@ void Runtime::_gcWalk(Value *v) {
 			break;
 		}
 		case TypeId::RootValue:
-			_gcWalk(((RootValue *)v)->scope.get());
 			break;
 		case TypeId::Fn: {
 			auto basicFn = (BasicFnValue *)v;
@@ -248,7 +247,7 @@ rescan:
 	destructingThreads.insert(std::this_thread::get_id());
 	for (auto i : _createdValues) {
 		if (!i->hostRefCount) {
-			auto d = memberChainOf(i, "delete");
+			auto d = i->getMemberChain("delete");
 			if (d.size() && i->getType() == TypeId::Object && !(((ObjectValue*)i)->objectFlags & OBJECT_PARENT)) {
 				for(auto j : d) {
 					_destructedValues.insert(j.first->owner);

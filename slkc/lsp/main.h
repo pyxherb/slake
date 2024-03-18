@@ -2,7 +2,6 @@
 #define _SLKC_LSP_MAIN_H_
 
 #include "net/http.h"
-#include <boost/asio.hpp>
 #include <memory>
 #include <set>
 

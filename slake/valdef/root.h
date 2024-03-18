@@ -7,10 +7,9 @@
 namespace slake {
 	class RootValue final : public Value {
 	public:
-		std::unique_ptr<Scope> scope;
-
 		inline RootValue(Runtime *rt)
-			: Value(rt), scope(std::make_unique<Scope>(this)) {
+			: Value(rt) {
+			scope = new Scope(this);
 			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Value));
 		}
 

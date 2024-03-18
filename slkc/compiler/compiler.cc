@@ -113,7 +113,7 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 			}
 		}
 
-		compileRef(os, toRegularRef(_targetModule->moduleName));
+		compileRef(os, _targetModule->moduleName);
 	}
 
 	pushMajorContext();
@@ -121,11 +121,11 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 	for (auto i : _targetModule->imports) {
 		_write(os, (uint32_t)i.first.size());
 		_write(os, i.first.data(), i.first.length());
-		compileRef(os, toRegularRef(i.second));
+		compileRef(os, i.second);
 
 		importModule(i.first, i.second, _targetModule->scope);
 
-		_targetModule->scope->members[i.first] = make_shared<AliasNode>(i.second[0].loc, i.first, toRegularRef(i.second));
+		_targetModule->scope->members[i.first] = make_shared<AliasNode>(i.second[0].loc, i.first, i.second);
 	}
 
 	popMajorContext();
@@ -133,7 +133,7 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 	compileScope(is, os, _targetModule->scope);
 }
 
-void Compiler::importModule(string name, const ModuleRef &ref, shared_ptr<Scope> scope) {
+void Compiler::importModule(string name, const Ref &ref, shared_ptr<Scope> scope) {
 	if (importedModules.count(ref))
 		return;
 	importedModules.insert(ref);
@@ -170,7 +170,7 @@ void Compiler::importModule(string name, const ModuleRef &ref, shared_ptr<Scope>
 				auto mod = _rt->loadModule(is, LMOD_NOIMPORT | LMOD_NORELOAD);
 
 				for (auto j : mod->imports)
-					importModule(j.first, toModuleRef(toAstRef(j.second->entries)), scope);
+					importModule(j.first, toAstRef(j.second->entries), scope);
 
 				importDefinitions(_rootScope, {}, mod.get());
 
@@ -187,7 +187,7 @@ void Compiler::importModule(string name, const ModuleRef &ref, shared_ptr<Scope>
 		Message(
 			ref[0].loc,
 			MessageType::Error,
-			"Cannot find module " + std::to_string(ref)));
+			"Cannot find module " + std::to_string(ref, this)));
 
 succeeded:;
 }

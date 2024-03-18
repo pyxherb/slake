@@ -1,12 +1,22 @@
 #ifndef _SLKC_LSP_NET_HTTP_H_
 #define _SLKC_LSP_NET_HTTP_H_
 
+#ifdef _MSC_VER
+	#pragma push_macro("new")
+#endif
+
+#undef new
+#include <boost/asio.hpp>
+
+#ifdef _MSC_VER
+	#pragma pop_macro("new")
+#endif
+
 #include <string>
 #include <string_view>
 #include <unordered_map>
 #include <cstdint>
 #include <stdexcept>
-#include <boost/asio.hpp>
 
 namespace slake {
 	namespace slkc {

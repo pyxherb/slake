@@ -23,14 +23,14 @@ namespace slake {
 
 	public:
 		ObjectValue *_parent;
-		std::unique_ptr<Scope> scope;
 
 		ObjectFlags objectFlags = 0;
 
 		inline ObjectValue(Runtime *rt, ClassValue *cls, ObjectValue *parent = nullptr)
-			: Value(rt), _class(cls), _parent(parent), scope(std::make_unique<Scope>(this, parent ? parent->scope.get() : nullptr)) {
+			: Value(rt), _class(cls), _parent(parent) {
 			if (parent)
 				parent->objectFlags |= OBJECT_PARENT;
+			scope = new Scope(this, parent ? parent->scope : nullptr);
 			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Value));
 		}
 
@@ -50,7 +50,6 @@ namespace slake {
 		inline ObjectValue &operator=(const ObjectValue &x) {
 			(Value &)*this = (const Value &)x;
 
-			this->scope = std::unique_ptr<Scope>(x.scope->duplicate());
 			_genericArgs = x._genericArgs;
 			_class = x._class;
 			objectFlags = x.objectFlags & ~OBJECT_PARENT;

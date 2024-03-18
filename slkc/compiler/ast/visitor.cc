@@ -100,20 +100,20 @@ VISIT_METHOD_DECL(ProgVarDef) {
 
 VISIT_METHOD_DECL(Imports) {
 	for (auto i : context->importItem()) {
-		auto item = any_cast<pair<string, ModuleRef>>(visit(i));
+		auto item = any_cast<pair<string, Ref>>(visit(i));
 		curModule->imports[item.first] = item.second;
 	}
 	return visitChildren(context);
 }
 
 VISIT_METHOD_DECL(ImportItem) {
-	return pair<string, ModuleRef>(
+	return pair<string, Ref>(
 		context->ID()->getText(),
-		any_cast<ModuleRef>(visit(context->moduleRef())));
+		any_cast<Ref>(visit(context->moduleRef())));
 }
 
 VISIT_METHOD_DECL(ModuleDecl) {
-	curModule->moduleName = any_cast<ModuleRef>(visit(context->children[1]));
+	curModule->moduleName = any_cast<Ref>(visit(context->children[1]));
 	return visitChildren(context);
 }
 
@@ -1374,10 +1374,10 @@ VISIT_METHOD_DECL(NewRef) {
 	return ref;
 }
 VISIT_METHOD_DECL(ModuleRef) {
-	ModuleRef ref;
+	Ref ref;
 
 	for (auto i : context->ID()) {
-		ref.push_back(ModuleRefEntry(Location(i), i->getText()));
+		ref.push_back(RefEntry(Location(i), i->getText()));
 	}
 
 	return ref;

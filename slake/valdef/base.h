@@ -1,6 +1,7 @@
 #ifndef _SLAKE_VALDEF_BASE_H_
 #define _SLAKE_VALDEF_BASE_H_
 
+#include "scope.h"
 #include <atomic>
 #include <stdexcept>
 #include <string>
@@ -104,9 +105,14 @@ namespace slake {
 	};
 
 	using ValueFlags = uint8_t;
-	constexpr static ValueFlags VF_WALKED = 0x01;
+	constexpr static ValueFlags
+		VF_WALKED = 0x01,  // The value has been walked by the garbage collector.
+		VF_ALIAS = 0x02	   // The value is an alias thus the scope should not be deleted.
+		;
 
 	struct Type;
+	class Scope;
+
 	class Value {
 	protected:
 		void reportSizeAllocatedToRuntime(size_t size);
@@ -120,6 +126,8 @@ namespace slake {
 
 		Runtime *_rt;
 		ValueFlags _flags = 0;
+
+		Scope *scope = nullptr;
 
 		/// @brief The basic constructor.
 		/// @param rt Runtime which the value belongs to.
@@ -142,12 +150,10 @@ namespace slake {
 
 		inline Runtime *getRuntime() const noexcept { return _rt; }
 
-		inline Value &operator=(const Value &x) {
-			_rt = x._rt;
-			_flags = x._flags & ~VF_WALKED;
+		Value *getMember(const std::string &name);
+		std::deque<std::pair<Scope *, MemberValue *>> getMemberChain(const std::string &name);
 
-			return *this;
-		}
+		Value &operator=(const Value &x);
 		Value &operator=(Value &&) = delete;
 	};
 }

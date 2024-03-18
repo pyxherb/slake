@@ -738,7 +738,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 					ObjectValue *instance = _newClassInstance(cls);
 					((VarValue *)ins.operands[0])->setData(instance);
 
-					FnValue *constructor = (FnValue *)memberOf(cls, "new");
+					FnValue *constructor = (FnValue *)cls->getMember("new");
 					if (constructor && constructor->getType() == TypeId::Fn) {
 						_callFn(context, constructor);
 						context->majorFrames.back().thisObject = instance;

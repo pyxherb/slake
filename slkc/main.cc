@@ -1,16 +1,16 @@
+#include <slake/util/debug.h>
+
 #include "compiler/compiler.h"
 #include "decompiler/decompiler.h"
-
-#include <filesystem>
-#include <fstream>
-
-#include <slake/util/debug.h>
 
 #include <config.h>
 
 #if SLKC_WITH_LSP_ENABLED
 	#include "lsp/lsp.h"
 #endif
+
+#include <filesystem>
+#include <fstream>
 
 using namespace slake::slkc;
 

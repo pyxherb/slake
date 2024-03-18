@@ -8,7 +8,6 @@
 namespace slake {
 	class ModuleValue : public MemberValue {
 	public:
-		std::unique_ptr<Scope> scope;
 		std::unordered_map<std::string, RefValue *> imports;
 
 		ModuleValue(Runtime *rt, AccessModifier access);
@@ -20,8 +19,6 @@ namespace slake {
 
 		inline ModuleValue &operator=(const ModuleValue &x) {
 			((MemberValue &)*this) = (MemberValue &)x;
-
-			scope = std::unique_ptr<Scope>(x.scope->duplicate());
 
 			return *this;
 		}

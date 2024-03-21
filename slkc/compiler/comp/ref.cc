@@ -6,8 +6,6 @@ using namespace slake::slkc;
 bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut) {
 	assert(ref.size());
 
-	curMajorContext.curMinorContext.lastResolvedGenericArgs.clear();
-
 	ResolvedOwnersSaver resolvedOwnersSaver(curMajorContext.curMinorContext);
 
 	// Try to resolve the first entry as a local variable.
@@ -64,8 +62,6 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 }
 
 bool Compiler::resolveRefWithScope(Scope *scope, Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut) {
-	curMajorContext.curMinorContext.lastResolvedGenericArgs.clear();
-
 	return _resolveRef(scope, ref, partsOut);
 }
 
@@ -88,11 +84,13 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 		newRef.pop_front();
 
 		m = scope->members.at(ref[0].name);
+		
+		if(ref[0].genericArgs.size())
+			m = instantiateGenericNode(m, ref[0].genericArgs);
 
 		if (!newRef.size()) {
 			// All entries have been resolved, return true.
 			partsOut.push_front({ Ref{ ref.front() }, m });
-			curMajorContext.curMinorContext.lastResolvedGenericArgs[m.get()] = ref.front().genericArgs;	 // Save generic arguments for full name resolving.
 			return true;
 		}
 
@@ -107,7 +105,6 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 					default:
 						partsOut.front().first.push_front(ref.front());
 				}
-				curMajorContext.curMinorContext.lastResolvedGenericArgs[newScope->owner] = ref.front().genericArgs;	 // Save generic arguments for full name resolving.
 				return true;
 			}
 		}
@@ -124,7 +121,6 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 
 bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut) {
 	if (scope->owner && (!curMajorContext.curMinorContext.resolvedOwners.count(scope->owner))) {
-		curMajorContext.curMinorContext.resolvedOwners.insert(scope->owner);
 		switch (scope->owner->getNodeType()) {
 			case NodeType::Class: {
 				ClassNode *owner = (ClassNode *)scope->owner;
@@ -232,11 +228,6 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 
 void Compiler::_getFullName(MemberNode *member, Ref &ref) {
 	RefEntry entry = member->getName();
-
-	if (auto it = curMajorContext.curMinorContext.lastResolvedGenericArgs.find(member);
-		it != curMajorContext.curMinorContext.lastResolvedGenericArgs.end()) {
-		entry.genericArgs = it->second;
-	}
 
 	ref.push_front(entry);
 

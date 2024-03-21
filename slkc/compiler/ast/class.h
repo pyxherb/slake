@@ -22,6 +22,7 @@ namespace slake {
 
 			shared_ptr<Scope> scope = make_shared<Scope>();
 
+			ClassNode() = default;
 			inline ClassNode(
 				Location loc,
 				string name,
@@ -43,6 +44,13 @@ namespace slake {
 			virtual inline NodeType getNodeType() const override { return NodeType::Class; }
 
 			virtual RefEntry getName() const override { return RefEntry(_loc, name, genericArgs); }
+			
+			ClassNode &operator=(const ClassNode &rhs) = default;
+			virtual inline shared_ptr<AstNode> duplicate() override {
+				shared_ptr<ClassNode> newInstance = make_shared<ClassNode>();
+				(*newInstance.get()) = *this;
+				return static_pointer_cast<AstNode>(newInstance);
+			}
 		};
 	}
 }

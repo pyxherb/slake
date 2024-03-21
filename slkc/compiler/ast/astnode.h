@@ -65,6 +65,8 @@ namespace slake {
 
 			virtual Location getLocation() const = 0;
 			virtual NodeType getNodeType() const = 0;
+			
+			virtual shared_ptr<AstNode> duplicate();
 		};
 	}
 }

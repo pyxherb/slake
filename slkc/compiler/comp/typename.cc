@@ -337,9 +337,6 @@ bool Compiler::areTypesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<Type
 
 shared_ptr<AstNode> Compiler::resolveCustomType(CustomTypeNameNode *typeName) {
 	if (typeName->resolved) {
-		for (auto i : typeName->resolvedPartsOut) {
-			curMajorContext.curMinorContext.lastResolvedGenericArgs[i.second.get()] = i.first.back().genericArgs;
-		}
 		return typeName->resolvedPartsOut.back().second;
 	}
 
@@ -378,7 +375,35 @@ bool Compiler::isSameType(shared_ptr<TypeNameNode> x, shared_ptr<TypeNameNode> y
 			auto xDest = resolveCustomType((CustomTypeNameNode *)x.get()),
 				 yDest = resolveCustomType((CustomTypeNameNode *)y.get());
 
-			return xDest == yDest;
+			if (xDest->getNodeType() != yDest->getNodeType())
+				return false;
+
+			switch (xDest->getNodeType()) {
+				case NodeType::Class: {
+					auto xDestClass = static_pointer_cast<ClassNode>(xDest),
+						 yDestClass = static_pointer_cast<ClassNode>(yDest);
+
+					if (xDestClass->genericArgs.size() || yDestClass->genericArgs.size()) {
+						if (xDestClass->uninstantiatedValue != yDestClass->uninstantiatedValue)
+							return false;
+
+						if (xDestClass->genericArgs.size() != yDestClass->genericArgs.size())
+							return false;
+
+						for (size_t i = 0; i < xDestClass->genericArgs.size(); ++i) {
+							if (!isSameType(xDestClass->genericArgs[i], yDestClass->genericArgs[i]))
+								return false;
+						}
+
+						return true;
+					} else
+						return xDest == yDest;
+
+					break;
+				}
+				default:
+					return xDest == yDest;
+			}
 		}
 		case Type::Map:
 			return isSameType(

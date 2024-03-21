@@ -12,6 +12,7 @@ namespace slake {
 			MemberNode* parent = nullptr;
 
 			deque<shared_ptr<TypeNameNode>> genericArgs;
+			shared_ptr<MemberNode> uninstantiatedValue;
 
 			inline MemberNode(AccessModifier access = 0)
 				: access(access) {}
@@ -27,6 +28,8 @@ namespace slake {
 			}
 
 			virtual RefEntry getName() const = 0;
+			
+			MemberNode &operator=(const MemberNode &) = default;
 		};
 	}
 }

@@ -4,7 +4,7 @@
 	#include <Windows.h>
 typedef int socklen_t;
 #else
-	#include <sys/io.h>
+	#include <sys/fcntl.h>
 	#include <sys/socket.h>
 	#include <netinet/in.h>
 	#include <unistd.h>

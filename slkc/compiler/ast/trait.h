@@ -17,6 +17,7 @@ namespace slake {
 			GenericParamNodeList genericParams;
 			unordered_map<string, size_t> genericParamIndices;
 
+			TraitNode() = default;
 			inline TraitNode(
 				Location loc,
 				deque<shared_ptr<CustomTypeNameNode>> parentInterfaces,
@@ -34,6 +35,14 @@ namespace slake {
 			virtual inline NodeType getNodeType() const override { return NodeType::Trait; }
 
 			virtual RefEntry getName() const override { return RefEntry(_loc, name, genericArgs); }
+
+			TraitNode &operator=(const TraitNode &rhs) = default;
+
+			virtual inline shared_ptr<AstNode> duplicate() override {
+				shared_ptr<TraitNode> newInstance = make_shared<TraitNode>();
+				(*newInstance.get()) = *this;
+				return static_pointer_cast<AstNode>(newInstance);
+			}
 		};
 	}
 }

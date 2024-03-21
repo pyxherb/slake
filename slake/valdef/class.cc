@@ -2,7 +2,7 @@
 
 using namespace slake;
 
-inline slake::ClassValue::ClassValue(Runtime *rt, AccessModifier access, Type parentClass)
+slake::ClassValue::ClassValue(Runtime *rt, AccessModifier access, Type parentClass)
 	: ModuleValue(rt, access), parentClass(parentClass) {
 	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(ModuleValue));
 }

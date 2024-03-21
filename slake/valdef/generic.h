@@ -17,7 +17,7 @@ namespace slake {
 
 	/// @brief Less than ("<") comparator for containers.
 	struct GenericArgListComparator {
-		bool operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept {
+		inline bool operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept {
 			if (lhs.size() < rhs.size())
 				return true;
 

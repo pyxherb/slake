@@ -4,6 +4,7 @@
 #include <deque>
 #include <stdexcept>
 #include <memory>
+#include <string>
 
 namespace slake {
 	class Value;

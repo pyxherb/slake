@@ -80,9 +80,6 @@ namespace slake {
 				bool isArgTypesSet = false;
 
 				shared_ptr<AstNode> evalDest, thisDest;
-
-				// Generic arguments of last resolved reference, for full reference resolving.
-				map<AstNode *, deque<shared_ptr<TypeNameNode>>> lastResolvedGenericArgs;
 			};
 
 			/// @brief Block level context
@@ -255,6 +252,8 @@ namespace slake {
 			void importModule(string name, const Ref &ref, shared_ptr<Scope> scope);
 			shared_ptr<TypeNameNode> toTypeName(slake::Type runtimeType);
 			Ref toAstRef(deque<slake::RefEntry> runtimeRefEntries);
+
+			shared_ptr<MemberNode> instantiateGenericNode(shared_ptr<MemberNode> node, deque<shared_ptr<TypeNameNode>> genericArgs);
 
 			friend class AstVisitor;
 			friend string std::to_string(shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slkc::Compiler *compiler, bool asOperatorName);

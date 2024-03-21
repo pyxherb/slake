@@ -17,6 +17,7 @@ namespace slake {
 			GenericParamNodeList genericParams;
 			unordered_map<string, size_t> genericParamIndices;
 
+			InterfaceNode() = default;
 			inline InterfaceNode(
 				Location loc,
 				string name,
@@ -36,6 +37,14 @@ namespace slake {
 			virtual inline NodeType getNodeType() const override { return NodeType::Interface; }
 
 			virtual RefEntry getName() const override { return RefEntry(_loc, name, genericArgs); }
+
+			InterfaceNode &operator=(const InterfaceNode &) = default;
+
+			virtual inline shared_ptr<AstNode> duplicate() override {
+				shared_ptr<InterfaceNode> newInstance = make_shared<InterfaceNode>();
+				(*newInstance.get()) = *this;
+				return static_pointer_cast<AstNode>(newInstance);
+			}
 		};
 	}
 }

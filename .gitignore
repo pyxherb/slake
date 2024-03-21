@@ -22,6 +22,7 @@ generated/
 CMakePresets.json
 CMakeSettings.json
 *.user
+*.bak
 
 # Runtime artifacts
 *.log

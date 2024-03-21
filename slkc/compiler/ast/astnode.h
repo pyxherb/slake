@@ -22,11 +22,13 @@ namespace slake {
 			Module,
 			Alias,
 			Var,
+			GenericParam,
 
 			CompiledFn,
 			LabelRef,
 			LocalVar,
 			ArgRef,
+			GenericArgRef,
 			Comment,
 
 			LocalVarRef,

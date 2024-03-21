@@ -155,34 +155,25 @@ Type Runtime::_loadType(std::istream &fs, slxfmt::Type vt) {
 
 GenericParam Runtime::_loadGenericParam(std::istream &fs) {
 	auto gpd = _read<slxfmt::GenericParamDesc>(fs);
+
 	std::string name(gpd.lenName, '\0');
 	fs.read(&(name[0]), gpd.lenName);
 
-	std::deque<GenericQualifier> qualifiers;
+	GenericParam param;
+	param.name = name;
 
-	for (size_t k = 0; k < gpd.nQualifier; ++k) {
-		auto desc = _read<slxfmt::GenericQualifierDesc>(fs);
+	if (gpd.hasBaseType)
+		param.baseType = _loadType(fs, _read<slxfmt::Type>(fs));
 
-		GenericFilter filter;
-		switch (desc.filter) {
-			case slxfmt::GenericFilter::Extends:
-				filter = GenericFilter::Extends;
-				break;
-			case slxfmt::GenericFilter::Implements:
-				filter = GenericFilter::Implements;
-				break;
-			case slxfmt::GenericFilter::HasTrait:
-				filter = GenericFilter::HasTrait;
-				break;
-			default:
-				throw LoaderError("Invalid generic filter");
-		}
-
-		GenericQualifier q(filter, _loadType(fs, _read<slxfmt::Type>(fs)));
-		qualifiers.push_back(q);
+	for (size_t i = 0; i < gpd.nInterfaces; ++i) {
+		param.interfaces.push_back(_loadType(fs, _read<slxfmt::Type>(fs)));
 	}
 
-	return GenericParam(name, qualifiers);
+	for (size_t i = 0; i < gpd.nTraits; ++i) {
+		param.traits.push_back(_loadType(fs, _read<slxfmt::Type>(fs)));
+	}
+
+	return param;
 }
 
 /// @brief Load a single scope.
@@ -246,44 +237,14 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 		// if (i.flags & slxfmt::FND_NATIVE)
 		//	access |= ACCESS_NATIVE;
 
-		GenericParamList genericParams;
-		for (size_t j = 0; j < i.nGenericParams; ++j) {
-			auto gpd = _read<slxfmt::GenericParamDesc>(fs);
-			std::string name(gpd.lenName, '\0');
-			fs.read(name.data(), gpd.lenName);
-
-			std::deque<GenericQualifier> qualifiers;
-
-			for (size_t k = 0; k < gpd.nQualifier; ++k) {
-				auto desc = _read<slxfmt::GenericQualifierDesc>(fs);
-
-				GenericFilter filter;
-				switch (desc.filter) {
-					case slxfmt::GenericFilter::Extends:
-						filter = GenericFilter::Extends;
-						break;
-					case slxfmt::GenericFilter::Implements:
-						filter = GenericFilter::Implements;
-						break;
-					case slxfmt::GenericFilter::HasTrait:
-						filter = GenericFilter::HasTrait;
-						break;
-					default:
-						throw LoaderError("Invalid generic filter");
-				}
-
-				GenericQualifier q(filter, _loadType(fs, _read<slxfmt::Type>(fs)));
-				qualifiers.push_back(q);
-			}
-
-			GenericParam param(name, qualifiers);
-			genericParams.push_back(param);
-		}
-
 		std::unique_ptr<FnValue> fn = std::make_unique<FnValue>(this, (uint32_t)i.lenBody, access, _loadType(fs, _read<slxfmt::Type>(fs)));
 
-		for (auto j = 0; j < i.nParams; j++) {
-			_loadType(fs, _read<slxfmt::Type>(fs));
+		for (size_t j = 0; j < i.nGenericParams; ++j) {
+			fn->genericParams.push_back(_loadGenericParam(fs));
+		}
+
+		for (uint8_t j = 0; j < i.nParams; j++) {
+			fn->paramTypes.push_back(_loadType(fs, _read<slxfmt::Type>(fs)));
 		}
 
 		if (i.flags & slxfmt::FND_VARG)
@@ -326,7 +287,6 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 
 		std::unique_ptr<ClassValue> value = std::make_unique<ClassValue>(this, access);
 
-		GenericParamList genericParams;
 		for (size_t j = 0; j < i.nGenericParams; ++j)
 			value->genericParams.push_back(_loadGenericParam(fs));
 
@@ -359,6 +319,9 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 
 		std::unique_ptr<InterfaceValue> value = std::make_unique<InterfaceValue>(this, access);
 
+		for (size_t j = 0; j < i.nGenericParams; ++j)
+			value->genericParams.push_back(_loadGenericParam(fs));
+
 		for (auto j = i.nParents; j; j--)
 			value->parents.push_back(_loadRef(fs));
 
@@ -382,6 +345,9 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 			access |= ACCESS_PUB;
 
 		std::unique_ptr<TraitValue> value = std::make_unique<TraitValue>(this, access);
+
+		for (size_t j = 0; j < i.nGenericParams; ++j)
+			value->genericParams.push_back(_loadGenericParam(fs));
 
 		for (auto j = i.nParents; j; j--)
 			value->parents.push_back(_loadRef(fs));

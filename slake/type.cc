@@ -12,6 +12,7 @@ Type::~Type() {
 	switch (typeId) {
 		case TypeId::Array: {
 			delete std::get<Type *>(exData);
+			break;
 		}
 		case TypeId::Map: {
 			auto pair = std::get<std::pair<Type *, Type *>>(exData);
@@ -216,7 +217,7 @@ bool slake::isCompatible(Type a, Type b) {
 	}
 }
 
-std::string std::to_string(const slake::Type &&type, const slake::Runtime *rt) {
+std::string std::to_string(const slake::Type &type, const slake::Runtime *rt) {
 	switch (type.typeId) {
 		case TypeId::I8:
 			return "i8";
@@ -245,15 +246,21 @@ std::string std::to_string(const slake::Type &&type, const slake::Runtime *rt) {
 		case TypeId::Array:
 			return to_string(type.getArrayExData(), rt) + "[]";
 		case TypeId::Object: {
-			if (type.isLoadingDeferred())
+			string s = "@";
+
+			if (type.isLoadingDeferred()) {
 				return "@" + std::to_string((RefValue *)type.getCustomTypeExData());
-			return "@" + rt->getFullName((MemberValue *)type.getCustomTypeExData());
+			} else {
+				return "@" + rt->getFullName((MemberValue *)type.getCustomTypeExData());
+			}
 		}
+		case TypeId::GenericArg:
+			return "@" + std::to_string(type.getGenericArgExData());
 		case TypeId::Any:
 			return "any";
 		case TypeId::None:
 			return "void";
 		default:
-			return "any";
+			return "<Unknown Type>";
 	}
 }

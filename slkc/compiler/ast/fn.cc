@@ -5,7 +5,7 @@ using namespace slake::slkc;
 slake::slkc::FnOverloadingRegistry::FnOverloadingRegistry(
 	Location loc,
 	shared_ptr<TypeNameNode> returnType,
-	GenericParamList genericParams,
+	GenericParamNodeList genericParams,
 	deque<Param> params)
 	: loc(loc), returnType(returnType), genericParams(genericParams), params(params) {
 	for (size_t i = 0; i < params.size(); ++i) {

@@ -83,7 +83,7 @@ static shared_ptr<ExprNode> _evalConstBinaryOpExpr(
 				return {};
 			if constexpr (is_same_v<T, bool>)
 				return make_shared<I32LiteralExprNode>(
-					x->getLocation(), ((int)x->data) / static_pointer_cast<LT>(y)->data);
+					x->getLocation(), ((int)x->data) / ((int)static_pointer_cast<LT>(y)->data));
 			else if constexpr (is_arithmetic_v<T>)
 				return make_shared<LT>(
 					x->getLocation(),
@@ -96,11 +96,11 @@ static shared_ptr<ExprNode> _evalConstBinaryOpExpr(
 			if constexpr (is_same_v<T, bool>)
 				return make_shared<I32LiteralExprNode>(
 					x->getLocation(),
-					((int)x->data) % static_pointer_cast<LT>(y)->data);
+					((int)x->data) % ((int)static_pointer_cast<LT>(y)->data));
 			else if constexpr (is_integral_v<T>)
 				return make_shared<LT>(
 					x->getLocation(),
-					x->data * static_pointer_cast<LT>(y)->data);
+					x->data % static_pointer_cast<LT>(y)->data);
 			else if constexpr (is_same_v<T, float>)
 				return make_shared<LT>(
 					x->getLocation(),
@@ -411,6 +411,8 @@ shared_ptr<ExprNode> Compiler::evalConstExpr(shared_ptr<ExprNode> expr) {
 		}
 		case ExprType::Ref: {
 			auto e = static_pointer_cast<RefExprNode>(expr);
+
+			return {};	// stub
 		}
 		case ExprType::Cast: {
 			auto e = static_pointer_cast<CastExprNode>(expr);
@@ -644,6 +646,11 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 							MessageType::Error,
 							"Expression is not callable" });
 			}
+		}
+		case ExprType::Cast: {
+			auto e = static_pointer_cast<CastExprNode>(expr);
+
+			return e->targetType;
 		}
 	}
 	assert(false);

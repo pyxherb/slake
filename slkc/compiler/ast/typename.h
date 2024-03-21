@@ -90,7 +90,8 @@ namespace slake {
 		class CustomTypeNameNode : public TypeNameNode {
 		public:
 			Ref ref;
-			shared_ptr<AstNode> resolvedDest;
+			deque<pair<Ref, shared_ptr<AstNode>>> resolvedPartsOut;
+
 			bool resolved = false;
 
 			inline CustomTypeNameNode(Location loc, Ref ref, bool isConst = false)

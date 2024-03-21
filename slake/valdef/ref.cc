@@ -27,9 +27,9 @@ std::string std::to_string(const slake::RefValue *ref) {
 			s += ".";
 		s += scope.name;
 
-		if (scope.genericArgs.size()) {
+		if (auto nGenericParams = scope.genericArgs.size(); nGenericParams) {
 			s += "<";
-			for (size_t j = 0; j < scope.genericArgs.size(); ++j) {
+			for (size_t j = 0; j < nGenericParams; ++j) {
 				if (j)
 					s += ",";
 				s += to_string(scope.genericArgs[j], ref->getRuntime());

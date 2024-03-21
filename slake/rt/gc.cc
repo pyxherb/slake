@@ -251,7 +251,7 @@ rescan:
 			if (d.size() && i->getType() == TypeId::Object && !(((ObjectValue*)i)->objectFlags & OBJECT_PARENT)) {
 				for(auto j : d) {
 					_destructedValues.insert(j.first->owner);
-					j.second->call({});
+					j.second->call(i, {});
 				}
 				foundDestructibleValues = true;
 			}

@@ -16,7 +16,10 @@ namespace slake {
 			string name;
 			shared_ptr<CustomTypeNameNode> parentClass;			   // Parent class
 			deque<shared_ptr<CustomTypeNameNode>> implInterfaces;  // Implemented interfaces
-			deque<GenericParam> genericParams;
+
+			GenericParamNodeList genericParams;
+			unordered_map<string, size_t> genericParamIndices;
+
 			shared_ptr<Scope> scope = make_shared<Scope>();
 
 			inline ClassNode(
@@ -24,12 +27,13 @@ namespace slake {
 				string name,
 				shared_ptr<CustomTypeNameNode> parentClass,
 				deque<shared_ptr<CustomTypeNameNode>> implInterfaces,
-				deque<GenericParam> genericParams)
+				GenericParamNodeList genericParams)
 				: _loc(loc),
 				  name(name),
 				  parentClass(parentClass),
 				  implInterfaces(implInterfaces),
-				  genericParams(genericParams) {
+				  genericParams(genericParams),
+				  genericParamIndices(genGenericParamIndicies(genericParams)) {
 				scope->owner = this;
 			}
 			virtual ~ClassNode() = default;
@@ -38,7 +42,7 @@ namespace slake {
 
 			virtual inline NodeType getNodeType() const override { return NodeType::Class; }
 
-			virtual RefEntry getName() const override { return RefEntry({}, name, {}); }
+			virtual RefEntry getName() const override { return RefEntry(_loc, name, genericArgs); }
 		};
 	}
 }

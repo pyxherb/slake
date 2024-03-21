@@ -2,16 +2,6 @@
 
 using namespace slake::slkc;
 
-#define INSMAP_ENTRY(name, exprs)      \
-	{                                  \
-		Opcode::name, { #name, exprs } \
-	}
-
-InsMap Compiler::defaultInsMap = {
-	INSMAP_ENTRY(NOP, {}),
-	INSMAP_ENTRY(PUSH, { TypeId::Any })
-};
-
 template <typename T>
 static void _write(std::ostream &fs, const T &value) {
 	fs.write((const char *)&value, sizeof(T));
@@ -130,6 +120,7 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 
 	popMajorContext();
 
+	curMajorContext = MajorContext();
 	compileScope(is, os, _targetModule->scope);
 }
 
@@ -199,6 +190,8 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 	unordered_map<string, shared_ptr<ClassNode>> classes;
 	unordered_map<string, shared_ptr<InterfaceNode>> interfaces;
 	unordered_map<string, shared_ptr<TraitNode>> traits;
+
+	curMajorContext.curMinorContext.curScope = scope;
 
 	for (auto i : scope->members) {
 		switch (i.second->getNodeType()) {
@@ -281,6 +274,10 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 
 	for (auto &i : funcs) {
 		for (auto &j : i.second->overloadingRegistries) {
+			pushMajorContext();
+
+			curMajorContext.mergeGenericParams(j.genericParams);
+
 			string mangledFnName = i.first;
 
 			if (i.first != "new") {
@@ -311,21 +308,19 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 			compiledFn->genericParamIndices = j.genericParamIndices;
 			compiledFn->access = j.access;
 
-			curMajorContext = MajorContext();
 			curFn = compiledFn;
-			curMajorContext.curMinorContext.curScope = scope;
 
 			if (j.body)
 				compileStmt(j.body);
 
 			compiledFuncs[mangledFnName] = compiledFn;
+
+			popMajorContext();
 		}
 	}
 
 	_write(os, (uint32_t)compiledFuncs.size());
 	for (auto &i : compiledFuncs) {
-		// TODO: Do some optimizations first
-
 		slxfmt::FnDesc fnd = {};
 		bool hasVarArg = false;
 
@@ -350,9 +345,13 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		fnd.lenBody = (uint32_t)i.second->body.size();
 		fnd.nParams = (uint8_t)i.second->params.size() - hasVarArg;
 		fnd.nSourceLocDescs = (uint32_t)i.second->srcLocDescs.size();
+		fnd.nGenericParams = i.second->genericParams.size();
 
 		_write(os, fnd);
 		_write(os, i.first.data(), i.first.length());
+
+		for (size_t j = 0; j < i.second->genericParams.size(); ++j)
+			compileGenericParam(os, i.second->genericParams[j]);
 
 		compileTypeName(os, i.second->returnType);
 
@@ -397,6 +396,11 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 
 	_write(os, (uint32_t)classes.size());
 	for (auto &i : classes) {
+		pushMajorContext();
+
+		// curMajorContext = MajorContext();
+		curMajorContext.mergeGenericParams(i.second->genericParams);
+
 		slxfmt::ClassTypeDesc ctd = {};
 
 		if (i.second->access & ACCESS_PUB)
@@ -407,12 +411,13 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 			ctd.flags |= slxfmt::CTD_DERIVED;
 		ctd.nImpls = (uint8_t)i.second->implInterfaces.size();
 		ctd.lenName = (uint8_t)i.first.length();
-		// Unimplemented yet, leave this field blank.
-		// ctd.nGenericParams = (uint8_t)i.second->genericParams.size();
-		ctd.nGenericParams = 0;
+		ctd.nGenericParams = (uint8_t)i.second->genericParams.size();
 
 		_write(os, ctd);
 		_write(os, i.first.data(), i.first.length());
+
+		for (auto &j : i.second->genericParams)
+			compileGenericParam(os, j);
 
 		if (i.second->parentClass)
 			compileRef(os, getFullName((MemberNode *)resolveCustomType(i.second->parentClass.get()).get()));
@@ -420,53 +425,73 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		for (auto &j : i.second->implInterfaces)
 			compileRef(os, j->ref);
 
-		// Unimplemented yet, do not try to compile generic parameters.
-		// for (auto &j : i.second->genericParams)
-		//	compileGenericParam(os, j);
-
 		compileScope(is, os, i.second->scope);
+
+		popMajorContext();
 	}
 
 	_write(os, (uint32_t)interfaces.size());
 	for (auto &i : interfaces) {
-		slxfmt::InterfaceTypeDesc ctd = {};
+		pushMajorContext();
+
+		// curMajorContext = MajorContext();
+		curMajorContext.mergeGenericParams(i.second->genericParams);
+
+		slxfmt::InterfaceTypeDesc itd = {};
 
 		if (i.second->access & ACCESS_PUB)
-			ctd.flags |= slxfmt::ITD_PUB;
+			itd.flags |= slxfmt::ITD_PUB;
 
-		ctd.nParents = (uint8_t)i.second->parentInterfaces.size();
+		itd.nParents = (uint8_t)i.second->parentInterfaces.size();
+		itd.nGenericParams = i.second->genericParams.size();
 
-		ctd.lenName = (uint8_t)i.first.length();
+		itd.lenName = (uint8_t)i.first.length();
 
-		_write(os, ctd);
+		_write(os, itd);
 		_write(os, i.first.data(), i.first.length());
+
+		for (size_t j = 0; j < i.second->genericParams.size(); ++j)
+			compileGenericParam(os, i.second->genericParams[j]);
 
 		for (auto j : i.second->parentInterfaces) {
 			compileRef(os, j->ref);
 		}
 
 		compileScope(is, os, i.second->scope);
+
+		popMajorContext();
 	}
 
 	_write(os, (uint32_t)traits.size());
 	for (auto &i : traits) {
-		slxfmt::TraitTypeDesc ctd = {};
+		pushMajorContext();
+
+		// curMajorContext = MajorContext();
+		curMajorContext.mergeGenericParams(i.second->genericParams);
+
+		slxfmt::TraitTypeDesc ttd = {};
 
 		if (i.second->access & ACCESS_PUB)
-			ctd.flags |= slxfmt::TTD_PUB;
+			ttd.flags |= slxfmt::TTD_PUB;
 
-		ctd.nParents = (uint8_t)i.second->parentTraits.size();
+		ttd.nParents = (uint8_t)i.second->parentTraits.size();
 
-		ctd.lenName = (uint8_t)i.first.length();
+		ttd.lenName = (uint8_t)i.first.length();
+		ttd.nGenericParams = i.second->genericParams.size();
 
-		_write(os, ctd);
+		_write(os, ttd);
 		_write(os, i.first.data(), i.first.length());
 
+		for (size_t j = 0; j < i.second->genericParams.size(); ++j)
+			compileGenericParam(os, i.second->genericParams[j]);
+
 		for (auto j : i.second->parentTraits) {
-			compileRef(os, j);
+			compileRef(os, j->ref);
 		}
 
 		compileScope(is, os, i.second->scope);
+
+		popMajorContext();
 	}
 }
 
@@ -544,11 +569,16 @@ void Compiler::compileTypeName(std::ostream &fs, shared_ptr<TypeNameNode> typeNa
 			break;
 		}
 		case Type::Custom: {
-			_write(fs, slxfmt::Type::Object);
-
 			auto dest = resolveCustomType((CustomTypeNameNode *)typeName.get());
 
-			compileRef(fs, getFullName((MemberNode *)dest.get()));
+			if (dest->getNodeType() == NodeType::GenericParam) {
+				_write(fs, slxfmt::Type::GenericArg);
+
+				_write(fs, (uint8_t)curMajorContext.genericParamIndices[static_pointer_cast<GenericParamNode>(dest)->name]);
+			} else {
+				_write(fs, slxfmt::Type::Object);
+				compileRef(fs, getFullName((MemberNode *)dest.get()));
+			}
 			break;
 		}
 		default:
@@ -720,4 +750,26 @@ void Compiler::compileValue(std::ostream &fs, shared_ptr<AstNode> value) {
 		default:
 			assert(false);
 	}
+}
+
+void slake::slkc::Compiler::compileGenericParam(std::ostream &fs, shared_ptr<GenericParamNode> genericParam) {
+	slxfmt::GenericParamDesc gpd;
+
+	gpd.lenName = genericParam->name.size();
+	gpd.hasBaseType = (bool)genericParam->baseType;
+	gpd.nInterfaces = genericParam->interfaceTypes.size();
+	gpd.nTraits = genericParam->traitTypes.size();
+
+	_write(fs, gpd);
+
+	fs.write(genericParam->name.c_str(), genericParam->name.size());
+
+	if (genericParam->baseType)
+		compileTypeName(fs, genericParam->baseType);
+
+	for (auto i : genericParam->interfaceTypes)
+		compileTypeName(fs, i);
+
+	for (auto i : genericParam->traitTypes)
+		compileTypeName(fs, i);
 }

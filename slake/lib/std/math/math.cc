@@ -84,7 +84,7 @@ static double _sqrt(double x);
 	if ((x)->getType() != (t)) throw InvalidArgumentsError()
 
 template <typename T>
-static ValueRef<> _sinImpl(Runtime *rt, std::deque<Value *> args) {
+static ValueRef<> _sinImpl(Runtime *rt, Value *thisObject, std::deque<Value *> args) {
 	using ValueType = LiteralValue<T, getValueType<T>()>;
 	_nArgCheck(==, 1);
 
@@ -97,7 +97,7 @@ static ValueRef<> _sinImpl(Runtime *rt, std::deque<Value *> args) {
 }
 
 template <typename T>
-static ValueRef<> _cosImpl(Runtime *rt, std::deque<Value *> args) {
+static ValueRef<> _cosImpl(Runtime *rt, Value *thisObject, std::deque<Value *> args) {
 	using ValueType = LiteralValue<T, getValueType<T>()>;
 	_nArgCheck(==, 1);
 
@@ -110,7 +110,7 @@ static ValueRef<> _cosImpl(Runtime *rt, std::deque<Value *> args) {
 }
 
 template <typename T>
-static ValueRef<> _tanImpl(Runtime *rt, std::deque<Value *> args) {
+static ValueRef<> _tanImpl(Runtime *rt, Value *thisObject, std::deque<Value *> args) {
 	using ValueType = LiteralValue<T, getValueType<T>()>;
 	_nArgCheck(==, 1);
 
@@ -123,7 +123,7 @@ static ValueRef<> _tanImpl(Runtime *rt, std::deque<Value *> args) {
 }
 
 template <typename T>
-static ValueRef<> _sqrtImpl(Runtime *rt, std::deque<Value *> args) {
+static ValueRef<> _sqrtImpl(Runtime *rt, Value *thisObject, std::deque<Value *> args) {
 	using ValueType = LiteralValue<T, getValueType<T>()>;
 	_nArgCheck(==, 1);
 
@@ -135,7 +135,7 @@ static ValueRef<> _sqrtImpl(Runtime *rt, std::deque<Value *> args) {
 	return new ValueType(rt, _sqrt(((ValueType *)x)->getData()));
 }
 
-static ValueRef<> _sinFastImpl(Runtime *rt, std::deque<Value *> args) {
+static ValueRef<> _sinFastImpl(Runtime *rt, Value *thisObject, std::deque<Value *> args) {
 	_nArgCheck(==, 1);
 
 	F64Value *x = (F64Value *)args[0];
@@ -146,7 +146,7 @@ static ValueRef<> _sinFastImpl(Runtime *rt, std::deque<Value *> args) {
 	return new F64Value(rt, _sin_fast(x->getData()));
 }
 
-static ValueRef<> _sinfFastImpl(Runtime *rt, std::deque<Value *> args) {
+static ValueRef<> _sinfFastImpl(Runtime *rt, Value *thisObject, std::deque<Value *> args) {
 	_nArgCheck(==, 1);
 
 	F32Value *x = (F32Value *)args[0];
@@ -157,7 +157,7 @@ static ValueRef<> _sinfFastImpl(Runtime *rt, std::deque<Value *> args) {
 	return new F32Value(rt, _sinf_fast(x->getData()));
 }
 
-static ValueRef<> _cosFastImpl(Runtime *rt, std::deque<Value *> args) {
+static ValueRef<> _cosFastImpl(Runtime *rt, Value *thisObject, std::deque<Value *> args) {
 	_nArgCheck(==, 1);
 
 	F64Value *x = (F64Value *)args[0];
@@ -168,7 +168,7 @@ static ValueRef<> _cosFastImpl(Runtime *rt, std::deque<Value *> args) {
 	return new F64Value(rt, _cos_fast(x->getData()));
 }
 
-static ValueRef<> _cosfFastImpl(Runtime *rt, std::deque<Value *> args) {
+static ValueRef<> _cosfFastImpl(Runtime *rt, Value *thisObject, std::deque<Value *> args) {
 	_nArgCheck(==, 1);
 
 	F32Value *x = (F32Value *)args[0];
@@ -179,7 +179,7 @@ static ValueRef<> _cosfFastImpl(Runtime *rt, std::deque<Value *> args) {
 	return new F32Value(rt, _cosf_fast(x->getData()));
 }
 
-static ValueRef<> _tanFastImpl(Runtime *rt, std::deque<Value *> args) {
+static ValueRef<> _tanFastImpl(Runtime *rt, Value *thisObject, std::deque<Value *> args) {
 	_nArgCheck(==, 1);
 
 	F64Value *x = (F64Value *)args[0];
@@ -190,7 +190,7 @@ static ValueRef<> _tanFastImpl(Runtime *rt, std::deque<Value *> args) {
 	return new F64Value(rt, _tan_fast(x->getData()));
 }
 
-static ValueRef<> _tanfFastImpl(Runtime *rt, std::deque<Value *> args) {
+static ValueRef<> _tanfFastImpl(Runtime *rt, Value *thisObject, std::deque<Value *> args) {
 	_nArgCheck(==, 1);
 
 	F32Value *x = (F32Value *)args[0];
@@ -201,7 +201,7 @@ static ValueRef<> _tanfFastImpl(Runtime *rt, std::deque<Value *> args) {
 	return new F32Value(rt, _tanf_fast(x->getData()));
 }
 
-static ValueRef<> _sqrtFastImpl(Runtime *rt, std::deque<Value *> args) {
+static ValueRef<> _sqrtFastImpl(Runtime *rt, Value *thisObject, std::deque<Value *> args) {
 	_nArgCheck(==, 1);
 
 	F64Value *x = (F64Value *)args[0];
@@ -212,7 +212,7 @@ static ValueRef<> _sqrtFastImpl(Runtime *rt, std::deque<Value *> args) {
 	return new F64Value(rt, _sqrt_fast(x->getData()));
 }
 
-static ValueRef<> _sqrtfFastImpl(Runtime *rt, std::deque<Value *> args) {
+static ValueRef<> _sqrtfFastImpl(Runtime *rt, Value *thisObject, std::deque<Value *> args) {
 	_nArgCheck(==, 1);
 
 	F32Value *x = (F32Value *)args[0];
@@ -224,7 +224,7 @@ static ValueRef<> _sqrtfFastImpl(Runtime *rt, std::deque<Value *> args) {
 }
 
 template <typename T>
-static ValueRef<> _absImpl(Runtime *rt, std::deque<Value *> args) {
+static ValueRef<> _absImpl(Runtime *rt, Value *thisObject, std::deque<Value *> args) {
 	using ValueType = LiteralValue<T, getValueType<T>()>;
 	_nArgCheck(==, 1);
 

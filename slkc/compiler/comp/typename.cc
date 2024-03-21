@@ -78,6 +78,9 @@ bool Compiler::isCompoundType(shared_ptr<TypeNameNode> node) {
 							Location(t->getLocation()),
 							t->ref,
 							t->isConst));
+				case NodeType::GenericArgRef:
+					// stub
+					return true;
 				default:
 					throw FatalCompilationError(
 						Message(
@@ -152,21 +155,21 @@ bool Compiler::_areTypesConvertible(shared_ptr<MemberNode> st, shared_ptr<TraitN
 
 		switch (sm->getNodeType()) {
 			case NodeType::Var: {
-				auto smTyped = static_pointer_cast<VarNode>(sm);
-				auto dmTyped = static_pointer_cast<VarNode>(dm);
+				auto smType = static_pointer_cast<VarNode>(sm);
+				auto dmType = static_pointer_cast<VarNode>(dm);
 
 				// The variables must have the same type.
-				if (!isSameType(smTyped->type, dmTyped->type))
+				if (!isSameType(smType->type, dmType->type))
 					return false;
 
 				break;
 			}
 			case NodeType::Fn: {
-				auto smTyped = static_pointer_cast<FnNode>(sm);
-				auto dmTyped = static_pointer_cast<FnNode>(dm);
+				auto smType = static_pointer_cast<FnNode>(sm);
+				auto dmType = static_pointer_cast<FnNode>(dm);
 
-				for (auto di : dmTyped->overloadingRegistries) {
-					for (auto si : smTyped->overloadingRegistries) {
+				for (auto di : dmType->overloadingRegistries) {
+					for (auto si : smType->overloadingRegistries) {
 						if (!isSameType(di.returnType, si.returnType))
 							return false;
 
@@ -179,6 +182,8 @@ bool Compiler::_areTypesConvertible(shared_ptr<MemberNode> st, shared_ptr<TraitN
 						}
 					}
 				}
+
+				break;
 			}
 			case NodeType::Class:
 			case NodeType::Interface:
@@ -224,14 +229,14 @@ bool Compiler::areTypesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<Type
 		case Type::Map:
 			break;
 		case Type::Custom: {
-			auto destType = resolveCustomType((CustomTypeNameNode*)dest.get());
+			auto destType = resolveCustomType((CustomTypeNameNode *)dest.get());
 
 			switch (destType->getNodeType()) {
 				case NodeType::Class: {
 					auto dt = static_pointer_cast<ClassNode>(destType);
 
 					if (src->getTypeId() == Type::Custom) {
-						auto srcType = resolveCustomType((CustomTypeNameNode*)src.get());
+						auto srcType = resolveCustomType((CustomTypeNameNode *)src.get());
 
 						switch (srcType->getNodeType()) {
 							case NodeType::Class: {
@@ -265,7 +270,7 @@ bool Compiler::areTypesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<Type
 					auto dt = static_pointer_cast<InterfaceNode>(destType);
 
 					if (src->getTypeId() == Type::Custom) {
-						auto srcType = resolveCustomType((CustomTypeNameNode*)src.get());
+						auto srcType = resolveCustomType((CustomTypeNameNode *)src.get());
 
 						switch (srcType->getNodeType()) {
 							case NodeType::Class: {
@@ -282,6 +287,8 @@ bool Compiler::areTypesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<Type
 									if (scope->members.count("operator@" + to_string(dest, this)))
 										return true;
 								} while (st);
+
+								break;
 							}
 							case NodeType::Interface:
 								return _areTypesConvertible(static_pointer_cast<InterfaceNode>(srcType), dt);
@@ -296,10 +303,14 @@ bool Compiler::areTypesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<Type
 				}
 				case NodeType::Trait: {
 					auto dt = static_pointer_cast<TraitNode>(destType);
+					break;
 				}
 				case NodeType::Alias: {
 					auto dt = static_pointer_cast<AliasNode>(destType);
+					break;
 				}
+				case NodeType::GenericParam:
+					return false;
 			}
 			break;
 		}
@@ -324,19 +335,27 @@ bool Compiler::areTypesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<Type
 	return false;
 }
 
-shared_ptr<AstNode> Compiler::resolveCustomType(CustomTypeNameNode* typeName) {
-	if (typeName->resolved)
-		return typeName->resolvedDest;
-
-	deque<pair<Ref, shared_ptr<AstNode>>> resolvedParts;
-
-	if (resolveRef(typeName->ref, resolvedParts)) {
-		typeName->resolvedDest = resolvedParts.back().second;
-		typeName->resolved = true;
-		return typeName->resolvedDest;
+shared_ptr<AstNode> Compiler::resolveCustomType(CustomTypeNameNode *typeName) {
+	if (typeName->resolved) {
+		for (auto i : typeName->resolvedPartsOut) {
+			curMajorContext.curMinorContext.lastResolvedGenericArgs[i.second.get()] = i.first.back().genericArgs;
+		}
+		return typeName->resolvedPartsOut.back().second;
 	}
 
-	if (resolvedParts.size() > 1)
+	if ((typeName->ref.size() == 1) && (typeName->ref[0].genericArgs.empty())) {
+		if (auto it = curMajorContext.genericParamIndices.find(typeName->ref[0].name);
+			it != curMajorContext.genericParamIndices.end()) {
+			return curMajorContext.genericParams[it->second];
+		}
+	}
+
+	if (resolveRef(typeName->ref, typeName->resolvedPartsOut)) {
+		typeName->resolved = true;
+		return typeName->resolvedPartsOut.back().second;
+	}
+
+	if (typeName->resolvedPartsOut.size() > 1)
 		throw FatalCompilationError(
 			Message(
 				Location(typeName->getLocation()),
@@ -356,8 +375,8 @@ bool Compiler::isSameType(shared_ptr<TypeNameNode> x, shared_ptr<TypeNameNode> y
 
 	switch (x->getTypeId()) {
 		case Type::Custom: {
-			auto xDest = resolveCustomType((CustomTypeNameNode*)x.get()),
-				 yDest = resolveCustomType((CustomTypeNameNode*)y.get());
+			auto xDest = resolveCustomType((CustomTypeNameNode *)x.get()),
+				 yDest = resolveCustomType((CustomTypeNameNode *)y.get());
 
 			return xDest == yDest;
 		}

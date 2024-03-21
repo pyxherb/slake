@@ -13,8 +13,8 @@ AliasValue::~AliasValue() {
 	reportSizeFreedToRuntime(sizeof(*this) - sizeof(MemberValue));
 }
 
-ValueRef<> AliasValue::call(std::deque<Value *> args) const {
-	return src->call(args);
+ValueRef<> AliasValue::call(Value *thisObject, std::deque<Value *> args) const {
+	return src->call(thisObject, args);
 }
 
 Value *AliasValue::duplicate() const {

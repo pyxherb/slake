@@ -181,19 +181,9 @@ namespace slake {
 		/// @brief Generic Parameter Descriptor (GPD)
 		struct GenericParamDesc final {
 			uint8_t lenName;
-			uint8_t nQualifier;
-		};
-
-		enum class GenericFilter : uint8_t {
-			Extends = 0,  // Derived from a class
-			Implements,	  // Implements an interface
-			HasTrait,	  // Has a trait
-		};
-
-		/// @brief Generic Qualifier Descriptor (GQD)
-		struct GenericQualifierDesc final {
-			GenericFilter filter : 4;
-			uint8_t flags : 4;
+			bool hasBaseType;
+			uint8_t nTraits;
+			uint8_t nInterfaces;
 		};
 
 		// @brief Variable Debugging Descriptor (VDD)

@@ -23,7 +23,7 @@ namespace slake {
 
 			virtual inline NodeType getNodeType() const override { return NodeType::Alias; }
 
-			virtual inline RefEntry getName() const { return { _loc, name }; }
+			virtual inline RefEntry getName() const { return { _loc, name, genericArgs }; }
 		};
 	}
 }

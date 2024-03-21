@@ -80,6 +80,8 @@ namespace slake {
 		friend bool slake::isConvertible(Type a, Type b);
 
 	public:
+		GenericParamList genericParams;
+
 		std::deque<Type> parents;
 
 		inline InterfaceValue(Runtime *rt, AccessModifier access, std::deque<Type> parents = {})
@@ -113,6 +115,8 @@ namespace slake {
 		friend class ClassValue;
 
 	public:
+		GenericParamList genericParams;
+
 		inline TraitValue(Runtime *rt, AccessModifier access, std::deque<Type> parents = {})
 			: InterfaceValue(rt, access, parents) {
 			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(InterfaceValue));

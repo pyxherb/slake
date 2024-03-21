@@ -53,35 +53,26 @@ namespace slake {
 
 		const size_t OUTPUT_SIZE_MAX = 0x20000000;
 
-		struct InsMapEntry {
-			string name;
-			deque<TypeId> operandTypes;
-
-			inline InsMapEntry(string name, deque<TypeId> operandTypes)
-				: name(name), operandTypes(operandTypes) {}
-		};
-
-		using InsMap = map<Opcode, InsMapEntry>;
-
 		class Compiler {
 		private:
 			enum class EvalPurpose {
 				Stmt,	 // As a statement
 				LValue,	 // As a lvalue
 				RValue,	 // As a rvalue
-				Call,	 // As the target of a call
+				Call,	 // As the target of a calling expression
 			};
 
 			/// @brief Statement level context
 			struct MinorContext {
 				shared_ptr<TypeNameNode> expectedType;
 				shared_ptr<Scope> curScope;
-				deque<shared_ptr<TypeNameNode>> genericArgs;
-				unordered_map<string, size_t> genericArgIndices;
+
 				uint32_t breakScopeLevel = 0;
 				uint32_t continueScopeLevel = 0;
 				string breakLabel, continueLabel;
+
 				EvalPurpose evalPurpose;
+
 				bool isLastCallTargetStatic = true;
 				std::set<AstNode *> resolvedOwners;
 
@@ -89,6 +80,9 @@ namespace slake {
 				bool isArgTypesSet = false;
 
 				shared_ptr<AstNode> evalDest, thisDest;
+
+				// Generic arguments of last resolved reference, for full reference resolving.
+				map<AstNode *, deque<shared_ptr<TypeNameNode>>> lastResolvedGenericArgs;
 			};
 
 			/// @brief Block level context
@@ -100,6 +94,9 @@ namespace slake {
 				uint32_t curRegCount;
 				uint32_t curScopeLevel = 0;
 
+				GenericParamNodeList genericParams;
+				unordered_map<string, size_t> genericParamIndices;
+
 				inline void pushMinorContext() {
 					savedMinorContexts.push_back(curMinorContext);
 				}
@@ -108,6 +105,14 @@ namespace slake {
 					savedMinorContexts.back().isLastCallTargetStatic = curMinorContext.isLastCallTargetStatic;
 					curMinorContext = savedMinorContexts.back();
 					savedMinorContexts.pop_back();
+				}
+
+				inline void mergeGenericParams(const GenericParamNodeList &genericParams) {
+					this->genericParams.insert(
+						this->genericParams.end(),
+						genericParams.begin(),
+						genericParams.end());
+					genericParamIndices = genGenericParamIndicies(this->genericParams);
 				}
 			};
 
@@ -134,9 +139,6 @@ namespace slake {
 			shared_ptr<ModuleNode> _targetModule;
 			unique_ptr<Runtime> _rt;
 			deque<MajorContext> _savedMajorContexts;
-			InsMap curInsMap;
-
-			static InsMap defaultInsMap;
 
 			void pushMajorContext();
 			void popMajorContext();
@@ -167,14 +169,27 @@ namespace slake {
 			bool _resolveRefWithOwner(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut);
 
 			/// @brief Resolve a reference with current context.
+			/// @note This method also updates resolved generic arguments.
 			/// @param ref Reference to be resolved.
 			/// @param refParts Divided minimum parts of the reference that can be loaded in a single time.
-			/// @param resolvedPartsOut Nodes referred by reference entries respectively.
+			/// @param resolvedPartsOut Where to store nodes referred by reference entries respectively.
 			bool resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut);
+
+			/// @brief Resolve a reference with specified scope.
+			/// @note This method also updates resolved generic arguments.
+			/// @param scope Scope to be used for resolving.
+			/// @param ref Reference to be resolved.
+			/// @param resolvedPartsOut Where to store nodes referred by reference entries respectively.
+			bool resolveRefWithScope(Scope *scope, Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut);
 
 			FnOverloadingRegistry *argDependentLookup(Location loc, FnNode *fn, const deque<shared_ptr<TypeNameNode>> &argTypes);
 
 			shared_ptr<Scope> scopeOf(AstNode *node);
+
+			/// @brief Resolve a custom type.
+			/// @note This method also updates resolved generic arguments.
+			/// @param typeName Type name to be resolved.
+			/// @return Resolved node, nullptr otherwise.
 			shared_ptr<AstNode> resolveCustomType(CustomTypeNameNode *typeName);
 
 			bool isSameType(shared_ptr<TypeNameNode> x, shared_ptr<TypeNameNode> y);
@@ -204,6 +219,7 @@ namespace slake {
 			void compileRef(std::ostream &fs, const Ref &ref);
 			void compileTypeName(std::ostream &fs, shared_ptr<TypeNameNode> typeName);
 			void compileValue(std::ostream &fs, shared_ptr<AstNode> expr);
+			void compileGenericParam(std::ostream &fs, shared_ptr<GenericParamNode> genericParam);
 
 			bool isDynamicMember(shared_ptr<AstNode> member);
 
@@ -239,7 +255,6 @@ namespace slake {
 			void importModule(string name, const Ref &ref, shared_ptr<Scope> scope);
 			shared_ptr<TypeNameNode> toTypeName(slake::Type runtimeType);
 			Ref toAstRef(deque<slake::RefEntry> runtimeRefEntries);
-			slkc::GenericQualifier toAstGenericQualifier(slake::GenericQualifier qualifier);
 
 			friend class AstVisitor;
 			friend string std::to_string(shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slkc::Compiler *compiler, bool asOperatorName);
@@ -251,7 +266,7 @@ namespace slake {
 			CompilerFlags flags = 0;
 
 			inline Compiler(CompilerOptions options = {})
-				: options(options), _rt(make_unique<Runtime>(RT_NOJIT)), curInsMap(defaultInsMap) {}
+				: options(options), _rt(make_unique<Runtime>(RT_NOJIT)) {}
 			~Compiler() = default;
 
 			void compile(std::istream &is, std::ostream &os);

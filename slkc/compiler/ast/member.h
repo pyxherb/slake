@@ -11,6 +11,8 @@ namespace slake {
 			AccessModifier access;
 			MemberNode* parent = nullptr;
 
+			deque<shared_ptr<TypeNameNode>> genericArgs;
+
 			inline MemberNode(AccessModifier access = 0)
 				: access(access) {}
 			virtual ~MemberNode() = default;

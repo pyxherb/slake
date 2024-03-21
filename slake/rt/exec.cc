@@ -670,10 +670,11 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 				throw NullRefError();
 
 			if (fn->isNative()) {
-				if (ins.opcode == Opcode::MCALL)
-					curMajorFrame.thisObject = (curMajorFrame.scopeValue = ins.operands[1]);
-
-				curMajorFrame.returnValue = ((NativeFnValue *)fn)->call(curMajorFrame.nextArgStack).get();
+				curMajorFrame.returnValue = ((NativeFnValue *)fn)->call(
+					ins.opcode == Opcode::MCALL
+					? (curMajorFrame.scopeValue = ins.operands[1])
+					: nullptr,
+					curMajorFrame.nextArgStack).get();
 				curMajorFrame.nextArgStack.clear();
 			} else {
 				_callFn(context, fn);

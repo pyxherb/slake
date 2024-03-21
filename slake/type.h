@@ -138,6 +138,9 @@ namespace slake {
 			if (typeId < rhs.typeId)
 				return true;
 
+			if (typeId > rhs.typeId)
+				return false;
+
 			switch (rhs.typeId) {
 				case TypeId::Class:
 				case TypeId::Interface:
@@ -236,9 +239,10 @@ namespace slake {
 }
 
 namespace std {
-	string to_string(const slake::Type &&type, const slake::Runtime *rt);
-	inline string to_string(const slake::Type &type, const slake::Runtime *rt) {
-		return to_string(move(type), rt);
+	string to_string(const slake::Type &type, const slake::Runtime *rt);
+	inline string to_string(slake::Type &&type, const slake::Runtime *rt) {
+		slake::Type t = type;
+		return to_string(t, rt);
 	}
 }
 

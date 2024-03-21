@@ -118,7 +118,7 @@ VISIT_METHOD_DECL(ModuleDecl) {
 }
 
 VISIT_METHOD_DECL(FnDecl) {
-	GenericParamList genericParams;
+	GenericParamNodeList genericParams;
 	auto returnType = any_cast<shared_ptr<TypeNameNode>>(visit(context->typeName()));
 	auto name = context->ID()->getText();
 	auto params = any_cast<deque<Param>>(visit(context->params()));
@@ -126,7 +126,7 @@ VISIT_METHOD_DECL(FnDecl) {
 	Location loc;
 	if (context->genericParams()) {
 		loc = Location(context->getToken(SlakeParser::RuleGenericParams, 0));
-		genericParams = any_cast<GenericParamList>(visit(context->genericParams()));
+		genericParams = any_cast<GenericParamNodeList>(visit(context->genericParams()));
 	} else {
 		loc = returnType->getLocation();
 	}
@@ -345,8 +345,8 @@ VISIT_METHOD_DECL(ClassDef) {
 			? any_cast<deque<shared_ptr<CustomTypeNameNode>>>(visit(context->implementList()))
 			: deque<shared_ptr<CustomTypeNameNode>>(),
 		context->genericParams()
-			? any_cast<deque<GenericParam>>(visit(context->genericParams()))
-			: deque<GenericParam>());
+			? any_cast<GenericParamNodeList>(visit(context->genericParams()))
+			: GenericParamNodeList());
 
 	_putDefinition(Location(context->ID()), name, cls);
 
@@ -479,47 +479,50 @@ VISIT_METHOD_DECL(ClassVarDef) {
 VISIT_METHOD_DECL(ClassClassDef) { return Any(); }
 
 VISIT_METHOD_DECL(GenericParams) {
-	deque<GenericParam> genericParams;
+	GenericParamNodeList genericParams;
 
-	for (size_t i = 1; i < context->children.size(); i += 2) {
-		genericParams.push_back(any_cast<GenericParam>(context->children[i]));
+	for (auto i : context->genericParam()) {
+		genericParams.push_back(any_cast<shared_ptr<GenericParamNode>>(visit(i)));
 	}
 
 	return genericParams;
 }
 VISIT_METHOD_DECL(GenericParam) {
-	deque<GenericQualifier> qualifiers;
+	shared_ptr<GenericParamNode> param = make_shared<GenericParamNode>(Location(context->ID()), context->ID()->getText());
 
-	for (auto i : context->baseSpec()->children)
-		qualifiers.push_back(any_cast<GenericQualifier>(i));
-	if (context->interfaceSpec()) {
-		auto q = any_cast<deque<GenericQualifier>>(visit(context->interfaceSpec()));
-		qualifiers.insert(qualifiers.end(), q.begin(), q.end());
-	}
-	if (context->traitSpec()) {
-		auto q = any_cast<deque<GenericQualifier>>(visit(context->traitSpec()));
-		qualifiers.insert(qualifiers.end(), q.begin(), q.end());
+	if (auto spec = context->baseSpec(); spec) {
+		param->baseType = any_cast<shared_ptr<TypeNameNode>>(visit(spec));
 	}
 
-	return GenericParam(context->ID()->getText(), qualifiers);
+	if (auto spec = context->interfaceSpec(); spec) {
+		param->interfaceTypes = std::move(any_cast<deque<shared_ptr<TypeNameNode>>>(visit(spec)));
+	}
+	if (auto spec = context->traitSpec(); spec) {
+		param->traitTypes = std::move(any_cast<deque<shared_ptr<TypeNameNode>>>(visit(spec)));
+	}
+
+	return param;
 }
 VISIT_METHOD_DECL(BaseSpec) {
-	return GenericQualifier(GenericFilter::Extends, any_cast<shared_ptr<TypeNameNode>>(visit(context->children[1])));
+	return any_cast<shared_ptr<TypeNameNode>>(visit(context->children[1]));
 }
 VISIT_METHOD_DECL(TraitSpec) {
-	deque<GenericQualifier> qualifiers;
+	deque<shared_ptr<TypeNameNode>> traits;
 
-	for (size_t i = 1; i < context->children.size(); i += 2) {
-		qualifiers.push_back(
-			GenericQualifier(
-				GenericFilter::HasTrait,
-				any_cast<shared_ptr<TypeNameNode>>(visit(context->children[i]))));
+	for (auto i : context->typeName()) {
+		traits.push_back(any_cast<shared_ptr<TypeNameNode>>(visit(i)));
 	}
 
-	return qualifiers;
+	return traits;
 }
 VISIT_METHOD_DECL(InterfaceSpec) {
-	return GenericQualifier(GenericFilter::Implements, any_cast<shared_ptr<TypeNameNode>>(visit(context->children[1])));
+	deque<shared_ptr<TypeNameNode>> interfaces;
+
+	for (auto i : context->typeName()) {
+		interfaces.push_back(any_cast<shared_ptr<TypeNameNode>>(visit(i)));
+	}
+
+	return interfaces;
 }
 
 VISIT_METHOD_DECL(InheritSlot) {
@@ -533,7 +536,7 @@ VISIT_METHOD_DECL(ImplementList) {
 }
 
 VISIT_METHOD_DECL(OperatorDecl) {
-	GenericParamList genericParams;
+	GenericParamNodeList genericParams;
 	auto returnType = any_cast<shared_ptr<TypeNameNode>>(visit(context->typeName()));
 	auto name = "operator" + context->operatorName()->getText();
 	auto params = any_cast<deque<Param>>(visit(context->params()));
@@ -541,7 +544,7 @@ VISIT_METHOD_DECL(OperatorDecl) {
 	Location loc;
 	if (context->genericParams()) {
 		loc = Location(context->getToken(SlakeParser::RuleGenericParams, 0));
-		genericParams = any_cast<GenericParamList>(visit(context->genericParams()));
+		genericParams = any_cast<GenericParamNodeList>(visit(context->genericParams()));
 	} else {
 		loc = returnType->getLocation();
 	}
@@ -603,8 +606,8 @@ VISIT_METHOD_DECL(InterfaceDef) {
 			? any_cast<deque<shared_ptr<CustomTypeNameNode>>>(visit(context->implementList()))
 			: deque<shared_ptr<CustomTypeNameNode>>(),
 		context->genericParams()
-			? any_cast<deque<GenericParam>>(visit(context->genericParams()))
-			: deque<GenericParam>());
+			? any_cast<GenericParamNodeList>(visit(context->genericParams()))
+			: GenericParamNodeList());
 
 	_putDefinition(Location(context->ID()), name, interface);
 
@@ -1323,12 +1326,13 @@ VISIT_METHOD_DECL(False) {
 }
 
 VISIT_METHOD_DECL(RefScope) {
-	RefEntry entry{
+	return RefEntry{
 		Location(context->name),
-		context->name->getText()
+		context->name->getText(),
+		context->genericArgs()
+			? any_cast<deque<shared_ptr<TypeNameNode>>>(visit(context->genericArgs()))
+			: deque<shared_ptr<TypeNameNode>>{}
 	};
-	auto a = context->gArgs;
-	return entry;
 }
 VISIT_METHOD_DECL(NormalRef) {
 	Ref ref;
@@ -1444,7 +1448,7 @@ VISIT_METHOD_DECL(CustomTypeName) {
 }
 VISIT_METHOD_DECL(GenericArgs) {
 	deque<shared_ptr<TypeNameNode>> args;
-	for (auto i : context->getTokens(SlakeParser::RuleTypeName))
+	for (auto i : context->typeName())
 		args.push_back(any_cast<shared_ptr<TypeNameNode>>(visit(i)));
 	return args;
 }

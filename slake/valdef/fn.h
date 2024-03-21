@@ -102,7 +102,7 @@ namespace slake {
 		inline Instruction *getBody() noexcept { return body; }
 
 		ValueRef<> exec(std::shared_ptr<Context> context) const;
-		virtual ValueRef<> call(std::deque<Value *> args) const override;
+		virtual ValueRef<> call(Value *thisObject, std::deque<Value *> args) const override;
 
 		virtual bool isAbstract() const override {
 			return nIns == 0;
@@ -114,7 +114,7 @@ namespace slake {
 		FnValue &operator=(FnValue &&) = delete;
 	};
 
-	using NativeFnCallback = std::function<ValueRef<>(Runtime *rt, std::deque<Value *> args)>;
+	using NativeFnCallback = std::function<ValueRef<>(Runtime *rt, Value *thisObject, std::deque<Value *> args)>;
 	class NativeFnValue final : public BasicFnValue {
 	protected:
 		NativeFnCallback body;
@@ -126,7 +126,7 @@ namespace slake {
 
 		inline const NativeFnCallback getBody() const noexcept { return body; }
 
-		virtual ValueRef<> call(std::deque<Value *> args) const override;
+		virtual ValueRef<> call(Value *thisObject, std::deque<Value *> args) const override;
 
 		virtual bool isAbstract() const override { return (bool)body; }
 

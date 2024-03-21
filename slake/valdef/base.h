@@ -18,8 +18,8 @@ namespace slake {
 	template <typename T = Value>
 	class ValueRef final {
 	public:
-		T *_value;
-		Runtime *_rt;
+		T *_value = nullptr;
+		Runtime *_rt = nullptr;
 
 		inline void reset() {
 			if (_value) {
@@ -142,7 +142,7 @@ namespace slake {
 		/// @param nArgs Number of arguments.
 		/// @param args Pointer to linear-arranged arguments.
 		/// @return Result of the calling.
-		virtual ValueRef<> call(std::deque<Value *> args) const;
+		virtual ValueRef<> call(Value *thisObject, std::deque<Value *> args) const;
 
 		/// @brief Dulplicate the value if supported.
 		/// @return Duplicate of the value.

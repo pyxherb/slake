@@ -20,7 +20,7 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 	fnName = fnName.substr(0, j);
 
 	auto returnType = toTypeName(value->getReturnType());
-	GenericParamList genericParams;
+	GenericParamNodeList genericParams;
 
 	deque<Param> params;
 
@@ -75,14 +75,8 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 		implInterfaceTypeNames.push_back(make_shared<CustomTypeNameNode>(Location(), toAstRef(implInterfaceRef)));
 	}
 
-	deque<GenericParam> genericParams;
+	GenericParamNodeList genericParams;
 	for (auto &i : value->genericParams) {
-		deque<GenericQualifier> qualifiers;
-
-		for (auto &j : i.qualifiers)
-			qualifiers.push_back(toAstGenericQualifier(j));
-
-		genericParams.push_back(GenericParam(i.name, qualifiers));
 	}
 
 	shared_ptr<ClassNode> cls = make_shared<ClassNode>(
@@ -107,7 +101,7 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 		Location(),
 		value->_name,
 		deque<shared_ptr<CustomTypeNameNode>>{},
-		deque<GenericParam>{});
+		GenericParamNodeList{});
 
 	for (auto i : value->parents) {
 		interface->parentInterfaces.push_back(static_pointer_cast<CustomTypeNameNode>(toTypeName(i)));
@@ -125,11 +119,17 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 
 	importedDefinitions.insert(value);
 
-	shared_ptr<TraitNode> trait = make_shared<TraitNode>(Location());
+	deque<shared_ptr<CustomTypeNameNode>> parentTraits;
 
 	for (auto i : value->parents) {
-		trait->parentTraits.push_back(static_pointer_cast<CustomTypeNameNode>(toTypeName(i))->ref);
+		parentTraits.push_back(static_pointer_cast<CustomTypeNameNode>(toTypeName(i)));
 	}
+
+	shared_ptr<TraitNode> trait = make_shared<TraitNode>(
+		Location(),
+		parentTraits,
+		GenericParamNodeList()	// stub
+	);
 
 	(scope->members[value->_name] = trait)->bind(parent.get());
 
@@ -154,8 +154,10 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 		}
 		case TypeId::Fn:
 			importDefinitions(scope, parent, (FnValue *)value);
+			break;
 		case TypeId::Module:
 			importDefinitions(scope, parent, (ModuleValue *)value);
+			break;
 		case TypeId::Var: {
 			VarValue *v = (VarValue *)value;
 			shared_ptr<VarNode> var = make_shared<VarNode>(Location(), v->getAccess(), toTypeName(v->getVarType()), v->_name, shared_ptr<ExprNode>());
@@ -255,10 +257,4 @@ slake::slkc::Ref Compiler::toAstRef(std::deque<slake::RefEntry> runtimeRefEntrie
 	}
 
 	return ref;
-}
-
-GenericQualifier Compiler::toAstGenericQualifier(slake::GenericQualifier qualifier) {
-	GenericQualifier q(qualifier.filter, toTypeName(qualifier.type));
-
-	return q;
 }

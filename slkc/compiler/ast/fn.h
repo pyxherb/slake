@@ -15,7 +15,7 @@ namespace slake {
 			Location loc;
 			shared_ptr<TypeNameNode> returnType;
 
-			GenericParamList genericParams;
+			GenericParamNodeList genericParams;
 			unordered_map<string, size_t> genericParamIndices;
 
 			deque<Param> params;
@@ -28,7 +28,7 @@ namespace slake {
 			FnOverloadingRegistry(
 				Location loc,
 				shared_ptr<TypeNameNode> returnType,
-				GenericParamList genericParams,
+				GenericParamNodeList genericParams,
 				deque<Param> params);
 
 			inline bool operator<(const FnOverloadingRegistry &rhs) {
@@ -57,7 +57,7 @@ namespace slake {
 
 			virtual inline NodeType getNodeType() const override { return NodeType::Fn; }
 
-			virtual RefEntry getName() const override { return RefEntry({}, name, {}); }
+			virtual RefEntry getName() const override { return RefEntry({}, name, genericArgs); }
 		};
 
 		struct Ins {
@@ -80,7 +80,7 @@ namespace slake {
 			deque<Ins> body;
 			unordered_map<string, size_t> labels;
 
-			GenericParamList genericParams;
+			GenericParamNodeList genericParams;
 			unordered_map<string, size_t> genericParamIndices;
 
 			deque<Param> params;
@@ -128,7 +128,7 @@ namespace slake {
 			}
 			inline void insertLabel(string name) { labels[name] = body.size(); }
 
-			virtual RefEntry getName() const override { return RefEntry({}, name, {}); }
+			virtual RefEntry getName() const override { return RefEntry(_loc, name, genericArgs); }
 		};
 
 		class LabelRefNode final : public AstNode {
@@ -184,10 +184,24 @@ namespace slake {
 			virtual ~ArgRefNode() = default;
 
 			virtual inline Location getLocation() const override {
-				throw std::logic_error("Should not get location of a label reference");
+				throw std::logic_error("Should not get location of a argument reference");
 			}
 
 			virtual inline NodeType getNodeType() const override { return NodeType::ArgRef; }
+		};
+
+		class GenericArgRefNode final : public AstNode {
+		public:
+			uint32_t index;
+
+			inline GenericArgRefNode(uint32_t index) : index(index) {}
+			virtual ~GenericArgRefNode() = default;
+
+			virtual inline Location getLocation() const override {
+				throw std::logic_error("Should not get location of a generic argument reference");
+			}
+
+			virtual inline NodeType getNodeType() const override { return NodeType::GenericArgRef; }
 		};
 	}
 }

@@ -6,6 +6,8 @@ using namespace slake::slkc;
 bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut) {
 	assert(ref.size());
 
+	curMajorContext.curMinorContext.lastResolvedGenericArgs.clear();
+
 	ResolvedOwnersSaver resolvedOwnersSaver(curMajorContext.curMinorContext);
 
 	// Try to resolve the first entry as a local variable.
@@ -30,7 +32,7 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 	}
 
 	// Try to resolve the first entry as a parameter.
-	if (curFn->paramIndices.count(ref[0].name) && (!ref[0].genericArgs.size())) {
+	if (curFn->paramIndices.count(ref[0].name)) {
 		auto newRef = ref;
 		newRef.pop_front();
 
@@ -61,6 +63,12 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 	return _resolveRef(curMajorContext.curMinorContext.curScope.get(), ref, partsOut);
 }
 
+bool Compiler::resolveRefWithScope(Scope *scope, Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut) {
+	curMajorContext.curMinorContext.lastResolvedGenericArgs.clear();
+
+	return _resolveRef(scope, ref, partsOut);
+}
+
 /// @brief Resolve a reference with a scope.
 /// @param scope Scope for resolution.
 /// @param ref Reference to be resolved.
@@ -84,12 +92,13 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 		if (!newRef.size()) {
 			// All entries have been resolved, return true.
 			partsOut.push_front({ Ref{ ref.front() }, m });
+			curMajorContext.curMinorContext.lastResolvedGenericArgs[m.get()] = ref.front().genericArgs;	 // Save generic arguments for full name resolving.
 			return true;
 		}
 
 		auto newScope = scopeOf(m.get());
 
-		if (m) {
+		if (newScope) {
 			if (_resolveRef(newScope.get(), newRef, partsOut)) {
 				switch (m->getNodeType()) {
 					case NodeType::Var:
@@ -98,6 +107,7 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 					default:
 						partsOut.front().first.push_front(ref.front());
 				}
+				curMajorContext.curMinorContext.lastResolvedGenericArgs[newScope->owner] = ref.front().genericArgs;	 // Save generic arguments for full name resolving.
 				return true;
 			}
 		}
@@ -221,9 +231,14 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 }
 
 void Compiler::_getFullName(MemberNode *member, Ref &ref) {
-	auto name = member->getName();
+	RefEntry entry = member->getName();
 
-	ref.push_front(name);
+	if (auto it = curMajorContext.curMinorContext.lastResolvedGenericArgs.find(member);
+		it != curMajorContext.curMinorContext.lastResolvedGenericArgs.end()) {
+		entry.genericArgs = it->second;
+	}
+
+	ref.push_front(entry);
 
 	if (!member->parent)
 		return;

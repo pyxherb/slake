@@ -83,7 +83,7 @@ ValueRef<> FnValue::exec(std::shared_ptr<Context> context) const {
 	return context->majorFrames.back().returnValue;
 }
 
-ValueRef<> FnValue::call(std::deque<Value *> args) const {
+ValueRef<> FnValue::call(Value *thisObject, std::deque<Value *> args) const {
 	std::shared_ptr<Context> context = std::make_shared<Context>();
 
 	{
@@ -96,6 +96,7 @@ ValueRef<> FnValue::call(std::deque<Value *> args) const {
 		frame.curFn = this;
 		frame.curIns = 0;
 		frame.scopeValue = _parent;
+		frame.thisObject = thisObject;
 		context->majorFrames.push_back(frame);
 	}
 
@@ -111,8 +112,8 @@ NativeFnValue::~NativeFnValue() {
 	reportSizeFreedToRuntime(sizeof(*this) - sizeof(BasicFnValue));
 }
 
-ValueRef<> NativeFnValue::call(std::deque<Value *> args) const {
-	return body(_rt, args);
+ValueRef<> NativeFnValue::call(Value *thisObject, std::deque<Value *> args) const {
+	return body(_rt, thisObject, args);
 }
 
 Value *FnValue::duplicate() const {

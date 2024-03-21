@@ -5,7 +5,7 @@
 #include <fstream>
 #include <iostream>
 
-slake::ValueRef<> print(slake::Runtime *rt, std::deque<slake::Value*> args) {
+slake::ValueRef<> print(slake::Runtime *rt, slake::Value *thisObject, std::deque<slake::Value*> args) {
 	using namespace slake;
 
 	for (uint8_t i = 0; i < args.size(); ++i) {
@@ -54,7 +54,7 @@ slake::ValueRef<> print(slake::Runtime *rt, std::deque<slake::Value*> args) {
 	return {};
 }
 
-slake::ValueRef<> getSlakeBuildVersionInfo(slake::Runtime *rt, std::deque<slake::Value*> args) {
+slake::ValueRef<> getSlakeBuildVersionInfo(slake::Runtime *rt, slake::Value *thisObject, std::deque<slake::Value*> args) {
 	using namespace slake;
 
 	switch(((I32Value*)args[0])->getData()) {
@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
 	((slake::ModuleValue *)((slake::ModuleValue *)rt->getRootValue()->scope->getMember("hostext"))->scope->getMember("extfns"))->scope->putMember("getSlakeBuildVersionInfo$i32", new slake::NativeFnValue(rt.get(), getSlakeBuildVersionInfo, slake::ACCESS_PUB, slake::TypeId::None));
 
 	try {
-		slake::ValueRef<slake::ContextValue> context = (slake::ContextValue *)mod->scope->getMember("main")->call({}).get();
+		slake::ValueRef<slake::ContextValue> context = (slake::ContextValue *)mod->scope->getMember("main")->call(nullptr, {}).get();
 		printf("%d\n", ((slake::I32Value *)context->getResult().get())->getData());
 		while (!context->isDone()) {
 			context->resume();

@@ -11,13 +11,20 @@ namespace slake {
 
 		public:
 			string name;
-			shared_ptr<Scope> scope;
-			deque<Ref> parentTraits;  // Parent traits
+			shared_ptr<Scope> scope = make_shared<Scope>();
+			deque<shared_ptr<CustomTypeNameNode>> parentTraits;	 // Parent traits
+
+			GenericParamNodeList genericParams;
+			unordered_map<string, size_t> genericParamIndices;
 
 			inline TraitNode(
 				Location loc,
-				shared_ptr<Scope> scope = make_shared<Scope>())
-				: _loc(loc), scope(scope) {
+				deque<shared_ptr<CustomTypeNameNode>> parentInterfaces,
+				GenericParamNodeList genericParams)
+				: _loc(loc),
+				  scope(scope),
+				  genericParams(genericParams),
+				  genericParamIndices(genGenericParamIndicies(genericParams)) {
 				scope->owner = this;
 			}
 			virtual ~TraitNode() = default;
@@ -26,7 +33,7 @@ namespace slake {
 
 			virtual inline NodeType getNodeType() const override { return NodeType::Trait; }
 
-			virtual RefEntry getName() const override { return RefEntry({}, name, {}); }
+			virtual RefEntry getName() const override { return RefEntry(_loc, name, genericArgs); }
 		};
 	}
 }

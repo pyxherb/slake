@@ -3,6 +3,27 @@ module hostext;
 use {
 	externs = hostext.extfns
 }
+///*
+class Generic<T> {
+	pub T x;
+
+	pub operator delete() {
+		hostext.extfns.print("Destructing Geneirc...\n");
+		hostext.extfns.print("x = ", this.x, "\n");
+		return;
+	}
+
+	pub operator new(T x) {
+		this.x = x;
+		return;
+	}
+
+	T getX() {
+		hostext.extfns.print("Fetched x: ", this.x, "\n");
+		return this.x;
+	}
+}
+//*/
 
 class Test {
 	pub i32 x;
@@ -65,16 +86,19 @@ class Unrelated {
 pub i32 main() {
 	hostext.extfns.print("Entered main\n");
 
-	hostext.extfns.print(hostext.extfns.getSlakeBuildVersionInfo(0), "\n");
-	hostext.extfns.print(hostext.extfns.getSlakeBuildVersionInfo(1), "\n");
-	hostext.extfns.print(hostext.extfns.getSlakeBuildVersionInfo(2), "\n");
+	///*
+	Generic<i32> a = new Generic<i32>(123);
+	Generic<f32> b = new Generic<f32>(123.456f);
+	//*/
 
+	///*
 	Test test = new Derived(50);
 
 	while(test.x = test.x - 1) {
 		hostext.extfns.print("Yielded\n");
 		yield test.getX();
 	}
+	//*/
 
 	return 114514;
 }

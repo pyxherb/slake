@@ -15,8 +15,8 @@ namespace slake {
 			string name;
 			Ref target;
 
-			inline AliasNode(Location loc, string name, Ref target)
-				: MemberNode(ACCESS_PUB), _loc(loc), name(name), target(target) {}
+			inline AliasNode(Location loc, Compiler *compiler, string name, Ref target)
+				: MemberNode(compiler, ACCESS_PUB), _loc(loc), name(name), target(target) {}
 			virtual ~AliasNode() = default;
 
 			virtual inline Location getLocation() const override { return _loc; }

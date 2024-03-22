@@ -137,27 +137,28 @@ namespace slake {
 		inline bool operator<(const Type &rhs) const {
 			if (typeId < rhs.typeId)
 				return true;
-
-			if (typeId > rhs.typeId)
+			else if (typeId > rhs.typeId)
 				return false;
+			else {
+				switch (rhs.typeId) {
+					case TypeId::Class:
+					case TypeId::Interface:
+					case TypeId::Trait:
+					case TypeId::Object: {
+						auto lhsType = getCustomTypeExData(), rhsType = rhs.getCustomTypeExData();
+						assert(lhsType->getType() != TypeId::Ref &&
+							   rhsType->getType() != TypeId::Ref);
 
-			switch (rhs.typeId) {
-				case TypeId::Class:
-				case TypeId::Interface:
-				case TypeId::Trait:
-				case TypeId::Object: {
-					auto lhsType = getCustomTypeExData(), rhsType = rhs.getCustomTypeExData();
-					assert(lhsType->getType() != TypeId::Ref &&
-						   rhsType->getType() != TypeId::Ref);
-
-					return lhsType < rhsType;
+						return lhsType < rhsType;
+					}
+					case TypeId::Array:
+						return getArrayExData() < rhs.getArrayExData();
+					case TypeId::Map:
+						return *(getMapExData().first) < *(rhs.getMapExData().first) &&
+							   *(getMapExData().second) < *(rhs.getMapExData().second);
 				}
-				case TypeId::Array:
-					return getArrayExData() < rhs.getArrayExData();
-				case TypeId::Map:
-					return *(getMapExData().first) < *(rhs.getMapExData().first) &&
-						   *(getMapExData().second) < *(rhs.getMapExData().second);
 			}
+
 			return false;
 		}
 		/// @brief The less than operator is required by containers such as map and set.

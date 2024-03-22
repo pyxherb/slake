@@ -5,6 +5,7 @@
 #include <variant>
 
 #include "ref.h"
+#include "scope.h"
 
 namespace slake {
 	namespace slkc {
@@ -47,7 +48,7 @@ namespace slake {
 			Location _loc;
 
 		public:
-			bool isConst; // For parameters.
+			bool isConst;  // For parameters.
 			bool isRValue;
 
 			inline TypeNameNode(Location loc, bool isConst = false)
@@ -61,7 +62,7 @@ namespace slake {
 			virtual inline Type getTypeId() const = 0;
 		};
 
-		template<Type TID>
+		template <Type TID>
 		class SimpleTypeNameNode : public TypeNameNode {
 		public:
 			inline SimpleTypeNameNode(Location loc, bool isConst = false)
@@ -90,12 +91,15 @@ namespace slake {
 		class CustomTypeNameNode : public TypeNameNode {
 		public:
 			Ref ref;
-			deque<pair<Ref, shared_ptr<AstNode>>> resolvedPartsOut;
+			// deque<pair<Ref, shared_ptr<AstNode>>> resolvedPartsOut;
 
-			bool resolved = false;
+			Compiler *compiler;
+			Scope *scope;
 
-			inline CustomTypeNameNode(Location loc, Ref ref, bool isConst = false)
-				: TypeNameNode(loc, isConst), ref(ref) {}
+			// bool resolved = false;
+
+			inline CustomTypeNameNode(Location loc, Ref ref, Compiler *compiler, Scope *scope, bool isConst = false)
+				: TypeNameNode(loc, isConst), ref(ref), compiler(compiler), scope(scope) {}
 			virtual ~CustomTypeNameNode() = default;
 
 			virtual inline Type getTypeId() const override { return Type::Custom; }
@@ -133,7 +137,8 @@ namespace slake {
 				deque<shared_ptr<TypeNameNode>> paramTypes,
 				bool isConst = false)
 				: TypeNameNode(returnType->getLocation(), isConst),
-				returnType(returnType), paramTypes(paramTypes) {}
+				  returnType(returnType),
+				  paramTypes(paramTypes) {}
 			virtual ~FnTypeNameNode() = default;
 
 			virtual inline Type getTypeId() const override { return Type::Fn; }

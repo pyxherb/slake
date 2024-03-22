@@ -2,6 +2,14 @@
 
 using namespace slake::slkc;
 
+MemberNode::~MemberNode() {
+	if (originalValue && (!(compiler->flags & COMP_DELETING))) {
+		if (auto it = compiler->_genericCacheDir.find(originalValue); it != compiler->_genericCacheDir.end()) {
+			it->second.erase(genericArgs);
+		}
+	}
+}
+
 bool Compiler::isDynamicMember(shared_ptr<AstNode> member) {
 	switch (member->getNodeType()) {
 		case NodeType::Module:

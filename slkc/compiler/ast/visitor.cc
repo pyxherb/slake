@@ -39,7 +39,7 @@ void AstVisitor::_putFnDefinition(
 	string name,
 	FnOverloadingRegistry overloadingRegistry) {
 	if (!curScope->members.count(name)) {
-		curScope->members[name] = make_shared<FnNode>(name);
+		curScope->members[name] = make_shared<FnNode>(compiler, name);
 		curScope->members[name]->parent = (MemberNode *)curScope->owner;
 	}
 
@@ -58,7 +58,7 @@ void AstVisitor::_putFnDefinition(
 	antlrcpp::Any slake::slkc::AstVisitor::visit##name(SlakeParser::name##Context *context)
 
 VISIT_METHOD_DECL(Prog) {
-	compiler->_targetModule = (curModule = make_shared<ModuleNode>(Location()));
+	compiler->_targetModule = (curModule = make_shared<ModuleNode>(compiler, Location()));
 	curScope = curModule->scope;
 	return visitChildren(context);
 }
@@ -337,6 +337,7 @@ VISIT_METHOD_DECL(ClassDef) {
 	string name = context->ID()->getText();
 	auto cls = make_shared<ClassNode>(
 		Location(context->KW_CLASS()),
+		compiler,
 		name,
 		context->inheritSlot()
 			? static_pointer_cast<CustomTypeNameNode>(any_cast<shared_ptr<TypeNameNode>>(visit(context->inheritSlot())))
@@ -463,6 +464,7 @@ VISIT_METHOD_DECL(ClassVarDef) {
 	for (auto i : varDef->varDefs) {
 		auto v = make_shared<VarNode>(
 			i.second.loc,
+			compiler,
 			any_cast<AccessModifier>(visit(context->access())),
 			varDef->type,
 			i.first,
@@ -1442,9 +1444,12 @@ VISIT_METHOD_DECL(PrimitiveTypeName) {
 	throw logic_error("Unrecognized primitive type");
 }
 VISIT_METHOD_DECL(CustomTypeName) {
-	return static_pointer_cast<TypeNameNode>(make_shared<CustomTypeNameNode>(
-		Location(context->ref()->getStart()),
-		any_cast<Ref>(visit(context->ref()))));
+	return static_pointer_cast<TypeNameNode>(
+		make_shared<CustomTypeNameNode>(
+			Location(context->ref()->getStart()),
+			any_cast<Ref>(visit(context->ref())),
+			compiler,
+			curScope.get()));
 }
 VISIT_METHOD_DECL(GenericArgs) {
 	deque<shared_ptr<TypeNameNode>> args;

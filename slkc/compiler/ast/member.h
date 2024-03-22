@@ -8,15 +8,18 @@ namespace slake {
 	namespace slkc {
 		class MemberNode : public AstNode {
 		public:
-			AccessModifier access;
+			AccessModifier access = 0;
 			MemberNode* parent = nullptr;
 
-			deque<shared_ptr<TypeNameNode>> genericArgs;
-			shared_ptr<MemberNode> uninstantiatedValue;
+			Compiler *compiler = nullptr;
 
-			inline MemberNode(AccessModifier access = 0)
-				: access(access) {}
-			virtual ~MemberNode() = default;
+			deque<shared_ptr<TypeNameNode>> genericArgs;
+			MemberNode* originalValue = nullptr;
+
+			MemberNode() = default;
+			inline MemberNode(Compiler *compiler, AccessModifier access = 0)
+				: compiler(compiler), access(access) {}
+			virtual ~MemberNode();
 
 			void bind(MemberNode* parent) {
 				assert(!this->parent);
@@ -28,7 +31,7 @@ namespace slake {
 			}
 
 			virtual RefEntry getName() const = 0;
-			
+
 			MemberNode &operator=(const MemberNode &) = default;
 		};
 	}

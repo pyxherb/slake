@@ -77,6 +77,8 @@ bool Compiler::isCompoundType(shared_ptr<TypeNameNode> node) {
 						make_shared<CustomTypeNameNode>(
 							Location(t->getLocation()),
 							t->ref,
+							this,
+							nullptr,
 							t->isConst));
 				case NodeType::GenericArgRef:
 					// stub
@@ -336,10 +338,6 @@ bool Compiler::areTypesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<Type
 }
 
 shared_ptr<AstNode> Compiler::resolveCustomType(CustomTypeNameNode *typeName) {
-	if (typeName->resolved) {
-		return typeName->resolvedPartsOut.back().second;
-	}
-
 	if ((typeName->ref.size() == 1) && (typeName->ref[0].genericArgs.empty())) {
 		if (auto it = curMajorContext.genericParamIndices.find(typeName->ref[0].name);
 			it != curMajorContext.genericParamIndices.end()) {
@@ -347,12 +345,21 @@ shared_ptr<AstNode> Compiler::resolveCustomType(CustomTypeNameNode *typeName) {
 		}
 	}
 
-	if (resolveRef(typeName->ref, typeName->resolvedPartsOut)) {
-		typeName->resolved = true;
-		return typeName->resolvedPartsOut.back().second;
+	deque<pair<Ref, shared_ptr<AstNode>>> resolvedParts;
+
+	if (typeName->scope) {
+		if (resolveRefWithScope(typeName->scope, typeName->ref, resolvedParts)) {
+			return resolvedParts.back().second;
+		}
 	}
 
-	if (typeName->resolvedPartsOut.size() > 1)
+	resolvedParts.clear();
+
+	if (resolveRef(typeName->ref, resolvedParts)) {
+		return resolvedParts.back().second;
+	}
+
+	if (resolvedParts.size() > 1)
 		throw FatalCompilationError(
 			Message(
 				Location(typeName->getLocation()),
@@ -372,38 +379,15 @@ bool Compiler::isSameType(shared_ptr<TypeNameNode> x, shared_ptr<TypeNameNode> y
 
 	switch (x->getTypeId()) {
 		case Type::Custom: {
-			auto xDest = resolveCustomType((CustomTypeNameNode *)x.get()),
-				 yDest = resolveCustomType((CustomTypeNameNode *)y.get());
+			shared_ptr<AstNode> xDest = resolveCustomType((CustomTypeNameNode *)x.get()),
+								yDest = resolveCustomType((CustomTypeNameNode *)y.get());
 
-			if (xDest->getNodeType() != yDest->getNodeType())
-				return false;
+			bool result = xDest == yDest;
 
-			switch (xDest->getNodeType()) {
-				case NodeType::Class: {
-					auto xDestClass = static_pointer_cast<ClassNode>(xDest),
-						 yDestClass = static_pointer_cast<ClassNode>(yDest);
+			xDest.reset();
+			yDest.reset();
 
-					if (xDestClass->genericArgs.size() || yDestClass->genericArgs.size()) {
-						if (xDestClass->uninstantiatedValue != yDestClass->uninstantiatedValue)
-							return false;
-
-						if (xDestClass->genericArgs.size() != yDestClass->genericArgs.size())
-							return false;
-
-						for (size_t i = 0; i < xDestClass->genericArgs.size(); ++i) {
-							if (!isSameType(xDestClass->genericArgs[i], yDestClass->genericArgs[i]))
-								return false;
-						}
-
-						return true;
-					} else
-						return xDest == yDest;
-
-					break;
-				}
-				default:
-					return xDest == yDest;
-			}
+			return result;
 		}
 		case Type::Map:
 			return isSameType(

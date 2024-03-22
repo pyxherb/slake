@@ -18,11 +18,12 @@ namespace slake {
 
 			inline VarNode(
 				Location loc,
+				Compiler *compiler,
 				AccessModifier access,
 				shared_ptr<TypeNameNode> type,
 				string name,
 				shared_ptr<ExprNode> initValue)
-				: MemberNode(access),
+				: MemberNode(compiler, access),
 				  _loc(loc),
 				  type(type),
 				  name(name),

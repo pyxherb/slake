@@ -47,8 +47,9 @@ namespace slake {
 			bool used = false;
 
 			inline FnNode(
+				Compiler *compiler,
 				string name)
-				: name(name), MemberNode(ACCESS_PUB) {}
+				: name(name), MemberNode(compiler, ACCESS_PUB) {}
 			virtual ~FnNode() = default;
 
 			virtual inline Location getLocation() const override {

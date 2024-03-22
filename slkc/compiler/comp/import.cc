@@ -33,7 +33,7 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 	FnOverloadingRegistry registry(Location(), returnType, genericParams, params);
 
 	if (!scope->members.count(fnName))
-		(scope->members[fnName] = make_shared<FnNode>(fnName))->bind(parent.get());
+		(scope->members[fnName] = make_shared<FnNode>(this, fnName))->bind(parent.get());
 
 	static_pointer_cast<FnNode>(scope->members[fnName])->overloadingRegistries.push_back(registry);
 }
@@ -44,7 +44,7 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 
 	importedDefinitions.insert(value);
 
-	shared_ptr<ModuleNode> mod = make_shared<ModuleNode>(Location());
+	shared_ptr<ModuleNode> mod = make_shared<ModuleNode>(this, Location());
 
 	(scope->members[value->_name] = mod)->bind(parent.get());
 
@@ -62,7 +62,12 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 	if (!parentClassValue)
 		assert(false);
 
-	shared_ptr<CustomTypeNameNode> parentClassTypeName = make_shared<CustomTypeNameNode>(Location(), toAstRef(_rt->getFullRef(parentClassValue)));
+	shared_ptr<CustomTypeNameNode> parentClassTypeName =
+		make_shared<CustomTypeNameNode>(
+			Location(),
+			toAstRef(_rt->getFullRef(parentClassValue)),
+			this,
+			scope.get());
 
 	deque<shared_ptr<CustomTypeNameNode>> implInterfaceTypeNames;
 	for (auto i : value->implInterfaces) {
@@ -72,7 +77,12 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 
 		auto implInterfaceRef = _rt->getFullRef(implInterfaceValue);
 
-		implInterfaceTypeNames.push_back(make_shared<CustomTypeNameNode>(Location(), toAstRef(implInterfaceRef)));
+		implInterfaceTypeNames.push_back(
+			make_shared<CustomTypeNameNode>(
+				Location(),
+				toAstRef(implInterfaceRef),
+				this,
+				scope.get()));
 	}
 
 	GenericParamNodeList genericParams;
@@ -81,6 +91,7 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 
 	shared_ptr<ClassNode> cls = make_shared<ClassNode>(
 		Location(),
+		this,
 		value->getName(),
 		parentClassTypeName, implInterfaceTypeNames,
 		genericParams);
@@ -160,7 +171,7 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 			break;
 		case TypeId::Var: {
 			VarValue *v = (VarValue *)value;
-			shared_ptr<VarNode> var = make_shared<VarNode>(Location(), v->getAccess(), toTypeName(v->getVarType()), v->_name, shared_ptr<ExprNode>());
+			shared_ptr<VarNode> var = make_shared<VarNode>(Location(), this, v->getAccess(), toTypeName(v->getVarType()), v->_name, shared_ptr<ExprNode>());
 
 			scope->members[v->_name] = var;
 			var->bind(parent.get());
@@ -230,7 +241,7 @@ shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 				ref.push_back(RefEntry(Location{}, i.name, genericArgs));
 			}
 
-			return make_shared<CustomTypeNameNode>(Location{}, ref, isConst);
+			return make_shared<CustomTypeNameNode>(Location{}, ref, this, nullptr, isConst);
 		}
 		case TypeId::Array:
 			return make_shared<ArrayTypeNameNode>(toTypeName(runtimeType.getArrayExData()), isConst);

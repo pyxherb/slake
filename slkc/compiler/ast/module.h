@@ -18,9 +18,10 @@ namespace slake {
 			weak_ptr<ModuleNode> parentModule;
 
 			inline ModuleNode(
+				Compiler *compiler,
 				Location loc,
 				shared_ptr<Scope> scope = make_shared<Scope>())
-				: MemberNode(ACCESS_PUB), _loc(loc), scope(scope) {
+				: MemberNode(compiler, ACCESS_PUB), _loc(loc), scope(scope) {
 				scope->owner = this;
 			}
 			virtual ~ModuleNode() = default;

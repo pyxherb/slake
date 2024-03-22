@@ -25,11 +25,13 @@ namespace slake {
 			ClassNode() = default;
 			inline ClassNode(
 				Location loc,
+				Compiler *compiler,
 				string name,
 				shared_ptr<CustomTypeNameNode> parentClass,
 				deque<shared_ptr<CustomTypeNameNode>> implInterfaces,
 				GenericParamNodeList genericParams)
-				: _loc(loc),
+				: MemberNode(compiler, 0),
+				  _loc(loc),
 				  name(name),
 				  parentClass(parentClass),
 				  implInterfaces(implInterfaces),
@@ -44,7 +46,7 @@ namespace slake {
 			virtual inline NodeType getNodeType() const override { return NodeType::Class; }
 
 			virtual RefEntry getName() const override { return RefEntry(_loc, name, genericArgs); }
-			
+
 			ClassNode &operator=(const ClassNode &rhs) = default;
 			virtual inline shared_ptr<AstNode> duplicate() override {
 				shared_ptr<ClassNode> newInstance = make_shared<ClassNode>();

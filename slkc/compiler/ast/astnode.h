@@ -59,7 +59,9 @@ namespace slake {
 			}
 		};
 
-		class AstNode {
+		class Compiler;
+
+		class AstNode : public std::enable_shared_from_this<AstNode> {
 		public:
 			virtual ~AstNode() = default;
 
@@ -67,6 +69,10 @@ namespace slake {
 			virtual NodeType getNodeType() const = 0;
 			
 			virtual shared_ptr<AstNode> duplicate();
+
+			inline shared_ptr<AstNode> getSharedPtr() {
+				return shared_from_this();
+			}
 		};
 	}
 }

@@ -49,7 +49,8 @@ namespace slake {
 		using CompilerFlags = uint32_t;
 
 		constexpr static CompilerFlags
-			COMP_FAILED = 0x00000001;
+			COMP_FAILED = 0x00000001,
+			COMP_DELETING = 0x80000000;
 
 		const size_t OUTPUT_SIZE_MAX = 0x20000000;
 
@@ -253,9 +254,73 @@ namespace slake {
 			shared_ptr<TypeNameNode> toTypeName(slake::Type runtimeType);
 			Ref toAstRef(deque<slake::RefEntry> runtimeRefEntries);
 
+			struct GenericNodeArgListComparator {
+				inline bool operator()(
+					const deque<shared_ptr<TypeNameNode>> &lhs,
+					const deque<shared_ptr<TypeNameNode>> &rhs) const noexcept {
+					if (lhs.size() < rhs.size())
+						return true;
+					if (lhs.size() > rhs.size())
+						return false;
+
+					for (size_t i = 0; i < lhs.size(); ++i) {
+						auto l = lhs[i], r = rhs[i];
+						auto lhsTypeId = l->getTypeId(), rhsTypeId = r->getTypeId();
+
+						if (lhsTypeId < lhsTypeId)
+							return true;
+						else if (lhsTypeId > rhsTypeId)
+							return false;
+						else {
+							//
+							// Do some special checks for some kinds of type name - such as custom.
+							//
+							switch (lhsTypeId) {
+								case Type::Custom: {
+									auto lhsTypeName = static_pointer_cast<CustomTypeNameNode>(lhs[i]),
+										 rhsTypeName = static_pointer_cast<CustomTypeNameNode>(rhs[i]);
+
+									if (lhsTypeName->compiler < rhsTypeName->compiler)
+										return true;
+									else if (lhsTypeName->compiler > rhsTypeName->compiler)
+										return false;
+									else {
+										auto lhsNode = lhsTypeName->compiler->resolveCustomType(lhsTypeName.get()),
+											 rhsNode = rhsTypeName->compiler->resolveCustomType(rhsTypeName.get());
+
+										if (lhsNode < rhsNode)
+											return true;
+										else if (lhsNode > rhsNode)
+											return false;
+									}
+
+									break;
+								}
+							}
+						}
+					}
+
+					return false;
+				}
+			};
+
+			using GenericNodeCacheTable =
+				std::map<
+					deque<shared_ptr<TypeNameNode>>,  // Generic arguments.
+					MemberNode *,					  // Cached instantiated value.
+					GenericNodeArgListComparator>;
+
+			using GenericNodeCacheDirectory = std::map<
+				MemberNode*,	 // Original uninstantiated generic value.
+				GenericNodeCacheTable>;
+
+			/// @brief Cached instances of generic values.
+			mutable GenericNodeCacheDirectory _genericCacheDir;
+
 			shared_ptr<MemberNode> instantiateGenericNode(shared_ptr<MemberNode> node, deque<shared_ptr<TypeNameNode>> genericArgs);
 
 			friend class AstVisitor;
+			friend class MemberNode;
 			friend string std::to_string(shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slkc::Compiler *compiler, bool asOperatorName);
 
 		public:
@@ -266,7 +331,7 @@ namespace slake {
 
 			inline Compiler(CompilerOptions options = {})
 				: options(options), _rt(make_unique<Runtime>(RT_NOJIT)) {}
-			~Compiler() = default;
+			~Compiler();
 
 			void compile(std::istream &is, std::ostream &os);
 		};

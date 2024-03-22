@@ -34,6 +34,10 @@ class SlakeErrorListener : public antlr4::BaseErrorListener {
 	}
 };
 
+Compiler::~Compiler() {
+	flags |= COMP_DELETING;
+}
+
 class PseudoOutputStream : public std::ostream {
 public:
 	inline PseudoOutputStream() : ostream(nullptr) {}
@@ -96,7 +100,7 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 					(scope->members[name] = _targetModule)->bind((MemberNode *)scope->owner);
 					_targetModule->scope->parent = scope.get();
 				} else {
-					auto newMod = make_shared<ModuleNode>(Location());
+					auto newMod = make_shared<ModuleNode>(this, Location());
 					(scope->members[name] = newMod)->bind((MemberNode *)scope->owner);
 					newMod->scope->parent = scope.get();
 				}
@@ -115,7 +119,7 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 
 		importModule(i.first, i.second, _targetModule->scope);
 
-		_targetModule->scope->members[i.first] = make_shared<AliasNode>(i.second[0].loc, i.first, i.second);
+		_targetModule->scope->members[i.first] = make_shared<AliasNode>(i.second[0].loc, this, i.first, i.second);
 	}
 
 	popMajorContext();
@@ -755,10 +759,10 @@ void Compiler::compileValue(std::ostream &fs, shared_ptr<AstNode> value) {
 void slake::slkc::Compiler::compileGenericParam(std::ostream &fs, shared_ptr<GenericParamNode> genericParam) {
 	slxfmt::GenericParamDesc gpd;
 
-	gpd.lenName = genericParam->name.size();
+	gpd.lenName = (uint8_t)genericParam->name.size();
 	gpd.hasBaseType = (bool)genericParam->baseType;
-	gpd.nInterfaces = genericParam->interfaceTypes.size();
-	gpd.nTraits = genericParam->traitTypes.size();
+	gpd.nInterfaces = (uint8_t)genericParam->interfaceTypes.size();
+	gpd.nTraits = (uint8_t)genericParam->traitTypes.size();
 
 	_write(fs, gpd);
 

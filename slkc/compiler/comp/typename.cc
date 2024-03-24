@@ -382,12 +382,7 @@ bool Compiler::isSameType(shared_ptr<TypeNameNode> x, shared_ptr<TypeNameNode> y
 			shared_ptr<AstNode> xDest = resolveCustomType((CustomTypeNameNode *)x.get()),
 								yDest = resolveCustomType((CustomTypeNameNode *)y.get());
 
-			bool result = xDest == yDest;
-
-			xDest.reset();
-			yDest.reset();
-
-			return result;
+			return xDest == yDest;
 		}
 		case Type::Map:
 			return isSameType(

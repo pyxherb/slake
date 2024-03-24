@@ -267,7 +267,7 @@ namespace slake {
 						auto l = lhs[i], r = rhs[i];
 						auto lhsTypeId = l->getTypeId(), rhsTypeId = r->getTypeId();
 
-						if (lhsTypeId < lhsTypeId)
+						if (lhsTypeId < rhsTypeId)
 							return true;
 						else if (lhsTypeId > rhsTypeId)
 							return false;

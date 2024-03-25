@@ -255,7 +255,7 @@ std::string std::to_string(const slake::Type &type, const slake::Runtime *rt) {
 			}
 		}
 		case TypeId::GenericArg:
-			return "@" + std::to_string(type.getGenericArgExData());
+			return "@!" + type.getGenericArgExData();
 		case TypeId::Any:
 			return "any";
 		case TypeId::None:

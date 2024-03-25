@@ -234,7 +234,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 				auto j = (ClassNode *)(scope->owner);
 
 				while (j->parentClass) {
-					j = (ClassNode *)resolveCustomType(j->parentClass.get()).get();
+					j = (ClassNode *)resolveCustomTypeName((CustomTypeNameNode *)j->parentClass.get()).get();
 					if (j->scope->members.count(i.first))
 						throw FatalCompilationError(
 							Message(
@@ -424,10 +424,10 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 			compileGenericParam(os, j);
 
 		if (i.second->parentClass)
-			compileRef(os, getFullName((MemberNode *)resolveCustomType(i.second->parentClass.get()).get()));
+			compileRef(os, getFullName((MemberNode *)resolveCustomTypeName((CustomTypeNameNode *)i.second->parentClass.get()).get()));
 
 		for (auto &j : i.second->implInterfaces)
-			compileRef(os, j->ref);
+			compileRef(os, static_pointer_cast<CustomTypeNameNode>(j)->ref);
 
 		compileScope(is, os, i.second->scope);
 
@@ -458,7 +458,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 			compileGenericParam(os, i.second->genericParams[j]);
 
 		for (auto j : i.second->parentInterfaces) {
-			compileRef(os, j->ref);
+			compileRef(os, static_pointer_cast<CustomTypeNameNode>(j)->ref);
 		}
 
 		compileScope(is, os, i.second->scope);
@@ -490,7 +490,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 			compileGenericParam(os, i.second->genericParams[j]);
 
 		for (auto j : i.second->parentTraits) {
-			compileRef(os, j->ref);
+			compileRef(os, static_pointer_cast<CustomTypeNameNode>(j)->ref);
 		}
 
 		compileScope(is, os, i.second->scope);
@@ -573,12 +573,14 @@ void Compiler::compileTypeName(std::ostream &fs, shared_ptr<TypeNameNode> typeNa
 			break;
 		}
 		case Type::Custom: {
-			auto dest = resolveCustomType((CustomTypeNameNode *)typeName.get());
+			auto dest = resolveCustomTypeName((CustomTypeNameNode *)typeName.get());
 
 			if (dest->getNodeType() == NodeType::GenericParam) {
 				_write(fs, slxfmt::Type::GenericArg);
 
-				_write(fs, (uint8_t)curMajorContext.genericParamIndices[static_pointer_cast<GenericParamNode>(dest)->name]);
+				auto d = static_pointer_cast<GenericParamNode>(dest);
+				_write(fs, (uint8_t)d->name.length());
+				fs.write(d->name.c_str(), d->name.length());
 			} else {
 				_write(fs, slxfmt::Type::Object);
 				compileRef(fs, getFullName((MemberNode *)dest.get()));

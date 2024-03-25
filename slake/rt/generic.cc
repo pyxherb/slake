@@ -2,12 +2,16 @@
 
 using namespace slake;
 
-void slake::Runtime::_instantiateGenericValue(Type &type, const GenericArgList &genericArgs) const {
-	if (type.typeId == TypeId::GenericArg)
-		type = genericArgs[type.getGenericArgExData()];
+void slake::Runtime::_instantiateGenericValue(Type &type, GenericInstantiationContext &instantiationContext) const {
+	if (type.typeId == TypeId::GenericArg) {
+		if (auto it = instantiationContext.mappedGenericArgs.find(type.getGenericArgExData()); it != instantiationContext.mappedGenericArgs.end()) {
+			type = it->second;
+		} else
+			throw GenericInstantiationError("No such generic parameter named " + type.getGenericArgExData());
+	}
 }
 
-void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &genericArgs) const {
+void slake::Runtime::_instantiateGenericValue(Value *v, GenericInstantiationContext &instantiationContext) const {
 	// How to instantiate generic classes:
 	// Duplicate the value, scan for references to generic parameters and
 	// replace them with generic arguments.
@@ -16,21 +20,21 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 			auto value = (ObjectValue *)v;
 
 			for (auto &i : value->scope->members)
-				_instantiateGenericValue(i.second, genericArgs);
+				_instantiateGenericValue(i.second, instantiationContext);
 
 			for (auto &i : value->_genericArgs)
-				_instantiateGenericValue(i, genericArgs);
+				_instantiateGenericValue(i, instantiationContext);
 
-			_instantiateGenericValue(value->_class, genericArgs);
+			_instantiateGenericValue(value->_class, instantiationContext);
 
 			if (value->_parent)
-				_instantiateGenericValue(value->_parent, genericArgs);
+				_instantiateGenericValue(value->_parent, instantiationContext);
 			break;
 		}
 		case TypeId::Array: {
 			auto value = (ArrayValue *)v;
 
-			_instantiateGenericValue(value->type, genericArgs);
+			_instantiateGenericValue(value->type, instantiationContext);
 			break;
 		}
 		case TypeId::Map: {
@@ -39,20 +43,20 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 		case TypeId::Class: {
 			ClassValue *const value = (ClassValue *)v;
 
-			value->_genericArgs = genericArgs;
+			value->_genericArgs = instantiationContext.genericArgs;
 
 			for (auto &i : value->scope->members)
-				_instantiateGenericValue(i.second, genericArgs);
+				_instantiateGenericValue(i.second, instantiationContext);
 
 			break;
 		}
 		case TypeId::Interface: {
 			InterfaceValue *const value = (InterfaceValue *)v;
 
-			value->_genericArgs = genericArgs;
+			value->_genericArgs = instantiationContext.genericArgs;
 
 			for (auto &i : value->scope->members)
-				_instantiateGenericValue(i.second, genericArgs);
+				_instantiateGenericValue(i.second, instantiationContext);
 
 			break;
 		}
@@ -60,45 +64,45 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 			TraitValue *const value = (TraitValue *)v;
 
 			for (auto &i : value->scope->members)
-				_instantiateGenericValue(i.second, genericArgs);
+				_instantiateGenericValue(i.second, instantiationContext);
 
 			break;
 		}
 		case TypeId::Var: {
 			VarValue *value = (VarValue *)v;
 
-			_instantiateGenericValue(value->type, genericArgs);
+			_instantiateGenericValue(value->type, instantiationContext);
 			break;
 		}
 		case TypeId::Module: {
 			ModuleValue *value = (ModuleValue *)v;
 
 			for (auto &i : value->scope->members)
-				_instantiateGenericValue(i.second, genericArgs);
+				_instantiateGenericValue(i.second, instantiationContext);
 			break;
 		}
 		case TypeId::Fn: {
 			FnValue *value = (FnValue *)v;
 
-			_instantiateGenericValue(value->returnType, genericArgs);
+			_instantiateGenericValue(value->returnType, instantiationContext);
 
 			for (auto &i : value->paramTypes)
-				_instantiateGenericValue(i, genericArgs);
+				_instantiateGenericValue(i, instantiationContext);
 
 			for (size_t i = 0; i < value->nIns; ++i) {
 				auto &ins = value->body[i];
 				for (size_t j = 0; j < ins.operands.size(); ++j) {
 					auto operand = ins.operands[j];
 					if (operand && operand->getType() == TypeId::TypeName)
-						_instantiateGenericValue(((TypeNameValue *)operand)->_data, genericArgs);
+						_instantiateGenericValue(((TypeNameValue *)operand)->_data, instantiationContext);
 				}
 			}
 			break;
 		}
 		case TypeId::Alias: {
-			AliasValue* value = (AliasValue*)v;
+			AliasValue *value = (AliasValue *)v;
 
-			value->src = instantiateGenericValue(value->src, genericArgs);
+			value->src = instantiateGenericValue(value->src, instantiationContext.genericArgs);
 			break;
 		}
 		case TypeId::RootValue:
@@ -123,6 +127,56 @@ void slake::Runtime::_instantiateGenericValue(Value *v, const GenericArgList &ge
 	}
 }
 
+void Runtime::mapGenericParams(const Value *v, GenericInstantiationContext &instantiationContext) const {
+	switch (v->getType().typeId) {
+		case TypeId::Class: {
+			ClassValue *value = (ClassValue *)v;
+
+			if (instantiationContext.genericArgs.size() != value->genericParams.size())
+				throw GenericInstantiationError("Number of generic parameter does not match");
+
+			for (size_t i = 0; i < value->genericParams.size(); ++i) {
+				instantiationContext.mappedGenericArgs[value->genericParams[i].name] = instantiationContext.genericArgs[i];
+			}
+			break;
+		}
+		case TypeId::Interface: {
+			InterfaceValue *value = (InterfaceValue *)v;
+
+			if (instantiationContext.genericArgs.size() != value->genericParams.size())
+				throw GenericInstantiationError("Number of generic parameter does not match");
+
+			for (size_t i = 0; i < value->genericParams.size(); ++i) {
+				instantiationContext.mappedGenericArgs[value->genericParams[i].name] = instantiationContext.genericArgs[i];
+			}
+			break;
+		}
+		case TypeId::Trait: {
+			TraitValue *value = (TraitValue *)v;
+
+			if (instantiationContext.genericArgs.size() != value->genericParams.size())
+				throw GenericInstantiationError("Number of generic parameter does not match");
+
+			for (size_t i = 0; i < value->genericParams.size(); ++i) {
+				instantiationContext.mappedGenericArgs[value->genericParams[i].name] = instantiationContext.genericArgs[i];
+			}
+			break;
+		}
+		case TypeId::Fn: {
+			FnValue *value = (FnValue *)v;
+
+			if (instantiationContext.genericArgs.size() != value->genericParams.size())
+				throw GenericInstantiationError("Number of generic parameter does not match");
+
+			for (size_t i = 0; i < value->genericParams.size(); ++i) {
+				instantiationContext.mappedGenericArgs[value->genericParams[i].name] = instantiationContext.genericArgs[i];
+			}
+			break;
+		}
+		default:;
+	}
+}
+
 Value *Runtime::instantiateGenericValue(const Value *v, const GenericArgList &genericArgs) const {
 	// Try to look up in the cache.
 	if (_genericCacheDir.count(v)) {
@@ -134,10 +188,13 @@ Value *Runtime::instantiateGenericValue(const Value *v, const GenericArgList &ge
 		// Cache missed, go to the fallback.
 	}
 
+	GenericInstantiationContext instantiationContext = { genericArgs, {} };
+
 	// Cache missed, instantiate the value.
-	auto value = v->duplicate();				   // Make a duplicate of the original value.
-	_genericCacheDir[v][genericArgs] = value;	   // Store the instance into the cache.
-	_instantiateGenericValue(value, genericArgs);  // Instantiate the value.
+	auto value = v->duplicate();							// Make a duplicate of the original value.
+	_genericCacheDir[v][genericArgs] = value;				// Store the instance into the cache.
+	mapGenericParams(value, instantiationContext);
+	_instantiateGenericValue(value, instantiationContext);	// Instantiate the value.
 
 	return value;
 }

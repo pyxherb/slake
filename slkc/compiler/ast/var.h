@@ -11,11 +11,20 @@ namespace slake {
 		private:
 			Location _loc;
 
+			virtual shared_ptr<AstNode> doDuplicate() override;
+
 		public:
 			shared_ptr<TypeNameNode> type;
 			string name;
 			shared_ptr<ExprNode> initValue;
 
+			inline VarNode(const VarNode& other) : MemberNode(other) {
+				_loc = other._loc;
+
+				type = other.type;
+				name = other.name;
+				initValue = other.initValue;
+			}
 			inline VarNode(
 				Location loc,
 				Compiler *compiler,

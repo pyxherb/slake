@@ -19,7 +19,6 @@ namespace slake {
 		ClassValue *_class;
 
 		friend class Runtime;
-		friend void walkForInstantiation(Value *v);
 
 	public:
 		ObjectValue *_parent;

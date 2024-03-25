@@ -30,7 +30,7 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 		params.push_back(param);
 	}
 
-	FnOverloadingRegistry registry(Location(), returnType, genericParams, params);
+	FnOverloadingRegistry registry = FnOverloadingRegistry(Location(), returnType, genericParams, params);
 
 	if (!scope->members.count(fnName))
 		(scope->members[fnName] = make_shared<FnNode>(this, fnName))->bind(parent.get());
@@ -69,7 +69,7 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 			this,
 			scope.get());
 
-	deque<shared_ptr<CustomTypeNameNode>> implInterfaceTypeNames;
+	deque<shared_ptr<TypeNameNode>> implInterfaceTypeNames;
 	for (auto i : value->implInterfaces) {
 		MemberValue *implInterfaceValue = (MemberValue *)(i.resolveCustomType());
 		if (!implInterfaceValue)
@@ -111,11 +111,11 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 	shared_ptr<InterfaceNode> interface = make_shared<InterfaceNode>(
 		Location(),
 		value->_name,
-		deque<shared_ptr<CustomTypeNameNode>>{},
+		deque<shared_ptr<TypeNameNode>>{},
 		GenericParamNodeList{});
 
 	for (auto i : value->parents) {
-		interface->parentInterfaces.push_back(static_pointer_cast<CustomTypeNameNode>(toTypeName(i)));
+		interface->parentInterfaces.push_back(toTypeName(i));
 	}
 
 	(scope->members[value->_name] = interface)->bind(parent.get());
@@ -130,10 +130,10 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 
 	importedDefinitions.insert(value);
 
-	deque<shared_ptr<CustomTypeNameNode>> parentTraits;
+	deque<shared_ptr<TypeNameNode>> parentTraits;
 
 	for (auto i : value->parents) {
-		parentTraits.push_back(static_pointer_cast<CustomTypeNameNode>(toTypeName(i)));
+		parentTraits.push_back(toTypeName(i));
 	}
 
 	shared_ptr<TraitNode> trait = make_shared<TraitNode>(

@@ -15,7 +15,7 @@ shared_ptr<Scope> Compiler::scopeOf(AstNode* node) {
 		case NodeType::TypeName: {
 			auto t = ((TypeNameNode*)node);
 			if (t->getTypeId()==Type::Custom)
-				return scopeOf(resolveCustomType((CustomTypeNameNode*)t).get());
+				return scopeOf(resolveCustomTypeName((CustomTypeNameNode*)t).get());
 			return {};
 		}
 		case NodeType::Alias: {

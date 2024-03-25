@@ -20,3 +20,7 @@ slake::slkc::FnOverloadingRegistry::FnOverloadingRegistry(
 		paramIndices[params[i].name] = i;
 	}
 }
+
+shared_ptr<AstNode> FnNode::doDuplicate() {
+	return make_shared<FnNode>(*this);
+}

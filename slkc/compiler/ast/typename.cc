@@ -56,8 +56,21 @@ string std::to_string(shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slk
 		}
 		case Type::Custom: {
 			slake::slkc::Ref ref;
-			compiler->_getFullName((MemberNode *)compiler->resolveCustomType((CustomTypeNameNode*)typeName.get()).get(), ref);
-			return (asOperatorName ? "" : "@") + to_string(ref, compiler);
+			auto m = compiler->resolveCustomTypeName((CustomTypeNameNode *)typeName.get());
+
+			switch (m->getNodeType()) {
+				case NodeType::GenericParam:
+					if (asOperatorName)
+						throw FatalCompilationError(
+							Message(
+								typeName->getLocation(),
+								MessageType::Error,
+								"Generic parameter cannot be used as the operator name"));
+					return "!" + static_pointer_cast<GenericParamNode>(m)->name;
+				default:
+					compiler->_getFullName((MemberNode *)m.get(), ref);
+					return (asOperatorName ? "" : "@") + to_string(ref, compiler);
+			}
 		}
 		default:
 			throw std::logic_error("Unrecognized type");

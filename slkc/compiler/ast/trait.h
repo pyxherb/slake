@@ -9,24 +9,33 @@ namespace slake {
 		private:
 			Location _loc;
 
+			virtual shared_ptr<AstNode> doDuplicate() override;
+
 		public:
 			string name;
-			shared_ptr<Scope> scope = make_shared<Scope>();
-			deque<shared_ptr<CustomTypeNameNode>> parentTraits;	 // Parent traits
+
+			deque<shared_ptr<TypeNameNode>> parentTraits;	 // Parent traits
 
 			GenericParamNodeList genericParams;
 			unordered_map<string, size_t> genericParamIndices;
 
+			shared_ptr<Scope> scope = make_shared<Scope>();
+
 			TraitNode() = default;
+			inline TraitNode(const TraitNode &other) : MemberNode(other) {
+				_loc = other._loc;
+
+				name = other.name;
+
+				parentTraits = other.parentTraits;
+			}
 			inline TraitNode(
 				Location loc,
-				deque<shared_ptr<CustomTypeNameNode>> parentInterfaces,
+				deque<shared_ptr<TypeNameNode>> parentInterfaces,
 				GenericParamNodeList genericParams)
-				: _loc(loc),
-				  scope(scope),
-				  genericParams(genericParams),
-				  genericParamIndices(genGenericParamIndicies(genericParams)) {
-				scope->owner = this;
+				: _loc(loc) {
+				setScope(make_shared<Scope>());
+				setGenericParams(genericParams);
 			}
 			virtual ~TraitNode() = default;
 
@@ -35,14 +44,6 @@ namespace slake {
 			virtual inline NodeType getNodeType() const override { return NodeType::Trait; }
 
 			virtual RefEntry getName() const override { return RefEntry(_loc, name, genericArgs); }
-
-			TraitNode &operator=(const TraitNode &rhs) = default;
-
-			virtual inline shared_ptr<AstNode> duplicate() override {
-				shared_ptr<TraitNode> newInstance = make_shared<TraitNode>();
-				(*newInstance.get()) = *this;
-				return static_pointer_cast<AstNode>(newInstance);
-			}
 		};
 	}
 }

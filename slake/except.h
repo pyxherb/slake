@@ -65,6 +65,13 @@ namespace slake {
 		virtual ~NotFoundError() = default;
 	};
 
+	class GenericInstantiationError : public RuntimeExecError {
+	public:
+		inline GenericInstantiationError(std::string msg)
+			: RuntimeExecError(msg) {}
+		virtual ~GenericInstantiationError() = default;
+	};
+
 	class AccessViolationError : public RuntimeExecError {
 	public:
 		inline AccessViolationError(std::string msg) : RuntimeExecError(msg){};

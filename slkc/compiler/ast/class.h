@@ -12,32 +12,36 @@ namespace slake {
 		private:
 			Location _loc;
 
+			virtual shared_ptr<AstNode> doDuplicate() override;
+
 		public:
 			string name;
-			shared_ptr<CustomTypeNameNode> parentClass;			   // Parent class
-			deque<shared_ptr<CustomTypeNameNode>> implInterfaces;  // Implemented interfaces
-
-			GenericParamNodeList genericParams;
-			unordered_map<string, size_t> genericParamIndices;
-
-			shared_ptr<Scope> scope = make_shared<Scope>();
+			shared_ptr<TypeNameNode> parentClass;			   // Parent class
+			deque<shared_ptr<TypeNameNode>> implInterfaces;  // Implemented interfaces
 
 			ClassNode() = default;
+			inline ClassNode(const ClassNode& other) : MemberNode(other) {
+				_loc = other._loc;
+
+				name = other.name;
+
+				parentClass = other.parentClass;
+				implInterfaces = other.implInterfaces;
+			}
 			inline ClassNode(
 				Location loc,
 				Compiler *compiler,
 				string name,
-				shared_ptr<CustomTypeNameNode> parentClass,
-				deque<shared_ptr<CustomTypeNameNode>> implInterfaces,
+				shared_ptr<TypeNameNode> parentClass,
+				deque<shared_ptr<TypeNameNode>> implInterfaces,
 				GenericParamNodeList genericParams)
 				: MemberNode(compiler, 0),
 				  _loc(loc),
 				  name(name),
 				  parentClass(parentClass),
-				  implInterfaces(implInterfaces),
-				  genericParams(genericParams),
-				  genericParamIndices(genGenericParamIndicies(genericParams)) {
-				scope->owner = this;
+				  implInterfaces(implInterfaces) {
+				setScope(make_shared<Scope>());
+				setGenericParams(genericParams);
 			}
 			virtual ~ClassNode() = default;
 
@@ -46,13 +50,6 @@ namespace slake {
 			virtual inline NodeType getNodeType() const override { return NodeType::Class; }
 
 			virtual RefEntry getName() const override { return RefEntry(_loc, name, genericArgs); }
-
-			ClassNode &operator=(const ClassNode &rhs) = default;
-			virtual inline shared_ptr<AstNode> duplicate() override {
-				shared_ptr<ClassNode> newInstance = make_shared<ClassNode>();
-				(*newInstance.get()) = *this;
-				return static_pointer_cast<AstNode>(newInstance);
-			}
 		};
 	}
 }

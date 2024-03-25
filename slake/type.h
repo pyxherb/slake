@@ -98,7 +98,13 @@ namespace slake {
 
 	struct Type final {
 		TypeId typeId;	// Type ID
-		mutable std::variant<std::monostate, Value *, Type *, std::pair<Type *, Type *>, uint8_t> exData;
+		mutable std::variant<
+			std::monostate, // Simple type
+			Value *, // Resolved type
+			Type *, // Array
+			std::pair<Type *, Type *>, // Map
+			std::string // Generic parameter
+		> exData;
 		TypeFlags flags = 0;
 
 		inline Type() noexcept : typeId(TypeId::None) {}
@@ -108,11 +114,8 @@ namespace slake {
 		inline Type(TypeId type, Value *classObject, TypeFlags flags = 0) noexcept : typeId(type), flags(flags) {
 			exData = classObject;
 		}
-		inline Type(TypeId type, Type elementType, TypeFlags flags = 0) : typeId(type), flags(flags) {
-			exData = elementType;
-		}
-		inline Type(uint8_t idxGenericArg, TypeFlags flags = 0) : typeId(TypeId::GenericArg), flags(flags) {
-			exData = idxGenericArg;
+		inline Type(std::string genericParamName, TypeFlags flags = 0) : typeId(TypeId::GenericArg), flags(flags) {
+			exData = genericParamName;
 		}
 		Type(RefValue *ref, TypeFlags flags = 0);
 
@@ -125,7 +128,7 @@ namespace slake {
 		inline Value *getCustomTypeExData() const { return std::get<Value *>(exData); }
 		inline Type &getArrayExData() const { return *std::get<Type *>(exData); }
 		inline std::pair<Type *, Type *> getMapExData() const { return std::get<std::pair<Type *, Type *>>(exData); }
-		inline uint8_t getGenericArgExData() const { return std::get<uint8_t>(exData); }
+		inline std::string getGenericArgExData() const { return std::get<std::string>(exData); }
 
 		bool isLoadingDeferred() const noexcept;
 		void loadDeferredType(const Runtime *rt) const;

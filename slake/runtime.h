@@ -129,6 +129,11 @@ namespace slake {
 		/// @brief Contains all created values.
 		std::set<Value *> _createdValues, _walkedValues, _destructedValues;
 
+		struct GenericInstantiationContext {
+			const GenericArgList &genericArgs;
+			std::unordered_map<std::string, Type> mappedGenericArgs;
+		};
+
 		struct GenericLookupEntry {
 			Value *originalValue;
 			GenericArgList genericArgs;
@@ -190,8 +195,8 @@ namespace slake {
 		void _gcWalk(Value *i);
 		void _gcWalk(Context &i);
 
-		void _instantiateGenericValue(Type &type, const GenericArgList &genericArgs) const;
-		void _instantiateGenericValue(Value *v, const GenericArgList &genericArgs) const;
+		void _instantiateGenericValue(Type &type, GenericInstantiationContext &instantiationContext) const;
+		void _instantiateGenericValue(Value *v, GenericInstantiationContext &instantiationContext) const;
 
 		ObjectValue *_newClassInstance(ClassValue *cls);
 		ObjectValue *_newGenericClassInstance(ClassValue *cls, GenericArgList &genericArgs);
@@ -227,6 +232,7 @@ namespace slake {
 		Runtime(RuntimeFlags flags = 0);
 		virtual ~Runtime();
 
+		void mapGenericParams(const Value *v, GenericInstantiationContext &instantiationContext) const;
 		/// @brief Instantiate an generic value (e.g. generic class, etc).
 		/// @param v Value to be instantiated.
 		/// @param genericArgs Generic arguments for instantiation.

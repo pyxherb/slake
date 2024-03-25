@@ -416,7 +416,7 @@ shared_ptr<ExprNode> Compiler::evalConstExpr(shared_ptr<ExprNode> expr) {
 		}
 		case ExprType::Cast: {
 			auto e = static_pointer_cast<CastExprNode>(expr);
-			if (!isLiteralType(e->targetType))
+			if (!isLiteralTypeName(e->targetType))
 				return {};
 
 			switch (e->getExprType()) {
@@ -502,7 +502,7 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 		case ExprType::Unary: {
 			auto e = static_pointer_cast<UnaryOpExprNode>(expr);
 
-			if (isCompoundType(evalExprType(e->x))) {
+			if (isCompoundTypeName(evalExprType(e->x))) {
 			} else
 				return evalExprType(e->x);
 
@@ -511,7 +511,7 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 		case ExprType::Binary: {
 			auto e = static_pointer_cast<BinaryOpExprNode>(expr);
 
-			if (isCompoundType(evalExprType(e->lhs))) {
+			if (isCompoundTypeName(evalExprType(e->lhs))) {
 			} else {
 				switch (e->op) {
 					case BinaryOp::Add:
@@ -574,8 +574,9 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 							shared_ptr<FnTypeNameNode> type;
 
 							deque<shared_ptr<TypeNameNode>> paramTypes;
-							for (auto i : fn->overloadingRegistries[0].params)
+							for(auto i : fn->overloadingRegistries[0].params) {
 								paramTypes.push_back(i.type);
+							}
 
 							type = make_shared<FnTypeNameNode>(fn->overloadingRegistries[0].returnType, paramTypes);
 							return type;

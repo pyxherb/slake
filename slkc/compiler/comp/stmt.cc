@@ -49,7 +49,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 
 				if (i.second.initValue) {
 					if (!isSameType(s->type, initValueType)) {
-						if (!areTypesConvertible(initValueType, s->type))
+						if (!isTypeNamesConvertible(initValueType, s->type))
 							throw FatalCompilationError(
 								{ i.second.initValue->getLocation(),
 									MessageType::Error,

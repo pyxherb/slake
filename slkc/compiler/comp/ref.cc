@@ -84,7 +84,7 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 		newRef.pop_front();
 
 		m = scope->members.at(ref[0].name);
-		
+
 		if(ref[0].genericArgs.size())
 			m = instantiateGenericNode(m, ref[0].genericArgs);
 
@@ -127,7 +127,7 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 
 				// Resolve with the parent class.
 				if (owner->parentClass) {
-					if (auto p = resolveCustomType(owner->parentClass.get()); p) {
+					if (auto p = resolveCustomTypeName((CustomTypeNameNode *)owner->parentClass.get()); p) {
 						if (p->getNodeType() != NodeType::Class) {
 							throw FatalCompilationError(
 								Message(
@@ -149,7 +149,7 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 
 				// Resolve with the interfaces.
 				for (auto i : owner->implInterfaces) {
-					if (auto p = resolveCustomType(i.get()); p) {
+					if (auto p = resolveCustomTypeName((CustomTypeNameNode *)i.get()); p) {
 						if (p->getNodeType() != NodeType::Class) {
 							throw FatalCompilationError(
 								Message(
@@ -176,7 +176,7 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 				auto owner = (InterfaceNode *)scope->owner;
 
 				for (auto i : owner->parentInterfaces) {
-					if (auto p = resolveCustomType(i.get()); p) {
+					if (auto p = resolveCustomTypeName((CustomTypeNameNode *)i.get()); p) {
 						if (p->getNodeType() != NodeType::Class) {
 							throw FatalCompilationError(
 								Message(

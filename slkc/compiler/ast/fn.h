@@ -41,11 +41,19 @@ namespace slake {
 		};
 
 		class FnNode final : public MemberNode {
+		private:
+			virtual shared_ptr<AstNode> doDuplicate();
+
 		public:
 			deque<FnOverloadingRegistry> overloadingRegistries;
 			string name;
 			bool used = false;
 
+			inline FnNode(const FnNode& other) : MemberNode(other) {
+				overloadingRegistries = other.overloadingRegistries;
+				name = other.name;
+				used = false;
+			}
 			inline FnNode(
 				Compiler *compiler,
 				string name)

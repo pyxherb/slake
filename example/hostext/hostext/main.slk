@@ -13,7 +13,7 @@ class Generic<T> {
 		return;
 	}
 
-	pub operator new(T x) {
+	pub void setX(T x) {
 		this.x = x;
 		return;
 	}
@@ -87,8 +87,10 @@ pub i32 main() {
 	hostext.extfns.print("Entered main\n");
 
 	///*
-	Generic<i32> a = new Generic<i32>(123);
-	Generic<f32> b = new Generic<f32>(123.456f);
+	Generic<i32> a = new Generic<i32>();
+	a.setX(123);
+	Generic<f32> b = new Generic<f32>();
+	b.setX(123.0f);
 	//*/
 
 	///*

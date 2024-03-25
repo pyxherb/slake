@@ -2,8 +2,8 @@
 
 using namespace slake::slkc;
 
-FnOverloadingRegistry *Compiler::argDependentLookup(Location loc, FnNode *fn, const deque<shared_ptr<TypeNameNode>> &argTypes) {
-	std::deque<FnOverloadingRegistry *> matchedRegistries;
+FnOverloadingRegistry* Compiler::argDependentLookup(Location loc, FnNode *fn, const deque<shared_ptr<TypeNameNode>> &argTypes) {
+	std::deque<FnOverloadingRegistry*> matchedRegistries;
 
 	for (auto &i : fn->overloadingRegistries) {
 		size_t nParams = i.params.size();
@@ -19,20 +19,20 @@ FnOverloadingRegistry *Compiler::argDependentLookup(Location loc, FnNode *fn, co
 				continue;
 		}
 
-		bool exactMatched = true;
+		bool exactlyMatched = true;
 
 		for (size_t j = 0; j < nParams; ++j) {
 			if (!isSameType(i.params[j].type, argTypes[j])) {
-				exactMatched = false;
+				exactlyMatched = false;
 
-				if (!areTypesConvertible(argTypes[j], i.params[j].type))
+				if (!isTypeNamesConvertible(argTypes[j], i.params[j].type))
 					goto fail;
 			}
 		}
 
 		matchedRegistries.push_back(&i);
 
-		if (exactMatched)
+		if (exactlyMatched)
 			return &i;
 	fail:;
 	}

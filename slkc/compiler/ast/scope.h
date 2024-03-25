@@ -19,6 +19,8 @@ namespace slake {
 			AstNode *owner = nullptr;								// Owner of this scope.
 			Scope *parent = nullptr;								// Parent scope.
 			unordered_map<string, shared_ptr<MemberNode>> members;	// Members owned by this scope.
+
+			Scope *duplicate();
 		};
 	}
 }

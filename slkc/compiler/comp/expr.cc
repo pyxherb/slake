@@ -135,7 +135,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 				make_shared<RegRefNode>(lhsRegIndex));
 
 			if (!isSameType(lhsType, rhsType)) {
-				if (!areTypesConvertible(rhsType, lhsType))
+				if (!isTypeNamesConvertible(rhsType, lhsType))
 					throw FatalCompilationError(
 						{ e->rhs->getLocation(),
 							MessageType::Error,
@@ -372,13 +372,13 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 			auto e = static_pointer_cast<CastExprNode>(expr);
 
 			if (auto ce = evalConstExpr(e->target); ce) {
-				if (areTypesConvertible(evalExprType(ce), e->targetType)) {
+				if (isTypeNamesConvertible(evalExprType(ce), e->targetType)) {
 					curFn->insertIns(Opcode::CAST, curMajorContext.curMinorContext.evalDest, e->targetType, ce);
 				} else {
 					throw FatalCompilationError({ e->getLocation(), MessageType::Error, "Invalid type conversion" });
 				}
 			} else {
-				if (areTypesConvertible(evalExprType(e->target), e->targetType)) {
+				if (isTypeNamesConvertible(evalExprType(e->target), e->targetType)) {
 					uint32_t tmpRegIndex = allocReg();
 
 					compileExpr(e->target, EvalPurpose::RValue, make_shared<RegRefNode>(tmpRegIndex));
@@ -408,6 +408,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 
 			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::Call) {
 				if (isDynamicMember(resolvedParts.back().second)) {
+					// Load `this' for the method calling.
 					Ref thisRef = e->ref;
 					thisRef.pop_back();
 					compileExpr(
@@ -421,6 +422,71 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 
 			uint32_t tmpRegIndex = allocReg();
 
+			auto determineOverloadingRegistry = [this, expr, &resolvedParts](shared_ptr<FnNode> x) -> FnOverloadingRegistry * {
+				FnOverloadingRegistry *overloadingRegistry = nullptr;
+
+				if ((resolvedParts.size() > 2) || (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Call)) {
+					//
+					// Reference to a overloaded function is always ambiguous,
+					// because we cannot determine which overloading is the user wanted.
+					//
+					if (x->overloadingRegistries.size() > 1) {
+						throw FatalCompilationError(
+							Message(
+								expr->getLocation(),
+								MessageType::Error,
+								"Reference to a overloaded function is ambiguous"));
+					}
+
+					overloadingRegistry = &x->overloadingRegistries.front();
+				} else {
+					overloadingRegistry = argDependentLookup(expr->getLocation(), x.get(), curMajorContext.curMinorContext.argTypes);
+				}
+
+				return overloadingRegistry;
+			};
+			auto loadRest = [this, &determineOverloadingRegistry, &expr, &tmpRegIndex, &resolvedParts]() {
+				for (size_t i = 1; i < resolvedParts.size(); ++i) {
+					switch (resolvedParts[i].second->getNodeType()) {
+						case NodeType::Var: {
+							curFn->insertIns(
+								Opcode::RLOAD,
+								make_shared<RegRefNode>(tmpRegIndex),
+								make_shared<RegRefNode>(tmpRegIndex, true),
+								make_shared<RefExprNode>(resolvedParts[i].first));
+							break;
+						}
+						case NodeType::Fn: {
+							Ref ref = resolvedParts[i].first;
+
+							FnOverloadingRegistry *overloadingRegistry = determineOverloadingRegistry(static_pointer_cast<FnNode>(resolvedParts[i].second));
+
+							deque<shared_ptr<TypeNameNode>> paramTypes;
+							for (auto &j : overloadingRegistry->params) {
+								paramTypes.push_back(j.originalType ? j.originalType : j.type);
+							}
+
+							if (overloadingRegistry->isVaridic())
+								paramTypes.pop_back();
+
+							ref.back().name = mangleName(
+								resolvedParts[i].first.back().name,
+								paramTypes,
+								false);
+
+							curFn->insertIns(
+								Opcode::RLOAD,
+								make_shared<RegRefNode>(tmpRegIndex),
+								make_shared<RegRefNode>(tmpRegIndex, true),
+								make_shared<RefExprNode>(ref));
+							break;
+						}
+						default:
+							assert(false);
+					}
+				}
+			};
+
 			auto &x = resolvedParts.front().second;
 			switch (x->getNodeType()) {
 				case NodeType::LocalVar:
@@ -433,25 +499,13 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 								? true
 								: curMajorContext.curMinorContext.evalPurpose != EvalPurpose::LValue));
 
-					resolvedParts.pop_front();
-
-					if (resolvedParts.size()) {
-						for (auto i : resolvedParts) {
+					loadRest();
+					if (resolvedParts.back().second->getNodeType() == NodeType::Var) {
+						if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RValue)
 							curFn->insertIns(
-								Opcode::RLOAD,
+								Opcode::LVALUE,
 								make_shared<RegRefNode>(tmpRegIndex),
-								make_shared<RegRefNode>(tmpRegIndex, true),
-								make_shared<RefExprNode>(i.first));
-						}
-
-						if (resolvedParts.back().second->getNodeType() == NodeType::Var) {
-							if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RValue) {
-								curFn->insertIns(
-									Opcode::LVALUE,
-									make_shared<RegRefNode>(tmpRegIndex),
-									make_shared<RegRefNode>(tmpRegIndex, true));
-							}
-						}
+								make_shared<RegRefNode>(tmpRegIndex, true));
 					}
 
 					curFn->insertIns(
@@ -461,6 +515,14 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 					break;
 				case NodeType::ArgRef:
 					static_pointer_cast<ArgRefNode>(x)->unwrapData = (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RValue);
+					loadRest();
+					if (resolvedParts.back().second->getNodeType() == NodeType::Var) {
+						if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RValue)
+							curFn->insertIns(
+								Opcode::LVALUE,
+								make_shared<RegRefNode>(tmpRegIndex),
+								make_shared<RegRefNode>(tmpRegIndex, true));
+					}
 					curFn->insertIns(
 						Opcode::STORE,
 						curMajorContext.curMinorContext.evalDest, x);
@@ -488,25 +550,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 							FnNode *fn = (FnNode *)x.get();
 							_getFullName(fn, ref);
 
-							FnOverloadingRegistry *overloadingRegistry = nullptr;
-
-							if ((resolvedParts.size() > 2) || (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Call)) {
-								//
-								// Reference to a overloaded function is always ambiguous,
-								// because we cannot determine which overloading is the user wanted.
-								//
-								if (fn->overloadingRegistries.size() > 1) {
-									throw FatalCompilationError(
-										Message(
-											e->getLocation(),
-											MessageType::Error,
-											"Reference to a overloaded function is ambiguous"));
-								}
-
-								overloadingRegistry = &fn->overloadingRegistries.front();
-							} else {
-								overloadingRegistry = argDependentLookup(e->getLocation(), fn, curMajorContext.curMinorContext.argTypes);
-							}
+							FnOverloadingRegistry *overloadingRegistry = determineOverloadingRegistry(static_pointer_cast<FnNode>(x));
 
 							deque<shared_ptr<TypeNameNode>> paramTypes;
 							for (auto i : overloadingRegistry->params) {
@@ -538,21 +582,9 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 					}
 
 					// Check if the target is static.
-					resolvedParts.pop_front();
-					for (size_t i = 0; i < resolvedParts.size(); ++i) {
-						curFn->insertIns(
-							Opcode::RLOAD,
-							make_shared<RegRefNode>(tmpRegIndex),
-							make_shared<RegRefNode>(tmpRegIndex, true),
-							make_shared<RefExprNode>(resolvedParts[i].first));
-					}
+					loadRest();
 
-					//
-					// TODO: Do some checks about if the final part is a function, if it is,
-					// we have to redirect it to overloading which user wanted.
-					//
-
-					if (resolvedParts.size()) {
+					if (resolvedParts.back().second->getNodeType() == NodeType::Var) {
 						if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RValue)
 							curFn->insertIns(
 								Opcode::LVALUE,
@@ -569,6 +601,8 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 				default:
 					assert(false);
 			}
+
+			// Resolve the rest of the reference.
 
 			break;
 		}

@@ -150,18 +150,18 @@ namespace slake {
 
 			shared_ptr<ExprNode> castLiteralExpr(shared_ptr<ExprNode> expr, Type targetType);
 
-			bool isLiteralType(shared_ptr<TypeNameNode> typeName);
-			bool isNumericType(shared_ptr<TypeNameNode> typeName);
+			bool isLiteralTypeName(shared_ptr<TypeNameNode> typeName);
+			bool isNumericTypeName(shared_ptr<TypeNameNode> typeName);
 			bool isDecimalType(shared_ptr<TypeNameNode> typeName);
-			bool isCompoundType(shared_ptr<TypeNameNode> typeName);
+			bool isCompoundTypeName(shared_ptr<TypeNameNode> typeName);
 
-			bool _areTypesConvertible(shared_ptr<InterfaceNode> st, shared_ptr<ClassNode> dt);
+			bool _isTypeNamesConvertible(shared_ptr<InterfaceNode> st, shared_ptr<ClassNode> dt);
 
-			bool _areTypesConvertible(shared_ptr<ClassNode> st, shared_ptr<InterfaceNode> dt);
-			bool _areTypesConvertible(shared_ptr<InterfaceNode> st, shared_ptr<InterfaceNode> dt);
-			bool _areTypesConvertible(shared_ptr<MemberNode> st, shared_ptr<TraitNode> dt);
+			bool _isTypeNamesConvertible(shared_ptr<ClassNode> st, shared_ptr<InterfaceNode> dt);
+			bool _isTypeNamesConvertible(shared_ptr<InterfaceNode> st, shared_ptr<InterfaceNode> dt);
+			bool _isTypeNamesConvertible(shared_ptr<MemberNode> st, shared_ptr<TraitNode> dt);
 
-			bool areTypesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<TypeNameNode> dest);
+			bool isTypeNamesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<TypeNameNode> dest);
 
 			bool _resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut);
 			bool _resolveRefWithOwner(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut);
@@ -180,7 +180,7 @@ namespace slake {
 			/// @param resolvedPartsOut Where to store nodes referred by reference entries respectively.
 			bool resolveRefWithScope(Scope *scope, Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut);
 
-			FnOverloadingRegistry *argDependentLookup(Location loc, FnNode *fn, const deque<shared_ptr<TypeNameNode>> &argTypes);
+			FnOverloadingRegistry* argDependentLookup(Location loc, FnNode *fn, const deque<shared_ptr<TypeNameNode>> &argTypes);
 
 			shared_ptr<Scope> scopeOf(AstNode *node);
 
@@ -188,7 +188,7 @@ namespace slake {
 			/// @note This method also updates resolved generic arguments.
 			/// @param typeName Type name to be resolved.
 			/// @return Resolved node, nullptr otherwise.
-			shared_ptr<AstNode> resolveCustomType(CustomTypeNameNode *typeName);
+			shared_ptr<AstNode> resolveCustomTypeName(CustomTypeNameNode *typeName);
 
 			bool isSameType(shared_ptr<TypeNameNode> x, shared_ptr<TypeNameNode> y);
 
@@ -285,8 +285,8 @@ namespace slake {
 									else if (lhsTypeName->compiler > rhsTypeName->compiler)
 										return false;
 									else {
-										auto lhsNode = lhsTypeName->compiler->resolveCustomType(lhsTypeName.get()),
-											 rhsNode = rhsTypeName->compiler->resolveCustomType(rhsTypeName.get());
+										auto lhsNode = lhsTypeName->compiler->resolveCustomTypeName(lhsTypeName.get()),
+											 rhsNode = rhsTypeName->compiler->resolveCustomTypeName(rhsTypeName.get());
 
 										if (lhsNode < rhsNode)
 											return true;
@@ -317,6 +317,18 @@ namespace slake {
 			/// @brief Cached instances of generic values.
 			mutable GenericNodeCacheDirectory _genericCacheDir;
 
+			struct GenericNodeInstantiationContext {
+				const deque<shared_ptr<TypeNameNode>> &genericArgs;
+				unordered_map<string, shared_ptr<TypeNameNode>> mappedGenericArgs;
+			};
+
+			void walkTypeNameNodeForGenericInstantiation(
+				shared_ptr<TypeNameNode> &type,
+				GenericNodeInstantiationContext &instantiationContext);
+			void walkNodeForGenericInstantiation(
+				shared_ptr<AstNode> node,
+				GenericNodeInstantiationContext &instantiationContext);
+			void mapGenericParams(shared_ptr<MemberNode> node, GenericNodeInstantiationContext &instantiationContext);
 			shared_ptr<MemberNode> instantiateGenericNode(shared_ptr<MemberNode> node, deque<shared_ptr<TypeNameNode>> genericArgs);
 
 			friend class AstVisitor;

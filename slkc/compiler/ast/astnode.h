@@ -62,16 +62,22 @@ namespace slake {
 		class Compiler;
 
 		class AstNode : public std::enable_shared_from_this<AstNode> {
+		private:
+			virtual shared_ptr<AstNode> doDuplicate();
+
 		public:
 			virtual ~AstNode() = default;
 
 			virtual Location getLocation() const = 0;
 			virtual NodeType getNodeType() const = 0;
-			
-			virtual shared_ptr<AstNode> duplicate();
 
-			inline shared_ptr<AstNode> getSharedPtr() {
-				return shared_from_this();
+			/// @brief Duplicate the member.
+			/// @note Some members may not be duplicated, because duplication is only used by generic mechanism and it does not overwrite anything.
+			/// @tparam T 
+			/// @return 
+			template<typename T>
+			inline shared_ptr<T> duplicate() {
+				return static_pointer_cast<T>(doDuplicate());
 			}
 		};
 	}

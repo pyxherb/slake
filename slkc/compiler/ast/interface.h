@@ -9,26 +9,37 @@ namespace slake {
 		private:
 			Location _loc;
 
+			virtual shared_ptr<AstNode> doDuplicate() override;
+
 		public:
 			string name;
-			shared_ptr<Scope> scope = make_shared<Scope>();
-			deque<shared_ptr<CustomTypeNameNode>> parentInterfaces;	 // Parent interfaces
+
+			deque<shared_ptr<TypeNameNode>> parentInterfaces;	 // Parent interfaces
 
 			GenericParamNodeList genericParams;
 			unordered_map<string, size_t> genericParamIndices;
 
+			shared_ptr<Scope> scope = make_shared<Scope>();
+
 			InterfaceNode() = default;
+			inline InterfaceNode(const InterfaceNode &other) : MemberNode(other) {
+				_loc = other._loc;
+
+				name = other.name;
+
+				parentInterfaces = other.parentInterfaces;
+			}
 			inline InterfaceNode(
 				Location loc,
 				string name,
-				deque<shared_ptr<CustomTypeNameNode>> parentInterfaces,
+				deque<shared_ptr<TypeNameNode>> parentInterfaces,
 				GenericParamNodeList genericParams)
 				: _loc(loc),
 				  name(name),
-				  parentInterfaces(parentInterfaces),
-				  genericParams(genericParams),
-				  genericParamIndices(genGenericParamIndicies(genericParams)) {
-				scope->owner = this;
+				  parentInterfaces(parentInterfaces) {
+				scope = make_shared<Scope>();
+				setScope(make_shared<Scope>());
+				setGenericParams(genericParams);
 			}
 			virtual ~InterfaceNode() = default;
 
@@ -37,14 +48,6 @@ namespace slake {
 			virtual inline NodeType getNodeType() const override { return NodeType::Interface; }
 
 			virtual RefEntry getName() const override { return RefEntry(_loc, name, genericArgs); }
-
-			InterfaceNode &operator=(const InterfaceNode &) = default;
-
-			virtual inline shared_ptr<AstNode> duplicate() override {
-				shared_ptr<InterfaceNode> newInstance = make_shared<InterfaceNode>();
-				(*newInstance.get()) = *this;
-				return static_pointer_cast<AstNode>(newInstance);
-			}
 		};
 	}
 }

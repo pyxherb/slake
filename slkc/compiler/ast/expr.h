@@ -295,6 +295,9 @@ namespace slake {
 			shared_ptr<TypeNameNode> type;
 			string name;
 
+			// The original type will be saved during generic instantiation.
+			shared_ptr<TypeNameNode> originalType;
+
 			inline Param(
 				Location loc,
 				shared_ptr<TypeNameNode> type,

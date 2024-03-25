@@ -37,7 +37,7 @@ void AstVisitor::_putDefinition(
 void AstVisitor::_putFnDefinition(
 	Location locName,
 	string name,
-	FnOverloadingRegistry overloadingRegistry) {
+	const FnOverloadingRegistry& overloadingRegistry) {
 	if (!curScope->members.count(name)) {
 		curScope->members[name] = make_shared<FnNode>(compiler, name);
 		curScope->members[name]->parent = (MemberNode *)curScope->owner;
@@ -340,11 +340,11 @@ VISIT_METHOD_DECL(ClassDef) {
 		compiler,
 		name,
 		context->inheritSlot()
-			? static_pointer_cast<CustomTypeNameNode>(any_cast<shared_ptr<TypeNameNode>>(visit(context->inheritSlot())))
-			: shared_ptr<CustomTypeNameNode>(),
+			? any_cast<shared_ptr<TypeNameNode>>(visit(context->inheritSlot()))
+			: shared_ptr<TypeNameNode>(),
 		context->implementList()
-			? any_cast<deque<shared_ptr<CustomTypeNameNode>>>(visit(context->implementList()))
-			: deque<shared_ptr<CustomTypeNameNode>>(),
+			? any_cast<deque<shared_ptr<TypeNameNode>>>(visit(context->implementList()))
+			: deque<shared_ptr<TypeNameNode>>(),
 		context->genericParams()
 			? any_cast<GenericParamNodeList>(visit(context->genericParams()))
 			: GenericParamNodeList());
@@ -531,7 +531,7 @@ VISIT_METHOD_DECL(InheritSlot) {
 	return visit(context->customTypeName());
 }
 VISIT_METHOD_DECL(ImplementList) {
-	deque<shared_ptr<CustomTypeNameNode>> typeNames;
+	deque<shared_ptr<TypeNameNode>> typeNames;
 	for (auto i : context->getTokens(SlakeParser::RuleImplementList))
 		typeNames.push_back(any_cast<shared_ptr<CustomTypeNameNode>>(visit(i)));
 	return typeNames;
@@ -572,8 +572,8 @@ VISIT_METHOD_DECL(ConstructorDecl) {
 		name,
 		FnOverloadingRegistry(
 			Location(context->KW_OPERATOR()),
-			make_shared<VoidTypeNameNode>(Location(context->KW_OPERATOR()), false),
-			{},
+			static_pointer_cast<TypeNameNode>(make_shared<VoidTypeNameNode>(Location(context->KW_OPERATOR()), false)),
+			GenericParamNodeList{},
 			params));
 }
 VISIT_METHOD_DECL(ConstructorDef) {
@@ -589,9 +589,9 @@ VISIT_METHOD_DECL(DestructorDecl) {
 		name,
 		FnOverloadingRegistry(
 			Location(context->KW_OPERATOR()),
-			make_shared<VoidTypeNameNode>(Location(context->KW_OPERATOR()), false),
-			{},
-			{}));
+			static_pointer_cast<TypeNameNode>(make_shared<VoidTypeNameNode>(Location(context->KW_OPERATOR()), false)),
+			GenericParamNodeList{},
+			deque<Param>{}));
 }
 VISIT_METHOD_DECL(DestructorDef) {
 	auto decl = any_cast<FnDecl>(visit(context->destructorDecl()));
@@ -605,8 +605,8 @@ VISIT_METHOD_DECL(InterfaceDef) {
 		Location(context->KW_INTERFACE()),
 		name,
 		context->implementList()
-			? any_cast<deque<shared_ptr<CustomTypeNameNode>>>(visit(context->implementList()))
-			: deque<shared_ptr<CustomTypeNameNode>>(),
+			? any_cast<deque<shared_ptr<TypeNameNode>>>(visit(context->implementList()))
+			: deque<shared_ptr<TypeNameNode>>(),
 		context->genericParams()
 			? any_cast<GenericParamNodeList>(visit(context->genericParams()))
 			: GenericParamNodeList());

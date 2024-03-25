@@ -31,7 +31,7 @@ namespace slake {
 			Compiler *compiler;
 
 			void _putDefinition(Location locName, string name, shared_ptr<MemberNode> member);
-			void _putFnDefinition(Location locName, string name, FnOverloadingRegistry overloadingRegistry);
+			void _putFnDefinition(Location locName, string name, const FnOverloadingRegistry &overloadingRegistry);
 
 		public:
 			inline AstVisitor(Compiler *compiler) : compiler(compiler) {

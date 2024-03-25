@@ -146,8 +146,12 @@ Type Runtime::_loadType(std::istream &fs, slxfmt::Type vt) {
 				_loadType(fs, _read<slxfmt::Type>(fs)));
 		case slxfmt::Type::TypeName:
 			return TypeId::TypeName;
-		case slxfmt::Type::GenericArg:
-			return Type(_read<uint8_t>(fs));
+		case slxfmt::Type::GenericArg: {
+			uint8_t length = _read<uint8_t>(fs);
+			std::string name(length, '\0');
+			fs.read(name.data(), length);
+			return Type(name);
+		}
 		default:
 			throw LoaderError("Invalid type ID");
 	}

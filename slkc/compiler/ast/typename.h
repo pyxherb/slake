@@ -43,13 +43,14 @@ namespace slake {
 			Custom
 		};
 
+		/// @brief Base type name node class.
+		/// @note Duplication is unneeded, because type names should not be modified after they created.
 		class TypeNameNode : public AstNode {
 		private:
 			Location _loc;
 
 		public:
 			bool isConst;  // For parameters.
-			bool isRValue;
 
 			inline TypeNameNode(Location loc, bool isConst = false)
 				: _loc(loc), isConst(isConst) {}
@@ -91,7 +92,7 @@ namespace slake {
 		class CustomTypeNameNode : public TypeNameNode {
 		public:
 			Ref ref;
-			// deque<pair<Ref, shared_ptr<AstNode>>> resolvedPartsOut;
+			deque<pair<Ref, shared_ptr<AstNode>>> resolvedPartsOut;
 
 			Compiler *compiler;
 			Scope *scope;

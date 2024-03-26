@@ -12,6 +12,8 @@ Value *Runtime::resolveRef(RefValue* ref, Value *scopeValue) const {
 
 	MemberValue *curValue = (MemberValue *)scopeValue;
 
+	GenericInstantiationContext genericInstantiationContext = { nullptr, {} };
+
 	while (curValue) {
 		curValue = (MemberValue *)scopeValue;
 
@@ -39,7 +41,8 @@ Value *Runtime::resolveRef(RefValue* ref, Value *scopeValue) const {
 				for (auto &j : i.genericArgs)
 					j.loadDeferredType(this);
 
-				scopeValue = instantiateGenericValue(scopeValue, i.genericArgs);
+				genericInstantiationContext.genericArgs = &i.genericArgs;
+				scopeValue = instantiateGenericValue(scopeValue, genericInstantiationContext);
 			}
 		}
 

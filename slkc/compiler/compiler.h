@@ -318,7 +318,7 @@ namespace slake {
 			mutable GenericNodeCacheDirectory _genericCacheDir;
 
 			struct GenericNodeInstantiationContext {
-				const deque<shared_ptr<TypeNameNode>> &genericArgs;
+				const deque<shared_ptr<TypeNameNode>> *genericArgs;
 				unordered_map<string, shared_ptr<TypeNameNode>> mappedGenericArgs;
 			};
 
@@ -329,7 +329,7 @@ namespace slake {
 				shared_ptr<AstNode> node,
 				GenericNodeInstantiationContext &instantiationContext);
 			void mapGenericParams(shared_ptr<MemberNode> node, GenericNodeInstantiationContext &instantiationContext);
-			shared_ptr<MemberNode> instantiateGenericNode(shared_ptr<MemberNode> node, deque<shared_ptr<TypeNameNode>> genericArgs);
+			shared_ptr<MemberNode> instantiateGenericNode(shared_ptr<MemberNode> node, GenericNodeInstantiationContext &instantiationContext);
 
 			friend class AstVisitor;
 			friend class MemberNode;

@@ -116,34 +116,33 @@ void Compiler::walkNodeForGenericInstantiation(
 }
 
 void Compiler::mapGenericParams(shared_ptr<MemberNode> node, GenericNodeInstantiationContext &instantiationContext) {
-	if (instantiationContext.genericArgs.size() != node->genericParams.size())
+	if (instantiationContext.genericArgs->size() != node->genericParams.size())
 		throw FatalCompilationError(
 			Message(
-				instantiationContext.genericArgs[0]->getLocation(),
+				instantiationContext.genericArgs->at(0)->getLocation(),
 				MessageType::Error,
 				"Unmatched generic argument count"));
 
 	for (size_t i = 0; i < node->genericParams.size(); ++i) {
-		instantiationContext.mappedGenericArgs[node->genericParams[i]->name] = instantiationContext.genericArgs[i];
+		instantiationContext.mappedGenericArgs[node->genericParams[i]->name] = instantiationContext.genericArgs->at(i);
 	}
 }
 
-shared_ptr<MemberNode> Compiler::instantiateGenericNode(shared_ptr<MemberNode> node, deque<shared_ptr<TypeNameNode>> genericArgs) {
+shared_ptr<MemberNode> Compiler::instantiateGenericNode(shared_ptr<MemberNode> node, GenericNodeInstantiationContext &instantiationContext) {
 	if (auto it = _genericCacheDir.find(node.get()); it != _genericCacheDir.end()) {
-		if (auto subIt = it->second.find(genericArgs); subIt != it->second.end())
+		if (auto subIt = it->second.find(*instantiationContext.genericArgs); subIt != it->second.end())
 			return static_pointer_cast<MemberNode>(subIt->second->shared_from_this());
 	}
 
 	shared_ptr<MemberNode> newInstance = node->duplicate<MemberNode>();
 
-	GenericNodeInstantiationContext instantiationContext = { genericArgs, {} };
 	mapGenericParams(node, instantiationContext);
 	walkNodeForGenericInstantiation(newInstance, instantiationContext);
 
-	newInstance->genericArgs = genericArgs;
+	newInstance->genericArgs = *instantiationContext.genericArgs;
 	newInstance->originalValue = node.get();
 
-	_genericCacheDir[node.get()][genericArgs] = newInstance.get();
+	_genericCacheDir[node.get()][*instantiationContext.genericArgs] = newInstance.get();
 
 	return newInstance;
 }

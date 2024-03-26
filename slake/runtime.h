@@ -122,17 +122,18 @@ namespace slake {
 		LMOD_NOIMPORT = 0x08;
 
 	class Runtime final {
+	public:
+		struct GenericInstantiationContext {
+			const GenericArgList *genericArgs;
+			std::unordered_map<std::string, Type> mappedGenericArgs;
+		};
+
 	private:
 		/// @brief Root value of the runtime.
 		RootValue *_rootValue;
 
 		/// @brief Contains all created values.
 		std::set<Value *> _createdValues, _walkedValues, _destructedValues;
-
-		struct GenericInstantiationContext {
-			const GenericArgList &genericArgs;
-			std::unordered_map<std::string, Type> mappedGenericArgs;
-		};
 
 		struct GenericLookupEntry {
 			Value *originalValue;
@@ -199,7 +200,6 @@ namespace slake {
 		void _instantiateGenericValue(Value *v, GenericInstantiationContext &instantiationContext) const;
 
 		ObjectValue *_newClassInstance(ClassValue *cls);
-		ObjectValue *_newGenericClassInstance(ClassValue *cls, GenericArgList &genericArgs);
 
 		void _callFn(Context *context, FnValue *fn);
 		VarValue *_addLocalVar(MajorFrame &frame, Type type);
@@ -237,7 +237,7 @@ namespace slake {
 		/// @param v Value to be instantiated.
 		/// @param genericArgs Generic arguments for instantiation.
 		/// @return Instantiated value.
-		Value *instantiateGenericValue(const Value *v, const std::deque<Type> &genericArgs) const;
+		Value *instantiateGenericValue(const Value *v, GenericInstantiationContext &instantiationContext) const;
 
 		/// @brief Resolve a reference and get the referenced value.
 		/// @param ref Reference to be resolved.

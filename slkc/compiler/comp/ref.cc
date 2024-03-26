@@ -79,14 +79,18 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 		return result;
 	}
 
+	GenericNodeInstantiationContext genericInstantiationContext = { nullptr, {} };
+
 	if (shared_ptr<MemberNode> m; scope->members.count(ref[0].name)) {
 		auto newRef = ref;
 		newRef.pop_front();
 
 		m = scope->members.at(ref[0].name);
 
-		if(ref[0].genericArgs.size())
-			m = instantiateGenericNode(m, ref[0].genericArgs);
+		if (ref[0].genericArgs.size()) {
+			genericInstantiationContext.genericArgs = &ref[0].genericArgs;
+			m = instantiateGenericNode(m, genericInstantiationContext);
+		}
 
 		if (!newRef.size()) {
 			// All entries have been resolved, return true.

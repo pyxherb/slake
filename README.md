@@ -2,20 +2,23 @@
 
 <div align="center">
     <img src="./common/logo2.svg" alt="Slake logo"><br/>
-    <big>Powerful object-oriented, type-safe programming language,</big>
+    <big>The powerful object-oriented, type-safe programming language,</big>
     <big>designed for scripting and embedding.</big>
 </div>
 
 ## Introduction
 
-Slake is an object-oriented, type-safe programming language which is designed
-for embedding into applications.
+Slake is an object-oriented, type-safe programming language designed for
+scripting and embedding.
 
 ## Development Progress
 
 ✅: Completed
+
 🕓: Working In Progress
+
 ⏸: Paused/Postponed
+
 ❌: Cancelled
 
 * Bytecode Compiler ✅
@@ -82,30 +85,26 @@ for embedding into applications.
 To build Slake, you will always need:
 
 * CMake (version > 3.13)
-* A compiler with C++17 support
+* A C++ compiler with C++17 support
 * A C++17 standard library implementation
 
 ### Runtime
 
-To build the runtime with Slake standard library, you may need some extra tools.
-
 For x86 and x86-64, you will need:
 
-* Netwise Assembler (NASM), or compatible assemblers.
+* Netwise Assembler (NASM), or any other compatible assembler.
 
 ### Slake Compiler (slkc)
 
 You will need:
 
-* Compiler with C++17 support
-* ANTLR 4
-
-Note that CMake cache variables for ANTLR4 may need to be configured manually.
+* A C++ Compiler with C++17 support
+* ANTLR 4, both jar executable and C++ runtime
 
 ### Bytecode Compiler (slkbc)
 
 You will need:
 
-* Compiler with C++17 support
+* A C++ Compiler with C++17 support
 * Flex
 * GNU Bison

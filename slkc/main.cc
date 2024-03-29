@@ -133,7 +133,7 @@ int main(int argc, char **argv) {
 				try {
 					compiler->compile(is, os);
 				} catch (FatalCompilationError e) {
-					fprintf(stderr, "Error at %zd, %zd: %s\n", e.message.loc.line, e.message.loc.column, e.message.msg.c_str());
+					fprintf(stderr, "Error at %zd, %zd: %s\n", e.message.loc.line + 1, e.message.loc.column + 1, e.message.msg.c_str());
 					return -1;
 				}
 

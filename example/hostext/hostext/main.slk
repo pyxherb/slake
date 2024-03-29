@@ -3,7 +3,7 @@ module hostext;
 use {
 	externs = hostext.extfns
 }
-///*
+
 class Generic<T> {
 	pub T x;
 
@@ -23,7 +23,6 @@ class Generic<T> {
 		return this.x;
 	}
 }
-//*/
 
 class Test {
 	pub i32 x;
@@ -86,21 +85,17 @@ class Unrelated {
 pub i32 main() {
 	hostext.extfns.print("Entered main\n");
 
-	///*
 	Generic<i32> a = new Generic<i32>();
 	a.setX(123);
 	Generic<f32> b = new Generic<f32>();
 	b.setX(123.0f);
-	//*/
 
-	///*
 	Test test = new Derived(50);
 
 	while(test.x = test.x - 1) {
 		hostext.extfns.print("Yielded\n");
 		yield test.getX();
 	}
-	//*/
 
 	return 114514;
 }

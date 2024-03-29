@@ -3,6 +3,8 @@
 
 #include "ast/ast.h"
 #include <slake/runtime.h>
+#include <iostream>
+#include <fstream>
 
 namespace slake {
 	namespace slkc {
@@ -334,6 +336,7 @@ namespace slake {
 			friend class AstVisitor;
 			friend class MemberNode;
 			friend string std::to_string(shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slkc::Compiler *compiler, bool asOperatorName);
+			friend class Parser;
 
 		public:
 			deque<Message> messages;

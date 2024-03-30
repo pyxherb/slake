@@ -195,15 +195,15 @@ namespace slake {
 			Location _loc;
 
 		public:
-			shared_ptr<ExprNode> condition;
 			shared_ptr<VarDefStmtNode> varDefs;
+			shared_ptr<ExprNode> condition;
 			shared_ptr<StmtNode> body;
 			shared_ptr<StmtNode> elseBranch;
 
 			inline IfStmtNode(
 				Location loc,
-				shared_ptr<ExprNode> condition,
 				shared_ptr<VarDefStmtNode> varDefs,
+				shared_ptr<ExprNode> condition,
 				shared_ptr<StmtNode> body,
 				shared_ptr<StmtNode> elseBranch)
 				: _loc(loc),

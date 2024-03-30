@@ -20,7 +20,7 @@ if(RE2C_EXECUTABLE)
         add_custom_command(
             OUTPUT ${Re2cOutput}
             DEPENDS ${Re2cInput}
-            COMMAND ${RE2C_EXECUTABLE} --no-debug-info -c ${Re2cInput} -o ${Re2cOutput}
+            COMMAND ${RE2C_EXECUTABLE} -c ${Re2cInput} -o ${Re2cOutput}
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         )
     endmacro()

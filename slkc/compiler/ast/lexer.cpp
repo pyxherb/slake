@@ -434,10 +434,10 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 				<InitialCondition>"\n"		{ ++line; discardCurToken = true; break; }
 				<InitialCondition>"\000"	{ goto end; }
 
-				<InitialCondition>[ \t]+	{ discardCurToken = true; break; }
+				<InitialCondition>[ \r\t]+	{ discardCurToken = true; break; }
 
 				<InitialCondition>[^]		{
-					size_t index = YYCURSOR - src.data();
+					size_t index = prevYYCURSOR - src.data();
 					auto pos = src.find_last_of('\n', index);
 					if(pos == std::string::npos)
 						pos = 0;
@@ -456,7 +456,7 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 				<StringCondition>"\\\n"		{ continue; }
 				<StringCondition>"\\"		{ YYSETCONDITION(EscapeCondition); continue; }
 				<StringCondition>"\n"		{
-					size_t index = YYCURSOR - src.data();
+					size_t index = prevYYCURSOR - src.data();
 					auto pos = src.find_last_of('\n', index);
 					if(pos == std::string::npos)
 						pos = 0;
@@ -465,7 +465,7 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 					throw LexicalError("Unexpected end of line", { line, pos });
 				}
 				<StringCondition>"\000"	{
-					size_t index = YYCURSOR - src.data();
+					size_t index = prevYYCURSOR - src.data();
 					auto pos = src.find_last_of('\n', index);
 					if(pos == std::string::npos)
 						pos = 0;

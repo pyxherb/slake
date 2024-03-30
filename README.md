@@ -99,7 +99,6 @@ For x86 and x86-64, you will need:
 You will need:
 
 * A C++ Compiler with C++17 support
-* ANTLR 4, both jar executable and C++ runtime
 
 ### Bytecode Compiler (slkbc)
 

@@ -25,11 +25,6 @@ namespace slake {
 			virtual ~SyntaxError() = default;
 		};
 
-		struct Traceback {
-			LexerContext context;
-			SyntaxError error;
-		};
-
 		class Parser {
 		private:
 			void _putDefinition(

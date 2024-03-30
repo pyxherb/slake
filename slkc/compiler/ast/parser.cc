@@ -39,25 +39,16 @@ void Parser::_putFnDefinition(
 
 std::map<TokenId, Parser::OpRegistry> Parser::prefixOpRegistries = {
 	{ TokenId::SubOp,
-		{ 140,
+		{ 131,
 			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
 				return static_pointer_cast<ExprNode>(
 					make_shared<UnaryOpExprNode>(
 						lhs->getLocation(),
-						UnaryOp::DecF,
-						lhs));
-			} } },
-	{ TokenId::AddOp,
-		{ 140,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				return static_pointer_cast<ExprNode>(
-					make_shared<UnaryOpExprNode>(
-						lhs->getLocation(),
-						UnaryOp::IncF,
+						UnaryOp::Neg,
 						lhs));
 			} } },
 	{ TokenId::RevOp,
-		{ 140,
+		{ 131,
 			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
 				return static_pointer_cast<ExprNode>(
 					make_shared<UnaryOpExprNode>(
@@ -66,7 +57,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::prefixOpRegistries = {
 						lhs));
 			} } },
 	{ TokenId::NotOp,
-		{ 140,
+		{ 131,
 			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
 				return static_pointer_cast<ExprNode>(
 					make_shared<UnaryOpExprNode>(
@@ -75,7 +66,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::prefixOpRegistries = {
 						lhs));
 			} } },
 	{ TokenId::IncOp,
-		{ 140,
+		{ 131,
 			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
 				return static_pointer_cast<ExprNode>(
 					make_shared<UnaryOpExprNode>(
@@ -84,7 +75,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::prefixOpRegistries = {
 						lhs));
 			} } },
 	{ TokenId::DecOp,
-		{ 140,
+		{ 131,
 			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
 				return static_pointer_cast<ExprNode>(
 					make_shared<UnaryOpExprNode>(
@@ -96,7 +87,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::prefixOpRegistries = {
 
 std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 	{ TokenId::LParenthese,
-		{ 151,
+		{ 140,
 			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
 				auto args = parser->parseArgs();
 
@@ -107,9 +98,22 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 						lhs,
 						args));
 			} } },
+	{ TokenId::LBracket,
+		{ 140,
+			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
+				auto rhs = parser->parseExpr();
 
+				parser->expectToken(parser->lexer->nextToken(), TokenId::RBracket);
+
+				return static_pointer_cast<ExprNode>(
+					make_shared<BinaryOpExprNode>(
+						lhs->getLocation(),
+						BinaryOp::Subscript,
+						lhs,
+						rhs));
+			} } },
 	{ TokenId::IncOp,
-		{ 141,
+		{ 140,
 			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
 				return static_pointer_cast<ExprNode>(
 					make_shared<UnaryOpExprNode>(
@@ -118,7 +122,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 						lhs));
 			} } },
 	{ TokenId::DecOp,
-		{ 141,
+		{ 140,
 			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
 				return static_pointer_cast<ExprNode>(
 					make_shared<UnaryOpExprNode>(
@@ -128,9 +132,9 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 			} } },
 
 	{ TokenId::MulOp,
-		{ 130,
+		{ 120,
 			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(131);
+				auto rhs = parser->parseExpr(121);
 
 				return static_pointer_cast<ExprNode>(
 					make_shared<BinaryOpExprNode>(
@@ -140,9 +144,9 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 						rhs));
 			} } },
 	{ TokenId::DivOp,
-		{ 130,
+		{ 120,
 			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(131);
+				auto rhs = parser->parseExpr(121);
 
 				return static_pointer_cast<ExprNode>(
 					make_shared<BinaryOpExprNode>(
@@ -152,9 +156,9 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 						rhs));
 			} } },
 	{ TokenId::ModOp,
-		{ 130,
+		{ 120,
 			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(131);
+				auto rhs = parser->parseExpr(121);
 
 				return static_pointer_cast<ExprNode>(
 					make_shared<BinaryOpExprNode>(
@@ -165,9 +169,9 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 			} } },
 
 	{ TokenId::AddOp,
-		{ 120,
+		{ 110,
 			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(121);
+				auto rhs = parser->parseExpr(111);
 
 				return static_pointer_cast<ExprNode>(
 					make_shared<BinaryOpExprNode>(
@@ -177,9 +181,9 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 						rhs));
 			} } },
 	{ TokenId::SubOp,
-		{ 120,
+		{ 110,
 			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(121);
+				auto rhs = parser->parseExpr(111);
 
 				return static_pointer_cast<ExprNode>(
 					make_shared<BinaryOpExprNode>(
@@ -190,9 +194,9 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 			} } },
 
 	{ TokenId::LshOp,
-		{ 110,
+		{ 100,
 			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(111);
+				auto rhs = parser->parseExpr(101);
 
 				return static_pointer_cast<ExprNode>(
 					make_shared<BinaryOpExprNode>(
@@ -202,9 +206,9 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 						rhs));
 			} } },
 	{ TokenId::RshOp,
-		{ 110,
+		{ 100,
 			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(111);
+				auto rhs = parser->parseExpr(101);
 
 				return static_pointer_cast<ExprNode>(
 					make_shared<BinaryOpExprNode>(
@@ -215,9 +219,9 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 			} } },
 
 	{ TokenId::GtOp,
-		{ 100,
+		{ 90,
 			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(101);
+				auto rhs = parser->parseExpr(91);
 
 				return static_pointer_cast<ExprNode>(
 					make_shared<BinaryOpExprNode>(
@@ -227,9 +231,9 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 						rhs));
 			} } },
 	{ TokenId::GtEqOp,
-		{ 100,
+		{ 90,
 			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(101);
+				auto rhs = parser->parseExpr(91);
 
 				return static_pointer_cast<ExprNode>(
 					make_shared<BinaryOpExprNode>(
@@ -239,9 +243,9 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 						rhs));
 			} } },
 	{ TokenId::LtOp,
-		{ 100,
+		{ 90,
 			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(101);
+				auto rhs = parser->parseExpr(91);
 
 				return static_pointer_cast<ExprNode>(
 					make_shared<BinaryOpExprNode>(
@@ -251,9 +255,9 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 						rhs));
 			} } },
 	{ TokenId::LtEqOp,
-		{ 100,
+		{ 90,
 			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(101);
+				auto rhs = parser->parseExpr(91);
 
 				return static_pointer_cast<ExprNode>(
 					make_shared<BinaryOpExprNode>(
@@ -264,9 +268,9 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 			} } },
 
 	{ TokenId::EqOp,
-		{ 90,
+		{ 80,
 			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(91);
+				auto rhs = parser->parseExpr(81);
 
 				return static_pointer_cast<ExprNode>(
 					make_shared<BinaryOpExprNode>(
@@ -276,9 +280,9 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 						rhs));
 			} } },
 	{ TokenId::NeqOp,
-		{ 90,
+		{ 80,
 			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(91);
+				auto rhs = parser->parseExpr(81);
 
 				return static_pointer_cast<ExprNode>(
 					make_shared<BinaryOpExprNode>(
@@ -286,6 +290,87 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 						BinaryOp::Neq,
 						lhs,
 						rhs));
+			} } },
+
+	{ TokenId::AndOp,
+		{ 70,
+			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
+				auto rhs = parser->parseExpr(71);
+
+				return static_pointer_cast<ExprNode>(
+					make_shared<BinaryOpExprNode>(
+						lhs->getLocation(),
+						BinaryOp::And,
+						lhs,
+						rhs));
+			} } },
+
+	{ TokenId::XorOp,
+		{ 60,
+			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
+				auto rhs = parser->parseExpr(61);
+
+				return static_pointer_cast<ExprNode>(
+					make_shared<BinaryOpExprNode>(
+						lhs->getLocation(),
+						BinaryOp::Xor,
+						lhs,
+						rhs));
+			} } },
+
+	{ TokenId::OrOp,
+		{ 50,
+			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
+				auto rhs = parser->parseExpr(51);
+
+				return static_pointer_cast<ExprNode>(
+					make_shared<BinaryOpExprNode>(
+						lhs->getLocation(),
+						BinaryOp::Or,
+						lhs,
+						rhs));
+			} } },
+
+	{ TokenId::LAndOp,
+		{ 40,
+			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
+				auto rhs = parser->parseExpr(41);
+
+				return static_pointer_cast<ExprNode>(
+					make_shared<BinaryOpExprNode>(
+						lhs->getLocation(),
+						BinaryOp::LAnd,
+						lhs,
+						rhs));
+			} } },
+
+	{ TokenId::LOrOp,
+		{ 30,
+			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
+				auto rhs = parser->parseExpr(31);
+
+				return static_pointer_cast<ExprNode>(
+					make_shared<BinaryOpExprNode>(
+						lhs->getLocation(),
+						BinaryOp::LOr,
+						lhs,
+						rhs));
+			} } },
+
+	{ TokenId::Question,
+		{ 21,
+			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
+				auto trueBranch = parser->parseExpr(20);
+
+				parser->expectToken(parser->lexer->nextToken(), TokenId::Colon);
+
+				auto falseBranch = parser->parseExpr(20);
+
+				return static_pointer_cast<ExprNode>(
+					make_shared<TernaryOpExprNode>(
+						lhs,
+						trueBranch,
+						falseBranch));
 			} } },
 
 	{ TokenId::AssignOp,
@@ -859,8 +944,8 @@ shared_ptr<StmtNode> Parser::parseStmt() {
 			return static_pointer_cast<StmtNode>(
 				make_shared<IfStmtNode>(
 					beginToken.beginLocation,
-					condition,
 					varDefs,
+					condition,
 					body,
 					elseBranch));
 		}

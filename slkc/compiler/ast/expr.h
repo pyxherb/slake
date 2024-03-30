@@ -55,7 +55,8 @@ namespace slake {
 			IncF,
 			DecF,
 			IncB,
-			DecB
+			DecB,
+			Neg
 		};
 
 		inline bool isForwardUnaryOp(UnaryOp op) {

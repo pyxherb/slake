@@ -55,7 +55,8 @@ namespace slake {
 			IncF,
 			DecF,
 			IncB,
-			DecB
+			DecB,
+			Neg
 		};
 
 		inline bool isForwardUnaryOp(UnaryOp op) {
@@ -334,7 +335,7 @@ namespace slake {
 			inline CallExprNode(
 				shared_ptr<ExprNode> target,
 				deque<shared_ptr<ExprNode>> args,
-				bool isAsync) : target(target), args(args), isAsync(isAsync) {}
+				bool isAsync = false) : target(target), args(args), isAsync(isAsync) {}
 			virtual ~CallExprNode() = default;
 
 			virtual inline Location getLocation() const override { return target->getLocation(); }

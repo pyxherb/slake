@@ -1,22 +1,12 @@
-find_package(ANTLR REQUIRED)
+find_package(re2c REQUIRED)
 
-include_directories(${ANTLR_INCLUDE_DIRS}/antlr4-runtime)
-
-antlr_target(SlakeLexer SlakeLexer.g4 LEXER)
-antlr_target(SlakeParser SlakeParser.g4 PARSER
-            DEPENDS_ANTLR SlakeLexer
-            COMPILE_FLAGS -visitor -no-listener -lib ${ANTLR_SlakeLexer_OUTPUT_DIR})
-
-include_directories(${ANTLR_SlakeLexer_OUTPUT_DIR})
-include_directories(${ANTLR_SlakeParser_OUTPUT_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+add_re2c_target(slakeLexer compiler/ast/lexer.cpp ${CMAKE_CURRENT_BINARY_DIR}/lexer.cc)
 
 file(GLOB SRC *.h *.hh *.c *.cc)
 add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
-add_executable(slkc
-    ${SRC}
-    ${ANTLR_SlakeLexer_CXX_OUTPUTS}
-    ${ANTLR_SlakeParser_CXX_OUTPUTS})
+add_executable(slkc ${SRC} ${CMAKE_CURRENT_BINARY_DIR}/lexer.cc)
 
 set(SLKC_WITH_LSP_ENABLED TRUE CACHE BOOL "Enable built-in LSP server of SLKC")
 configure_file("config.h.in" ${CMAKE_CURRENT_BINARY_DIR}/config.h)

@@ -18,22 +18,6 @@ static void _write(std::ostream &fs, const T *ptr, size_t size) {
 	fs.write((const char *)ptr, size);
 }
 
-class SlakeErrorListener : public antlr4::BaseErrorListener {
-	virtual void syntaxError(
-		antlr4::Recognizer *recognizer,
-		antlr4::Token *offendingSymbol,
-		size_t line,
-		size_t charPositionInLine,
-		const std::string &msg,
-		std::exception_ptr e) override {
-		throw FatalCompilationError(
-			Message(
-				Location(line, charPositionInLine),
-				MessageType::Error,
-				msg));
-	}
-};
-
 Compiler::~Compiler() {
 	flags |= COMP_DELETING;
 }
@@ -45,19 +29,37 @@ public:
 };
 
 void Compiler::compile(std::istream &is, std::ostream &os) {
-	antlr4::ANTLRInputStream s(is);
+	Lexer lexer;
 
-	SlakeLexer lexer(&s);
-	antlr4::CommonTokenStream tokens(&lexer);
-	SlakeErrorListener errorListener;
+	std::string s;
+	{
+		is.seekg(0, std::ios::end);
+		size_t size = is.tellg();
+		s.resize(size);
+		is.seekg(0, std::ios::beg);
+		is.read(s.data(), size);
+	}
 
-	SlakeParser parser(&tokens);
-	parser.removeErrorListeners();
-	parser.addErrorListener(&errorListener);
-	auto tree = parser.prog();
+	try {
+		lexer.lex(s);
+	} catch (LexicalError e) {
+		throw FatalCompilationError(
+			Message(
+				e.location,
+				MessageType::Error,
+				"Lexical error"));
+	}
 
-	slake::slkc::AstVisitor visitor(this);
-	visitor.visit(tree);
+	Parser parser;
+	try {
+		parser.parse(&lexer, this);
+	} catch (SyntaxError e) {
+		throw FatalCompilationError(
+			Message(
+				e.location,
+				MessageType::Error,
+				e.what()));
+	}
 
 	{
 		slxfmt::ImgHeader ih = {};

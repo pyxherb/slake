@@ -284,24 +284,22 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 
 			string mangledFnName = i.first;
 
-			if (i.first != "new") {
-				{
-					deque<shared_ptr<TypeNameNode>> argTypes;
+			{
+				deque<shared_ptr<TypeNameNode>> argTypes;
 
-					for (auto &k : j.params) {
-						argTypes.push_back(k.type);
-					}
-
-					mangledFnName = mangleName(i.first, argTypes, false);
+				for (auto &k : j.params) {
+					argTypes.push_back(k.type);
 				}
 
-				if (compiledFuncs.count(mangledFnName)) {
-					throw FatalCompilationError(
-						Message(
-							j.loc,
-							MessageType::Error,
-							"Duplicated function overloading"));
-				}
+				mangledFnName = mangleName(i.first, argTypes, false);
+			}
+
+			if (compiledFuncs.count(mangledFnName)) {
+				throw FatalCompilationError(
+					Message(
+						j.loc,
+						MessageType::Error,
+						"Duplicated function overloading"));
 			}
 
 			auto compiledFn = make_shared<CompiledFnNode>(j.loc, mangledFnName);

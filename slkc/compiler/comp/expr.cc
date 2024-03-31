@@ -351,7 +351,53 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 				}
 			}
 
-			curFn->insertIns(Opcode::NEW, curMajorContext.curMinorContext.evalDest, e->type);
+			auto node = resolveCustomTypeName((CustomTypeNameNode *)e->type.get());
+
+			switch (node->getNodeType()) {
+				case NodeType::Class:
+				case NodeType::Interface:
+				case NodeType::Trait: {
+					shared_ptr<MemberNode> n = static_pointer_cast<MemberNode>(node);
+
+					if (auto it = n->scope->members.find("new"); it != n->scope->members.end()) {
+						deque<shared_ptr<TypeNameNode>> argTypes;
+
+						for (auto &i : e->args) {
+							argTypes.push_back(evalExprType(i));
+						}
+
+						assert(it->second->getNodeType() == NodeType::Fn);
+
+						FnOverloadingRegistry *overloadingRegistry = argDependentLookup(expr->getLocation(), (FnNode *)it->second.get(), argTypes);
+
+						deque<shared_ptr<TypeNameNode>> paramTypes;
+						for (auto &j : overloadingRegistry->params) {
+							paramTypes.push_back(j.originalType ? j.originalType : j.type);
+						}
+
+						if (overloadingRegistry->isVaridic())
+							paramTypes.pop_back();
+
+						Ref fullName = getFullName(it->second.get());
+						fullName.back().name = mangleName("new", paramTypes, false);
+
+						curFn->insertIns(Opcode::NEW, curMajorContext.curMinorContext.evalDest, e->type, make_shared<RefExprNode>(fullName));
+					} else {
+						curFn->insertIns(Opcode::NEW, curMajorContext.curMinorContext.evalDest, e->type, {});
+					}
+
+					break;
+				}
+				case NodeType::GenericParam:
+					throw FatalCompilationError(
+						Message(
+							e->type->getLocation(),
+							MessageType::Error,
+							"Cannot instantiate a generic parameter"));
+				default:
+					assert(false);
+			}
+
 			break;
 		}
 		case ExprType::Typeof: {

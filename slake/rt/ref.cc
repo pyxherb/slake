@@ -10,13 +10,11 @@ Value *Runtime::resolveRef(RefValue* ref, Value *scopeValue) const {
 		if (!(scopeValue = _rootValue))
 			return nullptr;
 
-	MemberValue *curValue = (MemberValue *)scopeValue;
+	MemberValue *curValue;
 
 	GenericInstantiationContext genericInstantiationContext = { nullptr, {} };
 
-	while (curValue) {
-		curValue = (MemberValue *)scopeValue;
-
+	while ((curValue = (MemberValue *)scopeValue)) {
 		for (auto &i : ref->entries) {
 			if (!scopeValue)
 				goto fail;

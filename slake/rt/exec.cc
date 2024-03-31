@@ -670,11 +670,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 				throw NullRefError();
 
 			if (fn->isNative()) {
-				curMajorFrame.returnValue = ((NativeFnValue *)fn)->call(
-					ins.opcode == Opcode::MCALL
-					? (curMajorFrame.scopeValue = ins.operands[1])
-					: nullptr,
-					curMajorFrame.nextArgStack).get();
+				curMajorFrame.returnValue = ((NativeFnValue *)fn)->call(ins.opcode == Opcode::MCALL ? (curMajorFrame.scopeValue = ins.operands[1]) : nullptr, curMajorFrame.nextArgStack).get();
 				curMajorFrame.nextArgStack.clear();
 			} else {
 				_callFn(context, fn);
@@ -725,11 +721,12 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			break;
 		}
 		case Opcode::NEW: {
-			_checkOperandCount(ins, 2);
+			_checkOperandCount(ins, 3);
 
-			_checkOperandType(ins, { TypeId::Var, TypeId::TypeName });
+			_checkOperandType(ins, { TypeId::Var, TypeId::TypeName, TypeId::Ref });
 
 			Type &type = ((TypeNameValue *)ins.operands[1])->_data;
+			RefValue *constructorRef = (RefValue *)ins.operands[2];
 			type.loadDeferredType(this);
 
 			switch (type.typeId) {
@@ -739,16 +736,28 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 					ObjectValue *instance = _newClassInstance(cls);
 					((VarValue *)ins.operands[0])->setData(instance);
 
-					FnValue *constructor = (FnValue *)cls->getMember("new");
-					if (constructor && constructor->getType() == TypeId::Fn) {
-						_callFn(context, constructor);
-						context->majorFrames.back().thisObject = instance;
-						return;
+					if (constructorRef) {
+						if (auto v = resolveRef(constructorRef); v) {
+							if ((v->getType() != TypeId::Fn))
+								throw InvalidOperandsError("Specified constructor is not a function");
+
+							BasicFnValue *constructor = (BasicFnValue *)v;
+
+							if (constructor->isNative()) {
+								constructor->call(instance, curMajorFrame.nextArgStack);
+								curMajorFrame.nextArgStack.clear();
+							} else {
+								_callFn(context, (FnValue *)constructor);
+								context->majorFrames.back().thisObject = instance;
+								return;
+							}
+						} else
+							throw InvalidOperandsError("Specified constructor is not found");
 					}
 					break;
 				}
 				default:
-					throw InvalidOperandsError("The type cannot be instantiated");
+					throw InvalidOperandsError("Specified type cannot be instantiated");
 			}
 			break;
 		}

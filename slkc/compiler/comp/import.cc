@@ -30,12 +30,12 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 		params.push_back(param);
 	}
 
-	FnOverloadingRegistry registry = FnOverloadingRegistry(Location(), returnType, genericParams, params);
+	shared_ptr<FnOverloadingNode> overloading = make_shared<FnOverloadingNode>(Location(), this, returnType, genericParams, params);
 
 	if (!scope->members.count(fnName))
 		(scope->members[fnName] = make_shared<FnNode>(this, fnName))->bind(parent.get());
 
-	static_pointer_cast<FnNode>(scope->members[fnName])->overloadingRegistries.push_back(registry);
+	static_pointer_cast<FnNode>(scope->members[fnName])->overloadingRegistries.push_back(overloading);
 }
 
 void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, ModuleValue *value) {

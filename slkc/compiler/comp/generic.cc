@@ -11,8 +11,11 @@ void Compiler::walkTypeNameNodeForGenericInstantiation(
 		if ((t->ref.size() == 1) &&
 			(t->ref[0].genericArgs.empty())) {
 			if (auto it = instantiationContext.mappedGenericArgs.find(t->ref[0].name);
-				it != instantiationContext.mappedGenericArgs.end())
-				type = it->second;
+				it != instantiationContext.mappedGenericArgs.end()) {
+				// Note that we use nullptr to identify irreplaceable generic parameters.
+				if (it->second)
+					type = it->second;
+			}
 		} else {
 			for (auto &i : t->ref) {
 				for (auto &j : i.genericArgs)
@@ -30,14 +33,34 @@ void Compiler::walkNodeForGenericInstantiation(
 			shared_ptr<FnNode> n = static_pointer_cast<FnNode>(node);
 
 			for (auto &i : n->overloadingRegistries) {
-				walkTypeNameNodeForGenericInstantiation(i.returnType, instantiationContext);
+				if (i->genericParams.empty()) {
+					walkTypeNameNodeForGenericInstantiation(i->returnType, instantiationContext);
 
-				for (auto &j : i.genericParams)
-					walkNodeForGenericInstantiation(j, instantiationContext);
+					for (auto &j : i->genericParams)
+						walkNodeForGenericInstantiation(j, instantiationContext);
 
-				for (auto& j : i.params) {
-					j.originalType = j.type;
-					walkTypeNameNodeForGenericInstantiation(j.type, instantiationContext);
+					for (auto &j : i->params) {
+						j.originalType = j.type;
+						walkTypeNameNodeForGenericInstantiation(j.type, instantiationContext);
+					}
+				} else {
+					GenericNodeInstantiationContext newInstantiationContext = instantiationContext;
+
+					// Mark the generic parameters in the overloading as irreplaceable.
+					// Note that we use nullptr to identify irreplaceable generic parameters.
+					for (size_t j = 0; j < i->genericParams.size(); ++j) {
+						instantiationContext.mappedGenericArgs[i->genericParams[j]->name] = {};
+					}
+
+					walkTypeNameNodeForGenericInstantiation(i->returnType, newInstantiationContext);
+
+					for (auto &j : i->genericParams)
+						walkNodeForGenericInstantiation(j, newInstantiationContext);
+
+					for (auto &j : i->params) {
+						j.originalType = j.type;
+						walkTypeNameNodeForGenericInstantiation(j.type, newInstantiationContext);
+					}
 				}
 			}
 			break;
@@ -62,7 +85,7 @@ void Compiler::walkNodeForGenericInstantiation(
 				walkTypeNameNodeForGenericInstantiation(i, instantiationContext);
 			}
 
-			for (auto& i : n->scope->members) {
+			for (auto &i : n->scope->members) {
 				walkNodeForGenericInstantiation(i.second, instantiationContext);
 			}
 
@@ -116,6 +139,10 @@ void Compiler::walkNodeForGenericInstantiation(
 }
 
 void Compiler::mapGenericParams(shared_ptr<MemberNode> node, GenericNodeInstantiationContext &instantiationContext) {
+	// DO NOT map functions because their generic parameters are saved in overloadings.
+	if (node->getNodeType() == NodeType::Fn)
+		return;
+
 	if (instantiationContext.genericArgs->size() != node->genericParams.size())
 		throw FatalCompilationError(
 			Message(
@@ -143,6 +170,23 @@ shared_ptr<MemberNode> Compiler::instantiateGenericNode(shared_ptr<MemberNode> n
 	newInstance->originalValue = node.get();
 
 	_genericCacheDir[node.get()][*instantiationContext.genericArgs] = newInstance.get();
+
+	return newInstance;
+}
+
+shared_ptr<FnOverloadingNode> Compiler::instantiateGenericFnOverloading(shared_ptr<FnOverloadingNode> overloading, GenericNodeInstantiationContext& instantiationContext) {
+	mapGenericParams(overloading, instantiationContext);
+	walkTypeNameNodeForGenericInstantiation(overloading->returnType, instantiationContext);
+
+	auto newInstance = overloading->duplicate<FnOverloadingNode>();
+
+	for (auto &j : newInstance->genericParams)
+		walkNodeForGenericInstantiation(j, instantiationContext);
+
+	for (auto &j : newInstance->params) {
+		j.originalType = j.type;
+		walkTypeNameNodeForGenericInstantiation(j.type, instantiationContext);
+	}
 
 	return newInstance;
 }

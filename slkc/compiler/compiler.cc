@@ -282,14 +282,14 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		for (auto &j : i.second->overloadingRegistries) {
 			pushMajorContext();
 
-			curMajorContext.mergeGenericParams(j.genericParams);
+			curMajorContext.mergeGenericParams(j->genericParams);
 
 			string mangledFnName = i.first;
 
 			{
 				deque<shared_ptr<TypeNameNode>> argTypes;
 
-				for (auto &k : j.params) {
+				for (auto &k : j->params) {
 					argTypes.push_back(k.type);
 				}
 
@@ -299,23 +299,23 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 			if (compiledFuncs.count(mangledFnName)) {
 				throw FatalCompilationError(
 					Message(
-						j.loc,
+						j->loc,
 						MessageType::Error,
 						"Duplicated function overloading"));
 			}
 
-			auto compiledFn = make_shared<CompiledFnNode>(j.loc, mangledFnName);
-			compiledFn->returnType = j.returnType;
-			compiledFn->params = j.params;
-			compiledFn->paramIndices = j.paramIndices;
-			compiledFn->genericParams = j.genericParams;
-			compiledFn->genericParamIndices = j.genericParamIndices;
-			compiledFn->access = j.access;
+			auto compiledFn = make_shared<CompiledFnNode>(j->loc, mangledFnName);
+			compiledFn->returnType = j->returnType;
+			compiledFn->params = j->params;
+			compiledFn->paramIndices = j->paramIndices;
+			compiledFn->genericParams = j->genericParams;
+			compiledFn->genericParamIndices = j->genericParamIndices;
+			compiledFn->access = j->access;
 
 			curFn = compiledFn;
 
-			if (j.body)
-				compileStmt(j.body);
+			if (j->body)
+				compileStmt(j->body);
 
 			compiledFuncs[mangledFnName] = compiledFn;
 
@@ -354,10 +354,10 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		_write(os, fnd);
 		_write(os, i.first.data(), i.first.length());
 
+		compileTypeName(os, i.second->returnType);
+
 		for (size_t j = 0; j < i.second->genericParams.size(); ++j)
 			compileGenericParam(os, i.second->genericParams[j]);
-
-		compileTypeName(os, i.second->returnType);
 
 		for (size_t j = 0; j < i.second->params.size() - hasVarArg; ++j)
 			compileTypeName(os, i.second->params[j].type);

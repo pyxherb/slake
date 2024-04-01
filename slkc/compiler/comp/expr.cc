@@ -368,14 +368,14 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 
 						assert(it->second->getNodeType() == NodeType::Fn);
 
-						FnOverloadingRegistry *overloadingRegistry = argDependentLookup(expr->getLocation(), (FnNode *)it->second.get(), argTypes);
+						shared_ptr<FnOverloadingNode> overloading = argDependentLookup(expr->getLocation(), (FnNode *)it->second.get(), argTypes, {});
 
 						deque<shared_ptr<TypeNameNode>> paramTypes;
-						for (auto &j : overloadingRegistry->params) {
+						for (auto &j : overloading->params) {
 							paramTypes.push_back(j.originalType ? j.originalType : j.type);
 						}
 
-						if (overloadingRegistry->isVaridic())
+						if (overloading->isVaridic())
 							paramTypes.pop_back();
 
 						Ref fullName = getFullName(it->second.get());
@@ -468,9 +468,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 
 			uint32_t tmpRegIndex = allocReg();
 
-			auto determineOverloadingRegistry = [this, expr, &resolvedParts](shared_ptr<FnNode> x) -> FnOverloadingRegistry * {
-				FnOverloadingRegistry *overloadingRegistry = nullptr;
-
+			auto determineOverloadingRegistry = [this, expr, &resolvedParts](shared_ptr<FnNode> x, const deque<shared_ptr<TypeNameNode>> &genericArgs) -> shared_ptr<FnOverloadingNode> {
 				if ((resolvedParts.size() > 2) || (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Call)) {
 					//
 					// Reference to a overloaded function is always ambiguous,
@@ -484,12 +482,13 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 								"Reference to a overloaded function is ambiguous"));
 					}
 
-					overloadingRegistry = &x->overloadingRegistries.front();
-				} else {
-					overloadingRegistry = argDependentLookup(expr->getLocation(), x.get(), curMajorContext.curMinorContext.argTypes);
+					return x->overloadingRegistries.front();
 				}
 
-				return overloadingRegistry;
+				//
+				// Find a proper overloading for the function calling expression.
+				//
+				return argDependentLookup(expr->getLocation(), x.get(), curMajorContext.curMinorContext.argTypes, genericArgs);
 			};
 			auto loadRest = [this, &determineOverloadingRegistry, &expr, &tmpRegIndex, &resolvedParts]() {
 				for (size_t i = 1; i < resolvedParts.size(); ++i) {
@@ -505,14 +504,14 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 						case NodeType::Fn: {
 							Ref ref = resolvedParts[i].first;
 
-							FnOverloadingRegistry *overloadingRegistry = determineOverloadingRegistry(static_pointer_cast<FnNode>(resolvedParts[i].second));
+							shared_ptr<FnOverloadingNode> overloading = determineOverloadingRegistry(static_pointer_cast<FnNode>(resolvedParts[i].second), resolvedParts[i].first.back().genericArgs);
 
 							deque<shared_ptr<TypeNameNode>> paramTypes;
-							for (auto &j : overloadingRegistry->params) {
+							for (auto &j : overloading->params) {
 								paramTypes.push_back(j.originalType ? j.originalType : j.type);
 							}
 
-							if (overloadingRegistry->isVaridic())
+							if (overloading->isVaridic())
 								paramTypes.pop_back();
 
 							ref.back().name = mangleName(
@@ -596,14 +595,14 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 							FnNode *fn = (FnNode *)x.get();
 							_getFullName(fn, ref);
 
-							FnOverloadingRegistry *overloadingRegistry = determineOverloadingRegistry(static_pointer_cast<FnNode>(x));
+							shared_ptr<FnOverloadingNode> overloading = determineOverloadingRegistry(static_pointer_cast<FnNode>(x), ref.back().genericArgs);
 
 							deque<shared_ptr<TypeNameNode>> paramTypes;
-							for (auto i : overloadingRegistry->params) {
-								paramTypes.push_back(i.type);
+							for (auto i : overloading->params) {
+								paramTypes.push_back(i.originalType ? i.originalType : i.type);
 							}
 
-							if (overloadingRegistry->isVaridic())
+							if (overloading->isVaridic())
 								paramTypes.pop_back();
 
 							ref.back().name = mangleName(

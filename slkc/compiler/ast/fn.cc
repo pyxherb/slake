@@ -2,12 +2,13 @@
 
 using namespace slake::slkc;
 
-slake::slkc::FnOverloadingRegistry::FnOverloadingRegistry(
+FnOverloadingNode::FnOverloadingNode(
 	Location loc,
+	Compiler *compiler,
 	shared_ptr<TypeNameNode> returnType,
 	GenericParamNodeList genericParams,
-	deque<Param> params)
-	: loc(loc), returnType(returnType), genericParams(genericParams), params(params) {
+	deque<Param> params,
+	shared_ptr<Scope> scope) : MemberNode(compiler, access), returnType(returnType), params(params) {
 	for (size_t i = 0; i < params.size(); ++i) {
 		if (paramIndices.count(params[i].name)) {
 			throw FatalCompilationError(
@@ -19,6 +20,13 @@ slake::slkc::FnOverloadingRegistry::FnOverloadingRegistry(
 
 		paramIndices[params[i].name] = i;
 	}
+
+	setGenericParams(genericParams);
+	setScope(scope);  // For custom type names.
+}
+
+shared_ptr<AstNode> FnOverloadingNode::doDuplicate() {
+	return make_shared<FnOverloadingNode>(*this);
 }
 
 shared_ptr<AstNode> FnNode::doDuplicate() {

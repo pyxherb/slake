@@ -82,6 +82,11 @@ class AnotherDerived(Derived) {
 class Unrelated {
 }
 
+void test<T>(T x) {
+	hostext.extfns.print(x, "\n");
+	return;
+}
+
 pub i32 main() {
 	hostext.extfns.print("Entered main\n");
 
@@ -96,6 +101,9 @@ pub i32 main() {
 		hostext.extfns.print("Yielded\n");
 		yield test.getX();
 	}
+
+	test<f32>(123.456f);
+	test<i32>(123);
 
 	return 114514;
 }

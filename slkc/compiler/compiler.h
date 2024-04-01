@@ -182,7 +182,7 @@ namespace slake {
 			/// @param resolvedPartsOut Where to store nodes referred by reference entries respectively.
 			bool resolveRefWithScope(Scope *scope, Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut);
 
-			FnOverloadingRegistry* argDependentLookup(Location loc, FnNode *fn, const deque<shared_ptr<TypeNameNode>> &argTypes);
+			shared_ptr<FnOverloadingNode> argDependentLookup(Location loc, FnNode *fn, const deque<shared_ptr<TypeNameNode>> &argTypes, const deque<shared_ptr<TypeNameNode>> &genericArgs);
 
 			shared_ptr<Scope> scopeOf(AstNode *node);
 
@@ -313,7 +313,7 @@ namespace slake {
 					GenericNodeArgListComparator>;
 
 			using GenericNodeCacheDirectory = std::map<
-				MemberNode*,	 // Original uninstantiated generic value.
+				MemberNode *,  // Original uninstantiated generic value.
 				GenericNodeCacheTable>;
 
 			/// @brief Cached instances of generic values.
@@ -332,6 +332,8 @@ namespace slake {
 				GenericNodeInstantiationContext &instantiationContext);
 			void mapGenericParams(shared_ptr<MemberNode> node, GenericNodeInstantiationContext &instantiationContext);
 			shared_ptr<MemberNode> instantiateGenericNode(shared_ptr<MemberNode> node, GenericNodeInstantiationContext &instantiationContext);
+
+			shared_ptr<FnOverloadingNode> instantiateGenericFnOverloading(shared_ptr<FnOverloadingNode> overloading, GenericNodeInstantiationContext &instantiationContext);
 
 			friend class AstVisitor;
 			friend class MemberNode;

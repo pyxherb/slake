@@ -2,38 +2,47 @@
 
 using namespace slake::slkc;
 
-FnOverloadingRegistry* Compiler::argDependentLookup(Location loc, FnNode *fn, const deque<shared_ptr<TypeNameNode>> &argTypes) {
-	std::deque<FnOverloadingRegistry*> matchedRegistries;
+shared_ptr<FnOverloadingNode> Compiler::argDependentLookup(Location loc, FnNode *fn, const deque<shared_ptr<TypeNameNode>> &argTypes, const deque<shared_ptr<TypeNameNode>> &genericArgs) {
+	std::deque<shared_ptr<FnOverloadingNode>> matchedRegistries;
 
-	for (auto &i : fn->overloadingRegistries) {
-		size_t nParams = i.params.size();
+	for (auto i : fn->overloadingRegistries) {
+		auto overloading = i;
+		size_t nParams = overloading->params.size(), nGenericParams = overloading->genericParams.size();
 
-		if (i.isVaridic())
+		if (overloading->isVaridic())
 			--nParams;
 
 		if (nParams > argTypes.size())
 			continue;
 
 		if (nParams < argTypes.size()) {
-			if (!i.isVaridic())
+			if (!overloading->isVaridic())
 				continue;
+		}
+
+		if (nGenericParams != genericArgs.size())
+			continue;
+
+		if (nGenericParams) {
+			GenericNodeInstantiationContext instantiationContext{ &genericArgs, {} };
+			overloading = instantiateGenericFnOverloading(overloading, instantiationContext);
 		}
 
 		bool exactlyMatched = true;
 
 		for (size_t j = 0; j < nParams; ++j) {
-			if (!isSameType(i.params[j].type, argTypes[j])) {
+			if (!isSameType(overloading->params[j].type, argTypes[j])) {
 				exactlyMatched = false;
 
-				if (!isTypeNamesConvertible(argTypes[j], i.params[j].type))
+				if (!isTypeNamesConvertible(argTypes[j], overloading->params[j].type))
 					goto fail;
 			}
 		}
 
-		matchedRegistries.push_back(&i);
-
 		if (exactlyMatched)
-			return &i;
+			return overloading;
+
+		matchedRegistries.push_back(overloading);
 	fail:;
 	}
 

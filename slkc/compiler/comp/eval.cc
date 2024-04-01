@@ -574,22 +574,22 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 							shared_ptr<FnTypeNameNode> type;
 
 							deque<shared_ptr<TypeNameNode>> paramTypes;
-							for(auto i : fn->overloadingRegistries[0].params) {
+							for(auto i : fn->overloadingRegistries[0]->params) {
 								paramTypes.push_back(i.type);
 							}
 
-							type = make_shared<FnTypeNameNode>(fn->overloadingRegistries[0].returnType, paramTypes);
+							type = make_shared<FnTypeNameNode>(fn->overloadingRegistries[0]->returnType, paramTypes);
 							return type;
 						}
 
 						if (curMajorContext.curMinorContext.isArgTypesSet) {
-							auto &registry = *argDependentLookup(e->ref[0].loc, fn.get(), curMajorContext.curMinorContext.argTypes);
+							auto overloading = argDependentLookup(e->ref[0].loc, fn.get(), curMajorContext.curMinorContext.argTypes, resolvedParts.back().first.back().genericArgs);
 
 							deque<shared_ptr<TypeNameNode>> paramTypes;
-							for (auto i : registry.params)
+							for (auto i : overloading->params)
 								paramTypes.push_back(i.type);
 
-							return make_shared<FnTypeNameNode>(registry.returnType, paramTypes);
+							return make_shared<FnTypeNameNode>(overloading->returnType, paramTypes);
 						}
 
 						throw FatalCompilationError(

@@ -38,6 +38,18 @@ shared_ptr<GenericParamNode> slake::slkc::lookupGenericParam(shared_ptr<AstNode>
 				return lookupGenericParam(n->parent->shared_from_this(), name);
 			break;
 		}
+		case NodeType::FnOverloading: {
+			shared_ptr<FnOverloadingNode> n = static_pointer_cast<FnOverloadingNode>(node);
+
+			if (auto it = n->genericParamIndices.find(name); it != n->genericParamIndices.end())
+				return n->genericParams[it->second];
+
+			if (n->owner) {
+				if (n->owner->parent)
+					return lookupGenericParam(n->owner->parent->shared_from_this(), name);
+			}
+			break;
+		}
 		default:
 			break;
 	}

@@ -34,7 +34,7 @@ namespace slake {
 			void _putFnDefinition(
 				Location locName,
 				string name,
-				const FnOverloadingRegistry &overloadingRegistry);
+				shared_ptr<FnOverloadingNode> overloading);
 
 		public:
 			using OpParselet = std::function<shared_ptr<ExprNode>(Parser *parser, shared_ptr<ExprNode> lhs)>;
@@ -99,14 +99,14 @@ namespace slake {
 
 			deque<Param> parseParams();
 
-			FnOverloadingRegistry parseFnDecl(shared_ptr<TypeNameNode> returnType, string& nameOut);
-			FnOverloadingRegistry parseFnDef(shared_ptr<TypeNameNode> returnType, string& nameOut);
-			FnOverloadingRegistry parseOperatorDecl(shared_ptr<TypeNameNode> returnType, string& nameOut);
-			FnOverloadingRegistry parseOperatorDef(shared_ptr<TypeNameNode> returnType, string& nameOut);
-			FnOverloadingRegistry parseConstructorDecl();
-			FnOverloadingRegistry parseConstructorDef();
-			FnOverloadingRegistry parseDestructorDecl();
-			FnOverloadingRegistry parseDestructorDef();
+			shared_ptr<FnOverloadingNode> parseFnDecl(shared_ptr<TypeNameNode> returnType, string& nameOut);
+			shared_ptr<FnOverloadingNode> parseFnDef(shared_ptr<TypeNameNode> returnType, string &nameOut);
+			shared_ptr<FnOverloadingNode> parseOperatorDecl(shared_ptr<TypeNameNode> returnType, string &nameOut);
+			shared_ptr<FnOverloadingNode> parseOperatorDef(shared_ptr<TypeNameNode> returnType, string &nameOut);
+			shared_ptr<FnOverloadingNode> parseConstructorDecl();
+			shared_ptr<FnOverloadingNode> parseConstructorDef();
+			shared_ptr<FnOverloadingNode> parseDestructorDecl();
+			shared_ptr<FnOverloadingNode> parseDestructorDef();
 
 			GenericParamNodeList parseGenericParams();
 

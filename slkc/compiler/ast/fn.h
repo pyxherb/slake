@@ -11,30 +11,45 @@ namespace slake {
 	namespace slkc {
 		class FnNode;
 
-		struct FnOverloadingRegistry {
+		class FnOverloadingNode final : public MemberNode {
+		private:
+			virtual shared_ptr<AstNode> doDuplicate();
+
+		public:
 			Location loc;
 			shared_ptr<TypeNameNode> returnType;
-
-			GenericParamNodeList genericParams;
-			unordered_map<string, size_t> genericParamIndices;
 
 			deque<Param> params;
 			unordered_map<string, size_t> paramIndices;
 
 			shared_ptr<BlockStmtNode> body;
-			weak_ptr<FnNode> parent;
+			FnNode* owner;
 			AccessModifier access = 0;
 
-			FnOverloadingRegistry(
+			inline FnOverloadingNode(const FnOverloadingNode &other) : MemberNode(other) {
+				loc = other.loc;
+				returnType = other.returnType;
+
+				params = other.params;
+				paramIndices = other.paramIndices;
+
+				body = other.body;
+				owner = other.owner;
+				access = other.access;
+			}
+
+			FnOverloadingNode(
 				Location loc,
+				Compiler *compiler,
 				shared_ptr<TypeNameNode> returnType,
 				GenericParamNodeList genericParams,
-				deque<Param> params);
+				deque<Param> params,
+				shared_ptr<Scope> scope = make_shared<Scope>());
 
-			inline bool operator<(const FnOverloadingRegistry &rhs) {
-				if (params.size() < rhs.params.size())
-					return true;
-			}
+			virtual inline NodeType getNodeType() const override { return NodeType::FnOverloading; }
+
+			virtual RefEntry getName() const override { throw std::logic_error("Cannot get name of a function overloading"); }
+			virtual Location getLocation() const override { return loc; }
 
 			inline bool isAbstract() { return !body; }
 			inline bool isVaridic() { return paramIndices.count("..."); }
@@ -45,12 +60,16 @@ namespace slake {
 			virtual shared_ptr<AstNode> doDuplicate();
 
 		public:
-			deque<FnOverloadingRegistry> overloadingRegistries;
+			deque<shared_ptr<FnOverloadingNode>> overloadingRegistries;
 			string name;
 			bool used = false;
 
-			inline FnNode(const FnNode& other) : MemberNode(other) {
-				overloadingRegistries = other.overloadingRegistries;
+			inline FnNode(const FnNode &other) : MemberNode(other) {
+				overloadingRegistries.resize(other.overloadingRegistries.size());
+				for (size_t i = 0; i < other.overloadingRegistries.size(); ++i) {
+					overloadingRegistries[i] = other.overloadingRegistries[i]->duplicate<FnOverloadingNode>();
+					overloadingRegistries[i]->owner = this;
+				}
 				name = other.name;
 				used = false;
 			}

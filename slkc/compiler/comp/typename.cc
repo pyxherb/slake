@@ -172,14 +172,14 @@ bool Compiler::_isTypeNamesConvertible(shared_ptr<MemberNode> st, shared_ptr<Tra
 
 				for (auto di : dmType->overloadingRegistries) {
 					for (auto si : smType->overloadingRegistries) {
-						if (!isSameType(di.returnType, si.returnType))
+						if (!isSameType(di->returnType, si->returnType))
 							return false;
 
-						if (di.params.size() != si.params.size())
+						if (di->params.size() != si->params.size())
 							return false;
 
-						for (size_t i = 0; i < di.params.size(); ++i) {
-							if (!isSameType(si.params[i].type, di.params[i].type))
+						for (size_t i = 0; i < di->params.size(); ++i) {
+							if (!isSameType(si->params[i].type, di->params[i].type))
 								return false;
 						}
 					}

@@ -84,17 +84,28 @@ void slake::Runtime::_instantiateGenericValue(Value *v, GenericInstantiationCont
 		case TypeId::Fn: {
 			FnValue *value = (FnValue *)v;
 
-			_instantiateGenericValue(value->returnType, instantiationContext);
+			// We have to treat member generic functions carefully, just like what we do in the compiler.
+			if (value->genericParams.size() && value != instantiationContext.mappedValue) {
+				GenericInstantiationContext newInstantiationContext = instantiationContext;
 
-			for (auto &i : value->paramTypes)
-				_instantiateGenericValue(i, instantiationContext);
+				// Map irreplaceable parameters to corresponding generic parameter reference type
+				// and thus the generic types will keep unchanged.
+				for (size_t i = 0; i < value->genericParams.size(); ++i) {
+					instantiationContext.mappedGenericArgs[value->genericParams[i].name] = Type(value->genericParams[i].name);
+				}
+			} else {
+				_instantiateGenericValue(value->returnType, instantiationContext);
 
-			for (size_t i = 0; i < value->nIns; ++i) {
-				auto &ins = value->body[i];
-				for (size_t j = 0; j < ins.operands.size(); ++j) {
-					auto operand = ins.operands[j];
-					if (operand && operand->getType() == TypeId::TypeName)
-						_instantiateGenericValue(((TypeNameValue *)operand)->_data, instantiationContext);
+				for (auto &i : value->paramTypes)
+					_instantiateGenericValue(i, instantiationContext);
+
+				for (size_t i = 0; i < value->nIns; ++i) {
+					auto &ins = value->body[i];
+					for (size_t j = 0; j < ins.operands.size(); ++j) {
+						auto operand = ins.operands[j];
+						if (operand && operand->getType() == TypeId::TypeName)
+							_instantiateGenericValue(((TypeNameValue *)operand)->_data, instantiationContext);
+					}
 				}
 			}
 			break;
@@ -128,6 +139,8 @@ void slake::Runtime::_instantiateGenericValue(Value *v, GenericInstantiationCont
 }
 
 void Runtime::mapGenericParams(const Value *v, GenericInstantiationContext &instantiationContext) const {
+	instantiationContext.mappedValue = v;
+
 	switch (v->getType().typeId) {
 		case TypeId::Class: {
 			ClassValue *value = (ClassValue *)v;

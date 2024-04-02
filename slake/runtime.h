@@ -124,6 +124,7 @@ namespace slake {
 	class Runtime final {
 	public:
 		struct GenericInstantiationContext {
+			const Value *mappedValue;
 			const GenericArgList *genericArgs;
 			std::unordered_map<std::string, Type> mappedGenericArgs;
 		};

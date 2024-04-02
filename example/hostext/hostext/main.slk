@@ -22,6 +22,11 @@ class Generic<T> {
 		hostext.extfns.print("Fetched x: ", this.x, "\n");
 		return this.x;
 	}
+	
+	void test<T>(T x) {
+		hostext.extfns.print(x, "\n");
+		return;
+	}
 }
 
 class Test {
@@ -82,11 +87,6 @@ class AnotherDerived(Derived) {
 class Unrelated {
 }
 
-void test<T>(T x) {
-	hostext.extfns.print(x, "\n");
-	return;
-}
-
 pub i32 main() {
 	hostext.extfns.print("Entered main\n");
 
@@ -102,8 +102,8 @@ pub i32 main() {
 		yield test.getX();
 	}
 
-	test<f32>(123.456f);
-	test<i32>(123);
+	a.test<f32>(123.456f);
+	b.test<i32>(123);
 
 	return 114514;
 }

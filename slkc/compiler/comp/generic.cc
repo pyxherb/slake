@@ -49,7 +49,7 @@ void Compiler::walkNodeForGenericInstantiation(
 					// Mark the generic parameters in the overloading as irreplaceable.
 					// Note that we use nullptr to identify irreplaceable generic parameters.
 					for (size_t j = 0; j < i->genericParams.size(); ++j) {
-						instantiationContext.mappedGenericArgs[i->genericParams[j]->name] = {};
+						newInstantiationContext.mappedGenericArgs[i->genericParams[j]->name] = {};
 					}
 
 					walkTypeNameNodeForGenericInstantiation(i->returnType, newInstantiationContext);

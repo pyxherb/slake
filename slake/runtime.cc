@@ -36,7 +36,7 @@ std::string Runtime::mangleName(
 		s += "$" + std::to_string(i, this);
 
 	for (auto i : genericArgs)
-		s += "?" + std::to_string(i, this);
+		s += "!" + std::to_string(i, this);
 
 	return s;
 }

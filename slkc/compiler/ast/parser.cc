@@ -743,6 +743,22 @@ shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 						prefixToken.beginLocation,
 						((F64LiteralTokenExtension *)prefixToken.exData.get())->data));
 				break;
+			case TokenId::TrueKeyword:
+				lexer->nextToken();
+
+				lhs = static_pointer_cast<ExprNode>(
+					make_shared<BoolLiteralExprNode>(
+						prefixToken.beginLocation,
+						true));
+				break;
+			case TokenId::FalseKeyword:
+				lexer->nextToken();
+
+				lhs = static_pointer_cast<ExprNode>(
+					make_shared<BoolLiteralExprNode>(
+						prefixToken.beginLocation,
+						false));
+				break;
 			default:
 				throw SyntaxError("Expecting an expression", prefixToken.beginLocation);
 		}
@@ -927,9 +943,16 @@ shared_ptr<StmtNode> Parser::parseStmt() {
 
 			expectToken(lexer->nextToken(), TokenId::LParenthese);
 
-			varDefs = parseVarDefs(parseTypeName());
-			if (varDefs)
-				expectToken(lexer->nextToken(), TokenId::Semicolon);
+			{
+				LexerContext savedContext = lexer->context;
+				try {
+					varDefs = parseVarDefs(parseTypeName());
+					if (varDefs)
+						expectToken(lexer->nextToken(), TokenId::Semicolon);
+				} catch (SyntaxError e) {
+					lexer->context = savedContext;
+				}
+			}
 
 			auto condition = parseExpr();
 
@@ -940,8 +963,10 @@ shared_ptr<StmtNode> Parser::parseStmt() {
 
 			shared_ptr<StmtNode> body = parseStmt(), elseBranch;
 
-			if (lexer->peekToken().tokenId == TokenId::ElseKeyword)
+			if (lexer->peekToken().tokenId == TokenId::ElseKeyword) {
+				lexer->nextToken();
 				elseBranch = parseStmt();
+			}
 
 			return static_pointer_cast<StmtNode>(
 				make_shared<IfStmtNode>(

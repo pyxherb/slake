@@ -87,6 +87,16 @@ class AnotherDerived(Derived) {
 class Unrelated {
 }
 
+bool testX() {
+	hostext.extfns.print("Called testX\n");
+	return false;
+}
+
+bool testY() {
+	hostext.extfns.print("Called testY\n");
+	return false;
+}
+
 pub i32 main() {
 	hostext.extfns.print("Entered main\n");
 
@@ -104,6 +114,11 @@ pub i32 main() {
 
 	a.test<f32>(123.456f);
 	b.test<i32>(123);
+
+	if(testX() || testY())
+		hostext.extfns.print("Result = true\n");
+	else
+		hostext.extfns.print("Result = false\n");
 
 	return 114514;
 }

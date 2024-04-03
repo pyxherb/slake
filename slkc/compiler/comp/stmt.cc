@@ -224,7 +224,8 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 			auto s = static_pointer_cast<IfStmtNode>(stmt);
 			auto loc = s->getLocation();
 
-			string endLabel = endLabel = "$if_" + to_string(loc.line) + "_" + to_string(loc.column) + "_end";
+			string falseBranchLabel = "$if_" + to_string(loc.line) + "_" + to_string(loc.column) + "_false",
+				   endLabel = "$if_" + to_string(loc.line) + "_" + to_string(loc.column) + "_end";
 
 			uint32_t tmpRegIndex = allocReg();
 
@@ -236,12 +237,18 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 					make_shared<BoolTypeNameNode>(s->getLocation(), true),
 					make_shared<RegRefNode>(tmpRegIndex, true));
 
-			curFn->insertIns(Opcode::JF, make_shared<LabelRefNode>(endLabel), make_shared<RegRefNode>(tmpRegIndex));
+			curFn->insertIns(Opcode::JF, make_shared<LabelRefNode>(falseBranchLabel), make_shared<RegRefNode>(tmpRegIndex, true));
 
 			compileStmt(s->body);
+			if (s->elseBranch) {
+				curFn->insertIns(Opcode::JMP, make_shared<LabelRefNode>(endLabel));
+			}
 
-			if (s->elseBranch)
+			curFn->insertLabel(falseBranchLabel);
+
+			if (s->elseBranch) {
 				compileStmt(s->elseBranch);
+			}
 
 			curFn->insertLabel(endLabel);
 

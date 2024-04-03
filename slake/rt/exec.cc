@@ -91,10 +91,10 @@ static Value *_execBinaryOp(ValueRef<> x, ValueRef<> y, Opcode opcode) {
 				case Opcode::LAND: {
 					return new V(
 						rt,
-						_x->getData() + ((V *)y.get())->getData());
+						_x->getData() && ((V *)y.get())->getData());
 				}
 				case Opcode::LOR: {
-					return new V(rt, _x->getData() + ((V *)y.get())->getData());
+					return new V(rt, _x->getData() || ((V *)y.get())->getData());
 				}
 				default:
 					throw InvalidOperandsError("Binary operation with incompatible types");
@@ -487,6 +487,9 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 					break;
 				case TypeId::String:
 					out->setData(_execBinaryOp<std::string>(x, y, ins.opcode));
+					break;
+				case TypeId::Bool:
+					out->setData(_execBinaryOp<bool>(x, y, ins.opcode));
 					break;
 				default:
 					throw InvalidOperandsError("Invalid operand combination");

@@ -32,3 +32,7 @@ shared_ptr<AstNode> FnOverloadingNode::doDuplicate() {
 shared_ptr<AstNode> FnNode::doDuplicate() {
 	return make_shared<FnNode>(*this);
 }
+
+shared_ptr<AstNode> CompiledFnNode::doDuplicate() {
+	return make_shared<CompiledFnNode>(*this);
+}

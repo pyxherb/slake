@@ -1213,7 +1213,6 @@ shared_ptr<FnOverloadingNode> Parser::parseOperatorDecl(shared_ptr<TypeNameNode>
 		case TokenId::LOrOp:
 		case TokenId::RevOp:
 		case TokenId::NotOp:
-		case TokenId::AssignOp:
 		case TokenId::AddAssignOp:
 		case TokenId::SubAssignOp:
 		case TokenId::MulAssignOp:

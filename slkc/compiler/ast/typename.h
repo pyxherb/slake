@@ -24,9 +24,6 @@ namespace slake {
 			F64,
 
 			String,
-			Char,
-
-			WChar,
 			WString,
 
 			Bool,
@@ -84,6 +81,7 @@ namespace slake {
 		using F32TypeNameNode = SimpleTypeNameNode<Type::F32>;
 		using F64TypeNameNode = SimpleTypeNameNode<Type::F64>;
 		using StringTypeNameNode = SimpleTypeNameNode<Type::String>;
+		using WStringTypeNameNode = SimpleTypeNameNode<Type::WString>;
 		using BoolTypeNameNode = SimpleTypeNameNode<Type::Bool>;
 		using AutoTypeNameNode = SimpleTypeNameNode<Type::Auto>;
 		using VoidTypeNameNode = SimpleTypeNameNode<Type::Void>;

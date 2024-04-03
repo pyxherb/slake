@@ -442,10 +442,6 @@ shared_ptr<ExprNode> Compiler::evalConstExpr(shared_ptr<ExprNode> expr) {
 						}
 						case Type::F64: {
 						}
-						case Type::Char: {
-						}
-						case Type::WChar: {
-						}
 						case Type::Bool: {
 						}
 					}
@@ -511,46 +507,292 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 		case ExprType::Binary: {
 			auto e = static_pointer_cast<BinaryOpExprNode>(expr);
 
-			if (isCompoundTypeName(evalExprType(e->lhs))) {
-			} else {
-				switch (e->op) {
-					case BinaryOp::Add:
-					case BinaryOp::Sub:
-					case BinaryOp::Mul:
-					case BinaryOp::Div:
-					case BinaryOp::Mod:
-					case BinaryOp::And:
-					case BinaryOp::Or:
-					case BinaryOp::Xor:
-					case BinaryOp::Lsh:
-					case BinaryOp::Rsh:
-					case BinaryOp::Assign:
-					case BinaryOp::AssignAdd:
-					case BinaryOp::AssignSub:
-					case BinaryOp::AssignMul:
-					case BinaryOp::AssignDiv:
-					case BinaryOp::AssignMod:
-					case BinaryOp::AssignAnd:
-					case BinaryOp::AssignOr:
-					case BinaryOp::AssignXor:
-					case BinaryOp::AssignLsh:
-					case BinaryOp::AssignRsh:
-						return evalExprType(e->lhs);
-					case BinaryOp::LAnd:
-					case BinaryOp::LOr:
-					case BinaryOp::Eq:
-					case BinaryOp::Neq:
-					case BinaryOp::StrictEq:
-					case BinaryOp::StrictNeq:
-					case BinaryOp::Lt:
-					case BinaryOp::Gt:
-					case BinaryOp::LtEq:
-					case BinaryOp::GtEq:
-						return make_shared<BoolTypeNameNode>(Location(), true);
-					case BinaryOp::Swap:
-					default:
-						assert(false);
+			auto lhsType = evalExprType(e->lhs);
+			switch (lhsType->getTypeId()) {
+				case Type::I8:
+				case Type::I16:
+				case Type::I32:
+				case Type::I64:
+				case Type::U8:
+				case Type::U16:
+				case Type::U32:
+				case Type::U64:
+				case Type::F32:
+				case Type::F64: {
+					switch (e->op) {
+						case BinaryOp::Add:
+						case BinaryOp::Sub:
+						case BinaryOp::Mul:
+						case BinaryOp::Div:
+						case BinaryOp::Mod:
+						case BinaryOp::And:
+						case BinaryOp::Or:
+						case BinaryOp::Xor:
+						case BinaryOp::Lsh:
+						case BinaryOp::Rsh:
+						case BinaryOp::Assign:
+						case BinaryOp::AssignAdd:
+						case BinaryOp::AssignSub:
+						case BinaryOp::AssignMul:
+						case BinaryOp::AssignDiv:
+						case BinaryOp::AssignMod:
+						case BinaryOp::AssignAnd:
+						case BinaryOp::AssignOr:
+						case BinaryOp::AssignXor:
+						case BinaryOp::AssignLsh:
+						case BinaryOp::AssignRsh:
+							return lhsType;
+						case BinaryOp::LAnd:
+						case BinaryOp::LOr:
+						case BinaryOp::Eq:
+						case BinaryOp::Neq:
+						case BinaryOp::StrictEq:
+						case BinaryOp::StrictNeq:
+						case BinaryOp::Lt:
+						case BinaryOp::Gt:
+						case BinaryOp::LtEq:
+						case BinaryOp::GtEq:
+							return make_shared<BoolTypeNameNode>(Location(), true);
+						case BinaryOp::Swap:
+						default:
+							assert(false);
+					}
+
+					break;
 				}
+				case Type::Bool: {
+					switch (e->op) {
+						case BinaryOp::LAnd:
+						case BinaryOp::LOr:
+						case BinaryOp::Eq:
+						case BinaryOp::Neq:
+							return make_shared<BoolTypeNameNode>(Location(), true);
+						default:
+							throw FatalCompilationError(
+								Message(
+									e->getLocation(),
+									MessageType::Error,
+									"No matching operator"));
+					}
+				}
+				case Type::String: {
+					switch (e->op) {
+						case BinaryOp::Add:
+							return make_shared<StringTypeNameNode>(Location(), true);
+						case BinaryOp::Subscript:
+							return make_shared<U8TypeNameNode>(Location(), true);
+						default:
+							throw FatalCompilationError(
+								Message(
+									e->getLocation(),
+									MessageType::Error,
+									"No matching operator"));
+					}
+					break;
+				}
+				case Type::WString: {
+					switch (e->op) {
+						case BinaryOp::Add:
+							return make_shared<WStringTypeNameNode>(Location(), true);
+						case BinaryOp::Subscript:
+							return make_shared<U32TypeNameNode>(Location(), true);
+						default:
+							throw FatalCompilationError(
+								Message(
+									e->getLocation(),
+									MessageType::Error,
+									"No matching operator"));
+					}
+					break;
+				}
+				case Type::Custom: {
+					auto node = resolveCustomTypeName(static_pointer_cast<CustomTypeNameNode>(lhsType).get());
+					auto rhsType = evalExprType(e->lhs);
+
+					auto determineOverloading = [this, e, rhsType](shared_ptr<MemberNode> n, uint32_t lhsRegIndex) -> shared_ptr<TypeNameNode> {
+						if (auto it = n->scope->members.find(std::to_string(e->op));
+							it != n->scope->members.end()) {
+							assert(it->second->getNodeType() == NodeType::Fn);
+							shared_ptr<FnNode> operatorNode = static_pointer_cast<FnNode>(n);
+							auto overloading = operatorNode->overloadingRegistries[0];
+
+							Ref fullName;
+							_getFullName(operatorNode.get(), fullName);
+
+							try {
+								auto overloading = argDependentLookup(e->getLocation(), operatorNode.get(), { rhsType }, {});
+
+								return overloading->returnType;
+							} catch (FatalCompilationError e) {
+								return {};
+							}
+						}
+						return {};
+					};
+
+					switch (node->getNodeType()) {
+						case NodeType::Class:
+						case NodeType::Interface:
+						case NodeType::Trait: {
+							uint32_t lhsRegIndex = allocReg(1);
+
+							switch (e->op) {
+								case BinaryOp::Assign: {
+									uint32_t rhsRegIndex = allocReg(1);
+
+									compileExpr(
+										e->lhs,
+										EvalPurpose::LValue,
+										make_shared<RegRefNode>(lhsRegIndex));
+
+									compileExpr(
+										e->rhs,
+										EvalPurpose::RValue,
+										make_shared<RegRefNode>(rhsRegIndex));
+
+									if (!isSameType(lhsType, rhsType)) {
+										if (!isTypeNamesConvertible(rhsType, lhsType))
+											throw FatalCompilationError(
+												{ e->rhs->getLocation(),
+													MessageType::Error,
+													"Incompatible operand types" });
+
+										compileExpr(
+											make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
+											EvalPurpose::LValue,
+											make_shared<RegRefNode>(rhsRegIndex));
+									}
+
+									curFn->insertIns(
+										Opcode::STORE,
+										make_shared<RegRefNode>(lhsRegIndex, true),
+										make_shared<RegRefNode>(rhsRegIndex, true));
+
+									break;
+								}
+								default: {
+									shared_ptr<MemberNode> n = static_pointer_cast<MemberNode>(node);
+
+									if (!determineOverloading(n, lhsRegIndex))
+										throw FatalCompilationError(
+											Message(
+												e->getLocation(),
+												MessageType::Error,
+												"No matching operator"));
+								}
+							}
+
+							break;
+						}
+						case NodeType::GenericParam: {
+							uint32_t lhsRegIndex = allocReg(1);
+
+							shared_ptr<GenericParamNode> n = static_pointer_cast<GenericParamNode>(node);
+
+							switch (e->op) {
+								case BinaryOp::Assign: {
+									uint32_t rhsRegIndex = allocReg(1);
+
+									compileExpr(
+										e->lhs,
+										EvalPurpose::LValue,
+										make_shared<RegRefNode>(lhsRegIndex));
+
+									compileExpr(
+										e->rhs,
+										EvalPurpose::RValue,
+										make_shared<RegRefNode>(rhsRegIndex));
+
+									if (!isSameType(lhsType, rhsType)) {
+										if (!isTypeNamesConvertible(rhsType, lhsType))
+											throw FatalCompilationError(
+												{ e->rhs->getLocation(),
+													MessageType::Error,
+													"Incompatible operand types" });
+
+										compileExpr(
+											make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
+											EvalPurpose::LValue,
+											make_shared<RegRefNode>(rhsRegIndex));
+									}
+
+									curFn->insertIns(
+										Opcode::STORE,
+										make_shared<RegRefNode>(lhsRegIndex, true),
+										make_shared<RegRefNode>(rhsRegIndex, true));
+
+									break;
+								}
+								default: {
+									shared_ptr<AstNode> curMember;
+
+									curMember = resolveCustomTypeName((CustomTypeNameNode *)n->baseType.get());
+
+									if (curMember->getNodeType() != NodeType::Class)
+										throw FatalCompilationError(
+											Message(
+												n->baseType->getLocation(),
+												MessageType::Error,
+												"Must be a class"));
+
+									auto savedCurFn = curFn->duplicate<CompiledFnNode>();
+									auto savedCurMajorContext = curMajorContext;
+
+									if (auto t = determineOverloading(static_pointer_cast<MemberNode>(curMember), lhsRegIndex); t)
+										return t;
+
+									for (auto i : n->interfaceTypes) {
+										curMember = resolveCustomTypeName((CustomTypeNameNode *)i.get());
+
+										if (curMember->getNodeType() != NodeType::Interface)
+											throw FatalCompilationError(
+												Message(
+													n->baseType->getLocation(),
+													MessageType::Error,
+													"Must be an interface"));
+
+										if (auto t = determineOverloading(static_pointer_cast<MemberNode>(curMember), lhsRegIndex); t)
+											return t;
+									}
+
+									for (auto i : n->traitTypes) {
+										curMember = resolveCustomTypeName((CustomTypeNameNode *)i.get());
+
+										if (curMember->getNodeType() != NodeType::Interface)
+											throw FatalCompilationError(
+												Message(
+													n->baseType->getLocation(),
+													MessageType::Error,
+													"Must be an interface"));
+
+										if (auto t = determineOverloading(static_pointer_cast<MemberNode>(curMember), lhsRegIndex); t)
+											return t;
+									}
+
+									throw FatalCompilationError(
+										Message(
+											e->getLocation(),
+											MessageType::Error,
+											"No matching operator"));
+								}
+							}
+							break;
+						}
+						default:
+							throw FatalCompilationError(
+								Message(
+									e->getLocation(),
+									MessageType::Error,
+									"No matching operator"));
+					}
+					break;
+				}
+				default:
+					throw FatalCompilationError(
+						Message(
+							e->getLocation(),
+							MessageType::Error,
+							"No matching operator"));
 			}
 
 			break;
@@ -574,7 +816,7 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 							shared_ptr<FnTypeNameNode> type;
 
 							deque<shared_ptr<TypeNameNode>> paramTypes;
-							for(auto i : fn->overloadingRegistries[0]->params) {
+							for (auto i : fn->overloadingRegistries[0]->params) {
 								paramTypes.push_back(i.type);
 							}
 

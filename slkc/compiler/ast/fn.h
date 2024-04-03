@@ -13,7 +13,7 @@ namespace slake {
 
 		class FnOverloadingNode final : public MemberNode {
 		private:
-			virtual shared_ptr<AstNode> doDuplicate();
+			virtual shared_ptr<AstNode> doDuplicate() override;
 
 		public:
 			Location loc;
@@ -57,7 +57,7 @@ namespace slake {
 
 		class FnNode final : public MemberNode {
 		private:
-			virtual shared_ptr<AstNode> doDuplicate();
+			virtual shared_ptr<AstNode> doDuplicate() override;
 
 		public:
 			deque<shared_ptr<FnOverloadingNode>> overloadingRegistries;
@@ -102,6 +102,7 @@ namespace slake {
 		class CompiledFnNode final : public MemberNode {
 		private:
 			Location _loc;
+			virtual shared_ptr<AstNode> doDuplicate() override;
 
 		public:
 			string name;
@@ -118,6 +119,23 @@ namespace slake {
 
 			deque<slxfmt::SourceLocDesc> srcLocDescs;
 
+			inline CompiledFnNode(const CompiledFnNode& other) {
+				name = other.name;
+				body = other.body;
+				labels = other.labels;
+
+				genericParams.resize(other.genericParams.size());
+				for (size_t i = 0; i < other.genericParams.size(); ++i)
+					genericParams[i] = other.genericParams[i]->duplicate<GenericParamNode>();
+				genericParamIndices = other.genericParamIndices;
+
+				params = other.params;
+				paramIndices = other.paramIndices;
+
+				returnType = other.returnType->duplicate<TypeNameNode>();
+
+				srcLocDescs = other.srcLocDescs;
+			}
 			inline CompiledFnNode(Location loc, string name) : _loc(loc), name(name) {}
 			virtual ~CompiledFnNode() = default;
 

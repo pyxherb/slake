@@ -57,12 +57,6 @@ static shared_ptr<ExprNode> _castLiteralExpr(
 				return make_shared<F64LiteralExprNode>(expr->getLocation(), (double)expr->data);
 			} else
 				return {};
-		case Type::Char:
-			// stub
-			return {};
-		case Type::WChar:
-			// stub
-			return {};
 		case Type::Bool:
 			if constexpr (std::is_convertible_v<T, bool>) {
 				return make_shared<BoolLiteralExprNode>(expr->getLocation(), (bool)expr->data);

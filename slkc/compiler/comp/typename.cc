@@ -50,8 +50,6 @@ bool Compiler::isNumericTypeName(shared_ptr<TypeNameNode> node) {
 		case Type::U64:
 		case Type::F32:
 		case Type::F64:
-		case Type::Char:
-		case Type::WChar:
 			return true;
 		default:
 			return false;
@@ -218,8 +216,6 @@ bool Compiler::isTypeNamesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<T
 		case Type::U64:
 		case Type::F32:
 		case Type::F64:
-		case Type::Char:
-		case Type::WChar:
 			if (isNumericTypeName(src))
 				return true;
 			break;

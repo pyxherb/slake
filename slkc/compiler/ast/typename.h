@@ -37,7 +37,8 @@ namespace slake {
 			Map,
 			Fn,
 
-			Custom
+			Custom,
+			Ref
 		};
 
 		/// @brief Base type name node class.
@@ -49,6 +50,10 @@ namespace slake {
 		public:
 			bool isConst;  // For parameters.
 
+			inline TypeNameNode(const TypeNameNode &other)
+				: _loc(other._loc),
+				  isConst(other.isConst) {
+			}
 			inline TypeNameNode(Location loc, bool isConst = false)
 				: _loc(loc), isConst(isConst) {}
 			virtual ~TypeNameNode() = default;
@@ -62,7 +67,15 @@ namespace slake {
 
 		template <Type TID>
 		class SimpleTypeNameNode : public TypeNameNode {
+		private:
+			virtual inline shared_ptr<AstNode> doDuplicate() override {
+				return make_shared<SimpleTypeNameNode>(*this);
+			}
+
 		public:
+			inline SimpleTypeNameNode(const TypeNameNode &other)
+				: TypeNameNode(other) {
+			}
 			inline SimpleTypeNameNode(Location loc, bool isConst = false)
 				: TypeNameNode(loc, isConst) {}
 			virtual ~SimpleTypeNameNode() = default;
@@ -88,6 +101,9 @@ namespace slake {
 		using AnyTypeNameNode = SimpleTypeNameNode<Type::Any>;
 
 		class CustomTypeNameNode : public TypeNameNode {
+		private:
+			virtual shared_ptr<AstNode> doDuplicate() override;
+
 		public:
 			Ref ref;
 			deque<pair<Ref, shared_ptr<AstNode>>> resolvedPartsOut;
@@ -97,6 +113,13 @@ namespace slake {
 
 			// bool resolved = false;
 
+			inline CustomTypeNameNode(const CustomTypeNameNode &other)
+				: TypeNameNode(other),
+				  ref(duplicateRef(other.ref)),
+				  resolvedPartsOut(other.resolvedPartsOut),
+				  compiler(other.compiler),
+				  scope(other.scope) {
+			}
 			inline CustomTypeNameNode(Location loc, Ref ref, Compiler *compiler, Scope *scope, bool isConst = false)
 				: TypeNameNode(loc, isConst), ref(ref), compiler(compiler), scope(scope) {}
 			virtual ~CustomTypeNameNode() = default;
@@ -105,9 +128,14 @@ namespace slake {
 		};
 
 		class ArrayTypeNameNode : public TypeNameNode {
+		private:
+			virtual shared_ptr<AstNode> doDuplicate() override;
+
 		public:
 			shared_ptr<TypeNameNode> elementType;
 
+			inline ArrayTypeNameNode(const ArrayTypeNameNode &other)
+				: TypeNameNode(other), elementType(other.elementType->duplicate<TypeNameNode>()) {}
 			inline ArrayTypeNameNode(shared_ptr<TypeNameNode> elementType, bool isConst = false)
 				: TypeNameNode(elementType->getLocation(), isConst), elementType(elementType) {}
 			virtual ~ArrayTypeNameNode() = default;
@@ -116,9 +144,14 @@ namespace slake {
 		};
 
 		class MapTypeNameNode : public TypeNameNode {
+		private:
+			virtual shared_ptr<AstNode> doDuplicate() override;
+
 		public:
 			shared_ptr<TypeNameNode> keyType, valueType;
 
+			inline MapTypeNameNode(const MapTypeNameNode &other)
+				: TypeNameNode(other), keyType(other.keyType->duplicate<TypeNameNode>()), valueType(other.valueType->duplicate<TypeNameNode>()) {}
 			inline MapTypeNameNode(shared_ptr<TypeNameNode> keyType, shared_ptr<TypeNameNode> valueType, bool isConst = false)
 				: TypeNameNode(keyType->getLocation(), isConst), keyType(keyType), valueType(valueType) {}
 			virtual ~MapTypeNameNode() = default;
@@ -127,10 +160,20 @@ namespace slake {
 		};
 
 		class FnTypeNameNode : public TypeNameNode {
+		private:
+			virtual shared_ptr<AstNode> doDuplicate() override;
+
 		public:
 			shared_ptr<TypeNameNode> returnType;
 			deque<shared_ptr<TypeNameNode>> paramTypes;
 
+			inline FnTypeNameNode(const FnTypeNameNode& other)
+				: TypeNameNode(other), returnType(other.returnType->duplicate<TypeNameNode>()) {
+				paramTypes.resize(other.paramTypes.size());
+
+				for (size_t i = 0; i < other.paramTypes.size(); ++i)
+					paramTypes[i] = other.paramTypes[i]->duplicate<TypeNameNode>();
+			}
 			inline FnTypeNameNode(
 				shared_ptr<TypeNameNode> returnType,
 				deque<shared_ptr<TypeNameNode>> paramTypes,
@@ -141,6 +184,22 @@ namespace slake {
 			virtual ~FnTypeNameNode() = default;
 
 			virtual inline Type getTypeId() const override { return Type::Fn; }
+		};
+
+		class RefTypeNameNode : public TypeNameNode {
+		private:
+			virtual shared_ptr<AstNode> doDuplicate() override;
+
+		public:
+			shared_ptr<TypeNameNode> referencedType;
+
+			inline RefTypeNameNode(const RefTypeNameNode &other) : TypeNameNode(other), referencedType(other.referencedType->duplicate<TypeNameNode>()) {}
+			inline RefTypeNameNode(
+				shared_ptr<TypeNameNode> referencedType)
+				: TypeNameNode(referencedType->getLocation(), referencedType->isConst) {}
+			virtual ~RefTypeNameNode() = default;
+
+			virtual inline Type getTypeId() const override { return Type::Ref; }
 		};
 
 		class Compiler;

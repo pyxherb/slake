@@ -52,10 +52,15 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 	}
 
 	if (ref[0].name == "this") {
-		ref.pop_front();
-		auto result = _resolveRef(curMajorContext.curMinorContext.curScope.get(), ref, partsOut);
-		partsOut.push_front({ Ref{ ref.front() }, make_shared<ThisRefNode>() });
-		return result;
+		if (ref.size() > 1) {
+			ref.pop_front();
+			auto result = _resolveRef(curMajorContext.curMinorContext.curScope.get(), ref, partsOut);
+			partsOut.push_front({ Ref{ ref.front() }, make_shared<ThisRefNode>() });
+			return result;
+		} else {
+			partsOut.push_front({ Ref{ ref.front() }, make_shared<ThisRefNode>() });
+			return true;
+		}
 	}
 
 	return _resolveRef(curMajorContext.curMinorContext.curScope.get(), ref, partsOut);

@@ -40,7 +40,7 @@ void Compiler::walkNodeForGenericInstantiation(
 						walkNodeForGenericInstantiation(j, instantiationContext);
 
 					for (auto &j : i->params) {
-						j.originalType = j.type;
+						j.originalType = j.type->duplicate<TypeNameNode>();
 						walkTypeNameNodeForGenericInstantiation(j.type, instantiationContext);
 					}
 				} else {

@@ -15,3 +15,11 @@ Scope *Scope::duplicate() {
 
 	return newScope.release();
 }
+
+void Scope::setOwner(MemberNode *owner) {
+	for (auto i : members) {
+		if (i.second)
+			i.second->parent = owner;
+	}
+	this->owner = (AstNode *)owner;
+}

@@ -21,13 +21,20 @@ namespace slake {
 			shared_ptr<TypeNameNode> baseType;
 			deque<shared_ptr<TypeNameNode>> traitTypes, interfaceTypes;
 
-			inline GenericParamNode(const GenericParamNode& other) {
+			inline GenericParamNode(const GenericParamNode &other) {
 				_loc = other._loc;
 
 				name = other.name;
-				baseType = other.baseType;
-				traitTypes = other.traitTypes;
-				interfaceTypes = other.interfaceTypes;
+				if (baseType)
+					baseType = other.baseType->duplicate<TypeNameNode>();
+
+				traitTypes.resize(other.traitTypes.size());
+				for (size_t i = 0; i < other.traitTypes.size(); ++i)
+					traitTypes[i] = other.traitTypes[i]->duplicate<TypeNameNode>();
+
+				interfaceTypes.resize(other.interfaceTypes.size());
+				for (size_t i = 0; i < other.interfaceTypes.size(); ++i)
+					interfaceTypes[i] = other.interfaceTypes[i]->duplicate<TypeNameNode>();
 			}
 			inline GenericParamNode(
 				Location location,
@@ -43,7 +50,7 @@ namespace slake {
 		inline unordered_map<string, size_t> genGenericParamIndicies(const GenericParamNodeList &genericParams) {
 			unordered_map<string, size_t> indices;
 
-			for (size_t i = 0; i < genericParams.size();++i)
+			for (size_t i = 0; i < genericParams.size(); ++i)
 				indices[genericParams[i]->name] = i;
 
 			return indices;

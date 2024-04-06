@@ -116,8 +116,8 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
-	((slake::ModuleValue *)((slake::ModuleValue *)rt->getRootValue()->scope->getMember("hostext"))->scope->getMember("extfns"))->scope->putMember("print", new slake::NativeFnValue(rt.get(), print, slake::ACCESS_PUB, slake::TypeId::None));
-	((slake::ModuleValue *)((slake::ModuleValue *)rt->getRootValue()->scope->getMember("hostext"))->scope->getMember("extfns"))->scope->putMember("getSlakeBuildVersionInfo$i32", new slake::NativeFnValue(rt.get(), getSlakeBuildVersionInfo, slake::ACCESS_PUB, slake::TypeId::None));
+	((slake::ModuleValue *)((slake::ModuleValue *)rt->getRootValue()->getMember("hostext"))->getMember("extfns"))->scope->putMember("print", new slake::NativeFnValue(rt.get(), print, slake::ACCESS_PUB, slake::TypeId::None));
+	((slake::ModuleValue *)((slake::ModuleValue *)rt->getRootValue()->getMember("hostext"))->getMember("extfns"))->scope->putMember("getSlakeBuildVersionInfo$i32", new slake::NativeFnValue(rt.get(), getSlakeBuildVersionInfo, slake::ACCESS_PUB, slake::TypeId::None));
 
 	try {
 		slake::ValueRef<slake::ContextValue> context = (slake::ContextValue *)mod->scope->getMember("main")->call(nullptr, {}).get();

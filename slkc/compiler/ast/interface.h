@@ -14,7 +14,7 @@ namespace slake {
 		public:
 			string name;
 
-			deque<shared_ptr<TypeNameNode>> parentInterfaces;	 // Parent interfaces
+			deque<shared_ptr<TypeNameNode>> parentInterfaces;  // Parent interfaces
 
 			GenericParamNodeList genericParams;
 			unordered_map<string, size_t> genericParamIndices;
@@ -27,7 +27,9 @@ namespace slake {
 
 				name = other.name;
 
-				parentInterfaces = other.parentInterfaces;
+				parentInterfaces.resize(other.parentInterfaces.size());
+				for (size_t i = 0; i < other.parentInterfaces.size(); ++i)
+					parentInterfaces[i] = other.parentInterfaces[i]->duplicate<TypeNameNode>();
 			}
 			inline InterfaceNode(
 				Location loc,

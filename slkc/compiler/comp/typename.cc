@@ -94,6 +94,18 @@ bool Compiler::isCompoundTypeName(shared_ptr<TypeNameNode> node) {
 	}
 }
 
+bool slake::slkc::Compiler::isLValueType(shared_ptr<TypeNameNode> typeName) {
+	switch (typeName->getTypeId()) {
+		case Type::Ref:
+			return true;
+		case Type::Custom:
+			// stub
+		default:;
+	}
+
+	return false;
+}
+
 bool Compiler::_isTypeNamesConvertible(shared_ptr<InterfaceNode> st, shared_ptr<ClassNode> dt) {
 	for (auto i : dt->implInterfaces) {
 		auto interface = static_pointer_cast<InterfaceNode>(resolveCustomTypeName((CustomTypeNameNode*)i.get()));
@@ -405,4 +417,24 @@ bool Compiler::isSameType(shared_ptr<TypeNameNode> x, shared_ptr<TypeNameNode> y
 		default:
 			return true;
 	}
+}
+
+shared_ptr<AstNode> CustomTypeNameNode::doDuplicate() {
+	return make_shared<CustomTypeNameNode>(*this);
+}
+
+shared_ptr<AstNode> ArrayTypeNameNode::doDuplicate() {
+	return make_shared<ArrayTypeNameNode>(*this);
+}
+
+shared_ptr<AstNode> MapTypeNameNode::doDuplicate() {
+	return make_shared<MapTypeNameNode>(*this);
+}
+
+shared_ptr<AstNode> FnTypeNameNode::doDuplicate() {
+	return make_shared<FnTypeNameNode>(*this);
+}
+
+shared_ptr<AstNode> RefTypeNameNode::doDuplicate() {
+	return make_shared<RefTypeNameNode>(*this);
 }

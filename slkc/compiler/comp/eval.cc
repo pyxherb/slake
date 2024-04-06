@@ -847,6 +847,22 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 							{ e->getLocation(),
 								MessageType::Error,
 								"`" + to_string(e->ref, this) + "' is a type" });
+					case NodeType::ThisRef: {
+						auto owner = curMajorContext.curMinorContext.curScope->owner;
+
+						switch (owner->getNodeType()) {
+							case NodeType::Class:
+							case NodeType::Interface:
+							case NodeType::Trait:
+								return curMajorContext.thisType;
+							default:
+								throw FatalCompilationError(
+									Message(
+										e->getLocation(),
+										MessageType::Error,
+										"Cannot use this reference in this context"));
+						}
+					}
 					default:
 						assert(false);
 				}

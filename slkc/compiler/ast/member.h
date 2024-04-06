@@ -29,7 +29,9 @@ namespace slake {
 
 				compiler = other.compiler;
 
-				genericArgs = other.genericArgs;
+				genericArgs.resize(other.genericArgs.size());
+				for (size_t i = 0 ; i < other.genericArgs.size(); ++i)
+					genericArgs[i] = other.genericArgs[i]->duplicate<TypeNameNode>();
 				originalValue = other.originalValue;
 
 				{
@@ -42,7 +44,7 @@ namespace slake {
 				genericParamIndices = other.genericParamIndices;
 
 				if (other.scope)
-					(scope = shared_ptr<Scope>(other.scope->duplicate()))->owner = this;
+					setScope(shared_ptr<Scope>(other.scope->duplicate()));
 			}
 			inline MemberNode(Compiler *compiler, AccessModifier access = 0)
 				: compiler(compiler), access(access) {}
@@ -66,7 +68,7 @@ namespace slake {
 
 			inline void setScope(shared_ptr<Scope> scope) {
 				this->scope = scope;
-				scope->owner = this;
+				scope->setOwner(this);
 			}
 		};
 	}

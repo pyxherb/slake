@@ -95,6 +95,13 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 	sld.column = expr->getLocation().column;
 
 	if (auto ce = evalConstExpr(expr); ce) {
+		if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
+			throw FatalCompilationError(
+				Message(
+					expr->getLocation(),
+					MessageType::Error,
+					"Expecting a lvalue expression"));
+
 		curFn->insertIns(Opcode::STORE, curMajorContext.curMinorContext.evalDest, ce);
 		return;
 	}
@@ -434,34 +441,63 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 				}
 				case Type::Custom: {
 					auto node = resolveCustomTypeName(static_pointer_cast<CustomTypeNameNode>(lhsType).get());
-					auto rhsType = evalExprType(e->lhs);
+					auto lhsType = evalExprType(e->lhs), rhsType = evalExprType(e->rhs);
 
 					auto determineOverloading = [this, e, rhsType](shared_ptr<MemberNode> n, uint32_t lhsRegIndex) -> bool {
 						if (auto it = n->scope->members.find(std::to_string(e->op));
 							it != n->scope->members.end()) {
 							assert(it->second->getNodeType() == NodeType::Fn);
-							shared_ptr<FnNode> operatorNode = static_pointer_cast<FnNode>(n);
-							auto overloading = operatorNode->overloadingRegistries[0];
-
-							Ref fullName;
-							_getFullName(operatorNode.get(), fullName);
+							shared_ptr<FnNode> operatorNode = static_pointer_cast<FnNode>(it->second);
+							shared_ptr<FnOverloadingNode> overloading;
 
 							try {
-								argDependentLookup(e->getLocation(), operatorNode.get(), { rhsType }, {});
+								overloading = argDependentLookup(e->getLocation(), operatorNode.get(), { rhsType }, {});
 							} catch (FatalCompilationError e) {
 								return false;
 							}
 
 							compileExpr(
-								make_shared<CallExprNode>(
-									make_shared<RefExprNode>(fullName),
-									deque<shared_ptr<ExprNode>>{ e->rhs }),
-								_binaryOpRegs.at(e->op).isRhsLvalue
-									? EvalPurpose::LValue
-									: EvalPurpose::RValue,
-								curMajorContext.curMinorContext.evalPurpose == EvalPurpose::Stmt
-									? make_shared<RegRefNode>(lhsRegIndex)
-									: curMajorContext.curMinorContext.evalDest);
+								e->lhs,
+								EvalPurpose::RValue,
+								make_shared<RegRefNode>(lhsRegIndex));
+
+							Ref fullName;
+							_getFullName(operatorNode.get(), fullName);
+
+							// FIXME: The compiler does not generate the original type.
+							fullName.back().name = mangleName(
+								fullName.back().name,
+								{ overloading->params[0].originalType
+										? overloading->params[0].originalType
+										: overloading->params[0].type },
+								false);
+
+							uint32_t tmpRegIndex = allocReg();
+
+							if (auto ce = evalConstExpr(e->rhs); ce) {
+								if (isLValueType(overloading->params[0].type))
+									throw FatalCompilationError(
+										Message(
+											e->getLocation(),
+											MessageType::Error,
+											"Expecting a lvalue expression"));
+
+								curFn->insertIns(Opcode::PUSHARG, ce);
+							} else {
+								compileExpr(
+									e->rhs,
+									isLValueType(overloading->params[0].type)
+										? EvalPurpose::LValue
+										: EvalPurpose::RValue,
+									make_shared<RegRefNode>(tmpRegIndex));
+								curFn->insertIns(Opcode::PUSHARG, make_shared<RegRefNode>(tmpRegIndex, true));
+							}
+
+							curFn->insertIns(Opcode::LOAD, make_shared<RegRefNode>(tmpRegIndex), make_shared<RefExprNode>(fullName));
+							curFn->insertIns(Opcode::MCALL, make_shared<RegRefNode>(tmpRegIndex, true), make_shared<RegRefNode>(lhsRegIndex, true));
+
+							if (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt)
+								curFn->insertIns(Opcode::LRET, curMajorContext.curMinorContext.evalDest);
 
 							return true;
 						}
@@ -747,6 +783,9 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 					}
 				}
 
+				auto returnType = evalExprType(e->target);
+				bool isReturnTypeLValue = isLValueType(returnType);
+
 				compileExpr(e->target, EvalPurpose::Call, make_shared<RegRefNode>(callTargetRegIndex), make_shared<RegRefNode>(tmpRegIndex));
 
 				if (curMajorContext.curMinorContext.isLastCallTargetStatic)
@@ -759,10 +798,44 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 						make_shared<RegRefNode>(callTargetRegIndex, true),
 						make_shared<RegRefNode>(tmpRegIndex, true));
 
-				if (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt) {
-					curFn->insertIns(
-						Opcode::LRET,
-						curMajorContext.curMinorContext.evalDest);
+				switch (curMajorContext.curMinorContext.evalPurpose) {
+					case EvalPurpose::LValue: {
+						if (!isReturnTypeLValue)
+							throw FatalCompilationError(
+								Message(
+									e->getLocation(),
+									MessageType::Error,
+									"Expecting a lvalue expression"));
+
+						curFn->insertIns(
+							Opcode::LRET,
+							curMajorContext.curMinorContext.evalDest);
+						break;
+					}
+					case EvalPurpose::RValue:
+					case EvalPurpose::Call: {
+						if (isReturnTypeLValue) {
+							uint32_t tmpRegIndex = allocReg();
+
+							curFn->insertIns(
+								Opcode::LRET,
+								make_shared<RegRefNode>(tmpRegIndex));
+							curFn->insertIns(
+								Opcode::LVALUE,
+								curMajorContext.curMinorContext.evalDest,
+								make_shared<RegRefNode>(tmpRegIndex, true));
+						} else {
+							curFn->insertIns(
+								Opcode::LRET,
+								curMajorContext.curMinorContext.evalDest);
+						}
+
+						break;
+					}
+					case EvalPurpose::Stmt:
+						break;
+					default:
+						assert(false);
 				}
 			}
 
@@ -1006,6 +1079,10 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 					break;
 				case NodeType::ArgRef:
 					static_pointer_cast<ArgRefNode>(x)->unwrapData = (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RValue);
+
+					curFn->insertIns(
+						Opcode::STORE,
+						make_shared<RegRefNode>(tmpRegIndex), x);
 					loadRest();
 					if (resolvedParts.back().second->getNodeType() == NodeType::Var) {
 						if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RValue)
@@ -1016,7 +1093,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 					}
 					curFn->insertIns(
 						Opcode::STORE,
-						curMajorContext.curMinorContext.evalDest, x);
+						curMajorContext.curMinorContext.evalDest, make_shared<RegRefNode>(tmpRegIndex, true));
 					break;
 				case NodeType::Var:
 				case NodeType::Fn:
@@ -1109,6 +1186,13 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 		case ExprType::Bool:
 		case ExprType::Array:
 		case ExprType::Map:
+			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
+				throw FatalCompilationError(
+					Message(
+						expr->getLocation(),
+						MessageType::Error,
+						"Expecting a lvalue expression"));
+
 			curFn->insertIns(Opcode::STORE, curMajorContext.curMinorContext.evalDest, expr);
 			break;
 		default:

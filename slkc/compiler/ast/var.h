@@ -21,7 +21,7 @@ namespace slake {
 			inline VarNode(const VarNode& other) : MemberNode(other) {
 				_loc = other._loc;
 
-				type = other.type;
+				type = other.type->duplicate<TypeNameNode>();
 				name = other.name;
 				initValue = other.initValue;
 			}

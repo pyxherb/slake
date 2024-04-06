@@ -27,6 +27,8 @@ namespace slake {
 
 		Value *getData() const { return value; }
 		void setData(Value *value) {
+			type.loadDeferredType(_rt);
+
 			if (value && !isCompatible(type, value->getType()))
 				throw MismatchedTypeError("Mismatched types");
 			this->value = value;

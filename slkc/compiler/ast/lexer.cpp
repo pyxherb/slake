@@ -550,4 +550,6 @@ end:
 		{},
 		""
 	};
+
+	context.tokenInfos.resize(tokens.size());
 }

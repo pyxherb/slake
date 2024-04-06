@@ -97,6 +97,8 @@ namespace slake {
 				GenericParamNodeList genericParams;
 				unordered_map<string, size_t> genericParamIndices;
 
+				shared_ptr<TypeNameNode> thisType;
+
 				inline void pushMinorContext() {
 					savedMinorContexts.push_back(curMinorContext);
 				}
@@ -156,6 +158,7 @@ namespace slake {
 			bool isNumericTypeName(shared_ptr<TypeNameNode> typeName);
 			bool isDecimalType(shared_ptr<TypeNameNode> typeName);
 			bool isCompoundTypeName(shared_ptr<TypeNameNode> typeName);
+			bool isLValueType(shared_ptr<TypeNameNode> typeName);
 
 			bool _isTypeNamesConvertible(shared_ptr<InterfaceNode> st, shared_ptr<ClassNode> dt);
 

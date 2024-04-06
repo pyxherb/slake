@@ -23,14 +23,19 @@ namespace slake {
 			unordered_map<string, size_t> paramIndices;
 
 			shared_ptr<BlockStmtNode> body;
-			FnNode* owner;
+			FnNode *owner;
 			AccessModifier access = 0;
 
 			inline FnOverloadingNode(const FnOverloadingNode &other) : MemberNode(other) {
 				loc = other.loc;
-				returnType = other.returnType;
+				returnType = other.returnType->duplicate<TypeNameNode>();
 
 				params = other.params;
+				for (size_t i = 0; i < other.params.size(); ++i) {
+					params[i].type = other.params[i].type->duplicate<TypeNameNode>();
+					if (params[i].originalType)
+						params[i].originalType = other.params[i].originalType->duplicate<TypeNameNode>();
+				}
 				paramIndices = other.paramIndices;
 
 				body = other.body;
@@ -119,7 +124,7 @@ namespace slake {
 
 			deque<slxfmt::SourceLocDesc> srcLocDescs;
 
-			inline CompiledFnNode(const CompiledFnNode& other) {
+			inline CompiledFnNode(const CompiledFnNode &other) {
 				name = other.name;
 				body = other.body;
 				labels = other.labels;

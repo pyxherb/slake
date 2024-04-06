@@ -16,17 +16,21 @@ namespace slake {
 
 		public:
 			string name;
-			shared_ptr<TypeNameNode> parentClass;			   // Parent class
-			deque<shared_ptr<TypeNameNode>> implInterfaces;  // Implemented interfaces
+			shared_ptr<TypeNameNode> parentClass;			 // Parent class
+			deque<shared_ptr<TypeNameNode>> implInterfaces;	 // Implemented interfaces
 
 			ClassNode() = default;
-			inline ClassNode(const ClassNode& other) : MemberNode(other) {
+			inline ClassNode(const ClassNode &other) : MemberNode(other) {
 				_loc = other._loc;
 
 				name = other.name;
 
-				parentClass = other.parentClass;
-				implInterfaces = other.implInterfaces;
+				if (parentClass)
+					parentClass = other.parentClass->duplicate<TypeNameNode>();
+
+				implInterfaces.resize(other.implInterfaces.size());
+				for (size_t i = 0; i < other.implInterfaces.size(); ++i)
+					implInterfaces[i] = other.implInterfaces[i]->duplicate<TypeNameNode>();
 			}
 			inline ClassNode(
 				Location loc,

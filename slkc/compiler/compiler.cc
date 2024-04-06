@@ -402,6 +402,18 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 	for (auto &i : classes) {
 		pushMajorContext();
 
+		{
+			auto thisType = make_shared<CustomTypeNameNode>(i.second->getLocation(), getFullName(i.second.get()), this, i.second->scope.get());
+			for (auto &j : i.second->genericParams) {
+				thisType->ref.back().genericArgs.push_back(make_shared<CustomTypeNameNode>(
+					i.second->getLocation(),
+					Ref{ { j->getLocation(), j->name, deque<shared_ptr<TypeNameNode>>{} } },
+					this,
+					i.second->scope.get()));
+			}
+			curMajorContext.thisType = thisType;
+		}
+
 		// curMajorContext = MajorContext();
 		curMajorContext.mergeGenericParams(i.second->genericParams);
 

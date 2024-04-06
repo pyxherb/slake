@@ -18,6 +18,8 @@ namespace slake {
 
 		using Ref = deque<RefEntry>;
 
+		Ref duplicateRef(const Ref &other);
+
 		class ThisRefNode : public AstNode {
 		public:
 			inline ThisRefNode() = default;

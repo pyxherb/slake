@@ -27,7 +27,9 @@ namespace slake {
 
 				name = other.name;
 
-				parentTraits = other.parentTraits;
+				parentTraits.resize(other.parentTraits.size());
+				for (size_t i = 0; i < other.parentTraits.size(); ++i)
+					parentTraits[i] = other.parentTraits[i]->duplicate<TypeNameNode>();
 			}
 			inline TraitNode(
 				Location loc,

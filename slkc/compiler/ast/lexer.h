@@ -180,16 +180,13 @@ namespace slake {
 			virtual ~LexicalError() = default;
 		};
 
+		struct TokenInfo {
+
+		};
+
 		struct LexerContext {
 			size_t curIndex = 0;
-
-			inline bool operator>(const LexerContext &rhs) const {
-				return curIndex > rhs.curIndex;
-			}
-
-			inline bool operator<(const LexerContext &rhs) const {
-				return curIndex < rhs.curIndex;
-			}
+			std::vector<TokenInfo> tokenInfos;
 		};
 
 		class Lexer {

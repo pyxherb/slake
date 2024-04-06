@@ -20,3 +20,15 @@ string std::to_string(const slake::slkc::Ref &ref, slake::slkc::Compiler *compil
 	}
 	return s;
 }
+
+Ref slake::slkc::duplicateRef(const Ref &other) {
+	Ref newRef = other;
+
+	for (size_t i = 0; i < other.size(); ++i) {
+		for (size_t j = 0; j < newRef[i].genericArgs.size(); ++j) {
+			newRef[i].genericArgs[j] = newRef[i].genericArgs[j]->duplicate<TypeNameNode>();
+		}
+	}
+
+	return newRef;
+}

@@ -28,6 +28,16 @@ class Generic<T> {
 		return;
 	}
 
+	Generic<T> operator--() {
+		hostext.extfns.print("Called forward --, target = ", this.x, "\n");
+		return this;
+	}
+	
+	Generic<T> operator--(any x) {
+		hostext.extfns.print("Called backward --, target = ", this.x, "\n");
+		return this;
+	}
+
 	Generic<T> operator+(Generic<T> other) {
 		hostext.extfns.print("Called +, lhs = ", this.x, ", rhs = ", other.x, "\n");
 		return this;
@@ -40,13 +50,19 @@ pub i32 main() {
 	Generic<i32> a = new Generic<i32>();
 	a.setX(123);
 	Generic<f32> b = new Generic<f32>();
-	b.setX(123.0f);
+	b.setX(123.456f);
 
 	a.test<f32>(123.456f);
 	b.test<i32>(123);
 
 	a + a;
 	b + b;
+
+	--a;
+	--b;
+
+	a--;
+	b--;
 
 	yield 1;
 

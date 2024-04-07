@@ -665,7 +665,7 @@ shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 	if (auto it = prefixOpRegistries.find(prefixToken.tokenId); it != prefixOpRegistries.end()) {
 		lexer->nextToken();
 
-		lhs = it->second.parselet(this, lhs);
+		lhs = it->second.parselet(this, parseExpr(it->second.leftPrecedence));
 	} else {
 		switch (prefixToken.tokenId) {
 			case TokenId::ThisKeyword:
@@ -1217,6 +1217,8 @@ shared_ptr<FnOverloadingNode> Parser::parseOperatorDecl(shared_ptr<TypeNameNode>
 		case TokenId::XorOp:
 		case TokenId::LAndOp:
 		case TokenId::LOrOp:
+		case TokenId::IncOp:
+		case TokenId::DecOp:
 		case TokenId::RevOp:
 		case TokenId::NotOp:
 		case TokenId::AddAssignOp:

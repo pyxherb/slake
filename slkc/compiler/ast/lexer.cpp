@@ -532,10 +532,13 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 		if (discardCurToken)
 			std::move(token);
 		else {
-			size_t index = prevYYCURSOR - src.data();
+			size_t beginIndex = prevYYCURSOR - src.data(), endIndex = YYCURSOR - src.data();
+
+			std::string_view strToBegin = src.substr(0, beginIndex), strToEnd = src.substr(0, endIndex);
 
 			token.text = std::string(prevYYCURSOR, YYCURSOR - prevYYCURSOR);
-			token.beginLocation = { line, index - src.find_last_of('\n', index) - 1 };
+			token.beginLocation = { (size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'), beginIndex - src.find_last_of('\n', beginIndex) - 1 };
+			token.endLocation = Location{ (size_t)std::count(strToEnd.begin(), strToEnd.end(), '\n'), endIndex - src.find_last_of('\n', endIndex) - 1 };
 			tokens.push_back(std::move(token));
 		}
 

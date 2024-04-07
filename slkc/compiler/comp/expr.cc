@@ -112,16 +112,187 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 
 			uint32_t lhsRegIndex = allocReg();
 
-			compileExpr(
-				e->x,
-				_unaryOpRegs.at(e->op).lvalueOperand ? EvalPurpose::LValue : EvalPurpose::RValue,
-				make_shared<RegRefNode>(lhsRegIndex));
-			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::Stmt) {
-				if (_unaryOpRegs.at(e->op).lvalueOperand) {
-					curFn->insertIns(_unaryOpRegs.at(e->op).opcode, make_shared<RegRefNode>(lhsRegIndex), make_shared<RegRefNode>(lhsRegIndex));
+			auto lhsType = evalExprType(e->x);
+
+			switch (lhsType->getTypeId()) {
+				case Type::I8:
+				case Type::I16:
+				case Type::I32:
+				case Type::I64:
+				case Type::U8:
+				case Type::U16:
+				case Type::U32:
+				case Type::U64:
+				case Type::F32:
+				case Type::F64:
+					compileExpr(
+						e->x,
+						_unaryOpRegs.at(e->op).lvalueOperand
+							? EvalPurpose::LValue
+							: EvalPurpose::RValue,
+						make_shared<RegRefNode>(lhsRegIndex));
+
+					curFn->insertIns(
+						_unaryOpRegs.at(e->op).opcode,
+						curMajorContext.curMinorContext.evalDest,
+						make_shared<RegRefNode>(lhsRegIndex, true));
+
+					break;
+				case Type::Bool:
+					switch (e->op) {
+						case UnaryOp::LNot:
+						case UnaryOp::Not:
+							compileExpr(
+								e->x,
+								_unaryOpRegs.at(e->op).lvalueOperand
+									? EvalPurpose::LValue
+									: EvalPurpose::RValue,
+								make_shared<RegRefNode>(lhsRegIndex));
+
+							curFn->insertIns(
+								_unaryOpRegs.at(e->op).opcode,
+								curMajorContext.curMinorContext.evalDest,
+								make_shared<RegRefNode>(lhsRegIndex, true));
+							break;
+						default:
+							throw FatalCompilationError(
+								Message(
+									e->getLocation(),
+									MessageType::Error,
+									"No matching operator"));
+					}
+
+					break;
+				case Type::Custom: {
+					auto node = resolveCustomTypeName(static_pointer_cast<CustomTypeNameNode>(lhsType).get());
+
+					auto determineOverloading = [this, e](shared_ptr<MemberNode> n, uint32_t lhsRegIndex) -> bool {
+						if (auto it = n->scope->members.find(std::to_string(e->op));
+							it != n->scope->members.end()) {
+							assert(it->second->getNodeType() == NodeType::Fn);
+							shared_ptr<FnNode> operatorNode = static_pointer_cast<FnNode>(it->second);
+							shared_ptr<FnOverloadingNode> overloading;
+
+							try {
+								overloading = argDependentLookup(e->getLocation(), operatorNode.get(), {}, {});
+							} catch (FatalCompilationError e) {
+								return false;
+							}
+
+							compileExpr(
+								e->x,
+								EvalPurpose::RValue,
+								make_shared<RegRefNode>(lhsRegIndex));
+
+							Ref fullName;
+							_getFullName(operatorNode.get(), fullName);
+
+							fullName.back().name = mangleName(
+								fullName.back().name,
+								isForwardUnaryOp(e->op)
+									? deque<shared_ptr<TypeNameNode>>{}
+									: deque<shared_ptr<TypeNameNode>>{ make_shared<AnyTypeNameNode>(e->getLocation(), false) },
+								false);
+
+							uint32_t tmpRegIndex = allocReg();
+
+							curFn->insertIns(Opcode::LOAD, make_shared<RegRefNode>(tmpRegIndex), make_shared<RefExprNode>(fullName));
+							curFn->insertIns(Opcode::MCALL, make_shared<RegRefNode>(tmpRegIndex, true), make_shared<RegRefNode>(lhsRegIndex, true));
+
+							if (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt)
+								curFn->insertIns(Opcode::LRET, curMajorContext.curMinorContext.evalDest);
+
+							return true;
+						}
+						return false;
+					};
+
+					switch (node->getNodeType()) {
+						case NodeType::Class:
+						case NodeType::Interface:
+						case NodeType::Trait: {
+							uint32_t lhsRegIndex = allocReg(1);
+
+							shared_ptr<MemberNode> n = static_pointer_cast<MemberNode>(node);
+
+							if (!determineOverloading(n, lhsRegIndex))
+								throw FatalCompilationError(
+									Message(
+										e->getLocation(),
+										MessageType::Error,
+										"No matching operator"));
+
+							break;
+						}
+						case NodeType::GenericParam: {
+							uint32_t lhsRegIndex = allocReg(1);
+
+							shared_ptr<GenericParamNode> n = static_pointer_cast<GenericParamNode>(node);
+
+							shared_ptr<AstNode> curMember;
+
+							curMember = resolveCustomTypeName((CustomTypeNameNode *)n->baseType.get());
+
+							if (curMember->getNodeType() != NodeType::Class)
+								throw FatalCompilationError(
+									Message(
+										n->baseType->getLocation(),
+										MessageType::Error,
+										"Must be a class"));
+
+							if (determineOverloading(static_pointer_cast<MemberNode>(curMember), lhsRegIndex))
+								break;
+
+							for (auto i : n->interfaceTypes) {
+								curMember = resolveCustomTypeName((CustomTypeNameNode *)i.get());
+
+								if (curMember->getNodeType() != NodeType::Interface)
+									throw FatalCompilationError(
+										Message(
+											n->baseType->getLocation(),
+											MessageType::Error,
+											"Must be an interface"));
+
+								if (determineOverloading(static_pointer_cast<MemberNode>(curMember), lhsRegIndex))
+									break;
+							}
+
+							for (auto i : n->traitTypes) {
+								curMember = resolveCustomTypeName((CustomTypeNameNode *)i.get());
+
+								if (curMember->getNodeType() != NodeType::Interface)
+									throw FatalCompilationError(
+										Message(
+											n->baseType->getLocation(),
+											MessageType::Error,
+											"Must be an interface"));
+
+								if (determineOverloading(static_pointer_cast<MemberNode>(curMember), lhsRegIndex))
+									break;
+							}
+
+							throw FatalCompilationError(
+								Message(
+									e->getLocation(),
+									MessageType::Error,
+									"No matching operator"));
+							break;
+						}
+						default:
+							throw FatalCompilationError(
+								Message(
+									e->getLocation(),
+									MessageType::Error,
+									"No matching operator"));
+					}
+					break;
 				}
-			} else {
-				curFn->insertIns(_unaryOpRegs.at(e->op).opcode, curMajorContext.curMinorContext.evalDest, make_shared<RegRefNode>(lhsRegIndex, true));
+				default:
+					throw FatalCompilationError(
+						Message(
+							e->getLocation(),
+							MessageType::Error,
+							"No matching operator"));
 			}
 
 			break;
@@ -464,7 +635,6 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 							Ref fullName;
 							_getFullName(operatorNode.get(), fullName);
 
-							// FIXME: The compiler does not generate the original type.
 							fullName.back().name = mangleName(
 								fullName.back().name,
 								{ overloading->params[0].originalType

@@ -498,9 +498,152 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 		case ExprType::Unary: {
 			auto e = static_pointer_cast<UnaryOpExprNode>(expr);
 
-			if (isCompoundTypeName(evalExprType(e->x))) {
-			} else
-				return evalExprType(e->x);
+			uint32_t lhsRegIndex = allocReg();
+
+			auto lhsType = evalExprType(e->x);
+
+			switch (lhsType->getTypeId()) {
+				case Type::I8:
+				case Type::I16:
+				case Type::I32:
+				case Type::I64:
+				case Type::U8:
+				case Type::U16:
+				case Type::U32:
+				case Type::U64:
+				case Type::F32:
+				case Type::F64:
+					switch (e->op) {
+						case UnaryOp::LNot:
+						case UnaryOp::Not:
+							return make_shared<BoolTypeNameNode>(e->getLocation(), false);
+						default:
+							return lhsType;
+					}
+
+					break;
+				case Type::Bool:
+					switch (e->op) {
+						case UnaryOp::LNot:
+						case UnaryOp::Not:
+							return make_shared<BoolTypeNameNode>(e->getLocation(), false);
+						default:
+							throw FatalCompilationError(
+								Message(
+									e->getLocation(),
+									MessageType::Error,
+									"No matching operator"));
+					}
+
+					break;
+				case Type::Custom: {
+					auto node = resolveCustomTypeName(static_pointer_cast<CustomTypeNameNode>(lhsType).get());
+
+					auto determineOverloading = [this, e](shared_ptr<MemberNode> n, uint32_t lhsRegIndex) -> shared_ptr<TypeNameNode> {
+						if (auto it = n->scope->members.find(std::to_string(e->op));
+							it != n->scope->members.end()) {
+							assert(it->second->getNodeType() == NodeType::Fn);
+							shared_ptr<FnNode> operatorNode = static_pointer_cast<FnNode>(it->second);
+							shared_ptr<FnOverloadingNode> overloading;
+
+							try {
+								overloading = argDependentLookup(e->getLocation(), operatorNode.get(), {}, {});
+							} catch (FatalCompilationError e) {
+								return {};
+							}
+
+							return overloading->returnType;
+						}
+						return {};
+					};
+
+					switch (node->getNodeType()) {
+						case NodeType::Class:
+						case NodeType::Interface:
+						case NodeType::Trait: {
+							uint32_t lhsRegIndex = allocReg(1);
+
+							shared_ptr<MemberNode> n = static_pointer_cast<MemberNode>(node);
+
+							if (!determineOverloading(n, lhsRegIndex))
+								throw FatalCompilationError(
+									Message(
+										e->getLocation(),
+										MessageType::Error,
+										"No matching operator"));
+
+							break;
+						}
+						case NodeType::GenericParam: {
+							uint32_t lhsRegIndex = allocReg(1);
+
+							shared_ptr<GenericParamNode> n = static_pointer_cast<GenericParamNode>(node);
+
+							shared_ptr<AstNode> curMember;
+
+							curMember = resolveCustomTypeName((CustomTypeNameNode *)n->baseType.get());
+
+							if (curMember->getNodeType() != NodeType::Class)
+								throw FatalCompilationError(
+									Message(
+										n->baseType->getLocation(),
+										MessageType::Error,
+										"Must be a class"));
+
+							if (auto t = determineOverloading(static_pointer_cast<MemberNode>(curMember), lhsRegIndex); t)
+								return t;
+
+							for (auto i : n->interfaceTypes) {
+								curMember = resolveCustomTypeName((CustomTypeNameNode *)i.get());
+
+								if (curMember->getNodeType() != NodeType::Interface)
+									throw FatalCompilationError(
+										Message(
+											n->baseType->getLocation(),
+											MessageType::Error,
+											"Must be an interface"));
+
+								if (auto t = determineOverloading(static_pointer_cast<MemberNode>(curMember), lhsRegIndex); t)
+									return t;
+							}
+
+							for (auto i : n->traitTypes) {
+								curMember = resolveCustomTypeName((CustomTypeNameNode *)i.get());
+
+								if (curMember->getNodeType() != NodeType::Interface)
+									throw FatalCompilationError(
+										Message(
+											n->baseType->getLocation(),
+											MessageType::Error,
+											"Must be an interface"));
+
+								if (auto t = determineOverloading(static_pointer_cast<MemberNode>(curMember), lhsRegIndex); t)
+									return t;
+							}
+
+							throw FatalCompilationError(
+								Message(
+									e->getLocation(),
+									MessageType::Error,
+									"No matching operator"));
+							break;
+						}
+						default:
+							throw FatalCompilationError(
+								Message(
+									e->getLocation(),
+									MessageType::Error,
+									"No matching operator"));
+					}
+					break;
+				}
+				default:
+					throw FatalCompilationError(
+						Message(
+							e->getLocation(),
+							MessageType::Error,
+							"No matching operator"));
+			}
 
 			break;
 		}

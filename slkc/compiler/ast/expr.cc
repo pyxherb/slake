@@ -14,6 +14,8 @@ std::string std::to_string(UnaryOp op) {
 		case UnaryOp::DecF:
 		case UnaryOp::DecB:
 			return "--";
+		case UnaryOp::Neg:
+			return "-";
 		default:
 			throw logic_error("Unrecognized operator type");
 	}

@@ -5,7 +5,11 @@
 #include <fstream>
 #include <iostream>
 
-slake::ValueRef<> print(slake::Runtime *rt, slake::Value *thisObject, std::deque<slake::Value*> args) {
+slake::ValueRef<> print(
+	slake::Runtime *rt,
+	slake::Value *thisObject,
+	std::deque<slake::Value *> args,
+	const std::unordered_map<std::string, slake::Type> &mappedGenericArgs) {
 	using namespace slake;
 
 	for (uint8_t i = 0; i < args.size(); ++i) {
@@ -54,10 +58,14 @@ slake::ValueRef<> print(slake::Runtime *rt, slake::Value *thisObject, std::deque
 	return {};
 }
 
-slake::ValueRef<> getSlakeBuildVersionInfo(slake::Runtime *rt, slake::Value *thisObject, std::deque<slake::Value*> args) {
+slake::ValueRef<> getSlakeBuildVersionInfo(
+	slake::Runtime *rt,
+	slake::Value *thisObject,
+	std::deque<slake::Value *> args,
+	const std::unordered_map<std::string, slake::Type> &mappedGenericArgs) {
 	using namespace slake;
 
-	switch(((I32Value*)args[0])->getData()) {
+	switch (((I32Value *)args[0])->getData()) {
 		case 0:
 			return new StringValue(rt, __DATE__);
 		case 1:

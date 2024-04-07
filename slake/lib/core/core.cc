@@ -13,7 +13,11 @@ ClassValue *corelib::except::exOutOfMemoryError;
 ClassValue *corelib::except::exInvalidOpcodeError;
 ClassValue *corelib::except::exInvalidOperandsError;
 
-static ValueRef<> _exceptionConstructor(Runtime *rt, Value *thisObject, std::deque<Value *> args) {
+static ValueRef<> _exceptionConstructor(
+	Runtime *rt,
+	Value *thisObject,
+	std::deque<Value *> args,
+	const std::unordered_map<std::string, Type> &mappedGenericArgs) {
 	if (args.size() != 1)
 		throw InvalidArgumentsError("Invalid arguments");
 	((VarValue *)rt->getActiveContext()->getCurFrame().thisObject->getMember("_msg"))->setData(args[0]);

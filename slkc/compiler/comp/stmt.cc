@@ -43,11 +43,11 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 							MessageType::Error,
 							"Redefinition of local variable `" + i.first + "'" });
 
-				auto initValueType = evalExprType(i.second.initValue);
-
 				uint32_t index = allocLocalVar(i.first, s->type);
 
 				if (i.second.initValue) {
+					shared_ptr<TypeNameNode> initValueType = evalExprType(i.second.initValue);
+
 					if (!isSameType(s->type, initValueType)) {
 						if (!isTypeNamesConvertible(initValueType, s->type))
 							throw FatalCompilationError(

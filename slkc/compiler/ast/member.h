@@ -30,7 +30,7 @@ namespace slake {
 				compiler = other.compiler;
 
 				genericArgs.resize(other.genericArgs.size());
-				for (size_t i = 0 ; i < other.genericArgs.size(); ++i)
+				for (size_t i = 0; i < other.genericArgs.size(); ++i)
 					genericArgs[i] = other.genericArgs[i]->duplicate<TypeNameNode>();
 				originalValue = other.originalValue;
 

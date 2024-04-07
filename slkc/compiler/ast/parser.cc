@@ -1204,6 +1204,9 @@ shared_ptr<FnOverloadingNode> Parser::parseFnDef(shared_ptr<TypeNameNode> return
 shared_ptr<FnOverloadingNode> Parser::parseOperatorDecl(shared_ptr<TypeNameNode> returnType, string &nameOut) {
 	expectToken(lexer->nextToken(), TokenId::OperatorKeyword);
 
+	auto savedScope = curScope;
+	auto newScope = (curScope = make_shared<Scope>());
+
 	auto &nameToken = lexer->nextToken();
 	string name;
 	switch (nameToken.tokenId) {
@@ -1255,13 +1258,18 @@ shared_ptr<FnOverloadingNode> Parser::parseOperatorDecl(shared_ptr<TypeNameNode>
 
 	nameOut = name;
 
-	return make_shared<FnOverloadingNode>(returnType->getLocation(), compiler, returnType, GenericParamNodeList{}, params);
+	curScope = savedScope;
+
+	return make_shared<FnOverloadingNode>(returnType->getLocation(), compiler, returnType, GenericParamNodeList{}, params, newScope);
 }
 
 shared_ptr<FnOverloadingNode> Parser::parseOperatorDef(shared_ptr<TypeNameNode> returnType, string &nameOut) {
 	shared_ptr<FnOverloadingNode> overloading = parseOperatorDecl(returnType, nameOut);
 
 	if (auto &token = lexer->peekToken(); token.tokenId == TokenId::LBrace) {
+		auto savedScope = curScope;
+		curScope = overloading->scope;
+
 		lexer->nextToken();
 
 		deque<shared_ptr<StmtNode>> stmts;
@@ -1274,6 +1282,8 @@ shared_ptr<FnOverloadingNode> Parser::parseOperatorDef(shared_ptr<TypeNameNode> 
 
 			stmts.push_back(parseStmt());
 		}
+
+		curScope = savedScope;
 
 		overloading->body = make_shared<BlockStmtNode>(
 			stmts.empty() ? token.beginLocation : stmts[0]->getLocation(),

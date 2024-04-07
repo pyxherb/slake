@@ -509,6 +509,8 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 
 		popMajorContext();
 	}
+
+	_genericCacheDir.clear();
 }
 
 void Compiler::compileTypeName(std::ostream &fs, shared_ptr<TypeNameNode> typeName) {

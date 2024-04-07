@@ -82,7 +82,7 @@ void slake::Runtime::_instantiateGenericValue(Value *v, GenericInstantiationCont
 			break;
 		}
 		case TypeId::Fn: {
-			FnValue *value = (FnValue *)v;
+			BasicFnValue *value = (BasicFnValue *)v;
 
 			// We have to treat member generic functions carefully, just like what we do in the compiler.
 			if (value->genericParams.size() && value != instantiationContext.mappedValue) {
@@ -99,12 +99,16 @@ void slake::Runtime::_instantiateGenericValue(Value *v, GenericInstantiationCont
 				for (auto &i : value->paramTypes)
 					_instantiateGenericValue(i, instantiationContext);
 
-				for (size_t i = 0; i < value->nIns; ++i) {
-					auto &ins = value->body[i];
-					for (size_t j = 0; j < ins.operands.size(); ++j) {
-						auto operand = ins.operands[j];
-						if (operand && operand->getType() == TypeId::TypeName)
-							_instantiateGenericValue(((TypeNameValue *)operand)->_data, instantiationContext);
+				if (value->isNative()) {
+					((NativeFnValue *)value)->mappedGenericArgs = instantiationContext.mappedGenericArgs;
+				} else {
+					for (size_t i = 0; i < (((FnValue *)value))->nIns; ++i) {
+						auto &ins = (((FnValue *)value))->body[i];
+						for (size_t j = 0; j < ins.operands.size(); ++j) {
+							auto operand = ins.operands[j];
+							if (operand && operand->getType() == TypeId::TypeName)
+								_instantiateGenericValue(((TypeNameValue *)operand)->_data, instantiationContext);
+						}
 					}
 				}
 			}

@@ -114,13 +114,20 @@ namespace slake {
 		FnValue &operator=(FnValue &&) = delete;
 	};
 
-	using NativeFnCallback = std::function<ValueRef<>(Runtime *rt, Value *thisObject, std::deque<Value *> args)>;
+	using NativeFnCallback =
+		std::function<ValueRef<>(
+			Runtime *rt,
+			Value *thisObject,
+			std::deque<Value *> args,
+			const std::unordered_map<std::string, Type> &mappedGenericArgs)>;
 	class NativeFnValue final : public BasicFnValue {
 	protected:
 		NativeFnCallback body;
 		friend class ClassValue;
 
 	public:
+		std::unordered_map<std::string, Type> mappedGenericArgs;
+
 		NativeFnValue(Runtime *rt, NativeFnCallback body, AccessModifier access, Type returnType);
 		virtual ~NativeFnValue();
 

@@ -113,7 +113,7 @@ NativeFnValue::~NativeFnValue() {
 }
 
 ValueRef<> NativeFnValue::call(Value *thisObject, std::deque<Value *> args) const {
-	return body(_rt, thisObject, args);
+	return body(_rt, thisObject, args, mappedGenericArgs);
 }
 
 Value *FnValue::duplicate() const {

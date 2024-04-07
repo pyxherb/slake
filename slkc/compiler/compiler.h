@@ -312,7 +312,7 @@ namespace slake {
 			using GenericNodeCacheTable =
 				std::map<
 					deque<shared_ptr<TypeNameNode>>,  // Generic arguments.
-					MemberNode *,					  // Cached instantiated value.
+					shared_ptr<MemberNode>,			  // Cached instantiated value.
 					GenericNodeArgListComparator>;
 
 			using GenericNodeCacheDirectory = std::map<
@@ -325,6 +325,7 @@ namespace slake {
 			struct GenericNodeInstantiationContext {
 				const deque<shared_ptr<TypeNameNode>> *genericArgs;
 				unordered_map<string, shared_ptr<TypeNameNode>> mappedGenericArgs;
+				shared_ptr<MemberNode> mappedNode = {};
 			};
 
 			void walkTypeNameNodeForGenericInstantiation(

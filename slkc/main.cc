@@ -5,10 +5,6 @@
 
 #include <config.h>
 
-#if SLKC_WITH_LSP_ENABLED
-	#include "lsp/lsp.h"
-#endif
-
 #include <filesystem>
 #include <fstream>
 
@@ -29,7 +25,7 @@ static inline char *fetchArg(int argc, char **argv, int &i) {
 enum class AppAction : uint8_t {
 	Compile = 0,
 	Dump,
-	LspServer
+	LanguageServer
 };
 
 std::string srcPath = "", outPath = "";
@@ -63,7 +59,7 @@ CmdLineAction cmdLineActions[] = {
 	{ "-s\0"
 	  "--language-server\0",
 		[](int argc, char **argv, int &i) {
-			action = AppAction::LspServer;
+			action = AppAction::LanguageServer;
 		} },
 	{ "-p\0"
 	  "--server-port\0",
@@ -149,13 +145,6 @@ int main(int argc, char **argv) {
 				fs.close();
 				break;
 			}
-#if SLKC_WITH_LSP_ENABLED
-			case AppAction::LspServer: {
-				printf("Server started on local port %hd\n", lspServerPort);
-				slake::slkc::lsp::LspServer lspServer(lspServerPort);
-				return lspServer.run();
-			}
-#endif
 			default:
 				assert(false);
 		}

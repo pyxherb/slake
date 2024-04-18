@@ -40,8 +40,4 @@ if(SLAKE_BUILD_SLKC)
     add_subdirectory("slkc")
 endif()
 
-if(SLAKE_BUILD_SLKBCC)
-    add_subdirectory("slkbcc")
-endif()
-
 add_subdirectory("example")

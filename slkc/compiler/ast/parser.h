@@ -51,6 +51,13 @@ namespace slake {
 			Lexer *lexer;
 			Compiler *compiler;
 
+			inline void reset() {
+				curScope.reset();
+				curModule.reset();
+				lexer = nullptr;
+				compiler = nullptr;
+			}
+
 			inline const Token &expectToken(const Token &token) {
 				if (token.tokenId == TokenId::End)
 					throw SyntaxError("Expecting more tokens", token.beginLocation);

@@ -45,7 +45,7 @@ namespace slake {
 
 			virtual inline NodeType getNodeType() const override { return NodeType::Trait; }
 
-			virtual RefEntry getName() const override { return RefEntry(_loc, name, genericArgs); }
+			virtual RefEntry getName() const override { return RefEntry(_loc, SIZE_MAX, name, genericArgs); }
 		};
 	}
 }

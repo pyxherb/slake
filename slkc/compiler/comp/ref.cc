@@ -9,11 +9,11 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 	ResolvedOwnersSaver resolvedOwnersSaver(curMajorContext.curMinorContext);
 
 	// Try to resolve the first entry as a local variable.
-	if (curMajorContext.localVars.count(ref[0].name) && (!ref[0].genericArgs.size())) {
+	if (curMajorContext.curMinorContext.localVars.count(ref[0].name) && (!ref[0].genericArgs.size())) {
 		auto newRef = ref;
 		newRef.pop_front();
 
-		auto localVar = curMajorContext.localVars.at(ref[0].name);
+		auto localVar = curMajorContext.curMinorContext.localVars.at(ref[0].name);
 		if (!newRef.size())
 			goto lvarSucceeded;
 

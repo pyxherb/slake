@@ -65,19 +65,31 @@ namespace slake {
 			virtual inline Type getTypeId() const = 0;
 		};
 
+		class BasicSimpleTypeNameNode : public TypeNameNode {
+		public:
+			size_t idxToken;
+
+			inline BasicSimpleTypeNameNode(const BasicSimpleTypeNameNode &other)
+				: TypeNameNode(other), idxToken(other.idxToken) {
+			}
+			inline BasicSimpleTypeNameNode(Location loc, size_t idxToken, bool isConst = false)
+				: TypeNameNode(loc, isConst), idxToken(idxToken) {}
+			virtual ~BasicSimpleTypeNameNode() = default;
+		};
+
 		template <Type TID>
-		class SimpleTypeNameNode : public TypeNameNode {
+		class SimpleTypeNameNode : public BasicSimpleTypeNameNode {
 		private:
 			virtual inline shared_ptr<AstNode> doDuplicate() override {
 				return make_shared<SimpleTypeNameNode>(*this);
 			}
 
 		public:
-			inline SimpleTypeNameNode(const TypeNameNode &other)
-				: TypeNameNode(other) {
+			inline SimpleTypeNameNode(const SimpleTypeNameNode<TID> &other)
+				: BasicSimpleTypeNameNode(other) {
 			}
-			inline SimpleTypeNameNode(Location loc, bool isConst = false)
-				: TypeNameNode(loc, isConst) {}
+			inline SimpleTypeNameNode(Location loc, size_t idxToken, bool isConst = false)
+				: BasicSimpleTypeNameNode(loc, idxToken, isConst) {}
 			virtual ~SimpleTypeNameNode() = default;
 
 			virtual inline Type getTypeId() const override { return TID; }
@@ -167,7 +179,7 @@ namespace slake {
 			shared_ptr<TypeNameNode> returnType;
 			deque<shared_ptr<TypeNameNode>> paramTypes;
 
-			inline FnTypeNameNode(const FnTypeNameNode& other)
+			inline FnTypeNameNode(const FnTypeNameNode &other)
 				: TypeNameNode(other), returnType(other.returnType->duplicate<TypeNameNode>()) {
 				paramTypes.resize(other.paramTypes.size());
 

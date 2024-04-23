@@ -1,9 +1,5 @@
 module hostext;
 
-use {
-	externs = hostext.extfns
-}
-
 class AnotherGeneric<T, U> {
 	class ChildGeneric<V, T> {
 		pub T x;
@@ -14,15 +10,12 @@ class AnotherGeneric<T, U> {
 		}
 
 		T getX() {
-			hostext.extfns.print("Fetched x: ", this.x, "\n");
 			return this.x;
 		}
 	}
 }
 
 pub i32 main() {
-	hostext.extfns.print("Entered main\n");
-
 	AnotherGeneric<i32, f32>.ChildGeneric<f32, i32> x = new AnotherGeneric<i32, f32>.ChildGeneric<f32, i32>();
 	x.setX(123);
 	x.getX();

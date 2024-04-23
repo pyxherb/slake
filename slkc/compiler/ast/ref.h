@@ -2,6 +2,7 @@
 #define _SLKC_COMPILER_AST_REF_H_
 
 #include "astnode.h"
+#include <stdexcept>
 
 namespace slake {
 	namespace slkc {
@@ -9,11 +10,12 @@ namespace slake {
 
 		struct RefEntry {
 			Location loc;
+			size_t idxToken;
 			string name;
 			deque<shared_ptr<TypeNameNode>> genericArgs;
 
-			inline RefEntry(Location loc, string name, deque<shared_ptr<TypeNameNode>> genericArgs = {})
-				: loc(loc), name(name), genericArgs(genericArgs) {}
+			inline RefEntry(Location loc, size_t idxToken, string name, deque<shared_ptr<TypeNameNode>> genericArgs = {})
+				: loc(loc), idxToken(idxToken), name(name), genericArgs(genericArgs) {}
 		};
 
 		using Ref = deque<RefEntry>;

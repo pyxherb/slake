@@ -1,4 +1,5 @@
 #include "compiler.h"
+#include <slake/util/stream.hh>
 
 using namespace slake::slkc;
 
@@ -22,14 +23,8 @@ Compiler::~Compiler() {
 	flags |= COMP_DELETING;
 }
 
-class PseudoOutputStream : public std::ostream {
-public:
-	inline PseudoOutputStream() : ostream(nullptr) {}
-	virtual ~PseudoOutputStream() = default;
-};
-
-void Compiler::compile(std::istream &is, std::ostream &os) {
-	Lexer lexer;
+void Compiler::compile(std::istream &is, std::ostream &os, bool isImport) {
+	lexer.reset();
 
 	std::string s;
 	{
@@ -49,6 +44,9 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 				MessageType::Error,
 				"Lexical error"));
 	}
+
+	if (!isImport)
+		tokenInfos.resize(lexer.tokens.size());
 
 	Parser parser;
 	try {
@@ -149,8 +147,8 @@ void Compiler::importModule(string name, const Ref &ref, shared_ptr<Scope> scope
 			path = j + path + ".slk";
 
 			auto savedTargetModule = _targetModule;
-			PseudoOutputStream pseudoOs;
-			compile(is, pseudoOs);
+			util::PseudoOutputStream pseudoOs;
+			compile(is, pseudoOs, true);
 			_targetModule = savedTargetModule;
 
 			goto succeeded;
@@ -407,7 +405,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 			for (auto &j : i.second->genericParams) {
 				thisType->ref.back().genericArgs.push_back(make_shared<CustomTypeNameNode>(
 					i.second->getLocation(),
-					Ref{ { j->getLocation(), j->name, deque<shared_ptr<TypeNameNode>>{} } },
+					Ref{ { j->getLocation(), SIZE_MAX, j->name, deque<shared_ptr<TypeNameNode>>{} } },
 					this,
 					i.second->scope.get()));
 			}

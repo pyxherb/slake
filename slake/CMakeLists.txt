@@ -1,5 +1,6 @@
-file(GLOB SRC *.h *.hh *.c *.cc)
-add_library(slake ${SRC})
+file(GLOB HEADERS *.h *.hh)
+file(GLOB SRC *.c *.cc)
+add_library(slake ${HEADERS} ${SRC})
 
 set_property(TARGET slake PROPERTY CXX_STANDARD 17)
 
@@ -22,3 +23,5 @@ configure_file(
 if(${SLAKE_ENABLE_DEBUGGER})
     add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/dbg")
 endif()
+
+install(FILES ${HEADERS} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/slake)

@@ -56,68 +56,141 @@ namespace slake {
 
 		const size_t OUTPUT_SIZE_MAX = 0x20000000;
 
+		enum class EvalPurpose {
+			Stmt,	 // As a statement
+			LValue,	 // As a lvalue
+			RValue,	 // As a rvalue
+			Call,	 // As the target of a calling expression
+		};
+
+		/// @brief Statement level context
+		struct MinorContext {
+			shared_ptr<TypeNameNode> expectedType;
+			shared_ptr<Scope> curScope;
+
+			unordered_map<string, shared_ptr<LocalVarNode>> localVars;
+
+			uint32_t breakScopeLevel = 0;
+			uint32_t continueScopeLevel = 0;
+			string breakLabel, continueLabel;
+
+			EvalPurpose evalPurpose;
+
+			bool isLastCallTargetStatic = true;
+			std::set<AstNode *> resolvedOwners;
+
+			deque<shared_ptr<TypeNameNode>> argTypes;
+			bool isArgTypesSet = false;
+
+			shared_ptr<AstNode> evalDest, thisDest;
+		};
+
+		/// @brief Block level context
+		struct MajorContext {
+			deque<MinorContext> savedMinorContexts;
+			MinorContext curMinorContext;
+
+			uint32_t curRegCount;
+			uint32_t curScopeLevel = 0;
+
+			GenericParamNodeList genericParams;
+			unordered_map<string, size_t> genericParamIndices;
+
+			shared_ptr<TypeNameNode> thisType;
+
+			inline void pushMinorContext() {
+				savedMinorContexts.push_back(curMinorContext);
+			}
+
+			inline void popMinorContext() {
+				savedMinorContexts.back().isLastCallTargetStatic = curMinorContext.isLastCallTargetStatic;
+				curMinorContext = savedMinorContexts.back();
+				savedMinorContexts.pop_back();
+			}
+
+			inline void mergeGenericParams(const GenericParamNodeList &genericParams) {
+				this->genericParams.insert(
+					this->genericParams.end(),
+					genericParams.begin(),
+					genericParams.end());
+				genericParamIndices = genGenericParamIndicies(this->genericParams);
+			}
+		};
+
+		struct TokenContext {
+			unordered_map<string, shared_ptr<LocalVarNode>> localVars;
+			shared_ptr<Scope> curScope;
+			GenericParamNodeList genericParams;
+			unordered_map<string, size_t> genericParamIndices;
+
+			TokenContext() = default;
+			TokenContext(const TokenContext &) = default;
+			TokenContext(TokenContext &&) = default;
+			inline TokenContext(const MajorContext &majorContext) {
+				localVars = majorContext.curMinorContext.localVars;
+				curScope = majorContext.curMinorContext.curScope;
+				genericParams = majorContext.genericParams;
+				genericParamIndices = majorContext.genericParamIndices;
+			}
+
+			TokenContext &operator=(const TokenContext &) = default;
+			TokenContext &operator=(TokenContext &&) = default;
+		};
+
+		enum class SemanticType {
+			FnName,			   // Function name
+			VarName,		   // Variable name
+			ParamName,		   // Parameter name
+			ClassName,		   // Class name
+			InterfaceName,	   // Interface name
+			TraitName,		   // Trait name
+			EnumName,		   // Enumeration name
+			EnumConstName,	   // Enumeration constant name
+			GenericParamName,  // Generic parameter name
+			Modifier,		   // Modifier
+			AccessModifier,	   // Access modifier
+			Ref,			   // Part of a reference
+			Type,			   // Type
+			TypeRef,		   // Part of a reference in a type
+			OperatorRef,	   // (Custom) Operator reference
+			Keyword,		   // Keyword
+			None			   // No semantic information
+		};
+
+		enum class CompletionContext {
+			None = 0,	// No context
+			TopLevel,	// User is entering in the top level.
+			Class,		// User is entering in a class.
+			Interface,	// User is entering in an interface.
+			Trait,		// User is entering in a trait.
+			Stmt,		// User is entering a statement.
+
+			Import,		   // User is entering an import item.
+			Type,		   // User is entering a type name.
+			Name,		   // User is entering name of an identifier.
+			Expr,		   // User is entering an expression.
+			MemberAccess,  // User is accessing an member.
+		};
+
+		struct TokenInfo {
+			string hoverInfo = "";
+			SemanticType semanticType = SemanticType::None;
+			CompletionContext completionContext = CompletionContext::None;
+
+			struct {
+				shared_ptr<TypeNameNode> type;
+
+				std::string name;
+
+				Ref ref;
+			} semanticInfo;
+
+			// Corresponding token context, for completion.
+			TokenContext tokenContext;
+		};
+
 		class Compiler {
 		private:
-			enum class EvalPurpose {
-				Stmt,	 // As a statement
-				LValue,	 // As a lvalue
-				RValue,	 // As a rvalue
-				Call,	 // As the target of a calling expression
-			};
-
-			/// @brief Statement level context
-			struct MinorContext {
-				shared_ptr<TypeNameNode> expectedType;
-				shared_ptr<Scope> curScope;
-
-				uint32_t breakScopeLevel = 0;
-				uint32_t continueScopeLevel = 0;
-				string breakLabel, continueLabel;
-
-				EvalPurpose evalPurpose;
-
-				bool isLastCallTargetStatic = true;
-				std::set<AstNode *> resolvedOwners;
-
-				deque<shared_ptr<TypeNameNode>> argTypes;
-				bool isArgTypesSet = false;
-
-				shared_ptr<AstNode> evalDest, thisDest;
-			};
-
-			/// @brief Block level context
-			struct MajorContext {
-				deque<MinorContext> savedMinorContexts;
-				MinorContext curMinorContext;
-
-				unordered_map<string, shared_ptr<LocalVarNode>> localVars;
-				uint32_t curRegCount;
-				uint32_t curScopeLevel = 0;
-
-				GenericParamNodeList genericParams;
-				unordered_map<string, size_t> genericParamIndices;
-
-				shared_ptr<TypeNameNode> thisType;
-
-				inline void pushMinorContext() {
-					savedMinorContexts.push_back(curMinorContext);
-				}
-
-				inline void popMinorContext() {
-					savedMinorContexts.back().isLastCallTargetStatic = curMinorContext.isLastCallTargetStatic;
-					curMinorContext = savedMinorContexts.back();
-					savedMinorContexts.pop_back();
-				}
-
-				inline void mergeGenericParams(const GenericParamNodeList &genericParams) {
-					this->genericParams.insert(
-						this->genericParams.end(),
-						genericParams.begin(),
-						genericParams.end());
-					genericParamIndices = genGenericParamIndicies(this->genericParams);
-				}
-			};
-
 			MajorContext curMajorContext;
 			shared_ptr<CompiledFnNode> curFn;
 
@@ -259,6 +332,10 @@ namespace slake {
 			shared_ptr<TypeNameNode> toTypeName(slake::Type runtimeType);
 			Ref toAstRef(deque<slake::RefEntry> runtimeRefEntries);
 
+			//
+			// Generic begin
+			//
+
 			struct GenericNodeArgListComparator {
 				inline bool operator()(
 					const deque<shared_ptr<TypeNameNode>> &lhs,
@@ -339,22 +416,51 @@ namespace slake {
 
 			shared_ptr<FnOverloadingNode> instantiateGenericFnOverloading(shared_ptr<FnOverloadingNode> overloading, GenericNodeInstantiationContext &instantiationContext);
 
+			//
+			// Generic end
+			//
+
+			void updateCorrespondingTokenInfo(shared_ptr<TypeNameNode> targetTypeName, shared_ptr<TypeNameNode> semanticType, CompletionContext completionContext);
+			void updateCorrespondingTokenInfo(const Ref &ref, SemanticType semanticType, CompletionContext completionContext);
+
 			friend class AstVisitor;
 			friend class MemberNode;
 			friend string std::to_string(shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slkc::Compiler *compiler, bool asOperatorName);
 			friend class Parser;
 
 		public:
+			std::deque<TokenInfo> tokenInfos;
 			deque<Message> messages;
 			deque<string> modulePaths;
 			CompilerOptions options;
 			CompilerFlags flags = 0;
+			Lexer lexer;
 
 			inline Compiler(CompilerOptions options = {})
 				: options(options), _rt(make_unique<Runtime>(RT_NOJIT)) {}
 			~Compiler();
 
-			void compile(std::istream &is, std::ostream &os);
+			void compile(std::istream &is, std::ostream &os, bool isImport = false);
+
+			inline void reset() {
+				curMajorContext = MajorContext();
+				curFn.reset();
+
+				_rootScope = make_shared<Scope>();
+				_targetModule.reset();
+				_rt = make_unique<Runtime>(RT_NOJIT);
+				_savedMajorContexts.clear();
+
+				importedDefinitions.clear();
+				importedModules.clear();
+
+				tokenInfos.clear();
+				messages.clear();
+				modulePaths.clear();
+				options = CompilerOptions();
+				flags = 0;
+				lexer.reset();
+			}
 		};
 	}
 }

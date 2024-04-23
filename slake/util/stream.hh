@@ -2,7 +2,7 @@
 #define _SLAKE_UTIL_STREAM_HH_
 
 #include <cstdint>
-#include <istream>
+#include <iostream>
 
 namespace slake {
 	namespace util {
@@ -20,6 +20,12 @@ namespace slake {
 				setbuf((char *)src, size);
 			}
 			virtual ~InputMemStream() = default;
+		};
+
+		class PseudoOutputStream : public std::ostream {
+		public:
+			inline PseudoOutputStream() : std::ostream(nullptr) {}
+			virtual ~PseudoOutputStream() = default;
 		};
 	}
 }

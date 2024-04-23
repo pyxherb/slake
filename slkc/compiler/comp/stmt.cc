@@ -21,10 +21,12 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 			auto s = static_pointer_cast<VarDefStmtNode>(stmt);
 
 			if (s->type->getTypeId() == Type::Auto) {
+				shared_ptr<TypeNameNode> deducedType;
+
 				for (auto i : s->varDefs) {
 					if (i.second.initValue) {
-						s->type = evalExprType(i.second.initValue);
-						goto initValueFound;
+						deducedType = evalExprType(i.second.initValue);
+						goto foundInitValue;
 					}
 				}
 
@@ -33,11 +35,14 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 						MessageType::Error,
 						"No initializer was found, unable to deduce the type" });
 
-			initValueFound:;
-			}
+			foundInitValue:
+				updateCorrespondingTokenInfo(s->type, deducedType, CompletionContext::Type);
+				s->type = deducedType;
+			} else
+				updateCorrespondingTokenInfo(s->type, s->type, CompletionContext::Type);
 
 			for (auto i : s->varDefs) {
-				if (curMajorContext.localVars.count(i.first))
+				if (curMajorContext.curMinorContext.localVars.count(i.first))
 					throw FatalCompilationError(
 						{ i.second.loc,
 							MessageType::Error,
@@ -372,13 +377,29 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 			curFn->insertIns(Opcode::ENTER);
 			++curMajorContext.curScopeLevel;
 
-			for (auto i : s->body.stmts)
-				compileStmt(i);
+			for (auto i : s->body.stmts) {
+				try {
+					compileStmt(i);
+				}
+				catch (FatalCompilationError e) {
+					messages.push_back(e.message);
+				}
+			}
 
 			--curMajorContext.curScopeLevel;
 			curFn->insertIns(Opcode::LEAVE);
 
 			popMajorContext();
+			break;
+		}
+		case StmtType::Bad: {
+			auto s = static_pointer_cast<BadStmtNode>(stmt);
+
+			// Fill token information for completion.
+			for (size_t i = s->beginTokenIndex; i <= s->endTokenIndex; ++i) {
+				tokenInfos[i].completionContext = CompletionContext::Stmt;
+				tokenInfos[i].tokenContext = TokenContext(curMajorContext);
+			}
 			break;
 		}
 		default:

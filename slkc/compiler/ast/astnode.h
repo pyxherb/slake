@@ -44,12 +44,32 @@ namespace slake {
 			inline Location() : line(0), column(0) {}
 			inline Location(size_t line, size_t column) : line(line), column(column) {}
 
-			inline bool operator<(Location loc) const {
+			inline bool operator<(const Location &loc) const {
 				if (line < loc.line)
 					return true;
 				if (line > loc.line)
 					return false;
 				return column < loc.column;
+			}
+
+			inline bool operator>(const Location &loc) const {
+				if(line > loc.line)
+					return true;
+				if(line < loc.line)
+					return false;
+				return column > loc.column;
+			}
+
+			inline bool operator==(const Location &loc) const {
+				return (line == loc.line) && (column == loc.column);
+			}
+
+			inline bool operator>=(const Location &loc) const {
+				return ((*this) == loc) || ((*this) > loc);
+			}
+
+			inline bool operator<=(const Location &loc) const {
+				return ((*this) == loc) || ((*this) < loc);
 			}
 		};
 

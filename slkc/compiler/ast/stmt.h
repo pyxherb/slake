@@ -26,7 +26,8 @@ namespace slake {
 			If,
 			Try,
 			Switch,
-			CodeBlock
+			CodeBlock,
+			Bad
 		};
 
 		class StmtNode : public AstNode {
@@ -54,6 +55,27 @@ namespace slake {
 
 		using BreakStmtNode = SimpleStmtNode<StmtType::Break>;
 		using ContinueStmtNode = SimpleStmtNode<StmtType::Continue>;
+
+		class BadStmtNode : public StmtNode {
+		private:
+			Location _loc;
+
+		public:
+			size_t beginTokenIndex, endTokenIndex;
+
+			inline BadStmtNode(
+				Location loc,
+				size_t beginTokenIndex,
+				size_t endTokenIndex)
+				: _loc(loc),
+				  beginTokenIndex(beginTokenIndex),
+				  endTokenIndex(endTokenIndex) {}
+			virtual ~BadStmtNode() = default;
+
+			virtual inline Location getLocation() const override { return _loc; }
+
+			virtual inline StmtType getStmtType() const override { return StmtType::Bad; }
+		};
 
 		class ExprStmtNode : public StmtNode {
 		public:

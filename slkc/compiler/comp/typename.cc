@@ -56,6 +56,16 @@ bool Compiler::isNumericTypeName(shared_ptr<TypeNameNode> node) {
 	}
 }
 
+bool Compiler::isDecimalType(shared_ptr<TypeNameNode> node) {
+	switch (node->getTypeId()) {
+		case Type::F32:
+		case Type::F64:
+			return true;
+		default:
+			return false;
+	}
+}
+
 bool Compiler::isCompoundTypeName(shared_ptr<TypeNameNode> node) {
 	switch (node->getTypeId()) {
 		case Type::Array:
@@ -354,7 +364,7 @@ shared_ptr<AstNode> Compiler::resolveCustomTypeName(CustomTypeNameNode *typeName
 	if ((typeName->ref.size() == 1) && (typeName->ref[0].genericArgs.empty())) {
 		auto genericParam = lookupGenericParam(typeName->scope->owner->shared_from_this(), typeName->ref[0].name);
 		if (genericParam) {
-			typeName->resolvedPartsOut.push_back({ Ref{ RefEntry{ typeName->getLocation(), typeName->ref[0].name, {} } }, genericParam });
+			typeName->resolvedPartsOut.push_back({ Ref{ RefEntry{ typeName->getLocation(), SIZE_MAX, typeName->ref[0].name, {} } }, genericParam });
 			goto succeeded;
 		}
 	}

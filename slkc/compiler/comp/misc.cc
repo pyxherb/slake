@@ -3,16 +3,16 @@
 using namespace slake::slkc;
 
 uint32_t Compiler::allocLocalVar(string name, shared_ptr<TypeNameNode> type) {
-	if (curMajorContext.localVars.size() > UINT32_MAX)
+	if (curMajorContext.curMinorContext.localVars.size() > UINT32_MAX)
 		throw FatalCompilationError(
 			Message(
 				type->getLocation(),
 				MessageType::Error,
 				"Number limit of local variables exceeded"));
 
-	uint32_t index = (uint32_t)curMajorContext.localVars.size();
+	uint32_t index = (uint32_t)curMajorContext.curMinorContext.localVars.size();
 
-	curMajorContext.localVars[name] = make_shared<LocalVarNode>(index, type);
+	curMajorContext.curMinorContext.localVars[name] = make_shared<LocalVarNode>(index, type);
 	curFn->insertIns(Opcode::LVAR, type);
 
 	return index;

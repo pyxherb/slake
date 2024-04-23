@@ -43,7 +43,7 @@ namespace slake {
 			virtual inline Location getLocation() const override { return _loc; }
 			virtual inline NodeType getNodeType() const override { return NodeType::Var; }
 
-			virtual RefEntry getName() const override { return RefEntry(_loc, name, genericArgs); }
+			virtual RefEntry getName() const override { return RefEntry(_loc, SIZE_MAX, name, genericArgs); }
 		};
 
 		class LocalVarNode : public AstNode {

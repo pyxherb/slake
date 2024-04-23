@@ -305,7 +305,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 			auto compileShortCircuitOperator = [this, e, lhsType, rhsType]() {
 				uint32_t lhsRegIndex = allocReg(1);
 
-				auto boolType = std::make_shared<BoolTypeNameNode>(e->lhs->getLocation());
+				auto boolType = std::make_shared<BoolTypeNameNode>(e->lhs->getLocation(), SIZE_MAX);
 
 				// Compile the LHS.
 				// The LHS must be a boolean expression.
@@ -436,7 +436,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 							uint32_t lhsRegIndex = allocReg(2),
 									 rhsRegIndex = lhsRegIndex + 1;
 
-							auto u32Type = std::make_shared<U32TypeNameNode>(e->rhs->getLocation());
+							auto u32Type = std::make_shared<U32TypeNameNode>(e->rhs->getLocation(), SIZE_MAX);
 
 							compileExpr(
 								e->lhs,
@@ -563,7 +563,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 							uint32_t lhsRegIndex = allocReg(2),
 									 rhsRegIndex = lhsRegIndex + 1;
 
-							auto u32Type = std::make_shared<U32TypeNameNode>(e->rhs->getLocation());
+							auto u32Type = std::make_shared<U32TypeNameNode>(e->rhs->getLocation(), SIZE_MAX);
 
 							if (!isSameType(rhsType, u32Type)) {
 								if (!isTypeNamesConvertible(rhsType, u32Type))
@@ -1313,7 +1313,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 							curFn->insertIns(Opcode::LTHIS, make_shared<RegRefNode>(tmpRegIndex));
 							break;
 						case NodeType::BaseRef:
-							curFn->insertIns(Opcode::LOAD, make_shared<RegRefNode>(tmpRegIndex), make_shared<RefExprNode>(Ref{ RefEntry(e->getLocation(), "base") }));
+							curFn->insertIns(Opcode::LOAD, make_shared<RegRefNode>(tmpRegIndex), make_shared<RefExprNode>(Ref{ RefEntry(e->getLocation(), SIZE_MAX, "base") }));
 							break;
 						default:
 							assert(false);

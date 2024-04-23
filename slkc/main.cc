@@ -5,6 +5,10 @@
 
 #include <config.h>
 
+#if SLKC_WITH_LANGUAGE_SERVER
+	#include "server/server.h"
+#endif
+
 #include <filesystem>
 #include <fstream>
 
@@ -25,7 +29,9 @@ static inline char *fetchArg(int argc, char **argv, int &i) {
 enum class AppAction : uint8_t {
 	Compile = 0,
 	Dump,
+#if SLKC_WITH_LANGUAGE_SERVER
 	LanguageServer
+#endif
 };
 
 std::string srcPath = "", outPath = "";
@@ -55,7 +61,7 @@ CmdLineAction cmdLineActions[] = {
 		[](int argc, char **argv, int &i) {
 			slake::decompiler::decompilerFlags |= slake::decompiler::DECOMP_SRCLOCINFO;
 		} },
-#if SLKC_WITH_LSP_ENABLED
+#if SLKC_WITH_LANGUAGE_SERVER
 	{ "-s\0"
 	  "--language-server\0",
 		[](int argc, char **argv, int &i) {
@@ -133,6 +139,26 @@ int main(int argc, char **argv) {
 					return -1;
 				}
 
+				for (auto &i : compiler->messages) {
+					const char *msgType = "<Unknown Message Type>";
+					switch (i.type) {
+						case MessageType::Info:
+							msgType = "Info";
+							break;
+						case MessageType::Note:
+							msgType = "Note";
+							break;
+						case MessageType::Warn:
+							msgType = "Warn";
+							break;
+						case MessageType::Error:
+							msgType = "error";
+							break;
+					}
+
+					printf("%s at %zd, %zd: %s\n", msgType, i.loc.line + 1, i.loc.column + 1, i.msg.c_str());
+				}
+
 				is.close();
 				os.close();
 				break;
@@ -145,6 +171,17 @@ int main(int argc, char **argv) {
 				fs.close();
 				break;
 			}
+#if SLKC_WITH_LANGUAGE_SERVER
+			case AppAction::LanguageServer: {
+				printf("Language server started on local port %hu\n", lspServerPort);
+
+				slake::slkc::Server server;
+
+				server.start(lspServerPort);
+
+				break;
+			}
+#endif
 			default:
 				assert(false);
 		}

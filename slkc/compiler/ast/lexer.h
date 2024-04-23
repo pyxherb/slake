@@ -10,6 +10,8 @@
 #include <stdexcept>
 
 #include "astnode.h"
+#include "ref.h"
+#include "typename.h"
 
 namespace slake {
 	namespace slkc {
@@ -165,6 +167,8 @@ namespace slake {
 		using IntLiteralTokenExtension = LiteralTokenExtension<int32_t>;
 		using StringLiteralTokenExtension = LiteralTokenExtension<std::string>;
 
+		struct MajorContext;
+
 		struct Token {
 			TokenId tokenId;
 			Location beginLocation, endLocation;
@@ -180,13 +184,8 @@ namespace slake {
 			virtual ~LexicalError() = default;
 		};
 
-		struct TokenInfo {
-
-		};
-
 		struct LexerContext {
 			size_t curIndex = 0;
-			std::vector<TokenInfo> tokenInfos;
 		};
 
 		class Lexer {
@@ -212,6 +211,21 @@ namespace slake {
 					return _endToken;
 
 				return tokens.at(context.curIndex);
+			}
+
+			inline void reset() {
+				context = {};
+				_endToken = {};
+				tokens.clear();
+			}
+
+			inline size_t getTokenByLocation(Location location) {
+				for (size_t i = 0; i < tokens.size(); ++i) {
+					if (tokens[i].beginLocation <= location && tokens[i].endLocation >= location)
+						return i;
+				}
+
+				return SIZE_MAX;
 			}
 		};
 	}

@@ -238,7 +238,7 @@ shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 					genericArgs.push_back(toTypeName(j));
 				}
 
-				ref.push_back(RefEntry(Location{}, i.name, genericArgs));
+				ref.push_back(RefEntry(Location{}, SIZE_MAX, i.name, genericArgs));
 			}
 
 			return make_shared<CustomTypeNameNode>(Location{}, ref, this, nullptr, isConst);
@@ -264,7 +264,7 @@ slake::slkc::Ref Compiler::toAstRef(std::deque<slake::RefEntry> runtimeRefEntrie
 		for (auto j : i.genericArgs)
 			genericArgs.push_back(toTypeName(j));
 
-		ref.push_back(RefEntry(Location(), i.name, genericArgs));
+		ref.push_back(RefEntry(Location(), SIZE_MAX, i.name, genericArgs));
 	}
 
 	return ref;

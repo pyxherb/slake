@@ -11,6 +11,36 @@ namespace slake {
 	namespace slkc {
 		class FnNode;
 
+		class ParamNode : public AstNode {
+		private:
+			virtual shared_ptr<AstNode> doDuplicate() override;
+
+		public:
+			Location loc;
+
+			shared_ptr<TypeNameNode> type;
+			string name;
+
+			// The original type will be saved during generic instantiation.
+			shared_ptr<TypeNameNode> originalType;
+
+			inline ParamNode(const ParamNode &other) : AstNode(other) {
+				loc = other.loc;
+
+				type = other.type->duplicate<TypeNameNode>();
+				name = other.name;
+
+				if (originalType)
+					originalType = other.originalType->duplicate<TypeNameNode>();
+			}
+			inline ParamNode(Location loc, shared_ptr<TypeNameNode> type, string name) : type(type), name(name), loc(loc) {}
+			virtual ~ParamNode() = default;
+
+			virtual inline Location getLocation() const override { return loc; }
+
+			virtual inline NodeType getNodeType() const override { return NodeType::Param; }
+		};
+
 		class FnOverloadingNode final : public MemberNode {
 		private:
 			virtual shared_ptr<AstNode> doDuplicate() override;
@@ -19,7 +49,7 @@ namespace slake {
 			Location loc;
 			shared_ptr<TypeNameNode> returnType;
 
-			deque<Param> params;
+			deque<shared_ptr<ParamNode>> params;
 			unordered_map<string, size_t> paramIndices;
 
 			shared_ptr<BlockStmtNode> body;
@@ -30,11 +60,9 @@ namespace slake {
 				loc = other.loc;
 				returnType = other.returnType->duplicate<TypeNameNode>();
 
-				params = other.params;
+				params.resize(other.params.size());
 				for (size_t i = 0; i < other.params.size(); ++i) {
-					params[i].type = other.params[i].type->duplicate<TypeNameNode>();
-					if (params[i].originalType)
-						params[i].originalType = other.params[i].originalType->duplicate<TypeNameNode>();
+					params[i] = other.params[i]->duplicate<ParamNode>();
 				}
 				paramIndices = other.paramIndices;
 
@@ -48,7 +76,7 @@ namespace slake {
 				Compiler *compiler,
 				shared_ptr<TypeNameNode> returnType,
 				GenericParamNodeList genericParams,
-				deque<Param> params,
+				deque<shared_ptr<ParamNode>> params,
 				shared_ptr<Scope> scope = make_shared<Scope>());
 
 			virtual inline NodeType getNodeType() const override { return NodeType::FnOverloading; }
@@ -117,7 +145,7 @@ namespace slake {
 			GenericParamNodeList genericParams;
 			unordered_map<string, size_t> genericParamIndices;
 
-			deque<Param> params;
+			deque<shared_ptr<ParamNode>> params;
 			unordered_map<string, size_t> paramIndices;
 
 			shared_ptr<TypeNameNode> returnType;

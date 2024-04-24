@@ -288,7 +288,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 				deque<shared_ptr<TypeNameNode>> argTypes;
 
 				for (auto &k : j->params) {
-					argTypes.push_back(k.type);
+					argTypes.push_back(k->type);
 				}
 
 				mangledFnName = mangleName(i.first, argTypes, false);
@@ -358,7 +358,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 			compileGenericParam(os, i.second->genericParams[j]);
 
 		for (size_t j = 0; j < i.second->params.size() - hasVarArg; ++j)
-			compileTypeName(os, i.second->params[j].type);
+			compileTypeName(os, i.second->params[j]->type);
 
 		for (auto &j : i.second->body) {
 			slxfmt::InsHeader ih;

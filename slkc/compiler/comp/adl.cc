@@ -31,10 +31,10 @@ shared_ptr<FnOverloadingNode> Compiler::argDependentLookup(Location loc, FnNode 
 		bool exactlyMatched = true;
 
 		for (size_t j = 0; j < nParams; ++j) {
-			if (!isSameType(overloading->params[j].type, argTypes[j])) {
+			if (!isSameType(overloading->params[j]->type, argTypes[j])) {
 				exactlyMatched = false;
 
-				if (!isTypeNamesConvertible(argTypes[j], overloading->params[j].type))
+				if (!isTypeNamesConvertible(argTypes[j], overloading->params[j]->type))
 					goto fail;
 			}
 		}

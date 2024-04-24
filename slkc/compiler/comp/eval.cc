@@ -951,7 +951,7 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 					case NodeType::LocalVar:
 						return static_pointer_cast<LocalVarNode>(resolvedParts.back().second)->type;
 					case NodeType::ArgRef:
-						return curFn->params.at(static_pointer_cast<ArgRefNode>(resolvedParts.back().second)->index).type;
+						return curFn->params.at(static_pointer_cast<ArgRefNode>(resolvedParts.back().second)->index)->type;
 					case NodeType::Fn: {
 						shared_ptr<FnNode> fn = static_pointer_cast<FnNode>(resolvedParts.back().second);
 
@@ -960,7 +960,7 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 
 							deque<shared_ptr<TypeNameNode>> paramTypes;
 							for (auto i : fn->overloadingRegistries[0]->params) {
-								paramTypes.push_back(i.type);
+								paramTypes.push_back(i->type);
 							}
 
 							type = make_shared<FnTypeNameNode>(fn->overloadingRegistries[0]->returnType, paramTypes);
@@ -972,7 +972,7 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 
 							deque<shared_ptr<TypeNameNode>> paramTypes;
 							for (auto i : overloading->params)
-								paramTypes.push_back(i.type);
+								paramTypes.push_back(i->type);
 
 							return make_shared<FnTypeNameNode>(overloading->returnType, paramTypes);
 						}

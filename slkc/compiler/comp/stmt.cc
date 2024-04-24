@@ -380,8 +380,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 			for (auto i : s->body.stmts) {
 				try {
 					compileStmt(i);
-				}
-				catch (FatalCompilationError e) {
+				} catch (FatalCompilationError e) {
 					messages.push_back(e.message);
 				}
 			}
@@ -398,7 +397,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 			// Fill token information for completion.
 			for (size_t i = s->beginTokenIndex; i <= s->endTokenIndex; ++i) {
 				tokenInfos[i].completionContext = CompletionContext::Stmt;
-				tokenInfos[i].tokenContext = TokenContext(curMajorContext);
+				tokenInfos[i].tokenContext = TokenContext(curFn, curMajorContext);
 			}
 			break;
 		}

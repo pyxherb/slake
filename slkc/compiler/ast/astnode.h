@@ -27,6 +27,7 @@ namespace slake {
 			CompiledFn,
 			LabelRef,
 			LocalVar,
+			Param,
 			ArgRef,
 			GenericArgRef,
 			Comment,

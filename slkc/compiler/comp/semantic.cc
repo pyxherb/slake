@@ -27,7 +27,7 @@ void Compiler::updateCorrespondingTokenInfo(
 			tokenInfos[t->idxToken].semanticType = SemanticType::Type;
 			tokenInfos[t->idxToken].semanticInfo.type = semanticType;
 			tokenInfos[t->idxToken].completionContext = completionContext;
-			tokenInfos[t->idxToken].tokenContext = TokenContext(curMajorContext);
+			tokenInfos[t->idxToken].tokenContext = TokenContext(curFn, curMajorContext);
 			break;
 		}
 		case Type::Array: {
@@ -51,16 +51,8 @@ void Compiler::updateCorrespondingTokenInfo(const Ref &ref, SemanticType semanti
 	if (!resolveRef(ref, partsOut))
 		return;
 
-	Ref semanticRef;
-
-	for (auto &i : partsOut) {
-		for (auto &j : i.first) {
-			semanticRef.push_front(j);
-
-			tokenInfos[j.idxToken].semanticType = semanticType;
-			tokenInfos[j.idxToken].semanticInfo.ref = semanticRef;
-			tokenInfos[j.idxToken].tokenContext = TokenContext(curMajorContext);
-			tokenInfos[j.idxToken].completionContext = completionContext;
-		}
+	for (size_t i = 0; i < ref.size(); ++i) {
+		tokenInfos[ref[i].idxToken].semanticType = semanticType;
+		tokenInfos[ref[i].idxToken].completionContext = completionContext;
 	}
 }

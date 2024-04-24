@@ -1130,20 +1130,21 @@ shared_ptr<StmtNode> Parser::parseStmt() {
 	}
 }
 
-deque<Param> Parser::parseParams() {
-	deque<Param> params;
+deque<shared_ptr<ParamNode>> Parser::parseParams() {
+	deque<shared_ptr<ParamNode>> params;
 
 	while (true) {
 		if (lexer->peekToken().tokenId == TokenId::RParenthese)
 			break;
 
 		if (auto &token = lexer->peekToken(); token.tokenId == TokenId::VarArg) {
-			params.push_back({ token.beginLocation,
-				make_shared<ArrayTypeNameNode>(
-					make_shared<AnyTypeNameNode>(
-						token.beginLocation,
-						lexer->context.curIndex)),
-				"..." });
+			params.push_back(
+				make_shared<ParamNode>(token.beginLocation,
+					make_shared<ArrayTypeNameNode>(
+						make_shared<AnyTypeNameNode>(
+							token.beginLocation,
+							lexer->context.curIndex)),
+					"..."));
 			lexer->nextToken();
 			break;
 		}
@@ -1151,7 +1152,7 @@ deque<Param> Parser::parseParams() {
 		auto type = parseTypeName();
 		auto &nameToken = expectToken(lexer->nextToken(), TokenId::Id);
 
-		params.push_back({ type->getLocation(), type, nameToken.text });
+		params.push_back(make_shared<ParamNode>(type->getLocation(), type, nameToken.text));
 
 		if (lexer->peekToken().tokenId != TokenId::Comma)
 			break;
@@ -1352,7 +1353,7 @@ shared_ptr<FnOverloadingNode> Parser::parseDestructorDecl() {
 	expectToken(lexer->nextToken(), TokenId::LParenthese);
 	expectToken(lexer->nextToken(), TokenId::RParenthese);
 
-	return make_shared<FnOverloadingNode>(beginToken.beginLocation, compiler, make_shared<VoidTypeNameNode>(beginToken.beginLocation, SIZE_MAX), GenericParamNodeList{}, deque<Param>{});
+	return make_shared<FnOverloadingNode>(beginToken.beginLocation, compiler, make_shared<VoidTypeNameNode>(beginToken.beginLocation, SIZE_MAX), GenericParamNodeList{}, deque<shared_ptr<ParamNode>>{});
 }
 
 shared_ptr<FnOverloadingNode> Parser::parseDestructorDef() {

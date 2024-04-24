@@ -637,15 +637,15 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 
 							fullName.back().name = mangleName(
 								fullName.back().name,
-								{ overloading->params[0].originalType
-										? overloading->params[0].originalType
-										: overloading->params[0].type },
+								{ overloading->params[0]->originalType
+										? overloading->params[0]->originalType
+										: overloading->params[0]->type },
 								false);
 
 							uint32_t tmpRegIndex = allocReg();
 
 							if (auto ce = evalConstExpr(e->rhs); ce) {
-								if (isLValueType(overloading->params[0].type))
+								if (isLValueType(overloading->params[0]->type))
 									throw FatalCompilationError(
 										Message(
 											e->getLocation(),
@@ -656,7 +656,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 							} else {
 								compileExpr(
 									e->rhs,
-									isLValueType(overloading->params[0].type)
+									isLValueType(overloading->params[0]->type)
 										? EvalPurpose::LValue
 										: EvalPurpose::RValue,
 									make_shared<RegRefNode>(tmpRegIndex));
@@ -924,10 +924,6 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 
 			break;
 		}
-		case ExprType::Closure: {
-			auto e = static_pointer_cast<ClosureExprNode>(expr);
-			break;
-		}
 		case ExprType::Call: {
 			auto e = static_pointer_cast<CallExprNode>(expr);
 
@@ -1061,7 +1057,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 
 						deque<shared_ptr<TypeNameNode>> paramTypes;
 						for (auto &j : overloading->params) {
-							paramTypes.push_back(j.originalType ? j.originalType : j.type);
+							paramTypes.push_back(j->originalType ? j->originalType : j->type);
 						}
 
 						if (overloading->isVaridic())
@@ -1141,6 +1137,8 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 						MessageType::Error,
 						"Identifier not found: `" + to_string(e->ref, this) + "'" });
 
+			updateCorrespondingTokenInfo(e->ref, SemanticType::Ref, CompletionContext::Expr);
+
 			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::Call) {
 				if (isDynamicMember(resolvedParts.back().second)) {
 					// Load `this' for the method calling.
@@ -1197,7 +1195,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 
 							deque<shared_ptr<TypeNameNode>> paramTypes;
 							for (auto &j : overloading->params) {
-								paramTypes.push_back(j.originalType ? j.originalType : j.type);
+								paramTypes.push_back(j->originalType ? j->originalType : j->type);
 							}
 
 							if (overloading->isVaridic())
@@ -1292,7 +1290,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 
 							deque<shared_ptr<TypeNameNode>> paramTypes;
 							for (auto i : overloading->params) {
-								paramTypes.push_back(i.originalType ? i.originalType : i.type);
+								paramTypes.push_back(i->originalType ? i->originalType : i->type);
 							}
 
 							if (overloading->isVaridic())

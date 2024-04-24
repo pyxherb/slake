@@ -24,6 +24,11 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 
 		if (false) {
 		lvarSucceeded:
+			// Update corresponding semantic information for completion.
+			auto &tokenInfo = tokenInfos[ref[0].idxToken];
+			tokenInfo.semanticInfo.correspondingMember = localVar;
+			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+
 			partsOut.push_front({ Ref{ ref.front() }, localVar });
 			return true;
 		}
@@ -39,26 +44,37 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 		if (!newRef.size())
 			goto paramSucceeded;
 
-		if (auto scope = scopeOf(curFn->params[idxParam].type.get()); scope) {
+		if (auto scope = scopeOf(curFn->params[idxParam]->type.get()); scope) {
 			_resolveRef(scope.get(), newRef, partsOut);
 			goto paramSucceeded;
 		}
 
 		if (false) {
 		paramSucceeded:
+			// Update corresponding semantic information for completion.
+			auto &tokenInfo = tokenInfos[ref[0].idxToken];
+			tokenInfo.semanticInfo.correspondingMember = curFn->params[idxParam];
+			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+			tokenInfo.tokenContext.curScope = {};
+
 			partsOut.push_front({ Ref{ ref.front() }, make_shared<ArgRefNode>(idxParam) });
 			return true;
 		}
 	}
 
 	if (ref[0].name == "this") {
+		auto thisRefNode = make_shared<ThisRefNode>();
+
+		// Update corresponding semantic information for completion.
+		tokenInfos[ref[0].idxToken].semanticInfo.correspondingMember = thisRefNode;
+
 		if (ref.size() > 1) {
 			ref.pop_front();
 			auto result = _resolveRef(curMajorContext.curMinorContext.curScope.get(), ref, partsOut);
-			partsOut.push_front({ Ref{ ref.front() }, make_shared<ThisRefNode>() });
+			partsOut.push_front({ Ref{ ref.front() }, thisRefNode });
 			return result;
 		} else {
-			partsOut.push_front({ Ref{ ref.front() }, make_shared<ThisRefNode>() });
+			partsOut.push_front({ Ref{ ref.front() }, thisRefNode });
 			return true;
 		}
 	}
@@ -91,6 +107,13 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 		newRef.pop_front();
 
 		m = scope->members.at(ref[0].name);
+
+		// Update corresponding semantic information for completion.
+		auto &tokenInfo = tokenInfos[ref[0].idxToken];
+		//tokenInfo.completionContext = CompletionContext::MemberAccess;
+		tokenInfo.semanticInfo.correspondingMember = m;
+		tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+		tokenInfo.tokenContext.curScope = scope->shared_from_this();
 
 		if (ref[0].genericArgs.size()) {
 			genericInstantiationContext.genericArgs = &ref[0].genericArgs;

@@ -15,6 +15,7 @@ namespace slake {
 		enum class CompletionItemType {
 			Var = 0,	   // Variable
 			LocalVar,	   // Local variable
+			Param,		   // Parameter
 			Fn,			   // Function
 			Type,		   // Type
 			GenericParam,  // Generic parameter
@@ -47,8 +48,16 @@ namespace slake {
 
 			std::shared_ptr<Compiler> compiler;
 
-			void getCompletionItems(
+			void getCompletionMemberItems(
 				Scope *scope,
+				std::deque<CompletionItem> &completionItems,
+				const std::set<NodeType> &targetNodeTypes);
+			void getCompletionMemberItems(
+				shared_ptr<TypeNameNode> t,
+				std::deque<CompletionItem> &completionItems,
+				const std::set<NodeType> &targetNodeTypes);
+			void getCompletionMemberItems(
+				AstNode *m,
 				std::deque<CompletionItem> &completionItems,
 				const std::set<NodeType> &targetNodeTypes);
 			std::deque<CompletionItem> getCompletionItems(Location location);
@@ -86,8 +95,10 @@ namespace slake {
 
 			Server();
 
+			static bool jsonToLocation(const Json::Value &value, Location &locationOut);
 			static Json::Value locationToJson(const Location &loc);
 			static Json::Value compilerMessageToJson(const Message &msg);
+			static Json::Value completionItemToJson(const CompletionItem &item);
 
 			void start(uint16_t port);
 		};

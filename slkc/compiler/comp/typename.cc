@@ -199,7 +199,7 @@ bool Compiler::_isTypeNamesConvertible(shared_ptr<MemberNode> st, shared_ptr<Tra
 							return false;
 
 						for (size_t i = 0; i < di->params.size(); ++i) {
-							if (!isSameType(si->params[i].type, di->params[i].type))
+							if (!isSameType(si->params[i]->type, di->params[i]->type))
 								return false;
 						}
 					}

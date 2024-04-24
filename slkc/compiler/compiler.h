@@ -122,15 +122,19 @@ namespace slake {
 			shared_ptr<Scope> curScope;
 			GenericParamNodeList genericParams;
 			unordered_map<string, size_t> genericParamIndices;
+			deque<shared_ptr<ParamNode>> params;
+			unordered_map<string, size_t> paramIndices;
 
 			TokenContext() = default;
 			TokenContext(const TokenContext &) = default;
 			TokenContext(TokenContext &&) = default;
-			inline TokenContext(const MajorContext &majorContext) {
+			inline TokenContext(shared_ptr<CompiledFnNode> curFn, const MajorContext &majorContext) {
 				localVars = majorContext.curMinorContext.localVars;
 				curScope = majorContext.curMinorContext.curScope;
 				genericParams = majorContext.genericParams;
 				genericParamIndices = majorContext.genericParamIndices;
+				params = curFn->params;
+				paramIndices = curFn->paramIndices;
 			}
 
 			TokenContext &operator=(const TokenContext &) = default;
@@ -183,6 +187,8 @@ namespace slake {
 				std::string name;
 
 				Ref ref;
+
+				shared_ptr<AstNode> correspondingMember;
 			} semanticInfo;
 
 			// Corresponding token context, for completion.
@@ -427,6 +433,7 @@ namespace slake {
 			friend class MemberNode;
 			friend string std::to_string(shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slkc::Compiler *compiler, bool asOperatorName);
 			friend class Parser;
+			friend class Document;
 
 		public:
 			std::deque<TokenInfo> tokenInfos;

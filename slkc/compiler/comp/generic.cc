@@ -48,8 +48,8 @@ void Compiler::walkNodeForGenericInstantiation(
 						walkNodeForGenericInstantiation(j, newInstantiationContext);
 
 					for (auto &j : i->params) {
-						j.originalType = j.type;
-						walkTypeNameNodeForGenericInstantiation(j.type, newInstantiationContext);
+						j->originalType = j->type;
+						walkTypeNameNodeForGenericInstantiation(j->type, newInstantiationContext);
 					}
 				} else {
 					walkTypeNameNodeForGenericInstantiation(i->returnType, instantiationContext);
@@ -58,8 +58,8 @@ void Compiler::walkNodeForGenericInstantiation(
 						walkNodeForGenericInstantiation(j, instantiationContext);
 
 					for (auto &j : i->params) {
-						j.originalType = j.type->duplicate<TypeNameNode>();
-						walkTypeNameNodeForGenericInstantiation(j.type, instantiationContext);
+						j->originalType = j->type->duplicate<TypeNameNode>();
+						walkTypeNameNodeForGenericInstantiation(j->type, instantiationContext);
 					}
 				}
 			}
@@ -210,8 +210,8 @@ shared_ptr<FnOverloadingNode> Compiler::instantiateGenericFnOverloading(shared_p
 		walkNodeForGenericInstantiation(j, instantiationContext);
 
 	for (auto &j : newInstance->params) {
-		j.originalType = j.type;
-		walkTypeNameNodeForGenericInstantiation(j.type, instantiationContext);
+		j->originalType = j->type;
+		walkTypeNameNodeForGenericInstantiation(j->type, instantiationContext);
 	}
 
 	return newInstance;

@@ -24,4 +24,5 @@ if(${SLAKE_ENABLE_DEBUGGER})
     add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/dbg")
 endif()
 
+install(TARGETS slake DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 install(FILES ${HEADERS} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/slake)

@@ -211,14 +211,94 @@ slake::slkc::Server::Server() {
 		response.status = httplib::NotFound_404;
 		return;
 	});
-	server.Get("/completion", [this](const httplib::Request &request, httplib::Response &response) {
+	server.Post("/completion", [this](const httplib::Request &request, httplib::Response &response) {
+		puts("/completion");
 
+		Json::Value rootValue;
+
+		Json::Reader reader;
+
+		string uri;
+		Location loc;
+
+		if (!reader.parse(request.body, rootValue)) {
+			response.body = "Error parsing request";
+			goto badRequest;
+		}
+
+		if (!rootValue.isMember("uri")) {
+			response.body = "Missing document URI";
+			goto badRequest;
+		}
+		if (!rootValue["uri"].isString()) {
+			response.body = "Invalid document URI";
+			goto badRequest;
+		}
+		uri = rootValue["uri"].asString();
+
+		if (!rootValue.isMember("location")) {
+			response.body = "Missing document location";
+			goto badRequest;
+		}
+		if (!jsonToLocation(rootValue["location"], loc)) {
+			response.body = "Invalid document location";
+			goto badRequest;
+		}
+
+		if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
+			std::shared_ptr<Document> doc = it->second;
+
+			Json::Value responseValue;
+
+			responseValue["type"] = (uint32_t)ResponseType::Completion;
+
+			Json::Value &responseBodyValue = responseValue["body"],
+						&completionItemsValue = responseBodyValue["completionItems"];
+
+			auto completionItems = doc->getCompletionItems(loc);
+
+			responseBodyValue["uri"] = uri;
+			for (auto &i : completionItems)
+				completionItemsValue.insert(Json::Value::ArrayIndex(0), completionItemToJson(i));
+
+			doc->compiler->messages.clear();
+
+			response.body = responseValue.toStyledString();
+		} else {
+			response.body = "No such opened file";
+			goto notFound;
+		}
+		return;
+
+	badRequest:
+		response.status = httplib::BadRequest_400;
+		return;
+
+	notFound:
+		response.status = httplib::NotFound_404;
+		return;
 	});
 	server.Post("/stop", [this](const httplib::Request &request, httplib::Response &response) {
 		server.stop();
 		response.status = httplib::OK_200;
 		response.body = "OK";
 	});
+}
+
+bool slake::slkc::Server::jsonToLocation(const Json::Value &value, Location &locationOut) {
+	if (!value.isMember("line"))
+		return false;
+	if (!value["line"].isUInt())
+		return false;
+	locationOut.line = value["line"].asUInt();
+
+	if (!value.isMember("column"))
+		return false;
+	if (!value["column"].isUInt())
+		return false;
+	locationOut.column = value["column"].asUInt();
+
+	return true;
 }
 
 Json::Value slake::slkc::Server::locationToJson(const Location &loc) {
@@ -236,6 +316,21 @@ Json::Value slake::slkc::Server::compilerMessageToJson(const Message &msg) {
 	value["location"] = locationToJson(msg.loc);
 	value["type"] = (int)msg.type;
 	value["message"] = msg.msg;
+
+	return value;
+}
+
+Json::Value slake::slkc::Server::completionItemToJson(const CompletionItem &item) {
+	Json::Value value;
+
+	value["type"] = (int)item.type;
+
+	value["label"] = item.label;
+	value["details"] = item.details;
+	value["documentations"] = item.documentations;
+	value["insertText"] = item.insertText;
+
+	value["deprecated"] = item.deprecated;
 
 	return value;
 }

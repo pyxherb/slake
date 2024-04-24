@@ -2,15 +2,15 @@ module hostext;
 
 class AnotherGeneric<T, U> {
 	class ChildGeneric<V, T> {
-		pub T x;
+		pub T data;
 
-		pub void setX(T x) {
-			this.x = x;
+		pub void setX(T data) {
+			this.data = data;
 			return;
 		}
 
 		T getX() {
-			return this.x;
+			return this.data;
 		}
 	}
 }
@@ -20,8 +20,8 @@ pub i32 main() {
 	x.setX(123);
 	x.getX();
 
-	while(x.x--) {
-		yield x.x;
+	while(x.data--) {
+		yield x.data;
 	}
 
 	return 114514;

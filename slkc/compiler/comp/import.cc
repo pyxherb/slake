@@ -22,10 +22,10 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 	auto returnType = toTypeName(value->getReturnType());
 	GenericParamNodeList genericParams;
 
-	deque<Param> params;
+	deque<shared_ptr<ParamNode>> params;
 
 	for (auto i : value->getParamTypes()) {
-		Param param(Location(), toTypeName(i), "");
+		shared_ptr<ParamNode> param = make_shared<ParamNode>(Location(), toTypeName(i), "");
 
 		params.push_back(param);
 	}

@@ -7,22 +7,26 @@ FnOverloadingNode::FnOverloadingNode(
 	Compiler *compiler,
 	shared_ptr<TypeNameNode> returnType,
 	GenericParamNodeList genericParams,
-	deque<Param> params,
+	deque<shared_ptr<ParamNode>> params,
 	shared_ptr<Scope> scope) : MemberNode(compiler, access), returnType(returnType), params(params) {
 	for (size_t i = 0; i < params.size(); ++i) {
-		if (paramIndices.count(params[i].name)) {
+		if (paramIndices.count(params[i]->name)) {
 			throw FatalCompilationError(
 				Message(
-					params[i].loc,
+					params[i]->loc,
 					MessageType::Error,
-					"Redefinition of parameter `" + params[i].name + "'"));
+					"Redefinition of parameter `" + params[i]->name + "'"));
 		}
 
-		paramIndices[params[i].name] = i;
+		paramIndices[params[i]->name] = i;
 	}
 
 	setGenericParams(genericParams);
 	setScope(scope);  // For custom type names.
+}
+
+shared_ptr<AstNode> ParamNode::doDuplicate() {
+	return make_shared<ParamNode>(*this);
 }
 
 shared_ptr<AstNode> FnOverloadingNode::doDuplicate() {

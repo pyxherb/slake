@@ -14,7 +14,7 @@ namespace slake {
 	namespace slkc {
 		class MemberNode;
 
-		class Scope {
+		class Scope : public std::enable_shared_from_this<Scope> {
 		public:
 			AstNode *owner = nullptr;								// Owner of this scope.
 			Scope *parent = nullptr;								// Parent scope.

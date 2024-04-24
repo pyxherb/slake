@@ -30,8 +30,6 @@ namespace slake {
 			Array,	// Array
 			Map,	// Map
 
-			Closure,  // Closure
-
 			Call,	// Call
 			Await,	// Await
 
@@ -291,40 +289,7 @@ namespace slake {
 			virtual ExprType getExprType() const override { return ExprType::Map; }
 		};
 
-		struct Param {
-			Location loc;
-			shared_ptr<TypeNameNode> type;
-			string name;
-
-			// The original type will be saved during generic instantiation.
-			shared_ptr<TypeNameNode> originalType;
-
-			inline Param(
-				Location loc,
-				shared_ptr<TypeNameNode> type,
-				string name) : type(type), name(name), loc(loc) {}
-		};
-
 		class StmtNode;
-
-		class ClosureExprNode : public ExprNode {
-		public:
-			shared_ptr<TypeNameNode> returnType;
-			deque<Param> params;
-			deque<shared_ptr<ExprNode>> captureList;
-			shared_ptr<StmtNode> body;
-
-			inline ClosureExprNode(
-				shared_ptr<TypeNameNode> returnType,
-				deque<Param> params,
-				deque<shared_ptr<ExprNode>> captureList,
-				shared_ptr<StmtNode> body)
-				: returnType(returnType),
-				  params(params),
-				  captureList(captureList),
-				  body(body) {}
-			virtual ~ClosureExprNode() = default;
-		};
 
 		class CallExprNode : public ExprNode {
 		public:

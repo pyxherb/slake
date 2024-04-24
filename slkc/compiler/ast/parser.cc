@@ -597,39 +597,55 @@ Ref Parser::parseModuleRef() {
 
 Ref Parser::parseRef() {
 	Ref ref;
+	size_t idxPrecedingAccessOp = SIZE_MAX;
 
 	switch (auto &token = lexer->peekToken(); token.tokenId) {
 		case TokenId::ThisKeyword:
 		case TokenId::BaseKeyword:
-		case TokenId::ScopeOp:
+		case TokenId::ScopeOp: {
+			auto refEntry = RefEntry(token.beginLocation, lexer->context.curIndex, "", {});
+
 			switch (token.tokenId) {
 				case TokenId::ThisKeyword:
-					ref.push_back(RefEntry(token.beginLocation, lexer->context.curIndex, "this", {}));
+					refEntry.name = "this";
+					ref.push_back(refEntry);
 					break;
 				case TokenId::BaseKeyword:
-					ref.push_back(RefEntry(token.beginLocation, lexer->context.curIndex, "base", {}));
+					refEntry.name = "base";
+					ref.push_back(refEntry);
 					break;
 				case TokenId::ScopeOp:
-					ref.push_back(RefEntry(token.beginLocation, lexer->context.curIndex, "", {}));
+					refEntry.name = "";
+					ref.push_back(refEntry);
 					break;
 			}
+
 			lexer->nextToken();
 			if (lexer->peekToken().tokenId != TokenId::Dot)
 				goto end;
+
+			idxPrecedingAccessOp = lexer->context.curIndex;
 			lexer->nextToken();
+
 			break;
+		}
 	}
 
 	while (true) {
 		auto nameTokenIndex = lexer->context.curIndex;
 		auto &nameToken = expectToken(lexer->nextToken(), TokenId::Id);
 
-		ref.push_back(RefEntry(nameToken.beginLocation, nameTokenIndex, nameToken.text));
+		auto refEntry = RefEntry(nameToken.beginLocation, nameTokenIndex, nameToken.text);
+		refEntry.idxAccessOpToken = idxPrecedingAccessOp;
+
+		ref.push_back(refEntry);
 
 		ref.back().genericArgs = parseGenericArgs();
 
 		if (auto &token = lexer->peekToken(); token.tokenId != TokenId::Dot)
 			break;
+
+		idxPrecedingAccessOp = lexer->context.curIndex;
 
 		lexer->nextToken();
 	}

@@ -117,30 +117,6 @@ namespace slake {
 			}
 		};
 
-		struct TokenContext {
-			unordered_map<string, shared_ptr<LocalVarNode>> localVars;
-			shared_ptr<Scope> curScope;
-			GenericParamNodeList genericParams;
-			unordered_map<string, size_t> genericParamIndices;
-			deque<shared_ptr<ParamNode>> params;
-			unordered_map<string, size_t> paramIndices;
-
-			TokenContext() = default;
-			TokenContext(const TokenContext &) = default;
-			TokenContext(TokenContext &&) = default;
-			inline TokenContext(shared_ptr<CompiledFnNode> curFn, const MajorContext &majorContext) {
-				localVars = majorContext.curMinorContext.localVars;
-				curScope = majorContext.curMinorContext.curScope;
-				genericParams = majorContext.genericParams;
-				genericParamIndices = majorContext.genericParamIndices;
-				params = curFn->params;
-				paramIndices = curFn->paramIndices;
-			}
-
-			TokenContext &operator=(const TokenContext &) = default;
-			TokenContext &operator=(TokenContext &&) = default;
-		};
-
 		enum class SemanticType {
 			FnName,			   // Function name
 			VarName,		   // Variable name
@@ -174,6 +150,41 @@ namespace slake {
 			Name,		   // User is entering name of an identifier.
 			Expr,		   // User is entering an expression.
 			MemberAccess,  // User is accessing an member.
+		};
+
+		struct TokenContext {
+			unordered_map<string, shared_ptr<LocalVarNode>> localVars;
+
+			shared_ptr<Scope> curScope;
+
+			GenericParamNodeList genericParams;
+			unordered_map<string, size_t> genericParamIndices;
+
+			deque<shared_ptr<ParamNode>> params;
+			unordered_map<string, size_t> paramIndices;
+
+			TokenContext() = default;
+			TokenContext(const TokenContext &) = default;
+			TokenContext(TokenContext &&) = default;
+			inline TokenContext(shared_ptr<CompiledFnNode> curFn, const MajorContext &majorContext) {
+				localVars = majorContext.curMinorContext.localVars;
+				curScope = majorContext.curMinorContext.curScope;
+				genericParams = majorContext.genericParams;
+				genericParamIndices = majorContext.genericParamIndices;
+				params = curFn->params;
+				paramIndices = curFn->paramIndices;
+			}
+
+			TokenContext &operator=(const TokenContext &) = default;
+			TokenContext &operator=(TokenContext &&) = default;
+
+			inline TokenContext toMemberAccessContext() {
+				TokenContext context;
+
+				context.curScope = this->curScope;
+
+				return context;
+			}
 		};
 
 		struct TokenInfo {
@@ -247,7 +258,7 @@ namespace slake {
 
 			bool isTypeNamesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<TypeNameNode> dest);
 
-			bool _resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut);
+			bool _resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, bool isTopLevel = false);
 			bool _resolveRefWithOwner(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut);
 
 			/// @brief Resolve a reference with current context.

@@ -10,6 +10,7 @@ namespace slake {
 
 		struct RefEntry {
 			Location loc;
+			size_t idxAccessOpToken = SIZE_MAX;	 // Index of preceding access operator token
 			size_t idxToken;
 			string name;
 			deque<shared_ptr<TypeNameNode>> genericArgs;

@@ -177,8 +177,8 @@ void slake::slkc::Document::getCompletionMemberItems(
 			ModuleNode *node = (ModuleNode *)m;
 			getCompletionMemberItems(node->scope.get(), completionItems, targetNodeTypes);
 
-			if (!node->parentModule.expired())
-				getCompletionMemberItems(node->parentModule.lock().get(), completionItems, targetNodeTypes);
+			//if (!node->parentModule.expired())
+			//	getCompletionMemberItems(node->parentModule.lock().get(), completionItems, targetNodeTypes);
 			break;
 		}
 	}

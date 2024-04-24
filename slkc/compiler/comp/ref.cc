@@ -79,7 +79,7 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 		}
 	}
 
-	return _resolveRef(curMajorContext.curMinorContext.curScope.get(), ref, partsOut);
+	return _resolveRef(curMajorContext.curMinorContext.curScope.get(), ref, partsOut, true);
 }
 
 bool Compiler::resolveRefWithScope(Scope *scope, Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut) {
@@ -90,7 +90,7 @@ bool Compiler::resolveRefWithScope(Scope *scope, Ref ref, deque<pair<Ref, shared
 /// @param scope Scope for resolution.
 /// @param ref Reference to be resolved.
 /// @return true if succeeded, false otherwise.
-bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut) {
+bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, bool isTopLevel) {
 	if (ref[0].name == "base") {
 		auto newRef = ref;
 		newRef.pop_front();
@@ -109,11 +109,25 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 		m = scope->members.at(ref[0].name);
 
 		// Update corresponding semantic information for completion.
-		auto &tokenInfo = tokenInfos[ref[0].idxToken];
-		//tokenInfo.completionContext = CompletionContext::MemberAccess;
-		tokenInfo.semanticInfo.correspondingMember = m;
-		tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
-		tokenInfo.tokenContext.curScope = scope->shared_from_this();
+		{
+			TokenContext tokenContext = TokenContext(curFn, curMajorContext);
+			tokenContext.curScope = scope->shared_from_this();
+
+			if (!isTopLevel)
+				tokenContext = tokenContext.toMemberAccessContext();
+
+			{
+				auto &tokenInfo = tokenInfos[ref[0].idxToken];
+				// tokenInfo.completionContext = CompletionContext::MemberAccess;
+				tokenInfo.semanticInfo.correspondingMember = m;
+				tokenInfo.tokenContext = tokenContext;
+			}
+			if (ref[0].idxAccessOpToken != SIZE_MAX) {
+				auto &precedingAccessOpTokenInfo = tokenInfos[ref[0].idxAccessOpToken];
+				precedingAccessOpTokenInfo.semanticInfo.correspondingMember = m;
+				precedingAccessOpTokenInfo.tokenContext = tokenContext;
+			}
+		}
 
 		if (ref[0].genericArgs.size()) {
 			genericInstantiationContext.genericArgs = &ref[0].genericArgs;

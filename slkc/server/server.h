@@ -45,6 +45,7 @@ namespace slake {
 			string languageId;
 			string content;
 			ClientMarkupType markupType;
+			std::mutex mutex;
 
 			std::shared_ptr<Compiler> compiler;
 

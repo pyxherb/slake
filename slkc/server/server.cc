@@ -62,6 +62,7 @@ slake::slkc::Server::Server() {
 
 		{
 			std::shared_ptr<Document> doc = std::make_shared<Document>();
+			std::lock_guard<mutex> docMutexGuard(doc->mutex);
 
 			doc->uri = uri;
 			doc->languageId = languageId;
@@ -121,6 +122,7 @@ slake::slkc::Server::Server() {
 
 		if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
 			std::shared_ptr<Document> doc = it->second;
+			std::lock_guard<mutex> docMutexGuard(doc->mutex);
 
 			openedDocuments[uri] = doc;
 
@@ -186,6 +188,7 @@ slake::slkc::Server::Server() {
 		uri = rootValue["uri"].asString();
 
 		if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
+			std::lock_guard<mutex> docMutexGuard(it->second->mutex);
 			openedDocuments.erase(it);
 
 			Json::Value responseValue;
@@ -247,6 +250,7 @@ slake::slkc::Server::Server() {
 
 		if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
 			std::shared_ptr<Document> doc = it->second;
+			std::lock_guard<mutex> docMutexGuard(doc->mutex);
 
 			Json::Value responseValue;
 

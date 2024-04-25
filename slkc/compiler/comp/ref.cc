@@ -18,8 +18,8 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 			goto lvarSucceeded;
 
 		if (auto scope = scopeOf(localVar->type.get()); scope) {
-			_resolveRef(scope.get(), newRef, partsOut);
-			goto lvarSucceeded;
+			if (_resolveRef(scope.get(), newRef, partsOut))
+				goto lvarSucceeded;
 		}
 
 		if (false) {
@@ -45,8 +45,8 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 			goto paramSucceeded;
 
 		if (auto scope = scopeOf(curFn->params[idxParam]->type.get()); scope) {
-			_resolveRef(scope.get(), newRef, partsOut);
-			goto paramSucceeded;
+			if (_resolveRef(scope.get(), newRef, partsOut))
+				goto paramSucceeded;
 		}
 
 		if (false) {
@@ -55,7 +55,6 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 			auto &tokenInfo = tokenInfos[ref[0].idxToken];
 			tokenInfo.semanticInfo.correspondingMember = curFn->params[idxParam];
 			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
-			tokenInfo.tokenContext.curScope = {};
 
 			partsOut.push_front({ Ref{ ref.front() }, make_shared<ArgRefNode>(idxParam) });
 			return true;
@@ -66,7 +65,9 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 		auto thisRefNode = make_shared<ThisRefNode>();
 
 		// Update corresponding semantic information for completion.
-		tokenInfos[ref[0].idxToken].semanticInfo.correspondingMember = thisRefNode;
+		auto &tokenInfo = tokenInfos[ref[0].idxToken];
+		tokenInfo.semanticInfo.correspondingMember = thisRefNode;
+		tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 
 		if (ref.size() > 1) {
 			ref.pop_front();
@@ -91,6 +92,35 @@ bool Compiler::resolveRefWithScope(Scope *scope, Ref ref, deque<pair<Ref, shared
 /// @param ref Reference to be resolved.
 /// @return true if succeeded, false otherwise.
 bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, bool isTopLevel) {
+	// Update corresponding semantic information for completion.
+	{
+		TokenContext tokenContext = TokenContext(curFn, curMajorContext);
+		tokenContext.curScope = scope->shared_from_this();
+
+		if (!isTopLevel)
+			tokenContext = tokenContext.toMemberAccessContext();
+
+		if (ref[0].idxAccessOpToken != SIZE_MAX) {
+			auto &precedingAccessOpTokenInfo = tokenInfos[ref[0].idxAccessOpToken];
+			precedingAccessOpTokenInfo.tokenContext = tokenContext;
+		}
+
+		if (ref[0].idxToken != SIZE_MAX) {
+			auto &tokenInfo = tokenInfos[ref[0].idxToken];
+			// tokenInfo.completionContext = CompletionContext::MemberAccess;
+			tokenInfo.tokenContext = tokenContext;
+		}
+
+	}
+
+	// Raise an error if the reference is incomplete.
+	if (ref[0].idxToken == SIZE_MAX)
+		throw FatalCompilationError(
+			Message(
+				ref[0].loc,
+				MessageType::Error,
+				"Expecting an identifier"));
+
 	if (ref[0].name == "base") {
 		auto newRef = ref;
 		newRef.pop_front();
@@ -110,22 +140,10 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 
 		// Update corresponding semantic information for completion.
 		{
-			TokenContext tokenContext = TokenContext(curFn, curMajorContext);
-			tokenContext.curScope = scope->shared_from_this();
-
-			if (!isTopLevel)
-				tokenContext = tokenContext.toMemberAccessContext();
-
 			{
 				auto &tokenInfo = tokenInfos[ref[0].idxToken];
 				// tokenInfo.completionContext = CompletionContext::MemberAccess;
 				tokenInfo.semanticInfo.correspondingMember = m;
-				tokenInfo.tokenContext = tokenContext;
-			}
-			if (ref[0].idxAccessOpToken != SIZE_MAX) {
-				auto &precedingAccessOpTokenInfo = tokenInfos[ref[0].idxAccessOpToken];
-				precedingAccessOpTokenInfo.semanticInfo.correspondingMember = m;
-				precedingAccessOpTokenInfo.tokenContext = tokenContext;
 			}
 		}
 
@@ -159,10 +177,13 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 	if (_resolveRefWithOwner(scope, ref, partsOut))
 		return true;
 
-	if (scope->parent)
-		return _resolveRef(scope->parent, ref, partsOut);
+	if (isTopLevel && scope->parent) {
+		auto result = _resolveRef(scope->parent, ref, partsOut, isTopLevel);
 
-	return {};
+		return result;
+	}
+
+	return false;
 }
 
 bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut) {

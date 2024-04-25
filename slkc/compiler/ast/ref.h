@@ -21,6 +21,10 @@ namespace slake {
 
 		using Ref = deque<RefEntry>;
 
+		inline bool isCompleteRef(const Ref& ref) {
+			return ref.back().idxToken != SIZE_MAX;
+		}
+
 		Ref duplicateRef(const Ref &other);
 
 		class ThisRefNode : public AstNode {

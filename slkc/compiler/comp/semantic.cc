@@ -52,7 +52,9 @@ void Compiler::updateCorrespondingTokenInfo(const Ref &ref, SemanticType semanti
 		return;
 
 	for (size_t i = 0; i < ref.size(); ++i) {
-		tokenInfos[ref[i].idxToken].semanticType = semanticType;
-		tokenInfos[ref[i].idxToken].completionContext = completionContext;
+		if (ref[i].idxToken != SIZE_MAX) {
+			tokenInfos[ref[i].idxToken].semanticType = semanticType;
+			tokenInfos[ref[i].idxToken].completionContext = completionContext;
+		}
 	}
 }

@@ -132,6 +132,14 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 						UnaryOp::DecB,
 						lhs));
 			} } },
+	{ TokenId::Dot,
+		{ 140,
+			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
+				return static_pointer_cast<ExprNode>(
+					make_shared<HeadedRefExprNode>(
+						lhs,
+						parser->parseRef()));
+			} } },
 
 	{ TokenId::MulOp,
 		{ 120,
@@ -509,12 +517,12 @@ shared_ptr<TypeNameNode> Parser::parseTypeName() {
 		}
 		case TokenId::Id: {
 			LexerContext savedContext = lexer->context;
-			try {
-				type = make_shared<CustomTypeNameNode>(token.beginLocation, parseRef(), compiler, curScope.get());
-			} catch (SyntaxError e) {
+			auto ref = parseRef();
+			if (!isCompleteRef(ref)) {
 				lexer->context = savedContext;
 				return {};
 			}
+			type = make_shared<CustomTypeNameNode>(token.beginLocation, ref, compiler, curScope.get());
 			break;
 		}
 		default:
@@ -633,12 +641,20 @@ Ref Parser::parseRef() {
 
 	while (true) {
 		auto nameTokenIndex = lexer->context.curIndex;
-		auto &nameToken = expectToken(lexer->nextToken(), TokenId::Id);
+		auto &nameToken = lexer->peekToken();
 
-		auto refEntry = RefEntry(nameToken.beginLocation, nameTokenIndex, nameToken.text);
+		auto refEntry = RefEntry(nameToken.beginLocation, SIZE_MAX, "");
 		refEntry.idxAccessOpToken = idxPrecedingAccessOp;
 
-		ref.push_back(refEntry);
+		if (nameToken.tokenId != TokenId::Id) {
+			ref.push_back(refEntry);
+			return ref;
+		} else {
+			lexer->nextToken();
+			refEntry.name = nameToken.text;
+			refEntry.idxToken = nameTokenIndex;
+			ref.push_back(refEntry);
+		}
 
 		ref.back().genericArgs = parseGenericArgs();
 

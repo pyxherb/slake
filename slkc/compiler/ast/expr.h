@@ -35,7 +35,9 @@ namespace slake {
 
 			New,	 // New
 			Typeof,	 // Typeof
-			Cast	 // Cast
+			Cast,	 // Cast
+
+			Wrapper, // Expression wrapper
 		};
 
 		class ExprNode : public AstNode {
@@ -374,6 +376,22 @@ namespace slake {
 			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual ExprType getExprType() const override { return ExprType::Cast; }
+		};
+		
+		class WrapperExprNode : public ExprNode {
+		private:
+			Location _loc;
+
+		public:
+			shared_ptr<ExprNode> expr;
+
+			inline WrapperExprNode(Location loc, shared_ptr<ExprNode> expr)
+				: _loc(loc), expr(expr) {}
+			virtual ~WrapperExprNode() = default;
+
+			virtual inline Location getLocation() const override { return _loc; }
+
+			virtual ExprType getExprType() const override { return ExprType::Wrapper; }
 		};
 	}
 }

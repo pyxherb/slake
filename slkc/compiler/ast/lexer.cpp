@@ -529,8 +529,9 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 			*/
 		}
 
-		if (discardCurToken)
-			std::move(token);
+		if (discardCurToken) {
+			auto discardedToken = std::move(token);
+		}
 		else {
 			size_t beginIndex = prevYYCURSOR - src.data(), endIndex = YYCURSOR - src.data();
 

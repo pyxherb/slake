@@ -19,6 +19,7 @@ pub i32 main() {
 	AnotherGeneric<i32, f32>.ChildGeneric<f32, i32> x = new AnotherGeneric<i32, f32>.ChildGeneric<f32, i32>();
 	x.setX(123);
 	x.getX();
+	x.dat;
 
 	while(x.data--) {
 		yield x.data;

@@ -462,8 +462,6 @@ shared_ptr<TypeNameNode> Parser::parseTypeName() {
 		case TokenId::AutoTypeName:
 		case TokenId::VoidTypeName:
 		case TokenId::AnyTypeName: {
-			compiler->tokenInfos[lexer->context.curIndex].semanticType = SemanticType::Type;
-
 			switch (token.tokenId) {
 				case TokenId::I8TypeName:
 					type = make_shared<I8TypeNameNode>(token.beginLocation, lexer->context.curIndex);

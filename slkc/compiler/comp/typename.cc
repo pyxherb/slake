@@ -365,6 +365,13 @@ shared_ptr<AstNode> Compiler::resolveCustomTypeName(CustomTypeNameNode *typeName
 		auto genericParam = lookupGenericParam(typeName->scope->owner->shared_from_this(), typeName->ref[0].name);
 		if (genericParam) {
 			typeName->resolvedPartsOut.push_back({ Ref{ RefEntry{ typeName->getLocation(), SIZE_MAX, typeName->ref[0].name, {} } }, genericParam });
+
+			// Update corresponding semantic information for completion.
+			auto &tokenInfo = tokenInfos[typeName->ref[0].idxToken];
+			tokenInfo.semanticInfo.correspondingMember = genericParam;
+			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+			tokenInfo.semanticType = SemanticType::TypeParam;
+
 			goto succeeded;
 		}
 	}

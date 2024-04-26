@@ -40,6 +40,13 @@ namespace slake {
 			bool deprecated;
 		};
 
+		struct SemanticToken {
+			Location location;
+			unsigned int length;
+			SemanticType type;
+			std::set<SemanticTokenModifier> modifiers;
+		};
+
 		struct Document {
 			string uri;
 			string languageId;
@@ -68,24 +75,15 @@ namespace slake {
 			DocumentOpen = 0,
 			DocumentUpdate,
 			DocumentClose,
-			Completion
+			Completion,
+			SemanticTokens
 		};
 
 		enum class ResponseType {
 			DocumentOk = 0,
 			DocumentError,
-			Completion
-		};
-
-		struct DocumentErrorResponseBody {
-			std::string uri;
-			int code;
-			string message;
-		};
-
-		struct CompletionResponseBody {
-			std::string uri;
-			std::deque<CompletionItem> completionItems;
+			Completion,
+			SemanticTokens
 		};
 
 		class Server {
@@ -100,6 +98,7 @@ namespace slake {
 			static Json::Value locationToJson(const Location &loc);
 			static Json::Value compilerMessageToJson(const Message &msg);
 			static Json::Value completionItemToJson(const CompletionItem &item);
+			static Json::Value semanticTokenToJson(const SemanticToken &loc);
 
 			void start(uint16_t port);
 		};

@@ -282,7 +282,75 @@ slake::slkc::Server::Server() {
 		response.status = httplib::NotFound_404;
 		return;
 	});
-	server.Post("/stop", [this](const httplib::Request &request, httplib::Response &response) {
+	server.Post("/semanticTokens", [this](const httplib::Request &request, httplib::Response &response) {
+		puts("/semanticTokens");
+
+		Json::Value rootValue;
+
+		Json::Reader reader;
+
+		string uri;
+		Location loc;
+
+		if (!reader.parse(request.body, rootValue)) {
+			response.body = "Error parsing request";
+			goto badRequest;
+		}
+
+		if (!rootValue.isMember("uri")) {
+			response.body = "Missing document URI";
+			goto badRequest;
+		}
+		if (!rootValue["uri"].isString()) {
+			response.body = "Invalid document URI";
+			goto badRequest;
+		}
+		uri = rootValue["uri"].asString();
+
+		if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
+			std::shared_ptr<Document> doc = it->second;
+			std::lock_guard<mutex> docMutexGuard(doc->mutex);
+
+			Json::Value responseValue;
+
+			responseValue["type"] = (uint32_t)ResponseType::SemanticTokens;
+
+			Json::Value &responseBodyValue = responseValue["body"],
+						&semanticTokensValue = responseBodyValue["semanticTokens"];
+
+			responseBodyValue["uri"] = uri;
+
+			const size_t nTokens = doc->compiler->lexer.tokens.size();
+			for (size_t i = 0; i < nTokens; ++i) {
+				const Token &token = doc->compiler->lexer.tokens[i];
+				const TokenInfo &tokenInfo = doc->compiler->tokenInfos[i];
+
+				SemanticToken semanticToken = {};
+
+				semanticToken.location = token.beginLocation;
+				semanticToken.length = token.text.size();
+				semanticToken.type = tokenInfo.semanticType;
+				semanticToken.modifiers = tokenInfo.semanticModifiers;
+
+				semanticTokensValue.append(semanticTokenToJson(semanticToken));
+			}
+
+			response.body = responseValue.toStyledString();
+		} else {
+			response.body = "No such opened file";
+			goto notFound;
+		}
+		return;
+
+	badRequest:
+		response.status = httplib::BadRequest_400;
+		return;
+
+	notFound:
+		response.status = httplib::NotFound_404;
+		return;
+	});
+	server.Get("/stop", [this](const httplib::Request &request, httplib::Response &response) {
 		server.stop();
 		response.status = httplib::OK_200;
 		response.body = "OK";
@@ -335,6 +403,24 @@ Json::Value slake::slkc::Server::completionItemToJson(const CompletionItem &item
 	value["insertText"] = item.insertText;
 
 	value["deprecated"] = item.deprecated;
+
+	return value;
+}
+
+Json::Value slake::slkc::Server::semanticTokenToJson(const SemanticToken &item) {
+	Json::Value value;
+
+	value["type"] = (int)item.type;
+
+	auto &modifiersValue = value["modifiers"];
+	for (auto i : item.modifiers) {
+		Json::Value modifierValue = (int)i;
+
+		modifiersValue.insert(Json::Value::ArrayIndex(0), modifierValue);
+	}
+
+	value["location"] = locationToJson(item.location);
+	value["length"] = item.length;
 
 	return value;
 }

@@ -6,8 +6,6 @@ using namespace slake::slkc;
 bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut) {
 	assert(ref.size());
 
-	ResolvedOwnersSaver resolvedOwnersSaver(curMajorContext.curMinorContext);
-
 	// Try to resolve the first entry as a local variable.
 	if (curMajorContext.curMinorContext.localVars.count(ref[0].name) && (!ref[0].genericArgs.size())) {
 		auto newRef = ref;
@@ -28,6 +26,7 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 			auto &tokenInfo = tokenInfos[ref[0].idxToken];
 			tokenInfo.semanticInfo.correspondingMember = localVar;
 			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+			tokenInfo.semanticType = SemanticType::Var;
 
 			partsOut.push_front({ Ref{ ref.front() }, localVar });
 			return true;
@@ -55,6 +54,7 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 			auto &tokenInfo = tokenInfos[ref[0].idxToken];
 			tokenInfo.semanticInfo.correspondingMember = curFn->params[idxParam];
 			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+			tokenInfo.semanticType = SemanticType::Param;
 
 			partsOut.push_front({ Ref{ ref.front() }, make_shared<ArgRefNode>(idxParam) });
 			return true;
@@ -68,6 +68,7 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 		auto &tokenInfo = tokenInfos[ref[0].idxToken];
 		tokenInfo.semanticInfo.correspondingMember = thisRefNode;
 		tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+		tokenInfo.semanticType = SemanticType::Keyword;
 
 		if (ref.size() > 1) {
 			ref.pop_front();
@@ -110,7 +111,6 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 			// tokenInfo.completionContext = CompletionContext::MemberAccess;
 			tokenInfo.tokenContext = tokenContext;
 		}
-
 	}
 
 	// Raise an error if the reference is incomplete.
@@ -124,6 +124,12 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 	if (ref[0].name == "base") {
 		auto newRef = ref;
 		newRef.pop_front();
+
+		// Update corresponding semantic information for completion.
+		auto &tokenInfo = tokenInfos[ref[0].idxToken];
+		tokenInfo.semanticInfo.correspondingMember = scope->owner->shared_from_this();
+		tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+		tokenInfo.semanticType = SemanticType::Keyword;
 
 		bool result = _resolveRefWithOwner(scope, newRef, partsOut);
 		partsOut.push_front({ Ref{ ref.front() }, make_shared<BaseRefNode>() });
@@ -140,10 +146,32 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 
 		// Update corresponding semantic information for completion.
 		{
-			{
-				auto &tokenInfo = tokenInfos[ref[0].idxToken];
-				// tokenInfo.completionContext = CompletionContext::MemberAccess;
-				tokenInfo.semanticInfo.correspondingMember = m;
+			auto &tokenInfo = tokenInfos[ref[0].idxToken];
+			// tokenInfo.completionContext = CompletionContext::MemberAccess;
+			tokenInfo.semanticInfo.correspondingMember = m;
+
+			switch (m->getNodeType()) {
+				case NodeType::Class:
+					tokenInfo.semanticType = SemanticType::Class;
+					break;
+				case NodeType::Interface:
+					tokenInfo.semanticType = SemanticType::Interface;
+					break;
+				case NodeType::GenericParam:
+					tokenInfo.semanticType = SemanticType::TypeParam;
+					break;
+				case NodeType::Param:
+					tokenInfo.semanticType = SemanticType::Param;
+					break;
+				case NodeType::Var:
+					tokenInfo.semanticType = isTopLevel ? SemanticType::Var : SemanticType::Property;
+					break;
+				case NodeType::LocalVar:
+					tokenInfo.semanticType = SemanticType::Var;
+					break;
+				case NodeType::Fn:
+					tokenInfo.semanticType = isTopLevel ? SemanticType::Fn : SemanticType::Method;
+					break;
 			}
 		}
 
@@ -177,17 +205,14 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 	if (_resolveRefWithOwner(scope, ref, partsOut))
 		return true;
 
-	if (isTopLevel && scope->parent) {
-		auto result = _resolveRef(scope->parent, ref, partsOut, isTopLevel);
-
-		return result;
-	}
+	if (isTopLevel && scope->parent)
+		return _resolveRef(scope->parent, ref, partsOut, isTopLevel);
 
 	return false;
 }
 
 bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut) {
-	if (scope->owner && (!curMajorContext.curMinorContext.resolvedOwners.count(scope->owner))) {
+	if (scope->owner) {
 		switch (scope->owner->getNodeType()) {
 			case NodeType::Class: {
 				ClassNode *owner = (ClassNode *)scope->owner;

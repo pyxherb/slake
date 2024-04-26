@@ -4,7 +4,6 @@ using namespace slake::slkc;
 
 void Compiler::updateCorrespondingTokenInfo(
 	shared_ptr<TypeNameNode> targetTypeName,
-	shared_ptr<TypeNameNode> semanticType,
 	CompletionContext completionContext) {
 	switch (targetTypeName->getTypeId()) {
 		case Type::I8:
@@ -24,21 +23,19 @@ void Compiler::updateCorrespondingTokenInfo(
 		case Type::Auto: {
 			auto t = static_pointer_cast<BasicSimpleTypeNameNode>(targetTypeName);
 			assert(t->idxToken != SIZE_MAX);
-			tokenInfos[t->idxToken].semanticType = SemanticType::Type;
-			tokenInfos[t->idxToken].semanticInfo.type = semanticType;
 			tokenInfos[t->idxToken].completionContext = completionContext;
 			tokenInfos[t->idxToken].tokenContext = TokenContext(curFn, curMajorContext);
 			break;
 		}
 		case Type::Array: {
 			auto t = static_pointer_cast<ArrayTypeNameNode>(targetTypeName);
-			updateCorrespondingTokenInfo(t->elementType, semanticType, completionContext);
+			updateCorrespondingTokenInfo(t->elementType, completionContext);
 			break;
 		}
 		case Type::Custom: {
 			auto t = static_pointer_cast<CustomTypeNameNode>(targetTypeName);
 
-			updateCorrespondingTokenInfo(t->ref, SemanticType::TypeRef, completionContext);
+			updateCorrespondingTokenInfo(t->ref, SemanticType::Type, completionContext);
 			break;
 		}
 		default:
@@ -51,10 +48,12 @@ void Compiler::updateCorrespondingTokenInfo(const Ref &ref, SemanticType semanti
 	if (!resolveRef(ref, partsOut))
 		return;
 
-	for (size_t i = 0; i < ref.size(); ++i) {
-		if (ref[i].idxToken != SIZE_MAX) {
-			tokenInfos[ref[i].idxToken].semanticType = semanticType;
-			tokenInfos[ref[i].idxToken].completionContext = completionContext;
+	if (semanticType != SemanticType::None) {
+		for (size_t i = 0; i < ref.size(); ++i) {
+			if (ref[i].idxToken != SIZE_MAX) {
+				tokenInfos[ref[i].idxToken].semanticType = semanticType;
+				tokenInfos[ref[i].idxToken].completionContext = completionContext;
+			}
 		}
 	}
 }

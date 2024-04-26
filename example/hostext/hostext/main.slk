@@ -20,6 +20,64 @@ class AnotherGeneric<T, U> {
 	}
 }
 
+class Test {
+	pub i32 x;
+
+	pub operator delete() {
+		hostext.extfns.print("Destructing Test...\n");
+		return;
+	}
+
+	pub operator new(i32 x) {
+		this.x = x;
+		return;
+	}
+
+	i32 getX() {
+		hostext.extfns.print("Fetched x: ", this.x, "\n");
+		return this.x;
+	}
+}
+
+class Derived(Test) {
+	pub i32 y;
+
+	pub operator delete() {
+		hostext.extfns.print("Destructing Derived...\n");
+		return;
+	}
+
+	pub operator new(i32 y) {
+		base.x = y * 2;
+		this.x = y * 4;
+		return;
+	}
+
+	i32 getY() {
+		hostext.extfns.print("Fetched y: ", this.y, "\n");
+		return this.y;
+	}
+}
+
+class AnotherDerived(Derived) {
+	pub i32 z;
+
+	pub operator new(i32 z) {
+		this.z = z;
+		base.x = z * 4;
+		base.y = z * 2;
+		return;
+	}
+
+	i32 getZ() {
+		hostext.extfns.print("Fetched z: ", this.z, "\n");
+		return this.y;
+	}
+}
+
+class Unrelated {
+}
+
 pub i32 main() {
 	hostext.extfns.print("Entered main\n");
 
@@ -27,8 +85,11 @@ pub i32 main() {
 	x.setX(123);
 	x.getX();
 
-	while(x.x--) {
-		yield x.x;
+	Test test = new Derived(50);
+
+	while(test.x = test.x - 1) {
+		hostext.extfns.print("Yielded\n");
+		yield test.getX();
 	}
 
 	return 114514;

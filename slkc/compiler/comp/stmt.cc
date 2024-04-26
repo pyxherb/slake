@@ -36,10 +36,10 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 						"No initializer was found, unable to deduce the type" });
 
 			foundInitValue:
-				updateCorrespondingTokenInfo(s->type, deducedType, CompletionContext::Type);
+				updateCorrespondingTokenInfo(s->type, CompletionContext::Type);
 				s->type = deducedType;
 			} else
-				updateCorrespondingTokenInfo(s->type, s->type, CompletionContext::Type);
+				updateCorrespondingTokenInfo(s->type, CompletionContext::Type);
 
 			for (auto i : s->varDefs) {
 				if (curMajorContext.curMinorContext.localVars.count(i.first))

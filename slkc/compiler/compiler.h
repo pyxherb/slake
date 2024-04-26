@@ -77,7 +77,6 @@ namespace slake {
 			EvalPurpose evalPurpose;
 
 			bool isLastCallTargetStatic = true;
-			std::set<AstNode *> resolvedOwners;
 
 			deque<shared_ptr<TypeNameNode>> argTypes;
 			bool isArgTypesSet = false;
@@ -118,23 +117,35 @@ namespace slake {
 		};
 
 		enum class SemanticType {
-			FnName,			   // Function name
-			VarName,		   // Variable name
-			ParamName,		   // Parameter name
-			ClassName,		   // Class name
-			InterfaceName,	   // Interface name
-			TraitName,		   // Trait name
-			EnumName,		   // Enumeration name
-			EnumConstName,	   // Enumeration constant name
-			GenericParamName,  // Generic parameter name
-			Modifier,		   // Modifier
-			AccessModifier,	   // Access modifier
-			Ref,			   // Part of a reference
-			Type,			   // Type
-			TypeRef,		   // Part of a reference in a type
-			OperatorRef,	   // (Custom) Operator reference
-			Keyword,		   // Keyword
-			None			   // No semantic information
+			None = 0,	 // None
+			Type,		 // Type
+			Class,		 // Class
+			Enum,		 // Enumeration
+			Interface,	 // Interface
+			Struct,		 // Structure
+			TypeParam,	 // Type parameter
+			Param,		 // Parameter
+			Var,		 // Variable
+			Property,	 // Property
+			EnumMember,	 // Enumeration Member
+			Fn,			 // Function
+			Method,		 // Method
+			Keyword,	 // Keyword
+			Modifier,	 // Modifier
+			Comment,	 // Comment
+			String,		 // String
+			Number,		 // Number
+			Operator	 // Operator
+		};
+
+		enum class SemanticTokenModifier {
+			Decl = 0,
+			Def,
+			Readonly,
+			Static,
+			Deprecated,
+			Abstract,
+			Async
 		};
 
 		enum class CompletionContext {
@@ -190,6 +201,7 @@ namespace slake {
 		struct TokenInfo {
 			string hoverInfo = "";
 			SemanticType semanticType = SemanticType::None;
+			std::set<SemanticTokenModifier> semanticModifiers;
 			CompletionContext completionContext = CompletionContext::None;
 
 			struct {
@@ -210,22 +222,6 @@ namespace slake {
 		private:
 			MajorContext curMajorContext;
 			shared_ptr<CompiledFnNode> curFn;
-
-			struct ResolvedOwnersSaver {
-				std::set<AstNode *> resolvedOwners;
-				MinorContext &context;
-				bool discarded = false;
-
-				inline ResolvedOwnersSaver(MinorContext &context) : context(context), resolvedOwners(context.resolvedOwners) {}
-				inline ~ResolvedOwnersSaver() {
-					if (!discarded)
-						context.resolvedOwners = resolvedOwners;
-				}
-
-				inline void discard() {
-					discarded = true;
-				}
-			};
 
 			shared_ptr<Scope> _rootScope = make_shared<Scope>();
 			shared_ptr<ModuleNode> _targetModule;
@@ -437,7 +433,7 @@ namespace slake {
 			// Generic end
 			//
 
-			void updateCorrespondingTokenInfo(shared_ptr<TypeNameNode> targetTypeName, shared_ptr<TypeNameNode> semanticType, CompletionContext completionContext);
+			void updateCorrespondingTokenInfo(shared_ptr<TypeNameNode> targetTypeName, CompletionContext completionContext);
 			void updateCorrespondingTokenInfo(const Ref &ref, SemanticType semanticType, CompletionContext completionContext);
 
 			friend class AstVisitor;

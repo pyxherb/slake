@@ -1137,7 +1137,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 						MessageType::Error,
 						"Identifier not found: `" + to_string(e->ref, this) + "'" });
 
-			updateCorrespondingTokenInfo(e->ref, SemanticType::Ref, CompletionContext::Expr);
+			updateCorrespondingTokenInfo(e->ref, SemanticType::None, CompletionContext::Expr);
 
 			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::Call) {
 				if (isDynamicMember(resolvedParts.back().second)) {

@@ -366,7 +366,7 @@ shared_ptr<AstNode> Compiler::resolveCustomTypeName(CustomTypeNameNode *typeName
 		if (genericParam) {
 			typeName->resolvedPartsOut.push_back({ Ref{ RefEntry{ typeName->getLocation(), SIZE_MAX, typeName->ref[0].name, {} } }, genericParam });
 
-			// Update corresponding semantic information for completion.
+			// Update corresponding semantic information.
 			auto &tokenInfo = tokenInfos[typeName->ref[0].idxToken];
 			tokenInfo.semanticInfo.correspondingMember = genericParam;
 			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);

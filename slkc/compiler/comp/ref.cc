@@ -22,7 +22,7 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 
 		if (false) {
 		lvarSucceeded:
-			// Update corresponding semantic information for completion.
+			// Update corresponding semantic information.
 			auto &tokenInfo = tokenInfos[ref[0].idxToken];
 			tokenInfo.semanticInfo.correspondingMember = localVar;
 			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
@@ -50,7 +50,7 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 
 		if (false) {
 		paramSucceeded:
-			// Update corresponding semantic information for completion.
+			// Update corresponding semantic information.
 			auto &tokenInfo = tokenInfos[ref[0].idxToken];
 			tokenInfo.semanticInfo.correspondingMember = curFn->params[idxParam];
 			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
@@ -64,7 +64,7 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 	if (ref[0].name == "this") {
 		auto thisRefNode = make_shared<ThisRefNode>();
 
-		// Update corresponding semantic information for completion.
+		// Update corresponding semantic information.
 		auto &tokenInfo = tokenInfos[ref[0].idxToken];
 		tokenInfo.semanticInfo.correspondingMember = thisRefNode;
 		tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
@@ -93,7 +93,7 @@ bool Compiler::resolveRefWithScope(Scope *scope, Ref ref, deque<pair<Ref, shared
 /// @param ref Reference to be resolved.
 /// @return true if succeeded, false otherwise.
 bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, bool isTopLevel) {
-	// Update corresponding semantic information for completion.
+	// Update corresponding semantic information.
 	{
 		TokenContext tokenContext = TokenContext(curFn, curMajorContext);
 		tokenContext.curScope = scope->shared_from_this();
@@ -125,7 +125,7 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 		auto newRef = ref;
 		newRef.pop_front();
 
-		// Update corresponding semantic information for completion.
+		// Update corresponding semantic information.
 		auto &tokenInfo = tokenInfos[ref[0].idxToken];
 		tokenInfo.semanticInfo.correspondingMember = scope->owner->shared_from_this();
 		tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
@@ -144,7 +144,7 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 
 		m = scope->members.at(ref[0].name);
 
-		// Update corresponding semantic information for completion.
+		// Update corresponding semantic information.
 		{
 			auto &tokenInfo = tokenInfos[ref[0].idxToken];
 			// tokenInfo.completionContext = CompletionContext::MemberAccess;

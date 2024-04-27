@@ -8,7 +8,8 @@ FnOverloadingNode::FnOverloadingNode(
 	shared_ptr<TypeNameNode> returnType,
 	GenericParamNodeList genericParams,
 	deque<shared_ptr<ParamNode>> params,
-	shared_ptr<Scope> scope) : MemberNode(compiler, access), returnType(returnType), params(params) {
+	shared_ptr<Scope> scope,
+	size_t idxNameToken) : MemberNode(compiler, access), returnType(returnType), params(params), idxNameToken(idxNameToken) {
 	for (size_t i = 0; i < params.size(); ++i) {
 		if (paramIndices.count(params[i]->name)) {
 			throw FatalCompilationError(

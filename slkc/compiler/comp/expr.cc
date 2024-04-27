@@ -1353,7 +1353,6 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 		case ExprType::String:
 		case ExprType::Bool:
 		case ExprType::Array:
-		case ExprType::Map:
 			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
 				throw FatalCompilationError(
 					Message(

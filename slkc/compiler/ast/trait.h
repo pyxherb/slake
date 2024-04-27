@@ -14,12 +14,14 @@ namespace slake {
 		public:
 			string name;
 
-			deque<shared_ptr<TypeNameNode>> parentTraits;	 // Parent traits
+			deque<shared_ptr<TypeNameNode>> parentTraits;  // Parent traits
 
 			GenericParamNodeList genericParams;
 			unordered_map<string, size_t> genericParamIndices;
 
 			shared_ptr<Scope> scope = make_shared<Scope>();
+
+			size_t idxNameToken;
 
 			TraitNode() = default;
 			inline TraitNode(const TraitNode &other) : MemberNode(other) {
@@ -30,12 +32,17 @@ namespace slake {
 				parentTraits.resize(other.parentTraits.size());
 				for (size_t i = 0; i < other.parentTraits.size(); ++i)
 					parentTraits[i] = other.parentTraits[i]->duplicate<TypeNameNode>();
+
+				idxNameToken = other.idxNameToken;
 			}
 			inline TraitNode(
 				Location loc,
-				deque<shared_ptr<TypeNameNode>> parentInterfaces,
-				GenericParamNodeList genericParams)
-				: _loc(loc) {
+				deque<shared_ptr<TypeNameNode>> parentTraits,
+				GenericParamNodeList genericParams,
+				size_t idxNameToken)
+				: _loc(loc),
+				  parentTraits(parentTraits),
+				  idxNameToken(idxNameToken) {
 				setScope(make_shared<Scope>());
 				setGenericParams(genericParams);
 			}

@@ -94,13 +94,16 @@ namespace slake {
 			Location loc;
 			shared_ptr<ExprNode> initValue;
 
+			size_t idxNameToken;
+
 			inline VarDefEntry() = default;
 			inline VarDefEntry(const VarDefEntry &) = default;
 			inline VarDefEntry(
 				Location loc,
 				string name,
-				shared_ptr<ExprNode> initValue)
-				: loc(loc), name(name), initValue(initValue) {}
+				shared_ptr<ExprNode> initValue,
+				size_t idxNameToken)
+				: loc(loc), name(name), initValue(initValue), idxNameToken(idxNameToken) {}
 
 			inline VarDefEntry &operator=(const VarDefEntry &) = default;
 		};

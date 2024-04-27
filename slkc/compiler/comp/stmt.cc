@@ -41,7 +41,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 			} else
 				updateCorrespondingTokenInfo(s->type, CompletionContext::Type);
 
-			for (auto i : s->varDefs) {
+			for (auto &i : s->varDefs) {
 				if (curMajorContext.curMinorContext.localVars.count(i.first))
 					throw FatalCompilationError(
 						{ i.second.loc,
@@ -63,6 +63,13 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 						compileExpr(make_shared<CastExprNode>(i.second.initValue->getLocation(), s->type, i.second.initValue), EvalPurpose::RValue, make_shared<LocalVarRefNode>(index));
 					} else
 						compileExpr(i.second.initValue, EvalPurpose::RValue, make_shared<LocalVarRefNode>(index));
+				}
+
+				if (i.second.idxNameToken != SIZE_MAX) {
+					// Update corresponding semantic information.
+					auto &tokenInfo = tokenInfos[i.second.idxNameToken];
+					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+					tokenInfo.semanticType = SemanticType::Var;
 				}
 			}
 

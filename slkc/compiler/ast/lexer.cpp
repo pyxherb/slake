@@ -550,8 +550,8 @@ end:
 
 	_endToken = {
 		TokenId::End,
-		{},
-		{},
+		token.endLocation,
+		token.endLocation,
 		""
 	};
 }

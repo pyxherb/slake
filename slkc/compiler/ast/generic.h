@@ -18,6 +18,7 @@ namespace slake {
 
 		public:
 			string name;
+			size_t idxNameToken;
 			shared_ptr<TypeNameNode> baseType;
 			deque<shared_ptr<TypeNameNode>> traitTypes, interfaceTypes;
 
@@ -25,6 +26,7 @@ namespace slake {
 				_loc = other._loc;
 
 				name = other.name;
+				idxNameToken = other.idxNameToken;
 				if (baseType)
 					baseType = other.baseType->duplicate<TypeNameNode>();
 
@@ -38,8 +40,9 @@ namespace slake {
 			}
 			inline GenericParamNode(
 				Location location,
-				string name)
-				: _loc(location), name(name) {}
+				string name,
+				size_t idxNameToken)
+				: _loc(location), name(name), idxNameToken(idxNameToken) {}
 
 			virtual inline NodeType getNodeType() const override { return NodeType::GenericParam; }
 			virtual inline Location getLocation() const override { return _loc; }

@@ -182,8 +182,10 @@ namespace slake {
 				curScope = majorContext.curMinorContext.curScope;
 				genericParams = majorContext.genericParams;
 				genericParamIndices = majorContext.genericParamIndices;
-				params = curFn->params;
-				paramIndices = curFn->paramIndices;
+				if (curFn) {
+					params = curFn->params;
+					paramIndices = curFn->paramIndices;
+				}
 			}
 
 			TokenContext &operator=(const TokenContext &) = default;
@@ -440,7 +442,7 @@ namespace slake {
 			friend class MemberNode;
 			friend string std::to_string(shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slkc::Compiler *compiler, bool asOperatorName);
 			friend class Parser;
-			friend class Document;
+			friend struct Document;
 
 		public:
 			std::deque<TokenInfo> tokenInfos;

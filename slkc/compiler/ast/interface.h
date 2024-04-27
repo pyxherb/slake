@@ -21,6 +21,8 @@ namespace slake {
 
 			shared_ptr<Scope> scope = make_shared<Scope>();
 
+			size_t idxNameToken;
+
 			InterfaceNode() = default;
 			inline InterfaceNode(const InterfaceNode &other) : MemberNode(other) {
 				_loc = other._loc;
@@ -30,15 +32,19 @@ namespace slake {
 				parentInterfaces.resize(other.parentInterfaces.size());
 				for (size_t i = 0; i < other.parentInterfaces.size(); ++i)
 					parentInterfaces[i] = other.parentInterfaces[i]->duplicate<TypeNameNode>();
+
+				idxNameToken = other.idxNameToken;
 			}
 			inline InterfaceNode(
 				Location loc,
 				string name,
 				deque<shared_ptr<TypeNameNode>> parentInterfaces,
-				GenericParamNodeList genericParams)
+				GenericParamNodeList genericParams,
+				size_t idxNameToken)
 				: _loc(loc),
 				  name(name),
-				  parentInterfaces(parentInterfaces) {
+				  parentInterfaces(parentInterfaces),
+				  idxNameToken(idxNameToken) {
 				scope = make_shared<Scope>();
 				setScope(make_shared<Scope>());
 				setGenericParams(genericParams);

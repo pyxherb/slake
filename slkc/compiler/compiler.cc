@@ -224,6 +224,13 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 
 	_write<uint32_t>(os, vars.size());
 	for (auto &i : vars) {
+		if (i.second->idxNameToken != SIZE_MAX) {
+			// Update corresponding semantic information.
+			auto &tokenInfo = tokenInfos[i.second->idxNameToken];
+			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+			tokenInfo.semanticType = SemanticType::Var;
+		}
+
 		slxfmt::VarDesc vad = {};
 
 		//
@@ -278,6 +285,13 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 
 	for (auto &i : funcs) {
 		for (auto &j : i.second->overloadingRegistries) {
+			if (j->idxNameToken != SIZE_MAX) {
+				// Update corresponding semantic information.
+				auto &tokenInfo = tokenInfos[j->idxNameToken];
+				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+				tokenInfo.semanticType = SemanticType::Fn;
+			}
+
 			pushMajorContext();
 
 			curMajorContext.mergeGenericParams(j->genericParams);
@@ -287,8 +301,9 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 			{
 				deque<shared_ptr<TypeNameNode>> argTypes;
 
-				for (auto &k : j->params) {
-					argTypes.push_back(k->type);
+				argTypes.resize(j->params.size());
+				for (size_t k = 0; k < j->params.size(); ++k) {
+					argTypes[k] = j->params[k]->type;
 				}
 
 				mangledFnName = mangleName(i.first, argTypes, false);
@@ -309,6 +324,24 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 			compiledFn->genericParams = j->genericParams;
 			compiledFn->genericParamIndices = j->genericParamIndices;
 			compiledFn->access = j->access;
+
+			for (auto& k : j->params) {
+				if (k->idxNameToken != SIZE_MAX) {
+					// Update corresponding semantic information.
+					auto &tokenInfo = tokenInfos[k->idxNameToken];
+					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+					tokenInfo.semanticType = SemanticType::Param;
+				}
+			}
+
+			for (auto& k : j->genericParams) {
+				if (k->idxNameToken != SIZE_MAX) {
+					// Update corresponding semantic information.
+					auto &tokenInfo = tokenInfos[k->idxNameToken];
+					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+					tokenInfo.semanticType = SemanticType::TypeParam;
+				}
+			}
 
 			curFn = compiledFn;
 
@@ -398,6 +431,13 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 
 	_write(os, (uint32_t)classes.size());
 	for (auto &i : classes) {
+		if (i.second->idxNameToken != SIZE_MAX) {
+			// Update corresponding semantic information.
+			auto &tokenInfo = tokenInfos[i.second->idxNameToken];
+			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+			tokenInfo.semanticType = SemanticType::Class;
+		}
+
 		pushMajorContext();
 
 		{
@@ -430,8 +470,15 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		_write(os, ctd);
 		_write(os, i.first.data(), i.first.length());
 
-		for (auto &j : i.second->genericParams)
+		for (auto &j : i.second->genericParams) {
+			if (j->idxNameToken != SIZE_MAX) {
+				// Update corresponding semantic information.
+				auto &tokenInfo = tokenInfos[j->idxNameToken];
+				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+				tokenInfo.semanticType = SemanticType::TypeParam;
+			}
 			compileGenericParam(os, j);
+		}
 
 		if (i.second->parentClass)
 			compileRef(os, getFullName((MemberNode *)resolveCustomTypeName((CustomTypeNameNode *)i.second->parentClass.get()).get()));
@@ -446,6 +493,13 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 
 	_write(os, (uint32_t)interfaces.size());
 	for (auto &i : interfaces) {
+		if (i.second->idxNameToken != SIZE_MAX) {
+			// Update corresponding semantic information.
+			auto &tokenInfo = tokenInfos[i.second->idxNameToken];
+			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+			tokenInfo.semanticType = SemanticType::Interface;
+		}
+
 		pushMajorContext();
 
 		// curMajorContext = MajorContext();
@@ -464,8 +518,15 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		_write(os, itd);
 		_write(os, i.first.data(), i.first.length());
 
-		for (size_t j = 0; j < i.second->genericParams.size(); ++j)
-			compileGenericParam(os, i.second->genericParams[j]);
+		for (auto &j : i.second->genericParams) {
+			if (j->idxNameToken != SIZE_MAX) {
+				// Update corresponding semantic information.
+				auto &tokenInfo = tokenInfos[j->idxNameToken];
+				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+				tokenInfo.semanticType = SemanticType::TypeParam;
+			}
+			compileGenericParam(os, j);
+		}
 
 		for (auto j : i.second->parentInterfaces) {
 			compileRef(os, static_pointer_cast<CustomTypeNameNode>(j)->ref);
@@ -478,6 +539,13 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 
 	_write(os, (uint32_t)traits.size());
 	for (auto &i : traits) {
+		if (i.second->idxNameToken != SIZE_MAX) {
+			// Update corresponding semantic information.
+			auto &tokenInfo = tokenInfos[i.second->idxNameToken];
+			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+			tokenInfo.semanticType = SemanticType::Interface;
+		}
+
 		pushMajorContext();
 
 		// curMajorContext = MajorContext();
@@ -496,8 +564,15 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		_write(os, ttd);
 		_write(os, i.first.data(), i.first.length());
 
-		for (size_t j = 0; j < i.second->genericParams.size(); ++j)
-			compileGenericParam(os, i.second->genericParams[j]);
+		for (auto &j : i.second->genericParams) {
+			if (j->idxNameToken != SIZE_MAX) {
+				// Update corresponding semantic information.
+				auto &tokenInfo = tokenInfos[j->idxNameToken];
+				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+				tokenInfo.semanticType = SemanticType::TypeParam;
+			}
+			compileGenericParam(os, j);
+		}
 
 		for (auto j : i.second->parentTraits) {
 			compileRef(os, static_pointer_cast<CustomTypeNameNode>(j)->ref);

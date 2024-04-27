@@ -61,7 +61,7 @@ class AnotherDerived(Derived) {
 	}
 
 	i32 getZ() {
-		return this.y;
+		return this.z;
 	}
 }
 

@@ -402,13 +402,6 @@ shared_ptr<ExprNode> Compiler::evalConstExpr(shared_ptr<ExprNode> expr) {
 					return {};
 			return e;
 		}
-		case ExprType::Map: {
-			auto e = static_pointer_cast<MapExprNode>(expr);
-			for (auto i : e->pairs)
-				if ((!evalConstExpr(i.first)) || (!evalConstExpr(i.second)))
-					return {};
-			return e;
-		}
 		case ExprType::Ref: {
 			auto e = static_pointer_cast<RefExprNode>(expr);
 

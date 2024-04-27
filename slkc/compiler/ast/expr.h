@@ -28,7 +28,6 @@ namespace slake {
 			Bool,	 // bool Literal
 
 			Array,	// Array
-			Map,	// Map
 
 			Call,	// Call
 			Await,	// Await
@@ -188,18 +187,26 @@ namespace slake {
 			virtual ExprType getExprType() const override { return ExprType::Match; }
 		};
 
-		template <typename T, ExprType xt>
-		class LiteralExprNode : public ExprNode {
+		class BasicLiteralExprNode : public ExprNode {
 		private:
 			Location _loc;
 
 		public:
-			T data;
+			size_t idxToken = SIZE_MAX;
 
-			inline LiteralExprNode(Location loc, T data) : _loc(loc), data(data) {}
-			virtual ~LiteralExprNode() = default;
+			inline BasicLiteralExprNode(Location loc, size_t idxToken) : _loc(loc), idxToken(idxToken) {}
+			virtual ~BasicLiteralExprNode() = default;
 
 			virtual inline Location getLocation() const override { return _loc; }
+		};
+
+		template <typename T, ExprType xt>
+		class LiteralExprNode : public BasicLiteralExprNode {
+		public:
+			T data;
+
+			inline LiteralExprNode(Location loc, T data, size_t idxToken = SIZE_MAX) : BasicLiteralExprNode(loc, idxToken), data(data) {}
+			virtual ~LiteralExprNode() = default;
 
 			virtual ExprType getExprType() const override { return xt; }
 		};
@@ -273,22 +280,6 @@ namespace slake {
 			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual ExprType getExprType() const override { return ExprType::Array; }
-		};
-
-		class MapExprNode : public ExprNode {
-		private:
-			Location _loc;
-
-		public:
-			deque<pair<shared_ptr<ExprNode>, shared_ptr<ExprNode>>> pairs;
-
-			inline MapExprNode(Location loc, deque<pair<shared_ptr<ExprNode>, shared_ptr<ExprNode>>> pairs)
-				: _loc(loc), pairs(pairs) {}
-			virtual ~MapExprNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
-
-			virtual ExprType getExprType() const override { return ExprType::Map; }
 		};
 
 		class StmtNode;

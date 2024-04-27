@@ -18,12 +18,16 @@ namespace slake {
 			string name;
 			shared_ptr<ExprNode> initValue;
 
-			inline VarNode(const VarNode& other) : MemberNode(other) {
+			size_t idxNameToken;
+
+			inline VarNode(const VarNode &other) : MemberNode(other) {
 				_loc = other._loc;
 
 				type = other.type->duplicate<TypeNameNode>();
 				name = other.name;
 				initValue = other.initValue;
+
+				idxNameToken = other.idxNameToken;
 			}
 			inline VarNode(
 				Location loc,
@@ -31,12 +35,14 @@ namespace slake {
 				AccessModifier access,
 				shared_ptr<TypeNameNode> type,
 				string name,
-				shared_ptr<ExprNode> initValue)
+				shared_ptr<ExprNode> initValue,
+				size_t idxNameToken)
 				: MemberNode(compiler, access),
 				  _loc(loc),
 				  type(type),
 				  name(name),
-				  initValue(initValue) {
+				  initValue(initValue),
+				  idxNameToken(idxNameToken) {
 			}
 			virtual ~VarNode() = default;
 

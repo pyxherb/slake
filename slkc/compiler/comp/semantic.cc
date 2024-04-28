@@ -2,9 +2,11 @@
 
 using namespace slake::slkc;
 
-void Compiler::updateCorrespondingTokenInfo(
-	shared_ptr<TypeNameNode> targetTypeName,
-	CompletionContext completionContext) {
+void Compiler::updateCompletionContext(size_t idxToken, CompletionContext completionContext) {
+	tokenInfos[idxToken].completionContext = completionContext;
+}
+
+void Compiler::updateCompletionContext(shared_ptr<TypeNameNode> targetTypeName, CompletionContext completionContext) {
 	switch (targetTypeName->getTypeId()) {
 		case Type::I8:
 		case Type::I16:
@@ -24,18 +26,17 @@ void Compiler::updateCorrespondingTokenInfo(
 			auto t = static_pointer_cast<BasicSimpleTypeNameNode>(targetTypeName);
 			assert(t->idxToken != SIZE_MAX);
 			tokenInfos[t->idxToken].completionContext = completionContext;
-			tokenInfos[t->idxToken].tokenContext = TokenContext(curFn, curMajorContext);
 			break;
 		}
 		case Type::Array: {
 			auto t = static_pointer_cast<ArrayTypeNameNode>(targetTypeName);
-			updateCorrespondingTokenInfo(t->elementType, completionContext);
+			updateCompletionContext(t->elementType, completionContext);
 			break;
 		}
 		case Type::Custom: {
 			auto t = static_pointer_cast<CustomTypeNameNode>(targetTypeName);
 
-			updateCorrespondingTokenInfo(t->ref, SemanticType::Type, completionContext);
+			updateCompletionContext(t->ref, completionContext);
 			break;
 		}
 		default:
@@ -43,17 +44,13 @@ void Compiler::updateCorrespondingTokenInfo(
 	}
 }
 
-void Compiler::updateCorrespondingTokenInfo(const Ref &ref, SemanticType semanticType, CompletionContext completionContext) {
-	deque<pair<Ref, shared_ptr<AstNode>>> partsOut;
-	if (!resolveRef(ref, partsOut))
-		return;
-
-	if (semanticType != SemanticType::None) {
-		for (size_t i = 0; i < ref.size(); ++i) {
-			if (ref[i].idxToken != SIZE_MAX) {
-				tokenInfos[ref[i].idxToken].semanticType = semanticType;
-				tokenInfos[ref[i].idxToken].completionContext = completionContext;
-			}
+void Compiler::updateCompletionContext(const Ref &ref, CompletionContext completionContext) {
+	for (size_t i = 0; i < ref.size(); ++i) {
+		if (ref[i].idxAccessOpToken != SIZE_MAX) {
+			tokenInfos[ref[i].idxAccessOpToken].completionContext = completionContext;
+		}
+		if (ref[i].idxToken != SIZE_MAX) {
+			tokenInfos[ref[i].idxToken].completionContext = completionContext;
 		}
 	}
 }

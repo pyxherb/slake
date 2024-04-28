@@ -141,7 +141,10 @@ namespace slake {
 			StringLiteral,
 			RawStringLiteral,
 
-			Id
+			Id,
+
+			Indent,
+			Newline
 		};
 
 		const char *getTokenName(TokenId tokenId);

@@ -1149,7 +1149,15 @@ shared_ptr<StmtNode> Parser::parseStmt() {
 			}
 		}
 		auto expr = parseExpr();
-		expectToken(lexer->nextToken(), TokenId::Semicolon);
+		if (auto &token = lexer->peekToken(); token.tokenId != TokenId::Semicolon) {
+			compiler->messages.push_back(
+				Message(
+					token.beginLocation,
+					MessageType::Error,
+					"Expecting ;"));
+			return make_shared<BadExprStmtNode>(expr->getLocation(), expr);
+		}
+		lexer->nextToken();
 		return make_shared<ExprStmtNode>(expr);
 	} catch (SyntaxError e) {
 		compiler->messages.push_back(

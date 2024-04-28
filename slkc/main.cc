@@ -139,6 +139,7 @@ int main(int argc, char **argv) {
 					return -1;
 				}
 
+				bool foundErrors = false;
 				for (auto &i : compiler->messages) {
 					const char *msgType = "<Unknown Message Type>";
 					switch (i.type) {
@@ -152,6 +153,7 @@ int main(int argc, char **argv) {
 							msgType = "Warn";
 							break;
 						case MessageType::Error:
+							foundErrors = true;
 							msgType = "error";
 							break;
 					}
@@ -161,6 +163,9 @@ int main(int argc, char **argv) {
 
 				is.close();
 				os.close();
+
+				if (foundErrors)
+					return -1;
 				break;
 			}
 			case AppAction::Dump: {

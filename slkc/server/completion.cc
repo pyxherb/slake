@@ -177,7 +177,7 @@ void slake::slkc::Document::getCompletionMemberItems(
 			ModuleNode *node = (ModuleNode *)m;
 			getCompletionMemberItems(node->scope.get(), completionItems, targetNodeTypes);
 
-			//if (!node->parentModule.expired())
+			// if (!node->parentModule.expired())
 			//	getCompletionMemberItems(node->parentModule.lock().get(), completionItems, targetNodeTypes);
 			break;
 		}
@@ -209,197 +209,166 @@ std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(Location lo
 	}
 	*/
 
-	if (auto cm = tokenInfo.tokenContext.curScope; cm) {
-		getCompletionMemberItems(
-			cm.get(),
-			completionItems,
-			{ NodeType::Var,
-				NodeType::Fn,
-				NodeType::GenericParam,
-				NodeType::Class,
-				NodeType::Interface,
-				NodeType::Trait,
-				NodeType::Module });
+	switch (tokenInfo.completionContext) {
+		case CompletionContext::TopLevel: {
+			if (tokenInfo.tokenContext.curScope)
+				getCompletionMemberItems(
+					tokenInfo.tokenContext.curScope.get(),
+					completionItems,
+					{ NodeType::GenericParam,
+						NodeType::Class,
+						NodeType::Interface,
+						NodeType::Trait,
+						NodeType::Module });
 
-		for (auto &i : tokenInfo.tokenContext.localVars) {
-			CompletionItem item = {};
-
-			item.label = i.first;
-			item.type = CompletionItemType::LocalVar;
-
-			completionItems.push_back(item);
+			break;
 		}
-
-		for (auto &i : tokenInfo.tokenContext.paramIndices) {
-			CompletionItem item = {};
-
-			item.label = i.first;
-			item.type = CompletionItemType::GenericParam;
-
-			completionItems.push_back(item);
+		case CompletionContext::Class: {
+			if (tokenInfo.tokenContext.curScope)
+				getCompletionMemberItems(
+					tokenInfo.tokenContext.curScope.get(),
+					completionItems,
+					{ NodeType::GenericParam,
+						NodeType::Class,
+						NodeType::Interface,
+						NodeType::Trait,
+						NodeType::Module });
+			break;
 		}
-	} else {
-		switch (tokenInfo.completionContext) {
-			case CompletionContext::TopLevel: {
-				if (tokenInfo.tokenContext.curScope)
-					getCompletionMemberItems(
-						tokenInfo.tokenContext.curScope.get(),
-						completionItems,
-						{ NodeType::GenericParam,
-							NodeType::Class,
-							NodeType::Interface,
-							NodeType::Trait,
-							NodeType::Module });
-
-				break;
-			}
-			case CompletionContext::Class: {
-				if (tokenInfo.tokenContext.curScope)
-					getCompletionMemberItems(
-						tokenInfo.tokenContext.curScope.get(),
-						completionItems,
-						{ NodeType::GenericParam,
-							NodeType::Class,
-							NodeType::Interface,
-							NodeType::Trait,
-							NodeType::Module });
-				break;
-			}
-			case CompletionContext::Interface: {
-				if (tokenInfo.tokenContext.curScope)
-					getCompletionMemberItems(
-						tokenInfo.tokenContext.curScope.get(),
-						completionItems,
-						{ NodeType::GenericParam,
-							NodeType::Class,
-							NodeType::Interface,
-							NodeType::Trait,
-							NodeType::Module });
-				break;
-			}
-			case CompletionContext::Trait: {
-				if (tokenInfo.tokenContext.curScope)
-					getCompletionMemberItems(
-						tokenInfo.tokenContext.curScope.get(),
-						completionItems,
-						{ NodeType::GenericParam,
-							NodeType::Class,
-							NodeType::Interface,
-							NodeType::Trait,
-							NodeType::Module });
-				break;
-			}
-			case CompletionContext::Stmt: {
-				if (tokenInfo.tokenContext.curScope)
-					getCompletionMemberItems(
-						tokenInfo.tokenContext.curScope.get(),
-						completionItems,
-						{ NodeType::Var,
-							NodeType::Fn,
-							NodeType::GenericParam,
-							NodeType::Class,
-							NodeType::Interface,
-							NodeType::Trait,
-							NodeType::Module });
-
-				for (auto &i : tokenInfo.tokenContext.localVars) {
-					CompletionItem item = {};
-
-					item.label = i.first;
-					item.type = CompletionItemType::LocalVar;
-
-					completionItems.push_back(item);
-				}
-
-				for (auto &i : tokenInfo.tokenContext.paramIndices) {
-					CompletionItem item = {};
-
-					item.label = i.first;
-					item.type = CompletionItemType::GenericParam;
-
-					completionItems.push_back(item);
-				}
-				break;
-			}
-			case CompletionContext::Import: {
-				if (tokenInfo.tokenContext.curScope)
-					getCompletionMemberItems(
-						tokenInfo.tokenContext.curScope.get(),
-						completionItems,
-						{ NodeType::Var,
-							NodeType::Fn,
-							NodeType::GenericParam,
-							NodeType::Class,
-							NodeType::Interface,
-							NodeType::Trait,
-							NodeType::Module });
-				break;
-			}
-			case CompletionContext::Type: {
-				if (tokenInfo.tokenContext.curScope)
-					getCompletionMemberItems(
-						tokenInfo.tokenContext.curScope.get(),
-						completionItems,
-						{ NodeType::GenericParam,
-							NodeType::Class,
-							NodeType::Interface,
-							NodeType::Trait,
-							NodeType::Module });
-				break;
-			}
-			case CompletionContext::Name:
-				return {};
-			case CompletionContext::Expr: {
-				if (tokenInfo.tokenContext.curScope)
-					getCompletionMemberItems(
-						tokenInfo.tokenContext.curScope.get(),
-						completionItems,
-						{ NodeType::Var,
-							NodeType::Fn,
-							NodeType::GenericParam,
-							NodeType::Class,
-							NodeType::Interface,
-							NodeType::Trait,
-							NodeType::Module });
-
-				for (auto &i : tokenInfo.tokenContext.localVars) {
-					CompletionItem item = {};
-
-					item.label = i.first;
-					item.type = CompletionItemType::LocalVar;
-
-					completionItems.push_back(item);
-				}
-
-				for (auto &i : tokenInfo.tokenContext.paramIndices) {
-					CompletionItem item = {};
-
-					item.label = i.first;
-					item.type = CompletionItemType::GenericParam;
-
-					completionItems.push_back(item);
-				}
-				break;
-			}
-			case CompletionContext::MemberAccess: {
-				if (tokenInfo.tokenContext.curScope)
-					getCompletionMemberItems(
-						tokenInfo.tokenContext.curScope.get(),
-						completionItems,
-						{ NodeType::Var,
-							NodeType::Fn,
-							NodeType::GenericParam,
-							NodeType::Class,
-							NodeType::Interface,
-							NodeType::Trait,
-							NodeType::Module });
-				break;
-			}
-			case CompletionContext::None:
-				break;
-			default:
-				assert(false);
+		case CompletionContext::Interface: {
+			if (tokenInfo.tokenContext.curScope)
+				getCompletionMemberItems(
+					tokenInfo.tokenContext.curScope.get(),
+					completionItems,
+					{ NodeType::GenericParam,
+						NodeType::Class,
+						NodeType::Interface,
+						NodeType::Trait,
+						NodeType::Module });
+			break;
 		}
+		case CompletionContext::Trait: {
+			if (tokenInfo.tokenContext.curScope)
+				getCompletionMemberItems(
+					tokenInfo.tokenContext.curScope.get(),
+					completionItems,
+					{ NodeType::GenericParam,
+						NodeType::Class,
+						NodeType::Interface,
+						NodeType::Trait,
+						NodeType::Module });
+			break;
+		}
+		case CompletionContext::Stmt: {
+			if (tokenInfo.tokenContext.curScope)
+				getCompletionMemberItems(
+					tokenInfo.tokenContext.curScope.get(),
+					completionItems,
+					{ NodeType::Var,
+						NodeType::Fn,
+						NodeType::GenericParam,
+						NodeType::Class,
+						NodeType::Interface,
+						NodeType::Trait,
+						NodeType::Module });
+
+			for (auto &i : tokenInfo.tokenContext.localVars) {
+				CompletionItem item = {};
+
+				item.label = i.first;
+				item.type = CompletionItemType::LocalVar;
+
+				completionItems.push_back(item);
+			}
+
+			for (auto &i : tokenInfo.tokenContext.paramIndices) {
+				CompletionItem item = {};
+
+				item.label = i.first;
+				item.type = CompletionItemType::GenericParam;
+
+				completionItems.push_back(item);
+			}
+			break;
+		}
+		case CompletionContext::Import: {
+			if (tokenInfo.tokenContext.curScope)
+				getCompletionMemberItems(
+					tokenInfo.tokenContext.curScope.get(),
+					completionItems,
+					{ NodeType::Var,
+						NodeType::Fn,
+						NodeType::GenericParam,
+						NodeType::Class,
+						NodeType::Interface,
+						NodeType::Trait,
+						NodeType::Module });
+			break;
+		}
+		case CompletionContext::Type: {
+			if (tokenInfo.tokenContext.curScope)
+				getCompletionMemberItems(
+					tokenInfo.tokenContext.curScope.get(),
+					completionItems,
+					{ NodeType::GenericParam,
+						NodeType::Class,
+						NodeType::Interface,
+						NodeType::Trait,
+						NodeType::Module });
+			break;
+		}
+		case CompletionContext::Name:
+			return {};
+		case CompletionContext::Expr: {
+			if (tokenInfo.tokenContext.curScope)
+				getCompletionMemberItems(
+					tokenInfo.tokenContext.curScope.get(),
+					completionItems,
+					{ NodeType::Var,
+						NodeType::Fn,
+						NodeType::GenericParam,
+						NodeType::Class,
+						NodeType::Interface,
+						NodeType::Trait,
+						NodeType::Module });
+
+			for (auto &i : tokenInfo.tokenContext.localVars) {
+				CompletionItem item = {};
+
+				item.label = i.first;
+				item.type = CompletionItemType::LocalVar;
+
+				completionItems.push_back(item);
+			}
+
+			for (auto &i : tokenInfo.tokenContext.paramIndices) {
+				CompletionItem item = {};
+
+				item.label = i.first;
+				item.type = CompletionItemType::GenericParam;
+
+				completionItems.push_back(item);
+			}
+			break;
+		}
+		case CompletionContext::MemberAccess: {
+			if (tokenInfo.tokenContext.curScope)
+				getCompletionMemberItems(
+					tokenInfo.tokenContext.curScope.get(),
+					completionItems,
+					{ NodeType::Var,
+						NodeType::Fn,
+						NodeType::GenericParam,
+						NodeType::Class,
+						NodeType::Interface,
+						NodeType::Trait,
+						NodeType::Module });
+			break;
+		}
+		case CompletionContext::None:
+			break;
+		default:
+			assert(false);
 	}
 
 	return completionItems;

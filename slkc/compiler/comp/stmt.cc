@@ -36,10 +36,10 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 						"No initializer was found, unable to deduce the type" });
 
 			foundInitValue:
-				updateCorrespondingTokenInfo(s->type, CompletionContext::Type);
+				updateCompletionContext(s->type, CompletionContext::Type);
 				s->type = deducedType;
 			} else
-				updateCorrespondingTokenInfo(s->type, CompletionContext::Type);
+				updateCompletionContext(s->type, CompletionContext::Type);
 
 			for (auto &i : s->varDefs) {
 				if (curMajorContext.curMinorContext.localVars.count(i.first))
@@ -70,6 +70,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 					auto &tokenInfo = tokenInfos[i.second.idxNameToken];
 					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 					tokenInfo.semanticType = SemanticType::Var;
+					tokenInfo.completionContext = CompletionContext::Name;
 				}
 			}
 
@@ -406,6 +407,14 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 				tokenInfos[i].completionContext = CompletionContext::Stmt;
 				tokenInfos[i].tokenContext = TokenContext(curFn, curMajorContext);
 			}
+			break;
+		}
+		case StmtType::BadExpr: {
+			auto s = static_pointer_cast<BadExprStmtNode>(stmt);
+
+			// Compile the expression to fill token information for completion.
+			compileExpr(s->expr);
+
 			break;
 		}
 		default:

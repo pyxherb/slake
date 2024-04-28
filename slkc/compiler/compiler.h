@@ -81,7 +81,7 @@ namespace slake {
 			deque<shared_ptr<TypeNameNode>> argTypes;
 			bool isArgTypesSet = false;
 
-			shared_ptr<AstNode> evalDest, thisDest;
+			shared_ptr<AstNode> evalDest, thisDest;;
 		};
 
 		/// @brief Block level context
@@ -207,8 +207,6 @@ namespace slake {
 			CompletionContext completionContext = CompletionContext::None;
 
 			struct {
-				shared_ptr<TypeNameNode> type;
-
 				std::string name;
 
 				Ref ref;
@@ -291,7 +289,6 @@ namespace slake {
 				bool isConst);
 
 			void _getFullName(MemberNode *member, Ref &ref);
-			Ref getFullName(MemberNode *member);
 
 			void compileExpr(shared_ptr<ExprNode> expr);
 			inline void compileExpr(shared_ptr<ExprNode> expr, EvalPurpose evalPurpose, shared_ptr<AstNode> evalDest, shared_ptr<AstNode> thisDest = {}) {
@@ -435,8 +432,9 @@ namespace slake {
 			// Generic end
 			//
 
-			void updateCorrespondingTokenInfo(shared_ptr<TypeNameNode> targetTypeName, CompletionContext completionContext);
-			void updateCorrespondingTokenInfo(const Ref &ref, SemanticType semanticType, CompletionContext completionContext);
+			void updateCompletionContext(size_t idxToken, CompletionContext completionContext);
+			void updateCompletionContext(shared_ptr<TypeNameNode> targetTypeName, CompletionContext completionContext);
+			void updateCompletionContext(const Ref &ref, CompletionContext completionContext);
 
 			friend class AstVisitor;
 			friend class MemberNode;
@@ -476,7 +474,11 @@ namespace slake {
 				options = CompilerOptions();
 				flags = 0;
 				lexer.reset();
+
+				_genericCacheDir.clear();
 			}
+
+			Ref getFullName(MemberNode *member);
 		};
 	}
 }

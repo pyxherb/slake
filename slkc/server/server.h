@@ -76,14 +76,16 @@ namespace slake {
 			DocumentUpdate,
 			DocumentClose,
 			Completion,
-			SemanticTokens
+			SemanticTokens,
+			Hover
 		};
 
 		enum class ResponseType {
 			DocumentOk = 0,
 			DocumentError,
 			Completion,
-			SemanticTokens
+			SemanticTokens,
+			Hover
 		};
 
 		class Server {

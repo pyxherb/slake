@@ -2,27 +2,33 @@
 
 using namespace slake::slkc;
 
-shared_ptr<Scope> Compiler::scopeOf(AstNode* node) {
+shared_ptr<Scope> Compiler::scopeOf(AstNode *node) {
 	switch (node->getNodeType()) {
 		case NodeType::Class:
-			return ((ClassNode*)node)->scope;
+			return ((ClassNode *)node)->scope;
 		case NodeType::Interface:
-			return ((InterfaceNode*)node)->scope;
+			return ((InterfaceNode *)node)->scope;
 		case NodeType::Trait:
-			return ((TraitNode*)node)->scope;
+			return ((TraitNode *)node)->scope;
 		case NodeType::Module:
-			return ((ModuleNode*)node)->scope;
+			return ((ModuleNode *)node)->scope;
 		case NodeType::TypeName: {
-			auto t = ((TypeNameNode*)node);
-			if (t->getTypeId()==Type::Custom)
-				return scopeOf(resolveCustomTypeName((CustomTypeNameNode*)t).get());
+			auto t = ((TypeNameNode *)node);
+			if (t->getTypeId() == Type::Custom)
+				return scopeOf(resolveCustomTypeName((CustomTypeNameNode *)t).get());
 			return {};
 		}
 		case NodeType::Alias: {
 			deque<pair<Ref, shared_ptr<AstNode>>> resolvedParts;
 
-			resolveRef(((AliasNode*)node)->target, resolvedParts);
+			resolveRef(((AliasNode *)node)->target, resolvedParts);
 			return scopeOf(resolvedParts.back().second.get());
+		}
+		case NodeType::Var: {
+			auto n = (VarNode *)node;
+			if (n->type->getTypeId() == Type::Custom)
+				return scopeOf(resolveCustomTypeName((CustomTypeNameNode *)n->type.get()).get());
+			return {};
 		}
 		default:
 			return {};

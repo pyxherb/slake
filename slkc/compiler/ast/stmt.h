@@ -15,19 +15,21 @@
 namespace slake {
 	namespace slkc {
 		enum class StmtType : uint8_t {
-			Expr = 0,
-			VarDef,
-			Break,
-			Continue,
-			For,
-			While,
-			Return,
-			Yield,
-			If,
-			Try,
-			Switch,
-			CodeBlock,
-			Bad
+			Expr = 0,	// Expression
+			VarDef,		// (Local) Variable definition
+			Break,		// Break
+			Continue,	// Continue
+			For,		// For
+			While,		// While
+			Return,		// Return
+			Yield,		// Yield
+			If,			// If
+			Try,		// Try
+			Switch,		// Switch
+			CodeBlock,	// Code block
+
+			Bad,	 // Bad statement - unrecognized statement type
+			BadExpr	 // Bad expression - malformed expression statements, e.g. expression statements without ending semicolon.
 		};
 
 		class StmtNode : public AstNode {
@@ -75,6 +77,25 @@ namespace slake {
 			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual inline StmtType getStmtType() const override { return StmtType::Bad; }
+		};
+
+		class BadExprStmtNode : public StmtNode {
+		private:
+			Location _loc;
+
+		public:
+			shared_ptr<ExprNode> expr;
+
+			inline BadExprStmtNode(
+				Location loc,
+				shared_ptr<ExprNode> expr)
+				: _loc(loc),
+				  expr(expr) {}
+			virtual ~BadExprStmtNode() = default;
+
+			virtual inline Location getLocation() const override { return _loc; }
+
+			virtual inline StmtType getStmtType() const override { return StmtType::BadExpr; }
 		};
 
 		class ExprStmtNode : public StmtNode {

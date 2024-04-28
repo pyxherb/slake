@@ -17,6 +17,7 @@ class AnotherGeneric<T, U> {
 
 class Test {
 	pub i32 x;
+	pub Test lab;
 
 	pub operator delete() {
 		return;
@@ -74,6 +75,7 @@ pub i32 main() {
 	x.getX();
 
 	Test test = new Derived(50);
+	test.lab.lab;
 
 	while(test.x = test.x - 1) {
 		yield test.getX();

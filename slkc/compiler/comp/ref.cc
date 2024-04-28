@@ -93,23 +93,27 @@ bool Compiler::resolveRefWithScope(Scope *scope, Ref ref, deque<pair<Ref, shared
 /// @param ref Reference to be resolved.
 /// @return true if succeeded, false otherwise.
 bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, bool isTopLevel) {
+	if (ref[0].name == "lab")
+		puts("");
 	// Update corresponding semantic information.
 	{
 		TokenContext tokenContext = TokenContext(curFn, curMajorContext);
 		tokenContext.curScope = scope->shared_from_this();
 
-		if (!isTopLevel)
-			tokenContext = tokenContext.toMemberAccessContext();
-
 		if (ref[0].idxAccessOpToken != SIZE_MAX) {
 			auto &precedingAccessOpTokenInfo = tokenInfos[ref[0].idxAccessOpToken];
 			precedingAccessOpTokenInfo.tokenContext = tokenContext;
+
+			if (!isTopLevel)
+				precedingAccessOpTokenInfo.completionContext = CompletionContext::MemberAccess;
 		}
 
 		if (ref[0].idxToken != SIZE_MAX) {
 			auto &tokenInfo = tokenInfos[ref[0].idxToken];
-			// tokenInfo.completionContext = CompletionContext::MemberAccess;
 			tokenInfo.tokenContext = tokenContext;
+
+			if (!isTopLevel)
+				tokenInfo.completionContext = CompletionContext::MemberAccess;
 		}
 	}
 
@@ -147,7 +151,6 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 		// Update corresponding semantic information.
 		{
 			auto &tokenInfo = tokenInfos[ref[0].idxToken];
-			// tokenInfo.completionContext = CompletionContext::MemberAccess;
 			tokenInfo.semanticInfo.correspondingMember = m;
 
 			switch (m->getNodeType()) {

@@ -10,7 +10,7 @@ namespace slake {
 		class MemberNode : public AstNode {
 		public:
 			AccessModifier access = 0;
-			MemberNode *parent = nullptr;
+			MemberNode *parent = nullptr; // We don't use shared_ptr - or it will cause problems about bad_weak_ptr exception.
 
 			Compiler *compiler = nullptr;
 

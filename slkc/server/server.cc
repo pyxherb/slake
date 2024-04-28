@@ -350,6 +350,105 @@ slake::slkc::Server::Server() {
 		response.status = httplib::NotFound_404;
 		return;
 	});
+	server.Post("/hover", [this](const httplib::Request &request, httplib::Response &response) {
+		puts("/hover");
+
+		Json::Value rootValue;
+
+		Json::Reader reader;
+
+		string uri;
+		Location loc;
+
+		if (!reader.parse(request.body, rootValue)) {
+			response.body = "Error parsing request";
+			goto badRequest;
+		}
+
+		if (!rootValue.isMember("uri")) {
+			response.body = "Missing document URI";
+			goto badRequest;
+		}
+		if (!rootValue["uri"].isString()) {
+			response.body = "Invalid document URI";
+			goto badRequest;
+		}
+		uri = rootValue["uri"].asString();
+
+		if (!rootValue.isMember("location")) {
+			response.body = "Missing document location";
+			goto badRequest;
+		}
+		if (!jsonToLocation(rootValue["location"], loc)) {
+			response.body = "Invalid document location";
+			goto badRequest;
+		}
+
+		if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
+			std::shared_ptr<Document> doc = it->second;
+			std::lock_guard<mutex> docMutexGuard(doc->mutex);
+
+			Json::Value responseValue;
+
+			responseValue["type"] = (uint32_t)ResponseType::Hover;
+
+			Json::Value &responseBodyValue = responseValue["body"];
+
+			size_t idxToken = doc->compiler->lexer.getTokenByLocation(loc);
+
+			if (idxToken == SIZE_MAX)
+				goto badRequest;
+
+			TokenInfo &tokenInfo = doc->compiler->tokenInfos[idxToken];
+
+			responseBodyValue["uri"] = uri;
+
+			if (tokenInfo.semanticInfo.correspondingMember) {
+				auto &m = tokenInfo.semanticInfo.correspondingMember;
+
+				switch (m->getNodeType()) {
+					case NodeType::Var:
+						responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((VarNode*)m.get()), doc->compiler.get());
+						break;
+					case NodeType::LocalVar:
+						responseBodyValue["content"] = "(Local variable)";
+						break;
+					case NodeType::Fn:
+						responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((FnNode *)m.get()), doc->compiler.get());
+						break;
+					case NodeType::GenericParam:
+						responseBodyValue["content"] = "(Generic parameter) " +((GenericParamNode *)m.get())->name;
+						break;
+					case NodeType::Class:
+						responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((ClassNode *)m.get()), doc->compiler.get());
+						break;
+					case NodeType::Interface:
+						responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((InterfaceNode *)m.get()), doc->compiler.get());
+						break;
+					case NodeType::Trait:
+						responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((TraitNode *)m.get()), doc->compiler.get());
+						break;
+					case NodeType::Module:
+						responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((ModuleNode *)m.get()), doc->compiler.get());
+						break;
+				}
+			}
+
+			response.body = responseValue.toStyledString();
+		} else {
+			response.body = "No such opened file";
+			goto notFound;
+		}
+		return;
+
+	badRequest:
+		response.status = httplib::BadRequest_400;
+		return;
+
+	notFound:
+		response.status = httplib::NotFound_404;
+		return;
+	});
 	server.Get("/stop", [this](const httplib::Request &request, httplib::Response &response) {
 		server.stop();
 		response.status = httplib::OK_200;

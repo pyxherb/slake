@@ -24,6 +24,15 @@ Compiler::~Compiler() {
 }
 
 void Compiler::compile(std::istream &is, std::ostream &os, bool isImport) {
+	//
+	// Clear the previous generic cache.
+	// Note that we don't clear the generic cache after every compilation immediately,
+	// because this will cause some generic instances referenced as parent value by member values
+	// to be expired, this will influence services that analyzes the final compilation status,
+	// such as language server.
+	//
+	_genericCacheDir.clear();
+
 	lexer.reset();
 
 	std::string s;
@@ -582,8 +591,6 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 
 		popMajorContext();
 	}
-
-	_genericCacheDir.clear();
 }
 
 void Compiler::compileTypeName(std::ostream &fs, shared_ptr<TypeNameNode> typeName) {

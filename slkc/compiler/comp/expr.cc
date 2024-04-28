@@ -1129,6 +1129,8 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 		case ExprType::Ref: {
 			auto e = static_pointer_cast<RefExprNode>(expr);
 
+			updateCompletionContext(e->ref, CompletionContext::Expr);
+
 			deque<pair<Ref, shared_ptr<AstNode>>> resolvedParts;
 			if (!resolveRef(e->ref, resolvedParts))
 				// The default case is already exist.
@@ -1136,8 +1138,6 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 					{ e->getLocation(),
 						MessageType::Error,
 						"Identifier not found: `" + to_string(e->ref, this) + "'" });
-
-			updateCorrespondingTokenInfo(e->ref, SemanticType::None, CompletionContext::Expr);
 
 			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::Call) {
 				if (isDynamicMember(resolvedParts.back().second)) {

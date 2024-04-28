@@ -1181,11 +1181,19 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 				for (size_t i = 1; i < resolvedParts.size(); ++i) {
 					switch (resolvedParts[i].second->getNodeType()) {
 						case NodeType::Var: {
+							;
 							curFn->insertIns(
 								Opcode::RLOAD,
 								make_shared<RegRefNode>(tmpRegIndex),
 								make_shared<RegRefNode>(tmpRegIndex, true),
 								make_shared<RefExprNode>(resolvedParts[i].first));
+
+							// Intermediate scopes should always be loaded as rvalue.
+							if ((i + 1 != resolvedParts.size()))
+								curFn->insertIns(
+									Opcode::LVALUE,
+									make_shared<RegRefNode>(tmpRegIndex),
+									make_shared<RegRefNode>(tmpRegIndex, true));
 							break;
 						}
 						case NodeType::Fn: {
@@ -1240,10 +1248,11 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 								make_shared<RegRefNode>(tmpRegIndex, true));
 					}
 
-					curFn->insertIns(
-						Opcode::STORE,
-						curMajorContext.curMinorContext.evalDest,
-						make_shared<RegRefNode>(tmpRegIndex, true));
+					if (curMajorContext.curMinorContext.evalDest)
+						curFn->insertIns(
+							Opcode::STORE,
+							curMajorContext.curMinorContext.evalDest,
+							make_shared<RegRefNode>(tmpRegIndex, true));
 					break;
 				case NodeType::ArgRef:
 					static_pointer_cast<ArgRefNode>(x)->unwrapData = (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RValue);
@@ -1259,9 +1268,11 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 								make_shared<RegRefNode>(tmpRegIndex),
 								make_shared<RegRefNode>(tmpRegIndex, true));
 					}
-					curFn->insertIns(
-						Opcode::STORE,
-						curMajorContext.curMinorContext.evalDest, make_shared<RegRefNode>(tmpRegIndex, true));
+
+					if (curMajorContext.curMinorContext.evalDest)
+						curFn->insertIns(
+							Opcode::STORE,
+							curMajorContext.curMinorContext.evalDest, make_shared<RegRefNode>(tmpRegIndex, true));
 					break;
 				case NodeType::Var:
 				case NodeType::Fn:
@@ -1328,10 +1339,11 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 								make_shared<RegRefNode>(tmpRegIndex, true));
 					}
 
-					curFn->insertIns(
-						Opcode::STORE,
-						curMajorContext.curMinorContext.evalDest,
-						make_shared<RegRefNode>(tmpRegIndex, true));
+					if (curMajorContext.curMinorContext.evalDest)
+						curFn->insertIns(
+							Opcode::STORE,
+							curMajorContext.curMinorContext.evalDest,
+							make_shared<RegRefNode>(tmpRegIndex, true));
 					break;
 				}
 				default:

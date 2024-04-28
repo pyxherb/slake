@@ -93,8 +93,6 @@ bool Compiler::resolveRefWithScope(Scope *scope, Ref ref, deque<pair<Ref, shared
 /// @param ref Reference to be resolved.
 /// @return true if succeeded, false otherwise.
 bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, bool isTopLevel) {
-	if (ref[0].name == "lab")
-		puts("");
 	// Update corresponding semantic information.
 	{
 		TokenContext tokenContext = TokenContext(curFn, curMajorContext);

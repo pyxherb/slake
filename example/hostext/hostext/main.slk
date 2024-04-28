@@ -22,6 +22,7 @@ class AnotherGeneric<T, U> {
 
 class Test {
 	pub i32 x;
+	pub Test lab;
 
 	pub operator delete() {
 		hostext.extfns.print("Destructing Test...\n");
@@ -86,6 +87,8 @@ pub i32 main() {
 	x.getX();
 
 	Test test = new Derived(50);
+	test.lab = test;
+	test.lab.lab.getX();
 
 	while(test.x = test.x - 1) {
 		hostext.extfns.print("Yielded\n");

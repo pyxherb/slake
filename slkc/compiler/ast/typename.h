@@ -176,6 +176,7 @@ namespace slake {
 			virtual shared_ptr<AstNode> doDuplicate() override;
 
 		public:
+			Location loc;
 			shared_ptr<TypeNameNode> returnType;
 			deque<shared_ptr<TypeNameNode>> paramTypes;
 
@@ -187,10 +188,11 @@ namespace slake {
 					paramTypes[i] = other.paramTypes[i]->duplicate<TypeNameNode>();
 			}
 			inline FnTypeNameNode(
+				Location location,
 				shared_ptr<TypeNameNode> returnType,
 				deque<shared_ptr<TypeNameNode>> paramTypes,
 				bool isConst = false)
-				: TypeNameNode(returnType->getLocation(), isConst),
+				: TypeNameNode(location, isConst),
 				  returnType(returnType),
 				  paramTypes(paramTypes) {}
 			virtual ~FnTypeNameNode() = default;

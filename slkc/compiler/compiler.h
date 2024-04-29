@@ -63,59 +63,6 @@ namespace slake {
 			Call,	 // As the target of a calling expression
 		};
 
-		/// @brief Statement level context
-		struct MinorContext {
-			shared_ptr<TypeNameNode> expectedType;
-			shared_ptr<Scope> curScope;
-
-			unordered_map<string, shared_ptr<LocalVarNode>> localVars;
-
-			uint32_t breakScopeLevel = 0;
-			uint32_t continueScopeLevel = 0;
-			string breakLabel, continueLabel;
-
-			EvalPurpose evalPurpose;
-
-			bool isLastCallTargetStatic = true;
-
-			deque<shared_ptr<TypeNameNode>> argTypes;
-			bool isArgTypesSet = false;
-
-			shared_ptr<AstNode> evalDest, thisDest;;
-		};
-
-		/// @brief Block level context
-		struct MajorContext {
-			deque<MinorContext> savedMinorContexts;
-			MinorContext curMinorContext;
-
-			uint32_t curRegCount;
-			uint32_t curScopeLevel = 0;
-
-			GenericParamNodeList genericParams;
-			unordered_map<string, size_t> genericParamIndices;
-
-			shared_ptr<TypeNameNode> thisType;
-
-			inline void pushMinorContext() {
-				savedMinorContexts.push_back(curMinorContext);
-			}
-
-			inline void popMinorContext() {
-				savedMinorContexts.back().isLastCallTargetStatic = curMinorContext.isLastCallTargetStatic;
-				curMinorContext = savedMinorContexts.back();
-				savedMinorContexts.pop_back();
-			}
-
-			inline void mergeGenericParams(const GenericParamNodeList &genericParams) {
-				this->genericParams.insert(
-					this->genericParams.end(),
-					genericParams.begin(),
-					genericParams.end());
-				genericParamIndices = genGenericParamIndicies(this->genericParams);
-			}
-		};
-
 		enum class SemanticType {
 			None = 0,	 // None
 			Type,		 // Type
@@ -161,6 +108,59 @@ namespace slake {
 			Name,		   // User is entering name of an identifier.
 			Expr,		   // User is entering an expression.
 			MemberAccess,  // User is accessing an member.
+		};
+
+		/// @brief Statement level context
+		struct MinorContext {
+			shared_ptr<TypeNameNode> expectedType;
+			shared_ptr<Scope> curScope;
+
+			unordered_map<string, shared_ptr<LocalVarNode>> localVars;
+
+			uint32_t breakScopeLevel = 0;
+			uint32_t continueScopeLevel = 0;
+			string breakLabel, continueLabel;
+
+			EvalPurpose evalPurpose;
+
+			bool isLastCallTargetStatic = true;
+
+			deque<shared_ptr<TypeNameNode>> argTypes;
+			bool isArgTypesSet = false;
+
+			shared_ptr<AstNode> evalDest, thisDest;
+		};
+
+		/// @brief Block level context
+		struct MajorContext {
+			deque<MinorContext> savedMinorContexts;
+			MinorContext curMinorContext;
+
+			uint32_t curRegCount;
+			uint32_t curScopeLevel = 0;
+
+			GenericParamNodeList genericParams;
+			unordered_map<string, size_t> genericParamIndices;
+
+			shared_ptr<TypeNameNode> thisType;
+
+			inline void pushMinorContext() {
+				savedMinorContexts.push_back(curMinorContext);
+			}
+
+			inline void popMinorContext() {
+				savedMinorContexts.back().isLastCallTargetStatic = curMinorContext.isLastCallTargetStatic;
+				curMinorContext = savedMinorContexts.back();
+				savedMinorContexts.pop_back();
+			}
+
+			inline void mergeGenericParams(const GenericParamNodeList &genericParams) {
+				this->genericParams.insert(
+					this->genericParams.end(),
+					genericParams.begin(),
+					genericParams.end());
+				genericParamIndices = genGenericParamIndicies(this->genericParams);
+			}
 		};
 
 		struct TokenContext {
@@ -254,8 +254,13 @@ namespace slake {
 
 			bool isTypeNamesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<TypeNameNode> dest);
 
-			bool _resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, bool isTopLevel = false);
-			bool _resolveRefWithOwner(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut);
+			struct RefResolveContext {
+				bool isTopLevel = true;
+				bool keepTokenScope = false;
+			};
+
+			bool _resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, const RefResolveContext &resolveContext);
+			bool _resolveRefWithOwner(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, const RefResolveContext &resolveContext);
 
 			/// @brief Resolve a reference with current context.
 			/// @note This method also updates resolved generic arguments.
@@ -271,7 +276,11 @@ namespace slake {
 			/// @param resolvedPartsOut Where to store nodes referred by reference entries respectively.
 			bool resolveRefWithScope(Scope *scope, Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut);
 
-			shared_ptr<FnOverloadingNode> argDependentLookup(Location loc, FnNode *fn, const deque<shared_ptr<TypeNameNode>> &argTypes, const deque<shared_ptr<TypeNameNode>> &genericArgs);
+			shared_ptr<FnOverloadingNode> argDependentLookup(
+				Location loc,
+				FnNode *fn,
+				const deque<shared_ptr<TypeNameNode>> &argTypes,
+				const deque<shared_ptr<TypeNameNode>> &genericArgs);
 
 			shared_ptr<Scope> scopeOf(AstNode *node);
 
@@ -432,9 +441,34 @@ namespace slake {
 			// Generic end
 			//
 
+			//
+			// Semantic begin
+			//
+
 			void updateCompletionContext(size_t idxToken, CompletionContext completionContext);
 			void updateCompletionContext(shared_ptr<TypeNameNode> targetTypeName, CompletionContext completionContext);
 			void updateCompletionContext(const Ref &ref, CompletionContext completionContext);
+
+			//
+			// Semantic end
+			//
+
+			//
+			// Class begin
+			//
+
+			void verifyInheritanceChain(ClassNode *node, std::set<AstNode *> &walkedNodes);
+			void verifyInheritanceChain(InterfaceNode *node, std::set<AstNode *> &walkedNodes);
+			void verifyInheritanceChain(TraitNode *node, std::set<AstNode *> &walkedNodes);
+
+			void getMemberNodes(Scope *scope, std::unordered_map<std::string, MemberNode *> &membersOut);
+			void getMemberNodes(ClassNode *node, std::unordered_map<std::string, MemberNode *> &membersOut);
+			void getMemberNodes(InterfaceNode *node, std::unordered_map<std::string, MemberNode *> &membersOut);
+			void getMemberNodes(TraitNode *node, std::unordered_map<std::string, MemberNode *> &membersOut);
+
+			//
+			// Class end
+			//
 
 			friend class AstVisitor;
 			friend class MemberNode;

@@ -8,8 +8,6 @@
 #include "fn.h"
 #include <slake/access.h>
 #include "class.h"
-#include "interface.h"
-#include "trait.h"
 #include "var.h"
 #include "module.h"
 
@@ -100,20 +98,16 @@ namespace slake {
 			deque<shared_ptr<TypeNameNode>> parseImplList();
 			deque<shared_ptr<TypeNameNode>> parseTraitList();
 
-			shared_ptr<VarDefStmtNode> parseVarDefs(shared_ptr<TypeNameNode> type);
+			shared_ptr<VarDefStmtNode> parseVarDefs();
 
 			shared_ptr<StmtNode> parseStmt();
 
 			deque<shared_ptr<ParamNode>> parseParams();
 
-			shared_ptr<FnOverloadingNode> parseFnDecl(shared_ptr<TypeNameNode> returnType, string& nameOut);
-			shared_ptr<FnOverloadingNode> parseFnDef(shared_ptr<TypeNameNode> returnType, string &nameOut);
-			shared_ptr<FnOverloadingNode> parseOperatorDecl(shared_ptr<TypeNameNode> returnType, string &nameOut);
-			shared_ptr<FnOverloadingNode> parseOperatorDef(shared_ptr<TypeNameNode> returnType, string &nameOut);
-			shared_ptr<FnOverloadingNode> parseConstructorDecl();
-			shared_ptr<FnOverloadingNode> parseConstructorDef();
-			shared_ptr<FnOverloadingNode> parseDestructorDecl();
-			shared_ptr<FnOverloadingNode> parseDestructorDef();
+			shared_ptr<FnOverloadingNode> parseFnDecl(string& nameOut);
+			shared_ptr<FnOverloadingNode> parseFnDef(string &nameOut);
+			shared_ptr<FnOverloadingNode> parseOperatorDecl(string &nameOut);
+			shared_ptr<FnOverloadingNode> parseOperatorDef(string &nameOut);
 
 			GenericParamNodeList parseGenericParams();
 

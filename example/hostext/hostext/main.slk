@@ -1,31 +1,31 @@
 module hostext;
 
 use {
-	externs = hostext.extfns
+	extfns = hostext.extfns
 }
 
 class AnotherGeneric<T, U> {
 	class ChildGeneric<V, T> {
-		pub T x;
+		pub let x: T;
 
-		pub void setX(T x) {
+		pub fn setX(T x) {
 			this.x = x;
 			return;
 		}
 
-		T getX() {
-			hostext.extfns.print("Fetched x: ", this.x, "\n");
+		pub fn getX(): T {
+			extfns.print("Fetched x: ", this.x, "\n");
 			return this.x;
 		}
 	}
 }
 
 class Test {
-	pub i32 x;
-	pub Test lab;
+	pub let x: i32;
+	pub let lab: Test;
 
 	pub operator delete() {
-		hostext.extfns.print("Destructing Test...\n");
+		extfns.print("Destructing Test...\n");
 		return;
 	}
 
@@ -34,17 +34,17 @@ class Test {
 		return;
 	}
 
-	i32 getX() {
-		hostext.extfns.print("Fetched x: ", this.x, "\n");
+	pub fn getX(): i32 {
+		extfns.print("Fetched x: ", this.x, "\n");
 		return this.x;
 	}
 }
 
 class Derived(Test) {
-	pub i32 y;
+	pub let y: i32;
 
 	pub operator delete() {
-		hostext.extfns.print("Destructing Derived...\n");
+		extfns.print("Destructing Derived...\n");
 		return;
 	}
 
@@ -54,14 +54,15 @@ class Derived(Test) {
 		return;
 	}
 
-	i32 getY() {
-		hostext.extfns.print("Fetched y: ", this.y, "\n");
+	pub fn getY(): i32 {
+		extfns.print("Fetched y: ", this.y, "\n");
 		return this.y;
 	}
 }
 
 class AnotherDerived(Derived) {
-	pub i32 z;
+	pub let x: u32;
+	pub let z: i32;
 
 	pub operator new(i32 z) {
 		this.z = z;
@@ -70,7 +71,7 @@ class AnotherDerived(Derived) {
 		return;
 	}
 
-	i32 getZ() {
+	pub fn getZ(): i32 {
 		hostext.extfns.print("Fetched z: ", this.z, "\n");
 		return this.y;
 	}
@@ -79,14 +80,14 @@ class AnotherDerived(Derived) {
 class Unrelated {
 }
 
-pub i32 main() {
+pub fn main(): i32 {
 	hostext.extfns.print("Entered main\n");
 
-	AnotherGeneric<i32, f32>.ChildGeneric<f32, i32> x = new AnotherGeneric<i32, f32>.ChildGeneric<f32, i32>();
+	let x: AnotherGeneric<i32, f32>.ChildGeneric<f32, i32> = new AnotherGeneric<i32, f32>.ChildGeneric<f32, i32>();
 	x.setX(123);
 	x.getX();
 
-	Test test = new Derived(50);
+	let test: Test = new Derived(50);
 	test.lab = test;
 	test.lab.lab.getX();
 

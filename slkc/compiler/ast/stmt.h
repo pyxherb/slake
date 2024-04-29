@@ -114,6 +114,7 @@ namespace slake {
 			string name;
 			Location loc;
 			shared_ptr<ExprNode> initValue;
+			shared_ptr<TypeNameNode> type;
 
 			size_t idxNameToken;
 
@@ -122,9 +123,10 @@ namespace slake {
 			inline VarDefEntry(
 				Location loc,
 				string name,
+				shared_ptr<TypeNameNode> type,
 				shared_ptr<ExprNode> initValue,
 				size_t idxNameToken)
-				: loc(loc), name(name), initValue(initValue), idxNameToken(idxNameToken) {}
+				: loc(loc), name(name), initValue(initValue), type(type), idxNameToken(idxNameToken) {}
 
 			inline VarDefEntry &operator=(const VarDefEntry &) = default;
 		};
@@ -135,9 +137,8 @@ namespace slake {
 
 		public:
 			unordered_map<string, VarDefEntry> varDefs;
-			shared_ptr<TypeNameNode> type;
 
-			inline VarDefStmtNode(Location loc, shared_ptr<TypeNameNode> type) : _loc(loc), type(type) {}
+			inline VarDefStmtNode(Location loc) : _loc(loc) {}
 			virtual ~VarDefStmtNode() = default;
 
 			virtual inline Location getLocation() const override { return _loc; }

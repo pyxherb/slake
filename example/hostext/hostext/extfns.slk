@@ -1,4 +1,4 @@
 module hostext.extfns;
 
-pub void print(...);
-pub string getSlakeBuildVersionInfo(i32 selector);
+pub fn print(...): void;
+pub fn getSlakeBuildVersionInfo(i32 selector): string;

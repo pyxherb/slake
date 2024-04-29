@@ -56,15 +56,20 @@ namespace slake {
 
 			std::shared_ptr<Compiler> compiler;
 
-			void getCompletionMemberItems(
+			CompletionItemType _toCompletionItemType(NodeType nodeType);
+			void _getCompletionItems(
+				std::unordered_map<std::string, MemberNode *> &membersOut,
+				std::deque<CompletionItem> &completionItems,
+				const std::set<NodeType> &targetNodeTypes);
+			void _getCompletionItems(
 				Scope *scope,
 				std::deque<CompletionItem> &completionItems,
 				const std::set<NodeType> &targetNodeTypes);
-			void getCompletionMemberItems(
+			void _getCompletionItems(
 				shared_ptr<TypeNameNode> t,
 				std::deque<CompletionItem> &completionItems,
 				const std::set<NodeType> &targetNodeTypes);
-			void getCompletionMemberItems(
+			void _getCompletionItems(
 				AstNode *m,
 				std::deque<CompletionItem> &completionItems,
 				const std::set<NodeType> &targetNodeTypes);

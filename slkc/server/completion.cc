@@ -62,74 +62,81 @@ static string typeNameConditions[] = {
 	"any"
 };
 
-void slake::slkc::Document::getCompletionMemberItems(
-	Scope *scope,
-	std::deque<CompletionItem> &completionItems,
-	const std::set<NodeType> &targetNodeTypes) {
-	for (auto &i : scope->members) {
+CompletionItemType slake::slkc::Document::_toCompletionItemType(NodeType nodeType) {
+	switch (nodeType) {
+		case NodeType::Var:
+			return CompletionItemType::Var;
+		case NodeType::LocalVar:
+			return CompletionItemType::LocalVar;
+		case NodeType::Param:
+			return CompletionItemType::Param;
+		case NodeType::Fn:
+			return CompletionItemType::Fn;
+		case NodeType::TypeName:
+			return CompletionItemType::Type;
+		case NodeType::GenericParam:
+			return CompletionItemType::GenericParam;
+		case NodeType::Class:
+			return CompletionItemType::Class;
+		case NodeType::Interface:
+			return CompletionItemType::Interface;
+		case NodeType::Trait:
+			return CompletionItemType::Trait;
+		case NodeType::Module:
+			return CompletionItemType::Module;
+		/*case NodeType::Enum:
+			return CompletionItemType::Enum;
+		case NodeType::EnumConst:
+			return CompletionItemType::EnumConst;*/
+		default:
+			assert(false);
+	}
+}
+
+void slake::slkc::Document::_getCompletionItems(
+	std::unordered_map<std::string, MemberNode*>& membersOut,
+	std::deque<CompletionItem>& completionItems,
+	const std::set<NodeType>& targetNodeTypes) {
+	for (auto& i : membersOut) {
+		if (!targetNodeTypes.count(i.second->getNodeType()))
+			continue;
+
 		CompletionItem item = {};
 
 		item.label = i.first;
-		switch (i.second->getNodeType()) {
-			case NodeType::Var:
-				if (targetNodeTypes.count(NodeType::Var)) {
-					item.type = CompletionItemType::Var;
-				}
-				break;
-			case NodeType::LocalVar:
-				assert(false);
-				break;
-			case NodeType::Fn:
-				if (targetNodeTypes.count(NodeType::Fn)) {
-					item.type = CompletionItemType::Fn;
-				}
-				break;
-			case NodeType::GenericParam:
-				if (targetNodeTypes.count(NodeType::GenericParam)) {
-					item.type = CompletionItemType::GenericParam;
-				}
-				break;
-			case NodeType::Class:
-				if (targetNodeTypes.count(NodeType::Class)) {
-					item.type = CompletionItemType::Class;
-				}
-				break;
-			case NodeType::Interface:
-				if (targetNodeTypes.count(NodeType::Interface)) {
-					item.type = CompletionItemType::Interface;
-				}
-				break;
-			case NodeType::Trait:
-				if (targetNodeTypes.count(NodeType::Trait)) {
-					item.type = CompletionItemType::Trait;
-				}
-				break;
-			case NodeType::Module:
-				if (targetNodeTypes.count(NodeType::Module)) {
-					item.type = CompletionItemType::Module;
-				}
-				break;
-		}
+		item.type = _toCompletionItemType(i.second->getNodeType());
 
 		completionItems.push_back(item);
 	}
 }
 
-void slake::slkc::Document::getCompletionMemberItems(
+void slake::slkc::Document::_getCompletionItems(
+	Scope* scope,
+	std::deque<CompletionItem>& completionItems,
+	const std::set<NodeType> &targetNodeTypes) {
+	std::unordered_map<std::string, MemberNode *> membersOut;
+
+	compiler->getMemberNodes(scope, membersOut);
+
+	_getCompletionItems(membersOut, completionItems, targetNodeTypes);
+}
+
+void slake::slkc::Document::_getCompletionItems(
 	shared_ptr<TypeNameNode> t,
 	std::deque<CompletionItem> &completionItems,
 	const std::set<NodeType> &targetNodeTypes) {
 	switch (t->getTypeId()) {
 		case Type::Custom: {
 			shared_ptr<CustomTypeNameNode> tn = static_pointer_cast<CustomTypeNameNode>(t);
+			auto tnDest = compiler->resolveCustomTypeName(tn.get());
 
-			getCompletionMemberItems(compiler->resolveCustomTypeName(tn.get()).get(), completionItems, targetNodeTypes);
+			_getCompletionItems(tnDest.get(), completionItems, targetNodeTypes);
 			break;
 		}
 	}
 }
 
-void slake::slkc::Document::getCompletionMemberItems(
+void slake::slkc::Document::_getCompletionItems(
 	AstNode *m,
 	std::deque<CompletionItem> &completionItems,
 	const std::set<NodeType> &targetNodeTypes) {
@@ -137,48 +144,53 @@ void slake::slkc::Document::getCompletionMemberItems(
 		case NodeType::Var: {
 			VarNode *node = (VarNode *)m;
 
-			getCompletionMemberItems(node->type, completionItems, targetNodeTypes);
+			_getCompletionItems(node->type, completionItems, targetNodeTypes);
 			break;
 		}
 		case NodeType::LocalVar: {
 			LocalVarNode *node = (LocalVarNode *)m;
 
-			getCompletionMemberItems(node->type, completionItems, targetNodeTypes);
+			_getCompletionItems(node->type, completionItems, targetNodeTypes);
 			break;
 		}
 		case NodeType::Class: {
 			ClassNode *node = (ClassNode *)m;
-			getCompletionMemberItems(node->scope.get(), completionItems, targetNodeTypes);
 
-			if (node->parentClass)
-				getCompletionMemberItems(node->parentClass, completionItems, targetNodeTypes);
+			std::unordered_map<std::string, MemberNode *> membersOut;
 
-			for (auto i : node->implInterfaces)
-				getCompletionMemberItems(i, completionItems, targetNodeTypes);
+			compiler->getMemberNodes(node, membersOut);
+
+			_getCompletionItems(membersOut, completionItems, targetNodeTypes);
 			break;
 		}
 		case NodeType::Interface: {
 			InterfaceNode *node = (InterfaceNode *)m;
-			getCompletionMemberItems(node->scope.get(), completionItems, targetNodeTypes);
 
-			for (auto i : node->parentInterfaces)
-				getCompletionMemberItems(i, completionItems, targetNodeTypes);
+			std::unordered_map<std::string, MemberNode *> membersOut;
+
+			compiler->getMemberNodes(node, membersOut);
+
+			_getCompletionItems(membersOut, completionItems, targetNodeTypes);
 			break;
 		}
 		case NodeType::Trait: {
 			TraitNode *node = (TraitNode *)m;
-			getCompletionMemberItems(node->scope.get(), completionItems, targetNodeTypes);
 
-			for (auto i : node->parentTraits)
-				getCompletionMemberItems(i, completionItems, targetNodeTypes);
+			std::unordered_map<std::string, MemberNode *> membersOut;
+
+			compiler->getMemberNodes(node, membersOut);
+
+			_getCompletionItems(membersOut, completionItems, targetNodeTypes);
 			break;
 		}
 		case NodeType::Module: {
 			ModuleNode *node = (ModuleNode *)m;
-			getCompletionMemberItems(node->scope.get(), completionItems, targetNodeTypes);
 
-			// if (!node->parentModule.expired())
-			//	getCompletionMemberItems(node->parentModule.lock().get(), completionItems, targetNodeTypes);
+			std::unordered_map<std::string, MemberNode *> membersOut;
+
+			compiler->getMemberNodes(node->scope.get(), membersOut);
+
+			_getCompletionItems(membersOut, completionItems, targetNodeTypes);
 			break;
 		}
 	}
@@ -212,8 +224,8 @@ std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(Location lo
 	switch (tokenInfo.completionContext) {
 		case CompletionContext::TopLevel: {
 			if (tokenInfo.tokenContext.curScope)
-				getCompletionMemberItems(
-					tokenInfo.tokenContext.curScope.get(),
+				_getCompletionItems(
+					tokenInfo.tokenContext.curScope->owner,
 					completionItems,
 					{ NodeType::GenericParam,
 						NodeType::Class,
@@ -225,8 +237,8 @@ std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(Location lo
 		}
 		case CompletionContext::Class: {
 			if (tokenInfo.tokenContext.curScope)
-				getCompletionMemberItems(
-					tokenInfo.tokenContext.curScope.get(),
+				_getCompletionItems(
+					tokenInfo.tokenContext.curScope->owner,
 					completionItems,
 					{ NodeType::GenericParam,
 						NodeType::Class,
@@ -237,8 +249,8 @@ std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(Location lo
 		}
 		case CompletionContext::Interface: {
 			if (tokenInfo.tokenContext.curScope)
-				getCompletionMemberItems(
-					tokenInfo.tokenContext.curScope.get(),
+				_getCompletionItems(
+					tokenInfo.tokenContext.curScope->owner,
 					completionItems,
 					{ NodeType::GenericParam,
 						NodeType::Class,
@@ -249,8 +261,8 @@ std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(Location lo
 		}
 		case CompletionContext::Trait: {
 			if (tokenInfo.tokenContext.curScope)
-				getCompletionMemberItems(
-					tokenInfo.tokenContext.curScope.get(),
+				_getCompletionItems(
+					tokenInfo.tokenContext.curScope->owner,
 					completionItems,
 					{ NodeType::GenericParam,
 						NodeType::Class,
@@ -261,8 +273,8 @@ std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(Location lo
 		}
 		case CompletionContext::Stmt: {
 			if (tokenInfo.tokenContext.curScope)
-				getCompletionMemberItems(
-					tokenInfo.tokenContext.curScope.get(),
+				_getCompletionItems(
+					tokenInfo.tokenContext.curScope->owner,
 					completionItems,
 					{ NodeType::Var,
 						NodeType::Fn,
@@ -293,8 +305,8 @@ std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(Location lo
 		}
 		case CompletionContext::Import: {
 			if (tokenInfo.tokenContext.curScope)
-				getCompletionMemberItems(
-					tokenInfo.tokenContext.curScope.get(),
+				_getCompletionItems(
+					tokenInfo.tokenContext.curScope->owner,
 					completionItems,
 					{ NodeType::Var,
 						NodeType::Fn,
@@ -307,8 +319,8 @@ std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(Location lo
 		}
 		case CompletionContext::Type: {
 			if (tokenInfo.tokenContext.curScope)
-				getCompletionMemberItems(
-					tokenInfo.tokenContext.curScope.get(),
+				_getCompletionItems(
+					tokenInfo.tokenContext.curScope->owner,
 					completionItems,
 					{ NodeType::GenericParam,
 						NodeType::Class,
@@ -320,9 +332,12 @@ std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(Location lo
 		case CompletionContext::Name:
 			return {};
 		case CompletionContext::Expr: {
-			if (tokenInfo.tokenContext.curScope)
-				getCompletionMemberItems(
-					tokenInfo.tokenContext.curScope.get(),
+			if (tokenInfo.tokenContext.curScope) {
+				// A token has `expr` type means it is the top level scope of
+				// a reference, which means we can resolve it with its parent
+				// scope.
+				_getCompletionItems(
+					tokenInfo.tokenContext.curScope->owner,
 					completionItems,
 					{ NodeType::Var,
 						NodeType::Fn,
@@ -331,6 +346,20 @@ std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(Location lo
 						NodeType::Interface,
 						NodeType::Trait,
 						NodeType::Module });
+
+				for (Scope *scope = tokenInfo.tokenContext.curScope.get(); scope; scope = scope->parent) {
+					_getCompletionItems(
+						scope,
+						completionItems,
+						{ NodeType::Var,
+							NodeType::Fn,
+							NodeType::GenericParam,
+							NodeType::Class,
+							NodeType::Interface,
+							NodeType::Trait,
+							NodeType::Module });
+				}
+			}
 
 			for (auto &i : tokenInfo.tokenContext.localVars) {
 				CompletionItem item = {};
@@ -353,8 +382,8 @@ std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(Location lo
 		}
 		case CompletionContext::MemberAccess: {
 			if (tokenInfo.tokenContext.curScope)
-				getCompletionMemberItems(
-					tokenInfo.tokenContext.curScope.get(),
+				_getCompletionItems(
+					tokenInfo.tokenContext.curScope->owner,
 					completionItems,
 					{ NodeType::Var,
 						NodeType::Fn,

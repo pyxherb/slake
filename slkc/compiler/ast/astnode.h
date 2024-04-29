@@ -35,7 +35,9 @@ namespace slake {
 			LocalVarRef,
 			RegRef,
 			ThisRef,
-			BaseRef
+			BaseRef,
+
+			Bad
 		};
 
 		struct Location {

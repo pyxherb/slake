@@ -16,39 +16,47 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 			goto lvarSucceeded;
 
 		if (auto scope = scopeOf(localVar->type.get()); scope) {
-			if (_resolveRef(scope.get(), newRef, partsOut))
+			RefResolveContext newResolveContext;
+			newResolveContext.isTopLevel = false;
+
+			if (_resolveRef(scope.get(), newRef, partsOut, newResolveContext))
 				goto lvarSucceeded;
 		}
 
-		if (false) {
-		lvarSucceeded:
-			// Update corresponding semantic information.
-			auto &tokenInfo = tokenInfos[ref[0].idxToken];
-			tokenInfo.semanticInfo.correspondingMember = localVar;
-			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
-			tokenInfo.semanticType = SemanticType::Var;
+		return false;
 
-			partsOut.push_front({ Ref{ ref.front() }, localVar });
-			return true;
-		}
+	lvarSucceeded:
+		// Update corresponding semantic information.
+		auto &tokenInfo = tokenInfos[ref[0].idxToken];
+		tokenInfo.semanticInfo.correspondingMember = localVar;
+		tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+		tokenInfo.semanticType = SemanticType::Var;
+
+		partsOut.push_front({ Ref{ ref.front() }, localVar });
+		return true;
 	}
 
-	// Try to resolve the first entry as a parameter.
-	if (curFn->paramIndices.count(ref[0].name)) {
-		auto newRef = ref;
-		newRef.pop_front();
+	if (curFn) {
+		// Try to resolve the first entry as a parameter.
+		if (curFn->paramIndices.count(ref[0].name)) {
+			auto newRef = ref;
+			newRef.pop_front();
 
-		auto idxParam = curFn->paramIndices.at(ref[0].name);
+			auto idxParam = curFn->paramIndices.at(ref[0].name);
 
-		if (!newRef.size())
-			goto paramSucceeded;
-
-		if (auto scope = scopeOf(curFn->params[idxParam]->type.get()); scope) {
-			if (_resolveRef(scope.get(), newRef, partsOut))
+			if (!newRef.size())
 				goto paramSucceeded;
-		}
 
-		if (false) {
+			if (auto scope = scopeOf(curFn->params[idxParam]->type.get()); scope) {
+				RefResolveContext newResolveContext;
+				newResolveContext.isTopLevel = false;
+
+				if (_resolveRef(scope.get(), newRef, partsOut, newResolveContext))
+					goto paramSucceeded;
+			}
+
+			return false;
+
 		paramSucceeded:
 			// Update corresponding semantic information.
 			auto &tokenInfo = tokenInfos[ref[0].idxToken];
@@ -71,8 +79,11 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 		tokenInfo.semanticType = SemanticType::Keyword;
 
 		if (ref.size() > 1) {
+			RefResolveContext newResolveContext;
+			newResolveContext.isTopLevel = false;
+
 			ref.pop_front();
-			auto result = _resolveRef(curMajorContext.curMinorContext.curScope.get(), ref, partsOut);
+			auto result = _resolveRef(curMajorContext.curMinorContext.curScope.get(), ref, partsOut, newResolveContext);
 			partsOut.push_front({ Ref{ ref.front() }, thisRefNode });
 			return result;
 		} else {
@@ -81,28 +92,28 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 		}
 	}
 
-	return _resolveRef(curMajorContext.curMinorContext.curScope.get(), ref, partsOut, true);
+	RefResolveContext newResolveContext;
+	return _resolveRef(curMajorContext.curMinorContext.curScope.get(), ref, partsOut, newResolveContext);
 }
 
 bool Compiler::resolveRefWithScope(Scope *scope, Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut) {
-	return _resolveRef(scope, ref, partsOut);
+	RefResolveContext resolveContext;
+
+	return _resolveRef(scope, ref, partsOut, resolveContext);
 }
 
-/// @brief Resolve a reference with a scope.
-/// @param scope Scope for resolution.
-/// @param ref Reference to be resolved.
-/// @return true if succeeded, false otherwise.
-bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, bool isTopLevel) {
+bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, const RefResolveContext &resolveContext) {
 	// Update corresponding semantic information.
 	{
 		TokenContext tokenContext = TokenContext(curFn, curMajorContext);
-		tokenContext.curScope = scope->shared_from_this();
+		if (!resolveContext.keepTokenScope)
+			tokenContext.curScope = scope->shared_from_this();
 
 		if (ref[0].idxAccessOpToken != SIZE_MAX) {
 			auto &precedingAccessOpTokenInfo = tokenInfos[ref[0].idxAccessOpToken];
 			precedingAccessOpTokenInfo.tokenContext = tokenContext;
 
-			if (!isTopLevel)
+			if (!resolveContext.isTopLevel)
 				precedingAccessOpTokenInfo.completionContext = CompletionContext::MemberAccess;
 		}
 
@@ -110,7 +121,7 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 			auto &tokenInfo = tokenInfos[ref[0].idxToken];
 			tokenInfo.tokenContext = tokenContext;
 
-			if (!isTopLevel)
+			if (!resolveContext.isTopLevel)
 				tokenInfo.completionContext = CompletionContext::MemberAccess;
 		}
 	}
@@ -133,7 +144,7 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 		tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 		tokenInfo.semanticType = SemanticType::Keyword;
 
-		bool result = _resolveRefWithOwner(scope, newRef, partsOut);
+		bool result = _resolveRefWithOwner(scope, newRef, partsOut, resolveContext);
 		partsOut.push_front({ Ref{ ref.front() }, make_shared<BaseRefNode>() });
 		return result;
 	}
@@ -165,13 +176,13 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 					tokenInfo.semanticType = SemanticType::Param;
 					break;
 				case NodeType::Var:
-					tokenInfo.semanticType = isTopLevel ? SemanticType::Var : SemanticType::Property;
+					tokenInfo.semanticType = resolveContext.isTopLevel ? SemanticType::Var : SemanticType::Property;
 					break;
 				case NodeType::LocalVar:
 					tokenInfo.semanticType = SemanticType::Var;
 					break;
 				case NodeType::Fn:
-					tokenInfo.semanticType = isTopLevel ? SemanticType::Fn : SemanticType::Method;
+					tokenInfo.semanticType = resolveContext.isTopLevel ? SemanticType::Fn : SemanticType::Method;
 					break;
 			}
 		}
@@ -187,10 +198,11 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 			return true;
 		}
 
-		auto newScope = scopeOf(m.get());
+		if (auto scope = scopeOf(m.get()); scope) {
+			RefResolveContext newResolveContext;
+			newResolveContext.isTopLevel = false;
 
-		if (newScope) {
-			if (_resolveRef(newScope.get(), newRef, partsOut)) {
+			if (_resolveRef(scope.get(), newRef, partsOut, newResolveContext)) {
 				switch (m->getNodeType()) {
 					case NodeType::Var:
 						partsOut.push_front({ Ref{ ref.front() }, m });
@@ -203,16 +215,37 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 		}
 	}
 
-	if (_resolveRefWithOwner(scope, ref, partsOut))
+	if (_resolveRefWithOwner(scope, ref, partsOut, resolveContext))
 		return true;
 
-	if (isTopLevel && scope->parent)
-		return _resolveRef(scope->parent, ref, partsOut, isTopLevel);
+	// Resolve with the parent scope - we should only do this on the top level.
+	// 
+	// Consider a following example:
+	// let g_var : i32;
+	//
+	// class Test {
+	//     pub fn new(i32 initValue) {
+	//         g_var = initValue;
+	//     }
+	// }
+	// As the case above, the g_var is defined outside the class and cannot be
+	// resolved with the class's scope, that is why we need to resolve the
+	// scope with the parent scope.
+	// 
+	// Note that resolution of subscopes is always be restricted in the
+	// resolved scope from the parent, so we don't need to care about them.
+	//
+	if (resolveContext.isTopLevel && scope->parent) {
+		RefResolveContext newResolveContext;
+		newResolveContext.keepTokenScope = true;
+
+		return _resolveRef(scope->parent, ref, partsOut, newResolveContext);
+	}
 
 	return false;
 }
 
-bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut) {
+bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, const RefResolveContext &resolveContext) {
 	if (scope->owner) {
 		switch (scope->owner->getNodeType()) {
 			case NodeType::Class: {
@@ -228,7 +261,7 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 									MessageType::Error,
 									"`" + to_string(owner->parentClass, this) + "' is not a class"));
 						}
-						if (_resolveRef(scopeOf(p.get()).get(), ref, partsOut))
+						if (_resolveRef(scopeOf(p.get()).get(), ref, partsOut, resolveContext))
 							return true;
 					} else {
 						// Error resolving the parent class - the reference is invalid.
@@ -240,7 +273,7 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 					}
 				}
 
-				// Resolve with the interfaces.
+				// Resolve with the implemented interfaces.
 				for (auto i : owner->implInterfaces) {
 					if (auto p = resolveCustomTypeName((CustomTypeNameNode *)i.get()); p) {
 						if (p->getNodeType() != NodeType::Class) {
@@ -250,7 +283,7 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 									MessageType::Error,
 									"`" + to_string(i, this) + "' is not an interface"));
 						}
-						if (_resolveRef(scopeOf(p.get()).get(), ref, partsOut))
+						if (_resolveRef(scopeOf(p.get()).get(), ref, partsOut, resolveContext))
 							return true;
 					} else {
 						// Error resolving the interface - the reference is invalid.
@@ -261,13 +294,12 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 								"Interface `" + to_string(i, this) + "' was not found"));
 					}
 				}
-
-				// TODO: Check the generic arguments.
 				break;
 			}
 			case NodeType::Interface: {
 				auto owner = (InterfaceNode *)scope->owner;
 
+				// Resolve with the inherited interfaces.
 				for (auto i : owner->parentInterfaces) {
 					if (auto p = resolveCustomTypeName((CustomTypeNameNode *)i.get()); p) {
 						if (p->getNodeType() != NodeType::Class) {
@@ -277,7 +309,7 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 									MessageType::Error,
 									"`" + to_string(i, this) + "' is not an interface"));
 						}
-						if (_resolveRef(scopeOf(p.get()).get(), ref, partsOut))
+						if (_resolveRef(scopeOf(p.get()).get(), ref, partsOut, resolveContext))
 							return true;
 					} else {
 						// Error resolving the interface - the reference is invalid.
@@ -300,7 +332,7 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 				if (owner->parentModule.expired())
 					return false;
 
-				if (_resolveRef(owner->parentModule.lock()->scope.get(), ref, partsOut))
+				if (_resolveRef(owner->parentModule.lock()->scope.get(), ref, partsOut, resolveContext))
 					return true;
 
 				break;
@@ -310,7 +342,7 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 				if (!owner->parent)
 					return false;
 
-				if (_resolveRef(scopeOf((AstNode *)owner->parent).get(), ref, partsOut))
+				if (_resolveRef(scopeOf((AstNode *)owner->parent).get(), ref, partsOut, resolveContext))
 					return false;
 			}
 		}

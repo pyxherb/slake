@@ -956,7 +956,7 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 								paramTypes.push_back(i->type);
 							}
 
-							type = make_shared<FnTypeNameNode>(fn->overloadingRegistries[0]->returnType, paramTypes);
+							type = make_shared<FnTypeNameNode>(fn->overloadingRegistries[0]->loc, fn->overloadingRegistries[0]->returnType, paramTypes);
 							return type;
 						}
 
@@ -967,7 +967,7 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 							for (auto i : overloading->params)
 								paramTypes.push_back(i->type);
 
-							return make_shared<FnTypeNameNode>(overloading->returnType, paramTypes);
+							return make_shared<FnTypeNameNode>(overloading->loc, overloading->returnType, paramTypes);
 						}
 
 						throw FatalCompilationError(

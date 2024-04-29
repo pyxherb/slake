@@ -20,50 +20,9 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 		case StmtType::VarDef: {
 			auto s = static_pointer_cast<VarDefStmtNode>(stmt);
 
-			if (s->type->getTypeId() == Type::Auto) {
-				shared_ptr<TypeNameNode> deducedType;
-
-				for (auto i : s->varDefs) {
-					if (i.second.initValue) {
-						deducedType = evalExprType(i.second.initValue);
-						goto foundInitValue;
-					}
-				}
-
-				throw FatalCompilationError(
-					{ s->getLocation(),
-						MessageType::Error,
-						"No initializer was found, unable to deduce the type" });
-
-			foundInitValue:
-				updateCompletionContext(s->type, CompletionContext::Type);
-				s->type = deducedType;
-			} else
-				updateCompletionContext(s->type, CompletionContext::Type);
-
 			for (auto &i : s->varDefs) {
-				if (curMajorContext.curMinorContext.localVars.count(i.first))
-					throw FatalCompilationError(
-						{ i.second.loc,
-							MessageType::Error,
-							"Redefinition of local variable `" + i.first + "'" });
-
-				uint32_t index = allocLocalVar(i.first, s->type);
-
-				if (i.second.initValue) {
-					shared_ptr<TypeNameNode> initValueType = evalExprType(i.second.initValue);
-
-					if (!isSameType(s->type, initValueType)) {
-						if (!isTypeNamesConvertible(initValueType, s->type))
-							throw FatalCompilationError(
-								{ i.second.initValue->getLocation(),
-									MessageType::Error,
-									"Incompatible initial value type" });
-
-						compileExpr(make_shared<CastExprNode>(i.second.initValue->getLocation(), s->type, i.second.initValue), EvalPurpose::RValue, make_shared<LocalVarRefNode>(index));
-					} else
-						compileExpr(i.second.initValue, EvalPurpose::RValue, make_shared<LocalVarRefNode>(index));
-				}
+				if (i.second.type)
+					updateCompletionContext(i.second.type, CompletionContext::Type);
 
 				if (i.second.idxNameToken != SIZE_MAX) {
 					// Update corresponding semantic information.
@@ -71,6 +30,31 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 					tokenInfo.semanticType = SemanticType::Var;
 					tokenInfo.completionContext = CompletionContext::Name;
+				}
+
+				if (curMajorContext.curMinorContext.localVars.count(i.first))
+					throw FatalCompilationError(
+						{ i.second.loc,
+							MessageType::Error,
+							"Redefinition of local variable `" + i.first + "'" });
+
+				shared_ptr<TypeNameNode> varType = i.second.type ? i.second.type : make_shared<AnyTypeNameNode>(Location(), SIZE_MAX);
+
+				uint32_t index = allocLocalVar(i.first, varType);
+
+				if (i.second.initValue) {
+					shared_ptr<TypeNameNode> initValueType = evalExprType(i.second.initValue);
+
+					if (!isSameType(varType, initValueType)) {
+						if (!isTypeNamesConvertible(initValueType, varType))
+							throw FatalCompilationError(
+								{ i.second.initValue->getLocation(),
+									MessageType::Error,
+									"Incompatible initial value type" });
+
+						compileExpr(make_shared<CastExprNode>(i.second.initValue->getLocation(), varType, i.second.initValue), EvalPurpose::RValue, make_shared<LocalVarRefNode>(index));
+					} else
+						compileExpr(i.second.initValue, EvalPurpose::RValue, make_shared<LocalVarRefNode>(index));
 				}
 			}
 
@@ -413,7 +397,8 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 			auto s = static_pointer_cast<BadExprStmtNode>(stmt);
 
 			// Compile the expression to fill token information for completion.
-			compileExpr(s->expr);
+			if (s->expr)
+				compileExpr(s->expr);
 
 			break;
 		}

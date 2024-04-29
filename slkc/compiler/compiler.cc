@@ -256,7 +256,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 							Message(
 								i.second->getLocation(),
 								MessageType::Error,
-								"This member shadows members from parent classes"));
+								"The member shadows another members from a parent"));
 				};
 
 				break;
@@ -278,7 +278,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		_write(os, vad);
 		_write(os, i.first.data(), i.first.length());
 
-		compileTypeName(os, i.second->type);
+		compileTypeName(os, i.second->type ? i.second->type : make_shared<AnyTypeNameNode>(Location(), SIZE_MAX));
 
 		if (i.second->initValue) {
 			if (auto ce = evalConstExpr(i.second->initValue); ce)
@@ -327,14 +327,16 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 			}
 
 			auto compiledFn = make_shared<CompiledFnNode>(j->loc, mangledFnName);
-			compiledFn->returnType = j->returnType;
+			compiledFn->returnType = j->returnType
+										 ? j->returnType
+										 : static_pointer_cast<TypeNameNode>(make_shared<VoidTypeNameNode>(Location(), SIZE_MAX));
 			compiledFn->params = j->params;
 			compiledFn->paramIndices = j->paramIndices;
 			compiledFn->genericParams = j->genericParams;
 			compiledFn->genericParamIndices = j->genericParamIndices;
 			compiledFn->access = j->access;
 
-			for (auto& k : j->params) {
+			for (auto &k : j->params) {
 				if (k->idxNameToken != SIZE_MAX) {
 					// Update corresponding semantic information.
 					auto &tokenInfo = tokenInfos[k->idxNameToken];
@@ -343,7 +345,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 				}
 			}
 
-			for (auto& k : j->genericParams) {
+			for (auto &k : j->genericParams) {
 				if (k->idxNameToken != SIZE_MAX) {
 					// Update corresponding semantic information.
 					auto &tokenInfo = tokenInfos[k->idxNameToken];
@@ -489,8 +491,9 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 			compileGenericParam(os, j);
 		}
 
-		if (i.second->parentClass)
+		if (i.second->parentClass) {
 			compileRef(os, getFullName((MemberNode *)resolveCustomTypeName((CustomTypeNameNode *)i.second->parentClass.get()).get()));
+		}
 
 		for (auto &j : i.second->implInterfaces)
 			compileRef(os, static_pointer_cast<CustomTypeNameNode>(j)->ref);

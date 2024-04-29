@@ -5,6 +5,9 @@ using namespace slake::slkc;
 void Compiler::walkTypeNameNodeForGenericInstantiation(
 	shared_ptr<TypeNameNode> &type,
 	GenericNodeInstantiationContext &instantiationContext) {
+	if (!type)
+		return;
+
 	if (type->getTypeId() == Type::Custom) {
 		auto t = static_pointer_cast<CustomTypeNameNode>(type);
 

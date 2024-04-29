@@ -1,23 +1,28 @@
 module hostext;
 
-class AnotherGeneric<T, U> {
-	class ChildGeneric<V, T> {
-		pub T data;
+pub let g_globalVar: Test;
 
-		pub void setX(T data) {
-			this.data = data;
+class AnotherGeneric<T, U> {
+	pub let n : T;
+
+	class ChildGeneric<V, T> {
+		pub let x: T;
+
+		pub fn setX(T x) {
+			this.x = x;
+			g_globalVar.lab.x;
 			return;
 		}
 
-		T getX() {
-			return this.data;
+		pub fn getX(): T {
+			return this.x;
 		}
 	}
 }
 
 class Test {
-	pub i32 x;
-	pub Test lab;
+	pub let x: i32;
+	pub let lab: Test;
 
 	pub operator delete() {
 		return;
@@ -28,13 +33,14 @@ class Test {
 		return;
 	}
 
-	i32 getX() {
+	pub fn getX(): i32 {
 		return this.x;
 	}
 }
 
 class Derived(Test) {
-	pub i32 y;
+	pub let y: i32;
+	pub let bal : Derived;
 
 	pub operator delete() {
 		return;
@@ -46,13 +52,13 @@ class Derived(Test) {
 		return;
 	}
 
-	i32 getY() {
+	pub fn getY(): i32 {
 		return this.y;
 	}
 }
 
 class AnotherDerived(Derived) {
-	pub i32 z;
+	pub let z: i32;
 
 	pub operator new(i32 z) {
 		this.z = z;
@@ -61,21 +67,24 @@ class AnotherDerived(Derived) {
 		return;
 	}
 
-	i32 getZ() {
-		return this.z;
+	pub fn getZ(): i32 {
+		return this.y;
 	}
 }
 
 class Unrelated {
 }
 
-pub i32 main() {
-	AnotherGeneric<i32, f32>.ChildGeneric<f32, i32> x = new AnotherGeneric<i32, f32>.ChildGeneric<f32, i32>();
+pub fn main(): i32 {
+	let x: AnotherGeneric<i32, f32>.ChildGeneric<f32, i32> = new AnotherGeneric<i32, f32>.ChildGeneric<f32, i32>();
 	x.setX(123);
 	x.getX();
 
-	Test test = new Derived(50);
-	test.lab.lab;
+	let test: Test = new Derived(50);
+	test.lab = test;
+
+	let s: Derived;
+	s.bal.bal.lab;
 
 	while(test.x = test.x - 1) {
 		yield test.getX();

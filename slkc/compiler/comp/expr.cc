@@ -1277,14 +1277,20 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 				case NodeType::Var:
 				case NodeType::Fn:
 				case NodeType::ThisRef:
-				case NodeType::BaseRef: {
+				case NodeType::BaseRef:
+				case NodeType::Class:
+				case NodeType::Interface:
+				case NodeType::Trait: {
 					//
 					// Resolve the head of the reference.
 					// After that, we will use RLOAD instructions to load the members one by one.
 					//
 					switch (x->getNodeType()) {
+						case NodeType::Class:
+						case NodeType::Interface:
+						case NodeType::Trait:
 						case NodeType::Var: {
-							Ref ref = getFullName((VarNode *)x.get());
+							Ref ref = getFullName((MemberNode *)x.get());
 							curFn->insertIns(
 								Opcode::LOAD,
 								make_shared<RegRefNode>(tmpRegIndex),

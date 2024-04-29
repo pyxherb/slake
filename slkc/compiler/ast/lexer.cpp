@@ -147,6 +147,8 @@ const char *slake::slkc::getTokenName(slake::slkc::TokenId tokenId) {
 			return "final";
 		case TokenId::IfKeyword:
 			return "if";
+		case TokenId::LetKeyword:
+			return "let";
 		case TokenId::ModuleKeyword:
 			return "module";
 		case TokenId::NativeKeyword:
@@ -337,6 +339,7 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 				<InitialCondition>"for"			{ token.tokenId = TokenId::ForKeyword; break; }
 				<InitialCondition>"final"		{ token.tokenId = TokenId::FinalKeyword; break; }
 				<InitialCondition>"if"			{ token.tokenId = TokenId::IfKeyword; break; }
+				<InitialCondition>"let"			{ token.tokenId = TokenId::LetKeyword; break; }
 				<InitialCondition>"module"		{ token.tokenId = TokenId::ModuleKeyword; break; }
 				<InitialCondition>"native"		{ token.tokenId = TokenId::NativeKeyword; break; }
 				<InitialCondition>"new"			{ token.tokenId = TokenId::NewKeyword; break; }
@@ -531,8 +534,7 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 
 		if (discardCurToken) {
 			auto discardedToken = std::move(token);
-		}
-		else {
+		} else {
 			size_t beginIndex = prevYYCURSOR - src.data(), endIndex = YYCURSOR - src.data();
 
 			std::string_view strToBegin = src.substr(0, beginIndex), strToEnd = src.substr(0, endIndex);

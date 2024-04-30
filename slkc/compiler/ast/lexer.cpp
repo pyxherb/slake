@@ -1,248 +1,7 @@
 #include <slkc/compiler/ast/lexer.h>
 #include <algorithm>
 
-const char *slake::slkc::getTokenName(slake::slkc::TokenId tokenId) {
-	switch (tokenId) {
-		case TokenId::End:
-			return "end of file";
-		case TokenId::Comma:
-			return ",";
-		case TokenId::Question:
-			return "?";
-		case TokenId::Colon:
-			return ":";
-		case TokenId::Semicolon:
-			return ";";
-		case TokenId::LBracket:
-			return "[";
-		case TokenId::RBracket:
-			return "]";
-		case TokenId::LBrace:
-			return "{";
-		case TokenId::RBrace:
-			return "}";
-		case TokenId::LParenthese:
-			return "(";
-		case TokenId::RParenthese:
-			return ")";
-		case TokenId::At:
-			return "@";
-		case TokenId::Dot:
-			return ".";
-		case TokenId::VarArg:
-			return "...";
-		case TokenId::AddOp:
-			return "+";
-		case TokenId::SubOp:
-			return "-";
-		case TokenId::MulOp:
-			return "*";
-		case TokenId::DivOp:
-			return "/";
-		case TokenId::ModOp:
-			return "%";
-		case TokenId::AndOp:
-			return "&";
-		case TokenId::OrOp:
-			return "|";
-		case TokenId::XorOp:
-			return "^";
-		case TokenId::NotOp:
-			return "!";
-		case TokenId::RevOp:
-			return "~";
-		case TokenId::AssignOp:
-			return "=";
-		case TokenId::AddAssignOp:
-			return "+=";
-		case TokenId::SubAssignOp:
-			return "-=";
-		case TokenId::MulAssignOp:
-			return "*=";
-		case TokenId::DivAssignOp:
-			return "/=";
-		case TokenId::ModAssignOp:
-			return "%=";
-		case TokenId::AndAssignOp:
-			return "&=";
-		case TokenId::OrAssignOp:
-			return "|=";
-		case TokenId::XorAssignOp:
-			return "^=";
-		case TokenId::RevAssignOp:
-			return "~=";
-		case TokenId::LshAssignOp:
-			return "<<=";
-		case TokenId::RshAssignOp:
-			return ">>=";
-		case TokenId::SwapOp:
-			return "<=>";
-		case TokenId::StrictEqOp:
-			return "===";
-		case TokenId::StrictNeqOp:
-			return "!==";
-		case TokenId::EqOp:
-			return "==";
-		case TokenId::NeqOp:
-			return "!=";
-		case TokenId::LshOp:
-			return "<<";
-		case TokenId::RshOp:
-			return ">>";
-		case TokenId::LtOp:
-			return "<";
-		case TokenId::GtOp:
-			return ">";
-		case TokenId::LtEqOp:
-			return "<=";
-		case TokenId::GtEqOp:
-			return ">=";
-		case TokenId::LAndOp:
-			return "&&";
-		case TokenId::LOrOp:
-			return "||";
-		case TokenId::IncOp:
-			return "++";
-		case TokenId::DecOp:
-			return "--";
-		case TokenId::MatchOp:
-			return "=>";
-		case TokenId::WrapOp:
-			return "->";
-		case TokenId::DollarOp:
-			return "$";
-		case TokenId::AsyncKeyword:
-			return "async";
-		case TokenId::AwaitKeyword:
-			return "await";
-		case TokenId::BaseKeyword:
-			return "base";
-		case TokenId::BreakKeyword:
-			return "break";
-		case TokenId::CaseKeyword:
-			return "case";
-		case TokenId::CatchKeyword:
-			return "catch";
-		case TokenId::ClassKeyword:
-			return "class";
-		case TokenId::ConstKeyword:
-			return "const";
-		case TokenId::ContinueKeyword:
-			return "continue";
-		case TokenId::DeleteKeyword:
-			return "delete";
-		case TokenId::DefaultKeyword:
-			return "default";
-		case TokenId::ElseKeyword:
-			return "else";
-		case TokenId::EnumKeyword:
-			return "enum";
-		case TokenId::FalseKeyword:
-			return "false";
-		case TokenId::FnKeyword:
-			return "fn";
-		case TokenId::ForKeyword:
-			return "for";
-		case TokenId::FinalKeyword:
-			return "final";
-		case TokenId::IfKeyword:
-			return "if";
-		case TokenId::LetKeyword:
-			return "let";
-		case TokenId::ModuleKeyword:
-			return "module";
-		case TokenId::NativeKeyword:
-			return "native";
-		case TokenId::NewKeyword:
-			return "new";
-		case TokenId::NullKeyword:
-			return "null";
-		case TokenId::OverrideKeyword:
-			return "override";
-		case TokenId::OperatorKeyword:
-			return "operator";
-		case TokenId::PubKeyword:
-			return "pub";
-		case TokenId::ReturnKeyword:
-			return "return";
-		case TokenId::StaticKeyword:
-			return "static";
-		case TokenId::StructKeyword:
-			return "struct";
-		case TokenId::SwitchKeyword:
-			return "switch";
-		case TokenId::ThisKeyword:
-			return "this";
-		case TokenId::ThrowKeyword:
-			return "throw";
-		case TokenId::TraitKeyword:
-			return "trait";
-		case TokenId::TypeofKeyword:
-			return "typeof";
-		case TokenId::InterfaceKeyword:
-			return "interface";
-		case TokenId::TrueKeyword:
-			return "true";
-		case TokenId::TryKeyword:
-			return "try";
-		case TokenId::UseKeyword:
-			return "use";
-		case TokenId::WhileKeyword:
-			return "while";
-		case TokenId::YieldKeyword:
-			return "yield";
-		case TokenId::I8TypeName:
-			return "i8";
-		case TokenId::I16TypeName:
-			return "i16";
-		case TokenId::I32TypeName:
-			return "i32";
-		case TokenId::I64TypeName:
-			return "i64";
-		case TokenId::U8TypeName:
-			return "u8";
-		case TokenId::U16TypeName:
-			return "u16";
-		case TokenId::U32TypeName:
-			return "u32";
-		case TokenId::U64TypeName:
-			return "u64";
-		case TokenId::F32TypeName:
-			return "f32";
-		case TokenId::F64TypeName:
-			return "f64";
-		case TokenId::StringTypeName:
-			return "string";
-		case TokenId::BoolTypeName:
-			return "bool";
-		case TokenId::AutoTypeName:
-			return "auto";
-		case TokenId::VoidTypeName:
-			return "void";
-		case TokenId::AnyTypeName:
-			return "any";
-		case TokenId::IntLiteral:
-			return "integer literal";
-		case TokenId::LongLiteral:
-			return "long literal";
-		case TokenId::UIntLiteral:
-			return "unsigned integer literal";
-		case TokenId::ULongLiteral:
-			return "unsigned long literal";
-		case TokenId::F32Literal:
-			return "32-bit floating-point number literal";
-		case TokenId::F64Literal:
-			return "64-bit floating-point number literal";
-		case TokenId::StringLiteral:
-			return "string literal";
-		case TokenId::RawStringLiteral:
-			return "raw string literal";
-		case TokenId::Id:
-			return "identifier";
-	}
-
-	return "<unknown tokenId>";
-}
+using namespace slake::slkc;
 
 enum LexCondition {
 	yycInitialCondition = 0,
@@ -265,19 +24,16 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 
 	Token token;
 
-	size_t line = 0;
-
 	while (true) {
 		std::string strLiteral;
-		bool discardCurToken = false;
 
 		while (true) {
 			/*!re2c
 				re2c:yyfill:enable = 0;
 				re2c:define:YYCTYPE = char;
 
-				<InitialCondition>"/*"		{ YYSETCONDITION(CommentCondition); discardCurToken = true; continue; }
-				<InitialCondition>"//"		{ YYSETCONDITION(LineCommentCondition); discardCurToken = true; continue; }
+				<InitialCondition>"/*"		{ YYSETCONDITION(CommentCondition); token.tokenId = TokenId::Comment; continue; }
+				<InitialCondition>"//"		{ YYSETCONDITION(LineCommentCondition); token.tokenId = TokenId::Comment; continue; }
 
 				<InitialCondition>"::"		{ token.tokenId = TokenId::ScopeOp; break; }
 				<InitialCondition>"->"		{ token.tokenId = TokenId::WrapOp; break; }
@@ -434,19 +190,22 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 
 				<InitialCondition>"\""		{ YYSETCONDITION(StringCondition); continue; }
 
-				<InitialCondition>"\n"		{ ++line; discardCurToken = true; break; }
+				<InitialCondition>"\n"		{ token.tokenId = TokenId::NewLine; break; }
 				<InitialCondition>"\000"	{ goto end; }
 
-				<InitialCondition>[ \r\t]+	{ discardCurToken = true; break; }
+				<InitialCondition>[ \r\t]+	{ token.tokenId = TokenId::Whitespace; break; }
 
 				<InitialCondition>[^]		{
+					size_t beginIndex = prevYYCURSOR - src.data(), endIndex = YYCURSOR - src.data();
+					std::string_view strToBegin = src.substr(0, beginIndex), strToEnd = src.substr(0, endIndex);
+
 					size_t index = prevYYCURSOR - src.data();
 					auto pos = src.find_last_of('\n', index);
 					if(pos == std::string::npos)
 						pos = 0;
 					pos = index - pos;
 
-					throw LexicalError("Invalid token", { line, pos });
+					throw LexicalError("Invalid token", { (size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'), pos });
 				}
 
 				<StringCondition>"\""		{
@@ -459,22 +218,28 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 				<StringCondition>"\\\n"		{ continue; }
 				<StringCondition>"\\"		{ YYSETCONDITION(EscapeCondition); continue; }
 				<StringCondition>"\n"		{
+					size_t beginIndex = prevYYCURSOR - src.data(), endIndex = YYCURSOR - src.data();
+					std::string_view strToBegin = src.substr(0, beginIndex), strToEnd = src.substr(0, endIndex);
+
 					size_t index = prevYYCURSOR - src.data();
 					auto pos = src.find_last_of('\n', index);
 					if(pos == std::string::npos)
 						pos = 0;
 					pos = index - pos;
 
-					throw LexicalError("Unexpected end of line", { line, pos });
+					throw LexicalError("Unexpected end of line", { (size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'), pos });
 				}
 				<StringCondition>"\000"	{
+					size_t beginIndex = prevYYCURSOR - src.data(), endIndex = YYCURSOR - src.data();
+					std::string_view strToBegin = src.substr(0, beginIndex), strToEnd = src.substr(0, endIndex);
+
 					size_t index = prevYYCURSOR - src.data();
 					auto pos = src.find_last_of('\n', index);
 					if(pos == std::string::npos)
 						pos = 0;
 					pos = index - pos;
 
-					throw LexicalError("Prematured end of file", { line, pos });
+					throw LexicalError("Prematured end of file", { (size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'), pos });
 				}
 				<StringCondition>[^]		{ strLiteral += YYCURSOR[-1]; continue; }
 
@@ -532,18 +297,28 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 			*/
 		}
 
-		if (discardCurToken) {
-			auto discardedToken = std::move(token);
-		} else {
-			size_t beginIndex = prevYYCURSOR - src.data(), endIndex = YYCURSOR - src.data();
+		size_t beginIndex = prevYYCURSOR - src.data(), endIndex = YYCURSOR - src.data();
 
-			std::string_view strToBegin = src.substr(0, beginIndex), strToEnd = src.substr(0, endIndex);
+		std::string_view strToBegin = src.substr(0, beginIndex), strToEnd = src.substr(0, endIndex);
 
-			token.text = std::string(prevYYCURSOR, YYCURSOR - prevYYCURSOR);
-			token.beginLocation = { (size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'), beginIndex - src.find_last_of('\n', beginIndex) - 1 };
-			token.endLocation = Location{ (size_t)std::count(strToEnd.begin(), strToEnd.end(), '\n'), endIndex - src.find_last_of('\n', endIndex) - 1 };
-			tokens.push_back(std::move(token));
-		}
+		token.text = std::string(prevYYCURSOR, YYCURSOR - prevYYCURSOR);
+
+		size_t idxLastBeginNewline = src.find_last_of('\n', beginIndex),
+			   idxLastEndNewline = src.find_last_of('\n', endIndex);
+
+		token.beginLocation = {
+			(size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'),
+			(idxLastBeginNewline == string::npos
+					? beginIndex
+					: beginIndex - idxLastBeginNewline - 1)
+		};
+		token.endLocation = {
+			(size_t)std::count(strToEnd.begin(), strToEnd.end(), '\n'),
+			(idxLastEndNewline == string::npos
+					? endIndex
+					: endIndex - idxLastEndNewline - 1)
+		};
+		tokens.push_back(std::move(token));
 
 		prevYYCURSOR = YYCURSOR;
 	}

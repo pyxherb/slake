@@ -209,7 +209,7 @@ namespace slake {
 			struct {
 				std::string name;
 
-				Ref ref;
+				bool isTopLevelRef = false;
 
 				shared_ptr<AstNode> correspondingMember;
 			} semanticInfo;
@@ -461,10 +461,18 @@ namespace slake {
 			void verifyInheritanceChain(InterfaceNode *node, std::set<AstNode *> &walkedNodes);
 			void verifyInheritanceChain(TraitNode *node, std::set<AstNode *> &walkedNodes);
 
-			void getMemberNodes(Scope *scope, std::unordered_map<std::string, MemberNode *> &membersOut);
-			void getMemberNodes(ClassNode *node, std::unordered_map<std::string, MemberNode *> &membersOut);
-			void getMemberNodes(InterfaceNode *node, std::unordered_map<std::string, MemberNode *> &membersOut);
-			void getMemberNodes(TraitNode *node, std::unordered_map<std::string, MemberNode *> &membersOut);
+			inline void verifyInheritanceChain(ClassNode* node) {
+				std::set<AstNode *> walkedNodes;
+				verifyInheritanceChain(node, walkedNodes);
+			}
+			inline void verifyInheritanceChain(InterfaceNode *node) {
+				std::set<AstNode *> walkedNodes;
+				verifyInheritanceChain(node, walkedNodes);
+			}
+			inline void verifyInheritanceChain(TraitNode *node) {
+				std::set<AstNode *> walkedNodes;
+				verifyInheritanceChain(node, walkedNodes);
+			}
 
 			//
 			// Class end

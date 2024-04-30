@@ -38,7 +38,9 @@ namespace slake {
 			Fn,
 
 			Custom,
-			Ref
+			Ref,
+
+			Bad
 		};
 
 		/// @brief Base type name node class.
@@ -214,6 +216,25 @@ namespace slake {
 			virtual ~RefTypeNameNode() = default;
 
 			virtual inline Type getTypeId() const override { return Type::Ref; }
+		};
+
+		class BadTypeNameNode : public TypeNameNode {
+		private:
+			virtual inline shared_ptr<AstNode> doDuplicate() override {
+				return make_shared<BadTypeNameNode>(*this);
+			}
+
+		public:
+			size_t idxStartToken, idxEndToken;
+
+			inline BadTypeNameNode(const BadTypeNameNode &other)
+				: TypeNameNode(other.getLocation(), other.isConst) {
+			}
+			inline BadTypeNameNode(Location loc, size_t idxStartToken, size_t idxEndToken, bool isConst = false)
+				: TypeNameNode(loc, isConst), idxStartToken(idxStartToken), idxEndToken(idxEndToken) {}
+			virtual ~BadTypeNameNode() = default;
+
+			virtual inline Type getTypeId() const override { return Type::Bad; }
 		};
 
 		class Compiler;

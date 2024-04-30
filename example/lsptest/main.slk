@@ -75,13 +75,14 @@ class AnotherDerived(Derived) {
 class Unrelated {
 }
 
-pub fn main(): i32 {
+pub fn main() : i32 {
 	let x: AnotherGeneric<i32, f32>.ChildGeneric<f32, i32> = new AnotherGeneric<i32, f32>.ChildGeneric<f32, i32>();
 	x.setX(123);
 	x.getX();
 
 	let test: Test = new Derived(50);
 	test.lab = test;
+	test.lab.lab.x;
 
 	let s: Derived;
 	s.bal.bal.lab;

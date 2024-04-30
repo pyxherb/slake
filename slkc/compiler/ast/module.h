@@ -7,6 +7,11 @@
 
 namespace slake {
 	namespace slkc {
+		struct ImportItem {
+			Ref ref;
+			size_t idxNameToken;
+		};
+
 		class ModuleNode : public MemberNode {
 		private:
 			Location _loc;
@@ -14,7 +19,7 @@ namespace slake {
 		public:
 			Ref moduleName;
 			shared_ptr<Scope> scope;
-			unordered_map<string, Ref> imports;
+			unordered_map<string, ImportItem> imports;
 			weak_ptr<ModuleNode> parentModule;
 
 			inline ModuleNode(

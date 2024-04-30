@@ -39,6 +39,14 @@ void Compiler::updateCompletionContext(shared_ptr<TypeNameNode> targetTypeName, 
 			updateCompletionContext(t->ref, completionContext);
 			break;
 		}
+		case Type::Bad: {
+			auto t = static_pointer_cast<BadTypeNameNode>(targetTypeName);
+
+			for (size_t i = t->idxStartToken; i <= t->idxEndToken; ++i)
+				tokenInfos[i].completionContext = completionContext;
+
+			break;
+		}
 		default:
 			assert(false);
 	}

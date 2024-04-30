@@ -1,7 +1,7 @@
 module hostext;
 
 use {
-	extfns = hostext.extfns
+	extfnsModule = hostext.extfns
 }
 
 class AnotherGeneric<T, U> {
@@ -14,7 +14,7 @@ class AnotherGeneric<T, U> {
 		}
 
 		pub fn getX(): T {
-			extfns.print("Fetched x: ", this.x, "\n");
+			extfnsModule.print("Fetched x: ", this.x, "\n");
 			return this.x;
 		}
 	}
@@ -25,7 +25,7 @@ class Test {
 	pub let lab: Test;
 
 	pub operator delete() {
-		extfns.print("Destructing Test...\n");
+		extfnsModule.print("Destructing Test...\n");
 		return;
 	}
 
@@ -35,7 +35,7 @@ class Test {
 	}
 
 	pub fn getX(): i32 {
-		extfns.print("Fetched x: ", this.x, "\n");
+		extfnsModule.print("Fetched x: ", this.x, "\n");
 		return this.x;
 	}
 }
@@ -44,7 +44,7 @@ class Derived(Test) {
 	pub let y: i32;
 
 	pub operator delete() {
-		extfns.print("Destructing Derived...\n");
+		extfnsModule.print("Destructing Derived...\n");
 		return;
 	}
 
@@ -55,13 +55,12 @@ class Derived(Test) {
 	}
 
 	pub fn getY(): i32 {
-		extfns.print("Fetched y: ", this.y, "\n");
+		extfnsModule.print("Fetched y: ", this.y, "\n");
 		return this.y;
 	}
 }
 
 class AnotherDerived(Derived) {
-	pub let x: u32;
 	pub let z: i32;
 
 	pub operator new(i32 z) {
@@ -72,7 +71,7 @@ class AnotherDerived(Derived) {
 	}
 
 	pub fn getZ(): i32 {
-		hostext.extfns.print("Fetched z: ", this.z, "\n");
+		extfnsModule.print("Fetched z: ", this.z, "\n");
 		return this.y;
 	}
 }
@@ -92,7 +91,7 @@ pub fn main(): i32 {
 	test.lab.lab.getX();
 
 	while(test.x = test.x - 1) {
-		hostext.extfns.print("Yielded\n");
+		extfnsModule.print("Yielded\n");
 		yield test.getX();
 	}
 

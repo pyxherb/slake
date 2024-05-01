@@ -1129,7 +1129,9 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 		case ExprType::Ref: {
 			auto e = static_pointer_cast<RefExprNode>(expr);
 
+#if SLKC_WITH_LANGUAGE_SERVER
 			updateCompletionContext(e->ref, CompletionContext::Expr);
+#endif
 
 			deque<pair<Ref, shared_ptr<AstNode>>> resolvedParts;
 			if (!resolveRef(e->ref, resolvedParts))

@@ -2,6 +2,8 @@
 
 using namespace slake::slkc;
 
+#if SLKC_WITH_LANGUAGE_SERVER
+
 void Compiler::updateCompletionContext(size_t idxToken, CompletionContext completionContext) {
 	tokenInfos[idxToken].completionContext = completionContext;
 }
@@ -123,3 +125,5 @@ void Compiler::updateSemanticType(const Ref &ref, SemanticType type) {
 		}
 	}
 }
+
+#endif

@@ -13,7 +13,7 @@ configure_file("config.h.in" ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 target_link_libraries(slkc PRIVATE ${ANTLR_LINK_LIBRARIES} slake)
 set_property(TARGET slkc PROPERTY CXX_STANDARD 17)
 
-set(SLKC_WITH_LANGUAGE_SERVER TRUE CACHE BOOL "Build SLKC")
+set(SLKC_WITH_LANGUAGE_SERVER TRUE CACHE BOOL "Build SLKC with language server support")
 
 add_subdirectory("compiler")
 add_subdirectory("decompiler")

@@ -118,7 +118,7 @@ bool slake::slkc::Compiler::isLValueType(shared_ptr<TypeNameNode> typeName) {
 
 bool Compiler::_isTypeNamesConvertible(shared_ptr<InterfaceNode> st, shared_ptr<ClassNode> dt) {
 	for (auto i : dt->implInterfaces) {
-		auto interface = static_pointer_cast<InterfaceNode>(resolveCustomTypeName((CustomTypeNameNode*)i.get()));
+		auto interface = static_pointer_cast<InterfaceNode>(resolveCustomTypeName((CustomTypeNameNode *)i.get()));
 		assert(interface->getNodeType() == NodeType::Interface);
 
 		if (interface == st)
@@ -366,11 +366,13 @@ shared_ptr<AstNode> Compiler::resolveCustomTypeName(CustomTypeNameNode *typeName
 		if (genericParam) {
 			typeName->resolvedPartsOut.push_back({ Ref{ RefEntry{ typeName->getLocation(), SIZE_MAX, typeName->ref[0].name, {} } }, genericParam });
 
+#if SLKC_WITH_LANGUAGE_SERVER
 			// Update corresponding semantic information.
 			auto &tokenInfo = tokenInfos[typeName->ref[0].idxToken];
 			tokenInfo.semanticInfo.correspondingMember = genericParam;
 			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 			tokenInfo.semanticType = SemanticType::TypeParam;
+#endif
 
 			goto succeeded;
 		}

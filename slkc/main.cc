@@ -3,8 +3,6 @@
 #include "compiler/compiler.h"
 #include "decompiler/decompiler.h"
 
-#include <config.h>
-
 #if SLKC_WITH_LANGUAGE_SERVER
 	#include "server/server.h"
 #endif
@@ -29,9 +27,7 @@ static inline char *fetchArg(int argc, char **argv, int &i) {
 enum class AppAction : uint8_t {
 	Compile = 0,
 	Dump,
-#if SLKC_WITH_LANGUAGE_SERVER
 	LanguageServer
-#endif
 };
 
 std::string srcPath = "", outPath = "";
@@ -61,7 +57,6 @@ CmdLineAction cmdLineActions[] = {
 		[](int argc, char **argv, int &i) {
 			slake::decompiler::decompilerFlags |= slake::decompiler::DECOMP_SRCLOCINFO;
 		} },
-#if SLKC_WITH_LANGUAGE_SERVER
 	{ "-s\0"
 	  "--language-server\0",
 		[](int argc, char **argv, int &i) {
@@ -77,7 +72,6 @@ CmdLineAction cmdLineActions[] = {
 
 			lspServerPort = port;
 		} }
-#endif
 };
 
 int main(int argc, char **argv) {
@@ -176,8 +170,9 @@ int main(int argc, char **argv) {
 				fs.close();
 				break;
 			}
+			case AppAction::LanguageServer:
 #if SLKC_WITH_LANGUAGE_SERVER
-			case AppAction::LanguageServer: {
+			{
 				printf("Language server started on local port %hu\n", lspServerPort);
 
 				slake::slkc::Server server;
@@ -186,6 +181,9 @@ int main(int argc, char **argv) {
 
 				break;
 			}
+#else
+				fputs("This version of SLKC is not compiled with language server support", stderr);
+				break;
 #endif
 			default:
 				assert(false);

@@ -6,6 +6,8 @@
 #include <iostream>
 #include <fstream>
 
+#include <config.h>
+
 namespace slake {
 	namespace slkc {
 		enum class MessageType {
@@ -63,53 +65,6 @@ namespace slake {
 			Call,	 // As the target of a calling expression
 		};
 
-		enum class SemanticType {
-			None = 0,	 // None
-			Type,		 // Type
-			Class,		 // Class
-			Enum,		 // Enumeration
-			Interface,	 // Interface
-			Struct,		 // Structure
-			TypeParam,	 // Type parameter
-			Param,		 // Parameter
-			Var,		 // Variable
-			Property,	 // Property
-			EnumMember,	 // Enumeration Member
-			Fn,			 // Function
-			Method,		 // Method
-			Keyword,	 // Keyword
-			Modifier,	 // Modifier
-			Comment,	 // Comment
-			String,		 // String
-			Number,		 // Number
-			Operator	 // Operator
-		};
-
-		enum class SemanticTokenModifier {
-			Decl = 0,
-			Def,
-			Readonly,
-			Static,
-			Deprecated,
-			Abstract,
-			Async
-		};
-
-		enum class CompletionContext {
-			None = 0,	// No context
-			TopLevel,	// User is entering in the top level.
-			Class,		// User is entering in a class.
-			Interface,	// User is entering in an interface.
-			Trait,		// User is entering in a trait.
-			Stmt,		// User is entering a statement.
-
-			Import,		   // User is entering an import item.
-			Type,		   // User is entering a type name.
-			Name,		   // User is entering name of an identifier.
-			Expr,		   // User is entering an expression.
-			MemberAccess,  // User is accessing an member.
-		};
-
 		/// @brief Statement level context
 		struct MinorContext {
 			shared_ptr<TypeNameNode> expectedType;
@@ -161,6 +116,54 @@ namespace slake {
 					genericParams.end());
 				genericParamIndices = genGenericParamIndicies(this->genericParams);
 			}
+		};
+
+#if SLKC_WITH_LANGUAGE_SERVER
+		enum class SemanticType {
+			None = 0,	 // None
+			Type,		 // Type
+			Class,		 // Class
+			Enum,		 // Enumeration
+			Interface,	 // Interface
+			Struct,		 // Structure
+			TypeParam,	 // Type parameter
+			Param,		 // Parameter
+			Var,		 // Variable
+			Property,	 // Property
+			EnumMember,	 // Enumeration Member
+			Fn,			 // Function
+			Method,		 // Method
+			Keyword,	 // Keyword
+			Modifier,	 // Modifier
+			Comment,	 // Comment
+			String,		 // String
+			Number,		 // Number
+			Operator	 // Operator
+		};
+
+		enum class SemanticTokenModifier {
+			Decl = 0,
+			Def,
+			Readonly,
+			Static,
+			Deprecated,
+			Abstract,
+			Async
+		};
+
+		enum class CompletionContext {
+			None = 0,	// No context
+			TopLevel,	// User is entering in the top level.
+			Class,		// User is entering in a class.
+			Interface,	// User is entering in an interface.
+			Trait,		// User is entering in a trait.
+			Stmt,		// User is entering a statement.
+
+			Import,		   // User is entering an import item.
+			Type,		   // User is entering a type name.
+			Name,		   // User is entering name of an identifier.
+			Expr,		   // User is entering an expression.
+			MemberAccess,  // User is accessing an member.
 		};
 
 		struct TokenContext {
@@ -217,6 +220,7 @@ namespace slake {
 			// Corresponding token context, for completion.
 			TokenContext tokenContext;
 		};
+#endif
 
 		class Compiler {
 		private:
@@ -444,7 +448,7 @@ namespace slake {
 			//
 			// Semantic begin
 			//
-
+#if SLKC_WITH_LANGUAGE_SERVER
 			void updateCompletionContext(size_t idxToken, CompletionContext completionContext);
 			void updateCompletionContext(shared_ptr<TypeNameNode> targetTypeName, CompletionContext completionContext);
 			void updateCompletionContext(const Ref &ref, CompletionContext completionContext);
@@ -452,6 +456,7 @@ namespace slake {
 			void updateSemanticType(size_t idxToken, SemanticType type);
 			void updateSemanticType(shared_ptr<TypeNameNode> targetTypeName, SemanticType type);
 			void updateSemanticType(const Ref &ref, SemanticType type);
+#endif
 
 			//
 			// Semantic end
@@ -489,7 +494,9 @@ namespace slake {
 			friend struct Document;
 
 		public:
+#if SLKC_WITH_LANGUAGE_SERVER
 			std::deque<TokenInfo> tokenInfos;
+#endif
 			deque<Message> messages;
 			deque<string> modulePaths;
 			CompilerOptions options;
@@ -502,27 +509,7 @@ namespace slake {
 
 			void compile(std::istream &is, std::ostream &os, bool isImport = false);
 
-			inline void reset() {
-				curMajorContext = MajorContext();
-				curFn.reset();
-
-				_rootScope = make_shared<Scope>();
-				_targetModule.reset();
-				_rt = make_unique<Runtime>(RT_NOJIT);
-				_savedMajorContexts.clear();
-
-				importedDefinitions.clear();
-				importedModules.clear();
-
-				tokenInfos.clear();
-				messages.clear();
-				modulePaths.clear();
-				options = CompilerOptions();
-				flags = 0;
-				lexer.reset();
-
-				_genericCacheDir.clear();
-			}
+			void reset();
 
 			Ref getFullName(MemberNode *member);
 		};

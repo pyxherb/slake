@@ -26,12 +26,14 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 		return false;
 
 	lvarSucceeded:
+#if SLKC_WITH_LANGUAGE_SERVER
 		// Update corresponding semantic information.
 		auto &tokenInfo = tokenInfos[ref[0].idxToken];
 		tokenInfo.semanticInfo.isTopLevelRef = true;
 		tokenInfo.semanticInfo.correspondingMember = localVar;
 		tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 		tokenInfo.semanticType = SemanticType::Var;
+#endif
 
 		partsOut.push_front({ Ref{ ref.front() }, localVar });
 		return true;
@@ -59,12 +61,14 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 			return false;
 
 		paramSucceeded:
+#if SLKC_WITH_LANGUAGE_SERVER
 			// Update corresponding semantic information.
 			auto &tokenInfo = tokenInfos[ref[0].idxToken];
 			tokenInfo.semanticInfo.isTopLevelRef = true;
 			tokenInfo.semanticInfo.correspondingMember = curFn->params[idxParam];
 			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 			tokenInfo.semanticType = SemanticType::Param;
+#endif
 
 			partsOut.push_front({ Ref{ ref.front() }, make_shared<ArgRefNode>(idxParam) });
 			return true;
@@ -74,12 +78,14 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 	if (ref[0].name == "this") {
 		auto thisRefNode = make_shared<ThisRefNode>();
 
+#if SLKC_WITH_LANGUAGE_SERVER
 		// Update corresponding semantic information.
 		auto &tokenInfo = tokenInfos[ref[0].idxToken];
 		tokenInfo.semanticInfo.isTopLevelRef = true;
 		tokenInfo.semanticInfo.correspondingMember = thisRefNode;
 		tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 		tokenInfo.semanticType = SemanticType::Keyword;
+#endif
 
 		if (ref.size() > 1) {
 			RefResolveContext newResolveContext;
@@ -106,6 +112,7 @@ bool Compiler::resolveRefWithScope(Scope *scope, Ref ref, deque<pair<Ref, shared
 }
 
 bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, const RefResolveContext &resolveContext) {
+#if SLKC_WITH_LANGUAGE_SERVER
 	// Update corresponding semantic information.
 	{
 		TokenContext tokenContext = TokenContext(curFn, curMajorContext);
@@ -130,6 +137,7 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 				tokenInfo.completionContext = CompletionContext::MemberAccess;*/
 		}
 	}
+#endif
 
 	// Raise an error if the reference is incomplete.
 	if (ref[0].idxToken == SIZE_MAX)
@@ -143,11 +151,13 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 		auto newRef = ref;
 		newRef.pop_front();
 
+#if SLKC_WITH_LANGUAGE_SERVER
 		// Update corresponding semantic information.
 		auto &tokenInfo = tokenInfos[ref[0].idxToken];
 		tokenInfo.semanticInfo.correspondingMember = scope->owner->shared_from_this();
 		tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 		tokenInfo.semanticType = SemanticType::Keyword;
+#endif
 
 		bool result = _resolveRefWithOwner(scope, newRef, partsOut, resolveContext);
 		partsOut.push_front({ Ref{ ref.front() }, make_shared<BaseRefNode>() });
@@ -162,6 +172,7 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 
 		m = scope->members.at(ref[0].name);
 
+#if SLKC_WITH_LANGUAGE_SERVER
 		// Update corresponding semantic information.
 		{
 			auto &tokenInfo = tokenInfos[ref[0].idxToken];
@@ -191,6 +202,7 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 					break;
 			}
 		}
+#endif
 
 		if (ref[0].genericArgs.size()) {
 			genericInstantiationContext.genericArgs = &ref[0].genericArgs;

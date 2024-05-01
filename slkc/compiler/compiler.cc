@@ -54,8 +54,10 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport) {
 				"Lexical error"));
 	}
 
+#if SLKC_WITH_LANGUAGE_SERVER
 	if (!isImport)
 		tokenInfos.resize(lexer.tokens.size());
+#endif
 
 	Parser parser;
 	try {
@@ -87,6 +89,7 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport) {
 		for (size_t i = 0; i < _targetModule->moduleName.size(); ++i) {
 			string name = _targetModule->moduleName[i].name;
 
+#if SLKC_WITH_LANGUAGE_SERVER
 			if (_targetModule->moduleName[i].idxToken != SIZE_MAX) {
 				auto &tokenInfo = tokenInfos[_targetModule->moduleName[i].idxToken];
 				tokenInfo.semanticType = i == 0 ? SemanticType::Var : SemanticType::Property;
@@ -96,6 +99,7 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport) {
 				auto &tokenInfo = tokenInfos[_targetModule->moduleName[i].idxAccessOpToken];
 				tokenInfo.semanticType = i == 0 ? SemanticType::Var : SemanticType::Property;
 			}
+#endif
 
 			if (auto it = scope->members.find(name); it != scope->members.end()) {
 				switch (it->second->getNodeType()) {
@@ -148,12 +152,14 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport) {
 
 		_targetModule->scope->members[i.first] = make_shared<AliasNode>(lexer.tokens[i.second.idxNameToken].beginLocation, this, i.first, i.second.ref);
 
+#if SLKC_WITH_LANGUAGE_SERVER
 		if (i.second.idxNameToken != SIZE_MAX) {
 			// Update corresponding semantic information.
 			auto &tokenInfo = tokenInfos[i.second.idxNameToken];
 			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 			tokenInfo.semanticType = SemanticType::Property;
 		}
+#endif
 	}
 
 	popMajorContext();
@@ -237,6 +243,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 				auto m = static_pointer_cast<VarNode>(i.second);
 				vars[i.first] = m;
 
+#if SLKC_WITH_LANGUAGE_SERVER
 				if (m->type)
 					updateCompletionContext(m->type, CompletionContext::Type);
 
@@ -246,12 +253,14 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 					tokenInfo.semanticType = SemanticType::Var;
 				}
+#endif
 				break;
 			}
 			case NodeType::Fn: {
 				auto m = static_pointer_cast<FnNode>(i.second);
 				funcs[i.first] = m;
 
+#if SLKC_WITH_LANGUAGE_SERVER
 				for (auto &j : m->overloadingRegistries) {
 					if (j->idxNameToken != SIZE_MAX) {
 						// Update corresponding semantic information.
@@ -281,12 +290,14 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 						}
 					}
 				}
+#endif
 				break;
 			}
 			case NodeType::Class: {
 				auto m = static_pointer_cast<ClassNode>(i.second);
 				classes[i.first] = m;
 
+#if SLKC_WITH_LANGUAGE_SERVER
 				if (m->idxNameToken != SIZE_MAX) {
 					// Update corresponding semantic information.
 					auto &tokenInfo = tokenInfos[m->idxNameToken];
@@ -302,12 +313,14 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 						tokenInfo.semanticType = SemanticType::TypeParam;
 					}
 				}
+#endif
 				break;
 			}
 			case NodeType::Interface: {
 				auto m = static_pointer_cast<InterfaceNode>(i.second);
 				interfaces[i.first] = m;
 
+#if SLKC_WITH_LANGUAGE_SERVER
 				if (m->idxNameToken != SIZE_MAX) {
 					// Update corresponding semantic information.
 					auto &tokenInfo = tokenInfos[m->idxNameToken];
@@ -323,12 +336,14 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 						tokenInfo.semanticType = SemanticType::TypeParam;
 					}
 				}
+#endif
 				break;
 			}
 			case NodeType::Trait: {
 				auto m = static_pointer_cast<TraitNode>(i.second);
 				traits[i.first] = m;
 
+#if SLKC_WITH_LANGUAGE_SERVER
 				if (m->idxNameToken != SIZE_MAX) {
 					// Update corresponding semantic information.
 					auto &tokenInfo = tokenInfos[m->idxNameToken];
@@ -344,6 +359,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 						tokenInfo.semanticType = SemanticType::TypeParam;
 					}
 				}
+#endif
 				break;
 			}
 			case NodeType::Alias:
@@ -938,4 +954,28 @@ void slake::slkc::Compiler::compileGenericParam(std::ostream &fs, shared_ptr<Gen
 
 	for (auto i : genericParam->traitTypes)
 		compileTypeName(fs, i);
+}
+
+void slake::slkc::Compiler::reset() {
+	curMajorContext = MajorContext();
+	curFn.reset();
+
+	_rootScope = make_shared<Scope>();
+	_targetModule.reset();
+	_rt = make_unique<Runtime>(RT_NOJIT);
+	_savedMajorContexts.clear();
+
+	importedDefinitions.clear();
+	importedModules.clear();
+
+#if SLKC_WITH_LANGUAGE_SERVER
+	tokenInfos.clear();
+#endif
+	messages.clear();
+	modulePaths.clear();
+	options = CompilerOptions();
+	flags = 0;
+	lexer.reset();
+
+	_genericCacheDir.clear();
 }

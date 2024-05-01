@@ -902,11 +902,13 @@ shared_ptr<VarDefStmtNode> Parser::parseVarDefs() {
 		if (auto &token = lexer->peekToken(); token.tokenId == TokenId::Colon) {
 			lexer->nextToken();
 
+#if SLKC_WITH_LANGUAGE_SERVER
 			// Update corresponding semantic information.
 			auto &tokenInfo = compiler->tokenInfos[lexer->getTokenIndex(token)];
 			tokenInfo.tokenContext.curScope = curScope;
 			tokenInfo.completionContext = CompletionContext::Type;
 			tokenInfo.semanticInfo.isTopLevelRef = true;
+#endif
 
 			type = parseTypeName();
 		}
@@ -1232,11 +1234,13 @@ shared_ptr<FnOverloadingNode> Parser::parseFnDecl(string &nameOut) {
 	if (auto &token = lexer->peekToken(); token.tokenId == TokenId::Colon) {
 		lexer->nextToken();
 
+#if SLKC_WITH_LANGUAGE_SERVER
 		// Update corresponding semantic information.
 		auto &tokenInfo = compiler->tokenInfos[lexer->getTokenIndex(token)];
 		tokenInfo.tokenContext.curScope = curScope;
 		tokenInfo.completionContext = CompletionContext::Type;
 		tokenInfo.semanticInfo.isTopLevelRef = true;
+#endif
 
 		returnType = parseTypeName();
 	}
@@ -1343,11 +1347,13 @@ shared_ptr<FnOverloadingNode> Parser::parseOperatorDecl(string &nameOut) {
 	if (auto &token = lexer->peekToken(); token.tokenId == TokenId::Colon) {
 		lexer->nextToken();
 
+#if SLKC_WITH_LANGUAGE_SERVER
 		// Update corresponding semantic information.
 		auto &tokenInfo = compiler->tokenInfos[lexer->getTokenIndex(token)];
 		tokenInfo.tokenContext.curScope = curScope;
 		tokenInfo.completionContext = CompletionContext::Type;
 		tokenInfo.semanticInfo.isTopLevelRef = true;
+#endif
 
 		returnType = parseTypeName();
 	}

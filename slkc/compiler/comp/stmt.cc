@@ -21,6 +21,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 			auto s = static_pointer_cast<VarDefStmtNode>(stmt);
 
 			for (auto &i : s->varDefs) {
+#if SLKC_WITH_LANGUAGE_SERVER
 				if (i.second.type)
 					updateCompletionContext(i.second.type, CompletionContext::Type);
 
@@ -31,6 +32,7 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 					tokenInfo.semanticType = SemanticType::Var;
 					tokenInfo.completionContext = CompletionContext::Name;
 				}
+#endif
 
 				if (curMajorContext.curMinorContext.localVars.count(i.first))
 					throw FatalCompilationError(

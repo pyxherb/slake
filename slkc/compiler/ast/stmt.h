@@ -29,7 +29,6 @@ namespace slake {
 			CodeBlock,	// Code block
 
 			Bad,	 // Bad statement - unrecognized statement type
-			BadExpr	 // Bad expression - malformed expression statements, e.g. expression statements without ending semicolon.
 		};
 
 		class StmtNode : public AstNode {
@@ -63,15 +62,13 @@ namespace slake {
 			Location _loc;
 
 		public:
-			size_t beginTokenIndex, endTokenIndex;
+			shared_ptr<StmtNode> body;
 
 			inline BadStmtNode(
 				Location loc,
-				size_t beginTokenIndex,
-				size_t endTokenIndex)
+				shared_ptr<StmtNode> body)
 				: _loc(loc),
-				  beginTokenIndex(beginTokenIndex),
-				  endTokenIndex(endTokenIndex) {}
+				  body(body) {}
 			virtual ~BadStmtNode() = default;
 
 			virtual inline Location getLocation() const override { return _loc; }
@@ -79,30 +76,11 @@ namespace slake {
 			virtual inline StmtType getStmtType() const override { return StmtType::Bad; }
 		};
 
-		class BadExprStmtNode : public StmtNode {
-		private:
-			Location _loc;
-
-		public:
-			shared_ptr<ExprNode> expr;
-
-			inline BadExprStmtNode(
-				Location loc,
-				shared_ptr<ExprNode> expr)
-				: _loc(loc),
-				  expr(expr) {}
-			virtual ~BadExprStmtNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
-
-			virtual inline StmtType getStmtType() const override { return StmtType::BadExpr; }
-		};
-
 		class ExprStmtNode : public StmtNode {
 		public:
 			shared_ptr<ExprNode> expr;
 
-			inline ExprStmtNode(shared_ptr<ExprNode> expr) : expr(expr) {}
+			inline ExprStmtNode() {}
 			virtual ~ExprStmtNode() = default;
 
 			virtual inline Location getLocation() const override { return expr->getLocation(); }
@@ -174,13 +152,7 @@ namespace slake {
 			shared_ptr<ExprNode> endExpr;
 			shared_ptr<StmtNode> body;
 
-			inline ForStmtNode(
-				Location loc,
-				shared_ptr<VarDefStmtNode> varDefs,
-				shared_ptr<ExprNode> condition,
-				shared_ptr<ExprNode> endExpr,
-				shared_ptr<StmtNode> body)
-				: _loc(loc), varDefs(varDefs), condition(condition), body(body), endExpr(endExpr) {}
+			inline ForStmtNode(Location loc) : _loc(loc) {}
 			virtual ~ForStmtNode() = default;
 
 			virtual inline Location getLocation() const override { return _loc; }
@@ -196,11 +168,7 @@ namespace slake {
 			shared_ptr<ExprNode> condition;
 			shared_ptr<StmtNode> body;
 
-			inline WhileStmtNode(
-				Location loc,
-				shared_ptr<ExprNode> condition,
-				shared_ptr<StmtNode> body)
-				: _loc(loc), condition(condition), body(body) {}
+			inline WhileStmtNode(Location loc) : _loc(loc) {}
 			virtual ~WhileStmtNode() = default;
 
 			virtual inline Location getLocation() const override { return _loc; }
@@ -215,10 +183,7 @@ namespace slake {
 		public:
 			shared_ptr<ExprNode> returnValue;
 
-			inline ReturnStmtNode(
-				Location loc,
-				shared_ptr<ExprNode> returnValue)
-				: _loc(loc), returnValue(returnValue) {}
+			inline ReturnStmtNode(Location loc) : _loc(loc) {}
 			virtual ~ReturnStmtNode() = default;
 
 			virtual inline Location getLocation() const override { return _loc; }
@@ -228,10 +193,7 @@ namespace slake {
 
 		class YieldStmtNode : public ReturnStmtNode {
 		public:
-			inline YieldStmtNode(
-				Location loc,
-				shared_ptr<ExprNode> returnValue)
-				: ReturnStmtNode(loc, returnValue) {}
+			inline YieldStmtNode(Location loc) : ReturnStmtNode(loc) {}
 			virtual ~YieldStmtNode() = default;
 
 			virtual inline StmtType getStmtType() const override { return StmtType::Yield; }
@@ -242,22 +204,11 @@ namespace slake {
 			Location _loc;
 
 		public:
-			shared_ptr<VarDefStmtNode> varDefs;
 			shared_ptr<ExprNode> condition;
 			shared_ptr<StmtNode> body;
 			shared_ptr<StmtNode> elseBranch;
 
-			inline IfStmtNode(
-				Location loc,
-				shared_ptr<VarDefStmtNode> varDefs,
-				shared_ptr<ExprNode> condition,
-				shared_ptr<StmtNode> body,
-				shared_ptr<StmtNode> elseBranch)
-				: _loc(loc),
-				  condition(condition),
-				  varDefs(varDefs),
-				  body(body),
-				  elseBranch(elseBranch) {
+			inline IfStmtNode(Location loc) : _loc(loc) {
 			}
 			virtual ~IfStmtNode() = default;
 
@@ -288,7 +239,7 @@ namespace slake {
 			shared_ptr<StmtNode> body;
 
 			FinalBlock() = default;
-			inline FinalBlock(Location loc, shared_ptr<StmtNode> body) : loc(loc), body(body) {}
+			inline FinalBlock(Location loc) : loc(loc) {}
 		};
 
 		class TryStmtNode : public StmtNode {
@@ -301,14 +252,8 @@ namespace slake {
 			FinalBlock finalBlock;
 
 			inline TryStmtNode(
-				Location loc,
-				shared_ptr<StmtNode> body,
-				deque<CatchBlock> catchBlocks,
-				FinalBlock finalBlock)
-				: _loc(loc),
-				  body(body),
-				  catchBlocks(catchBlocks),
-				  finalBlock(finalBlock) {
+				Location loc)
+				: _loc(loc) {
 			}
 			virtual ~TryStmtNode() = default;
 
@@ -357,11 +302,7 @@ namespace slake {
 			shared_ptr<ExprNode> expr;
 			deque<SwitchCase> cases;
 
-			inline SwitchStmtNode(
-				Location loc,
-				shared_ptr<ExprNode> expr,
-				deque<SwitchCase> cases)
-				: _loc(loc), expr(expr), cases(cases) {}
+			inline SwitchStmtNode(Location loc) : _loc(loc) {}
 			virtual ~SwitchStmtNode() = default;
 
 			virtual inline Location getLocation() const override { return _loc; }

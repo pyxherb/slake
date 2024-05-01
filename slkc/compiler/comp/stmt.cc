@@ -386,20 +386,8 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 		case StmtType::Bad: {
 			auto s = static_pointer_cast<BadStmtNode>(stmt);
 
-			// Fill token information for completion.
-			for (size_t i = s->beginTokenIndex; i <= s->endTokenIndex; ++i) {
-				tokenInfos[i].completionContext = CompletionContext::Stmt;
-				tokenInfos[i].tokenContext = TokenContext(curFn, curMajorContext);
-			}
-			break;
-		}
-		case StmtType::BadExpr: {
-			auto s = static_pointer_cast<BadExprStmtNode>(stmt);
-
-			// Compile the expression to fill token information for completion.
-			if (s->expr)
-				compileExpr(s->expr);
-
+			if (s->body)
+				compileStmt(s->body);
 			break;
 		}
 		default:

@@ -200,6 +200,20 @@ std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(Location lo
 				NodeType::Trait,
 				NodeType::Module });
 	} else {
+		do {
+			switch (compiler->lexer.tokens[idxToken].tokenId) {
+				case TokenId::Whitespace:
+				case TokenId::NewLine:
+				case TokenId::Comment:
+					break;
+				default:
+					goto succeeded;
+			}
+		} while (idxToken--);
+
+		return {};
+
+	succeeded:
 		Token &token = compiler->lexer.tokens[idxToken];
 		TokenInfo &tokenInfo = compiler->tokenInfos[idxToken];
 

@@ -56,6 +56,15 @@ namespace slake {
 				compiler = nullptr;
 			}
 
+			inline const Token &expectToken(TokenId tokenId) {
+				const auto &token = lexer->peekToken();
+				if (token.tokenId == tokenId) {
+					lexer->nextToken();
+					return token;
+				}
+				throw SyntaxError(std::string("Expecting ") + getTokenName(tokenId), token.beginLocation);
+			}
+
 			inline const Token &expectToken(const Token &token) {
 				if (token.tokenId == TokenId::End)
 					throw SyntaxError("Expecting more tokens", token.beginLocation);
@@ -104,7 +113,7 @@ namespace slake {
 
 			deque<shared_ptr<ParamNode>> parseParams();
 
-			shared_ptr<FnOverloadingNode> parseFnDecl(string& nameOut);
+			shared_ptr<FnOverloadingNode> parseFnDecl(string &nameOut);
 			shared_ptr<FnOverloadingNode> parseFnDef(string &nameOut);
 			shared_ptr<FnOverloadingNode> parseOperatorDecl(string &nameOut);
 			shared_ptr<FnOverloadingNode> parseOperatorDef(string &nameOut);

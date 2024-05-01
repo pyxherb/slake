@@ -110,18 +110,23 @@ int main(int argc, char **argv) {
 	std::unique_ptr<slake::Runtime> rt = std::make_unique<slake::Runtime>(slake::RT_DEBUG | slake::RT_GCDBG);
 
 	slake::ValueRef<slake::ModuleValue> mod;
-	try {
+	{
 		std::ifstream fs;
-		fs.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
-		fs.open("hostext/main.slx", std::ios_base::in | std::ios_base::binary);
+		try {
+			fs.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
+			fs.open("hostext/main.slx", std::ios_base::in | std::ios_base::binary);
 
-		rt->setModuleLocator(fsModuleLocator);
-		slake::stdlib::load(rt.get());
+			rt->setModuleLocator(fsModuleLocator);
+			slake::stdlib::load(rt.get());
 
-		mod = rt->loadModule(fs, slake::LMOD_NOCONFLICT);
-	} catch (std::ios::failure e) {
-		printf("Error loading main module: %s\n", e.what());
-		return -1;
+			mod = rt->loadModule(fs, slake::LMOD_NOCONFLICT);
+		} catch (slake::LoaderError e) {
+			printf("Error loading main module: %s, at file offset %zu\n", e.what(), (size_t)fs.tellg());
+		}
+		catch (std::ios::failure e) {
+			printf("Error loading main module: %s, at file offset %zu\n", e.what(), (size_t)fs.tellg());
+			return -1;
+		}
 	}
 
 	((slake::ModuleValue *)((slake::ModuleValue *)rt->getRootValue()->getMember("hostext"))->getMember("extfns"))->scope->putMember("print", new slake::NativeFnValue(rt.get(), print, slake::ACCESS_PUB, slake::TypeId::None));

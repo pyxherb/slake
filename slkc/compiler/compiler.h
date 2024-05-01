@@ -449,6 +449,10 @@ namespace slake {
 			void updateCompletionContext(shared_ptr<TypeNameNode> targetTypeName, CompletionContext completionContext);
 			void updateCompletionContext(const Ref &ref, CompletionContext completionContext);
 
+			void updateSemanticType(size_t idxToken, SemanticType type);
+			void updateSemanticType(shared_ptr<TypeNameNode> targetTypeName, SemanticType type);
+			void updateSemanticType(const Ref &ref, SemanticType type);
+
 			//
 			// Semantic end
 			//
@@ -461,7 +465,7 @@ namespace slake {
 			void verifyInheritanceChain(InterfaceNode *node, std::set<AstNode *> &walkedNodes);
 			void verifyInheritanceChain(TraitNode *node, std::set<AstNode *> &walkedNodes);
 
-			inline void verifyInheritanceChain(ClassNode* node) {
+			inline void verifyInheritanceChain(ClassNode *node) {
 				std::set<AstNode *> walkedNodes;
 				verifyInheritanceChain(node, walkedNodes);
 			}

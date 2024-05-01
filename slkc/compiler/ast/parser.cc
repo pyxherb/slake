@@ -551,7 +551,7 @@ shared_ptr<TypeNameNode> Parser::parseTypeName() {
 		if (!type)
 			return {};
 
-		expectToken(lexer->nextToken(), TokenId::RBracket);
+		expectToken(TokenId::RBracket);
 	}
 
 	if (auto &token = lexer->peekToken(); token.tokenId == TokenId::AndOp) {
@@ -599,7 +599,7 @@ Ref Parser::parseModuleRef() {
 	Ref ref;
 
 	while (true) {
-		auto &nameToken = expectToken(lexer->nextToken(), TokenId::Id);
+		auto &nameToken = expectToken(TokenId::Id);
 		auto nameTokenIndex = lexer->getTokenIndex(nameToken);
 
 		ref.push_back(RefEntry(nameToken.beginLocation, nameTokenIndex, nameToken.text));
@@ -723,16 +723,16 @@ shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 			case TokenId::LParenthese:
 				lexer->nextToken();
 				parseExpr(precedence);
-				expectToken(lexer->nextToken(), TokenId::RParenthese);
+				expectToken(TokenId::RParenthese);
 				break;
 			case TokenId::NewKeyword: {
 				lexer->nextToken();
 
 				auto typeName = parseTypeName();
 
-				expectToken(lexer->nextToken(), TokenId::LParenthese);
+				expectToken(TokenId::LParenthese);
 				auto args = parseArgs();
-				expectToken(lexer->nextToken(), TokenId::RParenthese);
+				expectToken(TokenId::RParenthese);
 
 				lhs = make_shared<NewExprNode>(prefixToken.beginLocation, typeName, args);
 
@@ -843,7 +843,7 @@ shared_ptr<TypeNameNode> Parser::parseParentSlot() {
 
 		baseClass = parseTypeName();
 
-		expectToken(lexer->nextToken(), TokenId::RParenthese);
+		expectToken(TokenId::RParenthese);
 	}
 
 	return baseClass;
@@ -883,24 +883,31 @@ deque<shared_ptr<TypeNameNode>> Parser::parseTraitList() {
 			lexer->nextToken();
 		}
 
-		expectToken(lexer->nextToken(), TokenId::RBracket);
+		expectToken(TokenId::RBracket);
 	}
 
 	return inheritedTraits;
 }
 
 shared_ptr<VarDefStmtNode> Parser::parseVarDefs() {
-	auto &letKeywordToken = expectToken(lexer->nextToken(), TokenId::LetKeyword);
+	auto &letKeywordToken = expectToken(TokenId::LetKeyword);
 	shared_ptr<VarDefStmtNode> varDefStmt = make_shared<VarDefStmtNode>(letKeywordToken.beginLocation);
 
 	while (true) {
-		auto &nameToken = expectToken(lexer->nextToken(), TokenId::Id);
+		auto &nameToken = expectToken(TokenId::Id);
 		size_t idxNameToken = lexer->getTokenIndex(nameToken);
 		shared_ptr<ExprNode> initValue;
 		shared_ptr<TypeNameNode> type;
 
 		if (auto &token = lexer->peekToken(); token.tokenId == TokenId::Colon) {
 			lexer->nextToken();
+
+			// Update corresponding semantic information.
+			auto &tokenInfo = compiler->tokenInfos[lexer->getTokenIndex(token)];
+			tokenInfo.tokenContext.curScope = curScope;
+			tokenInfo.completionContext = CompletionContext::Type;
+			tokenInfo.semanticInfo.isTopLevelRef = true;
+
 			type = parseTypeName();
 		}
 
@@ -922,125 +929,110 @@ shared_ptr<VarDefStmtNode> Parser::parseVarDefs() {
 
 shared_ptr<StmtNode> Parser::parseStmt() {
 	LexerContext beginContext = lexer->context;
+	shared_ptr<StmtNode> result;
 
 	try {
 		switch (auto &beginToken = lexer->peekToken(); beginToken.tokenId) {
 			case TokenId::BreakKeyword:
 				lexer->nextToken();
-				expectToken(lexer->nextToken(), TokenId::Semicolon);
-				return static_pointer_cast<StmtNode>(
+				result = static_pointer_cast<StmtNode>(
 					make_shared<BreakStmtNode>(beginToken.beginLocation));
+
+				expectToken(TokenId::Semicolon);
+				break;
 			case TokenId::ContinueKeyword:
 				lexer->nextToken();
-				expectToken(lexer->nextToken(), TokenId::Semicolon);
-				return static_pointer_cast<StmtNode>(
+				result = static_pointer_cast<StmtNode>(
 					make_shared<ContinueStmtNode>(beginToken.beginLocation));
+
+				expectToken(TokenId::Semicolon);
+				break;
 			case TokenId::ForKeyword: {
 				lexer->nextToken();
 
-				expectToken(lexer->nextToken(), TokenId::LParenthese);
+				auto stmt = make_shared<ForStmtNode>(beginToken.beginLocation);
+				result = static_pointer_cast<StmtNode>(stmt);
 
-				auto varDefs = parseVarDefs();
-				expectToken(lexer->nextToken(), TokenId::Semicolon);
+				expectToken(TokenId::LParenthese);
 
-				auto condition = parseExpr();
-				expectToken(lexer->nextToken(), TokenId::Semicolon);
+				stmt->varDefs = parseVarDefs();
+				expectToken(TokenId::Semicolon);
 
-				auto endExpr = parseExpr();
-				expectToken(lexer->nextToken(), TokenId::RParenthese);
+				stmt->condition = parseExpr();
+				expectToken(TokenId::Semicolon);
 
-				auto body = parseStmt();
+				stmt->endExpr = parseExpr();
+				expectToken(TokenId::RParenthese);
 
-				return static_pointer_cast<StmtNode>(
-					make_shared<ForStmtNode>(
-						beginToken.beginLocation,
-						varDefs,
-						condition,
-						endExpr,
-						body));
+				stmt->body = parseStmt();
+				break;
 			}
 			case TokenId::WhileKeyword: {
 				lexer->nextToken();
 
-				expectToken(lexer->nextToken(), TokenId::LParenthese);
-				auto condition = parseExpr();
-				expectToken(lexer->nextToken(), TokenId::RParenthese);
+				auto stmt = make_shared<WhileStmtNode>(beginToken.beginLocation);
+				result = static_pointer_cast<StmtNode>(stmt);
 
-				auto body = parseStmt();
+				expectToken(TokenId::LParenthese);
+				stmt->condition = parseExpr();
+				expectToken(TokenId::RParenthese);
 
-				return static_pointer_cast<StmtNode>(
-					make_shared<WhileStmtNode>(beginToken.beginLocation, condition, body));
+				stmt->body = parseStmt();
+				break;
 			}
 			case TokenId::ReturnKeyword: {
 				lexer->nextToken();
 
+				auto stmt = make_shared<ReturnStmtNode>(beginToken.beginLocation);
+				result = static_pointer_cast<StmtNode>(stmt);
+
 				if (auto &token = lexer->peekToken(); token.tokenId == TokenId::Semicolon) {
 					lexer->nextToken();
-					return static_pointer_cast<StmtNode>(
-						make_shared<ReturnStmtNode>(beginToken.beginLocation, shared_ptr<ExprNode>()));
 				} else {
-					auto stmt = static_pointer_cast<StmtNode>(
-						make_shared<ReturnStmtNode>(beginToken.beginLocation, parseExpr()));
-					expectToken(lexer->nextToken(), TokenId::Semicolon);
-					return stmt;
+					stmt->returnValue = parseExpr();
+					expectToken(TokenId::Semicolon);
 				}
+				break;
 			}
 			case TokenId::YieldKeyword: {
 				lexer->nextToken();
 
+				auto stmt = make_shared<YieldStmtNode>(beginToken.beginLocation);
+				result = static_pointer_cast<StmtNode>(stmt);
+
 				if (auto &token = lexer->peekToken(); token.tokenId == TokenId::Semicolon) {
 					lexer->nextToken();
-					return static_pointer_cast<StmtNode>(
-						make_shared<YieldStmtNode>(beginToken.beginLocation, shared_ptr<ExprNode>()));
 				} else {
-					auto stmt = static_pointer_cast<StmtNode>(
-						make_shared<YieldStmtNode>(beginToken.beginLocation, parseExpr()));
-					expectToken(lexer->nextToken(), TokenId::Semicolon);
-					return stmt;
+					stmt->returnValue = parseExpr();
+					expectToken(TokenId::Semicolon);
 				}
+				break;
 			}
 			case TokenId::IfKeyword: {
 				lexer->nextToken();
 
-				shared_ptr<VarDefStmtNode> varDefs;
+				auto stmt = make_shared<IfStmtNode>(beginToken.beginLocation);
+				result = static_pointer_cast<StmtNode>(stmt);
 
-				expectToken(lexer->nextToken(), TokenId::LParenthese);
+				stmt->condition = parseExpr();
 
-				{
-					LexerContext savedContext = lexer->context;
-					try {
-						varDefs = parseVarDefs();
-						if (varDefs)
-							expectToken(lexer->nextToken(), TokenId::Semicolon);
-					} catch (SyntaxError e) {
-						lexer->context = savedContext;
-					}
-				}
+				expectToken(TokenId::RParenthese);
 
-				auto condition = parseExpr();
-
-				expectToken(lexer->nextToken(), TokenId::RParenthese);
-
-				shared_ptr<StmtNode> body = parseStmt(), elseBranch;
+				stmt->body = parseStmt();
 
 				if (lexer->peekToken().tokenId == TokenId::ElseKeyword) {
 					lexer->nextToken();
-					elseBranch = parseStmt();
+					stmt->elseBranch = parseStmt();
 				}
-
-				return static_pointer_cast<StmtNode>(
-					make_shared<IfStmtNode>(
-						beginToken.beginLocation,
-						varDefs,
-						condition,
-						body,
-						elseBranch));
+				break;
 			}
 			case TokenId::TryKeyword: {
 				lexer->nextToken();
 
-				auto body = parseStmt();
-				deque<CatchBlock> catchBlocks;
+				auto stmt = make_shared<TryStmtNode>(beginToken.beginLocation);
+				result = static_pointer_cast<StmtNode>(stmt);
+
+				stmt->body = parseStmt();
 				FinalBlock finalBlock;
 
 				while (true) {
@@ -1050,7 +1042,7 @@ shared_ptr<StmtNode> Parser::parseStmt() {
 
 					lexer->nextToken();
 
-					expectToken(lexer->nextToken(), TokenId::LParenthese);
+					expectToken(TokenId::LParenthese);
 
 					auto targetType = parseTypeName();
 					std::string exceptionVarName;
@@ -1060,11 +1052,11 @@ shared_ptr<StmtNode> Parser::parseStmt() {
 						exceptionVarName = nameToken.text;
 					}
 
-					expectToken(lexer->nextToken(), TokenId::RParenthese);
+					expectToken(TokenId::RParenthese);
 
 					auto body = parseStmt();
 
-					catchBlocks.push_back({ catchToken.beginLocation,
+					stmt->catchBlocks.push_back({ catchToken.beginLocation,
 						targetType,
 						exceptionVarName,
 						body });
@@ -1072,27 +1064,25 @@ shared_ptr<StmtNode> Parser::parseStmt() {
 
 				if (auto &finalToken = lexer->peekToken(); finalToken.tokenId == TokenId::FinalKeyword) {
 					lexer->nextToken();
-					finalBlock = { finalToken.beginLocation, parseStmt() };
+					stmt->finalBlock.loc = finalToken.beginLocation;
+					stmt->finalBlock.body = parseStmt();
 				}
 
-				return static_pointer_cast<StmtNode>(
-					make_shared<TryStmtNode>(
-						beginToken.beginLocation,
-						body,
-						catchBlocks,
-						finalBlock));
+				break;
 			}
 			case TokenId::SwitchKeyword: {
 				lexer->nextToken();
 
-				expectToken(lexer->nextToken(), TokenId::LParenthese);
+				auto stmt = make_shared<SwitchStmtNode>(beginToken.beginLocation);
+				result = static_pointer_cast<StmtNode>(stmt);
 
-				shared_ptr<ExprNode> expr = parseExpr();
-				deque<SwitchCase> cases;
+				expectToken(TokenId::LParenthese);
 
-				expectToken(lexer->nextToken(), TokenId::RParenthese);
+				stmt->expr = parseExpr();
 
-				expectToken(lexer->nextToken(), TokenId::LBrace);
+				expectToken(TokenId::RParenthese);
+
+				expectToken(TokenId::LBrace);
 
 				while (true) {
 					auto &caseToken = lexer->peekToken();
@@ -1113,7 +1103,7 @@ shared_ptr<StmtNode> Parser::parseStmt() {
 						body.push_back(parseStmt());
 					}
 
-					cases.push_back({ caseToken.beginLocation, body, condition });
+					stmt->cases.push_back({ caseToken.beginLocation, body, condition });
 				}
 
 				if (auto &defaultToken = lexer->peekToken(); defaultToken.tokenId == TokenId::DefaultKeyword) {
@@ -1127,17 +1117,18 @@ shared_ptr<StmtNode> Parser::parseStmt() {
 						body.push_back(parseStmt());
 					}
 
-					cases.push_back({ defaultToken.beginLocation, body });
+					stmt->cases.push_back({ defaultToken.beginLocation, body });
 				}
 
-				expectToken(lexer->nextToken(), TokenId::RBrace);
+				expectToken(TokenId::RBrace);
 
-				return static_pointer_cast<StmtNode>(make_shared<SwitchStmtNode>(beginToken.beginLocation, expr, cases));
+				break;
 			}
 			case TokenId::LBrace: {
 				lexer->nextToken();
 
-				CodeBlock codeBlock = { beginToken.beginLocation, {} };
+				auto stmt = make_shared<CodeBlockStmtNode>(CodeBlock{ beginToken.beginLocation, {} });
+				result = static_pointer_cast<StmtNode>(stmt);
 
 				while (true) {
 					if (lexer->peekToken().tokenId == TokenId::RBrace) {
@@ -1145,43 +1136,28 @@ shared_ptr<StmtNode> Parser::parseStmt() {
 						break;
 					}
 
-					codeBlock.stmts.push_back(parseStmt());
+					stmt->body.stmts.push_back(parseStmt());
 				}
 
-				return static_pointer_cast<StmtNode>(make_shared<CodeBlockStmtNode>(codeBlock));
+				break;
 			}
 			case TokenId::LetKeyword: {
 				auto stmt = parseVarDefs();
-				expectToken(lexer->nextToken(), TokenId::Semicolon);
+				result = static_pointer_cast<StmtNode>(stmt);
 
-				for (auto &i : stmt->varDefs) {
-					_putDefinition(
-						i.second.loc,
-						i.first,
-						make_shared<VarNode>(
-							i.second.loc,
-							compiler,
-							0,
-							i.second.type,
-							i.first,
-							i.second.initValue,
-							i.second.idxNameToken));
-				}
+				expectToken(TokenId::Semicolon);
 
-				return stmt;
+				break;
 			}
 			default: {
-				auto expr = parseExpr();
-				if (auto &token = lexer->peekToken(); token.tokenId != TokenId::Semicolon) {
-					compiler->messages.push_back(
-						Message(
-							token.beginLocation,
-							MessageType::Error,
-							"Expecting ;"));
-					return make_shared<BadExprStmtNode>(beginToken.beginLocation, expr);
-				}
-				lexer->nextToken();
-				return make_shared<ExprStmtNode>(expr);
+				auto stmt = make_shared<ExprStmtNode>();
+				result = stmt;
+
+				stmt->expr = parseExpr();
+
+				expectToken(TokenId::Semicolon);
+
+				break;
 			}
 		}
 	} catch (SyntaxError e) {
@@ -1190,8 +1166,10 @@ shared_ptr<StmtNode> Parser::parseStmt() {
 				e.location,
 				MessageType::Error,
 				e.what()));
-		return make_shared<BadStmtNode>(e.location, beginContext.curIndex, lexer->context.curIndex);
+		return make_shared<BadStmtNode>(e.location, result);
 	}
+
+	return result;
 }
 
 deque<shared_ptr<ParamNode>> Parser::parseParams() {
@@ -1215,7 +1193,7 @@ deque<shared_ptr<ParamNode>> Parser::parseParams() {
 		}
 
 		auto type = parseTypeName();
-		auto &nameToken = expectToken(lexer->nextToken(), TokenId::Id);
+		auto &nameToken = expectToken(TokenId::Id);
 		size_t idxNameToken = lexer->getTokenIndex(nameToken);
 
 		params.push_back(make_shared<ParamNode>(type->getLocation(), type, nameToken.text, idxNameToken));
@@ -1230,9 +1208,9 @@ deque<shared_ptr<ParamNode>> Parser::parseParams() {
 }
 
 shared_ptr<FnOverloadingNode> Parser::parseFnDecl(string &nameOut) {
-	auto &fnKeywordToken = expectToken(lexer->nextToken(), TokenId::FnKeyword);
+	auto &fnKeywordToken = expectToken(TokenId::FnKeyword);
 
-	auto &nameToken = expectToken(lexer->nextToken(), TokenId::Id);
+	auto &nameToken = expectToken(TokenId::Id);
 	size_t idxNameToken = lexer->getTokenIndex(nameToken);
 
 	auto savedScope = curScope;
@@ -1243,9 +1221,9 @@ shared_ptr<FnOverloadingNode> Parser::parseFnDecl(string &nameOut) {
 	if (lexer->peekToken().tokenId == TokenId::LtOp)
 		genericParams = parseGenericParams();
 
-	expectToken(lexer->nextToken(), TokenId::LParenthese);
+	expectToken(TokenId::LParenthese);
 	auto params = parseParams();
-	expectToken(lexer->nextToken(), TokenId::RParenthese);
+	expectToken(TokenId::RParenthese);
 
 	nameOut = nameToken.text;
 
@@ -1292,18 +1270,18 @@ shared_ptr<FnOverloadingNode> Parser::parseFnDef(string &nameOut) {
 		}
 
 		overloading->body = make_shared<BlockStmtNode>(
-			stmts.empty() ? token.beginLocation : stmts[0]->getLocation(),
+			token.beginLocation,
 			stmts);
 
 		curScope = savedScope;
 	} else
-		expectToken(lexer->nextToken(), TokenId::Semicolon);
+		expectToken(TokenId::Semicolon);
 
 	return overloading;
 }
 
 shared_ptr<FnOverloadingNode> Parser::parseOperatorDecl(string &nameOut) {
-	auto &operatorKeywordToken = expectToken(lexer->nextToken(), TokenId::OperatorKeyword);
+	auto &operatorKeywordToken = expectToken(TokenId::OperatorKeyword);
 
 	auto savedScope = curScope;
 	auto newScope = (curScope = make_shared<Scope>());
@@ -1346,24 +1324,31 @@ shared_ptr<FnOverloadingNode> Parser::parseOperatorDecl(string &nameOut) {
 			break;
 		case TokenId::LBracket:
 			name = "[]";
-			expectToken(lexer->nextToken(), TokenId::RBracket);
+			expectToken(TokenId::RBracket);
 			break;
 		case TokenId::LParenthese:
 			name = "()";
-			expectToken(lexer->nextToken(), TokenId::RParenthese);
+			expectToken(TokenId::RParenthese);
 			break;
 		default:
 			throw SyntaxError("Unrecognized operator", nameToken.beginLocation);
 	}
 
-	expectToken(lexer->nextToken(), TokenId::LParenthese);
+	expectToken(TokenId::LParenthese);
 	auto params = parseParams();
-	expectToken(lexer->nextToken(), TokenId::RParenthese);
+	expectToken(TokenId::RParenthese);
 
 	shared_ptr<TypeNameNode> returnType;
 
 	if (auto &token = lexer->peekToken(); token.tokenId == TokenId::Colon) {
 		lexer->nextToken();
+
+		// Update corresponding semantic information.
+		auto &tokenInfo = compiler->tokenInfos[lexer->getTokenIndex(token)];
+		tokenInfo.tokenContext.curScope = curScope;
+		tokenInfo.completionContext = CompletionContext::Type;
+		tokenInfo.semanticInfo.isTopLevelRef = true;
+
 		returnType = parseTypeName();
 	}
 
@@ -1397,10 +1382,10 @@ shared_ptr<FnOverloadingNode> Parser::parseOperatorDef(string &nameOut) {
 		curScope = savedScope;
 
 		overloading->body = make_shared<BlockStmtNode>(
-			stmts.empty() ? token.beginLocation : stmts[0]->getLocation(),
+			token.beginLocation,
 			stmts);
 	} else
-		expectToken(lexer->nextToken(), TokenId::Semicolon);
+		expectToken(TokenId::Semicolon);
 
 	return overloading;
 }
@@ -1408,10 +1393,10 @@ shared_ptr<FnOverloadingNode> Parser::parseOperatorDef(string &nameOut) {
 GenericParamNodeList Parser::parseGenericParams() {
 	GenericParamNodeList genericParams;
 
-	expectToken(lexer->nextToken(), TokenId::LtOp);
+	expectToken(TokenId::LtOp);
 
 	while (true) {
-		auto &nameToken = expectToken(lexer->nextToken(), TokenId::Id);
+		auto &nameToken = expectToken(TokenId::Id);
 		size_t idxNameToken = lexer->getTokenIndex(nameToken);
 
 		shared_ptr<TypeNameNode> baseType = parseParentSlot();
@@ -1431,7 +1416,7 @@ GenericParamNodeList Parser::parseGenericParams() {
 		lexer->nextToken();
 	}
 
-	expectToken(lexer->nextToken(), TokenId::GtOp);
+	expectToken(TokenId::GtOp);
 
 	// stub
 	return genericParams;
@@ -1439,7 +1424,7 @@ GenericParamNodeList Parser::parseGenericParams() {
 
 shared_ptr<ClassNode> Parser::parseClassDef() {
 	auto &beginToken = expectTokens(lexer->nextToken(), TokenId::ClassKeyword);
-	auto &nameToken = expectToken(lexer->nextToken(), TokenId::Id);
+	auto &nameToken = expectToken(TokenId::Id);
 	size_t idxNameToken = lexer->getTokenIndex(nameToken);
 
 	GenericParamNodeList genericParams;
@@ -1464,7 +1449,7 @@ shared_ptr<ClassNode> Parser::parseClassDef() {
 	curScope = classNode->scope;
 	curScope->parent = savedScope.get();
 
-	expectToken(lexer->nextToken(), TokenId::LBrace);
+	expectToken(TokenId::LBrace);
 
 	while (true) {
 		if (auto &token = lexer->peekToken();
@@ -1513,7 +1498,7 @@ void Parser::parseClassStmt() {
 		}
 		case TokenId::LetKeyword: {
 			auto stmt = parseVarDefs();
-			expectToken(lexer->nextToken(), TokenId::Semicolon);
+			expectToken(TokenId::Semicolon);
 
 			for (auto &i : stmt->varDefs) {
 				_putDefinition(
@@ -1537,7 +1522,7 @@ void Parser::parseClassStmt() {
 
 shared_ptr<InterfaceNode> Parser::parseInterfaceDef() {
 	auto &beginToken = expectTokens(lexer->nextToken(), TokenId::InterfaceKeyword);
-	auto &nameToken = expectToken(lexer->nextToken(), TokenId::Id);
+	auto &nameToken = expectToken(TokenId::Id);
 	size_t idxNameToken = lexer->getTokenIndex(nameToken);
 
 	GenericParamNodeList genericParams;
@@ -1559,7 +1544,7 @@ shared_ptr<InterfaceNode> Parser::parseInterfaceDef() {
 	curScope = interfaceNode->scope;
 	curScope->parent = savedScope.get();
 
-	expectToken(lexer->nextToken(), TokenId::LBrace);
+	expectToken(TokenId::LBrace);
 
 	while (true) {
 		if (auto &token = lexer->peekToken();
@@ -1608,7 +1593,7 @@ void Parser::parseInterfaceStmt() {
 		}
 		case TokenId::LetKeyword: {
 			auto stmt = parseVarDefs();
-			expectToken(lexer->nextToken(), TokenId::Semicolon);
+			expectToken(TokenId::Semicolon);
 
 			for (auto &i : stmt->varDefs) {
 				_putDefinition(
@@ -1631,14 +1616,14 @@ void Parser::parseInterfaceStmt() {
 }
 
 shared_ptr<InterfaceNode> Parser::parseTraitDef() {
-	auto &beginToken = expectToken(lexer->nextToken(), TokenId::TraitKeyword),
-		 &nameToken = expectToken(lexer->nextToken(), TokenId::Id);
+	auto &beginToken = expectToken(TokenId::TraitKeyword),
+		 &nameToken = expectToken(TokenId::Id);
 
 	deque<shared_ptr<TypeNameNode>> inheritedTraits = parseImplList();
 
-	expectToken(lexer->nextToken(), TokenId::LBrace);
+	expectToken(TokenId::LBrace);
 
-	expectToken(lexer->nextToken(), TokenId::RBrace);
+	expectToken(TokenId::RBrace);
 
 	return {};
 }
@@ -1670,7 +1655,7 @@ void Parser::parseProgramStmt() {
 		}
 		case TokenId::LetKeyword: {
 			auto stmt = parseVarDefs();
-			expectToken(lexer->nextToken(), TokenId::Semicolon);
+			expectToken(TokenId::Semicolon);
 
 			for (auto &i : stmt->varDefs) {
 				_putDefinition(
@@ -1698,7 +1683,7 @@ void Parser::parseModuleDecl() {
 
 		curModule->moduleName = parseModuleRef();
 
-		expectToken(lexer->nextToken(), TokenId::Semicolon);
+		expectToken(TokenId::Semicolon);
 	}
 }
 
@@ -1706,13 +1691,13 @@ void Parser::parseImportList() {
 	if (auto &beginToken = lexer->peekToken(); beginToken.tokenId == TokenId::UseKeyword) {
 		lexer->nextToken();
 
-		expectToken(lexer->nextToken(), TokenId::LBrace);
+		expectToken(TokenId::LBrace);
 
 		while (true) {
-			auto &nameToken = expectToken(lexer->nextToken(), TokenId::Id);
+			auto &nameToken = expectToken(TokenId::Id);
 			size_t idxNameToken = lexer->getTokenIndex(nameToken);
 
-			expectToken(lexer->nextToken(), TokenId::AssignOp);
+			expectToken(TokenId::AssignOp);
 
 			auto ref = parseModuleRef();
 
@@ -1724,7 +1709,7 @@ void Parser::parseImportList() {
 			lexer->nextToken();
 		}
 
-		expectToken(lexer->nextToken(), TokenId::RBrace);
+		expectToken(TokenId::RBrace);
 	}
 }
 

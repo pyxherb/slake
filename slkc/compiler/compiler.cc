@@ -86,6 +86,17 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport) {
 		auto scope = _rootScope;
 		for (size_t i = 0; i < _targetModule->moduleName.size(); ++i) {
 			string name = _targetModule->moduleName[i].name;
+
+			if (_targetModule->moduleName[i].idxToken != SIZE_MAX) {
+				auto &tokenInfo = tokenInfos[_targetModule->moduleName[i].idxToken];
+				tokenInfo.semanticType = i == 0 ? SemanticType::Var : SemanticType::Property;
+			}
+
+			if (_targetModule->moduleName[i].idxAccessOpToken != SIZE_MAX) {
+				auto &tokenInfo = tokenInfos[_targetModule->moduleName[i].idxAccessOpToken];
+				tokenInfo.semanticType = i == 0 ? SemanticType::Var : SemanticType::Property;
+			}
+
 			if (auto it = scope->members.find(name); it != scope->members.end()) {
 				switch (it->second->getNodeType()) {
 					case NodeType::Class:
@@ -226,6 +237,9 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 				auto m = static_pointer_cast<VarNode>(i.second);
 				vars[i.first] = m;
 
+				if (m->type)
+					updateCompletionContext(m->type, CompletionContext::Type);
+
 				if (m->idxNameToken != SIZE_MAX) {
 					// Update corresponding semantic information.
 					auto &tokenInfo = tokenInfos[m->idxNameToken];
@@ -238,7 +252,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 				auto m = static_pointer_cast<FnNode>(i.second);
 				funcs[i.first] = m;
 
-				for (auto& j : m->overloadingRegistries) {
+				for (auto &j : m->overloadingRegistries) {
 					if (j->idxNameToken != SIZE_MAX) {
 						// Update corresponding semantic information.
 						auto &tokenInfo = tokenInfos[j->idxNameToken];
@@ -287,7 +301,6 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 						tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 						tokenInfo.semanticType = SemanticType::TypeParam;
 					}
-					compileGenericParam(os, j);
 				}
 				break;
 			}
@@ -309,7 +322,6 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 						tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 						tokenInfo.semanticType = SemanticType::TypeParam;
 					}
-					compileGenericParam(os, j);
 				}
 				break;
 			}
@@ -331,7 +343,6 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 						tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 						tokenInfo.semanticType = SemanticType::TypeParam;
 					}
-					compileGenericParam(os, j);
 				}
 				break;
 			}

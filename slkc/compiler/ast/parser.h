@@ -103,11 +103,17 @@ namespace slake {
 
 			shared_ptr<ExprNode> parseExpr(int precedence = 0);
 
-			shared_ptr<TypeNameNode> parseParentSlot();
-			deque<shared_ptr<TypeNameNode>> parseImplList();
+			void parseParentSlot(
+				shared_ptr<TypeNameNode> &typeNameOut,
+				size_t &idxLParentheseTokenOut,
+				size_t &idxRParentheseTokenOut);
+			void parseImplList(
+				deque<shared_ptr<TypeNameNode>> &implInterfacesOut,
+				size_t &idxColonTokenOut,
+				deque<size_t> &idxCommaTokensOut);
 			deque<shared_ptr<TypeNameNode>> parseTraitList();
 
-			shared_ptr<VarDefStmtNode> parseVarDefs();
+			void parseVarDefs(shared_ptr<VarDefStmtNode> varDefStmtOut);
 
 			shared_ptr<StmtNode> parseStmt();
 
@@ -126,7 +132,7 @@ namespace slake {
 			shared_ptr<InterfaceNode> parseInterfaceDef();
 			void parseInterfaceStmt();
 
-			shared_ptr<InterfaceNode> parseTraitDef();
+			shared_ptr<TraitNode> parseTraitDef();
 			void parseTraitStmt();
 
 			void parseProgramStmt();

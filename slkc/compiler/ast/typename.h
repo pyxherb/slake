@@ -225,10 +225,12 @@ namespace slake {
 			}
 
 		public:
-			size_t idxStartToken, idxEndToken;
+			size_t idxStartToken = SIZE_MAX, idxEndToken = SIZE_MAX;
 
 			inline BadTypeNameNode(const BadTypeNameNode &other)
 				: TypeNameNode(other.getLocation(), other.isConst) {
+				idxStartToken = other.idxStartToken;
+				idxEndToken = other.idxEndToken;
 			}
 			inline BadTypeNameNode(Location loc, size_t idxStartToken, size_t idxEndToken, bool isConst = false)
 				: TypeNameNode(loc, isConst), idxStartToken(idxStartToken), idxEndToken(idxEndToken) {}

@@ -18,7 +18,10 @@ namespace slake {
 			string name;
 			shared_ptr<ExprNode> initValue;
 
-			size_t idxNameToken;
+			size_t idxNameToken = SIZE_MAX,
+				   idxColonToken = SIZE_MAX,
+				   idxAssignOpToken = SIZE_MAX,
+				   idxCommaToken = SIZE_MAX;
 
 			inline VarNode(const VarNode &other) : MemberNode(other) {
 				_loc = other._loc;
@@ -29,6 +32,9 @@ namespace slake {
 				initValue = other.initValue;
 
 				idxNameToken = other.idxNameToken;
+				idxColonToken = other.idxColonToken;
+				idxAssignOpToken = other.idxAssignOpToken;
+				idxCommaToken = other.idxCommaToken;
 			}
 			inline VarNode(
 				Location loc,
@@ -37,13 +43,19 @@ namespace slake {
 				shared_ptr<TypeNameNode> type,
 				string name,
 				shared_ptr<ExprNode> initValue,
-				size_t idxNameToken)
+				size_t idxNameToken,
+				size_t idxColonToken,
+				size_t idxAssignOpToken,
+				size_t idxCommaToken)
 				: MemberNode(compiler, access),
 				  _loc(loc),
 				  type(type),
 				  name(name),
 				  initValue(initValue),
-				  idxNameToken(idxNameToken) {
+				  idxNameToken(idxNameToken),
+				  idxColonToken(idxColonToken),
+				  idxAssignOpToken(idxAssignOpToken),
+				  idxCommaToken(idxCommaToken) {
 			}
 			virtual ~VarNode() = default;
 

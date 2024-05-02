@@ -92,10 +92,11 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 	shared_ptr<ClassNode> cls = make_shared<ClassNode>(
 		Location(),
 		this,
-		value->getName(),
-		parentClassTypeName, implInterfaceTypeNames,
-		genericParams,
-		SIZE_MAX);
+		value->getName());
+
+	cls->parentClass = parentClassTypeName;
+	cls->implInterfaces = implInterfaceTypeNames;
+	cls->genericParams = genericParams;
 
 	(scope->members[value->_name] = cls)->bind(parent.get());
 
@@ -111,10 +112,7 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 
 	shared_ptr<InterfaceNode> interface = make_shared<InterfaceNode>(
 		Location(),
-		value->_name,
-		deque<shared_ptr<TypeNameNode>>{},
-		GenericParamNodeList{},
-		SIZE_MAX);
+		value->getName());
 
 	for (auto i : value->parents) {
 		interface->parentInterfaces.push_back(toTypeName(i));
@@ -140,9 +138,9 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 
 	shared_ptr<TraitNode> trait = make_shared<TraitNode>(
 		Location(),
-		parentTraits,
-		GenericParamNodeList(),	 // stub
-		SIZE_MAX);
+		value->getName());
+
+	trait->parentTraits = parentTraits;
 
 	(scope->members[value->_name] = trait)->bind(parent.get());
 
@@ -173,7 +171,13 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 			break;
 		case TypeId::Var: {
 			VarValue *v = (VarValue *)value;
-			shared_ptr<VarNode> var = make_shared<VarNode>(Location(), this, v->getAccess(), toTypeName(v->getVarType()), v->_name, shared_ptr<ExprNode>(), SIZE_MAX);
+			shared_ptr<VarNode> var = make_shared<VarNode>(
+				Location(), this,
+				v->getAccess(),
+				toTypeName(v->getVarType()),
+				v->_name,
+				shared_ptr<ExprNode>(),
+				SIZE_MAX, SIZE_MAX, SIZE_MAX, SIZE_MAX);
 
 			scope->members[v->_name] = var;
 			var->bind(parent.get());

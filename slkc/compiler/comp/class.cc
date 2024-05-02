@@ -14,6 +14,15 @@ void Compiler::verifyInheritanceChain(ClassNode *node, std::set<AstNode *> &walk
 	walkedNodes.insert(node);
 
 	if (node->parentClass) {
+		updateCompletionContext(node->parentClass, CompletionContext::Type);
+
+		if (node->parentClass->getTypeId() != Type::Custom)
+			throw FatalCompilationError(
+				Message(
+					node->parentClass->getLocation(),
+					MessageType::Error,
+					"The type cannot be inherited"));
+
 		auto cls = resolveCustomTypeName((CustomTypeNameNode *)node->parentClass.get());
 
 		if (cls->getNodeType() != NodeType::Class)
@@ -32,6 +41,15 @@ void Compiler::verifyInheritanceChain(ClassNode *node, std::set<AstNode *> &walk
 	}
 
 	for (auto &i : node->implInterfaces) {
+		updateCompletionContext(i, CompletionContext::Type);
+
+		if (i->getTypeId() != Type::Custom)
+			throw FatalCompilationError(
+				Message(
+					i->getLocation(),
+					MessageType::Error,
+					"The type cannot be implemented"));
+
 		auto parent = resolveCustomTypeName((CustomTypeNameNode *)i.get());
 
 		if (parent->getNodeType() != NodeType::Interface)
@@ -54,6 +72,15 @@ void Compiler::verifyInheritanceChain(InterfaceNode *node, std::set<AstNode *> &
 	walkedNodes.insert(node);
 
 	for (auto &i : node->parentInterfaces) {
+		updateCompletionContext(i, CompletionContext::Type);
+
+		if (i->getTypeId() != Type::Custom)
+			throw FatalCompilationError(
+				Message(
+					i->getLocation(),
+					MessageType::Error,
+					"Specified type cannot be implemented"));
+
 		auto parent = resolveCustomTypeName((CustomTypeNameNode *)i.get());
 
 		if (parent->getNodeType() != NodeType::Interface)
@@ -76,6 +103,15 @@ void Compiler::verifyInheritanceChain(TraitNode *node, std::set<AstNode *> &walk
 	walkedNodes.insert(node);
 
 	for (auto &i : node->parentTraits) {
+		updateCompletionContext(i, CompletionContext::Type);
+
+		if (i->getTypeId() != Type::Custom)
+			throw FatalCompilationError(
+				Message(
+					i->getLocation(),
+					MessageType::Error,
+					"`" + to_string(i, this) + "' cannot be implemented"));
+
 		auto parent = resolveCustomTypeName((CustomTypeNameNode *)i.get());
 
 		if (parent->getNodeType() != NodeType::Trait)

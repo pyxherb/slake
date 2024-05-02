@@ -5,16 +5,20 @@ using namespace slake::slkc;
 void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 	switch (stmt->getStmtType()) {
 		case StmtType::Expr: {
-			slxfmt::SourceLocDesc sld;
-			sld.offIns = curFn->body.size();
-			sld.line = stmt->getLocation().line;
-			sld.column = stmt->getLocation().column;
+			auto s = static_pointer_cast<ExprStmtNode>(stmt);
 
-			curMajorContext.curMinorContext.evalPurpose = EvalPurpose::Stmt;
-			compileExpr(static_pointer_cast<ExprStmtNode>(stmt)->expr);
+			if (s->expr) {
+				slxfmt::SourceLocDesc sld;
+				sld.offIns = curFn->body.size();
+				sld.line = stmt->getLocation().line;
+				sld.column = stmt->getLocation().column;
 
-			sld.nIns = curFn->body.size() - sld.offIns;
-			curFn->srcLocDescs.push_back(sld);
+				curMajorContext.curMinorContext.evalPurpose = EvalPurpose::Stmt;
+				compileExpr(static_pointer_cast<ExprStmtNode>(stmt)->expr);
+
+				sld.nIns = curFn->body.size() - sld.offIns;
+				curFn->srcLocDescs.push_back(sld);
+			}
 			break;
 		}
 		case StmtType::VarDef: {
@@ -22,9 +26,6 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 
 			for (auto &i : s->varDefs) {
 #if SLKC_WITH_LANGUAGE_SERVER
-				if (i.second.type)
-					updateCompletionContext(i.second.type, CompletionContext::Type);
-
 				if (i.second.idxNameToken != SIZE_MAX) {
 					// Update corresponding semantic information.
 					auto &tokenInfo = tokenInfos[i.second.idxNameToken];
@@ -32,6 +33,16 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 					tokenInfo.semanticType = SemanticType::Var;
 					tokenInfo.completionContext = CompletionContext::Name;
 				}
+
+				if (i.second.idxColonToken != SIZE_MAX) {
+					// Update corresponding semantic information.
+					auto &tokenInfo = tokenInfos[i.second.idxColonToken];
+					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+					tokenInfo.completionContext = CompletionContext::Type;
+					tokenInfo.semanticInfo.isTopLevelRef = true;
+				}
+				if (i.second.type)
+					updateCompletionContext(i.second.type, CompletionContext::Type);
 #endif
 
 				if (curMajorContext.curMinorContext.localVars.count(i.first))
@@ -127,6 +138,16 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 		case StmtType::While: {
 			auto s = static_pointer_cast<WhileStmtNode>(stmt);
 
+#if SLKC_WITH_LANGUAGE_SERVER
+			if (s->idxLParentheseToken != SIZE_MAX) {
+				// Update corresponding semantic information.
+				auto &tokenInfo = tokenInfos[s->idxLParentheseToken];
+				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+				tokenInfo.semanticType = SemanticType::Keyword;
+				tokenInfo.completionContext = CompletionContext::Expr;
+			}
+#endif
+
 			auto loc = s->getLocation();
 			string beginLabel = "$while_" + to_string(loc.line) + "_" + to_string(loc.column) + "_begin",
 				   endLabel = "$while_" + to_string(loc.line) + "_" + to_string(loc.column) + "_end";
@@ -162,6 +183,16 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 		}
 		case StmtType::Return: {
 			auto s = static_pointer_cast<ReturnStmtNode>(stmt);
+
+#if SLKC_WITH_LANGUAGE_SERVER
+			if (s->idxReturnToken != SIZE_MAX) {
+				// Update corresponding semantic information.
+				auto &tokenInfo = tokenInfos[s->idxReturnToken];
+				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+				tokenInfo.semanticType = SemanticType::Keyword;
+				tokenInfo.completionContext = CompletionContext::Expr;
+			}
+#endif
 
 			auto returnType = curFn->returnType;
 

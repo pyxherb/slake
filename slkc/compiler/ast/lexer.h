@@ -190,6 +190,7 @@ namespace slake {
 		};
 
 		struct LexerContext {
+			size_t prevIndex = 0;
 			size_t curIndex = 0;
 		};
 

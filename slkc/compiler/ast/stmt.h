@@ -28,7 +28,7 @@ namespace slake {
 			Switch,		// Switch
 			CodeBlock,	// Code block
 
-			Bad,	 // Bad statement - unrecognized statement type
+			Bad,  // Bad statement - unrecognized statement type
 		};
 
 		class StmtNode : public AstNode {
@@ -40,22 +40,38 @@ namespace slake {
 			virtual StmtType getStmtType() const = 0;
 		};
 
-		template <StmtType st>
-		class SimpleStmtNode : public StmtNode {
+		class BreakStmtNode : public StmtNode {
 		private:
 			Location _loc;
 
 		public:
-			inline SimpleStmtNode(Location loc) : _loc(loc) {}
-			virtual ~SimpleStmtNode() = default;
+			size_t idxBreakToken = SIZE_MAX, idxSemicolonToken = SIZE_MAX;
+
+			inline BreakStmtNode(
+				Location loc)
+				: _loc(loc) {}
+			virtual ~BreakStmtNode() = default;
 
 			virtual inline Location getLocation() const override { return _loc; }
 
-			virtual inline StmtType getStmtType() const override { return st; }
+			virtual inline StmtType getStmtType() const override { return StmtType::Break; }
 		};
 
-		using BreakStmtNode = SimpleStmtNode<StmtType::Break>;
-		using ContinueStmtNode = SimpleStmtNode<StmtType::Continue>;
+		class ContinueStmtNode : public StmtNode {
+		private:
+			Location _loc;
+
+		public:
+			size_t idxContinueToken = SIZE_MAX, idxSemicolonToken = SIZE_MAX;
+			inline ContinueStmtNode(
+				Location loc)
+				: _loc(loc) {}
+			virtual ~ContinueStmtNode() = default;
+
+			virtual inline Location getLocation() const override { return _loc; }
+
+			virtual inline StmtType getStmtType() const override { return StmtType::Break; }
+		};
 
 		class BadStmtNode : public StmtNode {
 		private:
@@ -79,6 +95,7 @@ namespace slake {
 		class ExprStmtNode : public StmtNode {
 		public:
 			shared_ptr<ExprNode> expr;
+			size_t idxSemicolonToken = SIZE_MAX;
 
 			inline ExprStmtNode() {}
 			virtual ~ExprStmtNode() = default;
@@ -94,19 +111,13 @@ namespace slake {
 			shared_ptr<ExprNode> initValue;
 			shared_ptr<TypeNameNode> type;
 
-			size_t idxNameToken;
+			size_t idxNameToken = SIZE_MAX,
+				   idxColonToken = SIZE_MAX,
+				   idxAssignOpToken = SIZE_MAX,
+				idxCommaToken = SIZE_MAX;
 
-			inline VarDefEntry() = default;
-			inline VarDefEntry(const VarDefEntry &) = default;
-			inline VarDefEntry(
-				Location loc,
-				string name,
-				shared_ptr<TypeNameNode> type,
-				shared_ptr<ExprNode> initValue,
-				size_t idxNameToken)
-				: loc(loc), name(name), initValue(initValue), type(type), idxNameToken(idxNameToken) {}
-
-			inline VarDefEntry &operator=(const VarDefEntry &) = default;
+			VarDefEntry() = default;
+			inline VarDefEntry(Location loc, string name, size_t idxNameToken) : loc(loc), name(name), idxNameToken(idxNameToken) {}
 		};
 
 		class VarDefStmtNode : public StmtNode {
@@ -115,6 +126,8 @@ namespace slake {
 
 		public:
 			unordered_map<string, VarDefEntry> varDefs;
+			size_t idxLetToken = SIZE_MAX,
+				   idxSemicolonToken = SIZE_MAX;
 
 			inline VarDefStmtNode(Location loc) : _loc(loc) {}
 			virtual ~VarDefStmtNode() = default;
@@ -152,6 +165,12 @@ namespace slake {
 			shared_ptr<ExprNode> endExpr;
 			shared_ptr<StmtNode> body;
 
+			size_t idxForToken = SIZE_MAX,
+				   idxLParentheseToken = SIZE_MAX,
+				   idxFirstSemicolonToken = SIZE_MAX,
+				   idxSecondSemicolonToken = SIZE_MAX,
+				   idxRParentheseToken = SIZE_MAX;
+
 			inline ForStmtNode(Location loc) : _loc(loc) {}
 			virtual ~ForStmtNode() = default;
 
@@ -168,6 +187,10 @@ namespace slake {
 			shared_ptr<ExprNode> condition;
 			shared_ptr<StmtNode> body;
 
+			size_t idxWhileToken = SIZE_MAX,
+				   idxLParentheseToken = SIZE_MAX,
+				   idxRParentheseToken = SIZE_MAX;
+
 			inline WhileStmtNode(Location loc) : _loc(loc) {}
 			virtual ~WhileStmtNode() = default;
 
@@ -183,6 +206,9 @@ namespace slake {
 		public:
 			shared_ptr<ExprNode> returnValue;
 
+			size_t idxReturnToken = SIZE_MAX,
+				   idxSemicolonToken = SIZE_MAX;
+
 			inline ReturnStmtNode(Location loc) : _loc(loc) {}
 			virtual ~ReturnStmtNode() = default;
 
@@ -191,10 +217,20 @@ namespace slake {
 			virtual inline StmtType getStmtType() const override { return StmtType::Return; }
 		};
 
-		class YieldStmtNode : public ReturnStmtNode {
+		class YieldStmtNode : public StmtNode {
+		private:
+			Location _loc;
+
 		public:
-			inline YieldStmtNode(Location loc) : ReturnStmtNode(loc) {}
+			shared_ptr<ExprNode> returnValue;
+
+			size_t idxYieldToken = SIZE_MAX,
+				   idxSemicolonToken = SIZE_MAX;
+
+			inline YieldStmtNode(Location loc) : _loc(loc) {}
 			virtual ~YieldStmtNode() = default;
+
+			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual inline StmtType getStmtType() const override { return StmtType::Yield; }
 		};
@@ -207,6 +243,11 @@ namespace slake {
 			shared_ptr<ExprNode> condition;
 			shared_ptr<StmtNode> body;
 			shared_ptr<StmtNode> elseBranch;
+
+			size_t idxIfToken = SIZE_MAX,
+				   idxLParentheseToken = SIZE_MAX,
+				   idxRParentheseToken = SIZE_MAX,
+				   idxElseToken = SIZE_MAX;
 
 			inline IfStmtNode(Location loc) : _loc(loc) {
 			}
@@ -223,23 +264,17 @@ namespace slake {
 			string exceptionVarName;
 			shared_ptr<StmtNode> body;
 
-			inline CatchBlock(
-				Location loc,
-				shared_ptr<TypeNameNode> targetType,
-				string exceptionVarName,
-				shared_ptr<StmtNode> body)
-				: loc(loc),
-				  targetType(targetType),
-				  exceptionVarName(exceptionVarName),
-				  body(body) {}
+			size_t idxCatchToken = SIZE_MAX,
+				   idxLParentheseToken = SIZE_MAX,
+				   idxExceptionVarNameToken = SIZE_MAX,
+				   idxRParentheseToken = SIZE_MAX;
 		};
 
 		struct FinalBlock {
 			Location loc;
 			shared_ptr<StmtNode> body;
 
-			FinalBlock() = default;
-			inline FinalBlock(Location loc) : loc(loc) {}
+			size_t idxFinalToken = SIZE_MAX;
 		};
 
 		class TryStmtNode : public StmtNode {
@@ -250,6 +285,8 @@ namespace slake {
 			shared_ptr<StmtNode> body;
 			deque<CatchBlock> catchBlocks;
 			FinalBlock finalBlock;
+
+			size_t idxTryToken = SIZE_MAX;
 
 			inline TryStmtNode(
 				Location loc)
@@ -265,6 +302,8 @@ namespace slake {
 		struct CodeBlock {
 			Location loc;
 			deque<shared_ptr<StmtNode>> stmts;
+
+			size_t idxLBraceToken = SIZE_MAX, idxRBraceToken = SIZE_MAX;
 		};
 
 		class CodeBlockStmtNode : public StmtNode {
@@ -284,14 +323,8 @@ namespace slake {
 			shared_ptr<ExprNode> condition;
 			deque<shared_ptr<StmtNode>> body;
 
-			inline SwitchCase(
-				Location loc,
-				deque<shared_ptr<StmtNode>> body,
-				shared_ptr<ExprNode> condition = {})
-				: loc(loc),
-				  condition(condition),
-				  body(body) {
-			}
+			size_t idxCaseToken = SIZE_MAX,
+				   idxColonToken = SIZE_MAX;
 		};
 
 		class SwitchStmtNode : public StmtNode {
@@ -301,6 +334,12 @@ namespace slake {
 		public:
 			shared_ptr<ExprNode> expr;
 			deque<SwitchCase> cases;
+
+			size_t idxSwitchToken = SIZE_MAX,
+				   idxLParentheseToken = SIZE_MAX,
+				   idxRParentheseToken = SIZE_MAX,
+				   idxLBraceToken = SIZE_MAX,
+				   idxRBraceToken = SIZE_MAX;
 
 			inline SwitchStmtNode(Location loc) : _loc(loc) {}
 			virtual ~SwitchStmtNode() = default;

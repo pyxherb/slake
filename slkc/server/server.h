@@ -2,6 +2,7 @@
 #define _SLKC_SERVER_SERVER_H_
 
 #include "../compiler/compiler.h"
+#include <mutex>
 #include <httplib.h>
 #include <json/json.h>
 
@@ -59,7 +60,8 @@ namespace slake {
 			void _walkForCompletion(
 				Scope *scope,
 				std::unordered_map<std::string, MemberNode *> &membersOut,
-				std::set<Scope*> &walkedScopes);
+				std::set<Scope*> &walkedScopes,
+				bool isTopLevelRef = false);
 			void _walkForCompletion(
 				AstNode *m,
 				std::unordered_map<std::string, MemberNode *> &membersOut,

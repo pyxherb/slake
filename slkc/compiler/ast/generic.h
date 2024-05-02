@@ -18,15 +18,23 @@ namespace slake {
 
 		public:
 			string name;
-			size_t idxNameToken;
 			shared_ptr<TypeNameNode> baseType;
 			deque<shared_ptr<TypeNameNode>> traitTypes, interfaceTypes;
+
+			size_t idxNameToken = SIZE_MAX;
+
+			size_t idxParentSlotLParentheseToken = SIZE_MAX,
+				   idxParentSlotRParentheseToken = SIZE_MAX;
+
+			size_t idxImplInterfacesColonToken = SIZE_MAX;
+			deque<size_t> idxImplInterfacesCommaTokens;
+
+			size_t idxCommaToken = SIZE_MAX;
 
 			inline GenericParamNode(const GenericParamNode &other) {
 				_loc = other._loc;
 
 				name = other.name;
-				idxNameToken = other.idxNameToken;
 				if (baseType)
 					baseType = other.baseType->duplicate<TypeNameNode>();
 
@@ -37,12 +45,19 @@ namespace slake {
 				interfaceTypes.resize(other.interfaceTypes.size());
 				for (size_t i = 0; i < other.interfaceTypes.size(); ++i)
 					interfaceTypes[i] = other.interfaceTypes[i]->duplicate<TypeNameNode>();
+
+				idxNameToken = other.idxNameToken;
+
+				idxParentSlotLParentheseToken = other.idxParentSlotLParentheseToken;
+				idxParentSlotRParentheseToken = other.idxParentSlotRParentheseToken;
+
+				idxImplInterfacesColonToken = other.idxImplInterfacesColonToken;
+				idxImplInterfacesCommaTokens = other.idxImplInterfacesCommaTokens;
 			}
 			inline GenericParamNode(
 				Location location,
-				string name,
-				size_t idxNameToken)
-				: _loc(location), name(name), idxNameToken(idxNameToken) {}
+				string name)
+				: _loc(location), name(name) {}
 
 			virtual inline NodeType getNodeType() const override { return NodeType::GenericParam; }
 			virtual inline Location getLocation() const override { return _loc; }

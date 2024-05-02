@@ -65,7 +65,8 @@ static string typeNameConditions[] = {
 void slake::slkc::Document::_walkForCompletion(
 	Scope *scope,
 	std::unordered_map<std::string, MemberNode *> &membersOut,
-	std::set<Scope *> &walkedScopes) {
+	std::set<Scope *> &walkedScopes,
+	bool isTopLevelRef) {
 	if (walkedScopes.count(scope))
 		return;
 	walkedScopes.insert(scope);
@@ -77,6 +78,11 @@ void slake::slkc::Document::_walkForCompletion(
 
 	if (scope->owner)
 		_walkForCompletion(scope->owner, membersOut, walkedScopes);
+
+	if (isTopLevelRef) {
+		if (scope->parent)
+			_walkForCompletion(scope->parent, membersOut, walkedScopes, isTopLevelRef);
+	}
 }
 
 void slake::slkc::Document::_walkForCompletion(
@@ -125,14 +131,9 @@ std::unordered_map<std::string, MemberNode *> slake::slkc::Document::_walkForCom
 	std::unordered_map<std::string, MemberNode *> membersOut;
 	std::set<Scope *> walkedScopes;
 
-	_walkForCompletion(scope, membersOut, walkedScopes);
+	_walkForCompletion(scope, membersOut, walkedScopes, isTopLevelRef);
 	if (scope->owner)
 		_walkForCompletion(scope->owner, membersOut, walkedScopes);
-
-	if (isTopLevelRef) {
-		if (scope->parent)
-			_walkForCompletion(scope->parent, membersOut, walkedScopes);
-	}
 
 	return membersOut;
 }
@@ -190,16 +191,7 @@ std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(Location lo
 
 	size_t idxToken = compiler->lexer.getTokenByLocation(location);
 
-	if (idxToken == SIZE_MAX) {
-		_getCompletionItems(
-			_walkForCompletion(compiler->_rootScope.get(), true),
-			completionItems,
-			{ NodeType::GenericParam,
-				NodeType::Class,
-				NodeType::Interface,
-				NodeType::Trait,
-				NodeType::Module });
-	} else {
+	if (idxToken != SIZE_MAX) {
 		do {
 			switch (compiler->lexer.tokens[idxToken].tokenId) {
 				case TokenId::Whitespace:
@@ -210,202 +202,211 @@ std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(Location lo
 					goto succeeded;
 			}
 		} while (idxToken--);
+	}
 
-		return {};
+	_getCompletionItems(
+		_walkForCompletion(compiler->_rootScope.get(), true),
+		completionItems,
+		{ NodeType::GenericParam,
+			NodeType::Class,
+			NodeType::Interface,
+			NodeType::Trait,
+			NodeType::Module });
 
-	succeeded:
-		Token &token = compiler->lexer.tokens[idxToken];
-		TokenInfo &tokenInfo = compiler->tokenInfos[idxToken];
+	return completionItems;
 
-		/*
-		for (size_t i = 0; i < keywordConditions->size(); ++i) {
-			std::string &s = keywordConditions[i];
-			if (s.find(token.text) != std::string::npos)
-				completionItems.push_back({ CompletionItemType::Keyword, s, s + " keyword", "", false });
+succeeded:
+	Token &token = compiler->lexer.tokens[idxToken];
+	TokenInfo &tokenInfo = compiler->tokenInfos[idxToken];
+
+	/*
+	for (size_t i = 0; i < keywordConditions->size(); ++i) {
+		std::string &s = keywordConditions[i];
+		if (s.find(token.text) != std::string::npos)
+			completionItems.push_back({ CompletionItemType::Keyword, s, s + " keyword", "", false });
+	}
+
+	for (size_t i = 0; i < typeNameConditions->size(); ++i) {
+		std::string &s = typeNameConditions[i];
+		if (s.find(token.text) != std::string::npos)
+			completionItems.push_back({ CompletionItemType::Type, s, s + " type name", "", false });
+	}
+	*/
+
+	switch (tokenInfo.completionContext) {
+		case CompletionContext::TopLevel: {
+			if (tokenInfo.tokenContext.curScope)
+				_getCompletionItems(
+					_walkForCompletion(tokenInfo.tokenContext.curScope.get(), true),
+					completionItems,
+					{ NodeType::GenericParam,
+						NodeType::Class,
+						NodeType::Interface,
+						NodeType::Trait,
+						NodeType::Module });
+
+			break;
 		}
-
-		for (size_t i = 0; i < typeNameConditions->size(); ++i) {
-			std::string &s = typeNameConditions[i];
-			if (s.find(token.text) != std::string::npos)
-				completionItems.push_back({ CompletionItemType::Type, s, s + " type name", "", false });
+		case CompletionContext::Class: {
+			if (tokenInfo.tokenContext.curScope)
+				_getCompletionItems(
+					_walkForCompletion(tokenInfo.tokenContext.curScope.get(), true),
+					completionItems,
+					{ NodeType::GenericParam,
+						NodeType::Class,
+						NodeType::Interface,
+						NodeType::Trait,
+						NodeType::Module });
+			break;
 		}
-		*/
+		case CompletionContext::Interface: {
+			if (tokenInfo.tokenContext.curScope)
+				_getCompletionItems(
+					_walkForCompletion(tokenInfo.tokenContext.curScope.get(), true),
+					completionItems,
+					{ NodeType::GenericParam,
+						NodeType::Class,
+						NodeType::Interface,
+						NodeType::Trait,
+						NodeType::Module });
+			break;
+		}
+		case CompletionContext::Trait: {
+			if (tokenInfo.tokenContext.curScope)
+				_getCompletionItems(
+					_walkForCompletion(tokenInfo.tokenContext.curScope.get(), true),
+					completionItems,
+					{ NodeType::GenericParam,
+						NodeType::Class,
+						NodeType::Interface,
+						NodeType::Trait,
+						NodeType::Module });
+			break;
+		}
+		case CompletionContext::Stmt: {
+			if (tokenInfo.tokenContext.curScope)
+				_getCompletionItems(
+					_walkForCompletion(
+						tokenInfo.tokenContext.curScope.get(),
+						tokenInfo.semanticInfo.isTopLevelRef),
+					completionItems,
+					{ NodeType::Var,
+						NodeType::Fn,
+						NodeType::GenericParam,
+						NodeType::Class,
+						NodeType::Interface,
+						NodeType::Trait,
+						NodeType::Module });
 
-		switch (tokenInfo.completionContext) {
-			case CompletionContext::TopLevel: {
-				if (tokenInfo.tokenContext.curScope)
-					_getCompletionItems(
-						_walkForCompletion(tokenInfo.tokenContext.curScope.get(), true),
-						completionItems,
-						{ NodeType::GenericParam,
-							NodeType::Class,
-							NodeType::Interface,
-							NodeType::Trait,
-							NodeType::Module });
+			if (tokenInfo.semanticInfo.isTopLevelRef) {
+				for (auto &i : tokenInfo.tokenContext.localVars) {
+					CompletionItem item = {};
 
-				break;
-			}
-			case CompletionContext::Class: {
-				if (tokenInfo.tokenContext.curScope)
-					_getCompletionItems(
-						_walkForCompletion(tokenInfo.tokenContext.curScope.get(), true),
-						completionItems,
-						{ NodeType::GenericParam,
-							NodeType::Class,
-							NodeType::Interface,
-							NodeType::Trait,
-							NodeType::Module });
-				break;
-			}
-			case CompletionContext::Interface: {
-				if (tokenInfo.tokenContext.curScope)
-					_getCompletionItems(
-						_walkForCompletion(tokenInfo.tokenContext.curScope.get(), true),
-						completionItems,
-						{ NodeType::GenericParam,
-							NodeType::Class,
-							NodeType::Interface,
-							NodeType::Trait,
-							NodeType::Module });
-				break;
-			}
-			case CompletionContext::Trait: {
-				if (tokenInfo.tokenContext.curScope)
-					_getCompletionItems(
-						_walkForCompletion(tokenInfo.tokenContext.curScope.get(), true),
-						completionItems,
-						{ NodeType::GenericParam,
-							NodeType::Class,
-							NodeType::Interface,
-							NodeType::Trait,
-							NodeType::Module });
-				break;
-			}
-			case CompletionContext::Stmt: {
-				if (tokenInfo.tokenContext.curScope)
-					_getCompletionItems(
-						_walkForCompletion(
-							tokenInfo.tokenContext.curScope.get(),
-							tokenInfo.semanticInfo.isTopLevelRef),
-						completionItems,
-						{ NodeType::Var,
-							NodeType::Fn,
-							NodeType::GenericParam,
-							NodeType::Class,
-							NodeType::Interface,
-							NodeType::Trait,
-							NodeType::Module });
+					item.label = i.first;
+					item.type = CompletionItemType::LocalVar;
 
-				if (tokenInfo.semanticInfo.isTopLevelRef) {
-					for (auto &i : tokenInfo.tokenContext.localVars) {
-						CompletionItem item = {};
-
-						item.label = i.first;
-						item.type = CompletionItemType::LocalVar;
-
-						completionItems.push_back(item);
-					}
-
-					for (auto &i : tokenInfo.tokenContext.paramIndices) {
-						CompletionItem item = {};
-
-						item.label = i.first;
-						item.type = CompletionItemType::GenericParam;
-
-						completionItems.push_back(item);
-					}
-				}
-				break;
-			}
-			case CompletionContext::Import: {
-				if (tokenInfo.tokenContext.curScope)
-					_getCompletionItems(
-						_walkForCompletion(tokenInfo.tokenContext.curScope.get(), true),
-						completionItems,
-						{ NodeType::Var,
-							NodeType::Fn,
-							NodeType::GenericParam,
-							NodeType::Class,
-							NodeType::Interface,
-							NodeType::Trait,
-							NodeType::Module });
-				break;
-			}
-			case CompletionContext::Type: {
-				if (tokenInfo.tokenContext.curScope)
-					_getCompletionItems(
-						_walkForCompletion(
-							tokenInfo.tokenContext.curScope.get(),
-							tokenInfo.semanticInfo.isTopLevelRef),
-						completionItems,
-						{ NodeType::GenericParam,
-							NodeType::Class,
-							NodeType::Interface,
-							NodeType::Trait,
-							NodeType::Module });
-				break;
-			}
-			case CompletionContext::Name:
-				return {};
-			case CompletionContext::Expr: {
-				if (tokenInfo.tokenContext.curScope) {
-					// A token has `expr` type means it is the top level scope of
-					// a reference, which means we can resolve it with its parent
-					// scope.
-					_getCompletionItems(
-						_walkForCompletion(
-							tokenInfo.tokenContext.curScope.get(),
-							tokenInfo.semanticInfo.isTopLevelRef),
-						completionItems,
-						{ NodeType::Var,
-							NodeType::Fn,
-							NodeType::GenericParam,
-							NodeType::Class,
-							NodeType::Interface,
-							NodeType::Trait,
-							NodeType::Module });
+					completionItems.push_back(item);
 				}
 
-				if (tokenInfo.semanticInfo.isTopLevelRef) {
-					for (auto &i : tokenInfo.tokenContext.localVars) {
-						CompletionItem item = {};
+				for (auto &i : tokenInfo.tokenContext.paramIndices) {
+					CompletionItem item = {};
 
-						item.label = i.first;
-						item.type = CompletionItemType::LocalVar;
+					item.label = i.first;
+					item.type = CompletionItemType::GenericParam;
 
-						completionItems.push_back(item);
-					}
-
-					for (auto &i : tokenInfo.tokenContext.paramIndices) {
-						CompletionItem item = {};
-
-						item.label = i.first;
-						item.type = CompletionItemType::GenericParam;
-
-						completionItems.push_back(item);
-					}
+					completionItems.push_back(item);
 				}
-				break;
 			}
-			case CompletionContext::MemberAccess: {
-				if (tokenInfo.tokenContext.curScope)
-					_getCompletionItems(
-						_walkForCompletion(tokenInfo.tokenContext.curScope.get(), false),
-						completionItems,
-						{ NodeType::Var,
-							NodeType::Fn,
-							NodeType::GenericParam,
-							NodeType::Class,
-							NodeType::Interface,
-							NodeType::Trait,
-							NodeType::Module });
-				break;
-			}
-			case CompletionContext::None:
-				break;
-			default:
-				assert(false);
+			break;
 		}
+		case CompletionContext::Import: {
+			if (tokenInfo.tokenContext.curScope)
+				_getCompletionItems(
+					_walkForCompletion(tokenInfo.tokenContext.curScope.get(), true),
+					completionItems,
+					{ NodeType::Var,
+						NodeType::Fn,
+						NodeType::GenericParam,
+						NodeType::Class,
+						NodeType::Interface,
+						NodeType::Trait,
+						NodeType::Module });
+			break;
+		}
+		case CompletionContext::Type: {
+			if (tokenInfo.tokenContext.curScope)
+				_getCompletionItems(
+					_walkForCompletion(
+						tokenInfo.tokenContext.curScope.get(),
+						tokenInfo.semanticInfo.isTopLevelRef),
+					completionItems,
+					{ NodeType::GenericParam,
+						NodeType::Class,
+						NodeType::Interface,
+						NodeType::Trait,
+						NodeType::Module });
+			break;
+		}
+		case CompletionContext::Name:
+			return {};
+		case CompletionContext::Expr: {
+			if (tokenInfo.tokenContext.curScope) {
+				// A token has `expr` type means it is the top level scope of
+				// a reference, which means we can resolve it with its parent
+				// scope.
+				_getCompletionItems(
+					_walkForCompletion(
+						tokenInfo.tokenContext.curScope.get(),
+						tokenInfo.semanticInfo.isTopLevelRef),
+					completionItems,
+					{ NodeType::Var,
+						NodeType::Fn,
+						NodeType::GenericParam,
+						NodeType::Class,
+						NodeType::Interface,
+						NodeType::Trait,
+						NodeType::Module });
+			}
+
+			if (tokenInfo.semanticInfo.isTopLevelRef) {
+				for (auto &i : tokenInfo.tokenContext.localVars) {
+					CompletionItem item = {};
+
+					item.label = i.first;
+					item.type = CompletionItemType::LocalVar;
+
+					completionItems.push_back(item);
+				}
+
+				for (auto &i : tokenInfo.tokenContext.paramIndices) {
+					CompletionItem item = {};
+
+					item.label = i.first;
+					item.type = CompletionItemType::GenericParam;
+
+					completionItems.push_back(item);
+				}
+			}
+			break;
+		}
+		case CompletionContext::MemberAccess: {
+			if (tokenInfo.tokenContext.curScope)
+				_getCompletionItems(
+					_walkForCompletion(tokenInfo.tokenContext.curScope.get(), false),
+					completionItems,
+					{ NodeType::Var,
+						NodeType::Fn,
+						NodeType::GenericParam,
+						NodeType::Class,
+						NodeType::Interface,
+						NodeType::Trait,
+						NodeType::Module });
+			break;
+		}
+		case CompletionContext::None:
+			break;
+		default:
+			assert(false);
 	}
 
 	return completionItems;

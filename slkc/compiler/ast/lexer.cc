@@ -252,18 +252,25 @@ const Token &Lexer::nextToken(bool keepNewLine, bool keepWhitespace, bool keepCo
 	while (i < tokens.size()) {
 		switch (tokens[i].tokenId) {
 			case TokenId::NewLine:
-				if (keepNewLine)
+				if (keepNewLine) {
+					context.prevIndex = context.curIndex;
 					return tokens[i++];
+				}
 				break;
 			case TokenId::Whitespace:
-				if (keepWhitespace)
+				if (keepWhitespace) {
+					context.prevIndex = context.curIndex;
 					return tokens[i++];
+				}
 				break;
 			case TokenId::Comment:
-				if (keepComment)
+				if (keepComment) {
+					context.prevIndex = context.curIndex;
 					return tokens[i++];
+				}
 				break;
 			default:
+				context.prevIndex = context.curIndex;
 				return tokens[i++];
 		}
 

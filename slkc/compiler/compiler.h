@@ -193,14 +193,6 @@ namespace slake {
 
 			TokenContext &operator=(const TokenContext &) = default;
 			TokenContext &operator=(TokenContext &&) = default;
-
-			inline TokenContext toMemberAccessContext() {
-				TokenContext context;
-
-				context.curScope = this->curScope;
-
-				return context;
-			}
 		};
 
 		struct TokenInfo {

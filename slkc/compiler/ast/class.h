@@ -8,6 +8,13 @@
 
 namespace slake {
 	namespace slkc {
+		struct ParentSlot {
+			shared_ptr<TypeNameNode> typeName;
+
+			size_t idxLParentheseToken = SIZE_MAX,
+				   idxRParentheseToken = SIZE_MAX;
+		};
+
 		class ClassNode : public MemberNode {
 		private:
 			Location _loc;
@@ -19,7 +26,17 @@ namespace slake {
 			shared_ptr<TypeNameNode> parentClass;			 // Parent class
 			deque<shared_ptr<TypeNameNode>> implInterfaces;	 // Implemented interfaces
 
-			size_t idxNameToken;
+			size_t idxClassToken = SIZE_MAX,
+				   idxNameToken = SIZE_MAX;
+
+			size_t idxParentSlotLParentheseToken = SIZE_MAX,
+				   idxParentSlotRParentheseToken = SIZE_MAX;
+
+			size_t idxImplInterfacesColonToken = SIZE_MAX;
+			deque<size_t> idxImplInterfacesCommaTokens;
+
+			size_t idxLBraceToken = SIZE_MAX,
+				   idxRBraceToken = SIZE_MAX;
 
 			ClassNode() = default;
 			inline ClassNode(const ClassNode &other) : MemberNode(other) {
@@ -34,22 +51,25 @@ namespace slake {
 				for (size_t i = 0; i < other.implInterfaces.size(); ++i)
 					implInterfaces[i] = other.implInterfaces[i]->duplicate<TypeNameNode>();
 
+				idxClassToken = other.idxClassToken;
 				idxNameToken = other.idxNameToken;
+
+				idxParentSlotLParentheseToken = other.idxParentSlotLParentheseToken;
+				idxParentSlotRParentheseToken = other.idxParentSlotRParentheseToken;
+
+				idxImplInterfacesColonToken = other.idxImplInterfacesColonToken;
+				idxImplInterfacesCommaTokens = other.idxImplInterfacesCommaTokens;
+
+				idxLBraceToken = other.idxLBraceToken;
+				idxRBraceToken = other.idxRBraceToken;
 			}
 			inline ClassNode(
 				Location loc,
 				Compiler *compiler,
-				string name,
-				shared_ptr<TypeNameNode> parentClass,
-				deque<shared_ptr<TypeNameNode>> implInterfaces,
-				GenericParamNodeList genericParams,
-				size_t idxNameToken)
+				string name)
 				: MemberNode(compiler, 0),
 				  _loc(loc),
-				  name(name),
-				  parentClass(parentClass),
-				  implInterfaces(implInterfaces),
-				  idxNameToken(idxNameToken) {
+				  name(name) {
 				setScope(make_shared<Scope>());
 				setGenericParams(genericParams);
 			}
@@ -78,7 +98,14 @@ namespace slake {
 
 			shared_ptr<Scope> scope = make_shared<Scope>();
 
-			size_t idxNameToken;
+			size_t idxInterfaceToken = SIZE_MAX,
+				   idxNameToken = SIZE_MAX;
+
+			size_t idxImplInterfacesColonToken = SIZE_MAX;
+			deque<size_t> idxImplInterfacesCommaTokens;
+
+			size_t idxLBraceToken = SIZE_MAX,
+				   idxRBraceToken = SIZE_MAX;
 
 			InterfaceNode() = default;
 			inline InterfaceNode(const InterfaceNode &other) : MemberNode(other) {
@@ -90,21 +117,22 @@ namespace slake {
 				for (size_t i = 0; i < other.parentInterfaces.size(); ++i)
 					parentInterfaces[i] = other.parentInterfaces[i]->duplicate<TypeNameNode>();
 
+				idxInterfaceToken = other.idxInterfaceToken;
 				idxNameToken = other.idxNameToken;
+
+				idxImplInterfacesColonToken = other.idxImplInterfacesColonToken;
+				idxImplInterfacesCommaTokens = other.idxImplInterfacesCommaTokens;
+
+				idxLBraceToken = other.idxLBraceToken;
+				idxRBraceToken = other.idxRBraceToken;
 			}
 			inline InterfaceNode(
 				Location loc,
-				string name,
-				deque<shared_ptr<TypeNameNode>> parentInterfaces,
-				GenericParamNodeList genericParams,
-				size_t idxNameToken)
+				string name)
 				: _loc(loc),
-				  name(name),
-				  parentInterfaces(parentInterfaces),
-				  idxNameToken(idxNameToken) {
+				  name(name) {
 				scope = make_shared<Scope>();
 				setScope(make_shared<Scope>());
-				setGenericParams(genericParams);
 			}
 			virtual ~InterfaceNode() = default;
 
@@ -131,7 +159,14 @@ namespace slake {
 
 			shared_ptr<Scope> scope = make_shared<Scope>();
 
-			size_t idxNameToken;
+			size_t idxTraitToken = SIZE_MAX,
+				   idxNameToken = SIZE_MAX;
+
+			size_t idxImplTraitsColonToken = SIZE_MAX;
+			deque<size_t> idxImplTraitsCommaTokens;
+
+			size_t idxLBraceToken = SIZE_MAX,
+				   idxRBraceToken = SIZE_MAX;
 
 			TraitNode() = default;
 			inline TraitNode(const TraitNode &other) : MemberNode(other) {
@@ -143,18 +178,21 @@ namespace slake {
 				for (size_t i = 0; i < other.parentTraits.size(); ++i)
 					parentTraits[i] = other.parentTraits[i]->duplicate<TypeNameNode>();
 
+				idxTraitToken = other.idxTraitToken;
 				idxNameToken = other.idxNameToken;
+
+				idxImplTraitsColonToken = other.idxImplTraitsColonToken;
+				idxImplTraitsCommaTokens = other.idxImplTraitsCommaTokens;
+
+				idxLBraceToken = other.idxLBraceToken;
+				idxRBraceToken = other.idxRBraceToken;
 			}
 			inline TraitNode(
 				Location loc,
-				deque<shared_ptr<TypeNameNode>> parentTraits,
-				GenericParamNodeList genericParams,
-				size_t idxNameToken)
+				string name)
 				: _loc(loc),
-				  parentTraits(parentTraits),
-				  idxNameToken(idxNameToken) {
+				  name(name) {
 				setScope(make_shared<Scope>());
-				setGenericParams(genericParams);
 			}
 			virtual ~TraitNode() = default;
 

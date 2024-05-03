@@ -42,358 +42,427 @@ void Parser::_putFnDefinition(
 std::map<TokenId, Parser::OpRegistry> Parser::prefixOpRegistries = {
 	{ TokenId::SubOp,
 		{ 131,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				return static_pointer_cast<ExprNode>(
-					make_shared<UnaryOpExprNode>(
-						lhs->getLocation(),
-						UnaryOp::Neg,
-						lhs));
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<UnaryOpExprNode>(
+					opToken.beginLocation,
+					UnaryOp::Neg,
+					lhs);
+
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 	{ TokenId::RevOp,
 		{ 131,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				return static_pointer_cast<ExprNode>(
-					make_shared<UnaryOpExprNode>(
-						lhs->getLocation(),
-						UnaryOp::Not,
-						lhs));
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<UnaryOpExprNode>(
+					opToken.beginLocation,
+					UnaryOp::Not,
+					lhs);
+
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 	{ TokenId::NotOp,
 		{ 131,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				return static_pointer_cast<ExprNode>(
-					make_shared<UnaryOpExprNode>(
-						lhs->getLocation(),
-						UnaryOp::LNot,
-						lhs));
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<UnaryOpExprNode>(
+					opToken.beginLocation,
+					UnaryOp::LNot,
+					lhs);
+
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 	{ TokenId::IncOp,
 		{ 131,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				return static_pointer_cast<ExprNode>(
-					make_shared<UnaryOpExprNode>(
-						lhs->getLocation(),
-						UnaryOp::IncF,
-						lhs));
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<UnaryOpExprNode>(
+					opToken.beginLocation,
+					UnaryOp::IncF,
+					lhs);
+
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 	{ TokenId::DecOp,
 		{ 131,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				return static_pointer_cast<ExprNode>(
-					make_shared<UnaryOpExprNode>(
-						lhs->getLocation(),
-						UnaryOp::DecF,
-						lhs));
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<UnaryOpExprNode>(
+					opToken.beginLocation,
+					UnaryOp::DecF,
+					lhs);
+
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 };
 
 std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 	{ TokenId::LParenthese,
 		{ 140,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto args = parser->parseArgs();
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<CallExprNode>();
 
-				parser->expectToken(parser->lexer->nextToken(), TokenId::RParenthese);
+				expr->target = lhs;
+				expr->idxLParentheseToken = parser->lexer->getTokenIndex(opToken);
 
-				return static_pointer_cast<ExprNode>(
-					make_shared<CallExprNode>(
-						lhs,
-						args));
+				parser->parseArgs(expr->args, expr->idxCommaTokens);
+
+				expr->idxRParentheseToken = parser->lexer->getTokenIndex(
+					parser->expectToken(parser->lexer->nextToken(), TokenId::RParenthese));
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 	{ TokenId::LBracket,
 		{ 140,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr();
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<BinaryOpExprNode>(
+					lhs->getLocation(),
+					BinaryOp::Subscript,
+					lhs);
 
-				parser->expectToken(parser->lexer->nextToken(), TokenId::RBracket);
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
-				return static_pointer_cast<ExprNode>(
-					make_shared<BinaryOpExprNode>(
-						lhs->getLocation(),
-						BinaryOp::Subscript,
-						lhs,
-						rhs));
+				expr->rhs = parser->parseExpr();
+
+				const auto &closingToken = parser->expectToken(parser->lexer->nextToken(), TokenId::RBracket);
+				expr->idxClosingToken = parser->lexer->getTokenIndex(closingToken);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 	{ TokenId::IncOp,
 		{ 140,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				return static_pointer_cast<ExprNode>(
-					make_shared<UnaryOpExprNode>(
-						lhs->getLocation(),
-						UnaryOp::IncB,
-						lhs));
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<UnaryOpExprNode>(
+					lhs->getLocation(),
+					UnaryOp::IncB,
+					lhs);
+
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 	{ TokenId::DecOp,
 		{ 140,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				return static_pointer_cast<ExprNode>(
-					make_shared<UnaryOpExprNode>(
-						lhs->getLocation(),
-						UnaryOp::DecB,
-						lhs));
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<UnaryOpExprNode>(
+					lhs->getLocation(),
+					UnaryOp::DecB,
+					lhs);
+
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 	{ TokenId::Dot,
 		{ 140,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				return static_pointer_cast<ExprNode>(
-					make_shared<HeadedRefExprNode>(
-						lhs,
-						parser->parseRef()));
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<HeadedRefExprNode>(
+					lhs,
+					parser->parseRef());
+
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 
 	{ TokenId::MulOp,
 		{ 120,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(121);
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<BinaryOpExprNode>(
+					lhs->getLocation(),
+					BinaryOp::Mul,
+					lhs);
 
-				return static_pointer_cast<ExprNode>(
-					make_shared<BinaryOpExprNode>(
-						lhs->getLocation(),
-						BinaryOp::Mul,
-						lhs,
-						rhs));
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				expr->rhs = parser->parseExpr(121);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 	{ TokenId::DivOp,
 		{ 120,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(121);
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<BinaryOpExprNode>(
+					lhs->getLocation(),
+					BinaryOp::Div,
+					lhs);
 
-				return static_pointer_cast<ExprNode>(
-					make_shared<BinaryOpExprNode>(
-						lhs->getLocation(),
-						BinaryOp::Div,
-						lhs,
-						rhs));
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				expr->rhs = parser->parseExpr(121);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 	{ TokenId::ModOp,
 		{ 120,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(121);
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<BinaryOpExprNode>(
+					lhs->getLocation(),
+					BinaryOp::Mod,
+					lhs);
 
-				return static_pointer_cast<ExprNode>(
-					make_shared<BinaryOpExprNode>(
-						lhs->getLocation(),
-						BinaryOp::Mod,
-						lhs,
-						rhs));
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				expr->rhs = parser->parseExpr(121);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 
 	{ TokenId::AddOp,
 		{ 110,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(111);
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<BinaryOpExprNode>(
+					lhs->getLocation(),
+					BinaryOp::Add,
+					lhs);
 
-				return static_pointer_cast<ExprNode>(
-					make_shared<BinaryOpExprNode>(
-						lhs->getLocation(),
-						BinaryOp::Add,
-						lhs,
-						rhs));
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				expr->rhs = parser->parseExpr(111);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 	{ TokenId::SubOp,
 		{ 110,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(111);
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<BinaryOpExprNode>(
+					lhs->getLocation(),
+					BinaryOp::Sub,
+					lhs);
 
-				return static_pointer_cast<ExprNode>(
-					make_shared<BinaryOpExprNode>(
-						lhs->getLocation(),
-						BinaryOp::Sub,
-						lhs,
-						rhs));
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				expr->rhs = parser->parseExpr(111);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 
 	{ TokenId::LshOp,
 		{ 100,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(101);
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<BinaryOpExprNode>(
+					lhs->getLocation(),
+					BinaryOp::Lsh,
+					lhs);
 
-				return static_pointer_cast<ExprNode>(
-					make_shared<BinaryOpExprNode>(
-						lhs->getLocation(),
-						BinaryOp::Lsh,
-						lhs,
-						rhs));
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				expr->rhs = parser->parseExpr(101);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 	{ TokenId::RshOp,
 		{ 100,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(101);
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<BinaryOpExprNode>(
+					lhs->getLocation(),
+					BinaryOp::Rsh,
+					lhs);
 
-				return static_pointer_cast<ExprNode>(
-					make_shared<BinaryOpExprNode>(
-						lhs->getLocation(),
-						BinaryOp::Rsh,
-						lhs,
-						rhs));
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				expr->rhs = parser->parseExpr(101);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 
 	{ TokenId::GtOp,
 		{ 90,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(91);
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<BinaryOpExprNode>(
+					lhs->getLocation(),
+					BinaryOp::Gt,
+					lhs);
 
-				return static_pointer_cast<ExprNode>(
-					make_shared<BinaryOpExprNode>(
-						lhs->getLocation(),
-						BinaryOp::Gt,
-						lhs,
-						rhs));
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				expr->rhs = parser->parseExpr(91);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 	{ TokenId::GtEqOp,
 		{ 90,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(91);
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<BinaryOpExprNode>(
+					lhs->getLocation(),
+					BinaryOp::GtEq,
+					lhs);
 
-				return static_pointer_cast<ExprNode>(
-					make_shared<BinaryOpExprNode>(
-						lhs->getLocation(),
-						BinaryOp::GtEq,
-						lhs,
-						rhs));
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				expr->rhs = parser->parseExpr(91);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 	{ TokenId::LtOp,
 		{ 90,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(91);
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<BinaryOpExprNode>(
+					lhs->getLocation(),
+					BinaryOp::Lt,
+					lhs);
 
-				return static_pointer_cast<ExprNode>(
-					make_shared<BinaryOpExprNode>(
-						lhs->getLocation(),
-						BinaryOp::Lt,
-						lhs,
-						rhs));
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				expr->rhs = parser->parseExpr(91);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 	{ TokenId::LtEqOp,
 		{ 90,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(91);
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<BinaryOpExprNode>(
+					lhs->getLocation(),
+					BinaryOp::LtEq,
+					lhs);
 
-				return static_pointer_cast<ExprNode>(
-					make_shared<BinaryOpExprNode>(
-						lhs->getLocation(),
-						BinaryOp::LtEq,
-						lhs,
-						rhs));
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				expr->rhs = parser->parseExpr(91);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 
 	{ TokenId::EqOp,
 		{ 80,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(81);
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<BinaryOpExprNode>(
+					lhs->getLocation(),
+					BinaryOp::Eq,
+					lhs);
 
-				return static_pointer_cast<ExprNode>(
-					make_shared<BinaryOpExprNode>(
-						lhs->getLocation(),
-						BinaryOp::Eq,
-						lhs,
-						rhs));
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				expr->rhs = parser->parseExpr(81);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 	{ TokenId::NeqOp,
 		{ 80,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(81);
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<BinaryOpExprNode>(
+					lhs->getLocation(),
+					BinaryOp::Neq,
+					lhs);
 
-				return static_pointer_cast<ExprNode>(
-					make_shared<BinaryOpExprNode>(
-						lhs->getLocation(),
-						BinaryOp::Neq,
-						lhs,
-						rhs));
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				expr->rhs = parser->parseExpr(81);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 
 	{ TokenId::AndOp,
 		{ 70,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(71);
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<BinaryOpExprNode>(
+					lhs->getLocation(),
+					BinaryOp::And,
+					lhs);
 
-				return static_pointer_cast<ExprNode>(
-					make_shared<BinaryOpExprNode>(
-						lhs->getLocation(),
-						BinaryOp::And,
-						lhs,
-						rhs));
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				expr->rhs = parser->parseExpr(71);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 
 	{ TokenId::XorOp,
 		{ 60,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(61);
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<BinaryOpExprNode>(
+					lhs->getLocation(),
+					BinaryOp::Xor,
+					lhs);
 
-				return static_pointer_cast<ExprNode>(
-					make_shared<BinaryOpExprNode>(
-						lhs->getLocation(),
-						BinaryOp::Xor,
-						lhs,
-						rhs));
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				expr->rhs = parser->parseExpr(61);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 
 	{ TokenId::OrOp,
 		{ 50,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(51);
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<BinaryOpExprNode>(
+					lhs->getLocation(),
+					BinaryOp::Or,
+					lhs);
 
-				return static_pointer_cast<ExprNode>(
-					make_shared<BinaryOpExprNode>(
-						lhs->getLocation(),
-						BinaryOp::Or,
-						lhs,
-						rhs));
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				expr->rhs = parser->parseExpr(51);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 
 	{ TokenId::LAndOp,
 		{ 40,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(41);
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<BinaryOpExprNode>(
+					lhs->getLocation(),
+					BinaryOp::LAnd,
+					lhs);
 
-				return static_pointer_cast<ExprNode>(
-					make_shared<BinaryOpExprNode>(
-						lhs->getLocation(),
-						BinaryOp::LAnd,
-						lhs,
-						rhs));
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				expr->rhs = parser->parseExpr(41);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 
 	{ TokenId::LOrOp,
 		{ 30,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(31);
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<BinaryOpExprNode>(
+					lhs->getLocation(),
+					BinaryOp::LOr,
+					lhs);
 
-				return static_pointer_cast<ExprNode>(
-					make_shared<BinaryOpExprNode>(
-						lhs->getLocation(),
-						BinaryOp::LOr,
-						lhs,
-						rhs));
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				expr->rhs = parser->parseExpr(31);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 
 	{ TokenId::Question,
 		{ 21,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto trueBranch = parser->parseExpr(20);
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<TernaryOpExprNode>(lhs);
 
-				parser->expectToken(parser->lexer->nextToken(), TokenId::Colon);
+				expr->idxQuestionToken = parser->lexer->getTokenIndex(opToken);
 
-				auto falseBranch = parser->parseExpr(20);
+				expr->x = parser->parseExpr(20);
 
-				return static_pointer_cast<ExprNode>(
-					make_shared<TernaryOpExprNode>(
-						lhs,
-						trueBranch,
-						falseBranch));
+				const auto &colonToken = parser->expectToken(parser->lexer->nextToken(), TokenId::Colon);
+				expr->idxColonToken = parser->lexer->getTokenIndex(colonToken);
+
+				expr->y = parser->parseExpr(20);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 
 	{ TokenId::AssignOp,
 		{ 11,
-			[](Parser *parser, shared_ptr<ExprNode> lhs) -> shared_ptr<ExprNode> {
-				auto rhs = parser->parseExpr(10);
+			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
+				auto expr = make_shared<BinaryOpExprNode>(
+					lhs->getLocation(),
+					BinaryOp::Assign,
+					lhs);
 
-				return static_pointer_cast<ExprNode>(
-					make_shared<BinaryOpExprNode>(
-						lhs->getLocation(),
-						BinaryOp::Assign,
-						lhs,
-						rhs));
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				expr->rhs = parser->parseExpr(10);
+
+				return static_pointer_cast<ExprNode>(expr);
 			} } },
 };
 
@@ -679,24 +748,23 @@ end:
 	return ref;
 }
 
-deque<shared_ptr<ExprNode>> Parser::parseArgs() {
-	deque<shared_ptr<ExprNode>> args;
-
+void Parser::parseArgs(
+	deque<shared_ptr<ExprNode>> &argsOut,
+	deque<size_t> &idxCommaTokensOut) {
 	while (true) {
 		if (lexer->peekToken().tokenId == TokenId::RParenthese) {
 			break;
 		}
 
-		args.push_back(parseExpr());
+		argsOut.push_back(parseExpr());
 
 		if (lexer->peekToken().tokenId != TokenId::Comma) {
 			break;
 		}
 
-		lexer->nextToken();
+		const auto &commaToken = lexer->nextToken();
+		idxCommaTokensOut.push_back(lexer->getTokenIndex(commaToken));
 	}
-
-	return args;
 }
 
 shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
@@ -706,130 +774,144 @@ shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 
 	const Token &prefixToken = expectToken(lexer->peekToken());
 
-	if (auto it = prefixOpRegistries.find(prefixToken.tokenId); it != prefixOpRegistries.end()) {
-		lexer->nextToken();
-
-		lhs = it->second.parselet(this, parseExpr(it->second.leftPrecedence));
-	} else {
-		switch (prefixToken.tokenId) {
-			case TokenId::ThisKeyword:
-			case TokenId::BaseKeyword:
-			case TokenId::ScopeOp:
-			case TokenId::Id:
-				lhs = static_pointer_cast<ExprNode>(
-					make_shared<RefExprNode>(
-						parseRef()));
-				break;
-			case TokenId::LParenthese:
-				lexer->nextToken();
-				parseExpr(precedence);
-				expectToken(TokenId::RParenthese);
-				break;
-			case TokenId::NewKeyword: {
-				lexer->nextToken();
-
-				auto typeName = parseTypeName();
-
-				expectToken(TokenId::LParenthese);
-				auto args = parseArgs();
-				expectToken(TokenId::RParenthese);
-
-				lhs = make_shared<NewExprNode>(prefixToken.beginLocation, typeName, args);
-
-				break;
-			}
-			case TokenId::IntLiteral:
-				lhs = static_pointer_cast<ExprNode>(
-					make_shared<I32LiteralExprNode>(
-						prefixToken.beginLocation,
-						((IntLiteralTokenExtension *)prefixToken.exData.get())->data,
-						lexer->getTokenIndex(prefixToken)));
-				lexer->nextToken();
-				break;
-			case TokenId::LongLiteral:
-				lhs = static_pointer_cast<ExprNode>(
-					make_shared<I64LiteralExprNode>(
-						prefixToken.beginLocation,
-						((LongLiteralTokenExtension *)prefixToken.exData.get())->data,
-						lexer->getTokenIndex(prefixToken)));
-				lexer->nextToken();
-				break;
-			case TokenId::UIntLiteral:
-				lhs = static_pointer_cast<ExprNode>(
-					make_shared<U32LiteralExprNode>(
-						prefixToken.beginLocation,
-						((UIntLiteralTokenExtension *)prefixToken.exData.get())->data,
-						lexer->getTokenIndex(prefixToken)));
-				lexer->nextToken();
-				break;
-			case TokenId::ULongLiteral:
-				lhs = static_pointer_cast<ExprNode>(
-					make_shared<U64LiteralExprNode>(
-						prefixToken.beginLocation,
-						((ULongLiteralTokenExtension *)prefixToken.exData.get())->data,
-						lexer->getTokenIndex(prefixToken)));
-				lexer->nextToken();
-				break;
-			case TokenId::StringLiteral:
-				lhs = static_pointer_cast<ExprNode>(
-					make_shared<StringLiteralExprNode>(
-						prefixToken.beginLocation,
-						((StringLiteralTokenExtension *)prefixToken.exData.get())->data,
-						lexer->getTokenIndex(prefixToken)));
-				lexer->nextToken();
-				break;
-			case TokenId::F32Literal:
-				lhs = static_pointer_cast<ExprNode>(
-					make_shared<F32LiteralExprNode>(
-						prefixToken.beginLocation,
-						((F32LiteralTokenExtension *)prefixToken.exData.get())->data,
-						lexer->getTokenIndex(prefixToken)));
-				lexer->nextToken();
-				break;
-			case TokenId::F64Literal:
-				lhs = static_pointer_cast<ExprNode>(
-					make_shared<F64LiteralExprNode>(
-						prefixToken.beginLocation,
-						((F64LiteralTokenExtension *)prefixToken.exData.get())->data,
-						lexer->getTokenIndex(prefixToken)));
-				lexer->nextToken();
-				break;
-			case TokenId::TrueKeyword:
-				lhs = static_pointer_cast<ExprNode>(
-					make_shared<BoolLiteralExprNode>(
-						prefixToken.beginLocation,
-						true,
-						lexer->getTokenIndex(prefixToken)));
-				lexer->nextToken();
-				break;
-			case TokenId::FalseKeyword:
-				lhs = static_pointer_cast<ExprNode>(
-					make_shared<BoolLiteralExprNode>(
-						prefixToken.beginLocation,
-						false,
-						lexer->getTokenIndex(prefixToken)));
-				lexer->nextToken();
-				break;
-			default:
-				lexer->nextToken();
-				throw SyntaxError("Expecting an expression", prefixToken.beginLocation);
-		}
-	}
-
-	while (true) {
-		const Token &infixToken = lexer->peekToken();
-		if (infixToken.tokenId == TokenId::End)
-			break;
-
-		if (auto it = infixOpRegistries.find(infixToken.tokenId); it != infixOpRegistries.end()) {
-			if (it->second.leftPrecedence < precedence)
-				break;
-
+	try {
+		if (auto it = prefixOpRegistries.find(prefixToken.tokenId); it != prefixOpRegistries.end()) {
 			lexer->nextToken();
 
-			lhs = it->second.parselet(this, lhs);
-		} else
-			break;
+			lhs = it->second.parselet(this, parseExpr(it->second.leftPrecedence), prefixToken);
+		} else {
+			switch (prefixToken.tokenId) {
+				case TokenId::ThisKeyword:
+				case TokenId::BaseKeyword:
+				case TokenId::ScopeOp:
+				case TokenId::Id:
+					lhs = static_pointer_cast<ExprNode>(
+						make_shared<RefExprNode>(
+							parseRef()));
+					break;
+				case TokenId::LParenthese:
+					lexer->nextToken();
+					parseExpr(precedence);
+					expectToken(TokenId::RParenthese);
+					break;
+				case TokenId::NewKeyword: {
+					auto expr = make_shared<NewExprNode>(prefixToken.beginLocation);
+					lhs = expr;
+
+					const auto &newToken = lexer->nextToken();
+					expr->idxNewToken = lexer->getTokenIndex(newToken);
+
+					expr->type = parseTypeName();
+
+					const auto &lParentheseToken = expectToken(TokenId::LParenthese);
+					expr->idxLParentheseToken = lexer->getTokenIndex(lParentheseToken);
+
+					parseArgs(expr->args, expr->idxCommaTokens);
+
+					const auto &rParentheseToken = expectToken(TokenId::RParenthese);
+					expr->idxRParentheseToken = lexer->getTokenIndex(rParentheseToken);
+					break;
+				}
+				case TokenId::IntLiteral:
+					lhs = static_pointer_cast<ExprNode>(
+						make_shared<I32LiteralExprNode>(
+							prefixToken.beginLocation,
+							((IntLiteralTokenExtension *)prefixToken.exData.get())->data,
+							lexer->getTokenIndex(prefixToken)));
+					lexer->nextToken();
+					break;
+				case TokenId::LongLiteral:
+					lhs = static_pointer_cast<ExprNode>(
+						make_shared<I64LiteralExprNode>(
+							prefixToken.beginLocation,
+							((LongLiteralTokenExtension *)prefixToken.exData.get())->data,
+							lexer->getTokenIndex(prefixToken)));
+					lexer->nextToken();
+					break;
+				case TokenId::UIntLiteral:
+					lhs = static_pointer_cast<ExprNode>(
+						make_shared<U32LiteralExprNode>(
+							prefixToken.beginLocation,
+							((UIntLiteralTokenExtension *)prefixToken.exData.get())->data,
+							lexer->getTokenIndex(prefixToken)));
+					lexer->nextToken();
+					break;
+				case TokenId::ULongLiteral:
+					lhs = static_pointer_cast<ExprNode>(
+						make_shared<U64LiteralExprNode>(
+							prefixToken.beginLocation,
+							((ULongLiteralTokenExtension *)prefixToken.exData.get())->data,
+							lexer->getTokenIndex(prefixToken)));
+					lexer->nextToken();
+					break;
+				case TokenId::StringLiteral:
+					lhs = static_pointer_cast<ExprNode>(
+						make_shared<StringLiteralExprNode>(
+							prefixToken.beginLocation,
+							((StringLiteralTokenExtension *)prefixToken.exData.get())->data,
+							lexer->getTokenIndex(prefixToken)));
+					lexer->nextToken();
+					break;
+				case TokenId::F32Literal:
+					lhs = static_pointer_cast<ExprNode>(
+						make_shared<F32LiteralExprNode>(
+							prefixToken.beginLocation,
+							((F32LiteralTokenExtension *)prefixToken.exData.get())->data,
+							lexer->getTokenIndex(prefixToken)));
+					lexer->nextToken();
+					break;
+				case TokenId::F64Literal:
+					lhs = static_pointer_cast<ExprNode>(
+						make_shared<F64LiteralExprNode>(
+							prefixToken.beginLocation,
+							((F64LiteralTokenExtension *)prefixToken.exData.get())->data,
+							lexer->getTokenIndex(prefixToken)));
+					lexer->nextToken();
+					break;
+				case TokenId::TrueKeyword:
+					lhs = static_pointer_cast<ExprNode>(
+						make_shared<BoolLiteralExprNode>(
+							prefixToken.beginLocation,
+							true,
+							lexer->getTokenIndex(prefixToken)));
+					lexer->nextToken();
+					break;
+				case TokenId::FalseKeyword:
+					lhs = static_pointer_cast<ExprNode>(
+						make_shared<BoolLiteralExprNode>(
+							prefixToken.beginLocation,
+							false,
+							lexer->getTokenIndex(prefixToken)));
+					lexer->nextToken();
+					break;
+				default:
+					lexer->nextToken();
+					throw SyntaxError("Expecting an expression", prefixToken.beginLocation);
+			}
+		}
+
+		while (true) {
+			const Token &infixToken = lexer->peekToken();
+			if (infixToken.tokenId == TokenId::End)
+				break;
+
+			if (auto it = infixOpRegistries.find(infixToken.tokenId); it != infixOpRegistries.end()) {
+				if (it->second.leftPrecedence < precedence)
+					break;
+
+				lexer->nextToken();
+
+				lhs = it->second.parselet(this, lhs, infixToken);
+			} else
+				break;
+		}
+	} catch (SyntaxError e) {
+		compiler->messages.push_back(
+			Message(
+				e.location,
+				MessageType::Error,
+				e.what()));
+		lhs = make_shared<BadExprNode>(prefixToken.beginLocation, lhs);
 	}
 
 	return lhs;
@@ -1300,7 +1382,6 @@ shared_ptr<FnOverloadingNode> Parser::parseFnDecl(string &nameOut) {
 		auto &tokenInfo = compiler->tokenInfos[lexer->getTokenIndex(token)];
 		tokenInfo.tokenContext.curScope = curScope;
 		tokenInfo.completionContext = CompletionContext::Type;
-		tokenInfo.semanticInfo.isTopLevelRef = true;
 #endif
 
 		returnType = parseTypeName();

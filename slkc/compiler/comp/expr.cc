@@ -19,7 +19,8 @@ static map<UnaryOp, UnaryOpRegistry> _unaryOpRegs = {
 	{ UnaryOp::IncF, { slake::Opcode::INCF, true } },
 	{ UnaryOp::DecF, { slake::Opcode::DECF, true } },
 	{ UnaryOp::IncB, { slake::Opcode::INCB, true } },
-	{ UnaryOp::DecB, { slake::Opcode::DECB, true } }
+	{ UnaryOp::DecB, { slake::Opcode::DECB, true } },
+	{ UnaryOp::Neg, { slake::Opcode::NEG, false } }
 };
 
 struct BinaryOpRegistry {
@@ -113,6 +114,13 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 			uint32_t lhsRegIndex = allocReg();
 
 			auto lhsType = evalExprType(e->x);
+
+			if (!lhsType)
+				throw FatalCompilationError(
+					Message(
+						e->x->getLocation(),
+						MessageType::Error,
+						"Error deducing type of the operand"));
 
 			switch (lhsType->getTypeId()) {
 				case Type::I8:
@@ -300,7 +308,20 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 		case ExprType::Binary: {
 			auto e = static_pointer_cast<BinaryOpExprNode>(expr);
 
-			auto lhsType = evalExprType(e->lhs), rhsType = evalExprType(e->rhs);
+			shared_ptr<TypeNameNode> lhsType = evalExprType(e->lhs), rhsType = evalExprType(e->rhs);
+
+			if (!lhsType)
+				throw FatalCompilationError(
+					Message(
+						e->lhs->getLocation(),
+						MessageType::Error,
+						"Error deducing type of the left operand"));
+			if (!rhsType)
+				throw FatalCompilationError(
+					Message(
+						e->rhs->getLocation(),
+						MessageType::Error,
+						"Error deducing type of the right operand"));
 
 			auto compileShortCircuitOperator = [this, e, lhsType, rhsType]() {
 				uint32_t lhsRegIndex = allocReg(1);
@@ -949,10 +970,19 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 					}
 				}
 
-				auto returnType = evalExprType(e->target);
-				bool isReturnTypeLValue = isLValueType(returnType);
-
 				compileExpr(e->target, EvalPurpose::Call, make_shared<RegRefNode>(callTargetRegIndex), make_shared<RegRefNode>(tmpRegIndex));
+
+				auto returnType = evalExprType(e->target);
+				if (!returnType) {
+					messages.push_back(
+						Message(
+							e->target->getLocation(),
+							MessageType::Error,
+							"Error deducing type of call target"));
+					break;
+				}
+
+				bool isReturnTypeLValue = isLValueType(returnType);
 
 				if (curMajorContext.curMinorContext.isLastCallTargetStatic)
 					curFn->insertIns(
@@ -1109,7 +1139,12 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 					throw FatalCompilationError({ e->getLocation(), MessageType::Error, "Invalid type conversion" });
 				}
 			} else {
-				if (isTypeNamesConvertible(evalExprType(e->target), e->targetType)) {
+				auto originalType = evalExprType(e->target);
+
+				if (!originalType)
+					break;
+
+				if (isTypeNamesConvertible(originalType, e->targetType)) {
 					uint32_t tmpRegIndex = allocReg();
 
 					compileExpr(e->target, EvalPurpose::RValue, make_shared<RegRefNode>(tmpRegIndex));
@@ -1381,6 +1416,8 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 						"Expecting a lvalue expression"));
 
 			curFn->insertIns(Opcode::STORE, curMajorContext.curMinorContext.evalDest, expr);
+			break;
+		case ExprType::Bad:
 			break;
 		default:
 			assert(false);

@@ -256,7 +256,6 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 					auto &tokenInfo = tokenInfos[m->idxColonToken];
 					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 					tokenInfo.completionContext = CompletionContext::Type;
-					tokenInfo.semanticInfo.isTopLevelRef = true;
 				}
 				if (m->type)
 					updateCompletionContext(m->type, CompletionContext::Type);
@@ -310,7 +309,6 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 					auto &tokenInfo = tokenInfos[m->idxNameToken];
 					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 					tokenInfo.semanticType = SemanticType::Class;
-					tokenInfo.semanticInfo.isTopLevelRef = true;
 				}
 
 				if (m->idxParentSlotLParentheseToken != SIZE_MAX) {
@@ -318,7 +316,6 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 					auto &tokenInfo = tokenInfos[m->idxParentSlotLParentheseToken];
 					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 					tokenInfo.completionContext = CompletionContext::Type;
-					tokenInfo.semanticInfo.isTopLevelRef = true;
 				}
 
 				if (m->idxImplInterfacesColonToken != SIZE_MAX) {
@@ -326,7 +323,6 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 					auto &tokenInfo = tokenInfos[m->idxImplInterfacesColonToken];
 					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 					tokenInfo.completionContext = CompletionContext::Type;
-					tokenInfo.semanticInfo.isTopLevelRef = true;
 				}
 
 				for (auto j : m->idxImplInterfacesCommaTokens) {
@@ -335,7 +331,6 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 						auto &tokenInfo = tokenInfos[j];
 						tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 						tokenInfo.completionContext = CompletionContext::Type;
-						tokenInfo.semanticInfo.isTopLevelRef = true;
 					}
 				}
 

@@ -306,6 +306,10 @@ shared_ptr<ExprNode> Compiler::evalConstExpr(shared_ptr<ExprNode> expr) {
 			return expr;
 		case ExprType::Unary: {
 			auto e = static_pointer_cast<UnaryOpExprNode>(expr);
+
+			if (!e->x)
+				return {};
+
 			if (!evalConstExpr(e->x))
 				return {};
 
@@ -332,6 +336,9 @@ shared_ptr<ExprNode> Compiler::evalConstExpr(shared_ptr<ExprNode> expr) {
 		}
 		case ExprType::Binary: {
 			auto e = static_pointer_cast<BinaryOpExprNode>(expr);
+
+			if ((!e->lhs) || (!e->rhs))
+				return {};
 
 			auto lhs = evalConstExpr(e->lhs), rhs = evalConstExpr(e->rhs);
 
@@ -491,9 +498,15 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 		case ExprType::Unary: {
 			auto e = static_pointer_cast<UnaryOpExprNode>(expr);
 
+			if (!e->x)
+				return {};
+
 			uint32_t lhsRegIndex = allocReg();
 
 			auto lhsType = evalExprType(e->x);
+
+			if (!lhsType)
+				return {};
 
 			switch (lhsType->getTypeId()) {
 				case Type::I8:
@@ -643,7 +656,14 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 		case ExprType::Binary: {
 			auto e = static_pointer_cast<BinaryOpExprNode>(expr);
 
+			if ((!e->lhs) || (!e->rhs))
+				return {};
+
 			auto lhsType = evalExprType(e->lhs);
+
+			if (!lhsType)
+				return {};
+
 			switch (lhsType->getTypeId()) {
 				case Type::I8:
 				case Type::I16:
@@ -744,6 +764,9 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 				case Type::Custom: {
 					auto node = resolveCustomTypeName(static_pointer_cast<CustomTypeNameNode>(lhsType).get());
 					auto rhsType = evalExprType(e->lhs);
+
+					if (!rhsType)
+						return {};
 
 					auto determineOverloading = [this, e, rhsType](shared_ptr<MemberNode> n, uint32_t lhsRegIndex) -> shared_ptr<TypeNameNode> {
 						if (auto it = n->scope->members.find(std::to_string(e->op));
@@ -937,6 +960,10 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 			auto e = static_pointer_cast<RefExprNode>(expr);
 			deque<pair<Ref, shared_ptr<AstNode>>> resolvedParts;
 
+#if SLKC_WITH_LANGUAGE_SERVER
+			updateCompletionContext(e->ref, CompletionContext::Expr);
+#endif
+
 			if (resolveRef(e->ref, resolvedParts)) {
 				switch (resolvedParts.back().second->getNodeType()) {
 					case NodeType::Var:
@@ -1047,6 +1074,9 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 
 			return e->targetType;
 		}
+		case ExprType::Bad:
+			return {};
+		default:
+			assert(false);
 	}
-	assert(false);
 }

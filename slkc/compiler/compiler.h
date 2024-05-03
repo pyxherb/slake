@@ -202,9 +202,7 @@ namespace slake {
 			CompletionContext completionContext = CompletionContext::None;
 
 			struct {
-				std::string name;
-
-				bool isTopLevelRef = false;
+				bool isTopLevelRef = true;
 
 				shared_ptr<AstNode> correspondingMember;
 			} semanticInfo;

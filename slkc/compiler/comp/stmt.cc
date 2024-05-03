@@ -19,6 +19,15 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 				sld.nIns = curFn->body.size() - sld.offIns;
 				curFn->srcLocDescs.push_back(sld);
 			}
+
+#if SLKC_WITH_LANGUAGE_SERVER
+			if (s->idxSemicolonToken != SIZE_MAX) {
+				// Update corresponding semantic information.
+				auto &tokenInfo = tokenInfos[s->idxSemicolonToken];
+				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+				tokenInfo.completionContext = CompletionContext::Stmt;
+			}
+#endif
 			break;
 		}
 		case StmtType::VarDef: {
@@ -39,7 +48,6 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 					auto &tokenInfo = tokenInfos[i.second.idxColonToken];
 					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 					tokenInfo.completionContext = CompletionContext::Type;
-					tokenInfo.semanticInfo.isTopLevelRef = true;
 				}
 				if (i.second.type)
 					updateCompletionContext(i.second.type, CompletionContext::Type);
@@ -57,6 +65,12 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 
 				if (i.second.initValue) {
 					shared_ptr<TypeNameNode> initValueType = evalExprType(i.second.initValue);
+
+					if (!initValueType)
+						throw FatalCompilationError(
+							{ i.second.initValue->getLocation(),
+								MessageType::Error,
+								"Error deducing type of the initial value" });
 
 					if (!isSameType(varType, initValueType)) {
 						if (!isTypeNamesConvertible(initValueType, varType))
@@ -163,15 +177,18 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 
 			curFn->insertLabel(beginLabel);
 
-			compileExpr(s->condition, EvalPurpose::RValue, make_shared<RegRefNode>(tmpRegIndex));
-			if (evalExprType(s->condition)->getTypeId() != Type::Bool)
-				curFn->insertIns(
-					Opcode::CAST,
-					make_shared<RegRefNode>(tmpRegIndex),
-					make_shared<BoolTypeNameNode>(s->condition->getLocation(), true),
-					make_shared<RegRefNode>(tmpRegIndex, true));
+			if (s->condition) {
+				compileExpr(s->condition, EvalPurpose::RValue, make_shared<RegRefNode>(tmpRegIndex));
+				if (evalExprType(s->condition)->getTypeId() != Type::Bool)
+					curFn->insertIns(
+						Opcode::CAST,
+						make_shared<RegRefNode>(tmpRegIndex),
+						make_shared<BoolTypeNameNode>(s->condition->getLocation(), true),
+						make_shared<RegRefNode>(tmpRegIndex, true));
+			}
 
-			compileStmt(s->body);
+			if (s->body)
+				compileStmt(s->body);
 
 			curFn->insertLabel(endLabel);
 

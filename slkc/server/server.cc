@@ -68,6 +68,8 @@ slake::slkc::Server::Server() {
 			doc->languageId = languageId;
 			doc->compiler = make_shared<Compiler>();
 
+			doc->compiler->modulePaths = modulePaths;
+
 			openedDocuments[uri] = doc;
 
 			Json::Value responseValue;

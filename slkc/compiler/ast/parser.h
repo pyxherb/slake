@@ -35,7 +35,7 @@ namespace slake {
 				shared_ptr<FnOverloadingNode> overloading);
 
 		public:
-			using OpParselet = std::function<shared_ptr<ExprNode>(Parser *parser, shared_ptr<ExprNode> lhs)>;
+			using OpParselet = std::function<shared_ptr<ExprNode>(Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken)>;
 
 			struct OpRegistry {
 				int leftPrecedence;
@@ -99,7 +99,7 @@ namespace slake {
 			shared_ptr<TypeNameNode> parseTypeName();
 			deque<shared_ptr<TypeNameNode>> parseGenericArgs();
 			Ref parseRef();
-			deque<shared_ptr<ExprNode>> parseArgs();
+			void parseArgs(deque<shared_ptr<ExprNode>> &argsOut, deque<size_t> &idxCommaTokensOut);
 
 			shared_ptr<ExprNode> parseExpr(int precedence = 0);
 

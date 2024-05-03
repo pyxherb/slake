@@ -176,6 +176,7 @@ int main(int argc, char **argv) {
 				printf("Language server started on local port %hu\n", lspServerPort);
 
 				slake::slkc::Server server;
+				server.modulePaths = modulePaths;
 
 				server.start(lspServerPort);
 

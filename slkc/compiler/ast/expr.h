@@ -36,7 +36,9 @@ namespace slake {
 			Typeof,	 // Typeof
 			Cast,	 // Cast
 
-			Wrapper, // Expression wrapper
+			Wrapper,  // Expression wrapper
+
+			Bad,  // Bad expression
 		};
 
 		class ExprNode : public AstNode {
@@ -116,6 +118,8 @@ namespace slake {
 			shared_ptr<ExprNode> head;
 			Ref ref;
 
+			size_t idxOpToken = SIZE_MAX;
+
 			inline HeadedRefExprNode(shared_ptr<ExprNode> head, Ref ref) : head(head), ref(ref) {}
 			virtual ~HeadedRefExprNode() = default;
 
@@ -131,6 +135,8 @@ namespace slake {
 		public:
 			UnaryOp op;
 			shared_ptr<ExprNode> x;
+
+			size_t idxOpToken = SIZE_MAX;
 
 			inline UnaryOpExprNode(Location loc, UnaryOp op, shared_ptr<ExprNode> x)
 				: _loc(loc), op(op), x(x) {}
@@ -149,8 +155,10 @@ namespace slake {
 			BinaryOp op;
 			shared_ptr<ExprNode> lhs, rhs;
 
-			inline BinaryOpExprNode(Location loc, BinaryOp op, shared_ptr<ExprNode> lhs, shared_ptr<ExprNode> rhs)
-				: _loc(loc), op(op), lhs(lhs), rhs(rhs) {}
+			size_t idxOpToken = SIZE_MAX, idxClosingToken = SIZE_MAX;
+
+			inline BinaryOpExprNode(Location loc, BinaryOp op, shared_ptr<ExprNode> lhs)
+				: _loc(loc), op(op), lhs(lhs) {}
 			virtual ~BinaryOpExprNode() = default;
 
 			virtual inline Location getLocation() const override { return _loc; }
@@ -162,8 +170,9 @@ namespace slake {
 		public:
 			shared_ptr<ExprNode> condition, x, y;
 
-			inline TernaryOpExprNode(shared_ptr<ExprNode> condition, shared_ptr<ExprNode> x, shared_ptr<ExprNode> y)
-				: condition(condition), x(x), y(y) {}
+			size_t idxQuestionToken = SIZE_MAX, idxColonToken = SIZE_MAX;
+
+			inline TernaryOpExprNode(shared_ptr<ExprNode> condition) : condition(condition) {}
 			virtual ~TernaryOpExprNode() = default;
 
 			virtual inline Location getLocation() const override { return condition->getLocation(); }
@@ -288,12 +297,13 @@ namespace slake {
 		public:
 			shared_ptr<ExprNode> target;
 			deque<shared_ptr<ExprNode>> args;
-			bool isAsync;
+			bool isAsync = false;
 
-			inline CallExprNode(
-				shared_ptr<ExprNode> target,
-				deque<shared_ptr<ExprNode>> args,
-				bool isAsync = false) : target(target), args(args), isAsync(isAsync) {}
+			size_t idxLParentheseToken = SIZE_MAX,
+				   idxRParentheseToken = SIZE_MAX;
+			deque<size_t> idxCommaTokens;
+
+			CallExprNode() = default;
 			virtual ~CallExprNode() = default;
 
 			virtual inline Location getLocation() const override { return target->getLocation(); }
@@ -324,8 +334,13 @@ namespace slake {
 			shared_ptr<TypeNameNode> type;
 			deque<shared_ptr<ExprNode>> args;
 
-			inline NewExprNode(Location loc, shared_ptr<TypeNameNode> type, deque<shared_ptr<ExprNode>> args)
-				: _loc(loc), type(type), args(args) {}
+			size_t idxNewToken = SIZE_MAX,
+				   idxLParentheseToken = SIZE_MAX,
+				   idxRParentheseToken = SIZE_MAX;
+			deque<size_t> idxCommaTokens;
+
+			inline NewExprNode(Location loc)
+				: _loc(loc) {}
 			virtual ~NewExprNode() = default;
 
 			virtual inline Location getLocation() const override { return _loc; }
@@ -368,7 +383,7 @@ namespace slake {
 
 			virtual ExprType getExprType() const override { return ExprType::Cast; }
 		};
-		
+
 		class WrapperExprNode : public ExprNode {
 		private:
 			Location _loc;
@@ -383,6 +398,22 @@ namespace slake {
 			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual ExprType getExprType() const override { return ExprType::Wrapper; }
+		};
+
+		class BadExprNode : public ExprNode {
+		private:
+			Location _loc;
+
+		public:
+			shared_ptr<ExprNode> expr;
+
+			inline BadExprNode(Location loc, shared_ptr<ExprNode> expr)
+				: _loc(loc), expr(expr) {}
+			virtual ~BadExprNode() = default;
+
+			virtual inline Location getLocation() const override { return _loc; }
+
+			virtual ExprType getExprType() const override { return ExprType::Bad; }
 		};
 	}
 }

@@ -98,6 +98,7 @@ namespace slake {
 			httplib::Server server;
 
 			unordered_map<string, std::shared_ptr<Document>> openedDocuments;
+			deque<string> modulePaths;
 
 			Server();
 

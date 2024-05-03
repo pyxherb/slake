@@ -87,6 +87,8 @@ pub fn main() : i32 {
 	let s: Derived;
 	s.bal.bal.lab;
 
+	let n = 1.14 + 5;
+
 	while(test.x = test.x - 1) {
 		yield test.getX();
 	}

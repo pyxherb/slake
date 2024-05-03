@@ -308,6 +308,15 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 		case ExprType::Binary: {
 			auto e = static_pointer_cast<BinaryOpExprNode>(expr);
 
+#if SLKC_WITH_LANGUAGE_SERVER
+			{
+				auto &tokenInfo = tokenInfos[e->idxOpToken];
+				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+				tokenInfo.semanticType = SemanticType::Operator;
+			}
+			updateCompletionContext(e->idxOpToken, CompletionContext::Expr);
+#endif
+
 			shared_ptr<TypeNameNode> lhsType = evalExprType(e->lhs), rhsType = evalExprType(e->rhs);
 
 			if (!lhsType)
@@ -687,6 +696,13 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 							curFn->insertIns(Opcode::LOAD, make_shared<RegRefNode>(tmpRegIndex), make_shared<RefExprNode>(fullName));
 							curFn->insertIns(Opcode::MCALL, make_shared<RegRefNode>(tmpRegIndex, true), make_shared<RegRefNode>(lhsRegIndex, true));
 
+#if SLKC_WITH_LANGUAGE_SERVER
+							{
+								auto &tokenInfo = tokenInfos[e->idxOpToken];
+								tokenInfo.semanticInfo.correspondingMember = overloading;
+							}
+#endif
+
 							if (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt)
 								curFn->insertIns(Opcode::LRET, curMajorContext.curMinorContext.evalDest);
 
@@ -952,7 +968,14 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 			curMajorContext.curMinorContext.argTypes = {};
 
 			for (auto &i : e->args) {
-				curMajorContext.curMinorContext.argTypes.push_back(evalExprType(i));
+				auto type = evalExprType(i);
+				if (!type)
+					throw FatalCompilationError(
+						Message(
+							i->getLocation(),
+							MessageType::Error,
+							"Error deducing type of the argument"));
+				curMajorContext.curMinorContext.argTypes.push_back(type);
 			}
 
 			if (auto ce = evalConstExpr(e); ce) {
@@ -1167,6 +1190,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 #if SLKC_WITH_LANGUAGE_SERVER
 			updateCompletionContext(e->ref, CompletionContext::Expr);
 #endif
+			bool isCurStageStatic = true;
 
 			deque<pair<Ref, shared_ptr<AstNode>>> resolvedParts;
 			if (!resolveRef(e->ref, resolvedParts))
@@ -1214,11 +1238,12 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 				//
 				return argDependentLookup(expr->getLocation(), x.get(), curMajorContext.curMinorContext.argTypes, genericArgs);
 			};
-			auto loadRest = [this, &determineOverloadingRegistry, &expr, &tmpRegIndex, &resolvedParts]() {
+			auto loadRest = [this, &determineOverloadingRegistry, &expr, &tmpRegIndex, &resolvedParts, &isCurStageStatic]() {
 				for (size_t i = 1; i < resolvedParts.size(); ++i) {
 					switch (resolvedParts[i].second->getNodeType()) {
 						case NodeType::Var: {
-							;
+							auto varNode = static_pointer_cast<VarNode>(resolvedParts[i].second);
+
 							curFn->insertIns(
 								Opcode::RLOAD,
 								make_shared<RegRefNode>(tmpRegIndex),
@@ -1267,6 +1292,8 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 			auto &x = resolvedParts.front().second;
 			switch (x->getNodeType()) {
 				case NodeType::LocalVar:
+					isCurStageStatic = false;
+
 					curFn->insertIns(
 						Opcode::STORE,
 						make_shared<RegRefNode>(tmpRegIndex),
@@ -1292,6 +1319,8 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 							make_shared<RegRefNode>(tmpRegIndex, true));
 					break;
 				case NodeType::ArgRef:
+					isCurStageStatic = false;
+
 					static_pointer_cast<ArgRefNode>(x)->unwrapData = (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RValue);
 
 					curFn->insertIns(
@@ -1325,13 +1354,33 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 					switch (x->getNodeType()) {
 						case NodeType::Class:
 						case NodeType::Interface:
-						case NodeType::Trait:
-						case NodeType::Var: {
+						case NodeType::Trait: {
 							Ref ref = getFullName((MemberNode *)x.get());
 							curFn->insertIns(
 								Opcode::LOAD,
 								make_shared<RegRefNode>(tmpRegIndex),
 								make_shared<RefExprNode>(ref));
+							break;
+						}
+						case NodeType::Var: {
+							auto varNode = (VarNode *)x.get();
+
+							if (varNode->access & ACCESS_STATIC) {
+								Ref ref = getFullName(varNode);
+								curFn->insertIns(
+									Opcode::LOAD,
+									make_shared<RegRefNode>(tmpRegIndex),
+									make_shared<RefExprNode>(ref));
+							} else {
+								curFn->insertIns(
+									Opcode::LTHIS,
+									make_shared<RegRefNode>(tmpRegIndex));
+								curFn->insertIns(
+									Opcode::RLOAD,
+									make_shared<RegRefNode>(tmpRegIndex),
+									make_shared<RegRefNode>(tmpRegIndex, true),
+									make_shared<RefExprNode>(resolvedParts.front().first));
+							}
 							break;
 						}
 						case NodeType::Fn: {
@@ -1362,9 +1411,11 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 							break;
 						}
 						case NodeType::ThisRef:
+							isCurStageStatic = false;
 							curFn->insertIns(Opcode::LTHIS, make_shared<RegRefNode>(tmpRegIndex));
 							break;
 						case NodeType::BaseRef:
+							isCurStageStatic = false;
 							curFn->insertIns(Opcode::LOAD, make_shared<RegRefNode>(tmpRegIndex), make_shared<RefExprNode>(Ref{ RefEntry(e->getLocation(), SIZE_MAX, "base") }));
 							break;
 						default:

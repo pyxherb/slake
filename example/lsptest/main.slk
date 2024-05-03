@@ -55,6 +55,10 @@ class Derived(Test) {
 	pub fn getY(): i32 {
 		return this.y;
 	}
+
+	pub operator+(i32 x) : i32 {
+		return this.x + x;
+	}
 }
 
 class AnotherDerived(Derived) {
@@ -86,6 +90,8 @@ pub fn main() : i32 {
 
 	let s: Derived;
 	s.bal.bal.lab;
+
+	s + 1;
 
 	let n = 1.14 + 5;
 

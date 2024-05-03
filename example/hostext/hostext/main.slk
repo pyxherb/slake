@@ -38,6 +38,10 @@ class Test {
 		extfnsModule.print("Fetched x: ", this.x, "\n");
 		return this.x;
 	}
+	
+	pub operator +(i32 rhs) : i32 {
+		return this.x + rhs;
+	}
 }
 
 class Derived(Test) {
@@ -49,7 +53,7 @@ class Derived(Test) {
 	}
 
 	pub operator new(i32 y) {
-		base.x = y * 2;
+		this.x = y * 2;
 		this.x = y * 4;
 		return;
 	}
@@ -65,8 +69,8 @@ class AnotherDerived(Derived) {
 
 	pub operator new(i32 z) {
 		this.z = z;
-		base.x = z * 4;
-		base.y = z * 2;
+		this.x = z * 4;
+		this.y = z * 2;
 		return;
 	}
 
@@ -79,6 +83,8 @@ class AnotherDerived(Derived) {
 class Unrelated {
 }
 
+let n : AnotherDerived;
+
 pub fn main(): i32 {
 	hostext.extfns.print("Entered main\n");
 
@@ -90,10 +96,14 @@ pub fn main(): i32 {
 	test.lab = test;
 	test.lab.lab.getX();
 
+	extfnsModule.print(test + 123);
+
 	while(test.x = test.x - 1) {
 		extfnsModule.print("Yielded\n");
 		yield test.getX();
 	}
+
+	n.z;
 
 	return 114514;
 }

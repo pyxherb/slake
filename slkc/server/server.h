@@ -61,12 +61,14 @@ namespace slake {
 				Scope *scope,
 				std::unordered_map<std::string, MemberNode *> &membersOut,
 				std::set<Scope*> &walkedScopes,
-				bool isTopLevelRef = false);
+				bool isTopLevelRef,
+				bool isStatic);
 			void _walkForCompletion(
 				AstNode *m,
 				std::unordered_map<std::string, MemberNode *> &membersOut,
-				std::set<Scope *> &walkedScopes);
-			std::unordered_map<std::string, MemberNode *> _walkForCompletion(Scope *scope, bool isTopLevelRef);
+				std::set<Scope *> &walkedScopes,
+				bool isStatic);
+			std::unordered_map<std::string, MemberNode *> _walkForCompletion(Scope *scope, bool isTopLevelRef, bool isStatic);
 
 			CompletionItemType _toCompletionItemType(NodeType nodeType);
 			void _getCompletionItems(

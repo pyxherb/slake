@@ -18,6 +18,7 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 		if (auto scope = scopeOf(localVar->type.get()); scope) {
 			RefResolveContext newResolveContext;
 			newResolveContext.isTopLevel = false;
+			newResolveContext.isStatic = false;
 
 			if (_resolveRef(scope.get(), newRef, partsOut, newResolveContext))
 				goto lvarSucceeded;
@@ -53,6 +54,7 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 			if (auto scope = scopeOf(curFn->params[idxParam]->type.get()); scope) {
 				RefResolveContext newResolveContext;
 				newResolveContext.isTopLevel = false;
+				newResolveContext.isStatic = false;
 
 				if (_resolveRef(scope.get(), newRef, partsOut, newResolveContext))
 					goto paramSucceeded;
@@ -90,6 +92,7 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 		if (ref.size() > 1) {
 			RefResolveContext newResolveContext;
 			newResolveContext.isTopLevel = false;
+			newResolveContext.isStatic = false;
 
 			ref.pop_front();
 			auto result = _resolveRef(curMajorContext.curMinorContext.curScope.get(), ref, partsOut, newResolveContext);
@@ -111,7 +114,7 @@ bool Compiler::resolveRefWithScope(Scope *scope, Ref ref, deque<pair<Ref, shared
 	return _resolveRef(scope, ref, partsOut, resolveContext);
 }
 
-bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, const RefResolveContext &resolveContext) {
+bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, RefResolveContext resolveContext) {
 #if SLKC_WITH_LANGUAGE_SERVER
 	// Update corresponding semantic information.
 	{
@@ -123,6 +126,7 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 			auto &precedingAccessOpTokenInfo = tokenInfos[ref[0].idxAccessOpToken];
 			precedingAccessOpTokenInfo.tokenContext = tokenContext;
 			precedingAccessOpTokenInfo.semanticInfo.isTopLevelRef = resolveContext.isTopLevel;
+			precedingAccessOpTokenInfo.semanticInfo.isStatic = resolveContext.isStatic;
 
 			/* if (!resolveContext.isTopLevel)
 				precedingAccessOpTokenInfo.completionContext = CompletionContext::MemberAccess;*/
@@ -132,6 +136,7 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 			auto &tokenInfo = tokenInfos[ref[0].idxToken];
 			tokenInfo.tokenContext = tokenContext;
 			tokenInfo.semanticInfo.isTopLevelRef = resolveContext.isTopLevel;
+			tokenInfo.semanticInfo.isStatic = resolveContext.isStatic;
 
 			/* if (!resolveContext.isTopLevel)
 				tokenInfo.completionContext = CompletionContext::MemberAccess;*/
@@ -148,6 +153,9 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 				"Expecting an identifier"));
 
 	if (ref[0].name == "base") {
+		if (!resolveContext.isStatic)
+			return false;
+
 		auto newRef = ref;
 		newRef.pop_front();
 
@@ -185,17 +193,8 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 				case NodeType::Interface:
 					tokenInfo.semanticType = SemanticType::Interface;
 					break;
-				case NodeType::GenericParam:
-					tokenInfo.semanticType = SemanticType::TypeParam;
-					break;
-				case NodeType::Param:
-					tokenInfo.semanticType = SemanticType::Param;
-					break;
 				case NodeType::Var:
 					tokenInfo.semanticType = resolveContext.isTopLevel ? SemanticType::Var : SemanticType::Property;
-					break;
-				case NodeType::LocalVar:
-					tokenInfo.semanticType = SemanticType::Var;
 					break;
 				case NodeType::Fn:
 					tokenInfo.semanticType = resolveContext.isTopLevel ? SemanticType::Fn : SemanticType::Method;
@@ -203,6 +202,39 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 			}
 		}
 #endif
+
+		switch (m->getNodeType()) {
+			case NodeType::Class:
+				if (!resolveContext.isStatic)
+					return false;
+				break;
+			case NodeType::Interface:
+				if (!resolveContext.isStatic)
+					return false;
+				break;
+			case NodeType::Var: {
+				auto member = static_pointer_cast<VarNode>(m);
+
+				if (resolveContext.isTopLevel) {
+					resolveContext.isStatic = false;
+				} else {
+					if (!resolveContext.isStatic) {
+						if (member->access & ACCESS_STATIC) {
+							return false;
+						}
+					} else if (resolveContext.isStatic) {
+						if (!(member->access & ACCESS_STATIC)) {
+							return false;
+						}
+					}
+				}
+				break;
+			}
+			case NodeType::Fn:
+			case NodeType::GenericParam: {
+				break;
+			}
+		}
 
 		if (ref[0].genericArgs.size()) {
 			genericInstantiationContext.genericArgs = &ref[0].genericArgs;
@@ -216,7 +248,7 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 		}
 
 		if (auto scope = scopeOf(m.get()); scope) {
-			RefResolveContext newResolveContext;
+			RefResolveContext newResolveContext = resolveContext;
 			newResolveContext.isTopLevel = false;
 
 			if (_resolveRef(scope.get(), newRef, partsOut, newResolveContext)) {
@@ -262,7 +294,7 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 	return false;
 }
 
-bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, const RefResolveContext &resolveContext) {
+bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, RefResolveContext resolveContext) {
 	if (scope->owner) {
 		switch (scope->owner->getNodeType()) {
 			case NodeType::Class: {

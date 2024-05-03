@@ -203,6 +203,7 @@ namespace slake {
 
 			struct {
 				bool isTopLevelRef = true;
+				bool isStatic = true;
 
 				shared_ptr<AstNode> correspondingMember;
 			} semanticInfo;
@@ -251,10 +252,11 @@ namespace slake {
 			struct RefResolveContext {
 				bool isTopLevel = true;
 				bool keepTokenScope = false;
+				bool isStatic = true;
 			};
 
-			bool _resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, const RefResolveContext &resolveContext);
-			bool _resolveRefWithOwner(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, const RefResolveContext &resolveContext);
+			bool _resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, RefResolveContext resolveContext);
+			bool _resolveRefWithOwner(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, RefResolveContext resolveContext);
 
 			/// @brief Resolve a reference with current context.
 			/// @note This method also updates resolved generic arguments.

@@ -1844,6 +1844,9 @@ void Parser::parseProgramStmt() {
 		case TokenId::FnKeyword: {
 			string name;
 			auto overloading = parseFnDef(name);
+
+			overloading->access |= ACCESS_STATIC;
+
 			_putFnDefinition(token.beginLocation, name, overloading);
 
 			break;
@@ -1861,20 +1864,24 @@ void Parser::parseProgramStmt() {
 			stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
 
 			for (auto &i : stmt->varDefs) {
+				auto varNode = make_shared<VarNode>(
+					i.second.loc,
+					compiler,
+					0,
+					i.second.type,
+					i.first,
+					i.second.initValue,
+					i.second.idxNameToken,
+					i.second.idxColonToken,
+					i.second.idxAssignOpToken,
+					i.second.idxCommaToken);
+
+				varNode->access |= ACCESS_STATIC;
+
 				_putDefinition(
 					i.second.loc,
 					i.first,
-					make_shared<VarNode>(
-						i.second.loc,
-						compiler,
-						0,
-						i.second.type,
-						i.first,
-						i.second.initValue,
-						i.second.idxNameToken,
-						i.second.idxColonToken,
-						i.second.idxAssignOpToken,
-						i.second.idxCommaToken));
+					varNode);
 			}
 			break;
 		}

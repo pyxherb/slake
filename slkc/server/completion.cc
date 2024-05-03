@@ -66,43 +66,80 @@ void slake::slkc::Document::_walkForCompletion(
 	Scope *scope,
 	std::unordered_map<std::string, MemberNode *> &membersOut,
 	std::set<Scope *> &walkedScopes,
-	bool isTopLevelRef) {
+	bool isTopLevelRef,
+	bool isStatic) {
 	if (walkedScopes.count(scope))
 		return;
 	walkedScopes.insert(scope);
 
 	for (auto &i : scope->members) {
-		if (!membersOut.count(i.first))
-			membersOut[i.first] = i.second.get();
+		if (!membersOut.count(i.first)) {
+			switch (i.second->getNodeType()) {
+				case NodeType::Class:
+				case NodeType::Interface:
+					if (isStatic)
+						membersOut[i.first] = i.second.get();
+					break;
+				case NodeType::Var: {
+					auto m = static_pointer_cast<VarNode>(i.second);
+
+					if (isStatic) {
+						if (m->access & ACCESS_STATIC) {
+							membersOut[i.first] = m.get();
+						}
+					} else {
+						if (!(m->access & ACCESS_STATIC)) {
+							membersOut[i.first] = m.get();
+						}
+					}
+					break;
+				}
+				case NodeType::Fn: {
+					auto m = static_pointer_cast<FnNode>(i.second);
+
+					if (isStatic) {
+						if (m->access & ACCESS_STATIC) {
+							membersOut[i.first] = m.get();
+						}
+					} else {
+						if (!(m->access & ACCESS_STATIC)) {
+							membersOut[i.first] = m.get();
+						}
+					}
+					break;
+				}
+			}
+		}
 	}
 
 	if (scope->owner)
-		_walkForCompletion(scope->owner, membersOut, walkedScopes);
+		_walkForCompletion(scope->owner, membersOut, walkedScopes, isStatic);
 
 	if (isTopLevelRef) {
 		if (scope->parent)
-			_walkForCompletion(scope->parent, membersOut, walkedScopes, isTopLevelRef);
+			_walkForCompletion(scope->parent, membersOut, walkedScopes, isTopLevelRef, isStatic);
 	}
 }
 
 void slake::slkc::Document::_walkForCompletion(
 	AstNode *m,
 	std::unordered_map<std::string, MemberNode *> &membersOut,
-	std::set<Scope *> &walkedScopes) {
+	std::set<Scope *> &walkedScopes,
+	bool isStatic) {
 	switch (m->getNodeType()) {
 		case NodeType::Class: {
 			ClassNode *node = (ClassNode *)m;
 
-			_walkForCompletion(node->scope.get(), membersOut, walkedScopes);
+			_walkForCompletion(node->scope.get(), membersOut, walkedScopes, false, isStatic);
 
 			if (node->parentClass) {
 				auto parent = compiler->resolveCustomTypeName((CustomTypeNameNode *)node->parentClass.get());
-				_walkForCompletion(parent.get(), membersOut, walkedScopes);
+				_walkForCompletion(parent.get(), membersOut, walkedScopes, isStatic);
 			}
 
 			for (auto &i : node->implInterfaces) {
 				auto parent = compiler->resolveCustomTypeName((CustomTypeNameNode *)i.get());
-				_walkForCompletion(parent.get(), membersOut, walkedScopes);
+				_walkForCompletion(parent.get(), membersOut, walkedScopes, isStatic);
 			}
 			break;
 		}
@@ -111,7 +148,7 @@ void slake::slkc::Document::_walkForCompletion(
 
 			for (auto &i : node->parentInterfaces) {
 				auto parent = compiler->resolveCustomTypeName((CustomTypeNameNode *)i.get());
-				_walkForCompletion(parent.get(), membersOut, walkedScopes);
+				_walkForCompletion(parent.get(), membersOut, walkedScopes, isStatic);
 			}
 			break;
 		}
@@ -120,20 +157,20 @@ void slake::slkc::Document::_walkForCompletion(
 
 			for (auto &i : node->parentTraits) {
 				auto parent = compiler->resolveCustomTypeName((CustomTypeNameNode *)i.get());
-				_walkForCompletion(parent.get(), membersOut, walkedScopes);
+				_walkForCompletion(parent.get(), membersOut, walkedScopes, isStatic);
 			}
 			break;
 		}
 	}
 }
 
-std::unordered_map<std::string, MemberNode *> slake::slkc::Document::_walkForCompletion(Scope *scope, bool isTopLevelRef) {
+std::unordered_map<std::string, MemberNode *> slake::slkc::Document::_walkForCompletion(Scope *scope, bool isTopLevelRef, bool isStatic) {
 	std::unordered_map<std::string, MemberNode *> membersOut;
 	std::set<Scope *> walkedScopes;
 
-	_walkForCompletion(scope, membersOut, walkedScopes, isTopLevelRef);
+	_walkForCompletion(scope, membersOut, walkedScopes, isTopLevelRef, isStatic);
 	if (scope->owner)
-		_walkForCompletion(scope->owner, membersOut, walkedScopes);
+		_walkForCompletion(scope->owner, membersOut, walkedScopes, isStatic);
 
 	return membersOut;
 }
@@ -205,7 +242,7 @@ std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(Location lo
 	}
 
 	_getCompletionItems(
-		_walkForCompletion(compiler->_rootScope.get(), true),
+		_walkForCompletion(compiler->_rootScope.get(), true, true),
 		completionItems,
 		{ NodeType::GenericParam,
 			NodeType::Class,
@@ -237,7 +274,7 @@ succeeded:
 		case CompletionContext::TopLevel: {
 			if (tokenInfo.tokenContext.curScope)
 				_getCompletionItems(
-					_walkForCompletion(tokenInfo.tokenContext.curScope.get(), true),
+					_walkForCompletion(tokenInfo.tokenContext.curScope.get(), true, tokenInfo.semanticInfo.isStatic),
 					completionItems,
 					{ NodeType::GenericParam,
 						NodeType::Class,
@@ -250,7 +287,7 @@ succeeded:
 		case CompletionContext::Class: {
 			if (tokenInfo.tokenContext.curScope)
 				_getCompletionItems(
-					_walkForCompletion(tokenInfo.tokenContext.curScope.get(), true),
+					_walkForCompletion(tokenInfo.tokenContext.curScope.get(), true, tokenInfo.semanticInfo.isStatic),
 					completionItems,
 					{ NodeType::GenericParam,
 						NodeType::Class,
@@ -262,7 +299,7 @@ succeeded:
 		case CompletionContext::Interface: {
 			if (tokenInfo.tokenContext.curScope)
 				_getCompletionItems(
-					_walkForCompletion(tokenInfo.tokenContext.curScope.get(), true),
+					_walkForCompletion(tokenInfo.tokenContext.curScope.get(), true, tokenInfo.semanticInfo.isStatic),
 					completionItems,
 					{ NodeType::GenericParam,
 						NodeType::Class,
@@ -274,7 +311,7 @@ succeeded:
 		case CompletionContext::Trait: {
 			if (tokenInfo.tokenContext.curScope)
 				_getCompletionItems(
-					_walkForCompletion(tokenInfo.tokenContext.curScope.get(), true),
+					_walkForCompletion(tokenInfo.tokenContext.curScope.get(), true, tokenInfo.semanticInfo.isStatic),
 					completionItems,
 					{ NodeType::GenericParam,
 						NodeType::Class,
@@ -288,7 +325,8 @@ succeeded:
 				_getCompletionItems(
 					_walkForCompletion(
 						tokenInfo.tokenContext.curScope.get(),
-						tokenInfo.semanticInfo.isTopLevelRef),
+						tokenInfo.semanticInfo.isTopLevelRef,
+						tokenInfo.semanticInfo.isStatic),
 					completionItems,
 					{ NodeType::Var,
 						NodeType::Fn,
@@ -322,7 +360,7 @@ succeeded:
 		case CompletionContext::Import: {
 			if (tokenInfo.tokenContext.curScope)
 				_getCompletionItems(
-					_walkForCompletion(tokenInfo.tokenContext.curScope.get(), true),
+					_walkForCompletion(tokenInfo.tokenContext.curScope.get(), true, tokenInfo.semanticInfo.isStatic),
 					completionItems,
 					{ NodeType::Var,
 						NodeType::Fn,
@@ -338,7 +376,8 @@ succeeded:
 				_getCompletionItems(
 					_walkForCompletion(
 						tokenInfo.tokenContext.curScope.get(),
-						tokenInfo.semanticInfo.isTopLevelRef),
+						tokenInfo.semanticInfo.isTopLevelRef,
+						tokenInfo.semanticInfo.isStatic),
 					completionItems,
 					{ NodeType::GenericParam,
 						NodeType::Class,
@@ -357,7 +396,8 @@ succeeded:
 				_getCompletionItems(
 					_walkForCompletion(
 						tokenInfo.tokenContext.curScope.get(),
-						tokenInfo.semanticInfo.isTopLevelRef),
+						tokenInfo.semanticInfo.isTopLevelRef,
+						tokenInfo.semanticInfo.isStatic),
 					completionItems,
 					{ NodeType::Var,
 						NodeType::Fn,
@@ -392,7 +432,10 @@ succeeded:
 		case CompletionContext::MemberAccess: {
 			if (tokenInfo.tokenContext.curScope)
 				_getCompletionItems(
-					_walkForCompletion(tokenInfo.tokenContext.curScope.get(), false),
+					_walkForCompletion(
+						tokenInfo.tokenContext.curScope.get(),
+						false,
+						tokenInfo.semanticInfo.isStatic),
 					completionItems,
 					{ NodeType::Var,
 						NodeType::Fn,

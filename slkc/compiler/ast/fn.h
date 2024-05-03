@@ -105,7 +105,6 @@ namespace slake {
 		public:
 			deque<shared_ptr<FnOverloadingNode>> overloadingRegistries;
 			string name;
-			bool used = false;
 
 			inline FnNode(const FnNode &other) : MemberNode(other) {
 				overloadingRegistries.resize(other.overloadingRegistries.size());
@@ -114,7 +113,6 @@ namespace slake {
 					overloadingRegistries[i]->owner = this;
 				}
 				name = other.name;
-				used = false;
 			}
 			inline FnNode(
 				Compiler *compiler,

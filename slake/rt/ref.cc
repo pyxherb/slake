@@ -25,9 +25,6 @@ Value *Runtime::resolveRef(RefValue* ref, Value *scopeValue) const {
 					case TypeId::Class:
 						scopeValue = (MemberValue *)curValue->getParent();
 						break;
-					case TypeId::Object:
-						scopeValue = ((ObjectValue *)curValue)->_parent;
-						break;
 					default:
 						goto fail;
 				}

@@ -763,7 +763,7 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 				}
 				case Type::Custom: {
 					auto node = resolveCustomTypeName(static_pointer_cast<CustomTypeNameNode>(lhsType).get());
-					auto rhsType = evalExprType(e->lhs);
+					auto rhsType = evalExprType(e->rhs);
 
 					if (!rhsType)
 						return {};
@@ -772,7 +772,7 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 						if (auto it = n->scope->members.find(std::to_string(e->op));
 							it != n->scope->members.end()) {
 							assert(it->second->getNodeType() == NodeType::Fn);
-							shared_ptr<FnNode> operatorNode = static_pointer_cast<FnNode>(n);
+							shared_ptr<FnNode> operatorNode = static_pointer_cast<FnNode>(it->second);
 							auto overloading = operatorNode->overloadingRegistries[0];
 
 							Ref fullName;
@@ -832,12 +832,14 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 								default: {
 									shared_ptr<MemberNode> n = static_pointer_cast<MemberNode>(node);
 
-									if (!determineOverloading(n, lhsRegIndex))
-										throw FatalCompilationError(
-											Message(
-												e->getLocation(),
-												MessageType::Error,
-												"No matching operator"));
+									if (auto t = determineOverloading(n, lhsRegIndex); t)
+										return t;
+
+									throw FatalCompilationError(
+										Message(
+											e->getLocation(),
+											MessageType::Error,
+											"No matching operator"));
 								}
 							}
 

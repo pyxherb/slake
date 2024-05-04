@@ -8,7 +8,6 @@
 #include "valdef/context.h"
 #include "valdef/fn.h"
 #include "valdef/literal.h"
-#include "valdef/map.h"
 #include "valdef/member.h"
 #include "valdef/module.h"
 #include "valdef/object.h"

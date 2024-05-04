@@ -3,104 +3,106 @@
 
 using namespace slake::slkc;
 
-bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut) {
+bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, bool ignoreDynamicPrecedings) {
 	assert(ref.size());
 
-	// Try to resolve the first entry as a local variable.
-	if (curMajorContext.curMinorContext.localVars.count(ref[0].name) && (!ref[0].genericArgs.size())) {
-		auto newRef = ref;
-		newRef.pop_front();
-
-		auto localVar = curMajorContext.curMinorContext.localVars.at(ref[0].name);
-		if (!newRef.size())
-			goto lvarSucceeded;
-
-		if (auto scope = scopeOf(localVar->type.get()); scope) {
-			RefResolveContext newResolveContext;
-			newResolveContext.isTopLevel = false;
-			newResolveContext.isStatic = false;
-
-			if (_resolveRef(scope.get(), newRef, partsOut, newResolveContext))
-				goto lvarSucceeded;
-		}
-
-		return false;
-
-	lvarSucceeded:
-#if SLKC_WITH_LANGUAGE_SERVER
-		// Update corresponding semantic information.
-		auto &tokenInfo = tokenInfos[ref[0].idxToken];
-		tokenInfo.semanticInfo.isTopLevelRef = true;
-		tokenInfo.semanticInfo.correspondingMember = localVar;
-		tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
-		tokenInfo.semanticType = SemanticType::Var;
-#endif
-
-		partsOut.push_front({ Ref{ ref.front() }, localVar });
-		return true;
-	}
-
-	if (curFn) {
-		// Try to resolve the first entry as a parameter.
-		if (curFn->paramIndices.count(ref[0].name)) {
+	if (!ignoreDynamicPrecedings) {
+		// Try to resolve the first entry as a local variable.
+		if (curMajorContext.curMinorContext.localVars.count(ref[0].name) && (!ref[0].genericArgs.size())) {
 			auto newRef = ref;
 			newRef.pop_front();
 
-			auto idxParam = curFn->paramIndices.at(ref[0].name);
-
+			auto localVar = curMajorContext.curMinorContext.localVars.at(ref[0].name);
 			if (!newRef.size())
-				goto paramSucceeded;
+				goto lvarSucceeded;
 
-			if (auto scope = scopeOf(curFn->params[idxParam]->type.get()); scope) {
+			if (auto scope = scopeOf(localVar->type.get()); scope) {
 				RefResolveContext newResolveContext;
 				newResolveContext.isTopLevel = false;
 				newResolveContext.isStatic = false;
 
 				if (_resolveRef(scope.get(), newRef, partsOut, newResolveContext))
-					goto paramSucceeded;
+					goto lvarSucceeded;
 			}
 
 			return false;
 
-		paramSucceeded:
+		lvarSucceeded:
 #if SLKC_WITH_LANGUAGE_SERVER
 			// Update corresponding semantic information.
 			auto &tokenInfo = tokenInfos[ref[0].idxToken];
 			tokenInfo.semanticInfo.isTopLevelRef = true;
-			tokenInfo.semanticInfo.correspondingMember = curFn->params[idxParam];
+			tokenInfo.semanticInfo.correspondingMember = localVar;
 			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
-			tokenInfo.semanticType = SemanticType::Param;
+			tokenInfo.semanticType = SemanticType::Var;
 #endif
 
-			partsOut.push_front({ Ref{ ref.front() }, make_shared<ArgRefNode>(idxParam) });
+			partsOut.push_front({ Ref{ ref.front() }, localVar });
 			return true;
 		}
-	}
 
-	if (ref[0].name == "this") {
-		auto thisRefNode = make_shared<ThisRefNode>();
+		if (curFn) {
+			// Try to resolve the first entry as a parameter.
+			if (curFn->paramIndices.count(ref[0].name)) {
+				auto newRef = ref;
+				newRef.pop_front();
 
+				auto idxParam = curFn->paramIndices.at(ref[0].name);
+
+				if (!newRef.size())
+					goto paramSucceeded;
+
+				if (auto scope = scopeOf(curFn->params[idxParam]->type.get()); scope) {
+					RefResolveContext newResolveContext;
+					newResolveContext.isTopLevel = false;
+					newResolveContext.isStatic = false;
+
+					if (_resolveRef(scope.get(), newRef, partsOut, newResolveContext))
+						goto paramSucceeded;
+				}
+
+				return false;
+
+			paramSucceeded:
 #if SLKC_WITH_LANGUAGE_SERVER
-		// Update corresponding semantic information.
-		auto &tokenInfo = tokenInfos[ref[0].idxToken];
-		tokenInfo.semanticInfo.isTopLevelRef = true;
-		tokenInfo.semanticInfo.correspondingMember = thisRefNode;
-		tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
-		tokenInfo.semanticType = SemanticType::Keyword;
+				// Update corresponding semantic information.
+				auto &tokenInfo = tokenInfos[ref[0].idxToken];
+				tokenInfo.semanticInfo.isTopLevelRef = true;
+				tokenInfo.semanticInfo.correspondingMember = curFn->params[idxParam];
+				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+				tokenInfo.semanticType = SemanticType::Param;
 #endif
 
-		if (ref.size() > 1) {
-			RefResolveContext newResolveContext;
-			newResolveContext.isTopLevel = false;
-			newResolveContext.isStatic = false;
+				partsOut.push_front({ Ref{ ref.front() }, make_shared<ArgRefNode>(idxParam) });
+				return true;
+			}
+		}
 
-			ref.pop_front();
-			auto result = _resolveRef(curMajorContext.curMinorContext.curScope.get(), ref, partsOut, newResolveContext);
-			partsOut.push_front({ Ref{ ref.front() }, thisRefNode });
-			return result;
-		} else {
-			partsOut.push_front({ Ref{ ref.front() }, thisRefNode });
-			return true;
+		if (ref[0].name == "this") {
+			auto thisRefNode = make_shared<ThisRefNode>();
+
+#if SLKC_WITH_LANGUAGE_SERVER
+			// Update corresponding semantic information.
+			auto &tokenInfo = tokenInfos[ref[0].idxToken];
+			tokenInfo.semanticInfo.isTopLevelRef = true;
+			tokenInfo.semanticInfo.correspondingMember = thisRefNode;
+			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+			tokenInfo.semanticType = SemanticType::Keyword;
+#endif
+
+			if (ref.size() > 1) {
+				RefResolveContext newResolveContext;
+				newResolveContext.isTopLevel = false;
+				newResolveContext.isStatic = false;
+
+				ref.pop_front();
+				auto result = _resolveRef(curMajorContext.curMinorContext.curScope.get(), ref, partsOut, newResolveContext);
+				partsOut.push_front({ Ref{ ref.front() }, thisRefNode });
+				return result;
+			} else {
+				partsOut.push_front({ Ref{ ref.front() }, thisRefNode });
+				return true;
+			}
 		}
 	}
 
@@ -215,19 +217,17 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 			case NodeType::Var: {
 				auto member = static_pointer_cast<VarNode>(m);
 
-				if (resolveContext.isTopLevel) {
-					resolveContext.isStatic = false;
-				} else {
-					if (!resolveContext.isStatic) {
-						if (member->access & ACCESS_STATIC) {
-							return false;
-						}
-					} else if (resolveContext.isStatic) {
-						if (!(member->access & ACCESS_STATIC)) {
-							return false;
-						}
+				if (!resolveContext.isStatic) {
+					if (member->access & ACCESS_STATIC) {
+						return false;
+					}
+				} else if (resolveContext.isStatic) {
+					if (!(member->access & ACCESS_STATIC)) {
+						return false;
 					}
 				}
+
+				resolveContext.isStatic = false;
 				break;
 			}
 			case NodeType::Fn:
@@ -248,8 +248,9 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 		}
 
 		if (auto scope = scopeOf(m.get()); scope) {
-			RefResolveContext newResolveContext = resolveContext;
+			RefResolveContext newResolveContext;
 			newResolveContext.isTopLevel = false;
+			newResolveContext.isStatic = resolveContext.isStatic;
 
 			if (_resolveRef(scope.get(), newRef, partsOut, newResolveContext)) {
 				switch (m->getNodeType()) {
@@ -270,6 +271,8 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 	// Resolve with the parent scope - we should only do this on the top level.
 	//
 	// Consider a following example:
+	// 
+	// ```C++
 	// let g_var : i32;
 	//
 	// class Test {
@@ -277,6 +280,8 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 	//         g_var = initValue;
 	//     }
 	// }
+	// ```
+	// 
 	// As the case above, the g_var is defined outside the class and cannot be
 	// resolved with the class's scope, that is why we need to resolve the
 	// scope with the parent scope.

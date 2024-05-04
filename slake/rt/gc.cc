@@ -23,13 +23,9 @@ void Runtime::_gcWalk(Type &type) {
 			_gcWalk(type.getCustomTypeExData());
 			break;
 		case TypeId::Array:
-			_gcWalk(type.getArrayExData());
+			if (auto t = type.getArrayExData(); t)
+				_gcWalk(t);
 			break;
-		case TypeId::Map: {
-			_gcWalk(*type.getMapExData().first);
-			_gcWalk(*type.getMapExData().second);
-			break;
-		}
 		case TypeId::Var:
 		case TypeId::Module:
 		case TypeId::RootValue:
@@ -78,12 +74,15 @@ void Runtime::_gcWalk(Value *v) {
 				_gcWalk(value->_parent);
 			break;
 		}
-		case TypeId::Array:
-			for (auto &i : ((ArrayValue *)v)->values)
+		case TypeId::Array: {
+			auto value = (ArrayValue *)v;
+
+			_gcWalk(value->type);
+
+			for (auto &i : value->values)
 				_gcWalk(i);
 			break;
-		case TypeId::Map:
-			break;
+		}
 		case TypeId::Module:
 		case TypeId::Class:
 		case TypeId::Trait:
@@ -248,8 +247,10 @@ rescan:
 	for (auto i : _createdValues) {
 		if (!i->hostRefCount) {
 			auto d = i->getMemberChain("delete");
-			if (d.size() && i->getType() == TypeId::Object && !(((ObjectValue*)i)->objectFlags & OBJECT_PARENT)) {
-				for(auto j : d) {
+			if ((d.size()) &&
+				(i->getType() == TypeId::Object) &&
+				(!(((ObjectValue *)i)->objectFlags & OBJECT_PARENT))) {
+				for (auto &j : d) {
 					_destructedValues.insert(j.first->owner);
 					j.second->call(i, {});
 				}
@@ -260,7 +261,7 @@ rescan:
 	destructingThreads.erase(std::this_thread::get_id());
 
 	for (auto i : _createdValues) {
-		if(i->hostRefCount) {
+		if (i->hostRefCount) {
 			_walkedValues.insert(i);
 		} else
 			delete i;

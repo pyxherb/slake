@@ -41,3 +41,15 @@ ObjectValue *slake::Runtime::_newClassInstance(ClassValue *cls) {
 	}
 	return instance;
 }
+
+ArrayValue* slake::Runtime::_newArrayInstance(Type type, uint32_t size) {
+	ArrayValue *instance = new ArrayValue(this, type);
+
+	instance->values.resize(size);
+
+	for (size_t i = 0; i < size; ++i) {
+		instance->values[i] = new VarValue(this, ACCESS_PUB, type);
+	}
+
+	return instance;
+}

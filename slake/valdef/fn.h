@@ -75,7 +75,7 @@ namespace slake {
 	public:
 		std::deque<slxfmt::SourceLocDesc> sourceLocDescs;
 
-		slxfmt::SourceLocDesc *getSourceLocationInfo(uint32_t offIns) {
+		inline slxfmt::SourceLocDesc *getSourceLocationInfo(uint32_t offIns) {
 			for (auto &i : sourceLocDescs) {
 				if ((offIns >= i.offIns) &&
 					(offIns < i.offIns + i.nIns)) {
@@ -86,7 +86,7 @@ namespace slake {
 			return nullptr;
 		}
 
-		const slxfmt::SourceLocDesc *getSourceLocationInfo(uint32_t offIns) const {
+		inline const slxfmt::SourceLocDesc *getSourceLocationInfo(uint32_t offIns) const {
 			return ((FnValue *)this)->getSourceLocationInfo(offIns);
 		}
 
@@ -104,7 +104,7 @@ namespace slake {
 		ValueRef<> exec(std::shared_ptr<Context> context) const;
 		virtual ValueRef<> call(Value *thisObject, std::deque<Value *> args) const override;
 
-		virtual bool isAbstract() const override {
+		virtual inline bool isAbstract() const override {
 			return nIns == 0;
 		}
 

@@ -55,7 +55,7 @@ CmdLineAction cmdLineActions[] = {
 	{ "-l\0"
 	  "--no-source-location-info\0",
 		[](int argc, char **argv, int &i) {
-			slake::decompiler::decompilerFlags |= slake::decompiler::DECOMP_SRCLOCINFO;
+			slake::decompiler::decompilerFlags |= slake::decompiler::DECOMP_SRCLOC;
 		} },
 	{ "-s\0"
 	  "--language-server\0",

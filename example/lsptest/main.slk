@@ -1,5 +1,9 @@
 module hostext;
 
+use {
+	extfnsModule = hostext.extfns
+}
+
 pub let g_globalVar: Test;
 
 class AnotherGeneric<T, U> {
@@ -21,6 +25,8 @@ class AnotherGeneric<T, U> {
 }
 
 class Test {
+	static let n : f32;
+
 	pub let x: i32;
 	pub let lab: Test;
 
@@ -47,7 +53,7 @@ class Derived(Test) {
 	}
 
 	pub operator new(i32 y) {
-		base.x = y * 2;
+		this.x = y * 2;
 		this.x = y * 4;
 		return;
 	}
@@ -59,6 +65,10 @@ class Derived(Test) {
 	pub operator+(i32 x) : i32 {
 		return this.x + x;
 	}
+
+	pub operator+(f32 x) : f32 {
+		return this.x + x;
+	}
 }
 
 class AnotherDerived(Derived) {
@@ -66,8 +76,8 @@ class AnotherDerived(Derived) {
 
 	pub operator new(i32 z) {
 		this.z = z;
-		base.x = z * 4;
-		base.y = z * 2;
+		this.x = z * 4;
+		this.y = z * 2;
 		return;
 	}
 

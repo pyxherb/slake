@@ -98,12 +98,12 @@ pub fn main(): i32 {
 
 	extfnsModule.print(test + 123);
 
+	let array: i32[] = new i32[](32);
+
 	while(test.x = test.x - 1) {
 		extfnsModule.print("Yielded\n");
 		yield test.getX();
 	}
-
-	n.z;
 
 	return 114514;
 }

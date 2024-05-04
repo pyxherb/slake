@@ -201,6 +201,7 @@ namespace slake {
 		void _instantiateGenericValue(Value *v, GenericInstantiationContext &instantiationContext) const;
 
 		ObjectValue *_newClassInstance(ClassValue *cls);
+		ArrayValue *_newArrayInstance(Type type, uint32_t size);
 
 		void _callFn(Context *context, FnValue *fn);
 		VarValue *_addLocalVar(MajorFrame &frame, Type type);
@@ -219,7 +220,7 @@ namespace slake {
 		/// @brief Runtime flags.
 		RuntimeFlags _flags = 0;
 
-		/// @brief Active context on threads.
+		/// @brief Active contexts of each thread.
 		std::map<std::thread::id, std::shared_ptr<Context>> activeContexts;
 
 		/// @brief Thread IDs of threads which are executing destructors.

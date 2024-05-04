@@ -263,7 +263,7 @@ namespace slake {
 			/// @param ref Reference to be resolved.
 			/// @param refParts Divided minimum parts of the reference that can be loaded in a single time.
 			/// @param resolvedPartsOut Where to store nodes referred by reference entries respectively.
-			bool resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut);
+			bool resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, bool ignoreDynamicPrecedings = false);
 
 			/// @brief Resolve a reference with specified scope.
 			/// @note This method also updates resolved generic arguments.
@@ -272,7 +272,7 @@ namespace slake {
 			/// @param resolvedPartsOut Where to store nodes referred by reference entries respectively.
 			bool resolveRefWithScope(Scope *scope, Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut);
 
-			shared_ptr<FnOverloadingNode> argDependentLookup(
+			std::deque<shared_ptr<FnOverloadingNode>> argDependentLookup(
 				Location loc,
 				FnNode *fn,
 				const deque<shared_ptr<TypeNameNode>> &argTypes,
@@ -493,7 +493,7 @@ namespace slake {
 			deque<string> modulePaths;
 			CompilerOptions options;
 			CompilerFlags flags = 0;
-			Lexer lexer;
+			std::unique_ptr<Lexer> lexer;
 
 			inline Compiler(CompilerOptions options = {})
 				: options(options), _rt(make_unique<Runtime>(RT_NOJIT)) {}

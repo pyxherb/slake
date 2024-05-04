@@ -251,10 +251,6 @@ shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 		}
 		case TypeId::Array:
 			return make_shared<ArrayTypeNameNode>(toTypeName(runtimeType.getArrayExData()), isConst);
-		case TypeId::Map: {
-			auto exData = runtimeType.getMapExData();
-			return make_shared<MapTypeNameNode>(toTypeName(*exData.first), toTypeName(*exData.second), isConst);
-		}
 		default:
 			// Inconvertible/unrecognized type
 			assert(false);

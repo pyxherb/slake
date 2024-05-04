@@ -68,8 +68,6 @@ slake::slkc::Server::Server() {
 			doc->languageId = languageId;
 			doc->compiler = make_shared<Compiler>();
 
-			doc->compiler->modulePaths = modulePaths;
-
 			openedDocuments[uri] = doc;
 
 			Json::Value responseValue;
@@ -129,6 +127,9 @@ slake::slkc::Server::Server() {
 			openedDocuments[uri] = doc;
 
 			doc->compiler->reset();
+
+			doc->compiler->modulePaths = modulePaths;
+
 			try {
 				std::stringstream ss(content);
 				util::PseudoOutputStream pseudoOs;
@@ -322,9 +323,9 @@ slake::slkc::Server::Server() {
 
 			responseBodyValue["uri"] = uri;
 
-			const size_t nTokens = doc->compiler->lexer.tokens.size();
+			const size_t nTokens = doc->compiler->lexer->tokens.size();
 			for (size_t i = 0; i < nTokens; ++i) {
-				const Token &token = doc->compiler->lexer.tokens[i];
+				const Token &token = doc->compiler->lexer->tokens[i];
 				const TokenInfo &tokenInfo = doc->compiler->tokenInfos[i];
 
 				SemanticToken semanticToken = {};
@@ -396,7 +397,7 @@ slake::slkc::Server::Server() {
 
 			Json::Value &responseBodyValue = responseValue["body"];
 
-			size_t idxToken = doc->compiler->lexer.getTokenByLocation(loc);
+			size_t idxToken = doc->compiler->lexer->getTokenByLocation(loc);
 
 			if (idxToken == SIZE_MAX)
 				goto badRequest;

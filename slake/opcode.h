@@ -75,7 +75,8 @@ namespace slake {
 
 		LTHIS,	// Load this register
 
-		NEW,  // New
+		NEW,	 // New
+		ARRNEW,	 // Array new
 
 		THROW,	  // Throw an exception
 		PUSHXH,	  // Push an exception handler

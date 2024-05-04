@@ -25,7 +25,7 @@ namespace slake {
 
 		virtual Value *duplicate() const override;
 
-		RefValue &operator=(const RefValue &x) {
+		inline RefValue &operator=(const RefValue &x) {
 			((Value&)*this) = (Value&)x;
 
 			entries = x.entries;

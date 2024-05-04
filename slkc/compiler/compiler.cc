@@ -44,8 +44,9 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport) {
 		is.read(s.data(), size);
 	}
 
+	lexer = std::make_unique<Lexer>();
 	try {
-		lexer.lex(s);
+		lexer->lex(s);
 	} catch (LexicalError e) {
 		throw FatalCompilationError(
 			Message(
@@ -56,12 +57,12 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport) {
 
 #if SLKC_WITH_LANGUAGE_SERVER
 	if (!isImport)
-		tokenInfos.resize(lexer.tokens.size());
+		tokenInfos.resize(lexer->tokens.size());
 #endif
 
 	Parser parser;
 	try {
-		parser.parse(&lexer, this);
+		parser.parse(lexer.get(), this);
 	} catch (SyntaxError e) {
 		throw FatalCompilationError(
 			Message(
@@ -146,11 +147,11 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport) {
 		if (_targetModule->scope->members.count(i.first))
 			throw FatalCompilationError(
 				Message(
-					lexer.tokens[i.second.idxNameToken].beginLocation,
+					lexer->tokens[i.second.idxNameToken].beginLocation,
 					MessageType::Error,
 					"The import item shadows an existing member"));
 
-		_targetModule->scope->members[i.first] = make_shared<AliasNode>(lexer.tokens[i.second.idxNameToken].beginLocation, this, i.first, i.second.ref);
+		_targetModule->scope->members[i.first] = make_shared<AliasNode>(lexer->tokens[i.second.idxNameToken].beginLocation, this, i.first, i.second.ref);
 
 #if SLKC_WITH_LANGUAGE_SERVER
 		if (i.second.idxNameToken != SIZE_MAX) {
@@ -178,6 +179,11 @@ void Compiler::importModule(string name, const Ref &ref, shared_ptr<Scope> scope
 	for (auto j : ref) {
 		path += "/" + j.name;
 	}
+
+	auto savedLexer = std::move(lexer);
+#if SLKC_WITH_LANGUAGE_SERVER
+	auto savedTokenInfos = tokenInfos;
+#endif
 
 	std::ifstream is;
 	for (auto j : modulePaths) {
@@ -218,6 +224,11 @@ void Compiler::importModule(string name, const Ref &ref, shared_ptr<Scope> scope
 		is.clear();
 	}
 
+#if SLKC_WITH_LANGUAGE_SERVER
+	tokenInfos = savedTokenInfos;
+#endif
+	lexer = std::move(savedLexer);
+
 	throw FatalCompilationError(
 		Message(
 			ref[0].loc,
@@ -225,6 +236,10 @@ void Compiler::importModule(string name, const Ref &ref, shared_ptr<Scope> scope
 			"Cannot find module " + std::to_string(ref, this)));
 
 succeeded:;
+#if SLKC_WITH_LANGUAGE_SERVER
+	tokenInfos = savedTokenInfos;
+#endif
+	lexer = std::move(savedLexer);
 }
 
 void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope> scope) {
@@ -763,12 +778,6 @@ void Compiler::compileTypeName(std::ostream &fs, shared_ptr<TypeNameNode> typeNa
 		case Type::Array: {
 			_write(fs, slxfmt::Type::Array);
 			compileTypeName(fs, static_pointer_cast<ArrayTypeNameNode>(typeName)->elementType);
-			break;
-		}
-		case Type::Map: {
-			_write(fs, slxfmt::Type::Map);
-			compileTypeName(fs, static_pointer_cast<MapTypeNameNode>(typeName)->keyType);
-			compileTypeName(fs, static_pointer_cast<MapTypeNameNode>(typeName)->valueType);
 			break;
 		}
 		case Type::Fn: {

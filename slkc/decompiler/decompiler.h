@@ -27,7 +27,7 @@ namespace slake {
 
 		using DecompilerFlags = uint32_t;
 		constexpr static DecompilerFlags
-			DECOMP_SRCLOCINFO = 0x00000001;
+			DECOMP_SRCLOC = 0x00000001;
 
 		extern DecompilerFlags decompilerFlags;
 

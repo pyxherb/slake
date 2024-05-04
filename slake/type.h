@@ -32,7 +32,6 @@ namespace slake {
 		Module,	 // Module
 		Var,	 // Variable
 		Array,	 // Array
-		Map,	 // Map
 
 		Class,		// Class
 		Interface,	// Interface
@@ -99,17 +98,20 @@ namespace slake {
 	struct Type final {
 		TypeId typeId;	// Type ID
 		mutable std::variant<
-			std::monostate, // Simple type
-			Value *, // Resolved type
-			Type *, // Array
-			std::pair<Type *, Type *>, // Map
-			std::string // Generic parameter
-		> exData;
+			std::monostate,				// Simple type
+			Value *,					// Resolved type
+			Type *,						// Array
+			std::string					// Generic parameter
+			>
+			exData;
 		TypeFlags flags = 0;
 
 		inline Type() noexcept : typeId(TypeId::None) {}
 		inline Type(const Type &x) noexcept { *this = x; }
 		inline Type(Type &&x) noexcept { *this = x; }
+		inline Type(TypeId typeId, const Type &elementType) : typeId(typeId) {
+			exData = new Type(elementType);
+		}
 		inline Type(TypeId type, TypeFlags flags = 0) noexcept : typeId(type), flags(flags) {}
 		inline Type(TypeId type, Value *classObject, TypeFlags flags = 0) noexcept : typeId(type), flags(flags) {
 			exData = classObject;
@@ -119,15 +121,10 @@ namespace slake {
 		}
 		Type(RefValue *ref, TypeFlags flags = 0);
 
-		inline Type(Type k, Type v, TypeFlags flags = 0) : typeId(TypeId::Map), flags(flags) {
-			exData = std::pair<Type *, Type *>(new Type(k), new Type(v));
-		}
-
 		~Type();
 
 		inline Value *getCustomTypeExData() const { return std::get<Value *>(exData); }
 		inline Type &getArrayExData() const { return *std::get<Type *>(exData); }
-		inline std::pair<Type *, Type *> getMapExData() const { return std::get<std::pair<Type *, Type *>>(exData); }
 		inline std::string getGenericArgExData() const { return std::get<std::string>(exData); }
 
 		bool isLoadingDeferred() const noexcept;
@@ -156,9 +153,6 @@ namespace slake {
 					}
 					case TypeId::Array:
 						return getArrayExData() < rhs.getArrayExData();
-					case TypeId::Map:
-						return *(getMapExData().first) < *(rhs.getMapExData().first) &&
-							   *(getMapExData().second) < *(rhs.getMapExData().second);
 				}
 			}
 
@@ -194,9 +188,6 @@ namespace slake {
 				}
 				case TypeId::Array:
 					return getArrayExData() == rhs.getArrayExData();
-				case TypeId::Map:
-					return *(getMapExData().first) == *(rhs.getMapExData().first) &&
-						   *(getMapExData().second) == *(rhs.getMapExData().second);
 			}
 			return true;
 		}
@@ -219,7 +210,15 @@ namespace slake {
 
 		inline Type &operator=(const Type &rhs) noexcept {
 			typeId = rhs.typeId;
-			exData = rhs.exData;
+
+			switch (typeId) {
+				case TypeId::Array:
+					exData = new Type(rhs.getArrayExData());
+					break;
+				default:
+					exData = rhs.exData;
+			}
+
 			return *this;
 		}
 

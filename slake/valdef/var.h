@@ -6,18 +6,27 @@
 #include <slake/type.h>
 
 namespace slake {
-	using VarFlags = uint8_t;
-	constexpr static VarFlags
-		VAR_REG = 0x01;
+	class BasicVarValue final : public MemberValue {
+	public:
+		BasicVarValue(Runtime *rt, AccessModifier access);
+		virtual ~BasicVarValue();
+
+		virtual Value *getData() = 0;
+		virtual void setData(Value *value) = 0;
+
+		inline BasicVarValue &operator=(const BasicVarValue &x) {
+			((MemberValue &)*this) = (MemberValue &)x;
+			return *this;
+		}
+		BasicVarValue &operator=(BasicVarValue &&) = delete;
+	};
 
 	class VarValue final : public MemberValue {
 	public:
 		mutable slake::Value* value = nullptr;
 		Type type = TypeId::Any;
 
-		VarFlags flags;
-
-		VarValue(Runtime *rt, AccessModifier access, Type type, VarFlags flags = 0);
+		VarValue(Runtime *rt, AccessModifier access, Type type);
 		virtual ~VarValue();
 
 		virtual inline Type getType() const override { return TypeId::Var; }
@@ -25,8 +34,8 @@ namespace slake {
 
 		virtual Value *duplicate() const override;
 
-		Value *getData() const { return value; }
-		void setData(Value *value) {
+		inline Value *getData() const { return value; }
+		inline void setData(Value *value) {
 			type.loadDeferredType(_rt);
 
 			if (value && !isCompatible(type, value->getType()))
@@ -34,7 +43,7 @@ namespace slake {
 			this->value = value;
 		}
 
-		VarValue &operator=(const VarValue &x) {
+		inline VarValue &operator=(const VarValue &x) {
 			((MemberValue &)*this) = (MemberValue &)x;
 			if (x.value)
 				value = x.value->duplicate();

@@ -122,8 +122,7 @@ int main(int argc, char **argv) {
 			mod = rt->loadModule(fs, slake::LMOD_NOCONFLICT);
 		} catch (slake::LoaderError e) {
 			printf("Error loading main module: %s, at file offset %zu\n", e.what(), (size_t)fs.tellg());
-		}
-		catch (std::ios::failure e) {
+		} catch (std::ios::failure e) {
 			printf("Error loading main module: %s, at file offset %zu\n", e.what(), (size_t)fs.tellg());
 			return -1;
 		}

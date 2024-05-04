@@ -608,19 +608,25 @@ shared_ptr<TypeNameNode> Parser::parseTypeName() {
 				lexer->getTokenIndex(token));
 	}
 
-	if (auto &token = lexer->peekToken(); token.tokenId == TokenId::LBracket) {
+	if (const auto &lBracketToken = lexer->peekToken(); lBracketToken.tokenId == TokenId::LBracket) {
 		lexer->nextToken();
 
-		LexerContext savedContext = lexer->context;
+		auto t = make_shared<ArrayTypeNameNode>(type);
+		type = t;
+		t->idxLBracketToken = lexer->getTokenIndex(lBracketToken);
 
-		auto valueType = parseTypeName();
+		const auto &rBracketToken = lexer->peekToken();
+		if (rBracketToken.tokenId != TokenId::RBracket) {
+			compiler->messages.push_back(
+				Message(
+					rBracketToken.beginLocation,
+					MessageType::Error,
+					"Expecting ]"));
+			return t;
+		}
+		lexer->nextToken();
 
-		type = make_shared<MapTypeNameNode>(type, valueType);
-
-		if (!type)
-			return {};
-
-		expectToken(TokenId::RBracket);
+		t->idxRBracketToken = lexer->getTokenIndex(rBracketToken);
 	}
 
 	if (auto &token = lexer->peekToken(); token.tokenId == TokenId::AndOp) {
@@ -1632,6 +1638,9 @@ void Parser::parseClassStmt() {
 			return;
 		case TokenId::ClassKeyword: {
 			auto def = parseClassDef();
+
+			def->access = accessModifier;
+
 			_putDefinition(
 				def->getLocation(),
 				def->name,
@@ -1640,14 +1649,19 @@ void Parser::parseClassStmt() {
 		}
 		case TokenId::OperatorKeyword: {
 			string name;
-
 			auto overloading = parseOperatorDef(name);
+
+			overloading->access = accessModifier;
+
 			_putFnDefinition(token.beginLocation, name, overloading);
 			break;
 		}
 		case TokenId::FnKeyword: {
 			string name;
 			auto overloading = parseFnDef(name);
+
+			overloading->access = accessModifier;
+
 			_putFnDefinition(token.beginLocation, name, overloading);
 
 			break;
@@ -1671,7 +1685,7 @@ void Parser::parseClassStmt() {
 					make_shared<VarNode>(
 						i.second.loc,
 						compiler,
-						0,
+						accessModifier,
 						i.second.type,
 						i.first,
 						i.second.initValue,
@@ -1747,6 +1761,9 @@ void Parser::parseInterfaceStmt() {
 			return;
 		case TokenId::ClassKeyword: {
 			auto def = parseClassDef();
+
+			def->access = accessModifier;
+
 			_putDefinition(
 				def->getLocation(),
 				def->name,
@@ -1757,12 +1774,18 @@ void Parser::parseInterfaceStmt() {
 			string name;
 
 			auto overloading = parseOperatorDef(name);
+
+			overloading->access = accessModifier;
+
 			_putFnDefinition(token.beginLocation, name, overloading);
 			break;
 		}
 		case TokenId::FnKeyword: {
 			string name;
 			auto overloading = parseFnDef(name);
+
+			overloading->access = accessModifier;
+
 			_putFnDefinition(token.beginLocation, name, overloading);
 
 			break;
@@ -1786,7 +1809,7 @@ void Parser::parseInterfaceStmt() {
 					make_shared<VarNode>(
 						i.second.loc,
 						compiler,
-						0,
+						accessModifier,
 						i.second.type,
 						i.first,
 						i.second.initValue,
@@ -1835,6 +1858,9 @@ void Parser::parseProgramStmt() {
 			return;
 		case TokenId::ClassKeyword: {
 			auto def = parseClassDef();
+
+			def->access = accessModifier;
+
 			_putDefinition(
 				def->getLocation(),
 				def->name,
@@ -1845,6 +1871,7 @@ void Parser::parseProgramStmt() {
 			string name;
 			auto overloading = parseFnDef(name);
 
+			overloading->access = accessModifier;
 			overloading->access |= ACCESS_STATIC;
 
 			_putFnDefinition(token.beginLocation, name, overloading);
@@ -1876,6 +1903,7 @@ void Parser::parseProgramStmt() {
 					i.second.idxAssignOpToken,
 					i.second.idxCommaToken);
 
+				varNode->access = accessModifier;
 				varNode->access |= ACCESS_STATIC;
 
 				_putDefinition(

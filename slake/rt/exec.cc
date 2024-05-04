@@ -323,7 +323,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		}
 
 		if (unwrapValue)
-			i = ((VarValue *)i)->value;
+			i = ((VarValue *)i)->getData();
 	}
 
 	switch (ins.opcode) {
@@ -610,10 +610,6 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 					((VarValue *)ins.operands[0])->setData(array->values[index]);
 					break;
 				}
-				case TypeId::Map: {
-					throw std::logic_error("Unimplemented yet");
-					break;
-				}
 				case TypeId::Object: {
 					throw std::logic_error("Unimplemented yet");
 					break;
@@ -762,6 +758,22 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 				default:
 					throw InvalidOperandsError("Specified type cannot be instantiated");
 			}
+			break;
+		}
+		case Opcode::ARRNEW: {
+			_checkOperandCount(ins, 3);
+
+			_checkOperandType(ins, { TypeId::Var, TypeId::TypeName, TypeId::U32 });
+
+			VarValue *varOut = (VarValue *)ins.operands[0];
+			Type &type = ((TypeNameValue *)ins.operands[1])->_data;
+			uint32_t size = ((U32Value*)ins.operands[2])->_data;
+			type.loadDeferredType(this);
+
+			auto instance = _newArrayInstance(type, size);
+
+			varOut->setData(instance);
+
 			break;
 		}
 		case Opcode::THROW: {

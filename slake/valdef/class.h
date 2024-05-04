@@ -99,7 +99,7 @@ namespace slake {
 		/// @return true if the interface is derived from specified interface, false otherwise.
 		bool isDerivedFrom(const InterfaceValue *pInterface) const;
 
-		InterfaceValue &operator=(const InterfaceValue &x) {
+		inline InterfaceValue &operator=(const InterfaceValue &x) {
 			((ModuleValue &)*this) = (ModuleValue &)x;
 
 			parents = x.parents;
@@ -127,7 +127,7 @@ namespace slake {
 
 		virtual Value *duplicate() const override;
 
-		TraitValue &operator=(const TraitValue &x) {
+		inline TraitValue &operator=(const TraitValue &x) {
 			((InterfaceValue &)*this) = (InterfaceValue &)x;
 			return *this;
 		}

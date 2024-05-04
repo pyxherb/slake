@@ -15,6 +15,7 @@ Runtime::Runtime(RuntimeFlags flags) : _flags(flags) {
 
 Runtime::~Runtime() {
 	_rootValue = nullptr;
+	activeContexts.clear();
 
 	gc();
 

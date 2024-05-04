@@ -23,10 +23,6 @@ bool Compiler::isLiteralTypeName(shared_ptr<TypeNameNode> typeName) {
 		case Type::Array: {
 			return isLiteralTypeName(static_pointer_cast<ArrayTypeNameNode>(typeName));
 		}
-		case Type::Map: {
-			auto t = static_pointer_cast<MapTypeNameNode>(typeName);
-			return isLiteralTypeName(t->keyType) && isLiteralTypeName(t->valueType);
-		}
 		case Type::Auto:
 		case Type::Void:
 		case Type::Any:
@@ -69,7 +65,6 @@ bool Compiler::isDecimalType(shared_ptr<TypeNameNode> node) {
 bool Compiler::isCompoundTypeName(shared_ptr<TypeNameNode> node) {
 	switch (node->getTypeId()) {
 		case Type::Array:
-		case Type::Map:
 		case Type::Fn:
 			return true;
 		case Type::Custom: {
@@ -246,7 +241,6 @@ bool Compiler::isTypeNamesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<T
 		case Type::String:
 		case Type::WString:
 		case Type::Array:
-		case Type::Map:
 			break;
 		case Type::Custom: {
 			auto destType = resolveCustomTypeName((CustomTypeNameNode *)dest.get());
@@ -388,7 +382,7 @@ shared_ptr<AstNode> Compiler::resolveCustomTypeName(CustomTypeNameNode *typeName
 
 	// Check the type with the global scope.
 	typeName->resolvedPartsOut.clear();
-	if (resolveRef(typeName->ref, typeName->resolvedPartsOut)) {
+	if (resolveRef(typeName->ref, typeName->resolvedPartsOut, true)) {
 		goto succeeded;
 	}
 
@@ -398,7 +392,7 @@ shared_ptr<AstNode> Compiler::resolveCustomTypeName(CustomTypeNameNode *typeName
 		Message(
 			Location(typeName->getLocation()),
 			MessageType::Error,
-			"`" + to_string(typeName->ref, this) + "' was not found"));
+			"Type `" + to_string(typeName->ref, this) + "' was not found"));
 
 succeeded:
 	if (typeName->resolvedPartsOut.size() > 1)
@@ -422,13 +416,6 @@ bool Compiler::isSameType(shared_ptr<TypeNameNode> x, shared_ptr<TypeNameNode> y
 
 			return xDest == yDest;
 		}
-		case Type::Map:
-			return isSameType(
-					   static_pointer_cast<MapTypeNameNode>(x)->keyType,
-					   static_pointer_cast<MapTypeNameNode>(y)->keyType) &&
-				   isSameType(
-					   static_pointer_cast<MapTypeNameNode>(x)->valueType,
-					   static_pointer_cast<MapTypeNameNode>(y)->valueType);
 		case Type::Array:
 			return isSameType(
 				static_pointer_cast<ArrayTypeNameNode>(x)->elementType,
@@ -444,10 +431,6 @@ shared_ptr<AstNode> CustomTypeNameNode::doDuplicate() {
 
 shared_ptr<AstNode> ArrayTypeNameNode::doDuplicate() {
 	return make_shared<ArrayTypeNameNode>(*this);
-}
-
-shared_ptr<AstNode> MapTypeNameNode::doDuplicate() {
-	return make_shared<MapTypeNameNode>(*this);
 }
 
 shared_ptr<AstNode> FnTypeNameNode::doDuplicate() {

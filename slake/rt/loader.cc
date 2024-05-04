@@ -139,11 +139,7 @@ Type Runtime::_loadType(std::istream &fs, slxfmt::Type vt) {
 		case slxfmt::Type::None:
 			return TypeId::None;
 		case slxfmt::Type::Array:
-			return Type(_loadType(fs, _read<slxfmt::Type>(fs)));
-		case slxfmt::Type::Map:
-			return Type(
-				_loadType(fs, _read<slxfmt::Type>(fs)),
-				_loadType(fs, _read<slxfmt::Type>(fs)));
+			return Type(TypeId::Array, _loadType(fs, _read<slxfmt::Type>(fs)));
 		case slxfmt::Type::TypeName:
 			return TypeId::TypeName;
 		case slxfmt::Type::GenericArg: {

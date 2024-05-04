@@ -16,7 +16,7 @@ namespace slake {
 
 		virtual Value *duplicate() const override;
 
-		LocalVarRefValue &operator=(const LocalVarRefValue &x) {
+		inline LocalVarRefValue &operator=(const LocalVarRefValue &x) {
 			((Value &)*this) = (Value &)x;
 			index = x.index;
 			unwrapValue = x.unwrapValue;
@@ -40,7 +40,7 @@ namespace slake {
 
 		virtual Value *duplicate() const override;
 
-		RegRefValue &operator=(const RegRefValue &x) {
+		inline RegRefValue &operator=(const RegRefValue &x) {
 			((Value &)*this) = (Value &)x;
 			index = x.index;
 			unwrapValue = x.unwrapValue;

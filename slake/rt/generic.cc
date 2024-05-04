@@ -37,9 +37,6 @@ void slake::Runtime::_instantiateGenericValue(Value *v, GenericInstantiationCont
 			_instantiateGenericValue(value->type, instantiationContext);
 			break;
 		}
-		case TypeId::Map: {
-			break;
-		}
 		case TypeId::Class: {
 			ClassValue *const value = (ClassValue *)v;
 

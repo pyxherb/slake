@@ -552,10 +552,11 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 							shared_ptr<FnNode> operatorNode = static_pointer_cast<FnNode>(it->second);
 							shared_ptr<FnOverloadingNode> overloading;
 
-							try {
-								overloading = argDependentLookup(e->getLocation(), operatorNode.get(), {}, {});
-							} catch (FatalCompilationError e) {
-								return {};
+							{
+								auto overloadings = argDependentLookup(e->getLocation(), operatorNode.get(), {}, {});
+								if (overloadings.size() != 1)
+									return false;
+								overloading = overloadings[0];
 							}
 
 							return overloading->returnType;
@@ -773,17 +774,31 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 							it != n->scope->members.end()) {
 							assert(it->second->getNodeType() == NodeType::Fn);
 							shared_ptr<FnNode> operatorNode = static_pointer_cast<FnNode>(it->second);
-							auto overloading = operatorNode->overloadingRegistries[0];
 
 							Ref fullName;
 							_getFullName(operatorNode.get(), fullName);
 
-							try {
-								auto overloading = argDependentLookup(e->getLocation(), operatorNode.get(), { rhsType }, {});
+							shared_ptr<FnOverloadingNode> overloading;
 
-								return overloading->returnType;
-							} catch (FatalCompilationError e) {
-								return {};
+							{
+								auto overloadings = argDependentLookup(e->getLocation(), operatorNode.get(), { rhsType }, {});
+								if (overloadings.size() > 1) {
+									for (auto i : overloadings) {
+										messages.push_back(
+											Message(
+												e->getLocation(),
+												MessageType::Note,
+												"Matched here"));
+									}
+									throw FatalCompilationError(
+										Message(
+											e->getLocation(),
+											MessageType::Error,
+											"Ambiguous function call"));
+								} else if (overloadings.size() == 1) {
+									overloading = overloadings[0];
+									return overloading->returnType;
+								}
 							}
 						}
 						return {};
@@ -990,7 +1005,32 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 						}
 
 						if (curMajorContext.curMinorContext.isArgTypesSet) {
-							auto overloading = argDependentLookup(e->ref[0].loc, fn.get(), curMajorContext.curMinorContext.argTypes, resolvedParts.back().first.back().genericArgs);
+							shared_ptr<FnOverloadingNode> overloading;
+
+							{
+								auto overloadings = argDependentLookup(e->ref[0].loc, fn.get(), curMajorContext.curMinorContext.argTypes, resolvedParts.back().first.back().genericArgs);
+								if (!overloadings.size()) {
+									throw FatalCompilationError(
+										Message(
+											e->ref[0].loc,
+											MessageType::Error,
+											"No matching function was found"));
+								} else if (overloadings.size() > 1) {
+									for (auto i : overloadings) {
+										messages.push_back(
+											Message(
+												i->loc,
+												MessageType::Note,
+												"Matched here"));
+									}
+									throw FatalCompilationError(
+										Message(
+											e->ref[0].loc,
+											MessageType::Error,
+											"Ambiguous function call"));
+								}
+								overloading = overloadings[0];
+							}
 
 							deque<shared_ptr<TypeNameNode>> paramTypes;
 							for (auto i : overloading->params)

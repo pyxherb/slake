@@ -105,12 +105,12 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 				for (size_t i = 0; i < v->getInsCount(); ++i) {
 					auto ins = &(v->getBody()[i]);
 
-					if (!(decompilerFlags & DECOMP_SRCLOCINFO)) {
+					if (!(decompilerFlags & DECOMP_SRCLOC)) {
 						for (auto &j : v->sourceLocDescs) {
 							if (dumpedSourceLocationDescs.count(&j))
 								continue;
 
-							if ((i > j.offIns) &
+							if ((i > j.offIns) &&
 								(i < j.offIns + j.nIns)) {
 								os << std::string(indentLevel + 1, '\t')
 								   << "// Source location=" << j.line << ":" << j.column << ", " << j.nIns << " instructions\n";

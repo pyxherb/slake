@@ -181,10 +181,11 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 							shared_ptr<FnNode> operatorNode = static_pointer_cast<FnNode>(it->second);
 							shared_ptr<FnOverloadingNode> overloading;
 
-							try {
-								overloading = argDependentLookup(e->getLocation(), operatorNode.get(), {}, {});
-							} catch (FatalCompilationError e) {
-								return false;
+							{
+								auto overloadings = argDependentLookup(e->getLocation(), operatorNode.get(), {}, {});
+								if (overloadings.size() != 1)
+									return false;
+								overloading = overloadings[0];
 							}
 
 							compileExpr(
@@ -651,10 +652,11 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 							shared_ptr<FnNode> operatorNode = static_pointer_cast<FnNode>(it->second);
 							shared_ptr<FnOverloadingNode> overloading;
 
-							try {
-								overloading = argDependentLookup(e->getLocation(), operatorNode.get(), { rhsType }, {});
-							} catch (FatalCompilationError e) {
-								return false;
+							{
+								auto overloadings = argDependentLookup(e->getLocation(), operatorNode.get(), { rhsType }, {});
+								if (overloadings.size() != 1)
+									return false;
+								overloading = overloadings[0];
 							}
 
 							compileExpr(
@@ -1078,62 +1080,161 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 		case ExprType::New: {
 			auto e = static_pointer_cast<NewExprNode>(expr);
 
-			for (auto i : e->args) {
-				if (auto ce = evalConstExpr(i); ce)
-					curFn->insertIns(Opcode::PUSHARG, ce);
-				else {
-					uint32_t tmpRegIndex = allocReg();
+			switch (e->type->getTypeId()) {
+				case Type::Array: {
+					//
+					// Construct a new array.
+					//
+					auto t = static_pointer_cast<ArrayTypeNameNode>(e->type);
 
-					compileExpr(i, EvalPurpose::RValue, make_shared<RegRefNode>(tmpRegIndex));
-					curFn->insertIns(Opcode::PUSHARG, make_shared<RegRefNode>(tmpRegIndex, true));
-				}
-			}
+					if (!t->elementType) {
+						throw FatalCompilationError(
+							Message(
+								t->elementType->getLocation(),
+								MessageType::Error,
+								"Cannot deduce type of elements"));
+					}
 
-			auto node = resolveCustomTypeName((CustomTypeNameNode *)e->type.get());
+					if (e->args.size() != 1) {
+						throw FatalCompilationError(
+							Message(
+								e->type->getLocation(),
+								MessageType::Error,
+								"Invalid argument number for array constructor"));
+					}
 
-			switch (node->getNodeType()) {
-				case NodeType::Class:
-				case NodeType::Interface:
-				case NodeType::Trait: {
-					shared_ptr<MemberNode> n = static_pointer_cast<MemberNode>(node);
+					auto sizeArg = e->args[0];
+					auto sizeArgType = evalExprType(sizeArg);
 
-					if (auto it = n->scope->members.find("new"); it != n->scope->members.end()) {
-						deque<shared_ptr<TypeNameNode>> argTypes;
+					auto u32Type = make_shared<U32TypeNameNode>(Location(), SIZE_MAX);
 
-						for (auto &i : e->args) {
-							argTypes.push_back(evalExprType(i));
-						}
+					if (!sizeArgType) {
+						throw FatalCompilationError(
+							Message(
+								sizeArg->getLocation(),
+								MessageType::Error,
+								"Cannot deduce type of the argument"));
+					}
 
-						assert(it->second->getNodeType() == NodeType::Fn);
+					uint32_t sizeArgRegIndex = allocReg(1);
 
-						shared_ptr<FnOverloadingNode> overloading = argDependentLookup(expr->getLocation(), (FnNode *)it->second.get(), argTypes, {});
-
-						deque<shared_ptr<TypeNameNode>> paramTypes;
-						for (auto &j : overloading->params) {
-							paramTypes.push_back(j->originalType ? j->originalType : j->type);
-						}
-
-						if (overloading->isVaridic())
-							paramTypes.pop_back();
-
-						Ref fullName = getFullName(it->second.get());
-						fullName.back().name = mangleName("new", paramTypes, false);
-
-						curFn->insertIns(Opcode::NEW, curMajorContext.curMinorContext.evalDest, e->type, make_shared<RefExprNode>(fullName));
+					if (!isSameType(sizeArgType, u32Type)) {
+						if (!isTypeNamesConvertible(sizeArgType, u32Type))
+							throw FatalCompilationError(
+								{ sizeArg->getLocation(),
+									MessageType::Error,
+									"Incompatible argument type" });
+						compileExpr(
+							make_shared<CastExprNode>(sizeArg->getLocation(), u32Type, sizeArg),
+							EvalPurpose::RValue,
+							make_shared<RegRefNode>(sizeArgRegIndex));
 					} else {
-						curFn->insertIns(Opcode::NEW, curMajorContext.curMinorContext.evalDest, e->type, {});
+						compileExpr(
+							sizeArg,
+							EvalPurpose::RValue,
+							make_shared<RegRefNode>(sizeArgRegIndex));
+					}
+
+					curFn->insertIns(Opcode::ARRNEW, curMajorContext.curMinorContext.evalDest, t->elementType, make_shared<RegRefNode>(sizeArgRegIndex, true));
+
+					break;
+				}
+				case Type::Custom: {
+					//
+					// Instantiate a custom type.
+					//
+					for (auto i : e->args) {
+						if (auto ce = evalConstExpr(i); ce)
+							curFn->insertIns(Opcode::PUSHARG, ce);
+						else {
+							uint32_t tmpRegIndex = allocReg();
+
+							compileExpr(i, EvalPurpose::RValue, make_shared<RegRefNode>(tmpRegIndex));
+							curFn->insertIns(Opcode::PUSHARG, make_shared<RegRefNode>(tmpRegIndex, true));
+						}
+					}
+
+					auto node = resolveCustomTypeName((CustomTypeNameNode *)e->type.get());
+
+					switch (node->getNodeType()) {
+						case NodeType::Class:
+						case NodeType::Interface:
+						case NodeType::Trait: {
+							shared_ptr<MemberNode> n = static_pointer_cast<MemberNode>(node);
+
+							if (auto it = n->scope->members.find("new"); it != n->scope->members.end()) {
+								deque<shared_ptr<TypeNameNode>> argTypes;
+
+								for (auto &i : e->args) {
+									argTypes.push_back(evalExprType(i));
+								}
+
+								assert(it->second->getNodeType() == NodeType::Fn);
+
+								shared_ptr<FnOverloadingNode> overloading;
+
+								{
+									auto overloadings = argDependentLookup(expr->getLocation(), (FnNode *)it->second.get(), argTypes, {});
+									if (!overloadings.size()) {
+										throw FatalCompilationError(
+											Message(
+												expr->getLocation(),
+												MessageType::Error,
+												"No matching function was found"));
+									} else if (overloadings.size() > 1) {
+										for (auto i : overloadings) {
+											messages.push_back(
+												Message(
+													i->loc,
+													MessageType::Note,
+													"Matched here"));
+										}
+										throw FatalCompilationError(
+											Message(
+												expr->getLocation(),
+												MessageType::Error,
+												"Ambiguous function call"));
+									}
+
+									overloading = overloadings[0];
+								}
+
+								deque<shared_ptr<TypeNameNode>> paramTypes;
+								for (auto &j : overloading->params) {
+									paramTypes.push_back(j->originalType ? j->originalType : j->type);
+								}
+
+								if (overloading->isVaridic())
+									paramTypes.pop_back();
+
+								Ref fullName = getFullName(it->second.get());
+								fullName.back().name = mangleName("new", paramTypes, false);
+
+								curFn->insertIns(Opcode::NEW, curMajorContext.curMinorContext.evalDest, e->type, make_shared<RefExprNode>(fullName));
+							} else {
+								curFn->insertIns(Opcode::NEW, curMajorContext.curMinorContext.evalDest, e->type, {});
+							}
+
+							break;
+						}
+						case NodeType::GenericParam:
+							throw FatalCompilationError(
+								Message(
+									e->type->getLocation(),
+									MessageType::Error,
+									"Cannot instantiate a generic parameter"));
+						default:
+							assert(false);
 					}
 
 					break;
 				}
-				case NodeType::GenericParam:
+				default:
 					throw FatalCompilationError(
 						Message(
 							e->type->getLocation(),
 							MessageType::Error,
-							"Cannot instantiate a generic parameter"));
-				default:
-					assert(false);
+							"Specified type is not constructible"));
 			}
 
 			break;
@@ -1190,7 +1291,6 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 #if SLKC_WITH_LANGUAGE_SERVER
 			updateCompletionContext(e->ref, CompletionContext::Expr);
 #endif
-			bool isCurStageStatic = true;
 
 			deque<pair<Ref, shared_ptr<AstNode>>> resolvedParts;
 			if (!resolveRef(e->ref, resolvedParts))
@@ -1236,9 +1336,34 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 				//
 				// Find a proper overloading for the function calling expression.
 				//
-				return argDependentLookup(expr->getLocation(), x.get(), curMajorContext.curMinorContext.argTypes, genericArgs);
+				{
+					auto overloadings = argDependentLookup(expr->getLocation(), x.get(), curMajorContext.curMinorContext.argTypes, genericArgs);
+
+					if (!overloadings.size()) {
+						throw FatalCompilationError(
+							Message(
+								expr->getLocation(),
+								MessageType::Error,
+								"No matching function was found"));
+					} else if (overloadings.size() > 1) {
+						for (auto i : overloadings) {
+							messages.push_back(
+								Message(
+									i->loc,
+									MessageType::Note,
+									"Matched here"));
+						}
+						throw FatalCompilationError(
+							Message(
+								expr->getLocation(),
+								MessageType::Error,
+								"Ambiguous function call"));
+					}
+
+					return overloadings[0];
+				}
 			};
-			auto loadRest = [this, &determineOverloadingRegistry, &expr, &tmpRegIndex, &resolvedParts, &isCurStageStatic]() {
+			auto loadRest = [this, &determineOverloadingRegistry, &expr, &tmpRegIndex, &resolvedParts]() {
 				for (size_t i = 1; i < resolvedParts.size(); ++i) {
 					switch (resolvedParts[i].second->getNodeType()) {
 						case NodeType::Var: {
@@ -1292,8 +1417,6 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 			auto &x = resolvedParts.front().second;
 			switch (x->getNodeType()) {
 				case NodeType::LocalVar:
-					isCurStageStatic = false;
-
 					curFn->insertIns(
 						Opcode::STORE,
 						make_shared<RegRefNode>(tmpRegIndex),
@@ -1319,8 +1442,6 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 							make_shared<RegRefNode>(tmpRegIndex, true));
 					break;
 				case NodeType::ArgRef:
-					isCurStageStatic = false;
-
 					static_pointer_cast<ArgRefNode>(x)->unwrapData = (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RValue);
 
 					curFn->insertIns(
@@ -1346,7 +1467,8 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 				case NodeType::BaseRef:
 				case NodeType::Class:
 				case NodeType::Interface:
-				case NodeType::Trait: {
+				case NodeType::Trait:
+				case NodeType::Module: {
 					//
 					// Resolve the head of the reference.
 					// After that, we will use RLOAD instructions to load the members one by one.
@@ -1354,7 +1476,8 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 					switch (x->getNodeType()) {
 						case NodeType::Class:
 						case NodeType::Interface:
-						case NodeType::Trait: {
+						case NodeType::Trait:
+						case NodeType::Module: {
 							Ref ref = getFullName((MemberNode *)x.get());
 							curFn->insertIns(
 								Opcode::LOAD,
@@ -1365,22 +1488,11 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 						case NodeType::Var: {
 							auto varNode = (VarNode *)x.get();
 
-							if (varNode->access & ACCESS_STATIC) {
-								Ref ref = getFullName(varNode);
-								curFn->insertIns(
-									Opcode::LOAD,
-									make_shared<RegRefNode>(tmpRegIndex),
-									make_shared<RefExprNode>(ref));
-							} else {
-								curFn->insertIns(
-									Opcode::LTHIS,
-									make_shared<RegRefNode>(tmpRegIndex));
-								curFn->insertIns(
-									Opcode::RLOAD,
-									make_shared<RegRefNode>(tmpRegIndex),
-									make_shared<RegRefNode>(tmpRegIndex, true),
-									make_shared<RefExprNode>(resolvedParts.front().first));
-							}
+							Ref ref = getFullName(varNode);
+							curFn->insertIns(
+								Opcode::LOAD,
+								make_shared<RegRefNode>(tmpRegIndex),
+								make_shared<RefExprNode>(ref));
 							break;
 						}
 						case NodeType::Fn: {
@@ -1411,11 +1523,9 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 							break;
 						}
 						case NodeType::ThisRef:
-							isCurStageStatic = false;
 							curFn->insertIns(Opcode::LTHIS, make_shared<RegRefNode>(tmpRegIndex));
 							break;
 						case NodeType::BaseRef:
-							isCurStageStatic = false;
 							curFn->insertIns(Opcode::LOAD, make_shared<RegRefNode>(tmpRegIndex), make_shared<RefExprNode>(Ref{ RefEntry(e->getLocation(), SIZE_MAX, "base") }));
 							break;
 						default:

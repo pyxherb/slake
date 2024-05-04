@@ -235,7 +235,12 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 				} else {
 					uint32_t tmpRegIndex = allocReg();
 
-					if (isSameType(evalExprType(s->returnValue), returnType))
+					auto exprType = evalExprType(s->returnValue);
+
+					if (!exprType)
+						throw FatalCompilationError({ s->returnValue->getLocation(), MessageType::Error, "Cannot deduce type of the return value" });
+
+					if (isSameType(exprType, returnType))
 						compileExpr(s->returnValue, EvalPurpose::RValue, make_shared<RegRefNode>(tmpRegIndex));
 					else
 						compileExpr(make_shared<CastExprNode>(s->returnValue->getLocation(), returnType, s->returnValue), EvalPurpose::RValue, make_shared<RegRefNode>(tmpRegIndex));

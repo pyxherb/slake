@@ -37,10 +37,6 @@ string std::to_string(shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slk
 			return s + "any";
 		case Type::Array:
 			return s + to_string(static_pointer_cast<ArrayTypeNameNode>(typeName)->elementType, compiler, asOperatorName) + "[]";
-		case Type::Map: {
-			auto t = static_pointer_cast<MapTypeNameNode>(typeName);
-			return s + to_string(t->keyType, compiler, asOperatorName) + "[" + to_string(t->valueType, compiler, asOperatorName) + "]";
-		}
 		case Type::Fn: {
 			auto t = static_pointer_cast<FnTypeNameNode>(typeName);
 			s += to_string(t->returnType, compiler, asOperatorName) + " -> (";

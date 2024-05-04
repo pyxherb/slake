@@ -5,19 +5,15 @@
 using namespace slake;
 
 Type::Type(RefValue *ref, TypeFlags flags) : typeId(TypeId::Object), flags(flags) {
-	exData = (Value*)ref;
+	exData = (Value *)ref;
 }
 
 Type::~Type() {
 	switch (typeId) {
 		case TypeId::Array: {
-			delete std::get<Type *>(exData);
+			if (auto t = std::get<Type *>(exData); t)
+				delete t;
 			break;
-		}
-		case TypeId::Map: {
-			auto pair = std::get<std::pair<Type *, Type *>>(exData);
-			delete pair.first;
-			delete pair.second;
 		}
 	}
 }
@@ -158,6 +154,10 @@ bool slake::isCompatible(Type a, Type b) {
 		case TypeId::Bool:
 		case TypeId::String:
 			return a.typeId == b.typeId;
+		case TypeId::Array:
+			if (a.typeId != b.typeId)
+				return false;
+			return isCompatible(a.getArrayExData(), b.getArrayExData());
 		case TypeId::Object: {
 			switch (a.getCustomTypeExData()->getType().typeId) {
 				case TypeId::Class: {

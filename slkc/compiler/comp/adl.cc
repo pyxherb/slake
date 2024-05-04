@@ -2,7 +2,7 @@
 
 using namespace slake::slkc;
 
-shared_ptr<FnOverloadingNode> Compiler::argDependentLookup(
+std::deque<shared_ptr<FnOverloadingNode>> Compiler::argDependentLookup(
 	Location loc,
 	FnNode *fn,
 	const deque<shared_ptr<TypeNameNode>> &argTypes,
@@ -44,32 +44,11 @@ shared_ptr<FnOverloadingNode> Compiler::argDependentLookup(
 		}
 
 		if (exactlyMatched)
-			return overloading;
+			return { overloading };
 
 		matchedRegistries.push_back(overloading);
 	fail:;
 	}
 
-	if (matchedRegistries.size() > 1) {
-		for (auto i : matchedRegistries) {
-			messages.push_back(
-				Message(
-					i->loc,
-					MessageType::Note,
-					"Matched here"));
-		}
-		throw FatalCompilationError(
-			Message(
-				loc,
-				MessageType::Error,
-				"Ambiguous function call"));
-	} else if (matchedRegistries.empty()) {
-		throw FatalCompilationError(
-			Message(
-				loc,
-				MessageType::Error,
-				"No matching function was found"));
-	}
-
-	return matchedRegistries.front();
+	return matchedRegistries;
 }

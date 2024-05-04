@@ -34,7 +34,6 @@ namespace slake {
 			Any,
 
 			Array,
-			Map,
 			Fn,
 
 			Custom,
@@ -148,29 +147,20 @@ namespace slake {
 		public:
 			shared_ptr<TypeNameNode> elementType;
 
+			size_t idxLBracketToken = SIZE_MAX,
+					 idxRBracketToken = SIZE_MAX;
+
 			inline ArrayTypeNameNode(const ArrayTypeNameNode &other)
-				: TypeNameNode(other), elementType(other.elementType->duplicate<TypeNameNode>()) {}
+				: TypeNameNode(other) {
+				elementType = other.elementType->duplicate<TypeNameNode>();
+				idxLBracketToken = other.idxLBracketToken;
+				idxRBracketToken = other.idxRBracketToken;
+			}
 			inline ArrayTypeNameNode(shared_ptr<TypeNameNode> elementType, bool isConst = false)
 				: TypeNameNode(elementType->getLocation(), isConst), elementType(elementType) {}
 			virtual ~ArrayTypeNameNode() = default;
 
 			virtual inline Type getTypeId() const override { return Type::Array; }
-		};
-
-		class MapTypeNameNode : public TypeNameNode {
-		private:
-			virtual shared_ptr<AstNode> doDuplicate() override;
-
-		public:
-			shared_ptr<TypeNameNode> keyType, valueType;
-
-			inline MapTypeNameNode(const MapTypeNameNode &other)
-				: TypeNameNode(other), keyType(other.keyType->duplicate<TypeNameNode>()), valueType(other.valueType->duplicate<TypeNameNode>()) {}
-			inline MapTypeNameNode(shared_ptr<TypeNameNode> keyType, shared_ptr<TypeNameNode> valueType, bool isConst = false)
-				: TypeNameNode(keyType->getLocation(), isConst), keyType(keyType), valueType(valueType) {}
-			virtual ~MapTypeNameNode() = default;
-
-			virtual inline Type getTypeId() const override { return Type::Map; }
 		};
 
 		class FnTypeNameNode : public TypeNameNode {

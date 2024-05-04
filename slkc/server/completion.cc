@@ -77,6 +77,7 @@ void slake::slkc::Document::_walkForCompletion(
 			switch (i.second->getNodeType()) {
 				case NodeType::Class:
 				case NodeType::Interface:
+				case NodeType::Module:
 					if (isStatic)
 						membersOut[i.first] = i.second.get();
 					break;
@@ -97,13 +98,17 @@ void slake::slkc::Document::_walkForCompletion(
 				case NodeType::Fn: {
 					auto m = static_pointer_cast<FnNode>(i.second);
 
-					if (isStatic) {
-						if (m->access & ACCESS_STATIC) {
-							membersOut[i.first] = m.get();
-						}
-					} else {
-						if (!(m->access & ACCESS_STATIC)) {
-							membersOut[i.first] = m.get();
+					for (auto &j : m->overloadingRegistries) {
+						if (isStatic) {
+							if (j->access & ACCESS_STATIC) {
+								membersOut[i.first] = m.get();
+								break;
+							}
+						} else {
+							if (!(j->access & ACCESS_STATIC)) {
+								membersOut[i.first] = m.get();
+								break;
+							}
 						}
 					}
 					break;
@@ -226,11 +231,11 @@ void slake::slkc::Document::_getCompletionItems(
 std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(Location location) {
 	std::deque<CompletionItem> completionItems;
 
-	size_t idxToken = compiler->lexer.getTokenByLocation(location);
+	size_t idxToken = compiler->lexer->getTokenByLocation(location);
 
 	if (idxToken != SIZE_MAX) {
 		do {
-			switch (compiler->lexer.tokens[idxToken].tokenId) {
+			switch (compiler->lexer->tokens[idxToken].tokenId) {
 				case TokenId::Whitespace:
 				case TokenId::NewLine:
 				case TokenId::Comment:
@@ -253,7 +258,7 @@ std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(Location lo
 	return completionItems;
 
 succeeded:
-	Token &token = compiler->lexer.tokens[idxToken];
+	Token &token = compiler->lexer->tokens[idxToken];
 	TokenInfo &tokenInfo = compiler->tokenInfos[idxToken];
 
 	/*

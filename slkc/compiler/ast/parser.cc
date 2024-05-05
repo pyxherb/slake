@@ -52,7 +52,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::prefixOpRegistries = {
 
 				return static_pointer_cast<ExprNode>(expr);
 			} } },
-	{ TokenId::RevOp,
+	{ TokenId::NotOp,
 		{ 131,
 			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
 				auto expr = make_shared<UnaryOpExprNode>(
@@ -64,7 +64,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::prefixOpRegistries = {
 
 				return static_pointer_cast<ExprNode>(expr);
 			} } },
-	{ TokenId::NotOp,
+	{ TokenId::LNotOp,
 		{ 131,
 			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
 				auto expr = make_shared<UnaryOpExprNode>(
@@ -1463,8 +1463,8 @@ shared_ptr<FnOverloadingNode> Parser::parseOperatorDecl(string &nameOut) {
 		case TokenId::LOrOp:
 		case TokenId::IncOp:
 		case TokenId::DecOp:
-		case TokenId::RevOp:
 		case TokenId::NotOp:
+		case TokenId::LNotOp:
 		case TokenId::AddAssignOp:
 		case TokenId::SubAssignOp:
 		case TokenId::MulAssignOp:

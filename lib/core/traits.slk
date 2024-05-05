@@ -84,7 +84,7 @@ pub trait BitXorAssign<T, Result> {
 	@Result operator^=(@T other);
 }
 
-pub trait RevAssign<T, Result> {
+pub trait NotAssign<T, Result> {
 	@Result operator~=(@T other);
 }
 

@@ -348,6 +348,10 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 
 						updateCompletionContext(k->type, CompletionContext::Type);
 						updateSemanticType(k->type, SemanticType::Type);
+
+						// Resolve the type name to fill corresponding `curScope` field in token contexts for completion.
+						if (k->type->getTypeId() == Type::Custom)
+							resolveCustomTypeName((CustomTypeNameNode *)k->type.get());
 					}
 
 					for (auto &k : j->idxParamCommaTokens) {

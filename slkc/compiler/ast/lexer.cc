@@ -49,9 +49,9 @@ const char *slake::slkc::getTokenName(slake::slkc::TokenId tokenId) {
 			return "|";
 		case TokenId::XorOp:
 			return "^";
-		case TokenId::NotOp:
+		case TokenId::LNotOp:
 			return "!";
-		case TokenId::RevOp:
+		case TokenId::NotOp:
 			return "~";
 		case TokenId::AssignOp:
 			return "=";
@@ -71,14 +71,12 @@ const char *slake::slkc::getTokenName(slake::slkc::TokenId tokenId) {
 			return "|=";
 		case TokenId::XorAssignOp:
 			return "^=";
-		case TokenId::RevAssignOp:
+		case TokenId::NotAssignOp:
 			return "~=";
 		case TokenId::LshAssignOp:
 			return "<<=";
 		case TokenId::RshAssignOp:
 			return ">>=";
-		case TokenId::SwapOp:
-			return "<=>";
 		case TokenId::StrictEqOp:
 			return "===";
 		case TokenId::StrictNeqOp:

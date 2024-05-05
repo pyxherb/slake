@@ -50,8 +50,8 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 				<InitialCondition>"&"		{ token.tokenId = TokenId::AndOp; break; }
 				<InitialCondition>"|"		{ token.tokenId = TokenId::OrOp; break; }
 				<InitialCondition>"^"		{ token.tokenId = TokenId::XorOp; break; }
-				<InitialCondition>"!"		{ token.tokenId = TokenId::NotOp; break; }
-				<InitialCondition>"~"		{ token.tokenId = TokenId::RevOp; break; }
+				<InitialCondition>"!"		{ token.tokenId = TokenId::LNotOp; break; }
+				<InitialCondition>"~"		{ token.tokenId = TokenId::NotOp; break; }
 				<InitialCondition>"="		{ token.tokenId = TokenId::AssignOp; break; }
 				<InitialCondition>"+="		{ token.tokenId = TokenId::AddAssignOp; break; }
 				<InitialCondition>"-="		{ token.tokenId = TokenId::SubAssignOp; break; }
@@ -61,10 +61,9 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 				<InitialCondition>"&="		{ token.tokenId = TokenId::AndAssignOp; break; }
 				<InitialCondition>"|="		{ token.tokenId = TokenId::OrAssignOp; break; }
 				<InitialCondition>"^="		{ token.tokenId = TokenId::XorAssignOp; break; }
-				<InitialCondition>"~="		{ token.tokenId = TokenId::RevAssignOp; break; }
+				<InitialCondition>"~="		{ token.tokenId = TokenId::NotAssignOp; break; }
 				<InitialCondition>"<<="		{ token.tokenId = TokenId::LshAssignOp; break; }
 				<InitialCondition>">>="		{ token.tokenId = TokenId::RshAssignOp; break; }
-				<InitialCondition>"<=>"		{ token.tokenId = TokenId::SwapOp; break; }
 				<InitialCondition>"==="		{ token.tokenId = TokenId::StrictEqOp; break; }
 				<InitialCondition>"!=="		{ token.tokenId = TokenId::StrictNeqOp; break; }
 				<InitialCondition>"=="		{ token.tokenId = TokenId::EqOp; break; }

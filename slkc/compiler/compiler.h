@@ -59,6 +59,7 @@ namespace slake {
 		const size_t OUTPUT_SIZE_MAX = 0x20000000;
 
 		enum class EvalPurpose {
+			None,	 // None
 			Stmt,	 // As a statement
 			LValue,	 // As a lvalue
 			RValue,	 // As a rvalue
@@ -76,7 +77,7 @@ namespace slake {
 			uint32_t continueScopeLevel = 0;
 			string breakLabel, continueLabel;
 
-			EvalPurpose evalPurpose;
+			EvalPurpose evalPurpose = EvalPurpose::None;
 
 			bool isLastCallTargetStatic = true;
 
@@ -91,7 +92,7 @@ namespace slake {
 			deque<MinorContext> savedMinorContexts;
 			MinorContext curMinorContext;
 
-			uint32_t curRegCount;
+			uint32_t curRegCount = 0;
 			uint32_t curScopeLevel = 0;
 
 			GenericParamNodeList genericParams;
@@ -189,6 +190,21 @@ namespace slake {
 					params = curFn->params;
 					paramIndices = curFn->paramIndices;
 				}
+			}
+
+			inline TokenContext(
+				const unordered_map<string, shared_ptr<LocalVarNode>> localVars,
+				shared_ptr<Scope> curScope,
+				const GenericParamNodeList &genericParams,
+				const unordered_map<string, size_t> &genericParamIndices,
+				const deque<shared_ptr<ParamNode>> &params,
+				const unordered_map<string, size_t> &paramIndices)
+				: localVars(localVars),
+				  curScope(curScope),
+				  genericParams(genericParams),
+				  genericParamIndices(genericParamIndices),
+				  params(params),
+				  paramIndices(paramIndices) {
 			}
 
 			TokenContext &operator=(const TokenContext &) = default;

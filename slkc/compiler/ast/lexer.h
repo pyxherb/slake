@@ -94,6 +94,7 @@ namespace slake {
 			ForKeyword,
 			FinalKeyword,
 			IfKeyword,
+			ImportKeyword,
 			LetKeyword,
 			ModuleKeyword,
 			NativeKeyword,

@@ -6,12 +6,16 @@
 #include <slake/type.h>
 
 namespace slake {
-	class BasicVarValue final : public MemberValue {
+	class BasicVarValue : public MemberValue {
 	public:
 		BasicVarValue(Runtime *rt, AccessModifier access);
 		virtual ~BasicVarValue();
 
-		virtual Value *getData() = 0;
+		virtual inline Type getType() const override { return TypeId::Var; }
+
+		virtual Type getVarType() const = 0;
+
+		virtual Value *getData() const = 0;
 		virtual void setData(Value *value) = 0;
 
 		inline BasicVarValue &operator=(const BasicVarValue &x) {
@@ -21,21 +25,20 @@ namespace slake {
 		BasicVarValue &operator=(BasicVarValue &&) = delete;
 	};
 
-	class VarValue final : public MemberValue {
+	class VarValue final : public BasicVarValue {
 	public:
-		mutable slake::Value* value = nullptr;
+		mutable slake::Value *value = nullptr;
 		Type type = TypeId::Any;
 
 		VarValue(Runtime *rt, AccessModifier access, Type type);
 		virtual ~VarValue();
 
-		virtual inline Type getType() const override { return TypeId::Var; }
-		inline Type getVarType() const { return type; }
+		inline Type getVarType() const override { return type; }
 
 		virtual Value *duplicate() const override;
 
-		inline Value *getData() const { return value; }
-		inline void setData(Value *value) {
+		virtual inline Value *getData() const override { return value; }
+		virtual inline void setData(Value *value) override {
 			type.loadDeferredType(_rt);
 
 			if (value && !isCompatible(type, value->getType()))
@@ -45,8 +48,11 @@ namespace slake {
 
 		inline VarValue &operator=(const VarValue &x) {
 			((MemberValue &)*this) = (MemberValue &)x;
-			if (x.value)
-				value = x.value->duplicate();
+			// TODO: Do we actually need to duplicate value of the variable? If so, how do we treat object values (they should not be duplicated)?
+			//
+			// if (x.value)
+			//	value = x.value->duplicate();
+			value = x.value;
 			type = x.type;
 			return *this;
 		}

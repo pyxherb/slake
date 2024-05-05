@@ -726,7 +726,6 @@ Ref Parser::parseRef() {
 
 	while (true) {
 		auto &nameToken = lexer->peekToken();
-		auto nameTokenIndex = lexer->getTokenIndex(nameToken);
 
 		auto refEntry = RefEntry(nameToken.beginLocation, SIZE_MAX, "");
 		refEntry.idxAccessOpToken = idxPrecedingAccessOp;
@@ -737,7 +736,7 @@ Ref Parser::parseRef() {
 		} else {
 			lexer->nextToken();
 			refEntry.name = nameToken.text;
-			refEntry.idxToken = nameTokenIndex;
+			refEntry.idxToken = lexer->getTokenIndex(nameToken);
 			ref.push_back(refEntry);
 		}
 
@@ -1323,77 +1322,87 @@ shared_ptr<StmtNode> Parser::parseStmt() {
 	return result;
 }
 
-deque<shared_ptr<ParamNode>> Parser::parseParams() {
-	deque<shared_ptr<ParamNode>> params;
+void Parser::parseParams(deque<shared_ptr<ParamNode>> &paramsOut, std::deque<size_t> &idxCommaTokensOut) {
+	if (lexer->peekToken().tokenId == TokenId::RParenthese)
+		return;
 
 	while (true) {
-		if (lexer->peekToken().tokenId == TokenId::RParenthese)
-			break;
+		if (auto &varArgToken = lexer->peekToken(); varArgToken.tokenId == TokenId::VarArg) {
+			auto param = make_shared<ParamNode>(
+				varArgToken.beginLocation,
+				make_shared<ArrayTypeNameNode>(
+					make_shared<AnyTypeNameNode>(
+						varArgToken.beginLocation,
+						lexer->getTokenIndex(varArgToken))));
 
-		if (auto &token = lexer->peekToken(); token.tokenId == TokenId::VarArg) {
-			params.push_back(
-				make_shared<ParamNode>(token.beginLocation,
-					make_shared<ArrayTypeNameNode>(
-						make_shared<AnyTypeNameNode>(
-							token.beginLocation,
-							lexer->getTokenIndex(token))),
-					"...",
-					lexer->getTokenIndex(token)));
+			param->name = "...";
+			param->idxNameToken = lexer->getTokenIndex(varArgToken);
+
+			paramsOut.push_back(param);
 			lexer->nextToken();
 			break;
 		}
 
 		auto type = parseTypeName();
-		auto &nameToken = expectToken(TokenId::Id);
-		size_t idxNameToken = lexer->getTokenIndex(nameToken);
 
-		params.push_back(make_shared<ParamNode>(type->getLocation(), type, nameToken.text, idxNameToken));
+		auto paramNode = make_shared<ParamNode>(type->getLocation(), type);
+
+		auto &nameToken = lexer->peekToken();
+		if (nameToken.tokenId != TokenId::Id) {
+			compiler->messages.push_back(
+				Message(
+					nameToken.beginLocation,
+					MessageType::Error,
+					"Expecting an identifier"));
+		} else {
+			paramNode->name = nameToken.text;
+			paramNode->idxNameToken = lexer->getTokenIndex(nameToken);
+			lexer->nextToken();
+		}
+
+		paramsOut.push_back(paramNode);
 
 		if (lexer->peekToken().tokenId != TokenId::Comma)
 			break;
 
-		lexer->nextToken();
+		const auto &commaToken = lexer->nextToken();
+		idxCommaTokensOut.push_back(lexer->getTokenIndex(commaToken));
 	}
-
-	return params;
 }
 
 shared_ptr<FnOverloadingNode> Parser::parseFnDecl(string &nameOut) {
+	auto savedScope = curScope;
+	curScope = make_shared<Scope>();
+
 	auto &fnKeywordToken = expectToken(TokenId::FnKeyword);
+	auto overloading = make_shared<FnOverloadingNode>(fnKeywordToken.beginLocation, compiler, curScope);
 
 	auto &nameToken = expectToken(TokenId::Id);
-	size_t idxNameToken = lexer->getTokenIndex(nameToken);
-
-	auto savedScope = curScope;
-	auto newScope = (curScope = make_shared<Scope>());
-
-	GenericParamNodeList genericParams;
+	nameOut = nameToken.text;
+	overloading->idxNameToken = lexer->getTokenIndex(nameToken);
 
 	if (lexer->peekToken().tokenId == TokenId::LtOp)
-		genericParams = parseGenericParams();
+		overloading->setGenericParams(parseGenericParams());
 
-	expectToken(TokenId::LParenthese);
-	auto params = parseParams();
-	expectToken(TokenId::RParenthese);
+	{
+		const auto &paramLParentheseToken = expectToken(TokenId::LParenthese);
+		overloading->idxParamLParentheseToken = lexer->getTokenIndex(paramLParentheseToken);
+	}
 
-	nameOut = nameToken.text;
+	parseParams(overloading->params, overloading->idxParamCommaTokens);
 
-	shared_ptr<TypeNameNode> returnType;
+	{
+		const auto &paramRParentheseToken = expectToken(TokenId::RParenthese);
+		overloading->idxParamRParentheseToken = lexer->getTokenIndex(paramRParentheseToken);
+	}
 
 	if (auto &token = lexer->peekToken(); token.tokenId == TokenId::Colon) {
 		lexer->nextToken();
 
-#if SLKC_WITH_LANGUAGE_SERVER
-		// Update corresponding semantic information.
-		auto &tokenInfo = compiler->tokenInfos[lexer->getTokenIndex(token)];
-		tokenInfo.tokenContext.curScope = curScope;
-		tokenInfo.completionContext = CompletionContext::Type;
-#endif
+		overloading->idxReturnTypeColonToken = lexer->getTokenIndex(token);
 
-		returnType = parseTypeName();
+		overloading->returnType = parseTypeName();
 	}
-
-	auto overloading = make_shared<FnOverloadingNode>(fnKeywordToken.beginLocation, compiler, returnType, genericParams, params, newScope, idxNameToken);
 
 	curScope->parent = savedScope.get();
 	curScope = savedScope;
@@ -1433,13 +1442,13 @@ shared_ptr<FnOverloadingNode> Parser::parseFnDef(string &nameOut) {
 }
 
 shared_ptr<FnOverloadingNode> Parser::parseOperatorDecl(string &nameOut) {
-	auto &operatorKeywordToken = expectToken(TokenId::OperatorKeyword);
-
 	auto savedScope = curScope;
-	auto newScope = (curScope = make_shared<Scope>());
+	curScope = make_shared<Scope>();
+
+	auto &operatorKeywordToken = expectToken(TokenId::OperatorKeyword);
+	auto overloading = make_shared<FnOverloadingNode>(operatorKeywordToken.beginLocation, compiler, curScope);
 
 	auto &nameToken = lexer->nextToken();
-	size_t idxNameToken = lexer->getTokenIndex(nameToken);
 	string name;
 	switch (nameToken.tokenId) {
 		case TokenId::AddOp:
@@ -1486,23 +1495,33 @@ shared_ptr<FnOverloadingNode> Parser::parseOperatorDecl(string &nameOut) {
 			throw SyntaxError("Unrecognized operator", nameToken.beginLocation);
 	}
 
-	expectToken(TokenId::LParenthese);
-	auto params = parseParams();
-	expectToken(TokenId::RParenthese);
+	{
+		const auto &paramLParentheseToken = expectToken(TokenId::LParenthese);
+		overloading->idxParamLParentheseToken = lexer->getTokenIndex(paramLParentheseToken);
+	}
 
-	shared_ptr<TypeNameNode> returnType;
+	parseParams(overloading->params, overloading->idxParamCommaTokens);
 
-	if (auto &token = lexer->peekToken(); token.tokenId == TokenId::Colon) {
+	{
+		const auto &paramRParentheseToken = expectToken(TokenId::RParenthese);
+		overloading->idxParamRParentheseToken = lexer->getTokenIndex(paramRParentheseToken);
+	}
+
+	if (auto &colonToken = lexer->peekToken(); colonToken.tokenId == TokenId::Colon) {
 		lexer->nextToken();
 
-		returnType = parseTypeName();
+		overloading->idxReturnTypeColonToken = lexer->getTokenIndex(colonToken);
+
+		overloading->returnType = parseTypeName();
 	}
 
 	nameOut = name;
 
 	curScope = savedScope;
 
-	return make_shared<FnOverloadingNode>(operatorKeywordToken.beginLocation, compiler, returnType, GenericParamNodeList{}, params, newScope, idxNameToken);
+	overloading->idxNameToken = lexer->getTokenIndex(nameToken);
+
+	return overloading;
 }
 
 shared_ptr<FnOverloadingNode> Parser::parseOperatorDef(string &nameOut) {
@@ -1929,7 +1948,7 @@ void Parser::parseModuleDecl() {
 }
 
 void Parser::parseImportList() {
-	if (auto &beginToken = lexer->peekToken(); beginToken.tokenId == TokenId::UseKeyword) {
+	if (auto &beginToken = lexer->peekToken(); beginToken.tokenId == TokenId::ImportKeyword) {
 		lexer->nextToken();
 
 		expectToken(TokenId::LBrace);

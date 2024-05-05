@@ -149,6 +149,8 @@ const char *slake::slkc::getTokenName(slake::slkc::TokenId tokenId) {
 			return "final";
 		case TokenId::IfKeyword:
 			return "if";
+		case TokenId::ImportKeyword:
+			return "import";
 		case TokenId::LetKeyword:
 			return "let";
 		case TokenId::ModuleKeyword:

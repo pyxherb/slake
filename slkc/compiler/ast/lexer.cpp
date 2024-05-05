@@ -95,6 +95,7 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 				<InitialCondition>"for"			{ token.tokenId = TokenId::ForKeyword; break; }
 				<InitialCondition>"final"		{ token.tokenId = TokenId::FinalKeyword; break; }
 				<InitialCondition>"if"			{ token.tokenId = TokenId::IfKeyword; break; }
+				<InitialCondition>"import"		{ token.tokenId = TokenId::ImportKeyword; break; }
 				<InitialCondition>"let"			{ token.tokenId = TokenId::LetKeyword; break; }
 				<InitialCondition>"module"		{ token.tokenId = TokenId::ModuleKeyword; break; }
 				<InitialCondition>"native"		{ token.tokenId = TokenId::NativeKeyword; break; }
@@ -178,7 +179,7 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 
 				<InitialCondition>[0-9]+"."[0-9]+[fF] {
 					token.tokenId = TokenId::F32Literal;
-					token.exData = std::make_unique<F32LiteralTokenExtension>(strtod(prevYYCURSOR, nullptr));
+					token.exData = std::make_unique<F32LiteralTokenExtension>(strtof(prevYYCURSOR, nullptr));
 					break;
 				}
 
@@ -257,7 +258,7 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 				<EscapeCondition>[0-7]{1,3}	{
 					YYSETCONDITION(StringCondition);
 
-					uint_fast8_t size = YYCURSOR - prevYYCURSOR;
+					size_t size = YYCURSOR - prevYYCURSOR;
 
 					char c = 0;
 					for(uint_fast8_t i = 0; i < size; ++i) {
@@ -270,7 +271,7 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 				<EscapeCondition>[xX][0-9a-fA-F]{1,2}	{
 					YYSETCONDITION(StringCondition);
 
-					uint_fast8_t size = YYCURSOR - prevYYCURSOR;
+					size_t size = YYCURSOR - prevYYCURSOR;
 
 					char c = 0, j;
 

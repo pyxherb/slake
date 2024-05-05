@@ -331,7 +331,7 @@ slake::slkc::Server::Server() {
 				SemanticToken semanticToken = {};
 
 				semanticToken.location = token.beginLocation;
-				semanticToken.length = token.text.size();
+				semanticToken.length = (unsigned int)token.text.size();
 				semanticToken.type = tokenInfo.semanticType;
 				semanticToken.modifiers = tokenInfo.semanticModifiers;
 

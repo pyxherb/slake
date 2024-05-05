@@ -12,7 +12,7 @@ BasicVarValue::~BasicVarValue() {
 }
 
 slake::VarValue::VarValue(Runtime *rt, AccessModifier access, Type type)
-	: MemberValue(rt, access), type(type) {
+	: BasicVarValue(rt, access), type(type) {
 	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(MemberValue));
 }
 

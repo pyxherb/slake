@@ -97,7 +97,7 @@ static ValueRef<> _sinImpl(
 	_nullRefCheck(x);
 	_typeCheck(x, getValueType<T>());
 
-	return new ValueType(rt, _sin(((ValueType *)x)->getData()));
+	return new ValueType(rt, (T)_sin(((ValueType *)x)->getData()));
 }
 
 template <typename T>
@@ -114,7 +114,7 @@ static ValueRef<> _cosImpl(
 	_nullRefCheck(x);
 	_typeCheck(x, getValueType<T>());
 
-	return new ValueType(rt, _cos(((ValueType *)x)->getData()));
+	return new ValueType(rt, (T)_cos(((ValueType *)x)->getData()));
 }
 
 template <typename T>
@@ -131,7 +131,7 @@ static ValueRef<> _tanImpl(
 	_nullRefCheck(x);
 	_typeCheck(x, getValueType<T>());
 
-	return new ValueType(rt, _tan(((ValueType *)x)->getData()));
+	return new ValueType(rt, (T)_tan(((ValueType *)x)->getData()));
 }
 
 template <typename T>
@@ -148,7 +148,7 @@ static ValueRef<> _sqrtImpl(
 	_nullRefCheck(x);
 	_typeCheck(x, getValueType<T>());
 
-	return new ValueType(rt, _sqrt(((ValueType *)x)->getData()));
+	return new ValueType(rt, (T)_sqrt(((ValueType *)x)->getData()));
 }
 
 static ValueRef<> _sinFastImpl(

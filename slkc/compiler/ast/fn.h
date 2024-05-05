@@ -24,7 +24,7 @@ namespace slake {
 			// The original type will be saved during generic instantiation.
 			shared_ptr<TypeNameNode> originalType;
 
-			size_t idxNameToken;
+			size_t idxNameToken = SIZE_MAX;
 
 			inline ParamNode(const ParamNode &other) : AstNode(other) {
 				loc = other.loc;
@@ -37,7 +37,7 @@ namespace slake {
 
 				idxNameToken = other.idxNameToken;
 			}
-			inline ParamNode(Location loc, shared_ptr<TypeNameNode> type, string name, size_t idxNameToken) : type(type), name(name), loc(loc), idxNameToken(idxNameToken) {}
+			inline ParamNode(Location loc, shared_ptr<TypeNameNode> type) : loc(loc), type(type) {}
 			virtual ~ParamNode() = default;
 
 			virtual inline Location getLocation() const override { return loc; }
@@ -54,14 +54,20 @@ namespace slake {
 
 			shared_ptr<TypeNameNode> returnType;
 
+			/// @brief Actual parameters. DO NOT forget to update the parameter indices after you updated the parameters.
 			deque<shared_ptr<ParamNode>> params;
+			/// @brief Parameter indices. Note that it needs to be updated manually after you updated the parameters.
 			unordered_map<string, size_t> paramIndices;
 
 			shared_ptr<BlockStmtNode> body;
 			FnNode *owner = nullptr;
 			AccessModifier access = 0;
 
-			size_t idxNameToken;
+			size_t idxNameToken = SIZE_MAX,
+				idxParamLParentheseToken = SIZE_MAX,
+				idxParamRParentheseToken = SIZE_MAX,
+				idxReturnTypeColonToken = SIZE_MAX;
+			deque<size_t> idxParamCommaTokens;
 
 			inline FnOverloadingNode(const FnOverloadingNode &other) : MemberNode(other) {
 				loc = other.loc;
@@ -83,11 +89,7 @@ namespace slake {
 			FnOverloadingNode(
 				Location loc,
 				Compiler *compiler,
-				shared_ptr<TypeNameNode> returnType,
-				GenericParamNodeList genericParams,
-				deque<shared_ptr<ParamNode>> params,
-				shared_ptr<Scope> scope,
-				size_t idxNameToken);
+				shared_ptr<Scope> scope);
 
 			virtual inline NodeType getNodeType() const override { return NodeType::FnOverloading; }
 
@@ -96,6 +98,9 @@ namespace slake {
 
 			inline bool isAbstract() { return !body; }
 			inline bool isVaridic() { return paramIndices.count("..."); }
+
+			/// @brief Update parameter indices.
+			void updateParamIndices();
 		};
 
 		class FnNode final : public MemberNode {
@@ -148,7 +153,7 @@ namespace slake {
 		public:
 			string name;
 			deque<Ins> body;
-			unordered_map<string, size_t> labels;
+			unordered_map<string, uint32_t> labels;
 
 			GenericParamNodeList genericParams;
 			unordered_map<string, size_t> genericParamIndices;
@@ -213,7 +218,7 @@ namespace slake {
 				shared_ptr<AstNode> op4) {
 				insertIns({ opcode, { op1, op2, op3, op4 } });
 			}
-			inline void insertLabel(string name) { labels[name] = body.size(); }
+			inline void insertLabel(string name) { labels[name] = (uint32_t)body.size(); }
 
 			virtual RefEntry getName() const override { return RefEntry(_loc, 0, name, genericArgs); }
 		};

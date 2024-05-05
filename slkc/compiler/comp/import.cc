@@ -25,12 +25,16 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 	deque<shared_ptr<ParamNode>> params;
 
 	for (auto i : value->getParamTypes()) {
-		shared_ptr<ParamNode> param = make_shared<ParamNode>(Location(), toTypeName(i), "", SIZE_MAX);
+		shared_ptr<ParamNode> param = make_shared<ParamNode>(Location(), toTypeName(i));
 
 		params.push_back(param);
 	}
 
-	shared_ptr<FnOverloadingNode> overloading = make_shared<FnOverloadingNode>(Location(), this, returnType, genericParams, params, make_shared<Scope>(), SIZE_MAX);
+	shared_ptr<FnOverloadingNode> overloading = make_shared<FnOverloadingNode>(Location(), this, make_shared<Scope>());
+	overloading->returnType = returnType;
+	overloading->setGenericParams(genericParams);
+	overloading->params = params;
+	overloading->updateParamIndices();
 
 	if (!scope->members.count(fnName))
 		(scope->members[fnName] = make_shared<FnNode>(this, fnName))->bind(parent.get());
@@ -253,7 +257,7 @@ shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 			return make_shared<ArrayTypeNameNode>(toTypeName(runtimeType.getArrayExData()), isConst);
 		default:
 			// Inconvertible/unrecognized type
-			assert(false);
+			throw std::logic_error("Unrecognized runtime value type");
 	}
 }
 

@@ -68,6 +68,8 @@ string std::to_string(shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slk
 					return (asOperatorName ? "" : "@") + to_string(ref, compiler);
 			}
 		}
+		case Type::Bad:
+			return "<error type>";
 		default:
 			throw std::logic_error("Unrecognized type");
 	}

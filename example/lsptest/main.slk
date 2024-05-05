@@ -1,6 +1,6 @@
 module hostext;
 
-use {
+import {
 	extfnsModule = hostext.extfns
 }
 

@@ -16,7 +16,20 @@ namespace slake {
 
 		virtual inline Type getType() const override { return Type(TypeId::Array, type); }
 
-		ArrayValue &operator=(const ArrayValue &) = delete;
+		Value *duplicate() const override;
+
+		inline ArrayValue &operator=(const ArrayValue &x) {
+			((Value &)*this) = (Value &)x;
+
+			values.resize(x.values.size());
+			for (size_t i = 0; i < x.values.size(); ++i) {
+				values[i] = (VarValue *)x.values[i]->duplicate();
+			}
+
+			type = x.type;
+			return *this;
+		}
+		VarValue &operator=(VarValue &&) = delete;
 		ArrayValue &operator=(ArrayValue &&) = delete;
 	};
 }

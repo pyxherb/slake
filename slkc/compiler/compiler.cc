@@ -160,6 +160,9 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport) {
 			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 			tokenInfo.semanticType = SemanticType::Property;
 		}
+
+		updateCompletionContext(i.second.ref, CompletionContext::Import);
+		updateSemanticType(i.second.ref, SemanticType::Property);
 #endif
 	}
 
@@ -286,8 +289,43 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 					if (j->idxNameToken != SIZE_MAX) {
 						// Update corresponding semantic information.
 						auto &tokenInfo = tokenInfos[j->idxNameToken];
-						tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+						tokenInfo.tokenContext =
+							TokenContext(
+								{},
+								curMajorContext.curMinorContext.curScope,
+								j->genericParams,
+								j->genericParamIndices,
+								{},
+								{});
 						tokenInfo.semanticType = SemanticType::Fn;
+					}
+
+					if (j->idxParamLParentheseToken != SIZE_MAX) {
+						// Update corresponding semantic information.
+						auto &tokenInfo = tokenInfos[j->idxParamLParentheseToken];
+						tokenInfo.tokenContext =
+							TokenContext(
+								{},
+								curMajorContext.curMinorContext.curScope,
+								j->genericParams,
+								j->genericParamIndices,
+								{},
+								{});
+						tokenInfo.completionContext = CompletionContext::Type;
+					}
+
+					if (j->idxReturnTypeColonToken != SIZE_MAX) {
+						// Update corresponding semantic information.
+						auto &tokenInfo = tokenInfos[j->idxReturnTypeColonToken];
+						tokenInfo.tokenContext =
+							TokenContext(
+								{},
+								curMajorContext.curMinorContext.curScope,
+								j->genericParams,
+								j->genericParamIndices,
+								{},
+								{});
+						tokenInfo.completionContext = CompletionContext::Type;
 					}
 
 					if (j->returnType)
@@ -297,8 +335,34 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 						if (k->idxNameToken != SIZE_MAX) {
 							// Update corresponding semantic information.
 							auto &tokenInfo = tokenInfos[k->idxNameToken];
-							tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+							tokenInfo.tokenContext =
+								TokenContext(
+									{},
+									curMajorContext.curMinorContext.curScope,
+									j->genericParams,
+									j->genericParamIndices,
+									{},
+									{});
 							tokenInfo.semanticType = SemanticType::Param;
+						}
+
+						updateCompletionContext(k->type, CompletionContext::Type);
+						updateSemanticType(k->type, SemanticType::Type);
+					}
+
+					for (auto &k : j->idxParamCommaTokens) {
+						if (k != SIZE_MAX) {
+							// Update corresponding semantic information.
+							auto &tokenInfo = tokenInfos[k];
+							tokenInfo.tokenContext =
+								TokenContext(
+									{},
+									curMajorContext.curMinorContext.curScope,
+									j->genericParams,
+									j->genericParamIndices,
+									{},
+									{});
+							updateCompletionContext(k, CompletionContext::Type);
 						}
 					}
 
@@ -306,10 +370,19 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 						if (k->idxNameToken != SIZE_MAX) {
 							// Update corresponding semantic information.
 							auto &tokenInfo = tokenInfos[k->idxNameToken];
-							tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+							tokenInfo.tokenContext =
+								TokenContext(
+									{},
+									curMajorContext.curMinorContext.curScope,
+									j->genericParams,
+									j->genericParamIndices,
+									{},
+									{});
 							tokenInfo.semanticType = SemanticType::TypeParam;
 						}
 					}
+
+					j->updateParamIndices();
 				}
 #endif
 				break;
@@ -322,21 +395,42 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 				if (m->idxNameToken != SIZE_MAX) {
 					// Update corresponding semantic information.
 					auto &tokenInfo = tokenInfos[m->idxNameToken];
-					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+					tokenInfo.tokenContext =
+						TokenContext(
+							{},
+							curMajorContext.curMinorContext.curScope,
+							m->genericParams,
+							m->genericParamIndices,
+							{},
+							{});
 					tokenInfo.semanticType = SemanticType::Class;
 				}
 
 				if (m->idxParentSlotLParentheseToken != SIZE_MAX) {
 					// Update corresponding semantic information.
 					auto &tokenInfo = tokenInfos[m->idxParentSlotLParentheseToken];
-					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+					tokenInfo.tokenContext =
+						TokenContext(
+							{},
+							curMajorContext.curMinorContext.curScope,
+							m->genericParams,
+							m->genericParamIndices,
+							{},
+							{});
 					tokenInfo.completionContext = CompletionContext::Type;
 				}
 
 				if (m->idxImplInterfacesColonToken != SIZE_MAX) {
 					// Update corresponding semantic information.
 					auto &tokenInfo = tokenInfos[m->idxImplInterfacesColonToken];
-					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+					tokenInfo.tokenContext =
+						TokenContext(
+							{},
+							curMajorContext.curMinorContext.curScope,
+							m->genericParams,
+							m->genericParamIndices,
+							{},
+							{});
 					tokenInfo.completionContext = CompletionContext::Type;
 				}
 
@@ -344,7 +438,14 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 					if (j != SIZE_MAX) {
 						// Update corresponding semantic information.
 						auto &tokenInfo = tokenInfos[j];
-						tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+						tokenInfo.tokenContext =
+							TokenContext(
+								{},
+								curMajorContext.curMinorContext.curScope,
+								m->genericParams,
+								m->genericParamIndices,
+								{},
+								{});
 						tokenInfo.completionContext = CompletionContext::Type;
 					}
 				}
@@ -353,7 +454,14 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 					if (j->idxNameToken != SIZE_MAX) {
 						// Update corresponding semantic information.
 						auto &tokenInfo = tokenInfos[j->idxNameToken];
-						tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+						tokenInfo.tokenContext =
+							TokenContext(
+								{},
+								curMajorContext.curMinorContext.curScope,
+								m->genericParams,
+								m->genericParamIndices,
+								{},
+								{});
 						tokenInfo.semanticType = SemanticType::TypeParam;
 					}
 				}
@@ -368,7 +476,14 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 				if (m->idxNameToken != SIZE_MAX) {
 					// Update corresponding semantic information.
 					auto &tokenInfo = tokenInfos[m->idxNameToken];
-					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+					tokenInfo.tokenContext =
+						TokenContext(
+							{},
+							curMajorContext.curMinorContext.curScope,
+							m->genericParams,
+							m->genericParamIndices,
+							{},
+							{});
 					tokenInfo.semanticType = SemanticType::Interface;
 				}
 
@@ -376,7 +491,14 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 					if (j->idxNameToken != SIZE_MAX) {
 						// Update corresponding semantic information.
 						auto &tokenInfo = tokenInfos[j->idxNameToken];
-						tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+						tokenInfo.tokenContext =
+							TokenContext(
+								{},
+								curMajorContext.curMinorContext.curScope,
+								m->genericParams,
+								m->genericParamIndices,
+								{},
+								{});
 						tokenInfo.semanticType = SemanticType::TypeParam;
 					}
 				}
@@ -391,7 +513,14 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 				if (m->idxNameToken != SIZE_MAX) {
 					// Update corresponding semantic information.
 					auto &tokenInfo = tokenInfos[m->idxNameToken];
-					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+					tokenInfo.tokenContext =
+						TokenContext(
+							{},
+							curMajorContext.curMinorContext.curScope,
+							m->genericParams,
+							m->genericParamIndices,
+							{},
+							{});
 					tokenInfo.semanticType = SemanticType::Interface;
 				}
 
@@ -399,7 +528,14 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 					if (j->idxNameToken != SIZE_MAX) {
 						// Update corresponding semantic information.
 						auto &tokenInfo = tokenInfos[j->idxNameToken];
-						tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+						tokenInfo.tokenContext =
+							TokenContext(
+								{},
+								curMajorContext.curMinorContext.curScope,
+								m->genericParams,
+								m->genericParamIndices,
+								{},
+								{});
 						tokenInfo.semanticType = SemanticType::TypeParam;
 					}
 				}
@@ -423,7 +559,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 	for (auto &i : traits)
 		verifyInheritanceChain(i.second.get());
 
-	_write<uint32_t>(os, vars.size());
+	_write<uint32_t>(os, (uint32_t)vars.size());
 	for (auto &i : vars) {
 		slxfmt::VarDesc vad = {};
 

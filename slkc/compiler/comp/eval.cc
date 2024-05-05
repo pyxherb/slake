@@ -22,9 +22,11 @@ static shared_ptr<ExprNode> _evalConstUnaryOpExpr(
 			} else if constexpr (is_integral_v<T>) {
 				return make_shared<LT>(x->getLocation(), ~x->data);
 			} else if constexpr (is_same_v<T, float>) {
-				return make_shared<LT>(x->getLocation(), ~(*(uint32_t *)&x->data));
+				uint32_t result = ~(*(uint32_t *)&x->data);
+				return make_shared<LT>(x->getLocation(), *(float *)&result);
 			} else if constexpr (is_same_v<T, double>) {
-				return make_shared<LT>(x->getLocation(), ~(*(uint64_t *)&x->data));
+				uint64_t result = ~(*(uint64_t *)&x->data);
+				return make_shared<LT>(x->getLocation(), *(double *)&result);
 			} else
 				return {};
 		}
@@ -1119,6 +1121,6 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 		case ExprType::Bad:
 			return {};
 		default:
-			assert(false);
+			throw std::logic_error("Unrecognized expression type");
 	}
 }

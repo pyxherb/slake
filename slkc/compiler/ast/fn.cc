@@ -5,11 +5,11 @@ using namespace slake::slkc;
 FnOverloadingNode::FnOverloadingNode(
 	Location loc,
 	Compiler *compiler,
-	shared_ptr<TypeNameNode> returnType,
-	GenericParamNodeList genericParams,
-	deque<shared_ptr<ParamNode>> params,
-	shared_ptr<Scope> scope,
-	size_t idxNameToken) : MemberNode(compiler, access), returnType(returnType), params(params), idxNameToken(idxNameToken) {
+	shared_ptr<Scope> scope) : MemberNode(compiler, 0), returnType(returnType), params(params), idxNameToken(idxNameToken) {
+	setScope(scope);  // For custom type names.
+}
+
+void FnOverloadingNode::updateParamIndices() {
 	for (size_t i = 0; i < params.size(); ++i) {
 		if (paramIndices.count(params[i]->name)) {
 			throw FatalCompilationError(
@@ -21,9 +21,6 @@ FnOverloadingNode::FnOverloadingNode(
 
 		paramIndices[params[i]->name] = i;
 	}
-
-	setGenericParams(genericParams);
-	setScope(scope);  // For custom type names.
 }
 
 shared_ptr<AstNode> ParamNode::doDuplicate() {

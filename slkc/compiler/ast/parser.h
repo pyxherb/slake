@@ -117,7 +117,7 @@ namespace slake {
 
 			shared_ptr<StmtNode> parseStmt();
 
-			deque<shared_ptr<ParamNode>> parseParams();
+			void parseParams(deque<shared_ptr<ParamNode>> &paramsOut, std::deque<size_t> &idxCommaTokensOut);
 
 			shared_ptr<FnOverloadingNode> parseFnDecl(string &nameOut);
 			shared_ptr<FnOverloadingNode> parseFnDef(string &nameOut);

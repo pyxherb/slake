@@ -206,9 +206,9 @@ CompletionItemType slake::slkc::Document::_toCompletionItemType(NodeType nodeTyp
 			return CompletionItemType::Enum;
 		case NodeType::EnumConst:
 			return CompletionItemType::EnumConst;*/
-		default:
-			assert(false);
 	}
+
+	throw std::logic_error("Unrecognized node type");
 }
 
 void slake::slkc::Document::_getCompletionItems(

@@ -413,7 +413,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		}
 		case Opcode::ENTER: {
 			_checkOperandCount(ins, 0);
-			MinorFrame frame(curMajorFrame.localVars.size(), curMajorFrame.regs.size());
+			MinorFrame frame((uint32_t)curMajorFrame.localVars.size(), (uint32_t)curMajorFrame.regs.size());
 
 			curMajorFrame.minorFrames.push_back(frame);
 			break;

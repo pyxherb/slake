@@ -10,3 +10,11 @@ ArrayValue::ArrayValue(Runtime *rt, Type type)
 ArrayValue::~ArrayValue() {
 	reportSizeFreedToRuntime(sizeof(*this) - sizeof(Value));
 }
+
+Value *ArrayValue::duplicate() const {
+	ArrayValue *v = new ArrayValue(_rt, type);
+
+	*v = *this;
+
+	return (Value *)v;
+}

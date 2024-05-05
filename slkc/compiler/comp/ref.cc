@@ -73,7 +73,7 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 				tokenInfo.semanticType = SemanticType::Param;
 #endif
 
-				partsOut.push_front({ Ref{ ref.front() }, make_shared<ArgRefNode>(idxParam) });
+				partsOut.push_front({ Ref{ ref.front() }, make_shared<ArgRefNode>((uint32_t)idxParam) });
 				return true;
 			}
 		}

@@ -44,7 +44,7 @@ void Compiler::updateCompletionContext(shared_ptr<TypeNameNode> targetTypeName, 
 		case Type::Bad: {
 			auto t = static_pointer_cast<BadTypeNameNode>(targetTypeName);
 
-			for (size_t i = t->idxStartToken; i <= t->idxEndToken; ++i)
+			for (size_t i = t->idxStartToken; i < t->idxEndToken; ++i)
 				tokenInfos[i].completionContext = completionContext;
 
 			break;
@@ -105,7 +105,7 @@ void Compiler::updateSemanticType(shared_ptr<TypeNameNode> targetTypeName, Seman
 		case Type::Bad: {
 			auto t = static_pointer_cast<BadTypeNameNode>(targetTypeName);
 
-			for (size_t i = t->idxStartToken; i <= t->idxEndToken; ++i)
+			for (size_t i = t->idxStartToken; i < t->idxEndToken; ++i)
 				tokenInfos[i].semanticType = type;
 
 			break;

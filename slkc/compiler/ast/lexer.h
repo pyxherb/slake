@@ -75,6 +75,7 @@ namespace slake {
 			GtOp,
 			DollarOp,
 
+			AsKeyword,
 			AsyncKeyword,
 			AwaitKeyword,
 			BaseKeyword,
@@ -223,7 +224,7 @@ namespace slake {
 				return SIZE_MAX;
 			}
 
-			inline size_t getTokenIndex(const Token& token) {
+			inline size_t getTokenIndex(const Token &token) {
 				return (&token) - tokens.data();
 			}
 		};

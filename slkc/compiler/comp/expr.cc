@@ -1294,7 +1294,6 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 
 			deque<pair<Ref, shared_ptr<AstNode>>> resolvedParts;
 			if (!resolveRef(e->ref, resolvedParts))
-				// The default case is already exist.
 				throw FatalCompilationError(
 					{ e->getLocation(),
 						MessageType::Error,

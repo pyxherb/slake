@@ -1954,14 +1954,16 @@ void Parser::parseImportList() {
 		expectToken(TokenId::LBrace);
 
 		while (true) {
-			auto &nameToken = expectToken(TokenId::Id);
-			size_t idxNameToken = lexer->getTokenIndex(nameToken);
-
-			expectToken(TokenId::AssignOp);
-
 			auto ref = parseModuleRef();
 
-			curModule->imports[nameToken.text] = { ref, idxNameToken };
+			if (auto &asToken = lexer->peekToken(); asToken.tokenId == TokenId::AsKeyword) {
+				lexer->nextToken();
+
+				auto &nameToken = expectToken(TokenId::Id);
+
+				curModule->imports[nameToken.text] = { ref, lexer->getTokenIndex(nameToken) };
+			} else
+				curModule->unnamedImports.push_back({ ref, SIZE_MAX });
 
 			if (lexer->peekToken().tokenId != TokenId::Comma)
 				break;
@@ -1977,7 +1979,7 @@ void Parser::parse(Lexer *lexer, Compiler *compiler) {
 	this->compiler = compiler;
 	this->lexer = lexer;
 
-	compiler->_targetModule = (curModule = make_shared<ModuleNode>(compiler, Location()));
+	curModule = compiler->_targetModule;
 	curScope = curModule->scope;
 
 	parseModuleDecl();

@@ -19,6 +19,11 @@ namespace slake {
 		std::deque<Value *> operands;
 	};
 
+	using FnFlags = uint32_t;
+
+	constexpr static FnFlags
+		FN_VARG = 0x01;
+
 	class BasicFnValue : public MemberValue {
 	protected:
 		GenericParamList genericParams;
@@ -29,6 +34,8 @@ namespace slake {
 		friend class ClassValue;
 
 	public:
+		FnFlags fnFlags = 0;
+
 		inline BasicFnValue(
 			Runtime *rt,
 			AccessModifier access,

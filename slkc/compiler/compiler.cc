@@ -23,7 +23,60 @@ Compiler::~Compiler() {
 	flags |= COMP_DELETING;
 }
 
-void Compiler::compile(std::istream &is, std::ostream &os, bool isImport) {
+shared_ptr<Scope> slake::slkc::Compiler::completeModuleNamespaces(const Ref &ref) {
+	auto scope = _rootScope;
+
+	for (size_t i = 0; i < ref.size(); ++i) {
+		string name = ref[i].name;
+
+#if SLKC_WITH_LANGUAGE_SERVER
+		if (ref[i].idxToken != SIZE_MAX) {
+			auto &tokenInfo = tokenInfos[ref[i].idxToken];
+			tokenInfo.semanticType = i == 0 ? SemanticType::Var : SemanticType::Property;
+		}
+
+		if (ref[i].idxAccessOpToken != SIZE_MAX) {
+			auto &tokenInfo = tokenInfos[ref[i].idxAccessOpToken];
+			tokenInfo.semanticType = i == 0 ? SemanticType::Var : SemanticType::Property;
+		}
+#endif
+
+		if (auto it = scope->members.find(name); it != scope->members.end()) {
+			switch (it->second->getNodeType()) {
+				case NodeType::Class:
+					scope = static_pointer_cast<ClassNode>(it->second)->scope;
+					break;
+				case NodeType::Interface:
+					scope = static_pointer_cast<InterfaceNode>(it->second)->scope;
+					break;
+				case NodeType::Trait:
+					scope = static_pointer_cast<TraitNode>(it->second)->scope;
+					break;
+				case NodeType::Module:
+					scope = static_pointer_cast<ModuleNode>(it->second)->scope;
+					break;
+				default:
+					// I give up - such situations shouldn't be exist.
+					assert(false);
+			}
+		} else {
+			auto newMod = make_shared<ModuleNode>(this, Location());
+			(scope->members[name] = newMod)->bind((MemberNode *)scope->owner);
+			newMod->scope->parent = scope.get();
+			newMod->moduleName = { RefEntry(Location(), SIZE_MAX, name, {}) };
+			scope = newMod->scope;
+		}
+	}
+
+	return scope;
+}
+
+void Compiler::compile(std::istream &is, std::ostream &os, bool isImport, shared_ptr<ModuleNode> targetModule) {
+	if (targetModule)
+		_targetModule = targetModule;
+	else
+		_targetModule = make_shared<ModuleNode>(this, Location());
+
 	//
 	// Clear the previous generic cache.
 	// Note that we don't clear the generic cache after every compilation immediately,
@@ -76,7 +129,7 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport) {
 
 		memcpy(ih.magic, slxfmt::IMH_MAGIC, sizeof(ih.magic));
 		ih.fmtVer = 0;
-		ih.nImports = (uint16_t)_targetModule->imports.size();
+		ih.nImports = (uint16_t)(_targetModule->imports.size() + _targetModule->unnamedImports.size());
 
 		if (_targetModule->moduleName.size())
 			ih.flags |= slxfmt::IMH_MODNAME;
@@ -85,64 +138,25 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport) {
 	}
 
 	if (_targetModule->moduleName.size()) {
-		// Build supposed parent modules in the root scope.
-		auto scope = _rootScope;
-		for (size_t i = 0; i < _targetModule->moduleName.size(); ++i) {
-			string name = _targetModule->moduleName[i].name;
+		auto trimmedModuleName = _targetModule->moduleName;
+		trimmedModuleName.pop_back();
 
-#if SLKC_WITH_LANGUAGE_SERVER
-			if (_targetModule->moduleName[i].idxToken != SIZE_MAX) {
-				auto &tokenInfo = tokenInfos[_targetModule->moduleName[i].idxToken];
-				tokenInfo.semanticType = i == 0 ? SemanticType::Var : SemanticType::Property;
-			}
+		auto scope = completeModuleNamespaces(trimmedModuleName);
 
-			if (_targetModule->moduleName[i].idxAccessOpToken != SIZE_MAX) {
-				auto &tokenInfo = tokenInfos[_targetModule->moduleName[i].idxAccessOpToken];
-				tokenInfo.semanticType = i == 0 ? SemanticType::Var : SemanticType::Property;
-			}
-#endif
-
-			if (auto it = scope->members.find(name); it != scope->members.end()) {
-				switch (it->second->getNodeType()) {
-					case NodeType::Class:
-						scope = static_pointer_cast<ClassNode>(it->second)->scope;
-						break;
-					case NodeType::Interface:
-						scope = static_pointer_cast<InterfaceNode>(it->second)->scope;
-						break;
-					case NodeType::Trait:
-						scope = static_pointer_cast<TraitNode>(it->second)->scope;
-						break;
-					case NodeType::Module:
-						scope = static_pointer_cast<ModuleNode>(it->second)->scope;
-						break;
-					default:
-						// I give up - such situations shouldn't be here.
-						assert(false);
-				}
-			} else {
-				if (i + 1 == _targetModule->moduleName.size()) {
-					(scope->members[name] = _targetModule)->bind((MemberNode *)scope->owner);
-					_targetModule->scope->parent = scope.get();
-				} else {
-					auto newMod = make_shared<ModuleNode>(this, Location());
-					(scope->members[name] = newMod)->bind((MemberNode *)scope->owner);
-					newMod->scope->parent = scope.get();
-				}
-			}
-		}
+		(scope->members[_targetModule->moduleName.back().name] = _targetModule)->bind((MemberNode *)scope->owner);
+		_targetModule->scope->parent = scope.get();
 
 		compileRef(os, _targetModule->moduleName);
 	}
 
 	pushMajorContext();
 
-	for (auto i : _targetModule->imports) {
+	for (auto &i : _targetModule->imports) {
 		_write(os, (uint32_t)i.first.size());
 		_write(os, i.first.data(), i.first.length());
 		compileRef(os, i.second.ref);
 
-		importModule(i.first, i.second.ref, _targetModule->scope);
+		importModule(i.second.ref);
 
 		if (_targetModule->scope->members.count(i.first))
 			throw FatalCompilationError(
@@ -166,83 +180,22 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport) {
 #endif
 	}
 
+	for (auto &i : _targetModule->unnamedImports) {
+		_write(os, (uint32_t)0);
+		compileRef(os, i.ref);
+
+		importModule(i.ref);
+
+#if SLKC_WITH_LANGUAGE_SERVER
+		updateCompletionContext(i.ref, CompletionContext::Import);
+		updateSemanticType(i.ref, SemanticType::Property);
+#endif
+	}
+
 	popMajorContext();
 
 	curMajorContext = MajorContext();
 	compileScope(is, os, _targetModule->scope);
-}
-
-void Compiler::importModule(string name, const Ref &ref, shared_ptr<Scope> scope) {
-	if (importedModules.count(ref))
-		return;
-	importedModules.insert(ref);
-
-	string path;
-
-	for (auto j : ref) {
-		path += "/" + j.name;
-	}
-
-	auto savedLexer = std::move(lexer);
-#if SLKC_WITH_LANGUAGE_SERVER
-	auto savedTokenInfos = tokenInfos;
-#endif
-
-	std::ifstream is;
-	for (auto j : modulePaths) {
-		is.open(j + path + ".slk");
-
-		if (is.good()) {
-			path = j + path + ".slk";
-
-			auto savedTargetModule = _targetModule;
-			util::PseudoOutputStream pseudoOs;
-			compile(is, pseudoOs, true);
-			_targetModule = savedTargetModule;
-
-			goto succeeded;
-		}
-
-		is.clear();
-
-		is.open(j + path + ".slx");
-
-		if (is.good()) {
-			path = j + path + ".slx";
-
-			try {
-				auto mod = _rt->loadModule(is, LMOD_NOIMPORT | LMOD_NORELOAD);
-
-				for (auto j : mod->imports)
-					importModule(j.first, toAstRef(j.second->entries), scope);
-
-				importDefinitions(_rootScope, {}, mod.get());
-
-				goto succeeded;
-			} catch (LoaderError e) {
-				printf("%s\n", e.what());
-			}
-		}
-
-		is.clear();
-	}
-
-#if SLKC_WITH_LANGUAGE_SERVER
-	tokenInfos = savedTokenInfos;
-#endif
-	lexer = std::move(savedLexer);
-
-	throw FatalCompilationError(
-		Message(
-			ref[0].loc,
-			MessageType::Error,
-			"Cannot find module " + std::to_string(ref, this)));
-
-succeeded:;
-#if SLKC_WITH_LANGUAGE_SERVER
-	tokenInfos = savedTokenInfos;
-#endif
-	lexer = std::move(savedLexer);
 }
 
 void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope> scope) {
@@ -255,9 +208,12 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 
 	curMajorContext.curMinorContext.curScope = scope;
 
-	for (auto i : scope->members) {
+	for (auto &i : scope->members) {
 		switch (i.second->getNodeType()) {
 			case NodeType::Var: {
+				if (i.second->isImported)
+					continue;
+
 				auto m = static_pointer_cast<VarNode>(i.second);
 				vars[i.first] = m;
 
@@ -281,6 +237,9 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 				break;
 			}
 			case NodeType::Fn: {
+				if (i.second->isImported)
+					continue;
+
 				auto m = static_pointer_cast<FnNode>(i.second);
 				funcs[i.first] = m;
 
@@ -392,6 +351,9 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 				break;
 			}
 			case NodeType::Class: {
+				if (i.second->isImported)
+					continue;
+
 				auto m = static_pointer_cast<ClassNode>(i.second);
 				classes[i.first] = m;
 
@@ -473,6 +435,9 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 				break;
 			}
 			case NodeType::Interface: {
+				if (i.second->isImported)
+					continue;
+
 				auto m = static_pointer_cast<InterfaceNode>(i.second);
 				interfaces[i.first] = m;
 
@@ -510,6 +475,9 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 				break;
 			}
 			case NodeType::Trait: {
+				if (i.second->isImported)
+					continue;
+
 				auto m = static_pointer_cast<TraitNode>(i.second);
 				traits[i.first] = m;
 

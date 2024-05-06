@@ -111,6 +111,8 @@ const char *slake::slkc::getTokenName(slake::slkc::TokenId tokenId) {
 			return "->";
 		case TokenId::DollarOp:
 			return "$";
+		case TokenId::AsKeyword:
+			return "as";
 		case TokenId::AsyncKeyword:
 			return "async";
 		case TokenId::AwaitKeyword:

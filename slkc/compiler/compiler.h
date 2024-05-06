@@ -355,13 +355,14 @@ namespace slake {
 			set<Ref, ModuleRefComparator> importedModules;
 
 			static unique_ptr<ifstream> moduleLocator(Runtime *rt, ValueRef<RefValue> ref);
+			shared_ptr<Scope> completeModuleNamespaces(const Ref &ref);
 			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, BasicFnValue *value);
 			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, ModuleValue *value);
 			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, ClassValue *value);
 			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, InterfaceValue *value);
 			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, TraitValue *value);
 			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, Value *value);
-			void importModule(string name, const Ref &ref, shared_ptr<Scope> scope);
+			void importModule(const Ref &ref);
 			shared_ptr<TypeNameNode> toTypeName(slake::Type runtimeType);
 			Ref toAstRef(deque<slake::RefEntry> runtimeRefEntries);
 
@@ -515,7 +516,7 @@ namespace slake {
 				: options(options), _rt(make_unique<Runtime>(RT_NOJIT)) {}
 			~Compiler();
 
-			void compile(std::istream &is, std::ostream &os, bool isImport = false);
+			void compile(std::istream &is, std::ostream &os, bool isImport = false, shared_ptr<ModuleNode> targetModule = {});
 
 			void reset();
 

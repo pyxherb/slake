@@ -18,16 +18,17 @@ namespace slake {
 
 		public:
 			Ref moduleName;
-			shared_ptr<Scope> scope;
 			unordered_map<string, ImportItem> imports;
+			deque<ImportItem> unnamedImports;
 			weak_ptr<ModuleNode> parentModule;
 
 			inline ModuleNode(
 				Compiler *compiler,
 				Location loc,
 				shared_ptr<Scope> scope = make_shared<Scope>())
-				: MemberNode(compiler, ACCESS_PUB), _loc(loc), scope(scope) {
+				: MemberNode(compiler, ACCESS_PUB), _loc(loc) {
 				scope->owner = this;
+				setScope(scope);
 			}
 			virtual ~ModuleNode() = default;
 
@@ -35,7 +36,9 @@ namespace slake {
 
 			virtual inline NodeType getNodeType() const override { return NodeType::Module; }
 
-			virtual RefEntry getName() const override { return moduleName.back(); }
+			virtual inline RefEntry getName() const override {
+				return moduleName.back();
+			}
 		};
 	}
 }

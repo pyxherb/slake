@@ -1,6 +1,85 @@
 #include "../compiler.h"
+#include <slake/util/stream.hh>
 
 using namespace slake::slkc;
+
+void Compiler::importModule(const Ref &ref) {
+	if (importedModules.count(ref))
+		return;
+	importedModules.insert(ref);
+
+	auto scope = completeModuleNamespaces(ref);
+
+	string path;
+
+	for (auto j : ref) {
+		path += "/" + j.name;
+	}
+
+	auto savedLexer = std::move(lexer);
+#if SLKC_WITH_LANGUAGE_SERVER
+	auto savedTokenInfos = tokenInfos;
+#endif
+
+	std::ifstream is;
+	for (auto j : modulePaths) {
+		is.open(j + path + ".slk");
+
+		if (is.good()) {
+			path = j + path + ".slk";
+
+			auto savedTargetModule = _targetModule;
+			util::PseudoOutputStream pseudoOs;
+			compile(is, pseudoOs, true);
+			_targetModule = savedTargetModule;
+
+			goto succeeded;
+		}
+
+		is.clear();
+
+		is.open(j + path + ".slx");
+
+		if (is.good()) {
+			path = j + path + ".slx";
+
+			try {
+				auto mod = _rt->loadModule(is, LMOD_NOIMPORT | LMOD_NORELOAD);
+
+				for (auto j : mod->imports)
+					importModule(toAstRef(j.second->entries));
+
+				for (auto j : mod->unnamedImports)
+					importModule(toAstRef(j->entries));
+
+				importDefinitions(scope, {}, mod.get());
+
+				goto succeeded;
+			} catch (LoaderError e) {
+				printf("%s\n", e.what());
+			}
+		}
+
+		is.clear();
+	}
+
+#if SLKC_WITH_LANGUAGE_SERVER
+	tokenInfos = savedTokenInfos;
+#endif
+	lexer = std::move(savedLexer);
+
+	throw FatalCompilationError(
+		Message(
+			ref[0].loc,
+			MessageType::Error,
+			"Cannot find module " + std::to_string(ref, this)));
+
+succeeded:;
+#if SLKC_WITH_LANGUAGE_SERVER
+	tokenInfos = savedTokenInfos;
+#endif
+	lexer = std::move(savedLexer);
+}
 
 void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, BasicFnValue *value) {
 	if (importedDefinitions.count(value))
@@ -34,10 +113,21 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 	overloading->returnType = returnType;
 	overloading->setGenericParams(genericParams);
 	overloading->params = params;
+
+	if (value->fnFlags & FN_VARG) {
+		auto param = make_shared<ParamNode>(Location(), make_shared<ArrayTypeNameNode>(make_shared<AnyTypeNameNode>(Location(), SIZE_MAX)));
+		param->name = "...";
+		overloading->params.push_back(param);
+	}
+
 	overloading->updateParamIndices();
+
+	overloading->isImported = true;
 
 	if (!scope->members.count(fnName))
 		(scope->members[fnName] = make_shared<FnNode>(this, fnName))->bind(parent.get());
+
+	scope->members[fnName]->isImported = true;
 
 	static_pointer_cast<FnNode>(scope->members[fnName])->overloadingRegistries.push_back(overloading);
 }
@@ -46,14 +136,12 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 	if (importedDefinitions.count(value))
 		return;
 
-	importedDefinitions.insert(value);
-
-	shared_ptr<ModuleNode> mod = make_shared<ModuleNode>(this, Location());
-
-	(scope->members[value->_name] = mod)->bind(parent.get());
+	auto fullRef = toAstRef(_rt->getFullRef(value));
+	auto s = completeModuleNamespaces(fullRef);
+	shared_ptr<MemberNode> owner = static_pointer_cast<MemberNode>(scope->owner->shared_from_this());
 
 	for (auto i : value->scope->members)
-		importDefinitions(mod->scope, mod, i.second);
+		importDefinitions(s, owner, i.second);
 }
 
 void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, ClassValue *value) {
@@ -155,8 +243,6 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, Value *value) {
 	if (importedDefinitions.count(value))
 		return;
-
-	importedDefinitions.insert(value);
 
 	switch (value->getType().typeId) {
 		case TypeId::RootValue: {

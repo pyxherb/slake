@@ -9,6 +9,7 @@ namespace slake {
 	class ModuleValue : public MemberValue {
 	public:
 		std::unordered_map<std::string, RefValue *> imports;
+		std::deque<RefValue *> unnamedImports;
 
 		ModuleValue(Runtime *rt, AccessModifier access);
 		virtual ~ModuleValue();
@@ -19,6 +20,9 @@ namespace slake {
 
 		inline ModuleValue &operator=(const ModuleValue &x) {
 			((MemberValue &)*this) = (MemberValue &)x;
+
+			imports = x.imports;
+			unnamedImports = x.unnamedImports;
 
 			return *this;
 		}

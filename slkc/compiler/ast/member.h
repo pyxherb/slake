@@ -22,6 +22,8 @@ namespace slake {
 
 			shared_ptr<Scope> scope;
 
+			bool isImported = false;
+
 			MemberNode() = default;
 			inline MemberNode(const MemberNode &other) {
 				access = other.access;

@@ -76,6 +76,7 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 				<InitialCondition>">"		{ token.tokenId = TokenId::GtOp; break; }
 				<InitialCondition>"$"		{ token.tokenId = TokenId::DollarOp; break; }
 
+				<InitialCondition>"as"			{ token.tokenId = TokenId::AsKeyword; break; }
 				<InitialCondition>"async"		{ token.tokenId = TokenId::AsyncKeyword; break; }
 				<InitialCondition>"await"		{ token.tokenId = TokenId::AwaitKeyword; break; }
 				<InitialCondition>"base"		{ token.tokenId = TokenId::BaseKeyword; break; }

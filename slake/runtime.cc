@@ -67,7 +67,7 @@ std::deque<RefEntry> Runtime::getFullRef(const MemberValue* v) const {
 				v = (const MemberValue *)((ObjectValue *)v)->getType().getCustomTypeExData();
 				break;
 		}
-		entries.push_back({ v->getName(), v->_genericArgs });
+		entries.push_front({ v->getName(), v->_genericArgs });
 	} while ((Value *)(v = (const MemberValue *)v->getParent()) != _rootValue);
 	return entries;
 }

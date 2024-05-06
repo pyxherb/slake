@@ -248,7 +248,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 		}
 
 		if (i.flags & slxfmt::FND_VARG)
-			/* stub */;
+			fn->fnFlags |= FN_VARG;
 
 		if (i.lenBody) {
 			auto body = fn->getBody();
@@ -427,7 +427,11 @@ ValueRef<ModuleValue> slake::Runtime::loadModule(std::istream &fs, LoadModuleFla
 			std::unique_ptr<std::istream> moduleStream(_moduleLocator(this, moduleName));
 			if (!moduleStream)
 				throw LoaderError("Error finding module `" + std::to_string(moduleName) + "' for dependencies");
-			mod->scope->putMember(name, (MemberValue *)new AliasValue(this, 0, loadModule(*moduleStream.get(), LMOD_NORELOAD).get()));
+
+			auto mod = loadModule(*moduleStream.get(), LMOD_NORELOAD);
+
+			if (name.size())
+				mod->scope->putMember(name, (MemberValue *)new AliasValue(this, 0, mod.get()));
 		}
 
 		mod->imports[name] = moduleName.get();

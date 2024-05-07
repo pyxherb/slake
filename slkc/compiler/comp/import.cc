@@ -3,7 +3,7 @@
 
 using namespace slake::slkc;
 
-void Compiler::importModule(const Ref &ref) {
+void Compiler::importModule(const IdRef &ref) {
 	if (importedModules.count(ref))
 		return;
 	importedModules.insert(ref);
@@ -47,10 +47,10 @@ void Compiler::importModule(const Ref &ref) {
 				auto mod = _rt->loadModule(is, LMOD_NOIMPORT | LMOD_NORELOAD);
 
 				for (auto j : mod->imports)
-					importModule(toAstRef(j.second->entries));
+					importModule(toAstIdRef(j.second->entries));
 
 				for (auto j : mod->unnamedImports)
-					importModule(toAstRef(j->entries));
+					importModule(toAstIdRef(j->entries));
 
 				importDefinitions(scope, {}, mod.get());
 
@@ -136,7 +136,7 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 	if (importedDefinitions.count(value))
 		return;
 
-	auto fullRef = toAstRef(_rt->getFullRef(value));
+	auto fullRef = toAstIdRef(_rt->getFullRef(value));
 	auto s = completeModuleNamespaces(fullRef);
 	shared_ptr<MemberNode> owner = static_pointer_cast<MemberNode>(scope->owner->shared_from_this());
 
@@ -157,7 +157,7 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 	shared_ptr<CustomTypeNameNode> parentClassTypeName =
 		make_shared<CustomTypeNameNode>(
 			Location(),
-			toAstRef(_rt->getFullRef(parentClassValue)),
+			toAstIdRef(_rt->getFullRef(parentClassValue)),
 			this,
 			scope.get());
 
@@ -172,7 +172,7 @@ void Compiler::importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode>
 		implInterfaceTypeNames.push_back(
 			make_shared<CustomTypeNameNode>(
 				Location(),
-				toAstRef(implInterfaceRef),
+				toAstIdRef(implInterfaceRef),
 				this,
 				scope.get()));
 	}
@@ -326,7 +326,7 @@ shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 			return make_shared<AnyTypeNameNode>(Location{}, isConst);
 		case TypeId::TypeName: {
 			auto refs = _rt->getFullRef((MemberValue *)runtimeType.getCustomTypeExData());
-			Ref ref;
+			IdRef ref;
 
 			for (auto &i : refs) {
 				deque<shared_ptr<TypeNameNode>> genericArgs;
@@ -334,7 +334,7 @@ shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 					genericArgs.push_back(toTypeName(j));
 				}
 
-				ref.push_back(RefEntry(Location{}, SIZE_MAX, i.name, genericArgs));
+				ref.push_back(IdRefEntry(Location{}, SIZE_MAX, i.name, genericArgs));
 			}
 
 			return make_shared<CustomTypeNameNode>(Location{}, ref, this, nullptr, isConst);
@@ -347,8 +347,8 @@ shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 	}
 }
 
-slake::slkc::Ref Compiler::toAstRef(std::deque<slake::RefEntry> runtimeRefEntries) {
-	Ref ref;
+slake::slkc::IdRef Compiler::toAstIdRef(std::deque<slake::IdRefEntry> runtimeRefEntries) {
+	IdRef ref;
 
 	for (auto &i : runtimeRefEntries) {
 		deque<shared_ptr<TypeNameNode>> genericArgs;
@@ -356,7 +356,7 @@ slake::slkc::Ref Compiler::toAstRef(std::deque<slake::RefEntry> runtimeRefEntrie
 		for (auto j : i.genericArgs)
 			genericArgs.push_back(toTypeName(j));
 
-		ref.push_back(RefEntry(Location(), SIZE_MAX, i.name, genericArgs));
+		ref.push_back(IdRefEntry(Location(), SIZE_MAX, i.name, genericArgs));
 	}
 
 	return ref;

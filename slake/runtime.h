@@ -108,7 +108,7 @@ namespace slake {
 		_RT_DELETING = 0x80000000;
 
 	using ModuleLocatorFn = std::function<
-		std::unique_ptr<std::istream>(Runtime *rt, ValueRef<RefValue> ref)>;
+		std::unique_ptr<std::istream>(Runtime *rt, ValueRef<IdRefValue> ref)>;
 
 	using LoadModuleFlags = uint8_t;
 	constexpr LoadModuleFlags
@@ -178,7 +178,7 @@ namespace slake {
 		/// @brief Module locator for importing.
 		ModuleLocatorFn _moduleLocator;
 
-		RefValue *_loadRef(std::istream &fs);
+		IdRefValue *_loadIdRef(std::istream &fs);
 		Value *_loadValue(std::istream &fs);
 		Type _loadType(std::istream &fs, slxfmt::Type vt);
 		GenericParam _loadGenericParam(std::istream &fs);
@@ -245,7 +245,7 @@ namespace slake {
 		/// @param ref Reference to be resolved.
 		/// @param scopeValue Scope value for resolving.
 		/// @return Resolved value which is referred by the reference.
-		Value *resolveRef(RefValue *ref, Value *scopeValue = nullptr) const;
+		Value *resolveIdRef(IdRefValue *ref, Value *scopeValue = nullptr) const;
 
 		ValueRef<ModuleValue> loadModule(std::istream &fs, LoadModuleFlags flags);
 		ValueRef<ModuleValue> loadModule(const void *buf, size_t size, LoadModuleFlags flags);
@@ -256,9 +256,9 @@ namespace slake {
 		inline ModuleLocatorFn getModuleLocator() { return _moduleLocator; }
 
 		std::string getFullName(const MemberValue *v) const;
-		std::string getFullName(const RefValue *v) const;
+		std::string getFullName(const IdRefValue *v) const;
 
-		std::deque<RefEntry> getFullRef(const MemberValue *v) const;
+		std::deque<IdRefEntry> getFullRef(const MemberValue *v) const;
 
 		/// @brief Get active context on specified thread.
 		/// @param id ID of specified thread.

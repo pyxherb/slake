@@ -2,7 +2,7 @@
 #define _SLAKE_EXCEPT_H_
 
 #include <stdexcept>
-#include <slake/valdef/ref.h>
+#include <slake/valdef/idref.h>
 
 namespace slake {
 	class RuntimeExecError : public std::runtime_error {
@@ -59,9 +59,9 @@ namespace slake {
 
 	class NotFoundError : public RuntimeExecError {
 	public:
-		ValueRef<RefValue> ref;
+		ValueRef<IdRefValue> ref;
 
-		NotFoundError(std::string msg, ValueRef<RefValue> ref);
+		NotFoundError(std::string msg, ValueRef<IdRefValue> ref);
 		virtual ~NotFoundError() = default;
 	};
 

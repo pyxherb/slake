@@ -30,13 +30,13 @@ pub native class Context {
 	bool native isAsync();
 }
 
-pub native class RefEntry {
+pub native class IdRefEntry {
 	pub string name;
 	pub @Type[] genericArgs;
 }
 
 pub native class Ref {
-	@RefEntry entries[];
+	@IdRefEntry entries[];
 }
 
 pub native class Module {

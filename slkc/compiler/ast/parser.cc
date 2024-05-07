@@ -162,7 +162,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 	{ TokenId::Dot,
 		{ 140,
 			[](Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken) -> shared_ptr<ExprNode> {
-				auto expr = make_shared<HeadedRefExprNode>(
+				auto expr = make_shared<HeadedIdRefExprNode>(
 					lhs,
 					parser->parseRef());
 
@@ -586,7 +586,7 @@ shared_ptr<TypeNameNode> Parser::parseTypeName() {
 		case TokenId::Id: {
 			LexerContext savedContext = lexer->context;
 			auto ref = parseRef();
-			if (!isCompleteRef(ref)) {
+			if (!isCompleteIdRef(ref)) {
 				lexer->context = savedContext;
 				return make_shared<BadTypeNameNode>(
 					ref[0].loc,
@@ -670,14 +670,14 @@ fail:
 	return {};
 }
 
-Ref Parser::parseModuleRef() {
-	Ref ref;
+IdRef Parser::parseModuleRef() {
+	IdRef ref;
 
 	while (true) {
 		auto &nameToken = expectToken(TokenId::Id);
 		auto nameTokenIndex = lexer->getTokenIndex(nameToken);
 
-		ref.push_back(RefEntry(nameToken.beginLocation, nameTokenIndex, nameToken.text));
+		ref.push_back(IdRefEntry(nameToken.beginLocation, nameTokenIndex, nameToken.text));
 
 		if (auto &token = lexer->peekToken(); token.tokenId != TokenId::Dot)
 			break;
@@ -688,15 +688,15 @@ Ref Parser::parseModuleRef() {
 	return ref;
 }
 
-Ref Parser::parseRef() {
-	Ref ref;
+IdRef Parser::parseRef() {
+	IdRef ref;
 	size_t idxPrecedingAccessOp = SIZE_MAX;
 
 	switch (auto &token = lexer->peekToken(); token.tokenId) {
 		case TokenId::ThisKeyword:
 		case TokenId::BaseKeyword:
 		case TokenId::ScopeOp: {
-			auto refEntry = RefEntry(token.beginLocation, lexer->getTokenIndex(token), "", {});
+			auto refEntry = IdRefEntry(token.beginLocation, lexer->getTokenIndex(token), "", {});
 
 			switch (token.tokenId) {
 				case TokenId::ThisKeyword:
@@ -727,7 +727,7 @@ Ref Parser::parseRef() {
 	while (true) {
 		auto &nameToken = lexer->peekToken();
 
-		auto refEntry = RefEntry(nameToken.beginLocation, SIZE_MAX, "");
+		auto refEntry = IdRefEntry(nameToken.beginLocation, SIZE_MAX, "");
 		refEntry.idxAccessOpToken = idxPrecedingAccessOp;
 
 		if (nameToken.tokenId != TokenId::Id) {
@@ -791,7 +791,7 @@ shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 				case TokenId::ScopeOp:
 				case TokenId::Id:
 					lhs = static_pointer_cast<ExprNode>(
-						make_shared<RefExprNode>(
+						make_shared<IdRefExprNode>(
 							parseRef()));
 					break;
 				case TokenId::LParenthese:

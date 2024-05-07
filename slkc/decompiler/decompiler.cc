@@ -74,8 +74,8 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 			os << '"';
 			break;
 		}
-		case TypeId::Ref:
-			os << to_string((RefValue *)value);
+		case TypeId::IdRef:
+			os << to_string((IdRefValue *)value);
 			break;
 		case TypeId::TypeName:
 			os << to_string(((TypeNameValue *)value)->getData(), rt);

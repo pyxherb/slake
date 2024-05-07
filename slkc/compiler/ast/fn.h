@@ -93,7 +93,7 @@ namespace slake {
 
 			virtual inline NodeType getNodeType() const override { return NodeType::FnOverloading; }
 
-			virtual RefEntry getName() const override { throw std::logic_error("Cannot get name of a function overloading"); }
+			virtual IdRefEntry getName() const override { throw std::logic_error("Cannot get name of a function overloading"); }
 			virtual Location getLocation() const override { return loc; }
 
 			inline bool isAbstract() { return !body; }
@@ -131,7 +131,7 @@ namespace slake {
 
 			virtual inline NodeType getNodeType() const override { return NodeType::Fn; }
 
-			virtual RefEntry getName() const override { return RefEntry({}, SIZE_MAX, name, genericArgs); }
+			virtual IdRefEntry getName() const override { return IdRefEntry({}, SIZE_MAX, name, genericArgs); }
 		};
 
 		struct Ins {
@@ -220,7 +220,7 @@ namespace slake {
 			}
 			inline void insertLabel(string name) { labels[name] = (uint32_t)body.size(); }
 
-			virtual RefEntry getName() const override { return RefEntry(_loc, 0, name, genericArgs); }
+			virtual IdRefEntry getName() const override { return IdRefEntry(_loc, 0, name, genericArgs); }
 		};
 
 		class LabelRefNode final : public AstNode {

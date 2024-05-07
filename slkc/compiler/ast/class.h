@@ -3,7 +3,7 @@
 
 #include "member.h"
 #include "scope.h"
-#include "ref.h"
+#include "idref.h"
 #include "generic.h"
 
 namespace slake {
@@ -79,7 +79,7 @@ namespace slake {
 
 			virtual inline NodeType getNodeType() const override { return NodeType::Class; }
 
-			virtual RefEntry getName() const override { return RefEntry(_loc, SIZE_MAX, name, genericArgs); }
+			virtual IdRefEntry getName() const override { return IdRefEntry(_loc, SIZE_MAX, name, genericArgs); }
 		};
 
 		class InterfaceNode : public MemberNode {
@@ -140,7 +140,7 @@ namespace slake {
 
 			virtual inline NodeType getNodeType() const override { return NodeType::Interface; }
 
-			virtual RefEntry getName() const override { return RefEntry(_loc, SIZE_MAX, name, genericArgs); }
+			virtual IdRefEntry getName() const override { return IdRefEntry(_loc, SIZE_MAX, name, genericArgs); }
 		};
 
 		class TraitNode : public MemberNode {
@@ -200,7 +200,7 @@ namespace slake {
 
 			virtual inline NodeType getNodeType() const override { return NodeType::Trait; }
 
-			virtual RefEntry getName() const override { return RefEntry(_loc, SIZE_MAX, name, genericArgs); }
+			virtual IdRefEntry getName() const override { return IdRefEntry(_loc, SIZE_MAX, name, genericArgs); }
 		};
 	}
 }

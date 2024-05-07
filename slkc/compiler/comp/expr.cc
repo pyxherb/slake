@@ -193,7 +193,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 								EvalPurpose::RValue,
 								make_shared<RegRefNode>(lhsRegIndex));
 
-							Ref fullName;
+							IdRef fullName;
 							_getFullName(operatorNode.get(), fullName);
 
 							fullName.back().name = mangleName(
@@ -205,7 +205,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 
 							uint32_t tmpRegIndex = allocReg();
 
-							curFn->insertIns(Opcode::LOAD, make_shared<RegRefNode>(tmpRegIndex), make_shared<RefExprNode>(fullName));
+							curFn->insertIns(Opcode::LOAD, make_shared<RegRefNode>(tmpRegIndex), make_shared<IdRefExprNode>(fullName));
 							curFn->insertIns(Opcode::MCALL, make_shared<RegRefNode>(tmpRegIndex, true), make_shared<RegRefNode>(lhsRegIndex, true));
 
 							if (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt)
@@ -664,7 +664,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 								EvalPurpose::RValue,
 								make_shared<RegRefNode>(lhsRegIndex));
 
-							Ref fullName;
+							IdRef fullName;
 							_getFullName(operatorNode.get(), fullName);
 
 							fullName.back().name = mangleName(
@@ -695,7 +695,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 								curFn->insertIns(Opcode::PUSHARG, make_shared<RegRefNode>(tmpRegIndex, true));
 							}
 
-							curFn->insertIns(Opcode::LOAD, make_shared<RegRefNode>(tmpRegIndex), make_shared<RefExprNode>(fullName));
+							curFn->insertIns(Opcode::LOAD, make_shared<RegRefNode>(tmpRegIndex), make_shared<IdRefExprNode>(fullName));
 							curFn->insertIns(Opcode::MCALL, make_shared<RegRefNode>(tmpRegIndex, true), make_shared<RegRefNode>(lhsRegIndex, true));
 
 #if SLKC_WITH_LANGUAGE_SERVER
@@ -1207,10 +1207,10 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 								if (overloading->isVaridic())
 									paramTypes.pop_back();
 
-								Ref fullName = getFullName(it->second.get());
+								IdRef fullName = getFullName(it->second.get());
 								fullName.back().name = mangleName("new", paramTypes, false);
 
-								curFn->insertIns(Opcode::NEW, curMajorContext.curMinorContext.evalDest, e->type, make_shared<RefExprNode>(fullName));
+								curFn->insertIns(Opcode::NEW, curMajorContext.curMinorContext.evalDest, e->type, make_shared<IdRefExprNode>(fullName));
 							} else {
 								curFn->insertIns(Opcode::NEW, curMajorContext.curMinorContext.evalDest, e->type, {});
 							}
@@ -1281,19 +1281,19 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 			break;
 		}
 		case ExprType::HeadedRef: {
-			auto e = static_pointer_cast<HeadedRefExprNode>(expr);
+			auto e = static_pointer_cast<HeadedIdRefExprNode>(expr);
 
 			break;
 		}
-		case ExprType::Ref: {
-			auto e = static_pointer_cast<RefExprNode>(expr);
+		case ExprType::IdRef: {
+			auto e = static_pointer_cast<IdRefExprNode>(expr);
 
 #if SLKC_WITH_LANGUAGE_SERVER
 			updateCompletionContext(e->ref, CompletionContext::Expr);
 #endif
 
-			deque<pair<Ref, shared_ptr<AstNode>>> resolvedParts;
-			if (!resolveRef(e->ref, resolvedParts))
+			deque<pair<IdRef, shared_ptr<AstNode>>> resolvedParts;
+			if (!resolveIdRef(e->ref, resolvedParts))
 				throw FatalCompilationError(
 					{ e->getLocation(),
 						MessageType::Error,
@@ -1302,10 +1302,10 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::Call) {
 				if (isDynamicMember(resolvedParts.back().second)) {
 					// Load `this' for the method calling.
-					Ref thisRef = e->ref;
+					IdRef thisRef = e->ref;
 					thisRef.pop_back();
 					compileExpr(
-						make_shared<RefExprNode>(thisRef),
+						make_shared<IdRefExprNode>(thisRef),
 						EvalPurpose::RValue,
 						curMajorContext.curMinorContext.thisDest);
 					curMajorContext.curMinorContext.isLastCallTargetStatic = false;
@@ -1372,7 +1372,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 								Opcode::RLOAD,
 								make_shared<RegRefNode>(tmpRegIndex),
 								make_shared<RegRefNode>(tmpRegIndex, true),
-								make_shared<RefExprNode>(resolvedParts[i].first));
+								make_shared<IdRefExprNode>(resolvedParts[i].first));
 
 							// Intermediate scopes should always be loaded as rvalue.
 							if ((i + 1 != resolvedParts.size()))
@@ -1383,7 +1383,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 							break;
 						}
 						case NodeType::Fn: {
-							Ref ref = resolvedParts[i].first;
+							IdRef ref = resolvedParts[i].first;
 
 							shared_ptr<FnOverloadingNode> overloading = determineOverloadingRegistry(static_pointer_cast<FnNode>(resolvedParts[i].second), resolvedParts[i].first.back().genericArgs);
 
@@ -1404,7 +1404,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 								Opcode::RLOAD,
 								make_shared<RegRefNode>(tmpRegIndex),
 								make_shared<RegRefNode>(tmpRegIndex, true),
-								make_shared<RefExprNode>(ref));
+								make_shared<IdRefExprNode>(ref));
 							break;
 						}
 						default:
@@ -1477,25 +1477,25 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 						case NodeType::Interface:
 						case NodeType::Trait:
 						case NodeType::Module: {
-							Ref ref = getFullName((MemberNode *)x.get());
+							IdRef ref = getFullName((MemberNode *)x.get());
 							curFn->insertIns(
 								Opcode::LOAD,
 								make_shared<RegRefNode>(tmpRegIndex),
-								make_shared<RefExprNode>(ref));
+								make_shared<IdRefExprNode>(ref));
 							break;
 						}
 						case NodeType::Var: {
 							auto varNode = (VarNode *)x.get();
 
-							Ref ref = getFullName(varNode);
+							IdRef ref = getFullName(varNode);
 							curFn->insertIns(
 								Opcode::LOAD,
 								make_shared<RegRefNode>(tmpRegIndex),
-								make_shared<RefExprNode>(ref));
+								make_shared<IdRefExprNode>(ref));
 							break;
 						}
 						case NodeType::Fn: {
-							Ref ref;
+							IdRef ref;
 
 							FnNode *fn = (FnNode *)x.get();
 							_getFullName(fn, ref);
@@ -1518,14 +1518,14 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 							curFn->insertIns(
 								Opcode::LOAD,
 								make_shared<RegRefNode>(tmpRegIndex),
-								make_shared<RefExprNode>(ref));
+								make_shared<IdRefExprNode>(ref));
 							break;
 						}
 						case NodeType::ThisRef:
 							curFn->insertIns(Opcode::LTHIS, make_shared<RegRefNode>(tmpRegIndex));
 							break;
 						case NodeType::BaseRef:
-							curFn->insertIns(Opcode::LOAD, make_shared<RegRefNode>(tmpRegIndex), make_shared<RefExprNode>(Ref{ RefEntry(e->getLocation(), SIZE_MAX, "base") }));
+							curFn->insertIns(Opcode::LOAD, make_shared<RegRefNode>(tmpRegIndex), make_shared<IdRefExprNode>(IdRef{ IdRefEntry(e->getLocation(), SIZE_MAX, "base") }));
 							break;
 						default:
 							assert(false);

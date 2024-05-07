@@ -361,13 +361,13 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		case Opcode::LOAD: {
 			_checkOperandCount(ins, 2);
 
-			_checkOperandType(ins, { TypeId::Var, TypeId::Ref });
+			_checkOperandType(ins, { TypeId::Var, TypeId::IdRef });
 
-			RefValue *ref = (RefValue *)ins.operands[1];
-			auto v = resolveRef(ref, curMajorFrame.thisObject);
+			IdRefValue *ref = (IdRefValue *)ins.operands[1];
+			auto v = resolveIdRef(ref, curMajorFrame.thisObject);
 			if (!v) {
-				if (!(v = resolveRef(ref, curMajorFrame.scopeValue)))
-					v = resolveRef(ref);
+				if (!(v = resolveIdRef(ref, curMajorFrame.scopeValue)))
+					v = resolveIdRef(ref);
 			}
 
 			if (!v)
@@ -378,14 +378,14 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		case Opcode::RLOAD: {
 			_checkOperandCount(ins, 3);
 
-			_checkOperandType(ins, { TypeId::Var, TypeId::Any, TypeId::Ref });
+			_checkOperandType(ins, { TypeId::Var, TypeId::Any, TypeId::IdRef });
 
 			auto v = ins.operands[1];
 			if (!v)
 				throw NullRefError();
 
-			if (!(v = resolveRef((RefValue *)ins.operands[2], v))) {
-				throw NotFoundError("Member not found", (RefValue *)ins.operands[2]);
+			if (!(v = resolveIdRef((IdRefValue *)ins.operands[2], v))) {
+				throw NotFoundError("Member not found", (IdRefValue *)ins.operands[2]);
 			}
 			((VarValue *)ins.operands[0])->setData(v);
 			break;
@@ -722,10 +722,10 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		case Opcode::NEW: {
 			_checkOperandCount(ins, 3);
 
-			_checkOperandType(ins, { TypeId::Var, TypeId::TypeName, TypeId::Ref });
+			_checkOperandType(ins, { TypeId::Var, TypeId::TypeName, TypeId::IdRef });
 
 			Type &type = ((TypeNameValue *)ins.operands[1])->_data;
-			RefValue *constructorRef = (RefValue *)ins.operands[2];
+			IdRefValue *constructorRef = (IdRefValue *)ins.operands[2];
 			type.loadDeferredType(this);
 
 			switch (type.typeId) {
@@ -736,7 +736,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 					((VarValue *)ins.operands[0])->setData(instance);
 
 					if (constructorRef) {
-						if (auto v = resolveRef(constructorRef); v) {
+						if (auto v = resolveIdRef(constructorRef); v) {
 							if ((v->getType() != TypeId::Fn))
 								throw InvalidOperandsError("Specified constructor is not a function");
 

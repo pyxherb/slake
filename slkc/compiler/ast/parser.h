@@ -98,7 +98,7 @@ namespace slake {
 
 			shared_ptr<TypeNameNode> parseTypeName();
 			deque<shared_ptr<TypeNameNode>> parseGenericArgs();
-			Ref parseRef();
+			IdRef parseRef();
 			void parseArgs(deque<shared_ptr<ExprNode>> &argsOut, deque<size_t> &idxCommaTokensOut);
 
 			shared_ptr<ExprNode> parseExpr(int precedence = 0);
@@ -137,7 +137,7 @@ namespace slake {
 
 			void parseProgramStmt();
 
-			Ref parseModuleRef();
+			IdRef parseModuleRef();
 			void parseModuleDecl();
 			void parseImportList();
 

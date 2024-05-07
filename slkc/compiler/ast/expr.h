@@ -1,7 +1,7 @@
 #ifndef _SLKC_COMPILER_AST_EXPR_H_
 #define _SLKC_COMPILER_AST_EXPR_H_
 
-#include "ref.h"
+#include "idref.h"
 #include "typename.h"
 
 namespace slake {
@@ -12,7 +12,7 @@ namespace slake {
 			Ternary,	// Ternary operation
 			Match,		// Match
 			HeadedRef,	// Headed reference
-			Ref,		// Reference
+			IdRef,		// Reference
 
 			I8,		 // i8 Literal
 			I16,	 // i16 Literal
@@ -113,15 +113,15 @@ namespace slake {
 			return (op >= BinaryOp::Assign) && (op < BinaryOp::Eq);
 		}
 
-		class HeadedRefExprNode : public ExprNode {
+		class HeadedIdRefExprNode : public ExprNode {
 		public:
 			shared_ptr<ExprNode> head;
-			Ref ref;
+			IdRef ref;
 
 			size_t idxOpToken = SIZE_MAX;
 
-			inline HeadedRefExprNode(shared_ptr<ExprNode> head, Ref ref) : head(head), ref(ref) {}
-			virtual ~HeadedRefExprNode() = default;
+			inline HeadedIdRefExprNode(shared_ptr<ExprNode> head, IdRef ref) : head(head), ref(ref) {}
+			virtual ~HeadedIdRefExprNode() = default;
 
 			virtual inline Location getLocation() const override { return head->getLocation(); }
 
@@ -263,17 +263,17 @@ namespace slake {
 		using StringLiteralExprNode = LiteralExprNode<string, ExprType::String>;
 		using BoolLiteralExprNode = LiteralExprNode<bool, ExprType::Bool>;
 
-		class RefExprNode : public ExprNode {
+		class IdRefExprNode : public ExprNode {
 		public:
-			Ref ref;
+			IdRef ref;
 
-			inline RefExprNode(Ref ref)
+			inline IdRefExprNode(IdRef ref)
 				: ref(ref) {}
-			virtual ~RefExprNode() = default;
+			virtual ~IdRefExprNode() = default;
 
 			virtual inline Location getLocation() const override { return ref[0].loc; }
 
-			virtual ExprType getExprType() const override { return ExprType::Ref; }
+			virtual ExprType getExprType() const override { return ExprType::IdRef; }
 		};
 
 		class ArrayExprNode : public ExprNode {

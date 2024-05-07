@@ -19,9 +19,9 @@ shared_ptr<Scope> Compiler::scopeOf(AstNode *node) {
 			return {};
 		}
 		case NodeType::Alias: {
-			deque<pair<Ref, shared_ptr<AstNode>>> resolvedParts;
+			deque<pair<IdRef, shared_ptr<AstNode>>> resolvedParts;
 
-			resolveRef(((AliasNode *)node)->target, resolvedParts);
+			resolveIdRef(((AliasNode *)node)->target, resolvedParts);
 			return scopeOf(resolvedParts.back().second.get());
 		}
 		case NodeType::Var: {

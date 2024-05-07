@@ -1,7 +1,7 @@
 module hostext;
 
 import {
-	hostext.extfns
+	hostext.extfns as extfnsModule
 }
 
 pub let g_globalVar: Test;

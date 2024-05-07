@@ -51,7 +51,7 @@ string std::to_string(shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slk
 			return s;
 		}
 		case Type::Custom: {
-			slake::slkc::Ref ref;
+			slake::slkc::IdRef ref;
 			auto m = compiler->resolveCustomTypeName((CustomTypeNameNode *)typeName.get());
 
 			switch (m->getNodeType()) {

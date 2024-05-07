@@ -75,7 +75,7 @@ slake::ValueRef<> getSlakeBuildVersionInfo(
 	}
 }
 
-std::unique_ptr<std::istream> fsModuleLocator(slake::Runtime *rt, slake::ValueRef<slake::RefValue> ref) {
+std::unique_ptr<std::istream> fsModuleLocator(slake::Runtime *rt, slake::ValueRef<slake::IdRefValue> ref) {
 	std::string path;
 	for (size_t i = 0; i < ref->entries.size(); ++i) {
 		path += ref->entries[i].name;

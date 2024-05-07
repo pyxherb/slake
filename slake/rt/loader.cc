@@ -20,12 +20,12 @@ static T _read(std::istream &fs) {
 /// @param rt Runtime for the new value.
 /// @param fs Stream to be read.
 /// @return Reference value loaded from the stream.
-RefValue *Runtime::_loadRef(std::istream &fs) {
-	auto ref = std::make_unique<RefValue>(this);
+IdRefValue *Runtime::_loadIdRef(std::istream &fs) {
+	auto ref = std::make_unique<IdRefValue>(this);
 
-	slxfmt::RefEntryDesc i = { 0 };
+	slxfmt::IdRefEntryDesc i = { 0 };
 	while (true) {
-		i = _read<slxfmt::RefEntryDesc>(fs);
+		i = _read<slxfmt::IdRefEntryDesc>(fs);
 
 		std::string name(i.lenName, '\0');
 		fs.read(name.data(), i.lenName);
@@ -34,7 +34,7 @@ RefValue *Runtime::_loadRef(std::istream &fs) {
 		for (size_t j = i.nGenericArgs; j; --j)
 			genericArgs.push_back(_loadType(fs, _read<slxfmt::Type>(fs)));
 
-		ref->entries.push_back(RefEntry(name, genericArgs));
+		ref->entries.push_back(IdRefEntry(name, genericArgs));
 		if (!(i.flags & slxfmt::RSD_NEXT))
 			break;
 	};
@@ -80,8 +80,8 @@ Value *Runtime::_loadValue(std::istream &fs) {
 			fs.read(&(s[0]), len);
 			return new StringValue(this, s);
 		}
-		case slxfmt::Type::Ref:
-			return _loadRef(fs);
+		case slxfmt::Type::IdRef:
+			return _loadIdRef(fs);
 		case slxfmt::Type::TypeName:
 			return new TypeNameValue(this, _loadType(fs, _read<slxfmt::Type>(fs)));
 		case slxfmt::Type::Reg:
@@ -131,7 +131,7 @@ Type Runtime::_loadType(std::istream &fs, slxfmt::Type vt) {
 		case slxfmt::Type::String:
 			return TypeId::String;
 		case slxfmt::Type::Object:
-			return _loadRef(fs);
+			return _loadIdRef(fs);
 		case slxfmt::Type::Any:
 			return TypeId::Any;
 		case slxfmt::Type::Bool:
@@ -292,11 +292,11 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 
 		// Load reference to the parent class.
 		if (i.flags & slxfmt::CTD_DERIVED)
-			value->parentClass = Type(TypeId::Class, _loadRef(fs));
+			value->parentClass = Type(TypeId::Class, _loadIdRef(fs));
 
 		// Load references to implemented interfaces.
 		for (auto j = i.nImpls; j; j--)
-			value->implInterfaces.push_back(_loadRef(fs));
+			value->implInterfaces.push_back(_loadIdRef(fs));
 
 		_loadScope(value.get(), fs);
 
@@ -323,7 +323,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 			value->genericParams.push_back(_loadGenericParam(fs));
 
 		for (auto j = i.nParents; j; j--)
-			value->parents.push_back(_loadRef(fs));
+			value->parents.push_back(_loadIdRef(fs));
 
 		_loadScope(value.get(), fs);
 
@@ -350,7 +350,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 			value->genericParams.push_back(_loadGenericParam(fs));
 
 		for (auto j = i.nParents; j; j--)
-			value->parents.push_back(_loadRef(fs));
+			value->parents.push_back(_loadIdRef(fs));
 
 		_loadScope(value.get(), fs);
 
@@ -369,7 +369,7 @@ ValueRef<ModuleValue> slake::Runtime::loadModule(std::istream &fs, LoadModuleFla
 		throw LoaderError("Bad SLX format version");
 
 	if (ih.flags & slxfmt::IMH_MODNAME) {
-		auto modName = _loadRef(fs);
+		auto modName = _loadIdRef(fs);
 		if (!modName->entries.size())
 			throw LoaderError("Empty module name with module name flag set");
 
@@ -421,7 +421,7 @@ ValueRef<ModuleValue> slake::Runtime::loadModule(std::istream &fs, LoadModuleFla
 		std::string name(len, '\0');
 		fs.read(name.data(), len);
 
-		ValueRef<RefValue> moduleName = _loadRef(fs);
+		ValueRef<IdRefValue> moduleName = _loadIdRef(fs);
 
 		if (!(flags & LMOD_NOIMPORT)) {
 			std::unique_ptr<std::istream> moduleStream(_moduleLocator(this, moduleName));

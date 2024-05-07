@@ -4,7 +4,7 @@
 
 using namespace slake;
 
-Type::Type(RefValue *ref, TypeFlags flags) : typeId(TypeId::Object), flags(flags) {
+Type::Type(IdRefValue *ref, TypeFlags flags) : typeId(TypeId::Object), flags(flags) {
 	exData = (Value *)ref;
 }
 
@@ -24,7 +24,7 @@ bool Type::isLoadingDeferred() const noexcept {
 		case TypeId::Interface:
 		case TypeId::Trait:
 		case TypeId::Object:
-			return getCustomTypeExData()->getType() == TypeId::Ref;
+			return getCustomTypeExData()->getType() == TypeId::IdRef;
 		default:
 			return false;
 	}
@@ -34,8 +34,8 @@ void Type::loadDeferredType(const Runtime *rt) const {
 	if (!isLoadingDeferred())
 		return;
 
-	auto ref = (RefValue *)getCustomTypeExData();
-	auto typeValue = rt->resolveRef(ref);
+	auto ref = (IdRefValue *)getCustomTypeExData();
+	auto typeValue = rt->resolveIdRef(ref);
 	if (!typeValue)
 		throw NotFoundError("Value referenced by the type was not found", ref);
 
@@ -249,7 +249,7 @@ std::string std::to_string(const slake::Type &type, const slake::Runtime *rt) {
 			string s = "@";
 
 			if (type.isLoadingDeferred()) {
-				return "@" + std::to_string((RefValue *)type.getCustomTypeExData());
+				return "@" + std::to_string((IdRefValue *)type.getCustomTypeExData());
 			} else {
 				return "@" + rt->getFullName((MemberValue *)type.getCustomTypeExData());
 			}

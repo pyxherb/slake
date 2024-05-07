@@ -8,8 +8,8 @@
 namespace slake {
 	class ModuleValue : public MemberValue {
 	public:
-		std::unordered_map<std::string, RefValue *> imports;
-		std::deque<RefValue *> unnamedImports;
+		std::unordered_map<std::string, IdRefValue *> imports;
+		std::deque<IdRefValue *> unnamedImports;
 
 		ModuleValue(Runtime *rt, AccessModifier access);
 		virtual ~ModuleValue();

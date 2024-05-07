@@ -11,7 +11,7 @@
 #include "valdef/member.h"
 #include "valdef/module.h"
 #include "valdef/object.h"
-#include "valdef/ref.h"
+#include "valdef/idref.h"
 #include "valdef/root.h"
 #include "valdef/var.h"
 #include "valdef/operand.h"

@@ -101,7 +101,7 @@ bool Compiler::isCompoundTypeName(shared_ptr<TypeNameNode> node) {
 
 bool slake::slkc::Compiler::isLValueType(shared_ptr<TypeNameNode> typeName) {
 	switch (typeName->getTypeId()) {
-		case Type::Ref:
+		case Type::IdRef:
 			return true;
 		case Type::Custom:
 			// stub
@@ -358,7 +358,7 @@ shared_ptr<AstNode> Compiler::resolveCustomTypeName(CustomTypeNameNode *typeName
 	if ((typeName->ref.size() == 1) && (typeName->ref[0].genericArgs.empty())) {
 		auto genericParam = lookupGenericParam(typeName->scope->owner->shared_from_this(), typeName->ref[0].name);
 		if (genericParam) {
-			typeName->resolvedPartsOut.push_back({ Ref{ RefEntry{ typeName->getLocation(), SIZE_MAX, typeName->ref[0].name, {} } }, genericParam });
+			typeName->resolvedPartsOut.push_back({ IdRef{ IdRefEntry{ typeName->getLocation(), SIZE_MAX, typeName->ref[0].name, {} } }, genericParam });
 
 #if SLKC_WITH_LANGUAGE_SERVER
 			// Update corresponding semantic information.
@@ -375,14 +375,14 @@ shared_ptr<AstNode> Compiler::resolveCustomTypeName(CustomTypeNameNode *typeName
 	// Check the type with scope where the type name is created.
 	typeName->resolvedPartsOut.clear();
 	if (typeName->scope) {
-		if (resolveRefWithScope(typeName->scope, typeName->ref, typeName->resolvedPartsOut)) {
+		if (resolveIdRefWithScope(typeName->scope, typeName->ref, typeName->resolvedPartsOut)) {
 			goto succeeded;
 		}
 	}
 
 	// Check the type with the global scope.
 	typeName->resolvedPartsOut.clear();
-	if (resolveRef(typeName->ref, typeName->resolvedPartsOut, true)) {
+	if (resolveIdRef(typeName->ref, typeName->resolvedPartsOut, true)) {
 		goto succeeded;
 	}
 

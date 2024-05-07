@@ -1,14 +1,14 @@
 #ifndef _SLKC_COMPILER_AST_MODULE_H_
 #define _SLKC_COMPILER_AST_MODULE_H_
 
-#include "ref.h"
+#include "idref.h"
 #include "scope.h"
 #include "member.h"
 
 namespace slake {
 	namespace slkc {
 		struct ImportItem {
-			Ref ref;
+			IdRef ref;
 			size_t idxNameToken;
 		};
 
@@ -17,7 +17,7 @@ namespace slake {
 			Location _loc;
 
 		public:
-			Ref moduleName;
+			IdRef moduleName;
 			unordered_map<string, ImportItem> imports;
 			deque<ImportItem> unnamedImports;
 			weak_ptr<ModuleNode> parentModule;
@@ -36,7 +36,7 @@ namespace slake {
 
 			virtual inline NodeType getNodeType() const override { return NodeType::Module; }
 
-			virtual inline RefEntry getName() const override {
+			virtual inline IdRefEntry getName() const override {
 				return moduleName.back();
 			}
 		};

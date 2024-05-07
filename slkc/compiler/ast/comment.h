@@ -1,7 +1,7 @@
 #ifndef _SLKC_COMPILER_AST_COMMENT_H_
 #define _SLKC_COMPILER_AST_COMMENT_H_
 
-#include "ref.h"
+#include "idref.h"
 
 namespace slake {
 	namespace slkc {

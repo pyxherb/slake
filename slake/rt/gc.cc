@@ -42,7 +42,7 @@ void Runtime::_gcWalk(Type &type) {
 		case TypeId::String:
 		case TypeId::Bool:
 		case TypeId::Fn:
-		case TypeId::Ref:
+		case TypeId::IdRef:
 		case TypeId::None:
 		case TypeId::GenericArg:
 		case TypeId::Alias:
@@ -161,8 +161,8 @@ void Runtime::_gcWalk(Value *v) {
 			_gcWalk(value->_data);
 			break;
 		}
-		case TypeId::Ref: {
-			auto value = (RefValue *)v;
+		case TypeId::IdRef: {
+			auto value = (IdRefValue *)v;
 
 			for (auto &i : value->entries)
 				for (auto &j : i.genericArgs) {

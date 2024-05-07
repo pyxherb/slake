@@ -411,8 +411,8 @@ shared_ptr<ExprNode> Compiler::evalConstExpr(shared_ptr<ExprNode> expr) {
 					return {};
 			return e;
 		}
-		case ExprType::Ref: {
-			auto e = static_pointer_cast<RefExprNode>(expr);
+		case ExprType::IdRef: {
+			auto e = static_pointer_cast<IdRefExprNode>(expr);
 
 			return {};	// stub
 		}
@@ -777,7 +777,7 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 							assert(it->second->getNodeType() == NodeType::Fn);
 							shared_ptr<FnNode> operatorNode = static_pointer_cast<FnNode>(it->second);
 
-							Ref fullName;
+							IdRef fullName;
 							_getFullName(operatorNode.get(), fullName);
 
 							shared_ptr<FnOverloadingNode> overloading;
@@ -975,15 +975,15 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 
 			break;
 		}
-		case ExprType::Ref: {
-			auto e = static_pointer_cast<RefExprNode>(expr);
-			deque<pair<Ref, shared_ptr<AstNode>>> resolvedParts;
+		case ExprType::IdRef: {
+			auto e = static_pointer_cast<IdRefExprNode>(expr);
+			deque<pair<IdRef, shared_ptr<AstNode>>> resolvedParts;
 
 #if SLKC_WITH_LANGUAGE_SERVER
 			updateCompletionContext(e->ref, CompletionContext::Expr);
 #endif
 
-			if (resolveRef(e->ref, resolvedParts)) {
+			if (resolveIdRef(e->ref, resolvedParts)) {
 				switch (resolvedParts.back().second->getNodeType()) {
 					case NodeType::Var:
 						return static_pointer_cast<VarNode>(resolvedParts.back().second)->type;

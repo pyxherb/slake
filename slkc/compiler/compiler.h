@@ -265,28 +265,28 @@ namespace slake {
 
 			bool isTypeNamesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<TypeNameNode> dest);
 
-			struct RefResolveContext {
+			struct IdRefResolveContext {
 				bool isTopLevel = true;
 				bool keepTokenScope = false;
 				bool isStatic = true;
 			};
 
-			bool _resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, RefResolveContext resolveContext);
-			bool _resolveRefWithOwner(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, RefResolveContext resolveContext);
+			bool _resolveIdRef(Scope *scope, const IdRef &ref, deque<pair<IdRef, shared_ptr<AstNode>>> &partsOut, IdRefResolveContext resolveContext);
+			bool _resolveIdRefWithOwner(Scope *scope, const IdRef &ref, deque<pair<IdRef, shared_ptr<AstNode>>> &partsOut, IdRefResolveContext resolveContext);
 
 			/// @brief Resolve a reference with current context.
 			/// @note This method also updates resolved generic arguments.
 			/// @param ref Reference to be resolved.
 			/// @param refParts Divided minimum parts of the reference that can be loaded in a single time.
 			/// @param resolvedPartsOut Where to store nodes referred by reference entries respectively.
-			bool resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, bool ignoreDynamicPrecedings = false);
+			bool resolveIdRef(IdRef ref, deque<pair<IdRef, shared_ptr<AstNode>>> &partsOut, bool ignoreDynamicPrecedings = false);
 
 			/// @brief Resolve a reference with specified scope.
 			/// @note This method also updates resolved generic arguments.
 			/// @param scope Scope to be used for resolving.
 			/// @param ref Reference to be resolved.
 			/// @param resolvedPartsOut Where to store nodes referred by reference entries respectively.
-			bool resolveRefWithScope(Scope *scope, Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut);
+			bool resolveIdRefWithScope(Scope *scope, IdRef ref, deque<pair<IdRef, shared_ptr<AstNode>>> &partsOut);
 
 			std::deque<shared_ptr<FnOverloadingNode>> argDependentLookup(
 				Location loc,
@@ -309,7 +309,7 @@ namespace slake {
 				const deque<shared_ptr<TypeNameNode>> &argTypes,
 				bool isConst);
 
-			void _getFullName(MemberNode *member, Ref &ref);
+			void _getFullName(MemberNode *member, IdRef &ref);
 
 			void compileExpr(shared_ptr<ExprNode> expr);
 			inline void compileExpr(shared_ptr<ExprNode> expr, EvalPurpose evalPurpose, shared_ptr<AstNode> evalDest, shared_ptr<AstNode> thisDest = {}) {
@@ -325,7 +325,7 @@ namespace slake {
 			void compileStmt(shared_ptr<StmtNode> stmt);
 
 			void compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope> scope);
-			void compileRef(std::ostream &fs, const Ref &ref);
+			void compileIdRef(std::ostream &fs, const IdRef &ref);
 			void compileTypeName(std::ostream &fs, shared_ptr<TypeNameNode> typeName);
 			void compileValue(std::ostream &fs, shared_ptr<AstNode> expr);
 			void compileGenericParam(std::ostream &fs, shared_ptr<GenericParamNode> genericParam);
@@ -338,7 +338,7 @@ namespace slake {
 			set<Value *> importedDefinitions;
 
 			struct ModuleRefComparator {
-				inline bool operator()(const Ref &lhs, const Ref &rhs) const {
+				inline bool operator()(const IdRef &lhs, const IdRef &rhs) const {
 					if (lhs.size() < rhs.size())
 						return true;
 					if (lhs.size() > rhs.size())
@@ -352,19 +352,19 @@ namespace slake {
 					return true;
 				}
 			};
-			set<Ref, ModuleRefComparator> importedModules;
+			set<IdRef, ModuleRefComparator> importedModules;
 
-			static unique_ptr<ifstream> moduleLocator(Runtime *rt, ValueRef<RefValue> ref);
-			shared_ptr<Scope> completeModuleNamespaces(const Ref &ref);
+			static unique_ptr<ifstream> moduleLocator(Runtime *rt, ValueRef<IdRefValue> ref);
+			shared_ptr<Scope> completeModuleNamespaces(const IdRef &ref);
 			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, BasicFnValue *value);
 			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, ModuleValue *value);
 			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, ClassValue *value);
 			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, InterfaceValue *value);
 			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, TraitValue *value);
 			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, Value *value);
-			void importModule(const Ref &ref);
+			void importModule(const IdRef &ref);
 			shared_ptr<TypeNameNode> toTypeName(slake::Type runtimeType);
-			Ref toAstRef(deque<slake::RefEntry> runtimeRefEntries);
+			IdRef toAstIdRef(deque<slake::IdRefEntry> runtimeRefEntries);
 
 			//
 			// Generic begin
@@ -460,11 +460,11 @@ namespace slake {
 #if SLKC_WITH_LANGUAGE_SERVER
 			void updateCompletionContext(size_t idxToken, CompletionContext completionContext);
 			void updateCompletionContext(shared_ptr<TypeNameNode> targetTypeName, CompletionContext completionContext);
-			void updateCompletionContext(const Ref &ref, CompletionContext completionContext);
+			void updateCompletionContext(const IdRef &ref, CompletionContext completionContext);
 
 			void updateSemanticType(size_t idxToken, SemanticType type);
 			void updateSemanticType(shared_ptr<TypeNameNode> targetTypeName, SemanticType type);
-			void updateSemanticType(const Ref &ref, SemanticType type);
+			void updateSemanticType(const IdRef &ref, SemanticType type);
 #endif
 
 			//
@@ -520,7 +520,7 @@ namespace slake {
 
 			void reset();
 
-			Ref getFullName(MemberNode *member);
+			IdRef getFullName(MemberNode *member);
 		};
 	}
 }

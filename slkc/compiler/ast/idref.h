@@ -8,24 +8,24 @@ namespace slake {
 	namespace slkc {
 		class TypeNameNode;
 
-		struct RefEntry {
+		struct IdRefEntry {
 			Location loc;
 			size_t idxAccessOpToken = SIZE_MAX;	 // Index of preceding access operator token
 			size_t idxToken;
 			string name;
 			deque<shared_ptr<TypeNameNode>> genericArgs;
 
-			inline RefEntry(Location loc, size_t idxToken, string name, deque<shared_ptr<TypeNameNode>> genericArgs = {})
+			inline IdRefEntry(Location loc, size_t idxToken, string name, deque<shared_ptr<TypeNameNode>> genericArgs = {})
 				: loc(loc), idxToken(idxToken), name(name), genericArgs(genericArgs) {}
 		};
 
-		using Ref = deque<RefEntry>;
+		using IdRef = deque<IdRefEntry>;
 
-		inline bool isCompleteRef(const Ref& ref) {
+		inline bool isCompleteIdRef(const IdRef& ref) {
 			return ref.back().idxToken != SIZE_MAX;
 		}
 
-		Ref duplicateRef(const Ref &other);
+		IdRef duplicateIdRef(const IdRef &other);
 
 		class ThisRefNode : public AstNode {
 		public:
@@ -52,7 +52,7 @@ namespace slake {
 }
 
 namespace std {
-	string to_string(const slake::slkc::Ref &ref, slake::slkc::Compiler *compiler);
+	string to_string(const slake::slkc::IdRef &ref, slake::slkc::Compiler *compiler);
 }
 
 #endif

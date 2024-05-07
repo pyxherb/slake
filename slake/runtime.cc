@@ -55,12 +55,12 @@ std::string Runtime::getFullName(const MemberValue *v) const {
 	return s;
 }
 
-std::string Runtime::getFullName(const RefValue *v) const {
+std::string Runtime::getFullName(const IdRefValue *v) const {
 	return std::to_string(v);
 }
 
-std::deque<RefEntry> Runtime::getFullRef(const MemberValue* v) const {
-	std::deque<RefEntry> entries;
+std::deque<IdRefEntry> Runtime::getFullRef(const MemberValue* v) const {
+	std::deque<IdRefEntry> entries;
 	do {
 		switch (v->getType().typeId) {
 			case TypeId::Object:

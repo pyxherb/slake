@@ -42,7 +42,7 @@ namespace slake {
 
 		Alias,	// Alias
 
-		Ref,		 // Reference
+		IdRef,		 // Reference
 		GenericArg,	 // Generic argument
 		RootValue,	 // Root value
 		TypeName,	 // Type name
@@ -87,7 +87,7 @@ namespace slake {
 
 	class Runtime;
 	class Value;
-	class RefValue;
+	class IdRefValue;
 	class MemberValue;
 
 	using TypeFlags = uint8_t;
@@ -119,7 +119,7 @@ namespace slake {
 		inline Type(std::string genericParamName, TypeFlags flags = 0) : typeId(TypeId::GenericArg), flags(flags) {
 			exData = genericParamName;
 		}
-		Type(RefValue *ref, TypeFlags flags = 0);
+		Type(IdRefValue *ref, TypeFlags flags = 0);
 
 		~Type();
 
@@ -146,8 +146,8 @@ namespace slake {
 					case TypeId::Trait:
 					case TypeId::Object: {
 						auto lhsType = getCustomTypeExData(), rhsType = rhs.getCustomTypeExData();
-						assert(lhsType->getType() != TypeId::Ref &&
-							   rhsType->getType() != TypeId::Ref);
+						assert(lhsType->getType() != TypeId::IdRef &&
+							   rhsType->getType() != TypeId::IdRef);
 
 						return lhsType < rhsType;
 					}
@@ -181,8 +181,8 @@ namespace slake {
 				case TypeId::Trait:
 				case TypeId::Object: {
 					auto lhsType = getCustomTypeExData(), rhsType = rhs.getCustomTypeExData();
-					assert(lhsType->getType() != TypeId::Ref &&
-						   rhsType->getType() != TypeId::Ref);
+					assert(lhsType->getType() != TypeId::IdRef &&
+						   rhsType->getType() != TypeId::IdRef);
 
 					return lhsType == rhsType;
 				}

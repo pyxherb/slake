@@ -3,7 +3,7 @@
 
 using namespace slake::slkc;
 
-bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, bool ignoreDynamicPrecedings) {
+bool Compiler::resolveIdRef(IdRef ref, deque<pair<IdRef, shared_ptr<AstNode>>> &partsOut, bool ignoreDynamicPrecedings) {
 	assert(ref.size());
 
 	if (!ignoreDynamicPrecedings) {
@@ -17,11 +17,11 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 				goto lvarSucceeded;
 
 			if (auto scope = scopeOf(localVar->type.get()); scope) {
-				RefResolveContext newResolveContext;
+				IdRefResolveContext newResolveContext;
 				newResolveContext.isTopLevel = false;
 				newResolveContext.isStatic = false;
 
-				if (_resolveRef(scope.get(), newRef, partsOut, newResolveContext))
+				if (_resolveIdRef(scope.get(), newRef, partsOut, newResolveContext))
 					goto lvarSucceeded;
 			}
 
@@ -37,7 +37,7 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 			tokenInfo.semanticType = SemanticType::Var;
 #endif
 
-			partsOut.push_front({ Ref{ ref.front() }, localVar });
+			partsOut.push_front({ IdRef{ ref.front() }, localVar });
 			return true;
 		}
 
@@ -53,11 +53,11 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 					goto paramSucceeded;
 
 				if (auto scope = scopeOf(curFn->params[idxParam]->type.get()); scope) {
-					RefResolveContext newResolveContext;
+					IdRefResolveContext newResolveContext;
 					newResolveContext.isTopLevel = false;
 					newResolveContext.isStatic = false;
 
-					if (_resolveRef(scope.get(), newRef, partsOut, newResolveContext))
+					if (_resolveIdRef(scope.get(), newRef, partsOut, newResolveContext))
 						goto paramSucceeded;
 				}
 
@@ -73,7 +73,7 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 				tokenInfo.semanticType = SemanticType::Param;
 #endif
 
-				partsOut.push_front({ Ref{ ref.front() }, make_shared<ArgRefNode>((uint32_t)idxParam) });
+				partsOut.push_front({ IdRef{ ref.front() }, make_shared<ArgRefNode>((uint32_t)idxParam) });
 				return true;
 			}
 		}
@@ -91,32 +91,32 @@ bool Compiler::resolveRef(Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsO
 #endif
 
 			if (ref.size() > 1) {
-				RefResolveContext newResolveContext;
+				IdRefResolveContext newResolveContext;
 				newResolveContext.isTopLevel = false;
 				newResolveContext.isStatic = false;
 
 				ref.pop_front();
-				auto result = _resolveRef(curMajorContext.curMinorContext.curScope.get(), ref, partsOut, newResolveContext);
-				partsOut.push_front({ Ref{ ref.front() }, thisRefNode });
+				auto result = _resolveIdRef(curMajorContext.curMinorContext.curScope.get(), ref, partsOut, newResolveContext);
+				partsOut.push_front({ IdRef{ ref.front() }, thisRefNode });
 				return result;
 			} else {
-				partsOut.push_front({ Ref{ ref.front() }, thisRefNode });
+				partsOut.push_front({ IdRef{ ref.front() }, thisRefNode });
 				return true;
 			}
 		}
 	}
 
-	RefResolveContext newResolveContext;
-	return _resolveRef(curMajorContext.curMinorContext.curScope.get(), ref, partsOut, newResolveContext);
+	IdRefResolveContext newResolveContext;
+	return _resolveIdRef(curMajorContext.curMinorContext.curScope.get(), ref, partsOut, newResolveContext);
 }
 
-bool Compiler::resolveRefWithScope(Scope *scope, Ref ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut) {
-	RefResolveContext resolveContext;
+bool Compiler::resolveIdRefWithScope(Scope *scope, IdRef ref, deque<pair<IdRef, shared_ptr<AstNode>>> &partsOut) {
+	IdRefResolveContext resolveContext;
 
-	return _resolveRef(scope, ref, partsOut, resolveContext);
+	return _resolveIdRef(scope, ref, partsOut, resolveContext);
 }
 
-bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, RefResolveContext resolveContext) {
+bool Compiler::_resolveIdRef(Scope *scope, const IdRef &ref, deque<pair<IdRef, shared_ptr<AstNode>>> &partsOut, IdRefResolveContext resolveContext) {
 #if SLKC_WITH_LANGUAGE_SERVER
 	// Update corresponding semantic information.
 	{
@@ -169,8 +169,8 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 		tokenInfo.semanticType = SemanticType::Keyword;
 #endif
 
-		bool result = _resolveRefWithOwner(scope, newRef, partsOut, resolveContext);
-		partsOut.push_front({ Ref{ ref.front() }, make_shared<BaseRefNode>() });
+		bool result = _resolveIdRefWithOwner(scope, newRef, partsOut, resolveContext);
+		partsOut.push_front({ IdRef{ ref.front() }, make_shared<BaseRefNode>() });
 		return result;
 	}
 
@@ -243,19 +243,19 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 
 		if (!newRef.size()) {
 			// All entries have been resolved, return true.
-			partsOut.push_front({ Ref{ ref.front() }, m });
+			partsOut.push_front({ IdRef{ ref.front() }, m });
 			return true;
 		}
 
 		if (auto scope = scopeOf(m.get()); scope) {
-			RefResolveContext newResolveContext;
+			IdRefResolveContext newResolveContext;
 			newResolveContext.isTopLevel = false;
 			newResolveContext.isStatic = resolveContext.isStatic;
 
-			if (_resolveRef(scope.get(), newRef, partsOut, newResolveContext)) {
+			if (_resolveIdRef(scope.get(), newRef, partsOut, newResolveContext)) {
 				switch (m->getNodeType()) {
 					case NodeType::Var:
-						partsOut.push_front({ Ref{ ref.front() }, m });
+						partsOut.push_front({ IdRef{ ref.front() }, m });
 						break;
 					default:
 						partsOut.front().first.push_front(ref.front());
@@ -265,13 +265,13 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 		}
 	}
 
-	if (_resolveRefWithOwner(scope, ref, partsOut, resolveContext))
+	if (_resolveIdRefWithOwner(scope, ref, partsOut, resolveContext))
 		return true;
 
 	// Resolve with the parent scope - we should only do this on the top level.
 	//
 	// Consider a following example:
-	// 
+	//
 	// ```C++
 	// let g_var : i32;
 	//
@@ -281,7 +281,7 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 	//     }
 	// }
 	// ```
-	// 
+	//
 	// As the case above, the g_var is defined outside the class and cannot be
 	// resolved with the class's scope, that is why we need to resolve the
 	// scope with the parent scope.
@@ -290,16 +290,16 @@ bool Compiler::_resolveRef(Scope *scope, const Ref &ref, deque<pair<Ref, shared_
 	// resolved scope from the parent, so we don't need to care about them.
 	//
 	if (resolveContext.isTopLevel && scope->parent) {
-		RefResolveContext newResolveContext;
+		IdRefResolveContext newResolveContext;
 		newResolveContext.keepTokenScope = true;
 
-		return _resolveRef(scope->parent, ref, partsOut, newResolveContext);
+		return _resolveIdRef(scope->parent, ref, partsOut, newResolveContext);
 	}
 
 	return false;
 }
 
-bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, deque<pair<Ref, shared_ptr<AstNode>>> &partsOut, RefResolveContext resolveContext) {
+bool slake::slkc::Compiler::_resolveIdRefWithOwner(Scope *scope, const IdRef &ref, deque<pair<IdRef, shared_ptr<AstNode>>> &partsOut, IdRefResolveContext resolveContext) {
 	if (scope->owner) {
 		switch (scope->owner->getNodeType()) {
 			case NodeType::Class: {
@@ -307,7 +307,7 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 
 				// Resolve with the parent class.
 				if (owner->parentClass) {
-					if (_resolveRef(
+					if (_resolveIdRef(
 							scopeOf(
 								resolveCustomTypeName(
 									(CustomTypeNameNode *)owner->parentClass.get())
@@ -319,7 +319,7 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 
 				// Resolve with the implemented interfaces.
 				for (auto i : owner->implInterfaces) {
-					if (_resolveRef(
+					if (_resolveIdRef(
 							scopeOf(
 								resolveCustomTypeName(
 									(CustomTypeNameNode *)i.get())
@@ -335,7 +335,7 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 
 				// Resolve with the inherited interfaces.
 				for (auto i : owner->parentInterfaces) {
-					if (_resolveRef(
+					if (_resolveIdRef(
 							scopeOf(
 								resolveCustomTypeName(
 									(CustomTypeNameNode *)i.get())
@@ -351,7 +351,7 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 
 				// Resolve with the inherited traits.
 				for (auto i : owner->parentTraits) {
-					if (_resolveRef(
+					if (_resolveIdRef(
 							scopeOf(
 								resolveCustomTypeName(
 									(CustomTypeNameNode *)i.get())
@@ -368,7 +368,7 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 				if (owner->parentModule.expired())
 					return false;
 
-				if (_resolveRef(owner->parentModule.lock()->scope.get(), ref, partsOut, resolveContext))
+				if (_resolveIdRef(owner->parentModule.lock()->scope.get(), ref, partsOut, resolveContext))
 					return true;
 
 				break;
@@ -378,7 +378,7 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 				if (!owner->parent)
 					return false;
 
-				if (_resolveRef(scopeOf((AstNode *)owner->parent).get(), ref, partsOut, resolveContext))
+				if (_resolveIdRef(scopeOf((AstNode *)owner->parent).get(), ref, partsOut, resolveContext))
 					return false;
 			}
 		}
@@ -387,8 +387,8 @@ bool slake::slkc::Compiler::_resolveRefWithOwner(Scope *scope, const Ref &ref, d
 	return false;
 }
 
-void Compiler::_getFullName(MemberNode *member, Ref &ref) {
-	RefEntry entry = member->getName();
+void Compiler::_getFullName(MemberNode *member, IdRef &ref) {
+	IdRefEntry entry = member->getName();
 
 	ref.push_front(entry);
 
@@ -398,8 +398,8 @@ void Compiler::_getFullName(MemberNode *member, Ref &ref) {
 	_getFullName(member->parent, ref);
 }
 
-slake::slkc::Ref Compiler::getFullName(MemberNode *member) {
-	Ref ref;
+slake::slkc::IdRef Compiler::getFullName(MemberNode *member) {
+	IdRef ref;
 
 	_getFullName(member, ref);
 

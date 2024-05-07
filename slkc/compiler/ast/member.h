@@ -2,7 +2,7 @@
 #define _SLKC_COMPILER_AST_MEMBER_H_
 
 #include "astnode.h"
-#include "ref.h"
+#include "idref.h"
 #include "generic.h"
 
 namespace slake {
@@ -61,7 +61,7 @@ namespace slake {
 				parent = nullptr;
 			}
 
-			virtual RefEntry getName() const = 0;
+			virtual IdRefEntry getName() const = 0;
 
 			inline void setGenericParams(const GenericParamNodeList &genericParams) {
 				this->genericParams = genericParams;

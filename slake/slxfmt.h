@@ -72,7 +72,7 @@ namespace slake {
 			Array,			// Array
 			Map,			// Map
 			Object,			// Object
-			Ref,			// Reference
+			IdRef,			// Identifier reference
 			TypeName,		// Type name
 			GenericArg,		// Generic argument
 			Reg,			// Register
@@ -170,7 +170,7 @@ namespace slake {
 			;
 
 		/// @brief Reference Scope Descriptor (RSD)
-		struct RefEntryDesc final {
+		struct IdRefEntryDesc final {
 			uint16_t lenName : 8;
 			uint8_t flags : 4;
 			uint8_t nGenericArgs : 4;

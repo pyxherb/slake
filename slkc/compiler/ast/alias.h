@@ -13,9 +13,9 @@ namespace slake {
 
 		public:
 			string name;
-			Ref target;
+			IdRef target;
 
-			inline AliasNode(Location loc, Compiler *compiler, string name, Ref target)
+			inline AliasNode(Location loc, Compiler *compiler, string name, IdRef target)
 				: MemberNode(compiler, ACCESS_PUB), _loc(loc), name(name), target(target) {}
 			virtual ~AliasNode() = default;
 
@@ -23,7 +23,7 @@ namespace slake {
 
 			virtual inline NodeType getNodeType() const override { return NodeType::Alias; }
 
-			virtual inline RefEntry getName() const { return { _loc, SIZE_MAX, name, genericArgs }; }
+			virtual inline IdRefEntry getName() const { return { _loc, SIZE_MAX, name, genericArgs }; }
 		};
 	}
 }

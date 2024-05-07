@@ -10,7 +10,7 @@
 #include <stdexcept>
 
 #include "astnode.h"
-#include "ref.h"
+#include "idref.h"
 #include "typename.h"
 
 namespace slake {

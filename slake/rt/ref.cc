@@ -2,7 +2,7 @@
 
 using namespace slake;
 
-Value *Runtime::resolveRef(RefValue* ref, Value *scopeValue) const {
+Value *Runtime::resolveIdRef(IdRefValue* ref, Value *scopeValue) const {
 	if (!ref)
 		return nullptr;
 

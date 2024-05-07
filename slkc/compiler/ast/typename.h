@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <variant>
 
-#include "ref.h"
+#include "idref.h"
 #include "scope.h"
 
 namespace slake {
@@ -37,7 +37,7 @@ namespace slake {
 			Fn,
 
 			Custom,
-			Ref,
+			IdRef,
 
 			Bad
 		};
@@ -118,8 +118,8 @@ namespace slake {
 			virtual shared_ptr<AstNode> doDuplicate() override;
 
 		public:
-			Ref ref;
-			deque<pair<Ref, shared_ptr<AstNode>>> resolvedPartsOut;
+			IdRef ref;
+			deque<pair<IdRef, shared_ptr<AstNode>>> resolvedPartsOut;
 
 			Compiler *compiler;
 			Scope *scope;
@@ -128,12 +128,12 @@ namespace slake {
 
 			inline CustomTypeNameNode(const CustomTypeNameNode &other)
 				: TypeNameNode(other),
-				  ref(duplicateRef(other.ref)),
+				  ref(duplicateIdRef(other.ref)),
 				  resolvedPartsOut(other.resolvedPartsOut),
 				  compiler(other.compiler),
 				  scope(other.scope) {
 			}
-			inline CustomTypeNameNode(Location loc, Ref ref, Compiler *compiler, Scope *scope, bool isConst = false)
+			inline CustomTypeNameNode(Location loc, IdRef ref, Compiler *compiler, Scope *scope, bool isConst = false)
 				: TypeNameNode(loc, isConst), ref(ref), compiler(compiler), scope(scope) {}
 			virtual ~CustomTypeNameNode() = default;
 
@@ -205,7 +205,7 @@ namespace slake {
 				: TypeNameNode(referencedType->getLocation(), referencedType->isConst) {}
 			virtual ~RefTypeNameNode() = default;
 
-			virtual inline Type getTypeId() const override { return Type::Ref; }
+			virtual inline Type getTypeId() const override { return Type::IdRef; }
 		};
 
 		class BadTypeNameNode : public TypeNameNode {

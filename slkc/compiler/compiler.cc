@@ -23,7 +23,7 @@ Compiler::~Compiler() {
 	flags |= COMP_DELETING;
 }
 
-shared_ptr<Scope> slake::slkc::Compiler::completeModuleNamespaces(const Ref &ref) {
+shared_ptr<Scope> slake::slkc::Compiler::completeModuleNamespaces(const IdRef &ref) {
 	auto scope = _rootScope;
 
 	for (size_t i = 0; i < ref.size(); ++i) {
@@ -63,7 +63,7 @@ shared_ptr<Scope> slake::slkc::Compiler::completeModuleNamespaces(const Ref &ref
 			auto newMod = make_shared<ModuleNode>(this, Location());
 			(scope->members[name] = newMod)->bind((MemberNode *)scope->owner);
 			newMod->scope->parent = scope.get();
-			newMod->moduleName = { RefEntry(Location(), SIZE_MAX, name, {}) };
+			newMod->moduleName = { IdRefEntry(Location(), SIZE_MAX, name, {}) };
 			scope = newMod->scope;
 		}
 	}
@@ -146,7 +146,7 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport, shared
 		(scope->members[_targetModule->moduleName.back().name] = _targetModule)->bind((MemberNode *)scope->owner);
 		_targetModule->scope->parent = scope.get();
 
-		compileRef(os, _targetModule->moduleName);
+		compileIdRef(os, _targetModule->moduleName);
 	}
 
 	pushMajorContext();
@@ -154,7 +154,7 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport, shared
 	for (auto &i : _targetModule->imports) {
 		_write(os, (uint32_t)i.first.size());
 		_write(os, i.first.data(), i.first.length());
-		compileRef(os, i.second.ref);
+		compileIdRef(os, i.second.ref);
 
 		importModule(i.second.ref);
 
@@ -182,7 +182,7 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport, shared
 
 	for (auto &i : _targetModule->unnamedImports) {
 		_write(os, (uint32_t)0);
-		compileRef(os, i.ref);
+		compileIdRef(os, i.ref);
 
 		importModule(i.ref);
 
@@ -717,7 +717,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 			for (auto &j : i.second->genericParams) {
 				thisType->ref.back().genericArgs.push_back(make_shared<CustomTypeNameNode>(
 					i.second->getLocation(),
-					Ref{ { j->getLocation(), SIZE_MAX, j->name, deque<shared_ptr<TypeNameNode>>{} } },
+					IdRef{ { j->getLocation(), SIZE_MAX, j->name, deque<shared_ptr<TypeNameNode>>{} } },
 					this,
 					i.second->scope.get()));
 			}
@@ -747,11 +747,11 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		}
 
 		if (i.second->parentClass) {
-			compileRef(os, getFullName((MemberNode *)resolveCustomTypeName((CustomTypeNameNode *)i.second->parentClass.get()).get()));
+			compileIdRef(os, getFullName((MemberNode *)resolveCustomTypeName((CustomTypeNameNode *)i.second->parentClass.get()).get()));
 		}
 
 		for (auto &j : i.second->implInterfaces)
-			compileRef(os, static_pointer_cast<CustomTypeNameNode>(j)->ref);
+			compileIdRef(os, static_pointer_cast<CustomTypeNameNode>(j)->ref);
 
 		compileScope(is, os, i.second->scope);
 
@@ -783,7 +783,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		}
 
 		for (auto j : i.second->parentInterfaces) {
-			compileRef(os, static_pointer_cast<CustomTypeNameNode>(j)->ref);
+			compileIdRef(os, static_pointer_cast<CustomTypeNameNode>(j)->ref);
 		}
 
 		compileScope(is, os, i.second->scope);
@@ -816,7 +816,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		}
 
 		for (auto j : i.second->parentTraits) {
-			compileRef(os, static_pointer_cast<CustomTypeNameNode>(j)->ref);
+			compileIdRef(os, static_pointer_cast<CustomTypeNameNode>(j)->ref);
 		}
 
 		compileScope(is, os, i.second->scope);
@@ -903,7 +903,7 @@ void Compiler::compileTypeName(std::ostream &fs, shared_ptr<TypeNameNode> typeNa
 				fs.write(d->name.c_str(), d->name.length());
 			} else {
 				_write(fs, slxfmt::Type::Object);
-				compileRef(fs, getFullName((MemberNode *)dest.get()));
+				compileIdRef(fs, getFullName((MemberNode *)dest.get()));
 			}
 			break;
 		}
@@ -914,9 +914,9 @@ void Compiler::compileTypeName(std::ostream &fs, shared_ptr<TypeNameNode> typeNa
 	}
 }
 
-void Compiler::compileRef(std::ostream &fs, const Ref &ref) {
+void Compiler::compileIdRef(std::ostream &fs, const IdRef &ref) {
 	for (size_t i = 0; i < ref.size(); ++i) {
-		slxfmt::RefEntryDesc rsd = {};
+		slxfmt::IdRefEntryDesc rsd = {};
 
 		auto &entry = ref[i];
 
@@ -1063,11 +1063,11 @@ void Compiler::compileValue(std::ostream &fs, shared_ptr<AstNode> value) {
 					_write(fs, s.data(), s.size());
 					break;
 				}
-				case ExprType::Ref: {
-					vd.type = slxfmt::Type::Ref;
+				case ExprType::IdRef: {
+					vd.type = slxfmt::Type::IdRef;
 					_write(fs, vd);
 
-					compileRef(fs, static_pointer_cast<RefExprNode>(expr)->ref);
+					compileIdRef(fs, static_pointer_cast<IdRefExprNode>(expr)->ref);
 					break;
 				}
 				default:

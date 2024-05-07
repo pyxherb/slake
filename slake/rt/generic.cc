@@ -129,7 +129,7 @@ void slake::Runtime::_instantiateGenericValue(Value *v, GenericInstantiationCont
 		case TypeId::F32:
 		case TypeId::F64:
 		case TypeId::Bool:
-		case TypeId::Ref:
+		case TypeId::IdRef:
 		case TypeId::RegRef:
 		case TypeId::LocalVarRef:
 		case TypeId::ArgRef:

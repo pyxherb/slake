@@ -54,7 +54,7 @@ void Compiler::updateCompletionContext(shared_ptr<TypeNameNode> targetTypeName, 
 	}
 }
 
-void Compiler::updateCompletionContext(const Ref &ref, CompletionContext completionContext) {
+void Compiler::updateCompletionContext(const IdRef &ref, CompletionContext completionContext) {
 	for (size_t i = 0; i < ref.size(); ++i) {
 		if (ref[i].idxAccessOpToken != SIZE_MAX) {
 			tokenInfos[ref[i].idxAccessOpToken].completionContext = completionContext;
@@ -115,7 +115,7 @@ void Compiler::updateSemanticType(shared_ptr<TypeNameNode> targetTypeName, Seman
 	}
 }
 
-void Compiler::updateSemanticType(const Ref &ref, SemanticType type) {
+void Compiler::updateSemanticType(const IdRef &ref, SemanticType type) {
 	for (size_t i = 0; i < ref.size(); ++i) {
 		if (ref[i].idxAccessOpToken != SIZE_MAX) {
 			tokenInfos[ref[i].idxAccessOpToken].semanticType = type;

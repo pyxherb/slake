@@ -88,6 +88,9 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 				os << std::string(indentLevel, '\t')
 				   << ".access " << accessToString(v->getAccess()) << "\n";
 
+			if (v->fnFlags & FN_ASYNC)
+				puts(".async");
+
 			os << std::string(indentLevel, '\t')
 			   << (v->getInsCount() ? ".fn " : ".fndecl ")
 			   << std::to_string(v->getReturnType(), rt) << " "

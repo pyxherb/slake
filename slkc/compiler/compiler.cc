@@ -56,8 +56,10 @@ shared_ptr<Scope> slake::slkc::Compiler::completeModuleNamespaces(const IdRef &r
 					scope = static_pointer_cast<ModuleNode>(it->second)->scope;
 					break;
 				default:
-					// I give up - such situations shouldn't be exist.
-					assert(false);
+					throw FatalCompilationError(Message{
+						ref[i].loc,
+						MessageType::Error,
+						"Cannot import a non-module member" });
 			}
 		} else {
 			auto newMod = make_shared<ModuleNode>(this, Location());
@@ -109,8 +111,8 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport, shared
 	}
 
 #if SLKC_WITH_LANGUAGE_SERVER
-	if (!isImport)
-		tokenInfos.resize(lexer->tokens.size());
+	auto savedTokenInfos = tokenInfos;
+	tokenInfos.resize(lexer->tokens.size());
 #endif
 
 	Parser parser;
@@ -137,6 +139,14 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport, shared
 		os.write((char *)&ih, sizeof(ih));
 	}
 
+	if (!isCompleteIdRef(_targetModule->moduleName)) {
+		throw FatalCompilationError(Message(
+			_targetModule->moduleName.back().loc,
+			MessageType::Error,
+			"Expecting an identifier"
+		));
+	}
+
 	if (_targetModule->moduleName.size()) {
 		auto trimmedModuleName = _targetModule->moduleName;
 		trimmedModuleName.pop_back();
@@ -150,6 +160,55 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport, shared
 	}
 
 	pushMajorContext();
+
+#if SLKC_WITH_LANGUAGE_SERVER
+	for (auto &i : _targetModule->imports) {
+		if (i.second.idxNameToken != SIZE_MAX) {
+			// Update corresponding semantic information.0
+			auto &tokenInfo = tokenInfos[i.second.idxNameToken];
+			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+			tokenInfo.semanticType = SemanticType::Property;
+		}
+
+		updateCompletionContext(i.second.ref, CompletionContext::Import);
+		updateSemanticType(i.second.ref, SemanticType::Property);
+
+		IdRef importedPath;
+		for (size_t j = 0; j < i.second.ref.size(); ++j) {
+			if (i.second.ref[j].idxAccessOpToken != SIZE_MAX) {
+				auto &tokenInfo = tokenInfos[i.second.ref[j].idxAccessOpToken];
+				tokenInfo.semanticInfo.importedPath = importedPath;
+			}
+
+			if (i.second.ref[j].idxToken != SIZE_MAX) {
+				auto &tokenInfo = tokenInfos[i.second.ref[j].idxToken];
+				tokenInfo.semanticInfo.importedPath = importedPath;
+			}
+
+			importedPath.push_back(i.second.ref[j]);
+		}
+	}
+
+	for (auto &i : _targetModule->unnamedImports) {
+		updateCompletionContext(i.ref, CompletionContext::Import);
+		updateSemanticType(i.ref, SemanticType::Property);
+
+		IdRef importedPath;
+		for (size_t j = 0; j < i.ref.size(); ++j) {
+			if (i.ref[j].idxAccessOpToken != SIZE_MAX) {
+				auto &tokenInfo = tokenInfos[i.ref[j].idxAccessOpToken];
+				tokenInfo.semanticInfo.importedPath = importedPath;
+			}
+
+			if (i.ref[j].idxToken != SIZE_MAX) {
+				auto &tokenInfo = tokenInfos[i.ref[j].idxToken];
+				tokenInfo.semanticInfo.importedPath = importedPath;
+			}
+
+			importedPath.push_back(i.ref[j]);
+		}
+	}
+#endif
 
 	for (auto &i : _targetModule->imports) {
 		_write(os, (uint32_t)i.first.size());
@@ -166,18 +225,6 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport, shared
 					"The import item shadows an existing member"));
 
 		_targetModule->scope->members[i.first] = make_shared<AliasNode>(lexer->tokens[i.second.idxNameToken].beginLocation, this, i.first, i.second.ref);
-
-#if SLKC_WITH_LANGUAGE_SERVER
-		if (i.second.idxNameToken != SIZE_MAX) {
-			// Update corresponding semantic information.
-			auto &tokenInfo = tokenInfos[i.second.idxNameToken];
-			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
-			tokenInfo.semanticType = SemanticType::Property;
-		}
-
-		updateCompletionContext(i.second.ref, CompletionContext::Import);
-		updateSemanticType(i.second.ref, SemanticType::Property);
-#endif
 	}
 
 	for (auto &i : _targetModule->unnamedImports) {
@@ -185,17 +232,17 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport, shared
 		compileIdRef(os, i.ref);
 
 		importModule(i.ref);
-
-#if SLKC_WITH_LANGUAGE_SERVER
-		updateCompletionContext(i.ref, CompletionContext::Import);
-		updateSemanticType(i.ref, SemanticType::Property);
-#endif
 	}
 
 	popMajorContext();
 
 	curMajorContext = MajorContext();
 	compileScope(is, os, _targetModule->scope);
+
+#if SLKC_WITH_LANGUAGE_SERVER
+	if (isImport)
+		tokenInfos = savedTokenInfos;
+#endif
 }
 
 void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope> scope) {
@@ -622,6 +669,8 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 			compiledFn->genericParamIndices = j->genericParamIndices;
 			compiledFn->access = j->access;
 
+			compiledFn->isAsync = j->isAsync;
+
 			curFn = compiledFn;
 
 			if (j->body)
@@ -648,6 +697,9 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 			fnd.flags |= slxfmt::FND_OVERRIDE;
 		if (i.second->access & ACCESS_FINAL)
 			fnd.flags |= slxfmt::FND_FINAL;
+
+		if (i.second->isAsync)
+			fnd.flags |= slxfmt::FND_ASYNC;
 
 		if (i.second->paramIndices.count("..."))
 			hasVarArg = true;

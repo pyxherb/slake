@@ -1,14 +1,6 @@
 #ifndef _SLKC_CONFIG_H_IN_
 #define _SLKC_CONFIG_H_IN_
 
-#ifndef TRUE
-#define TRUE true
-#endif
-
-#ifndef FALSE
-#define FALSE false
-#endif
-
-#cmakedefine SLKC_WITH_LANGUAGE_SERVER
+#cmakedefine01 SLKC_WITH_LANGUAGE_SERVER
 
 #endif

@@ -1,5 +1,6 @@
 #include "server.h"
 #include "../compiler/compiler.h"
+#include <filesystem>
 
 using namespace slake::slkc;
 
@@ -202,10 +203,10 @@ CompletionItemType slake::slkc::Document::_toCompletionItemType(NodeType nodeTyp
 			return CompletionItemType::Trait;
 		case NodeType::Module:
 			return CompletionItemType::Module;
-		/*case NodeType::Enum:
-			return CompletionItemType::Enum;
-		case NodeType::EnumConst:
-			return CompletionItemType::EnumConst;*/
+			/*case NodeType::Enum:
+				return CompletionItemType::Enum;
+			case NodeType::EnumConst:
+				return CompletionItemType::EnumConst;*/
 	}
 
 	throw std::logic_error("Unrecognized node type");
@@ -363,17 +364,15 @@ succeeded:
 			break;
 		}
 		case CompletionContext::Import: {
-			if (tokenInfo.tokenContext.curScope)
-				_getCompletionItems(
-					_walkForCompletion(tokenInfo.tokenContext.curScope.get(), true, tokenInfo.semanticInfo.isStatic),
-					completionItems,
-					{ NodeType::Var,
-						NodeType::Fn,
-						NodeType::GenericParam,
-						NodeType::Class,
-						NodeType::Interface,
-						NodeType::Trait,
-						NodeType::Module });
+			std::string path;
+
+			for (size_t i = 0; i < tokenInfo.semanticInfo.importedPath.size(); ++i) {
+				if (i)
+					path += "/";
+				path += tokenInfo.semanticInfo.importedPath[i].name;
+			}
+
+			_getImportCompletionItems(path, completionItems);
 			break;
 		}
 		case CompletionContext::Type: {
@@ -458,4 +457,105 @@ succeeded:
 	}
 
 	return completionItems;
+}
+
+void slake::slkc::Document::_getImportCompletionItems(std::string path, std::deque<CompletionItem> &completionItems) {
+	std::set<std::string> foundModuleNames;
+
+	for (auto i : compiler->modulePaths) {
+#ifdef _WIN32
+		std::string contactedPath = i + "\\" + path;
+
+		std::string findPath;
+
+		WIN32_FIND_DATAA findData;
+		HANDLE hFindFile;
+
+		findData = {};
+		findPath = contactedPath + "\\*.slk";
+
+		hFindFile = FindFirstFileA(findPath.c_str(), &findData);
+		do {
+			if (hFindFile == INVALID_HANDLE_VALUE)
+				break;
+
+			std::string fileName = findData.cFileName;
+
+			size_t idxLastPathSeparator = fileName.find_last_of('/');
+			if (idxLastPathSeparator != std::string::npos)
+				fileName = fileName.substr(idxLastPathSeparator);
+
+			fileName = fileName.substr(0, fileName.size() - 4);
+
+			if (!foundModuleNames.count(fileName)) {
+				CompletionItem item = {};
+				item.label = fileName;
+				item.type = CompletionItemType::Module;
+
+				completionItems.push_back(item);
+
+				foundModuleNames.insert(fileName);
+			}
+		} while (FindNextFileA(hFindFile, &findData));
+
+		findData = {};
+		findPath = contactedPath + "\\*.slx";
+
+		hFindFile = FindFirstFileA(findPath.c_str(), &findData);
+		do {
+			if (hFindFile == INVALID_HANDLE_VALUE)
+				break;
+
+			std::string fileName = findData.cFileName;
+
+			size_t idxLastPathSeparator = fileName.find_last_of('/');
+			if (idxLastPathSeparator != std::string::npos)
+				fileName = fileName.substr(idxLastPathSeparator);
+
+			fileName = fileName.substr(0, fileName.size() - 4);
+
+			if (!foundModuleNames.count(fileName)) {
+				CompletionItem item = {};
+				item.label = fileName;
+				item.type = CompletionItemType::Module;
+
+				completionItems.push_back(item);
+
+				foundModuleNames.insert(fileName);
+			}
+		} while (FindNextFileA(hFindFile, &findData));
+
+		findData = {};
+		findPath = contactedPath + "\\*.*";
+
+		hFindFile = FindFirstFileA(findPath.c_str(), &findData);
+		do {
+			if (hFindFile == INVALID_HANDLE_VALUE)
+				break;
+
+			std::string fileName = findData.cFileName;
+
+			if (fileName == "." || fileName == "..")
+				continue;
+
+			if (!(findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+				continue;
+
+			size_t idxLastPathSeparator = fileName.find_last_of('/');
+			if (idxLastPathSeparator != std::string::npos)
+				fileName = fileName.substr(idxLastPathSeparator);
+
+			if (!foundModuleNames.count(fileName)) {
+				CompletionItem item = {};
+				item.label = fileName;
+				item.type = CompletionItemType::Module;
+
+				completionItems.push_back(item);
+
+				foundModuleNames.insert(fileName);
+			}
+		} while (FindNextFileA(hFindFile, &findData));
+#else
+#endif
+	}
 }

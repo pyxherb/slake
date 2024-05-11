@@ -1,28 +1,10 @@
 module hostext;
 
 import {
-	hostext.extfns as extfnsModule
+	hostext.extfns
 }
 
 pub let g_globalVar: Test;
-
-class AnotherGeneric<T, U> {
-	pub let n : T;
-
-	class ChildGeneric<V, T> {
-		pub let x: T;
-
-		pub fn setX(T x) {
-			this.x = x;
-			g_globalVar.lab.x;
-			return;
-		}
-
-		pub fn getX(): T {
-			return this.x;
-		}
-	}
-}
 
 class Test {
 	static let n : f32;
@@ -69,19 +51,8 @@ class Derived(Test) {
 	pub operator+(f32 x, Test t) : f32 {
 		return this.x + x;
 	}
-}
 
-class AnotherDerived(Derived) {
-	pub let z: i32;
-
-	pub operator new(i32 z) {
-		this.z = z;
-		this.x = z * 4;
-		this.y = z * 2;
-		return;
-	}
-
-	pub fn getZ(): i32 {
+	pub fn getX() : i32 {
 		return this.y;
 	}
 }
@@ -89,25 +60,9 @@ class AnotherDerived(Derived) {
 class Unrelated {
 }
 
-pub fn main() : i32 {
-	let x: AnotherGeneric<i32, f32>.ChildGeneric<f32, i32> = new AnotherGeneric<i32, f32>.ChildGeneric<f32, i32>();
-	x.setX(123);
+pub fn main() async : i32 {
+	let x : Derived = new Derived(123);
 	x.getX();
-
-	let test: Test = new Derived(50);
-	test.lab = test;
-	test.lab.lab.x;
-
-	let s: Derived;
-	s.bal.bal.lab;
-
-	s + 1;
-
-	let n = 1.14 + 5;
-
-	while(test.x = test.x - 1) {
-		yield test.getX();
-	}
 
 	return 114514;
 }

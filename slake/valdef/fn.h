@@ -22,7 +22,8 @@ namespace slake {
 	using FnFlags = uint32_t;
 
 	constexpr static FnFlags
-		FN_VARG = 0x01;
+		FN_VARG = 0x01,
+		FN_ASYNC = 0x02;
 
 	class BasicFnValue : public MemberValue {
 	protected:

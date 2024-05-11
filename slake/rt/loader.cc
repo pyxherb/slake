@@ -239,6 +239,9 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 
 		std::unique_ptr<FnValue> fn = std::make_unique<FnValue>(this, (uint32_t)i.lenBody, access, _loadType(fs, _read<slxfmt::Type>(fs)));
 
+		if (i.flags & slxfmt::FND_ASYNC)
+			fn->fnFlags |= FN_ASYNC;
+
 		for (size_t j = 0; j < i.nGenericParams; ++j) {
 			fn->genericParams.push_back(_loadGenericParam(fs));
 		}

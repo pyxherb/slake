@@ -131,21 +131,22 @@ namespace slake {
 
 		/// @brief Function Descriptor (FND)
 		struct FnDesc final {
-			uint8_t flags : 8;				// Flags
+			uint16_t flags : 16;				// Flags
 			uint16_t lenName : 16;			// Length of name
 			uint8_t nGenericParams : 8;		// Number of generic parameters
 			uint8_t nParams : 8;			// Number of parameters, only used by compilers
 			uint32_t lenBody : 24;			// Length of body
 			uint32_t nSourceLocDescs : 32;	// Number of SLDs
 		};
-		constexpr static uint8_t
-			FND_PUB = 0x01,		  // Public
-			FND_FINAL = 0x02,	  // Final
-			FND_OVERRIDE = 0x04,  // Override
-			FND_STATIC = 0x08,	  // Static
-			FND_NATIVE = 0x10,	  // Native
-			FND_DBG = 0x40,		  // With debugging information
-			FND_VARG = 0x80		  // Variable arguments
+		constexpr static uint16_t
+			FND_PUB = 0x0001,		// Public
+			FND_FINAL = 0x0002,		// Final
+			FND_OVERRIDE = 0x0004,	// Override
+			FND_STATIC = 0x0008,	// Static
+			FND_NATIVE = 0x0010,	// Native
+			FND_DBG = 0x0040,		// With debugging information
+			FND_VARG = 0x0080,		// Variable arguments
+			FND_ASYNC = 0x0100		// Asynchronous
 			;
 
 		struct SrcInfoEntry {

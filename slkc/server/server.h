@@ -76,6 +76,10 @@ namespace slake {
 				std::deque<CompletionItem> &completionItems,
 				const std::set<NodeType> &targetNodeTypes);
 			std::deque<CompletionItem> getCompletionItems(Location location);
+
+			void _getImportCompletionItems(
+				std::string path,
+				std::deque<CompletionItem> &completionItems);
 		};
 
 		enum class RequestType {

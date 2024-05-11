@@ -632,7 +632,17 @@ shared_ptr<TypeNameNode> Parser::parseTypeName() {
 	if (auto &token = lexer->peekToken(); token.tokenId == TokenId::AndOp) {
 		lexer->nextToken();
 
-		type = make_shared<RefTypeNameNode>(type);
+		auto result = make_shared<RefTypeNameNode>(type);
+		result->idxIndicatorToken = lexer->getTokenIndex(token);
+		type = result;
+	}
+
+	if (auto &token = lexer->peekToken(); token.tokenId == TokenId::MulOp) {
+		lexer->nextToken();
+
+		auto result = make_shared<ContextTypeNameNode>(type);
+		result->idxIndicatorToken = lexer->getTokenIndex(token);
+		type = result;
 	}
 
 	return type;
@@ -672,17 +682,31 @@ fail:
 
 IdRef Parser::parseModuleRef() {
 	IdRef ref;
+	size_t idxPrecedingAccessOp = SIZE_MAX;
 
 	while (true) {
-		auto &nameToken = expectToken(TokenId::Id);
-		auto nameTokenIndex = lexer->getTokenIndex(nameToken);
+		auto &nameToken = lexer->peekToken();
 
-		ref.push_back(IdRefEntry(nameToken.beginLocation, nameTokenIndex, nameToken.text));
+		auto refEntry = IdRefEntry(nameToken.beginLocation, SIZE_MAX, "");
+		refEntry.idxAccessOpToken = idxPrecedingAccessOp;
+
+		if (nameToken.tokenId != TokenId::Id) {
+			// Return the bad reference.
+			ref.push_back(refEntry);
+			return ref;
+		} else {
+			// Push current reference scope.
+			lexer->nextToken();
+			refEntry.name = nameToken.text;
+			refEntry.idxToken = lexer->getTokenIndex(nameToken);
+			ref.push_back(refEntry);
+		}
 
 		if (auto &token = lexer->peekToken(); token.tokenId != TokenId::Dot)
 			break;
 
-		lexer->nextToken();
+		const auto &precedingAccessOpToken = lexer->nextToken();
+		idxPrecedingAccessOp = lexer->getTokenIndex(precedingAccessOpToken);
 	}
 
 	return ref;
@@ -731,9 +755,11 @@ IdRef Parser::parseRef() {
 		refEntry.idxAccessOpToken = idxPrecedingAccessOp;
 
 		if (nameToken.tokenId != TokenId::Id) {
+			// Return the bad reference.
 			ref.push_back(refEntry);
 			return ref;
 		} else {
+			// Push current reference scope.
 			lexer->nextToken();
 			refEntry.name = nameToken.text;
 			refEntry.idxToken = lexer->getTokenIndex(nameToken);
@@ -1396,6 +1422,14 @@ shared_ptr<FnOverloadingNode> Parser::parseFnDecl(string &nameOut) {
 		overloading->idxParamRParentheseToken = lexer->getTokenIndex(paramRParentheseToken);
 	}
 
+	if (auto &token = lexer->peekToken(); token.tokenId == TokenId::AsyncKeyword) {
+		lexer->nextToken();
+
+		overloading->idxAsyncModifierToken = lexer->getTokenIndex(token);
+
+		overloading->isAsync = true;
+	}
+
 	if (auto &token = lexer->peekToken(); token.tokenId == TokenId::Colon) {
 		lexer->nextToken();
 
@@ -1951,7 +1985,14 @@ void Parser::parseImportList() {
 	if (auto &beginToken = lexer->peekToken(); beginToken.tokenId == TokenId::ImportKeyword) {
 		lexer->nextToken();
 
-		expectToken(TokenId::LBrace);
+		const auto &lBraceToken = expectToken(TokenId::LBrace);
+
+#if SLKC_WITH_LANGUAGE_SERVER
+		{
+			auto &tokenInfo = compiler->tokenInfos[lexer->getTokenIndex(lBraceToken)];
+			tokenInfo.completionContext = CompletionContext::Import;
+		}
+#endif
 
 		while (true) {
 			auto ref = parseModuleRef();

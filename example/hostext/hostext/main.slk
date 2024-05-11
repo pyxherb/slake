@@ -85,7 +85,7 @@ class Unrelated {
 
 let n : AnotherDerived;
 
-pub fn main(): i32 {
+pub fn main() async: i32 {
 	hostext.extfns.print("Entered main\n");
 
 	let x: AnotherGeneric<i32, f32>.ChildGeneric<f32, i32> = new AnotherGeneric<i32, f32>.ChildGeneric<f32, i32>();

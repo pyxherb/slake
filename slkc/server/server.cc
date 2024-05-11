@@ -413,6 +413,9 @@ slake::slkc::Server::Server() {
 					case NodeType::Var:
 						responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((VarNode*)m.get()), doc->compiler.get());
 						break;
+					case NodeType::Param:
+						responseBodyValue["content"] = "(Parameter)";
+						break;
 					case NodeType::LocalVar:
 						responseBodyValue["content"] = "(Local variable)";
 						break;

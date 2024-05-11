@@ -254,6 +254,9 @@ void Compiler::compileStmt(shared_ptr<StmtNode> stmt) {
 		case StmtType::Yield: {
 			auto s = static_pointer_cast<YieldStmtNode>(stmt);
 
+			if (!(curFn->isAsync))
+				throw FatalCompilationError({ stmt->getLocation(), MessageType::Error, "Cannot yield in a non-asynchronous function" });
+
 			if (!s->returnValue) {
 				if (curFn->returnType->getTypeId() != Type::Void)
 					throw FatalCompilationError({ stmt->getLocation(), MessageType::Error, "Must yield a value" });

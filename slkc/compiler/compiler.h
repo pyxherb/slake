@@ -222,6 +222,8 @@ namespace slake {
 				bool isStatic = true;
 
 				shared_ptr<AstNode> correspondingMember;
+
+				IdRef importedPath;
 			} semanticInfo;
 
 			// Corresponding token context, for completion.

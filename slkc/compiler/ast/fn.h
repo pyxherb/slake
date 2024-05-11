@@ -63,9 +63,12 @@ namespace slake {
 			FnNode *owner = nullptr;
 			AccessModifier access = 0;
 
+			bool isAsync = false;
+
 			size_t idxNameToken = SIZE_MAX,
 				idxParamLParentheseToken = SIZE_MAX,
 				idxParamRParentheseToken = SIZE_MAX,
+				idxAsyncModifierToken = SIZE_MAX,
 				idxReturnTypeColonToken = SIZE_MAX;
 			deque<size_t> idxParamCommaTokens;
 
@@ -164,6 +167,8 @@ namespace slake {
 			shared_ptr<TypeNameNode> returnType;
 
 			deque<slxfmt::SourceLocDesc> srcLocDescs;
+
+			bool isAsync = false;
 
 			inline CompiledFnNode(const CompiledFnNode &other) {
 				name = other.name;

@@ -37,7 +37,9 @@ namespace slake {
 			Fn,
 
 			Custom,
-			IdRef,
+			Ref,
+
+			Context,
 
 			Bad
 		};
@@ -199,13 +201,33 @@ namespace slake {
 		public:
 			shared_ptr<TypeNameNode> referencedType;
 
+			size_t idxIndicatorToken = SIZE_MAX;
+
 			inline RefTypeNameNode(const RefTypeNameNode &other) : TypeNameNode(other), referencedType(other.referencedType->duplicate<TypeNameNode>()) {}
 			inline RefTypeNameNode(
 				shared_ptr<TypeNameNode> referencedType)
 				: TypeNameNode(referencedType->getLocation(), referencedType->isConst) {}
 			virtual ~RefTypeNameNode() = default;
 
-			virtual inline Type getTypeId() const override { return Type::IdRef; }
+			virtual inline Type getTypeId() const override { return Type::Ref; }
+		};
+
+		class ContextTypeNameNode : public TypeNameNode {
+		private:
+			virtual shared_ptr<AstNode> doDuplicate() override;
+
+		public:
+			shared_ptr<TypeNameNode> resultType;
+
+			size_t idxIndicatorToken = SIZE_MAX;
+
+			inline ContextTypeNameNode(const ContextTypeNameNode &other) : TypeNameNode(other), resultType(other.resultType) {}
+			inline ContextTypeNameNode(
+				shared_ptr<TypeNameNode> resultType)
+				: TypeNameNode(resultType->getLocation(), false) {}
+			virtual ~ContextTypeNameNode() = default;
+
+			virtual inline Type getTypeId() const override { return Type::Context; }
 		};
 
 		class BadTypeNameNode : public TypeNameNode {

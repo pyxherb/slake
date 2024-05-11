@@ -101,7 +101,7 @@ bool Compiler::isCompoundTypeName(shared_ptr<TypeNameNode> node) {
 
 bool slake::slkc::Compiler::isLValueType(shared_ptr<TypeNameNode> typeName) {
 	switch (typeName->getTypeId()) {
-		case Type::IdRef:
+		case Type::Ref:
 			return true;
 		case Type::Custom:
 			// stub
@@ -439,4 +439,8 @@ shared_ptr<AstNode> FnTypeNameNode::doDuplicate() {
 
 shared_ptr<AstNode> RefTypeNameNode::doDuplicate() {
 	return make_shared<RefTypeNameNode>(*this);
+}
+
+shared_ptr<AstNode> slake::slkc::ContextTypeNameNode::doDuplicate() {
+	return make_shared<ContextTypeNameNode>(*this);
 }

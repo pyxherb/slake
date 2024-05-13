@@ -96,8 +96,6 @@ namespace slake {
 			GenericParamNodeList genericParams;
 			unordered_map<string, size_t> genericParamIndices;
 
-			shared_ptr<Scope> scope = make_shared<Scope>();
-
 			size_t idxInterfaceToken = SIZE_MAX,
 				   idxNameToken = SIZE_MAX;
 
@@ -131,7 +129,6 @@ namespace slake {
 				string name)
 				: _loc(loc),
 				  name(name) {
-				scope = make_shared<Scope>();
 				setScope(make_shared<Scope>());
 			}
 			virtual ~InterfaceNode() = default;

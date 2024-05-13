@@ -351,15 +351,13 @@ bool Compiler::isTypeNamesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<T
 }
 
 shared_ptr<AstNode> Compiler::resolveCustomTypeName(CustomTypeNameNode *typeName) {
-	if (typeName->resolvedPartsOut.size())
-		return typeName->resolvedPartsOut.back().second;
+	if (!typeName->cachedResolvedResult.expired())
+		return typeName->cachedResolvedResult.lock();
 
 	// Check if the type refers to a generic parameter.
 	if ((typeName->ref.size() == 1) && (typeName->ref[0].genericArgs.empty())) {
 		auto genericParam = lookupGenericParam(typeName->scope->owner->shared_from_this(), typeName->ref[0].name);
 		if (genericParam) {
-			typeName->resolvedPartsOut.push_back({ IdRef{ IdRefEntry{ typeName->getLocation(), SIZE_MAX, typeName->ref[0].name, {} } }, genericParam });
-
 #if SLKC_WITH_LANGUAGE_SERVER
 			// Update corresponding semantic information.
 			auto &tokenInfo = tokenInfos[typeName->ref[0].idxToken];
@@ -368,41 +366,51 @@ shared_ptr<AstNode> Compiler::resolveCustomTypeName(CustomTypeNameNode *typeName
 			tokenInfo.semanticType = SemanticType::TypeParam;
 #endif
 
-			goto succeeded;
+			typeName->cachedResolvedResult = genericParam;
+			return genericParam;
 		}
 	}
 
 	// Check the type with scope where the type name is created.
-	typeName->resolvedPartsOut.clear();
 	if (typeName->scope) {
-		if (resolveIdRefWithScope(typeName->scope, typeName->ref, typeName->resolvedPartsOut)) {
-			goto succeeded;
+		deque<pair<IdRef, shared_ptr<AstNode>>> resolvedPartsOut;
+
+		if (resolveIdRefWithScope(typeName->scope, typeName->ref, resolvedPartsOut)) {
+			if (resolvedPartsOut.size() > 1)
+				throw FatalCompilationError(
+					Message(
+						Location(typeName->getLocation()),
+						MessageType::Error,
+						"Expecting a static identifier"));
+
+			typeName->cachedResolvedResult = resolvedPartsOut.back().second;
+			return resolvedPartsOut.back().second;
 		}
 	}
 
 	// Check the type with the global scope.
-	typeName->resolvedPartsOut.clear();
-	if (resolveIdRef(typeName->ref, typeName->resolvedPartsOut, true)) {
-		goto succeeded;
+	{
+		deque<pair<IdRef, shared_ptr<AstNode>>> resolvedPartsOut;
+
+		if (resolveIdRef(typeName->ref, resolvedPartsOut, true)) {
+			if (resolvedPartsOut.size() > 1)
+				throw FatalCompilationError(
+					Message(
+						Location(typeName->getLocation()),
+						MessageType::Error,
+						"Expecting a static identifier"));
+
+			typeName->cachedResolvedResult = resolvedPartsOut.back().second;
+			return resolvedPartsOut.back().second;
+		}
 	}
 
 	// Cannot resolve the type name - generate an error.
-	typeName->resolvedPartsOut.clear();
 	throw FatalCompilationError(
 		Message(
 			Location(typeName->getLocation()),
 			MessageType::Error,
 			"Type `" + to_string(typeName->ref, this) + "' was not found"));
-
-succeeded:
-	if (typeName->resolvedPartsOut.size() > 1)
-		throw FatalCompilationError(
-			Message(
-				Location(typeName->getLocation()),
-				MessageType::Error,
-				"Expecting a static identifier"));
-
-	return typeName->resolvedPartsOut.back().second;
 }
 
 bool Compiler::isSameType(shared_ptr<TypeNameNode> x, shared_ptr<TypeNameNode> y) {

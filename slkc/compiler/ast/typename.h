@@ -121,7 +121,7 @@ namespace slake {
 
 		public:
 			IdRef ref;
-			deque<pair<IdRef, shared_ptr<AstNode>>> resolvedPartsOut;
+			weak_ptr<AstNode> cachedResolvedResult;
 
 			Compiler *compiler;
 			Scope *scope;
@@ -131,7 +131,6 @@ namespace slake {
 			inline CustomTypeNameNode(const CustomTypeNameNode &other)
 				: TypeNameNode(other),
 				  ref(duplicateIdRef(other.ref)),
-				  resolvedPartsOut(other.resolvedPartsOut),
 				  compiler(other.compiler),
 				  scope(other.scope) {
 			}

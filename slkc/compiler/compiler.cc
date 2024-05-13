@@ -126,6 +126,28 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport, shared
 				e.what()));
 	}
 
+#if SLKC_WITH_LANGUAGE_SERVER
+	if (!isImport) {
+		updateCompletionContext(_targetModule->moduleName, CompletionContext::ModuleName);
+		updateSemanticType(_targetModule->moduleName, SemanticType::Var);
+
+		IdRef curRef;
+		for (size_t i = 0; i < _targetModule->moduleName.size(); ++i) {
+			if (_targetModule->moduleName[i].idxToken != SIZE_MAX) {
+				auto &tokenInfo = tokenInfos[_targetModule->moduleName[i].idxToken];
+				tokenInfo.semanticInfo.importedPath = curRef;
+			}
+
+			if (_targetModule->moduleName[i].idxAccessOpToken != SIZE_MAX) {
+				auto &tokenInfo = tokenInfos[_targetModule->moduleName[i].idxAccessOpToken];
+				tokenInfo.semanticInfo.importedPath = curRef;
+			}
+
+			curRef.push_back(_targetModule->moduleName[i]);
+		}
+	}
+#endif
+
 	{
 		slxfmt::ImgHeader ih = {};
 
@@ -143,8 +165,7 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport, shared
 		throw FatalCompilationError(Message(
 			_targetModule->moduleName.back().loc,
 			MessageType::Error,
-			"Expecting an identifier"
-		));
+			"Expecting a complete module name"));
 	}
 
 	if (_targetModule->moduleName.size()) {
@@ -211,6 +232,10 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport, shared
 #endif
 
 	for (auto &i : _targetModule->imports) {
+		// Skip bad references.
+		// if (!isCompleteIdRef(i.second.ref))
+		//	continue;
+
 		_write(os, (uint32_t)i.first.size());
 		_write(os, i.first.data(), i.first.length());
 		compileIdRef(os, i.second.ref);
@@ -228,6 +253,10 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport, shared
 	}
 
 	for (auto &i : _targetModule->unnamedImports) {
+		// Skip bad references.
+		// if (!isCompleteIdRef(i.ref))
+		//	continue;
+
 		_write(os, (uint32_t)0);
 		compileIdRef(os, i.ref);
 
@@ -632,11 +661,24 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		}
 	}
 
+	auto mergeGenericParams = [this](const GenericParamNodeList &newParams) {
+		for (auto &i : newParams) {
+			if (curMajorContext.genericParamIndices.count(i->name))
+				throw FatalCompilationError(
+					Message(
+						i->getLocation(),
+						MessageType::Error,
+						"This generic parameter shadows another generic parameter"));
+			curMajorContext.genericParams.push_back(i);
+			curMajorContext.genericParamIndices[i->name] = curMajorContext.genericParams.size() - 1;
+		}
+	};
+
 	for (auto &i : funcs) {
 		for (auto &j : i.second->overloadingRegistries) {
 			pushMajorContext();
 
-			curMajorContext.mergeGenericParams(j->genericParams);
+			mergeGenericParams(j->genericParams);
 
 			string mangledFnName = i.first;
 
@@ -777,7 +819,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		}
 
 		// curMajorContext = MajorContext();
-		curMajorContext.mergeGenericParams(i.second->genericParams);
+		mergeGenericParams(i.second->genericParams);
 
 		slxfmt::ClassTypeDesc ctd = {};
 
@@ -815,7 +857,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		pushMajorContext();
 
 		// curMajorContext = MajorContext();
-		curMajorContext.mergeGenericParams(i.second->genericParams);
+		mergeGenericParams(i.second->genericParams);
 
 		slxfmt::InterfaceTypeDesc itd = {};
 
@@ -848,7 +890,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		pushMajorContext();
 
 		// curMajorContext = MajorContext();
-		curMajorContext.mergeGenericParams(i.second->genericParams);
+		mergeGenericParams(i.second->genericParams);
 
 		slxfmt::TraitTypeDesc ttd = {};
 

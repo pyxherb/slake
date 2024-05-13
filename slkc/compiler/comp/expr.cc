@@ -175,7 +175,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 					auto node = resolveCustomTypeName(static_pointer_cast<CustomTypeNameNode>(lhsType).get());
 
 					auto determineOverloading = [this, e](shared_ptr<MemberNode> n, uint32_t lhsRegIndex) -> bool {
-						if (auto it = n->scope->members.find(std::to_string(e->op));
+						if (auto it = n->scope->members.find("operator" + std::to_string(e->op));
 							it != n->scope->members.end()) {
 							assert(it->second->getNodeType() == NodeType::Fn);
 							shared_ptr<FnNode> operatorNode = static_pointer_cast<FnNode>(it->second);
@@ -646,7 +646,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 					auto lhsType = evalExprType(e->lhs), rhsType = evalExprType(e->rhs);
 
 					auto determineOverloading = [this, e, rhsType](shared_ptr<MemberNode> n, uint32_t lhsRegIndex) -> bool {
-						if (auto it = n->scope->members.find(std::to_string(e->op));
+						if (auto it = n->scope->members.find("operator" + std::to_string(e->op));
 							it != n->scope->members.end()) {
 							assert(it->second->getNodeType() == NodeType::Fn);
 							shared_ptr<FnNode> operatorNode = static_pointer_cast<FnNode>(it->second);
@@ -1441,7 +1441,7 @@ void Compiler::compileExpr(shared_ptr<ExprNode> expr) {
 							make_shared<RegRefNode>(tmpRegIndex, true));
 					break;
 				case NodeType::ArgRef:
-					static_pointer_cast<ArgRefNode>(x)->unwrapData = (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RValue);
+					static_pointer_cast<ArgRefNode>(x)->unwrapData = (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::LValue);
 
 					curFn->insertIns(
 						Opcode::STORE,

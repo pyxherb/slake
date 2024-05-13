@@ -109,14 +109,6 @@ namespace slake {
 				curMinorContext = savedMinorContexts.back();
 				savedMinorContexts.pop_back();
 			}
-
-			inline void mergeGenericParams(const GenericParamNodeList &genericParams) {
-				this->genericParams.insert(
-					this->genericParams.end(),
-					genericParams.begin(),
-					genericParams.end());
-				genericParamIndices = genGenericParamIndicies(this->genericParams);
-			}
 		};
 
 #if SLKC_WITH_LANGUAGE_SERVER
@@ -163,6 +155,7 @@ namespace slake {
 			Import,		   // User is entering an import item.
 			Type,		   // User is entering a type name.
 			Name,		   // User is entering name of an identifier.
+			ModuleName,	   // User is entering name of a module.
 			Expr,		   // User is entering an expression.
 			MemberAccess,  // User is accessing an member.
 		};
@@ -497,6 +490,8 @@ namespace slake {
 			//
 			// Class end
 			//
+
+			shared_ptr<Scope> mergeScope(Scope *a, Scope *b);
 
 			friend class AstVisitor;
 			friend class MemberNode;

@@ -375,6 +375,18 @@ succeeded:
 			_getImportCompletionItems(path, completionItems);
 			break;
 		}
+		case CompletionContext::ModuleName: {
+			std::string path;
+
+			for (size_t i = 0; i < tokenInfo.semanticInfo.importedPath.size(); ++i) {
+				if (i)
+					path += "/";
+				path += tokenInfo.semanticInfo.importedPath[i].name;
+			}
+
+			_getImportCompletionItems(path, completionItems);
+			break;
+		}
 		case CompletionContext::Type: {
 			if (tokenInfo.tokenContext.curScope)
 				_getCompletionItems(

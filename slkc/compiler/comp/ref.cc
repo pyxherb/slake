@@ -146,13 +146,9 @@ bool Compiler::_resolveIdRef(Scope *scope, const IdRef &ref, deque<pair<IdRef, s
 	}
 #endif
 
-	// Raise an error if the reference is incomplete.
+	// Return false if the reference is incomplete.
 	if (ref[0].idxToken == SIZE_MAX)
-		throw FatalCompilationError(
-			Message(
-				ref[0].loc,
-				MessageType::Error,
-				"Expecting an identifier"));
+		return false;
 
 	if (ref[0].name == "base") {
 		if (!resolveContext.isStatic)

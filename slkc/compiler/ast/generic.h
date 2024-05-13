@@ -21,6 +21,8 @@ namespace slake {
 			shared_ptr<TypeNameNode> baseType;
 			deque<shared_ptr<TypeNameNode>> traitTypes, interfaceTypes;
 
+			weak_ptr<Scope> cachedMergedScope;
+
 			size_t idxNameToken = SIZE_MAX;
 
 			size_t idxParentSlotLParentheseToken = SIZE_MAX,

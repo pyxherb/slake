@@ -692,6 +692,10 @@ IdRef Parser::parseModuleRef() {
 
 		if (nameToken.tokenId != TokenId::Id) {
 			// Return the bad reference.
+			compiler->messages.push_back(Message(
+				nameToken.beginLocation,
+				MessageType::Error,
+				"Expecting an identifier"));
 			ref.push_back(refEntry);
 			return ref;
 		} else {
@@ -756,6 +760,10 @@ IdRef Parser::parseRef() {
 
 		if (nameToken.tokenId != TokenId::Id) {
 			// Return the bad reference.
+			compiler->messages.push_back(Message(
+				nameToken.beginLocation,
+				MessageType::Error,
+				"Expecting an identifier"));
 			ref.push_back(refEntry);
 			return ref;
 		} else {
@@ -1403,7 +1411,16 @@ shared_ptr<FnOverloadingNode> Parser::parseFnDecl(string &nameOut) {
 	auto &fnKeywordToken = expectToken(TokenId::FnKeyword);
 	auto overloading = make_shared<FnOverloadingNode>(fnKeywordToken.beginLocation, compiler, curScope);
 
-	auto &nameToken = expectToken(TokenId::Id);
+	auto &nameToken = lexer->peekToken();
+	switch (nameToken.tokenId) {
+		case TokenId::Id:
+		case TokenId::NewKeyword:
+		case TokenId::DeleteKeyword:
+			lexer->nextToken();
+			break;
+		default:
+			throw SyntaxError("Expecting identifier or new or delete", nameToken.beginLocation);
+	}
 	nameOut = nameToken.text;
 	overloading->idxNameToken = lexer->getTokenIndex(nameToken);
 
@@ -1515,14 +1532,14 @@ shared_ptr<FnOverloadingNode> Parser::parseOperatorDecl(string &nameOut) {
 		case TokenId::LtEqOp:
 		case TokenId::NewKeyword:
 		case TokenId::DeleteKeyword:
-			name = nameToken.text;
+			name = "operator" + nameToken.text;
 			break;
 		case TokenId::LBracket:
-			name = "[]";
+			name = "operator[]";
 			expectToken(TokenId::RBracket);
 			break;
 		case TokenId::LParenthese:
-			name = "()";
+			name = "operator()";
 			expectToken(TokenId::RParenthese);
 			break;
 		default:

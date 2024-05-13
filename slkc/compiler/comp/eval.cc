@@ -548,7 +548,7 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 					auto node = resolveCustomTypeName(static_pointer_cast<CustomTypeNameNode>(lhsType).get());
 
 					auto determineOverloading = [this, e](shared_ptr<MemberNode> n, uint32_t lhsRegIndex) -> shared_ptr<TypeNameNode> {
-						if (auto it = n->scope->members.find(std::to_string(e->op));
+						if (auto it = n->scope->members.find("operator" + std::to_string(e->op));
 							it != n->scope->members.end()) {
 							assert(it->second->getNodeType() == NodeType::Fn);
 							shared_ptr<FnNode> operatorNode = static_pointer_cast<FnNode>(it->second);
@@ -772,7 +772,7 @@ shared_ptr<TypeNameNode> Compiler::evalExprType(shared_ptr<ExprNode> expr) {
 						return {};
 
 					auto determineOverloading = [this, e, rhsType](shared_ptr<MemberNode> n, uint32_t lhsRegIndex) -> shared_ptr<TypeNameNode> {
-						if (auto it = n->scope->members.find(std::to_string(e->op));
+						if (auto it = n->scope->members.find("operator" + std::to_string(e->op));
 							it != n->scope->members.end()) {
 							assert(it->second->getNodeType() == NodeType::Fn);
 							shared_ptr<FnNode> operatorNode = static_pointer_cast<FnNode>(it->second);

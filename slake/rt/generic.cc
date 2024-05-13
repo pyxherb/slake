@@ -42,8 +42,21 @@ void slake::Runtime::_instantiateGenericValue(Value *v, GenericInstantiationCont
 
 			value->_genericArgs = *instantiationContext.genericArgs;
 
-			for (auto &i : value->scope->members)
-				_instantiateGenericValue(i.second, instantiationContext);
+			if (value->genericParams.size() && value != instantiationContext.mappedValue) {
+				GenericInstantiationContext newInstantiationContext = instantiationContext;
+
+				// Map irreplaceable parameters to corresponding generic parameter reference type
+				// and thus the generic types will keep unchanged.
+				for (size_t i = 0; i < value->genericParams.size(); ++i) {
+					newInstantiationContext.mappedGenericArgs[value->genericParams[i].name] = Type(value->genericParams[i].name);
+				}
+
+				for (auto &i : value->scope->members)
+					_instantiateGenericValue(i.second, newInstantiationContext);
+			} else {
+				for (auto &i : value->scope->members)
+					_instantiateGenericValue(i.second, instantiationContext);
+			}
 
 			break;
 		}
@@ -81,14 +94,31 @@ void slake::Runtime::_instantiateGenericValue(Value *v, GenericInstantiationCont
 		case TypeId::Fn: {
 			BasicFnValue *value = (BasicFnValue *)v;
 
-			// We have to treat member generic functions carefully, just like what we do in the compiler.
 			if (value->genericParams.size() && value != instantiationContext.mappedValue) {
 				GenericInstantiationContext newInstantiationContext = instantiationContext;
 
 				// Map irreplaceable parameters to corresponding generic parameter reference type
 				// and thus the generic types will keep unchanged.
 				for (size_t i = 0; i < value->genericParams.size(); ++i) {
-					instantiationContext.mappedGenericArgs[value->genericParams[i].name] = Type(value->genericParams[i].name);
+					newInstantiationContext.mappedGenericArgs[value->genericParams[i].name] = Type(value->genericParams[i].name);
+				}
+
+				_instantiateGenericValue(value->returnType, newInstantiationContext);
+
+				for (auto &i : value->paramTypes)
+					_instantiateGenericValue(i, newInstantiationContext);
+
+				if (value->isNative()) {
+					((NativeFnValue *)value)->mappedGenericArgs = newInstantiationContext.mappedGenericArgs;
+				} else {
+					for (size_t i = 0; i < (((FnValue *)value))->nIns; ++i) {
+						auto &ins = (((FnValue *)value))->body[i];
+						for (size_t j = 0; j < ins.operands.size(); ++j) {
+							auto operand = ins.operands[j];
+							if (operand && operand->getType() == TypeId::TypeName)
+								_instantiateGenericValue(((TypeNameValue *)operand)->_data, newInstantiationContext);
+						}
+					}
 				}
 			} else {
 				_instantiateGenericValue(value->returnType, instantiationContext);

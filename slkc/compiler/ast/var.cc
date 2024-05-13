@@ -2,6 +2,6 @@
 
 using namespace slake::slkc;
 
-shared_ptr<AstNode> VarNode::doDuplicate() {
-	return make_shared<VarNode>(*this);
+std::shared_ptr<AstNode> VarNode::doDuplicate() {
+	return std::make_shared<VarNode>(*this);
 }

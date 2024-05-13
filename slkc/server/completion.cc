@@ -4,7 +4,7 @@
 
 using namespace slake::slkc;
 
-static string keywordConditions[] = {
+static std::string keywordConditions[] = {
 	"async",
 	"await",
 	"base",
@@ -45,7 +45,7 @@ static string keywordConditions[] = {
 	"yield"
 };
 
-static string typeNameConditions[] = {
+static std::string typeNameConditions[] = {
 	"i8",
 	"i16",
 	"i32",
@@ -56,7 +56,7 @@ static string typeNameConditions[] = {
 	"u64",
 	"f32",
 	"f64",
-	"string",
+	"std::string",
 	"bool",
 	"auto",
 	"void",
@@ -83,7 +83,7 @@ void slake::slkc::Document::_walkForCompletion(
 						membersOut[i.first] = i.second.get();
 					break;
 				case NodeType::Var: {
-					auto m = static_pointer_cast<VarNode>(i.second);
+					auto m = std::static_pointer_cast<VarNode>(i.second);
 
 					if (isStatic) {
 						if (m->access & ACCESS_STATIC) {
@@ -97,7 +97,7 @@ void slake::slkc::Document::_walkForCompletion(
 					break;
 				}
 				case NodeType::Fn: {
-					auto m = static_pointer_cast<FnNode>(i.second);
+					auto m = std::static_pointer_cast<FnNode>(i.second);
 
 					for (auto &j : m->overloadingRegistries) {
 						if (isStatic) {

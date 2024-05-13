@@ -19,10 +19,10 @@ namespace slake {
 
 		struct Message {
 			MessageType type;
-			string msg;
+			std::string msg;
 			Location loc;
 
-			Message(Location loc, const MessageType &type, const string &msg)
+			Message(Location loc, const MessageType &type, const std::string &msg)
 				: loc(loc), type(type), msg(msg) {
 			}
 		};
@@ -68,37 +68,37 @@ namespace slake {
 
 		/// @brief Statement level context
 		struct MinorContext {
-			shared_ptr<TypeNameNode> expectedType;
-			shared_ptr<Scope> curScope;
+			std::shared_ptr<TypeNameNode> expectedType;
+			std::shared_ptr<Scope> curScope;
 
-			unordered_map<string, shared_ptr<LocalVarNode>> localVars;
+			std::unordered_map<std::string, std::shared_ptr<LocalVarNode>> localVars;
 
 			uint32_t breakScopeLevel = 0;
 			uint32_t continueScopeLevel = 0;
-			string breakLabel, continueLabel;
+			std::string breakLabel, continueLabel;
 
 			EvalPurpose evalPurpose = EvalPurpose::None;
 
 			bool isLastCallTargetStatic = true;
 
-			deque<shared_ptr<TypeNameNode>> argTypes;
+			std::deque<std::shared_ptr<TypeNameNode>> argTypes;
 			bool isArgTypesSet = false;
 
-			shared_ptr<AstNode> evalDest, thisDest;
+			std::shared_ptr<AstNode> evalDest, thisDest;
 		};
 
 		/// @brief Block level context
 		struct MajorContext {
-			deque<MinorContext> savedMinorContexts;
+			std::deque<MinorContext> savedMinorContexts;
 			MinorContext curMinorContext;
 
 			uint32_t curRegCount = 0;
 			uint32_t curScopeLevel = 0;
 
 			GenericParamNodeList genericParams;
-			unordered_map<string, size_t> genericParamIndices;
+			std::unordered_map<std::string, size_t> genericParamIndices;
 
-			shared_ptr<TypeNameNode> thisType;
+			std::shared_ptr<TypeNameNode> thisType;
 
 			inline void pushMinorContext() {
 				savedMinorContexts.push_back(curMinorContext);
@@ -161,20 +161,20 @@ namespace slake {
 		};
 
 		struct TokenContext {
-			unordered_map<string, shared_ptr<LocalVarNode>> localVars;
+			std::unordered_map<std::string, std::shared_ptr<LocalVarNode>> localVars;
 
-			shared_ptr<Scope> curScope;
+			std::shared_ptr<Scope> curScope;
 
 			GenericParamNodeList genericParams;
-			unordered_map<string, size_t> genericParamIndices;
+			std::unordered_map<std::string, size_t> genericParamIndices;
 
-			deque<shared_ptr<ParamNode>> params;
-			unordered_map<string, size_t> paramIndices;
+			std::deque<std::shared_ptr<ParamNode>> params;
+			std::unordered_map<std::string, size_t> paramIndices;
 
 			TokenContext() = default;
 			TokenContext(const TokenContext &) = default;
 			TokenContext(TokenContext &&) = default;
-			inline TokenContext(shared_ptr<CompiledFnNode> curFn, const MajorContext &majorContext) {
+			inline TokenContext(std::shared_ptr<CompiledFnNode> curFn, const MajorContext &majorContext) {
 				localVars = majorContext.curMinorContext.localVars;
 				curScope = majorContext.curMinorContext.curScope;
 				genericParams = majorContext.genericParams;
@@ -186,12 +186,12 @@ namespace slake {
 			}
 
 			inline TokenContext(
-				const unordered_map<string, shared_ptr<LocalVarNode>> localVars,
-				shared_ptr<Scope> curScope,
+				const std::unordered_map<std::string, std::shared_ptr<LocalVarNode>> localVars,
+				std::shared_ptr<Scope> curScope,
 				const GenericParamNodeList &genericParams,
-				const unordered_map<string, size_t> &genericParamIndices,
-				const deque<shared_ptr<ParamNode>> &params,
-				const unordered_map<string, size_t> &paramIndices)
+				const std::unordered_map<std::string, size_t> &genericParamIndices,
+				const std::deque<std::shared_ptr<ParamNode>> &params,
+				const std::unordered_map<std::string, size_t> &paramIndices)
 				: localVars(localVars),
 				  curScope(curScope),
 				  genericParams(genericParams),
@@ -205,7 +205,7 @@ namespace slake {
 		};
 
 		struct TokenInfo {
-			string hoverInfo = "";
+			std::string hoverInfo = "";
 			SemanticType semanticType = SemanticType::None;
 			std::set<SemanticTokenModifier> semanticModifiers;
 			CompletionContext completionContext = CompletionContext::None;
@@ -214,7 +214,7 @@ namespace slake {
 				bool isTopLevelRef = true;
 				bool isStatic = true;
 
-				shared_ptr<AstNode> correspondingMember;
+				std::shared_ptr<AstNode> correspondingMember;
 
 				IdRef importedPath;
 			} semanticInfo;
@@ -227,12 +227,12 @@ namespace slake {
 		class Compiler {
 		private:
 			MajorContext curMajorContext;
-			shared_ptr<CompiledFnNode> curFn;
+			std::shared_ptr<CompiledFnNode> curFn;
 
-			shared_ptr<Scope> _rootScope = make_shared<Scope>();
-			shared_ptr<ModuleNode> _targetModule;
-			unique_ptr<Runtime> _rt;
-			deque<MajorContext> _savedMajorContexts;
+			std::shared_ptr<Scope> _rootScope = std::make_shared<Scope>();
+			std::shared_ptr<ModuleNode> _targetModule;
+			std::unique_ptr<Runtime> _rt;
+			std::deque<MajorContext> _savedMajorContexts;
 
 			void pushMajorContext();
 			void popMajorContext();
@@ -240,25 +240,25 @@ namespace slake {
 			void pushMinorContext();
 			void popMinorContext();
 
-			shared_ptr<ExprNode> evalConstExpr(shared_ptr<ExprNode> expr);
+			std::shared_ptr<ExprNode> evalConstExpr(std::shared_ptr<ExprNode> expr);
 
-			shared_ptr<TypeNameNode> evalExprType(shared_ptr<ExprNode> expr);
+			std::shared_ptr<TypeNameNode> evalExprType(std::shared_ptr<ExprNode> expr);
 
-			shared_ptr<ExprNode> castLiteralExpr(shared_ptr<ExprNode> expr, Type targetType);
+			std::shared_ptr<ExprNode> castLiteralExpr(std::shared_ptr<ExprNode> expr, Type targetType);
 
-			bool isLiteralTypeName(shared_ptr<TypeNameNode> typeName);
-			bool isNumericTypeName(shared_ptr<TypeNameNode> typeName);
-			bool isDecimalType(shared_ptr<TypeNameNode> typeName);
-			bool isCompoundTypeName(shared_ptr<TypeNameNode> typeName);
-			bool isLValueType(shared_ptr<TypeNameNode> typeName);
+			bool isLiteralTypeName(std::shared_ptr<TypeNameNode> typeName);
+			bool isNumericTypeName(std::shared_ptr<TypeNameNode> typeName);
+			bool isDecimalType(std::shared_ptr<TypeNameNode> typeName);
+			bool isCompoundTypeName(std::shared_ptr<TypeNameNode> typeName);
+			bool isLValueType(std::shared_ptr<TypeNameNode> typeName);
 
-			bool _isTypeNamesConvertible(shared_ptr<InterfaceNode> st, shared_ptr<ClassNode> dt);
+			bool _isTypeNamesConvertible(std::shared_ptr<InterfaceNode> st, std::shared_ptr<ClassNode> dt);
 
-			bool _isTypeNamesConvertible(shared_ptr<ClassNode> st, shared_ptr<InterfaceNode> dt);
-			bool _isTypeNamesConvertible(shared_ptr<InterfaceNode> st, shared_ptr<InterfaceNode> dt);
-			bool _isTypeNamesConvertible(shared_ptr<MemberNode> st, shared_ptr<TraitNode> dt);
+			bool _isTypeNamesConvertible(std::shared_ptr<ClassNode> st, std::shared_ptr<InterfaceNode> dt);
+			bool _isTypeNamesConvertible(std::shared_ptr<InterfaceNode> st, std::shared_ptr<InterfaceNode> dt);
+			bool _isTypeNamesConvertible(std::shared_ptr<MemberNode> st, std::shared_ptr<TraitNode> dt);
 
-			bool isTypeNamesConvertible(shared_ptr<TypeNameNode> src, shared_ptr<TypeNameNode> dest);
+			bool isTypeNamesConvertible(std::shared_ptr<TypeNameNode> src, std::shared_ptr<TypeNameNode> dest);
 
 			struct IdRefResolveContext {
 				bool isTopLevel = true;
@@ -266,48 +266,48 @@ namespace slake {
 				bool isStatic = true;
 			};
 
-			bool _resolveIdRef(Scope *scope, const IdRef &ref, deque<pair<IdRef, shared_ptr<AstNode>>> &partsOut, IdRefResolveContext resolveContext);
-			bool _resolveIdRefWithOwner(Scope *scope, const IdRef &ref, deque<pair<IdRef, shared_ptr<AstNode>>> &partsOut, IdRefResolveContext resolveContext);
+			bool _resolveIdRef(Scope *scope, const IdRef &ref, std::deque<std::pair<IdRef, std::shared_ptr<AstNode>>> &partsOut, IdRefResolveContext resolveContext);
+			bool _resolveIdRefWithOwner(Scope *scope, const IdRef &ref, std::deque<std::pair<IdRef, std::shared_ptr<AstNode>>> &partsOut, IdRefResolveContext resolveContext);
 
 			/// @brief Resolve a reference with current context.
 			/// @note This method also updates resolved generic arguments.
 			/// @param ref Reference to be resolved.
 			/// @param refParts Divided minimum parts of the reference that can be loaded in a single time.
 			/// @param resolvedPartsOut Where to store nodes referred by reference entries respectively.
-			bool resolveIdRef(IdRef ref, deque<pair<IdRef, shared_ptr<AstNode>>> &partsOut, bool ignoreDynamicPrecedings = false);
+			bool resolveIdRef(IdRef ref, std::deque<std::pair<IdRef, std::shared_ptr<AstNode>>> &partsOut, bool ignoreDynamicPrecedings = false);
 
 			/// @brief Resolve a reference with specified scope.
 			/// @note This method also updates resolved generic arguments.
 			/// @param scope Scope to be used for resolving.
 			/// @param ref Reference to be resolved.
 			/// @param resolvedPartsOut Where to store nodes referred by reference entries respectively.
-			bool resolveIdRefWithScope(Scope *scope, IdRef ref, deque<pair<IdRef, shared_ptr<AstNode>>> &partsOut);
+			bool resolveIdRefWithScope(Scope *scope, IdRef ref, std::deque<std::pair<IdRef, std::shared_ptr<AstNode>>> &partsOut);
 
-			std::deque<shared_ptr<FnOverloadingNode>> argDependentLookup(
+			std::deque<std::shared_ptr<FnOverloadingNode>> argDependentLookup(
 				Location loc,
 				FnNode *fn,
-				const deque<shared_ptr<TypeNameNode>> &argTypes,
-				const deque<shared_ptr<TypeNameNode>> &genericArgs);
+				const std::deque<std::shared_ptr<TypeNameNode>> &argTypes,
+				const std::deque<std::shared_ptr<TypeNameNode>> &genericArgs);
 
-			shared_ptr<Scope> scopeOf(AstNode *node);
+			std::shared_ptr<Scope> scopeOf(AstNode *node);
 
 			/// @brief Resolve a custom type.
 			/// @note This method also updates resolved generic arguments.
 			/// @param typeName Type name to be resolved.
 			/// @return Resolved node, nullptr otherwise.
-			shared_ptr<AstNode> resolveCustomTypeName(CustomTypeNameNode *typeName);
+			std::shared_ptr<AstNode> resolveCustomTypeName(CustomTypeNameNode *typeName);
 
-			bool isSameType(shared_ptr<TypeNameNode> x, shared_ptr<TypeNameNode> y);
+			bool isSameType(std::shared_ptr<TypeNameNode> x, std::shared_ptr<TypeNameNode> y);
 
-			string mangleName(
-				string name,
-				const deque<shared_ptr<TypeNameNode>> &argTypes,
+			std::string mangleName(
+				std::string name,
+				const std::deque<std::shared_ptr<TypeNameNode>> &argTypes,
 				bool isConst);
 
 			void _getFullName(MemberNode *member, IdRef &ref);
 
-			void compileExpr(shared_ptr<ExprNode> expr);
-			inline void compileExpr(shared_ptr<ExprNode> expr, EvalPurpose evalPurpose, shared_ptr<AstNode> evalDest, shared_ptr<AstNode> thisDest = {}) {
+			void compileExpr(std::shared_ptr<ExprNode> expr);
+			inline void compileExpr(std::shared_ptr<ExprNode> expr, EvalPurpose evalPurpose, std::shared_ptr<AstNode> evalDest, std::shared_ptr<AstNode> thisDest = {}) {
 				pushMinorContext();
 
 				curMajorContext.curMinorContext.evalPurpose = evalPurpose;
@@ -317,20 +317,20 @@ namespace slake {
 
 				popMinorContext();
 			}
-			void compileStmt(shared_ptr<StmtNode> stmt);
+			void compileStmt(std::shared_ptr<StmtNode> stmt);
 
-			void compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope> scope);
+			void compileScope(std::istream &is, std::ostream &os, std::shared_ptr<Scope> scope);
 			void compileIdRef(std::ostream &fs, const IdRef &ref);
-			void compileTypeName(std::ostream &fs, shared_ptr<TypeNameNode> typeName);
-			void compileValue(std::ostream &fs, shared_ptr<AstNode> expr);
-			void compileGenericParam(std::ostream &fs, shared_ptr<GenericParamNode> genericParam);
+			void compileTypeName(std::ostream &fs, std::shared_ptr<TypeNameNode> typeName);
+			void compileValue(std::ostream &fs, std::shared_ptr<AstNode> expr);
+			void compileGenericParam(std::ostream &fs, std::shared_ptr<GenericParamNode> genericParam);
 
-			bool isDynamicMember(shared_ptr<AstNode> member);
+			bool isDynamicMember(std::shared_ptr<AstNode> member);
 
-			uint32_t allocLocalVar(string name, shared_ptr<TypeNameNode> type);
+			uint32_t allocLocalVar(std::string name, std::shared_ptr<TypeNameNode> type);
 			uint32_t allocReg(uint32_t nRegs = 1);
 
-			set<Value *> importedDefinitions;
+			std::set<Value *> importedDefinitions;
 
 			struct ModuleRefComparator {
 				inline bool operator()(const IdRef &lhs, const IdRef &rhs) const {
@@ -347,19 +347,19 @@ namespace slake {
 					return true;
 				}
 			};
-			set<IdRef, ModuleRefComparator> importedModules;
+			std::set<IdRef, ModuleRefComparator> importedModules;
 
-			static unique_ptr<ifstream> moduleLocator(Runtime *rt, ValueRef<IdRefValue> ref);
-			shared_ptr<Scope> completeModuleNamespaces(const IdRef &ref);
-			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, BasicFnValue *value);
-			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, ModuleValue *value);
-			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, ClassValue *value);
-			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, InterfaceValue *value);
-			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, TraitValue *value);
-			void importDefinitions(shared_ptr<Scope> scope, shared_ptr<MemberNode> parent, Value *value);
+			static std::unique_ptr<std::ifstream> moduleLocator(Runtime *rt, ValueRef<IdRefValue> ref);
+			std::shared_ptr<Scope> completeModuleNamespaces(const IdRef &ref);
+			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, BasicFnValue *value);
+			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, ModuleValue *value);
+			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, ClassValue *value);
+			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, InterfaceValue *value);
+			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, TraitValue *value);
+			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, Value *value);
 			void importModule(const IdRef &ref);
-			shared_ptr<TypeNameNode> toTypeName(slake::Type runtimeType);
-			IdRef toAstIdRef(deque<slake::IdRefEntry> runtimeRefEntries);
+			std::shared_ptr<TypeNameNode> toTypeName(slake::Type runtimeType);
+			IdRef toAstIdRef(std::deque<slake::IdRefEntry> runtimeRefEntries);
 
 			//
 			// Generic begin
@@ -367,8 +367,8 @@ namespace slake {
 
 			struct GenericNodeArgListComparator {
 				inline bool operator()(
-					const deque<shared_ptr<TypeNameNode>> &lhs,
-					const deque<shared_ptr<TypeNameNode>> &rhs) const noexcept {
+					const std::deque<std::shared_ptr<TypeNameNode>> &lhs,
+					const std::deque<std::shared_ptr<TypeNameNode>> &rhs) const noexcept {
 					if (lhs.size() < rhs.size())
 						return true;
 					if (lhs.size() > rhs.size())
@@ -388,8 +388,8 @@ namespace slake {
 							//
 							switch (lhsTypeId) {
 								case Type::Custom: {
-									auto lhsTypeName = static_pointer_cast<CustomTypeNameNode>(lhs[i]),
-										 rhsTypeName = static_pointer_cast<CustomTypeNameNode>(rhs[i]);
+									auto lhsTypeName = std::static_pointer_cast<CustomTypeNameNode>(lhs[i]),
+										 rhsTypeName = std::static_pointer_cast<CustomTypeNameNode>(rhs[i]);
 
 									if (lhsTypeName->compiler < rhsTypeName->compiler)
 										return true;
@@ -417,8 +417,8 @@ namespace slake {
 
 			using GenericNodeCacheTable =
 				std::map<
-					deque<shared_ptr<TypeNameNode>>,  // Generic arguments.
-					shared_ptr<MemberNode>,			  // Cached instantiated value.
+					std::deque<std::shared_ptr<TypeNameNode>>,  // Generic arguments.
+					std::shared_ptr<MemberNode>,			  // Cached instantiated value.
 					GenericNodeArgListComparator>;
 
 			using GenericNodeCacheDirectory = std::map<
@@ -429,21 +429,21 @@ namespace slake {
 			mutable GenericNodeCacheDirectory _genericCacheDir;
 
 			struct GenericNodeInstantiationContext {
-				const deque<shared_ptr<TypeNameNode>> *genericArgs;
-				unordered_map<string, shared_ptr<TypeNameNode>> mappedGenericArgs;
-				shared_ptr<MemberNode> mappedNode = {};
+				const std::deque<std::shared_ptr<TypeNameNode>> *genericArgs;
+				std::unordered_map<std::string, std::shared_ptr<TypeNameNode>> mappedGenericArgs;
+				std::shared_ptr<MemberNode> mappedNode = {};
 			};
 
 			void walkTypeNameNodeForGenericInstantiation(
-				shared_ptr<TypeNameNode> &type,
+				std::shared_ptr<TypeNameNode> &type,
 				GenericNodeInstantiationContext &instantiationContext);
 			void walkNodeForGenericInstantiation(
-				shared_ptr<AstNode> node,
+				std::shared_ptr<AstNode> node,
 				GenericNodeInstantiationContext &instantiationContext);
-			void mapGenericParams(shared_ptr<MemberNode> node, GenericNodeInstantiationContext &instantiationContext);
-			shared_ptr<MemberNode> instantiateGenericNode(shared_ptr<MemberNode> node, GenericNodeInstantiationContext &instantiationContext);
+			void mapGenericParams(std::shared_ptr<MemberNode> node, GenericNodeInstantiationContext &instantiationContext);
+			std::shared_ptr<MemberNode> instantiateGenericNode(std::shared_ptr<MemberNode> node, GenericNodeInstantiationContext &instantiationContext);
 
-			shared_ptr<FnOverloadingNode> instantiateGenericFnOverloading(shared_ptr<FnOverloadingNode> overloading, GenericNodeInstantiationContext &instantiationContext);
+			std::shared_ptr<FnOverloadingNode> instantiateGenericFnOverloading(std::shared_ptr<FnOverloadingNode> overloading, GenericNodeInstantiationContext &instantiationContext);
 
 			//
 			// Generic end
@@ -454,11 +454,11 @@ namespace slake {
 			//
 #if SLKC_WITH_LANGUAGE_SERVER
 			void updateCompletionContext(size_t idxToken, CompletionContext completionContext);
-			void updateCompletionContext(shared_ptr<TypeNameNode> targetTypeName, CompletionContext completionContext);
+			void updateCompletionContext(std::shared_ptr<TypeNameNode> targetTypeName, CompletionContext completionContext);
 			void updateCompletionContext(const IdRef &ref, CompletionContext completionContext);
 
 			void updateSemanticType(size_t idxToken, SemanticType type);
-			void updateSemanticType(shared_ptr<TypeNameNode> targetTypeName, SemanticType type);
+			void updateSemanticType(std::shared_ptr<TypeNameNode> targetTypeName, SemanticType type);
 			void updateSemanticType(const IdRef &ref, SemanticType type);
 #endif
 
@@ -491,11 +491,11 @@ namespace slake {
 			// Class end
 			//
 
-			shared_ptr<Scope> mergeScope(Scope *a, Scope *b);
+			std::shared_ptr<Scope> mergeScope(Scope *a, Scope *b);
 
 			friend class AstVisitor;
 			friend class MemberNode;
-			friend string std::to_string(shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slkc::Compiler *compiler, bool asOperatorName);
+			friend std::string std::to_string(std::shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slkc::Compiler *compiler, bool asOperatorName);
 			friend class Parser;
 			friend struct Document;
 
@@ -503,17 +503,17 @@ namespace slake {
 #if SLKC_WITH_LANGUAGE_SERVER
 			std::deque<TokenInfo> tokenInfos;
 #endif
-			deque<Message> messages;
-			deque<string> modulePaths;
+			std::deque<Message> messages;
+			std::deque<std::string> modulePaths;
 			CompilerOptions options;
 			CompilerFlags flags = 0;
 			std::unique_ptr<Lexer> lexer;
 
 			inline Compiler(CompilerOptions options = {})
-				: options(options), _rt(make_unique<Runtime>(RT_NOJIT)) {}
+				: options(options), _rt(std::make_unique<Runtime>(RT_NOJIT)) {}
 			~Compiler();
 
-			void compile(std::istream &is, std::ostream &os, bool isImport = false, shared_ptr<ModuleNode> targetModule = {});
+			void compile(std::istream &is, std::ostream &os, bool isImport = false, std::shared_ptr<ModuleNode> targetModule = {});
 
 			void reset();
 

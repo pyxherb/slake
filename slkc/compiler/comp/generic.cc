@@ -3,13 +3,13 @@
 using namespace slake::slkc;
 
 void Compiler::walkTypeNameNodeForGenericInstantiation(
-	shared_ptr<TypeNameNode> &type,
+	std::shared_ptr<TypeNameNode> &type,
 	GenericNodeInstantiationContext &instantiationContext) {
 	if (!type)
 		return;
 
 	if (type->getTypeId() == Type::Custom) {
-		auto t = static_pointer_cast<CustomTypeNameNode>(type);
+		auto t = std::static_pointer_cast<CustomTypeNameNode>(type);
 
 		if ((t->ref.size() == 1) &&
 			(t->ref[0].genericArgs.empty())) {
@@ -29,11 +29,11 @@ void Compiler::walkTypeNameNodeForGenericInstantiation(
 }
 
 void Compiler::walkNodeForGenericInstantiation(
-	shared_ptr<AstNode> node,
+	std::shared_ptr<AstNode> node,
 	GenericNodeInstantiationContext &instantiationContext) {
 	switch (node->getNodeType()) {
 		case NodeType::Fn: {
-			shared_ptr<FnNode> n = static_pointer_cast<FnNode>(node);
+			std::shared_ptr<FnNode> n = std::static_pointer_cast<FnNode>(node);
 
 			for (auto &i : n->overloadingRegistries) {
 				if (i->genericParams.size() && n != instantiationContext.mappedNode) {
@@ -69,14 +69,14 @@ void Compiler::walkNodeForGenericInstantiation(
 			break;
 		}
 		case NodeType::Var: {
-			shared_ptr<VarNode> n = static_pointer_cast<VarNode>(node);
+			std::shared_ptr<VarNode> n = std::static_pointer_cast<VarNode>(node);
 
 			walkTypeNameNodeForGenericInstantiation(n->type, instantiationContext);
 
 			break;
 		}
 		case NodeType::Class: {
-			shared_ptr<ClassNode> n = static_pointer_cast<ClassNode>(node);
+			std::shared_ptr<ClassNode> n = std::static_pointer_cast<ClassNode>(node);
 
 			if (n->genericParams.size() && n != instantiationContext.mappedNode) {
 				GenericNodeInstantiationContext newInstantiationContext = instantiationContext;
@@ -119,7 +119,7 @@ void Compiler::walkNodeForGenericInstantiation(
 			break;
 		}
 		case NodeType::Interface: {
-			shared_ptr<InterfaceNode> n = static_pointer_cast<InterfaceNode>(node);
+			std::shared_ptr<InterfaceNode> n = std::static_pointer_cast<InterfaceNode>(node);
 
 			for (auto &i : n->genericParams)
 				walkNodeForGenericInstantiation(i, instantiationContext);
@@ -135,7 +135,7 @@ void Compiler::walkNodeForGenericInstantiation(
 			break;
 		}
 		case NodeType::Trait: {
-			shared_ptr<TraitNode> n = static_pointer_cast<TraitNode>(node);
+			std::shared_ptr<TraitNode> n = std::static_pointer_cast<TraitNode>(node);
 
 			for (auto &i : n->genericParams)
 				walkNodeForGenericInstantiation(i, instantiationContext);
@@ -151,7 +151,7 @@ void Compiler::walkNodeForGenericInstantiation(
 			break;
 		}
 		case NodeType::GenericParam: {
-			shared_ptr<GenericParamNode> n = static_pointer_cast<GenericParamNode>(node);
+			std::shared_ptr<GenericParamNode> n = std::static_pointer_cast<GenericParamNode>(node);
 
 			if (n->baseType)
 				walkTypeNameNodeForGenericInstantiation(n->baseType, instantiationContext);
@@ -165,7 +165,7 @@ void Compiler::walkNodeForGenericInstantiation(
 	}
 }
 
-void Compiler::mapGenericParams(shared_ptr<MemberNode> node, GenericNodeInstantiationContext &instantiationContext) {
+void Compiler::mapGenericParams(std::shared_ptr<MemberNode> node, GenericNodeInstantiationContext &instantiationContext) {
 	// DO NOT map functions because their generic parameters are saved in overloadings.
 	if (node->getNodeType() == NodeType::Fn)
 		return;
@@ -182,13 +182,13 @@ void Compiler::mapGenericParams(shared_ptr<MemberNode> node, GenericNodeInstanti
 	}
 }
 
-shared_ptr<MemberNode> Compiler::instantiateGenericNode(shared_ptr<MemberNode> node, GenericNodeInstantiationContext &instantiationContext) {
+std::shared_ptr<MemberNode> Compiler::instantiateGenericNode(std::shared_ptr<MemberNode> node, GenericNodeInstantiationContext &instantiationContext) {
 	if (auto it = _genericCacheDir.find(node.get()); it != _genericCacheDir.end()) {
 		if (auto subIt = it->second.find(*instantiationContext.genericArgs); subIt != it->second.end())
-			return static_pointer_cast<MemberNode>(subIt->second->shared_from_this());
+			return std::static_pointer_cast<MemberNode>(subIt->second->shared_from_this());
 	}
 
-	shared_ptr<MemberNode> newInstance = node->duplicate<MemberNode>();
+	std::shared_ptr<MemberNode> newInstance = node->duplicate<MemberNode>();
 
 	instantiationContext.mappedNode = newInstance;
 
@@ -203,7 +203,7 @@ shared_ptr<MemberNode> Compiler::instantiateGenericNode(shared_ptr<MemberNode> n
 	return newInstance;
 }
 
-shared_ptr<FnOverloadingNode> Compiler::instantiateGenericFnOverloading(shared_ptr<FnOverloadingNode> overloading, GenericNodeInstantiationContext &instantiationContext) {
+std::shared_ptr<FnOverloadingNode> Compiler::instantiateGenericFnOverloading(std::shared_ptr<FnOverloadingNode> overloading, GenericNodeInstantiationContext &instantiationContext) {
 	mapGenericParams(overloading, instantiationContext);
 	walkTypeNameNodeForGenericInstantiation(overloading->returnType, instantiationContext);
 

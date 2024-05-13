@@ -2,9 +2,9 @@
 
 using namespace slake::slkc;
 
-string Compiler::mangleName(
-	string name,
-	const deque<shared_ptr<TypeNameNode>> &argTypes,
+std::string Compiler::mangleName(
+	std::string name,
+	const std::deque<std::shared_ptr<TypeNameNode>> &argTypes,
 	bool isConst) {
 	std::string s = name;
 

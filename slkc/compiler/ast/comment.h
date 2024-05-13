@@ -10,9 +10,9 @@ namespace slake {
 			Location _loc;
 
 		public:
-			string content;
+			std::string content;
 
-			inline TypeNameNode(string content) : content(content) {}
+			inline TypeNameNode(std::string content) : content(content) {}
 			virtual ~TypeNameNode() = default;
 
 			virtual inline Location getLocation() const override { return _loc; }
@@ -23,7 +23,7 @@ namespace slake {
 }
 
 namespace std {
-	string to_string(shared_ptr<slake::slkc::TypeNameNode> typeName);
+	std::string to_string(std::shared_ptr<slake::slkc::TypeNameNode> typeName);
 }
 
 #endif

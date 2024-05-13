@@ -309,13 +309,13 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 
 		token.beginLocation = {
 			(size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'),
-			(idxLastBeginNewline == string::npos
+			(idxLastBeginNewline == std::string::npos
 					? beginIndex
 					: beginIndex - idxLastBeginNewline - 1)
 		};
 		token.endLocation = {
 			(size_t)std::count(strToEnd.begin(), strToEnd.end(), '\n'),
-			(idxLastEndNewline == string::npos
+			(idxLastEndNewline == std::string::npos
 					? endIndex
 					: endIndex - idxLastEndNewline - 1)
 		};

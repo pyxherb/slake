@@ -6,7 +6,7 @@
 
 namespace slake {
 	namespace slkc {
-		bool isMemberNode(shared_ptr<AstNode> node);
+		bool isMemberNode(std::shared_ptr<AstNode> node);
 	}
 }
 

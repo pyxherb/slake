@@ -2,14 +2,14 @@
 
 using namespace slake::slkc;
 
-shared_ptr<AstNode> GenericParamNode::doDuplicate() {
-	return make_shared<GenericParamNode>(*this);
+std::shared_ptr<AstNode> GenericParamNode::doDuplicate() {
+	return std::make_shared<GenericParamNode>(*this);
 }
 
-shared_ptr<GenericParamNode> slake::slkc::lookupGenericParam(shared_ptr<AstNode> node, string name) {
+std::shared_ptr<GenericParamNode> slake::slkc::lookupGenericParam(std::shared_ptr<AstNode> node, std::string name) {
 	switch (node->getNodeType()) {
 		case NodeType::Class: {
-			shared_ptr<ClassNode> n = static_pointer_cast<ClassNode>(node);
+			std::shared_ptr<ClassNode> n = std::static_pointer_cast<ClassNode>(node);
 
 			if (auto it = n->genericParamIndices.find(name); it != n->genericParamIndices.end())
 				return n->genericParams[it->second];
@@ -19,7 +19,7 @@ shared_ptr<GenericParamNode> slake::slkc::lookupGenericParam(shared_ptr<AstNode>
 			break;
 		}
 		case NodeType::Interface: {
-			shared_ptr<InterfaceNode> n = static_pointer_cast<InterfaceNode>(node);
+			std::shared_ptr<InterfaceNode> n = std::static_pointer_cast<InterfaceNode>(node);
 
 			if (auto it = n->genericParamIndices.find(name); it != n->genericParamIndices.end())
 				return n->genericParams[it->second];
@@ -29,7 +29,7 @@ shared_ptr<GenericParamNode> slake::slkc::lookupGenericParam(shared_ptr<AstNode>
 			break;
 		}
 		case NodeType::Trait: {
-			shared_ptr<TraitNode> n = static_pointer_cast<TraitNode>(node);
+			std::shared_ptr<TraitNode> n = std::static_pointer_cast<TraitNode>(node);
 
 			if (auto it = n->genericParamIndices.find(name); it != n->genericParamIndices.end())
 				return n->genericParams[it->second];
@@ -39,7 +39,7 @@ shared_ptr<GenericParamNode> slake::slkc::lookupGenericParam(shared_ptr<AstNode>
 			break;
 		}
 		case NodeType::FnOverloading: {
-			shared_ptr<FnOverloadingNode> n = static_pointer_cast<FnOverloadingNode>(node);
+			std::shared_ptr<FnOverloadingNode> n = std::static_pointer_cast<FnOverloadingNode>(node);
 
 			if (auto it = n->genericParamIndices.find(name); it != n->genericParamIndices.end())
 				return n->genericParams[it->second];

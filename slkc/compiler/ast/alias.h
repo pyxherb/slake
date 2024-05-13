@@ -12,10 +12,10 @@ namespace slake {
 			Location _loc;
 
 		public:
-			string name;
+			std::string name;
 			IdRef target;
 
-			inline AliasNode(Location loc, Compiler *compiler, string name, IdRef target)
+			inline AliasNode(Location loc, Compiler *compiler, std::string name, IdRef target)
 				: MemberNode(compiler, ACCESS_PUB), _loc(loc), name(name), target(target) {}
 			virtual ~AliasNode() = default;
 

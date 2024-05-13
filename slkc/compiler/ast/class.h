@@ -9,7 +9,7 @@
 namespace slake {
 	namespace slkc {
 		struct ParentSlot {
-			shared_ptr<TypeNameNode> typeName;
+			std::shared_ptr<TypeNameNode> typeName;
 
 			size_t idxLParentheseToken = SIZE_MAX,
 				   idxRParentheseToken = SIZE_MAX;
@@ -19,12 +19,12 @@ namespace slake {
 		private:
 			Location _loc;
 
-			virtual shared_ptr<AstNode> doDuplicate() override;
+			virtual std::shared_ptr<AstNode> doDuplicate() override;
 
 		public:
-			string name;
-			shared_ptr<TypeNameNode> parentClass;			 // Parent class
-			deque<shared_ptr<TypeNameNode>> implInterfaces;	 // Implemented interfaces
+			std::string name;
+			std::shared_ptr<TypeNameNode> parentClass;			 // Parent class
+			std::deque<std::shared_ptr<TypeNameNode>> implInterfaces;	 // Implemented interfaces
 
 			size_t idxClassToken = SIZE_MAX,
 				   idxNameToken = SIZE_MAX;
@@ -33,7 +33,7 @@ namespace slake {
 				   idxParentSlotRParentheseToken = SIZE_MAX;
 
 			size_t idxImplInterfacesColonToken = SIZE_MAX;
-			deque<size_t> idxImplInterfacesCommaTokens;
+			std::deque<size_t> idxImplInterfacesCommaTokens;
 
 			size_t idxLBraceToken = SIZE_MAX,
 				   idxRBraceToken = SIZE_MAX;
@@ -66,11 +66,11 @@ namespace slake {
 			inline ClassNode(
 				Location loc,
 				Compiler *compiler,
-				string name)
+				std::string name)
 				: MemberNode(compiler, 0),
 				  _loc(loc),
 				  name(name) {
-				setScope(make_shared<Scope>());
+				setScope(std::make_shared<Scope>());
 				setGenericParams(genericParams);
 			}
 			virtual ~ClassNode() = default;
@@ -86,21 +86,21 @@ namespace slake {
 		private:
 			Location _loc;
 
-			virtual shared_ptr<AstNode> doDuplicate() override;
+			virtual std::shared_ptr<AstNode> doDuplicate() override;
 
 		public:
-			string name;
+			std::string name;
 
-			deque<shared_ptr<TypeNameNode>> parentInterfaces;  // Parent interfaces
+			std::deque<std::shared_ptr<TypeNameNode>> parentInterfaces;  // Parent interfaces
 
 			GenericParamNodeList genericParams;
-			unordered_map<string, size_t> genericParamIndices;
+			std::unordered_map<std::string, size_t> genericParamIndices;
 
 			size_t idxInterfaceToken = SIZE_MAX,
 				   idxNameToken = SIZE_MAX;
 
 			size_t idxImplInterfacesColonToken = SIZE_MAX;
-			deque<size_t> idxImplInterfacesCommaTokens;
+			std::deque<size_t> idxImplInterfacesCommaTokens;
 
 			size_t idxLBraceToken = SIZE_MAX,
 				   idxRBraceToken = SIZE_MAX;
@@ -126,10 +126,10 @@ namespace slake {
 			}
 			inline InterfaceNode(
 				Location loc,
-				string name)
+				std::string name)
 				: _loc(loc),
 				  name(name) {
-				setScope(make_shared<Scope>());
+				setScope(std::make_shared<Scope>());
 			}
 			virtual ~InterfaceNode() = default;
 
@@ -144,23 +144,23 @@ namespace slake {
 		private:
 			Location _loc;
 
-			virtual shared_ptr<AstNode> doDuplicate() override;
+			virtual std::shared_ptr<AstNode> doDuplicate() override;
 
 		public:
-			string name;
+			std::string name;
 
-			deque<shared_ptr<TypeNameNode>> parentTraits;  // Parent traits
+			std::deque<std::shared_ptr<TypeNameNode>> parentTraits;  // Parent traits
 
 			GenericParamNodeList genericParams;
-			unordered_map<string, size_t> genericParamIndices;
+			std::unordered_map<std::string, size_t> genericParamIndices;
 
-			shared_ptr<Scope> scope = make_shared<Scope>();
+			std::shared_ptr<Scope> scope = std::make_shared<Scope>();
 
 			size_t idxTraitToken = SIZE_MAX,
 				   idxNameToken = SIZE_MAX;
 
 			size_t idxImplTraitsColonToken = SIZE_MAX;
-			deque<size_t> idxImplTraitsCommaTokens;
+			std::deque<size_t> idxImplTraitsCommaTokens;
 
 			size_t idxLBraceToken = SIZE_MAX,
 				   idxRBraceToken = SIZE_MAX;
@@ -186,10 +186,10 @@ namespace slake {
 			}
 			inline TraitNode(
 				Location loc,
-				string name)
+				std::string name)
 				: _loc(loc),
 				  name(name) {
-				setScope(make_shared<Scope>());
+				setScope(std::make_shared<Scope>());
 			}
 			virtual ~TraitNode() = default;
 

@@ -2,8 +2,8 @@
 
 using namespace slake::slkc;
 
-string std::to_string(const slake::slkc::IdRef &ref, slake::slkc::Compiler *compiler) {
-	string s;
+std::string std::to_string(const slake::slkc::IdRef &ref, slake::slkc::Compiler *compiler) {
+	std::string s;
 	for (size_t i = 0; i < ref.size(); ++i) {
 		if (i)
 			s += ".";
@@ -13,7 +13,7 @@ string std::to_string(const slake::slkc::IdRef &ref, slake::slkc::Compiler *comp
 			for (size_t j = 0; j < ref[i].genericArgs.size(); ++j) {
 				if (j)
 					s += ", ";
-				s += to_string(ref[i].genericArgs[j], compiler);
+				s += std::to_string(ref[i].genericArgs[j], compiler);
 			}
 			s += ">";
 		}

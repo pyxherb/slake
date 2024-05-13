@@ -13,16 +13,16 @@ namespace slake {
 
 		class ParamNode : public AstNode {
 		private:
-			virtual shared_ptr<AstNode> doDuplicate() override;
+			virtual std::shared_ptr<AstNode> doDuplicate() override;
 
 		public:
 			Location loc;
 
-			shared_ptr<TypeNameNode> type;
-			string name;
+			std::shared_ptr<TypeNameNode> type;
+			std::string name;
 
 			// The original type will be saved during generic instantiation.
-			shared_ptr<TypeNameNode> originalType;
+			std::shared_ptr<TypeNameNode> originalType;
 
 			size_t idxNameToken = SIZE_MAX;
 
@@ -37,7 +37,7 @@ namespace slake {
 
 				idxNameToken = other.idxNameToken;
 			}
-			inline ParamNode(Location loc, shared_ptr<TypeNameNode> type) : loc(loc), type(type) {}
+			inline ParamNode(Location loc, std::shared_ptr<TypeNameNode> type) : loc(loc), type(type) {}
 			virtual ~ParamNode() = default;
 
 			virtual inline Location getLocation() const override { return loc; }
@@ -47,19 +47,19 @@ namespace slake {
 
 		class FnOverloadingNode final : public MemberNode {
 		private:
-			virtual shared_ptr<AstNode> doDuplicate() override;
+			virtual std::shared_ptr<AstNode> doDuplicate() override;
 
 		public:
 			Location loc;
 
-			shared_ptr<TypeNameNode> returnType;
+			std::shared_ptr<TypeNameNode> returnType;
 
 			/// @brief Actual parameters. DO NOT forget to update the parameter indices after you updated the parameters.
-			deque<shared_ptr<ParamNode>> params;
+			std::deque<std::shared_ptr<ParamNode>> params;
 			/// @brief Parameter indices. Note that it needs to be updated manually after you updated the parameters.
-			unordered_map<string, size_t> paramIndices;
+			std::unordered_map<std::string, size_t> paramIndices;
 
-			shared_ptr<BlockStmtNode> body;
+			std::shared_ptr<BlockStmtNode> body;
 			FnNode *owner = nullptr;
 			AccessModifier access = 0;
 
@@ -70,7 +70,7 @@ namespace slake {
 				idxParamRParentheseToken = SIZE_MAX,
 				idxAsyncModifierToken = SIZE_MAX,
 				idxReturnTypeColonToken = SIZE_MAX;
-			deque<size_t> idxParamCommaTokens;
+			std::deque<size_t> idxParamCommaTokens;
 
 			inline FnOverloadingNode(const FnOverloadingNode &other) : MemberNode(other) {
 				loc = other.loc;
@@ -92,7 +92,7 @@ namespace slake {
 			FnOverloadingNode(
 				Location loc,
 				Compiler *compiler,
-				shared_ptr<Scope> scope);
+				std::shared_ptr<Scope> scope);
 
 			virtual inline NodeType getNodeType() const override { return NodeType::FnOverloading; }
 
@@ -108,11 +108,11 @@ namespace slake {
 
 		class FnNode final : public MemberNode {
 		private:
-			virtual shared_ptr<AstNode> doDuplicate() override;
+			virtual std::shared_ptr<AstNode> doDuplicate() override;
 
 		public:
-			deque<shared_ptr<FnOverloadingNode>> overloadingRegistries;
-			string name;
+			std::deque<std::shared_ptr<FnOverloadingNode>> overloadingRegistries;
+			std::string name;
 
 			inline FnNode(const FnNode &other) : MemberNode(other) {
 				overloadingRegistries.resize(other.overloadingRegistries.size());
@@ -124,7 +124,7 @@ namespace slake {
 			}
 			inline FnNode(
 				Compiler *compiler,
-				string name)
+				std::string name)
 				: name(name), MemberNode(compiler, ACCESS_PUB) {}
 			virtual ~FnNode() = default;
 
@@ -139,34 +139,34 @@ namespace slake {
 
 		struct Ins {
 			Opcode opcode;
-			deque<shared_ptr<AstNode>> operands;
+			std::deque<std::shared_ptr<AstNode>> operands;
 
 			Ins() = default;
 			inline Ins(
 				Opcode opcode,
-				deque<shared_ptr<AstNode>> operands = {})
+				std::deque<std::shared_ptr<AstNode>> operands = {})
 				: opcode(opcode), operands(operands) {}
 		};
 
 		class CompiledFnNode final : public MemberNode {
 		private:
 			Location _loc;
-			virtual shared_ptr<AstNode> doDuplicate() override;
+			virtual std::shared_ptr<AstNode> doDuplicate() override;
 
 		public:
-			string name;
-			deque<Ins> body;
-			unordered_map<string, uint32_t> labels;
+			std::string name;
+			std::deque<Ins> body;
+			std::unordered_map<std::string, uint32_t> labels;
 
 			GenericParamNodeList genericParams;
-			unordered_map<string, size_t> genericParamIndices;
+			std::unordered_map<std::string, size_t> genericParamIndices;
 
-			deque<shared_ptr<ParamNode>> params;
-			unordered_map<string, size_t> paramIndices;
+			std::deque<std::shared_ptr<ParamNode>> params;
+			std::unordered_map<std::string, size_t> paramIndices;
 
-			shared_ptr<TypeNameNode> returnType;
+			std::shared_ptr<TypeNameNode> returnType;
 
-			deque<slxfmt::SourceLocDesc> srcLocDescs;
+			std::deque<slxfmt::SourceLocDesc> srcLocDescs;
 
 			bool isAsync = false;
 
@@ -187,7 +187,7 @@ namespace slake {
 
 				srcLocDescs = other.srcLocDescs;
 			}
-			inline CompiledFnNode(Location loc, string name) : _loc(loc), name(name) {}
+			inline CompiledFnNode(Location loc, std::string name) : _loc(loc), name(name) {}
 			virtual ~CompiledFnNode() = default;
 
 			virtual inline Location getLocation() const override {
@@ -199,40 +199,40 @@ namespace slake {
 			inline void insertIns(Ins ins) { body.push_back(ins); }
 			inline void insertIns(
 				Opcode opcode,
-				shared_ptr<AstNode> op1) {
+				std::shared_ptr<AstNode> op1) {
 				insertIns({ opcode, { op1 } });
 			}
 			inline void insertIns(
 				Opcode opcode,
-				shared_ptr<AstNode> op1,
-				shared_ptr<AstNode> op2) {
+				std::shared_ptr<AstNode> op1,
+				std::shared_ptr<AstNode> op2) {
 				insertIns({ opcode, { op1, op2 } });
 			}
 			inline void insertIns(
 				Opcode opcode,
-				shared_ptr<AstNode> op1,
-				shared_ptr<AstNode> op2,
-				shared_ptr<AstNode> op3) {
+				std::shared_ptr<AstNode> op1,
+				std::shared_ptr<AstNode> op2,
+				std::shared_ptr<AstNode> op3) {
 				insertIns({ opcode, { op1, op2, op3 } });
 			}
 			inline void insertIns(
 				Opcode opcode,
-				shared_ptr<AstNode> op1,
-				shared_ptr<AstNode> op2,
-				shared_ptr<AstNode> op3,
-				shared_ptr<AstNode> op4) {
+				std::shared_ptr<AstNode> op1,
+				std::shared_ptr<AstNode> op2,
+				std::shared_ptr<AstNode> op3,
+				std::shared_ptr<AstNode> op4) {
 				insertIns({ opcode, { op1, op2, op3, op4 } });
 			}
-			inline void insertLabel(string name) { labels[name] = (uint32_t)body.size(); }
+			inline void insertLabel(std::string name) { labels[name] = (uint32_t)body.size(); }
 
 			virtual IdRefEntry getName() const override { return IdRefEntry(_loc, 0, name, genericArgs); }
 		};
 
 		class LabelRefNode final : public AstNode {
 		public:
-			string label;
+			std::string label;
 
-			inline LabelRefNode(string label) : label(label) {}
+			inline LabelRefNode(std::string label) : label(label) {}
 			virtual ~LabelRefNode() = default;
 
 			virtual inline Location getLocation() const override {

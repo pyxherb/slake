@@ -8,8 +8,6 @@
 
 namespace slake {
 	namespace slkc {
-		using namespace std;
-
 		enum class NodeType : uint8_t {
 			Class = 0,
 			Interface,
@@ -80,7 +78,7 @@ namespace slake {
 
 		class AstNode : public std::enable_shared_from_this<AstNode> {
 		private:
-			virtual shared_ptr<AstNode> doDuplicate();
+			virtual std::shared_ptr<AstNode> doDuplicate();
 
 		public:
 			virtual ~AstNode() = default;
@@ -93,15 +91,15 @@ namespace slake {
 			/// @tparam T
 			/// @return
 			template<typename T>
-			inline shared_ptr<T> duplicate() {
-				return static_pointer_cast<T>(doDuplicate());
+			inline std::shared_ptr<T> duplicate() {
+				return std::static_pointer_cast<T>(doDuplicate());
 			}
 		};
 	}
 }
 
 namespace std {
-	inline string to_string(slake::slkc::Location loc) {
+	inline std::string to_string(slake::slkc::Location loc) {
 		return std::to_string(loc.line) + ", " + std::to_string(loc.column);
 	}
 }

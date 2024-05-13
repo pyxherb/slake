@@ -27,15 +27,15 @@ namespace slake {
 		private:
 			void _putDefinition(
 				Location locName,
-				string name,
-				shared_ptr<MemberNode> member);
+				std::string name,
+				std::shared_ptr<MemberNode> member);
 			void _putFnDefinition(
 				Location locName,
-				string name,
-				shared_ptr<FnOverloadingNode> overloading);
+				std::string name,
+				std::shared_ptr<FnOverloadingNode> overloading);
 
 		public:
-			using OpParselet = std::function<shared_ptr<ExprNode>(Parser *parser, shared_ptr<ExprNode> lhs, const Token &opToken)>;
+			using OpParselet = std::function<std::shared_ptr<ExprNode>(Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken)>;
 
 			struct OpRegistry {
 				int leftPrecedence;
@@ -44,8 +44,8 @@ namespace slake {
 
 			static std::map<TokenId, OpRegistry> prefixOpRegistries, infixOpRegistries;
 
-			shared_ptr<Scope> curScope;
-			shared_ptr<ModuleNode> curModule;
+			std::shared_ptr<Scope> curScope;
+			std::shared_ptr<ModuleNode> curModule;
 			Lexer *lexer;
 			Compiler *compiler;
 
@@ -96,43 +96,43 @@ namespace slake {
 
 			AccessModifier parseAccessModifier(Location &locationOut);
 
-			shared_ptr<TypeNameNode> parseTypeName();
-			deque<shared_ptr<TypeNameNode>> parseGenericArgs();
+			std::shared_ptr<TypeNameNode> parseTypeName();
+			std::deque<std::shared_ptr<TypeNameNode>> parseGenericArgs();
 			IdRef parseRef();
-			void parseArgs(deque<shared_ptr<ExprNode>> &argsOut, deque<size_t> &idxCommaTokensOut);
+			void parseArgs(std::deque<std::shared_ptr<ExprNode>> &argsOut, std::deque<size_t> &idxCommaTokensOut);
 
-			shared_ptr<ExprNode> parseExpr(int precedence = 0);
+			std::shared_ptr<ExprNode> parseExpr(int precedence = 0);
 
 			void parseParentSlot(
-				shared_ptr<TypeNameNode> &typeNameOut,
+				std::shared_ptr<TypeNameNode> &typeNameOut,
 				size_t &idxLParentheseTokenOut,
 				size_t &idxRParentheseTokenOut);
 			void parseImplList(
-				deque<shared_ptr<TypeNameNode>> &implInterfacesOut,
+				std::deque<std::shared_ptr<TypeNameNode>> &implInterfacesOut,
 				size_t &idxColonTokenOut,
-				deque<size_t> &idxCommaTokensOut);
-			deque<shared_ptr<TypeNameNode>> parseTraitList();
+				std::deque<size_t> &idxCommaTokensOut);
+			std::deque<std::shared_ptr<TypeNameNode>> parseTraitList();
 
-			void parseVarDefs(shared_ptr<VarDefStmtNode> varDefStmtOut);
+			void parseVarDefs(std::shared_ptr<VarDefStmtNode> varDefStmtOut);
 
-			shared_ptr<StmtNode> parseStmt();
+			std::shared_ptr<StmtNode> parseStmt();
 
-			void parseParams(deque<shared_ptr<ParamNode>> &paramsOut, std::deque<size_t> &idxCommaTokensOut);
+			void parseParams(std::deque<std::shared_ptr<ParamNode>> &paramsOut, std::deque<size_t> &idxCommaTokensOut);
 
-			shared_ptr<FnOverloadingNode> parseFnDecl(string &nameOut);
-			shared_ptr<FnOverloadingNode> parseFnDef(string &nameOut);
-			shared_ptr<FnOverloadingNode> parseOperatorDecl(string &nameOut);
-			shared_ptr<FnOverloadingNode> parseOperatorDef(string &nameOut);
+			std::shared_ptr<FnOverloadingNode> parseFnDecl(std::string &nameOut);
+			std::shared_ptr<FnOverloadingNode> parseFnDef(std::string &nameOut);
+			std::shared_ptr<FnOverloadingNode> parseOperatorDecl(std::string &nameOut);
+			std::shared_ptr<FnOverloadingNode> parseOperatorDef(std::string &nameOut);
 
 			GenericParamNodeList parseGenericParams();
 
-			shared_ptr<ClassNode> parseClassDef();
+			std::shared_ptr<ClassNode> parseClassDef();
 			void parseClassStmt();
 
-			shared_ptr<InterfaceNode> parseInterfaceDef();
+			std::shared_ptr<InterfaceNode> parseInterfaceDef();
 			void parseInterfaceStmt();
 
-			shared_ptr<TraitNode> parseTraitDef();
+			std::shared_ptr<TraitNode> parseTraitDef();
 			void parseTraitStmt();
 
 			void parseProgramStmt();

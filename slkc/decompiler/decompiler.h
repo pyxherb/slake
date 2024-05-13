@@ -12,8 +12,6 @@
 
 namespace slake {
 	namespace decompiler {
-		using namespace std;
-
 		class DecompileError : public std::runtime_error {
 		public:
 			inline DecompileError(std::string msg) : runtime_error(msg) {}

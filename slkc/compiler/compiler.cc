@@ -23,11 +23,11 @@ Compiler::~Compiler() {
 	flags |= COMP_DELETING;
 }
 
-shared_ptr<Scope> slake::slkc::Compiler::completeModuleNamespaces(const IdRef &ref) {
+std::shared_ptr<Scope> slake::slkc::Compiler::completeModuleNamespaces(const IdRef &ref) {
 	auto scope = _rootScope;
 
 	for (size_t i = 0; i < ref.size(); ++i) {
-		string name = ref[i].name;
+		std::string name = ref[i].name;
 
 #if SLKC_WITH_LANGUAGE_SERVER
 		if (ref[i].idxToken != SIZE_MAX) {
@@ -44,16 +44,16 @@ shared_ptr<Scope> slake::slkc::Compiler::completeModuleNamespaces(const IdRef &r
 		if (auto it = scope->members.find(name); it != scope->members.end()) {
 			switch (it->second->getNodeType()) {
 				case NodeType::Class:
-					scope = static_pointer_cast<ClassNode>(it->second)->scope;
+					scope = std::static_pointer_cast<ClassNode>(it->second)->scope;
 					break;
 				case NodeType::Interface:
-					scope = static_pointer_cast<InterfaceNode>(it->second)->scope;
+					scope = std::static_pointer_cast<InterfaceNode>(it->second)->scope;
 					break;
 				case NodeType::Trait:
-					scope = static_pointer_cast<TraitNode>(it->second)->scope;
+					scope = std::static_pointer_cast<TraitNode>(it->second)->scope;
 					break;
 				case NodeType::Module:
-					scope = static_pointer_cast<ModuleNode>(it->second)->scope;
+					scope = std::static_pointer_cast<ModuleNode>(it->second)->scope;
 					break;
 				default:
 					throw FatalCompilationError(Message{
@@ -62,7 +62,7 @@ shared_ptr<Scope> slake::slkc::Compiler::completeModuleNamespaces(const IdRef &r
 						"Cannot import a non-module member" });
 			}
 		} else {
-			auto newMod = make_shared<ModuleNode>(this, Location());
+			auto newMod = std::make_shared<ModuleNode>(this, Location());
 			(scope->members[name] = newMod)->bind((MemberNode *)scope->owner);
 			newMod->scope->parent = scope.get();
 			newMod->moduleName = { IdRefEntry(Location(), SIZE_MAX, name, {}) };
@@ -73,11 +73,11 @@ shared_ptr<Scope> slake::slkc::Compiler::completeModuleNamespaces(const IdRef &r
 	return scope;
 }
 
-void Compiler::compile(std::istream &is, std::ostream &os, bool isImport, shared_ptr<ModuleNode> targetModule) {
+void Compiler::compile(std::istream &is, std::ostream &os, bool isImport, std::shared_ptr<ModuleNode> targetModule) {
 	if (targetModule)
 		_targetModule = targetModule;
 	else
-		_targetModule = make_shared<ModuleNode>(this, Location());
+		_targetModule = std::make_shared<ModuleNode>(this, Location());
 
 	//
 	// Clear the previous generic cache.
@@ -249,7 +249,7 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport, shared
 					MessageType::Error,
 					"The import item shadows an existing member"));
 
-		_targetModule->scope->members[i.first] = make_shared<AliasNode>(lexer->tokens[i.second.idxNameToken].beginLocation, this, i.first, i.second.ref);
+		_targetModule->scope->members[i.first] = std::make_shared<AliasNode>(lexer->tokens[i.second.idxNameToken].beginLocation, this, i.first, i.second.ref);
 	}
 
 	for (auto &i : _targetModule->unnamedImports) {
@@ -274,13 +274,13 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport, shared
 #endif
 }
 
-void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope> scope) {
-	unordered_map<string, shared_ptr<VarNode>> vars;
-	unordered_map<string, shared_ptr<FnNode>> funcs;
-	unordered_map<string, shared_ptr<CompiledFnNode>> compiledFuncs;
-	unordered_map<string, shared_ptr<ClassNode>> classes;
-	unordered_map<string, shared_ptr<InterfaceNode>> interfaces;
-	unordered_map<string, shared_ptr<TraitNode>> traits;
+void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<Scope> scope) {
+	std::unordered_map<std::string, std::shared_ptr<VarNode>> vars;
+	std::unordered_map<std::string, std::shared_ptr<FnNode>> funcs;
+	std::unordered_map<std::string, std::shared_ptr<CompiledFnNode>> compiledFuncs;
+	std::unordered_map<std::string, std::shared_ptr<ClassNode>> classes;
+	std::unordered_map<std::string, std::shared_ptr<InterfaceNode>> interfaces;
+	std::unordered_map<std::string, std::shared_ptr<TraitNode>> traits;
 
 	curMajorContext.curMinorContext.curScope = scope;
 
@@ -290,7 +290,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 				if (i.second->isImported)
 					continue;
 
-				auto m = static_pointer_cast<VarNode>(i.second);
+				auto m = std::static_pointer_cast<VarNode>(i.second);
 				vars[i.first] = m;
 
 #if SLKC_WITH_LANGUAGE_SERVER
@@ -316,7 +316,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 				if (i.second->isImported)
 					continue;
 
-				auto m = static_pointer_cast<FnNode>(i.second);
+				auto m = std::static_pointer_cast<FnNode>(i.second);
 				funcs[i.first] = m;
 
 #if SLKC_WITH_LANGUAGE_SERVER
@@ -430,7 +430,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 				if (i.second->isImported)
 					continue;
 
-				auto m = static_pointer_cast<ClassNode>(i.second);
+				auto m = std::static_pointer_cast<ClassNode>(i.second);
 				classes[i.first] = m;
 
 #if SLKC_WITH_LANGUAGE_SERVER
@@ -514,7 +514,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 				if (i.second->isImported)
 					continue;
 
-				auto m = static_pointer_cast<InterfaceNode>(i.second);
+				auto m = std::static_pointer_cast<InterfaceNode>(i.second);
 				interfaces[i.first] = m;
 
 #if SLKC_WITH_LANGUAGE_SERVER
@@ -554,7 +554,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 				if (i.second->isImported)
 					continue;
 
-				auto m = static_pointer_cast<TraitNode>(i.second);
+				auto m = std::static_pointer_cast<TraitNode>(i.second);
 				traits[i.first] = m;
 
 #if SLKC_WITH_LANGUAGE_SERVER
@@ -647,7 +647,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		_write(os, vad);
 		_write(os, i.first.data(), i.first.length());
 
-		compileTypeName(os, i.second->type ? i.second->type : make_shared<AnyTypeNameNode>(Location(), SIZE_MAX));
+		compileTypeName(os, i.second->type ? i.second->type : std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX));
 
 		if (i.second->initValue) {
 			if (auto ce = evalConstExpr(i.second->initValue); ce)
@@ -680,10 +680,10 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 
 			mergeGenericParams(j->genericParams);
 
-			string mangledFnName = i.first;
+			std::string mangledFnName = i.first;
 
 			{
-				deque<shared_ptr<TypeNameNode>> argTypes;
+				std::deque<std::shared_ptr<TypeNameNode>> argTypes;
 
 				argTypes.resize(j->params.size());
 				for (size_t k = 0; k < j->params.size(); ++k) {
@@ -701,10 +701,10 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 						"Duplicated function overloading"));
 			}
 
-			auto compiledFn = make_shared<CompiledFnNode>(j->loc, mangledFnName);
+			auto compiledFn = std::make_shared<CompiledFnNode>(j->loc, mangledFnName);
 			compiledFn->returnType = j->returnType
 										 ? j->returnType
-										 : static_pointer_cast<TypeNameNode>(make_shared<VoidTypeNameNode>(Location(), SIZE_MAX));
+										 : std::static_pointer_cast<TypeNameNode>(std::make_shared<VoidTypeNameNode>(Location(), SIZE_MAX));
 			compiledFn->params = j->params;
 			compiledFn->paramIndices = j->paramIndices;
 			compiledFn->genericParams = j->genericParams;
@@ -783,14 +783,14 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 			for (auto &k : j.operands) {
 				if (k) {
 					if (k->getNodeType() == NodeType::LabelRef) {
-						auto &label = static_pointer_cast<LabelRefNode>(k)->label;
+						auto &label = std::static_pointer_cast<LabelRefNode>(k)->label;
 						if (!i.second->labels.count(label))
 							throw FatalCompilationError(
 								Message(
 									i.second->getLocation(),
 									MessageType::Error,
-									"Undefined label: " + static_pointer_cast<LabelRefNode>(k)->label));
-						k = make_shared<U32LiteralExprNode>(i.second->getLocation(), i.second->labels.at(label));
+									"Undefined label: " + std::static_pointer_cast<LabelRefNode>(k)->label));
+						k = std::make_shared<U32LiteralExprNode>(i.second->getLocation(), i.second->labels.at(label));
 					}
 				}
 				compileValue(os, k);
@@ -807,11 +807,11 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		pushMajorContext();
 
 		{
-			auto thisType = make_shared<CustomTypeNameNode>(i.second->getLocation(), getFullName(i.second.get()), this, i.second->scope.get());
+			auto thisType = std::make_shared<CustomTypeNameNode>(i.second->getLocation(), getFullName(i.second.get()), this, i.second->scope.get());
 			for (auto &j : i.second->genericParams) {
-				thisType->ref.back().genericArgs.push_back(make_shared<CustomTypeNameNode>(
+				thisType->ref.back().genericArgs.push_back(std::make_shared<CustomTypeNameNode>(
 					i.second->getLocation(),
-					IdRef{ { j->getLocation(), SIZE_MAX, j->name, deque<shared_ptr<TypeNameNode>>{} } },
+					IdRef{ { j->getLocation(), SIZE_MAX, j->name, std::deque<std::shared_ptr<TypeNameNode>>{} } },
 					this,
 					i.second->scope.get()));
 			}
@@ -845,7 +845,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		}
 
 		for (auto &j : i.second->implInterfaces)
-			compileIdRef(os, static_pointer_cast<CustomTypeNameNode>(j)->ref);
+			compileIdRef(os, std::static_pointer_cast<CustomTypeNameNode>(j)->ref);
 
 		compileScope(is, os, i.second->scope);
 
@@ -877,7 +877,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		}
 
 		for (auto j : i.second->parentInterfaces) {
-			compileIdRef(os, static_pointer_cast<CustomTypeNameNode>(j)->ref);
+			compileIdRef(os, std::static_pointer_cast<CustomTypeNameNode>(j)->ref);
 		}
 
 		compileScope(is, os, i.second->scope);
@@ -910,7 +910,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 		}
 
 		for (auto j : i.second->parentTraits) {
-			compileIdRef(os, static_pointer_cast<CustomTypeNameNode>(j)->ref);
+			compileIdRef(os, std::static_pointer_cast<CustomTypeNameNode>(j)->ref);
 		}
 
 		compileScope(is, os, i.second->scope);
@@ -919,7 +919,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, shared_ptr<Scope
 	}
 }
 
-void Compiler::compileTypeName(std::ostream &fs, shared_ptr<TypeNameNode> typeName) {
+void Compiler::compileTypeName(std::ostream &fs, std::shared_ptr<TypeNameNode> typeName) {
 	switch (typeName->getTypeId()) {
 		case Type::I8: {
 			_write(fs, slxfmt::Type::I8);
@@ -979,7 +979,7 @@ void Compiler::compileTypeName(std::ostream &fs, shared_ptr<TypeNameNode> typeNa
 		}
 		case Type::Array: {
 			_write(fs, slxfmt::Type::Array);
-			compileTypeName(fs, static_pointer_cast<ArrayTypeNameNode>(typeName)->elementType);
+			compileTypeName(fs, std::static_pointer_cast<ArrayTypeNameNode>(typeName)->elementType);
 			break;
 		}
 		case Type::Fn: {
@@ -992,7 +992,7 @@ void Compiler::compileTypeName(std::ostream &fs, shared_ptr<TypeNameNode> typeNa
 			if (dest->getNodeType() == NodeType::GenericParam) {
 				_write(fs, slxfmt::Type::GenericArg);
 
-				auto d = static_pointer_cast<GenericParamNode>(dest);
+				auto d = std::static_pointer_cast<GenericParamNode>(dest);
 				_write(fs, (uint8_t)d->name.length());
 				fs.write(d->name.c_str(), d->name.length());
 			} else {
@@ -1027,7 +1027,7 @@ void Compiler::compileIdRef(std::ostream &fs, const IdRef &ref) {
 	}
 }
 
-void Compiler::compileValue(std::ostream &fs, shared_ptr<AstNode> value) {
+void Compiler::compileValue(std::ostream &fs, std::shared_ptr<AstNode> value) {
 	slxfmt::ValueDesc vd = {};
 
 	if (!value) {
@@ -1041,10 +1041,10 @@ void Compiler::compileValue(std::ostream &fs, shared_ptr<AstNode> value) {
 			vd.type = slxfmt::Type::TypeName;
 			_write(fs, vd);
 
-			compileTypeName(fs, static_pointer_cast<TypeNameNode>(value));
+			compileTypeName(fs, std::static_pointer_cast<TypeNameNode>(value));
 			break;
 		case NodeType::ArgRef: {
-			auto v = static_pointer_cast<ArgRefNode>(value);
+			auto v = std::static_pointer_cast<ArgRefNode>(value);
 			vd.type = v->unwrapData ? slxfmt::Type::ArgValue : slxfmt::Type::Arg;
 			_write(fs, vd);
 
@@ -1052,7 +1052,7 @@ void Compiler::compileValue(std::ostream &fs, shared_ptr<AstNode> value) {
 			break;
 		}
 		case NodeType::LocalVarRef: {
-			auto v = static_pointer_cast<LocalVarRefNode>(value);
+			auto v = std::static_pointer_cast<LocalVarRefNode>(value);
 			vd.type = v->unwrapData ? slxfmt::Type::LocalVarValue : slxfmt::Type::LocalVar;
 			_write(fs, vd);
 
@@ -1060,7 +1060,7 @@ void Compiler::compileValue(std::ostream &fs, shared_ptr<AstNode> value) {
 			break;
 		}
 		case NodeType::RegRef: {
-			auto v = static_pointer_cast<RegRefNode>(value);
+			auto v = std::static_pointer_cast<RegRefNode>(value);
 			vd.type = v->unwrapData ? slxfmt::Type::RegValue : slxfmt::Type::Reg;
 			_write(fs, vd);
 
@@ -1068,90 +1068,90 @@ void Compiler::compileValue(std::ostream &fs, shared_ptr<AstNode> value) {
 			break;
 		}
 		case NodeType::Expr: {
-			shared_ptr<ExprNode> expr = static_pointer_cast<ExprNode>(value);
+			std::shared_ptr<ExprNode> expr = std::static_pointer_cast<ExprNode>(value);
 			switch (expr->getExprType()) {
 				case ExprType::I8: {
 					vd.type = slxfmt::Type::I8;
 					_write(fs, vd);
 
-					_write(fs, static_pointer_cast<I8LiteralExprNode>(expr)->data);
+					_write(fs, std::static_pointer_cast<I8LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::I16: {
 					vd.type = slxfmt::Type::I16;
 					_write(fs, vd);
 
-					_write(fs, static_pointer_cast<I16LiteralExprNode>(expr)->data);
+					_write(fs, std::static_pointer_cast<I16LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::I32: {
 					vd.type = slxfmt::Type::I32;
 					_write(fs, vd);
 
-					_write(fs, static_pointer_cast<I32LiteralExprNode>(expr)->data);
+					_write(fs, std::static_pointer_cast<I32LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::I64: {
 					vd.type = slxfmt::Type::I64;
 					_write(fs, vd);
 
-					_write(fs, static_pointer_cast<I64LiteralExprNode>(expr)->data);
+					_write(fs, std::static_pointer_cast<I64LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::U8: {
 					vd.type = slxfmt::Type::U8;
 					_write(fs, vd);
 
-					_write(fs, static_pointer_cast<U8LiteralExprNode>(expr)->data);
+					_write(fs, std::static_pointer_cast<U8LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::U16: {
 					vd.type = slxfmt::Type::U16;
 					_write(fs, vd);
 
-					_write(fs, static_pointer_cast<U16LiteralExprNode>(expr)->data);
+					_write(fs, std::static_pointer_cast<U16LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::U32: {
 					vd.type = slxfmt::Type::U32;
 					_write(fs, vd);
 
-					_write(fs, static_pointer_cast<U32LiteralExprNode>(expr)->data);
+					_write(fs, std::static_pointer_cast<U32LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::U64: {
 					vd.type = slxfmt::Type::U64;
 					_write(fs, vd);
 
-					_write(fs, static_pointer_cast<U64LiteralExprNode>(expr)->data);
+					_write(fs, std::static_pointer_cast<U64LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::F32: {
 					vd.type = slxfmt::Type::F32;
 					_write(fs, vd);
 
-					_write(fs, static_pointer_cast<F32LiteralExprNode>(expr)->data);
+					_write(fs, std::static_pointer_cast<F32LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::F64: {
 					vd.type = slxfmt::Type::F64;
 					_write(fs, vd);
 
-					_write(fs, static_pointer_cast<F64LiteralExprNode>(expr)->data);
+					_write(fs, std::static_pointer_cast<F64LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::Bool: {
 					vd.type = slxfmt::Type::Bool;
 					_write(fs, vd);
 
-					_write(fs, static_pointer_cast<BoolLiteralExprNode>(expr)->data);
+					_write(fs, std::static_pointer_cast<BoolLiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::String: {
 					vd.type = slxfmt::Type::String;
 					_write(fs, vd);
 
-					auto &s = static_pointer_cast<StringLiteralExprNode>(expr)->data;
+					auto &s = std::static_pointer_cast<StringLiteralExprNode>(expr)->data;
 
 					_write(fs, (uint32_t)s.length());
 					_write(fs, s.data(), s.size());
@@ -1161,7 +1161,7 @@ void Compiler::compileValue(std::ostream &fs, shared_ptr<AstNode> value) {
 					vd.type = slxfmt::Type::IdRef;
 					_write(fs, vd);
 
-					compileIdRef(fs, static_pointer_cast<IdRefExprNode>(expr)->ref);
+					compileIdRef(fs, std::static_pointer_cast<IdRefExprNode>(expr)->ref);
 					break;
 				}
 				default:
@@ -1174,7 +1174,7 @@ void Compiler::compileValue(std::ostream &fs, shared_ptr<AstNode> value) {
 	}
 }
 
-void slake::slkc::Compiler::compileGenericParam(std::ostream &fs, shared_ptr<GenericParamNode> genericParam) {
+void slake::slkc::Compiler::compileGenericParam(std::ostream &fs, std::shared_ptr<GenericParamNode> genericParam) {
 	slxfmt::GenericParamDesc gpd;
 
 	gpd.lenName = (uint8_t)genericParam->name.size();
@@ -1200,9 +1200,9 @@ void slake::slkc::Compiler::reset() {
 	curMajorContext = MajorContext();
 	curFn.reset();
 
-	_rootScope = make_shared<Scope>();
+	_rootScope = std::make_shared<Scope>();
 	_targetModule.reset();
-	_rt = make_unique<Runtime>(RT_NOJIT);
+	_rt = std::make_unique<Runtime>(RT_NOJIT);
 	_savedMajorContexts.clear();
 
 	importedDefinitions.clear();

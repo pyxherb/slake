@@ -2,8 +2,8 @@
 
 using namespace slake::slkc;
 
-string std::to_string(shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slkc::Compiler *compiler, bool asOperatorName) {
-	string s = typeName->isConst ? "const " : "";
+std::string std::to_string(std::shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slkc::Compiler *compiler, bool asOperatorName) {
+	std::string s = typeName->isConst ? "const " : "";
 	switch (typeName->getTypeId()) {
 		case Type::I8:
 			return s + "i8";
@@ -26,7 +26,7 @@ string std::to_string(shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slk
 		case Type::F64:
 			return s + "f64";
 		case Type::String:
-			return s + "string";
+			return s + "std::string";
 		case Type::Bool:
 			return s + "bool";
 		case Type::Auto:
@@ -36,15 +36,15 @@ string std::to_string(shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slk
 		case Type::Any:
 			return s + "any";
 		case Type::Array:
-			return s + to_string(static_pointer_cast<ArrayTypeNameNode>(typeName)->elementType, compiler, asOperatorName) + "[]";
+			return s + std::to_string(std::static_pointer_cast<ArrayTypeNameNode>(typeName)->elementType, compiler, asOperatorName) + "[]";
 		case Type::Fn: {
-			auto t = static_pointer_cast<FnTypeNameNode>(typeName);
-			s += to_string(t->returnType, compiler, asOperatorName) + " -> (";
+			auto t = std::static_pointer_cast<FnTypeNameNode>(typeName);
+			s += std::to_string(t->returnType, compiler, asOperatorName) + " -> (";
 
 			for (size_t i = 0; i < t->paramTypes.size(); ++i) {
 				if (i)
 					s += ", ";
-				s += to_string(t->paramTypes[i], compiler, asOperatorName);
+				s += std::to_string(t->paramTypes[i], compiler, asOperatorName);
 			}
 
 			s += ")";
@@ -62,10 +62,10 @@ string std::to_string(shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slk
 								typeName->getLocation(),
 								MessageType::Error,
 								"Generic parameter cannot be used as the operator name"));
-					return "!" + static_pointer_cast<GenericParamNode>(m)->name;
+					return "!" + std::static_pointer_cast<GenericParamNode>(m)->name;
 				default:
 					compiler->_getFullName((MemberNode *)m.get(), ref);
-					return (asOperatorName ? "" : "@") + to_string(ref, compiler);
+					return (asOperatorName ? "" : "@") + std::to_string(ref, compiler);
 			}
 		}
 		case Type::Bad:

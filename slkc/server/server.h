@@ -33,10 +33,10 @@ namespace slake {
 		struct CompletionItem {
 			CompletionItemType type;
 
-			string label;
-			string details;
-			string documentations;
-			string insertText;
+			std::string label;
+			std::string details;
+			std::string documentations;
+			std::string insertText;
 
 			bool deprecated;
 		};
@@ -49,9 +49,9 @@ namespace slake {
 		};
 
 		struct Document {
-			string uri;
-			string languageId;
-			string content;
+			std::string uri;
+			std::string languageId;
+			std::string content;
 			ClientMarkupType markupType;
 			std::mutex mutex;
 
@@ -103,8 +103,8 @@ namespace slake {
 		public:
 			httplib::Server server;
 
-			unordered_map<string, std::shared_ptr<Document>> openedDocuments;
-			deque<string> modulePaths;
+			std::unordered_map<std::string, std::shared_ptr<Document>> openedDocuments;
+			std::deque<std::string> modulePaths;
 
 			Server();
 

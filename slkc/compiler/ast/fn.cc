@@ -5,7 +5,7 @@ using namespace slake::slkc;
 FnOverloadingNode::FnOverloadingNode(
 	Location loc,
 	Compiler *compiler,
-	shared_ptr<Scope> scope) : MemberNode(compiler, 0), returnType(returnType), params(params), idxNameToken(idxNameToken) {
+	std::shared_ptr<Scope> scope) : MemberNode(compiler, 0), returnType(returnType), params(params), idxNameToken(idxNameToken) {
 	setScope(scope);  // For custom type names.
 }
 
@@ -23,18 +23,18 @@ void FnOverloadingNode::updateParamIndices() {
 	}
 }
 
-shared_ptr<AstNode> ParamNode::doDuplicate() {
-	return make_shared<ParamNode>(*this);
+std::shared_ptr<AstNode> ParamNode::doDuplicate() {
+	return std::make_shared<ParamNode>(*this);
 }
 
-shared_ptr<AstNode> FnOverloadingNode::doDuplicate() {
-	return make_shared<FnOverloadingNode>(*this);
+std::shared_ptr<AstNode> FnOverloadingNode::doDuplicate() {
+	return std::make_shared<FnOverloadingNode>(*this);
 }
 
-shared_ptr<AstNode> FnNode::doDuplicate() {
-	return make_shared<FnNode>(*this);
+std::shared_ptr<AstNode> FnNode::doDuplicate() {
+	return std::make_shared<FnNode>(*this);
 }
 
-shared_ptr<AstNode> CompiledFnNode::doDuplicate() {
-	return make_shared<CompiledFnNode>(*this);
+std::shared_ptr<AstNode> CompiledFnNode::doDuplicate() {
+	return std::make_shared<CompiledFnNode>(*this);
 }

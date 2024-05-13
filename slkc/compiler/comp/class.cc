@@ -30,9 +30,9 @@ void Compiler::verifyInheritanceChain(ClassNode *node, std::set<AstNode *> &walk
 				Message(
 					node->parentClass->getLocation(),
 					MessageType::Error,
-					"`" + to_string(node->parentClass, this) + "' is not a class"));
+					"`" + std::to_string(node->parentClass, this) + "' is not a class"));
 
-		auto m = static_pointer_cast<ClassNode>(cls);
+		auto m = std::static_pointer_cast<ClassNode>(cls);
 
 		if (walkedNodes.count(m.get()))
 			_throwCyclicInheritanceError(node->parentClass->getLocation());
@@ -57,9 +57,9 @@ void Compiler::verifyInheritanceChain(ClassNode *node, std::set<AstNode *> &walk
 				Message(
 					i->getLocation(),
 					MessageType::Error,
-					"`" + to_string(i, this) + "' is not an interface"));
+					"`" + std::to_string(i, this) + "' is not an interface"));
 
-		auto m = static_pointer_cast<InterfaceNode>(parent);
+		auto m = std::static_pointer_cast<InterfaceNode>(parent);
 
 		if (walkedNodes.count(m.get()))
 			_throwCyclicInheritanceError(i->getLocation());
@@ -88,9 +88,9 @@ void Compiler::verifyInheritanceChain(InterfaceNode *node, std::set<AstNode *> &
 				Message(
 					i->getLocation(),
 					MessageType::Error,
-					"`" + to_string(i, this) + "' is not an interface"));
+					"`" + std::to_string(i, this) + "' is not an interface"));
 
-		auto m = static_pointer_cast<InterfaceNode>(parent);
+		auto m = std::static_pointer_cast<InterfaceNode>(parent);
 
 		if (walkedNodes.count(m.get()))
 			_throwCyclicInheritanceError(i->getLocation());
@@ -110,7 +110,7 @@ void Compiler::verifyInheritanceChain(TraitNode *node, std::set<AstNode *> &walk
 				Message(
 					i->getLocation(),
 					MessageType::Error,
-					"`" + to_string(i, this) + "' cannot be implemented"));
+					"`" + std::to_string(i, this) + "' cannot be implemented"));
 
 		auto parent = resolveCustomTypeName((CustomTypeNameNode *)i.get());
 
@@ -119,9 +119,9 @@ void Compiler::verifyInheritanceChain(TraitNode *node, std::set<AstNode *> &walk
 				Message(
 					i->getLocation(),
 					MessageType::Error,
-					"`" + to_string(i, this) + "' is not a trait"));
+					"`" + std::to_string(i, this) + "' is not a trait"));
 
-		auto m = static_pointer_cast<TraitNode>(parent);
+		auto m = std::static_pointer_cast<TraitNode>(parent);
 
 		if (walkedNodes.count(m.get()))
 			_throwCyclicInheritanceError(i->getLocation());

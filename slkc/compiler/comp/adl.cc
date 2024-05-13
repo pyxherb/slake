@@ -2,12 +2,12 @@
 
 using namespace slake::slkc;
 
-std::deque<shared_ptr<FnOverloadingNode>> Compiler::argDependentLookup(
+std::deque<std::shared_ptr<FnOverloadingNode>> Compiler::argDependentLookup(
 	Location loc,
 	FnNode *fn,
-	const deque<shared_ptr<TypeNameNode>> &argTypes,
-	const deque<shared_ptr<TypeNameNode>> &genericArgs) {
-	std::deque<shared_ptr<FnOverloadingNode>> matchedRegistries;
+	const std::deque<std::shared_ptr<TypeNameNode>> &argTypes,
+	const std::deque<std::shared_ptr<TypeNameNode>> &genericArgs) {
+	std::deque<std::shared_ptr<FnOverloadingNode>> matchedRegistries;
 
 	for (auto i : fn->overloadingRegistries) {
 		auto overloading = i;

@@ -30,34 +30,34 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 	}
 	switch (value->getType().typeId) {
 		case TypeId::I8:
-			os << to_string(((I8Value *)value)->getData());
+			os << std::to_string(((I8Value *)value)->getData());
 			break;
 		case TypeId::I16:
-			os << to_string(((I16Value *)value)->getData());
+			os << std::to_string(((I16Value *)value)->getData());
 			break;
 		case TypeId::I32:
-			os << to_string(((I32Value *)value)->getData());
+			os << std::to_string(((I32Value *)value)->getData());
 			break;
 		case TypeId::I64:
-			os << to_string(((I64Value *)value)->getData());
+			os << std::to_string(((I64Value *)value)->getData());
 			break;
 		case TypeId::U8:
-			os << to_string(((U8Value *)value)->getData());
+			os << std::to_string(((U8Value *)value)->getData());
 			break;
 		case TypeId::U16:
-			os << to_string(((U16Value *)value)->getData());
+			os << std::to_string(((U16Value *)value)->getData());
 			break;
 		case TypeId::U32:
-			os << to_string(((U32Value *)value)->getData());
+			os << std::to_string(((U32Value *)value)->getData());
 			break;
 		case TypeId::U64:
-			os << to_string(((U64Value *)value)->getData());
+			os << std::to_string(((U64Value *)value)->getData());
 			break;
 		case TypeId::F32:
-			os << to_string(((F32Value *)value)->getData());
+			os << std::to_string(((F32Value *)value)->getData());
 			break;
 		case TypeId::F64:
-			os << to_string(((F64Value *)value)->getData());
+			os << std::to_string(((F64Value *)value)->getData());
 			break;
 		case TypeId::Bool:
 			os << ((BoolValue *)value)->getData() ? "true" : "false";
@@ -75,10 +75,10 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 			break;
 		}
 		case TypeId::IdRef:
-			os << to_string((IdRefValue *)value);
+			os << std::to_string((IdRefValue *)value);
 			break;
 		case TypeId::TypeName:
-			os << to_string(((TypeNameValue *)value)->getData(), rt);
+			os << std::to_string(((TypeNameValue *)value)->getData(), rt);
 			break;
 		case TypeId::Fn: {
 			auto v = (FnValue *)value;

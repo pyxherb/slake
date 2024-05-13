@@ -2,7 +2,7 @@
 
 using namespace slake::slkc;
 
-shared_ptr<Scope> Compiler::scopeOf(AstNode *node) {
+std::shared_ptr<Scope> Compiler::scopeOf(AstNode *node) {
 	switch (node->getNodeType()) {
 		case NodeType::Class:
 			return ((ClassNode *)node)->scope;
@@ -19,7 +19,7 @@ shared_ptr<Scope> Compiler::scopeOf(AstNode *node) {
 			return {};
 		}
 		case NodeType::Alias: {
-			deque<pair<IdRef, shared_ptr<AstNode>>> resolvedParts;
+			std::deque<std::pair<IdRef, std::shared_ptr<AstNode>>> resolvedParts;
 
 			resolveIdRef(((AliasNode *)node)->target, resolvedParts);
 			return scopeOf(resolvedParts.back().second.get());
@@ -36,7 +36,7 @@ shared_ptr<Scope> Compiler::scopeOf(AstNode *node) {
 			if (!n->cachedMergedScope.expired())
 				return n->cachedMergedScope.lock();
 
-			shared_ptr<Scope> newScope = make_shared<Scope>();
+			std::shared_ptr<Scope> newScope = std::make_shared<Scope>();
 
 			if (n->baseType) {
 				auto baseTypeScope = scopeOf(n->baseType.get());
@@ -68,8 +68,8 @@ shared_ptr<Scope> Compiler::scopeOf(AstNode *node) {
 	}
 }
 
-shared_ptr<Scope> slake::slkc::Compiler::mergeScope(Scope *a, Scope *b) {
-	shared_ptr<Scope> newScope(a->duplicate());
+std::shared_ptr<Scope> slake::slkc::Compiler::mergeScope(Scope *a, Scope *b) {
+	std::shared_ptr<Scope> newScope(a->duplicate());
 
 	for (auto &i : b->members) {
 		if (newScope->members.count(i.first)) {
@@ -78,8 +78,8 @@ shared_ptr<Scope> slake::slkc::Compiler::mergeScope(Scope *a, Scope *b) {
 
 			switch (i.second->getNodeType()) {
 				case NodeType::Fn: {
-					auto fnNew = static_pointer_cast<FnNode>(newScope->members.at(i.first)),
-						 fnB = static_pointer_cast<FnNode> (i.second);
+					auto fnNew = std::static_pointer_cast<FnNode>(newScope->members.at(i.first)),
+						 fnB = std::static_pointer_cast<FnNode> (i.second);
 
 					// Check if the overloading registry is duplicated.
 					for (auto &j : fnB->overloadingRegistries) {

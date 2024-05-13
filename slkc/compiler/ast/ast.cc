@@ -2,7 +2,7 @@
 
 using namespace slake::slkc;
 
-bool slake::slkc::isMemberNode(shared_ptr<AstNode> node) {
+bool slake::slkc::isMemberNode(std::shared_ptr<AstNode> node) {
     switch(node->getNodeType()) {
         case NodeType::Class:
         case NodeType::Interface:

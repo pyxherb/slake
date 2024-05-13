@@ -10,17 +10,17 @@ namespace slake {
 		class MemberNode : public AstNode {
 		public:
 			AccessModifier access = 0;
-			MemberNode *parent = nullptr; // Don't use shared_ptr - or it will cause problems about bad_weak_ptr exception.
+			MemberNode *parent = nullptr; // Don't use std::shared_ptr - or it will cause problems about bad_std::weak_ptr exception.
 
 			Compiler *compiler = nullptr;
 
-			deque<shared_ptr<TypeNameNode>> genericArgs;
+			std::deque<std::shared_ptr<TypeNameNode>> genericArgs;
 			MemberNode *originalValue = nullptr;
 
 			GenericParamNodeList genericParams;
-			unordered_map<string, size_t> genericParamIndices;
+			std::unordered_map<std::string, size_t> genericParamIndices;
 
-			shared_ptr<Scope> scope;
+			std::shared_ptr<Scope> scope;
 
 			bool isImported = false;
 
@@ -46,7 +46,7 @@ namespace slake {
 				genericParamIndices = other.genericParamIndices;
 
 				if (other.scope)
-					setScope(shared_ptr<Scope>(other.scope->duplicate()));
+					setScope(std::shared_ptr<Scope>(other.scope->duplicate()));
 			}
 			inline MemberNode(Compiler *compiler, AccessModifier access = 0)
 				: compiler(compiler), access(access) {}
@@ -68,7 +68,7 @@ namespace slake {
 				genericParamIndices = genGenericParamIndicies(genericParams);
 			}
 
-			inline void setScope(shared_ptr<Scope> scope) {
+			inline void setScope(std::shared_ptr<Scope> scope) {
 				this->scope = scope;
 				scope->setOwner(this);
 			}

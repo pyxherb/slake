@@ -12,14 +12,14 @@ namespace slake {
 			Location loc;
 			size_t idxAccessOpToken = SIZE_MAX;	 // Index of preceding access operator token
 			size_t idxToken;
-			string name;
-			deque<shared_ptr<TypeNameNode>> genericArgs;
+			std::string name;
+			std::deque<std::shared_ptr<TypeNameNode>> genericArgs;
 
-			inline IdRefEntry(Location loc, size_t idxToken, string name, deque<shared_ptr<TypeNameNode>> genericArgs = {})
+			inline IdRefEntry(Location loc, size_t idxToken, std::string name, std::deque<std::shared_ptr<TypeNameNode>> genericArgs = {})
 				: loc(loc), idxToken(idxToken), name(name), genericArgs(genericArgs) {}
 		};
 
-		using IdRef = deque<IdRefEntry>;
+		using IdRef = std::deque<IdRefEntry>;
 
 		inline bool isCompleteIdRef(const IdRef& ref) {
 			return ref.back().idxToken != SIZE_MAX;
@@ -52,7 +52,7 @@ namespace slake {
 }
 
 namespace std {
-	string to_string(const slake::slkc::IdRef &ref, slake::slkc::Compiler *compiler);
+	std::string to_string(const slake::slkc::IdRef &ref, slake::slkc::Compiler *compiler);
 }
 
 #endif

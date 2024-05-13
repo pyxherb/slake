@@ -83,8 +83,8 @@ namespace slake {
 		template <Type TID>
 		class SimpleTypeNameNode : public BasicSimpleTypeNameNode {
 		private:
-			virtual inline shared_ptr<AstNode> doDuplicate() override {
-				return make_shared<SimpleTypeNameNode>(*this);
+			virtual inline std::shared_ptr<AstNode> doDuplicate() override {
+				return std::make_shared<SimpleTypeNameNode>(*this);
 			}
 
 		public:
@@ -117,11 +117,11 @@ namespace slake {
 
 		class CustomTypeNameNode : public TypeNameNode {
 		private:
-			virtual shared_ptr<AstNode> doDuplicate() override;
+			virtual std::shared_ptr<AstNode> doDuplicate() override;
 
 		public:
 			IdRef ref;
-			weak_ptr<AstNode> cachedResolvedResult;
+			std::weak_ptr<AstNode> cachedResolvedResult;
 
 			Compiler *compiler;
 			Scope *scope;
@@ -143,10 +143,10 @@ namespace slake {
 
 		class ArrayTypeNameNode : public TypeNameNode {
 		private:
-			virtual shared_ptr<AstNode> doDuplicate() override;
+			virtual std::shared_ptr<AstNode> doDuplicate() override;
 
 		public:
-			shared_ptr<TypeNameNode> elementType;
+			std::shared_ptr<TypeNameNode> elementType;
 
 			size_t idxLBracketToken = SIZE_MAX,
 					 idxRBracketToken = SIZE_MAX;
@@ -157,7 +157,7 @@ namespace slake {
 				idxLBracketToken = other.idxLBracketToken;
 				idxRBracketToken = other.idxRBracketToken;
 			}
-			inline ArrayTypeNameNode(shared_ptr<TypeNameNode> elementType, bool isConst = false)
+			inline ArrayTypeNameNode(std::shared_ptr<TypeNameNode> elementType, bool isConst = false)
 				: TypeNameNode(elementType->getLocation(), isConst), elementType(elementType) {}
 			virtual ~ArrayTypeNameNode() = default;
 
@@ -166,12 +166,12 @@ namespace slake {
 
 		class FnTypeNameNode : public TypeNameNode {
 		private:
-			virtual shared_ptr<AstNode> doDuplicate() override;
+			virtual std::shared_ptr<AstNode> doDuplicate() override;
 
 		public:
 			Location loc;
-			shared_ptr<TypeNameNode> returnType;
-			deque<shared_ptr<TypeNameNode>> paramTypes;
+			std::shared_ptr<TypeNameNode> returnType;
+			std::deque<std::shared_ptr<TypeNameNode>> paramTypes;
 
 			inline FnTypeNameNode(const FnTypeNameNode &other)
 				: TypeNameNode(other), returnType(other.returnType->duplicate<TypeNameNode>()) {
@@ -182,8 +182,8 @@ namespace slake {
 			}
 			inline FnTypeNameNode(
 				Location location,
-				shared_ptr<TypeNameNode> returnType,
-				deque<shared_ptr<TypeNameNode>> paramTypes,
+				std::shared_ptr<TypeNameNode> returnType,
+				std::deque<std::shared_ptr<TypeNameNode>> paramTypes,
 				bool isConst = false)
 				: TypeNameNode(location, isConst),
 				  returnType(returnType),
@@ -195,16 +195,16 @@ namespace slake {
 
 		class RefTypeNameNode : public TypeNameNode {
 		private:
-			virtual shared_ptr<AstNode> doDuplicate() override;
+			virtual std::shared_ptr<AstNode> doDuplicate() override;
 
 		public:
-			shared_ptr<TypeNameNode> referencedType;
+			std::shared_ptr<TypeNameNode> referencedType;
 
 			size_t idxIndicatorToken = SIZE_MAX;
 
 			inline RefTypeNameNode(const RefTypeNameNode &other) : TypeNameNode(other), referencedType(other.referencedType->duplicate<TypeNameNode>()) {}
 			inline RefTypeNameNode(
-				shared_ptr<TypeNameNode> referencedType)
+				std::shared_ptr<TypeNameNode> referencedType)
 				: TypeNameNode(referencedType->getLocation(), referencedType->isConst) {}
 			virtual ~RefTypeNameNode() = default;
 
@@ -213,16 +213,16 @@ namespace slake {
 
 		class ContextTypeNameNode : public TypeNameNode {
 		private:
-			virtual shared_ptr<AstNode> doDuplicate() override;
+			virtual std::shared_ptr<AstNode> doDuplicate() override;
 
 		public:
-			shared_ptr<TypeNameNode> resultType;
+			std::shared_ptr<TypeNameNode> resultType;
 
 			size_t idxIndicatorToken = SIZE_MAX;
 
 			inline ContextTypeNameNode(const ContextTypeNameNode &other) : TypeNameNode(other), resultType(other.resultType) {}
 			inline ContextTypeNameNode(
-				shared_ptr<TypeNameNode> resultType)
+				std::shared_ptr<TypeNameNode> resultType)
 				: TypeNameNode(resultType->getLocation(), false) {}
 			virtual ~ContextTypeNameNode() = default;
 
@@ -231,8 +231,8 @@ namespace slake {
 
 		class BadTypeNameNode : public TypeNameNode {
 		private:
-			virtual inline shared_ptr<AstNode> doDuplicate() override {
-				return make_shared<BadTypeNameNode>(*this);
+			virtual inline std::shared_ptr<AstNode> doDuplicate() override {
+				return std::make_shared<BadTypeNameNode>(*this);
 			}
 
 		public:
@@ -255,7 +255,7 @@ namespace slake {
 }
 
 namespace std {
-	string to_string(shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slkc::Compiler *compiler, bool asOperatorName = false);
+	std::string to_string(std::shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slkc::Compiler *compiler, bool asOperatorName = false);
 }
 
 #endif

@@ -11,12 +11,12 @@ namespace slake {
 		private:
 			Location _loc;
 
-			virtual shared_ptr<AstNode> doDuplicate() override;
+			virtual std::shared_ptr<AstNode> doDuplicate() override;
 
 		public:
-			shared_ptr<TypeNameNode> type;
-			string name;
-			shared_ptr<ExprNode> initValue;
+			std::shared_ptr<TypeNameNode> type;
+			std::string name;
+			std::shared_ptr<ExprNode> initValue;
 
 			size_t idxNameToken = SIZE_MAX,
 				   idxColonToken = SIZE_MAX,
@@ -40,9 +40,9 @@ namespace slake {
 				Location loc,
 				Compiler *compiler,
 				AccessModifier access,
-				shared_ptr<TypeNameNode> type,
-				string name,
-				shared_ptr<ExprNode> initValue,
+				std::shared_ptr<TypeNameNode> type,
+				std::string name,
+				std::shared_ptr<ExprNode> initValue,
 				size_t idxNameToken,
 				size_t idxColonToken,
 				size_t idxAssignOpToken,
@@ -68,9 +68,9 @@ namespace slake {
 		class LocalVarNode : public AstNode {
 		public:
 			uint32_t index;
-			shared_ptr<TypeNameNode> type;
+			std::shared_ptr<TypeNameNode> type;
 
-			inline LocalVarNode(uint32_t index, shared_ptr<TypeNameNode> type)
+			inline LocalVarNode(uint32_t index, std::shared_ptr<TypeNameNode> type)
 				: index(index), type(type) {}
 			virtual ~LocalVarNode() = default;
 

@@ -18,14 +18,14 @@ namespace slake {
 
 		public:
 			IdRef moduleName;
-			unordered_map<string, ImportItem> imports;
-			deque<ImportItem> unnamedImports;
-			weak_ptr<ModuleNode> parentModule;
+			std::unordered_map<std::string, ImportItem> imports;
+			std::deque<ImportItem> unnamedImports;
+			std::weak_ptr<ModuleNode> parentModule;
 
 			inline ModuleNode(
 				Compiler *compiler,
 				Location loc,
-				shared_ptr<Scope> scope = make_shared<Scope>())
+				std::shared_ptr<Scope> scope = std::make_shared<Scope>())
 				: MemberNode(compiler, ACCESS_PUB), _loc(loc) {
 				scope->owner = this;
 				setScope(scope);

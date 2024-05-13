@@ -3,7 +3,7 @@
 
 using namespace slake::slkc;
 
-bool Compiler::resolveIdRef(IdRef ref, deque<pair<IdRef, shared_ptr<AstNode>>> &partsOut, bool ignoreDynamicPrecedings) {
+bool Compiler::resolveIdRef(IdRef ref, std::deque<std::pair<IdRef, std::shared_ptr<AstNode>>> &partsOut, bool ignoreDynamicPrecedings) {
 	assert(ref.size());
 
 	if (!ignoreDynamicPrecedings) {
@@ -73,13 +73,13 @@ bool Compiler::resolveIdRef(IdRef ref, deque<pair<IdRef, shared_ptr<AstNode>>> &
 				tokenInfo.semanticType = SemanticType::Param;
 #endif
 
-				partsOut.push_front({ IdRef{ ref.front() }, make_shared<ArgRefNode>((uint32_t)idxParam) });
+				partsOut.push_front({ IdRef{ ref.front() }, std::make_shared<ArgRefNode>((uint32_t)idxParam) });
 				return true;
 			}
 		}
 
 		if (ref[0].name == "this") {
-			auto thisRefNode = make_shared<ThisRefNode>();
+			auto thisRefNode = std::make_shared<ThisRefNode>();
 
 #if SLKC_WITH_LANGUAGE_SERVER
 			// Update corresponding semantic information.
@@ -110,13 +110,13 @@ bool Compiler::resolveIdRef(IdRef ref, deque<pair<IdRef, shared_ptr<AstNode>>> &
 	return _resolveIdRef(curMajorContext.curMinorContext.curScope.get(), ref, partsOut, newResolveContext);
 }
 
-bool Compiler::resolveIdRefWithScope(Scope *scope, IdRef ref, deque<pair<IdRef, shared_ptr<AstNode>>> &partsOut) {
+bool Compiler::resolveIdRefWithScope(Scope *scope, IdRef ref, std::deque<std::pair<IdRef, std::shared_ptr<AstNode>>> &partsOut) {
 	IdRefResolveContext resolveContext;
 
 	return _resolveIdRef(scope, ref, partsOut, resolveContext);
 }
 
-bool Compiler::_resolveIdRef(Scope *scope, const IdRef &ref, deque<pair<IdRef, shared_ptr<AstNode>>> &partsOut, IdRefResolveContext resolveContext) {
+bool Compiler::_resolveIdRef(Scope *scope, const IdRef &ref, std::deque<std::pair<IdRef, std::shared_ptr<AstNode>>> &partsOut, IdRefResolveContext resolveContext) {
 #if SLKC_WITH_LANGUAGE_SERVER
 	// Update corresponding semantic information.
 	{
@@ -166,13 +166,13 @@ bool Compiler::_resolveIdRef(Scope *scope, const IdRef &ref, deque<pair<IdRef, s
 #endif
 
 		bool result = _resolveIdRefWithOwner(scope, newRef, partsOut, resolveContext);
-		partsOut.push_front({ IdRef{ ref.front() }, make_shared<BaseRefNode>() });
+		partsOut.push_front({ IdRef{ ref.front() }, std::make_shared<BaseRefNode>() });
 		return result;
 	}
 
 	GenericNodeInstantiationContext genericInstantiationContext = { nullptr, {} };
 
-	if (shared_ptr<MemberNode> m; scope->members.count(ref[0].name)) {
+	if (std::shared_ptr<MemberNode> m; scope->members.count(ref[0].name)) {
 		auto newRef = ref;
 		newRef.pop_front();
 
@@ -211,7 +211,7 @@ bool Compiler::_resolveIdRef(Scope *scope, const IdRef &ref, deque<pair<IdRef, s
 					return false;
 				break;
 			case NodeType::Var: {
-				auto member = static_pointer_cast<VarNode>(m);
+				auto member = std::static_pointer_cast<VarNode>(m);
 
 				if (!resolveContext.isStatic) {
 					if (member->access & ACCESS_STATIC) {
@@ -295,7 +295,7 @@ bool Compiler::_resolveIdRef(Scope *scope, const IdRef &ref, deque<pair<IdRef, s
 	return false;
 }
 
-bool slake::slkc::Compiler::_resolveIdRefWithOwner(Scope *scope, const IdRef &ref, deque<pair<IdRef, shared_ptr<AstNode>>> &partsOut, IdRefResolveContext resolveContext) {
+bool slake::slkc::Compiler::_resolveIdRefWithOwner(Scope *scope, const IdRef &ref, std::deque<std::pair<IdRef, std::shared_ptr<AstNode>>> &partsOut, IdRefResolveContext resolveContext) {
 	if (scope->owner) {
 		switch (scope->owner->getNodeType()) {
 			case NodeType::Class: {

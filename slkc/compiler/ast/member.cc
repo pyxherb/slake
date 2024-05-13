@@ -5,7 +5,7 @@ using namespace slake::slkc;
 MemberNode::~MemberNode() {
 }
 
-bool Compiler::isDynamicMember(shared_ptr<AstNode> member) {
+bool Compiler::isDynamicMember(std::shared_ptr<AstNode> member) {
 	switch (member->getNodeType()) {
 		case NodeType::Module:
 		case NodeType::Class:
@@ -15,7 +15,7 @@ bool Compiler::isDynamicMember(shared_ptr<AstNode> member) {
 			return false;
 	}
 
-	auto m = static_pointer_cast<MemberNode>(member);
+	auto m = std::static_pointer_cast<MemberNode>(member);
 
 	if (m->parent) {
 		switch (m->parent->getNodeType()) {

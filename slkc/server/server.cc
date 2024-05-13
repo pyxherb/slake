@@ -12,8 +12,8 @@ slake::slkc::Server::Server() {
 
 		Json::Reader reader;
 
-		string uri;
-		string languageId;
+		std::string uri;
+		std::string languageId;
 		ClientMarkupType clientMarkupType;
 
 		if (!reader.parse(request.body, rootValue)) {
@@ -62,11 +62,11 @@ slake::slkc::Server::Server() {
 
 		{
 			std::shared_ptr<Document> doc = std::make_shared<Document>();
-			std::lock_guard<mutex> docMutexGuard(doc->mutex);
+			std::lock_guard<std::mutex> docMutexGuard(doc->mutex);
 
 			doc->uri = uri;
 			doc->languageId = languageId;
-			doc->compiler = make_shared<Compiler>();
+			doc->compiler = std::make_shared<Compiler>();
 
 			openedDocuments[uri] = doc;
 
@@ -92,8 +92,8 @@ slake::slkc::Server::Server() {
 
 		Json::Reader reader;
 
-		string uri;
-		string content;
+		std::string uri;
+		std::string content;
 
 		if (!reader.parse(request.body, rootValue)) {
 			response.body = "Error parsing request";
@@ -122,7 +122,7 @@ slake::slkc::Server::Server() {
 
 		if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
 			std::shared_ptr<Document> doc = it->second;
-			std::lock_guard<mutex> docMutexGuard(doc->mutex);
+			std::lock_guard<std::mutex> docMutexGuard(doc->mutex);
 
 			openedDocuments[uri] = doc;
 
@@ -173,7 +173,7 @@ slake::slkc::Server::Server() {
 
 		Json::Reader reader;
 
-		string uri;
+		std::string uri;
 
 		if (!reader.parse(request.body, rootValue)) {
 			response.body = "Error parsing request";
@@ -191,7 +191,7 @@ slake::slkc::Server::Server() {
 		uri = rootValue["uri"].asString();
 
 		if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
-			std::lock_guard<mutex> docMutexGuard(it->second->mutex);
+			std::lock_guard<std::mutex> docMutexGuard(it->second->mutex);
 			openedDocuments.erase(it);
 
 			Json::Value responseValue;
@@ -224,7 +224,7 @@ slake::slkc::Server::Server() {
 
 		Json::Reader reader;
 
-		string uri;
+		std::string uri;
 		Location loc;
 
 		if (!reader.parse(request.body, rootValue)) {
@@ -253,7 +253,7 @@ slake::slkc::Server::Server() {
 
 		if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
 			std::shared_ptr<Document> doc = it->second;
-			std::lock_guard<mutex> docMutexGuard(doc->mutex);
+			std::lock_guard<std::mutex> docMutexGuard(doc->mutex);
 
 			Json::Value responseValue;
 
@@ -292,7 +292,7 @@ slake::slkc::Server::Server() {
 
 		Json::Reader reader;
 
-		string uri;
+		std::string uri;
 		Location loc;
 
 		if (!reader.parse(request.body, rootValue)) {
@@ -312,7 +312,7 @@ slake::slkc::Server::Server() {
 
 		if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
 			std::shared_ptr<Document> doc = it->second;
-			std::lock_guard<mutex> docMutexGuard(doc->mutex);
+			std::lock_guard<std::mutex> docMutexGuard(doc->mutex);
 
 			Json::Value responseValue;
 
@@ -360,7 +360,7 @@ slake::slkc::Server::Server() {
 
 		Json::Reader reader;
 
-		string uri;
+		std::string uri;
 		Location loc;
 
 		if (!reader.parse(request.body, rootValue)) {
@@ -389,7 +389,7 @@ slake::slkc::Server::Server() {
 
 		if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
 			std::shared_ptr<Document> doc = it->second;
-			std::lock_guard<mutex> docMutexGuard(doc->mutex);
+			std::lock_guard<std::mutex> docMutexGuard(doc->mutex);
 
 			Json::Value responseValue;
 

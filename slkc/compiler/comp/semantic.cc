@@ -8,7 +8,7 @@ void Compiler::updateCompletionContext(size_t idxToken, CompletionContext comple
 	tokenInfos[idxToken].completionContext = completionContext;
 }
 
-void Compiler::updateCompletionContext(shared_ptr<TypeNameNode> targetTypeName, CompletionContext completionContext) {
+void Compiler::updateCompletionContext(std::shared_ptr<TypeNameNode> targetTypeName, CompletionContext completionContext) {
 	switch (targetTypeName->getTypeId()) {
 		case Type::I8:
 		case Type::I16:
@@ -25,24 +25,24 @@ void Compiler::updateCompletionContext(shared_ptr<TypeNameNode> targetTypeName, 
 		case Type::Void:
 		case Type::Any:
 		case Type::Auto: {
-			auto t = static_pointer_cast<BasicSimpleTypeNameNode>(targetTypeName);
+			auto t = std::static_pointer_cast<BasicSimpleTypeNameNode>(targetTypeName);
 			assert(t->idxToken != SIZE_MAX);
 			tokenInfos[t->idxToken].completionContext = completionContext;
 			break;
 		}
 		case Type::Array: {
-			auto t = static_pointer_cast<ArrayTypeNameNode>(targetTypeName);
+			auto t = std::static_pointer_cast<ArrayTypeNameNode>(targetTypeName);
 			updateCompletionContext(t->elementType, completionContext);
 			break;
 		}
 		case Type::Custom: {
-			auto t = static_pointer_cast<CustomTypeNameNode>(targetTypeName);
+			auto t = std::static_pointer_cast<CustomTypeNameNode>(targetTypeName);
 
 			updateCompletionContext(t->ref, completionContext);
 			break;
 		}
 		case Type::Bad: {
-			auto t = static_pointer_cast<BadTypeNameNode>(targetTypeName);
+			auto t = std::static_pointer_cast<BadTypeNameNode>(targetTypeName);
 
 			for (size_t i = t->idxStartToken; i < t->idxEndToken; ++i)
 				tokenInfos[i].completionContext = completionContext;
@@ -69,7 +69,7 @@ void Compiler::updateSemanticType(size_t idxToken, SemanticType type) {
 	tokenInfos[idxToken].semanticType = type;
 }
 
-void Compiler::updateSemanticType(shared_ptr<TypeNameNode> targetTypeName, SemanticType type) {
+void Compiler::updateSemanticType(std::shared_ptr<TypeNameNode> targetTypeName, SemanticType type) {
 	switch (targetTypeName->getTypeId()) {
 		case Type::I8:
 		case Type::I16:
@@ -86,24 +86,24 @@ void Compiler::updateSemanticType(shared_ptr<TypeNameNode> targetTypeName, Seman
 		case Type::Void:
 		case Type::Any:
 		case Type::Auto: {
-			auto t = static_pointer_cast<BasicSimpleTypeNameNode>(targetTypeName);
+			auto t = std::static_pointer_cast<BasicSimpleTypeNameNode>(targetTypeName);
 			assert(t->idxToken != SIZE_MAX);
 			tokenInfos[t->idxToken].semanticType = type;
 			break;
 		}
 		case Type::Array: {
-			auto t = static_pointer_cast<ArrayTypeNameNode>(targetTypeName);
+			auto t = std::static_pointer_cast<ArrayTypeNameNode>(targetTypeName);
 			updateSemanticType(t->elementType, type);
 			break;
 		}
 		case Type::Custom: {
-			auto t = static_pointer_cast<CustomTypeNameNode>(targetTypeName);
+			auto t = std::static_pointer_cast<CustomTypeNameNode>(targetTypeName);
 
 			updateSemanticType(t->ref, type);
 			break;
 		}
 		case Type::Bad: {
-			auto t = static_pointer_cast<BadTypeNameNode>(targetTypeName);
+			auto t = std::static_pointer_cast<BadTypeNameNode>(targetTypeName);
 
 			for (size_t i = t->idxStartToken; i < t->idxEndToken; ++i)
 				tokenInfos[i].semanticType = type;

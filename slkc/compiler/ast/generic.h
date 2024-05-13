@@ -14,14 +14,14 @@ namespace slake {
 		private:
 			Location _loc;
 
-			virtual shared_ptr<AstNode> doDuplicate() override;
+			virtual std::shared_ptr<AstNode> doDuplicate() override;
 
 		public:
-			string name;
-			shared_ptr<TypeNameNode> baseType;
-			deque<shared_ptr<TypeNameNode>> traitTypes, interfaceTypes;
+			std::string name;
+			std::shared_ptr<TypeNameNode> baseType;
+			std::deque<std::shared_ptr<TypeNameNode>> traitTypes, interfaceTypes;
 
-			weak_ptr<Scope> cachedMergedScope;
+			std::weak_ptr<Scope> cachedMergedScope;
 
 			size_t idxNameToken = SIZE_MAX;
 
@@ -29,7 +29,7 @@ namespace slake {
 				   idxParentSlotRParentheseToken = SIZE_MAX;
 
 			size_t idxImplInterfacesColonToken = SIZE_MAX;
-			deque<size_t> idxImplInterfacesCommaTokens;
+			std::deque<size_t> idxImplInterfacesCommaTokens;
 
 			size_t idxCommaToken = SIZE_MAX;
 
@@ -58,17 +58,17 @@ namespace slake {
 			}
 			inline GenericParamNode(
 				Location location,
-				string name)
+				std::string name)
 				: _loc(location), name(name) {}
 
 			virtual inline NodeType getNodeType() const override { return NodeType::GenericParam; }
 			virtual inline Location getLocation() const override { return _loc; }
 		};
 
-		using GenericParamNodeList = deque<shared_ptr<GenericParamNode>>;
+		using GenericParamNodeList = std::deque<std::shared_ptr<GenericParamNode>>;
 
-		inline unordered_map<string, size_t> genGenericParamIndicies(const GenericParamNodeList &genericParams) {
-			unordered_map<string, size_t> indices;
+		inline std::unordered_map<std::string, size_t> genGenericParamIndicies(const GenericParamNodeList &genericParams) {
+			std::unordered_map<std::string, size_t> indices;
 
 			for (size_t i = 0; i < genericParams.size(); ++i)
 				indices[genericParams[i]->name] = i;
@@ -76,7 +76,7 @@ namespace slake {
 			return indices;
 		}
 
-		shared_ptr<GenericParamNode> lookupGenericParam(shared_ptr<AstNode> node, string name);
+		std::shared_ptr<GenericParamNode> lookupGenericParam(std::shared_ptr<AstNode> node, std::string name);
 	}
 }
 

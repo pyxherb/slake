@@ -18,7 +18,7 @@ namespace slake {
 		public:
 			AstNode *owner = nullptr;								// Owner of this scope.
 			Scope *parent = nullptr;								// Parent of this scope, owned by the owner's owner.
-			unordered_map<string, shared_ptr<MemberNode>> members;	// Members owned by this scope.
+			std::unordered_map<std::string, std::shared_ptr<MemberNode>> members;	// Members owned by this scope.
 
 			Scope *duplicate();
 

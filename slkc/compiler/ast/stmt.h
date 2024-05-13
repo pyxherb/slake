@@ -78,11 +78,11 @@ namespace slake {
 			Location _loc;
 
 		public:
-			shared_ptr<StmtNode> body;
+			std::shared_ptr<StmtNode> body;
 
 			inline BadStmtNode(
 				Location loc,
-				shared_ptr<StmtNode> body)
+				std::shared_ptr<StmtNode> body)
 				: _loc(loc),
 				  body(body) {}
 			virtual ~BadStmtNode() = default;
@@ -94,7 +94,7 @@ namespace slake {
 
 		class ExprStmtNode : public StmtNode {
 		public:
-			shared_ptr<ExprNode> expr;
+			std::shared_ptr<ExprNode> expr;
 			size_t idxSemicolonToken = SIZE_MAX;
 
 			inline ExprStmtNode() {}
@@ -106,10 +106,10 @@ namespace slake {
 		};
 
 		struct VarDefEntry {
-			string name;
+			std::string name;
 			Location loc;
-			shared_ptr<ExprNode> initValue;
-			shared_ptr<TypeNameNode> type;
+			std::shared_ptr<ExprNode> initValue;
+			std::shared_ptr<TypeNameNode> type;
 
 			size_t idxNameToken = SIZE_MAX,
 				   idxColonToken = SIZE_MAX,
@@ -117,7 +117,7 @@ namespace slake {
 				idxCommaToken = SIZE_MAX;
 
 			VarDefEntry() = default;
-			inline VarDefEntry(Location loc, string name, size_t idxNameToken) : loc(loc), name(name), idxNameToken(idxNameToken) {}
+			inline VarDefEntry(Location loc, std::string name, size_t idxNameToken) : loc(loc), name(name), idxNameToken(idxNameToken) {}
 		};
 
 		class VarDefStmtNode : public StmtNode {
@@ -125,7 +125,7 @@ namespace slake {
 			Location _loc;
 
 		public:
-			unordered_map<string, VarDefEntry> varDefs;
+			std::unordered_map<std::string, VarDefEntry> varDefs;
 			size_t idxLetToken = SIZE_MAX,
 				   idxSemicolonToken = SIZE_MAX;
 
@@ -142,11 +142,11 @@ namespace slake {
 			Location _loc;
 
 		public:
-			deque<shared_ptr<StmtNode>> stmts;
+			std::deque<std::shared_ptr<StmtNode>> stmts;
 
 			inline BlockStmtNode(
 				Location loc,
-				deque<shared_ptr<StmtNode>> stmts)
+				std::deque<std::shared_ptr<StmtNode>> stmts)
 				: _loc(loc), stmts(stmts) {}
 			virtual ~BlockStmtNode() = default;
 
@@ -160,10 +160,10 @@ namespace slake {
 			Location _loc;
 
 		public:
-			shared_ptr<VarDefStmtNode> varDefs;
-			shared_ptr<ExprNode> condition;
-			shared_ptr<ExprNode> endExpr;
-			shared_ptr<StmtNode> body;
+			std::shared_ptr<VarDefStmtNode> varDefs;
+			std::shared_ptr<ExprNode> condition;
+			std::shared_ptr<ExprNode> endExpr;
+			std::shared_ptr<StmtNode> body;
 
 			size_t idxForToken = SIZE_MAX,
 				   idxLParentheseToken = SIZE_MAX,
@@ -184,8 +184,8 @@ namespace slake {
 			Location _loc;
 
 		public:
-			shared_ptr<ExprNode> condition;
-			shared_ptr<StmtNode> body;
+			std::shared_ptr<ExprNode> condition;
+			std::shared_ptr<StmtNode> body;
 
 			size_t idxWhileToken = SIZE_MAX,
 				   idxLParentheseToken = SIZE_MAX,
@@ -204,7 +204,7 @@ namespace slake {
 			Location _loc;
 
 		public:
-			shared_ptr<ExprNode> returnValue;
+			std::shared_ptr<ExprNode> returnValue;
 
 			size_t idxReturnToken = SIZE_MAX,
 				   idxSemicolonToken = SIZE_MAX;
@@ -222,7 +222,7 @@ namespace slake {
 			Location _loc;
 
 		public:
-			shared_ptr<ExprNode> returnValue;
+			std::shared_ptr<ExprNode> returnValue;
 
 			size_t idxYieldToken = SIZE_MAX,
 				   idxSemicolonToken = SIZE_MAX;
@@ -240,9 +240,9 @@ namespace slake {
 			Location _loc;
 
 		public:
-			shared_ptr<ExprNode> condition;
-			shared_ptr<StmtNode> body;
-			shared_ptr<StmtNode> elseBranch;
+			std::shared_ptr<ExprNode> condition;
+			std::shared_ptr<StmtNode> body;
+			std::shared_ptr<StmtNode> elseBranch;
 
 			size_t idxIfToken = SIZE_MAX,
 				   idxLParentheseToken = SIZE_MAX,
@@ -260,9 +260,9 @@ namespace slake {
 
 		struct CatchBlock {
 			Location loc;
-			shared_ptr<TypeNameNode> targetType;
-			string exceptionVarName;
-			shared_ptr<StmtNode> body;
+			std::shared_ptr<TypeNameNode> targetType;
+			std::string exceptionVarName;
+			std::shared_ptr<StmtNode> body;
 
 			size_t idxCatchToken = SIZE_MAX,
 				   idxLParentheseToken = SIZE_MAX,
@@ -272,7 +272,7 @@ namespace slake {
 
 		struct FinalBlock {
 			Location loc;
-			shared_ptr<StmtNode> body;
+			std::shared_ptr<StmtNode> body;
 
 			size_t idxFinalToken = SIZE_MAX;
 		};
@@ -282,8 +282,8 @@ namespace slake {
 			Location _loc;
 
 		public:
-			shared_ptr<StmtNode> body;
-			deque<CatchBlock> catchBlocks;
+			std::shared_ptr<StmtNode> body;
+			std::deque<CatchBlock> catchBlocks;
 			FinalBlock finalBlock;
 
 			size_t idxTryToken = SIZE_MAX;
@@ -301,7 +301,7 @@ namespace slake {
 
 		struct CodeBlock {
 			Location loc;
-			deque<shared_ptr<StmtNode>> stmts;
+			std::deque<std::shared_ptr<StmtNode>> stmts;
 
 			size_t idxLBraceToken = SIZE_MAX, idxRBraceToken = SIZE_MAX;
 		};
@@ -320,8 +320,8 @@ namespace slake {
 
 		struct SwitchCase {
 			Location loc;
-			shared_ptr<ExprNode> condition;
-			deque<shared_ptr<StmtNode>> body;
+			std::shared_ptr<ExprNode> condition;
+			std::deque<std::shared_ptr<StmtNode>> body;
 
 			size_t idxCaseToken = SIZE_MAX,
 				   idxColonToken = SIZE_MAX;
@@ -332,8 +332,8 @@ namespace slake {
 			Location _loc;
 
 		public:
-			shared_ptr<ExprNode> expr;
-			deque<SwitchCase> cases;
+			std::shared_ptr<ExprNode> expr;
+			std::deque<SwitchCase> cases;
 
 			size_t idxSwitchToken = SIZE_MAX,
 				   idxLParentheseToken = SIZE_MAX,

@@ -4,7 +4,7 @@
 using namespace slake::slkc;
 
 Scope *Scope::duplicate() {
-	unique_ptr<Scope> newScope = make_unique<Scope>();
+	std::unique_ptr<Scope> newScope = std::make_unique<Scope>();
 
 	newScope->owner = owner;
 	newScope->parent = parent;

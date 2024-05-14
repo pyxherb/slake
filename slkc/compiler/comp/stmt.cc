@@ -21,12 +21,10 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			}
 
 #if SLKC_WITH_LANGUAGE_SERVER
-			if (s->idxSemicolonToken != SIZE_MAX) {
-				// Update corresponding semantic information.
-				auto &tokenInfo = tokenInfos[s->idxSemicolonToken];
+			updateTokenInfo(s->idxSemicolonToken, [this](TokenInfo &tokenInfo) {
 				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 				tokenInfo.completionContext = CompletionContext::Stmt;
-			}
+			});
 #endif
 			break;
 		}
@@ -35,20 +33,17 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 
 			for (auto &i : s->varDefs) {
 #if SLKC_WITH_LANGUAGE_SERVER
-				if (i.second.idxNameToken != SIZE_MAX) {
-					// Update corresponding semantic information.
-					auto &tokenInfo = tokenInfos[i.second.idxNameToken];
+				updateTokenInfo(i.second.idxNameToken, [this](TokenInfo &tokenInfo) {
 					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 					tokenInfo.semanticType = SemanticType::Var;
 					tokenInfo.completionContext = CompletionContext::Name;
-				}
+				});
 
-				if (i.second.idxColonToken != SIZE_MAX) {
-					// Update corresponding semantic information.
-					auto &tokenInfo = tokenInfos[i.second.idxColonToken];
+				updateTokenInfo(i.second.idxColonToken, [this](TokenInfo &tokenInfo) {
 					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 					tokenInfo.completionContext = CompletionContext::Type;
-				}
+				});
+
 				if (i.second.type)
 					updateCompletionContext(i.second.type, CompletionContext::Type);
 #endif
@@ -153,13 +148,11 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			auto s = std::static_pointer_cast<WhileStmtNode>(stmt);
 
 #if SLKC_WITH_LANGUAGE_SERVER
-			if (s->idxLParentheseToken != SIZE_MAX) {
-				// Update corresponding semantic information.
-				auto &tokenInfo = tokenInfos[s->idxLParentheseToken];
+			updateTokenInfo(s->idxLParentheseToken, [this](TokenInfo &tokenInfo) {
 				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 				tokenInfo.semanticType = SemanticType::Keyword;
 				tokenInfo.completionContext = CompletionContext::Expr;
-			}
+			});
 #endif
 
 			auto loc = s->getLocation();
@@ -202,13 +195,11 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			auto s = std::static_pointer_cast<ReturnStmtNode>(stmt);
 
 #if SLKC_WITH_LANGUAGE_SERVER
-			if (s->idxReturnToken != SIZE_MAX) {
-				// Update corresponding semantic information.
-				auto &tokenInfo = tokenInfos[s->idxReturnToken];
+			updateTokenInfo(s->idxReturnToken, [this](TokenInfo &tokenInfo) {
 				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 				tokenInfo.semanticType = SemanticType::Keyword;
 				tokenInfo.completionContext = CompletionContext::Expr;
-			}
+			});
 #endif
 
 			auto returnType = curFn->returnType;

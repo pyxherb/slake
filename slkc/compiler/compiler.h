@@ -100,6 +100,8 @@ namespace slake {
 
 			std::shared_ptr<TypeNameNode> thisType;
 
+			bool isImport = false;
+
 			inline void pushMinorContext() {
 				savedMinorContexts.push_back(curMinorContext);
 			}
@@ -460,6 +462,8 @@ namespace slake {
 			void updateSemanticType(size_t idxToken, SemanticType type);
 			void updateSemanticType(std::shared_ptr<TypeNameNode> targetTypeName, SemanticType type);
 			void updateSemanticType(const IdRef &ref, SemanticType type);
+
+			void updateTokenInfo(size_t idxToken, std::function<void(TokenInfo &info)> updater);
 #endif
 
 			//
@@ -513,7 +517,7 @@ namespace slake {
 				: options(options), _rt(std::make_unique<Runtime>(RT_NOJIT)) {}
 			~Compiler();
 
-			void compile(std::istream &is, std::ostream &os, bool isImport = false, std::shared_ptr<ModuleNode> targetModule = {});
+			void compile(std::istream &is, std::ostream &os, std::shared_ptr<ModuleNode> targetModule = {});
 
 			void reset();
 

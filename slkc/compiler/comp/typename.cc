@@ -360,10 +360,11 @@ std::shared_ptr<AstNode> Compiler::resolveCustomTypeName(CustomTypeNameNode *typ
 		if (genericParam) {
 #if SLKC_WITH_LANGUAGE_SERVER
 			// Update corresponding semantic information.
-			auto &tokenInfo = tokenInfos[typeName->ref[0].idxToken];
-			tokenInfo.semanticInfo.correspondingMember = genericParam;
-			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
-			tokenInfo.semanticType = SemanticType::TypeParam;
+			updateTokenInfo(typeName->ref[0].idxToken, [this, &genericParam](TokenInfo &tokenInfo) {
+				tokenInfo.semanticInfo.correspondingMember = genericParam;
+				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+				tokenInfo.semanticType = SemanticType::TypeParam;
+			});
 #endif
 
 			typeName->cachedResolvedResult = genericParam;

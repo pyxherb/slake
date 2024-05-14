@@ -310,11 +310,10 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			auto e = std::static_pointer_cast<BinaryOpExprNode>(expr);
 
 #if SLKC_WITH_LANGUAGE_SERVER
-			{
-				auto &tokenInfo = tokenInfos[e->idxOpToken];
+			updateTokenInfo(e->idxOpToken, [this](TokenInfo &tokenInfo) {
 				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 				tokenInfo.semanticType = SemanticType::Operator;
-			}
+			});
 			updateCompletionContext(e->idxOpToken, CompletionContext::Expr);
 #endif
 
@@ -699,10 +698,9 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							curFn->insertIns(Opcode::MCALL, std::make_shared<RegRefNode>(tmpRegIndex, true), std::make_shared<RegRefNode>(lhsRegIndex, true));
 
 #if SLKC_WITH_LANGUAGE_SERVER
-							{
-								auto &tokenInfo = tokenInfos[e->idxOpToken];
+							updateTokenInfo(e->idxOpToken, [this, &overloading](TokenInfo &tokenInfo) {
 								tokenInfo.semanticInfo.correspondingMember = overloading;
-							}
+							});
 #endif
 
 							if (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt)

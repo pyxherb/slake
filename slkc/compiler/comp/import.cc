@@ -30,7 +30,7 @@ void Compiler::importModule(const IdRef &ref) {
 
 			auto savedTargetModule = _targetModule;
 			util::PseudoOutputStream pseudoOs;
-			compile(is, pseudoOs, true);
+			compile(is, pseudoOs);
 			_targetModule = savedTargetModule;
 
 			goto succeeded;

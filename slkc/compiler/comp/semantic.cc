@@ -5,10 +5,16 @@ using namespace slake::slkc;
 #if SLKC_WITH_LANGUAGE_SERVER
 
 void Compiler::updateCompletionContext(size_t idxToken, CompletionContext completionContext) {
+	if (curMajorContext.isImport)
+		return;
+
 	tokenInfos[idxToken].completionContext = completionContext;
 }
 
 void Compiler::updateCompletionContext(std::shared_ptr<TypeNameNode> targetTypeName, CompletionContext completionContext) {
+	if (curMajorContext.isImport)
+		return;
+
 	switch (targetTypeName->getTypeId()) {
 		case Type::I8:
 		case Type::I16:
@@ -55,6 +61,9 @@ void Compiler::updateCompletionContext(std::shared_ptr<TypeNameNode> targetTypeN
 }
 
 void Compiler::updateCompletionContext(const IdRef &ref, CompletionContext completionContext) {
+	if (curMajorContext.isImport)
+		return;
+
 	for (size_t i = 0; i < ref.size(); ++i) {
 		if (ref[i].idxAccessOpToken != SIZE_MAX) {
 			tokenInfos[ref[i].idxAccessOpToken].completionContext = completionContext;
@@ -66,10 +75,16 @@ void Compiler::updateCompletionContext(const IdRef &ref, CompletionContext compl
 }
 
 void Compiler::updateSemanticType(size_t idxToken, SemanticType type) {
+	if (curMajorContext.isImport)
+		return;
+
 	tokenInfos[idxToken].semanticType = type;
 }
 
 void Compiler::updateSemanticType(std::shared_ptr<TypeNameNode> targetTypeName, SemanticType type) {
+	if (curMajorContext.isImport)
+		return;
+
 	switch (targetTypeName->getTypeId()) {
 		case Type::I8:
 		case Type::I16:
@@ -116,6 +131,9 @@ void Compiler::updateSemanticType(std::shared_ptr<TypeNameNode> targetTypeName, 
 }
 
 void Compiler::updateSemanticType(const IdRef &ref, SemanticType type) {
+	if (curMajorContext.isImport)
+		return;
+
 	for (size_t i = 0; i < ref.size(); ++i) {
 		if (ref[i].idxAccessOpToken != SIZE_MAX) {
 			tokenInfos[ref[i].idxAccessOpToken].semanticType = type;
@@ -124,6 +142,16 @@ void Compiler::updateSemanticType(const IdRef &ref, SemanticType type) {
 			tokenInfos[ref[i].idxToken].semanticType = type;
 		}
 	}
+}
+
+void Compiler::updateTokenInfo(size_t idxToken, std::function<void(TokenInfo &info)> updater) {
+	if (curMajorContext.isImport)
+		return;
+
+	if (idxToken == SIZE_MAX)
+		return;
+
+	updater(tokenInfos[idxToken]);
 }
 
 #endif

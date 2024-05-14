@@ -30,15 +30,9 @@ std::shared_ptr<Scope> slake::slkc::Compiler::completeModuleNamespaces(const IdR
 		std::string name = ref[i].name;
 
 #if SLKC_WITH_LANGUAGE_SERVER
-		if (ref[i].idxToken != SIZE_MAX) {
-			auto &tokenInfo = tokenInfos[ref[i].idxToken];
+		updateTokenInfo(ref[i].idxToken, [i](TokenInfo &tokenInfo) {
 			tokenInfo.semanticType = i == 0 ? SemanticType::Var : SemanticType::Property;
-		}
-
-		if (ref[i].idxAccessOpToken != SIZE_MAX) {
-			auto &tokenInfo = tokenInfos[ref[i].idxAccessOpToken];
-			tokenInfo.semanticType = i == 0 ? SemanticType::Var : SemanticType::Property;
-		}
+		});
 #endif
 
 		if (auto it = scope->members.find(name); it != scope->members.end()) {
@@ -73,7 +67,7 @@ std::shared_ptr<Scope> slake::slkc::Compiler::completeModuleNamespaces(const IdR
 	return scope;
 }
 
-void Compiler::compile(std::istream &is, std::ostream &os, bool isImport, std::shared_ptr<ModuleNode> targetModule) {
+void Compiler::compile(std::istream &is, std::ostream &os, std::shared_ptr<ModuleNode> targetModule) {
 	if (targetModule)
 		_targetModule = targetModule;
 	else
@@ -111,8 +105,8 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport, std::s
 	}
 
 #if SLKC_WITH_LANGUAGE_SERVER
-	auto savedTokenInfos = tokenInfos;
-	tokenInfos.resize(lexer->tokens.size());
+	if (!curMajorContext.isImport)
+		tokenInfos.resize(lexer->tokens.size());
 #endif
 
 	Parser parser;
@@ -127,21 +121,18 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport, std::s
 	}
 
 #if SLKC_WITH_LANGUAGE_SERVER
-	if (!isImport) {
+	if (!curMajorContext.isImport) {
 		updateCompletionContext(_targetModule->moduleName, CompletionContext::ModuleName);
 		updateSemanticType(_targetModule->moduleName, SemanticType::Var);
 
 		IdRef curRef;
 		for (size_t i = 0; i < _targetModule->moduleName.size(); ++i) {
-			if (_targetModule->moduleName[i].idxToken != SIZE_MAX) {
-				auto &tokenInfo = tokenInfos[_targetModule->moduleName[i].idxToken];
+			updateTokenInfo(_targetModule->moduleName[i].idxToken, [&curRef](TokenInfo &tokenInfo) {
 				tokenInfo.semanticInfo.importedPath = curRef;
-			}
-
-			if (_targetModule->moduleName[i].idxAccessOpToken != SIZE_MAX) {
-				auto &tokenInfo = tokenInfos[_targetModule->moduleName[i].idxAccessOpToken];
+			});
+			updateTokenInfo(_targetModule->moduleName[i].idxAccessOpToken, [&curRef](TokenInfo &tokenInfo) {
 				tokenInfo.semanticInfo.importedPath = curRef;
-			}
+			});
 
 			curRef.push_back(_targetModule->moduleName[i]);
 		}
@@ -184,27 +175,22 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport, std::s
 
 #if SLKC_WITH_LANGUAGE_SERVER
 	for (auto &i : _targetModule->imports) {
-		if (i.second.idxNameToken != SIZE_MAX) {
-			// Update corresponding semantic information.0
-			auto &tokenInfo = tokenInfos[i.second.idxNameToken];
+		updateTokenInfo(i.second.idxNameToken, [this](TokenInfo &tokenInfo) {
 			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 			tokenInfo.semanticType = SemanticType::Property;
-		}
+		});
 
 		updateCompletionContext(i.second.ref, CompletionContext::Import);
 		updateSemanticType(i.second.ref, SemanticType::Property);
 
 		IdRef importedPath;
 		for (size_t j = 0; j < i.second.ref.size(); ++j) {
-			if (i.second.ref[j].idxAccessOpToken != SIZE_MAX) {
-				auto &tokenInfo = tokenInfos[i.second.ref[j].idxAccessOpToken];
+			updateTokenInfo(i.second.ref[j].idxAccessOpToken, [&importedPath](TokenInfo &tokenInfo) {
 				tokenInfo.semanticInfo.importedPath = importedPath;
-			}
-
-			if (i.second.ref[j].idxToken != SIZE_MAX) {
-				auto &tokenInfo = tokenInfos[i.second.ref[j].idxToken];
+			});
+			updateTokenInfo(i.second.ref[j].idxToken, [&importedPath](TokenInfo &tokenInfo) {
 				tokenInfo.semanticInfo.importedPath = importedPath;
-			}
+			});
 
 			importedPath.push_back(i.second.ref[j]);
 		}
@@ -216,15 +202,12 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport, std::s
 
 		IdRef importedPath;
 		for (size_t j = 0; j < i.ref.size(); ++j) {
-			if (i.ref[j].idxAccessOpToken != SIZE_MAX) {
-				auto &tokenInfo = tokenInfos[i.ref[j].idxAccessOpToken];
+			updateTokenInfo(i.ref[j].idxAccessOpToken, [&importedPath](TokenInfo &tokenInfo) {
 				tokenInfo.semanticInfo.importedPath = importedPath;
-			}
-
-			if (i.ref[j].idxToken != SIZE_MAX) {
-				auto &tokenInfo = tokenInfos[i.ref[j].idxToken];
+			});
+			updateTokenInfo(i.ref[j].idxToken, [&importedPath](TokenInfo &tokenInfo) {
 				tokenInfo.semanticInfo.importedPath = importedPath;
-			}
+			});
 
 			importedPath.push_back(i.ref[j]);
 		}
@@ -240,7 +223,12 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport, std::s
 		_write(os, i.first.data(), i.first.length());
 		compileIdRef(os, i.second.ref);
 
+		pushMajorContext();
+		curMajorContext.isImport = true;
+
 		importModule(i.second.ref);
+
+		popMajorContext();
 
 		if (_targetModule->scope->members.count(i.first))
 			throw FatalCompilationError(
@@ -260,18 +248,18 @@ void Compiler::compile(std::istream &is, std::ostream &os, bool isImport, std::s
 		_write(os, (uint32_t)0);
 		compileIdRef(os, i.ref);
 
+		pushMajorContext();
+		curMajorContext.isImport = true;
+
 		importModule(i.ref);
+
+		popMajorContext();
 	}
 
 	popMajorContext();
 
 	curMajorContext = MajorContext();
 	compileScope(is, os, _targetModule->scope);
-
-#if SLKC_WITH_LANGUAGE_SERVER
-	if (isImport)
-		tokenInfos = savedTokenInfos;
-#endif
 }
 
 void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<Scope> scope) {
@@ -294,19 +282,16 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				vars[i.first] = m;
 
 #if SLKC_WITH_LANGUAGE_SERVER
-				if (m->idxNameToken != SIZE_MAX) {
-					// Update corresponding semantic information.
-					auto &tokenInfo = tokenInfos[m->idxNameToken];
+				updateTokenInfo(m->idxNameToken, [this](TokenInfo &tokenInfo) {
 					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 					tokenInfo.semanticType = SemanticType::Var;
-				}
+				});
 
-				if (m->idxColonToken != SIZE_MAX) {
-					// Update corresponding semantic information.
-					auto &tokenInfo = tokenInfos[m->idxColonToken];
+				updateTokenInfo(m->idxColonToken, [this](TokenInfo &tokenInfo) {
 					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 					tokenInfo.completionContext = CompletionContext::Type;
-				}
+				});
+
 				if (m->type)
 					updateCompletionContext(m->type, CompletionContext::Type);
 #endif
@@ -321,9 +306,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 
 #if SLKC_WITH_LANGUAGE_SERVER
 				for (auto &j : m->overloadingRegistries) {
-					if (j->idxNameToken != SIZE_MAX) {
-						// Update corresponding semantic information.
-						auto &tokenInfo = tokenInfos[j->idxNameToken];
+					updateTokenInfo(j->idxNameToken, [this, &j](TokenInfo &tokenInfo) {
 						tokenInfo.tokenContext =
 							TokenContext(
 								{},
@@ -333,11 +316,9 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 								{},
 								{});
 						tokenInfo.semanticType = SemanticType::Fn;
-					}
+					});
 
-					if (j->idxParamLParentheseToken != SIZE_MAX) {
-						// Update corresponding semantic information.
-						auto &tokenInfo = tokenInfos[j->idxParamLParentheseToken];
+					updateTokenInfo(j->idxParamLParentheseToken, [this, &j](TokenInfo &tokenInfo) {
 						tokenInfo.tokenContext =
 							TokenContext(
 								{},
@@ -347,11 +328,9 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 								{},
 								{});
 						tokenInfo.completionContext = CompletionContext::Type;
-					}
+					});
 
-					if (j->idxReturnTypeColonToken != SIZE_MAX) {
-						// Update corresponding semantic information.
-						auto &tokenInfo = tokenInfos[j->idxReturnTypeColonToken];
+					updateTokenInfo(j->idxReturnTypeColonToken, [this, &j](TokenInfo &tokenInfo) {
 						tokenInfo.tokenContext =
 							TokenContext(
 								{},
@@ -361,15 +340,13 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 								{},
 								{});
 						tokenInfo.completionContext = CompletionContext::Type;
-					}
+					});
 
 					if (j->returnType)
 						updateCompletionContext(j->returnType, CompletionContext::Type);
 
 					for (auto &k : j->params) {
-						if (k->idxNameToken != SIZE_MAX) {
-							// Update corresponding semantic information.
-							auto &tokenInfo = tokenInfos[k->idxNameToken];
+						updateTokenInfo(k->idxNameToken, [this, &j](TokenInfo &tokenInfo) {
 							tokenInfo.tokenContext =
 								TokenContext(
 									{},
@@ -379,7 +356,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 									{},
 									{});
 							tokenInfo.semanticType = SemanticType::Param;
-						}
+						});
 
 						updateCompletionContext(k->type, CompletionContext::Type);
 						updateSemanticType(k->type, SemanticType::Type);
@@ -390,9 +367,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 					}
 
 					for (auto &k : j->idxParamCommaTokens) {
-						if (k != SIZE_MAX) {
-							// Update corresponding semantic information.
-							auto &tokenInfo = tokenInfos[k];
+						updateTokenInfo(k, [this, &j, &k](TokenInfo &tokenInfo) {
 							tokenInfo.tokenContext =
 								TokenContext(
 									{},
@@ -402,13 +377,11 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 									{},
 									{});
 							updateCompletionContext(k, CompletionContext::Type);
-						}
+						});
 					}
 
 					for (auto &k : j->genericParams) {
-						if (k->idxNameToken != SIZE_MAX) {
-							// Update corresponding semantic information.
-							auto &tokenInfo = tokenInfos[k->idxNameToken];
+						updateTokenInfo(k->idxNameToken, [this, &j](TokenInfo &tokenInfo) {
 							tokenInfo.tokenContext =
 								TokenContext(
 									{},
@@ -418,7 +391,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 									{},
 									{});
 							tokenInfo.semanticType = SemanticType::TypeParam;
-						}
+						});
 					}
 
 					j->updateParamIndices();
@@ -434,9 +407,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				classes[i.first] = m;
 
 #if SLKC_WITH_LANGUAGE_SERVER
-				if (m->idxNameToken != SIZE_MAX) {
-					// Update corresponding semantic information.
-					auto &tokenInfo = tokenInfos[m->idxNameToken];
+				updateTokenInfo(m->idxNameToken, [this, &m](TokenInfo &tokenInfo) {
 					tokenInfo.tokenContext =
 						TokenContext(
 							{},
@@ -446,11 +417,9 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 							{},
 							{});
 					tokenInfo.semanticType = SemanticType::Class;
-				}
+				});
 
-				if (m->idxParentSlotLParentheseToken != SIZE_MAX) {
-					// Update corresponding semantic information.
-					auto &tokenInfo = tokenInfos[m->idxParentSlotLParentheseToken];
+				updateTokenInfo(m->idxParentSlotLParentheseToken, [this, &m](TokenInfo &tokenInfo) {
 					tokenInfo.tokenContext =
 						TokenContext(
 							{},
@@ -460,11 +429,9 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 							{},
 							{});
 					tokenInfo.completionContext = CompletionContext::Type;
-				}
+				});
 
-				if (m->idxImplInterfacesColonToken != SIZE_MAX) {
-					// Update corresponding semantic information.
-					auto &tokenInfo = tokenInfos[m->idxImplInterfacesColonToken];
+				updateTokenInfo(m->idxImplInterfacesColonToken, [this, &m](TokenInfo &tokenInfo) {
 					tokenInfo.tokenContext =
 						TokenContext(
 							{},
@@ -474,12 +441,10 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 							{},
 							{});
 					tokenInfo.completionContext = CompletionContext::Type;
-				}
+				});
 
 				for (auto j : m->idxImplInterfacesCommaTokens) {
-					if (j != SIZE_MAX) {
-						// Update corresponding semantic information.
-						auto &tokenInfo = tokenInfos[j];
+					updateTokenInfo(j, [this, &m](TokenInfo &tokenInfo) {
 						tokenInfo.tokenContext =
 							TokenContext(
 								{},
@@ -489,13 +454,11 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 								{},
 								{});
 						tokenInfo.completionContext = CompletionContext::Type;
-					}
+					});
 				}
 
 				for (auto &j : m->genericParams) {
-					if (j->idxNameToken != SIZE_MAX) {
-						// Update corresponding semantic information.
-						auto &tokenInfo = tokenInfos[j->idxNameToken];
+					updateTokenInfo(j->idxNameToken, [this, &m](TokenInfo &tokenInfo) {
 						tokenInfo.tokenContext =
 							TokenContext(
 								{},
@@ -505,7 +468,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 								{},
 								{});
 						tokenInfo.semanticType = SemanticType::TypeParam;
-					}
+					});
 				}
 #endif
 				break;
@@ -518,9 +481,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				interfaces[i.first] = m;
 
 #if SLKC_WITH_LANGUAGE_SERVER
-				if (m->idxNameToken != SIZE_MAX) {
-					// Update corresponding semantic information.
-					auto &tokenInfo = tokenInfos[m->idxNameToken];
+				updateTokenInfo(m->idxNameToken, [this, &m](TokenInfo &tokenInfo) {
 					tokenInfo.tokenContext =
 						TokenContext(
 							{},
@@ -530,12 +491,10 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 							{},
 							{});
 					tokenInfo.semanticType = SemanticType::Interface;
-				}
+				});
 
 				for (auto &j : m->genericParams) {
-					if (j->idxNameToken != SIZE_MAX) {
-						// Update corresponding semantic information.
-						auto &tokenInfo = tokenInfos[j->idxNameToken];
+					updateTokenInfo(j->idxNameToken, [this, &m](TokenInfo &tokenInfo) {
 						tokenInfo.tokenContext =
 							TokenContext(
 								{},
@@ -545,7 +504,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 								{},
 								{});
 						tokenInfo.semanticType = SemanticType::TypeParam;
-					}
+					});
 				}
 #endif
 				break;
@@ -558,9 +517,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				traits[i.first] = m;
 
 #if SLKC_WITH_LANGUAGE_SERVER
-				if (m->idxNameToken != SIZE_MAX) {
-					// Update corresponding semantic information.
-					auto &tokenInfo = tokenInfos[m->idxNameToken];
+				updateTokenInfo(m->idxNameToken, [this, &m](TokenInfo &tokenInfo) {
 					tokenInfo.tokenContext =
 						TokenContext(
 							{},
@@ -570,12 +527,10 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 							{},
 							{});
 					tokenInfo.semanticType = SemanticType::Interface;
-				}
+				});
 
 				for (auto &j : m->genericParams) {
-					if (j->idxNameToken != SIZE_MAX) {
-						// Update corresponding semantic information.
-						auto &tokenInfo = tokenInfos[j->idxNameToken];
+					updateTokenInfo(j->idxNameToken, [this, &m](TokenInfo &tokenInfo) {
 						tokenInfo.tokenContext =
 							TokenContext(
 								{},
@@ -585,7 +540,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 								{},
 								{});
 						tokenInfo.semanticType = SemanticType::TypeParam;
-					}
+					});
 				}
 #endif
 				break;

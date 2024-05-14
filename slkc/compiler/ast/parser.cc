@@ -2005,10 +2005,9 @@ void Parser::parseImportList() {
 		const auto &lBraceToken = expectToken(TokenId::LBrace);
 
 #if SLKC_WITH_LANGUAGE_SERVER
-		{
-			auto &tokenInfo = compiler->tokenInfos[lexer->getTokenIndex(lBraceToken)];
+		compiler->updateTokenInfo(lexer->getTokenIndex(lBraceToken), [](TokenInfo &tokenInfo) {
 			tokenInfo.completionContext = CompletionContext::Import;
-		}
+		});
 #endif
 
 		while (true) {

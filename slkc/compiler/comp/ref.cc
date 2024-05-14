@@ -29,12 +29,12 @@ bool Compiler::resolveIdRef(IdRef ref, std::deque<std::pair<IdRef, std::shared_p
 
 		lvarSucceeded:
 #if SLKC_WITH_LANGUAGE_SERVER
-			// Update corresponding semantic information.
-			auto &tokenInfo = tokenInfos[ref[0].idxToken];
-			tokenInfo.semanticInfo.isTopLevelRef = true;
-			tokenInfo.semanticInfo.correspondingMember = localVar;
-			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
-			tokenInfo.semanticType = SemanticType::Var;
+			updateTokenInfo(ref[0].idxToken, [this, &localVar](TokenInfo &tokenInfo) {
+				tokenInfo.semanticInfo.isTopLevelRef = true;
+				tokenInfo.semanticInfo.correspondingMember = localVar;
+				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+				tokenInfo.semanticType = SemanticType::Var;
+			});
 #endif
 
 			partsOut.push_front({ IdRef{ ref.front() }, localVar });
@@ -65,12 +65,12 @@ bool Compiler::resolveIdRef(IdRef ref, std::deque<std::pair<IdRef, std::shared_p
 
 			paramSucceeded:
 #if SLKC_WITH_LANGUAGE_SERVER
-				// Update corresponding semantic information.
-				auto &tokenInfo = tokenInfos[ref[0].idxToken];
-				tokenInfo.semanticInfo.isTopLevelRef = true;
-				tokenInfo.semanticInfo.correspondingMember = curFn->params[idxParam];
-				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
-				tokenInfo.semanticType = SemanticType::Param;
+				updateTokenInfo(ref[0].idxToken, [this, idxParam](TokenInfo &tokenInfo) {
+					tokenInfo.semanticInfo.isTopLevelRef = true;
+					tokenInfo.semanticInfo.correspondingMember = curFn->params[idxParam];
+					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+					tokenInfo.semanticType = SemanticType::Param;
+				});
 #endif
 
 				partsOut.push_front({ IdRef{ ref.front() }, std::make_shared<ArgRefNode>((uint32_t)idxParam) });
@@ -82,12 +82,12 @@ bool Compiler::resolveIdRef(IdRef ref, std::deque<std::pair<IdRef, std::shared_p
 			auto thisRefNode = std::make_shared<ThisRefNode>();
 
 #if SLKC_WITH_LANGUAGE_SERVER
-			// Update corresponding semantic information.
-			auto &tokenInfo = tokenInfos[ref[0].idxToken];
-			tokenInfo.semanticInfo.isTopLevelRef = true;
-			tokenInfo.semanticInfo.correspondingMember = thisRefNode;
-			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
-			tokenInfo.semanticType = SemanticType::Keyword;
+			updateTokenInfo(ref[0].idxToken, [this, &thisRefNode](TokenInfo &tokenInfo) {
+				tokenInfo.semanticInfo.isTopLevelRef = true;
+				tokenInfo.semanticInfo.correspondingMember = thisRefNode;
+				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+				tokenInfo.semanticType = SemanticType::Keyword;
+			});
 #endif
 
 			if (ref.size() > 1) {
@@ -124,25 +124,23 @@ bool Compiler::_resolveIdRef(Scope *scope, const IdRef &ref, std::deque<std::pai
 		if (!resolveContext.keepTokenScope)
 			tokenContext.curScope = scope->shared_from_this();
 
-		if (ref[0].idxAccessOpToken != SIZE_MAX) {
-			auto &precedingAccessOpTokenInfo = tokenInfos[ref[0].idxAccessOpToken];
+		updateTokenInfo(ref[0].idxAccessOpToken, [&tokenContext, &resolveContext](TokenInfo &precedingAccessOpTokenInfo) {
 			precedingAccessOpTokenInfo.tokenContext = tokenContext;
 			precedingAccessOpTokenInfo.semanticInfo.isTopLevelRef = resolveContext.isTopLevel;
 			precedingAccessOpTokenInfo.semanticInfo.isStatic = resolveContext.isStatic;
 
 			/* if (!resolveContext.isTopLevel)
 				precedingAccessOpTokenInfo.completionContext = CompletionContext::MemberAccess;*/
-		}
+		});
 
-		if (ref[0].idxToken != SIZE_MAX) {
-			auto &tokenInfo = tokenInfos[ref[0].idxToken];
+		updateTokenInfo(ref[0].idxToken, [&tokenContext, &resolveContext](TokenInfo &tokenInfo) {
 			tokenInfo.tokenContext = tokenContext;
 			tokenInfo.semanticInfo.isTopLevelRef = resolveContext.isTopLevel;
 			tokenInfo.semanticInfo.isStatic = resolveContext.isStatic;
 
 			/* if (!resolveContext.isTopLevel)
 				tokenInfo.completionContext = CompletionContext::MemberAccess;*/
-		}
+		});
 	}
 #endif
 
@@ -158,11 +156,11 @@ bool Compiler::_resolveIdRef(Scope *scope, const IdRef &ref, std::deque<std::pai
 		newRef.pop_front();
 
 #if SLKC_WITH_LANGUAGE_SERVER
-		// Update corresponding semantic information.
-		auto &tokenInfo = tokenInfos[ref[0].idxToken];
-		tokenInfo.semanticInfo.correspondingMember = scope->owner->shared_from_this();
-		tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
-		tokenInfo.semanticType = SemanticType::Keyword;
+		updateTokenInfo(ref[0].idxToken, [this, scope](TokenInfo &tokenInfo) {
+			tokenInfo.semanticInfo.correspondingMember = scope->owner->shared_from_this();
+			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+			tokenInfo.semanticType = SemanticType::Keyword;
+		});
 #endif
 
 		bool result = _resolveIdRefWithOwner(scope, newRef, partsOut, resolveContext);
@@ -179,9 +177,7 @@ bool Compiler::_resolveIdRef(Scope *scope, const IdRef &ref, std::deque<std::pai
 		m = scope->members.at(ref[0].name);
 
 #if SLKC_WITH_LANGUAGE_SERVER
-		// Update corresponding semantic information.
-		{
-			auto &tokenInfo = tokenInfos[ref[0].idxToken];
+		updateTokenInfo(ref[0].idxToken, [this, &resolveContext, &m](TokenInfo &tokenInfo) {
 			tokenInfo.semanticInfo.correspondingMember = m;
 
 			switch (m->getNodeType()) {
@@ -198,7 +194,7 @@ bool Compiler::_resolveIdRef(Scope *scope, const IdRef &ref, std::deque<std::pai
 					tokenInfo.semanticType = resolveContext.isTopLevel ? SemanticType::Fn : SemanticType::Method;
 					break;
 			}
-		}
+		});
 #endif
 
 		switch (m->getNodeType()) {

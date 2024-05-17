@@ -553,14 +553,146 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 		}
 	}
 
-	for (auto &i : classes)
+	for (auto &i : classes) {
 		verifyInheritanceChain(i.second.get());
+		verifyGenericParams(i.second->genericParams);
+	}
 
-	for (auto &i : interfaces)
+	for (auto &i : interfaces) {
 		verifyInheritanceChain(i.second.get());
+		verifyGenericParams(i.second->genericParams);
+	}
 
-	for (auto &i : traits)
+	for (auto &i : traits) {
 		verifyInheritanceChain(i.second.get());
+		verifyGenericParams(i.second->genericParams);
+	}
+
+	auto mergeGenericParams = [this](const GenericParamNodeList &newParams) {
+		for (auto &i : newParams) {
+			if (curMajorContext.genericParamIndices.count(i->name))
+				throw FatalCompilationError(
+					Message(
+						i->getLocation(),
+						MessageType::Error,
+						"This generic parameter shadows another generic parameter"));
+			curMajorContext.genericParams.push_back(i);
+			curMajorContext.genericParamIndices[i->name] = curMajorContext.genericParams.size() - 1;
+		}
+	};
+
+	_write(os, (uint32_t)classes.size());
+	for (auto &i : classes) {
+		pushMajorContext();
+
+		{
+			auto thisType = std::make_shared<CustomTypeNameNode>(i.second->getLocation(), getFullName(i.second.get()), this, i.second->scope.get());
+			for (auto &j : i.second->genericParams) {
+				thisType->ref.back().genericArgs.push_back(std::make_shared<CustomTypeNameNode>(
+					i.second->getLocation(),
+					IdRef{ { j->getLocation(), SIZE_MAX, j->name, std::deque<std::shared_ptr<TypeNameNode>>{} } },
+					this,
+					i.second->scope.get()));
+			}
+			curMajorContext.thisType = thisType;
+		}
+
+		mergeGenericParams(i.second->genericParams);
+
+		slxfmt::ClassTypeDesc ctd = {};
+
+		if (i.second->access & ACCESS_PUB)
+			ctd.flags |= slxfmt::CTD_PUB;
+		if (i.second->access & ACCESS_FINAL)
+			ctd.flags |= slxfmt::CTD_FINAL;
+		if (i.second->parentClass)
+			ctd.flags |= slxfmt::CTD_DERIVED;
+		ctd.nImpls = (uint8_t)i.second->implInterfaces.size();
+		ctd.lenName = (uint8_t)i.first.length();
+		ctd.nGenericParams = (uint8_t)i.second->genericParams.size();
+
+		_write(os, ctd);
+		_write(os, i.first.data(), i.first.length());
+
+		for (auto &j : i.second->genericParams) {
+			compileGenericParam(os, j);
+		}
+
+		if (i.second->parentClass) {
+			compileIdRef(os, getFullName((MemberNode *)resolveCustomTypeName((CustomTypeNameNode *)i.second->parentClass.get()).get()));
+		}
+
+		for (auto &j : i.second->implInterfaces)
+			compileIdRef(os, std::static_pointer_cast<CustomTypeNameNode>(j)->ref);
+
+		compileScope(is, os, i.second->scope);
+
+		popMajorContext();
+	}
+
+	_write(os, (uint32_t)interfaces.size());
+	for (auto &i : interfaces) {
+		pushMajorContext();
+
+		mergeGenericParams(i.second->genericParams);
+
+		slxfmt::InterfaceTypeDesc itd = {};
+
+		if (i.second->access & ACCESS_PUB)
+			itd.flags |= slxfmt::ITD_PUB;
+
+		itd.nParents = (uint8_t)i.second->parentInterfaces.size();
+		itd.nGenericParams = i.second->genericParams.size();
+
+		itd.lenName = (uint8_t)i.first.length();
+
+		_write(os, itd);
+		_write(os, i.first.data(), i.first.length());
+
+		for (auto &j : i.second->genericParams) {
+			compileGenericParam(os, j);
+		}
+
+		for (auto j : i.second->parentInterfaces) {
+			compileIdRef(os, std::static_pointer_cast<CustomTypeNameNode>(j)->ref);
+		}
+
+		compileScope(is, os, i.second->scope);
+
+		popMajorContext();
+	}
+
+	_write(os, (uint32_t)traits.size());
+	for (auto &i : traits) {
+		pushMajorContext();
+
+		mergeGenericParams(i.second->genericParams);
+
+		slxfmt::TraitTypeDesc ttd = {};
+
+		if (i.second->access & ACCESS_PUB)
+			ttd.flags |= slxfmt::TTD_PUB;
+
+		ttd.nParents = (uint8_t)i.second->parentTraits.size();
+
+		ttd.lenName = (uint8_t)i.first.length();
+		ttd.nGenericParams = i.second->genericParams.size();
+
+		_write(os, ttd);
+		_write(os, i.first.data(), i.first.length());
+
+		for (auto &j : i.second->genericParams) {
+			compileGenericParam(os, j);
+		}
+
+		for (auto j : i.second->parentTraits) {
+			compileIdRef(os, std::static_pointer_cast<CustomTypeNameNode>(j)->ref);
+		}
+
+		compileScope(is, os, i.second->scope);
+
+		popMajorContext();
+	}
 
 	_write<uint32_t>(os, (uint32_t)vars.size());
 	for (auto &i : vars) {
@@ -615,19 +747,6 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 						"Expecting a compiling-time expression"));
 		}
 	}
-
-	auto mergeGenericParams = [this](const GenericParamNodeList &newParams) {
-		for (auto &i : newParams) {
-			if (curMajorContext.genericParamIndices.count(i->name))
-				throw FatalCompilationError(
-					Message(
-						i->getLocation(),
-						MessageType::Error,
-						"This generic parameter shadows another generic parameter"));
-			curMajorContext.genericParams.push_back(i);
-			curMajorContext.genericParamIndices[i->name] = curMajorContext.genericParams.size() - 1;
-		}
-	};
 
 	for (auto &i : funcs) {
 		for (auto &j : i.second->overloadingRegistries) {
@@ -755,122 +874,6 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 		for (auto &j : i.second->srcLocDescs) {
 			_write(os, j);
 		}
-	}
-
-	_write(os, (uint32_t)classes.size());
-	for (auto &i : classes) {
-		pushMajorContext();
-
-		{
-			auto thisType = std::make_shared<CustomTypeNameNode>(i.second->getLocation(), getFullName(i.second.get()), this, i.second->scope.get());
-			for (auto &j : i.second->genericParams) {
-				thisType->ref.back().genericArgs.push_back(std::make_shared<CustomTypeNameNode>(
-					i.second->getLocation(),
-					IdRef{ { j->getLocation(), SIZE_MAX, j->name, std::deque<std::shared_ptr<TypeNameNode>>{} } },
-					this,
-					i.second->scope.get()));
-			}
-			curMajorContext.thisType = thisType;
-		}
-
-		// curMajorContext = MajorContext();
-		mergeGenericParams(i.second->genericParams);
-
-		slxfmt::ClassTypeDesc ctd = {};
-
-		if (i.second->access & ACCESS_PUB)
-			ctd.flags |= slxfmt::CTD_PUB;
-		if (i.second->access & ACCESS_FINAL)
-			ctd.flags |= slxfmt::CTD_FINAL;
-		if (i.second->parentClass)
-			ctd.flags |= slxfmt::CTD_DERIVED;
-		ctd.nImpls = (uint8_t)i.second->implInterfaces.size();
-		ctd.lenName = (uint8_t)i.first.length();
-		ctd.nGenericParams = (uint8_t)i.second->genericParams.size();
-
-		_write(os, ctd);
-		_write(os, i.first.data(), i.first.length());
-
-		for (auto &j : i.second->genericParams) {
-			compileGenericParam(os, j);
-		}
-
-		if (i.second->parentClass) {
-			compileIdRef(os, getFullName((MemberNode *)resolveCustomTypeName((CustomTypeNameNode *)i.second->parentClass.get()).get()));
-		}
-
-		for (auto &j : i.second->implInterfaces)
-			compileIdRef(os, std::static_pointer_cast<CustomTypeNameNode>(j)->ref);
-
-		compileScope(is, os, i.second->scope);
-
-		popMajorContext();
-	}
-
-	_write(os, (uint32_t)interfaces.size());
-	for (auto &i : interfaces) {
-		pushMajorContext();
-
-		// curMajorContext = MajorContext();
-		mergeGenericParams(i.second->genericParams);
-
-		slxfmt::InterfaceTypeDesc itd = {};
-
-		if (i.second->access & ACCESS_PUB)
-			itd.flags |= slxfmt::ITD_PUB;
-
-		itd.nParents = (uint8_t)i.second->parentInterfaces.size();
-		itd.nGenericParams = i.second->genericParams.size();
-
-		itd.lenName = (uint8_t)i.first.length();
-
-		_write(os, itd);
-		_write(os, i.first.data(), i.first.length());
-
-		for (auto &j : i.second->genericParams) {
-			compileGenericParam(os, j);
-		}
-
-		for (auto j : i.second->parentInterfaces) {
-			compileIdRef(os, std::static_pointer_cast<CustomTypeNameNode>(j)->ref);
-		}
-
-		compileScope(is, os, i.second->scope);
-
-		popMajorContext();
-	}
-
-	_write(os, (uint32_t)traits.size());
-	for (auto &i : traits) {
-		pushMajorContext();
-
-		// curMajorContext = MajorContext();
-		mergeGenericParams(i.second->genericParams);
-
-		slxfmt::TraitTypeDesc ttd = {};
-
-		if (i.second->access & ACCESS_PUB)
-			ttd.flags |= slxfmt::TTD_PUB;
-
-		ttd.nParents = (uint8_t)i.second->parentTraits.size();
-
-		ttd.lenName = (uint8_t)i.first.length();
-		ttd.nGenericParams = i.second->genericParams.size();
-
-		_write(os, ttd);
-		_write(os, i.first.data(), i.first.length());
-
-		for (auto &j : i.second->genericParams) {
-			compileGenericParam(os, j);
-		}
-
-		for (auto j : i.second->parentTraits) {
-			compileIdRef(os, std::static_pointer_cast<CustomTypeNameNode>(j)->ref);
-		}
-
-		compileScope(is, os, i.second->scope);
-
-		popMajorContext();
 	}
 }
 

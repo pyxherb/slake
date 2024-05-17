@@ -31,7 +31,8 @@ bool Compiler::resolveIdRef(IdRef ref, std::deque<std::pair<IdRef, std::shared_p
 #if SLKC_WITH_LANGUAGE_SERVER
 			updateTokenInfo(ref[0].idxToken, [this, &localVar](TokenInfo &tokenInfo) {
 				tokenInfo.semanticInfo.isTopLevelRef = true;
-				tokenInfo.semanticInfo.correspondingMember = localVar;
+				if (!tokenInfo.semanticInfo.correspondingMember)
+					tokenInfo.semanticInfo.correspondingMember = localVar;
 				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 				tokenInfo.semanticType = SemanticType::Var;
 			});
@@ -67,7 +68,8 @@ bool Compiler::resolveIdRef(IdRef ref, std::deque<std::pair<IdRef, std::shared_p
 #if SLKC_WITH_LANGUAGE_SERVER
 				updateTokenInfo(ref[0].idxToken, [this, idxParam](TokenInfo &tokenInfo) {
 					tokenInfo.semanticInfo.isTopLevelRef = true;
-					tokenInfo.semanticInfo.correspondingMember = curFn->params[idxParam];
+					if (!tokenInfo.semanticInfo.correspondingMember)
+						tokenInfo.semanticInfo.correspondingMember = curFn->params[idxParam];
 					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 					tokenInfo.semanticType = SemanticType::Param;
 				});
@@ -84,7 +86,8 @@ bool Compiler::resolveIdRef(IdRef ref, std::deque<std::pair<IdRef, std::shared_p
 #if SLKC_WITH_LANGUAGE_SERVER
 			updateTokenInfo(ref[0].idxToken, [this, &thisRefNode](TokenInfo &tokenInfo) {
 				tokenInfo.semanticInfo.isTopLevelRef = true;
-				tokenInfo.semanticInfo.correspondingMember = thisRefNode;
+				if (!tokenInfo.semanticInfo.correspondingMember)
+					tokenInfo.semanticInfo.correspondingMember = thisRefNode;
 				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 				tokenInfo.semanticType = SemanticType::Keyword;
 			});
@@ -117,6 +120,27 @@ bool Compiler::resolveIdRefWithScope(Scope *scope, IdRef ref, std::deque<std::pa
 }
 
 bool Compiler::_resolveIdRef(Scope *scope, const IdRef &ref, std::deque<std::pair<IdRef, std::shared_ptr<AstNode>>> &partsOut, IdRefResolveContext resolveContext) {
+	// Break looping resolutions - For example, when a the scope's owner is a class and it has a
+	// parent class, where:
+	//
+	// classNode->scope == classNode->parentClass->scope
+	//
+	// And we have to resolve the parent class for verification, so the resolution call stack
+	// will be:
+	//
+	// _resolveCustomTypeName (resolves classNode->parentClass)
+	// -> _resolveIdRef (with classNode->parentClass->scope)
+	// -> _resolveIdRefWithOwner (resolves classNode->parentClass->scope->owner->parentClass, which equals to classNode->parentClass)
+	// -> _resolveCustomTypeName (resolves classNode->parentClass->scope->owner->parentClass)
+	// -> _resolveIdRef (with classNode->parentClass->scope->owner->parentClass->scope, which equals to classNode->scope)
+	// -> ...
+	// 
+	// which causes a infinite recursion and we have to break that by not resolving scopes that is
+	// already in a resolution.
+	if (resolveContext.resolvingScopes.count(scope))
+		return false;
+	resolveContext.resolvingScopes.insert(scope);
+
 #if SLKC_WITH_LANGUAGE_SERVER
 	// Update corresponding semantic information.
 	{
@@ -157,7 +181,8 @@ bool Compiler::_resolveIdRef(Scope *scope, const IdRef &ref, std::deque<std::pai
 
 #if SLKC_WITH_LANGUAGE_SERVER
 		updateTokenInfo(ref[0].idxToken, [this, scope](TokenInfo &tokenInfo) {
-			tokenInfo.semanticInfo.correspondingMember = scope->owner->shared_from_this();
+			if (!tokenInfo.semanticInfo.correspondingMember)
+				tokenInfo.semanticInfo.correspondingMember = scope->owner->shared_from_this();
 			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 			tokenInfo.semanticType = SemanticType::Keyword;
 		});
@@ -178,7 +203,8 @@ bool Compiler::_resolveIdRef(Scope *scope, const IdRef &ref, std::deque<std::pai
 
 #if SLKC_WITH_LANGUAGE_SERVER
 		updateTokenInfo(ref[0].idxToken, [this, &resolveContext, &m](TokenInfo &tokenInfo) {
-			tokenInfo.semanticInfo.correspondingMember = m;
+			if (!tokenInfo.semanticInfo.correspondingMember)
+				tokenInfo.semanticInfo.correspondingMember = m;
 
 			switch (m->getNodeType()) {
 				case NodeType::Class:
@@ -301,8 +327,9 @@ bool slake::slkc::Compiler::_resolveIdRefWithOwner(Scope *scope, const IdRef &re
 				if (owner->parentClass) {
 					if (_resolveIdRef(
 							scopeOf(
-								resolveCustomTypeName(
-									(CustomTypeNameNode *)owner->parentClass.get())
+								_resolveCustomTypeName(
+									(CustomTypeNameNode *)owner->parentClass.get(),
+									resolveContext.resolvingScopes)
 									.get())
 								.get(),
 							ref, partsOut, resolveContext))
@@ -313,8 +340,9 @@ bool slake::slkc::Compiler::_resolveIdRefWithOwner(Scope *scope, const IdRef &re
 				for (auto i : owner->implInterfaces) {
 					if (_resolveIdRef(
 							scopeOf(
-								resolveCustomTypeName(
-									(CustomTypeNameNode *)i.get())
+								_resolveCustomTypeName(
+									(CustomTypeNameNode *)i.get(),
+									resolveContext.resolvingScopes)
 									.get())
 								.get(),
 							ref, partsOut, resolveContext))
@@ -329,8 +357,9 @@ bool slake::slkc::Compiler::_resolveIdRefWithOwner(Scope *scope, const IdRef &re
 				for (auto i : owner->parentInterfaces) {
 					if (_resolveIdRef(
 							scopeOf(
-								resolveCustomTypeName(
-									(CustomTypeNameNode *)i.get())
+								_resolveCustomTypeName(
+									(CustomTypeNameNode *)i.get(),
+									resolveContext.resolvingScopes)
 									.get())
 								.get(),
 							ref, partsOut, resolveContext))
@@ -345,8 +374,9 @@ bool slake::slkc::Compiler::_resolveIdRefWithOwner(Scope *scope, const IdRef &re
 				for (auto i : owner->parentTraits) {
 					if (_resolveIdRef(
 							scopeOf(
-								resolveCustomTypeName(
-									(CustomTypeNameNode *)i.get())
+								_resolveCustomTypeName(
+									(CustomTypeNameNode *)i.get(),
+									resolveContext.resolvingScopes)
 									.get())
 								.get(),
 							ref, partsOut, resolveContext))

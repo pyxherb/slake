@@ -407,11 +407,11 @@ slake::slkc::Server::Server() {
 			responseBodyValue["uri"] = uri;
 
 			if (tokenInfo.semanticInfo.correspondingMember) {
-				auto &m = tokenInfo.semanticInfo.correspondingMember;
+				auto &member = tokenInfo.semanticInfo.correspondingMember;
 
-				switch (m->getNodeType()) {
+				switch (member->getNodeType()) {
 					case NodeType::Var:
-						responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((VarNode*)m.get()), doc->compiler.get());
+						responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((VarNode*)member.get()), doc->compiler.get());
 						break;
 					case NodeType::Param:
 						responseBodyValue["content"] = "(Parameter)";
@@ -419,23 +419,48 @@ slake::slkc::Server::Server() {
 					case NodeType::LocalVar:
 						responseBodyValue["content"] = "(Local variable)";
 						break;
-					case NodeType::Fn:
-						responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((FnNode *)m.get()), doc->compiler.get());
+					case NodeType::FnOverloading: {
+						auto m = std::static_pointer_cast<FnOverloadingNode>(member);
+
+						std::string fullName;
+
+						fullName += std::to_string(m->returnType ? m->returnType : std::make_shared<VoidTypeNameNode>(Location(), SIZE_MAX), doc->compiler.get());
+						fullName += " ";
+						fullName += std::to_string(doc->compiler->getFullName(m->owner), doc->compiler.get());
+
+						fullName += "(";
+
+						for (size_t i = 0; i < m->params.size(); ++i) {
+							if (i)
+								fullName += ",";
+							if (m->params[i]->name == "...") {
+								fullName += "...";
+							} else {
+								fullName += std::to_string(m->params[i]->type, doc->compiler.get());
+								fullName += " ";
+								fullName += m->params[i]->name;
+							}
+						}
+
+						fullName += ")";
+
+						responseBodyValue["content"] = fullName;
 						break;
+					}
 					case NodeType::GenericParam:
-						responseBodyValue["content"] = "(Generic parameter) " +((GenericParamNode *)m.get())->name;
+						responseBodyValue["content"] = "(Generic parameter) " +((GenericParamNode *)member.get())->name;
 						break;
 					case NodeType::Class:
-						responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((ClassNode *)m.get()), doc->compiler.get());
+						responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((ClassNode *)member.get()), doc->compiler.get());
 						break;
 					case NodeType::Interface:
-						responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((InterfaceNode *)m.get()), doc->compiler.get());
+						responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((InterfaceNode *)member.get()), doc->compiler.get());
 						break;
 					case NodeType::Trait:
-						responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((TraitNode *)m.get()), doc->compiler.get());
+						responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((TraitNode *)member.get()), doc->compiler.get());
 						break;
 					case NodeType::Module:
-						responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((ModuleNode *)m.get()), doc->compiler.get());
+						responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((ModuleNode *)member.get()), doc->compiler.get());
 						break;
 				}
 			}

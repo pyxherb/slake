@@ -1658,6 +1658,9 @@ std::shared_ptr<ClassNode> Parser::parseClassDef() {
 
 	auto savedScope = curScope;
 	try {
+		curScope = classNode->scope;
+		curScope->parent = savedScope.get();
+
 		if (auto &token = lexer->peekToken(); token.tokenId == TokenId::LtOp) {
 			classNode->setGenericParams(parseGenericParams());
 		}
@@ -1670,9 +1673,6 @@ std::shared_ptr<ClassNode> Parser::parseClassDef() {
 			classNode->implInterfaces,
 			classNode->idxImplInterfacesColonToken,
 			classNode->idxImplInterfacesCommaTokens);
-
-		curScope = classNode->scope;
-		curScope->parent = savedScope.get();
 
 		const auto &lBraceToken = expectToken(TokenId::LBrace);
 		classNode->idxLBraceToken = lexer->getTokenIndex(lBraceToken);
@@ -1783,7 +1783,8 @@ std::shared_ptr<InterfaceNode> Parser::parseInterfaceDef() {
 
 	auto savedScope = curScope;
 	try {
-		GenericParamNodeList genericParams;
+		curScope = interfaceNode->scope;
+		curScope->parent = savedScope.get();
 
 		if (auto &token = lexer->peekToken(); token.tokenId == TokenId::LtOp) {
 			interfaceNode->setGenericParams(parseGenericParams());
@@ -1793,9 +1794,6 @@ std::shared_ptr<InterfaceNode> Parser::parseInterfaceDef() {
 			interfaceNode->parentInterfaces,
 			interfaceNode->idxImplInterfacesColonToken,
 			interfaceNode->idxImplInterfacesCommaTokens);
-
-		curScope = interfaceNode->scope;
-		curScope->parent = savedScope.get();
 
 		const auto &lBraceToken = expectToken(TokenId::LBrace);
 		interfaceNode->idxLBraceToken = lexer->getTokenIndex(lBraceToken);

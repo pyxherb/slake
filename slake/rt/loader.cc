@@ -183,6 +183,94 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 	uint32_t nItemsToRead;
 
 	//
+	// Load classes.
+	//
+	nItemsToRead = _read<uint32_t>(fs);
+	for (slxfmt::ClassTypeDesc i = {}; nItemsToRead--;) {
+		i = _read<slxfmt::ClassTypeDesc>(fs);
+
+		std::string name(i.lenName, '\0');
+		fs.read(name.data(), i.lenName);
+
+		AccessModifier access = 0;
+		if (i.flags & slxfmt::CTD_PUB)
+			access |= ACCESS_PUB;
+		if (i.flags & slxfmt::CTD_FINAL)
+			access |= ACCESS_FINAL;
+
+		std::unique_ptr<ClassValue> value = std::make_unique<ClassValue>(this, access);
+
+		for (size_t j = 0; j < i.nGenericParams; ++j)
+			value->genericParams.push_back(_loadGenericParam(fs));
+
+		// Load reference to the parent class.
+		if (i.flags & slxfmt::CTD_DERIVED)
+			value->parentClass = Type(TypeId::Class, _loadIdRef(fs));
+
+		// Load references to implemented interfaces.
+		for (auto j = i.nImpls; j; j--)
+			value->implInterfaces.push_back(_loadIdRef(fs));
+
+		_loadScope(value.get(), fs);
+
+		mod->scope->putMember(name, value.release());
+	}
+
+	//
+	// Load interfaces.
+	//
+	nItemsToRead = _read<uint32_t>(fs);
+	for (slxfmt::InterfaceTypeDesc i = {}; nItemsToRead--;) {
+		i = _read<slxfmt::InterfaceTypeDesc>(fs);
+
+		std::string name(i.lenName, '\0');
+		fs.read(name.data(), i.lenName);
+
+		AccessModifier access = 0;
+		if (i.flags & slxfmt::ITD_PUB)
+			access |= ACCESS_PUB;
+
+		std::unique_ptr<InterfaceValue> value = std::make_unique<InterfaceValue>(this, access);
+
+		for (size_t j = 0; j < i.nGenericParams; ++j)
+			value->genericParams.push_back(_loadGenericParam(fs));
+
+		for (auto j = i.nParents; j; j--)
+			value->parents.push_back(_loadIdRef(fs));
+
+		_loadScope(value.get(), fs);
+
+		mod->scope->putMember(name, value.release());
+	}
+
+	//
+	// Load traits.
+	//
+	nItemsToRead = _read<uint32_t>(fs);
+	for (slxfmt::TraitTypeDesc i = {}; nItemsToRead--;) {
+		i = _read<slxfmt::TraitTypeDesc>(fs);
+
+		std::string name(i.lenName, '\0');
+		fs.read(name.data(), i.lenName);
+
+		AccessModifier access = 0;
+		if (i.flags & slxfmt::TTD_PUB)
+			access |= ACCESS_PUB;
+
+		std::unique_ptr<TraitValue> value = std::make_unique<TraitValue>(this, access);
+
+		for (size_t j = 0; j < i.nGenericParams; ++j)
+			value->genericParams.push_back(_loadGenericParam(fs));
+
+		for (auto j = i.nParents; j; j--)
+			value->parents.push_back(_loadIdRef(fs));
+
+		_loadScope(value.get(), fs);
+
+		mod->scope->putMember(name, value.release());
+	}
+
+	//
 	// Load variables.
 	//
 	nItemsToRead = _read<uint32_t>(fs);
@@ -270,94 +358,6 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 		}
 
 		mod->scope->putMember(name, fn.release());
-	}
-
-	//
-	// Load classes.
-	//
-	nItemsToRead = _read<uint32_t>(fs);
-	for (slxfmt::ClassTypeDesc i = {}; nItemsToRead--;) {
-		i = _read<slxfmt::ClassTypeDesc>(fs);
-
-		std::string name(i.lenName, '\0');
-		fs.read(name.data(), i.lenName);
-
-		AccessModifier access = 0;
-		if (i.flags & slxfmt::CTD_PUB)
-			access |= ACCESS_PUB;
-		if (i.flags & slxfmt::CTD_FINAL)
-			access |= ACCESS_FINAL;
-
-		std::unique_ptr<ClassValue> value = std::make_unique<ClassValue>(this, access);
-
-		for (size_t j = 0; j < i.nGenericParams; ++j)
-			value->genericParams.push_back(_loadGenericParam(fs));
-
-		// Load reference to the parent class.
-		if (i.flags & slxfmt::CTD_DERIVED)
-			value->parentClass = Type(TypeId::Class, _loadIdRef(fs));
-
-		// Load references to implemented interfaces.
-		for (auto j = i.nImpls; j; j--)
-			value->implInterfaces.push_back(_loadIdRef(fs));
-
-		_loadScope(value.get(), fs);
-
-		mod->scope->putMember(name, value.release());
-	}
-
-	//
-	// Load interfaces.
-	//
-	nItemsToRead = _read<uint32_t>(fs);
-	for (slxfmt::InterfaceTypeDesc i = {}; nItemsToRead--;) {
-		i = _read<slxfmt::InterfaceTypeDesc>(fs);
-
-		std::string name(i.lenName, '\0');
-		fs.read(name.data(), i.lenName);
-
-		AccessModifier access = 0;
-		if (i.flags & slxfmt::ITD_PUB)
-			access |= ACCESS_PUB;
-
-		std::unique_ptr<InterfaceValue> value = std::make_unique<InterfaceValue>(this, access);
-
-		for (size_t j = 0; j < i.nGenericParams; ++j)
-			value->genericParams.push_back(_loadGenericParam(fs));
-
-		for (auto j = i.nParents; j; j--)
-			value->parents.push_back(_loadIdRef(fs));
-
-		_loadScope(value.get(), fs);
-
-		mod->scope->putMember(name, value.release());
-	}
-
-	//
-	// Load traits.
-	//
-	nItemsToRead = _read<uint32_t>(fs);
-	for (slxfmt::TraitTypeDesc i = {}; nItemsToRead--;) {
-		i = _read<slxfmt::TraitTypeDesc>(fs);
-
-		std::string name(i.lenName, '\0');
-		fs.read(name.data(), i.lenName);
-
-		AccessModifier access = 0;
-		if (i.flags & slxfmt::TTD_PUB)
-			access |= ACCESS_PUB;
-
-		std::unique_ptr<TraitValue> value = std::make_unique<TraitValue>(this, access);
-
-		for (size_t j = 0; j < i.nGenericParams; ++j)
-			value->genericParams.push_back(_loadGenericParam(fs));
-
-		for (auto j = i.nParents; j; j--)
-			value->parents.push_back(_loadIdRef(fs));
-
-		_loadScope(value.get(), fs);
-
-		mod->scope->putMember(name, value.release());
 	}
 }
 

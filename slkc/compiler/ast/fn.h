@@ -75,7 +75,7 @@ namespace slake {
 			inline FnOverloadingNode(const FnOverloadingNode &other) : MemberNode(other) {
 				loc = other.loc;
 				idxNameToken = other.idxNameToken;
-				if (returnType)
+				if (other.returnType)
 					returnType = other.returnType->duplicate<TypeNameNode>();
 
 				params.resize(other.params.size());

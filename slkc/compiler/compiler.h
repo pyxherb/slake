@@ -266,6 +266,7 @@ namespace slake {
 				bool isTopLevel = true;
 				bool keepTokenScope = false;
 				bool isStatic = true;
+				std::set<Scope *> resolvingScopes;	// Current resolving scopes, used for breaking looping resolving.
 			};
 
 			bool _resolveIdRef(Scope *scope, const IdRef &ref, std::deque<std::pair<IdRef, std::shared_ptr<AstNode>>> &partsOut, IdRefResolveContext resolveContext);
@@ -293,6 +294,7 @@ namespace slake {
 
 			std::shared_ptr<Scope> scopeOf(AstNode *node);
 
+			std::shared_ptr<AstNode> _resolveCustomTypeName(CustomTypeNameNode *typeName, const std::set<Scope *> &resolvingScopes);
 			/// @brief Resolve a custom type.
 			/// @note This method also updates resolved generic arguments.
 			/// @param typeName Type name to be resolved.
@@ -398,8 +400,13 @@ namespace slake {
 									else if (lhsTypeName->compiler > rhsTypeName->compiler)
 										return false;
 									else {
-										auto lhsNode = lhsTypeName->compiler->resolveCustomTypeName(lhsTypeName.get()),
-											 rhsNode = rhsTypeName->compiler->resolveCustomTypeName(rhsTypeName.get());
+										std::shared_ptr<AstNode> lhsNode, rhsNode;
+										try {
+											lhsNode = lhsTypeName->compiler->resolveCustomTypeName(lhsTypeName.get());
+											rhsNode = rhsTypeName->compiler->resolveCustomTypeName(rhsTypeName.get());
+										} catch (FatalCompilationError e) {
+											// Supress the exceptions - the function should be noexcept, we have to raise compilation errors out of the comparator.
+										}
 
 										if (lhsNode < rhsNode)
 											return true;
@@ -419,8 +426,8 @@ namespace slake {
 
 			using GenericNodeCacheTable =
 				std::map<
-					std::deque<std::shared_ptr<TypeNameNode>>,  // Generic arguments.
-					std::shared_ptr<MemberNode>,			  // Cached instantiated value.
+					std::deque<std::shared_ptr<TypeNameNode>>,	// Generic arguments.
+					std::shared_ptr<MemberNode>,				// Cached instantiated value.
 					GenericNodeArgListComparator>;
 
 			using GenericNodeCacheDirectory = std::map<
@@ -471,12 +478,13 @@ namespace slake {
 			//
 
 			//
-			// Class begin
+			// Verify begin
 			//
 
 			void verifyInheritanceChain(ClassNode *node, std::set<AstNode *> &walkedNodes);
 			void verifyInheritanceChain(InterfaceNode *node, std::set<AstNode *> &walkedNodes);
 			void verifyInheritanceChain(TraitNode *node, std::set<AstNode *> &walkedNodes);
+			void verifyInheritanceChain(GenericParamNode *node, std::set<AstNode *> &walkedNodes);
 
 			inline void verifyInheritanceChain(ClassNode *node) {
 				std::set<AstNode *> walkedNodes;
@@ -490,9 +498,15 @@ namespace slake {
 				std::set<AstNode *> walkedNodes;
 				verifyInheritanceChain(node, walkedNodes);
 			}
+			inline void verifyInheritanceChain(GenericParamNode *node) {
+				std::set<AstNode *> walkedNodes;
+				verifyInheritanceChain(node, walkedNodes);
+			}
+
+			void verifyGenericParams(const GenericParamNodeList &params);
 
 			//
-			// Class end
+			// Verify end
 			//
 
 			std::shared_ptr<Scope> mergeScope(Scope *a, Scope *b);

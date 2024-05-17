@@ -188,6 +188,12 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 								overloading = overloadings[0];
 							}
 
+#if SLKC_WITH_LANGUAGE_SERVER
+							updateTokenInfo(e->idxOpToken, [&overloading](TokenInfo &tokenInfo) {
+								tokenInfo.semanticInfo.correspondingMember = overloading;
+							});
+#endif
+
 							compileExpr(
 								e->x,
 								EvalPurpose::RValue,
@@ -656,6 +662,15 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 								if (overloadings.size() != 1)
 									return false;
 								overloading = overloadings[0];
+
+#ifdef SLKC_WITH_LANGUAGE_SERVER
+								updateTokenInfo(e->idxOpToken, [&overloading](TokenInfo &tokenInfo) {
+									tokenInfo.semanticInfo.correspondingMember = overloading;
+								});
+								updateTokenInfo(e->idxClosingToken, [&overloading](TokenInfo &tokenInfo) {
+									tokenInfo.semanticInfo.correspondingMember = overloading;
+								});
+#endif
 							}
 
 							compileExpr(
@@ -881,7 +896,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 
 			auto loc = e->getLocation();
 			std::string falseBranchLabel = "$ternary_" + std::to_string(loc.line) + "_" + std::to_string(loc.column) + "_false",
-				   endLabel = "$ternary_" + std::to_string(loc.line) + "_" + std::to_string(loc.column) + "_end";
+						endLabel = "$ternary_" + std::to_string(loc.line) + "_" + std::to_string(loc.column) + "_end";
 
 			compileExpr(e->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(conditionRegIndex));
 			if (evalExprType(e->condition)->getTypeId() != Type::Bool)
@@ -913,9 +928,9 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			auto loc = e->getLocation();
 
 			std::string labelPrefix = "$match_" + std::to_string(loc.line) + "_" + std::to_string(loc.column),
-				   condLocalVarName = labelPrefix + "_cond",
-				   defaultLabel = labelPrefix + "_label",
-				   endLabel = labelPrefix + "_end";
+						condLocalVarName = labelPrefix + "_cond",
+						defaultLabel = labelPrefix + "_label",
+						endLabel = labelPrefix + "_end";
 
 			uint32_t matcheeRegIndex = allocReg();
 
@@ -1385,6 +1400,12 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 
 							std::shared_ptr<FnOverloadingNode> overloading = determineOverloadingRegistry(std::static_pointer_cast<FnNode>(resolvedParts[i].second), resolvedParts[i].first.back().genericArgs);
 
+#ifdef SLKC_WITH_LANGUAGE_SERVER
+							updateTokenInfo(resolvedParts[i].first.back().idxToken, [&overloading](TokenInfo &tokenInfo) {
+								tokenInfo.semanticInfo.correspondingMember = overloading;
+							});
+#endif
+
 							std::deque<std::shared_ptr<TypeNameNode>> paramTypes;
 							for (auto &j : overloading->params) {
 								paramTypes.push_back(j->originalType ? j->originalType : j->type);
@@ -1499,6 +1520,12 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							_getFullName(fn, ref);
 
 							std::shared_ptr<FnOverloadingNode> overloading = determineOverloadingRegistry(std::static_pointer_cast<FnNode>(x), ref.back().genericArgs);
+
+#ifdef SLKC_WITH_LANGUAGE_SERVER
+							updateTokenInfo(resolvedParts.front().first.back().idxToken, [&overloading](TokenInfo &tokenInfo) {
+								tokenInfo.semanticInfo.correspondingMember = overloading;
+							});
+#endif
 
 							std::deque<std::shared_ptr<TypeNameNode>> paramTypes;
 							for (auto i : overloading->params) {

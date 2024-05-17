@@ -350,7 +350,7 @@ bool Compiler::isTypeNamesConvertible(std::shared_ptr<TypeNameNode> src, std::sh
 	return false;
 }
 
-std::shared_ptr<AstNode> Compiler::resolveCustomTypeName(CustomTypeNameNode *typeName) {
+std::shared_ptr<AstNode> Compiler::_resolveCustomTypeName(CustomTypeNameNode *typeName, const std::set<Scope *> &resolvingScopes) {
 	if (!typeName->cachedResolvedResult.expired())
 		return typeName->cachedResolvedResult.lock();
 
@@ -375,8 +375,10 @@ std::shared_ptr<AstNode> Compiler::resolveCustomTypeName(CustomTypeNameNode *typ
 	// Check the type with scope where the type name is created.
 	if (typeName->scope) {
 		std::deque<std::pair<IdRef, std::shared_ptr<AstNode>>> resolvedPartsOut;
+		IdRefResolveContext resolveContext;
+		resolveContext.resolvingScopes = resolvingScopes;
 
-		if (resolveIdRefWithScope(typeName->scope, typeName->ref, resolvedPartsOut)) {
+		if (_resolveIdRef(typeName->scope, typeName->ref, resolvedPartsOut, resolveContext)) {
 			if (resolvedPartsOut.size() > 1)
 				throw FatalCompilationError(
 					Message(
@@ -412,6 +414,11 @@ std::shared_ptr<AstNode> Compiler::resolveCustomTypeName(CustomTypeNameNode *typ
 			Location(typeName->getLocation()),
 			MessageType::Error,
 			"Type `" + std::to_string(typeName->ref, this) + "' was not found"));
+}
+
+std::shared_ptr<AstNode> Compiler::resolveCustomTypeName(CustomTypeNameNode* typeName) {
+	std::set<Scope *> resolvingScopes;
+	return _resolveCustomTypeName(typeName, resolvingScopes);
 }
 
 bool Compiler::isSameType(std::shared_ptr<TypeNameNode> x, std::shared_ptr<TypeNameNode> y) {

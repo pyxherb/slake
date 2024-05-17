@@ -65,7 +65,7 @@ std::string std::to_string(std::shared_ptr<slake::slkc::TypeNameNode> typeName, 
 					return "!" + std::static_pointer_cast<GenericParamNode>(m)->name;
 				default:
 					compiler->_getFullName((MemberNode *)m.get(), ref);
-					return (asOperatorName ? "" : "@") + std::to_string(ref, compiler);
+					return std::to_string(ref, compiler);
 			}
 		}
 		case Type::Bad:

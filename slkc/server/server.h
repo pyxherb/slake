@@ -52,7 +52,7 @@ namespace slake {
 			std::string uri;
 			std::string languageId;
 			std::string content;
-			ClientMarkupType markupType;
+			ClientMarkupType markupType = ClientMarkupType::PlainText;
 			std::mutex mutex;
 
 			std::shared_ptr<Compiler> compiler;

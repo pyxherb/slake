@@ -13,6 +13,7 @@ slake::slkc::Server::Server() {
 		Json::Reader reader;
 
 		std::string uri;
+		std::string content;
 		std::string languageId;
 		ClientMarkupType clientMarkupType;
 
@@ -30,6 +31,16 @@ slake::slkc::Server::Server() {
 			goto badRequest;
 		}
 		uri = rootValue["uri"].asString();
+
+		if (!rootValue.isMember("content")) {
+			response.body = "Missing content";
+			goto badRequest;
+		}
+		if (!rootValue["content"].isString()) {
+			response.body = "Invalid content";
+			goto badRequest;
+		}
+		content = rootValue["content"].asString();
 
 		if (!rootValue.isMember("languageId")) {
 			response.body = "Missing language ID";
@@ -70,13 +81,28 @@ slake::slkc::Server::Server() {
 
 			openedDocuments[uri] = doc;
 
+			doc->compiler->modulePaths = modulePaths;
+
+			try {
+				std::stringstream ss(content);
+				util::PseudoOutputStream pseudoOs;
+				doc->compiler->compile(ss, pseudoOs);
+			} catch (FatalCompilationError e) {
+				doc->compiler->messages.push_back(e.message);
+			}
+
 			Json::Value responseValue;
 
 			responseValue["type"] = (uint32_t)ResponseType::DocumentOk;
 
-			Json::Value &responseBodyValue = responseValue["body"];
+			Json::Value &responseBodyValue = responseValue["body"],
+						&compilerMessagesValue = responseBodyValue["compilerMessages"];
 
 			responseBodyValue["uri"] = uri;
+			for (auto &i : doc->compiler->messages)
+				compilerMessagesValue.insert(Json::Value::ArrayIndex(0), compilerMessageToJson(i));
+
+			doc->compiler->messages.clear();
 
 			response.body = responseValue.toStyledString();
 		}
@@ -120,41 +146,41 @@ slake::slkc::Server::Server() {
 		}
 		content = rootValue["content"].asString();
 
-		if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
-			std::shared_ptr<Document> doc = it->second;
-			std::lock_guard<std::mutex> docMutexGuard(doc->mutex);
+		{
+			if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
+				std::lock_guard<std::mutex> docMutexGuard(it->second->mutex);
+				std::shared_ptr<Document> doc = it->second;
 
-			openedDocuments[uri] = doc;
+				doc->compiler->reset();
 
-			doc->compiler->reset();
+				doc->compiler->modulePaths = modulePaths;
 
-			doc->compiler->modulePaths = modulePaths;
+				try {
+					std::stringstream ss(content);
+					util::PseudoOutputStream pseudoOs;
+					doc->compiler->compile(ss, pseudoOs);
+				} catch (FatalCompilationError e) {
+					doc->compiler->messages.push_back(e.message);
+				}
 
-			try {
-				std::stringstream ss(content);
-				util::PseudoOutputStream pseudoOs;
-				doc->compiler->compile(ss, pseudoOs);
-			} catch (FatalCompilationError e) {
-				doc->compiler->messages.push_back(e.message);
+				Json::Value responseValue;
+
+				responseValue["type"] = (uint32_t)ResponseType::DocumentOk;
+
+				Json::Value &responseBodyValue = responseValue["body"],
+							&compilerMessagesValue = responseBodyValue["compilerMessages"];
+
+				responseBodyValue["uri"] = uri;
+				for (auto &i : doc->compiler->messages)
+					compilerMessagesValue.insert(Json::Value::ArrayIndex(0), compilerMessageToJson(i));
+
+				doc->compiler->messages.clear();
+
+				response.body = responseValue.toStyledString();
+			} else {
+				response.body = "No such opened file";
+				goto notFound;
 			}
-
-			Json::Value responseValue;
-
-			responseValue["type"] = (uint32_t)ResponseType::DocumentOk;
-
-			Json::Value &responseBodyValue = responseValue["body"],
-						&compilerMessagesValue = responseBodyValue["compilerMessages"];
-
-			responseBodyValue["uri"] = uri;
-			for (auto &i : doc->compiler->messages)
-				compilerMessagesValue.insert(Json::Value::ArrayIndex(0), compilerMessageToJson(i));
-
-			doc->compiler->messages.clear();
-
-			response.body = responseValue.toStyledString();
-		} else {
-			response.body = "No such opened file";
-			goto notFound;
 		}
 		return;
 
@@ -190,22 +216,24 @@ slake::slkc::Server::Server() {
 		}
 		uri = rootValue["uri"].asString();
 
-		if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
-			std::lock_guard<std::mutex> docMutexGuard(it->second->mutex);
-			openedDocuments.erase(it);
+		{
+			if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
+				std::lock_guard<std::mutex> docMutexGuard(it->second->mutex);
+				openedDocuments.erase(it);
 
-			Json::Value responseValue;
+				Json::Value responseValue;
 
-			responseValue["type"] = (uint32_t)ResponseType::DocumentOk;
+				responseValue["type"] = (uint32_t)ResponseType::DocumentOk;
 
-			Json::Value &responseBodyValue = responseValue["body"];
+				Json::Value &responseBodyValue = responseValue["body"];
 
-			responseBodyValue["uri"] = uri;
+				responseBodyValue["uri"] = uri;
 
-			response.body = responseValue.toStyledString();
-		} else {
-			response.body = "No such opened file";
-			goto notFound;
+				response.body = responseValue.toStyledString();
+			} else {
+				response.body = "No such opened file";
+				goto notFound;
+			}
 		}
 		return;
 
@@ -251,29 +279,31 @@ slake::slkc::Server::Server() {
 			goto badRequest;
 		}
 
-		if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
-			std::shared_ptr<Document> doc = it->second;
-			std::lock_guard<std::mutex> docMutexGuard(doc->mutex);
+		{
+			if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
+				std::lock_guard<std::mutex> docMutexGuard(it->second->mutex);
+				std::shared_ptr<Document> doc = it->second;
 
-			Json::Value responseValue;
+				Json::Value responseValue;
 
-			responseValue["type"] = (uint32_t)ResponseType::Completion;
+				responseValue["type"] = (uint32_t)ResponseType::Completion;
 
-			Json::Value &responseBodyValue = responseValue["body"],
-						&completionItemsValue = responseBodyValue["completionItems"];
+				Json::Value &responseBodyValue = responseValue["body"],
+							&completionItemsValue = responseBodyValue["completionItems"];
 
-			auto completionItems = doc->getCompletionItems(loc);
+				auto completionItems = doc->getCompletionItems(loc);
 
-			responseBodyValue["uri"] = uri;
-			for (auto &i : completionItems)
-				completionItemsValue.insert(Json::Value::ArrayIndex(0), completionItemToJson(i));
+				responseBodyValue["uri"] = uri;
+				for (auto &i : completionItems)
+					completionItemsValue.insert(Json::Value::ArrayIndex(0), completionItemToJson(i));
 
-			doc->compiler->messages.clear();
+				doc->compiler->messages.clear();
 
-			response.body = responseValue.toStyledString();
-		} else {
-			response.body = "No such opened file";
-			goto notFound;
+				response.body = responseValue.toStyledString();
+			} else {
+				response.body = "No such opened file";
+				goto notFound;
+			}
 		}
 		return;
 
@@ -310,38 +340,40 @@ slake::slkc::Server::Server() {
 		}
 		uri = rootValue["uri"].asString();
 
-		if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
-			std::shared_ptr<Document> doc = it->second;
-			std::lock_guard<std::mutex> docMutexGuard(doc->mutex);
+		{
+			if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
+				std::lock_guard<std::mutex> docMutexGuard(it->second->mutex);
+				std::shared_ptr<Document> doc = it->second;
 
-			Json::Value responseValue;
+				Json::Value responseValue;
 
-			responseValue["type"] = (uint32_t)ResponseType::SemanticTokens;
+				responseValue["type"] = (uint32_t)ResponseType::SemanticTokens;
 
-			Json::Value &responseBodyValue = responseValue["body"],
-						&semanticTokensValue = responseBodyValue["semanticTokens"];
+				Json::Value &responseBodyValue = responseValue["body"],
+							&semanticTokensValue = responseBodyValue["semanticTokens"];
 
-			responseBodyValue["uri"] = uri;
+				responseBodyValue["uri"] = uri;
 
-			const size_t nTokens = doc->compiler->lexer->tokens.size();
-			for (size_t i = 0; i < nTokens; ++i) {
-				const Token &token = doc->compiler->lexer->tokens[i];
-				const TokenInfo &tokenInfo = doc->compiler->tokenInfos[i];
+				const size_t nTokens = doc->compiler->lexer->tokens.size();
+				for (size_t i = 0; i < nTokens; ++i) {
+					const Token &token = doc->compiler->lexer->tokens[i];
+					const TokenInfo &tokenInfo = doc->compiler->tokenInfos[i];
 
-				SemanticToken semanticToken = {};
+					SemanticToken semanticToken = {};
 
-				semanticToken.location = token.beginLocation;
-				semanticToken.length = (unsigned int)token.text.size();
-				semanticToken.type = tokenInfo.semanticType;
-				semanticToken.modifiers = tokenInfo.semanticModifiers;
+					semanticToken.location = token.beginLocation;
+					semanticToken.length = (unsigned int)token.text.size();
+					semanticToken.type = tokenInfo.semanticType;
+					semanticToken.modifiers = tokenInfo.semanticModifiers;
 
-				semanticTokensValue.append(semanticTokenToJson(semanticToken));
+					semanticTokensValue.append(semanticTokenToJson(semanticToken));
+				}
+
+				response.body = responseValue.toStyledString();
+			} else {
+				response.body = "No such opened file";
+				goto notFound;
 			}
-
-			response.body = responseValue.toStyledString();
-		} else {
-			response.body = "No such opened file";
-			goto notFound;
 		}
 		return;
 
@@ -387,88 +419,90 @@ slake::slkc::Server::Server() {
 			goto badRequest;
 		}
 
-		if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
-			std::shared_ptr<Document> doc = it->second;
-			std::lock_guard<std::mutex> docMutexGuard(doc->mutex);
+		{
+			if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
+				std::lock_guard<std::mutex> docMutexGuard(it->second->mutex);
+				std::shared_ptr<Document> doc = it->second;
 
-			Json::Value responseValue;
+				Json::Value responseValue;
 
-			responseValue["type"] = (uint32_t)ResponseType::Hover;
+				responseValue["type"] = (uint32_t)ResponseType::Hover;
 
-			Json::Value &responseBodyValue = responseValue["body"];
+				Json::Value &responseBodyValue = responseValue["body"];
 
-			size_t idxToken = doc->compiler->lexer->getTokenByLocation(loc);
+				size_t idxToken = doc->compiler->lexer->getTokenByLocation(loc);
 
-			if (idxToken == SIZE_MAX)
-				goto badRequest;
+				if (idxToken == SIZE_MAX)
+					goto badRequest;
 
-			TokenInfo &tokenInfo = doc->compiler->tokenInfos[idxToken];
+				TokenInfo &tokenInfo = doc->compiler->tokenInfos[idxToken];
 
-			responseBodyValue["uri"] = uri;
+				responseBodyValue["uri"] = uri;
 
-			if (tokenInfo.semanticInfo.correspondingMember) {
-				auto &member = tokenInfo.semanticInfo.correspondingMember;
+				if (tokenInfo.semanticInfo.correspondingMember) {
+					auto &member = tokenInfo.semanticInfo.correspondingMember;
 
-				switch (member->getNodeType()) {
-					case NodeType::Var:
-						responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((VarNode*)member.get()), doc->compiler.get());
-						break;
-					case NodeType::Param:
-						responseBodyValue["content"] = "(Parameter)";
-						break;
-					case NodeType::LocalVar:
-						responseBodyValue["content"] = "(Local variable)";
-						break;
-					case NodeType::FnOverloading: {
-						auto m = std::static_pointer_cast<FnOverloadingNode>(member);
+					switch (member->getNodeType()) {
+						case NodeType::Var:
+							responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((VarNode *)member.get()), doc->compiler.get());
+							break;
+						case NodeType::Param:
+							responseBodyValue["content"] = "(Parameter)";
+							break;
+						case NodeType::LocalVar:
+							responseBodyValue["content"] = "(Local variable)";
+							break;
+						case NodeType::FnOverloading: {
+							auto m = std::static_pointer_cast<FnOverloadingNode>(member);
 
-						std::string fullName;
+							std::string fullName;
 
-						fullName += std::to_string(m->returnType ? m->returnType : std::make_shared<VoidTypeNameNode>(Location(), SIZE_MAX), doc->compiler.get());
-						fullName += " ";
-						fullName += std::to_string(doc->compiler->getFullName(m->owner), doc->compiler.get());
+							fullName += std::to_string(m->returnType ? m->returnType : std::make_shared<VoidTypeNameNode>(Location(), SIZE_MAX), doc->compiler.get());
+							fullName += " ";
+							fullName += std::to_string(doc->compiler->getFullName(m->owner), doc->compiler.get());
 
-						fullName += "(";
+							fullName += "(";
 
-						for (size_t i = 0; i < m->params.size(); ++i) {
-							if (i)
-								fullName += ",";
-							if (m->params[i]->name == "...") {
-								fullName += "...";
-							} else {
-								fullName += std::to_string(m->params[i]->type, doc->compiler.get());
-								fullName += " ";
-								fullName += m->params[i]->name;
+							for (size_t i = 0; i < m->params.size(); ++i) {
+								if (i)
+									fullName += ",";
+								if (m->params[i]->name == "...") {
+									fullName += "...";
+								} else {
+									fullName += std::to_string(m->params[i]->type, doc->compiler.get());
+									fullName += " ";
+									fullName += m->params[i]->name;
+								}
 							}
+
+							fullName += ")";
+
+							responseBodyValue["content"] = fullName;
+							break;
 						}
-
-						fullName += ")";
-
-						responseBodyValue["content"] = fullName;
-						break;
+						case NodeType::GenericParam:
+							responseBodyValue["content"] = "(Generic parameter) " + ((GenericParamNode *)member.get())->name;
+							break;
+						case NodeType::Class:
+							responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((ClassNode *)member.get()), doc->compiler.get());
+							break;
+						case NodeType::Interface:
+							responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((InterfaceNode *)member.get()), doc->compiler.get());
+							break;
+						case NodeType::Trait:
+							responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((TraitNode *)member.get()), doc->compiler.get());
+							break;
+						case NodeType::Module:
+							responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((ModuleNode *)member.get()), doc->compiler.get());
+							break;
 					}
-					case NodeType::GenericParam:
-						responseBodyValue["content"] = "(Generic parameter) " +((GenericParamNode *)member.get())->name;
-						break;
-					case NodeType::Class:
-						responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((ClassNode *)member.get()), doc->compiler.get());
-						break;
-					case NodeType::Interface:
-						responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((InterfaceNode *)member.get()), doc->compiler.get());
-						break;
-					case NodeType::Trait:
-						responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((TraitNode *)member.get()), doc->compiler.get());
-						break;
-					case NodeType::Module:
-						responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((ModuleNode *)member.get()), doc->compiler.get());
-						break;
 				}
-			}
 
-			response.body = responseValue.toStyledString();
-		} else {
-			response.body = "No such opened file";
-			goto notFound;
+				response.body = responseValue.toStyledString();
+			} else {
+				response.body = "No such opened file";
+				goto notFound;
+			}
 		}
 		return;
 

@@ -67,11 +67,12 @@ namespace slake {
 
 		class LocalVarNode : public AstNode {
 		public:
+			std::string name;
 			uint32_t index;
 			std::shared_ptr<TypeNameNode> type;
 
-			inline LocalVarNode(uint32_t index, std::shared_ptr<TypeNameNode> type)
-				: index(index), type(type) {}
+			inline LocalVarNode(std::string name, uint32_t index, std::shared_ptr<TypeNameNode> type)
+				: name(name), index(index), type(type) {}
 			virtual ~LocalVarNode() = default;
 
 			virtual inline Location getLocation() const override { throw std::logic_error("Unsupported operation"); }

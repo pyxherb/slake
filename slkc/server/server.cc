@@ -443,22 +443,47 @@ slake::slkc::Server::Server() {
 					auto &member = tokenInfo.semanticInfo.correspondingMember;
 
 					switch (member->getNodeType()) {
-						case NodeType::Var:
-							responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((VarNode *)member.get()), doc->compiler.get());
+						case NodeType::Var: {
+							auto m = std::static_pointer_cast<VarNode>(member);
+
+							std::string fullName;
+
+							fullName += std::to_string(doc->compiler->getFullName(m.get()), doc->compiler.get());
+							fullName += ": ";
+							fullName += std::to_string(m->type ? m->type : std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX), doc->compiler.get());
+
+							responseBodyValue["content"] = fullName;
 							break;
-						case NodeType::Param:
-							responseBodyValue["content"] = "(Parameter)";
+						}
+						case NodeType::Param: {
+							auto m = std::static_pointer_cast<ParamNode>(member);
+
+							std::string fullName;
+
+							fullName += std::to_string(m->type ? m->type : std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX), doc->compiler.get());
+							fullName += " ";
+							fullName += m->name;
+
+							responseBodyValue["content"] = "(Parameter) " + fullName;
 							break;
-						case NodeType::LocalVar:
-							responseBodyValue["content"] = "(Local variable)";
+						}
+						case NodeType::LocalVar: {
+							auto m = std::static_pointer_cast<LocalVarNode>(member);
+
+							std::string fullName;
+
+							fullName += m->name;
+							fullName += ": ";
+							fullName += std::to_string(m->type ? m->type : std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX), doc->compiler.get());
+
+							responseBodyValue["content"] = "(Local variable) " + fullName;
 							break;
+						}
 						case NodeType::FnOverloading: {
 							auto m = std::static_pointer_cast<FnOverloadingNode>(member);
 
 							std::string fullName;
 
-							fullName += std::to_string(m->returnType ? m->returnType : std::make_shared<VoidTypeNameNode>(Location(), SIZE_MAX), doc->compiler.get());
-							fullName += " ";
 							fullName += std::to_string(doc->compiler->getFullName(m->owner), doc->compiler.get());
 
 							fullName += "(";
@@ -476,6 +501,9 @@ slake::slkc::Server::Server() {
 							}
 
 							fullName += ")";
+
+							fullName += ": ";
+							fullName += std::to_string(m->returnType ? m->returnType : std::make_shared<VoidTypeNameNode>(Location(), SIZE_MAX), doc->compiler.get());
 
 							responseBodyValue["content"] = fullName;
 							break;

@@ -12,7 +12,7 @@ uint32_t Compiler::allocLocalVar(std::string name, std::shared_ptr<TypeNameNode>
 
 	uint32_t index = (uint32_t)curMajorContext.curMinorContext.localVars.size();
 
-	curMajorContext.curMinorContext.localVars[name] = std::make_shared<LocalVarNode>(index, type);
+	curMajorContext.curMinorContext.localVars[name] = std::make_shared<LocalVarNode>(name, index, type);
 	curFn->insertIns(Opcode::LVAR, type);
 
 	return index;

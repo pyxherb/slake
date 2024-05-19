@@ -431,6 +431,9 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 					tokenInfo.completionContext = CompletionContext::Type;
 				});
 
+				if (m->parentClass)
+					updateCompletionContext(m->parentClass, CompletionContext::Type);
+
 				updateTokenInfo(m->idxImplInterfacesColonToken, [this, &m](TokenInfo &tokenInfo) {
 					tokenInfo.tokenContext =
 						TokenContext(
@@ -455,6 +458,10 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 								{});
 						tokenInfo.completionContext = CompletionContext::Type;
 					});
+				}
+
+				for (auto& j : m->implInterfaces) {
+					updateCompletionContext(j, CompletionContext::Type);
 				}
 
 				for (auto &j : m->genericParams) {
@@ -493,6 +500,10 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 					tokenInfo.semanticType = SemanticType::Interface;
 				});
 
+				for (auto &j : m->parentInterfaces) {
+					updateCompletionContext(j, CompletionContext::Type);
+				}
+
 				for (auto &j : m->genericParams) {
 					updateTokenInfo(j->idxNameToken, [this, &m](TokenInfo &tokenInfo) {
 						tokenInfo.tokenContext =
@@ -528,6 +539,10 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 							{});
 					tokenInfo.semanticType = SemanticType::Interface;
 				});
+
+				for (auto &j : m->parentTraits) {
+					updateCompletionContext(j, CompletionContext::Type);
+				}
 
 				for (auto &j : m->genericParams) {
 					updateTokenInfo(j->idxNameToken, [this, &m](TokenInfo &tokenInfo) {

@@ -96,9 +96,9 @@ namespace slake {
 
 			AccessModifier parseAccessModifier(Location &locationOut);
 
-			std::shared_ptr<TypeNameNode> parseTypeName();
-			std::deque<std::shared_ptr<TypeNameNode>> parseGenericArgs();
-			IdRef parseRef();
+			std::shared_ptr<TypeNameNode> parseTypeName(bool forGenericArgs = false);
+			std::deque<std::shared_ptr<TypeNameNode>> parseGenericArgs(bool forTypeName = false);
+			IdRef parseRef(bool forTypeName = false);
 			void parseArgs(std::deque<std::shared_ptr<ExprNode>> &argsOut, std::deque<size_t> &idxCommaTokensOut);
 
 			std::shared_ptr<ExprNode> parseExpr(int precedence = 0);

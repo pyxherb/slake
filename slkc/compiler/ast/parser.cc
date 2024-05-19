@@ -513,7 +513,7 @@ end:
 	return accessModifier;
 }
 
-std::shared_ptr<TypeNameNode> Parser::parseTypeName() {
+std::shared_ptr<TypeNameNode> Parser::parseTypeName(bool forGenericArgs) {
 	std::shared_ptr<TypeNameNode> type;
 
 	switch (auto &token = lexer->peekToken(); token.tokenId) {
@@ -585,7 +585,7 @@ std::shared_ptr<TypeNameNode> Parser::parseTypeName() {
 		}
 		case TokenId::Id: {
 			LexerContext savedContext = lexer->context;
-			auto ref = parseRef();
+			auto ref = parseRef(true);
 			if (!isCompleteIdRef(ref)) {
 				lexer->context = savedContext;
 				return std::make_shared<BadTypeNameNode>(
@@ -597,11 +597,13 @@ std::shared_ptr<TypeNameNode> Parser::parseTypeName() {
 			break;
 		}
 		default:
-			compiler->messages.push_back(
-				Message(
-					token.beginLocation,
-					MessageType::Error,
-					"Expecting a type name"));
+			if (forGenericArgs) {
+				compiler->messages.push_back(
+					Message(
+						token.beginLocation,
+						MessageType::Error,
+						"Expecting a type name"));
+			}
 			return std::make_shared<BadTypeNameNode>(
 				token.beginLocation,
 				lexer->getTokenIndex(token),
@@ -648,7 +650,7 @@ std::shared_ptr<TypeNameNode> Parser::parseTypeName() {
 	return type;
 }
 
-std::deque<std::shared_ptr<TypeNameNode>> Parser::parseGenericArgs() {
+std::deque<std::shared_ptr<TypeNameNode>> Parser::parseGenericArgs(bool forTypeName) {
 	LexerContext savedContext = lexer->context;
 	std::deque<std::shared_ptr<TypeNameNode>> genericArgs;
 
@@ -659,10 +661,20 @@ std::deque<std::shared_ptr<TypeNameNode>> Parser::parseGenericArgs() {
 		if (auto &token = lexer->peekToken(); token.tokenId == TokenId::GtOp)
 			break;
 
-		if (auto type = parseTypeName(); type)
+		if (auto type = parseTypeName(true); type->getTypeId() != Type::Bad)
 			genericArgs.push_back(type);
-		else
-			goto fail;
+		else {
+			if (forTypeName) {
+				compiler->messages.push_back(
+					Message(
+						type->getLocation(),
+						MessageType::Error,
+						"Expecting a type name"));
+				genericArgs.push_back(type);
+				return genericArgs;
+			} else
+				goto fail;
+		}
 
 		if (auto &token = lexer->peekToken(); token.tokenId != TokenId::Comma)
 			break;
@@ -670,8 +682,19 @@ std::deque<std::shared_ptr<TypeNameNode>> Parser::parseGenericArgs() {
 		lexer->nextToken();
 	}
 
-	if (auto &token = lexer->nextToken(); token.tokenId != TokenId::GtOp)
-		goto fail;
+	if (auto &token = lexer->peekToken(); token.tokenId != TokenId::GtOp) {
+		if (forTypeName) {
+			compiler->messages.push_back(
+				Message(
+					token.beginLocation,
+					MessageType::Error,
+					"Expecting a type name"));
+			return genericArgs;
+		}
+		else
+			goto fail;
+	}
+	lexer->nextToken();
 
 	return genericArgs;
 
@@ -716,7 +739,7 @@ IdRef Parser::parseModuleRef() {
 	return ref;
 }
 
-IdRef Parser::parseRef() {
+IdRef Parser::parseRef(bool forTypeName) {
 	IdRef ref;
 	size_t idxPrecedingAccessOp = SIZE_MAX;
 
@@ -774,7 +797,8 @@ IdRef Parser::parseRef() {
 			ref.push_back(refEntry);
 		}
 
-		ref.back().genericArgs = parseGenericArgs();
+		if (lexer->peekToken().tokenId == TokenId::LtOp)
+			ref.back().genericArgs = parseGenericArgs(forTypeName);
 
 		if (auto &token = lexer->peekToken(); token.tokenId != TokenId::Dot)
 			break;

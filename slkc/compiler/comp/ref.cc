@@ -165,6 +165,10 @@ bool Compiler::_resolveIdRef(Scope *scope, const IdRef &ref, std::deque<std::pai
 			/* if (!resolveContext.isTopLevel)
 				tokenInfo.completionContext = CompletionContext::MemberAccess;*/
 		});
+
+		for (auto &i : ref[0].genericArgs) {
+			updateCompletionContext(i, CompletionContext::Type);
+		}
 	}
 #endif
 
@@ -325,28 +329,32 @@ bool slake::slkc::Compiler::_resolveIdRefWithOwner(Scope *scope, const IdRef &re
 
 				// Resolve with the parent class.
 				if (owner->parentClass) {
-					if (_resolveIdRef(
-							scopeOf(
-								_resolveCustomTypeName(
-									(CustomTypeNameNode *)owner->parentClass.get(),
-									resolveContext.resolvingScopes)
-									.get())
-								.get(),
-							ref, partsOut, resolveContext))
-						return true;
+					if (owner->parentClass->getTypeId() == Type::Custom) {
+						if (_resolveIdRef(
+								scopeOf(
+									_resolveCustomTypeName(
+										(CustomTypeNameNode *)owner->parentClass.get(),
+										resolveContext.resolvingScopes)
+										.get())
+									.get(),
+								ref, partsOut, resolveContext))
+							return true;
+					}
 				}
 
 				// Resolve with the implemented interfaces.
 				for (auto i : owner->implInterfaces) {
-					if (_resolveIdRef(
-							scopeOf(
-								_resolveCustomTypeName(
-									(CustomTypeNameNode *)i.get(),
-									resolveContext.resolvingScopes)
-									.get())
-								.get(),
-							ref, partsOut, resolveContext))
-						return true;
+					if (i->getTypeId() == Type::Custom) {
+						if (_resolveIdRef(
+								scopeOf(
+									_resolveCustomTypeName(
+										(CustomTypeNameNode *)i.get(),
+										resolveContext.resolvingScopes)
+										.get())
+									.get(),
+								ref, partsOut, resolveContext))
+							return true;
+					}
 				}
 				break;
 			}
@@ -355,15 +363,17 @@ bool slake::slkc::Compiler::_resolveIdRefWithOwner(Scope *scope, const IdRef &re
 
 				// Resolve with the inherited interfaces.
 				for (auto i : owner->parentInterfaces) {
-					if (_resolveIdRef(
-							scopeOf(
-								_resolveCustomTypeName(
-									(CustomTypeNameNode *)i.get(),
-									resolveContext.resolvingScopes)
-									.get())
-								.get(),
-							ref, partsOut, resolveContext))
-						return true;
+					if (i->getTypeId() == Type::Custom) {
+						if (_resolveIdRef(
+								scopeOf(
+									_resolveCustomTypeName(
+										(CustomTypeNameNode *)i.get(),
+										resolveContext.resolvingScopes)
+										.get())
+									.get(),
+								ref, partsOut, resolveContext))
+							return true;
+					}
 				}
 				break;
 			}
@@ -372,15 +382,17 @@ bool slake::slkc::Compiler::_resolveIdRefWithOwner(Scope *scope, const IdRef &re
 
 				// Resolve with the inherited traits.
 				for (auto i : owner->parentTraits) {
-					if (_resolveIdRef(
-							scopeOf(
-								_resolveCustomTypeName(
-									(CustomTypeNameNode *)i.get(),
-									resolveContext.resolvingScopes)
-									.get())
-								.get(),
-							ref, partsOut, resolveContext))
-						return true;
+					if (i->getTypeId() == Type::Custom) {
+						if (_resolveIdRef(
+								scopeOf(
+									_resolveCustomTypeName(
+										(CustomTypeNameNode *)i.get(),
+										resolveContext.resolvingScopes)
+										.get())
+									.get(),
+								ref, partsOut, resolveContext))
+							return true;
+					}
 				}
 				break;
 			}

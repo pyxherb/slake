@@ -170,14 +170,21 @@ void Compiler::mapGenericParams(std::shared_ptr<MemberNode> node, GenericNodeIns
 	if (node->getNodeType() == NodeType::Fn)
 		return;
 
-	if (instantiationContext.genericArgs->size() != node->genericParams.size())
-		throw FatalCompilationError(
+	if (instantiationContext.genericArgs->size() != node->genericParams.size()) {
+		messages.push_back(
 			Message(
 				instantiationContext.genericArgs->at(0)->getLocation(),
 				MessageType::Error,
-				"Unmatched generic argument count"));
+				"Mismatched generic argument number"));
 
-	for (size_t i = 0; i < node->genericParams.size(); ++i) {
+		if (instantiationContext.genericArgs->size() < node->genericParams.size()) {
+			for (size_t i = instantiationContext.genericArgs->size(); i < node->genericParams.size(); ++i) {
+				instantiationContext.mappedGenericArgs[node->genericParams[i]->name] = std::make_shared<BadTypeNameNode>(Location(), SIZE_MAX, SIZE_MAX);
+			}
+		}
+	}
+
+	for (size_t i = 0; i < node->genericArgs.size(); ++i) {
 		instantiationContext.mappedGenericArgs[node->genericParams[i]->name] = instantiationContext.genericArgs->at(i);
 	}
 }

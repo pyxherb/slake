@@ -37,6 +37,11 @@ std::deque<std::pair<Scope *, MemberValue *>> slake::Value::getMemberChain(const
 }
 
 Value &slake::Value::operator=(const Value &x) {
+	if (scope) {
+		if (!(_flags & VF_ALIAS))
+			delete scope;
+	}
+
 	_rt = x._rt;
 	_flags = x._flags & ~VF_WALKED;
 	scope = x.scope ? x.scope->duplicate() : nullptr;

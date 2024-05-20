@@ -657,7 +657,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 			itd.flags |= slxfmt::ITD_PUB;
 
 		itd.nParents = (uint8_t)i.second->parentInterfaces.size();
-		itd.nGenericParams = i.second->genericParams.size();
+		itd.nGenericParams = (uint8_t)i.second->genericParams.size();
 
 		itd.lenName = (uint8_t)i.first.length();
 
@@ -691,7 +691,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 		ttd.nParents = (uint8_t)i.second->parentTraits.size();
 
 		ttd.lenName = (uint8_t)i.first.length();
-		ttd.nGenericParams = i.second->genericParams.size();
+		ttd.nGenericParams = (uint8_t)i.second->genericParams.size();
 
 		_write(os, ttd);
 		_write(os, i.first.data(), i.first.length());

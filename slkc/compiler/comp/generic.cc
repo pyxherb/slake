@@ -8,7 +8,7 @@ void Compiler::walkTypeNameNodeForGenericInstantiation(
 	if (!type)
 		return;
 
-	if (type->getTypeId() == Type::Custom) {
+	if (type->getTypeId() == TypeId::Custom) {
 		auto t = std::static_pointer_cast<CustomTypeNameNode>(type);
 
 		if ((t->ref.size() == 1) &&

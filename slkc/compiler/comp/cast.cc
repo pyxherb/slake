@@ -5,59 +5,59 @@ using namespace slake::slkc;
 template <typename T>
 static std::shared_ptr<ExprNode> _castLiteralExpr(
 	std::shared_ptr<LiteralExprNode<T, getLiteralExprType<T>()>> expr,
-	Type targetType) {
+	TypeId targetType) {
 	switch (targetType) {
-		case Type::I8:
+		case TypeId::I8:
 			if constexpr (std::is_convertible_v<T, int8_t>) {
 				return std::make_shared<I32LiteralExprNode>(expr->getLocation(), (int8_t)expr->data);
 			} else
 				return {};
-		case Type::I16:
+		case TypeId::I16:
 			if constexpr (std::is_convertible_v<T, int16_t>) {
 				return std::make_shared<I32LiteralExprNode>(expr->getLocation(), (int16_t)expr->data);
 			} else
 				return {};
-		case Type::I32:
+		case TypeId::I32:
 			if constexpr (std::is_convertible_v<T, int32_t>) {
 				return std::make_shared<I32LiteralExprNode>(expr->getLocation(), (int32_t)expr->data);
 			} else
 				return {};
-		case Type::I64:
+		case TypeId::I64:
 			if constexpr (std::is_convertible_v<T, int64_t>) {
 				return std::make_shared<I64LiteralExprNode>(expr->getLocation(), (int64_t)expr->data);
 			} else
 				return {};
-		case Type::U8:
+		case TypeId::U8:
 			if constexpr (std::is_convertible_v<T, uint8_t>) {
 				return std::make_shared<U8LiteralExprNode>(expr->getLocation(), (int8_t)expr->data);
 			} else
 				return {};
-		case Type::U16:
+		case TypeId::U16:
 			if constexpr (std::is_convertible_v<T, uint16_t>) {
 				return std::make_shared<U16LiteralExprNode>(expr->getLocation(), (int16_t)expr->data);
 			} else
 				return {};
-		case Type::U32:
+		case TypeId::U32:
 			if constexpr (std::is_convertible_v<T, uint32_t>) {
 				return std::make_shared<U32LiteralExprNode>(expr->getLocation(), (int32_t)expr->data);
 			} else
 				return {};
-		case Type::U64:
+		case TypeId::U64:
 			if constexpr (std::is_convertible_v<T, uint64_t>) {
 				return std::make_shared<U64LiteralExprNode>(expr->getLocation(), (int64_t)expr->data);
 			} else
 				return {};
-		case Type::F32:
+		case TypeId::F32:
 			if constexpr (std::is_convertible_v<T, float>) {
 				return std::make_shared<F32LiteralExprNode>(expr->getLocation(), (float)expr->data);
 			} else
 				return {};
-		case Type::F64:
+		case TypeId::F64:
 			if constexpr (std::is_convertible_v<T, double>) {
 				return std::make_shared<F64LiteralExprNode>(expr->getLocation(), (double)expr->data);
 			} else
 				return {};
-		case Type::Bool:
+		case TypeId::Bool:
 			if constexpr (std::is_convertible_v<T, bool>) {
 				return std::make_shared<BoolLiteralExprNode>(expr->getLocation(), (bool)expr->data);
 			} else
@@ -67,7 +67,7 @@ static std::shared_ptr<ExprNode> _castLiteralExpr(
 	return {};
 }
 
-std::shared_ptr<ExprNode> Compiler::castLiteralExpr(std::shared_ptr<ExprNode> expr, Type targetType) {
+std::shared_ptr<ExprNode> Compiler::castLiteralExpr(std::shared_ptr<ExprNode> expr, TypeId targetType) {
 	switch (expr->getExprType()) {
 		case ExprType::I32:
 			return _castLiteralExpr<int32_t>(std::static_pointer_cast<I32LiteralExprNode>(expr), targetType);

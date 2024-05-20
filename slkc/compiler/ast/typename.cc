@@ -2,73 +2,67 @@
 
 using namespace slake::slkc;
 
-std::string std::to_string(std::shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slkc::Compiler *compiler, bool asOperatorName) {
+std::string std::to_string(std::shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slkc::Compiler *compiler, bool forMangling) {
 	std::string s = typeName->isConst ? "const " : "";
 	switch (typeName->getTypeId()) {
-		case Type::I8:
+		case TypeId::I8:
 			return s + "i8";
-		case Type::I16:
+		case TypeId::I16:
 			return s + "i16";
-		case Type::I32:
+		case TypeId::I32:
 			return s + "i32";
-		case Type::I64:
+		case TypeId::I64:
 			return s + "i64";
-		case Type::U8:
+		case TypeId::U8:
 			return s + "u8";
-		case Type::U16:
+		case TypeId::U16:
 			return s + "u16";
-		case Type::U32:
+		case TypeId::U32:
 			return s + "u32";
-		case Type::U64:
+		case TypeId::U64:
 			return s + "u64";
-		case Type::F32:
+		case TypeId::F32:
 			return s + "f32";
-		case Type::F64:
+		case TypeId::F64:
 			return s + "f64";
-		case Type::String:
+		case TypeId::String:
 			return s + "std::string";
-		case Type::Bool:
+		case TypeId::Bool:
 			return s + "bool";
-		case Type::Auto:
+		case TypeId::Auto:
 			return s + "auto";
-		case Type::Void:
+		case TypeId::Void:
 			return s + "void";
-		case Type::Any:
+		case TypeId::Any:
 			return s + "any";
-		case Type::Array:
-			return s + std::to_string(std::static_pointer_cast<ArrayTypeNameNode>(typeName)->elementType, compiler, asOperatorName) + "[]";
-		case Type::Fn: {
+		case TypeId::Array:
+			return s + std::to_string(std::static_pointer_cast<ArrayTypeNameNode>(typeName)->elementType, compiler, forMangling) + "[]";
+		case TypeId::Fn: {
 			auto t = std::static_pointer_cast<FnTypeNameNode>(typeName);
-			s += std::to_string(t->returnType, compiler, asOperatorName) + " -> (";
+			s += std::to_string(t->returnType, compiler, forMangling) + " -> (";
 
 			for (size_t i = 0; i < t->paramTypes.size(); ++i) {
 				if (i)
 					s += ", ";
-				s += std::to_string(t->paramTypes[i], compiler, asOperatorName);
+				s += std::to_string(t->paramTypes[i], compiler, forMangling);
 			}
 
 			s += ")";
 			return s;
 		}
-		case Type::Custom: {
+		case TypeId::Custom: {
 			slake::slkc::IdRef ref;
 			auto m = compiler->resolveCustomTypeName((CustomTypeNameNode *)typeName.get());
 
 			switch (m->getNodeType()) {
 				case NodeType::GenericParam:
-					if (asOperatorName)
-						throw FatalCompilationError(
-							Message(
-								typeName->getLocation(),
-								MessageType::Error,
-								"Generic parameter cannot be used as the operator name"));
-					return "!" + std::static_pointer_cast<GenericParamNode>(m)->name;
+					return (forMangling ? "!" : "") + std::static_pointer_cast<GenericParamNode>(m)->name;
 				default:
 					compiler->_getFullName((MemberNode *)m.get(), ref);
 					return std::to_string(ref, compiler);
 			}
 		}
-		case Type::Bad:
+		case TypeId::Bad:
 			return "<error type>";
 		default:
 			throw std::logic_error("Unrecognized type");

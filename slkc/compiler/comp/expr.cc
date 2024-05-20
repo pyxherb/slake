@@ -123,16 +123,16 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 						"Error deducing type of the operand"));
 
 			switch (lhsType->getTypeId()) {
-				case Type::I8:
-				case Type::I16:
-				case Type::I32:
-				case Type::I64:
-				case Type::U8:
-				case Type::U16:
-				case Type::U32:
-				case Type::U64:
-				case Type::F32:
-				case Type::F64:
+				case TypeId::I8:
+				case TypeId::I16:
+				case TypeId::I32:
+				case TypeId::I64:
+				case TypeId::U8:
+				case TypeId::U16:
+				case TypeId::U32:
+				case TypeId::U64:
+				case TypeId::F32:
+				case TypeId::F64:
 					compileExpr(
 						e->x,
 						_unaryOpRegs.at(e->op).lvalueOperand
@@ -146,7 +146,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 						std::make_shared<RegRefNode>(lhsRegIndex, true));
 
 					break;
-				case Type::Bool:
+				case TypeId::Bool:
 					switch (e->op) {
 						case UnaryOp::LNot:
 						case UnaryOp::Not:
@@ -171,7 +171,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					}
 
 					break;
-				case Type::Custom: {
+				case TypeId::Custom: {
 					auto node = resolveCustomTypeName(std::static_pointer_cast<CustomTypeNameNode>(lhsType).get());
 
 					auto determineOverloading = [this, e](std::shared_ptr<MemberNode> n, uint32_t lhsRegIndex) -> bool {
@@ -450,16 +450,16 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			};
 
 			switch (lhsType->getTypeId()) {
-				case Type::I8:
-				case Type::I16:
-				case Type::I32:
-				case Type::I64:
-				case Type::U8:
-				case Type::U16:
-				case Type::U32:
-				case Type::U64:
-				case Type::F32:
-				case Type::F64: {
+				case TypeId::I8:
+				case TypeId::I16:
+				case TypeId::I32:
+				case TypeId::I64:
+				case TypeId::U8:
+				case TypeId::U16:
+				case TypeId::U32:
+				case TypeId::U64:
+				case TypeId::F32:
+				case TypeId::F64: {
 					switch (e->op) {
 						case BinaryOp::LAnd:
 						case BinaryOp::LOr:
@@ -541,7 +541,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 
 					break;
 				}
-				case Type::Bool: {
+				case TypeId::Bool: {
 					switch (e->op) {
 						case BinaryOp::LAnd:
 						case BinaryOp::LOr:
@@ -589,8 +589,8 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 
 					break;
 				}
-				case Type::String:
-				case Type::WString: {
+				case TypeId::String:
+				case TypeId::WString: {
 					switch (e->op) {
 						case BinaryOp::Add:
 							compileShortCircuitOperator();
@@ -646,7 +646,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					}
 					break;
 				}
-				case Type::Custom: {
+				case TypeId::Custom: {
 					auto node = resolveCustomTypeName(std::static_pointer_cast<CustomTypeNameNode>(lhsType).get());
 					auto lhsType = evalExprType(e->lhs), rhsType = evalExprType(e->rhs);
 
@@ -899,7 +899,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 						endLabel = "$ternary_" + std::to_string(loc.line) + "_" + std::to_string(loc.column) + "_end";
 
 			compileExpr(e->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(conditionRegIndex));
-			if (evalExprType(e->condition)->getTypeId() != Type::Bool)
+			if (evalExprType(e->condition)->getTypeId() != TypeId::Bool)
 				curFn->insertIns(
 					Opcode::CAST,
 					std::make_shared<RegRefNode>(conditionRegIndex),
@@ -1094,7 +1094,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			auto e = std::static_pointer_cast<NewExprNode>(expr);
 
 			switch (e->type->getTypeId()) {
-				case Type::Array: {
+				case TypeId::Array: {
 					//
 					// Construct a new array.
 					//
@@ -1152,7 +1152,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 
 					break;
 				}
-				case Type::Custom: {
+				case TypeId::Custom: {
 					//
 					// Instantiate a custom type.
 					//

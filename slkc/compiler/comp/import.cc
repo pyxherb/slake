@@ -245,7 +245,7 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 		return;
 
 	switch (value->getType().typeId) {
-		case TypeId::RootValue: {
+		case slake::TypeId::RootValue: {
 			RootValue *v = (RootValue *)value;
 
 			for (auto i : v->scope->members)
@@ -253,13 +253,13 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 
 			break;
 		}
-		case TypeId::Fn:
+		case slake::TypeId::Fn:
 			importDefinitions(scope, parent, (FnValue *)value);
 			break;
-		case TypeId::Module:
+		case slake::TypeId::Module:
 			importDefinitions(scope, parent, (ModuleValue *)value);
 			break;
-		case TypeId::Var: {
+		case slake::TypeId::Var: {
 			VarValue *v = (VarValue *)value;
 			std::shared_ptr<VarNode> var = std::make_shared<VarNode>(
 				Location(), this,
@@ -273,17 +273,17 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 			var->bind(parent.get());
 			break;
 		}
-		case TypeId::Class:
+		case slake::TypeId::Class:
 			importDefinitions(scope, parent, (ClassValue *)value);
 			break;
-		case TypeId::Interface:
+		case slake::TypeId::Interface:
 			importDefinitions(scope, parent, (InterfaceValue *)value);
 			break;
-		case TypeId::Trait:
+		case slake::TypeId::Trait:
 			importDefinitions(scope, parent, (TraitValue *)value);
 			break;
 			/*
-		case TypeId::Alias: {
+		case slake::TypeId::Alias: {
 			AliasValue *v = (AliasValue *)value;
 		}*/
 		default:
@@ -296,35 +296,35 @@ std::shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 	bool isConst = runtimeType.flags & TYPE_CONST;
 
 	switch (runtimeType.typeId) {
-		case TypeId::I8:
+		case slake::TypeId::I8:
 			return std::make_shared<I8TypeNameNode>(Location{}, isConst);
-		case TypeId::I16:
+		case slake::TypeId::I16:
 			return std::make_shared<I16TypeNameNode>(Location{}, isConst);
-		case TypeId::I32:
+		case slake::TypeId::I32:
 			return std::make_shared<I32TypeNameNode>(Location{}, isConst);
-		case TypeId::I64:
+		case slake::TypeId::I64:
 			return std::make_shared<I64TypeNameNode>(Location{}, isConst);
-		case TypeId::U8:
+		case slake::TypeId::U8:
 			return std::make_shared<U8TypeNameNode>(Location{}, isConst);
-		case TypeId::U16:
+		case slake::TypeId::U16:
 			return std::make_shared<U16TypeNameNode>(Location{}, isConst);
-		case TypeId::U32:
+		case slake::TypeId::U32:
 			return std::make_shared<U32TypeNameNode>(Location{}, isConst);
-		case TypeId::U64:
+		case slake::TypeId::U64:
 			return std::make_shared<U64TypeNameNode>(Location{}, isConst);
-		case TypeId::F32:
+		case slake::TypeId::F32:
 			return std::make_shared<F32TypeNameNode>(Location{}, isConst);
-		case TypeId::F64:
+		case slake::TypeId::F64:
 			return std::make_shared<F64TypeNameNode>(Location{}, isConst);
-		case TypeId::String:
+		case slake::TypeId::String:
 			return std::make_shared<StringTypeNameNode>(Location{}, isConst);
-		case TypeId::Bool:
+		case slake::TypeId::Bool:
 			return std::make_shared<BoolTypeNameNode>(Location{}, isConst);
-		case TypeId::None:
+		case slake::TypeId::None:
 			return std::make_shared<VoidTypeNameNode>(Location{}, isConst);
-		case TypeId::Any:
+		case slake::TypeId::Any:
 			return std::make_shared<AnyTypeNameNode>(Location{}, isConst);
-		case TypeId::TypeName: {
+		case slake::TypeId::TypeName: {
 			auto refs = _rt->getFullRef((MemberValue *)runtimeType.getCustomTypeExData());
 			IdRef ref;
 
@@ -339,7 +339,7 @@ std::shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 
 			return std::make_shared<CustomTypeNameNode>(Location{}, ref, this, nullptr, isConst);
 		}
-		case TypeId::Array:
+		case slake::TypeId::Array:
 			return std::make_shared<ArrayTypeNameNode>(toTypeName(runtimeType.getArrayExData()), isConst);
 		default:
 			// Inconvertible/unrecognized type

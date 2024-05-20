@@ -12,7 +12,7 @@ std::string Compiler::mangleName(
 		s += "$const";
 
 	for (auto i : argTypes) {
-		s += "$" + std::to_string(i, this);
+		s += "$" + std::to_string(i, this, true);
 	}
 
 	return s;

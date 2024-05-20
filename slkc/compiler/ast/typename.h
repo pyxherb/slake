@@ -9,7 +9,7 @@
 
 namespace slake {
 	namespace slkc {
-		enum class Type : uint8_t {
+		enum class TypeId : uint8_t {
 			I8,
 			I16,
 			I32,
@@ -65,7 +65,7 @@ namespace slake {
 
 			virtual inline NodeType getNodeType() const override { return NodeType::TypeName; }
 
-			virtual inline Type getTypeId() const = 0;
+			virtual inline TypeId getTypeId() const = 0;
 		};
 
 		class BasicSimpleTypeNameNode : public TypeNameNode {
@@ -80,7 +80,7 @@ namespace slake {
 			virtual ~BasicSimpleTypeNameNode() = default;
 		};
 
-		template <Type TID>
+		template <TypeId TID>
 		class SimpleTypeNameNode : public BasicSimpleTypeNameNode {
 		private:
 			virtual inline std::shared_ptr<AstNode> doDuplicate() override {
@@ -95,25 +95,25 @@ namespace slake {
 				: BasicSimpleTypeNameNode(loc, idxToken, isConst) {}
 			virtual ~SimpleTypeNameNode() = default;
 
-			virtual inline Type getTypeId() const override { return TID; }
+			virtual inline TypeId getTypeId() const override { return TID; }
 		};
 
-		using I8TypeNameNode = SimpleTypeNameNode<Type::I8>;
-		using I16TypeNameNode = SimpleTypeNameNode<Type::I16>;
-		using I32TypeNameNode = SimpleTypeNameNode<Type::I32>;
-		using I64TypeNameNode = SimpleTypeNameNode<Type::I64>;
-		using U8TypeNameNode = SimpleTypeNameNode<Type::U8>;
-		using U16TypeNameNode = SimpleTypeNameNode<Type::U16>;
-		using U32TypeNameNode = SimpleTypeNameNode<Type::U32>;
-		using U64TypeNameNode = SimpleTypeNameNode<Type::U64>;
-		using F32TypeNameNode = SimpleTypeNameNode<Type::F32>;
-		using F64TypeNameNode = SimpleTypeNameNode<Type::F64>;
-		using StringTypeNameNode = SimpleTypeNameNode<Type::String>;
-		using WStringTypeNameNode = SimpleTypeNameNode<Type::WString>;
-		using BoolTypeNameNode = SimpleTypeNameNode<Type::Bool>;
-		using AutoTypeNameNode = SimpleTypeNameNode<Type::Auto>;
-		using VoidTypeNameNode = SimpleTypeNameNode<Type::Void>;
-		using AnyTypeNameNode = SimpleTypeNameNode<Type::Any>;
+		using I8TypeNameNode = SimpleTypeNameNode<TypeId::I8>;
+		using I16TypeNameNode = SimpleTypeNameNode<TypeId::I16>;
+		using I32TypeNameNode = SimpleTypeNameNode<TypeId::I32>;
+		using I64TypeNameNode = SimpleTypeNameNode<TypeId::I64>;
+		using U8TypeNameNode = SimpleTypeNameNode<TypeId::U8>;
+		using U16TypeNameNode = SimpleTypeNameNode<TypeId::U16>;
+		using U32TypeNameNode = SimpleTypeNameNode<TypeId::U32>;
+		using U64TypeNameNode = SimpleTypeNameNode<TypeId::U64>;
+		using F32TypeNameNode = SimpleTypeNameNode<TypeId::F32>;
+		using F64TypeNameNode = SimpleTypeNameNode<TypeId::F64>;
+		using StringTypeNameNode = SimpleTypeNameNode<TypeId::String>;
+		using WStringTypeNameNode = SimpleTypeNameNode<TypeId::WString>;
+		using BoolTypeNameNode = SimpleTypeNameNode<TypeId::Bool>;
+		using AutoTypeNameNode = SimpleTypeNameNode<TypeId::Auto>;
+		using VoidTypeNameNode = SimpleTypeNameNode<TypeId::Void>;
+		using AnyTypeNameNode = SimpleTypeNameNode<TypeId::Any>;
 
 		class CustomTypeNameNode : public TypeNameNode {
 		private:
@@ -138,7 +138,7 @@ namespace slake {
 				: TypeNameNode(loc, isConst), ref(ref), compiler(compiler), scope(scope) {}
 			virtual ~CustomTypeNameNode() = default;
 
-			virtual inline Type getTypeId() const override { return Type::Custom; }
+			virtual inline TypeId getTypeId() const override { return TypeId::Custom; }
 		};
 
 		class ArrayTypeNameNode : public TypeNameNode {
@@ -161,7 +161,7 @@ namespace slake {
 				: TypeNameNode(elementType->getLocation(), isConst), elementType(elementType) {}
 			virtual ~ArrayTypeNameNode() = default;
 
-			virtual inline Type getTypeId() const override { return Type::Array; }
+			virtual inline TypeId getTypeId() const override { return TypeId::Array; }
 		};
 
 		class FnTypeNameNode : public TypeNameNode {
@@ -190,7 +190,7 @@ namespace slake {
 				  paramTypes(paramTypes) {}
 			virtual ~FnTypeNameNode() = default;
 
-			virtual inline Type getTypeId() const override { return Type::Fn; }
+			virtual inline TypeId getTypeId() const override { return TypeId::Fn; }
 		};
 
 		class RefTypeNameNode : public TypeNameNode {
@@ -208,7 +208,7 @@ namespace slake {
 				: TypeNameNode(referencedType->getLocation(), referencedType->isConst) {}
 			virtual ~RefTypeNameNode() = default;
 
-			virtual inline Type getTypeId() const override { return Type::Ref; }
+			virtual inline TypeId getTypeId() const override { return TypeId::Ref; }
 		};
 
 		class ContextTypeNameNode : public TypeNameNode {
@@ -226,7 +226,7 @@ namespace slake {
 				: TypeNameNode(resultType->getLocation(), false) {}
 			virtual ~ContextTypeNameNode() = default;
 
-			virtual inline Type getTypeId() const override { return Type::Context; }
+			virtual inline TypeId getTypeId() const override { return TypeId::Context; }
 		};
 
 		class BadTypeNameNode : public TypeNameNode {
@@ -247,7 +247,7 @@ namespace slake {
 				: TypeNameNode(loc, isConst), idxStartToken(idxStartToken), idxEndToken(idxEndToken) {}
 			virtual ~BadTypeNameNode() = default;
 
-			virtual inline Type getTypeId() const override { return Type::Bad; }
+			virtual inline TypeId getTypeId() const override { return TypeId::Bad; }
 		};
 
 		class Compiler;
@@ -255,7 +255,7 @@ namespace slake {
 }
 
 namespace std {
-	std::string to_string(std::shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slkc::Compiler *compiler, bool asOperatorName = false);
+	std::string to_string(std::shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slkc::Compiler *compiler, bool forMangling = false);
 }
 
 #endif

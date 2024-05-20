@@ -16,7 +16,7 @@ void Compiler::verifyInheritanceChain(ClassNode *node, std::set<AstNode *> &walk
 	if (node->parentClass) {
 		updateCompletionContext(node->parentClass, CompletionContext::Type);
 
-		if (node->parentClass->getTypeId() != Type::Custom)
+		if (node->parentClass->getTypeId() != TypeId::Custom)
 			throw FatalCompilationError(
 				Message(
 					node->parentClass->getLocation(),
@@ -43,7 +43,7 @@ void Compiler::verifyInheritanceChain(ClassNode *node, std::set<AstNode *> &walk
 	for (auto &i : node->implInterfaces) {
 		updateCompletionContext(i, CompletionContext::Type);
 
-		if (i->getTypeId() != Type::Custom)
+		if (i->getTypeId() != TypeId::Custom)
 			throw FatalCompilationError(
 				Message(
 					i->getLocation(),
@@ -74,7 +74,7 @@ void Compiler::verifyInheritanceChain(InterfaceNode *node, std::set<AstNode *> &
 	for (auto &i : node->parentInterfaces) {
 		updateCompletionContext(i, CompletionContext::Type);
 
-		if (i->getTypeId() != Type::Custom)
+		if (i->getTypeId() != TypeId::Custom)
 			throw FatalCompilationError(
 				Message(
 					i->getLocation(),
@@ -105,7 +105,7 @@ void Compiler::verifyInheritanceChain(TraitNode *node, std::set<AstNode *> &walk
 	for (auto &i : node->parentTraits) {
 		updateCompletionContext(i, CompletionContext::Type);
 
-		if (i->getTypeId() != Type::Custom)
+		if (i->getTypeId() != TypeId::Custom)
 			throw FatalCompilationError(
 				Message(
 					i->getLocation(),
@@ -135,7 +135,7 @@ void Compiler::verifyInheritanceChain(GenericParamNode *node, std::set<AstNode *
 
 	if (node->baseType) {
 		auto typeName = node->baseType;
-		if (typeName->getTypeId() != Type::Custom)
+		if (typeName->getTypeId() != TypeId::Custom)
 			throw FatalCompilationError(
 				Message(
 					typeName->getLocation(),
@@ -153,7 +153,7 @@ void Compiler::verifyInheritanceChain(GenericParamNode *node, std::set<AstNode *
 	}
 
 	for (auto &i : node->interfaceTypes) {
-		if (i->getTypeId() != Type::Custom)
+		if (i->getTypeId() != TypeId::Custom)
 			throw FatalCompilationError(
 				Message(
 					i->getLocation(),
@@ -171,7 +171,7 @@ void Compiler::verifyInheritanceChain(GenericParamNode *node, std::set<AstNode *
 	}
 
 	for (auto &i : node->traitTypes) {
-		if (i->getTypeId() != Type::Custom)
+		if (i->getTypeId() != TypeId::Custom)
 			throw FatalCompilationError(
 				Message(
 					i->getLocation(),
@@ -208,7 +208,7 @@ void Compiler::verifyGenericParams(const GenericParamNodeList &params) {
 	for (auto &i : params) {
 		if (i->baseType) {
 			auto typeName = i->baseType;
-			if (typeName->getTypeId() != Type::Custom)
+			if (typeName->getTypeId() != TypeId::Custom)
 				throw FatalCompilationError(
 					Message(
 						typeName->getLocation(),
@@ -226,7 +226,7 @@ void Compiler::verifyGenericParams(const GenericParamNodeList &params) {
 		}
 
 		for (auto &j : i->interfaceTypes) {
-			if (j->getTypeId() != Type::Custom)
+			if (j->getTypeId() != TypeId::Custom)
 				throw FatalCompilationError(
 					Message(
 						j->getLocation(),
@@ -244,7 +244,7 @@ void Compiler::verifyGenericParams(const GenericParamNodeList &params) {
 		}
 
 		for (auto &j : i->traitTypes) {
-			if (j->getTypeId() != Type::Custom)
+			if (j->getTypeId() != TypeId::Custom)
 				throw FatalCompilationError(
 					Message(
 						j->getLocation(),

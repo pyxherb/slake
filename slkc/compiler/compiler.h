@@ -246,7 +246,7 @@ namespace slake {
 
 			std::shared_ptr<TypeNameNode> evalExprType(std::shared_ptr<ExprNode> expr);
 
-			std::shared_ptr<ExprNode> castLiteralExpr(std::shared_ptr<ExprNode> expr, Type targetType);
+			std::shared_ptr<ExprNode> castLiteralExpr(std::shared_ptr<ExprNode> expr, TypeId targetType);
 
 			bool isLiteralTypeName(std::shared_ptr<TypeNameNode> typeName);
 			bool isNumericTypeName(std::shared_ptr<TypeNameNode> typeName);
@@ -391,7 +391,7 @@ namespace slake {
 							// Do some special checks for some kinds of type name - such as custom.
 							//
 							switch (lhsTypeId) {
-								case Type::Custom: {
+								case TypeId::Custom: {
 									auto lhsTypeName = std::static_pointer_cast<CustomTypeNameNode>(lhs[i]),
 										 rhsTypeName = std::static_pointer_cast<CustomTypeNameNode>(rhs[i]);
 
@@ -513,7 +513,7 @@ namespace slake {
 
 			friend class AstVisitor;
 			friend class MemberNode;
-			friend std::string std::to_string(std::shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slkc::Compiler *compiler, bool asOperatorName);
+			friend std::string std::to_string(std::shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slkc::Compiler *compiler, bool forMangling);
 			friend class Parser;
 			friend struct Document;
 

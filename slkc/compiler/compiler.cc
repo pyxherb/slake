@@ -362,7 +362,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 						updateSemanticType(k->type, SemanticType::Type);
 
 						// Resolve the type name to fill corresponding `curScope` field in token contexts for completion.
-						if (k->type->getTypeId() == Type::Custom)
+						if (k->type->getTypeId() == TypeId::Custom)
 							resolveCustomTypeName((CustomTypeNameNode *)k->type.get());
 					}
 
@@ -894,87 +894,87 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 
 void Compiler::compileTypeName(std::ostream &fs, std::shared_ptr<TypeNameNode> typeName) {
 	switch (typeName->getTypeId()) {
-		case Type::I8: {
-			_write(fs, slxfmt::Type::I8);
+		case TypeId::I8: {
+			_write(fs, slxfmt::TypeId::I8);
 			break;
 		}
-		case Type::I16: {
-			_write(fs, slxfmt::Type::I16);
+		case TypeId::I16: {
+			_write(fs, slxfmt::TypeId::I16);
 			break;
 		}
-		case Type::I32: {
-			_write(fs, slxfmt::Type::I32);
+		case TypeId::I32: {
+			_write(fs, slxfmt::TypeId::I32);
 			break;
 		}
-		case Type::I64: {
-			_write(fs, slxfmt::Type::I64);
+		case TypeId::I64: {
+			_write(fs, slxfmt::TypeId::I64);
 			break;
 		}
-		case Type::U8: {
-			_write(fs, slxfmt::Type::U8);
+		case TypeId::U8: {
+			_write(fs, slxfmt::TypeId::U8);
 			break;
 		}
-		case Type::U16: {
-			_write(fs, slxfmt::Type::U16);
+		case TypeId::U16: {
+			_write(fs, slxfmt::TypeId::U16);
 			break;
 		}
-		case Type::U32: {
-			_write(fs, slxfmt::Type::U32);
+		case TypeId::U32: {
+			_write(fs, slxfmt::TypeId::U32);
 			break;
 		}
-		case Type::U64: {
-			_write(fs, slxfmt::Type::U64);
+		case TypeId::U64: {
+			_write(fs, slxfmt::TypeId::U64);
 			break;
 		}
-		case Type::F32: {
-			_write(fs, slxfmt::Type::F32);
+		case TypeId::F32: {
+			_write(fs, slxfmt::TypeId::F32);
 			break;
 		}
-		case Type::F64: {
-			_write(fs, slxfmt::Type::F64);
+		case TypeId::F64: {
+			_write(fs, slxfmt::TypeId::F64);
 			break;
 		}
-		case Type::Bool: {
-			_write(fs, slxfmt::Type::Bool);
+		case TypeId::Bool: {
+			_write(fs, slxfmt::TypeId::Bool);
 			break;
 		}
-		case Type::String: {
-			_write(fs, slxfmt::Type::String);
+		case TypeId::String: {
+			_write(fs, slxfmt::TypeId::String);
 			break;
 		}
-		case Type::Void: {
-			_write(fs, slxfmt::Type::None);
+		case TypeId::Void: {
+			_write(fs, slxfmt::TypeId::None);
 			break;
 		}
-		case Type::Any: {
-			_write(fs, slxfmt::Type::Any);
+		case TypeId::Any: {
+			_write(fs, slxfmt::TypeId::Any);
 			break;
 		}
-		case Type::Array: {
-			_write(fs, slxfmt::Type::Array);
+		case TypeId::Array: {
+			_write(fs, slxfmt::TypeId::Array);
 			compileTypeName(fs, std::static_pointer_cast<ArrayTypeNameNode>(typeName)->elementType);
 			break;
 		}
-		case Type::Fn: {
+		case TypeId::Fn: {
 			// stub
 			break;
 		}
-		case Type::Custom: {
+		case TypeId::Custom: {
 			auto dest = resolveCustomTypeName((CustomTypeNameNode *)typeName.get());
 
 			if (dest->getNodeType() == NodeType::GenericParam) {
-				_write(fs, slxfmt::Type::GenericArg);
+				_write(fs, slxfmt::TypeId::GenericArg);
 
 				auto d = std::static_pointer_cast<GenericParamNode>(dest);
 				_write(fs, (uint8_t)d->name.length());
 				fs.write(d->name.c_str(), d->name.length());
 			} else {
-				_write(fs, slxfmt::Type::Object);
+				_write(fs, slxfmt::TypeId::Object);
 				compileIdRef(fs, getFullName((MemberNode *)dest.get()));
 			}
 			break;
 		}
-		case Type::Bad:
+		case TypeId::Bad:
 			break;
 		default:
 			assert(false);
@@ -1004,21 +1004,21 @@ void Compiler::compileValue(std::ostream &fs, std::shared_ptr<AstNode> value) {
 	slxfmt::ValueDesc vd = {};
 
 	if (!value) {
-		vd.type = slxfmt::Type::None;
+		vd.type = slxfmt::TypeId::None;
 		_write(fs, vd);
 		return;
 	}
 
 	switch (value->getNodeType()) {
 		case NodeType::TypeName:
-			vd.type = slxfmt::Type::TypeName;
+			vd.type = slxfmt::TypeId::TypeName;
 			_write(fs, vd);
 
 			compileTypeName(fs, std::static_pointer_cast<TypeNameNode>(value));
 			break;
 		case NodeType::ArgRef: {
 			auto v = std::static_pointer_cast<ArgRefNode>(value);
-			vd.type = v->unwrapData ? slxfmt::Type::ArgValue : slxfmt::Type::Arg;
+			vd.type = v->unwrapData ? slxfmt::TypeId::ArgValue : slxfmt::TypeId::Arg;
 			_write(fs, vd);
 
 			_write(fs, v->index);
@@ -1026,7 +1026,7 @@ void Compiler::compileValue(std::ostream &fs, std::shared_ptr<AstNode> value) {
 		}
 		case NodeType::LocalVarRef: {
 			auto v = std::static_pointer_cast<LocalVarRefNode>(value);
-			vd.type = v->unwrapData ? slxfmt::Type::LocalVarValue : slxfmt::Type::LocalVar;
+			vd.type = v->unwrapData ? slxfmt::TypeId::LocalVarValue : slxfmt::TypeId::LocalVar;
 			_write(fs, vd);
 
 			_write(fs, v->index);
@@ -1034,7 +1034,7 @@ void Compiler::compileValue(std::ostream &fs, std::shared_ptr<AstNode> value) {
 		}
 		case NodeType::RegRef: {
 			auto v = std::static_pointer_cast<RegRefNode>(value);
-			vd.type = v->unwrapData ? slxfmt::Type::RegValue : slxfmt::Type::Reg;
+			vd.type = v->unwrapData ? slxfmt::TypeId::RegValue : slxfmt::TypeId::Reg;
 			_write(fs, vd);
 
 			_write(fs, v->index);
@@ -1044,84 +1044,84 @@ void Compiler::compileValue(std::ostream &fs, std::shared_ptr<AstNode> value) {
 			std::shared_ptr<ExprNode> expr = std::static_pointer_cast<ExprNode>(value);
 			switch (expr->getExprType()) {
 				case ExprType::I8: {
-					vd.type = slxfmt::Type::I8;
+					vd.type = slxfmt::TypeId::I8;
 					_write(fs, vd);
 
 					_write(fs, std::static_pointer_cast<I8LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::I16: {
-					vd.type = slxfmt::Type::I16;
+					vd.type = slxfmt::TypeId::I16;
 					_write(fs, vd);
 
 					_write(fs, std::static_pointer_cast<I16LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::I32: {
-					vd.type = slxfmt::Type::I32;
+					vd.type = slxfmt::TypeId::I32;
 					_write(fs, vd);
 
 					_write(fs, std::static_pointer_cast<I32LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::I64: {
-					vd.type = slxfmt::Type::I64;
+					vd.type = slxfmt::TypeId::I64;
 					_write(fs, vd);
 
 					_write(fs, std::static_pointer_cast<I64LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::U8: {
-					vd.type = slxfmt::Type::U8;
+					vd.type = slxfmt::TypeId::U8;
 					_write(fs, vd);
 
 					_write(fs, std::static_pointer_cast<U8LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::U16: {
-					vd.type = slxfmt::Type::U16;
+					vd.type = slxfmt::TypeId::U16;
 					_write(fs, vd);
 
 					_write(fs, std::static_pointer_cast<U16LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::U32: {
-					vd.type = slxfmt::Type::U32;
+					vd.type = slxfmt::TypeId::U32;
 					_write(fs, vd);
 
 					_write(fs, std::static_pointer_cast<U32LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::U64: {
-					vd.type = slxfmt::Type::U64;
+					vd.type = slxfmt::TypeId::U64;
 					_write(fs, vd);
 
 					_write(fs, std::static_pointer_cast<U64LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::F32: {
-					vd.type = slxfmt::Type::F32;
+					vd.type = slxfmt::TypeId::F32;
 					_write(fs, vd);
 
 					_write(fs, std::static_pointer_cast<F32LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::F64: {
-					vd.type = slxfmt::Type::F64;
+					vd.type = slxfmt::TypeId::F64;
 					_write(fs, vd);
 
 					_write(fs, std::static_pointer_cast<F64LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::Bool: {
-					vd.type = slxfmt::Type::Bool;
+					vd.type = slxfmt::TypeId::Bool;
 					_write(fs, vd);
 
 					_write(fs, std::static_pointer_cast<BoolLiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::String: {
-					vd.type = slxfmt::Type::String;
+					vd.type = slxfmt::TypeId::String;
 					_write(fs, vd);
 
 					auto &s = std::static_pointer_cast<StringLiteralExprNode>(expr)->data;
@@ -1131,7 +1131,7 @@ void Compiler::compileValue(std::ostream &fs, std::shared_ptr<AstNode> value) {
 					break;
 				}
 				case ExprType::IdRef: {
-					vd.type = slxfmt::Type::IdRef;
+					vd.type = slxfmt::TypeId::IdRef;
 					_write(fs, vd);
 
 					compileIdRef(fs, std::static_pointer_cast<IdRefExprNode>(expr)->ref);

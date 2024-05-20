@@ -54,7 +54,7 @@ namespace slake {
 			}
 		};
 
-		enum class Type : uint8_t {
+		enum class TypeId : uint8_t {
 			None = 0,		// None
 			Any,			// Any
 			I8,				// i8
@@ -85,7 +85,7 @@ namespace slake {
 
 		/// @brief Value Descriptor (VD)
 		struct ValueDesc final {
-			Type type : 5;		// Data Type
+			TypeId type : 5;	// Data Type
 			uint8_t flags : 3;	// Flags
 		};
 
@@ -131,7 +131,7 @@ namespace slake {
 
 		/// @brief Function Descriptor (FND)
 		struct FnDesc final {
-			uint16_t flags : 16;				// Flags
+			uint16_t flags : 16;			// Flags
 			uint16_t lenName : 16;			// Length of name
 			uint8_t nGenericParams : 8;		// Number of generic parameters
 			uint8_t nParams : 8;			// Number of parameters, only used by compilers

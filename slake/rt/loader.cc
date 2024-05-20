@@ -32,7 +32,7 @@ IdRefValue *Runtime::_loadIdRef(std::istream &fs) {
 
 		GenericArgList genericArgs;
 		for (size_t j = i.nGenericArgs; j; --j)
-			genericArgs.push_back(_loadType(fs, _read<slxfmt::Type>(fs)));
+			genericArgs.push_back(_loadType(fs, _read<slxfmt::TypeId>(fs)));
 
 		ref->entries.push_back(IdRefEntry(name, genericArgs));
 		if (!(i.flags & slxfmt::RSD_NEXT))
@@ -50,51 +50,51 @@ Value *Runtime::_loadValue(std::istream &fs) {
 	slxfmt::ValueDesc i = {};
 	fs.read((char *)&i, sizeof(i));
 	switch (i.type) {
-		case slxfmt::Type::None:
+		case slxfmt::TypeId::None:
 			return nullptr;
-		case slxfmt::Type::I8:
+		case slxfmt::TypeId::I8:
 			return new I8Value(this, _read<std::int8_t>(fs));
-		case slxfmt::Type::I16:
+		case slxfmt::TypeId::I16:
 			return new I16Value(this, _read<std::int16_t>(fs));
-		case slxfmt::Type::I32:
+		case slxfmt::TypeId::I32:
 			return new I32Value(this, _read<std::int32_t>(fs));
-		case slxfmt::Type::I64:
+		case slxfmt::TypeId::I64:
 			return new I64Value(this, _read<std::int64_t>(fs));
-		case slxfmt::Type::U8:
+		case slxfmt::TypeId::U8:
 			return new U8Value(this, _read<uint8_t>(fs));
-		case slxfmt::Type::U16:
+		case slxfmt::TypeId::U16:
 			return new U16Value(this, _read<uint16_t>(fs));
-		case slxfmt::Type::U32:
+		case slxfmt::TypeId::U32:
 			return new U32Value(this, _read<uint32_t>(fs));
-		case slxfmt::Type::U64:
+		case slxfmt::TypeId::U64:
 			return new U64Value(this, _read<uint64_t>(fs));
-		case slxfmt::Type::Bool:
+		case slxfmt::TypeId::Bool:
 			return new BoolValue(this, _read<bool>(fs));
-		case slxfmt::Type::F32:
+		case slxfmt::TypeId::F32:
 			return new F32Value(this, _read<float>(fs));
-		case slxfmt::Type::F64:
+		case slxfmt::TypeId::F64:
 			return new F64Value(this, _read<double>(fs));
-		case slxfmt::Type::String: {
+		case slxfmt::TypeId::String: {
 			auto len = _read<uint32_t>(fs);
 			std::string s(len, '\0');
 			fs.read(&(s[0]), len);
 			return new StringValue(this, s);
 		}
-		case slxfmt::Type::IdRef:
+		case slxfmt::TypeId::IdRef:
 			return _loadIdRef(fs);
-		case slxfmt::Type::TypeName:
-			return new TypeNameValue(this, _loadType(fs, _read<slxfmt::Type>(fs)));
-		case slxfmt::Type::Reg:
+		case slxfmt::TypeId::TypeName:
+			return new TypeNameValue(this, _loadType(fs, _read<slxfmt::TypeId>(fs)));
+		case slxfmt::TypeId::Reg:
 			return new RegRefValue(this, _read<uint32_t>(fs));
-		case slxfmt::Type::RegValue:
+		case slxfmt::TypeId::RegValue:
 			return new RegRefValue(this, _read<uint32_t>(fs), true);
-		case slxfmt::Type::LocalVar:
+		case slxfmt::TypeId::LocalVar:
 			return new LocalVarRefValue(this, _read<uint32_t>(fs));
-		case slxfmt::Type::LocalVarValue:
+		case slxfmt::TypeId::LocalVarValue:
 			return new LocalVarRefValue(this, _read<uint32_t>(fs), true);
-		case slxfmt::Type::Arg:
+		case slxfmt::TypeId::Arg:
 			return new ArgRefValue(this, _read<uint32_t>(fs));
-		case slxfmt::Type::ArgValue:
+		case slxfmt::TypeId::ArgValue:
 			return new ArgRefValue(this, _read<uint32_t>(fs), true);
 		default:
 			throw LoaderError("Invalid value type detected");
@@ -106,43 +106,43 @@ Value *Runtime::_loadValue(std::istream &fs) {
 /// @param fs Stream to be read.
 /// @param vt Previous read value type.
 /// @return Loaded complete type name.
-Type Runtime::_loadType(std::istream &fs, slxfmt::Type vt) {
+Type Runtime::_loadType(std::istream &fs, slxfmt::TypeId vt) {
 	switch (vt) {
-		case slxfmt::Type::I8:
+		case slxfmt::TypeId::I8:
 			return TypeId::I8;
-		case slxfmt::Type::I16:
+		case slxfmt::TypeId::I16:
 			return TypeId::I16;
-		case slxfmt::Type::I32:
+		case slxfmt::TypeId::I32:
 			return TypeId::I32;
-		case slxfmt::Type::I64:
+		case slxfmt::TypeId::I64:
 			return TypeId::I64;
-		case slxfmt::Type::U8:
+		case slxfmt::TypeId::U8:
 			return TypeId::U8;
-		case slxfmt::Type::U16:
+		case slxfmt::TypeId::U16:
 			return TypeId::U16;
-		case slxfmt::Type::U32:
+		case slxfmt::TypeId::U32:
 			return TypeId::U32;
-		case slxfmt::Type::U64:
+		case slxfmt::TypeId::U64:
 			return TypeId::U64;
-		case slxfmt::Type::F32:
+		case slxfmt::TypeId::F32:
 			return TypeId::F32;
-		case slxfmt::Type::F64:
+		case slxfmt::TypeId::F64:
 			return TypeId::F64;
-		case slxfmt::Type::String:
+		case slxfmt::TypeId::String:
 			return TypeId::String;
-		case slxfmt::Type::Object:
+		case slxfmt::TypeId::Object:
 			return _loadIdRef(fs);
-		case slxfmt::Type::Any:
+		case slxfmt::TypeId::Any:
 			return TypeId::Any;
-		case slxfmt::Type::Bool:
+		case slxfmt::TypeId::Bool:
 			return TypeId::Bool;
-		case slxfmt::Type::None:
+		case slxfmt::TypeId::None:
 			return TypeId::None;
-		case slxfmt::Type::Array:
-			return Type(TypeId::Array, _loadType(fs, _read<slxfmt::Type>(fs)));
-		case slxfmt::Type::TypeName:
+		case slxfmt::TypeId::Array:
+			return Type(TypeId::Array, _loadType(fs, _read<slxfmt::TypeId>(fs)));
+		case slxfmt::TypeId::TypeName:
 			return TypeId::TypeName;
-		case slxfmt::Type::GenericArg: {
+		case slxfmt::TypeId::GenericArg: {
 			uint8_t length = _read<uint8_t>(fs);
 			std::string name(length, '\0');
 			fs.read(name.data(), length);
@@ -163,14 +163,14 @@ GenericParam Runtime::_loadGenericParam(std::istream &fs) {
 	param.name = name;
 
 	if (gpd.hasBaseType)
-		param.baseType = _loadType(fs, _read<slxfmt::Type>(fs));
+		param.baseType = _loadType(fs, _read<slxfmt::TypeId>(fs));
 
 	for (size_t i = 0; i < gpd.nInterfaces; ++i) {
-		param.interfaces.push_back(_loadType(fs, _read<slxfmt::Type>(fs)));
+		param.interfaces.push_back(_loadType(fs, _read<slxfmt::TypeId>(fs)));
 	}
 
 	for (size_t i = 0; i < gpd.nTraits; ++i) {
-		param.traits.push_back(_loadType(fs, _read<slxfmt::Type>(fs)));
+		param.traits.push_back(_loadType(fs, _read<slxfmt::TypeId>(fs)));
 	}
 
 	return param;
@@ -294,7 +294,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 			std::make_unique<VarValue>(
 				this,
 				access,
-				_loadType(fs, _read<slxfmt::Type>(fs)));
+				_loadType(fs, _read<slxfmt::TypeId>(fs)));
 
 		// Load initial value.
 		if (i.flags & slxfmt::VAD_INIT)
@@ -325,7 +325,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 		// if (i.flags & slxfmt::FND_NATIVE)
 		//	access |= ACCESS_NATIVE;
 
-		std::unique_ptr<FnValue> fn = std::make_unique<FnValue>(this, (uint32_t)i.lenBody, access, _loadType(fs, _read<slxfmt::Type>(fs)));
+		std::unique_ptr<FnValue> fn = std::make_unique<FnValue>(this, (uint32_t)i.lenBody, access, _loadType(fs, _read<slxfmt::TypeId>(fs)));
 
 		if (i.flags & slxfmt::FND_ASYNC)
 			fn->fnFlags |= FN_ASYNC;
@@ -335,7 +335,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 		}
 
 		for (uint8_t j = 0; j < i.nParams; j++) {
-			fn->paramTypes.push_back(_loadType(fs, _read<slxfmt::Type>(fs)));
+			fn->paramTypes.push_back(_loadType(fs, _read<slxfmt::TypeId>(fs)));
 		}
 
 		if (i.flags & slxfmt::FND_VARG)

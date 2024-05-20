@@ -397,7 +397,7 @@ std::shared_ptr<ExprNode> Compiler::evalConstExpr(std::shared_ptr<ExprNode> expr
 
 			auto condition = evalConstExpr(e->condition);
 			if (condition) {
-				if (std::static_pointer_cast<BoolLiteralExprNode>(castLiteralExpr(condition, Type::Bool))->data)
+				if (std::static_pointer_cast<BoolLiteralExprNode>(castLiteralExpr(condition, TypeId::Bool))->data)
 					return e->x;
 				return e->y;
 			}
@@ -424,27 +424,27 @@ std::shared_ptr<ExprNode> Compiler::evalConstExpr(std::shared_ptr<ExprNode> expr
 			switch (e->getExprType()) {
 				case ExprType::I32: {
 					switch (e->targetType->getTypeId()) {
-						case Type::I8: {
+						case TypeId::I8: {
 						}
-						case Type::I16: {
+						case TypeId::I16: {
 						}
-						case Type::I32: {
+						case TypeId::I32: {
 						}
-						case Type::I64: {
+						case TypeId::I64: {
 						}
-						case Type::U8: {
+						case TypeId::U8: {
 						}
-						case Type::U16: {
+						case TypeId::U16: {
 						}
-						case Type::U32: {
+						case TypeId::U32: {
 						}
-						case Type::U64: {
+						case TypeId::U64: {
 						}
-						case Type::F32: {
+						case TypeId::F32: {
 						}
-						case Type::F64: {
+						case TypeId::F64: {
 						}
-						case Type::Bool: {
+						case TypeId::Bool: {
 						}
 					}
 				}
@@ -511,16 +511,16 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> e
 				return {};
 
 			switch (lhsType->getTypeId()) {
-				case Type::I8:
-				case Type::I16:
-				case Type::I32:
-				case Type::I64:
-				case Type::U8:
-				case Type::U16:
-				case Type::U32:
-				case Type::U64:
-				case Type::F32:
-				case Type::F64:
+				case TypeId::I8:
+				case TypeId::I16:
+				case TypeId::I32:
+				case TypeId::I64:
+				case TypeId::U8:
+				case TypeId::U16:
+				case TypeId::U32:
+				case TypeId::U64:
+				case TypeId::F32:
+				case TypeId::F64:
 					switch (e->op) {
 						case UnaryOp::LNot:
 						case UnaryOp::Not:
@@ -530,7 +530,7 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> e
 					}
 
 					break;
-				case Type::Bool:
+				case TypeId::Bool:
 					switch (e->op) {
 						case UnaryOp::LNot:
 						case UnaryOp::Not:
@@ -544,7 +544,7 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> e
 					}
 
 					break;
-				case Type::Custom: {
+				case TypeId::Custom: {
 					auto node = resolveCustomTypeName(std::static_pointer_cast<CustomTypeNameNode>(lhsType).get());
 
 					auto determineOverloading = [this, e](std::shared_ptr<MemberNode> n, uint32_t lhsRegIndex) -> std::shared_ptr<TypeNameNode> {
@@ -668,16 +668,16 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> e
 				return {};
 
 			switch (lhsType->getTypeId()) {
-				case Type::I8:
-				case Type::I16:
-				case Type::I32:
-				case Type::I64:
-				case Type::U8:
-				case Type::U16:
-				case Type::U32:
-				case Type::U64:
-				case Type::F32:
-				case Type::F64: {
+				case TypeId::I8:
+				case TypeId::I16:
+				case TypeId::I32:
+				case TypeId::I64:
+				case TypeId::U8:
+				case TypeId::U16:
+				case TypeId::U32:
+				case TypeId::U64:
+				case TypeId::F32:
+				case TypeId::F64: {
 					switch (e->op) {
 						case BinaryOp::Add:
 						case BinaryOp::Sub:
@@ -719,7 +719,7 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> e
 
 					break;
 				}
-				case Type::Bool: {
+				case TypeId::Bool: {
 					switch (e->op) {
 						case BinaryOp::LAnd:
 						case BinaryOp::LOr:
@@ -734,7 +734,7 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> e
 									"No matching operator"));
 					}
 				}
-				case Type::String: {
+				case TypeId::String: {
 					switch (e->op) {
 						case BinaryOp::Add:
 							return std::make_shared<StringTypeNameNode>(Location(), true);
@@ -749,7 +749,7 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> e
 					}
 					break;
 				}
-				case Type::WString: {
+				case TypeId::WString: {
 					switch (e->op) {
 						case BinaryOp::Add:
 							return std::make_shared<WStringTypeNameNode>(Location(), true);
@@ -764,7 +764,7 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> e
 					}
 					break;
 				}
-				case Type::Custom: {
+				case TypeId::Custom: {
 					auto node = resolveCustomTypeName(std::static_pointer_cast<CustomTypeNameNode>(lhsType).get());
 					auto rhsType = evalExprType(e->rhs);
 
@@ -1102,9 +1102,9 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> e
 			popMinorContext();
 
 			switch (t->getTypeId()) {
-				case Type::Fn:
+				case TypeId::Fn:
 					return std::static_pointer_cast<FnTypeNameNode>(t)->returnType;
-				case Type::Custom:
+				case TypeId::Custom:
 					// stub
 				default:
 					throw FatalCompilationError(

@@ -134,7 +134,7 @@ bool Compiler::_resolveIdRef(Scope *scope, const IdRef &ref, std::deque<std::pai
 	// -> _resolveCustomTypeName (resolves classNode->parentClass->scope->owner->parentClass)
 	// -> _resolveIdRef (with classNode->parentClass->scope->owner->parentClass->scope, which equals to classNode->scope)
 	// -> ...
-	// 
+	//
 	// which causes a infinite recursion and we have to break that by not resolving scopes that is
 	// already in a resolution.
 	if (resolveContext.resolvingScopes.count(scope))
@@ -329,7 +329,7 @@ bool slake::slkc::Compiler::_resolveIdRefWithOwner(Scope *scope, const IdRef &re
 
 				// Resolve with the parent class.
 				if (owner->parentClass) {
-					if (owner->parentClass->getTypeId() == Type::Custom) {
+					if (owner->parentClass->getTypeId() == TypeId::Custom) {
 						if (_resolveIdRef(
 								scopeOf(
 									_resolveCustomTypeName(
@@ -344,7 +344,7 @@ bool slake::slkc::Compiler::_resolveIdRefWithOwner(Scope *scope, const IdRef &re
 
 				// Resolve with the implemented interfaces.
 				for (auto i : owner->implInterfaces) {
-					if (i->getTypeId() == Type::Custom) {
+					if (i->getTypeId() == TypeId::Custom) {
 						if (_resolveIdRef(
 								scopeOf(
 									_resolveCustomTypeName(
@@ -363,7 +363,7 @@ bool slake::slkc::Compiler::_resolveIdRefWithOwner(Scope *scope, const IdRef &re
 
 				// Resolve with the inherited interfaces.
 				for (auto i : owner->parentInterfaces) {
-					if (i->getTypeId() == Type::Custom) {
+					if (i->getTypeId() == TypeId::Custom) {
 						if (_resolveIdRef(
 								scopeOf(
 									_resolveCustomTypeName(
@@ -382,7 +382,7 @@ bool slake::slkc::Compiler::_resolveIdRefWithOwner(Scope *scope, const IdRef &re
 
 				// Resolve with the inherited traits.
 				for (auto i : owner->parentTraits) {
-					if (i->getTypeId() == Type::Custom) {
+					if (i->getTypeId() == TypeId::Custom) {
 						if (_resolveIdRef(
 								scopeOf(
 									_resolveCustomTypeName(

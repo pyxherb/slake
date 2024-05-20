@@ -14,7 +14,7 @@ std::shared_ptr<Scope> Compiler::scopeOf(AstNode *node) {
 			return ((ModuleNode *)node)->scope;
 		case NodeType::TypeName: {
 			auto t = ((TypeNameNode *)node);
-			if (t->getTypeId() == Type::Custom)
+			if (t->getTypeId() == TypeId::Custom)
 				return scopeOf(resolveCustomTypeName((CustomTypeNameNode *)t).get());
 			return {};
 		}
@@ -26,7 +26,7 @@ std::shared_ptr<Scope> Compiler::scopeOf(AstNode *node) {
 		}
 		case NodeType::Var: {
 			auto n = (VarNode *)node;
-			if (n->type->getTypeId() == Type::Custom)
+			if (n->type->getTypeId() == TypeId::Custom)
 				return scopeOf(resolveCustomTypeName((CustomTypeNameNode *)n->type.get()).get());
 			return {};
 		}

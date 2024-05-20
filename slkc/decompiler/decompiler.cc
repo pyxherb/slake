@@ -29,40 +29,40 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 		return;
 	}
 	switch (value->getType().typeId) {
-		case TypeId::I8:
+		case slake::TypeId::I8:
 			os << std::to_string(((I8Value *)value)->getData());
 			break;
-		case TypeId::I16:
+		case slake::TypeId::I16:
 			os << std::to_string(((I16Value *)value)->getData());
 			break;
-		case TypeId::I32:
+		case slake::TypeId::I32:
 			os << std::to_string(((I32Value *)value)->getData());
 			break;
-		case TypeId::I64:
+		case slake::TypeId::I64:
 			os << std::to_string(((I64Value *)value)->getData());
 			break;
-		case TypeId::U8:
+		case slake::TypeId::U8:
 			os << std::to_string(((U8Value *)value)->getData());
 			break;
-		case TypeId::U16:
+		case slake::TypeId::U16:
 			os << std::to_string(((U16Value *)value)->getData());
 			break;
-		case TypeId::U32:
+		case slake::TypeId::U32:
 			os << std::to_string(((U32Value *)value)->getData());
 			break;
-		case TypeId::U64:
+		case slake::TypeId::U64:
 			os << std::to_string(((U64Value *)value)->getData());
 			break;
-		case TypeId::F32:
+		case slake::TypeId::F32:
 			os << std::to_string(((F32Value *)value)->getData());
 			break;
-		case TypeId::F64:
+		case slake::TypeId::F64:
 			os << std::to_string(((F64Value *)value)->getData());
 			break;
-		case TypeId::Bool:
+		case slake::TypeId::Bool:
 			os << ((BoolValue *)value)->getData() ? "true" : "false";
 			break;
-		case TypeId::String: {
+		case slake::TypeId::String: {
 			os << '"';
 
 			for (auto i : ((StringValue *)value)->getData()) {
@@ -74,13 +74,13 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 			os << '"';
 			break;
 		}
-		case TypeId::IdRef:
+		case slake::TypeId::IdRef:
 			os << std::to_string((IdRefValue *)value);
 			break;
-		case TypeId::TypeName:
+		case slake::TypeId::TypeName:
 			os << std::to_string(((TypeNameValue *)value)->getData(), rt);
 			break;
-		case TypeId::Fn: {
+		case slake::TypeId::Fn: {
 			auto v = (FnValue *)value;
 
 			// Dump access of the function.
@@ -144,7 +144,7 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 				   << "\n";
 			break;
 		}
-		case TypeId::Module: {
+		case slake::TypeId::Module: {
 			auto v = (ModuleValue *)value;
 			os << std::string(indentLevel, '\t')
 			   << ".module " << v->getName() << "\n";
@@ -157,13 +157,13 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 			   << "\n\n";
 			break;
 		}
-		case TypeId::Var: {
+		case slake::TypeId::Var: {
 			VarValue *v = (VarValue *)value;
 			os << std::string(indentLevel, '\t')
 			   << ".var " << std::to_string(v->getVarType(), rt) << " " << v->getName() << "\n";
 			break;
 		}
-		case TypeId::Class: {
+		case slake::TypeId::Class: {
 			ClassValue *v = (ClassValue *)value;
 			os << std::string(indentLevel, '\t')
 			   << ".class " << v->getName() << "\n";
@@ -176,27 +176,27 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 			   << "\n\n";
 			break;
 		}
-		case TypeId::Interface: {
+		case slake::TypeId::Interface: {
 			break;
 		}
-		case TypeId::Trait: {
+		case slake::TypeId::Trait: {
 			break;
 		}
-		case TypeId::RegRef: {
+		case slake::TypeId::RegRef: {
 			RegRefValue *v = (RegRefValue *)value;
 			if (v->unwrapValue)
 				os << "*";
 			os << "%" << std::to_string(v->index);
 			break;
 		}
-		case TypeId::LocalVarRef: {
+		case slake::TypeId::LocalVarRef: {
 			LocalVarRefValue *v = (LocalVarRefValue *)value;
 			if (v->unwrapValue)
 				os << "*";
 			os << "$" << std::to_string(v->index);
 			break;
 		}
-		case TypeId::ArgRef: {
+		case slake::TypeId::ArgRef: {
 			ArgRefValue *v = (ArgRefValue *)value;
 			if (v->unwrapValue)
 				os << "*";

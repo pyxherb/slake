@@ -121,7 +121,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 				tmpRegIndex = allocReg();
 
 				compileExpr(s->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
-				if (evalExprType(s->condition)->getTypeId() != Type::Bool)
+				if (evalExprType(s->condition)->getTypeId() != TypeId::Bool)
 					curFn->insertIns(
 						Opcode::CAST,
 						std::make_shared<RegRefNode>(tmpRegIndex),
@@ -172,7 +172,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 
 			if (s->condition) {
 				compileExpr(s->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
-				if (evalExprType(s->condition)->getTypeId() != Type::Bool)
+				if (evalExprType(s->condition)->getTypeId() != TypeId::Bool)
 					curFn->insertIns(
 						Opcode::CAST,
 						std::make_shared<RegRefNode>(tmpRegIndex),
@@ -205,7 +205,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			auto returnType = curFn->returnType;
 
 			if (!s->returnValue) {
-				if (returnType->getTypeId() != Type::Void)
+				if (returnType->getTypeId() != TypeId::Void)
 					throw FatalCompilationError({ stmt->getLocation(), MessageType::Error, "Must return a value" });
 				else
 					curFn->insertIns(Opcode::RET, {});
@@ -249,7 +249,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 				throw FatalCompilationError({ stmt->getLocation(), MessageType::Error, "Cannot yield in a non-asynchronous function" });
 
 			if (!s->returnValue) {
-				if (curFn->returnType->getTypeId() != Type::Void)
+				if (curFn->returnType->getTypeId() != TypeId::Void)
 					throw FatalCompilationError({ stmt->getLocation(), MessageType::Error, "Must yield a value" });
 				else
 					curFn->insertIns(Opcode::YIELD, {});
@@ -276,7 +276,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			uint32_t tmpRegIndex = allocReg();
 
 			compileExpr(s->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
-			if (evalExprType(s->condition)->getTypeId() != Type::Bool)
+			if (evalExprType(s->condition)->getTypeId() != TypeId::Bool)
 				curFn->insertIns(
 					Opcode::CAST,
 					std::make_shared<RegRefNode>(tmpRegIndex),

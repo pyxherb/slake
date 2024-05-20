@@ -661,7 +661,7 @@ std::deque<std::shared_ptr<TypeNameNode>> Parser::parseGenericArgs(bool forTypeN
 		if (auto &token = lexer->peekToken(); token.tokenId == TokenId::GtOp)
 			break;
 
-		if (auto type = parseTypeName(true); type->getTypeId() != Type::Bad)
+		if (auto type = parseTypeName(true); type->getTypeId() != TypeId::Bad)
 			genericArgs.push_back(type);
 		else {
 			if (forTypeName) {

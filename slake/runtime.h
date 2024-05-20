@@ -180,7 +180,7 @@ namespace slake {
 
 		IdRefValue *_loadIdRef(std::istream &fs);
 		Value *_loadValue(std::istream &fs);
-		Type _loadType(std::istream &fs, slxfmt::Type vt);
+		Type _loadType(std::istream &fs, slxfmt::TypeId vt);
 		GenericParam _loadGenericParam(std::istream &fs);
 		void _loadScope(ModuleValue *mod, std::istream &fs);
 

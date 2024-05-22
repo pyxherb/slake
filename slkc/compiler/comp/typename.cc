@@ -82,7 +82,7 @@ bool Compiler::isCompoundTypeName(std::shared_ptr<TypeNameNode> node) {
 							t->ref,
 							this,
 							nullptr,
-							t->isConst));
+							t->isRef));
 				case NodeType::GenericArgRef:
 					// stub
 					return true;
@@ -100,15 +100,7 @@ bool Compiler::isCompoundTypeName(std::shared_ptr<TypeNameNode> node) {
 }
 
 bool slake::slkc::Compiler::isLValueType(std::shared_ptr<TypeNameNode> typeName) {
-	switch (typeName->getTypeId()) {
-		case TypeId::Ref:
-			return true;
-		case TypeId::Custom:
-			// stub
-		default:;
-	}
-
-	return false;
+	return typeName->isRef;
 }
 
 bool Compiler::_isTypeNamesConvertible(std::shared_ptr<InterfaceNode> st, std::shared_ptr<ClassNode> dt) {
@@ -166,10 +158,6 @@ bool Compiler::_isTypeNamesConvertible(std::shared_ptr<MemberNode> st, std::shar
 		if (!(sm->access & ACCESS_PUB))
 			return false;
 
-		// Mutability of the member must be stronger than the target type's.
-		if ((sm->access & ACCESS_CONST) && !(dm->access & ACCESS_CONST))
-			return false;
-
 		switch (sm->getNodeType()) {
 			case NodeType::Var: {
 				auto smType = std::static_pointer_cast<VarNode>(sm);
@@ -217,8 +205,17 @@ bool Compiler::_isTypeNamesConvertible(std::shared_ptr<MemberNode> st, std::shar
 }
 
 bool Compiler::isTypeNamesConvertible(std::shared_ptr<TypeNameNode> src, std::shared_ptr<TypeNameNode> dest) {
+	if (dest->isRef) {
+		if (!src->isRef)
+			return false;
+		return isSameType(src, dest);
+	}
+
 	if (((src->getTypeId()) == dest->getTypeId()) && (!isCompoundTypeName(src)))
 		return true;
+
+	/*if (src->getTypeId() == TypeId::Ref)
+		return isTypeNamesConvertible(std::static_pointer_cast<RefTypeNameNode>(src)->referencedType, dest);*/
 
 	switch (dest->getTypeId()) {
 		case TypeId::Any:
@@ -436,6 +433,11 @@ std::shared_ptr<AstNode> Compiler::resolveCustomTypeName(CustomTypeNameNode *typ
 }
 
 bool Compiler::isSameType(std::shared_ptr<TypeNameNode> x, std::shared_ptr<TypeNameNode> y) {
+	/* if (x->getTypeId() == TypeId::Ref)
+		x = std::static_pointer_cast<RefTypeNameNode>(x)->referencedType;
+	if (y->getTypeId() == TypeId::Ref)
+		y = std::static_pointer_cast<RefTypeNameNode>(y)->referencedType;*/
+
 	if (x->getTypeId() != y->getTypeId())
 		return false;
 
@@ -455,6 +457,43 @@ bool Compiler::isSameType(std::shared_ptr<TypeNameNode> x, std::shared_ptr<TypeN
 	}
 }
 
+int Compiler::getTypeNameWeight(std::shared_ptr<TypeNameNode> t) {
+	switch (t->getTypeId()) {
+		case TypeId::Bool:
+			return 0;
+		case TypeId::I8:
+			return 10;
+		case TypeId::I16:
+			return 11;
+		case TypeId::I32:
+			return 12;
+		case TypeId::I64:
+			return 13;
+		case TypeId::U8:
+			return 20;
+		case TypeId::U16:
+			return 21;
+		case TypeId::U32:
+			return 22;
+		case TypeId::U64:
+			return 23;
+		case TypeId::F32:
+			return 31;
+		case TypeId::F64:
+			return 32;
+		default:
+			return -1;
+	}
+}
+
+std::shared_ptr<TypeNameNode> Compiler::getStrongerTypeName(std::shared_ptr<TypeNameNode> x, std::shared_ptr<TypeNameNode> y) {
+	int leftWeight = getTypeNameWeight(x), rightWeight = getTypeNameWeight(y);
+
+	if (rightWeight > leftWeight)
+		return y;
+	return x;
+}
+
 std::shared_ptr<AstNode> CustomTypeNameNode::doDuplicate() {
 	return std::make_shared<CustomTypeNameNode>(*this);
 }
@@ -465,10 +504,6 @@ std::shared_ptr<AstNode> ArrayTypeNameNode::doDuplicate() {
 
 std::shared_ptr<AstNode> FnTypeNameNode::doDuplicate() {
 	return std::make_shared<FnTypeNameNode>(*this);
-}
-
-std::shared_ptr<AstNode> RefTypeNameNode::doDuplicate() {
-	return std::make_shared<RefTypeNameNode>(*this);
 }
 
 std::shared_ptr<AstNode> slake::slkc::ContextTypeNameNode::doDuplicate() {

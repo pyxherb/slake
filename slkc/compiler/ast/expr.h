@@ -84,7 +84,6 @@ namespace slake {
 			LOr,
 			Lsh,
 			Rsh,
-			Swap,
 
 			Assign,
 			AssignAdd,

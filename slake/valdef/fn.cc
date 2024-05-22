@@ -56,7 +56,7 @@ ValueRef<> FnValue::exec(std::shared_ptr<Context> context) const {
 			while ((getRuntime()->_flags & _RT_INGC) && !isDestructing)
 				std::this_thread::yield();
 
-			getRuntime()->_execIns(context.get(), context->majorFrames.back().curFn->body[context->majorFrames.back().curIns]);
+			_rt->_execIns(context.get(), context->majorFrames.back().curFn->body[context->majorFrames.back().curIns]);
 
 			if ((_rt->_szMemInUse > (_rt->_szMemUsedAfterLastGc << 1)) && !isDestructing)
 				_rt->gc();

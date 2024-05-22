@@ -8,18 +8,21 @@
 namespace slake {
 	class BasicVarValue : public MemberValue {
 	public:
-		BasicVarValue(Runtime *rt, AccessModifier access);
+		Type type = TypeId::Any;
+
+		BasicVarValue(Runtime *rt, AccessModifier access, Type type);
 		virtual ~BasicVarValue();
 
-		virtual inline Type getType() const override { return TypeId::Var; }
+		virtual inline Type getType() const override { return Type(TypeId::Var, type); }
 
-		virtual Type getVarType() const = 0;
+		virtual Type getVarType() const { return type; }
 
 		virtual Value *getData() const = 0;
 		virtual void setData(Value *value) = 0;
 
 		inline BasicVarValue &operator=(const BasicVarValue &x) {
 			((MemberValue &)*this) = (MemberValue &)x;
+			type = x.type;
 			return *this;
 		}
 		BasicVarValue &operator=(BasicVarValue &&) = delete;
@@ -28,12 +31,9 @@ namespace slake {
 	class VarValue final : public BasicVarValue {
 	public:
 		mutable slake::Value *value = nullptr;
-		Type type = TypeId::Any;
 
 		VarValue(Runtime *rt, AccessModifier access, Type type);
 		virtual ~VarValue();
-
-		inline Type getVarType() const override { return type; }
 
 		virtual Value *duplicate() const override;
 
@@ -53,7 +53,6 @@ namespace slake {
 			// if (x.value)
 			//	value = x.value->duplicate();
 			value = x.value;
-			type = x.type;
 			return *this;
 		}
 		VarValue &operator=(VarValue &&) = delete;

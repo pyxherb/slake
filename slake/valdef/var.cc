@@ -3,7 +3,7 @@
 
 using namespace slake;
 
-BasicVarValue::BasicVarValue(Runtime *rt, AccessModifier access) : MemberValue(rt, access) {
+BasicVarValue::BasicVarValue(Runtime *rt, AccessModifier access, Type type) : MemberValue(rt, access), type(type) {
 	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(MemberValue));
 }
 
@@ -12,12 +12,12 @@ BasicVarValue::~BasicVarValue() {
 }
 
 slake::VarValue::VarValue(Runtime *rt, AccessModifier access, Type type)
-	: BasicVarValue(rt, access), type(type) {
-	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(MemberValue));
+	: BasicVarValue(rt, access, type) {
+	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(BasicVarValue));
 }
 
 VarValue::~VarValue() {
-	reportSizeFreedToRuntime(sizeof(*this) - sizeof(MemberValue));
+	reportSizeFreedToRuntime(sizeof(*this) - sizeof(BasicVarValue));
 }
 
 Value *VarValue::duplicate() const {

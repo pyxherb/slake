@@ -127,8 +127,6 @@ const char *slake::slkc::getTokenName(slake::slkc::TokenId tokenId) {
 			return "catch";
 		case TokenId::ClassKeyword:
 			return "class";
-		case TokenId::ConstKeyword:
-			return "const";
 		case TokenId::ContinueKeyword:
 			return "continue";
 		case TokenId::DeleteKeyword:

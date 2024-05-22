@@ -79,7 +79,7 @@ void slake::Runtime::_instantiateGenericValue(Value *v, GenericInstantiationCont
 			break;
 		}
 		case TypeId::Var: {
-			VarValue *value = (VarValue *)v;
+			BasicVarValue *value = (BasicVarValue *)v;
 
 			_instantiateGenericValue(value->type, instantiationContext);
 			break;

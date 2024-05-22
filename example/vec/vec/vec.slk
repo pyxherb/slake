@@ -1,0 +1,43 @@
+module vec;
+
+import {
+	hostext.extfns
+}
+
+pub native class Vec2f {
+	pub native let x: f32, y: f32;
+	pub native operator[](u8 index): f32&;
+	pub native fn new();
+}
+
+pub native class Vec3f {
+	pub native let x: f32, y: f32, z: f32;
+	pub native operator[](u8 index): f32&;
+	pub native fn new();
+}
+
+pub native class Vec4f {
+	pub native let x: f32, y: f32, z: f32, w: f32;
+	pub native operator[](u8 index): f32&;
+	pub native fn new();
+
+	pub native fn test(f32 &arg);
+}
+
+pub fn main() {
+	let a : Vec4f = new Vec4f(),
+		b : Vec4f = new Vec4f();
+
+	let test : f64;
+	a.test(test);
+
+	a[0] = 1.2f;
+	a[1] = 3.4f;
+	a[3] = 5.6f;
+	a[4] = 7.8f;
+
+	b[0] = 9.8f;
+	b[1] = 7.6f;
+	b[2] = 5.4f;
+	b[3] = 3.2f;
+}

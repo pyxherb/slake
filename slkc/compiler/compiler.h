@@ -80,6 +80,8 @@ namespace slake {
 			EvalPurpose evalPurpose = EvalPurpose::None;
 
 			bool isLastCallTargetStatic = true;
+			std::deque<std::shared_ptr<ParamNode>> lastCallTargetParams;
+			std::shared_ptr<TypeNameNode> lastCallTargetReturnType;
 
 			std::deque<std::shared_ptr<TypeNameNode>> argTypes;
 			bool isArgTypesSet = false;
@@ -107,7 +109,11 @@ namespace slake {
 			}
 
 			inline void popMinorContext() {
-				savedMinorContexts.back().isLastCallTargetStatic = curMinorContext.isLastCallTargetStatic;
+				auto &lastMinorContext = savedMinorContexts.back();
+				lastMinorContext.isLastCallTargetStatic = curMinorContext.isLastCallTargetStatic;
+				lastMinorContext.lastCallTargetParams = curMinorContext.lastCallTargetParams;
+				lastMinorContext.lastCallTargetReturnType = curMinorContext.lastCallTargetReturnType;
+
 				curMinorContext = savedMinorContexts.back();
 				savedMinorContexts.pop_back();
 			}
@@ -262,6 +268,9 @@ namespace slake {
 
 			bool isTypeNamesConvertible(std::shared_ptr<TypeNameNode> src, std::shared_ptr<TypeNameNode> dest);
 
+			int getTypeNameWeight(std::shared_ptr<TypeNameNode> t);
+			std::shared_ptr<TypeNameNode> getStrongerTypeName(std::shared_ptr<TypeNameNode> x, std::shared_ptr<TypeNameNode> y);
+
 			struct IdRefResolveContext {
 				bool isTopLevel = true;
 				bool keepTokenScope = false;
@@ -310,6 +319,23 @@ namespace slake {
 
 			void _getFullName(MemberNode *member, IdRef &ref);
 
+			struct UnaryOpRegistry {
+				slake::Opcode opcode;
+				bool lvalueOperand;
+				bool lvalueResult;
+			};
+			static std::map<UnaryOp, UnaryOpRegistry> _unaryOpRegs;
+
+			struct BinaryOpRegistry {
+				slake::Opcode opcode;
+				bool isLhsLvalue;
+				bool isRhsLvalue;
+				bool isResultLvalue;
+			};
+			static std::map<BinaryOp, BinaryOpRegistry> _binaryOpRegs;
+
+			void compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> e, std::shared_ptr<TypeNameNode> lhsType);
+			void compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::shared_ptr<TypeNameNode> lhsType, std::shared_ptr<TypeNameNode> rhsType);
 			void compileExpr(std::shared_ptr<ExprNode> expr);
 			inline void compileExpr(std::shared_ptr<ExprNode> expr, EvalPurpose evalPurpose, std::shared_ptr<AstNode> evalDest, std::shared_ptr<AstNode> thisDest = {}) {
 				pushMinorContext();

@@ -10,8 +10,7 @@ namespace slake {
 		ACCESS_STATIC = 0x02,
 		ACCESS_NATIVE = 0x04,
 		ACCESS_OVERRIDE = 0x08,
-		ACCESS_FINAL = 0x10,
-		ACCESS_CONST = 0x20;
+		ACCESS_FINAL = 0x10;
 
 	class AccessModified {
 	private:
@@ -32,7 +31,6 @@ namespace slake {
 		inline bool isNative() const noexcept { return _modifier & ACCESS_NATIVE; }
 		inline bool isOverriden() const noexcept { return _modifier & ACCESS_OVERRIDE; }
 		inline bool isFinal() const noexcept { return _modifier & ACCESS_FINAL; }
-		inline bool isConst() const noexcept { return _modifier & ACCESS_CONST; }
 	};
 }
 

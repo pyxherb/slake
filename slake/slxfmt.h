@@ -80,7 +80,8 @@ namespace slake {
 			LocalVar,		// Local variable
 			LocalVarValue,	// Local variable value
 			Arg,			// Argument
-			ArgValue,		// Argument
+			ArgValue,		// Argument value
+			Ref,			// Reference
 		};
 
 		/// @brief Value Descriptor (VD)

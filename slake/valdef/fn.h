@@ -41,7 +41,8 @@ namespace slake {
 			Runtime *rt,
 			AccessModifier access,
 			Type returnType)
-			: MemberValue(rt, access) {
+			: MemberValue(rt, access),
+			  returnType(returnType) {
 			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(MemberValue));
 		}
 		virtual ~BasicFnValue();

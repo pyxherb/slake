@@ -16,6 +16,9 @@ namespace slake {
 		_CLS_ABSTRACT_INITED = 0x8000;	// The class has checked if itself is abstract
 
 	class InterfaceValue;
+	class ObjectValue;
+
+	using ClassInstantiator = std::function<ObjectValue *(Runtime *runtime, ClassValue *cls)>;
 
 	class ClassValue : public ModuleValue {
 	private:
@@ -33,6 +36,9 @@ namespace slake {
 
 		Type parentClass;
 		std::deque<Type> implInterfaces;  // Implemented interfaces
+
+		/// @brief User-defined instantiator.
+		ClassInstantiator customInstantiator;
 
 		ClassValue(Runtime *rt, AccessModifier access, Type parentClass = {});
 		virtual ~ClassValue();
@@ -67,6 +73,7 @@ namespace slake {
 			genericParams = x.genericParams;
 			_flags = x._flags;
 			implInterfaces = x.implInterfaces;
+			customInstantiator = x.customInstantiator;
 
 			return *this;
 		}

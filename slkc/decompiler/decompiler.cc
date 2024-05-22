@@ -81,7 +81,7 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 			os << std::to_string(((TypeNameValue *)value)->getData(), rt);
 			break;
 		case slake::TypeId::Fn: {
-			auto v = (FnValue *)value;
+			auto v = (BasicFnValue *)value;
 
 			// Dump access of the function.
 			if (v->getAccess())
@@ -91,9 +91,14 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 			if (v->fnFlags & FN_ASYNC)
 				puts(".async");
 
-			os << std::string(indentLevel, '\t')
-			   << (v->getInsCount() ? ".fn " : ".fndecl ")
-			   << std::to_string(v->getReturnType(), rt) << " "
+			os << std::string(indentLevel, '\t');
+			if (v->getAccess() & ACCESS_NATIVE) {
+				os << ".fndecl ";
+			} else {
+				os << (((FnValue*)v)->getInsCount() ? ".fn " : ".fndecl ");
+			}
+
+			os << std::to_string(v->getReturnType(), rt) << " "
 			   << v->getName();
 
 			// Dump parameter types.
@@ -104,44 +109,50 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 			std::set<slxfmt::SourceLocDesc *> dumpedSourceLocationDescs;
 
 			// Dump instructions.
-			if (v->getInsCount()) {
-				for (size_t i = 0; i < v->getInsCount(); ++i) {
-					auto ins = &(v->getBody()[i]);
-
-					if (!(decompilerFlags & DECOMP_SRCLOC)) {
-						for (auto &j : v->sourceLocDescs) {
-							if (dumpedSourceLocationDescs.count(&j))
-								continue;
-
-							if ((i > j.offIns) &&
-								(i < j.offIns + j.nIns)) {
-								os << std::string(indentLevel + 1, '\t')
-								   << "// Source location=" << j.line << ":" << j.column << ", " << j.nIns << " instructions\n";
-
-								dumpedSourceLocationDescs.insert(&j);
-							}
-						}
-					}
-
-					os << std::string(indentLevel + 1, '\t');
-
-					if (slake::OPCODE_MNEMONIC_MAP.count(ins->opcode))
-						os << slake::OPCODE_MNEMONIC_MAP.at(ins->opcode);
-					else
-						os << (uint16_t)ins->opcode;
-
-					for (size_t j = 0; j < ins->operands.size(); ++j) {
-						os << (j ? ", " : " ");
-						decompileValue(rt, ins->operands[j], os, indentLevel);
-					}
-
-					os << ";\n";
-				}
-				os << std::string(indentLevel, '\t')
-				   << ".end\n\n";
-			} else
+			if (v->getAccess() & ACCESS_NATIVE) {
 				os << std::string(indentLevel, '\t')
 				   << "\n";
+			} else {
+				FnValue *fn = (FnValue *)v;
+				if (fn->getInsCount()) {
+					for (size_t i = 0; i < fn->getInsCount(); ++i) {
+						auto ins = &(fn->getBody()[i]);
+
+						if (!(decompilerFlags & DECOMP_SRCLOC)) {
+							for (auto &j : fn->sourceLocDescs) {
+								if (dumpedSourceLocationDescs.count(&j))
+									continue;
+
+								if ((i > j.offIns) &&
+									(i < j.offIns + j.nIns)) {
+									os << std::string(indentLevel + 1, '\t')
+									   << "// Source location=" << j.line << ":" << j.column << ", " << j.nIns << " instructions\n";
+
+									dumpedSourceLocationDescs.insert(&j);
+								}
+							}
+						}
+
+						os << std::string(indentLevel + 1, '\t');
+
+						if (slake::OPCODE_MNEMONIC_MAP.count(ins->opcode))
+							os << slake::OPCODE_MNEMONIC_MAP.at(ins->opcode);
+						else
+							os << (uint16_t)ins->opcode;
+
+						for (size_t j = 0; j < ins->operands.size(); ++j) {
+							os << (j ? ", " : " ");
+							decompileValue(rt, ins->operands[j], os, indentLevel);
+						}
+
+						os << ";\n";
+					}
+					os << std::string(indentLevel, '\t')
+					   << ".end\n\n";
+				} else
+					os << std::string(indentLevel, '\t')
+					   << "\n";
+			}
 			break;
 		}
 		case slake::TypeId::Module: {
@@ -165,6 +176,12 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 		}
 		case slake::TypeId::Class: {
 			ClassValue *v = (ClassValue *)value;
+
+			// Dump access of the class.
+			if (v->getAccess())
+				os << std::string(indentLevel, '\t')
+				   << ".access " << accessToString(v->getAccess()) << "\n";
+
 			os << std::string(indentLevel, '\t')
 			   << ".class " << v->getName() << "\n";
 

@@ -13,8 +13,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 				sld.line = stmt->getLocation().line;
 				sld.column = stmt->getLocation().column;
 
-				curMajorContext.curMinorContext.evalPurpose = EvalPurpose::Stmt;
-				compileExpr(std::static_pointer_cast<ExprStmtNode>(stmt)->expr);
+				compileExpr(std::static_pointer_cast<ExprStmtNode>(stmt)->expr, EvalPurpose::Stmt, {});
 
 				sld.nIns = curFn->body.size() - sld.offIns;
 				curFn->srcLocDescs.push_back(sld);
@@ -58,7 +57,14 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 
 				uint32_t index = allocLocalVar(i.first, varType);
 
-				if (i.second.initValue) {
+				if (isLValueType(varType)) {
+					if (!i.second.initValue) {
+						throw FatalCompilationError(
+							{ i.second.loc,
+								MessageType::Error,
+								"Reference variables require an initial value" });
+					}
+
 					std::shared_ptr<TypeNameNode> initValueType = evalExprType(i.second.initValue);
 
 					if (!initValueType)
@@ -68,15 +74,33 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 								"Error deducing type of the initial value" });
 
 					if (!isSameType(varType, initValueType)) {
-						if (!isTypeNamesConvertible(initValueType, varType))
-							throw FatalCompilationError(
+						throw FatalCompilationError(
 								{ i.second.initValue->getLocation(),
 									MessageType::Error,
 									"Incompatible initial value type" });
-
-						compileExpr(std::make_shared<CastExprNode>(i.second.initValue->getLocation(), varType, i.second.initValue), EvalPurpose::RValue, std::make_shared<LocalVarRefNode>(index));
 					} else
-						compileExpr(i.second.initValue, EvalPurpose::RValue, std::make_shared<LocalVarRefNode>(index));
+						compileExpr(i.second.initValue, EvalPurpose::LValue, std::make_shared<LocalVarRefNode>(index));
+				} else {
+					if (i.second.initValue) {
+						std::shared_ptr<TypeNameNode> initValueType = evalExprType(i.second.initValue);
+
+						if (!initValueType)
+							throw FatalCompilationError(
+								{ i.second.initValue->getLocation(),
+									MessageType::Error,
+									"Error deducing type of the initial value" });
+
+						if (!isSameType(varType, initValueType)) {
+							if (!isTypeNamesConvertible(initValueType, varType))
+								throw FatalCompilationError(
+									{ i.second.initValue->getLocation(),
+										MessageType::Error,
+										"Incompatible initial value type" });
+
+							compileExpr(std::make_shared<CastExprNode>(i.second.initValue->getLocation(), varType, i.second.initValue), EvalPurpose::RValue, std::make_shared<LocalVarRefNode>(index));
+						} else
+							compileExpr(i.second.initValue, EvalPurpose::RValue, std::make_shared<LocalVarRefNode>(index));
+					}
 				}
 			}
 
@@ -120,13 +144,25 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			if (s->condition) {
 				tmpRegIndex = allocReg();
 
-				compileExpr(s->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
-				if (evalExprType(s->condition)->getTypeId() != TypeId::Bool)
-					curFn->insertIns(
-						Opcode::CAST,
-						std::make_shared<RegRefNode>(tmpRegIndex),
-						std::make_shared<BoolTypeNameNode>(s->condition->getLocation(), true),
-						std::make_shared<RegRefNode>(tmpRegIndex, true));
+				auto conditionType = evalExprType(s->condition);
+				auto boolType = std::make_shared<BoolTypeNameNode>(Location(), SIZE_MAX);
+
+				if (!isSameType(conditionType, boolType)) {
+					if (!isTypeNamesConvertible(conditionType, boolType))
+						throw FatalCompilationError(
+							{ s->condition->getLocation(),
+								MessageType::Error,
+								"Expecting a boolean expression" });
+
+					compileExpr(
+						std::make_shared<CastExprNode>(
+							s->condition->getLocation(),
+							boolType,
+							s->condition),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(tmpRegIndex));
+				} else
+					compileExpr(s->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
 				curFn->insertIns(Opcode::JF, std::make_shared<LabelRefNode>(endLabel), std::make_shared<RegRefNode>(tmpRegIndex, true));
 			} else {
 				curFn->insertIns(Opcode::JMP, std::make_shared<LabelRefNode>(endLabel));
@@ -170,15 +206,25 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 
 			curFn->insertLabel(beginLabel);
 
-			if (s->condition) {
+			auto conditionType = evalExprType(s->condition);
+			auto boolType = std::make_shared<BoolTypeNameNode>(Location(), SIZE_MAX);
+
+			if (!isSameType(conditionType, boolType)) {
+				if (!isTypeNamesConvertible(conditionType, boolType))
+					throw FatalCompilationError(
+						{ s->condition->getLocation(),
+							MessageType::Error,
+							"Expecting a boolean expression" });
+
+				compileExpr(
+					std::make_shared<CastExprNode>(
+						s->condition->getLocation(),
+						boolType,
+						s->condition),
+					EvalPurpose::RValue,
+					std::make_shared<RegRefNode>(tmpRegIndex));
+			} else
 				compileExpr(s->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
-				if (evalExprType(s->condition)->getTypeId() != TypeId::Bool)
-					curFn->insertIns(
-						Opcode::CAST,
-						std::make_shared<RegRefNode>(tmpRegIndex),
-						std::make_shared<BoolTypeNameNode>(s->condition->getLocation(), true),
-						std::make_shared<RegRefNode>(tmpRegIndex, true));
-			}
 
 			if (s->body)
 				compileStmt(s->body);
@@ -275,13 +321,25 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 
 			uint32_t tmpRegIndex = allocReg();
 
-			compileExpr(s->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
-			if (evalExprType(s->condition)->getTypeId() != TypeId::Bool)
-				curFn->insertIns(
-					Opcode::CAST,
-					std::make_shared<RegRefNode>(tmpRegIndex),
-					std::make_shared<BoolTypeNameNode>(s->getLocation(), true),
-					std::make_shared<RegRefNode>(tmpRegIndex, true));
+			auto conditionType = evalExprType(s->condition);
+			auto boolType = std::make_shared<BoolTypeNameNode>(Location(), SIZE_MAX);
+
+			if (!isSameType(conditionType, boolType)) {
+				if (!isTypeNamesConvertible(conditionType, boolType))
+					throw FatalCompilationError(
+						{ s->condition->getLocation(),
+							MessageType::Error,
+							"Expecting a boolean expression" });
+
+				compileExpr(
+					std::make_shared<CastExprNode>(
+						s->condition->getLocation(),
+						boolType,
+						s->condition),
+					EvalPurpose::RValue,
+					std::make_shared<RegRefNode>(tmpRegIndex));
+			} else
+				compileExpr(s->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
 
 			curFn->insertIns(Opcode::JF, std::make_shared<LabelRefNode>(falseBranchLabel), std::make_shared<RegRefNode>(tmpRegIndex, true));
 

@@ -140,6 +140,8 @@ Type Runtime::_loadType(std::istream &fs, slxfmt::TypeId vt) {
 			return TypeId::None;
 		case slxfmt::TypeId::Array:
 			return Type(TypeId::Array, _loadType(fs, _read<slxfmt::TypeId>(fs)));
+		case slxfmt::TypeId::Ref:
+			return Type(TypeId::Ref, _loadType(fs, _read<slxfmt::TypeId>(fs)));
 		case slxfmt::TypeId::TypeName:
 			return TypeId::TypeName;
 		case slxfmt::TypeId::GenericArg: {
@@ -179,7 +181,7 @@ GenericParam Runtime::_loadGenericParam(std::istream &fs) {
 /// @brief Load a single scope.
 /// @param mod Module value which is treated as a scope.
 /// @param fs The input stream.
-void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
+void Runtime::_loadScope(ModuleValue *mod, std::istream &fs, LoadModuleFlags loadModuleFlags) {
 	uint32_t nItemsToRead;
 
 	//
@@ -211,7 +213,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 		for (auto j = i.nImpls; j; j--)
 			value->implInterfaces.push_back(_loadIdRef(fs));
 
-		_loadScope(value.get(), fs);
+		_loadScope(value.get(), fs, loadModuleFlags);
 
 		mod->scope->putMember(name, value.release());
 	}
@@ -238,7 +240,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 		for (auto j = i.nParents; j; j--)
 			value->parents.push_back(_loadIdRef(fs));
 
-		_loadScope(value.get(), fs);
+		_loadScope(value.get(), fs, loadModuleFlags);
 
 		mod->scope->putMember(name, value.release());
 	}
@@ -265,7 +267,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs) {
 		for (auto j = i.nParents; j; j--)
 			value->parents.push_back(_loadIdRef(fs));
 
-		_loadScope(value.get(), fs);
+		_loadScope(value.get(), fs, loadModuleFlags);
 
 		mod->scope->putMember(name, value.release());
 	}
@@ -440,7 +442,7 @@ ValueRef<ModuleValue> slake::Runtime::loadModule(std::istream &fs, LoadModuleFla
 		mod->imports[name] = moduleName.get();
 	}
 
-	_loadScope(mod.get(), fs);
+	_loadScope(mod.get(), fs, flags);
 	return mod.release();
 }
 

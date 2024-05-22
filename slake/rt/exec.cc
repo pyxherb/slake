@@ -408,6 +408,11 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 			_checkOperandType(ins, { TypeId::Var, TypeId::Var });
 
+			if (!ins.operands[0])
+				throw NullRefError();
+			if (!ins.operands[1])
+				throw NullRefError();
+
 			((VarValue *)ins.operands[0])->setData(((VarValue *)ins.operands[1])->getData());
 			break;
 		}
@@ -732,7 +737,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 				case TypeId::Object:
 				case TypeId::Class: {
 					ClassValue *cls = (ClassValue *)type.getCustomTypeExData();
-					ObjectValue *instance = _newClassInstance(cls);
+					ObjectValue *instance = newClassInstance(cls);
 					((VarValue *)ins.operands[0])->setData(instance);
 
 					if (constructorRef) {
@@ -770,7 +775,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			uint32_t size = ((U32Value*)ins.operands[2])->_data;
 			type.loadDeferredType(this);
 
-			auto instance = _newArrayInstance(type, size);
+			auto instance = newArrayInstance(type, size);
 
 			varOut->setData(instance);
 

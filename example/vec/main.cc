@@ -13,11 +13,6 @@ slake::ValueRef<> print(
 	using namespace slake;
 
 	for (uint8_t i = 0; i < args.size(); ++i) {
-		if (!args[i]) {
-			throw slake::NullRefError();
-			continue;
-		}
-
 		switch (args[i]->getType().typeId) {
 			case TypeId::I8:
 				std::cout << ((I8Value *)args[i])->getData();
@@ -119,7 +114,7 @@ int main(int argc, char **argv) {
 		std::ifstream fs;
 		try {
 			fs.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
-			fs.open("hostext/main.slx", std::ios_base::in | std::ios_base::binary);
+			fs.open("vec/vec.slx", std::ios_base::in | std::ios_base::binary);
 
 			rt->setModuleLocator(fsModuleLocator);
 			slake::stdlib::load(rt.get());
@@ -138,16 +133,7 @@ int main(int argc, char **argv) {
 	((slake::ModuleValue *)((slake::ModuleValue *)rt->getRootValue()->getMember("hostext"))->getMember("extfns"))->scope->putMember("getSlakeBuildVersionInfo$i32", new slake::NativeFnValue(rt.get(), getSlakeBuildVersionInfo, slake::ACCESS_PUB, slake::TypeId::None));
 
 	try {
-		slake::ValueRef<slake::ContextValue> context = (slake::ContextValue *)mod->scope->getMember("main")->call(nullptr, {}).get();
-		printf("%d\n", ((slake::I32Value *)context->getResult().get())->getData());
-		while (!context->isDone()) {
-			context->resume();
-
-			auto result = context->getResult();
-			assert(result->getType() == slake::TypeId::I32);
-
-			printf("%d\n", ((slake::I32Value *)result.get())->getData());
-		}
+		mod->scope->getMember("main")->call(nullptr, {});
 	} catch (slake::NotFoundError e) {
 		printf("NotFoundError: %s, ref = %s\n", e.what(), std::to_string(e.ref.get()).c_str());
 		printTraceback(rt.get());

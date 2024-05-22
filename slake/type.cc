@@ -4,13 +4,15 @@
 
 using namespace slake;
 
-Type::Type(IdRefValue *ref, TypeFlags flags) : typeId(TypeId::Object), flags(flags) {
+Type::Type(IdRefValue *ref) : typeId(TypeId::Object) {
 	exData = (Value *)ref;
 }
 
 Type::~Type() {
 	switch (typeId) {
-		case TypeId::Array: {
+		case TypeId::Array:
+		case TypeId::Ref:
+		case TypeId::Var: {
 			if (auto t = std::get<Type *>(exData); t)
 				delete t;
 			break;
@@ -158,6 +160,14 @@ bool slake::isCompatible(Type a, Type b) {
 			if (a.typeId != b.typeId)
 				return false;
 			return isCompatible(a.getArrayExData(), b.getArrayExData());
+		case TypeId::Var:
+			if (a.typeId != b.typeId)
+				return false;
+			return isCompatible(a.getVarExData(), b.getVarExData());
+		case TypeId::Ref:
+			if (b.typeId != TypeId::Var)
+				return false;
+			return isCompatible(a.getRefExData(), b.getVarExData());
 		case TypeId::Object: {
 			switch (a.getCustomTypeExData()->getType().typeId) {
 				case TypeId::Class: {
@@ -245,17 +255,17 @@ std::string std::to_string(const slake::Type &type, const slake::Runtime *rt) {
 			return "bool";
 		case TypeId::Array:
 			return to_string(type.getArrayExData(), rt) + "[]";
+		case TypeId::Ref:
+			return to_string(type.getArrayExData(), rt) + "&";
 		case TypeId::Object: {
-			string s = "@";
-
 			if (type.isLoadingDeferred()) {
-				return "@" + std::to_string((IdRefValue *)type.getCustomTypeExData());
+				return std::to_string((IdRefValue *)type.getCustomTypeExData());
 			} else {
-				return "@" + rt->getFullName((MemberValue *)type.getCustomTypeExData());
+				return rt->getFullName((MemberValue *)type.getCustomTypeExData());
 			}
 		}
 		case TypeId::GenericArg:
-			return "@!" + type.getGenericArgExData();
+			return "!" + type.getGenericArgExData();
 		case TypeId::Any:
 			return "any";
 		case TypeId::None:

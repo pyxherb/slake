@@ -47,8 +47,6 @@ std::string std::to_string(BinaryOp op) {
 			return "<<";
 		case BinaryOp::Rsh:
 			return ">>";
-		case BinaryOp::Swap:
-			return "<=>";
 		case BinaryOp::Assign:
 			return "=";
 		case BinaryOp::AssignAdd:

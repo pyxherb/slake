@@ -478,7 +478,6 @@ AccessModifier Parser::parseAccessModifier(Location &locationOut) {
 		switch (token.tokenId) {
 			case TokenId::PubKeyword:
 			case TokenId::FinalKeyword:
-			case TokenId::ConstKeyword:
 			case TokenId::OverrideKeyword:
 			case TokenId::StaticKeyword:
 			case TokenId::NativeKeyword:
@@ -489,9 +488,6 @@ AccessModifier Parser::parseAccessModifier(Location &locationOut) {
 						break;
 					case TokenId::FinalKeyword:
 						accessModifier |= ACCESS_FINAL;
-						break;
-					case TokenId::ConstKeyword:
-						accessModifier |= ACCESS_CONST;
 						break;
 					case TokenId::OverrideKeyword:
 						accessModifier |= ACCESS_OVERRIDE;
@@ -634,9 +630,8 @@ std::shared_ptr<TypeNameNode> Parser::parseTypeName(bool forGenericArgs) {
 	if (auto &token = lexer->peekToken(); token.tokenId == TokenId::AndOp) {
 		lexer->nextToken();
 
-		auto result = std::make_shared<RefTypeNameNode>(type);
-		result->idxIndicatorToken = lexer->getTokenIndex(token);
-		type = result;
+		type->isRef = true;
+		type->idxRefIndicatorToken = lexer->getTokenIndex(token);
 	}
 
 	if (auto &token = lexer->peekToken(); token.tokenId == TokenId::MulOp) {

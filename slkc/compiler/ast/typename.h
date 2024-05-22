@@ -37,7 +37,6 @@ namespace slake {
 			Fn,
 
 			Custom,
-			Ref,
 
 			Context,
 
@@ -51,14 +50,15 @@ namespace slake {
 			Location _loc;
 
 		public:
-			bool isConst;  // For parameters.
+			bool isRef = false;
+			size_t idxRefIndicatorToken = SIZE_MAX;  // Reference indicator token.
 
 			inline TypeNameNode(const TypeNameNode &other)
 				: _loc(other._loc),
-				  isConst(other.isConst) {
+				  isRef(other.isRef) {
 			}
-			inline TypeNameNode(Location loc, bool isConst = false)
-				: _loc(loc), isConst(isConst) {}
+			inline TypeNameNode(Location loc, bool isRef = false)
+				: _loc(loc), isRef(isRef) {}
 			virtual ~TypeNameNode() = default;
 
 			virtual inline Location getLocation() const override { return _loc; }
@@ -75,8 +75,8 @@ namespace slake {
 			inline BasicSimpleTypeNameNode(const BasicSimpleTypeNameNode &other)
 				: TypeNameNode(other), idxToken(other.idxToken) {
 			}
-			inline BasicSimpleTypeNameNode(Location loc, size_t idxToken, bool isConst = false)
-				: TypeNameNode(loc, isConst), idxToken(idxToken) {}
+			inline BasicSimpleTypeNameNode(Location loc, size_t idxToken, bool isRef = false)
+				: TypeNameNode(loc, isRef), idxToken(idxToken) {}
 			virtual ~BasicSimpleTypeNameNode() = default;
 		};
 
@@ -91,8 +91,8 @@ namespace slake {
 			inline SimpleTypeNameNode(const SimpleTypeNameNode<TID> &other)
 				: BasicSimpleTypeNameNode(other) {
 			}
-			inline SimpleTypeNameNode(Location loc, size_t idxToken, bool isConst = false)
-				: BasicSimpleTypeNameNode(loc, idxToken, isConst) {}
+			inline SimpleTypeNameNode(Location loc, size_t idxToken, bool isRef = false)
+				: BasicSimpleTypeNameNode(loc, idxToken, isRef) {}
 			virtual ~SimpleTypeNameNode() = default;
 
 			virtual inline TypeId getTypeId() const override { return TID; }
@@ -134,8 +134,8 @@ namespace slake {
 				  compiler(other.compiler),
 				  scope(other.scope) {
 			}
-			inline CustomTypeNameNode(Location loc, IdRef ref, Compiler *compiler, Scope *scope, bool isConst = false)
-				: TypeNameNode(loc, isConst), ref(ref), compiler(compiler), scope(scope) {}
+			inline CustomTypeNameNode(Location loc, IdRef ref, Compiler *compiler, Scope *scope, bool isRef = false)
+				: TypeNameNode(loc, isRef), ref(ref), compiler(compiler), scope(scope) {}
 			virtual ~CustomTypeNameNode() = default;
 
 			virtual inline TypeId getTypeId() const override { return TypeId::Custom; }
@@ -149,7 +149,7 @@ namespace slake {
 			std::shared_ptr<TypeNameNode> elementType;
 
 			size_t idxLBracketToken = SIZE_MAX,
-					 idxRBracketToken = SIZE_MAX;
+				   idxRBracketToken = SIZE_MAX;
 
 			inline ArrayTypeNameNode(const ArrayTypeNameNode &other)
 				: TypeNameNode(other) {
@@ -157,8 +157,8 @@ namespace slake {
 				idxLBracketToken = other.idxLBracketToken;
 				idxRBracketToken = other.idxRBracketToken;
 			}
-			inline ArrayTypeNameNode(std::shared_ptr<TypeNameNode> elementType, bool isConst = false)
-				: TypeNameNode(elementType->getLocation(), isConst), elementType(elementType) {}
+			inline ArrayTypeNameNode(std::shared_ptr<TypeNameNode> elementType, bool isRef = false)
+				: TypeNameNode(elementType->getLocation(), isRef), elementType(elementType) {}
 			virtual ~ArrayTypeNameNode() = default;
 
 			virtual inline TypeId getTypeId() const override { return TypeId::Array; }
@@ -184,31 +184,13 @@ namespace slake {
 				Location location,
 				std::shared_ptr<TypeNameNode> returnType,
 				std::deque<std::shared_ptr<TypeNameNode>> paramTypes,
-				bool isConst = false)
-				: TypeNameNode(location, isConst),
+				bool isRef = false)
+				: TypeNameNode(location, isRef),
 				  returnType(returnType),
 				  paramTypes(paramTypes) {}
 			virtual ~FnTypeNameNode() = default;
 
 			virtual inline TypeId getTypeId() const override { return TypeId::Fn; }
-		};
-
-		class RefTypeNameNode : public TypeNameNode {
-		private:
-			virtual std::shared_ptr<AstNode> doDuplicate() override;
-
-		public:
-			std::shared_ptr<TypeNameNode> referencedType;
-
-			size_t idxIndicatorToken = SIZE_MAX;
-
-			inline RefTypeNameNode(const RefTypeNameNode &other) : TypeNameNode(other), referencedType(other.referencedType->duplicate<TypeNameNode>()) {}
-			inline RefTypeNameNode(
-				std::shared_ptr<TypeNameNode> referencedType)
-				: TypeNameNode(referencedType->getLocation(), referencedType->isConst) {}
-			virtual ~RefTypeNameNode() = default;
-
-			virtual inline TypeId getTypeId() const override { return TypeId::Ref; }
 		};
 
 		class ContextTypeNameNode : public TypeNameNode {
@@ -239,12 +221,12 @@ namespace slake {
 			size_t idxStartToken = SIZE_MAX, idxEndToken = SIZE_MAX;
 
 			inline BadTypeNameNode(const BadTypeNameNode &other)
-				: TypeNameNode(other.getLocation(), other.isConst) {
+				: TypeNameNode(other.getLocation(), other.isRef) {
 				idxStartToken = other.idxStartToken;
 				idxEndToken = other.idxEndToken;
 			}
-			inline BadTypeNameNode(Location loc, size_t idxStartToken, size_t idxEndToken, bool isConst = false)
-				: TypeNameNode(loc, isConst), idxStartToken(idxStartToken), idxEndToken(idxEndToken) {}
+			inline BadTypeNameNode(Location loc, size_t idxStartToken, size_t idxEndToken, bool isRef = false)
+				: TypeNameNode(loc, isRef), idxStartToken(idxStartToken), idxEndToken(idxEndToken) {}
 			virtual ~BadTypeNameNode() = default;
 
 			virtual inline TypeId getTypeId() const override { return TypeId::Bad; }

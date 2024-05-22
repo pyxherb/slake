@@ -749,7 +749,15 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 		_write(os, vad);
 		_write(os, i.first.data(), i.first.length());
 
-		compileTypeName(os, i.second->type ? i.second->type : std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX));
+		auto varType = i.second->type ? i.second->type : std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX);
+		compileTypeName(os, varType);
+
+		if (isLValueType(varType))
+			throw FatalCompilationError(
+				Message(
+					varType->getLocation(),
+					MessageType::Error,
+					"Cannot use reference types for member variables"));
 
 		if (i.second->initValue) {
 			if (auto ce = evalConstExpr(i.second->initValue); ce)
@@ -893,91 +901,99 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 }
 
 void Compiler::compileTypeName(std::ostream &fs, std::shared_ptr<TypeNameNode> typeName) {
-	switch (typeName->getTypeId()) {
-		case TypeId::I8: {
-			_write(fs, slxfmt::TypeId::I8);
-			break;
-		}
-		case TypeId::I16: {
-			_write(fs, slxfmt::TypeId::I16);
-			break;
-		}
-		case TypeId::I32: {
-			_write(fs, slxfmt::TypeId::I32);
-			break;
-		}
-		case TypeId::I64: {
-			_write(fs, slxfmt::TypeId::I64);
-			break;
-		}
-		case TypeId::U8: {
-			_write(fs, slxfmt::TypeId::U8);
-			break;
-		}
-		case TypeId::U16: {
-			_write(fs, slxfmt::TypeId::U16);
-			break;
-		}
-		case TypeId::U32: {
-			_write(fs, slxfmt::TypeId::U32);
-			break;
-		}
-		case TypeId::U64: {
-			_write(fs, slxfmt::TypeId::U64);
-			break;
-		}
-		case TypeId::F32: {
-			_write(fs, slxfmt::TypeId::F32);
-			break;
-		}
-		case TypeId::F64: {
-			_write(fs, slxfmt::TypeId::F64);
-			break;
-		}
-		case TypeId::Bool: {
-			_write(fs, slxfmt::TypeId::Bool);
-			break;
-		}
-		case TypeId::String: {
-			_write(fs, slxfmt::TypeId::String);
-			break;
-		}
-		case TypeId::Void: {
-			_write(fs, slxfmt::TypeId::None);
-			break;
-		}
-		case TypeId::Any: {
-			_write(fs, slxfmt::TypeId::Any);
-			break;
-		}
-		case TypeId::Array: {
-			_write(fs, slxfmt::TypeId::Array);
-			compileTypeName(fs, std::static_pointer_cast<ArrayTypeNameNode>(typeName)->elementType);
-			break;
-		}
-		case TypeId::Fn: {
-			// stub
-			break;
-		}
-		case TypeId::Custom: {
-			auto dest = resolveCustomTypeName((CustomTypeNameNode *)typeName.get());
+	if (typeName->isRef) {
+		_write(fs, slxfmt::TypeId::Ref);
 
-			if (dest->getNodeType() == NodeType::GenericParam) {
-				_write(fs, slxfmt::TypeId::GenericArg);
-
-				auto d = std::static_pointer_cast<GenericParamNode>(dest);
-				_write(fs, (uint8_t)d->name.length());
-				fs.write(d->name.c_str(), d->name.length());
-			} else {
-				_write(fs, slxfmt::TypeId::Object);
-				compileIdRef(fs, getFullName((MemberNode *)dest.get()));
+		auto derefTypeName = typeName->duplicate<TypeNameNode>();
+		derefTypeName->isRef = false;
+		compileTypeName(fs, derefTypeName);
+	} else {
+		switch (typeName->getTypeId()) {
+			case TypeId::I8: {
+				_write(fs, slxfmt::TypeId::I8);
+				break;
 			}
-			break;
+			case TypeId::I16: {
+				_write(fs, slxfmt::TypeId::I16);
+				break;
+			}
+			case TypeId::I32: {
+				_write(fs, slxfmt::TypeId::I32);
+				break;
+			}
+			case TypeId::I64: {
+				_write(fs, slxfmt::TypeId::I64);
+				break;
+			}
+			case TypeId::U8: {
+				_write(fs, slxfmt::TypeId::U8);
+				break;
+			}
+			case TypeId::U16: {
+				_write(fs, slxfmt::TypeId::U16);
+				break;
+			}
+			case TypeId::U32: {
+				_write(fs, slxfmt::TypeId::U32);
+				break;
+			}
+			case TypeId::U64: {
+				_write(fs, slxfmt::TypeId::U64);
+				break;
+			}
+			case TypeId::F32: {
+				_write(fs, slxfmt::TypeId::F32);
+				break;
+			}
+			case TypeId::F64: {
+				_write(fs, slxfmt::TypeId::F64);
+				break;
+			}
+			case TypeId::Bool: {
+				_write(fs, slxfmt::TypeId::Bool);
+				break;
+			}
+			case TypeId::String: {
+				_write(fs, slxfmt::TypeId::String);
+				break;
+			}
+			case TypeId::Void: {
+				_write(fs, slxfmt::TypeId::None);
+				break;
+			}
+			case TypeId::Any: {
+				_write(fs, slxfmt::TypeId::Any);
+				break;
+			}
+			case TypeId::Array: {
+				_write(fs, slxfmt::TypeId::Array);
+				compileTypeName(fs, std::static_pointer_cast<ArrayTypeNameNode>(typeName)->elementType);
+				break;
+			}
+			case TypeId::Fn: {
+				// stub
+				break;
+			}
+			case TypeId::Custom: {
+				auto dest = resolveCustomTypeName((CustomTypeNameNode *)typeName.get());
+
+				if (dest->getNodeType() == NodeType::GenericParam) {
+					_write(fs, slxfmt::TypeId::GenericArg);
+
+					auto d = std::static_pointer_cast<GenericParamNode>(dest);
+					_write(fs, (uint8_t)d->name.length());
+					fs.write(d->name.c_str(), d->name.length());
+				} else {
+					_write(fs, slxfmt::TypeId::Object);
+					compileIdRef(fs, getFullName((MemberNode *)dest.get()));
+				}
+				break;
+			}
+			case TypeId::Bad:
+				break;
+			default:
+				assert(false);
 		}
-		case TypeId::Bad:
-			break;
-		default:
-			assert(false);
 	}
 }
 

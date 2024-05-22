@@ -26,7 +26,14 @@ void Runtime::_gcWalk(Type &type) {
 			if (auto t = type.getArrayExData(); t)
 				_gcWalk(t);
 			break;
+		case TypeId::Ref:
+			if (auto t = type.getRefExData(); t)
+				_gcWalk(t);
+			break;
 		case TypeId::Var:
+			if (auto t = type.getVarExData(); t)
+				_gcWalk(t);
+			break;
 		case TypeId::Module:
 		case TypeId::RootValue:
 		case TypeId::I8:
@@ -61,7 +68,7 @@ void Runtime::_gcWalk(Value *v) {
 		return;
 
 	_walkedValues.insert(v);
-	_createdValues.erase(v);
+	createdValues.erase(v);
 
 	if (v->scope)
 		_gcWalk(v->scope);
@@ -244,7 +251,7 @@ rescan:
 
 	// Execute destructors for all destructible objects.
 	destructingThreads.insert(std::this_thread::get_id());
-	for (auto i : _createdValues) {
+	for (auto i : createdValues) {
 		if (!i->hostRefCount) {
 			auto d = i->getMemberChain("delete");
 			if ((d.size()) &&
@@ -260,14 +267,14 @@ rescan:
 	}
 	destructingThreads.erase(std::this_thread::get_id());
 
-	for (auto i : _createdValues) {
+	for (auto i : createdValues) {
 		if (i->hostRefCount) {
 			_walkedValues.insert(i);
 		} else
 			delete i;
 	}
 
-	_createdValues.swap(_walkedValues);
+	createdValues.swap(_walkedValues);
 	_walkedValues.clear();
 	_destructedValues.clear();
 

@@ -83,7 +83,6 @@ namespace slake {
 			CaseKeyword,
 			CatchKeyword,
 			ClassKeyword,
-			ConstKeyword,
 			ContinueKeyword,
 			DeleteKeyword,
 			DefaultKeyword,

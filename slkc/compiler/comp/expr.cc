@@ -4,75 +4,51 @@
 
 using namespace slake::slkc;
 
-struct UnaryOpRegistry {
-	slake::Opcode opcode;
-	bool lvalueOperand;
-
-	inline UnaryOpRegistry(
-		slake::Opcode opcode,
-		bool lvalueOperand) : opcode(opcode), lvalueOperand(lvalueOperand) {}
+std::map<UnaryOp, Compiler::UnaryOpRegistry> Compiler::_unaryOpRegs = {
+	{ UnaryOp::LNot, { slake::Opcode::LNOT, false, false } },
+	{ UnaryOp::Not, { slake::Opcode::NOT, false, false } },
+	{ UnaryOp::IncF, { slake::Opcode::INCF, true, false } },
+	{ UnaryOp::DecF, { slake::Opcode::DECF, true, false } },
+	{ UnaryOp::IncB, { slake::Opcode::INCB, true, false } },
+	{ UnaryOp::DecB, { slake::Opcode::DECB, true, false } },
+	{ UnaryOp::Neg, { slake::Opcode::NEG, false, false } }
 };
 
-static std::map<UnaryOp, UnaryOpRegistry> _unaryOpRegs = {
-	{ UnaryOp::LNot, { slake::Opcode::LNOT, false } },
-	{ UnaryOp::Not, { slake::Opcode::NOT, false } },
-	{ UnaryOp::IncF, { slake::Opcode::INCF, true } },
-	{ UnaryOp::DecF, { slake::Opcode::DECF, true } },
-	{ UnaryOp::IncB, { slake::Opcode::INCB, true } },
-	{ UnaryOp::DecB, { slake::Opcode::DECB, true } },
-	{ UnaryOp::Neg, { slake::Opcode::NEG, false } }
-};
+std::map<BinaryOp, Compiler::BinaryOpRegistry> Compiler::_binaryOpRegs = {
+	{ BinaryOp::Add, { slake::Opcode::ADD, false, false, false } },
+	{ BinaryOp::Sub, { slake::Opcode::SUB, false, false, false } },
+	{ BinaryOp::Mul, { slake::Opcode::MUL, false, false, false } },
+	{ BinaryOp::Div, { slake::Opcode::DIV, false, false, false } },
+	{ BinaryOp::Mod, { slake::Opcode::MOD, false, false, false } },
+	{ BinaryOp::And, { slake::Opcode::AND, false, false, false } },
+	{ BinaryOp::Or, { slake::Opcode::OR, false, false, false } },
+	{ BinaryOp::Xor, { slake::Opcode::XOR, false, false, false } },
+	{ BinaryOp::LAnd, { slake::Opcode::LAND, false, false, false } },
+	{ BinaryOp::LOr, { slake::Opcode::LOR, false, false, false } },
+	{ BinaryOp::Lsh, { slake::Opcode::LSH, false, false, false } },
+	{ BinaryOp::Rsh, { slake::Opcode::RSH, false, false, false } },
 
-struct BinaryOpRegistry {
-	slake::Opcode opcode;
-	bool isLhsLvalue;
-	bool isRhsLvalue;
+	{ BinaryOp::Assign, { slake::Opcode::NOP, true, false, true } },
+	{ BinaryOp::AssignAdd, { slake::Opcode::NOP, true, false, true } },
+	{ BinaryOp::AssignSub, { slake::Opcode::NOP, true, false, true } },
+	{ BinaryOp::AssignMul, { slake::Opcode::NOP, true, false, true } },
+	{ BinaryOp::AssignDiv, { slake::Opcode::NOP, true, false, true } },
+	{ BinaryOp::AssignMod, { slake::Opcode::NOP, true, false, true } },
+	{ BinaryOp::AssignAnd, { slake::Opcode::NOP, true, false, true } },
+	{ BinaryOp::AssignOr, { slake::Opcode::NOP, true, false, true } },
+	{ BinaryOp::AssignXor, { slake::Opcode::NOP, true, false, true } },
+	{ BinaryOp::AssignLsh, { slake::Opcode::NOP, true, false, true } },
+	{ BinaryOp::AssignRsh, { slake::Opcode::NOP, true, false, true } },
 
-	inline BinaryOpRegistry(
-		slake::Opcode opcode,
-		bool isLhsLvalue,
-		bool isRhsLvalue)
-		: opcode(opcode),
-		  isLhsLvalue(isLhsLvalue),
-		  isRhsLvalue(isRhsLvalue) {}
-};
-
-static std::map<BinaryOp, BinaryOpRegistry> _binaryOpRegs = {
-	{ BinaryOp::Add, { slake::Opcode::ADD, false, false } },
-	{ BinaryOp::Sub, { slake::Opcode::SUB, false, false } },
-	{ BinaryOp::Mul, { slake::Opcode::MUL, false, false } },
-	{ BinaryOp::Div, { slake::Opcode::DIV, false, false } },
-	{ BinaryOp::Mod, { slake::Opcode::MOD, false, false } },
-	{ BinaryOp::And, { slake::Opcode::AND, false, false } },
-	{ BinaryOp::Or, { slake::Opcode::OR, false, false } },
-	{ BinaryOp::Xor, { slake::Opcode::XOR, false, false } },
-	{ BinaryOp::LAnd, { slake::Opcode::LAND, false, false } },
-	{ BinaryOp::LOr, { slake::Opcode::LOR, false, false } },
-	{ BinaryOp::Lsh, { slake::Opcode::LSH, false, false } },
-	{ BinaryOp::Rsh, { slake::Opcode::RSH, false, false } },
-	{ BinaryOp::Swap, { slake::Opcode::SWAP, true, true } },
-
-	{ BinaryOp::Assign, { slake::Opcode::NOP, true, false } },
-	{ BinaryOp::AssignAdd, { slake::Opcode::NOP, true, false } },
-	{ BinaryOp::AssignSub, { slake::Opcode::NOP, true, false } },
-	{ BinaryOp::AssignMul, { slake::Opcode::NOP, true, false } },
-	{ BinaryOp::AssignDiv, { slake::Opcode::NOP, true, false } },
-	{ BinaryOp::AssignMod, { slake::Opcode::NOP, true, false } },
-	{ BinaryOp::AssignAnd, { slake::Opcode::NOP, true, false } },
-	{ BinaryOp::AssignOr, { slake::Opcode::NOP, true, false } },
-	{ BinaryOp::AssignXor, { slake::Opcode::NOP, true, false } },
-	{ BinaryOp::AssignLsh, { slake::Opcode::NOP, true, false } },
-	{ BinaryOp::AssignRsh, { slake::Opcode::NOP, true, false } },
-
-	{ BinaryOp::Eq, { slake::Opcode::EQ, false, false } },
-	{ BinaryOp::Neq, { slake::Opcode::NEQ, false, false } },
-	{ BinaryOp::StrictEq, { slake::Opcode::SEQ, false, false } },
-	{ BinaryOp::StrictNeq, { slake::Opcode::SNEQ, false, false } },
-	{ BinaryOp::Lt, { slake::Opcode::LT, false, false } },
-	{ BinaryOp::Gt, { slake::Opcode::GT, false, false } },
-	{ BinaryOp::LtEq, { slake::Opcode::LTEQ, false, false } },
-	{ BinaryOp::GtEq, { slake::Opcode::GTEQ, false, false } },
-	{ BinaryOp::Subscript, { slake::Opcode::AT, false, false } }
+	{ BinaryOp::Eq, { slake::Opcode::EQ, false, false, false } },
+	{ BinaryOp::Neq, { slake::Opcode::NEQ, false, false, false } },
+	{ BinaryOp::StrictEq, { slake::Opcode::SEQ, false, false, false } },
+	{ BinaryOp::StrictNeq, { slake::Opcode::SNEQ, false, false, false } },
+	{ BinaryOp::Lt, { slake::Opcode::LT, false, false, false } },
+	{ BinaryOp::Gt, { slake::Opcode::GT, false, false, false } },
+	{ BinaryOp::LtEq, { slake::Opcode::LTEQ, false, false, false } },
+	{ BinaryOp::GtEq, { slake::Opcode::GTEQ, false, false, false } },
+	{ BinaryOp::Subscript, { slake::Opcode::AT, false, false, true } }
 };
 
 static std::map<BinaryOp, BinaryOp> _assignBinaryOpToOrdinaryBinaryOpMap = {
@@ -89,145 +65,728 @@ static std::map<BinaryOp, BinaryOp> _assignBinaryOpToOrdinaryBinaryOpMap = {
 	{ BinaryOp::AssignRsh, BinaryOp::Rsh }
 };
 
-void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
-	slxfmt::SourceLocDesc sld;
-	sld.offIns = curFn->body.size();
-	sld.line = expr->getLocation().line;
-	sld.column = expr->getLocation().column;
+void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> e, std::shared_ptr<TypeNameNode> lhsType) {
+	uint32_t resultRegIndex = allocReg(),
+			 lhsRegIndex = allocReg();
 
-	if (auto ce = evalConstExpr(expr); ce) {
-		if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
-			throw FatalCompilationError(
-				Message(
-					expr->getLocation(),
-					MessageType::Error,
-					"Expecting a lvalue expression"));
+	if (!lhsType)
+		throw FatalCompilationError(
+			Message(
+				e->x->getLocation(),
+				MessageType::Error,
+				"Error deducing type of the operand"));
 
-		curFn->insertIns(Opcode::STORE, curMajorContext.curMinorContext.evalDest, ce);
-		return;
-	}
+	auto &opReg = _unaryOpRegs.at(e->op);
 
-	switch (expr->getExprType()) {
-		case ExprType::Unary: {
-			auto e = std::static_pointer_cast<UnaryOpExprNode>(expr);
+	switch (lhsType->getTypeId()) {
+		case TypeId::I8:
+		case TypeId::I16:
+		case TypeId::I32:
+		case TypeId::I64:
+		case TypeId::U8:
+		case TypeId::U16:
+		case TypeId::U32:
+		case TypeId::U64:
+		case TypeId::F32:
+		case TypeId::F64:
+			compileExpr(
+				e->x,
+				opReg.lvalueOperand
+					? EvalPurpose::LValue
+					: EvalPurpose::RValue,
+				std::make_shared<RegRefNode>(lhsRegIndex));
 
-			uint32_t lhsRegIndex = allocReg();
+			curFn->insertIns(
+				opReg.opcode,
+				std::make_shared<RegRefNode>(resultRegIndex),
+				std::make_shared<RegRefNode>(lhsRegIndex, true));
 
-			auto lhsType = evalExprType(e->x);
-
-			if (!lhsType)
-				throw FatalCompilationError(
-					Message(
-						e->x->getLocation(),
-						MessageType::Error,
-						"Error deducing type of the operand"));
-
-			switch (lhsType->getTypeId()) {
-				case TypeId::I8:
-				case TypeId::I16:
-				case TypeId::I32:
-				case TypeId::I64:
-				case TypeId::U8:
-				case TypeId::U16:
-				case TypeId::U32:
-				case TypeId::U64:
-				case TypeId::F32:
-				case TypeId::F64:
+			break;
+		case TypeId::Bool:
+			switch (e->op) {
+				case UnaryOp::LNot:
+				case UnaryOp::Not:
 					compileExpr(
 						e->x,
-						_unaryOpRegs.at(e->op).lvalueOperand
+						opReg.lvalueOperand
 							? EvalPurpose::LValue
 							: EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
 
 					curFn->insertIns(
-						_unaryOpRegs.at(e->op).opcode,
-						curMajorContext.curMinorContext.evalDest,
+						opReg.opcode,
+						std::make_shared<RegRefNode>(resultRegIndex),
 						std::make_shared<RegRefNode>(lhsRegIndex, true));
+					break;
+				default:
+					throw FatalCompilationError(
+						Message(
+							e->getLocation(),
+							MessageType::Error,
+							"No matching operator"));
+			}
+
+			break;
+		case TypeId::Custom: {
+			auto node = resolveCustomTypeName(std::static_pointer_cast<CustomTypeNameNode>(lhsType).get());
+
+			auto determineOverloading = [this, e, resultRegIndex](std::shared_ptr<MemberNode> n, uint32_t lhsRegIndex) -> bool {
+				if (auto it = n->scope->members.find("operator" + std::to_string(e->op));
+					it != n->scope->members.end()) {
+					assert(it->second->getNodeType() == NodeType::Fn);
+					std::shared_ptr<FnNode> operatorNode = std::static_pointer_cast<FnNode>(it->second);
+					std::shared_ptr<FnOverloadingNode> overloading;
+
+					{
+						auto overloadings = argDependentLookup(e->getLocation(), operatorNode.get(), {}, {});
+						if (overloadings.size() != 1)
+							return false;
+						overloading = overloadings[0];
+					}
+
+#if SLKC_WITH_LANGUAGE_SERVER
+					updateTokenInfo(e->idxOpToken, [&overloading](TokenInfo &tokenInfo) {
+						tokenInfo.semanticInfo.correspondingMember = overloading;
+					});
+#endif
+
+					compileExpr(
+						e->x,
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+
+					IdRef fullName;
+					_getFullName(operatorNode.get(), fullName);
+
+					fullName.back().name = mangleName(
+						fullName.back().name,
+						isForwardUnaryOp(e->op)
+							? std::deque<std::shared_ptr<TypeNameNode>>{}
+							: std::deque<std::shared_ptr<TypeNameNode>>{ std::make_shared<AnyTypeNameNode>(e->getLocation(), false) },
+						false);
+
+					uint32_t tmpRegIndex = allocReg();
+
+					curFn->insertIns(Opcode::LOAD, std::make_shared<RegRefNode>(tmpRegIndex), std::make_shared<IdRefExprNode>(fullName));
+					curFn->insertIns(Opcode::MCALL, std::make_shared<RegRefNode>(tmpRegIndex, true), std::make_shared<RegRefNode>(lhsRegIndex, true));
+
+					curFn->insertIns(Opcode::LRET, std::make_shared<RegRefNode>(resultRegIndex));
+
+					return true;
+				}
+				return false;
+			};
+
+			switch (node->getNodeType()) {
+				case NodeType::Class:
+				case NodeType::Interface:
+				case NodeType::Trait: {
+					uint32_t lhsRegIndex = allocReg(1);
+
+					std::shared_ptr<MemberNode> n = std::static_pointer_cast<MemberNode>(node);
+
+					if (!determineOverloading(n, lhsRegIndex))
+						throw FatalCompilationError(
+							Message(
+								e->getLocation(),
+								MessageType::Error,
+								"No matching operator"));
 
 					break;
-				case TypeId::Bool:
-					switch (e->op) {
-						case UnaryOp::LNot:
-						case UnaryOp::Not:
-							compileExpr(
-								e->x,
-								_unaryOpRegs.at(e->op).lvalueOperand
-									? EvalPurpose::LValue
-									: EvalPurpose::RValue,
-								std::make_shared<RegRefNode>(lhsRegIndex));
+				}
+				case NodeType::GenericParam: {
+					uint32_t lhsRegIndex = allocReg(1);
 
-							curFn->insertIns(
-								_unaryOpRegs.at(e->op).opcode,
-								curMajorContext.curMinorContext.evalDest,
-								std::make_shared<RegRefNode>(lhsRegIndex, true));
+					std::shared_ptr<GenericParamNode> n = std::static_pointer_cast<GenericParamNode>(node);
+
+					std::shared_ptr<AstNode> curMember;
+
+					curMember = resolveCustomTypeName((CustomTypeNameNode *)n->baseType.get());
+
+					if (curMember->getNodeType() != NodeType::Class)
+						throw FatalCompilationError(
+							Message(
+								n->baseType->getLocation(),
+								MessageType::Error,
+								"Must be a class"));
+
+					if (determineOverloading(std::static_pointer_cast<MemberNode>(curMember), lhsRegIndex))
+						break;
+
+					for (auto i : n->interfaceTypes) {
+						curMember = resolveCustomTypeName((CustomTypeNameNode *)i.get());
+
+						if (curMember->getNodeType() != NodeType::Interface)
+							throw FatalCompilationError(
+								Message(
+									n->baseType->getLocation(),
+									MessageType::Error,
+									"Must be an interface"));
+
+						if (determineOverloading(std::static_pointer_cast<MemberNode>(curMember), lhsRegIndex))
 							break;
-						default:
+					}
+
+					for (auto i : n->traitTypes) {
+						curMember = resolveCustomTypeName((CustomTypeNameNode *)i.get());
+
+						if (curMember->getNodeType() != NodeType::Interface)
+							throw FatalCompilationError(
+								Message(
+									n->baseType->getLocation(),
+									MessageType::Error,
+									"Must be an interface"));
+
+						if (determineOverloading(std::static_pointer_cast<MemberNode>(curMember), lhsRegIndex))
+							break;
+					}
+
+					throw FatalCompilationError(
+						Message(
+							e->getLocation(),
+							MessageType::Error,
+							"No matching operator"));
+					break;
+				}
+				default:
+					throw FatalCompilationError(
+						Message(
+							e->getLocation(),
+							MessageType::Error,
+							"No matching operator"));
+			}
+			break;
+		}
+		default:
+			throw FatalCompilationError(
+				Message(
+					e->getLocation(),
+					MessageType::Error,
+					"No matching operator"));
+	}
+
+	auto resultType = evalExprType(e);
+	if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue) {
+		if (!isLValueType(resultType))
+			throw FatalCompilationError(
+				Message(
+					e->getLocation(),
+					MessageType::Error,
+					"Expecting a lvalue expression"));
+	} else {
+		if (isLValueType(resultType)) {
+			curFn->insertIns(
+				Opcode::LVALUE,
+				std::make_shared<RegRefNode>(resultRegIndex),
+				std::make_shared<RegRefNode>(resultRegIndex, true));
+		}
+	}
+
+	if (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt)
+		curFn->insertIns(
+			Opcode::STORE,
+			curMajorContext.curMinorContext.evalDest,
+			std::make_shared<RegRefNode>(resultRegIndex, true));
+}
+
+void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::shared_ptr<TypeNameNode> lhsType, std::shared_ptr<TypeNameNode> rhsType) {
+#if SLKC_WITH_LANGUAGE_SERVER
+	updateTokenInfo(e->idxOpToken, [this](TokenInfo &tokenInfo) {
+		tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+		tokenInfo.semanticType = SemanticType::Operator;
+	});
+	updateCompletionContext(e->idxOpToken, CompletionContext::Expr);
+#endif
+
+	if (!lhsType)
+		throw FatalCompilationError(
+			Message(
+				e->lhs->getLocation(),
+				MessageType::Error,
+				"Error deducing type of the left operand"));
+	if (!rhsType)
+		throw FatalCompilationError(
+			Message(
+				e->rhs->getLocation(),
+				MessageType::Error,
+				"Error deducing type of the right operand"));
+
+	bool isLhsTypeLValue = isLValueType(lhsType), isRhsTypeLValue = isLValueType(rhsType);
+
+	uint32_t resultRegIndex = allocReg();
+
+	auto &opReg = _binaryOpRegs.at(e->op);
+
+	auto compileShortCircuitOperator = [this, e, lhsType, rhsType, &opReg, resultRegIndex]() {
+		uint32_t lhsRegIndex = allocReg(1);
+
+		auto boolType = std::make_shared<BoolTypeNameNode>(e->lhs->getLocation(), SIZE_MAX);
+
+		// Compile the LHS.
+		// The LHS must be a boolean expression.
+		if (!isSameType(lhsType, boolType)) {
+			if (!isTypeNamesConvertible(lhsType, boolType))
+				throw FatalCompilationError(
+					{ e->lhs->getLocation(),
+						MessageType::Error,
+						"Incompatible operand types" });
+
+			compileExpr(
+				std::make_shared<CastExprNode>(e->lhs->getLocation(), boolType, e->lhs),
+				opReg.isLhsLvalue
+					? EvalPurpose::LValue
+					: EvalPurpose::RValue,
+				std::make_shared<RegRefNode>(lhsRegIndex));
+		} else
+			compileExpr(
+				e->lhs,
+				opReg.isLhsLvalue
+					? EvalPurpose::LValue
+					: EvalPurpose::RValue,
+				std::make_shared<RegRefNode>(lhsRegIndex));
+
+		Location loc = e->getLocation();
+		std::string endLabel = "$short_circuit_" + std::to_string(loc.line) + "_" + std::to_string(loc.column) + "_end";
+
+		// Jump to the end if the left expression is enough to get the final result.
+		curFn->insertIns(
+			e->op == BinaryOp::LOr ? Opcode::JT : Opcode::JF,
+			std::make_shared<LabelRefNode>(endLabel),
+			std::make_shared<RegRefNode>(lhsRegIndex, true));
+
+		// Compile the RHS.
+		// The RHS also must be a boolean expression.
+		uint32_t rhsRegIndex = allocReg(1);
+
+		if (!isSameType(rhsType, boolType)) {
+			if (!isTypeNamesConvertible(rhsType, boolType))
+				throw FatalCompilationError(
+					{ e->rhs->getLocation(),
+						MessageType::Error,
+						"Incompatible operand types" });
+
+			compileExpr(
+				std::make_shared<CastExprNode>(e->rhs->getLocation(), boolType, e->rhs),
+				opReg.isRhsLvalue
+					? EvalPurpose::LValue
+					: EvalPurpose::RValue,
+				std::make_shared<RegRefNode>(lhsRegIndex));
+		} else
+			compileExpr(
+				e->rhs,
+				opReg.isRhsLvalue
+					? EvalPurpose::LValue
+					: EvalPurpose::RValue,
+				std::make_shared<RegRefNode>(rhsRegIndex));
+
+		curFn->insertIns(
+			opReg.opcode,
+			std::make_shared<RegRefNode>(lhsRegIndex),
+			std::make_shared<RegRefNode>(lhsRegIndex, true),
+			std::make_shared<RegRefNode>(rhsRegIndex, true));
+
+		curFn->insertLabel(endLabel);
+
+		curFn->insertIns(
+			Opcode::STORE,
+			std::make_shared<RegRefNode>(resultRegIndex),
+			std::make_shared<RegRefNode>(lhsRegIndex, true));
+	};
+	auto execOpAndStoreResult = [this, e, lhsType, &opReg, resultRegIndex](uint32_t lhsRegIndex, uint32_t rhsRegIndex) {
+		if (isAssignBinaryOp(e->op)) {
+			BinaryOp ordinaryOp = _assignBinaryOpToOrdinaryBinaryOpMap.at(e->op);
+
+			if (ordinaryOp != BinaryOp::Assign) {
+				uint32_t lhsValueRegIndex = allocReg(),
+						 opResultRegIndex = allocReg();
+
+				// Load value of the LHS.
+				curFn->insertIns(
+					Opcode::LVALUE,
+					std::make_shared<RegRefNode>(lhsValueRegIndex),
+					std::make_shared<RegRefNode>(lhsRegIndex, true));
+
+				curFn->insertIns(
+					_binaryOpRegs.at(ordinaryOp).opcode,
+					std::make_shared<RegRefNode>(opResultRegIndex),
+					std::make_shared<RegRefNode>(lhsValueRegIndex, true),
+					std::make_shared<RegRefNode>(rhsRegIndex, true));
+
+				// Store the result to the LHS.
+				curFn->insertIns(Opcode::STORE, std::make_shared<RegRefNode>(lhsRegIndex, true), std::make_shared<RegRefNode>(opResultRegIndex, true));
+				curFn->insertIns(Opcode::STORE, std::make_shared<RegRefNode>(resultRegIndex), std::make_shared<RegRefNode>(lhsRegIndex, true));
+			} else {
+				curFn->insertIns(Opcode::STORE, std::make_shared<RegRefNode>(lhsRegIndex, true), std::make_shared<RegRefNode>(rhsRegIndex, true));
+				curFn->insertIns(Opcode::STORE, std::make_shared<RegRefNode>(resultRegIndex), std::make_shared<RegRefNode>(lhsRegIndex, true));
+			}
+		} else {
+			curFn->insertIns(
+				opReg.opcode,
+				std::make_shared<RegRefNode>(resultRegIndex),
+				std::make_shared<RegRefNode>(lhsRegIndex, true),
+				std::make_shared<RegRefNode>(rhsRegIndex, true));
+		}
+	};
+
+	switch (lhsType->getTypeId()) {
+		case TypeId::I8:
+		case TypeId::I16:
+		case TypeId::I32:
+		case TypeId::I64:
+		case TypeId::U8:
+		case TypeId::U16:
+		case TypeId::U32:
+		case TypeId::U64:
+		case TypeId::F32:
+		case TypeId::F64: {
+			switch (e->op) {
+				case BinaryOp::LAnd:
+				case BinaryOp::LOr:
+					compileShortCircuitOperator();
+					break;
+				case BinaryOp::Lsh:
+				case BinaryOp::Rsh:
+				case BinaryOp::AssignLsh:
+				case BinaryOp::AssignRsh: {
+					uint32_t lhsRegIndex = allocReg(2),
+							 rhsRegIndex = lhsRegIndex + 1;
+
+					auto u32Type = std::make_shared<U32TypeNameNode>(e->rhs->getLocation(), SIZE_MAX);
+
+					compileExpr(
+						e->lhs,
+						opReg.isLhsLvalue
+							? EvalPurpose::LValue
+							: EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+
+					if (!isSameType(rhsType, u32Type)) {
+						if (!isTypeNamesConvertible(rhsType, u32Type))
+							throw FatalCompilationError(
+								{ e->rhs->getLocation(),
+									MessageType::Error,
+									"Incompatible operand types" });
+
+						compileExpr(
+							std::make_shared<CastExprNode>(e->rhs->getLocation(), u32Type, e->rhs),
+							opReg.isRhsLvalue
+								? EvalPurpose::LValue
+								: EvalPurpose::RValue,
+							std::make_shared<RegRefNode>(lhsRegIndex));
+					} else
+						compileExpr(
+							e->rhs,
+							opReg.isRhsLvalue
+								? EvalPurpose::LValue
+								: EvalPurpose::RValue,
+							std::make_shared<RegRefNode>(rhsRegIndex));
+
+					execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
+
+					break;
+				}
+				default: {
+					uint32_t lhsRegIndex = allocReg(2);
+					uint32_t rhsRegIndex = lhsRegIndex + 1;
+
+					compileExpr(
+						e->lhs,
+						opReg.isLhsLvalue
+							? EvalPurpose::LValue
+							: EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+
+					if (!isSameType(lhsType, rhsType)) {
+						if (!isTypeNamesConvertible(rhsType, lhsType))
+							throw FatalCompilationError(
+								{ e->rhs->getLocation(),
+									MessageType::Error,
+									"Incompatible operand types" });
+
+						compileExpr(
+							std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
+							opReg.isRhsLvalue
+								? EvalPurpose::LValue
+								: EvalPurpose::RValue,
+							std::make_shared<RegRefNode>(rhsRegIndex));
+					} else
+						compileExpr(e->rhs, opReg.isRhsLvalue ? EvalPurpose::LValue : EvalPurpose::RValue, std::make_shared<RegRefNode>(rhsRegIndex));
+
+					execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
+
+					break;
+				}
+			}
+
+			break;
+		}
+		case TypeId::Bool: {
+			switch (e->op) {
+				case BinaryOp::LAnd:
+				case BinaryOp::LOr:
+					compileShortCircuitOperator();
+					break;
+				case BinaryOp::Eq:
+				case BinaryOp::Neq: {
+					uint32_t lhsRegIndex = allocReg(2);
+					uint32_t rhsRegIndex = lhsRegIndex + 1;
+
+					compileExpr(
+						e->lhs,
+						opReg.isLhsLvalue
+							? EvalPurpose::LValue
+							: EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+
+					if (!isSameType(lhsType, rhsType)) {
+						if (!isTypeNamesConvertible(rhsType, lhsType))
+							throw FatalCompilationError(
+								{ e->rhs->getLocation(),
+									MessageType::Error,
+									"Incompatible operand types" });
+
+						compileExpr(
+							std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
+							opReg.isRhsLvalue
+								? EvalPurpose::LValue
+								: EvalPurpose::RValue,
+							std::make_shared<RegRefNode>(rhsRegIndex));
+					} else
+						compileExpr(e->rhs, opReg.isRhsLvalue ? EvalPurpose::LValue : EvalPurpose::RValue, std::make_shared<RegRefNode>(rhsRegIndex));
+
+					execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
+
+					break;
+				}
+				default:
+					throw FatalCompilationError(
+						Message(
+							e->getLocation(),
+							MessageType::Error,
+							"No matching operator"));
+			}
+
+			break;
+		}
+		case TypeId::String:
+		case TypeId::WString: {
+			switch (e->op) {
+				case BinaryOp::Add: {
+					uint32_t lhsRegIndex = allocReg(2),
+							 rhsRegIndex = lhsRegIndex + 1;
+
+					compileExpr(
+						e->lhs,
+						opReg.isLhsLvalue
+							? EvalPurpose::LValue
+							: EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+
+					if (!isSameType(lhsType, rhsType)) {
+						if (!isTypeNamesConvertible(rhsType, lhsType))
+							throw FatalCompilationError(
+								{ e->rhs->getLocation(),
+									MessageType::Error,
+									"Incompatible operand types" });
+
+						compileExpr(
+							std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
+							opReg.isRhsLvalue
+								? EvalPurpose::LValue
+								: EvalPurpose::RValue,
+							std::make_shared<RegRefNode>(rhsRegIndex));
+					} else
+						compileExpr(
+							e->rhs,
+							opReg.isRhsLvalue
+								? EvalPurpose::LValue
+								: EvalPurpose::RValue,
+							std::make_shared<RegRefNode>(rhsRegIndex));
+
+					curFn->insertIns(
+						opReg.opcode,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						std::make_shared<RegRefNode>(lhsRegIndex, true),
+						std::make_shared<RegRefNode>(rhsRegIndex, true));
+
+					break;
+				}
+				case BinaryOp::Subscript: {
+					uint32_t lhsRegIndex = allocReg(2),
+							 rhsRegIndex = lhsRegIndex + 1;
+
+					auto u32Type = std::make_shared<U32TypeNameNode>(e->rhs->getLocation(), SIZE_MAX);
+
+					compileExpr(
+						e->lhs,
+						opReg.isLhsLvalue
+							? EvalPurpose::LValue
+							: EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+
+					if (!isSameType(rhsType, u32Type)) {
+						if (!isTypeNamesConvertible(rhsType, u32Type))
+							throw FatalCompilationError(
+								{ e->rhs->getLocation(),
+									MessageType::Error,
+									"Incompatible operand types" });
+
+						compileExpr(
+							std::make_shared<CastExprNode>(e->rhs->getLocation(), u32Type, e->rhs),
+							opReg.isRhsLvalue
+								? EvalPurpose::LValue
+								: EvalPurpose::RValue,
+							std::make_shared<RegRefNode>(rhsRegIndex));
+					} else
+						compileExpr(
+							e->rhs,
+							opReg.isRhsLvalue
+								? EvalPurpose::LValue
+								: EvalPurpose::RValue,
+							std::make_shared<RegRefNode>(rhsRegIndex));
+
+					curFn->insertIns(
+						opReg.opcode,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						std::make_shared<RegRefNode>(lhsRegIndex, true),
+						std::make_shared<RegRefNode>(rhsRegIndex, true));
+
+					break;
+				}
+				default:
+					throw FatalCompilationError(
+						Message(
+							e->getLocation(),
+							MessageType::Error,
+							"No matching operator"));
+			}
+			break;
+		}
+		case TypeId::Custom: {
+			auto node = resolveCustomTypeName(std::static_pointer_cast<CustomTypeNameNode>(lhsType).get());
+			auto lhsType = evalExprType(e->lhs), rhsType = evalExprType(e->rhs);
+
+			auto determineOverloading = [this, e, rhsType, resultRegIndex](std::shared_ptr<MemberNode> n, uint32_t lhsRegIndex) -> bool {
+				if (auto it = n->scope->members.find("operator" + std::to_string(e->op));
+					it != n->scope->members.end()) {
+					assert(it->second->getNodeType() == NodeType::Fn);
+					std::shared_ptr<FnNode> operatorNode = std::static_pointer_cast<FnNode>(it->second);
+					std::shared_ptr<FnOverloadingNode> overloading;
+
+					{
+						auto overloadings = argDependentLookup(e->getLocation(), operatorNode.get(), { rhsType }, {});
+						if (overloadings.size() != 1)
+							return false;
+						overloading = overloadings[0];
+
+#ifdef SLKC_WITH_LANGUAGE_SERVER
+						updateTokenInfo(e->idxOpToken, [&overloading](TokenInfo &tokenInfo) {
+							tokenInfo.semanticInfo.correspondingMember = overloading;
+						});
+						updateTokenInfo(e->idxClosingToken, [&overloading](TokenInfo &tokenInfo) {
+							tokenInfo.semanticInfo.correspondingMember = overloading;
+						});
+#endif
+					}
+
+					compileExpr(
+						e->lhs,
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+
+					IdRef fullName;
+					_getFullName(operatorNode.get(), fullName);
+
+					fullName.back().name = mangleName(
+						fullName.back().name,
+						{ overloading->params[0]->originalType
+								? overloading->params[0]->originalType
+								: overloading->params[0]->type },
+						false);
+
+					uint32_t tmpRegIndex = allocReg();
+
+					if (auto ce = evalConstExpr(e->rhs); ce) {
+						// Check if the parameter requires a lvalue argument.
+						if (isLValueType(overloading->params[0]->type))
 							throw FatalCompilationError(
 								Message(
 									e->getLocation(),
 									MessageType::Error,
-									"No matching operator"));
+									"Expecting a lvalue expression"));
+
+						curFn->insertIns(Opcode::PUSHARG, ce);
+					} else {
+						compileExpr(
+							e->rhs,
+							isLValueType(overloading->params[0]->type)
+								? EvalPurpose::LValue
+								: EvalPurpose::RValue,
+							std::make_shared<RegRefNode>(tmpRegIndex));
+						curFn->insertIns(Opcode::PUSHARG, std::make_shared<RegRefNode>(tmpRegIndex, true));
 					}
 
-					break;
-				case TypeId::Custom: {
-					auto node = resolveCustomTypeName(std::static_pointer_cast<CustomTypeNameNode>(lhsType).get());
-
-					auto determineOverloading = [this, e](std::shared_ptr<MemberNode> n, uint32_t lhsRegIndex) -> bool {
-						if (auto it = n->scope->members.find("operator" + std::to_string(e->op));
-							it != n->scope->members.end()) {
-							assert(it->second->getNodeType() == NodeType::Fn);
-							std::shared_ptr<FnNode> operatorNode = std::static_pointer_cast<FnNode>(it->second);
-							std::shared_ptr<FnOverloadingNode> overloading;
-
-							{
-								auto overloadings = argDependentLookup(e->getLocation(), operatorNode.get(), {}, {});
-								if (overloadings.size() != 1)
-									return false;
-								overloading = overloadings[0];
-							}
+					curFn->insertIns(Opcode::LOAD, std::make_shared<RegRefNode>(tmpRegIndex), std::make_shared<IdRefExprNode>(fullName));
+					curFn->insertIns(Opcode::MCALL, std::make_shared<RegRefNode>(tmpRegIndex, true), std::make_shared<RegRefNode>(lhsRegIndex, true));
 
 #if SLKC_WITH_LANGUAGE_SERVER
-							updateTokenInfo(e->idxOpToken, [&overloading](TokenInfo &tokenInfo) {
-								tokenInfo.semanticInfo.correspondingMember = overloading;
-							});
+					updateTokenInfo(e->idxOpToken, [this, &overloading](TokenInfo &tokenInfo) {
+						tokenInfo.semanticInfo.correspondingMember = overloading;
+					});
 #endif
 
+					curFn->insertIns(Opcode::LRET, std::make_shared<RegRefNode>(resultRegIndex));
+
+					return true;
+				}
+				return false;
+			};
+
+			switch (node->getNodeType()) {
+				case NodeType::Class:
+				case NodeType::Interface:
+				case NodeType::Trait: {
+					uint32_t lhsRegIndex = allocReg(1);
+
+					switch (e->op) {
+						case BinaryOp::Assign: {
+							uint32_t rhsRegIndex = allocReg(1);
+
 							compileExpr(
-								e->x,
-								EvalPurpose::RValue,
+								e->lhs,
+								EvalPurpose::LValue,
 								std::make_shared<RegRefNode>(lhsRegIndex));
 
-							IdRef fullName;
-							_getFullName(operatorNode.get(), fullName);
+							compileExpr(
+								e->rhs,
+								EvalPurpose::RValue,
+								std::make_shared<RegRefNode>(rhsRegIndex));
 
-							fullName.back().name = mangleName(
-								fullName.back().name,
-								isForwardUnaryOp(e->op)
-									? std::deque<std::shared_ptr<TypeNameNode>>{}
-									: std::deque<std::shared_ptr<TypeNameNode>>{ std::make_shared<AnyTypeNameNode>(e->getLocation(), false) },
-								false);
+							if (!isSameType(lhsType, rhsType)) {
+								if (!isTypeNamesConvertible(rhsType, lhsType))
+									throw FatalCompilationError(
+										{ e->rhs->getLocation(),
+											MessageType::Error,
+											"Incompatible operand types" });
 
-							uint32_t tmpRegIndex = allocReg();
+								compileExpr(
+									std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
+									EvalPurpose::LValue,
+									std::make_shared<RegRefNode>(rhsRegIndex));
+							}
 
-							curFn->insertIns(Opcode::LOAD, std::make_shared<RegRefNode>(tmpRegIndex), std::make_shared<IdRefExprNode>(fullName));
-							curFn->insertIns(Opcode::MCALL, std::make_shared<RegRefNode>(tmpRegIndex, true), std::make_shared<RegRefNode>(lhsRegIndex, true));
+							curFn->insertIns(
+								Opcode::STORE,
+								std::make_shared<RegRefNode>(lhsRegIndex, true),
+								std::make_shared<RegRefNode>(rhsRegIndex, true));
+							curFn->insertIns(
+								Opcode::STORE,
+								std::make_shared<RegRefNode>(resultRegIndex),
+								std::make_shared<RegRefNode>(lhsRegIndex, true));
 
-							if (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt)
-								curFn->insertIns(Opcode::LRET, curMajorContext.curMinorContext.evalDest);
-
-							return true;
+							break;
 						}
-						return false;
-					};
-
-					switch (node->getNodeType()) {
-						case NodeType::Class:
-						case NodeType::Interface:
-						case NodeType::Trait: {
-							uint32_t lhsRegIndex = allocReg(1);
-
+						default: {
 							std::shared_ptr<MemberNode> n = std::static_pointer_cast<MemberNode>(node);
 
 							if (!determineOverloading(n, lhsRegIndex))
@@ -236,14 +795,55 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 										e->getLocation(),
 										MessageType::Error,
 										"No matching operator"));
+						}
+					}
+
+					break;
+				}
+				case NodeType::GenericParam: {
+					uint32_t lhsRegIndex = allocReg(1);
+
+					std::shared_ptr<GenericParamNode> n = std::static_pointer_cast<GenericParamNode>(node);
+
+					switch (e->op) {
+						case BinaryOp::Assign: {
+							uint32_t rhsRegIndex = allocReg(1);
+
+							compileExpr(
+								e->lhs,
+								EvalPurpose::LValue,
+								std::make_shared<RegRefNode>(lhsRegIndex));
+
+							compileExpr(
+								e->rhs,
+								EvalPurpose::RValue,
+								std::make_shared<RegRefNode>(rhsRegIndex));
+
+							if (!isSameType(lhsType, rhsType)) {
+								if (!isTypeNamesConvertible(rhsType, lhsType))
+									throw FatalCompilationError(
+										{ e->rhs->getLocation(),
+											MessageType::Error,
+											"Incompatible operand types" });
+
+								compileExpr(
+									std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
+									EvalPurpose::LValue,
+									std::make_shared<RegRefNode>(rhsRegIndex));
+							}
+
+							curFn->insertIns(
+								Opcode::STORE,
+								std::make_shared<RegRefNode>(lhsRegIndex, true),
+								std::make_shared<RegRefNode>(rhsRegIndex, true));
+							curFn->insertIns(
+								Opcode::STORE,
+								std::make_shared<RegRefNode>(resultRegIndex),
+								std::make_shared<RegRefNode>(lhsRegIndex, true));
 
 							break;
 						}
-						case NodeType::GenericParam: {
-							uint32_t lhsRegIndex = allocReg(1);
-
-							std::shared_ptr<GenericParamNode> n = std::static_pointer_cast<GenericParamNode>(node);
-
+						default: {
 							std::shared_ptr<AstNode> curMember;
 
 							curMember = resolveCustomTypeName((CustomTypeNameNode *)n->baseType.get());
@@ -291,14 +891,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 									e->getLocation(),
 									MessageType::Error,
 									"No matching operator"));
-							break;
 						}
-						default:
-							throw FatalCompilationError(
-								Message(
-									e->getLocation(),
-									MessageType::Error,
-									"No matching operator"));
 					}
 					break;
 				}
@@ -309,602 +902,123 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							MessageType::Error,
 							"No matching operator"));
 			}
+			break;
+		}
+		default:
+			throw FatalCompilationError(
+				Message(
+					e->getLocation(),
+					MessageType::Error,
+					"No matching operator"));
+	}
 
+	auto resultType = evalExprType(e);
+	if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue) {
+		if (!isLValueType(resultType))
+			throw FatalCompilationError(
+				Message(
+					e->getLocation(),
+					MessageType::Error,
+					"Expecting a lvalue expression"));
+	} else {
+		if (isLValueType(resultType)) {
+			curFn->insertIns(
+				Opcode::LVALUE,
+				std::make_shared<RegRefNode>(resultRegIndex),
+				std::make_shared<RegRefNode>(resultRegIndex, true));
+		}
+	}
+
+	if (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt)
+		curFn->insertIns(
+			Opcode::STORE,
+			curMajorContext.curMinorContext.evalDest,
+			std::make_shared<RegRefNode>(resultRegIndex, true));
+}
+
+void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
+	slxfmt::SourceLocDesc sld;
+	sld.offIns = curFn->body.size();
+	sld.line = expr->getLocation().line;
+	sld.column = expr->getLocation().column;
+
+	if (auto ce = evalConstExpr(expr); ce) {
+		if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
+			throw FatalCompilationError(
+				Message(
+					expr->getLocation(),
+					MessageType::Error,
+					"Expecting a lvalue expression"));
+
+		curFn->insertIns(Opcode::STORE, curMajorContext.curMinorContext.evalDest, ce);
+		return;
+	}
+
+	switch (expr->getExprType()) {
+		case ExprType::Unary: {
+			auto e = std::static_pointer_cast<UnaryOpExprNode>(expr);
+
+			compileUnaryOpExpr(e, evalExprType(e->x));
 			break;
 		}
 		case ExprType::Binary: {
 			auto e = std::static_pointer_cast<BinaryOpExprNode>(expr);
 
-#if SLKC_WITH_LANGUAGE_SERVER
-			updateTokenInfo(e->idxOpToken, [this](TokenInfo &tokenInfo) {
-				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
-				tokenInfo.semanticType = SemanticType::Operator;
-			});
-			updateCompletionContext(e->idxOpToken, CompletionContext::Expr);
-#endif
-
-			std::shared_ptr<TypeNameNode> lhsType = evalExprType(e->lhs), rhsType = evalExprType(e->rhs);
-
-			if (!lhsType)
-				throw FatalCompilationError(
-					Message(
-						e->lhs->getLocation(),
-						MessageType::Error,
-						"Error deducing type of the left operand"));
-			if (!rhsType)
-				throw FatalCompilationError(
-					Message(
-						e->rhs->getLocation(),
-						MessageType::Error,
-						"Error deducing type of the right operand"));
-
-			auto compileShortCircuitOperator = [this, e, lhsType, rhsType]() {
-				uint32_t lhsRegIndex = allocReg(1);
-
-				auto boolType = std::make_shared<BoolTypeNameNode>(e->lhs->getLocation(), SIZE_MAX);
-
-				// Compile the LHS.
-				// The LHS must be a boolean expression.
-				if (!isSameType(lhsType, boolType)) {
-					if (!isTypeNamesConvertible(lhsType, boolType))
-						throw FatalCompilationError(
-							{ e->lhs->getLocation(),
-								MessageType::Error,
-								"Incompatible operand types" });
-
-					compileExpr(
-						std::make_shared<CastExprNode>(e->lhs->getLocation(), boolType, e->lhs),
-						_binaryOpRegs.at(e->op).isLhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(lhsRegIndex));
-				} else
-					compileExpr(
-						e->lhs,
-						_binaryOpRegs.at(e->op).isLhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(lhsRegIndex));
-
-				Location loc = e->getLocation();
-				std::string endLabel = "$short_circuit_" + std::to_string(loc.line) + "_" + std::to_string(loc.column) + "_end";
-
-				// Jump to the end if the left expression is enough to get the final result.
-				curFn->insertIns(
-					e->op == BinaryOp::LOr ? Opcode::JT : Opcode::JF,
-					std::make_shared<LabelRefNode>(endLabel),
-					std::make_shared<RegRefNode>(lhsRegIndex, true));
-
-				// Compile the RHS.
-				// The RHS also must be a boolean expression.
-				uint32_t rhsRegIndex = allocReg(1);
-
-				if (!isSameType(rhsType, boolType)) {
-					if (!isTypeNamesConvertible(rhsType, boolType))
-						throw FatalCompilationError(
-							{ e->rhs->getLocation(),
-								MessageType::Error,
-								"Incompatible operand types" });
-
-					compileExpr(
-						std::make_shared<CastExprNode>(e->rhs->getLocation(), boolType, e->rhs),
-						_binaryOpRegs.at(e->op).isRhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(lhsRegIndex));
-				} else
-					compileExpr(
-						e->rhs,
-						_binaryOpRegs.at(e->op).isRhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(rhsRegIndex));
-
-				curFn->insertIns(
-					_binaryOpRegs.at(e->op).opcode,
-					std::make_shared<RegRefNode>(lhsRegIndex),
-					std::make_shared<RegRefNode>(lhsRegIndex, true),
-					std::make_shared<RegRefNode>(rhsRegIndex, true));
-
-				curFn->insertLabel(endLabel);
-
-				if (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt)
-					curFn->insertIns(
-						Opcode::STORE,
-						curMajorContext.curMinorContext.evalDest,
-						std::make_shared<RegRefNode>(lhsRegIndex, true));
-			};
-			auto execOpAndStoreResult = [this, e, lhsType](uint32_t lhsRegIndex, uint32_t rhsRegIndex) {
-				if (isAssignBinaryOp(e->op)) {
-					// RHS of the assignment expression.
-					uint32_t lhsValueRegIndex = allocReg();
-
-					curFn->insertIns(
-						Opcode::STORE,
-						std::make_shared<RegRefNode>(lhsValueRegIndex),
-						std::make_shared<RegRefNode>(lhsRegIndex, true));
-					curFn->insertIns(
-						_binaryOpRegs.at(_assignBinaryOpToOrdinaryBinaryOpMap.at(e->op)).opcode,
-						std::make_shared<RegRefNode>(rhsRegIndex),
-						std::make_shared<RegRefNode>(lhsValueRegIndex, true),
-						std::make_shared<RegRefNode>(rhsRegIndex, true));
-
-					// LHS of the assignment expression.
-					curFn->insertIns(Opcode::STORE, std::make_shared<RegRefNode>(lhsRegIndex, true), std::make_shared<RegRefNode>(rhsRegIndex, true));
-
-					if ((curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt) && (curMajorContext.curMinorContext.evalDest))
-						// TODO: Make it returns LHS (reference to the left operand), not RHS.
-						curFn->insertIns(Opcode::STORE, curMajorContext.curMinorContext.evalDest, std::make_shared<RegRefNode>(rhsRegIndex, true));
-				} else if (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt) {
-					curFn->insertIns(
-						_binaryOpRegs.at(e->op).opcode,
-						curMajorContext.curMinorContext.evalDest,
-						std::make_shared<RegRefNode>(lhsRegIndex, true),
-						std::make_shared<RegRefNode>(rhsRegIndex, true));
-				} else
-					curFn->insertIns(
-						_binaryOpRegs.at(e->op).opcode,
-						std::make_shared<RegRefNode>(lhsRegIndex),
-						std::make_shared<RegRefNode>(lhsRegIndex, true),
-						std::make_shared<RegRefNode>(rhsRegIndex, true));
-			};
-
-			switch (lhsType->getTypeId()) {
-				case TypeId::I8:
-				case TypeId::I16:
-				case TypeId::I32:
-				case TypeId::I64:
-				case TypeId::U8:
-				case TypeId::U16:
-				case TypeId::U32:
-				case TypeId::U64:
-				case TypeId::F32:
-				case TypeId::F64: {
-					switch (e->op) {
-						case BinaryOp::LAnd:
-						case BinaryOp::LOr:
-							compileShortCircuitOperator();
-							break;
-						case BinaryOp::Lsh:
-						case BinaryOp::Rsh:
-						case BinaryOp::AssignLsh:
-						case BinaryOp::AssignRsh: {
-							uint32_t lhsRegIndex = allocReg(2),
-									 rhsRegIndex = lhsRegIndex + 1;
-
-							auto u32Type = std::make_shared<U32TypeNameNode>(e->rhs->getLocation(), SIZE_MAX);
-
-							compileExpr(
-								e->lhs,
-								_binaryOpRegs.at(e->op).isLhsLvalue
-									? EvalPurpose::LValue
-									: EvalPurpose::RValue,
-								std::make_shared<RegRefNode>(lhsRegIndex));
-
-							if (!isSameType(rhsType, u32Type)) {
-								if (!isTypeNamesConvertible(rhsType, u32Type))
-									throw FatalCompilationError(
-										{ e->rhs->getLocation(),
-											MessageType::Error,
-											"Incompatible operand types" });
-
-								compileExpr(
-									std::make_shared<CastExprNode>(e->rhs->getLocation(), u32Type, e->rhs),
-									_binaryOpRegs.at(e->op).isRhsLvalue
-										? EvalPurpose::LValue
-										: EvalPurpose::RValue,
-									std::make_shared<RegRefNode>(lhsRegIndex));
-							} else
-								compileExpr(
-									e->rhs,
-									_binaryOpRegs.at(e->op).isRhsLvalue
-										? EvalPurpose::LValue
-										: EvalPurpose::RValue,
-									std::make_shared<RegRefNode>(rhsRegIndex));
-
-							execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
-
-							break;
-						}
-						default: {
-							uint32_t lhsRegIndex = allocReg(2);
-							uint32_t rhsRegIndex = lhsRegIndex + 1;
-
-							compileExpr(
-								e->lhs,
-								_binaryOpRegs.at(e->op).isLhsLvalue
-									? EvalPurpose::LValue
-									: EvalPurpose::RValue,
-								std::make_shared<RegRefNode>(lhsRegIndex));
-
-							if (!isSameType(lhsType, rhsType)) {
-								if (!isTypeNamesConvertible(rhsType, lhsType))
-									throw FatalCompilationError(
-										{ e->rhs->getLocation(),
-											MessageType::Error,
-											"Incompatible operand types" });
-
-								compileExpr(
-									std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
-									_binaryOpRegs.at(e->op).isRhsLvalue
-										? EvalPurpose::LValue
-										: EvalPurpose::RValue,
-									std::make_shared<RegRefNode>(rhsRegIndex));
-							} else
-								compileExpr(e->rhs, _binaryOpRegs.at(e->op).isRhsLvalue ? EvalPurpose::LValue : EvalPurpose::RValue, std::make_shared<RegRefNode>(rhsRegIndex));
-
-							execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
-
-							break;
-						}
-					}
-
-					break;
-				}
-				case TypeId::Bool: {
-					switch (e->op) {
-						case BinaryOp::LAnd:
-						case BinaryOp::LOr:
-							compileShortCircuitOperator();
-							break;
-						case BinaryOp::Eq:
-						case BinaryOp::Neq: {
-							uint32_t lhsRegIndex = allocReg(2);
-							uint32_t rhsRegIndex = lhsRegIndex + 1;
-
-							compileExpr(
-								e->lhs,
-								_binaryOpRegs.at(e->op).isLhsLvalue
-									? EvalPurpose::LValue
-									: EvalPurpose::RValue,
-								std::make_shared<RegRefNode>(lhsRegIndex));
-
-							if (!isSameType(lhsType, rhsType)) {
-								if (!isTypeNamesConvertible(rhsType, lhsType))
-									throw FatalCompilationError(
-										{ e->rhs->getLocation(),
-											MessageType::Error,
-											"Incompatible operand types" });
-
-								compileExpr(
-									std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
-									_binaryOpRegs.at(e->op).isRhsLvalue
-										? EvalPurpose::LValue
-										: EvalPurpose::RValue,
-									std::make_shared<RegRefNode>(rhsRegIndex));
-							} else
-								compileExpr(e->rhs, _binaryOpRegs.at(e->op).isRhsLvalue ? EvalPurpose::LValue : EvalPurpose::RValue, std::make_shared<RegRefNode>(rhsRegIndex));
-
-							execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
-
-							break;
-						}
-						default:
-							throw FatalCompilationError(
-								Message(
-									e->getLocation(),
-									MessageType::Error,
-									"No matching operator"));
-					}
-
-					break;
-				}
-				case TypeId::String:
-				case TypeId::WString: {
-					switch (e->op) {
-						case BinaryOp::Add:
-							compileShortCircuitOperator();
-							break;
-						case BinaryOp::Subscript: {
-							uint32_t lhsRegIndex = allocReg(2),
-									 rhsRegIndex = lhsRegIndex + 1;
-
-							auto u32Type = std::make_shared<U32TypeNameNode>(e->rhs->getLocation(), SIZE_MAX);
-
-							if (!isSameType(rhsType, u32Type)) {
-								if (!isTypeNamesConvertible(rhsType, u32Type))
-									throw FatalCompilationError(
-										{ e->rhs->getLocation(),
-											MessageType::Error,
-											"Incompatible operand types" });
-
-								compileExpr(
-									std::make_shared<CastExprNode>(e->rhs->getLocation(), u32Type, e->rhs),
-									_binaryOpRegs.at(e->op).isRhsLvalue
-										? EvalPurpose::LValue
-										: EvalPurpose::RValue,
-									std::make_shared<RegRefNode>(lhsRegIndex));
-							} else
-								compileExpr(
-									e->rhs,
-									_binaryOpRegs.at(e->op).isRhsLvalue
-										? EvalPurpose::LValue
-										: EvalPurpose::RValue,
-									std::make_shared<RegRefNode>(rhsRegIndex));
-
-							if (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt) {
-								curFn->insertIns(
-									_binaryOpRegs.at(e->op).opcode,
-									curMajorContext.curMinorContext.evalDest,
-									std::make_shared<RegRefNode>(lhsRegIndex, true),
-									std::make_shared<RegRefNode>(rhsRegIndex, true));
-							} else
-								curFn->insertIns(
-									_binaryOpRegs.at(e->op).opcode,
-									std::make_shared<RegRefNode>(lhsRegIndex),
-									std::make_shared<RegRefNode>(lhsRegIndex, true),
-									std::make_shared<RegRefNode>(rhsRegIndex, true));
-
-							break;
-						}
-						default:
-							throw FatalCompilationError(
-								Message(
-									e->getLocation(),
-									MessageType::Error,
-									"No matching operator"));
-					}
-					break;
-				}
-				case TypeId::Custom: {
-					auto node = resolveCustomTypeName(std::static_pointer_cast<CustomTypeNameNode>(lhsType).get());
-					auto lhsType = evalExprType(e->lhs), rhsType = evalExprType(e->rhs);
-
-					auto determineOverloading = [this, e, rhsType](std::shared_ptr<MemberNode> n, uint32_t lhsRegIndex) -> bool {
-						if (auto it = n->scope->members.find("operator" + std::to_string(e->op));
-							it != n->scope->members.end()) {
-							assert(it->second->getNodeType() == NodeType::Fn);
-							std::shared_ptr<FnNode> operatorNode = std::static_pointer_cast<FnNode>(it->second);
-							std::shared_ptr<FnOverloadingNode> overloading;
-
-							{
-								auto overloadings = argDependentLookup(e->getLocation(), operatorNode.get(), { rhsType }, {});
-								if (overloadings.size() != 1)
-									return false;
-								overloading = overloadings[0];
-
-#ifdef SLKC_WITH_LANGUAGE_SERVER
-								updateTokenInfo(e->idxOpToken, [&overloading](TokenInfo &tokenInfo) {
-									tokenInfo.semanticInfo.correspondingMember = overloading;
-								});
-								updateTokenInfo(e->idxClosingToken, [&overloading](TokenInfo &tokenInfo) {
-									tokenInfo.semanticInfo.correspondingMember = overloading;
-								});
-#endif
-							}
-
-							compileExpr(
-								e->lhs,
-								EvalPurpose::RValue,
-								std::make_shared<RegRefNode>(lhsRegIndex));
-
-							IdRef fullName;
-							_getFullName(operatorNode.get(), fullName);
-
-							fullName.back().name = mangleName(
-								fullName.back().name,
-								{ overloading->params[0]->originalType
-										? overloading->params[0]->originalType
-										: overloading->params[0]->type },
-								false);
-
-							uint32_t tmpRegIndex = allocReg();
-
-							if (auto ce = evalConstExpr(e->rhs); ce) {
-								if (isLValueType(overloading->params[0]->type))
-									throw FatalCompilationError(
-										Message(
-											e->getLocation(),
-											MessageType::Error,
-											"Expecting a lvalue expression"));
-
-								curFn->insertIns(Opcode::PUSHARG, ce);
-							} else {
-								compileExpr(
-									e->rhs,
-									isLValueType(overloading->params[0]->type)
-										? EvalPurpose::LValue
-										: EvalPurpose::RValue,
-									std::make_shared<RegRefNode>(tmpRegIndex));
-								curFn->insertIns(Opcode::PUSHARG, std::make_shared<RegRefNode>(tmpRegIndex, true));
-							}
-
-							curFn->insertIns(Opcode::LOAD, std::make_shared<RegRefNode>(tmpRegIndex), std::make_shared<IdRefExprNode>(fullName));
-							curFn->insertIns(Opcode::MCALL, std::make_shared<RegRefNode>(tmpRegIndex, true), std::make_shared<RegRefNode>(lhsRegIndex, true));
-
-#if SLKC_WITH_LANGUAGE_SERVER
-							updateTokenInfo(e->idxOpToken, [this, &overloading](TokenInfo &tokenInfo) {
-								tokenInfo.semanticInfo.correspondingMember = overloading;
-							});
-#endif
-
-							if (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt)
-								curFn->insertIns(Opcode::LRET, curMajorContext.curMinorContext.evalDest);
-
-							return true;
-						}
-						return false;
-					};
-
-					switch (node->getNodeType()) {
-						case NodeType::Class:
-						case NodeType::Interface:
-						case NodeType::Trait: {
-							uint32_t lhsRegIndex = allocReg(1);
-
-							switch (e->op) {
-								case BinaryOp::Assign: {
-									uint32_t rhsRegIndex = allocReg(1);
-
-									compileExpr(
-										e->lhs,
-										EvalPurpose::LValue,
-										std::make_shared<RegRefNode>(lhsRegIndex));
-
-									compileExpr(
-										e->rhs,
-										EvalPurpose::RValue,
-										std::make_shared<RegRefNode>(rhsRegIndex));
-
-									if (!isSameType(lhsType, rhsType)) {
-										if (!isTypeNamesConvertible(rhsType, lhsType))
-											throw FatalCompilationError(
-												{ e->rhs->getLocation(),
-													MessageType::Error,
-													"Incompatible operand types" });
-
-										compileExpr(
-											std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
-											EvalPurpose::LValue,
-											std::make_shared<RegRefNode>(rhsRegIndex));
-									}
-
-									curFn->insertIns(
-										Opcode::STORE,
-										std::make_shared<RegRefNode>(lhsRegIndex, true),
-										std::make_shared<RegRefNode>(rhsRegIndex, true));
-
-									break;
-								}
-								default: {
-									std::shared_ptr<MemberNode> n = std::static_pointer_cast<MemberNode>(node);
-
-									if (!determineOverloading(n, lhsRegIndex))
-										throw FatalCompilationError(
-											Message(
-												e->getLocation(),
-												MessageType::Error,
-												"No matching operator"));
-								}
-							}
-
-							break;
-						}
-						case NodeType::GenericParam: {
-							uint32_t lhsRegIndex = allocReg(1);
-
-							std::shared_ptr<GenericParamNode> n = std::static_pointer_cast<GenericParamNode>(node);
-
-							switch (e->op) {
-								case BinaryOp::Assign: {
-									uint32_t rhsRegIndex = allocReg(1);
-
-									compileExpr(
-										e->lhs,
-										EvalPurpose::LValue,
-										std::make_shared<RegRefNode>(lhsRegIndex));
-
-									compileExpr(
-										e->rhs,
-										EvalPurpose::RValue,
-										std::make_shared<RegRefNode>(rhsRegIndex));
-
-									if (!isSameType(lhsType, rhsType)) {
-										if (!isTypeNamesConvertible(rhsType, lhsType))
-											throw FatalCompilationError(
-												{ e->rhs->getLocation(),
-													MessageType::Error,
-													"Incompatible operand types" });
-
-										compileExpr(
-											std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
-											EvalPurpose::LValue,
-											std::make_shared<RegRefNode>(rhsRegIndex));
-									}
-
-									curFn->insertIns(
-										Opcode::STORE,
-										std::make_shared<RegRefNode>(lhsRegIndex, true),
-										std::make_shared<RegRefNode>(rhsRegIndex, true));
-
-									break;
-								}
-								default: {
-									std::shared_ptr<AstNode> curMember;
-
-									curMember = resolveCustomTypeName((CustomTypeNameNode *)n->baseType.get());
-
-									if (curMember->getNodeType() != NodeType::Class)
-										throw FatalCompilationError(
-											Message(
-												n->baseType->getLocation(),
-												MessageType::Error,
-												"Must be a class"));
-
-									if (determineOverloading(std::static_pointer_cast<MemberNode>(curMember), lhsRegIndex))
-										break;
-
-									for (auto i : n->interfaceTypes) {
-										curMember = resolveCustomTypeName((CustomTypeNameNode *)i.get());
-
-										if (curMember->getNodeType() != NodeType::Interface)
-											throw FatalCompilationError(
-												Message(
-													n->baseType->getLocation(),
-													MessageType::Error,
-													"Must be an interface"));
-
-										if (determineOverloading(std::static_pointer_cast<MemberNode>(curMember), lhsRegIndex))
-											break;
-									}
-
-									for (auto i : n->traitTypes) {
-										curMember = resolveCustomTypeName((CustomTypeNameNode *)i.get());
-
-										if (curMember->getNodeType() != NodeType::Interface)
-											throw FatalCompilationError(
-												Message(
-													n->baseType->getLocation(),
-													MessageType::Error,
-													"Must be an interface"));
-
-										if (determineOverloading(std::static_pointer_cast<MemberNode>(curMember), lhsRegIndex))
-											break;
-									}
-
-									throw FatalCompilationError(
-										Message(
-											e->getLocation(),
-											MessageType::Error,
-											"No matching operator"));
-								}
-							}
-							break;
-						}
-						default:
-							throw FatalCompilationError(
-								Message(
-									e->getLocation(),
-									MessageType::Error,
-									"No matching operator"));
-					}
-					break;
-				}
-				default:
-					throw FatalCompilationError(
-						Message(
-							e->getLocation(),
-							MessageType::Error,
-							"No matching operator"));
-			}
+			compileBinaryOpExpr(e, evalExprType(e->lhs), evalExprType(e->rhs));
 			break;
 		}
 		case ExprType::Ternary: {
 			auto e = std::static_pointer_cast<TernaryOpExprNode>(expr);
 
-			uint32_t conditionRegIndex = allocReg();
+			uint32_t conditionRegIndex = allocReg(),
+					 resultRegIndex = allocReg();
 
 			auto loc = e->getLocation();
 			std::string falseBranchLabel = "$ternary_" + std::to_string(loc.line) + "_" + std::to_string(loc.column) + "_false",
 						endLabel = "$ternary_" + std::to_string(loc.line) + "_" + std::to_string(loc.column) + "_end";
 
-			compileExpr(e->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(conditionRegIndex));
-			if (evalExprType(e->condition)->getTypeId() != TypeId::Bool)
-				curFn->insertIns(
-					Opcode::CAST,
-					std::make_shared<RegRefNode>(conditionRegIndex),
-					std::make_shared<BoolTypeNameNode>(e->getLocation(), true),
-					std::make_shared<RegRefNode>(conditionRegIndex, true));
+			auto conditionType = evalExprType(e->condition),
+				 trueBranchType = evalExprType(e->x),
+				 falseBranchType = evalExprType(e->y);
+			auto boolType = std::make_shared<BoolTypeNameNode>(Location(), SIZE_MAX);
+
+			if (!conditionType)
+				throw FatalCompilationError(
+					Message(
+						e->getLocation(),
+						MessageType::Error,
+						"Error deducing type of the condition expression"));
+			if (!trueBranchType)
+				throw FatalCompilationError(
+					Message(
+						e->getLocation(),
+						MessageType::Error,
+						"Error deducing type of the true branch expression"));
+			if (!falseBranchType)
+				throw FatalCompilationError(
+					Message(
+						e->getLocation(),
+						MessageType::Error,
+						"Error deducing type of the true branch expression"));
+
+			auto resultType = getStrongerTypeName(trueBranchType, falseBranchType);
+
+			if (!isSameType(conditionType, boolType)) {
+				if (!isTypeNamesConvertible(conditionType, boolType))
+					throw FatalCompilationError(
+						{ e->condition->getLocation(),
+							MessageType::Error,
+							"Expecting a boolean expression" });
+
+				compileExpr(
+					std::make_shared<CastExprNode>(
+						e->condition->getLocation(),
+						boolType,
+						e->condition),
+					EvalPurpose::RValue,
+					std::make_shared<RegRefNode>(conditionRegIndex));
+			} else
+				compileExpr(e->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(conditionRegIndex));
 
 			curFn->insertIns(
 				Opcode::JF,
@@ -912,12 +1026,33 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 				std::make_shared<RegRefNode>(conditionRegIndex, true));
 
 			// Compile the true expression.
-			compileExpr(e->x, EvalPurpose::RValue, curMajorContext.curMinorContext.evalDest);
+			if (isSameType(trueBranchType, resultType)) {
+				if (!isTypeNamesConvertible(trueBranchType, resultType))
+					throw FatalCompilationError(
+						{ e->x->getLocation(),
+							MessageType::Error,
+							"Incompatible operand types" });
+				compileExpr(
+					std::make_shared<CastExprNode>(e->x->getLocation(), resultType, e->x),
+					curMajorContext.curMinorContext.evalPurpose,
+					std::make_shared<RegRefNode>(resultRegIndex));
+			} else
+				compileExpr(e->x, curMajorContext.curMinorContext.evalPurpose, std::make_shared<RegRefNode>(resultRegIndex));
 			curFn->insertIns(Opcode::JMP, std::make_shared<LabelRefNode>(endLabel));
 
 			// Compile the false expression.
-			curFn->insertLabel(falseBranchLabel);
-			compileExpr(e->y, EvalPurpose::RValue, curMajorContext.curMinorContext.evalDest);
+			if (isSameType(falseBranchType, resultType)) {
+				if (!isTypeNamesConvertible(falseBranchType, resultType))
+					throw FatalCompilationError(
+						{ e->y->getLocation(),
+							MessageType::Error,
+							"Incompatible operand types" });
+				compileExpr(
+					std::make_shared<CastExprNode>(e->y->getLocation(), resultType, e->y),
+					curMajorContext.curMinorContext.evalPurpose,
+					std::make_shared<RegRefNode>(resultRegIndex));
+			} else
+				compileExpr(e->y, curMajorContext.curMinorContext.evalPurpose, std::make_shared<RegRefNode>(resultRegIndex));
 
 			curFn->insertLabel(endLabel);
 			break;
@@ -993,84 +1128,80 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 				curMajorContext.curMinorContext.argTypes.push_back(type);
 			}
 
-			if (auto ce = evalConstExpr(e); ce) {
-				curFn->insertIns(Opcode::CALL, ce);
-			} else {
-				uint32_t callTargetRegIndex = allocReg(2);
-				uint32_t tmpRegIndex = callTargetRegIndex + 1;
+			uint32_t callTargetRegIndex = allocReg(),
+					 tmpRegIndex = allocReg(),
+					 thisRegIndex = allocReg();
 
-				for (auto i : e->args) {
-					if (auto ce = evalConstExpr(i); ce)
-						curFn->insertIns(Opcode::PUSHARG, ce);
-					else {
-						compileExpr(i, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
-						curFn->insertIns(Opcode::PUSHARG, std::make_shared<RegRefNode>(tmpRegIndex, true));
-					}
+			compileExpr(e->target, EvalPurpose::Call, std::make_shared<RegRefNode>(callTargetRegIndex), std::make_shared<RegRefNode>(thisRegIndex));
+
+			auto paramTypes = curMajorContext.curMinorContext.lastCallTargetParams;
+			auto returnType = curMajorContext.curMinorContext.lastCallTargetReturnType;
+			if (!returnType)
+				throw FatalCompilationError(
+					Message(
+						e->target->getLocation(),
+						MessageType::Error,
+						"Error deducing return type"));
+
+			for (size_t i = 0; i < e->args.size(); ++i) {
+				EvalPurpose evalPurpose = EvalPurpose::RValue;
+				if (i < paramTypes.size()) {
+					if (isLValueType(curMajorContext.curMinorContext.lastCallTargetParams[i]->type))
+						evalPurpose = EvalPurpose::LValue;
 				}
 
-				compileExpr(e->target, EvalPurpose::Call, std::make_shared<RegRefNode>(callTargetRegIndex), std::make_shared<RegRefNode>(tmpRegIndex));
+				compileExpr(e->args[i], evalPurpose, std::make_shared<RegRefNode>(tmpRegIndex));
+				curFn->insertIns(Opcode::PUSHARG, std::make_shared<RegRefNode>(tmpRegIndex, true));
+			}
 
-				auto returnType = evalExprType(e->target);
-				if (!returnType) {
-					messages.push_back(
-						Message(
-							e->target->getLocation(),
-							MessageType::Error,
-							"Error deducing type of call target"));
+			if (curMajorContext.curMinorContext.isLastCallTargetStatic)
+				curFn->insertIns(
+					e->isAsync ? Opcode::ACALL : Opcode::CALL,
+					std::make_shared<RegRefNode>(callTargetRegIndex, true));
+			else
+				curFn->insertIns(
+					e->isAsync ? Opcode::AMCALL : Opcode::MCALL,
+					std::make_shared<RegRefNode>(callTargetRegIndex, true),
+					std::make_shared<RegRefNode>(thisRegIndex, true));
+
+			switch (curMajorContext.curMinorContext.evalPurpose) {
+				case EvalPurpose::LValue: {
+					if (!isLValueType(returnType))
+						throw FatalCompilationError(
+							Message(
+								e->getLocation(),
+								MessageType::Error,
+								"Expecting a lvalue expression"));
+
+					curFn->insertIns(
+						Opcode::LRET,
+						curMajorContext.curMinorContext.evalDest);
 					break;
 				}
-
-				bool isReturnTypeLValue = isLValueType(returnType);
-
-				if (curMajorContext.curMinorContext.isLastCallTargetStatic)
-					curFn->insertIns(
-						e->isAsync ? Opcode::ACALL : Opcode::CALL,
-						std::make_shared<RegRefNode>(callTargetRegIndex, true));
-				else
-					curFn->insertIns(
-						e->isAsync ? Opcode::AMCALL : Opcode::MCALL,
-						std::make_shared<RegRefNode>(callTargetRegIndex, true),
-						std::make_shared<RegRefNode>(tmpRegIndex, true));
-
-				switch (curMajorContext.curMinorContext.evalPurpose) {
-					case EvalPurpose::LValue: {
-						if (!isReturnTypeLValue)
-							throw FatalCompilationError(
-								Message(
-									e->getLocation(),
-									MessageType::Error,
-									"Expecting a lvalue expression"));
+				case EvalPurpose::RValue:
+				case EvalPurpose::Call: {
+					if (isLValueType(returnType)) {
+						uint32_t tmpRegIndex = allocReg();
 
 						curFn->insertIns(
 							Opcode::LRET,
+							std::make_shared<RegRefNode>(tmpRegIndex));
+						curFn->insertIns(
+							Opcode::LVALUE,
+							curMajorContext.curMinorContext.evalDest,
+							std::make_shared<RegRefNode>(tmpRegIndex, true));
+					} else {
+						curFn->insertIns(
+							Opcode::LRET,
 							curMajorContext.curMinorContext.evalDest);
-						break;
 					}
-					case EvalPurpose::RValue:
-					case EvalPurpose::Call: {
-						if (isReturnTypeLValue) {
-							uint32_t tmpRegIndex = allocReg();
 
-							curFn->insertIns(
-								Opcode::LRET,
-								std::make_shared<RegRefNode>(tmpRegIndex));
-							curFn->insertIns(
-								Opcode::LVALUE,
-								curMajorContext.curMinorContext.evalDest,
-								std::make_shared<RegRefNode>(tmpRegIndex, true));
-						} else {
-							curFn->insertIns(
-								Opcode::LRET,
-								curMajorContext.curMinorContext.evalDest);
-						}
-
-						break;
-					}
-					case EvalPurpose::Stmt:
-						break;
-					default:
-						assert(false);
+					break;
 				}
+				case EvalPurpose::Stmt:
+					break;
+				default:
+					assert(false);
 			}
 
 			break;
@@ -1372,9 +1503,15 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 								"Ambiguous function call"));
 					}
 
+					curMajorContext.curMinorContext.lastCallTargetParams = overloadings[0]->params;
+					curMajorContext.curMinorContext.lastCallTargetReturnType =
+						overloadings[0]->returnType
+							? overloadings[0]->returnType
+							: std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX);
 					return overloadings[0];
 				}
 			};
+
 			auto loadRest = [this, &determineOverloadingRegistry, &expr, &tmpRegIndex, &resolvedParts]() {
 				for (size_t i = 1; i < resolvedParts.size(); ++i) {
 					switch (resolvedParts[i].second->getNodeType()) {
@@ -1386,6 +1523,14 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 								std::make_shared<RegRefNode>(tmpRegIndex),
 								std::make_shared<RegRefNode>(tmpRegIndex, true),
 								std::make_shared<IdRefExprNode>(resolvedParts[i].first));
+
+							if (varNode->type ? isLValueType(varNode->type) : false) {
+								// Load once more for reference types.
+								curFn->insertIns(
+									Opcode::LVALUE,
+									std::make_shared<RegRefNode>(tmpRegIndex),
+									std::make_shared<RegRefNode>(tmpRegIndex, true));
+							}
 
 							// Intermediate scopes should always be loaded as rvalue.
 							if ((i + 1 != resolvedParts.size()))
@@ -1459,12 +1604,24 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							curMajorContext.curMinorContext.evalDest,
 							std::make_shared<RegRefNode>(tmpRegIndex, true));
 					break;
-				case NodeType::ArgRef:
-					std::static_pointer_cast<ArgRefNode>(x)->unwrapData = (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::LValue);
+				case NodeType::ArgRef: {
+					auto argRef = std::static_pointer_cast<ArgRefNode>(x);
 
+					argRef->unwrapData = (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::LValue);
 					curFn->insertIns(
 						Opcode::STORE,
 						std::make_shared<RegRefNode>(tmpRegIndex), x);
+
+					auto paramNode = curFn->params[argRef->index];
+
+					if (paramNode->type ? isLValueType(paramNode->type) : false) {
+						// Load once more for reference types.
+						curFn->insertIns(
+							Opcode::LVALUE,
+							std::make_shared<RegRefNode>(tmpRegIndex),
+							std::make_shared<RegRefNode>(tmpRegIndex, true));
+					}
+
 					loadRest();
 					if (resolvedParts.back().second->getNodeType() == NodeType::Var) {
 						if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RValue)
@@ -1479,6 +1636,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							Opcode::STORE,
 							curMajorContext.curMinorContext.evalDest, std::make_shared<RegRefNode>(tmpRegIndex, true));
 					break;
+				}
 				case NodeType::Var:
 				case NodeType::Fn:
 				case NodeType::ThisRef:

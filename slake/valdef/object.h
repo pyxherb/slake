@@ -13,6 +13,11 @@ namespace slake {
 	constexpr static ObjectFlags
 		OBJECT_PARENT = 0x01;
 
+	class ObjectExtension {
+	public:
+		virtual ~ObjectExtension() = default;
+	};
+
 	class ObjectValue final : public Value {
 	protected:
 		GenericArgList _genericArgs;
@@ -24,6 +29,7 @@ namespace slake {
 		ObjectValue *_parent;
 
 		ObjectFlags objectFlags = 0;
+		std::unique_ptr<ObjectExtension> objectExtension;
 
 		inline ObjectValue(Runtime *rt, ClassValue *cls, ObjectValue *parent = nullptr)
 			: Value(rt), _class(cls), _parent(parent) {

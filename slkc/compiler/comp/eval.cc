@@ -392,18 +392,6 @@ std::shared_ptr<ExprNode> Compiler::evalConstExpr(std::shared_ptr<ExprNode> expr
 					return {};
 			}
 		}
-		case ExprType::Ternary: {
-			auto e = std::static_pointer_cast<TernaryOpExprNode>(expr);
-
-			auto condition = evalConstExpr(e->condition);
-			if (condition) {
-				if (std::static_pointer_cast<BoolLiteralExprNode>(castLiteralExpr(condition, TypeId::Bool))->data)
-					return e->x;
-				return e->y;
-			}
-
-			return {};
-		}
 		case ExprType::Array: {
 			auto e = std::static_pointer_cast<ArrayExprNode>(expr);
 			for (auto i : e->elements)
@@ -474,29 +462,29 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> e
 	auto t = expr->getExprType();
 	switch (t) {
 		case ExprType::I8:
-			return std::make_shared<I8TypeNameNode>(Location(), true);
+			return std::make_shared<I8TypeNameNode>(Location(), SIZE_MAX);
 		case ExprType::I16:
-			return std::make_shared<I16TypeNameNode>(Location(), true);
+			return std::make_shared<I16TypeNameNode>(Location(), SIZE_MAX);
 		case ExprType::I32:
-			return std::make_shared<I32TypeNameNode>(Location(), true);
+			return std::make_shared<I32TypeNameNode>(Location(), SIZE_MAX);
 		case ExprType::I64:
-			return std::make_shared<I64TypeNameNode>(Location(), true);
+			return std::make_shared<I64TypeNameNode>(Location(), SIZE_MAX);
 		case ExprType::U8:
-			return std::make_shared<U8TypeNameNode>(Location(), true);
+			return std::make_shared<U8TypeNameNode>(Location(), SIZE_MAX);
 		case ExprType::U16:
-			return std::make_shared<U16TypeNameNode>(Location(), true);
+			return std::make_shared<U16TypeNameNode>(Location(), SIZE_MAX);
 		case ExprType::U32:
-			return std::make_shared<U32TypeNameNode>(Location(), true);
+			return std::make_shared<U32TypeNameNode>(Location(), SIZE_MAX);
 		case ExprType::U64:
-			return std::make_shared<U64TypeNameNode>(Location(), true);
+			return std::make_shared<U64TypeNameNode>(Location(), SIZE_MAX);
 		case ExprType::F32:
-			return std::make_shared<F32TypeNameNode>(Location(), true);
+			return std::make_shared<F32TypeNameNode>(Location(), SIZE_MAX);
 		case ExprType::F64:
-			return std::make_shared<F64TypeNameNode>(Location(), true);
+			return std::make_shared<F64TypeNameNode>(Location(), SIZE_MAX);
 		case ExprType::String:
-			return std::make_shared<StringTypeNameNode>(Location(), true);
+			return std::make_shared<StringTypeNameNode>(Location(), SIZE_MAX);
 		case ExprType::Bool:
-			return std::make_shared<BoolTypeNameNode>(Location(), true);
+			return std::make_shared<BoolTypeNameNode>(Location(), SIZE_MAX);
 		case ExprType::Unary: {
 			auto e = std::static_pointer_cast<UnaryOpExprNode>(expr);
 
@@ -688,7 +676,11 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> e
 						case BinaryOp::Or:
 						case BinaryOp::Xor:
 						case BinaryOp::Lsh:
-						case BinaryOp::Rsh:
+						case BinaryOp::Rsh: {
+							auto result = lhsType->duplicate<TypeNameNode>();
+							result->isRef = false;
+							return result;
+						}
 						case BinaryOp::Assign:
 						case BinaryOp::AssignAdd:
 						case BinaryOp::AssignSub:
@@ -711,8 +703,7 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> e
 						case BinaryOp::Gt:
 						case BinaryOp::LtEq:
 						case BinaryOp::GtEq:
-							return std::make_shared<BoolTypeNameNode>(Location(), true);
-						case BinaryOp::Swap:
+							return std::make_shared<BoolTypeNameNode>(Location(), SIZE_MAX);
 						default:
 							assert(false);
 					}
@@ -725,7 +716,7 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> e
 						case BinaryOp::LOr:
 						case BinaryOp::Eq:
 						case BinaryOp::Neq:
-							return std::make_shared<BoolTypeNameNode>(Location(), true);
+							return std::make_shared<BoolTypeNameNode>(Location(), SIZE_MAX);
 						default:
 							throw FatalCompilationError(
 								Message(
@@ -737,9 +728,9 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> e
 				case TypeId::String: {
 					switch (e->op) {
 						case BinaryOp::Add:
-							return std::make_shared<StringTypeNameNode>(Location(), true);
+							return std::make_shared<StringTypeNameNode>(Location(), SIZE_MAX);
 						case BinaryOp::Subscript:
-							return std::make_shared<U8TypeNameNode>(Location(), true);
+							return std::make_shared<U8TypeNameNode>(Location(), SIZE_MAX, true);
 						default:
 							throw FatalCompilationError(
 								Message(
@@ -752,9 +743,9 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> e
 				case TypeId::WString: {
 					switch (e->op) {
 						case BinaryOp::Add:
-							return std::make_shared<WStringTypeNameNode>(Location(), true);
+							return std::make_shared<WStringTypeNameNode>(Location(), SIZE_MAX);
 						case BinaryOp::Subscript:
-							return std::make_shared<U32TypeNameNode>(Location(), true);
+							return std::make_shared<U32TypeNameNode>(Location(), SIZE_MAX, true);
 						default:
 							throw FatalCompilationError(
 								Message(
@@ -771,7 +762,7 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> e
 					if (!rhsType)
 						return {};
 
-					auto determineOverloading = [this, e, rhsType](std::shared_ptr<MemberNode> n, uint32_t lhsRegIndex) -> std::shared_ptr<TypeNameNode> {
+					auto determineOverloading = [this, e, rhsType](std::shared_ptr<MemberNode> n) -> std::shared_ptr<TypeNameNode> {
 						if (auto it = n->scope->members.find("operator" + std::to_string(e->op));
 							it != n->scope->members.end()) {
 							assert(it->second->getNodeType() == NodeType::Fn);
@@ -810,46 +801,22 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> e
 						case NodeType::Class:
 						case NodeType::Interface:
 						case NodeType::Trait: {
-							uint32_t lhsRegIndex = allocReg(1);
-
 							switch (e->op) {
 								case BinaryOp::Assign: {
-									uint32_t rhsRegIndex = allocReg(1);
-
-									compileExpr(
-										e->lhs,
-										EvalPurpose::LValue,
-										std::make_shared<RegRefNode>(lhsRegIndex));
-
-									compileExpr(
-										e->rhs,
-										EvalPurpose::RValue,
-										std::make_shared<RegRefNode>(rhsRegIndex));
-
 									if (!isSameType(lhsType, rhsType)) {
 										if (!isTypeNamesConvertible(rhsType, lhsType))
 											throw FatalCompilationError(
 												{ e->rhs->getLocation(),
 													MessageType::Error,
 													"Incompatible operand types" });
-
-										compileExpr(
-											std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
-											EvalPurpose::LValue,
-											std::make_shared<RegRefNode>(rhsRegIndex));
 									}
 
-									curFn->insertIns(
-										Opcode::STORE,
-										std::make_shared<RegRefNode>(lhsRegIndex, true),
-										std::make_shared<RegRefNode>(rhsRegIndex, true));
-
-									break;
+									return lhsType;
 								}
 								default: {
 									std::shared_ptr<MemberNode> n = std::static_pointer_cast<MemberNode>(node);
 
-									if (auto t = determineOverloading(n, lhsRegIndex); t)
+									if (auto t = determineOverloading(n); t)
 										return t;
 
 									throw FatalCompilationError(
@@ -863,43 +830,19 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> e
 							break;
 						}
 						case NodeType::GenericParam: {
-							uint32_t lhsRegIndex = allocReg(1);
-
 							std::shared_ptr<GenericParamNode> n = std::static_pointer_cast<GenericParamNode>(node);
 
 							switch (e->op) {
 								case BinaryOp::Assign: {
-									uint32_t rhsRegIndex = allocReg(1);
-
-									compileExpr(
-										e->lhs,
-										EvalPurpose::LValue,
-										std::make_shared<RegRefNode>(lhsRegIndex));
-
-									compileExpr(
-										e->rhs,
-										EvalPurpose::RValue,
-										std::make_shared<RegRefNode>(rhsRegIndex));
-
 									if (!isSameType(lhsType, rhsType)) {
 										if (!isTypeNamesConvertible(rhsType, lhsType))
 											throw FatalCompilationError(
 												{ e->rhs->getLocation(),
 													MessageType::Error,
 													"Incompatible operand types" });
-
-										compileExpr(
-											std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
-											EvalPurpose::LValue,
-											std::make_shared<RegRefNode>(rhsRegIndex));
 									}
 
-									curFn->insertIns(
-										Opcode::STORE,
-										std::make_shared<RegRefNode>(lhsRegIndex, true),
-										std::make_shared<RegRefNode>(rhsRegIndex, true));
-
-									break;
+									return lhsType;
 								}
 								default: {
 									std::shared_ptr<AstNode> curMember;
@@ -916,7 +859,7 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> e
 									auto savedCurFn = curFn->duplicate<CompiledFnNode>();
 									auto savedCurMajorContext = curMajorContext;
 
-									if (auto t = determineOverloading(std::static_pointer_cast<MemberNode>(curMember), lhsRegIndex); t)
+									if (auto t = determineOverloading(std::static_pointer_cast<MemberNode>(curMember)); t)
 										return t;
 
 									for (auto i : n->interfaceTypes) {
@@ -929,7 +872,7 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> e
 													MessageType::Error,
 													"Must be an interface"));
 
-										if (auto t = determineOverloading(std::static_pointer_cast<MemberNode>(curMember), lhsRegIndex); t)
+										if (auto t = determineOverloading(std::static_pointer_cast<MemberNode>(curMember)); t)
 											return t;
 									}
 
@@ -943,7 +886,7 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> e
 													MessageType::Error,
 													"Must be an interface"));
 
-										if (auto t = determineOverloading(std::static_pointer_cast<MemberNode>(curMember), lhsRegIndex); t)
+										if (auto t = determineOverloading(std::static_pointer_cast<MemberNode>(curMember)); t)
 											return t;
 									}
 
@@ -985,12 +928,21 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> e
 
 			if (resolveIdRef(e->ref, resolvedParts)) {
 				switch (resolvedParts.back().second->getNodeType()) {
-					case NodeType::Var:
-						return std::static_pointer_cast<VarNode>(resolvedParts.back().second)->type;
-					case NodeType::LocalVar:
-						return std::static_pointer_cast<LocalVarNode>(resolvedParts.back().second)->type;
-					case NodeType::ArgRef:
-						return curFn->params.at(std::static_pointer_cast<ArgRefNode>(resolvedParts.back().second)->index)->type;
+					case NodeType::Var: {
+						auto result = std::static_pointer_cast<VarNode>(resolvedParts.back().second)->type->duplicate<TypeNameNode>();
+						result->isRef = true;
+						return result;
+					}
+					case NodeType::LocalVar: {
+						auto result = std::static_pointer_cast<LocalVarNode>(resolvedParts.back().second)->type->duplicate<TypeNameNode>();
+						result->isRef = true;
+						return result;
+					}
+					case NodeType::ArgRef: {
+						auto result = curFn->params.at(std::static_pointer_cast<ArgRefNode>(resolvedParts.back().second)->index)->type->duplicate<TypeNameNode>();
+						result->isRef = true;
+						return result;
+					}
 					case NodeType::Fn: {
 						std::shared_ptr<FnNode> fn = std::static_pointer_cast<FnNode>(resolvedParts.back().second);
 

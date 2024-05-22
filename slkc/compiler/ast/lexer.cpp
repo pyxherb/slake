@@ -84,7 +84,6 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 				<InitialCondition>"case"		{ token.tokenId = TokenId::CaseKeyword; break; }
 				<InitialCondition>"catch"		{ token.tokenId = TokenId::CatchKeyword; break; }
 				<InitialCondition>"class"		{ token.tokenId = TokenId::ClassKeyword; break; }
-				<InitialCondition>"const"		{ token.tokenId = TokenId::ConstKeyword; break; }
 				<InitialCondition>"continue"	{ token.tokenId = TokenId::ContinueKeyword; break; }
 				<InitialCondition>"delete"		{ token.tokenId = TokenId::DeleteKeyword; break; }
 				<InitialCondition>"default"		{ token.tokenId = TokenId::DefaultKeyword; break; }

@@ -113,7 +113,18 @@ namespace slake {
 	struct Type;
 	class Scope;
 
+	struct CreatedValuesInsertionGuard {
+		Runtime *runtime;
+		Value *value;
+
+		CreatedValuesInsertionGuard(Runtime *runtime, Value *value);
+		~CreatedValuesInsertionGuard();
+	};
+
 	class Value {
+	private:
+		CreatedValuesInsertionGuard _createdValuesInsertionGuard;
+
 	protected:
 		void reportSizeAllocatedToRuntime(size_t size);
 		void reportSizeFreedToRuntime(size_t size);

@@ -118,8 +118,10 @@ namespace slake {
 		LMOD_NORELOAD = 0x02,
 		// Throw an exception if module that corresponds to the module name exists.
 		LMOD_NOCONFLICT = 0x04,
-		// Do not import modules automatically.
-		LMOD_NOIMPORT = 0x08;
+		// Do not import modules.
+		LMOD_NOIMPORT = 0x08,
+		// Load native members
+		LMOD_LOADNATIVE = 0x10;
 
 	class Runtime final {
 	public:
@@ -134,7 +136,7 @@ namespace slake {
 		RootValue *_rootValue;
 
 		/// @brief Contains all created values.
-		std::set<Value *> _createdValues, _walkedValues, _destructedValues;
+		std::set<Value *> _walkedValues, _destructedValues;
 
 		struct GenericLookupEntry {
 			Value *originalValue;
@@ -182,7 +184,7 @@ namespace slake {
 		Value *_loadValue(std::istream &fs);
 		Type _loadType(std::istream &fs, slxfmt::TypeId vt);
 		GenericParam _loadGenericParam(std::istream &fs);
-		void _loadScope(ModuleValue *mod, std::istream &fs);
+		void _loadScope(ModuleValue *mod, std::istream &fs, LoadModuleFlags loadModuleFlags);
 
 		/// @brief Execute a single instruction.
 		/// @param context Context for execution.
@@ -200,9 +202,6 @@ namespace slake {
 		void _instantiateGenericValue(Type &type, GenericInstantiationContext &instantiationContext) const;
 		void _instantiateGenericValue(Value *v, GenericInstantiationContext &instantiationContext) const;
 
-		ObjectValue *_newClassInstance(ClassValue *cls);
-		ArrayValue *_newArrayInstance(Type type, uint32_t size);
-
 		void _callFn(Context *context, FnValue *fn);
 		VarValue *_addLocalVar(MajorFrame &frame, Type type);
 		VarValue *_addLocalReg(MajorFrame &frame);
@@ -219,6 +218,8 @@ namespace slake {
 	public:
 		/// @brief Runtime flags.
 		RuntimeFlags _flags = 0;
+
+		std::set<Value *> createdValues;
 
 		/// @brief Active contexts of each thread.
 		std::map<std::thread::id, std::shared_ptr<Context>> activeContexts;
@@ -288,6 +289,9 @@ namespace slake {
 			GenericArgList genericArgs = {}) const {
 			return mangleName(name, params, {}, false);
 		}
+
+		ObjectValue *newClassInstance(ClassValue *cls);
+		ArrayValue *newArrayInstance(Type type, uint32_t size);
 	};
 }
 

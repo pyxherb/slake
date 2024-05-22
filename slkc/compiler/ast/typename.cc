@@ -3,40 +3,56 @@
 using namespace slake::slkc;
 
 std::string std::to_string(std::shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slkc::Compiler *compiler, bool forMangling) {
-	std::string s = typeName->isConst ? "const " : "";
+	std::string s;
 	switch (typeName->getTypeId()) {
 		case TypeId::I8:
-			return s + "i8";
+			s = "i8";
+			break;
 		case TypeId::I16:
-			return s + "i16";
+			s = "i16";
+			break;
 		case TypeId::I32:
-			return s + "i32";
+			s = "i32";
+			break;
 		case TypeId::I64:
-			return s + "i64";
+			s = "i64";
+			break;
 		case TypeId::U8:
-			return s + "u8";
+			s = "u8";
+			break;
 		case TypeId::U16:
-			return s + "u16";
+			s = "u16";
+			break;
 		case TypeId::U32:
-			return s + "u32";
+			s = "u32";
+			break;
 		case TypeId::U64:
-			return s + "u64";
+			s = "u64";
+			break;
 		case TypeId::F32:
-			return s + "f32";
+			s = "f32";
+			break;
 		case TypeId::F64:
-			return s + "f64";
+			s = "f64";
+			break;
 		case TypeId::String:
-			return s + "std::string";
+			s = "string";
+			break;
 		case TypeId::Bool:
-			return s + "bool";
+			s = "bool";
+			break;
 		case TypeId::Auto:
-			return s + "auto";
+			s = "auto";
+			break;
 		case TypeId::Void:
-			return s + "void";
+			s = "void";
+			break;
 		case TypeId::Any:
-			return s + "any";
+			s = "any";
+			break;
 		case TypeId::Array:
-			return s + std::to_string(std::static_pointer_cast<ArrayTypeNameNode>(typeName)->elementType, compiler, forMangling) + "[]";
+			s = std::to_string(std::static_pointer_cast<ArrayTypeNameNode>(typeName)->elementType, compiler, forMangling) + "[]";
+			break;
 		case TypeId::Fn: {
 			auto t = std::static_pointer_cast<FnTypeNameNode>(typeName);
 			s += std::to_string(t->returnType, compiler, forMangling) + " -> (";
@@ -48,7 +64,7 @@ std::string std::to_string(std::shared_ptr<slake::slkc::TypeNameNode> typeName, 
 			}
 
 			s += ")";
-			return s;
+			break;
 		}
 		case TypeId::Custom: {
 			slake::slkc::IdRef ref;
@@ -56,15 +72,23 @@ std::string std::to_string(std::shared_ptr<slake::slkc::TypeNameNode> typeName, 
 
 			switch (m->getNodeType()) {
 				case NodeType::GenericParam:
-					return (forMangling ? "!" : "") + std::static_pointer_cast<GenericParamNode>(m)->name;
+					s = (forMangling ? "!" : "") + std::static_pointer_cast<GenericParamNode>(m)->name;
+					break;
 				default:
 					compiler->_getFullName((MemberNode *)m.get(), ref);
-					return std::to_string(ref, compiler);
+					s = std::to_string(ref, compiler);
 			}
+			break;
 		}
 		case TypeId::Bad:
-			return "<error type>";
+			s = "<error type>";
+			break;
 		default:
 			throw std::logic_error("Unrecognized type");
 	}
+
+	if (typeName->isRef)
+		s += "&";
+
+	return s;
 }

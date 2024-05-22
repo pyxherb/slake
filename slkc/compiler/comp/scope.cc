@@ -26,8 +26,10 @@ std::shared_ptr<Scope> Compiler::scopeOf(AstNode *node) {
 		}
 		case NodeType::Var: {
 			auto n = (VarNode *)node;
-			if (n->type->getTypeId() == TypeId::Custom)
-				return scopeOf(resolveCustomTypeName((CustomTypeNameNode *)n->type.get()).get());
+			if (n->type) {
+				if (n->type->getTypeId() == TypeId::Custom)
+					return scopeOf(resolveCustomTypeName((CustomTypeNameNode *)n->type.get()).get());
+			}
 			return {};
 		}
 		case NodeType::GenericParam: {

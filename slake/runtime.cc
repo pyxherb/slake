@@ -19,7 +19,7 @@ Runtime::~Runtime() {
 
 	gc();
 
-	assert(!_createdValues.size());
+	assert(!createdValues.size());
 	assert(!_szMemInUse);
 }
 

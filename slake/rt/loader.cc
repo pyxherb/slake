@@ -82,6 +82,10 @@ Value *Runtime::_loadValue(std::istream &fs) {
 		}
 		case slxfmt::TypeId::Array: {
 			auto elementType = _loadType(fs, _read<slxfmt::TypeId>(fs));
+
+			// stub for debugging.
+			//elementType = Type(TypeId::Any);
+
 			std::unique_ptr<ArrayValue> value = std::make_unique<ArrayValue>(this, elementType);
 
 			auto len = _read<uint32_t>(fs);

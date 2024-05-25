@@ -111,15 +111,15 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			if (!curMajorContext.curMinorContext.breakLabel.empty())
 				throw FatalCompilationError({ stmt->getLocation(), MessageType::Error, "Unexpected break statement" });
 			if (curMajorContext.curMinorContext.breakScopeLevel < curMajorContext.curScopeLevel)
-				curFn->insertIns(
+				_insertIns(
 					Opcode::LEAVE,
 					std::make_shared<U32LiteralExprNode>(stmt->getLocation(), curMajorContext.curScopeLevel - curMajorContext.curMinorContext.breakScopeLevel));
-			curFn->insertIns(Opcode::JMP, std::make_shared<LabelRefNode>(curMajorContext.curMinorContext.breakLabel));
+			_insertIns(Opcode::JMP, std::make_shared<LabelRefNode>(curMajorContext.curMinorContext.breakLabel));
 			break;
 		case StmtType::Continue:
 			if (!curMajorContext.curMinorContext.continueLabel.size())
 				throw FatalCompilationError({ stmt->getLocation(), MessageType::Error, "Unexpected continue statement" });
-			curFn->insertIns(Opcode::JMP, std::make_shared<LabelRefNode>(curMajorContext.curMinorContext.continueLabel));
+			_insertIns(Opcode::JMP, std::make_shared<LabelRefNode>(curMajorContext.curMinorContext.continueLabel));
 			break;
 		case StmtType::For: {
 			auto s = std::static_pointer_cast<ForStmtNode>(stmt);
@@ -135,10 +135,10 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			curMajorContext.curMinorContext.breakLabel = endLabel;
 			curMajorContext.curMinorContext.continueLabel = beginLabel;
 
-			curFn->insertIns(Opcode::ENTER);
+			_insertIns(Opcode::ENTER);
 			compileStmt(s->varDefs);
 
-			curFn->insertLabel(beginLabel);
+			_insertLabel(beginLabel);
 
 			uint32_t tmpRegIndex;
 
@@ -164,19 +164,19 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 						std::make_shared<RegRefNode>(tmpRegIndex));
 				} else
 					compileExpr(s->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
-				curFn->insertIns(Opcode::JF, std::make_shared<LabelRefNode>(endLabel), std::make_shared<RegRefNode>(tmpRegIndex, true));
+				_insertIns(Opcode::JF, std::make_shared<LabelRefNode>(endLabel), std::make_shared<RegRefNode>(tmpRegIndex, true));
 			} else {
-				curFn->insertIns(Opcode::JMP, std::make_shared<LabelRefNode>(endLabel));
+				_insertIns(Opcode::JMP, std::make_shared<LabelRefNode>(endLabel));
 			}
 
 			compileStmt(s->body);
 
 			compileExpr(s->endExpr, EvalPurpose::Stmt, {});
 
-			curFn->insertIns(Opcode::JMP, std::make_shared<LabelRefNode>(beginLabel));
+			_insertIns(Opcode::JMP, std::make_shared<LabelRefNode>(beginLabel));
 
-			curFn->insertLabel(endLabel);
-			curFn->insertIns(Opcode::LEAVE);
+			_insertLabel(endLabel);
+			_insertIns(Opcode::LEAVE);
 
 			popMinorContext();
 			break;
@@ -205,7 +205,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 
 			uint32_t tmpRegIndex = allocReg();
 
-			curFn->insertLabel(beginLabel);
+			_insertLabel(beginLabel);
 
 			auto conditionType = evalExprType(s->condition);
 			auto boolType = std::make_shared<BoolTypeNameNode>(Location(), SIZE_MAX);
@@ -230,9 +230,9 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			if (s->body)
 				compileStmt(s->body);
 
-			curFn->insertLabel(endLabel);
+			_insertLabel(endLabel);
 
-			curFn->insertIns(Opcode::JT, std::make_shared<LabelRefNode>(beginLabel), std::make_shared<RegRefNode>(tmpRegIndex, true));
+			_insertIns(Opcode::JT, std::make_shared<LabelRefNode>(beginLabel), std::make_shared<RegRefNode>(tmpRegIndex, true));
 
 			popMinorContext();
 
@@ -255,19 +255,19 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 				if (returnType->getTypeId() != TypeId::Void)
 					throw FatalCompilationError({ stmt->getLocation(), MessageType::Error, "Must return a value" });
 				else
-					curFn->insertIns(Opcode::RET, {});
+					_insertIns(Opcode::RET, {});
 			} else {
 				if (auto e = evalConstExpr(s->returnValue); e) {
 					if (isSameType(evalExprType(e), returnType)) {
-						curFn->insertIns(Opcode::RET, e);
+						_insertIns(Opcode::RET, e);
 					} else {
 						if (auto ce = castLiteralExpr(e, returnType->getTypeId()); ce) {
-							curFn->insertIns(Opcode::RET, ce);
+							_insertIns(Opcode::RET, ce);
 						} else {
 							uint32_t tmpRegIndex = allocReg();
 
 							compileExpr(std::make_shared<CastExprNode>(e->getLocation(), returnType, e), EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
-							curFn->insertIns(Opcode::RET, std::make_shared<RegRefNode>(tmpRegIndex, true));
+							_insertIns(Opcode::RET, std::make_shared<RegRefNode>(tmpRegIndex, true));
 						}
 					}
 				} else {
@@ -283,7 +283,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 					else
 						compileExpr(std::make_shared<CastExprNode>(s->returnValue->getLocation(), returnType, s->returnValue), EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
 
-					curFn->insertIns(Opcode::RET, std::make_shared<RegRefNode>(tmpRegIndex, true));
+					_insertIns(Opcode::RET, std::make_shared<RegRefNode>(tmpRegIndex, true));
 				}
 			}
 
@@ -299,15 +299,15 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 				if (curFn->returnType->getTypeId() != TypeId::Void)
 					throw FatalCompilationError({ stmt->getLocation(), MessageType::Error, "Must yield a value" });
 				else
-					curFn->insertIns(Opcode::YIELD, {});
+					_insertIns(Opcode::YIELD, {});
 			} else {
 				if (auto e = evalConstExpr(s->returnValue); e) {
-					curFn->insertIns(Opcode::YIELD, e);
+					_insertIns(Opcode::YIELD, e);
 				} else {
 					uint32_t tmpRegIndex = allocReg();
 
 					compileExpr(s->returnValue, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
-					curFn->insertIns(Opcode::YIELD, std::make_shared<RegRefNode>(tmpRegIndex, true));
+					_insertIns(Opcode::YIELD, std::make_shared<RegRefNode>(tmpRegIndex, true));
 				}
 			}
 
@@ -342,20 +342,20 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			} else
 				compileExpr(s->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
 
-			curFn->insertIns(Opcode::JF, std::make_shared<LabelRefNode>(falseBranchLabel), std::make_shared<RegRefNode>(tmpRegIndex, true));
+			_insertIns(Opcode::JF, std::make_shared<LabelRefNode>(falseBranchLabel), std::make_shared<RegRefNode>(tmpRegIndex, true));
 
 			compileStmt(s->body);
 			if (s->elseBranch) {
-				curFn->insertIns(Opcode::JMP, std::make_shared<LabelRefNode>(endLabel));
+				_insertIns(Opcode::JMP, std::make_shared<LabelRefNode>(endLabel));
 			}
 
-			curFn->insertLabel(falseBranchLabel);
+			_insertLabel(falseBranchLabel);
 
 			if (s->elseBranch) {
 				compileStmt(s->elseBranch);
 			}
 
-			curFn->insertLabel(endLabel);
+			_insertLabel(endLabel);
 
 			break;
 		}
@@ -366,10 +366,10 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			std::string labelPrefix = "$try_" + std::to_string(loc.line) + "_" + std::to_string(loc.column),
 				   endLabel = labelPrefix + "_final";
 
-			curFn->insertIns(Opcode::ENTER);
+			_insertIns(Opcode::ENTER);
 
 			for (size_t i = 0; i < s->catchBlocks.size(); ++i)
-				curFn->insertIns(
+				_insertIns(
 					Opcode::PUSHXH,
 					s->catchBlocks[i].targetType,
 					std::make_shared<LabelRefNode>(labelPrefix + "_xh_" + std::to_string(i)));
@@ -380,27 +380,27 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 				pushMajorContext();
 
 				auto &curBlock = s->catchBlocks[i];
-				curFn->insertLabel(labelPrefix + "_xh_" + std::to_string(i));
+				_insertLabel(labelPrefix + "_xh_" + std::to_string(i));
 
 				if (curBlock.exceptionVarName.size()) {
-					curFn->insertIns(Opcode::ENTER);
+					_insertIns(Opcode::ENTER);
 
-					curFn->insertIns(Opcode::LEXCEPT, std::make_shared<LocalVarRefNode>(allocLocalVar(curBlock.exceptionVarName, curBlock.targetType)));
+					_insertIns(Opcode::LEXCEPT, std::make_shared<LocalVarRefNode>(allocLocalVar(curBlock.exceptionVarName, curBlock.targetType)));
 				}
 
 				compileStmt(curBlock.body);
 
 				if (curBlock.exceptionVarName.size())
-					curFn->insertIns(Opcode::LEAVE);
+					_insertIns(Opcode::LEAVE);
 
-				curFn->insertIns(Opcode::JMP, std::make_shared<LabelRefNode>(endLabel));
+				_insertIns(Opcode::JMP, std::make_shared<LabelRefNode>(endLabel));
 
 				popMajorContext();
 			}
 
-			curFn->insertIns(Opcode::LEAVE);
+			_insertIns(Opcode::LEAVE);
 
-			curFn->insertLabel(endLabel);
+			_insertLabel(endLabel);
 
 			if (s->finalBlock.body)
 				compileStmt(s->finalBlock.body);
@@ -433,7 +433,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 				std::string caseBeginLabel = labelPrefix + "_case" + std::to_string(i) + "_end",
 					   caseEndLabel = labelPrefix + "_case" + std::to_string(i) + "_end";
 
-				curFn->insertLabel(caseBeginLabel);
+				_insertLabel(caseBeginLabel);
 
 				if (!curCase.condition) {
 					if (defaultCase)
@@ -446,25 +446,25 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 				}
 
 				compileExpr(curCase.condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(conditionRegIndex));
-				curFn->insertIns(
+				_insertIns(
 					Opcode::EQ,
 					std::make_shared<RegRefNode>(conditionRegIndex),
 					std::make_shared<RegRefNode>(matcheeRegIndex, true),
 					std::make_shared<RegRefNode>(conditionRegIndex, true));
-				curFn->insertIns(Opcode::JF, std::make_shared<LabelRefNode>(caseEndLabel), std::make_shared<RegRefNode>(conditionRegIndex));
+				_insertIns(Opcode::JF, std::make_shared<LabelRefNode>(caseEndLabel), std::make_shared<RegRefNode>(conditionRegIndex));
 
 				compileStmt(std::make_shared<BlockStmtNode>(curCase.loc, curCase.body));
 
-				curFn->insertLabel(caseEndLabel);
+				_insertLabel(caseEndLabel);
 
 				if (i + 1 < s->cases.size())
-					curFn->insertIns(Opcode::JMP, std::make_shared<LabelRefNode>(labelPrefix + "_case" + std::to_string(i + 1) + "_end"));
+					_insertIns(Opcode::JMP, std::make_shared<LabelRefNode>(labelPrefix + "_case" + std::to_string(i + 1) + "_end"));
 			}
 
 			if (defaultCase)
 				compileStmt(std::make_shared<BlockStmtNode>(defaultCase->loc, defaultCase->body));
 
-			curFn->insertLabel(endLabel);
+			_insertLabel(endLabel);
 
 			popMinorContext();
 			break;
@@ -474,7 +474,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 
 			pushMajorContext();
 
-			curFn->insertIns(Opcode::ENTER);
+			_insertIns(Opcode::ENTER);
 			++curMajorContext.curScopeLevel;
 
 			for (auto i : s->body.stmts) {
@@ -486,7 +486,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			}
 
 			--curMajorContext.curScopeLevel;
-			curFn->insertIns(Opcode::LEAVE);
+			_insertIns(Opcode::LEAVE);
 
 			popMajorContext();
 			break;

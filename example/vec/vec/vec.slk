@@ -28,7 +28,7 @@ pub fn main() {
 	let a : Vec4f = new Vec4f(),
 		b : Vec4f = new Vec4f();
 
-	let test : f64;
+	let test : f32;
 	a.test(test);
 
 	a[0] = 1.2f;

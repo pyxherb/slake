@@ -68,7 +68,10 @@ namespace slake {
 
 		/// @brief Statement level context
 		struct MinorContext {
+			bool dryRun = false;  // Dry run: Update semantic information but do not compile
+
 			std::shared_ptr<TypeNameNode> expectedType;
+			std::shared_ptr<TypeNameNode> evaluatedType;
 			std::shared_ptr<Scope> curScope;
 
 			std::unordered_map<std::string, std::shared_ptr<LocalVarNode>> localVars;
@@ -360,6 +363,55 @@ namespace slake {
 			uint32_t allocLocalVar(std::string name, std::shared_ptr<TypeNameNode> type);
 			uint32_t allocReg(uint32_t nRegs = 1);
 
+			inline void _insertIns(Ins ins) {
+				if (curMajorContext.curMinorContext.dryRun)
+					return;
+				curFn->insertIns(ins);
+			}
+			inline void _insertIns(
+				Opcode opcode,
+				std::shared_ptr<AstNode> op1) {
+				if (curMajorContext.curMinorContext.dryRun)
+					return;
+				curFn->insertIns(opcode, op1);
+			}
+			inline void _insertIns(
+				Opcode opcode,
+				std::shared_ptr<AstNode> op1,
+				std::shared_ptr<AstNode> op2) {
+				if (curMajorContext.curMinorContext.dryRun)
+					return;
+				curFn->insertIns(opcode, op1, op2);
+			}
+			inline void _insertIns(
+				Opcode opcode,
+				std::shared_ptr<AstNode> op1,
+				std::shared_ptr<AstNode> op2,
+				std::shared_ptr<AstNode> op3) {
+				if (curMajorContext.curMinorContext.dryRun)
+					return;
+				curFn->insertIns(opcode, op1, op2, op3);
+			}
+			inline void _insertIns(
+				Opcode opcode,
+				std::shared_ptr<AstNode> op1,
+				std::shared_ptr<AstNode> op2,
+				std::shared_ptr<AstNode> op3,
+				std::shared_ptr<AstNode> op4) {
+				if (curMajorContext.curMinorContext.dryRun)
+					return;
+				curFn->insertIns(opcode, op1, op2, op3, op4);
+			}
+			inline void _insertLabel(std::string name) {
+				if (curMajorContext.curMinorContext.dryRun)
+					return;
+				curFn->insertLabel(name);
+			}
+
+			//
+			// Import begin
+			//
+
 			std::set<Value *> importedDefinitions;
 
 			struct ModuleRefComparator {
@@ -390,6 +442,10 @@ namespace slake {
 			void importModule(const IdRef &ref);
 			std::shared_ptr<TypeNameNode> toTypeName(slake::Type runtimeType);
 			IdRef toAstIdRef(std::deque<slake::IdRefEntry> runtimeRefEntries);
+
+			//
+			// Import end
+			//
 
 			//
 			// Generic begin

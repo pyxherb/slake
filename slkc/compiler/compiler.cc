@@ -1157,13 +1157,13 @@ void Compiler::compileValue(std::ostream &fs, std::shared_ptr<AstNode> value) {
 					vd.type = slxfmt::TypeId::Array;
 					_write(fs, vd);
 
-					auto &s = std::static_pointer_cast<ArrayExprNode>(expr);
+					auto &a = std::static_pointer_cast<ArrayExprNode>(expr);
 
-					compileTypeName(fs, s->evaluatedElementType);
+					compileTypeName(fs, a->evaluatedElementType);
 
-					_write(fs, (uint32_t)s->elements.size());
+					_write(fs, (uint32_t)a->elements.size());
 
-					for (auto i : s->elements)
+					for (auto i : a->elements)
 						compileValue(fs, i);
 
 					break;

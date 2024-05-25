@@ -280,9 +280,14 @@ namespace slake {
 			Location _loc;
 
 		public:
+			size_t idxLBraceToken = SIZE_MAX, idxRBraceToken = SIZE_MAX;
 			std::deque<std::shared_ptr<ExprNode>> elements;
+			std::deque<size_t> idxCommaTokens;
 
-			inline ArrayExprNode(Location loc, std::deque<std::shared_ptr<ExprNode>> elements) : _loc(loc), elements(elements) {}
+			// Evaluated element type, for value compilation.
+			std::shared_ptr<TypeNameNode> evaluatedElementType;
+
+			inline ArrayExprNode(Location loc) : _loc(loc) {}
 			virtual ~ArrayExprNode() = default;
 
 			virtual inline Location getLocation() const override { return _loc; }

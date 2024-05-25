@@ -394,10 +394,43 @@ std::shared_ptr<ExprNode> Compiler::evalConstExpr(std::shared_ptr<ExprNode> expr
 		}
 		case ExprType::Array: {
 			auto e = std::static_pointer_cast<ArrayExprNode>(expr);
-			for (auto i : e->elements)
-				if (!evalConstExpr(i))
-					return {};
-			return e;
+
+			auto resultExpr = std::make_shared<ArrayExprNode>(e->getLocation());
+
+			if ((!curMajorContext.curMinorContext.expectedType) ||
+				curMajorContext.curMinorContext.expectedType->getTypeId() != TypeId::Array)
+				return {};
+
+			auto et = std::static_pointer_cast<ArrayTypeNameNode>(curMajorContext.curMinorContext.expectedType);
+
+			for (auto &i : e->elements) {
+				auto t = evalExprType(i);
+
+				if (!isSameType(t, et->elementType)) {
+					if (isTypeNamesConvertible(t, et->elementType)) {
+						auto element = evalConstExpr(std::make_shared<CastExprNode>(
+							i->getLocation(),
+							et,
+							i));
+
+						if (!element)
+							return {};
+
+						resultExpr->elements.push_back(element);
+					} else
+						return false;
+				} else {
+					auto element = evalConstExpr(i);
+					if (!element)
+						return {};
+
+					resultExpr->elements.push_back(element);
+				}
+			}
+
+			resultExpr->evaluatedElementType = et->elementType;
+
+			return resultExpr;
 		}
 		case ExprType::IdRef: {
 			auto e = std::static_pointer_cast<IdRefExprNode>(expr);
@@ -755,6 +788,23 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> e
 					}
 					break;
 				}
+				case TypeId::Array: {
+					switch (e->op) {
+						//case BinaryOp::Add:
+						//	return lhsType;
+						case BinaryOp::Subscript: {
+							auto resultType = std::static_pointer_cast<ArrayTypeNameNode>(lhsType)->elementType->duplicate<TypeNameNode>();
+							resultType->isRef = true;
+							return resultType;
+						}
+						default:
+							throw FatalCompilationError(
+								Message(
+									e->getLocation(),
+									MessageType::Error,
+									"No matching operator"));
+					}
+				}
 				case TypeId::Custom: {
 					auto node = resolveCustomTypeName(std::static_pointer_cast<CustomTypeNameNode>(lhsType).get());
 					auto rhsType = evalExprType(e->rhs);
@@ -1033,6 +1083,36 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> e
 			}
 
 			break;
+		}
+		case ExprType::Array: {
+			auto e = std::static_pointer_cast<ArrayExprNode>(expr);
+
+			if ((!curMajorContext.curMinorContext.expectedType) ||
+				curMajorContext.curMinorContext.expectedType->getTypeId() != TypeId::Array)
+				return {};
+
+			auto et = std::static_pointer_cast<ArrayTypeNameNode>(curMajorContext.curMinorContext.expectedType);
+
+			for (auto &i : e->elements) {
+				auto t = evalExprType(i);
+				if (!t)
+					throw FatalCompilationError(
+						Message(
+							i->getLocation(),
+							MessageType::Error,
+							"Error deducing the element type"));
+
+				if (!isSameType(t, et->elementType)) {
+					if (!isTypeNamesConvertible(t, et->elementType))
+						throw FatalCompilationError(
+							Message(
+								i->getLocation(),
+								MessageType::Error,
+								"Incompatible element type"));
+				}
+			}
+
+			return curMajorContext.curMinorContext.expectedType;
 		}
 		case ExprType::New:
 			return std::static_pointer_cast<NewExprNode>(expr)->type;

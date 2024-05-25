@@ -24,3 +24,16 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
     re2c
     REQUIRED_VARS SLAKE_INCLUDE_DIRS SLAKE_LINK_LIBRARIES)
+
+if(SLAKE_INCLUDE_DIRS AND
+	SLAKE_LINK_LIBRARIES)
+	set(SLAKE_FOUND TRUE)
+endif()
+
+if(SLAKE_FOUND)
+	add_library(Slake::Slake STATIC IMPORTED)
+	set_target_properties(
+		Slake::Slake PROPERTIES
+		INTERFACE_INCLUDE_DIRECTORIES ${SLAKE_INCLUDE_DIRS}
+		IMPORTED_LOCATION ${SLAKE_LINK_LIBRARIES})
+endif()

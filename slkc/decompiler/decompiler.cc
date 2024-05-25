@@ -74,6 +74,21 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 			os << '"';
 			break;
 		}
+		case slake::TypeId::Array: {
+			os << "{";
+
+			auto v = ((ArrayValue *)value);
+
+			for (size_t i = 0; i < v->values.size(); ++i) {
+				if (i)
+					os << ", ";
+
+				decompileValue(rt, v->values[i]->getData(), os, indentLevel);
+			}
+
+			os << "}";
+			break;
+		}
 		case slake::TypeId::IdRef:
 			os << std::to_string((IdRefValue *)value);
 			break;

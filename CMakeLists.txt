@@ -43,3 +43,5 @@ if(SLAKE_BUILD_SLKC)
 endif()
 
 add_subdirectory("example")
+
+install(FILES "cmake/slakeConfig.cmake" DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/slake)

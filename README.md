@@ -2,14 +2,13 @@
 
 <div align="center">
     <img src="./common/logo2.svg" alt="Slake logo"><br/>
-    <big>The powerful object-oriented, type-safe programming language,</big>
-    <big>designed for scripting and embedding.</big>
+    <big>The object-oriented, type-safe, embeddable programming language</big>
 </div>
 
 ## Introduction
 
-Slake is an object-oriented, type-safe programming language designed for
-scripting and embedding.
+Slake is an object-oriented, type-safe and embeddable programming language for
+scripting.
 
 ## Development Progress
 
@@ -31,7 +30,7 @@ scripting and embedding.
   * Compiler ✅
   * Optimizer ❌
   * Language Server 🕓
-    * Linting 🕓
+    * Linting ✅
     * Snippets 🕓
     * Formatting 🕓
     * Renaming 🕓
@@ -44,7 +43,7 @@ scripting and embedding.
     * Interface ✅
     * Trait ✅
     * Operator ✅
-    * Accessor 🕓
+    * Accessor ❌
   * Coroutine 🕓
   * Closure ❌
   * Overloading ✅
@@ -102,11 +101,4 @@ For x86 and x86-64, you will need:
 You will need:
 
 * A C++ Compiler with C++17 support
-
-### Bytecode Compiler (slkbc)
-
-You will need:
-
-* A C++ Compiler with C++17 support
-* Flex
-* GNU Bison
+* jsoncpp library (If with language server support enabled)

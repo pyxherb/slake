@@ -143,6 +143,12 @@ namespace slake {
 		inline NullRefError() : RuntimeExecError("Null reference detected"){};
 		virtual ~NullRefError() = default;
 	};
+
+	class OutOfRangeError : public RuntimeExecError {
+	public:
+		inline OutOfRangeError() : RuntimeExecError("Out of range"){};
+		virtual ~OutOfRangeError() = default;
+	};
 }
 
 #endif

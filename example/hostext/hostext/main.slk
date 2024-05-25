@@ -84,10 +84,11 @@ pub fn main() async: i32 {
 
 	let v : i32 = 1919810;
 	test.test(v);
+	
+	let array: i32[] = { 12, 34, 56, 78, 114, 514, 1919, 810 };
+	v = array[2];
 
 	extfns.print("Value:", v, "\n");
-
-	let array: i32[] = new i32[](32);
 
 	while(test.x = test.x - 1) {
 		extfns.print("Yielded\n");

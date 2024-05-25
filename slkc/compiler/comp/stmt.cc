@@ -57,6 +57,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 
 				uint32_t index = allocLocalVar(i.first, varType);
 
+				curMajorContext.curMinorContext.expectedType = varType;
 				if (isLValueType(varType)) {
 					if (!i.second.initValue) {
 						throw FatalCompilationError(

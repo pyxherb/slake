@@ -80,6 +80,19 @@ Value *Runtime::_loadValue(std::istream &fs) {
 			fs.read(&(s[0]), len);
 			return new StringValue(this, s);
 		}
+		case slxfmt::TypeId::Array: {
+			auto elementType = _loadType(fs, _read<slxfmt::TypeId>(fs));
+			std::unique_ptr<ArrayValue> value = std::make_unique<ArrayValue>(this, elementType);
+
+			auto len = _read<uint32_t>(fs);
+
+			value->values.resize(len);
+			for (uint32_t i = 0; i < len; ++i) {
+				(value->values[i] = new VarValue(this, ACCESS_PUB, elementType))->setData(_loadValue(fs));
+			}
+
+			return value.release();
+		}
 		case slxfmt::TypeId::IdRef:
 			return _loadIdRef(fs);
 		case slxfmt::TypeId::TypeName:

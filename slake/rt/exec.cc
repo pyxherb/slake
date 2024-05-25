@@ -597,31 +597,17 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		case Opcode::AT: {
 			_checkOperandCount(ins, 3);
 
-			_checkOperandType(ins, { TypeId::Var, TypeId::Any, TypeId::Any });
+			_checkOperandType(ins, { TypeId::Var, TypeId::Array, TypeId::U32});
 
-			Value *x = ins.operands[1], *i = ins.operands[2];
+			VarValue *valueOut = (VarValue*)ins.operands[0];
+			ArrayValue *arrayIn = (ArrayValue *)ins.operands[1];
+			U32Value *indexIn = (U32Value *)ins.operands[2];
 
-			switch (x->getType().typeId) {
-				case TypeId::Array: {
-					ArrayValue *array = (ArrayValue *)x;
+			if (indexIn->_data > arrayIn->values.size())
+				throw OutOfRangeError();
 
-					if (i->getType() != TypeId::U32)
-						throw InvalidOperandsError("Invalid argument for subscription");
+			valueOut->setData(arrayIn->values[indexIn->_data]);
 
-					auto index = ((I32Value *)i)->getData();
-					if (array->values.size() <= index)
-						throw InvalidSubscriptionError("Out of array range");
-
-					((VarValue *)ins.operands[0])->setData(array->values[index]);
-					break;
-				}
-				case TypeId::Object: {
-					throw std::logic_error("Unimplemented yet");
-					break;
-				}
-				default:
-					throw InvalidOperandsError("Subscription is not supported by the operand");
-			}
 			break;
 		}
 		case Opcode::JMP: {

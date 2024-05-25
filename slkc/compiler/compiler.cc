@@ -1153,6 +1153,21 @@ void Compiler::compileValue(std::ostream &fs, std::shared_ptr<AstNode> value) {
 					compileIdRef(fs, std::static_pointer_cast<IdRefExprNode>(expr)->ref);
 					break;
 				}
+				case ExprType::Array: {
+					vd.type = slxfmt::TypeId::Array;
+					_write(fs, vd);
+
+					auto &s = std::static_pointer_cast<ArrayExprNode>(expr);
+
+					compileTypeName(fs, s->evaluatedElementType);
+
+					_write(fs, (uint32_t)s->elements.size());
+
+					for (auto i : s->elements)
+						compileValue(fs, i);
+
+					break;
+				}
 				default:
 					assert(false);
 			}

@@ -311,6 +311,8 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 				MessageType::Error,
 				"Error deducing type of the right operand"));
 
+	curMajorContext.curMinorContext.expectedType = lhsType;
+
 	bool isLhsTypeLValue = isLValueType(lhsType), isRhsTypeLValue = isLValueType(rhsType);
 
 	uint32_t resultRegIndex = allocReg();
@@ -660,6 +662,60 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							MessageType::Error,
 							"No matching operator"));
 			}
+			break;
+		}
+		case TypeId::Array: {
+			switch (e->op) {
+				case BinaryOp::Subscript: {
+					uint32_t lhsRegIndex = allocReg(2),
+							 rhsRegIndex = lhsRegIndex + 1;
+
+					auto u32Type = std::make_shared<U32TypeNameNode>(e->rhs->getLocation(), SIZE_MAX);
+
+					compileExpr(
+						e->lhs,
+						opReg.isLhsLvalue
+							? EvalPurpose::LValue
+							: EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+
+					if (!isSameType(rhsType, u32Type)) {
+						if (!isTypeNamesConvertible(rhsType, u32Type))
+							throw FatalCompilationError(
+								{ e->rhs->getLocation(),
+									MessageType::Error,
+									"Incompatible operand types" });
+
+						compileExpr(
+							std::make_shared<CastExprNode>(e->rhs->getLocation(), u32Type, e->rhs),
+							opReg.isRhsLvalue
+								? EvalPurpose::LValue
+								: EvalPurpose::RValue,
+							std::make_shared<RegRefNode>(rhsRegIndex));
+					} else
+						compileExpr(
+							e->rhs,
+							opReg.isRhsLvalue
+								? EvalPurpose::LValue
+								: EvalPurpose::RValue,
+							std::make_shared<RegRefNode>(rhsRegIndex));
+
+					curFn->insertIns(
+						opReg.opcode,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						std::make_shared<RegRefNode>(lhsRegIndex, true),
+						std::make_shared<RegRefNode>(rhsRegIndex, true));
+
+					break;
+				}
+				default:
+					throw FatalCompilationError(
+						Message(
+							e->getLocation(),
+							MessageType::Error,
+							"No matching operator"));
+			}
+
 			break;
 		}
 		case TypeId::Custom: {
@@ -1400,6 +1456,8 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 		case ExprType::Cast: {
 			auto e = std::static_pointer_cast<CastExprNode>(expr);
 
+			curMajorContext.curMinorContext.expectedType = e->targetType;
+
 			if (auto ce = evalConstExpr(e->target); ce) {
 				if (isTypeNamesConvertible(evalExprType(ce), e->targetType)) {
 					curFn->insertIns(Opcode::CAST, curMajorContext.curMinorContext.evalDest, e->targetType, ce);
@@ -1740,6 +1798,64 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 
 			break;
 		}
+		case ExprType::Array: {
+			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
+				throw FatalCompilationError(
+					Message(
+						expr->getLocation(),
+						MessageType::Error,
+						"Expecting a lvalue expression"));
+
+			auto e = std::static_pointer_cast<ArrayExprNode>(expr);
+
+			auto type = std::static_pointer_cast<ArrayTypeNameNode>(evalExprType(e));
+
+			if (!type)
+				throw FatalCompilationError(
+					Message(
+						e->getLocation(),
+						MessageType::Error,
+						"Error deducing type of the expression"));
+
+			if (auto ce = evalConstExpr(e); ce) {
+				curFn->insertIns(Opcode::STORE, curMajorContext.curMinorContext.evalDest, ce);
+			} else {
+				auto initArray = std::make_shared<ArrayExprNode>(e->getLocation());
+				initArray->elements.resize(e->elements.size());
+
+				initArray->evaluatedElementType = type->elementType;
+
+				// We use nullptr to represent non-constexpr expressions.
+				for (size_t i = 0; i < e->elements.size(); ++i) {
+					initArray->elements[i] = evalConstExpr(initArray->elements[i]);
+				}
+
+				size_t idxTmpArrayRegIndex = allocReg(),
+					   idxTmpElementRegIndex = allocReg();
+
+				curFn->insertIns(
+					Opcode::STORE,
+					std::make_shared<RegRefNode>(idxTmpArrayRegIndex),
+					initArray);
+
+				// Assign non-constexpr expressions to corresponding elements.
+				for (size_t i = 0; i < initArray->elements.size(); ++i) {
+					if (!initArray->elements[i]) {
+						curFn->insertIns(
+							Opcode::AT,
+							std::make_shared<RegRefNode>(idxTmpElementRegIndex),
+							std::make_shared<RegRefNode>(idxTmpArrayRegIndex, true),
+							std::make_shared<U32LiteralExprNode>(Location(), idxTmpElementRegIndex, SIZE_MAX));
+						compileExpr(
+							e->elements[i],
+							EvalPurpose::RValue,
+							std::make_shared<RegRefNode>(idxTmpElementRegIndex, true));
+					}
+				}
+			}
+
+			break;
+		}
 		case ExprType::I8:
 		case ExprType::I16:
 		case ExprType::I32:
@@ -1750,7 +1866,6 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 		case ExprType::F64:
 		case ExprType::String:
 		case ExprType::Bool:
-		case ExprType::Array:
 			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
 				throw FatalCompilationError(
 					Message(

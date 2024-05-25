@@ -685,8 +685,7 @@ std::deque<std::shared_ptr<TypeNameNode>> Parser::parseGenericArgs(bool forTypeN
 					MessageType::Error,
 					"Expecting a type name"));
 			return genericArgs;
-		}
-		else
+		} else
 			goto fail;
 	}
 	lexer->nextToken();
@@ -849,7 +848,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 					break;
 				case TokenId::LParenthese:
 					lexer->nextToken();
-					parseExpr(precedence);
+					lhs = parseExpr();
 					expectToken(TokenId::RParenthese);
 					break;
 				case TokenId::NewKeyword: {
@@ -942,6 +941,28 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 							lexer->getTokenIndex(prefixToken)));
 					lexer->nextToken();
 					break;
+				case TokenId::LBrace: {
+					lexer->nextToken();
+
+					auto expr = std::make_shared<ArrayExprNode>(prefixToken.beginLocation);
+
+					expr->idxLBraceToken = lexer->getTokenIndex(prefixToken);
+
+					while (true) {
+						expr->elements.push_back(parseExpr());
+
+						if (auto& commaToken = lexer->peekToken(); commaToken.tokenId == TokenId::Comma) {
+							lexer->nextToken();
+							expr->idxCommaTokens.push_back(lexer->getTokenIndex(commaToken));
+						} else
+							break;
+					}
+
+					lhs = std::static_pointer_cast<ExprNode>(expr);
+
+					expectToken(TokenId::RBrace);
+					break;
+				}
 				default:
 					lexer->nextToken();
 					throw SyntaxError("Expecting an expression", prefixToken.beginLocation);

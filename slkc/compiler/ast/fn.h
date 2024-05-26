@@ -96,7 +96,7 @@ namespace slake {
 
 			virtual inline NodeType getNodeType() const override { return NodeType::FnOverloading; }
 
-			virtual IdRefEntry getName() const override { throw std::logic_error("Cannot get name of a function overloading"); }
+			virtual IdRefEntry getName() const override;
 			virtual Location getLocation() const override { return loc; }
 
 			inline bool isAbstract() { return !body; }
@@ -134,7 +134,9 @@ namespace slake {
 
 			virtual inline NodeType getNodeType() const override { return NodeType::Fn; }
 
-			virtual IdRefEntry getName() const override { return IdRefEntry({}, SIZE_MAX, name, genericArgs); }
+			virtual IdRefEntry getName() const override {
+				throw std::logic_error("Please get name from overloading registries");
+			}
 		};
 
 		struct Ins {
@@ -285,20 +287,6 @@ namespace slake {
 			}
 
 			virtual inline NodeType getNodeType() const override { return NodeType::ArgRef; }
-		};
-
-		class GenericArgRefNode final : public AstNode {
-		public:
-			uint32_t index;
-
-			inline GenericArgRefNode(uint32_t index) : index(index) {}
-			virtual ~GenericArgRefNode() = default;
-
-			virtual inline Location getLocation() const override {
-				throw std::logic_error("Should not get location of a generic argument reference");
-			}
-
-			virtual inline NodeType getNodeType() const override { return NodeType::GenericArgRef; }
 		};
 	}
 }

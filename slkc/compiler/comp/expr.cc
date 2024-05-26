@@ -91,24 +91,49 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 		case TypeId::U64:
 		case TypeId::F32:
 		case TypeId::F64:
-			compileExpr(
-				e->x,
-				opReg.lvalueOperand
-					? EvalPurpose::LValue
-					: EvalPurpose::RValue,
-				std::make_shared<RegRefNode>(lhsRegIndex));
-
-			_insertIns(
-				opReg.opcode,
-				std::make_shared<RegRefNode>(resultRegIndex),
-				std::make_shared<RegRefNode>(lhsRegIndex, true));
-
 			switch (e->op) {
 				case UnaryOp::LNot:
+					compileExpr(
+						e->x,
+						opReg.lvalueOperand
+							? EvalPurpose::LValue
+							: EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+
+					_insertIns(
+						opReg.opcode,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						std::make_shared<RegRefNode>(lhsRegIndex, true));
+
 					resultType = std::make_shared<BoolTypeNameNode>(e->getLocation(), SIZE_MAX);
 					break;
+				case UnaryOp::Not:
+				case UnaryOp::IncF:
+				case UnaryOp::DecF:
+				case UnaryOp::IncB:
+				case UnaryOp::DecB:
+				case UnaryOp::Neg:
+					compileExpr(
+						e->x,
+						opReg.lvalueOperand
+							? EvalPurpose::LValue
+							: EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+
+					_insertIns(
+						opReg.opcode,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						std::make_shared<RegRefNode>(lhsRegIndex, true));
+
+					resultType = lhsType->duplicate<TypeNameNode>();
+					resultType->isRef = opReg.lvalueResult;
+					break;
 				default:
-					resultType = lhsType;
+					throw FatalCompilationError(
+						Message(
+							e->getLocation(),
+							MessageType::Error,
+							"No matching operator"));
 			}
 			break;
 		case TypeId::Bool:
@@ -466,6 +491,44 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 					resultType = std::make_shared<BoolTypeNameNode>(Location(), SIZE_MAX);
 					break;
+				case BinaryOp::Eq:
+				case BinaryOp::Neq:
+				case BinaryOp::Lt:
+				case BinaryOp::Gt:
+				case BinaryOp::LtEq:
+				case BinaryOp::GtEq: {
+					uint32_t lhsRegIndex = allocReg(2);
+					uint32_t rhsRegIndex = lhsRegIndex + 1;
+
+					compileExpr(
+						e->lhs,
+						opReg.isLhsLvalue
+							? EvalPurpose::LValue
+							: EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+
+					if (!isSameType(lhsType, rhsType)) {
+						if (!isTypeNamesConvertible(rhsType, lhsType))
+							throw FatalCompilationError(
+								{ e->rhs->getLocation(),
+									MessageType::Error,
+									"Incompatible operand types" });
+
+						compileExpr(
+							std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
+							opReg.isRhsLvalue
+								? EvalPurpose::LValue
+								: EvalPurpose::RValue,
+							std::make_shared<RegRefNode>(rhsRegIndex));
+					} else
+						compileExpr(e->rhs, opReg.isRhsLvalue ? EvalPurpose::LValue : EvalPurpose::RValue, std::make_shared<RegRefNode>(rhsRegIndex));
+
+					execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
+
+					resultType = std::make_shared<BoolTypeNameNode>(Location(), SIZE_MAX);
+
+					break;
+				}
 				case BinaryOp::Lsh:
 				case BinaryOp::Rsh:
 				case BinaryOp::AssignLsh:
@@ -505,15 +568,28 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 					execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
 
-					if (isAssignBinaryOp(e->op)) {
-						resultType = lhsType->duplicate<TypeNameNode>();
-						resultType->isRef = true;
-					} else
-						resultType = lhsType;
+					resultType = lhsType->duplicate<TypeNameNode>();
+					resultType->isRef = opReg.isResultLvalue;
 
 					break;
 				}
-				default: {
+				case BinaryOp::Add:
+				case BinaryOp::Sub:
+				case BinaryOp::Mul:
+				case BinaryOp::Div:
+				case BinaryOp::Mod:
+				case BinaryOp::And:
+				case BinaryOp::Or:
+				case BinaryOp::Xor:
+				case BinaryOp::Assign:
+				case BinaryOp::AssignAdd:
+				case BinaryOp::AssignSub:
+				case BinaryOp::AssignMul:
+				case BinaryOp::AssignDiv:
+				case BinaryOp::AssignMod:
+				case BinaryOp::AssignAnd:
+				case BinaryOp::AssignOr:
+				case BinaryOp::AssignXor: {
 					uint32_t lhsRegIndex = allocReg(2);
 					uint32_t rhsRegIndex = lhsRegIndex + 1;
 
@@ -542,14 +618,17 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 					execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
 
-					if (isAssignBinaryOp(e->op)) {
-						resultType = lhsType->duplicate<TypeNameNode>();
-						resultType->isRef = true;
-					} else
-						resultType = lhsType;
+					resultType = lhsType->duplicate<TypeNameNode>();
+					resultType->isRef = opReg.isResultLvalue;
 
 					break;
 				}
+				default:
+					throw FatalCompilationError(
+						Message(
+							e->getLocation(),
+							MessageType::Error,
+							"No matching operator"));
 			}
 
 			break;
@@ -874,7 +953,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							return false;
 						overloading = overloadings[0];
 
-#ifdef SLKC_WITH_LANGUAGE_SERVER
+#if SLKC_WITH_LANGUAGE_SERVER
 						updateTokenInfo(e->idxOpToken, [&overloading](TokenInfo &tokenInfo) {
 							tokenInfo.semanticInfo.correspondingMember = overloading;
 						});
@@ -890,7 +969,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 						std::make_shared<RegRefNode>(lhsRegIndex));
 
 					IdRef fullName;
-					_getFullName(operatorNode.get(), fullName);
+					_getFullName(overloading.get(), fullName);
 
 					fullName.back().name = mangleName(
 						fullName.back().name,
@@ -954,11 +1033,6 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 								EvalPurpose::LValue,
 								std::make_shared<RegRefNode>(lhsRegIndex));
 
-							compileExpr(
-								e->rhs,
-								EvalPurpose::RValue,
-								std::make_shared<RegRefNode>(rhsRegIndex));
-
 							if (!isSameType(lhsType, rhsType)) {
 								if (!isTypeNamesConvertible(rhsType, lhsType))
 									throw FatalCompilationError(
@@ -968,9 +1042,13 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 								compileExpr(
 									std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
-									EvalPurpose::LValue,
+									EvalPurpose::RValue,
 									std::make_shared<RegRefNode>(rhsRegIndex));
-							}
+							} else
+								compileExpr(
+									e->rhs,
+									EvalPurpose::RValue,
+									std::make_shared<RegRefNode>(rhsRegIndex));
 
 							_insertIns(
 								Opcode::STORE,
@@ -983,6 +1061,44 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 							resultType = lhsType->duplicate<TypeNameNode>();
 							resultType->isRef = true;
+							break;
+						}
+						case BinaryOp::StrictEq:
+						case BinaryOp::StrictNeq: {
+							uint32_t rhsRegIndex = allocReg(1);
+
+							compileExpr(
+								e->lhs,
+								EvalPurpose::RValue,
+								std::make_shared<RegRefNode>(lhsRegIndex));
+
+							lhsType = lhsType->duplicate<TypeNameNode>();
+							lhsType->isRef = false;
+
+							if (!isSameType(lhsType, rhsType)) {
+								if (!isTypeNamesConvertible(rhsType, lhsType))
+									throw FatalCompilationError(
+										{ e->rhs->getLocation(),
+											MessageType::Error,
+											"Incompatible operand types" });
+
+								compileExpr(
+									std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
+									EvalPurpose::RValue,
+									std::make_shared<RegRefNode>(rhsRegIndex));
+							} else
+								compileExpr(
+									e->rhs,
+									EvalPurpose::RValue,
+									std::make_shared<RegRefNode>(rhsRegIndex));
+
+							_insertIns(
+								opReg.opcode,
+								std::make_shared<RegRefNode>(resultRegIndex),
+								std::make_shared<RegRefNode>(lhsRegIndex, true),
+								std::make_shared<RegRefNode>(rhsRegIndex, true));
+
+							resultType = std::make_shared<BoolTypeNameNode>(Location(), SIZE_MAX);
 							break;
 						}
 						default: {
@@ -1013,11 +1129,6 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 								EvalPurpose::LValue,
 								std::make_shared<RegRefNode>(lhsRegIndex));
 
-							compileExpr(
-								e->rhs,
-								EvalPurpose::RValue,
-								std::make_shared<RegRefNode>(rhsRegIndex));
-
 							if (!isSameType(lhsType, rhsType)) {
 								if (!isTypeNamesConvertible(rhsType, lhsType))
 									throw FatalCompilationError(
@@ -1027,9 +1138,13 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 								compileExpr(
 									std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
-									EvalPurpose::LValue,
+									EvalPurpose::RValue,
 									std::make_shared<RegRefNode>(rhsRegIndex));
-							}
+							} else
+								compileExpr(
+									e->rhs,
+									EvalPurpose::RValue,
+									std::make_shared<RegRefNode>(rhsRegIndex));
 
 							_insertIns(
 								Opcode::STORE,
@@ -1042,6 +1157,44 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 							resultType = lhsType->duplicate<TypeNameNode>();
 							resultType->isRef = true;
+							break;
+						}
+						case BinaryOp::StrictEq:
+						case BinaryOp::StrictNeq: {
+							uint32_t rhsRegIndex = allocReg(1);
+
+							compileExpr(
+								e->lhs,
+								EvalPurpose::RValue,
+								std::make_shared<RegRefNode>(lhsRegIndex));
+
+							lhsType = lhsType->duplicate<TypeNameNode>();
+							lhsType->isRef = false;
+
+							if (!isSameType(lhsType, rhsType)) {
+								if (!isTypeNamesConvertible(rhsType, lhsType))
+									throw FatalCompilationError(
+										{ e->rhs->getLocation(),
+											MessageType::Error,
+											"Incompatible operand types" });
+
+								compileExpr(
+									std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
+									EvalPurpose::RValue,
+									std::make_shared<RegRefNode>(rhsRegIndex));
+							} else
+								compileExpr(
+									e->rhs,
+									EvalPurpose::RValue,
+									std::make_shared<RegRefNode>(rhsRegIndex));
+
+							_insertIns(
+								opReg.opcode,
+								std::make_shared<RegRefNode>(resultRegIndex),
+								std::make_shared<RegRefNode>(lhsRegIndex, true),
+								std::make_shared<RegRefNode>(rhsRegIndex, true));
+
+							resultType = std::make_shared<BoolTypeNameNode>(Location(), SIZE_MAX);
 							break;
 						}
 						default: {
@@ -1572,7 +1725,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 								if (overloading->isVaridic())
 									paramTypes.pop_back();
 
-								IdRef fullName = getFullName(it->second.get());
+								IdRef fullName = getFullName(overloading.get());
 								fullName.back().name = mangleName("new", paramTypes, false);
 
 								_insertIns(Opcode::NEW, curMajorContext.curMinorContext.evalDest, e->type, std::make_shared<IdRefExprNode>(fullName));
@@ -1778,7 +1931,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 
 							std::shared_ptr<FnOverloadingNode> overloading = determineOverloadingRegistry(std::static_pointer_cast<FnNode>(resolvedParts[i].second), resolvedParts[i].first.back().genericArgs);
 
-#ifdef SLKC_WITH_LANGUAGE_SERVER
+#if SLKC_WITH_LANGUAGE_SERVER
 							updateTokenInfo(resolvedParts[i].first.back().idxToken, [&overloading](TokenInfo &tokenInfo) {
 								tokenInfo.semanticInfo.correspondingMember = overloading;
 							});
@@ -1940,11 +2093,11 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							IdRef ref;
 
 							FnNode *fn = (FnNode *)x.get();
-							_getFullName(fn, ref);
 
-							std::shared_ptr<FnOverloadingNode> overloading = determineOverloadingRegistry(std::static_pointer_cast<FnNode>(x), ref.back().genericArgs);
+							std::shared_ptr<FnOverloadingNode> overloading = determineOverloadingRegistry(std::static_pointer_cast<FnNode>(x), resolvedParts.front().first.back().genericArgs);
+							_getFullName(overloading.get(), ref);
 
-#ifdef SLKC_WITH_LANGUAGE_SERVER
+#if SLKC_WITH_LANGUAGE_SERVER
 							updateTokenInfo(resolvedParts.front().first.back().idxToken, [&overloading](TokenInfo &tokenInfo) {
 								tokenInfo.semanticInfo.correspondingMember = overloading;
 							});
@@ -2048,6 +2201,20 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 						"Expecting a lvalue expression"));
 
 			auto type = std::static_pointer_cast<ArrayTypeNameNode>(curMajorContext.curMinorContext.expectedType);
+
+#if SLKC_WITH_LANGUAGE_SERVER
+			updateTokenInfo(e->idxLBraceToken, [this](TokenInfo &tokenInfo) {
+				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+				tokenInfo.completionContext = CompletionContext::Expr;
+			});
+
+			for (size_t i = 0; i < e->idxCommaTokens.size(); ++i) {
+				updateTokenInfo(e->idxCommaTokens[i], [this](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+					tokenInfo.completionContext = CompletionContext::Expr;
+				});
+			}
+#endif
 
 			// Check type of the members.
 			for (auto &i : e->elements) {
@@ -2171,6 +2338,18 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			}
 			break;
 		}
+		case ExprType::Null:
+			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
+				throw FatalCompilationError(
+					Message(
+						expr->getLocation(),
+						MessageType::Error,
+						"Expecting a lvalue expression"));
+
+			_insertIns(Opcode::STORE, curMajorContext.curMinorContext.evalDest, expr);
+
+			curMajorContext.curMinorContext.evaluatedType = std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX);
+			break;
 		case ExprType::Bad:
 			break;
 		default:

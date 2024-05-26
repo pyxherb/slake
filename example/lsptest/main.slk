@@ -6,16 +6,17 @@ import {
 
 class AnotherGeneric<X, U> {
 	class ChildGeneric<V, T(Test)> {
-		pub let x: i32;
+		pub let xyz: i32;
 
-		pub fn setX(T x) {
-			this.x = x.getX();
+		pub fn _setX(T abc) {
+			this.xyz = abc.getX();
+			extfns.print("[ChildGeneric]setX: ", this.xyz, "\n");
 			return;
 		}
 
-		pub fn getX(): i32 {
-			extfns.print("Fetched x: ", this.x, "\n");
-			return this.x;
+		pub fn _getX(): i32 {
+			extfns.print("[ChildGeneric]Fetched xyz: ", this.xyz, "\n");
+			return this.xyz;
 		}
 	}
 }
@@ -39,6 +40,11 @@ class Test {
 		return this.x;
 	}
 
+	pub fn test(i32 &x) {
+		x = 114514;
+		return;
+	}
+	
 	pub operator +(i32 rhs) : i32 {
 		return this.x + rhs;
 	}
@@ -64,41 +70,25 @@ class Derived(Test) {
 	}
 }
 
-class AnotherDerived(Derived) {
-	pub let z: i32;
-
-	pub fn new(i32 z) {
-		this.z = z;
-		this.x = z * 4;
-		this.y = z * 2;
-		return;
-	}
-
-	pub fn getZ(): i32 {
-		extfns.print("Fetched z: ", this.z, "\n");
-		return this.y;
-	}
-}
-
-class Unrelated {
-}
-
-let n : AnotherDerived;
-
 pub fn main() async: i32 {
 	hostext.extfns.print("Entered main\n");
-
+	
 	let test: Test = new Derived(50);
 	test.lab = test;
-	test.lab.lab.getX();
 
 	let x: AnotherGeneric<i32, f32>.ChildGeneric<f32, Test> = new AnotherGeneric<i32, f32>.ChildGeneric<f32, Test>();
-	x.setX(test);
-	x.getX();
+	x._setX(test);
+	x._getX();
 
 	extfns.print(test + 123);
 
-	let array: i32[] = new i32[](32);
+	let v : i32 = 1919810;
+	test.test(v);
+	
+	let array: i32[] = { 12, 34, 56, 78, 114, 514, 1919, 810 };
+	v = array[2];
+
+	extfns.print("Value:", v, "\n");
 
 	while(test.x = test.x - 1) {
 		extfns.print("Yielded\n");

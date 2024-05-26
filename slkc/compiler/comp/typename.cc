@@ -232,14 +232,21 @@ bool Compiler::isTypeNamesConvertible(std::shared_ptr<TypeNameNode> src, std::sh
 		case TypeId::F64:
 			if (isNumericTypeName(src))
 				return true;
+			if (src->getTypeId() == TypeId::Any)
+				return true;
 			break;
 		case TypeId::Bool:
 			return true;
 		case TypeId::String:
 		case TypeId::WString:
 		case TypeId::Array:
+			if (src->getTypeId() == TypeId::Any)
+				return true;
 			break;
 		case TypeId::Custom: {
+			if (src->getTypeId() == TypeId::Any)
+				return true;
+
 			auto destType = resolveCustomTypeName((CustomTypeNameNode *)dest.get());
 
 			switch (destType->getNodeType()) {
@@ -341,9 +348,12 @@ bool Compiler::isTypeNamesConvertible(std::shared_ptr<TypeNameNode> src, std::sh
 			break;
 		}
 		case TypeId::Fn:
+			if (src->getTypeId() == TypeId::Any)
+				return true;
+			return false;
+		case TypeId::Void:
 			return false;
 		case TypeId::Auto:
-		case TypeId::Void:
 			throw std::logic_error("Invalid destination type");
 	}
 

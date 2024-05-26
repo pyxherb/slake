@@ -26,6 +26,7 @@ namespace slake {
 			F64,	 // f64 Literal
 			String,	 // std::string Literal
 			Bool,	 // bool Literal
+			Null,	 // null
 
 			Array,	// Array
 
@@ -261,6 +262,14 @@ namespace slake {
 		using F64LiteralExprNode = LiteralExprNode<double, ExprType::F64>;
 		using StringLiteralExprNode = LiteralExprNode<std::string, ExprType::String>;
 		using BoolLiteralExprNode = LiteralExprNode<bool, ExprType::Bool>;
+
+		class NullLiteralExprNode : public BasicLiteralExprNode {
+		public:
+			inline NullLiteralExprNode(Location loc, size_t idxToken = SIZE_MAX) : BasicLiteralExprNode(loc, idxToken) {}
+			virtual ~NullLiteralExprNode() = default;
+
+			virtual ExprType getExprType() const override { return ExprType::Null; }
+		};
 
 		class IdRefExprNode : public ExprNode {
 		public:

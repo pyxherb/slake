@@ -1168,6 +1168,11 @@ void Compiler::compileValue(std::ostream &fs, std::shared_ptr<AstNode> value) {
 
 					break;
 				}
+				case ExprType::Null: {
+					vd.type = slxfmt::TypeId::None;
+					_write(fs, vd);
+					break;
+				}
 				default:
 					assert(false);
 			}

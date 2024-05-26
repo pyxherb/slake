@@ -72,6 +72,21 @@ namespace slake {
 				this->scope = scope;
 				scope->setOwner(this);
 			}
+
+			inline std::deque<std::shared_ptr<TypeNameNode>> getPlaceholderGenericArgs() const {
+				std::deque<std::shared_ptr<TypeNameNode>> placeholderGenericArgs;
+
+				for (auto &i : genericParams) {
+					placeholderGenericArgs.push_back(
+						std::make_shared<CustomTypeNameNode>(
+							Location(),
+							IdRef{ IdRefEntry{ Location(), SIZE_MAX, i->name, {} } },
+							compiler,
+							scope.get()));
+				}
+
+				return placeholderGenericArgs;
+			}
 		};
 	}
 }

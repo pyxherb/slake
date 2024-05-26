@@ -426,10 +426,19 @@ void Compiler::_getFullName(MemberNode *member, IdRef &ref) {
 
 	ref.push_front(entry);
 
-	if (!member->parent)
-		return;
-
-	_getFullName(member->parent, ref);
+	switch (member->getNodeType()) {
+		case NodeType::FnOverloading: {
+			auto m = (FnOverloadingNode *)member;
+			if (!m->owner->parent)
+				return;
+			_getFullName(m->owner->parent, ref);
+			break;
+		}
+		default:
+			if (!member->parent)
+				return;
+			_getFullName(member->parent, ref);
+	}
 }
 
 slake::slkc::IdRef Compiler::getFullName(MemberNode *member) {

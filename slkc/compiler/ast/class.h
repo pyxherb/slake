@@ -23,8 +23,8 @@ namespace slake {
 
 		public:
 			std::string name;
-			std::shared_ptr<TypeNameNode> parentClass;			 // Parent class
-			std::deque<std::shared_ptr<TypeNameNode>> implInterfaces;	 // Implemented interfaces
+			std::shared_ptr<TypeNameNode> parentClass;				   // Parent class
+			std::deque<std::shared_ptr<TypeNameNode>> implInterfaces;  // Implemented interfaces
 
 			size_t idxClassToken = SIZE_MAX,
 				   idxNameToken = SIZE_MAX;
@@ -79,7 +79,11 @@ namespace slake {
 
 			virtual inline NodeType getNodeType() const override { return NodeType::Class; }
 
-			virtual IdRefEntry getName() const override { return IdRefEntry(_loc, SIZE_MAX, name, genericArgs); }
+			virtual IdRefEntry getName() const override {
+				if (genericArgs.size())
+					return IdRefEntry(_loc, SIZE_MAX, name, genericArgs);
+				return IdRefEntry(_loc, SIZE_MAX, name, getPlaceholderGenericArgs());
+			}
 		};
 
 		class InterfaceNode : public MemberNode {
@@ -91,7 +95,7 @@ namespace slake {
 		public:
 			std::string name;
 
-			std::deque<std::shared_ptr<TypeNameNode>> parentInterfaces;  // Parent interfaces
+			std::deque<std::shared_ptr<TypeNameNode>> parentInterfaces;	 // Parent interfaces
 
 			GenericParamNodeList genericParams;
 			std::unordered_map<std::string, size_t> genericParamIndices;
@@ -137,7 +141,11 @@ namespace slake {
 
 			virtual inline NodeType getNodeType() const override { return NodeType::Interface; }
 
-			virtual IdRefEntry getName() const override { return IdRefEntry(_loc, SIZE_MAX, name, genericArgs); }
+			virtual IdRefEntry getName() const override {
+				if (genericArgs.size())
+					return IdRefEntry(_loc, SIZE_MAX, name, genericArgs);
+				return IdRefEntry(_loc, SIZE_MAX, name, getPlaceholderGenericArgs());
+			}
 		};
 
 		class TraitNode : public MemberNode {
@@ -149,7 +157,7 @@ namespace slake {
 		public:
 			std::string name;
 
-			std::deque<std::shared_ptr<TypeNameNode>> parentTraits;  // Parent traits
+			std::deque<std::shared_ptr<TypeNameNode>> parentTraits;	 // Parent traits
 
 			GenericParamNodeList genericParams;
 			std::unordered_map<std::string, size_t> genericParamIndices;
@@ -197,7 +205,11 @@ namespace slake {
 
 			virtual inline NodeType getNodeType() const override { return NodeType::Trait; }
 
-			virtual IdRefEntry getName() const override { return IdRefEntry(_loc, SIZE_MAX, name, genericArgs); }
+			virtual IdRefEntry getName() const override {
+				if (genericArgs.size())
+					return IdRefEntry(_loc, SIZE_MAX, name, genericArgs);
+				return IdRefEntry(_loc, SIZE_MAX, name, getPlaceholderGenericArgs());
+			}
 		};
 	}
 }

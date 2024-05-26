@@ -498,6 +498,7 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> e
 
 	curMajorContext.curMinorContext.dryRun = true;
 	curMajorContext.curMinorContext.evalPurpose = EvalPurpose::Stmt;
+	curMajorContext.curMinorContext.evaluatedType = {};
 	compileExpr(expr);
 	t = curMajorContext.curMinorContext.evaluatedType;
 

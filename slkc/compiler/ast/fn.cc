@@ -23,6 +23,12 @@ void FnOverloadingNode::updateParamIndices() {
 	}
 }
 
+IdRefEntry FnOverloadingNode::getName() const {
+	if (genericArgs.size())
+		return IdRefEntry(loc, SIZE_MAX, owner->name, genericArgs);
+	return IdRefEntry(loc, SIZE_MAX, owner->name, getPlaceholderGenericArgs());
+}
+
 std::shared_ptr<AstNode> ParamNode::doDuplicate() {
 	return std::make_shared<ParamNode>(*this);
 }

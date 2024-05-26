@@ -357,6 +357,34 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
+	{ TokenId::StrictEqOp,
+		{ 80,
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+				auto expr = std::make_shared<BinaryOpExprNode>(
+					lhs->getLocation(),
+					BinaryOp::StrictEq,
+					lhs);
+
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				expr->rhs = parser->parseExpr(81);
+
+				return std::static_pointer_cast<ExprNode>(expr);
+			} } },
+	{ TokenId::StrictNeqOp,
+		{ 80,
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+				auto expr = std::make_shared<BinaryOpExprNode>(
+					lhs->getLocation(),
+					BinaryOp::StrictNeq,
+					lhs);
+
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				expr->rhs = parser->parseExpr(81);
+
+				return std::static_pointer_cast<ExprNode>(expr);
+			} } },
 
 	{ TokenId::AndOp,
 		{ 70,
@@ -656,7 +684,7 @@ std::deque<std::shared_ptr<TypeNameNode>> Parser::parseGenericArgs(bool forTypeN
 		if (auto &token = lexer->peekToken(); token.tokenId == TokenId::GtOp)
 			break;
 
-		if (auto type = parseTypeName(true); type->getTypeId() != TypeId::Bad)
+		if (auto type = parseTypeName(forTypeName); type->getTypeId() != TypeId::Bad)
 			genericArgs.push_back(type);
 		else {
 			if (forTypeName) {
@@ -941,6 +969,13 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 							lexer->getTokenIndex(prefixToken)));
 					lexer->nextToken();
 					break;
+				case TokenId::NullKeyword:
+					lhs = std::static_pointer_cast<ExprNode>(
+						std::make_shared<NullLiteralExprNode>(
+							prefixToken.beginLocation,
+							lexer->getTokenIndex(prefixToken)));
+					lexer->nextToken();
+					break;
 				case TokenId::LBrace: {
 					lexer->nextToken();
 
@@ -951,7 +986,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 					while (true) {
 						expr->elements.push_back(parseExpr());
 
-						if (auto& commaToken = lexer->peekToken(); commaToken.tokenId == TokenId::Comma) {
+						if (auto &commaToken = lexer->peekToken(); commaToken.tokenId == TokenId::Comma) {
 							lexer->nextToken();
 							expr->idxCommaTokens.push_back(lexer->getTokenIndex(commaToken));
 						} else

@@ -4,7 +4,7 @@ using namespace slake::slkc;
 
 uint32_t Compiler::allocLocalVar(std::string name, std::shared_ptr<TypeNameNode> type) {
 	if (curMajorContext.curMinorContext.dryRun)
-		return SIZE_MAX;
+		return UINT32_MAX;
 
 	if (curMajorContext.curMinorContext.localVars.size() > UINT32_MAX)
 		throw FatalCompilationError(
@@ -23,7 +23,7 @@ uint32_t Compiler::allocLocalVar(std::string name, std::shared_ptr<TypeNameNode>
 
 uint32_t Compiler::allocReg(uint32_t nRegs) {
 	if (curMajorContext.curMinorContext.dryRun)
-		return SIZE_MAX;
+		return UINT32_MAX;
 
 	auto idxReg = curMajorContext.curRegCount;
 

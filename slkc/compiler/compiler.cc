@@ -596,8 +596,13 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 		}
 	};
 
+	//
+	// Compile and write classes.
+	//
 	_write(os, (uint32_t)classes.size());
 	for (auto &i : classes) {
+		MemberNodeCompilingStatusGuard compilingStatusGuard(i.second);
+
 		pushMajorContext();
 
 		{
@@ -645,8 +650,13 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 		popMajorContext();
 	}
 
+	//
+	// Compile and write interfaces.
+	//
 	_write(os, (uint32_t)interfaces.size());
 	for (auto &i : interfaces) {
+		MemberNodeCompilingStatusGuard compilingStatusGuard(i.second);
+
 		pushMajorContext();
 
 		mergeGenericParams(i.second->genericParams);
@@ -677,8 +687,13 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 		popMajorContext();
 	}
 
+	//
+	// Compile and write traits.
+	//
 	_write(os, (uint32_t)traits.size());
 	for (auto &i : traits) {
+		MemberNodeCompilingStatusGuard compilingStatusGuard(i.second);
+
 		pushMajorContext();
 
 		mergeGenericParams(i.second->genericParams);
@@ -709,8 +724,13 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 		popMajorContext();
 	}
 
+	//
+	// Compile and write variables.
+	//
 	_write<uint32_t>(os, (uint32_t)vars.size());
 	for (auto &i : vars) {
+		MemberNodeCompilingStatusGuard compilingStatusGuard(i.second);
+
 		slxfmt::VarDesc vad = {};
 
 		//
@@ -771,8 +791,13 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 		}
 	}
 
+	//
+	// Compile functions.
+	//
 	for (auto &i : funcs) {
 		for (auto &j : i.second->overloadingRegistries) {
+			MemberNodeCompilingStatusGuard compilingStatusGuard(j);
+
 			pushMajorContext();
 
 			mergeGenericParams(j->genericParams);
@@ -821,8 +846,17 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 		}
 	}
 
+	//
+	// Write compiled functions.
+	//
 	_write(os, (uint32_t)compiledFuncs.size());
 	for (auto &i : compiledFuncs) {
+		MemberNodeCompilingStatusGuard compilingStatusGuard(i.second);
+
+		pushMajorContext();
+
+		mergeGenericParams(i.second->genericParams);
+
 		slxfmt::FnDesc fnd = {};
 		bool hasVarArg = false;
 
@@ -897,6 +931,8 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 		for (auto &j : i.second->srcLocDescs) {
 			_write(os, j);
 		}
+
+		popMajorContext();
 	}
 }
 

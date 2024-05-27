@@ -94,9 +94,9 @@ namespace slake {
 				return expectTokens(token, args...);
 			}
 
-			AccessModifier parseAccessModifier(Location &locationOut);
+			AccessModifier parseAccessModifier(Location &locationOut, std::deque<size_t> idxAccessModifierTokensOut);
 
-			std::shared_ptr<TypeNameNode> parseTypeName(bool forGenericArgs = false);
+			std::shared_ptr<TypeNameNode> parseTypeName(bool required = false);
 			std::deque<std::shared_ptr<TypeNameNode>> parseGenericArgs(bool forTypeName = false);
 			IdRef parseRef(bool forTypeName = false);
 			void parseArgs(std::deque<std::shared_ptr<ExprNode>> &argsOut, std::deque<size_t> &idxCommaTokensOut);

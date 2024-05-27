@@ -400,6 +400,15 @@ succeeded:
 						NodeType::Interface,
 						NodeType::Trait,
 						NodeType::Module });
+
+			for (auto &i : tokenInfo.tokenContext.genericParams) {
+				CompletionItem item = {};
+
+				item.label = i->name;
+				item.type = CompletionItemType::GenericParam;
+
+				completionItems.push_back(item);
+			}
 			break;
 		}
 		case CompletionContext::Name:

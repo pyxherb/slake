@@ -10,7 +10,9 @@ namespace slake {
 		class MemberNode : public AstNode {
 		public:
 			AccessModifier access = 0;
-			MemberNode *parent = nullptr; // Don't use std::shared_ptr - or it will cause problems about bad_std::weak_ptr exception.
+			std::deque<size_t> idxAccessModifierTokens;
+
+			MemberNode *parent = nullptr;  // Don't use std::shared_ptr - or it will cause problems about bad_std::weak_ptr exception.
 
 			Compiler *compiler = nullptr;
 
@@ -23,6 +25,7 @@ namespace slake {
 			std::shared_ptr<Scope> scope;
 
 			bool isImported = false;
+			bool isCompiling = false;
 
 			MemberNode() = default;
 			inline MemberNode(const MemberNode &other) {
@@ -73,7 +76,12 @@ namespace slake {
 				scope->setOwner(this);
 			}
 
+			/// @brief Get placeholder generic parameters during the member is being compiled.
+			/// @return Placeholder arguments if the member is being compiled, an empty deque otherwise.
 			inline std::deque<std::shared_ptr<TypeNameNode>> getPlaceholderGenericArgs() const {
+				if (!isCompiling)
+					return {};
+
 				std::deque<std::shared_ptr<TypeNameNode>> placeholderGenericArgs;
 
 				for (auto &i : genericParams) {
@@ -86,6 +94,20 @@ namespace slake {
 				}
 
 				return placeholderGenericArgs;
+			}
+		};
+
+		struct MemberNodeCompilingStatusGuard {
+			std::shared_ptr<MemberNode> memberNode;
+			bool prevStatus;
+
+			inline MemberNodeCompilingStatusGuard(std::shared_ptr<MemberNode> memberNode)
+				: memberNode(memberNode),
+				  prevStatus(memberNode->isCompiling) {
+				memberNode->isCompiling = true;
+			}
+			inline ~MemberNodeCompilingStatusGuard() {
+				memberNode->isCompiling = prevStatus;
 			}
 		};
 	}

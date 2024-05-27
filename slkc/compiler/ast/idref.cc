@@ -2,7 +2,7 @@
 
 using namespace slake::slkc;
 
-std::string std::to_string(const slake::slkc::IdRef &ref, slake::slkc::Compiler *compiler) {
+std::string std::to_string(const slake::slkc::IdRef &ref, slake::slkc::Compiler *compiler, bool forMangling) {
 	std::string s;
 	for (size_t i = 0; i < ref.size(); ++i) {
 		if (i)
@@ -13,7 +13,7 @@ std::string std::to_string(const slake::slkc::IdRef &ref, slake::slkc::Compiler 
 			for (size_t j = 0; j < ref[i].genericArgs.size(); ++j) {
 				if (j)
 					s += ", ";
-				s += std::to_string(ref[i].genericArgs[j], compiler);
+				s += std::to_string(ref[i].genericArgs[j], compiler, forMangling);
 			}
 			s += ">";
 		}

@@ -1,0 +1,29 @@
+module rbtree;
+
+pub class RBTree<T> {
+	class Node {
+		let left : Node, right : Node, p : Node;
+		let data : T;
+		let color : bool;
+	}
+
+	let _root : Node;
+	let _cachedMinNode : Node, _cachedMaxNode : Node;
+	let _nNodes : i32;
+
+	pub static fn _getMinNode(Node node) : Node {
+		if(node === null)
+			return node;
+
+		while (node.left)
+			node = node.left;
+		return node;
+	}
+
+	pub fn new() {
+		this._nNodes = 0;
+	}
+}
+
+pub fn main() {
+}

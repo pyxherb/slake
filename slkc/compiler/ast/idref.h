@@ -52,7 +52,7 @@ namespace slake {
 }
 
 namespace std {
-	std::string to_string(const slake::slkc::IdRef &ref, slake::slkc::Compiler *compiler);
+	std::string to_string(const slake::slkc::IdRef &ref, slake::slkc::Compiler *compiler, bool forMangling = false);
 }
 
 #endif

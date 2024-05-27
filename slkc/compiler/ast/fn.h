@@ -227,7 +227,11 @@ namespace slake {
 			}
 			inline void insertLabel(std::string name) { labels[name] = (uint32_t)body.size(); }
 
-			virtual IdRefEntry getName() const override { return IdRefEntry(_loc, 0, name, genericArgs); }
+			virtual IdRefEntry getName() const override {
+				if (genericArgs.size())
+					return IdRefEntry(_loc, SIZE_MAX, name, genericArgs);
+				return IdRefEntry(_loc, SIZE_MAX, name, getPlaceholderGenericArgs());
+			}
 		};
 
 		class LabelRefNode final : public AstNode {

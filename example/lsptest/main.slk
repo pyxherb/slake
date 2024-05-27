@@ -44,7 +44,7 @@ class Test {
 		x = 114514;
 		return;
 	}
-	
+
 	pub operator +(i32 rhs) : i32 {
 		return this.x + rhs;
 	}
@@ -72,7 +72,7 @@ class Derived(Test) {
 
 pub fn main() async: i32 {
 	hostext.extfns.print("Entered main\n");
-	
+
 	let test: Test = new Derived(50);
 	test.lab = test;
 
@@ -84,7 +84,7 @@ pub fn main() async: i32 {
 
 	let v : i32 = 1919810;
 	test.test(v);
-	
+
 	let array: i32[] = { 12, 34, 56, 78, 114, 514, 1919, 810 };
 	v = array[2];
 

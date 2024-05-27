@@ -76,7 +76,7 @@ std::string std::to_string(std::shared_ptr<slake::slkc::TypeNameNode> typeName, 
 					break;
 				default:
 					compiler->_getFullName((MemberNode *)m.get(), ref);
-					s = std::to_string(ref, compiler);
+					s = std::to_string(ref, compiler, forMangling);
 			}
 			break;
 		}

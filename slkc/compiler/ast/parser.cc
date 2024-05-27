@@ -494,7 +494,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 			} } },
 };
 
-AccessModifier Parser::parseAccessModifier(Location &locationOut) {
+AccessModifier Parser::parseAccessModifier(Location &locationOut, std::deque<size_t> idxAccessModifierTokensOut) {
 	AccessModifier accessModifier = 0;
 
 	while (true) {
@@ -527,6 +527,7 @@ AccessModifier Parser::parseAccessModifier(Location &locationOut) {
 						accessModifier |= ACCESS_NATIVE;
 						break;
 				}
+				idxAccessModifierTokensOut.push_back(lexer->getTokenIndex(token));
 				break;
 			default:
 				goto end;
@@ -537,7 +538,7 @@ end:
 	return accessModifier;
 }
 
-std::shared_ptr<TypeNameNode> Parser::parseTypeName(bool forGenericArgs) {
+std::shared_ptr<TypeNameNode> Parser::parseTypeName(bool required) {
 	std::shared_ptr<TypeNameNode> type;
 
 	switch (auto &token = lexer->peekToken(); token.tokenId) {
@@ -621,7 +622,7 @@ std::shared_ptr<TypeNameNode> Parser::parseTypeName(bool forGenericArgs) {
 			break;
 		}
 		default:
-			if (forGenericArgs) {
+			if (required) {
 				compiler->messages.push_back(
 					Message(
 						token.beginLocation,
@@ -1452,7 +1453,7 @@ void Parser::parseParams(std::deque<std::shared_ptr<ParamNode>> &paramsOut, std:
 			break;
 		}
 
-		auto type = parseTypeName();
+		auto type = parseTypeName(true);
 
 		auto paramNode = std::make_shared<ParamNode>(type->getLocation(), type);
 
@@ -1775,7 +1776,8 @@ std::shared_ptr<ClassNode> Parser::parseClassDef() {
 
 void Parser::parseClassStmt() {
 	Location loc;
-	AccessModifier accessModifier = parseAccessModifier(loc);
+	std::deque<size_t> idxAccessModifierTokens;
+	AccessModifier accessModifier = parseAccessModifier(loc, idxAccessModifierTokens);
 
 	switch (auto &token = lexer->peekToken(); token.tokenId) {
 		case TokenId::End:
@@ -1785,6 +1787,7 @@ void Parser::parseClassStmt() {
 			auto def = parseClassDef();
 
 			def->access = accessModifier;
+			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
 
 			_putDefinition(
 				def->getLocation(),
@@ -1797,6 +1800,7 @@ void Parser::parseClassStmt() {
 			auto overloading = parseOperatorDef(name);
 
 			overloading->access = accessModifier;
+			overloading->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
 
 			_putFnDefinition(token.beginLocation, name, overloading);
 			break;
@@ -1806,6 +1810,7 @@ void Parser::parseClassStmt() {
 			auto overloading = parseFnDef(name);
 
 			overloading->access = accessModifier;
+			overloading->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
 
 			_putFnDefinition(token.beginLocation, name, overloading);
 
@@ -1818,26 +1823,37 @@ void Parser::parseClassStmt() {
 
 			stmt->idxLetToken = lexer->getTokenIndex(letToken);
 
+			// TODO: Apply indices of access modifier tokens to the variables.
+
 			parseVarDefs(stmt);
 
 			const auto &semicolonToken = expectToken(TokenId::Semicolon);
 			stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
 
+			bool idxAccessModifierTokensMoved = false;
+
 			for (auto &i : stmt->varDefs) {
+				auto varNode = std::make_shared<VarNode>(
+					i.second.loc,
+					compiler,
+					accessModifier,
+					i.second.type,
+					i.first,
+					i.second.initValue,
+					i.second.idxNameToken,
+					i.second.idxColonToken,
+					i.second.idxAssignOpToken,
+					i.second.idxCommaToken);
+
+				if (!idxAccessModifierTokensMoved) {
+					varNode->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
+					idxAccessModifierTokensMoved = true;
+				}
+
 				_putDefinition(
 					i.second.loc,
 					i.first,
-					std::make_shared<VarNode>(
-						i.second.loc,
-						compiler,
-						accessModifier,
-						i.second.type,
-						i.first,
-						i.second.initValue,
-						i.second.idxNameToken,
-						i.second.idxColonToken,
-						i.second.idxAssignOpToken,
-						i.second.idxCommaToken));
+					varNode);
 			}
 			break;
 		}
@@ -1896,7 +1912,8 @@ std::shared_ptr<InterfaceNode> Parser::parseInterfaceDef() {
 
 void Parser::parseInterfaceStmt() {
 	Location loc;
-	AccessModifier accessModifier = parseAccessModifier(loc);
+	std::deque<size_t> idxAccessModifierTokens;
+	AccessModifier accessModifier = parseAccessModifier(loc, idxAccessModifierTokens);
 
 	switch (auto &token = lexer->peekToken(); token.tokenId) {
 		case TokenId::End:
@@ -1906,6 +1923,7 @@ void Parser::parseInterfaceStmt() {
 			auto def = parseClassDef();
 
 			def->access = accessModifier;
+			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
 
 			_putDefinition(
 				def->getLocation(),
@@ -1919,6 +1937,7 @@ void Parser::parseInterfaceStmt() {
 			auto overloading = parseOperatorDef(name);
 
 			overloading->access = accessModifier;
+			overloading->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
 
 			_putFnDefinition(token.beginLocation, name, overloading);
 			break;
@@ -1945,21 +1964,30 @@ void Parser::parseInterfaceStmt() {
 			const auto &semicolonToken = expectToken(TokenId::Semicolon);
 			stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
 
+			bool idxAccessModifierTokensMoved = false;
+
 			for (auto &i : stmt->varDefs) {
+				auto varNode = std::make_shared<VarNode>(
+					i.second.loc,
+					compiler,
+					accessModifier,
+					i.second.type,
+					i.first,
+					i.second.initValue,
+					i.second.idxNameToken,
+					i.second.idxColonToken,
+					i.second.idxAssignOpToken,
+					i.second.idxCommaToken);
+
+				if (!idxAccessModifierTokensMoved) {
+					varNode->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
+					idxAccessModifierTokensMoved = true;
+				}
+
 				_putDefinition(
 					i.second.loc,
 					i.first,
-					std::make_shared<VarNode>(
-						i.second.loc,
-						compiler,
-						accessModifier,
-						i.second.type,
-						i.first,
-						i.second.initValue,
-						i.second.idxNameToken,
-						i.second.idxColonToken,
-						i.second.idxAssignOpToken,
-						i.second.idxCommaToken));
+					varNode);
 			}
 			break;
 		}
@@ -1994,7 +2022,8 @@ void Parser::parseTraitStmt() {
 
 void Parser::parseProgramStmt() {
 	Location loc;
-	AccessModifier accessModifier = parseAccessModifier(loc);
+	std::deque<size_t> idxAccessModifierTokens;
+	AccessModifier accessModifier = parseAccessModifier(loc, idxAccessModifierTokens);
 
 	switch (auto &token = lexer->peekToken(); token.tokenId) {
 		case TokenId::End:
@@ -2003,6 +2032,7 @@ void Parser::parseProgramStmt() {
 			auto def = parseClassDef();
 
 			def->access = accessModifier;
+			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
 
 			_putDefinition(
 				def->getLocation(),
@@ -2016,6 +2046,7 @@ void Parser::parseProgramStmt() {
 
 			overloading->access = accessModifier;
 			overloading->access |= ACCESS_STATIC;
+			overloading->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
 
 			_putFnDefinition(token.beginLocation, name, overloading);
 
@@ -2033,6 +2064,8 @@ void Parser::parseProgramStmt() {
 			const auto &semicolonToken = expectToken(TokenId::Semicolon);
 			stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
 
+			bool idxAccessModifierTokensMoved = false;
+
 			for (auto &i : stmt->varDefs) {
 				auto varNode = std::make_shared<VarNode>(
 					i.second.loc,
@@ -2048,6 +2081,11 @@ void Parser::parseProgramStmt() {
 
 				varNode->access = accessModifier;
 				varNode->access |= ACCESS_STATIC;
+
+				if (!idxAccessModifierTokensMoved) {
+					varNode->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
+					idxAccessModifierTokensMoved = true;
+				}
 
 				_putDefinition(
 					i.second.loc,

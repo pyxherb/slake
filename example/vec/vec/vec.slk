@@ -6,22 +6,22 @@ import {
 
 pub native class Vec2f {
 	pub native let x: f32, y: f32;
-	pub native operator[](u8 index): f32&;
+	pub native operator[](index: u8): f32&;
 	pub native fn new();
 }
 
 pub native class Vec3f {
 	pub native let x: f32, y: f32, z: f32;
-	pub native operator[](u8 index): f32&;
+	pub native operator[](index: u8): f32&;
 	pub native fn new();
 }
 
 pub native class Vec4f {
 	pub native let x: f32, y: f32, z: f32, w: f32;
-	pub native operator[](u8 index): f32&;
+	pub native operator[](index: u8): f32&;
 	pub native fn new();
 
-	pub native fn test(f32 &arg);
+	pub native fn test(arg: f32&);
 }
 
 pub fn main() {

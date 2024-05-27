@@ -8,7 +8,7 @@ class AnotherGeneric<X, U> {
 	class ChildGeneric<V, T(Test)> {
 		pub let xyz: i32;
 
-		pub fn _setX(T abc) {
+		pub fn _setX(abc: T) {
 			this.xyz = abc.getX();
 			extfns.print("[ChildGeneric]setX: ", this.xyz, "\n");
 			return;
@@ -30,7 +30,7 @@ class Test {
 		return;
 	}
 
-	pub fn new(i32 x) {
+	pub fn new(x: i32) {
 		this.x = x;
 		return;
 	}
@@ -40,12 +40,12 @@ class Test {
 		return this.x;
 	}
 
-	pub fn test(i32 &x) {
+	pub fn test(x: i32&) {
 		x = 114514;
 		return;
 	}
 
-	pub operator +(i32 rhs) : i32 {
+	pub operator +(rhs: i32) : i32 {
 		return this.x + rhs;
 	}
 }
@@ -58,7 +58,7 @@ class Derived(Test) {
 		return;
 	}
 
-	pub fn new(i32 y) {
+	pub fn new(y: i32) {
 		this.x = y * 2;
 		this.x = y * 4;
 		return;

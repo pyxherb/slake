@@ -32,8 +32,9 @@ void Compiler::updateCompletionContext(std::shared_ptr<TypeNameNode> targetTypeN
 		case TypeId::Any:
 		case TypeId::Auto: {
 			auto t = std::static_pointer_cast<BasicSimpleTypeNameNode>(targetTypeName);
-			assert(t->idxToken != SIZE_MAX);
-			tokenInfos[t->idxToken].completionContext = completionContext;
+
+			if (t->idxToken != SIZE_MAX)
+				tokenInfos[t->idxToken].completionContext = completionContext;
 			break;
 		}
 		case TypeId::Array: {

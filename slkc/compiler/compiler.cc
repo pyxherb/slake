@@ -358,12 +358,14 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 							tokenInfo.semanticType = SemanticType::Param;
 						});
 
-						updateCompletionContext(k->type, CompletionContext::Type);
-						updateSemanticType(k->type, SemanticType::Type);
+						if (k->type) {
+							updateCompletionContext(k->type, CompletionContext::Type);
+							updateSemanticType(k->type, SemanticType::Type);
 
-						// Resolve the type name to fill corresponding `curScope` field in token contexts for completion.
-						if (k->type->getTypeId() == TypeId::Custom)
-							resolveCustomTypeName((CustomTypeNameNode *)k->type.get());
+							// Resolve the type name to fill corresponding `curScope` field in token contexts for completion.
+							if (k->type->getTypeId() == TypeId::Custom)
+								resolveCustomTypeName((CustomTypeNameNode *)k->type.get());
+						}
 					}
 
 					for (auto &k : j->idxParamCommaTokens) {
@@ -809,7 +811,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 
 				argTypes.resize(j->params.size());
 				for (size_t k = 0; k < j->params.size(); ++k) {
-					argTypes[k] = j->params[k]->type;
+					argTypes[k] = j->params[k]->type ? j->params[k]->type : std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX);
 				}
 
 				mangledFnName = mangleName(i.first, argTypes, false);
@@ -895,7 +897,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 			compileGenericParam(os, i.second->genericParams[j]);
 
 		for (size_t j = 0; j < i.second->params.size() - hasVarArg; ++j)
-			compileTypeName(os, i.second->params[j]->type);
+			compileTypeName(os, i.second->params[j]->type ? i.second->params[j]->type : std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX));
 
 		for (auto &j : i.second->body) {
 			slxfmt::InsHeader ih;

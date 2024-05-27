@@ -24,20 +24,23 @@ namespace slake {
 			// The original type will be saved during generic instantiation.
 			std::shared_ptr<TypeNameNode> originalType;
 
-			size_t idxNameToken = SIZE_MAX;
+			size_t idxNameToken = SIZE_MAX,
+				   idxColonToken = SIZE_MAX;
 
 			inline ParamNode(const ParamNode &other) : AstNode(other) {
 				loc = other.loc;
 
-				type = other.type->duplicate<TypeNameNode>();
+				if (other.type)
+					type = other.type->duplicate<TypeNameNode>();
 				name = other.name;
 
 				if (originalType)
 					originalType = other.originalType->duplicate<TypeNameNode>();
 
 				idxNameToken = other.idxNameToken;
+				idxColonToken = other.idxColonToken;
 			}
-			inline ParamNode(Location loc, std::shared_ptr<TypeNameNode> type) : loc(loc), type(type) {}
+			inline ParamNode(Location loc) : loc(loc) {}
 			virtual ~ParamNode() = default;
 
 			virtual inline Location getLocation() const override { return loc; }
@@ -66,10 +69,10 @@ namespace slake {
 			bool isAsync = false;
 
 			size_t idxNameToken = SIZE_MAX,
-				idxParamLParentheseToken = SIZE_MAX,
-				idxParamRParentheseToken = SIZE_MAX,
-				idxAsyncModifierToken = SIZE_MAX,
-				idxReturnTypeColonToken = SIZE_MAX;
+				   idxParamLParentheseToken = SIZE_MAX,
+				   idxParamRParentheseToken = SIZE_MAX,
+				   idxAsyncModifierToken = SIZE_MAX,
+				   idxReturnTypeColonToken = SIZE_MAX;
 			std::deque<size_t> idxParamCommaTokens;
 
 			inline FnOverloadingNode(const FnOverloadingNode &other) : MemberNode(other) {

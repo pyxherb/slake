@@ -104,7 +104,8 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 	std::deque<std::shared_ptr<ParamNode>> params;
 
 	for (auto i : value->getParamTypes()) {
-		std::shared_ptr<ParamNode> param = std::make_shared<ParamNode>(Location(), toTypeName(i));
+		std::shared_ptr<ParamNode> param = std::make_shared<ParamNode>(Location());
+		param->type = toTypeName(i);
 
 		params.push_back(param);
 	}
@@ -115,7 +116,8 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 	overloading->params = params;
 
 	if (value->fnFlags & FN_VARG) {
-		auto param = std::make_shared<ParamNode>(Location(), std::make_shared<ArrayTypeNameNode>(std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX)));
+		auto param = std::make_shared<ParamNode>(Location());
+		param->type = std::make_shared<ArrayTypeNameNode>(std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX));
 		param->name = "...";
 		overloading->params.push_back(param);
 	}

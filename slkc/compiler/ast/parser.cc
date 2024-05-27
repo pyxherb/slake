@@ -1438,12 +1438,12 @@ void Parser::parseParams(std::deque<std::shared_ptr<ParamNode>> &paramsOut, std:
 
 	while (true) {
 		if (auto &varArgToken = lexer->peekToken(); varArgToken.tokenId == TokenId::VarArg) {
-			auto param = std::make_shared<ParamNode>(
-				varArgToken.beginLocation,
+			auto param = std::make_shared<ParamNode>(varArgToken.beginLocation);
+			param->type =
 				std::make_shared<ArrayTypeNameNode>(
 					std::make_shared<AnyTypeNameNode>(
 						varArgToken.beginLocation,
-						lexer->getTokenIndex(varArgToken))));
+						lexer->getTokenIndex(varArgToken)));
 
 			param->name = "...";
 			param->idxNameToken = lexer->getTokenIndex(varArgToken);
@@ -1453,11 +1453,8 @@ void Parser::parseParams(std::deque<std::shared_ptr<ParamNode>> &paramsOut, std:
 			break;
 		}
 
-		auto type = parseTypeName(true);
-
-		auto paramNode = std::make_shared<ParamNode>(type->getLocation(), type);
-
 		auto &nameToken = lexer->peekToken();
+		std::string name;
 		if (nameToken.tokenId != TokenId::Id) {
 			compiler->messages.push_back(
 				Message(
@@ -1465,9 +1462,17 @@ void Parser::parseParams(std::deque<std::shared_ptr<ParamNode>> &paramsOut, std:
 					MessageType::Error,
 					"Expecting an identifier"));
 		} else {
-			paramNode->name = nameToken.text;
-			paramNode->idxNameToken = lexer->getTokenIndex(nameToken);
+			name = nameToken.text;
 			lexer->nextToken();
+		}
+
+		auto paramNode = std::make_shared<ParamNode>(nameToken.beginLocation);
+		paramNode->name = name;
+
+		if (auto &colonToken = lexer->peekToken(); colonToken.tokenId == TokenId::Colon) {
+			lexer->nextToken();
+			paramNode->idxColonToken = lexer->getTokenIndex(colonToken);
+			paramNode->type = parseTypeName(true);
 		}
 
 		paramsOut.push_back(paramNode);

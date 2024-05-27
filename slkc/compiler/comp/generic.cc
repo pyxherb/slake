@@ -61,7 +61,9 @@ void Compiler::walkNodeForGenericInstantiation(
 						walkNodeForGenericInstantiation(j, instantiationContext);
 
 					for (auto &j : i->params) {
-						j->originalType = j->type->duplicate<TypeNameNode>();
+						j->originalType = j->type
+											  ? j->type->duplicate<TypeNameNode>()
+											  : std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX);
 						walkTypeNameNodeForGenericInstantiation(j->type, instantiationContext);
 					}
 				}

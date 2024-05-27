@@ -11,7 +11,7 @@ pub class RBTree<T> {
 	let _cachedMinNode : Node, _cachedMaxNode : Node;
 	let _nNodes : i32;
 
-	pub static fn _getMinNode(Node node) : Node {
+	pub static fn _getMinNode(node: Node) : Node {
 		if(node === null)
 			return node;
 

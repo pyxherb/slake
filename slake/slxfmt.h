@@ -84,12 +84,6 @@ namespace slake {
 			Ref,			// Reference
 		};
 
-		/// @brief Value Descriptor (VD)
-		struct ValueDesc final {
-			TypeId type : 5;	// Data Type
-			uint8_t flags : 3;	// Flags
-		};
-
 		/// @brief Class Type Descriptor (CTD)
 		struct ClassTypeDesc final {
 			/// @brief Flags

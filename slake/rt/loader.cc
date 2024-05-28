@@ -32,7 +32,7 @@ IdRefValue *Runtime::_loadIdRef(std::istream &fs) {
 
 		GenericArgList genericArgs;
 		for (size_t j = i.nGenericArgs; j; --j)
-			genericArgs.push_back(_loadType(fs, _read<slxfmt::TypeId>(fs)));
+			genericArgs.push_back(_loadType(fs));
 
 		ref->entries.push_back(IdRefEntry(name, genericArgs));
 		if (!(i.flags & slxfmt::RSD_NEXT))
@@ -47,9 +47,9 @@ IdRefValue *Runtime::_loadIdRef(std::istream &fs) {
 /// @param fs Stream to be read.
 /// @return Value loaded from the stream.
 Value *Runtime::_loadValue(std::istream &fs) {
-	slxfmt::ValueDesc i = {};
-	fs.read((char *)&i, sizeof(i));
-	switch (i.type) {
+	slxfmt::TypeId typeId=_read<slxfmt::TypeId>(fs);
+
+	switch (typeId) {
 		case slxfmt::TypeId::None:
 			return nullptr;
 		case slxfmt::TypeId::I8:
@@ -81,7 +81,7 @@ Value *Runtime::_loadValue(std::istream &fs) {
 			return new StringValue(this, s);
 		}
 		case slxfmt::TypeId::Array: {
-			auto elementType = _loadType(fs, _read<slxfmt::TypeId>(fs));
+			auto elementType = _loadType(fs);
 
 			// stub for debugging.
 			//elementType = Type(TypeId::Any);
@@ -100,7 +100,7 @@ Value *Runtime::_loadValue(std::istream &fs) {
 		case slxfmt::TypeId::IdRef:
 			return _loadIdRef(fs);
 		case slxfmt::TypeId::TypeName:
-			return new TypeNameValue(this, _loadType(fs, _read<slxfmt::TypeId>(fs)));
+			return new TypeNameValue(this, _loadType(fs));
 		case slxfmt::TypeId::Reg:
 			return new RegRefValue(this, _read<uint32_t>(fs));
 		case slxfmt::TypeId::RegValue:
@@ -123,7 +123,9 @@ Value *Runtime::_loadValue(std::istream &fs) {
 /// @param fs Stream to be read.
 /// @param vt Previous read value type.
 /// @return Loaded complete type name.
-Type Runtime::_loadType(std::istream &fs, slxfmt::TypeId vt) {
+Type Runtime::_loadType(std::istream &fs) {
+	slxfmt::TypeId vt = _read<slxfmt::TypeId>(fs);
+
 	switch (vt) {
 		case slxfmt::TypeId::I8:
 			return TypeId::I8;
@@ -156,9 +158,9 @@ Type Runtime::_loadType(std::istream &fs, slxfmt::TypeId vt) {
 		case slxfmt::TypeId::None:
 			return TypeId::None;
 		case slxfmt::TypeId::Array:
-			return Type(TypeId::Array, _loadType(fs, _read<slxfmt::TypeId>(fs)));
+			return Type(TypeId::Array, _loadType(fs));
 		case slxfmt::TypeId::Ref:
-			return Type(TypeId::Ref, _loadType(fs, _read<slxfmt::TypeId>(fs)));
+			return Type(TypeId::Ref, _loadType(fs));
 		case slxfmt::TypeId::TypeName:
 			return TypeId::TypeName;
 		case slxfmt::TypeId::GenericArg: {
@@ -182,14 +184,14 @@ GenericParam Runtime::_loadGenericParam(std::istream &fs) {
 	param.name = name;
 
 	if (gpd.hasBaseType)
-		param.baseType = _loadType(fs, _read<slxfmt::TypeId>(fs));
+		param.baseType = _loadType(fs);
 
 	for (size_t i = 0; i < gpd.nInterfaces; ++i) {
-		param.interfaces.push_back(_loadType(fs, _read<slxfmt::TypeId>(fs)));
+		param.interfaces.push_back(_loadType(fs));
 	}
 
 	for (size_t i = 0; i < gpd.nTraits; ++i) {
-		param.traits.push_back(_loadType(fs, _read<slxfmt::TypeId>(fs)));
+		param.traits.push_back(_loadType(fs));
 	}
 
 	return param;
@@ -313,7 +315,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs, LoadModuleFlags loa
 			std::make_unique<VarValue>(
 				this,
 				access,
-				_loadType(fs, _read<slxfmt::TypeId>(fs)));
+				_loadType(fs));
 
 		// Load initial value.
 		if (i.flags & slxfmt::VAD_INIT)
@@ -344,7 +346,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs, LoadModuleFlags loa
 		// if (i.flags & slxfmt::FND_NATIVE)
 		//	access |= ACCESS_NATIVE;
 
-		std::unique_ptr<FnValue> fn = std::make_unique<FnValue>(this, (uint32_t)i.lenBody, access, _loadType(fs, _read<slxfmt::TypeId>(fs)));
+		std::unique_ptr<FnValue> fn = std::make_unique<FnValue>(this, (uint32_t)i.lenBody, access, _loadType(fs));
 
 		if (i.flags & slxfmt::FND_ASYNC)
 			fn->fnFlags |= FN_ASYNC;
@@ -354,7 +356,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs, LoadModuleFlags loa
 		}
 
 		for (uint8_t j = 0; j < i.nParams; j++) {
-			fn->paramTypes.push_back(_loadType(fs, _read<slxfmt::TypeId>(fs)));
+			fn->paramTypes.push_back(_loadType(fs));
 		}
 
 		if (i.flags & slxfmt::FND_VARG)

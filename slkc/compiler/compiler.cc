@@ -1055,41 +1055,34 @@ void Compiler::compileIdRef(std::ostream &fs, const IdRef &ref) {
 }
 
 void Compiler::compileValue(std::ostream &fs, std::shared_ptr<AstNode> value) {
-	slxfmt::ValueDesc vd = {};
-
 	if (!value) {
-		vd.type = slxfmt::TypeId::None;
-		_write(fs, vd);
+		_write(fs, slxfmt::TypeId::None);
 		return;
 	}
 
 	switch (value->getNodeType()) {
 		case NodeType::TypeName:
-			vd.type = slxfmt::TypeId::TypeName;
-			_write(fs, vd);
+			_write(fs, slxfmt::TypeId::TypeName);
 
 			compileTypeName(fs, std::static_pointer_cast<TypeNameNode>(value));
 			break;
 		case NodeType::ArgRef: {
 			auto v = std::static_pointer_cast<ArgRefNode>(value);
-			vd.type = v->unwrapData ? slxfmt::TypeId::ArgValue : slxfmt::TypeId::Arg;
-			_write(fs, vd);
+			_write(fs, v->unwrapData ? slxfmt::TypeId::ArgValue : slxfmt::TypeId::Arg);
 
 			_write(fs, v->index);
 			break;
 		}
 		case NodeType::LocalVarRef: {
 			auto v = std::static_pointer_cast<LocalVarRefNode>(value);
-			vd.type = v->unwrapData ? slxfmt::TypeId::LocalVarValue : slxfmt::TypeId::LocalVar;
-			_write(fs, vd);
+			_write(fs, v->unwrapData ? slxfmt::TypeId::LocalVarValue : slxfmt::TypeId::LocalVar);
 
 			_write(fs, v->index);
 			break;
 		}
 		case NodeType::RegRef: {
 			auto v = std::static_pointer_cast<RegRefNode>(value);
-			vd.type = v->unwrapData ? slxfmt::TypeId::RegValue : slxfmt::TypeId::Reg;
-			_write(fs, vd);
+			_write(fs, v->unwrapData ? slxfmt::TypeId::RegValue : slxfmt::TypeId::Reg);
 
 			_write(fs, v->index);
 			break;
@@ -1098,85 +1091,73 @@ void Compiler::compileValue(std::ostream &fs, std::shared_ptr<AstNode> value) {
 			std::shared_ptr<ExprNode> expr = std::static_pointer_cast<ExprNode>(value);
 			switch (expr->getExprType()) {
 				case ExprType::I8: {
-					vd.type = slxfmt::TypeId::I8;
-					_write(fs, vd);
+					_write(fs, slxfmt::TypeId::I8);
 
 					_write(fs, std::static_pointer_cast<I8LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::I16: {
-					vd.type = slxfmt::TypeId::I16;
-					_write(fs, vd);
+					_write(fs, slxfmt::TypeId::I16);
 
 					_write(fs, std::static_pointer_cast<I16LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::I32: {
-					vd.type = slxfmt::TypeId::I32;
-					_write(fs, vd);
+					_write(fs, slxfmt::TypeId::I32);
 
 					_write(fs, std::static_pointer_cast<I32LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::I64: {
-					vd.type = slxfmt::TypeId::I64;
-					_write(fs, vd);
+					_write(fs, slxfmt::TypeId::I64);
 
 					_write(fs, std::static_pointer_cast<I64LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::U8: {
-					vd.type = slxfmt::TypeId::U8;
-					_write(fs, vd);
+					_write(fs, slxfmt::TypeId::U8);
 
 					_write(fs, std::static_pointer_cast<U8LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::U16: {
-					vd.type = slxfmt::TypeId::U16;
-					_write(fs, vd);
+					_write(fs, slxfmt::TypeId::U16);
 
 					_write(fs, std::static_pointer_cast<U16LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::U32: {
-					vd.type = slxfmt::TypeId::U32;
-					_write(fs, vd);
+					_write(fs, slxfmt::TypeId::U32);
 
 					_write(fs, std::static_pointer_cast<U32LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::U64: {
-					vd.type = slxfmt::TypeId::U64;
-					_write(fs, vd);
+					_write(fs, slxfmt::TypeId::U64);
 
 					_write(fs, std::static_pointer_cast<U64LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::F32: {
-					vd.type = slxfmt::TypeId::F32;
-					_write(fs, vd);
+					_write(fs, slxfmt::TypeId::F32);
 
 					_write(fs, std::static_pointer_cast<F32LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::F64: {
-					vd.type = slxfmt::TypeId::F64;
-					_write(fs, vd);
+					_write(fs, slxfmt::TypeId::F64);
 
 					_write(fs, std::static_pointer_cast<F64LiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::Bool: {
-					vd.type = slxfmt::TypeId::Bool;
-					_write(fs, vd);
+					_write(fs, slxfmt::TypeId::Bool);
 
 					_write(fs, std::static_pointer_cast<BoolLiteralExprNode>(expr)->data);
 					break;
 				}
 				case ExprType::String: {
-					vd.type = slxfmt::TypeId::String;
-					_write(fs, vd);
+					_write(fs, slxfmt::TypeId::String);
 
 					auto &s = std::static_pointer_cast<StringLiteralExprNode>(expr)->data;
 
@@ -1185,15 +1166,13 @@ void Compiler::compileValue(std::ostream &fs, std::shared_ptr<AstNode> value) {
 					break;
 				}
 				case ExprType::IdRef: {
-					vd.type = slxfmt::TypeId::IdRef;
-					_write(fs, vd);
+					_write(fs, slxfmt::TypeId::IdRef);
 
 					compileIdRef(fs, std::static_pointer_cast<IdRefExprNode>(expr)->ref);
 					break;
 				}
 				case ExprType::Array: {
-					vd.type = slxfmt::TypeId::Array;
-					_write(fs, vd);
+					_write(fs, slxfmt::TypeId::Array);
 
 					auto &a = std::static_pointer_cast<ArrayExprNode>(expr);
 
@@ -1207,8 +1186,7 @@ void Compiler::compileValue(std::ostream &fs, std::shared_ptr<AstNode> value) {
 					break;
 				}
 				case ExprType::Null: {
-					vd.type = slxfmt::TypeId::None;
-					_write(fs, vd);
+					_write(fs, slxfmt::TypeId::None);
 					break;
 				}
 				default:

@@ -64,3 +64,33 @@ Value *Runtime::resolveIdRef(IdRefValue* ref, Value *scopeValue) const {
 
 	return nullptr;
 }
+
+std::string Runtime::getFullName(const MemberValue *v) const {
+	std::string s;
+	do {
+		switch (v->getType().typeId) {
+			case TypeId::Object:
+				v = (const MemberValue *)((ObjectValue *)v)->getType().getCustomTypeExData();
+				break;
+		}
+		s = v->getName() + (s.empty() ? "" : "." + s);
+	} while ((Value *)(v = (const MemberValue *)v->getParent()) != _rootValue);
+	return s;
+}
+
+std::string Runtime::getFullName(const IdRefValue *v) const {
+	return std::to_string(v);
+}
+
+std::deque<IdRefEntry> Runtime::getFullRef(const MemberValue *v) const {
+	std::deque<IdRefEntry> entries;
+	do {
+		switch (v->getType().typeId) {
+			case TypeId::Object:
+				v = (const MemberValue *)((ObjectValue *)v)->getType().getCustomTypeExData();
+				break;
+		}
+		entries.push_front({ v->getName(), v->_genericArgs });
+	} while ((Value *)(v = (const MemberValue *)v->getParent()) != _rootValue);
+	return entries;
+}

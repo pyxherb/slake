@@ -39,7 +39,6 @@ namespace slake {
 		Trait,		   // Trait
 		Struct,		   // Structure
 		Object,		   // Object instance
-		StructObject,  // Structure instance
 
 		Any,  // Any
 

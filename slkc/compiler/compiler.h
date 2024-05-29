@@ -591,7 +591,7 @@ namespace slake {
 			// Verify end
 			//
 
-			std::shared_ptr<Scope> mergeScope(Scope *a, Scope *b);
+			std::shared_ptr<Scope> mergeScope(Scope *a, Scope *b, bool keepStaticMembers = false);
 
 			friend class AstVisitor;
 			friend class MemberNode;

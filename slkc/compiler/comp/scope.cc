@@ -70,10 +70,27 @@ std::shared_ptr<Scope> Compiler::scopeOf(AstNode *node) {
 	}
 }
 
-std::shared_ptr<Scope> slake::slkc::Compiler::mergeScope(Scope *a, Scope *b) {
+std::shared_ptr<Scope> slake::slkc::Compiler::mergeScope(Scope *a, Scope *b, bool keepStaticMembers) {
 	std::shared_ptr<Scope> newScope(a->duplicate());
 
+	if (!keepStaticMembers) {
+		std::set<std::string> staticMemberNames;
+		for (auto &i : newScope->members) {
+			if (i.second->access & ACCESS_STATIC)
+				staticMemberNames.insert(i.first);
+		}
+
+		for (auto &i : staticMemberNames)
+			newScope->members.erase(i);
+	}
+
 	for (auto &i : b->members) {
+		if (!keepStaticMembers) {
+			if (i.second->access & ACCESS_STATIC) {
+				continue;
+			}
+		}
+
 		if (newScope->members.count(i.first)) {
 			if (newScope->members.at(i.first)->getNodeType() != i.second->getNodeType())
 				continue;

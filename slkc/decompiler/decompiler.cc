@@ -23,6 +23,56 @@ void slake::decompiler::decompile(std::istream &fs, std::ostream &os) {
 		decompileValue(rt.get(), i.second, os);
 }
 
+std::string slake::decompiler::decompileTypeName(const Type &type, Runtime *rt) {
+	std::string s;
+	switch (type.typeId) {
+		case TypeId::Class:
+		case TypeId::Interface:
+		case TypeId::Trait:
+		case TypeId::GenericArg:
+		case TypeId::Object:
+			s += "@";
+			break;
+		default:
+			break;
+	}
+	s += std::to_string(type, rt);
+	return s;
+}
+
+std::string slake::decompiler::decompileIdRef(const IdRefValue *ref) {
+	std::string s;
+
+	for (size_t i = 0; i < ref->entries.size(); ++i) {
+		auto scope = ref->entries[i];
+
+		if (i)
+			s += ".";
+
+		if ((scope.name.find('.') != std::string::npos) ||
+			(scope.name.find('<') != std::string::npos) ||
+			(scope.name.find('>') != std::string::npos)) {
+			s += "{";
+			s += scope.name;
+			s += "}";
+		}
+			else {
+				s += scope.name;
+			}
+
+		if (auto nGenericParams = scope.genericArgs.size(); nGenericParams) {
+			s += "<";
+			for (size_t j = 0; j < nGenericParams; ++j) {
+				if (j)
+					s += ",";
+				s += decompileTypeName(scope.genericArgs[j], ref->getRuntime());
+			}
+			s += ">";
+		}
+	}
+	return s;
+}
+
 void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &os, int indentLevel) {
 	if (!value) {
 		os << "null";
@@ -75,7 +125,7 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 			break;
 		}
 		case slake::TypeId::Array: {
-			os << "{";
+			os << "[";
 
 			auto v = ((ArrayValue *)value);
 
@@ -86,15 +136,17 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 				decompileValue(rt, v->values[i]->getData(), os, indentLevel);
 			}
 
-			os << "}";
+			os << "]";
 			break;
 		}
 		case slake::TypeId::IdRef:
-			os << std::to_string((IdRefValue *)value);
+			os << decompileIdRef((IdRefValue *)value);
 			break;
-		case slake::TypeId::TypeName:
-			os << std::to_string(((TypeNameValue *)value)->getData(), rt);
+		case slake::TypeId::TypeName: {
+			auto v = (TypeNameValue *)value;
+			os << decompileTypeName(v->getData(), rt);
 			break;
+		}
 		case slake::TypeId::Fn: {
 			auto v = (BasicFnValue *)value;
 
@@ -110,15 +162,15 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 			if (v->getAccess() & ACCESS_NATIVE) {
 				os << ".fndecl ";
 			} else {
-				os << (((FnValue*)v)->getInsCount() ? ".fn " : ".fndecl ");
+				os << (((FnValue *)v)->getInsCount() ? ".fn " : ".fndecl ");
 			}
 
-			os << std::to_string(v->getReturnType(), rt) << " "
+			os << decompileTypeName(v->getReturnType(), rt) << " "
 			   << v->getName();
 
 			// Dump parameter types.
 			for (auto &i : v->getParamTypes())
-				os << " " << std::to_string(i, rt);
+				os << " " << decompileTypeName(i, rt);
 			os << "\n";
 
 			std::set<slxfmt::SourceLocDesc *> dumpedSourceLocationDescs;
@@ -186,7 +238,7 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 		case slake::TypeId::Var: {
 			VarValue *v = (VarValue *)value;
 			os << std::string(indentLevel, '\t')
-			   << ".var " << std::to_string(v->getVarType(), rt) << " " << v->getName() << "\n";
+			   << ".var " << decompileTypeName(v->getVarType(), rt) << " " << v->getName() << "\n";
 			break;
 		}
 		case slake::TypeId::Class: {

@@ -35,7 +35,7 @@ namespace slake {
 				std::shared_ptr<FnOverloadingNode> overloading);
 
 		public:
-			using OpParselet = std::function<std::shared_ptr<ExprNode>(Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken)>;
+			using OpParselet = std::function<std::shared_ptr<ExprNode>(Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken)>;
 
 			struct OpRegistry {
 				int leftPrecedence;
@@ -56,8 +56,8 @@ namespace slake {
 				compiler = nullptr;
 			}
 
-			inline const Token &expectToken(TokenId tokenId) {
-				const auto &token = lexer->peekToken();
+			inline Token &expectToken(TokenId tokenId) {
+				Token &token = lexer->peekToken();
 				if (token.tokenId == tokenId) {
 					lexer->nextToken();
 					return token;
@@ -65,21 +65,21 @@ namespace slake {
 				throw SyntaxError(std::string("Expecting ") + getTokenName(tokenId), token.beginLocation);
 			}
 
-			inline const Token &expectToken(const Token &token) {
+			inline Token &expectToken(Token &token) {
 				if (token.tokenId == TokenId::End)
 					throw SyntaxError("Expecting more tokens", token.beginLocation);
 
 				return token;
 			}
 
-			inline const Token &expectToken(const Token &token, TokenId tokenId) {
+			inline Token &expectToken(Token &token, TokenId tokenId) {
 				if (token.tokenId != tokenId)
 					throw SyntaxError(std::string("Expecting ") + getTokenName(tokenId), token.beginLocation);
 
 				return token;
 			}
 
-			inline const Token &expectTokens(const Token &token, TokenId tokenId) {
+			inline Token &expectTokens(Token &token, TokenId tokenId) {
 				if (token.tokenId == tokenId)
 					return token;
 
@@ -87,7 +87,7 @@ namespace slake {
 			}
 
 			template <typename... Args>
-			inline const Token &expectTokens(const Token &token, TokenId tokenId, Args... args) {
+			inline Token &expectTokens(Token &token, TokenId tokenId, Args... args) {
 				if (token.tokenId == tokenId)
 					return token;
 

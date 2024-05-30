@@ -246,7 +246,7 @@ const char *slake::slkc::getTokenName(slake::slkc::TokenId tokenId) {
 	return "<unknown tokenId>";
 }
 
-const Token &Lexer::nextToken(bool keepNewLine, bool keepWhitespace, bool keepComment) {
+Token &Lexer::nextToken(bool keepNewLine, bool keepWhitespace, bool keepComment) {
 	size_t &i = context.curIndex;
 
 	while (i < tokens.size()) {
@@ -280,7 +280,7 @@ const Token &Lexer::nextToken(bool keepNewLine, bool keepWhitespace, bool keepCo
 	return _endToken;
 }
 
-const Token &Lexer::peekToken(bool keepNewLine, bool keepWhitespace, bool keepComment) {
+Token &Lexer::peekToken(bool keepNewLine, bool keepWhitespace, bool keepComment) {
 	size_t i = context.curIndex;
 
 	while (i < tokens.size()) {

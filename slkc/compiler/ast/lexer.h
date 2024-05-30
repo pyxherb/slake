@@ -205,8 +205,8 @@ namespace slake {
 
 			void lex(std::string_view src);
 
-			const Token &nextToken(bool keepNewLine = false, bool keepWhitespace = false, bool keepComment = false);
-			const Token &peekToken(bool keepNewLine = false, bool keepWhitespace = false, bool keepComment = false);
+			Token &nextToken(bool keepNewLine = false, bool keepWhitespace = false, bool keepComment = false);
+			Token &peekToken(bool keepNewLine = false, bool keepWhitespace = false, bool keepComment = false);
 
 			inline void reset() {
 				context = {};
@@ -223,7 +223,7 @@ namespace slake {
 				return SIZE_MAX;
 			}
 
-			inline size_t getTokenIndex(const Token &token) {
+			inline size_t getTokenIndex(Token &token) {
 				return (&token) - tokens.data();
 			}
 		};

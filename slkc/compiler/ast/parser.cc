@@ -42,7 +42,7 @@ void Parser::_putFnDefinition(
 std::map<TokenId, Parser::OpRegistry> Parser::prefixOpRegistries = {
 	{ TokenId::SubOp,
 		{ 131,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<UnaryOpExprNode>(
 					opToken.beginLocation,
 					UnaryOp::Neg,
@@ -54,7 +54,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::prefixOpRegistries = {
 			} } },
 	{ TokenId::NotOp,
 		{ 131,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<UnaryOpExprNode>(
 					opToken.beginLocation,
 					UnaryOp::Not,
@@ -66,7 +66,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::prefixOpRegistries = {
 			} } },
 	{ TokenId::LNotOp,
 		{ 131,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<UnaryOpExprNode>(
 					opToken.beginLocation,
 					UnaryOp::LNot,
@@ -78,7 +78,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::prefixOpRegistries = {
 			} } },
 	{ TokenId::IncOp,
 		{ 131,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<UnaryOpExprNode>(
 					opToken.beginLocation,
 					UnaryOp::IncF,
@@ -90,7 +90,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::prefixOpRegistries = {
 			} } },
 	{ TokenId::DecOp,
 		{ 131,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<UnaryOpExprNode>(
 					opToken.beginLocation,
 					UnaryOp::DecF,
@@ -105,7 +105,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::prefixOpRegistries = {
 std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 	{ TokenId::LParenthese,
 		{ 140,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<CallExprNode>();
 
 				expr->target = lhs;
@@ -120,7 +120,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 			} } },
 	{ TokenId::LBracket,
 		{ 140,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					lhs->getLocation(),
 					BinaryOp::Subscript,
@@ -130,14 +130,14 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 
 				expr->rhs = parser->parseExpr();
 
-				const auto &closingToken = parser->expectToken(parser->lexer->nextToken(), TokenId::RBracket);
+				Token &closingToken = parser->expectToken(parser->lexer->nextToken(), TokenId::RBracket);
 				expr->idxClosingToken = parser->lexer->getTokenIndex(closingToken);
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
 	{ TokenId::IncOp,
 		{ 140,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<UnaryOpExprNode>(
 					lhs->getLocation(),
 					UnaryOp::IncB,
@@ -149,7 +149,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 			} } },
 	{ TokenId::DecOp,
 		{ 140,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<UnaryOpExprNode>(
 					lhs->getLocation(),
 					UnaryOp::DecB,
@@ -161,7 +161,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 			} } },
 	{ TokenId::Dot,
 		{ 140,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<HeadedIdRefExprNode>(
 					lhs,
 					parser->parseRef());
@@ -173,7 +173,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 
 	{ TokenId::MulOp,
 		{ 120,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					lhs->getLocation(),
 					BinaryOp::Mul,
@@ -187,7 +187,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 			} } },
 	{ TokenId::DivOp,
 		{ 120,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					lhs->getLocation(),
 					BinaryOp::Div,
@@ -201,7 +201,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 			} } },
 	{ TokenId::ModOp,
 		{ 120,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					lhs->getLocation(),
 					BinaryOp::Mod,
@@ -216,7 +216,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 
 	{ TokenId::AddOp,
 		{ 110,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					lhs->getLocation(),
 					BinaryOp::Add,
@@ -230,7 +230,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 			} } },
 	{ TokenId::SubOp,
 		{ 110,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					lhs->getLocation(),
 					BinaryOp::Sub,
@@ -245,7 +245,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 
 	{ TokenId::LshOp,
 		{ 100,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					lhs->getLocation(),
 					BinaryOp::Lsh,
@@ -259,7 +259,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 			} } },
 	{ TokenId::RshOp,
 		{ 100,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					lhs->getLocation(),
 					BinaryOp::Rsh,
@@ -274,7 +274,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 
 	{ TokenId::GtOp,
 		{ 90,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					lhs->getLocation(),
 					BinaryOp::Gt,
@@ -288,7 +288,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 			} } },
 	{ TokenId::GtEqOp,
 		{ 90,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					lhs->getLocation(),
 					BinaryOp::GtEq,
@@ -302,7 +302,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 			} } },
 	{ TokenId::LtOp,
 		{ 90,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					lhs->getLocation(),
 					BinaryOp::Lt,
@@ -316,7 +316,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 			} } },
 	{ TokenId::LtEqOp,
 		{ 90,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					lhs->getLocation(),
 					BinaryOp::LtEq,
@@ -331,7 +331,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 
 	{ TokenId::EqOp,
 		{ 80,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					lhs->getLocation(),
 					BinaryOp::Eq,
@@ -345,7 +345,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 			} } },
 	{ TokenId::NeqOp,
 		{ 80,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					lhs->getLocation(),
 					BinaryOp::Neq,
@@ -359,7 +359,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 			} } },
 	{ TokenId::StrictEqOp,
 		{ 80,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					lhs->getLocation(),
 					BinaryOp::StrictEq,
@@ -373,7 +373,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 			} } },
 	{ TokenId::StrictNeqOp,
 		{ 80,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					lhs->getLocation(),
 					BinaryOp::StrictNeq,
@@ -388,7 +388,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 
 	{ TokenId::AndOp,
 		{ 70,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					lhs->getLocation(),
 					BinaryOp::And,
@@ -403,7 +403,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 
 	{ TokenId::XorOp,
 		{ 60,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					lhs->getLocation(),
 					BinaryOp::Xor,
@@ -418,7 +418,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 
 	{ TokenId::OrOp,
 		{ 50,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					lhs->getLocation(),
 					BinaryOp::Or,
@@ -433,7 +433,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 
 	{ TokenId::LAndOp,
 		{ 40,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					lhs->getLocation(),
 					BinaryOp::LAnd,
@@ -448,7 +448,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 
 	{ TokenId::LOrOp,
 		{ 30,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					lhs->getLocation(),
 					BinaryOp::LOr,
@@ -463,14 +463,14 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 
 	{ TokenId::Question,
 		{ 21,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<TernaryOpExprNode>(lhs);
 
 				expr->idxQuestionToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->x = parser->parseExpr(20);
 
-				const auto &colonToken = parser->expectToken(parser->lexer->nextToken(), TokenId::Colon);
+				Token &colonToken = parser->expectToken(parser->lexer->nextToken(), TokenId::Colon);
 				expr->idxColonToken = parser->lexer->getTokenIndex(colonToken);
 
 				expr->y = parser->parseExpr(20);
@@ -480,7 +480,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 
 	{ TokenId::AssignOp,
 		{ 11,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, const Token &opToken) -> std::shared_ptr<ExprNode> {
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					lhs->getLocation(),
 					BinaryOp::Assign,
@@ -498,7 +498,7 @@ AccessModifier Parser::parseAccessModifier(Location &locationOut, std::deque<siz
 	AccessModifier accessModifier = 0;
 
 	while (true) {
-		auto &token = lexer->peekToken();
+		Token &token = lexer->peekToken();
 
 		if (!accessModifier)
 			locationOut = token.beginLocation;
@@ -541,7 +541,7 @@ end:
 std::shared_ptr<TypeNameNode> Parser::parseTypeName(bool required) {
 	std::shared_ptr<TypeNameNode> type;
 
-	switch (auto &token = lexer->peekToken(); token.tokenId) {
+	switch (Token &token = lexer->peekToken(); token.tokenId) {
 		case TokenId::I8TypeName:
 		case TokenId::I16TypeName:
 		case TokenId::I32TypeName:
@@ -635,14 +635,14 @@ std::shared_ptr<TypeNameNode> Parser::parseTypeName(bool required) {
 				lexer->getTokenIndex(token));
 	}
 
-	if (const auto &lBracketToken = lexer->peekToken(); lBracketToken.tokenId == TokenId::LBracket) {
+	if (Token &lBracketToken = lexer->peekToken(); lBracketToken.tokenId == TokenId::LBracket) {
 		lexer->nextToken();
 
 		auto t = std::make_shared<ArrayTypeNameNode>(type);
 		type = t;
 		t->idxLBracketToken = lexer->getTokenIndex(lBracketToken);
 
-		const auto &rBracketToken = lexer->peekToken();
+		Token &rBracketToken = lexer->peekToken();
 		if (rBracketToken.tokenId != TokenId::RBracket) {
 			compiler->messages.push_back(
 				Message(
@@ -656,14 +656,14 @@ std::shared_ptr<TypeNameNode> Parser::parseTypeName(bool required) {
 		t->idxRBracketToken = lexer->getTokenIndex(rBracketToken);
 	}
 
-	if (auto &token = lexer->peekToken(); token.tokenId == TokenId::AndOp) {
+	if (Token &token = lexer->peekToken(); token.tokenId == TokenId::AndOp) {
 		lexer->nextToken();
 
 		type->isRef = true;
 		type->idxRefIndicatorToken = lexer->getTokenIndex(token);
 	}
 
-	if (auto &token = lexer->peekToken(); token.tokenId == TokenId::MulOp) {
+	if (Token &token = lexer->peekToken(); token.tokenId == TokenId::MulOp) {
 		lexer->nextToken();
 
 		auto result = std::make_shared<ContextTypeNameNode>(type);
@@ -678,11 +678,11 @@ std::deque<std::shared_ptr<TypeNameNode>> Parser::parseGenericArgs(bool forTypeN
 	LexerContext savedContext = lexer->context;
 	std::deque<std::shared_ptr<TypeNameNode>> genericArgs;
 
-	if (auto &token = lexer->nextToken(); token.tokenId != TokenId::LtOp)
+	if (Token &token = lexer->nextToken(); token.tokenId != TokenId::LtOp)
 		goto fail;
 
 	while (true) {
-		if (auto &token = lexer->peekToken(); token.tokenId == TokenId::GtOp)
+		if (Token &token = lexer->peekToken(); token.tokenId == TokenId::GtOp)
 			break;
 
 		if (auto type = parseTypeName(forTypeName); type->getTypeId() != TypeId::Bad)
@@ -700,13 +700,13 @@ std::deque<std::shared_ptr<TypeNameNode>> Parser::parseGenericArgs(bool forTypeN
 				goto fail;
 		}
 
-		if (auto &token = lexer->peekToken(); token.tokenId != TokenId::Comma)
+		if (Token &token = lexer->peekToken(); token.tokenId != TokenId::Comma)
 			break;
 
 		lexer->nextToken();
 	}
 
-	if (auto &token = lexer->peekToken(); token.tokenId != TokenId::GtOp) {
+	if (Token &token = lexer->peekToken(); token.tokenId != TokenId::GtOp) {
 		if (forTypeName) {
 			compiler->messages.push_back(
 				Message(
@@ -731,7 +731,7 @@ IdRef Parser::parseModuleRef() {
 	size_t idxPrecedingAccessOp = SIZE_MAX;
 
 	while (true) {
-		auto &nameToken = lexer->peekToken();
+		Token &nameToken = lexer->peekToken();
 
 		auto refEntry = IdRefEntry(nameToken.beginLocation, SIZE_MAX, "");
 		refEntry.idxAccessOpToken = idxPrecedingAccessOp;
@@ -752,10 +752,10 @@ IdRef Parser::parseModuleRef() {
 			ref.push_back(refEntry);
 		}
 
-		if (auto &token = lexer->peekToken(); token.tokenId != TokenId::Dot)
+		if (Token &token = lexer->peekToken(); token.tokenId != TokenId::Dot)
 			break;
 
-		const auto &precedingAccessOpToken = lexer->nextToken();
+		Token &precedingAccessOpToken = lexer->nextToken();
 		idxPrecedingAccessOp = lexer->getTokenIndex(precedingAccessOpToken);
 	}
 
@@ -766,7 +766,7 @@ IdRef Parser::parseRef(bool forTypeName) {
 	IdRef ref;
 	size_t idxPrecedingAccessOp = SIZE_MAX;
 
-	switch (auto &token = lexer->peekToken(); token.tokenId) {
+	switch (Token &token = lexer->peekToken(); token.tokenId) {
 		case TokenId::ThisKeyword:
 		case TokenId::BaseKeyword:
 		case TokenId::ScopeOp: {
@@ -791,7 +791,7 @@ IdRef Parser::parseRef(bool forTypeName) {
 			if (lexer->peekToken().tokenId != TokenId::Dot)
 				goto end;
 
-			const auto &precedingAccessOpToken = lexer->nextToken();
+			Token &precedingAccessOpToken = lexer->nextToken();
 			idxPrecedingAccessOp = lexer->getTokenIndex(precedingAccessOpToken);
 
 			break;
@@ -799,7 +799,7 @@ IdRef Parser::parseRef(bool forTypeName) {
 	}
 
 	while (true) {
-		auto &nameToken = lexer->peekToken();
+		Token &nameToken = lexer->peekToken();
 
 		auto refEntry = IdRefEntry(nameToken.beginLocation, SIZE_MAX, "");
 		refEntry.idxAccessOpToken = idxPrecedingAccessOp;
@@ -823,10 +823,10 @@ IdRef Parser::parseRef(bool forTypeName) {
 		if (lexer->peekToken().tokenId == TokenId::LtOp)
 			ref.back().genericArgs = parseGenericArgs(forTypeName);
 
-		if (auto &token = lexer->peekToken(); token.tokenId != TokenId::Dot)
+		if (Token &token = lexer->peekToken(); token.tokenId != TokenId::Dot)
 			break;
 
-		const auto &precedingAccessOpToken = lexer->nextToken();
+		Token &precedingAccessOpToken = lexer->nextToken();
 		idxPrecedingAccessOp = lexer->getTokenIndex(precedingAccessOpToken);
 	}
 
@@ -848,7 +848,7 @@ void Parser::parseArgs(
 			break;
 		}
 
-		const auto &commaToken = lexer->nextToken();
+		Token &commaToken = lexer->nextToken();
 		idxCommaTokensOut.push_back(lexer->getTokenIndex(commaToken));
 	}
 }
@@ -858,7 +858,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 
 	std::shared_ptr<ExprNode> lhs, rhs;
 
-	const Token &prefixToken = expectToken(lexer->peekToken());
+	Token &prefixToken = expectToken(lexer->peekToken());
 
 	try {
 		if (auto it = prefixOpRegistries.find(prefixToken.tokenId); it != prefixOpRegistries.end()) {
@@ -884,17 +884,17 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 					auto expr = std::make_shared<NewExprNode>(prefixToken.beginLocation);
 					lhs = expr;
 
-					const auto &newToken = lexer->nextToken();
+					Token &newToken = lexer->nextToken();
 					expr->idxNewToken = lexer->getTokenIndex(newToken);
 
 					expr->type = parseTypeName();
 
-					const auto &lParentheseToken = expectToken(TokenId::LParenthese);
+					Token &lParentheseToken = expectToken(TokenId::LParenthese);
 					expr->idxLParentheseToken = lexer->getTokenIndex(lParentheseToken);
 
 					parseArgs(expr->args, expr->idxCommaTokens);
 
-					const auto &rParentheseToken = expectToken(TokenId::RParenthese);
+					Token &rParentheseToken = expectToken(TokenId::RParenthese);
 					expr->idxRParentheseToken = lexer->getTokenIndex(rParentheseToken);
 					break;
 				}
@@ -987,7 +987,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 					while (true) {
 						expr->elements.push_back(parseExpr());
 
-						if (auto &commaToken = lexer->peekToken(); commaToken.tokenId == TokenId::Comma) {
+						if (Token &commaToken = lexer->peekToken(); commaToken.tokenId == TokenId::Comma) {
 							lexer->nextToken();
 							expr->idxCommaTokens.push_back(lexer->getTokenIndex(commaToken));
 						} else
@@ -1006,7 +1006,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 		}
 
 		while (true) {
-			const Token &infixToken = lexer->peekToken();
+			Token &infixToken = lexer->peekToken();
 			if (infixToken.tokenId == TokenId::End)
 				break;
 
@@ -1036,14 +1036,14 @@ void Parser::parseParentSlot(
 	std::shared_ptr<TypeNameNode> &typeNameOut,
 	size_t &idxLParentheseTokenOut,
 	size_t &idxRParentheseTokenOut) {
-	if (const auto &lParentheseToken = lexer->peekToken(); lParentheseToken.tokenId == TokenId::LParenthese) {
+	if (Token &lParentheseToken = lexer->peekToken(); lParentheseToken.tokenId == TokenId::LParenthese) {
 		lexer->nextToken();
 
 		idxLParentheseTokenOut = lexer->getTokenIndex(lParentheseToken);
 
 		typeNameOut = parseTypeName();
 
-		const auto &rParentheseToken = expectToken(TokenId::RParenthese);
+		Token &rParentheseToken = expectToken(TokenId::RParenthese);
 		idxRParentheseTokenOut = lexer->getTokenIndex(rParentheseToken);
 	}
 }
@@ -1052,7 +1052,7 @@ void Parser::parseImplList(
 	std::deque<std::shared_ptr<TypeNameNode>> &implInterfacesOut,
 	size_t &idxColonTokenOut,
 	std::deque<size_t> &idxSeparatorTokensOut) {
-	if (const auto &colonToken = lexer->peekToken(); colonToken.tokenId == TokenId::Colon) {
+	if (Token &colonToken = lexer->peekToken(); colonToken.tokenId == TokenId::Colon) {
 		lexer->nextToken();
 		idxColonTokenOut = lexer->getTokenIndex(colonToken);
 
@@ -1062,7 +1062,7 @@ void Parser::parseImplList(
 			if (lexer->peekToken().tokenId != TokenId::OrOp)
 				break;
 
-			const auto &commaToken = lexer->nextToken();
+			Token &commaToken = lexer->nextToken();
 			idxSeparatorTokensOut.push_back(lexer->getTokenIndex(commaToken));
 		}
 	}
@@ -1091,7 +1091,7 @@ std::deque<std::shared_ptr<TypeNameNode>> Parser::parseTraitList() {
 
 void Parser::parseVarDefs(std::shared_ptr<VarDefStmtNode> varDefStmtOut) {
 	while (true) {
-		const auto &nameToken = expectToken(TokenId::Id);
+		Token &nameToken = expectToken(TokenId::Id);
 
 		varDefStmtOut->varDefs[nameToken.text] = VarDefEntry(
 			nameToken.beginLocation,
@@ -1099,15 +1099,15 @@ void Parser::parseVarDefs(std::shared_ptr<VarDefStmtNode> varDefStmtOut) {
 			lexer->getTokenIndex(nameToken));
 		VarDefEntry &entry = varDefStmtOut->varDefs[nameToken.text];
 
-		if (const auto &token = lexer->peekToken(); token.tokenId == TokenId::Colon) {
-			const auto &colonToken = lexer->nextToken();
+		if (Token &token = lexer->peekToken(); token.tokenId == TokenId::Colon) {
+			Token &colonToken = lexer->nextToken();
 			entry.idxColonToken = lexer->getTokenIndex(colonToken);
 
 			entry.type = parseTypeName();
 		}
 
-		if (auto &token = lexer->peekToken(); token.tokenId == TokenId::AssignOp) {
-			const auto &assignOpToken = lexer->nextToken();
+		if (Token &token = lexer->peekToken(); token.tokenId == TokenId::AssignOp) {
+			Token &assignOpToken = lexer->nextToken();
 			entry.idxAssignOpToken = lexer->getTokenIndex(assignOpToken);
 
 			entry.initValue = parseExpr();
@@ -1116,7 +1116,7 @@ void Parser::parseVarDefs(std::shared_ptr<VarDefStmtNode> varDefStmtOut) {
 		if (lexer->peekToken().tokenId != TokenId::Comma)
 			break;
 
-		const auto &commaToken = lexer->nextToken();
+		Token &commaToken = lexer->nextToken();
 		entry.idxCommaToken = lexer->getTokenIndex(commaToken);
 	}
 }
@@ -1126,15 +1126,15 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 	std::shared_ptr<StmtNode> result;
 
 	try {
-		switch (auto &beginToken = lexer->peekToken(); beginToken.tokenId) {
+		switch (Token &beginToken = lexer->peekToken(); beginToken.tokenId) {
 			case TokenId::BreakKeyword: {
 				auto stmt = std::make_shared<BreakStmtNode>(beginToken.beginLocation);
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
-				const auto &idxBreakToken = lexer->nextToken();
+				Token &idxBreakToken = lexer->nextToken();
 				stmt->idxBreakToken = lexer->getTokenIndex(idxBreakToken);
 
-				const auto &semicolonToken = expectToken(TokenId::Semicolon);
+				Token &semicolonToken = expectToken(TokenId::Semicolon);
 				stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
 				break;
 			}
@@ -1142,10 +1142,10 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				auto stmt = std::make_shared<BreakStmtNode>(beginToken.beginLocation);
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
-				const auto &idxBreakToken = lexer->nextToken();
+				Token &idxBreakToken = lexer->nextToken();
 				stmt->idxBreakToken = lexer->getTokenIndex(idxBreakToken);
 
-				const auto &semicolonToken = expectToken(TokenId::Semicolon);
+				Token &semicolonToken = expectToken(TokenId::Semicolon);
 				stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
 
 				break;
@@ -1154,26 +1154,26 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				auto stmt = std::make_shared<ForStmtNode>(beginToken.beginLocation);
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
-				const auto &forToken = lexer->nextToken();
+				Token &forToken = lexer->nextToken();
 				stmt->idxForToken = lexer->getTokenIndex(forToken);
 
-				const auto &lParentheseToken = expectToken(TokenId::LParenthese);
+				Token &lParentheseToken = expectToken(TokenId::LParenthese);
 				stmt->idxLParentheseToken = lexer->getTokenIndex(lParentheseToken);
 
-				if (const auto &letToken = lexer->peekToken(); letToken.tokenId == TokenId::LetKeyword) {
+				if (Token &letToken = lexer->peekToken(); letToken.tokenId == TokenId::LetKeyword) {
 					stmt->varDefs = std::make_shared<VarDefStmtNode>(letToken.beginLocation);
 					stmt->varDefs->idxLetToken = lexer->getTokenIndex(letToken);
 					parseVarDefs(stmt->varDefs);
 				}
-				const auto &firstSemicolonToken = expectToken(TokenId::Semicolon);
+				Token &firstSemicolonToken = expectToken(TokenId::Semicolon);
 				stmt->idxFirstSemicolonToken = lexer->getTokenIndex(firstSemicolonToken);
 
 				stmt->condition = parseExpr();
-				const auto &secondSemicolonToken = expectToken(TokenId::Semicolon);
+				Token &secondSemicolonToken = expectToken(TokenId::Semicolon);
 				stmt->idxSecondSemicolonToken = lexer->getTokenIndex(secondSemicolonToken);
 
 				stmt->endExpr = parseExpr();
-				const auto &rParentheseToken = expectToken(TokenId::RParenthese);
+				Token &rParentheseToken = expectToken(TokenId::RParenthese);
 				stmt->idxRParentheseToken = lexer->getTokenIndex(rParentheseToken);
 
 				stmt->body = parseStmt();
@@ -1183,15 +1183,15 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				auto stmt = std::make_shared<WhileStmtNode>(beginToken.beginLocation);
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
-				const auto &whileToken = lexer->nextToken();
+				Token &whileToken = lexer->nextToken();
 				stmt->idxWhileToken = lexer->getTokenIndex(whileToken);
 
-				const auto &lParentheseToken = expectToken(TokenId::LParenthese);
+				Token &lParentheseToken = expectToken(TokenId::LParenthese);
 				stmt->idxLParentheseToken = lexer->getTokenIndex(lParentheseToken);
 
 				stmt->condition = parseExpr();
 
-				const auto &rParentheseToken = expectToken(TokenId::RParenthese);
+				Token &rParentheseToken = expectToken(TokenId::RParenthese);
 				stmt->idxRParentheseToken = lexer->getTokenIndex(rParentheseToken);
 
 				stmt->body = parseStmt();
@@ -1201,16 +1201,16 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				auto stmt = std::make_shared<ReturnStmtNode>(beginToken.beginLocation);
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
-				const auto &returnToken = lexer->nextToken();
+				Token &returnToken = lexer->nextToken();
 				stmt->idxReturnToken = lexer->getTokenIndex(returnToken);
 
-				if (auto &token = lexer->peekToken(); token.tokenId == TokenId::Semicolon) {
+				if (Token &token = lexer->peekToken(); token.tokenId == TokenId::Semicolon) {
 					lexer->nextToken();
 					stmt->idxSemicolonToken = lexer->getTokenIndex(token);
 				} else {
 					stmt->returnValue = parseExpr();
 
-					const auto &semicolonToken = expectToken(TokenId::Semicolon);
+					Token &semicolonToken = expectToken(TokenId::Semicolon);
 					stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
 				}
 				break;
@@ -1219,16 +1219,16 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				auto stmt = std::make_shared<YieldStmtNode>(beginToken.beginLocation);
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
-				const auto &returnToken = lexer->nextToken();
+				Token &returnToken = lexer->nextToken();
 				stmt->idxYieldToken = lexer->getTokenIndex(returnToken);
 
-				if (auto &token = lexer->peekToken(); token.tokenId == TokenId::Semicolon) {
+				if (Token &token = lexer->peekToken(); token.tokenId == TokenId::Semicolon) {
 					lexer->nextToken();
 					stmt->idxSemicolonToken = lexer->getTokenIndex(token);
 				} else {
 					stmt->returnValue = parseExpr();
 
-					const auto &semicolonToken = expectToken(TokenId::Semicolon);
+					Token &semicolonToken = expectToken(TokenId::Semicolon);
 					stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
 				}
 				break;
@@ -1237,20 +1237,20 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				auto stmt = std::make_shared<IfStmtNode>(beginToken.beginLocation);
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
-				const auto &ifToken = lexer->nextToken();
+				Token &ifToken = lexer->nextToken();
 				stmt->idxIfToken = lexer->getTokenIndex(ifToken);
 
-				const auto &lParentheseToken = expectToken(TokenId::LParenthese);
+				Token &lParentheseToken = expectToken(TokenId::LParenthese);
 				stmt->idxLParentheseToken = lexer->getTokenIndex(lParentheseToken);
 
 				stmt->condition = parseExpr();
 
-				const auto &rParentheseToken = expectToken(TokenId::RParenthese);
+				Token &rParentheseToken = expectToken(TokenId::RParenthese);
 				stmt->idxRParentheseToken = lexer->getTokenIndex(rParentheseToken);
 
 				stmt->body = parseStmt();
 
-				if (const auto &elseToken = lexer->peekToken(); elseToken.tokenId == TokenId::ElseKeyword) {
+				if (Token &elseToken = lexer->peekToken(); elseToken.tokenId == TokenId::ElseKeyword) {
 					lexer->nextToken();
 					stmt->idxElseToken = lexer->getTokenIndex(elseToken);
 					stmt->elseBranch = parseStmt();
@@ -1261,13 +1261,13 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				auto stmt = std::make_shared<TryStmtNode>(beginToken.beginLocation);
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
-				const auto &tryToken = lexer->nextToken();
+				Token &tryToken = lexer->nextToken();
 				stmt->idxTryToken = lexer->getTokenIndex(tryToken);
 
 				stmt->body = parseStmt();
 
 				while (true) {
-					auto &catchToken = lexer->peekToken();
+					Token &catchToken = lexer->peekToken();
 					if (catchToken.tokenId != TokenId::CatchKeyword)
 						break;
 					lexer->nextToken();
@@ -1277,27 +1277,27 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 
 					catchBlock.idxCatchToken = lexer->getTokenIndex(catchToken);
 
-					const auto &lParentheseToken = expectToken(TokenId::LParenthese);
+					Token &lParentheseToken = expectToken(TokenId::LParenthese);
 					catchBlock.idxLParentheseToken = lexer->getTokenIndex(lParentheseToken);
 
 					catchBlock.targetType = parseTypeName();
 
 					std::string exceptionVarName;
 
-					if (auto &nameToken = lexer->peekToken(); nameToken.tokenId == TokenId::Id) {
+					if (Token &nameToken = lexer->peekToken(); nameToken.tokenId == TokenId::Id) {
 						lexer->nextToken();
 						catchBlock.idxExceptionVarNameToken = lexer->getTokenIndex(nameToken);
 
 						exceptionVarName = nameToken.text;
 					}
 
-					const auto &rParentheseToken = expectToken(TokenId::RParenthese);
+					Token &rParentheseToken = expectToken(TokenId::RParenthese);
 					catchBlock.idxRParentheseToken = lexer->getTokenIndex(rParentheseToken);
 
 					catchBlock.body = parseStmt();
 				}
 
-				if (const auto &finalToken = lexer->peekToken(); finalToken.tokenId == TokenId::FinalKeyword) {
+				if (Token &finalToken = lexer->peekToken(); finalToken.tokenId == TokenId::FinalKeyword) {
 					lexer->nextToken();
 					stmt->finalBlock.idxFinalToken = lexer->getTokenIndex(finalToken);
 
@@ -1313,19 +1313,19 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				const auto stmt = std::make_shared<SwitchStmtNode>(beginToken.beginLocation);
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
-				const auto &lParentheseToken = expectToken(TokenId::LParenthese);
+				Token &lParentheseToken = expectToken(TokenId::LParenthese);
 				stmt->idxLParentheseToken = lexer->getTokenIndex(lParentheseToken);
 
 				stmt->expr = parseExpr();
 
-				const auto &rParentheseToken = expectToken(TokenId::RParenthese);
+				Token &rParentheseToken = expectToken(TokenId::RParenthese);
 				stmt->idxRParentheseToken = lexer->getTokenIndex(rParentheseToken);
 
-				const auto &lBraceToken = expectToken(TokenId::LBrace);
+				Token &lBraceToken = expectToken(TokenId::LBrace);
 				stmt->idxLBraceToken = lexer->getTokenIndex(lBraceToken);
 
 				while (true) {
-					const auto &caseToken = lexer->peekToken();
+					Token &caseToken = lexer->peekToken();
 
 					if (caseToken.tokenId != TokenId::CaseKeyword)
 						break;
@@ -1338,11 +1338,11 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 
 					newCase.condition = parseExpr();
 
-					const auto &colonToken = expectToken(TokenId::Colon);
+					Token &colonToken = expectToken(TokenId::Colon);
 					newCase.idxColonToken = lexer->getTokenIndex(colonToken);
 
 					while (true) {
-						if (const auto &token = lexer->peekToken();
+						if (Token &token = lexer->peekToken();
 							(token.tokenId == TokenId::DefaultKeyword) ||
 							(token.tokenId == TokenId::RBrace))
 							break;
@@ -1350,26 +1350,26 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 					}
 				}
 
-				if (const auto &defaultToken = lexer->peekToken(); defaultToken.tokenId == TokenId::DefaultKeyword) {
+				if (Token &defaultToken = lexer->peekToken(); defaultToken.tokenId == TokenId::DefaultKeyword) {
 					lexer->nextToken();
 
 					stmt->cases.push_back({});
 					SwitchCase &defaultCase = stmt->cases.back();
 					defaultCase.idxCaseToken = lexer->getTokenIndex(defaultToken);
 
-					const auto &colonToken = expectToken(TokenId::Colon);
+					Token &colonToken = expectToken(TokenId::Colon);
 					defaultCase.idxColonToken = lexer->getTokenIndex(colonToken);
 
 					std::deque<std::shared_ptr<StmtNode>> body;
 
 					while (true) {
-						if (const auto &token = lexer->peekToken(); token.tokenId == TokenId::RBrace)
+						if (Token &token = lexer->peekToken(); token.tokenId == TokenId::RBrace)
 							break;
 						body.push_back(parseStmt());
 					}
 				}
 
-				const auto &rBraceToken = expectToken(TokenId::RBrace);
+				Token &rBraceToken = expectToken(TokenId::RBrace);
 				stmt->idxRBraceToken = lexer->getTokenIndex(rBraceToken);
 
 				break;
@@ -1378,12 +1378,12 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				const auto stmt = std::make_shared<CodeBlockStmtNode>(CodeBlock{ beginToken.beginLocation, {} });
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
-				const auto &lBraceToken = lexer->nextToken();
+				Token &lBraceToken = lexer->nextToken();
 				stmt->body.idxLBraceToken = lexer->getTokenIndex(lBraceToken);
 
 				while (true) {
 					if (lexer->peekToken().tokenId == TokenId::RBrace) {
-						const auto &rBraceToken = lexer->nextToken();
+						Token &rBraceToken = lexer->nextToken();
 						stmt->body.idxRBraceToken = lexer->getTokenIndex(rBraceToken);
 						break;
 					}
@@ -1394,7 +1394,7 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				break;
 			}
 			case TokenId::LetKeyword: {
-				const auto &letToken = lexer->nextToken();
+				Token &letToken = lexer->nextToken();
 
 				auto stmt = std::make_shared<VarDefStmtNode>(letToken.beginLocation);
 				result = std::static_pointer_cast<StmtNode>(stmt);
@@ -1403,7 +1403,7 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 
 				parseVarDefs(stmt);
 
-				const auto &semicolonToken = expectToken(TokenId::Semicolon);
+				Token &semicolonToken = expectToken(TokenId::Semicolon);
 				stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
 
 				break;
@@ -1414,7 +1414,7 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 
 				stmt->expr = parseExpr();
 
-				const auto &semicolonToken = expectToken(TokenId::Semicolon);
+				Token &semicolonToken = expectToken(TokenId::Semicolon);
 				stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
 
 				break;
@@ -1437,7 +1437,7 @@ void Parser::parseParams(std::deque<std::shared_ptr<ParamNode>> &paramsOut, std:
 		return;
 
 	while (true) {
-		if (auto &varArgToken = lexer->peekToken(); varArgToken.tokenId == TokenId::VarArg) {
+		if (Token &varArgToken = lexer->peekToken(); varArgToken.tokenId == TokenId::VarArg) {
 			auto param = std::make_shared<ParamNode>(varArgToken.beginLocation);
 			param->type =
 				std::make_shared<ArrayTypeNameNode>(
@@ -1453,7 +1453,7 @@ void Parser::parseParams(std::deque<std::shared_ptr<ParamNode>> &paramsOut, std:
 			break;
 		}
 
-		auto &nameToken = lexer->peekToken();
+		Token &nameToken = lexer->peekToken();
 		std::string name;
 		if (nameToken.tokenId != TokenId::Id) {
 			compiler->messages.push_back(
@@ -1469,7 +1469,7 @@ void Parser::parseParams(std::deque<std::shared_ptr<ParamNode>> &paramsOut, std:
 		auto paramNode = std::make_shared<ParamNode>(nameToken.beginLocation);
 		paramNode->name = name;
 
-		if (auto &colonToken = lexer->peekToken(); colonToken.tokenId == TokenId::Colon) {
+		if (Token &colonToken = lexer->peekToken(); colonToken.tokenId == TokenId::Colon) {
 			lexer->nextToken();
 			paramNode->idxColonToken = lexer->getTokenIndex(colonToken);
 			paramNode->type = parseTypeName(true);
@@ -1480,7 +1480,7 @@ void Parser::parseParams(std::deque<std::shared_ptr<ParamNode>> &paramsOut, std:
 		if (lexer->peekToken().tokenId != TokenId::Comma)
 			break;
 
-		const auto &commaToken = lexer->nextToken();
+		Token &commaToken = lexer->nextToken();
 		idxCommaTokensOut.push_back(lexer->getTokenIndex(commaToken));
 	}
 }
@@ -1489,10 +1489,10 @@ std::shared_ptr<FnOverloadingNode> Parser::parseFnDecl(std::string &nameOut) {
 	auto savedScope = curScope;
 	curScope = std::make_shared<Scope>();
 
-	auto &fnKeywordToken = expectToken(TokenId::FnKeyword);
+	Token &fnKeywordToken = expectToken(TokenId::FnKeyword);
 	auto overloading = std::make_shared<FnOverloadingNode>(fnKeywordToken.beginLocation, compiler, curScope);
 
-	auto &nameToken = lexer->peekToken();
+	Token &nameToken = lexer->peekToken();
 	switch (nameToken.tokenId) {
 		case TokenId::Id:
 		case TokenId::NewKeyword:
@@ -1509,18 +1509,18 @@ std::shared_ptr<FnOverloadingNode> Parser::parseFnDecl(std::string &nameOut) {
 		overloading->setGenericParams(parseGenericParams());
 
 	{
-		const auto &paramLParentheseToken = expectToken(TokenId::LParenthese);
+		Token &paramLParentheseToken = expectToken(TokenId::LParenthese);
 		overloading->idxParamLParentheseToken = lexer->getTokenIndex(paramLParentheseToken);
 	}
 
 	parseParams(overloading->params, overloading->idxParamCommaTokens);
 
 	{
-		const auto &paramRParentheseToken = expectToken(TokenId::RParenthese);
+		Token &paramRParentheseToken = expectToken(TokenId::RParenthese);
 		overloading->idxParamRParentheseToken = lexer->getTokenIndex(paramRParentheseToken);
 	}
 
-	if (auto &token = lexer->peekToken(); token.tokenId == TokenId::AsyncKeyword) {
+	if (Token &token = lexer->peekToken(); token.tokenId == TokenId::AsyncKeyword) {
 		lexer->nextToken();
 
 		overloading->idxAsyncModifierToken = lexer->getTokenIndex(token);
@@ -1528,7 +1528,7 @@ std::shared_ptr<FnOverloadingNode> Parser::parseFnDecl(std::string &nameOut) {
 		overloading->isAsync = true;
 	}
 
-	if (auto &token = lexer->peekToken(); token.tokenId == TokenId::Colon) {
+	if (Token &token = lexer->peekToken(); token.tokenId == TokenId::Colon) {
 		lexer->nextToken();
 
 		overloading->idxReturnTypeColonToken = lexer->getTokenIndex(token);
@@ -1545,7 +1545,7 @@ std::shared_ptr<FnOverloadingNode> Parser::parseFnDecl(std::string &nameOut) {
 std::shared_ptr<FnOverloadingNode> Parser::parseFnDef(std::string &nameOut) {
 	std::shared_ptr<FnOverloadingNode> overloading = parseFnDecl(nameOut);
 
-	if (auto &token = lexer->peekToken(); token.tokenId == TokenId::LBrace) {
+	if (Token &token = lexer->peekToken(); token.tokenId == TokenId::LBrace) {
 		auto savedScope = curScope;
 		curScope = overloading->scope;
 
@@ -1577,10 +1577,10 @@ std::shared_ptr<FnOverloadingNode> Parser::parseOperatorDecl(std::string &nameOu
 	auto savedScope = curScope;
 	curScope = std::make_shared<Scope>();
 
-	auto &operatorKeywordToken = expectToken(TokenId::OperatorKeyword);
+	Token &operatorKeywordToken = expectToken(TokenId::OperatorKeyword);
 	auto overloading = std::make_shared<FnOverloadingNode>(operatorKeywordToken.beginLocation, compiler, curScope);
 
-	auto &nameToken = lexer->nextToken();
+	Token &nameToken = lexer->nextToken();
 	std::string name;
 	switch (nameToken.tokenId) {
 		case TokenId::AddOp:
@@ -1628,18 +1628,18 @@ std::shared_ptr<FnOverloadingNode> Parser::parseOperatorDecl(std::string &nameOu
 	}
 
 	{
-		const auto &paramLParentheseToken = expectToken(TokenId::LParenthese);
+		Token &paramLParentheseToken = expectToken(TokenId::LParenthese);
 		overloading->idxParamLParentheseToken = lexer->getTokenIndex(paramLParentheseToken);
 	}
 
 	parseParams(overloading->params, overloading->idxParamCommaTokens);
 
 	{
-		const auto &paramRParentheseToken = expectToken(TokenId::RParenthese);
+		Token &paramRParentheseToken = expectToken(TokenId::RParenthese);
 		overloading->idxParamRParentheseToken = lexer->getTokenIndex(paramRParentheseToken);
 	}
 
-	if (auto &colonToken = lexer->peekToken(); colonToken.tokenId == TokenId::Colon) {
+	if (Token &colonToken = lexer->peekToken(); colonToken.tokenId == TokenId::Colon) {
 		lexer->nextToken();
 
 		overloading->idxReturnTypeColonToken = lexer->getTokenIndex(colonToken);
@@ -1659,7 +1659,7 @@ std::shared_ptr<FnOverloadingNode> Parser::parseOperatorDecl(std::string &nameOu
 std::shared_ptr<FnOverloadingNode> Parser::parseOperatorDef(std::string &nameOut) {
 	std::shared_ptr<FnOverloadingNode> overloading = parseOperatorDecl(nameOut);
 
-	if (auto &token = lexer->peekToken(); token.tokenId == TokenId::LBrace) {
+	if (Token &token = lexer->peekToken(); token.tokenId == TokenId::LBrace) {
 		auto savedScope = curScope;
 		curScope = overloading->scope;
 
@@ -1693,7 +1693,7 @@ GenericParamNodeList Parser::parseGenericParams() {
 	expectToken(TokenId::LtOp);
 
 	while (true) {
-		auto &nameToken = expectToken(TokenId::Id);
+		Token &nameToken = expectToken(TokenId::Id);
 
 		auto param = std::make_shared<GenericParamNode>(
 			nameToken.beginLocation,
@@ -1714,10 +1714,10 @@ GenericParamNodeList Parser::parseGenericParams() {
 
 		genericParams.push_back(param);
 
-		if (auto &token = lexer->peekToken(); token.tokenId != TokenId::Comma)
+		if (Token &token = lexer->peekToken(); token.tokenId != TokenId::Comma)
 			break;
 
-		const auto &token = lexer->nextToken();
+		Token &token = lexer->nextToken();
 		param->idxCommaToken = lexer->getTokenIndex(token);
 	}
 
@@ -1728,8 +1728,8 @@ GenericParamNodeList Parser::parseGenericParams() {
 }
 
 std::shared_ptr<ClassNode> Parser::parseClassDef() {
-	auto &beginToken = expectTokens(lexer->nextToken(), TokenId::ClassKeyword);
-	auto &nameToken = expectToken(TokenId::Id);
+	Token &beginToken = expectTokens(lexer->nextToken(), TokenId::ClassKeyword);
+	Token &nameToken = expectToken(TokenId::Id);
 
 	std::shared_ptr<ClassNode> classNode = std::make_shared<ClassNode>(
 		beginToken.beginLocation,
@@ -1742,7 +1742,7 @@ std::shared_ptr<ClassNode> Parser::parseClassDef() {
 		curScope = classNode->scope;
 		curScope->parent = savedScope.get();
 
-		if (auto &token = lexer->peekToken(); token.tokenId == TokenId::LtOp) {
+		if (Token &token = lexer->peekToken(); token.tokenId == TokenId::LtOp) {
 			classNode->setGenericParams(parseGenericParams());
 		}
 
@@ -1755,18 +1755,18 @@ std::shared_ptr<ClassNode> Parser::parseClassDef() {
 			classNode->idxImplInterfacesColonToken,
 			classNode->idxImplInterfacesSeparatorTokens);
 
-		const auto &lBraceToken = expectToken(TokenId::LBrace);
+		Token &lBraceToken = expectToken(TokenId::LBrace);
 		classNode->idxLBraceToken = lexer->getTokenIndex(lBraceToken);
 
 		while (true) {
-			if (auto &token = lexer->peekToken();
+			if (Token &token = lexer->peekToken();
 				token.tokenId == TokenId::RBrace ||
 				token.tokenId == TokenId::End)
 				break;
 			parseClassStmt();
 		}
 
-		const auto &rBraceToken = expectToken(TokenId::RBrace);
+		Token &rBraceToken = expectToken(TokenId::RBrace);
 		classNode->idxRBraceToken = lexer->getTokenIndex(rBraceToken);
 	} catch (SyntaxError e) {
 		compiler->messages.push_back(Message(
@@ -1784,7 +1784,7 @@ void Parser::parseClassStmt() {
 	std::deque<size_t> idxAccessModifierTokens;
 	AccessModifier accessModifier = parseAccessModifier(loc, idxAccessModifierTokens);
 
-	switch (auto &token = lexer->peekToken(); token.tokenId) {
+	switch (Token &token = lexer->peekToken(); token.tokenId) {
 		case TokenId::End:
 		case TokenId::RBrace:
 			return;
@@ -1846,7 +1846,7 @@ void Parser::parseClassStmt() {
 			break;
 		}
 		case TokenId::LetKeyword: {
-			const auto &letToken = lexer->nextToken();
+			Token &letToken = lexer->nextToken();
 
 			auto stmt = std::make_shared<VarDefStmtNode>(letToken.beginLocation);
 
@@ -1856,7 +1856,7 @@ void Parser::parseClassStmt() {
 
 			parseVarDefs(stmt);
 
-			const auto &semicolonToken = expectToken(TokenId::Semicolon);
+			Token &semicolonToken = expectToken(TokenId::Semicolon);
 			stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
 
 			bool idxAccessModifierTokensMoved = false;
@@ -1892,8 +1892,8 @@ void Parser::parseClassStmt() {
 }
 
 std::shared_ptr<InterfaceNode> Parser::parseInterfaceDef() {
-	auto &beginToken = expectTokens(lexer->nextToken(), TokenId::InterfaceKeyword);
-	auto &nameToken = expectToken(TokenId::Id);
+	Token &beginToken = expectTokens(lexer->nextToken(), TokenId::InterfaceKeyword);
+	Token &nameToken = expectToken(TokenId::Id);
 
 	std::shared_ptr<InterfaceNode> interfaceNode = std::make_shared<InterfaceNode>(
 		beginToken.beginLocation,
@@ -1906,7 +1906,7 @@ std::shared_ptr<InterfaceNode> Parser::parseInterfaceDef() {
 		curScope = interfaceNode->scope;
 		curScope->parent = savedScope.get();
 
-		if (auto &token = lexer->peekToken(); token.tokenId == TokenId::LtOp) {
+		if (Token &token = lexer->peekToken(); token.tokenId == TokenId::LtOp) {
 			interfaceNode->setGenericParams(parseGenericParams());
 		}
 
@@ -1915,18 +1915,18 @@ std::shared_ptr<InterfaceNode> Parser::parseInterfaceDef() {
 			interfaceNode->idxImplInterfacesColonToken,
 			interfaceNode->idxImplInterfacesSeparatorTokens);
 
-		const auto &lBraceToken = expectToken(TokenId::LBrace);
+		Token &lBraceToken = expectToken(TokenId::LBrace);
 		interfaceNode->idxLBraceToken = lexer->getTokenIndex(lBraceToken);
 
 		while (true) {
-			if (auto &token = lexer->peekToken();
+			if (Token &token = lexer->peekToken();
 				token.tokenId == TokenId::RBrace ||
 				token.tokenId == TokenId::End)
 				break;
 			parseInterfaceStmt();
 		}
 
-		const auto &rBraceToken = expectToken(TokenId::RBrace);
+		Token &rBraceToken = expectToken(TokenId::RBrace);
 		interfaceNode->idxRBraceToken = lexer->getTokenIndex(rBraceToken);
 	} catch (SyntaxError e) {
 		compiler->messages.push_back(Message(
@@ -1944,7 +1944,7 @@ void Parser::parseInterfaceStmt() {
 	std::deque<size_t> idxAccessModifierTokens;
 	AccessModifier accessModifier = parseAccessModifier(loc, idxAccessModifierTokens);
 
-	switch (auto &token = lexer->peekToken(); token.tokenId) {
+	switch (Token &token = lexer->peekToken(); token.tokenId) {
 		case TokenId::End:
 		case TokenId::RBrace:
 			return;
@@ -2006,7 +2006,7 @@ void Parser::parseInterfaceStmt() {
 			break;
 		}
 		case TokenId::LetKeyword: {
-			const auto &letToken = lexer->nextToken();
+			Token &letToken = lexer->nextToken();
 
 			auto stmt = std::make_shared<VarDefStmtNode>(letToken.beginLocation);
 
@@ -2014,7 +2014,7 @@ void Parser::parseInterfaceStmt() {
 
 			parseVarDefs(stmt);
 
-			const auto &semicolonToken = expectToken(TokenId::Semicolon);
+			Token &semicolonToken = expectToken(TokenId::Semicolon);
 			stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
 
 			bool idxAccessModifierTokensMoved = false;
@@ -2050,8 +2050,8 @@ void Parser::parseInterfaceStmt() {
 }
 
 std::shared_ptr<TraitNode> Parser::parseTraitDef() {
-	auto &beginToken = expectTokens(lexer->nextToken(), TokenId::TraitKeyword);
-	auto &nameToken = expectToken(TokenId::Id);
+	Token &beginToken = expectTokens(lexer->nextToken(), TokenId::TraitKeyword);
+	Token &nameToken = expectToken(TokenId::Id);
 
 	std::shared_ptr<TraitNode> traitNode = std::make_shared<TraitNode>(
 		beginToken.beginLocation,
@@ -2064,7 +2064,7 @@ std::shared_ptr<TraitNode> Parser::parseTraitDef() {
 		curScope = traitNode->scope;
 		curScope->parent = savedScope.get();
 
-		if (auto &token = lexer->peekToken(); token.tokenId == TokenId::LtOp) {
+		if (Token &token = lexer->peekToken(); token.tokenId == TokenId::LtOp) {
 			traitNode->setGenericParams(parseGenericParams());
 		}
 
@@ -2073,18 +2073,18 @@ std::shared_ptr<TraitNode> Parser::parseTraitDef() {
 			traitNode->idxImplTraitsColonToken,
 			traitNode->idxImplTraitsCommaTokens);
 
-		const auto &lBraceToken = expectToken(TokenId::LBrace);
+		Token &lBraceToken = expectToken(TokenId::LBrace);
 		traitNode->idxLBraceToken = lexer->getTokenIndex(lBraceToken);
 
 		while (true) {
-			if (auto &token = lexer->peekToken();
+			if (Token &token = lexer->peekToken();
 				token.tokenId == TokenId::RBrace ||
 				token.tokenId == TokenId::End)
 				break;
 			parseTraitStmt();
 		}
 
-		const auto &rBraceToken = expectToken(TokenId::RBrace);
+		Token &rBraceToken = expectToken(TokenId::RBrace);
 		traitNode->idxRBraceToken = lexer->getTokenIndex(rBraceToken);
 	} catch (SyntaxError e) {
 		compiler->messages.push_back(Message(
@@ -2102,7 +2102,7 @@ void Parser::parseTraitStmt() {
 	std::deque<size_t> idxAccessModifierTokens;
 	AccessModifier accessModifier = parseAccessModifier(loc, idxAccessModifierTokens);
 
-	switch (auto &token = lexer->peekToken(); token.tokenId) {
+	switch (Token &token = lexer->peekToken(); token.tokenId) {
 		case TokenId::End:
 		case TokenId::RBrace:
 			return;
@@ -2164,7 +2164,7 @@ void Parser::parseTraitStmt() {
 			break;
 		}
 		case TokenId::LetKeyword: {
-			const auto &letToken = lexer->nextToken();
+			Token &letToken = lexer->nextToken();
 
 			auto stmt = std::make_shared<VarDefStmtNode>(letToken.beginLocation);
 
@@ -2172,7 +2172,7 @@ void Parser::parseTraitStmt() {
 
 			parseVarDefs(stmt);
 
-			const auto &semicolonToken = expectToken(TokenId::Semicolon);
+			Token &semicolonToken = expectToken(TokenId::Semicolon);
 			stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
 
 			bool idxAccessModifierTokensMoved = false;
@@ -2212,7 +2212,7 @@ void Parser::parseProgramStmt() {
 	std::deque<size_t> idxAccessModifierTokens;
 	AccessModifier accessModifier = parseAccessModifier(loc, idxAccessModifierTokens);
 
-	switch (auto &token = lexer->peekToken(); token.tokenId) {
+	switch (Token &token = lexer->peekToken(); token.tokenId) {
 		case TokenId::End:
 			return;
 		case TokenId::ClassKeyword: {
@@ -2264,7 +2264,7 @@ void Parser::parseProgramStmt() {
 			break;
 		}
 		case TokenId::LetKeyword: {
-			const auto &letToken = lexer->nextToken();
+			Token &letToken = lexer->nextToken();
 
 			auto stmt = std::make_shared<VarDefStmtNode>(letToken.beginLocation);
 
@@ -2272,7 +2272,7 @@ void Parser::parseProgramStmt() {
 
 			parseVarDefs(stmt);
 
-			const auto &semicolonToken = expectToken(TokenId::Semicolon);
+			Token &semicolonToken = expectToken(TokenId::Semicolon);
 			stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
 
 			bool idxAccessModifierTokensMoved = false;
@@ -2311,7 +2311,7 @@ void Parser::parseProgramStmt() {
 }
 
 void Parser::parseModuleDecl() {
-	if (auto &beginToken = lexer->peekToken(); beginToken.tokenId == TokenId::ModuleKeyword) {
+	if (Token &beginToken = lexer->peekToken(); beginToken.tokenId == TokenId::ModuleKeyword) {
 		lexer->nextToken();
 
 		curModule->moduleName = parseModuleRef();
@@ -2321,10 +2321,10 @@ void Parser::parseModuleDecl() {
 }
 
 void Parser::parseImportList() {
-	if (auto &beginToken = lexer->peekToken(); beginToken.tokenId == TokenId::ImportKeyword) {
+	if (Token &beginToken = lexer->peekToken(); beginToken.tokenId == TokenId::ImportKeyword) {
 		lexer->nextToken();
 
-		const auto &lBraceToken = expectToken(TokenId::LBrace);
+		Token &lBraceToken = expectToken(TokenId::LBrace);
 
 #if SLKC_WITH_LANGUAGE_SERVER
 		compiler->updateTokenInfo(lexer->getTokenIndex(lBraceToken), [](TokenInfo &tokenInfo) {
@@ -2335,10 +2335,10 @@ void Parser::parseImportList() {
 		while (true) {
 			auto ref = parseModuleRef();
 
-			if (auto &asToken = lexer->peekToken(); asToken.tokenId == TokenId::AsKeyword) {
+			if (Token &asToken = lexer->peekToken(); asToken.tokenId == TokenId::AsKeyword) {
 				lexer->nextToken();
 
-				auto &nameToken = expectToken(TokenId::Id);
+				Token &nameToken = expectToken(TokenId::Id);
 
 				curModule->imports[nameToken.text] = { ref, lexer->getTokenIndex(nameToken) };
 			} else

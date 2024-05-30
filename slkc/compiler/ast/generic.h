@@ -29,7 +29,7 @@ namespace slake {
 				   idxParentSlotRParentheseToken = SIZE_MAX;
 
 			size_t idxImplInterfacesColonToken = SIZE_MAX;
-			std::deque<size_t> idxImplInterfacesCommaTokens;
+			std::deque<size_t> idxImplInterfacesSeparatorTokens;
 
 			size_t idxCommaToken = SIZE_MAX;
 
@@ -54,7 +54,7 @@ namespace slake {
 				idxParentSlotRParentheseToken = other.idxParentSlotRParentheseToken;
 
 				idxImplInterfacesColonToken = other.idxImplInterfacesColonToken;
-				idxImplInterfacesCommaTokens = other.idxImplInterfacesCommaTokens;
+				idxImplInterfacesSeparatorTokens = other.idxImplInterfacesSeparatorTokens;
 			}
 			inline GenericParamNode(
 				Location location,

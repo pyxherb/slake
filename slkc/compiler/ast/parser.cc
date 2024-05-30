@@ -1051,7 +1051,7 @@ void Parser::parseParentSlot(
 void Parser::parseImplList(
 	std::deque<std::shared_ptr<TypeNameNode>> &implInterfacesOut,
 	size_t &idxColonTokenOut,
-	std::deque<size_t> &idxCommaTokensOut) {
+	std::deque<size_t> &idxSeparatorTokensOut) {
 	if (const auto &colonToken = lexer->peekToken(); colonToken.tokenId == TokenId::Colon) {
 		lexer->nextToken();
 		idxColonTokenOut = lexer->getTokenIndex(colonToken);
@@ -1059,11 +1059,11 @@ void Parser::parseImplList(
 		while (true) {
 			implInterfacesOut.push_back(parseTypeName());
 
-			if (lexer->peekToken().tokenId != TokenId::Comma)
+			if (lexer->peekToken().tokenId != TokenId::OrOp)
 				break;
 
 			const auto &commaToken = lexer->nextToken();
-			idxCommaTokensOut.push_back(lexer->getTokenIndex(commaToken));
+			idxSeparatorTokensOut.push_back(lexer->getTokenIndex(commaToken));
 		}
 	}
 }
@@ -1708,7 +1708,7 @@ GenericParamNodeList Parser::parseGenericParams() {
 		parseImplList(
 			param->interfaceTypes,
 			param->idxImplInterfacesColonToken,
-			param->idxImplInterfacesCommaTokens);
+			param->idxImplInterfacesSeparatorTokens);
 
 		// TODO: Parse trait types.
 
@@ -1753,7 +1753,7 @@ std::shared_ptr<ClassNode> Parser::parseClassDef() {
 		parseImplList(
 			classNode->implInterfaces,
 			classNode->idxImplInterfacesColonToken,
-			classNode->idxImplInterfacesCommaTokens);
+			classNode->idxImplInterfacesSeparatorTokens);
 
 		const auto &lBraceToken = expectToken(TokenId::LBrace);
 		classNode->idxLBraceToken = lexer->getTokenIndex(lBraceToken);
@@ -1791,7 +1791,31 @@ void Parser::parseClassStmt() {
 		case TokenId::ClassKeyword: {
 			auto def = parseClassDef();
 
-			def->access = accessModifier;
+			def->access = accessModifier | ACCESS_STATIC;
+			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
+
+			_putDefinition(
+				def->getLocation(),
+				def->name,
+				def);
+			break;
+		}
+		case TokenId::InterfaceKeyword: {
+			auto def = parseInterfaceDef();
+
+			def->access = accessModifier | ACCESS_STATIC;
+			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
+
+			_putDefinition(
+				def->getLocation(),
+				def->name,
+				def);
+			break;
+		}
+		case TokenId::TraitKeyword: {
+			auto def = parseTraitDef();
+
+			def->access = accessModifier | ACCESS_STATIC;
 			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
 
 			_putDefinition(
@@ -1889,7 +1913,7 @@ std::shared_ptr<InterfaceNode> Parser::parseInterfaceDef() {
 		parseImplList(
 			interfaceNode->parentInterfaces,
 			interfaceNode->idxImplInterfacesColonToken,
-			interfaceNode->idxImplInterfacesCommaTokens);
+			interfaceNode->idxImplInterfacesSeparatorTokens);
 
 		const auto &lBraceToken = expectToken(TokenId::LBrace);
 		interfaceNode->idxLBraceToken = lexer->getTokenIndex(lBraceToken);
@@ -1927,7 +1951,31 @@ void Parser::parseInterfaceStmt() {
 		case TokenId::ClassKeyword: {
 			auto def = parseClassDef();
 
-			def->access = accessModifier;
+			def->access = accessModifier | ACCESS_STATIC;
+			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
+
+			_putDefinition(
+				def->getLocation(),
+				def->name,
+				def);
+			break;
+		}
+		case TokenId::InterfaceKeyword: {
+			auto def = parseInterfaceDef();
+
+			def->access = accessModifier | ACCESS_STATIC;
+			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
+
+			_putDefinition(
+				def->getLocation(),
+				def->name,
+				def);
+			break;
+		}
+		case TokenId::TraitKeyword: {
+			auto def = parseTraitDef();
+
+			def->access = accessModifier | ACCESS_STATIC;
 			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
 
 			_putDefinition(
@@ -2002,27 +2050,161 @@ void Parser::parseInterfaceStmt() {
 }
 
 std::shared_ptr<TraitNode> Parser::parseTraitDef() {
-	auto &beginToken = expectToken(TokenId::TraitKeyword),
-		 &nameToken = expectToken(TokenId::Id);
+	auto &beginToken = expectTokens(lexer->nextToken(), TokenId::TraitKeyword);
+	auto &nameToken = expectToken(TokenId::Id);
 
-	std::shared_ptr<TraitNode> traitNode = std::make_shared<TraitNode>(beginToken.beginLocation, nameToken.text);
+	std::shared_ptr<TraitNode> traitNode = std::make_shared<TraitNode>(
+		beginToken.beginLocation,
+		nameToken.text);
+
 	traitNode->idxNameToken = lexer->getTokenIndex(nameToken);
 
-	parseImplList(
-		traitNode->parentTraits,
-		traitNode->idxImplTraitsColonToken,
-		traitNode->idxImplTraitsCommaTokens);
+	auto savedScope = curScope;
+	try {
+		curScope = traitNode->scope;
+		curScope->parent = savedScope.get();
 
-	const auto &lBraceToken = expectToken(TokenId::LBrace);
-	traitNode->idxLBraceToken = lexer->getTokenIndex(lBraceToken);
+		if (auto &token = lexer->peekToken(); token.tokenId == TokenId::LtOp) {
+			traitNode->setGenericParams(parseGenericParams());
+		}
 
-	const auto &rBraceToken = expectToken(TokenId::RBrace);
-	traitNode->idxRBraceToken = lexer->getTokenIndex(rBraceToken);
+		parseImplList(
+			traitNode->parentTraits,
+			traitNode->idxImplTraitsColonToken,
+			traitNode->idxImplTraitsCommaTokens);
+
+		const auto &lBraceToken = expectToken(TokenId::LBrace);
+		traitNode->idxLBraceToken = lexer->getTokenIndex(lBraceToken);
+
+		while (true) {
+			if (auto &token = lexer->peekToken();
+				token.tokenId == TokenId::RBrace ||
+				token.tokenId == TokenId::End)
+				break;
+			parseTraitStmt();
+		}
+
+		const auto &rBraceToken = expectToken(TokenId::RBrace);
+		traitNode->idxRBraceToken = lexer->getTokenIndex(rBraceToken);
+	} catch (SyntaxError e) {
+		compiler->messages.push_back(Message(
+			e.location,
+			MessageType::Error,
+			e.what()));
+	}
+	curScope = savedScope;
 
 	return traitNode;
 }
 
 void Parser::parseTraitStmt() {
+	Location loc;
+	std::deque<size_t> idxAccessModifierTokens;
+	AccessModifier accessModifier = parseAccessModifier(loc, idxAccessModifierTokens);
+
+	switch (auto &token = lexer->peekToken(); token.tokenId) {
+		case TokenId::End:
+		case TokenId::RBrace:
+			return;
+		case TokenId::ClassKeyword: {
+			auto def = parseClassDef();
+
+			def->access = accessModifier | ACCESS_STATIC;
+			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
+
+			_putDefinition(
+				def->getLocation(),
+				def->name,
+				def);
+			break;
+		}
+		case TokenId::InterfaceKeyword: {
+			auto def = parseInterfaceDef();
+
+			def->access = accessModifier | ACCESS_STATIC;
+			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
+
+			_putDefinition(
+				def->getLocation(),
+				def->name,
+				def);
+			break;
+		}
+		case TokenId::TraitKeyword: {
+			auto def = parseTraitDef();
+
+			def->access = accessModifier | ACCESS_STATIC;
+			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
+
+			_putDefinition(
+				def->getLocation(),
+				def->name,
+				def);
+			break;
+		}
+		case TokenId::OperatorKeyword: {
+			std::string name;
+
+			auto overloading = parseOperatorDef(name);
+
+			overloading->access = accessModifier;
+			overloading->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
+
+			_putFnDefinition(token.beginLocation, name, overloading);
+			break;
+		}
+		case TokenId::FnKeyword: {
+			std::string name;
+			auto overloading = parseFnDef(name);
+
+			overloading->access = accessModifier;
+
+			_putFnDefinition(token.beginLocation, name, overloading);
+
+			break;
+		}
+		case TokenId::LetKeyword: {
+			const auto &letToken = lexer->nextToken();
+
+			auto stmt = std::make_shared<VarDefStmtNode>(letToken.beginLocation);
+
+			stmt->idxLetToken = lexer->getTokenIndex(letToken);
+
+			parseVarDefs(stmt);
+
+			const auto &semicolonToken = expectToken(TokenId::Semicolon);
+			stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
+
+			bool idxAccessModifierTokensMoved = false;
+
+			for (auto &i : stmt->varDefs) {
+				auto varNode = std::make_shared<VarNode>(
+					i.second.loc,
+					compiler,
+					accessModifier,
+					i.second.type,
+					i.first,
+					i.second.initValue,
+					i.second.idxNameToken,
+					i.second.idxColonToken,
+					i.second.idxAssignOpToken,
+					i.second.idxCommaToken);
+
+				if (!idxAccessModifierTokensMoved) {
+					varNode->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
+					idxAccessModifierTokensMoved = true;
+				}
+
+				_putDefinition(
+					i.second.loc,
+					i.first,
+					varNode);
+			}
+			break;
+		}
+		default:
+			throw SyntaxError("Unrecognized token", token.beginLocation);
+	}
 }
 
 void Parser::parseProgramStmt() {
@@ -2036,7 +2218,31 @@ void Parser::parseProgramStmt() {
 		case TokenId::ClassKeyword: {
 			auto def = parseClassDef();
 
-			def->access = accessModifier;
+			def->access = accessModifier | ACCESS_STATIC;
+			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
+
+			_putDefinition(
+				def->getLocation(),
+				def->name,
+				def);
+			break;
+		}
+		case TokenId::InterfaceKeyword: {
+			auto def = parseInterfaceDef();
+
+			def->access = accessModifier | ACCESS_STATIC;
+			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
+
+			_putDefinition(
+				def->getLocation(),
+				def->name,
+				def);
+			break;
+		}
+		case TokenId::TraitKeyword: {
+			auto def = parseTraitDef();
+
+			def->access = accessModifier | ACCESS_STATIC;
 			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
 
 			_putDefinition(

@@ -74,6 +74,7 @@ bool Compiler::isCompoundTypeName(std::shared_ptr<TypeNameNode> node) {
 				case NodeType::Class:
 				case NodeType::Interface:
 				case NodeType::Trait:
+				case NodeType::GenericParam:
 					return true;
 				case NodeType::Alias:
 					return isCompoundTypeName(
@@ -83,9 +84,6 @@ bool Compiler::isCompoundTypeName(std::shared_ptr<TypeNameNode> node) {
 							this,
 							nullptr,
 							t->isRef));
-				case NodeType::GenericArgRef:
-					// stub
-					return true;
 				default:
 					throw FatalCompilationError(
 						Message(
@@ -101,6 +99,26 @@ bool Compiler::isCompoundTypeName(std::shared_ptr<TypeNameNode> node) {
 
 bool slake::slkc::Compiler::isLValueType(std::shared_ptr<TypeNameNode> typeName) {
 	return typeName->isRef;
+}
+
+bool Compiler::_isTypeNamesConvertible(std::shared_ptr<ClassNode> st, std::shared_ptr<InterfaceNode> dt) {
+	for (auto i : st->implInterfaces) {
+		auto interface = std::static_pointer_cast<InterfaceNode>(resolveCustomTypeName((CustomTypeNameNode *)i.get()));
+		assert(interface->getNodeType() == NodeType::Interface);
+
+		if (interface == dt)
+			return true;
+
+		for (auto j : st->implInterfaces) {
+			auto jt = std::static_pointer_cast<InterfaceNode>(resolveCustomTypeName((CustomTypeNameNode *)j.get()));
+			assert(jt->getNodeType() == NodeType::Interface);
+
+			if (_isTypeNamesConvertible(jt, dt))
+				return true;
+		}
+	}
+
+	return false;
 }
 
 bool Compiler::_isTypeNamesConvertible(std::shared_ptr<InterfaceNode> st, std::shared_ptr<ClassNode> dt) {
@@ -204,6 +222,16 @@ bool Compiler::_isTypeNamesConvertible(std::shared_ptr<MemberNode> st, std::shar
 	return false;
 }
 
+bool Compiler::_isTypeNamesConvertible(std::shared_ptr<ClassNode> st, std::shared_ptr<ClassNode> dt) {
+	do {
+		if (st == dt)
+			return true;
+
+		auto scope = scopeOf(st.get());
+		assert(scope);
+	} while (st->parentClass && (st = std::static_pointer_cast<ClassNode>(resolveCustomTypeName((CustomTypeNameNode *)st->parentClass.get()))));
+}
+
 bool Compiler::isTypeNamesConvertible(std::shared_ptr<TypeNameNode> src, std::shared_ptr<TypeNameNode> dest) {
 	if (dest->isRef) {
 		if (!src->isRef)
@@ -257,22 +285,8 @@ bool Compiler::isTypeNamesConvertible(std::shared_ptr<TypeNameNode> src, std::sh
 						auto srcType = resolveCustomTypeName((CustomTypeNameNode *)src.get());
 
 						switch (srcType->getNodeType()) {
-							case NodeType::Class: {
-								auto st = std::static_pointer_cast<ClassNode>(srcType);
-
-								do {
-									if (st == dt)
-										return true;
-
-									auto scope = scopeOf(st.get());
-									assert(scope);
-
-									if (scope->members.count(std::string("operator") + (dest->getTypeId() == TypeId::Custom ? "" : "@") + std::to_string(dest, this)))
-										return true;
-								} while (st->parentClass && (st = std::static_pointer_cast<ClassNode>(resolveCustomTypeName((CustomTypeNameNode *)st->parentClass.get()))));
-
-								break;
-							}
+							case NodeType::Class:
+								return _isTypeNamesConvertible(std::static_pointer_cast<ClassNode>(srcType), dt);
 							case NodeType::Interface:
 								return _isTypeNamesConvertible(std::static_pointer_cast<InterfaceNode>(srcType), dt);
 							case NodeType::Trait:
@@ -291,24 +305,24 @@ bool Compiler::isTypeNamesConvertible(std::shared_ptr<TypeNameNode> src, std::sh
 						auto srcType = resolveCustomTypeName((CustomTypeNameNode *)src.get());
 
 						switch (srcType->getNodeType()) {
-							case NodeType::Class: {
-								auto st = std::static_pointer_cast<ClassNode>(srcType);
-
-								do {
-									if ((void *)st.get() == (void *)dt.get())
-										return true;
-									st = std::static_pointer_cast<ClassNode>(resolveCustomTypeName((CustomTypeNameNode *)st->parentClass.get()));
-
-									auto scope = scopeOf(st.get());
-									assert(scope);
-								} while (st);
-
-								break;
-							}
+							case NodeType::Class:
+								return _isTypeNamesConvertible(std::static_pointer_cast<ClassNode>(srcType), dt);
 							case NodeType::Interface:
 								return _isTypeNamesConvertible(std::static_pointer_cast<InterfaceNode>(srcType), dt);
 							case NodeType::Trait:
 								return _isTypeNamesConvertible(dt, std::static_pointer_cast<TraitNode>(srcType));
+							case NodeType::GenericParam: {
+								auto gp = std::static_pointer_cast<GenericParamNode>(srcType);
+
+								for (auto &i : gp->interfaceTypes) {
+									auto st = std::static_pointer_cast<InterfaceNode>(resolveCustomTypeName((CustomTypeNameNode*)i.get()));
+
+									if (_isTypeNamesConvertible(st, dt))
+										return true;
+								}
+
+								break;
+							}
 							default:
 								throw std::logic_error("Unresolved node type");
 						}
@@ -328,21 +342,21 @@ bool Compiler::isTypeNamesConvertible(std::shared_ptr<TypeNameNode> src, std::sh
 					auto dt = std::static_pointer_cast<GenericParamNode>(destType);
 
 					if (dt->baseType) {
-						if (isTypeNamesConvertible(src, dt->baseType))
-							return true;
+						if (!isTypeNamesConvertible(src, dt->baseType))
+							return false;
 					}
 
 					for (auto &i : dt->interfaceTypes) {
-						if (isTypeNamesConvertible(src, i))
-							return true;
+						if (!isTypeNamesConvertible(src, i))
+							return false;
 					}
 
 					for (auto &i : dt->traitTypes) {
-						if (isTypeNamesConvertible(src, i))
-							return true;
+						if (!isTypeNamesConvertible(src, i))
+							return false;
 					}
 
-					return false;
+					return true;
 				}
 			}
 			break;

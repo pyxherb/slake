@@ -276,7 +276,9 @@ namespace slake {
 			IdRef ref;
 
 			inline IdRefExprNode(IdRef ref)
-				: ref(ref) {}
+				: ref(ref) {
+				assert(!ref.empty());
+			}
 			virtual ~IdRefExprNode() = default;
 
 			virtual inline Location getLocation() const override { return ref[0].loc; }

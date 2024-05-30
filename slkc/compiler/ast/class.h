@@ -33,7 +33,7 @@ namespace slake {
 				   idxParentSlotRParentheseToken = SIZE_MAX;
 
 			size_t idxImplInterfacesColonToken = SIZE_MAX;
-			std::deque<size_t> idxImplInterfacesCommaTokens;
+			std::deque<size_t> idxImplInterfacesSeparatorTokens;
 
 			size_t idxLBraceToken = SIZE_MAX,
 				   idxRBraceToken = SIZE_MAX;
@@ -58,7 +58,7 @@ namespace slake {
 				idxParentSlotRParentheseToken = other.idxParentSlotRParentheseToken;
 
 				idxImplInterfacesColonToken = other.idxImplInterfacesColonToken;
-				idxImplInterfacesCommaTokens = other.idxImplInterfacesCommaTokens;
+				idxImplInterfacesSeparatorTokens = other.idxImplInterfacesSeparatorTokens;
 
 				idxLBraceToken = other.idxLBraceToken;
 				idxRBraceToken = other.idxRBraceToken;
@@ -97,14 +97,11 @@ namespace slake {
 
 			std::deque<std::shared_ptr<TypeNameNode>> parentInterfaces;	 // Parent interfaces
 
-			GenericParamNodeList genericParams;
-			std::unordered_map<std::string, size_t> genericParamIndices;
-
 			size_t idxInterfaceToken = SIZE_MAX,
 				   idxNameToken = SIZE_MAX;
 
 			size_t idxImplInterfacesColonToken = SIZE_MAX;
-			std::deque<size_t> idxImplInterfacesCommaTokens;
+			std::deque<size_t> idxImplInterfacesSeparatorTokens;
 
 			size_t idxLBraceToken = SIZE_MAX,
 				   idxRBraceToken = SIZE_MAX;
@@ -123,7 +120,7 @@ namespace slake {
 				idxNameToken = other.idxNameToken;
 
 				idxImplInterfacesColonToken = other.idxImplInterfacesColonToken;
-				idxImplInterfacesCommaTokens = other.idxImplInterfacesCommaTokens;
+				idxImplInterfacesSeparatorTokens = other.idxImplInterfacesSeparatorTokens;
 
 				idxLBraceToken = other.idxLBraceToken;
 				idxRBraceToken = other.idxRBraceToken;
@@ -158,9 +155,6 @@ namespace slake {
 			std::string name;
 
 			std::deque<std::shared_ptr<TypeNameNode>> parentTraits;	 // Parent traits
-
-			GenericParamNodeList genericParams;
-			std::unordered_map<std::string, size_t> genericParamIndices;
 
 			std::shared_ptr<Scope> scope = std::make_shared<Scope>();
 

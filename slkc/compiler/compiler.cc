@@ -448,7 +448,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 					tokenInfo.completionContext = CompletionContext::Type;
 				});
 
-				for (auto j : m->idxImplInterfacesCommaTokens) {
+				for (auto j : m->idxImplInterfacesSeparatorTokens) {
 					updateTokenInfo(j, [this, &m](TokenInfo &tokenInfo) {
 						tokenInfo.tokenContext =
 							TokenContext(

@@ -264,10 +264,10 @@ namespace slake {
 			bool isLValueType(std::shared_ptr<TypeNameNode> typeName);
 
 			bool _isTypeNamesConvertible(std::shared_ptr<InterfaceNode> st, std::shared_ptr<ClassNode> dt);
-
 			bool _isTypeNamesConvertible(std::shared_ptr<ClassNode> st, std::shared_ptr<InterfaceNode> dt);
 			bool _isTypeNamesConvertible(std::shared_ptr<InterfaceNode> st, std::shared_ptr<InterfaceNode> dt);
 			bool _isTypeNamesConvertible(std::shared_ptr<MemberNode> st, std::shared_ptr<TraitNode> dt);
+			bool _isTypeNamesConvertible(std::shared_ptr<ClassNode> st, std::shared_ptr<ClassNode> dt);
 
 			bool isTypeNamesConvertible(std::shared_ptr<TypeNameNode> src, std::shared_ptr<TypeNameNode> dest);
 

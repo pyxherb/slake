@@ -675,6 +675,40 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 					break;
 				}
+				case BinaryOp::Assign: {
+					uint32_t lhsRegIndex = allocReg(2);
+					uint32_t rhsRegIndex = lhsRegIndex + 1;
+
+					compileExpr(
+						e->lhs,
+						opReg.isLhsLvalue
+							? EvalPurpose::LValue
+							: EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+
+					if (!isSameType(lhsType, rhsType)) {
+						if (!isTypeNamesConvertible(rhsType, lhsType))
+							throw FatalCompilationError(
+								{ e->rhs->getLocation(),
+									MessageType::Error,
+									"Incompatible operand types" });
+
+						compileExpr(
+							std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
+							opReg.isRhsLvalue
+								? EvalPurpose::LValue
+								: EvalPurpose::RValue,
+							std::make_shared<RegRefNode>(rhsRegIndex));
+					} else
+						compileExpr(e->rhs, opReg.isRhsLvalue ? EvalPurpose::LValue : EvalPurpose::RValue, std::make_shared<RegRefNode>(rhsRegIndex));
+
+					execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
+
+					resultType = lhsType->duplicate<TypeNameNode>();
+					resultType->isRef = opReg.isResultLvalue;
+
+					break;
+				}
 				default:
 					throw FatalCompilationError(
 						Message(
@@ -1200,33 +1234,21 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 						default: {
 							std::shared_ptr<AstNode> curMember;
 
-							curMember = resolveCustomTypeName((CustomTypeNameNode *)n->baseType.get());
+							if (n->baseType) {
+								curMember = resolveCustomTypeName((CustomTypeNameNode *)n->baseType.get());
 
-							if (curMember->getNodeType() != NodeType::Class)
-								throw FatalCompilationError(
-									Message(
-										n->baseType->getLocation(),
-										MessageType::Error,
-										"Must be a class"));
-
-							if (determineOverloading(std::static_pointer_cast<MemberNode>(curMember), lhsRegIndex))
-								break;
-
-							for (auto i : n->interfaceTypes) {
-								curMember = resolveCustomTypeName((CustomTypeNameNode *)i.get());
-
-								if (curMember->getNodeType() != NodeType::Interface)
+								if (curMember->getNodeType() != NodeType::Class)
 									throw FatalCompilationError(
 										Message(
 											n->baseType->getLocation(),
 											MessageType::Error,
-											"Must be an interface"));
+											"Must be a class"));
 
 								if (determineOverloading(std::static_pointer_cast<MemberNode>(curMember), lhsRegIndex))
-									break;
+									goto genericParamOperatorFound;
 							}
 
-							for (auto i : n->traitTypes) {
+							for (auto &i : n->interfaceTypes) {
 								curMember = resolveCustomTypeName((CustomTypeNameNode *)i.get());
 
 								if (curMember->getNodeType() != NodeType::Interface)
@@ -1237,7 +1259,21 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 											"Must be an interface"));
 
 								if (determineOverloading(std::static_pointer_cast<MemberNode>(curMember), lhsRegIndex))
-									break;
+									goto genericParamOperatorFound;
+							}
+
+							for (auto &i : n->traitTypes) {
+								curMember = resolveCustomTypeName((CustomTypeNameNode *)i.get());
+
+								if (curMember->getNodeType() != NodeType::Interface)
+									throw FatalCompilationError(
+										Message(
+											n->baseType->getLocation(),
+											MessageType::Error,
+											"Must be an interface"));
+
+								if (determineOverloading(std::static_pointer_cast<MemberNode>(curMember), lhsRegIndex))
+									goto genericParamOperatorFound;
 							}
 
 							throw FatalCompilationError(
@@ -1247,6 +1283,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 									"No matching operator"));
 						}
 					}
+					genericParamOperatorFound:
 					break;
 				}
 				default:
@@ -1825,20 +1862,6 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 						MessageType::Error,
 						"Identifier not found: `" + std::to_string(e->ref, this) + "'" });
 
-			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::Call) {
-				if (isDynamicMember(resolvedParts.back().second)) {
-					// Load `this' for the method calling.
-					IdRef thisRef = e->ref;
-					thisRef.pop_back();
-					compileExpr(
-						std::make_shared<IdRefExprNode>(thisRef),
-						EvalPurpose::RValue,
-						curMajorContext.curMinorContext.thisDest);
-					curMajorContext.curMinorContext.isLastCallTargetStatic = false;
-				} else
-					curMajorContext.curMinorContext.isLastCallTargetStatic = true;
-			}
-
 			uint32_t tmpRegIndex = allocReg();
 
 			auto determineOverloadingRegistry = [this, expr, &resolvedParts](std::shared_ptr<FnNode> x, const std::deque<std::shared_ptr<TypeNameNode>> &genericArgs) -> std::shared_ptr<FnOverloadingNode> {
@@ -1890,6 +1913,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 						overloadings[0]->returnType
 							? overloadings[0]->returnType
 							: std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX);
+					curMajorContext.curMinorContext.isLastCallTargetStatic = overloadings[0]->access & ACCESS_STATIC;
 					return overloadings[0];
 				}
 			};
@@ -1930,6 +1954,13 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							IdRef ref = resolvedParts[i].first;
 
 							std::shared_ptr<FnOverloadingNode> overloading = determineOverloadingRegistry(std::static_pointer_cast<FnNode>(resolvedParts[i].second), resolvedParts[i].first.back().genericArgs);
+
+							if (!curMajorContext.curMinorContext.isLastCallTargetStatic) {
+								_insertIns(
+									Opcode::STORE,
+									curMajorContext.curMinorContext.thisDest,
+									std::make_shared<RegRefNode>(tmpRegIndex, true));
+							}
 
 #if SLKC_WITH_LANGUAGE_SERVER
 							updateTokenInfo(resolvedParts[i].first.back().idxToken, [&overloading](TokenInfo &tokenInfo) {

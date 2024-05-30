@@ -108,17 +108,20 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			break;
 		}
 		case StmtType::Break:
-			if (!curMajorContext.curMinorContext.breakLabel.empty())
+			if (curMajorContext.curMinorContext.breakLabel.empty())
 				throw FatalCompilationError({ stmt->getLocation(), MessageType::Error, "Unexpected break statement" });
+
 			if (curMajorContext.curMinorContext.breakScopeLevel < curMajorContext.curScopeLevel)
 				_insertIns(
 					Opcode::LEAVE,
 					std::make_shared<U32LiteralExprNode>(stmt->getLocation(), curMajorContext.curScopeLevel - curMajorContext.curMinorContext.breakScopeLevel));
+
 			_insertIns(Opcode::JMP, std::make_shared<LabelRefNode>(curMajorContext.curMinorContext.breakLabel));
 			break;
 		case StmtType::Continue:
-			if (!curMajorContext.curMinorContext.continueLabel.size())
+			if (curMajorContext.curMinorContext.continueLabel.size())
 				throw FatalCompilationError({ stmt->getLocation(), MessageType::Error, "Unexpected continue statement" });
+
 			_insertIns(Opcode::JMP, std::make_shared<LabelRefNode>(curMajorContext.curMinorContext.continueLabel));
 			break;
 		case StmtType::For: {

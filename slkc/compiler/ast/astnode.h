@@ -27,7 +27,6 @@ namespace slake {
 			LocalVar,
 			Param,
 			ArgRef,
-			GenericArgRef,
 			Comment,
 
 			LocalVarRef,

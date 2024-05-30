@@ -110,7 +110,7 @@ namespace slake {
 			void parseImplList(
 				std::deque<std::shared_ptr<TypeNameNode>> &implInterfacesOut,
 				size_t &idxColonTokenOut,
-				std::deque<size_t> &idxCommaTokensOut);
+				std::deque<size_t> &idxSeparatorTokensOut);
 			std::deque<std::shared_ptr<TypeNameNode>> parseTraitList();
 
 			void parseVarDefs(std::shared_ptr<VarDefStmtNode> varDefStmtOut);

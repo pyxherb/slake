@@ -35,7 +35,7 @@ namespace slake {
 				std::shared_ptr<FnOverloadingNode> overloading);
 
 		public:
-			using OpParselet = std::function<std::shared_ptr<ExprNode>(Parser *parser, std::shared_ptr<ExprNode> lhs, Token &opToken)>;
+			using OpParselet = std::function<std::shared_ptr<ExprNode>(Parser *parser, std::shared_ptr<ExprNode> lhs, Token *opToken)>;
 
 			struct OpRegistry {
 				int leftPrecedence;
@@ -56,43 +56,45 @@ namespace slake {
 				compiler = nullptr;
 			}
 
-			inline Token &expectToken(TokenId tokenId) {
-				Token &token = lexer->peekToken();
-				if (token.tokenId == tokenId) {
+			inline Token *expectToken(TokenId tokenId) {
+				Token *token = lexer->peekToken();
+				if (token->tokenId == tokenId) {
 					lexer->nextToken();
 					return token;
 				}
-				throw SyntaxError(std::string("Expecting ") + getTokenName(tokenId), token.beginLocation);
+				throw SyntaxError(std::string("Expecting ") + getTokenName(tokenId), token->beginLocation);
 			}
 
-			inline Token &expectToken(Token &token) {
-				if (token.tokenId == TokenId::End)
-					throw SyntaxError("Expecting more tokens", token.beginLocation);
+			inline Token *expectToken(Token *token) {
+				if (token->tokenId == TokenId::End)
+					throw SyntaxError("Expecting more tokens", token->beginLocation);
 
 				return token;
 			}
 
-			inline Token &expectToken(Token &token, TokenId tokenId) {
-				if (token.tokenId != tokenId)
-					throw SyntaxError(std::string("Expecting ") + getTokenName(tokenId), token.beginLocation);
+			inline Token *expectToken(Token *token, TokenId tokenId) {
+				if (token->tokenId != tokenId)
+					throw SyntaxError(std::string("Expecting ") + getTokenName(tokenId), token->beginLocation);
 
 				return token;
 			}
 
-			inline Token &expectTokens(Token &token, TokenId tokenId) {
-				if (token.tokenId == tokenId)
+			inline Token *expectTokens(Token *token, TokenId tokenId) {
+				if (token->tokenId == tokenId)
 					return token;
 
-				throw SyntaxError(std::string("Unexpected ") + getTokenName(token.tokenId), token.beginLocation);
+				throw SyntaxError(std::string("Unexpected ") + getTokenName(token->tokenId), token->beginLocation);
 			}
 
 			template <typename... Args>
-			inline Token &expectTokens(Token &token, TokenId tokenId, Args... args) {
+			inline Token *expectTokens(Token *token, TokenId tokenId, Args... args) {
 				if (token.tokenId == tokenId)
 					return token;
 
 				return expectTokens(token, args...);
 			}
+
+			void splitRshOpToken();
 
 			AccessModifier parseAccessModifier(Location &locationOut, std::deque<size_t> idxAccessModifierTokensOut);
 

@@ -356,13 +356,13 @@ slake::slkc::Server::Server() {
 
 				const size_t nTokens = doc->compiler->lexer->tokens.size();
 				for (size_t i = 0; i < nTokens; ++i) {
-					Token &token = doc->compiler->lexer->tokens[i];
+					Token *token = doc->compiler->lexer->tokens[i].get();
 					const TokenInfo &tokenInfo = doc->compiler->tokenInfos[i];
 
 					SemanticToken semanticToken = {};
 
-					semanticToken.location = token.beginLocation;
-					semanticToken.length = (unsigned int)token.text.size();
+					semanticToken.location = token->beginLocation;
+					semanticToken.length = (unsigned int)token->text.size();
 					semanticToken.type = tokenInfo.semanticType;
 					semanticToken.modifiers = tokenInfo.semanticModifiers;
 

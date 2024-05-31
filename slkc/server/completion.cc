@@ -236,7 +236,7 @@ std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(Location lo
 
 	if (idxToken != SIZE_MAX) {
 		do {
-			switch (compiler->lexer->tokens[idxToken].tokenId) {
+			switch (compiler->lexer->tokens[idxToken]->tokenId) {
 				case TokenId::Whitespace:
 				case TokenId::NewLine:
 				case TokenId::Comment:
@@ -259,7 +259,7 @@ std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(Location lo
 	return completionItems;
 
 succeeded:
-	Token &token = compiler->lexer->tokens[idxToken];
+	Token *token = compiler->lexer->tokens[idxToken].get();
 	TokenInfo &tokenInfo = compiler->tokenInfos[idxToken];
 
 	/*

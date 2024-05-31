@@ -246,63 +246,76 @@ const char *slake::slkc::getTokenName(slake::slkc::TokenId tokenId) {
 	return "<unknown tokenId>";
 }
 
-Token &Lexer::nextToken(bool keepNewLine, bool keepWhitespace, bool keepComment) {
+Token *Lexer::nextToken(bool keepNewLine, bool keepWhitespace, bool keepComment) {
 	size_t &i = context.curIndex;
 
 	while (i < tokens.size()) {
-		switch (tokens[i].tokenId) {
+		tokens[i]->index = i;
+
+		switch (tokens[i]->tokenId) {
 			case TokenId::NewLine:
 				if (keepNewLine) {
 					context.prevIndex = context.curIndex;
-					return tokens[i++];
+					return tokens[i++].get();
 				}
 				break;
 			case TokenId::Whitespace:
 				if (keepWhitespace) {
 					context.prevIndex = context.curIndex;
-					return tokens[i++];
+					return tokens[i++].get();
 				}
 				break;
 			case TokenId::Comment:
 				if (keepComment) {
 					context.prevIndex = context.curIndex;
-					return tokens[i++];
+					return tokens[i++].get();
 				}
 				break;
 			default:
 				context.prevIndex = context.curIndex;
-				return tokens[i++];
+				return tokens[i++].get();
 		}
 
 		++i;
 	}
 
-	return _endToken;
+	return _endToken.get();
 }
 
-Token &Lexer::peekToken(bool keepNewLine, bool keepWhitespace, bool keepComment) {
+Token *Lexer::peekToken(bool keepNewLine, bool keepWhitespace, bool keepComment) {
 	size_t i = context.curIndex;
 
 	while (i < tokens.size()) {
-		switch (tokens[i].tokenId) {
+		tokens[i]->index = i;
+
+		switch (tokens[i]->tokenId) {
 			case TokenId::NewLine:
 				if (keepNewLine)
-					return tokens[i];
+					return tokens[i].get();
 				break;
 			case TokenId::Whitespace:
 				if (keepWhitespace)
-					return tokens[i];
+					return tokens[i].get();
 				break;
 			case TokenId::Comment:
 				if (keepComment)
-					return tokens[i];
+					return tokens[i].get();
 				break;
 			default:
-				return tokens[i];
+				return tokens[i].get();
 		}
 
 		++i;
 	}
 
-	return _endToken;
+	return _endToken.get();
+}
+
+size_t Lexer::getTokenByLocation(Location location) {
+	for (size_t i = 0; i < tokens.size(); ++i) {
+		if (tokens[i]->beginLocation <= location && tokens[i]->endLocation >= location)
+			return i;
+	}
+
+	return SIZE_MAX;
 }

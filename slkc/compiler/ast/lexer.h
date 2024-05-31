@@ -175,6 +175,7 @@ namespace slake {
 		struct MajorContext;
 
 		struct Token {
+			size_t index = SIZE_MAX;
 			TokenId tokenId;
 			Location beginLocation, endLocation;
 			std::string text;
@@ -196,17 +197,17 @@ namespace slake {
 
 		class Lexer {
 		private:
-			Token _endToken;
+			std::unique_ptr<Token> _endToken;
 
 		public:
 			LexerContext context;
 
-			std::vector<Token> tokens;
+			std::deque<std::unique_ptr<Token>> tokens;
 
 			void lex(std::string_view src);
 
-			Token &nextToken(bool keepNewLine = false, bool keepWhitespace = false, bool keepComment = false);
-			Token &peekToken(bool keepNewLine = false, bool keepWhitespace = false, bool keepComment = false);
+			Token *nextToken(bool keepNewLine = false, bool keepWhitespace = false, bool keepComment = false);
+			Token *peekToken(bool keepNewLine = false, bool keepWhitespace = false, bool keepComment = false);
 
 			inline void reset() {
 				context = {};
@@ -214,17 +215,10 @@ namespace slake {
 				tokens.clear();
 			}
 
-			inline size_t getTokenByLocation(Location location) {
-				for (size_t i = 0; i < tokens.size(); ++i) {
-					if (tokens[i].beginLocation <= location && tokens[i].endLocation >= location)
-						return i;
-				}
+			size_t getTokenByLocation(Location location);
 
-				return SIZE_MAX;
-			}
-
-			inline size_t getTokenIndex(Token &token) {
-				return (&token) - tokens.data();
+			inline size_t getTokenIndex(Token *token) {
+				return token->index;
 			}
 		};
 	}

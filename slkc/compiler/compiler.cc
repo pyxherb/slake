@@ -120,6 +120,15 @@ void Compiler::compile(std::istream &is, std::ostream &os, std::shared_ptr<Modul
 				e.what()));
 	}
 
+	//
+	// Because tokens may be splitted into multiple new tokens during parsing,
+	// we have to resize the token information again for the new tokens.
+	//
+#if SLKC_WITH_LANGUAGE_SERVER
+	if (!curMajorContext.isImport)
+		tokenInfos.resize(lexer->tokens.size());
+#endif
+
 #if SLKC_WITH_LANGUAGE_SERVER
 	if (!curMajorContext.isImport) {
 		updateCompletionContext(_targetModule->moduleName, CompletionContext::ModuleName);
@@ -233,11 +242,11 @@ void Compiler::compile(std::istream &is, std::ostream &os, std::shared_ptr<Modul
 		if (_targetModule->scope->members.count(i.first))
 			throw FatalCompilationError(
 				Message(
-					lexer->tokens[i.second.idxNameToken].beginLocation,
+					lexer->tokens[i.second.idxNameToken]->beginLocation,
 					MessageType::Error,
 					"The import item shadows an existing member"));
 
-		_targetModule->scope->members[i.first] = std::make_shared<AliasNode>(lexer->tokens[i.second.idxNameToken].beginLocation, this, i.first, i.second.ref);
+		_targetModule->scope->members[i.first] = std::make_shared<AliasNode>(lexer->tokens[i.second.idxNameToken]->beginLocation, this, i.first, i.second.ref);
 	}
 
 	for (auto &i : _targetModule->unnamedImports) {

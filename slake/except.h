@@ -11,6 +11,12 @@ namespace slake {
 		virtual ~RuntimeExecError() = default;
 	};
 
+	class NoOverloadingError : public RuntimeExecError {
+	public:
+		inline NoOverloadingError(std::string msg) : RuntimeExecError(msg){};
+		virtual ~NoOverloadingError() = default;
+	};
+
 	class OutOfFnBodyError : public RuntimeExecError {
 	public:
 		inline OutOfFnBodyError(std::string msg) : RuntimeExecError(msg){};

@@ -81,7 +81,7 @@ succeeded:;
 	lexer = std::move(savedLexer);
 }
 
-void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, BasicFnValue *value) {
+void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, FnValue *value) {
 	if (importedDefinitions.count(value))
 		return;
 
@@ -90,48 +90,44 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 	std::string fnName = value->_name;
 	size_t j = 0;
 
-	while (j < value->_name.size())
-		if (value->_name[j] == '$') {
-			break;
-		} else
-			++j;
-
 	fnName = fnName.substr(0, j);
 
-	auto returnType = toTypeName(value->getReturnType());
-	GenericParamNodeList genericParams;
+	for (auto &i : value->overloadings) {
+		auto returnType = toTypeName(i->returnType);
+		GenericParamNodeList genericParams;
 
-	std::deque<std::shared_ptr<ParamNode>> params;
+		std::deque<std::shared_ptr<ParamNode>> params;
 
-	for (auto i : value->getParamTypes()) {
-		std::shared_ptr<ParamNode> param = std::make_shared<ParamNode>(Location());
-		param->type = toTypeName(i);
+		for (auto i : i->paramTypes) {
+			std::shared_ptr<ParamNode> param = std::make_shared<ParamNode>(Location());
+			param->type = toTypeName(i);
 
-		params.push_back(param);
+			params.push_back(param);
+		}
+
+		std::shared_ptr<FnOverloadingNode> overloading = std::make_shared<FnOverloadingNode>(Location(), this, std::make_shared<Scope>());
+		overloading->returnType = returnType;
+		overloading->setGenericParams(genericParams);
+		overloading->params = params;
+
+		if (i->overloadingFlags & OL_VARG) {
+			auto param = std::make_shared<ParamNode>(Location());
+			param->type = std::make_shared<ArrayTypeNameNode>(std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX));
+			param->name = "...";
+			overloading->params.push_back(param);
+		}
+
+		overloading->updateParamIndices();
+
+		overloading->isImported = true;
+
+		if (!scope->members.count(fnName))
+			(scope->members[fnName] = std::make_shared<FnNode>(this, fnName))->bind(parent.get());
+
+		scope->members[fnName]->isImported = true;
+
+		std::static_pointer_cast<FnNode>(scope->members[fnName])->overloadingRegistries.push_back(overloading);
 	}
-
-	std::shared_ptr<FnOverloadingNode> overloading = std::make_shared<FnOverloadingNode>(Location(), this, std::make_shared<Scope>());
-	overloading->returnType = returnType;
-	overloading->setGenericParams(genericParams);
-	overloading->params = params;
-
-	if (value->fnFlags & FN_VARG) {
-		auto param = std::make_shared<ParamNode>(Location());
-		param->type = std::make_shared<ArrayTypeNameNode>(std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX));
-		param->name = "...";
-		overloading->params.push_back(param);
-	}
-
-	overloading->updateParamIndices();
-
-	overloading->isImported = true;
-
-	if (!scope->members.count(fnName))
-		(scope->members[fnName] = std::make_shared<FnNode>(this, fnName))->bind(parent.get());
-
-	scope->members[fnName]->isImported = true;
-
-	std::static_pointer_cast<FnNode>(scope->members[fnName])->overloadingRegistries.push_back(overloading);
 }
 
 void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, ModuleValue *value) {

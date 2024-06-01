@@ -11,10 +11,6 @@ namespace slake {
 	/// @brief Type for storing class flags.
 	using ClassFlags = uint16_t;
 
-	constexpr static ClassFlags
-		_CLS_ABSTRACT = 0x4000,			// Set if the class is abstract
-		_CLS_ABSTRACT_INITED = 0x8000;	// The class has checked if itself is abstract
-
 	class InterfaceValue;
 	class ObjectValue;
 
@@ -26,10 +22,6 @@ namespace slake {
 
 		friend class Runtime;
 		friend bool slake::isConvertible(Type a, Type b);
-
-		/// @brief Actually check if the class is abstract.
-		/// @return true if the class is abstract, false otherwise.
-		bool _isAbstract() const;
 
 	public:
 		GenericParamList genericParams;
@@ -58,12 +50,6 @@ namespace slake {
 		///
 		/// @return true if implemented, false otherwise.
 		bool hasImplemented(const InterfaceValue *pInterface) const;
-
-		/// @brief Check if the class has the trait.
-		/// @param[in] t Trait to check.
-		///
-		/// @return true if the class has the trait, false otherwise.
-		bool hasTrait(const TraitValue *t) const;
 
 		virtual Value *duplicate() const override;
 

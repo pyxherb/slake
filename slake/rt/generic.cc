@@ -40,8 +40,6 @@ void slake::Runtime::_instantiateGenericValue(Value *v, GenericInstantiationCont
 		case TypeId::Class: {
 			ClassValue *const value = (ClassValue *)v;
 
-			value->_genericArgs = *instantiationContext.genericArgs;
-
 			if (value->genericParams.size() && value != instantiationContext.mappedValue) {
 				GenericInstantiationContext newInstantiationContext = instantiationContext;
 
@@ -51,9 +49,12 @@ void slake::Runtime::_instantiateGenericValue(Value *v, GenericInstantiationCont
 					newInstantiationContext.mappedGenericArgs[value->genericParams[i].name] = Type(value->genericParams[i].name);
 				}
 
-				for (auto &i : value->scope->members)
-					_instantiateGenericValue(i.second, newInstantiationContext);
+				newInstantiationContext.mappedValue = value;
+
+				_instantiateGenericValue(value, newInstantiationContext);
 			} else {
+				value->_genericArgs = *instantiationContext.genericArgs;
+
 				for (auto &i : value->scope->members)
 					_instantiateGenericValue(i.second, instantiationContext);
 			}
@@ -92,51 +93,31 @@ void slake::Runtime::_instantiateGenericValue(Value *v, GenericInstantiationCont
 			break;
 		}
 		case TypeId::Fn: {
-			BasicFnValue *value = (BasicFnValue *)v;
+			FnValue *value = (FnValue *)v;
 
-			if (value->genericParams.size() && value != instantiationContext.mappedValue) {
-				GenericInstantiationContext newInstantiationContext = instantiationContext;
+			if (instantiationContext.mappedValue == value) {
+				//
+				// We expect there's only one overloading can be instantiated.
+				// Uninstantiatable overloadings will be discarded.
+				//
+				std::unique_ptr<FnOverloading> matchedOverloading;
 
-				// Map irreplaceable parameters to corresponding generic parameter reference type
-				// and thus the generic types will keep unchanged.
-				for (size_t i = 0; i < value->genericParams.size(); ++i) {
-					newInstantiationContext.mappedGenericArgs[value->genericParams[i].name] = Type(value->genericParams[i].name);
+				for (auto& i : value->overloadings) {
+					if (i->genericParams.size() == instantiationContext.genericArgs->size()) {
+						matchedOverloading = std::move(i);
+						break;
+					}
 				}
 
-				_instantiateGenericValue(value->returnType, newInstantiationContext);
+				value->overloadings.clear();
 
-				for (auto &i : value->paramTypes)
-					_instantiateGenericValue(i, newInstantiationContext);
-
-				if (value->isNative()) {
-					((NativeFnValue *)value)->mappedGenericArgs = newInstantiationContext.mappedGenericArgs;
-				} else {
-					for (size_t i = 0; i < (((FnValue *)value))->nIns; ++i) {
-						auto &ins = (((FnValue *)value))->body[i];
-						for (size_t j = 0; j < ins.operands.size(); ++j) {
-							auto operand = ins.operands[j];
-							if (operand && operand->getType() == TypeId::TypeName)
-								_instantiateGenericValue(((TypeNameValue *)operand)->_data, newInstantiationContext);
-						}
-					}
+				if (matchedOverloading) {
+					_instantiateGenericValue(matchedOverloading.get(), instantiationContext);
+					value->overloadings.push_back(std::move(matchedOverloading));
 				}
 			} else {
-				_instantiateGenericValue(value->returnType, instantiationContext);
-
-				for (auto &i : value->paramTypes)
-					_instantiateGenericValue(i, instantiationContext);
-
-				if (value->isNative()) {
-					((NativeFnValue *)value)->mappedGenericArgs = instantiationContext.mappedGenericArgs;
-				} else {
-					for (size_t i = 0; i < (((FnValue *)value))->nIns; ++i) {
-						auto &ins = (((FnValue *)value))->body[i];
-						for (size_t j = 0; j < ins.operands.size(); ++j) {
-							auto operand = ins.operands[j];
-							if (operand && operand->getType() == TypeId::TypeName)
-								_instantiateGenericValue(((TypeNameValue *)operand)->_data, instantiationContext);
-						}
-					}
+				for (auto &i : value->overloadings) {
+					_instantiateGenericValue(i.get(), instantiationContext);
 				}
 			}
 			break;
@@ -206,18 +187,16 @@ void Runtime::mapGenericParams(const Value *v, GenericInstantiationContext &inst
 			}
 			break;
 		}
-		case TypeId::Fn: {
-			FnValue *value = (FnValue *)v;
-
-			if (instantiationContext.genericArgs->size() != value->genericParams.size())
-				throw GenericInstantiationError("Number of generic parameter does not match");
-
-			for (size_t i = 0; i < value->genericParams.size(); ++i) {
-				instantiationContext.mappedGenericArgs[value->genericParams[i].name] = instantiationContext.genericArgs->at(i);
-			}
-			break;
-		}
 		default:;
+	}
+}
+
+void Runtime::mapGenericParams(const FnOverloading *ol, GenericInstantiationContext &instantiationContext) const {
+	if (instantiationContext.genericArgs->size() != ol->genericParams.size())
+		throw GenericInstantiationError("Number of generic parameter does not match");
+
+	for (size_t i = 0; i < ol->genericParams.size(); ++i) {
+		instantiationContext.mappedGenericArgs[ol->genericParams[i].name] = instantiationContext.genericArgs->at(i);
 	}
 }
 
@@ -233,10 +212,53 @@ Value *Runtime::instantiateGenericValue(const Value *v, GenericInstantiationCont
 	}
 
 	// Cache missed, instantiate the value.
-	auto value = v->duplicate();									// Make a duplicate of the original value.
-	_genericCacheDir[v][*instantiationContext.genericArgs] = value;	// Store the instance into the cache.
+	auto value = v->duplicate();									 // Make a duplicate of the original value.
+	_genericCacheDir[v][*instantiationContext.genericArgs] = value;	 // Store the instance into the cache.
 	mapGenericParams(value, instantiationContext);
 	_instantiateGenericValue(value, instantiationContext);	// Instantiate the value.
 
 	return value;
+}
+
+void Runtime::_instantiateGenericValue(FnOverloading *ol, GenericInstantiationContext &instantiationContext) const {
+	if (ol->genericParams.size() && ol->fnValue != instantiationContext.mappedValue) {
+		GenericInstantiationContext newInstantiationContext = instantiationContext;
+
+		// Map irreplaceable parameters to corresponding generic parameter reference type
+		// and thus the generic types will keep unchanged.
+		for (size_t i = 0; i < ol->genericParams.size(); ++i) {
+			newInstantiationContext.mappedGenericArgs[ol->genericParams[i].name] = Type(ol->genericParams[i].name);
+		}
+
+		newInstantiationContext.mappedValue = ol->fnValue;
+
+		_instantiateGenericValue(ol, newInstantiationContext);
+	} else {
+		for (auto &i : ol->paramTypes)
+			_instantiateGenericValue(i, instantiationContext);
+
+		_instantiateGenericValue(ol->returnType, instantiationContext);
+
+		switch (ol->getOverloadingKind()) {
+			case FnOverloadingKind::Regular: {
+				RegularFnOverloading *overloading = (RegularFnOverloading *)ol;
+
+				for (auto& i : overloading->instructions) {
+					for (auto& j : i.operands) {
+						if (j) {
+							if (j->getType() == TypeId::TypeName)
+								_instantiateGenericValue(((TypeNameValue *)j)->_data, instantiationContext);
+						}
+					}
+				}
+
+				break;
+			}
+			case FnOverloadingKind::Native: {
+				NativeFnOverloading *overloading = (NativeFnOverloading *)ol;
+
+				break;
+			}
+		}
+	}
 }

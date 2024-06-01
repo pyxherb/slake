@@ -13,7 +13,7 @@ namespace slake {
 
 		virtual inline Type getType() const override { return TypeId::Alias; }
 
-		virtual ValueRef<> call(Value *thisObject, std::deque<Value *> args) const override;
+		virtual ValueRef<> call(Value *thisObject, std::deque<Value *> args, std::deque<Type> argTypes) const override;
 
 		virtual Value *duplicate() const override;
 

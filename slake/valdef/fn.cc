@@ -2,64 +2,92 @@
 
 using namespace slake;
 
-Type BasicFnValue::getType() const { return TypeId::Fn; }
-Type BasicFnValue::getReturnType() const { return returnType; }
+Type FnValue::getType() const { return TypeId::Fn; }
 
-BasicFnValue::~BasicFnValue() {
-	reportSizeFreedToRuntime(sizeof(*this) - sizeof(MemberValue));
+FnOverloadingKind slake::RegularFnOverloading::getOverloadingKind() const {
+	return FnOverloadingKind::Regular;
 }
 
-slake::FnValue::FnValue(Runtime *rt, uint32_t nIns, AccessModifier access, Type returnType)
-	: nIns(nIns),
-	  BasicFnValue(rt, access, returnType) {
-	if (nIns)
-		body = new Instruction[nIns];
-	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(BasicFnValue) + sizeof(Instruction) * nIns);
+FnOverloading *slake::RegularFnOverloading::duplicate() const {
+	RegularFnOverloading *v = new RegularFnOverloading(fnValue, access, {}, returnType);
+
+	*v = *this;
+
+	return (FnOverloading *)v;
 }
 
-FnValue::~FnValue() {
-	// Because the runtime will release all values, so we just fill the body with 0
-	// (because the references do not release objects they held).
-	if (_rt->_flags & _RT_DELETING)
-		memset((void *)body, 0, sizeof(Instruction) * nIns);
-
-	if (body) {
-		delete[] body;
-		body = nullptr;
-	}
-
-	reportSizeFreedToRuntime(sizeof(*this) - sizeof(BasicFnValue) + sizeof(Instruction) * nIns);
+FnOverloadingKind slake::NativeFnOverloading::getOverloadingKind() const {
+	return FnOverloadingKind::Native;
 }
 
-ValueRef<> FnValue::exec(std::shared_ptr<Context> context) const {
-	if (context->flags & CTX_DONE)
-		throw std::logic_error("Executing with a done context");
+ValueRef<> slake::NativeFnOverloading::call(Value *thisObject, std::deque<Value *> args) const {
+	return callback(fnValue->_rt, thisObject, args, mappedGenericArgs);
+}
+
+FnOverloading *slake::NativeFnOverloading::duplicate() const {
+	NativeFnOverloading *v = new NativeFnOverloading(fnValue, access, {}, returnType, {});
+
+	*v = *this;
+
+	return (FnOverloading *)v;
+}
+
+ValueRef<> RegularFnOverloading::call(Value *thisObject, std::deque<Value *> args) const {
+	Runtime *rt = fnValue->_rt;
 
 	// Save previous context
-	std::shared_ptr<Context> savedContext;
-	if (_rt->activeContexts.count(std::this_thread::get_id()))
-		savedContext = _rt->activeContexts.at(std::this_thread::get_id());
+	std::shared_ptr<Context> context;
+	if (auto it = rt->activeContexts.find(std::this_thread::get_id());
+		it != rt->activeContexts.end()) {
+		context = it->second;
+	} else {
+		context = std::make_shared<Context>();
 
-	_rt->activeContexts[std::this_thread::get_id()] = context;
+		auto frame = MajorFrame(rt);
+		frame.curFn = this;
+		frame.curIns = UINT32_MAX;
+		context->majorFrames.push_back(frame);
 
-	bool isDestructing = _rt->destructingThreads.count(std::this_thread::get_id());
+		rt->activeContexts[std::this_thread::get_id()] = context;
+	}
+
+	if (!(context->flags & CTX_YIELDED)) {
+		auto frame = MajorFrame(rt);
+		frame.curFn = this;
+		frame.curIns = 0;
+		frame.scopeValue = fnValue->_parent;
+		frame.thisObject = thisObject;
+		frame.argStack.resize(args.size());
+		for (size_t i = 0; i < args.size(); ++i) {
+			auto var = new VarValue(rt, 0, TypeId::Any);
+			var->setData(args[i]);
+			frame.argStack[i] = var;
+		}
+		context->majorFrames.push_back(frame);
+	} else
+		context->flags &= ~CTX_YIELDED;
+
+	bool isDestructing = rt->destructingThreads.count(std::this_thread::get_id());
 
 	try {
-		while (context->majorFrames.back().curIns != UINT32_MAX) {
-			if (context->majorFrames.back().curIns >= context->majorFrames.back().curFn->nIns)
+		while ((context->majorFrames.back().curIns != UINT32_MAX) &&
+			   (context->majorFrames.back().curFn == this)) {
+			if (context->majorFrames.back().curIns >= context->majorFrames.back().curFn->instructions.size())
 				throw OutOfFnBodyError("Out of function body");
 
 			if (context->flags & CTX_YIELDED)
 				break;
 
 			// Pause if the runtime is in GC
-			while ((getRuntime()->_flags & _RT_INGC) && !isDestructing)
+			while ((rt->_flags & _RT_INGC) && !isDestructing)
 				std::this_thread::yield();
 
-			_rt->_execIns(context.get(), context->majorFrames.back().curFn->body[context->majorFrames.back().curIns]);
+			rt->_execIns(
+				context.get(),
+				context->majorFrames.back().curFn->instructions[context->majorFrames.back().curIns]);
 
-			if ((_rt->_szMemInUse > (_rt->_szMemUsedAfterLastGc << 1)) && !isDestructing)
-				_rt->gc();
+			if ((rt->_szMemInUse > (rt->_szMemUsedAfterLastGc << 1)) && !isDestructing)
+				rt->gc();
 		}
 	} catch (...) {
 		context->flags |= CTX_DONE;
@@ -67,105 +95,50 @@ ValueRef<> FnValue::exec(std::shared_ptr<Context> context) const {
 	}
 
 	// Do a GC cycle if size of memory in use is greater than double the size used after last cycle.
-	if (((_rt->_szMemInUse >> 1) > _rt->_szMemUsedAfterLastGc) && !isDestructing)
-		_rt->gc();
-
-	// Restore previous context
-	if (savedContext)
-		_rt->activeContexts[std::this_thread::get_id()] = savedContext;
-	else
-		_rt->activeContexts.erase(std::this_thread::get_id());
+	if (((rt->_szMemInUse >> 1) > rt->_szMemUsedAfterLastGc) && !isDestructing)
+		rt->gc();
 
 	if (context->flags & CTX_YIELDED)
-		return new ContextValue(_rt, context);
+		return new ContextValue(rt, context);
 
-	context->flags |= CTX_DONE;
+	if (context->majorFrames.back().curIns == UINT32_MAX) {
+		rt->activeContexts.erase(std::this_thread::get_id());
+		context->flags |= CTX_DONE;
+	}
+
 	return context->majorFrames.back().returnValue;
 }
 
-ValueRef<> FnValue::call(Value *thisObject, std::deque<Value *> args) const {
+ValueRef<> FnValue::call(Value *thisObject, std::deque<Value *> args, std::deque<Type> argTypes) const {
 	std::shared_ptr<Context> context = std::make_shared<Context>();
 
-	{
-		auto frame = MajorFrame(_rt);
-		frame.curFn = this;	 // The garbage collector does not check if curFn is nullptr.
-		frame.curIns = UINT32_MAX - 1;
-		context->majorFrames.push_back(frame);
+	for (auto &i : overloadings) {
+		if (i->overloadingFlags & OL_VARG) {
+			if (argTypes.size() < i->paramTypes.size())
+				continue;
+		} else {
+			if (argTypes.size() != i->paramTypes.size())
+				continue;
+		}
 
-		frame = MajorFrame(_rt);
-		frame.curFn = this;
-		frame.curIns = 0;
-		frame.scopeValue = _parent;
-		frame.thisObject = thisObject;
-		context->majorFrames.push_back(frame);
+		for (size_t j = 0; j < argTypes.size(); ++j) {
+			argTypes[j].loadDeferredType(_rt);
+			i->paramTypes[j].loadDeferredType(_rt);
+
+			if (argTypes[j] != i->paramTypes[j])
+				goto mismatched;
+		}
+
+		return i->call(thisObject, args);
+
+	mismatched:;
 	}
 
-	return exec(context);
-}
-
-slake::NativeFnValue::NativeFnValue(Runtime *rt, NativeFnCallback body, AccessModifier access, Type returnType)
-	: BasicFnValue(rt, access | ACCESS_NATIVE, returnType), body(body) {
-	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(BasicFnValue));
-}
-
-NativeFnValue::~NativeFnValue() {
-	reportSizeFreedToRuntime(sizeof(*this) - sizeof(BasicFnValue));
-}
-
-ValueRef<> NativeFnValue::call(Value *thisObject, std::deque<Value *> args) const {
-	return body(_rt, thisObject, args, mappedGenericArgs);
+	throw NoOverloadingError("No matching overloading was found");
 }
 
 Value *FnValue::duplicate() const {
-	FnValue *v = new FnValue(_rt, 0, 0, {});
-
-	*v = *this;
-
-	return (Value *)v;
-}
-
-FnValue &slake::FnValue::operator=(const FnValue &x) {
-	((BasicFnValue &)*this) = (BasicFnValue &)x;
-
-	// Delete existing function body.
-	if (body) {
-		delete[] body;
-		body = nullptr;
-	}
-
-	// Copy the function body if the source function is not abstract.
-	if (x.body) {
-		body = new Instruction[x.nIns];
-
-		// Copy each instruction.
-		for (size_t i = 0; i < x.nIns; ++i) {
-			// Duplicate current instruction from the source function.
-			auto ins = x.body[i];
-
-			// Copy each operand.
-			for (size_t j = 0; j < ins.operands.size(); ++j) {
-				auto &operand = ins.operands[j];
-				if (operand)
-					operand = operand->duplicate();
-			}
-
-			// Move current instruction into the function body.
-			body[i] = ins;
-		}
-	}
-
-	if (nIns > x.nIns)
-		reportSizeFreedToRuntime(sizeof(Instruction) * (nIns - x.nIns));
-	else
-		reportSizeAllocatedToRuntime(sizeof(Instruction) * (x.nIns - nIns));
-
-	nIns = x.nIns;
-
-	return *this;
-}
-
-Value *NativeFnValue::duplicate() const {
-	NativeFnValue *v = new NativeFnValue(_rt, {}, 0, {});
+	FnValue *v = new FnValue(_rt);
 
 	*v = *this;
 

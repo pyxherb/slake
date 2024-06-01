@@ -14,8 +14,8 @@ ContextValue::~ContextValue() {
 }
 
 ValueRef<> ContextValue::resume() {
-	_context->flags &= ~CTX_YIELDED;
-	return _context->majorFrames.back().curFn->exec(_context);
+	_rt->activeContexts[std::this_thread::get_id()] = _context;
+	return _context->majorFrames.back().curFn->call(nullptr, {});
 }
 
 ValueRef<> ContextValue::getResult() {

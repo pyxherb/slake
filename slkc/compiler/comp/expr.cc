@@ -191,19 +191,11 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 						EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
 
-					IdRef fullName;
-					_getFullName(operatorNode.get(), fullName);
-
-					fullName.back().name = mangleName(
-						fullName.back().name,
-						isForwardUnaryOp(e->op)
-							? std::deque<std::shared_ptr<TypeNameNode>>{}
-							: std::deque<std::shared_ptr<TypeNameNode>>{ std::make_shared<AnyTypeNameNode>(e->getLocation(), false) },
-						false);
+					IdRef operatorName = { overloading->getName() };
 
 					uint32_t tmpRegIndex = allocReg();
 
-					_insertIns(Opcode::LOAD, std::make_shared<RegRefNode>(tmpRegIndex), std::make_shared<IdRefExprNode>(fullName));
+					_insertIns(Opcode::RLOAD, std::make_shared<RegRefNode>(tmpRegIndex), std::make_shared<RegRefNode>(lhsRegIndex, true), std::make_shared<IdRefExprNode>(operatorName));
 					_insertIns(Opcode::MCALL, std::make_shared<RegRefNode>(tmpRegIndex, true), std::make_shared<RegRefNode>(lhsRegIndex, true));
 
 					_insertIns(Opcode::LRET, std::make_shared<RegRefNode>(resultRegIndex));
@@ -1002,15 +994,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 						EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
 
-					IdRef fullName;
-					_getFullName(overloading.get(), fullName);
-
-					fullName.back().name = mangleName(
-						fullName.back().name,
-						{ overloading->params[0]->originalType
-								? overloading->params[0]->originalType
-								: overloading->params[0]->type },
-						false);
+					IdRef operatorName = { overloading->getName() };
 
 					uint32_t tmpRegIndex = allocReg();
 
@@ -1023,7 +1007,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 									MessageType::Error,
 									"Expecting a lvalue expression"));
 
-						_insertIns(Opcode::PUSHARG, ce);
+						_insertIns(Opcode::PUSHARG, ce, overloading->params[0]->type);
 					} else {
 						compileExpr(
 							e->rhs,
@@ -1031,10 +1015,10 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 								? EvalPurpose::LValue
 								: EvalPurpose::RValue,
 							std::make_shared<RegRefNode>(tmpRegIndex));
-						_insertIns(Opcode::PUSHARG, std::make_shared<RegRefNode>(tmpRegIndex, true));
+						_insertIns(Opcode::PUSHARG, std::make_shared<RegRefNode>(tmpRegIndex, true), overloading->params[0]->type);
 					}
 
-					_insertIns(Opcode::LOAD, std::make_shared<RegRefNode>(tmpRegIndex), std::make_shared<IdRefExprNode>(fullName));
+					_insertIns(Opcode::RLOAD, std::make_shared<RegRefNode>(tmpRegIndex), std::make_shared<RegRefNode>(lhsRegIndex, true), std::make_shared<IdRefExprNode>(operatorName));
 					_insertIns(Opcode::MCALL, std::make_shared<RegRefNode>(tmpRegIndex, true), std::make_shared<RegRefNode>(lhsRegIndex, true));
 
 #if SLKC_WITH_LANGUAGE_SERVER
@@ -1283,7 +1267,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 									"No matching operator"));
 						}
 					}
-					genericParamOperatorFound:
+				genericParamOperatorFound:
 					break;
 				}
 				default:
@@ -1534,7 +1518,6 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 
 			compileExpr(e->target, EvalPurpose::Call, std::make_shared<RegRefNode>(callTargetRegIndex), std::make_shared<RegRefNode>(thisRegIndex));
 
-			auto paramTypes = curMajorContext.curMinorContext.lastCallTargetParams;
 			auto returnType = curMajorContext.curMinorContext.lastCallTargetReturnType;
 			if (!returnType)
 				throw FatalCompilationError(
@@ -1545,13 +1528,18 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 
 			for (size_t i = 0; i < e->args.size(); ++i) {
 				EvalPurpose evalPurpose = EvalPurpose::RValue;
-				if (i < paramTypes.size()) {
+				if (i < curMajorContext.curMinorContext.lastCallTargetParams.size()) {
 					if (isLValueType(curMajorContext.curMinorContext.lastCallTargetParams[i]->type))
 						evalPurpose = EvalPurpose::LValue;
 				}
 
 				compileExpr(e->args[i], evalPurpose, std::make_shared<RegRefNode>(tmpRegIndex));
-				_insertIns(Opcode::PUSHARG, std::make_shared<RegRefNode>(tmpRegIndex, true));
+				_insertIns(
+					Opcode::PUSHARG,
+					std::make_shared<RegRefNode>(tmpRegIndex, true),
+					i < curMajorContext.curMinorContext.lastCallTargetParams.size()
+						? curMajorContext.curMinorContext.lastCallTargetParams[i]->type
+						: nullptr);
 			}
 
 			if (curMajorContext.curMinorContext.isLastCallTargetStatic)
@@ -1691,17 +1679,6 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					//
 					// Instantiate a custom type.
 					//
-					for (auto i : e->args) {
-						if (auto ce = evalConstExpr(i); ce)
-							_insertIns(Opcode::PUSHARG, ce);
-						else {
-							uint32_t tmpRegIndex = allocReg();
-
-							compileExpr(i, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
-							_insertIns(Opcode::PUSHARG, std::make_shared<RegRefNode>(tmpRegIndex, true));
-						}
-					}
-
 					auto node = resolveCustomTypeName((CustomTypeNameNode *)e->type.get());
 
 					switch (node->getNodeType()) {
@@ -1756,14 +1733,45 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 
 								std::deque<std::shared_ptr<TypeNameNode>> paramTypes;
 								for (auto &j : overloading->params) {
-									paramTypes.push_back(j->originalType ? j->originalType : j->type);
+									paramTypes.push_back(j->type);
 								}
 
 								if (overloading->isVaridic())
 									paramTypes.pop_back();
 
+								for (size_t i = 0; i < argTypes.size(); ++i) {
+									if (i < paramTypes.size()) {
+										if (isSameType(argTypes[i], paramTypes[i])) {
+											if (auto ce = evalConstExpr(e->args[i]); ce)
+												_insertIns(Opcode::PUSHARG, ce, paramTypes[i]);
+											else {
+												uint32_t tmpRegIndex = allocReg();
+
+												compileExpr(e->args[i], EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
+												_insertIns(Opcode::PUSHARG, std::make_shared<RegRefNode>(tmpRegIndex, true), paramTypes[i]);
+											}
+										} else {
+											uint32_t tmpRegIndex = allocReg();
+
+											compileExpr(
+												std::make_shared<CastExprNode>(e->args[i]->getLocation(), argTypes[i], e->args[i]),
+												EvalPurpose::RValue,
+												std::make_shared<RegRefNode>(tmpRegIndex));
+											_insertIns(Opcode::PUSHARG, std::make_shared<RegRefNode>(tmpRegIndex, true), paramTypes[i]);
+										}
+									} else {
+										if (auto ce = evalConstExpr(e->args[i]); ce)
+											_insertIns(Opcode::PUSHARG, ce, {});
+										else {
+											uint32_t tmpRegIndex = allocReg();
+
+											compileExpr(e->args[i], EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
+											_insertIns(Opcode::PUSHARG, std::make_shared<RegRefNode>(tmpRegIndex, true), {});
+										}
+									}
+								}
+
 								IdRef fullName = getFullName(overloading.get());
-								fullName.back().name = mangleName("new", paramTypes, false);
 
 								_insertIns(Opcode::NEW, curMajorContext.curMinorContext.evalDest, e->type, std::make_shared<IdRefExprNode>(fullName));
 							} else {
@@ -1909,6 +1917,10 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					}
 
 					curMajorContext.curMinorContext.lastCallTargetParams = overloadings[0]->params;
+					// stub, TODO: Set a flag to hint that the last call target has varidic parameters.
+					if (overloadings[0]->isVaridic())
+						curMajorContext.curMinorContext.lastCallTargetParams.pop_back();
+
 					curMajorContext.curMinorContext.lastCallTargetReturnType =
 						overloadings[0]->returnType
 							? overloadings[0]->returnType
@@ -1970,16 +1982,11 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 
 							std::deque<std::shared_ptr<TypeNameNode>> paramTypes;
 							for (auto &j : overloading->params) {
-								paramTypes.push_back(j->originalType ? j->originalType : j->type);
+								paramTypes.push_back(j->type);
 							}
 
 							if (overloading->isVaridic())
 								paramTypes.pop_back();
-
-							ref.back().name = mangleName(
-								resolvedParts[i].first.back().name,
-								paramTypes,
-								false);
 
 							curMajorContext.curMinorContext.evaluatedType =
 								std::make_shared<FnTypeNameNode>(
@@ -2136,16 +2143,11 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 
 							std::deque<std::shared_ptr<TypeNameNode>> paramTypes;
 							for (auto i : overloading->params) {
-								paramTypes.push_back(i->originalType ? i->originalType : i->type);
+								paramTypes.push_back(i->type);
 							}
 
 							if (overloading->isVaridic())
 								paramTypes.pop_back();
-
-							ref.back().name = mangleName(
-								resolvedParts.front().first.back().name,
-								paramTypes,
-								false);
 
 							if (resolvedParts.size() == 1) {
 								curMajorContext.curMinorContext.evaluatedType =

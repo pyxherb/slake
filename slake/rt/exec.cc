@@ -254,23 +254,6 @@ static Value *_execUnaryOp(ValueRef<> x, Opcode opcode) {
 	throw InvalidOperandsError("Binary operation with incompatible types");
 }
 
-void slake::Runtime::_callFn(Context *context, FnValue *fn) {
-	auto &curFrame = context->majorFrames.back();
-	MajorFrame frame(this);
-	frame.curIns = 0;
-	frame.curFn = fn;
-
-	for (size_t i = 0; i < curFrame.nextArgStack.size(); ++i) {
-		VarValue *argVar = new VarValue(this, ACCESS_PUB, i < fn->paramTypes.size() ? fn->paramTypes[i] : TypeId::Any);
-		argVar->setData(curFrame.nextArgStack[i]);
-		frame.argStack.push_back(argVar);
-	}
-
-	curFrame.nextArgStack.clear();
-	context->majorFrames.push_back(frame);
-	return;
-}
-
 VarValue *slake::Runtime::_addLocalVar(MajorFrame &frame, Type type) {
 	auto v = new VarValue(this, ACCESS_PUB, type);
 	frame.localVars.push_back(v);
@@ -371,7 +354,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			}
 
 			if (!v)
-				throw NotFoundError("No such member", ref);
+				throw NotFoundError("Member not found", ref);
 			((VarValue *)ins.operands[0])->setData(v);
 			break;
 		}
@@ -597,9 +580,9 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		case Opcode::AT: {
 			_checkOperandCount(ins, 3);
 
-			_checkOperandType(ins, { TypeId::Var, TypeId::Array, TypeId::U32});
+			_checkOperandType(ins, { TypeId::Var, TypeId::Array, TypeId::U32 });
 
-			VarValue *valueOut = (VarValue*)ins.operands[0];
+			VarValue *valueOut = (VarValue *)ins.operands[0];
 			ArrayValue *arrayIn = (ArrayValue *)ins.operands[1];
 			U32Value *indexIn = (U32Value *)ins.operands[2];
 
@@ -637,9 +620,12 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			break;
 		}
 		case Opcode::PUSHARG: {
-			_checkOperandCount(ins, 1);
+			_checkOperandCount(ins, 2);
+			_checkOperandType(ins, { TypeId::Any, TypeId::TypeName });
 
 			curMajorFrame.nextArgStack.push_back(ins.operands[0]);
+			if (ins.operands[1])
+				curMajorFrame.nextArgTypes.push_back(((TypeNameValue *)ins.operands[1])->_data);
 			break;
 		}
 		case Opcode::MCALL:
@@ -659,18 +645,15 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			if (!fn)
 				throw NullRefError();
 
-			if (fn->isNative()) {
-				curMajorFrame.returnValue = ((NativeFnValue *)fn)->call(ins.opcode == Opcode::MCALL ? (curMajorFrame.scopeValue = ins.operands[1]) : nullptr, curMajorFrame.nextArgStack).get();
-				curMajorFrame.nextArgStack.clear();
-			} else {
-				_callFn(context, fn);
+			fn->call(
+				ins.opcode == Opcode::MCALL
+					? ins.operands[1]
+					: nullptr,
+				curMajorFrame.nextArgStack,
+				curMajorFrame.nextArgTypes);
 
-				auto &newCurFrame = context->getCurFrame();
-
-				if (ins.opcode == Opcode::MCALL)
-					newCurFrame.thisObject = (newCurFrame.scopeValue = ins.operands[1]);
-				return;
-			}
+			curMajorFrame.nextArgStack.clear();
+			curMajorFrame.nextArgTypes.clear();
 
 			break;
 		}
@@ -679,7 +662,6 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 			context->majorFrames.pop_back();
 			context->majorFrames.back().returnValue = ins.operands[0];
-			++context->majorFrames.back().curIns;
 			break;
 		}
 		case Opcode::LRET: {
@@ -731,16 +713,11 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 							if ((v->getType() != TypeId::Fn))
 								throw InvalidOperandsError("Specified constructor is not a function");
 
-							BasicFnValue *constructor = (BasicFnValue *)v;
+							FnValue *constructor = (FnValue *)v;
 
-							if (constructor->isNative()) {
-								constructor->call(instance, curMajorFrame.nextArgStack);
-								curMajorFrame.nextArgStack.clear();
-							} else {
-								_callFn(context, (FnValue *)constructor);
-								context->majorFrames.back().thisObject = instance;
-								return;
-							}
+							constructor->call(instance, curMajorFrame.nextArgStack, curMajorFrame.nextArgTypes);
+							curMajorFrame.nextArgStack.clear();
+							curMajorFrame.nextArgTypes.clear();
 						} else
 							throw InvalidOperandsError("Specified constructor is not found");
 					}
@@ -758,7 +735,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 			VarValue *varOut = (VarValue *)ins.operands[0];
 			Type &type = ((TypeNameValue *)ins.operands[1])->_data;
-			uint32_t size = ((U32Value*)ins.operands[2])->_data;
+			uint32_t size = ((U32Value *)ins.operands[2])->_data;
 			type.loadDeferredType(this);
 
 			auto instance = newArrayInstance(type, size);

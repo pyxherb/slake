@@ -63,6 +63,37 @@ void Runtime::_gcWalk(Type &type) {
 	}
 }
 
+void Runtime::_gcWalk(FnOverloading *fnOverloading) {
+	_gcWalk(fnOverloading->fnValue);
+
+	// TODO: Walk generic parameters.
+	for (auto &j : fnOverloading->paramTypes)
+		_gcWalk(j);
+	_gcWalk(fnOverloading->returnType);
+
+	switch (fnOverloading->getOverloadingKind()) {
+		case FnOverloadingKind::Regular: {
+			RegularFnOverloading *ol = (RegularFnOverloading *)fnOverloading;
+
+			for (auto &i : ol->instructions) {
+				for (auto &j : i.operands) {
+					if (j)
+						_gcWalk(j);
+				}
+			}
+
+			break;
+		}
+		case FnOverloadingKind::Native: {
+			NativeFnOverloading *ol = (NativeFnOverloading *)fnOverloading;
+
+			break;
+		}
+		default:
+			throw std::logic_error("Invalid overloading kind");
+	}
+}
+
 void Runtime::_gcWalk(Value *v) {
 	if (_walkedValues.count(v))
 		return;
@@ -94,6 +125,8 @@ void Runtime::_gcWalk(Value *v) {
 		case TypeId::Class:
 		case TypeId::Trait:
 		case TypeId::Interface: {
+			// TODO: Walk generic parameters.
+
 			if (((ModuleValue *)v)->_parent)
 				_gcWalk(((ModuleValue *)v)->_parent);
 
@@ -141,24 +174,13 @@ void Runtime::_gcWalk(Value *v) {
 		case TypeId::RootValue:
 			break;
 		case TypeId::Fn: {
-			auto basicFn = (BasicFnValue *)v;
+			auto fn = (FnValue *)v;
 
-			if (basicFn->_parent)
-				_gcWalk(basicFn->_parent);
+			if (fn->_parent)
+				_gcWalk(fn->_parent);
 
-			_gcWalk(basicFn->returnType);
-			for (auto &i : basicFn->paramTypes)
-				_gcWalk(i);
-
-			if (!((BasicFnValue *)v)->isNative()) {
-				auto value = (FnValue *)basicFn;
-				for (size_t i = 0; i < value->nIns; ++i) {
-					auto &ins = value->body[i];
-					for (auto j : ins.operands) {
-						if (j)
-							_gcWalk(j);
-					}
-				}
+			for (auto &i : fn->overloadings) {
+				_gcWalk(i.get());
 			}
 			break;
 		}
@@ -212,7 +234,7 @@ void Runtime::_gcWalk(Value *v) {
 
 void Runtime::_gcWalk(Context &ctxt) {
 	for (auto &j : ctxt.majorFrames) {
-		_gcWalk(const_cast<FnValue *>(j.curFn));
+		_gcWalk((FnOverloading *)j.curFn);
 		if (j.scopeValue)
 			_gcWalk(j.scopeValue);
 		if (j.returnValue)
@@ -259,7 +281,7 @@ rescan:
 				(!(((ObjectValue *)i)->objectFlags & OBJECT_PARENT))) {
 				for (auto &j : d) {
 					_destructedValues.insert(j.first->owner);
-					j.second->call(i, {});
+					j.second->call(i, {}, {});
 				}
 				foundDestructibleValues = true;
 			}

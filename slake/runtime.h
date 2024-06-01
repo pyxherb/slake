@@ -47,17 +47,18 @@ namespace slake {
 
 	/// @brief Major frames which represent a single calling frame.
 	struct MajorFrame final {
-		Value *scopeValue = nullptr;		 // Scope value.
-		const FnValue *curFn = nullptr;		 // Current function.
-		uint32_t curIns = 0;				 // Offset of current instruction in function body.
-		std::deque<Value *> argStack;		 // Argument stack.
-		std::deque<Value *> nextArgStack;	 // Argument stack for next call.
-		std::deque<VarValue *> localVars;	 // Local variables.
-		std::deque<VarValue *> regs;		 // Local registers.
-		Value *thisObject = nullptr;		 // `this' object.
-		Value *returnValue = nullptr;		 // Return value.
-		std::deque<MinorFrame> minorFrames;	 // Minor frames.
-		Value *curExcept = nullptr;			 // Current exception.
+		Value *scopeValue = nullptr;				  // Scope value.
+		const RegularFnOverloading *curFn = nullptr;  // Current function overloading.
+		uint32_t curIns = 0;						  // Offset of current instruction in function body.
+		std::deque<Value *> argStack;				  // Argument stack.
+		std::deque<Value *> nextArgStack;			  // Argument stack for next call.
+		std::deque<Type> nextArgTypes;				  // Types of argument stack for next call.
+		std::deque<VarValue *> localVars;			  // Local variables.
+		std::deque<VarValue *> regs;				  // Local registers.
+		Value *thisObject = nullptr;				  // `this' object.
+		Value *returnValue = nullptr;				  // Return value.
+		std::deque<MinorFrame> minorFrames;			  // Minor frames.
+		Value *curExcept = nullptr;					  // Current exception.
 
 		MajorFrame(Runtime *rt);
 
@@ -78,18 +79,14 @@ namespace slake {
 
 	using ContextFlags = uint8_t;
 	constexpr static ContextFlags
-		// Context execution has done (cannot be resumed).
+		// Done
 		CTX_DONE = 0x01,
 		// Yielded
 		CTX_YIELDED = 0x02;
 
 	struct Context final {
-		std::deque<MajorFrame> majorFrames;	 // Major frames, aka calling frames
+		std::deque<MajorFrame> majorFrames;	 // Major frame
 		ContextFlags flags = 0;				 // Flags
-
-		inline MajorFrame &getCurFrame() {
-			return majorFrames.back();
-		}
 	};
 
 	using RuntimeFlags = uint32_t;
@@ -189,26 +186,25 @@ namespace slake {
 		/// @brief Execute a single instruction.
 		/// @param context Context for execution.
 		/// @param ins Instruction to be executed.
-		///
-		/// @note Opcode-callback map was not introduced because designated initialization
-		/// was not introduced into ISO C++17.
 		void _execIns(Context *context, Instruction ins);
 
 		void _gcWalk(Scope *scope);
 		void _gcWalk(Type &type);
+		void _gcWalk(FnOverloading *fnOverloading);
 		void _gcWalk(Value *i);
 		void _gcWalk(Context &i);
 
 		void _instantiateGenericValue(Type &type, GenericInstantiationContext &instantiationContext) const;
 		void _instantiateGenericValue(Value *v, GenericInstantiationContext &instantiationContext) const;
+		void _instantiateGenericValue(FnOverloading *ol, GenericInstantiationContext &instantiationContext) const;
 
-		void _callFn(Context *context, FnValue *fn);
 		VarValue *_addLocalVar(MajorFrame &frame, Type type);
 		VarValue *_addLocalReg(MajorFrame &frame);
 
 		bool _findAndDispatchExceptHandler(Context *context) const;
 
 		friend class Value;
+		friend class RegularFnOverloading;
 		friend class FnValue;
 		friend class ObjectValue;
 		friend class MemberValue;
@@ -221,7 +217,7 @@ namespace slake {
 
 		std::set<Value *> createdValues;
 
-		/// @brief Active contexts of each thread.
+		/// @brief Active contexts of threads.
 		std::map<std::thread::id, std::shared_ptr<Context>> activeContexts;
 
 		/// @brief Thread IDs of threads which are executing destructors.
@@ -236,6 +232,7 @@ namespace slake {
 		virtual ~Runtime();
 
 		void mapGenericParams(const Value *v, GenericInstantiationContext &instantiationContext) const;
+		void mapGenericParams(const FnOverloading *ol, GenericInstantiationContext &instantiationContext) const;
 		/// @brief Instantiate an generic value (e.g. generic class, etc).
 		/// @param v Value to be instantiated.
 		/// @param genericArgs Generic arguments for instantiation.
@@ -261,34 +258,8 @@ namespace slake {
 
 		std::deque<IdRefEntry> getFullRef(const MemberValue *v) const;
 
-		/// @brief Get active context on specified thread.
-		/// @param id ID of specified thread.
-		/// @return Active context on specified thread.
-		inline std::shared_ptr<Context> getActiveContext(std::thread::id id = std::this_thread::get_id()) {
-			return activeContexts.at(id);
-		}
-
 		/// @brief Do a GC cycle.
 		void gc();
-
-		std::string mangleName(
-			std::string name,
-			std::deque<Type> params,
-			GenericArgList genericArgs,
-			bool isConst) const;
-
-		inline std::string mangleName(
-			std::string name,
-			std::deque<Type> params,
-			bool isConst) const {
-			return mangleName(name, params, {}, isConst);
-		}
-		inline std::string mangleName(
-			std::string name,
-			std::deque<Type> params,
-			GenericArgList genericArgs = {}) const {
-			return mangleName(name, params, {}, false);
-		}
 
 		ObjectValue *newClassInstance(ClassValue *cls);
 		ArrayValue *newArrayInstance(Type type, uint32_t size);

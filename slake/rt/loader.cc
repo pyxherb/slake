@@ -47,7 +47,7 @@ IdRefValue *Runtime::_loadIdRef(std::istream &fs) {
 /// @param fs Stream to be read.
 /// @return Value loaded from the stream.
 Value *Runtime::_loadValue(std::istream &fs) {
-	slxfmt::TypeId typeId=_read<slxfmt::TypeId>(fs);
+	slxfmt::TypeId typeId = _read<slxfmt::TypeId>(fs);
 
 	switch (typeId) {
 		case slxfmt::TypeId::None:
@@ -84,7 +84,7 @@ Value *Runtime::_loadValue(std::istream &fs) {
 			auto elementType = _loadType(fs);
 
 			// stub for debugging.
-			//elementType = Type(TypeId::Any);
+			// elementType = Type(TypeId::Any);
 
 			std::unique_ptr<ArrayValue> value = std::make_unique<ArrayValue>(this, elementType);
 
@@ -328,57 +328,71 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs, LoadModuleFlags loa
 	// Load functions.
 	//
 	nItemsToRead = _read<uint32_t>(fs);
-	for (slxfmt::FnDesc i = { 0 }; nItemsToRead--;) {
-		i = _read<slxfmt::FnDesc>(fs);
+	while (nItemsToRead--) {
+		uint32_t nOverloadings = _read<uint32_t>(fs);
 
-		std::string name(i.lenName, '\0');
-		fs.read(name.data(), i.lenName);
+		for (slxfmt::FnDesc i = { 0 }; nOverloadings--;) {
+			i = _read<slxfmt::FnDesc>(fs);
 
-		AccessModifier access = 0;
-		if (i.flags & slxfmt::FND_PUB)
-			access |= ACCESS_PUB;
-		if (i.flags & slxfmt::FND_STATIC)
-			access |= ACCESS_STATIC;
-		if (i.flags & slxfmt::FND_FINAL)
-			access |= ACCESS_FINAL;
-		if (i.flags & slxfmt::FND_OVERRIDE)
-			access |= ACCESS_OVERRIDE;
-		// if (i.flags & slxfmt::FND_NATIVE)
-		//	access |= ACCESS_NATIVE;
+			std::string name(i.lenName, '\0');
+			fs.read(name.data(), i.lenName);
 
-		std::unique_ptr<FnValue> fn = std::make_unique<FnValue>(this, (uint32_t)i.lenBody, access, _loadType(fs));
+			AccessModifier access = 0;
+			if (i.flags & slxfmt::FND_PUB)
+				access |= ACCESS_PUB;
+			if (i.flags & slxfmt::FND_STATIC)
+				access |= ACCESS_STATIC;
+			if (i.flags & slxfmt::FND_FINAL)
+				access |= ACCESS_FINAL;
+			if (i.flags & slxfmt::FND_OVERRIDE)
+				access |= ACCESS_OVERRIDE;
+			// if (i.flags & slxfmt::FND_NATIVE)
+			//	access |= ACCESS_NATIVE;
 
-		if (i.flags & slxfmt::FND_ASYNC)
-			fn->fnFlags |= FN_ASYNC;
+			FnValue *fn = (FnValue *)mod->scope->getMember(name);
 
-		for (size_t j = 0; j < i.nGenericParams; ++j) {
-			fn->genericParams.push_back(_loadGenericParam(fs));
-		}
-
-		for (uint8_t j = 0; j < i.nParams; j++) {
-			fn->paramTypes.push_back(_loadType(fs));
-		}
-
-		if (i.flags & slxfmt::FND_VARG)
-			fn->fnFlags |= FN_VARG;
-
-		if (i.lenBody) {
-			auto body = fn->getBody();
-
-			for (uint32_t j = 0; j < i.lenBody; j++) {
-				slxfmt::InsHeader ih = _read<slxfmt::InsHeader>(fs);
-				body[j].opcode = ih.opcode;
-				for (uint8_t k = 0; k < ih.nOperands; k++)
-					body[j].operands.push_back(_loadValue(fs));
+			if (!fn) {
+				fn = new FnValue(this);
+				mod->scope->putMember(name, fn);
 			}
-		}
 
-		for (uint32_t j = 0; j < i.nSourceLocDescs; ++j) {
-			slxfmt::SourceLocDesc sld = _read<slxfmt::SourceLocDesc>(fs);
-			fn->sourceLocDescs.push_back(sld);
-		}
+			std::unique_ptr<RegularFnOverloading> overloading = std::make_unique<RegularFnOverloading>(fn, access, std::deque<Type>{}, Type());
 
-		mod->scope->putMember(name, fn.release());
+			overloading->returnType = _loadType(fs);
+
+			for (size_t j = 0; j < i.nGenericParams; ++j) {
+				overloading->genericParams.push_back(_loadGenericParam(fs));
+			}
+
+			for (uint8_t j = 0; j < i.nParams; j++) {
+				overloading->paramTypes.push_back(_loadType(fs));
+			}
+
+			if (i.flags & slxfmt::FND_VARG)
+				overloading->overloadingFlags |= OL_VARG;
+
+			if (i.lenBody) {
+				overloading->instructions.resize(i.lenBody);
+
+				for (uint32_t j = 0; j < i.lenBody; j++) {
+					auto &ins = overloading->instructions[j];
+
+					slxfmt::InsHeader ih = _read<slxfmt::InsHeader>(fs);
+
+					ins.opcode = ih.opcode;
+					ins.operands.resize(ih.nOperands);
+					for (uint8_t k = 0; k < ih.nOperands; k++)
+						ins.operands[k] = _loadValue(fs);
+				}
+			}
+
+			for (uint32_t j = 0; j < i.nSourceLocDescs; ++j) {
+				slxfmt::SourceLocDesc sld = _read<slxfmt::SourceLocDesc>(fs);
+				overloading->sourceLocDescs.push_back(sld);
+			}
+
+			fn->overloadings.push_back(std::move(overloading));
+		}
 	}
 }
 

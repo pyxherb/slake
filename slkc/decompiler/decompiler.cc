@@ -55,10 +55,9 @@ std::string slake::decompiler::decompileIdRef(const IdRefValue *ref) {
 			s += "{";
 			s += scope.name;
 			s += "}";
+		} else {
+			s += scope.name;
 		}
-			else {
-				s += scope.name;
-			}
 
 		if (auto nGenericParams = scope.genericArgs.size(); nGenericParams) {
 			s += "<";
@@ -148,77 +147,75 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 			break;
 		}
 		case slake::TypeId::Fn: {
-			auto v = (BasicFnValue *)value;
+			auto v = (FnValue *)value;
 
-			// Dump access of the function.
-			if (v->getAccess())
-				os << std::string(indentLevel, '\t')
-				   << ".access " << accessToString(v->getAccess()) << "\n";
-
-			if (v->fnFlags & FN_ASYNC)
-				puts(".async");
-
-			os << std::string(indentLevel, '\t');
-			if (v->getAccess() & ACCESS_NATIVE) {
-				os << ".fndecl ";
-			} else {
-				os << (((FnValue *)v)->getInsCount() ? ".fn " : ".fndecl ");
-			}
-
-			os << decompileTypeName(v->getReturnType(), rt) << " "
-			   << v->getName();
-
-			// Dump parameter types.
-			for (auto &i : v->getParamTypes())
-				os << " " << decompileTypeName(i, rt);
-			os << "\n";
-
-			std::set<slxfmt::SourceLocDesc *> dumpedSourceLocationDescs;
-
-			// Dump instructions.
-			if (v->getAccess() & ACCESS_NATIVE) {
-				os << std::string(indentLevel, '\t')
-				   << "\n";
-			} else {
-				FnValue *fn = (FnValue *)v;
-				if (fn->getInsCount()) {
-					for (size_t i = 0; i < fn->getInsCount(); ++i) {
-						auto ins = &(fn->getBody()[i]);
-
-						if (!(decompilerFlags & DECOMP_SRCLOC)) {
-							for (auto &j : fn->sourceLocDescs) {
-								if (dumpedSourceLocationDescs.count(&j))
-									continue;
-
-								if ((i > j.offIns) &&
-									(i < j.offIns + j.nIns)) {
-									os << std::string(indentLevel + 1, '\t')
-									   << "// Source location=" << j.line << ":" << j.column << ", " << j.nIns << " instructions\n";
-
-									dumpedSourceLocationDescs.insert(&j);
-								}
-							}
-						}
-
-						os << std::string(indentLevel + 1, '\t');
-
-						if (slake::OPCODE_MNEMONIC_MAP.count(ins->opcode))
-							os << slake::OPCODE_MNEMONIC_MAP.at(ins->opcode);
-						else
-							os << (uint16_t)ins->opcode;
-
-						for (size_t j = 0; j < ins->operands.size(); ++j) {
-							os << (j ? ", " : " ");
-							decompileValue(rt, ins->operands[j], os, indentLevel);
-						}
-
-						os << ";\n";
-					}
+			for (auto &i : v->overloadings) {
+				// Dump access of the function.
+				if (i->access)
 					os << std::string(indentLevel, '\t')
-					   << ".end\n\n";
-				} else
+					   << ".access " << accessToString(v->getAccess()) << "\n";
+
+				os << std::string(indentLevel, '\t')
+				   << ".fn ";
+
+				os << decompileTypeName(i->returnType, rt) << " "
+				   << v->getName();
+
+				// Dump parameter types.
+				for (auto &i : i->paramTypes)
+					os << " " << decompileTypeName(i, rt);
+				os << "\n";
+
+				std::set<slxfmt::SourceLocDesc *> dumpedSourceLocationDescs;
+
+				// Dump instructions.
+				if (v->getAccess() & ACCESS_NATIVE) {
 					os << std::string(indentLevel, '\t')
 					   << "\n";
+				} else {
+					switch (i->getOverloadingKind()) {
+						case FnOverloadingKind::Regular: {
+							RegularFnOverloading *fn = (RegularFnOverloading *)i.get();
+							for (size_t i = 0; i < fn->instructions.size(); ++i) {
+								auto &ins = fn->instructions[i];
+
+								if (!(decompilerFlags & DECOMP_SRCLOC)) {
+									for (auto &j : fn->sourceLocDescs) {
+										if (dumpedSourceLocationDescs.count(&j))
+											continue;
+
+										if ((i > j.offIns) &&
+											(i < j.offIns + j.nIns)) {
+											os << std::string(indentLevel + 1, '\t')
+											   << "// Source location=" << j.line << ":" << j.column << ", " << j.nIns << " instructions\n";
+
+											dumpedSourceLocationDescs.insert(&j);
+										}
+									}
+								}
+
+								os << std::string(indentLevel + 1, '\t');
+
+								if (slake::OPCODE_MNEMONIC_MAP.count(ins.opcode))
+									os << slake::OPCODE_MNEMONIC_MAP.at(ins.opcode);
+								else
+									os << (uint16_t)ins.opcode;
+
+								for (size_t j = 0; j < ins.operands.size(); ++j) {
+									os << (j ? ", " : " ");
+									decompileValue(rt, ins.operands[j], os, indentLevel);
+								}
+
+								os << ";\n";
+							}
+							os << std::string(indentLevel, '\t')
+							   << ".end\n\n";
+							break;
+						}
+						case FnOverloadingKind::Native: {
+						}
+					}
+				}
 			}
 			break;
 		}

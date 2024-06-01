@@ -186,7 +186,7 @@ void Compiler::mapGenericParams(std::shared_ptr<MemberNode> node, GenericNodeIns
 		}
 	}
 
-	for (size_t i = 0; i < node->genericArgs.size(); ++i) {
+	for (size_t i = 0; i < node->genericParams.size(); ++i) {
 		instantiationContext.mappedGenericArgs[node->genericParams[i]->name] = instantiationContext.genericArgs->at(i);
 	}
 }

@@ -115,12 +115,6 @@ bool slake::isConvertible(Type src, Type dest) {
 								return true;
 							return false;
 						}
-						case TypeId::Trait: {
-							auto destType = (TraitValue *)dest.getCustomTypeExData();
-							if (srcType->hasTrait(destType))
-								return true;
-							return false;
-						}
 						default:
 							return false;
 					}
@@ -188,16 +182,6 @@ bool slake::isCompatible(Type a, Type b) {
 					switch (b.typeId) {
 						case TypeId::Object:
 							return ((ClassValue *)b.getCustomTypeExData())->hasImplemented((InterfaceValue *)a.getCustomTypeExData());
-						case TypeId::None:
-							return true;
-						default:
-							return false;
-					}
-				}
-				case TypeId::Trait: {
-					switch (b.typeId) {
-						case TypeId::Object:
-							return ((ClassValue *)b.getCustomTypeExData())->hasTrait((TraitValue *)a.getCustomTypeExData());
 						case TypeId::None:
 							return true;
 						default:

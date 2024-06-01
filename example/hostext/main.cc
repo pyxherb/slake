@@ -63,23 +63,6 @@ slake::ValueRef<> print(
 	return {};
 }
 
-slake::ValueRef<> getSlakeBuildVersionInfo(
-	slake::Runtime *rt,
-	slake::Value *thisObject,
-	std::deque<slake::Value *> args,
-	const std::unordered_map<std::string, slake::Type> &mappedGenericArgs) {
-	using namespace slake;
-
-	switch (((I32Value *)args[0])->getData()) {
-		case 0:
-			return new StringValue(rt, __DATE__);
-		case 1:
-			return new StringValue(rt, __TIME__);
-		default:
-			return new StringValue(rt, __DATE__ " " __TIME__);
-	}
-}
-
 std::unique_ptr<std::istream> fsModuleLocator(slake::Runtime *rt, slake::ValueRef<slake::IdRefValue> ref) {
 	std::string path;
 	for (size_t i = 0; i < ref->entries.size(); ++i) {
@@ -100,11 +83,7 @@ void printTraceback(slake::Runtime *rt) {
 	auto ctxt = rt->activeContexts.at(std::this_thread::get_id());
 	printf("Traceback:\n");
 	for (auto i = ctxt->majorFrames.rbegin(); i != ctxt->majorFrames.rend(); ++i) {
-		printf("\t%s: 0x%08x", rt->getFullName(i->curFn).c_str(), i->curIns);
-
-		if (auto sld = i->curFn->getSourceLocationInfo(i->curIns); sld) {
-			printf(" at %d:%d", sld->line, sld->column);
-		}
+		printf("\t%s: 0x%08x", rt->getFullName(i->curFn->fnValue).c_str(), i->curIns);
 		putchar('\n');
 	}
 }
@@ -122,7 +101,7 @@ int main(int argc, char **argv) {
 			fs.open("hostext/main.slx", std::ios_base::in | std::ios_base::binary);
 
 			rt->setModuleLocator(fsModuleLocator);
-			slake::stdlib::load(rt.get());
+			//slake::stdlib::load(rt.get());
 
 			mod = rt->loadModule(fs, slake::LMOD_NOCONFLICT);
 		} catch (slake::LoaderError e) {
@@ -134,11 +113,14 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	((slake::ModuleValue *)((slake::ModuleValue *)rt->getRootValue()->getMember("hostext"))->getMember("extfns"))->scope->putMember("print", new slake::NativeFnValue(rt.get(), print, slake::ACCESS_PUB, slake::TypeId::None));
-	((slake::ModuleValue *)((slake::ModuleValue *)rt->getRootValue()->getMember("hostext"))->getMember("extfns"))->scope->putMember("getSlakeBuildVersionInfo$i32", new slake::NativeFnValue(rt.get(), getSlakeBuildVersionInfo, slake::ACCESS_PUB, slake::TypeId::None));
+	slake::ValueRef<slake::FnValue> fnValue = new slake::FnValue(rt.get());
+
+	fnValue->overloadings.push_back(std::make_unique<slake::NativeFnOverloading>(fnValue.get(), slake::ACCESS_PUB, std::deque<slake::Type>{}, slake::TypeId::None, print));
+
+	((slake::ModuleValue *)((slake::ModuleValue *)rt->getRootValue()->getMember("hostext"))->getMember("extfns"))->scope->putMember("print", fnValue.get());
 
 	try {
-		slake::ValueRef<slake::ContextValue> context = (slake::ContextValue *)mod->scope->getMember("main")->call(nullptr, {}).get();
+		slake::ValueRef<slake::ContextValue> context = (slake::ContextValue *)mod->scope->getMember("main")->call(nullptr, {}, {}).get();
 		printf("%d\n", ((slake::I32Value *)context->getResult().get())->getData());
 		while (!context->isDone()) {
 			context->resume();
@@ -156,6 +138,8 @@ int main(int argc, char **argv) {
 		printf("RuntimeExecError: %s\n", e.what());
 		printTraceback(rt.get());
 	}
+
+	fnValue.reset();
 
 	mod.reset();
 

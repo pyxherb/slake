@@ -28,7 +28,7 @@ Value::~Value() {
 	reportSizeFreedToRuntime(sizeof(*this));
 }
 
-ValueRef<> Value::call(Value *thisObject, std::deque<Value *> args) const {
+ValueRef<> Value::call(Value *thisObject, std::deque<Value *> args, std::deque<Type> argTypes) const {
 	return nullptr;
 }
 

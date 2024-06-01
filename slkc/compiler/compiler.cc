@@ -274,7 +274,6 @@ void Compiler::compile(std::istream &is, std::ostream &os, std::shared_ptr<Modul
 void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<Scope> scope) {
 	std::unordered_map<std::string, std::shared_ptr<VarNode>> vars;
 	std::unordered_map<std::string, std::shared_ptr<FnNode>> funcs;
-	std::unordered_map<std::string, std::shared_ptr<CompiledFnNode>> compiledFuncs;
 	std::unordered_map<std::string, std::shared_ptr<ClassNode>> classes;
 	std::unordered_map<std::string, std::shared_ptr<InterfaceNode>> interfaces;
 	std::unordered_map<std::string, std::shared_ptr<TraitNode>> traits;
@@ -471,7 +470,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 					});
 				}
 
-				for (auto& j : m->implInterfaces) {
+				for (auto &j : m->implInterfaces) {
 					updateCompletionContext(j, CompletionContext::Type);
 				}
 
@@ -803,9 +802,12 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 	}
 
 	//
-	// Compile functions.
+	// Compile and write functions.
 	//
+	_write<uint32_t>(os, (uint32_t)funcs.size());
 	for (auto &i : funcs) {
+		_write<uint32_t>(os, (uint32_t)i.second->overloadingRegistries.size());
+
 		for (auto &j : i.second->overloadingRegistries) {
 			MemberNodeCompilingStatusGuard compilingStatusGuard(j);
 
@@ -813,28 +815,26 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 
 			mergeGenericParams(j->genericParams);
 
-			std::string mangledFnName = i.first;
+			for (auto &k : i.second->overloadingRegistries) {
+				if (j == k)
+					continue;
 
-			{
-				std::deque<std::shared_ptr<TypeNameNode>> argTypes;
+				if (k->params.size() == j->params.size()) {
+					for (size_t l = 0; l < k->params.size(); ++l) {
+						if (!isSameType(k->params[l]->type, j->params[l]->type))
+							goto notDuplicated;
+					}
 
-				argTypes.resize(j->params.size());
-				for (size_t k = 0; k < j->params.size(); ++k) {
-					argTypes[k] = j->params[k]->type ? j->params[k]->type : std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX);
+					throw FatalCompilationError(
+						Message(
+							j->loc,
+							MessageType::Error,
+							"Duplicated function overloading"));
 				}
-
-				mangledFnName = mangleName(i.first, argTypes, false);
 			}
 
-			if (compiledFuncs.count(mangledFnName)) {
-				throw FatalCompilationError(
-					Message(
-						j->loc,
-						MessageType::Error,
-						"Duplicated function overloading"));
-			}
-
-			auto compiledFn = std::make_shared<CompiledFnNode>(j->loc, mangledFnName);
+		notDuplicated:
+			auto compiledFn = std::make_shared<CompiledFnNode>(j->loc, i.first);
 			compiledFn->returnType = j->returnType
 										 ? j->returnType
 										 : std::static_pointer_cast<TypeNameNode>(std::make_shared<VoidTypeNameNode>(Location(), SIZE_MAX));
@@ -851,99 +851,85 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 			if (j->body)
 				compileStmt(j->body);
 
-			compiledFuncs[mangledFnName] = compiledFn;
+			mergeGenericParams(compiledFn->genericParams);
+
+			slxfmt::FnDesc fnd = {};
+			bool hasVarArg = false;
+
+			if (compiledFn->access & ACCESS_PUB)
+				fnd.flags |= slxfmt::FND_PUB;
+			if (compiledFn->access & ACCESS_STATIC)
+				fnd.flags |= slxfmt::FND_STATIC;
+			if (compiledFn->access & ACCESS_NATIVE)
+				fnd.flags |= slxfmt::FND_NATIVE;
+			if (compiledFn->access & ACCESS_OVERRIDE)
+				fnd.flags |= slxfmt::FND_OVERRIDE;
+			if (compiledFn->access & ACCESS_FINAL)
+				fnd.flags |= slxfmt::FND_FINAL;
+
+			if (compiledFn->isAsync)
+				fnd.flags |= slxfmt::FND_ASYNC;
+
+			if (compiledFn->paramIndices.count("..."))
+				hasVarArg = true;
+
+			if (hasVarArg)
+				fnd.flags |= slxfmt::FND_VARG;
+
+			fnd.lenName = (uint16_t)i.first.length();
+			fnd.lenBody = (uint32_t)compiledFn->body.size();
+			fnd.nParams = (uint8_t)compiledFn->params.size() - hasVarArg;
+			fnd.nSourceLocDescs = (uint32_t)compiledFn->srcLocDescs.size();
+			fnd.nGenericParams = compiledFn->genericParams.size();
+
+			_write(os, fnd);
+			_write(os, i.first.data(), i.first.length());
+
+			compileTypeName(os, compiledFn->returnType);
+
+			for (size_t j = 0; j < compiledFn->genericParams.size(); ++j)
+				compileGenericParam(os, compiledFn->genericParams[j]);
+
+			for (size_t j = 0; j < compiledFn->params.size() - hasVarArg; ++j)
+				compileTypeName(os, compiledFn->params[j]->type ? compiledFn->params[j]->type : std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX));
+
+			for (auto &j : compiledFn->body) {
+				slxfmt::InsHeader ih;
+				ih.opcode = j.opcode;
+
+				if (j.operands.size() > 3)
+					throw FatalCompilationError(
+						Message(
+							compiledFn->getLocation(),
+							MessageType::Error,
+							"Too many operands"));
+				ih.nOperands = (uint8_t)j.operands.size();
+
+				_write(os, ih);
+
+				for (auto &k : j.operands) {
+					if (k) {
+						if (k->getNodeType() == NodeType::LabelRef) {
+							auto &label = std::static_pointer_cast<LabelRefNode>(k)->label;
+							if (!compiledFn->labels.count(label))
+								throw FatalCompilationError(
+									Message(
+										compiledFn->getLocation(),
+										MessageType::Error,
+										"Undefined label: " + std::static_pointer_cast<LabelRefNode>(k)->label));
+							k = std::make_shared<U32LiteralExprNode>(compiledFn->getLocation(), compiledFn->labels.at(label));
+						}
+					}
+					compileValue(os, k);
+				}
+			}
+
+			for (auto &j : compiledFn->srcLocDescs) {
+				_write(os, j);
+			}
 
 			popMajorContext();
 		}
-	}
-
-	//
-	// Write compiled functions.
-	//
-	_write(os, (uint32_t)compiledFuncs.size());
-	for (auto &i : compiledFuncs) {
-		MemberNodeCompilingStatusGuard compilingStatusGuard(i.second);
-
-		pushMajorContext();
-
-		mergeGenericParams(i.second->genericParams);
-
-		slxfmt::FnDesc fnd = {};
-		bool hasVarArg = false;
-
-		if (i.second->access & ACCESS_PUB)
-			fnd.flags |= slxfmt::FND_PUB;
-		if (i.second->access & ACCESS_STATIC)
-			fnd.flags |= slxfmt::FND_STATIC;
-		if (i.second->access & ACCESS_NATIVE)
-			fnd.flags |= slxfmt::FND_NATIVE;
-		if (i.second->access & ACCESS_OVERRIDE)
-			fnd.flags |= slxfmt::FND_OVERRIDE;
-		if (i.second->access & ACCESS_FINAL)
-			fnd.flags |= slxfmt::FND_FINAL;
-
-		if (i.second->isAsync)
-			fnd.flags |= slxfmt::FND_ASYNC;
-
-		if (i.second->paramIndices.count("..."))
-			hasVarArg = true;
-
-		if (hasVarArg)
-			fnd.flags |= slxfmt::FND_VARG;
-
-		fnd.lenName = (uint16_t)i.first.length();
-		fnd.lenBody = (uint32_t)i.second->body.size();
-		fnd.nParams = (uint8_t)i.second->params.size() - hasVarArg;
-		fnd.nSourceLocDescs = (uint32_t)i.second->srcLocDescs.size();
-		fnd.nGenericParams = i.second->genericParams.size();
-
-		_write(os, fnd);
-		_write(os, i.first.data(), i.first.length());
-
-		compileTypeName(os, i.second->returnType);
-
-		for (size_t j = 0; j < i.second->genericParams.size(); ++j)
-			compileGenericParam(os, i.second->genericParams[j]);
-
-		for (size_t j = 0; j < i.second->params.size() - hasVarArg; ++j)
-			compileTypeName(os, i.second->params[j]->type ? i.second->params[j]->type : std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX));
-
-		for (auto &j : i.second->body) {
-			slxfmt::InsHeader ih;
-			ih.opcode = j.opcode;
-
-			if (j.operands.size() > 3)
-				throw FatalCompilationError(
-					Message(
-						i.second->getLocation(),
-						MessageType::Error,
-						"Too many operands"));
-			ih.nOperands = (uint8_t)j.operands.size();
-
-			_write(os, ih);
-
-			for (auto &k : j.operands) {
-				if (k) {
-					if (k->getNodeType() == NodeType::LabelRef) {
-						auto &label = std::static_pointer_cast<LabelRefNode>(k)->label;
-						if (!i.second->labels.count(label))
-							throw FatalCompilationError(
-								Message(
-									i.second->getLocation(),
-									MessageType::Error,
-									"Undefined label: " + std::static_pointer_cast<LabelRefNode>(k)->label));
-						k = std::make_shared<U32LiteralExprNode>(i.second->getLocation(), i.second->labels.at(label));
-					}
-				}
-				compileValue(os, k);
-			}
-		}
-
-		for (auto &j : i.second->srcLocDescs) {
-			_write(os, j);
-		}
-
-		popMajorContext();
 	}
 }
 

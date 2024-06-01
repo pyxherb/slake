@@ -315,11 +315,6 @@ namespace slake {
 
 			bool isSameType(std::shared_ptr<TypeNameNode> x, std::shared_ptr<TypeNameNode> y);
 
-			std::string mangleName(
-				std::string name,
-				const std::deque<std::shared_ptr<TypeNameNode>> &argTypes,
-				bool isConst);
-
 			void _getFullName(MemberNode *member, IdRef &ref);
 
 			struct UnaryOpRegistry {
@@ -433,7 +428,7 @@ namespace slake {
 
 			static std::unique_ptr<std::ifstream> moduleLocator(Runtime *rt, ValueRef<IdRefValue> ref);
 			std::shared_ptr<Scope> completeModuleNamespaces(const IdRef &ref);
-			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, BasicFnValue *value);
+			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, FnValue *value);
 			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, ModuleValue *value);
 			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, ClassValue *value);
 			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, InterfaceValue *value);

@@ -153,7 +153,7 @@ namespace slake {
 		/// @param nArgs Number of arguments.
 		/// @param args Pointer to linear-arranged arguments.
 		/// @return Result of the calling.
-		virtual ValueRef<> call(Value *thisObject, std::deque<Value *> args) const;
+		virtual ValueRef<> call(Value *thisObject, std::deque<Value *> args, std::deque<Type> argTypes) const;
 
 		/// @brief Dulplicate the value if supported.
 		/// @return Duplicate of the value.

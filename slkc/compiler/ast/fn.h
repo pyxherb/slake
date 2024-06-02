@@ -77,7 +77,7 @@ namespace slake {
 
 			inline FnOverloadingNode(const FnOverloadingNode &other) : MemberNode(other) {
 				loc = other.loc;
-				idxNameToken = other.idxNameToken;
+
 				if (other.returnType)
 					returnType = other.returnType->duplicate<TypeNameNode>();
 
@@ -90,6 +90,15 @@ namespace slake {
 				body = other.body;
 				owner = other.owner;
 				access = other.access;
+
+				isAsync = other.isAsync;
+
+				idxNameToken = other.idxNameToken;
+				idxParamLParentheseToken = other.idxParamLParentheseToken;
+				idxParamRParentheseToken = other.idxParamRParentheseToken;
+				idxAsyncModifierToken = other.idxAsyncModifierToken;
+				idxReturnTypeColonToken = other.idxReturnTypeColonToken;
+				idxParamCommaTokens = other.idxParamCommaTokens;
 			}
 
 			FnOverloadingNode(
@@ -97,7 +106,7 @@ namespace slake {
 				Compiler *compiler,
 				std::shared_ptr<Scope> scope);
 
-			virtual inline NodeType getNodeType() const override { return NodeType::FnOverloading; }
+			virtual inline NodeType getNodeType() const override { return NodeType::FnOverloadingValue; }
 
 			virtual IdRefEntry getName() const override;
 			virtual Location getLocation() const override { return loc; }
@@ -114,10 +123,14 @@ namespace slake {
 			virtual std::shared_ptr<AstNode> doDuplicate() override;
 
 		public:
+			FnNode *parentFn = nullptr;
+
 			std::deque<std::shared_ptr<FnOverloadingNode>> overloadingRegistries;
 			std::string name;
 
 			inline FnNode(const FnNode &other) : MemberNode(other) {
+				parentFn = other.parentFn;
+
 				overloadingRegistries.resize(other.overloadingRegistries.size());
 				for (size_t i = 0; i < other.overloadingRegistries.size(); ++i) {
 					overloadingRegistries[i] = other.overloadingRegistries[i]->duplicate<FnOverloadingNode>();

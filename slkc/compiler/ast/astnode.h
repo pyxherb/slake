@@ -13,7 +13,7 @@ namespace slake {
 			Interface,
 			Trait,
 			Fn,
-			FnOverloading,
+			FnOverloadingValue,
 			Stmt,
 			Expr,
 			TypeName,

@@ -44,6 +44,11 @@ class Test {
 		x = 114514;
 		return;
 	}
+
+	pub fn testFunc(x: i32, y: i32) {
+		extfns.print("Called testFunc from Test");
+		return;
+	}
 	
 	pub operator +(rhs: i32) : i32 {
 		return this.x + rhs;
@@ -68,19 +73,26 @@ class Derived(Test) {
 		extfns.print("Fetched y: ", this.y, "\n");
 		return this.y;
 	}
+	
+	pub fn testFunc(x: i32) {
+		extfns.print("Called testFunc from Derived");
+		return;
+	}
 }
 
 pub fn main() async: i32 {
 	hostext.extfns.print("Entered main\n");
 	
-	let test: Test = new Derived(50);
-	test.lab = test;
+	let test: Derived = new Derived(50);
+	/*test.lab = test;*/
+
+	test.testFunc(123, 456);
 
 	let x: AnotherGeneric<i32, f32>.ChildGeneric<f32, Test> = new AnotherGeneric<i32, f32>.ChildGeneric<f32, Test>();
 	x._setX(test);
 	x._getX();
 
-	extfns.print(test + 123);
+	/* extfns.print(test + 123); */
 
 	let v : i32 = 1919810;
 	test.test(v);

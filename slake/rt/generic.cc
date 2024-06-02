@@ -100,11 +100,11 @@ void slake::Runtime::_instantiateGenericValue(Value *v, GenericInstantiationCont
 				// We expect there's only one overloading can be instantiated.
 				// Uninstantiatable overloadings will be discarded.
 				//
-				std::unique_ptr<FnOverloading> matchedOverloading;
+				FnOverloadingValue* matchedOverloading = nullptr;
 
 				for (auto& i : value->overloadings) {
 					if (i->genericParams.size() == instantiationContext.genericArgs->size()) {
-						matchedOverloading = std::move(i);
+						matchedOverloading = i;
 						break;
 					}
 				}
@@ -112,12 +112,12 @@ void slake::Runtime::_instantiateGenericValue(Value *v, GenericInstantiationCont
 				value->overloadings.clear();
 
 				if (matchedOverloading) {
-					_instantiateGenericValue(matchedOverloading.get(), instantiationContext);
-					value->overloadings.push_back(std::move(matchedOverloading));
+					_instantiateGenericValue(matchedOverloading, instantiationContext);
+					value->overloadings.push_back(matchedOverloading);
 				}
 			} else {
-				for (auto &i : value->overloadings) {
-					_instantiateGenericValue(i.get(), instantiationContext);
+				for (auto i : value->overloadings) {
+					_instantiateGenericValue(i, instantiationContext);
 				}
 			}
 			break;
@@ -191,7 +191,7 @@ void Runtime::mapGenericParams(const Value *v, GenericInstantiationContext &inst
 	}
 }
 
-void Runtime::mapGenericParams(const FnOverloading *ol, GenericInstantiationContext &instantiationContext) const {
+void Runtime::mapGenericParams(const FnOverloadingValue *ol, GenericInstantiationContext &instantiationContext) const {
 	if (instantiationContext.genericArgs->size() != ol->genericParams.size())
 		throw GenericInstantiationError("Number of generic parameter does not match");
 
@@ -220,7 +220,7 @@ Value *Runtime::instantiateGenericValue(const Value *v, GenericInstantiationCont
 	return value;
 }
 
-void Runtime::_instantiateGenericValue(FnOverloading *ol, GenericInstantiationContext &instantiationContext) const {
+void Runtime::_instantiateGenericValue(FnOverloadingValue *ol, GenericInstantiationContext &instantiationContext) const {
 	if (ol->genericParams.size() && ol->fnValue != instantiationContext.mappedValue) {
 		GenericInstantiationContext newInstantiationContext = instantiationContext;
 
@@ -241,7 +241,7 @@ void Runtime::_instantiateGenericValue(FnOverloading *ol, GenericInstantiationCo
 
 		switch (ol->getOverloadingKind()) {
 			case FnOverloadingKind::Regular: {
-				RegularFnOverloading *overloading = (RegularFnOverloading *)ol;
+				RegularFnOverloadingValue *overloading = (RegularFnOverloadingValue *)ol;
 
 				for (auto& i : overloading->instructions) {
 					for (auto& j : i.operands) {
@@ -255,7 +255,7 @@ void Runtime::_instantiateGenericValue(FnOverloading *ol, GenericInstantiationCo
 				break;
 			}
 			case FnOverloadingKind::Native: {
-				NativeFnOverloading *overloading = (NativeFnOverloading *)ol;
+				NativeFnOverloadingValue *overloading = (NativeFnOverloadingValue *)ol;
 
 				break;
 			}

@@ -57,8 +57,21 @@ static ObjectValue *_defaultClassInstantiator(Runtime *runtime, ClassValue *cls)
 				break;
 			}
 			case TypeId::Fn: {
-				if (!((FnValue *)i.second)->isStatic())
-					instance->scope->addMember(i.first, (MemberValue *)i.second->duplicate());
+				FnValue *fn = new FnValue(runtime);
+
+				for (auto j : ((FnValue *)i.second)->overloadings) {
+					if (!(j->access & ACCESS_STATIC))
+						fn->overloadings.push_back(j);
+				}
+
+				for (ObjectValue* j = parent; j; j=j->_parent) {
+					if (auto f = j->scope->getMember(i.first);
+						f && (f->getType() == TypeId::Fn))
+						fn->parentFn = (FnValue*)f;
+				}
+
+				instance->scope->addMember(i.first, fn);
+
 				break;
 			}
 		}

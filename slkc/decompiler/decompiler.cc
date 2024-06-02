@@ -175,7 +175,7 @@ void slake::decompiler::decompileValue(Runtime *rt, Value *value, std::ostream &
 				} else {
 					switch (i->getOverloadingKind()) {
 						case FnOverloadingKind::Regular: {
-							RegularFnOverloading *fn = (RegularFnOverloading *)i.get();
+							RegularFnOverloadingValue *fn = (RegularFnOverloadingValue *)i;
 							for (size_t i = 0; i < fn->instructions.size(); ++i) {
 								auto &ins = fn->instructions[i];
 

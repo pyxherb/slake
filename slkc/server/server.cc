@@ -479,7 +479,7 @@ slake::slkc::Server::Server() {
 							responseBodyValue["content"] = "(Local variable) " + fullName;
 							break;
 						}
-						case NodeType::FnOverloading: {
+						case NodeType::FnOverloadingValue: {
 							auto m = std::static_pointer_cast<FnOverloadingNode>(member);
 
 							std::string fullName;

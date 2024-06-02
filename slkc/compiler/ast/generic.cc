@@ -38,7 +38,7 @@ std::shared_ptr<GenericParamNode> slake::slkc::lookupGenericParam(std::shared_pt
 				return lookupGenericParam(n->parent->shared_from_this(), name);
 			break;
 		}
-		case NodeType::FnOverloading: {
+		case NodeType::FnOverloadingValue: {
 			std::shared_ptr<FnOverloadingNode> n = std::static_pointer_cast<FnOverloadingNode>(node);
 
 			if (auto it = n->genericParamIndices.find(name); it != n->genericParamIndices.end())

@@ -298,6 +298,12 @@ namespace slake {
 			/// @param resolvedPartsOut Where to store nodes referred by reference entries respectively.
 			bool resolveIdRefWithScope(Scope *scope, IdRef ref, std::deque<std::pair<IdRef, std::shared_ptr<AstNode>>> &partsOut);
 
+			void _argDependentLookup(
+				FnNode *fn,
+				const std::deque<std::shared_ptr<TypeNameNode>> &argTypes,
+				const std::deque<std::shared_ptr<TypeNameNode>> &genericArgs,
+				std::deque<std::shared_ptr<FnOverloadingNode>> &overloadingsOut
+			);
 			std::deque<std::shared_ptr<FnOverloadingNode>> argDependentLookup(
 				Location loc,
 				FnNode *fn,

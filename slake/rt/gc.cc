@@ -63,37 +63,6 @@ void Runtime::_gcWalk(Type &type) {
 	}
 }
 
-void Runtime::_gcWalk(FnOverloading *fnOverloading) {
-	_gcWalk(fnOverloading->fnValue);
-
-	// TODO: Walk generic parameters.
-	for (auto &j : fnOverloading->paramTypes)
-		_gcWalk(j);
-	_gcWalk(fnOverloading->returnType);
-
-	switch (fnOverloading->getOverloadingKind()) {
-		case FnOverloadingKind::Regular: {
-			RegularFnOverloading *ol = (RegularFnOverloading *)fnOverloading;
-
-			for (auto &i : ol->instructions) {
-				for (auto &j : i.operands) {
-					if (j)
-						_gcWalk(j);
-				}
-			}
-
-			break;
-		}
-		case FnOverloadingKind::Native: {
-			NativeFnOverloading *ol = (NativeFnOverloading *)fnOverloading;
-
-			break;
-		}
-		default:
-			throw std::logic_error("Invalid overloading kind");
-	}
-}
-
 void Runtime::_gcWalk(Value *v) {
 	if (_walkedValues.count(v))
 		return;
@@ -180,8 +149,42 @@ void Runtime::_gcWalk(Value *v) {
 				_gcWalk(fn->_parent);
 
 			for (auto &i : fn->overloadings) {
-				_gcWalk(i.get());
+				_gcWalk(i);
 			}
+			break;
+		}
+		case TypeId::FnOverloading: {
+			auto fnOverloading = (FnOverloadingValue *)v;
+
+			_gcWalk(fnOverloading->fnValue);
+
+			// TODO: Walk generic parameters.
+			for (auto &j : fnOverloading->paramTypes)
+				_gcWalk(j);
+			_gcWalk(fnOverloading->returnType);
+
+			switch (fnOverloading->getOverloadingKind()) {
+				case FnOverloadingKind::Regular: {
+					RegularFnOverloadingValue *ol = (RegularFnOverloadingValue *)fnOverloading;
+
+					for (auto &i : ol->instructions) {
+						for (auto &j : i.operands) {
+							if (j)
+								_gcWalk(j);
+						}
+					}
+
+					break;
+				}
+				case FnOverloadingKind::Native: {
+					NativeFnOverloadingValue *ol = (NativeFnOverloadingValue *)fnOverloading;
+
+					break;
+				}
+				default:
+					throw std::logic_error("Invalid overloading kind");
+			}
+
 			break;
 		}
 		case TypeId::TypeName: {
@@ -234,7 +237,7 @@ void Runtime::_gcWalk(Value *v) {
 
 void Runtime::_gcWalk(Context &ctxt) {
 	for (auto &j : ctxt.majorFrames) {
-		_gcWalk((FnOverloading *)j.curFn);
+		_gcWalk((FnOverloadingValue *)j.curFn);
 		if (j.scopeValue)
 			_gcWalk(j.scopeValue);
 		if (j.returnValue)

@@ -427,7 +427,7 @@ void Compiler::_getFullName(MemberNode *member, IdRef &ref) {
 	ref.push_front(entry);
 
 	switch (member->getNodeType()) {
-		case NodeType::FnOverloading: {
+		case NodeType::FnOverloadingValue: {
 			auto m = (FnOverloadingNode *)member;
 			if (!m->owner->parent)
 				return;

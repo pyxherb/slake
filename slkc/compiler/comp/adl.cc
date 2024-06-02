@@ -2,13 +2,11 @@
 
 using namespace slake::slkc;
 
-std::deque<std::shared_ptr<FnOverloadingNode>> Compiler::argDependentLookup(
-	Location loc,
+void slake::slkc::Compiler::_argDependentLookup(
 	FnNode *fn,
 	const std::deque<std::shared_ptr<TypeNameNode>> &argTypes,
-	const std::deque<std::shared_ptr<TypeNameNode>> &genericArgs) {
-	std::deque<std::shared_ptr<FnOverloadingNode>> matchedRegistries;
-
+	const std::deque<std::shared_ptr<TypeNameNode>> &genericArgs,
+	std::deque<std::shared_ptr<FnOverloadingNode>> &overloadingsOut) {
 	for (auto i : fn->overloadingRegistries) {
 		auto overloading = i;
 		size_t nParams = overloading->params.size(), nGenericParams = overloading->genericParams.size();
@@ -43,12 +41,27 @@ std::deque<std::shared_ptr<FnOverloadingNode>> Compiler::argDependentLookup(
 			}
 		}
 
-		if (exactlyMatched)
-			return { overloading };
+		if (exactlyMatched) {
+			overloadingsOut = { overloading };
+			return;
+		}
 
-		matchedRegistries.push_back(overloading);
+		overloadingsOut.push_back(overloading);
 	fail:;
 	}
+
+	if (fn->parentFn)
+		_argDependentLookup(fn->parentFn, argTypes, genericArgs, overloadingsOut);
+}
+
+std::deque<std::shared_ptr<FnOverloadingNode>> Compiler::argDependentLookup(
+	Location loc,
+	FnNode *fn,
+	const std::deque<std::shared_ptr<TypeNameNode>> &argTypes,
+	const std::deque<std::shared_ptr<TypeNameNode>> &genericArgs) {
+	std::deque<std::shared_ptr<FnOverloadingNode>> matchedRegistries;
+
+	_argDependentLookup(fn, argTypes, genericArgs, matchedRegistries);
 
 	return matchedRegistries;
 }

@@ -28,17 +28,18 @@ namespace slake {
 		Char,	  // ASCII character
 		WChar,	  // UTF-32 character
 
-		Fn,		 // Function
-		Module,	 // Module
-		Var,	 // Variable
-		Array,	 // Array
-		Ref,	 // Reference
+		Fn,				// Function
+		FnOverloading,	// Function overloading
+		Module,			// Module
+		Var,			// Variable
+		Array,			// Array
+		Ref,			// Reference
 
-		Class,		   // Class
-		Interface,	   // Interface
-		Trait,		   // Trait
-		Struct,		   // Structure
-		Object,		   // Object instance
+		Class,		// Class
+		Interface,	// Interface
+		Trait,		// Trait
+		Struct,		// Structure
+		Object,		// Object instance
 
 		Any,  // Any
 
@@ -109,7 +110,7 @@ namespace slake {
 			exData = new Type(elementType);
 		}
 		inline Type(TypeId type) noexcept : typeId(type) {}
-		inline Type(TypeId type, Value *classObject) noexcept : typeId(type){
+		inline Type(TypeId type, Value *classObject) noexcept : typeId(type) {
 			exData = classObject;
 		}
 		inline Type(std::string genericParamName) : typeId(TypeId::GenericArg) {

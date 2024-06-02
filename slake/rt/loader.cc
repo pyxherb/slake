@@ -356,7 +356,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs, LoadModuleFlags loa
 				mod->scope->putMember(name, fn);
 			}
 
-			std::unique_ptr<RegularFnOverloading> overloading = std::make_unique<RegularFnOverloading>(fn, access, std::deque<Type>{}, Type());
+			RegularFnOverloadingValue *overloading = new RegularFnOverloadingValue(fn, access, std::deque<Type>{}, Type());
 
 			overloading->returnType = _loadType(fs);
 
@@ -391,7 +391,7 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs, LoadModuleFlags loa
 				overloading->sourceLocDescs.push_back(sld);
 			}
 
-			fn->overloadings.push_back(std::move(overloading));
+			fn->overloadings.push_back(overloading);
 		}
 	}
 }

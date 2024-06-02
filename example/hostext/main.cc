@@ -115,7 +115,7 @@ int main(int argc, char **argv) {
 
 	slake::ValueRef<slake::FnValue> fnValue = new slake::FnValue(rt.get());
 
-	fnValue->overloadings.push_back(std::make_unique<slake::NativeFnOverloading>(fnValue.get(), slake::ACCESS_PUB, std::deque<slake::Type>{}, slake::TypeId::None, print));
+	fnValue->overloadings.push_back(new slake::NativeFnOverloadingValue(fnValue.get(), slake::ACCESS_PUB, std::deque<slake::Type>{}, slake::TypeId::None, print));
 
 	((slake::ModuleValue *)((slake::ModuleValue *)rt->getRootValue()->getMember("hostext"))->getMember("extfns"))->scope->putMember("print", fnValue.get());
 

@@ -4,35 +4,52 @@ using namespace slake;
 
 Type FnValue::getType() const { return TypeId::Fn; }
 
-FnOverloadingKind slake::RegularFnOverloading::getOverloadingKind() const {
+FnOverloadingValue::FnOverloadingValue(
+	FnValue *fnValue,
+	AccessModifier access,
+	std::deque<Type> paramTypes,
+	Type returnType)
+	: Value(fnValue->_rt),
+	  fnValue(fnValue),
+	  access(access),
+	  paramTypes(paramTypes),
+	  returnType(returnType) {
+	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Value));
+}
+
+FnOverloadingValue::~FnOverloadingValue() {
+	reportSizeFreedToRuntime(sizeof(*this) - sizeof(Value));
+}
+
+FnOverloadingKind slake::RegularFnOverloadingValue::getOverloadingKind() const {
 	return FnOverloadingKind::Regular;
 }
 
-FnOverloading *slake::RegularFnOverloading::duplicate() const {
-	RegularFnOverloading *v = new RegularFnOverloading(fnValue, access, {}, returnType);
+FnOverloadingValue *slake::RegularFnOverloadingValue::duplicate() const {
+	RegularFnOverloadingValue *v = new RegularFnOverloadingValue(fnValue, access, {}, returnType);
 
 	*v = *this;
 
-	return (FnOverloading *)v;
+	return (FnOverloadingValue *)v;
 }
 
-FnOverloadingKind slake::NativeFnOverloading::getOverloadingKind() const {
+FnOverloadingKind slake::NativeFnOverloadingValue::getOverloadingKind() const {
 	return FnOverloadingKind::Native;
 }
 
-ValueRef<> slake::NativeFnOverloading::call(Value *thisObject, std::deque<Value *> args) const {
+ValueRef<> slake::NativeFnOverloadingValue::call(Value *thisObject, std::deque<Value *> args) const {
 	return callback(fnValue->_rt, thisObject, args, mappedGenericArgs);
 }
 
-FnOverloading *slake::NativeFnOverloading::duplicate() const {
-	NativeFnOverloading *v = new NativeFnOverloading(fnValue, access, {}, returnType, {});
+FnOverloadingValue *slake::NativeFnOverloadingValue::duplicate() const {
+	NativeFnOverloadingValue *v = new NativeFnOverloadingValue(fnValue, access, {}, returnType, {});
 
 	*v = *this;
 
-	return (FnOverloading *)v;
+	return (FnOverloadingValue *)v;
 }
 
-ValueRef<> RegularFnOverloading::call(Value *thisObject, std::deque<Value *> args) const {
+ValueRef<> RegularFnOverloadingValue::call(Value *thisObject, std::deque<Value *> args) const {
 	Runtime *rt = fnValue->_rt;
 
 	// Save previous context
@@ -133,6 +150,9 @@ ValueRef<> FnValue::call(Value *thisObject, std::deque<Value *> args, std::deque
 
 	mismatched:;
 	}
+
+	if (parentFn)
+		return parentFn->call(thisObject, args, argTypes);
 
 	throw NoOverloadingError("No matching overloading was found");
 }

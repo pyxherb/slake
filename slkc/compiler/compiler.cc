@@ -593,6 +593,36 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 		verifyGenericParams(i.second->genericParams);
 	}
 
+	// Link the functions to their parent functions correctly.
+	for (auto &i : funcs) {
+		for (AstNode *j = scope->owner; j;) {
+			switch (j->getNodeType()) {
+				case NodeType::Class: {
+					ClassNode *node = (ClassNode *)j;
+
+					if (j != scope->owner) {
+						if (auto it = node->scope->members.find(i.first);
+							(it != node->scope->members.end()) && (it->second->getNodeType() == NodeType::Fn)) {
+							((FnNode *)i.second.get())->parentFn = (FnNode *)it->second.get();
+							goto parentFnScanEnd;
+						}
+					}
+
+					if (node->parentClass)
+						j = resolveCustomTypeName((CustomTypeNameNode *)node->parentClass.get()).get();
+					else
+						goto parentFnScanEnd;
+
+					break;
+				}
+				default:
+					goto parentFnScanEnd;
+			}
+		}
+
+	parentFnScanEnd:;
+	}
+
 	auto mergeGenericParams = [this](const GenericParamNodeList &newParams) {
 		for (auto &i : newParams) {
 			if (curMajorContext.genericParamIndices.count(i->name))

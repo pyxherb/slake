@@ -48,7 +48,7 @@ namespace slake {
 	/// @brief Major frames which represent a single calling frame.
 	struct MajorFrame final {
 		Value *scopeValue = nullptr;				  // Scope value.
-		const RegularFnOverloading *curFn = nullptr;  // Current function overloading.
+		const RegularFnOverloadingValue *curFn = nullptr;  // Current function overloading.
 		uint32_t curIns = 0;						  // Offset of current instruction in function body.
 		std::deque<Value *> argStack;				  // Argument stack.
 		std::deque<Value *> nextArgStack;			  // Argument stack for next call.
@@ -190,13 +190,12 @@ namespace slake {
 
 		void _gcWalk(Scope *scope);
 		void _gcWalk(Type &type);
-		void _gcWalk(FnOverloading *fnOverloading);
 		void _gcWalk(Value *i);
 		void _gcWalk(Context &i);
 
 		void _instantiateGenericValue(Type &type, GenericInstantiationContext &instantiationContext) const;
 		void _instantiateGenericValue(Value *v, GenericInstantiationContext &instantiationContext) const;
-		void _instantiateGenericValue(FnOverloading *ol, GenericInstantiationContext &instantiationContext) const;
+		void _instantiateGenericValue(FnOverloadingValue *ol, GenericInstantiationContext &instantiationContext) const;
 
 		VarValue *_addLocalVar(MajorFrame &frame, Type type);
 		VarValue *_addLocalReg(MajorFrame &frame);
@@ -204,7 +203,7 @@ namespace slake {
 		bool _findAndDispatchExceptHandler(Context *context) const;
 
 		friend class Value;
-		friend class RegularFnOverloading;
+		friend class RegularFnOverloadingValue;
 		friend class FnValue;
 		friend class ObjectValue;
 		friend class MemberValue;
@@ -232,7 +231,7 @@ namespace slake {
 		virtual ~Runtime();
 
 		void mapGenericParams(const Value *v, GenericInstantiationContext &instantiationContext) const;
-		void mapGenericParams(const FnOverloading *ol, GenericInstantiationContext &instantiationContext) const;
+		void mapGenericParams(const FnOverloadingValue *ol, GenericInstantiationContext &instantiationContext) const;
 		/// @brief Instantiate an generic value (e.g. generic class, etc).
 		/// @param v Value to be instantiated.
 		/// @param genericArgs Generic arguments for instantiation.

@@ -56,7 +56,7 @@ namespace slake {
 
 		virtual FnOverloadingKind getOverloadingKind() const = 0;
 
-		virtual ValueRef<> call(Value *thisObject, std::deque<Value *> args) const = 0;
+		virtual ValueRef<> invoke(Value *thisObject, std::deque<Value *> args) const = 0;
 
 		virtual FnOverloadingValue *duplicate() const = 0;
 
@@ -96,7 +96,7 @@ namespace slake {
 
 		virtual FnOverloadingKind getOverloadingKind() const override;
 
-		virtual ValueRef<> call(Value *thisObject, std::deque<Value *> args) const override;
+		virtual ValueRef<> invoke(Value *thisObject, std::deque<Value *> args) const override;
 
 		virtual FnOverloadingValue *duplicate() const override;
 
@@ -150,7 +150,7 @@ namespace slake {
 
 		virtual FnOverloadingKind getOverloadingKind() const override;
 
-		virtual ValueRef<> call(Value *thisObject, std::deque<Value *> args) const override;
+		virtual ValueRef<> invoke(Value *thisObject, std::deque<Value *> args) const override;
 
 		virtual FnOverloadingValue *duplicate() const override;
 
@@ -176,6 +176,8 @@ namespace slake {
 		}
 
 		virtual Type getType() const override;
+
+		FnOverloadingValue *getOverloading(std::deque<Type> argTypes) const;
 
 		virtual ValueRef<> call(Value *thisObject, std::deque<Value *> args, std::deque<Type> argTypes) const override;
 

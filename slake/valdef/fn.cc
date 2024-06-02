@@ -37,7 +37,7 @@ FnOverloadingKind slake::NativeFnOverloadingValue::getOverloadingKind() const {
 	return FnOverloadingKind::Native;
 }
 
-ValueRef<> slake::NativeFnOverloadingValue::call(Value *thisObject, std::deque<Value *> args) const {
+ValueRef<> slake::NativeFnOverloadingValue::invoke(Value *thisObject, std::deque<Value *> args) const {
 	return callback(fnValue->_rt, thisObject, args, mappedGenericArgs);
 }
 
@@ -49,7 +49,7 @@ FnOverloadingValue *slake::NativeFnOverloadingValue::duplicate() const {
 	return (FnOverloadingValue *)v;
 }
 
-ValueRef<> RegularFnOverloadingValue::call(Value *thisObject, std::deque<Value *> args) const {
+ValueRef<> RegularFnOverloadingValue::invoke(Value *thisObject, std::deque<Value *> args) const {
 	Runtime *rt = fnValue->_rt;
 
 	// Save previous context
@@ -126,9 +126,7 @@ ValueRef<> RegularFnOverloadingValue::call(Value *thisObject, std::deque<Value *
 	return context->majorFrames.back().returnValue;
 }
 
-ValueRef<> FnValue::call(Value *thisObject, std::deque<Value *> args, std::deque<Type> argTypes) const {
-	std::shared_ptr<Context> context = std::make_shared<Context>();
-
+FnOverloadingValue* FnValue::getOverloading(std::deque<Type> argTypes) const {
 	for (auto &i : overloadings) {
 		if (i->overloadingFlags & OL_VARG) {
 			if (argTypes.size() < i->paramTypes.size())
@@ -146,13 +144,22 @@ ValueRef<> FnValue::call(Value *thisObject, std::deque<Value *> args, std::deque
 				goto mismatched;
 		}
 
-		return i->call(thisObject, args);
+		return i;
 
 	mismatched:;
 	}
 
 	if (parentFn)
-		return parentFn->call(thisObject, args, argTypes);
+		return parentFn->getOverloading(argTypes);
+
+	return nullptr;
+}
+
+ValueRef<> FnValue::call(Value *thisObject, std::deque<Value *> args, std::deque<Type> argTypes) const {
+	FnOverloadingValue *overloading = getOverloading(argTypes);
+
+	if (overloading)
+		return overloading->invoke(thisObject, args);
 
 	throw NoOverloadingError("No matching overloading was found");
 }

@@ -1,7 +1,7 @@
 #ifndef _SLAKE_VALDEF_REF_H_
 #define _SLAKE_VALDEF_REF_H_
 
-#include "base.h"
+#include "value.h"
 #include "generic.h"
 #include <deque>
 

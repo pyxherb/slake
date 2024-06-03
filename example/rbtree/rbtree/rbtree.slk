@@ -102,13 +102,13 @@ pub class RBTree<T: ILesserOp<T> | IGreaterOp<T>> {
 	fn _insertFixUp(node: Node) {
 		let p: Node, gp: Node = node, u: Node;
 
-		while (((p = gp.p) !== null) && this._isRed(p)) {
+		while (((p = gp.p) !== null) && _isRed(p)) {
 			gp = p.p;
 
 			if (p === gp.l) {
 				u = gp.r;
 
-				if (this._isRed(u)) {
+				if (_isRed(u)) {
 					p.color = false;
 					u.color = false;
 					gp.color = true;
@@ -116,13 +116,13 @@ pub class RBTree<T: ILesserOp<T> | IGreaterOp<T>> {
 					continue;
 				} else {
 					if (node === p.r) {
-						_lRot(p);
+						this._lRot(p);
 
 						let tmp : Node = node;
 						node = p;
 						p = tmp;
 					}
-					_rRot(gp);
+					this._rRot(gp);
 					p.color = false;
 					gp.color = true;
 				}
@@ -137,13 +137,13 @@ pub class RBTree<T: ILesserOp<T> | IGreaterOp<T>> {
 					continue;
 				} else {
 					if (node === p.l) {
-						_rRot(p);
+						this._rRot(p);
 
 						let tmp : Node = node;
 						node = p;
 						p = tmp;
 					}
-					_lRot(gp);
+					this._lRot(gp);
 					p.color = false;
 					gp.color = true;
 				}

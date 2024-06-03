@@ -1,7 +1,7 @@
 #ifndef _SLAKE_VALDEF_CONTEXT_H_
 #define _SLAKE_VALDEF_CONTEXT_H_
 
-#include "base.h"
+#include "value.h"
 #include <memory>
 
 namespace slake {

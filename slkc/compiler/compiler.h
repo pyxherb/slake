@@ -82,6 +82,8 @@ namespace slake {
 
 			EvalPurpose evalPurpose = EvalPurpose::None;
 
+			bool isLastResolvedTargetStatic = true;
+
 			bool isLastCallTargetStatic = true;
 			std::deque<std::shared_ptr<ParamNode>> lastCallTargetParams;
 			std::shared_ptr<TypeNameNode> lastCallTargetReturnType;
@@ -302,13 +304,15 @@ namespace slake {
 				FnNode *fn,
 				const std::deque<std::shared_ptr<TypeNameNode>> &argTypes,
 				const std::deque<std::shared_ptr<TypeNameNode>> &genericArgs,
-				std::deque<std::shared_ptr<FnOverloadingNode>> &overloadingsOut
+				std::deque<std::shared_ptr<FnOverloadingNode>> &overloadingsOut,
+				bool isStatic
 			);
 			std::deque<std::shared_ptr<FnOverloadingNode>> argDependentLookup(
 				Location loc,
 				FnNode *fn,
 				const std::deque<std::shared_ptr<TypeNameNode>> &argTypes,
-				const std::deque<std::shared_ptr<TypeNameNode>> &genericArgs);
+				const std::deque<std::shared_ptr<TypeNameNode>> &genericArgs,
+				bool isStatic = false);
 
 			std::shared_ptr<Scope> scopeOf(AstNode *node);
 

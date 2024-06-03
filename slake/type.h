@@ -6,7 +6,7 @@
 #include <cassert>
 #include <string>
 #include <variant>
-#include "valdef/base.h"
+#include "valdef/value.h"
 
 namespace slake {
 	enum class TypeId : uint8_t {

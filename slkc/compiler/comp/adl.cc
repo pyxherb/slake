@@ -6,19 +6,27 @@ void slake::slkc::Compiler::_argDependentLookup(
 	FnNode *fn,
 	const std::deque<std::shared_ptr<TypeNameNode>> &argTypes,
 	const std::deque<std::shared_ptr<TypeNameNode>> &genericArgs,
-	std::deque<std::shared_ptr<FnOverloadingNode>> &overloadingsOut) {
+	std::deque<std::shared_ptr<FnOverloadingNode>> &overloadingsOut,
+	bool isStatic) {
 	for (auto i : fn->overloadingRegistries) {
-		auto overloading = i;
-		size_t nParams = overloading->params.size(), nGenericParams = overloading->genericParams.size();
+		if (isStatic) {
+			if (!(i->access & ACCESS_STATIC))
+				continue;
+		} else {
+			if (i->access & ACCESS_STATIC)
+				continue;
+		}
 
-		if (overloading->isVaridic())
+		size_t nParams = i->params.size(), nGenericParams = i->genericParams.size();
+
+		if (i->isVaridic())
 			--nParams;
 
 		if (nParams > argTypes.size())
 			continue;
 
 		if (nParams < argTypes.size()) {
-			if (!overloading->isVaridic())
+			if (!i->isVaridic())
 				continue;
 		}
 
@@ -27,41 +35,42 @@ void slake::slkc::Compiler::_argDependentLookup(
 
 		if (nGenericParams) {
 			GenericNodeInstantiationContext instantiationContext{ &genericArgs, {} };
-			overloading = instantiateGenericFnOverloading(overloading, instantiationContext);
+			i = instantiateGenericFnOverloading(i, instantiationContext);
 		}
 
 		bool exactlyMatched = true;
 
 		for (size_t j = 0; j < nParams; ++j) {
-			if (!isSameType(overloading->params[j]->type, argTypes[j])) {
+			if (!isSameType(i->params[j]->type, argTypes[j])) {
 				exactlyMatched = false;
 
-				if (!isTypeNamesConvertible(argTypes[j], overloading->params[j]->type))
+				if (!isTypeNamesConvertible(argTypes[j], i->params[j]->type))
 					goto fail;
 			}
 		}
 
 		if (exactlyMatched) {
-			overloadingsOut = { overloading };
+			overloadingsOut = { i };
 			return;
 		}
 
-		overloadingsOut.push_back(overloading);
+		overloadingsOut.push_back(i);
 	fail:;
 	}
 
-	if (fn->parentFn)
-		_argDependentLookup(fn->parentFn, argTypes, genericArgs, overloadingsOut);
+	if ((!isStatic) && fn->parentFn)
+		_argDependentLookup(fn->parentFn, argTypes, genericArgs, overloadingsOut, isStatic);
 }
 
 std::deque<std::shared_ptr<FnOverloadingNode>> Compiler::argDependentLookup(
 	Location loc,
 	FnNode *fn,
 	const std::deque<std::shared_ptr<TypeNameNode>> &argTypes,
-	const std::deque<std::shared_ptr<TypeNameNode>> &genericArgs) {
+	const std::deque<std::shared_ptr<TypeNameNode>> &genericArgs,
+	bool isStatic) {
 	std::deque<std::shared_ptr<FnOverloadingNode>> matchedRegistries;
 
-	_argDependentLookup(fn, argTypes, genericArgs, matchedRegistries);
+	_argDependentLookup(fn, argTypes, genericArgs, matchedRegistries, isStatic);
 
 	return matchedRegistries;
 }

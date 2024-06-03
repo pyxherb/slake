@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <memory>
 
-#include "base.h"
+#include "value.h"
 #include "generic.h"
 
 namespace slake {

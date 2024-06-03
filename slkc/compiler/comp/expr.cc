@@ -1893,7 +1893,12 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 				// Find a proper overloading for the function calling expression.
 				//
 				{
-					auto overloadings = argDependentLookup(expr->getLocation(), x.get(), curMajorContext.curMinorContext.argTypes, genericArgs);
+					auto overloadings = argDependentLookup(
+						expr->getLocation(),
+						x.get(),
+						curMajorContext.curMinorContext.argTypes,
+						genericArgs,
+						curMajorContext.curMinorContext.isLastResolvedTargetStatic);
 
 					if (!overloadings.size()) {
 						throw FatalCompilationError(
@@ -1965,7 +1970,9 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 						case NodeType::Fn: {
 							IdRef ref = resolvedParts[i].first;
 
-							std::shared_ptr<FnOverloadingNode> overloading = determineOverloadingRegistry(std::static_pointer_cast<FnNode>(resolvedParts[i].second), resolvedParts[i].first.back().genericArgs);
+							std::shared_ptr<FnOverloadingNode> overloading = determineOverloadingRegistry(
+								std::static_pointer_cast<FnNode>(resolvedParts[i].second),
+								resolvedParts[i].first.back().genericArgs);
 
 							if (!curMajorContext.curMinorContext.isLastCallTargetStatic) {
 								_insertIns(

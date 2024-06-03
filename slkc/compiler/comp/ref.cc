@@ -266,6 +266,7 @@ bool Compiler::_resolveIdRef(Scope *scope, const IdRef &ref, std::deque<std::pai
 		if (!newRef.size()) {
 			// All entries have been resolved, return true.
 			partsOut.push_front({ IdRef{ ref.front() }, m });
+			curMajorContext.curMinorContext.isLastResolvedTargetStatic = resolveContext.isStatic;
 			return true;
 		}
 

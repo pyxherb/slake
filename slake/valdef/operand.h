@@ -1,7 +1,7 @@
 #ifndef _SLAKE_VALDEF_OPERAND_H_
 #define _SLAKE_VALDEF_OPERAND_H_
 
-#include "base.h"
+#include "value.h"
 
 namespace slake {
 	class LocalVarRefValue final : public Value {

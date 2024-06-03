@@ -3,7 +3,7 @@
 
 #include "valdef/alias.h"
 #include "valdef/array.h"
-#include "valdef/base.h"
+#include "valdef/value.h"
 #include "valdef/class.h"
 #include "valdef/context.h"
 #include "valdef/fn.h"

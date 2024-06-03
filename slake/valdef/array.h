@@ -1,7 +1,7 @@
 #ifndef _SLAKE_VALDEF_ARRAY_H_
 #define _SLAKE_VALDEF_ARRAY_H_
 
-#include "base.h"
+#include "value.h"
 #include "var.h"
 #include <deque>
 

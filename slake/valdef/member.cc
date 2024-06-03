@@ -13,17 +13,7 @@ MemberValue::~MemberValue() {
 }
 
 std::string MemberValue::getName() const {
-	auto s = _name;
-	if (_genericArgs.size()) {
-		s += "<";
-		for (size_t i = 0; i < _genericArgs.size(); ++i) {
-			if (i)
-				s += ", ";
-			s += std::to_string(_genericArgs[i], _rt);
-		}
-		s += ">";
-	}
-	return s;
+	return _name;
 }
 
 const Value *MemberValue::getParent() const { return _parent; }

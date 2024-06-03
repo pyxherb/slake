@@ -67,14 +67,27 @@ Value *Runtime::resolveIdRef(IdRefValue* ref, Value *scopeValue) const {
 
 std::string Runtime::getFullName(const MemberValue *v) const {
 	std::string s;
-	do {
-		switch (v->getType().typeId) {
-			case TypeId::Object:
-				v = (const MemberValue *)((ObjectValue *)v)->getType().getCustomTypeExData();
-				break;
+
+	auto fullIdRef = getFullRef(v);
+
+	for (size_t i = 0; i < fullIdRef.size(); ++i) {
+		auto &scope = fullIdRef[i];
+
+		if (i)
+			s += ".";
+		s += scope.name;
+
+		if (auto nGenericParams = scope.genericArgs.size(); nGenericParams) {
+			s += "<";
+			for (size_t j = 0; j < nGenericParams; ++j) {
+				if (j)
+					s += ",";
+				s += std::to_string(scope.genericArgs[j], this);
+			}
+			s += ">";
 		}
-		s = v->getName() + (s.empty() ? "" : "." + s);
-	} while ((Value *)(v = (const MemberValue *)v->getParent()) != _rootValue);
+	}
+
 	return s;
 }
 

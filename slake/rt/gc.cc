@@ -14,6 +14,26 @@ void Runtime::_gcWalk(Scope *scope) {
 		_gcWalk(scope->parent);
 }
 
+void Runtime::_gcWalk(GenericParamList& genericParamList) {
+	for (auto &i : genericParamList) {
+		i.baseType.loadDeferredType(this);
+		if (auto p = i.baseType.resolveCustomType(); p)
+			_gcWalk(p);
+
+		for (auto &j : i.interfaces) {
+			j.loadDeferredType(this);
+			if (auto p = j.resolveCustomType(); p)
+				_gcWalk(p);
+		}
+
+		for (auto &j : i.traits) {
+			j.loadDeferredType(this);
+			if (auto p = j.resolveCustomType(); p)
+				_gcWalk(p);
+		}
+	}
+}
+
 void Runtime::_gcWalk(Type &type) {
 	switch (type.typeId) {
 		case TypeId::Object:
@@ -23,16 +43,13 @@ void Runtime::_gcWalk(Type &type) {
 			_gcWalk(type.getCustomTypeExData());
 			break;
 		case TypeId::Array:
-			if (auto t = type.getArrayExData(); t)
-				_gcWalk(t);
+			_gcWalk(type.getArrayExData());
 			break;
 		case TypeId::Ref:
-			if (auto t = type.getRefExData(); t)
-				_gcWalk(t);
+			_gcWalk(type.getRefExData());
 			break;
 		case TypeId::Var:
-			if (auto t = type.getVarExData(); t)
-				_gcWalk(t);
+			_gcWalk(type.getVarExData());
 			break;
 		case TypeId::Module:
 		case TypeId::RootValue:
@@ -103,27 +120,42 @@ void Runtime::_gcWalk(Value *v) {
 				_gcWalk(i.second);
 
 			switch (typeId) {
-				case TypeId::Class:
-					for (auto &i : ((ClassValue *)v)->implInterfaces) {
+				case TypeId::Class: {
+					ClassValue *value = (ClassValue *)v;
+					for (auto &i : value->implInterfaces) {
 						i.loadDeferredType(this);
 						_gcWalk(i);
 					}
-					((ClassValue *)v)->parentClass.loadDeferredType(this);
-					if (auto p = ((ClassValue *)v)->parentClass.resolveCustomType(); p)
+
+					value->parentClass.loadDeferredType(this);
+					if (auto p = value->parentClass.resolveCustomType(); p)
 						_gcWalk(p);
+
+					_gcWalk(value->genericParams);
 					break;
-				case TypeId::Trait:
-					for (auto &i : ((TraitValue *)v)->parents) {
+				}
+				case TypeId::Trait: {
+					TraitValue *value = (TraitValue *)v;
+
+					for (auto &i : value->parents) {
 						i.loadDeferredType(this);
 						_gcWalk(i.getCustomTypeExData());
 					}
+
+					_gcWalk(value->genericParams);
 					break;
-				case TypeId::Interface:
-					for (auto &i : ((InterfaceValue *)v)->parents) {
+				}
+				case TypeId::Interface: {
+					InterfaceValue *value = (InterfaceValue *)v;
+
+					for (auto &i : value->parents) {
 						i.loadDeferredType(this);
 						_gcWalk(i.getCustomTypeExData());
 					}
+
+					_gcWalk(value->genericParams);
 					break;
+				}
 			}
 
 			break;
@@ -184,6 +216,8 @@ void Runtime::_gcWalk(Value *v) {
 				default:
 					throw std::logic_error("Invalid overloading kind");
 			}
+
+			_gcWalk(fnOverloading->genericParams);
 
 			break;
 		}

@@ -186,6 +186,8 @@ namespace slake {
 		inline FnValue &operator=(const FnValue &x) {
 			((MemberValue &)*this) = (MemberValue &)x;
 
+			// We don't copy parentFn because it has to be linked to a inherited function dynamically LOL
+
 			for (auto &i : x.overloadings) {
 				FnOverloadingValue *ol = i->duplicate();
 

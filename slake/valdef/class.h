@@ -56,6 +56,7 @@ namespace slake {
 		inline ClassValue &operator=(const ClassValue &x) {
 			((ModuleValue &)*this) = (ModuleValue &)x;
 
+			parentClass = x.parentClass;
 			genericParams = x.genericParams;
 			_flags = x._flags;
 			implInterfaces = x.implInterfaces;

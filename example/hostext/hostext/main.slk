@@ -4,6 +4,22 @@ import {
 	hostext.extfns
 }
 
+class TestParent<T> {
+	fn myTest(a: T, b: T) {
+		extfns.print("Called myTest: ", a, " ", b, "\n");
+		return;
+	}
+}
+
+class TestDerived<T>(TestParent<T>) {
+	fn myTest() {
+		return;
+	}
+	fn myTest(a: T) {
+		return;
+	}
+}
+
 class AnotherGeneric<X, U> {
 	class ChildGeneric<V, T(Test)> {
 		pub let xyz: i32;
@@ -82,7 +98,11 @@ class Derived(Test) {
 
 pub fn main() async: i32 {
 	hostext.extfns.print("Entered main\n");
-	
+
+	let testDerived: TestDerived<i32> = new TestDerived<i32>();
+
+	testDerived.myTest(123, 456);
+
 	let test: Derived = new Derived(50);
 	/*test.lab = test;*/
 

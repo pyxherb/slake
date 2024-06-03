@@ -3,11 +3,44 @@
 using namespace slake;
 
 void slake::Runtime::_instantiateGenericValue(Type &type, GenericInstantiationContext &instantiationContext) const {
-	if (type.typeId == TypeId::GenericArg) {
-		if (auto it = instantiationContext.mappedGenericArgs.find(type.getGenericArgExData()); it != instantiationContext.mappedGenericArgs.end()) {
-			type = it->second;
-		} else
-			throw GenericInstantiationError("No such generic parameter named " + type.getGenericArgExData());
+	switch (type.typeId) {
+		case TypeId::Class:
+		case TypeId::Interface:
+		case TypeId::Trait:
+		case TypeId::Object: {
+			if (type.isLoadingDeferred()) {
+				IdRefValue *exData = (IdRefValue *)type.getCustomTypeExData();
+				for (auto &i : exData->entries) {
+					for (auto &j : i.genericArgs) {
+						_instantiateGenericValue(j, instantiationContext);
+					}
+				}
+			} else {
+				auto idRefToResolvedType = getFullRef((MemberValue *)type.getCustomTypeExData());
+
+				ValueRef<IdRefValue> idRefValue = new IdRefValue((Runtime *)this);
+				idRefValue->entries = idRefToResolvedType;
+
+				type = Type(type.typeId, idRefValue.release());
+
+				_instantiateGenericValue(type, instantiationContext);
+			}
+			break;
+		}
+		case TypeId::Array:
+			_instantiateGenericValue(type.getArrayExData(), instantiationContext);
+			break;
+		case TypeId::Ref:
+			_instantiateGenericValue(type.getRefExData(), instantiationContext);
+			break;
+		case TypeId::Var:
+			_instantiateGenericValue(type.getVarExData(), instantiationContext);
+			break;
+		case TypeId::GenericArg:
+			if (auto it = instantiationContext.mappedGenericArgs.find(type.getGenericArgExData()); it != instantiationContext.mappedGenericArgs.end()) {
+				type = it->second;
+			} else
+				throw GenericInstantiationError("No such generic parameter named " + type.getGenericArgExData());
 	}
 }
 
@@ -51,9 +84,13 @@ void slake::Runtime::_instantiateGenericValue(Value *v, GenericInstantiationCont
 
 				newInstantiationContext.mappedValue = value;
 
+				_instantiateGenericValue(value->parentClass, newInstantiationContext);
+
 				_instantiateGenericValue(value, newInstantiationContext);
 			} else {
 				value->_genericArgs = *instantiationContext.genericArgs;
+
+				_instantiateGenericValue(value->parentClass, instantiationContext);
 
 				for (auto &i : value->scope->members)
 					_instantiateGenericValue(i.second, instantiationContext);
@@ -100,9 +137,9 @@ void slake::Runtime::_instantiateGenericValue(Value *v, GenericInstantiationCont
 				// We expect there's only one overloading can be instantiated.
 				// Uninstantiatable overloadings will be discarded.
 				//
-				FnOverloadingValue* matchedOverloading = nullptr;
+				FnOverloadingValue *matchedOverloading = nullptr;
 
-				for (auto& i : value->overloadings) {
+				for (auto &i : value->overloadings) {
 					if (i->genericParams.size() == instantiationContext.genericArgs->size()) {
 						matchedOverloading = i;
 						break;
@@ -243,8 +280,8 @@ void Runtime::_instantiateGenericValue(FnOverloadingValue *ol, GenericInstantiat
 			case FnOverloadingKind::Regular: {
 				RegularFnOverloadingValue *overloading = (RegularFnOverloadingValue *)ol;
 
-				for (auto& i : overloading->instructions) {
-					for (auto& j : i.operands) {
+				for (auto &i : overloading->instructions) {
+					for (auto &j : i.operands) {
 						if (j) {
 							if (j->getType() == TypeId::TypeName)
 								_instantiateGenericValue(((TypeNameValue *)j)->_data, instantiationContext);

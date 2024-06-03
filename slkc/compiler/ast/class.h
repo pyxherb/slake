@@ -44,7 +44,7 @@ namespace slake {
 
 				name = other.name;
 
-				if (parentClass)
+				if (other.parentClass)
 					parentClass = other.parentClass->duplicate<TypeNameNode>();
 
 				implInterfaces.resize(other.implInterfaces.size());

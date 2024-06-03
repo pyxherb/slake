@@ -189,6 +189,7 @@ namespace slake {
 		void _execIns(Context *context, Instruction ins);
 
 		void _gcWalk(Scope *scope);
+		void _gcWalk(GenericParamList &genericParamList);
 		void _gcWalk(Type &type);
 		void _gcWalk(Value *i);
 		void _gcWalk(Context &i);

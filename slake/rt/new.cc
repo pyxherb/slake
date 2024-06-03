@@ -15,7 +15,7 @@ ObjectValue *slake::Runtime::newClassInstance(ClassValue *cls) {
 	return _defaultClassInstantiator(this, cls);
 }
 
-ArrayValue* slake::Runtime::newArrayInstance(Type type, uint32_t size) {
+ArrayValue *slake::Runtime::newArrayInstance(Type type, uint32_t size) {
 	ArrayValue *instance = new ArrayValue(this, type);
 
 	instance->values.resize(size);
@@ -57,6 +57,7 @@ static ObjectValue *_defaultClassInstantiator(Runtime *runtime, ClassValue *cls)
 				break;
 			}
 			case TypeId::Fn: {
+				// Link the method with method inherited from the parent.
 				FnValue *fn = new FnValue(runtime);
 
 				for (auto j : ((FnValue *)i.second)->overloadings) {
@@ -64,10 +65,10 @@ static ObjectValue *_defaultClassInstantiator(Runtime *runtime, ClassValue *cls)
 						fn->overloadings.push_back(j);
 				}
 
-				for (ObjectValue* j = parent; j; j=j->_parent) {
+				for (ObjectValue *j = parent; j; j = j->_parent) {
 					if (auto f = j->scope->getMember(i.first);
 						f && (f->getType() == TypeId::Fn))
-						fn->parentFn = (FnValue*)f;
+						fn->parentFn = (FnValue *)f;
 				}
 
 				instance->scope->addMember(i.first, fn);

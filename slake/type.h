@@ -110,8 +110,8 @@ namespace slake {
 			exData = new Type(elementType);
 		}
 		inline Type(TypeId type) noexcept : typeId(type) {}
-		inline Type(TypeId type, Value *classObject) noexcept : typeId(type) {
-			exData = classObject;
+		inline Type(TypeId type, Value *destObject) noexcept : typeId(type) {
+			exData = destObject;
 		}
 		inline Type(std::string genericParamName) : typeId(TypeId::GenericArg) {
 			exData = genericParamName;
@@ -216,9 +216,17 @@ namespace slake {
 		}
 
 		inline Type &operator=(const Type &rhs) noexcept {
-			typeId = rhs.typeId;
-
-			switch (typeId) {
+			switch (typeId = rhs.typeId) {
+				case TypeId::Class:
+				case TypeId::Interface:
+				case TypeId::Trait:
+				case TypeId::Object:
+					if (rhs.isLoadingDeferred())
+						// Duplicate the reference to the type.
+						exData = rhs.getCustomTypeExData()->duplicate();
+					else
+						exData = rhs.getCustomTypeExData();
+					break;
 				case TypeId::Array:
 					exData = new Type(rhs.getArrayExData());
 					break;

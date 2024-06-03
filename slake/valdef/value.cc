@@ -13,6 +13,8 @@ CreatedValuesInsertionGuard::CreatedValuesInsertionGuard(Runtime *runtime, Value
 CreatedValuesInsertionGuard::~CreatedValuesInsertionGuard() {
 	if (!(runtime->_flags & _RT_INGC))
 		runtime->createdValues.erase(value);
+	runtime = nullptr;
+	value = nullptr;
 }
 
 Value::Value(Runtime *rt) : _rt(rt), _createdValuesInsertionGuard(rt, this) {

@@ -21,7 +21,7 @@ Value *IdRefValue::duplicate() const {
 std::string std::to_string(const slake::IdRefValue *ref) {
 	string s;
 	for (size_t i = 0; i < ref->entries.size(); ++i) {
-		auto scope = ref->entries[i];
+		auto &scope = ref->entries[i];
 
 		if (i)
 			s += ".";

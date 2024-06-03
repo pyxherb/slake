@@ -129,7 +129,7 @@ namespace slake {
 			std::string name;
 
 			inline FnNode(const FnNode &other) : MemberNode(other) {
-				parentFn = other.parentFn;
+				// We don't copy parentFn because it has to be linked to a inherited function dynamically LOL
 
 				overloadingRegistries.resize(other.overloadingRegistries.size());
 				for (size_t i = 0; i < other.overloadingRegistries.size(); ++i) {

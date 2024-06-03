@@ -37,6 +37,7 @@ namespace slake {
 }
 
 namespace std {
+	string to_string(std::deque<slake::IdRefEntry> &idRefEntries);
 	string to_string(const slake::IdRefValue *ref);
 }
 

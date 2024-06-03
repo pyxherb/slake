@@ -28,6 +28,13 @@ namespace slake {
 			}
 		}
 
+		inline T* release() {
+			T *v = _value;
+			--_value->hostRefCount;
+			_value = nullptr;
+			return v;
+		}
+
 		inline void discard() noexcept { _value = nullptr; }
 
 		inline ValueRef(const ValueRef<T> &x) : _value(x._value) {

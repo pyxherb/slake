@@ -35,6 +35,9 @@ void Compiler::walkNodeForGenericInstantiation(
 		case NodeType::Fn: {
 			std::shared_ptr<FnNode> n = std::static_pointer_cast<FnNode>(node);
 
+			if (auto scope = scopeOf(n->parent); scope)
+				scanAndLinkParentFns(scope.get(), n.get(), n->name);
+
 			for (auto &i : n->overloadingRegistries) {
 				if (i->genericParams.size() && n != instantiationContext.mappedNode) {
 					GenericNodeInstantiationContext newInstantiationContext = instantiationContext;

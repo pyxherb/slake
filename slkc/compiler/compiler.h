@@ -305,8 +305,7 @@ namespace slake {
 				const std::deque<std::shared_ptr<TypeNameNode>> &argTypes,
 				const std::deque<std::shared_ptr<TypeNameNode>> &genericArgs,
 				std::deque<std::shared_ptr<FnOverloadingNode>> &overloadingsOut,
-				bool isStatic
-			);
+				bool isStatic);
 			std::deque<std::shared_ptr<FnOverloadingNode>> argDependentLookup(
 				Location loc,
 				FnNode *fn,
@@ -591,6 +590,8 @@ namespace slake {
 			}
 
 			void verifyGenericParams(const GenericParamNodeList &params);
+
+			void scanAndLinkParentFns(Scope *scope, FnNode *fn, const std::string &name);
 
 			//
 			// Verify end

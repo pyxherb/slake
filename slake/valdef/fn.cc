@@ -37,7 +37,7 @@ FnOverloadingKind slake::NativeFnOverloadingValue::getOverloadingKind() const {
 	return FnOverloadingKind::Native;
 }
 
-ValueRef<> slake::NativeFnOverloadingValue::invoke(Value *thisObject, std::deque<Value *> args) const {
+ValueRef<> slake::NativeFnOverloadingValue::call(Value *thisObject, std::deque<Value *> args) const {
 	return callback(fnValue->_rt, thisObject, args, mappedGenericArgs);
 }
 
@@ -49,7 +49,7 @@ FnOverloadingValue *slake::NativeFnOverloadingValue::duplicate() const {
 	return (FnOverloadingValue *)v;
 }
 
-ValueRef<> RegularFnOverloadingValue::invoke(Value *thisObject, std::deque<Value *> args) const {
+ValueRef<> RegularFnOverloadingValue::call(Value *thisObject, std::deque<Value *> args) const {
 	Runtime *rt = fnValue->_rt;
 
 	// Save previous context
@@ -159,7 +159,7 @@ ValueRef<> FnValue::call(Value *thisObject, std::deque<Value *> args, std::deque
 	FnOverloadingValue *overloading = getOverloading(argTypes);
 
 	if (overloading)
-		return overloading->invoke(thisObject, args);
+		return overloading->call(thisObject, args);
 
 	throw NoOverloadingError("No matching overloading was found");
 }

@@ -14,7 +14,7 @@ void Runtime::_gcWalk(Scope *scope) {
 		_gcWalk(scope->parent);
 }
 
-void Runtime::_gcWalk(GenericParamList& genericParamList) {
+void Runtime::_gcWalk(GenericParamList &genericParamList) {
 	for (auto &i : genericParamList) {
 		i.baseType.loadDeferredType(this);
 		if (auto p = i.baseType.resolveCustomType(); p)
@@ -318,7 +318,8 @@ rescan:
 				(!(((ObjectValue *)i)->objectFlags & OBJECT_PARENT))) {
 				for (auto &j : d) {
 					_destructedValues.insert(j.first->owner);
-					j.second->call(i, {}, {});
+					if (j.second->getType().typeId == TypeId::Fn)
+						((FnValue*)j.second)->call(i, {}, {});
 				}
 				foundDestructibleValues = true;
 			}

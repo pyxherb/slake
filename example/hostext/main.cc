@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
 			fs.open("hostext/main.slx", std::ios_base::in | std::ios_base::binary);
 
 			rt->setModuleLocator(fsModuleLocator);
-			//slake::stdlib::load(rt.get());
+			// slake::stdlib::load(rt.get());
 
 			mod = rt->loadModule(fs, slake::LMOD_NOCONFLICT);
 		} catch (slake::LoaderError e) {
@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
 	((slake::ModuleValue *)((slake::ModuleValue *)rt->getRootValue()->getMember("hostext"))->getMember("extfns"))->scope->putMember("print", fnValue.get());
 
 	try {
-		slake::ValueRef<slake::ContextValue> context = (slake::ContextValue *)mod->scope->getMember("main")->call(nullptr, {}, {}).get();
+		slake::ValueRef<slake::ContextValue> context = (slake::ContextValue *)(((slake::FnValue *)mod->scope->getMember("main"))->call(nullptr, {}, {}).get());
 		printf("%d\n", ((slake::I32Value *)context->getResult().get())->getData());
 		while (!context->isDone()) {
 			context->resume();

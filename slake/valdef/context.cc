@@ -15,7 +15,7 @@ ContextValue::~ContextValue() {
 
 ValueRef<> ContextValue::resume() {
 	_rt->activeContexts[std::this_thread::get_id()] = _context;
-	return _context->majorFrames.back().curFn->invoke(nullptr, {});
+	return _context->majorFrames.back().curFn->call(nullptr, {});
 }
 
 ValueRef<> ContextValue::getResult() {

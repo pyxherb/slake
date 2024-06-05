@@ -142,8 +142,9 @@ namespace slake {
 		// The value will never be freed if its host reference count is not 0.
 		mutable std::atomic_uint32_t hostRefCount = 0;
 
-		Runtime *_rt;
 		ValueFlags _flags = 0;
+
+		Runtime *_rt;
 
 		Scope *scope = nullptr;
 
@@ -155,12 +156,6 @@ namespace slake {
 		/// @brief Get type of the value.
 		/// @return Type of the value.
 		virtual Type getType() const = 0;
-
-		/// @brief Call the value as callable.
-		/// @param nArgs Number of arguments.
-		/// @param args Pointer to linear-arranged arguments.
-		/// @return Result of the calling.
-		virtual ValueRef<> call(Value *thisObject, std::deque<Value *> args, std::deque<Type> argTypes) const;
 
 		/// @brief Dulplicate the value if supported.
 		/// @return Duplicate of the value.

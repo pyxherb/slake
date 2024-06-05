@@ -30,10 +30,6 @@ Value::~Value() {
 	reportSizeFreedToRuntime(sizeof(*this));
 }
 
-ValueRef<> Value::call(Value *thisObject, std::deque<Value *> args, std::deque<Type> argTypes) const {
-	return nullptr;
-}
-
 Value *Value::duplicate() const {
 	throw std::logic_error("duplicate method was not implemented by the value class");
 }

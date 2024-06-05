@@ -1532,6 +1532,14 @@ std::shared_ptr<FnOverloadingNode> Parser::parseFnDecl(std::string &nameOut) {
 		overloading->isAsync = true;
 	}
 
+	if (Token *token = lexer->peekToken(); token->tokenId == TokenId::VirtualKeyword) {
+		lexer->nextToken();
+
+		overloading->idxVirtualModifierToken = lexer->getTokenIndex(token);
+
+		overloading->isVirtual = true;
+	}
+
 	if (Token *token = lexer->peekToken(); token->tokenId == TokenId::Colon) {
 		lexer->nextToken();
 
@@ -2020,6 +2028,7 @@ void Parser::parseInterfaceStmt() {
 
 			overloading->access = accessModifier;
 			overloading->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
+			overloading->isVirtual = true;
 
 			_putFnDefinition(token->beginLocation, name, overloading);
 			break;
@@ -2029,6 +2038,7 @@ void Parser::parseInterfaceStmt() {
 			auto overloading = parseFnDef(name);
 
 			overloading->access = accessModifier;
+			overloading->isVirtual = true;
 
 			_putFnDefinition(token->beginLocation, name, overloading);
 

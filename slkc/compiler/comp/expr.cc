@@ -195,7 +195,12 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 
 					uint32_t tmpRegIndex = allocReg();
 
-					_insertIns(Opcode::RLOAD, std::make_shared<RegRefNode>(tmpRegIndex), std::make_shared<RegRefNode>(lhsRegIndex, true), std::make_shared<IdRefExprNode>(operatorName));
+					if (overloading->isVirtual)
+						_insertIns(Opcode::RLOAD, std::make_shared<RegRefNode>(tmpRegIndex), std::make_shared<RegRefNode>(lhsRegIndex, true), std::make_shared<IdRefExprNode>(operatorName));
+					else {
+						IdRef fullName = getFullName(overloading.get());
+						_insertIns(Opcode::LOAD, std::make_shared<RegRefNode>(tmpRegIndex), std::make_shared<IdRefExprNode>(fullName));
+					}
 					_insertIns(Opcode::MCALL, std::make_shared<RegRefNode>(tmpRegIndex, true), std::make_shared<RegRefNode>(lhsRegIndex, true));
 
 					_insertIns(Opcode::LRET, std::make_shared<RegRefNode>(resultRegIndex));
@@ -1018,7 +1023,12 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 						_insertIns(Opcode::PUSHARG, std::make_shared<RegRefNode>(tmpRegIndex, true), overloading->params[0]->type);
 					}
 
-					_insertIns(Opcode::RLOAD, std::make_shared<RegRefNode>(tmpRegIndex), std::make_shared<RegRefNode>(lhsRegIndex, true), std::make_shared<IdRefExprNode>(operatorName));
+					if (overloading->isVirtual)
+						_insertIns(Opcode::RLOAD, std::make_shared<RegRefNode>(tmpRegIndex), std::make_shared<RegRefNode>(lhsRegIndex, true), std::make_shared<IdRefExprNode>(operatorName));
+					else {
+						IdRef fullName = getFullName(overloading.get());
+						_insertIns(Opcode::LOAD, std::make_shared<RegRefNode>(tmpRegIndex), std::make_shared<IdRefExprNode>(fullName));
+					}
 					_insertIns(Opcode::MCALL, std::make_shared<RegRefNode>(tmpRegIndex, true), std::make_shared<RegRefNode>(lhsRegIndex, true));
 
 #if SLKC_WITH_LANGUAGE_SERVER
@@ -1968,8 +1978,6 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							break;
 						}
 						case NodeType::Fn: {
-							IdRef ref = resolvedParts[i].first;
-
 							std::shared_ptr<FnOverloadingNode> overloading = determineOverloadingRegistry(
 								std::static_pointer_cast<FnNode>(resolvedParts[i].second),
 								resolvedParts[i].first.back().genericArgs);
@@ -1987,25 +1995,35 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							});
 #endif
 
-							std::deque<std::shared_ptr<TypeNameNode>> paramTypes;
-							for (auto &j : overloading->params) {
-								paramTypes.push_back(j->type);
+							{
+								std::deque<std::shared_ptr<TypeNameNode>> paramTypes;
+								for (auto &j : overloading->params) {
+									paramTypes.push_back(j->type);
+								}
+
+								if (overloading->isVaridic())
+									paramTypes.pop_back();
+
+								curMajorContext.curMinorContext.evaluatedType =
+									std::make_shared<FnTypeNameNode>(
+										overloading->loc,
+										overloading->returnType,
+										paramTypes);
 							}
 
-							if (overloading->isVaridic())
-								paramTypes.pop_back();
-
-							curMajorContext.curMinorContext.evaluatedType =
-								std::make_shared<FnTypeNameNode>(
-									overloading->loc,
-									overloading->returnType,
-									paramTypes);
-
-							_insertIns(
-								Opcode::RLOAD,
-								std::make_shared<RegRefNode>(tmpRegIndex),
-								std::make_shared<RegRefNode>(tmpRegIndex, true),
-								std::make_shared<IdRefExprNode>(ref));
+							if (overloading->isVirtual)
+								_insertIns(
+									Opcode::RLOAD,
+									std::make_shared<RegRefNode>(tmpRegIndex),
+									std::make_shared<RegRefNode>(tmpRegIndex, true),
+									std::make_shared<IdRefExprNode>(resolvedParts[i].first));
+							else {
+								IdRef fullRef = getFullName(overloading.get());
+								_insertIns(
+									Opcode::LOAD,
+									std::make_shared<RegRefNode>(tmpRegIndex),
+									std::make_shared<IdRefExprNode>(fullRef));
+							}
 							break;
 						}
 						default:

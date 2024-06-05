@@ -66,13 +66,15 @@ namespace slake {
 			FnNode *owner = nullptr;
 			AccessModifier access = 0;
 
-			bool isAsync = false;
+			bool isAsync = false,
+				 isVirtual = false;
 
 			size_t idxNameToken = SIZE_MAX,
 				   idxParamLParentheseToken = SIZE_MAX,
 				   idxParamRParentheseToken = SIZE_MAX,
 				   idxAsyncModifierToken = SIZE_MAX,
-				   idxReturnTypeColonToken = SIZE_MAX;
+				   idxReturnTypeColonToken = SIZE_MAX,
+				   idxVirtualModifierToken = SIZE_MAX;
 			std::deque<size_t> idxParamCommaTokens;
 
 			inline FnOverloadingNode(const FnOverloadingNode &other) : MemberNode(other) {
@@ -92,12 +94,14 @@ namespace slake {
 				access = other.access;
 
 				isAsync = other.isAsync;
+				isVirtual = other.isVirtual;
 
 				idxNameToken = other.idxNameToken;
 				idxParamLParentheseToken = other.idxParamLParentheseToken;
 				idxParamRParentheseToken = other.idxParamRParentheseToken;
 				idxAsyncModifierToken = other.idxAsyncModifierToken;
 				idxReturnTypeColonToken = other.idxReturnTypeColonToken;
+				idxVirtualModifierToken = other.idxVirtualModifierToken;
 				idxParamCommaTokens = other.idxParamCommaTokens;
 			}
 

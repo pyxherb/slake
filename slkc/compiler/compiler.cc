@@ -845,6 +845,33 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 		for (auto &j : i.second->overloadingRegistries) {
 			MemberNodeCompilingStatusGuard compilingStatusGuard(j);
 
+			if (i.first == "delete") {
+				j->isVirtual = true;
+			}
+
+			if (j->isVirtual) {
+				if (i.first == "new") {
+					throw FatalCompilationError(
+						Message(
+							lexer->tokens[j->idxVirtualModifierToken]->beginLocation,
+							MessageType::Error,
+							"Constructor cannot be declared as virtual"));
+				}
+
+				switch (scope->owner->getNodeType()) {
+					case NodeType::Class:
+					case NodeType::Interface:
+					case NodeType::Trait:
+						break;
+					default:
+						throw FatalCompilationError(
+							Message(
+								lexer->tokens[j->idxVirtualModifierToken]->beginLocation,
+								MessageType::Error,
+								"Modifier is invalid in this context"));
+				}
+			}
+
 			pushMajorContext();
 
 			mergeGenericParams(j->genericParams);
@@ -903,6 +930,9 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 
 			if (compiledFn->isAsync)
 				fnd.flags |= slxfmt::FND_ASYNC;
+
+			if (j->isVirtual)
+				fnd.flags |= slxfmt::FND_VIRTUAL;
 
 			if (compiledFn->paramIndices.count("..."))
 				hasVarArg = true;

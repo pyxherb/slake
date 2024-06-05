@@ -117,6 +117,7 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 				<InitialCondition>"true"		{ token->tokenId = TokenId::TrueKeyword; break; }
 				<InitialCondition>"try"			{ token->tokenId = TokenId::TryKeyword; break; }
 				<InitialCondition>"use"			{ token->tokenId = TokenId::UseKeyword; break; }
+				<InitialCondition>"virtual"		{ token->tokenId = TokenId::VirtualKeyword; break; }
 				<InitialCondition>"while"		{ token->tokenId = TokenId::WhileKeyword; break; }
 				<InitialCondition>"yield"		{ token->tokenId = TokenId::YieldKeyword; break; }
 

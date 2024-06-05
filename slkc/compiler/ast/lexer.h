@@ -114,6 +114,7 @@ namespace slake {
 			TrueKeyword,
 			TryKeyword,
 			UseKeyword,
+			VirtualKeyword,
 			WhileKeyword,
 			YieldKeyword,
 

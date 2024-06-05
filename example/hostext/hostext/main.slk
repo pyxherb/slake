@@ -96,8 +96,26 @@ class Derived(Test) {
 	}
 }
 
+class VirtualBase {
+	pub fn test(test: i32) virtual {
+		extfns.print("Called VirtualBase's test\n");
+		return;
+	}
+}
+
+class VirtualDerived {
+	pub fn test(test: i32) virtual {
+		extfns.print("Called VirtualDerived's test\n");
+		return;
+	}
+}
+
 pub fn main() async: i32 {
 	hostext.extfns.print("Entered main\n");
+
+	let vt: VirtualBase = new VirtualDerived();
+
+	vt.test(123);
 
 	let testDerived: TestDerived<i32> = new TestDerived<i32>();
 

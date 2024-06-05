@@ -141,7 +141,8 @@ namespace slake {
 			FND_NATIVE = 0x0010,	// Native
 			FND_DBG = 0x0040,		// With debugging information
 			FND_VARG = 0x0080,		// Variable arguments
-			FND_ASYNC = 0x0100		// Asynchronous
+			FND_ASYNC = 0x0100,		// Asynchronous
+			FND_VIRTUAL = 0x200		// Virtual
 			;
 
 		struct SrcInfoEntry {

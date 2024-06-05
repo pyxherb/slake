@@ -358,6 +358,11 @@ void Runtime::_loadScope(ModuleValue *mod, std::istream &fs, LoadModuleFlags loa
 
 			RegularFnOverloadingValue *overloading = new RegularFnOverloadingValue(fn, access, std::deque<Type>{}, Type());
 
+			if (i.flags & slxfmt::FND_ASYNC)
+				overloading->overloadingFlags |= OL_ASYNC;
+			if (i.flags & slxfmt::FND_VIRTUAL)
+				overloading->overloadingFlags |= OL_VIRTUAL;
+
 			overloading->returnType = _loadType(fs);
 
 			for (size_t j = 0; j < i.nGenericParams; ++j) {

@@ -27,7 +27,10 @@ namespace slake {
 	using OverloadingFlags = uint32_t;
 
 	constexpr static OverloadingFlags
-		OL_VARG = 0x01;
+		OL_VARG = 0x01,	   // Has varidic parameters
+		OL_ASYNC = 0x02,   // Is asynchronous
+		OL_VIRTUAL = 0x04  // Is virtual
+		;
 
 	class FnValue;
 

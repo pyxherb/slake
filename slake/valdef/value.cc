@@ -6,18 +6,8 @@ bool slake::_isRuntimeInDestruction(Runtime *runtime) {
 	return runtime->_flags & _RT_DELETING;
 }
 
-CreatedValuesInsertionGuard::CreatedValuesInsertionGuard(Runtime *runtime, Value *value) : runtime(runtime), value(value) {
-	runtime->createdValues.insert(value);
-}
-
-CreatedValuesInsertionGuard::~CreatedValuesInsertionGuard() {
-	if (!(runtime->_flags & _RT_INGC))
-		runtime->createdValues.erase(value);
-	runtime = nullptr;
-	value = nullptr;
-}
-
-Value::Value(Runtime *rt) : _rt(rt), _createdValuesInsertionGuard(rt, this) {
+Value::Value(Runtime *rt) : _rt(rt) {
+	rt->createdValues.insert(this);
 	reportSizeAllocatedToRuntime(sizeof(*this));
 }
 
@@ -28,6 +18,8 @@ Value::~Value() {
 	}
 	_rt->invalidateGenericCache(this);
 	reportSizeFreedToRuntime(sizeof(*this));
+	if (!(_rt->_flags & _RT_INGC))
+		_rt->createdValues.erase(this);
 }
 
 Value *Value::duplicate() const {

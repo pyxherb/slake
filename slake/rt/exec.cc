@@ -13,7 +13,7 @@ static void _checkOperandType(
 	for (size_t i = 0; i < ins.operands.size(); ++i) {
 		auto type = *(it++);
 
-		if (type == ValueType::Invalid)
+		if (type == ValueType::Undefined)
 			continue;
 
 		if (ins.operands[i].valueType != type)
@@ -198,7 +198,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		case Opcode::STORE: {
 			_checkOperandCount(ins, 2);
 
-			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::Invalid });
+			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::Undefined });
 
 			auto varOutPtr = ins.operands[0].getObjectRef().objectPtr;
 			_checkObjectOperandType(varOutPtr, TypeId::Var);
@@ -259,7 +259,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		case Opcode::GTEQ: {
 			_checkOperandCount(ins, 3);
 
-			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::Invalid, ValueType::Invalid });
+			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::Undefined, ValueType::Undefined });
 
 			Value x(ins.operands[1]), y(ins.operands[2]), valueOut;
 			auto varOut = ins.operands[0].getObjectRef().objectPtr;
@@ -823,7 +823,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		case Opcode::NEG: {
 			_checkOperandCount(ins, 2);
 
-			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::Invalid });
+			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::Undefined });
 
 			auto varOut = ins.operands[0].getObjectRef().objectPtr;
 			_checkObjectOperandType(varOut, TypeId::Var);
@@ -946,7 +946,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		}
 		case Opcode::PUSHARG: {
 			_checkOperandCount(ins, 2);
-			_checkOperandType(ins, { ValueType::Invalid, ValueType::Invalid });
+			_checkOperandType(ins, { ValueType::Undefined, ValueType::Undefined });
 
 			curMajorFrame.nextArgStack.push_back(ins.operands[0]);
 			switch (ins.operands[1].valueType) {
@@ -1151,7 +1151,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		case Opcode::CAST: {
 			_checkOperandCount(ins, 3);
 
-			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::TypeName, ValueType::Invalid });
+			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::TypeName, ValueType::Undefined });
 
 			auto varOut = ins.operands[0].getObjectRef().objectPtr;
 			_checkObjectOperandType(varOut, TypeId::Var);

@@ -52,7 +52,7 @@ void Compiler::importModule(const IdRef &ref) {
 				for (auto j : mod->unnamedImports)
 					importModule(toAstIdRef(j->entries));
 
-				importDefinitions(scope, {}, mod);
+				importDefinitions(scope, {}, mod.get());
 
 				goto succeeded;
 			} catch (LoaderError e) {

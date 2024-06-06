@@ -32,7 +32,7 @@ namespace slake {
 		LocalVarRef,  // Local variable reference
 		TypeName,	  // Type name
 
-		Invalid = UINT8_MAX,
+		Undefined = UINT8_MAX,
 	};
 
 	struct IndexedRefValueExData {
@@ -67,7 +67,7 @@ namespace slake {
 		void _reset();
 
 	public:
-		ValueType valueType = ValueType::Invalid;
+		ValueType valueType = ValueType::Undefined;
 
 		inline Value(const Value &other) {
 			*this = other;

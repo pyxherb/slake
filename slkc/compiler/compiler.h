@@ -435,7 +435,7 @@ namespace slake {
 			};
 			std::set<IdRef, ModuleRefComparator> importedModules;
 
-			static std::unique_ptr<std::ifstream> moduleLocator(Runtime *rt, IdRefObject *ref);
+			static std::unique_ptr<std::ifstream> moduleLocator(Runtime *rt, HostObjectRef<IdRefObject> ref);
 			std::shared_ptr<Scope> completeModuleNamespaces(const IdRef &ref);
 			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, FnObject *value);
 			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, ModuleObject *value);

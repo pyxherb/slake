@@ -310,15 +310,65 @@ void Runtime::_loadScope(ModuleObject *mod, std::istream &fs, LoadModuleFlags lo
 		if (i.flags & slxfmt::VAD_NATIVE)
 			access |= ACCESS_NATIVE;
 
-		std::unique_ptr<VarObject> var =
-			std::make_unique<VarObject>(
+		auto varType = _loadType(fs);
+		HostObjectRef<VarObject> var =
+			new VarObject(
 				this,
 				access,
-				_loadType(fs));
+				varType);
 
 		// Load initial value.
 		if (i.flags & slxfmt::VAD_INIT)
 			var->setData(_loadValue(fs));
+		else {
+			switch (varType.typeId) {
+				case TypeId::Value:
+					switch (varType.getValueTypeExData()) {
+						case ValueType::I8:
+							var->setData(Value((int8_t)0));
+							break;
+						case ValueType::I16:
+							var->setData(Value((int16_t)0));
+							break;
+						case ValueType::I32:
+							var->setData(Value((int32_t)0));
+							break;
+						case ValueType::I64:
+							var->setData(Value((int64_t)0));
+							break;
+						case ValueType::U8:
+							var->setData(Value((uint8_t)0));
+							break;
+						case ValueType::U16:
+							var->setData(Value((uint16_t)0));
+							break;
+						case ValueType::U32:
+							var->setData(Value((uint32_t)0));
+							break;
+						case ValueType::U64:
+							var->setData(Value((uint64_t)0));
+							break;
+						case ValueType::Bool:
+							var->setData(Value((bool)false));
+							break;
+						case ValueType::String:
+							var->setData(Value(std::string()));
+							break;
+						default:
+							// Unenumerated value types should never occur.
+							throw std::logic_error("Invalid value type");
+					}
+					break;
+				case TypeId::Instance:
+					var->setData(Value(nullptr));
+					break;
+				case TypeId::Any:
+					var->setData(Value(nullptr));
+					break;
+				default:
+					throw LoaderError("Invalid variable type");
+			}
+		}
 
 		mod->scope->putMember(name, var.release());
 	}
@@ -400,7 +450,7 @@ void Runtime::_loadScope(ModuleObject *mod, std::istream &fs, LoadModuleFlags lo
 	}
 }
 
-ModuleObject *slake::Runtime::loadModule(std::istream &fs, LoadModuleFlags flags) {
+HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &fs, LoadModuleFlags flags) {
 	std::unique_ptr<ModuleObject> mod = std::make_unique<ModuleObject>(this, ACCESS_PUB);
 
 	slxfmt::ImgHeader ih;
@@ -463,7 +513,7 @@ ModuleObject *slake::Runtime::loadModule(std::istream &fs, LoadModuleFlags flags
 		std::string name(len, '\0');
 		fs.read(name.data(), len);
 
-		IdRefObject *moduleName = _loadIdRef(fs);
+		HostObjectRef<IdRefObject> moduleName = _loadIdRef(fs);
 
 		if (!(flags & LMOD_NOIMPORT)) {
 			std::unique_ptr<std::istream> moduleStream(_moduleLocator(this, moduleName));
@@ -473,17 +523,17 @@ ModuleObject *slake::Runtime::loadModule(std::istream &fs, LoadModuleFlags flags
 			auto mod = loadModule(*moduleStream.get(), LMOD_NORELOAD);
 
 			if (name.size())
-				mod->scope->putMember(name, (MemberObject *)new AliasObject(this, 0, mod));
+				mod->scope->putMember(name, (MemberObject *)new AliasObject(this, 0, mod.get()));
 		}
 
-		mod->imports[name] = moduleName;
+		mod->imports[name] = moduleName.get();
 	}
 
 	_loadScope(mod.get(), fs, flags);
 	return mod.release();
 }
 
-ModuleObject *slake::Runtime::loadModule(const void *buf, size_t size, LoadModuleFlags flags) {
+HostObjectRef<ModuleObject> slake::Runtime::loadModule(const void *buf, size_t size, LoadModuleFlags flags) {
 	util::InputMemStream fs(buf, size);
 	return loadModule(fs, flags);
 }

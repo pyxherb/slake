@@ -60,6 +60,102 @@ namespace slake {
 		Object &operator=(const Object &x);
 		Object &operator=(Object &&) = delete;
 	};
+
+	template <typename T = Object>
+	class HostObjectRef final {
+	public:
+		T *_value = nullptr;
+		Runtime *_rt = nullptr;
+
+		inline void reset() {
+			if (_value) {
+				--_value->hostRefCount;
+				_value = nullptr;
+			}
+		}
+
+		inline T *release() {
+			T *v = _value;
+			--_value->hostRefCount;
+			_value = nullptr;
+			return v;
+		}
+
+		inline void discard() noexcept { _value = nullptr; }
+
+		inline HostObjectRef(const HostObjectRef<T> &x) : _value(x._value) {
+			if (x._value) {
+				++_value->hostRefCount;
+				_rt = x->_rt;
+			}
+		}
+		inline HostObjectRef(HostObjectRef<T> &&x) noexcept : _value(x._value) {
+			if (x._value) {
+				_rt = x->_rt;
+				x._value = nullptr;
+			}
+		}
+		inline HostObjectRef(T *value = nullptr) noexcept : _value(value) {
+			if (_value) {
+				++_value->hostRefCount;
+				_rt = value->_rt;
+			}
+		}
+		inline ~HostObjectRef() {
+			reset();
+		}
+
+		inline const T *get() const { return _value; }
+		inline T *get() { return _value; }
+		inline const T *operator->() const { return _value; }
+		inline T *operator->() { return _value; }
+
+		inline HostObjectRef<T> &operator=(const HostObjectRef<T> &x) {
+			reset();
+
+			if ((_value = x._value)) {
+				++_value->hostRefCount;
+				_rt = _value->_rt;
+			}
+
+			return *this;
+		}
+		inline HostObjectRef<T> &operator=(HostObjectRef<T> &&x) noexcept {
+			reset();
+
+			if ((_value = x._value)) {
+				_rt = _value->_rt;
+				x._value = nullptr;
+			}
+
+			return *this;
+		}
+
+		inline HostObjectRef<T> &operator=(T *other) {
+			reset();
+
+			if ((_value = other)) {
+				++_value->hostRefCount;
+				_rt = _value->_rt;
+			}
+
+			return *this;
+		}
+
+		inline bool operator<(const HostObjectRef<T> &rhs) const noexcept {
+			return _value < rhs._value;
+		}
+		inline bool operator>(const HostObjectRef<T> &rhs) const noexcept {
+			return _value > rhs._value;
+		}
+		inline bool operator==(const HostObjectRef<T> &rhs) const noexcept {
+			return _value == rhs._value;
+		}
+
+		inline operator bool() const {
+			return _value;
+		}
+	};
 }
 
 #include <slake/type.h>

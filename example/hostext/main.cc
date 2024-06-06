@@ -58,7 +58,7 @@ slake::Value print(
 	return {};
 }
 
-std::unique_ptr<std::istream> fsModuleLocator(slake::Runtime *rt, slake::IdRefObject *ref) {
+std::unique_ptr<std::istream> fsModuleLocator(slake::Runtime *rt, slake::HostObjectRef<slake::IdRefObject> ref) {
 	std::string path;
 	for (size_t i = 0; i < ref->entries.size(); ++i) {
 		path += ref->entries[i].name;
@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
 
 	std::unique_ptr<slake::Runtime> rt = std::make_unique<slake::Runtime>(slake::RT_DEBUG | slake::RT_GCDBG);
 
-	slake::ModuleObject *mod;
+	slake::HostObjectRef<slake::ModuleObject> mod;
 	{
 		std::ifstream fs;
 		try {
@@ -108,21 +108,20 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	slake::FnObject *fnObject = new slake::FnObject(rt.get());
+	slake::HostObjectRef<slake::FnObject> fnObject = new slake::FnObject(rt.get());
 
 	fnObject->overloadings.push_back(
-		new slake::NativeFnOverloadingObject(fnObject, slake::ACCESS_PUB, std::deque<slake::Type>{}, slake::ValueType::Invalid, print));
+		new slake::NativeFnOverloadingObject(fnObject.get(), slake::ACCESS_PUB, std::deque<slake::Type>{}, slake::ValueType::Undefined, print));
 
-	((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext"))->getMember("extfns"))->scope->putMember("print", fnObject);
+	((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext"))->getMember("extfns"))->scope->putMember("print", fnObject.get());
 
 	try {
 		slake::Value result =
 			((slake::FnObject *)mod->scope->getMember("main"))->call(nullptr, {}, {});
 
-		slake::ContextObject *context = (slake::ContextObject *)result.getObjectRef().objectPtr;
+		slake::HostObjectRef<slake::ContextObject> context = (slake::ContextObject *)result.getObjectRef().objectPtr;
 		printf("%d\n", context->getResult());
 
-		slake::Value contextHolder = slake::Value(context, true);
 		while (!context->isDone()) {
 			context->resume();
 
@@ -136,6 +135,9 @@ int main(int argc, char **argv) {
 		printf("RuntimeExecError: %s\n", e.what());
 		printTraceback(rt.get());
 	}
+
+	fnObject.reset();
+	mod.reset();
 
 	rt.reset();
 	return 0;

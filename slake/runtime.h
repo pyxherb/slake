@@ -105,7 +105,7 @@ namespace slake {
 		_RT_DELETING = 0x80000000;
 
 	using ModuleLocatorFn = std::function<
-		std::unique_ptr<std::istream>(Runtime *rt, IdRefObject *ref)>;
+		std::unique_ptr<std::istream>(Runtime *rt, HostObjectRef<IdRefObject> ref)>;
 
 	using LoadModuleFlags = uint8_t;
 	constexpr LoadModuleFlags
@@ -246,8 +246,8 @@ namespace slake {
 		/// @return Resolved value which is referred by the reference.
 		Object *resolveIdRef(IdRefObject *ref, Object *scopeObject = nullptr) const;
 
-		ModuleObject *loadModule(std::istream &fs, LoadModuleFlags flags);
-		ModuleObject *loadModule(const void *buf, size_t size, LoadModuleFlags flags);
+		HostObjectRef<ModuleObject> loadModule(std::istream &fs, LoadModuleFlags flags);
+		HostObjectRef<ModuleObject> loadModule(const void *buf, size_t size, LoadModuleFlags flags);
 
 		inline RootObject *getRootObject() { return _rootObject; }
 

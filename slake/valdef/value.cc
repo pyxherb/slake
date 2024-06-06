@@ -39,13 +39,13 @@ void Value::_reset() {
 				delete t;
 			data = {};
 			break;
-		case ValueType::Invalid:
+		case ValueType::Undefined:
 			break;
 		default:
 			throw std::logic_error("Unhandled object type");
 	}
 
-	valueType = ValueType::Invalid;
+	valueType = ValueType::Undefined;
 }
 
 Value::~Value() {
@@ -93,7 +93,7 @@ Value &Value::operator=(const Value &other) {
 		case ValueType::TypeName:
 			this->data = new Type(other.getTypeName());
 			break;
-		case ValueType::Invalid:
+		case ValueType::Undefined:
 			break;
 		default:
 			throw std::logic_error("Unhandled object type");
@@ -124,7 +124,7 @@ Value &Value::operator=(Value &&other) {
 		case ValueType::ArgRef:
 		case ValueType::LocalVarRef:
 		case ValueType::TypeName:
-		case ValueType::Invalid:
+		case ValueType::Undefined:
 			this->data = std::move(other.data);
 			break;
 		default:
@@ -133,7 +133,7 @@ Value &Value::operator=(Value &&other) {
 	valueType = other.valueType;
 
 	other.data = {};
-	other.valueType = ValueType::Invalid;
+	other.valueType = ValueType::Undefined;
 
 	return *this;
 }

@@ -17,7 +17,7 @@ void slake::decompiler::decompile(std::istream &fs, std::ostream &os) {
 	auto rt = std::make_unique<slake::Runtime>();
 	auto mod = rt->loadModule(fs, LMOD_NOIMPORT);
 
-	auto modName = rt->getFullName(mod);
+	auto modName = rt->getFullName(mod.get());
 
 	for (auto &i : mod->scope->members)
 		decompileObject(rt.get(), i.second, os);

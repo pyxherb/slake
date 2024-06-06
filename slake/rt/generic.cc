@@ -18,10 +18,10 @@ void slake::Runtime::_instantiateGenericObject(Type &type, GenericInstantiationC
 			} else {
 				auto idRefToResolvedType = getFullRef((MemberObject *)type.getCustomTypeExData());
 
-				IdRefObject *idRefObject = new IdRefObject((Runtime *)this);
+				HostObjectRef<IdRefObject> idRefObject = new IdRefObject((Runtime *)this);
 				idRefObject->entries = idRefToResolvedType;
 
-				type = Type(type.typeId, idRefObject);
+				type = Type(type.typeId, idRefObject.release());
 
 				_instantiateGenericObject(type, instantiationContext);
 			}
@@ -66,7 +66,7 @@ void slake::Runtime::_instantiateGenericObject(Value& value, GenericInstantiatio
 		case ValueType::TypeName:
 			_instantiateGenericObject(value.getTypeName(), instantiationContext);
 			break;
-		case ValueType::Invalid:
+		case ValueType::Undefined:
 			break;
 		default:
 			throw std::logic_error("Unhandled value type");

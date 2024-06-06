@@ -53,7 +53,7 @@ bool slake::isCompatible(Type a, Type b) {
 		case TypeId::Value:
 			if (a.typeId != b.typeId)
 				return false;
-			return a.typeId == b.typeId;
+			return a.getValueTypeExData() == b.getValueTypeExData();
 		case TypeId::Array:
 			if (a.typeId != b.typeId)
 				return false;

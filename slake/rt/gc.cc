@@ -93,7 +93,7 @@ void Runtime::_gcWalk(Value &i) {
 		case ValueType::TypeName:
 			_gcWalk(i.getTypeName());
 			break;
-		case ValueType::Invalid:
+		case ValueType::Undefined:
 			break;
 		default:
 			throw std::logic_error("Unhandled value type");

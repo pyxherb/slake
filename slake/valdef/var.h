@@ -30,7 +30,7 @@ namespace slake {
 
 	class VarObject final : public BasicVarObject {
 	public:
-		mutable Value value = nullptr;
+		mutable Value value;
 
 		VarObject(Runtime *rt, AccessModifier access, Type type);
 		virtual ~VarObject();
@@ -39,10 +39,6 @@ namespace slake {
 
 		virtual inline Value getData() const override { return value; }
 		virtual inline void setData(const Value &value) override {
-			type.loadDeferredType(_rt);
-
-			Type valueType;
-
 			switch (value.valueType) {
 				case ValueType::I8:
 				case ValueType::I16:
@@ -56,16 +52,15 @@ namespace slake {
 				case ValueType::F64:
 				case ValueType::Bool:
 				case ValueType::String:
-					valueType = value.valueType;
-
-					if (!isCompatible(type, valueType))
+				case ValueType::Undefined:
+					if (!isCompatible(type, value.valueType))
 						throw MismatchedTypeError("Mismatched variable type");
 					break;
 				case ValueType::ObjectRef:
 					if (auto p = value.getObjectRef().objectPtr; p) {
-						valueType = value.getObjectRef().objectPtr->getType();
+						type.loadDeferredType(_rt);
 
-						if (!isCompatible(type, valueType))
+						if (!isCompatible(type, value.getObjectRef().objectPtr->getType()))
 							throw MismatchedTypeError("Mismatched variable type");
 					}
 					break;

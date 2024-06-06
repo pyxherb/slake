@@ -34,10 +34,6 @@ using namespace slake;
 		MNEMONIC_ENTRY(RSH),     \
 		MNEMONIC_ENTRY(NOT),     \
 		MNEMONIC_ENTRY(LNOT),    \
-		MNEMONIC_ENTRY(INCF),    \
-		MNEMONIC_ENTRY(DECF),    \
-		MNEMONIC_ENTRY(INCB),    \
-		MNEMONIC_ENTRY(DECB),    \
 		MNEMONIC_ENTRY(NEG),     \
 		MNEMONIC_ENTRY(AT),      \
 		MNEMONIC_ENTRY(JMP),     \

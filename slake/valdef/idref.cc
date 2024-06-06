@@ -2,23 +2,23 @@
 
 using namespace slake;
 
-slake::IdRefValue::IdRefValue(Runtime *rt)
-	: Value(rt) {
-	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Value));
+slake::IdRefObject::IdRefObject(Runtime *rt)
+	: Object(rt) {
+	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Object));
 }
 
-IdRefValue::~IdRefValue() {
-	reportSizeFreedToRuntime(sizeof(*this) - sizeof(Value));
+IdRefObject::~IdRefObject() {
+	reportSizeFreedToRuntime(sizeof(*this) - sizeof(Object));
 }
 
-Value *IdRefValue::duplicate() const {
-	IdRefValue *v = new IdRefValue(_rt);
+Object *IdRefObject::duplicate() const {
+	IdRefObject *v = new IdRefObject(_rt);
 	*v = *this;
 
-	return (Value *)v;
+	return (Object *)v;
 }
 
-std::string std::to_string(const slake::IdRefValue *ref) {
+std::string std::to_string(const slake::IdRefObject *ref) {
 	string s;
 	for (size_t i = 0; i < ref->entries.size(); ++i) {
 		auto &scope = ref->entries[i];

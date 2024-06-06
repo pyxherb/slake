@@ -2,24 +2,24 @@
 
 using namespace slake;
 
-ModuleValue::ModuleValue(Runtime *rt, AccessModifier access)
-	: MemberValue(rt, access) {
+ModuleObject::ModuleObject(Runtime *rt, AccessModifier access)
+	: MemberObject(rt, access) {
 	scope = new Scope(this);
-	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(MemberValue));
+	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(MemberObject));
 }
 
-ModuleValue::~ModuleValue() {
-	reportSizeFreedToRuntime(sizeof(*this) - sizeof(MemberValue));
+ModuleObject::~ModuleObject() {
+	reportSizeFreedToRuntime(sizeof(*this) - sizeof(MemberObject));
 }
 
-Type ModuleValue::getType() const {
+Type ModuleObject::getType() const {
 	return TypeId::Module;
 }
 
-Value *ModuleValue::duplicate() const {
-	ModuleValue* v = new ModuleValue(_rt, getAccess());
+Object *ModuleObject::duplicate() const {
+	ModuleObject* v = new ModuleObject(_rt, getAccess());
 
 	*v = *this;
 
-	return (Value *)v;
+	return (Object *)v;
 }

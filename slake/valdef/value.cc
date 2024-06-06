@@ -2,56 +2,138 @@
 
 using namespace slake;
 
-bool slake::_isRuntimeInDestruction(Runtime *runtime) {
-	return runtime->_flags & _RT_DELETING;
+Value::Value(const Type &type) {
+	this->data = new Type(type);
+	valueType = ValueType::TypeName;
 }
 
-Value::Value(Runtime *rt) : _rt(rt) {
-	rt->createdValues.insert(this);
-	reportSizeAllocatedToRuntime(sizeof(*this));
+void Value::_reset() {
+	switch (valueType) {
+		case ValueType::U8:
+		case ValueType::U16:
+		case ValueType::U32:
+		case ValueType::U64:
+		case ValueType::I8:
+		case ValueType::I16:
+		case ValueType::I32:
+		case ValueType::I64:
+		case ValueType::F32:
+		case ValueType::F64:
+		case ValueType::Bool:
+		case ValueType::String:
+		case ValueType::RegRef:
+		case ValueType::ArgRef:
+		case ValueType::LocalVarRef:
+			break;
+		case ValueType::ObjectRef: {
+			ObjectRefValueExData &exData = std::get<ObjectRefValueExData>(data);
+
+			if (exData.isHostRef) {
+				if (exData.objectPtr)
+					--exData.objectPtr->hostRefCount;
+			}
+			break;
+		}
+		case ValueType::TypeName:
+			if (auto t = std::get<Type *>(data); t)
+				delete t;
+			data = {};
+			break;
+		case ValueType::Invalid:
+			break;
+		default:
+			throw std::logic_error("Unhandled object type");
+	}
+
+	valueType = ValueType::Invalid;
 }
 
 Value::~Value() {
-	if (scope) {
-		if (!(_flags & VF_ALIAS))
-			delete scope;
+	_reset();
+}
+
+Type &Value::getTypeName() {
+	return *std::get<Type *>(data);
+}
+
+const Type &Value::getTypeName() const {
+	return ((Value *)this)->getTypeName();
+}
+
+const ObjectRefValueExData &Value::getObjectRef() const {
+	return std::get<ObjectRefValueExData>(data);
+}
+
+const IndexedRefValueExData &Value::getIndexedRef() const {
+	return std::get<IndexedRefValueExData>(data);
+}
+
+Value &Value::operator=(const Value &other) {
+	_reset();
+
+	switch (other.valueType) {
+		case ValueType::U8:
+		case ValueType::U16:
+		case ValueType::U32:
+		case ValueType::U64:
+		case ValueType::I8:
+		case ValueType::I16:
+		case ValueType::I32:
+		case ValueType::I64:
+		case ValueType::F32:
+		case ValueType::F64:
+		case ValueType::Bool:
+		case ValueType::String:
+		case ValueType::ObjectRef:
+		case ValueType::RegRef:
+		case ValueType::ArgRef:
+		case ValueType::LocalVarRef:
+			this->data = other.data;
+			break;
+		case ValueType::TypeName:
+			this->data = new Type(other.getTypeName());
+			break;
+		case ValueType::Invalid:
+			break;
+		default:
+			throw std::logic_error("Unhandled object type");
 	}
-	_rt->invalidateGenericCache(this);
-	reportSizeFreedToRuntime(sizeof(*this));
-	if (!(_rt->_flags & _RT_INGC))
-		_rt->createdValues.erase(this);
-}
-
-Value *Value::duplicate() const {
-	throw std::logic_error("duplicate method was not implemented by the value class");
-}
-
-MemberValue *slake::Value::getMember(const std::string &name) {
-	return scope ? scope->getMember(name) : nullptr;
-}
-
-std::deque<std::pair<Scope *, MemberValue *>> slake::Value::getMemberChain(const std::string &name) {
-	return scope ? scope->getMemberChain(name) : std::deque<std::pair<Scope *, MemberValue *>>();
-}
-
-Value &slake::Value::operator=(const Value &x) {
-	if (scope) {
-		if (!(_flags & VF_ALIAS))
-			delete scope;
-	}
-
-	_rt = x._rt;
-	_flags = x._flags & ~VF_WALKED;
-	scope = x.scope ? x.scope->duplicate() : nullptr;
+	valueType = other.valueType;
 
 	return *this;
 }
 
-void Value::reportSizeAllocatedToRuntime(size_t size) {
-	_rt->_szMemInUse += size;
-}
+Value &Value::operator=(Value &&other) {
+	_reset();
 
-void Value::reportSizeFreedToRuntime(size_t size) {
-	assert(_rt->_szMemInUse >= size);
-	_rt->_szMemInUse -= size;
+	switch (other.valueType) {
+		case ValueType::U8:
+		case ValueType::U16:
+		case ValueType::U32:
+		case ValueType::U64:
+		case ValueType::I8:
+		case ValueType::I16:
+		case ValueType::I32:
+		case ValueType::I64:
+		case ValueType::F32:
+		case ValueType::F64:
+		case ValueType::Bool:
+		case ValueType::String:
+		case ValueType::ObjectRef:
+		case ValueType::RegRef:
+		case ValueType::ArgRef:
+		case ValueType::LocalVarRef:
+		case ValueType::TypeName:
+		case ValueType::Invalid:
+			this->data = std::move(other.data);
+			break;
+		default:
+			throw std::logic_error("Unhandled object type");
+	}
+	valueType = other.valueType;
+
+	other.data = {};
+	other.valueType = ValueType::Invalid;
+
+	return *this;
 }

@@ -52,7 +52,7 @@ void Compiler::importModule(const IdRef &ref) {
 				for (auto j : mod->unnamedImports)
 					importModule(toAstIdRef(j->entries));
 
-				importDefinitions(scope, {}, mod.get());
+				importDefinitions(scope, {}, mod);
 
 				goto succeeded;
 			} catch (LoaderError e) {
@@ -81,7 +81,7 @@ succeeded:;
 	lexer = std::move(savedLexer);
 }
 
-void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, FnValue *value) {
+void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, FnObject *value) {
 	if (importedDefinitions.count(value))
 		return;
 
@@ -130,7 +130,7 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 	}
 }
 
-void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, ModuleValue *value) {
+void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, ModuleObject *value) {
 	if (importedDefinitions.count(value))
 		return;
 
@@ -142,30 +142,30 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 		importDefinitions(s, owner, i.second);
 }
 
-void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, ClassValue *value) {
+void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, ClassObject *value) {
 	if (importedDefinitions.count(value))
 		return;
 
 	importedDefinitions.insert(value);
 
-	MemberValue *parentClassValue = (MemberValue *)value->parentClass.resolveCustomType();
-	if (!parentClassValue)
+	MemberObject *parentClassObject = (MemberObject *)value->parentClass.resolveCustomType();
+	if (!parentClassObject)
 		assert(false);
 
 	std::shared_ptr<CustomTypeNameNode> parentClassTypeName =
 		std::make_shared<CustomTypeNameNode>(
 			Location(),
-			toAstIdRef(_rt->getFullRef(parentClassValue)),
+			toAstIdRef(_rt->getFullRef(parentClassObject)),
 			this,
 			scope.get());
 
 	std::deque<std::shared_ptr<TypeNameNode>> implInterfaceTypeNames;
 	for (auto i : value->implInterfaces) {
-		MemberValue *implInterfaceValue = (MemberValue *)(i.resolveCustomType());
-		if (!implInterfaceValue)
+		MemberObject *implInterfaceObject = (MemberObject *)(i.resolveCustomType());
+		if (!implInterfaceObject)
 			assert(false);
 
-		auto implInterfaceRef = _rt->getFullRef(implInterfaceValue);
+		auto implInterfaceRef = _rt->getFullRef(implInterfaceObject);
 
 		implInterfaceTypeNames.push_back(
 			std::make_shared<CustomTypeNameNode>(
@@ -191,10 +191,10 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 	(scope->members[value->_name] = cls)->bind(parent.get());
 
 	for (auto i : value->scope->members)
-		importDefinitions(cls->scope, cls, (Value *)i.second);
+		importDefinitions(cls->scope, cls, (Object *)i.second);
 }
 
-void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, InterfaceValue *value) {
+void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, InterfaceObject *value) {
 	if (importedDefinitions.count(value))
 		return;
 
@@ -211,10 +211,10 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 	(scope->members[value->_name] = interface)->bind(parent.get());
 
 	for (auto i : value->scope->members)
-		importDefinitions(scope, interface, (Value *)i.second);
+		importDefinitions(scope, interface, (Object *)i.second);
 }
 
-void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, TraitValue *value) {
+void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, TraitObject *value) {
 	if (importedDefinitions.count(value))
 		return;
 
@@ -235,16 +235,16 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 	(scope->members[value->_name] = trait)->bind(parent.get());
 
 	for (auto i : value->scope->members)
-		importDefinitions(scope, trait, (Value *)i.second);
+		importDefinitions(scope, trait, (Object *)i.second);
 }
 
-void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, Value *value) {
+void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, Object *value) {
 	if (importedDefinitions.count(value))
 		return;
 
 	switch (value->getType().typeId) {
-		case slake::TypeId::RootValue: {
-			RootValue *v = (RootValue *)value;
+		case slake::TypeId::RootObject: {
+			RootObject *v = (RootObject *)value;
 
 			for (auto i : v->scope->members)
 				importDefinitions(scope, parent, i.second);
@@ -252,13 +252,13 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 			break;
 		}
 		case slake::TypeId::Fn:
-			importDefinitions(scope, parent, (FnValue *)value);
+			importDefinitions(scope, parent, (FnObject *)value);
 			break;
 		case slake::TypeId::Module:
-			importDefinitions(scope, parent, (ModuleValue *)value);
+			importDefinitions(scope, parent, (ModuleObject *)value);
 			break;
 		case slake::TypeId::Var: {
-			VarValue *v = (VarValue *)value;
+			VarObject *v = (VarObject *)value;
 			std::shared_ptr<VarNode> var = std::make_shared<VarNode>(
 				Location(), this,
 				v->getAccess(),
@@ -272,13 +272,13 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 			break;
 		}
 		case slake::TypeId::Class:
-			importDefinitions(scope, parent, (ClassValue *)value);
+			importDefinitions(scope, parent, (ClassObject *)value);
 			break;
 		case slake::TypeId::Interface:
-			importDefinitions(scope, parent, (InterfaceValue *)value);
+			importDefinitions(scope, parent, (InterfaceObject *)value);
 			break;
 		case slake::TypeId::Trait:
-			importDefinitions(scope, parent, (TraitValue *)value);
+			importDefinitions(scope, parent, (TraitObject *)value);
 			break;
 			/*
 		case slake::TypeId::Alias: {
@@ -292,55 +292,58 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 
 std::shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 	switch (runtimeType.typeId) {
-		case slake::TypeId::I8:
-			return std::make_shared<I8TypeNameNode>(Location{}, SIZE_MAX);
-		case slake::TypeId::I16:
-			return std::make_shared<I16TypeNameNode>(Location{}, SIZE_MAX);
-		case slake::TypeId::I32:
-			return std::make_shared<I32TypeNameNode>(Location{}, SIZE_MAX);
-		case slake::TypeId::I64:
-			return std::make_shared<I64TypeNameNode>(Location{}, SIZE_MAX);
-		case slake::TypeId::U8:
-			return std::make_shared<U8TypeNameNode>(Location{}, SIZE_MAX);
-		case slake::TypeId::U16:
-			return std::make_shared<U16TypeNameNode>(Location{}, SIZE_MAX);
-		case slake::TypeId::U32:
-			return std::make_shared<U32TypeNameNode>(Location{}, SIZE_MAX);
-		case slake::TypeId::U64:
-			return std::make_shared<U64TypeNameNode>(Location{}, SIZE_MAX);
-		case slake::TypeId::F32:
-			return std::make_shared<F32TypeNameNode>(Location{}, SIZE_MAX);
-		case slake::TypeId::F64:
-			return std::make_shared<F64TypeNameNode>(Location{}, SIZE_MAX);
-		case slake::TypeId::String:
-			return std::make_shared<StringTypeNameNode>(Location{}, SIZE_MAX);
-		case slake::TypeId::Bool:
-			return std::make_shared<BoolTypeNameNode>(Location{}, SIZE_MAX);
+		case slake::TypeId::Value:
+			switch (runtimeType.getValueTypeExData()) {
+				case slake::ValueType::I8:
+					return std::make_shared<I8TypeNameNode>(Location{}, SIZE_MAX);
+				case slake::ValueType::I16:
+					return std::make_shared<I16TypeNameNode>(Location{}, SIZE_MAX);
+				case slake::ValueType::I32:
+					return std::make_shared<I32TypeNameNode>(Location{}, SIZE_MAX);
+				case slake::ValueType::I64:
+					return std::make_shared<I64TypeNameNode>(Location{}, SIZE_MAX);
+				case slake::ValueType::U8:
+					return std::make_shared<U8TypeNameNode>(Location{}, SIZE_MAX);
+				case slake::ValueType::U16:
+					return std::make_shared<U16TypeNameNode>(Location{}, SIZE_MAX);
+				case slake::ValueType::U32:
+					return std::make_shared<U32TypeNameNode>(Location{}, SIZE_MAX);
+				case slake::ValueType::U64:
+					return std::make_shared<U64TypeNameNode>(Location{}, SIZE_MAX);
+				case slake::ValueType::F32:
+					return std::make_shared<F32TypeNameNode>(Location{}, SIZE_MAX);
+				case slake::ValueType::F64:
+					return std::make_shared<F64TypeNameNode>(Location{}, SIZE_MAX);
+				case slake::ValueType::String:
+					return std::make_shared<StringTypeNameNode>(Location{}, SIZE_MAX);
+				case slake::ValueType::Bool:
+					return std::make_shared<BoolTypeNameNode>(Location{}, SIZE_MAX);
+				case slake::ValueType::TypeName: {
+					auto refs = _rt->getFullRef((MemberObject *)runtimeType.getCustomTypeExData());
+					IdRef ref;
+
+					for (auto &i : refs) {
+						std::deque<std::shared_ptr<TypeNameNode>> genericArgs;
+						for (auto j : i.genericArgs) {
+							genericArgs.push_back(toTypeName(j));
+						}
+
+						ref.push_back(IdRefEntry(Location{}, SIZE_MAX, i.name, genericArgs));
+					}
+
+					return std::make_shared<CustomTypeNameNode>(Location{}, ref, this, nullptr);
+				}
+			}
 		case slake::TypeId::None:
 			return std::make_shared<VoidTypeNameNode>(Location{}, SIZE_MAX);
 		case slake::TypeId::Any:
 			return std::make_shared<AnyTypeNameNode>(Location{}, SIZE_MAX);
-		case slake::TypeId::TypeName: {
-			auto refs = _rt->getFullRef((MemberValue *)runtimeType.getCustomTypeExData());
-			IdRef ref;
-
-			for (auto &i : refs) {
-				std::deque<std::shared_ptr<TypeNameNode>> genericArgs;
-				for (auto j : i.genericArgs) {
-					genericArgs.push_back(toTypeName(j));
-				}
-
-				ref.push_back(IdRefEntry(Location{}, SIZE_MAX, i.name, genericArgs));
-			}
-
-			return std::make_shared<CustomTypeNameNode>(Location{}, ref, this, nullptr);
-		}
 		case slake::TypeId::Array:
 			return std::make_shared<ArrayTypeNameNode>(toTypeName(runtimeType.getArrayExData()));
 		default:
-			// Inconvertible/unrecognized type
-			throw std::logic_error("Unrecognized runtime value type");
+			break;
 	}
+	throw std::logic_error("Unrecognized runtime value type");
 }
 
 slake::slkc::IdRef Compiler::toAstIdRef(std::deque<slake::IdRefEntry> runtimeRefEntries) {

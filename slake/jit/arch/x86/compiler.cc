@@ -117,7 +117,7 @@ uint8_t leaveIns[] = {
 	0xc3		 // ret
 };
 
-slake::ICodePage *slake::compileFn(FnValue *fn) {
+slake::ICodePage *slake::compileFn(FnObject *fn) {
 	slake::ICodePage *codePage;
 	size_t size;
 	// Enter instructions

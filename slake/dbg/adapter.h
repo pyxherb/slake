@@ -10,8 +10,8 @@ namespace slake {
 	public:
 		virtual ~DebugAdapter() = default;
 
-		virtual void onExecBreakpoint(FnValue* fn, uint32_t curIns) = 0;
-		virtual void onVarWrite(VarValue* var) = 0;
+		virtual void onExecBreakpoint(FnObject* fn, uint32_t curIns) = 0;
+		virtual void onVarWrite(VarObject* var) = 0;
 	};
 }
 

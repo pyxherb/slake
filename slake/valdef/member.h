@@ -6,30 +6,30 @@
 #include <unordered_map>
 #include <memory>
 
-#include "value.h"
+#include "object.h"
 #include "generic.h"
 
 namespace slake {
-	class MemberValue : public Value, public AccessModified {
+	class MemberObject : public Object, public AccessModified {
 	public:
-		Value *_parent = nullptr;
+		Object *_parent = nullptr;
 		std::string _name;
 
 		GenericArgList _genericArgs;
 
-		MemberValue(Runtime *rt, AccessModifier access);
-		virtual ~MemberValue();
+		MemberObject(Runtime *rt, AccessModifier access);
+		virtual ~MemberObject();
 
 		virtual std::string getName() const;
 
-		const Value *getParent() const;
-		Value *getParent();
+		const Object *getParent() const;
+		Object *getParent();
 
-		virtual void bind(Value *parent, std::string name);
+		virtual void bind(Object *parent, std::string name);
 		virtual void unbind();
 
-		inline MemberValue &operator=(const MemberValue &x) {
-			((Value &)*this) = (Value &)x;
+		inline MemberObject &operator=(const MemberObject &x) {
+			((Object &)*this) = (Object &)x;
 
 			setAccess(x.getAccess());
 			_parent = x._parent;

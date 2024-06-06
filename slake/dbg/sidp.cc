@@ -76,10 +76,10 @@ SidpDebugAdapter::~SidpDebugAdapter() {
 		std::this_thread::yield();
 }
 
-void SidpDebugAdapter::onExecBreakpoint(FnValue* fn, uint32_t curIns) {
+void SidpDebugAdapter::onExecBreakpoint(FnObject* fn, uint32_t curIns) {
 
 }
 
-void SidpDebugAdapter::onVarWrite(VarValue *var) {
+void SidpDebugAdapter::onVarWrite(VarObject *var) {
 
 }

@@ -6,27 +6,14 @@
 #include <cassert>
 #include <string>
 #include <variant>
+#include "valdef/object.h"
 #include "valdef/value.h"
 
 namespace slake {
 	enum class TypeId : uint8_t {
 		None,  // None, aka `null'
 
-		U8,		  // Unsigned 8-bit integer
-		U16,	  // Unsigned 16-bit integer
-		U32,	  // Unsigned 32-bit integer
-		U64,	  // Unsigned 64-bit integer
-		I8,		  // Signed 8-bit integer
-		I16,	  // Signed 16-bit integer
-		I32,	  // Signed 32-bit integer
-		I64,	  // Signed 64-bit integer
-		F32,	  // 32-bit floating point number
-		F64,	  // 64-bit floating point number
-		Bool,	  // Boolean
-		String,	  // String
-		WString,  // UTF-32 string
-		Char,	  // ASCII character
-		WChar,	  // UTF-32 character
+		Value,	// Value type
 
 		Fn,				// Function
 		FnOverloading,	// Function overloading
@@ -39,7 +26,7 @@ namespace slake {
 		Interface,	// Interface
 		Trait,		// Trait
 		Struct,		// Structure
-		Object,		// Object instance
+		Instance,	// Object instance
 
 		Any,  // Any
 
@@ -47,17 +34,12 @@ namespace slake {
 
 		IdRef,		 // Reference
 		GenericArg,	 // Generic argument
-		RootValue,	 // Root value
-		TypeName,	 // Type name
+		RootObject,	 // Root value
 		Context,	 // Context
-
-		LocalVarRef,  // Local variable reference
-		RegRef,		  // Register reference
-		ArgRef,		  // Argument reference
 	};
 
 	template <typename T>
-	constexpr inline TypeId getValueType() {
+	constexpr inline TypeId getObjectType() {
 		if constexpr (std::is_same<T, std::int8_t>::value)
 			return TypeId::I8;
 		else if constexpr (std::is_same<T, std::int16_t>::value)
@@ -89,15 +71,16 @@ namespace slake {
 	}
 
 	class Runtime;
-	class Value;
-	class IdRefValue;
-	class MemberValue;
+	class Object;
+	class IdRefObject;
+	class MemberObject;
 
 	struct Type final {
 		TypeId typeId;	// Type ID
 		mutable std::variant<
 			std::monostate,	 // Simple type
-			Value *,		 // Resolved type
+			ValueType,		 // Value type
+			Object *,		 // Resolved type
 			Type *,			 // Array/Reference
 			std::string		 // Generic parameter
 			>
@@ -105,22 +88,24 @@ namespace slake {
 
 		inline Type() noexcept : typeId(TypeId::None) {}
 		inline Type(const Type &x) noexcept { *this = x; }
-		inline Type(Type &&x) noexcept { *this = x; }
+		inline Type(ValueType valueType) noexcept : typeId(TypeId::Value) { exData = valueType; }
+		inline Type(Type &&x) noexcept { *this = std::move(x); }
 		inline Type(TypeId typeId, const Type &elementType) : typeId(typeId) {
 			exData = new Type(elementType);
 		}
 		inline Type(TypeId type) noexcept : typeId(type) {}
-		inline Type(TypeId type, Value *destObject) noexcept : typeId(type) {
+		inline Type(TypeId type, Object *destObject) noexcept : typeId(type) {
 			exData = destObject;
 		}
 		inline Type(std::string genericParamName) : typeId(TypeId::GenericArg) {
 			exData = genericParamName;
 		}
-		Type(IdRefValue *ref);
+		Type(IdRefObject *ref);
 
 		~Type();
 
-		inline Value *getCustomTypeExData() const { return std::get<Value *>(exData); }
+		inline ValueType getValueTypeExData() const { return std::get<ValueType>(exData); }
+		inline Object *getCustomTypeExData() const { return std::get<Object *>(exData); }
 		inline Type &getArrayExData() const { return *std::get<Type *>(exData); }
 		inline Type &getRefExData() const { return *std::get<Type *>(exData); }
 		inline Type &getVarExData() const { return *std::get<Type *>(exData); }
@@ -143,7 +128,7 @@ namespace slake {
 					case TypeId::Class:
 					case TypeId::Interface:
 					case TypeId::Trait:
-					case TypeId::Object: {
+					case TypeId::Instance: {
 						auto lhsType = getCustomTypeExData(), rhsType = rhs.getCustomTypeExData();
 						assert(lhsType->getType() != TypeId::IdRef &&
 							   rhsType->getType() != TypeId::IdRef);
@@ -179,10 +164,12 @@ namespace slake {
 				return false;
 
 			switch (rhs.typeId) {
+				case TypeId::Value:
+					return getValueTypeExData() == rhs.getValueTypeExData();
 				case TypeId::Class:
 				case TypeId::Interface:
 				case TypeId::Trait:
-				case TypeId::Object: {
+				case TypeId::Instance: {
 					auto lhsType = getCustomTypeExData(), rhsType = rhs.getCustomTypeExData();
 					assert(lhsType->getType() != TypeId::IdRef &&
 						   rhsType->getType() != TypeId::IdRef);
@@ -209,18 +196,14 @@ namespace slake {
 			return this->typeId != rhs;
 		}
 
-		inline Type &operator=(Type &&rhs) noexcept {
-			typeId = rhs.typeId;
-			exData = std::move(rhs.exData);
-			return *this;
-		}
-
 		inline Type &operator=(const Type &rhs) noexcept {
-			switch (typeId = rhs.typeId) {
+			typeId = rhs.typeId;
+
+			switch (rhs.typeId) {
 				case TypeId::Class:
 				case TypeId::Interface:
 				case TypeId::Trait:
-				case TypeId::Object:
+				case TypeId::Instance:
 					if (rhs.isLoadingDeferred())
 						// Duplicate the reference to the type.
 						exData = rhs.getCustomTypeExData()->duplicate();
@@ -243,19 +226,48 @@ namespace slake {
 			return *this;
 		}
 
-		inline Value *resolveCustomType() {
+		inline Type &operator=(Type &&rhs) noexcept {
+			typeId = rhs.typeId;
+
+			switch (rhs.typeId) {
+				case TypeId::Class:
+				case TypeId::Interface:
+				case TypeId::Trait:
+				case TypeId::Instance:
+					exData = rhs.getCustomTypeExData();
+					break;
+				case TypeId::Array:
+					exData = std::get<Type*>(rhs.exData);
+					break;
+				case TypeId::Ref:
+					exData = std::get<Type *>(rhs.exData);
+					break;
+				case TypeId::Var:
+					exData = std::get<Type *>(rhs.exData);
+					break;
+				default:
+					exData = rhs.exData;
+			}
+
+			rhs.exData = {};
+			rhs.typeId = TypeId::None;
+
+			return *this;
+		}
+
+		inline Object *resolveCustomType() {
 			if (typeId == TypeId::Class)
-				return (Value *)getCustomTypeExData();
+				return (Object *)getCustomTypeExData();
 			return nullptr;
 		}
 	};
 
-	class ClassValue;
-	class InterfaceValue;
-	class TraitValue;
+	class ClassObject;
+	class InterfaceObject;
+	class TraitObject;
 
-	bool hasImplemented(ClassValue *c, InterfaceValue *i);
-	bool hasTrait(ClassValue *c, TraitValue *t);
+	bool hasImplemented(ClassObject *c, InterfaceObject *i);
+	bool hasTrait(ClassObject *c, TraitObject *t);
 	bool isCompatible(Type a, Type b);
 
 	class Runtime;

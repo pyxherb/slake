@@ -54,23 +54,8 @@ namespace slake {
 		enum class UnaryOp : uint8_t {
 			LNot,
 			Not,
-			IncF,
-			DecF,
-			IncB,
-			DecB,
 			Neg
 		};
-
-		inline bool isForwardUnaryOp(UnaryOp op) {
-			switch (op) {
-				case UnaryOp::IncF:
-				case UnaryOp::DecF:
-					return true;
-				default:
-					return false;
-			}
-		}
-		inline bool isBackwardUnaryOp(UnaryOp op) { return !isForwardUnaryOp(op); }
 
 		enum class BinaryOp : uint8_t {
 			Add = 0,

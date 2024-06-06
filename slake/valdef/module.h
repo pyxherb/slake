@@ -6,27 +6,27 @@
 #include <map>
 
 namespace slake {
-	class ModuleValue : public MemberValue {
+	class ModuleObject : public MemberObject {
 	public:
-		std::unordered_map<std::string, IdRefValue *> imports;
-		std::deque<IdRefValue *> unnamedImports;
+		std::unordered_map<std::string, IdRefObject *> imports;
+		std::deque<IdRefObject *> unnamedImports;
 
-		ModuleValue(Runtime *rt, AccessModifier access);
-		virtual ~ModuleValue();
+		ModuleObject(Runtime *rt, AccessModifier access);
+		virtual ~ModuleObject();
 
 		virtual Type getType() const override;
 
-		virtual Value *duplicate() const override;
+		virtual Object *duplicate() const override;
 
-		inline ModuleValue &operator=(const ModuleValue &x) {
-			((MemberValue &)*this) = (MemberValue &)x;
+		inline ModuleObject &operator=(const ModuleObject &x) {
+			((MemberObject &)*this) = (MemberObject &)x;
 
 			imports = x.imports;
 			unnamedImports = x.unnamedImports;
 
 			return *this;
 		}
-		ModuleValue &operator=(ModuleValue &&) = delete;
+		ModuleObject &operator=(ModuleObject &&) = delete;
 	};
 }
 

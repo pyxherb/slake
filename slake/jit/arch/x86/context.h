@@ -5,7 +5,7 @@
 
 namespace slake {
 	struct X86JITContext {
-		Value* args;
+		Object* args;
 	};
 }
 

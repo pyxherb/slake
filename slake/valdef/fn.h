@@ -16,7 +16,7 @@ namespace slake {
 
 	struct Instruction final {
 		Opcode opcode = (Opcode)0xffff;
-		std::deque<Value *> operands;
+		std::deque<Value> operands;
 	};
 
 	enum class FnOverloadingKind {
@@ -32,11 +32,11 @@ namespace slake {
 		OL_VIRTUAL = 0x04  // Is virtual
 		;
 
-	class FnValue;
+	class FnObject;
 
-	class FnOverloadingValue : public Value {
+	class FnOverloadingObject : public Object {
 	public:
-		FnValue *fnValue;
+		FnObject *fnObject;
 
 		AccessModifier access;
 
@@ -48,23 +48,23 @@ namespace slake {
 
 		OverloadingFlags overloadingFlags = 0;
 
-		FnOverloadingValue(
-			FnValue *fnValue,
+		FnOverloadingObject(
+			FnObject *fnObject,
 			AccessModifier access,
 			std::deque<Type> paramTypes,
 			Type returnType);
-		virtual ~FnOverloadingValue();
+		virtual ~FnOverloadingObject();
 
 		virtual inline Type getType() const { return TypeId::FnOverloading; }
 
 		virtual FnOverloadingKind getOverloadingKind() const = 0;
 
-		virtual ValueRef<> call(Value *thisObject, std::deque<Value *> args) const = 0;
+		virtual Value call(Object *thisObject, std::deque<Value> args) const = 0;
 
-		virtual FnOverloadingValue *duplicate() const = 0;
+		virtual FnOverloadingObject *duplicate() const = 0;
 
-		inline FnOverloadingValue &operator=(const FnOverloadingValue &other) {
-			fnValue = other.fnValue;
+		inline FnOverloadingObject &operator=(const FnOverloadingObject &other) {
+			fnObject = other.fnObject;
 
 			access = other.access;
 
@@ -80,31 +80,31 @@ namespace slake {
 		}
 	};
 
-	class RegularFnOverloadingValue : public FnOverloadingValue {
+	class RegularFnOverloadingObject : public FnOverloadingObject {
 	public:
 		std::deque<slxfmt::SourceLocDesc> sourceLocDescs;
 		std::deque<Instruction> instructions;
 
-		inline RegularFnOverloadingValue(
-			FnValue *fnValue,
+		inline RegularFnOverloadingObject(
+			FnObject *fnObject,
 			AccessModifier access,
 			std::deque<Type> paramTypes,
 			Type returnType)
-			: FnOverloadingValue(
-				  fnValue,
+			: FnOverloadingObject(
+				  fnObject,
 				  access,
 				  paramTypes,
 				  returnType) {}
-		virtual ~RegularFnOverloadingValue() = default;
+		virtual ~RegularFnOverloadingObject() = default;
 
 		virtual FnOverloadingKind getOverloadingKind() const override;
 
-		virtual ValueRef<> call(Value *thisObject, std::deque<Value *> args) const override;
+		virtual Value call(Object *thisObject, std::deque<Value> args) const override;
 
-		virtual FnOverloadingValue *duplicate() const override;
+		virtual FnOverloadingObject *duplicate() const override;
 
-		inline RegularFnOverloadingValue &operator=(const RegularFnOverloadingValue &other) {
-			*(FnOverloadingValue *)this = (const FnOverloadingValue &)other;
+		inline RegularFnOverloadingObject &operator=(const RegularFnOverloadingObject &other) {
+			*(FnOverloadingObject *)this = (const FnOverloadingObject &)other;
 
 			sourceLocDescs = other.sourceLocDescs;
 
@@ -115,10 +115,14 @@ namespace slake {
 				// Duplicate each of the operands.
 				instructions[i].operands.resize(other.instructions[i].operands.size());
 				for (size_t j = 0; j < other.instructions[i].operands.size(); ++j) {
-					instructions[i].operands[j] =
-						other.instructions[i].operands[j]
-							? other.instructions[i].operands[j]->duplicate()
-							: nullptr;
+					if (other.instructions[i].operands[j].valueType == ValueType::ObjectRef) {
+						if (other.instructions[i].operands[j].getObjectRef().objectPtr)
+							instructions[i].operands[j] =
+								other.instructions[i].operands[j].getObjectRef().objectPtr->duplicate();
+						else
+							instructions[i].operands[j] = nullptr;
+					} else
+						instructions[i].operands[j] = other.instructions[i].operands[j];
 				}
 			}
 
@@ -127,38 +131,38 @@ namespace slake {
 	};
 
 	using NativeFnCallback =
-		std::function<ValueRef<>(
+		std::function<Value(
 			Runtime *rt,
-			Value *thisObject,
-			std::deque<Value *> args,
+			Object *thisObject,
+			std::deque<Value> args,
 			const std::unordered_map<std::string, Type> &mappedGenericArgs)>;
 
-	class NativeFnOverloadingValue : public FnOverloadingValue {
+	class NativeFnOverloadingObject : public FnOverloadingObject {
 	public:
 		NativeFnCallback callback;
 
-		inline NativeFnOverloadingValue(
-			FnValue *fnValue,
+		inline NativeFnOverloadingObject(
+			FnObject *fnObject,
 			AccessModifier access,
 			std::deque<Type> paramTypes,
 			Type returnType,
 			NativeFnCallback callback)
-			: FnOverloadingValue(
-				  fnValue,
+			: FnOverloadingObject(
+				  fnObject,
 				  access,
 				  paramTypes,
 				  returnType),
 			  callback(callback) {}
-		virtual ~NativeFnOverloadingValue() = default;
+		virtual ~NativeFnOverloadingObject() = default;
 
 		virtual FnOverloadingKind getOverloadingKind() const override;
 
-		virtual ValueRef<> call(Value *thisObject, std::deque<Value *> args) const override;
+		virtual Value call(Object *thisObject, std::deque<Value> args) const override;
 
-		virtual FnOverloadingValue *duplicate() const override;
+		virtual FnOverloadingObject *duplicate() const override;
 
-		inline NativeFnOverloadingValue &operator=(const NativeFnOverloadingValue &other) {
-			*(FnOverloadingValue *)this = (const FnOverloadingValue &)other;
+		inline NativeFnOverloadingObject &operator=(const NativeFnOverloadingObject &other) {
+			*(FnOverloadingObject *)this = (const FnOverloadingObject &)other;
 
 			callback = other.callback;
 
@@ -166,42 +170,42 @@ namespace slake {
 		}
 	};
 
-	class FnValue : public MemberValue {
+	class FnObject : public MemberObject {
 	public:
-		FnValue *parentFn = nullptr;
-		std::deque<FnOverloadingValue *> overloadings;
+		FnObject *parentFn = nullptr;
+		std::deque<FnOverloadingObject *> overloadings;
 
-		inline FnValue(Runtime *rt) : MemberValue(rt, ACCESS_PUB) {
-			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(MemberValue));
+		inline FnObject(Runtime *rt) : MemberObject(rt, ACCESS_PUB) {
+			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(MemberObject));
 		}
-		virtual inline ~FnValue() {
-			reportSizeFreedToRuntime(sizeof(*this) - sizeof(MemberValue));
+		virtual inline ~FnObject() {
+			reportSizeFreedToRuntime(sizeof(*this) - sizeof(MemberObject));
 		}
 
 		virtual Type getType() const override;
 
-		FnOverloadingValue *getOverloading(std::deque<Type> argTypes) const;
+		FnOverloadingObject *getOverloading(std::deque<Type> argTypes) const;
 
-		virtual ValueRef<> call(Value *thisObject, std::deque<Value *> args, std::deque<Type> argTypes) const;
+		virtual Value call(Object *thisObject, std::deque<Value> args, std::deque<Type> argTypes) const;
 
-		virtual Value *duplicate() const override;
+		virtual Object *duplicate() const override;
 
-		inline FnValue &operator=(const FnValue &x) {
-			((MemberValue &)*this) = (MemberValue &)x;
+		inline FnObject &operator=(const FnObject &x) {
+			((MemberObject &)*this) = (MemberObject &)x;
 
 			// We don't copy parentFn because it has to be linked to a inherited function dynamically LOL
 
 			for (auto &i : x.overloadings) {
-				FnOverloadingValue *ol = i->duplicate();
+				FnOverloadingObject *ol = i->duplicate();
 
-				ol->fnValue = this;
+				ol->fnObject = this;
 
 				overloadings.push_back(ol);
 			}
 
 			return *this;
 		}
-		FnValue &operator=(FnValue &&) = delete;
+		FnObject &operator=(FnObject &&) = delete;
 	};
 }
 

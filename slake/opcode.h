@@ -48,10 +48,6 @@ namespace slake {
 
 		NOT,   // Bitwise NOT
 		LNOT,  // Logical NOT
-		INCF,  // Forward Increase
-		DECF,  // Forward Decrease
-		INCB,  // Backward Increase
-		DECB,  // Backward Decrease
 		NEG,   // Negate
 
 		AT,	 // Subscript

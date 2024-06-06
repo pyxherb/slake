@@ -4,37 +4,37 @@
 #include "member.h"
 
 namespace slake {
-	class AliasValue final : public MemberValue {
+	class AliasObject final : public MemberObject {
 	public:
-		mutable Value *src;
+		mutable Object *src;
 
-		AliasValue(Runtime *rt, AccessModifier access, Value *src);
-		virtual ~AliasValue();
+		AliasObject(Runtime *rt, AccessModifier access, Object *src);
+		virtual ~AliasObject();
 
 		virtual inline Type getType() const override { return TypeId::Alias; }
 
-		virtual Value *duplicate() const override;
+		virtual Object *duplicate() const override;
 
-		inline AliasValue &operator=(const AliasValue &x) {
-			((Value &)*this) = (Value &)x;
+		inline AliasObject &operator=(const AliasObject &x) {
+			((Object &)*this) = (Object &)x;
 
 			src = x.src;
 
 			return *this;
 		}
-		AliasValue &operator=(AliasValue &&) = delete;
+		AliasObject &operator=(AliasObject &&) = delete;
 	};
 
-	inline Value *unwrapAlias(Value *value) noexcept {
+	inline Object *unwrapAlias(Object *value) noexcept {
 		if (value->getType() != TypeId::Alias)
 			return value;
-		return ((AliasValue *)value)->src;
+		return ((AliasObject *)value)->src;
 	}
 
-	inline const Value *unwrapAlias(const Value *value) noexcept {
+	inline const Object *unwrapAlias(const Object *value) noexcept {
 		if (value->getType() != TypeId::Alias)
 			return value;
-		return ((AliasValue *)value)->src;
+		return ((AliasObject *)value)->src;
 	}
 }
 

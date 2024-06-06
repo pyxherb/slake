@@ -1,32 +1,32 @@
 #ifndef _SLAKE_VALDEF_CONTEXT_H_
 #define _SLAKE_VALDEF_CONTEXT_H_
 
-#include "value.h"
+#include "object.h"
 #include <memory>
 
 namespace slake {
 	struct Context;
 
-	class ContextValue final : public Value {
+	class ContextObject final : public Object {
 	private:
 		std::shared_ptr<Context> _context;
 
 		friend class Runtime;
 
 	public:
-		ContextValue(Runtime *rt, std::shared_ptr<Context> context);
-		virtual ~ContextValue();
+		ContextObject(Runtime *rt, std::shared_ptr<Context> context);
+		virtual ~ContextObject();
 
 		virtual inline Type getType() const override { return TypeId::Context; }
 
 		inline std::shared_ptr<Context> getContext() { return _context; }
 
-		ValueRef<> resume();
-		ValueRef<> getResult();
+		Value resume();
+		Value getResult();
 		bool isDone();
 
-		inline ContextValue &operator=(const ContextValue &x) {
-			((Value &)*this) = (Value &)x;
+		inline ContextObject &operator=(const ContextObject &x) {
+			((Object &)*this) = (Object &)x;
 
 			_context = x._context;
 

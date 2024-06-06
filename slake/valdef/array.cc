@@ -2,19 +2,19 @@
 
 using namespace slake;
 
-ArrayValue::ArrayValue(Runtime *rt, Type type)
-	: Value(rt), type(type) {
-	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Value));
+ArrayObject::ArrayObject(Runtime *rt, Type type)
+	: Object(rt), type(type) {
+	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Object));
 }
 
-ArrayValue::~ArrayValue() {
-	reportSizeFreedToRuntime(sizeof(*this) - sizeof(Value));
+ArrayObject::~ArrayObject() {
+	reportSizeFreedToRuntime(sizeof(*this) - sizeof(Object));
 }
 
-Value *ArrayValue::duplicate() const {
-	ArrayValue *v = new ArrayValue(_rt, type);
+Object *ArrayObject::duplicate() const {
+	ArrayObject *v = new ArrayObject(_rt, type);
 
 	*v = *this;
 
-	return (Value *)v;
+	return (Object *)v;
 }

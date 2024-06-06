@@ -3,27 +3,27 @@
 
 using namespace slake;
 
-BasicVarValue::BasicVarValue(Runtime *rt, AccessModifier access, Type type) : MemberValue(rt, access), type(type) {
-	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(MemberValue));
+BasicVarObject::BasicVarObject(Runtime *rt, AccessModifier access, Type type) : MemberObject(rt, access), type(type) {
+	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(MemberObject));
 }
 
-BasicVarValue::~BasicVarValue() {
-	reportSizeFreedToRuntime(sizeof(*this) - sizeof(MemberValue));
+BasicVarObject::~BasicVarObject() {
+	reportSizeFreedToRuntime(sizeof(*this) - sizeof(MemberObject));
 }
 
-slake::VarValue::VarValue(Runtime *rt, AccessModifier access, Type type)
-	: BasicVarValue(rt, access, type) {
-	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(BasicVarValue));
+slake::VarObject::VarObject(Runtime *rt, AccessModifier access, Type type)
+	: BasicVarObject(rt, access, type) {
+	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(BasicVarObject));
 }
 
-VarValue::~VarValue() {
-	reportSizeFreedToRuntime(sizeof(*this) - sizeof(BasicVarValue));
+VarObject::~VarObject() {
+	reportSizeFreedToRuntime(sizeof(*this) - sizeof(BasicVarObject));
 }
 
-Value *VarValue::duplicate() const {
-	VarValue *v = new VarValue(_rt, 0, type);
+Object *VarObject::duplicate() const {
+	VarObject *v = new VarObject(_rt, 0, type);
 
 	*v = *this;
 
-	return (Value *)v;
+	return (Object *)v;
 }

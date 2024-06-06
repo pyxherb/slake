@@ -22,8 +22,8 @@ namespace slake {
 		SidpDebugAdapter(uint16_t port);
 		virtual ~SidpDebugAdapter();
 
-		virtual void onExecBreakpoint(FnValue *fn, uint32_t curIns) override;
-		virtual void onVarWrite(VarValue *var) override;
+		virtual void onExecBreakpoint(FnObject *fn, uint32_t curIns) override;
+		virtual void onVarWrite(VarObject *var) override;
 	};
 }
 

@@ -101,10 +101,6 @@ const char *slake::slkc::getTokenName(slake::slkc::TokenId tokenId) {
 			return "&&";
 		case TokenId::LOrOp:
 			return "||";
-		case TokenId::IncOp:
-			return "++";
-		case TokenId::DecOp:
-			return "--";
 		case TokenId::MatchOp:
 			return "=>";
 		case TokenId::WrapOp:

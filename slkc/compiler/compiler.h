@@ -416,7 +416,7 @@ namespace slake {
 			// Import begin
 			//
 
-			std::set<Value *> importedDefinitions;
+			std::set<Object *> importedDefinitions;
 
 			struct ModuleRefComparator {
 				inline bool operator()(const IdRef &lhs, const IdRef &rhs) const {
@@ -435,14 +435,14 @@ namespace slake {
 			};
 			std::set<IdRef, ModuleRefComparator> importedModules;
 
-			static std::unique_ptr<std::ifstream> moduleLocator(Runtime *rt, ValueRef<IdRefValue> ref);
+			static std::unique_ptr<std::ifstream> moduleLocator(Runtime *rt, IdRefObject *ref);
 			std::shared_ptr<Scope> completeModuleNamespaces(const IdRef &ref);
-			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, FnValue *value);
-			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, ModuleValue *value);
-			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, ClassValue *value);
-			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, InterfaceValue *value);
-			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, TraitValue *value);
-			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, Value *value);
+			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, FnObject *value);
+			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, ModuleObject *value);
+			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, ClassObject *value);
+			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, InterfaceObject *value);
+			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, TraitObject *value);
+			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, Object *value);
 			void importModule(const IdRef &ref);
 			std::shared_ptr<TypeNameNode> toTypeName(slake::Type runtimeType);
 			IdRef toAstIdRef(std::deque<slake::IdRefEntry> runtimeRefEntries);

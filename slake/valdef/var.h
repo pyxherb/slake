@@ -6,48 +6,78 @@
 #include <slake/type.h>
 
 namespace slake {
-	class BasicVarValue : public MemberValue {
+	class BasicVarObject : public MemberObject {
 	public:
 		Type type = TypeId::Any;
 
-		BasicVarValue(Runtime *rt, AccessModifier access, Type type);
-		virtual ~BasicVarValue();
+		BasicVarObject(Runtime *rt, AccessModifier access, Type type);
+		virtual ~BasicVarObject();
 
 		virtual inline Type getType() const override { return Type(TypeId::Var, type); }
 
 		virtual Type getVarType() const { return type; }
 
-		virtual Value *getData() const = 0;
-		virtual void setData(Value *value) = 0;
+		virtual Value getData() const = 0;
+		virtual void setData(const Value &value) = 0;
 
-		inline BasicVarValue &operator=(const BasicVarValue &x) {
-			((MemberValue &)*this) = (MemberValue &)x;
+		inline BasicVarObject &operator=(const BasicVarObject &x) {
+			((MemberObject &)*this) = (MemberObject &)x;
 			type = x.type;
 			return *this;
 		}
-		BasicVarValue &operator=(BasicVarValue &&) = delete;
+		BasicVarObject &operator=(BasicVarObject &&) = delete;
 	};
 
-	class VarValue final : public BasicVarValue {
+	class VarObject final : public BasicVarObject {
 	public:
-		mutable slake::Value *value = nullptr;
+		mutable Value value = nullptr;
 
-		VarValue(Runtime *rt, AccessModifier access, Type type);
-		virtual ~VarValue();
+		VarObject(Runtime *rt, AccessModifier access, Type type);
+		virtual ~VarObject();
 
-		virtual Value *duplicate() const override;
+		virtual Object *duplicate() const override;
 
-		virtual inline Value *getData() const override { return value; }
-		virtual inline void setData(Value *value) override {
+		virtual inline Value getData() const override { return value; }
+		virtual inline void setData(const Value &value) override {
 			type.loadDeferredType(_rt);
 
-			if (value && !isCompatible(type, value->getType()))
-				throw MismatchedTypeError("Mismatched types");
+			Type valueType;
+
+			switch (value.valueType) {
+				case ValueType::I8:
+				case ValueType::I16:
+				case ValueType::I32:
+				case ValueType::I64:
+				case ValueType::U8:
+				case ValueType::U16:
+				case ValueType::U32:
+				case ValueType::U64:
+				case ValueType::F32:
+				case ValueType::F64:
+				case ValueType::Bool:
+				case ValueType::String:
+					valueType = value.valueType;
+
+					if (!isCompatible(type, valueType))
+						throw MismatchedTypeError("Mismatched variable type");
+					break;
+				case ValueType::ObjectRef:
+					if (auto p = value.getObjectRef().objectPtr; p) {
+						valueType = value.getObjectRef().objectPtr->getType();
+
+						if (!isCompatible(type, valueType))
+							throw MismatchedTypeError("Mismatched variable type");
+					}
+					break;
+				default:
+					throw MismatchedTypeError("Mismatched variable type");
+			}
+
 			this->value = value;
 		}
 
-		inline VarValue &operator=(const VarValue &x) {
-			((MemberValue &)*this) = (MemberValue &)x;
+		inline VarObject &operator=(const VarObject &x) {
+			((MemberObject &)*this) = (MemberObject &)x;
 			// TODO: Do we actually need to duplicate value of the variable? If so, how do we treat object values (they should not be duplicated)?
 			//
 			// if (x.value)
@@ -55,7 +85,7 @@ namespace slake {
 			value = x.value;
 			return *this;
 		}
-		VarValue &operator=(VarValue &&) = delete;
+		VarObject &operator=(VarObject &&) = delete;
 	};
 }
 

@@ -3,34 +3,34 @@
 
 using namespace slake;
 
-MemberValue::MemberValue(Runtime *rt, AccessModifier access)
-	: Value(rt), AccessModified(access) {
-	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Value));
+MemberObject::MemberObject(Runtime *rt, AccessModifier access)
+	: Object(rt), AccessModified(access) {
+	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Object));
 }
 
-MemberValue::~MemberValue() {
-	reportSizeFreedToRuntime(sizeof(*this) - sizeof(Value));
+MemberObject::~MemberObject() {
+	reportSizeFreedToRuntime(sizeof(*this) - sizeof(Object));
 }
 
-std::string MemberValue::getName() const {
+std::string MemberObject::getName() const {
 	return _name;
 }
 
-const Value *MemberValue::getParent() const { return _parent; }
-Value *MemberValue::getParent() { return _parent; }
+const Object *MemberObject::getParent() const { return _parent; }
+Object *MemberObject::getParent() { return _parent; }
 
-void MemberValue::bind(Value *parent, std::string name) {
+void MemberObject::bind(Object *parent, std::string name) {
 	_parent = parent, _name = name;
 }
 
-void MemberValue::unbind() {
+void MemberObject::unbind() {
 	if (!_parent)
 		throw std::logic_error("Unbinding an unbound member value");
 	_parent = nullptr;
 	_name.clear();
 }
 
-void Scope::_getMemberChain(const std::string &name, std::deque<std::pair<Scope *, MemberValue *>> &membersOut) {
+void Scope::_getMemberChain(const std::string &name, std::deque<std::pair<Scope *, MemberObject *>> &membersOut) {
 	if (auto m = getMember(name); m)
 		membersOut.push_back({ this, m });
 

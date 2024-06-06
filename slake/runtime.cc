@@ -10,15 +10,15 @@ MajorFrame::MajorFrame(Runtime *rt) {
 }
 
 Runtime::Runtime(RuntimeFlags flags) : _flags(flags) {
-	_rootValue = new RootValue(this);
+	_rootObject = new RootObject(this);
 }
 
 Runtime::~Runtime() {
-	_rootValue = nullptr;
+	_rootObject = nullptr;
 	activeContexts.clear();
 
 	gc();
 
-	assert(!createdValues.size());
+	assert(!createdObjects.size());
 	assert(!_szMemInUse);
 }

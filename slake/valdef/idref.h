@@ -1,7 +1,7 @@
 #ifndef _SLAKE_VALDEF_REF_H_
 #define _SLAKE_VALDEF_REF_H_
 
-#include "value.h"
+#include "object.h"
 #include "generic.h"
 #include <deque>
 
@@ -14,31 +14,31 @@ namespace slake {
 			: name(name), genericArgs(genericArgs) {}
 	};
 
-	class IdRefValue final : public Value {
+	class IdRefObject final : public Object {
 	public:
 		std::deque<IdRefEntry> entries;
 
-		IdRefValue(Runtime *rt);
-		virtual ~IdRefValue();
+		IdRefObject(Runtime *rt);
+		virtual ~IdRefObject();
 
 		virtual inline Type getType() const override { return TypeId::IdRef; }
 
-		virtual Value *duplicate() const override;
+		virtual Object *duplicate() const override;
 
-		inline IdRefValue &operator=(const IdRefValue &x) {
-			((Value&)*this) = (Value&)x;
+		inline IdRefObject &operator=(const IdRefObject &x) {
+			((Object&)*this) = (Object&)x;
 
 			entries = x.entries;
 
 			return *this;
 		}
-		IdRefValue &operator=(IdRefValue &&) = delete;
+		IdRefObject &operator=(IdRefObject &&) = delete;
 	};
 }
 
 namespace std {
 	string to_string(std::deque<slake::IdRefEntry> &idRefEntries);
-	string to_string(const slake::IdRefValue *ref);
+	string to_string(const slake::IdRefObject *ref);
 }
 
 #endif

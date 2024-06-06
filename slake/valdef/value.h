@@ -1,162 +1,217 @@
-#ifndef _SLAKE_VALDEF_BASE_H_
-#define _SLAKE_VALDEF_BASE_H_
+#ifndef _SLAKE_VALDEF_VALUE_H_
+#define _SLAKE_VALDEF_VALUE_H_
 
-#include "scope.h"
 #include <atomic>
 #include <stdexcept>
 #include <string>
 #include <deque>
 #include <map>
+#include <cassert>
 
 namespace slake {
-	class Runtime;
-	class MemberValue;
-	class Value;
+	struct Type;
+	class Object;
 
-	bool _isRuntimeInDestruction(Runtime *runtime);
+	enum class ValueType : uint8_t {
+		I8 = 0,		// Signed 8-bit integer
+		I16,		// Signed 16-bit integer
+		I32,		// Signed 32-bit integer
+		I64,		// Signed 64-bit integer
+		U8,			// Unsigned 8-bit integer
+		U16,		// Unsigned 16-bit integer
+		U32,		// Unsigned 32-bit integer
+		U64,		// Unsigned 64-bit integer
+		F32,		// 32-bit floating point number
+		F64,		// 64-bit floating point number
+		Bool,		// Boolean
+		String,		// String
+		ObjectRef,	// Object reference
 
-	template <typename T = Value>
-	class ValueRef final {
-	public:
-		T *_value = nullptr;
-		Runtime *_rt = nullptr;
+		RegRef,		  // Register reference
+		ArgRef,		  // Argument reference
+		LocalVarRef,  // Local variable reference
+		TypeName,	  // Type name
 
-		inline void reset() {
-			if (_value) {
-				--_value->hostRefCount;
-				_value = nullptr;
-			}
-		}
-
-		inline T* release() {
-			T *v = _value;
-			--_value->hostRefCount;
-			_value = nullptr;
-			return v;
-		}
-
-		inline void discard() noexcept { _value = nullptr; }
-
-		inline ValueRef(const ValueRef<T> &x) : _value(x._value) {
-			if (x._value) {
-				++_value->hostRefCount;
-				_rt = x->_rt;
-			}
-		}
-		inline ValueRef(ValueRef<T> &&x) noexcept : _value(x._value) {
-			if (x._value) {
-				_rt = x->_rt;
-				x._value = nullptr;
-			}
-		}
-		inline ValueRef(T *value = nullptr) noexcept : _value(value) {
-			if (_value) {
-				++_value->hostRefCount;
-				_rt = value->_rt;
-			}
-		}
-		inline ~ValueRef() {
-			reset();
-		}
-
-		inline const T *get() const { return _value; }
-		inline T *get() { return _value; }
-		inline const T *operator->() const { return _value; }
-		inline T *operator->() { return _value; }
-
-		inline ValueRef<T> &operator=(const ValueRef<T> &x) {
-			reset();
-
-			if ((_value = x._value)) {
-				++_value->hostRefCount;
-				_rt = _value->_rt;
-			}
-
-			return *this;
-		}
-		inline ValueRef<T> &operator=(ValueRef<T> &&x) noexcept {
-			reset();
-
-			if ((_value = x._value)) {
-				_rt = _value->_rt;
-				x._value = nullptr;
-			}
-
-			return *this;
-		}
-
-		inline ValueRef<T> &operator=(T *other) {
-			reset();
-
-			if ((_value = other)) {
-				++_value->hostRefCount;
-				_rt = _value->_rt;
-			}
-
-			return *this;
-		}
-
-		inline bool operator<(const ValueRef<T> &rhs) const noexcept {
-			return _value < rhs._value;
-		}
-		inline bool operator>(const ValueRef<T> &rhs) const noexcept {
-			return _value > rhs._value;
-		}
-		inline bool operator==(const ValueRef<T> &rhs) const noexcept {
-			return _value == rhs._value;
-		}
-
-		inline operator bool() const {
-			return _value;
-		}
+		Invalid = UINT8_MAX,
 	};
 
-	using ValueFlags = uint8_t;
-	constexpr static ValueFlags
-		VF_WALKED = 0x01,  // The value has been walked by the garbage collector.
-		VF_ALIAS = 0x02	   // The value is an alias thus the scope should not be deleted.
-		;
+	struct IndexedRefValueExData {
+		bool unwrap;
+		uint32_t index;
+	};
 
-	struct Type;
-	class Scope;
+	struct ObjectRefValueExData {
+		Object *objectPtr;
+		bool isHostRef;
+	};
 
-	class Value {
-	protected:
-		void reportSizeAllocatedToRuntime(size_t size);
-		void reportSizeFreedToRuntime(size_t size);
-
-		friend class Runtime;
+	struct Value {
+	private:
+		std::variant<
+			uint8_t,
+			uint16_t,
+			uint32_t,
+			uint64_t,
+			int8_t,
+			int16_t,
+			int32_t,
+			int64_t,
+			float,
+			double,
+			bool,
+			std::string,
+			ObjectRefValueExData,
+			IndexedRefValueExData,
+			Type *>
+			data;
+		void _reset();
 
 	public:
-		// The value will never be freed if its host reference count is not 0.
-		mutable std::atomic_uint32_t hostRefCount = 0;
+		ValueType valueType = ValueType::Invalid;
 
-		ValueFlags _flags = 0;
+		inline Value(const Value &other) {
+			*this = other;
+		}
+		inline Value(Value &&other) {
+			*this = std::move(other);
+		}
+		Value() = default;
+		inline Value(int8_t data) {
+			this->data = data;
+			valueType = ValueType::I8;
+		}
+		inline Value(int16_t data) {
+			this->data = data;
+			valueType = ValueType::I16;
+		}
+		inline Value(int32_t data) {
+			this->data = data;
+			valueType = ValueType::I32;
+		}
+		inline Value(int64_t data) {
+			this->data = data;
+			valueType = ValueType::I64;
+		}
+		inline Value(uint8_t data) {
+			this->data = data;
+			valueType = ValueType::U8;
+		}
+		inline Value(uint16_t data) {
+			this->data = data;
+			valueType = ValueType::U16;
+		}
+		inline Value(uint32_t data) {
+			this->data = data;
+			valueType = ValueType::U32;
+		}
+		inline Value(uint64_t data) {
+			this->data = data;
+			valueType = ValueType::U64;
+		}
+		inline Value(float data) {
+			this->data = data;
+			valueType = ValueType::F32;
+		}
+		inline Value(double data) {
+			this->data = data;
+			valueType = ValueType::F64;
+		}
+		inline Value(bool data) {
+			this->data = data;
+			valueType = ValueType::Bool;
+		}
+		inline Value(const std::string &data) {
+			this->data = data;
+			valueType = ValueType::String;
+		}
+		inline Value(std::string &&data) {
+			this->data = std::move(data);
+			valueType = ValueType::String;
+		}
+		inline Value(Object *objectPtr, bool isHostRef = false) {
+			if (isHostRef) {
+				if (objectPtr)
+					++objectPtr->hostRefCount;
+			}
+			this->data = ObjectRefValueExData{ objectPtr, isHostRef };
+			valueType = ValueType::ObjectRef;
+		}
+		inline Value(ValueType vt, uint32_t index, bool unwrap) {
+			this->data = IndexedRefValueExData{ unwrap, index };
+			valueType = vt;
+		}
+		Value(const Type &type);
+		~Value();
 
-		Runtime *_rt;
+		inline int8_t getI8() const {
+			assert(valueType == ValueType::I8);
+			return std::get<int8_t>(data);
+		}
 
-		Scope *scope = nullptr;
+		inline int16_t getI16() const {
+			assert(valueType == ValueType::I16);
+			return std::get<int16_t>(data);
+		}
 
-		/// @brief The basic constructor.
-		/// @param rt Runtime which the value belongs to.
-		Value(Runtime *rt);
-		virtual ~Value();
+		inline int32_t getI32() const {
+			assert(valueType == ValueType::I32);
+			return std::get<int32_t>(data);
+		}
 
-		/// @brief Get type of the value.
-		/// @return Type of the value.
-		virtual Type getType() const = 0;
+		inline int64_t getI64() const {
+			assert(valueType == ValueType::I64);
+			return std::get<int64_t>(data);
+		}
 
-		/// @brief Dulplicate the value if supported.
-		/// @return Duplicate of the value.
-		virtual Value *duplicate() const;
+		inline uint8_t getU8() const {
+			assert(valueType == ValueType::U8);
+			return std::get<uint8_t>(data);
+		}
 
-		inline Runtime *getRuntime() const noexcept { return _rt; }
+		inline uint16_t getU16() const {
+			assert(valueType == ValueType::U16);
+			return std::get<uint16_t>(data);
+		}
 
-		MemberValue *getMember(const std::string &name);
-		std::deque<std::pair<Scope *, MemberValue *>> getMemberChain(const std::string &name);
+		inline uint32_t getU32() const {
+			assert(valueType == ValueType::U32);
+			return std::get<uint32_t>(data);
+		}
 
-		Value &operator=(const Value &x);
-		Value &operator=(Value &&) = delete;
+		inline uint64_t getU64() const {
+			assert(valueType == ValueType::U64);
+			return std::get<uint64_t>(data);
+		}
+
+		inline float getF32() const {
+			assert(valueType == ValueType::F32);
+			return std::get<float>(data);
+		}
+
+		inline double getF64() const {
+			assert(valueType == ValueType::F64);
+			return std::get<double>(data);
+		}
+
+		inline bool getBool() const {
+			assert(valueType == ValueType::Bool);
+			return std::get<bool>(data);
+		}
+
+		inline const std::string &getString() const {
+			assert(valueType == ValueType::String);
+			return std::get<std::string>(data);
+		}
+
+		Type &getTypeName();
+		const Type &getTypeName() const;
+
+		const ObjectRefValueExData &getObjectRef() const;
+
+		const IndexedRefValueExData &getIndexedRef() const;
+
+		Value &operator=(const Value &other);
+		Value &operator=(Value &&other);
 	};
 }
 

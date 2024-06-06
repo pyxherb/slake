@@ -13,10 +13,10 @@ namespace slake {
 		virtual void jump() = 0;
 	};
 
-	class FnValue;
+	class FnObject;
 
 	ICodePage* genCodePage(size_t size);
-	ICodePage *compileFn(FnValue* fn);
+	ICodePage *compileFn(FnObject* fn);
 }
 
 #endif

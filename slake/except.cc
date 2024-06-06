@@ -2,6 +2,6 @@
 
 using namespace slake;
 
-slake::NotFoundError::NotFoundError(std::string msg, ValueRef<IdRefValue> ref)
+slake::NotFoundError::NotFoundError(std::string msg, IdRefObject *ref)
 	: RuntimeExecError(msg), ref(ref) {
 }

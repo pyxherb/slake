@@ -1,68 +1,67 @@
 #ifndef _SLAKE_VALDEF_OBJECT_H_
 #define _SLAKE_VALDEF_OBJECT_H_
 
-#include <unordered_map>
+#include "scope.h"
+#include <atomic>
+#include <stdexcept>
+#include <string>
 #include <deque>
-
-#include "member.h"
-#include "generic.h"
+#include <map>
 
 namespace slake {
-	using ObjectFlags = uint32_t;
+	class Runtime;
+	class MemberObject;
+	class Object;
 
+	using ObjectFlags = uint8_t;
 	constexpr static ObjectFlags
-		OBJECT_PARENT = 0x01;
+		VF_WALKED = 0x01,  // The value has been walked by the garbage collector.
+		VF_ALIAS = 0x02	   // The value is an alias thus the scope should not be deleted.
+		;
 
-	class ObjectExtension {
-	public:
-		virtual ~ObjectExtension() = default;
-	};
+	struct Type;
+	class Scope;
 
-	class ObjectValue final : public Value {
+	class Object {
 	protected:
-		GenericArgList _genericArgs;
-		ClassValue *_class;
+		void reportSizeAllocatedToRuntime(size_t size);
+		void reportSizeFreedToRuntime(size_t size);
 
 		friend class Runtime;
 
 	public:
-		ObjectValue *_parent;
+		// The object will never be freed if its host reference count is not 0.
+		mutable std::atomic_uint32_t hostRefCount = 0;
 
-		ObjectFlags objectFlags = 0;
-		std::unique_ptr<ObjectExtension> objectExtension;
+		ObjectFlags _flags = 0;
 
-		inline ObjectValue(Runtime *rt, ClassValue *cls, ObjectValue *parent = nullptr)
-			: Value(rt), _class(cls), _parent(parent) {
-			if (parent)
-				parent->objectFlags |= OBJECT_PARENT;
-			scope = new Scope(this, parent ? parent->scope : nullptr);
-			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Value));
-		}
+		Runtime *_rt;
 
-		/// @brief Delete the object and execute its destructor (if exists).
-		///
-		/// @note Never delete objects directly.
-		virtual inline ~ObjectValue() {
-			reportSizeFreedToRuntime(sizeof(*this) - sizeof(Value));
-		}
+		Scope *scope = nullptr;
 
-		virtual inline Type getType() const override { return Type(TypeId::Object, (Value *)_class); }
+		/// @brief The basic constructor.
+		/// @param rt Runtime which the value belongs to.
+		Object(Runtime *rt);
+		virtual ~Object();
 
-		virtual Value *duplicate() const override;
+		/// @brief Get type of the value.
+		/// @return Type of the value.
+		virtual Type getType() const = 0;
 
-		ObjectValue(ObjectValue &) = delete;
-		ObjectValue(ObjectValue &&) = delete;
-		inline ObjectValue &operator=(const ObjectValue &x) {
-			(Value &)*this = (const Value &)x;
+		/// @brief Dulplicate the value if supported.
+		/// @return Duplicate of the value.
+		virtual Object *duplicate() const;
 
-			_genericArgs = x._genericArgs;
-			_class = x._class;
-			objectFlags = x.objectFlags & ~OBJECT_PARENT;
+		inline Runtime *getRuntime() const noexcept { return _rt; }
 
-			return *this;
-		}
-		ObjectValue &operator=(ObjectValue &&) = delete;
+		MemberObject *getMember(const std::string &name);
+		std::deque<std::pair<Scope *, MemberObject *>> getMemberChain(const std::string &name);
+
+		Object &operator=(const Object &x);
+		Object &operator=(Object &&) = delete;
 	};
 }
+
+#include <slake/type.h>
 
 #endif

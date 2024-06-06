@@ -76,30 +76,6 @@ std::map<TokenId, Parser::OpRegistry> Parser::prefixOpRegistries = {
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
-	{ TokenId::IncOp,
-		{ 131,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token *opToken) -> std::shared_ptr<ExprNode> {
-				auto expr = std::make_shared<UnaryOpExprNode>(
-					opToken->beginLocation,
-					UnaryOp::IncF,
-					lhs);
-
-				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
-
-				return std::static_pointer_cast<ExprNode>(expr);
-			} } },
-	{ TokenId::DecOp,
-		{ 131,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token *opToken) -> std::shared_ptr<ExprNode> {
-				auto expr = std::make_shared<UnaryOpExprNode>(
-					opToken->beginLocation,
-					UnaryOp::DecF,
-					lhs);
-
-				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
-
-				return std::static_pointer_cast<ExprNode>(expr);
-			} } },
 };
 
 std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
@@ -132,30 +108,6 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 
 				Token *closingToken = parser->expectToken(parser->lexer->nextToken(), TokenId::RBracket);
 				expr->idxClosingToken = parser->lexer->getTokenIndex(closingToken);
-
-				return std::static_pointer_cast<ExprNode>(expr);
-			} } },
-	{ TokenId::IncOp,
-		{ 140,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token *opToken) -> std::shared_ptr<ExprNode> {
-				auto expr = std::make_shared<UnaryOpExprNode>(
-					lhs->getLocation(),
-					UnaryOp::IncB,
-					lhs);
-
-				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
-
-				return std::static_pointer_cast<ExprNode>(expr);
-			} } },
-	{ TokenId::DecOp,
-		{ 140,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token *opToken) -> std::shared_ptr<ExprNode> {
-				auto expr = std::make_shared<UnaryOpExprNode>(
-					lhs->getLocation(),
-					UnaryOp::DecB,
-					lhs);
-
-				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
@@ -1605,8 +1557,6 @@ std::shared_ptr<FnOverloadingNode> Parser::parseOperatorDecl(std::string &nameOu
 		case TokenId::XorOp:
 		case TokenId::LAndOp:
 		case TokenId::LOrOp:
-		case TokenId::IncOp:
-		case TokenId::DecOp:
 		case TokenId::NotOp:
 		case TokenId::LNotOp:
 		case TokenId::AddAssignOp:

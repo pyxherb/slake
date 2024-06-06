@@ -25,21 +25,21 @@ namespace slake {
 	struct MinorFrame final {
 		std::deque<ExceptionHandler> exceptHandlers;  // Exception handlers
 
-		std::deque<Value *> dataStack;	// Data stack
+		std::deque<Value> dataStack;  // Data stack
 		uint32_t nLocalVars = 0, nRegs = 0;
 
 		MinorFrame(uint32_t nLocalVars, uint32_t nRegs);
 
-		inline void push(Value *v) {
+		inline void push(Value v) {
 			if (dataStack.size() > SLAKE_STACK_MAX)
 				throw StackOverflowError("Stack overflowed");
 			dataStack.push_back(v);
 		}
 
-		inline ValueRef<> pop() {
+		inline Value pop() {
 			if (!dataStack.size())
 				throw FrameBoundaryExceededError("Frame bottom exceeded");
-			ValueRef<> v = dataStack.back();
+			Value v = dataStack.back();
 			dataStack.pop_back();
 			return v;
 		}
@@ -47,22 +47,22 @@ namespace slake {
 
 	/// @brief Major frames which represent a single calling frame.
 	struct MajorFrame final {
-		Value *scopeValue = nullptr;				  // Scope value.
-		const RegularFnOverloadingValue *curFn = nullptr;  // Current function overloading.
-		uint32_t curIns = 0;						  // Offset of current instruction in function body.
-		std::deque<Value *> argStack;				  // Argument stack.
-		std::deque<Value *> nextArgStack;			  // Argument stack for next call.
-		std::deque<Type> nextArgTypes;				  // Types of argument stack for next call.
-		std::deque<VarValue *> localVars;			  // Local variables.
-		std::deque<VarValue *> regs;				  // Local registers.
-		Value *thisObject = nullptr;				  // `this' object.
-		Value *returnValue = nullptr;				  // Return value.
-		std::deque<MinorFrame> minorFrames;			  // Minor frames.
-		Value *curExcept = nullptr;					  // Current exception.
+		Object *scopeObject = nullptr;						// Scope value.
+		const RegularFnOverloadingObject *curFn = nullptr;	// Current function overloading.
+		uint32_t curIns = 0;								// Offset of current instruction in function body.
+		std::deque<Value> argStack;							// Argument stack.
+		std::deque<Value> nextArgStack;						// Argument stack for next call.
+		std::deque<Type> nextArgTypes;						// Types of argument stack for next call.
+		std::deque<VarObject *> localVars;					// Local variables.
+		std::deque<VarObject *> regs;						// Local registers.
+		Object *thisObject = nullptr;						// `this' object.
+		Value returnValue = nullptr;						// Return value.
+		std::deque<MinorFrame> minorFrames;					// Minor frames.
+		Object *curExcept = nullptr;						// Current exception.
 
 		MajorFrame(Runtime *rt);
 
-		inline Value *lload(uint32_t off) {
+		inline Object *lload(uint32_t off) {
 			if (off >= localVars.size())
 				throw InvalidLocalVarIndexError("Invalid local variable index", off);
 
@@ -105,7 +105,7 @@ namespace slake {
 		_RT_DELETING = 0x80000000;
 
 	using ModuleLocatorFn = std::function<
-		std::unique_ptr<std::istream>(Runtime *rt, ValueRef<IdRefValue> ref)>;
+		std::unique_ptr<std::istream>(Runtime *rt, IdRefObject *ref)>;
 
 	using LoadModuleFlags = uint8_t;
 	constexpr LoadModuleFlags
@@ -123,47 +123,47 @@ namespace slake {
 	class Runtime final {
 	public:
 		struct GenericInstantiationContext {
-			const Value *mappedValue;
+			const Object *mappedObject;
 			const GenericArgList *genericArgs;
 			std::unordered_map<std::string, Type> mappedGenericArgs;
 		};
 
 	private:
 		/// @brief Root value of the runtime.
-		RootValue *_rootValue;
+		RootObject *_rootObject;
 
 		/// @brief Contains all created values.
-		std::set<Value *> _walkedValues, _destructedValues;
+		std::set<Object *> _walkedObjects, _destructedObjects;
 
 		struct GenericLookupEntry {
-			Value *originalValue;
+			const Object *originalObject;
 			GenericArgList genericArgs;
 		};
-		std::map<Value *, GenericLookupEntry> _genericCacheLookupTable;
+		mutable std::map<const Object *, GenericLookupEntry> _genericCacheLookupTable;
 
 		using GenericCacheTable =
 			std::map<
 				GenericArgList,	 // Generic arguments.
-				Value *,		 // Cached instantiated value.
+				Object *,		 // Cached instantiated value.
 				GenericArgListComparator>;
 
 		using GenericCacheDirectory = std::map<
-			const Value *,	// Original uninstantiated generic value.
+			const Object *,	 // Original uninstantiated generic value.
 			GenericCacheTable>;
 
 		/// @brief Cached instances of generic values.
 		mutable GenericCacheDirectory _genericCacheDir;
 
-		inline void invalidateGenericCache(Value *i) {
+		inline void invalidateGenericCache(Object *i) {
 			if (_genericCacheLookupTable.count(i)) {
 				// Remove the value from generic cache if it is unreachable.
 				auto &lookupEntry = _genericCacheLookupTable.at(i);
 
-				auto &table = _genericCacheDir.at(lookupEntry.originalValue);
+				auto &table = _genericCacheDir.at(lookupEntry.originalObject);
 				table.erase(lookupEntry.genericArgs);
 
 				if (!table.size())
-					_genericCacheLookupTable.erase(lookupEntry.originalValue);
+					_genericCacheLookupTable.erase(lookupEntry.originalObject);
 
 				_genericCacheLookupTable.erase(i);
 			}
@@ -177,11 +177,11 @@ namespace slake {
 		/// @brief Module locator for importing.
 		ModuleLocatorFn _moduleLocator;
 
-		IdRefValue *_loadIdRef(std::istream &fs);
-		Value *_loadValue(std::istream &fs);
+		IdRefObject *_loadIdRef(std::istream &fs);
+		Value _loadValue(std::istream &fs);
 		Type _loadType(std::istream &fs);
 		GenericParam _loadGenericParam(std::istream &fs);
-		void _loadScope(ModuleValue *mod, std::istream &fs, LoadModuleFlags loadModuleFlags);
+		void _loadScope(ModuleObject *mod, std::istream &fs, LoadModuleFlags loadModuleFlags);
 
 		/// @brief Execute a single instruction.
 		/// @param context Context for execution.
@@ -191,31 +191,32 @@ namespace slake {
 		void _gcWalk(Scope *scope);
 		void _gcWalk(GenericParamList &genericParamList);
 		void _gcWalk(Type &type);
-		void _gcWalk(Value *i);
+		void _gcWalk(Value &i);
+		void _gcWalk(Object *i);
 		void _gcWalk(Context &i);
 
-		void _instantiateGenericValue(Type &type, GenericInstantiationContext &instantiationContext) const;
-		void _instantiateGenericValue(Value *v, GenericInstantiationContext &instantiationContext) const;
-		void _instantiateGenericValue(FnOverloadingValue *ol, GenericInstantiationContext &instantiationContext) const;
+		void _instantiateGenericObject(Type &type, GenericInstantiationContext &instantiationContext) const;
+		void _instantiateGenericObject(Value &value, GenericInstantiationContext &instantiationContext) const;
+		void _instantiateGenericObject(Object *v, GenericInstantiationContext &instantiationContext) const;
+		void _instantiateGenericObject(FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const;
 
-		VarValue *_addLocalVar(MajorFrame &frame, Type type);
-		VarValue *_addLocalReg(MajorFrame &frame);
+		VarObject *_addLocalVar(MajorFrame &frame, Type type);
+		VarObject *_addLocalReg(MajorFrame &frame);
 
 		bool _findAndDispatchExceptHandler(Context *context) const;
 
-		friend class Value;
-		friend class RegularFnOverloadingValue;
-		friend class FnValue;
-		friend class ObjectValue;
-		friend class MemberValue;
-		friend class ModuleValue;
-		friend class ValueRef<ObjectValue>;
+		friend class Object;
+		friend class RegularFnOverloadingObject;
+		friend class FnObject;
+		friend class InstanceObject;
+		friend class MemberObject;
+		friend class ModuleObject;
 
 	public:
 		/// @brief Runtime flags.
 		RuntimeFlags _flags = 0;
 
-		std::set<Value *> createdValues;
+		std::set<Object *> createdObjects;
 
 		/// @brief Active contexts of threads.
 		std::map<std::thread::id, std::shared_ptr<Context>> activeContexts;
@@ -231,38 +232,38 @@ namespace slake {
 		Runtime(RuntimeFlags flags = 0);
 		virtual ~Runtime();
 
-		void mapGenericParams(const Value *v, GenericInstantiationContext &instantiationContext) const;
-		void mapGenericParams(const FnOverloadingValue *ol, GenericInstantiationContext &instantiationContext) const;
+		void mapGenericParams(const Object *v, GenericInstantiationContext &instantiationContext) const;
+		void mapGenericParams(const FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const;
 		/// @brief Instantiate an generic value (e.g. generic class, etc).
-		/// @param v Value to be instantiated.
+		/// @param v Object to be instantiated.
 		/// @param genericArgs Generic arguments for instantiation.
 		/// @return Instantiated value.
-		Value *instantiateGenericValue(const Value *v, GenericInstantiationContext &instantiationContext) const;
+		Object *instantiateGenericObject(const Object *v, GenericInstantiationContext &instantiationContext) const;
 
 		/// @brief Resolve a reference and get the referenced value.
 		/// @param ref Reference to be resolved.
-		/// @param scopeValue Scope value for resolving.
+		/// @param scopeObject Scope value for resolving.
 		/// @return Resolved value which is referred by the reference.
-		Value *resolveIdRef(IdRefValue *ref, Value *scopeValue = nullptr) const;
+		Object *resolveIdRef(IdRefObject *ref, Object *scopeObject = nullptr) const;
 
-		ValueRef<ModuleValue> loadModule(std::istream &fs, LoadModuleFlags flags);
-		ValueRef<ModuleValue> loadModule(const void *buf, size_t size, LoadModuleFlags flags);
+		ModuleObject *loadModule(std::istream &fs, LoadModuleFlags flags);
+		ModuleObject *loadModule(const void *buf, size_t size, LoadModuleFlags flags);
 
-		inline RootValue *getRootValue() { return _rootValue; }
+		inline RootObject *getRootObject() { return _rootObject; }
 
 		inline void setModuleLocator(ModuleLocatorFn locator) { _moduleLocator = locator; }
 		inline ModuleLocatorFn getModuleLocator() { return _moduleLocator; }
 
-		std::string getFullName(const MemberValue *v) const;
-		std::string getFullName(const IdRefValue *v) const;
+		std::string getFullName(const MemberObject *v) const;
+		std::string getFullName(const IdRefObject *v) const;
 
-		std::deque<IdRefEntry> getFullRef(const MemberValue *v) const;
+		std::deque<IdRefEntry> getFullRef(const MemberObject *v) const;
 
 		/// @brief Do a GC cycle.
 		void gc();
 
-		ObjectValue *newClassInstance(ClassValue *cls);
-		ArrayValue *newArrayInstance(Type type, uint32_t size);
+		InstanceObject *newClassInstance(ClassObject *cls);
+		ArrayObject *newArrayInstance(Type type, uint32_t size);
 	};
 }
 

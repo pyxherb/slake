@@ -65,9 +65,9 @@ namespace slake {
 
 	class NotFoundError : public RuntimeExecError {
 	public:
-		ValueRef<IdRefValue> ref;
+		IdRefObject *ref;
 
-		NotFoundError(std::string msg, ValueRef<IdRefValue> ref);
+		NotFoundError(std::string msg, IdRefObject *ref);
 		virtual ~NotFoundError() = default;
 	};
 
@@ -86,7 +86,7 @@ namespace slake {
 
 	class UncaughtExceptionError : public RuntimeExecError {
 	public:
-		ValueRef<MemberValue> source;
+		MemberObject *source;
 
 		inline UncaughtExceptionError(std::string msg) : RuntimeExecError(msg){};
 		virtual ~UncaughtExceptionError() = default;
@@ -118,6 +118,14 @@ namespace slake {
 
 		inline InvalidRegisterIndexError(std::string msg, uint32_t index) : RuntimeExecError(msg), index(index){};
 		virtual ~InvalidRegisterIndexError() = default;
+	};
+
+	class InvalidArgumentIndexError : public RuntimeExecError {
+	public:
+		const uint32_t index;
+
+		inline InvalidArgumentIndexError(std::string msg, uint32_t index) : RuntimeExecError(msg), index(index){};
+		virtual ~InvalidArgumentIndexError() = default;
 	};
 
 	class InvalidSubscriptionError : public RuntimeExecError {

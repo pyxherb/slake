@@ -2,39 +2,39 @@
 
 using namespace slake;
 
-void slake::Runtime::_instantiateGenericValue(Type &type, GenericInstantiationContext &instantiationContext) const {
+void slake::Runtime::_instantiateGenericObject(Type &type, GenericInstantiationContext &instantiationContext) const {
 	switch (type.typeId) {
 		case TypeId::Class:
 		case TypeId::Interface:
 		case TypeId::Trait:
-		case TypeId::Object: {
+		case TypeId::Instance: {
 			if (type.isLoadingDeferred()) {
-				IdRefValue *exData = (IdRefValue *)type.getCustomTypeExData();
+				IdRefObject *exData = (IdRefObject *)type.getCustomTypeExData();
 				for (auto &i : exData->entries) {
 					for (auto &j : i.genericArgs) {
-						_instantiateGenericValue(j, instantiationContext);
+						_instantiateGenericObject(j, instantiationContext);
 					}
 				}
 			} else {
-				auto idRefToResolvedType = getFullRef((MemberValue *)type.getCustomTypeExData());
+				auto idRefToResolvedType = getFullRef((MemberObject *)type.getCustomTypeExData());
 
-				ValueRef<IdRefValue> idRefValue = new IdRefValue((Runtime *)this);
-				idRefValue->entries = idRefToResolvedType;
+				IdRefObject *idRefObject = new IdRefObject((Runtime *)this);
+				idRefObject->entries = idRefToResolvedType;
 
-				type = Type(type.typeId, idRefValue.release());
+				type = Type(type.typeId, idRefObject);
 
-				_instantiateGenericValue(type, instantiationContext);
+				_instantiateGenericObject(type, instantiationContext);
 			}
 			break;
 		}
 		case TypeId::Array:
-			_instantiateGenericValue(type.getArrayExData(), instantiationContext);
+			_instantiateGenericObject(type.getArrayExData(), instantiationContext);
 			break;
 		case TypeId::Ref:
-			_instantiateGenericValue(type.getRefExData(), instantiationContext);
+			_instantiateGenericObject(type.getRefExData(), instantiationContext);
 			break;
 		case TypeId::Var:
-			_instantiateGenericValue(type.getVarExData(), instantiationContext);
+			_instantiateGenericObject(type.getVarExData(), instantiationContext);
 			break;
 		case TypeId::GenericArg:
 			if (auto it = instantiationContext.mappedGenericArgs.find(type.getGenericArgExData()); it != instantiationContext.mappedGenericArgs.end()) {
@@ -44,36 +44,65 @@ void slake::Runtime::_instantiateGenericValue(Type &type, GenericInstantiationCo
 	}
 }
 
-void slake::Runtime::_instantiateGenericValue(Value *v, GenericInstantiationContext &instantiationContext) const {
+void slake::Runtime::_instantiateGenericObject(Value& value, GenericInstantiationContext &instantiationContext) const {
+	switch (value.valueType) {
+		case ValueType::I8:
+		case ValueType::I16:
+		case ValueType::I32:
+		case ValueType::I64:
+		case ValueType::U8:
+		case ValueType::U16:
+		case ValueType::U32:
+		case ValueType::U64:
+		case ValueType::F32:
+		case ValueType::F64:
+		case ValueType::Bool:
+		case ValueType::String:
+		case ValueType::ObjectRef:
+		case ValueType::RegRef:
+		case ValueType::ArgRef:
+		case ValueType::LocalVarRef:
+			break;
+		case ValueType::TypeName:
+			_instantiateGenericObject(value.getTypeName(), instantiationContext);
+			break;
+		case ValueType::Invalid:
+			break;
+		default:
+			throw std::logic_error("Unhandled value type");
+	}
+}
+
+void slake::Runtime::_instantiateGenericObject(Object *v, GenericInstantiationContext &instantiationContext) const {
 	// How to instantiate generic classes:
 	// Duplicate the value, scan for references to generic parameters and
 	// replace them with generic arguments.
 	switch (v->getType().typeId) {
-		case TypeId::Object: {
-			auto value = (ObjectValue *)v;
+		case TypeId::Instance: {
+			auto value = (InstanceObject *)v;
 
 			for (auto &i : value->scope->members)
-				_instantiateGenericValue(i.second, instantiationContext);
+				_instantiateGenericObject(i.second, instantiationContext);
 
 			for (auto &i : value->_genericArgs)
-				_instantiateGenericValue(i, instantiationContext);
+				_instantiateGenericObject(i, instantiationContext);
 
-			_instantiateGenericValue(value->_class, instantiationContext);
+			_instantiateGenericObject(value->_class, instantiationContext);
 
 			if (value->_parent)
-				_instantiateGenericValue(value->_parent, instantiationContext);
+				_instantiateGenericObject(value->_parent, instantiationContext);
 			break;
 		}
 		case TypeId::Array: {
-			auto value = (ArrayValue *)v;
+			auto value = (ArrayObject *)v;
 
-			_instantiateGenericValue(value->type, instantiationContext);
+			_instantiateGenericObject(value->type, instantiationContext);
 			break;
 		}
 		case TypeId::Class: {
-			ClassValue *const value = (ClassValue *)v;
+			ClassObject *const value = (ClassObject *)v;
 
-			if (value->genericParams.size() && value != instantiationContext.mappedValue) {
+			if (value->genericParams.size() && value != instantiationContext.mappedObject) {
 				GenericInstantiationContext newInstantiationContext = instantiationContext;
 
 				// Map irreplaceable parameters to corresponding generic parameter reference type
@@ -82,62 +111,62 @@ void slake::Runtime::_instantiateGenericValue(Value *v, GenericInstantiationCont
 					newInstantiationContext.mappedGenericArgs[value->genericParams[i].name] = Type(value->genericParams[i].name);
 				}
 
-				newInstantiationContext.mappedValue = value;
+				newInstantiationContext.mappedObject = value;
 
-				_instantiateGenericValue(value->parentClass, newInstantiationContext);
+				_instantiateGenericObject(value->parentClass, newInstantiationContext);
 
-				_instantiateGenericValue(value, newInstantiationContext);
+				_instantiateGenericObject(value, newInstantiationContext);
 			} else {
 				value->_genericArgs = *instantiationContext.genericArgs;
 
-				_instantiateGenericValue(value->parentClass, instantiationContext);
+				_instantiateGenericObject(value->parentClass, instantiationContext);
 
 				for (auto &i : value->scope->members)
-					_instantiateGenericValue(i.second, instantiationContext);
+					_instantiateGenericObject(i.second, instantiationContext);
 			}
 
 			break;
 		}
 		case TypeId::Interface: {
-			InterfaceValue *const value = (InterfaceValue *)v;
+			InterfaceObject *const value = (InterfaceObject *)v;
 
 			value->_genericArgs = *instantiationContext.genericArgs;
 
 			for (auto &i : value->scope->members)
-				_instantiateGenericValue(i.second, instantiationContext);
+				_instantiateGenericObject(i.second, instantiationContext);
 
 			break;
 		}
 		case TypeId::Trait: {
-			TraitValue *const value = (TraitValue *)v;
+			TraitObject *const value = (TraitObject *)v;
 
 			for (auto &i : value->scope->members)
-				_instantiateGenericValue(i.second, instantiationContext);
+				_instantiateGenericObject(i.second, instantiationContext);
 
 			break;
 		}
 		case TypeId::Var: {
-			BasicVarValue *value = (BasicVarValue *)v;
+			BasicVarObject *value = (BasicVarObject *)v;
 
-			_instantiateGenericValue(value->type, instantiationContext);
+			_instantiateGenericObject(value->type, instantiationContext);
 			break;
 		}
 		case TypeId::Module: {
-			ModuleValue *value = (ModuleValue *)v;
+			ModuleObject *value = (ModuleObject *)v;
 
 			for (auto &i : value->scope->members)
-				_instantiateGenericValue(i.second, instantiationContext);
+				_instantiateGenericObject(i.second, instantiationContext);
 			break;
 		}
 		case TypeId::Fn: {
-			FnValue *value = (FnValue *)v;
+			FnObject *value = (FnObject *)v;
 
-			if (instantiationContext.mappedValue == value) {
+			if (instantiationContext.mappedObject == value) {
 				//
 				// We expect there's only one overloading can be instantiated.
 				// Uninstantiatable overloadings will be discarded.
 				//
-				FnOverloadingValue *matchedOverloading = nullptr;
+				FnOverloadingObject *matchedOverloading = nullptr;
 
 				for (auto &i : value->overloadings) {
 					if (i->genericParams.size() == instantiationContext.genericArgs->size()) {
@@ -149,50 +178,36 @@ void slake::Runtime::_instantiateGenericValue(Value *v, GenericInstantiationCont
 				value->overloadings.clear();
 
 				if (matchedOverloading) {
-					_instantiateGenericValue(matchedOverloading, instantiationContext);
+					_instantiateGenericObject(matchedOverloading, instantiationContext);
 					value->overloadings.push_back(matchedOverloading);
 				}
 			} else {
 				for (auto i : value->overloadings) {
-					_instantiateGenericValue(i, instantiationContext);
+					_instantiateGenericObject(i, instantiationContext);
 				}
 			}
 			break;
 		}
 		case TypeId::Alias: {
-			AliasValue *value = (AliasValue *)v;
+			AliasObject *value = (AliasObject *)v;
 
-			value->src = instantiateGenericValue(value->src, instantiationContext);
+			value->src = instantiateGenericObject(value->src, instantiationContext);
 			break;
 		}
-		case TypeId::RootValue:
-		case TypeId::I8:
-		case TypeId::I16:
-		case TypeId::I32:
-		case TypeId::I64:
-		case TypeId::U8:
-		case TypeId::U16:
-		case TypeId::U32:
-		case TypeId::U64:
-		case TypeId::F32:
-		case TypeId::F64:
-		case TypeId::Bool:
+		case TypeId::RootObject:
 		case TypeId::IdRef:
-		case TypeId::RegRef:
-		case TypeId::LocalVarRef:
-		case TypeId::ArgRef:
 			break;
 		default:
-			throw std::logic_error("Unhandled value type");
+			throw std::logic_error("Unhandled object type");
 	}
 }
 
-void Runtime::mapGenericParams(const Value *v, GenericInstantiationContext &instantiationContext) const {
-	instantiationContext.mappedValue = v;
+void Runtime::mapGenericParams(const Object *v, GenericInstantiationContext &instantiationContext) const {
+	instantiationContext.mappedObject = v;
 
 	switch (v->getType().typeId) {
 		case TypeId::Class: {
-			ClassValue *value = (ClassValue *)v;
+			ClassObject *value = (ClassObject *)v;
 
 			if (instantiationContext.genericArgs->size() != value->genericParams.size())
 				throw GenericInstantiationError("Number of generic parameter does not match");
@@ -203,7 +218,7 @@ void Runtime::mapGenericParams(const Value *v, GenericInstantiationContext &inst
 			break;
 		}
 		case TypeId::Interface: {
-			InterfaceValue *value = (InterfaceValue *)v;
+			InterfaceObject *value = (InterfaceObject *)v;
 
 			if (instantiationContext.genericArgs->size() != value->genericParams.size())
 				throw GenericInstantiationError("Number of generic parameter does not match");
@@ -214,7 +229,7 @@ void Runtime::mapGenericParams(const Value *v, GenericInstantiationContext &inst
 			break;
 		}
 		case TypeId::Trait: {
-			TraitValue *value = (TraitValue *)v;
+			TraitObject *value = (TraitObject *)v;
 
 			if (instantiationContext.genericArgs->size() != value->genericParams.size())
 				throw GenericInstantiationError("Number of generic parameter does not match");
@@ -228,7 +243,7 @@ void Runtime::mapGenericParams(const Value *v, GenericInstantiationContext &inst
 	}
 }
 
-void Runtime::mapGenericParams(const FnOverloadingValue *ol, GenericInstantiationContext &instantiationContext) const {
+void Runtime::mapGenericParams(const FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const {
 	if (instantiationContext.genericArgs->size() != ol->genericParams.size())
 		throw GenericInstantiationError("Number of generic parameter does not match");
 
@@ -237,7 +252,7 @@ void Runtime::mapGenericParams(const FnOverloadingValue *ol, GenericInstantiatio
 	}
 }
 
-Value *Runtime::instantiateGenericValue(const Value *v, GenericInstantiationContext &instantiationContext) const {
+Object *Runtime::instantiateGenericObject(const Object *v, GenericInstantiationContext &instantiationContext) const {
 	// Try to look up in the cache.
 	if (_genericCacheDir.count(v)) {
 		auto &table = _genericCacheDir.at(v);
@@ -252,13 +267,15 @@ Value *Runtime::instantiateGenericValue(const Value *v, GenericInstantiationCont
 	auto value = v->duplicate();									 // Make a duplicate of the original value.
 	_genericCacheDir[v][*instantiationContext.genericArgs] = value;	 // Store the instance into the cache.
 	mapGenericParams(value, instantiationContext);
-	_instantiateGenericValue(value, instantiationContext);	// Instantiate the value.
+	_instantiateGenericObject(value, instantiationContext);	// Instantiate the value.
+
+	_genericCacheLookupTable[value] = { v, *instantiationContext.genericArgs };
 
 	return value;
 }
 
-void Runtime::_instantiateGenericValue(FnOverloadingValue *ol, GenericInstantiationContext &instantiationContext) const {
-	if (ol->genericParams.size() && ol->fnValue != instantiationContext.mappedValue) {
+void Runtime::_instantiateGenericObject(FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const {
+	if (ol->genericParams.size() && ol->fnObject != instantiationContext.mappedObject) {
 		GenericInstantiationContext newInstantiationContext = instantiationContext;
 
 		// Map irreplaceable parameters to corresponding generic parameter reference type
@@ -267,32 +284,29 @@ void Runtime::_instantiateGenericValue(FnOverloadingValue *ol, GenericInstantiat
 			newInstantiationContext.mappedGenericArgs[ol->genericParams[i].name] = Type(ol->genericParams[i].name);
 		}
 
-		newInstantiationContext.mappedValue = ol->fnValue;
+		newInstantiationContext.mappedObject = ol->fnObject;
 
-		_instantiateGenericValue(ol, newInstantiationContext);
+		_instantiateGenericObject(ol, newInstantiationContext);
 	} else {
 		for (auto &i : ol->paramTypes)
-			_instantiateGenericValue(i, instantiationContext);
+			_instantiateGenericObject(i, instantiationContext);
 
-		_instantiateGenericValue(ol->returnType, instantiationContext);
+		_instantiateGenericObject(ol->returnType, instantiationContext);
 
 		switch (ol->getOverloadingKind()) {
 			case FnOverloadingKind::Regular: {
-				RegularFnOverloadingValue *overloading = (RegularFnOverloadingValue *)ol;
+				RegularFnOverloadingObject *overloading = (RegularFnOverloadingObject *)ol;
 
 				for (auto &i : overloading->instructions) {
 					for (auto &j : i.operands) {
-						if (j) {
-							if (j->getType() == TypeId::TypeName)
-								_instantiateGenericValue(((TypeNameValue *)j)->_data, instantiationContext);
-						}
+						_instantiateGenericObject(j, instantiationContext);
 					}
 				}
 
 				break;
 			}
 			case FnOverloadingKind::Native: {
-				NativeFnOverloadingValue *overloading = (NativeFnOverloadingValue *)ol;
+				NativeFnOverloadingObject *overloading = (NativeFnOverloadingObject *)ol;
 
 				break;
 			}

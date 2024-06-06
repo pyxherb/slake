@@ -2,7 +2,7 @@
 
 using namespace slake;
 
-void Scope::putMember(const std::string &name, MemberValue *value) {
+void Scope::putMember(const std::string &name, MemberObject *value) {
 	members[name] = value;
 	value->bind(owner, name);
 }
@@ -20,7 +20,7 @@ Scope *Scope::duplicate() {
 	std::unique_ptr<Scope> newScope = std::make_unique<Scope>(owner, parent);
 
 	for (auto i : members) {
-		newScope->putMember(i.first, (MemberValue *)i.second->duplicate());
+		newScope->putMember(i.first, (MemberObject *)i.second->duplicate());
 	}
 
 	return newScope.release();

@@ -8,21 +8,21 @@
 #include <string>
 
 namespace slake {
-	class Value;
-	class MemberValue;
+	class Object;
+	class MemberObject;
 
 	class Scope {
 	private:
-		void _getMemberChain(const std::string &name, std::deque<std::pair<Scope *, MemberValue *>> &membersOut);
+		void _getMemberChain(const std::string &name, std::deque<std::pair<Scope *, MemberObject *>> &membersOut);
 
 	public:
 		Scope *parent;
-		Value *owner;
-		std::unordered_map<std::string, MemberValue *> members;
+		Object *owner;
+		std::unordered_map<std::string, MemberObject *> members;
 
-		inline Scope(Value *owner, Scope *parent = nullptr) : owner(owner), parent(parent) {}
+		inline Scope(Object *owner, Scope *parent = nullptr) : owner(owner), parent(parent) {}
 
-		inline MemberValue *getMember(const std::string &name) {
+		inline MemberObject *getMember(const std::string &name) {
 			if (auto it = members.find(name); it != members.end())
 				return it->second;
 			if (parent)
@@ -30,9 +30,9 @@ namespace slake {
 			return nullptr;
 		}
 
-		void putMember(const std::string &name, MemberValue *value);
+		void putMember(const std::string &name, MemberObject *value);
 
-		inline void addMember(const std::string &name, MemberValue *value) {
+		inline void addMember(const std::string &name, MemberObject *value) {
 			if (members.find(name) != members.end())
 				throw std::logic_error("The member is already exists");
 
@@ -43,8 +43,8 @@ namespace slake {
 
 		Scope *duplicate();
 
-		inline std::deque<std::pair<Scope *, MemberValue *>> getMemberChain(const std::string &name) {
-			std::deque<std::pair<Scope *, MemberValue *>> members;
+		inline std::deque<std::pair<Scope *, MemberObject *>> getMemberChain(const std::string &name) {
+			std::deque<std::pair<Scope *, MemberObject *>> members;
 
 			_getMemberChain(name, members);
 

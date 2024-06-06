@@ -2,55 +2,55 @@
 
 using namespace slake;
 
-Type FnValue::getType() const { return TypeId::Fn; }
+Type FnObject::getType() const { return TypeId::Fn; }
 
-FnOverloadingValue::FnOverloadingValue(
-	FnValue *fnValue,
+FnOverloadingObject::FnOverloadingObject(
+	FnObject *fnObject,
 	AccessModifier access,
 	std::deque<Type> paramTypes,
 	Type returnType)
-	: Value(fnValue->_rt),
-	  fnValue(fnValue),
+	: Object(fnObject->_rt),
+	  fnObject(fnObject),
 	  access(access),
 	  paramTypes(paramTypes),
 	  returnType(returnType) {
-	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Value));
+	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Object));
 }
 
-FnOverloadingValue::~FnOverloadingValue() {
-	reportSizeFreedToRuntime(sizeof(*this) - sizeof(Value));
+FnOverloadingObject::~FnOverloadingObject() {
+	reportSizeFreedToRuntime(sizeof(*this) - sizeof(Object));
 }
 
-FnOverloadingKind slake::RegularFnOverloadingValue::getOverloadingKind() const {
+FnOverloadingKind slake::RegularFnOverloadingObject::getOverloadingKind() const {
 	return FnOverloadingKind::Regular;
 }
 
-FnOverloadingValue *slake::RegularFnOverloadingValue::duplicate() const {
-	RegularFnOverloadingValue *v = new RegularFnOverloadingValue(fnValue, access, {}, returnType);
+FnOverloadingObject *slake::RegularFnOverloadingObject::duplicate() const {
+	RegularFnOverloadingObject *v = new RegularFnOverloadingObject(fnObject, access, {}, returnType);
 
 	*v = *this;
 
-	return (FnOverloadingValue *)v;
+	return (FnOverloadingObject *)v;
 }
 
-FnOverloadingKind slake::NativeFnOverloadingValue::getOverloadingKind() const {
+FnOverloadingKind slake::NativeFnOverloadingObject::getOverloadingKind() const {
 	return FnOverloadingKind::Native;
 }
 
-ValueRef<> slake::NativeFnOverloadingValue::call(Value *thisObject, std::deque<Value *> args) const {
-	return callback(fnValue->_rt, thisObject, args, mappedGenericArgs);
+Value slake::NativeFnOverloadingObject::call(Object *thisObject, std::deque<Value> args) const {
+	return callback(fnObject->_rt, thisObject, args, mappedGenericArgs);
 }
 
-FnOverloadingValue *slake::NativeFnOverloadingValue::duplicate() const {
-	NativeFnOverloadingValue *v = new NativeFnOverloadingValue(fnValue, access, {}, returnType, {});
+FnOverloadingObject *slake::NativeFnOverloadingObject::duplicate() const {
+	NativeFnOverloadingObject *v = new NativeFnOverloadingObject(fnObject, access, {}, returnType, {});
 
 	*v = *this;
 
-	return (FnOverloadingValue *)v;
+	return (FnOverloadingObject *)v;
 }
 
-ValueRef<> RegularFnOverloadingValue::call(Value *thisObject, std::deque<Value *> args) const {
-	Runtime *rt = fnValue->_rt;
+Value RegularFnOverloadingObject::call(Object *thisObject, std::deque<Value> args) const {
+	Runtime *rt = fnObject->_rt;
 
 	// Save previous context
 	std::shared_ptr<Context> context;
@@ -72,11 +72,11 @@ ValueRef<> RegularFnOverloadingValue::call(Value *thisObject, std::deque<Value *
 		auto frame = MajorFrame(rt);
 		frame.curFn = this;
 		frame.curIns = 0;
-		frame.scopeValue = fnValue->_parent;
+		frame.scopeObject = fnObject->_parent;
 		frame.thisObject = thisObject;
 		frame.argStack.resize(args.size());
 		for (size_t i = 0; i < args.size(); ++i) {
-			auto var = new VarValue(rt, 0, TypeId::Any);
+			auto var = new VarObject(rt, 0, TypeId::Any);
 			var->setData(args[i]);
 			frame.argStack[i] = var;
 		}
@@ -116,7 +116,7 @@ ValueRef<> RegularFnOverloadingValue::call(Value *thisObject, std::deque<Value *
 		rt->gc();
 
 	if (context->flags & CTX_YIELDED)
-		return new ContextValue(rt, context);
+		return new ContextObject(rt, context);
 
 	if (context->majorFrames.back().curIns == UINT32_MAX) {
 		rt->activeContexts.erase(std::this_thread::get_id());
@@ -126,7 +126,7 @@ ValueRef<> RegularFnOverloadingValue::call(Value *thisObject, std::deque<Value *
 	return context->majorFrames.back().returnValue;
 }
 
-FnOverloadingValue* FnValue::getOverloading(std::deque<Type> argTypes) const {
+FnOverloadingObject *FnObject::getOverloading(std::deque<Type> argTypes) const {
 	for (auto &i : overloadings) {
 		if (i->overloadingFlags & OL_VARG) {
 			if (argTypes.size() < i->paramTypes.size())
@@ -155,8 +155,8 @@ FnOverloadingValue* FnValue::getOverloading(std::deque<Type> argTypes) const {
 	return nullptr;
 }
 
-ValueRef<> FnValue::call(Value *thisObject, std::deque<Value *> args, std::deque<Type> argTypes) const {
-	FnOverloadingValue *overloading = getOverloading(argTypes);
+Value FnObject::call(Object *thisObject, std::deque<Value> args, std::deque<Type> argTypes) const {
+	FnOverloadingObject *overloading = getOverloading(argTypes);
 
 	if (overloading)
 		return overloading->call(thisObject, args);
@@ -164,10 +164,10 @@ ValueRef<> FnValue::call(Value *thisObject, std::deque<Value *> args, std::deque
 	throw NoOverloadingError("No matching overloading was found");
 }
 
-Value *FnValue::duplicate() const {
-	FnValue *v = new FnValue(_rt);
+Object *FnObject::duplicate() const {
+	FnObject *v = new FnObject(_rt);
 
 	*v = *this;
 
-	return (Value *)v;
+	return (Object *)v;
 }

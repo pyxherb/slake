@@ -3,23 +3,9 @@
 
 using namespace slake;
 
-/// @brief Check if value of a value object is in range of specified type.
-/// @tparam TD Destination type.
-/// @tparam TS Source type.
-/// @param v Input value object.
-/// @return Converted value.
-template <typename TD, typename TS>
-static TD _checkOperandRange(ValueRef<> v) {
-	auto value = (LiteralValue<TS, getValueType<TS>()> *)v.get();
-	if ((TD)value->getData() > std::numeric_limits<TD>::max() ||
-		(TD)value->getData() < std::numeric_limits<TD>::min())
-		throw InvalidOperandsError("Invalid operand value");
-	return (TD)value->getData();
-}
-
 static void _checkOperandType(
 	Instruction &ins,
-	std::initializer_list<TypeId> types) {
+	std::initializer_list<ValueType> types) {
 	if (ins.operands.size() < types.size())
 		throw InvalidOperandsError("Invalid operand combination");
 
@@ -27,15 +13,19 @@ static void _checkOperandType(
 	for (size_t i = 0; i < ins.operands.size(); ++i) {
 		auto type = *(it++);
 
-		if (!ins.operands[i])
+		if (type == ValueType::Invalid)
 			continue;
 
-		if (type == TypeId::Any)
-			continue;
-
-		if (ins.operands[i]->getType() != type)
+		if (ins.operands[i].valueType != type)
 			throw InvalidOperandsError("Invalid operand combination");
 	}
+}
+
+static void _checkObjectOperandType(
+	Object *object,
+	TypeId typeId) {
+	if (object->getType().typeId != typeId)
+		throw InvalidOperandsError("Invalid operand combination");
 }
 
 static void _checkOperandCount(Instruction &ins, uint8_t n) {
@@ -44,224 +34,43 @@ static void _checkOperandCount(Instruction &ins, uint8_t n) {
 }
 
 template <typename LT>
-static Value *_castToLiteralValue(Runtime *rt, Value *x) {
-	using T = LiteralValue<LT, getValueType<LT>()>;
-	if (getValueType<LT>() == x->getType().typeId)
-		return x;
-	switch (x->getType().typeId) {
-		case TypeId::I8:
-			return new T(rt, (LT)(((I8Value *)x)->getData()));
-		case TypeId::I16:
-			return new T(rt, (LT)(((I16Value *)x)->getData()));
-		case TypeId::I32:
-			return new T(rt, (LT)(((I32Value *)x)->getData()));
-		case TypeId::I64:
-			return new T(rt, (LT)(((I64Value *)x)->getData()));
-		case TypeId::U8:
-			return new T(rt, (LT)(((U8Value *)x)->getData()));
-		case TypeId::U16:
-			return new T(rt, (LT)(((U16Value *)x)->getData()));
-		case TypeId::U32:
-			return new T(rt, (LT)(((U32Value *)x)->getData()));
-		case TypeId::U64:
-			return new T(rt, (LT)(((U64Value *)x)->getData()));
-		case TypeId::F32:
-			return new T(rt, (LT)(((F32Value *)x)->getData()));
-		case TypeId::F64:
-			return new T(rt, (LT)(((F64Value *)x)->getData()));
-		case TypeId::Bool:
-			return new T(rt, (LT)(((BoolValue *)x)->getData()));
+static Value _castToLiteralValue(Value x) {
+	switch (x.valueType) {
+		case ValueType::I8:
+			return Value((LT)(x.getI8()));
+		case ValueType::I16:
+			return Value((LT)(x.getI16()));
+		case ValueType::I32:
+			return Value((LT)(x.getI32()));
+		case ValueType::I64:
+			return Value((LT)(x.getI64()));
+		case ValueType::U8:
+			return Value((LT)(x.getU8()));
+		case ValueType::U16:
+			return Value((LT)(x.getU16()));
+		case ValueType::U32:
+			return Value((LT)(x.getU32()));
+		case ValueType::U64:
+			return Value((LT)(x.getU64()));
+		case ValueType::F32:
+			return Value((LT)(x.getF32()));
+		case ValueType::F64:
+			return Value((LT)(x.getF64()));
+		case ValueType::Bool:
+			return Value((LT)(x.getBool()));
 		default:
 			throw IncompatibleTypeError("Invalid type conversion");
 	}
 }
 
-template <typename T>
-static Value *_execBinaryOp(ValueRef<> x, ValueRef<> y, Opcode opcode) {
-	// Corresponding value type
-	using V = LiteralValue<T, getValueType<T>()>;
-
-	auto _x = (V *)x.get();
-	auto rt = _x->getRuntime();
-
-	if constexpr (std::is_arithmetic<T>::value) {
-		if constexpr (std::is_same<T, bool>::value) {
-			// Boolean
-			switch (opcode) {
-				case Opcode::LAND: {
-					return new V(
-						rt,
-						_x->getData() && ((V *)y.get())->getData());
-				}
-				case Opcode::LOR: {
-					return new V(rt, _x->getData() || ((V *)y.get())->getData());
-				}
-				default:
-					throw InvalidOperandsError("Binary operation with incompatible types");
-			}
-		} else {
-			if (opcode == Opcode::LSH || opcode == Opcode::RSH) {
-				if (y->getType() != TypeId::U32)
-					throw InvalidOperandsError("Binary operation with incompatible types");
-			} else if (_x->getType() != y->getType())
-				throw InvalidOperandsError("Binary operation with incompatible types");
-
-			switch (opcode) {
-				case Opcode::ADD:
-					return new V(rt, _x->getData() + ((V *)y.get())->getData());
-				case Opcode::SUB:
-					return new V(rt, _x->getData() - ((V *)y.get())->getData());
-				case Opcode::MUL:
-					return new V(rt, _x->getData() * ((V *)y.get())->getData());
-				case Opcode::DIV:
-					return new V(rt, _x->getData() / ((V *)y.get())->getData());
-				case Opcode::MOD: {
-					T result;
-					if constexpr (std::is_same<T, float>::value)
-						result = fmodf(_x->getData(), ((V *)y.get())->getData());
-					else if constexpr (std::is_same<T, double>::value)
-						result = fmod(_x->getData(), ((V *)y.get())->getData());
-					else
-						result = _x->getData() % ((V *)y.get())->getData();
-					return new V(rt, result);
-				}
-				case Opcode::AND:
-					if constexpr (std::is_integral<T>::value)
-						return new V(rt, _x->getData() & ((V *)y.get())->getData());
-					else
-						throw InvalidOperandsError("Binary operation with incompatible types");
-				case Opcode::OR:
-					if constexpr (std::is_integral<T>::value)
-						return new V(rt, _x->getData() | ((V *)y.get())->getData());
-					else
-						throw InvalidOperandsError("Binary operation with incompatible types");
-				case Opcode::XOR:
-					if constexpr (std::is_integral<T>::value)
-						return new V(rt, _x->getData() ^ ((V *)y.get())->getData());
-					else
-						throw InvalidOperandsError("Binary operation with incompatible types");
-				case Opcode::LAND:
-					return new BoolValue(rt, _x->getData() && ((V *)y.get())->getData());
-				case Opcode::LOR:
-					return new BoolValue(rt, _x->getData() || ((V *)y.get())->getData());
-				case Opcode::EQ:
-					return new BoolValue(rt, _x->getData() == ((V *)y.get())->getData());
-				case Opcode::NEQ:
-					return new BoolValue(rt, _x->getData() != ((V *)y.get())->getData());
-				case Opcode::LT:
-					return new BoolValue(rt, _x->getData() < ((V *)y.get())->getData());
-				case Opcode::GT:
-					return new BoolValue(rt, _x->getData() > ((V *)y.get())->getData());
-				case Opcode::LTEQ:
-					return new BoolValue(rt, _x->getData() <= ((V *)y.get())->getData());
-				case Opcode::GTEQ:
-					return new BoolValue(rt, _x->getData() >= ((V *)y.get())->getData());
-				case Opcode::LSH:
-					if constexpr (std::is_integral<T>::value)
-						return new V(rt, _x->getData() << ((U32Value *)y.get())->getData());
-					else if constexpr (std::is_same<T, float>::value) {
-						auto result = (*(uint32_t *)(&_x->getData())) << ((U32Value *)y.get())->getData();
-						return new V(rt, *(float *)(&result));
-					} else if constexpr (std::is_same<T, double>::value) {
-						auto result = (*(uint64_t *)(&_x->getData())) << ((U32Value *)y.get())->getData();
-						return new V(rt, *(double *)(&result));
-					} else
-						throw InvalidOperandsError("Binary operation with incompatible types");
-				case Opcode::RSH:
-					if constexpr (std::is_integral<T>::value)
-						return new V(rt, _x->getData() >> ((U32Value *)y.get())->getData());
-					else if constexpr (std::is_same<T, float>::value) {
-						auto result = (*(uint32_t *)(&_x->getData())) >> ((U32Value *)y.get())->getData();
-						return new V(rt, *(float *)(&result));
-					} else if constexpr (std::is_same<T, double>::value) {
-						auto result = (*(uint64_t *)(&_x->getData())) >> ((U32Value *)y.get())->getData();
-						return new V(rt, *(double *)(&result));
-					} else
-						throw InvalidOperandsError("Binary operation with incompatible types");
-				default:
-					throw InvalidOperandsError("Binary operation with incompatible types");
-			}
-		}
-	} else if constexpr (std::is_same<T, std::string>::value) {
-		// String
-		switch (opcode) {
-			case Opcode::ADD:
-				return new LiteralValue<T, TypeId::String>(rt, _x->getData() + ((V *)y.get())->getData());
-			case Opcode::EQ:
-				return new BoolValue(rt, _x->getData() == ((V *)y.get())->getData());
-			case Opcode::NEQ:
-				return new BoolValue(rt, _x->getData() != ((V *)y.get())->getData());
-			default:
-				throw InvalidOperandsError("Binary operation with incompatible types");
-		}
-	} else {
-		switch (opcode) {
-			case Opcode::EQ:
-				return new BoolValue(rt, _x->getData() == ((V *)y.get())->getData());
-			case Opcode::NEQ:
-				return new BoolValue(rt, _x->getData() != ((V *)y.get())->getData());
-			default:
-				throw InvalidOperandsError("Binary operation with incompatible types");
-		}
-	}
-}
-
-template <typename T>
-static Value *_execUnaryOp(ValueRef<> x, Opcode opcode) {
-	auto _x = (LiteralValue<T, getValueType<T>()> *)x.get();
-	auto rt = _x->getRuntime();
-
-	if constexpr (std::is_arithmetic<T>::value) {
-		switch (opcode) {
-			case Opcode::NOT:
-				if constexpr (std::is_integral<T>::value)
-					return new LiteralValue<T, getValueType<T>()>(rt, ~(_x->getData()));
-				else if constexpr (std::is_same<T, float>::value) {
-					auto result = ~(*(uint32_t *)(rt, &_x->getData()));
-					return new LiteralValue<T, getValueType<T>()>(rt, *((float *)&result));
-				} else if constexpr (std::is_same<T, double>::value) {
-					auto result = ~(*(uint64_t *)(rt, &_x->getData()));
-					return new LiteralValue<T, getValueType<T>()>(rt, *((double *)&result));
-				}
-				throw InvalidOperandsError("Binary operation with incompatible types");
-			case Opcode::LNOT:
-				return new BoolValue(rt, !_x->getData());
-			case Opcode::INCF:
-			case Opcode::INCB:
-				if constexpr (std::is_integral<T>::value)
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() + 1);
-				else if constexpr (std::is_same<T, float>::value)
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() + 1.0f);
-				else if constexpr (std::is_same<T, double>::value)
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() + 1.0);
-				throw InvalidOperandsError("Binary operation with incompatible types");
-			case Opcode::DECF:
-			case Opcode::DECB:
-				if constexpr (std::is_integral<T>::value)
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() - 1);
-				else if constexpr (std::is_same<T, float>::value)
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() - 1.0f);
-				else if constexpr (std::is_same<T, double>::value)
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData() - 1.0);
-				throw InvalidOperandsError("Binary operation with incompatible types");
-			case Opcode::NEG:
-				if constexpr (std::is_signed<T>::value)
-					return new LiteralValue<T, getValueType<T>()>(rt, -_x->getData());
-				else
-					return new LiteralValue<T, getValueType<T>()>(rt, _x->getData());
-		}
-	}
-	throw InvalidOperandsError("Binary operation with incompatible types");
-}
-
-VarValue *slake::Runtime::_addLocalVar(MajorFrame &frame, Type type) {
-	auto v = new VarValue(this, ACCESS_PUB, type);
+VarObject *slake::Runtime::_addLocalVar(MajorFrame &frame, Type type) {
+	auto v = new VarObject(this, ACCESS_PUB, type);
 	frame.localVars.push_back(v);
 	return v;
 }
 
-VarValue *slake::Runtime::_addLocalReg(MajorFrame &frame) {
-	auto v = new VarValue(this, ACCESS_PUB, TypeId::Any);
+VarObject *slake::Runtime::_addLocalReg(MajorFrame &frame) {
+	auto v = new VarObject(this, ACCESS_PUB, TypeId::Any);
 	frame.regs.push_back(v);
 	return v;
 }
@@ -271,15 +80,12 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 	auto &curMinorFrame = curMajorFrame.minorFrames.back();
 
 	for (auto &i : ins.operands) {
-		if (!i)
-			continue;
+		bool unwrapObject = false;
+		switch (i.valueType) {
+			case ValueType::LocalVarRef: {
+				unwrapObject = i.getIndexedRef().unwrap;
 
-		bool unwrapValue = false;
-		switch (i->getType().typeId) {
-			case TypeId::LocalVarRef: {
-				unwrapValue = ((LocalVarRefValue *)i)->unwrapValue;
-
-				auto index = ((LocalVarRefValue *)i)->index;
+				auto index = i.getIndexedRef().index;
 
 				if (index >= curMajorFrame.localVars.size())
 					throw InvalidLocalVarIndexError("Invalid local variable index", index);
@@ -287,10 +93,10 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 				i = curMajorFrame.localVars.at(index);
 				break;
 			}
-			case TypeId::RegRef: {
-				unwrapValue = ((RegRefValue *)i)->unwrapValue;
+			case ValueType::RegRef: {
+				unwrapObject = i.getIndexedRef().unwrap;
 
-				auto index = ((RegRefValue *)i)->index;
+				auto index = i.getIndexedRef().index;
 
 				if (index >= curMajorFrame.regs.size())
 					throw InvalidRegisterIndexError("Invalid register index", index);
@@ -298,15 +104,20 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 				i = curMajorFrame.regs.at(index);
 				break;
 			}
-			case TypeId::ArgRef:
-				unwrapValue = ((ArgRefValue *)i)->unwrapValue;
+			case ValueType::ArgRef:
+				unwrapObject = i.getIndexedRef().unwrap;
 
-				i = curMajorFrame.argStack[((ArgRefValue *)i)->index];
+				auto index = i.getIndexedRef().index;
+
+				if (index >= curMajorFrame.argStack.size())
+					throw InvalidRegisterIndexError("Invalid argument index", index);
+
+				i = curMajorFrame.argStack[index];
 				break;
 		}
 
-		if (unwrapValue)
-			i = ((VarValue *)i)->getData();
+		if (unwrapObject)
+			i = ((VarObject *)i.getObjectRef().objectPtr)->getData();
 	}
 
 	switch (ins.opcode) {
@@ -314,9 +125,9 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			break;
 		case Opcode::LVAR: {
 			_checkOperandCount(ins, 1);
-			_checkOperandType(ins, { TypeId::TypeName });
+			_checkOperandType(ins, { ValueType::TypeName });
 
-			auto &type = ((TypeNameValue *)ins.operands[0])->_data;
+			auto &type = ins.operands[0].getTypeName();
 			type.loadDeferredType(this);
 
 			_addLocalVar(curMajorFrame, type);
@@ -324,9 +135,9 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		}
 		case Opcode::REG: {
 			_checkOperandCount(ins, 1);
-			_checkOperandType(ins, { TypeId::U32 });
+			_checkOperandType(ins, { ValueType::U32 });
 
-			uint32_t times = ((U32Value *)ins.operands[0])->getData();
+			uint32_t times = ins.operands[0].getU32();
 			while (times--)
 				_addLocalReg(curMajorFrame);
 			break;
@@ -335,68 +146,85 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_checkOperandCount(ins, 1);
 			curMinorFrame.push(ins.operands[0]);
 			break;
-		case Opcode::POP:
+		case Opcode::POP: {
 			_checkOperandCount(ins, 1);
-			_checkOperandType(ins, { TypeId::Var });
+			_checkOperandType(ins, { ValueType::ObjectRef });
 
-			((VarValue *)ins.operands[0])->setData(curMinorFrame.pop().get());
+			auto varOutPtr = ins.operands[0].getObjectRef().objectPtr;
+			_checkObjectOperandType(varOutPtr, TypeId::Var);
+
+			((VarObject *)varOutPtr)->setData(curMinorFrame.pop());
 			break;
+		}
 		case Opcode::LOAD: {
 			_checkOperandCount(ins, 2);
 
-			_checkOperandType(ins, { TypeId::Var, TypeId::IdRef });
+			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::ObjectRef });
 
-			IdRefValue *ref = (IdRefValue *)ins.operands[1];
-			auto v = resolveIdRef(ref, curMajorFrame.thisObject);
+			auto varOutPtr = ins.operands[0].getObjectRef().objectPtr;
+			auto refPtr = ins.operands[1].getObjectRef().objectPtr;
+			_checkObjectOperandType(varOutPtr, TypeId::Var);
+			_checkObjectOperandType(refPtr, TypeId::IdRef);
+
+			auto v = resolveIdRef((IdRefObject *)refPtr, curMajorFrame.thisObject);
 			if (!v) {
-				if (!(v = resolveIdRef(ref, curMajorFrame.scopeValue)))
-					v = resolveIdRef(ref);
+				if (!(v = resolveIdRef((IdRefObject *)refPtr, curMajorFrame.scopeObject)))
+					v = resolveIdRef((IdRefObject *)refPtr);
 			}
 
 			if (!v)
-				throw NotFoundError("Member not found", ref);
-			((VarValue *)ins.operands[0])->setData(v);
+				throw NotFoundError("Member not found", (IdRefObject *)refPtr);
+			((VarObject *)varOutPtr)->setData(v);
 			break;
 		}
 		case Opcode::RLOAD: {
 			_checkOperandCount(ins, 3);
 
-			_checkOperandType(ins, { TypeId::Var, TypeId::Any, TypeId::IdRef });
+			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::ObjectRef, ValueType::ObjectRef });
 
-			auto v = ins.operands[1];
-			if (!v)
+			auto varOutPtr = ins.operands[0].getObjectRef().objectPtr;
+			auto lhsPtr = ins.operands[1].getObjectRef().objectPtr;
+			auto refPtr = ins.operands[2].getObjectRef().objectPtr;
+
+			if (!lhsPtr)
 				throw NullRefError();
 
-			if (!(v = resolveIdRef((IdRefValue *)ins.operands[2], v))) {
-				throw NotFoundError("Member not found", (IdRefValue *)ins.operands[2]);
+			if (!(lhsPtr = resolveIdRef((IdRefObject *)refPtr, lhsPtr))) {
+				throw NotFoundError("Member not found", (IdRefObject *)refPtr);
 			}
-			((VarValue *)ins.operands[0])->setData(v);
+			((VarObject *)varOutPtr)->setData(lhsPtr);
 			break;
 		}
 		case Opcode::STORE: {
 			_checkOperandCount(ins, 2);
 
-			_checkOperandType(ins, { TypeId::Var, TypeId::Any });
+			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::Invalid });
 
-			VarValue *x = (VarValue *)ins.operands[0];
+			auto varOutPtr = ins.operands[0].getObjectRef().objectPtr;
+			_checkObjectOperandType(varOutPtr, TypeId::Var);
 
-			if (!x)
+			if (!varOutPtr)
 				throw NullRefError();
 
-			x->setData(ins.operands[1]);
+			((VarObject *)varOutPtr)->setData(ins.operands[1]);
 			break;
 		}
 		case Opcode::LVALUE: {
 			_checkOperandCount(ins, 2);
 
-			_checkOperandType(ins, { TypeId::Var, TypeId::Var });
+			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::ObjectRef });
 
-			if (!ins.operands[0])
+			auto varOutPtr = ins.operands[0].getObjectRef().objectPtr,
+				 varInPtr = ins.operands[1].getObjectRef().objectPtr;
+			_checkObjectOperandType(varOutPtr, TypeId::Var);
+			_checkObjectOperandType(varInPtr, TypeId::Var);
+
+			if (!varOutPtr)
 				throw NullRefError();
-			if (!ins.operands[1])
+			if (!varInPtr)
 				throw NullRefError();
 
-			((VarValue *)ins.operands[0])->setData(((VarValue *)ins.operands[1])->getData());
+			((VarObject *)varOutPtr)->setData(((VarObject *)varInPtr)->getData());
 			break;
 		}
 		case Opcode::ENTER: {
@@ -428,192 +256,689 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		case Opcode::LT:
 		case Opcode::GT:
 		case Opcode::LTEQ:
-		case Opcode::GTEQ:
-		case Opcode::LSH: {
+		case Opcode::GTEQ: {
 			_checkOperandCount(ins, 3);
 
-			_checkOperandType(ins, { TypeId::Var, TypeId::Any, TypeId::Any });
+			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::Invalid, ValueType::Invalid });
 
-			ValueRef<> x(ins.operands[1]), y(ins.operands[2]);
-			ValueRef<VarValue> out((VarValue *)ins.operands[0]);
-
-			if (!x)
+			Value x(ins.operands[1]), y(ins.operands[2]), valueOut;
+			auto varOut = ins.operands[0].getObjectRef().objectPtr;
+			if (!varOut)
 				throw NullRefError();
-			if (!y)
-				throw NullRefError();
+			_checkObjectOperandType(varOut, TypeId::Var);
 
-			switch (x->getType().typeId) {
-				case TypeId::I8:
-					out->setData(_execBinaryOp<std::int8_t>(x, y, ins.opcode));
+			if (x.valueType != y.valueType)
+				throw InvalidOperandsError("LHS and RHS must have the same type");
+
+			switch (x.valueType) {
+				case ValueType::I8:
+					switch (ins.opcode) {
+						case Opcode::ADD:
+							valueOut = Value((int8_t)(x.getI8() + y.getI8()));
+							break;
+						case Opcode::SUB:
+							valueOut = Value((int8_t)(x.getI8() - y.getI8()));
+							break;
+						case Opcode::MUL:
+							valueOut = Value((int8_t)(x.getI8() * y.getI8()));
+							break;
+						case Opcode::DIV:
+							valueOut = Value((int8_t)(x.getI8() / y.getI8()));
+							break;
+						case Opcode::MOD:
+							valueOut = Value((int8_t)(x.getI8() % y.getI8()));
+							break;
+						case Opcode::AND:
+							valueOut = Value((int8_t)(x.getI8() & y.getI8()));
+							break;
+						case Opcode::OR:
+							valueOut = Value((int8_t)(x.getI8() | y.getI8()));
+							break;
+						case Opcode::XOR:
+							valueOut = Value((int8_t)(x.getI8() ^ y.getI8()));
+							break;
+						case Opcode::LAND:
+							valueOut = Value((bool)(x.getI8() && y.getI8()));
+							break;
+						case Opcode::LOR:
+							valueOut = Value((bool)(x.getI8() || y.getI8()));
+							break;
+						case Opcode::EQ:
+							valueOut = Value((bool)(x.getI8() == y.getI8()));
+							break;
+						case Opcode::NEQ:
+							valueOut = Value((bool)(x.getI8() != y.getI8()));
+							break;
+						case Opcode::LT:
+							valueOut = Value((bool)(x.getI8() < y.getI8()));
+							break;
+						case Opcode::GT:
+							valueOut = Value((bool)(x.getI8() > y.getI8()));
+							break;
+						case Opcode::LTEQ:
+							valueOut = Value((bool)(x.getI8() <= y.getI8()));
+							break;
+						case Opcode::GTEQ:
+							valueOut = Value((bool)(x.getI8() >= y.getI8()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
 					break;
-				case TypeId::I16:
-					out->setData(_execBinaryOp<std::int16_t>(x, y, ins.opcode));
+				case ValueType::I16:
+					switch (ins.opcode) {
+						case Opcode::ADD:
+							valueOut = Value((int16_t)(x.getI16() + y.getI16()));
+							break;
+						case Opcode::SUB:
+							valueOut = Value((int16_t)(x.getI16() - y.getI16()));
+							break;
+						case Opcode::MUL:
+							valueOut = Value((int16_t)(x.getI16() * y.getI16()));
+							break;
+						case Opcode::DIV:
+							valueOut = Value((int16_t)(x.getI16() / y.getI16()));
+							break;
+						case Opcode::MOD:
+							valueOut = Value((int16_t)(x.getI16() % y.getI16()));
+							break;
+						case Opcode::AND:
+							valueOut = Value((int16_t)(x.getI16() & y.getI16()));
+							break;
+						case Opcode::OR:
+							valueOut = Value((int16_t)(x.getI16() | y.getI16()));
+							break;
+						case Opcode::XOR:
+							valueOut = Value((int16_t)(x.getI16() ^ y.getI16()));
+							break;
+						case Opcode::LAND:
+							valueOut = Value((bool)(x.getI16() && y.getI16()));
+							break;
+						case Opcode::LOR:
+							valueOut = Value((bool)(x.getI16() || y.getI16()));
+							break;
+						case Opcode::EQ:
+							valueOut = Value((bool)(x.getI16() == y.getI16()));
+							break;
+						case Opcode::NEQ:
+							valueOut = Value((bool)(x.getI16() != y.getI16()));
+							break;
+						case Opcode::LT:
+							valueOut = Value((bool)(x.getI16() < y.getI16()));
+							break;
+						case Opcode::GT:
+							valueOut = Value((bool)(x.getI16() > y.getI16()));
+							break;
+						case Opcode::LTEQ:
+							valueOut = Value((bool)(x.getI16() <= y.getI16()));
+							break;
+						case Opcode::GTEQ:
+							valueOut = Value((bool)(x.getI16() >= y.getI16()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
 					break;
-				case TypeId::I32:
-					out->setData(_execBinaryOp<std::int32_t>(x, y, ins.opcode));
+				case ValueType::I32:
+					switch (ins.opcode) {
+						case Opcode::ADD:
+							valueOut = Value((int32_t)(x.getI32() + y.getI32()));
+							break;
+						case Opcode::SUB:
+							valueOut = Value((int32_t)(x.getI32() - y.getI32()));
+							break;
+						case Opcode::MUL:
+							valueOut = Value((int32_t)(x.getI32() * y.getI32()));
+							break;
+						case Opcode::DIV:
+							valueOut = Value((int32_t)(x.getI32() / y.getI32()));
+							break;
+						case Opcode::MOD:
+							valueOut = Value((int32_t)(x.getI32() % y.getI32()));
+							break;
+						case Opcode::AND:
+							valueOut = Value((int32_t)(x.getI32() & y.getI32()));
+							break;
+						case Opcode::OR:
+							valueOut = Value((int32_t)(x.getI32() | y.getI32()));
+							break;
+						case Opcode::XOR:
+							valueOut = Value((int32_t)(x.getI32() ^ y.getI32()));
+							break;
+						case Opcode::LAND:
+							valueOut = Value((bool)(x.getI32() && y.getI32()));
+							break;
+						case Opcode::LOR:
+							valueOut = Value((bool)(x.getI32() || y.getI32()));
+							break;
+						case Opcode::EQ:
+							valueOut = Value((bool)(x.getI32() == y.getI32()));
+							break;
+						case Opcode::NEQ:
+							valueOut = Value((bool)(x.getI32() != y.getI32()));
+							break;
+						case Opcode::LT:
+							valueOut = Value((bool)(x.getI32() < y.getI32()));
+							break;
+						case Opcode::GT:
+							valueOut = Value((bool)(x.getI32() > y.getI32()));
+							break;
+						case Opcode::LTEQ:
+							valueOut = Value((bool)(x.getI32() <= y.getI32()));
+							break;
+						case Opcode::GTEQ:
+							valueOut = Value((bool)(x.getI32() >= y.getI32()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
 					break;
-				case TypeId::I64:
-					out->setData(_execBinaryOp<std::int64_t>(x, y, ins.opcode));
+				case ValueType::I64:
+					switch (ins.opcode) {
+						case Opcode::ADD:
+							valueOut = Value((int64_t)(x.getI64() + y.getI64()));
+							break;
+						case Opcode::SUB:
+							valueOut = Value((int64_t)(x.getI64() - y.getI64()));
+							break;
+						case Opcode::MUL:
+							valueOut = Value((int64_t)(x.getI64() * y.getI64()));
+							break;
+						case Opcode::DIV:
+							valueOut = Value((int64_t)(x.getI64() / y.getI64()));
+							break;
+						case Opcode::MOD:
+							valueOut = Value((int64_t)(x.getI64() % y.getI64()));
+							break;
+						case Opcode::AND:
+							valueOut = Value((int64_t)(x.getI64() & y.getI64()));
+							break;
+						case Opcode::OR:
+							valueOut = Value((int64_t)(x.getI64() | y.getI64()));
+							break;
+						case Opcode::XOR:
+							valueOut = Value((int64_t)(x.getI64() ^ y.getI64()));
+							break;
+						case Opcode::LAND:
+							valueOut = Value((bool)(x.getI64() && y.getI64()));
+							break;
+						case Opcode::LOR:
+							valueOut = Value((bool)(x.getI64() || y.getI64()));
+							break;
+						case Opcode::EQ:
+							valueOut = Value((bool)(x.getI64() == y.getI64()));
+							break;
+						case Opcode::NEQ:
+							valueOut = Value((bool)(x.getI64() != y.getI64()));
+							break;
+						case Opcode::LT:
+							valueOut = Value((bool)(x.getI64() < y.getI64()));
+							break;
+						case Opcode::GT:
+							valueOut = Value((bool)(x.getI64() > y.getI64()));
+							break;
+						case Opcode::LTEQ:
+							valueOut = Value((bool)(x.getI64() <= y.getI64()));
+							break;
+						case Opcode::GTEQ:
+							valueOut = Value((bool)(x.getI64() >= y.getI64()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
 					break;
-				case TypeId::U8:
-					out->setData(_execBinaryOp<uint8_t>(x, y, ins.opcode));
+				case ValueType::U8:
+					switch (ins.opcode) {
+						case Opcode::ADD:
+							valueOut = Value((uint8_t)(x.getU8() + y.getU8()));
+							break;
+						case Opcode::SUB:
+							valueOut = Value((uint8_t)(x.getU8() - y.getU8()));
+							break;
+						case Opcode::MUL:
+							valueOut = Value((uint8_t)(x.getU8() * y.getU8()));
+							break;
+						case Opcode::DIV:
+							valueOut = Value((uint8_t)(x.getU8() / y.getU8()));
+							break;
+						case Opcode::MOD:
+							valueOut = Value((uint8_t)(x.getU8() % y.getU8()));
+							break;
+						case Opcode::AND:
+							valueOut = Value((uint8_t)(x.getU8() & y.getU8()));
+							break;
+						case Opcode::OR:
+							valueOut = Value((uint8_t)(x.getU8() | y.getU8()));
+							break;
+						case Opcode::XOR:
+							valueOut = Value((uint8_t)(x.getU8() ^ y.getU8()));
+							break;
+						case Opcode::LAND:
+							valueOut = Value((bool)(x.getU8() && y.getU8()));
+							break;
+						case Opcode::LOR:
+							valueOut = Value((bool)(x.getU8() || y.getU8()));
+							break;
+						case Opcode::EQ:
+							valueOut = Value((bool)(x.getU8() == y.getU8()));
+							break;
+						case Opcode::NEQ:
+							valueOut = Value((bool)(x.getU8() != y.getU8()));
+							break;
+						case Opcode::LT:
+							valueOut = Value((bool)(x.getU8() < y.getU8()));
+							break;
+						case Opcode::GT:
+							valueOut = Value((bool)(x.getU8() > y.getU8()));
+							break;
+						case Opcode::LTEQ:
+							valueOut = Value((bool)(x.getU8() <= y.getU8()));
+							break;
+						case Opcode::GTEQ:
+							valueOut = Value((bool)(x.getU8() >= y.getU8()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
 					break;
-				case TypeId::U16:
-					out->setData(_execBinaryOp<uint16_t>(x, y, ins.opcode));
+				case ValueType::U16:
+					switch (ins.opcode) {
+						case Opcode::ADD:
+							valueOut = Value((uint8_t)(x.getU16() + y.getU16()));
+							break;
+						case Opcode::SUB:
+							valueOut = Value((uint8_t)(x.getU16() - y.getU16()));
+							break;
+						case Opcode::MUL:
+							valueOut = Value((uint8_t)(x.getU16() * y.getU16()));
+							break;
+						case Opcode::DIV:
+							valueOut = Value((uint8_t)(x.getU16() / y.getU16()));
+							break;
+						case Opcode::MOD:
+							valueOut = Value((uint8_t)(x.getU16() % y.getU16()));
+							break;
+						case Opcode::AND:
+							valueOut = Value((uint8_t)(x.getU16() & y.getU16()));
+							break;
+						case Opcode::OR:
+							valueOut = Value((uint8_t)(x.getU16() | y.getU16()));
+							break;
+						case Opcode::XOR:
+							valueOut = Value((uint8_t)(x.getU16() ^ y.getU16()));
+							break;
+						case Opcode::LAND:
+							valueOut = Value((bool)(x.getU16() && y.getU16()));
+							break;
+						case Opcode::LOR:
+							valueOut = Value((bool)(x.getU16() || y.getU16()));
+							break;
+						case Opcode::EQ:
+							valueOut = Value((bool)(x.getU16() == y.getU16()));
+							break;
+						case Opcode::NEQ:
+							valueOut = Value((bool)(x.getU16() != y.getU16()));
+							break;
+						case Opcode::LT:
+							valueOut = Value((bool)(x.getU16() < y.getU16()));
+							break;
+						case Opcode::GT:
+							valueOut = Value((bool)(x.getU16() > y.getU16()));
+							break;
+						case Opcode::LTEQ:
+							valueOut = Value((bool)(x.getU16() <= y.getU16()));
+							break;
+						case Opcode::GTEQ:
+							valueOut = Value((bool)(x.getU16() >= y.getU16()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
 					break;
-				case TypeId::U32:
-					out->setData(_execBinaryOp<uint32_t>(x, y, ins.opcode));
+				case ValueType::U32:
+					switch (ins.opcode) {
+						case Opcode::ADD:
+							valueOut = Value((uint32_t)(x.getU32() + y.getU32()));
+							break;
+						case Opcode::SUB:
+							valueOut = Value((uint32_t)(x.getU32() - y.getU32()));
+							break;
+						case Opcode::MUL:
+							valueOut = Value((uint32_t)(x.getU32() * y.getU32()));
+							break;
+						case Opcode::DIV:
+							valueOut = Value((uint32_t)(x.getU32() / y.getU32()));
+							break;
+						case Opcode::MOD:
+							valueOut = Value((uint32_t)(x.getU32() % y.getU32()));
+							break;
+						case Opcode::AND:
+							valueOut = Value((uint32_t)(x.getU32() & y.getU32()));
+							break;
+						case Opcode::OR:
+							valueOut = Value((uint32_t)(x.getU32() | y.getU32()));
+							break;
+						case Opcode::XOR:
+							valueOut = Value((uint32_t)(x.getU32() ^ y.getU32()));
+							break;
+						case Opcode::LAND:
+							valueOut = Value((bool)(x.getU32() && y.getU32()));
+							break;
+						case Opcode::LOR:
+							valueOut = Value((bool)(x.getU32() || y.getU32()));
+							break;
+						case Opcode::EQ:
+							valueOut = Value((bool)(x.getU32() == y.getU32()));
+							break;
+						case Opcode::NEQ:
+							valueOut = Value((bool)(x.getU32() != y.getU32()));
+							break;
+						case Opcode::LT:
+							valueOut = Value((bool)(x.getU32() < y.getU32()));
+							break;
+						case Opcode::GT:
+							valueOut = Value((bool)(x.getU32() > y.getU32()));
+							break;
+						case Opcode::LTEQ:
+							valueOut = Value((bool)(x.getU32() <= y.getU32()));
+							break;
+						case Opcode::GTEQ:
+							valueOut = Value((bool)(x.getU32() >= y.getU32()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
 					break;
-				case TypeId::U64:
-					out->setData(_execBinaryOp<uint64_t>(x, y, ins.opcode));
+				case ValueType::U64:
+					switch (ins.opcode) {
+						case Opcode::ADD:
+							valueOut = Value((uint64_t)(x.getU64() + y.getU64()));
+							break;
+						case Opcode::SUB:
+							valueOut = Value((uint64_t)(x.getU64() - y.getU64()));
+							break;
+						case Opcode::MUL:
+							valueOut = Value((uint64_t)(x.getU64() * y.getU64()));
+							break;
+						case Opcode::DIV:
+							valueOut = Value((uint64_t)(x.getU64() / y.getU64()));
+							break;
+						case Opcode::MOD:
+							valueOut = Value((uint64_t)(x.getU64() % y.getU64()));
+							break;
+						case Opcode::AND:
+							valueOut = Value((uint64_t)(x.getU64() & y.getU64()));
+							break;
+						case Opcode::OR:
+							valueOut = Value((uint64_t)(x.getU64() | y.getU64()));
+							break;
+						case Opcode::XOR:
+							valueOut = Value((uint64_t)(x.getU64() ^ y.getU64()));
+							break;
+						case Opcode::LAND:
+							valueOut = Value((bool)(x.getU64() && y.getU64()));
+							break;
+						case Opcode::LOR:
+							valueOut = Value((bool)(x.getU64() || y.getU64()));
+							break;
+						case Opcode::EQ:
+							valueOut = Value((bool)(x.getU64() == y.getU64()));
+							break;
+						case Opcode::NEQ:
+							valueOut = Value((bool)(x.getU64() != y.getU64()));
+							break;
+						case Opcode::LT:
+							valueOut = Value((bool)(x.getU64() < y.getU64()));
+							break;
+						case Opcode::GT:
+							valueOut = Value((bool)(x.getU64() > y.getU64()));
+							break;
+						case Opcode::LTEQ:
+							valueOut = Value((bool)(x.getU64() <= y.getU64()));
+							break;
+						case Opcode::GTEQ:
+							valueOut = Value((bool)(x.getU64() >= y.getU64()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
 					break;
-				case TypeId::F32:
-					out->setData(_execBinaryOp<float>(x, y, ins.opcode));
+				case ValueType::F32:
+					switch (ins.opcode) {
+						case Opcode::ADD:
+							valueOut = Value((float)(x.getF32() + y.getF32()));
+							break;
+						case Opcode::SUB:
+							valueOut = Value((float)(x.getF32() - y.getF32()));
+							break;
+						case Opcode::MUL:
+							valueOut = Value((float)(x.getF32() * y.getF32()));
+							break;
+						case Opcode::DIV:
+							valueOut = Value((float)(x.getF32() / y.getF32()));
+							break;
+						case Opcode::MOD:
+							valueOut = Value((float)fmodf(x.getF32(), y.getF32()));
+							break;
+						case Opcode::LAND:
+							valueOut = Value((bool)(x.getF32() && y.getF32()));
+							break;
+						case Opcode::LOR:
+							valueOut = Value((bool)(x.getF32() || y.getF32()));
+							break;
+						case Opcode::EQ:
+							valueOut = Value((bool)(x.getF32() == y.getF32()));
+							break;
+						case Opcode::NEQ:
+							valueOut = Value((bool)(x.getF32() != y.getF32()));
+							break;
+						case Opcode::LT:
+							valueOut = Value((bool)(x.getF32() < y.getF32()));
+							break;
+						case Opcode::GT:
+							valueOut = Value((bool)(x.getF32() > y.getF32()));
+							break;
+						case Opcode::LTEQ:
+							valueOut = Value((bool)(x.getF32() <= y.getF32()));
+							break;
+						case Opcode::GTEQ:
+							valueOut = Value((bool)(x.getF32() >= y.getF32()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
 					break;
-				case TypeId::F64:
-					out->setData(_execBinaryOp<double>(x, y, ins.opcode));
+				case ValueType::F64:
+					switch (ins.opcode) {
+						case Opcode::ADD:
+							valueOut = Value((double)(x.getF64() + y.getF64()));
+							break;
+						case Opcode::SUB:
+							valueOut = Value((double)(x.getF64() - y.getF64()));
+							break;
+						case Opcode::MUL:
+							valueOut = Value((double)(x.getF64() * y.getF64()));
+							break;
+						case Opcode::DIV:
+							valueOut = Value((double)(x.getF64() / y.getF64()));
+							break;
+						case Opcode::MOD:
+							valueOut = Value((double)fmodf(x.getF64(), y.getF64()));
+							break;
+						case Opcode::LAND:
+							valueOut = Value((bool)(x.getF64() && y.getF64()));
+							break;
+						case Opcode::LOR:
+							valueOut = Value((bool)(x.getF64() || y.getF64()));
+							break;
+						case Opcode::EQ:
+							valueOut = Value((bool)(x.getF64() == y.getF64()));
+							break;
+						case Opcode::NEQ:
+							valueOut = Value((bool)(x.getF64() != y.getF64()));
+							break;
+						case Opcode::LT:
+							valueOut = Value((bool)(x.getF64() < y.getF64()));
+							break;
+						case Opcode::GT:
+							valueOut = Value((bool)(x.getF64() > y.getF64()));
+							break;
+						case Opcode::LTEQ:
+							valueOut = Value((bool)(x.getF64() <= y.getF64()));
+							break;
+						case Opcode::GTEQ:
+							valueOut = Value((bool)(x.getF64() >= y.getF64()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
 					break;
-				case TypeId::String:
-					out->setData(_execBinaryOp<std::string>(x, y, ins.opcode));
-					break;
-				case TypeId::Bool:
-					out->setData(_execBinaryOp<bool>(x, y, ins.opcode));
+				case ValueType::Bool:
+					switch (ins.opcode) {
+						case Opcode::LAND:
+							valueOut = Value((bool)(x.getBool() && y.getBool()));
+							break;
+						case Opcode::LOR:
+							valueOut = Value((bool)(x.getBool() || y.getBool()));
+							break;
+						case Opcode::EQ:
+							valueOut = Value((bool)(x.getBool() == y.getBool()));
+							break;
+						case Opcode::NEQ:
+							valueOut = Value((bool)(x.getBool() != y.getBool()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
 					break;
 				default:
 					throw InvalidOperandsError("Invalid operand combination");
 			}
+
+			((VarObject *)varOut)->setData(valueOut);
 			break;
 		}
-		case Opcode::INCF:
-		case Opcode::DECF:
-		case Opcode::INCB:
-		case Opcode::DECB:
 		case Opcode::NOT:
 		case Opcode::LNOT:
 		case Opcode::NEG: {
 			_checkOperandCount(ins, 2);
 
-			_checkOperandType(ins, { TypeId::Var, TypeId::Any });
+			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::Invalid });
 
-			Value *x = ins.operands[1];	 // Value of the operand.
-			VarValue *varIn, *varOut = (VarValue *)ins.operands[0];
+			auto varOut = ins.operands[0].getObjectRef().objectPtr;
+			_checkObjectOperandType(varOut, TypeId::Var);
 
-			if (!(x && varOut))
-				throw NullRefError();
+			Value x(ins.operands[1]), valueOut;
 
-			switch (ins.opcode) {
-				case Opcode::INCB:
-				case Opcode::DECB:
-				case Opcode::INCF:
-				case Opcode::DECF:
-					if (x->getType() != TypeId::Var)
-						throw InvalidOperandsError("Invalid operand combination");
-
+			switch (x.valueType) {
+				case ValueType::I8:
 					switch (ins.opcode) {
-						case Opcode::INCB:
-						case Opcode::DECB:
-							((VarValue *)varOut)->setData(((VarValue *)x)->getData());
+						case Opcode::NOT:
+							valueOut = Value((int8_t)(~x.getI8()));
 							break;
+						case Opcode::LNOT:
+							valueOut = Value((bool)(!x.getI8()));
+							break;
+						case Opcode::NEG:
+							valueOut = Value((int8_t)(-x.getI8()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
 					}
-
-					varIn = (VarValue *)x;
-					x = varIn->getData();
 					break;
-			}
-
-			ValueRef<> value;
-			if (!x)
-				throw NullRefError();
-
-			switch (x->getType().typeId) {
-				case TypeId::I8:
-					value = _execUnaryOp<std::int8_t>(x, ins.opcode);
+				case ValueType::I16:
+					switch (ins.opcode) {
+						case Opcode::NOT:
+							valueOut = Value((int16_t)(~x.getI16()));
+							break;
+						case Opcode::LNOT:
+							valueOut = Value((bool)(!x.getI16()));
+							break;
+						case Opcode::NEG:
+							valueOut = Value((int16_t)(-x.getI16()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
 					break;
-				case TypeId::I16:
-					value = _execUnaryOp<std::int16_t>(x, ins.opcode);
+				case ValueType::I32:
+					switch (ins.opcode) {
+						case Opcode::NOT:
+							valueOut = Value((int32_t)(~x.getI32()));
+							break;
+						case Opcode::LNOT:
+							valueOut = Value((bool)(!x.getI32()));
+							break;
+						case Opcode::NEG:
+							valueOut = Value((int32_t)(-x.getI32()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
 					break;
-				case TypeId::I32:
-					value = _execUnaryOp<std::int32_t>(x, ins.opcode);
-					break;
-				case TypeId::I64:
-					value = _execUnaryOp<std::int64_t>(x, ins.opcode);
-					break;
-				case TypeId::U8:
-					value = _execUnaryOp<uint8_t>(x, ins.opcode);
-					break;
-				case TypeId::U16:
-					value = _execUnaryOp<uint16_t>(x, ins.opcode);
-					break;
-				case TypeId::U32:
-					value = _execUnaryOp<uint32_t>(x, ins.opcode);
-					break;
-				case TypeId::U64:
-					value = _execUnaryOp<uint64_t>(x, ins.opcode);
-					break;
-				case TypeId::F32:
-					value = _execUnaryOp<float>(x, ins.opcode);
-					break;
-				case TypeId::F64:
-					value = _execUnaryOp<double>(x, ins.opcode);
-					break;
-				case TypeId::String:
-					value = _execUnaryOp<std::string>(x, ins.opcode);
+				case ValueType::I64:
+					switch (ins.opcode) {
+						case Opcode::NOT:
+							valueOut = Value((int64_t)(~x.getI64()));
+							break;
+						case Opcode::LNOT:
+							valueOut = Value((bool)(!x.getI64()));
+							break;
+						case Opcode::NEG:
+							valueOut = Value((int64_t)(-x.getI64()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
 					break;
 				default:
 					throw InvalidOperandsError("Invalid operand combination");
 			}
 
-			switch (ins.opcode) {
-				case Opcode::INCB:
-				case Opcode::DECB:
-					varIn->setData(value.get());
-					break;
-				case Opcode::INCF:
-				case Opcode::DECF:
-					varIn->setData(value.get());
-					break;
-				default:
-					((VarValue *)varOut)->setData(value.get());
-			}
+			((VarObject *)varOut)->setData(valueOut);
 			break;
 		}
 		case Opcode::AT: {
 			_checkOperandCount(ins, 3);
 
-			_checkOperandType(ins, { TypeId::Var, TypeId::Array, TypeId::U32 });
+			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::ObjectRef, ValueType::U32 });
 
-			VarValue *valueOut = (VarValue *)ins.operands[0];
-			ArrayValue *arrayIn = (ArrayValue *)ins.operands[1];
-			U32Value *indexIn = (U32Value *)ins.operands[2];
+			auto varOut = ins.operands[0].getObjectRef().objectPtr;
+			_checkObjectOperandType(varOut, TypeId::Var);
 
-			if (indexIn->_data > arrayIn->values.size())
+			auto arrayIn = ins.operands[1].getObjectRef().objectPtr;
+			_checkObjectOperandType(arrayIn, TypeId::Array);
+
+			uint32_t indexIn = ins.operands[2].getU32();
+
+			if (indexIn > ((ArrayObject *)arrayIn)->values.size())
 				throw OutOfRangeError();
 
-			valueOut->setData(arrayIn->values[indexIn->_data]);
+			((VarObject *)varOut)->setData(((ArrayObject *)arrayIn)->values[indexIn]);
 
 			break;
 		}
 		case Opcode::JMP: {
 			_checkOperandCount(ins, 1);
 
-			_checkOperandType(ins, { TypeId::U32 });
+			_checkOperandType(ins, { ValueType::U32 });
 
-			curMajorFrame.curIns = ((U32Value *)ins.operands[0])->getData();
+			curMajorFrame.curIns = ins.operands[0].getU32();
 			return;
 		}
 		case Opcode::JT:
 		case Opcode::JF: {
 			_checkOperandCount(ins, 2);
 
-			_checkOperandType(ins, { TypeId::U32, TypeId::Bool });
+			_checkOperandType(ins, { ValueType::U32, ValueType::Bool });
 
-			if (((BoolValue *)ins.operands[1])->getData()) {
+			if (ins.operands[1].getBool()) {
 				if (ins.opcode == Opcode::JT) {
-					curMajorFrame.curIns = ((U32Value *)ins.operands[0])->getData();
+					curMajorFrame.curIns = ins.operands[0].getU32();
 					return;
 				}
 			} else if (ins.opcode == Opcode::JF) {
-				curMajorFrame.curIns = ((U32Value *)ins.operands[0])->getData();
+				curMajorFrame.curIns = ins.operands[0].getU32();
 				return;
 			}
 
@@ -621,11 +946,20 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		}
 		case Opcode::PUSHARG: {
 			_checkOperandCount(ins, 2);
-			_checkOperandType(ins, { TypeId::Any, TypeId::TypeName });
+			_checkOperandType(ins, { ValueType::Invalid, ValueType::Invalid });
 
 			curMajorFrame.nextArgStack.push_back(ins.operands[0]);
-			if (ins.operands[1])
-				curMajorFrame.nextArgTypes.push_back(((TypeNameValue *)ins.operands[1])->_data);
+			switch (ins.operands[1].valueType) {
+				case ValueType::TypeName:
+					curMajorFrame.nextArgTypes.push_back(ins.operands[1].getTypeName());
+					break;
+				case ValueType::ObjectRef:
+					if (!ins.operands[1].getObjectRef().objectPtr)
+						break;
+					[[fallthrough]];
+				default:
+					throw InvalidOperandsError("Invalid operand combination");
+			}
 			break;
 		}
 		case Opcode::MCALL:
@@ -633,21 +967,22 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			if (ins.opcode == Opcode::MCALL) {
 				_checkOperandCount(ins, 2);
 
-				_checkOperandType(ins, { TypeId::Fn, TypeId::Any });
+				_checkOperandType(ins, { ValueType::ObjectRef, ValueType::ObjectRef });
 			} else {
 				_checkOperandCount(ins, 1);
 
-				_checkOperandType(ins, { TypeId::Fn });
+				_checkOperandType(ins, { ValueType::ObjectRef });
 			}
+			_checkObjectOperandType(ins.operands[0].getObjectRef().objectPtr, TypeId::Fn);
 
-			FnValue *fn = (FnValue *)ins.operands[0];
+			FnObject *fn = (FnObject *)ins.operands[0].getObjectRef().objectPtr;
 
 			if (!fn)
 				throw NullRefError();
 
 			fn->call(
 				ins.opcode == Opcode::MCALL
-					? ins.operands[1]
+					? ins.operands[1].getObjectRef().objectPtr
 					: nullptr,
 				curMajorFrame.nextArgStack,
 				curMajorFrame.nextArgTypes);
@@ -666,9 +1001,12 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		}
 		case Opcode::LRET: {
 			_checkOperandCount(ins, 1);
-			_checkOperandType(ins, { TypeId::Var });
+			_checkOperandType(ins, { ValueType::ObjectRef });
 
-			((VarValue *)ins.operands[0])->setData(curMajorFrame.returnValue);
+			auto varOut = ins.operands[0].getObjectRef().objectPtr;
+			_checkObjectOperandType(varOut, TypeId::Var);
+
+			((VarObject *)varOut)->setData(curMajorFrame.returnValue);
 			break;
 		}
 		case Opcode::ACALL:
@@ -687,33 +1025,42 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		}
 		case Opcode::LTHIS: {
 			_checkOperandCount(ins, 1);
-			_checkOperandType(ins, { TypeId::Var });
+			_checkOperandType(ins, { ValueType::ObjectRef });
 
-			((VarValue *)ins.operands[0])->setData(curMajorFrame.thisObject);
+			auto varOut = ins.operands[0].getObjectRef().objectPtr;
+			_checkObjectOperandType(varOut, TypeId::Var);
+
+			((VarObject *)varOut)->setData(curMajorFrame.thisObject);
 			break;
 		}
 		case Opcode::NEW: {
 			_checkOperandCount(ins, 3);
 
-			_checkOperandType(ins, { TypeId::Var, TypeId::TypeName, TypeId::IdRef });
+			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::TypeName, ValueType::ObjectRef });
 
-			Type &type = ((TypeNameValue *)ins.operands[1])->_data;
-			IdRefValue *constructorRef = (IdRefValue *)ins.operands[2];
+			auto varOut = ins.operands[0].getObjectRef().objectPtr;
+			_checkObjectOperandType(varOut, TypeId::Var);
+
+			auto constructorRef = ins.operands[2].getObjectRef().objectPtr;
+
+			Type &type = ins.operands[1].getTypeName();
 			type.loadDeferredType(this);
 
 			switch (type.typeId) {
-				case TypeId::Object:
+				case TypeId::Instance:
 				case TypeId::Class: {
-					ClassValue *cls = (ClassValue *)type.getCustomTypeExData();
-					ObjectValue *instance = newClassInstance(cls);
-					((VarValue *)ins.operands[0])->setData(instance);
+					ClassObject *cls = (ClassObject *)type.getCustomTypeExData();
+					InstanceObject *instance = newClassInstance(cls);
+					((VarObject *)varOut)->setData(instance);
 
 					if (constructorRef) {
-						if (auto v = resolveIdRef(constructorRef); v) {
+						_checkObjectOperandType(constructorRef, TypeId::IdRef);
+
+						if (auto v = resolveIdRef((IdRefObject *)constructorRef); v) {
 							if ((v->getType() != TypeId::Fn))
 								throw InvalidOperandsError("Specified constructor is not a function");
 
-							FnValue *constructor = (FnValue *)v;
+							FnObject *constructor = (FnObject *)v;
 
 							constructor->call(instance, curMajorFrame.nextArgStack, curMajorFrame.nextArgTypes);
 							curMajorFrame.nextArgStack.clear();
@@ -731,23 +1078,27 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		case Opcode::ARRNEW: {
 			_checkOperandCount(ins, 3);
 
-			_checkOperandType(ins, { TypeId::Var, TypeId::TypeName, TypeId::U32 });
+			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::TypeName, ValueType::U32 });
 
-			VarValue *varOut = (VarValue *)ins.operands[0];
-			Type &type = ((TypeNameValue *)ins.operands[1])->_data;
-			uint32_t size = ((U32Value *)ins.operands[2])->_data;
+			auto varOut = ins.operands[0].getObjectRef().objectPtr;
+			_checkObjectOperandType(varOut, TypeId::Var);
+
+			Type &type = ins.operands[1].getTypeName();
+			uint32_t size = ins.operands[2].getU32();
 			type.loadDeferredType(this);
 
 			auto instance = newArrayInstance(type, size);
 
-			varOut->setData(instance);
+			((VarObject *)varOut)->setData(instance);
 
 			break;
 		}
 		case Opcode::THROW: {
 			_checkOperandCount(ins, 1);
 
-			Value *x = ins.operands[0];
+			_checkOperandType(ins, { ValueType::ObjectRef });
+
+			Object *x = ins.operands[0].getObjectRef().objectPtr;
 
 			auto tmpContext = *context;
 
@@ -782,14 +1133,14 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		case Opcode::PUSHXH: {
 			_checkOperandCount(ins, 2);
 
-			_checkOperandType(ins, { TypeId::TypeName, TypeId::U32 });
+			_checkOperandType(ins, { ValueType::TypeName, ValueType::U32 });
 
 			ExceptionHandler xh;
 
-			((TypeNameValue *)ins.operands[0])->_data.loadDeferredType(this);
+			ins.operands[0].getTypeName().loadDeferredType(this);
 
-			xh.type = ((TypeNameValue *)ins.operands[0])->getData();
-			xh.off = ((U32Value *)ins.operands[1])->getData();
+			xh.type = ins.operands[0].getTypeName();
+			xh.off = ins.operands[1].getU32();
 
 			curMajorFrame.minorFrames.back().exceptHandlers.push_back(xh);
 			break;
@@ -800,54 +1151,62 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		case Opcode::CAST: {
 			_checkOperandCount(ins, 3);
 
-			_checkOperandType(ins, { TypeId::Var, TypeId::TypeName, TypeId::Any });
+			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::TypeName, ValueType::Invalid });
 
-			auto t = ((TypeNameValue *)ins.operands[1])->getData();
+			auto varOut = ins.operands[0].getObjectRef().objectPtr;
+			_checkObjectOperandType(varOut, TypeId::Var);
 
-			ValueRef<> v = ins.operands[2];
+			Value v = ins.operands[2];
+
+			auto t = ins.operands[1].getTypeName();
 
 			switch (t.typeId) {
-				case TypeId::I8:
-					v = _castToLiteralValue<int8_t>(this, v.get());
-					break;
-				case TypeId::I16:
-					v = _castToLiteralValue<int16_t>(this, v.get());
-					break;
-				case TypeId::I32:
-					v = _castToLiteralValue<int32_t>(this, v.get());
-					break;
-				case TypeId::I64:
-					v = _castToLiteralValue<int64_t>(this, v.get());
-					break;
-				case TypeId::U8:
-					v = _castToLiteralValue<uint8_t>(this, v.get());
-					break;
-				case TypeId::U16:
-					v = _castToLiteralValue<uint16_t>(this, v.get());
-					break;
-				case TypeId::U32:
-					v = _castToLiteralValue<uint32_t>(this, v.get());
-					break;
-				case TypeId::U64:
-					v = _castToLiteralValue<uint64_t>(this, v.get());
-					break;
-				case TypeId::Bool:
-					v = _castToLiteralValue<bool>(this, v.get());
-					break;
-				case TypeId::F32:
-					v = _castToLiteralValue<float>(this, v.get());
-					break;
-				case TypeId::F64:
-					v = _castToLiteralValue<double>(this, v.get());
-					break;
-				case TypeId::Object:
-					/* stub */
+				case TypeId::Value: {
+					switch (t.getValueTypeExData()) {
+						case ValueType::I8:
+							v = _castToLiteralValue<int8_t>(v);
+							break;
+						case ValueType::I16:
+							v = _castToLiteralValue<int16_t>(v);
+							break;
+						case ValueType::I32:
+							v = _castToLiteralValue<int32_t>(v);
+							break;
+						case ValueType::I64:
+							v = _castToLiteralValue<int64_t>(v);
+							break;
+						case ValueType::U8:
+							v = _castToLiteralValue<uint8_t>(v);
+							break;
+						case ValueType::U16:
+							v = _castToLiteralValue<uint16_t>(v);
+							break;
+						case ValueType::U32:
+							v = _castToLiteralValue<uint32_t>(v);
+							break;
+						case ValueType::U64:
+							v = _castToLiteralValue<uint64_t>(v);
+							break;
+						case ValueType::Bool:
+							v = _castToLiteralValue<bool>(v);
+							break;
+						case ValueType::F32:
+							v = _castToLiteralValue<float>(v);
+							break;
+						case ValueType::F64:
+							v = _castToLiteralValue<double>(v);
+							break;
+						default:
+							throw InvalidOperandsError("Invalid cast target type");
+					}
+				}
+				case TypeId::Instance:
 					break;
 				default:
 					throw InvalidOperandsError("Invalid cast target type");
 			}
 
-			((VarValue *)ins.operands[0])->setData(v.get());
+			((VarObject *)varOut)->setData(v);
 			break;
 		}
 		default:

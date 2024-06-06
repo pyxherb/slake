@@ -2,17 +2,17 @@
 
 using namespace slake;
 
-slake::AliasValue::AliasValue(Runtime *rt, AccessModifier access, Value *src)
-	: MemberValue(rt, access), src(src) {
+slake::AliasObject::AliasObject(Runtime *rt, AccessModifier access, Object *src)
+	: MemberObject(rt, access), src(src) {
 	scope = src->scope;
 	_flags |= VF_ALIAS;
-	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(MemberValue));
+	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(MemberObject));
 }
 
-AliasValue::~AliasValue() {
-	reportSizeFreedToRuntime(sizeof(*this) - sizeof(MemberValue));
+AliasObject::~AliasObject() {
+	reportSizeFreedToRuntime(sizeof(*this) - sizeof(MemberObject));
 }
 
-Value *AliasValue::duplicate() const {
-	return (Value *)new AliasValue(_rt, getAccess(), src);
+Object *AliasObject::duplicate() const {
+	return (Object *)new AliasObject(_rt, getAccess(), src);
 }

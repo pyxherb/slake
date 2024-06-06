@@ -2,33 +2,33 @@
 
 using namespace slake;
 
-Value *Runtime::resolveIdRef(IdRefValue* ref, Value *scopeValue) const {
+Object *Runtime::resolveIdRef(IdRefObject* ref, Object *scopeObject) const {
 	if (!ref)
 		return nullptr;
 
-	if ((!scopeValue))
-		if (!(scopeValue = _rootValue))
+	if ((!scopeObject))
+		if (!(scopeObject = _rootObject))
 			return nullptr;
 
-	MemberValue *curValue;
+	MemberObject *curObject;
 
 	GenericInstantiationContext genericInstantiationContext = { nullptr, {} };
 
-	while ((curValue = (MemberValue *)scopeValue)) {
+	while ((curObject = (MemberObject *)scopeObject)) {
 		for (auto &i : ref->entries) {
-			if (!scopeValue)
+			if (!scopeObject)
 				goto fail;
 
 			if (i.name == "base") {
-				switch (curValue->getType().typeId) {
+				switch (curObject->getType().typeId) {
 					case TypeId::Module:
 					case TypeId::Class:
-						scopeValue = (MemberValue *)curValue->getParent();
+						scopeObject = (MemberObject *)curObject->getParent();
 						break;
 					default:
 						goto fail;
 				}
-			} else if (!(scopeValue = scopeValue->getMember(i.name))) {
+			} else if (!(scopeObject = scopeObject->getMember(i.name))) {
 				break;
 			}
 
@@ -37,24 +37,24 @@ Value *Runtime::resolveIdRef(IdRefValue* ref, Value *scopeValue) const {
 					j.loadDeferredType(this);
 
 				genericInstantiationContext.genericArgs = &i.genericArgs;
-				scopeValue = instantiateGenericValue(scopeValue, genericInstantiationContext);
+				scopeObject = instantiateGenericObject(scopeObject, genericInstantiationContext);
 			}
 		}
 
-		if (scopeValue)
-			return scopeValue;
+		if (scopeObject)
+			return scopeObject;
 
 	fail:
-		switch (curValue->getType().typeId) {
+		switch (curObject->getType().typeId) {
 			case TypeId::Module:
 			case TypeId::Class:
-				if(!curValue->getParent())
+				if(!curObject->getParent())
 					return nullptr;
-				scopeValue = (MemberValue *)curValue->getParent();
+				scopeObject = (MemberObject *)curObject->getParent();
 				break;
-			case TypeId::Object: {
-				auto t = ((ObjectValue *)curValue)->getType();
-				scopeValue = t.getCustomTypeExData();
+			case TypeId::Instance: {
+				auto t = ((InstanceObject *)curObject)->getType();
+				scopeObject = t.getCustomTypeExData();
 				break;
 			}
 			default:
@@ -65,7 +65,7 @@ Value *Runtime::resolveIdRef(IdRefValue* ref, Value *scopeValue) const {
 	return nullptr;
 }
 
-std::string Runtime::getFullName(const MemberValue *v) const {
+std::string Runtime::getFullName(const MemberObject *v) const {
 	std::string s;
 
 	auto fullIdRef = getFullRef(v);
@@ -91,19 +91,19 @@ std::string Runtime::getFullName(const MemberValue *v) const {
 	return s;
 }
 
-std::string Runtime::getFullName(const IdRefValue *v) const {
+std::string Runtime::getFullName(const IdRefObject *v) const {
 	return std::to_string(v);
 }
 
-std::deque<IdRefEntry> Runtime::getFullRef(const MemberValue *v) const {
+std::deque<IdRefEntry> Runtime::getFullRef(const MemberObject *v) const {
 	std::deque<IdRefEntry> entries;
 	do {
 		switch (v->getType().typeId) {
-			case TypeId::Object:
-				v = (const MemberValue *)((ObjectValue *)v)->getType().getCustomTypeExData();
+			case TypeId::Instance:
+				v = (const MemberObject *)((InstanceObject *)v)->getType().getCustomTypeExData();
 				break;
 		}
 		entries.push_front({ v->getName(), v->_genericArgs });
-	} while ((Value *)(v = (const MemberValue *)v->getParent()) != _rootValue);
+	} while ((Object *)(v = (const MemberObject *)v->getParent()) != _rootObject);
 	return entries;
 }

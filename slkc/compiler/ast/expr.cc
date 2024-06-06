@@ -8,12 +8,6 @@ std::string std::to_string(UnaryOp op) {
 			return "!";
 		case UnaryOp::Not:
 			return "~";
-		case UnaryOp::IncF:
-		case UnaryOp::IncB:
-			return "--";
-		case UnaryOp::DecF:
-		case UnaryOp::DecB:
-			return "--";
 		case UnaryOp::Neg:
 			return "-";
 		default:

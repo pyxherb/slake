@@ -7,10 +7,6 @@ using namespace slake::slkc;
 std::map<UnaryOp, Compiler::UnaryOpRegistry> Compiler::_unaryOpRegs = {
 	{ UnaryOp::LNot, { slake::Opcode::LNOT, false, false } },
 	{ UnaryOp::Not, { slake::Opcode::NOT, false, false } },
-	{ UnaryOp::IncF, { slake::Opcode::INCF, true, false } },
-	{ UnaryOp::DecF, { slake::Opcode::DECF, true, false } },
-	{ UnaryOp::IncB, { slake::Opcode::INCB, true, false } },
-	{ UnaryOp::DecB, { slake::Opcode::DECB, true, false } },
 	{ UnaryOp::Neg, { slake::Opcode::NEG, false, false } }
 };
 
@@ -108,10 +104,6 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 					resultType = std::make_shared<BoolTypeNameNode>(e->getLocation(), SIZE_MAX);
 					break;
 				case UnaryOp::Not:
-				case UnaryOp::IncF:
-				case UnaryOp::DecF:
-				case UnaryOp::IncB:
-				case UnaryOp::DecB:
 				case UnaryOp::Neg:
 					compileExpr(
 						e->x,

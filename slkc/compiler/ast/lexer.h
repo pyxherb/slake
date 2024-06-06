@@ -39,8 +39,6 @@ namespace slake {
 			MatchOp,
 			LAndOp,
 			LOrOp,
-			IncOp,
-			DecOp,
 			AddOp,
 			SubOp,
 			MulOp,

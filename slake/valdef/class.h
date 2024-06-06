@@ -11,12 +11,12 @@ namespace slake {
 	/// @brief Type for storing class flags.
 	using ClassFlags = uint16_t;
 
-	class InterfaceValue;
-	class ObjectValue;
+	class InterfaceObject;
+	class InstanceObject;
 
-	using ClassInstantiator = std::function<ObjectValue *(Runtime *runtime, ClassValue *cls)>;
+	using ClassInstantiator = std::function<InstanceObject *(Runtime *runtime, ClassObject *cls)>;
 
-	class ClassValue : public ModuleValue {
+	class ClassObject : public ModuleObject {
 	private:
 		mutable ClassFlags _flags = 0;
 
@@ -31,8 +31,8 @@ namespace slake {
 		/// @brief User-defined instantiator.
 		ClassInstantiator customInstantiator;
 
-		ClassValue(Runtime *rt, AccessModifier access, Type parentClass = {});
-		virtual ~ClassValue();
+		ClassObject(Runtime *rt, AccessModifier access, Type parentClass = {});
+		virtual ~ClassObject();
 
 		virtual inline Type getType() const override { return TypeId::Class; }
 		virtual inline Type getParentType() const { return parentClass; }
@@ -48,12 +48,12 @@ namespace slake {
 		/// @param[in] pInterface Interface to check.
 		///
 		/// @return true if implemented, false otherwise.
-		bool hasImplemented(const InterfaceValue *pInterface) const;
+		bool hasImplemented(const InterfaceObject *pInterface) const;
 
-		virtual Value *duplicate() const override;
+		virtual Object *duplicate() const override;
 
-		inline ClassValue &operator=(const ClassValue &x) {
-			((ModuleValue &)*this) = (ModuleValue &)x;
+		inline ClassObject &operator=(const ClassObject &x) {
+			((ModuleObject &)*this) = (ModuleObject &)x;
 
 			parentClass = x.parentClass;
 			genericParams = x.genericParams;
@@ -63,67 +63,67 @@ namespace slake {
 
 			return *this;
 		}
-		ClassValue &operator=(ClassValue &&) = delete;
+		ClassObject &operator=(ClassObject &&) = delete;
 	};
 
-	class InterfaceValue : public ModuleValue {
+	class InterfaceObject : public ModuleObject {
 	protected:
 		friend class Runtime;
-		friend class ClassValue;
+		friend class ClassObject;
 
 	public:
 		GenericParamList genericParams;
 
 		std::deque<Type> parents;
 
-		inline InterfaceValue(Runtime *rt, AccessModifier access, std::deque<Type> parents = {})
-			: ModuleValue(rt, access), parents(parents) {
-			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(ModuleValue));
+		inline InterfaceObject(Runtime *rt, AccessModifier access, std::deque<Type> parents = {})
+			: ModuleObject(rt, access), parents(parents) {
+			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(ModuleObject));
 		}
-		virtual ~InterfaceValue();
+		virtual ~InterfaceObject();
 
 		virtual inline Type getType() const override { return TypeId::Interface; }
 
-		virtual Value *duplicate() const override;
+		virtual Object *duplicate() const override;
 
 		/// @brief Check if the interface is derived from specified interface
 		/// @param pInterface Interface to check.
 		/// @return true if the interface is derived from specified interface, false otherwise.
-		bool isDerivedFrom(const InterfaceValue *pInterface) const;
+		bool isDerivedFrom(const InterfaceObject *pInterface) const;
 
-		inline InterfaceValue &operator=(const InterfaceValue &x) {
-			((ModuleValue &)*this) = (ModuleValue &)x;
+		inline InterfaceObject &operator=(const InterfaceObject &x) {
+			((ModuleObject &)*this) = (ModuleObject &)x;
 
 			parents = x.parents;
 
 			return *this;
 		}
-		InterfaceValue &operator=(InterfaceValue &&) = delete;
+		InterfaceObject &operator=(InterfaceObject &&) = delete;
 	};
 
-	class TraitValue : public InterfaceValue {
+	class TraitObject : public InterfaceObject {
 	protected:
 		friend class Runtime;
-		friend class ClassValue;
+		friend class ClassObject;
 
 	public:
 		GenericParamList genericParams;
 
-		inline TraitValue(Runtime *rt, AccessModifier access, std::deque<Type> parents = {})
-			: InterfaceValue(rt, access, parents) {
-			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(InterfaceValue));
+		inline TraitObject(Runtime *rt, AccessModifier access, std::deque<Type> parents = {})
+			: InterfaceObject(rt, access, parents) {
+			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(InterfaceObject));
 		}
-		virtual ~TraitValue();
+		virtual ~TraitObject();
 
 		virtual inline Type getType() const override { return TypeId::Trait; }
 
-		virtual Value *duplicate() const override;
+		virtual Object *duplicate() const override;
 
-		inline TraitValue &operator=(const TraitValue &x) {
-			((InterfaceValue &)*this) = (InterfaceValue &)x;
+		inline TraitObject &operator=(const TraitObject &x) {
+			((InterfaceObject &)*this) = (InterfaceObject &)x;
 			return *this;
 		}
-		TraitValue &operator=(TraitValue &&) = delete;
+		TraitObject &operator=(TraitObject &&) = delete;
 	};
 }
 

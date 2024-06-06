@@ -31,8 +31,9 @@ namespace slake {
 
 		void decompile(std::istream &fs, std::ostream &os);
 		std::string decompileTypeName(const Type &type, Runtime *rt);
-		std::string decompileIdRef(const IdRefValue *ref);
-		void decompileValue(Runtime* rt, Value *value, std::ostream &os, int indentLevel = 0);
+		std::string decompileIdRef(const IdRefObject *ref);
+		void decompileObject(Runtime *rt, Object *object, std::ostream &os, int indentLevel = 0);
+		void decompileValue(Runtime* rt, Value &value, std::ostream &os, int indentLevel = 0);
 		std::string accessToString(AccessModifier access);
 	}
 }

@@ -36,7 +36,9 @@ void Runtime::_gcWalk(GenericParamList &genericParamList) {
 
 void Runtime::_gcWalk(Type &type) {
 	switch (type.typeId) {
-		case TypeId::Object:
+		case TypeId::Value:
+			break;
+		case TypeId::Instance:
 		case TypeId::Class:
 		case TypeId::Interface:
 		case TypeId::Trait:
@@ -52,54 +54,72 @@ void Runtime::_gcWalk(Type &type) {
 			_gcWalk(type.getVarExData());
 			break;
 		case TypeId::Module:
-		case TypeId::RootValue:
-		case TypeId::I8:
-		case TypeId::I16:
-		case TypeId::I32:
-		case TypeId::I64:
-		case TypeId::U8:
-		case TypeId::U16:
-		case TypeId::U32:
-		case TypeId::U64:
-		case TypeId::F32:
-		case TypeId::F64:
-		case TypeId::String:
-		case TypeId::Bool:
+		case TypeId::RootObject:
 		case TypeId::Fn:
 		case TypeId::IdRef:
 		case TypeId::None:
 		case TypeId::GenericArg:
 		case TypeId::Alias:
 		case TypeId::Any:
-		case TypeId::RegRef:
-		case TypeId::LocalVarRef:
-		case TypeId::ArgRef:
+			break;
+		default:
+			throw std::logic_error("Unhandled object type");
+	}
+}
+
+void Runtime::_gcWalk(Value &i) {
+	switch (i.valueType) {
+		case ValueType::I8:
+		case ValueType::I16:
+		case ValueType::I32:
+		case ValueType::I64:
+		case ValueType::U8:
+		case ValueType::U16:
+		case ValueType::U32:
+		case ValueType::U64:
+		case ValueType::F32:
+		case ValueType::F64:
+		case ValueType::Bool:
+		case ValueType::String:
+			break;
+		case ValueType::ObjectRef:
+			if (auto p = i.getObjectRef().objectPtr; p)
+				_gcWalk(p);
+			break;
+		case ValueType::RegRef:
+		case ValueType::ArgRef:
+		case ValueType::LocalVarRef:
+			break;
+		case ValueType::TypeName:
+			_gcWalk(i.getTypeName());
+			break;
+		case ValueType::Invalid:
 			break;
 		default:
 			throw std::logic_error("Unhandled value type");
 	}
 }
 
-void Runtime::_gcWalk(Value *v) {
-	if (_walkedValues.count(v))
+void Runtime::_gcWalk(Object *v) {
+	if (_walkedObjects.count(v))
 		return;
 
-	_walkedValues.insert(v);
-	createdValues.erase(v);
+	_walkedObjects.insert(v);
+	createdObjects.erase(v);
 
 	if (v->scope)
 		_gcWalk(v->scope);
 
 	switch (auto typeId = v->getType().typeId; typeId) {
-		case TypeId::Object: {
-			auto value = (ObjectValue *)v;
+		case TypeId::Instance: {
+			auto value = (InstanceObject *)v;
 			_gcWalk(value->_class);
 			if (value->_parent)
 				_gcWalk(value->_parent);
 			break;
 		}
 		case TypeId::Array: {
-			auto value = (ArrayValue *)v;
+			auto value = (ArrayObject *)v;
 
 			_gcWalk(value->type);
 
@@ -113,15 +133,15 @@ void Runtime::_gcWalk(Value *v) {
 		case TypeId::Interface: {
 			// TODO: Walk generic parameters.
 
-			if (((ModuleValue *)v)->_parent)
-				_gcWalk(((ModuleValue *)v)->_parent);
+			if (((ModuleObject *)v)->_parent)
+				_gcWalk(((ModuleObject *)v)->_parent);
 
-			for (auto &i : ((ModuleValue *)v)->imports)
+			for (auto &i : ((ModuleObject *)v)->imports)
 				_gcWalk(i.second);
 
 			switch (typeId) {
 				case TypeId::Class: {
-					ClassValue *value = (ClassValue *)v;
+					ClassObject *value = (ClassObject *)v;
 					for (auto &i : value->implInterfaces) {
 						i.loadDeferredType(this);
 						_gcWalk(i);
@@ -135,7 +155,7 @@ void Runtime::_gcWalk(Value *v) {
 					break;
 				}
 				case TypeId::Trait: {
-					TraitValue *value = (TraitValue *)v;
+					TraitObject *value = (TraitObject *)v;
 
 					for (auto &i : value->parents) {
 						i.loadDeferredType(this);
@@ -146,7 +166,7 @@ void Runtime::_gcWalk(Value *v) {
 					break;
 				}
 				case TypeId::Interface: {
-					InterfaceValue *value = (InterfaceValue *)v;
+					InterfaceObject *value = (InterfaceObject *)v;
 
 					for (auto &i : value->parents) {
 						i.loadDeferredType(this);
@@ -161,21 +181,20 @@ void Runtime::_gcWalk(Value *v) {
 			break;
 		}
 		case TypeId::Var: {
-			VarValue *value = (VarValue *)v;
+			VarObject *value = (VarObject *)v;
 
 			_gcWalk(value->type);
 
-			if (auto v = value->getData(); v)
-				_gcWalk(v);
+			_gcWalk(value->getData());
 
 			if (value->_parent)
 				_gcWalk(value->_parent);
 			break;
 		}
-		case TypeId::RootValue:
+		case TypeId::RootObject:
 			break;
 		case TypeId::Fn: {
-			auto fn = (FnValue *)v;
+			auto fn = (FnObject *)v;
 
 			if (fn->_parent)
 				_gcWalk(fn->_parent);
@@ -186,9 +205,9 @@ void Runtime::_gcWalk(Value *v) {
 			break;
 		}
 		case TypeId::FnOverloading: {
-			auto fnOverloading = (FnOverloadingValue *)v;
+			auto fnOverloading = (FnOverloadingObject *)v;
 
-			_gcWalk(fnOverloading->fnValue);
+			_gcWalk(fnOverloading->fnObject);
 
 			// TODO: Walk generic parameters.
 			for (auto &j : fnOverloading->paramTypes)
@@ -197,19 +216,18 @@ void Runtime::_gcWalk(Value *v) {
 
 			switch (fnOverloading->getOverloadingKind()) {
 				case FnOverloadingKind::Regular: {
-					RegularFnOverloadingValue *ol = (RegularFnOverloadingValue *)fnOverloading;
+					RegularFnOverloadingObject *ol = (RegularFnOverloadingObject *)fnOverloading;
 
 					for (auto &i : ol->instructions) {
 						for (auto &j : i.operands) {
-							if (j)
-								_gcWalk(j);
+							_gcWalk(j);
 						}
 					}
 
 					break;
 				}
 				case FnOverloadingKind::Native: {
-					NativeFnOverloadingValue *ol = (NativeFnOverloadingValue *)fnOverloading;
+					NativeFnOverloadingObject *ol = (NativeFnOverloadingObject *)fnOverloading;
 
 					break;
 				}
@@ -221,14 +239,8 @@ void Runtime::_gcWalk(Value *v) {
 
 			break;
 		}
-		case TypeId::TypeName: {
-			auto value = (TypeNameValue *)v;
-
-			_gcWalk(value->_data);
-			break;
-		}
 		case TypeId::IdRef: {
-			auto value = (IdRefValue *)v;
+			auto value = (IdRefObject *)v;
 
 			for (auto &i : value->entries)
 				for (auto &j : i.genericArgs) {
@@ -237,45 +249,28 @@ void Runtime::_gcWalk(Value *v) {
 			break;
 		}
 		case TypeId::Alias: {
-			auto value = (AliasValue *)v;
+			auto value = (AliasObject *)v;
 
 			_gcWalk(value->src);
 			break;
 		}
 		case TypeId::Context: {
-			auto value = (ContextValue *)v;
+			auto value = (ContextObject *)v;
 
 			_gcWalk(*value->_context);
 			break;
 		}
-		case TypeId::I8:
-		case TypeId::I16:
-		case TypeId::I32:
-		case TypeId::I64:
-		case TypeId::U8:
-		case TypeId::U16:
-		case TypeId::U32:
-		case TypeId::U64:
-		case TypeId::F32:
-		case TypeId::F64:
-		case TypeId::Bool:
-		case TypeId::String:
-		case TypeId::RegRef:
-		case TypeId::LocalVarRef:
-		case TypeId::ArgRef:
-			break;
 		default:
-			throw std::logic_error("Unhandled value type");
+			throw std::logic_error("Unhandled object type");
 	}
 }
 
 void Runtime::_gcWalk(Context &ctxt) {
 	for (auto &j : ctxt.majorFrames) {
-		_gcWalk((FnOverloadingValue *)j.curFn);
-		if (j.scopeValue)
-			_gcWalk(j.scopeValue);
-		if (j.returnValue)
-			_gcWalk(j.returnValue);
+		_gcWalk((FnOverloadingObject *)j.curFn);
+		if (j.scopeObject)
+			_gcWalk(j.scopeObject);
+		_gcWalk(j.returnValue);
 		if (j.thisObject)
 			_gcWalk(j.thisObject);
 		if (j.curExcept)
@@ -298,11 +293,11 @@ void Runtime::_gcWalk(Context &ctxt) {
 void Runtime::gc() {
 	_flags |= _RT_INGC;
 
-	bool foundDestructibleValues = false;
+	bool foundDestructibleObjects = false;
 
 rescan:
-	if (_rootValue)
-		_gcWalk(_rootValue);
+	if (_rootObject)
+		_gcWalk(_rootObject);
 
 	// Walk contexts for each thread.
 	for (auto &i : activeContexts)
@@ -310,36 +305,36 @@ rescan:
 
 	// Execute destructors for all destructible objects.
 	destructingThreads.insert(std::this_thread::get_id());
-	for (auto i : createdValues) {
+	for (auto i : createdObjects) {
 		if (!i->hostRefCount) {
 			auto d = i->getMemberChain("delete");
 			if ((d.size()) &&
-				(i->getType() == TypeId::Object) &&
-				(!(((ObjectValue *)i)->objectFlags & OBJECT_PARENT))) {
+				(i->getType() == TypeId::Instance) &&
+				(!(((InstanceObject *)i)->instanceFlags & INSTANCE_PARENT))) {
 				for (auto &j : d) {
-					_destructedValues.insert(j.first->owner);
+					_destructedObjects.insert(j.first->owner);
 					if (j.second->getType().typeId == TypeId::Fn)
-						((FnValue*)j.second)->call(i, {}, {});
+						((FnObject *)j.second)->call(i, {}, {});
 				}
-				foundDestructibleValues = true;
+				foundDestructibleObjects = true;
 			}
 		}
 	}
 	destructingThreads.erase(std::this_thread::get_id());
 
-	for (auto i : createdValues) {
+	for (auto i : createdObjects) {
 		if (i->hostRefCount) {
-			_walkedValues.insert(i);
+			_walkedObjects.insert(i);
 		} else
 			delete i;
 	}
 
-	createdValues.swap(_walkedValues);
-	_walkedValues.clear();
-	_destructedValues.clear();
+	createdObjects.swap(_walkedObjects);
+	_walkedObjects.clear();
+	_destructedObjects.clear();
 
-	if (foundDestructibleValues) {
-		foundDestructibleValues = false;
+	if (foundDestructibleObjects) {
+		foundDestructibleObjects = false;
 		goto rescan;
 	}
 

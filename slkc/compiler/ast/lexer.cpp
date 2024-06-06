@@ -42,8 +42,6 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 				<InitialCondition>"=>"		{ token->tokenId = TokenId::MatchOp; break; }
 				<InitialCondition>"&&"		{ token->tokenId = TokenId::LAndOp; break; }
 				<InitialCondition>"||"		{ token->tokenId = TokenId::LOrOp; break; }
-				<InitialCondition>"++"		{ token->tokenId = TokenId::IncOp; break; }
-				<InitialCondition>"--"		{ token->tokenId = TokenId::DecOp; break; }
 				<InitialCondition>"+"		{ token->tokenId = TokenId::AddOp; break; }
 				<InitialCondition>"-"		{ token->tokenId = TokenId::SubOp; break; }
 				<InitialCondition>"*"		{ token->tokenId = TokenId::MulOp; break; }

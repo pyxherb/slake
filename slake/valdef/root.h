@@ -1,25 +1,25 @@
 #ifndef _SLAKE_VALDEF_ROOT_H_
 #define _SLAKE_VALDEF_ROOT_H_
 
-#include "value.h"
+#include "object.h"
 #include "member.h"
 
 namespace slake {
-	class RootValue final : public Value {
+	class RootObject final : public Object {
 	public:
-		inline RootValue(Runtime *rt)
-			: Value(rt) {
+		inline RootObject(Runtime *rt)
+			: Object(rt) {
 			scope = new Scope(this);
-			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Value));
+			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Object));
 		}
 
-		virtual inline ~RootValue() {
-			reportSizeFreedToRuntime(sizeof(*this) - sizeof(Value));
+		virtual inline ~RootObject() {
+			reportSizeFreedToRuntime(sizeof(*this) - sizeof(Object));
 		}
-		virtual inline Type getType() const override { return TypeId::RootValue; }
+		virtual inline Type getType() const override { return TypeId::RootObject; }
 
-		RootValue &operator=(const RootValue &) = delete;
-		RootValue &operator=(RootValue &&) = delete;
+		RootObject &operator=(const RootObject &) = delete;
+		RootObject &operator=(RootObject &&) = delete;
 	};
 }
 

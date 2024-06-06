@@ -2,64 +2,63 @@
 
 using namespace slake;
 
-static ObjectValue *_defaultClassInstantiator(Runtime *runtime, ClassValue *cls);
+static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *cls);
 
 /// @brief Create a new class instance.
 /// @param cls Class for instance creation.
 /// @return Created instance of the class.
 ///
 /// @note This function normalizes loading-deferred types.
-ObjectValue *slake::Runtime::newClassInstance(ClassValue *cls) {
+InstanceObject *slake::Runtime::newClassInstance(ClassObject *cls) {
 	if (cls->customInstantiator)
 		return cls->customInstantiator(this, cls);
 	return _defaultClassInstantiator(this, cls);
 }
 
-ArrayValue *slake::Runtime::newArrayInstance(Type type, uint32_t size) {
-	ArrayValue *instance = new ArrayValue(this, type);
+ArrayObject *slake::Runtime::newArrayInstance(Type type, uint32_t size) {
+	ArrayObject *instance = new ArrayObject(this, type);
 
 	instance->values.resize(size);
 
 	for (size_t i = 0; i < size; ++i) {
-		instance->values[i] = new VarValue(this, ACCESS_PUB, type);
+		instance->values[i] = new VarObject(this, ACCESS_PUB, type);
 	}
 
 	return instance;
 }
 
-static ObjectValue *_defaultClassInstantiator(Runtime *runtime, ClassValue *cls) {
-	ObjectValue *parent = nullptr;
+static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *cls) {
+	InstanceObject *parent = nullptr;
 
 	if (cls->parentClass.typeId == TypeId::Class) {
 		cls->parentClass.loadDeferredType(runtime);
 
-		Value *parentClass = (ClassValue *)cls->parentClass.getCustomTypeExData();
+		Object *parentClass = (ClassObject *)cls->parentClass.getCustomTypeExData();
 		assert(parentClass->getType() == TypeId::Class);
 
-		parent = runtime->newClassInstance((ClassValue *)parentClass);
+		parent = runtime->newClassInstance((ClassObject *)parentClass);
 	}
 
-	ObjectValue *instance = new ObjectValue(runtime, cls, parent);
+	InstanceObject *instance = new InstanceObject(runtime, cls, parent);
 
 	for (auto i : cls->scope->members) {
 		switch (i.second->getType().typeId) {
 			case TypeId::Var: {
-				ValueRef<VarValue> var = new VarValue(
+				VarObject *var = new VarObject(
 					runtime,
-					((BasicVarValue *)i.second)->getAccess(),
-					((BasicVarValue *)i.second)->getVarType());
+					((BasicVarObject *)i.second)->getAccess(),
+					((BasicVarObject *)i.second)->getVarType());
 
 				// Initialize the variable if initial value is set
-				if (auto initValue = ((VarValue *)i.second)->getData(); initValue)
-					var->setData(initValue);
+				var->setData(((VarObject *)i.second)->getData());
 
-				instance->scope->addMember(i.first, var.get());
+				instance->scope->addMember(i.first, var);
 				break;
 			}
 			case TypeId::Fn: {
-				std::deque<FnOverloadingValue *> overloadings;
+				std::deque<FnOverloadingObject *> overloadings;
 
-				for (auto j : ((FnValue *)i.second)->overloadings) {
+				for (auto j : ((FnObject *)i.second)->overloadings) {
 					if ((!(j->access & ACCESS_STATIC)) &&
 						(j->overloadingFlags & OL_VIRTUAL))
 						overloadings.push_back(j);
@@ -67,14 +66,14 @@ static ObjectValue *_defaultClassInstantiator(Runtime *runtime, ClassValue *cls)
 
 				if (overloadings.size()) {
 					// Link the method with method inherited from the parent.
-					FnValue *fn = new FnValue(runtime);
+					FnObject *fn = new FnObject(runtime);
 
 					fn->overloadings = std::move(overloadings);
 
-					for (ObjectValue *j = parent; j; j = j->_parent) {
+					for (InstanceObject *j = parent; j; j = j->_parent) {
 						if (auto f = j->scope->getMember(i.first);
 							f && (f->getType() == TypeId::Fn))
-							fn->parentFn = (FnValue *)f;
+							fn->parentFn = (FnObject *)f;
 					}
 
 					instance->scope->addMember(i.first, fn);

@@ -26,7 +26,7 @@ Value *Value::duplicate() const {
 	throw std::logic_error("duplicate method was not implemented by the value class");
 }
 
-Value *slake::Value::getMember(const std::string &name) {
+MemberValue *slake::Value::getMember(const std::string &name) {
 	return scope ? scope->getMember(name) : nullptr;
 }
 

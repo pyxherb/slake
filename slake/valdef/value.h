@@ -152,7 +152,7 @@ namespace slake {
 
 		inline Runtime *getRuntime() const noexcept { return _rt; }
 
-		Value *getMember(const std::string &name);
+		MemberValue *getMember(const std::string &name);
 		std::deque<std::pair<Scope *, MemberValue *>> getMemberChain(const std::string &name);
 
 		Value &operator=(const Value &x);

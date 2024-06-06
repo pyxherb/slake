@@ -256,7 +256,6 @@ namespace slake {
 
 	bool hasImplemented(ClassValue *c, InterfaceValue *i);
 	bool hasTrait(ClassValue *c, TraitValue *t);
-	bool isConvertible(Type a, Type b);
 	bool isCompatible(Type a, Type b);
 
 	class Runtime;

@@ -15,8 +15,6 @@ namespace slake {
 		Value *_parent = nullptr;
 		std::string _name;
 
-		friend bool slake::isConvertible(Type a, Type b);
-
 		GenericArgList _genericArgs;
 
 		MemberValue(Runtime *rt, AccessModifier access);

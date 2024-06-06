@@ -21,7 +21,6 @@ namespace slake {
 		mutable ClassFlags _flags = 0;
 
 		friend class Runtime;
-		friend bool slake::isConvertible(Type a, Type b);
 
 	public:
 		GenericParamList genericParams;
@@ -71,7 +70,6 @@ namespace slake {
 	protected:
 		friend class Runtime;
 		friend class ClassValue;
-		friend bool slake::isConvertible(Type a, Type b);
 
 	public:
 		GenericParamList genericParams;

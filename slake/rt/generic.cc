@@ -6,7 +6,6 @@ void slake::Runtime::_instantiateGenericObject(Type &type, GenericInstantiationC
 	switch (type.typeId) {
 		case TypeId::Class:
 		case TypeId::Interface:
-		case TypeId::Trait:
 		case TypeId::Instance: {
 			if (type.isLoadingDeferred()) {
 				IdRefObject *exData = (IdRefObject *)type.getCustomTypeExData();
@@ -18,7 +17,7 @@ void slake::Runtime::_instantiateGenericObject(Type &type, GenericInstantiationC
 			} else {
 				auto idRefToResolvedType = getFullRef((MemberObject *)type.getCustomTypeExData());
 
-				HostObjectRef<IdRefObject> idRefObject = new IdRefObject((Runtime *)this);
+				HostObjectRef<IdRefObject> idRefObject = IdRefObject::alloc((Runtime *)this);
 				idRefObject->entries = idRefToResolvedType;
 
 				type = Type(type.typeId, idRefObject.release());
@@ -136,14 +135,6 @@ void slake::Runtime::_instantiateGenericObject(Object *v, GenericInstantiationCo
 
 			break;
 		}
-		case TypeId::Trait: {
-			TraitObject *const value = (TraitObject *)v;
-
-			for (auto &i : value->scope->members)
-				_instantiateGenericObject(i.second, instantiationContext);
-
-			break;
-		}
 		case TypeId::Var: {
 			BasicVarObject *value = (BasicVarObject *)v;
 
@@ -219,17 +210,6 @@ void Runtime::mapGenericParams(const Object *v, GenericInstantiationContext &ins
 		}
 		case TypeId::Interface: {
 			InterfaceObject *value = (InterfaceObject *)v;
-
-			if (instantiationContext.genericArgs->size() != value->genericParams.size())
-				throw GenericInstantiationError("Number of generic parameter does not match");
-
-			for (size_t i = 0; i < value->genericParams.size(); ++i) {
-				instantiationContext.mappedGenericArgs[value->genericParams[i].name] = instantiationContext.genericArgs->at(i);
-			}
-			break;
-		}
-		case TypeId::Trait: {
-			TraitObject *value = (TraitObject *)v;
 
 			if (instantiationContext.genericArgs->size() != value->genericParams.size())
 				throw GenericInstantiationError("Number of generic parameter does not match");

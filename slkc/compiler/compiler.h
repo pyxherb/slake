@@ -441,7 +441,6 @@ namespace slake {
 			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, ModuleObject *value);
 			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, ClassObject *value);
 			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, InterfaceObject *value);
-			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, TraitObject *value);
 			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, Object *value);
 			void importModule(const IdRef &ref);
 			std::shared_ptr<TypeNameNode> toTypeName(slake::Type runtimeType);

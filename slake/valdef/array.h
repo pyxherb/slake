@@ -8,15 +8,18 @@
 namespace slake {
 	class ArrayObject final : public Object {
 	public:
+		ArrayObject(Runtime *rt, const Type &type);
+		virtual ~ArrayObject();
+
 		std::deque<VarObject *> values;
 		Type type;
-
-		ArrayObject(Runtime *rt, Type type);
-		virtual ~ArrayObject();
 
 		virtual inline Type getType() const override { return Type(TypeId::Array, type); }
 
 		Object *duplicate() const override;
+
+		static HostObjectRef<ArrayObject> alloc(Runtime *rt, const Type &type);
+		virtual void dealloc() override;
 
 		inline ArrayObject &operator=(const ArrayObject &x) {
 			((Object &)*this) = (Object &)x;

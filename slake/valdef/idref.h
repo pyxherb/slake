@@ -16,14 +16,17 @@ namespace slake {
 
 	class IdRefObject final : public Object {
 	public:
-		std::deque<IdRefEntry> entries;
-
 		IdRefObject(Runtime *rt);
 		virtual ~IdRefObject();
+
+		std::deque<IdRefEntry> entries;
 
 		virtual inline Type getType() const override { return TypeId::IdRef; }
 
 		virtual Object *duplicate() const override;
+
+		static HostObjectRef<IdRefObject> alloc(Runtime *rt);
+		virtual void dealloc() override;
 
 		inline IdRefObject &operator=(const IdRefObject &x) {
 			((Object&)*this) = (Object&)x;

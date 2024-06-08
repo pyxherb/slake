@@ -23,6 +23,9 @@ namespace slake {
 		friend class Runtime;
 
 	public:
+		ClassObject(Runtime *rt, AccessModifier access, const Type &parentClass);
+		virtual ~ClassObject();
+
 		GenericParamList genericParams;
 
 		Type parentClass;
@@ -31,17 +34,9 @@ namespace slake {
 		/// @brief User-defined instantiator.
 		ClassInstantiator customInstantiator;
 
-		ClassObject(Runtime *rt, AccessModifier access, Type parentClass = {});
-		virtual ~ClassObject();
-
 		virtual inline Type getType() const override { return TypeId::Class; }
 		virtual inline Type getParentType() const { return parentClass; }
 		virtual inline void setParentType(Type parent) { parentClass = parent; }
-
-		/// @brief Check if the class is abstract.
-		///
-		/// @return true if abstract, false otherwise.
-		bool isAbstract() const;
 
 		/// @brief Check if the class has implemented the interface.
 		///
@@ -51,6 +46,9 @@ namespace slake {
 		bool hasImplemented(const InterfaceObject *pInterface) const;
 
 		virtual Object *duplicate() const override;
+
+		static HostObjectRef<ClassObject> alloc(Runtime *rt, AccessModifier access, const Type &parentClass = {});
+		virtual void dealloc() override;
 
 		inline ClassObject &operator=(const ClassObject &x) {
 			((ModuleObject &)*this) = (ModuleObject &)x;
@@ -72,19 +70,21 @@ namespace slake {
 		friend class ClassObject;
 
 	public:
+		inline InterfaceObject(Runtime *rt, AccessModifier access, const std::deque<Type> &parents)
+			: ModuleObject(rt, access), parents(parents) {
+		}
+		virtual ~InterfaceObject();
+
 		GenericParamList genericParams;
 
 		std::deque<Type> parents;
 
-		inline InterfaceObject(Runtime *rt, AccessModifier access, std::deque<Type> parents = {})
-			: ModuleObject(rt, access), parents(parents) {
-			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(ModuleObject));
-		}
-		virtual ~InterfaceObject();
-
 		virtual inline Type getType() const override { return TypeId::Interface; }
 
 		virtual Object *duplicate() const override;
+
+		static HostObjectRef<InterfaceObject> alloc(Runtime *rt, AccessModifier access, const std::deque<Type> &parents = {});
+		virtual void dealloc() override;
 
 		/// @brief Check if the interface is derived from specified interface
 		/// @param pInterface Interface to check.
@@ -99,31 +99,6 @@ namespace slake {
 			return *this;
 		}
 		InterfaceObject &operator=(InterfaceObject &&) = delete;
-	};
-
-	class TraitObject : public InterfaceObject {
-	protected:
-		friend class Runtime;
-		friend class ClassObject;
-
-	public:
-		GenericParamList genericParams;
-
-		inline TraitObject(Runtime *rt, AccessModifier access, std::deque<Type> parents = {})
-			: InterfaceObject(rt, access, parents) {
-			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(InterfaceObject));
-		}
-		virtual ~TraitObject();
-
-		virtual inline Type getType() const override { return TypeId::Trait; }
-
-		virtual Object *duplicate() const override;
-
-		inline TraitObject &operator=(const TraitObject &x) {
-			((InterfaceObject &)*this) = (InterfaceObject &)x;
-			return *this;
-		}
-		TraitObject &operator=(TraitObject &&) = delete;
 	};
 }
 

@@ -21,28 +21,25 @@ namespace slake {
 		friend class Runtime;
 
 	public:
-		InstanceObject *_parent;
-
-		ObjectFlags instanceFlags = 0;
-
-		inline InstanceObject(Runtime *rt, ClassObject *cls, InstanceObject *parent = nullptr)
+		inline InstanceObject(Runtime *rt, ClassObject *cls, InstanceObject *parent)
 			: Object(rt), _class(cls), _parent(parent) {
 			if (parent)
 				parent->instanceFlags |= INSTANCE_PARENT;
 			scope = new Scope(this, parent ? parent->scope : nullptr);
-			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Object));
+		}
+		virtual inline ~InstanceObject() {
 		}
 
-		/// @brief Delete the object and execute its destructor (if exists).
-		///
-		/// @note Never delete objects directly.
-		virtual inline ~InstanceObject() {
-			reportSizeFreedToRuntime(sizeof(*this) - sizeof(Object));
-		}
+		InstanceObject *_parent;
+
+		ObjectFlags instanceFlags = 0;
 
 		virtual inline Type getType() const override { return Type(TypeId::Instance, (Object *)_class); }
 
 		virtual Object *duplicate() const override;
+
+		static HostObjectRef<InstanceObject> alloc(Runtime *rt, ClassObject *cls, InstanceObject *parent = nullptr);
+		virtual void dealloc() override;
 
 		InstanceObject(InstanceObject &) = delete;
 		InstanceObject(InstanceObject &&) = delete;

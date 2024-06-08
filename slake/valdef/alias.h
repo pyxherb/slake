@@ -6,14 +6,17 @@
 namespace slake {
 	class AliasObject final : public MemberObject {
 	public:
-		mutable Object *src;
-
 		AliasObject(Runtime *rt, AccessModifier access, Object *src);
 		virtual ~AliasObject();
+
+		mutable Object *src;
 
 		virtual inline Type getType() const override { return TypeId::Alias; }
 
 		virtual Object *duplicate() const override;
+
+		static HostObjectRef<AliasObject> alloc(Runtime *rt, Object *src);
+		virtual void dealloc() override;
 
 		inline AliasObject &operator=(const AliasObject &x) {
 			((Object &)*this) = (Object &)x;

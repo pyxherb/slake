@@ -6,11 +6,25 @@ ContextObject::ContextObject(
 	Runtime *rt,
 	std::shared_ptr<Context> context)
 	: Object(rt), _context(context) {
-	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Object));
 }
 
 ContextObject::~ContextObject() {
-	reportSizeFreedToRuntime(sizeof(*this) - sizeof(Object));
+}
+
+HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt, std::shared_ptr<Context> context) {
+	std::pmr::polymorphic_allocator<ContextObject> allocator(&rt->globalHeapPoolResource);
+
+	ContextObject *ptr = allocator.allocate(1);
+	allocator.construct(ptr, rt, context);
+
+	return ptr;
+}
+
+void slake::ContextObject::dealloc() {
+	std::pmr::polymorphic_allocator<ContextObject> allocator(&_rt->globalHeapPoolResource);
+
+	std::destroy_at(this);
+	allocator.deallocate(this, 1);
 }
 
 Value ContextObject::resume() {

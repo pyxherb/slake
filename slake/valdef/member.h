@@ -12,13 +12,13 @@
 namespace slake {
 	class MemberObject : public Object, public AccessModified {
 	public:
+		MemberObject(Runtime *rt, AccessModifier access);
+		virtual ~MemberObject();
+
 		Object *_parent = nullptr;
 		std::string _name;
 
 		GenericArgList _genericArgs;
-
-		MemberObject(Runtime *rt, AccessModifier access);
-		virtual ~MemberObject();
 
 		virtual std::string getName() const;
 

@@ -24,7 +24,6 @@ bool Type::isLoadingDeferred() const noexcept {
 	switch (typeId) {
 		case TypeId::Class:
 		case TypeId::Interface:
-		case TypeId::Trait:
 		case TypeId::Instance:
 			return getCustomTypeExData()->getType() == TypeId::IdRef;
 		default:

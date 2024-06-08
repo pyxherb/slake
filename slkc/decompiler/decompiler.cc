@@ -28,7 +28,6 @@ std::string slake::decompiler::decompileTypeName(const Type &type, Runtime *rt) 
 	switch (type.typeId) {
 		case TypeId::Class:
 		case TypeId::Interface:
-		case TypeId::Trait:
 		case TypeId::GenericArg:
 		case TypeId::Instance:
 			s += "@";
@@ -215,9 +214,6 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 			break;
 		}
 		case slake::TypeId::Interface: {
-			break;
-		}
-		case slake::TypeId::Trait: {
 			break;
 		}
 	}

@@ -8,10 +8,10 @@
 namespace slake {
 	class BasicVarObject : public MemberObject {
 	public:
-		Type type = TypeId::Any;
-
 		BasicVarObject(Runtime *rt, AccessModifier access, Type type);
 		virtual ~BasicVarObject();
+
+		Type type = TypeId::Any;
 
 		virtual inline Type getType() const override { return Type(TypeId::Var, type); }
 
@@ -30,12 +30,15 @@ namespace slake {
 
 	class VarObject final : public BasicVarObject {
 	public:
-		mutable Value value;
-
-		VarObject(Runtime *rt, AccessModifier access, Type type);
+		VarObject(Runtime *rt, AccessModifier access, const Type &type);
 		virtual ~VarObject();
 
+		mutable Value value;
+
 		virtual Object *duplicate() const override;
+
+		static HostObjectRef<VarObject> alloc(Runtime *rt, AccessModifier access, const Type &type);
+		virtual void dealloc() override;
 
 		virtual inline Value getData() const override { return value; }
 		virtual inline void setData(const Value &value) override {

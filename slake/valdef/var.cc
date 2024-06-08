@@ -4,26 +4,38 @@
 using namespace slake;
 
 BasicVarObject::BasicVarObject(Runtime *rt, AccessModifier access, Type type) : MemberObject(rt, access), type(type) {
-	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(MemberObject));
 }
 
 BasicVarObject::~BasicVarObject() {
-	reportSizeFreedToRuntime(sizeof(*this) - sizeof(MemberObject));
 }
 
-slake::VarObject::VarObject(Runtime *rt, AccessModifier access, Type type)
+slake::VarObject::VarObject(Runtime *rt, AccessModifier access, const Type &type)
 	: BasicVarObject(rt, access, type) {
-	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(BasicVarObject));
 }
 
 VarObject::~VarObject() {
-	reportSizeFreedToRuntime(sizeof(*this) - sizeof(BasicVarObject));
 }
 
 Object *VarObject::duplicate() const {
-	VarObject *v = new VarObject(_rt, 0, type);
+	HostObjectRef<VarObject> v = VarObject::alloc(_rt, 0, type);
 
-	*v = *this;
+	*(v.get()) = *this;
 
-	return (Object *)v;
+	return (Object *)v.release();
+}
+
+void slake::VarObject::dealloc() {
+	std::pmr::polymorphic_allocator<VarObject> allocator(&_rt->globalHeapPoolResource);
+
+	std::destroy_at(this);
+	allocator.deallocate(this, 1);
+}
+
+HostObjectRef<VarObject> slake::VarObject::alloc(Runtime *rt, AccessModifier access, const Type &type) {
+	std::pmr::polymorphic_allocator<VarObject> allocator(&rt->globalHeapPoolResource);
+
+	VarObject *ptr = allocator.allocate(1);
+	allocator.construct(ptr, rt, access, type);
+
+	return ptr;
 }

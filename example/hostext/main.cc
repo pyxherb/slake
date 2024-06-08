@@ -121,10 +121,10 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	slake::HostObjectRef<slake::FnObject> fnObject = new slake::FnObject(rt.get());
+	slake::HostObjectRef<slake::FnObject> fnObject = slake::FnObject::alloc(rt.get());
 
 	fnObject->overloadings.push_back(
-		new slake::NativeFnOverloadingObject(fnObject.get(), slake::ACCESS_PUB, std::deque<slake::Type>{}, slake::ValueType::Undefined, print));
+		slake::NativeFnOverloadingObject::alloc(fnObject.get(), slake::ACCESS_PUB, std::deque<slake::Type>{}, slake::ValueType::Undefined, print).release());
 
 	((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext"))->getMember("extfns"))->scope->putMember("print", fnObject.get());
 

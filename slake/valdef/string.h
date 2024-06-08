@@ -8,18 +8,22 @@
 namespace slake {
 	class StringObject final : public Object {
 	private:
-		void _setData(const char* str, size_t size);
+		void _setData(const char *str, size_t size);
 
 	public:
-		std::string data;
-
 		StringObject(Runtime *rt, const char *str, size_t size);
 		StringObject(Runtime *rt, std::string &&s);
 		virtual ~StringObject();
 
+		std::pmr::string data;
+
 		virtual inline Type getType() const override { return TypeId::String; }
 
 		virtual Object *duplicate() const override;
+
+		static HostObjectRef<StringObject> alloc(Runtime *rt, const char *str, size_t size);
+		static HostObjectRef<StringObject> alloc(Runtime *rt, std::string &&s);
+		virtual void dealloc() override;
 
 		inline StringObject &operator=(const StringObject &x) {
 			((Object &)*this) = (Object &)x;

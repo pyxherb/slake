@@ -4,7 +4,6 @@ using namespace slake;
 
 Object::Object(Runtime *rt) : _rt(rt) {
 	rt->createdObjects.insert(this);
-	reportSizeAllocatedToRuntime(sizeof(*this));
 }
 
 Object::~Object() {
@@ -13,7 +12,6 @@ Object::~Object() {
 			delete scope;
 	}
 	_rt->invalidateGenericCache(this);
-	reportSizeFreedToRuntime(sizeof(*this));
 	if (!(_rt->_flags & _RT_INGC))
 		_rt->createdObjects.erase(this);
 }
@@ -41,13 +39,4 @@ Object &slake::Object::operator=(const Object &x) {
 	scope = x.scope ? x.scope->duplicate() : nullptr;
 
 	return *this;
-}
-
-void Object::reportSizeAllocatedToRuntime(size_t size) {
-	_rt->_szMemInUse += size;
-}
-
-void Object::reportSizeFreedToRuntime(size_t size) {
-	assert(_rt->_szMemInUse >= size);
-	_rt->_szMemInUse -= size;
 }

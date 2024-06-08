@@ -42,7 +42,6 @@ void Runtime::_gcWalk(Type &type) {
 		case TypeId::Instance:
 		case TypeId::Class:
 		case TypeId::Interface:
-		case TypeId::Trait:
 			_gcWalk(type.getCustomTypeExData());
 			break;
 		case TypeId::Array:
@@ -131,7 +130,6 @@ void Runtime::_gcWalk(Object *v) {
 		}
 		case TypeId::Module:
 		case TypeId::Class:
-		case TypeId::Trait:
 		case TypeId::Interface: {
 			// TODO: Walk generic parameters.
 
@@ -152,17 +150,6 @@ void Runtime::_gcWalk(Object *v) {
 					value->parentClass.loadDeferredType(this);
 					if (auto p = value->parentClass.resolveCustomType(); p)
 						_gcWalk(p);
-
-					_gcWalk(value->genericParams);
-					break;
-				}
-				case TypeId::Trait: {
-					TraitObject *value = (TraitObject *)v;
-
-					for (auto &i : value->parents) {
-						i.loadDeferredType(this);
-						_gcWalk(i.getCustomTypeExData());
-					}
 
 					_gcWalk(value->genericParams);
 					break;
@@ -324,11 +311,11 @@ rescan:
 	}
 	destructingThreads.erase(std::this_thread::get_id());
 
-	for (auto i : createdObjects) {
-		if (i->hostRefCount) {
-			_walkedObjects.insert(i);
+	for (auto i = createdObjects.begin(); i != createdObjects.end();) {
+		if ((*i)->hostRefCount) {
+			_gcWalk(*(i++));
 		} else
-			delete i;
+			(*(i++))->dealloc();
 	}
 
 	createdObjects.swap(_walkedObjects);
@@ -340,6 +327,6 @@ rescan:
 		goto rescan;
 	}
 
-	_szMemUsedAfterLastGc = _szMemInUse;
+	_szMemUsedAfterLastGc = globalHeapPoolResource.szAllocated;
 	_flags &= ~_RT_INGC;
 }

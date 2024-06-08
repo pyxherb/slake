@@ -25,7 +25,6 @@ namespace slake {
 
 		Class,		// Class
 		Interface,	// Interface
-		Trait,		// Trait
 		Struct,		// Structure
 		Instance,	// Object instance
 
@@ -128,7 +127,6 @@ namespace slake {
 				switch (rhs.typeId) {
 					case TypeId::Class:
 					case TypeId::Interface:
-					case TypeId::Trait:
 					case TypeId::Instance: {
 						auto lhsType = getCustomTypeExData(), rhsType = rhs.getCustomTypeExData();
 						assert(lhsType->getType() != TypeId::IdRef &&
@@ -169,7 +167,6 @@ namespace slake {
 					return getValueTypeExData() == rhs.getValueTypeExData();
 				case TypeId::Class:
 				case TypeId::Interface:
-				case TypeId::Trait:
 				case TypeId::Instance: {
 					auto lhsType = getCustomTypeExData(), rhsType = rhs.getCustomTypeExData();
 					assert(lhsType->getType() != TypeId::IdRef &&
@@ -203,7 +200,6 @@ namespace slake {
 			switch (rhs.typeId) {
 				case TypeId::Class:
 				case TypeId::Interface:
-				case TypeId::Trait:
 				case TypeId::Instance:
 					if (rhs.isLoadingDeferred())
 						// Duplicate the reference to the type.
@@ -233,7 +229,6 @@ namespace slake {
 			switch (rhs.typeId) {
 				case TypeId::Class:
 				case TypeId::Interface:
-				case TypeId::Trait:
 				case TypeId::Instance:
 					exData = rhs.getCustomTypeExData();
 					break;

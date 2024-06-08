@@ -4,18 +4,32 @@ using namespace slake;
 
 slake::IdRefObject::IdRefObject(Runtime *rt)
 	: Object(rt) {
-	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Object));
 }
 
 IdRefObject::~IdRefObject() {
-	reportSizeFreedToRuntime(sizeof(*this) - sizeof(Object));
 }
 
 Object *IdRefObject::duplicate() const {
-	IdRefObject *v = new IdRefObject(_rt);
-	*v = *this;
+	HostObjectRef<IdRefObject> v = IdRefObject::alloc(_rt);
+	*(v.get()) = *this;
 
-	return (Object *)v;
+	return (Object *)v.release();
+}
+
+HostObjectRef<IdRefObject> slake::IdRefObject::alloc(Runtime *rt) {
+	std::pmr::polymorphic_allocator<IdRefObject> allocator(&rt->globalHeapPoolResource);
+
+	IdRefObject *ptr = allocator.allocate(1);
+	allocator.construct(ptr, rt);
+
+	return ptr;
+}
+
+void slake::IdRefObject::dealloc() {
+	std::pmr::polymorphic_allocator<IdRefObject> allocator(&_rt->globalHeapPoolResource);
+
+	std::destroy_at(this);
+	allocator.deallocate(this, 1);
 }
 
 std::string std::to_string(const slake::IdRefObject *ref) {

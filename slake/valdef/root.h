@@ -10,13 +10,14 @@ namespace slake {
 		inline RootObject(Runtime *rt)
 			: Object(rt) {
 			scope = new Scope(this);
-			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Object));
+		}
+		virtual inline ~RootObject() {
 		}
 
-		virtual inline ~RootObject() {
-			reportSizeFreedToRuntime(sizeof(*this) - sizeof(Object));
-		}
 		virtual inline Type getType() const override { return TypeId::RootObject; }
+
+		static HostObjectRef<RootObject> alloc(Runtime *rt);
+		virtual void dealloc() override;
 
 		RootObject &operator=(const RootObject &) = delete;
 		RootObject &operator=(RootObject &&) = delete;

@@ -7,6 +7,7 @@
 #include <set>
 #include <memory>
 #include <slake/slxfmt.h>
+#include <memory_resource>
 
 #include "except.h"
 #include "generated/config.h"
@@ -120,6 +121,31 @@ namespace slake {
 		// Load native members
 		LMOD_LOADNATIVE = 0x10;
 
+	class SynchronizedCountablePoolResource : public std::pmr::synchronized_pool_resource {
+	public:
+		size_t szAllocated = 0;
+
+		inline SynchronizedCountablePoolResource() : synchronized_pool_resource() {}
+		explicit inline SynchronizedCountablePoolResource(std::pmr::memory_resource *upstream) : synchronized_pool_resource(upstream) {}
+		explicit inline SynchronizedCountablePoolResource(const std::pmr::pool_options &opts) : synchronized_pool_resource(opts) {}
+		inline SynchronizedCountablePoolResource(const std::pmr::pool_options &opts, std::pmr::memory_resource *upstream) : synchronized_pool_resource(opts, upstream) {}
+		SynchronizedCountablePoolResource(const SynchronizedCountablePoolResource &) = delete;
+
+		virtual void *do_allocate(std::size_t bytes, std::size_t alignment) override {
+			void *p = synchronized_pool_resource::do_allocate(bytes, alignment);
+
+			szAllocated += bytes;
+
+			return p;
+		}
+
+		virtual void do_deallocate(void *p, std::size_t bytes, std::size_t alignment) override {
+			synchronized_pool_resource::do_deallocate(p, bytes, alignment);
+
+			szAllocated -= bytes;
+		}
+	};
+
 	class Runtime final {
 	public:
 		struct GenericInstantiationContext {
@@ -127,6 +153,8 @@ namespace slake {
 			const GenericArgList *genericArgs;
 			std::unordered_map<std::string, Type> mappedGenericArgs;
 		};
+
+		SynchronizedCountablePoolResource globalHeapPoolResource;
 
 	private:
 		/// @brief Root value of the runtime.
@@ -154,23 +182,6 @@ namespace slake {
 		/// @brief Cached instances of generic values.
 		mutable GenericCacheDirectory _genericCacheDir;
 
-		inline void invalidateGenericCache(Object *i) {
-			if (_genericCacheLookupTable.count(i)) {
-				// Remove the value from generic cache if it is unreachable.
-				auto &lookupEntry = _genericCacheLookupTable.at(i);
-
-				auto &table = _genericCacheDir.at(lookupEntry.originalObject);
-				table.erase(lookupEntry.genericArgs);
-
-				if (!table.size())
-					_genericCacheLookupTable.erase(lookupEntry.originalObject);
-
-				_genericCacheLookupTable.erase(i);
-			}
-		}
-
-		/// @brief Size of memory allocated for values.
-		size_t _szMemInUse = 0;
 		/// @brief Size of memory allocated for values after last GC cycle.
 		size_t _szMemUsedAfterLastGc = 0;
 
@@ -231,6 +242,21 @@ namespace slake {
 
 		Runtime(RuntimeFlags flags = 0);
 		virtual ~Runtime();
+
+		inline void invalidateGenericCache(Object *i) {
+			if (_genericCacheLookupTable.count(i)) {
+				// Remove the value from generic cache if it is unreachable.
+				auto &lookupEntry = _genericCacheLookupTable.at(i);
+
+				auto &table = _genericCacheDir.at(lookupEntry.originalObject);
+				table.erase(lookupEntry.genericArgs);
+
+				if (!table.size())
+					_genericCacheLookupTable.erase(lookupEntry.originalObject);
+
+				_genericCacheLookupTable.erase(i);
+			}
+		}
 
 		void mapGenericParams(const Object *v, GenericInstantiationContext &instantiationContext) const;
 		void mapGenericParams(const FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const;

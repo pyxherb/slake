@@ -11,7 +11,7 @@ MajorFrame::MajorFrame(Runtime *rt) {
 
 Runtime::Runtime(RuntimeFlags flags) : _flags(flags) {
 	_flags |= _RT_INITING;
-	_rootObject = new RootObject(this);
+	_rootObject = RootObject::alloc(this).release();
 	_flags &= ~_RT_INITING;
 }
 
@@ -25,5 +25,5 @@ Runtime::~Runtime() {
 	gc();
 
 	assert(!createdObjects.size());
-	assert(!_szMemInUse);
+	assert(!globalHeapPoolResource.szAllocated);
 }

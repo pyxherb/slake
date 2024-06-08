@@ -19,6 +19,9 @@ namespace slake {
 
 		virtual inline Type getType() const override { return TypeId::Context; }
 
+		static HostObjectRef<ContextObject> alloc(Runtime *rt, std::shared_ptr<Context> context);
+		virtual void dealloc() override;
+
 		inline std::shared_ptr<Context> getContext() { return _context; }
 
 		Value resume();

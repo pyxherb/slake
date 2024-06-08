@@ -64,19 +64,19 @@ static Value _castToLiteralValue(Value x) {
 }
 
 VarObject *slake::Runtime::_addLocalVar(MajorFrame &frame, Type type) {
-	auto v = new VarObject(this, ACCESS_PUB, type);
-	frame.localVars.push_back(v);
-	return v;
+	auto v = VarObject::alloc(this, ACCESS_PUB, type);
+	frame.localVars.push_back(v.get());
+	return v.release();
 }
 
 VarObject *slake::Runtime::_addLocalReg(MajorFrame &frame) {
-	auto v = new VarObject(this, ACCESS_PUB, TypeId::Any);
-	frame.regs.push_back(v);
-	return v;
+	auto v = VarObject::alloc(this, ACCESS_PUB, TypeId::Any);
+	frame.regs.push_back(v.get());
+	return v.release();
 }
 
 void slake::Runtime::_execIns(Context *context, Instruction ins) {
-	if (((_szMemInUse >> 1) > _szMemUsedAfterLastGc)) {
+	if (((globalHeapPoolResource.szAllocated >> 1) > _szMemUsedAfterLastGc)) {
 		gc();
 	}
 

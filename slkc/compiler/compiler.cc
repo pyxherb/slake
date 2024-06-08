@@ -732,43 +732,6 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 	}
 
 	//
-	// Compile and write traits.
-	//
-	_write(os, (uint32_t)traits.size());
-	for (auto &i : traits) {
-		MemberNodeCompilingStatusGuard compilingStatusGuard(i.second);
-
-		pushMajorContext();
-
-		mergeGenericParams(i.second->genericParams);
-
-		slxfmt::TraitTypeDesc ttd = {};
-
-		if (i.second->access & ACCESS_PUB)
-			ttd.flags |= slxfmt::TTD_PUB;
-
-		ttd.nParents = (uint8_t)i.second->parentTraits.size();
-
-		ttd.lenName = (uint8_t)i.first.length();
-		ttd.nGenericParams = (uint8_t)i.second->genericParams.size();
-
-		_write(os, ttd);
-		_write(os, i.first.data(), i.first.length());
-
-		for (auto &j : i.second->genericParams) {
-			compileGenericParam(os, j);
-		}
-
-		for (auto j : i.second->parentTraits) {
-			compileIdRef(os, std::static_pointer_cast<CustomTypeNameNode>(j)->ref);
-		}
-
-		compileScope(is, os, i.second->scope);
-
-		popMajorContext();
-	}
-
-	//
 	// Compile and write variables.
 	//
 	_write<uint32_t>(os, (uint32_t)vars.size());

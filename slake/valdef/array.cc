@@ -1,14 +1,12 @@
-#include "array.h"
+#include <slake/runtime.h>
 
 using namespace slake;
 
-ArrayObject::ArrayObject(Runtime *rt, Type type)
+ArrayObject::ArrayObject(Runtime *rt, const Type &type)
 	: Object(rt), type(type) {
-	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Object));
 }
 
 ArrayObject::~ArrayObject() {
-	reportSizeFreedToRuntime(sizeof(*this) - sizeof(Object));
 }
 
 Object *ArrayObject::duplicate() const {
@@ -17,4 +15,20 @@ Object *ArrayObject::duplicate() const {
 	*v = *this;
 
 	return (Object *)v;
+}
+
+HostObjectRef<ArrayObject> slake::ArrayObject::alloc(Runtime *rt, const Type &type) {
+	std::pmr::polymorphic_allocator<ArrayObject> allocator(&rt->globalHeapPoolResource);
+
+	ArrayObject *ptr = allocator.allocate(1);
+	allocator.construct(ptr, rt, type);
+
+	return ptr;
+}
+
+void slake::ArrayObject::dealloc() {
+	std::pmr::polymorphic_allocator<ArrayObject> allocator(&_rt->globalHeapPoolResource);
+
+	std::destroy_at(this);
+	allocator.deallocate(this, 1);
 }

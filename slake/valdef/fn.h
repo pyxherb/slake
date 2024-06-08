@@ -36,6 +36,13 @@ namespace slake {
 
 	class FnOverloadingObject : public Object {
 	public:
+		FnOverloadingObject(
+			FnObject *fnObject,
+			AccessModifier access,
+			const std::deque<Type> &paramTypes,
+			const Type &returnType);
+		virtual ~FnOverloadingObject();
+
 		FnObject *fnObject;
 
 		AccessModifier access;
@@ -47,13 +54,6 @@ namespace slake {
 		Type returnType;
 
 		OverloadingFlags overloadingFlags = 0;
-
-		FnOverloadingObject(
-			FnObject *fnObject,
-			AccessModifier access,
-			std::deque<Type> paramTypes,
-			Type returnType);
-		virtual ~FnOverloadingObject();
 
 		virtual inline Type getType() const { return TypeId::FnOverloading; }
 
@@ -82,14 +82,11 @@ namespace slake {
 
 	class RegularFnOverloadingObject : public FnOverloadingObject {
 	public:
-		std::deque<slxfmt::SourceLocDesc> sourceLocDescs;
-		std::deque<Instruction> instructions;
-
 		inline RegularFnOverloadingObject(
 			FnObject *fnObject,
 			AccessModifier access,
-			std::deque<Type> paramTypes,
-			Type returnType)
+			const std::deque<Type> &paramTypes,
+			const Type &returnType)
 			: FnOverloadingObject(
 				  fnObject,
 				  access,
@@ -97,11 +94,21 @@ namespace slake {
 				  returnType) {}
 		virtual ~RegularFnOverloadingObject() = default;
 
+		std::deque<slxfmt::SourceLocDesc> sourceLocDescs;
+		std::deque<Instruction> instructions;
+
 		virtual FnOverloadingKind getOverloadingKind() const override;
 
 		virtual Value call(Object *thisObject, std::deque<Value> args) const override;
 
 		virtual FnOverloadingObject *duplicate() const override;
+
+		static HostObjectRef<RegularFnOverloadingObject> alloc(
+			FnObject *fnObject,
+			AccessModifier access,
+			const std::deque<Type> &paramTypes,
+			const Type &returnType);
+		virtual void dealloc() override;
 
 		inline RegularFnOverloadingObject &operator=(const RegularFnOverloadingObject &other) {
 			*(FnOverloadingObject *)this = (const FnOverloadingObject &)other;
@@ -139,13 +146,11 @@ namespace slake {
 
 	class NativeFnOverloadingObject : public FnOverloadingObject {
 	public:
-		NativeFnCallback callback;
-
 		inline NativeFnOverloadingObject(
 			FnObject *fnObject,
 			AccessModifier access,
-			std::deque<Type> paramTypes,
-			Type returnType,
+			const std::deque<Type> &paramTypes,
+			const Type &returnType,
 			NativeFnCallback callback)
 			: FnOverloadingObject(
 				  fnObject,
@@ -155,11 +160,21 @@ namespace slake {
 			  callback(callback) {}
 		virtual ~NativeFnOverloadingObject() = default;
 
+		NativeFnCallback callback;
+
 		virtual FnOverloadingKind getOverloadingKind() const override;
 
 		virtual Value call(Object *thisObject, std::deque<Value> args) const override;
 
 		virtual FnOverloadingObject *duplicate() const override;
+
+		static HostObjectRef<NativeFnOverloadingObject> alloc(
+			FnObject *fnObject,
+			AccessModifier access,
+			const std::deque<Type> &paramTypes,
+			const Type &returnType,
+			NativeFnCallback callback);
+		virtual void dealloc() override;
 
 		inline NativeFnOverloadingObject &operator=(const NativeFnOverloadingObject &other) {
 			*(FnOverloadingObject *)this = (const FnOverloadingObject &)other;
@@ -172,15 +187,13 @@ namespace slake {
 
 	class FnObject : public MemberObject {
 	public:
-		FnObject *parentFn = nullptr;
-		std::deque<FnOverloadingObject *> overloadings;
-
 		inline FnObject(Runtime *rt) : MemberObject(rt, ACCESS_PUB) {
-			reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(MemberObject));
 		}
 		virtual inline ~FnObject() {
-			reportSizeFreedToRuntime(sizeof(*this) - sizeof(MemberObject));
 		}
+
+		FnObject *parentFn = nullptr;
+		std::deque<FnOverloadingObject *> overloadings;
 
 		virtual Type getType() const override;
 
@@ -189,6 +202,9 @@ namespace slake {
 		virtual Value call(Object *thisObject, std::deque<Value> args, std::deque<Type> argTypes) const;
 
 		virtual Object *duplicate() const override;
+
+		static HostObjectRef<FnObject> alloc(Runtime *rt);
+		virtual void dealloc() override;
 
 		inline FnObject &operator=(const FnObject &x) {
 			((MemberObject &)*this) = (MemberObject &)x;

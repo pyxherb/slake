@@ -214,30 +214,6 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 		importDefinitions(scope, interface, (Object *)i.second);
 }
 
-void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, TraitObject *value) {
-	if (importedDefinitions.count(value))
-		return;
-
-	importedDefinitions.insert(value);
-
-	std::deque<std::shared_ptr<TypeNameNode>> parentTraits;
-
-	for (auto i : value->parents) {
-		parentTraits.push_back(toTypeName(i));
-	}
-
-	std::shared_ptr<TraitNode> trait = std::make_shared<TraitNode>(
-		Location(),
-		value->getName());
-
-	trait->parentTraits = parentTraits;
-
-	(scope->members[value->_name] = trait)->bind(parent.get());
-
-	for (auto i : value->scope->members)
-		importDefinitions(scope, trait, (Object *)i.second);
-}
-
 void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, Object *value) {
 	if (importedDefinitions.count(value))
 		return;
@@ -276,9 +252,6 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 			break;
 		case slake::TypeId::Interface:
 			importDefinitions(scope, parent, (InterfaceObject *)value);
-			break;
-		case slake::TypeId::Trait:
-			importDefinitions(scope, parent, (TraitObject *)value);
 			break;
 			/*
 		case slake::TypeId::Alias: {

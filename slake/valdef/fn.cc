@@ -7,18 +7,16 @@ Type FnObject::getType() const { return TypeId::Fn; }
 FnOverloadingObject::FnOverloadingObject(
 	FnObject *fnObject,
 	AccessModifier access,
-	std::deque<Type> paramTypes,
-	Type returnType)
+	const std::deque<Type> &paramTypes,
+	const Type &returnType)
 	: Object(fnObject->_rt),
 	  fnObject(fnObject),
 	  access(access),
 	  paramTypes(paramTypes),
 	  returnType(returnType) {
-	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Object));
 }
 
 FnOverloadingObject::~FnOverloadingObject() {
-	reportSizeFreedToRuntime(sizeof(*this) - sizeof(Object));
 }
 
 FnOverloadingKind slake::RegularFnOverloadingObject::getOverloadingKind() const {
@@ -26,11 +24,27 @@ FnOverloadingKind slake::RegularFnOverloadingObject::getOverloadingKind() const 
 }
 
 FnOverloadingObject *slake::RegularFnOverloadingObject::duplicate() const {
-	RegularFnOverloadingObject *v = new RegularFnOverloadingObject(fnObject, access, {}, returnType);
+	HostObjectRef<RegularFnOverloadingObject> v = RegularFnOverloadingObject::alloc(fnObject, access, {}, returnType);
 
-	*v = *this;
+	*(v.get()) = *this;
 
-	return (FnOverloadingObject *)v;
+	return (FnOverloadingObject *)v.release();
+}
+
+HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingObject::alloc(FnObject *fnObject, AccessModifier access, const std::deque<Type> &paramTypes, const Type &returnType) {
+	std::pmr::polymorphic_allocator<RegularFnOverloadingObject> allocator(&fnObject->_rt->globalHeapPoolResource);
+
+	RegularFnOverloadingObject *ptr = allocator.allocate(1);
+	allocator.construct(ptr, fnObject, access, paramTypes, returnType);
+
+	return ptr;
+}
+
+void slake::RegularFnOverloadingObject::dealloc() {
+	std::pmr::polymorphic_allocator<RegularFnOverloadingObject> allocator(&_rt->globalHeapPoolResource);
+
+	std::destroy_at(this);
+	allocator.deallocate(this, 1);
 }
 
 FnOverloadingKind slake::NativeFnOverloadingObject::getOverloadingKind() const {
@@ -42,11 +56,32 @@ Value slake::NativeFnOverloadingObject::call(Object *thisObject, std::deque<Valu
 }
 
 FnOverloadingObject *slake::NativeFnOverloadingObject::duplicate() const {
-	NativeFnOverloadingObject *v = new NativeFnOverloadingObject(fnObject, access, {}, returnType, {});
+	HostObjectRef<NativeFnOverloadingObject> v = NativeFnOverloadingObject::alloc(fnObject, access, {}, returnType, {});
 
-	*v = *this;
+	*(v.get()) = *this;
 
-	return (FnOverloadingObject *)v;
+	return (FnOverloadingObject *)v.release();
+}
+
+HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObject::alloc(
+	FnObject *fnObject,
+	AccessModifier access,
+	const std::deque<Type> &paramTypes,
+	const Type &returnType,
+	NativeFnCallback callback) {
+	std::pmr::polymorphic_allocator<NativeFnOverloadingObject> allocator(&fnObject->_rt->globalHeapPoolResource);
+
+	NativeFnOverloadingObject *ptr = allocator.allocate(1);
+	allocator.construct(ptr, fnObject, access, paramTypes, returnType, callback);
+
+	return ptr;
+}
+
+void slake::NativeFnOverloadingObject::dealloc() {
+	std::pmr::polymorphic_allocator<NativeFnOverloadingObject> allocator(&_rt->globalHeapPoolResource);
+
+	std::destroy_at(this);
+	allocator.deallocate(this, 1);
 }
 
 Value RegularFnOverloadingObject::call(Object *thisObject, std::deque<Value> args) const {
@@ -76,9 +111,9 @@ Value RegularFnOverloadingObject::call(Object *thisObject, std::deque<Value> arg
 		frame.thisObject = thisObject;
 		frame.argStack.resize(args.size());
 		for (size_t i = 0; i < args.size(); ++i) {
-			auto var = new VarObject(rt, 0, TypeId::Any);
+			auto var = VarObject::alloc(rt, 0, TypeId::Any);
 			var->setData(args[i]);
-			frame.argStack[i] = var;
+			frame.argStack[i] = var.release();
 		}
 		context->majorFrames.push_back(frame);
 	} else
@@ -102,9 +137,6 @@ Value RegularFnOverloadingObject::call(Object *thisObject, std::deque<Value> arg
 			rt->_execIns(
 				context.get(),
 				context->majorFrames.back().curFn->instructions[context->majorFrames.back().curIns]);
-
-			if ((rt->_szMemInUse > (rt->_szMemUsedAfterLastGc << 1)) && !isDestructing)
-				rt->gc();
 		}
 	} catch (...) {
 		context->flags |= CTX_DONE;
@@ -112,7 +144,7 @@ Value RegularFnOverloadingObject::call(Object *thisObject, std::deque<Value> arg
 	}
 
 	if (context->flags & CTX_YIELDED)
-		return new ContextObject(rt, context);
+		return Value(ContextObject::alloc(rt, context).release(), true);
 
 	if (context->majorFrames.back().curIns == UINT32_MAX) {
 		rt->activeContexts.erase(std::this_thread::get_id());
@@ -161,9 +193,25 @@ Value FnObject::call(Object *thisObject, std::deque<Value> args, std::deque<Type
 }
 
 Object *FnObject::duplicate() const {
-	FnObject *v = new FnObject(_rt);
+	HostObjectRef<FnObject> v = FnObject::alloc(_rt);
 
-	*v = *this;
+	*(v.get()) = *this;
 
-	return (Object *)v;
+	return (Object *)v.release();
+}
+
+HostObjectRef<FnObject> slake::FnObject::alloc(Runtime *rt) {
+	std::pmr::polymorphic_allocator<FnObject> allocator(&rt->globalHeapPoolResource);
+
+	FnObject *ptr = allocator.allocate(1);
+	allocator.construct(ptr, rt);
+
+	return ptr;
+}
+
+void slake::FnObject::dealloc() {
+	std::pmr::polymorphic_allocator<FnObject> allocator(&_rt->globalHeapPoolResource);
+
+	std::destroy_at(this);
+	allocator.deallocate(this, 1);
 }

@@ -5,11 +5,9 @@ using namespace slake;
 ModuleObject::ModuleObject(Runtime *rt, AccessModifier access)
 	: MemberObject(rt, access) {
 	scope = new Scope(this);
-	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(MemberObject));
 }
 
 ModuleObject::~ModuleObject() {
-	reportSizeFreedToRuntime(sizeof(*this) - sizeof(MemberObject));
 }
 
 Type ModuleObject::getType() const {
@@ -17,9 +15,25 @@ Type ModuleObject::getType() const {
 }
 
 Object *ModuleObject::duplicate() const {
-	ModuleObject* v = new ModuleObject(_rt, getAccess());
+	HostObjectRef<ModuleObject> v = ModuleObject::alloc(_rt, getAccess());
 
-	*v = *this;
+	*(v.get()) = *this;
 
-	return (Object *)v;
+	return (Object *)v.release();
+}
+
+HostObjectRef<ModuleObject> slake::ModuleObject::alloc(Runtime *rt, AccessModifier access) {
+	std::pmr::polymorphic_allocator<ModuleObject> allocator(&rt->globalHeapPoolResource);
+
+	ModuleObject *ptr = allocator.allocate(1);
+	allocator.construct(ptr, rt, access);
+
+	return ptr;
+}
+
+void slake::ModuleObject::dealloc() {
+	std::pmr::polymorphic_allocator<ModuleObject> allocator(&_rt->globalHeapPoolResource);
+
+	std::destroy_at(this);
+	allocator.deallocate(this, 1);
 }

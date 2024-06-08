@@ -5,11 +5,9 @@ using namespace slake;
 
 MemberObject::MemberObject(Runtime *rt, AccessModifier access)
 	: Object(rt), AccessModified(access) {
-	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(Object));
 }
 
 MemberObject::~MemberObject() {
-	reportSizeFreedToRuntime(sizeof(*this) - sizeof(Object));
 }
 
 std::string MemberObject::getName() const {

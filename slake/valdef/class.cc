@@ -2,13 +2,11 @@
 
 using namespace slake;
 
-slake::ClassObject::ClassObject(Runtime *rt, AccessModifier access, Type parentClass)
+slake::ClassObject::ClassObject(Runtime *rt, AccessModifier access, const Type &parentClass)
 	: ModuleObject(rt, access), parentClass(parentClass) {
-	reportSizeAllocatedToRuntime(sizeof(*this) - sizeof(ModuleObject));
 }
 
 ClassObject::~ClassObject() {
-	reportSizeFreedToRuntime(sizeof(*this) - sizeof(ModuleObject));
 }
 
 bool ClassObject::hasImplemented(const InterfaceObject *pInterface) const {
@@ -41,30 +39,50 @@ bool InterfaceObject::isDerivedFrom(const InterfaceObject *pInterface) const {
 }
 
 Object *ClassObject::duplicate() const {
-	ClassObject *v = new ClassObject(_rt, 0, {});
-	*v = *this;
+	HostObjectRef<ClassObject> v = ClassObject::alloc(_rt, 0, {});
+	*(v.get()) = *this;
 
-	return (Object *)v;
+	return (Object *)v.release();
+}
+
+HostObjectRef<ClassObject> slake::ClassObject::alloc(Runtime *rt, AccessModifier access, const Type &parentClass) {
+	std::pmr::polymorphic_allocator<ClassObject> allocator(&rt->globalHeapPoolResource);
+
+	ClassObject *ptr = allocator.allocate(1);
+	allocator.construct(ptr, rt, access, parentClass);
+
+	return ptr;
+}
+
+void slake::ClassObject::dealloc() {
+	std::pmr::polymorphic_allocator<ClassObject> allocator(&_rt->globalHeapPoolResource);
+
+	std::destroy_at(this);
+	allocator.deallocate(this, 1);
 }
 
 InterfaceObject::~InterfaceObject() {
-	reportSizeFreedToRuntime(sizeof(*this) - sizeof(ModuleObject));
 }
 
 Object *InterfaceObject::duplicate() const {
-	InterfaceObject *v = new InterfaceObject(_rt, 0);
-	*v = *this;
+	HostObjectRef<InterfaceObject> v = InterfaceObject::alloc(_rt, 0);
+	*(v.get()) = *this;
 
-	return (Object *)v;
+	return (Object *)v.release();
 }
 
-TraitObject::~TraitObject() {
-	reportSizeFreedToRuntime(sizeof(*this) - sizeof(InterfaceObject));
+HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Runtime *rt, AccessModifier access, const std::deque<Type> &parents) {
+	std::pmr::polymorphic_allocator<InterfaceObject> allocator(&rt->globalHeapPoolResource);
+
+	InterfaceObject *ptr = allocator.allocate(1);
+	allocator.construct(ptr, rt, access, parents);
+
+	return ptr;
 }
 
-Object *TraitObject::duplicate() const {
-	TraitObject *v = new TraitObject(_rt, 0);
-	*v = *this;
+void slake::InterfaceObject::dealloc() {
+	std::pmr::polymorphic_allocator<InterfaceObject> allocator(&_rt->globalHeapPoolResource);
 
-	return (Object *)v;
+	std::destroy_at(this);
+	allocator.deallocate(this, 1);
 }

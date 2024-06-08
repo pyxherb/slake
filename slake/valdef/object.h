@@ -23,13 +23,12 @@ namespace slake {
 	class Scope;
 
 	class Object {
-	protected:
-		void reportSizeAllocatedToRuntime(size_t size);
-		void reportSizeFreedToRuntime(size_t size);
-
-		friend class Runtime;
-
 	public:
+		/// @brief The basic constructor.
+		/// @param rt Runtime that the value belongs to.
+		Object(Runtime *rt);
+		virtual ~Object();
+
 		// The object will never be freed if its host reference count is not 0.
 		mutable std::atomic_uint32_t hostRefCount = 0;
 
@@ -39,11 +38,6 @@ namespace slake {
 
 		Scope *scope = nullptr;
 
-		/// @brief The basic constructor.
-		/// @param rt Runtime which the value belongs to.
-		Object(Runtime *rt);
-		virtual ~Object();
-
 		/// @brief Get type of the value.
 		/// @return Type of the value.
 		virtual Type getType() const = 0;
@@ -51,6 +45,8 @@ namespace slake {
 		/// @brief Dulplicate the value if supported.
 		/// @return Duplicate of the value.
 		virtual Object *duplicate() const;
+
+		virtual void dealloc() = 0;
 
 		inline Runtime *getRuntime() const noexcept { return _rt; }
 

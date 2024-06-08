@@ -16,15 +16,15 @@ InstanceObject *slake::Runtime::newClassInstance(ClassObject *cls) {
 }
 
 ArrayObject *slake::Runtime::newArrayInstance(Type type, uint32_t size) {
-	ArrayObject *instance = new ArrayObject(this, type);
+	HostObjectRef<ArrayObject> instance = ArrayObject::alloc(this, type);
 
 	instance->values.resize(size);
 
 	for (size_t i = 0; i < size; ++i) {
-		instance->values[i] = new VarObject(this, ACCESS_PUB, type);
+		instance->values[i] = VarObject::alloc(this, ACCESS_PUB, type).release();
 	}
 
-	return instance;
+	return instance.release();
 }
 
 static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *cls) {
@@ -39,12 +39,12 @@ static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *
 		parent = runtime->newClassInstance((ClassObject *)parentClass);
 	}
 
-	InstanceObject *instance = new InstanceObject(runtime, cls, parent);
+	HostObjectRef<InstanceObject> instance = InstanceObject::alloc(runtime, cls, parent);
 
 	for (auto i : cls->scope->members) {
 		switch (i.second->getType().typeId) {
 			case TypeId::Var: {
-				VarObject *var = new VarObject(
+				HostObjectRef<VarObject> var = VarObject::alloc(
 					runtime,
 					((BasicVarObject *)i.second)->getAccess(),
 					((BasicVarObject *)i.second)->getVarType());
@@ -52,7 +52,7 @@ static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *
 				// Initialize the variable if initial value is set
 				var->setData(((VarObject *)i.second)->getData());
 
-				instance->scope->addMember(i.first, var);
+				instance->scope->addMember(i.first, var.release());
 				break;
 			}
 			case TypeId::Fn: {
@@ -66,7 +66,7 @@ static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *
 
 				if (overloadings.size()) {
 					// Link the method with method inherited from the parent.
-					FnObject *fn = new FnObject(runtime);
+					HostObjectRef<FnObject> fn = FnObject::alloc(runtime);
 
 					fn->overloadings = std::move(overloadings);
 
@@ -76,12 +76,12 @@ static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *
 							fn->parentFn = (FnObject *)f;
 					}
 
-					instance->scope->addMember(i.first, fn);
+					instance->scope->addMember(i.first, fn.release());
 				}
 
 				break;
 			}
 		}
 	}
-	return instance;
+	return instance.release();
 }

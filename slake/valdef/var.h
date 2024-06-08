@@ -51,7 +51,6 @@ namespace slake {
 				case ValueType::F32:
 				case ValueType::F64:
 				case ValueType::Bool:
-				case ValueType::String:
 				case ValueType::Undefined:
 					if (!isCompatible(type, value.valueType))
 						throw MismatchedTypeError("Mismatched variable type");

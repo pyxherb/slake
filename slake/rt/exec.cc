@@ -76,6 +76,10 @@ VarObject *slake::Runtime::_addLocalReg(MajorFrame &frame) {
 }
 
 void slake::Runtime::_execIns(Context *context, Instruction ins) {
+	if (((_szMemInUse >> 1) > _szMemUsedAfterLastGc)) {
+		gc();
+	}
+
 	auto &curMajorFrame = context->majorFrames.back();
 	auto &curMinorFrame = curMajorFrame.minorFrames.back();
 

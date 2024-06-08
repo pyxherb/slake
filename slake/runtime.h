@@ -101,8 +101,8 @@ namespace slake {
 		RT_STRICT = 0x00000008,
 		// The runtime is in a GC cycle.
 		_RT_INGC = 0x40000000,
-		// The runtime is destructing.
-		_RT_DELETING = 0x80000000;
+		// The runtime is initializing.
+		_RT_INITING = 0x80000000;
 
 	using ModuleLocatorFn = std::function<
 		std::unique_ptr<std::istream>(Runtime *rt, HostObjectRef<IdRefObject> ref)>;

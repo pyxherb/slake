@@ -37,6 +37,7 @@ void Runtime::_gcWalk(GenericParamList &genericParamList) {
 void Runtime::_gcWalk(Type &type) {
 	switch (type.typeId) {
 		case TypeId::Value:
+		case TypeId::String:
 			break;
 		case TypeId::Instance:
 		case TypeId::Class:
@@ -80,7 +81,6 @@ void Runtime::_gcWalk(Value &i) {
 		case ValueType::F32:
 		case ValueType::F64:
 		case ValueType::Bool:
-		case ValueType::String:
 			break;
 		case ValueType::ObjectRef:
 			if (auto p = i.getObjectRef().objectPtr; p)
@@ -111,6 +111,8 @@ void Runtime::_gcWalk(Object *v) {
 		_gcWalk(v->scope);
 
 	switch (auto typeId = v->getType().typeId; typeId) {
+		case TypeId::String:
+			break;
 		case TypeId::Instance: {
 			auto value = (InstanceObject *)v;
 			_gcWalk(value->_class);

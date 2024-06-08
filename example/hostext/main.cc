@@ -47,9 +47,22 @@ slake::Value print(
 			case ValueType::Bool:
 				fputs(args[i].getBool() ? "true" : "false", stdout);
 				break;
-			case ValueType::String:
-				fputs(args[i].getString().c_str(), stdout);
+			case ValueType::ObjectRef: {
+				const ObjectRefValueExData &exData = args[i].getObjectRef();
+				if (!exData.objectPtr)
+					fputs("null", stdout);
+				else {
+					switch (exData.objectPtr->getType().typeId) {
+						case TypeId::String:
+							std::cout << ((slake::StringObject *)exData.objectPtr)->data;
+							break;
+						default:
+							std::cout << "<object at " << std::hex << exData.objectPtr << ">";
+							break;
+					}
+				}
 				break;
+			}
 			default:
 				throw std::runtime_error("Invalid argument type");
 		}

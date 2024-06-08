@@ -7,6 +7,7 @@
 #include <deque>
 #include <map>
 #include <cassert>
+#include "object.h"
 
 namespace slake {
 	struct Type;
@@ -24,7 +25,6 @@ namespace slake {
 		F32,		// 32-bit floating point number
 		F64,		// 64-bit floating point number
 		Bool,		// Boolean
-		String,		// String
 		ObjectRef,	// Object reference
 
 		RegRef,		  // Register reference
@@ -59,7 +59,6 @@ namespace slake {
 			float,
 			double,
 			bool,
-			std::string,
 			ObjectRefValueExData,
 			IndexedRefValueExData,
 			Type *>
@@ -119,14 +118,6 @@ namespace slake {
 		inline Value(bool data) {
 			this->data = data;
 			valueType = ValueType::Bool;
-		}
-		inline Value(const std::string &data) {
-			this->data = data;
-			valueType = ValueType::String;
-		}
-		inline Value(std::string &&data) {
-			this->data = std::move(data);
-			valueType = ValueType::String;
 		}
 		inline Value(Object *objectPtr, bool isHostRef = false) {
 			if (isHostRef) {
@@ -196,11 +187,6 @@ namespace slake {
 		inline bool getBool() const {
 			assert(valueType == ValueType::Bool);
 			return std::get<bool>(data);
-		}
-
-		inline const std::string &getString() const {
-			assert(valueType == ValueType::String);
-			return std::get<std::string>(data);
 		}
 
 		Type &getTypeName();

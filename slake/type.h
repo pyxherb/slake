@@ -13,7 +13,8 @@ namespace slake {
 	enum class TypeId : uint8_t {
 		None,  // None, aka `null'
 
-		Value,	// Value type
+		Value,	 // Value type
+		String,	 // String
 
 		Fn,				// Function
 		FnOverloading,	// Function overloading
@@ -237,7 +238,7 @@ namespace slake {
 					exData = rhs.getCustomTypeExData();
 					break;
 				case TypeId::Array:
-					exData = std::get<Type*>(rhs.exData);
+					exData = std::get<Type *>(rhs.exData);
 					break;
 				case TypeId::Ref:
 					exData = std::get<Type *>(rhs.exData);

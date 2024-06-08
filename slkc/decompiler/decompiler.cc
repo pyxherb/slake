@@ -74,6 +74,17 @@ std::string slake::decompiler::decompileIdRef(const IdRefObject *ref) {
 
 void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostream &os, int indentLevel) {
 	switch (object->getType().typeId) {
+		case slake::TypeId::String: {
+			os << '"';
+
+			for (auto i : ((StringObject*)object)->data) {
+				if (isprint(i))
+					os << i;
+				else
+					os << "\\" << _ctrlCharNames[i];
+			}
+			os << '"';
+		}
 		case slake::TypeId::Array: {
 			os << "[";
 
@@ -247,19 +258,6 @@ void slake::decompiler::decompileValue(Runtime *rt, Value &value, std::ostream &
 		case ValueType::Bool:
 			os << value.getBool() ? "true" : "false";
 			break;
-		case ValueType::String: {
-			os << '"';
-
-			for (auto i : value.getString()) {
-				if (isprint(i))
-					os << i;
-				else
-					os << "\\" << _ctrlCharNames[i];
-			}
-			os << '"';
-			break;
-		}
-
 		case ValueType::RegRef: {
 			if (value.getIndexedRef().unwrap)
 				os << "*";

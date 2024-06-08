@@ -314,8 +314,6 @@ std::shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 					return std::make_shared<F32TypeNameNode>(Location{}, SIZE_MAX);
 				case slake::ValueType::F64:
 					return std::make_shared<F64TypeNameNode>(Location{}, SIZE_MAX);
-				case slake::ValueType::String:
-					return std::make_shared<StringTypeNameNode>(Location{}, SIZE_MAX);
 				case slake::ValueType::Bool:
 					return std::make_shared<BoolTypeNameNode>(Location{}, SIZE_MAX);
 				case slake::ValueType::TypeName: {
@@ -334,6 +332,8 @@ std::shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 					return std::make_shared<CustomTypeNameNode>(Location{}, ref, this, nullptr);
 				}
 			}
+		case slake::TypeId::String:
+			return std::make_shared<StringTypeNameNode>(Location{}, SIZE_MAX);
 		case slake::TypeId::None:
 			return std::make_shared<VoidTypeNameNode>(Location{}, SIZE_MAX);
 		case slake::TypeId::Any:

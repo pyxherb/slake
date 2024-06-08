@@ -20,7 +20,6 @@ void Value::_reset() {
 		case ValueType::F32:
 		case ValueType::F64:
 		case ValueType::Bool:
-		case ValueType::String:
 		case ValueType::RegRef:
 		case ValueType::ArgRef:
 		case ValueType::LocalVarRef:
@@ -83,12 +82,14 @@ Value &Value::operator=(const Value &other) {
 		case ValueType::F32:
 		case ValueType::F64:
 		case ValueType::Bool:
-		case ValueType::String:
-		case ValueType::ObjectRef:
 		case ValueType::RegRef:
 		case ValueType::ArgRef:
 		case ValueType::LocalVarRef:
 			this->data = other.data;
+			break;
+		case ValueType::ObjectRef:
+			this->data = other.data;
+			std::get<ObjectRefValueExData>(this->data).isHostRef = false;
 			break;
 		case ValueType::TypeName:
 			this->data = new Type(other.getTypeName());
@@ -118,7 +119,6 @@ Value &Value::operator=(Value &&other) {
 		case ValueType::F32:
 		case ValueType::F64:
 		case ValueType::Bool:
-		case ValueType::String:
 		case ValueType::ObjectRef:
 		case ValueType::RegRef:
 		case ValueType::ArgRef:

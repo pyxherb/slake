@@ -2,6 +2,7 @@
 #define _SLAKE_VALUE_H_
 
 #include "valdef/value.h"
+#include "valdef/string.h"
 #include "valdef/alias.h"
 #include "valdef/array.h"
 #include "valdef/object.h"

@@ -15,8 +15,8 @@ namespace slake {
 
 	using ObjectFlags = uint8_t;
 	constexpr static ObjectFlags
-		VF_WALKED = 0x01,  // The value has been walked by the garbage collector.
-		VF_ALIAS = 0x02	   // The value is an alias thus the scope should not be deleted.
+		VF_WALKED = 0x01,	 // The value has been walked by the garbage collector.
+		VF_ALIAS = 0x02		 // The value is an alias thus the scope should not be deleted.
 		;
 
 	struct Type;

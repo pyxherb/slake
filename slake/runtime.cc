@@ -10,10 +10,15 @@ MajorFrame::MajorFrame(Runtime *rt) {
 }
 
 Runtime::Runtime(RuntimeFlags flags) : _flags(flags) {
+	_flags |= _RT_INITING;
 	_rootObject = new RootObject(this);
+	_flags &= ~_RT_INITING;
 }
 
 Runtime::~Runtime() {
+	_genericCacheDir.clear();
+	_genericCacheLookupTable.clear();
+
 	_rootObject = nullptr;
 	activeContexts.clear();
 

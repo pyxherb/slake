@@ -54,6 +54,8 @@ bool slake::isCompatible(Type a, Type b) {
 			if (a.typeId != b.typeId)
 				return false;
 			return a.getValueTypeExData() == b.getValueTypeExData();
+		case TypeId::String:
+			return a.typeId == b.typeId;
 		case TypeId::Array:
 			if (a.typeId != b.typeId)
 				return false;
@@ -139,13 +141,13 @@ std::string std::to_string(const slake::Type &type, const slake::Runtime *rt) {
 					return "f32";
 				case ValueType::F64:
 					return "f64";
-				case ValueType::String:
-					return "string";
 				case ValueType::Bool:
 					return "bool";
 				default:
 					return "<Unknown value type>";
 			}
+		case TypeId::String:
+			return "string";
 		case TypeId::Array:
 			return to_string(type.getArrayExData(), rt) + "[]";
 		case TypeId::Ref:

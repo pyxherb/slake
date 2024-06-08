@@ -57,7 +57,6 @@ void slake::Runtime::_instantiateGenericObject(Value& value, GenericInstantiatio
 		case ValueType::F32:
 		case ValueType::F64:
 		case ValueType::Bool:
-		case ValueType::String:
 		case ValueType::ObjectRef:
 		case ValueType::RegRef:
 		case ValueType::ArgRef:
@@ -194,6 +193,7 @@ void slake::Runtime::_instantiateGenericObject(Object *v, GenericInstantiationCo
 			value->src = instantiateGenericObject(value->src, instantiationContext);
 			break;
 		}
+		case TypeId::String:
 		case TypeId::RootObject:
 		case TypeId::IdRef:
 			break;

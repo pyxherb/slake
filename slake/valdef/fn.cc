@@ -111,10 +111,6 @@ Value RegularFnOverloadingObject::call(Object *thisObject, std::deque<Value> arg
 		std::rethrow_exception(std::current_exception());
 	}
 
-	// Do a GC cycle if size of memory in use is greater than double the size used after last cycle.
-	if (((rt->_szMemInUse >> 1) > rt->_szMemUsedAfterLastGc) && !isDestructing)
-		rt->gc();
-
 	if (context->flags & CTX_YIELDED)
 		return new ContextObject(rt, context);
 

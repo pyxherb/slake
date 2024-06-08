@@ -78,7 +78,7 @@ Value Runtime::_loadValue(std::istream &fs) {
 			auto len = _read<uint32_t>(fs);
 			std::string s(len, '\0');
 			fs.read(&(s[0]), len);
-			return Value(std::move(s));
+			return Value(new StringObject(this, std::move(s)), true);
 		}
 		case slxfmt::TypeId::Array: {
 			auto elementType = _loadType(fs);
@@ -147,7 +147,7 @@ Type Runtime::_loadType(std::istream &fs) {
 		case slxfmt::TypeId::F64:
 			return Type(ValueType::F64);
 		case slxfmt::TypeId::String:
-			return Type(ValueType::String);
+			return TypeId::String;
 		case slxfmt::TypeId::Object:
 			return _loadIdRef(fs);
 		case slxfmt::TypeId::Any:
@@ -351,13 +351,13 @@ void Runtime::_loadScope(ModuleObject *mod, std::istream &fs, LoadModuleFlags lo
 						case ValueType::Bool:
 							var->setData(Value((bool)false));
 							break;
-						case ValueType::String:
-							var->setData(Value(std::string()));
-							break;
 						default:
 							// Unenumerated value types should never occur.
 							throw std::logic_error("Invalid value type");
 					}
+					break;
+				case TypeId::String:
+					var->setData(Value(nullptr));
 					break;
 				case TypeId::Instance:
 					var->setData(Value(nullptr));
@@ -451,7 +451,7 @@ void Runtime::_loadScope(ModuleObject *mod, std::istream &fs, LoadModuleFlags lo
 }
 
 HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &fs, LoadModuleFlags flags) {
-	std::unique_ptr<ModuleObject> mod = std::make_unique<ModuleObject>(this, ACCESS_PUB);
+	HostObjectRef<ModuleObject> mod = new ModuleObject(this, ACCESS_PUB);
 
 	slxfmt::ImgHeader ih;
 	fs.read((char *)&ih, sizeof(ih));

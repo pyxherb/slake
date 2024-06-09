@@ -37,5 +37,7 @@ HostObjectRef<VarObject> slake::VarObject::alloc(Runtime *rt, AccessModifier acc
 	VarObject *ptr = allocator.allocate(1);
 	allocator.construct(ptr, rt, access, type);
 
+	rt->createdObjects.insert(ptr);
+
 	return ptr;
 }

@@ -51,6 +51,8 @@ HostObjectRef<ClassObject> slake::ClassObject::alloc(Runtime *rt, AccessModifier
 	ClassObject *ptr = allocator.allocate(1);
 	allocator.construct(ptr, rt, access, parentClass);
 
+	rt->createdObjects.insert(ptr);
+
 	return ptr;
 }
 
@@ -76,6 +78,8 @@ HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Runtime *rt, Access
 
 	InterfaceObject *ptr = allocator.allocate(1);
 	allocator.construct(ptr, rt, access, parents);
+
+	rt->createdObjects.insert(ptr);
 
 	return ptr;
 }

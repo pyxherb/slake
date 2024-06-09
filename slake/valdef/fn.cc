@@ -37,6 +37,8 @@ HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingObject::all
 	RegularFnOverloadingObject *ptr = allocator.allocate(1);
 	allocator.construct(ptr, fnObject, access, paramTypes, returnType);
 
+	fnObject->_rt->createdObjects.insert(ptr);
+
 	return ptr;
 }
 
@@ -73,6 +75,8 @@ HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObject::alloc
 
 	NativeFnOverloadingObject *ptr = allocator.allocate(1);
 	allocator.construct(ptr, fnObject, access, paramTypes, returnType, callback);
+
+	fnObject->_rt->createdObjects.insert(ptr);
 
 	return ptr;
 }
@@ -205,6 +209,8 @@ HostObjectRef<FnObject> slake::FnObject::alloc(Runtime *rt) {
 
 	FnObject *ptr = allocator.allocate(1);
 	allocator.construct(ptr, rt);
+
+	rt->createdObjects.insert(ptr);
 
 	return ptr;
 }

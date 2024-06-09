@@ -133,7 +133,7 @@ int main(int argc, char **argv) {
 			((slake::FnObject *)mod->scope->getMember("main"))->call(nullptr, {}, {});
 
 		slake::HostObjectRef<slake::ContextObject> context = (slake::ContextObject *)result.getObjectRef().objectPtr;
-		printf("%d\n", context->getResult());
+		printf("%d\n", context->getResult().getI32());
 
 		while (!context->isDone()) {
 			context->resume();

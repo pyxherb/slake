@@ -17,6 +17,8 @@ HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt, std::share
 	ContextObject *ptr = allocator.allocate(1);
 	allocator.construct(ptr, rt, context);
 
+	rt->createdObjects.insert(ptr);
+
 	return ptr;
 }
 

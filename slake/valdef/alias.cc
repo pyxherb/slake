@@ -21,6 +21,8 @@ HostObjectRef<AliasObject> AliasObject::alloc(Runtime *rt, Object *src) {
 	AliasObject *ptr = allocator.allocate(1);
 	allocator.construct(ptr, rt, ACCESS_PUB, src);
 
+	rt->createdObjects.insert(ptr);
+
 	return ptr;
 }
 

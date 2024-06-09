@@ -8,6 +8,8 @@ HostObjectRef<RootObject> slake::RootObject::alloc(Runtime *rt) {
 	RootObject *ptr = allocator.allocate(1);
 	allocator.construct(ptr, rt);
 
+	rt->createdObjects.insert(ptr);
+
 	return ptr;
 }
 

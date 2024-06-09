@@ -3,7 +3,6 @@
 using namespace slake;
 
 Object::Object(Runtime *rt) : _rt(rt) {
-	rt->createdObjects.insert(this);
 }
 
 Object::~Object() {
@@ -12,8 +11,6 @@ Object::~Object() {
 			delete scope;
 	}
 	_rt->invalidateGenericCache(this);
-	if (!(_rt->_flags & _RT_INGC))
-		_rt->createdObjects.erase(this);
 }
 
 Object *Object::duplicate() const {

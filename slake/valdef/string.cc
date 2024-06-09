@@ -35,6 +35,8 @@ HostObjectRef<StringObject> slake::StringObject::alloc(Runtime *rt, const char *
 	StringObject *ptr = allocator.allocate(1);
 	allocator.construct(ptr, rt, str, size);
 
+	rt->createdObjects.insert(ptr);
+
 	return ptr;
 }
 
@@ -43,6 +45,8 @@ HostObjectRef<StringObject> slake::StringObject::alloc(Runtime *rt, std::string 
 
 	StringObject *ptr = allocator.allocate(1);
 	allocator.construct(ptr, rt, std::move(s));
+
+	rt->createdObjects.insert(ptr);
 
 	return ptr;
 }

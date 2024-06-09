@@ -28,6 +28,8 @@ HostObjectRef<ModuleObject> slake::ModuleObject::alloc(Runtime *rt, AccessModifi
 	ModuleObject *ptr = allocator.allocate(1);
 	allocator.construct(ptr, rt, access);
 
+	rt->createdObjects.insert(ptr);
+
 	return ptr;
 }
 

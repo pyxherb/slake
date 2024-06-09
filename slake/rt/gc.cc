@@ -100,11 +100,10 @@ void Runtime::_gcWalk(Value &i) {
 }
 
 void Runtime::_gcWalk(Object *v) {
-	if (_walkedObjects.count(v))
+	if (v->_flags & VF_WALKED)
 		return;
 
-	_walkedObjects.insert(v);
-	createdObjects.erase(v);
+	v->_flags |= VF_WALKED;
 
 	if (v->scope)
 		_gcWalk(v->scope);
@@ -285,6 +284,11 @@ void Runtime::gc() {
 	bool foundDestructibleObjects = false;
 
 rescan:
+	for (auto i : createdObjects) {
+		i->_flags |= VF_GCREADY;
+	}
+
+	// Walk the root node.
 	if (_rootObject)
 		_gcWalk(_rootObject);
 
@@ -292,35 +296,46 @@ rescan:
 	for (auto &i : activeContexts)
 		_gcWalk(*i.second);
 
-	// Execute destructors for all destructible objects.
+	// Walk all objects referenced by the host.
+	for (auto i : createdObjects) {
+		if (i->hostRefCount) {
+			_gcWalk(i);
+		}
+	}
+
+	// Execute destructors for all destructible unreachable objects.
 	destructingThreads.insert(std::this_thread::get_id());
 	for (auto i : createdObjects) {
-		if (!i->hostRefCount) {
-			auto d = i->getMemberChain("delete");
-			if ((d.size()) &&
-				(i->getType() == TypeId::Instance) &&
-				(!(((InstanceObject *)i)->instanceFlags & INSTANCE_PARENT))) {
-				for (auto &j : d) {
-					_destructedObjects.insert(j.first->owner);
-					if (j.second->getType().typeId == TypeId::Fn)
-						((FnObject *)j.second)->call(i, {}, {});
-				}
-				foundDestructibleObjects = true;
+		if (i->_flags & VF_WALKED)
+			continue;
+
+		auto d = i->getMemberChain("delete");
+		if ((d.size()) &&
+			(i->getType() == TypeId::Instance) &&
+			(!(((InstanceObject *)i)->instanceFlags & INSTANCE_PARENT))) {
+			for (auto &j : d) {
+				if (j.second->getType().typeId == TypeId::Fn)
+					((FnObject *)j.second)->call(i, {}, {});
 			}
+			foundDestructibleObjects = true;
 		}
 	}
 	destructingThreads.erase(std::this_thread::get_id());
 
-	for (auto i = createdObjects.begin(); i != createdObjects.end();) {
-		if ((*i)->hostRefCount) {
-			_gcWalk(*(i++));
-		} else
-			(*(i++))->dealloc();
-	}
+	// Delete unreachable objects.
+	for (auto it = createdObjects.begin(); it != createdObjects.end();) {
+		if ((*it)->_flags & VF_WALKED) {
+			(*it)->_flags &= ~VF_WALKED;
+		} else {
+			if ((*it)->_flags & VF_GCREADY) {
+				(*it)->dealloc();
+				createdObjects.erase(*(it++));
+				continue;
+			}
+		}
 
-	createdObjects.swap(_walkedObjects);
-	_walkedObjects.clear();
-	_destructedObjects.clear();
+		++it;
+	}
 
 	if (foundDestructibleObjects) {
 		foundDestructibleObjects = false;

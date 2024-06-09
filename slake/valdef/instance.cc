@@ -18,6 +18,8 @@ HostObjectRef<InstanceObject> slake::InstanceObject::alloc(Runtime *rt, ClassObj
 	InstanceObject *ptr = allocator.allocate(1);
 	allocator.construct(ptr, rt, cls, parent);
 
+	rt->createdObjects.insert(ptr);
+
 	return ptr;
 }
 

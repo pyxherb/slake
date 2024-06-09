@@ -90,6 +90,31 @@ namespace slake {
 		ContextFlags flags = 0;				 // Flags
 	};
 
+	class SynchronizedCountablePoolResource : public std::pmr::synchronized_pool_resource {
+	public:
+		size_t szAllocated = 0;
+
+		inline SynchronizedCountablePoolResource() : synchronized_pool_resource() {}
+		explicit inline SynchronizedCountablePoolResource(std::pmr::memory_resource *upstream) : synchronized_pool_resource(upstream) {}
+		explicit inline SynchronizedCountablePoolResource(const std::pmr::pool_options &opts) : synchronized_pool_resource(opts) {}
+		inline SynchronizedCountablePoolResource(const std::pmr::pool_options &opts, std::pmr::memory_resource *upstream) : synchronized_pool_resource(opts, upstream) {}
+		SynchronizedCountablePoolResource(const SynchronizedCountablePoolResource &) = delete;
+
+		virtual void *do_allocate(size_t bytes, size_t alignment) override {
+			void *p = synchronized_pool_resource::do_allocate(bytes, alignment);
+
+			szAllocated += bytes;
+
+			return p;
+		}
+
+		virtual void do_deallocate(void *p, size_t bytes, size_t alignment) override {
+			synchronized_pool_resource::do_deallocate(p, bytes, alignment);
+
+			szAllocated -= bytes;
+		}
+	};
+
 	using RuntimeFlags = uint32_t;
 	constexpr static RuntimeFlags
 		// No JIT, do not set unless you want to debug the JIT engine.
@@ -121,31 +146,6 @@ namespace slake {
 		// Load native members
 		LMOD_LOADNATIVE = 0x10;
 
-	class SynchronizedCountablePoolResource : public std::pmr::synchronized_pool_resource {
-	public:
-		size_t szAllocated = 0;
-
-		inline SynchronizedCountablePoolResource() : synchronized_pool_resource() {}
-		explicit inline SynchronizedCountablePoolResource(std::pmr::memory_resource *upstream) : synchronized_pool_resource(upstream) {}
-		explicit inline SynchronizedCountablePoolResource(const std::pmr::pool_options &opts) : synchronized_pool_resource(opts) {}
-		inline SynchronizedCountablePoolResource(const std::pmr::pool_options &opts, std::pmr::memory_resource *upstream) : synchronized_pool_resource(opts, upstream) {}
-		SynchronizedCountablePoolResource(const SynchronizedCountablePoolResource &) = delete;
-
-		virtual void *do_allocate(std::size_t bytes, std::size_t alignment) override {
-			void *p = synchronized_pool_resource::do_allocate(bytes, alignment);
-
-			szAllocated += bytes;
-
-			return p;
-		}
-
-		virtual void do_deallocate(void *p, std::size_t bytes, std::size_t alignment) override {
-			synchronized_pool_resource::do_deallocate(p, bytes, alignment);
-
-			szAllocated -= bytes;
-		}
-	};
-
 	class Runtime final {
 	public:
 		struct GenericInstantiationContext {
@@ -159,9 +159,6 @@ namespace slake {
 	private:
 		/// @brief Root value of the runtime.
 		RootObject *_rootObject;
-
-		/// @brief Contains all created values.
-		std::set<Object *> _walkedObjects, _destructedObjects;
 
 		struct GenericLookupEntry {
 			const Object *originalObject;

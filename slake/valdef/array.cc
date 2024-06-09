@@ -23,6 +23,8 @@ HostObjectRef<ArrayObject> slake::ArrayObject::alloc(Runtime *rt, const Type &ty
 	ArrayObject *ptr = allocator.allocate(1);
 	allocator.construct(ptr, rt, type);
 
+	rt->createdObjects.insert(ptr);
+
 	return ptr;
 }
 

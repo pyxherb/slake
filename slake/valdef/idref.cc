@@ -22,6 +22,8 @@ HostObjectRef<IdRefObject> slake::IdRefObject::alloc(Runtime *rt) {
 	IdRefObject *ptr = allocator.allocate(1);
 	allocator.construct(ptr, rt);
 
+	rt->createdObjects.insert(ptr);
+
 	return ptr;
 }
 

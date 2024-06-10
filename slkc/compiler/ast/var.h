@@ -9,8 +9,6 @@ namespace slake {
 	namespace slkc {
 		class VarNode : public MemberNode {
 		private:
-			Location _loc;
-
 			virtual std::shared_ptr<AstNode> doDuplicate() override;
 
 		public:
@@ -24,8 +22,6 @@ namespace slake {
 				   idxCommaToken = SIZE_MAX;
 
 			inline VarNode(const VarNode &other) : MemberNode(other) {
-				_loc = other._loc;
-
 				if (other.type)
 					type = other.type->duplicate<TypeNameNode>();
 				name = other.name;
@@ -37,7 +33,6 @@ namespace slake {
 				idxCommaToken = other.idxCommaToken;
 			}
 			inline VarNode(
-				Location loc,
 				Compiler *compiler,
 				AccessModifier access,
 				std::shared_ptr<TypeNameNode> type,
@@ -48,7 +43,6 @@ namespace slake {
 				size_t idxAssignOpToken,
 				size_t idxCommaToken)
 				: MemberNode(compiler, access),
-				  _loc(loc),
 				  type(type),
 				  name(name),
 				  initValue(initValue),
@@ -59,10 +53,9 @@ namespace slake {
 			}
 			virtual ~VarNode() = default;
 
-			virtual inline Location getLocation() const override { return _loc; }
 			virtual inline NodeType getNodeType() const override { return NodeType::Var; }
 
-			virtual IdRefEntry getName() const override { return IdRefEntry(_loc, SIZE_MAX, name, genericArgs); }
+			virtual IdRefEntry getName() const override { return IdRefEntry(sourceLocation, SIZE_MAX, name, genericArgs); }
 		};
 
 		class LocalVarNode : public AstNode {
@@ -74,8 +67,6 @@ namespace slake {
 			inline LocalVarNode(std::string name, uint32_t index, std::shared_ptr<TypeNameNode> type)
 				: name(name), index(index), type(type) {}
 			virtual ~LocalVarNode() = default;
-
-			virtual inline Location getLocation() const override { throw std::logic_error("Unsupported operation"); }
 
 			virtual inline NodeType getNodeType() const override { return NodeType::LocalVar; }
 		};

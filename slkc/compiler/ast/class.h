@@ -17,8 +17,6 @@ namespace slake {
 
 		class ClassNode : public MemberNode {
 		private:
-			Location _loc;
-
 			virtual std::shared_ptr<AstNode> doDuplicate() override;
 
 		public:
@@ -40,8 +38,6 @@ namespace slake {
 
 			ClassNode() = default;
 			inline ClassNode(const ClassNode &other) : MemberNode(other) {
-				_loc = other._loc;
-
 				name = other.name;
 
 				if (other.parentClass)
@@ -64,32 +60,26 @@ namespace slake {
 				idxRBraceToken = other.idxRBraceToken;
 			}
 			inline ClassNode(
-				Location loc,
 				Compiler *compiler,
 				std::string name)
 				: MemberNode(compiler, 0),
-				  _loc(loc),
 				  name(name) {
 				setScope(std::make_shared<Scope>());
 				setGenericParams(genericParams);
 			}
 			virtual ~ClassNode() = default;
 
-			virtual inline Location getLocation() const override { return _loc; }
-
 			virtual inline NodeType getNodeType() const override { return NodeType::Class; }
 
 			virtual IdRefEntry getName() const override {
 				if (genericArgs.size())
-					return IdRefEntry(_loc, SIZE_MAX, name, genericArgs);
-				return IdRefEntry(_loc, SIZE_MAX, name, getPlaceholderGenericArgs());
+					return IdRefEntry(sourceLocation, SIZE_MAX, name, genericArgs);
+				return IdRefEntry(sourceLocation, SIZE_MAX, name, getPlaceholderGenericArgs());
 			}
 		};
 
 		class InterfaceNode : public MemberNode {
 		private:
-			Location _loc;
-
 			virtual std::shared_ptr<AstNode> doDuplicate() override;
 
 		public:
@@ -108,8 +98,6 @@ namespace slake {
 
 			InterfaceNode() = default;
 			inline InterfaceNode(const InterfaceNode &other) : MemberNode(other) {
-				_loc = other._loc;
-
 				name = other.name;
 
 				parentInterfaces.resize(other.parentInterfaces.size());
@@ -126,29 +114,23 @@ namespace slake {
 				idxRBraceToken = other.idxRBraceToken;
 			}
 			inline InterfaceNode(
-				Location loc,
 				std::string name)
-				: _loc(loc),
-				  name(name) {
+				: name(name) {
 				setScope(std::make_shared<Scope>());
 			}
 			virtual ~InterfaceNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual inline NodeType getNodeType() const override { return NodeType::Interface; }
 
 			virtual IdRefEntry getName() const override {
 				if (genericArgs.size())
-					return IdRefEntry(_loc, SIZE_MAX, name, genericArgs);
-				return IdRefEntry(_loc, SIZE_MAX, name, getPlaceholderGenericArgs());
+					return IdRefEntry(sourceLocation, SIZE_MAX, name, genericArgs);
+				return IdRefEntry(sourceLocation, SIZE_MAX, name, getPlaceholderGenericArgs());
 			}
 		};
 
 		class TraitNode : public MemberNode {
 		private:
-			Location _loc;
-
 			virtual std::shared_ptr<AstNode> doDuplicate() override;
 
 		public:
@@ -169,8 +151,6 @@ namespace slake {
 
 			TraitNode() = default;
 			inline TraitNode(const TraitNode &other) : MemberNode(other) {
-				_loc = other._loc;
-
 				name = other.name;
 
 				parentTraits.resize(other.parentTraits.size());
@@ -187,22 +167,18 @@ namespace slake {
 				idxRBraceToken = other.idxRBraceToken;
 			}
 			inline TraitNode(
-				Location loc,
 				std::string name)
-				: _loc(loc),
-				  name(name) {
+				: name(name) {
 				setScope(std::make_shared<Scope>());
 			}
 			virtual ~TraitNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual inline NodeType getNodeType() const override { return NodeType::Trait; }
 
 			virtual IdRefEntry getName() const override {
 				if (genericArgs.size())
-					return IdRefEntry(_loc, SIZE_MAX, name, genericArgs);
-				return IdRefEntry(_loc, SIZE_MAX, name, getPlaceholderGenericArgs());
+					return IdRefEntry(sourceLocation, SIZE_MAX, name, genericArgs);
+				return IdRefEntry(sourceLocation, SIZE_MAX, name, getPlaceholderGenericArgs());
 			}
 		};
 	}

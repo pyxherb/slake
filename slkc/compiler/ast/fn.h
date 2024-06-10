@@ -16,8 +16,6 @@ namespace slake {
 			virtual std::shared_ptr<AstNode> doDuplicate() override;
 
 		public:
-			Location loc;
-
 			std::shared_ptr<TypeNameNode> type;
 			std::string name;
 
@@ -28,8 +26,6 @@ namespace slake {
 				   idxColonToken = SIZE_MAX;
 
 			inline ParamNode(const ParamNode &other) : AstNode(other) {
-				loc = other.loc;
-
 				if (other.type)
 					type = other.type->duplicate<TypeNameNode>();
 				name = other.name;
@@ -40,10 +36,8 @@ namespace slake {
 				idxNameToken = other.idxNameToken;
 				idxColonToken = other.idxColonToken;
 			}
-			inline ParamNode(Location loc) : loc(loc) {}
+			inline ParamNode() {}
 			virtual ~ParamNode() = default;
-
-			virtual inline Location getLocation() const override { return loc; }
 
 			virtual inline NodeType getNodeType() const override { return NodeType::Param; }
 		};
@@ -53,8 +47,6 @@ namespace slake {
 			virtual std::shared_ptr<AstNode> doDuplicate() override;
 
 		public:
-			Location loc;
-
 			std::shared_ptr<TypeNameNode> returnType;
 
 			/// @brief Actual parameters. DO NOT forget to update the parameter indices after you updated the parameters.
@@ -62,7 +54,7 @@ namespace slake {
 			/// @brief Parameter indices. Note that it needs to be updated manually after you updated the parameters.
 			std::unordered_map<std::string, size_t> paramIndices;
 
-			std::shared_ptr<BlockStmtNode> body;
+			std::shared_ptr<CodeBlockStmtNode> body;
 			FnNode *owner = nullptr;
 			AccessModifier access = 0;
 
@@ -78,8 +70,6 @@ namespace slake {
 			std::deque<size_t> idxParamCommaTokens;
 
 			inline FnOverloadingNode(const FnOverloadingNode &other) : MemberNode(other) {
-				loc = other.loc;
-
 				if (other.returnType)
 					returnType = other.returnType->duplicate<TypeNameNode>();
 
@@ -106,14 +96,12 @@ namespace slake {
 			}
 
 			FnOverloadingNode(
-				Location loc,
 				Compiler *compiler,
 				std::shared_ptr<Scope> scope);
 
 			virtual inline NodeType getNodeType() const override { return NodeType::FnOverloadingValue; }
 
 			virtual IdRefEntry getName() const override;
-			virtual Location getLocation() const override { return loc; }
 
 			inline bool isAbstract() { return !body; }
 			inline bool isVaridic() { return paramIndices.count("..."); }
@@ -148,10 +136,6 @@ namespace slake {
 				: name(name), MemberNode(compiler, ACCESS_PUB) {}
 			virtual ~FnNode() = default;
 
-			virtual inline Location getLocation() const override {
-				throw std::logic_error("Please get locations from the overloading registries");
-			}
-
 			virtual inline NodeType getNodeType() const override { return NodeType::Fn; }
 
 			virtual IdRefEntry getName() const override {
@@ -172,7 +156,6 @@ namespace slake {
 
 		class CompiledFnNode final : public MemberNode {
 		private:
-			Location _loc;
 			virtual std::shared_ptr<AstNode> doDuplicate() override;
 
 		public:
@@ -209,12 +192,8 @@ namespace slake {
 
 				srcLocDescs = other.srcLocDescs;
 			}
-			inline CompiledFnNode(Location loc, std::string name) : _loc(loc), name(name) {}
+			inline CompiledFnNode(std::string name) : name(name) {}
 			virtual ~CompiledFnNode() = default;
-
-			virtual inline Location getLocation() const override {
-				return _loc;
-			}
 
 			virtual inline NodeType getNodeType() const override { return NodeType::Fn; }
 
@@ -249,8 +228,8 @@ namespace slake {
 
 			virtual IdRefEntry getName() const override {
 				if (genericArgs.size())
-					return IdRefEntry(_loc, SIZE_MAX, name, genericArgs);
-				return IdRefEntry(_loc, SIZE_MAX, name, getPlaceholderGenericArgs());
+					return IdRefEntry(sourceLocation, SIZE_MAX, name, genericArgs);
+				return IdRefEntry(sourceLocation, SIZE_MAX, name, getPlaceholderGenericArgs());
 			}
 		};
 
@@ -260,10 +239,6 @@ namespace slake {
 
 			inline LabelRefNode(std::string label) : label(label) {}
 			virtual ~LabelRefNode() = default;
-
-			virtual inline Location getLocation() const override {
-				throw std::logic_error("Should not get location of a label reference");
-			}
 
 			virtual inline NodeType getNodeType() const override { return NodeType::LabelRef; }
 		};
@@ -276,10 +251,6 @@ namespace slake {
 			inline RegRefNode(uint32_t index, bool unwrapData = false) : index(index), unwrapData(unwrapData) {}
 			virtual ~RegRefNode() = default;
 
-			virtual inline Location getLocation() const override {
-				throw std::logic_error("Should not get location of a register reference");
-			}
-
 			virtual inline NodeType getNodeType() const override { return NodeType::RegRef; }
 		};
 
@@ -291,10 +262,6 @@ namespace slake {
 			inline LocalVarRefNode(uint32_t index, bool unwrapData = false) : index(index), unwrapData(unwrapData) {}
 			virtual ~LocalVarRefNode() = default;
 
-			virtual inline Location getLocation() const override {
-				throw std::logic_error("Should not get location of a label reference");
-			}
-
 			virtual inline NodeType getNodeType() const override { return NodeType::LocalVarRef; }
 		};
 
@@ -305,10 +272,6 @@ namespace slake {
 
 			inline ArgRefNode(uint32_t index, bool unwrapData = false) : index(index), unwrapData(unwrapData) {}
 			virtual ~ArgRefNode() = default;
-
-			virtual inline Location getLocation() const override {
-				throw std::logic_error("Should not get location of a argument reference");
-			}
 
 			virtual inline NodeType getNodeType() const override { return NodeType::ArgRef; }
 		};

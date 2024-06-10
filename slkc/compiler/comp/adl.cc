@@ -63,7 +63,6 @@ void slake::slkc::Compiler::_argDependentLookup(
 }
 
 std::deque<std::shared_ptr<FnOverloadingNode>> Compiler::argDependentLookup(
-	Location loc,
 	FnNode *fn,
 	const std::deque<std::shared_ptr<TypeNameNode>> &argTypes,
 	const std::deque<std::shared_ptr<TypeNameNode>> &genericArgs,

@@ -2,7 +2,7 @@
 
 using namespace slake::slkc;
 
-static void _throwCyclicInheritanceError(const Location &loc) {
+static void _throwCyclicInheritanceError(const SourceLocation &loc) {
 	throw FatalCompilationError(
 		Message(
 			loc,
@@ -19,7 +19,7 @@ void Compiler::verifyInheritanceChain(ClassNode *node, std::set<AstNode *> &walk
 		if (node->parentClass->getTypeId() != TypeId::Custom)
 			throw FatalCompilationError(
 				Message(
-					node->parentClass->getLocation(),
+					node->parentClass->sourceLocation,
 					MessageType::Error,
 					"The type cannot be inherited"));
 
@@ -28,14 +28,14 @@ void Compiler::verifyInheritanceChain(ClassNode *node, std::set<AstNode *> &walk
 		if (cls->getNodeType() != NodeType::Class)
 			throw FatalCompilationError(
 				Message(
-					node->parentClass->getLocation(),
+					node->parentClass->sourceLocation,
 					MessageType::Error,
 					"`" + std::to_string(node->parentClass, this) + "' is not a class"));
 
 		auto m = std::static_pointer_cast<ClassNode>(cls);
 
 		if (walkedNodes.count(m.get()))
-			_throwCyclicInheritanceError(node->parentClass->getLocation());
+			_throwCyclicInheritanceError(node->parentClass->sourceLocation);
 
 		verifyInheritanceChain(m->originalValue ? (ClassNode *)m->originalValue : m.get(), walkedNodes);
 	}
@@ -46,7 +46,7 @@ void Compiler::verifyInheritanceChain(ClassNode *node, std::set<AstNode *> &walk
 		if (i->getTypeId() != TypeId::Custom)
 			throw FatalCompilationError(
 				Message(
-					i->getLocation(),
+					i->sourceLocation,
 					MessageType::Error,
 					"The type cannot be implemented"));
 
@@ -55,14 +55,14 @@ void Compiler::verifyInheritanceChain(ClassNode *node, std::set<AstNode *> &walk
 		if (parent->getNodeType() != NodeType::Interface)
 			throw FatalCompilationError(
 				Message(
-					i->getLocation(),
+					i->sourceLocation,
 					MessageType::Error,
 					"`" + std::to_string(i, this) + "' is not an interface"));
 
 		auto m = std::static_pointer_cast<InterfaceNode>(parent);
 
 		if (walkedNodes.count(m.get()))
-			_throwCyclicInheritanceError(i->getLocation());
+			_throwCyclicInheritanceError(i->sourceLocation);
 
 		verifyInheritanceChain(m->originalValue ? (InterfaceNode *)m->originalValue : m.get(), walkedNodes);
 	}
@@ -77,7 +77,7 @@ void Compiler::verifyInheritanceChain(InterfaceNode *node, std::set<AstNode *> &
 		if (i->getTypeId() != TypeId::Custom)
 			throw FatalCompilationError(
 				Message(
-					i->getLocation(),
+					i->sourceLocation,
 					MessageType::Error,
 					"Specified type cannot be implemented"));
 
@@ -86,14 +86,14 @@ void Compiler::verifyInheritanceChain(InterfaceNode *node, std::set<AstNode *> &
 		if (parent->getNodeType() != NodeType::Interface)
 			throw FatalCompilationError(
 				Message(
-					i->getLocation(),
+					i->sourceLocation,
 					MessageType::Error,
 					"`" + std::to_string(i, this) + "' is not an interface"));
 
 		auto m = std::static_pointer_cast<InterfaceNode>(parent);
 
 		if (walkedNodes.count(m.get()))
-			_throwCyclicInheritanceError(i->getLocation());
+			_throwCyclicInheritanceError(i->sourceLocation);
 
 		verifyInheritanceChain(m->originalValue ? (InterfaceNode *)m->originalValue : m.get(), walkedNodes);
 	}
@@ -108,7 +108,7 @@ void Compiler::verifyInheritanceChain(TraitNode *node, std::set<AstNode *> &walk
 		if (i->getTypeId() != TypeId::Custom)
 			throw FatalCompilationError(
 				Message(
-					i->getLocation(),
+					i->sourceLocation,
 					MessageType::Error,
 					"`" + std::to_string(i, this) + "' cannot be implemented"));
 
@@ -117,14 +117,14 @@ void Compiler::verifyInheritanceChain(TraitNode *node, std::set<AstNode *> &walk
 		if (parent->getNodeType() != NodeType::Trait)
 			throw FatalCompilationError(
 				Message(
-					i->getLocation(),
+					i->sourceLocation,
 					MessageType::Error,
 					"`" + std::to_string(i, this) + "' is not a trait"));
 
 		auto m = std::static_pointer_cast<TraitNode>(parent);
 
 		if (walkedNodes.count(m.get()))
-			_throwCyclicInheritanceError(i->getLocation());
+			_throwCyclicInheritanceError(i->sourceLocation);
 
 		verifyInheritanceChain(m->originalValue ? (TraitNode *)m->originalValue : m.get(), walkedNodes);
 	}
@@ -138,7 +138,7 @@ void Compiler::verifyInheritanceChain(GenericParamNode *node, std::set<AstNode *
 		if (typeName->getTypeId() != TypeId::Custom)
 			throw FatalCompilationError(
 				Message(
-					typeName->getLocation(),
+					typeName->sourceLocation,
 					MessageType::Error,
 					"The type cannot be inherited"));
 
@@ -146,7 +146,7 @@ void Compiler::verifyInheritanceChain(GenericParamNode *node, std::set<AstNode *
 		auto m = resolveCustomTypeName(t.get());
 
 		if (walkedNodes.count(m.get()))
-			_throwCyclicInheritanceError(t->getLocation());
+			_throwCyclicInheritanceError(t->sourceLocation);
 
 		if (m->getNodeType() == NodeType::GenericParam)
 			verifyInheritanceChain((GenericParamNode*)m.get(), walkedNodes);
@@ -156,7 +156,7 @@ void Compiler::verifyInheritanceChain(GenericParamNode *node, std::set<AstNode *
 		if (i->getTypeId() != TypeId::Custom)
 			throw FatalCompilationError(
 				Message(
-					i->getLocation(),
+					i->sourceLocation,
 					MessageType::Error,
 					"The type cannot be implemented"));
 
@@ -164,7 +164,7 @@ void Compiler::verifyInheritanceChain(GenericParamNode *node, std::set<AstNode *
 		auto m = resolveCustomTypeName(t.get());
 
 		if (walkedNodes.count(m.get()))
-			_throwCyclicInheritanceError(t->getLocation());
+			_throwCyclicInheritanceError(t->sourceLocation);
 
 		if (m->getNodeType() == NodeType::GenericParam)
 			verifyInheritanceChain((GenericParamNode *)m.get(), walkedNodes);
@@ -174,7 +174,7 @@ void Compiler::verifyInheritanceChain(GenericParamNode *node, std::set<AstNode *
 		if (i->getTypeId() != TypeId::Custom)
 			throw FatalCompilationError(
 				Message(
-					i->getLocation(),
+					i->sourceLocation,
 					MessageType::Error,
 					"The type cannot be implemented"));
 
@@ -182,7 +182,7 @@ void Compiler::verifyInheritanceChain(GenericParamNode *node, std::set<AstNode *
 		auto m = resolveCustomTypeName(t.get());
 
 		if (walkedNodes.count(m.get()))
-			_throwCyclicInheritanceError(t->getLocation());
+			_throwCyclicInheritanceError(t->sourceLocation);
 
 		if (m->getNodeType() == NodeType::GenericParam)
 			verifyInheritanceChain((GenericParamNode *)m.get(), walkedNodes);
@@ -211,7 +211,7 @@ void Compiler::verifyGenericParams(const GenericParamNodeList &params) {
 			if (typeName->getTypeId() != TypeId::Custom)
 				throw FatalCompilationError(
 					Message(
-						typeName->getLocation(),
+						typeName->sourceLocation,
 						MessageType::Error,
 						"The type cannot be inherited"));
 
@@ -229,7 +229,7 @@ void Compiler::verifyGenericParams(const GenericParamNodeList &params) {
 			if (j->getTypeId() != TypeId::Custom)
 				throw FatalCompilationError(
 					Message(
-						j->getLocation(),
+						j->sourceLocation,
 						MessageType::Error,
 						"The type cannot be implemented"));
 
@@ -247,7 +247,7 @@ void Compiler::verifyGenericParams(const GenericParamNodeList &params) {
 			if (j->getTypeId() != TypeId::Custom)
 				throw FatalCompilationError(
 					Message(
-						j->getLocation(),
+						j->sourceLocation,
 						MessageType::Error,
 						"The type cannot be implemented"));
 

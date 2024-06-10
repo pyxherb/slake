@@ -253,7 +253,7 @@ slake::slkc::Server::Server() {
 		Json::Reader reader;
 
 		std::string uri;
-		Location loc;
+		SourcePosition pos;
 
 		if (!reader.parse(request.body, rootValue)) {
 			response.body = "Error parsing request";
@@ -274,7 +274,7 @@ slake::slkc::Server::Server() {
 			response.body = "Missing document location";
 			goto badRequest;
 		}
-		if (!jsonToLocation(rootValue["location"], loc)) {
+		if (!jsonToPosition(rootValue["position"], pos)) {
 			response.body = "Invalid document location";
 			goto badRequest;
 		}
@@ -291,7 +291,7 @@ slake::slkc::Server::Server() {
 				Json::Value &responseBodyValue = responseValue["body"],
 							&completionItemsValue = responseBodyValue["completionItems"];
 
-				auto completionItems = doc->getCompletionItems(loc);
+				auto completionItems = doc->getCompletionItems(pos);
 
 				responseBodyValue["uri"] = uri;
 				for (auto &i : completionItems)
@@ -323,7 +323,6 @@ slake::slkc::Server::Server() {
 		Json::Reader reader;
 
 		std::string uri;
-		Location loc;
 
 		if (!reader.parse(request.body, rootValue)) {
 			response.body = "Error parsing request";
@@ -361,7 +360,7 @@ slake::slkc::Server::Server() {
 
 					SemanticToken semanticToken = {};
 
-					semanticToken.location = token->beginLocation;
+					semanticToken.position = token->location.beginPosition;
 					semanticToken.length = (unsigned int)token->text.size();
 					semanticToken.type = tokenInfo.semanticType;
 					semanticToken.modifiers = tokenInfo.semanticModifiers;
@@ -393,7 +392,7 @@ slake::slkc::Server::Server() {
 		Json::Reader reader;
 
 		std::string uri;
-		Location loc;
+		SourcePosition pos;
 
 		if (!reader.parse(request.body, rootValue)) {
 			response.body = "Error parsing request";
@@ -414,7 +413,7 @@ slake::slkc::Server::Server() {
 			response.body = "Missing document location";
 			goto badRequest;
 		}
-		if (!jsonToLocation(rootValue["location"], loc)) {
+		if (!jsonToPosition(rootValue["position"], pos)) {
 			response.body = "Invalid document location";
 			goto badRequest;
 		}
@@ -430,7 +429,7 @@ slake::slkc::Server::Server() {
 
 				Json::Value &responseBodyValue = responseValue["body"];
 
-				size_t idxToken = doc->compiler->lexer->getTokenByLocation(loc);
+				size_t idxToken = doc->compiler->lexer->getTokenByPosition(pos);
 
 				if (idxToken == SIZE_MAX)
 					goto badRequest;
@@ -450,7 +449,7 @@ slake::slkc::Server::Server() {
 
 							fullName += std::to_string(doc->compiler->getFullName(m.get()), doc->compiler.get());
 							fullName += ": ";
-							fullName += std::to_string(m->type ? m->type : std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX), doc->compiler.get());
+							fullName += std::to_string(m->type ? m->type : std::make_shared<AnyTypeNameNode>(SIZE_MAX), doc->compiler.get());
 
 							responseBodyValue["content"] = fullName;
 							break;
@@ -460,7 +459,7 @@ slake::slkc::Server::Server() {
 
 							std::string fullName;
 
-							fullName += std::to_string(m->type ? m->type : std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX), doc->compiler.get());
+							fullName += std::to_string(m->type ? m->type : std::make_shared<AnyTypeNameNode>(SIZE_MAX), doc->compiler.get());
 							fullName += " ";
 							fullName += m->name;
 
@@ -474,7 +473,7 @@ slake::slkc::Server::Server() {
 
 							fullName += m->name;
 							fullName += ": ";
-							fullName += std::to_string(m->type ? m->type : std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX), doc->compiler.get());
+							fullName += std::to_string(m->type ? m->type : std::make_shared<AnyTypeNameNode>(SIZE_MAX), doc->compiler.get());
 
 							responseBodyValue["content"] = "(Local variable) " + fullName;
 							break;
@@ -503,7 +502,7 @@ slake::slkc::Server::Server() {
 							fullName += ")";
 
 							fullName += ": ";
-							fullName += std::to_string(m->returnType ? m->returnType : std::make_shared<VoidTypeNameNode>(Location(), SIZE_MAX), doc->compiler.get());
+							fullName += std::to_string(m->returnType ? m->returnType : std::make_shared<VoidTypeNameNode>(SIZE_MAX), doc->compiler.get());
 
 							responseBodyValue["content"] = fullName;
 							break;
@@ -549,27 +548,50 @@ slake::slkc::Server::Server() {
 	});
 }
 
-bool slake::slkc::Server::jsonToLocation(const Json::Value &value, Location &locationOut) {
+bool slake::slkc::Server::jsonToPosition(const Json::Value &value, SourcePosition &positionOut) {
 	if (!value.isMember("line"))
 		return false;
 	if (!value["line"].isUInt())
 		return false;
-	locationOut.line = value["line"].asUInt();
+	positionOut.line = value["line"].asUInt();
 
 	if (!value.isMember("column"))
 		return false;
 	if (!value["column"].isUInt())
 		return false;
-	locationOut.column = value["column"].asUInt();
+	positionOut.column = value["column"].asUInt();
 
 	return true;
 }
 
-Json::Value slake::slkc::Server::locationToJson(const Location &loc) {
+Json::Value slake::slkc::Server::positionToJson(const SourcePosition &pos) {
 	Json::Value value;
 
-	value["line"] = loc.line;
-	value["column"] = loc.column;
+	value["line"] = pos.line;
+	value["column"] = pos.column;
+
+	return value;
+}
+
+bool slake::slkc::Server::jsonToLocation(const Json::Value &value, SourceLocation &locationOut) {
+	if (!value.isMember("begin"))
+		return false;
+	if(!jsonToPosition(value["begin"], locationOut.beginPosition))
+		return false;
+
+	if (!value.isMember("end"))
+		return false;
+	if(!jsonToPosition(value["end"], locationOut.beginPosition))
+		return false;
+
+	return true;
+}
+
+Json::Value slake::slkc::Server::locationToJson(const SourceLocation &pos) {
+	Json::Value value;
+
+	value["begin"] = positionToJson(pos.beginPosition);
+	value["end"] = positionToJson(pos.endPosition);
 
 	return value;
 }
@@ -611,7 +633,7 @@ Json::Value slake::slkc::Server::semanticTokenToJson(const SemanticToken &item) 
 		modifiersValue.insert(Json::Value::ArrayIndex(0), modifierValue);
 	}
 
-	value["location"] = locationToJson(item.location);
+	value["position"] = positionToJson(item.position);
 	value["length"] = item.length;
 
 	return value;

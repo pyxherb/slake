@@ -17,20 +17,18 @@ namespace slake {
 
 		class SyntaxError : public std::runtime_error {
 		public:
-			Location location;
+			SourceLocation location;
 
-			inline SyntaxError(std::string_view s, Location location) : runtime_error(s.data()), location(location) {}
+			inline SyntaxError(std::string_view s, SourceLocation location) : runtime_error(s.data()), location(location) {}
 			virtual ~SyntaxError() = default;
 		};
 
 		class Parser {
 		private:
 			void _putDefinition(
-				Location locName,
 				std::string name,
 				std::shared_ptr<MemberNode> member);
 			void _putFnDefinition(
-				Location locName,
 				std::string name,
 				std::shared_ptr<FnOverloadingNode> overloading);
 
@@ -62,19 +60,19 @@ namespace slake {
 					lexer->nextToken();
 					return token;
 				}
-				throw SyntaxError(std::string("Expecting ") + getTokenName(tokenId), token->beginLocation);
+				throw SyntaxError(std::string("Expecting ") + getTokenName(tokenId), token->location);
 			}
 
 			inline Token *expectToken(Token *token) {
 				if (token->tokenId == TokenId::End)
-					throw SyntaxError("Expecting more tokens", token->beginLocation);
+					throw SyntaxError("Expecting more tokens", token->location);
 
 				return token;
 			}
 
 			inline Token *expectToken(Token *token, TokenId tokenId) {
 				if (token->tokenId != tokenId)
-					throw SyntaxError(std::string("Expecting ") + getTokenName(tokenId), token->beginLocation);
+					throw SyntaxError(std::string("Expecting ") + getTokenName(tokenId), token->location);
 
 				return token;
 			}
@@ -83,7 +81,7 @@ namespace slake {
 				if (token->tokenId == tokenId)
 					return token;
 
-				throw SyntaxError(std::string("Unexpected ") + getTokenName(token->tokenId), token->beginLocation);
+				throw SyntaxError(std::string("Unexpected ") + getTokenName(token->tokenId), token->location);
 			}
 
 			template <typename... Args>
@@ -96,7 +94,7 @@ namespace slake {
 
 			void splitRshOpToken();
 
-			AccessModifier parseAccessModifier(Location &locationOut, std::deque<size_t> idxAccessModifierTokensOut);
+			AccessModifier parseAccessModifier(SourceLocation &locationOut, std::deque<size_t> idxAccessModifierTokensOut);
 
 			std::shared_ptr<TypeNameNode> parseTypeName(bool required = false);
 			std::deque<std::shared_ptr<TypeNameNode>> parseGenericArgs(bool forTypeName = false);
@@ -113,7 +111,6 @@ namespace slake {
 				std::deque<std::shared_ptr<TypeNameNode>> &implInterfacesOut,
 				size_t &idxColonTokenOut,
 				std::deque<size_t> &idxSeparatorTokensOut);
-			std::deque<std::shared_ptr<TypeNameNode>> parseTraitList();
 
 			void parseVarDefs(std::shared_ptr<VarDefStmtNode> varDefStmtOut);
 
@@ -126,16 +123,13 @@ namespace slake {
 			std::shared_ptr<FnOverloadingNode> parseOperatorDecl(std::string &nameOut);
 			std::shared_ptr<FnOverloadingNode> parseOperatorDef(std::string &nameOut);
 
-			GenericParamNodeList parseGenericParams();
+			GenericParamNodeList parseGenericParams(SourceLocation &locationOut);
 
 			std::shared_ptr<ClassNode> parseClassDef();
 			void parseClassStmt();
 
 			std::shared_ptr<InterfaceNode> parseInterfaceDef();
 			void parseInterfaceStmt();
-
-			std::shared_ptr<TraitNode> parseTraitDef();
-			void parseTraitStmt();
 
 			void parseProgramStmt();
 

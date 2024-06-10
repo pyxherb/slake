@@ -9,9 +9,9 @@ uint32_t Compiler::allocLocalVar(std::string name, std::shared_ptr<TypeNameNode>
 	if (curMajorContext.curMinorContext.localVars.size() > UINT32_MAX)
 		throw FatalCompilationError(
 			Message(
-				type->getLocation(),
+				type->sourceLocation,
 				MessageType::Error,
-				"Number limit of local variables exceeded"));
+				"Exceeded maximum number of local variables"));
 
 	uint32_t index = (uint32_t)curMajorContext.curMinorContext.localVars.size();
 
@@ -27,7 +27,7 @@ uint32_t Compiler::allocReg(uint32_t nRegs) {
 
 	auto idxReg = curMajorContext.curRegCount;
 
-	_insertIns(Opcode::REG, std::make_shared<U32LiteralExprNode>(Location(), nRegs));
+	_insertIns(Opcode::REG, std::make_shared<U32LiteralExprNode>(nRegs));
 
 	curMajorContext.curRegCount += nRegs;
 

@@ -3,7 +3,6 @@
 using namespace slake::slkc;
 
 FnOverloadingNode::FnOverloadingNode(
-	Location loc,
 	Compiler *compiler,
 	std::shared_ptr<Scope> scope) : MemberNode(compiler, 0), returnType(returnType), params(params), idxNameToken(idxNameToken) {
 	setScope(scope);  // For custom type names.
@@ -14,7 +13,7 @@ void FnOverloadingNode::updateParamIndices() {
 		if (paramIndices.count(params[i]->name)) {
 			throw FatalCompilationError(
 				Message(
-					params[i]->loc,
+					params[i]->sourceLocation,
 					MessageType::Error,
 					"Redefinition of parameter `" + params[i]->name + "'"));
 		}
@@ -25,8 +24,8 @@ void FnOverloadingNode::updateParamIndices() {
 
 IdRefEntry FnOverloadingNode::getName() const {
 	if (genericArgs.size())
-		return IdRefEntry(loc, SIZE_MAX, owner->name, genericArgs);
-	return IdRefEntry(loc, SIZE_MAX, owner->name, getPlaceholderGenericArgs());
+		return IdRefEntry(sourceLocation, SIZE_MAX, owner->name, genericArgs);
+	return IdRefEntry(sourceLocation, SIZE_MAX, owner->name, getPlaceholderGenericArgs());
 }
 
 std::shared_ptr<AstNode> ParamNode::doDuplicate() {

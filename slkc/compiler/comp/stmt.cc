@@ -10,8 +10,8 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			if (s->expr) {
 				slxfmt::SourceLocDesc sld;
 				sld.offIns = curFn->body.size();
-				sld.line = stmt->getLocation().line;
-				sld.column = stmt->getLocation().column;
+				sld.line = stmt->sourceLocation.beginPosition.line;
+				sld.column = stmt->sourceLocation.beginPosition.column;
 
 				compileExpr(std::static_pointer_cast<ExprStmtNode>(stmt)->expr, EvalPurpose::Stmt, {});
 
@@ -53,7 +53,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 							MessageType::Error,
 							"Redefinition of local variable `" + i.first + "'" });
 
-				std::shared_ptr<TypeNameNode> varType = i.second.type ? i.second.type : std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX);
+				std::shared_ptr<TypeNameNode> varType = i.second.type ? i.second.type : std::make_shared<AnyTypeNameNode>(SIZE_MAX);
 
 				uint32_t index = allocLocalVar(i.first, varType);
 
@@ -70,15 +70,15 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 
 					if (!initValueType)
 						throw FatalCompilationError(
-							{ i.second.initValue->getLocation(),
+							{ i.second.initValue->sourceLocation,
 								MessageType::Error,
 								"Error deducing type of the initial value" });
 
 					if (!isSameType(varType, initValueType)) {
 						throw FatalCompilationError(
-								{ i.second.initValue->getLocation(),
-									MessageType::Error,
-									"Incompatible initial value type" });
+							{ i.second.initValue->sourceLocation,
+								MessageType::Error,
+								"Incompatible initial value type" });
 					} else
 						compileExpr(i.second.initValue, EvalPurpose::LValue, std::make_shared<LocalVarRefNode>(index));
 				} else {
@@ -87,18 +87,18 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 
 						if (!initValueType)
 							throw FatalCompilationError(
-								{ i.second.initValue->getLocation(),
+								{ i.second.initValue->sourceLocation,
 									MessageType::Error,
 									"Error deducing type of the initial value" });
 
 						if (!isSameType(varType, initValueType)) {
 							if (!isTypeNamesConvertible(initValueType, varType))
 								throw FatalCompilationError(
-									{ i.second.initValue->getLocation(),
+									{ i.second.initValue->sourceLocation,
 										MessageType::Error,
 										"Incompatible initial value type" });
 
-							compileExpr(std::make_shared<CastExprNode>(i.second.initValue->getLocation(), varType, i.second.initValue), EvalPurpose::RValue, std::make_shared<LocalVarRefNode>(index));
+							compileExpr(std::make_shared<CastExprNode>(varType, i.second.initValue), EvalPurpose::RValue, std::make_shared<LocalVarRefNode>(index));
 						} else
 							compileExpr(i.second.initValue, EvalPurpose::RValue, std::make_shared<LocalVarRefNode>(index));
 					}
@@ -109,27 +109,27 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 		}
 		case StmtType::Break:
 			if (curMajorContext.curMinorContext.breakLabel.empty())
-				throw FatalCompilationError({ stmt->getLocation(), MessageType::Error, "Unexpected break statement" });
+				throw FatalCompilationError({ stmt->sourceLocation, MessageType::Error, "Unexpected break statement" });
 
 			if (curMajorContext.curMinorContext.breakScopeLevel < curMajorContext.curScopeLevel)
 				_insertIns(
 					Opcode::LEAVE,
-					std::make_shared<U32LiteralExprNode>(stmt->getLocation(), curMajorContext.curScopeLevel - curMajorContext.curMinorContext.breakScopeLevel));
+					std::make_shared<U32LiteralExprNode>(curMajorContext.curScopeLevel - curMajorContext.curMinorContext.breakScopeLevel));
 
 			_insertIns(Opcode::JMP, std::make_shared<LabelRefNode>(curMajorContext.curMinorContext.breakLabel));
 			break;
 		case StmtType::Continue:
 			if (curMajorContext.curMinorContext.continueLabel.size())
-				throw FatalCompilationError({ stmt->getLocation(), MessageType::Error, "Unexpected continue statement" });
+				throw FatalCompilationError({ stmt->sourceLocation, MessageType::Error, "Unexpected continue statement" });
 
 			_insertIns(Opcode::JMP, std::make_shared<LabelRefNode>(curMajorContext.curMinorContext.continueLabel));
 			break;
 		case StmtType::For: {
 			auto s = std::static_pointer_cast<ForStmtNode>(stmt);
 
-			auto loc = s->getLocation();
-			std::string beginLabel = "$for_" + std::to_string(loc.line) + "_" + std::to_string(loc.column) + "_begin",
-				   endLabel = "$for_" + std::to_string(loc.line) + "_" + std::to_string(loc.column) + "_end";
+			auto loc = s->sourceLocation;
+			std::string beginLabel = "$for_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_begin",
+						endLabel = "$for_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_end";
 
 			pushMinorContext();
 
@@ -149,18 +149,17 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 				tmpRegIndex = allocReg();
 
 				auto conditionType = evalExprType(s->condition);
-				auto boolType = std::make_shared<BoolTypeNameNode>(Location(), SIZE_MAX);
+				auto boolType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 
 				if (!isSameType(conditionType, boolType)) {
 					if (!isTypeNamesConvertible(conditionType, boolType))
 						throw FatalCompilationError(
-							{ s->condition->getLocation(),
+							{ s->condition->sourceLocation,
 								MessageType::Error,
 								"Expecting a boolean expression" });
 
 					compileExpr(
 						std::make_shared<CastExprNode>(
-							s->condition->getLocation(),
 							boolType,
 							s->condition),
 						EvalPurpose::RValue,
@@ -195,9 +194,9 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			});
 #endif
 
-			auto loc = s->getLocation();
-			std::string beginLabel = "$while_" + std::to_string(loc.line) + "_" + std::to_string(loc.column) + "_begin",
-				   endLabel = "$while_" + std::to_string(loc.line) + "_" + std::to_string(loc.column) + "_end";
+			auto loc = s->sourceLocation;
+			std::string beginLabel = "$while_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_begin",
+						endLabel = "$while_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_end";
 
 			pushMinorContext();
 
@@ -211,18 +210,17 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			_insertLabel(beginLabel);
 
 			auto conditionType = evalExprType(s->condition);
-			auto boolType = std::make_shared<BoolTypeNameNode>(Location(), SIZE_MAX);
+			auto boolType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 
 			if (!isSameType(conditionType, boolType)) {
 				if (!isTypeNamesConvertible(conditionType, boolType))
 					throw FatalCompilationError(
-						{ s->condition->getLocation(),
+						{ s->condition->sourceLocation,
 							MessageType::Error,
 							"Expecting a boolean expression" });
 
 				compileExpr(
 					std::make_shared<CastExprNode>(
-						s->condition->getLocation(),
 						boolType,
 						s->condition),
 					EvalPurpose::RValue,
@@ -256,7 +254,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 
 			if (!s->returnValue) {
 				if (returnType->getTypeId() != TypeId::Void)
-					throw FatalCompilationError({ stmt->getLocation(), MessageType::Error, "Must return a value" });
+					throw FatalCompilationError({ stmt->sourceLocation, MessageType::Error, "Must return a value" });
 				else
 					_insertIns(Opcode::RET, {});
 			} else {
@@ -269,7 +267,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 						} else {
 							uint32_t tmpRegIndex = allocReg();
 
-							compileExpr(std::make_shared<CastExprNode>(e->getLocation(), returnType, e), EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
+							compileExpr(std::make_shared<CastExprNode>(returnType, e), EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
 							_insertIns(Opcode::RET, std::make_shared<RegRefNode>(tmpRegIndex, true));
 						}
 					}
@@ -279,12 +277,12 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 					auto exprType = evalExprType(s->returnValue);
 
 					if (!exprType)
-						throw FatalCompilationError({ s->returnValue->getLocation(), MessageType::Error, "Cannot deduce type of the return value" });
+						throw FatalCompilationError({ s->returnValue->sourceLocation, MessageType::Error, "Cannot deduce type of the return value" });
 
 					if (isSameType(exprType, returnType))
 						compileExpr(s->returnValue, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
 					else
-						compileExpr(std::make_shared<CastExprNode>(s->returnValue->getLocation(), returnType, s->returnValue), EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
+						compileExpr(std::make_shared<CastExprNode>(returnType, s->returnValue), EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
 
 					_insertIns(Opcode::RET, std::make_shared<RegRefNode>(tmpRegIndex, true));
 				}
@@ -296,11 +294,11 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			auto s = std::static_pointer_cast<YieldStmtNode>(stmt);
 
 			if (!(curFn->isAsync))
-				throw FatalCompilationError({ stmt->getLocation(), MessageType::Error, "Cannot yield in a non-asynchronous function" });
+				throw FatalCompilationError({ stmt->sourceLocation, MessageType::Error, "Cannot yield in a non-asynchronous function" });
 
 			if (!s->returnValue) {
 				if (curFn->returnType->getTypeId() != TypeId::Void)
-					throw FatalCompilationError({ stmt->getLocation(), MessageType::Error, "Must yield a value" });
+					throw FatalCompilationError({ stmt->sourceLocation, MessageType::Error, "Must yield a value" });
 				else
 					_insertIns(Opcode::YIELD, {});
 			} else {
@@ -318,26 +316,25 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 		}
 		case StmtType::If: {
 			auto s = std::static_pointer_cast<IfStmtNode>(stmt);
-			auto loc = s->getLocation();
+			auto loc = s->sourceLocation;
 
-			std::string falseBranchLabel = "$if_" + std::to_string(loc.line) + "_" + std::to_string(loc.column) + "_false",
-				   endLabel = "$if_" + std::to_string(loc.line) + "_" + std::to_string(loc.column) + "_end";
+			std::string falseBranchLabel = "$if_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_false",
+						endLabel = "$if_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_end";
 
 			uint32_t tmpRegIndex = allocReg();
 
 			auto conditionType = evalExprType(s->condition);
-			auto boolType = std::make_shared<BoolTypeNameNode>(Location(), SIZE_MAX);
+			auto boolType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 
 			if (!isSameType(conditionType, boolType)) {
 				if (!isTypeNamesConvertible(conditionType, boolType))
 					throw FatalCompilationError(
-						{ s->condition->getLocation(),
+						{ s->condition->sourceLocation,
 							MessageType::Error,
 							"Expecting a boolean expression" });
 
 				compileExpr(
 					std::make_shared<CastExprNode>(
-						s->condition->getLocation(),
 						boolType,
 						s->condition),
 					EvalPurpose::RValue,
@@ -364,10 +361,10 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 		}
 		case StmtType::Try: {
 			auto s = std::static_pointer_cast<TryStmtNode>(stmt);
-			auto loc = s->getLocation();
+			auto loc = s->sourceLocation;
 
-			std::string labelPrefix = "$try_" + std::to_string(loc.line) + "_" + std::to_string(loc.column),
-				   endLabel = labelPrefix + "_final";
+			std::string labelPrefix = "$try_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column),
+						endLabel = labelPrefix + "_final";
 
 			_insertIns(Opcode::ENTER);
 
@@ -412,12 +409,12 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 		}
 		case StmtType::Switch: {
 			auto s = std::static_pointer_cast<SwitchStmtNode>(stmt);
-			auto loc = s->getLocation();
+			auto loc = s->sourceLocation;
 
-			std::string labelPrefix = "$switch_" + std::to_string(loc.line) + "_" + std::to_string(loc.column),
-				   condLocalVarName = labelPrefix + "_cond",
-				   defaultLabel = labelPrefix + "_label",
-				   endLabel = labelPrefix + "_end";
+			std::string labelPrefix = "$switch_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column),
+						condLocalVarName = labelPrefix + "_cond",
+						defaultLabel = labelPrefix + "_label",
+						endLabel = labelPrefix + "_end";
 
 			pushMinorContext();
 
@@ -434,7 +431,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			for (size_t i = 0; i < s->cases.size(); ++i) {
 				auto &curCase = s->cases[i];
 				std::string caseBeginLabel = labelPrefix + "_case" + std::to_string(i) + "_end",
-					   caseEndLabel = labelPrefix + "_case" + std::to_string(i) + "_end";
+							caseEndLabel = labelPrefix + "_case" + std::to_string(i) + "_end";
 
 				_insertLabel(caseBeginLabel);
 
@@ -456,7 +453,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 					std::make_shared<RegRefNode>(conditionRegIndex, true));
 				_insertIns(Opcode::JF, std::make_shared<LabelRefNode>(caseEndLabel), std::make_shared<RegRefNode>(conditionRegIndex));
 
-				compileStmt(std::make_shared<BlockStmtNode>(curCase.loc, curCase.body));
+				compileStmt(std::make_shared<CodeBlockStmtNode>(CodeBlock{ SourceLocation(), curCase.body }));
 
 				_insertLabel(caseEndLabel);
 
@@ -465,7 +462,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			}
 
 			if (defaultCase)
-				compileStmt(std::make_shared<BlockStmtNode>(defaultCase->loc, defaultCase->body));
+				compileStmt(std::make_shared<CodeBlockStmtNode>(CodeBlock{ SourceLocation(), defaultCase->body }));
 
 			_insertLabel(endLabel);
 

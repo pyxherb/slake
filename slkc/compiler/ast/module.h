@@ -13,9 +13,6 @@ namespace slake {
 		};
 
 		class ModuleNode : public MemberNode {
-		private:
-			Location _loc;
-
 		public:
 			IdRef moduleName;
 			std::unordered_map<std::string, ImportItem> imports;
@@ -24,15 +21,12 @@ namespace slake {
 
 			inline ModuleNode(
 				Compiler *compiler,
-				Location loc,
 				std::shared_ptr<Scope> scope = std::make_shared<Scope>())
-				: MemberNode(compiler, ACCESS_PUB), _loc(loc) {
+				: MemberNode(compiler, ACCESS_PUB) {
 				scope->owner = this;
 				setScope(scope);
 			}
 			virtual ~ModuleNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual inline NodeType getNodeType() const override { return NodeType::Module; }
 

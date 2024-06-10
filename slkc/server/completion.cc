@@ -229,10 +229,10 @@ void slake::slkc::Document::_getCompletionItems(
 	}
 }
 
-std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(Location location) {
+std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(SourcePosition location) {
 	std::deque<CompletionItem> completionItems;
 
-	size_t idxToken = compiler->lexer->getTokenByLocation(location);
+	size_t idxToken = compiler->lexer->getTokenByPosition(location);
 
 	if (idxToken != SIZE_MAX) {
 		do {

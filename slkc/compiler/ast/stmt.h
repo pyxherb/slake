@@ -41,53 +41,32 @@ namespace slake {
 		};
 
 		class BreakStmtNode : public StmtNode {
-		private:
-			Location _loc;
-
 		public:
 			size_t idxBreakToken = SIZE_MAX, idxSemicolonToken = SIZE_MAX;
 
-			inline BreakStmtNode(
-				Location loc)
-				: _loc(loc) {}
+			inline BreakStmtNode() {}
 			virtual ~BreakStmtNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual inline StmtType getStmtType() const override { return StmtType::Break; }
 		};
 
 		class ContinueStmtNode : public StmtNode {
-		private:
-			Location _loc;
-
 		public:
 			size_t idxContinueToken = SIZE_MAX, idxSemicolonToken = SIZE_MAX;
-			inline ContinueStmtNode(
-				Location loc)
-				: _loc(loc) {}
+			inline ContinueStmtNode() {}
 			virtual ~ContinueStmtNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual inline StmtType getStmtType() const override { return StmtType::Break; }
 		};
 
 		class BadStmtNode : public StmtNode {
-		private:
-			Location _loc;
-
 		public:
 			std::shared_ptr<StmtNode> body;
 
 			inline BadStmtNode(
-				Location loc,
 				std::shared_ptr<StmtNode> body)
-				: _loc(loc),
-				  body(body) {}
+				: body(body) {}
 			virtual ~BadStmtNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual inline StmtType getStmtType() const override { return StmtType::Bad; }
 		};
@@ -100,14 +79,12 @@ namespace slake {
 			inline ExprStmtNode() {}
 			virtual ~ExprStmtNode() = default;
 
-			virtual inline Location getLocation() const override { return expr->getLocation(); }
-
 			virtual inline StmtType getStmtType() const override { return StmtType::Expr; }
 		};
 
 		struct VarDefEntry {
 			std::string name;
-			Location loc;
+			SourceLocation loc;
 			std::shared_ptr<ExprNode> initValue;
 			std::shared_ptr<TypeNameNode> type;
 
@@ -117,48 +94,22 @@ namespace slake {
 				idxCommaToken = SIZE_MAX;
 
 			VarDefEntry() = default;
-			inline VarDefEntry(Location loc, std::string name, size_t idxNameToken) : loc(loc), name(name), idxNameToken(idxNameToken) {}
+			inline VarDefEntry(SourceLocation loc, std::string name, size_t idxNameToken) : loc(loc), name(name), idxNameToken(idxNameToken) {}
 		};
 
 		class VarDefStmtNode : public StmtNode {
-		private:
-			Location _loc;
-
 		public:
 			std::unordered_map<std::string, VarDefEntry> varDefs;
 			size_t idxLetToken = SIZE_MAX,
 				   idxSemicolonToken = SIZE_MAX;
 
-			inline VarDefStmtNode(Location loc) : _loc(loc) {}
+			inline VarDefStmtNode() {}
 			virtual ~VarDefStmtNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual inline StmtType getStmtType() const override { return StmtType::VarDef; }
 		};
 
-		class BlockStmtNode : public StmtNode {
-		private:
-			Location _loc;
-
-		public:
-			std::deque<std::shared_ptr<StmtNode>> stmts;
-
-			inline BlockStmtNode(
-				Location loc,
-				std::deque<std::shared_ptr<StmtNode>> stmts)
-				: _loc(loc), stmts(stmts) {}
-			virtual ~BlockStmtNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
-
-			virtual inline StmtType getStmtType() const override { return StmtType::CodeBlock; }
-		};
-
 		class ForStmtNode : public StmtNode {
-		private:
-			Location _loc;
-
 		public:
 			std::shared_ptr<VarDefStmtNode> varDefs;
 			std::shared_ptr<ExprNode> condition;
@@ -171,18 +122,13 @@ namespace slake {
 				   idxSecondSemicolonToken = SIZE_MAX,
 				   idxRParentheseToken = SIZE_MAX;
 
-			inline ForStmtNode(Location loc) : _loc(loc) {}
+			inline ForStmtNode() {}
 			virtual ~ForStmtNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual inline StmtType getStmtType() const override { return StmtType::For; }
 		};
 
 		class WhileStmtNode : public StmtNode {
-		private:
-			Location _loc;
-
 		public:
 			std::shared_ptr<ExprNode> condition;
 			std::shared_ptr<StmtNode> body;
@@ -191,54 +137,39 @@ namespace slake {
 				   idxLParentheseToken = SIZE_MAX,
 				   idxRParentheseToken = SIZE_MAX;
 
-			inline WhileStmtNode(Location loc) : _loc(loc) {}
+			inline WhileStmtNode() {}
 			virtual ~WhileStmtNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual inline StmtType getStmtType() const override { return StmtType::While; }
 		};
 
 		class ReturnStmtNode : public StmtNode {
-		private:
-			Location _loc;
-
 		public:
 			std::shared_ptr<ExprNode> returnValue;
 
 			size_t idxReturnToken = SIZE_MAX,
 				   idxSemicolonToken = SIZE_MAX;
 
-			inline ReturnStmtNode(Location loc) : _loc(loc) {}
+			inline ReturnStmtNode() {}
 			virtual ~ReturnStmtNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual inline StmtType getStmtType() const override { return StmtType::Return; }
 		};
 
 		class YieldStmtNode : public StmtNode {
-		private:
-			Location _loc;
-
 		public:
 			std::shared_ptr<ExprNode> returnValue;
 
 			size_t idxYieldToken = SIZE_MAX,
 				   idxSemicolonToken = SIZE_MAX;
 
-			inline YieldStmtNode(Location loc) : _loc(loc) {}
+			inline YieldStmtNode() {}
 			virtual ~YieldStmtNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual inline StmtType getStmtType() const override { return StmtType::Yield; }
 		};
 
 		class IfStmtNode : public StmtNode {
-		private:
-			Location _loc;
-
 		public:
 			std::shared_ptr<ExprNode> condition;
 			std::shared_ptr<StmtNode> body;
@@ -249,17 +180,15 @@ namespace slake {
 				   idxRParentheseToken = SIZE_MAX,
 				   idxElseToken = SIZE_MAX;
 
-			inline IfStmtNode(Location loc) : _loc(loc) {
+			inline IfStmtNode() {
 			}
 			virtual ~IfStmtNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual inline StmtType getStmtType() const override { return StmtType::If; }
 		};
 
 		struct CatchBlock {
-			Location loc;
+			SourceLocation loc;
 			std::shared_ptr<TypeNameNode> targetType;
 			std::string exceptionVarName;
 			std::shared_ptr<StmtNode> body;
@@ -271,16 +200,13 @@ namespace slake {
 		};
 
 		struct FinalBlock {
-			Location loc;
+			SourceLocation loc;
 			std::shared_ptr<StmtNode> body;
 
 			size_t idxFinalToken = SIZE_MAX;
 		};
 
 		class TryStmtNode : public StmtNode {
-		private:
-			Location _loc;
-
 		public:
 			std::shared_ptr<StmtNode> body;
 			std::deque<CatchBlock> catchBlocks;
@@ -288,19 +214,15 @@ namespace slake {
 
 			size_t idxTryToken = SIZE_MAX;
 
-			inline TryStmtNode(
-				Location loc)
-				: _loc(loc) {
+			inline TryStmtNode() {
 			}
 			virtual ~TryStmtNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual inline StmtType getStmtType() const override { return StmtType::Try; }
 		};
 
 		struct CodeBlock {
-			Location loc;
+			SourceLocation loc;
 			std::deque<std::shared_ptr<StmtNode>> stmts;
 
 			size_t idxLBraceToken = SIZE_MAX, idxRBraceToken = SIZE_MAX;
@@ -313,13 +235,11 @@ namespace slake {
 			inline CodeBlockStmtNode(CodeBlock body) : body(body) {}
 			virtual ~CodeBlockStmtNode() = default;
 
-			virtual inline Location getLocation() const override { return body.loc; }
-
 			virtual inline StmtType getStmtType() const override { return StmtType::CodeBlock; }
 		};
 
 		struct SwitchCase {
-			Location loc;
+			SourceLocation loc;
 			std::shared_ptr<ExprNode> condition;
 			std::deque<std::shared_ptr<StmtNode>> body;
 
@@ -328,9 +248,6 @@ namespace slake {
 		};
 
 		class SwitchStmtNode : public StmtNode {
-		private:
-			Location _loc;
-
 		public:
 			std::shared_ptr<ExprNode> expr;
 			std::deque<SwitchCase> cases;
@@ -341,10 +258,8 @@ namespace slake {
 				   idxLBraceToken = SIZE_MAX,
 				   idxRBraceToken = SIZE_MAX;
 
-			inline SwitchStmtNode(Location loc) : _loc(loc) {}
+			inline SwitchStmtNode() {}
 			virtual ~SwitchStmtNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual inline StmtType getStmtType() const override { return StmtType::CodeBlock; }
 		};

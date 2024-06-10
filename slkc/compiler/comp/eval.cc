@@ -12,21 +12,21 @@ static std::shared_ptr<ExprNode> _evalConstUnaryOpExpr(
 	switch (op) {
 		case UnaryOp::LNot:
 			if constexpr (std::is_convertible_v<bool, T>) {
-				return std::make_shared<BoolLiteralExprNode>(x->getLocation(), !(x->data));
+				return std::make_shared<BoolLiteralExprNode>(!(x->data));
 			} else {
 				return {};
 			}
 		case UnaryOp::Not: {
 			if constexpr (std::is_same_v<T, bool>) {
-				return std::make_shared<LT>(x->getLocation(), !x->data);
+				return std::make_shared<LT>(!x->data);
 			} else if constexpr (std::is_integral_v<T>) {
-				return std::make_shared<LT>(x->getLocation(), ~x->data);
+				return std::make_shared<LT>(~x->data);
 			} else if constexpr (std::is_same_v<T, float>) {
 				uint32_t result = ~(*(uint32_t *)&x->data);
-				return std::make_shared<LT>(x->getLocation(), *(float *)&result);
+				return std::make_shared<LT>(*(float *)&result);
 			} else if constexpr (std::is_same_v<T, double>) {
 				uint64_t result = ~(*(uint64_t *)&x->data);
-				return std::make_shared<LT>(x->getLocation(), *(double *)&result);
+				return std::make_shared<LT>(*(double *)&result);
 			} else
 				return {};
 		}
@@ -48,22 +48,18 @@ static std::shared_ptr<ExprNode> _evalConstBinaryOpExpr(
 				return {};
 			if constexpr (std::is_same_v<T, bool>)
 				return std::make_shared<I32LiteralExprNode>(
-					x->getLocation(),
 					(int)x->data + std::static_pointer_cast<LT>(y)->data);
 			else
 				return std::make_shared<LT>(
-					x->getLocation(),
 					x->data + std::static_pointer_cast<LT>(y)->data);
 		case BinaryOp::Sub:
 			if (y->getExprType() != x->getExprType())
 				return {};
 			if constexpr (std::is_same_v<T, bool>)
 				return std::make_shared<I32LiteralExprNode>(
-					x->getLocation(),
 					(int)x->data - std::static_pointer_cast<LT>(y)->data);
 			else if constexpr (std::is_arithmetic_v<T>)
 				return std::make_shared<LT>(
-					x->getLocation(),
 					x->data - std::static_pointer_cast<LT>(y)->data);
 			else
 				return {};
@@ -72,11 +68,9 @@ static std::shared_ptr<ExprNode> _evalConstBinaryOpExpr(
 				return {};
 			if constexpr (std::is_same_v<T, bool>)
 				return std::make_shared<I32LiteralExprNode>(
-					x->getLocation(),
 					(int)x->data * std::static_pointer_cast<LT>(y)->data);
 			else if constexpr (std::is_arithmetic_v<T>)
 				return std::make_shared<LT>(
-					x->getLocation(),
 					x->data * std::static_pointer_cast<LT>(y)->data);
 			else
 				return {};
@@ -85,10 +79,9 @@ static std::shared_ptr<ExprNode> _evalConstBinaryOpExpr(
 				return {};
 			if constexpr (std::is_same_v<T, bool>)
 				return std::make_shared<I32LiteralExprNode>(
-					x->getLocation(), ((int)x->data) / ((int)std::static_pointer_cast<LT>(y)->data));
+					((int)x->data) / ((int)std::static_pointer_cast<LT>(y)->data));
 			else if constexpr (std::is_arithmetic_v<T>)
 				return std::make_shared<LT>(
-					x->getLocation(),
 					x->data / std::static_pointer_cast<LT>(y)->data);
 			else
 				return {};
@@ -97,19 +90,15 @@ static std::shared_ptr<ExprNode> _evalConstBinaryOpExpr(
 				return {};
 			if constexpr (std::is_same_v<T, bool>)
 				return std::make_shared<I32LiteralExprNode>(
-					x->getLocation(),
 					((int)x->data) % ((int)std::static_pointer_cast<LT>(y)->data));
 			else if constexpr (std::is_integral_v<T>)
 				return std::make_shared<LT>(
-					x->getLocation(),
 					x->data % std::static_pointer_cast<LT>(y)->data);
 			else if constexpr (std::is_same_v<T, float>)
 				return std::make_shared<LT>(
-					x->getLocation(),
 					fmodf(x->data, std::static_pointer_cast<LT>(y)->data));
 			else if constexpr (std::is_same_v<T, double>)
 				return std::make_shared<LT>(
-					x->getLocation(),
 					fmod(x->data, std::static_pointer_cast<LT>(y)->data));
 			else
 				return {};
@@ -118,18 +107,16 @@ static std::shared_ptr<ExprNode> _evalConstBinaryOpExpr(
 				return {};
 			if constexpr (std::is_same_v<T, bool>)
 				return std::make_shared<BoolLiteralExprNode>(
-					x->getLocation(),
 					x->data && std::static_pointer_cast<LT>(y)->data);
 			else if constexpr (std::is_integral_v<T>)
 				return std::make_shared<LT>(
-					x->getLocation(),
 					x->data & std::static_pointer_cast<LT>(y)->data);
 			else if constexpr (std::is_same_v<T, float>) {
 				uint32_t tmp = (*(uint32_t *)&x->data) & (*(uint32_t *)&std::static_pointer_cast<LT>(y)->data);
-				return std::make_shared<LT>(x->getLocation(), *((float *)&tmp));
+				return std::make_shared<LT>(*((float *)&tmp));
 			} else if constexpr (std::is_same_v<T, double>) {
 				uint64_t tmp = (*(uint64_t *)&x->data) & (*(uint64_t *)&std::static_pointer_cast<LT>(y)->data);
-				return std::make_shared<LT>(x->getLocation(), *((double *)&tmp));
+				return std::make_shared<LT>(*((double *)&tmp));
 			} else
 				return {};
 		case BinaryOp::Or:
@@ -137,18 +124,16 @@ static std::shared_ptr<ExprNode> _evalConstBinaryOpExpr(
 				return {};
 			if constexpr (std::is_same_v<T, bool>)
 				return std::make_shared<BoolLiteralExprNode>(
-					x->getLocation(),
 					x->data || std::static_pointer_cast<LT>(y)->data);
 			else if constexpr (std::is_integral_v<T>)
 				return std::make_shared<LT>(
-					x->getLocation(),
 					x->data | std::static_pointer_cast<LT>(y)->data);
 			else if constexpr (std::is_same_v<T, float>) {
 				uint32_t tmp = (*(uint32_t *)&x->data) | (*(uint32_t *)&std::static_pointer_cast<LT>(y)->data);
-				return std::make_shared<LT>(x->getLocation(), *((float *)&tmp));
+				return std::make_shared<LT>(*((float *)&tmp));
 			} else if constexpr (std::is_same_v<T, double>) {
 				uint64_t tmp = (*(uint64_t *)&x->data) | (*(uint64_t *)&std::static_pointer_cast<LT>(y)->data);
-				return std::make_shared<LT>(x->getLocation(), *((double *)&tmp));
+				return std::make_shared<LT>(*((double *)&tmp));
 			} else
 				return {};
 		case BinaryOp::Xor:
@@ -156,18 +141,16 @@ static std::shared_ptr<ExprNode> _evalConstBinaryOpExpr(
 				return {};
 			if constexpr (std::is_same_v<T, bool>)
 				return std::make_shared<I32LiteralExprNode>(
-					x->getLocation(),
 					x->data ^ std::static_pointer_cast<LT>(y)->data);
 			else if constexpr (std::is_integral_v<T>)
 				return std::make_shared<LT>(
-					x->getLocation(),
 					x->data ^ std::static_pointer_cast<LT>(y)->data);
 			else if constexpr (std::is_same_v<T, float>) {
 				uint32_t tmp = (*(uint32_t *)&x->data) ^ (*(uint32_t *)&std::static_pointer_cast<LT>(y)->data);
-				return std::make_shared<LT>(x->getLocation(), *((float *)&tmp));
+				return std::make_shared<LT>(*((float *)&tmp));
 			} else if constexpr (std::is_same_v<T, double>) {
 				uint64_t tmp = (*(uint64_t *)&x->data) ^ (*(uint64_t *)&std::static_pointer_cast<LT>(y)->data);
-				return std::make_shared<LT>(x->getLocation(), *((double *)&tmp));
+				return std::make_shared<LT>(*((double *)&tmp));
 			} else
 				return {};
 		case BinaryOp::LAnd:
@@ -175,7 +158,6 @@ static std::shared_ptr<ExprNode> _evalConstBinaryOpExpr(
 				return {};
 			if constexpr (std::is_same_v<T, bool>) {
 				return std::make_shared<BoolLiteralExprNode>(
-					x->getLocation(),
 					x->data && std::static_pointer_cast<LT>(y)->data);
 			} else
 				return {};
@@ -184,7 +166,6 @@ static std::shared_ptr<ExprNode> _evalConstBinaryOpExpr(
 				return {};
 			if constexpr (std::is_same_v<T, bool>) {
 				return std::make_shared<BoolLiteralExprNode>(
-					x->getLocation(),
 					x->data || std::static_pointer_cast<LT>(y)->data);
 			} else
 				return {};
@@ -193,18 +174,16 @@ static std::shared_ptr<ExprNode> _evalConstBinaryOpExpr(
 				return {};
 			if constexpr (std::is_same_v<T, bool>)
 				return std::make_shared<I32LiteralExprNode>(
-					x->getLocation(),
 					(int)x->data << std::static_pointer_cast<I32LiteralExprNode>(y)->data);
 			else if constexpr (std::is_integral_v<T>)
 				return std::make_shared<LT>(
-					x->getLocation(),
 					x->data << std::static_pointer_cast<I32LiteralExprNode>(y)->data);
 			else if constexpr (std::is_same_v<T, float>) {
 				uint32_t tmp = (*(uint32_t *)&x->data) << (std::static_pointer_cast<I32LiteralExprNode>(y)->data);
-				return std::make_shared<LT>(x->getLocation(), *((float *)&tmp));
+				return std::make_shared<LT>(*((float *)&tmp));
 			} else if constexpr (std::is_same_v<T, double>) {
 				uint64_t tmp = (*(uint64_t *)&x->data) << (std::static_pointer_cast<I32LiteralExprNode>(y)->data);
-				return std::make_shared<LT>(x->getLocation(), *((double *)&tmp));
+				return std::make_shared<LT>(*((double *)&tmp));
 			} else
 				return {};
 		case BinaryOp::Rsh:
@@ -212,38 +191,33 @@ static std::shared_ptr<ExprNode> _evalConstBinaryOpExpr(
 				return {};
 			if constexpr (std::is_same_v<T, bool>)
 				return std::make_shared<I32LiteralExprNode>(
-					x->getLocation(),
 					(int)x->data >> std::static_pointer_cast<I32LiteralExprNode>(y)->data);
 			else if constexpr (std::is_integral_v<T>)
 				return std::make_shared<LT>(
-					x->getLocation(),
 					x->data >> std::static_pointer_cast<I32LiteralExprNode>(y)->data);
 			else if constexpr (std::is_same_v<T, float>) {
 				uint32_t tmp = (*(uint32_t *)&x->data) >> (std::static_pointer_cast<I32LiteralExprNode>(y)->data);
-				return std::make_shared<LT>(x->getLocation(), *((float *)&tmp));
+				return std::make_shared<LT>(*((float *)&tmp));
 			} else if constexpr (std::is_same_v<T, double>) {
 				uint64_t tmp = (*(uint64_t *)&x->data) >> (std::static_pointer_cast<I32LiteralExprNode>(y)->data);
-				return std::make_shared<LT>(x->getLocation(), *((double *)&tmp));
+				return std::make_shared<LT>(*((double *)&tmp));
 			} else
 				return {};
 		case BinaryOp::Eq:
 			if (y->getExprType() != x->getExprType())
 				return {};
 			return std::make_shared<BoolLiteralExprNode>(
-				x->getLocation(),
 				x->data == std::static_pointer_cast<LT>(y)->data);
 		case BinaryOp::Neq:
 			if (y->getExprType() != x->getExprType())
 				return {};
 			return std::make_shared<BoolLiteralExprNode>(
-				x->getLocation(),
 				x->data != std::static_pointer_cast<LT>(y)->data);
 		case BinaryOp::Lt:
 			if (y->getExprType() != x->getExprType())
 				return {};
 			if constexpr (std::is_arithmetic_v<T>)
 				return std::make_shared<BoolLiteralExprNode>(
-					x->getLocation(),
 					x->data < std::static_pointer_cast<LT>(y)->data);
 			else
 				return {};
@@ -252,7 +226,6 @@ static std::shared_ptr<ExprNode> _evalConstBinaryOpExpr(
 				return {};
 			if constexpr (std::is_arithmetic_v<T>)
 				return std::make_shared<BoolLiteralExprNode>(
-					x->getLocation(),
 					x->data > std::static_pointer_cast<LT>(y)->data);
 			else
 				return {};
@@ -261,7 +234,6 @@ static std::shared_ptr<ExprNode> _evalConstBinaryOpExpr(
 				return {};
 			if constexpr (std::is_arithmetic_v<T>)
 				return std::make_shared<BoolLiteralExprNode>(
-					x->getLocation(),
 					x->data <= std::static_pointer_cast<LT>(y)->data);
 			else
 				return {};
@@ -270,7 +242,6 @@ static std::shared_ptr<ExprNode> _evalConstBinaryOpExpr(
 				return {};
 			if constexpr (std::is_arithmetic_v<T>)
 				return std::make_shared<BoolLiteralExprNode>(
-					x->getLocation(),
 					x->data >= std::static_pointer_cast<LT>(y)->data);
 			else
 				return {};
@@ -282,7 +253,6 @@ static std::shared_ptr<ExprNode> _evalConstBinaryOpExpr(
 
 			if constexpr (std::is_same_v<T, std::string>) {
 				return std::make_shared<I32LiteralExprNode>(
-					x->getLocation(),
 					x->data[std::static_pointer_cast<I32LiteralExprNode>(y)->data]);
 			} else
 				return {};
@@ -395,7 +365,7 @@ std::shared_ptr<ExprNode> Compiler::evalConstExpr(std::shared_ptr<ExprNode> expr
 		case ExprType::Array: {
 			auto e = std::static_pointer_cast<ArrayExprNode>(expr);
 
-			auto resultExpr = std::make_shared<ArrayExprNode>(e->getLocation());
+			auto resultExpr = std::make_shared<ArrayExprNode>();
 
 			if ((!curMajorContext.curMinorContext.expectedType) ||
 				curMajorContext.curMinorContext.expectedType->getTypeId() != TypeId::Array)
@@ -409,7 +379,6 @@ std::shared_ptr<ExprNode> Compiler::evalConstExpr(std::shared_ptr<ExprNode> expr
 				if (!isSameType(t, et->elementType)) {
 					if (isTypeNamesConvertible(t, et->elementType)) {
 						auto element = evalConstExpr(std::make_shared<CastExprNode>(
-							i->getLocation(),
 							et,
 							i));
 

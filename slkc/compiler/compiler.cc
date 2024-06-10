@@ -56,10 +56,10 @@ std::shared_ptr<Scope> slake::slkc::Compiler::completeModuleNamespaces(const IdR
 						"Cannot import a non-module member" });
 			}
 		} else {
-			auto newMod = std::make_shared<ModuleNode>(this, Location());
+			auto newMod = std::make_shared<ModuleNode>(this);
 			(scope->members[name] = newMod)->bind((MemberNode *)scope->owner);
 			newMod->scope->parent = scope.get();
-			newMod->moduleName = { IdRefEntry(Location(), SIZE_MAX, name, {}) };
+			newMod->moduleName = { IdRefEntry(SourceLocation{}, SIZE_MAX, name, {}) };
 			scope = newMod->scope;
 		}
 	}
@@ -100,7 +100,7 @@ void Compiler::compile(std::istream &is, std::ostream &os, std::shared_ptr<Modul
 	if (targetModule)
 		_targetModule = targetModule;
 	else
-		_targetModule = std::make_shared<ModuleNode>(this, Location());
+		_targetModule = std::make_shared<ModuleNode>(this);
 
 	//
 	// Clear the previous generic cache.
@@ -128,7 +128,7 @@ void Compiler::compile(std::istream &is, std::ostream &os, std::shared_ptr<Modul
 	} catch (LexicalError e) {
 		throw FatalCompilationError(
 			Message(
-				e.location,
+				SourceLocation{ e.position, e.position },
 				MessageType::Error,
 				"Lexical error"));
 	}
@@ -271,11 +271,11 @@ void Compiler::compile(std::istream &is, std::ostream &os, std::shared_ptr<Modul
 		if (_targetModule->scope->members.count(i.first))
 			throw FatalCompilationError(
 				Message(
-					lexer->tokens[i.second.idxNameToken]->beginLocation,
+					lexer->tokens[i.second.idxNameToken]->location,
 					MessageType::Error,
 					"The import item shadows an existing member"));
 
-		_targetModule->scope->members[i.first] = std::make_shared<AliasNode>(lexer->tokens[i.second.idxNameToken]->beginLocation, this, i.first, i.second.ref);
+		_targetModule->scope->members[i.first] = std::make_shared<AliasNode>(this, i.first, i.second.ref);
 	}
 
 	for (auto &i : _targetModule->unnamedImports) {
@@ -632,7 +632,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 			if (curMajorContext.genericParamIndices.count(i->name))
 				throw FatalCompilationError(
 					Message(
-						i->getLocation(),
+						i->sourceLocation,
 						MessageType::Error,
 						"This generic parameter shadows another generic parameter"));
 			curMajorContext.genericParams.push_back(i);
@@ -650,11 +650,10 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 		pushMajorContext();
 
 		{
-			auto thisType = std::make_shared<CustomTypeNameNode>(i.second->getLocation(), getFullName(i.second.get()), this, i.second->scope.get());
+			auto thisType = std::make_shared<CustomTypeNameNode>(getFullName(i.second.get()), this, i.second->scope.get());
 			for (auto &j : i.second->genericParams) {
 				thisType->ref.back().genericArgs.push_back(std::make_shared<CustomTypeNameNode>(
-					i.second->getLocation(),
-					IdRef{ { j->getLocation(), SIZE_MAX, j->name, std::deque<std::shared_ptr<TypeNameNode>>{} } },
+					IdRef{ { j->sourceLocation, SIZE_MAX, j->name, std::deque<std::shared_ptr<TypeNameNode>>{} } },
 					this,
 					i.second->scope.get()));
 			}
@@ -752,7 +751,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 					if (j->scope->members.count(i.first))
 						throw FatalCompilationError(
 							Message(
-								i.second->getLocation(),
+								i.second->sourceLocation,
 								MessageType::Error,
 								"The member shadows another members from a parent"));
 				};
@@ -776,13 +775,13 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 		_write(os, vad);
 		_write(os, i.first.data(), i.first.length());
 
-		auto varType = i.second->type ? i.second->type : std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX);
+		auto varType = i.second->type ? i.second->type : std::make_shared<AnyTypeNameNode>(SIZE_MAX);
 		compileTypeName(os, varType);
 
 		if (isLValueType(varType))
 			throw FatalCompilationError(
 				Message(
-					varType->getLocation(),
+					varType->sourceLocation,
 					MessageType::Error,
 					"Cannot use reference types for member variables"));
 
@@ -792,7 +791,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 			else
 				throw FatalCompilationError(
 					Message(
-						i.second->initValue->getLocation(),
+						i.second->initValue->sourceLocation,
 						MessageType::Error,
 						"Expecting a compiling-time expression"));
 		}
@@ -816,7 +815,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				if (i.first == "new") {
 					throw FatalCompilationError(
 						Message(
-							lexer->tokens[j->idxVirtualModifierToken]->beginLocation,
+							lexer->tokens[j->idxVirtualModifierToken]->location,
 							MessageType::Error,
 							"Constructor cannot be declared as virtual"));
 				}
@@ -829,7 +828,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 					default:
 						throw FatalCompilationError(
 							Message(
-								lexer->tokens[j->idxVirtualModifierToken]->beginLocation,
+								lexer->tokens[j->idxVirtualModifierToken]->location,
 								MessageType::Error,
 								"Modifier is invalid in this context"));
 				}
@@ -851,17 +850,18 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 
 					throw FatalCompilationError(
 						Message(
-							j->loc,
+							j->sourceLocation,
 							MessageType::Error,
 							"Duplicated function overloading"));
 				}
 			}
 
 		notDuplicated:
-			auto compiledFn = std::make_shared<CompiledFnNode>(j->loc, i.first);
+			auto compiledFn = std::make_shared<CompiledFnNode>(i.first);
+			compiledFn->sourceLocation = j->sourceLocation;
 			compiledFn->returnType = j->returnType
 										 ? j->returnType
-										 : std::static_pointer_cast<TypeNameNode>(std::make_shared<VoidTypeNameNode>(Location(), SIZE_MAX));
+										 : std::static_pointer_cast<TypeNameNode>(std::make_shared<VoidTypeNameNode>(SIZE_MAX));
 			compiledFn->params = j->params;
 			compiledFn->paramIndices = j->paramIndices;
 			compiledFn->genericParams = j->genericParams;
@@ -918,7 +918,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				compileGenericParam(os, compiledFn->genericParams[j]);
 
 			for (size_t j = 0; j < compiledFn->params.size() - hasVarArg; ++j)
-				compileTypeName(os, compiledFn->params[j]->type ? compiledFn->params[j]->type : std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX));
+				compileTypeName(os, compiledFn->params[j]->type ? compiledFn->params[j]->type : std::make_shared<AnyTypeNameNode>(SIZE_MAX));
 
 			for (auto &j : compiledFn->body) {
 				slxfmt::InsHeader ih;
@@ -927,7 +927,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				if (j.operands.size() > 3)
 					throw FatalCompilationError(
 						Message(
-							compiledFn->getLocation(),
+							compiledFn->sourceLocation,
 							MessageType::Error,
 							"Too many operands"));
 				ih.nOperands = (uint8_t)j.operands.size();
@@ -941,10 +941,10 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 							if (!compiledFn->labels.count(label))
 								throw FatalCompilationError(
 									Message(
-										compiledFn->getLocation(),
+										compiledFn->sourceLocation,
 										MessageType::Error,
 										"Undefined label: " + std::static_pointer_cast<LabelRefNode>(k)->label));
-							k = std::make_shared<U32LiteralExprNode>(compiledFn->getLocation(), compiledFn->labels.at(label));
+							k = std::make_shared<U32LiteralExprNode>(compiledFn->labels.at(label));
 						}
 					}
 					compileValue(os, k);

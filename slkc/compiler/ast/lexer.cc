@@ -173,8 +173,6 @@ const char *slake::slkc::getTokenName(slake::slkc::TokenId tokenId) {
 			return "this";
 		case TokenId::ThrowKeyword:
 			return "throw";
-		case TokenId::TraitKeyword:
-			return "trait";
 		case TokenId::TypeofKeyword:
 			return "typeof";
 		case TokenId::InterfaceKeyword:
@@ -307,9 +305,9 @@ Token *Lexer::peekToken(bool keepNewLine, bool keepWhitespace, bool keepComment)
 	return _endToken.get();
 }
 
-size_t Lexer::getTokenByLocation(Location location) {
+size_t Lexer::getTokenByPosition(const SourcePosition &position) {
 	for (size_t i = 0; i < tokens.size(); ++i) {
-		if (tokens[i]->beginLocation <= location && tokens[i]->endLocation >= location)
+		if (tokens[i]->location.beginPosition <= position && tokens[i]->location.endPosition >= position)
 			return i;
 	}
 

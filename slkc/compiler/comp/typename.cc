@@ -79,7 +79,6 @@ bool Compiler::isCompoundTypeName(std::shared_ptr<TypeNameNode> node) {
 				case NodeType::Alias:
 					return isCompoundTypeName(
 						std::make_shared<CustomTypeNameNode>(
-							Location(t->getLocation()),
 							t->ref,
 							this,
 							nullptr,
@@ -417,7 +416,7 @@ std::shared_ptr<AstNode> Compiler::_resolveCustomTypeName(CustomTypeNameNode *ty
 			if (resolvedPartsOut.size() > 1)
 				throw FatalCompilationError(
 					Message(
-						Location(typeName->getLocation()),
+						typeName->sourceLocation,
 						MessageType::Error,
 						"Expecting a static identifier"));
 
@@ -434,7 +433,7 @@ std::shared_ptr<AstNode> Compiler::_resolveCustomTypeName(CustomTypeNameNode *ty
 			if (resolvedPartsOut.size() > 1)
 				throw FatalCompilationError(
 					Message(
-						Location(typeName->getLocation()),
+						typeName->sourceLocation,
 						MessageType::Error,
 						"Expecting a static identifier"));
 
@@ -446,7 +445,7 @@ std::shared_ptr<AstNode> Compiler::_resolveCustomTypeName(CustomTypeNameNode *ty
 	// Cannot resolve the type name - generate an error.
 	throw FatalCompilationError(
 		Message(
-			Location(typeName->getLocation()),
+			typeName->sourceLocation,
 			MessageType::Error,
 			"Type `" + std::to_string(typeName->ref, this) + "' was not found"));
 }

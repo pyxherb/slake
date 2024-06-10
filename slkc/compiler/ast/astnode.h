@@ -37,14 +37,13 @@ namespace slake {
 			Bad
 		};
 
-		struct Location {
-			size_t line;
-			size_t column;
+		struct SourcePosition {
+			size_t line, column;
 
-			inline Location() : line(0), column(0) {}
-			inline Location(size_t line, size_t column) : line(line), column(column) {}
+			inline SourcePosition() : line(SIZE_MAX), column(SIZE_MAX) {}
+			inline SourcePosition(size_t line, size_t column) : line(line), column(column) {}
 
-			inline bool operator<(const Location &loc) const {
+			inline bool operator<(const SourcePosition &loc) const {
 				if (line < loc.line)
 					return true;
 				if (line > loc.line)
@@ -52,25 +51,29 @@ namespace slake {
 				return column < loc.column;
 			}
 
-			inline bool operator>(const Location &loc) const {
-				if(line > loc.line)
+			inline bool operator>(const SourcePosition &loc) const {
+				if (line > loc.line)
 					return true;
-				if(line < loc.line)
+				if (line < loc.line)
 					return false;
 				return column > loc.column;
 			}
 
-			inline bool operator==(const Location &loc) const {
+			inline bool operator==(const SourcePosition &loc) const {
 				return (line == loc.line) && (column == loc.column);
 			}
 
-			inline bool operator>=(const Location &loc) const {
+			inline bool operator>=(const SourcePosition &loc) const {
 				return ((*this) == loc) || ((*this) > loc);
 			}
 
-			inline bool operator<=(const Location &loc) const {
+			inline bool operator<=(const SourcePosition &loc) const {
 				return ((*this) == loc) || ((*this) < loc);
 			}
+		};
+
+		struct SourceLocation {
+			SourcePosition beginPosition, endPosition;
 		};
 
 		class Compiler;
@@ -80,9 +83,14 @@ namespace slake {
 			virtual std::shared_ptr<AstNode> doDuplicate();
 
 		public:
+			SourceLocation sourceLocation;
+
+			AstNode() = default;
+			inline AstNode(const AstNode& other) {
+				sourceLocation = other.sourceLocation;
+			}
 			virtual ~AstNode() = default;
 
-			virtual Location getLocation() const = 0;
 			virtual NodeType getNodeType() const = 0;
 
 			/// @brief Duplicate the member.
@@ -98,8 +106,11 @@ namespace slake {
 }
 
 namespace std {
-	inline std::string to_string(slake::slkc::Location loc) {
-		return std::to_string(loc.line) + ", " + std::to_string(loc.column);
+	inline std::string to_string(slake::slkc::SourcePosition loc) {
+		return std::to_string(loc.line) + ":" + std::to_string(loc.column);
+	}
+	inline std::string to_string(slake::slkc::SourceLocation loc) {
+		return std::to_string(loc.beginPosition) + ", " + std::to_string(loc.endPosition);
 	}
 }
 

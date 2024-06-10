@@ -9,13 +9,13 @@ namespace slake {
 		class TypeNameNode;
 
 		struct IdRefEntry {
-			Location loc;
+			SourceLocation loc;
 			size_t idxAccessOpToken = SIZE_MAX;	 // Index of preceding access operator token
 			size_t idxToken;
 			std::string name;
 			std::deque<std::shared_ptr<TypeNameNode>> genericArgs;
 
-			inline IdRefEntry(Location loc, size_t idxToken, std::string name, std::deque<std::shared_ptr<TypeNameNode>> genericArgs = {})
+			inline IdRefEntry(SourceLocation loc, size_t idxToken, std::string name, std::deque<std::shared_ptr<TypeNameNode>> genericArgs = {})
 				: loc(loc), idxToken(idxToken), name(name), genericArgs(genericArgs) {}
 		};
 
@@ -32,8 +32,6 @@ namespace slake {
 			inline ThisRefNode() = default;
 			virtual ~ThisRefNode() = default;
 
-			virtual inline Location getLocation() const override { throw std::logic_error("Should not get location of a this reference"); }
-
 			virtual inline NodeType getNodeType() const override { return NodeType::ThisRef; }
 		};
 
@@ -41,8 +39,6 @@ namespace slake {
 		public:
 			inline BaseRefNode() = default;
 			virtual ~BaseRefNode() = default;
-
-			virtual inline Location getLocation() const override { throw std::logic_error("Should not get location of a this reference"); }
 
 			virtual inline NodeType getNodeType() const override { return NodeType::BaseRef; }
 		};

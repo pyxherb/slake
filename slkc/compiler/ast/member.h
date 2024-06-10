@@ -28,7 +28,7 @@ namespace slake {
 			bool isCompiling = false;
 
 			MemberNode() = default;
-			inline MemberNode(const MemberNode &other) {
+			inline MemberNode(const MemberNode &other) : AstNode(other) {
 				access = other.access;
 				parent = other.parent;
 
@@ -87,8 +87,7 @@ namespace slake {
 				for (auto &i : genericParams) {
 					placeholderGenericArgs.push_back(
 						std::make_shared<CustomTypeNameNode>(
-							Location(),
-							IdRef{ IdRefEntry{ Location(), SIZE_MAX, i->name, {} } },
+							IdRef{ IdRefEntry{ SourceLocation(), SIZE_MAX, i->name, {} } },
 							compiler,
 							scope.get()));
 				}

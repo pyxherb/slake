@@ -66,7 +66,7 @@ void Compiler::walkNodeForGenericInstantiation(
 					for (auto &j : i->params) {
 						j->originalType = j->type
 											  ? j->type->duplicate<TypeNameNode>()
-											  : std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX);
+											  : std::make_shared<AnyTypeNameNode>(SIZE_MAX);
 						walkTypeNameNodeForGenericInstantiation(j->type, instantiationContext);
 					}
 				}
@@ -178,13 +178,13 @@ void Compiler::mapGenericParams(std::shared_ptr<MemberNode> node, GenericNodeIns
 	if (instantiationContext.genericArgs->size() != node->genericParams.size()) {
 		messages.push_back(
 			Message(
-				instantiationContext.genericArgs->at(0)->getLocation(),
+				instantiationContext.genericArgs->at(0)->sourceLocation,
 				MessageType::Error,
 				"Mismatched generic argument number"));
 
 		if (instantiationContext.genericArgs->size() < node->genericParams.size()) {
 			for (size_t i = instantiationContext.genericArgs->size(); i < node->genericParams.size(); ++i) {
-				instantiationContext.mappedGenericArgs[node->genericParams[i]->name] = std::make_shared<BadTypeNameNode>(Location(), SIZE_MAX, SIZE_MAX);
+				instantiationContext.mappedGenericArgs[node->genericParams[i]->name] = std::make_shared<BadTypeNameNode>(SIZE_MAX, SIZE_MAX);
 			}
 		}
 	}

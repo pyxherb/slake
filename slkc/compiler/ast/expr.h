@@ -108,45 +108,33 @@ namespace slake {
 			inline HeadedIdRefExprNode(std::shared_ptr<ExprNode> head, IdRef ref) : head(head), ref(ref) {}
 			virtual ~HeadedIdRefExprNode() = default;
 
-			virtual inline Location getLocation() const override { return head->getLocation(); }
-
 			virtual ExprType getExprType() const override { return ExprType::HeadedRef; }
 		};
 
 		class UnaryOpExprNode : public ExprNode {
-		private:
-			Location _loc;
-
 		public:
 			UnaryOp op;
 			std::shared_ptr<ExprNode> x;
 
 			size_t idxOpToken = SIZE_MAX;
 
-			inline UnaryOpExprNode(Location loc, UnaryOp op, std::shared_ptr<ExprNode> x)
-				: _loc(loc), op(op), x(x) {}
+			inline UnaryOpExprNode(UnaryOp op, std::shared_ptr<ExprNode> x)
+				: op(op), x(x) {}
 			virtual ~UnaryOpExprNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual ExprType getExprType() const override { return ExprType::Unary; }
 		};
 
 		class BinaryOpExprNode : public ExprNode {
-		private:
-			Location _loc;
-
 		public:
 			BinaryOp op;
 			std::shared_ptr<ExprNode> lhs, rhs;
 
 			size_t idxOpToken = SIZE_MAX, idxClosingToken = SIZE_MAX;
 
-			inline BinaryOpExprNode(Location loc, BinaryOp op, std::shared_ptr<ExprNode> lhs)
-				: _loc(loc), op(op), lhs(lhs) {}
+			inline BinaryOpExprNode(BinaryOp op, std::shared_ptr<ExprNode> lhs)
+				: op(op), lhs(lhs) {}
 			virtual ~BinaryOpExprNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual ExprType getExprType() const override { return ExprType::Binary; }
 		};
@@ -159,8 +147,6 @@ namespace slake {
 
 			inline TernaryOpExprNode(std::shared_ptr<ExprNode> condition) : condition(condition) {}
 			virtual ~TernaryOpExprNode() = default;
-
-			virtual inline Location getLocation() const override { return condition->getLocation(); }
 
 			virtual ExprType getExprType() const override { return ExprType::Ternary; }
 		};
@@ -176,22 +162,15 @@ namespace slake {
 				: condition(condition), cases(cases) {}
 			virtual ~MatchExprNode() = default;
 
-			virtual inline Location getLocation() const override { return condition->getLocation(); }
-
 			virtual ExprType getExprType() const override { return ExprType::Match; }
 		};
 
 		class BasicLiteralExprNode : public ExprNode {
-		private:
-			Location _loc;
-
 		public:
 			size_t idxToken = SIZE_MAX;
 
-			inline BasicLiteralExprNode(Location loc, size_t idxToken) : _loc(loc), idxToken(idxToken) {}
+			inline BasicLiteralExprNode(size_t idxToken) : idxToken(idxToken) {}
 			virtual ~BasicLiteralExprNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
 		};
 
 		template <typename T, ExprType xt>
@@ -199,7 +178,7 @@ namespace slake {
 		public:
 			T data;
 
-			inline LiteralExprNode(Location loc, T data, size_t idxToken = SIZE_MAX) : BasicLiteralExprNode(loc, idxToken), data(data) {}
+			inline LiteralExprNode(T data, size_t idxToken = SIZE_MAX) : BasicLiteralExprNode(idxToken), data(data) {}
 			virtual ~LiteralExprNode() = default;
 
 			virtual ExprType getExprType() const override { return xt; }
@@ -250,7 +229,7 @@ namespace slake {
 
 		class NullLiteralExprNode : public BasicLiteralExprNode {
 		public:
-			inline NullLiteralExprNode(Location loc, size_t idxToken = SIZE_MAX) : BasicLiteralExprNode(loc, idxToken) {}
+			inline NullLiteralExprNode(size_t idxToken = SIZE_MAX) : BasicLiteralExprNode(idxToken) {}
 			virtual ~NullLiteralExprNode() = default;
 
 			virtual ExprType getExprType() const override { return ExprType::Null; }
@@ -266,15 +245,10 @@ namespace slake {
 			}
 			virtual ~IdRefExprNode() = default;
 
-			virtual inline Location getLocation() const override { return ref[0].loc; }
-
 			virtual ExprType getExprType() const override { return ExprType::IdRef; }
 		};
 
 		class ArrayExprNode : public ExprNode {
-		private:
-			Location _loc;
-
 		public:
 			size_t idxLBraceToken = SIZE_MAX, idxRBraceToken = SIZE_MAX;
 			std::deque<std::shared_ptr<ExprNode>> elements;
@@ -283,10 +257,8 @@ namespace slake {
 			// Evaluated element type, for value compilation.
 			std::shared_ptr<TypeNameNode> evaluatedElementType;
 
-			inline ArrayExprNode(Location loc) : _loc(loc) {}
+			inline ArrayExprNode() {}
 			virtual ~ArrayExprNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual ExprType getExprType() const override { return ExprType::Array; }
 		};
@@ -306,30 +278,20 @@ namespace slake {
 			CallExprNode() = default;
 			virtual ~CallExprNode() = default;
 
-			virtual inline Location getLocation() const override { return target->getLocation(); }
-
 			virtual ExprType getExprType() const override { return ExprType::Call; }
 		};
 
 		class AwaitExprNode : public ExprNode {
-		private:
-			Location _loc;
-
 		public:
 			std::shared_ptr<ExprNode> target;
 
-			inline AwaitExprNode(Location loc, std::shared_ptr<ExprNode> target) : _loc(loc), target(target) {}
+			inline AwaitExprNode(std::shared_ptr<ExprNode> target) : target(target) {}
 			virtual ~AwaitExprNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual ExprType getExprType() const override { return ExprType::Await; }
 		};
 
 		class NewExprNode : public ExprNode {
-		private:
-			Location _loc;
-
 		public:
 			std::shared_ptr<TypeNameNode> type;
 			std::deque<std::shared_ptr<ExprNode>> args;
@@ -339,79 +301,55 @@ namespace slake {
 				   idxRParentheseToken = SIZE_MAX;
 			std::deque<size_t> idxCommaTokens;
 
-			inline NewExprNode(Location loc)
-				: _loc(loc) {}
+			inline NewExprNode() {}
 			virtual ~NewExprNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual ExprType getExprType() const override { return ExprType::New; }
 		};
 
 		class TypeofExprNode : public ExprNode {
-		private:
-			Location _loc;
-
 		public:
 			std::shared_ptr<ExprNode> target;
 
-			inline TypeofExprNode(Location loc, std::shared_ptr<ExprNode> target)
-				: _loc(loc), target(target) {}
+			inline TypeofExprNode(std::shared_ptr<ExprNode> target)
+				: target(target) {}
 			virtual ~TypeofExprNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual ExprType getExprType() const override { return ExprType::Typeof; }
 		};
 
 		class CastExprNode : public ExprNode {
-		private:
-			Location _loc;
-
 		public:
 			std::shared_ptr<TypeNameNode> targetType;
 			std::shared_ptr<ExprNode> target;
 
 			inline CastExprNode(
-				Location loc,
 				std::shared_ptr<TypeNameNode> targetType,
 				std::shared_ptr<ExprNode> target)
-				: _loc(loc), targetType(targetType), target(target) {}
+				: targetType(targetType), target(target) {}
 			virtual ~CastExprNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual ExprType getExprType() const override { return ExprType::Cast; }
 		};
 
 		class WrapperExprNode : public ExprNode {
-		private:
-			Location _loc;
-
 		public:
 			std::shared_ptr<ExprNode> expr;
 
-			inline WrapperExprNode(Location loc, std::shared_ptr<ExprNode> expr)
-				: _loc(loc), expr(expr) {}
+			inline WrapperExprNode(std::shared_ptr<ExprNode> expr)
+				: expr(expr) {}
 			virtual ~WrapperExprNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual ExprType getExprType() const override { return ExprType::Wrapper; }
 		};
 
 		class BadExprNode : public ExprNode {
-		private:
-			Location _loc;
-
 		public:
 			std::shared_ptr<ExprNode> expr;
 
-			inline BadExprNode(Location loc, std::shared_ptr<ExprNode> expr)
-				: _loc(loc), expr(expr) {}
+			inline BadExprNode(std::shared_ptr<ExprNode> expr)
+				: expr(expr) {}
 			virtual ~BadExprNode() = default;
-
-			virtual inline Location getLocation() const override { return _loc; }
 
 			virtual ExprType getExprType() const override { return ExprType::Bad; }
 		};

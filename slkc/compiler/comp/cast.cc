@@ -9,57 +9,57 @@ static std::shared_ptr<ExprNode> _castLiteralExpr(
 	switch (targetType) {
 		case TypeId::I8:
 			if constexpr (std::is_convertible_v<T, int8_t>) {
-				return std::make_shared<I32LiteralExprNode>(expr->getLocation(), (int8_t)expr->data);
+				return std::make_shared<I32LiteralExprNode>((int8_t)expr->data);
 			} else
 				return {};
 		case TypeId::I16:
 			if constexpr (std::is_convertible_v<T, int16_t>) {
-				return std::make_shared<I32LiteralExprNode>(expr->getLocation(), (int16_t)expr->data);
+				return std::make_shared<I32LiteralExprNode>((int16_t)expr->data);
 			} else
 				return {};
 		case TypeId::I32:
 			if constexpr (std::is_convertible_v<T, int32_t>) {
-				return std::make_shared<I32LiteralExprNode>(expr->getLocation(), (int32_t)expr->data);
+				return std::make_shared<I32LiteralExprNode>((int32_t)expr->data);
 			} else
 				return {};
 		case TypeId::I64:
 			if constexpr (std::is_convertible_v<T, int64_t>) {
-				return std::make_shared<I64LiteralExprNode>(expr->getLocation(), (int64_t)expr->data);
+				return std::make_shared<I64LiteralExprNode>((int64_t)expr->data);
 			} else
 				return {};
 		case TypeId::U8:
 			if constexpr (std::is_convertible_v<T, uint8_t>) {
-				return std::make_shared<U8LiteralExprNode>(expr->getLocation(), (int8_t)expr->data);
+				return std::make_shared<U8LiteralExprNode>((int8_t)expr->data);
 			} else
 				return {};
 		case TypeId::U16:
 			if constexpr (std::is_convertible_v<T, uint16_t>) {
-				return std::make_shared<U16LiteralExprNode>(expr->getLocation(), (int16_t)expr->data);
+				return std::make_shared<U16LiteralExprNode>((int16_t)expr->data);
 			} else
 				return {};
 		case TypeId::U32:
 			if constexpr (std::is_convertible_v<T, uint32_t>) {
-				return std::make_shared<U32LiteralExprNode>(expr->getLocation(), (int32_t)expr->data);
+				return std::make_shared<U32LiteralExprNode>((int32_t)expr->data);
 			} else
 				return {};
 		case TypeId::U64:
 			if constexpr (std::is_convertible_v<T, uint64_t>) {
-				return std::make_shared<U64LiteralExprNode>(expr->getLocation(), (int64_t)expr->data);
+				return std::make_shared<U64LiteralExprNode>((int64_t)expr->data);
 			} else
 				return {};
 		case TypeId::F32:
 			if constexpr (std::is_convertible_v<T, float>) {
-				return std::make_shared<F32LiteralExprNode>(expr->getLocation(), (float)expr->data);
+				return std::make_shared<F32LiteralExprNode>((float)expr->data);
 			} else
 				return {};
 		case TypeId::F64:
 			if constexpr (std::is_convertible_v<T, double>) {
-				return std::make_shared<F64LiteralExprNode>(expr->getLocation(), (double)expr->data);
+				return std::make_shared<F64LiteralExprNode>((double)expr->data);
 			} else
 				return {};
 		case TypeId::Bool:
 			if constexpr (std::is_convertible_v<T, bool>) {
-				return std::make_shared<BoolLiteralExprNode>(expr->getLocation(), (bool)expr->data);
+				return std::make_shared<BoolLiteralExprNode>((bool)expr->data);
 			} else
 				return {};
 	}

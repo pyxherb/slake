@@ -109,7 +109,6 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 				<InitialCondition>"switch"		{ token->tokenId = TokenId::SwitchKeyword; break; }
 				<InitialCondition>"this"		{ token->tokenId = TokenId::ThisKeyword; break; }
 				<InitialCondition>"throw"		{ token->tokenId = TokenId::ThrowKeyword; break; }
-				<InitialCondition>"trait"		{ token->tokenId = TokenId::TraitKeyword; break; }
 				<InitialCondition>"typeof"		{ token->tokenId = TokenId::TypeofKeyword; break; }
 				<InitialCondition>"interface"	{ token->tokenId = TokenId::InterfaceKeyword; break; }
 				<InitialCondition>"true"		{ token->tokenId = TokenId::TrueKeyword; break; }
@@ -206,7 +205,7 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 						pos = 0;
 					pos = index - pos;
 
-					throw LexicalError("Invalid token", { (size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'), pos });
+					throw LexicalError("Invalid token", SourcePosition { (size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'), pos });
 				}
 
 				<StringCondition>"\""		{
@@ -228,7 +227,7 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 						pos = 0;
 					pos = index - pos;
 
-					throw LexicalError("Unexpected end of line", { (size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'), pos });
+					throw LexicalError("Unexpected end of line", SourcePosition { (size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'), pos });
 				}
 				<StringCondition>"\000"	{
 					size_t beginIndex = prevYYCURSOR - src.data(), endIndex = YYCURSOR - src.data();
@@ -240,7 +239,7 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 						pos = 0;
 					pos = index - pos;
 
-					throw LexicalError("Prematured end of file", { (size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'), pos });
+					throw LexicalError("Prematured end of file", SourcePosition { (size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'), pos });
 				}
 				<StringCondition>[^]		{ strLiteral += YYCURSOR[-1]; continue; }
 
@@ -307,13 +306,13 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 		size_t idxLastBeginNewline = src.find_last_of('\n', beginIndex),
 			   idxLastEndNewline = src.find_last_of('\n', endIndex);
 
-		token->beginLocation = {
+		token->location.beginPosition = {
 			(size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'),
 			(idxLastBeginNewline == std::string::npos
 					? beginIndex
 					: beginIndex - idxLastBeginNewline - 1)
 		};
-		token->endLocation = {
+		token->location.endPosition = {
 			(size_t)std::count(strToEnd.begin(), strToEnd.end(), '\n'),
 			(idxLastEndNewline == std::string::npos
 					? endIndex
@@ -330,8 +329,7 @@ end:
 	*(_endToken.get()) = {
 		tokens.size(),
 		TokenId::End,
-		token->endLocation,
-		token->endLocation,
+		SourceLocation { token->location.endPosition, token->location.endPosition },
 		""
 	};
 }

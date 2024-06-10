@@ -68,7 +68,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 	if (!lhsType)
 		throw FatalCompilationError(
 			Message(
-				e->x->getLocation(),
+				e->x->sourceLocation,
 				MessageType::Error,
 				"Error deducing type of the operand"));
 
@@ -101,7 +101,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 						std::make_shared<RegRefNode>(resultRegIndex),
 						std::make_shared<RegRefNode>(lhsRegIndex, true));
 
-					resultType = std::make_shared<BoolTypeNameNode>(e->getLocation(), SIZE_MAX);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				case UnaryOp::Not:
 				case UnaryOp::Neg:
@@ -123,7 +123,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 				default:
 					throw FatalCompilationError(
 						Message(
-							e->getLocation(),
+							e->sourceLocation,
 							MessageType::Error,
 							"No matching operator"));
 			}
@@ -144,12 +144,12 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 						std::make_shared<RegRefNode>(resultRegIndex),
 						std::make_shared<RegRefNode>(lhsRegIndex, true));
 
-					resultType = std::make_shared<BoolTypeNameNode>(e->getLocation(), SIZE_MAX);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				default:
 					throw FatalCompilationError(
 						Message(
-							e->getLocation(),
+							e->sourceLocation,
 							MessageType::Error,
 							"No matching operator"));
 			}
@@ -166,7 +166,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 					std::shared_ptr<FnOverloadingNode> overloading;
 
 					{
-						auto overloadings = argDependentLookup(e->getLocation(), operatorNode.get(), {}, {});
+						auto overloadings = argDependentLookup(operatorNode.get(), {}, {});
 						if (overloadings.size() != 1)
 							return false;
 						overloading = overloadings[0];
@@ -215,7 +215,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 					if (!determineOverloading(n, lhsRegIndex))
 						throw FatalCompilationError(
 							Message(
-								e->getLocation(),
+								e->sourceLocation,
 								MessageType::Error,
 								"No matching operator"));
 
@@ -233,7 +233,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 					if (curMember->getNodeType() != NodeType::Class)
 						throw FatalCompilationError(
 							Message(
-								n->baseType->getLocation(),
+								n->baseType->sourceLocation,
 								MessageType::Error,
 								"Must be a class"));
 
@@ -246,7 +246,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 						if (curMember->getNodeType() != NodeType::Interface)
 							throw FatalCompilationError(
 								Message(
-									n->baseType->getLocation(),
+									n->baseType->sourceLocation,
 									MessageType::Error,
 									"Must be an interface"));
 
@@ -260,7 +260,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 						if (curMember->getNodeType() != NodeType::Interface)
 							throw FatalCompilationError(
 								Message(
-									n->baseType->getLocation(),
+									n->baseType->sourceLocation,
 									MessageType::Error,
 									"Must be an interface"));
 
@@ -270,7 +270,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 
 					throw FatalCompilationError(
 						Message(
-							e->getLocation(),
+							e->sourceLocation,
 							MessageType::Error,
 							"No matching operator"));
 					break;
@@ -278,7 +278,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 				default:
 					throw FatalCompilationError(
 						Message(
-							e->getLocation(),
+							e->sourceLocation,
 							MessageType::Error,
 							"No matching operator"));
 			}
@@ -287,7 +287,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 		default:
 			throw FatalCompilationError(
 				Message(
-					e->getLocation(),
+					e->sourceLocation,
 					MessageType::Error,
 					"No matching operator"));
 	}
@@ -298,7 +298,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 		if (!isLValueType(resultType))
 			throw FatalCompilationError(
 				Message(
-					e->getLocation(),
+					e->sourceLocation,
 					MessageType::Error,
 					"Expecting a lvalue expression"));
 	} else {
@@ -331,13 +331,13 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 	if (!lhsType)
 		throw FatalCompilationError(
 			Message(
-				e->lhs->getLocation(),
+				e->lhs->sourceLocation,
 				MessageType::Error,
 				"Error deducing type of the left operand"));
 	if (!rhsType)
 		throw FatalCompilationError(
 			Message(
-				e->rhs->getLocation(),
+				e->rhs->sourceLocation,
 				MessageType::Error,
 				"Error deducing type of the right operand"));
 
@@ -354,19 +354,19 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 	auto compileShortCircuitOperator = [this, e, lhsType, rhsType, &opReg, resultRegIndex]() {
 		uint32_t lhsRegIndex = allocReg(1);
 
-		auto boolType = std::make_shared<BoolTypeNameNode>(e->lhs->getLocation(), SIZE_MAX);
+		auto boolType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 
 		// Compile the LHS.
 		// The LHS must be a boolean expression.
 		if (!isSameType(lhsType, boolType)) {
 			if (!isTypeNamesConvertible(lhsType, boolType))
 				throw FatalCompilationError(
-					{ e->lhs->getLocation(),
+					{ e->lhs->sourceLocation,
 						MessageType::Error,
 						"Incompatible operand types" });
 
 			compileExpr(
-				std::make_shared<CastExprNode>(e->lhs->getLocation(), boolType, e->lhs),
+				std::make_shared<CastExprNode>(boolType, e->lhs),
 				opReg.isLhsLvalue
 					? EvalPurpose::LValue
 					: EvalPurpose::RValue,
@@ -379,8 +379,8 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					: EvalPurpose::RValue,
 				std::make_shared<RegRefNode>(lhsRegIndex));
 
-		Location loc = e->getLocation();
-		std::string endLabel = "$short_circuit_" + std::to_string(loc.line) + "_" + std::to_string(loc.column) + "_end";
+		SourceLocation loc = e->sourceLocation;
+		std::string endLabel = "$short_circuit_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_end";
 
 		// Jump to the end if the left expression is enough to get the final result.
 		_insertIns(
@@ -395,12 +395,12 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 		if (!isSameType(rhsType, boolType)) {
 			if (!isTypeNamesConvertible(rhsType, boolType))
 				throw FatalCompilationError(
-					{ e->rhs->getLocation(),
+					{ e->rhs->sourceLocation,
 						MessageType::Error,
 						"Incompatible operand types" });
 
 			compileExpr(
-				std::make_shared<CastExprNode>(e->rhs->getLocation(), boolType, e->rhs),
+				std::make_shared<CastExprNode>(boolType, e->rhs),
 				opReg.isRhsLvalue
 					? EvalPurpose::LValue
 					: EvalPurpose::RValue,
@@ -478,7 +478,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 				case BinaryOp::LOr:
 					compileShortCircuitOperator();
 
-					resultType = std::make_shared<BoolTypeNameNode>(Location(), SIZE_MAX);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				case BinaryOp::Eq:
 				case BinaryOp::Neq:
@@ -499,12 +499,12 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					if (!isSameType(lhsType, rhsType)) {
 						if (!isTypeNamesConvertible(rhsType, lhsType))
 							throw FatalCompilationError(
-								{ e->rhs->getLocation(),
+								{ e->rhs->sourceLocation,
 									MessageType::Error,
 									"Incompatible operand types" });
 
 						compileExpr(
-							std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
+							std::make_shared<CastExprNode>(lhsType, e->rhs),
 							opReg.isRhsLvalue
 								? EvalPurpose::LValue
 								: EvalPurpose::RValue,
@@ -514,7 +514,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 					execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
 
-					resultType = std::make_shared<BoolTypeNameNode>(Location(), SIZE_MAX);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 
 					break;
 				}
@@ -525,7 +525,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					uint32_t lhsRegIndex = allocReg(2),
 							 rhsRegIndex = lhsRegIndex + 1;
 
-					auto u32Type = std::make_shared<U32TypeNameNode>(e->rhs->getLocation(), SIZE_MAX);
+					auto u32Type = std::make_shared<U32TypeNameNode>(SIZE_MAX);
 
 					compileExpr(
 						e->lhs,
@@ -537,12 +537,12 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					if (!isSameType(rhsType, u32Type)) {
 						if (!isTypeNamesConvertible(rhsType, u32Type))
 							throw FatalCompilationError(
-								{ e->rhs->getLocation(),
+								{ e->rhs->sourceLocation,
 									MessageType::Error,
 									"Incompatible operand types" });
 
 						compileExpr(
-							std::make_shared<CastExprNode>(e->rhs->getLocation(), u32Type, e->rhs),
+							std::make_shared<CastExprNode>(u32Type, e->rhs),
 							opReg.isRhsLvalue
 								? EvalPurpose::LValue
 								: EvalPurpose::RValue,
@@ -592,12 +592,12 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					if (!isSameType(lhsType, rhsType)) {
 						if (!isTypeNamesConvertible(rhsType, lhsType))
 							throw FatalCompilationError(
-								{ e->rhs->getLocation(),
+								{ e->rhs->sourceLocation,
 									MessageType::Error,
 									"Incompatible operand types" });
 
 						compileExpr(
-							std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
+							std::make_shared<CastExprNode>(lhsType, e->rhs),
 							opReg.isRhsLvalue
 								? EvalPurpose::LValue
 								: EvalPurpose::RValue,
@@ -615,7 +615,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 				default:
 					throw FatalCompilationError(
 						Message(
-							e->getLocation(),
+							e->sourceLocation,
 							MessageType::Error,
 							"No matching operator"));
 			}
@@ -628,7 +628,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 				case BinaryOp::LOr:
 					compileShortCircuitOperator();
 
-					resultType = std::make_shared<BoolTypeNameNode>(Location(), SIZE_MAX);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				case BinaryOp::Eq:
 				case BinaryOp::Neq: {
@@ -645,12 +645,12 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					if (!isSameType(lhsType, rhsType)) {
 						if (!isTypeNamesConvertible(rhsType, lhsType))
 							throw FatalCompilationError(
-								{ e->rhs->getLocation(),
+								{ e->rhs->sourceLocation,
 									MessageType::Error,
 									"Incompatible operand types" });
 
 						compileExpr(
-							std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
+							std::make_shared<CastExprNode>(lhsType, e->rhs),
 							opReg.isRhsLvalue
 								? EvalPurpose::LValue
 								: EvalPurpose::RValue,
@@ -660,7 +660,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 					execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
 
-					resultType = std::make_shared<BoolTypeNameNode>(Location(), SIZE_MAX);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 
 					break;
 				}
@@ -678,12 +678,12 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					if (!isSameType(lhsType, rhsType)) {
 						if (!isTypeNamesConvertible(rhsType, lhsType))
 							throw FatalCompilationError(
-								{ e->rhs->getLocation(),
+								{ e->rhs->sourceLocation,
 									MessageType::Error,
 									"Incompatible operand types" });
 
 						compileExpr(
-							std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
+							std::make_shared<CastExprNode>(lhsType, e->rhs),
 							opReg.isRhsLvalue
 								? EvalPurpose::LValue
 								: EvalPurpose::RValue,
@@ -701,7 +701,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 				default:
 					throw FatalCompilationError(
 						Message(
-							e->getLocation(),
+							e->sourceLocation,
 							MessageType::Error,
 							"No matching operator"));
 			}
@@ -724,12 +724,12 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					if (!isSameType(lhsType, rhsType)) {
 						if (!isTypeNamesConvertible(rhsType, lhsType))
 							throw FatalCompilationError(
-								{ e->rhs->getLocation(),
+								{ e->rhs->sourceLocation,
 									MessageType::Error,
 									"Incompatible operand types" });
 
 						compileExpr(
-							std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
+							std::make_shared<CastExprNode>(lhsType, e->rhs),
 							opReg.isRhsLvalue
 								? EvalPurpose::LValue
 								: EvalPurpose::RValue,
@@ -748,7 +748,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 						std::make_shared<RegRefNode>(lhsRegIndex, true),
 						std::make_shared<RegRefNode>(rhsRegIndex, true));
 
-					resultType = std::make_shared<StringTypeNameNode>(Location(), SIZE_MAX);
+					resultType = std::make_shared<StringTypeNameNode>(SIZE_MAX);
 
 					break;
 				}
@@ -756,7 +756,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					uint32_t lhsRegIndex = allocReg(2),
 							 rhsRegIndex = lhsRegIndex + 1;
 
-					auto u32Type = std::make_shared<U32TypeNameNode>(e->rhs->getLocation(), SIZE_MAX);
+					auto u32Type = std::make_shared<U32TypeNameNode>(SIZE_MAX);
 
 					compileExpr(
 						e->lhs,
@@ -768,12 +768,12 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					if (!isSameType(rhsType, u32Type)) {
 						if (!isTypeNamesConvertible(rhsType, u32Type))
 							throw FatalCompilationError(
-								{ e->rhs->getLocation(),
+								{ e->rhs->sourceLocation,
 									MessageType::Error,
 									"Incompatible operand types" });
 
 						compileExpr(
-							std::make_shared<CastExprNode>(e->rhs->getLocation(), u32Type, e->rhs),
+							std::make_shared<CastExprNode>(u32Type, e->rhs),
 							opReg.isRhsLvalue
 								? EvalPurpose::LValue
 								: EvalPurpose::RValue,
@@ -792,14 +792,14 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 						std::make_shared<RegRefNode>(lhsRegIndex, true),
 						std::make_shared<RegRefNode>(rhsRegIndex, true));
 
-					resultType = std::make_shared<U8TypeNameNode>(Location(), SIZE_MAX, true);
+					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX, true);
 
 					break;
 				}
 				default:
 					throw FatalCompilationError(
 						Message(
-							e->getLocation(),
+							e->sourceLocation,
 							MessageType::Error,
 							"No matching operator"));
 			}
@@ -821,12 +821,12 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					if (!isSameType(lhsType, rhsType)) {
 						if (!isTypeNamesConvertible(rhsType, lhsType))
 							throw FatalCompilationError(
-								{ e->rhs->getLocation(),
+								{ e->rhs->sourceLocation,
 									MessageType::Error,
 									"Incompatible operand types" });
 
 						compileExpr(
-							std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
+							std::make_shared<CastExprNode>(lhsType, e->rhs),
 							opReg.isRhsLvalue
 								? EvalPurpose::LValue
 								: EvalPurpose::RValue,
@@ -845,7 +845,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 						std::make_shared<RegRefNode>(lhsRegIndex, true),
 						std::make_shared<RegRefNode>(rhsRegIndex, true));
 
-					resultType = std::make_shared<WStringTypeNameNode>(Location(), SIZE_MAX);
+					resultType = std::make_shared<WStringTypeNameNode>(SIZE_MAX);
 
 					break;
 				}
@@ -853,7 +853,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					uint32_t lhsRegIndex = allocReg(2),
 							 rhsRegIndex = lhsRegIndex + 1;
 
-					auto u32Type = std::make_shared<U32TypeNameNode>(e->rhs->getLocation(), SIZE_MAX);
+					auto u32Type = std::make_shared<U32TypeNameNode>(SIZE_MAX);
 
 					compileExpr(
 						e->lhs,
@@ -865,12 +865,12 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					if (!isSameType(rhsType, u32Type)) {
 						if (!isTypeNamesConvertible(rhsType, u32Type))
 							throw FatalCompilationError(
-								{ e->rhs->getLocation(),
+								{ e->rhs->sourceLocation,
 									MessageType::Error,
 									"Incompatible operand types" });
 
 						compileExpr(
-							std::make_shared<CastExprNode>(e->rhs->getLocation(), u32Type, e->rhs),
+							std::make_shared<CastExprNode>(u32Type, e->rhs),
 							opReg.isRhsLvalue
 								? EvalPurpose::LValue
 								: EvalPurpose::RValue,
@@ -889,14 +889,14 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 						std::make_shared<RegRefNode>(lhsRegIndex, true),
 						std::make_shared<RegRefNode>(rhsRegIndex, true));
 
-					resultType = std::make_shared<U32TypeNameNode>(Location(), SIZE_MAX, true);
+					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX, true);
 
 					break;
 				}
 				default:
 					throw FatalCompilationError(
 						Message(
-							e->getLocation(),
+							e->sourceLocation,
 							MessageType::Error,
 							"No matching operator"));
 			}
@@ -908,7 +908,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					uint32_t lhsRegIndex = allocReg(2),
 							 rhsRegIndex = lhsRegIndex + 1;
 
-					auto u32Type = std::make_shared<U32TypeNameNode>(e->rhs->getLocation(), SIZE_MAX);
+					auto u32Type = std::make_shared<U32TypeNameNode>(SIZE_MAX);
 
 					compileExpr(
 						e->lhs,
@@ -920,12 +920,12 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					if (!isSameType(rhsType, u32Type)) {
 						if (!isTypeNamesConvertible(rhsType, u32Type))
 							throw FatalCompilationError(
-								{ e->rhs->getLocation(),
+								{ e->rhs->sourceLocation,
 									MessageType::Error,
 									"Incompatible operand types" });
 
 						compileExpr(
-							std::make_shared<CastExprNode>(e->rhs->getLocation(), u32Type, e->rhs),
+							std::make_shared<CastExprNode>(u32Type, e->rhs),
 							opReg.isRhsLvalue
 								? EvalPurpose::LValue
 								: EvalPurpose::RValue,
@@ -952,7 +952,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 				default:
 					throw FatalCompilationError(
 						Message(
-							e->getLocation(),
+							e->sourceLocation,
 							MessageType::Error,
 							"No matching operator"));
 			}
@@ -971,7 +971,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					std::shared_ptr<FnOverloadingNode> overloading;
 
 					{
-						auto overloadings = argDependentLookup(e->getLocation(), operatorNode.get(), { rhsType }, {});
+						auto overloadings = argDependentLookup(operatorNode.get(), { rhsType }, {});
 						if (overloadings.size() != 1)
 							return false;
 						overloading = overloadings[0];
@@ -1000,7 +1000,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 						if (isLValueType(overloading->params[0]->type))
 							throw FatalCompilationError(
 								Message(
-									e->getLocation(),
+									e->sourceLocation,
 									MessageType::Error,
 									"Expecting a lvalue expression"));
 
@@ -1056,12 +1056,12 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							if (!isSameType(lhsType, rhsType)) {
 								if (!isTypeNamesConvertible(rhsType, lhsType))
 									throw FatalCompilationError(
-										{ e->rhs->getLocation(),
+										{ e->rhs->sourceLocation,
 											MessageType::Error,
 											"Incompatible operand types" });
 
 								compileExpr(
-									std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
+									std::make_shared<CastExprNode>(lhsType, e->rhs),
 									EvalPurpose::RValue,
 									std::make_shared<RegRefNode>(rhsRegIndex));
 							} else
@@ -1098,12 +1098,12 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							if (!isSameType(lhsType, rhsType)) {
 								if (!isTypeNamesConvertible(rhsType, lhsType))
 									throw FatalCompilationError(
-										{ e->rhs->getLocation(),
+										{ e->rhs->sourceLocation,
 											MessageType::Error,
 											"Incompatible operand types" });
 
 								compileExpr(
-									std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
+									std::make_shared<CastExprNode>(lhsType, e->rhs),
 									EvalPurpose::RValue,
 									std::make_shared<RegRefNode>(rhsRegIndex));
 							} else
@@ -1118,7 +1118,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 								std::make_shared<RegRefNode>(lhsRegIndex, true),
 								std::make_shared<RegRefNode>(rhsRegIndex, true));
 
-							resultType = std::make_shared<BoolTypeNameNode>(Location(), SIZE_MAX);
+							resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 							break;
 						}
 						default: {
@@ -1127,7 +1127,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							if (!determineOverloading(n, lhsRegIndex))
 								throw FatalCompilationError(
 									Message(
-										e->getLocation(),
+										e->sourceLocation,
 										MessageType::Error,
 										"No matching operator"));
 						}
@@ -1152,12 +1152,12 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							if (!isSameType(lhsType, rhsType)) {
 								if (!isTypeNamesConvertible(rhsType, lhsType))
 									throw FatalCompilationError(
-										{ e->rhs->getLocation(),
+										{ e->rhs->sourceLocation,
 											MessageType::Error,
 											"Incompatible operand types" });
 
 								compileExpr(
-									std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
+									std::make_shared<CastExprNode>(lhsType, e->rhs),
 									EvalPurpose::RValue,
 									std::make_shared<RegRefNode>(rhsRegIndex));
 							} else
@@ -1194,12 +1194,12 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							if (!isSameType(lhsType, rhsType)) {
 								if (!isTypeNamesConvertible(rhsType, lhsType))
 									throw FatalCompilationError(
-										{ e->rhs->getLocation(),
+										{ e->rhs->sourceLocation,
 											MessageType::Error,
 											"Incompatible operand types" });
 
 								compileExpr(
-									std::make_shared<CastExprNode>(e->rhs->getLocation(), lhsType, e->rhs),
+									std::make_shared<CastExprNode>(lhsType, e->rhs),
 									EvalPurpose::RValue,
 									std::make_shared<RegRefNode>(rhsRegIndex));
 							} else
@@ -1214,7 +1214,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 								std::make_shared<RegRefNode>(lhsRegIndex, true),
 								std::make_shared<RegRefNode>(rhsRegIndex, true));
 
-							resultType = std::make_shared<BoolTypeNameNode>(Location(), SIZE_MAX);
+							resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 							break;
 						}
 						default: {
@@ -1226,7 +1226,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 								if (curMember->getNodeType() != NodeType::Class)
 									throw FatalCompilationError(
 										Message(
-											n->baseType->getLocation(),
+											n->baseType->sourceLocation,
 											MessageType::Error,
 											"Must be a class"));
 
@@ -1240,7 +1240,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 								if (curMember->getNodeType() != NodeType::Interface)
 									throw FatalCompilationError(
 										Message(
-											n->baseType->getLocation(),
+											n->baseType->sourceLocation,
 											MessageType::Error,
 											"Must be an interface"));
 
@@ -1254,7 +1254,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 								if (curMember->getNodeType() != NodeType::Interface)
 									throw FatalCompilationError(
 										Message(
-											n->baseType->getLocation(),
+											n->baseType->sourceLocation,
 											MessageType::Error,
 											"Must be an interface"));
 
@@ -1264,7 +1264,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 							throw FatalCompilationError(
 								Message(
-									e->getLocation(),
+									e->sourceLocation,
 									MessageType::Error,
 									"No matching operator"));
 						}
@@ -1275,7 +1275,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 				default:
 					throw FatalCompilationError(
 						Message(
-							e->getLocation(),
+							e->sourceLocation,
 							MessageType::Error,
 							"No matching operator"));
 			}
@@ -1284,7 +1284,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 		default:
 			throw FatalCompilationError(
 				Message(
-					e->getLocation(),
+					e->sourceLocation,
 					MessageType::Error,
 					"No matching operator"));
 	}
@@ -1295,7 +1295,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 		if (!isLValueType(resultType))
 			throw FatalCompilationError(
 				Message(
-					e->getLocation(),
+					e->sourceLocation,
 					MessageType::Error,
 					"Expecting a lvalue expression"));
 	} else {
@@ -1319,15 +1319,15 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 	slxfmt::SourceLocDesc sld;
 	sld.offIns = curFn->body.size();
-	sld.line = expr->getLocation().line;
-	sld.column = expr->getLocation().column;
+	sld.line = expr->sourceLocation.beginPosition.line;
+	sld.column = expr->sourceLocation.beginPosition.column;
 
 	if (!curMajorContext.curMinorContext.dryRun) {
 		if (auto ce = evalConstExpr(expr); ce) {
 			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
 				throw FatalCompilationError(
 					Message(
-						expr->getLocation(),
+						expr->sourceLocation,
 						MessageType::Error,
 						"Expecting a lvalue expression"));
 
@@ -1355,31 +1355,31 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			uint32_t conditionRegIndex = allocReg(),
 					 resultRegIndex = allocReg();
 
-			auto loc = e->getLocation();
-			std::string falseBranchLabel = "$ternary_" + std::to_string(loc.line) + "_" + std::to_string(loc.column) + "_false",
-						endLabel = "$ternary_" + std::to_string(loc.line) + "_" + std::to_string(loc.column) + "_end";
+			auto loc = e->sourceLocation;
+			std::string falseBranchLabel = "$ternary_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_false",
+						endLabel = "$ternary_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_end";
 
 			auto conditionType = evalExprType(e->condition),
 				 trueBranchType = evalExprType(e->x),
 				 falseBranchType = evalExprType(e->y);
-			auto boolType = std::make_shared<BoolTypeNameNode>(Location(), SIZE_MAX);
+			auto boolType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 
 			if (!conditionType)
 				throw FatalCompilationError(
 					Message(
-						e->getLocation(),
+						e->sourceLocation,
 						MessageType::Error,
 						"Error deducing type of the condition expression"));
 			if (!trueBranchType)
 				throw FatalCompilationError(
 					Message(
-						e->getLocation(),
+						e->sourceLocation,
 						MessageType::Error,
 						"Error deducing type of the true branch expression"));
 			if (!falseBranchType)
 				throw FatalCompilationError(
 					Message(
-						e->getLocation(),
+						e->sourceLocation,
 						MessageType::Error,
 						"Error deducing type of the true branch expression"));
 
@@ -1388,13 +1388,12 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			if (!isSameType(conditionType, boolType)) {
 				if (!isTypeNamesConvertible(conditionType, boolType))
 					throw FatalCompilationError(
-						{ e->condition->getLocation(),
+						{ e->condition->sourceLocation,
 							MessageType::Error,
 							"Expecting a boolean expression" });
 
 				compileExpr(
 					std::make_shared<CastExprNode>(
-						e->condition->getLocation(),
 						boolType,
 						e->condition),
 					EvalPurpose::RValue,
@@ -1411,11 +1410,11 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			if (isSameType(trueBranchType, resultType)) {
 				if (!isTypeNamesConvertible(trueBranchType, resultType))
 					throw FatalCompilationError(
-						{ e->x->getLocation(),
+						{ e->x->sourceLocation,
 							MessageType::Error,
 							"Incompatible operand types" });
 				compileExpr(
-					std::make_shared<CastExprNode>(e->x->getLocation(), resultType, e->x),
+					std::make_shared<CastExprNode>(resultType, e->x),
 					curMajorContext.curMinorContext.evalPurpose,
 					std::make_shared<RegRefNode>(resultRegIndex));
 			} else
@@ -1426,11 +1425,11 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			if (isSameType(falseBranchType, resultType)) {
 				if (!isTypeNamesConvertible(falseBranchType, resultType))
 					throw FatalCompilationError(
-						{ e->y->getLocation(),
+						{ e->y->sourceLocation,
 							MessageType::Error,
 							"Incompatible operand types" });
 				compileExpr(
-					std::make_shared<CastExprNode>(e->y->getLocation(), resultType, e->y),
+					std::make_shared<CastExprNode>(resultType, e->y),
 					curMajorContext.curMinorContext.evalPurpose,
 					std::make_shared<RegRefNode>(resultRegIndex));
 			} else
@@ -1444,9 +1443,9 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 		case ExprType::Match: {
 			auto e = std::static_pointer_cast<MatchExprNode>(expr);
 
-			auto loc = e->getLocation();
+			auto loc = e->sourceLocation;
 
-			std::string labelPrefix = "$match_" + std::to_string(loc.line) + "_" + std::to_string(loc.column),
+			std::string labelPrefix = "$match_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column),
 						condLocalVarName = labelPrefix + "_cond",
 						defaultLabel = labelPrefix + "_label",
 						endLabel = labelPrefix + "_end";
@@ -1459,13 +1458,14 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			std::pair<std::shared_ptr<ExprNode>, std::shared_ptr<ExprNode>> defaultCase;
 
 			for (auto i : e->cases) {
-				std::string caseEndLabel = "$match_" + std::to_string(i.second->getLocation().line) + "_" + std::to_string(i.second->getLocation().column) + "_caseEnd";
+				std::string caseEndLabel =
+					"$match_" + std::to_string(i.second->sourceLocation.beginPosition.line) + "_" + std::to_string(i.second->sourceLocation.beginPosition.column) + "_caseEnd";
 
 				if (!i.first) {
 					if (defaultCase.second)
 						// The default case is already exist.
 						throw FatalCompilationError(
-							{ i.second->getLocation(),
+							{ i.second->sourceLocation,
 								MessageType::Error,
 								"Duplicated default case" });
 					defaultCase = i;
@@ -1508,7 +1508,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 				if (!type)
 					throw FatalCompilationError(
 						Message(
-							i->getLocation(),
+							i->sourceLocation,
 							MessageType::Error,
 							"Error deducing type of the argument"));
 				curMajorContext.curMinorContext.argTypes.push_back(type);
@@ -1524,7 +1524,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			if (!returnType)
 				throw FatalCompilationError(
 					Message(
-						e->target->getLocation(),
+						e->target->sourceLocation,
 						MessageType::Error,
 						"Error deducing return type"));
 
@@ -1559,7 +1559,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					if (!isLValueType(returnType))
 						throw FatalCompilationError(
 							Message(
-								e->getLocation(),
+								e->sourceLocation,
 								MessageType::Error,
 								"Expecting a lvalue expression"));
 
@@ -1628,7 +1628,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					if (!t->elementType) {
 						throw FatalCompilationError(
 							Message(
-								t->elementType->getLocation(),
+								t->elementType->sourceLocation,
 								MessageType::Error,
 								"Cannot deduce type of elements"));
 					}
@@ -1636,7 +1636,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					if (e->args.size() != 1) {
 						throw FatalCompilationError(
 							Message(
-								e->type->getLocation(),
+								e->type->sourceLocation,
 								MessageType::Error,
 								"Invalid argument number for array constructor"));
 					}
@@ -1644,12 +1644,12 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					auto sizeArg = e->args[0];
 					auto sizeArgType = evalExprType(sizeArg);
 
-					auto u32Type = std::make_shared<U32TypeNameNode>(Location(), SIZE_MAX);
+					auto u32Type = std::make_shared<U32TypeNameNode>(SIZE_MAX);
 
 					if (!sizeArgType) {
 						throw FatalCompilationError(
 							Message(
-								sizeArg->getLocation(),
+								sizeArg->sourceLocation,
 								MessageType::Error,
 								"Cannot deduce type of the argument"));
 					}
@@ -1659,11 +1659,11 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					if (!isSameType(sizeArgType, u32Type)) {
 						if (!isTypeNamesConvertible(sizeArgType, u32Type))
 							throw FatalCompilationError(
-								{ sizeArg->getLocation(),
+								{ sizeArg->sourceLocation,
 									MessageType::Error,
 									"Incompatible argument type" });
 						compileExpr(
-							std::make_shared<CastExprNode>(sizeArg->getLocation(), u32Type, sizeArg),
+							std::make_shared<CastExprNode>(u32Type, sizeArg),
 							EvalPurpose::RValue,
 							std::make_shared<RegRefNode>(sizeArgRegIndex));
 					} else {
@@ -1697,7 +1697,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 									if (!t)
 										throw FatalCompilationError(
 											Message(
-												i->getLocation(),
+												i->sourceLocation,
 												MessageType::Error,
 												"Error deducing type of the argument"));
 									argTypes.push_back(t);
@@ -1708,24 +1708,24 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 								std::shared_ptr<FnOverloadingNode> overloading;
 
 								{
-									auto overloadings = argDependentLookup(expr->getLocation(), (FnNode *)it->second.get(), argTypes, {});
+									auto overloadings = argDependentLookup((FnNode *)it->second.get(), argTypes, {});
 									if (!overloadings.size()) {
 										throw FatalCompilationError(
 											Message(
-												expr->getLocation(),
+												expr->sourceLocation,
 												MessageType::Error,
 												"No matching function was found"));
 									} else if (overloadings.size() > 1) {
 										for (auto i : overloadings) {
 											messages.push_back(
 												Message(
-													i->loc,
+													i->sourceLocation,
 													MessageType::Note,
 													"Matched here"));
 										}
 										throw FatalCompilationError(
 											Message(
-												expr->getLocation(),
+												expr->sourceLocation,
 												MessageType::Error,
 												"Ambiguous function call"));
 									}
@@ -1756,7 +1756,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 											uint32_t tmpRegIndex = allocReg();
 
 											compileExpr(
-												std::make_shared<CastExprNode>(e->args[i]->getLocation(), argTypes[i], e->args[i]),
+												std::make_shared<CastExprNode>(argTypes[i], e->args[i]),
 												EvalPurpose::RValue,
 												std::make_shared<RegRefNode>(tmpRegIndex));
 											_insertIns(Opcode::PUSHARG, std::make_shared<RegRefNode>(tmpRegIndex, true), paramTypes[i]);
@@ -1785,7 +1785,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 						case NodeType::GenericParam:
 							throw FatalCompilationError(
 								Message(
-									e->type->getLocation(),
+									e->type->sourceLocation,
 									MessageType::Error,
 									"Cannot instantiate a generic parameter"));
 						default:
@@ -1797,7 +1797,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 				default:
 					throw FatalCompilationError(
 						Message(
-							e->type->getLocation(),
+							e->type->sourceLocation,
 							MessageType::Error,
 							"Specified type is not constructible"));
 			}
@@ -1815,7 +1815,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 				uint32_t tmpRegIndex = allocReg();
 
 				compileExpr(e->target, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
-				_insertIns(Opcode::TYPEOF, curMajorContext.curMinorContext.evalDest, std::make_shared<RegRefNode>(tmpRegIndex));
+				_insertIns(Opcode::TYPEOF, curMajorContext.curMinorContext.evalDest, std::make_shared<RegRefNode>(tmpRegIndex, true));
 			}
 
 			// TODO: Set evaluated type.
@@ -1831,7 +1831,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 				if (isTypeNamesConvertible(evalExprType(ce), e->targetType)) {
 					_insertIns(Opcode::CAST, curMajorContext.curMinorContext.evalDest, e->targetType, ce);
 				} else {
-					throw FatalCompilationError({ e->getLocation(), MessageType::Error, "Invalid type conversion" });
+					throw FatalCompilationError({ e->sourceLocation, MessageType::Error, "Invalid type conversion" });
 				}
 			} else {
 				auto originalType = evalExprType(e->target);
@@ -1845,7 +1845,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					compileExpr(e->target, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
 					_insertIns(Opcode::CAST, curMajorContext.curMinorContext.evalDest, e->targetType, std::make_shared<RegRefNode>(tmpRegIndex, true));
 				} else {
-					throw FatalCompilationError({ e->getLocation(), MessageType::Error, "Invalid type conversion" });
+					throw FatalCompilationError({ e->sourceLocation, MessageType::Error, "Invalid type conversion" });
 				}
 			}
 
@@ -1868,7 +1868,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			std::deque<std::pair<IdRef, std::shared_ptr<AstNode>>> resolvedParts;
 			if (!resolveIdRef(e->ref, resolvedParts))
 				throw FatalCompilationError(
-					{ e->getLocation(),
+					{ e->sourceLocation,
 						MessageType::Error,
 						"Identifier not found: `" + std::to_string(e->ref, this) + "'" });
 
@@ -1883,7 +1883,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					if (x->overloadingRegistries.size() > 1) {
 						throw FatalCompilationError(
 							Message(
-								expr->getLocation(),
+								expr->sourceLocation,
 								MessageType::Error,
 								"Reference to a overloaded function is ambiguous"));
 					}
@@ -1896,7 +1896,6 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 				//
 				{
 					auto overloadings = argDependentLookup(
-						expr->getLocation(),
 						x.get(),
 						curMajorContext.curMinorContext.argTypes,
 						genericArgs,
@@ -1905,20 +1904,20 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					if (!overloadings.size()) {
 						throw FatalCompilationError(
 							Message(
-								expr->getLocation(),
+								expr->sourceLocation,
 								MessageType::Error,
 								"No matching function was found"));
 					} else if (overloadings.size() > 1) {
 						for (auto i : overloadings) {
 							messages.push_back(
 								Message(
-									i->loc,
+									i->sourceLocation,
 									MessageType::Note,
 									"Matched here"));
 						}
 						throw FatalCompilationError(
 							Message(
-								expr->getLocation(),
+								expr->sourceLocation,
 								MessageType::Error,
 								"Ambiguous function call"));
 					}
@@ -1931,7 +1930,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					curMajorContext.curMinorContext.lastCallTargetReturnType =
 						overloadings[0]->returnType
 							? overloadings[0]->returnType
-							: std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX);
+							: std::make_shared<AnyTypeNameNode>(SIZE_MAX);
 					curMajorContext.curMinorContext.isLastCallTargetStatic = overloadings[0]->access & ACCESS_STATIC;
 					return overloadings[0];
 				}
@@ -1998,7 +1997,6 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 
 								curMajorContext.curMinorContext.evaluatedType =
 									std::make_shared<FnTypeNameNode>(
-										overloading->loc,
 										overloading->returnType,
 										paramTypes);
 							}
@@ -2123,7 +2121,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							if (resolvedParts.size() == 1) {
 								throw FatalCompilationError(
 									Message(
-										e->getLocation(),
+										e->sourceLocation,
 										MessageType::Error,
 										"`" + std::to_string(e->ref, this) + "' is a type"));
 							}
@@ -2169,7 +2167,6 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							if (resolvedParts.size() == 1) {
 								curMajorContext.curMinorContext.evaluatedType =
 									std::make_shared<FnTypeNameNode>(
-										overloading->loc,
 										overloading->returnType,
 										paramTypes);
 							}
@@ -2194,7 +2191,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 								default:
 									throw FatalCompilationError(
 										Message(
-											e->getLocation(),
+											e->sourceLocation,
 											MessageType::Error,
 											"Cannot use this reference in this context"));
 							}
@@ -2202,7 +2199,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							break;
 						}
 						case NodeType::BaseRef:
-							_insertIns(Opcode::LOAD, std::make_shared<RegRefNode>(tmpRegIndex), std::make_shared<IdRefExprNode>(IdRef{ IdRefEntry(e->getLocation(), SIZE_MAX, "base") }));
+							_insertIns(Opcode::LOAD, std::make_shared<RegRefNode>(tmpRegIndex), std::make_shared<IdRefExprNode>(IdRef{ IdRefEntry(e->sourceLocation, SIZE_MAX, "base") }));
 							break;
 						default:
 							assert(false);
@@ -2239,14 +2236,14 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 				curMajorContext.curMinorContext.expectedType->getTypeId() != TypeId::Array)
 				throw FatalCompilationError(
 					Message(
-						e->getLocation(),
+						e->sourceLocation,
 						MessageType::Error,
 						"Error deducing type of the expression"));
 
 			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
 				throw FatalCompilationError(
 					Message(
-						expr->getLocation(),
+						expr->sourceLocation,
 						MessageType::Error,
 						"Expecting a lvalue expression"));
 
@@ -2272,7 +2269,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 				if (!t)
 					throw FatalCompilationError(
 						Message(
-							i->getLocation(),
+							i->sourceLocation,
 							MessageType::Error,
 							"Error deducing the element type"));
 
@@ -2280,7 +2277,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					if (!isTypeNamesConvertible(t, type->elementType))
 						throw FatalCompilationError(
 							Message(
-								i->getLocation(),
+								i->sourceLocation,
 								MessageType::Error,
 								"Incompatible element type"));
 				}
@@ -2291,7 +2288,8 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			if (auto ce = evalConstExpr(e); ce) {
 				_insertIns(Opcode::STORE, curMajorContext.curMinorContext.evalDest, ce);
 			} else {
-				auto initArray = std::make_shared<ArrayExprNode>(e->getLocation());
+				auto initArray = std::make_shared<ArrayExprNode>();
+				initArray->sourceLocation = e->sourceLocation;
 				initArray->elements.resize(e->elements.size());
 
 				initArray->evaluatedElementType = type->elementType;
@@ -2301,7 +2299,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					initArray->elements[i] = evalConstExpr(initArray->elements[i]);
 				}
 
-				size_t idxTmpArrayRegIndex = allocReg(),
+				uint32_t idxTmpArrayRegIndex = allocReg(),
 					   idxTmpElementRegIndex = allocReg();
 
 				_insertIns(
@@ -2316,7 +2314,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							Opcode::AT,
 							std::make_shared<RegRefNode>(idxTmpElementRegIndex),
 							std::make_shared<RegRefNode>(idxTmpArrayRegIndex, true),
-							std::make_shared<U32LiteralExprNode>(Location(), idxTmpElementRegIndex, SIZE_MAX));
+							std::make_shared<U32LiteralExprNode>(idxTmpElementRegIndex, SIZE_MAX));
 						compileExpr(
 							e->elements[i],
 							EvalPurpose::RValue,
@@ -2342,7 +2340,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
 				throw FatalCompilationError(
 					Message(
-						expr->getLocation(),
+						expr->sourceLocation,
 						MessageType::Error,
 						"Expecting a lvalue expression"));
 
@@ -2350,40 +2348,40 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 
 			switch (expr->getExprType()) {
 				case ExprType::I8:
-					curMajorContext.curMinorContext.evaluatedType = std::make_shared<I8TypeNameNode>(Location(), SIZE_MAX);
+					curMajorContext.curMinorContext.evaluatedType = std::make_shared<I8TypeNameNode>(SIZE_MAX);
 					break;
 				case ExprType::I16:
-					curMajorContext.curMinorContext.evaluatedType = std::make_shared<I16TypeNameNode>(Location(), SIZE_MAX);
+					curMajorContext.curMinorContext.evaluatedType = std::make_shared<I16TypeNameNode>(SIZE_MAX);
 					break;
 				case ExprType::I32:
-					curMajorContext.curMinorContext.evaluatedType = std::make_shared<I32TypeNameNode>(Location(), SIZE_MAX);
+					curMajorContext.curMinorContext.evaluatedType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
 					break;
 				case ExprType::I64:
-					curMajorContext.curMinorContext.evaluatedType = std::make_shared<I64TypeNameNode>(Location(), SIZE_MAX);
+					curMajorContext.curMinorContext.evaluatedType = std::make_shared<I64TypeNameNode>(SIZE_MAX);
 					break;
 				case ExprType::U8:
-					curMajorContext.curMinorContext.evaluatedType = std::make_shared<U8TypeNameNode>(Location(), SIZE_MAX);
+					curMajorContext.curMinorContext.evaluatedType = std::make_shared<U8TypeNameNode>(SIZE_MAX);
 					break;
 				case ExprType::U16:
-					curMajorContext.curMinorContext.evaluatedType = std::make_shared<U16TypeNameNode>(Location(), SIZE_MAX);
+					curMajorContext.curMinorContext.evaluatedType = std::make_shared<U16TypeNameNode>(SIZE_MAX);
 					break;
 				case ExprType::U32:
-					curMajorContext.curMinorContext.evaluatedType = std::make_shared<U32TypeNameNode>(Location(), SIZE_MAX);
+					curMajorContext.curMinorContext.evaluatedType = std::make_shared<U32TypeNameNode>(SIZE_MAX);
 					break;
 				case ExprType::U64:
-					curMajorContext.curMinorContext.evaluatedType = std::make_shared<U64TypeNameNode>(Location(), SIZE_MAX);
+					curMajorContext.curMinorContext.evaluatedType = std::make_shared<U64TypeNameNode>(SIZE_MAX);
 					break;
 				case ExprType::F32:
-					curMajorContext.curMinorContext.evaluatedType = std::make_shared<F32TypeNameNode>(Location(), SIZE_MAX);
+					curMajorContext.curMinorContext.evaluatedType = std::make_shared<F32TypeNameNode>(SIZE_MAX);
 					break;
 				case ExprType::F64:
-					curMajorContext.curMinorContext.evaluatedType = std::make_shared<F64TypeNameNode>(Location(), SIZE_MAX);
+					curMajorContext.curMinorContext.evaluatedType = std::make_shared<F64TypeNameNode>(SIZE_MAX);
 					break;
 				case ExprType::String:
-					curMajorContext.curMinorContext.evaluatedType = std::make_shared<StringTypeNameNode>(Location(), SIZE_MAX);
+					curMajorContext.curMinorContext.evaluatedType = std::make_shared<StringTypeNameNode>(SIZE_MAX);
 					break;
 				case ExprType::Bool:
-					curMajorContext.curMinorContext.evaluatedType = std::make_shared<BoolTypeNameNode>(Location(), SIZE_MAX);
+					curMajorContext.curMinorContext.evaluatedType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 			}
 			break;
@@ -2392,13 +2390,13 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
 				throw FatalCompilationError(
 					Message(
-						expr->getLocation(),
+						expr->sourceLocation,
 						MessageType::Error,
 						"Expecting a lvalue expression"));
 
 			_insertIns(Opcode::STORE, curMajorContext.curMinorContext.evalDest, expr);
 
-			curMajorContext.curMinorContext.evaluatedType = std::make_shared<AnyTypeNameNode>(Location(), SIZE_MAX);
+			curMajorContext.curMinorContext.evaluatedType = std::make_shared<AnyTypeNameNode>(SIZE_MAX);
 			break;
 		case ExprType::Bad:
 			break;

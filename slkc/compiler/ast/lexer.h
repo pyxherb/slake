@@ -106,7 +106,6 @@ namespace slake {
 			SwitchKeyword,
 			ThisKeyword,
 			ThrowKeyword,
-			TraitKeyword,
 			TypeofKeyword,
 			InterfaceKeyword,
 			TrueKeyword,
@@ -176,16 +175,16 @@ namespace slake {
 		struct Token {
 			size_t index = SIZE_MAX;
 			TokenId tokenId;
-			Location beginLocation, endLocation;
+			SourceLocation location;
 			std::string text;
 			std::unique_ptr<TokenExtension> exData;
 		};
 
 		class LexicalError : public std::runtime_error {
 		public:
-			Location location;
+			SourcePosition position;
 
-			inline LexicalError(std::string_view s, Location location) : runtime_error(s.data()), location(location) {}
+			inline LexicalError(std::string_view s, SourcePosition position) : runtime_error(s.data()), position(position) {}
 			virtual ~LexicalError() = default;
 		};
 
@@ -214,7 +213,7 @@ namespace slake {
 				tokens.clear();
 			}
 
-			size_t getTokenByLocation(Location location);
+			size_t getTokenByPosition(const SourcePosition &position);
 
 			inline size_t getTokenIndex(Token *token) {
 				return token->index;

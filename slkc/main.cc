@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
 				try {
 					compiler->compile(is, os);
 				} catch (FatalCompilationError e) {
-					fprintf(stderr, "Error at %zd, %zd: %s\n", e.message.loc.line + 1, e.message.loc.column + 1, e.message.msg.c_str());
+					std::cerr << "Error at " << std::to_string(e.message.loc) << ": " << e.message.msg << std::endl;
 					return -1;
 				}
 
@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
 							break;
 					}
 
-					printf("%s at %zd, %zd: %s\n", msgType, i.loc.line + 1, i.loc.column + 1, i.msg.c_str());
+					std::cout << msgType << " at " << std::to_string(i.loc) << ": " << i.msg << std::endl;
 				}
 
 				is.close();

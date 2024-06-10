@@ -12,8 +12,6 @@ namespace slake {
 
 		class GenericParamNode : public AstNode {
 		private:
-			Location _loc;
-
 			virtual std::shared_ptr<AstNode> doDuplicate() override;
 
 		public:
@@ -33,9 +31,7 @@ namespace slake {
 
 			size_t idxCommaToken = SIZE_MAX;
 
-			inline GenericParamNode(const GenericParamNode &other) {
-				_loc = other._loc;
-
+			inline GenericParamNode(const GenericParamNode &other) : AstNode(other) {
 				name = other.name;
 				if (baseType)
 					baseType = other.baseType->duplicate<TypeNameNode>();
@@ -56,13 +52,9 @@ namespace slake {
 				idxImplInterfacesColonToken = other.idxImplInterfacesColonToken;
 				idxImplInterfacesSeparatorTokens = other.idxImplInterfacesSeparatorTokens;
 			}
-			inline GenericParamNode(
-				Location location,
-				std::string name)
-				: _loc(location), name(name) {}
+			inline GenericParamNode(std::string name) : name(name) {}
 
 			virtual inline NodeType getNodeType() const override { return NodeType::GenericParam; }
-			virtual inline Location getLocation() const override { return _loc; }
 		};
 
 		using GenericParamNodeList = std::deque<std::shared_ptr<GenericParamNode>>;

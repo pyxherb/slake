@@ -20,9 +20,9 @@ namespace slake {
 		struct Message {
 			MessageType type;
 			std::string msg;
-			Location loc;
+			SourceLocation loc;
 
-			Message(Location loc, const MessageType &type, const std::string &msg)
+			Message(SourceLocation loc, const MessageType &type, const std::string &msg)
 				: loc(loc), type(type), msg(msg) {
 			}
 		};
@@ -307,7 +307,6 @@ namespace slake {
 				std::deque<std::shared_ptr<FnOverloadingNode>> &overloadingsOut,
 				bool isStatic);
 			std::deque<std::shared_ptr<FnOverloadingNode>> argDependentLookup(
-				Location loc,
 				FnNode *fn,
 				const std::deque<std::shared_ptr<TypeNameNode>> &argTypes,
 				const std::deque<std::shared_ptr<TypeNameNode>> &genericArgs,

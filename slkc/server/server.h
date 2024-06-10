@@ -42,7 +42,7 @@ namespace slake {
 		};
 
 		struct SemanticToken {
-			Location location;
+			SourcePosition position;
 			unsigned int length;
 			SemanticType type;
 			std::set<SemanticTokenModifier> modifiers;
@@ -75,7 +75,7 @@ namespace slake {
 				std::unordered_map<std::string, MemberNode *> &membersOut,
 				std::deque<CompletionItem> &completionItems,
 				const std::set<NodeType> &targetNodeTypes);
-			std::deque<CompletionItem> getCompletionItems(Location location);
+			std::deque<CompletionItem> getCompletionItems(SourcePosition location);
 
 			void _getImportCompletionItems(
 				std::string path,
@@ -108,8 +108,10 @@ namespace slake {
 
 			Server();
 
-			static bool jsonToLocation(const Json::Value &value, Location &locationOut);
-			static Json::Value locationToJson(const Location &loc);
+			static bool jsonToLocation(const Json::Value &value, SourceLocation &locationOut);
+			static bool jsonToPosition(const Json::Value &value, SourcePosition &positionOut);
+			static Json::Value locationToJson(const SourceLocation &loc);
+			static Json::Value positionToJson(const SourcePosition &pos);
 			static Json::Value compilerMessageToJson(const Message &msg);
 			static Json::Value completionItemToJson(const CompletionItem &item);
 			static Json::Value semanticTokenToJson(const SemanticToken &loc);

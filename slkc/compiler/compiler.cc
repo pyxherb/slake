@@ -96,6 +96,53 @@ void Compiler::scanAndLinkParentFns(Scope *scope, FnNode *fn, const std::string 
 parentFnScanEnd:;
 }
 
+void Compiler::validateScope(Scope *scope) {
+	std::deque<ClassNode *> classes;
+	std::deque<InterfaceNode *> interfaces;
+	std::deque<FnNode *> funcs;
+
+	pushMajorContext();
+
+	curMajorContext.curMinorContext.curScope = scope->shared_from_this();
+
+	for (auto &i : scope->members) {
+		switch (i.second->getNodeType()) {
+			case NodeType::Class:
+				classes.push_back((ClassNode *)i.second.get());
+				break;
+			case NodeType::Interface:
+				interfaces.push_back((InterfaceNode *)i.second.get());
+				break;
+			case NodeType::Fn:
+				funcs.push_back((FnNode *)i.second.get());
+				break;
+		}
+	}
+
+	// We must make sure the classes and interfaces are valid before we validating their child scope.
+	for (auto i : classes) {
+		verifyInheritanceChain(i);
+		verifyGenericParams(i->genericParams);
+	}
+	for (auto i : interfaces) {
+		verifyInheritanceChain(i);
+		verifyGenericParams(i->genericParams);
+	}
+
+	// Validate child scopes of classes and interfaces.
+	for (auto i : classes)
+		validateScope(i->scope.get());
+	for (auto i : interfaces)
+		validateScope(i->scope.get());
+
+	// Link the functions to their parent functions correctly.
+	for (auto i : funcs) {
+		scanAndLinkParentFns(scope, i, i->name);
+	}
+
+	popMajorContext();
+}
+
 void Compiler::compile(std::istream &is, std::ostream &os, std::shared_ptr<ModuleNode> targetModule) {
 	if (targetModule)
 		_targetModule = targetModule;
@@ -296,6 +343,7 @@ void Compiler::compile(std::istream &is, std::ostream &os, std::shared_ptr<Modul
 
 	popMajorContext();
 
+	validateScope(_targetModule->scope.get());
 	curMajorContext = MajorContext();
 	compileScope(is, os, _targetModule->scope);
 }
@@ -606,27 +654,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				assert(false);
 		}
 	}
-
-	for (auto &i : classes) {
-		verifyInheritanceChain(i.second.get());
-		verifyGenericParams(i.second->genericParams);
-	}
-
-	for (auto &i : interfaces) {
-		verifyInheritanceChain(i.second.get());
-		verifyGenericParams(i.second->genericParams);
-	}
-
-	for (auto &i : traits) {
-		verifyInheritanceChain(i.second.get());
-		verifyGenericParams(i.second->genericParams);
-	}
-
-	// Link the functions to their parent functions correctly.
-	for (auto &i : funcs) {
-		scanAndLinkParentFns(scope.get(), i.second.get(), i.first);
-	}
-
+	
 	auto mergeGenericParams = [this](const GenericParamNodeList &newParams) {
 		for (auto &i : newParams) {
 			if (curMajorContext.genericParamIndices.count(i->name))

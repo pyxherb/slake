@@ -589,11 +589,12 @@ namespace slake {
 
 			void verifyGenericParams(const GenericParamNodeList &params);
 
-			void scanAndLinkParentFns(Scope *scope, FnNode *fn, const std::string &name);
-
 			//
 			// Verify end
 			//
+
+			void validateScope(Scope *scope);
+			void scanAndLinkParentFns(Scope *scope, FnNode *fn, const std::string &name);
 
 			std::shared_ptr<Scope> mergeScope(Scope *a, Scope *b, bool keepStaticMembers = false);
 

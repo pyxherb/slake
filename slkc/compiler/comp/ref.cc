@@ -252,7 +252,26 @@ bool Compiler::_resolveIdRef(Scope *scope, const IdRef &ref, std::deque<std::pai
 				resolveContext.isStatic = false;
 				break;
 			}
-			case NodeType::Fn:
+			case NodeType::Fn: {
+				auto member = std::static_pointer_cast<FnNode>(m);
+
+				for (auto i : member->overloadingRegistries) {
+					if (resolveContext.isStatic) {
+						if (i->access & ACCESS_STATIC) {
+							goto foundReachableOverloading;
+						}
+					} else if (!resolveContext.isStatic) {
+						if (!(i->access & ACCESS_STATIC)) {
+							goto foundReachableOverloading;
+						}
+					}
+				}
+
+				return false;
+
+			foundReachableOverloading:
+				break;
+			}
 			case NodeType::GenericParam: {
 				break;
 			}

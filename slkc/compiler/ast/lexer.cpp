@@ -293,7 +293,7 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 				<CommentCondition>[^]		{ continue; }
 
 				<LineCommentCondition>"\n"	{ YYSETCONDITION(InitialCondition); break; }
-				<CommentCondition>[^]		{ continue; }
+				<LineCommentCondition>[^]	{ continue; }
 			*/
 		}
 

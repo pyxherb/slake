@@ -338,6 +338,8 @@ void Runtime::_loadScope(ModuleObject *mod, std::istream &fs, LoadModuleFlags lo
 				case TypeId::Any:
 					var->setData(Value(nullptr));
 					break;
+				case TypeId::GenericArg:
+					break;
 				default:
 					throw LoaderError("Invalid variable type");
 			}

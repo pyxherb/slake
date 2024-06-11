@@ -107,7 +107,7 @@ namespace slake {
 
 namespace std {
 	inline std::string to_string(slake::slkc::SourcePosition loc) {
-		return std::to_string(loc.line) + ":" + std::to_string(loc.column);
+		return std::to_string(loc.line + 1) + ":" + std::to_string(loc.column + 1);
 	}
 	inline std::string to_string(slake::slkc::SourceLocation loc) {
 		return std::to_string(loc.beginPosition) + ", " + std::to_string(loc.endPosition);

@@ -164,7 +164,8 @@ pub class RBTree<T: ILesserOp<T> | IGreaterOp<T>> {
 			node.color = false;
 
 			this._updateNodeCaches();
-			++this._nNodes;
+			// this._nNodes += 1;
+			this._nNodes = this._nNodes + 1;
 
 			return;
 		}
@@ -195,7 +196,8 @@ pub class RBTree<T: ILesserOp<T> | IGreaterOp<T>> {
 		}
 		
 		this._updateNodeCaches();
-		++this._nNodes;
+		// this._nNodes += 1;
+		this._nNodes = this._nNodes + 1;
 	}
 
 	pub fn new() {

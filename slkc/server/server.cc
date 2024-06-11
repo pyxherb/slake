@@ -270,12 +270,12 @@ slake::slkc::Server::Server() {
 		}
 		uri = rootValue["uri"].asString();
 
-		if (!rootValue.isMember("location")) {
-			response.body = "Missing document location";
+		if (!rootValue.isMember("position")) {
+			response.body = "Missing document position";
 			goto badRequest;
 		}
 		if (!jsonToPosition(rootValue["position"], pos)) {
-			response.body = "Invalid document location";
+			response.body = "Invalid document position";
 			goto badRequest;
 		}
 
@@ -409,12 +409,12 @@ slake::slkc::Server::Server() {
 		}
 		uri = rootValue["uri"].asString();
 
-		if (!rootValue.isMember("location")) {
-			response.body = "Missing document location";
+		if (!rootValue.isMember("position")) {
+			response.body = "Missing document position";
 			goto badRequest;
 		}
 		if (!jsonToPosition(rootValue["position"], pos)) {
-			response.body = "Invalid document location";
+			response.body = "Invalid document position";
 			goto badRequest;
 		}
 

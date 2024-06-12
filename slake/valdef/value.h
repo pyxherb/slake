@@ -63,6 +63,7 @@ namespace slake {
 			IndexedRefValueExData,
 			Type *>
 			data;
+		void _setObjectRef(Object *objectPtr, bool isHostRef);
 		void _reset();
 
 	public:
@@ -120,11 +121,7 @@ namespace slake {
 			valueType = ValueType::Bool;
 		}
 		inline Value(Object *objectPtr, bool isHostRef = false) {
-			if (isHostRef) {
-				if (objectPtr)
-					++objectPtr->hostRefCount;
-			}
-			this->data = ObjectRefValueExData{ objectPtr, isHostRef };
+			_setObjectRef(objectPtr, isHostRef);
 			valueType = ValueType::ObjectRef;
 		}
 		inline Value(ValueType vt, uint32_t index, bool unwrap) {
@@ -197,7 +194,10 @@ namespace slake {
 		const IndexedRefValueExData &getIndexedRef() const;
 
 		Value &operator=(const Value &other);
-		Value &operator=(Value &&other);
+		inline Value& operator=(Value&& other) noexcept {
+			(*this) = other;
+			return *this;
+		}
 	};
 }
 

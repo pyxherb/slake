@@ -198,32 +198,6 @@ namespace slake {
 			virtual inline NodeType getNodeType() const override { return NodeType::Fn; }
 
 			inline void insertIns(Ins ins) { body.push_back(ins); }
-			inline void insertIns(
-				Opcode opcode,
-				std::shared_ptr<AstNode> op1) {
-				insertIns({ opcode, { op1 } });
-			}
-			inline void insertIns(
-				Opcode opcode,
-				std::shared_ptr<AstNode> op1,
-				std::shared_ptr<AstNode> op2) {
-				insertIns({ opcode, { op1, op2 } });
-			}
-			inline void insertIns(
-				Opcode opcode,
-				std::shared_ptr<AstNode> op1,
-				std::shared_ptr<AstNode> op2,
-				std::shared_ptr<AstNode> op3) {
-				insertIns({ opcode, { op1, op2, op3 } });
-			}
-			inline void insertIns(
-				Opcode opcode,
-				std::shared_ptr<AstNode> op1,
-				std::shared_ptr<AstNode> op2,
-				std::shared_ptr<AstNode> op3,
-				std::shared_ptr<AstNode> op4) {
-				insertIns({ opcode, { op1, op2, op3, op4 } });
-			}
 			inline void insertLabel(std::string name) { labels[name] = (uint32_t)body.size(); }
 
 			virtual IdRefEntry getName() const override {

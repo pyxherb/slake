@@ -7,7 +7,16 @@ Value::Value(const Type &type) {
 	valueType = ValueType::TypeName;
 }
 
+void Value::_setObjectRef(Object* objectPtr, bool isHostRef) {
+	if (isHostRef) {
+		if (objectPtr)
+			++objectPtr->hostRefCount;
+	}
+	this->data = ObjectRefValueExData{ objectPtr, isHostRef };
+}
+
 void Value::_reset() {
+	auto savedData = data;
 	switch (valueType) {
 		case ValueType::U8:
 		case ValueType::U16:
@@ -43,6 +52,7 @@ void Value::_reset() {
 		default:
 			throw std::logic_error("Unhandled object type");
 	}
+	data = {};
 
 	valueType = ValueType::Undefined;
 }
@@ -100,40 +110,6 @@ Value &Value::operator=(const Value &other) {
 			throw std::logic_error("Unhandled object type");
 	}
 	valueType = other.valueType;
-
-	return *this;
-}
-
-Value &Value::operator=(Value &&other) {
-	_reset();
-
-	switch (other.valueType) {
-		case ValueType::U8:
-		case ValueType::U16:
-		case ValueType::U32:
-		case ValueType::U64:
-		case ValueType::I8:
-		case ValueType::I16:
-		case ValueType::I32:
-		case ValueType::I64:
-		case ValueType::F32:
-		case ValueType::F64:
-		case ValueType::Bool:
-		case ValueType::ObjectRef:
-		case ValueType::RegRef:
-		case ValueType::ArgRef:
-		case ValueType::LocalVarRef:
-		case ValueType::TypeName:
-		case ValueType::Undefined:
-			this->data = std::move(other.data);
-			break;
-		default:
-			throw std::logic_error("Unhandled object type");
-	}
-	valueType = other.valueType;
-
-	other.data = {};
-	other.valueType = ValueType::Undefined;
 
 	return *this;
 }

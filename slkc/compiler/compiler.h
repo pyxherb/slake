@@ -373,37 +373,8 @@ namespace slake {
 			}
 			inline void _insertIns(
 				Opcode opcode,
-				std::shared_ptr<AstNode> op1) {
-				if (curMajorContext.curMinorContext.dryRun)
-					return;
-				curFn->insertIns(opcode, op1);
-			}
-			inline void _insertIns(
-				Opcode opcode,
-				std::shared_ptr<AstNode> op1,
-				std::shared_ptr<AstNode> op2) {
-				if (curMajorContext.curMinorContext.dryRun)
-					return;
-				curFn->insertIns(opcode, op1, op2);
-			}
-			inline void _insertIns(
-				Opcode opcode,
-				std::shared_ptr<AstNode> op1,
-				std::shared_ptr<AstNode> op2,
-				std::shared_ptr<AstNode> op3) {
-				if (curMajorContext.curMinorContext.dryRun)
-					return;
-				curFn->insertIns(opcode, op1, op2, op3);
-			}
-			inline void _insertIns(
-				Opcode opcode,
-				std::shared_ptr<AstNode> op1,
-				std::shared_ptr<AstNode> op2,
-				std::shared_ptr<AstNode> op3,
-				std::shared_ptr<AstNode> op4) {
-				if (curMajorContext.curMinorContext.dryRun)
-					return;
-				curFn->insertIns(opcode, op1, op2, op3, op4);
+				std::deque<std::shared_ptr<AstNode>> operands) {
+				_insertIns(Ins{ opcode, operands });
 			}
 			inline void _insertLabel(std::string name) {
 				if (curMajorContext.curMinorContext.dryRun)

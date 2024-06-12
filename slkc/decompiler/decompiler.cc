@@ -83,6 +83,7 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 					os << "\\" << _ctrlCharNames[i];
 			}
 			os << '"';
+			break;
 		}
 		case slake::TypeId::Array: {
 			os << "[";

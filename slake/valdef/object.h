@@ -62,7 +62,6 @@ namespace slake {
 	class HostObjectRef final {
 	public:
 		T *_value = nullptr;
-		Runtime *_rt = nullptr;
 
 		inline void reset() {
 			if (_value) {
@@ -83,19 +82,16 @@ namespace slake {
 		inline HostObjectRef(const HostObjectRef<T> &x) : _value(x._value) {
 			if (x._value) {
 				++_value->hostRefCount;
-				_rt = x->_rt;
 			}
 		}
 		inline HostObjectRef(HostObjectRef<T> &&x) noexcept : _value(x._value) {
 			if (x._value) {
-				_rt = x->_rt;
 				x._value = nullptr;
 			}
 		}
 		inline HostObjectRef(T *value = nullptr) noexcept : _value(value) {
 			if (_value) {
 				++_value->hostRefCount;
-				_rt = value->_rt;
 			}
 		}
 		inline ~HostObjectRef() {
@@ -112,7 +108,6 @@ namespace slake {
 
 			if ((_value = x._value)) {
 				++_value->hostRefCount;
-				_rt = _value->_rt;
 			}
 
 			return *this;
@@ -121,7 +116,6 @@ namespace slake {
 			reset();
 
 			if ((_value = x._value)) {
-				_rt = _value->_rt;
 				x._value = nullptr;
 			}
 
@@ -133,7 +127,6 @@ namespace slake {
 
 			if ((_value = other)) {
 				++_value->hostRefCount;
-				_rt = _value->_rt;
 			}
 
 			return *this;

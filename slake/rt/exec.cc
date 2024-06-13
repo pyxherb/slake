@@ -822,6 +822,128 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			((VarObject *)varOut)->setData(valueOut);
 			break;
 		}
+		case Opcode::LSH:
+		case Opcode::RSH: {
+			_checkOperandCount(ins, 3);
+
+			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::Undefined, ValueType::U32 });
+
+			Value x(ins.operands[1]), y(ins.operands[2]), valueOut;
+			auto varOut = ins.operands[0].getObjectRef().objectPtr;
+			if (!varOut)
+				throw NullRefError();
+			_checkObjectOperandType(varOut, TypeId::Var);
+
+			switch (x.valueType) {
+				case ValueType::I8:
+					switch (ins.opcode) {
+						case Opcode::LSH:
+							valueOut = Value((int8_t)(x.getI8() << y.getU32()));
+							break;
+						case Opcode::RSH:
+							valueOut = Value((int8_t)(x.getI8() >> y.getU32()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
+					break;
+				case ValueType::I16:
+					switch (ins.opcode) {
+						case Opcode::LSH:
+							valueOut = Value((int16_t)(x.getI16() << y.getU32()));
+							break;
+						case Opcode::RSH:
+							valueOut = Value((int16_t)(x.getI16() >> y.getU32()));
+							break;
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
+					break;
+				case ValueType::I32:
+					switch (ins.opcode) {
+						case Opcode::LSH:
+							valueOut = Value((int32_t)(x.getI32() << y.getU32()));
+							break;
+						case Opcode::RSH:
+							valueOut = Value((int32_t)(x.getI32() >> y.getU32()));
+							break;
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
+					break;
+				case ValueType::I64:
+					switch (ins.opcode) {
+						case Opcode::LSH:
+							valueOut = Value((int64_t)(x.getI64() << y.getU32()));
+							break;
+						case Opcode::RSH:
+							valueOut = Value((int64_t)(x.getI64() >> y.getU32()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
+					break;
+				case ValueType::U8:
+					switch (ins.opcode) {
+						case Opcode::LSH:
+							valueOut = Value((uint8_t)(x.getU8() << y.getU32()));
+							break;
+						case Opcode::RSH:
+							valueOut = Value((uint8_t)(x.getU8() >> y.getU32()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
+					break;
+				case ValueType::U16:
+					switch (ins.opcode) {
+						case Opcode::LSH:
+							valueOut = Value((uint8_t)(x.getU16() << y.getU32()));
+							break;
+						case Opcode::RSH:
+							valueOut = Value((uint8_t)(x.getU16() >> y.getU32()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
+					break;
+				case ValueType::U32:
+					switch (ins.opcode) {
+						case Opcode::LSH:
+							valueOut = Value((uint32_t)(x.getU32() << y.getU32()));
+							break;
+						case Opcode::RSH:
+							valueOut = Value((uint32_t)(x.getU32() >> y.getU32()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
+					break;
+				case ValueType::U64:
+					switch (ins.opcode) {
+						case Opcode::LSH:
+							valueOut = Value((uint64_t)(x.getU64() << y.getU32()));
+							break;
+						case Opcode::RSH:
+							valueOut = Value((uint64_t)(x.getU64() >> y.getU32()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
+					break;
+				case ValueType::F32:
+				case ValueType::F64:
+				case ValueType::Bool:
+					throw InvalidOperandsError("Unsupported operation");
+				default:
+					throw InvalidOperandsError("Invalid operand combination");
+			}
+
+			((VarObject *)varOut)->setData(valueOut);
+			break;
+		}
 		case Opcode::NOT:
 		case Opcode::LNOT:
 		case Opcode::NEG: {
@@ -890,6 +1012,99 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 							break;
 						case Opcode::NEG:
 							valueOut = Value((int64_t)(-x.getI64()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
+					break;
+				case ValueType::U8:
+					switch (ins.opcode) {
+						case Opcode::NOT:
+							valueOut = Value((uint8_t)(~x.getU8()));
+							break;
+						case Opcode::LNOT:
+							valueOut = Value((bool)(!x.getI8()));
+							break;
+						case Opcode::NEG:
+							valueOut = Value((uint8_t)(x.getU8()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
+					break;
+				case ValueType::U16:
+					switch (ins.opcode) {
+						case Opcode::NOT:
+							valueOut = Value((uint16_t)(~x.getU16()));
+							break;
+						case Opcode::LNOT:
+							valueOut = Value((bool)(!x.getU16()));
+							break;
+						case Opcode::NEG:
+							valueOut = Value((uint16_t)(x.getU16()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
+					break;
+				case ValueType::U32:
+					switch (ins.opcode) {
+						case Opcode::NOT:
+							valueOut = Value((uint32_t)(~x.getU32()));
+							break;
+						case Opcode::LNOT:
+							valueOut = Value((bool)(!x.getU32()));
+							break;
+						case Opcode::NEG:
+							valueOut = Value((uint32_t)(x.getU32()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
+					break;
+				case ValueType::U64:
+					switch (ins.opcode) {
+						case Opcode::NOT:
+							valueOut = Value((uint64_t)(~x.getU64()));
+							break;
+						case Opcode::LNOT:
+							valueOut = Value((bool)(!x.getU64()));
+							break;
+						case Opcode::NEG:
+							valueOut = Value((uint64_t)(x.getU64()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
+					break;
+				case ValueType::F32:
+					switch (ins.opcode) {
+						case Opcode::LNOT:
+							valueOut = Value((bool)(!x.getF32()));
+							break;
+						case Opcode::NEG:
+							valueOut = Value((float)(-x.getF32()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
+					break;
+				case ValueType::F64:
+					switch (ins.opcode) {
+						case Opcode::LNOT:
+							valueOut = Value((bool)(!x.getF64()));
+							break;
+						case Opcode::NEG:
+							valueOut = Value((double)(-x.getF64()));
+							break;
+						default:
+							throw InvalidOperandsError("Unsupported operation");
+					}
+					break;
+				case ValueType::Bool:
+					switch (ins.opcode) {
+						case Opcode::LNOT:
+							valueOut = Value((bool)(!x.getU64()));
 							break;
 						default:
 							throw InvalidOperandsError("Unsupported operation");

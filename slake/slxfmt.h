@@ -112,18 +112,6 @@ namespace slake {
 			ITD_PUB = 0x01	// Public
 			;
 
-		// Trait Type Descriptor (TTD)
-		struct TraitTypeDesc final {
-			uint8_t flags;
-			uint8_t nGenericParams;
-			uint8_t lenName;
-			uint8_t nParents;
-		};
-
-		constexpr static uint8_t
-			TTD_PUB = 0x01	// Public
-			;
-
 		/// @brief Function Descriptor (FND)
 		struct FnDesc final {
 			uint16_t flags : 16;			// Flags
@@ -178,9 +166,8 @@ namespace slake {
 		/// @brief Generic Parameter Descriptor (GPD)
 		struct GenericParamDesc final {
 			uint8_t lenName;
-			bool hasBaseType;
-			uint8_t nTraits;
-			uint8_t nInterfaces;
+			bool hasBaseType : 1;
+			uint8_t nInterfaces : 7;
 		};
 
 		// @brief Variable Debugging Descriptor (VDD)

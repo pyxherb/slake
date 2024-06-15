@@ -99,37 +99,6 @@ void Compiler::verifyInheritanceChain(InterfaceNode *node, std::set<AstNode *> &
 	}
 }
 
-void Compiler::verifyInheritanceChain(TraitNode *node, std::set<AstNode *> &walkedNodes) {
-	walkedNodes.insert(node);
-
-	for (auto &i : node->parentTraits) {
-		updateCompletionContext(i, CompletionContext::Type);
-
-		if (i->getTypeId() != TypeId::Custom)
-			throw FatalCompilationError(
-				Message(
-					i->sourceLocation,
-					MessageType::Error,
-					"`" + std::to_string(i, this) + "' cannot be implemented"));
-
-		auto parent = resolveCustomTypeName((CustomTypeNameNode *)i.get());
-
-		if (parent->getNodeType() != NodeType::Trait)
-			throw FatalCompilationError(
-				Message(
-					i->sourceLocation,
-					MessageType::Error,
-					"`" + std::to_string(i, this) + "' is not a trait"));
-
-		auto m = std::static_pointer_cast<TraitNode>(parent);
-
-		if (walkedNodes.count(m.get()))
-			_throwCyclicInheritanceError(i->sourceLocation);
-
-		verifyInheritanceChain(m->originalValue ? (TraitNode *)m->originalValue : m.get(), walkedNodes);
-	}
-}
-
 void Compiler::verifyInheritanceChain(GenericParamNode *node, std::set<AstNode *> &walkedNodes) {
 	walkedNodes.insert(node);
 
@@ -153,24 +122,6 @@ void Compiler::verifyInheritanceChain(GenericParamNode *node, std::set<AstNode *
 	}
 
 	for (auto &i : node->interfaceTypes) {
-		if (i->getTypeId() != TypeId::Custom)
-			throw FatalCompilationError(
-				Message(
-					i->sourceLocation,
-					MessageType::Error,
-					"The type cannot be implemented"));
-
-		auto t = std::static_pointer_cast<CustomTypeNameNode>(i);
-		auto m = resolveCustomTypeName(t.get());
-
-		if (walkedNodes.count(m.get()))
-			_throwCyclicInheritanceError(t->sourceLocation);
-
-		if (m->getNodeType() == NodeType::GenericParam)
-			verifyInheritanceChain((GenericParamNode *)m.get(), walkedNodes);
-	}
-
-	for (auto &i : node->traitTypes) {
 		if (i->getTypeId() != TypeId::Custom)
 			throw FatalCompilationError(
 				Message(
@@ -226,24 +177,6 @@ void Compiler::verifyGenericParams(const GenericParamNodeList &params) {
 		}
 
 		for (auto &j : i->interfaceTypes) {
-			if (j->getTypeId() != TypeId::Custom)
-				throw FatalCompilationError(
-					Message(
-						j->sourceLocation,
-						MessageType::Error,
-						"The type cannot be implemented"));
-
-			auto t = std::static_pointer_cast<CustomTypeNameNode>(j);
-			auto dest = resolveCustomTypeName(t.get());
-
-			if (dest->getNodeType() == NodeType::GenericParam) {
-				auto d = std::static_pointer_cast<GenericParamNode>(dest);
-
-				verifyInheritanceChain(d.get());
-			}
-		}
-
-		for (auto &j : i->traitTypes) {
 			if (j->getTypeId() != TypeId::Custom)
 				throw FatalCompilationError(
 					Message(

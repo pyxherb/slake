@@ -378,8 +378,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 
 					switch (node->getNodeType()) {
 						case NodeType::Class:
-						case NodeType::Interface:
-						case NodeType::Trait: {
+						case NodeType::Interface: {
 							std::shared_ptr<MemberNode> n = std::static_pointer_cast<MemberNode>(node);
 
 							if (auto it = n->scope->members.find("new"); it != n->scope->members.end()) {
@@ -808,7 +807,6 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 				case NodeType::BaseRef:
 				case NodeType::Class:
 				case NodeType::Interface:
-				case NodeType::Trait:
 				case NodeType::Module: {
 					//
 					// Resolve the head of the reference.
@@ -817,7 +815,6 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					switch (x->getNodeType()) {
 						case NodeType::Class:
 						case NodeType::Interface:
-						case NodeType::Trait:
 						case NodeType::Module: {
 							IdRef ref = getFullName((MemberNode *)x.get());
 							_insertIns(
@@ -889,8 +886,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 
 							switch (owner->getNodeType()) {
 								case NodeType::Class:
-								case NodeType::Interface:
-								case NodeType::Trait: {
+								case NodeType::Interface: {
 									_insertIns(Opcode::LTHIS, { std::make_shared<RegRefNode>(tmpRegIndex) });
 									curMajorContext.curMinorContext.evaluatedType = curMajorContext.thisType;
 									break;

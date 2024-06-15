@@ -22,7 +22,6 @@ namespace slake {
 			GenericParam,  // Generic parameter
 			Class,		   // Class
 			Interface,	   // Interface
-			Trait,		   // Trait
 			Module,		   // Module
 			Enum,		   // Enumeration
 			EnumConst,	   // Enumeration constant

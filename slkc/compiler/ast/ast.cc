@@ -6,7 +6,6 @@ bool slake::slkc::isMemberNode(std::shared_ptr<AstNode> node) {
     switch(node->getNodeType()) {
         case NodeType::Class:
         case NodeType::Interface:
-        case NodeType::Trait:
         case NodeType::Fn:
         case NodeType::Module:
         case NodeType::Alias:

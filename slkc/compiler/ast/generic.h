@@ -17,7 +17,7 @@ namespace slake {
 		public:
 			std::string name;
 			std::shared_ptr<TypeNameNode> baseType;
-			std::deque<std::shared_ptr<TypeNameNode>> traitTypes, interfaceTypes;
+			std::deque<std::shared_ptr<TypeNameNode>> interfaceTypes;
 
 			std::weak_ptr<Scope> cachedMergedScope;
 
@@ -35,10 +35,6 @@ namespace slake {
 				name = other.name;
 				if (baseType)
 					baseType = other.baseType->duplicate<TypeNameNode>();
-
-				traitTypes.resize(other.traitTypes.size());
-				for (size_t i = 0; i < other.traitTypes.size(); ++i)
-					traitTypes[i] = other.traitTypes[i]->duplicate<TypeNameNode>();
 
 				interfaceTypes.resize(other.interfaceTypes.size());
 				for (size_t i = 0; i < other.interfaceTypes.size(); ++i)

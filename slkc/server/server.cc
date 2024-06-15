@@ -516,9 +516,6 @@ slake::slkc::Server::Server() {
 						case NodeType::Interface:
 							responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((InterfaceNode *)member.get()), doc->compiler.get());
 							break;
-						case NodeType::Trait:
-							responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((TraitNode *)member.get()), doc->compiler.get());
-							break;
 						case NodeType::Module:
 							responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((ModuleNode *)member.get()), doc->compiler.get());
 							break;

@@ -189,10 +189,6 @@ GenericParam Runtime::_loadGenericParam(std::istream &fs) {
 		param.interfaces.push_back(_loadType(fs));
 	}
 
-	for (size_t i = 0; i < gpd.nTraits; ++i) {
-		param.traits.push_back(_loadType(fs));
-	}
-
 	return param;
 }
 

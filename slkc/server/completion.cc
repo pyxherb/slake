@@ -36,7 +36,6 @@ static std::string keywordConditions[] = {
 	"switch",
 	"this",
 	"throw",
-	"trait",
 	"interface",
 	"true",
 	"try",
@@ -158,15 +157,6 @@ void slake::slkc::Document::_walkForCompletion(
 			}
 			break;
 		}
-		case NodeType::Trait: {
-			TraitNode *node = (TraitNode *)m;
-
-			for (auto &i : node->parentTraits) {
-				auto parent = compiler->resolveCustomTypeName((CustomTypeNameNode *)i.get());
-				_walkForCompletion(parent.get(), membersOut, walkedScopes, isStatic);
-			}
-			break;
-		}
 	}
 }
 
@@ -199,8 +189,6 @@ CompletionItemType slake::slkc::Document::_toCompletionItemType(NodeType nodeTyp
 			return CompletionItemType::Class;
 		case NodeType::Interface:
 			return CompletionItemType::Interface;
-		case NodeType::Trait:
-			return CompletionItemType::Trait;
 		case NodeType::Module:
 			return CompletionItemType::Module;
 			/*case NodeType::Enum:
@@ -253,7 +241,6 @@ std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(SourcePosit
 		{ NodeType::GenericParam,
 			NodeType::Class,
 			NodeType::Interface,
-			NodeType::Trait,
 			NodeType::Module });
 
 	return completionItems;
@@ -285,7 +272,6 @@ succeeded:
 					{ NodeType::GenericParam,
 						NodeType::Class,
 						NodeType::Interface,
-						NodeType::Trait,
 						NodeType::Module });
 
 			break;
@@ -298,7 +284,6 @@ succeeded:
 					{ NodeType::GenericParam,
 						NodeType::Class,
 						NodeType::Interface,
-						NodeType::Trait,
 						NodeType::Module });
 			break;
 		}
@@ -310,19 +295,6 @@ succeeded:
 					{ NodeType::GenericParam,
 						NodeType::Class,
 						NodeType::Interface,
-						NodeType::Trait,
-						NodeType::Module });
-			break;
-		}
-		case CompletionContext::Trait: {
-			if (tokenInfo.tokenContext.curScope)
-				_getCompletionItems(
-					_walkForCompletion(tokenInfo.tokenContext.curScope.get(), true, tokenInfo.semanticInfo.isStatic),
-					completionItems,
-					{ NodeType::GenericParam,
-						NodeType::Class,
-						NodeType::Interface,
-						NodeType::Trait,
 						NodeType::Module });
 			break;
 		}
@@ -339,7 +311,6 @@ succeeded:
 						NodeType::GenericParam,
 						NodeType::Class,
 						NodeType::Interface,
-						NodeType::Trait,
 						NodeType::Module });
 
 			if (tokenInfo.semanticInfo.isTopLevelRef) {
@@ -398,7 +369,6 @@ succeeded:
 					{ NodeType::GenericParam,
 						NodeType::Class,
 						NodeType::Interface,
-						NodeType::Trait,
 						NodeType::Module });
 
 			for (auto &i : tokenInfo.tokenContext.genericParams) {
@@ -429,7 +399,6 @@ succeeded:
 						NodeType::GenericParam,
 						NodeType::Class,
 						NodeType::Interface,
-						NodeType::Trait,
 						NodeType::Module });
 			}
 
@@ -467,7 +436,6 @@ succeeded:
 						NodeType::GenericParam,
 						NodeType::Class,
 						NodeType::Interface,
-						NodeType::Trait,
 						NodeType::Module });
 			break;
 		}

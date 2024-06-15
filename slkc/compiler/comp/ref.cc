@@ -397,25 +397,6 @@ bool slake::slkc::Compiler::_resolveIdRefWithOwner(Scope *scope, const IdRef &re
 				}
 				break;
 			}
-			case NodeType::Trait: {
-				auto owner = (TraitNode *)scope->owner;
-
-				// Resolve with the inherited traits.
-				for (auto i : owner->parentTraits) {
-					if (i->getTypeId() == TypeId::Custom) {
-						if (_resolveIdRef(
-								scopeOf(
-									_resolveCustomTypeName(
-										(CustomTypeNameNode *)i.get(),
-										resolveContext.resolvingScopes)
-										.get())
-									.get(),
-								ref, partsOut, resolveContext))
-							return true;
-					}
-				}
-				break;
-			}
 			case NodeType::Module: {
 				// Resolve with the parent module.
 				auto owner = (ModuleNode *)scope->owner;

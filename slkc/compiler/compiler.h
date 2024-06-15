@@ -162,7 +162,6 @@ namespace slake {
 			TopLevel,	// User is entering in the top level.
 			Class,		// User is entering in a class.
 			Interface,	// User is entering in an interface.
-			Trait,		// User is entering in a trait.
 			Stmt,		// User is entering a statement.
 
 			Import,		   // User is entering an import item.
@@ -268,7 +267,6 @@ namespace slake {
 			bool _isTypeNamesConvertible(std::shared_ptr<InterfaceNode> st, std::shared_ptr<ClassNode> dt);
 			bool _isTypeNamesConvertible(std::shared_ptr<ClassNode> st, std::shared_ptr<InterfaceNode> dt);
 			bool _isTypeNamesConvertible(std::shared_ptr<InterfaceNode> st, std::shared_ptr<InterfaceNode> dt);
-			bool _isTypeNamesConvertible(std::shared_ptr<MemberNode> st, std::shared_ptr<TraitNode> dt);
 			bool _isTypeNamesConvertible(std::shared_ptr<ClassNode> st, std::shared_ptr<ClassNode> dt);
 
 			bool isTypeNamesConvertible(std::shared_ptr<TypeNameNode> src, std::shared_ptr<TypeNameNode> dest);
@@ -538,7 +536,6 @@ namespace slake {
 
 			void verifyInheritanceChain(ClassNode *node, std::set<AstNode *> &walkedNodes);
 			void verifyInheritanceChain(InterfaceNode *node, std::set<AstNode *> &walkedNodes);
-			void verifyInheritanceChain(TraitNode *node, std::set<AstNode *> &walkedNodes);
 			void verifyInheritanceChain(GenericParamNode *node, std::set<AstNode *> &walkedNodes);
 
 			inline void verifyInheritanceChain(ClassNode *node) {
@@ -546,10 +543,6 @@ namespace slake {
 				verifyInheritanceChain(node, walkedNodes);
 			}
 			inline void verifyInheritanceChain(InterfaceNode *node) {
-				std::set<AstNode *> walkedNodes;
-				verifyInheritanceChain(node, walkedNodes);
-			}
-			inline void verifyInheritanceChain(TraitNode *node) {
 				std::set<AstNode *> walkedNodes;
 				verifyInheritanceChain(node, walkedNodes);
 			}

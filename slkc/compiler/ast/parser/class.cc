@@ -67,8 +67,6 @@ GenericParamNodeList Parser::parseGenericParams(SourceLocation &locationOut) {
 		if (param->interfaceTypes.size())
 			param->sourceLocation.endPosition = param->interfaceTypes.back()->sourceLocation.endPosition;
 
-		// TODO: Parse trait types.
-
 		genericParams.push_back(param);
 
 		if (Token *token = lexer->peekToken(); token->tokenId != TokenId::Comma)

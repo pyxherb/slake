@@ -8,8 +8,6 @@ std::shared_ptr<Scope> Compiler::scopeOf(AstNode *node) {
 			return ((ClassNode *)node)->scope;
 		case NodeType::Interface:
 			return ((InterfaceNode *)node)->scope;
-		case NodeType::Trait:
-			return ((TraitNode *)node)->scope;
 		case NodeType::Module:
 			return ((ModuleNode *)node)->scope;
 		case NodeType::TypeName: {
@@ -52,13 +50,6 @@ std::shared_ptr<Scope> Compiler::scopeOf(AstNode *node) {
 
 				if (interfaceTypeScope)
 					newScope = mergeScope(newScope.get(), interfaceTypeScope.get());
-			}
-
-			for (auto i : n->traitTypes) {
-				auto traitTypeScope = scopeOf(i.get());
-
-				if (traitTypeScope)
-					newScope = mergeScope(newScope.get(), traitTypeScope.get());
 			}
 
 			n->cachedMergedScope = newScope;

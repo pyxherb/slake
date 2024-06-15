@@ -9,7 +9,7 @@ namespace slake {
 	struct GenericParam final {
 		std::string name;
 		Type baseType = Type(TypeId::Any);
-		std::deque<Type> interfaces, traits;
+		std::deque<Type> interfaces;
 	};
 
 	using GenericArgList = std::deque<Type>;

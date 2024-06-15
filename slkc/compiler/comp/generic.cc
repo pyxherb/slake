@@ -139,30 +139,12 @@ void Compiler::walkNodeForGenericInstantiation(
 
 			break;
 		}
-		case NodeType::Trait: {
-			std::shared_ptr<TraitNode> n = std::static_pointer_cast<TraitNode>(node);
-
-			for (auto &i : n->genericParams)
-				walkNodeForGenericInstantiation(i, instantiationContext);
-
-			for (auto &i : n->parentTraits) {
-				walkTypeNameNodeForGenericInstantiation(i, instantiationContext);
-			}
-
-			for (auto &i : n->scope->members) {
-				walkNodeForGenericInstantiation(i.second, instantiationContext);
-			}
-
-			break;
-		}
 		case NodeType::GenericParam: {
 			std::shared_ptr<GenericParamNode> n = std::static_pointer_cast<GenericParamNode>(node);
 
 			if (n->baseType)
 				walkTypeNameNodeForGenericInstantiation(n->baseType, instantiationContext);
 			for (auto &i : n->interfaceTypes)
-				walkTypeNameNodeForGenericInstantiation(i, instantiationContext);
-			for (auto &i : n->traitTypes)
 				walkTypeNameNodeForGenericInstantiation(i, instantiationContext);
 
 			break;

@@ -260,10 +260,8 @@ namespace slake {
 
 	class ClassObject;
 	class InterfaceObject;
-	class TraitObject;
 
 	bool hasImplemented(ClassObject *c, InterfaceObject *i);
-	bool hasTrait(ClassObject *c, TraitObject *t);
 	bool isCompatible(Type a, Type b);
 
 	class Runtime;

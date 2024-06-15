@@ -203,8 +203,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 
 			switch (node->getNodeType()) {
 				case NodeType::Class:
-				case NodeType::Interface:
-				case NodeType::Trait: {
+				case NodeType::Interface: {
 					uint32_t lhsRegIndex = allocReg(1);
 
 					std::shared_ptr<MemberNode> n = std::static_pointer_cast<MemberNode>(node);
@@ -238,20 +237,6 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 						break;
 
 					for (auto i : n->interfaceTypes) {
-						curMember = resolveCustomTypeName((CustomTypeNameNode *)i.get());
-
-						if (curMember->getNodeType() != NodeType::Interface)
-							throw FatalCompilationError(
-								Message(
-									n->baseType->sourceLocation,
-									MessageType::Error,
-									"Must be an interface"));
-
-						if (determineOverloading(std::static_pointer_cast<MemberNode>(curMember), lhsRegIndex))
-							break;
-					}
-
-					for (auto i : n->traitTypes) {
 						curMember = resolveCustomTypeName((CustomTypeNameNode *)i.get());
 
 						if (curMember->getNodeType() != NodeType::Interface)

@@ -43,9 +43,6 @@ std::shared_ptr<Scope> slake::slkc::Compiler::completeModuleNamespaces(const IdR
 				case NodeType::Interface:
 					scope = std::static_pointer_cast<InterfaceNode>(it->second)->scope;
 					break;
-				case NodeType::Trait:
-					scope = std::static_pointer_cast<TraitNode>(it->second)->scope;
-					break;
 				case NodeType::Module:
 					scope = std::static_pointer_cast<ModuleNode>(it->second)->scope;
 					break;
@@ -353,7 +350,6 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 	std::unordered_map<std::string, std::shared_ptr<FnNode>> funcs;
 	std::unordered_map<std::string, std::shared_ptr<ClassNode>> classes;
 	std::unordered_map<std::string, std::shared_ptr<InterfaceNode>> interfaces;
-	std::unordered_map<std::string, std::shared_ptr<TraitNode>> traits;
 
 	curMajorContext.curMinorContext.curScope = scope;
 
@@ -607,46 +603,6 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 #endif
 				break;
 			}
-			case NodeType::Trait: {
-				if (i.second->isImported)
-					continue;
-
-				auto m = std::static_pointer_cast<TraitNode>(i.second);
-				traits[i.first] = m;
-
-#if SLKC_WITH_LANGUAGE_SERVER
-				updateTokenInfo(m->idxNameToken, [this, &m](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext =
-						TokenContext(
-							{},
-							curMajorContext.curMinorContext.curScope,
-							m->genericParams,
-							m->genericParamIndices,
-							{},
-							{});
-					tokenInfo.semanticType = SemanticType::Interface;
-				});
-
-				for (auto &j : m->parentTraits) {
-					updateCompletionContext(j, CompletionContext::Type);
-				}
-
-				for (auto &j : m->genericParams) {
-					updateTokenInfo(j->idxNameToken, [this, &m](TokenInfo &tokenInfo) {
-						tokenInfo.tokenContext =
-							TokenContext(
-								{},
-								curMajorContext.curMinorContext.curScope,
-								m->genericParams,
-								m->genericParamIndices,
-								{},
-								{});
-						tokenInfo.semanticType = SemanticType::TypeParam;
-					});
-				}
-#endif
-				break;
-			}
 			case NodeType::Alias:
 			case NodeType::Module:
 				break;
@@ -654,7 +610,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				assert(false);
 		}
 	}
-	
+
 	auto mergeGenericParams = [this](const GenericParamNodeList &newParams) {
 		for (auto &i : newParams) {
 			if (curMajorContext.genericParamIndices.count(i->name))
@@ -851,7 +807,6 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				switch (scope->owner->getNodeType()) {
 					case NodeType::Class:
 					case NodeType::Interface:
-					case NodeType::Trait:
 						break;
 					default:
 						throw FatalCompilationError(
@@ -1255,7 +1210,6 @@ void slake::slkc::Compiler::compileGenericParam(std::ostream &fs, std::shared_pt
 	gpd.lenName = (uint8_t)genericParam->name.size();
 	gpd.hasBaseType = (bool)genericParam->baseType;
 	gpd.nInterfaces = (uint8_t)genericParam->interfaceTypes.size();
-	gpd.nTraits = (uint8_t)genericParam->traitTypes.size();
 
 	_write(fs, gpd);
 
@@ -1265,9 +1219,6 @@ void slake::slkc::Compiler::compileGenericParam(std::ostream &fs, std::shared_pt
 		compileTypeName(fs, genericParam->baseType);
 
 	for (auto i : genericParam->interfaceTypes)
-		compileTypeName(fs, i);
-
-	for (auto i : genericParam->traitTypes)
 		compileTypeName(fs, i);
 }
 

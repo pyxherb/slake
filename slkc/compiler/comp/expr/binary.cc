@@ -85,6 +85,27 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 	auto &opReg = _binaryOpRegs.at(e->op);
 
+	auto compileOrCastOperand =
+		[this, e](
+			std::shared_ptr<ExprNode> operand,
+			std::shared_ptr<TypeNameNode> operandType,
+			std::shared_ptr<TypeNameNode> targetType,
+			EvalPurpose evalPurpose,
+			std::shared_ptr<AstNode> destOut) {
+			if (!isSameType(operandType, targetType)) {
+				if (!isTypeNamesConvertible(operandType, targetType))
+					throw FatalCompilationError(
+						{ e->rhs->sourceLocation,
+							MessageType::Error,
+							"Incompatible operand types" });
+
+				compileExpr(
+					std::make_shared<CastExprNode>(targetType, operand),
+					evalPurpose,
+					destOut);
+			} else
+				compileExpr(e->rhs, evalPurpose, destOut);
+		};
 	auto compileShortCircuitOperator = [this, e, lhsType, rhsType, &opReg, resultRegIndex]() {
 		uint32_t lhsRegIndex = allocReg(1);
 
@@ -174,6 +195,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					{ std::make_shared<RegRefNode>(lhsValueRegIndex),
 						std::make_shared<RegRefNode>(lhsRegIndex, true) });
 
+				// Execute the operation.
 				_insertIns(
 					_binaryOpRegs.at(ordinaryOp).opcode,
 					{ std::make_shared<RegRefNode>(opResultRegIndex),
@@ -185,22 +207,20 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					Opcode::STORE,
 					{ std::make_shared<RegRefNode>(lhsRegIndex, true),
 						std::make_shared<RegRefNode>(opResultRegIndex, true) });
-
-				_insertIns(
-					Opcode::STORE,
-					{ std::make_shared<RegRefNode>(resultRegIndex),
-						std::make_shared<RegRefNode>(lhsRegIndex, true) });
 			} else {
+				// Ordinary assignment operation.
 				_insertIns(
 					Opcode::STORE,
 					{ std::make_shared<RegRefNode>(lhsRegIndex, true),
 						std::make_shared<RegRefNode>(rhsRegIndex, true) });
-				_insertIns(
-					Opcode::STORE,
-					{ std::make_shared<RegRefNode>(resultRegIndex),
-						std::make_shared<RegRefNode>(lhsRegIndex, true) });
 			}
+
+			_insertIns(
+				Opcode::STORE,
+				{ std::make_shared<RegRefNode>(resultRegIndex),
+					std::make_shared<RegRefNode>(lhsRegIndex, true) });
 		} else {
+			// Execute the operation.
 			_insertIns(
 				opReg.opcode,
 				{ std::make_shared<RegRefNode>(resultRegIndex),
@@ -241,21 +261,13 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							: EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
 
-					if (!isSameType(lhsType, rhsType)) {
-						if (!isTypeNamesConvertible(rhsType, lhsType))
-							throw FatalCompilationError(
-								{ e->rhs->sourceLocation,
-									MessageType::Error,
-									"Incompatible operand types" });
-
-						compileExpr(
-							std::make_shared<CastExprNode>(lhsType, e->rhs),
-							opReg.isRhsLvalue
-								? EvalPurpose::LValue
-								: EvalPurpose::RValue,
-							std::make_shared<RegRefNode>(rhsRegIndex));
-					} else
-						compileExpr(e->rhs, opReg.isRhsLvalue ? EvalPurpose::LValue : EvalPurpose::RValue, std::make_shared<RegRefNode>(rhsRegIndex));
+					compileOrCastOperand(
+						e->rhs,
+						rhsType, lhsType,
+						opReg.isRhsLvalue
+							? EvalPurpose::LValue
+							: EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(rhsRegIndex));
 
 					execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
 
@@ -270,8 +282,6 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					uint32_t lhsRegIndex = allocReg(2),
 							 rhsRegIndex = lhsRegIndex + 1;
 
-					auto u32Type = std::make_shared<U32TypeNameNode>(SIZE_MAX);
-
 					compileExpr(
 						e->lhs,
 						opReg.isLhsLvalue
@@ -279,26 +289,13 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							: EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
 
-					if (!isSameType(rhsType, u32Type)) {
-						if (!isTypeNamesConvertible(rhsType, u32Type))
-							throw FatalCompilationError(
-								{ e->rhs->sourceLocation,
-									MessageType::Error,
-									"Incompatible operand types" });
-
-						compileExpr(
-							std::make_shared<CastExprNode>(u32Type, e->rhs),
-							opReg.isRhsLvalue
-								? EvalPurpose::LValue
-								: EvalPurpose::RValue,
-							std::make_shared<RegRefNode>(lhsRegIndex));
-					} else
-						compileExpr(
-							e->rhs,
-							opReg.isRhsLvalue
-								? EvalPurpose::LValue
-								: EvalPurpose::RValue,
-							std::make_shared<RegRefNode>(rhsRegIndex));
+					compileOrCastOperand(
+						e->rhs,
+						rhsType, std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						opReg.isRhsLvalue
+							? EvalPurpose::LValue
+							: EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(rhsRegIndex));
 
 					execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
 
@@ -334,21 +331,13 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							: EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
 
-					if (!isSameType(lhsType, rhsType)) {
-						if (!isTypeNamesConvertible(rhsType, lhsType))
-							throw FatalCompilationError(
-								{ e->rhs->sourceLocation,
-									MessageType::Error,
-									"Incompatible operand types" });
-
-						compileExpr(
-							std::make_shared<CastExprNode>(lhsType, e->rhs),
-							opReg.isRhsLvalue
-								? EvalPurpose::LValue
-								: EvalPurpose::RValue,
-							std::make_shared<RegRefNode>(rhsRegIndex));
-					} else
-						compileExpr(e->rhs, opReg.isRhsLvalue ? EvalPurpose::LValue : EvalPurpose::RValue, std::make_shared<RegRefNode>(rhsRegIndex));
+					compileOrCastOperand(
+						e->rhs,
+						rhsType, lhsType,
+						opReg.isRhsLvalue
+							? EvalPurpose::LValue
+							: EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(rhsRegIndex));
 
 					execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
 
@@ -392,21 +381,13 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							: EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
 
-					if (!isSameType(lhsType, rhsType)) {
-						if (!isTypeNamesConvertible(rhsType, lhsType))
-							throw FatalCompilationError(
-								{ e->rhs->sourceLocation,
-									MessageType::Error,
-									"Incompatible operand types" });
-
-						compileExpr(
-							std::make_shared<CastExprNode>(lhsType, e->rhs),
-							opReg.isRhsLvalue
-								? EvalPurpose::LValue
-								: EvalPurpose::RValue,
-							std::make_shared<RegRefNode>(rhsRegIndex));
-					} else
-						compileExpr(e->rhs, opReg.isRhsLvalue ? EvalPurpose::LValue : EvalPurpose::RValue, std::make_shared<RegRefNode>(rhsRegIndex));
+					compileOrCastOperand(
+						e->rhs,
+						rhsType, lhsType,
+						opReg.isRhsLvalue
+							? EvalPurpose::LValue
+							: EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(rhsRegIndex));
 
 					execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
 
@@ -435,21 +416,13 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							: EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
 
-					if (!isSameType(lhsType, rhsType)) {
-						if (!isTypeNamesConvertible(rhsType, lhsType))
-							throw FatalCompilationError(
-								{ e->rhs->sourceLocation,
-									MessageType::Error,
-									"Incompatible operand types" });
-
-						compileExpr(
-							std::make_shared<CastExprNode>(lhsType, e->rhs),
-							opReg.isRhsLvalue
-								? EvalPurpose::LValue
-								: EvalPurpose::RValue,
-							std::make_shared<RegRefNode>(rhsRegIndex));
-					} else
-						compileExpr(e->rhs, opReg.isRhsLvalue ? EvalPurpose::LValue : EvalPurpose::RValue, std::make_shared<RegRefNode>(rhsRegIndex));
+					compileOrCastOperand(
+						e->rhs,
+						rhsType, lhsType,
+						opReg.isRhsLvalue
+							? EvalPurpose::LValue
+							: EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(rhsRegIndex));
 
 					execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
 
@@ -488,21 +461,13 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							: EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
 
-					if (!isSameType(lhsType, rhsType)) {
-						if (!isTypeNamesConvertible(rhsType, lhsType))
-							throw FatalCompilationError(
-								{ e->rhs->sourceLocation,
-									MessageType::Error,
-									"Incompatible operand types" });
-
-						compileExpr(
-							std::make_shared<CastExprNode>(lhsType, e->rhs),
-							opReg.isRhsLvalue
-								? EvalPurpose::LValue
-								: EvalPurpose::RValue,
-							std::make_shared<RegRefNode>(rhsRegIndex));
-					} else
-						compileExpr(e->rhs, opReg.isRhsLvalue ? EvalPurpose::LValue : EvalPurpose::RValue, std::make_shared<RegRefNode>(rhsRegIndex));
+					compileOrCastOperand(
+						e->rhs,
+						rhsType, lhsType,
+						opReg.isRhsLvalue
+							? EvalPurpose::LValue
+							: EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(rhsRegIndex));
 
 					execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
 
@@ -521,21 +486,13 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							: EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
 
-					if (!isSameType(lhsType, rhsType)) {
-						if (!isTypeNamesConvertible(rhsType, lhsType))
-							throw FatalCompilationError(
-								{ e->rhs->sourceLocation,
-									MessageType::Error,
-									"Incompatible operand types" });
-
-						compileExpr(
-							std::make_shared<CastExprNode>(lhsType, e->rhs),
-							opReg.isRhsLvalue
-								? EvalPurpose::LValue
-								: EvalPurpose::RValue,
-							std::make_shared<RegRefNode>(rhsRegIndex));
-					} else
-						compileExpr(e->rhs, opReg.isRhsLvalue ? EvalPurpose::LValue : EvalPurpose::RValue, std::make_shared<RegRefNode>(rhsRegIndex));
+					compileOrCastOperand(
+						e->rhs,
+						rhsType, lhsType,
+						opReg.isRhsLvalue
+							? EvalPurpose::LValue
+							: EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(rhsRegIndex));
 
 					execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
 
@@ -567,26 +524,13 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							: EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
 
-					if (!isSameType(lhsType, rhsType)) {
-						if (!isTypeNamesConvertible(rhsType, lhsType))
-							throw FatalCompilationError(
-								{ e->rhs->sourceLocation,
-									MessageType::Error,
-									"Incompatible operand types" });
-
-						compileExpr(
-							std::make_shared<CastExprNode>(lhsType, e->rhs),
-							opReg.isRhsLvalue
-								? EvalPurpose::LValue
-								: EvalPurpose::RValue,
-							std::make_shared<RegRefNode>(rhsRegIndex));
-					} else
-						compileExpr(
-							e->rhs,
-							opReg.isRhsLvalue
-								? EvalPurpose::LValue
-								: EvalPurpose::RValue,
-							std::make_shared<RegRefNode>(rhsRegIndex));
+					compileOrCastOperand(
+						e->rhs,
+						rhsType, lhsType,
+						opReg.isRhsLvalue
+							? EvalPurpose::LValue
+							: EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(rhsRegIndex));
 
 					_insertIns(
 						opReg.opcode,
@@ -602,8 +546,6 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					uint32_t lhsRegIndex = allocReg(2),
 							 rhsRegIndex = lhsRegIndex + 1;
 
-					auto u32Type = std::make_shared<U32TypeNameNode>(SIZE_MAX);
-
 					compileExpr(
 						e->lhs,
 						opReg.isLhsLvalue
@@ -611,26 +553,13 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							: EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
 
-					if (!isSameType(rhsType, u32Type)) {
-						if (!isTypeNamesConvertible(rhsType, u32Type))
-							throw FatalCompilationError(
-								{ e->rhs->sourceLocation,
-									MessageType::Error,
-									"Incompatible operand types" });
-
-						compileExpr(
-							std::make_shared<CastExprNode>(u32Type, e->rhs),
-							opReg.isRhsLvalue
-								? EvalPurpose::LValue
-								: EvalPurpose::RValue,
-							std::make_shared<RegRefNode>(rhsRegIndex));
-					} else
-						compileExpr(
-							e->rhs,
-							opReg.isRhsLvalue
-								? EvalPurpose::LValue
-								: EvalPurpose::RValue,
-							std::make_shared<RegRefNode>(rhsRegIndex));
+					compileOrCastOperand(
+						e->rhs,
+						rhsType, std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						opReg.isRhsLvalue
+							? EvalPurpose::LValue
+							: EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(rhsRegIndex));
 
 					_insertIns(
 						opReg.opcode,
@@ -639,103 +568,6 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							std::make_shared<RegRefNode>(rhsRegIndex, true) });
 
 					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX, true);
-
-					break;
-				}
-				default:
-					throw FatalCompilationError(
-						Message(
-							e->sourceLocation,
-							MessageType::Error,
-							"No matching operator"));
-			}
-			break;
-		}
-		case TypeId::WString: {
-			switch (e->op) {
-				case BinaryOp::Add: {
-					uint32_t lhsRegIndex = allocReg(2),
-							 rhsRegIndex = lhsRegIndex + 1;
-
-					compileExpr(
-						e->lhs,
-						opReg.isLhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(lhsRegIndex));
-
-					if (!isSameType(lhsType, rhsType)) {
-						if (!isTypeNamesConvertible(rhsType, lhsType))
-							throw FatalCompilationError(
-								{ e->rhs->sourceLocation,
-									MessageType::Error,
-									"Incompatible operand types" });
-
-						compileExpr(
-							std::make_shared<CastExprNode>(lhsType, e->rhs),
-							opReg.isRhsLvalue
-								? EvalPurpose::LValue
-								: EvalPurpose::RValue,
-							std::make_shared<RegRefNode>(rhsRegIndex));
-					} else
-						compileExpr(
-							e->rhs,
-							opReg.isRhsLvalue
-								? EvalPurpose::LValue
-								: EvalPurpose::RValue,
-							std::make_shared<RegRefNode>(rhsRegIndex));
-
-					_insertIns(
-						opReg.opcode,
-						{ std::make_shared<RegRefNode>(resultRegIndex),
-							std::make_shared<RegRefNode>(lhsRegIndex, true),
-							std::make_shared<RegRefNode>(rhsRegIndex, true) });
-
-					resultType = std::make_shared<WStringTypeNameNode>(SIZE_MAX);
-
-					break;
-				}
-				case BinaryOp::Subscript: {
-					uint32_t lhsRegIndex = allocReg(2),
-							 rhsRegIndex = lhsRegIndex + 1;
-
-					auto u32Type = std::make_shared<U32TypeNameNode>(SIZE_MAX);
-
-					compileExpr(
-						e->lhs,
-						opReg.isLhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(lhsRegIndex));
-
-					if (!isSameType(rhsType, u32Type)) {
-						if (!isTypeNamesConvertible(rhsType, u32Type))
-							throw FatalCompilationError(
-								{ e->rhs->sourceLocation,
-									MessageType::Error,
-									"Incompatible operand types" });
-
-						compileExpr(
-							std::make_shared<CastExprNode>(u32Type, e->rhs),
-							opReg.isRhsLvalue
-								? EvalPurpose::LValue
-								: EvalPurpose::RValue,
-							std::make_shared<RegRefNode>(rhsRegIndex));
-					} else
-						compileExpr(
-							e->rhs,
-							opReg.isRhsLvalue
-								? EvalPurpose::LValue
-								: EvalPurpose::RValue,
-							std::make_shared<RegRefNode>(rhsRegIndex));
-
-					_insertIns(
-						opReg.opcode,
-						{ std::make_shared<RegRefNode>(resultRegIndex),
-							std::make_shared<RegRefNode>(lhsRegIndex, true),
-							std::make_shared<RegRefNode>(rhsRegIndex, true) });
-
-					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX, true);
 
 					break;
 				}
@@ -763,26 +595,13 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							: EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
 
-					if (!isSameType(rhsType, u32Type)) {
-						if (!isTypeNamesConvertible(rhsType, u32Type))
-							throw FatalCompilationError(
-								{ e->rhs->sourceLocation,
-									MessageType::Error,
-									"Incompatible operand types" });
-
-						compileExpr(
-							std::make_shared<CastExprNode>(u32Type, e->rhs),
-							opReg.isRhsLvalue
-								? EvalPurpose::LValue
-								: EvalPurpose::RValue,
-							std::make_shared<RegRefNode>(rhsRegIndex));
-					} else
-						compileExpr(
-							e->rhs,
-							opReg.isRhsLvalue
-								? EvalPurpose::LValue
-								: EvalPurpose::RValue,
-							std::make_shared<RegRefNode>(rhsRegIndex));
+					compileOrCastOperand(
+						e->rhs,
+						rhsType, std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						opReg.isRhsLvalue
+							? EvalPurpose::LValue
+							: EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(rhsRegIndex));
 
 					_insertIns(
 						opReg.opcode,
@@ -889,8 +708,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 			switch (node->getNodeType()) {
 				case NodeType::Class:
-				case NodeType::Interface:
-				case NodeType::Trait: {
+				case NodeType::Interface: {
 					uint32_t lhsRegIndex = allocReg(1);
 
 					switch (e->op) {
@@ -902,22 +720,11 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 								EvalPurpose::LValue,
 								std::make_shared<RegRefNode>(lhsRegIndex));
 
-							if (!isSameType(lhsType, rhsType)) {
-								if (!isTypeNamesConvertible(rhsType, lhsType))
-									throw FatalCompilationError(
-										{ e->rhs->sourceLocation,
-											MessageType::Error,
-											"Incompatible operand types" });
-
-								compileExpr(
-									std::make_shared<CastExprNode>(lhsType, e->rhs),
-									EvalPurpose::RValue,
-									std::make_shared<RegRefNode>(rhsRegIndex));
-							} else
-								compileExpr(
-									e->rhs,
-									EvalPurpose::RValue,
-									std::make_shared<RegRefNode>(rhsRegIndex));
+							compileOrCastOperand(
+								e->rhs,
+								rhsType, std::make_shared<U32TypeNameNode>(SIZE_MAX),
+								EvalPurpose::RValue,
+								std::make_shared<RegRefNode>(rhsRegIndex));
 
 							_insertIns(
 								Opcode::STORE,
@@ -944,22 +751,11 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							lhsType = lhsType->duplicate<TypeNameNode>();
 							lhsType->isRef = false;
 
-							if (!isSameType(lhsType, rhsType)) {
-								if (!isTypeNamesConvertible(rhsType, lhsType))
-									throw FatalCompilationError(
-										{ e->rhs->sourceLocation,
-											MessageType::Error,
-											"Incompatible operand types" });
-
-								compileExpr(
-									std::make_shared<CastExprNode>(lhsType, e->rhs),
-									EvalPurpose::RValue,
-									std::make_shared<RegRefNode>(rhsRegIndex));
-							} else
-								compileExpr(
-									e->rhs,
-									EvalPurpose::RValue,
-									std::make_shared<RegRefNode>(rhsRegIndex));
+							compileOrCastOperand(
+								e->rhs,
+								rhsType, std::make_shared<U32TypeNameNode>(SIZE_MAX),
+								EvalPurpose::RValue,
+								std::make_shared<RegRefNode>(rhsRegIndex));
 
 							_insertIns(
 								opReg.opcode,
@@ -998,22 +794,11 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 								EvalPurpose::LValue,
 								std::make_shared<RegRefNode>(lhsRegIndex));
 
-							if (!isSameType(lhsType, rhsType)) {
-								if (!isTypeNamesConvertible(rhsType, lhsType))
-									throw FatalCompilationError(
-										{ e->rhs->sourceLocation,
-											MessageType::Error,
-											"Incompatible operand types" });
-
-								compileExpr(
-									std::make_shared<CastExprNode>(lhsType, e->rhs),
-									EvalPurpose::RValue,
-									std::make_shared<RegRefNode>(rhsRegIndex));
-							} else
-								compileExpr(
-									e->rhs,
-									EvalPurpose::RValue,
-									std::make_shared<RegRefNode>(rhsRegIndex));
+							compileOrCastOperand(
+								e->rhs,
+								rhsType, std::make_shared<U32TypeNameNode>(SIZE_MAX),
+								EvalPurpose::RValue,
+								std::make_shared<RegRefNode>(rhsRegIndex));
 
 							_insertIns(
 								Opcode::STORE,
@@ -1040,22 +825,11 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							lhsType = lhsType->duplicate<TypeNameNode>();
 							lhsType->isRef = false;
 
-							if (!isSameType(lhsType, rhsType)) {
-								if (!isTypeNamesConvertible(rhsType, lhsType))
-									throw FatalCompilationError(
-										{ e->rhs->sourceLocation,
-											MessageType::Error,
-											"Incompatible operand types" });
-
-								compileExpr(
-									std::make_shared<CastExprNode>(lhsType, e->rhs),
-									EvalPurpose::RValue,
-									std::make_shared<RegRefNode>(rhsRegIndex));
-							} else
-								compileExpr(
-									e->rhs,
-									EvalPurpose::RValue,
-									std::make_shared<RegRefNode>(rhsRegIndex));
+							compileOrCastOperand(
+								e->rhs,
+								rhsType, std::make_shared<U32TypeNameNode>(SIZE_MAX),
+								EvalPurpose::RValue,
+								std::make_shared<RegRefNode>(rhsRegIndex));
 
 							_insertIns(
 								opReg.opcode,
@@ -1084,20 +858,6 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							}
 
 							for (auto &i : n->interfaceTypes) {
-								curMember = resolveCustomTypeName((CustomTypeNameNode *)i.get());
-
-								if (curMember->getNodeType() != NodeType::Interface)
-									throw FatalCompilationError(
-										Message(
-											n->baseType->sourceLocation,
-											MessageType::Error,
-											"Must be an interface"));
-
-								if (determineOverloading(std::static_pointer_cast<MemberNode>(curMember), lhsRegIndex))
-									goto genericParamOperatorFound;
-							}
-
-							for (auto &i : n->traitTypes) {
 								curMember = resolveCustomTypeName((CustomTypeNameNode *)i.get());
 
 								if (curMember->getNodeType() != NodeType::Interface)

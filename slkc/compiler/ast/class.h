@@ -128,59 +128,6 @@ namespace slake {
 				return IdRefEntry(sourceLocation, SIZE_MAX, name, getPlaceholderGenericArgs());
 			}
 		};
-
-		class TraitNode : public MemberNode {
-		private:
-			virtual std::shared_ptr<AstNode> doDuplicate() override;
-
-		public:
-			std::string name;
-
-			std::deque<std::shared_ptr<TypeNameNode>> parentTraits;	 // Parent traits
-
-			std::shared_ptr<Scope> scope = std::make_shared<Scope>();
-
-			size_t idxTraitToken = SIZE_MAX,
-				   idxNameToken = SIZE_MAX;
-
-			size_t idxImplTraitsColonToken = SIZE_MAX;
-			std::deque<size_t> idxImplTraitsCommaTokens;
-
-			size_t idxLBraceToken = SIZE_MAX,
-				   idxRBraceToken = SIZE_MAX;
-
-			TraitNode() = default;
-			inline TraitNode(const TraitNode &other) : MemberNode(other) {
-				name = other.name;
-
-				parentTraits.resize(other.parentTraits.size());
-				for (size_t i = 0; i < other.parentTraits.size(); ++i)
-					parentTraits[i] = other.parentTraits[i]->duplicate<TypeNameNode>();
-
-				idxTraitToken = other.idxTraitToken;
-				idxNameToken = other.idxNameToken;
-
-				idxImplTraitsColonToken = other.idxImplTraitsColonToken;
-				idxImplTraitsCommaTokens = other.idxImplTraitsCommaTokens;
-
-				idxLBraceToken = other.idxLBraceToken;
-				idxRBraceToken = other.idxRBraceToken;
-			}
-			inline TraitNode(
-				std::string name)
-				: name(name) {
-				setScope(std::make_shared<Scope>());
-			}
-			virtual ~TraitNode() = default;
-
-			virtual inline NodeType getNodeType() const override { return NodeType::Trait; }
-
-			virtual IdRefEntry getName() const override {
-				if (genericArgs.size())
-					return IdRefEntry(sourceLocation, SIZE_MAX, name, genericArgs);
-				return IdRefEntry(sourceLocation, SIZE_MAX, name, getPlaceholderGenericArgs());
-			}
-		};
 	}
 }
 

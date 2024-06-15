@@ -11,7 +11,6 @@ namespace slake {
 		enum class NodeType : uint8_t {
 			Class = 0,
 			Interface,
-			Trait,
 			Fn,
 			FnOverloadingValue,
 			Stmt,

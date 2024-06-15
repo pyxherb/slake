@@ -10,7 +10,6 @@ bool Compiler::isDynamicMember(std::shared_ptr<AstNode> member) {
 		case NodeType::Module:
 		case NodeType::Class:
 		case NodeType::Interface:
-		case NodeType::Trait:
 		case NodeType::Alias:
 			return false;
 	}

@@ -25,12 +25,6 @@ void Runtime::_gcWalk(GenericParamList &genericParamList) {
 			if (auto p = j.resolveCustomType(); p)
 				_gcWalk(p);
 		}
-
-		for (auto &j : i.traits) {
-			j.loadDeferredType(this);
-			if (auto p = j.resolveCustomType(); p)
-				_gcWalk(p);
-		}
 	}
 }
 

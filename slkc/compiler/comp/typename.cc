@@ -73,7 +73,6 @@ bool Compiler::isCompoundTypeName(std::shared_ptr<TypeNameNode> node) {
 			switch (dest->getNodeType()) {
 				case NodeType::Class:
 				case NodeType::Interface:
-				case NodeType::Trait:
 				case NodeType::GenericParam:
 					return true;
 				case NodeType::Alias:
@@ -160,67 +159,6 @@ bool Compiler::_isTypeNamesConvertible(std::shared_ptr<InterfaceNode> st, std::s
 	return false;
 }
 
-bool Compiler::_isTypeNamesConvertible(std::shared_ptr<MemberNode> st, std::shared_ptr<TraitNode> dt) {
-	for (auto i : dt->scope->members) {
-		if (!(scopeOf(st.get())->members.count(i.first)))
-			return false;
-
-		auto sm = scopeOf(st.get())->members.at(i.first);
-		auto dm = i.second;
-
-		if (sm->getNodeType() != dm->getNodeType())
-			return false;
-
-		// The member must be public
-		if (!(sm->access & ACCESS_PUB))
-			return false;
-
-		switch (sm->getNodeType()) {
-			case NodeType::Var: {
-				auto smType = std::static_pointer_cast<VarNode>(sm);
-				auto dmType = std::static_pointer_cast<VarNode>(dm);
-
-				// The variables must have the same type.
-				if (!isSameType(smType->type, dmType->type))
-					return false;
-
-				break;
-			}
-			case NodeType::Fn: {
-				auto smType = std::static_pointer_cast<FnNode>(sm);
-				auto dmType = std::static_pointer_cast<FnNode>(dm);
-
-				for (auto di : dmType->overloadingRegistries) {
-					for (auto si : smType->overloadingRegistries) {
-						if (!isSameType(di->returnType, si->returnType))
-							return false;
-
-						if (di->params.size() != si->params.size())
-							return false;
-
-						for (size_t i = 0; i < di->params.size(); ++i) {
-							if (!isSameType(si->params[i]->type, di->params[i]->type))
-								return false;
-						}
-					}
-				}
-
-				break;
-			}
-			case NodeType::Class:
-			case NodeType::Interface:
-			case NodeType::Trait:
-			case NodeType::Module:
-			case NodeType::Alias:
-				break;
-			default:
-				throw std::logic_error("Unrecognized member type");
-		}
-	}
-
-	return false;
-}
-
 bool Compiler::_isTypeNamesConvertible(std::shared_ptr<ClassNode> st, std::shared_ptr<ClassNode> dt) {
 	do {
 		if (st == dt)
@@ -265,7 +203,6 @@ bool Compiler::isTypeNamesConvertible(std::shared_ptr<TypeNameNode> src, std::sh
 		case TypeId::Bool:
 			return true;
 		case TypeId::String:
-		case TypeId::WString:
 		case TypeId::Array:
 			if (src->getTypeId() == TypeId::Any)
 				return true;
@@ -288,8 +225,6 @@ bool Compiler::isTypeNamesConvertible(std::shared_ptr<TypeNameNode> src, std::sh
 								return _isTypeNamesConvertible(std::static_pointer_cast<ClassNode>(srcType), dt);
 							case NodeType::Interface:
 								return _isTypeNamesConvertible(std::static_pointer_cast<InterfaceNode>(srcType), dt);
-							case NodeType::Trait:
-								return _isTypeNamesConvertible(dt, std::static_pointer_cast<TraitNode>(srcType));
 							default:
 								throw std::logic_error("Unresolved node type");
 						}
@@ -308,8 +243,6 @@ bool Compiler::isTypeNamesConvertible(std::shared_ptr<TypeNameNode> src, std::sh
 								return _isTypeNamesConvertible(std::static_pointer_cast<ClassNode>(srcType), dt);
 							case NodeType::Interface:
 								return _isTypeNamesConvertible(std::static_pointer_cast<InterfaceNode>(srcType), dt);
-							case NodeType::Trait:
-								return _isTypeNamesConvertible(dt, std::static_pointer_cast<TraitNode>(srcType));
 							case NodeType::GenericParam: {
 								auto gp = std::static_pointer_cast<GenericParamNode>(srcType);
 
@@ -329,10 +262,6 @@ bool Compiler::isTypeNamesConvertible(std::shared_ptr<TypeNameNode> src, std::sh
 
 					return false;
 				}
-				case NodeType::Trait: {
-					auto dt = std::static_pointer_cast<TraitNode>(destType);
-					break;
-				}
 				case NodeType::Alias: {
 					auto dt = std::static_pointer_cast<AliasNode>(destType);
 					break;
@@ -346,11 +275,6 @@ bool Compiler::isTypeNamesConvertible(std::shared_ptr<TypeNameNode> src, std::sh
 					}
 
 					for (auto &i : dt->interfaceTypes) {
-						if (!isTypeNamesConvertible(src, i))
-							return false;
-					}
-
-					for (auto &i : dt->traitTypes) {
 						if (!isTypeNamesConvertible(src, i))
 							return false;
 					}

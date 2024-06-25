@@ -1164,7 +1164,7 @@ void Compiler::compileValue(std::ostream &fs, std::shared_ptr<AstNode> value) {
 				case ExprType::String: {
 					_write(fs, slxfmt::TypeId::String);
 
-					auto &s = std::static_pointer_cast<StringLiteralExprNode>(expr)->data;
+					auto s = std::static_pointer_cast<StringLiteralExprNode>(expr)->data;
 
 					_write(fs, (uint32_t)s.length());
 					_write(fs, s.data(), s.size());
@@ -1179,7 +1179,7 @@ void Compiler::compileValue(std::ostream &fs, std::shared_ptr<AstNode> value) {
 				case ExprType::Array: {
 					_write(fs, slxfmt::TypeId::Array);
 
-					auto &a = std::static_pointer_cast<ArrayExprNode>(expr);
+					auto a = std::static_pointer_cast<ArrayExprNode>(expr);
 
 					compileTypeName(fs, a->evaluatedElementType);
 

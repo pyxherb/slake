@@ -199,7 +199,7 @@ namespace slake {
 		void _gcWalk(Scope *scope);
 		void _gcWalk(GenericParamList &genericParamList);
 		void _gcWalk(Type &type);
-		void _gcWalk(Value &i);
+		void _gcWalk(Value i);
 		void _gcWalk(Object *i);
 		void _gcWalk(Context &i);
 

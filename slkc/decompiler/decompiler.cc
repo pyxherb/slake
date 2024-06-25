@@ -220,7 +220,7 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 	}
 }
 
-void slake::decompiler::decompileValue(Runtime *rt, Value &value, std::ostream &os, int indentLevel) {
+void slake::decompiler::decompileValue(Runtime *rt, Value value, std::ostream &os, int indentLevel) {
 	switch (value.valueType) {
 		case ValueType::I8:
 			os << std::to_string(value.getI8());

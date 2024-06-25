@@ -387,7 +387,7 @@ std::shared_ptr<ExprNode> Compiler::evalConstExpr(std::shared_ptr<ExprNode> expr
 
 						resultExpr->elements.push_back(element);
 					} else
-						return false;
+						return {};
 				} else {
 					auto element = evalConstExpr(i);
 					if (!element)

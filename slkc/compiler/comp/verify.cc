@@ -14,7 +14,9 @@ void Compiler::verifyInheritanceChain(ClassNode *node, std::set<AstNode *> &walk
 	walkedNodes.insert(node);
 
 	if (node->parentClass) {
+#if SLKC_WITH_LANGUAGE_SERVER
 		updateCompletionContext(node->parentClass, CompletionContext::Type);
+#endif
 
 		if (node->parentClass->getTypeId() != TypeId::Custom)
 			throw FatalCompilationError(
@@ -41,7 +43,9 @@ void Compiler::verifyInheritanceChain(ClassNode *node, std::set<AstNode *> &walk
 	}
 
 	for (auto &i : node->implInterfaces) {
+#if SLKC_WITH_LANGUAGE_SERVER
 		updateCompletionContext(i, CompletionContext::Type);
+#endif
 
 		if (i->getTypeId() != TypeId::Custom)
 			throw FatalCompilationError(
@@ -72,7 +76,9 @@ void Compiler::verifyInheritanceChain(InterfaceNode *node, std::set<AstNode *> &
 	walkedNodes.insert(node);
 
 	for (auto &i : node->parentInterfaces) {
+#if SLKC_WITH_LANGUAGE_SERVER
 		updateCompletionContext(i, CompletionContext::Type);
+#endif
 
 		if (i->getTypeId() != TypeId::Custom)
 			throw FatalCompilationError(

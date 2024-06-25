@@ -38,38 +38,6 @@ namespace slake {
 		Context,	 // Context
 	};
 
-	template <typename T>
-	constexpr inline TypeId getObjectType() {
-		if constexpr (std::is_same<T, std::int8_t>::value)
-			return TypeId::I8;
-		else if constexpr (std::is_same<T, std::int16_t>::value)
-			return TypeId::I16;
-		else if constexpr (std::is_same<T, std::int32_t>::value)
-			return TypeId::I32;
-		else if constexpr (std::is_same<T, std::int64_t>::value)
-			return TypeId::I64;
-		else if constexpr (std::is_same<T, uint8_t>::value)
-			return TypeId::U8;
-		else if constexpr (std::is_same<T, uint16_t>::value)
-			return TypeId::U16;
-		else if constexpr (std::is_same<T, uint32_t>::value)
-			return TypeId::U32;
-		else if constexpr (std::is_same<T, uint64_t>::value)
-			return TypeId::U64;
-		else if constexpr (std::is_same<T, float>::value)
-			return TypeId::F32;
-		else if constexpr (std::is_same<T, double>::value)
-			return TypeId::F64;
-		else if constexpr (std::is_same<T, bool>::value)
-			return TypeId::Bool;
-		else if constexpr (std::is_same<T, std::string>::value)
-			return TypeId::String;
-		else
-			// We didn't use false as the condition directly because some
-			// compilers will evaluate the condition prematurely.
-			static_assert(!std::is_same<T, T>::value);
-	}
-
 	class Runtime;
 	class Object;
 	class IdRefObject;

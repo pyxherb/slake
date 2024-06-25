@@ -86,7 +86,7 @@ namespace slake {
 
 			template <typename... Args>
 			inline Token *expectTokens(Token *token, TokenId tokenId, Args... args) {
-				if (token.tokenId == tokenId)
+				if (token->tokenId == tokenId)
 					return token;
 
 				return expectTokens(token, args...);

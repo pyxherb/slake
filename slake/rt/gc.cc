@@ -61,7 +61,7 @@ void Runtime::_gcWalk(Type &type) {
 	}
 }
 
-void Runtime::_gcWalk(Value &i) {
+void Runtime::_gcWalk(Value i) {
 	switch (i.valueType) {
 		case ValueType::I8:
 		case ValueType::I16:

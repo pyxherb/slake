@@ -28,7 +28,7 @@ void Runtime::_gcWalk(GenericParamList &genericParamList) {
 	}
 }
 
-void Runtime::_gcWalk(Type &type) {
+void Runtime::_gcWalk(const Type &type) {
 	switch (type.typeId) {
 		case TypeId::Value:
 		case TypeId::String:
@@ -61,7 +61,7 @@ void Runtime::_gcWalk(Type &type) {
 	}
 }
 
-void Runtime::_gcWalk(Value i) {
+void Runtime::_gcWalk(const Value &i) {
 	switch (i.valueType) {
 		case ValueType::I8:
 		case ValueType::I16:
@@ -180,6 +180,12 @@ void Runtime::_gcWalk(Object *v) {
 
 			if (fn->_parent)
 				_gcWalk(fn->_parent);
+
+			if (fn->parentFn)
+				_gcWalk(fn->parentFn);
+
+			if (fn->descentFn)
+				_gcWalk(fn->descentFn);
 
 			for (auto &i : fn->overloadings) {
 				_gcWalk(i);

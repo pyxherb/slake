@@ -192,7 +192,7 @@ namespace slake {
 		virtual inline ~FnObject() {
 		}
 
-		FnObject *parentFn = nullptr;
+		FnObject *parentFn = nullptr, *descentFn = nullptr;
 		std::deque<FnOverloadingObject *> overloadings;
 
 		virtual Type getType() const override;

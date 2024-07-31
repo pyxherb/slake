@@ -72,8 +72,10 @@ static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *
 
 					for (InstanceObject *j = parent; j; j = j->_parent) {
 						if (auto f = j->scope->getMember(i.first);
-							f && (f->getType() == TypeId::Fn))
+							f && (f->getType() == TypeId::Fn)) {
 							fn->parentFn = (FnObject *)f;
+							((FnObject *)f)->descentFn = fn.get();
+						}
 					}
 
 					instance->scope->addMember(i.first, fn.release());

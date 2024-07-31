@@ -138,9 +138,15 @@ Value RegularFnOverloadingObject::call(Object *thisObject, std::deque<Value> arg
 			while ((rt->_flags & _RT_INGC) && !isDestructing)
 				std::this_thread::yield();
 
+			MajorFrame &curMajorFrame = context->majorFrames.back();
+			Instruction curIns;
+			curIns.opcode = Opcode::NOP;
+			curIns.operands = {};
+			curIns = curMajorFrame.curFn->instructions[curMajorFrame.curIns];
+
 			rt->_execIns(
 				context.get(),
-				context->majorFrames.back().curFn->instructions[context->majorFrames.back().curIns]);
+				curIns);
 		}
 	} catch (...) {
 		context->flags |= CTX_DONE;
@@ -159,30 +165,36 @@ Value RegularFnOverloadingObject::call(Object *thisObject, std::deque<Value> arg
 }
 
 FnOverloadingObject *FnObject::getOverloading(std::deque<Type> argTypes) const {
-	for (auto &i : overloadings) {
-		if (i->overloadingFlags & OL_VARG) {
-			if (argTypes.size() < i->paramTypes.size())
-				continue;
-		} else {
-			if (argTypes.size() != i->paramTypes.size())
-				continue;
+	const FnObject *i = this;
+
+	for (; i->descentFn; i = i->descentFn)
+		;
+
+	while (i) {
+		for (auto &j : overloadings) {
+			if (j->overloadingFlags & OL_VARG) {
+				if (argTypes.size() < j->paramTypes.size())
+					continue;
+			} else {
+				if (argTypes.size() != j->paramTypes.size())
+					continue;
+			}
+
+			for (size_t k = 0; k < argTypes.size(); ++k) {
+				argTypes[k].loadDeferredType(_rt);
+				j->paramTypes[k].loadDeferredType(_rt);
+
+				if (argTypes[k] != j->paramTypes[k])
+					goto mismatched;
+			}
+
+			return j;
+
+		mismatched:;
 		}
 
-		for (size_t j = 0; j < argTypes.size(); ++j) {
-			argTypes[j].loadDeferredType(_rt);
-			i->paramTypes[j].loadDeferredType(_rt);
-
-			if (argTypes[j] != i->paramTypes[j])
-				goto mismatched;
-		}
-
-		return i;
-
-	mismatched:;
+		i = i->parentFn;
 	}
-
-	if (parentFn)
-		return parentFn->getOverloading(argTypes);
 
 	return nullptr;
 }

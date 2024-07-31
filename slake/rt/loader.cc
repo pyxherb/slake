@@ -406,6 +406,7 @@ void Runtime::_loadScope(ModuleObject *mod, std::istream &fs, LoadModuleFlags lo
 
 					ins.opcode = ih.opcode;
 					ins.operands.resize(ih.nOperands);
+
 					for (uint8_t k = 0; k < ih.nOperands; k++)
 						ins.operands[k] = _loadValue(fs);
 				}

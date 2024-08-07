@@ -107,7 +107,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 				compileExpr(e->rhs, evalPurpose, destOut);
 		};
 	auto compileShortCircuitOperator = [this, e, lhsType, rhsType, &opReg, resultRegIndex]() {
-		uint32_t lhsRegIndex = allocReg(1);
+		uint32_t lhsRegIndex = allocReg();
 
 		auto boolType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 
@@ -146,7 +146,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 		// Compile the RHS.
 		// The RHS also must be a boolean expression.
-		uint32_t rhsRegIndex = allocReg(1);
+		uint32_t rhsRegIndex = allocReg();
 
 		if (!isSameType(rhsType, boolType)) {
 			if (!isTypeNamesConvertible(rhsType, boolType))
@@ -247,8 +247,8 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 				case BinaryOp::Gt:
 				case BinaryOp::LtEq:
 				case BinaryOp::GtEq: {
-					uint32_t lhsRegIndex = allocReg(2);
-					uint32_t rhsRegIndex = lhsRegIndex + 1;
+					uint32_t lhsRegIndex = allocReg();
+					uint32_t rhsRegIndex = allocReg();
 
 					compileExpr(
 						e->lhs,
@@ -275,8 +275,8 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 				case BinaryOp::Rsh:
 				case BinaryOp::AssignLsh:
 				case BinaryOp::AssignRsh: {
-					uint32_t lhsRegIndex = allocReg(2),
-							 rhsRegIndex = lhsRegIndex + 1;
+					uint32_t lhsRegIndex = allocReg(),
+							 rhsRegIndex = allocReg();
 
 					compileExpr(
 						e->lhs,
@@ -317,8 +317,8 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 				case BinaryOp::AssignAnd:
 				case BinaryOp::AssignOr:
 				case BinaryOp::AssignXor: {
-					uint32_t lhsRegIndex = allocReg(2);
-					uint32_t rhsRegIndex = lhsRegIndex + 1;
+					uint32_t lhsRegIndex = allocReg();
+					uint32_t rhsRegIndex = allocReg();
 
 					compileExpr(
 						e->lhs,
@@ -367,8 +367,8 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 				case BinaryOp::Gt:
 				case BinaryOp::LtEq:
 				case BinaryOp::GtEq: {
-					uint32_t lhsRegIndex = allocReg(2);
-					uint32_t rhsRegIndex = lhsRegIndex + 1;
+					uint32_t lhsRegIndex = allocReg();
+					uint32_t rhsRegIndex = allocReg();
 
 					compileExpr(
 						e->lhs,
@@ -402,8 +402,8 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 				case BinaryOp::AssignMul:
 				case BinaryOp::AssignDiv:
 				case BinaryOp::AssignMod: {
-					uint32_t lhsRegIndex = allocReg(2);
-					uint32_t rhsRegIndex = lhsRegIndex + 1;
+					uint32_t lhsRegIndex = allocReg();
+					uint32_t rhsRegIndex = allocReg();
 
 					compileExpr(
 						e->lhs,
@@ -447,8 +447,8 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					break;
 				case BinaryOp::Eq:
 				case BinaryOp::Neq: {
-					uint32_t lhsRegIndex = allocReg(2);
-					uint32_t rhsRegIndex = lhsRegIndex + 1;
+					uint32_t lhsRegIndex = allocReg();
+					uint32_t rhsRegIndex = allocReg();
 
 					compileExpr(
 						e->lhs,
@@ -472,8 +472,8 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					break;
 				}
 				case BinaryOp::Assign: {
-					uint32_t lhsRegIndex = allocReg(2);
-					uint32_t rhsRegIndex = lhsRegIndex + 1;
+					uint32_t lhsRegIndex = allocReg();
+					uint32_t rhsRegIndex = allocReg();
 
 					compileExpr(
 						e->lhs,
@@ -510,8 +510,8 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 		case TypeId::String: {
 			switch (e->op) {
 				case BinaryOp::Add: {
-					uint32_t lhsRegIndex = allocReg(2),
-							 rhsRegIndex = lhsRegIndex + 1;
+					uint32_t lhsRegIndex = allocReg(),
+							 rhsRegIndex = allocReg();
 
 					compileExpr(
 						e->lhs,
@@ -539,8 +539,8 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					break;
 				}
 				case BinaryOp::Subscript: {
-					uint32_t lhsRegIndex = allocReg(2),
-							 rhsRegIndex = lhsRegIndex + 1;
+					uint32_t lhsRegIndex = allocReg(),
+							 rhsRegIndex = allocReg();
 
 					compileExpr(
 						e->lhs,
@@ -579,8 +579,8 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 		case TypeId::Array: {
 			switch (e->op) {
 				case BinaryOp::Subscript: {
-					uint32_t lhsRegIndex = allocReg(2),
-							 rhsRegIndex = lhsRegIndex + 1;
+					uint32_t lhsRegIndex = allocReg(),
+							 rhsRegIndex = allocReg();
 
 					auto u32Type = std::make_shared<U32TypeNameNode>(SIZE_MAX);
 
@@ -710,11 +710,11 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 			switch (node->getNodeType()) {
 				case NodeType::Class:
 				case NodeType::Interface: {
-					uint32_t lhsRegIndex = allocReg(1);
+					uint32_t lhsRegIndex = allocReg();
 
 					switch (e->op) {
 						case BinaryOp::Assign: {
-							uint32_t rhsRegIndex = allocReg(1);
+							uint32_t rhsRegIndex = allocReg();
 
 							compileExpr(
 								e->lhs,
@@ -743,7 +743,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 						}
 						case BinaryOp::StrictEq:
 						case BinaryOp::StrictNeq: {
-							uint32_t rhsRegIndex = allocReg(1);
+							uint32_t rhsRegIndex = allocReg();
 
 							compileExpr(
 								e->lhs,
@@ -783,13 +783,13 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					break;
 				}
 				case NodeType::GenericParam: {
-					uint32_t lhsRegIndex = allocReg(1);
+					uint32_t lhsRegIndex = allocReg();
 
 					std::shared_ptr<GenericParamNode> n = std::static_pointer_cast<GenericParamNode>(node);
 
 					switch (e->op) {
 						case BinaryOp::Assign: {
-							uint32_t rhsRegIndex = allocReg(1);
+							uint32_t rhsRegIndex = allocReg();
 
 							compileExpr(
 								e->lhs,
@@ -818,7 +818,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 						}
 						case BinaryOp::StrictEq:
 						case BinaryOp::StrictNeq: {
-							uint32_t rhsRegIndex = allocReg(1);
+							uint32_t rhsRegIndex = allocReg();
 
 							compileExpr(
 								e->lhs,

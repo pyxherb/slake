@@ -205,7 +205,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 			switch (node->getNodeType()) {
 				case NodeType::Class:
 				case NodeType::Interface: {
-					uint32_t lhsRegIndex = allocReg(1);
+					uint32_t lhsRegIndex = allocReg();
 
 					std::shared_ptr<MemberNode> n = std::static_pointer_cast<MemberNode>(node);
 
@@ -219,7 +219,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 					break;
 				}
 				case NodeType::GenericParam: {
-					uint32_t lhsRegIndex = allocReg(1);
+					uint32_t lhsRegIndex = allocReg();
 
 					std::shared_ptr<GenericParamNode> n = std::static_pointer_cast<GenericParamNode>(node);
 

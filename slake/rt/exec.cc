@@ -36,8 +36,8 @@ static void _setRegisterValue(
 	if (index >= curMajorFrame.regs.size())
 		throw InvalidRegisterIndexError("Invalid register index", index);
 	Value &reg = curMajorFrame.regs[index];
-	//if (reg.valueType != ValueType::Undefined)
-	//	throw AccessViolationError("The register is already assigned");
+	if (reg.valueType != ValueType::Undefined)
+		throw AccessViolationError("The register is already assigned");
 	curMajorFrame.regs[index] = value;
 }
 
@@ -122,9 +122,14 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_checkOperandCount(ins, false, 1);
 			_checkOperandType(ins.operands[0], ValueType::U32);
 
-			uint32_t times = ins.operands[0].getU32();
-			while (times--)
+			uint32_t index = ins.operands[0].getU32();
+			if (index > curMajorFrame.regs.size()) {
+				throw InvalidOperandsError("");
+			} else if (index < curMajorFrame.regs.size()) {
+				curMajorFrame.regs[index] = Value();
+			} else {
 				_addLocalReg(curMajorFrame);
+			}
 			break;
 		}
 		case Opcode::LOAD: {
@@ -1191,7 +1196,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 				Value fnValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
 				_checkOperandType(fnValue, ValueType::ObjectRef);
 				_checkObjectOperandType(fnValue.getObjectRef().objectPtr, TypeId::Fn);
-				fn = (FnObject*)fnValue.getObjectRef().objectPtr;
+				fn = (FnObject *)fnValue.getObjectRef().objectPtr;
 
 				Value thisObjectValue = _unwrapRegOperand(curMajorFrame, ins.operands[1]);
 				_checkOperandType(thisObjectValue, ValueType::ObjectRef);

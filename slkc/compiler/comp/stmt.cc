@@ -244,9 +244,9 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			curMajorContext.curMinorContext.breakLabel = endLabel;
 			curMajorContext.curMinorContext.continueLabel = beginLabel;
 
-			uint32_t tmpRegIndex = allocReg();
-
 			_insertLabel(beginLabel);
+
+			uint32_t tmpRegIndex = allocReg();
 
 			auto conditionType = evalExprType(s->condition);
 			auto boolType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
@@ -473,8 +473,8 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			curMajorContext.curMinorContext.breakScopeLevel = curMajorContext.curScopeLevel;
 			curMajorContext.curMinorContext.breakLabel = endLabel;
 
-			uint32_t matcheeRegIndex = allocReg(2);
-			uint32_t conditionRegIndex = matcheeRegIndex + 1;
+			uint32_t matcheeRegIndex = allocReg();
+			uint32_t conditionRegIndex = allocReg();
 
 			compileExpr(s->expr, EvalPurpose::RValue, std::make_shared<RegRefNode>(matcheeRegIndex));
 

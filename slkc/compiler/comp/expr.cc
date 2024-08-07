@@ -354,7 +354,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 								"Cannot deduce type of the argument"));
 					}
 
-					uint32_t sizeArgRegIndex = allocReg(1);
+					uint32_t sizeArgRegIndex = allocReg();
 
 					if (!isSameType(sizeArgType, u32Type)) {
 						if (!isTypeNamesConvertible(sizeArgType, u32Type))

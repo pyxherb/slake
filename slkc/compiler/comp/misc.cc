@@ -21,15 +21,13 @@ uint32_t Compiler::allocLocalVar(std::string name, std::shared_ptr<TypeNameNode>
 	return index;
 }
 
-uint32_t Compiler::allocReg(uint32_t nRegs) {
+uint32_t Compiler::allocReg() {
 	if (curMajorContext.curMinorContext.dryRun)
 		return UINT32_MAX;
 
 	auto idxReg = curMajorContext.curRegCount;
 
-	_insertIns(Opcode::REG, {} ,{ std::make_shared<U32LiteralExprNode>(nRegs) });
-
-	curMajorContext.curRegCount += nRegs;
+	_insertIns(Opcode::REG, {}, { std::make_shared<U32LiteralExprNode>(curMajorContext.curRegCount++) });
 
 	return idxReg;
 }

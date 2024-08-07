@@ -362,7 +362,7 @@ namespace slake {
 			bool isDynamicMember(std::shared_ptr<AstNode> member);
 
 			uint32_t allocLocalVar(std::string name, std::shared_ptr<TypeNameNode> type);
-			uint32_t allocReg(uint32_t nRegs = 1);
+			uint32_t allocReg();
 
 			inline void _insertIns(Ins ins) {
 				if (curMajorContext.curMinorContext.dryRun)

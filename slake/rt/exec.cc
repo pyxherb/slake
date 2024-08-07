@@ -3,22 +3,23 @@
 
 using namespace slake;
 
-static void _checkOperandType(
-	Instruction &ins,
-	std::initializer_list<ValueType> types) {
-	if (ins.operands.size() < types.size())
-		throw InvalidOperandsError("Invalid operand combination");
-
-	auto it = types.begin();
-	for (size_t i = 0; i < ins.operands.size(); ++i) {
-		auto type = *(it++);
-
-		if (type == ValueType::Undefined)
-			continue;
-
-		if (ins.operands[i].valueType != type)
+static void _checkOperandCount(
+	const Instruction &ins,
+	bool hasOutput,
+	int_fast8_t nOperands) {
+	if (hasOutput) {
+		if (ins.output.valueType == ValueType::Undefined)
 			throw InvalidOperandsError("Invalid operand combination");
 	}
+	if (ins.operands.size() != nOperands)
+		throw InvalidOperandsError("Invalid operand combination");
+}
+
+static void _checkOperandType(
+	const Value &operand,
+	ValueType valueType) {
+	if (operand.valueType != valueType)
+		throw InvalidOperandsError("Invalid operand combination");
 }
 
 static void _checkObjectOperandType(
@@ -28,9 +29,32 @@ static void _checkObjectOperandType(
 		throw InvalidOperandsError("Invalid operand combination");
 }
 
-static void _checkOperandCount(Instruction &ins, uint8_t n) {
-	if (ins.operands.size() != n)
-		throw InvalidOperandsError("Invalid operand count");
+static void _setRegisterValue(
+	MajorFrame &curMajorFrame,
+	uint32_t index,
+	const Value &value) {
+	if (index >= curMajorFrame.regs.size())
+		throw InvalidRegisterIndexError("Invalid register index", index);
+	Value &reg = curMajorFrame.regs[index];
+	//if (reg.valueType != ValueType::Undefined)
+	//	throw AccessViolationError("The register is already assigned");
+	curMajorFrame.regs[index] = value;
+}
+
+static Value &_fetchRegValue(
+	MajorFrame &curMajorFrame,
+	uint32_t index) {
+	if (index >= curMajorFrame.regs.size())
+		throw InvalidRegisterIndexError("Invalid register index", index);
+	return curMajorFrame.regs[index];
+}
+
+static Value &_unwrapRegOperand(
+	MajorFrame &curMajorFrame,
+	Value &value) {
+	if (value.valueType == ValueType::RegRef)
+		return _fetchRegValue(curMajorFrame, value.getRegIndex());
+	return value;
 }
 
 template <typename LT>
@@ -69,10 +93,8 @@ VarObject *slake::Runtime::_addLocalVar(MajorFrame &frame, Type type) {
 	return v.release();
 }
 
-VarObject *slake::Runtime::_addLocalReg(MajorFrame &frame) {
-	auto v = VarObject::alloc(this, ACCESS_PUB, TypeId::Any);
-	frame.regs.push_back(v.get());
-	return v.release();
+void slake::Runtime::_addLocalReg(MajorFrame &frame) {
+	frame.regs.push_back({});
 }
 
 void slake::Runtime::_execIns(Context *context, Instruction ins) {
@@ -83,53 +105,12 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 	auto &curMajorFrame = context->majorFrames.back();
 	auto &curMinorFrame = curMajorFrame.minorFrames.back();
 
-	for (auto &i : ins.operands) {
-		bool unwrapObject = false;
-		switch (i.valueType) {
-			case ValueType::LocalVarRef: {
-				unwrapObject = i.getIndexedRef().unwrap;
-
-				auto index = i.getIndexedRef().index;
-
-				if (index >= curMajorFrame.localVars.size())
-					throw InvalidLocalVarIndexError("Invalid local variable index", index);
-
-				i = curMajorFrame.localVars.at(index);
-				break;
-			}
-			case ValueType::RegRef: {
-				unwrapObject = i.getIndexedRef().unwrap;
-
-				auto index = i.getIndexedRef().index;
-
-				if (index >= curMajorFrame.regs.size())
-					throw InvalidRegisterIndexError("Invalid register index", index);
-
-				i = curMajorFrame.regs.at(index);
-				break;
-			}
-			case ValueType::ArgRef:
-				unwrapObject = i.getIndexedRef().unwrap;
-
-				auto index = i.getIndexedRef().index;
-
-				if (index >= curMajorFrame.argStack.size())
-					throw InvalidRegisterIndexError("Invalid argument index", index);
-
-				i = curMajorFrame.argStack[index];
-				break;
-		}
-
-		if (unwrapObject)
-			i = ((VarObject *)i.getObjectRef().objectPtr)->getData();
-	}
-
 	switch (ins.opcode) {
 		case Opcode::NOP:
 			break;
 		case Opcode::LVAR: {
-			_checkOperandCount(ins, 1);
-			_checkOperandType(ins, { ValueType::TypeName });
+			_checkOperandCount(ins, false, 1);
+			_checkOperandType(ins.operands[0], ValueType::TypeName);
 
 			auto &type = ins.operands[0].getTypeName();
 			type.loadDeferredType(this);
@@ -138,36 +119,21 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			break;
 		}
 		case Opcode::REG: {
-			_checkOperandCount(ins, 1);
-			_checkOperandType(ins, { ValueType::U32 });
+			_checkOperandCount(ins, false, 1);
+			_checkOperandType(ins.operands[0], ValueType::U32);
 
 			uint32_t times = ins.operands[0].getU32();
 			while (times--)
 				_addLocalReg(curMajorFrame);
 			break;
 		}
-		case Opcode::PUSH:
-			_checkOperandCount(ins, 1);
-			curMinorFrame.push(ins.operands[0]);
-			break;
-		case Opcode::POP: {
-			_checkOperandCount(ins, 1);
-			_checkOperandType(ins, { ValueType::ObjectRef });
-
-			auto varOutPtr = ins.operands[0].getObjectRef().objectPtr;
-			_checkObjectOperandType(varOutPtr, TypeId::Var);
-
-			((VarObject *)varOutPtr)->setData(curMinorFrame.pop());
-			break;
-		}
 		case Opcode::LOAD: {
-			_checkOperandCount(ins, 2);
+			_checkOperandCount(ins, true, 1);
 
-			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::ObjectRef });
+			_checkOperandType(ins.output, ValueType::RegRef);
 
-			auto varOutPtr = ins.operands[0].getObjectRef().objectPtr;
-			auto refPtr = ins.operands[1].getObjectRef().objectPtr;
-			_checkObjectOperandType(varOutPtr, TypeId::Var);
+			_checkOperandType(ins.operands[0], ValueType::ObjectRef);
+			auto refPtr = ins.operands[0].getObjectRef().objectPtr;
 			_checkObjectOperandType(refPtr, TypeId::IdRef);
 
 			auto v = resolveIdRef((IdRefObject *)refPtr, curMajorFrame.thisObject);
@@ -178,17 +144,23 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 			if (!v)
 				throw NotFoundError("Member not found", (IdRefObject *)refPtr);
-			((VarObject *)varOutPtr)->setData(v);
+
+			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), v);
 			break;
 		}
 		case Opcode::RLOAD: {
-			_checkOperandCount(ins, 3);
+			_checkOperandCount(ins, true, 2);
 
-			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::ObjectRef, ValueType::ObjectRef });
+			_checkOperandType(ins.output, ValueType::RegRef);
 
-			auto varOutPtr = ins.operands[0].getObjectRef().objectPtr;
-			auto lhsPtr = ins.operands[1].getObjectRef().objectPtr;
-			auto refPtr = ins.operands[2].getObjectRef().objectPtr;
+			_checkOperandType(ins.operands[0], ValueType::RegRef);
+			auto &lhs = _fetchRegValue(curMajorFrame, ins.operands[0].getRegIndex());
+			_checkOperandType(lhs, ValueType::ObjectRef);
+			auto lhsPtr = lhs.getObjectRef().objectPtr;
+
+			_checkOperandType(ins.operands[1], ValueType::ObjectRef);
+			;
+			auto refPtr = ins.operands[1].getObjectRef().objectPtr;
 
 			if (!lhsPtr)
 				throw NullRefError();
@@ -196,50 +168,84 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			if (!(lhsPtr = resolveIdRef((IdRefObject *)refPtr, lhsPtr))) {
 				throw NotFoundError("Member not found", (IdRefObject *)refPtr);
 			}
-			((VarObject *)varOutPtr)->setData(lhsPtr);
+
+			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), lhsPtr);
 			break;
 		}
 		case Opcode::STORE: {
-			_checkOperandCount(ins, 2);
+			_checkOperandCount(ins, false, 2);
 
-			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::Undefined });
+			Value destValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
+			_checkOperandType(destValue, ValueType::ObjectRef);
 
-			auto varOutPtr = ins.operands[0].getObjectRef().objectPtr;
+			auto varOutPtr = destValue.getObjectRef().objectPtr;
 			_checkObjectOperandType(varOutPtr, TypeId::Var);
 
 			if (!varOutPtr)
 				throw NullRefError();
 
-			((VarObject *)varOutPtr)->setData(ins.operands[1]);
+			((VarObject *)varOutPtr)->setData(_unwrapRegOperand(curMajorFrame, ins.operands[1]));
+			break;
+		}
+		case Opcode::MOV: {
+			_checkOperandCount(ins, true, 1);
+
+			_setRegisterValue(
+				curMajorFrame,
+				ins.output.getRegIndex(),
+				_unwrapRegOperand(curMajorFrame, ins.operands[0]));
+			break;
+		}
+		case Opcode::LLOAD: {
+			_checkOperandCount(ins, true, 1);
+
+			_checkOperandType(ins.output, ValueType::RegRef);
+			_checkOperandType(ins.operands[0], ValueType::U32);
+
+			_setRegisterValue(
+				curMajorFrame,
+				ins.output.getRegIndex(),
+				curMajorFrame.lload(ins.operands[0].getU32()));
+			break;
+		}
+		case Opcode::LARG: {
+			_checkOperandCount(ins, true, 1);
+
+			_checkOperandType(ins.output, ValueType::RegRef);
+			_checkOperandType(ins.operands[0], ValueType::U32);
+
+			_setRegisterValue(
+				curMajorFrame,
+				ins.output.getRegIndex(),
+				curMajorFrame.larg(ins.operands[0].getU32()));
 			break;
 		}
 		case Opcode::LVALUE: {
-			_checkOperandCount(ins, 2);
+			_checkOperandCount(ins, true, 1);
 
-			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::ObjectRef });
+			_checkOperandType(ins.output, ValueType::RegRef);
 
-			auto varOutPtr = ins.operands[0].getObjectRef().objectPtr,
-				 varInPtr = ins.operands[1].getObjectRef().objectPtr;
-			_checkObjectOperandType(varOutPtr, TypeId::Var);
+			Value dest = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
+			_checkOperandType(dest, ValueType::ObjectRef);
+
+			auto varInPtr = dest.getObjectRef().objectPtr;
 			_checkObjectOperandType(varInPtr, TypeId::Var);
 
-			if (!varOutPtr)
-				throw NullRefError();
 			if (!varInPtr)
 				throw NullRefError();
 
-			((VarObject *)varOutPtr)->setData(((VarObject *)varInPtr)->getData());
+			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), ((VarObject *)varInPtr)->getData());
 			break;
 		}
 		case Opcode::ENTER: {
-			_checkOperandCount(ins, 0);
+			_checkOperandCount(ins, false, 0);
 			MinorFrame frame((uint32_t)curMajorFrame.localVars.size(), (uint32_t)curMajorFrame.regs.size());
 
 			curMajorFrame.minorFrames.push_back(frame);
 			break;
 		}
 		case Opcode::LEAVE: {
-			_checkOperandCount(ins, 0);
+			_checkOperandCount(ins, false, 0);
 			if (curMajorFrame.minorFrames.size() < 2)
 				throw FrameError("Leaving the only frame");
 			curMajorFrame.leave();
@@ -261,16 +267,13 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		case Opcode::GT:
 		case Opcode::LTEQ:
 		case Opcode::GTEQ: {
-			_checkOperandCount(ins, 3);
+			_checkOperandCount(ins, true, 2);
 
-			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::Undefined, ValueType::Undefined });
+			_checkOperandType(ins.output, ValueType::RegRef);
 
-			Value x(ins.operands[1]), y(ins.operands[2]), valueOut;
-			auto varOut = ins.operands[0].getObjectRef().objectPtr;
-			if (!varOut)
-				throw NullRefError();
-			_checkObjectOperandType(varOut, TypeId::Var);
-
+			Value x(_unwrapRegOperand(curMajorFrame, ins.operands[0])),
+				y(_unwrapRegOperand(curMajorFrame, ins.operands[1])),
+				valueOut;
 			if (x.valueType != y.valueType)
 				throw InvalidOperandsError("LHS and RHS must have the same type");
 
@@ -819,20 +822,18 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 					throw InvalidOperandsError("Invalid operand combination");
 			}
 
-			((VarObject *)varOut)->setData(valueOut);
+			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), valueOut);
 			break;
 		}
 		case Opcode::LSH:
 		case Opcode::RSH: {
-			_checkOperandCount(ins, 3);
+			_checkOperandCount(ins, true, 2);
 
-			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::Undefined, ValueType::U32 });
+			_checkOperandType(ins.output, ValueType::RegRef);
 
-			Value x(ins.operands[1]), y(ins.operands[2]), valueOut;
-			auto varOut = ins.operands[0].getObjectRef().objectPtr;
-			if (!varOut)
-				throw NullRefError();
-			_checkObjectOperandType(varOut, TypeId::Var);
+			Value x(_unwrapRegOperand(curMajorFrame, ins.operands[0])),
+				y(_unwrapRegOperand(curMajorFrame, ins.operands[1])),
+				valueOut;
 
 			switch (x.valueType) {
 				case ValueType::I8:
@@ -941,18 +942,15 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 					throw InvalidOperandsError("Invalid operand combination");
 			}
 
-			((VarObject *)varOut)->setData(valueOut);
+			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), valueOut);
 			break;
 		}
 		case Opcode::NOT:
 		case Opcode::LNOT:
 		case Opcode::NEG: {
-			_checkOperandCount(ins, 2);
+			_checkOperandCount(ins, true, 1);
 
-			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::Undefined });
-
-			auto varOut = ins.operands[0].getObjectRef().objectPtr;
-			_checkObjectOperandType(varOut, TypeId::Var);
+			_checkOperandType(ins.output, ValueType::RegRef);
 
 			Value x(ins.operands[1]), valueOut;
 
@@ -1114,44 +1112,46 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 					throw InvalidOperandsError("Invalid operand combination");
 			}
 
-			((VarObject *)varOut)->setData(valueOut);
+			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), valueOut);
 			break;
 		}
 		case Opcode::AT: {
-			_checkOperandCount(ins, 3);
+			_checkOperandCount(ins, true, 2);
 
-			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::ObjectRef, ValueType::U32 });
+			Value &arrayValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
+			_checkOperandType(arrayValue, ValueType::ObjectRef);
+			Value &index = _unwrapRegOperand(curMajorFrame, ins.operands[1]);
+			_checkOperandType(index, ValueType::U32);
 
-			auto varOut = ins.operands[0].getObjectRef().objectPtr;
-			_checkObjectOperandType(varOut, TypeId::Var);
-
-			auto arrayIn = ins.operands[1].getObjectRef().objectPtr;
+			auto arrayIn = arrayValue.getObjectRef().objectPtr;
 			_checkObjectOperandType(arrayIn, TypeId::Array);
 
-			uint32_t indexIn = ins.operands[2].getU32();
+			uint32_t indexIn = index.getU32();
 
 			if (indexIn > ((ArrayObject *)arrayIn)->values.size())
 				throw OutOfRangeError();
 
-			((VarObject *)varOut)->setData(((ArrayObject *)arrayIn)->values[indexIn]);
+			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), ((ArrayObject *)arrayIn)->values[indexIn]);
 
 			break;
 		}
 		case Opcode::JMP: {
-			_checkOperandCount(ins, 1);
+			_checkOperandCount(ins, false, 1);
 
-			_checkOperandType(ins, { ValueType::U32 });
+			_checkOperandType(ins.operands[0], ValueType::U32);
 
 			curMajorFrame.curIns = ins.operands[0].getU32();
 			return;
 		}
 		case Opcode::JT:
 		case Opcode::JF: {
-			_checkOperandCount(ins, 2);
+			_checkOperandCount(ins, false, 2);
 
-			_checkOperandType(ins, { ValueType::U32, ValueType::Bool });
+			_checkOperandType(ins.operands[0], ValueType::U32);
+			Value &condition = _unwrapRegOperand(curMajorFrame, ins.operands[1]);
+			_checkOperandType(condition, ValueType::Bool);
 
-			if (ins.operands[1].getBool()) {
+			if (condition.getBool()) {
 				if (ins.opcode == Opcode::JT) {
 					curMajorFrame.curIns = ins.operands[0].getU32();
 					return;
@@ -1164,10 +1164,9 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			break;
 		}
 		case Opcode::PUSHARG: {
-			_checkOperandCount(ins, 2);
-			_checkOperandType(ins, { ValueType::Undefined, ValueType::Undefined });
+			_checkOperandCount(ins, false, 2);
 
-			curMajorFrame.nextArgStack.push_back(ins.operands[0]);
+			curMajorFrame.nextArgStack.push_back(_unwrapRegOperand(curMajorFrame, ins.operands[0]));
 			switch (ins.operands[1].valueType) {
 				case ValueType::TypeName:
 					curMajorFrame.nextArgTypes.push_back(ins.operands[1].getTypeName());
@@ -1183,26 +1182,34 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		}
 		case Opcode::MCALL:
 		case Opcode::CALL: {
+			FnObject *fn;
+			Object *thisObject = nullptr;
+
 			if (ins.opcode == Opcode::MCALL) {
-				_checkOperandCount(ins, 2);
+				_checkOperandCount(ins, false, 2);
 
-				_checkOperandType(ins, { ValueType::ObjectRef, ValueType::ObjectRef });
+				Value fnValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
+				_checkOperandType(fnValue, ValueType::ObjectRef);
+				_checkObjectOperandType(fnValue.getObjectRef().objectPtr, TypeId::Fn);
+				fn = (FnObject*)fnValue.getObjectRef().objectPtr;
+
+				Value thisObjectValue = _unwrapRegOperand(curMajorFrame, ins.operands[1]);
+				_checkOperandType(thisObjectValue, ValueType::ObjectRef);
+				thisObject = thisObjectValue.getObjectRef().objectPtr;
 			} else {
-				_checkOperandCount(ins, 1);
+				_checkOperandCount(ins, false, 1);
 
-				_checkOperandType(ins, { ValueType::ObjectRef });
+				Value fnValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
+				_checkOperandType(fnValue, ValueType::ObjectRef);
+				_checkObjectOperandType(fnValue.getObjectRef().objectPtr, TypeId::Fn);
+				fn = (FnObject *)fnValue.getObjectRef().objectPtr;
 			}
-			_checkObjectOperandType(ins.operands[0].getObjectRef().objectPtr, TypeId::Fn);
-
-			FnObject *fn = (FnObject *)ins.operands[0].getObjectRef().objectPtr;
 
 			if (!fn)
 				throw NullRefError();
 
 			fn->call(
-				ins.opcode == Opcode::MCALL
-					? ins.operands[1].getObjectRef().objectPtr
-					: nullptr,
+				thisObject,
 				curMajorFrame.nextArgStack,
 				curMajorFrame.nextArgTypes);
 
@@ -1212,20 +1219,18 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			break;
 		}
 		case Opcode::RET: {
-			_checkOperandCount(ins, 1);
+			_checkOperandCount(ins, false, 1);
 
+			Value returnValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
 			context->majorFrames.pop_back();
-			context->majorFrames.back().returnValue = ins.operands[0];
+			context->majorFrames.back().returnValue = returnValue;
 			break;
 		}
 		case Opcode::LRET: {
-			_checkOperandCount(ins, 1);
-			_checkOperandType(ins, { ValueType::ObjectRef });
+			_checkOperandCount(ins, false, 0);
+			_checkOperandType(ins.output, ValueType::RegRef);
 
-			auto varOut = ins.operands[0].getObjectRef().objectPtr;
-			_checkObjectOperandType(varOut, TypeId::Var);
-
-			((VarObject *)varOut)->setData(curMajorFrame.returnValue);
+			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), curMajorFrame.returnValue);
 			break;
 		}
 		case Opcode::ACALL:
@@ -1233,36 +1238,31 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			break;
 		}
 		case Opcode::YIELD: {
-			_checkOperandCount(ins, 1);
+			_checkOperandCount(ins, false, 1);
 
 			context->flags |= CTX_YIELDED;
-			curMajorFrame.returnValue = ins.operands[0];
+			curMajorFrame.returnValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
 			break;
 		}
 		case Opcode::AWAIT: {
 			break;
 		}
 		case Opcode::LTHIS: {
-			_checkOperandCount(ins, 1);
-			_checkOperandType(ins, { ValueType::ObjectRef });
+			_checkOperandCount(ins, false, 0);
+			_checkOperandType(ins.output, ValueType::RegRef);
 
-			auto varOut = ins.operands[0].getObjectRef().objectPtr;
-			_checkObjectOperandType(varOut, TypeId::Var);
-
-			((VarObject *)varOut)->setData(curMajorFrame.thisObject);
+			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), curMajorFrame.thisObject);
 			break;
 		}
 		case Opcode::NEW: {
-			_checkOperandCount(ins, 3);
+			_checkOperandCount(ins, true, 2);
 
-			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::TypeName, ValueType::ObjectRef });
+			_checkOperandType(ins.operands[0], ValueType::TypeName);
+			_checkOperandType(ins.operands[1], ValueType::ObjectRef);
 
-			auto varOut = ins.operands[0].getObjectRef().objectPtr;
-			_checkObjectOperandType(varOut, TypeId::Var);
+			auto constructorRef = ins.operands[1].getObjectRef().objectPtr;
 
-			auto constructorRef = ins.operands[2].getObjectRef().objectPtr;
-
-			Type &type = ins.operands[1].getTypeName();
+			Type &type = ins.operands[0].getTypeName();
 			type.loadDeferredType(this);
 
 			switch (type.typeId) {
@@ -1270,7 +1270,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 				case TypeId::Class: {
 					ClassObject *cls = (ClassObject *)type.getCustomTypeExData();
 					InstanceObject *instance = newClassInstance(cls);
-					((VarObject *)varOut)->setData(instance);
+					_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), instance);
 
 					if (constructorRef) {
 						_checkObjectOperandType(constructorRef, TypeId::IdRef);
@@ -1295,12 +1295,10 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			break;
 		}
 		case Opcode::ARRNEW: {
-			_checkOperandCount(ins, 3);
+			_checkOperandCount(ins, true, 2);
 
-			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::TypeName, ValueType::U32 });
-
-			auto varOut = ins.operands[0].getObjectRef().objectPtr;
-			_checkObjectOperandType(varOut, TypeId::Var);
+			_checkOperandType(ins.operands[0], ValueType::TypeName);
+			_checkOperandType(ins.operands[1], ValueType::U32);
 
 			Type &type = ins.operands[1].getTypeName();
 			uint32_t size = ins.operands[2].getU32();
@@ -1308,14 +1306,14 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 			auto instance = newArrayInstance(type, size);
 
-			((VarObject *)varOut)->setData(instance);
+			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), instance);
 
 			break;
 		}
 		case Opcode::THROW: {
-			_checkOperandCount(ins, 1);
+			_checkOperandCount(ins, false, 1);
 
-			_checkOperandType(ins, { ValueType::ObjectRef });
+			_checkOperandType(ins.operands[0], ValueType::ObjectRef);
 
 			Object *x = ins.operands[0].getObjectRef().objectPtr;
 
@@ -1350,9 +1348,10 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			throw UncaughtExceptionError("Uncaught exception: " + std::to_string(x->getType(), this));
 		}
 		case Opcode::PUSHXH: {
-			_checkOperandCount(ins, 2);
+			_checkOperandCount(ins, false, 2);
 
-			_checkOperandType(ins, { ValueType::TypeName, ValueType::U32 });
+			_checkOperandType(ins.operands[0], ValueType::TypeName);
+			_checkOperandType(ins.operands[1], ValueType::U32);
 
 			ExceptionHandler xh;
 
@@ -1365,19 +1364,17 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			break;
 		}
 		case Opcode::ABORT:
-			_checkOperandCount(ins, 0);
+			_checkOperandCount(ins, false, 0);
 			throw UncaughtExceptionError("Use chose to abort the execution");
 		case Opcode::CAST: {
-			_checkOperandCount(ins, 3);
+			_checkOperandCount(ins, true, 2);
 
-			_checkOperandType(ins, { ValueType::ObjectRef, ValueType::TypeName, ValueType::Undefined });
+			_checkOperandType(ins.output, ValueType::RegRef);
+			_checkOperandType(ins.operands[0], ValueType::TypeName);
 
-			auto varOut = ins.operands[0].getObjectRef().objectPtr;
-			_checkObjectOperandType(varOut, TypeId::Var);
+			Value v = _unwrapRegOperand(curMajorFrame, ins.operands[1]);
 
-			Value v = ins.operands[2];
-
-			auto t = ins.operands[1].getTypeName();
+			auto t = ins.operands[0].getTypeName();
 
 			switch (t.typeId) {
 				case TypeId::Value: {
@@ -1425,7 +1422,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 					throw InvalidOperandsError("Invalid cast target type");
 			}
 
-			((VarObject *)varOut)->setData(v);
+			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), v);
 			break;
 		}
 		default:

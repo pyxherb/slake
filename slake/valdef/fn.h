@@ -16,6 +16,7 @@ namespace slake {
 
 	struct Instruction final {
 		Opcode opcode = (Opcode)0xffff;
+		Value output;
 		std::deque<Value> operands;
 	};
 
@@ -119,17 +120,27 @@ namespace slake {
 			for (size_t i = 0; i < instructions.size(); ++i) {
 				instructions[i].opcode = other.instructions[i].opcode;
 
+				if (auto &output = other.instructions[i].output; output.valueType == ValueType::ObjectRef) {
+					if (auto ptr = output.getObjectRef().objectPtr; ptr)
+						instructions[i].output = ptr->duplicate();
+					else
+						instructions[i].output = nullptr;
+				} else
+					instructions[i].output = output;
+
 				// Duplicate each of the operands.
 				instructions[i].operands.resize(other.instructions[i].operands.size());
 				for (size_t j = 0; j < other.instructions[i].operands.size(); ++j) {
-					if (other.instructions[i].operands[j].valueType == ValueType::ObjectRef) {
-						if (other.instructions[i].operands[j].getObjectRef().objectPtr)
+					auto &operand = other.instructions[i].operands[j];
+
+					if (operand.valueType == ValueType::ObjectRef) {
+						if (auto ptr = operand.getObjectRef().objectPtr; ptr)
 							instructions[i].operands[j] =
-								other.instructions[i].operands[j].getObjectRef().objectPtr->duplicate();
+								ptr->duplicate();
 						else
 							instructions[i].operands[j] = nullptr;
 					} else
-						instructions[i].operands[j] = other.instructions[i].operands[j];
+						instructions[i].operands[j] = operand;
 				}
 			}
 

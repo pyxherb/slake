@@ -145,13 +145,15 @@ namespace slake {
 
 		struct Ins {
 			Opcode opcode;
+			std::shared_ptr<AstNode> output;
 			std::deque<std::shared_ptr<AstNode>> operands;
 
 			Ins() = default;
 			inline Ins(
 				Opcode opcode,
+				std::shared_ptr<AstNode> output,
 				std::deque<std::shared_ptr<AstNode>> operands = {})
-				: opcode(opcode), operands(operands) {}
+				: opcode(opcode), output(output), operands(operands) {}
 		};
 
 		class CompiledFnNode final : public MemberNode {
@@ -220,34 +222,11 @@ namespace slake {
 		class RegRefNode final : public AstNode {
 		public:
 			uint32_t index;
-			bool unwrapData;
 
-			inline RegRefNode(uint32_t index, bool unwrapData = false) : index(index), unwrapData(unwrapData) {}
+			inline RegRefNode(uint32_t index) : index(index) {}
 			virtual ~RegRefNode() = default;
 
 			virtual inline NodeType getNodeType() const override { return NodeType::RegRef; }
-		};
-
-		class LocalVarRefNode final : public AstNode {
-		public:
-			uint32_t index;
-			bool unwrapData;
-
-			inline LocalVarRefNode(uint32_t index, bool unwrapData = false) : index(index), unwrapData(unwrapData) {}
-			virtual ~LocalVarRefNode() = default;
-
-			virtual inline NodeType getNodeType() const override { return NodeType::LocalVarRef; }
-		};
-
-		class ArgRefNode final : public AstNode {
-		public:
-			uint32_t index;
-			bool unwrapData;
-
-			inline ArgRefNode(uint32_t index, bool unwrapData = false) : index(index), unwrapData(unwrapData) {}
-			virtual ~ArgRefNode() = default;
-
-			virtual inline NodeType getNodeType() const override { return NodeType::ArgRef; }
 		};
 	}
 }

@@ -30,8 +30,6 @@ void Value::_reset() {
 		case ValueType::F64:
 		case ValueType::Bool:
 		case ValueType::RegRef:
-		case ValueType::ArgRef:
-		case ValueType::LocalVarRef:
 			break;
 		case ValueType::ObjectRef: {
 			ObjectRefValueExData &exData = std::get<ObjectRefValueExData>(data);
@@ -73,10 +71,6 @@ const ObjectRefValueExData &Value::getObjectRef() const {
 	return std::get<ObjectRefValueExData>(data);
 }
 
-const IndexedRefValueExData &Value::getIndexedRef() const {
-	return std::get<IndexedRefValueExData>(data);
-}
-
 Value &Value::operator=(const Value &other) {
 	_reset();
 
@@ -93,8 +87,6 @@ Value &Value::operator=(const Value &other) {
 		case ValueType::F64:
 		case ValueType::Bool:
 		case ValueType::RegRef:
-		case ValueType::ArgRef:
-		case ValueType::LocalVarRef:
 			this->data = other.data;
 			break;
 		case ValueType::ObjectRef:

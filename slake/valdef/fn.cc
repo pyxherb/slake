@@ -115,7 +115,7 @@ Value RegularFnOverloadingObject::call(Object *thisObject, std::deque<Value> arg
 		frame.thisObject = thisObject;
 		frame.argStack.resize(args.size());
 		for (size_t i = 0; i < args.size(); ++i) {
-			auto var = VarObject::alloc(rt, 0, TypeId::Any);
+			auto var = VarObject::alloc(rt, 0, i < paramTypes.size() ? paramTypes[i] : TypeId::Any);
 			var->setData(args[i]);
 			frame.argStack[i] = var.release();
 		}

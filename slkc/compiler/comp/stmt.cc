@@ -79,8 +79,21 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 							{ i.second.initValue->sourceLocation,
 								MessageType::Error,
 								"Incompatible initial value type" });
-					} else
-						compileExpr(i.second.initValue, EvalPurpose::LValue, std::make_shared<LocalVarRefNode>(index));
+					} else {
+						uint32_t
+							resultRegIndex = allocReg(),
+							tmpRegIndex = allocReg();
+
+						compileExpr(i.second.initValue, EvalPurpose::LValue, std::make_shared<RegRefNode>(resultRegIndex));
+						_insertIns(
+							Opcode::LLOAD,
+							std::make_shared<RegRefNode>(tmpRegIndex),
+							{ std::make_shared<U32LiteralExprNode>(index) });
+						_insertIns(
+							Opcode::STORE,
+							{},
+							{ std::make_shared<RegRefNode>(tmpRegIndex), std::make_shared<RegRefNode>(resultRegIndex) });
+					}
 				} else {
 					if (i.second.initValue) {
 						std::shared_ptr<TypeNameNode> initValueType = evalExprType(i.second.initValue);
@@ -98,9 +111,34 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 										MessageType::Error,
 										"Incompatible initial value type" });
 
-							compileExpr(std::make_shared<CastExprNode>(varType, i.second.initValue), EvalPurpose::RValue, std::make_shared<LocalVarRefNode>(index));
-						} else
-							compileExpr(i.second.initValue, EvalPurpose::RValue, std::make_shared<LocalVarRefNode>(index));
+							uint32_t
+								resultRegIndex = allocReg(),
+								tmpRegIndex = allocReg();
+
+							compileExpr(std::make_shared<CastExprNode>(varType, i.second.initValue), EvalPurpose::RValue, std::make_shared<RegRefNode>(resultRegIndex));
+							_insertIns(
+								Opcode::LLOAD,
+								std::make_shared<RegRefNode>(tmpRegIndex),
+								{ std::make_shared<U32LiteralExprNode>(index) });
+							_insertIns(
+								Opcode::STORE,
+								{},
+								{ std::make_shared<RegRefNode>(tmpRegIndex), std::make_shared<RegRefNode>(resultRegIndex) });
+						} else {
+							uint32_t
+								resultRegIndex = allocReg(),
+								tmpRegIndex = allocReg();
+
+							compileExpr(i.second.initValue, EvalPurpose::RValue, std::make_shared<RegRefNode>(resultRegIndex));
+							_insertIns(
+								Opcode::LLOAD,
+								std::make_shared<RegRefNode>(tmpRegIndex),
+								{ std::make_shared<U32LiteralExprNode>(index) });
+							_insertIns(
+								Opcode::STORE,
+								{},
+								{ std::make_shared<RegRefNode>(tmpRegIndex), std::make_shared<RegRefNode>(resultRegIndex) });
+						}
 					}
 				}
 			}
@@ -114,15 +152,16 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			if (curMajorContext.curMinorContext.breakScopeLevel < curMajorContext.curScopeLevel)
 				_insertIns(
 					Opcode::LEAVE,
+					{},
 					{ std::make_shared<U32LiteralExprNode>(curMajorContext.curScopeLevel - curMajorContext.curMinorContext.breakScopeLevel) });
 
-			_insertIns(Opcode::JMP, { std::make_shared<LabelRefNode>(curMajorContext.curMinorContext.breakLabel) });
+			_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(curMajorContext.curMinorContext.breakLabel) });
 			break;
 		case StmtType::Continue:
 			if (curMajorContext.curMinorContext.continueLabel.size())
 				throw FatalCompilationError({ stmt->sourceLocation, MessageType::Error, "Unexpected continue statement" });
 
-			_insertIns(Opcode::JMP, { std::make_shared<LabelRefNode>(curMajorContext.curMinorContext.continueLabel) });
+			_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(curMajorContext.curMinorContext.continueLabel) });
 			break;
 		case StmtType::For: {
 			auto s = std::static_pointer_cast<ForStmtNode>(stmt);
@@ -138,7 +177,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			curMajorContext.curMinorContext.breakLabel = endLabel;
 			curMajorContext.curMinorContext.continueLabel = beginLabel;
 
-			_insertIns(Opcode::ENTER);
+			_insertIns(Opcode::ENTER, {}, {});
 			compileStmt(s->varDefs);
 
 			_insertLabel(beginLabel);
@@ -166,19 +205,19 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 						std::make_shared<RegRefNode>(tmpRegIndex));
 				} else
 					compileExpr(s->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
-				_insertIns(Opcode::JF, { std::make_shared<LabelRefNode>(endLabel), std::make_shared<RegRefNode>(tmpRegIndex, true) });
+				_insertIns(Opcode::JF, {}, { std::make_shared<LabelRefNode>(endLabel), std::make_shared<RegRefNode>(tmpRegIndex) });
 			} else {
-				_insertIns(Opcode::JMP, { std::make_shared<LabelRefNode>(endLabel) });
+				_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(endLabel) });
 			}
 
 			compileStmt(s->body);
 
 			compileExpr(s->endExpr, EvalPurpose::Stmt, {});
 
-			_insertIns(Opcode::JMP, { std::make_shared<LabelRefNode>(beginLabel) });
+			_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(beginLabel) });
 
 			_insertLabel(endLabel);
-			_insertIns(Opcode::LEAVE);
+			_insertIns(Opcode::LEAVE, {}, {});
 
 			popMinorContext();
 			break;
@@ -233,7 +272,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 
 			_insertLabel(endLabel);
 
-			_insertIns(Opcode::JT, { std::make_shared<LabelRefNode>(beginLabel), std::make_shared<RegRefNode>(tmpRegIndex, true) });
+			_insertIns(Opcode::JT, {}, { std::make_shared<LabelRefNode>(beginLabel), std::make_shared<RegRefNode>(tmpRegIndex) });
 
 			popMinorContext();
 
@@ -256,19 +295,19 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 				if (returnType->getTypeId() != TypeId::Void)
 					throw FatalCompilationError({ stmt->sourceLocation, MessageType::Error, "Must return a value" });
 				else
-					_insertIns(Opcode::RET, { {} });
+					_insertIns(Opcode::RET, {}, { {} });
 			} else {
 				if (auto e = evalConstExpr(s->returnValue); e) {
 					if (isSameType(evalExprType(e), returnType)) {
-						_insertIns(Opcode::RET, { e });
+						_insertIns(Opcode::RET, {}, { e });
 					} else {
 						if (auto ce = castLiteralExpr(e, returnType->getTypeId()); ce) {
-							_insertIns(Opcode::RET, { ce });
+							_insertIns(Opcode::RET, {}, { ce });
 						} else {
 							uint32_t tmpRegIndex = allocReg();
 
 							compileExpr(std::make_shared<CastExprNode>(returnType, e), EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
-							_insertIns(Opcode::RET, { std::make_shared<RegRefNode>(tmpRegIndex, true) });
+							_insertIns(Opcode::RET, {}, { std::make_shared<RegRefNode>(tmpRegIndex) });
 						}
 					}
 				} else {
@@ -284,7 +323,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 					else
 						compileExpr(std::make_shared<CastExprNode>(returnType, s->returnValue), EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
 
-					_insertIns(Opcode::RET, { std::make_shared<RegRefNode>(tmpRegIndex, true) });
+					_insertIns(Opcode::RET, {}, { std::make_shared<RegRefNode>(tmpRegIndex) });
 				}
 			}
 
@@ -300,15 +339,15 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 				if (curFn->returnType->getTypeId() != TypeId::Void)
 					throw FatalCompilationError({ stmt->sourceLocation, MessageType::Error, "Must yield a value" });
 				else
-					_insertIns(Opcode::YIELD, {});
+					_insertIns(Opcode::YIELD, {}, {});
 			} else {
 				if (auto e = evalConstExpr(s->returnValue); e) {
-					_insertIns(Opcode::YIELD, { e });
+					_insertIns(Opcode::YIELD, {}, { e });
 				} else {
 					uint32_t tmpRegIndex = allocReg();
 
 					compileExpr(s->returnValue, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
-					_insertIns(Opcode::YIELD, { std::make_shared<RegRefNode>(tmpRegIndex, true) });
+					_insertIns(Opcode::YIELD, {}, { std::make_shared<RegRefNode>(tmpRegIndex) });
 				}
 			}
 
@@ -342,11 +381,11 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			} else
 				compileExpr(s->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
 
-			_insertIns(Opcode::JF, { std::make_shared<LabelRefNode>(falseBranchLabel), std::make_shared<RegRefNode>(tmpRegIndex, true) });
+			_insertIns(Opcode::JF, {}, { std::make_shared<LabelRefNode>(falseBranchLabel), std::make_shared<RegRefNode>(tmpRegIndex) });
 
 			compileStmt(s->body);
 			if (s->elseBranch) {
-				_insertIns(Opcode::JMP, { std::make_shared<LabelRefNode>(endLabel) });
+				_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(endLabel) });
 			}
 
 			_insertLabel(falseBranchLabel);
@@ -366,11 +405,12 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			std::string labelPrefix = "$try_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column),
 						endLabel = labelPrefix + "_final";
 
-			_insertIns(Opcode::ENTER);
+			_insertIns(Opcode::ENTER, {}, {});
 
 			for (size_t i = 0; i < s->catchBlocks.size(); ++i)
 				_insertIns(
 					Opcode::PUSHXH,
+					{},
 					{ s->catchBlocks[i].targetType,
 						std::make_shared<LabelRefNode>(labelPrefix + "_xh_" + std::to_string(i)) });
 
@@ -383,22 +423,34 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 				_insertLabel(labelPrefix + "_xh_" + std::to_string(i));
 
 				if (curBlock.exceptionVarName.size()) {
-					_insertIns(Opcode::ENTER);
+					_insertIns(Opcode::ENTER, {}, {});
 
-					_insertIns(Opcode::LEXCEPT, { std::make_shared<LocalVarRefNode>(allocLocalVar(curBlock.exceptionVarName, curBlock.targetType)) });
+					uint32_t localVarIndex = allocLocalVar(curBlock.exceptionVarName, curBlock.targetType);
+					uint32_t tmpRegIndex = allocReg(),
+							 exceptRegIndex = allocReg();
+
+					_insertIns(Opcode::LLOAD,
+						std::make_shared<RegRefNode>(tmpRegIndex),
+						{ std::make_shared<U32LiteralExprNode>(localVarIndex) });
+
+					_insertIns(Opcode::LEXCEPT, std::make_shared<RegRefNode>(exceptRegIndex), {});
+					_insertIns(Opcode::STORE,
+						{},
+						{ std::make_shared<RegRefNode>(tmpRegIndex),
+							std::make_shared<RegRefNode>(exceptRegIndex) });
 				}
 
 				compileStmt(curBlock.body);
 
 				if (curBlock.exceptionVarName.size())
-					_insertIns(Opcode::LEAVE);
+					_insertIns(Opcode::LEAVE, {}, {});
 
-				_insertIns(Opcode::JMP, { std::make_shared<LabelRefNode>(endLabel) });
+				_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(endLabel) });
 
 				popMajorContext();
 			}
 
-			_insertIns(Opcode::LEAVE);
+			_insertIns(Opcode::LEAVE, {}, {});
 
 			_insertLabel(endLabel);
 
@@ -446,19 +498,21 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 				}
 
 				compileExpr(curCase.condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(conditionRegIndex));
+
+				uint32_t cmpResultRegIndex = allocReg();
 				_insertIns(
 					Opcode::EQ,
-					{ std::make_shared<RegRefNode>(conditionRegIndex),
-						std::make_shared<RegRefNode>(matcheeRegIndex, true),
-						std::make_shared<RegRefNode>(conditionRegIndex, true) });
-				_insertIns(Opcode::JF, { std::make_shared<LabelRefNode>(caseEndLabel), std::make_shared<RegRefNode>(conditionRegIndex) });
+					std::make_shared<RegRefNode>(cmpResultRegIndex),
+					{ std::make_shared<RegRefNode>(matcheeRegIndex),
+						std::make_shared<RegRefNode>(conditionRegIndex) });
+				_insertIns(Opcode::JF, {}, { std::make_shared<LabelRefNode>(caseEndLabel), std::make_shared<RegRefNode>(cmpResultRegIndex) });
 
 				compileStmt(std::make_shared<CodeBlockStmtNode>(CodeBlock{ SourceLocation(), curCase.body }));
 
 				_insertLabel(caseEndLabel);
 
 				if (i + 1 < s->cases.size())
-					_insertIns(Opcode::JMP, { std::make_shared<LabelRefNode>(labelPrefix + "_case" + std::to_string(i + 1) + "_end") });
+					_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(labelPrefix + "_case" + std::to_string(i + 1) + "_end") });
 			}
 
 			if (defaultCase)
@@ -474,7 +528,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 
 			pushMajorContext();
 
-			_insertIns(Opcode::ENTER);
+			_insertIns(Opcode::ENTER, {}, {});
 			++curMajorContext.curScopeLevel;
 
 			for (auto i : s->body.stmts) {
@@ -486,7 +540,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			}
 
 			--curMajorContext.curScopeLevel;
-			_insertIns(Opcode::LEAVE);
+			_insertIns(Opcode::LEAVE, {}, {});
 
 			popMajorContext();
 			break;

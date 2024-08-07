@@ -58,8 +58,6 @@ void slake::Runtime::_instantiateGenericObject(Value& value, GenericInstantiatio
 		case ValueType::Bool:
 		case ValueType::ObjectRef:
 		case ValueType::RegRef:
-		case ValueType::ArgRef:
-		case ValueType::LocalVarRef:
 			break;
 		case ValueType::TypeName:
 			_instantiateGenericObject(value.getTypeName(), instantiationContext);

@@ -42,8 +42,9 @@ namespace slake {
 		/// @brief Instruction Header (IH)
 		///
 		struct InsHeader final {
-			Opcode opcode : 14;		// Operation code
-			uint8_t nOperands : 2;	// Number of operands
+			Opcode opcode : 13;			// Operation code
+			bool hasOutputOperand : 1;	// Determines if the instruction has an output.
+			uint8_t nOperands : 2;		// Number of operands
 
 			inline InsHeader() : opcode(Opcode::NOP), nOperands(0) {}
 			inline InsHeader(Opcode opcode, uint8_t nOperands) {
@@ -76,11 +77,6 @@ namespace slake {
 			TypeName,		// Type name
 			GenericArg,		// Generic argument
 			Reg,			// Register
-			RegValue,		// Register value
-			LocalVar,		// Local variable
-			LocalVarValue,	// Local variable value
-			Arg,			// Argument
-			ArgValue,		// Argument value
 			Ref,			// Reference
 		};
 

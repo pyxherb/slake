@@ -140,8 +140,9 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 		// Jump to the end if the left expression is enough to get the final result.
 		_insertIns(
 			e->op == BinaryOp::LOr ? Opcode::JT : Opcode::JF,
+			{},
 			{ std::make_shared<LabelRefNode>(endLabel),
-				std::make_shared<RegRefNode>(lhsRegIndex, true) });
+				std::make_shared<RegRefNode>(lhsRegIndex) });
 
 		// Compile the RHS.
 		// The RHS also must be a boolean expression.
@@ -170,62 +171,57 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 		_insertIns(
 			opReg.opcode,
+			std::make_shared<RegRefNode>(resultRegIndex),
 			{ std::make_shared<RegRefNode>(lhsRegIndex),
-				std::make_shared<RegRefNode>(lhsRegIndex, true),
-				std::make_shared<RegRefNode>(rhsRegIndex, true) });
+				std::make_shared<RegRefNode>(rhsRegIndex) });
 
 		_insertLabel(endLabel);
-
-		_insertIns(
-			Opcode::STORE,
-			{ std::make_shared<RegRefNode>(resultRegIndex),
-				std::make_shared<RegRefNode>(lhsRegIndex, true) });
 	};
 	auto execOpAndStoreResult = [this, e, lhsType, &opReg, resultRegIndex](uint32_t lhsRegIndex, uint32_t rhsRegIndex) {
 		if (isAssignBinaryOp(e->op)) {
 			BinaryOp ordinaryOp = _assignBinaryOpToOrdinaryBinaryOpMap.at(e->op);
 
 			if (ordinaryOp != BinaryOp::Assign) {
-				uint32_t lhsValueRegIndex = allocReg(),
-						 opResultRegIndex = allocReg();
+				uint32_t lhsValueRegIndex = allocReg();
 
 				// Load value of the LHS.
 				_insertIns(
 					Opcode::LVALUE,
-					{ std::make_shared<RegRefNode>(lhsValueRegIndex),
-						std::make_shared<RegRefNode>(lhsRegIndex, true) });
+					std::make_shared<RegRefNode>(lhsValueRegIndex),
+					{ std::make_shared<RegRefNode>(lhsRegIndex) });
 
 				// Execute the operation.
 				_insertIns(
 					_binaryOpRegs.at(ordinaryOp).opcode,
-					{ std::make_shared<RegRefNode>(opResultRegIndex),
-						std::make_shared<RegRefNode>(lhsValueRegIndex, true),
-						std::make_shared<RegRefNode>(rhsRegIndex, true) });
+					std::make_shared<RegRefNode>(resultRegIndex),
+					{ std::make_shared<RegRefNode>(lhsValueRegIndex),
+						std::make_shared<RegRefNode>(rhsRegIndex) });
 
 				// Store the result to the LHS.
 				_insertIns(
 					Opcode::STORE,
-					{ std::make_shared<RegRefNode>(lhsRegIndex, true),
-						std::make_shared<RegRefNode>(opResultRegIndex, true) });
+					{},
+					{ std::make_shared<RegRefNode>(lhsRegIndex),
+						std::make_shared<RegRefNode>(resultRegIndex) });
 			} else {
 				// Ordinary assignment operation.
 				_insertIns(
 					Opcode::STORE,
-					{ std::make_shared<RegRefNode>(lhsRegIndex, true),
-						std::make_shared<RegRefNode>(rhsRegIndex, true) });
+					{},
+					{ std::make_shared<RegRefNode>(lhsRegIndex),
+						std::make_shared<RegRefNode>(rhsRegIndex) });
+				_insertIns(
+					Opcode::MOV,
+					std::make_shared<RegRefNode>(resultRegIndex),
+					{ std::make_shared<RegRefNode>(lhsRegIndex) });
 			}
-
-			_insertIns(
-				Opcode::STORE,
-				{ std::make_shared<RegRefNode>(resultRegIndex),
-					std::make_shared<RegRefNode>(lhsRegIndex, true) });
 		} else {
 			// Execute the operation.
 			_insertIns(
 				opReg.opcode,
-				{ std::make_shared<RegRefNode>(resultRegIndex),
-					std::make_shared<RegRefNode>(lhsRegIndex, true),
-					std::make_shared<RegRefNode>(rhsRegIndex, true) });
+				std::make_shared<RegRefNode>(resultRegIndex),
+				{ std::make_shared<RegRefNode>(lhsRegIndex),
+					std::make_shared<RegRefNode>(rhsRegIndex) });
 		}
 	};
 
@@ -534,9 +530,9 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 					_insertIns(
 						opReg.opcode,
-						{ std::make_shared<RegRefNode>(resultRegIndex),
-							std::make_shared<RegRefNode>(lhsRegIndex, true),
-							std::make_shared<RegRefNode>(rhsRegIndex, true) });
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex),
+							std::make_shared<RegRefNode>(rhsRegIndex) });
 
 					resultType = std::make_shared<StringTypeNameNode>(SIZE_MAX);
 
@@ -563,9 +559,9 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 					_insertIns(
 						opReg.opcode,
-						{ std::make_shared<RegRefNode>(resultRegIndex),
-							std::make_shared<RegRefNode>(lhsRegIndex, true),
-							std::make_shared<RegRefNode>(rhsRegIndex, true) });
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex),
+							std::make_shared<RegRefNode>(rhsRegIndex) });
 
 					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX, true);
 
@@ -605,9 +601,9 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 					_insertIns(
 						opReg.opcode,
-						{ std::make_shared<RegRefNode>(resultRegIndex),
-							std::make_shared<RegRefNode>(lhsRegIndex, true),
-							std::make_shared<RegRefNode>(rhsRegIndex, true) });
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex),
+							std::make_shared<RegRefNode>(rhsRegIndex) });
 
 					resultType = std::static_pointer_cast<ArrayTypeNameNode>(lhsType)->elementType->duplicate<TypeNameNode>();
 					resultType->isRef = true;
@@ -669,7 +665,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 									MessageType::Error,
 									"Expecting a lvalue expression"));
 
-						_insertIns(Opcode::PUSHARG, { ce, overloading->params[0]->type });
+						_insertIns(Opcode::PUSHARG, {}, { ce, overloading->params[0]->type });
 					} else {
 						compileExpr(
 							e->rhs,
@@ -677,19 +673,24 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 								? EvalPurpose::LValue
 								: EvalPurpose::RValue,
 							std::make_shared<RegRefNode>(tmpRegIndex));
-						_insertIns(Opcode::PUSHARG, { std::make_shared<RegRefNode>(tmpRegIndex, true), overloading->params[0]->type });
+						_insertIns(Opcode::PUSHARG, {}, { std::make_shared<RegRefNode>(tmpRegIndex), overloading->params[0]->type });
 					}
 
-					if (overloading->isVirtual)
+					uint32_t callTargetRegIndex = allocReg();
+					if (overloading->isVirtual) {
 						_insertIns(Opcode::RLOAD,
-							{ std::make_shared<RegRefNode>(tmpRegIndex),
-								std::make_shared<RegRefNode>(lhsRegIndex, true),
+							std::make_shared<RegRefNode>(callTargetRegIndex),
+							{ std::make_shared<RegRefNode>(lhsRegIndex),
 								std::make_shared<IdRefExprNode>(operatorName) });
-					else {
+					} else {
 						IdRef fullName = getFullName(overloading.get());
-						_insertIns(Opcode::LOAD, { std::make_shared<RegRefNode>(tmpRegIndex), std::make_shared<IdRefExprNode>(fullName) });
+						_insertIns(Opcode::LOAD,
+							std::make_shared<RegRefNode>(callTargetRegIndex),
+							{ std::make_shared<IdRefExprNode>(fullName) });
 					}
-					_insertIns(Opcode::MCALL, { std::make_shared<RegRefNode>(tmpRegIndex, true), std::make_shared<RegRefNode>(lhsRegIndex, true) });
+					_insertIns(Opcode::MCALL,
+						{},
+						{ std::make_shared<RegRefNode>(callTargetRegIndex), std::make_shared<RegRefNode>(lhsRegIndex) });
 
 #if SLKC_WITH_LANGUAGE_SERVER
 					updateTokenInfo(e->idxOpToken, [this, &overloading](TokenInfo &tokenInfo) {
@@ -697,7 +698,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					});
 #endif
 
-					_insertIns(Opcode::LRET, { std::make_shared<RegRefNode>(resultRegIndex) });
+					_insertIns(Opcode::LRET, std::make_shared<RegRefNode>(resultRegIndex), {});
 
 					resultType = overloading->returnType;
 
@@ -728,12 +729,13 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 							_insertIns(
 								Opcode::STORE,
-								{ std::make_shared<RegRefNode>(lhsRegIndex, true),
-									std::make_shared<RegRefNode>(rhsRegIndex, true) });
+								{},
+								{ std::make_shared<RegRefNode>(lhsRegIndex),
+									std::make_shared<RegRefNode>(rhsRegIndex) });
 							_insertIns(
-								Opcode::STORE,
-								{ std::make_shared<RegRefNode>(resultRegIndex),
-									std::make_shared<RegRefNode>(lhsRegIndex, true) });
+								Opcode::MOV,
+								std::make_shared<RegRefNode>(resultRegIndex),
+								{ std::make_shared<RegRefNode>(lhsRegIndex) });
 
 							resultType = lhsType->duplicate<TypeNameNode>();
 							resultType->isRef = true;
@@ -759,9 +761,9 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 							_insertIns(
 								opReg.opcode,
-								{ std::make_shared<RegRefNode>(resultRegIndex),
-									std::make_shared<RegRefNode>(lhsRegIndex, true),
-									std::make_shared<RegRefNode>(rhsRegIndex, true) });
+								std::make_shared<RegRefNode>(resultRegIndex),
+								{ std::make_shared<RegRefNode>(lhsRegIndex),
+									std::make_shared<RegRefNode>(rhsRegIndex) });
 
 							resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 							break;
@@ -802,12 +804,13 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 							_insertIns(
 								Opcode::STORE,
-								{ std::make_shared<RegRefNode>(lhsRegIndex, true),
-									std::make_shared<RegRefNode>(rhsRegIndex, true) });
+								{},
+								{ std::make_shared<RegRefNode>(lhsRegIndex),
+									std::make_shared<RegRefNode>(rhsRegIndex) });
 							_insertIns(
-								Opcode::STORE,
-								{ std::make_shared<RegRefNode>(resultRegIndex),
-									std::make_shared<RegRefNode>(lhsRegIndex, true) });
+								Opcode::MOV,
+								std::make_shared<RegRefNode>(resultRegIndex),
+								{ std::make_shared<RegRefNode>(lhsRegIndex) });
 
 							resultType = lhsType->duplicate<TypeNameNode>();
 							resultType->isRef = true;
@@ -833,9 +836,9 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 							_insertIns(
 								opReg.opcode,
-								{ std::make_shared<RegRefNode>(resultRegIndex),
-									std::make_shared<RegRefNode>(lhsRegIndex, true),
-									std::make_shared<RegRefNode>(rhsRegIndex, true) });
+								std::make_shared<RegRefNode>(resultRegIndex),
+								{ std::make_shared<RegRefNode>(lhsRegIndex),
+									std::make_shared<RegRefNode>(rhsRegIndex) });
 
 							resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 							break;
@@ -909,18 +912,20 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					"Expecting a lvalue expression"));
 	} else {
 		if (isLValueType(resultType)) {
+			uint32_t newResultRegIndex = allocReg();
 			_insertIns(
 				Opcode::LVALUE,
-				{ std::make_shared<RegRefNode>(resultRegIndex),
-					std::make_shared<RegRefNode>(resultRegIndex, true) });
+				std::make_shared<RegRefNode>(newResultRegIndex),
+				{ std::make_shared<RegRefNode>(resultRegIndex) });
+			resultRegIndex = newResultRegIndex;
 		}
 	}
 
 	if (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt)
 		_insertIns(
-			Opcode::STORE,
-			{ curMajorContext.curMinorContext.evalDest,
-				std::make_shared<RegRefNode>(resultRegIndex, true) });
+			Opcode::MOV,
+			curMajorContext.curMinorContext.evalDest,
+			{ std::make_shared<RegRefNode>(resultRegIndex) });
 
 	curMajorContext.curMinorContext.evaluatedType = resultType;
 }

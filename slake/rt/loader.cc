@@ -102,17 +102,7 @@ Value Runtime::_loadValue(std::istream &fs) {
 		case slxfmt::TypeId::TypeName:
 			return Value(_loadType(fs));
 		case slxfmt::TypeId::Reg:
-			return Value(ValueType::RegRef, _read<uint32_t>(fs), false);
-		case slxfmt::TypeId::RegValue:
-			return Value(ValueType::RegRef, _read<uint32_t>(fs), true);
-		case slxfmt::TypeId::LocalVar:
-			return Value(ValueType::LocalVarRef, _read<uint32_t>(fs), false);
-		case slxfmt::TypeId::LocalVarValue:
-			return Value(ValueType::LocalVarRef, _read<uint32_t>(fs), true);
-		case slxfmt::TypeId::Arg:
-			return Value(ValueType::ArgRef, _read<uint32_t>(fs), false);
-		case slxfmt::TypeId::ArgValue:
-			return Value(ValueType::ArgRef, _read<uint32_t>(fs), true);
+			return Value(ValueType::RegRef, _read<uint32_t>(fs));
 		default:
 			throw LoaderError("Invalid object type detected");
 	}
@@ -406,6 +396,9 @@ void Runtime::_loadScope(ModuleObject *mod, std::istream &fs, LoadModuleFlags lo
 
 					ins.opcode = ih.opcode;
 					ins.operands.resize(ih.nOperands);
+
+					if (ih.hasOutputOperand)
+						ins.output = _loadValue(fs);
 
 					for (uint8_t k = 0; k < ih.nOperands; k++)
 						ins.operands[k] = _loadValue(fs);

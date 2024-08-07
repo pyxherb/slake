@@ -80,8 +80,6 @@ void Runtime::_gcWalk(const Value &i) {
 				_gcWalk(p);
 			break;
 		case ValueType::RegRef:
-		case ValueType::ArgRef:
-		case ValueType::LocalVarRef:
 			break;
 		case ValueType::TypeName:
 			_gcWalk(i.getTypeName());

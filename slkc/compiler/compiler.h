@@ -371,8 +371,9 @@ namespace slake {
 			}
 			inline void _insertIns(
 				Opcode opcode,
+				std::shared_ptr<AstNode> output,
 				std::deque<std::shared_ptr<AstNode>> operands) {
-				_insertIns(Ins{ opcode, operands });
+				_insertIns(Ins{ opcode, output, operands });
 			}
 			inline void _insertLabel(std::string name) {
 				if (curMajorContext.curMinorContext.dryRun)

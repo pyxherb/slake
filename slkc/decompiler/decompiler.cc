@@ -153,6 +153,11 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 
 								os << std::string(indentLevel + 1, '\t');
 
+								if (ins.output.valueType != ValueType::Undefined) {
+									decompileValue(rt, ins.output, os, indentLevel);
+									os << " = ";
+								}
+
 								if (slake::OPCODE_MNEMONIC_MAP.count(ins.opcode))
 									os << slake::OPCODE_MNEMONIC_MAP.at(ins.opcode);
 								else
@@ -255,24 +260,9 @@ void slake::decompiler::decompileValue(Runtime *rt, Value value, std::ostream &o
 		case ValueType::Bool:
 			os << value.getBool() ? "true" : "false";
 			break;
-		case ValueType::RegRef: {
-			if (value.getIndexedRef().unwrap)
-				os << "*";
-			os << "%" << std::to_string(value.getIndexedRef().index);
+		case ValueType::RegRef:
+			os << "%" << std::to_string(value.getRegIndex());
 			break;
-		}
-		case ValueType::LocalVarRef: {
-			if (value.getIndexedRef().unwrap)
-				os << "*";
-			os << "$" << std::to_string(value.getIndexedRef().index);
-			break;
-		}
-		case ValueType::ArgRef: {
-			if (value.getIndexedRef().unwrap)
-				os << "*";
-			os << "[" << std::to_string(value.getIndexedRef().index) << "]";
-			break;
-		}
 		case ValueType::ObjectRef: {
 			auto ptr = value.getObjectRef().objectPtr;
 

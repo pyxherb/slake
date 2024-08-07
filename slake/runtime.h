@@ -26,24 +26,9 @@ namespace slake {
 	struct MinorFrame final {
 		std::deque<ExceptionHandler> exceptHandlers;  // Exception handlers
 
-		std::deque<Value> dataStack;  // Data stack
 		uint32_t nLocalVars = 0, nRegs = 0;
 
 		MinorFrame(uint32_t nLocalVars, uint32_t nRegs);
-
-		inline void push(Value v) {
-			if (dataStack.size() > SLAKE_STACK_MAX)
-				throw StackOverflowError("Stack overflowed");
-			dataStack.push_back(v);
-		}
-
-		inline Value pop() {
-			if (!dataStack.size())
-				throw FrameBoundaryExceededError("Frame bottom exceeded");
-			Value v = dataStack.back();
-			dataStack.pop_back();
-			return v;
-		}
 	};
 
 	/// @brief Major frames which represent a single calling frame.
@@ -51,11 +36,11 @@ namespace slake {
 		Object *scopeObject = nullptr;						// Scope value.
 		const RegularFnOverloadingObject *curFn = nullptr;	// Current function overloading.
 		uint32_t curIns = 0;								// Offset of current instruction in function body.
-		std::deque<Value> argStack;							// Argument stack.
+		std::deque<VarObject *> argStack;					// Argument stack.
 		std::deque<Value> nextArgStack;						// Argument stack for next call.
 		std::deque<Type> nextArgTypes;						// Types of argument stack for next call.
 		std::deque<VarObject *> localVars;					// Local variables.
-		std::deque<VarObject *> regs;						// Local registers.
+		std::deque<Value> regs;								// Local registers.
 		Object *thisObject = nullptr;						// `this' object.
 		Value returnValue = nullptr;						// Return value.
 		std::deque<MinorFrame> minorFrames;					// Minor frames.
@@ -68,6 +53,13 @@ namespace slake {
 				throw InvalidLocalVarIndexError("Invalid local variable index", off);
 
 			return localVars.at(off);
+		}
+
+		inline Object *larg(uint32_t off) {
+			if (off >= argStack.size())
+				throw InvalidArgumentIndexError("Invalid argument index", off);
+
+			return argStack.at(off);
 		}
 
 		/// @brief Leave current minor frame.
@@ -209,7 +201,7 @@ namespace slake {
 		void _instantiateGenericObject(FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const;
 
 		VarObject *_addLocalVar(MajorFrame &frame, Type type);
-		VarObject *_addLocalReg(MajorFrame &frame);
+		void _addLocalReg(MajorFrame &frame);
 
 		bool _findAndDispatchExceptHandler(Context *context) const;
 

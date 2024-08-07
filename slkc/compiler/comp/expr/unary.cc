@@ -43,8 +43,8 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 
 					_insertIns(
 						opReg.opcode,
-						{ std::make_shared<RegRefNode>(resultRegIndex),
-							std::make_shared<RegRefNode>(lhsRegIndex, true) });
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
 
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
@@ -59,8 +59,8 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 
 					_insertIns(
 						opReg.opcode,
-						{ std::make_shared<RegRefNode>(resultRegIndex),
-							std::make_shared<RegRefNode>(lhsRegIndex, true) });
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
 
 					resultType = lhsType->duplicate<TypeNameNode>();
 					resultType->isRef = opReg.lvalueResult;
@@ -86,8 +86,8 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 
 					_insertIns(
 						opReg.opcode,
-						{ std::make_shared<RegRefNode>(resultRegIndex),
-							std::make_shared<RegRefNode>(lhsRegIndex, true) });
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
 
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
@@ -101,8 +101,8 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 
 					_insertIns(
 						opReg.opcode,
-						{ std::make_shared<RegRefNode>(resultRegIndex),
-							std::make_shared<RegRefNode>(lhsRegIndex, true) });
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
 
 					resultType = lhsType->duplicate<TypeNameNode>();
 					resultType->isRef = opReg.lvalueResult;
@@ -128,8 +128,8 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 
 					_insertIns(
 						opReg.opcode,
-						{ std::make_shared<RegRefNode>(resultRegIndex),
-							std::make_shared<RegRefNode>(lhsRegIndex, true) });
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
 
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
@@ -172,27 +172,28 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 
 					IdRef operatorName = { overloading->getName() };
 
-					uint32_t tmpRegIndex = allocReg();
+					uint32_t callTargetRegIndex = allocReg();
 
 					if (overloading->isVirtual)
 						_insertIns(
 							Opcode::RLOAD,
-							{ std::make_shared<RegRefNode>(tmpRegIndex),
-								std::make_shared<RegRefNode>(lhsRegIndex, true),
+							std::make_shared<RegRefNode>(callTargetRegIndex),
+							{ std::make_shared<RegRefNode>(lhsRegIndex),
 								std::make_shared<IdRefExprNode>(operatorName) });
 					else {
 						IdRef fullName = getFullName(overloading.get());
 						_insertIns(
 							Opcode::LOAD,
-							{ std::make_shared<RegRefNode>(tmpRegIndex),
-								std::make_shared<IdRefExprNode>(fullName) });
+							std::make_shared<RegRefNode>(callTargetRegIndex),
+							{ std::make_shared<IdRefExprNode>(fullName) });
 					}
 					_insertIns(
 						Opcode::MCALL,
-						{ std::make_shared<RegRefNode>(tmpRegIndex, true),
-							std::make_shared<RegRefNode>(lhsRegIndex, true) });
+						{},
+						{ std::make_shared<RegRefNode>(callTargetRegIndex),
+							std::make_shared<RegRefNode>(lhsRegIndex) });
 
-					_insertIns(Opcode::LRET, { std::make_shared<RegRefNode>(resultRegIndex) });
+					_insertIns(Opcode::LRET, std::make_shared<RegRefNode>(resultRegIndex), {});
 
 					resultType = overloading->returnType;
 
@@ -285,18 +286,19 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 					"Expecting a lvalue expression"));
 	} else {
 		if (isLValueType(resultType)) {
+			uint32_t newResultRegIndex = allocReg();
 			_insertIns(
 				Opcode::LVALUE,
-				{ std::make_shared<RegRefNode>(resultRegIndex),
-					std::make_shared<RegRefNode>(resultRegIndex, true) });
+				std::make_shared<RegRefNode>(newResultRegIndex),
+				{ std::make_shared<RegRefNode>(resultRegIndex) });
 		}
 	}
 
 	if (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt)
 		_insertIns(
-			Opcode::STORE,
-			{ curMajorContext.curMinorContext.evalDest,
-				std::make_shared<RegRefNode>(resultRegIndex, true) });
+			Opcode::MOV,
+			curMajorContext.curMinorContext.evalDest,
+			{ std::make_shared<RegRefNode>(resultRegIndex) });
 
 	curMajorContext.curMinorContext.evaluatedType = resultType;
 }

@@ -914,8 +914,12 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 							MessageType::Error,
 							"Too many operands"));
 				ih.nOperands = (uint8_t)j.operands.size();
+				ih.hasOutputOperand = (bool)j.output;
 
 				_write(os, ih);
+
+				if (j.output)
+					compileValue(os, j.output);
 
 				for (auto &k : j.operands) {
 					if (k) {
@@ -1071,23 +1075,9 @@ void Compiler::compileValue(std::ostream &fs, std::shared_ptr<AstNode> value) {
 
 			compileTypeName(fs, std::static_pointer_cast<TypeNameNode>(value));
 			break;
-		case NodeType::ArgRef: {
-			auto v = std::static_pointer_cast<ArgRefNode>(value);
-			_write(fs, v->unwrapData ? slxfmt::TypeId::ArgValue : slxfmt::TypeId::Arg);
-
-			_write(fs, v->index);
-			break;
-		}
-		case NodeType::LocalVarRef: {
-			auto v = std::static_pointer_cast<LocalVarRefNode>(value);
-			_write(fs, v->unwrapData ? slxfmt::TypeId::LocalVarValue : slxfmt::TypeId::LocalVar);
-
-			_write(fs, v->index);
-			break;
-		}
 		case NodeType::RegRef: {
 			auto v = std::static_pointer_cast<RegRefNode>(value);
-			_write(fs, v->unwrapData ? slxfmt::TypeId::RegValue : slxfmt::TypeId::Reg);
+			_write(fs, slxfmt::TypeId::Reg);
 
 			_write(fs, v->index);
 			break;

@@ -75,7 +75,7 @@ bool Compiler::resolveIdRef(IdRef ref, std::deque<std::pair<IdRef, std::shared_p
 				});
 #endif
 
-				partsOut.push_front({ IdRef{ ref.front() }, std::make_shared<ArgRefNode>((uint32_t)idxParam) });
+				partsOut.push_front({ IdRef{ ref.front() }, curFn->params[curFn->paramIndices.at(ref[0].name)] });
 				return true;
 			}
 		}

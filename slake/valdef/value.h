@@ -28,16 +28,9 @@ namespace slake {
 		ObjectRef,	// Object reference
 
 		RegRef,		  // Register reference
-		ArgRef,		  // Argument reference
-		LocalVarRef,  // Local variable reference
 		TypeName,	  // Type name
 
 		Undefined = UINT8_MAX,
-	};
-
-	struct IndexedRefValueExData {
-		bool unwrap;
-		uint32_t index;
 	};
 
 	struct ObjectRefValueExData {
@@ -60,7 +53,6 @@ namespace slake {
 			double,
 			bool,
 			ObjectRefValueExData,
-			IndexedRefValueExData,
 			Type *>
 			data;
 		void _setObjectRef(Object *objectPtr, bool isHostRef);
@@ -124,8 +116,8 @@ namespace slake {
 			_setObjectRef(objectPtr, isHostRef);
 			valueType = ValueType::ObjectRef;
 		}
-		inline Value(ValueType vt, uint32_t index, bool unwrap) {
-			this->data = IndexedRefValueExData{ unwrap, index };
+		inline Value(ValueType vt, uint32_t index) {
+			this->data = index;
 			valueType = vt;
 		}
 		Value(const Type &type);
@@ -186,12 +178,15 @@ namespace slake {
 			return std::get<bool>(data);
 		}
 
+		inline uint32_t getRegIndex() const {
+			assert(valueType == ValueType::RegRef);
+			return std::get<uint32_t>(data);
+		}
+
 		Type &getTypeName();
 		const Type &getTypeName() const;
 
 		const ObjectRefValueExData &getObjectRef() const;
-
-		const IndexedRefValueExData &getIndexedRef() const;
 
 		Value &operator=(const Value &other);
 		inline Value& operator=(Value&& other) noexcept {

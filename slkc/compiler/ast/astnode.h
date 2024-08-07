@@ -25,10 +25,8 @@ namespace slake {
 			LabelRef,
 			LocalVar,
 			Param,
-			ArgRef,
 			Comment,
 
-			LocalVarRef,
 			RegRef,
 			ThisRef,
 			BaseRef,

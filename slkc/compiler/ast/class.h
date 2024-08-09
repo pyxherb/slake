@@ -36,6 +36,8 @@ namespace slake {
 			size_t idxLBraceToken = SIZE_MAX,
 				   idxRBraceToken = SIZE_MAX;
 
+			std::string documentation;
+
 			ClassNode() = default;
 			inline ClassNode(const ClassNode &other) : MemberNode(other) {
 				name = other.name;
@@ -58,6 +60,8 @@ namespace slake {
 
 				idxLBraceToken = other.idxLBraceToken;
 				idxRBraceToken = other.idxRBraceToken;
+
+				documentation = other.documentation;
 			}
 			inline ClassNode(
 				Compiler *compiler,

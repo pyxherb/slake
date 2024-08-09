@@ -8,15 +8,33 @@ void Parser::parseProgramStmt() {
 	std::deque<size_t> idxAccessModifierTokens;
 	AccessModifier accessModifier = parseAccessModifier(loc, idxAccessModifierTokens);
 
-	switch (Token *token = lexer->peekToken(); token->tokenId) {
+	Token *token = lexer->peekToken(true, false, true);
+
+	switch (token->tokenId) {
 		case TokenId::End:
 			return;
+		case TokenId::NewLine:
+			lexer->nextToken(true, false, true);
+			if (isLastTokenNewline)
+				resetLineCommentDocumentation();
+			isLastTokenNewline = true;
+			break;
+		case TokenId::LineComment:
+		case TokenId::BlockComment:
+			lexer->nextToken(true, false, true);
+			resetLineCommentDocumentation();
+			break;
+		case TokenId::DocumentationComment:
+			lexer->nextToken(true, false, true);
+			updateLineCommentDocumentation(token);
+			break;
 		case TokenId::ClassKeyword: {
 			auto def = parseClassDef();
 
 			def->sourceLocation.beginPosition = loc.beginPosition;
 			def->access = accessModifier | ACCESS_STATIC;
 			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
+			def->documentation = extractLineCommentDocumentation();
 
 			_putDefinition(
 				def->name,
@@ -94,6 +112,9 @@ void Parser::parseProgramStmt() {
 		default:
 			throw SyntaxError("Unrecognized token", token->location);
 	}
+
+	if (token->tokenId != TokenId::NewLine)
+		isLastTokenNewline = false;
 }
 
 void Parser::parseModuleDecl() {

@@ -259,7 +259,9 @@ Token *Lexer::nextToken(bool keepNewLine, bool keepWhitespace, bool keepComment)
 					return tokens[i++].get();
 				}
 				break;
-			case TokenId::Comment:
+			case TokenId::LineComment:
+			case TokenId::BlockComment:
+			case TokenId::DocumentationComment:
 				if (keepComment) {
 					context.prevIndex = context.curIndex;
 					return tokens[i++].get();
@@ -291,7 +293,9 @@ Token *Lexer::peekToken(bool keepNewLine, bool keepWhitespace, bool keepComment)
 				if (keepWhitespace)
 					return tokens[i].get();
 				break;
-			case TokenId::Comment:
+			case TokenId::LineComment:
+			case TokenId::BlockComment:
+			case TokenId::DocumentationComment:
 				if (keepComment)
 					return tokens[i].get();
 				break;

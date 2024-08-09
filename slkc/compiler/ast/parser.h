@@ -47,6 +47,14 @@ namespace slake {
 			Lexer *lexer;
 			Compiler *compiler;
 
+			std::deque<std::string> curDocStringLines;
+			size_t curMinDocIndentLevel = SIZE_MAX;
+			bool isLastTokenNewline = false;
+
+			void resetLineCommentDocumentation();
+			void updateLineCommentDocumentation(Token *token);
+			std::string extractLineCommentDocumentation();
+
 			inline void reset() {
 				curScope.reset();
 				curModule.reset();

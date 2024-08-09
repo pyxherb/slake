@@ -227,7 +227,9 @@ std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(SourcePosit
 			switch (compiler->lexer->tokens[idxToken]->tokenId) {
 				case TokenId::Whitespace:
 				case TokenId::NewLine:
-				case TokenId::Comment:
+				case TokenId::LineComment:
+				case TokenId::BlockComment:
+				case TokenId::DocumentationComment:
 					break;
 				default:
 					goto succeeded;

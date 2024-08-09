@@ -483,7 +483,7 @@ slake::slkc::Server::Server() {
 
 							std::string fullName;
 
-							fullName += std::to_string(doc->compiler->getFullName(m->owner), doc->compiler.get());
+							fullName += std::to_string(doc->compiler->getFullName(m.get()), doc->compiler.get());
 
 							fullName += "(";
 
@@ -510,9 +510,13 @@ slake::slkc::Server::Server() {
 						case NodeType::GenericParam:
 							responseBodyValue["content"] = "(Generic parameter) " + ((GenericParamNode *)member.get())->name;
 							break;
-						case NodeType::Class:
+						case NodeType::Class: {
 							responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((ClassNode *)member.get()), doc->compiler.get());
+							if (auto &doc = ((ClassNode *)member.get())->documentation; doc.size()) {
+								responseBodyValue["documentation"] = doc;
+							}
 							break;
+						}
 						case NodeType::Interface:
 							responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((InterfaceNode *)member.get()), doc->compiler.get());
 							break;

@@ -144,7 +144,9 @@ namespace slake {
 
 			Whitespace,
 			NewLine,
-			Comment
+			LineComment,
+			BlockComment,
+			DocumentationComment,
 		};
 
 		const char *getTokenName(TokenId tokenId);

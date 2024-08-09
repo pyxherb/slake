@@ -21,6 +21,8 @@ class AnotherGeneric<X, U> {
 	}
 }
 
+/// # Test Class
+/// This is a test class LOL
 class Test {
 	pub let x: i32;
 	pub let lab: Test;
@@ -74,7 +76,7 @@ pub fn main() async: i32 {
 	hostext.extfns.print("Entered main\n");
 
 	let test: Test = new Derived(50);
-	test.lab = test;
+	// test.lab = test;
 
 	let x: AnotherGeneric<i32, f32>.ChildGeneric<f32, Test> = new AnotherGeneric<i32, f32>.ChildGeneric<f32, Test>();
 	x._setX(test);

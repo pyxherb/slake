@@ -34,8 +34,9 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 				re2c:yyfill:enable = 0;
 				re2c:define:YYCTYPE = char;
 
-				<InitialCondition>"/*"		{ YYSETCONDITION(CommentCondition); token->tokenId = TokenId::Comment; continue; }
-				<InitialCondition>"//"		{ YYSETCONDITION(LineCommentCondition); token->tokenId = TokenId::Comment; continue; }
+				<InitialCondition>"///"		{ YYSETCONDITION(LineCommentCondition); token->tokenId = TokenId::DocumentationComment; continue; }
+				<InitialCondition>"//"		{ YYSETCONDITION(LineCommentCondition); token->tokenId = TokenId::LineComment; continue; }
+				<InitialCondition>"/*"		{ YYSETCONDITION(CommentCondition); token->tokenId = TokenId::BlockComment; continue; }
 
 				<InitialCondition>"::"		{ token->tokenId = TokenId::ScopeOp; break; }
 				<InitialCondition>"->"		{ token->tokenId = TokenId::WrapOp; break; }

@@ -79,6 +79,33 @@ namespace slake {
 			void _getImportCompletionItems(
 				std::string path,
 				std::deque<CompletionItem> &completionItems);
+
+			Json::Value extractTypeName(std::shared_ptr<TypeNameNode> typeName);
+			Json::Value extractDeclaration(std::shared_ptr<VarNode> m);
+			Json::Value extractDeclaration(std::shared_ptr<ParamNode> m);
+			Json::Value extractDeclaration(std::shared_ptr<LocalVarNode> m);
+			Json::Value extractDeclaration(std::shared_ptr<FnOverloadingNode> m);
+			Json::Value extractDeclaration(std::shared_ptr<GenericParamNode> m);
+			Json::Value extractDeclaration(std::shared_ptr<ClassNode> m);
+			Json::Value extractDeclaration(std::shared_ptr<InterfaceNode> m);
+			Json::Value extractDeclaration(std::shared_ptr<ModuleNode> m);
+		};
+
+		enum class DeclarationKind {
+			Property = 0,
+			Var,
+			Param,
+			LocalVar,
+			FnOverloading,
+			GenericParam,
+			Class,
+			Interface,
+			Module
+		};
+
+		enum class HoverResponseKind {
+			None = 0,
+			Declaration
 		};
 
 		enum class RequestType {

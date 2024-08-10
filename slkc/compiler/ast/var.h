@@ -15,6 +15,7 @@ namespace slake {
 			std::shared_ptr<TypeNameNode> type;
 			std::string name;
 			std::shared_ptr<ExprNode> initValue;
+			bool isProperty;
 
 			size_t idxNameToken = SIZE_MAX,
 				   idxColonToken = SIZE_MAX,
@@ -26,6 +27,7 @@ namespace slake {
 					type = other.type->duplicate<TypeNameNode>();
 				name = other.name;
 				initValue = other.initValue;
+				isProperty = other.isProperty;
 
 				idxNameToken = other.idxNameToken;
 				idxColonToken = other.idxColonToken;
@@ -41,7 +43,8 @@ namespace slake {
 				size_t idxNameToken,
 				size_t idxColonToken,
 				size_t idxAssignOpToken,
-				size_t idxCommaToken)
+				size_t idxCommaToken,
+				bool isProperty = false)
 				: MemberNode(compiler, access),
 				  type(type),
 				  name(name),
@@ -49,7 +52,8 @@ namespace slake {
 				  idxNameToken(idxNameToken),
 				  idxColonToken(idxColonToken),
 				  idxAssignOpToken(idxAssignOpToken),
-				  idxCommaToken(idxCommaToken) {
+				  idxCommaToken(idxCommaToken),
+				  isProperty(isProperty) {
 			}
 			virtual ~VarNode() = default;
 

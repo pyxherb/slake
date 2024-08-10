@@ -231,7 +231,8 @@ void Parser::parseClassStmt() {
 					i.second.idxNameToken,
 					i.second.idxColonToken,
 					i.second.idxAssignOpToken,
-					i.second.idxCommaToken);
+					i.second.idxCommaToken,
+					true);
 				varNode->sourceLocation = i.second.loc;
 
 				if (!idxAccessModifierTokensMoved) {
@@ -391,7 +392,8 @@ void Parser::parseInterfaceStmt() {
 					i.second.idxNameToken,
 					i.second.idxColonToken,
 					i.second.idxAssignOpToken,
-					i.second.idxCommaToken);
+					i.second.idxCommaToken,
+					true);
 				varNode->sourceLocation = i.second.loc;
 
 				if (!idxAccessModifierTokensMoved) {

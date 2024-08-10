@@ -438,91 +438,64 @@ slake::slkc::Server::Server() {
 
 				responseBodyValue["uri"] = uri;
 
+				responseBodyValue["responseKind"] = (uint32_t)HoverResponseKind::None;
+
 				if (tokenInfo.semanticInfo.correspondingMember) {
 					auto &member = tokenInfo.semanticInfo.correspondingMember;
+
+					responseBodyValue["responseKind"] = (uint32_t)HoverResponseKind::Declaration;
+
+					auto &contentsValue = responseBodyValue["contents"];
 
 					switch (member->getNodeType()) {
 						case NodeType::Var: {
 							auto m = std::static_pointer_cast<VarNode>(member);
 
-							std::string fullName;
-
-							fullName += std::to_string(doc->compiler->getFullName(m.get()), doc->compiler.get());
-							fullName += ": ";
-							fullName += std::to_string(m->type ? m->type : std::make_shared<AnyTypeNameNode>(SIZE_MAX), doc->compiler.get());
-
-							responseBodyValue["content"] = fullName;
+							contentsValue = doc->extractDeclaration(m);
 							break;
 						}
 						case NodeType::Param: {
 							auto m = std::static_pointer_cast<ParamNode>(member);
 
-							std::string fullName;
-
-							fullName += std::to_string(m->type ? m->type : std::make_shared<AnyTypeNameNode>(SIZE_MAX), doc->compiler.get());
-							fullName += " ";
-							fullName += m->name;
-
-							responseBodyValue["content"] = "(Parameter) " + fullName;
+							contentsValue = doc->extractDeclaration(m);
 							break;
 						}
 						case NodeType::LocalVar: {
 							auto m = std::static_pointer_cast<LocalVarNode>(member);
 
-							std::string fullName;
-
-							fullName += m->name;
-							fullName += ": ";
-							fullName += std::to_string(m->type ? m->type : std::make_shared<AnyTypeNameNode>(SIZE_MAX), doc->compiler.get());
-
-							responseBodyValue["content"] = "(Local variable) " + fullName;
+							contentsValue = doc->extractDeclaration(m);
 							break;
 						}
 						case NodeType::FnOverloadingValue: {
 							auto m = std::static_pointer_cast<FnOverloadingNode>(member);
 
-							std::string fullName;
-
-							fullName += std::to_string(doc->compiler->getFullName(m.get()), doc->compiler.get());
-
-							fullName += "(";
-
-							for (size_t i = 0; i < m->params.size(); ++i) {
-								if (i)
-									fullName += ",";
-								if (m->params[i]->name == "...") {
-									fullName += "...";
-								} else {
-									fullName += std::to_string(m->params[i]->type, doc->compiler.get());
-									fullName += " ";
-									fullName += m->params[i]->name;
-								}
-							}
-
-							fullName += ")";
-
-							fullName += ": ";
-							fullName += std::to_string(m->returnType ? m->returnType : std::make_shared<VoidTypeNameNode>(SIZE_MAX), doc->compiler.get());
-
-							responseBodyValue["content"] = fullName;
+							contentsValue = doc->extractDeclaration(m);
 							break;
 						}
-						case NodeType::GenericParam:
-							responseBodyValue["content"] = "(Generic parameter) " + ((GenericParamNode *)member.get())->name;
+						case NodeType::GenericParam: {
+							auto m = std::static_pointer_cast<GenericParamNode>(member);
+
+							contentsValue = doc->extractDeclaration(m);
 							break;
+						}
 						case NodeType::Class: {
-							responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((ClassNode *)member.get()), doc->compiler.get());
-							if (auto &doc = ((ClassNode *)member.get())->documentation; doc.size()) {
-								responseBodyValue["documentation"] = doc;
-							}
+							auto m = std::static_pointer_cast<ClassNode>(member);
+
+							contentsValue = doc->extractDeclaration(m);
 							break;
 						}
-						case NodeType::Interface:
-							responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((InterfaceNode *)member.get()), doc->compiler.get());
+						case NodeType::Interface: {
+							auto m = std::static_pointer_cast<InterfaceNode>(member);
+
+							contentsValue = doc->extractDeclaration(m);
 							break;
-						case NodeType::Module:
-							responseBodyValue["content"] = std::to_string(doc->compiler->getFullName((ModuleNode *)member.get()), doc->compiler.get());
+						}
+						case NodeType::Module: {
+							auto m = std::static_pointer_cast<ModuleNode>(member);
+
+							contentsValue = doc->extractDeclaration(m);
 							break;
+						}
 					}
 				}
 

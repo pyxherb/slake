@@ -395,10 +395,15 @@ bool Compiler::isSameType(std::shared_ptr<TypeNameNode> x, std::shared_ptr<TypeN
 
 			return xDest == yDest;
 		}
-		case TypeId::Array:
+		case TypeId::Array: {
+			auto xArrayType = std::static_pointer_cast<ArrayTypeNameNode>(x),
+				 yArrayType = std::static_pointer_cast<ArrayTypeNameNode>(y);
+			if (xArrayType->nDimensions != yArrayType->nDimensions)
+				return false;
 			return isSameType(
-				std::static_pointer_cast<ArrayTypeNameNode>(x)->elementType,
-				std::static_pointer_cast<ArrayTypeNameNode>(y)->elementType);
+				xArrayType->elementType,
+				yArrayType->elementType);
+		}
 		default:
 			return true;
 	}

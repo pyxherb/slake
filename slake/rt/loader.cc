@@ -146,17 +146,27 @@ Type Runtime::_loadType(std::istream &fs) {
 			return Type(ValueType::Bool);
 		case slxfmt::TypeId::None:
 			return TypeId::None;
-		case slxfmt::TypeId::Array:
-			return Type(TypeId::Array, _loadType(fs));
+		case slxfmt::TypeId::Array: {
+			Type type = _loadType(fs);
+
+			if (type.typeId == TypeId::Array)
+				throw LoaderError("Nested array type detected");
+
+			return Type::makeArrayTypeName(type, _read<uint32_t>(fs));
+		}
 		case slxfmt::TypeId::Ref:
-			return Type(TypeId::Ref, _loadType(fs));
+			return Type::makeRefTypeName(_loadType(fs));
 		case slxfmt::TypeId::TypeName:
 			return Type(ValueType::TypeName);
 		case slxfmt::TypeId::GenericArg: {
 			uint8_t length = _read<uint8_t>(fs);
+
 			std::string name(length, '\0');
 			fs.read(name.data(), length);
-			return Type(name);
+
+			auto nameObject = StringObject::alloc(this, std::move(name));
+
+			return Type(TypeId::GenericArg, nameObject.get());
 		}
 		default:
 			throw LoaderError("Invalid type ID");
@@ -169,7 +179,7 @@ GenericParam Runtime::_loadGenericParam(std::istream &fs) {
 	std::string name(gpd.lenName, '\0');
 	fs.read(&(name[0]), gpd.lenName);
 
-	GenericParam param;
+	GenericParam param((std::pmr::memory_resource *)&this->globalHeapPoolResource);
 	param.name = name;
 
 	if (gpd.hasBaseType)

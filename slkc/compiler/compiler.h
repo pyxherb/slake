@@ -478,6 +478,19 @@ namespace slake {
 				}
 			};
 
+			bool isParamTypesSame(const std::deque<std::shared_ptr<ParamNode>> &lhs, const std::deque<std::shared_ptr<ParamNode>> &rhs) {
+				if (lhs.size() == rhs.size()) {
+					for (size_t l = 0; l < rhs.size(); ++l) {
+						if (!isSameType(lhs[l]->type, rhs[l]->type))
+							return true;
+					}
+
+					return false;
+				}
+
+				return true;
+			}
+
 			using GenericNodeCacheTable =
 				std::map<
 					std::deque<std::shared_ptr<TypeNameNode>>,	// Generic arguments.
@@ -553,6 +566,11 @@ namespace slake {
 			}
 
 			void verifyGenericParams(const GenericParamNodeList &params);
+
+			void collectMethodsForFulfillmentVerification(std::shared_ptr<Scope> scope, std::unordered_map<std::string, std::set<std::shared_ptr<FnOverloadingNode>>> &unfilledMethodsOut);
+			void collectMethodsForFulfillmentVerification(InterfaceNode *node, std::unordered_map<std::string, std::set<std::shared_ptr<FnOverloadingNode>>> &unfilledMethodsOut);
+			void collectMethodsForFulfillmentVerification(ClassNode *node, std::unordered_map<std::string, std::set<std::shared_ptr<FnOverloadingNode>>> &unfilledMethodsOut);
+			void verifyIfImplementationFulfilled(std::shared_ptr<ClassNode> node);
 
 			//
 			// Verify end

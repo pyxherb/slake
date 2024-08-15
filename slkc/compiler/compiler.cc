@@ -93,6 +93,62 @@ void Compiler::scanAndLinkParentFns(Scope *scope, FnNode *fn, const std::string 
 parentFnScanEnd:;
 }
 
+void Compiler::collectMethodsForFulfillmentVerification(std::shared_ptr<Scope> scope, std::unordered_map<std::string, std::set<std::shared_ptr<FnOverloadingNode>>>& unfilledMethodsOut) {
+	for (auto i : scope->members) {
+		if (i.second->getNodeType() == NodeType::Fn) {
+			std::shared_ptr<FnNode> m = std::static_pointer_cast<FnNode>(i.second);
+
+			for (auto j : m->overloadingRegistries) {
+				if (!j->body) {
+					unfilledMethodsOut[i.first].insert(j);
+				} else {
+					if (auto it = unfilledMethodsOut.find(i.first); it != unfilledMethodsOut.end()) {
+						for (auto k : it->second) {
+							if (isParamTypesSame(j->params, k->params)) {
+								unfilledMethodsOut[i.first].erase(k);
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+void Compiler::collectMethodsForFulfillmentVerification(InterfaceNode *node, std::unordered_map<std::string, std::set<std::shared_ptr<FnOverloadingNode>>> &unfilledMethodsOut) {
+	for (auto i : node->parentInterfaces) {
+		collectMethodsForFulfillmentVerification((InterfaceNode *)resolveCustomTypeName((CustomTypeNameNode *)i.get()).get(), unfilledMethodsOut);
+	}
+
+	collectMethodsForFulfillmentVerification(node->scope, unfilledMethodsOut);
+}
+
+void Compiler::collectMethodsForFulfillmentVerification(ClassNode *node, std::unordered_map<std::string, std::set<std::shared_ptr<FnOverloadingNode>>> &unfilledMethodsOut) {
+	for (auto i : node->implInterfaces) {
+		collectMethodsForFulfillmentVerification((InterfaceNode *)resolveCustomTypeName((CustomTypeNameNode *)i.get()).get(), unfilledMethodsOut);
+	}
+	if (node->parentClass) {
+		collectMethodsForFulfillmentVerification((ClassNode *)resolveCustomTypeName((CustomTypeNameNode *)node->parentClass.get()).get(), unfilledMethodsOut);
+	}
+
+	collectMethodsForFulfillmentVerification(node->scope, unfilledMethodsOut);
+}
+
+void Compiler::verifyIfImplementationFulfilled(std::shared_ptr<ClassNode> node) {
+	std::unordered_map<std::string, std::set<std::shared_ptr<FnOverloadingNode>>> unfilledMethodsOut;
+
+	collectMethodsForFulfillmentVerification(node.get(), unfilledMethodsOut);
+
+	if (unfilledMethodsOut.size()) {
+		messages.push_back(
+			Message(
+				lexer->tokens[node->idxNameToken]->location,
+				MessageType::Error,
+				"Not all abstract methods are implemented"));
+	}
+}
+
 void Compiler::validateScope(Scope *scope) {
 	std::deque<ClassNode *> classes;
 	std::deque<InterfaceNode *> interfaces;
@@ -674,6 +730,8 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 
 		compileScope(is, os, i.second->scope);
 
+		verifyIfImplementationFulfilled(i.second);
+
 		popMajorContext();
 	}
 
@@ -825,12 +883,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				if (j == k)
 					continue;
 
-				if (k->params.size() == j->params.size()) {
-					for (size_t l = 0; l < k->params.size(); ++l) {
-						if (!isSameType(k->params[l]->type, j->params[l]->type))
-							goto notDuplicated;
-					}
-
+				if (!isParamTypesSame(k->params, j->params)) {
 					throw FatalCompilationError(
 						Message(
 							j->sourceLocation,
@@ -1013,8 +1066,10 @@ void Compiler::compileTypeName(std::ostream &fs, std::shared_ptr<TypeNameNode> t
 				break;
 			}
 			case TypeId::Array: {
+				auto t = std::static_pointer_cast<ArrayTypeNameNode>(typeName);
 				_write(fs, slxfmt::TypeId::Array);
-				compileTypeName(fs, std::static_pointer_cast<ArrayTypeNameNode>(typeName)->elementType);
+				compileTypeName(fs, t->elementType);
+				_write(fs, t->nDimensions);
 				break;
 			}
 			case TypeId::Fn: {

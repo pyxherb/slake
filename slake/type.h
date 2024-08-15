@@ -43,41 +43,86 @@ namespace slake {
 	class IdRefObject;
 	class MemberObject;
 
+	union BasicTypeExData {
+		ValueType valueType;
+		Object *ptr;
+	};
+
+	struct ArrayExData {
+		TypeId typeId;
+		BasicTypeExData exData;
+		uint32_t nDimensions;
+	};
+
+	struct RefExData {
+		TypeId typeId;
+		union {
+			BasicTypeExData basicExData;
+			ArrayExData arrayExData;
+		} exData;
+	};
+
 	struct Type final {
 		TypeId typeId;	// Type ID
-		mutable std::variant<
-			std::monostate,	 // Simple type
-			ValueType,		 // Value type
-			Object *,		 // Resolved type
-			Type *,			 // Array/Reference
-			std::string		 // Generic parameter
-			>
-			exData;
+
+		mutable union {
+			BasicTypeExData basicExData;
+			ArrayExData arrayExData;
+			RefExData refExData;
+		} exData;
 
 		inline Type() noexcept : typeId(TypeId::None) {}
 		inline Type(const Type &x) noexcept { *this = x; }
-		inline Type(ValueType valueType) noexcept : typeId(TypeId::Value) { exData = valueType; }
-		inline Type(Type &&x) noexcept { *this = std::move(x); }
-		inline Type(TypeId typeId, const Type &elementType) : typeId(typeId) {
-			exData = new Type(elementType);
-		}
+		inline Type(ValueType valueType) noexcept : typeId(TypeId::Value) { exData.basicExData.valueType = valueType; }
 		inline Type(TypeId type) noexcept : typeId(type) {}
 		inline Type(TypeId type, Object *destObject) noexcept : typeId(type) {
-			exData = destObject;
+			exData.basicExData.ptr = destObject;
 		}
-		inline Type(std::string genericParamName) : typeId(TypeId::GenericArg) {
-			exData = genericParamName;
+		inline Type(TypeId type, const BasicTypeExData &exData) noexcept : typeId(type) {
+			this->exData.basicExData = exData;
+		}
+		inline Type(TypeId type, const ArrayExData &exData) noexcept : typeId(type) {
+			this->exData.arrayExData = exData;
 		}
 		Type(IdRefObject *ref);
 
-		~Type();
+		static inline Type makeArrayTypeName(const Type &elementType, uint32_t nDimensions) {
+			assert(elementType.typeId != TypeId::Array);
+			assert(elementType.typeId != TypeId::Ref);
 
-		inline ValueType getValueTypeExData() const { return std::get<ValueType>(exData); }
-		inline Object *getCustomTypeExData() const { return std::get<Object *>(exData); }
-		inline Type &getArrayExData() const { return *std::get<Type *>(exData); }
-		inline Type &getRefExData() const { return *std::get<Type *>(exData); }
-		inline Type &getVarExData() const { return *std::get<Type *>(exData); }
-		inline std::string getGenericArgExData() const { return std::get<std::string>(exData); }
+			Type type;
+
+			type.typeId = TypeId::Array;
+			type.exData.arrayExData.typeId = elementType.typeId;
+			type.exData.arrayExData.exData = elementType.exData.basicExData;
+			type.exData.arrayExData.nDimensions = nDimensions;
+
+			return type;
+		}
+
+		static inline Type makeRefTypeName(const Type &elementType) {
+			assert(elementType.typeId != TypeId::Ref);
+
+			Type type;
+
+			type.typeId = TypeId::Ref;
+			type.exData.refExData.typeId = elementType.typeId;
+			if (elementType.typeId == TypeId::Array) {
+				type.exData.refExData.exData.arrayExData = elementType.exData.arrayExData;
+			} else
+				type.exData.refExData.exData.basicExData = elementType.exData.basicExData;
+
+			return type;
+		}
+
+		inline ValueType getValueTypeExData() const { return exData.basicExData.valueType; }
+		inline Object *getCustomTypeExData() const { return exData.basicExData.ptr; }
+		inline Type getArrayExData() const { return Type(exData.arrayExData.typeId, exData.arrayExData.exData); }
+		inline Type getRefExData() const {
+			if (exData.refExData.typeId == TypeId::Array)
+				return Type(exData.refExData.typeId, exData.refExData.exData.arrayExData);
+			return Type(exData.refExData.typeId, exData.refExData.exData.basicExData);
+		}
 
 		bool isLoadingDeferred() const noexcept;
 		void loadDeferredType(const Runtime *rt) const;
@@ -106,8 +151,6 @@ namespace slake {
 						return getArrayExData() < rhs.getArrayExData();
 					case TypeId::Ref:
 						return getRefExData() < rhs.getRefExData();
-					case TypeId::Var:
-						return getVarExData() < rhs.getVarExData();
 				}
 			}
 
@@ -146,8 +189,6 @@ namespace slake {
 					return getArrayExData() == rhs.getArrayExData();
 				case TypeId::Ref:
 					return getRefExData() == rhs.getRefExData();
-				case TypeId::Var:
-					return getVarExData() == rhs.getVarExData();
 			}
 			return true;
 		}
@@ -162,62 +203,8 @@ namespace slake {
 			return this->typeId != rhs;
 		}
 
-		inline Type &operator=(const Type &rhs) noexcept {
-			typeId = rhs.typeId;
-
-			switch (rhs.typeId) {
-				case TypeId::Class:
-				case TypeId::Interface:
-				case TypeId::Instance:
-					if (rhs.isLoadingDeferred())
-						// Duplicate the reference to the type.
-						exData = rhs.getCustomTypeExData()->duplicate();
-					else
-						exData = rhs.getCustomTypeExData();
-					break;
-				case TypeId::Array:
-					exData = new Type(rhs.getArrayExData());
-					break;
-				case TypeId::Ref:
-					exData = new Type(rhs.getRefExData());
-					break;
-				case TypeId::Var:
-					exData = new Type(rhs.getVarExData());
-					break;
-				default:
-					exData = rhs.exData;
-			}
-
-			return *this;
-		}
-
-		inline Type &operator=(Type &&rhs) noexcept {
-			typeId = rhs.typeId;
-
-			switch (rhs.typeId) {
-				case TypeId::Class:
-				case TypeId::Interface:
-				case TypeId::Instance:
-					exData = rhs.getCustomTypeExData();
-					break;
-				case TypeId::Array:
-					exData = std::get<Type *>(rhs.exData);
-					break;
-				case TypeId::Ref:
-					exData = std::get<Type *>(rhs.exData);
-					break;
-				case TypeId::Var:
-					exData = std::get<Type *>(rhs.exData);
-					break;
-				default:
-					exData = rhs.exData;
-			}
-
-			rhs.exData = {};
-			rhs.typeId = TypeId::None;
-
-			return *this;
-		}
+		inline Type &operator=(const Type &rhs) noexcept = default;
+		inline Type &operator=(Type &&rhs) noexcept = default;
 
 		inline Object *resolveCustomType() {
 			if (typeId == TypeId::Class)

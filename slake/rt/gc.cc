@@ -36,6 +36,7 @@ void Runtime::_gcWalk(const Type &type) {
 		case TypeId::Instance:
 		case TypeId::Class:
 		case TypeId::Interface:
+		case TypeId::GenericArg:
 			_gcWalk(type.getCustomTypeExData());
 			break;
 		case TypeId::Array:
@@ -45,14 +46,11 @@ void Runtime::_gcWalk(const Type &type) {
 			_gcWalk(type.getRefExData());
 			break;
 		case TypeId::Var:
-			_gcWalk(type.getVarExData());
-			break;
 		case TypeId::Module:
 		case TypeId::RootObject:
 		case TypeId::Fn:
 		case TypeId::IdRef:
 		case TypeId::None:
-		case TypeId::GenericArg:
 		case TypeId::Alias:
 		case TypeId::Any:
 			break;

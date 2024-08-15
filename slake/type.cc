@@ -5,19 +5,7 @@
 using namespace slake;
 
 Type::Type(IdRefObject *ref) : typeId(TypeId::Instance) {
-	exData = (Object *)ref;
-}
-
-Type::~Type() {
-	switch (typeId) {
-		case TypeId::Array:
-		case TypeId::Ref:
-		case TypeId::Var: {
-			if (auto t = std::get<Type *>(exData); t)
-				delete t;
-			break;
-		}
-	}
+	exData.basicExData.ptr = (Object *)ref;
 }
 
 bool Type::isLoadingDeferred() const noexcept {
@@ -40,7 +28,7 @@ void Type::loadDeferredType(const Runtime *rt) const {
 	if (!typeObject)
 		throw NotFoundError("Object referenced by the type was not found", ref);
 
-	exData = (Object *)typeObject;
+	exData.basicExData.ptr = (Object *)typeObject;
 }
 
 /// @brief
@@ -60,13 +48,9 @@ bool slake::isCompatible(Type a, Type b) {
 				return false;
 			return isCompatible(a.getArrayExData(), b.getArrayExData());
 		case TypeId::Var:
-			if (a.typeId != b.typeId)
-				return false;
-			return isCompatible(a.getVarExData(), b.getVarExData());
+			return a.typeId == b.typeId;
 		case TypeId::Ref:
-			if (b.typeId != TypeId::Var)
-				return false;
-			return isCompatible(a.getRefExData(), b.getVarExData());
+			return b.typeId == TypeId::Var;
 		case TypeId::Instance: {
 			switch (a.getCustomTypeExData()->getType().typeId) {
 				case TypeId::Class: {
@@ -158,8 +142,10 @@ std::string std::to_string(const slake::Type &type, const slake::Runtime *rt) {
 				return rt->getFullName((MemberObject *)type.getCustomTypeExData());
 			}
 		}
-		case TypeId::GenericArg:
-			return "!" + type.getGenericArgExData();
+		case TypeId::GenericArg: {
+			StringObject *nameObject = (StringObject *)type.exData.basicExData.ptr;
+			return "!" + std::string(nameObject->data);
+		}
 		case TypeId::Any:
 			return "any";
 		case TypeId::None:

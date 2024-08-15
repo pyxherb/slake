@@ -7,9 +7,12 @@
 
 namespace slake {
 	struct GenericParam final {
-		std::string name;
+		std::pmr::string name;
 		Type baseType = Type(TypeId::Any);
 		std::deque<Type> interfaces;
+
+		inline GenericParam(std::pmr::memory_resource *memoryResource) : name(memoryResource) {
+		}
 	};
 
 	using GenericArgList = std::deque<Type>;

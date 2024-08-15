@@ -13,7 +13,7 @@ namespace slake {
 
 		Type type = TypeId::Any;
 
-		virtual inline Type getType() const override { return Type(TypeId::Var, type); }
+		virtual inline Type getType() const override { return TypeId::Var; }
 
 		virtual Type getVarType() const { return type; }
 

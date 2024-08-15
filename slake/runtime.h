@@ -143,7 +143,7 @@ namespace slake {
 		struct GenericInstantiationContext {
 			const Object *mappedObject;
 			const GenericArgList *genericArgs;
-			std::unordered_map<std::string, Type> mappedGenericArgs;
+			std::unordered_map<std::pmr::string, Type> mappedGenericArgs;
 		};
 
 		SynchronizedCountablePoolResource globalHeapPoolResource;

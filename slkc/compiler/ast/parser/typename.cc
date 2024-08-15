@@ -118,27 +118,47 @@ std::shared_ptr<TypeNameNode> Parser::parseTypeName(bool required) {
 			return type;
 	}
 
-	if (Token *lBracketToken = lexer->peekToken(); lBracketToken->tokenId == TokenId::LBracket) {
+	Token *lBracketToken;
+	while ((lBracketToken = lexer->peekToken())->tokenId == TokenId::LBracket) {
 		lexer->nextToken();
 
-		auto t = std::make_shared<ArrayTypeNameNode>(type);
-		t->idxLBracketToken = lexer->getTokenIndex(lBracketToken);
-		t->sourceLocation = type->sourceLocation;
+		if (type->getTypeId() == TypeId::Array) {
+			auto t = std::static_pointer_cast<ArrayTypeNameNode>(type);
+			++t->nDimensions;
 
-		Token *rBracketToken = lexer->peekToken();
-		if (rBracketToken->tokenId != TokenId::RBracket) {
-			compiler->messages.push_back(
-				Message(
-					rBracketToken->location,
-					MessageType::Error,
-					"Expecting ]"));
-			return t;
+			Token *rBracketToken = lexer->peekToken();
+			if (rBracketToken->tokenId != TokenId::RBracket) {
+				compiler->messages.push_back(
+					Message(
+						rBracketToken->location,
+						MessageType::Error,
+						"Expecting ]"));
+				return t;
+			}
+			lexer->nextToken();
+
+			t->sourceLocation.endPosition = rBracketToken->location.endPosition;
+			t->idxRBracketToken = lexer->getTokenIndex(rBracketToken);
+		} else {
+			auto t = std::make_shared<ArrayTypeNameNode>(type);
+			t->idxLBracketToken = lexer->getTokenIndex(lBracketToken);
+			t->sourceLocation = type->sourceLocation;
+
+			Token *rBracketToken = lexer->peekToken();
+			if (rBracketToken->tokenId != TokenId::RBracket) {
+				compiler->messages.push_back(
+					Message(
+						rBracketToken->location,
+						MessageType::Error,
+						"Expecting ]"));
+				return t;
+			}
+			lexer->nextToken();
+
+			t->sourceLocation.endPosition = rBracketToken->location.endPosition;
+			t->idxRBracketToken = lexer->getTokenIndex(rBracketToken);
+			type = t;
 		}
-		lexer->nextToken();
-
-		t->sourceLocation.endPosition = rBracketToken->location.endPosition;
-		t->idxRBracketToken = lexer->getTokenIndex(rBracketToken);
-		type = t;
 	}
 
 	if (Token *token = lexer->peekToken(); token->tokenId == TokenId::AndOp) {

@@ -32,18 +32,18 @@ void slake::Runtime::_instantiateGenericObject(Type &type, GenericInstantiationC
 		case TypeId::Ref:
 			_instantiateGenericObject(type.getRefExData(), instantiationContext);
 			break;
-		case TypeId::Var:
-			_instantiateGenericObject(type.getVarExData(), instantiationContext);
-			break;
-		case TypeId::GenericArg:
-			if (auto it = instantiationContext.mappedGenericArgs.find(type.getGenericArgExData()); it != instantiationContext.mappedGenericArgs.end()) {
-				type = it->second;
+		case TypeId::GenericArg: {
+			HostObjectRef<StringObject> nameObject = (StringObject *)type.getCustomTypeExData();
+			if (auto it = instantiationContext.mappedGenericArgs.find(nameObject->data); it != instantiationContext.mappedGenericArgs.end()) {
+				if (it->second.typeId != TypeId::None)
+					type = it->second;
 			} else
-				throw GenericInstantiationError("No such generic parameter named " + type.getGenericArgExData());
+				throw GenericInstantiationError((std::string) "No such generic parameter named " + nameObject->data.c_str());
+		}
 	}
 }
 
-void slake::Runtime::_instantiateGenericObject(Value& value, GenericInstantiationContext &instantiationContext) const {
+void slake::Runtime::_instantiateGenericObject(Value &value, GenericInstantiationContext &instantiationContext) const {
 	switch (value.valueType) {
 		case ValueType::I8:
 		case ValueType::I16:
@@ -104,7 +104,7 @@ void slake::Runtime::_instantiateGenericObject(Object *v, GenericInstantiationCo
 				// Map irreplaceable parameters to corresponding generic parameter reference type
 				// and thus the generic types will keep unchanged.
 				for (size_t i = 0; i < value->genericParams.size(); ++i) {
-					newInstantiationContext.mappedGenericArgs[value->genericParams[i].name] = Type(value->genericParams[i].name);
+					newInstantiationContext.mappedGenericArgs[value->genericParams[i].name] = TypeId::None;
 				}
 
 				newInstantiationContext.mappedObject = value;
@@ -245,7 +245,7 @@ Object *Runtime::instantiateGenericObject(const Object *v, GenericInstantiationC
 	auto value = v->duplicate();									 // Make a duplicate of the original value.
 	_genericCacheDir[v][*instantiationContext.genericArgs] = value;	 // Store the instance into the cache.
 	mapGenericParams(value, instantiationContext);
-	_instantiateGenericObject(value, instantiationContext);	// Instantiate the value.
+	_instantiateGenericObject(value, instantiationContext);	 // Instantiate the value.
 
 	_genericCacheLookupTable[value] = { v, *instantiationContext.genericArgs };
 
@@ -259,7 +259,7 @@ void Runtime::_instantiateGenericObject(FnOverloadingObject *ol, GenericInstanti
 		// Map irreplaceable parameters to corresponding generic parameter reference type
 		// and thus the generic types will keep unchanged.
 		for (size_t i = 0; i < ol->genericParams.size(); ++i) {
-			newInstantiationContext.mappedGenericArgs[ol->genericParams[i].name] = Type(ol->genericParams[i].name);
+			newInstantiationContext.mappedGenericArgs[ol->genericParams[i].name] = TypeId::None;
 		}
 
 		newInstantiationContext.mappedObject = ol->fnObject;

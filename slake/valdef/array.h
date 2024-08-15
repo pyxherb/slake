@@ -14,7 +14,7 @@ namespace slake {
 		std::deque<VarObject *> values;
 		Type type;
 
-		virtual inline Type getType() const override { return Type(TypeId::Array, type); }
+		virtual inline Type getType() const override { return Type::makeArrayTypeName(type, 1); }
 
 		Object *duplicate() const override;
 

@@ -10,16 +10,8 @@ ModuleObject::ModuleObject(Runtime *rt, AccessModifier access)
 ModuleObject::~ModuleObject() {
 }
 
-Type ModuleObject::getType() const {
-	return TypeId::Module;
-}
-
 Object *ModuleObject::duplicate() const {
-	HostObjectRef<ModuleObject> v = ModuleObject::alloc(_rt, getAccess());
-
-	*(v.get()) = *this;
-
-	return (Object *)v.release();
+	return (Object *)alloc(this).get();
 }
 
 HostObjectRef<ModuleObject> slake::ModuleObject::alloc(Runtime *rt, AccessModifier access) {
@@ -29,6 +21,17 @@ HostObjectRef<ModuleObject> slake::ModuleObject::alloc(Runtime *rt, AccessModifi
 	allocator.construct(ptr, rt, access);
 
 	rt->createdObjects.insert(ptr);
+
+	return ptr;
+}
+
+HostObjectRef<ModuleObject> slake::ModuleObject::alloc(const ModuleObject *other) {
+	std::pmr::polymorphic_allocator<ModuleObject> allocator(&other->_rt->globalHeapPoolResource);
+
+	ModuleObject *ptr = allocator.allocate(1);
+	allocator.construct(ptr, *other);
+
+	other->_rt->createdObjects.insert(ptr);
 
 	return ptr;
 }

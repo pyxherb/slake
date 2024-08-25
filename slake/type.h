@@ -13,29 +13,15 @@ namespace slake {
 	enum class TypeId : uint8_t {
 		None,  // None, aka `null'
 
-		Value,	 // Value type
-		String,	 // String
-
-		Fn,				// Function
-		FnOverloading,	// Function overloading
-		Module,			// Module
-		Var,			// Variable
-		Array,			// Array
-		Ref,			// Reference
-
-		Class,		// Class
-		Interface,	// Interface
-		Struct,		// Structure
-		Instance,	// Object instance
-
-		Any,  // Any
-
-		Alias,	// Alias
-
-		IdRef,		 // Reference
+		Value,		 // Value type
+		String,		 // String
+		Instance,	 // Object instance
 		GenericArg,	 // Generic argument
-		RootObject,	 // Root value
-		Context,	 // Context
+
+		Array,	// Array
+		Ref,	// Reference
+
+		Any	 // Any
 	};
 
 	class Runtime;
@@ -138,12 +124,10 @@ namespace slake {
 				return false;
 			else {
 				switch (rhs.typeId) {
-					case TypeId::Class:
-					case TypeId::Interface:
 					case TypeId::Instance: {
 						auto lhsType = getCustomTypeExData(), rhsType = rhs.getCustomTypeExData();
-						assert(lhsType->getType() != TypeId::IdRef &&
-							   rhsType->getType() != TypeId::IdRef);
+						assert(lhsType->getKind() != ObjectKind::IdRef &&
+							   rhsType->getKind() != ObjectKind::IdRef);
 
 						return lhsType < rhsType;
 					}
@@ -176,12 +160,10 @@ namespace slake {
 			switch (rhs.typeId) {
 				case TypeId::Value:
 					return getValueTypeExData() == rhs.getValueTypeExData();
-				case TypeId::Class:
-				case TypeId::Interface:
 				case TypeId::Instance: {
 					auto lhsType = getCustomTypeExData(), rhsType = rhs.getCustomTypeExData();
-					assert(lhsType->getType() != TypeId::IdRef &&
-						   rhsType->getType() != TypeId::IdRef);
+					assert(lhsType->getKind() != ObjectKind::IdRef &&
+						   rhsType->getKind() != ObjectKind::IdRef);
 
 					return lhsType == rhsType;
 				}
@@ -206,8 +188,8 @@ namespace slake {
 		inline Type &operator=(const Type &rhs) noexcept = default;
 		inline Type &operator=(Type &&rhs) noexcept = default;
 
-		inline Object *resolveCustomType() {
-			if (typeId == TypeId::Class)
+		inline Object *resolveCustomType() const {
+			if (typeId == TypeId::Instance)
 				return (Object *)getCustomTypeExData();
 			return nullptr;
 		}
@@ -215,9 +197,6 @@ namespace slake {
 
 	class ClassObject;
 	class InterfaceObject;
-
-	bool hasImplemented(ClassObject *c, InterfaceObject *i);
-	bool isCompatible(Type a, Type b);
 
 	class Runtime;
 }

@@ -213,8 +213,8 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 	if (importedDefinitions.count(value))
 		return;
 
-	switch (value->getType().typeId) {
-		case slake::TypeId::RootObject: {
+	switch (value->getKind()) {
+		case slake::ObjectKind::RootObject: {
 			RootObject *v = (RootObject *)value;
 
 			for (auto i : v->scope->members)
@@ -222,17 +222,17 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 
 			break;
 		}
-		case slake::TypeId::Fn:
+		case slake::ObjectKind::Fn:
 			importDefinitions(scope, parent, (FnObject *)value);
 			break;
-		case slake::TypeId::Module:
+		case slake::ObjectKind::Module:
 			importDefinitions(scope, parent, (ModuleObject *)value);
 			break;
-		case slake::TypeId::Var: {
+		case slake::ObjectKind::Var: {
 			VarObject *v = (VarObject *)value;
 			std::shared_ptr<VarNode> var = std::make_shared<VarNode>(
 				this,
-				v->getAccess(),
+				v->accessModifier,
 				toTypeName(v->getVarType()),
 				v->_name,
 				std::shared_ptr<ExprNode>(),
@@ -242,14 +242,14 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 			var->bind(parent.get());
 			break;
 		}
-		case slake::TypeId::Class:
+		case slake::ObjectKind::Class:
 			importDefinitions(scope, parent, (ClassObject *)value);
 			break;
-		case slake::TypeId::Interface:
+		case slake::ObjectKind::Interface:
 			importDefinitions(scope, parent, (InterfaceObject *)value);
 			break;
 			/*
-		case slake::TypeId::Alias: {
+		case slake::ObjectKind::Alias: {
 			AliasValue *v = (AliasValue *)value;
 		}*/
 		default:

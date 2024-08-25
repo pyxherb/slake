@@ -19,6 +19,23 @@ bool ClassObject::hasImplemented(const InterfaceObject *pInterface) const {
 	return false;
 }
 
+bool ClassObject::isBaseOf(const ClassObject *pClass) const {
+	const ClassObject *i = pClass;
+	while (true) {
+		if (i == this)
+			return true;
+
+		if (i->parentClass.typeId == TypeId::None)
+			break;
+		i->parentClass.loadDeferredType(i->_rt);
+		auto parentClassObject = i->parentClass.getCustomTypeExData();
+		assert(parentClassObject->getKind() == ObjectKind::Class);
+		i = (ClassObject *)parentClassObject;
+	}
+
+	return false;
+}
+
 bool InterfaceObject::isDerivedFrom(const InterfaceObject *pInterface) const {
 	if (pInterface == this)
 		return true;
@@ -28,7 +45,7 @@ bool InterfaceObject::isDerivedFrom(const InterfaceObject *pInterface) const {
 
 		InterfaceObject *interface = (InterfaceObject *)i.getCustomTypeExData();
 
-		if (interface->getType() != TypeId::Interface)
+		if (interface->getKind() != ObjectKind::Interface)
 			throw IncompatibleTypeError("Referenced type value is not an interface");
 
 		if (interface->isDerivedFrom(pInterface))
@@ -39,10 +56,18 @@ bool InterfaceObject::isDerivedFrom(const InterfaceObject *pInterface) const {
 }
 
 Object *ClassObject::duplicate() const {
-	HostObjectRef<ClassObject> v = ClassObject::alloc(_rt, 0, {});
-	*(v.get()) = *this;
+	return (Object *)alloc(this).get();
+}
 
-	return (Object *)v.release();
+HostObjectRef<ClassObject> slake::ClassObject::alloc(const ClassObject *other) {
+	std::pmr::polymorphic_allocator<ClassObject> allocator(&other->_rt->globalHeapPoolResource);
+
+	ClassObject *ptr = allocator.allocate(1);
+	allocator.construct(ptr, *other);
+
+	other->_rt->createdObjects.insert(ptr);
+
+	return ptr;
 }
 
 HostObjectRef<ClassObject> slake::ClassObject::alloc(Runtime *rt, AccessModifier access, const Type &parentClass) {
@@ -67,10 +92,7 @@ InterfaceObject::~InterfaceObject() {
 }
 
 Object *InterfaceObject::duplicate() const {
-	HostObjectRef<InterfaceObject> v = InterfaceObject::alloc(_rt, 0);
-	*(v.get()) = *this;
-
-	return (Object *)v.release();
+	return (Object *)alloc(this).get();
 }
 
 HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Runtime *rt, AccessModifier access, const std::deque<Type> &parents) {
@@ -80,6 +102,17 @@ HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Runtime *rt, Access
 	allocator.construct(ptr, rt, access, parents);
 
 	rt->createdObjects.insert(ptr);
+
+	return ptr;
+}
+
+HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(const InterfaceObject *other) {
+	std::pmr::polymorphic_allocator<InterfaceObject> allocator(&other->_rt->globalHeapPoolResource);
+
+	InterfaceObject *ptr = allocator.allocate(1);
+	allocator.construct(ptr, *other);
+
+	other->_rt->createdObjects.insert(ptr);
 
 	return ptr;
 }

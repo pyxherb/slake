@@ -30,23 +30,23 @@ ArrayObject *slake::Runtime::newArrayInstance(Type type, uint32_t size) {
 static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *cls) {
 	InstanceObject *parent = nullptr;
 
-	if (cls->parentClass.typeId == TypeId::Class) {
+	if (cls->parentClass.typeId == TypeId::Instance) {
 		cls->parentClass.loadDeferredType(runtime);
 
 		Object *parentClass = (ClassObject *)cls->parentClass.getCustomTypeExData();
-		assert(parentClass->getType() == TypeId::Class);
+		assert(parentClass->getKind() == ObjectKind::Class);
 
 		parent = runtime->newClassInstance((ClassObject *)parentClass);
 	}
 
 	HostObjectRef<InstanceObject> instance = InstanceObject::alloc(runtime, cls, parent);
 
-	for (auto i : cls->scope->members) {
-		switch (i.second->getType().typeId) {
-			case TypeId::Var: {
+	for (const auto &i : cls->scope->members) {
+		switch (i.second->getKind()) {
+			case ObjectKind::Var: {
 				HostObjectRef<VarObject> var = VarObject::alloc(
 					runtime,
-					((BasicVarObject *)i.second)->getAccess(),
+					((BasicVarObject *)i.second)->accessModifier,
 					((BasicVarObject *)i.second)->getVarType());
 
 				// Initialize the variable if initial value is set
@@ -55,7 +55,7 @@ static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *
 				instance->scope->addMember(i.first, var.release());
 				break;
 			}
-			case TypeId::Fn: {
+			case ObjectKind::Fn: {
 				std::deque<FnOverloadingObject *> overloadings;
 
 				for (auto j : ((FnObject *)i.second)->overloadings) {
@@ -72,7 +72,7 @@ static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *
 
 					for (InstanceObject *j = parent; j; j = j->_parent) {
 						if (auto f = j->scope->getMember(i.first);
-							f && (f->getType() == TypeId::Fn)) {
+							f && (f->getKind() == ObjectKind::Fn)) {
 							fn->parentFn = (FnObject *)f;
 							((FnObject *)f)->descentFn = fn.get();
 						}

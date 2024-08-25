@@ -103,7 +103,7 @@ class VirtualBase {
 	}
 }
 
-class VirtualDerived {
+class VirtualDerived(VirtualBase) {
 	pub fn test(test: i32) virtual {
 		extfns.print("Called VirtualDerived's test\n");
 		return;

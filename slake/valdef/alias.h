@@ -7,38 +7,21 @@ namespace slake {
 	class AliasObject final : public MemberObject {
 	public:
 		AliasObject(Runtime *rt, AccessModifier access, Object *src);
+		inline AliasObject(const AliasObject &other) : MemberObject(other) {
+			src = other.src;
+		}
 		virtual ~AliasObject();
 
 		mutable Object *src;
 
-		virtual inline Type getType() const override { return TypeId::Alias; }
+		virtual inline ObjectKind getKind() const override { return ObjectKind::Alias; }
 
 		virtual Object *duplicate() const override;
 
 		static HostObjectRef<AliasObject> alloc(Runtime *rt, Object *src);
+		static HostObjectRef<AliasObject> alloc(const AliasObject *other);
 		virtual void dealloc() override;
-
-		inline AliasObject &operator=(const AliasObject &x) {
-			((Object &)*this) = (Object &)x;
-
-			src = x.src;
-
-			return *this;
-		}
-		AliasObject &operator=(AliasObject &&) = delete;
 	};
-
-	inline Object *unwrapAlias(Object *value) noexcept {
-		if (value->getType() != TypeId::Alias)
-			return value;
-		return ((AliasObject *)value)->src;
-	}
-
-	inline const Object *unwrapAlias(const Object *value) noexcept {
-		if (value->getType() != TypeId::Alias)
-			return value;
-		return ((AliasObject *)value)->src;
-	}
 }
 
 #endif

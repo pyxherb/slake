@@ -52,8 +52,8 @@ slake::Value print(
 				if (!exData.objectPtr)
 					fputs("null", stdout);
 				else {
-					switch (exData.objectPtr->getType().typeId) {
-						case TypeId::String:
+					switch (exData.objectPtr->getKind()) {
+						case ObjectKind::String:
 							std::cout << ((slake::StringObject *)exData.objectPtr)->data;
 							break;
 						default:

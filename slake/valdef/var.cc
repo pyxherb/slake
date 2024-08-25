@@ -17,11 +17,7 @@ VarObject::~VarObject() {
 }
 
 Object *VarObject::duplicate() const {
-	HostObjectRef<VarObject> v = VarObject::alloc(_rt, 0, type);
-
-	*(v.get()) = *this;
-
-	return (Object *)v.release();
+	return (Object *)alloc(this).get();
 }
 
 void slake::VarObject::dealloc() {
@@ -38,6 +34,17 @@ HostObjectRef<VarObject> slake::VarObject::alloc(Runtime *rt, AccessModifier acc
 	allocator.construct(ptr, rt, access, type);
 
 	rt->createdObjects.insert(ptr);
+
+	return ptr;
+}
+
+HostObjectRef<VarObject> slake::VarObject::alloc(const VarObject *other) {
+	std::pmr::polymorphic_allocator<VarObject> allocator(&other->_rt->globalHeapPoolResource);
+
+	VarObject *ptr = allocator.allocate(1);
+	allocator.construct(ptr, *other);
+
+	other->_rt->createdObjects.insert(ptr);
 
 	return ptr;
 }

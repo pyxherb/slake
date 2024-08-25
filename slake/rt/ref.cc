@@ -20,9 +20,9 @@ Object *Runtime::resolveIdRef(IdRefObject* ref, Object *scopeObject) const {
 				goto fail;
 
 			if (i.name == "base") {
-				switch (curObject->getType().typeId) {
-					case TypeId::Module:
-					case TypeId::Class:
+				switch (curObject->getKind()) {
+					case ObjectKind::Module:
+					case ObjectKind::Class:
 						scopeObject = (MemberObject *)curObject->getParent();
 						break;
 					default:
@@ -45,16 +45,15 @@ Object *Runtime::resolveIdRef(IdRefObject* ref, Object *scopeObject) const {
 			return scopeObject;
 
 	fail:
-		switch (curObject->getType().typeId) {
-			case TypeId::Module:
-			case TypeId::Class:
+		switch (curObject->getKind()) {
+			case ObjectKind::Module:
+			case ObjectKind::Class:
 				if(!curObject->getParent())
 					return nullptr;
 				scopeObject = (MemberObject *)curObject->getParent();
 				break;
-			case TypeId::Instance: {
-				auto t = ((InstanceObject *)curObject)->getType();
-				scopeObject = t.getCustomTypeExData();
+			case ObjectKind::Instance: {
+				scopeObject = ((InstanceObject *)curObject)->_class;
 				break;
 			}
 			default:
@@ -98,9 +97,9 @@ std::string Runtime::getFullName(const IdRefObject *v) const {
 std::deque<IdRefEntry> Runtime::getFullRef(const MemberObject *v) const {
 	std::deque<IdRefEntry> entries;
 	do {
-		switch (v->getType().typeId) {
-			case TypeId::Instance:
-				v = (const MemberObject *)((InstanceObject *)v)->getType().getCustomTypeExData();
+		switch (v->getKind()) {
+			case ObjectKind::Instance:
+				v = (const MemberObject *)((InstanceObject *)v)->_class;
 				break;
 		}
 		entries.push_front({ v->getName(), v->_genericArgs });

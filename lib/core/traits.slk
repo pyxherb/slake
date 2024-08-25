@@ -1,131 +1,85 @@
-module std.core.traits;
+module core.traits;
 
-pub trait Add<T, Result> {
-	@Result operator+(@T other);
+pub interface IAdd<T, Result> {
+	operator +(rhs: T): Result;
 }
 
-pub trait Sub<T, Result> {
-	@Result operator-(@T other);
+pub interface ISub<T, Result> {
+	operator -(rhs: T): Result;
 }
 
-pub trait Mul<T, Result> {
-	@Result operator*(@T other);
+pub interface IMul<T, Result> {
+	operator *(rhs: T): Result;
 }
 
-pub trait Div<T, Result> {
-	@Result operator/(@T other);
+pub interface IDiv<T, Result> {
+	operator /(rhs: T): Result;
 }
 
-pub trait Mod<T, Result> {
-	@Result operator%(@T other);
+pub interface IMod<T, Result> {
+	operator %(rhs: T): Result;
 }
 
-pub trait BitAnd<T, Result> {
-	@Result operator&(@T other);
+pub interface IAnd<T, Result> {
+	operator &(rhs: T): Result;
 }
 
-pub trait BitOr<T, Result> {
-	@Result operator|(@T other);
+pub interface IOr<T, Result> {
+	operator |(rhs: T): Result;
 }
 
-pub trait Xor<T, Result> {
-	@Result operator^(@T other);
+pub interface IXor<T, Result> {
+	operator ^(rhs: T): Result;
 }
 
-pub trait And<T, Result> {
-	@Result operator&&(@T other);
+pub interface ILogicalAnd<T, Result> {
+	operator &&(rhs: T): Result;
 }
 
-pub trait Or<T, Result> {
-	@Result operator||(@T other);
+pub interface ILogicalOr<T, Result> {
+	operator ||(rhs: T): Result;
 }
 
-pub trait Rev<T, Result> {
-	@Result operator~();
+pub interface ILsh<T, Result> {
+	operator <<(rhs: T): Result;
 }
 
-pub trait Not<T, Result> {
-	@Result operator!();
+pub interface IRsh<T, Result> {
+	operator >>(rhs: T): Result;
 }
 
-pub trait Assign<T, Result> {
-	@Result operator=(@T other);
+pub interface IAssignAdd<T, Result> {
+	operator +=(rhs: T): Result;
 }
 
-pub trait AddAssign<T, Result> {
-	@Result operator+=(@T other);
+pub interface IAssignSub<T, Result> {
+	operator -=(rhs: T): Result;
 }
 
-pub trait SubAssign<T, Result> {
-	@Result operator-=(@T other);
+pub interface IAssignMul<T, Result> {
+	operator *=(rhs: T): Result;
 }
 
-pub trait MulAssign<T, Result> {
-	@Result operator*=(@T other);
+pub interface IAssignDiv<T, Result> {
+	operator /=(rhs: T): Result;
 }
 
-pub trait DivAssign<T, Result> {
-	@Result operator/=(@T other);
+pub interface IAssignMod<T, Result> {
+	operator %=(rhs: T): Result;
 }
 
-pub trait ModAssign<T, Result> {
-	@Result operator%=(@T other);
+pub interface IAssignAnd<T, Result> {
+	operator &=(rhs: T): Result;
 }
 
-pub trait BitAndAssign<T, Result> {
-	@Result operator&=(@T other);
+pub interface IAssignOr<T, Result> {
+	operator |=(rhs: T): Result;
 }
 
-pub trait BitOrAssign<T, Result> {
-	@Result operator|=(@T other);
+pub interface IAssignXor<T, Result> {
+	operator ^=(rhs: T): Result;
 }
 
-pub trait BitXorAssign<T, Result> {
-	@Result operator^=(@T other);
-}
-
-pub trait NotAssign<T, Result> {
-	@Result operator~=(@T other);
-}
-
-pub trait Eq<T, Result> {
-	@Result operator==(@T other);
-}
-
-pub trait NotEq<T, Result> {
-	@Result operator!=(@T other);
-}
-
-pub trait Gt<T, Result> {
-	@Result operator>(@T other);
-}
-
-pub trait Lt<T, Result> {
-	@Result operator<(@T other);
-}
-
-pub trait GtEq<T, Result> {
-	@Result operator>=(@T other);
-}
-
-pub trait LtEq<T, Result> {
-	@Result operator<=(@T other);
-}
-
-pub trait GtEq<T, Result> {
-	@Result operator>=(@T other);
-}
-
-pub trait Subscript<T, Result> {
-	@Result operator[](@T other);
-}
-
-pub trait Comparable<T, Result>
-	: @Gt<T, Result>, @Lt<T, Result>,
-	  @GtEq<T, Result>, @LtEq<T, Result>,
-	  @Eq, @NotEq<T, Result> {
-}
-
-pub trait Stringifiable {
-	operator string();
+pub interface IComparable<T> {
+	fn compareTo(rhs: T): i32;
 }

@@ -23,10 +23,7 @@ StringObject::~StringObject() {
 }
 
 Object *StringObject::duplicate() const {
-	HostObjectRef<StringObject> v = StringObject::alloc(_rt, nullptr, 0);
-	*(v.get()) = *this;
-
-	return (Object *)v.release();
+	return (Object *)alloc(this).get();
 }
 
 HostObjectRef<StringObject> slake::StringObject::alloc(Runtime *rt, const char *str, size_t size) {
@@ -36,6 +33,17 @@ HostObjectRef<StringObject> slake::StringObject::alloc(Runtime *rt, const char *
 	allocator.construct(ptr, rt, str, size);
 
 	rt->createdObjects.insert(ptr);
+
+	return ptr;
+}
+
+HostObjectRef<StringObject> slake::StringObject::alloc(const StringObject *other) {
+	std::pmr::polymorphic_allocator<StringObject> allocator(&other->_rt->globalHeapPoolResource);
+
+	StringObject *ptr = allocator.allocate(1);
+	allocator.construct(ptr, *other);
+
+	other->_rt->createdObjects.insert(ptr);
 
 	return ptr;
 }

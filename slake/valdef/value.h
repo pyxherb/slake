@@ -194,6 +194,8 @@ namespace slake {
 			return *this;
 		}
 	};
+
+	bool isCompatible(const Type &type, const Value &value);
 }
 
 #include <slake/type.h>

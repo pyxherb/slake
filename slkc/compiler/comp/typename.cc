@@ -167,6 +167,8 @@ bool Compiler::_isTypeNamesConvertible(std::shared_ptr<ClassNode> st, std::share
 		auto scope = scopeOf(st.get());
 		assert(scope);
 	} while (st->parentClass && (st = std::static_pointer_cast<ClassNode>(resolveCustomTypeName((CustomTypeNameNode *)st->parentClass.get()))));
+
+	return false;
 }
 
 bool Compiler::isTypeNamesConvertible(std::shared_ptr<TypeNameNode> src, std::shared_ptr<TypeNameNode> dest) {

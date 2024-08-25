@@ -11,27 +11,6 @@ namespace slake {
 		ACCESS_NATIVE = 0x04,
 		ACCESS_OVERRIDE = 0x08,
 		ACCESS_FINAL = 0x10;
-
-	class AccessModified {
-	private:
-		AccessModifier _modifier = 0;
-
-	public:
-		AccessModified() = delete;
-		AccessModified(const AccessModified &) = delete;
-		AccessModified(AccessModified &&) = delete;
-
-		inline AccessModified(AccessModifier modifier = 0) : _modifier(modifier) {}
-		virtual ~AccessModified() = default;
-		inline AccessModifier getAccess() const noexcept { return _modifier; }
-		inline void setAccess(AccessModifier modifier) noexcept { _modifier = modifier; }
-
-		inline bool isPublic() const noexcept { return _modifier & ACCESS_PUB; }
-		inline bool isStatic() const noexcept { return _modifier & ACCESS_STATIC; }
-		inline bool isNative() const noexcept { return _modifier & ACCESS_NATIVE; }
-		inline bool isOverriden() const noexcept { return _modifier & ACCESS_OVERRIDE; }
-		inline bool isFinal() const noexcept { return _modifier & ACCESS_FINAL; }
-	};
 }
 
 #endif

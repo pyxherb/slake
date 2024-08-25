@@ -26,8 +26,6 @@ void slake::decompiler::decompile(std::istream &fs, std::ostream &os) {
 std::string slake::decompiler::decompileTypeName(const Type &type, Runtime *rt) {
 	std::string s;
 	switch (type.typeId) {
-		case TypeId::Class:
-		case TypeId::Interface:
 		case TypeId::GenericArg:
 		case TypeId::Instance:
 			s += "@";
@@ -72,8 +70,8 @@ std::string slake::decompiler::decompileIdRef(const IdRefObject *ref) {
 }
 
 void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostream &os, int indentLevel) {
-	switch (object->getType().typeId) {
-		case slake::TypeId::String: {
+	switch (object->getKind()) {
+		case slake::ObjectKind::String: {
 			os << '"';
 
 			for (auto i : ((StringObject*)object)->data) {
@@ -85,7 +83,7 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 			os << '"';
 			break;
 		}
-		case slake::TypeId::Array: {
+		case slake::ObjectKind::Array: {
 			os << "[";
 
 			auto v = ((ArrayObject *)object);
@@ -100,17 +98,17 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 			os << "]";
 			break;
 		}
-		case slake::TypeId::IdRef:
+		case slake::ObjectKind::IdRef:
 			os << decompileIdRef((IdRefObject *)object);
 			break;
-		case slake::TypeId::Fn: {
+		case slake::ObjectKind::Fn: {
 			auto v = (FnObject *)object;
 
 			for (auto &i : v->overloadings) {
 				// Dump access of the function.
 				if (i->access)
 					os << std::string(indentLevel, '\t')
-					   << ".access " << accessToString(v->getAccess()) << "\n";
+					   << ".access " << accessToString(v->accessModifier) << "\n";
 
 				os << std::string(indentLevel, '\t')
 				   << ".fn ";
@@ -126,7 +124,7 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 				std::set<slxfmt::SourceLocDesc *> dumpedSourceLocationDescs;
 
 				// Dump instructions.
-				if (v->getAccess() & ACCESS_NATIVE) {
+				if (v->accessModifier & ACCESS_NATIVE) {
 					os << std::string(indentLevel, '\t')
 					   << "\n";
 				} else {
@@ -181,7 +179,7 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 			}
 			break;
 		}
-		case slake::TypeId::Module: {
+		case slake::ObjectKind::Module: {
 			auto v = (ModuleObject *)object;
 			os << std::string(indentLevel, '\t')
 			   << ".module " << v->getName() << "\n";
@@ -194,19 +192,19 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 			   << "\n\n";
 			break;
 		}
-		case slake::TypeId::Var: {
+		case slake::ObjectKind::Var: {
 			VarObject *v = (VarObject *)object;
 			os << std::string(indentLevel, '\t')
 			   << ".var " << decompileTypeName(v->getVarType(), rt) << " " << v->getName() << "\n";
 			break;
 		}
-		case slake::TypeId::Class: {
+		case slake::ObjectKind::Class: {
 			ClassObject *v = (ClassObject *)object;
 
 			// Dump access of the class.
-			if (v->getAccess())
+			if (v->accessModifier)
 				os << std::string(indentLevel, '\t')
-				   << ".access " << accessToString(v->getAccess()) << "\n";
+				   << ".access " << accessToString(v->accessModifier) << "\n";
 
 			os << std::string(indentLevel, '\t')
 			   << ".class " << v->getName() << "\n";
@@ -219,7 +217,7 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 			   << "\n\n";
 			break;
 		}
-		case slake::TypeId::Interface: {
+		case slake::ObjectKind::Interface: {
 			break;
 		}
 	}

@@ -15,11 +15,15 @@ namespace slake {
 
 	public:
 		ContextObject(Runtime *rt, std::shared_ptr<Context> context);
+		inline ContextObject(const ContextObject &x) : Object(x) {
+			_context = x._context;
+		}
 		virtual ~ContextObject();
 
-		virtual inline Type getType() const override { return TypeId::Context; }
+		virtual inline ObjectKind getKind() const override { return ObjectKind::Context; }
 
 		static HostObjectRef<ContextObject> alloc(Runtime *rt, std::shared_ptr<Context> context);
+		static HostObjectRef<ContextObject> alloc(const ContextObject *other);
 		virtual void dealloc() override;
 
 		inline std::shared_ptr<Context> getContext() { return _context; }
@@ -27,14 +31,6 @@ namespace slake {
 		Value resume();
 		Value getResult();
 		bool isDone();
-
-		inline ContextObject &operator=(const ContextObject &x) {
-			((Object &)*this) = (Object &)x;
-
-			_context = x._context;
-
-			return *this;
-		}
 	};
 }
 

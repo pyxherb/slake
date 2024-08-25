@@ -34,8 +34,6 @@ void Runtime::_gcWalk(const Type &type) {
 		case TypeId::String:
 			break;
 		case TypeId::Instance:
-		case TypeId::Class:
-		case TypeId::Interface:
 		case TypeId::GenericArg:
 			_gcWalk(type.getCustomTypeExData());
 			break;
@@ -45,13 +43,7 @@ void Runtime::_gcWalk(const Type &type) {
 		case TypeId::Ref:
 			_gcWalk(type.getRefExData());
 			break;
-		case TypeId::Var:
-		case TypeId::Module:
-		case TypeId::RootObject:
-		case TypeId::Fn:
-		case TypeId::IdRef:
 		case TypeId::None:
-		case TypeId::Alias:
 		case TypeId::Any:
 			break;
 		default:
@@ -98,17 +90,17 @@ void Runtime::_gcWalk(Object *v) {
 	if (v->scope)
 		_gcWalk(v->scope);
 
-	switch (auto typeId = v->getType().typeId; typeId) {
-		case TypeId::String:
+	switch (auto typeId = v->getKind(); typeId) {
+		case ObjectKind::String:
 			break;
-		case TypeId::Instance: {
+		case ObjectKind::Instance: {
 			auto value = (InstanceObject *)v;
 			_gcWalk(value->_class);
 			if (value->_parent)
 				_gcWalk(value->_parent);
 			break;
 		}
-		case TypeId::Array: {
+		case ObjectKind::Array: {
 			auto value = (ArrayObject *)v;
 
 			_gcWalk(value->type);
@@ -117,9 +109,9 @@ void Runtime::_gcWalk(Object *v) {
 				_gcWalk(i);
 			break;
 		}
-		case TypeId::Module:
-		case TypeId::Class:
-		case TypeId::Interface: {
+		case ObjectKind::Module:
+		case ObjectKind::Class:
+		case ObjectKind::Interface: {
 			// TODO: Walk generic parameters.
 
 			if (((ModuleObject *)v)->_parent)
@@ -129,7 +121,7 @@ void Runtime::_gcWalk(Object *v) {
 				_gcWalk(i.second);
 
 			switch (typeId) {
-				case TypeId::Class: {
+				case ObjectKind::Class: {
 					ClassObject *value = (ClassObject *)v;
 					for (auto &i : value->implInterfaces) {
 						i.loadDeferredType(this);
@@ -143,7 +135,7 @@ void Runtime::_gcWalk(Object *v) {
 					_gcWalk(value->genericParams);
 					break;
 				}
-				case TypeId::Interface: {
+				case ObjectKind::Interface: {
 					InterfaceObject *value = (InterfaceObject *)v;
 
 					for (auto &i : value->parents) {
@@ -158,7 +150,7 @@ void Runtime::_gcWalk(Object *v) {
 
 			break;
 		}
-		case TypeId::Var: {
+		case ObjectKind::Var: {
 			VarObject *value = (VarObject *)v;
 
 			_gcWalk(value->type);
@@ -169,9 +161,9 @@ void Runtime::_gcWalk(Object *v) {
 				_gcWalk(value->_parent);
 			break;
 		}
-		case TypeId::RootObject:
+		case ObjectKind::RootObject:
 			break;
-		case TypeId::Fn: {
+		case ObjectKind::Fn: {
 			auto fn = (FnObject *)v;
 
 			if (fn->_parent)
@@ -188,7 +180,7 @@ void Runtime::_gcWalk(Object *v) {
 			}
 			break;
 		}
-		case TypeId::FnOverloading: {
+		case ObjectKind::FnOverloading: {
 			auto fnOverloading = (FnOverloadingObject *)v;
 
 			_gcWalk(fnOverloading->fnObject);
@@ -223,7 +215,7 @@ void Runtime::_gcWalk(Object *v) {
 
 			break;
 		}
-		case TypeId::IdRef: {
+		case ObjectKind::IdRef: {
 			auto value = (IdRefObject *)v;
 
 			for (auto &i : value->entries)
@@ -232,13 +224,13 @@ void Runtime::_gcWalk(Object *v) {
 				}
 			break;
 		}
-		case TypeId::Alias: {
+		case ObjectKind::Alias: {
 			auto value = (AliasObject *)v;
 
 			_gcWalk(value->src);
 			break;
 		}
-		case TypeId::Context: {
+		case ObjectKind::Context: {
 			auto value = (ContextObject *)v;
 
 			_gcWalk(*value->_context);
@@ -257,8 +249,7 @@ void Runtime::_gcWalk(Context &ctxt) {
 		_gcWalk(j.returnValue);
 		if (j.thisObject)
 			_gcWalk(j.thisObject);
-		if (j.curExcept)
-			_gcWalk(j.curExcept);
+		_gcWalk(j.curExcept);
 		for (auto &k : j.argStack)
 			_gcWalk(k);
 		for (auto &k : j.nextArgStack)
@@ -307,10 +298,10 @@ rescan:
 
 		auto d = i->getMemberChain("delete");
 		if ((d.size()) &&
-			(i->getType() == TypeId::Instance) &&
+			(i->getKind() == ObjectKind::Instance) &&
 			(!(((InstanceObject *)i)->instanceFlags & INSTANCE_PARENT))) {
 			for (auto &j : d) {
-				if (j.second->getType().typeId == TypeId::Fn)
+				if (j.second->getKind() == ObjectKind::Fn)
 					((FnObject *)j.second)->call(i, {}, {});
 			}
 			foundDestructibleObjects = true;

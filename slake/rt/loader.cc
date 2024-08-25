@@ -86,7 +86,7 @@ Value Runtime::_loadValue(std::istream &fs) {
 			// stub for debugging.
 			// elementType = Type(TypeId::Any);
 
-			HostObjectRef<ArrayObject> value = ArrayObject::alloc(this, elementType);
+			HostObjectRef<ArrayObject> value = ArrayObject::alloc(this, Type::makeArrayTypeName(elementType, 1));
 
 			auto len = _read<uint32_t>(fs);
 
@@ -221,7 +221,7 @@ void Runtime::_loadScope(ModuleObject *mod, std::istream &fs, LoadModuleFlags lo
 
 		// Load reference to the parent class.
 		if (i.flags & slxfmt::CTD_DERIVED)
-			value->parentClass = Type(TypeId::Class, _loadIdRef(fs));
+			value->parentClass = Type(TypeId::Instance, _loadIdRef(fs));
 
 		// Load references to implemented interfaces.
 		for (auto j = i.nImpls; j; j--)
@@ -450,7 +450,7 @@ HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &fs, LoadMod
 				// Create a new one if corresponding module does not present.
 				auto mod = ModuleObject::alloc(this, ACCESS_PUB);
 
-				if (curObject->getType() == TypeId::RootObject)
+				if (curObject->getKind() == ObjectKind::RootObject)
 					((RootObject *)curObject)->scope->putMember(name, mod.get());
 				else
 					((ModuleObject *)curObject)->scope->putMember(name, mod.get());
@@ -464,14 +464,14 @@ HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &fs, LoadMod
 
 		auto lastName = modName->entries.back().name;
 		// Add current module.
-		if (curObject->getType() == TypeId::RootObject)
+		if (curObject->getKind() == ObjectKind::RootObject)
 			((RootObject *)curObject)->scope->putMember(lastName, mod.get());
 		else {
 			auto moduleObject = (ModuleObject *)curObject;
 
 			if (auto member = moduleObject->getMember(lastName); member) {
 				if (flags & LMOD_NORELOAD) {
-					if (member->getType() != TypeId::Module)
+					if (member->getKind() != ObjectKind::Module)
 						throw LoaderError(
 							"Object which corresponds to module name \"" + std::to_string(modName, this) + "\" was found, but is not a module");
 				}

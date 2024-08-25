@@ -23,11 +23,46 @@ namespace slake {
 	struct Type;
 	class Scope;
 
+	enum class ObjectKind {
+		String,	 // String
+
+		Fn,				// Function
+		FnOverloading,	// Function overloading
+		Module,			// Module
+		Var,			// Variable
+		Array,			// Array
+		Ref,			// Reference
+
+		Class,		// Class
+		Interface,	// Interface
+		Struct,		// Structure
+		Instance,	// Object instance
+
+		Any,  // Any
+
+		Alias,	// Alias
+
+		IdRef,		 // Reference
+		GenericArg,	 // Generic argument
+		RootObject,	 // Root value
+		Context,	 // Context
+	};
+
 	class Object {
 	public:
 		/// @brief The basic constructor.
 		/// @param rt Runtime that the value belongs to.
 		Object(Runtime *rt);
+		inline Object(const Object &x) {
+			if (scope) {
+				if (!(_flags & VF_ALIAS))
+					delete scope;
+			}
+
+			_rt = x._rt;
+			_flags = x._flags & ~VF_WALKED;
+			scope = x.scope ? x.scope->duplicate() : nullptr;
+		}
 		virtual ~Object();
 
 		// The object will never be freed if its host reference count is not 0.
@@ -41,7 +76,7 @@ namespace slake {
 
 		/// @brief Get type of the value.
 		/// @return Type of the value.
-		virtual Type getType() const = 0;
+		virtual ObjectKind getKind() const = 0;
 
 		/// @brief Dulplicate the value if supported.
 		/// @return Duplicate of the value.
@@ -53,9 +88,6 @@ namespace slake {
 
 		MemberObject *getMember(const std::string &name);
 		std::deque<std::pair<Scope *, MemberObject *>> getMemberChain(const std::string &name);
-
-		Object &operator=(const Object &x);
-		Object &operator=(Object &&) = delete;
 	};
 
 	template <typename T = Object>

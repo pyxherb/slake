@@ -24,6 +24,13 @@ namespace slake {
 
 	public:
 		ClassObject(Runtime *rt, AccessModifier access, const Type &parentClass);
+		inline ClassObject(const ClassObject &x) : ModuleObject(x) {
+			parentClass = x.parentClass;
+			genericParams = x.genericParams;
+			_flags = x._flags;
+			implInterfaces = x.implInterfaces;
+			customInstantiator = x.customInstantiator;
+		}
 		virtual ~ClassObject();
 
 		GenericParamList genericParams;
@@ -34,7 +41,7 @@ namespace slake {
 		/// @brief User-defined instantiator.
 		ClassInstantiator customInstantiator;
 
-		virtual inline Type getType() const override { return TypeId::Class; }
+		virtual inline ObjectKind getKind() const override { return ObjectKind::Class; }
 		virtual inline Type getParentType() const { return parentClass; }
 		virtual inline void setParentType(Type parent) { parentClass = parent; }
 
@@ -44,24 +51,13 @@ namespace slake {
 		///
 		/// @return true if implemented, false otherwise.
 		bool hasImplemented(const InterfaceObject *pInterface) const;
+		bool isBaseOf(const ClassObject *pClass) const;
 
 		virtual Object *duplicate() const override;
 
 		static HostObjectRef<ClassObject> alloc(Runtime *rt, AccessModifier access, const Type &parentClass = {});
+		static HostObjectRef<ClassObject> alloc(const ClassObject *other);
 		virtual void dealloc() override;
-
-		inline ClassObject &operator=(const ClassObject &x) {
-			((ModuleObject &)*this) = (ModuleObject &)x;
-
-			parentClass = x.parentClass;
-			genericParams = x.genericParams;
-			_flags = x._flags;
-			implInterfaces = x.implInterfaces;
-			customInstantiator = x.customInstantiator;
-
-			return *this;
-		}
-		ClassObject &operator=(ClassObject &&) = delete;
 	};
 
 	class InterfaceObject : public ModuleObject {
@@ -73,32 +69,27 @@ namespace slake {
 		inline InterfaceObject(Runtime *rt, AccessModifier access, const std::deque<Type> &parents)
 			: ModuleObject(rt, access), parents(parents) {
 		}
+		inline InterfaceObject(const InterfaceObject& x) : ModuleObject(x) {
+			parents = x.parents;
+		}
 		virtual ~InterfaceObject();
 
 		GenericParamList genericParams;
 
 		std::deque<Type> parents;
 
-		virtual inline Type getType() const override { return TypeId::Interface; }
+		virtual inline ObjectKind getKind() const override { return ObjectKind::Interface; }
 
 		virtual Object *duplicate() const override;
 
 		static HostObjectRef<InterfaceObject> alloc(Runtime *rt, AccessModifier access, const std::deque<Type> &parents = {});
+		static HostObjectRef<InterfaceObject> alloc(const InterfaceObject *other);
 		virtual void dealloc() override;
 
 		/// @brief Check if the interface is derived from specified interface
 		/// @param pInterface Interface to check.
 		/// @return true if the interface is derived from specified interface, false otherwise.
 		bool isDerivedFrom(const InterfaceObject *pInterface) const;
-
-		inline InterfaceObject &operator=(const InterfaceObject &x) {
-			((ModuleObject &)*this) = (ModuleObject &)x;
-
-			parents = x.parents;
-
-			return *this;
-		}
-		InterfaceObject &operator=(InterfaceObject &&) = delete;
 	};
 }
 

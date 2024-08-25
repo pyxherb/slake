@@ -86,9 +86,9 @@ namespace slake {
 
 	class UncaughtExceptionError : public RuntimeExecError {
 	public:
-		MemberObject *source;
+		Value source;
 
-		inline UncaughtExceptionError(std::string msg) : RuntimeExecError(msg){};
+		inline UncaughtExceptionError(std::string msg, const Value &source) : RuntimeExecError(msg), source(source){};
 		virtual ~UncaughtExceptionError() = default;
 	};
 

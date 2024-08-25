@@ -15,6 +15,8 @@ namespace slake {
 			std::string name;
 			std::deque<std::shared_ptr<TypeNameNode>> genericArgs;
 
+			inline IdRefEntry(std::string name, std::deque<std::shared_ptr<TypeNameNode>> genericArgs = {})
+				: name(name), genericArgs(genericArgs) {}
 			inline IdRefEntry(SourceLocation loc, size_t idxToken, std::string name, std::deque<std::shared_ptr<TypeNameNode>> genericArgs = {})
 				: loc(loc), idxToken(idxToken), name(name), genericArgs(genericArgs) {}
 		};

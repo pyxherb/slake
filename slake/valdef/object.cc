@@ -25,15 +25,3 @@ std::deque<std::pair<Scope *, MemberObject *>> slake::Object::getMemberChain(con
 	return scope ? scope->getMemberChain(name) : std::deque<std::pair<Scope *, MemberObject *>>();
 }
 
-Object &slake::Object::operator=(const Object &x) {
-	if (scope) {
-		if (!(_flags & VF_ALIAS))
-			delete scope;
-	}
-
-	_rt = x._rt;
-	_flags = x._flags & ~VF_WALKED;
-	scope = x.scope ? x.scope->duplicate() : nullptr;
-
-	return *this;
-}

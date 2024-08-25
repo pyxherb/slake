@@ -44,7 +44,7 @@ namespace slake {
 		Object *thisObject = nullptr;						// `this' object.
 		Value returnValue = nullptr;						// Return value.
 		std::deque<MinorFrame> minorFrames;					// Minor frames.
-		Object *curExcept = nullptr;						// Current exception.
+		Value curExcept = nullptr;							// Current exception.
 
 		MajorFrame(Runtime *rt);
 

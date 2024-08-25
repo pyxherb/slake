@@ -4,7 +4,7 @@
 using namespace slake;
 
 MemberObject::MemberObject(Runtime *rt, AccessModifier access)
-	: Object(rt), AccessModified(access) {
+	: Object(rt), accessModifier(access) {
 }
 
 MemberObject::~MemberObject() {

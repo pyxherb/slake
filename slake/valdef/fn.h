@@ -42,6 +42,19 @@ namespace slake {
 			AccessModifier access,
 			const std::deque<Type> &paramTypes,
 			const Type &returnType);
+		inline FnOverloadingObject(const FnOverloadingObject& other) : Object(other) {
+			fnObject = other.fnObject;
+
+			access = other.access;
+
+			genericParams = other.genericParams;
+			mappedGenericArgs = other.mappedGenericArgs;
+
+			paramTypes = other.paramTypes;
+			returnType = other.returnType;
+
+			overloadingFlags = other.overloadingFlags;
+		}
 		virtual ~FnOverloadingObject();
 
 		FnObject *fnObject;
@@ -56,29 +69,13 @@ namespace slake {
 
 		OverloadingFlags overloadingFlags = 0;
 
-		virtual inline Type getType() const { return TypeId::FnOverloading; }
+		virtual inline ObjectKind getKind() const { return ObjectKind::FnOverloading; }
 
 		virtual FnOverloadingKind getOverloadingKind() const = 0;
 
 		virtual Value call(Object *thisObject, std::deque<Value> args) const = 0;
 
 		virtual FnOverloadingObject *duplicate() const = 0;
-
-		inline FnOverloadingObject &operator=(const FnOverloadingObject &other) {
-			fnObject = other.fnObject;
-
-			access = other.access;
-
-			genericParams = other.genericParams;
-			mappedGenericArgs = other.mappedGenericArgs;
-
-			paramTypes = other.paramTypes;
-			returnType = other.returnType;
-
-			overloadingFlags = other.overloadingFlags;
-
-			return *this;
-		}
 	};
 
 	class RegularFnOverloadingObject : public FnOverloadingObject {
@@ -93,27 +90,7 @@ namespace slake {
 				  access,
 				  paramTypes,
 				  returnType) {}
-		virtual ~RegularFnOverloadingObject() = default;
-
-		std::deque<slxfmt::SourceLocDesc> sourceLocDescs;
-		std::deque<Instruction> instructions;
-
-		virtual FnOverloadingKind getOverloadingKind() const override;
-
-		virtual Value call(Object *thisObject, std::deque<Value> args) const override;
-
-		virtual FnOverloadingObject *duplicate() const override;
-
-		static HostObjectRef<RegularFnOverloadingObject> alloc(
-			FnObject *fnObject,
-			AccessModifier access,
-			const std::deque<Type> &paramTypes,
-			const Type &returnType);
-		virtual void dealloc() override;
-
-		inline RegularFnOverloadingObject &operator=(const RegularFnOverloadingObject &other) {
-			*(FnOverloadingObject *)this = (const FnOverloadingObject &)other;
-
+		inline RegularFnOverloadingObject(const RegularFnOverloadingObject& other) : FnOverloadingObject(other) {
 			sourceLocDescs = other.sourceLocDescs;
 
 			instructions.resize(other.instructions.size());
@@ -143,9 +120,25 @@ namespace slake {
 						instructions[i].operands[j] = operand;
 				}
 			}
-
-			return *this;
 		}
+		virtual ~RegularFnOverloadingObject() = default;
+
+		std::deque<slxfmt::SourceLocDesc> sourceLocDescs;
+		std::deque<Instruction> instructions;
+
+		virtual FnOverloadingKind getOverloadingKind() const override;
+
+		virtual Value call(Object *thisObject, std::deque<Value> args) const override;
+
+		virtual FnOverloadingObject *duplicate() const override;
+
+		static HostObjectRef<RegularFnOverloadingObject> alloc(
+			FnObject *fnObject,
+			AccessModifier access,
+			const std::deque<Type> &paramTypes,
+			const Type &returnType);
+		static HostObjectRef<RegularFnOverloadingObject> alloc(const RegularFnOverloadingObject *other);
+		virtual void dealloc() override;
 	};
 
 	using NativeFnCallback =
@@ -169,6 +162,9 @@ namespace slake {
 				  paramTypes,
 				  returnType),
 			  callback(callback) {}
+		inline NativeFnOverloadingObject(const NativeFnOverloadingObject &other) : FnOverloadingObject(other) {
+			callback = other.callback;
+		}
 		virtual ~NativeFnOverloadingObject() = default;
 
 		NativeFnCallback callback;
@@ -185,41 +181,15 @@ namespace slake {
 			const std::deque<Type> &paramTypes,
 			const Type &returnType,
 			NativeFnCallback callback);
+		static HostObjectRef<NativeFnOverloadingObject> alloc(const NativeFnOverloadingObject *other);
 		virtual void dealloc() override;
-
-		inline NativeFnOverloadingObject &operator=(const NativeFnOverloadingObject &other) {
-			*(FnOverloadingObject *)this = (const FnOverloadingObject &)other;
-
-			callback = other.callback;
-
-			return *this;
-		}
 	};
 
 	class FnObject : public MemberObject {
 	public:
 		inline FnObject(Runtime *rt) : MemberObject(rt, ACCESS_PUB) {
 		}
-		virtual inline ~FnObject() {
-		}
-
-		FnObject *parentFn = nullptr, *descentFn = nullptr;
-		std::deque<FnOverloadingObject *> overloadings;
-
-		virtual Type getType() const override;
-
-		FnOverloadingObject *getOverloading(std::deque<Type> argTypes) const;
-
-		virtual Value call(Object *thisObject, std::deque<Value> args, std::deque<Type> argTypes) const;
-
-		virtual Object *duplicate() const override;
-
-		static HostObjectRef<FnObject> alloc(Runtime *rt);
-		virtual void dealloc() override;
-
-		inline FnObject &operator=(const FnObject &x) {
-			((MemberObject &)*this) = (MemberObject &)x;
-
+		inline FnObject(const FnObject &x) : MemberObject(x) {
 			// We don't copy parentFn because it has to be linked to a inherited function dynamically LOL
 
 			for (auto &i : x.overloadings) {
@@ -229,10 +199,24 @@ namespace slake {
 
 				overloadings.push_back(ol);
 			}
-
-			return *this;
 		}
-		FnObject &operator=(FnObject &&) = delete;
+		virtual inline ~FnObject() {
+		}
+
+		FnObject *parentFn = nullptr, *descentFn = nullptr;
+		std::deque<FnOverloadingObject *> overloadings;
+
+		virtual inline ObjectKind getKind() const override { return ObjectKind::Fn; }
+
+		FnOverloadingObject *getOverloading(std::deque<Type> argTypes) const;
+
+		virtual Value call(Object *thisObject, std::deque<Value> args, std::deque<Type> argTypes) const;
+
+		virtual Object *duplicate() const override;
+
+		static HostObjectRef<FnObject> alloc(Runtime *rt);
+		static HostObjectRef<FnObject> alloc(const FnObject *other);
+		virtual void dealloc() override;
 	};
 }
 

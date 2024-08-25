@@ -22,6 +22,17 @@ HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt, std::share
 	return ptr;
 }
 
+HostObjectRef<ContextObject> slake::ContextObject::alloc(const ContextObject *other) {
+	std::pmr::polymorphic_allocator<ContextObject> allocator(&other->_rt->globalHeapPoolResource);
+
+	ContextObject *ptr = allocator.allocate(1);
+	allocator.construct(ptr, *other);
+
+	other->_rt->createdObjects.insert(ptr);
+
+	return ptr;
+}
+
 void slake::ContextObject::dealloc() {
 	std::pmr::polymorphic_allocator<ContextObject> allocator(&_rt->globalHeapPoolResource);
 

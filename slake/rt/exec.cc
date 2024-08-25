@@ -24,8 +24,8 @@ static void _checkOperandType(
 
 static void _checkObjectOperandType(
 	Object *object,
-	TypeId typeId) {
-	if (object->getType().typeId != typeId)
+	ObjectKind typeId) {
+	if (object->getKind() != typeId)
 		throw InvalidOperandsError("Invalid operand combination");
 }
 
@@ -139,7 +139,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 			_checkOperandType(ins.operands[0], ValueType::ObjectRef);
 			auto refPtr = ins.operands[0].getObjectRef().objectPtr;
-			_checkObjectOperandType(refPtr, TypeId::IdRef);
+			_checkObjectOperandType(refPtr, ObjectKind::IdRef);
 
 			auto v = resolveIdRef((IdRefObject *)refPtr, curMajorFrame.thisObject);
 			if (!v) {
@@ -184,7 +184,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_checkOperandType(destValue, ValueType::ObjectRef);
 
 			auto varOutPtr = destValue.getObjectRef().objectPtr;
-			_checkObjectOperandType(varOutPtr, TypeId::Var);
+			_checkObjectOperandType(varOutPtr, ObjectKind::Var);
 
 			if (!varOutPtr)
 				throw NullRefError();
@@ -234,7 +234,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_checkOperandType(dest, ValueType::ObjectRef);
 
 			auto varInPtr = dest.getObjectRef().objectPtr;
-			_checkObjectOperandType(varInPtr, TypeId::Var);
+			_checkObjectOperandType(varInPtr, ObjectKind::Var);
 
 			if (!varInPtr)
 				throw NullRefError();
@@ -1129,7 +1129,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_checkOperandType(index, ValueType::U32);
 
 			auto arrayIn = arrayValue.getObjectRef().objectPtr;
-			_checkObjectOperandType(arrayIn, TypeId::Array);
+			_checkObjectOperandType(arrayIn, ObjectKind::Array);
 
 			uint32_t indexIn = index.getU32();
 
@@ -1195,7 +1195,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 				Value fnValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
 				_checkOperandType(fnValue, ValueType::ObjectRef);
-				_checkObjectOperandType(fnValue.getObjectRef().objectPtr, TypeId::Fn);
+				_checkObjectOperandType(fnValue.getObjectRef().objectPtr, ObjectKind::Fn);
 				fn = (FnObject *)fnValue.getObjectRef().objectPtr;
 
 				Value thisObjectValue = _unwrapRegOperand(curMajorFrame, ins.operands[1]);
@@ -1206,7 +1206,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 				Value fnValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
 				_checkOperandType(fnValue, ValueType::ObjectRef);
-				_checkObjectOperandType(fnValue.getObjectRef().objectPtr, TypeId::Fn);
+				_checkObjectOperandType(fnValue.getObjectRef().objectPtr, ObjectKind::Fn);
 				fn = (FnObject *)fnValue.getObjectRef().objectPtr;
 			}
 
@@ -1271,17 +1271,16 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			type.loadDeferredType(this);
 
 			switch (type.typeId) {
-				case TypeId::Instance:
-				case TypeId::Class: {
+				case TypeId::Instance: {
 					ClassObject *cls = (ClassObject *)type.getCustomTypeExData();
 					InstanceObject *instance = newClassInstance(cls);
 					_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), instance);
 
 					if (constructorRef) {
-						_checkObjectOperandType(constructorRef, TypeId::IdRef);
+						_checkObjectOperandType(constructorRef, ObjectKind::IdRef);
 
 						if (auto v = resolveIdRef((IdRefObject *)constructorRef); v) {
-							if ((v->getType() != TypeId::Fn))
+							if ((v->getKind() != ObjectKind::Fn))
 								throw InvalidOperandsError("Specified constructor is not a function");
 
 							FnObject *constructor = (FnObject *)v;
@@ -1318,9 +1317,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		case Opcode::THROW: {
 			_checkOperandCount(ins, false, 1);
 
-			_checkOperandType(ins.operands[0], ValueType::ObjectRef);
-
-			Object *x = ins.operands[0].getObjectRef().objectPtr;
+			Value x = ins.operands[0];
 
 			auto tmpContext = *context;
 
@@ -1350,7 +1347,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			}
 
 			curMajorFrame.curExcept = x;
-			throw UncaughtExceptionError("Uncaught exception: " + std::to_string(x->getType(), this));
+			throw UncaughtExceptionError("Uncaught exception", x);
 		}
 		case Opcode::PUSHXH: {
 			_checkOperandCount(ins, false, 2);
@@ -1368,9 +1365,6 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			curMajorFrame.minorFrames.back().exceptHandlers.push_back(xh);
 			break;
 		}
-		case Opcode::ABORT:
-			_checkOperandCount(ins, false, 0);
-			throw UncaughtExceptionError("Use chose to abort the execution");
 		case Opcode::CAST: {
 			_checkOperandCount(ins, true, 2);
 

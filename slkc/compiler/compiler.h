@@ -246,6 +246,10 @@ namespace slake {
 			std::unique_ptr<Runtime> _rt;
 			std::deque<MajorContext> _savedMajorContexts;
 
+			std::shared_ptr<ClassNode> _i32Class;
+
+			void registerBuiltinTypedefs();
+
 			void pushMajorContext();
 			void popMajorContext();
 

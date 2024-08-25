@@ -12,7 +12,7 @@ AliasObject::~AliasObject() {
 }
 
 Object *AliasObject::duplicate() const {
-	return (Object *)new AliasObject(_rt, getAccess(), src);
+	return (Object *)alloc(this).get();
 }
 
 HostObjectRef<AliasObject> AliasObject::alloc(Runtime *rt, Object *src) {
@@ -22,6 +22,17 @@ HostObjectRef<AliasObject> AliasObject::alloc(Runtime *rt, Object *src) {
 	allocator.construct(ptr, rt, ACCESS_PUB, src);
 
 	rt->createdObjects.insert(ptr);
+
+	return ptr;
+}
+
+HostObjectRef<AliasObject> AliasObject::alloc(const AliasObject *other) {
+	std::pmr::polymorphic_allocator<AliasObject> allocator(&other->_rt->globalHeapPoolResource);
+
+	AliasObject *ptr = allocator.allocate(1);
+	allocator.construct(ptr, *other);
+
+	other->_rt->createdObjects.insert(ptr);
 
 	return ptr;
 }

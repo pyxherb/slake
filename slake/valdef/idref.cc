@@ -10,10 +10,7 @@ IdRefObject::~IdRefObject() {
 }
 
 Object *IdRefObject::duplicate() const {
-	HostObjectRef<IdRefObject> v = IdRefObject::alloc(_rt);
-	*(v.get()) = *this;
-
-	return (Object *)v.release();
+	return (Object *)alloc(this).get();
 }
 
 HostObjectRef<IdRefObject> slake::IdRefObject::alloc(Runtime *rt) {
@@ -23,6 +20,17 @@ HostObjectRef<IdRefObject> slake::IdRefObject::alloc(Runtime *rt) {
 	allocator.construct(ptr, rt);
 
 	rt->createdObjects.insert(ptr);
+
+	return ptr;
+}
+
+HostObjectRef<IdRefObject> slake::IdRefObject::alloc(const IdRefObject *other) {
+	std::pmr::polymorphic_allocator<IdRefObject> allocator(&other->_rt->globalHeapPoolResource);
+
+	IdRefObject *ptr = allocator.allocate(1);
+	allocator.construct(ptr, *other);
+
+	other->_rt->createdObjects.insert(ptr);
 
 	return ptr;
 }

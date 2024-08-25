@@ -80,8 +80,6 @@ namespace slake {
 		PUSHXH,	  // Push an exception handler
 		LEXCEPT,  // Load current exception
 
-		ABORT,	// Abort
-
 		CAST,  // Cast
 
 		TYPEOF,	 // Get type of an object

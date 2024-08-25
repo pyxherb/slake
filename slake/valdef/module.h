@@ -9,27 +9,22 @@ namespace slake {
 	class ModuleObject : public MemberObject {
 	public:
 		ModuleObject(Runtime *rt, AccessModifier access);
+		inline ModuleObject(const ModuleObject &x) : MemberObject(x) {
+			imports = x.imports;
+			unnamedImports = x.unnamedImports;
+		}
 		virtual ~ModuleObject();
 
 		std::unordered_map<std::string, IdRefObject *> imports;
 		std::deque<IdRefObject *> unnamedImports;
 
-		virtual Type getType() const override;
+		virtual inline ObjectKind getKind() const override { return ObjectKind::Module; }
 
 		virtual Object *duplicate() const override;
 
 		static HostObjectRef<ModuleObject> alloc(Runtime *rt, AccessModifier access);
+		static HostObjectRef<ModuleObject> alloc(const ModuleObject *other);
 		virtual void dealloc() override;
-
-		inline ModuleObject &operator=(const ModuleObject &x) {
-			((MemberObject &)*this) = (MemberObject &)x;
-
-			imports = x.imports;
-			unnamedImports = x.unnamedImports;
-
-			return *this;
-		}
-		ModuleObject &operator=(ModuleObject &&) = delete;
 	};
 }
 

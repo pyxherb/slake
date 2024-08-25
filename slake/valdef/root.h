@@ -14,13 +14,10 @@ namespace slake {
 		virtual inline ~RootObject() {
 		}
 
-		virtual inline Type getType() const override { return TypeId::RootObject; }
+		virtual inline ObjectKind getKind() const override { return ObjectKind::RootObject; }
 
 		static HostObjectRef<RootObject> alloc(Runtime *rt);
 		virtual void dealloc() override;
-
-		RootObject &operator=(const RootObject &) = delete;
-		RootObject &operator=(RootObject &&) = delete;
 	};
 }
 

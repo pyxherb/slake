@@ -10,10 +10,8 @@ Type::Type(IdRefObject *ref) : typeId(TypeId::Instance) {
 
 bool Type::isLoadingDeferred() const noexcept {
 	switch (typeId) {
-		case TypeId::Class:
-		case TypeId::Interface:
 		case TypeId::Instance:
-			return getCustomTypeExData()->getType() == TypeId::IdRef;
+			return getCustomTypeExData()->getKind() == ObjectKind::IdRef;
 		default:
 			return false;
 	}
@@ -31,74 +29,95 @@ void Type::loadDeferredType(const Runtime *rt) const {
 	exData.basicExData.ptr = (Object *)typeObject;
 }
 
-/// @brief
-/// @param a Type of the variable
-/// @param b Type of the value
-/// @return
-bool slake::isCompatible(Type a, Type b) {
-	switch (a.typeId) {
-		case TypeId::Value:
-			if (a.typeId != b.typeId)
+bool slake::isCompatible(const Type &type, const Value &value) {
+	if (type.typeId == TypeId::Any)
+		return true;
+
+	switch (type.typeId) {
+		case TypeId::Value: {
+			if (type.exData.basicExData.valueType != value.valueType)
 				return false;
-			return a.getValueTypeExData() == b.getValueTypeExData();
+			break;
+		}
 		case TypeId::String:
-			return a.typeId == b.typeId;
-		case TypeId::Array:
-			if (a.typeId != b.typeId)
+			if (value.valueType != ValueType::ObjectRef)
 				return false;
-			return isCompatible(a.getArrayExData(), b.getArrayExData());
-		case TypeId::Var:
-			return a.typeId == b.typeId;
-		case TypeId::Ref:
-			return b.typeId == TypeId::Var;
+			if (value.getObjectRef().objectPtr->getKind() != ObjectKind::String)
+				return false;
+			break;
 		case TypeId::Instance: {
-			switch (a.getCustomTypeExData()->getType().typeId) {
-				case TypeId::Class: {
-					switch (b.typeId) {
-						case TypeId::Instance:
-							for (auto i = ((ClassObject *)b.getCustomTypeExData()); i; i = (ClassObject *)i->getParent()) {
-								if (i == b.getCustomTypeExData())
-									return true;
-							}
-							return false;
-						case TypeId::None:
-							return true;
-						default:
-							return false;
-					}
+			if (value.valueType != ValueType::ObjectRef)
+				return false;
+
+			auto objectPtr = value.getObjectRef().objectPtr;
+			if (!objectPtr)
+				return true;
+			if (objectPtr->getKind() != ObjectKind::Instance)
+				return false;
+
+			type.loadDeferredType(objectPtr->_rt);
+			switch (type.getCustomTypeExData()->getKind()) {
+				case ObjectKind::Class: {
+					ClassObject *thisClass = (ClassObject *)type.getCustomTypeExData();
+
+					ClassObject *valueClass = ((InstanceObject *)objectPtr)->_class;
+
+					if (!thisClass->isBaseOf(valueClass))
+						return false;
+					break;
 				}
-				case TypeId::Interface: {
-					switch (b.typeId) {
-						case TypeId::Instance:
-							return ((ClassObject *)b.getCustomTypeExData())->hasImplemented((InterfaceObject *)a.getCustomTypeExData());
-						case TypeId::None:
-							return true;
-						default:
-							return false;
-					}
+				case ObjectKind::Interface: {
+					InterfaceObject *thisInterface = (InterfaceObject *)type.getCustomTypeExData();
+
+					ClassObject *valueClass = ((InstanceObject *)objectPtr)->_class;
+
+					if (!valueClass->hasImplemented(thisInterface))
+						return false;
+					break;
 				}
-				default:
-					return false;
+				default:;
 			}
+
+			break;
 		}
-		case TypeId::Fn: {
-			switch (b.typeId) {
-				case TypeId::Fn: {
-					// stub
-					return false;
-				}
-				case TypeId::None:
-					return true;
-				default:
-					return false;
-			}
+		case TypeId::Array: {
+			if (value.valueType != ValueType::ObjectRef)
+				return false;
+
+			auto objectPtr = value.getObjectRef().objectPtr;
+			if (objectPtr->getKind() != ObjectKind::Array)
+				return false;
+
+			auto arrayObjectPtr = ((ArrayObject *)objectPtr);
+
+			if (arrayObjectPtr->type.getArrayExData() != type.getArrayExData())
+				return false;
+
+			if (arrayObjectPtr->type.exData.arrayExData.nDimensions != type.exData.arrayExData.nDimensions)
+				return false;
+			break;
 		}
-		case TypeId::Any:
-			return true;
+		case TypeId::Ref: {
+			if (value.valueType != ValueType::ObjectRef)
+				return false;
+
+			auto objectPtr = value.getObjectRef().objectPtr;
+			if (objectPtr->getKind() != ObjectKind::Var)
+				return false;
+
+			auto varObjectPtr = ((BasicVarObject *)objectPtr);
+
+			if (varObjectPtr->type != type.getRefExData())
+				return false;
+			break;
+		}
 		default:
 			return false;
 	}
+
+	return true;
 }
+
 
 std::string std::to_string(const slake::Type &type, const slake::Runtime *rt) {
 	switch (type.typeId) {

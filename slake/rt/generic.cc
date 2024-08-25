@@ -4,8 +4,6 @@ using namespace slake;
 
 void slake::Runtime::_instantiateGenericObject(Type &type, GenericInstantiationContext &instantiationContext) const {
 	switch (type.typeId) {
-		case TypeId::Class:
-		case TypeId::Interface:
 		case TypeId::Instance: {
 			if (type.isLoadingDeferred()) {
 				IdRefObject *exData = (IdRefObject *)type.getCustomTypeExData();
@@ -73,8 +71,8 @@ void slake::Runtime::_instantiateGenericObject(Object *v, GenericInstantiationCo
 	// How to instantiate generic classes:
 	// Duplicate the value, scan for references to generic parameters and
 	// replace them with generic arguments.
-	switch (v->getType().typeId) {
-		case TypeId::Instance: {
+	switch (v->getKind()) {
+		case ObjectKind::Instance: {
 			auto value = (InstanceObject *)v;
 
 			for (auto &i : value->scope->members)
@@ -89,13 +87,13 @@ void slake::Runtime::_instantiateGenericObject(Object *v, GenericInstantiationCo
 				_instantiateGenericObject(value->_parent, instantiationContext);
 			break;
 		}
-		case TypeId::Array: {
+		case ObjectKind::Array: {
 			auto value = (ArrayObject *)v;
 
 			_instantiateGenericObject(value->type, instantiationContext);
 			break;
 		}
-		case TypeId::Class: {
+		case ObjectKind::Class: {
 			ClassObject *const value = (ClassObject *)v;
 
 			if (value->genericParams.size() && value != instantiationContext.mappedObject) {
@@ -123,7 +121,7 @@ void slake::Runtime::_instantiateGenericObject(Object *v, GenericInstantiationCo
 
 			break;
 		}
-		case TypeId::Interface: {
+		case ObjectKind::Interface: {
 			InterfaceObject *const value = (InterfaceObject *)v;
 
 			value->_genericArgs = *instantiationContext.genericArgs;
@@ -133,20 +131,20 @@ void slake::Runtime::_instantiateGenericObject(Object *v, GenericInstantiationCo
 
 			break;
 		}
-		case TypeId::Var: {
+		case ObjectKind::Var: {
 			BasicVarObject *value = (BasicVarObject *)v;
 
 			_instantiateGenericObject(value->type, instantiationContext);
 			break;
 		}
-		case TypeId::Module: {
+		case ObjectKind::Module: {
 			ModuleObject *value = (ModuleObject *)v;
 
 			for (auto &i : value->scope->members)
 				_instantiateGenericObject(i.second, instantiationContext);
 			break;
 		}
-		case TypeId::Fn: {
+		case ObjectKind::Fn: {
 			FnObject *value = (FnObject *)v;
 
 			if (instantiationContext.mappedObject == value) {
@@ -176,15 +174,15 @@ void slake::Runtime::_instantiateGenericObject(Object *v, GenericInstantiationCo
 			}
 			break;
 		}
-		case TypeId::Alias: {
+		case ObjectKind::Alias: {
 			AliasObject *value = (AliasObject *)v;
 
 			value->src = instantiateGenericObject(value->src, instantiationContext);
 			break;
 		}
-		case TypeId::String:
-		case TypeId::RootObject:
-		case TypeId::IdRef:
+		case ObjectKind::String:
+		case ObjectKind::RootObject:
+		case ObjectKind::IdRef:
 			break;
 		default:
 			throw std::logic_error("Unhandled object type");
@@ -194,8 +192,8 @@ void slake::Runtime::_instantiateGenericObject(Object *v, GenericInstantiationCo
 void Runtime::mapGenericParams(const Object *v, GenericInstantiationContext &instantiationContext) const {
 	instantiationContext.mappedObject = v;
 
-	switch (v->getType().typeId) {
-		case TypeId::Class: {
+	switch (v->getKind()) {
+		case ObjectKind::Class: {
 			ClassObject *value = (ClassObject *)v;
 
 			if (instantiationContext.genericArgs->size() != value->genericParams.size())
@@ -206,7 +204,7 @@ void Runtime::mapGenericParams(const Object *v, GenericInstantiationContext &ins
 			}
 			break;
 		}
-		case TypeId::Interface: {
+		case ObjectKind::Interface: {
 			InterfaceObject *value = (InterfaceObject *)v;
 
 			if (instantiationContext.genericArgs->size() != value->genericParams.size())

@@ -5,11 +5,7 @@
 using namespace slake;
 
 Object* InstanceObject::duplicate() const {
-	HostObjectRef<InstanceObject> v = InstanceObject::alloc(_rt, _class);
-
-	*(v.get()) = *this;
-
-	return (Object *)v.release();
+	return (Object *)alloc(this).get();
 }
 
 HostObjectRef<InstanceObject> slake::InstanceObject::alloc(Runtime *rt, ClassObject *cls, InstanceObject *parent) {
@@ -19,6 +15,17 @@ HostObjectRef<InstanceObject> slake::InstanceObject::alloc(Runtime *rt, ClassObj
 	allocator.construct(ptr, rt, cls, parent);
 
 	rt->createdObjects.insert(ptr);
+
+	return ptr;
+}
+
+HostObjectRef<InstanceObject> slake::InstanceObject::alloc(const InstanceObject *other) {
+	std::pmr::polymorphic_allocator<InstanceObject> allocator(&other->_rt->globalHeapPoolResource);
+
+	InstanceObject *ptr = allocator.allocate(1);
+	allocator.construct(ptr, *other);
+
+	other->_rt->createdObjects.insert(ptr);
 
 	return ptr;
 }

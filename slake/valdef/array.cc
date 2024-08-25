@@ -10,11 +10,7 @@ ArrayObject::~ArrayObject() {
 }
 
 Object *ArrayObject::duplicate() const {
-	ArrayObject *v = new ArrayObject(_rt, type);
-
-	*v = *this;
-
-	return (Object *)v;
+	return (Object *)alloc(this).get();
 }
 
 HostObjectRef<ArrayObject> slake::ArrayObject::alloc(Runtime *rt, const Type &type) {
@@ -24,6 +20,17 @@ HostObjectRef<ArrayObject> slake::ArrayObject::alloc(Runtime *rt, const Type &ty
 	allocator.construct(ptr, rt, type);
 
 	rt->createdObjects.insert(ptr);
+
+	return ptr;
+}
+
+HostObjectRef<ArrayObject> slake::ArrayObject::alloc(const ArrayObject *other) {
+	std::pmr::polymorphic_allocator<ArrayObject> allocator(&other->_rt->globalHeapPoolResource);
+
+	ArrayObject *ptr = allocator.allocate(1);
+	allocator.construct(ptr, *other);
+
+	other->_rt->createdObjects.insert(ptr);
 
 	return ptr;
 }

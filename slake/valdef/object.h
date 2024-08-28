@@ -15,9 +15,10 @@ namespace slake {
 
 	using ObjectFlags = uint8_t;
 	constexpr static ObjectFlags
-		VF_WALKED = 0x01,  // The value has been walked by the garbage collector.
-		VF_ALIAS = 0x02,   // The value is an alias thus the scope should not be deleted.
-		VF_GCREADY = 0x04  // The object is ready to be GC., for objects created during GC.
+		VF_WALKED = 0x01,		   // The value has been walked by the garbage collector.
+		VF_ALIAS = 0x02,		   // The value is an alias thus the scope should not be deleted.
+		VF_UNOWNED_VTABLE = 0x04,  // The value does not own the vtable.
+		VF_GCREADY = 0x80		   // The object is ready to be GC., for objects created during GC.
 		;
 
 	struct Type;
@@ -73,6 +74,7 @@ namespace slake {
 		Runtime *_rt;
 
 		Scope *scope = nullptr;
+		MethodTable *methodTable = nullptr;
 
 		/// @brief Get type of the value.
 		/// @return Type of the value.

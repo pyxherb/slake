@@ -68,31 +68,10 @@ void slake::Runtime::_instantiateGenericObject(Value &value, GenericInstantiatio
 }
 
 void slake::Runtime::_instantiateGenericObject(Object *v, GenericInstantiationContext &instantiationContext) const {
-	// How to instantiate generic classes:
+	// How do we instantiate generic classes:
 	// Duplicate the value, scan for references to generic parameters and
 	// replace them with generic arguments.
 	switch (v->getKind()) {
-		case ObjectKind::Instance: {
-			auto value = (InstanceObject *)v;
-
-			for (auto &i : value->scope->members)
-				_instantiateGenericObject(i.second, instantiationContext);
-
-			for (auto &i : value->_genericArgs)
-				_instantiateGenericObject(i, instantiationContext);
-
-			_instantiateGenericObject(value->_class, instantiationContext);
-
-			if (value->_parent)
-				_instantiateGenericObject(value->_parent, instantiationContext);
-			break;
-		}
-		case ObjectKind::Array: {
-			auto value = (ArrayObject *)v;
-
-			_instantiateGenericObject(value->type, instantiationContext);
-			break;
-		}
 		case ObjectKind::Class: {
 			ClassObject *const value = (ClassObject *)v;
 
@@ -165,7 +144,7 @@ void slake::Runtime::_instantiateGenericObject(Object *v, GenericInstantiationCo
 
 				if (matchedOverloading) {
 					_instantiateGenericObject(matchedOverloading, instantiationContext);
-					value->overloadings.push_back(matchedOverloading);
+					value->overloadings.insert(matchedOverloading);
 				}
 			} else {
 				for (auto i : value->overloadings) {

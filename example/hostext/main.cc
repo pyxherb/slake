@@ -123,14 +123,14 @@ int main(int argc, char **argv) {
 
 	slake::HostObjectRef<slake::FnObject> fnObject = slake::FnObject::alloc(rt.get());
 
-	fnObject->overloadings.push_back(
+	fnObject->overloadings.insert(
 		slake::NativeFnOverloadingObject::alloc(fnObject.get(), slake::ACCESS_PUB, std::deque<slake::Type>{}, slake::ValueType::Undefined, print).release());
 
 	((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext"))->getMember("extfns"))->scope->putMember("print", fnObject.get());
 
 	try {
 		slake::Value result =
-			((slake::FnObject *)mod->scope->getMember("main"))->call(nullptr, {}, {});
+			((slake::FnObject *)mod->getMember("main"))->call(nullptr, {}, {});
 
 		slake::HostObjectRef<slake::ContextObject> context = (slake::ContextObject *)result.getObjectRef().objectPtr;
 		printf("%d\n", context->getResult().getI32());

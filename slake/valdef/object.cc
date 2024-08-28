@@ -18,7 +18,17 @@ Object *Object::duplicate() const {
 }
 
 MemberObject *slake::Object::getMember(const std::string &name) {
-	return scope ? scope->getMember(name) : nullptr;
+	if (methodTable) {
+		if (auto m = methodTable->getMethod(name); m)
+			return m;
+	}
+
+	if (scope) {
+		if (auto m = scope->getMember(name); m)
+			return m;
+	}
+
+	return nullptr;
 }
 
 std::deque<std::pair<Scope *, MemberObject *>> slake::Object::getMemberChain(const std::string &name) {

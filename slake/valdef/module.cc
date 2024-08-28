@@ -5,6 +5,7 @@ using namespace slake;
 ModuleObject::ModuleObject(Runtime *rt, AccessModifier access)
 	: MemberObject(rt, access) {
 	scope = new Scope(this);
+	methodTable = new MethodTable(this);
 }
 
 ModuleObject::~ModuleObject() {

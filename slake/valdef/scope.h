@@ -10,6 +10,7 @@
 namespace slake {
 	class Object;
 	class MemberObject;
+	class FnObject;
 
 	class Scope {
 	private:
@@ -49,6 +50,20 @@ namespace slake {
 			_getMemberChain(name, members);
 
 			return members;
+		}
+	};
+
+	class MethodTable {
+	public:
+		Object *owner;
+		std::unordered_map<std::string, FnObject *> methods;
+
+		inline MethodTable(Object *owner) : owner(owner) {}
+
+		inline FnObject* getMethod(const std::string& name) {
+			if (auto it = methods.find(name); it != methods.end())
+				return it->second;
+			return nullptr;
 		}
 	};
 }

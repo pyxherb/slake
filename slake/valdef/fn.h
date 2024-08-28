@@ -42,7 +42,7 @@ namespace slake {
 			AccessModifier access,
 			const std::deque<Type> &paramTypes,
 			const Type &returnType);
-		inline FnOverloadingObject(const FnOverloadingObject& other) : Object(other) {
+		inline FnOverloadingObject(const FnOverloadingObject &other) : Object(other) {
 			fnObject = other.fnObject;
 
 			access = other.access;
@@ -90,7 +90,7 @@ namespace slake {
 				  access,
 				  paramTypes,
 				  returnType) {}
-		inline RegularFnOverloadingObject(const RegularFnOverloadingObject& other) : FnOverloadingObject(other) {
+		inline RegularFnOverloadingObject(const RegularFnOverloadingObject &other) : FnOverloadingObject(other) {
 			sourceLocDescs = other.sourceLocDescs;
 
 			instructions.resize(other.instructions.size());
@@ -197,14 +197,14 @@ namespace slake {
 
 				ol->fnObject = this;
 
-				overloadings.push_back(ol);
+				overloadings.insert(ol);
 			}
 		}
 		virtual inline ~FnObject() {
 		}
 
 		FnObject *parentFn = nullptr, *descentFn = nullptr;
-		std::deque<FnOverloadingObject *> overloadings;
+		std::set<FnOverloadingObject *> overloadings;
 
 		virtual inline ObjectKind getKind() const override { return ObjectKind::Fn; }
 
@@ -218,6 +218,30 @@ namespace slake {
 		static HostObjectRef<FnObject> alloc(const FnObject *other);
 		virtual void dealloc() override;
 	};
+
+	inline FnOverloadingObject *findDuplicatedOverloading(FnObject *fn, FnOverloadingObject *overloading) {
+		for (auto &i : fn->overloadings) {
+			if ((i->overloadingFlags & OL_VARG) != (overloading->overloadingFlags & OL_VARG))
+				continue;
+
+			if (i->paramTypes.size() != overloading->paramTypes.size())
+				continue;
+
+			if (i->genericParams.size() != overloading->genericParams.size())
+				continue;
+
+			for (size_t j = 0; j < overloading->paramTypes.size(); ++j) {
+				if (i->paramTypes[j] != overloading->paramTypes[j])
+					goto mismatched;
+			}
+
+			return i;
+
+		mismatched:;
+		}
+
+		return nullptr;
+	}
 }
 
 #endif

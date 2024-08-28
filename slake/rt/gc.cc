@@ -14,6 +14,15 @@ void Runtime::_gcWalk(Scope *scope) {
 		_gcWalk(scope->parent);
 }
 
+void Runtime::_gcWalk(MethodTable *methodTable) {
+	for (auto &i : methodTable->methods) {
+		_gcWalk(i.second);
+	}
+
+	if (methodTable->owner)
+		_gcWalk(methodTable->owner);
+}
+
 void Runtime::_gcWalk(GenericParamList &genericParamList) {
 	for (auto &i : genericParamList) {
 		i.baseType.loadDeferredType(this);
@@ -89,6 +98,8 @@ void Runtime::_gcWalk(Object *v) {
 
 	if (v->scope)
 		_gcWalk(v->scope);
+	if (v->methodTable)
+		_gcWalk(v->methodTable);
 
 	switch (auto typeId = v->getKind(); typeId) {
 		case ObjectKind::String:

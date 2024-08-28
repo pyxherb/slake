@@ -420,7 +420,10 @@ void Runtime::_loadScope(ModuleObject *mod, std::istream &fs, LoadModuleFlags lo
 				overloading->sourceLocDescs.push_back(sld);
 			}
 
-			fn->overloadings.push_back(overloading.release());
+			if (findDuplicatedOverloading(fn.get(), overloading.get()))
+				throw LoaderError("Duplicated function overloading detected");
+
+			fn->overloadings.insert(overloading.release());
 		}
 	}
 }

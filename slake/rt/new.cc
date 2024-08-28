@@ -41,6 +41,19 @@ static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *
 
 	HostObjectRef<InstanceObject> instance = InstanceObject::alloc(runtime, cls, parent);
 
+	MethodTable *methodTable;
+
+	if (parent) {
+		methodTable = parent->methodTable;
+	} else {
+		methodTable = cls->cachedInstantiatedMethodTable;
+	}
+
+	if (!methodTable) {
+		methodTable = new MethodTable(instance.get());
+	}
+	instance->methodTable = methodTable;
+
 	for (const auto &i : cls->scope->members) {
 		switch (i.second->getKind()) {
 			case ObjectKind::Var: {
@@ -66,24 +79,28 @@ static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *
 
 				if (overloadings.size()) {
 					// Link the method with method inherited from the parent.
-					HostObjectRef<FnObject> fn = FnObject::alloc(runtime);
+					HostObjectRef<FnObject> fn;
+					auto &methodSlot = methodTable->methods[i.first];
 
-					fn->overloadings = std::move(overloadings);
-
-					for (InstanceObject *j = parent; j; j = j->_parent) {
-						if (auto f = j->scope->getMember(i.first);
-							f && (f->getKind() == ObjectKind::Fn)) {
-							fn->parentFn = (FnObject *)f;
-							((FnObject *)f)->descentFn = fn.get();
-						}
+					if (auto m = methodTable->getMethod(i.first); m)
+						fn = m;
+					else {
+						fn = FnObject::alloc(runtime);
+						methodSlot = fn.get();
 					}
 
-					instance->scope->addMember(i.first, fn.release());
+					for (auto& j : overloadings) {
+						if (auto ol = findDuplicatedOverloading(methodSlot, j); ol) {
+							methodSlot->overloadings.erase(ol);
+						}
+						methodSlot->overloadings.insert(j);
+					}
 				}
 
 				break;
 			}
 		}
 	}
+
 	return instance.release();
 }

@@ -77,23 +77,39 @@ static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *
 						overloadings.push_back(j);
 				}
 
-				if (overloadings.size()) {
-					// Link the method with method inherited from the parent.
-					HostObjectRef<FnObject> fn;
-					auto &methodSlot = methodTable->methods[i.first];
-
-					if (auto m = methodTable->getMethod(i.first); m)
-						fn = m;
-					else {
-						fn = FnObject::alloc(runtime);
-						methodSlot = fn.get();
-					}
-
-					for (auto& j : overloadings) {
-						if (auto ol = findDuplicatedOverloading(methodSlot, j); ol) {
-							methodSlot->overloadings.erase(ol);
+				if (i.first == "delete") {
+					for (auto &j : overloadings) {
+						if (isDuplicatedOverloading(j, std::deque<Type>{}, GenericParamList{}, false)) {
+							methodTable->destructors.push_front(j);
+							break;
 						}
-						methodSlot->overloadings.insert(j);
+					}
+				} else {
+					if (overloadings.size()) {
+						// Link the method with method inherited from the parent.
+						HostObjectRef<FnObject> fn;
+						auto &methodSlot = methodTable->methods[i.first];
+
+						if (auto m = methodTable->getMethod(i.first); m)
+							fn = m;
+						else {
+							fn = FnObject::alloc(runtime);
+							methodSlot = fn.get();
+						}
+
+						for (auto &j : overloadings) {
+							for (auto &k : methodSlot->overloadings) {
+								if (isDuplicatedOverloading(
+										k,
+										j->paramTypes,
+										j->genericParams,
+										j->overloadingFlags & OL_VARG)) {
+									methodSlot->overloadings.erase(k);
+									break;
+								}
+							}
+							methodSlot->overloadings.insert(j);
+						}
 					}
 				}
 

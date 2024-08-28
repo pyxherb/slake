@@ -219,28 +219,26 @@ namespace slake {
 		virtual void dealloc() override;
 	};
 
-	inline FnOverloadingObject *findDuplicatedOverloading(FnObject *fn, FnOverloadingObject *overloading) {
-		for (auto &i : fn->overloadings) {
-			if ((i->overloadingFlags & OL_VARG) != (overloading->overloadingFlags & OL_VARG))
-				continue;
+	inline bool isDuplicatedOverloading(
+		const FnOverloadingObject* overloading,
+		std::deque<Type>& paramTypes,
+		GenericParamList& genericParams,
+		bool hasVarArg) {
+		if ((overloading->overloadingFlags & OL_VARG) != (hasVarArg ? OL_VARG : 0))
+			return false;
 
-			if (i->paramTypes.size() != overloading->paramTypes.size())
-				continue;
+		if (overloading->paramTypes.size() != paramTypes.size())
+			return false;
 
-			if (i->genericParams.size() != overloading->genericParams.size())
-				continue;
+		if (overloading->genericParams.size() != genericParams.size())
+			return false;
 
-			for (size_t j = 0; j < overloading->paramTypes.size(); ++j) {
-				if (i->paramTypes[j] != overloading->paramTypes[j])
-					goto mismatched;
-			}
-
-			return i;
-
-		mismatched:;
+		for (size_t j = 0; j < paramTypes.size(); ++j) {
+			if (overloading->paramTypes[j] != paramTypes[j])
+				return false;
 		}
 
-		return nullptr;
+		return true;
 	}
 }
 

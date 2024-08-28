@@ -11,6 +11,7 @@ namespace slake {
 	class Object;
 	class MemberObject;
 	class FnObject;
+	class FnOverloadingObject;
 
 	class Scope {
 	private:
@@ -57,6 +58,7 @@ namespace slake {
 	public:
 		Object *owner;
 		std::unordered_map<std::string, FnObject *> methods;
+		std::deque<FnOverloadingObject*> destructors;
 
 		inline MethodTable(Object *owner) : owner(owner) {}
 

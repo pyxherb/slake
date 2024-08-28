@@ -307,15 +307,18 @@ rescan:
 		if (i->_flags & VF_WALKED)
 			continue;
 
-		auto d = i->getMemberChain("delete");
-		if ((d.size()) &&
-			(i->getKind() == ObjectKind::Instance) &&
-			(!(((InstanceObject *)i)->instanceFlags & INSTANCE_PARENT))) {
-			for (auto &j : d) {
-				if (j.second->getKind() == ObjectKind::Fn)
-					((FnObject *)j.second)->call(i, {}, {});
+		if (i->getKind() == ObjectKind::Instance) {
+			InstanceObject *object = (InstanceObject *)i;
+
+			if (!(object->instanceFlags & INSTANCE_PARENT)) {
+				if (auto mt = object->methodTable; mt) {
+					if (mt->destructors.size()) {
+						for (auto i : mt->destructors)
+							i->call(i, {});
+						foundDestructibleObjects = true;
+					}
+				}
 			}
-			foundDestructibleObjects = true;
 		}
 	}
 	destructingThreads.erase(std::this_thread::get_id());

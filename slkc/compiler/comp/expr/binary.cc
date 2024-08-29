@@ -607,15 +607,8 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 					auto arrayType = std::static_pointer_cast<ArrayTypeNameNode>(lhsType);
 
-					if (arrayType->nDimensions - 1) {
-						auto t = lhsType->duplicate<ArrayTypeNameNode>();
-						--t->nDimensions;
-						resultType = t;
-						resultType->isRef = true;
-					} else {
-						resultType = std::static_pointer_cast<ArrayTypeNameNode>(lhsType)->elementType->duplicate<TypeNameNode>();
-						resultType->isRef = true;
-					}
+					resultType = std::static_pointer_cast<ArrayTypeNameNode>(lhsType)->elementType->duplicate<TypeNameNode>();
+					resultType->isRef = true;
 
 					break;
 				}

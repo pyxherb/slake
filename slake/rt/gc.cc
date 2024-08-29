@@ -104,6 +104,9 @@ void Runtime::_gcWalk(Object *v) {
 	switch (auto typeId = v->getKind(); typeId) {
 		case ObjectKind::String:
 			break;
+		case ObjectKind::TypeDef:
+			_gcWalk(((TypeDefObject *)v)->type);
+			break;
 		case ObjectKind::Instance: {
 			auto value = (InstanceObject *)v;
 			_gcWalk(value->_class);

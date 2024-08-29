@@ -13,7 +13,7 @@ ClassObject::~ClassObject() {
 
 bool ClassObject::hasImplemented(const InterfaceObject *pInterface) const {
 	for (auto &i : implInterfaces) {
-		i.loadDeferredType(_rt);
+		const_cast<Type &>(i).loadDeferredType(_rt);
 
 		if (((InterfaceObject *)i.getCustomTypeExData())->isDerivedFrom(pInterface))
 			return true;
@@ -29,7 +29,7 @@ bool ClassObject::isBaseOf(const ClassObject *pClass) const {
 
 		if (i->parentClass.typeId == TypeId::None)
 			break;
-		i->parentClass.loadDeferredType(i->_rt);
+		const_cast<Type &>(i->parentClass).loadDeferredType(i->_rt);
 		auto parentClassObject = i->parentClass.getCustomTypeExData();
 		assert(parentClassObject->getKind() == ObjectKind::Class);
 		i = (ClassObject *)parentClassObject;
@@ -43,7 +43,7 @@ bool InterfaceObject::isDerivedFrom(const InterfaceObject *pInterface) const {
 		return true;
 
 	for (auto &i : parents) {
-		i.loadDeferredType(_rt);
+		const_cast<Type &>(i).loadDeferredType(_rt);
 
 		InterfaceObject *interface = (InterfaceObject *)i.getCustomTypeExData();
 

@@ -3,6 +3,7 @@
 
 #include "valdef/value.h"
 #include "valdef/string.h"
+#include "valdef/typedef.h"
 #include "valdef/alias.h"
 #include "valdef/array.h"
 #include "valdef/object.h"

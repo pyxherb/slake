@@ -29,89 +29,37 @@ namespace slake {
 	class IdRefObject;
 	class MemberObject;
 
-	union BasicTypeExData {
+	union TypeExData {
 		ValueType valueType;
 		Object *ptr;
-	};
-
-	struct ArrayExData {
-		TypeId typeId;
-		BasicTypeExData exData;
-		uint32_t nDimensions;
-	};
-
-	struct RefExData {
-		TypeId typeId;
-		union {
-			BasicTypeExData basicExData;
-			ArrayExData arrayExData;
-		} exData;
 	};
 
 	struct Type final {
 		TypeId typeId;	// Type ID
 
-		mutable union {
-			BasicTypeExData basicExData;
-			ArrayExData arrayExData;
-			RefExData refExData;
-		} exData;
+		TypeExData exData;
 
 		inline Type() noexcept : typeId(TypeId::None) {}
 		inline Type(const Type &x) noexcept { *this = x; }
-		inline Type(ValueType valueType) noexcept : typeId(TypeId::Value) { exData.basicExData.valueType = valueType; }
+		inline Type(ValueType valueType) noexcept : typeId(TypeId::Value) { exData.valueType = valueType; }
 		inline Type(TypeId type) noexcept : typeId(type) {}
 		inline Type(TypeId type, Object *destObject) noexcept : typeId(type) {
-			exData.basicExData.ptr = destObject;
-		}
-		inline Type(TypeId type, const BasicTypeExData &exData) noexcept : typeId(type) {
-			this->exData.basicExData = exData;
-		}
-		inline Type(TypeId type, const ArrayExData &exData) noexcept : typeId(type) {
-			this->exData.arrayExData = exData;
+			exData.ptr = destObject;
 		}
 		Type(IdRefObject *ref);
 
-		static inline Type makeArrayTypeName(const Type &elementType, uint32_t nDimensions) {
-			assert(elementType.typeId != TypeId::Array);
-			assert(elementType.typeId != TypeId::Ref);
+		static Type makeArrayTypeName(Runtime *runtime, const Type &elementType);
+		static Type makeRefTypeName(Runtime *runtime, const Type &elementType);
 
-			Type type;
+		Type duplicate() const;
 
-			type.typeId = TypeId::Array;
-			type.exData.arrayExData.typeId = elementType.typeId;
-			type.exData.arrayExData.exData = elementType.exData.basicExData;
-			type.exData.arrayExData.nDimensions = nDimensions;
-
-			return type;
-		}
-
-		static inline Type makeRefTypeName(const Type &elementType) {
-			assert(elementType.typeId != TypeId::Ref);
-
-			Type type;
-
-			type.typeId = TypeId::Ref;
-			type.exData.refExData.typeId = elementType.typeId;
-			if (elementType.typeId == TypeId::Array) {
-				type.exData.refExData.exData.arrayExData = elementType.exData.arrayExData;
-			} else
-				type.exData.refExData.exData.basicExData = elementType.exData.basicExData;
-
-			return type;
-		}
-
-		inline ValueType getValueTypeExData() const { return exData.basicExData.valueType; }
-		inline Object *getCustomTypeExData() const { return exData.basicExData.ptr; }
-		inline Type getArrayExData() const { return Type(exData.arrayExData.typeId, exData.arrayExData.exData); }
-		inline Type getRefExData() const {
-			if (exData.refExData.typeId == TypeId::Array)
-				return Type(exData.refExData.typeId, exData.refExData.exData.arrayExData);
-			return Type(exData.refExData.typeId, exData.refExData.exData.basicExData);
-		}
+		inline ValueType getValueTypeExData() const { return exData.valueType; }
+		inline Object *getCustomTypeExData() const { return exData.ptr; }
+		Type &getArrayExData() const;
+		Type &getRefExData() const;
 
 		bool isLoadingDeferred() const noexcept;
-		void loadDeferredType(const Runtime *rt) const;
+		void loadDeferredType(const Runtime *rt);
 
 		inline operator bool() const noexcept {
 			return typeId != TypeId::None;

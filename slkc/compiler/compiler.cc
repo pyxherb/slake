@@ -1069,7 +1069,6 @@ void Compiler::compileTypeName(std::ostream &fs, std::shared_ptr<TypeNameNode> t
 				auto t = std::static_pointer_cast<ArrayTypeNameNode>(typeName);
 				_write(fs, slxfmt::TypeId::Array);
 				compileTypeName(fs, t->elementType);
-				_write(fs, t->nDimensions);
 				break;
 			}
 			case TypeId::Fn: {

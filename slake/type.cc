@@ -5,8 +5,48 @@
 using namespace slake;
 
 Type::Type(IdRefObject *ref) : typeId(TypeId::Instance) {
-	exData.basicExData.ptr = (Object *)ref;
+	exData.ptr = (Object *)ref;
 }
+
+Type Type::makeArrayTypeName(Runtime *runtime, const Type &elementType) {
+	assert(elementType.typeId != TypeId::Array);
+	assert(elementType.typeId != TypeId::Ref);
+
+	Type type;
+
+	type.typeId = TypeId::Array;
+	type.exData.ptr = TypeDefObject::alloc(runtime, elementType).release();
+
+	return type;
+}
+
+Type Type::makeRefTypeName(Runtime *runtime, const Type &elementType) {
+	assert(elementType.typeId != TypeId::Ref);
+
+	Type type;
+
+	type.typeId = TypeId::Ref;
+	type.exData.ptr = TypeDefObject::alloc(runtime, elementType).release();
+
+	return type;
+}
+
+Type Type::duplicate() const {
+	Type newType(*this);
+
+	switch (typeId) {
+		case TypeId::Array:
+		case TypeId::Ref:
+			newType.exData.ptr = newType.exData.ptr->duplicate();
+			break;
+		default:;
+	}
+
+	return newType;
+}
+
+Type &Type::getArrayExData() const { return ((TypeDefObject *)exData.ptr)->type; }
+Type &Type::getRefExData() const { return ((TypeDefObject *)exData.ptr)->type; }
 
 bool Type::isLoadingDeferred() const noexcept {
 	switch (typeId) {
@@ -17,7 +57,7 @@ bool Type::isLoadingDeferred() const noexcept {
 	}
 }
 
-void Type::loadDeferredType(const Runtime *rt) const {
+void Type::loadDeferredType(const Runtime *rt) {
 	if (!isLoadingDeferred())
 		return;
 
@@ -26,7 +66,7 @@ void Type::loadDeferredType(const Runtime *rt) const {
 	if (!typeObject)
 		throw NotFoundError("Object referenced by the type was not found", ref);
 
-	exData.basicExData.ptr = (Object *)typeObject;
+	exData.ptr = (Object *)typeObject;
 }
 
 bool slake::isCompatible(const Type &type, const Value &value) {
@@ -35,7 +75,7 @@ bool slake::isCompatible(const Type &type, const Value &value) {
 
 	switch (type.typeId) {
 		case TypeId::Value: {
-			if (type.exData.basicExData.valueType != value.valueType)
+			if (type.exData.valueType != value.valueType)
 				return false;
 			break;
 		}
@@ -55,7 +95,7 @@ bool slake::isCompatible(const Type &type, const Value &value) {
 			if (objectPtr->getKind() != ObjectKind::Instance)
 				return false;
 
-			type.loadDeferredType(objectPtr->_rt);
+			const_cast<Type &>(type).loadDeferredType(objectPtr->_rt);
 			switch (type.getCustomTypeExData()->getKind()) {
 				case ObjectKind::Class: {
 					ClassObject *thisClass = (ClassObject *)type.getCustomTypeExData();
@@ -92,9 +132,6 @@ bool slake::isCompatible(const Type &type, const Value &value) {
 
 			if (arrayObjectPtr->type.getArrayExData() != type.getArrayExData())
 				return false;
-
-			if (arrayObjectPtr->type.exData.arrayExData.nDimensions != type.exData.arrayExData.nDimensions)
-				return false;
 			break;
 		}
 		case TypeId::Ref: {
@@ -117,7 +154,6 @@ bool slake::isCompatible(const Type &type, const Value &value) {
 
 	return true;
 }
-
 
 std::string std::to_string(const slake::Type &type, const slake::Runtime *rt) {
 	switch (type.typeId) {
@@ -162,7 +198,7 @@ std::string std::to_string(const slake::Type &type, const slake::Runtime *rt) {
 			}
 		}
 		case TypeId::GenericArg: {
-			StringObject *nameObject = (StringObject *)type.exData.basicExData.ptr;
+			StringObject *nameObject = (StringObject *)type.exData.ptr;
 			return "!" + std::string(nameObject->data);
 		}
 		case TypeId::Any:

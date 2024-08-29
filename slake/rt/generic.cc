@@ -25,9 +25,11 @@ void slake::Runtime::_instantiateGenericObject(Type &type, GenericInstantiationC
 			break;
 		}
 		case TypeId::Array:
+			type = type.duplicate();
 			_instantiateGenericObject(type.getArrayExData(), instantiationContext);
 			break;
 		case TypeId::Ref:
+			type = type.duplicate();
 			_instantiateGenericObject(type.getRefExData(), instantiationContext);
 			break;
 		case TypeId::GenericArg: {

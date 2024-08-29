@@ -86,7 +86,7 @@ Value Runtime::_loadValue(std::istream &fs) {
 			// stub for debugging.
 			// elementType = Type(TypeId::Any);
 
-			HostObjectRef<ArrayObject> value = ArrayObject::alloc(this, Type::makeArrayTypeName(elementType, 1));
+			HostObjectRef<ArrayObject> value = ArrayObject::alloc(this, Type::makeArrayTypeName(this, elementType));
 
 			auto len = _read<uint32_t>(fs);
 
@@ -152,10 +152,10 @@ Type Runtime::_loadType(std::istream &fs) {
 			if (type.typeId == TypeId::Array)
 				throw LoaderError("Nested array type detected");
 
-			return Type::makeArrayTypeName(type, _read<uint32_t>(fs));
+			return Type::makeArrayTypeName(this, type);
 		}
 		case slxfmt::TypeId::Ref:
-			return Type::makeRefTypeName(_loadType(fs));
+			return Type::makeRefTypeName(this, _loadType(fs));
 		case slxfmt::TypeId::TypeName:
 			return Type(ValueType::TypeName);
 		case slxfmt::TypeId::GenericArg: {

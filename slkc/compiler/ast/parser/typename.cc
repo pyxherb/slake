@@ -122,43 +122,24 @@ std::shared_ptr<TypeNameNode> Parser::parseTypeName(bool required) {
 	while ((lBracketToken = lexer->peekToken())->tokenId == TokenId::LBracket) {
 		lexer->nextToken();
 
-		if (type->getTypeId() == TypeId::Array) {
-			auto t = std::static_pointer_cast<ArrayTypeNameNode>(type);
-			++t->nDimensions;
+		auto t = std::make_shared<ArrayTypeNameNode>(type);
+		t->idxLBracketToken = lexer->getTokenIndex(lBracketToken);
+		t->sourceLocation = type->sourceLocation;
 
-			Token *rBracketToken = lexer->peekToken();
-			if (rBracketToken->tokenId != TokenId::RBracket) {
-				compiler->messages.push_back(
-					Message(
-						rBracketToken->location,
-						MessageType::Error,
-						"Expecting ]"));
-				return t;
-			}
-			lexer->nextToken();
-
-			t->sourceLocation.endPosition = rBracketToken->location.endPosition;
-			t->idxRBracketToken = lexer->getTokenIndex(rBracketToken);
-		} else {
-			auto t = std::make_shared<ArrayTypeNameNode>(type);
-			t->idxLBracketToken = lexer->getTokenIndex(lBracketToken);
-			t->sourceLocation = type->sourceLocation;
-
-			Token *rBracketToken = lexer->peekToken();
-			if (rBracketToken->tokenId != TokenId::RBracket) {
-				compiler->messages.push_back(
-					Message(
-						rBracketToken->location,
-						MessageType::Error,
-						"Expecting ]"));
-				return t;
-			}
-			lexer->nextToken();
-
-			t->sourceLocation.endPosition = rBracketToken->location.endPosition;
-			t->idxRBracketToken = lexer->getTokenIndex(rBracketToken);
-			type = t;
+		Token *rBracketToken = lexer->peekToken();
+		if (rBracketToken->tokenId != TokenId::RBracket) {
+			compiler->messages.push_back(
+				Message(
+					rBracketToken->location,
+					MessageType::Error,
+					"Expecting ]"));
+			return t;
 		}
+		lexer->nextToken();
+
+		t->sourceLocation.endPosition = rBracketToken->location.endPosition;
+		t->idxRBracketToken = lexer->getTokenIndex(rBracketToken);
+		type = t;
 	}
 
 	if (Token *token = lexer->peekToken(); token->tokenId == TokenId::AndOp) {

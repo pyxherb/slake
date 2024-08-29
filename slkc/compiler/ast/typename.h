@@ -140,7 +140,6 @@ namespace slake {
 
 		public:
 			std::shared_ptr<TypeNameNode> elementType;
-			uint32_t nDimensions = 1;
 
 			size_t idxLBracketToken = SIZE_MAX,
 				   idxRBracketToken = SIZE_MAX;

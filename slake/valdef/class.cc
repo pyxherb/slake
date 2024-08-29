@@ -7,6 +7,8 @@ slake::ClassObject::ClassObject(Runtime *rt, AccessModifier access, const Type &
 }
 
 ClassObject::~ClassObject() {
+	if (cachedInstantiatedMethodTable)
+		delete cachedInstantiatedMethodTable;
 }
 
 bool ClassObject::hasImplemented(const InterfaceObject *pInterface) const {

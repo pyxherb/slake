@@ -38,7 +38,7 @@ namespace slake {
 		Type parentClass;
 		std::deque<Type> implInterfaces;  // Implemented interfaces
 
-		MethodTable *cachedInstantiatedMethodTable;
+		MethodTable *cachedInstantiatedMethodTable = nullptr;
 
 		/// @brief User-defined instantiator.
 		ClassInstantiator customInstantiator;

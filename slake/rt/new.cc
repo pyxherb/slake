@@ -51,6 +51,7 @@ static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *
 
 	if (!methodTable) {
 		methodTable = new MethodTable(instance.get());
+		cls->cachedInstantiatedMethodTable = methodTable;
 	}
 	instance->methodTable = methodTable;
 

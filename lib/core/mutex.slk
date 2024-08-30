@@ -1,0 +1,10 @@
+module core.mutex;
+
+pub native class Mutex {
+	pub native fn new();
+
+	pub native fn lock();
+	pub native fn unlock();
+	pub native fn tryLock(): bool;
+	pub native fn isLocked(): bool;
+}

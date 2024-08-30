@@ -528,7 +528,8 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 
 			pushMajorContext();
 
-			_insertIns(Opcode::ENTER, {}, {});
+			if (curMajorContext.curScopeLevel)
+				_insertIns(Opcode::ENTER, {}, {});
 			++curMajorContext.curScopeLevel;
 
 			for (auto i : s->body.stmts) {
@@ -540,7 +541,8 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			}
 
 			--curMajorContext.curScopeLevel;
-			_insertIns(Opcode::LEAVE, {}, {});
+			if (curMajorContext.curScopeLevel)
+				_insertIns(Opcode::LEAVE, {}, {});
 
 			popMajorContext();
 			break;

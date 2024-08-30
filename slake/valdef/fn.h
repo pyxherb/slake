@@ -6,6 +6,7 @@
 
 #include <functional>
 #include <deque>
+#include <vector>
 #include <memory>
 
 #include "member.h"
@@ -124,7 +125,7 @@ namespace slake {
 		virtual ~RegularFnOverloadingObject() = default;
 
 		std::deque<slxfmt::SourceLocDesc> sourceLocDescs;
-		std::deque<Instruction> instructions;
+		std::vector<Instruction> instructions;
 
 		virtual FnOverloadingKind getOverloadingKind() const override;
 

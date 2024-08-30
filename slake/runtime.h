@@ -6,9 +6,9 @@
 #include <unordered_set>
 #include <set>
 #include <memory>
-#include <slake/slxfmt.h>
 #include <memory_resource>
 
+#include "slxfmt.h"
 #include "except.h"
 #include "generated/config.h"
 #include "util/debug.h"

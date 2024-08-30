@@ -5,9 +5,10 @@ add_library(slake ${HEADERS} ${SRC})
 set_property(TARGET slake PROPERTY CXX_STANDARD 17)
 
 add_subdirectory("util")
+add_subdirectory("valdef")
 add_subdirectory("rt")
 add_subdirectory("jit")
-add_subdirectory("valdef")
+add_subdirectory("opti")
 
 set(SLAKE_STACK_MAX 1048576 CACHE STRING "Maximum stack size for Slake runtime")
 set(SLAKE_WITH_STDLIB TRUE CACHE BOOL "With Slake standard library")

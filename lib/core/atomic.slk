@@ -1,0 +1,6 @@
+module core.atomic;
+
+pub native fn increment(i32 &dest);
+pub native fn fetchAndIncrement(i32 &dest): i32;
+pub native fn exchange(i32 &dest, i32 value): i32;
+pub native fn compareExchange(i32 &dest, i32 value, i32 compared): i32;

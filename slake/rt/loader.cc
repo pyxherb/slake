@@ -398,6 +398,7 @@ void Runtime::_loadScope(ModuleObject *mod, std::istream &fs, LoadModuleFlags lo
 
 			if (i.lenBody) {
 				overloading->instructions.resize(i.lenBody);
+				overloading->instructions.shrink_to_fit();
 
 				for (uint32_t j = 0; j < i.lenBody; j++) {
 					auto &ins = overloading->instructions[j];

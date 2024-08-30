@@ -610,6 +610,8 @@ namespace slake {
 			void reset();
 
 			IdRef getFullName(MemberNode *member);
+
+			void optimizeFn(std::shared_ptr<FnNode> fnNode);
 		};
 	}
 }

@@ -1,4 +1,5 @@
 #include <slake/runtime.h>
+#include <slake/opti/optimizer.h>
 
 using namespace slake;
 

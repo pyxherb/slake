@@ -24,7 +24,7 @@ namespace slake {
 		using IdRef = std::deque<IdRefEntry>;
 
 		inline bool isCompleteIdRef(const IdRef& ref) {
-			return ref.back().idxToken != SIZE_MAX;
+			return ref.size() && (ref.back().idxToken != SIZE_MAX);
 		}
 
 		IdRef duplicateIdRef(const IdRef &other);

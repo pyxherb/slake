@@ -6,10 +6,28 @@
 #include <cassert>
 #include <string>
 #include <variant>
-#include "valdef/object.h"
-#include "valdef/value.h"
 
 namespace slake {
+	enum class ValueType : uint8_t {
+		I8 = 0,		// Signed 8-bit integer
+		I16,		// Signed 16-bit integer
+		I32,		// Signed 32-bit integer
+		I64,		// Signed 64-bit integer
+		U8,			// Unsigned 8-bit integer
+		U16,		// Unsigned 16-bit integer
+		U32,		// Unsigned 32-bit integer
+		U64,		// Unsigned 64-bit integer
+		F32,		// 32-bit floating point number
+		F64,		// 64-bit floating point number
+		Bool,		// Boolean
+		ObjectRef,	// Object reference
+
+		RegRef,	   // Register reference
+		TypeName,  // Type name
+
+		Undefined = UINT8_MAX,
+	};
+
 	enum class TypeId : uint8_t {
 		None,  // None, aka `null'
 
@@ -65,29 +83,7 @@ namespace slake {
 			return typeId != TypeId::None;
 		}
 
-		inline bool operator<(const Type &rhs) const {
-			if (typeId < rhs.typeId)
-				return true;
-			else if (typeId > rhs.typeId)
-				return false;
-			else {
-				switch (rhs.typeId) {
-					case TypeId::Instance: {
-						auto lhsType = getCustomTypeExData(), rhsType = rhs.getCustomTypeExData();
-						assert(lhsType->getKind() != ObjectKind::IdRef &&
-							   rhsType->getKind() != ObjectKind::IdRef);
-
-						return lhsType < rhsType;
-					}
-					case TypeId::Array:
-						return getArrayExData() < rhs.getArrayExData();
-					case TypeId::Ref:
-						return getRefExData() < rhs.getRefExData();
-				}
-			}
-
-			return false;
-		}
+		bool operator<(const Type &rhs) const;
 		/// @brief The less than operator is required by containers such as map and set.
 		/// @param rhs Right-hand side operand.
 		/// @return true if lesser, false otherwise.
@@ -101,27 +97,7 @@ namespace slake {
 			return *this == r;
 		}
 
-		inline bool operator==(const Type &rhs) const noexcept {
-			if (rhs.typeId != typeId)
-				return false;
-
-			switch (rhs.typeId) {
-				case TypeId::Value:
-					return getValueTypeExData() == rhs.getValueTypeExData();
-				case TypeId::Instance: {
-					auto lhsType = getCustomTypeExData(), rhsType = rhs.getCustomTypeExData();
-					assert(lhsType->getKind() != ObjectKind::IdRef &&
-						   rhsType->getKind() != ObjectKind::IdRef);
-
-					return lhsType == rhsType;
-				}
-				case TypeId::Array:
-					return getArrayExData() == rhs.getArrayExData();
-				case TypeId::Ref:
-					return getRefExData() == rhs.getRefExData();
-			}
-			return true;
-		}
+		bool operator==(const Type &rhs) const;
 
 		inline bool operator!=(Type &&rhs) noexcept { return !(*this == rhs); }
 		inline bool operator!=(const Type &rhs) noexcept { return !(*this == rhs); }

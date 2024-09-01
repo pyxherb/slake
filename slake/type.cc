@@ -69,6 +69,108 @@ void Type::loadDeferredType(const Runtime *rt) {
 	exData.ptr = (Object *)typeObject;
 }
 
+bool Type::operator<(const Type &rhs) const {
+	if (typeId < rhs.typeId)
+		return true;
+	else if (typeId > rhs.typeId)
+		return false;
+	else {
+		switch (rhs.typeId) {
+			case TypeId::Instance: {
+				auto lhsType = getCustomTypeExData(), rhsType = rhs.getCustomTypeExData();
+
+				assert(lhsType->getKind() == rhsType->getKind());
+				switch (lhsType->getKind()) {
+					case ObjectKind::IdRef: {
+						IdRefObject *lhsRef = (IdRefObject *)lhsType,
+									*rhsRef = (IdRefObject *)rhsType;
+
+						if (lhsRef->entries.size() < rhsRef->entries.size())
+							return true;
+						if (lhsRef->entries.size() > rhsRef->entries.size())
+							return false;
+
+						GenericArgListComparator genericArgListComparator;
+
+						for (size_t i = 0; i < lhsRef->entries.size(); ++i) {
+							auto &curLhsRefEntry = lhsRef->entries[i],
+								 &curRhsRefEntry = rhsRef->entries[i];
+
+							if (curLhsRefEntry.name < curRhsRefEntry.name)
+								return true;
+							if (curLhsRefEntry.name > curRhsRefEntry.name)
+								return false;
+
+							if (genericArgListComparator(
+									curLhsRefEntry.genericArgs,
+									curRhsRefEntry.genericArgs))
+								return true;
+						}
+
+						return false;
+					}
+				}
+
+				return lhsType < rhsType;
+			}
+			case TypeId::Array:
+				return getArrayExData() < rhs.getArrayExData();
+			case TypeId::Ref:
+				return getRefExData() < rhs.getRefExData();
+		}
+	}
+
+	return false;
+}
+
+bool Type::operator==(const Type &rhs) const {
+	if (rhs.typeId != typeId)
+		return false;
+
+	switch (rhs.typeId) {
+		case TypeId::Value:
+			return getValueTypeExData() == rhs.getValueTypeExData();
+		case TypeId::Instance: {
+			auto lhsType = getCustomTypeExData(), rhsType = rhs.getCustomTypeExData();
+
+			assert(lhsType->getKind() == rhsType->getKind());
+			switch (lhsType->getKind()) {
+				case ObjectKind::IdRef: {
+					IdRefObject *lhsRef = (IdRefObject *)lhsType,
+								*rhsRef = (IdRefObject *)rhsType;
+
+					if (lhsRef->entries.size() != rhsRef->entries.size())
+						return false;
+
+					GenericArgListEqComparator genericArgListComparator;
+
+					for (size_t i = 0; i < lhsRef->entries.size(); ++i) {
+						auto &curLhsRefEntry = lhsRef->entries[i],
+							 &curRhsRefEntry = rhsRef->entries[i];
+
+						if (curLhsRefEntry.name != curRhsRefEntry.name)
+							return false;
+
+						if (!genericArgListComparator(
+								curLhsRefEntry.genericArgs,
+								curRhsRefEntry.genericArgs))
+							return false;
+					}
+
+					return false;
+				}
+			}
+
+			return lhsType == rhsType;
+		}
+		case TypeId::Array:
+			return getArrayExData() == rhs.getArrayExData();
+		case TypeId::Ref:
+			return getRefExData() == rhs.getRefExData();
+	}
+	return true;
+}
+
 bool slake::isCompatible(const Type &type, const Value &value) {
 	if (type.typeId == TypeId::Any)
 		return true;

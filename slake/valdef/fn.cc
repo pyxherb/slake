@@ -3,6 +3,40 @@
 
 using namespace slake;
 
+bool Instruction::operator==(const Instruction &rhs) const {
+	if (opcode != rhs.opcode)
+		return false;
+	if (output != rhs.output)
+		return false;
+	if (operands.size() != rhs.operands.size())
+		return false;
+	for (size_t i = 0; i < operands.size(); ++i) {
+		if (operands[i] != rhs.operands[i])
+			return false;
+	}
+	return true;
+}
+
+bool Instruction::operator<(const Instruction &rhs) const {
+	if (opcode < rhs.opcode)
+		return true;
+	if (opcode > rhs.opcode)
+		return false;
+	if (output < rhs.output)
+		return true;
+	if (operands.size() < rhs.operands.size())
+		return true;
+	if (operands.size() > rhs.operands.size())
+		return false;
+	for (size_t i = 0; i < operands.size(); ++i) {
+		if (operands[i] < rhs.operands[i])
+			return true;
+		if (operands[i] != rhs.operands[i])
+			return false;
+	}
+	return false;
+}
+
 FnOverloadingObject::FnOverloadingObject(
 	FnObject *fnObject,
 	AccessModifier access,
@@ -102,6 +136,7 @@ void slake::NativeFnOverloadingObject::dealloc() {
 }
 
 Value RegularFnOverloadingObject::call(Object *thisObject, std::deque<Value> args) const {
+	trimFnInstructions((std::vector<Instruction>&)instructions);
 	Runtime *rt = fnObject->_rt;
 
 	// Save previous context

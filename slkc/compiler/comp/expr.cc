@@ -207,8 +207,11 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 				curMajorContext.curMinorContext.argTypes.push_back(type);
 			}
 
-			uint32_t callTargetRegIndex = allocReg(),
-					 thisRegIndex = allocReg();
+			uint32_t callTargetRegIndex = allocReg();
+
+			// Note that the register allocated for `thisRegIndex' may end up useless for static methods.
+			// The optimizer will (or should) remove it if the register is useless.
+			uint32_t thisRegIndex = allocReg();
 
 			compileExpr(e->target, EvalPurpose::Call, std::make_shared<RegRefNode>(callTargetRegIndex), std::make_shared<RegRefNode>(thisRegIndex));
 

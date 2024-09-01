@@ -2,6 +2,7 @@
 #define _SLAKE_EXCEPT_H_
 
 #include <stdexcept>
+#include <slake/valdef/value.h>
 #include <slake/valdef/idref.h>
 
 namespace slake {

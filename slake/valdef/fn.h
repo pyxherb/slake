@@ -18,7 +18,14 @@ namespace slake {
 	struct Instruction final {
 		Opcode opcode = (Opcode)0xffff;
 		Value output;
-		std::deque<Value> operands;
+		std::vector<Value> operands;
+
+		bool operator==(const Instruction &rhs) const;
+		inline bool operator!=(const Instruction& rhs) const {
+			return !(*this == rhs);
+		}
+
+		bool operator<(const Instruction &rhs) const;
 	};
 
 	enum class FnOverloadingKind {

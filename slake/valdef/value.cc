@@ -3,7 +3,7 @@
 using namespace slake;
 
 Value::Value(const Type &type) {
-	this->data = new Type(type);
+	*((Type *)data.asType) = type;
 	valueType = ValueType::TypeName;
 }
 
@@ -12,7 +12,7 @@ void Value::_setObjectRef(Object* objectPtr, bool isHostRef) {
 		if (objectPtr)
 			++objectPtr->hostRefCount;
 	}
-	this->data = ObjectRefValueExData{ objectPtr, isHostRef };
+	this->data.asObjectRef = ObjectRefValueExData{ objectPtr, isHostRef };
 }
 
 void Value::_reset() {
@@ -32,7 +32,7 @@ void Value::_reset() {
 		case ValueType::RegRef:
 			break;
 		case ValueType::ObjectRef: {
-			ObjectRefValueExData &exData = std::get<ObjectRefValueExData>(data);
+			ObjectRefValueExData &exData = data.asObjectRef;
 
 			if (exData.isHostRef) {
 				if (exData.objectPtr)
@@ -41,9 +41,7 @@ void Value::_reset() {
 			break;
 		}
 		case ValueType::TypeName:
-			if (auto t = std::get<Type *>(data); t)
-				delete t;
-			data = {};
+			*((Type *)data.asType) = {};
 			break;
 		case ValueType::Undefined:
 			break;
@@ -60,7 +58,7 @@ Value::~Value() {
 }
 
 Type &Value::getTypeName() {
-	return *std::get<Type *>(data);
+	return *((Type *)data.asType);
 }
 
 const Type &Value::getTypeName() const {
@@ -68,7 +66,7 @@ const Type &Value::getTypeName() const {
 }
 
 const ObjectRefValueExData &Value::getObjectRef() const {
-	return std::get<ObjectRefValueExData>(data);
+	return data.asObjectRef;
 }
 
 Value &Value::operator=(const Value &other) {
@@ -91,10 +89,10 @@ Value &Value::operator=(const Value &other) {
 			break;
 		case ValueType::ObjectRef:
 			this->data = other.data;
-			std::get<ObjectRefValueExData>(this->data).isHostRef = false;
+			this->data.asObjectRef.isHostRef = false;
 			break;
 		case ValueType::TypeName:
-			this->data = new Type(other.getTypeName());
+			*((Type *)data.asType) = other.getTypeName();
 			break;
 		case ValueType::Undefined:
 			break;
@@ -104,4 +102,77 @@ Value &Value::operator=(const Value &other) {
 	valueType = other.valueType;
 
 	return *this;
+}
+
+bool Value::operator==(const Value &rhs) const {
+	if (valueType != rhs.valueType)
+		return false;
+
+	switch (valueType) {
+		case ValueType::I8:
+			return data.asI8 == rhs.data.asI8;
+		case ValueType::I16:
+			return data.asI16 == rhs.data.asI16;
+		case ValueType::I32:
+			return data.asI32 == rhs.data.asI32;
+		case ValueType::I64:
+			return data.asI64 == rhs.data.asI64;
+		case ValueType::U8:
+			return data.asU8 == rhs.data.asU8;
+		case ValueType::U16:
+			return data.asU16 == rhs.data.asU16;
+		case ValueType::U32:
+			return data.asU32 == rhs.data.asU32;
+		case ValueType::U64:
+			return data.asU64 == rhs.data.asU64;
+		case ValueType::Bool:
+			return data.asBool == rhs.data.asBool;
+		case ValueType::ObjectRef: {
+			if (data.asObjectRef.isHostRef != rhs.data.asObjectRef.isHostRef)
+				return false;
+			return data.asObjectRef.objectPtr == data.asObjectRef.objectPtr;
+		}
+		case ValueType::RegRef:
+			return data.asU32 == rhs.data.asU32;
+		case ValueType::TypeName:
+			return getTypeName() == rhs.getTypeName();
+		case ValueType::Undefined:
+			return true;
+	}
+}
+
+bool Value::operator<(const Value &rhs) const {
+	if (valueType < rhs.valueType)
+		return true;
+	if (valueType > rhs.valueType)
+		return false;
+
+	switch (valueType) {
+		case ValueType::I8:
+			return data.asI8 < rhs.data.asI8;
+		case ValueType::I16:
+			return data.asI16 < rhs.data.asI16;
+		case ValueType::I32:
+			return data.asI32 < rhs.data.asI32;
+		case ValueType::I64:
+			return data.asI64 < rhs.data.asI64;
+		case ValueType::U8:
+			return data.asU8 < rhs.data.asU8;
+		case ValueType::U16:
+			return data.asU16 < rhs.data.asU16;
+		case ValueType::U32:
+			return data.asU32 < rhs.data.asU32;
+		case ValueType::U64:
+			return data.asU64 < rhs.data.asU64;
+		case ValueType::Bool:
+			return data.asBool < rhs.data.asBool;
+		case ValueType::ObjectRef:
+			return data.asObjectRef.objectPtr < rhs.data.asObjectRef.objectPtr;
+		case ValueType::RegRef:
+			return data.asU32 < rhs.data.asU32;
+		case ValueType::TypeName:
+			return getTypeName() < rhs.getTypeName();
+		case ValueType::Undefined:
+			return false;
+	}
 }

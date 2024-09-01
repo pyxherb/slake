@@ -23,6 +23,8 @@ namespace slake {
 		inline bool operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept {
 			if (lhs.size() < rhs.size())
 				return true;
+			if (lhs.size() > rhs.size())
+				return false;
 
 			for (size_t i = 0; i < lhs.size(); ++i) {
 				if (lhs[i] < rhs[i])
@@ -30,6 +32,21 @@ namespace slake {
 			}
 
 			return false;
+		}
+	};
+
+	/// @brief Equal ("<") comparator for containers.
+	struct GenericArgListEqComparator {
+		inline bool operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept {
+			if (lhs.size() != rhs.size())
+				return false;
+
+			for (size_t i = 0; i < lhs.size(); ++i) {
+				if (lhs[i] != rhs[i])
+					return false;
+			}
+
+			return true;
 		}
 	};
 }

@@ -38,8 +38,6 @@ namespace slake {
 		LOR,   // Logical OR
 		EQ,	   // Equal
 		NEQ,   // Not Equal
-		SEQ,   // Strictly Equal
-		SNEQ,  // Strictly Not Equal
 		LT,	   // Less than
 		GT,	   // Greater than
 		LTEQ,  // Less than or equal

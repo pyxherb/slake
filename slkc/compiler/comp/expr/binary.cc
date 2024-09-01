@@ -30,8 +30,8 @@ std::map<BinaryOp, Compiler::BinaryOpRegistry> Compiler::_binaryOpRegs = {
 
 	{ BinaryOp::Eq, { slake::Opcode::EQ, false, false, false } },
 	{ BinaryOp::Neq, { slake::Opcode::NEQ, false, false, false } },
-	{ BinaryOp::StrictEq, { slake::Opcode::SEQ, false, false, false } },
-	{ BinaryOp::StrictNeq, { slake::Opcode::SNEQ, false, false, false } },
+	{ BinaryOp::StrictEq, { slake::Opcode::EQ, false, false, false } },
+	{ BinaryOp::StrictNeq, { slake::Opcode::NEQ, false, false, false } },
 	{ BinaryOp::Lt, { slake::Opcode::LT, false, false, false } },
 	{ BinaryOp::Gt, { slake::Opcode::GT, false, false, false } },
 	{ BinaryOp::LtEq, { slake::Opcode::LTEQ, false, false, false } },

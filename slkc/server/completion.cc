@@ -201,10 +201,10 @@ CompletionItemType slake::slkc::Document::_toCompletionItemType(NodeType nodeTyp
 }
 
 void slake::slkc::Document::_getCompletionItems(
-	std::unordered_map<std::string, MemberNode *> &membersOut,
+	const std::unordered_map<std::string, MemberNode *> &members,
 	std::deque<CompletionItem> &completionItems,
 	const std::set<NodeType> &targetNodeTypes) {
-	for (auto &i : membersOut) {
+	for (auto &i : members) {
 		if (!targetNodeTypes.count(i.second->getNodeType()))
 			continue;
 

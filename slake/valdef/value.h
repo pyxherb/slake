@@ -13,12 +13,41 @@
 namespace slake {
 	struct Type;
 	class Object;
+	class VarObject;
 
 	// Value type definitions are defined in <slake/type.h>.
 
 	struct ObjectRefValueExData {
 		Object *objectPtr;
 		bool isHostRef;
+	};
+
+	union VarRefContext {
+		struct {
+			uint32_t index;
+		} asArray;
+
+		static VarRefContext makeArrayContext(uint32_t index) {
+			VarRefContext context = {};
+
+			context.asArray.index = index;
+
+			return context;
+		}
+	};
+
+	struct VarRef {
+		VarObject *varPtr;
+		VarRefContext context;
+
+		VarRef() = default;
+		inline VarRef(VarObject *varPtr) : varPtr(varPtr) {}
+		inline VarRef(
+			VarObject *varPtr,
+			const VarRefContext &context)
+			: varPtr(varPtr),
+			  context(context) {}
+		bool operator<(const VarRef &rhs) const;
 	};
 
 	struct Value {
@@ -37,6 +66,7 @@ namespace slake {
 			bool asBool;
 			ObjectRefValueExData asObjectRef;
 			char asType[sizeof(Type)];
+			VarRef asVarRef;
 		} data;
 		void _setObjectRef(Object *objectPtr, bool isHostRef);
 		void _reset();
@@ -103,6 +133,10 @@ namespace slake {
 			this->data.asU32 = index;
 			valueType = vt;
 		}
+		inline Value(const VarRef &varRef) {
+			this->data.asVarRef = varRef;
+			valueType = ValueType::VarRef;
+		}
 		Value(const Type &type);
 		~Value();
 
@@ -164,6 +198,16 @@ namespace slake {
 		inline uint32_t getRegIndex() const {
 			assert(valueType == ValueType::RegRef);
 			return data.asU32;
+		}
+
+		inline VarRef &getVarRef() {
+			assert(valueType == ValueType::VarRef);
+			return data.asVarRef;
+		}
+
+		inline const VarRef &getVarRef() const {
+			assert(valueType == ValueType::VarRef);
+			return data.asVarRef;
 		}
 
 		Type &getTypeName();

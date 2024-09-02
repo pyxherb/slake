@@ -57,6 +57,15 @@ static Value &_unwrapRegOperand(
 	return value;
 }
 
+static Value _wrapObjectIntoValue(Object *object) {
+	switch (object->getKind()) {
+		case ObjectKind::Var:
+			return Value(VarRef((VarObject *)object));
+		default:
+			return Value(object);
+	}
+}
+
 template <typename LT>
 static Value _castToLiteralValue(Value x) {
 	switch (x.valueType) {
@@ -150,7 +159,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			if (!v)
 				throw NotFoundError("Member not found", (IdRefObject *)refPtr);
 
-			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), v);
+			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), _wrapObjectIntoValue(v));
 			break;
 		}
 		case Opcode::RLOAD: {
@@ -164,7 +173,6 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			auto lhsPtr = lhs.getObjectRef().objectPtr;
 
 			_checkOperandType(ins.operands[1], ValueType::ObjectRef);
-			;
 			auto refPtr = ins.operands[1].getObjectRef().objectPtr;
 
 			if (!lhsPtr)
@@ -174,22 +182,23 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 				throw NotFoundError("Member not found", (IdRefObject *)refPtr);
 			}
 
-			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), lhsPtr);
+			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), _wrapObjectIntoValue(lhsPtr));
 			break;
 		}
 		case Opcode::STORE: {
 			_checkOperandCount(ins, false, 2);
 
 			Value destValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
-			_checkOperandType(destValue, ValueType::ObjectRef);
+			_checkOperandType(destValue, ValueType::VarRef);
 
-			auto varOutPtr = destValue.getObjectRef().objectPtr;
-			_checkObjectOperandType(varOutPtr, ObjectKind::Var);
+			const VarRef varRef = destValue.getVarRef();
 
-			if (!varOutPtr)
+			if (!varRef.varPtr)
 				throw NullRefError();
 
-			((VarObject *)varOutPtr)->setData(_unwrapRegOperand(curMajorFrame, ins.operands[1]));
+			varRef.varPtr->setData(
+				varRef.context,
+				_unwrapRegOperand(curMajorFrame, ins.operands[1]));
 			break;
 		}
 		case Opcode::MOV: {
@@ -210,7 +219,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_setRegisterValue(
 				curMajorFrame,
 				ins.output.getRegIndex(),
-				curMajorFrame.lload(ins.operands[0].getU32()));
+				Value(curMajorFrame.lload(ins.operands[0].getU32())));
 			break;
 		}
 		case Opcode::LARG: {
@@ -222,7 +231,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_setRegisterValue(
 				curMajorFrame,
 				ins.output.getRegIndex(),
-				curMajorFrame.larg(ins.operands[0].getU32()));
+				Value(curMajorFrame.larg(ins.operands[0].getU32())));
 			break;
 		}
 		case Opcode::LVALUE: {
@@ -231,15 +240,17 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_checkOperandType(ins.output, ValueType::RegRef);
 
 			Value dest = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
-			_checkOperandType(dest, ValueType::ObjectRef);
+			_checkOperandType(dest, ValueType::VarRef);
 
-			auto varInPtr = dest.getObjectRef().objectPtr;
-			_checkObjectOperandType(varInPtr, ObjectKind::Var);
+			const VarRef varRef = dest.getVarRef();
 
-			if (!varInPtr)
+			if (!varRef.varPtr)
 				throw NullRefError();
 
-			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), ((VarObject *)varInPtr)->getData());
+			_setRegisterValue(
+				curMajorFrame,
+				ins.output.getRegIndex(),
+				((VarObject *)varRef.varPtr)->getData(varRef.context));
 			break;
 		}
 		case Opcode::ENTER: {
@@ -1136,7 +1147,10 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			if (indexIn > ((ArrayObject *)arrayIn)->values.size())
 				throw OutOfRangeError();
 
-			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), ((ArrayObject *)arrayIn)->values[indexIn]);
+			_setRegisterValue(
+				curMajorFrame,
+				ins.output.getRegIndex(),
+				_wrapObjectIntoValue(((ArrayObject *)arrayIn)->values[indexIn]));
 
 			break;
 		}

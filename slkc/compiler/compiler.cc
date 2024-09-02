@@ -441,8 +441,8 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				auto m = std::static_pointer_cast<FnNode>(i.second);
 				funcs[i.first] = m;
 
-#if SLKC_WITH_LANGUAGE_SERVER
 				for (auto &j : m->overloadingRegistries) {
+#if SLKC_WITH_LANGUAGE_SERVER
 					updateTokenInfo(j->idxNameToken, [this, &j](TokenInfo &tokenInfo) {
 						tokenInfo.tokenContext =
 							TokenContext(
@@ -532,10 +532,10 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 							tokenInfo.semanticType = SemanticType::TypeParam;
 						});
 					}
+#endif
 
 					j->updateParamIndices();
 				}
-#endif
 				break;
 			}
 			case NodeType::Class: {
@@ -892,7 +892,6 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				}
 			}
 
-		notDuplicated:
 			auto compiledFn = std::make_shared<CompiledFnNode>(i.first);
 			compiledFn->sourceLocation = j->sourceLocation;
 			compiledFn->returnType = j->returnType

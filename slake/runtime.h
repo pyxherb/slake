@@ -48,18 +48,18 @@ namespace slake {
 
 		MajorFrame(Runtime *rt);
 
-		inline Object *lload(uint32_t off) {
+		inline VarRef lload(uint32_t off) {
 			if (off >= localVars.size())
 				throw InvalidLocalVarIndexError("Invalid local variable index", off);
 
-			return localVars.at(off);
+			return VarRef(localVars.at(off));
 		}
 
-		inline Object *larg(uint32_t off) {
+		inline VarRef larg(uint32_t off) {
 			if (off >= argStack.size())
 				throw InvalidArgumentIndexError("Invalid argument index", off);
 
-			return argStack.at(off);
+			return VarRef(argStack.at(off));
 		}
 
 		/// @brief Leave current minor frame.

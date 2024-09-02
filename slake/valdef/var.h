@@ -6,6 +6,11 @@
 #include <slake/type.h>
 
 namespace slake {
+	enum class VarKind {
+		Regular = 0,
+		ArrayElement
+	};
+
 	class BasicVarObject : public MemberObject {
 	public:
 		BasicVarObject(Runtime *rt, AccessModifier access, Type type);
@@ -20,8 +25,10 @@ namespace slake {
 
 		virtual Type getVarType() const { return type; }
 
-		virtual Value getData() const = 0;
-		virtual void setData(const Value &value) = 0;
+		virtual Value getData(const VarRefContext &context) const = 0;
+		virtual void setData(const VarRefContext &context, const Value &value) = 0;
+
+		virtual VarKind getVarKind() const = 0;
 	};
 
 	class VarObject final : public BasicVarObject {
@@ -40,12 +47,14 @@ namespace slake {
 		static HostObjectRef<VarObject> alloc(const VarObject *other);
 		virtual void dealloc() override;
 
-		virtual inline Value getData() const override { return value; }
-		virtual inline void setData(const Value &value) override {
+		virtual inline Value getData(const VarRefContext &context) const override { return value; }
+		virtual inline void setData(const VarRefContext &context, const Value &value) override {
 			if (!isCompatible(type, value))
 				throw MismatchedTypeError("Mismatched variable type");
 			this->value = value;
 		}
+
+		virtual VarKind getVarKind() const { return VarKind::Regular; }
 	};
 }
 

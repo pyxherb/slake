@@ -237,16 +237,12 @@ bool slake::isCompatible(const Type &type, const Value &value) {
 			break;
 		}
 		case TypeId::Ref: {
-			if (value.valueType != ValueType::ObjectRef)
+			if (value.valueType != ValueType::VarRef)
 				return false;
 
-			auto objectPtr = value.getObjectRef().objectPtr;
-			if (objectPtr->getKind() != ObjectKind::Var)
-				return false;
+			auto varRef = value.getVarRef();
 
-			auto varObjectPtr = ((BasicVarObject *)objectPtr);
-
-			if (varObjectPtr->type != type.getRefExData())
+			if (varRef.varPtr->type != type.getRefExData())
 				return false;
 			break;
 		}

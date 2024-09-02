@@ -63,8 +63,9 @@ static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *
 					((BasicVarObject *)i.second)->accessModifier,
 					((BasicVarObject *)i.second)->getVarType());
 
+				VarRefContext placeholderVarContext = {};
 				// Initialize the variable if initial value is set
-				var->setData(((VarObject *)i.second)->getData());
+				var->setData(placeholderVarContext, ((VarObject *)i.second)->getData(placeholderVarContext));
 
 				instance->scope->addMember(i.first, var.release());
 				break;
@@ -79,8 +80,11 @@ static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *
 				}
 
 				if (i.first == "delete") {
+					std::deque<Type> destructorParamTypes;
+					GenericParamList destructorGenericParamList;
+
 					for (auto &j : overloadings) {
-						if (isDuplicatedOverloading(j, std::deque<Type>{}, GenericParamList{}, false)) {
+						if (isDuplicatedOverloading(j, destructorParamTypes, destructorGenericParamList, false)) {
 							methodTable->destructors.push_front(j);
 							break;
 						}

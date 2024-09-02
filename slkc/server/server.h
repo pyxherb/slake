@@ -71,7 +71,7 @@ namespace slake {
 
 			CompletionItemType _toCompletionItemType(NodeType nodeType);
 			void _getCompletionItems(
-				std::unordered_map<std::string, MemberNode *> &membersOut,
+				const std::unordered_map<std::string, MemberNode *> &members,
 				std::deque<CompletionItem> &completionItems,
 				const std::set<NodeType> &targetNodeTypes);
 			std::deque<CompletionItem> getCompletionItems(SourcePosition location);

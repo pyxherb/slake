@@ -92,7 +92,9 @@ Value Runtime::_loadValue(std::istream &fs) {
 
 			value->values.resize(len);
 			for (uint32_t i = 0; i < len; ++i) {
-				(value->values[i] = VarObject::alloc(this, ACCESS_PUB, elementType).release())->setData(_loadValue(fs));
+				(value->values[i] = VarObject::alloc(this, ACCESS_PUB, elementType).release())->setData(
+					VarRefContext::makeArrayContext(i),
+					_loadValue(fs));
 			}
 
 			return value.release();
@@ -288,37 +290,37 @@ void Runtime::_loadScope(ModuleObject *mod, std::istream &fs, LoadModuleFlags lo
 
 		// Load initial value.
 		if (i.flags & slxfmt::VAD_INIT)
-			var->setData(_loadValue(fs));
+			var->setData(VarRefContext(), _loadValue(fs));
 		else {
 			switch (varType.typeId) {
 				case TypeId::Value:
 					switch (varType.getValueTypeExData()) {
 						case ValueType::I8:
-							var->setData(Value((int8_t)0));
+							var->setData(VarRefContext(), Value((int8_t)0));
 							break;
 						case ValueType::I16:
-							var->setData(Value((int16_t)0));
+							var->setData(VarRefContext(), Value((int16_t)0));
 							break;
 						case ValueType::I32:
-							var->setData(Value((int32_t)0));
+							var->setData(VarRefContext(), Value((int32_t)0));
 							break;
 						case ValueType::I64:
-							var->setData(Value((int64_t)0));
+							var->setData(VarRefContext(), Value((int64_t)0));
 							break;
 						case ValueType::U8:
-							var->setData(Value((uint8_t)0));
+							var->setData(VarRefContext(), Value((uint8_t)0));
 							break;
 						case ValueType::U16:
-							var->setData(Value((uint16_t)0));
+							var->setData(VarRefContext(), Value((uint16_t)0));
 							break;
 						case ValueType::U32:
-							var->setData(Value((uint32_t)0));
+							var->setData(VarRefContext(), Value((uint32_t)0));
 							break;
 						case ValueType::U64:
-							var->setData(Value((uint64_t)0));
+							var->setData(VarRefContext(), Value((uint64_t)0));
 							break;
 						case ValueType::Bool:
-							var->setData(Value((bool)false));
+							var->setData(VarRefContext(), Value((bool)false));
 							break;
 						default:
 							// Unenumerated value types should never occur.
@@ -326,13 +328,13 @@ void Runtime::_loadScope(ModuleObject *mod, std::istream &fs, LoadModuleFlags lo
 					}
 					break;
 				case TypeId::String:
-					var->setData(Value(nullptr));
+					var->setData(VarRefContext(), Value(nullptr));
 					break;
 				case TypeId::Instance:
-					var->setData(Value(nullptr));
+					var->setData(VarRefContext(), Value(nullptr));
 					break;
 				case TypeId::Any:
-					var->setData(Value(nullptr));
+					var->setData(VarRefContext(), Value(nullptr));
 					break;
 				case TypeId::GenericArg:
 					break;

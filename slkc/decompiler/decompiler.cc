@@ -93,7 +93,7 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 				if (i)
 					os << ", ";
 
-				decompileValue(rt, v->values[i]->getData(), os, indentLevel);
+				decompileValue(rt, v->values[i]->getData(VarRefContext()), os, indentLevel);
 			}
 
 			os << "]";

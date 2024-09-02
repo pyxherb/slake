@@ -169,7 +169,7 @@ void Runtime::_gcWalk(Object *v) {
 
 			_gcWalk(value->type);
 
-			_gcWalk(value->getData());
+			_gcWalk(value->getData(VarRefContext()));
 
 			if (value->_parent)
 				_gcWalk(value->_parent);

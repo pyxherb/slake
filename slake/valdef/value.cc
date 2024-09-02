@@ -2,6 +2,27 @@
 
 using namespace slake;
 
+bool VarRef::operator<(const VarRef &rhs) const {
+	if (varPtr < rhs.varPtr)
+		return true;
+	if (varPtr > rhs.varPtr)
+		return false;
+
+	if (!varPtr)
+		return false;
+
+	switch (varPtr->getVarKind()) {
+		case VarKind::ArrayElement:
+			if (context.asArray.index < rhs.context.asArray.index)
+				return true;
+			break;
+		case VarKind::Regular:
+			break;
+	}
+
+	return false;
+}
+
 Value::Value(const Type &type) {
 	*((Type *)data.asType) = type;
 	valueType = ValueType::TypeName;
@@ -30,6 +51,7 @@ void Value::_reset() {
 		case ValueType::F64:
 		case ValueType::Bool:
 		case ValueType::RegRef:
+		case ValueType::VarRef:
 			break;
 		case ValueType::ObjectRef: {
 			ObjectRefValueExData &exData = data.asObjectRef;
@@ -85,6 +107,7 @@ Value &Value::operator=(const Value &other) {
 		case ValueType::F64:
 		case ValueType::Bool:
 		case ValueType::RegRef:
+		case ValueType::VarRef:
 			this->data = other.data;
 			break;
 		case ValueType::ObjectRef:
@@ -172,6 +195,8 @@ bool Value::operator<(const Value &rhs) const {
 			return data.asU32 < rhs.data.asU32;
 		case ValueType::TypeName:
 			return getTypeName() < rhs.getTypeName();
+		case ValueType::VarRef:
+			return data.asVarRef < rhs.data.asVarRef;
 		case ValueType::Undefined:
 			return false;
 	}

@@ -24,6 +24,7 @@ namespace slake {
 
 		RegRef,	   // Register reference
 		TypeName,  // Type name
+		VarRef,	   // Variable reference
 
 		Undefined = UINT8_MAX,
 	};

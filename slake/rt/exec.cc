@@ -247,10 +247,13 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			if (!varRef.varPtr)
 				throw NullRefError();
 
+			if (((BasicVarObject*)varRef.varPtr)->getVarKind() == VarKind::ArrayElementAccessor)
+				puts("");
+
 			_setRegisterValue(
 				curMajorFrame,
 				ins.output.getRegIndex(),
-				((VarObject *)varRef.varPtr)->getData(varRef.context));
+				((BasicVarObject *)varRef.varPtr)->getData(varRef.context));
 			break;
 		}
 		case Opcode::ENTER: {
@@ -1144,13 +1147,15 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 			uint32_t indexIn = index.getU32();
 
-			if (indexIn > ((ArrayObject *)arrayIn)->values.size())
+			if (indexIn > ((ArrayObject *)arrayIn)->length)
 				throw OutOfRangeError();
 
 			_setRegisterValue(
 				curMajorFrame,
 				ins.output.getRegIndex(),
-				_wrapObjectIntoValue(((ArrayObject *)arrayIn)->values[indexIn]));
+				Value(VarRef(
+					((ArrayObject *)arrayIn)->accessor,
+					VarRefContext::makeArrayContext(indexIn))));
 
 			break;
 		}
@@ -1322,9 +1327,9 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			uint32_t size = ins.operands[2].getU32();
 			type.loadDeferredType(this);
 
-			auto instance = newArrayInstance(type, size);
+			auto instance = newArrayInstance(this, type, size);
 
-			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), instance);
+			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), instance.get());
 
 			break;
 		}

@@ -12,7 +12,7 @@ bool VarRef::operator<(const VarRef &rhs) const {
 		return false;
 
 	switch (varPtr->getVarKind()) {
-		case VarKind::ArrayElement:
+		case VarKind::ArrayElementAccessor:
 			if (context.asArray.index < rhs.context.asArray.index)
 				return true;
 			break;

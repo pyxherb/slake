@@ -86,15 +86,12 @@ Value Runtime::_loadValue(std::istream &fs) {
 			// stub for debugging.
 			// elementType = Type(TypeId::Any);
 
-			HostObjectRef<ArrayObject> value = ArrayObject::alloc(this, Type::makeArrayTypeName(this, elementType));
-
 			auto len = _read<uint32_t>(fs);
 
-			value->values.resize(len);
+			HostObjectRef<ArrayObject> value = newArrayInstance(this, elementType, len);
+
 			for (uint32_t i = 0; i < len; ++i) {
-				(value->values[i] = VarObject::alloc(this, ACCESS_PUB, elementType).release())->setData(
-					VarRefContext::makeArrayContext(i),
-					_loadValue(fs));
+				value->accessor->setData(VarRefContext::makeArrayContext(i), _loadValue(fs));
 			}
 
 			return value.release();

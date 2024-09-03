@@ -15,16 +15,44 @@ InstanceObject *slake::Runtime::newClassInstance(ClassObject *cls) {
 	return _defaultClassInstantiator(this, cls);
 }
 
-ArrayObject *slake::Runtime::newArrayInstance(Type type, uint32_t size) {
-	HostObjectRef<ArrayObject> instance = ArrayObject::alloc(this, type);
 
-	instance->values.resize(size);
-
-	for (size_t i = 0; i < size; ++i) {
-		instance->values[i] = VarObject::alloc(this, ACCESS_PUB, type).release();
+HostObjectRef<ArrayObject> Runtime::newArrayInstance(Runtime *rt, const Type &type, size_t length) {
+	switch (type.typeId) {
+		case TypeId::Value:
+			switch (type.getValueTypeExData()) {
+				case ValueType::I8:
+					return I8ArrayObject::alloc(rt, length).get();
+				case ValueType::I16:
+					return I16ArrayObject::alloc(rt, length).get();
+				case ValueType::I32:
+					return I32ArrayObject::alloc(rt, length).get();
+				case ValueType::I64:
+					return I64ArrayObject::alloc(rt, length).get();
+				case ValueType::U8:
+					return U8ArrayObject::alloc(rt, length).get();
+				case ValueType::U16:
+					return U16ArrayObject::alloc(rt, length).get();
+				case ValueType::U32:
+					return U32ArrayObject::alloc(rt, length).get();
+				case ValueType::U64:
+					return U64ArrayObject::alloc(rt, length).get();
+				case ValueType::F32:
+					return F32ArrayObject::alloc(rt, length).get();
+				case ValueType::F64:
+					return F64ArrayObject::alloc(rt, length).get();
+				case ValueType::Bool:
+					return BoolArrayObject::alloc(rt, length).get();
+			}
+			break;
+		case TypeId::String:
+		case TypeId::Instance:
+		case TypeId::Array:
+			return ObjectRefArrayObject::alloc(rt, type, length).get();
+		case TypeId::Any:
+			return AnyArrayObject::alloc(rt, length).get();
+		default:
+			throw IncompatibleTypeError("Specified type is not constructible");
 	}
-
-	return instance.release();
 }
 
 static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *cls) {

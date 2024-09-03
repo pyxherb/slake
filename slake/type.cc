@@ -9,24 +9,19 @@ Type::Type(IdRefObject *ref) : typeId(TypeId::Instance) {
 }
 
 Type Type::makeArrayTypeName(Runtime *runtime, const Type &elementType) {
-	assert(elementType.typeId != TypeId::Array);
-	assert(elementType.typeId != TypeId::Ref);
-
 	Type type;
 
 	type.typeId = TypeId::Array;
-	type.exData.ptr = TypeDefObject::alloc(runtime, elementType).release();
+	type.exData.ptr = TypeDefObject::alloc(runtime, elementType).get();
 
 	return type;
 }
 
 Type Type::makeRefTypeName(Runtime *runtime, const Type &elementType) {
-	assert(elementType.typeId != TypeId::Ref);
-
 	Type type;
 
 	type.typeId = TypeId::Ref;
-	type.exData.ptr = TypeDefObject::alloc(runtime, elementType).release();
+	type.exData.ptr = TypeDefObject::alloc(runtime, elementType).get();
 
 	return type;
 }
@@ -232,7 +227,7 @@ bool slake::isCompatible(const Type &type, const Value &value) {
 
 			auto arrayObjectPtr = ((ArrayObject *)objectPtr);
 
-			if (arrayObjectPtr->type.getArrayExData() != type.getArrayExData())
+			if (arrayObjectPtr->elementType != type.getArrayExData())
 				return false;
 			break;
 		}

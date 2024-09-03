@@ -47,10 +47,12 @@ void Runtime::_gcWalk(const Type &type) {
 			_gcWalk(type.getCustomTypeExData());
 			break;
 		case TypeId::Array:
-			_gcWalk(type.getArrayExData());
+			if (type.exData.ptr)
+				_gcWalk(type.exData.ptr);
 			break;
 		case TypeId::Ref:
-			_gcWalk(type.getRefExData());
+			if (type.exData.ptr)
+				_gcWalk(type.exData.ptr);
 			break;
 		case TypeId::None:
 		case TypeId::Any:
@@ -83,6 +85,12 @@ void Runtime::_gcWalk(const Value &i) {
 		case ValueType::TypeName:
 			_gcWalk(i.getTypeName());
 			break;
+		case ValueType::VarRef: {
+			auto &varRef = i.getVarRef();
+
+			_gcWalk(varRef.varPtr);
+			break;
+		}
 		case ValueType::Undefined:
 			break;
 		default:
@@ -117,10 +125,17 @@ void Runtime::_gcWalk(Object *v) {
 		case ObjectKind::Array: {
 			auto value = (ArrayObject *)v;
 
-			_gcWalk(value->type);
+			_gcWalk(value->elementType);
+			_gcWalk(value->accessor);
 
-			for (auto &i : value->values)
-				_gcWalk(i);
+			switch (value->elementType.typeId) {
+				case TypeId::Instance: {
+					auto v = (ObjectRefArrayObject *)value;
+					for (size_t i = 0; i < v->length; ++i)
+						_gcWalk(v->data[i]);
+					break;
+				}
+			}
 			break;
 		}
 		case ObjectKind::Module:
@@ -165,7 +180,7 @@ void Runtime::_gcWalk(Object *v) {
 			break;
 		}
 		case ObjectKind::Var: {
-			VarObject *value = (VarObject *)v;
+			BasicVarObject *value = (BasicVarObject *)v;
 
 			_gcWalk(value->type);
 
@@ -173,6 +188,18 @@ void Runtime::_gcWalk(Object *v) {
 
 			if (value->_parent)
 				_gcWalk(value->_parent);
+
+			switch (value->getVarKind()) {
+				case VarKind::Regular: {
+					break;
+				}
+				case VarKind::ArrayElementAccessor: {
+					auto v = (ArrayAccessorVarObject *)value;
+
+					_gcWalk(v->arrayObject);
+					break;
+				}
+			}
 			break;
 		}
 		case ObjectKind::RootObject:

@@ -279,7 +279,7 @@ namespace slake {
 		void gc();
 
 		InstanceObject *newClassInstance(ClassObject *cls);
-		ArrayObject *newArrayInstance(Type type, uint32_t size);
+		HostObjectRef<ArrayObject> newArrayInstance(Runtime *rt, const Type &type, size_t length);
 	};
 }
 

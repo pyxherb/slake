@@ -8,7 +8,7 @@
 namespace slake {
 	enum class VarKind {
 		Regular = 0,
-		ArrayElement
+		ArrayElementAccessor
 	};
 
 	class BasicVarObject : public MemberObject {
@@ -54,7 +54,7 @@ namespace slake {
 			this->value = value;
 		}
 
-		virtual VarKind getVarKind() const { return VarKind::Regular; }
+		virtual VarKind getVarKind() const override { return VarKind::Regular; }
 	};
 }
 

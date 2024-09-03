@@ -89,11 +89,11 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 
 			auto v = ((ArrayObject *)object);
 
-			for (size_t i = 0; i < v->values.size(); ++i) {
+			for (size_t i = 0; i < v->length; ++i) {
 				if (i)
 					os << ", ";
 
-				decompileValue(rt, v->values[i]->getData(VarRefContext()), os, indentLevel);
+				decompileValue(rt, v->accessor->getData(VarRefContext::makeArrayContext(i)), os, indentLevel);
 			}
 
 			os << "]";

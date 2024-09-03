@@ -13,7 +13,7 @@
 namespace slake {
 	struct Type;
 	class Object;
-	class VarObject;
+	class BasicVarObject;
 
 	// Value type definitions are defined in <slake/type.h>.
 
@@ -37,13 +37,13 @@ namespace slake {
 	};
 
 	struct VarRef {
-		VarObject *varPtr;
+		BasicVarObject *varPtr;
 		VarRefContext context;
 
 		VarRef() = default;
-		inline VarRef(VarObject *varPtr) : varPtr(varPtr) {}
+		inline VarRef(BasicVarObject *varPtr) : varPtr(varPtr) {}
 		inline VarRef(
-			VarObject *varPtr,
+			BasicVarObject *varPtr,
 			const VarRefContext &context)
 			: varPtr(varPtr),
 			  context(context) {}

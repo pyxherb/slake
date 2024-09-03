@@ -20,7 +20,7 @@ namespace slake {
 		virtual inline ~TypeDefObject() {
 		}
 
-		virtual inline ObjectKind getKind() const override { return ObjectKind::Instance; }
+		virtual inline ObjectKind getKind() const override { return ObjectKind::TypeDef; }
 
 		virtual Object *duplicate() const override;
 

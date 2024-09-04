@@ -87,10 +87,7 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 
 	importedDefinitions.insert(value);
 
-	std::string fnName = value->_name;
-	size_t j = 0;
-
-	fnName = fnName.substr(0, j);
+	std::string fnName = value->getName();
 
 	for (auto &i : value->overloadings) {
 		auto returnType = toTypeName(i->returnType);
@@ -185,7 +182,7 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 	cls->implInterfaces = implInterfaceTypeNames;
 	cls->genericParams = genericParams;
 
-	(scope->members[value->_name] = cls)->bind(parent.get());
+	(scope->members[value->getName()] = cls)->bind(parent.get());
 
 	for (auto i : value->scope->members)
 		importDefinitions(cls->scope, cls, (Object *)i.second);
@@ -203,7 +200,7 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 		interface->parentInterfaces.push_back(toTypeName(i));
 	}
 
-	(scope->members[value->_name] = interface)->bind(parent.get());
+	(scope->members[value->getName()] = interface)->bind(parent.get());
 
 	for (auto i : value->scope->members)
 		importDefinitions(scope, interface, (Object *)i.second);
@@ -234,11 +231,11 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 				this,
 				v->accessModifier,
 				toTypeName(v->getVarType()),
-				v->_name,
+				v->getName(),
 				std::shared_ptr<ExprNode>(),
 				SIZE_MAX, SIZE_MAX, SIZE_MAX, SIZE_MAX);
 
-			scope->members[v->_name] = var;
+			scope->members[v->getName()] = var;
 			var->bind(parent.get());
 			break;
 		}

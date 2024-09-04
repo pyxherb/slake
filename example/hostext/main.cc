@@ -126,11 +126,11 @@ int main(int argc, char **argv) {
 	fnObject->overloadings.insert(
 		slake::NativeFnOverloadingObject::alloc(fnObject.get(), slake::ACCESS_PUB, std::deque<slake::Type>{}, slake::ValueType::Undefined, print).release());
 
-	((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext"))->getMember("extfns"))->scope->putMember("print", fnObject.get());
+	((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext", nullptr))->getMember("extfns", nullptr))->scope->putMember("print", fnObject.get());
 
 	try {
 		slake::Value result =
-			((slake::FnObject *)mod->getMember("main"))->call(nullptr, {}, {});
+			((slake::FnObject *)mod->getMember("main", nullptr))->call(nullptr, {}, {});
 
 		slake::HostObjectRef<slake::ContextObject> context = (slake::ContextObject *)result.getObjectRef().objectPtr;
 		printf("%d\n", context->getResult().getI32());

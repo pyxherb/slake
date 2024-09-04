@@ -9,9 +9,6 @@ void Runtime::_gcWalk(Scope *scope) {
 
 	if (scope->owner)
 		_gcWalk(scope->owner);
-
-	if (scope->parent)
-		_gcWalk(scope->parent);
 }
 
 void Runtime::_gcWalk(MethodTable *methodTable) {
@@ -104,11 +101,6 @@ void Runtime::_gcWalk(Object *v) {
 
 	v->_flags |= VF_WALKED;
 
-	if (v->scope)
-		_gcWalk(v->scope);
-	if (v->methodTable)
-		_gcWalk(v->methodTable);
-
 	switch (auto typeId = v->getKind(); typeId) {
 		case ObjectKind::String:
 			break;
@@ -117,6 +109,12 @@ void Runtime::_gcWalk(Object *v) {
 			break;
 		case ObjectKind::Instance: {
 			auto value = (InstanceObject *)v;
+
+			if (value->scope)
+				_gcWalk(value->scope);
+			if (value->methodTable)
+				_gcWalk(value->methodTable);
+
 			_gcWalk(value->_class);
 			if (value->_parent)
 				_gcWalk(value->_parent);
@@ -142,6 +140,9 @@ void Runtime::_gcWalk(Object *v) {
 		case ObjectKind::Class:
 		case ObjectKind::Interface: {
 			// TODO: Walk generic parameters.
+
+			if (((ModuleObject *)v)->scope)
+				_gcWalk(((ModuleObject *)v)->scope);
 
 			if (((ModuleObject *)v)->parent)
 				_gcWalk(((ModuleObject *)v)->parent);

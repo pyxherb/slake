@@ -22,6 +22,7 @@ namespace slake {
 		;
 
 	struct Type;
+	union VarRefContext;
 	class Scope;
 
 	enum class ObjectKind {
@@ -56,14 +57,8 @@ namespace slake {
 		/// @param rt Runtime that the value belongs to.
 		Object(Runtime *rt);
 		inline Object(const Object &x) {
-			if (scope) {
-				if (!(_flags & VF_ALIAS))
-					delete scope;
-			}
-
 			_rt = x._rt;
 			_flags = x._flags & ~VF_WALKED;
-			scope = x.scope ? x.scope->duplicate() : nullptr;
 		}
 		virtual ~Object();
 
@@ -73,9 +68,6 @@ namespace slake {
 		ObjectFlags _flags = 0;
 
 		Runtime *_rt;
-
-		Scope *scope = nullptr;
-		MethodTable *methodTable = nullptr;
 
 		/// @brief Get type of the value.
 		/// @return Type of the value.
@@ -89,7 +81,9 @@ namespace slake {
 
 		inline Runtime *getRuntime() const noexcept { return _rt; }
 
-		MemberObject *getMember(const std::string &name);
+		virtual MemberObject *getMember(
+			const std::string &name,
+			VarRefContext *varRefContextOut) const;
 	};
 
 	template <typename T = Object>

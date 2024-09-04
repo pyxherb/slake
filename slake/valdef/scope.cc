@@ -19,7 +19,7 @@ void Scope::removeMember(const std::string &name) {
 }
 
 Scope *Scope::duplicate() {
-	std::unique_ptr<Scope> newScope = std::make_unique<Scope>(owner, parent);
+	std::unique_ptr<Scope> newScope = std::make_unique<Scope>(owner);
 
 	for (auto i : members) {
 		newScope->putMember(i.first, (MemberObject *)i.second->duplicate());

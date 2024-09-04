@@ -271,7 +271,7 @@ namespace slake {
 		/// @param ref Reference to be resolved.
 		/// @param scopeObject Scope value for resolving.
 		/// @return Resolved value which is referred by the reference.
-		Object *resolveIdRef(IdRefObject *ref, Object *scopeObject = nullptr) const;
+		Object *resolveIdRef(IdRefObject *ref, VarRefContext *varRefContextOut, Object *scopeObject = nullptr) const;
 
 		HostObjectRef<ModuleObject> loadModule(std::istream &fs, LoadModuleFlags flags);
 		HostObjectRef<ModuleObject> loadModule(const void *buf, size_t size, LoadModuleFlags flags);

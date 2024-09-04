@@ -4,7 +4,6 @@ using namespace slake;
 
 slake::AliasObject::AliasObject(Runtime *rt, AccessModifier access, Object *src)
 	: MemberObject(rt), src(src) {
-	scope = src->scope;
 	_flags |= VF_ALIAS;
 	this->accessModifier = access;
 }
@@ -14,6 +13,12 @@ AliasObject::~AliasObject() {
 
 Object *AliasObject::duplicate() const {
 	return (Object *)alloc(this).get();
+}
+
+MemberObject* AliasObject::getMember(
+	const std::string& name,
+	VarRefContext* varRefContextOut) const {
+	return src->getMember(name, varRefContextOut);
 }
 
 const char *AliasObject::getName() const {

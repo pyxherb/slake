@@ -10,6 +10,7 @@ namespace slake {
 	public:
 		std::string name;
 		Object *parent = nullptr;
+		Scope *scope;
 
 		ModuleObject(Runtime *rt, AccessModifier access);
 		inline ModuleObject(const ModuleObject &x) : MemberObject(x) {
@@ -17,6 +18,7 @@ namespace slake {
 			unnamedImports = x.unnamedImports;
 			name = x.name;
 			parent = x.parent;
+			scope = x.scope->duplicate();
 		}
 		virtual ~ModuleObject();
 
@@ -26,6 +28,10 @@ namespace slake {
 		virtual inline ObjectKind getKind() const override { return ObjectKind::Module; }
 
 		virtual Object *duplicate() const override;
+
+		virtual MemberObject *getMember(
+			const std::string &name,
+			VarRefContext *varRefContextOut) const;
 
 		virtual const char *getName() const override;
 		virtual void setName(const char *name) override;

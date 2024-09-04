@@ -2,6 +2,12 @@
 
 using namespace slake;
 
+MemberObject* RootObject::getMember(
+	const std::string& name,
+	VarRefContext* varRefContextOut) const {
+	return scope->getMember(name);
+}
+
 HostObjectRef<RootObject> slake::RootObject::alloc(Runtime *rt) {
 	std::pmr::polymorphic_allocator<RootObject> allocator(&rt->globalHeapPoolResource);
 

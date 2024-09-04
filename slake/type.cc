@@ -57,7 +57,7 @@ void Type::loadDeferredType(const Runtime *rt) {
 		return;
 
 	auto ref = (IdRefObject *)getCustomTypeExData();
-	auto typeObject = rt->resolveIdRef(ref);
+	auto typeObject = rt->resolveIdRef(ref, nullptr);
 	if (!typeObject)
 		throw NotFoundError("Object referenced by the type was not found", ref);
 

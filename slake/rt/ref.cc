@@ -2,7 +2,10 @@
 
 using namespace slake;
 
-Object *Runtime::resolveIdRef(IdRefObject* ref, Object *scopeObject) const {
+Object *Runtime::resolveIdRef(
+	IdRefObject *ref,
+	VarRefContext *varRefContextOut,
+	Object *scopeObject) const {
 	if (!ref)
 		return nullptr;
 
@@ -28,7 +31,7 @@ Object *Runtime::resolveIdRef(IdRefObject* ref, Object *scopeObject) const {
 					default:
 						goto fail;
 				}
-			} else if (!(scopeObject = scopeObject->getMember(i.name))) {
+			} else if (!(scopeObject = scopeObject->getMember(i.name, varRefContextOut))) {
 				break;
 			}
 
@@ -48,7 +51,7 @@ Object *Runtime::resolveIdRef(IdRefObject* ref, Object *scopeObject) const {
 		switch (curObject->getKind()) {
 			case ObjectKind::Module:
 			case ObjectKind::Class:
-				if(!curObject->getParent())
+				if (!curObject->getParent())
 					return nullptr;
 				scopeObject = (MemberObject *)curObject->getParent();
 				break;

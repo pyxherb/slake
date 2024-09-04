@@ -57,10 +57,10 @@ static Value &_unwrapRegOperand(
 	return value;
 }
 
-static Value _wrapObjectIntoValue(Object *object) {
+static Value _wrapObjectIntoValue(Object *object, VarRefContext &varRefContext) {
 	switch (object->getKind()) {
 		case ObjectKind::Var:
-			return Value(VarRef((VarObject *)object));
+			return Value(VarRef((VarObject *)object, varRefContext));
 		default:
 			return Value(object);
 	}
@@ -150,16 +150,18 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			auto refPtr = ins.operands[0].getObjectRef().objectPtr;
 			_checkObjectOperandType(refPtr, ObjectKind::IdRef);
 
-			auto v = resolveIdRef((IdRefObject *)refPtr, curMajorFrame.thisObject);
+			VarRefContext varRefContext;
+
+			auto v = resolveIdRef((IdRefObject *)refPtr, &varRefContext, curMajorFrame.thisObject);
 			if (!v) {
-				if (!(v = resolveIdRef((IdRefObject *)refPtr, curMajorFrame.scopeObject)))
-					v = resolveIdRef((IdRefObject *)refPtr);
+				if (!(v = resolveIdRef((IdRefObject *)refPtr, &varRefContext, curMajorFrame.scopeObject)))
+					v = resolveIdRef((IdRefObject *)refPtr, &varRefContext);
 			}
 
 			if (!v)
 				throw NotFoundError("Member not found", (IdRefObject *)refPtr);
 
-			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), _wrapObjectIntoValue(v));
+			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), _wrapObjectIntoValue(v, varRefContext));
 			break;
 		}
 		case Opcode::RLOAD: {
@@ -178,11 +180,13 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			if (!lhsPtr)
 				throw NullRefError();
 
-			if (!(lhsPtr = resolveIdRef((IdRefObject *)refPtr, lhsPtr))) {
+			VarRefContext varRefContext;
+
+			if (!(lhsPtr = resolveIdRef((IdRefObject *)refPtr, &varRefContext, lhsPtr))) {
 				throw NotFoundError("Member not found", (IdRefObject *)refPtr);
 			}
 
-			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), _wrapObjectIntoValue(lhsPtr));
+			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), _wrapObjectIntoValue(lhsPtr, varRefContext));
 			break;
 		}
 		case Opcode::STORE: {
@@ -1298,7 +1302,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 					if (constructorRef) {
 						_checkObjectOperandType(constructorRef, ObjectKind::IdRef);
 
-						if (auto v = resolveIdRef((IdRefObject *)constructorRef); v) {
+						if (auto v = resolveIdRef((IdRefObject *)constructorRef, nullptr); v) {
 							if ((v->getKind() != ObjectKind::Fn))
 								throw InvalidOperandsError("Specified constructor is not a function");
 

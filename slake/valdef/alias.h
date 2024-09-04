@@ -27,6 +27,10 @@ namespace slake {
 
 		virtual Object *duplicate() const override;
 
+		virtual MemberObject *getMember(
+			const std::string &name,
+			VarRefContext *varRefContextOut) const;
+
 		static HostObjectRef<AliasObject> alloc(Runtime *rt, Object *src);
 		static HostObjectRef<AliasObject> alloc(const AliasObject *other);
 		virtual void dealloc() override;

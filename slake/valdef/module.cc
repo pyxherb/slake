@@ -9,10 +9,17 @@ ModuleObject::ModuleObject(Runtime *rt, AccessModifier access)
 }
 
 ModuleObject::~ModuleObject() {
+	delete scope;
 }
 
 Object *ModuleObject::duplicate() const {
 	return (Object *)alloc(this).get();
+}
+
+MemberObject* ModuleObject::getMember(
+	const std::string& name,
+	VarRefContext* varRefContextOut) const {
+	return scope->getMember(name);
 }
 
 const char* ModuleObject::getName() const {

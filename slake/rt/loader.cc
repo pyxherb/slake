@@ -451,7 +451,7 @@ HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &fs, LoadMod
 		for (size_t i = 0; i < modName->entries.size() - 1; ++i) {
 			auto &name = modName->entries[i].name;
 
-			if (!curObject->getMember(name)) {
+			if (!curObject->getMember(name, nullptr)) {
 				// Create a new one if corresponding module does not present.
 				auto mod = ModuleObject::alloc(this, ACCESS_PUB);
 
@@ -463,7 +463,7 @@ HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &fs, LoadMod
 				curObject = (Object *)mod.get();
 			} else {
 				// Continue if the module presents.
-				curObject = curObject->getMember(name);
+				curObject = curObject->getMember(name, nullptr);
 			}
 		}
 
@@ -474,7 +474,7 @@ HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &fs, LoadMod
 		else {
 			auto moduleObject = (ModuleObject *)curObject;
 
-			if (auto member = moduleObject->getMember(lastName); member) {
+			if (auto member = moduleObject->getMember(lastName, nullptr); member) {
 				if (flags & LMOD_NORELOAD) {
 					if (member->getKind() != ObjectKind::Module)
 						throw LoaderError(

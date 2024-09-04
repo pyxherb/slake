@@ -212,7 +212,8 @@ bool slake::isCompatible(const Type &type, const Value &value) {
 						return false;
 					break;
 				}
-				default:;
+				default:
+					break;
 			}
 
 			break;

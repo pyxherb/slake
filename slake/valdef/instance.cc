@@ -11,19 +11,21 @@ Object* InstanceObject::duplicate() const {
 MemberObject *InstanceObject::getMember(
 	const std::string& name,
 	VarRefContext* varRefContextOut) const {
-	for (const InstanceObject* i = this; i; i = i->_parent) {
-		if (auto m = i->scope->getMember(name); m)
-			return m;
-	}
+	if (auto it = methodTable->methods.find(name);
+		it != methodTable->methods.end())
+		return it->second;
+
+	if (auto m = scope->getMember(name); m)
+		return m;
 
 	return nullptr;
 }
 
-HostObjectRef<InstanceObject> slake::InstanceObject::alloc(Runtime *rt, ClassObject *cls, InstanceObject *parent) {
+HostObjectRef<InstanceObject> slake::InstanceObject::alloc(Runtime *rt) {
 	std::pmr::polymorphic_allocator<InstanceObject> allocator(&rt->globalHeapPoolResource);
 
 	InstanceObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, cls, parent);
+	allocator.construct(ptr, rt);
 
 	rt->createdObjects.insert(ptr);
 

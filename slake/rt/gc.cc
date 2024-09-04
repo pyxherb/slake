@@ -116,8 +116,6 @@ void Runtime::_gcWalk(Object *v) {
 				_gcWalk(value->methodTable);
 
 			_gcWalk(value->_class);
-			if (value->_parent)
-				_gcWalk(value->_parent);
 			break;
 		}
 		case ObjectKind::Array: {

@@ -15,7 +15,6 @@ InstanceObject *slake::Runtime::newClassInstance(ClassObject *cls) {
 	return _defaultClassInstantiator(this, cls);
 }
 
-
 HostObjectRef<ArrayObject> Runtime::newArrayInstance(Runtime *rt, const Type &type, size_t length) {
 	switch (type.typeId) {
 		case TypeId::Value:
@@ -58,6 +57,8 @@ HostObjectRef<ArrayObject> Runtime::newArrayInstance(Runtime *rt, const Type &ty
 static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *cls) {
 	InstanceObject *parent = nullptr;
 
+	HostObjectRef<InstanceObject> instance;
+
 	if (cls->parentClass.typeId == TypeId::Instance) {
 		cls->parentClass.loadDeferredType(runtime);
 
@@ -67,9 +68,16 @@ static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *
 		parent = runtime->newClassInstance((ClassObject *)parentClass);
 	}
 
-	HostObjectRef<InstanceObject> instance = InstanceObject::alloc(runtime, cls, parent);
+	if (parent) {
+		instance = parent;
+	} else {
+		instance = InstanceObject::alloc(runtime);
+	}
 
-	MethodTable *methodTable;
+	instance->_class = cls;
+
+	MethodTable *methodTable = nullptr;
+	bool isMethodTablePresent = true;
 
 	if (parent) {
 		methodTable = parent->methodTable;
@@ -80,6 +88,7 @@ static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *
 	if (!methodTable) {
 		methodTable = new MethodTable(instance.get());
 		cls->cachedInstantiatedMethodTable = methodTable;
+		isMethodTablePresent = false;
 	}
 	instance->methodTable = methodTable;
 
@@ -99,49 +108,51 @@ static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *
 				break;
 			}
 			case ObjectKind::Fn: {
-				std::deque<FnOverloadingObject *> overloadings;
+				if (!isMethodTablePresent) {
+					std::deque<FnOverloadingObject *> overloadings;
 
-				for (auto j : ((FnObject *)i.second)->overloadings) {
-					if ((!(j->access & ACCESS_STATIC)) &&
-						(j->overloadingFlags & OL_VIRTUAL))
-						overloadings.push_back(j);
-				}
-
-				if (i.first == "delete") {
-					std::deque<Type> destructorParamTypes;
-					GenericParamList destructorGenericParamList;
-
-					for (auto &j : overloadings) {
-						if (isDuplicatedOverloading(j, destructorParamTypes, destructorGenericParamList, false)) {
-							methodTable->destructors.push_front(j);
-							break;
-						}
+					for (auto j : ((FnObject *)i.second)->overloadings) {
+						if ((!(j->access & ACCESS_STATIC)) &&
+							(j->overloadingFlags & OL_VIRTUAL))
+							overloadings.push_back(j);
 					}
-				} else {
-					if (overloadings.size()) {
-						// Link the method with method inherited from the parent.
-						HostObjectRef<FnObject> fn;
-						auto &methodSlot = methodTable->methods[i.first];
 
-						if (auto m = methodTable->getMethod(i.first); m)
-							fn = m;
-						else {
-							fn = FnObject::alloc(runtime);
-							methodSlot = fn.get();
-						}
+					if (i.first == "delete") {
+						std::deque<Type> destructorParamTypes;
+						GenericParamList destructorGenericParamList;
 
 						for (auto &j : overloadings) {
-							for (auto &k : methodSlot->overloadings) {
-								if (isDuplicatedOverloading(
-										k,
-										j->paramTypes,
-										j->genericParams,
-										j->overloadingFlags & OL_VARG)) {
-									methodSlot->overloadings.erase(k);
-									break;
-								}
+							if (isDuplicatedOverloading(j, destructorParamTypes, destructorGenericParamList, false)) {
+								methodTable->destructors.push_front(j);
+								break;
 							}
-							methodSlot->overloadings.insert(j);
+						}
+					} else {
+						if (overloadings.size()) {
+							// Link the method with method inherited from the parent.
+							HostObjectRef<FnObject> fn;
+							auto &methodSlot = methodTable->methods[i.first];
+
+							if (auto m = methodTable->getMethod(i.first); m)
+								fn = m;
+							else {
+								fn = FnObject::alloc(runtime);
+								methodSlot = fn.get();
+							}
+
+							for (auto &j : overloadings) {
+								for (auto &k : methodSlot->overloadings) {
+									if (isDuplicatedOverloading(
+											k,
+											j->paramTypes,
+											j->genericParams,
+											j->overloadingFlags & OL_VARG)) {
+										methodSlot->overloadings.erase(k);
+										break;
+									}
+								}
+								methodSlot->overloadings.insert(j);
+							}
 						}
 					}
 				}

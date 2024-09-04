@@ -136,7 +136,7 @@ void slake::NativeFnOverloadingObject::dealloc() {
 }
 
 Value RegularFnOverloadingObject::call(Object *thisObject, std::deque<Value> args) const {
-	trimFnInstructions((std::vector<Instruction>&)instructions);
+	trimFnInstructions((std::vector<Instruction> &)instructions);
 	Runtime *rt = fnObject->_rt;
 
 	// Save previous context
@@ -159,11 +159,11 @@ Value RegularFnOverloadingObject::call(Object *thisObject, std::deque<Value> arg
 		auto frame = MajorFrame(rt);
 		frame.curFn = this;
 		frame.curIns = 0;
-		frame.scopeObject = fnObject->_parent;
+		frame.scopeObject = fnObject->getParent();
 		frame.thisObject = thisObject;
 		frame.argStack.resize(args.size());
 		for (size_t i = 0; i < args.size(); ++i) {
-			auto var = VarObject::alloc(rt, 0, i < paramTypes.size() ? paramTypes[i] : TypeId::Any);
+			auto var = RegularVarObject::alloc(rt, 0, i < paramTypes.size() ? paramTypes[i] : TypeId::Any);
 			var->setData(VarRefContext(), args[i]);
 			frame.argStack[i] = var.release();
 		}
@@ -215,33 +215,26 @@ Value RegularFnOverloadingObject::call(Object *thisObject, std::deque<Value> arg
 FnOverloadingObject *FnObject::getOverloading(std::deque<Type> argTypes) const {
 	const FnObject *i = this;
 
-	for (; i->descentFn; i = i->descentFn)
-		;
-
-	while (i) {
-		for (auto &j : overloadings) {
-			if (j->overloadingFlags & OL_VARG) {
-				if (argTypes.size() < j->paramTypes.size())
-					continue;
-			} else {
-				if (argTypes.size() != j->paramTypes.size())
-					continue;
-			}
-
-			for (size_t k = 0; k < argTypes.size(); ++k) {
-				argTypes[k].loadDeferredType(_rt);
-				j->paramTypes[k].loadDeferredType(_rt);
-
-				if (argTypes[k] != j->paramTypes[k])
-					goto mismatched;
-			}
-
-			return j;
-
-		mismatched:;
+	for (auto &j : overloadings) {
+		if (j->overloadingFlags & OL_VARG) {
+			if (argTypes.size() < j->paramTypes.size())
+				continue;
+		} else {
+			if (argTypes.size() != j->paramTypes.size())
+				continue;
 		}
 
-		i = i->parentFn;
+		for (size_t k = 0; k < argTypes.size(); ++k) {
+			argTypes[k].loadDeferredType(_rt);
+			j->paramTypes[k].loadDeferredType(_rt);
+
+			if (argTypes[k] != j->paramTypes[k])
+				goto mismatched;
+		}
+
+		return j;
+
+	mismatched:;
 	}
 
 	return nullptr;

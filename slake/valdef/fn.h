@@ -21,7 +21,7 @@ namespace slake {
 		std::vector<Value> operands;
 
 		bool operator==(const Instruction &rhs) const;
-		inline bool operator!=(const Instruction& rhs) const {
+		inline bool operator!=(const Instruction &rhs) const {
 			return !(*this == rhs);
 		}
 
@@ -45,6 +45,18 @@ namespace slake {
 
 	class FnOverloadingObject : public Object {
 	public:
+		FnObject *fnObject;
+
+		AccessModifier access;
+
+		GenericParamList genericParams;
+		std::unordered_map<std::string, Type> mappedGenericArgs;
+
+		std::deque<Type> paramTypes;
+		Type returnType;
+
+		OverloadingFlags overloadingFlags = 0;
+
 		FnOverloadingObject(
 			FnObject *fnObject,
 			AccessModifier access,
@@ -64,18 +76,6 @@ namespace slake {
 			overloadingFlags = other.overloadingFlags;
 		}
 		virtual ~FnOverloadingObject();
-
-		FnObject *fnObject;
-
-		AccessModifier access;
-
-		GenericParamList genericParams;
-		std::unordered_map<std::string, Type> mappedGenericArgs;
-
-		std::deque<Type> paramTypes;
-		Type returnType;
-
-		OverloadingFlags overloadingFlags = 0;
 
 		virtual inline ObjectKind getKind() const { return ObjectKind::FnOverloading; }
 
@@ -195,11 +195,12 @@ namespace slake {
 
 	class FnObject : public MemberObject {
 	public:
-		inline FnObject(Runtime *rt) : MemberObject(rt, ACCESS_PUB) {
+		std::string name;
+		Object *parent = nullptr;
+
+		inline FnObject(Runtime *rt) : MemberObject(rt) {
 		}
 		inline FnObject(const FnObject &x) : MemberObject(x) {
-			// We don't copy parentFn because it has to be linked to a inherited function dynamically LOL
-
 			for (auto &i : x.overloadings) {
 				FnOverloadingObject *ol = i->duplicate();
 
@@ -207,14 +208,20 @@ namespace slake {
 
 				overloadings.insert(ol);
 			}
+
+			parent = x.parent;
 		}
 		virtual inline ~FnObject() {
 		}
 
-		FnObject *parentFn = nullptr, *descentFn = nullptr;
 		std::set<FnOverloadingObject *> overloadings;
 
 		virtual inline ObjectKind getKind() const override { return ObjectKind::Fn; }
+
+		virtual inline const char *getName() const override { return name.c_str(); }
+		virtual void setName(const char *name) override { this->name = name; }
+		virtual inline Object *getParent() const override { return parent; }
+		virtual void setParent(Object *parent) override { this->parent = parent; }
 
 		FnOverloadingObject *getOverloading(std::deque<Type> argTypes) const;
 
@@ -228,9 +235,9 @@ namespace slake {
 	};
 
 	inline bool isDuplicatedOverloading(
-		const FnOverloadingObject* overloading,
-		std::deque<Type>& paramTypes,
-		GenericParamList& genericParams,
+		const FnOverloadingObject *overloading,
+		std::deque<Type> &paramTypes,
+		GenericParamList &genericParams,
 		bool hasVarArg) {
 		if ((overloading->overloadingFlags & OL_VARG) != (hasVarArg ? OL_VARG : 0))
 			return false;

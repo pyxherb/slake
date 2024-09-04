@@ -3,8 +3,9 @@
 using namespace slake;
 
 ModuleObject::ModuleObject(Runtime *rt, AccessModifier access)
-	: MemberObject(rt, access) {
+	: MemberObject(rt) {
 	scope = new Scope(this);
+	this->accessModifier = access;
 }
 
 ModuleObject::~ModuleObject() {
@@ -12,6 +13,22 @@ ModuleObject::~ModuleObject() {
 
 Object *ModuleObject::duplicate() const {
 	return (Object *)alloc(this).get();
+}
+
+const char* ModuleObject::getName() const {
+	return name.c_str();
+}
+
+void ModuleObject::setName(const char *name) {
+	this->name = name;
+}
+
+Object *ModuleObject::getParent() const {
+	return parent;
+}
+
+void ModuleObject::setParent(Object *parent) {
+	this->parent = parent;
 }
 
 HostObjectRef<ModuleObject> slake::ModuleObject::alloc(Runtime *rt, AccessModifier access) {

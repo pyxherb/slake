@@ -143,8 +143,8 @@ void Runtime::_gcWalk(Object *v) {
 		case ObjectKind::Interface: {
 			// TODO: Walk generic parameters.
 
-			if (((ModuleObject *)v)->_parent)
-				_gcWalk(((ModuleObject *)v)->_parent);
+			if (((ModuleObject *)v)->parent)
+				_gcWalk(((ModuleObject *)v)->parent);
 
 			for (auto &i : ((ModuleObject *)v)->imports)
 				_gcWalk(i.second);
@@ -153,6 +153,18 @@ void Runtime::_gcWalk(Object *v) {
 				case ObjectKind::Class: {
 					ClassObject *value = (ClassObject *)v;
 					for (auto &i : value->implInterfaces) {
+						i.loadDeferredType(this);
+						_gcWalk(i);
+					}
+					for (auto &i : value->genericParams) {
+						i.baseType.loadDeferredType(this);
+						_gcWalk(i.baseType);
+						for (auto& j : i.interfaces) {
+							j.loadDeferredType(this);
+							_gcWalk(j);
+						}
+					}
+					for (auto &i : value->genericArgs) {
 						i.loadDeferredType(this);
 						_gcWalk(i);
 					}
@@ -171,6 +183,18 @@ void Runtime::_gcWalk(Object *v) {
 						i.loadDeferredType(this);
 						_gcWalk(i.getCustomTypeExData());
 					}
+					for (auto &i : value->genericParams) {
+						i.baseType.loadDeferredType(this);
+						_gcWalk(i.baseType);
+						for (auto &j : i.interfaces) {
+							j.loadDeferredType(this);
+							_gcWalk(j);
+						}
+					}
+					for (auto &i : value->genericArgs) {
+						i.loadDeferredType(this);
+						_gcWalk(i);
+					}
 
 					_gcWalk(value->genericParams);
 					break;
@@ -180,17 +204,18 @@ void Runtime::_gcWalk(Object *v) {
 			break;
 		}
 		case ObjectKind::Var: {
-			BasicVarObject *value = (BasicVarObject *)v;
-
-			_gcWalk(value->type);
+			VarObject *value = (VarObject *)v;
 
 			_gcWalk(value->getData(VarRefContext()));
 
-			if (value->_parent)
-				_gcWalk(value->_parent);
-
 			switch (value->getVarKind()) {
 				case VarKind::Regular: {
+					auto v = (RegularVarObject *)value;
+
+					if (v->parent)
+						_gcWalk(v->parent);
+
+					_gcWalk(v->type);
 					break;
 				}
 				case VarKind::ArrayElementAccessor: {
@@ -207,14 +232,8 @@ void Runtime::_gcWalk(Object *v) {
 		case ObjectKind::Fn: {
 			auto fn = (FnObject *)v;
 
-			if (fn->_parent)
-				_gcWalk(fn->_parent);
-
-			if (fn->parentFn)
-				_gcWalk(fn->parentFn);
-
-			if (fn->descentFn)
-				_gcWalk(fn->descentFn);
+			if (auto p = fn->getParent(); p)
+				_gcWalk(p);
 
 			for (auto &i : fn->overloadings) {
 				_gcWalk(i);
@@ -226,7 +245,19 @@ void Runtime::_gcWalk(Object *v) {
 
 			_gcWalk(fnOverloading->fnObject);
 
-			// TODO: Walk generic parameters.
+			for (auto &i : fnOverloading->genericParams) {
+				i.baseType.loadDeferredType(this);
+				_gcWalk(i.baseType);
+				for (auto &j : i.interfaces) {
+					j.loadDeferredType(this);
+					_gcWalk(j);
+				}
+			}
+			for (auto &i : fnOverloading->mappedGenericArgs) {
+				i.second.loadDeferredType(this);
+				_gcWalk(i.second);
+			}
+
 			for (auto &j : fnOverloading->paramTypes)
 				_gcWalk(j);
 			_gcWalk(fnOverloading->returnType);
@@ -292,11 +323,11 @@ void Runtime::_gcWalk(Context &ctxt) {
 			_gcWalk(j.thisObject);
 		_gcWalk(j.curExcept);
 		for (auto &k : j.argStack)
-			_gcWalk(k);
+			_gcWalk((VarObject *)k);
 		for (auto &k : j.nextArgStack)
 			_gcWalk(k);
 		for (auto &k : j.localVars)
-			_gcWalk(k);
+			_gcWalk((VarObject*)k);
 		for (auto &k : j.regs)
 			_gcWalk(k);
 		for (auto &k : j.minorFrames) {

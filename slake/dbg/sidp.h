@@ -23,7 +23,7 @@ namespace slake {
 		virtual ~SidpDebugAdapter();
 
 		virtual void onExecBreakpoint(FnObject *fn, uint32_t curIns) override;
-		virtual void onVarWrite(VarObject *var) override;
+		virtual void onVarWrite(RegularVarObject *var) override;
 	};
 }
 

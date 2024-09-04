@@ -21,25 +21,31 @@ namespace slake {
 		uint32_t off;
 	};
 
-	/// @brief Minor frames which are created by ENTER instructions and
-	/// destroyed by LEAVE instructions.
+	/// @brief Minor frames are created by ENTER instructions and destroyed by
+	/// LEAVE instructions.
 	struct MinorFrame final {
 		std::deque<ExceptionHandler> exceptHandlers;  // Exception handlers
 
 		uint32_t nLocalVars = 0, nRegs = 0;
+		size_t stackBase;
 
 		MinorFrame(uint32_t nLocalVars, uint32_t nRegs);
+		// Default constructor is required by resize() methods from the
+		// containers.
+		inline MinorFrame() {
+			assert(false);
+		}
 	};
 
-	/// @brief Major frames which represent a single calling frame.
+	/// @brief A major frame represents a single calling frame.
 	struct MajorFrame final {
 		Object *scopeObject = nullptr;						// Scope value.
 		const RegularFnOverloadingObject *curFn = nullptr;	// Current function overloading.
 		uint32_t curIns = 0;								// Offset of current instruction in function body.
-		std::deque<VarObject *> argStack;					// Argument stack.
+		std::deque<RegularVarObject *> argStack;					// Argument stack.
 		std::deque<Value> nextArgStack;						// Argument stack for next call.
 		std::deque<Type> nextArgTypes;						// Types of argument stack for next call.
-		std::deque<VarObject *> localVars;					// Local variables.
+		std::deque<RegularVarObject *> localVars;					// Local variables.
 		std::deque<Value> regs;								// Local registers.
 		Object *thisObject = nullptr;						// `this' object.
 		Value returnValue = nullptr;						// Return value.
@@ -47,6 +53,11 @@ namespace slake {
 		Value curExcept = nullptr;							// Current exception.
 
 		MajorFrame(Runtime *rt);
+		// Default constructor is required by resize() methods from the
+		// containers.
+		inline MajorFrame() {
+			assert(false);
+		}
 
 		inline VarRef lload(uint32_t off) {
 			if (off >= localVars.size())
@@ -80,6 +91,7 @@ namespace slake {
 	struct Context final {
 		std::deque<MajorFrame> majorFrames;	 // Major frame
 		ContextFlags flags = 0;				 // Flags
+		std::unique_ptr<char[]> dataStack;	 // Data stack
 	};
 
 	class SynchronizedCountablePoolResource : public std::pmr::synchronized_pool_resource {
@@ -201,16 +213,15 @@ namespace slake {
 		void _instantiateGenericObject(Object *v, GenericInstantiationContext &instantiationContext) const;
 		void _instantiateGenericObject(FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const;
 
-		VarObject *_addLocalVar(MajorFrame &frame, Type type);
+		RegularVarObject *_addLocalVar(MajorFrame &frame, Type type);
 		void _addLocalReg(MajorFrame &frame);
 
-		bool _findAndDispatchExceptHandler(Context *context) const;
+		uint32_t _findAndDispatchExceptHandler(const Value &curExcept, const MinorFrame &minorFrame) const;
 
 		friend class Object;
 		friend class RegularFnOverloadingObject;
 		friend class FnObject;
 		friend class InstanceObject;
-		friend class MemberObject;
 		friend class ModuleObject;
 
 	public:

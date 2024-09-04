@@ -12,28 +12,19 @@
 namespace slake {
 	class MemberObject : public Object {
 	public:
-		AccessModifier accessModifier;
+		AccessModifier accessModifier = 0;
 
-		MemberObject(Runtime *rt, AccessModifier access);
+		MemberObject(Runtime *rt);
 		inline MemberObject(const MemberObject &x) : Object(x) {
 			accessModifier = x.accessModifier;
-			_parent = x._parent;
-			_name = x._name;
 		}
 		virtual ~MemberObject();
 
-		Object *_parent = nullptr;
-		std::string _name;
-
-		GenericArgList _genericArgs;
-
-		virtual std::string getName() const;
-
-		const Object *getParent() const;
-		Object *getParent();
-
-		virtual void bind(Object *parent, std::string name);
-		virtual void unbind();
+		virtual const char *getName() const;
+		virtual void setName(const char *name);
+		virtual Object *getParent() const;
+		virtual void setParent(Object *parent);
+		virtual GenericArgList getGenericArgs() const;
 	};
 }
 

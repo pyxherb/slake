@@ -7,14 +7,18 @@ ArrayAccessorVarObject::ArrayAccessorVarObject(
 	Runtime *rt,
 	const Type &elementType,
 	ArrayObject *arrayObject)
-	: BasicVarObject(rt, ACCESS_PUB, Type::makeArrayTypeName(rt, elementType)), arrayObject(arrayObject) {
+	: VarObject(rt), arrayObject(arrayObject) {
 }
 
-ArrayAccessorVarObject::ArrayAccessorVarObject(const ArrayAccessorVarObject &other) : BasicVarObject(other) {
+ArrayAccessorVarObject::ArrayAccessorVarObject(const ArrayAccessorVarObject &other) : VarObject(other) {
 	arrayObject = other.arrayObject;
 }
 
 ArrayAccessorVarObject::~ArrayAccessorVarObject() {}
+
+Type ArrayAccessorVarObject::getVarType() const {
+	return Type::makeArrayTypeName(_rt, elementType);
+}
 
 ArrayObject::ArrayObject(Runtime *rt, const Type &elementType, ArrayAccessorVarObject *accessor)
 	: Object(rt),

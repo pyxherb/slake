@@ -3,35 +3,29 @@
 
 using namespace slake;
 
-MemberObject::MemberObject(Runtime *rt, AccessModifier access)
-	: Object(rt), accessModifier(access) {
+MemberObject::MemberObject(Runtime *rt)
+	: Object(rt) {
 }
 
 MemberObject::~MemberObject() {
 }
 
-std::string MemberObject::getName() const {
-	return _name;
+const char* MemberObject::getName() const {
+	return nullptr;
 }
 
-const Object *MemberObject::getParent() const { return _parent; }
-Object *MemberObject::getParent() { return _parent; }
-
-void MemberObject::bind(Object *parent, std::string name) {
-	_parent = parent, _name = name;
+void MemberObject::setName(const char* name) {
+	throw std::logic_error("The object did not implement setName()");
 }
 
-void MemberObject::unbind() {
-	if (!_parent)
-		throw std::logic_error("Unbinding an unbound member value");
-	_parent = nullptr;
-	_name.clear();
+Object* MemberObject::getParent() const {
+	return nullptr;
 }
 
-void Scope::_getMemberChain(const std::string &name, std::deque<std::pair<Scope *, MemberObject *>> &membersOut) {
-	if (auto m = getMember(name); m)
-		membersOut.push_back({ this, m });
+void MemberObject::setParent(Object *parent) {
+	throw std::logic_error("The object did not implement setParent()");
+}
 
-	if (parent)
-		parent->_getMemberChain(name, membersOut);
+GenericArgList MemberObject::getGenericArgs() const {
+	return {};
 }

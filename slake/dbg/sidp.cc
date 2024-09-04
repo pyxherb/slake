@@ -80,6 +80,6 @@ void SidpDebugAdapter::onExecBreakpoint(FnObject* fn, uint32_t curIns) {
 
 }
 
-void SidpDebugAdapter::onVarWrite(VarObject *var) {
+void SidpDebugAdapter::onVarWrite(RegularVarObject *var) {
 
 }

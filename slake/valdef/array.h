@@ -8,13 +8,16 @@
 namespace slake {
 	class ArrayObject;
 
-	class ArrayAccessorVarObject : public BasicVarObject {
+	class ArrayAccessorVarObject : public VarObject {
 	public:
 		ArrayObject *arrayObject;
+		Type elementType;
 
 		ArrayAccessorVarObject(Runtime *rt, const Type& elementType, ArrayObject *arrayObject);
 		ArrayAccessorVarObject(const ArrayAccessorVarObject &other);
 		virtual ~ArrayAccessorVarObject();
+
+		virtual Type getVarType() const override;
 
 		virtual VarKind getVarKind() const override { return VarKind::ArrayElementAccessor; }
 	};

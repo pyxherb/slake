@@ -11,19 +11,16 @@ namespace slake {
 		ArrayElementAccessor
 	};
 
-	class BasicVarObject : public MemberObject {
+	class VarObject : public MemberObject {
 	public:
-		BasicVarObject(Runtime *rt, AccessModifier access, Type type);
-		inline BasicVarObject(const BasicVarObject &x) : MemberObject(x) {
-			type = x.type;
+		VarObject(Runtime *rt);
+		inline VarObject(const VarObject &x) : MemberObject(x) {
 		}
-		virtual ~BasicVarObject();
-
-		Type type = TypeId::Any;
+		virtual ~VarObject();
 
 		virtual inline ObjectKind getKind() const override { return ObjectKind::Var; }
 
-		virtual Type getVarType() const { return type; }
+		virtual Type getVarType() const = 0;
 
 		virtual Value getData(const VarRefContext &context) const = 0;
 		virtual void setData(const VarRefContext &context, const Value &value) = 0;
@@ -31,20 +28,33 @@ namespace slake {
 		virtual VarKind getVarKind() const = 0;
 	};
 
-	class VarObject final : public BasicVarObject {
+	class RegularVarObject final : public VarObject {
 	public:
 		Value value;
+		Type type;
 
-		VarObject(Runtime *rt, AccessModifier access, const Type &type);
-		inline VarObject(const VarObject &other) : BasicVarObject(other) {
+		std::pmr::string name;
+		Object *parent = nullptr;
+
+		RegularVarObject(Runtime *rt, AccessModifier access, const Type &type);
+		inline RegularVarObject(const RegularVarObject &other) : VarObject(other) {
 			value = other.value;
+			type = other.type;
+
+			name = other.name;
+			parent = other.parent;
 		}
-		virtual ~VarObject();
+		virtual ~RegularVarObject();
 
 		virtual Object *duplicate() const override;
 
-		static HostObjectRef<VarObject> alloc(Runtime *rt, AccessModifier access, const Type &type);
-		static HostObjectRef<VarObject> alloc(const VarObject *other);
+		virtual const char *getName() const override;
+		virtual void setName(const char *name);
+		virtual Object *getParent() const override;
+		virtual void setParent(Object *parent);
+
+		static HostObjectRef<RegularVarObject> alloc(Runtime *rt, AccessModifier access, const Type &type);
+		static HostObjectRef<RegularVarObject> alloc(const RegularVarObject *other);
 		virtual void dealloc() override;
 
 		virtual inline Value getData(const VarRefContext &context) const override { return value; }
@@ -54,6 +64,9 @@ namespace slake {
 			this->value = value;
 		}
 
+		virtual inline ObjectKind getKind() const override { return ObjectKind::Var; }
+
+		virtual Type getVarType() const override { return type; }
 		virtual VarKind getVarKind() const override { return VarKind::Regular; }
 	};
 }

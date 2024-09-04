@@ -279,8 +279,8 @@ void Runtime::_loadScope(ModuleObject *mod, std::istream &fs, LoadModuleFlags lo
 			access |= ACCESS_NATIVE;
 
 		auto varType = _loadType(fs);
-		HostObjectRef<VarObject> var =
-			VarObject::alloc(
+		HostObjectRef<RegularVarObject> var =
+			RegularVarObject::alloc(
 				this,
 				access,
 				varType);

@@ -12,7 +12,7 @@
 		#define malloc(n) _malloc_dbg(n, _NORMAL_BLOCK, __FILE__, __LINE__)
 		#define free(n) _free_dbg(n, _NORMAL_BLOCK)
 		#define __DBG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)
-		//#define new __DBG_NEW
+		#define new __DBG_NEW
 
 	#endif
 #endif

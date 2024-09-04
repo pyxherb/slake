@@ -6,13 +6,22 @@
 namespace slake {
 	class AliasObject final : public MemberObject {
 	public:
+		mutable Object *src;
+		std::string name;
+		Object *parent;
+
 		AliasObject(Runtime *rt, AccessModifier access, Object *src);
 		inline AliasObject(const AliasObject &other) : MemberObject(other) {
 			src = other.src;
+			name = other.name;
+			parent = other.parent;
 		}
 		virtual ~AliasObject();
 
-		mutable Object *src;
+		virtual const char *getName() const;
+		virtual void setName(const char *name);
+		virtual Object *getParent() const;
+		virtual void setParent(Object *parent);
 
 		virtual inline ObjectKind getKind() const override { return ObjectKind::Alias; }
 

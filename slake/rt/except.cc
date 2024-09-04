@@ -1,15 +1,12 @@
 #include "../runtime.h"
 using namespace slake;
 
-bool Runtime::_findAndDispatchExceptHandler(Context *context) const {
-	auto &curMajorFrame = context->majorFrames.back();
-	auto &x = curMajorFrame.curExcept;
-	// Find for a proper exception handler.
-	for (const auto &i : curMajorFrame.minorFrames.back().exceptHandlers) {
-		if (isCompatible(i.type, x)) {
-			curMajorFrame.curIns = i.off;
-			return true;
+uint32_t Runtime::_findAndDispatchExceptHandler(const Value &curExcept, const MinorFrame &minorFrame) const {
+	// Find a proper exception handler.
+	for (const auto &i : minorFrame.exceptHandlers) {
+		if (isCompatible(i.type, curExcept)) {
+			return i.off;
 		}
 	}
-	return false;
+	return UINT32_MAX;
 }

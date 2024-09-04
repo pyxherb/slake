@@ -96,8 +96,8 @@ static Value _castToLiteralValue(Value x) {
 	}
 }
 
-VarObject *slake::Runtime::_addLocalVar(MajorFrame &frame, Type type) {
-	auto v = VarObject::alloc(this, ACCESS_PUB, type);
+RegularVarObject *slake::Runtime::_addLocalVar(MajorFrame &frame, Type type) {
+	auto v = RegularVarObject::alloc(this, ACCESS_PUB, type);
 	frame.localVars.push_back(v.get());
 	return v.release();
 }
@@ -247,13 +247,13 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			if (!varRef.varPtr)
 				throw NullRefError();
 
-			if (((BasicVarObject*)varRef.varPtr)->getVarKind() == VarKind::ArrayElementAccessor)
+			if (((VarObject*)varRef.varPtr)->getVarKind() == VarKind::ArrayElementAccessor)
 				puts("");
 
 			_setRegisterValue(
 				curMajorFrame,
 				ins.output.getRegIndex(),
-				((BasicVarObject *)varRef.varPtr)->getData(varRef.context));
+				((VarObject *)varRef.varPtr)->getData(varRef.context));
 			break;
 		}
 		case Opcode::ENTER: {
@@ -1338,31 +1338,23 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 			Value x = ins.operands[0];
 
-			auto tmpContext = *context;
+			for (size_t i = context->majorFrames.size(); i; --i) {
+				auto &majorFrame = context->majorFrames[i - 1];
 
-			while (tmpContext.majorFrames.size()) {
-				// Pass the exception to current level of major frames.
-				// Because curMajorFrame expires once we unwind a major frame,
-				// we use `context->majorFrames.back()` instead.
-				tmpContext.majorFrames.back().curExcept = x;
+				for (size_t j = majorFrame.minorFrames.size(); j; --j) {
+					auto &minorFrame = majorFrame.minorFrames[j - 1];
 
-				while (tmpContext.majorFrames.back().minorFrames.size()) {
-					bool found = _findAndDispatchExceptHandler(&tmpContext);
-
-					// Leave current minor frame.
-					tmpContext.majorFrames.back().leave();
-
-					if (found) {
-						*context = tmpContext;
+					if (uint32_t off = _findAndDispatchExceptHandler(majorFrame.curExcept, minorFrame);
+						off != UINT32_MAX) {
+						context->majorFrames.resize(i);
+						majorFrame.minorFrames.resize(j);
 						// Do not increase the current instruction offset,
 						// the offset has been set to offset to first instruction
 						// of the exception handler.
+						majorFrame.curIns = off;
 						return;
 					}
 				}
-
-				// Unwind current major frame if no handler was matched.
-				tmpContext.majorFrames.pop_back();
 			}
 
 			curMajorFrame.curExcept = x;

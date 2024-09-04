@@ -229,7 +229,7 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 			importDefinitions(scope, parent, (ModuleObject *)value);
 			break;
 		case slake::ObjectKind::Var: {
-			VarObject *v = (VarObject *)value;
+			RegularVarObject *v = (RegularVarObject *)value;
 			std::shared_ptr<VarNode> var = std::make_shared<VarNode>(
 				this,
 				v->accessModifier,

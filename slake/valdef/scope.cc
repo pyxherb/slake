@@ -4,12 +4,14 @@ using namespace slake;
 
 void Scope::putMember(const std::string &name, MemberObject *value) {
 	members[name] = value;
-	value->bind(owner, name);
+	value->setParent(owner);
+	value->setName(name.c_str());
 }
 
 void Scope::removeMember(const std::string &name) {
 	if (auto it = members.find(name); it != members.end()) {
-		it->second->unbind();
+		it->second->setParent(nullptr);
+		it->second->setName("");
 		members.erase(it);
 	}
 

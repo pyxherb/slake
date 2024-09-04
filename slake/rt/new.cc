@@ -86,14 +86,14 @@ static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *
 	for (const auto &i : cls->scope->members) {
 		switch (i.second->getKind()) {
 			case ObjectKind::Var: {
-				HostObjectRef<VarObject> var = VarObject::alloc(
+				HostObjectRef<RegularVarObject> var = RegularVarObject::alloc(
 					runtime,
-					((BasicVarObject *)i.second)->accessModifier,
-					((BasicVarObject *)i.second)->getVarType());
+					((RegularVarObject *)i.second)->accessModifier,
+					((RegularVarObject *)i.second)->getVarType());
 
 				VarRefContext placeholderVarContext = {};
 				// Initialize the variable if initial value is set
-				var->setData(placeholderVarContext, ((VarObject *)i.second)->getData(placeholderVarContext));
+				var->setData(placeholderVarContext, ((RegularVarObject *)i.second)->getData(placeholderVarContext));
 
 				instance->scope->addMember(i.first, var.release());
 				break;

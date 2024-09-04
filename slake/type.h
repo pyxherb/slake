@@ -46,7 +46,6 @@ namespace slake {
 	class Runtime;
 	class Object;
 	class IdRefObject;
-	class MemberObject;
 
 	union TypeExData {
 		ValueType valueType;

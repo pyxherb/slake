@@ -14,9 +14,6 @@ namespace slake {
 	class FnOverloadingObject;
 
 	class Scope {
-	private:
-		void _getMemberChain(const std::string &name, std::deque<std::pair<Scope *, MemberObject *>> &membersOut);
-
 	public:
 		Scope *parent;
 		Object *owner;
@@ -44,14 +41,6 @@ namespace slake {
 		void removeMember(const std::string &name);
 
 		Scope *duplicate();
-
-		inline std::deque<std::pair<Scope *, MemberObject *>> getMemberChain(const std::string &name) {
-			std::deque<std::pair<Scope *, MemberObject *>> members;
-
-			_getMemberChain(name, members);
-
-			return members;
-		}
 	};
 
 	class MethodTable {

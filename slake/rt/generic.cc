@@ -92,7 +92,7 @@ void slake::Runtime::_instantiateGenericObject(Object *v, GenericInstantiationCo
 
 				_instantiateGenericObject(value, newInstantiationContext);
 			} else {
-				value->_genericArgs = *instantiationContext.genericArgs;
+				value->genericArgs = *instantiationContext.genericArgs;
 
 				_instantiateGenericObject(value->parentClass, instantiationContext);
 
@@ -105,7 +105,7 @@ void slake::Runtime::_instantiateGenericObject(Object *v, GenericInstantiationCo
 		case ObjectKind::Interface: {
 			InterfaceObject *const value = (InterfaceObject *)v;
 
-			value->_genericArgs = *instantiationContext.genericArgs;
+			value->genericArgs = *instantiationContext.genericArgs;
 
 			for (auto &i : value->scope->members)
 				_instantiateGenericObject(i.second, instantiationContext);
@@ -113,9 +113,20 @@ void slake::Runtime::_instantiateGenericObject(Object *v, GenericInstantiationCo
 			break;
 		}
 		case ObjectKind::Var: {
-			BasicVarObject *value = (BasicVarObject *)v;
+			VarObject *value = (VarObject *)v;
 
-			_instantiateGenericObject(value->type, instantiationContext);
+			switch (value->getVarKind()) {
+				case VarKind::Regular: {
+					RegularVarObject *v = (RegularVarObject *)value;
+					_instantiateGenericObject(v->type, instantiationContext);
+					break;
+				}
+				case VarKind::ArrayElementAccessor: {
+					ArrayAccessorVarObject *v = (ArrayAccessorVarObject*)value;
+					_instantiateGenericObject(v->arrayObject, instantiationContext);
+					break;
+				}
+			}
 			break;
 		}
 		case ObjectKind::Module: {

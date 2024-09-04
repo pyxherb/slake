@@ -197,7 +197,7 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 			break;
 		}
 		case slake::ObjectKind::Var: {
-			VarObject *v = (VarObject *)object;
+			RegularVarObject *v = (RegularVarObject *)object;
 			os << std::string(indentLevel, '\t')
 			   << ".var " << decompileTypeName(v->getVarType(), rt) << " " << v->getName() << "\n";
 			break;

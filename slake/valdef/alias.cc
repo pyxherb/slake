@@ -3,9 +3,10 @@
 using namespace slake;
 
 slake::AliasObject::AliasObject(Runtime *rt, AccessModifier access, Object *src)
-	: MemberObject(rt, access), src(src) {
+	: MemberObject(rt), src(src) {
 	scope = src->scope;
 	_flags |= VF_ALIAS;
+	this->accessModifier = access;
 }
 
 AliasObject::~AliasObject() {
@@ -13,6 +14,22 @@ AliasObject::~AliasObject() {
 
 Object *AliasObject::duplicate() const {
 	return (Object *)alloc(this).get();
+}
+
+const char *AliasObject::getName() const {
+	return name.c_str();
+}
+
+void AliasObject::setName(const char *name) {
+	this->name = name;
+}
+
+Object *AliasObject::getParent() const {
+	return parent;
+}
+
+void AliasObject::setParent(Object *parent) {
+	this->parent = parent;
 }
 
 HostObjectRef<AliasObject> AliasObject::alloc(Runtime *rt, Object *src) {

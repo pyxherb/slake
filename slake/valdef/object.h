@@ -90,7 +90,6 @@ namespace slake {
 		inline Runtime *getRuntime() const noexcept { return _rt; }
 
 		MemberObject *getMember(const std::string &name);
-		std::deque<std::pair<Scope *, MemberObject *>> getMemberChain(const std::string &name);
 	};
 
 	template <typename T = Object>

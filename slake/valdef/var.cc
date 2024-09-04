@@ -3,48 +3,65 @@
 
 using namespace slake;
 
-BasicVarObject::BasicVarObject(Runtime *rt, AccessModifier access, Type type) : MemberObject(rt, access), type(type) {
-}
-
-BasicVarObject::~BasicVarObject() {
-}
-
-slake::VarObject::VarObject(Runtime *rt, AccessModifier access, const Type &type)
-	: BasicVarObject(rt, access, type) {
+VarObject::VarObject(Runtime *rt) : MemberObject(rt) {
 }
 
 VarObject::~VarObject() {
 }
 
-Object *VarObject::duplicate() const {
-	return (Object *)alloc(this).get();
+slake::RegularVarObject::RegularVarObject(Runtime *rt, AccessModifier access, const Type &type)
+	: VarObject(rt), type(type) {
+	this->accessModifier = access;
 }
 
-void slake::VarObject::dealloc() {
-	std::pmr::polymorphic_allocator<VarObject> allocator(&_rt->globalHeapPoolResource);
+RegularVarObject::~RegularVarObject() {
+}
+
+Object *RegularVarObject::duplicate() const {
+	return (Object *)(VarObject *)alloc(this).get();
+}
+
+const char* RegularVarObject::getName() const {
+	return name.c_str();
+}
+
+void RegularVarObject::setName(const char* name) {
+	this->name = name;
+}
+
+Object* RegularVarObject::getParent() const {
+	return parent;
+}
+
+void RegularVarObject::setParent(Object* parent) {
+	this->parent = parent;
+}
+
+void slake::RegularVarObject::dealloc() {
+	std::pmr::polymorphic_allocator<RegularVarObject> allocator(&VarObject::_rt->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
-HostObjectRef<VarObject> slake::VarObject::alloc(Runtime *rt, AccessModifier access, const Type &type) {
-	std::pmr::polymorphic_allocator<VarObject> allocator(&rt->globalHeapPoolResource);
+HostObjectRef<RegularVarObject> slake::RegularVarObject::alloc(Runtime *rt, AccessModifier access, const Type &type) {
+	std::pmr::polymorphic_allocator<RegularVarObject> allocator(&rt->globalHeapPoolResource);
 
-	VarObject *ptr = allocator.allocate(1);
+	RegularVarObject *ptr = allocator.allocate(1);
 	allocator.construct(ptr, rt, access, type);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert((VarObject*)ptr);
 
 	return ptr;
 }
 
-HostObjectRef<VarObject> slake::VarObject::alloc(const VarObject *other) {
-	std::pmr::polymorphic_allocator<VarObject> allocator(&other->_rt->globalHeapPoolResource);
+HostObjectRef<RegularVarObject> slake::RegularVarObject::alloc(const RegularVarObject *other) {
+	std::pmr::polymorphic_allocator<RegularVarObject> allocator(&other->Object::_rt->globalHeapPoolResource);
 
-	VarObject *ptr = allocator.allocate(1);
+	RegularVarObject *ptr = allocator.allocate(1);
 	allocator.construct(ptr, *other);
 
-	other->_rt->createdObjects.insert(ptr);
+	other->Object::_rt->createdObjects.insert((VarObject *)ptr);
 
 	return ptr;
 }

@@ -102,7 +102,7 @@ std::deque<IdRefEntry> Runtime::getFullRef(const MemberObject *v) const {
 				v = (const MemberObject *)((InstanceObject *)v)->_class;
 				break;
 		}
-		entries.push_front({ v->getName(), v->_genericArgs });
+		entries.push_front({ v->getName(), v->getGenericArgs() });
 	} while ((Object *)(v = (const MemberObject *)v->getParent()) != _rootObject);
 	return entries;
 }

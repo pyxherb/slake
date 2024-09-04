@@ -31,7 +31,3 @@ MemberObject *slake::Object::getMember(const std::string &name) {
 	return nullptr;
 }
 
-std::deque<std::pair<Scope *, MemberObject *>> slake::Object::getMemberChain(const std::string &name) {
-	return scope ? scope->getMemberChain(name) : std::deque<std::pair<Scope *, MemberObject *>>();
-}
-

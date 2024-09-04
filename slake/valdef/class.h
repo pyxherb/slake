@@ -23,15 +23,7 @@ namespace slake {
 		friend class Runtime;
 
 	public:
-		ClassObject(Runtime *rt, AccessModifier access, const Type &parentClass);
-		inline ClassObject(const ClassObject &x) : ModuleObject(x) {
-			parentClass = x.parentClass;
-			genericParams = x.genericParams;
-			_flags = x._flags;
-			implInterfaces = x.implInterfaces;
-			customInstantiator = x.customInstantiator;
-		}
-		virtual ~ClassObject();
+		GenericArgList genericArgs;
 
 		GenericParamList genericParams;
 
@@ -43,7 +35,28 @@ namespace slake {
 		/// @brief User-defined instantiator.
 		ClassInstantiator customInstantiator;
 
+		ClassObject(Runtime *rt, AccessModifier access, const Type &parentClass);
+		inline ClassObject(const ClassObject &x) : ModuleObject(x) {
+			_flags = x._flags;
+
+			genericArgs = x.genericArgs;
+			genericParams = x.genericParams;
+
+			parentClass = x.parentClass;
+			implInterfaces = x.implInterfaces;
+
+			// DO NOT copy the cached instantiated method table.
+
+			customInstantiator = x.customInstantiator;
+		}
+		virtual ~ClassObject();
+
 		virtual inline ObjectKind getKind() const override { return ObjectKind::Class; }
+
+		virtual inline GenericArgList getGenericArgs() const override {
+			return genericArgs;
+		}
+
 		virtual inline Type getParentType() const { return parentClass; }
 		virtual inline void setParentType(Type parent) { parentClass = parent; }
 
@@ -68,21 +81,31 @@ namespace slake {
 		friend class ClassObject;
 
 	public:
-		inline InterfaceObject(Runtime *rt, AccessModifier access, const std::deque<Type> &parents)
-			: ModuleObject(rt, access), parents(parents) {
-		}
-		inline InterfaceObject(const InterfaceObject& x) : ModuleObject(x) {
-			parents = x.parents;
-		}
-		virtual ~InterfaceObject();
+		GenericArgList genericArgs;
 
 		GenericParamList genericParams;
 
 		std::deque<Type> parents;
 
+		inline InterfaceObject(Runtime *rt, AccessModifier access, const std::deque<Type> &parents)
+			: ModuleObject(rt, access), parents(parents) {
+		}
+		inline InterfaceObject(const InterfaceObject& x) : ModuleObject(x) {
+			genericArgs = x.genericArgs;
+
+			genericParams = x.genericParams;
+
+			parents = x.parents;
+		}
+		virtual ~InterfaceObject();
+
 		virtual inline ObjectKind getKind() const override { return ObjectKind::Interface; }
 
 		virtual Object *duplicate() const override;
+
+		virtual inline GenericArgList getGenericArgs() const override {
+			return genericArgs;
+		}
 
 		static HostObjectRef<InterfaceObject> alloc(Runtime *rt, AccessModifier access, const std::deque<Type> &parents = {});
 		static HostObjectRef<InterfaceObject> alloc(const InterfaceObject *other);

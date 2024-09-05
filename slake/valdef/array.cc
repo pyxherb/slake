@@ -16,7 +16,7 @@ ArrayAccessorVarObject::ArrayAccessorVarObject(const ArrayAccessorVarObject &oth
 
 ArrayAccessorVarObject::~ArrayAccessorVarObject() {}
 
-Type ArrayAccessorVarObject::getVarType() const {
+Type ArrayAccessorVarObject::getVarType(const VarRefContext &context) const {
 	return Type::makeArrayTypeName(_rt, elementType);
 }
 

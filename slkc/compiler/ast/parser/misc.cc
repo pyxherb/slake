@@ -6,12 +6,14 @@ using namespace slake::slkc;
 void Parser::_putDefinition(
 	std::string name,
 	std::shared_ptr<MemberNode> member) {
-	if (curScope->members.count(name))
-		throw FatalCompilationError(
+	if (curScope->members.count(name)) {
+		compiler->messages.push_back(
 			Message(
 				member->sourceLocation,
 				MessageType::Error,
 				"Redefinition of `" + name + "'"));
+		return;
+	}
 	curScope->members[name] = member;
 	member->parent = (MemberNode *)curScope->owner;
 }
@@ -25,11 +27,12 @@ void Parser::_putFnDefinition(
 	}
 
 	if (curScope->members.at(name)->getNodeType() != NodeType::Fn) {
-		throw FatalCompilationError(
+		compiler->messages.push_back(
 			Message(
 				overloading->sourceLocation,
 				MessageType::Error,
 				"Redefinition of `" + name + "'"));
+		return;
 	} else {
 		auto fn = std::static_pointer_cast<FnNode>(curScope->members.at(name));
 		fn->overloadingRegistries.push_back(overloading);

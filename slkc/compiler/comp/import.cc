@@ -230,7 +230,7 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 			std::shared_ptr<VarNode> var = std::make_shared<VarNode>(
 				this,
 				v->accessModifier,
-				toTypeName(v->getVarType()),
+				toTypeName(v->getVarType(VarRefContext())),
 				v->getName(),
 				std::shared_ptr<ExprNode>(),
 				SIZE_MAX, SIZE_MAX, SIZE_MAX, SIZE_MAX);

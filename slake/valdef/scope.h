@@ -42,16 +42,17 @@ namespace slake {
 
 	class MethodTable {
 	public:
-		Object *owner;
 		std::unordered_map<std::string, FnObject *> methods;
 		std::deque<FnOverloadingObject*> destructors;
-
-		inline MethodTable(Object *owner) : owner(owner) {}
 
 		inline FnObject* getMethod(const std::string& name) {
 			if (auto it = methods.find(name); it != methods.end())
 				return it->second;
 			return nullptr;
+		}
+
+		inline MethodTable* duplicate() const {
+			return new MethodTable(*this);
 		}
 	};
 }

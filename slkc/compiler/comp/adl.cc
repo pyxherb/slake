@@ -33,6 +33,13 @@ void slake::slkc::Compiler::_argDependentLookup(
 		if (nGenericParams != genericArgs.size())
 			continue;
 
+		for (size_t j = 0; j < i->specializationArgs.size(); ++j) {
+			std::shared_ptr<TypeNameNode> curType = i->specializationArgs[j];
+
+			if (!isSameType(curType, genericArgs[j]))
+				goto fail;
+		}
+
 		if (nGenericParams) {
 			GenericNodeInstantiationContext instantiationContext{ &genericArgs, {} };
 			i = instantiateGenericFnOverloading(i, instantiationContext);

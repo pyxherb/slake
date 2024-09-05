@@ -52,6 +52,8 @@ namespace slake {
 		GenericParamList genericParams;
 		std::unordered_map<std::string, Type> mappedGenericArgs;
 
+		GenericArgList specializationArgs;
+
 		std::deque<Type> paramTypes;
 		Type returnType;
 

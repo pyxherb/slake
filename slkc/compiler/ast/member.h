@@ -21,6 +21,7 @@ namespace slake {
 
 			GenericParamNodeList genericParams;
 			std::unordered_map<std::string, size_t> genericParamIndices;
+			std::deque<std::shared_ptr<TypeNameNode>> specializationArgs;
 
 			std::shared_ptr<Scope> scope;
 

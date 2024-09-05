@@ -93,7 +93,7 @@ void Compiler::scanAndLinkParentFns(Scope *scope, FnNode *fn, const std::string 
 parentFnScanEnd:;
 }
 
-void Compiler::collectMethodsForFulfillmentVerification(std::shared_ptr<Scope> scope, std::unordered_map<std::string, std::set<std::shared_ptr<FnOverloadingNode>>>& unfilledMethodsOut) {
+void Compiler::collectMethodsForFulfillmentVerification(std::shared_ptr<Scope> scope, std::unordered_map<std::string, std::set<std::shared_ptr<FnOverloadingNode>>> &unfilledMethodsOut) {
 	for (auto i : scope->members) {
 		if (i.second->getNodeType() == NodeType::Fn) {
 			std::shared_ptr<FnNode> m = std::static_pointer_cast<FnNode>(i.second);
@@ -104,7 +104,7 @@ void Compiler::collectMethodsForFulfillmentVerification(std::shared_ptr<Scope> s
 				} else {
 					if (auto it = unfilledMethodsOut.find(i.first); it != unfilledMethodsOut.end()) {
 						for (auto k : it->second) {
-							if (isParamTypesSame(j->params, k->params)) {
+							if (isFnOverloadingDuplicated(j, k)) {
 								unfilledMethodsOut[i.first].erase(k);
 								break;
 							}
@@ -670,7 +670,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 	auto mergeGenericParams = [this](const GenericParamNodeList &newParams) {
 		for (auto &i : newParams) {
 			if (curMajorContext.genericParamIndices.count(i->name))
-				throw FatalCompilationError(
+				messages.push_back(
 					Message(
 						i->sourceLocation,
 						MessageType::Error,
@@ -790,12 +790,14 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 
 				while (j->parentClass) {
 					j = (ClassNode *)resolveCustomTypeName((CustomTypeNameNode *)j->parentClass.get()).get();
-					if (j->scope->members.count(i.first))
-						throw FatalCompilationError(
-							Message(
-								i.second->sourceLocation,
-								MessageType::Error,
-								"The member shadows another members from a parent"));
+					if (j->scope->members.count(i.first)) {
+						messages.push_back(Message(
+							i.second->sourceLocation,
+							MessageType::Error,
+							"The member shadows another member from the parent"));
+
+						goto skipCurVar;
+					}
 				};
 
 				break;
@@ -817,26 +819,33 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 		_write(os, vad);
 		_write(os, i.first.data(), i.first.length());
 
-		auto varType = i.second->type ? i.second->type : std::make_shared<AnyTypeNameNode>(SIZE_MAX);
-		compileTypeName(os, varType);
+		{
+			auto varType = i.second->type ? i.second->type : std::make_shared<AnyTypeNameNode>(SIZE_MAX);
+			compileTypeName(os, varType);
 
-		if (isLValueType(varType))
-			throw FatalCompilationError(
-				Message(
-					varType->sourceLocation,
-					MessageType::Error,
-					"Cannot use reference types for member variables"));
-
-		if (i.second->initValue) {
-			if (auto ce = evalConstExpr(i.second->initValue); ce)
-				compileExpr(i.second->initValue);
-			else
-				throw FatalCompilationError(
+			if (isLValueType(varType)) {
+				messages.push_back(
 					Message(
-						i.second->initValue->sourceLocation,
+						varType->sourceLocation,
 						MessageType::Error,
-						"Expecting a compiling-time expression"));
+						"Cannot use reference types for member variables"));
+				goto skipCurVar;
+			}
+
+			if (i.second->initValue) {
+				if (auto ce = evalConstExpr(i.second->initValue); ce)
+					compileExpr(i.second->initValue);
+				else {
+					messages.push_back(
+						Message(
+							i.second->initValue->sourceLocation,
+							MessageType::Error,
+							"Expecting a compiling-time expression"));
+					goto skipCurVar;
+				}
+			}
 		}
+	skipCurVar:;
 	}
 
 	//
@@ -845,6 +854,8 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 	_write<uint32_t>(os, (uint32_t)funcs.size());
 	for (auto &i : funcs) {
 		_write<uint32_t>(os, (uint32_t)i.second->overloadingRegistries.size());
+
+		std::set<std::shared_ptr<FnOverloadingNode>> compiledOverloadingsWithDuplication;
 
 		for (auto &j : i.second->overloadingRegistries) {
 			MemberNodeCompilingStatusGuard compilingStatusGuard(j);
@@ -855,11 +866,12 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 
 			if (j->isVirtual) {
 				if (i.first == "new") {
-					throw FatalCompilationError(
+					messages.push_back(
 						Message(
 							lexer->tokens[j->idxVirtualModifierToken]->location,
 							MessageType::Error,
-							"Constructor cannot be declared as virtual"));
+							"new() method cannot be declared as virtual"));
+					goto skipCurOverloading;
 				}
 
 				switch (scope->owner->getNodeType()) {
@@ -867,11 +879,66 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 					case NodeType::Interface:
 						break;
 					default:
-						throw FatalCompilationError(
+						messages.push_back(
 							Message(
 								lexer->tokens[j->idxVirtualModifierToken]->location,
 								MessageType::Error,
-								"Modifier is invalid in this context"));
+								"Virtual modifier is invalid in the context"));
+						goto skipCurOverloading;
+				}
+
+				if (j->genericParams.size()) {
+					messages.push_back(
+						Message(
+							lexer->tokens[j->idxVirtualModifierToken]->location,
+							MessageType::Error,
+							"Generic method cannot be declared as virtual"));
+					goto skipCurOverloading;
+				}
+			}
+
+			for (size_t k = 0; k < j->specializationArgs.size(); ++k) {
+				auto curType = j->specializationArgs[k];
+
+				switch (curType->getTypeId()) {
+					case TypeId::I8:
+					case TypeId::I16:
+					case TypeId::I32:
+					case TypeId::I64:
+					case TypeId::U8:
+					case TypeId::U16:
+					case TypeId::U32:
+					case TypeId::U64:
+					case TypeId::F32:
+					case TypeId::F64:
+					case TypeId::String:
+					case TypeId::Bool:
+					case TypeId::Any:
+					case TypeId::Void:
+					case TypeId::Array:
+					case TypeId::Fn:
+						break;
+					case TypeId::Custom: {
+						auto m = resolveCustomTypeName((CustomTypeNameNode *)curType.get());
+
+						if (m->getNodeType() == NodeType::GenericParam) {
+							messages.push_back(
+								Message(
+									curType->sourceLocation,
+									MessageType::Error,
+									"Specialization argument must be deterministic"));
+							goto skipCurOverloading;
+						}
+
+						break;
+					}
+					default:
+						messages.push_back(
+							Message(
+								curType->sourceLocation,
+								MessageType::Error,
+								"Specified type cannot be used as a specialization argument"));
+						goto skipCurOverloading;
 				}
 			}
 
@@ -883,118 +950,127 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				if (j == k)
 					continue;
 
-				if (!isParamTypesSame(k->params, j->params)) {
-					throw FatalCompilationError(
-						Message(
-							j->sourceLocation,
-							MessageType::Error,
-							"Duplicated function overloading"));
-				}
-			}
-
-			auto compiledFn = std::make_shared<CompiledFnNode>(i.first);
-			compiledFn->sourceLocation = j->sourceLocation;
-			compiledFn->returnType = j->returnType
-										 ? j->returnType
-										 : std::static_pointer_cast<TypeNameNode>(std::make_shared<VoidTypeNameNode>(SIZE_MAX));
-			compiledFn->params = j->params;
-			compiledFn->paramIndices = j->paramIndices;
-			compiledFn->genericParams = j->genericParams;
-			compiledFn->genericParamIndices = j->genericParamIndices;
-			compiledFn->access = j->access;
-
-			compiledFn->isAsync = j->isAsync;
-
-			curFn = compiledFn;
-
-			if (j->body)
-				compileStmt(j->body);
-
-			mergeGenericParams(compiledFn->genericParams);
-
-			slxfmt::FnDesc fnd = {};
-			bool hasVarArg = false;
-
-			if (compiledFn->access & ACCESS_PUB)
-				fnd.flags |= slxfmt::FND_PUB;
-			if (compiledFn->access & ACCESS_STATIC)
-				fnd.flags |= slxfmt::FND_STATIC;
-			if (compiledFn->access & ACCESS_NATIVE)
-				fnd.flags |= slxfmt::FND_NATIVE;
-			if (compiledFn->access & ACCESS_OVERRIDE)
-				fnd.flags |= slxfmt::FND_OVERRIDE;
-			if (compiledFn->access & ACCESS_FINAL)
-				fnd.flags |= slxfmt::FND_FINAL;
-
-			if (compiledFn->isAsync)
-				fnd.flags |= slxfmt::FND_ASYNC;
-
-			if (j->isVirtual)
-				fnd.flags |= slxfmt::FND_VIRTUAL;
-
-			if (compiledFn->paramIndices.count("..."))
-				hasVarArg = true;
-
-			if (hasVarArg)
-				fnd.flags |= slxfmt::FND_VARG;
-
-			fnd.lenName = (uint16_t)i.first.length();
-			fnd.lenBody = (uint32_t)compiledFn->body.size();
-			fnd.nParams = (uint8_t)compiledFn->params.size() - hasVarArg;
-			fnd.nSourceLocDescs = (uint32_t)compiledFn->srcLocDescs.size();
-			fnd.nGenericParams = compiledFn->genericParams.size();
-
-			_write(os, fnd);
-			_write(os, i.first.data(), i.first.length());
-
-			compileTypeName(os, compiledFn->returnType);
-
-			for (size_t j = 0; j < compiledFn->genericParams.size(); ++j)
-				compileGenericParam(os, compiledFn->genericParams[j]);
-
-			for (size_t j = 0; j < compiledFn->params.size() - hasVarArg; ++j)
-				compileTypeName(os, compiledFn->params[j]->type ? compiledFn->params[j]->type : std::make_shared<AnyTypeNameNode>(SIZE_MAX));
-
-			for (auto &j : compiledFn->body) {
-				slxfmt::InsHeader ih;
-				ih.opcode = j.opcode;
-
-				if (j.operands.size() > 3)
-					throw FatalCompilationError(
-						Message(
-							compiledFn->sourceLocation,
-							MessageType::Error,
-							"Too many operands"));
-				ih.nOperands = (uint8_t)j.operands.size();
-				ih.hasOutputOperand = (bool)j.output;
-
-				_write(os, ih);
-
-				if (j.output)
-					compileValue(os, j.output);
-
-				for (auto &k : j.operands) {
-					if (k) {
-						if (k->getNodeType() == NodeType::LabelRef) {
-							auto &label = std::static_pointer_cast<LabelRefNode>(k)->label;
-							if (!compiledFn->labels.count(label))
-								throw FatalCompilationError(
-									Message(
-										compiledFn->sourceLocation,
-										MessageType::Error,
-										"Undefined label: " + std::static_pointer_cast<LabelRefNode>(k)->label));
-							k = std::make_shared<U32LiteralExprNode>(compiledFn->labels.at(label));
-						}
+				if (isFnOverloadingDuplicated(k, j)) {
+					if (compiledOverloadingsWithDuplication.count(k)) {
+						messages.push_back(
+							Message(
+								j->sourceLocation,
+								MessageType::Error,
+								"Duplicated function overloading"));
+						popMajorContext();
+						goto skipCurOverloading;
 					}
-					compileValue(os, k);
+					compiledOverloadingsWithDuplication.insert(j);
 				}
 			}
 
-			for (auto &j : compiledFn->srcLocDescs) {
-				_write(os, j);
+			{
+				auto compiledFn = std::make_shared<CompiledFnNode>(i.first);
+				compiledFn->sourceLocation = j->sourceLocation;
+				compiledFn->returnType = j->returnType
+											 ? j->returnType
+											 : std::static_pointer_cast<TypeNameNode>(std::make_shared<VoidTypeNameNode>(SIZE_MAX));
+				compiledFn->params = j->params;
+				compiledFn->paramIndices = j->paramIndices;
+				compiledFn->genericParams = j->genericParams;
+				compiledFn->genericParamIndices = j->genericParamIndices;
+				compiledFn->access = j->access;
+
+				compiledFn->isAsync = j->isAsync;
+
+				curFn = compiledFn;
+
+				if (j->body)
+					compileStmt(j->body);
+
+				mergeGenericParams(compiledFn->genericParams);
+
+				slxfmt::FnDesc fnd = {};
+				bool hasVarArg = false;
+
+				if (compiledFn->access & ACCESS_PUB)
+					fnd.flags |= slxfmt::FND_PUB;
+				if (compiledFn->access & ACCESS_STATIC)
+					fnd.flags |= slxfmt::FND_STATIC;
+				if (compiledFn->access & ACCESS_NATIVE)
+					fnd.flags |= slxfmt::FND_NATIVE;
+				if (compiledFn->access & ACCESS_OVERRIDE)
+					fnd.flags |= slxfmt::FND_OVERRIDE;
+				if (compiledFn->access & ACCESS_FINAL)
+					fnd.flags |= slxfmt::FND_FINAL;
+
+				if (compiledFn->isAsync)
+					fnd.flags |= slxfmt::FND_ASYNC;
+
+				if (j->isVirtual)
+					fnd.flags |= slxfmt::FND_VIRTUAL;
+
+				if (compiledFn->paramIndices.count("..."))
+					hasVarArg = true;
+
+				if (hasVarArg)
+					fnd.flags |= slxfmt::FND_VARG;
+
+				fnd.lenName = (uint16_t)i.first.length();
+				fnd.lenBody = (uint32_t)compiledFn->body.size();
+				fnd.nParams = (uint8_t)compiledFn->params.size() - hasVarArg;
+				fnd.nSourceLocDescs = (uint32_t)compiledFn->srcLocDescs.size();
+				fnd.nGenericParams = compiledFn->genericParams.size();
+
+				_write(os, fnd);
+				_write(os, i.first.data(), i.first.length());
+
+				compileTypeName(os, compiledFn->returnType);
+
+				for (size_t j = 0; j < compiledFn->genericParams.size(); ++j)
+					compileGenericParam(os, compiledFn->genericParams[j]);
+
+				for (size_t j = 0; j < compiledFn->params.size() - hasVarArg; ++j)
+					compileTypeName(os, compiledFn->params[j]->type ? compiledFn->params[j]->type : std::make_shared<AnyTypeNameNode>(SIZE_MAX));
+
+				for (auto &j : compiledFn->body) {
+					slxfmt::InsHeader ih;
+					ih.opcode = j.opcode;
+
+					if (j.operands.size() > 3)
+						throw FatalCompilationError(
+							Message(
+								compiledFn->sourceLocation,
+								MessageType::Error,
+								"Too many operands"));
+					ih.nOperands = (uint8_t)j.operands.size();
+					ih.hasOutputOperand = (bool)j.output;
+
+					_write(os, ih);
+
+					if (j.output)
+						compileValue(os, j.output);
+
+					for (auto &k : j.operands) {
+						if (k) {
+							if (k->getNodeType() == NodeType::LabelRef) {
+								auto &label = std::static_pointer_cast<LabelRefNode>(k)->label;
+								if (!compiledFn->labels.count(label))
+									throw FatalCompilationError(
+										Message(
+											compiledFn->sourceLocation,
+											MessageType::Error,
+											"Undefined label: " + std::static_pointer_cast<LabelRefNode>(k)->label));
+								k = std::make_shared<U32LiteralExprNode>(compiledFn->labels.at(label));
+							}
+						}
+						compileValue(os, k);
+					}
+				}
+
+				for (auto &j : compiledFn->srcLocDescs) {
+					_write(os, j);
+				}
 			}
 
 			popMajorContext();
+
+		skipCurOverloading:;
 		}
 	}
 }

@@ -4,42 +4,62 @@
 #include <unordered_map>
 #include <deque>
 
-#include "member.h"
+#include "var.h"
 #include "generic.h"
 
 namespace slake {
 	using InstanceFlags = uint32_t;
 
-	constexpr static InstanceFlags
-		INSTANCE_PARENT = 0x01;
+	class InstanceObject;
+	struct ObjectLayout;
+
+	class InstanceMemberAccessorVarObject : public VarObject {
+	public:
+		InstanceObject *instanceObject;
+
+		InstanceMemberAccessorVarObject(Runtime *rt, InstanceObject *instanceObject);
+		virtual ~InstanceMemberAccessorVarObject();
+
+		virtual Type getVarType(const VarRefContext &context) const override;
+
+		virtual VarKind getVarKind() const override { return VarKind::InstanceMemberAccessor; }
+
+		virtual void setData(const VarRefContext &varRefContext, const Value &value) override;
+		virtual Value getData(const VarRefContext &varRefContext) const override;
+
+		static HostObjectRef<InstanceMemberAccessorVarObject> alloc(Runtime *rt, InstanceObject *arrayObject);
+		virtual void dealloc() override;
+	};
 
 	class InstanceObject final : public Object {
 	public:
-		GenericArgList _genericArgs;
 		ClassObject *_class = nullptr;
-		Scope *scope = nullptr;
+		ObjectLayout *objectLayout = nullptr;
 		MethodTable *methodTable = nullptr;
+		char *rawFieldData = nullptr;
+		size_t szRawFieldData = 0;
+
+		InstanceMemberAccessorVarObject *memberAccessor;
 
 		inline InstanceObject(Runtime *rt)
 			: Object(rt) {
-			scope = new Scope(this);
+			memberAccessor = InstanceMemberAccessorVarObject::alloc(rt, this).get();
 		}
-		inline InstanceObject(const InstanceObject& x) : Object(x) {
-			_genericArgs = x._genericArgs;
+		inline InstanceObject(const InstanceObject &x) : Object(x) {
 			_class = x._class;
-			instanceFlags = x.instanceFlags & ~INSTANCE_PARENT;
-			scope = x.scope->duplicate();
+			objectLayout = x.objectLayout;
 			methodTable = x.methodTable;
+			// TODO: Copy the rawFieldData.
 		}
 		virtual inline ~InstanceObject() {
-			if (scope)
-				delete scope;
+			if (rawFieldData)
+				delete[] rawFieldData;
 
-			// DO NOT DELETE THE METHOD TABLE!!!
-			// The method table is borrowed from the class.
+			// DO NOT DELETE THE OBJECT LAYOUT AND THE METHOD TABLE!!!
+			// They are borrowed from the class.
 		}
 
-		ObjectFlags instanceFlags = 0;
+		InstanceFlags instanceFlags = 0;
 
 		virtual inline ObjectKind getKind() const override { return ObjectKind::Instance; }
 

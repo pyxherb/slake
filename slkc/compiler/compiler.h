@@ -482,15 +482,17 @@ namespace slake {
 				}
 			};
 
-			bool isParamTypesSame(const std::deque<std::shared_ptr<ParamNode>> &lhs, const std::deque<std::shared_ptr<ParamNode>> &rhs) {
-				if (lhs.size() == rhs.size()) {
-					for (size_t l = 0; l < rhs.size(); ++l) {
-						if (!isSameType(lhs[l]->type, rhs[l]->type))
-							return true;
-					}
-
+			bool isFnOverloadingDuplicated(std::shared_ptr<FnOverloadingNode> lhs, std::shared_ptr<FnOverloadingNode> rhs) {
+				if (lhs->params.size() != rhs->params.size())
 					return false;
+
+				for (size_t i = 0; i < lhs->params.size(); ++i) {
+					if (!isSameType(lhs->params[i]->type, rhs->params[i]->type))
+						return false;
 				}
+
+				if (lhs->genericParams.size() != rhs->genericParams.size())
+					return false;
 
 				return true;
 			}

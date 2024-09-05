@@ -77,87 +77,260 @@ static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *
 	instance->_class = cls;
 
 	MethodTable *methodTable = nullptr;
-	bool isMethodTablePresent = true;
+	ObjectLayout *objectLayout = nullptr;
+	bool isMethodTablePresent = true, isObjectLayoutPresent = true;
 
-	if (parent) {
-		methodTable = parent->methodTable;
-	} else {
+	if (cls->cachedInstantiatedMethodTable) {
 		methodTable = cls->cachedInstantiatedMethodTable;
-	}
-
-	if (!methodTable) {
-		methodTable = new MethodTable(instance.get());
-		cls->cachedInstantiatedMethodTable = methodTable;
+		isMethodTablePresent = true;
+	} else {
+		if (parent) {
+			methodTable =
+				(cls->cachedInstantiatedMethodTable = parent->methodTable->duplicate());
+		} else
+			methodTable =
+				(cls->cachedInstantiatedMethodTable = new MethodTable());
 		isMethodTablePresent = false;
 	}
+
+	if (cls->cachedObjectLayout) {
+		objectLayout = cls->cachedObjectLayout;
+		isObjectLayoutPresent = true;
+	} else {
+		if (parent) {
+			objectLayout =
+				(cls->cachedObjectLayout = parent->objectLayout->duplicate());
+		} else
+			objectLayout =
+				(cls->cachedObjectLayout = new ObjectLayout());
+		isObjectLayoutPresent = false;
+	}
+
 	instance->methodTable = methodTable;
+	instance->objectLayout = objectLayout;
 
-	for (const auto &i : cls->scope->members) {
-		switch (i.second->getKind()) {
-			case ObjectKind::Var: {
-				HostObjectRef<RegularVarObject> var = RegularVarObject::alloc(
-					runtime,
-					((RegularVarObject *)i.second)->accessModifier,
-					((RegularVarObject *)i.second)->getVarType());
+	std::pmr::vector<char> rawData(&runtime->globalHeapPoolResource);
 
-				VarRefContext placeholderVarContext = {};
-				// Initialize the variable if initial value is set
-				var->setData(placeholderVarContext, ((RegularVarObject *)i.second)->getData(placeholderVarContext));
+	std::pmr::map<size_t, VarObject *> fieldInitVarMap(&runtime->globalHeapPoolResource);
 
-				instance->scope->addMember(i.first, var.release());
-				break;
-			}
-			case ObjectKind::Fn: {
-				if (!isMethodTablePresent) {
-					std::deque<FnOverloadingObject *> overloadings;
+	if ((!isMethodTablePresent) || (!isObjectLayoutPresent)) {
+		for (const auto &i : cls->scope->members) {
+			switch (i.second->getKind()) {
+				case ObjectKind::Var: {
+					if (!isObjectLayoutPresent) {
+						ObjectFieldRecord fieldRecord;
 
-					for (auto j : ((FnObject *)i.second)->overloadings) {
-						if ((!(j->access & ACCESS_STATIC)) &&
-							(j->overloadingFlags & OL_VIRTUAL))
-							overloadings.push_back(j);
-					}
+						RegularVarObject *var = (RegularVarObject *)i.second;
+						auto type = var->getVarType(VarRefContext());
 
-					if (i.first == "delete") {
-						std::deque<Type> destructorParamTypes;
-						GenericParamList destructorGenericParamList;
-
-						for (auto &j : overloadings) {
-							if (isDuplicatedOverloading(j, destructorParamTypes, destructorGenericParamList, false)) {
-								methodTable->destructors.push_front(j);
+						switch (type.typeId) {
+							case TypeId::Value:
+								switch (type.getValueTypeExData()) {
+									case ValueType::I8:
+										fieldRecord.offset = objectLayout->totalSize;
+										objectLayout->totalSize += sizeof(int8_t);
+										break;
+									case ValueType::I16:
+										objectLayout->totalSize += (2 - (objectLayout->totalSize & 1));
+										fieldRecord.offset = objectLayout->totalSize;
+										objectLayout->totalSize += sizeof(int16_t);
+										break;
+									case ValueType::I32:
+										objectLayout->totalSize += (4 - (objectLayout->totalSize & 3));
+										fieldRecord.offset = objectLayout->totalSize;
+										objectLayout->totalSize += sizeof(int32_t);
+										break;
+									case ValueType::I64:
+										objectLayout->totalSize += (8 - (objectLayout->totalSize & 7));
+										fieldRecord.offset = objectLayout->totalSize;
+										objectLayout->totalSize += sizeof(int64_t);
+										break;
+									case ValueType::U8:
+										fieldRecord.offset = objectLayout->totalSize;
+										objectLayout->totalSize += sizeof(uint8_t);
+										break;
+									case ValueType::U16:
+										objectLayout->totalSize += (2 - (objectLayout->totalSize & 1));
+										fieldRecord.offset = objectLayout->totalSize;
+										objectLayout->totalSize += sizeof(uint16_t);
+										break;
+									case ValueType::U32:
+										objectLayout->totalSize += (4 - (objectLayout->totalSize & 3));
+										fieldRecord.offset = objectLayout->totalSize;
+										objectLayout->totalSize += sizeof(uint32_t);
+										break;
+									case ValueType::U64:
+										objectLayout->totalSize += (8 - (objectLayout->totalSize & 7));
+										fieldRecord.offset = objectLayout->totalSize;
+										objectLayout->totalSize += sizeof(uint64_t);
+										break;
+									case ValueType::F32:
+										objectLayout->totalSize += (4 - (objectLayout->totalSize & 3));
+										fieldRecord.offset = objectLayout->totalSize;
+										objectLayout->totalSize += sizeof(float);
+										break;
+									case ValueType::F64:
+										objectLayout->totalSize += (8 - (objectLayout->totalSize & 7));
+										fieldRecord.offset = objectLayout->totalSize;
+										objectLayout->totalSize += sizeof(double);
+										break;
+									case ValueType::Bool:
+										fieldRecord.offset = objectLayout->totalSize;
+										objectLayout->totalSize += sizeof(bool);
+										break;
+									case ValueType::ObjectRef:
+										objectLayout->totalSize += sizeof(Object *) & (sizeof(Object *) - 1);
+										fieldRecord.offset = objectLayout->totalSize;
+										objectLayout->totalSize += sizeof(Object *);
+										break;
+								}
 								break;
-							}
+							case TypeId::String:
+							case TypeId::Instance:
+							case TypeId::Array:
+								objectLayout->totalSize += sizeof(Object *) & (sizeof(Object *) - 1);
+								fieldRecord.offset = objectLayout->totalSize;
+								objectLayout->totalSize += sizeof(Object *);
+								break;
+							default:
+								throw std::runtime_error("The variable has an inconstructible type");
 						}
-					} else {
-						if (overloadings.size()) {
-							// Link the method with method inherited from the parent.
-							HostObjectRef<FnObject> fn;
-							auto &methodSlot = methodTable->methods[i.first];
 
-							if (auto m = methodTable->getMethod(i.first); m)
-								fn = m;
-							else {
-								fn = FnObject::alloc(runtime);
-								methodSlot = fn.get();
-							}
+						fieldRecord.type = type;
+
+						fieldInitVarMap[fieldRecord.offset] = var;
+
+						objectLayout->fieldNameMap[i.first] = objectLayout->fieldRecords.size();
+						objectLayout->fieldRecords.push_back(std::move(fieldRecord));
+					}
+					break;
+				}
+				case ObjectKind::Fn: {
+					if (!isMethodTablePresent) {
+						std::deque<FnOverloadingObject *> overloadings;
+
+						for (auto j : ((FnObject *)i.second)->overloadings) {
+							if ((!(j->access & ACCESS_STATIC)) &&
+								(j->overloadingFlags & OL_VIRTUAL))
+								overloadings.push_back(j);
+						}
+
+						if (i.first == "delete") {
+							std::deque<Type> destructorParamTypes;
+							GenericParamList destructorGenericParamList;
 
 							for (auto &j : overloadings) {
-								for (auto &k : methodSlot->overloadings) {
-									if (isDuplicatedOverloading(
-											k,
-											j->paramTypes,
-											j->genericParams,
-											j->overloadingFlags & OL_VARG)) {
-										methodSlot->overloadings.erase(k);
-										break;
-									}
+								if (isDuplicatedOverloading(j, destructorParamTypes, destructorGenericParamList, false)) {
+									methodTable->destructors.push_front(j);
+									break;
 								}
-								methodSlot->overloadings.insert(j);
+							}
+						} else {
+							if (overloadings.size()) {
+								// Link the method with method inherited from the parent.
+								HostObjectRef<FnObject> fn;
+								auto &methodSlot = methodTable->methods[i.first];
+
+								if (auto m = methodTable->getMethod(i.first); m)
+									fn = m;
+								else {
+									fn = FnObject::alloc(runtime);
+									methodSlot = fn.get();
+								}
+
+								for (auto &j : overloadings) {
+									for (auto &k : methodSlot->overloadings) {
+										if (isDuplicatedOverloading(
+												k,
+												j->paramTypes,
+												j->genericParams,
+												j->overloadingFlags & OL_VARG)) {
+											methodSlot->overloadings.erase(k);
+											break;
+										}
+									}
+									methodSlot->overloadings.insert(j);
+								}
 							}
 						}
 					}
-				}
 
-				break;
+					break;
+				}
+			}
+		}
+	}
+
+	if (objectLayout->totalSize != instance->szRawFieldData) {
+		if (instance->rawFieldData) {
+			char *newRawFieldData = new char[objectLayout->totalSize];
+			memcpy(newRawFieldData, instance->rawFieldData, instance->szRawFieldData);
+			delete[] instance->rawFieldData;
+			instance->rawFieldData = newRawFieldData;
+		} else {
+			instance->rawFieldData = new char[objectLayout->totalSize];
+		}
+	}
+	instance->szRawFieldData = objectLayout->totalSize;
+
+	if (!isObjectLayoutPresent) {
+		for (auto &i : fieldInitVarMap) {
+			VarObject *initVar = i.second;
+			auto type = initVar->getVarType(VarRefContext());
+
+			char *pCurField = instance->rawFieldData + i.first;
+
+			switch (type.typeId) {
+				case TypeId::Value:
+					switch (type.getValueTypeExData()) {
+						case ValueType::I8:
+							*((int8_t *)pCurField) = initVar->getData(VarRefContext()).getI8();
+							break;
+						case ValueType::I16:
+							*((int16_t *)pCurField) = initVar->getData(VarRefContext()).getI16();
+							break;
+						case ValueType::I32:
+							*((int32_t *)pCurField) = initVar->getData(VarRefContext()).getI32();
+							break;
+						case ValueType::I64:
+							*((int64_t *)pCurField) = initVar->getData(VarRefContext()).getI64();
+							break;
+						case ValueType::U8:
+							*((uint8_t *)pCurField) = initVar->getData(VarRefContext()).getU8();
+							break;
+						case ValueType::U16:
+							*((uint16_t *)pCurField) = initVar->getData(VarRefContext()).getU16();
+							break;
+							break;
+						case ValueType::U32:
+							*((uint32_t *)pCurField) = initVar->getData(VarRefContext()).getU32();
+							break;
+							break;
+						case ValueType::U64:
+							*((uint64_t *)pCurField) = initVar->getData(VarRefContext()).getU64();
+							break;
+							break;
+						case ValueType::F32:
+							*((float *)pCurField) = initVar->getData(VarRefContext()).getF32();
+							break;
+						case ValueType::F64:
+							*((double *)pCurField) = initVar->getData(VarRefContext()).getF64();
+							break;
+						case ValueType::Bool:
+							*((bool *)pCurField) = initVar->getData(VarRefContext()).getBool();
+							break;
+						case ValueType::ObjectRef:
+							*((Object **)pCurField) = initVar->getData(VarRefContext()).getObjectRef().objectPtr;
+							break;
+					}
+					break;
+				case TypeId::String:
+				case TypeId::Instance:
+				case TypeId::Array:
+					*((Object **)pCurField) = initVar->getData(VarRefContext()).getObjectRef().objectPtr;
+					break;
+				default:
+					throw std::runtime_error("The variable has an inconstructible type");
 			}
 		}
 	}

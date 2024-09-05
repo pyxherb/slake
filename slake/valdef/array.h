@@ -17,7 +17,7 @@ namespace slake {
 		ArrayAccessorVarObject(const ArrayAccessorVarObject &other);
 		virtual ~ArrayAccessorVarObject();
 
-		virtual Type getVarType() const override;
+		virtual Type getVarType(const VarRefContext &context) const override;
 
 		virtual VarKind getVarKind() const override { return VarKind::ArrayElementAccessor; }
 	};

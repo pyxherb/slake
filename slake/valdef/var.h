@@ -8,7 +8,8 @@
 namespace slake {
 	enum class VarKind {
 		Regular = 0,
-		ArrayElementAccessor
+		ArrayElementAccessor,
+		InstanceMemberAccessor
 	};
 
 	class VarObject : public MemberObject {
@@ -20,7 +21,7 @@ namespace slake {
 
 		virtual inline ObjectKind getKind() const override { return ObjectKind::Var; }
 
-		virtual Type getVarType() const = 0;
+		virtual Type getVarType(const VarRefContext &context) const = 0;
 
 		virtual Value getData(const VarRefContext &context) const = 0;
 		virtual void setData(const VarRefContext &context, const Value &value) = 0;
@@ -66,7 +67,7 @@ namespace slake {
 
 		virtual inline ObjectKind getKind() const override { return ObjectKind::Var; }
 
-		virtual Type getVarType() const override { return type; }
+		virtual Type getVarType(const VarRefContext &context) const override { return type; }
 		virtual VarKind getVarKind() const override { return VarKind::Regular; }
 	};
 }

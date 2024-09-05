@@ -2,6 +2,7 @@
 #define _SLAKE_VALDEF_CLASS_H_
 
 #include <cassert>
+#include <unordered_map>
 
 #include "fn.h"
 #include "module.h"
@@ -15,6 +16,21 @@ namespace slake {
 	class InstanceObject;
 
 	using ClassInstantiator = std::function<InstanceObject *(Runtime *runtime, ClassObject *cls)>;
+
+	struct ObjectFieldRecord {
+		size_t offset;
+		Type type;
+	};
+
+	struct ObjectLayout {
+		size_t totalSize;
+		std::vector<ObjectFieldRecord> fieldRecords;
+		std::unordered_map<std::string, size_t> fieldNameMap;
+
+		inline ObjectLayout* duplicate() const {
+			return new ObjectLayout(*this);
+		}
+	};
 
 	class ClassObject : public ModuleObject {
 	private:
@@ -31,6 +47,7 @@ namespace slake {
 		std::deque<Type> implInterfaces;  // Implemented interfaces
 
 		MethodTable *cachedInstantiatedMethodTable = nullptr;
+		ObjectLayout *cachedObjectLayout = nullptr;
 
 		/// @brief User-defined instantiator.
 		ClassInstantiator customInstantiator;

@@ -26,11 +26,22 @@ namespace slake {
 		struct {
 			uint32_t index;
 		} asArray;
+		struct {
+			size_t fieldIndex;
+		} asInstance;
 
-		static VarRefContext makeArrayContext(uint32_t index) {
+		static inline VarRefContext makeArrayContext(uint32_t index) {
 			VarRefContext context = {};
 
 			context.asArray.index = index;
+
+			return context;
+		}
+
+		static inline VarRefContext makeInstanceContext(size_t fieldIndex) {
+			VarRefContext context = {};
+
+			context.asInstance.fieldIndex = fieldIndex;
 
 			return context;
 		}

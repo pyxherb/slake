@@ -15,9 +15,6 @@ void Runtime::_gcWalk(MethodTable *methodTable) {
 	for (auto &i : methodTable->methods) {
 		_gcWalk(i.second);
 	}
-
-	if (methodTable->owner)
-		_gcWalk(methodTable->owner);
 }
 
 void Runtime::_gcWalk(GenericParamList &genericParamList) {
@@ -110,10 +107,30 @@ void Runtime::_gcWalk(Object *v) {
 		case ObjectKind::Instance: {
 			auto value = (InstanceObject *)v;
 
-			if (value->scope)
-				_gcWalk(value->scope);
+			if (value->_class)
+				_gcWalk(value->_class);
 			if (value->methodTable)
 				_gcWalk(value->methodTable);
+
+			for (auto &i : value->objectLayout->fieldRecords) {
+				_gcWalk(i.type);
+
+				switch (i.type.typeId) {
+					case TypeId::Value: {
+						switch (i.type.getValueTypeExData()) {
+							case ValueType::ObjectRef:
+								_gcWalk(*((Object **)(value->rawFieldData + i.offset)));
+								break;
+						}
+					}
+					case TypeId::String:
+					case TypeId::Instance:
+					case TypeId::Array:
+					case TypeId::Ref:
+						_gcWalk(*((Object **)(value->rawFieldData + i.offset)));
+						break;
+				}
+			}
 
 			_gcWalk(value->_class);
 			break;
@@ -158,7 +175,7 @@ void Runtime::_gcWalk(Object *v) {
 					for (auto &i : value->genericParams) {
 						i.baseType.loadDeferredType(this);
 						_gcWalk(i.baseType);
-						for (auto& j : i.interfaces) {
+						for (auto &j : i.interfaces) {
 							j.loadDeferredType(this);
 							_gcWalk(j);
 						}
@@ -326,7 +343,7 @@ void Runtime::_gcWalk(Context &ctxt) {
 		for (auto &k : j.nextArgStack)
 			_gcWalk(k);
 		for (auto &k : j.localVars)
-			_gcWalk((VarObject*)k);
+			_gcWalk((VarObject *)k);
 		for (auto &k : j.regs)
 			_gcWalk(k);
 		for (auto &k : j.minorFrames) {
@@ -370,13 +387,11 @@ rescan:
 		if (i->getKind() == ObjectKind::Instance) {
 			InstanceObject *object = (InstanceObject *)i;
 
-			if (!(object->instanceFlags & INSTANCE_PARENT)) {
-				if (auto mt = object->methodTable; mt) {
-					if (mt->destructors.size()) {
-						for (auto i : mt->destructors)
-							i->call(i, {});
-						foundDestructibleObjects = true;
-					}
+			if (auto mt = object->methodTable; mt) {
+				if (mt->destructors.size()) {
+					for (auto i : mt->destructors)
+						i->call(i, {});
+					foundDestructibleObjects = true;
 				}
 			}
 		}

@@ -122,7 +122,7 @@ void slake::Runtime::_instantiateGenericObject(Object *v, GenericInstantiationCo
 					break;
 				}
 				case VarKind::ArrayElementAccessor: {
-					ArrayAccessorVarObject *v = (ArrayAccessorVarObject*)value;
+					ArrayAccessorVarObject *v = (ArrayAccessorVarObject *)value;
 					_instantiateGenericObject(v->arrayObject, instantiationContext);
 					break;
 				}
@@ -140,25 +140,41 @@ void slake::Runtime::_instantiateGenericObject(Object *v, GenericInstantiationCo
 			FnObject *value = (FnObject *)v;
 
 			if (instantiationContext.mappedObject == value) {
-				//
-				// We expect there's only one overloading can be instantiated.
-				// Uninstantiatable overloadings will be discarded.
-				//
-				FnOverloadingObject *matchedOverloading = nullptr;
+				FnOverloadingObject *matchedOverloading = nullptr, *matchedSpecializedOverloading = nullptr;
 
-				for (auto &i : value->overloadings) {
-					if (i->genericParams.size() == instantiationContext.genericArgs->size()) {
-						matchedOverloading = i;
-						break;
+				for (auto i : value->overloadings) {
+					if (i->genericParams.size() != instantiationContext.genericArgs->size()) {
+						continue;
 					}
+
+					assert(instantiationContext.genericArgs->size() == i->specializationArgs.size());
+
+					if (i->specializationArgs.size()) {
+						for (size_t j = 0; j < i->specializationArgs.size(); ++j) {
+							auto &curType = i->specializationArgs[j];
+
+							if (curType.typeId == TypeId::GenericArg)
+								throw std::runtime_error("Specialization argument must be deterministic");
+
+							curType.loadDeferredType(this);
+							if (curType != instantiationContext.genericArgs->at(j)) {
+								goto specializationArgsMismatched;
+							}
+						}
+
+						_instantiateGenericObject(i, instantiationContext);
+						matchedSpecializedOverloading = i;
+						break;
+					} else {
+						_instantiateGenericObject(i, instantiationContext);
+						matchedOverloading = i;
+					}
+
+				specializationArgsMismatched:;
 				}
 
-				value->overloadings.clear();
-
-				if (matchedOverloading) {
-					_instantiateGenericObject(matchedOverloading, instantiationContext);
-					value->overloadings.insert(matchedOverloading);
-				}
+				value->overloadings.insert(
+					matchedSpecializedOverloading ? matchedSpecializedOverloading : matchedOverloading);
 			} else {
 				for (auto i : value->overloadings) {
 					_instantiateGenericObject(i, instantiationContext);

@@ -2,79 +2,30 @@
 
 using namespace slake;
 
-static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *cls);
-
 /// @brief Create a new class instance.
 /// @param cls Class for instance creation.
 /// @return Created instance of the class.
 ///
 /// @note This function normalizes loading-deferred types.
-InstanceObject *slake::Runtime::newClassInstance(ClassObject *cls) {
-	if (cls->customInstantiator)
-		return cls->customInstantiator(this, cls);
-	return _defaultClassInstantiator(this, cls);
-}
-
-HostObjectRef<ArrayObject> Runtime::newArrayInstance(Runtime *rt, const Type &type, size_t length) {
-	switch (type.typeId) {
-		case TypeId::Value:
-			switch (type.getValueTypeExData()) {
-				case ValueType::I8:
-					return I8ArrayObject::alloc(rt, length).get();
-				case ValueType::I16:
-					return I16ArrayObject::alloc(rt, length).get();
-				case ValueType::I32:
-					return I32ArrayObject::alloc(rt, length).get();
-				case ValueType::I64:
-					return I64ArrayObject::alloc(rt, length).get();
-				case ValueType::U8:
-					return U8ArrayObject::alloc(rt, length).get();
-				case ValueType::U16:
-					return U16ArrayObject::alloc(rt, length).get();
-				case ValueType::U32:
-					return U32ArrayObject::alloc(rt, length).get();
-				case ValueType::U64:
-					return U64ArrayObject::alloc(rt, length).get();
-				case ValueType::F32:
-					return F32ArrayObject::alloc(rt, length).get();
-				case ValueType::F64:
-					return F64ArrayObject::alloc(rt, length).get();
-				case ValueType::Bool:
-					return BoolArrayObject::alloc(rt, length).get();
-			}
-			break;
-		case TypeId::String:
-		case TypeId::Instance:
-		case TypeId::Array:
-			return ObjectRefArrayObject::alloc(rt, type, length).get();
-		case TypeId::Any:
-			return AnyArrayObject::alloc(rt, length).get();
-		default:
-			throw IncompatibleTypeError("Specified type is not constructible");
-	}
-}
-
-static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *cls) {
+InstanceObject *slake::Runtime::newClassInstance(ClassObject *cls, NewClassInstanceFlags flags) {
 	InstanceObject *parent = nullptr;
 
 	HostObjectRef<InstanceObject> instance;
 
 	if (cls->parentClass.typeId == TypeId::Instance) {
-		cls->parentClass.loadDeferredType(runtime);
+		cls->parentClass.loadDeferredType(this);
 
 		Object *parentClass = (ClassObject *)cls->parentClass.getCustomTypeExData();
 		assert(parentClass->getKind() == ObjectKind::Class);
 
-		parent = runtime->newClassInstance((ClassObject *)parentClass);
+		parent = this->newClassInstance((ClassObject *)parentClass, _NEWCLSINST_PARENT);
 	}
 
 	if (parent) {
 		instance = parent;
 	} else {
-		instance = InstanceObject::alloc(runtime);
+		instance = InstanceObject::alloc(this);
 	}
-
-	instance->_class = cls;
 
 	MethodTable *methodTable = nullptr;
 	ObjectLayout *objectLayout = nullptr;
@@ -104,14 +55,15 @@ static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *
 			objectLayout =
 				(cls->cachedObjectLayout = new ObjectLayout());
 		isObjectLayoutPresent = false;
+
+		if (parent) {
+			cls->cachedFieldInitVars = parent->_class->cachedFieldInitVars;
+		} else
+			cls->cachedFieldInitVars = std::pmr::vector<VarObject *>(&globalHeapPoolResource);
 	}
 
 	instance->methodTable = methodTable;
 	instance->objectLayout = objectLayout;
-
-	std::pmr::vector<char> rawData(&runtime->globalHeapPoolResource);
-
-	std::pmr::map<size_t, VarObject *> fieldInitVarMap(&runtime->globalHeapPoolResource);
 
 	if ((!isMethodTablePresent) || (!isObjectLayoutPresent)) {
 		for (const auto &i : cls->scope->members) {
@@ -198,7 +150,7 @@ static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *
 
 						fieldRecord.type = type;
 
-						fieldInitVarMap[fieldRecord.offset] = var;
+						cls->cachedFieldInitVars.push_back(var);
 
 						objectLayout->fieldNameMap[i.first] = objectLayout->fieldRecords.size();
 						objectLayout->fieldRecords.push_back(std::move(fieldRecord));
@@ -234,7 +186,7 @@ static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *
 								if (auto m = methodTable->getMethod(i.first); m)
 									fn = m;
 								else {
-									fn = FnObject::alloc(runtime);
+									fn = FnObject::alloc(this);
 									methodSlot = fn.get();
 								}
 
@@ -261,79 +213,70 @@ static InstanceObject *_defaultClassInstantiator(Runtime *runtime, ClassObject *
 		}
 	}
 
-	if (objectLayout->totalSize != instance->szRawFieldData) {
-		if (instance->rawFieldData) {
-			char *newRawFieldData = new char[objectLayout->totalSize];
-			memcpy(newRawFieldData, instance->rawFieldData, instance->szRawFieldData);
-			delete[] instance->rawFieldData;
-			instance->rawFieldData = newRawFieldData;
-		} else {
-			instance->rawFieldData = new char[objectLayout->totalSize];
-		}
+	if (!(flags & _NEWCLSINST_PARENT)) {
+		instance->rawFieldData = new char[objectLayout->totalSize];
+		instance->szRawFieldData = objectLayout->totalSize;
 	}
-	instance->szRawFieldData = objectLayout->totalSize;
 
 	if (!isObjectLayoutPresent) {
-		for (auto &i : fieldInitVarMap) {
-			VarObject *initVar = i.second;
-			auto type = initVar->getVarType(VarRefContext());
+		cls->cachedFieldInitVars.shrink_to_fit();
+	}
 
-			char *pCurField = instance->rawFieldData + i.first;
+	instance->_class = cls;
 
-			switch (type.typeId) {
-				case TypeId::Value:
-					switch (type.getValueTypeExData()) {
-						case ValueType::I8:
-							*((int8_t *)pCurField) = initVar->getData(VarRefContext()).getI8();
-							break;
-						case ValueType::I16:
-							*((int16_t *)pCurField) = initVar->getData(VarRefContext()).getI16();
-							break;
-						case ValueType::I32:
-							*((int32_t *)pCurField) = initVar->getData(VarRefContext()).getI32();
-							break;
-						case ValueType::I64:
-							*((int64_t *)pCurField) = initVar->getData(VarRefContext()).getI64();
-							break;
-						case ValueType::U8:
-							*((uint8_t *)pCurField) = initVar->getData(VarRefContext()).getU8();
-							break;
-						case ValueType::U16:
-							*((uint16_t *)pCurField) = initVar->getData(VarRefContext()).getU16();
-							break;
-							break;
-						case ValueType::U32:
-							*((uint32_t *)pCurField) = initVar->getData(VarRefContext()).getU32();
-							break;
-							break;
-						case ValueType::U64:
-							*((uint64_t *)pCurField) = initVar->getData(VarRefContext()).getU64();
-							break;
-							break;
-						case ValueType::F32:
-							*((float *)pCurField) = initVar->getData(VarRefContext()).getF32();
-							break;
-						case ValueType::F64:
-							*((double *)pCurField) = initVar->getData(VarRefContext()).getF64();
-							break;
-						case ValueType::Bool:
-							*((bool *)pCurField) = initVar->getData(VarRefContext()).getBool();
-							break;
-						case ValueType::ObjectRef:
-							*((Object **)pCurField) = initVar->getData(VarRefContext()).getObjectRef().objectPtr;
-							break;
-					}
-					break;
-				case TypeId::String:
-				case TypeId::Instance:
-				case TypeId::Array:
-					*((Object **)pCurField) = initVar->getData(VarRefContext()).getObjectRef().objectPtr;
-					break;
-				default:
-					throw std::runtime_error("The variable has an inconstructible type");
-			}
+	//
+	// Initialize the fields.
+	//
+	if (!(flags & _NEWCLSINST_PARENT)) {
+		for (size_t i = 0; i < cls->cachedFieldInitVars.size(); ++i) {
+			VarObject *initVar = cls->cachedFieldInitVars[i];
+
+			ObjectFieldRecord &fieldRecord = objectLayout->fieldRecords[i];
+
+			instance->memberAccessor->setData(
+				VarRefContext::makeInstanceContext(i),
+				initVar->getData(VarRefContext()));
 		}
 	}
 
 	return instance.release();
+}
+
+HostObjectRef<ArrayObject> Runtime::newArrayInstance(Runtime *rt, const Type &type, size_t length) {
+	switch (type.typeId) {
+		case TypeId::Value:
+			switch (type.getValueTypeExData()) {
+				case ValueType::I8:
+					return I8ArrayObject::alloc(rt, length).get();
+				case ValueType::I16:
+					return I16ArrayObject::alloc(rt, length).get();
+				case ValueType::I32:
+					return I32ArrayObject::alloc(rt, length).get();
+				case ValueType::I64:
+					return I64ArrayObject::alloc(rt, length).get();
+				case ValueType::U8:
+					return U8ArrayObject::alloc(rt, length).get();
+				case ValueType::U16:
+					return U16ArrayObject::alloc(rt, length).get();
+				case ValueType::U32:
+					return U32ArrayObject::alloc(rt, length).get();
+				case ValueType::U64:
+					return U64ArrayObject::alloc(rt, length).get();
+				case ValueType::F32:
+					return F32ArrayObject::alloc(rt, length).get();
+				case ValueType::F64:
+					return F64ArrayObject::alloc(rt, length).get();
+				case ValueType::Bool:
+					return BoolArrayObject::alloc(rt, length).get();
+			}
+			break;
+		case TypeId::String:
+		case TypeId::Instance:
+		case TypeId::Array:
+			return ObjectRefArrayObject::alloc(rt, type, length).get();
+		case TypeId::Any:
+			return AnyArrayObject::alloc(rt, length).get();
+		default:
+			throw IncompatibleTypeError("Specified type is not constructible");
+	}
 }

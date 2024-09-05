@@ -1296,7 +1296,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			switch (type.typeId) {
 				case TypeId::Instance: {
 					ClassObject *cls = (ClassObject *)type.getCustomTypeExData();
-					InstanceObject *instance = newClassInstance(cls);
+					InstanceObject *instance = newClassInstance(cls, 0);
 					_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), instance);
 
 					if (constructorRef) {

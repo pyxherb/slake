@@ -150,6 +150,10 @@ namespace slake {
 		// Load native members
 		LMOD_LOADNATIVE = 0x10;
 
+	using NewClassInstanceFlags = uint8_t;
+	constexpr static NewClassInstanceFlags
+		_NEWCLSINST_PARENT = 0x80;
+
 	class Runtime final {
 	public:
 		struct GenericInstantiationContext {
@@ -289,7 +293,7 @@ namespace slake {
 		/// @brief Do a GC cycle.
 		void gc();
 
-		InstanceObject *newClassInstance(ClassObject *cls);
+		InstanceObject *newClassInstance(ClassObject *cls, NewClassInstanceFlags flags);
 		HostObjectRef<ArrayObject> newArrayInstance(Runtime *rt, const Type &type, size_t length);
 	};
 }

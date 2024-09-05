@@ -15,8 +15,6 @@ namespace slake {
 	class InterfaceObject;
 	class InstanceObject;
 
-	using ClassInstantiator = std::function<InstanceObject *(Runtime *runtime, ClassObject *cls)>;
-
 	struct ObjectFieldRecord {
 		size_t offset;
 		Type type;
@@ -49,8 +47,7 @@ namespace slake {
 		MethodTable *cachedInstantiatedMethodTable = nullptr;
 		ObjectLayout *cachedObjectLayout = nullptr;
 
-		/// @brief User-defined instantiator.
-		ClassInstantiator customInstantiator;
+		std::pmr::vector<VarObject *> cachedFieldInitVars;
 
 		ClassObject(Runtime *rt, AccessModifier access, const Type &parentClass);
 		inline ClassObject(const ClassObject &x) : ModuleObject(x) {
@@ -63,8 +60,6 @@ namespace slake {
 			implInterfaces = x.implInterfaces;
 
 			// DO NOT copy the cached instantiated method table.
-
-			customInstantiator = x.customInstantiator;
 		}
 		virtual ~ClassObject();
 

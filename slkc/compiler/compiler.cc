@@ -834,7 +834,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 
 			if (i.second->initValue) {
 				if (auto ce = evalConstExpr(i.second->initValue); ce)
-					compileExpr(i.second->initValue);
+					compileValue(os, ce);
 				else {
 					messages.push_back(
 						Message(

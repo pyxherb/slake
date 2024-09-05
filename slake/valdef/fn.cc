@@ -136,7 +136,7 @@ void slake::NativeFnOverloadingObject::dealloc() {
 }
 
 Value RegularFnOverloadingObject::call(Object *thisObject, std::deque<Value> args) const {
-	trimFnInstructions((std::vector<Instruction> &)instructions);
+	// trimFnInstructions((std::vector<Instruction> &)instructions);
 	Runtime *rt = fnObject->_rt;
 
 	// Save previous context

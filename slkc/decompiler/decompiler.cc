@@ -133,7 +133,7 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 						case FnOverloadingKind::Regular: {
 							RegularFnOverloadingObject *fn = (RegularFnOverloadingObject *)i;
 
-							trimFnInstructions(fn->instructions);
+							//trimFnInstructions(fn->instructions);
 
 							for (size_t i = 0; i < fn->instructions.size(); ++i) {
 								auto &ins = fn->instructions[i];

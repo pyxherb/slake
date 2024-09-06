@@ -238,7 +238,7 @@ bool slake::isCompatible(const Type &type, const Value &value) {
 
 			auto varRef = value.getVarRef();
 
-			if (varRef.varPtr->getVarType(VarRefContext()) != type.getRefExData())
+			if (varRef.varPtr->getVarType(varRef.context) != type.getRefExData())
 				return false;
 			break;
 		}

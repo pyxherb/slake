@@ -30,27 +30,27 @@ static void _checkObjectOperandType(
 }
 
 static void _setRegisterValue(
-	MajorFrame &curMajorFrame,
+	MajorFrame *curMajorFrame,
 	uint32_t index,
 	const Value &value) {
-	if (index >= curMajorFrame.regs.size())
+	if (index >= curMajorFrame->regs.size())
 		throw InvalidRegisterIndexError("Invalid register index", index);
-	Value &reg = curMajorFrame.regs[index];
+	Value &reg = curMajorFrame->regs[index];
 	if (reg.valueType != ValueType::Undefined)
 		throw AccessViolationError("The register is already assigned");
-	curMajorFrame.regs[index] = value;
+	curMajorFrame->regs[index] = value;
 }
 
 static Value &_fetchRegValue(
-	MajorFrame &curMajorFrame,
+	MajorFrame *curMajorFrame,
 	uint32_t index) {
-	if (index >= curMajorFrame.regs.size())
+	if (index >= curMajorFrame->regs.size())
 		throw InvalidRegisterIndexError("Invalid register index", index);
-	return curMajorFrame.regs[index];
+	return curMajorFrame->regs[index];
 }
 
 static Value &_unwrapRegOperand(
-	MajorFrame &curMajorFrame,
+	MajorFrame *curMajorFrame,
 	Value &value) {
 	if (value.valueType == ValueType::RegRef)
 		return _fetchRegValue(curMajorFrame, value.getRegIndex());
@@ -96,14 +96,91 @@ static Value _castToLiteralValue(Value x) {
 	}
 }
 
-RegularVarObject *slake::Runtime::_addLocalVar(MajorFrame &frame, Type type) {
-	auto v = RegularVarObject::alloc(this, ACCESS_PUB, type);
-	frame.localVars.push_back(v.get());
-	return v.release();
+VarRef slake::Runtime::_addLocalVar(MajorFrame *frame, Type type) {
+	LocalVarRecord localVarRecord;
+
+	switch (type.typeId) {
+		case TypeId::Value:
+			switch (type.getValueTypeExData()) {
+				case ValueType::I8:
+					localVarRecord.stackOffset = frame->context->stackTop;
+					frame->context->stackAlloc(sizeof(int8_t));
+					break;
+				case ValueType::I16:
+					frame->context->stackAlloc((2 - (frame->context->stackTop & 1)));
+					localVarRecord.stackOffset = frame->context->stackTop;
+					frame->context->stackAlloc(sizeof(int16_t));
+					break;
+				case ValueType::I32:
+					frame->context->stackAlloc((4 - (frame->context->stackTop & 3)));
+					localVarRecord.stackOffset = frame->context->stackTop;
+					frame->context->stackAlloc(sizeof(int32_t));
+					break;
+				case ValueType::I64:
+					frame->context->stackAlloc((8 - (frame->context->stackTop & 7)));
+					localVarRecord.stackOffset = frame->context->stackTop;
+					frame->context->stackAlloc(sizeof(int64_t));
+					break;
+				case ValueType::U8:
+					localVarRecord.stackOffset = frame->context->stackTop;
+					frame->context->stackAlloc(sizeof(uint8_t));
+					break;
+				case ValueType::U16:
+					frame->context->stackAlloc((2 - (frame->context->stackTop & 1)));
+					localVarRecord.stackOffset = frame->context->stackTop;
+					frame->context->stackAlloc(sizeof(uint16_t));
+					break;
+				case ValueType::U32:
+					frame->context->stackAlloc((4 - (frame->context->stackTop & 3)));
+					localVarRecord.stackOffset = frame->context->stackTop;
+					frame->context->stackAlloc(sizeof(uint32_t));
+					break;
+				case ValueType::U64:
+					frame->context->stackAlloc((8 - (frame->context->stackTop & 7)));
+					localVarRecord.stackOffset = frame->context->stackTop;
+					frame->context->stackAlloc(sizeof(uint64_t));
+					break;
+				case ValueType::F32:
+					frame->context->stackAlloc((4 - (frame->context->stackTop & 3)));
+					localVarRecord.stackOffset = frame->context->stackTop;
+					frame->context->stackAlloc(sizeof(float));
+					break;
+				case ValueType::F64:
+					frame->context->stackAlloc((8 - (frame->context->stackTop & 7)));
+					localVarRecord.stackOffset = frame->context->stackTop;
+					frame->context->stackAlloc(sizeof(double));
+					break;
+				case ValueType::Bool:
+					localVarRecord.stackOffset = frame->context->stackTop;
+					frame->context->stackAlloc(sizeof(bool));
+					break;
+				case ValueType::ObjectRef:
+					frame->context->stackAlloc(sizeof(Object *) & (sizeof(Object *) - 1));
+					localVarRecord.stackOffset = frame->context->stackTop;
+					frame->context->stackAlloc(sizeof(Object *));
+					break;
+			}
+			break;
+		case TypeId::String:
+		case TypeId::Instance:
+		case TypeId::Array:
+			frame->context->stackAlloc(sizeof(Object *) & (sizeof(Object *) - 1));
+			localVarRecord.stackOffset = frame->context->stackTop;
+			frame->context->stackAlloc(sizeof(Object *));
+			break;
+		default:
+			throw std::runtime_error("The variable has an inconstructible type");
+	}
+
+	localVarRecord.type = type;
+
+	size_t index = frame->localVarRecords.size();
+	frame->localVarRecords.push_back(std::move(localVarRecord));
+	return VarRef(frame->localVarAccessor, VarRefContext::makeLocalVarContext(index));
 }
 
-void slake::Runtime::_addLocalReg(MajorFrame &frame) {
-	frame.regs.push_back({});
+void slake::Runtime::_addLocalReg(MajorFrame *frame) {
+	frame->regs.push_back({});
 }
 
 void slake::Runtime::_execIns(Context *context, Instruction ins) {
@@ -111,8 +188,8 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		gc();
 	}
 
-	auto &curMajorFrame = context->majorFrames.back();
-	auto &curMinorFrame = curMajorFrame.minorFrames.back();
+	auto curMajorFrame = context->majorFrames.back().get();
+	auto &curMinorFrame = curMajorFrame->minorFrames.back();
 
 	switch (ins.opcode) {
 		case Opcode::NOP:
@@ -132,10 +209,10 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_checkOperandType(ins.operands[0], ValueType::U32);
 
 			uint32_t index = ins.operands[0].getU32();
-			if (index > curMajorFrame.regs.size()) {
+			if (index > curMajorFrame->regs.size()) {
 				throw InvalidOperandsError("");
-			} else if (index < curMajorFrame.regs.size()) {
-				curMajorFrame.regs[index] = Value();
+			} else if (index < curMajorFrame->regs.size()) {
+				curMajorFrame->regs[index] = Value();
 			} else {
 				_addLocalReg(curMajorFrame);
 			}
@@ -152,9 +229,9 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 			VarRefContext varRefContext;
 
-			auto v = resolveIdRef((IdRefObject *)refPtr, &varRefContext, curMajorFrame.thisObject);
+			auto v = resolveIdRef((IdRefObject *)refPtr, &varRefContext, curMajorFrame->thisObject);
 			if (!v) {
-				if (!(v = resolveIdRef((IdRefObject *)refPtr, &varRefContext, curMajorFrame.scopeObject)))
+				if (!(v = resolveIdRef((IdRefObject *)refPtr, &varRefContext, curMajorFrame->scopeObject)))
 					v = resolveIdRef((IdRefObject *)refPtr, &varRefContext);
 			}
 
@@ -223,7 +300,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_setRegisterValue(
 				curMajorFrame,
 				ins.output.getRegIndex(),
-				Value(curMajorFrame.lload(ins.operands[0].getU32())));
+				Value(curMajorFrame->lload(ins.operands[0].getU32())));
 			break;
 		}
 		case Opcode::LARG: {
@@ -235,7 +312,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_setRegisterValue(
 				curMajorFrame,
 				ins.output.getRegIndex(),
-				Value(curMajorFrame.larg(ins.operands[0].getU32())));
+				Value(curMajorFrame->larg(ins.operands[0].getU32())));
 			break;
 		}
 		case Opcode::LVALUE: {
@@ -251,7 +328,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			if (!varRef.varPtr)
 				throw NullRefError();
 
-			if (((VarObject*)varRef.varPtr)->getVarKind() == VarKind::ArrayElementAccessor)
+			if (((VarObject *)varRef.varPtr)->getVarKind() == VarKind::ArrayElementAccessor)
 				puts("");
 
 			_setRegisterValue(
@@ -262,16 +339,16 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		}
 		case Opcode::ENTER: {
 			_checkOperandCount(ins, false, 0);
-			MinorFrame frame((uint32_t)curMajorFrame.localVars.size(), (uint32_t)curMajorFrame.regs.size());
+			MinorFrame frame((uint32_t)curMajorFrame->localVarRecords.size(), (uint32_t)curMajorFrame->regs.size(), context->stackTop);
 
-			curMajorFrame.minorFrames.push_back(frame);
+			curMajorFrame->minorFrames.push_back(frame);
 			break;
 		}
 		case Opcode::LEAVE: {
 			_checkOperandCount(ins, false, 0);
-			if (curMajorFrame.minorFrames.size() < 2)
+			if (curMajorFrame->minorFrames.size() < 2)
 				throw FrameError("Leaving the only frame");
-			curMajorFrame.leave();
+			curMajorFrame->leave();
 			break;
 		}
 		case Opcode::ADD:
@@ -1168,7 +1245,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 			_checkOperandType(ins.operands[0], ValueType::U32);
 
-			curMajorFrame.curIns = ins.operands[0].getU32();
+			curMajorFrame->curIns = ins.operands[0].getU32();
 			return;
 		}
 		case Opcode::JT:
@@ -1181,11 +1258,11 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 			if (condition.getBool()) {
 				if (ins.opcode == Opcode::JT) {
-					curMajorFrame.curIns = ins.operands[0].getU32();
+					curMajorFrame->curIns = ins.operands[0].getU32();
 					return;
 				}
 			} else if (ins.opcode == Opcode::JF) {
-				curMajorFrame.curIns = ins.operands[0].getU32();
+				curMajorFrame->curIns = ins.operands[0].getU32();
 				return;
 			}
 
@@ -1194,10 +1271,10 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		case Opcode::PUSHARG: {
 			_checkOperandCount(ins, false, 2);
 
-			curMajorFrame.nextArgStack.push_back(_unwrapRegOperand(curMajorFrame, ins.operands[0]));
+			curMajorFrame->nextArgStack.push_back(_unwrapRegOperand(curMajorFrame, ins.operands[0]));
 			switch (ins.operands[1].valueType) {
 				case ValueType::TypeName:
-					curMajorFrame.nextArgTypes.push_back(ins.operands[1].getTypeName());
+					curMajorFrame->nextArgTypes.push_back(ins.operands[1].getTypeName());
 					break;
 				case ValueType::ObjectRef:
 					if (!ins.operands[1].getObjectRef().objectPtr)
@@ -1238,11 +1315,11 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 			fn->call(
 				thisObject,
-				curMajorFrame.nextArgStack,
-				curMajorFrame.nextArgTypes);
+				curMajorFrame->nextArgStack,
+				curMajorFrame->nextArgTypes);
 
-			curMajorFrame.nextArgStack.clear();
-			curMajorFrame.nextArgTypes.clear();
+			curMajorFrame->nextArgStack.clear();
+			curMajorFrame->nextArgTypes.clear();
 
 			break;
 		}
@@ -1251,14 +1328,14 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 			Value returnValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
 			context->majorFrames.pop_back();
-			context->majorFrames.back().returnValue = returnValue;
+			context->majorFrames.back()->returnValue = returnValue;
 			break;
 		}
 		case Opcode::LRET: {
 			_checkOperandCount(ins, false, 0);
 			_checkOperandType(ins.output, ValueType::RegRef);
 
-			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), curMajorFrame.returnValue);
+			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), curMajorFrame->returnValue);
 			break;
 		}
 		case Opcode::ACALL:
@@ -1269,7 +1346,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_checkOperandCount(ins, false, 1);
 
 			context->flags |= CTX_YIELDED;
-			curMajorFrame.returnValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
+			curMajorFrame->returnValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
 			break;
 		}
 		case Opcode::AWAIT: {
@@ -1279,7 +1356,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_checkOperandCount(ins, false, 0);
 			_checkOperandType(ins.output, ValueType::RegRef);
 
-			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), curMajorFrame.thisObject);
+			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), curMajorFrame->thisObject);
 			break;
 		}
 		case Opcode::NEW: {
@@ -1308,9 +1385,9 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 							FnObject *constructor = (FnObject *)v;
 
-							constructor->call(instance, curMajorFrame.nextArgStack, curMajorFrame.nextArgTypes);
-							curMajorFrame.nextArgStack.clear();
-							curMajorFrame.nextArgTypes.clear();
+							constructor->call(instance, curMajorFrame->nextArgStack, curMajorFrame->nextArgTypes);
+							curMajorFrame->nextArgStack.clear();
+							curMajorFrame->nextArgTypes.clear();
 						} else
 							throw InvalidOperandsError("Specified constructor is not found");
 					}
@@ -1345,23 +1422,23 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			for (size_t i = context->majorFrames.size(); i; --i) {
 				auto &majorFrame = context->majorFrames[i - 1];
 
-				for (size_t j = majorFrame.minorFrames.size(); j; --j) {
-					auto &minorFrame = majorFrame.minorFrames[j - 1];
+				for (size_t j = majorFrame->minorFrames.size(); j; --j) {
+					auto &minorFrame = majorFrame->minorFrames[j - 1];
 
-					if (uint32_t off = _findAndDispatchExceptHandler(majorFrame.curExcept, minorFrame);
+					if (uint32_t off = _findAndDispatchExceptHandler(majorFrame->curExcept, minorFrame);
 						off != UINT32_MAX) {
 						context->majorFrames.resize(i);
-						majorFrame.minorFrames.resize(j);
+						majorFrame->minorFrames.resize(j);
 						// Do not increase the current instruction offset,
 						// the offset has been set to offset to first instruction
 						// of the exception handler.
-						majorFrame.curIns = off;
+						majorFrame->curIns = off;
 						return;
 					}
 				}
 			}
 
-			curMajorFrame.curExcept = x;
+			curMajorFrame->curExcept = x;
 			throw UncaughtExceptionError("Uncaught exception", x);
 		}
 		case Opcode::PUSHXH: {
@@ -1377,7 +1454,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			xh.type = ins.operands[0].getTypeName();
 			xh.off = ins.operands[1].getU32();
 
-			curMajorFrame.minorFrames.back().exceptHandlers.push_back(xh);
+			curMajorFrame->minorFrames.back().exceptHandlers.push_back(xh);
 			break;
 		}
 		case Opcode::CAST: {
@@ -1442,5 +1519,5 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		default:
 			throw InvalidOpcodeError("Invalid opcode " + std::to_string((uint8_t)ins.opcode));
 	}
-	++curMajorFrame.curIns;
+	++curMajorFrame->curIns;
 }

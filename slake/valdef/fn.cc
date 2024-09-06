@@ -147,36 +147,45 @@ Value RegularFnOverloadingObject::call(Object *thisObject, std::deque<Value> arg
 	} else {
 		context = std::make_shared<Context>();
 
-		auto frame = MajorFrame(rt);
-		frame.curFn = this;
-		frame.curIns = UINT32_MAX;
-		context->majorFrames.push_back(frame);
+		auto frame = std::make_unique<MajorFrame>(rt, context.get());
+		frame->curFn = this;
+		frame->curIns = UINT32_MAX;
+		context->majorFrames.push_back(std::move(frame));
 
 		rt->activeContexts[std::this_thread::get_id()] = context;
 	}
 
 	if (!(context->flags & CTX_YIELDED)) {
-		auto frame = MajorFrame(rt);
-		frame.curFn = this;
-		frame.curIns = 0;
-		frame.scopeObject = fnObject->getParent();
-		frame.thisObject = thisObject;
-		frame.argStack.resize(args.size());
+		auto frame = std::make_unique<MajorFrame>(rt, context.get());
+		frame->curFn = this;
+		frame->curIns = 0;
+		frame->scopeObject = fnObject->getParent();
+		frame->thisObject = thisObject;
+		frame->argStack.resize(args.size());
 		for (size_t i = 0; i < args.size(); ++i) {
 			auto var = RegularVarObject::alloc(rt, 0, i < paramTypes.size() ? paramTypes[i] : TypeId::Any);
 			var->setData(VarRefContext(), args[i]);
-			frame.argStack[i] = var.release();
+			frame->argStack[i] = var.release();
 		}
-		context->majorFrames.push_back(frame);
+		context->majorFrames.push_back(std::move(frame));
 	} else
 		context->flags &= ~CTX_YIELDED;
 
 	bool isDestructing = rt->destructingThreads.count(std::this_thread::get_id());
 
+	MajorFrame *curMajorFrame;
 	try {
-		while ((context->majorFrames.back().curIns != UINT32_MAX) &&
-			   (context->majorFrames.back().curFn == this)) {
-			if (context->majorFrames.back().curIns >= context->majorFrames.back().curFn->instructions.size())
+		for (;;) {
+			curMajorFrame = context->majorFrames.back().get();
+
+			if (context->majorFrames.back()->curFn != this)
+				break;
+
+			if (curMajorFrame->curIns == UINT32_MAX)
+				break;
+
+			if (context->majorFrames.back()->curIns >=
+				context->majorFrames.back()->curFn->instructions.size())
 				throw OutOfFnBodyError("Out of function body");
 
 			if (context->flags & CTX_YIELDED)
@@ -186,15 +195,9 @@ Value RegularFnOverloadingObject::call(Object *thisObject, std::deque<Value> arg
 			while ((rt->_flags & _RT_INGC) && !isDestructing)
 				std::this_thread::yield();
 
-			MajorFrame &curMajorFrame = context->majorFrames.back();
-			Instruction curIns;
-			curIns.opcode = Opcode::NOP;
-			curIns.operands = {};
-			curIns = curMajorFrame.curFn->instructions[curMajorFrame.curIns];
-
 			rt->_execIns(
 				context.get(),
-				curIns);
+				curMajorFrame->curFn->instructions[curMajorFrame->curIns]);
 		}
 	} catch (...) {
 		context->flags |= CTX_DONE;
@@ -204,12 +207,12 @@ Value RegularFnOverloadingObject::call(Object *thisObject, std::deque<Value> arg
 	if (context->flags & CTX_YIELDED)
 		return Value(ContextObject::alloc(rt, context).release(), true);
 
-	if (context->majorFrames.back().curIns == UINT32_MAX) {
+	if (context->majorFrames.back()->curIns == UINT32_MAX) {
 		rt->activeContexts.erase(std::this_thread::get_id());
 		context->flags |= CTX_DONE;
 	}
 
-	return context->majorFrames.back().returnValue;
+	return context->majorFrames.back()->returnValue;
 }
 
 FnOverloadingObject *FnObject::getOverloading(std::deque<Type> argTypes) const {

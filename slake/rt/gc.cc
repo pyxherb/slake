@@ -3,6 +3,8 @@
 using namespace slake;
 
 void Runtime::_gcWalk(Scope *scope) {
+	if (!scope)
+		return;
 	for (auto &i : scope->members) {
 		_gcWalk(i.second);
 	}
@@ -12,6 +14,8 @@ void Runtime::_gcWalk(Scope *scope) {
 }
 
 void Runtime::_gcWalk(MethodTable *methodTable) {
+	if (!methodTable)
+		return;
 	for (auto &i : methodTable->methods) {
 		_gcWalk(i.second);
 	}
@@ -71,8 +75,7 @@ void Runtime::_gcWalk(const Value &i) {
 		case ValueType::Bool:
 			break;
 		case ValueType::ObjectRef:
-			if (auto p = i.getObjectRef().objectPtr; p)
-				_gcWalk(p);
+			_gcWalk(i.getObjectRef().objectPtr);
 			break;
 		case ValueType::RegRef:
 			break;
@@ -93,6 +96,9 @@ void Runtime::_gcWalk(const Value &i) {
 }
 
 void Runtime::_gcWalk(Object *v) {
+	if (!v)
+		return;
+
 	if (v->_flags & VF_WALKED)
 		return;
 
@@ -107,10 +113,8 @@ void Runtime::_gcWalk(Object *v) {
 		case ObjectKind::Instance: {
 			auto value = (InstanceObject *)v;
 
-			if (value->_class)
-				_gcWalk(value->_class);
-			if (value->methodTable)
-				_gcWalk(value->methodTable);
+			_gcWalk(value->_class);
+			_gcWalk(value->methodTable);
 
 			for (auto &i : value->objectLayout->fieldRecords) {
 				_gcWalk(i.type);
@@ -122,6 +126,7 @@ void Runtime::_gcWalk(Object *v) {
 								_gcWalk(*((Object **)(value->rawFieldData + i.offset)));
 								break;
 						}
+						break;
 					}
 					case TypeId::String:
 					case TypeId::Instance:
@@ -156,11 +161,8 @@ void Runtime::_gcWalk(Object *v) {
 		case ObjectKind::Interface: {
 			// TODO: Walk generic parameters.
 
-			if (((ModuleObject *)v)->scope)
-				_gcWalk(((ModuleObject *)v)->scope);
-
-			if (((ModuleObject *)v)->parent)
-				_gcWalk(((ModuleObject *)v)->parent);
+			_gcWalk(((ModuleObject *)v)->scope);
+			_gcWalk(((ModuleObject *)v)->parent);
 
 			for (auto &i : ((ModuleObject *)v)->imports)
 				_gcWalk(i.second);
@@ -186,8 +188,7 @@ void Runtime::_gcWalk(Object *v) {
 					}
 
 					value->parentClass.loadDeferredType(this);
-					if (auto p = value->parentClass.resolveCustomType(); p)
-						_gcWalk(p);
+					_gcWalk(value->parentClass.resolveCustomType());
 
 					_gcWalk(value->genericParams);
 					break;
@@ -222,14 +223,13 @@ void Runtime::_gcWalk(Object *v) {
 		case ObjectKind::Var: {
 			VarObject *value = (VarObject *)v;
 
-			_gcWalk(value->getData(VarRefContext()));
-
 			switch (value->getVarKind()) {
 				case VarKind::Regular: {
 					auto v = (RegularVarObject *)value;
 
-					if (v->parent)
-						_gcWalk(v->parent);
+					_gcWalk(value->getData(VarRefContext()));
+
+					_gcWalk(v->parent);
 
 					_gcWalk(v->type);
 					break;
@@ -240,16 +240,29 @@ void Runtime::_gcWalk(Object *v) {
 					_gcWalk(v->arrayObject);
 					break;
 				}
+				case VarKind::InstanceMemberAccessor: {
+					auto v = (InstanceMemberAccessorVarObject *)value;
+
+					_gcWalk(v->instanceObject);
+					break;
+				}
+				case VarKind::LocalVarAccessor: {
+					auto v = (LocalVarAccessorVarObject *)value;
+
+					break;
+				}
 			}
 			break;
 		}
-		case ObjectKind::RootObject:
+		case ObjectKind::RootObject: {
+			RootObject *value = (RootObject *)v;
+			_gcWalk(value->scope);
 			break;
+		}
 		case ObjectKind::Fn: {
 			auto fn = (FnObject *)v;
 
-			if (auto p = fn->getParent(); p)
-				_gcWalk(p);
+			_gcWalk(fn->getParent());
 
 			for (auto &i : fn->overloadings) {
 				_gcWalk(i);
@@ -331,22 +344,39 @@ void Runtime::_gcWalk(Object *v) {
 
 void Runtime::_gcWalk(Context &ctxt) {
 	for (auto &j : ctxt.majorFrames) {
-		_gcWalk((FnOverloadingObject *)j.curFn);
-		if (j.scopeObject)
-			_gcWalk(j.scopeObject);
-		_gcWalk(j.returnValue);
-		if (j.thisObject)
-			_gcWalk(j.thisObject);
-		_gcWalk(j.curExcept);
-		for (auto &k : j.argStack)
+		_gcWalk((FnOverloadingObject *)j->curFn);
+		_gcWalk(j->scopeObject);
+		_gcWalk(j->returnValue);
+		_gcWalk(j->thisObject);
+		_gcWalk(j->curExcept);
+		for (auto &k : j->argStack)
 			_gcWalk((VarObject *)k);
-		for (auto &k : j.nextArgStack)
+		for (auto &k : j->nextArgStack)
 			_gcWalk(k);
-		for (auto &k : j.localVars)
-			_gcWalk((VarObject *)k);
-		for (auto &k : j.regs)
+		for (auto &k : j->localVarRecords) {
+			_gcWalk(k.type);
+
+			switch (k.type.typeId) {
+				case TypeId::Value: {
+					switch (k.type.getValueTypeExData()) {
+						case ValueType::ObjectRef:
+							_gcWalk(*((Object **)(ctxt.dataStack + k.stackOffset)));
+							break;
+					}
+					break;
+				}
+				case TypeId::String:
+				case TypeId::Instance:
+				case TypeId::Array:
+				case TypeId::Ref:
+					_gcWalk(*((Object **)(ctxt.dataStack + k.stackOffset)));
+					break;
+			}
+		}
+		_gcWalk(j->localVarAccessor);
+		for (auto &k : j->regs)
 			_gcWalk(k);
-		for (auto &k : j.minorFrames) {
+		for (auto &k : j->minorFrames) {
 			for (auto &l : k.exceptHandlers)
 				_gcWalk(l.type);
 		}
@@ -364,8 +394,7 @@ rescan:
 	}
 
 	// Walk the root node.
-	if (_rootObject)
-		_gcWalk(_rootObject);
+	_gcWalk(_rootObject);
 
 	// Walk contexts for each thread.
 	for (auto &i : activeContexts)

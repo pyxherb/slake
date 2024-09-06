@@ -27,43 +27,54 @@ namespace slake {
 		std::deque<ExceptionHandler> exceptHandlers;  // Exception handlers
 
 		uint32_t nLocalVars = 0, nRegs = 0;
-		size_t stackBase;
+		size_t stackBase = 0;
 
-		MinorFrame(uint32_t nLocalVars, uint32_t nRegs);
+		MinorFrame(uint32_t nLocalVars, uint32_t nRegs, size_t stackBase);
 		// Default constructor is required by resize() methods from the
 		// containers.
 		inline MinorFrame() {
-			assert(false);
+			abort();
 		}
 	};
 
 	/// @brief A major frame represents a single calling frame.
 	struct MajorFrame final {
-		Object *scopeObject = nullptr;						// Scope value.
+		Context *context = nullptr;		// Context
+		Object *scopeObject = nullptr;	// Scope value.
+
 		const RegularFnOverloadingObject *curFn = nullptr;	// Current function overloading.
 		uint32_t curIns = 0;								// Offset of current instruction in function body.
-		std::deque<RegularVarObject *> argStack;					// Argument stack.
-		std::deque<Value> nextArgStack;						// Argument stack for next call.
-		std::deque<Type> nextArgTypes;						// Types of argument stack for next call.
-		std::deque<RegularVarObject *> localVars;					// Local variables.
-		std::deque<Value> regs;								// Local registers.
-		Object *thisObject = nullptr;						// `this' object.
-		Value returnValue = nullptr;						// Return value.
-		std::deque<MinorFrame> minorFrames;					// Minor frames.
-		Value curExcept = nullptr;							// Current exception.
 
-		MajorFrame(Runtime *rt);
+		std::deque<RegularVarObject *> argStack;  // Argument stack.
+
+		std::deque<Value> nextArgStack;	 // Argument stack for next call.
+		std::deque<Type> nextArgTypes;	 // Types of argument stack for next call.
+
+		std::vector<LocalVarRecord> localVarRecords;  // Local variable records.
+		LocalVarAccessorVarObject *localVarAccessor;  // Local variable accessor.
+
+		std::deque<Value> regs;	 // Local registers.
+
+		Object *thisObject = nullptr;  // `this' object.
+
+		Value returnValue = nullptr;  // Return value.
+
+		std::deque<MinorFrame> minorFrames;	 // Minor frames.
+
+		Value curExcept = nullptr;	// Current exception.
+
+		MajorFrame(Runtime *rt, Context *context);
 		// Default constructor is required by resize() methods from the
 		// containers.
 		inline MajorFrame() {
-			assert(false);
+			abort();
 		}
 
 		inline VarRef lload(uint32_t off) {
-			if (off >= localVars.size())
+			if (off >= localVarRecords.size())
 				throw InvalidLocalVarIndexError("Invalid local variable index", off);
 
-			return VarRef(localVars.at(off));
+			return VarRef(localVarAccessor, VarRefContext::makeLocalVarContext(off));
 		}
 
 		inline VarRef larg(uint32_t off) {
@@ -74,11 +85,7 @@ namespace slake {
 		}
 
 		/// @brief Leave current minor frame.
-		inline void leave() {
-			localVars.resize(minorFrames.back().nLocalVars);
-			regs.resize(minorFrames.back().nRegs);
-			minorFrames.pop_back();
-		}
+		void leave();
 	};
 
 	using ContextFlags = uint8_t;
@@ -88,10 +95,32 @@ namespace slake {
 		// Yielded
 		CTX_YIELDED = 0x02;
 
-	struct Context final {
-		std::deque<MajorFrame> majorFrames;	 // Major frame
-		ContextFlags flags = 0;				 // Flags
-		std::unique_ptr<char[]> dataStack;	 // Data stack
+	struct Context {
+		std::vector<std::unique_ptr<MajorFrame>> majorFrames;  // Major frame
+		ContextFlags flags = 0;								  // Flags
+		char *dataStack = nullptr;							  // Data stack
+		size_t stackTop = 0;								  // Stack top
+
+		char *stackAlloc(size_t size) {
+			char *stackBase = dataStack + size;
+
+			if (size_t newStackTop = stackTop + size;
+				newStackTop > SLAKE_STACK_MAX)
+				throw StackOverflowError("Stack overflowed");
+			else
+				stackTop = newStackTop;
+
+			return stackBase;
+		}
+
+		Context() {
+			dataStack = new char[SLAKE_STACK_MAX];
+		}
+
+		~Context() {
+			if (dataStack)
+				delete[] dataStack;
+		}
 	};
 
 	class SynchronizedCountablePoolResource : public std::pmr::synchronized_pool_resource {
@@ -217,8 +246,8 @@ namespace slake {
 		void _instantiateGenericObject(Object *v, GenericInstantiationContext &instantiationContext) const;
 		void _instantiateGenericObject(FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const;
 
-		RegularVarObject *_addLocalVar(MajorFrame &frame, Type type);
-		void _addLocalReg(MajorFrame &frame);
+		VarRef _addLocalVar(MajorFrame *frame, Type type);
+		void _addLocalReg(MajorFrame *frame);
 
 		uint32_t _findAndDispatchExceptHandler(const Value &curExcept, const MinorFrame &minorFrame) const;
 

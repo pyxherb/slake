@@ -6,10 +6,14 @@
 #include <slake/type.h>
 
 namespace slake {
+	struct MajorFrame;
+	struct Context;
+
 	enum class VarKind {
 		Regular = 0,
 		ArrayElementAccessor,
-		InstanceMemberAccessor
+		InstanceMemberAccessor,
+		LocalVarAccessor
 	};
 
 	class VarObject : public MemberObject {
@@ -69,6 +73,37 @@ namespace slake {
 
 		virtual Type getVarType(const VarRefContext &context) const override { return type; }
 		virtual VarKind getVarKind() const override { return VarKind::Regular; }
+	};
+
+	struct LocalVarRecord {
+		size_t stackOffset;
+		Type type;
+	};
+
+	class LocalVarAccessorVarObject : public VarObject {
+	public:
+		Context *context;
+		MajorFrame *majorFrame;
+
+		LocalVarAccessorVarObject(
+			Runtime *rt,
+			Context *context,
+			MajorFrame *majorFrame);
+		virtual ~LocalVarAccessorVarObject();
+
+		virtual Type getVarType(const VarRefContext &context) const override;
+
+		virtual VarKind getVarKind() const override { return VarKind::LocalVarAccessor; }
+
+		virtual void setData(const VarRefContext &varRefContext, const Value &value) override;
+		virtual Value getData(const VarRefContext &varRefContext) const override;
+
+		static HostObjectRef<LocalVarAccessorVarObject> alloc(
+			Runtime *rt,
+			Context *context,
+			MajorFrame *majorFrame
+		);
+		virtual void dealloc() override;
 	};
 }
 

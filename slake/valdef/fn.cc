@@ -93,7 +93,7 @@ FnOverloadingKind slake::NativeFnOverloadingObject::getOverloadingKind() const {
 	return FnOverloadingKind::Native;
 }
 
-Value slake::NativeFnOverloadingObject::call(Object *thisObject, std::deque<Value> args) const {
+Value slake::NativeFnOverloadingObject::call(Object *thisObject, std::deque<Value> args, HostRefHolder *hostRefHolder) const {
 	return callback(fnObject->_rt, thisObject, args, mappedGenericArgs);
 }
 
@@ -135,7 +135,7 @@ void slake::NativeFnOverloadingObject::dealloc() {
 	allocator.deallocate(this, 1);
 }
 
-Value RegularFnOverloadingObject::call(Object *thisObject, std::deque<Value> args) const {
+Value RegularFnOverloadingObject::call(Object *thisObject, std::deque<Value> args, HostRefHolder *hostRefHolder) const {
 	// trimFnInstructions((std::vector<Instruction> &)instructions);
 	Runtime *rt = fnObject->_rt;
 
@@ -204,8 +204,13 @@ Value RegularFnOverloadingObject::call(Object *thisObject, std::deque<Value> arg
 		std::rethrow_exception(std::current_exception());
 	}
 
-	if (context->flags & CTX_YIELDED)
-		return Value(ContextObject::alloc(rt, context).release(), true);
+	if (context->flags & CTX_YIELDED) {
+		auto returnValue = ContextObject::alloc(rt, context);
+
+		hostRefHolder->addObject(returnValue.get());
+
+		return Value(returnValue.get());
+	}
 
 	if (context->majorFrames.back()->curIns == UINT32_MAX) {
 		rt->activeContexts.erase(std::this_thread::get_id());
@@ -243,11 +248,11 @@ FnOverloadingObject *FnObject::getOverloading(std::deque<Type> argTypes) const {
 	return nullptr;
 }
 
-Value FnObject::call(Object *thisObject, std::deque<Value> args, std::deque<Type> argTypes) const {
+Value FnObject::call(Object *thisObject, std::deque<Value> args, std::deque<Type> argTypes, HostRefHolder *hostRefHolder) const {
 	FnOverloadingObject *overloading = getOverloading(argTypes);
 
 	if (overloading)
-		return overloading->call(thisObject, args);
+		return overloading->call(thisObject, args, hostRefHolder);
 
 	throw NoOverloadingError("No matching overloading was found");
 }

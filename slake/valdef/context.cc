@@ -40,9 +40,9 @@ void slake::ContextObject::dealloc() {
 	allocator.deallocate(this, 1);
 }
 
-Value ContextObject::resume() {
+Value ContextObject::resume(HostRefHolder *hostRefHolder) {
 	_rt->activeContexts[std::this_thread::get_id()] = _context;
-	return _context->majorFrames.back()->curFn->call(nullptr, {});
+	return _context->majorFrames.back()->curFn->call(nullptr, {}, hostRefHolder);
 }
 
 Value ContextObject::getResult() {

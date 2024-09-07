@@ -7,6 +7,8 @@
 #include <string>
 #include <deque>
 #include <map>
+#include <set>
+#include <memory_resource>
 
 namespace slake {
 	class Runtime;
@@ -89,6 +91,7 @@ namespace slake {
 	template <typename T = Object>
 	class HostObjectRef final {
 	public:
+		static_assert(std::is_base_of_v<Object, T>);
 		T *_value = nullptr;
 
 		inline void reset() {
@@ -173,6 +176,19 @@ namespace slake {
 		inline operator bool() const {
 			return _value;
 		}
+	};
+
+	class HostRefHolder final {
+	public:
+		std::pmr::set<Object *> holdedObjects;
+
+		HostRefHolder(
+			std::pmr::memory_resource *memoryResource =
+				std::pmr::get_default_resource());
+		~HostRefHolder();
+
+		void addObject(Object *object);
+		void removeObject(Object *object) noexcept;
 	};
 }
 

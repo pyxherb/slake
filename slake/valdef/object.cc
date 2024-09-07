@@ -19,3 +19,21 @@ MemberObject *Object::getMember(
 	return nullptr;
 }
 
+HostRefHolder::HostRefHolder(std::pmr::memory_resource *memoryResource)
+	: holdedObjects(memoryResource) {
+}
+
+HostRefHolder::~HostRefHolder() {
+	for (auto i : holdedObjects)
+		--i->hostRefCount;
+}
+
+void HostRefHolder::addObject(Object* object) {
+	holdedObjects.insert(object);
+	++object->hostRefCount;
+}
+
+void HostRefHolder::removeObject(Object *object) noexcept {
+	holdedObjects.erase(object);
+	++object->hostRefCount;
+}

@@ -97,9 +97,9 @@ namespace slake {
 
 	struct Context {
 		std::vector<std::unique_ptr<MajorFrame>> majorFrames;  // Major frame
-		ContextFlags flags = 0;								  // Flags
-		char *dataStack = nullptr;							  // Data stack
-		size_t stackTop = 0;								  // Stack top
+		ContextFlags flags = 0;								   // Flags
+		char *dataStack = nullptr;							   // Data stack
+		size_t stackTop = 0;								   // Stack top
 
 		char *stackAlloc(size_t size) {
 			char *stackBase = dataStack + size;
@@ -222,11 +222,15 @@ namespace slake {
 		/// @brief Module locator for importing.
 		ModuleLocatorFn _moduleLocator;
 
-		IdRefObject *_loadIdRef(std::istream &fs);
-		Value _loadValue(std::istream &fs);
-		Type _loadType(std::istream &fs);
-		GenericParam _loadGenericParam(std::istream &fs);
-		void _loadScope(ModuleObject *mod, std::istream &fs, LoadModuleFlags loadModuleFlags);
+		HostObjectRef<IdRefObject> _loadIdRef(std::istream &fs, HostRefHolder &holder);
+		Value _loadValue(std::istream &fs, HostRefHolder &holder);
+		Type _loadType(std::istream &fs, HostRefHolder &holder);
+		GenericParam _loadGenericParam(std::istream &fs, HostRefHolder &holder);
+		void _loadScope(
+			HostObjectRef<ModuleObject> mod,
+			std::istream &fs,
+			LoadModuleFlags loadModuleFlags,
+			HostRefHolder &holder);
 
 		/// @brief Execute a single instruction.
 		/// @param context Context for execution.
@@ -322,7 +326,7 @@ namespace slake {
 		/// @brief Do a GC cycle.
 		void gc();
 
-		InstanceObject *newClassInstance(ClassObject *cls, NewClassInstanceFlags flags);
+		HostObjectRef<InstanceObject> newClassInstance(ClassObject *cls, NewClassInstanceFlags flags);
 		HostObjectRef<ArrayObject> newArrayInstance(Runtime *rt, const Type &type, size_t length);
 	};
 }

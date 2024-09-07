@@ -1313,10 +1313,13 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			if (!fn)
 				throw NullRefError();
 
-			fn->call(
+			HostRefHolder holder;
+
+			curMajorFrame->returnValue = fn->call(
 				thisObject,
 				curMajorFrame->nextArgStack,
-				curMajorFrame->nextArgTypes);
+				curMajorFrame->nextArgTypes,
+				&holder);
 
 			curMajorFrame->nextArgStack.clear();
 			curMajorFrame->nextArgTypes.clear();
@@ -1373,8 +1376,8 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			switch (type.typeId) {
 				case TypeId::Instance: {
 					ClassObject *cls = (ClassObject *)type.getCustomTypeExData();
-					InstanceObject *instance = newClassInstance(cls, 0);
-					_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), instance);
+					HostObjectRef<InstanceObject> instance = newClassInstance(cls, 0);
+					_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), instance.get());
 
 					if (constructorRef) {
 						_checkObjectOperandType(constructorRef, ObjectKind::IdRef);
@@ -1385,7 +1388,9 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 							FnObject *constructor = (FnObject *)v;
 
-							constructor->call(instance, curMajorFrame->nextArgStack, curMajorFrame->nextArgTypes);
+							HostRefHolder holder;
+
+							constructor->call(instance.get(), curMajorFrame->nextArgStack, curMajorFrame->nextArgTypes, &holder);
 							curMajorFrame->nextArgStack.clear();
 							curMajorFrame->nextArgTypes.clear();
 						} else

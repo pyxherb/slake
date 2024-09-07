@@ -19,7 +19,6 @@ namespace slake {
 
 	struct ObjectRefValueExData {
 		Object *objectPtr;
-		bool isHostRef;
 	};
 
 	union VarRefContext {
@@ -49,7 +48,7 @@ namespace slake {
 			return context;
 		}
 
-		static inline VarRefContext makeLocalVarContext(size_t localVarIndex) {
+		static inline VarRefContext makeLocalVarContext(uint32_t localVarIndex) {
 			VarRefContext context = {};
 
 			context.asLocalVar.localVarIndex = localVarIndex;
@@ -90,7 +89,7 @@ namespace slake {
 			char asType[sizeof(Type)];
 			VarRef asVarRef;
 		} data;
-		void _setObjectRef(Object *objectPtr, bool isHostRef);
+		void _setObjectRef(Object *objectPtr);
 		void _reset();
 
 	public:
@@ -147,8 +146,8 @@ namespace slake {
 			this->data.asBool = data;
 			valueType = ValueType::Bool;
 		}
-		inline Value(Object *objectPtr, bool isHostRef = false) {
-			_setObjectRef(objectPtr, isHostRef);
+		inline Value(Object *objectPtr) {
+			_setObjectRef(objectPtr);
 			valueType = ValueType::ObjectRef;
 		}
 		inline Value(ValueType vt, uint32_t index) {

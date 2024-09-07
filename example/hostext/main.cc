@@ -121,35 +121,38 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	slake::HostObjectRef<slake::FnObject> fnObject = slake::FnObject::alloc(rt.get());
+	{
+		slake::HostRefHolder hostRefHolder;
 
-	fnObject->overloadings.insert(
-		slake::NativeFnOverloadingObject::alloc(fnObject.get(), slake::ACCESS_PUB, std::deque<slake::Type>{}, slake::ValueType::Undefined, print).release());
+		slake::HostObjectRef<slake::FnObject> fnObject = slake::FnObject::alloc(rt.get());
 
-	((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext", nullptr))->getMember("extfns", nullptr))->scope->putMember("print", fnObject.get());
+		fnObject->overloadings.insert(
+			slake::NativeFnOverloadingObject::alloc(fnObject.get(), slake::ACCESS_PUB, std::deque<slake::Type>{}, slake::ValueType::Undefined, print).release());
 
-	try {
-		slake::Value result =
-			((slake::FnObject *)mod->getMember("main", nullptr))->call(nullptr, {}, {});
+		((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext", nullptr))->getMember("extfns", nullptr))->scope->putMember("print", fnObject.get());
 
-		slake::HostObjectRef<slake::ContextObject> context = (slake::ContextObject *)result.getObjectRef().objectPtr;
-		printf("%d\n", context->getResult().getI32());
+		try {
+			slake::Value result =
+				((slake::FnObject *)mod->getMember("main", nullptr))->call(nullptr, {}, {}, &hostRefHolder);
 
-		while (!context->isDone()) {
-			context->resume();
-
+			slake::HostObjectRef<slake::ContextObject> context = (slake::ContextObject *)result.getObjectRef().objectPtr;
 			printf("%d\n", context->getResult().getI32());
+
+			while (!context->isDone()) {
+				context->resume(&hostRefHolder);
+
+				printf("%d\n", context->getResult().getI32());
+			}
+		} catch (slake::NotFoundError e) {
+			printf("NotFoundError: %s, ref = %s\n", e.what(), std::to_string(e.ref).c_str());
+			printTraceback(rt.get());
+		} catch (slake::RuntimeExecError e) {
+			auto ctxt = rt->activeContexts.at(std::this_thread::get_id());
+			printf("RuntimeExecError: %s\n", e.what());
+			printTraceback(rt.get());
 		}
-	} catch (slake::NotFoundError e) {
-		printf("NotFoundError: %s, ref = %s\n", e.what(), std::to_string(e.ref).c_str());
-		printTraceback(rt.get());
-	} catch (slake::RuntimeExecError e) {
-		auto ctxt = rt->activeContexts.at(std::this_thread::get_id());
-		printf("RuntimeExecError: %s\n", e.what());
-		printTraceback(rt.get());
 	}
 
-	fnObject.reset();
 	mod.reset();
 
 	rt.reset();

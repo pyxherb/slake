@@ -28,12 +28,8 @@ Value::Value(const Type &type) {
 	valueType = ValueType::TypeName;
 }
 
-void Value::_setObjectRef(Object* objectPtr, bool isHostRef) {
-	if (isHostRef) {
-		if (objectPtr)
-			++objectPtr->hostRefCount;
-	}
-	this->data.asObjectRef = ObjectRefValueExData{ objectPtr, isHostRef };
+void Value::_setObjectRef(Object *objectPtr) {
+	this->data.asObjectRef = ObjectRefValueExData{ objectPtr };
 }
 
 void Value::_reset() {
@@ -55,11 +51,6 @@ void Value::_reset() {
 			break;
 		case ValueType::ObjectRef: {
 			ObjectRefValueExData &exData = data.asObjectRef;
-
-			if (exData.isHostRef) {
-				if (exData.objectPtr)
-					--exData.objectPtr->hostRefCount;
-			}
 			break;
 		}
 		case ValueType::TypeName:
@@ -112,7 +103,6 @@ Value &Value::operator=(const Value &other) {
 			break;
 		case ValueType::ObjectRef:
 			this->data = other.data;
-			this->data.asObjectRef.isHostRef = false;
 			break;
 		case ValueType::TypeName:
 			*((Type *)data.asType) = other.getTypeName();
@@ -151,8 +141,6 @@ bool Value::operator==(const Value &rhs) const {
 		case ValueType::Bool:
 			return data.asBool == rhs.data.asBool;
 		case ValueType::ObjectRef: {
-			if (data.asObjectRef.isHostRef != rhs.data.asObjectRef.isHostRef)
-				return false;
 			return data.asObjectRef.objectPtr == data.asObjectRef.objectPtr;
 		}
 		case ValueType::RegRef:

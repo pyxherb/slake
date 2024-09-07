@@ -28,7 +28,7 @@ namespace slake {
 
 		inline std::shared_ptr<Context> getContext() { return _context; }
 
-		Value resume();
+		Value resume(HostRefHolder *hostRefHolder);
 		Value getResult();
 		bool isDone();
 	};

@@ -418,8 +418,10 @@ rescan:
 
 			if (auto mt = object->methodTable; mt) {
 				if (mt->destructors.size()) {
-					for (auto i : mt->destructors)
-						i->call(i, {});
+					for (auto i : mt->destructors) {
+						HostRefHolder holder;
+						i->call(i, {}, &holder);
+					}
 					foundDestructibleObjects = true;
 				}
 			}

@@ -23,7 +23,7 @@ namespace slake {
 		virtual ~ModuleObject();
 
 		std::unordered_map<std::string, IdRefObject *> imports;
-		std::deque<IdRefObject *> unnamedImports;
+		std::vector<IdRefObject *> unnamedImports;
 
 		virtual inline ObjectKind getKind() const override { return ObjectKind::Module; }
 

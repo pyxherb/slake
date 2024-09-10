@@ -10,7 +10,7 @@ namespace slake {
 		std::string name;
 		GenericArgList genericArgs;
 
-		inline IdRefEntry(std::string name, GenericArgList genericArgs = {})
+		inline IdRefEntry(std::string &&name, GenericArgList &&genericArgs = {})
 			: name(name), genericArgs(genericArgs) {}
 	};
 
@@ -35,7 +35,7 @@ namespace slake {
 }
 
 namespace std {
-	string to_string(std::deque<slake::IdRefEntry> &idRefEntries);
+	string to_string(std::vector<slake::IdRefEntry> &idRefEntries);
 	string to_string(const slake::IdRefObject *ref);
 }
 

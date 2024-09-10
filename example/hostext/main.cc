@@ -8,7 +8,7 @@
 slake::Value print(
 	slake::Runtime *rt,
 	slake::Object *thisObject,
-	std::deque<slake::Value> args,
+	std::pmr::vector<slake::Value> args,
 	const std::unordered_map<std::string, slake::Type> &mappedGenericArgs) {
 	using namespace slake;
 
@@ -126,8 +126,15 @@ int main(int argc, char **argv) {
 
 		slake::HostObjectRef<slake::FnObject> fnObject = slake::FnObject::alloc(rt.get());
 
+		std::vector<slake::Type> paramTypes;
+
 		fnObject->overloadings.insert(
-			slake::NativeFnOverloadingObject::alloc(fnObject.get(), slake::ACCESS_PUB, std::deque<slake::Type>{}, slake::ValueType::Undefined, print).release());
+			slake::NativeFnOverloadingObject::alloc(
+				fnObject.get(),
+				slake::ACCESS_PUB,
+				paramTypes,
+				slake::ValueType::Undefined,
+				print).release());
 
 		((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext", nullptr))->getMember("extfns", nullptr))->scope->putMember("print", fnObject.get());
 

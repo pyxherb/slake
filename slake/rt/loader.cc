@@ -31,10 +31,12 @@ HostObjectRef<IdRefObject> Runtime::_loadIdRef(std::istream &fs, HostRefHolder &
 		fs.read(name.data(), i.lenName);
 
 		GenericArgList genericArgs;
-		for (size_t j = i.nGenericArgs; j; --j)
-			genericArgs.push_back(_loadType(fs, holder));
+		genericArgs.resize(i.nGenericArgs);
+		genericArgs.shrink_to_fit();
+		for (size_t j = 0; j < i.nGenericArgs; ++j)
+			genericArgs[j] = _loadType(fs, holder);
 
-		ref->entries.push_back(IdRefEntry(name, genericArgs));
+		ref->entries.push_back(IdRefEntry(std::move(name), std::move(genericArgs)));
 		if (!(i.flags & slxfmt::RSD_NEXT))
 			break;
 	};
@@ -196,8 +198,10 @@ GenericParam Runtime::_loadGenericParam(std::istream &fs, HostRefHolder &holder)
 	if (gpd.hasBaseType)
 		param.baseType = _loadType(fs, holder);
 
+	param.interfaces.resize(gpd.nInterfaces);
+	param.interfaces.shrink_to_fit();
 	for (size_t i = 0; i < gpd.nInterfaces; ++i) {
-		param.interfaces.push_back(_loadType(fs, holder));
+		param.interfaces[i] = _loadType(fs, holder);
 	}
 
 	return param;
@@ -231,16 +235,20 @@ void Runtime::_loadScope(
 
 		HostObjectRef<ClassObject> value = ClassObject::alloc(this, access);
 
+		value->genericParams.resize(i.nGenericParams);
+		value->genericParams.shrink_to_fit();
 		for (size_t j = 0; j < i.nGenericParams; ++j)
-			value->genericParams.push_back(_loadGenericParam(fs, holder));
+			value->genericParams[j] = _loadGenericParam(fs, holder);
 
 		// Load reference to the parent class.
 		if (i.flags & slxfmt::CTD_DERIVED)
 			value->parentClass = Type(TypeId::Instance, _loadIdRef(fs, holder).release());
 
 		// Load references to implemented interfaces.
-		for (auto j = i.nImpls; j; j--)
-			value->implInterfaces.push_back(_loadIdRef(fs, holder).release());
+		value->implInterfaces.resize(i.nImpls);
+		value->implInterfaces.shrink_to_fit();
+		for (auto j = 0; j < i.nImpls; ++j)
+			value->implInterfaces[j] = _loadIdRef(fs, holder).release();
 
 		_loadScope(value.get(), fs, loadModuleFlags, holder);
 
@@ -263,11 +271,15 @@ void Runtime::_loadScope(
 
 		HostObjectRef<InterfaceObject> value = InterfaceObject::alloc(this, access);
 
+		value->genericParams.resize(i.nGenericParams);
+		value->genericParams.shrink_to_fit();
 		for (size_t j = 0; j < i.nGenericParams; ++j)
 			value->genericParams.push_back(_loadGenericParam(fs, holder));
 
-		for (auto j = i.nParents; j; j--)
-			value->parents.push_back(_loadIdRef(fs, holder).release());
+		value->parents.resize(i.nParents);
+		value->parents.shrink_to_fit();
+		for (auto j = 0; j < i.nParents; ++j)
+			value->parents[j] = (_loadIdRef(fs, holder).release());
 
 		_loadScope(value.get(), fs, loadModuleFlags, holder);
 
@@ -392,7 +404,7 @@ void Runtime::_loadScope(
 				mod->scope->putMember(name, fn.get());
 			}
 
-			HostObjectRef<RegularFnOverloadingObject> overloading = RegularFnOverloadingObject::alloc(fn.get(), access, std::deque<Type>{}, Type());
+			HostObjectRef<RegularFnOverloadingObject> overloading = RegularFnOverloadingObject::alloc(fn.get(), access, std::pmr::vector<Type>(&globalHeapPoolResource), Type());
 
 			if (i.flags & slxfmt::FND_ASYNC)
 				overloading->overloadingFlags |= OL_ASYNC;
@@ -401,12 +413,16 @@ void Runtime::_loadScope(
 
 			overloading->returnType = _loadType(fs, holder);
 
+			overloading->genericParams.resize(i.nGenericParams);
+			overloading->genericParams.shrink_to_fit();
 			for (size_t j = 0; j < i.nGenericParams; ++j) {
-				overloading->genericParams.push_back(_loadGenericParam(fs, holder));
+				overloading->genericParams[j] = _loadGenericParam(fs, holder);
 			}
 
-			for (uint8_t j = 0; j < i.nParams; j++) {
-				overloading->paramTypes.push_back(_loadType(fs, holder));
+			overloading->paramTypes.resize(i.nParams);
+			overloading->paramTypes.shrink_to_fit();
+			for (uint8_t j = 0; j < i.nParams; ++j) {
+				overloading->paramTypes[j] = _loadType(fs, holder);
 			}
 
 			if (i.flags & slxfmt::FND_VARG)
@@ -432,6 +448,7 @@ void Runtime::_loadScope(
 				}
 			}
 
+			// Obsoleted.
 			for (uint32_t j = 0; j < i.nSourceLocDescs; ++j) {
 				slxfmt::SourceLocDesc sld = _read<slxfmt::SourceLocDesc>(fs);
 				overloading->sourceLocDescs.push_back(sld);

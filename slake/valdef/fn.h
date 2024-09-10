@@ -54,7 +54,7 @@ namespace slake {
 
 		GenericArgList specializationArgs;
 
-		std::deque<Type> paramTypes;
+		std::pmr::vector<Type> paramTypes;
 		Type returnType;
 
 		OverloadingFlags overloadingFlags = 0;
@@ -62,7 +62,7 @@ namespace slake {
 		FnOverloadingObject(
 			FnObject *fnObject,
 			AccessModifier access,
-			const std::deque<Type> &paramTypes,
+			std::pmr::vector<Type> &&paramTypes,
 			const Type &returnType);
 		inline FnOverloadingObject(const FnOverloadingObject &other) : Object(other) {
 			fnObject = other.fnObject;
@@ -83,22 +83,25 @@ namespace slake {
 
 		virtual FnOverloadingKind getOverloadingKind() const = 0;
 
-		virtual Value call(Object *thisObject, std::deque<Value> args, HostRefHolder *hostRefHolder) const = 0;
+		virtual Value call(Object *thisObject, std::pmr::vector<Value> args, HostRefHolder *hostRefHolder) const = 0;
 
 		virtual FnOverloadingObject *duplicate() const = 0;
 	};
 
 	class RegularFnOverloadingObject : public FnOverloadingObject {
 	public:
+		std::vector<slxfmt::SourceLocDesc> sourceLocDescs;
+		std::vector<Instruction> instructions;
+
 		inline RegularFnOverloadingObject(
 			FnObject *fnObject,
 			AccessModifier access,
-			const std::deque<Type> &paramTypes,
+			std::pmr::vector<Type> &&paramTypes,
 			const Type &returnType)
 			: FnOverloadingObject(
 				  fnObject,
 				  access,
-				  paramTypes,
+				  std::move(paramTypes),
 				  returnType) {}
 		inline RegularFnOverloadingObject(const RegularFnOverloadingObject &other) : FnOverloadingObject(other) {
 			sourceLocDescs = other.sourceLocDescs;
@@ -133,19 +136,16 @@ namespace slake {
 		}
 		virtual ~RegularFnOverloadingObject() = default;
 
-		std::deque<slxfmt::SourceLocDesc> sourceLocDescs;
-		std::vector<Instruction> instructions;
-
 		virtual FnOverloadingKind getOverloadingKind() const override;
 
-		virtual Value call(Object *thisObject, std::deque<Value> args, HostRefHolder *hostRefHolder) const override;
+		virtual Value call(Object *thisObject, std::pmr::vector<Value> args, HostRefHolder *hostRefHolder) const override;
 
 		virtual FnOverloadingObject *duplicate() const override;
 
 		static HostObjectRef<RegularFnOverloadingObject> alloc(
 			FnObject *fnObject,
 			AccessModifier access,
-			const std::deque<Type> &paramTypes,
+			std::pmr::vector<Type> &&paramTypes,
 			const Type &returnType);
 		static HostObjectRef<RegularFnOverloadingObject> alloc(const RegularFnOverloadingObject *other);
 		virtual void dealloc() override;
@@ -155,7 +155,7 @@ namespace slake {
 		std::function<Value(
 			Runtime *rt,
 			Object *thisObject,
-			std::deque<Value> args,
+			std::pmr::vector<Value> args,
 			const std::unordered_map<std::string, Type> &mappedGenericArgs)>;
 
 	class NativeFnOverloadingObject : public FnOverloadingObject {
@@ -163,13 +163,13 @@ namespace slake {
 		inline NativeFnOverloadingObject(
 			FnObject *fnObject,
 			AccessModifier access,
-			const std::deque<Type> &paramTypes,
+			std::pmr::vector<Type> &&paramTypes,
 			const Type &returnType,
 			NativeFnCallback callback)
 			: FnOverloadingObject(
 				  fnObject,
 				  access,
-				  paramTypes,
+				  std::move(paramTypes),
 				  returnType),
 			  callback(callback) {}
 		inline NativeFnOverloadingObject(const NativeFnOverloadingObject &other) : FnOverloadingObject(other) {
@@ -181,14 +181,14 @@ namespace slake {
 
 		virtual FnOverloadingKind getOverloadingKind() const override;
 
-		virtual Value call(Object *thisObject, std::deque<Value> args, HostRefHolder *hostRefHolder) const override;
+		virtual Value call(Object *thisObject, std::pmr::vector<Value> args, HostRefHolder *hostRefHolder) const override;
 
 		virtual FnOverloadingObject *duplicate() const override;
 
 		static HostObjectRef<NativeFnOverloadingObject> alloc(
 			FnObject *fnObject,
 			AccessModifier access,
-			const std::deque<Type> &paramTypes,
+			const std::vector<Type> &paramTypes,
 			const Type &returnType,
 			NativeFnCallback callback);
 		static HostObjectRef<NativeFnOverloadingObject> alloc(const NativeFnOverloadingObject *other);
@@ -225,9 +225,9 @@ namespace slake {
 		virtual inline Object *getParent() const override { return parent; }
 		virtual void setParent(Object *parent) override { this->parent = parent; }
 
-		FnOverloadingObject *getOverloading(std::deque<Type> argTypes) const;
+		FnOverloadingObject *getOverloading(const std::pmr::vector<Type> &argTypes) const;
 
-		virtual Value call(Object *thisObject, std::deque<Value> args, std::deque<Type> argTypes, HostRefHolder *hostRefHolder) const;
+		virtual Value call(Object *thisObject, std::pmr::vector<Value> args, std::pmr::vector<Type> argTypes, HostRefHolder *hostRefHolder) const;
 
 		virtual Object *duplicate() const override;
 
@@ -238,8 +238,8 @@ namespace slake {
 
 	inline bool isDuplicatedOverloading(
 		const FnOverloadingObject *overloading,
-		std::deque<Type> &paramTypes,
-		GenericParamList &genericParams,
+		const std::pmr::vector<Type> &paramTypes,
+		const GenericParamList &genericParams,
 		bool hasVarArg) {
 		if ((overloading->overloadingFlags & OL_VARG) != (hasVarArg ? OL_VARG : 0))
 			return false;

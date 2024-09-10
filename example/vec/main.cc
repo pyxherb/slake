@@ -8,7 +8,7 @@
 slake::ValueRef<> print(
 	slake::Runtime *rt,
 	slake::Value *thisObject,
-	std::deque<slake::Value *> args,
+	std::vector<slake::Value *> args,
 	const std::unordered_map<std::string, slake::Type> &mappedGenericArgs) {
 	using namespace slake;
 
@@ -61,7 +61,7 @@ slake::ValueRef<> print(
 slake::ValueRef<> getSlakeBuildVersionInfo(
 	slake::Runtime *rt,
 	slake::Value *thisObject,
-	std::deque<slake::Value *> args,
+	std::vector<slake::Value *> args,
 	const std::unordered_map<std::string, slake::Type> &mappedGenericArgs) {
 	using namespace slake;
 

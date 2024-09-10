@@ -40,7 +40,7 @@ bool Instruction::operator<(const Instruction &rhs) const {
 FnOverloadingObject::FnOverloadingObject(
 	FnObject *fnObject,
 	AccessModifier access,
-	const std::deque<Type> &paramTypes,
+	std::pmr::vector<Type> &&paramTypes,
 	const Type &returnType)
 	: Object(fnObject->_rt),
 	  fnObject(fnObject),
@@ -60,11 +60,15 @@ FnOverloadingObject *slake::RegularFnOverloadingObject::duplicate() const {
 	return (FnOverloadingObject *)alloc(this).get();
 }
 
-HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingObject::alloc(FnObject *fnObject, AccessModifier access, const std::deque<Type> &paramTypes, const Type &returnType) {
+HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingObject::alloc(
+	FnObject *fnObject,
+	AccessModifier access,
+	std::pmr::vector<Type> &&paramTypes,
+	const Type &returnType) {
 	std::pmr::polymorphic_allocator<RegularFnOverloadingObject> allocator(&fnObject->_rt->globalHeapPoolResource);
 
 	RegularFnOverloadingObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, fnObject, access, paramTypes, returnType);
+	allocator.construct(ptr, fnObject, access, std::move(paramTypes), returnType);
 
 	fnObject->_rt->createdObjects.insert(ptr);
 
@@ -93,7 +97,7 @@ FnOverloadingKind slake::NativeFnOverloadingObject::getOverloadingKind() const {
 	return FnOverloadingKind::Native;
 }
 
-Value slake::NativeFnOverloadingObject::call(Object *thisObject, std::deque<Value> args, HostRefHolder *hostRefHolder) const {
+Value slake::NativeFnOverloadingObject::call(Object *thisObject, std::pmr::vector<Value> args, HostRefHolder *hostRefHolder) const {
 	return callback(fnObject->_rt, thisObject, args, mappedGenericArgs);
 }
 
@@ -104,13 +108,15 @@ FnOverloadingObject *slake::NativeFnOverloadingObject::duplicate() const {
 HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObject::alloc(
 	FnObject *fnObject,
 	AccessModifier access,
-	const std::deque<Type> &paramTypes,
+	const std::vector<Type> &paramTypes,
 	const Type &returnType,
 	NativeFnCallback callback) {
 	std::pmr::polymorphic_allocator<NativeFnOverloadingObject> allocator(&fnObject->_rt->globalHeapPoolResource);
 
+	std::pmr::vector<Type> pmrParamTypes(&fnObject->_rt->globalHeapPoolResource);
+
 	NativeFnOverloadingObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, fnObject, access, paramTypes, returnType, callback);
+	allocator.construct(ptr, fnObject, access, std::move(pmrParamTypes), returnType, callback);
 
 	fnObject->_rt->createdObjects.insert(ptr);
 
@@ -135,7 +141,7 @@ void slake::NativeFnOverloadingObject::dealloc() {
 	allocator.deallocate(this, 1);
 }
 
-Value RegularFnOverloadingObject::call(Object *thisObject, std::deque<Value> args, HostRefHolder *hostRefHolder) const {
+Value RegularFnOverloadingObject::call(Object *thisObject, std::pmr::vector<Value> args, HostRefHolder *hostRefHolder) const {
 	// trimFnInstructions((std::vector<Instruction> &)instructions);
 	Runtime *rt = fnObject->_rt;
 
@@ -220,7 +226,7 @@ Value RegularFnOverloadingObject::call(Object *thisObject, std::deque<Value> arg
 	return context->majorFrames.back()->returnValue;
 }
 
-FnOverloadingObject *FnObject::getOverloading(std::deque<Type> argTypes) const {
+FnOverloadingObject *FnObject::getOverloading(const std::pmr::vector<Type> &argTypes) const {
 	const FnObject *i = this;
 
 	for (auto &j : overloadings) {
@@ -233,9 +239,9 @@ FnOverloadingObject *FnObject::getOverloading(std::deque<Type> argTypes) const {
 		}
 
 		for (size_t k = 0; k < argTypes.size(); ++k) {
-			argTypes[k].loadDeferredType(_rt);
-			j->paramTypes[k].loadDeferredType(_rt);
+			assert(!argTypes[k].isLoadingDeferred());
 
+			j->paramTypes[k].loadDeferredType(_rt);
 			if (argTypes[k] != j->paramTypes[k])
 				goto mismatched;
 		}
@@ -248,7 +254,7 @@ FnOverloadingObject *FnObject::getOverloading(std::deque<Type> argTypes) const {
 	return nullptr;
 }
 
-Value FnObject::call(Object *thisObject, std::deque<Value> args, std::deque<Type> argTypes, HostRefHolder *hostRefHolder) const {
+Value FnObject::call(Object *thisObject, std::pmr::vector<Value> args, std::pmr::vector<Type> argTypes, HostRefHolder *hostRefHolder) const {
 	FnOverloadingObject *overloading = getOverloading(argTypes);
 
 	if (overloading)

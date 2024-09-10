@@ -24,12 +24,16 @@ namespace slake {
 	/// @brief Minor frames are created by ENTER instructions and destroyed by
 	/// LEAVE instructions.
 	struct MinorFrame final {
-		std::deque<ExceptionHandler> exceptHandlers;  // Exception handlers
+		std::pmr::vector<ExceptionHandler> exceptHandlers;  // Exception handlers
 
 		uint32_t nLocalVars = 0, nRegs = 0;
 		size_t stackBase = 0;
 
-		MinorFrame(uint32_t nLocalVars, uint32_t nRegs, size_t stackBase);
+		MinorFrame(
+			Runtime *rt,
+			uint32_t nLocalVars,
+			uint32_t nRegs,
+			size_t stackBase);
 		// Default constructor is required by resize() methods from the
 		// containers.
 		inline MinorFrame() {
@@ -45,21 +49,21 @@ namespace slake {
 		const RegularFnOverloadingObject *curFn = nullptr;	// Current function overloading.
 		uint32_t curIns = 0;								// Offset of current instruction in function body.
 
-		std::deque<RegularVarObject *> argStack;  // Argument stack.
+		std::pmr::vector<RegularVarObject *> argStack;  // Argument stack.
 
-		std::deque<Value> nextArgStack;	 // Argument stack for next call.
-		std::deque<Type> nextArgTypes;	 // Types of argument stack for next call.
+		std::pmr::vector<Value> nextArgStack;  // Argument stack for next call.
+		std::pmr::vector<Type> nextArgTypes;   // Types of argument stack for next call.
 
-		std::vector<LocalVarRecord> localVarRecords;  // Local variable records.
+		std::pmr::vector<LocalVarRecord> localVarRecords;  // Local variable records.
 		LocalVarAccessorVarObject *localVarAccessor;  // Local variable accessor.
 
-		std::deque<Value> regs;	 // Local registers.
+		std::pmr::vector<Value> regs;  // Local registers.
 
 		Object *thisObject = nullptr;  // `this' object.
 
 		Value returnValue = nullptr;  // Return value.
 
-		std::deque<MinorFrame> minorFrames;	 // Minor frames.
+		std::pmr::vector<MinorFrame> minorFrames;	 // Minor frames.
 
 		Value curExcept = nullptr;	// Current exception.
 

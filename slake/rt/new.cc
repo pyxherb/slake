@@ -131,7 +131,7 @@ HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassObject *cls,
 										objectLayout->totalSize += sizeof(bool);
 										break;
 									case ValueType::ObjectRef:
-										objectLayout->totalSize += sizeof(Object *) & (sizeof(Object *) - 1);
+										objectLayout->totalSize += sizeof(Object *) - (objectLayout->totalSize & (sizeof(Object *) - 1));
 										fieldRecord.offset = objectLayout->totalSize;
 										objectLayout->totalSize += sizeof(Object *);
 										break;
@@ -140,7 +140,7 @@ HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassObject *cls,
 							case TypeId::String:
 							case TypeId::Instance:
 							case TypeId::Array:
-								objectLayout->totalSize += sizeof(Object *) & (sizeof(Object *) - 1);
+								objectLayout->totalSize += sizeof(Object *) - (objectLayout->totalSize & (sizeof(Object *) - 1));
 								fieldRecord.offset = objectLayout->totalSize;
 								objectLayout->totalSize += sizeof(Object *);
 								break;
@@ -168,7 +168,7 @@ HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassObject *cls,
 						}
 
 						if (i.first == "delete") {
-							std::deque<Type> destructorParamTypes;
+							std::pmr::vector<Type> destructorParamTypes(&globalHeapPoolResource);
 							GenericParamList destructorGenericParamList;
 
 							for (auto &j : overloadings) {

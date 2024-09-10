@@ -99,7 +99,7 @@ Object *InterfaceObject::duplicate() const {
 	return (Object *)alloc(this).get();
 }
 
-HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Runtime *rt, AccessModifier access, const std::deque<Type> &parents) {
+HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Runtime *rt, AccessModifier access, const std::vector<Type> &parents) {
 	std::pmr::polymorphic_allocator<InterfaceObject> allocator(&rt->globalHeapPoolResource);
 
 	InterfaceObject *ptr = allocator.allocate(1);

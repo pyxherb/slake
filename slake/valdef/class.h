@@ -42,7 +42,7 @@ namespace slake {
 		GenericParamList genericParams;
 
 		Type parentClass;
-		std::deque<Type> implInterfaces;  // Implemented interfaces
+		std::vector<Type> implInterfaces;  // Implemented interfaces
 
 		MethodTable *cachedInstantiatedMethodTable = nullptr;
 		ObjectLayout *cachedObjectLayout = nullptr;
@@ -97,9 +97,9 @@ namespace slake {
 
 		GenericParamList genericParams;
 
-		std::deque<Type> parents;
+		std::vector<Type> parents;
 
-		inline InterfaceObject(Runtime *rt, AccessModifier access, const std::deque<Type> &parents)
+		inline InterfaceObject(Runtime *rt, AccessModifier access, const std::vector<Type> &parents)
 			: ModuleObject(rt, access), parents(parents) {
 		}
 		inline InterfaceObject(const InterfaceObject& x) : ModuleObject(x) {
@@ -119,7 +119,7 @@ namespace slake {
 			return genericArgs;
 		}
 
-		static HostObjectRef<InterfaceObject> alloc(Runtime *rt, AccessModifier access, const std::deque<Type> &parents = {});
+		static HostObjectRef<InterfaceObject> alloc(Runtime *rt, AccessModifier access, const std::vector<Type> &parents = {});
 		static HostObjectRef<InterfaceObject> alloc(const InterfaceObject *other);
 		virtual void dealloc() override;
 

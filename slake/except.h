@@ -6,6 +6,61 @@
 #include <slake/valdef/idref.h>
 
 namespace slake {
+	enum class ErrorKind {
+		RuntimeExecError = 0,
+		LoaderError
+	};
+
+	enum class RuntimeExecErrorCode : uint8_t {
+		/// @brief A null reference was detected while the runtime requires a non-null one.
+		NullRef = 0,
+
+		NoMatchingOverloading,
+
+		/// @brief The execution ran out from the function body.
+		OutOfFnBody,
+
+		/// @brief The type of the value does not match the variable's type.
+		MismatchedVarType,
+
+		/// @brief Invalid opcode.
+		InvalidOpcode,
+
+		/// @brief Invalid operand combination.
+		InvalidOperands,
+
+		/// @brief Member referenced was not found.
+		ReferencedMemberNotFound,
+
+		/// @brief An error occurred during the generic instantiation of a member.
+		GenericInstantiationError,
+
+		/// @brief There's an uncaught Slake exception.
+		UncaughtException,
+
+		/// @brief Stack frame pointer exceeds the frame boundary (usually an underflow).
+		FrameBoundaryExceeded,
+
+		/// @brief Invalid local variable index.
+		InvalidLocalVarIndex,
+
+		/// @brief Invalid register index.
+		InvalidRegisterIndex,
+
+		/// @brief Invalid argument index.
+		InvalidArgumentIndex,
+
+		/// @brief Invalid array index.
+		InvalidArrayIndex,
+
+		/// @brief Stack overflowed.
+		StackOverflow
+	};
+
+	class Excpetion {
+	public:
+	};
+
 	class RuntimeExecError : public std::runtime_error {
 	public:
 		inline RuntimeExecError(std::string msg) : runtime_error(msg){};

@@ -155,7 +155,7 @@ VarRef slake::Runtime::_addLocalVar(MajorFrame *frame, Type type) {
 					frame->context->stackAlloc(sizeof(bool));
 					break;
 				case ValueType::ObjectRef:
-					frame->context->stackAlloc(sizeof(Object *) & (sizeof(Object *) - 1));
+					frame->context->stackAlloc(sizeof(Object *) - (frame->context->stackTop & (sizeof(Object *) - 1)));
 					localVarRecord.stackOffset = frame->context->stackTop;
 					frame->context->stackAlloc(sizeof(Object *));
 					break;
@@ -164,7 +164,7 @@ VarRef slake::Runtime::_addLocalVar(MajorFrame *frame, Type type) {
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array:
-			frame->context->stackAlloc(sizeof(Object *) & (sizeof(Object *) - 1));
+			frame->context->stackAlloc(sizeof(Object *) - (frame->context->stackTop & (sizeof(Object *) - 1)));
 			localVarRecord.stackOffset = frame->context->stackTop;
 			frame->context->stackAlloc(sizeof(Object *));
 			break;
@@ -339,7 +339,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		}
 		case Opcode::ENTER: {
 			_checkOperandCount(ins, false, 0);
-			MinorFrame frame((uint32_t)curMajorFrame->localVarRecords.size(), (uint32_t)curMajorFrame->regs.size(), context->stackTop);
+			MinorFrame frame(this, (uint32_t)curMajorFrame->localVarRecords.size(), (uint32_t)curMajorFrame->regs.size(), context->stackTop);
 
 			curMajorFrame->minorFrames.push_back(frame);
 			break;
@@ -1314,6 +1314,9 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 				throw NullRefError();
 
 			HostRefHolder holder;
+
+			for(auto &i : curMajorFrame->nextArgTypes)
+				i.loadDeferredType(this);
 
 			curMajorFrame->returnValue = fn->call(
 				thisObject,

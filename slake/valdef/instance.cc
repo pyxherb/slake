@@ -68,7 +68,7 @@ void InstanceMemberAccessorVarObject::setData(const VarRefContext &context, cons
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array:
-			*((Object **)rawFieldPtr) = value.getObjectRef().objectPtr;
+			*((Object **)rawFieldPtr) = value.getObjectRef();
 			break;
 		default:
 			// All fields should be checked during the instantiation.

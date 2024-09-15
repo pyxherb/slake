@@ -111,7 +111,7 @@ namespace slake {
 				instructions[i].opcode = other.instructions[i].opcode;
 
 				if (auto &output = other.instructions[i].output; output.valueType == ValueType::ObjectRef) {
-					if (auto ptr = output.getObjectRef().objectPtr; ptr)
+					if (auto ptr = output.getObjectRef(); ptr)
 						instructions[i].output = ptr->duplicate();
 					else
 						instructions[i].output = nullptr;
@@ -124,7 +124,7 @@ namespace slake {
 					auto &operand = other.instructions[i].operands[j];
 
 					if (operand.valueType == ValueType::ObjectRef) {
-						if (auto ptr = operand.getObjectRef().objectPtr; ptr)
+						if (auto ptr = operand.getObjectRef(); ptr)
 							instructions[i].operands[j] =
 								ptr->duplicate();
 						else

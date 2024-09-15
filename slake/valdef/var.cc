@@ -130,7 +130,7 @@ void LocalVarAccessorVarObject::setData(const VarRefContext &context, const Valu
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array:
-			*((Object **)rawDataPtr) = value.getObjectRef().objectPtr;
+			*((Object **)rawDataPtr) = value.getObjectRef();
 			break;
 		default:
 			// All fields should be checked during the instantiation.

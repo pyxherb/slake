@@ -1602,7 +1602,7 @@ void ObjectRefArrayAccessorVarObject::setData(const VarRefContext &varRefContext
 	if (index > arrayObject->length)
 		throw OutOfRangeError();
 
-	arrayObject->data[index] = value.getObjectRef().objectPtr;
+	arrayObject->data[index] = value.getObjectRef();
 }
 
 Value ObjectRefArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
@@ -1657,7 +1657,7 @@ void ObjectRefArrayObject::fill(size_t beginIndex, size_t length, const Value &v
 		throw MismatchedTypeError("Mismatched array element type");
 	if (!isCompatible(elementType, value))
 		throw MismatchedTypeError("Mismatched array element type");
-	std::fill_n(data + beginIndex, length, value.getObjectRef().objectPtr);
+	std::fill_n(data + beginIndex, length, value.getObjectRef());
 }
 
 void ObjectRefArrayObject::resize(size_t newLength) {

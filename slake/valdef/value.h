@@ -17,10 +17,6 @@ namespace slake {
 
 	// Value type definitions are defined in <slake/type.h>.
 
-	struct ObjectRefValueExData {
-		Object *objectPtr;
-	};
-
 	union VarRefContext {
 		struct {
 			uint32_t index;
@@ -85,23 +81,17 @@ namespace slake {
 			float asF32;
 			double asF64;
 			bool asBool;
-			ObjectRefValueExData asObjectRef;
+			Object *asObjectRef;
 			char asType[sizeof(Type)];
 			VarRef asVarRef;
 		} data;
-		void _setObjectRef(Object *objectPtr);
-		void _reset();
 
 	public:
 		ValueType valueType = ValueType::Undefined;
 
-		inline Value(const Value &other) {
-			*this = other;
-		}
-		inline Value(Value &&other) {
-			*this = std::move(other);
-		}
 		Value() = default;
+		Value(const Value &other) = default;
+		Value(Value &&other) = default;
 		inline Value(int8_t data) {
 			this->data.asI8 = data;
 			valueType = ValueType::I8;
@@ -147,7 +137,7 @@ namespace slake {
 			valueType = ValueType::Bool;
 		}
 		inline Value(Object *objectPtr) {
-			_setObjectRef(objectPtr);
+			this->data.asObjectRef = objectPtr;
 			valueType = ValueType::ObjectRef;
 		}
 		inline Value(ValueType vt, uint32_t index) {
@@ -159,7 +149,6 @@ namespace slake {
 			valueType = ValueType::VarRef;
 		}
 		Value(const Type &type);
-		~Value();
 
 		inline int8_t getI8() const {
 			assert(valueType == ValueType::I8);
@@ -234,13 +223,12 @@ namespace slake {
 		Type &getTypeName();
 		const Type &getTypeName() const;
 
-		const ObjectRefValueExData &getObjectRef() const;
-
-		Value &operator=(const Value &other);
-		inline Value &operator=(Value &&other) noexcept {
-			(*this) = other;
-			return *this;
+		inline Object* getObjectRef() const {
+			return data.asObjectRef;
 		}
+
+		Value &operator=(const Value &other) = default;
+		inline Value &operator=(Value &&other) noexcept = default;
 
 		bool operator==(const Value &rhs) const;
 

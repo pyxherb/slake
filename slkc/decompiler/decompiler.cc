@@ -266,7 +266,7 @@ void slake::decompiler::decompileValue(Runtime *rt, Value value, std::ostream &o
 			os << "%" << std::to_string(value.getRegIndex());
 			break;
 		case ValueType::ObjectRef: {
-			auto ptr = value.getObjectRef().objectPtr;
+			auto ptr = value.getObjectRef();
 
 			if (!ptr)
 				os << "null";

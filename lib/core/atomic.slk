@@ -1,11 +1,29 @@
 module core.atomic;
 
+pub native fn load(i32 &dest): i32;
+pub native fn store(i32 &dest): i32;
 pub native fn increment(i32 &dest);
-pub native fn fetchAndIncrement(i32 &dest): i32;
+pub native fn fetchIncrement(i32 &dest): i32;
+pub native fn fetchAdd(i32 &dest): i32;
+pub native fn fetchSub(i32 &dest): i32;
+pub native fn fetchMul(i32 &dest): i32;
+pub native fn fetchDiv(i32 &dest): i32;
+pub native fn fetchAnd(i32 &dest): i32;
+pub native fn fetchOr(i32 &dest): i32;
+pub native fn fetchXor(i32 &dest): i32;
 pub native fn exchange(i32 &dest, i32 value): i32;
 pub native fn compareExchange(i32 &dest, i32 value, i32 compared): i32;
 
+pub native fn load(u32 &dest): i32;
+pub native fn store(u32 &dest): i32;
 pub native fn increment(u32 &dest);
-pub native fn fetchAndIncrement(u32 &dest): i32;
+pub native fn fetchIncrement(u32 &dest): u32;
+pub native fn fetchAdd(u32 &dest): u32;
+pub native fn fetchSub(u32 &dest): u32;
+pub native fn fetchMul(u32 &dest): u32;
+pub native fn fetchDiv(u32 &dest): u32;
+pub native fn fetchAnd(u32 &dest): u32;
+pub native fn fetchOr(u32 &dest): u32;
+pub native fn fetchXor(u32 &dest): u32;
 pub native fn exchange(u32 &dest, u32 value): i32;
 pub native fn compareExchange(u32 &dest, u32 value, u32 compared): u32;

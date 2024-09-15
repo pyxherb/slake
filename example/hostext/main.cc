@@ -48,16 +48,16 @@ slake::Value print(
 				fputs(args[i].getBool() ? "true" : "false", stdout);
 				break;
 			case ValueType::ObjectRef: {
-				const ObjectRefValueExData &exData = args[i].getObjectRef();
-				if (!exData.objectPtr)
+				Object *objectPtr = args[i].getObjectRef();
+				if (!objectPtr)
 					fputs("null", stdout);
 				else {
-					switch (exData.objectPtr->getKind()) {
+					switch (objectPtr->getKind()) {
 						case ObjectKind::String:
-							std::cout << ((slake::StringObject *)exData.objectPtr)->data;
+							std::cout << ((slake::StringObject *)objectPtr)->data;
 							break;
 						default:
-							std::cout << "<object at " << std::hex << exData.objectPtr << ">";
+							std::cout << "<object at " << std::hex << objectPtr << ">";
 							break;
 					}
 				}
@@ -142,7 +142,7 @@ int main(int argc, char **argv) {
 			slake::Value result =
 				((slake::FnObject *)mod->getMember("main", nullptr))->call(nullptr, {}, {}, &hostRefHolder);
 
-			slake::HostObjectRef<slake::ContextObject> context = (slake::ContextObject *)result.getObjectRef().objectPtr;
+			slake::HostObjectRef<slake::ContextObject> context = (slake::ContextObject *)result.getObjectRef();
 			printf("%d\n", context->getResult().getI32());
 
 			while (!context->isDone()) {

@@ -179,14 +179,14 @@ bool slake::isCompatible(const Type &type, const Value &value) {
 		case TypeId::String:
 			if (value.valueType != ValueType::ObjectRef)
 				return false;
-			if (value.getObjectRef().objectPtr->getKind() != ObjectKind::String)
+			if (value.getObjectRef()->getKind() != ObjectKind::String)
 				return false;
 			break;
 		case TypeId::Instance: {
 			if (value.valueType != ValueType::ObjectRef)
 				return false;
 
-			auto objectPtr = value.getObjectRef().objectPtr;
+			auto objectPtr = value.getObjectRef();
 			if (!objectPtr)
 				return true;
 			if (objectPtr->getKind() != ObjectKind::Instance)
@@ -222,7 +222,7 @@ bool slake::isCompatible(const Type &type, const Value &value) {
 			if (value.valueType != ValueType::ObjectRef)
 				return false;
 
-			auto objectPtr = value.getObjectRef().objectPtr;
+			auto objectPtr = value.getObjectRef();
 			if (objectPtr->getKind() != ObjectKind::Array)
 				return false;
 

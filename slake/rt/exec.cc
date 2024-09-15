@@ -224,7 +224,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_checkOperandType(ins.output, ValueType::RegRef);
 
 			_checkOperandType(ins.operands[0], ValueType::ObjectRef);
-			auto refPtr = ins.operands[0].getObjectRef().objectPtr;
+			auto refPtr = ins.operands[0].getObjectRef();
 			_checkObjectOperandType(refPtr, ObjectKind::IdRef);
 
 			VarRefContext varRefContext;
@@ -249,10 +249,10 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_checkOperandType(ins.operands[0], ValueType::RegRef);
 			auto &lhs = _fetchRegValue(curMajorFrame, ins.operands[0].getRegIndex());
 			_checkOperandType(lhs, ValueType::ObjectRef);
-			auto lhsPtr = lhs.getObjectRef().objectPtr;
+			auto lhsPtr = lhs.getObjectRef();
 
 			_checkOperandType(ins.operands[1], ValueType::ObjectRef);
-			auto refPtr = ins.operands[1].getObjectRef().objectPtr;
+			auto refPtr = ins.operands[1].getObjectRef();
 
 			if (!lhsPtr)
 				throw NullRefError();
@@ -1223,7 +1223,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			Value &index = _unwrapRegOperand(curMajorFrame, ins.operands[1]);
 			_checkOperandType(index, ValueType::U32);
 
-			auto arrayIn = arrayValue.getObjectRef().objectPtr;
+			auto arrayIn = arrayValue.getObjectRef();
 			_checkObjectOperandType(arrayIn, ObjectKind::Array);
 
 			uint32_t indexIn = index.getU32();
@@ -1277,7 +1277,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 					curMajorFrame->nextArgTypes.push_back(ins.operands[1].getTypeName());
 					break;
 				case ValueType::ObjectRef:
-					if (!ins.operands[1].getObjectRef().objectPtr)
+					if (!ins.operands[1].getObjectRef())
 						break;
 					[[fallthrough]];
 				default:
@@ -1295,19 +1295,19 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 				Value fnValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
 				_checkOperandType(fnValue, ValueType::ObjectRef);
-				_checkObjectOperandType(fnValue.getObjectRef().objectPtr, ObjectKind::Fn);
-				fn = (FnObject *)fnValue.getObjectRef().objectPtr;
+				_checkObjectOperandType(fnValue.getObjectRef(), ObjectKind::Fn);
+				fn = (FnObject *)fnValue.getObjectRef();
 
 				Value thisObjectValue = _unwrapRegOperand(curMajorFrame, ins.operands[1]);
 				_checkOperandType(thisObjectValue, ValueType::ObjectRef);
-				thisObject = thisObjectValue.getObjectRef().objectPtr;
+				thisObject = thisObjectValue.getObjectRef();
 			} else {
 				_checkOperandCount(ins, false, 1);
 
 				Value fnValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
 				_checkOperandType(fnValue, ValueType::ObjectRef);
-				_checkObjectOperandType(fnValue.getObjectRef().objectPtr, ObjectKind::Fn);
-				fn = (FnObject *)fnValue.getObjectRef().objectPtr;
+				_checkObjectOperandType(fnValue.getObjectRef(), ObjectKind::Fn);
+				fn = (FnObject *)fnValue.getObjectRef();
 			}
 
 			if (!fn)
@@ -1371,7 +1371,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_checkOperandType(ins.operands[0], ValueType::TypeName);
 			_checkOperandType(ins.operands[1], ValueType::ObjectRef);
 
-			auto constructorRef = ins.operands[1].getObjectRef().objectPtr;
+			auto constructorRef = ins.operands[1].getObjectRef();
 
 			Type &type = ins.operands[0].getTypeName();
 			type.loadDeferredType(this);

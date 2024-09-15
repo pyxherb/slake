@@ -75,7 +75,7 @@ void Runtime::_gcWalk(const Value &i) {
 		case ValueType::Bool:
 			break;
 		case ValueType::ObjectRef:
-			_gcWalk(i.getObjectRef().objectPtr);
+			_gcWalk(i.getObjectRef());
 			break;
 		case ValueType::RegRef:
 			break;

@@ -28,93 +28,12 @@ Value::Value(const Type &type) {
 	valueType = ValueType::TypeName;
 }
 
-void Value::_setObjectRef(Object *objectPtr) {
-	this->data.asObjectRef = ObjectRefValueExData{ objectPtr };
-}
-
-void Value::_reset() {
-	auto savedData = data;
-	switch (valueType) {
-		case ValueType::U8:
-		case ValueType::U16:
-		case ValueType::U32:
-		case ValueType::U64:
-		case ValueType::I8:
-		case ValueType::I16:
-		case ValueType::I32:
-		case ValueType::I64:
-		case ValueType::F32:
-		case ValueType::F64:
-		case ValueType::Bool:
-		case ValueType::RegRef:
-		case ValueType::VarRef:
-			break;
-		case ValueType::ObjectRef: {
-			ObjectRefValueExData &exData = data.asObjectRef;
-			break;
-		}
-		case ValueType::TypeName:
-			*((Type *)data.asType) = {};
-			break;
-		case ValueType::Undefined:
-			break;
-		default:
-			throw std::logic_error("Unhandled object type");
-	}
-	data = {};
-
-	valueType = ValueType::Undefined;
-}
-
-Value::~Value() {
-	_reset();
-}
-
 Type &Value::getTypeName() {
 	return *((Type *)data.asType);
 }
 
 const Type &Value::getTypeName() const {
 	return ((Value *)this)->getTypeName();
-}
-
-const ObjectRefValueExData &Value::getObjectRef() const {
-	return data.asObjectRef;
-}
-
-Value &Value::operator=(const Value &other) {
-	_reset();
-
-	switch (other.valueType) {
-		case ValueType::U8:
-		case ValueType::U16:
-		case ValueType::U32:
-		case ValueType::U64:
-		case ValueType::I8:
-		case ValueType::I16:
-		case ValueType::I32:
-		case ValueType::I64:
-		case ValueType::F32:
-		case ValueType::F64:
-		case ValueType::Bool:
-		case ValueType::RegRef:
-		case ValueType::VarRef:
-			this->data = other.data;
-			break;
-		case ValueType::ObjectRef:
-			this->data = other.data;
-			break;
-		case ValueType::TypeName:
-			*((Type *)data.asType) = other.getTypeName();
-			break;
-		case ValueType::Undefined:
-			break;
-		default:
-			throw std::logic_error("Unhandled object type");
-	}
-	valueType = other.valueType;
-
-	return *this;
 }
 
 bool Value::operator==(const Value &rhs) const {
@@ -141,7 +60,7 @@ bool Value::operator==(const Value &rhs) const {
 		case ValueType::Bool:
 			return data.asBool == rhs.data.asBool;
 		case ValueType::ObjectRef: {
-			return data.asObjectRef.objectPtr == data.asObjectRef.objectPtr;
+			return data.asObjectRef == data.asObjectRef;
 		}
 		case ValueType::RegRef:
 			return data.asU32 == rhs.data.asU32;
@@ -178,7 +97,7 @@ bool Value::operator<(const Value &rhs) const {
 		case ValueType::Bool:
 			return data.asBool < rhs.data.asBool;
 		case ValueType::ObjectRef:
-			return data.asObjectRef.objectPtr < rhs.data.asObjectRef.objectPtr;
+			return data.asObjectRef < rhs.data.asObjectRef;
 		case ValueType::RegRef:
 			return data.asU32 < rhs.data.asU32;
 		case ValueType::TypeName:

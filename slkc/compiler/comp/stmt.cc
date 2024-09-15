@@ -10,8 +10,8 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			if (s->expr) {
 				slxfmt::SourceLocDesc sld;
 				sld.offIns = curFn->body.size();
-				sld.line = stmt->sourceLocation.beginPosition.line;
-				sld.column = stmt->sourceLocation.beginPosition.column;
+				sld.line = tokenRangeToSourceLocation(stmt->tokenRange).beginPosition.line;
+				sld.column = tokenRangeToSourceLocation(stmt->tokenRange).beginPosition.column;
 
 				compileExpr(std::static_pointer_cast<ExprStmtNode>(stmt)->expr, EvalPurpose::Stmt, {});
 
@@ -49,7 +49,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 
 				if (curMajorContext.curMinorContext.localVars.count(i.first))
 					throw FatalCompilationError(
-						{ i.second.loc,
+						{ tokenRangeToSourceLocation(i.second.tokenRange),
 							MessageType::Error,
 							"Redefinition of local variable `" + i.first + "'" });
 
@@ -61,7 +61,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 				if (isLValueType(varType)) {
 					if (!i.second.initValue) {
 						throw FatalCompilationError(
-							{ i.second.loc,
+							{ tokenRangeToSourceLocation(i.second.tokenRange),
 								MessageType::Error,
 								"Reference variables require an initial value" });
 					}
@@ -70,13 +70,13 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 
 					if (!initValueType)
 						throw FatalCompilationError(
-							{ i.second.initValue->sourceLocation,
+							{ tokenRangeToSourceLocation(i.second.initValue->tokenRange),
 								MessageType::Error,
 								"Error deducing type of the initial value" });
 
 					if (!isSameType(varType, initValueType)) {
 						throw FatalCompilationError(
-							{ i.second.initValue->sourceLocation,
+							{ tokenRangeToSourceLocation(i.second.initValue->tokenRange),
 								MessageType::Error,
 								"Incompatible initial value type" });
 					} else {
@@ -100,14 +100,14 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 
 						if (!initValueType)
 							throw FatalCompilationError(
-								{ i.second.initValue->sourceLocation,
+								{ tokenRangeToSourceLocation(i.second.initValue->tokenRange),
 									MessageType::Error,
 									"Error deducing type of the initial value" });
 
 						if (!isSameType(varType, initValueType)) {
 							if (!isTypeNamesConvertible(initValueType, varType))
 								throw FatalCompilationError(
-									{ i.second.initValue->sourceLocation,
+									{ tokenRangeToSourceLocation(i.second.initValue->tokenRange),
 										MessageType::Error,
 										"Incompatible initial value type" });
 
@@ -147,7 +147,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 		}
 		case StmtType::Break:
 			if (curMajorContext.curMinorContext.breakLabel.empty())
-				throw FatalCompilationError({ stmt->sourceLocation, MessageType::Error, "Unexpected break statement" });
+				throw FatalCompilationError({ tokenRangeToSourceLocation(stmt->tokenRange), MessageType::Error, "Unexpected break statement" });
 
 			if (curMajorContext.curMinorContext.breakScopeLevel < curMajorContext.curScopeLevel)
 				_insertIns(
@@ -159,14 +159,14 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			break;
 		case StmtType::Continue:
 			if (curMajorContext.curMinorContext.continueLabel.size())
-				throw FatalCompilationError({ stmt->sourceLocation, MessageType::Error, "Unexpected continue statement" });
+				throw FatalCompilationError({ tokenRangeToSourceLocation(stmt->tokenRange), MessageType::Error, "Unexpected continue statement" });
 
 			_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(curMajorContext.curMinorContext.continueLabel) });
 			break;
 		case StmtType::For: {
 			auto s = std::static_pointer_cast<ForStmtNode>(stmt);
 
-			auto loc = s->sourceLocation;
+			auto loc = tokenRangeToSourceLocation(s->tokenRange);
 			std::string beginLabel = "$for_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_begin",
 						endLabel = "$for_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_end";
 
@@ -193,7 +193,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 				if (!isSameType(conditionType, boolType)) {
 					if (!isTypeNamesConvertible(conditionType, boolType))
 						throw FatalCompilationError(
-							{ s->condition->sourceLocation,
+							{ tokenRangeToSourceLocation(s->condition->tokenRange),
 								MessageType::Error,
 								"Expecting a boolean expression" });
 
@@ -233,7 +233,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			});
 #endif
 
-			auto loc = s->sourceLocation;
+			auto loc = tokenRangeToSourceLocation(s->tokenRange);
 			std::string beginLabel = "$while_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_begin",
 						endLabel = "$while_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_end";
 
@@ -254,7 +254,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			if (!isSameType(conditionType, boolType)) {
 				if (!isTypeNamesConvertible(conditionType, boolType))
 					throw FatalCompilationError(
-						{ s->condition->sourceLocation,
+						{ tokenRangeToSourceLocation(s->condition->tokenRange),
 							MessageType::Error,
 							"Expecting a boolean expression" });
 
@@ -293,7 +293,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 
 			if (!s->returnValue) {
 				if (returnType->getTypeId() != TypeId::Void)
-					throw FatalCompilationError({ stmt->sourceLocation, MessageType::Error, "Must return a value" });
+					throw FatalCompilationError({ tokenRangeToSourceLocation(stmt->tokenRange), MessageType::Error, "Must return a value" });
 				else
 					_insertIns(Opcode::RET, {}, { {} });
 			} else {
@@ -316,7 +316,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 					auto exprType = evalExprType(s->returnValue);
 
 					if (!exprType)
-						throw FatalCompilationError({ s->returnValue->sourceLocation, MessageType::Error, "Cannot deduce type of the return value" });
+						throw FatalCompilationError({ tokenRangeToSourceLocation(s->returnValue->tokenRange), MessageType::Error, "Cannot deduce type of the return value" });
 
 					if (isSameType(exprType, returnType))
 						compileExpr(s->returnValue, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
@@ -333,11 +333,11 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			auto s = std::static_pointer_cast<YieldStmtNode>(stmt);
 
 			if (!(curFn->isAsync))
-				throw FatalCompilationError({ stmt->sourceLocation, MessageType::Error, "Cannot yield in a non-asynchronous function" });
+				throw FatalCompilationError({ tokenRangeToSourceLocation(stmt->tokenRange), MessageType::Error, "Cannot yield in a non-asynchronous function" });
 
 			if (!s->returnValue) {
 				if (curFn->returnType->getTypeId() != TypeId::Void)
-					throw FatalCompilationError({ stmt->sourceLocation, MessageType::Error, "Must yield a value" });
+					throw FatalCompilationError({ tokenRangeToSourceLocation(stmt->tokenRange), MessageType::Error, "Must yield a value" });
 				else
 					_insertIns(Opcode::YIELD, {}, {});
 			} else {
@@ -355,7 +355,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 		}
 		case StmtType::If: {
 			auto s = std::static_pointer_cast<IfStmtNode>(stmt);
-			auto loc = s->sourceLocation;
+			auto loc = tokenRangeToSourceLocation(s->tokenRange);
 
 			std::string falseBranchLabel = "$if_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_false",
 						endLabel = "$if_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_end";
@@ -368,7 +368,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			if (!isSameType(conditionType, boolType)) {
 				if (!isTypeNamesConvertible(conditionType, boolType))
 					throw FatalCompilationError(
-						{ s->condition->sourceLocation,
+						{ tokenRangeToSourceLocation(s->condition->tokenRange),
 							MessageType::Error,
 							"Expecting a boolean expression" });
 
@@ -400,7 +400,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 		}
 		case StmtType::Try: {
 			auto s = std::static_pointer_cast<TryStmtNode>(stmt);
-			auto loc = s->sourceLocation;
+			auto loc = tokenRangeToSourceLocation(s->tokenRange);
 
 			std::string labelPrefix = "$try_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column),
 						endLabel = labelPrefix + "_final";
@@ -461,7 +461,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 		}
 		case StmtType::Switch: {
 			auto s = std::static_pointer_cast<SwitchStmtNode>(stmt);
-			auto loc = s->sourceLocation;
+			auto loc = tokenRangeToSourceLocation(s->tokenRange);
 
 			std::string labelPrefix = "$switch_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column),
 						condLocalVarName = labelPrefix + "_cond",
@@ -491,7 +491,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 					if (defaultCase)
 						// The default case is already exist.
 						throw FatalCompilationError(
-							{ curCase.loc,
+							{ tokenRangeToSourceLocation(curCase.tokenRange),
 								MessageType::Error,
 								"Duplicated default case" });
 					defaultCase = &curCase;
@@ -507,7 +507,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 						std::make_shared<RegRefNode>(conditionRegIndex) });
 				_insertIns(Opcode::JF, {}, { std::make_shared<LabelRefNode>(caseEndLabel), std::make_shared<RegRefNode>(cmpResultRegIndex) });
 
-				compileStmt(std::make_shared<CodeBlockStmtNode>(CodeBlock{ SourceLocation(), curCase.body }));
+				compileStmt(std::make_shared<CodeBlockStmtNode>(CodeBlock{ {}, curCase.body }));
 
 				_insertLabel(caseEndLabel);
 
@@ -516,7 +516,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			}
 
 			if (defaultCase)
-				compileStmt(std::make_shared<CodeBlockStmtNode>(CodeBlock{ SourceLocation(), defaultCase->body }));
+				compileStmt(std::make_shared<CodeBlockStmtNode>(CodeBlock{ {}, defaultCase->body }));
 
 			_insertLabel(endLabel);
 

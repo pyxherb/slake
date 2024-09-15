@@ -70,7 +70,7 @@ void Compiler::importModule(const IdRef &ref) {
 
 	throw FatalCompilationError(
 		Message(
-			ref[0].loc,
+			tokenRangeToSourceLocation(ref[0].tokenRange),
 			MessageType::Error,
 			"Cannot find module " + std::to_string(ref, this)));
 
@@ -291,7 +291,7 @@ std::shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 							genericArgs.push_back(toTypeName(j));
 						}
 
-						ref.push_back(IdRefEntry(SourceLocation{}, SIZE_MAX, i.name, genericArgs));
+						ref.push_back(IdRefEntry({}, SIZE_MAX, i.name, genericArgs));
 					}
 
 					return std::make_shared<CustomTypeNameNode>(ref, this, nullptr);
@@ -320,7 +320,7 @@ slake::slkc::IdRef Compiler::toAstIdRef(std::deque<slake::IdRefEntry> runtimeRef
 		for (auto j : i.genericArgs)
 			genericArgs.push_back(toTypeName(j));
 
-		ref.push_back(IdRefEntry(SourceLocation{}, SIZE_MAX, i.name, genericArgs));
+		ref.push_back(IdRefEntry({}, SIZE_MAX, i.name, genericArgs));
 	}
 
 	return ref;

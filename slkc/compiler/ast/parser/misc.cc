@@ -9,7 +9,7 @@ void Parser::_putDefinition(
 	if (curScope->members.count(name)) {
 		compiler->messages.push_back(
 			Message(
-				member->sourceLocation,
+				compiler->tokenRangeToSourceLocation(member->tokenRange),
 				MessageType::Error,
 				"Redefinition of `" + name + "'"));
 		return;
@@ -29,7 +29,7 @@ void Parser::_putFnDefinition(
 	if (curScope->members.at(name)->getNodeType() != NodeType::Fn) {
 		compiler->messages.push_back(
 			Message(
-				overloading->sourceLocation,
+				compiler->tokenRangeToSourceLocation(overloading->tokenRange),
 				MessageType::Error,
 				"Redefinition of `" + name + "'"));
 		return;
@@ -40,14 +40,14 @@ void Parser::_putFnDefinition(
 	}
 }
 
-AccessModifier Parser::parseAccessModifier(SourceLocation &locationOut, std::deque<size_t> idxAccessModifierTokensOut) {
+AccessModifier Parser::parseAccessModifier(TokenRange &tokenRangeOut, std::deque<size_t> idxAccessModifierTokensOut) {
 	AccessModifier accessModifier = 0;
 
 	while (true) {
 		Token *token = lexer->peekToken();
 
 		if (!accessModifier)
-			locationOut = token->location;
+			tokenRangeOut = lexer->getTokenIndex(token);
 
 		switch (token->tokenId) {
 			case TokenId::PubKeyword:
@@ -56,7 +56,7 @@ AccessModifier Parser::parseAccessModifier(SourceLocation &locationOut, std::deq
 			case TokenId::StaticKeyword:
 			case TokenId::NativeKeyword:
 				lexer->nextToken();
-				locationOut.endPosition = token->location.endPosition;
+				tokenRangeOut.endIndex = lexer->getTokenIndex(token);
 				switch (token->tokenId) {
 					case TokenId::PubKeyword:
 						accessModifier |= ACCESS_PUB;

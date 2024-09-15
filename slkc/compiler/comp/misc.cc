@@ -9,7 +9,7 @@ uint32_t Compiler::allocLocalVar(std::string name, std::shared_ptr<TypeNameNode>
 	if (curMajorContext.curMinorContext.localVars.size() > UINT32_MAX)
 		throw FatalCompilationError(
 			Message(
-				type->sourceLocation,
+				tokenRangeToSourceLocation(type->tokenRange),
 				MessageType::Error,
 				"Exceeded maximum number of local variables"));
 

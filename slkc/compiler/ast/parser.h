@@ -17,9 +17,9 @@ namespace slake {
 
 		class SyntaxError : public std::runtime_error {
 		public:
-			SourceLocation location;
+			TokenRange tokenRange;
 
-			inline SyntaxError(std::string_view s, SourceLocation location) : runtime_error(s.data()), location(location) {}
+			inline SyntaxError(std::string_view s, TokenRange tokenRange) : runtime_error(s.data()), tokenRange(tokenRange) {}
 			virtual ~SyntaxError() = default;
 		};
 
@@ -68,19 +68,19 @@ namespace slake {
 					lexer->nextToken();
 					return token;
 				}
-				throw SyntaxError(std::string("Expecting ") + getTokenName(tokenId), token->location);
+				throw SyntaxError(std::string("Expecting ") + getTokenName(tokenId), lexer->getTokenIndex(token));
 			}
 
 			inline Token *expectToken(Token *token) {
 				if (token->tokenId == TokenId::End)
-					throw SyntaxError("Expecting more tokens", token->location);
+					throw SyntaxError("Expecting more tokens", lexer->getTokenIndex(token));
 
 				return token;
 			}
 
 			inline Token *expectToken(Token *token, TokenId tokenId) {
 				if (token->tokenId != tokenId)
-					throw SyntaxError(std::string("Expecting ") + getTokenName(tokenId), token->location);
+					throw SyntaxError(std::string("Expecting ") + getTokenName(tokenId), lexer->getTokenIndex(token));
 
 				return token;
 			}
@@ -89,7 +89,7 @@ namespace slake {
 				if (token->tokenId == tokenId)
 					return token;
 
-				throw SyntaxError(std::string("Unexpected ") + getTokenName(token->tokenId), token->location);
+				throw SyntaxError(std::string("Unexpected ") + getTokenName(token->tokenId), lexer->getTokenIndex(token));
 			}
 
 			template <typename... Args>
@@ -102,7 +102,7 @@ namespace slake {
 
 			void splitRshOpToken();
 
-			AccessModifier parseAccessModifier(SourceLocation &locationOut, std::deque<size_t> idxAccessModifierTokensOut);
+			AccessModifier parseAccessModifier(TokenRange &tokenRangeOut, std::deque<size_t> idxAccessModifierTokensOut);
 
 			std::shared_ptr<TypeNameNode> parseTypeName(bool required = false);
 			std::deque<std::shared_ptr<TypeNameNode>> parseGenericArgs(bool forTypeName = false);
@@ -131,7 +131,7 @@ namespace slake {
 			std::shared_ptr<FnOverloadingNode> parseOperatorDecl(std::string &nameOut);
 			std::shared_ptr<FnOverloadingNode> parseOperatorDef(std::string &nameOut);
 
-			GenericParamNodeList parseGenericParams(SourceLocation &locationOut);
+			GenericParamNodeList parseGenericParams(TokenRange &tokenRangeOut);
 
 			std::shared_ptr<ClassNode> parseClassDef();
 			void parseClassStmt();

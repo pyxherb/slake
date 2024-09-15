@@ -48,7 +48,7 @@ std::shared_ptr<Scope> slake::slkc::Compiler::completeModuleNamespaces(const IdR
 					break;
 				default:
 					throw FatalCompilationError(Message{
-						ref[i].loc,
+						tokenRangeToSourceLocation(ref[i].tokenRange),
 						MessageType::Error,
 						"Cannot import a non-module member" });
 			}
@@ -56,7 +56,7 @@ std::shared_ptr<Scope> slake::slkc::Compiler::completeModuleNamespaces(const IdR
 			auto newMod = std::make_shared<ModuleNode>(this);
 			(scope->members[name] = newMod)->bind((MemberNode *)scope->owner);
 			newMod->scope->parent = scope.get();
-			newMod->moduleName = { IdRefEntry(SourceLocation{}, SIZE_MAX, name, {}) };
+			newMod->moduleName = { IdRefEntry({}, SIZE_MAX, name, {}) };
 			scope = newMod->scope;
 		}
 	}
@@ -143,7 +143,7 @@ void Compiler::verifyIfImplementationFulfilled(std::shared_ptr<ClassNode> node) 
 	if (unfilledMethodsOut.size()) {
 		messages.push_back(
 			Message(
-				lexer->tokens[node->idxNameToken]->location,
+				tokenRangeToSourceLocation(node->idxNameToken),
 				MessageType::Error,
 				"Not all abstract methods are implemented"));
 	}
@@ -244,7 +244,7 @@ void Compiler::compile(std::istream &is, std::ostream &os, std::shared_ptr<Modul
 	} catch (SyntaxError e) {
 		throw FatalCompilationError(
 			Message(
-				e.location,
+				tokenRangeToSourceLocation(e.tokenRange),
 				MessageType::Error,
 				e.what()));
 	}
@@ -292,7 +292,7 @@ void Compiler::compile(std::istream &is, std::ostream &os, std::shared_ptr<Modul
 
 	if (!isCompleteIdRef(_targetModule->moduleName)) {
 		throw FatalCompilationError(Message(
-			_targetModule->moduleName.back().loc,
+			tokenRangeToSourceLocation(_targetModule->moduleName.back().tokenRange),
 			MessageType::Error,
 			"Expecting a complete module name"));
 	}
@@ -672,7 +672,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 			if (curMajorContext.genericParamIndices.count(i->name))
 				messages.push_back(
 					Message(
-						i->sourceLocation,
+						tokenRangeToSourceLocation(i->tokenRange),
 						MessageType::Error,
 						"This generic parameter shadows another generic parameter"));
 			curMajorContext.genericParams.push_back(i);
@@ -693,7 +693,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 			auto thisType = std::make_shared<CustomTypeNameNode>(getFullName(i.second.get()), this, i.second->scope.get());
 			for (auto &j : i.second->genericParams) {
 				thisType->ref.back().genericArgs.push_back(std::make_shared<CustomTypeNameNode>(
-					IdRef{ { j->sourceLocation, SIZE_MAX, j->name, std::deque<std::shared_ptr<TypeNameNode>>{} } },
+					IdRef{ { j->tokenRange, SIZE_MAX, j->name, std::deque<std::shared_ptr<TypeNameNode>>{} } },
 					this,
 					i.second->scope.get()));
 			}
@@ -792,7 +792,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 					j = (ClassNode *)resolveCustomTypeName((CustomTypeNameNode *)j->parentClass.get()).get();
 					if (j->scope->members.count(i.first)) {
 						messages.push_back(Message(
-							i.second->sourceLocation,
+							tokenRangeToSourceLocation(i.second->tokenRange),
 							MessageType::Error,
 							"The member shadows another member from the parent"));
 
@@ -826,7 +826,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 			if (isLValueType(varType)) {
 				messages.push_back(
 					Message(
-						varType->sourceLocation,
+						tokenRangeToSourceLocation(varType->tokenRange),
 						MessageType::Error,
 						"Cannot use reference types for member variables"));
 				goto skipCurVar;
@@ -838,7 +838,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				else {
 					messages.push_back(
 						Message(
-							i.second->initValue->sourceLocation,
+							tokenRangeToSourceLocation(i.second->initValue->tokenRange),
 							MessageType::Error,
 							"Expecting a compiling-time expression"));
 					goto skipCurVar;
@@ -924,7 +924,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 						if (m->getNodeType() == NodeType::GenericParam) {
 							messages.push_back(
 								Message(
-									curType->sourceLocation,
+									tokenRangeToSourceLocation(curType->tokenRange),
 									MessageType::Error,
 									"Specialization argument must be deterministic"));
 							goto skipCurOverloading;
@@ -935,7 +935,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 					default:
 						messages.push_back(
 							Message(
-								curType->sourceLocation,
+								tokenRangeToSourceLocation(curType->tokenRange),
 								MessageType::Error,
 								"Specified type cannot be used as a specialization argument"));
 						goto skipCurOverloading;
@@ -954,7 +954,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 					if (compiledOverloadingsWithDuplication.count(k)) {
 						messages.push_back(
 							Message(
-								j->sourceLocation,
+								tokenRangeToSourceLocation(j->tokenRange),
 								MessageType::Error,
 								"Duplicated function overloading"));
 						popMajorContext();
@@ -966,7 +966,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 
 			{
 				auto compiledFn = std::make_shared<CompiledFnNode>(i.first);
-				compiledFn->sourceLocation = j->sourceLocation;
+				compiledFn->tokenRange = j->tokenRange;
 				compiledFn->returnType = j->returnType
 											 ? j->returnType
 											 : std::static_pointer_cast<TypeNameNode>(std::make_shared<VoidTypeNameNode>(SIZE_MAX));
@@ -1035,7 +1035,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 					if (j.operands.size() > 3)
 						throw FatalCompilationError(
 							Message(
-								compiledFn->sourceLocation,
+								tokenRangeToSourceLocation(compiledFn->tokenRange),
 								MessageType::Error,
 								"Too many operands"));
 					ih.nOperands = (uint8_t)j.operands.size();
@@ -1053,7 +1053,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 								if (!compiledFn->labels.count(label))
 									throw FatalCompilationError(
 										Message(
-											compiledFn->sourceLocation,
+											tokenRangeToSourceLocation(compiledFn->tokenRange),
 											MessageType::Error,
 											"Undefined label: " + std::static_pointer_cast<LabelRefNode>(k)->label));
 								k = std::make_shared<U32LiteralExprNode>(compiledFn->labels.at(label));

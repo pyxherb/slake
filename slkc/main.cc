@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
 				try {
 					compiler->compile(is, os);
 				} catch (FatalCompilationError e) {
-					std::cerr << "Error at " << std::to_string(e.message.loc) << ": " << e.message.msg << std::endl;
+					std::cerr << "Error at " << std::to_string(e.message.sourceLocation) << ": " << e.message.msg << std::endl;
 					return -1;
 				}
 
@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
 							break;
 					}
 
-					std::cout << msgType << " at " << std::to_string(i.loc) << ": " << i.msg << std::endl;
+					std::cout << msgType << " at " << std::to_string(i.sourceLocation) << ": " << i.msg << std::endl;
 				}
 
 				is.close();

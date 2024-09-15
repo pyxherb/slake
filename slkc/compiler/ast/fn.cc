@@ -13,7 +13,7 @@ void FnOverloadingNode::updateParamIndices() {
 		if (paramIndices.count(params[i]->name)) {
 			throw FatalCompilationError(
 				Message(
-					params[i]->sourceLocation,
+					compiler->tokenRangeToSourceLocation(params[i]->tokenRange),
 					MessageType::Error,
 					"Redefinition of parameter `" + params[i]->name + "'"));
 		}
@@ -24,8 +24,8 @@ void FnOverloadingNode::updateParamIndices() {
 
 IdRefEntry FnOverloadingNode::getName() const {
 	if (genericArgs.size())
-		return IdRefEntry(sourceLocation, SIZE_MAX, owner->name, genericArgs);
-	return IdRefEntry(sourceLocation, SIZE_MAX, owner->name, getPlaceholderGenericArgs());
+		return IdRefEntry(tokenRange, SIZE_MAX, owner->name, genericArgs);
+	return IdRefEntry(tokenRange, SIZE_MAX, owner->name, getPlaceholderGenericArgs());
 }
 
 std::shared_ptr<AstNode> ParamNode::doDuplicate() {

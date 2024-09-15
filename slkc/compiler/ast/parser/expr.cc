@@ -11,8 +11,8 @@ std::map<TokenId, Parser::OpRegistry> Parser::prefixOpRegistries = {
 					UnaryOp::Neg,
 					lhs);
 
-				expr->sourceLocation =
-					SourceLocation{ lhs->sourceLocation.beginPosition, opToken->location.endPosition };
+				expr->tokenRange =
+					TokenRange{ lhs->tokenRange.beginIndex, parser->lexer->getTokenIndex(opToken) };
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				return std::static_pointer_cast<ExprNode>(expr);
@@ -24,8 +24,8 @@ std::map<TokenId, Parser::OpRegistry> Parser::prefixOpRegistries = {
 					UnaryOp::Not,
 					lhs);
 
-				expr->sourceLocation =
-					SourceLocation{ lhs->sourceLocation.beginPosition, opToken->location.endPosition };
+				expr->tokenRange =
+					TokenRange{ lhs->tokenRange.beginIndex, parser->lexer->getTokenIndex(opToken) };
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				return std::static_pointer_cast<ExprNode>(expr);
@@ -37,8 +37,8 @@ std::map<TokenId, Parser::OpRegistry> Parser::prefixOpRegistries = {
 					UnaryOp::LNot,
 					lhs);
 
-				expr->sourceLocation =
-					SourceLocation{ lhs->sourceLocation.beginPosition, opToken->location.endPosition };
+				expr->tokenRange =
+					TokenRange{ lhs->tokenRange.beginIndex, parser->lexer->getTokenIndex(opToken) };
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				return std::static_pointer_cast<ExprNode>(expr);
@@ -52,17 +52,17 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 				auto expr = std::make_shared<CallExprNode>();
 
 				expr->target = lhs;
-				expr->sourceLocation = SourceLocation{ lhs->sourceLocation.beginPosition, opToken->location.endPosition };
+				expr->tokenRange = TokenRange{ lhs->tokenRange.beginIndex, parser->lexer->getTokenIndex(opToken) };
 				expr->idxLParentheseToken = parser->lexer->getTokenIndex(opToken);
 
 				parser->parseArgs(expr->args, expr->idxCommaTokens);
 				if (expr->args.size())
-					expr->sourceLocation.endPosition = expr->args.back()->sourceLocation.endPosition;
+					expr->tokenRange.endIndex = expr->args.back()->tokenRange.endIndex;
 
 				Token *lParentheseToken = parser->lexer->nextToken();
 				expr->idxRParentheseToken = parser->lexer->getTokenIndex(
 					parser->expectToken(lParentheseToken, TokenId::RParenthese));
-				expr->sourceLocation.endPosition = lParentheseToken->location.endPosition;
+				expr->tokenRange.endIndex = parser->lexer->getTokenIndex(lParentheseToken);
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
@@ -73,15 +73,15 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					BinaryOp::Subscript,
 					lhs);
 
-				expr->sourceLocation = SourceLocation{ lhs->sourceLocation.beginPosition, opToken->location.endPosition };
+				expr->tokenRange = TokenRange{ lhs->tokenRange.beginIndex, parser->lexer->getTokenIndex(opToken) };
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->rhs = parser->parseExpr();
-				expr->sourceLocation.endPosition = expr->rhs->sourceLocation.endPosition;
+				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				Token *closingToken = parser->expectToken(parser->lexer->nextToken(), TokenId::RBracket);
 				expr->idxClosingToken = parser->lexer->getTokenIndex(closingToken);
-				expr->sourceLocation.endPosition = closingToken->location.endPosition;
+				expr->tokenRange.endIndex = parser->lexer->getTokenIndex(closingToken);
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
@@ -92,7 +92,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					lhs,
 					parser->parseRef());
 
-				expr->sourceLocation = SourceLocation{ lhs->sourceLocation.beginPosition, expr->ref.back().loc.endPosition };
+				expr->tokenRange = TokenRange{ lhs->tokenRange.beginIndex, expr->ref.back().tokenRange.endIndex };
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				return std::static_pointer_cast<ExprNode>(expr);
@@ -105,11 +105,11 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					BinaryOp::Mul,
 					lhs);
 
-				expr->sourceLocation = lhs->sourceLocation;
+				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->rhs = parser->parseExpr(121);
-				expr->sourceLocation.endPosition = expr->rhs->sourceLocation.endPosition;
+				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
@@ -120,11 +120,11 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					BinaryOp::Div,
 					lhs);
 
-				expr->sourceLocation = lhs->sourceLocation;
+				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->rhs = parser->parseExpr(121);
-				expr->sourceLocation.endPosition = expr->rhs->sourceLocation.endPosition;
+				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
@@ -135,11 +135,11 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					BinaryOp::Mod,
 					lhs);
 
-				expr->sourceLocation = lhs->sourceLocation;
+				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->rhs = parser->parseExpr(121);
-				expr->sourceLocation.endPosition = expr->rhs->sourceLocation.endPosition;
+				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
@@ -151,11 +151,11 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					BinaryOp::Add,
 					lhs);
 
-				expr->sourceLocation = lhs->sourceLocation;
+				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->rhs = parser->parseExpr(111);
-				expr->sourceLocation.endPosition = expr->rhs->sourceLocation.endPosition;
+				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
@@ -166,11 +166,11 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					BinaryOp::Sub,
 					lhs);
 
-				expr->sourceLocation = lhs->sourceLocation;
+				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->rhs = parser->parseExpr(111);
-				expr->sourceLocation.endPosition = expr->rhs->sourceLocation.endPosition;
+				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
@@ -182,11 +182,11 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					BinaryOp::Lsh,
 					lhs);
 
-				expr->sourceLocation = lhs->sourceLocation;
+				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->rhs = parser->parseExpr(101);
-				expr->sourceLocation.endPosition = expr->rhs->sourceLocation.endPosition;
+				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
@@ -197,11 +197,11 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					BinaryOp::Rsh,
 					lhs);
 
-				expr->sourceLocation = lhs->sourceLocation;
+				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->rhs = parser->parseExpr(101);
-				expr->sourceLocation.endPosition = expr->rhs->sourceLocation.endPosition;
+				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
@@ -213,11 +213,11 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					BinaryOp::Gt,
 					lhs);
 
-				expr->sourceLocation = lhs->sourceLocation;
+				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->rhs = parser->parseExpr(91);
-				expr->sourceLocation.endPosition = expr->rhs->sourceLocation.endPosition;
+				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
@@ -228,11 +228,11 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					BinaryOp::GtEq,
 					lhs);
 
-				expr->sourceLocation = lhs->sourceLocation;
+				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->rhs = parser->parseExpr(91);
-				expr->sourceLocation.endPosition = expr->rhs->sourceLocation.endPosition;
+				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
@@ -243,11 +243,11 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					BinaryOp::Lt,
 					lhs);
 
-				expr->sourceLocation = lhs->sourceLocation;
+				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->rhs = parser->parseExpr(91);
-				expr->sourceLocation.endPosition = expr->rhs->sourceLocation.endPosition;
+				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
@@ -258,11 +258,11 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					BinaryOp::LtEq,
 					lhs);
 
-				expr->sourceLocation = lhs->sourceLocation;
+				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->rhs = parser->parseExpr(91);
-				expr->sourceLocation.endPosition = expr->rhs->sourceLocation.endPosition;
+				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
@@ -274,11 +274,11 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					BinaryOp::Eq,
 					lhs);
 
-				expr->sourceLocation = lhs->sourceLocation;
+				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->rhs = parser->parseExpr(81);
-				expr->sourceLocation.endPosition = expr->rhs->sourceLocation.endPosition;
+				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
@@ -289,11 +289,11 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					BinaryOp::Neq,
 					lhs);
 
-				expr->sourceLocation = lhs->sourceLocation;
+				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->rhs = parser->parseExpr(81);
-				expr->sourceLocation.endPosition = expr->rhs->sourceLocation.endPosition;
+				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
@@ -304,11 +304,11 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					BinaryOp::StrictEq,
 					lhs);
 
-				expr->sourceLocation = lhs->sourceLocation;
+				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->rhs = parser->parseExpr(81);
-				expr->sourceLocation.endPosition = expr->rhs->sourceLocation.endPosition;
+				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
@@ -319,11 +319,11 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					BinaryOp::StrictNeq,
 					lhs);
 
-				expr->sourceLocation = lhs->sourceLocation;
+				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->rhs = parser->parseExpr(81);
-				expr->sourceLocation.endPosition = expr->rhs->sourceLocation.endPosition;
+				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
@@ -335,11 +335,11 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					BinaryOp::And,
 					lhs);
 
-				expr->sourceLocation = lhs->sourceLocation;
+				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->rhs = parser->parseExpr(71);
-				expr->sourceLocation.endPosition = expr->rhs->sourceLocation.endPosition;
+				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
@@ -351,11 +351,11 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					BinaryOp::Xor,
 					lhs);
 
-				expr->sourceLocation = lhs->sourceLocation;
+				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->rhs = parser->parseExpr(61);
-				expr->sourceLocation.endPosition = expr->rhs->sourceLocation.endPosition;
+				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
@@ -367,11 +367,11 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					BinaryOp::Or,
 					lhs);
 
-				expr->sourceLocation = lhs->sourceLocation;
+				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->rhs = parser->parseExpr(51);
-				expr->sourceLocation.endPosition = expr->rhs->sourceLocation.endPosition;
+				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
@@ -383,11 +383,11 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					BinaryOp::LAnd,
 					lhs);
 
-				expr->sourceLocation = lhs->sourceLocation;
+				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->rhs = parser->parseExpr(41);
-				expr->sourceLocation.endPosition = expr->rhs->sourceLocation.endPosition;
+				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
@@ -399,11 +399,11 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					BinaryOp::LOr,
 					lhs);
 
-				expr->sourceLocation = lhs->sourceLocation;
+				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->rhs = parser->parseExpr(31);
-				expr->sourceLocation.endPosition = expr->rhs->sourceLocation.endPosition;
+				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
@@ -413,18 +413,18 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token *opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<TernaryOpExprNode>(lhs);
 
-				expr->sourceLocation = SourceLocation{ lhs->sourceLocation.beginPosition, opToken->location.endPosition };
+				expr->tokenRange = TokenRange{ lhs->tokenRange.beginIndex, parser->lexer->getTokenIndex(opToken) };
 				expr->idxQuestionToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->x = parser->parseExpr(20);
-				expr->sourceLocation.endPosition = expr->x->sourceLocation.endPosition;
+				expr->tokenRange.endIndex = expr->x->tokenRange.endIndex;
 
 				Token *colonToken = parser->expectToken(parser->lexer->nextToken(), TokenId::Colon);
 				expr->idxColonToken = parser->lexer->getTokenIndex(colonToken);
-				expr->sourceLocation.endPosition = colonToken->location.endPosition;
+				expr->tokenRange.endIndex = parser->lexer->getTokenIndex(colonToken);
 
 				expr->y = parser->parseExpr(20);
-				expr->sourceLocation.endPosition = expr->y->sourceLocation.endPosition;
+				expr->tokenRange.endIndex = expr->y->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
@@ -436,11 +436,11 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					BinaryOp::Assign,
 					lhs);
 
-				expr->sourceLocation = lhs->sourceLocation;
+				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->rhs = parser->parseExpr(10);
-				expr->sourceLocation.endPosition = expr->rhs->sourceLocation.endPosition;
+				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
@@ -486,24 +486,24 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 					auto ref = parseRef();
 					lhs = std::static_pointer_cast<ExprNode>(
 						std::make_shared<IdRefExprNode>(ref));
-					lhs->sourceLocation = SourceLocation{ ref[0].loc.beginPosition, ref.back().loc.endPosition };
+					lhs->tokenRange = TokenRange{ ref[0].tokenRange.beginIndex, ref.back().tokenRange.endIndex };
 					break;
 				}
 				case TokenId::LParenthese: {
 					lexer->nextToken();
 
 					lhs = parseExpr();
-					lhs->sourceLocation.beginPosition = prefixToken->location.beginPosition;
+					lhs->tokenRange.beginIndex = lexer->getTokenIndex(prefixToken);
 
 					Token *rParentheseToken = expectToken(TokenId::RParenthese);
-					lhs->sourceLocation.endPosition = rParentheseToken->location.endPosition;
+					lhs->tokenRange.endIndex = lexer->getTokenIndex(rParentheseToken);
 					break;
 				}
 				case TokenId::NewKeyword: {
 					auto expr = std::make_shared<NewExprNode>();
 
 					Token *newToken = lexer->nextToken();
-					expr->sourceLocation = prefixToken->location;
+					expr->tokenRange = lexer->getTokenIndex(prefixToken);
 					expr->idxNewToken = lexer->getTokenIndex(newToken);
 
 					lhs = expr;
@@ -511,16 +511,16 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 					expr->type = parseTypeName();
 
 					Token *lParentheseToken = expectToken(TokenId::LParenthese);
-					expr->sourceLocation.endPosition = lParentheseToken->location.endPosition;
+					expr->tokenRange.endIndex = lexer->getTokenIndex(lParentheseToken);
 					expr->idxLParentheseToken = lexer->getTokenIndex(lParentheseToken);
 
 					parseArgs(expr->args, expr->idxCommaTokens);
 
 					if (expr->args.size())
-						expr->sourceLocation.endPosition = expr->args.back()->sourceLocation.endPosition;
+						expr->tokenRange.endIndex = expr->args.back()->tokenRange.endIndex;
 
 					Token *rParentheseToken = expectToken(TokenId::RParenthese);
-					expr->sourceLocation.endPosition = rParentheseToken->location.endPosition;
+					expr->tokenRange.endIndex = lexer->getTokenIndex(rParentheseToken);
 					expr->idxRParentheseToken = lexer->getTokenIndex(rParentheseToken);
 					break;
 				}
@@ -529,7 +529,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 						std::make_shared<I32LiteralExprNode>(
 							((IntLiteralTokenExtension *)prefixToken->exData.get())->data,
 							lexer->getTokenIndex(prefixToken)));
-					lhs->sourceLocation = prefixToken->location;
+					lhs->tokenRange = lexer->getTokenIndex(prefixToken);
 					lexer->nextToken();
 					break;
 				case TokenId::LongLiteral:
@@ -537,7 +537,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 						std::make_shared<I64LiteralExprNode>(
 							((LongLiteralTokenExtension *)prefixToken->exData.get())->data,
 							lexer->getTokenIndex(prefixToken)));
-					lhs->sourceLocation = prefixToken->location;
+					lhs->tokenRange = lexer->getTokenIndex(prefixToken);
 					lexer->nextToken();
 					break;
 				case TokenId::UIntLiteral:
@@ -545,7 +545,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 						std::make_shared<U32LiteralExprNode>(
 							((UIntLiteralTokenExtension *)prefixToken->exData.get())->data,
 							lexer->getTokenIndex(prefixToken)));
-					lhs->sourceLocation = prefixToken->location;
+					lhs->tokenRange = lexer->getTokenIndex(prefixToken);
 					lexer->nextToken();
 					break;
 				case TokenId::ULongLiteral:
@@ -553,7 +553,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 						std::make_shared<U64LiteralExprNode>(
 							((ULongLiteralTokenExtension *)prefixToken->exData.get())->data,
 							lexer->getTokenIndex(prefixToken)));
-					lhs->sourceLocation = prefixToken->location;
+					lhs->tokenRange = lexer->getTokenIndex(prefixToken);
 					lexer->nextToken();
 					break;
 				case TokenId::StringLiteral:
@@ -561,7 +561,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 						std::make_shared<StringLiteralExprNode>(
 							((StringLiteralTokenExtension *)prefixToken->exData.get())->data,
 							lexer->getTokenIndex(prefixToken)));
-					lhs->sourceLocation = prefixToken->location;
+					lhs->tokenRange = lexer->getTokenIndex(prefixToken);
 					lexer->nextToken();
 					break;
 				case TokenId::F32Literal:
@@ -569,7 +569,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 						std::make_shared<F32LiteralExprNode>(
 							((F32LiteralTokenExtension *)prefixToken->exData.get())->data,
 							lexer->getTokenIndex(prefixToken)));
-					lhs->sourceLocation = prefixToken->location;
+					lhs->tokenRange = lexer->getTokenIndex(prefixToken);
 					lexer->nextToken();
 					break;
 				case TokenId::F64Literal:
@@ -577,7 +577,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 						std::make_shared<F64LiteralExprNode>(
 							((F64LiteralTokenExtension *)prefixToken->exData.get())->data,
 							lexer->getTokenIndex(prefixToken)));
-					lhs->sourceLocation = prefixToken->location;
+					lhs->tokenRange = lexer->getTokenIndex(prefixToken);
 					lexer->nextToken();
 					break;
 				case TokenId::TrueKeyword:
@@ -585,7 +585,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 						std::make_shared<BoolLiteralExprNode>(
 							true,
 							lexer->getTokenIndex(prefixToken)));
-					lhs->sourceLocation = prefixToken->location;
+					lhs->tokenRange = lexer->getTokenIndex(prefixToken);
 					lexer->nextToken();
 					break;
 				case TokenId::FalseKeyword:
@@ -593,14 +593,14 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 						std::make_shared<BoolLiteralExprNode>(
 							false,
 							lexer->getTokenIndex(prefixToken)));
-					lhs->sourceLocation = prefixToken->location;
+					lhs->tokenRange = lexer->getTokenIndex(prefixToken);
 					lexer->nextToken();
 					break;
 				case TokenId::NullKeyword:
 					lhs = std::static_pointer_cast<ExprNode>(
 						std::make_shared<NullLiteralExprNode>(
 							lexer->getTokenIndex(prefixToken)));
-					lhs->sourceLocation = prefixToken->location;
+					lhs->tokenRange = lexer->getTokenIndex(prefixToken);
 					lexer->nextToken();
 					break;
 				case TokenId::LBrace: {
@@ -608,18 +608,18 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 
 					auto expr = std::make_shared<ArrayExprNode>();
 
-					expr->sourceLocation = prefixToken->location;
+					expr->tokenRange = lexer->getTokenIndex(prefixToken);
 					expr->idxLBraceToken = lexer->getTokenIndex(prefixToken);
 
 					while (true) {
 						auto element = parseExpr();
 
-						expr->sourceLocation.endPosition = element->sourceLocation.endPosition;
+						expr->tokenRange.endIndex = element->tokenRange.endIndex;
 						expr->elements.push_back(element);
 
 						if (Token *commaToken = lexer->peekToken(); commaToken->tokenId == TokenId::Comma) {
 							lexer->nextToken();
-							expr->sourceLocation.endPosition = commaToken->location.endPosition;
+							expr->tokenRange.endIndex = lexer->getTokenIndex(commaToken);
 							expr->idxCommaTokens.push_back(lexer->getTokenIndex(commaToken));
 						} else
 							break;
@@ -632,7 +632,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 				}
 				default:
 					lexer->nextToken();
-					throw SyntaxError("Expecting an expression", prefixToken->location);
+					throw SyntaxError("Expecting an expression", lexer->getTokenIndex(prefixToken));
 			}
 		}
 
@@ -654,11 +654,11 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 	} catch (SyntaxError e) {
 		compiler->messages.push_back(
 			Message(
-				e.location,
+				compiler->tokenRangeToSourceLocation(e.tokenRange),
 				MessageType::Error,
 				e.what()));
 		lhs = std::make_shared<BadExprNode>(lhs);
-		lhs->sourceLocation = SourceLocation{ prefixToken->location.beginPosition, e.location.endPosition };
+		lhs->tokenRange = TokenRange{ lexer->getTokenIndex(prefixToken), e.tokenRange.endIndex };
 	}
 
 	return lhs;

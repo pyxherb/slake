@@ -15,7 +15,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 	if (!lhsType)
 		throw FatalCompilationError(
 			Message(
-				e->x->sourceLocation,
+				tokenRangeToSourceLocation(e->x->tokenRange),
 				MessageType::Error,
 				"Error deducing type of the operand"));
 
@@ -68,7 +68,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 				default:
 					throw FatalCompilationError(
 						Message(
-							e->sourceLocation,
+							tokenRangeToSourceLocation(e->tokenRange),
 							MessageType::Error,
 							"No matching operator"));
 			}
@@ -110,7 +110,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 				default:
 					throw FatalCompilationError(
 						Message(
-							e->sourceLocation,
+							tokenRangeToSourceLocation(e->tokenRange),
 							MessageType::Error,
 							"No matching operator"));
 			}
@@ -136,7 +136,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 				default:
 					throw FatalCompilationError(
 						Message(
-							e->sourceLocation,
+							tokenRangeToSourceLocation(e->tokenRange),
 							MessageType::Error,
 							"No matching operator"));
 			}
@@ -212,7 +212,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 					if (!determineOverloading(n, lhsRegIndex))
 						throw FatalCompilationError(
 							Message(
-								e->sourceLocation,
+								tokenRangeToSourceLocation(e->tokenRange),
 								MessageType::Error,
 								"No matching operator"));
 
@@ -230,7 +230,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 					if (curMember->getNodeType() != NodeType::Class)
 						throw FatalCompilationError(
 							Message(
-								n->baseType->sourceLocation,
+								tokenRangeToSourceLocation(n->baseType->tokenRange),
 								MessageType::Error,
 								"Must be a class"));
 
@@ -243,7 +243,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 						if (curMember->getNodeType() != NodeType::Interface)
 							throw FatalCompilationError(
 								Message(
-									n->baseType->sourceLocation,
+									tokenRangeToSourceLocation(n->baseType->tokenRange),
 									MessageType::Error,
 									"Must be an interface"));
 
@@ -253,7 +253,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 
 					throw FatalCompilationError(
 						Message(
-							e->sourceLocation,
+							tokenRangeToSourceLocation(e->tokenRange),
 							MessageType::Error,
 							"No matching operator"));
 					break;
@@ -261,7 +261,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 				default:
 					throw FatalCompilationError(
 						Message(
-							e->sourceLocation,
+							tokenRangeToSourceLocation(e->tokenRange),
 							MessageType::Error,
 							"No matching operator"));
 			}
@@ -270,7 +270,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 		default:
 			throw FatalCompilationError(
 				Message(
-					e->sourceLocation,
+					tokenRangeToSourceLocation(e->tokenRange),
 					MessageType::Error,
 					"No matching operator"));
 	}
@@ -281,7 +281,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 		if (!isLValueType(resultType))
 			throw FatalCompilationError(
 				Message(
-					e->sourceLocation,
+					tokenRangeToSourceLocation(e->tokenRange),
 					MessageType::Error,
 					"Expecting a lvalue expression"));
 	} else {

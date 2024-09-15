@@ -85,7 +85,7 @@ bool Compiler::isCompoundTypeName(std::shared_ptr<TypeNameNode> node) {
 				default:
 					throw FatalCompilationError(
 						Message(
-							t->ref[0].loc,
+							tokenRangeToSourceLocation(t->ref[0].tokenRange),
 							MessageType::Error,
 							"`" + std::to_string(t->ref, this) + "' cannot be referenced as a type"));
 			}
@@ -342,7 +342,7 @@ std::shared_ptr<AstNode> Compiler::_resolveCustomTypeName(CustomTypeNameNode *ty
 			if (resolvedPartsOut.size() > 1)
 				throw FatalCompilationError(
 					Message(
-						typeName->sourceLocation,
+						tokenRangeToSourceLocation(typeName->tokenRange),
 						MessageType::Error,
 						"Expecting a static identifier"));
 
@@ -359,7 +359,7 @@ std::shared_ptr<AstNode> Compiler::_resolveCustomTypeName(CustomTypeNameNode *ty
 			if (resolvedPartsOut.size() > 1)
 				throw FatalCompilationError(
 					Message(
-						typeName->sourceLocation,
+						tokenRangeToSourceLocation(typeName->tokenRange),
 						MessageType::Error,
 						"Expecting a static identifier"));
 
@@ -371,7 +371,7 @@ std::shared_ptr<AstNode> Compiler::_resolveCustomTypeName(CustomTypeNameNode *ty
 	// Cannot resolve the type name - generate an error.
 	throw FatalCompilationError(
 		Message(
-			typeName->sourceLocation,
+			tokenRangeToSourceLocation(typeName->tokenRange),
 			MessageType::Error,
 			"Type `" + std::to_string(typeName->ref, this) + "' was not found"));
 }

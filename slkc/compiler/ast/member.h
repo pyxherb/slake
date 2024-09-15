@@ -88,7 +88,7 @@ namespace slake {
 				for (auto &i : genericParams) {
 					placeholderGenericArgs.push_back(
 						std::make_shared<CustomTypeNameNode>(
-							IdRef{ IdRefEntry{ SourceLocation(), SIZE_MAX, i->name, {} } },
+							IdRef{ IdRefEntry{ {}, SIZE_MAX, i->name, {} } },
 							compiler,
 							scope.get()));
 				}

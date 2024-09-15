@@ -3,17 +3,17 @@
 using namespace slake::slkc;
 
 void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
-	slxfmt::SourceLocDesc sld;
-	sld.offIns = curFn->body.size();
-	sld.line = expr->sourceLocation.beginPosition.line;
-	sld.column = expr->sourceLocation.beginPosition.column;
+	//slxfmt::SourceLocDesc sld;
+	//sld.offIns = curFn->body.size();
+	//sld.line = tokenRangeToSourceLocation(expr->tokenRange).beginPosition.line;
+	//sld.column = tokenRangeToSourceLocation(expr->tokenRange).beginPosition.column;
 
 	if (!curMajorContext.curMinorContext.dryRun) {
 		if (auto ce = evalConstExpr(expr); ce) {
 			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
 				throw FatalCompilationError(
 					Message(
-						expr->sourceLocation,
+						tokenRangeToSourceLocation(expr->tokenRange),
 						MessageType::Error,
 						"Expecting a lvalue expression"));
 
@@ -41,7 +41,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			uint32_t conditionRegIndex = allocReg(),
 					 resultRegIndex = allocReg();
 
-			auto loc = e->sourceLocation;
+			auto loc = tokenRangeToSourceLocation(e->tokenRange);
 			std::string falseBranchLabel = "$ternary_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_false",
 						endLabel = "$ternary_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_end";
 
@@ -53,19 +53,19 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			if (!conditionType)
 				throw FatalCompilationError(
 					Message(
-						e->sourceLocation,
+						tokenRangeToSourceLocation(e->tokenRange),
 						MessageType::Error,
 						"Error deducing type of the condition expression"));
 			if (!trueBranchType)
 				throw FatalCompilationError(
 					Message(
-						e->sourceLocation,
+						tokenRangeToSourceLocation(e->tokenRange),
 						MessageType::Error,
 						"Error deducing type of the true branch expression"));
 			if (!falseBranchType)
 				throw FatalCompilationError(
 					Message(
-						e->sourceLocation,
+						tokenRangeToSourceLocation(e->tokenRange),
 						MessageType::Error,
 						"Error deducing type of the true branch expression"));
 
@@ -74,7 +74,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			if (!isSameType(conditionType, boolType)) {
 				if (!isTypeNamesConvertible(conditionType, boolType))
 					throw FatalCompilationError(
-						{ e->condition->sourceLocation,
+						{ tokenRangeToSourceLocation(e->condition->tokenRange),
 							MessageType::Error,
 							"Expecting a boolean expression" });
 
@@ -97,7 +97,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			if (isSameType(trueBranchType, resultType)) {
 				if (!isTypeNamesConvertible(trueBranchType, resultType))
 					throw FatalCompilationError(
-						{ e->x->sourceLocation,
+						{ tokenRangeToSourceLocation(e->x->tokenRange),
 							MessageType::Error,
 							"Incompatible operand types" });
 				compileExpr(
@@ -112,7 +112,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			if (isSameType(falseBranchType, resultType)) {
 				if (!isTypeNamesConvertible(falseBranchType, resultType))
 					throw FatalCompilationError(
-						{ e->y->sourceLocation,
+						{ tokenRangeToSourceLocation(e->y->tokenRange),
 							MessageType::Error,
 							"Incompatible operand types" });
 				compileExpr(
@@ -130,7 +130,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 		case ExprType::Match: {
 			auto e = std::static_pointer_cast<MatchExprNode>(expr);
 
-			auto loc = e->sourceLocation;
+			auto loc = tokenRangeToSourceLocation(e->tokenRange);
 
 			std::string labelPrefix = "$match_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column),
 						condLocalVarName = labelPrefix + "_cond",
@@ -146,13 +146,17 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 
 			for (auto i : e->cases) {
 				std::string caseEndLabel =
-					"$match_" + std::to_string(i.second->sourceLocation.beginPosition.line) + "_" + std::to_string(i.second->sourceLocation.beginPosition.column) + "_caseEnd";
+					"$match_" +
+					std::to_string(tokenRangeToSourceLocation(i.second->tokenRange).beginPosition.line) +
+					"_" +
+					std::to_string(tokenRangeToSourceLocation(i.second->tokenRange).beginPosition.column) +
+					"_caseEnd";
 
 				if (!i.first) {
 					if (defaultCase.second)
 						// The default case is already exist.
 						throw FatalCompilationError(
-							{ i.second->sourceLocation,
+							{ tokenRangeToSourceLocation(i.second->tokenRange),
 								MessageType::Error,
 								"Duplicated default case" });
 					defaultCase = i;
@@ -201,7 +205,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 				if (!type)
 					throw FatalCompilationError(
 						Message(
-							i->sourceLocation,
+							tokenRangeToSourceLocation(i->tokenRange),
 							MessageType::Error,
 							"Error deducing type of the argument"));
 				curMajorContext.curMinorContext.argTypes.push_back(type);
@@ -219,7 +223,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			if (!returnType)
 				throw FatalCompilationError(
 					Message(
-						e->target->sourceLocation,
+						tokenRangeToSourceLocation(e->target->tokenRange),
 						MessageType::Error,
 						"Error deducing return type"));
 
@@ -259,7 +263,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					if (!isLValueType(returnType))
 						throw FatalCompilationError(
 							Message(
-								e->sourceLocation,
+								tokenRangeToSourceLocation(e->tokenRange),
 								MessageType::Error,
 								"Expecting a lvalue expression"));
 
@@ -331,7 +335,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					if (!t->elementType) {
 						throw FatalCompilationError(
 							Message(
-								t->elementType->sourceLocation,
+								tokenRangeToSourceLocation(t->elementType->tokenRange),
 								MessageType::Error,
 								"Cannot deduce type of elements"));
 					}
@@ -339,7 +343,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					if (e->args.size() != 1) {
 						throw FatalCompilationError(
 							Message(
-								e->type->sourceLocation,
+								tokenRangeToSourceLocation(e->type->tokenRange),
 								MessageType::Error,
 								"Invalid argument number for array constructor"));
 					}
@@ -352,7 +356,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					if (!sizeArgType) {
 						throw FatalCompilationError(
 							Message(
-								sizeArg->sourceLocation,
+								tokenRangeToSourceLocation(sizeArg->tokenRange),
 								MessageType::Error,
 								"Cannot deduce type of the argument"));
 					}
@@ -362,7 +366,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					if (!isSameType(sizeArgType, u32Type)) {
 						if (!isTypeNamesConvertible(sizeArgType, u32Type))
 							throw FatalCompilationError(
-								{ sizeArg->sourceLocation,
+								{ tokenRangeToSourceLocation(sizeArg->tokenRange),
 									MessageType::Error,
 									"Incompatible argument type" });
 						compileExpr(
@@ -403,7 +407,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 									if (!t)
 										throw FatalCompilationError(
 											Message(
-												i->sourceLocation,
+												tokenRangeToSourceLocation(i->tokenRange),
 												MessageType::Error,
 												"Error deducing type of the argument"));
 									argTypes.push_back(t);
@@ -418,20 +422,20 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 									if (!overloadings.size()) {
 										throw FatalCompilationError(
 											Message(
-												expr->sourceLocation,
+												tokenRangeToSourceLocation(expr->tokenRange),
 												MessageType::Error,
 												"No matching function was found"));
 									} else if (overloadings.size() > 1) {
 										for (auto i : overloadings) {
 											messages.push_back(
 												Message(
-													i->sourceLocation,
+													tokenRangeToSourceLocation(i->tokenRange),
 													MessageType::Note,
 													"Matched here"));
 										}
 										throw FatalCompilationError(
 											Message(
-												expr->sourceLocation,
+												tokenRangeToSourceLocation(expr->tokenRange),
 												MessageType::Error,
 												"Ambiguous function call"));
 									}
@@ -499,7 +503,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 						case NodeType::GenericParam:
 							throw FatalCompilationError(
 								Message(
-									e->type->sourceLocation,
+									tokenRangeToSourceLocation(e->type->tokenRange),
 									MessageType::Error,
 									"Cannot instantiate a generic parameter"));
 						default:
@@ -511,7 +515,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 				default:
 					throw FatalCompilationError(
 						Message(
-							e->type->sourceLocation,
+							tokenRangeToSourceLocation(e->type->tokenRange),
 							MessageType::Error,
 							"Specified type is not constructible"));
 			}
@@ -551,7 +555,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 				if (isTypeNamesConvertible(evalExprType(ce), e->targetType)) {
 					_insertIns(Opcode::CAST, curMajorContext.curMinorContext.evalDest, { e->targetType, ce });
 				} else {
-					throw FatalCompilationError({ e->sourceLocation, MessageType::Error, "Invalid type conversion" });
+					throw FatalCompilationError({ tokenRangeToSourceLocation(e->tokenRange), MessageType::Error, "Invalid type conversion" });
 				}
 			} else {
 				auto originalType = evalExprType(e->target);
@@ -565,7 +569,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					compileExpr(e->target, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
 					_insertIns(Opcode::CAST, curMajorContext.curMinorContext.evalDest, { e->targetType, std::make_shared<RegRefNode>(tmpRegIndex) });
 				} else {
-					throw FatalCompilationError({ e->sourceLocation, MessageType::Error, "Invalid type conversion" });
+					throw FatalCompilationError({ tokenRangeToSourceLocation(e->tokenRange), MessageType::Error, "Invalid type conversion" });
 				}
 			}
 
@@ -588,7 +592,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			std::deque<std::pair<IdRef, std::shared_ptr<AstNode>>> resolvedParts;
 			if (!resolveIdRef(e->ref, resolvedParts))
 				throw FatalCompilationError(
-					{ e->sourceLocation,
+					{ tokenRangeToSourceLocation(e->tokenRange),
 						MessageType::Error,
 						"Identifier not found: `" + std::to_string(e->ref, this) + "'" });
 
@@ -603,7 +607,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					if (x->overloadingRegistries.size() > 1) {
 						throw FatalCompilationError(
 							Message(
-								expr->sourceLocation,
+								tokenRangeToSourceLocation(expr->tokenRange),
 								MessageType::Error,
 								"Reference to a overloaded function is ambiguous"));
 					}
@@ -624,20 +628,20 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					if (!overloadings.size()) {
 						throw FatalCompilationError(
 							Message(
-								expr->sourceLocation,
+								tokenRangeToSourceLocation(expr->tokenRange),
 								MessageType::Error,
 								"No matching function was found"));
 					} else if (overloadings.size() > 1) {
 						for (auto i : overloadings) {
 							messages.push_back(
 								Message(
-									i->sourceLocation,
+									tokenRangeToSourceLocation(i->tokenRange),
 									MessageType::Note,
 									"Matched here"));
 						}
 						throw FatalCompilationError(
 							Message(
-								expr->sourceLocation,
+								tokenRangeToSourceLocation(expr->tokenRange),
 								MessageType::Error,
 								"Ambiguous function call"));
 					}
@@ -886,7 +890,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							if (resolvedParts.size() == 1) {
 								throw FatalCompilationError(
 									Message(
-										e->sourceLocation,
+										tokenRangeToSourceLocation(e->tokenRange),
 										MessageType::Error,
 										"`" + std::to_string(e->ref, this) + "' is a type"));
 							}
@@ -955,7 +959,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 								default:
 									throw FatalCompilationError(
 										Message(
-											e->sourceLocation,
+											tokenRangeToSourceLocation(e->tokenRange),
 											MessageType::Error,
 											"Cannot use this reference in this context"));
 							}
@@ -966,7 +970,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							_insertIns(
 								Opcode::LOAD,
 								std::make_shared<RegRefNode>(tmpRegIndex),
-								{ std::make_shared<IdRefExprNode>(IdRef{ IdRefEntry(e->sourceLocation, SIZE_MAX, "base") }) });
+								{ std::make_shared<IdRefExprNode>(IdRef{ IdRefEntry(e->tokenRange, SIZE_MAX, "base") }) });
 							break;
 						default:
 							assert(false);
@@ -1006,14 +1010,14 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 				curMajorContext.curMinorContext.expectedType->getTypeId() != TypeId::Array)
 				throw FatalCompilationError(
 					Message(
-						e->sourceLocation,
+						tokenRangeToSourceLocation(e->tokenRange),
 						MessageType::Error,
 						"Error deducing type of the expression"));
 
 			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
 				throw FatalCompilationError(
 					Message(
-						expr->sourceLocation,
+						tokenRangeToSourceLocation(expr->tokenRange),
 						MessageType::Error,
 						"Expecting a lvalue expression"));
 
@@ -1039,7 +1043,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 				if (!t)
 					throw FatalCompilationError(
 						Message(
-							i->sourceLocation,
+							tokenRangeToSourceLocation(i->tokenRange),
 							MessageType::Error,
 							"Error deducing the element type"));
 
@@ -1047,7 +1051,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					if (!isTypeNamesConvertible(t, type->elementType))
 						throw FatalCompilationError(
 							Message(
-								i->sourceLocation,
+								tokenRangeToSourceLocation(i->tokenRange),
 								MessageType::Error,
 								"Incompatible element type"));
 				}
@@ -1059,7 +1063,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 				_insertIns(Opcode::MOV, curMajorContext.curMinorContext.evalDest, { ce });
 			} else {
 				auto initArray = std::make_shared<ArrayExprNode>();
-				initArray->sourceLocation = e->sourceLocation;
+				tokenRangeToSourceLocation(initArray->tokenRange) = tokenRangeToSourceLocation(e->tokenRange);
 				initArray->elements.resize(e->elements.size());
 
 				initArray->evaluatedElementType = type->elementType;
@@ -1110,7 +1114,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
 				throw FatalCompilationError(
 					Message(
-						expr->sourceLocation,
+						tokenRangeToSourceLocation(expr->tokenRange),
 						MessageType::Error,
 						"Expecting a lvalue expression"));
 
@@ -1160,7 +1164,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
 				throw FatalCompilationError(
 					Message(
-						expr->sourceLocation,
+						tokenRangeToSourceLocation(expr->tokenRange),
 						MessageType::Error,
 						"Expecting a lvalue expression"));
 
@@ -1175,7 +1179,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 	}
 
 	if (!curMajorContext.curMinorContext.dryRun) {
-		sld.nIns = curFn->body.size() - sld.offIns;
-		curFn->srcLocDescs.push_back(sld);
+		//sld.nIns = curFn->body.size() - sld.offIns;
+		//curFn->srcLocDescs.push_back(sld);
 	}
 }

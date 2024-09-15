@@ -77,8 +77,8 @@ namespace slake {
 
 			virtual IdRefEntry getName() const override {
 				if (genericArgs.size())
-					return IdRefEntry(sourceLocation, SIZE_MAX, name, genericArgs);
-				return IdRefEntry(sourceLocation, SIZE_MAX, name, getPlaceholderGenericArgs());
+					return IdRefEntry(tokenRange, SIZE_MAX, name, genericArgs);
+				return IdRefEntry(tokenRange, SIZE_MAX, name, getPlaceholderGenericArgs());
 			}
 		};
 
@@ -128,8 +128,8 @@ namespace slake {
 
 			virtual IdRefEntry getName() const override {
 				if (genericArgs.size())
-					return IdRefEntry(sourceLocation, SIZE_MAX, name, genericArgs);
-				return IdRefEntry(sourceLocation, SIZE_MAX, name, getPlaceholderGenericArgs());
+					return IdRefEntry(tokenRange, SIZE_MAX, name, genericArgs);
+				return IdRefEntry(tokenRange, SIZE_MAX, name, getPlaceholderGenericArgs());
 			}
 		};
 	}

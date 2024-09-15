@@ -65,13 +65,13 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 	if (!lhsType)
 		throw FatalCompilationError(
 			Message(
-				e->lhs->sourceLocation,
+				tokenRangeToSourceLocation(e->lhs->tokenRange),
 				MessageType::Error,
 				"Error deducing type of the left operand"));
 	if (!rhsType)
 		throw FatalCompilationError(
 			Message(
-				e->rhs->sourceLocation,
+				tokenRangeToSourceLocation(e->rhs->tokenRange),
 				MessageType::Error,
 				"Error deducing type of the right operand"));
 
@@ -95,7 +95,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 			if (!isSameType(operandType, targetType)) {
 				if (!isTypeNamesConvertible(operandType, targetType))
 					throw FatalCompilationError(
-						{ e->rhs->sourceLocation,
+						{ tokenRangeToSourceLocation(e->rhs->tokenRange),
 							MessageType::Error,
 							"Incompatible operand types" });
 
@@ -116,7 +116,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 		if (!isSameType(lhsType, boolType)) {
 			if (!isTypeNamesConvertible(lhsType, boolType))
 				throw FatalCompilationError(
-					{ e->lhs->sourceLocation,
+					{ tokenRangeToSourceLocation(e->lhs->tokenRange),
 						MessageType::Error,
 						"Incompatible operand types" });
 
@@ -134,7 +134,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					: EvalPurpose::RValue,
 				std::make_shared<RegRefNode>(lhsRegIndex));
 
-		SourceLocation loc = e->sourceLocation;
+		SourceLocation loc = tokenRangeToSourceLocation(e->tokenRange);
 		std::string endLabel = "$short_circuit_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_end";
 
 		// Jump to the end if the left expression is enough to get the final result.
@@ -151,7 +151,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 		if (!isSameType(rhsType, boolType)) {
 			if (!isTypeNamesConvertible(rhsType, boolType))
 				throw FatalCompilationError(
-					{ e->rhs->sourceLocation,
+					{ tokenRangeToSourceLocation(e->rhs->tokenRange),
 						MessageType::Error,
 						"Incompatible operand types" });
 
@@ -345,7 +345,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 				default:
 					throw FatalCompilationError(
 						Message(
-							e->sourceLocation,
+							tokenRangeToSourceLocation(e->tokenRange),
 							MessageType::Error,
 							"No matching operator"));
 			}
@@ -430,7 +430,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 				default:
 					throw FatalCompilationError(
 						Message(
-							e->sourceLocation,
+							tokenRangeToSourceLocation(e->tokenRange),
 							MessageType::Error,
 							"No matching operator"));
 			}
@@ -500,7 +500,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 				default:
 					throw FatalCompilationError(
 						Message(
-							e->sourceLocation,
+							tokenRangeToSourceLocation(e->tokenRange),
 							MessageType::Error,
 							"No matching operator"));
 			}
@@ -570,7 +570,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 				default:
 					throw FatalCompilationError(
 						Message(
-							e->sourceLocation,
+							tokenRangeToSourceLocation(e->tokenRange),
 							MessageType::Error,
 							"No matching operator"));
 			}
@@ -615,7 +615,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 				default:
 					throw FatalCompilationError(
 						Message(
-							e->sourceLocation,
+							tokenRangeToSourceLocation(e->tokenRange),
 							MessageType::Error,
 							"No matching operator"));
 			}
@@ -663,7 +663,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 						if (isLValueType(overloading->params[0]->type))
 							throw FatalCompilationError(
 								Message(
-									e->sourceLocation,
+									tokenRangeToSourceLocation(e->tokenRange),
 									MessageType::Error,
 									"Expecting a lvalue expression"));
 
@@ -776,7 +776,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							if (!determineOverloading(n, lhsRegIndex))
 								throw FatalCompilationError(
 									Message(
-										e->sourceLocation,
+										tokenRangeToSourceLocation(e->tokenRange),
 										MessageType::Error,
 										"No matching operator"));
 						}
@@ -854,7 +854,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 								if (curMember->getNodeType() != NodeType::Class)
 									throw FatalCompilationError(
 										Message(
-											n->baseType->sourceLocation,
+											tokenRangeToSourceLocation(n->baseType->tokenRange),
 											MessageType::Error,
 											"Must be a class"));
 
@@ -868,7 +868,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 								if (curMember->getNodeType() != NodeType::Interface)
 									throw FatalCompilationError(
 										Message(
-											n->baseType->sourceLocation,
+											tokenRangeToSourceLocation(n->baseType->tokenRange),
 											MessageType::Error,
 											"Must be an interface"));
 
@@ -878,7 +878,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 							throw FatalCompilationError(
 								Message(
-									e->sourceLocation,
+									tokenRangeToSourceLocation(e->tokenRange),
 									MessageType::Error,
 									"No matching operator"));
 						}
@@ -889,7 +889,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 				default:
 					throw FatalCompilationError(
 						Message(
-							e->sourceLocation,
+							tokenRangeToSourceLocation(e->tokenRange),
 							MessageType::Error,
 							"No matching operator"));
 			}
@@ -898,7 +898,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 		default:
 			throw FatalCompilationError(
 				Message(
-					e->sourceLocation,
+					tokenRangeToSourceLocation(e->tokenRange),
 					MessageType::Error,
 					"No matching operator"));
 	}
@@ -909,7 +909,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 		if (!isLValueType(resultType))
 			throw FatalCompilationError(
 				Message(
-					e->sourceLocation,
+					tokenRangeToSourceLocation(e->tokenRange),
 					MessageType::Error,
 					"Expecting a lvalue expression"));
 	} else {

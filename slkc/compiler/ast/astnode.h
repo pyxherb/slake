@@ -73,6 +73,18 @@ namespace slake {
 			SourcePosition beginPosition, endPosition;
 		};
 
+		struct TokenRange {
+			size_t beginIndex, endIndex;
+
+			inline TokenRange() : beginIndex(SIZE_MAX), endIndex(SIZE_MAX) {}
+			inline TokenRange(size_t index) : beginIndex(index), endIndex(index) {}
+			inline TokenRange(size_t beginIndex, size_t endIndex) : beginIndex(beginIndex), endIndex(endIndex) {}
+
+			operator bool() {
+				return beginIndex == SIZE_MAX;
+			}
+		};
+
 		class Compiler;
 
 		class AstNode : public std::enable_shared_from_this<AstNode> {
@@ -80,11 +92,11 @@ namespace slake {
 			virtual std::shared_ptr<AstNode> doDuplicate();
 
 		public:
-			SourceLocation sourceLocation;
+			TokenRange tokenRange;
 
 			AstNode() = default;
 			inline AstNode(const AstNode& other) {
-				sourceLocation = other.sourceLocation;
+				tokenRange = other.tokenRange;
 			}
 			virtual ~AstNode() = default;
 

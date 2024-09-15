@@ -573,7 +573,7 @@ Json::Value slake::slkc::Server::locationToJson(const SourceLocation &pos) {
 Json::Value slake::slkc::Server::compilerMessageToJson(const Message &msg) {
 	Json::Value value;
 
-	value["location"] = locationToJson(msg.loc);
+	value["location"] = locationToJson(msg.sourceLocation);
 	value["type"] = (int)msg.type;
 	value["message"] = msg.msg;
 

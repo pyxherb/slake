@@ -20,10 +20,10 @@ namespace slake {
 		struct Message {
 			MessageType type;
 			std::string msg;
-			SourceLocation loc;
+			SourceLocation sourceLocation;
 
-			Message(SourceLocation loc, const MessageType &type, const std::string &msg)
-				: loc(loc), type(type), msg(msg) {
+			Message(SourceLocation sourceLocation, const MessageType &type, const std::string &msg)
+				: sourceLocation(sourceLocation), type(type), msg(msg) {
 			}
 		};
 
@@ -33,7 +33,7 @@ namespace slake {
 
 			inline FatalCompilationError(Message message)
 				: message(message),
-				  runtime_error("Error at " + std::to_string(message.loc) + ": " + message.msg) {
+				  runtime_error("Error at " + std::to_string(message.sourceLocation) + ": " + message.msg) {
 			}
 			virtual ~FatalCompilationError() = default;
 		};
@@ -613,7 +613,11 @@ namespace slake {
 
 			IdRef getFullName(MemberNode *member);
 
-			void optimizeFn(std::shared_ptr<FnNode> fnNode);
+			inline SourceLocation tokenRangeToSourceLocation(const TokenRange &tokenRange) {
+				return SourceLocation{
+							lexer->tokens[tokenRange.beginIndex]->location.beginPosition,
+							lexer->tokens[tokenRange.endIndex]->location.endPosition };
+			}
 		};
 	}
 }

@@ -8,39 +8,39 @@ void Parser::parseVarDefs(std::shared_ptr<VarDefStmtNode> varDefStmtOut) {
 		Token *nameToken = expectToken(TokenId::Id);
 
 		varDefStmtOut->varDefs[nameToken->text] = VarDefEntry(
-			nameToken->location,
+			lexer->getTokenIndex(nameToken),
 			nameToken->text,
 			lexer->getTokenIndex(nameToken));
 		VarDefEntry &entry = varDefStmtOut->varDefs[nameToken->text];
 
 		if (Token *token = lexer->peekToken(); token->tokenId == TokenId::Colon) {
 			Token *colonToken = lexer->nextToken();
-			entry.loc.endPosition = colonToken->location.endPosition;
+			entry.tokenRange.endIndex = lexer->getTokenIndex(colonToken);
 			entry.idxColonToken = lexer->getTokenIndex(colonToken);
 
 			entry.type = parseTypeName();
-			entry.loc.endPosition = entry.type->sourceLocation.endPosition;
+			entry.tokenRange.endIndex = entry.type->tokenRange.endIndex;
 		}
 
 		if (Token *token = lexer->peekToken(); token->tokenId == TokenId::AssignOp) {
 			Token *assignOpToken = lexer->nextToken();
-			entry.loc.endPosition = token->location.endPosition;
+			entry.tokenRange.endIndex = lexer->getTokenIndex(token);
 			entry.idxAssignOpToken = lexer->getTokenIndex(assignOpToken);
 
 			entry.initValue = parseExpr();
-			entry.loc.endPosition = entry.initValue->sourceLocation.endPosition;
+			entry.tokenRange.endIndex = entry.initValue->tokenRange.endIndex;
 		}
 
 		if (lexer->peekToken()->tokenId != TokenId::Comma) {
-			varDefStmtOut->sourceLocation.endPosition = entry.loc.endPosition;
+			varDefStmtOut->tokenRange.endIndex = entry.tokenRange.endIndex;
 			break;
 		}
 
 		Token *commaToken = lexer->nextToken();
-		entry.loc.endPosition = commaToken->location.endPosition;
+		entry.tokenRange.endIndex = lexer->getTokenIndex(commaToken);
 		entry.idxCommaToken = lexer->getTokenIndex(commaToken);
 
-		varDefStmtOut->sourceLocation.endPosition = entry.loc.endPosition;
+		varDefStmtOut->tokenRange.endIndex = entry.tokenRange.endIndex;
 	}
 }
 
@@ -57,11 +57,11 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
 				Token *breakToken = lexer->nextToken();
-				stmt->sourceLocation = breakToken->location;
+				stmt->tokenRange = lexer->getTokenIndex(breakToken);
 				stmt->idxBreakToken = lexer->getTokenIndex(breakToken);
 
 				Token *semicolonToken = expectToken(TokenId::Semicolon);
-				stmt->sourceLocation.endPosition = semicolonToken->location.endPosition;
+				stmt->tokenRange.endIndex = lexer->getTokenIndex(semicolonToken);
 				stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
 				break;
 			}
@@ -70,11 +70,11 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
 				Token *breakToken = lexer->nextToken();
-				result->sourceLocation = breakToken->location;
+				result->tokenRange = lexer->getTokenIndex(breakToken);
 				stmt->idxBreakToken = lexer->getTokenIndex(breakToken);
 
 				Token *semicolonToken = expectToken(TokenId::Semicolon);
-				stmt->sourceLocation.endPosition = semicolonToken->location.endPosition;
+				stmt->tokenRange.endIndex = lexer->getTokenIndex(semicolonToken);
 				stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
 
 				break;
@@ -84,48 +84,48 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
 				Token *forToken = lexer->nextToken();
-				stmt->sourceLocation = forToken->location;
+				stmt->tokenRange = lexer->getTokenIndex(forToken);
 				stmt->idxForToken = lexer->getTokenIndex(forToken);
 
 				Token *lParentheseToken = expectToken(TokenId::LParenthese);
-				stmt->sourceLocation.endPosition = lParentheseToken->location.endPosition;
+				stmt->tokenRange.endIndex = lexer->getTokenIndex(lParentheseToken);
 				stmt->idxLParentheseToken = lexer->getTokenIndex(lParentheseToken);
 
 				if (Token *letToken = lexer->peekToken(); letToken->tokenId == TokenId::LetKeyword) {
 					stmt->varDefs = std::make_shared<VarDefStmtNode>();
 
-					stmt->varDefs->sourceLocation = letToken->location;
+					stmt->varDefs->tokenRange = lexer->getTokenIndex(letToken);
 					stmt->varDefs->idxLetToken = lexer->getTokenIndex(letToken);
-					stmt->sourceLocation.endPosition = stmt->varDefs->sourceLocation.endPosition;
+					stmt->tokenRange.endIndex = stmt->varDefs->tokenRange.endIndex;
 
 					parseVarDefs(stmt->varDefs);
-					stmt->sourceLocation.endPosition = stmt->varDefs->sourceLocation.endPosition;
+					stmt->tokenRange.endIndex = stmt->varDefs->tokenRange.endIndex;
 				}
 
 				Token *firstSemicolonToken = expectToken(TokenId::Semicolon);
-				stmt->sourceLocation.endPosition = firstSemicolonToken->location.endPosition;
+				stmt->tokenRange.endIndex = lexer->getTokenIndex(firstSemicolonToken);
 				stmt->idxFirstSemicolonToken = lexer->getTokenIndex(firstSemicolonToken);
 
 				if (Token *token = lexer->peekToken(); token->tokenId != TokenId::Semicolon) {
 					stmt->condition = parseExpr();
-					stmt->sourceLocation.endPosition = stmt->condition->sourceLocation.endPosition;
+					stmt->tokenRange.endIndex = stmt->condition->tokenRange.endIndex;
 				}
 
 				Token *secondSemicolonToken = expectToken(TokenId::Semicolon);
-				stmt->sourceLocation.endPosition = secondSemicolonToken->location.endPosition;
+				stmt->tokenRange.endIndex = lexer->getTokenIndex(secondSemicolonToken);
 				stmt->idxSecondSemicolonToken = lexer->getTokenIndex(secondSemicolonToken);
 
 				if (Token *token = lexer->peekToken(); token->tokenId != TokenId::RParenthese) {
 					stmt->endExpr = parseExpr();
-					stmt->sourceLocation.endPosition = stmt->endExpr->sourceLocation.endPosition;
+					stmt->tokenRange.endIndex = stmt->endExpr->tokenRange.endIndex;
 				}
 
 				Token *rParentheseToken = expectToken(TokenId::RParenthese);
-				stmt->sourceLocation.endPosition = rParentheseToken->location.endPosition;
+				stmt->tokenRange.endIndex = lexer->getTokenIndex(rParentheseToken);
 				stmt->idxRParentheseToken = lexer->getTokenIndex(rParentheseToken);
 
 				stmt->body = parseStmt();
-				stmt->sourceLocation.endPosition = stmt->body->sourceLocation.endPosition;
+				stmt->tokenRange.endIndex = stmt->body->tokenRange.endIndex;
 				break;
 			}
 			case TokenId::WhileKeyword: {
@@ -133,18 +133,18 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
 				Token *whileToken = lexer->nextToken();
-				stmt->sourceLocation = whileToken->location;
+				stmt->tokenRange = lexer->getTokenIndex(whileToken);
 				stmt->idxWhileToken = lexer->getTokenIndex(whileToken);
 
 				Token *lParentheseToken = expectToken(TokenId::LParenthese);
-				stmt->sourceLocation.endPosition = lParentheseToken->location.endPosition;
+				stmt->tokenRange.endIndex = lexer->getTokenIndex(lParentheseToken);
 				stmt->idxLParentheseToken = lexer->getTokenIndex(lParentheseToken);
 
 				stmt->condition = parseExpr();
-				stmt->sourceLocation.endPosition = stmt->condition->sourceLocation.endPosition;
+				stmt->tokenRange.endIndex = stmt->condition->tokenRange.endIndex;
 
 				Token *rParentheseToken = expectToken(TokenId::RParenthese);
-				stmt->sourceLocation.endPosition = rParentheseToken->location.endPosition;
+				stmt->tokenRange.endIndex = lexer->getTokenIndex(rParentheseToken);
 				stmt->idxRParentheseToken = lexer->getTokenIndex(rParentheseToken);
 
 				stmt->body = parseStmt();
@@ -155,19 +155,19 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
 				Token *returnToken = lexer->nextToken();
-				stmt->sourceLocation = returnToken->location;
+				stmt->tokenRange = lexer->getTokenIndex(returnToken);
 				stmt->idxReturnToken = lexer->getTokenIndex(returnToken);
 
 				if (Token *token = lexer->peekToken(); token->tokenId == TokenId::Semicolon) {
 					lexer->nextToken();
-					stmt->sourceLocation.endPosition = token->location.endPosition;
+					stmt->tokenRange.endIndex = lexer->getTokenIndex(token);
 					stmt->idxSemicolonToken = lexer->getTokenIndex(token);
 				} else {
 					stmt->returnValue = parseExpr();
-					stmt->sourceLocation.endPosition = stmt->returnValue->sourceLocation.endPosition;
+					stmt->tokenRange.endIndex = stmt->returnValue->tokenRange.endIndex;
 
 					Token *semicolonToken = expectToken(TokenId::Semicolon);
-					stmt->sourceLocation.endPosition = semicolonToken->location.endPosition;
+					stmt->tokenRange.endIndex = lexer->getTokenIndex(semicolonToken);
 					stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
 				}
 				break;
@@ -177,19 +177,19 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
 				Token *yieldToken = lexer->nextToken();
-				stmt->sourceLocation = yieldToken->location;
+				stmt->tokenRange = lexer->getTokenIndex(yieldToken);
 				stmt->idxYieldToken = lexer->getTokenIndex(yieldToken);
 
 				if (Token *token = lexer->peekToken(); token->tokenId == TokenId::Semicolon) {
 					lexer->nextToken();
-					stmt->sourceLocation.endPosition = token->location.endPosition;
+					stmt->tokenRange.endIndex = lexer->getTokenIndex(token);
 					stmt->idxSemicolonToken = lexer->getTokenIndex(token);
 				} else {
 					stmt->returnValue = parseExpr();
-					stmt->sourceLocation.endPosition = stmt->returnValue->sourceLocation.endPosition;
+					stmt->tokenRange.endIndex = stmt->returnValue->tokenRange.endIndex;
 
 					Token *semicolonToken = expectToken(TokenId::Semicolon);
-					stmt->sourceLocation.endPosition = semicolonToken->location.endPosition;
+					stmt->tokenRange.endIndex = lexer->getTokenIndex(semicolonToken);
 					stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
 				}
 				break;
@@ -199,30 +199,30 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
 				Token *ifToken = lexer->nextToken();
-				stmt->sourceLocation = ifToken->location;
+				stmt->tokenRange = lexer->getTokenIndex(ifToken);
 				stmt->idxIfToken = lexer->getTokenIndex(ifToken);
 
 				Token *lParentheseToken = expectToken(TokenId::LParenthese);
-				stmt->sourceLocation.endPosition = lParentheseToken->location.endPosition;
+				stmt->tokenRange.endIndex = lexer->getTokenIndex(lParentheseToken);
 				stmt->idxLParentheseToken = lexer->getTokenIndex(lParentheseToken);
 
 				stmt->condition = parseExpr();
-				stmt->sourceLocation.endPosition = stmt->condition->sourceLocation.endPosition;
+				stmt->tokenRange.endIndex = stmt->condition->tokenRange.endIndex;
 
 				Token *rParentheseToken = expectToken(TokenId::RParenthese);
-				stmt->sourceLocation.endPosition = rParentheseToken->location.endPosition;
+				stmt->tokenRange.endIndex = lexer->getTokenIndex(rParentheseToken);
 				stmt->idxRParentheseToken = lexer->getTokenIndex(rParentheseToken);
 
 				stmt->body = parseStmt();
-				stmt->sourceLocation.endPosition = stmt->body->sourceLocation.endPosition;
+				stmt->tokenRange.endIndex = stmt->body->tokenRange.endIndex;
 
 				if (Token *elseToken = lexer->peekToken(); elseToken->tokenId == TokenId::ElseKeyword) {
 					lexer->nextToken();
-					stmt->sourceLocation.endPosition = elseToken->location.endPosition;
+					stmt->tokenRange.endIndex = lexer->getTokenIndex(elseToken);
 					stmt->idxElseToken = lexer->getTokenIndex(elseToken);
 
 					stmt->elseBranch = parseStmt();
-					stmt->sourceLocation.endPosition = stmt->elseBranch->sourceLocation.endPosition;
+					stmt->tokenRange.endIndex = stmt->elseBranch->tokenRange.endIndex;
 				}
 				break;
 			}
@@ -231,61 +231,61 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
 				Token *tryToken = lexer->nextToken();
-				stmt->sourceLocation = tryToken->location;
+				stmt->tokenRange = lexer->getTokenIndex(tryToken);
 				stmt->idxTryToken = lexer->getTokenIndex(tryToken);
 
 				stmt->body = parseStmt();
-				stmt->sourceLocation.endPosition = stmt->body->sourceLocation.endPosition;
+				stmt->tokenRange.endIndex = stmt->body->tokenRange.endIndex;
 
 				while (true) {
 					Token *catchToken = lexer->peekToken();
 					if (catchToken->tokenId != TokenId::CatchKeyword)
 						break;
-					stmt->sourceLocation.endPosition = catchToken->location.endPosition;
+					stmt->tokenRange.endIndex = lexer->getTokenIndex(catchToken);
 					lexer->nextToken();
 
 					stmt->catchBlocks.push_back({});
 					CatchBlock &catchBlock = stmt->catchBlocks.back();
 
 					catchBlock.idxCatchToken = lexer->getTokenIndex(catchToken);
-					catchBlock.loc = catchToken->location;
+					catchBlock.tokenRange = lexer->getTokenIndex(catchToken);
 
 					Token *lParentheseToken = expectToken(TokenId::LParenthese);
-					catchBlock.loc.endPosition = lParentheseToken->location.endPosition;
+					catchBlock.tokenRange.endIndex = lexer->getTokenIndex(lParentheseToken);
 					catchBlock.idxLParentheseToken = lexer->getTokenIndex(lParentheseToken);
 
 					catchBlock.targetType = parseTypeName();
-					catchBlock.loc.endPosition = catchBlock.targetType->sourceLocation.endPosition;
+					catchBlock.tokenRange.endIndex = catchBlock.targetType->tokenRange.endIndex;
 
 					std::string exceptionVarName;
 
 					if (Token *nameToken = lexer->peekToken(); nameToken->tokenId == TokenId::Id) {
 						lexer->nextToken();
-						catchBlock.loc.endPosition = nameToken->location.endPosition;
+						catchBlock.tokenRange.endIndex = lexer->getTokenIndex(nameToken);
 						catchBlock.idxExceptionVarNameToken = lexer->getTokenIndex(nameToken);
 
 						exceptionVarName = nameToken->text;
 					}
 
 					Token *rParentheseToken = expectToken(TokenId::RParenthese);
-					catchBlock.loc.endPosition = rParentheseToken->location.endPosition;
+					catchBlock.tokenRange.endIndex = lexer->getTokenIndex(rParentheseToken);
 					catchBlock.idxRParentheseToken = lexer->getTokenIndex(rParentheseToken);
 
 					catchBlock.body = parseStmt();
-					catchBlock.loc.endPosition = catchBlock.body->sourceLocation.endPosition;
+					catchBlock.tokenRange.endIndex = catchBlock.body->tokenRange.endIndex;
 
-					stmt->sourceLocation.endPosition = catchBlock.loc.endPosition;
+					stmt->tokenRange.endIndex = catchBlock.tokenRange.endIndex;
 				}
 
 				if (Token *finalToken = lexer->peekToken(); finalToken->tokenId == TokenId::FinalKeyword) {
 					lexer->nextToken();
-					stmt->finalBlock.loc = finalToken->location;
+					stmt->finalBlock.tokenRange = lexer->getTokenIndex(finalToken);
 					stmt->finalBlock.idxFinalToken = lexer->getTokenIndex(finalToken);
 
 					stmt->finalBlock.body = parseStmt();
-					stmt->finalBlock.loc.endPosition = stmt->finalBlock.body->sourceLocation.endPosition;
+					stmt->finalBlock.tokenRange.endIndex = stmt->finalBlock.body->tokenRange.endIndex;
 
-					stmt->sourceLocation.endPosition = stmt->finalBlock.loc.endPosition;
+					stmt->tokenRange.endIndex = stmt->finalBlock.tokenRange.endIndex;
 				}
 
 				break;
@@ -295,22 +295,22 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
 				Token *switchToken = lexer->nextToken();
-				stmt->sourceLocation = switchToken->location;
+				stmt->tokenRange = lexer->getTokenIndex(switchToken);
 				stmt->idxSwitchToken = lexer->getTokenIndex(switchToken);
 
 				Token *lParentheseToken = expectToken(TokenId::LParenthese);
-				stmt->sourceLocation.endPosition = lParentheseToken->location.endPosition;
+				stmt->tokenRange.endIndex = lexer->getTokenIndex(lParentheseToken);
 				stmt->idxLParentheseToken = lexer->getTokenIndex(lParentheseToken);
 
 				stmt->expr = parseExpr();
-				stmt->sourceLocation.endPosition = stmt->expr->sourceLocation.endPosition;
+				stmt->tokenRange.endIndex = stmt->expr->tokenRange.endIndex;
 
 				Token *rParentheseToken = expectToken(TokenId::RParenthese);
-				stmt->sourceLocation.endPosition = rParentheseToken->location.endPosition;
+				stmt->tokenRange.endIndex = lexer->getTokenIndex(rParentheseToken);
 				stmt->idxRParentheseToken = lexer->getTokenIndex(rParentheseToken);
 
 				Token *lBraceToken = expectToken(TokenId::LBrace);
-				stmt->sourceLocation.endPosition = lBraceToken->location.endPosition;
+				stmt->tokenRange.endIndex = lexer->getTokenIndex(lBraceToken);
 				stmt->idxLBraceToken = lexer->getTokenIndex(lBraceToken);
 
 				while (true) {
@@ -324,15 +324,15 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 					stmt->cases.push_back({});
 					SwitchCase &newCase = stmt->cases.back();
 
-					newCase.loc = caseToken->location;
+					newCase.tokenRange = lexer->getTokenIndex(caseToken);
 					newCase.idxCaseToken = lexer->getTokenIndex(caseToken);
 					;
 
 					newCase.condition = parseExpr();
-					newCase.loc.endPosition = newCase.condition->sourceLocation.endPosition;
+					newCase.tokenRange.endIndex = newCase.condition->tokenRange.endIndex;
 
 					Token *colonToken = expectToken(TokenId::Colon);
-					newCase.loc.endPosition = colonToken->location.endPosition;
+					newCase.tokenRange.endIndex = lexer->getTokenIndex(colonToken);
 					newCase.idxColonToken = lexer->getTokenIndex(colonToken);
 
 					while (true) {
@@ -343,9 +343,9 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 
 						auto newCaseStmt = parseStmt();
 						newCase.body.push_back(newCaseStmt);
-						newCase.loc.endPosition = newCaseStmt->sourceLocation.endPosition;
+						newCase.tokenRange.endIndex = newCaseStmt->tokenRange.endIndex;
 
-						stmt->sourceLocation.endPosition = newCase.loc.endPosition;
+						stmt->tokenRange.endIndex = newCase.tokenRange.endIndex;
 					}
 				}
 
@@ -355,11 +355,11 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 					stmt->cases.push_back({});
 					SwitchCase &defaultCase = stmt->cases.back();
 
-					defaultCase.loc = defaultToken->location;
+					defaultCase.tokenRange = lexer->getTokenIndex(defaultToken);
 					defaultCase.idxCaseToken = lexer->getTokenIndex(defaultToken);
 
 					Token *colonToken = expectToken(TokenId::Colon);
-					defaultCase.loc.endPosition = colonToken->location.endPosition;
+					defaultCase.tokenRange.endIndex = lexer->getTokenIndex(colonToken);
 					defaultCase.idxColonToken = lexer->getTokenIndex(colonToken);
 
 					while (true) {
@@ -368,42 +368,42 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 
 						auto newDefaultCaseStmt = parseStmt();
 						defaultCase.body.push_back(newDefaultCaseStmt);
-						defaultCase.loc.endPosition = newDefaultCaseStmt->sourceLocation.endPosition;
+						defaultCase.tokenRange.endIndex = newDefaultCaseStmt->tokenRange.endIndex;
 
-						stmt->sourceLocation.endPosition = defaultCase.loc.endPosition;
+						stmt->tokenRange.endIndex = defaultCase.tokenRange.endIndex;
 					}
 				}
 
 				Token *rBraceToken = expectToken(TokenId::RBrace);
-				stmt->sourceLocation.endPosition = rBraceToken->location.endPosition;
+				stmt->tokenRange.endIndex = lexer->getTokenIndex(rBraceToken);
 				stmt->idxRBraceToken = lexer->getTokenIndex(rBraceToken);
 
 				break;
 			}
 			case TokenId::LBrace: {
-				auto stmt = std::make_shared<CodeBlockStmtNode>(CodeBlock{ SourceLocation(), {} });
+				auto stmt = std::make_shared<CodeBlockStmtNode>(CodeBlock{ TokenRange(), {} });
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
 				Token *lBraceToken = lexer->nextToken();
-				stmt->body.loc = lBraceToken->location;
+				stmt->body.tokenRange = lexer->getTokenIndex(lBraceToken);
 				stmt->body.idxLBraceToken = lexer->getTokenIndex(lBraceToken);
-				stmt->sourceLocation = stmt->body.loc;
+				stmt->tokenRange = stmt->body.tokenRange;
 
 				while (true) {
 					if (lexer->peekToken()->tokenId == TokenId::RBrace) {
 						Token *rBraceToken = lexer->nextToken();
-						stmt->body.loc = rBraceToken->location;
+						stmt->body.tokenRange = lexer->getTokenIndex(rBraceToken);
 						stmt->body.idxRBraceToken = lexer->getTokenIndex(rBraceToken);
 						break;
 					}
 
 					auto newStmt = parseStmt();
 					stmt->body.stmts.push_back(newStmt);
-					stmt->body.loc.endPosition = newStmt->sourceLocation.endPosition;
-					stmt->sourceLocation = stmt->body.loc;
+					stmt->body.tokenRange.endIndex = newStmt->tokenRange.endIndex;
+					stmt->tokenRange = stmt->body.tokenRange;
 				}
 
-				stmt->sourceLocation = stmt->body.loc;
+				stmt->tokenRange = stmt->body.tokenRange;
 
 				break;
 			}
@@ -413,13 +413,13 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				auto stmt = std::make_shared<VarDefStmtNode>();
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
-				stmt->sourceLocation.endPosition = letToken->location.endPosition;
+				stmt->tokenRange.endIndex = lexer->getTokenIndex(letToken);
 				stmt->idxLetToken = lexer->getTokenIndex(letToken);
 
 				parseVarDefs(stmt);
 
 				Token *semicolonToken = expectToken(TokenId::Semicolon);
-				stmt->sourceLocation.endPosition = semicolonToken->location.endPosition;
+				stmt->tokenRange.endIndex = lexer->getTokenIndex(semicolonToken);
 				stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
 
 				break;
@@ -429,10 +429,10 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				result = stmt;
 
 				stmt->expr = parseExpr();
-				stmt->sourceLocation = stmt->expr->sourceLocation;
+				stmt->tokenRange = stmt->expr->tokenRange;
 
 				Token *semicolonToken = expectToken(TokenId::Semicolon);
-				stmt->sourceLocation.endPosition = semicolonToken->location.endPosition;
+				stmt->tokenRange.endIndex = lexer->getTokenIndex(semicolonToken);
 				stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
 
 				break;
@@ -441,12 +441,12 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 	} catch (SyntaxError e) {
 		compiler->messages.push_back(
 			Message(
-				e.location,
+				compiler->tokenRangeToSourceLocation(e.tokenRange),
 				MessageType::Error,
 				e.what()));
 
 		auto badStmt = std::make_shared<BadStmtNode>(result);
-		badStmt->sourceLocation = SourceLocation{ beginToken->location.beginPosition, e.location.endPosition };
+		badStmt->tokenRange = TokenRange{ lexer->getTokenIndex(beginToken), e.tokenRange.endIndex };
 
 		return badStmt;
 	}

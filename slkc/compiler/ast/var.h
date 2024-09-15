@@ -59,7 +59,7 @@ namespace slake {
 
 			virtual inline NodeType getNodeType() const override { return NodeType::Var; }
 
-			virtual IdRefEntry getName() const override { return IdRefEntry(sourceLocation, SIZE_MAX, name, genericArgs); }
+			virtual IdRefEntry getName() const override { return IdRefEntry(tokenRange, SIZE_MAX, name, genericArgs); }
 		};
 
 		class LocalVarNode : public AstNode {

@@ -9,7 +9,7 @@ namespace slake {
 		class TypeNameNode;
 
 		struct IdRefEntry {
-			SourceLocation loc;
+			TokenRange tokenRange;
 			size_t idxAccessOpToken = SIZE_MAX;	 // Index of preceding access operator token
 			size_t idxToken;
 			std::string name;
@@ -17,8 +17,8 @@ namespace slake {
 
 			inline IdRefEntry(std::string name, std::deque<std::shared_ptr<TypeNameNode>> genericArgs = {})
 				: name(name), genericArgs(genericArgs) {}
-			inline IdRefEntry(SourceLocation loc, size_t idxToken, std::string name, std::deque<std::shared_ptr<TypeNameNode>> genericArgs = {})
-				: loc(loc), idxToken(idxToken), name(name), genericArgs(genericArgs) {}
+			inline IdRefEntry(TokenRange tokenRange, size_t idxToken, std::string name, std::deque<std::shared_ptr<TypeNameNode>> genericArgs = {})
+				: tokenRange(tokenRange), idxToken(idxToken), name(name), genericArgs(genericArgs) {}
 		};
 
 		using IdRef = std::deque<IdRefEntry>;

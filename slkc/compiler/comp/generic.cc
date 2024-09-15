@@ -160,7 +160,7 @@ void Compiler::mapGenericParams(std::shared_ptr<MemberNode> node, GenericNodeIns
 	if (instantiationContext.genericArgs->size() != node->genericParams.size()) {
 		messages.push_back(
 			Message(
-				instantiationContext.genericArgs->at(0)->sourceLocation,
+				tokenRangeToSourceLocation(instantiationContext.genericArgs->at(0)->tokenRange),
 				MessageType::Error,
 				"Mismatched generic argument number"));
 

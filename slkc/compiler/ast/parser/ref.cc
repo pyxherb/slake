@@ -22,7 +22,7 @@ std::deque<std::shared_ptr<TypeNameNode>> Parser::parseGenericArgs(bool forTypeN
 			if (forTypeName) {
 				compiler->messages.push_back(
 					Message(
-						type->sourceLocation,
+						compiler->tokenRangeToSourceLocation(type->tokenRange),
 						MessageType::Error,
 						"Expecting a type name"));
 				genericArgs.push_back(type);
@@ -66,7 +66,7 @@ IdRef Parser::parseModuleRef() {
 	while (true) {
 		Token *nameToken = lexer->peekToken();
 
-		auto refEntry = IdRefEntry(nameToken->location, SIZE_MAX, "");
+		auto refEntry = IdRefEntry(lexer->getTokenIndex(nameToken), SIZE_MAX, "");
 		refEntry.idxAccessOpToken = idxPrecedingAccessOp;
 
 		if (nameToken->tokenId != TokenId::Id) {
@@ -103,7 +103,7 @@ IdRef Parser::parseRef(bool forTypeName) {
 		case TokenId::ThisKeyword:
 		case TokenId::BaseKeyword:
 		case TokenId::ScopeOp: {
-			auto refEntry = IdRefEntry(token->location, lexer->getTokenIndex(token), "", {});
+			auto refEntry = IdRefEntry(lexer->getTokenIndex(token), lexer->getTokenIndex(token), "", {});
 
 			switch (token->tokenId) {
 				case TokenId::ThisKeyword:
@@ -134,7 +134,7 @@ IdRef Parser::parseRef(bool forTypeName) {
 	while (true) {
 		Token *nameToken = lexer->peekToken();
 
-		auto refEntry = IdRefEntry(nameToken->location, SIZE_MAX, "");
+		auto refEntry = IdRefEntry(lexer->getTokenIndex(nameToken), SIZE_MAX, "");
 		refEntry.idxAccessOpToken = idxPrecedingAccessOp;
 
 		if (nameToken->tokenId != TokenId::Id) {

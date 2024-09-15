@@ -39,18 +39,18 @@ void Parser::parseImplList(
 	}
 }
 
-GenericParamNodeList Parser::parseGenericParams(SourceLocation &locationOut) {
+GenericParamNodeList Parser::parseGenericParams(TokenRange &tokenRangeOut) {
 	GenericParamNodeList genericParams;
 
 	Token *startingToken = expectToken(TokenId::LtOp);
-	locationOut = startingToken->location;
+	tokenRangeOut = lexer->getTokenIndex(startingToken);
 
 	while (true) {
 		Token *nameToken = expectToken(TokenId::Id);
 
 		auto param = std::make_shared<GenericParamNode>(nameToken->text);
 
-		param->sourceLocation = nameToken->location;
+		param->tokenRange = lexer->getTokenIndex(nameToken);
 		param->idxNameToken = lexer->getTokenIndex(nameToken);
 
 		parseParentSlot(
@@ -58,14 +58,14 @@ GenericParamNodeList Parser::parseGenericParams(SourceLocation &locationOut) {
 			param->idxParentSlotLParentheseToken,
 			param->idxParentSlotRParentheseToken);
 		if (param->baseType)
-			param->sourceLocation.endPosition = lexer->tokens[param->idxParentSlotRParentheseToken]->location.endPosition;
+			param->tokenRange.endIndex = lexer->getTokenIndex(lexer->tokens[param->idxParentSlotRParentheseToken].get());
 
 		parseImplList(
 			param->interfaceTypes,
 			param->idxImplInterfacesColonToken,
 			param->idxImplInterfacesSeparatorTokens);
 		if (param->interfaceTypes.size())
-			param->sourceLocation.endPosition = param->interfaceTypes.back()->sourceLocation.endPosition;
+			param->tokenRange.endIndex = param->interfaceTypes.back()->tokenRange.endIndex;
 
 		genericParams.push_back(param);
 
@@ -78,12 +78,11 @@ GenericParamNodeList Parser::parseGenericParams(SourceLocation &locationOut) {
 
 	splitRshOpToken();
 	Token *endToken = expectToken(TokenId::GtOp);
-	locationOut.endPosition = endToken->location.endPosition;
+	tokenRangeOut.endIndex = lexer->getTokenIndex(endToken);
 
 	// stub
 	return genericParams;
 }
-
 
 std::shared_ptr<ClassNode> Parser::parseClassDef() {
 	Token *beginToken = expectTokens(lexer->nextToken(), TokenId::ClassKeyword);
@@ -92,7 +91,10 @@ std::shared_ptr<ClassNode> Parser::parseClassDef() {
 	std::shared_ptr<ClassNode> classNode = std::make_shared<ClassNode>(
 		compiler,
 		nameToken->text);
-	classNode->sourceLocation = SourceLocation{ beginToken->location.beginPosition, nameToken->location.endPosition };
+	classNode->tokenRange = TokenRange{
+		lexer->getTokenIndex(beginToken),
+		lexer->getTokenIndex(nameToken)
+	};
 	classNode->idxNameToken = lexer->getTokenIndex(nameToken);
 
 	auto savedScope = curScope;
@@ -101,9 +103,9 @@ std::shared_ptr<ClassNode> Parser::parseClassDef() {
 		curScope->parent = savedScope.get();
 
 		if (Token *token = lexer->peekToken(); token->tokenId == TokenId::LtOp) {
-			SourceLocation genericParamsLocation;
-			classNode->setGenericParams(parseGenericParams(genericParamsLocation));
-			classNode->sourceLocation.endPosition = genericParamsLocation.endPosition;
+			TokenRange genericParamsTokenRange;
+			classNode->setGenericParams(parseGenericParams(genericParamsTokenRange));
+			classNode->tokenRange.endIndex = genericParamsTokenRange.endIndex;
 		}
 
 		parseParentSlot(
@@ -111,17 +113,17 @@ std::shared_ptr<ClassNode> Parser::parseClassDef() {
 			classNode->idxParentSlotLParentheseToken,
 			classNode->idxParentSlotRParentheseToken);
 		if (classNode->parentClass)
-			classNode->sourceLocation.endPosition = lexer->tokens[classNode->idxParentSlotRParentheseToken]->location.endPosition;
+			classNode->tokenRange.endIndex = lexer->getTokenIndex(lexer->tokens[classNode->idxParentSlotRParentheseToken].get());
 
 		parseImplList(
 			classNode->implInterfaces,
 			classNode->idxImplInterfacesColonToken,
 			classNode->idxImplInterfacesSeparatorTokens);
 		if (classNode->implInterfaces.size())
-			classNode->sourceLocation.endPosition = classNode->implInterfaces.back()->sourceLocation.endPosition;
+			classNode->tokenRange.endIndex = classNode->implInterfaces.back()->tokenRange.endIndex;
 
 		Token *lBraceToken = expectToken(TokenId::LBrace);
-		classNode->sourceLocation.endPosition = lBraceToken->location.endPosition;
+		classNode->tokenRange.endIndex = lexer->getTokenIndex(lBraceToken);
 		classNode->idxLBraceToken = lexer->getTokenIndex(lBraceToken);
 
 		while (true) {
@@ -130,15 +132,15 @@ std::shared_ptr<ClassNode> Parser::parseClassDef() {
 				token->tokenId == TokenId::End)
 				break;
 			parseClassStmt();
-			classNode->sourceLocation.endPosition = lexer->peekToken()->location.beginPosition;
+			classNode->tokenRange.endIndex = lexer->getTokenIndex(lexer->peekToken());
 		}
 
 		Token *rBraceToken = expectToken(TokenId::RBrace);
-		classNode->sourceLocation.endPosition = rBraceToken->location.endPosition;
+		classNode->tokenRange.endIndex = lexer->getTokenIndex(rBraceToken);
 		classNode->idxRBraceToken = lexer->getTokenIndex(rBraceToken);
 	} catch (SyntaxError e) {
 		compiler->messages.push_back(Message(
-			e.location,
+			compiler->tokenRangeToSourceLocation(e.tokenRange),
 			MessageType::Error,
 			e.what()));
 	}
@@ -148,9 +150,9 @@ std::shared_ptr<ClassNode> Parser::parseClassDef() {
 }
 
 void Parser::parseClassStmt() {
-	SourceLocation loc;
+	TokenRange tokenRange;
 	std::deque<size_t> idxAccessModifierTokens;
-	AccessModifier accessModifier = parseAccessModifier(loc, idxAccessModifierTokens);
+	AccessModifier accessModifier = parseAccessModifier(tokenRange, idxAccessModifierTokens);
 
 	switch (Token *token = lexer->peekToken(); token->tokenId) {
 		case TokenId::End:
@@ -159,7 +161,7 @@ void Parser::parseClassStmt() {
 		case TokenId::ClassKeyword: {
 			auto def = parseClassDef();
 
-			def->sourceLocation.beginPosition = loc.beginPosition;
+			def->tokenRange.beginIndex = tokenRange.beginIndex;
 			def->access = accessModifier | ACCESS_STATIC;
 			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
 
@@ -171,7 +173,7 @@ void Parser::parseClassStmt() {
 		case TokenId::InterfaceKeyword: {
 			auto def = parseInterfaceDef();
 
-			def->sourceLocation.beginPosition = loc.beginPosition;
+			def->tokenRange.beginIndex = tokenRange.beginIndex;
 			def->access = accessModifier | ACCESS_STATIC;
 			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
 
@@ -184,7 +186,7 @@ void Parser::parseClassStmt() {
 			std::string name;
 			auto overloading = parseOperatorDef(name);
 
-			overloading->sourceLocation.beginPosition = loc.beginPosition;
+			overloading->tokenRange.beginIndex = tokenRange.beginIndex;
 			overloading->access = accessModifier;
 			overloading->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
 
@@ -195,7 +197,7 @@ void Parser::parseClassStmt() {
 			std::string name;
 			auto overloading = parseFnDef(name);
 
-			overloading->sourceLocation.beginPosition = loc.beginPosition;
+			overloading->tokenRange.beginIndex = tokenRange.beginIndex;
 			overloading->access = accessModifier;
 			overloading->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
 
@@ -207,7 +209,7 @@ void Parser::parseClassStmt() {
 			Token *letToken = lexer->nextToken();
 
 			auto stmt = std::make_shared<VarDefStmtNode>();
-			stmt->sourceLocation = letToken->location;
+			stmt->tokenRange = lexer->getTokenIndex(letToken);
 
 			stmt->idxLetToken = lexer->getTokenIndex(letToken);
 
@@ -216,7 +218,7 @@ void Parser::parseClassStmt() {
 			parseVarDefs(stmt);
 
 			Token *semicolonToken = expectToken(TokenId::Semicolon);
-			stmt->sourceLocation.endPosition = semicolonToken->location.endPosition;
+			stmt->tokenRange.endIndex = lexer->getTokenIndex(semicolonToken);
 			stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
 
 			bool idxAccessModifierTokensMoved = false;
@@ -233,7 +235,7 @@ void Parser::parseClassStmt() {
 					i.second.idxAssignOpToken,
 					i.second.idxCommaToken,
 					true);
-				varNode->sourceLocation = i.second.loc;
+				varNode->tokenRange = i.second.tokenRange;
 
 				if (!idxAccessModifierTokensMoved) {
 					varNode->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
@@ -247,7 +249,7 @@ void Parser::parseClassStmt() {
 			break;
 		}
 		default:
-			throw SyntaxError("Unrecognized token", token->location);
+			throw SyntaxError("Unrecognized token", lexer->getTokenIndex(token));
 	}
 }
 
@@ -258,7 +260,7 @@ std::shared_ptr<InterfaceNode> Parser::parseInterfaceDef() {
 	std::shared_ptr<InterfaceNode> interfaceNode = std::make_shared<InterfaceNode>(
 		nameToken->text);
 
-	interfaceNode->sourceLocation = SourceLocation{ beginToken->location.beginPosition, nameToken->location.endPosition };
+	interfaceNode->tokenRange = TokenRange{ lexer->getTokenIndex(beginToken), lexer->getTokenIndex(nameToken) };
 	interfaceNode->idxNameToken = lexer->getTokenIndex(nameToken);
 
 	auto savedScope = curScope;
@@ -267,9 +269,9 @@ std::shared_ptr<InterfaceNode> Parser::parseInterfaceDef() {
 		curScope->parent = savedScope.get();
 
 		if (Token *token = lexer->peekToken(); token->tokenId == TokenId::LtOp) {
-			SourceLocation genericParamsLocation;
-			interfaceNode->setGenericParams(parseGenericParams(genericParamsLocation));
-			interfaceNode->sourceLocation.endPosition = genericParamsLocation.endPosition;
+			TokenRange genericParamsTokenRange;
+			interfaceNode->setGenericParams(parseGenericParams(genericParamsTokenRange));
+			interfaceNode->tokenRange.endIndex = genericParamsTokenRange.endIndex;
 		}
 
 		parseImplList(
@@ -277,10 +279,10 @@ std::shared_ptr<InterfaceNode> Parser::parseInterfaceDef() {
 			interfaceNode->idxImplInterfacesColonToken,
 			interfaceNode->idxImplInterfacesSeparatorTokens);
 		if (interfaceNode->parentInterfaces.size())
-			interfaceNode->sourceLocation.endPosition = interfaceNode->parentInterfaces.back()->sourceLocation.endPosition;
+			interfaceNode->tokenRange.endIndex = interfaceNode->parentInterfaces.back()->tokenRange.endIndex;
 
 		Token *lBraceToken = expectToken(TokenId::LBrace);
-		interfaceNode->sourceLocation.endPosition = lBraceToken->location.endPosition;
+		interfaceNode->tokenRange.endIndex = lexer->getTokenIndex(lBraceToken);
 		interfaceNode->idxLBraceToken = lexer->getTokenIndex(lBraceToken);
 
 		while (true) {
@@ -289,15 +291,15 @@ std::shared_ptr<InterfaceNode> Parser::parseInterfaceDef() {
 				token->tokenId == TokenId::End)
 				break;
 			parseInterfaceStmt();
-			interfaceNode->sourceLocation.endPosition = lexer->peekToken()->location.beginPosition;
+			interfaceNode->tokenRange.endIndex = lexer->getTokenIndex(lexer->peekToken());
 		}
 
 		Token *rBraceToken = expectToken(TokenId::RBrace);
-		interfaceNode->sourceLocation.endPosition = rBraceToken->location.endPosition;
+		interfaceNode->tokenRange.endIndex = lexer->getTokenIndex(rBraceToken);
 		interfaceNode->idxRBraceToken = lexer->getTokenIndex(rBraceToken);
 	} catch (SyntaxError e) {
 		compiler->messages.push_back(Message(
-			e.location,
+			compiler->tokenRangeToSourceLocation(e.tokenRange),
 			MessageType::Error,
 			e.what()));
 	}
@@ -307,9 +309,9 @@ std::shared_ptr<InterfaceNode> Parser::parseInterfaceDef() {
 }
 
 void Parser::parseInterfaceStmt() {
-	SourceLocation loc;
+	TokenRange tokenRange;
 	std::deque<size_t> idxAccessModifierTokens;
-	AccessModifier accessModifier = parseAccessModifier(loc, idxAccessModifierTokens);
+	AccessModifier accessModifier = parseAccessModifier(tokenRange, idxAccessModifierTokens);
 
 	switch (Token *token = lexer->peekToken(); token->tokenId) {
 		case TokenId::End:
@@ -318,7 +320,7 @@ void Parser::parseInterfaceStmt() {
 		case TokenId::ClassKeyword: {
 			auto def = parseClassDef();
 
-			def->sourceLocation.beginPosition = loc.beginPosition;
+			def->tokenRange = tokenRange;
 			def->access = accessModifier | ACCESS_STATIC;
 			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
 
@@ -330,7 +332,7 @@ void Parser::parseInterfaceStmt() {
 		case TokenId::InterfaceKeyword: {
 			auto def = parseInterfaceDef();
 
-			def->sourceLocation.beginPosition = loc.beginPosition;
+			def->tokenRange = tokenRange;
 			def->access = accessModifier | ACCESS_STATIC;
 			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
 
@@ -344,7 +346,7 @@ void Parser::parseInterfaceStmt() {
 
 			auto overloading = parseOperatorDef(name);
 
-			overloading->sourceLocation.beginPosition = loc.beginPosition;
+			overloading->tokenRange = tokenRange;
 			overloading->access = accessModifier;
 			overloading->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
 			overloading->isVirtual = true;
@@ -356,7 +358,7 @@ void Parser::parseInterfaceStmt() {
 			std::string name;
 			auto overloading = parseFnDef(name);
 
-			overloading->sourceLocation.beginPosition = loc.beginPosition;
+			overloading->tokenRange = tokenRange;
 			overloading->access = accessModifier;
 			overloading->isVirtual = true;
 
@@ -368,7 +370,7 @@ void Parser::parseInterfaceStmt() {
 			Token *letToken = lexer->nextToken();
 
 			auto stmt = std::make_shared<VarDefStmtNode>();
-			stmt->sourceLocation = letToken->location;
+			stmt->tokenRange = lexer->getTokenIndex(letToken);
 
 			stmt->idxLetToken = lexer->getTokenIndex(letToken);
 
@@ -377,7 +379,7 @@ void Parser::parseInterfaceStmt() {
 			parseVarDefs(stmt);
 
 			Token *semicolonToken = expectToken(TokenId::Semicolon);
-			stmt->sourceLocation.endPosition = semicolonToken->location.endPosition;
+			stmt->tokenRange.endIndex = lexer->getTokenIndex(semicolonToken);
 			stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
 
 			bool idxAccessModifierTokensMoved = false;
@@ -394,7 +396,7 @@ void Parser::parseInterfaceStmt() {
 					i.second.idxAssignOpToken,
 					i.second.idxCommaToken,
 					true);
-				varNode->sourceLocation = i.second.loc;
+				varNode->tokenRange = i.second.tokenRange;
 
 				if (!idxAccessModifierTokensMoved) {
 					varNode->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
@@ -408,6 +410,6 @@ void Parser::parseInterfaceStmt() {
 			break;
 		}
 		default:
-			throw SyntaxError("Unrecognized token", token->location);
+			throw SyntaxError("Unrecognized token", lexer->getTokenIndex(token));
 	}
 }

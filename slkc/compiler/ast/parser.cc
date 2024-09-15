@@ -4,9 +4,9 @@ using namespace slake;
 using namespace slake::slkc;
 
 void Parser::parseProgramStmt() {
-	SourceLocation loc;
+	TokenRange tokenRange;
 	std::deque<size_t> idxAccessModifierTokens;
-	AccessModifier accessModifier = parseAccessModifier(loc, idxAccessModifierTokens);
+	AccessModifier accessModifier = parseAccessModifier(tokenRange, idxAccessModifierTokens);
 
 	Token *token = lexer->peekToken(true, false, true);
 
@@ -31,7 +31,7 @@ void Parser::parseProgramStmt() {
 		case TokenId::ClassKeyword: {
 			auto def = parseClassDef();
 
-			def->sourceLocation.beginPosition = loc.beginPosition;
+			def->tokenRange = tokenRange;
 			def->access = accessModifier | ACCESS_STATIC;
 			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
 			def->documentation = extractLineCommentDocumentation();
@@ -44,7 +44,7 @@ void Parser::parseProgramStmt() {
 		case TokenId::InterfaceKeyword: {
 			auto def = parseInterfaceDef();
 
-			def->sourceLocation.beginPosition = loc.beginPosition;
+			def->tokenRange = tokenRange;
 			def->access = accessModifier | ACCESS_STATIC;
 			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
 
@@ -57,7 +57,7 @@ void Parser::parseProgramStmt() {
 			std::string name;
 			auto overloading = parseFnDef(name);
 
-			overloading->sourceLocation.beginPosition = loc.beginPosition;
+			overloading->tokenRange = tokenRange;
 			overloading->access = accessModifier;
 			overloading->access |= ACCESS_STATIC;
 			overloading->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
@@ -70,7 +70,7 @@ void Parser::parseProgramStmt() {
 			Token *letToken = lexer->nextToken();
 
 			auto stmt = std::make_shared<VarDefStmtNode>();
-			stmt->sourceLocation = letToken->location;
+			stmt->tokenRange = lexer->getTokenIndex(letToken);
 
 			stmt->idxLetToken = lexer->getTokenIndex(letToken);
 
@@ -79,7 +79,7 @@ void Parser::parseProgramStmt() {
 			parseVarDefs(stmt);
 
 			Token *semicolonToken = expectToken(TokenId::Semicolon);
-			stmt->sourceLocation.endPosition = semicolonToken->location.endPosition;
+			stmt->tokenRange.endIndex = lexer->getTokenIndex(semicolonToken);
 			stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
 
 			bool idxAccessModifierTokensMoved = false;
@@ -96,7 +96,7 @@ void Parser::parseProgramStmt() {
 					i.second.idxAssignOpToken,
 					i.second.idxCommaToken);
 				varNode->access |= ACCESS_STATIC;
-				varNode->sourceLocation = i.second.loc;
+				varNode->tokenRange = i.second.tokenRange;
 
 				if (!idxAccessModifierTokensMoved) {
 					varNode->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
@@ -110,7 +110,7 @@ void Parser::parseProgramStmt() {
 			break;
 		}
 		default:
-			throw SyntaxError("Unrecognized token", token->location);
+			throw SyntaxError("Unrecognized token", lexer->getTokenIndex(token));
 	}
 
 	if (token->tokenId != TokenId::NewLine)

@@ -986,7 +986,6 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				mergeGenericParams(compiledFn->genericParams);
 
 				slxfmt::FnDesc fnd = {};
-				bool hasVarArg = false;
 
 				if (compiledFn->access & ACCESS_PUB)
 					fnd.flags |= slxfmt::FND_PUB;
@@ -1005,15 +1004,12 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				if (j->isVirtual)
 					fnd.flags |= slxfmt::FND_VIRTUAL;
 
-				if (compiledFn->paramIndices.count("..."))
-					hasVarArg = true;
-
-				if (hasVarArg)
+				if (j->isVaridic())
 					fnd.flags |= slxfmt::FND_VARG;
 
 				fnd.lenName = (uint16_t)i.first.length();
 				fnd.lenBody = (uint32_t)compiledFn->body.size();
-				fnd.nParams = (uint8_t)compiledFn->params.size() - hasVarArg;
+				fnd.nParams = (uint8_t)compiledFn->params.size();
 				fnd.nSourceLocDescs = (uint32_t)compiledFn->srcLocDescs.size();
 				fnd.nGenericParams = compiledFn->genericParams.size();
 
@@ -1025,7 +1021,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				for (size_t j = 0; j < compiledFn->genericParams.size(); ++j)
 					compileGenericParam(os, compiledFn->genericParams[j]);
 
-				for (size_t j = 0; j < compiledFn->params.size() - hasVarArg; ++j)
+				for (size_t j = 0; j < compiledFn->params.size(); ++j)
 					compileTypeName(os, compiledFn->params[j]->type ? compiledFn->params[j]->type : std::make_shared<AnyTypeNameNode>(SIZE_MAX));
 
 				for (auto &j : compiledFn->body) {
@@ -1184,11 +1180,24 @@ void Compiler::compileIdRef(std::ostream &fs, const IdRef &ref) {
 
 		rsd.lenName = entry.name.size();
 		rsd.nGenericArgs = entry.genericArgs.size();
+		if (entry.hasParamTypes) {
+			rsd.flags |= slxfmt::RSD_HASARG;
+			rsd.nParams = entry.paramTypes.size();
+			if (entry.hasVarArg)
+				rsd.flags |= slxfmt::RSD_VARARG;
+		} else {
+			rsd.nParams = 0;
+		}
 		_write(fs, rsd);
 		_write(fs, entry.name.data(), entry.name.length());
 
-		for (auto &j : entry.genericArgs)
+		for (auto j : entry.genericArgs)
 			compileTypeName(fs, j);
+
+		if (entry.hasParamTypes) {
+			for (auto j : entry.paramTypes)
+				compileTypeName(fs, j);
+		}
 	}
 }
 

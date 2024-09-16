@@ -3,10 +3,10 @@
 using namespace slake::slkc;
 
 void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
-	//slxfmt::SourceLocDesc sld;
-	//sld.offIns = curFn->body.size();
-	//sld.line = tokenRangeToSourceLocation(expr->tokenRange).beginPosition.line;
-	//sld.column = tokenRangeToSourceLocation(expr->tokenRange).beginPosition.column;
+	// slxfmt::SourceLocDesc sld;
+	// sld.offIns = curFn->body.size();
+	// sld.line = tokenRangeToSourceLocation(expr->tokenRange).beginPosition.line;
+	// sld.column = tokenRangeToSourceLocation(expr->tokenRange).beginPosition.column;
 
 	if (!curMajorContext.curMinorContext.dryRun) {
 		if (auto ce = evalConstExpr(expr); ce) {
@@ -647,9 +647,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					}
 
 					curMajorContext.curMinorContext.lastCallTargetParams = overloadings[0]->params;
-					// stub, TODO: Set a flag to hint that the last call target has varidic parameters.
-					if (overloadings[0]->isVaridic())
-						curMajorContext.curMinorContext.lastCallTargetParams.pop_back();
+					curMajorContext.curMinorContext.hasVarArgs = overloadings[0]->isVaridic();
 
 					curMajorContext.curMinorContext.lastCallTargetReturnType =
 						overloadings[0]->returnType
@@ -735,13 +733,18 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							}
 
 							uint32_t newRegIndex = allocReg();
-							if (overloading->isVirtual)
+							if (overloading->isVirtual) {
+								// Copy the parameter types to the reference.
+								resolvedParts[i].first.back().hasParamTypes = true;
+								resolvedParts[i].first.back().paramTypes = curMajorContext.curMinorContext.argTypes;
+								resolvedParts[i].first.back().hasVarArg = curMajorContext.curMinorContext.hasVarArgs;
+
 								_insertIns(
 									Opcode::RLOAD,
 									std::make_shared<RegRefNode>(newRegIndex),
 									{ std::make_shared<RegRefNode>(tmpRegIndex),
 										std::make_shared<IdRefExprNode>(resolvedParts[i].first) });
-							else {
+							} else {
 								IdRef fullRef = getFullName(overloading.get());
 								_insertIns(
 									Opcode::LOAD,
@@ -929,9 +932,6 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							for (auto i : overloading->params) {
 								paramTypes.push_back(i->type);
 							}
-
-							if (overloading->isVaridic())
-								paramTypes.pop_back();
 
 							if (resolvedParts.size() == 1) {
 								curMajorContext.curMinorContext.evaluatedType =
@@ -1179,7 +1179,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 	}
 
 	if (!curMajorContext.curMinorContext.dryRun) {
-		//sld.nIns = curFn->body.size() - sld.offIns;
-		//curFn->srcLocDescs.push_back(sld);
+		// sld.nIns = curFn->body.size() - sld.offIns;
+		// curFn->srcLocDescs.push_back(sld);
 	}
 }

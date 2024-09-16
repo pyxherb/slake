@@ -111,7 +111,7 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 			auto param = std::make_shared<ParamNode>();
 			param->type = std::make_shared<ArrayTypeNameNode>(std::make_shared<AnyTypeNameNode>(SIZE_MAX));
 			param->name = "...";
-			overloading->params.push_back(param);
+			overloading->varArgParam = param;
 		}
 
 		overloading->updateParamIndices();

@@ -54,6 +54,8 @@ namespace slake {
 			/// @brief Parameter indices. Note that it needs to be updated manually after you updated the parameters.
 			std::unordered_map<std::string, size_t> paramIndices;
 
+			std::shared_ptr<ParamNode> varArgParam;
+
 			std::shared_ptr<CodeBlockStmtNode> body;
 			FnNode *owner = nullptr;
 			AccessModifier access = 0;
@@ -104,7 +106,7 @@ namespace slake {
 			virtual IdRefEntry getName() const override;
 
 			inline bool isAbstract() { return !body; }
-			inline bool isVaridic() { return paramIndices.count("..."); }
+			inline bool isVaridic() const { return (bool)varArgParam; }
 
 			/// @brief Update parameter indices.
 			void updateParamIndices();

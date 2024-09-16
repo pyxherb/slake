@@ -42,6 +42,26 @@ Object *Runtime::resolveIdRef(
 				genericInstantiationContext.genericArgs = &i.genericArgs;
 				scopeObject = instantiateGenericObject(scopeObject, genericInstantiationContext);
 			}
+
+			if (i.hasParamTypes) {
+				switch (scopeObject->getKind()) {
+					case ObjectKind::Fn: {
+						FnObject *fnObject = ((FnObject *)scopeObject);
+
+						// stub, remove it after we use std::pmr version containers for argTypes.
+						std::pmr::vector<Type> pmrTypes((SynchronizedCountablePoolResource *)&globalHeapPoolResource);
+
+						pmrTypes.resize(i.paramTypes.size());
+						for (size_t j = 0; j < i.paramTypes.size(); ++j)
+							pmrTypes[j] = i.paramTypes[j];
+
+						scopeObject = fnObject->getOverloading(pmrTypes);
+						break;
+					}
+					default:
+						return nullptr;
+				}
+			}
 		}
 
 		if (scopeObject)

@@ -10,8 +10,20 @@ namespace slake {
 		std::string name;
 		GenericArgList genericArgs;
 
-		inline IdRefEntry(std::string &&name, GenericArgList &&genericArgs = {})
-			: name(name), genericArgs(genericArgs) {}
+		bool hasParamTypes;
+		std::vector<Type> paramTypes;
+		bool hasVarArg;
+
+		inline IdRefEntry(std::string &&name,
+			GenericArgList &&genericArgs = {},
+			bool hasParamTypes = false,
+			std::vector<Type> &&paramTypes = {},
+			bool hasVarArg = false)
+			: name(name),
+			  genericArgs(genericArgs),
+			  hasParamTypes(hasParamTypes),
+			  paramTypes(paramTypes),
+			  hasVarArg(hasVarArg) {}
 	};
 
 	class IdRefObject final : public Object {

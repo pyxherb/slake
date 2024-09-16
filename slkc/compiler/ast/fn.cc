@@ -4,7 +4,7 @@ using namespace slake::slkc;
 
 FnOverloadingNode::FnOverloadingNode(
 	Compiler *compiler,
-	std::shared_ptr<Scope> scope) : MemberNode(compiler, 0), returnType(returnType), params(params), idxNameToken(idxNameToken) {
+	std::shared_ptr<Scope> scope) : MemberNode(compiler, 0) {
 	setScope(scope);  // For custom type names.
 }
 
@@ -23,9 +23,23 @@ void FnOverloadingNode::updateParamIndices() {
 }
 
 IdRefEntry FnOverloadingNode::getName() const {
-	if (genericArgs.size())
-		return IdRefEntry(tokenRange, SIZE_MAX, owner->name, genericArgs);
-	return IdRefEntry(tokenRange, SIZE_MAX, owner->name, getPlaceholderGenericArgs());
+	IdRefEntry idRefEntry(tokenRange, SIZE_MAX, owner->name);
+
+	idRefEntry.hasParamTypes = true;
+
+	idRefEntry.paramTypes.resize(params.size());
+	for (size_t i = 0; i < params.size(); ++i) {
+		idRefEntry.paramTypes[i] = params[i]->type;
+	}
+
+	if (genericArgs.size()) {
+		idRefEntry.genericArgs = genericArgs;
+	} else
+		idRefEntry.genericArgs = getPlaceholderGenericArgs();
+
+	idRefEntry.hasVarArg = isVaridic();
+
+	return idRefEntry;
 }
 
 std::shared_ptr<AstNode> ParamNode::doDuplicate() {

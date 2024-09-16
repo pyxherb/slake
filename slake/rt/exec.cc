@@ -1287,7 +1287,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		}
 		case Opcode::MCALL:
 		case Opcode::CALL: {
-			FnObject *fn;
+			FnOverloadingObject *fn;
 			Object *thisObject = nullptr;
 
 			if (ins.opcode == Opcode::MCALL) {
@@ -1295,8 +1295,8 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 				Value fnValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
 				_checkOperandType(fnValue, ValueType::ObjectRef);
-				_checkObjectOperandType(fnValue.getObjectRef(), ObjectKind::Fn);
-				fn = (FnObject *)fnValue.getObjectRef();
+				_checkObjectOperandType(fnValue.getObjectRef(), ObjectKind::FnOverloading);
+				fn = (FnOverloadingObject *)fnValue.getObjectRef();
 
 				Value thisObjectValue = _unwrapRegOperand(curMajorFrame, ins.operands[1]);
 				_checkOperandType(thisObjectValue, ValueType::ObjectRef);
@@ -1306,8 +1306,8 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 				Value fnValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
 				_checkOperandType(fnValue, ValueType::ObjectRef);
-				_checkObjectOperandType(fnValue.getObjectRef(), ObjectKind::Fn);
-				fn = (FnObject *)fnValue.getObjectRef();
+				_checkObjectOperandType(fnValue.getObjectRef(), ObjectKind::FnOverloading);
+				fn = (FnOverloadingObject *)fnValue.getObjectRef();
 			}
 
 			if (!fn)
@@ -1321,7 +1321,6 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			curMajorFrame->returnValue = fn->call(
 				thisObject,
 				curMajorFrame->nextArgStack,
-				curMajorFrame->nextArgTypes,
 				&holder);
 
 			curMajorFrame->nextArgStack.clear();
@@ -1386,14 +1385,14 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 						_checkObjectOperandType(constructorRef, ObjectKind::IdRef);
 
 						if (auto v = resolveIdRef((IdRefObject *)constructorRef, nullptr); v) {
-							if ((v->getKind() != ObjectKind::Fn))
+							if ((v->getKind() != ObjectKind::FnOverloading))
 								throw InvalidOperandsError("Specified constructor is not a function");
 
-							FnObject *constructor = (FnObject *)v;
+							FnOverloadingObject *constructor = (FnOverloadingObject *)v;
 
 							HostRefHolder holder;
 
-							constructor->call(instance.get(), curMajorFrame->nextArgStack, curMajorFrame->nextArgTypes, &holder);
+							constructor->call(instance.get(), curMajorFrame->nextArgStack, &holder);
 							curMajorFrame->nextArgStack.clear();
 							curMajorFrame->nextArgTypes.clear();
 						} else

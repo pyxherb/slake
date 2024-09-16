@@ -66,6 +66,19 @@ std::string slake::decompiler::decompileIdRef(const IdRefObject *ref) {
 			}
 			s += ">";
 		}
+		if (scope.hasParamTypes) {
+			s += "(";
+
+			for (size_t j = 0; j < scope.paramTypes.size(); ++j) {
+				if (j)
+					s += ",";
+				s += decompileTypeName(scope.paramTypes[j], ref->getRuntime());
+			}
+			if (scope.hasVarArg)
+				s += "...";
+
+			s += ")";
+		}
 	}
 	return s;
 }
@@ -75,7 +88,7 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 		case slake::ObjectKind::String: {
 			os << '"';
 
-			for (auto i : ((StringObject*)object)->data) {
+			for (auto i : ((StringObject *)object)->data) {
 				if (isprint(i))
 					os << i;
 				else
@@ -133,7 +146,7 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 						case FnOverloadingKind::Regular: {
 							RegularFnOverloadingObject *fn = (RegularFnOverloadingObject *)i;
 
-							//trimFnInstructions(fn->instructions);
+							// trimFnInstructions(fn->instructions);
 
 							for (size_t i = 0; i < fn->instructions.size(); ++i) {
 								auto &ins = fn->instructions[i];

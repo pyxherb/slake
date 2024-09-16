@@ -56,12 +56,10 @@ Json::Value Document::extractDeclaration(std::shared_ptr<FnOverloadingNode> m) {
 	metadataValue["returnType"] = extractTypeName((m->returnType ? m->returnType : std::make_shared<VoidTypeNameNode>(SIZE_MAX)));
 
 	for (size_t i = 0; i < m->params.size(); ++i) {
-		if (m->params[i]->name == "...") {
-			metadataValue["hasVaridicParams"] = true;
-		} else {
-			metadataValue["paramDecls"].append(extractDeclaration(m->params[i]));
-		}
+		metadataValue["paramDecls"].append(extractDeclaration(m->params[i]));
 	}
+
+	metadataValue["hasVaridicParams"] = m->isVaridic();
 
 	return value;
 }

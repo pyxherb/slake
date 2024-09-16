@@ -36,7 +36,21 @@ HostObjectRef<IdRefObject> Runtime::_loadIdRef(std::istream &fs, HostRefHolder &
 		for (size_t j = 0; j < i.nGenericArgs; ++j)
 			genericArgs[j] = _loadType(fs, holder);
 
-		ref->entries.push_back(IdRefEntry(std::move(name), std::move(genericArgs)));
+		bool hasArgs = i.flags & slxfmt::RSD_HASARG;
+		bool hasVarArg = false;
+		std::vector<Type> paramTypes;
+
+		if (hasArgs) {
+			hasVarArg = i.flags & slxfmt::RSD_VARARG;
+			
+			paramTypes.resize(i.nParams);
+			paramTypes.shrink_to_fit();
+			for (size_t j = 0; j < i.nParams; ++j)
+				paramTypes[j] = _loadType(fs, holder);
+		}
+
+		ref->entries.push_back(IdRefEntry(std::move(name), std::move(genericArgs), hasArgs, std::move(paramTypes), hasVarArg));
+
 		if (!(i.flags & slxfmt::RSD_NEXT))
 			break;
 	};

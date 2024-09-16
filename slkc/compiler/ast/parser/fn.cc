@@ -3,7 +3,10 @@
 using namespace slake;
 using namespace slake::slkc;
 
-void Parser::parseParams(std::deque<std::shared_ptr<ParamNode>> &paramsOut, std::deque<size_t> &idxCommaTokensOut) {
+void Parser::parseParams(
+	std::deque<std::shared_ptr<ParamNode>> &paramsOut,
+	std::shared_ptr<ParamNode> &varArgParamOut,
+	std::deque<size_t> &idxCommaTokensOut) {
 	if (lexer->peekToken()->tokenId == TokenId::RParenthese)
 		return;
 
@@ -25,7 +28,7 @@ void Parser::parseParams(std::deque<std::shared_ptr<ParamNode>> &paramsOut, std:
 			param->tokenRange = lexer->getTokenIndex(varArgToken);
 			param->idxNameToken = lexer->getTokenIndex(varArgToken);
 
-			paramsOut.push_back(param);
+			varArgParamOut = param;
 			lexer->nextToken();
 			break;
 		}
@@ -98,7 +101,7 @@ std::shared_ptr<FnOverloadingNode> Parser::parseFnDecl(std::string &nameOut) {
 		overloading->idxParamLParentheseToken = lexer->getTokenIndex(paramLParentheseToken);
 	}
 
-	parseParams(overloading->params, overloading->idxParamCommaTokens);
+	parseParams(overloading->params, overloading->varArgParam, overloading->idxParamCommaTokens);
 	if (overloading->params.size())
 		overloading->tokenRange.endIndex = overloading->params.back()->tokenRange.endIndex;
 
@@ -242,7 +245,7 @@ std::shared_ptr<FnOverloadingNode> Parser::parseOperatorDecl(std::string &nameOu
 		overloading->idxParamLParentheseToken = lexer->getTokenIndex(paramLParentheseToken);
 	}
 
-	parseParams(overloading->params, overloading->idxParamCommaTokens);
+	parseParams(overloading->params, overloading->varArgParam, overloading->idxParamCommaTokens);
 	if (overloading->params.size())
 		overloading->tokenRange.endIndex = overloading->params.back()->tokenRange.endIndex;
 

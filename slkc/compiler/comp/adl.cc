@@ -19,9 +19,6 @@ void slake::slkc::Compiler::_argDependentLookup(
 
 		size_t nParams = i->params.size(), nGenericParams = i->genericParams.size();
 
-		if (i->isVaridic())
-			--nParams;
-
 		if (nParams > argTypes.size())
 			continue;
 

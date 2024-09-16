@@ -87,6 +87,7 @@ namespace slake {
 			bool isLastCallTargetStatic = true;
 			std::deque<std::shared_ptr<ParamNode>> lastCallTargetParams;
 			std::shared_ptr<TypeNameNode> lastCallTargetReturnType;
+			bool hasVarArgs = false;
 
 			std::deque<std::shared_ptr<TypeNameNode>> argTypes;
 			bool isArgTypesSet = false;

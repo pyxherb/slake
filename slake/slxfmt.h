@@ -56,28 +56,28 @@ namespace slake {
 		};
 
 		enum class TypeId : uint8_t {
-			None = 0,		// None
-			Any,			// Any
-			I8,				// i8
-			I16,			// i16
-			I32,			// i32
-			I64,			// i64
-			U8,				// u8
-			U16,			// u16
-			U32,			// u32
-			U64,			// u64
-			F32,			// f32
-			F64,			// f64
-			String,			// String
-			Bool,			// Boolean
-			Array,			// Array
-			Map,			// Map
-			Object,			// Object
-			IdRef,			// Identifier reference
-			TypeName,		// Type name
-			GenericArg,		// Generic argument
-			Reg,			// Register
-			Ref,			// Reference
+			None = 0,	 // None
+			Any,		 // Any
+			I8,			 // i8
+			I16,		 // i16
+			I32,		 // i32
+			I64,		 // i64
+			U8,			 // u8
+			U16,		 // u16
+			U32,		 // u32
+			U64,		 // u64
+			F32,		 // f32
+			F64,		 // f64
+			String,		 // String
+			Bool,		 // Boolean
+			Array,		 // Array
+			Map,		 // Map
+			Object,		 // Object
+			IdRef,		 // Identifier reference
+			TypeName,	 // Type name
+			GenericArg,	 // Generic argument
+			Reg,		 // Register
+			Ref,		 // Reference
 		};
 
 		/// @brief Class Type Descriptor (CTD)
@@ -152,12 +152,15 @@ namespace slake {
 
 		/// @brief Reference Scope Descriptor (RSD)
 		struct IdRefEntryDesc final {
-			uint16_t lenName : 8;
-			uint8_t flags : 4;
-			uint8_t nGenericArgs : 4;
+			uint8_t lenName;
+			uint8_t flags;
+			uint8_t nGenericArgs;
+			uint8_t nParams;
 		};
 		constexpr static uint8_t
-			RSD_NEXT = 0x01;
+			RSD_NEXT = 0x01,
+			RSD_HASARG = 0x02,
+			RSD_VARARG = 0x04;
 
 		/// @brief Generic Parameter Descriptor (GPD)
 		struct GenericParamDesc final {

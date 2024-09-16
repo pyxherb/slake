@@ -11,19 +11,45 @@ namespace slake {
 		struct IdRefEntry {
 			TokenRange tokenRange;
 			size_t idxAccessOpToken = SIZE_MAX;	 // Index of preceding access operator token
-			size_t idxToken;
+			size_t idxToken = SIZE_MAX;
 			std::string name;
 			std::deque<std::shared_ptr<TypeNameNode>> genericArgs;
 
-			inline IdRefEntry(std::string name, std::deque<std::shared_ptr<TypeNameNode>> genericArgs = {})
-				: name(name), genericArgs(genericArgs) {}
-			inline IdRefEntry(TokenRange tokenRange, size_t idxToken, std::string name, std::deque<std::shared_ptr<TypeNameNode>> genericArgs = {})
-				: tokenRange(tokenRange), idxToken(idxToken), name(name), genericArgs(genericArgs) {}
+			bool hasParamTypes;
+			std::deque<std::shared_ptr<TypeNameNode>> paramTypes;
+			bool hasVarArg;
+
+			inline IdRefEntry(
+				std::string name,
+				std::deque<std::shared_ptr<TypeNameNode>> genericArgs = {},
+				bool hasParamTypes = false,
+				std::deque<std::shared_ptr<TypeNameNode>> paramTypes = {},
+				bool hasVarArg = false)
+				: name(name),
+				  genericArgs(genericArgs),
+				  hasParamTypes(hasParamTypes),
+				  paramTypes(paramTypes),
+				  hasVarArg(hasVarArg) {}
+			inline IdRefEntry(
+				TokenRange tokenRange,
+				size_t idxToken,
+				std::string name,
+				std::deque<std::shared_ptr<TypeNameNode>> genericArgs = {},
+				bool hasParamTypes = false,
+				std::deque<std::shared_ptr<TypeNameNode>> paramTypes = {},
+				bool hasVarArg = false)
+				: tokenRange(tokenRange),
+				  idxToken(idxToken),
+				  name(name),
+				  genericArgs(genericArgs),
+				  hasParamTypes(hasParamTypes),
+				  paramTypes(paramTypes),
+				  hasVarArg(hasVarArg) {}
 		};
 
 		using IdRef = std::deque<IdRefEntry>;
 
-		inline bool isCompleteIdRef(const IdRef& ref) {
+		inline bool isCompleteIdRef(const IdRef &ref) {
 			return ref.size() && (ref.back().idxToken != SIZE_MAX);
 		}
 

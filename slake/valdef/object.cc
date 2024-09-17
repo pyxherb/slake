@@ -14,7 +14,7 @@ Object *Object::duplicate() const {
 }
 
 MemberObject *Object::getMember(
-	const std::string &name,
+	const std::pmr::string &name,
 	VarRefContext *varRefContextOut) const {
 	return nullptr;
 }

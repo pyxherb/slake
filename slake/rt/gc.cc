@@ -319,10 +319,14 @@ void Runtime::_gcWalk(Object *v) {
 		case ObjectKind::IdRef: {
 			auto value = (IdRefObject *)v;
 
-			for (auto &i : value->entries)
+			for (auto &i : value->entries) {
 				for (auto &j : i.genericArgs) {
 					_gcWalk(j);
 				}
+				for (auto &j : i.paramTypes) {
+					_gcWalk(j);
+				}
+			}
 			break;
 		}
 		case ObjectKind::Alias: {

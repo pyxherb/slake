@@ -22,7 +22,7 @@ namespace slake {
 		}
 		virtual ~ModuleObject();
 
-		std::unordered_map<std::string, IdRefObject *> imports;
+		std::unordered_map<std::pmr::string, IdRefObject *> imports;
 		std::vector<IdRefObject *> unnamedImports;
 
 		virtual inline ObjectKind getKind() const override { return ObjectKind::Module; }
@@ -30,7 +30,7 @@ namespace slake {
 		virtual Object *duplicate() const override;
 
 		virtual MemberObject *getMember(
-			const std::string &name,
+			const std::pmr::string &name,
 			VarRefContext *varRefContextOut) const;
 
 		virtual const char *getName() const override;

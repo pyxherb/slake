@@ -16,7 +16,7 @@ Object *AliasObject::duplicate() const {
 }
 
 MemberObject* AliasObject::getMember(
-	const std::string& name,
+	const std::pmr::string& name,
 	VarRefContext* varRefContextOut) const {
 	return src->getMember(name, varRefContextOut);
 }

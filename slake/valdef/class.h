@@ -21,13 +21,21 @@ namespace slake {
 	};
 
 	struct ObjectLayout {
-		size_t totalSize;
-		std::vector<ObjectFieldRecord> fieldRecords;
-		std::unordered_map<std::string, size_t> fieldNameMap;
+		std::pmr::memory_resource *memoryResource;
+		size_t totalSize = 0;
+		std::pmr::vector<ObjectFieldRecord> fieldRecords;
+		std::pmr::unordered_map<std::pmr::string, size_t> fieldNameMap;
 
-		inline ObjectLayout* duplicate() const {
-			return new ObjectLayout(*this);
+		inline ObjectLayout(std::pmr::memory_resource *memoryResource)
+			: memoryResource(memoryResource),
+			  fieldRecords(memoryResource),
+			  fieldNameMap(memoryResource) {
 		}
+
+		ObjectLayout *duplicate() const;
+
+		static ObjectLayout *alloc(std::pmr::memory_resource *memoryResource);
+		void dealloc();
 	};
 
 	class ClassObject : public ModuleObject {
@@ -102,7 +110,7 @@ namespace slake {
 		inline InterfaceObject(Runtime *rt, AccessModifier access, const std::vector<Type> &parents)
 			: ModuleObject(rt, access), parents(parents) {
 		}
-		inline InterfaceObject(const InterfaceObject& x) : ModuleObject(x) {
+		inline InterfaceObject(const InterfaceObject &x) : ModuleObject(x) {
 			genericArgs = x.genericArgs;
 
 			genericParams = x.genericParams;

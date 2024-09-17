@@ -84,7 +84,7 @@ namespace slake {
 		inline Runtime *getRuntime() const noexcept { return _rt; }
 
 		virtual MemberObject *getMember(
-			const std::string &name,
+			const std::pmr::string &name,
 			VarRefContext *varRefContextOut) const;
 	};
 

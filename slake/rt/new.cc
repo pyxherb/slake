@@ -1,4 +1,5 @@
 #include <slake/runtime.h>
+#include <slake/util/scope_guard.h>
 
 using namespace slake;
 
@@ -30,6 +31,15 @@ HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassObject *cls,
 	MethodTable *methodTable = nullptr;
 	ObjectLayout *objectLayout = nullptr;
 	bool isMethodTablePresent = true, isObjectLayoutPresent = true;
+	util::ScopeGuard
+		methodTableGuard([&isMethodTablePresent, &methodTable]() {
+			if ((!isMethodTablePresent) && methodTable)
+				methodTable->dealloc();
+		}),
+		objectLayoutGuard([&isObjectLayoutPresent, &objectLayout]() {
+			if ((!isObjectLayoutPresent) && objectLayout)
+				objectLayout->dealloc();
+		});
 
 	if (cls->cachedInstantiatedMethodTable) {
 		methodTable = cls->cachedInstantiatedMethodTable;
@@ -40,7 +50,7 @@ HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassObject *cls,
 				(cls->cachedInstantiatedMethodTable = parent->methodTable->duplicate());
 		} else
 			methodTable =
-				(cls->cachedInstantiatedMethodTable = new MethodTable());
+				(cls->cachedInstantiatedMethodTable = MethodTable::alloc(&globalHeapPoolResource));
 		isMethodTablePresent = false;
 	}
 
@@ -53,7 +63,7 @@ HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassObject *cls,
 				(cls->cachedObjectLayout = parent->objectLayout->duplicate());
 		} else
 			objectLayout =
-				(cls->cachedObjectLayout = new ObjectLayout());
+				(cls->cachedObjectLayout = ObjectLayout::alloc(&globalHeapPoolResource));
 		isObjectLayoutPresent = false;
 
 		if (parent) {
@@ -214,7 +224,8 @@ HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassObject *cls,
 	}
 
 	if (!(flags & _NEWCLSINST_PARENT)) {
-		instance->rawFieldData = new char[objectLayout->totalSize];
+		if (objectLayout->totalSize)
+			instance->rawFieldData = new char[objectLayout->totalSize];
 		instance->szRawFieldData = objectLayout->totalSize;
 	}
 
@@ -238,6 +249,9 @@ HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassObject *cls,
 				initVar->getData(VarRefContext()));
 		}
 	}
+
+	methodTableGuard.release();
+	objectLayoutGuard.release();
 
 	return instance;
 }

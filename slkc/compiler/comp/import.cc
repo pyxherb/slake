@@ -291,7 +291,7 @@ std::shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 							genericArgs.push_back(toTypeName(j));
 						}
 
-						ref.push_back(IdRefEntry({}, SIZE_MAX, i.name, genericArgs));
+						ref.push_back(IdRefEntry({}, SIZE_MAX, std::string(i.name.c_str(), i.name.size()), genericArgs));
 					}
 
 					return std::make_shared<CustomTypeNameNode>(ref, this, nullptr);
@@ -311,6 +311,21 @@ std::shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 	throw std::logic_error("Unrecognized runtime value type");
 }
 
+slake::slkc::IdRef Compiler::toAstIdRef(std::pmr::deque<slake::IdRefEntry> runtimeRefEntries) {
+	IdRef ref;
+
+	for (auto &i : runtimeRefEntries) {
+		std::deque<std::shared_ptr<TypeNameNode>> genericArgs;
+
+		for (auto j : i.genericArgs)
+			genericArgs.push_back(toTypeName(j));
+
+		ref.push_back(IdRefEntry({}, SIZE_MAX, std::string(i.name.c_str(), i.name.size()), genericArgs));
+	}
+
+	return ref;
+}
+
 slake::slkc::IdRef Compiler::toAstIdRef(std::deque<slake::IdRefEntry> runtimeRefEntries) {
 	IdRef ref;
 
@@ -320,7 +335,7 @@ slake::slkc::IdRef Compiler::toAstIdRef(std::deque<slake::IdRefEntry> runtimeRef
 		for (auto j : i.genericArgs)
 			genericArgs.push_back(toTypeName(j));
 
-		ref.push_back(IdRefEntry({}, SIZE_MAX, i.name, genericArgs));
+		ref.push_back(IdRefEntry({}, SIZE_MAX, std::string(i.name.c_str(), i.name.size()), genericArgs));
 	}
 
 	return ref;

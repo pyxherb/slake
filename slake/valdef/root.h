@@ -9,18 +9,15 @@ namespace slake {
 	public:
 		Scope *scope;
 
-		inline RootObject(Runtime *rt)
-			: Object(rt) {
-			scope = new Scope(this);
-		}
+		RootObject(Runtime *rt);
 		virtual inline ~RootObject() {
-			delete scope;
+			scope->dealloc();
 		}
 
 		virtual inline ObjectKind getKind() const override { return ObjectKind::RootObject; }
 
 		virtual MemberObject *getMember(
-			const std::string &name,
+			const std::pmr::string &name,
 			VarRefContext *varRefContextOut) const;
 
 		static HostObjectRef<RootObject> alloc(Runtime *rt);

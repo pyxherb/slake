@@ -2,8 +2,13 @@
 
 using namespace slake;
 
+RootObject::RootObject(Runtime *rt)
+	: Object(rt) {
+	scope = Scope::alloc(&rt->globalHeapPoolResource, this);
+}
+
 MemberObject* RootObject::getMember(
-	const std::string& name,
+	const std::pmr::string& name,
 	VarRefContext* varRefContextOut) const {
 	return scope->getMember(name);
 }

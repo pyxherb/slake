@@ -238,7 +238,7 @@ void Runtime::_loadScope(
 	for (slxfmt::ClassTypeDesc i = {}; nItemsToRead--;) {
 		i = _read<slxfmt::ClassTypeDesc>(fs);
 
-		std::string name(i.lenName, '\0');
+		std::pmr::string name(i.lenName, '\0', &globalHeapPoolResource);
 		fs.read(name.data(), i.lenName);
 
 		AccessModifier access = 0;
@@ -276,7 +276,7 @@ void Runtime::_loadScope(
 	for (slxfmt::InterfaceTypeDesc i = {}; nItemsToRead--;) {
 		i = _read<slxfmt::InterfaceTypeDesc>(fs);
 
-		std::string name(i.lenName, '\0');
+		std::pmr::string name(i.lenName, '\0', &globalHeapPoolResource);
 		fs.read(name.data(), i.lenName);
 
 		AccessModifier access = 0;
@@ -307,7 +307,7 @@ void Runtime::_loadScope(
 	for (slxfmt::VarDesc i = { 0 }; nItemsToRead--;) {
 		i = _read<slxfmt::VarDesc>(fs);
 
-		std::string name(i.lenName, '\0');
+		std::pmr::string name(i.lenName, '\0', &globalHeapPoolResource);
 		fs.read(name.data(), i.lenName);
 
 		AccessModifier access = 0;
@@ -396,7 +396,7 @@ void Runtime::_loadScope(
 		for (slxfmt::FnDesc i = { 0 }; nOverloadings--;) {
 			i = _read<slxfmt::FnDesc>(fs);
 
-			std::string name(i.lenName, '\0');
+			std::pmr::string name(i.lenName, '\0', &globalHeapPoolResource);
 			fs.read(name.data(), i.lenName);
 
 			AccessModifier access = 0;
@@ -499,7 +499,7 @@ HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &fs, LoadMod
 
 		// Create parent modules.
 		for (size_t i = 0; i < modName->entries.size() - 1; ++i) {
-			std::string name(modName->entries[i].name.c_str(), modName->entries[i].name.size());
+			std::pmr::string name = modName->entries[i].name;
 
 			if (!curObject->getMember(name, nullptr)) {
 				// Create a new one if corresponding module does not present.
@@ -517,7 +517,7 @@ HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &fs, LoadMod
 			}
 		}
 
-		std::string lastName(modName->entries.back().name.c_str(), modName->entries.back().name.size());
+		std::pmr::string lastName = modName->entries.back().name;
 		// Add current module.
 		if (curObject->getKind() == ObjectKind::RootObject)
 			((RootObject *)curObject)->scope->putMember(lastName, mod.get());
@@ -540,7 +540,7 @@ HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &fs, LoadMod
 
 	for (uint8_t i = 0; i < ih.nImports; i++) {
 		auto len = _read<uint32_t>(fs);
-		std::string name(len, '\0');
+		std::pmr::string name(len, '\0', &globalHeapPoolResource);
 		fs.read(name.data(), len);
 
 		HostObjectRef<IdRefObject> moduleName = _loadIdRef(fs, holder);

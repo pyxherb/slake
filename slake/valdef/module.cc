@@ -4,12 +4,12 @@ using namespace slake;
 
 ModuleObject::ModuleObject(Runtime *rt, AccessModifier access)
 	: MemberObject(rt) {
-	scope = new Scope(this);
+	scope = Scope::alloc(&rt->globalHeapPoolResource, this);
 	this->accessModifier = access;
 }
 
 ModuleObject::~ModuleObject() {
-	delete scope;
+	scope->dealloc();
 }
 
 Object *ModuleObject::duplicate() const {
@@ -17,7 +17,7 @@ Object *ModuleObject::duplicate() const {
 }
 
 MemberObject* ModuleObject::getMember(
-	const std::string& name,
+	const std::pmr::string& name,
 	VarRefContext* varRefContextOut) const {
 	return scope->getMember(name);
 }

@@ -418,6 +418,7 @@ namespace slake {
 			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, Object *value);
 			void importModule(const IdRef &ref);
 			std::shared_ptr<TypeNameNode> toTypeName(slake::Type runtimeType);
+			IdRef toAstIdRef(std::pmr::deque<slake::IdRefEntry> runtimeRefEntries);
 			IdRef toAstIdRef(std::deque<slake::IdRefEntry> runtimeRefEntries);
 
 			//

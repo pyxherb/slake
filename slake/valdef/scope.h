@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <memory>
 #include <string>
+#include <slake/util/memory.h>
 
 namespace slake {
 	class Object;
@@ -15,45 +16,60 @@ namespace slake {
 
 	class Scope {
 	public:
+		std::pmr::memory_resource *memoryResource;
 		Object *owner;
-		std::unordered_map<std::string, MemberObject *> members;
+		std::pmr::unordered_map<std::pmr::string, MemberObject *> members;
 
-		inline Scope(Object *owner) : owner(owner) {}
+		inline Scope(std::pmr::memory_resource *memoryResource,
+			Object *owner) : memoryResource(memoryResource),
+							 owner(owner),
+							 members(memoryResource) {}
 
-		inline MemberObject *getMember(const std::string &name) {
+		inline MemberObject *getMember(const std::pmr::string &name) {
 			if (auto it = members.find(name); it != members.end())
 				return it->second;
 			return nullptr;
 		}
 
-		void putMember(const std::string &name, MemberObject *value);
+		void putMember(const std::pmr::string &name, MemberObject *value);
 
-		inline void addMember(const std::string &name, MemberObject *value) {
+		inline void addMember(const std::pmr::string &name, MemberObject *value) {
 			if (members.find(name) != members.end())
 				throw std::logic_error("The member is already exists");
 
 			putMember(name, value);
 		}
 
-		void removeMember(const std::string &name);
+		void removeMember(const std::pmr::string &name);
 
 		Scope *duplicate();
+
+		static Scope *alloc(std::pmr::memory_resource *memoryResource, Object *owner);
+		void dealloc();
 	};
 
 	class MethodTable {
 	public:
-		std::unordered_map<std::string, FnObject *> methods;
-		std::deque<FnOverloadingObject*> destructors;
+		std::pmr::memory_resource *memoryResource;
+		std::pmr::unordered_map<std::pmr::string, FnObject *> methods;
+		std::pmr::deque<FnOverloadingObject *> destructors;
 
-		inline FnObject* getMethod(const std::string& name) {
+		inline MethodTable(std::pmr::memory_resource *memoryResource)
+			: memoryResource(memoryResource),
+			  methods(memoryResource),
+			  destructors(memoryResource) {
+		}
+
+		inline FnObject *getMethod(const std::pmr::string &name) {
 			if (auto it = methods.find(name); it != methods.end())
 				return it->second;
 			return nullptr;
 		}
 
-		inline MethodTable* duplicate() const {
-			return new MethodTable(*this);
-		}
+		MethodTable *duplicate();
+
+		static MethodTable *alloc(std::pmr::memory_resource *memoryResource);
+		void dealloc();
 	};
 }
 

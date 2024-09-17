@@ -143,7 +143,7 @@ Object *InstanceObject::duplicate() const {
 }
 
 MemberObject *InstanceObject::getMember(
-	const std::string &name,
+	const std::pmr::string &name,
 	VarRefContext *varRefContextOut) const {
 	if (auto it = methodTable->methods.find(name);
 		it != methodTable->methods.end())

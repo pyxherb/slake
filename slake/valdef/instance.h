@@ -66,7 +66,7 @@ namespace slake {
 		virtual Object *duplicate() const override;
 
 		virtual MemberObject *getMember(
-			const std::string &name,
+			const std::pmr::string &name,
 			VarRefContext *varRefContextOut) const;
 
 		static HostObjectRef<InstanceObject> alloc(Runtime *rt);

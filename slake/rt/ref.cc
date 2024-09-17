@@ -31,7 +31,7 @@ Object *Runtime::resolveIdRef(
 					default:
 						goto fail;
 				}
-			} else if (!(scopeObject = scopeObject->getMember(std::string(i.name.c_str(), i.name.length()), varRefContextOut))) {
+			} else if (!(scopeObject = scopeObject->getMember(i.name, varRefContextOut))) {
 				break;
 			}
 
@@ -47,6 +47,10 @@ Object *Runtime::resolveIdRef(
 				switch (scopeObject->getKind()) {
 					case ObjectKind::Fn: {
 						FnObject *fnObject = ((FnObject *)scopeObject);
+
+						for (auto& j : i.paramTypes) {
+							j.loadDeferredType(this);
+						}
 
 						scopeObject = fnObject->getOverloading(i.paramTypes);
 						break;

@@ -2,15 +2,46 @@
 
 using namespace slake;
 
+ObjectLayout *ObjectLayout::duplicate() const {
+	using Alloc = std::pmr::polymorphic_allocator<ObjectLayout>;
+	Alloc allocator(memoryResource);
+
+	std::unique_ptr<ObjectLayout, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), *this);
+
+	return ptr.release();
+}
+
+ObjectLayout *ObjectLayout::alloc(std::pmr::memory_resource *memoryResource) {
+	using Alloc = std::pmr::polymorphic_allocator<ObjectLayout>;
+	Alloc allocator(memoryResource);
+
+	std::unique_ptr<ObjectLayout, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), memoryResource);
+
+	return ptr.release();
+}
+
+void ObjectLayout::dealloc() {
+	std::pmr::polymorphic_allocator<ObjectLayout> allocator(memoryResource);
+
+	std::destroy_at(this);
+	allocator.deallocate(this, 1);
+}
+
 slake::ClassObject::ClassObject(Runtime *rt, AccessModifier access, const Type &parentClass)
 	: ModuleObject(rt, access), parentClass(parentClass) {
 }
 
 ClassObject::~ClassObject() {
 	if (cachedInstantiatedMethodTable)
-		delete cachedInstantiatedMethodTable;
+		cachedInstantiatedMethodTable->dealloc();
 	if (cachedObjectLayout)
-		delete cachedObjectLayout;
+		cachedObjectLayout->dealloc();
 }
 
 bool ClassObject::hasImplemented(const InterfaceObject *pInterface) const {

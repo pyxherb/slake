@@ -27,10 +27,10 @@ HostObjectRef<IdRefObject> Runtime::_loadIdRef(std::istream &fs, HostRefHolder &
 	while (true) {
 		i = _read<slxfmt::IdRefEntryDesc>(fs);
 
-		std::string name(i.lenName, '\0');
+		std::pmr::string name(i.lenName, '\0', &globalHeapPoolResource);
 		fs.read(name.data(), i.lenName);
 
-		GenericArgList genericArgs;
+		GenericArgList genericArgs(&globalHeapPoolResource);
 		genericArgs.resize(i.nGenericArgs);
 		genericArgs.shrink_to_fit();
 		for (size_t j = 0; j < i.nGenericArgs; ++j)
@@ -38,7 +38,7 @@ HostObjectRef<IdRefObject> Runtime::_loadIdRef(std::istream &fs, HostRefHolder &
 
 		bool hasArgs = i.flags & slxfmt::RSD_HASARG;
 		bool hasVarArg = false;
-		std::vector<Type> paramTypes;
+		std::pmr::vector<Type> paramTypes(&globalHeapPoolResource);
 
 		if (hasArgs) {
 			hasVarArg = i.flags & slxfmt::RSD_VARARG;
@@ -499,7 +499,7 @@ HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &fs, LoadMod
 
 		// Create parent modules.
 		for (size_t i = 0; i < modName->entries.size() - 1; ++i) {
-			auto &name = modName->entries[i].name;
+			std::string name(modName->entries[i].name.c_str(), modName->entries[i].name.size());
 
 			if (!curObject->getMember(name, nullptr)) {
 				// Create a new one if corresponding module does not present.
@@ -517,7 +517,7 @@ HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &fs, LoadMod
 			}
 		}
 
-		auto lastName = modName->entries.back().name;
+		std::string lastName(modName->entries.back().name.c_str(), modName->entries.back().name.size());
 		// Add current module.
 		if (curObject->getKind() == ObjectKind::RootObject)
 			((RootObject *)curObject)->scope->putMember(lastName, mod.get());
@@ -534,7 +534,7 @@ HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &fs, LoadMod
 					throw LoaderError("Module \"" + std::to_string(modName.get(), this) + "\" conflicted with existing value which is on the same path");
 			}
 
-			moduleObject->scope->putMember(modName->entries.back().name, mod.get());
+			moduleObject->scope->putMember(lastName, mod.get());
 		}
 	}
 

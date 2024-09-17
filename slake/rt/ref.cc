@@ -31,7 +31,7 @@ Object *Runtime::resolveIdRef(
 					default:
 						goto fail;
 				}
-			} else if (!(scopeObject = scopeObject->getMember(i.name, varRefContextOut))) {
+			} else if (!(scopeObject = scopeObject->getMember(std::string(i.name.c_str(), i.name.length()), varRefContextOut))) {
 				break;
 			}
 
@@ -48,14 +48,7 @@ Object *Runtime::resolveIdRef(
 					case ObjectKind::Fn: {
 						FnObject *fnObject = ((FnObject *)scopeObject);
 
-						// stub, remove it after we use std::pmr version containers for argTypes.
-						std::pmr::vector<Type> pmrTypes((SynchronizedCountablePoolResource *)&globalHeapPoolResource);
-
-						pmrTypes.resize(i.paramTypes.size());
-						for (size_t j = 0; j < i.paramTypes.size(); ++j)
-							pmrTypes[j] = i.paramTypes[j];
-
-						scopeObject = fnObject->getOverloading(pmrTypes);
+						scopeObject = fnObject->getOverloading(i.paramTypes);
 						break;
 					}
 					default:

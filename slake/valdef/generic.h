@@ -9,15 +9,15 @@ namespace slake {
 	struct GenericParam final {
 		std::pmr::string name;
 		Type baseType = Type(TypeId::Any);
-		std::vector<Type> interfaces;
+		std::pmr::vector<Type> interfaces;
 
 		inline GenericParam() {}
-		inline GenericParam(std::pmr::memory_resource *memoryResource) : name(memoryResource) {
+		inline GenericParam(std::pmr::memory_resource *memoryResource) : name(memoryResource), interfaces(memoryResource) {
 		}
 	};
 
-	using GenericArgList = std::vector<Type>;
-	using GenericParamList = std::vector<GenericParam>;
+	using GenericArgList = std::pmr::vector<Type>;
+	using GenericParamList = std::pmr::vector<GenericParam>;
 
 	/// @brief Less than ("<") comparator for containers.
 	struct GenericArgListComparator {

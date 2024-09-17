@@ -16,9 +16,15 @@ void slake::Runtime::_instantiateGenericObject(Type &type, GenericInstantiationC
 				auto idRefToResolvedType = getFullRef((MemberObject *)type.getCustomTypeExData());
 
 				HostObjectRef<IdRefObject> idRefObject = IdRefObject::alloc((Runtime *)this);
-				idRefObject->entries = idRefToResolvedType;
 
-				type = Type(type.typeId, idRefObject.release());
+				// TODO: If we use std::pmr version for getFullRef, remove these code and use following code:
+				// idRefObject->entries = idRefToResolvedType;
+				idRefObject->entries.resize(idRefToResolvedType.size(), IdRefEntry(&globalHeapPoolResource));
+				for (size_t i = 0; i < idRefToResolvedType.size(); ++i)
+					idRefObject->entries[i] = idRefToResolvedType[i];
+
+				// TODO: Add HostRefHolder for idRefObject.
+				type = Type(type.typeId, idRefObject.get());
 
 				_instantiateGenericObject(type, instantiationContext);
 			}

@@ -7,17 +7,21 @@
 
 namespace slake {
 	struct IdRefEntry final {
-		std::string name;
+		std::pmr::string name;
 		GenericArgList genericArgs;
 
-		bool hasParamTypes;
-		std::vector<Type> paramTypes;
+		bool hasParamTypes = false;
+		std::pmr::vector<Type> paramTypes;
 		bool hasVarArg;
 
-		inline IdRefEntry(std::string &&name,
+		inline IdRefEntry(std::pmr::memory_resource *memoryResource)
+			: name(memoryResource), genericArgs(memoryResource), paramTypes(memoryResource) {
+			// For resize() methods.
+		}
+		inline IdRefEntry(std::pmr::string &&name,
 			GenericArgList &&genericArgs = {},
 			bool hasParamTypes = false,
-			std::vector<Type> &&paramTypes = {},
+			std::pmr::vector<Type> &&paramTypes = {},
 			bool hasVarArg = false)
 			: name(name),
 			  genericArgs(genericArgs),
@@ -28,13 +32,13 @@ namespace slake {
 
 	class IdRefObject final : public Object {
 	public:
+		std::pmr::deque<IdRefEntry> entries;
+
 		IdRefObject(Runtime *rt);
 		IdRefObject(const IdRefObject &x) : Object(x) {
 			entries = x.entries;
 		}
 		virtual ~IdRefObject();
-
-		std::deque<IdRefEntry> entries;
 
 		virtual inline ObjectKind getKind() const override { return ObjectKind::IdRef; }
 

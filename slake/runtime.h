@@ -195,7 +195,7 @@ namespace slake {
 			std::unordered_map<std::pmr::string, Type> mappedGenericArgs;
 		};
 
-		SynchronizedCountablePoolResource globalHeapPoolResource;
+		mutable SynchronizedCountablePoolResource globalHeapPoolResource;
 
 	private:
 		/// @brief Root value of the runtime.

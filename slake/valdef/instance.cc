@@ -121,14 +121,17 @@ Value InstanceMemberAccessorVarObject::getData(const VarRefContext &varRefContex
 }
 
 HostObjectRef<InstanceMemberAccessorVarObject> slake::InstanceMemberAccessorVarObject::alloc(Runtime *rt, InstanceObject *instanceObject) {
-	std::pmr::polymorphic_allocator<InstanceMemberAccessorVarObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<InstanceMemberAccessorVarObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	InstanceMemberAccessorVarObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, instanceObject);
+	std::unique_ptr<InstanceMemberAccessorVarObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, instanceObject);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::InstanceMemberAccessorVarObject::dealloc() {
@@ -162,25 +165,31 @@ MemberObject *InstanceObject::getMember(
 }
 
 HostObjectRef<InstanceObject> slake::InstanceObject::alloc(Runtime *rt) {
-	std::pmr::polymorphic_allocator<InstanceObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<InstanceObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	InstanceObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt);
+	std::unique_ptr<InstanceObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 HostObjectRef<InstanceObject> slake::InstanceObject::alloc(const InstanceObject *other) {
-	std::pmr::polymorphic_allocator<InstanceObject> allocator(&other->_rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<InstanceObject>;
+	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
-	InstanceObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, *other);
+	std::unique_ptr<InstanceObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr);
+	other->_rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::InstanceObject::dealloc() {

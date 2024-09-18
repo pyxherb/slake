@@ -69,14 +69,17 @@ Value U8ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) cons
 }
 
 HostObjectRef<U8ArrayAccessorVarObject> slake::U8ArrayAccessorVarObject::alloc(Runtime *rt, U8ArrayObject *arrayObject) {
-	std::pmr::polymorphic_allocator<U8ArrayAccessorVarObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<U8ArrayAccessorVarObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	U8ArrayAccessorVarObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, arrayObject);
+	std::unique_ptr<U8ArrayAccessorVarObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, arrayObject);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::U8ArrayAccessorVarObject::dealloc() {
@@ -137,7 +140,7 @@ U8ArrayObject::U8ArrayObject(Runtime *rt, size_t length)
 
 U8ArrayObject::U8ArrayObject(const U8ArrayObject &x) : ArrayObject(x) {
 	_resizeUnchecked(x.length);
-	memcpy(data, x.data, length * sizeof(int8_t));
+	memcpy(data, x.data, length * sizeof(uint8_t));
 }
 
 U8ArrayObject::~U8ArrayObject() {
@@ -149,25 +152,31 @@ Object *U8ArrayObject::duplicate() const {
 }
 
 HostObjectRef<U8ArrayObject> slake::U8ArrayObject::alloc(Runtime *rt, size_t length) {
-	std::pmr::polymorphic_allocator<U8ArrayObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<U8ArrayObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	U8ArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, length);
+	std::unique_ptr<U8ArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, length);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 HostObjectRef<U8ArrayObject> slake::U8ArrayObject::alloc(const U8ArrayObject *other) {
-	std::pmr::polymorphic_allocator<U8ArrayObject> allocator(&other->_rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<U8ArrayObject>;
+	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
-	U8ArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, *other);
+	std::unique_ptr<U8ArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr);
+	other->_rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::U8ArrayObject::dealloc() {
@@ -209,14 +218,17 @@ Value U16ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) con
 }
 
 HostObjectRef<U16ArrayAccessorVarObject> slake::U16ArrayAccessorVarObject::alloc(Runtime *rt, U16ArrayObject *arrayObject) {
-	std::pmr::polymorphic_allocator<U16ArrayAccessorVarObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<U16ArrayAccessorVarObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	U16ArrayAccessorVarObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, arrayObject);
+	std::unique_ptr<U16ArrayAccessorVarObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, arrayObject);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::U16ArrayAccessorVarObject::dealloc() {
@@ -289,25 +301,31 @@ Object *U16ArrayObject::duplicate() const {
 }
 
 HostObjectRef<U16ArrayObject> slake::U16ArrayObject::alloc(Runtime *rt, size_t length) {
-	std::pmr::polymorphic_allocator<U16ArrayObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<U16ArrayObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	U16ArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, length);
+	std::unique_ptr<U16ArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, length);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 HostObjectRef<U16ArrayObject> slake::U16ArrayObject::alloc(const U16ArrayObject *other) {
-	std::pmr::polymorphic_allocator<U16ArrayObject> allocator(&other->_rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<U16ArrayObject>;
+	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
-	U16ArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, *other);
+	std::unique_ptr<U16ArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr);
+	other->_rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::U16ArrayObject::dealloc() {
@@ -349,14 +367,17 @@ Value U32ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) con
 }
 
 HostObjectRef<U32ArrayAccessorVarObject> slake::U32ArrayAccessorVarObject::alloc(Runtime *rt, U32ArrayObject *arrayObject) {
-	std::pmr::polymorphic_allocator<U32ArrayAccessorVarObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<U32ArrayAccessorVarObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	U32ArrayAccessorVarObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, arrayObject);
+	std::unique_ptr<U32ArrayAccessorVarObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, arrayObject);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::U32ArrayAccessorVarObject::dealloc() {
@@ -429,25 +450,31 @@ Object *U32ArrayObject::duplicate() const {
 }
 
 HostObjectRef<U32ArrayObject> slake::U32ArrayObject::alloc(Runtime *rt, size_t length) {
-	std::pmr::polymorphic_allocator<U32ArrayObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<U32ArrayObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	U32ArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, length);
+	std::unique_ptr<U32ArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, length);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 HostObjectRef<U32ArrayObject> slake::U32ArrayObject::alloc(const U32ArrayObject *other) {
-	std::pmr::polymorphic_allocator<U32ArrayObject> allocator(&other->_rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<U32ArrayObject>;
+	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
-	U32ArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, *other);
+	std::unique_ptr<U32ArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr);
+	other->_rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::U32ArrayObject::dealloc() {
@@ -489,14 +516,17 @@ Value U64ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) con
 }
 
 HostObjectRef<U64ArrayAccessorVarObject> slake::U64ArrayAccessorVarObject::alloc(Runtime *rt, U64ArrayObject *arrayObject) {
-	std::pmr::polymorphic_allocator<U64ArrayAccessorVarObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<U64ArrayAccessorVarObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	U64ArrayAccessorVarObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, arrayObject);
+	std::unique_ptr<U64ArrayAccessorVarObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, arrayObject);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::U64ArrayAccessorVarObject::dealloc() {
@@ -569,25 +599,31 @@ Object *U64ArrayObject::duplicate() const {
 }
 
 HostObjectRef<U64ArrayObject> slake::U64ArrayObject::alloc(Runtime *rt, size_t length) {
-	std::pmr::polymorphic_allocator<U64ArrayObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<U64ArrayObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	U64ArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, length);
+	std::unique_ptr<U64ArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, length);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 HostObjectRef<U64ArrayObject> slake::U64ArrayObject::alloc(const U64ArrayObject *other) {
-	std::pmr::polymorphic_allocator<U64ArrayObject> allocator(&other->_rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<U64ArrayObject>;
+	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
-	U64ArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, *other);
+	std::unique_ptr<U64ArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr);
+	other->_rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::U64ArrayObject::dealloc() {
@@ -629,14 +665,17 @@ Value I8ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) cons
 }
 
 HostObjectRef<I8ArrayAccessorVarObject> slake::I8ArrayAccessorVarObject::alloc(Runtime *rt, I8ArrayObject *arrayObject) {
-	std::pmr::polymorphic_allocator<I8ArrayAccessorVarObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<I8ArrayAccessorVarObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	I8ArrayAccessorVarObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, arrayObject);
+	std::unique_ptr<I8ArrayAccessorVarObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, arrayObject);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::I8ArrayAccessorVarObject::dealloc() {
@@ -711,25 +750,31 @@ Object *I8ArrayObject::duplicate() const {
 }
 
 HostObjectRef<I8ArrayObject> slake::I8ArrayObject::alloc(Runtime *rt, size_t length) {
-	std::pmr::polymorphic_allocator<I8ArrayObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<I8ArrayObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	I8ArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, length);
+	std::unique_ptr<I8ArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, length);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 HostObjectRef<I8ArrayObject> slake::I8ArrayObject::alloc(const I8ArrayObject *other) {
-	std::pmr::polymorphic_allocator<I8ArrayObject> allocator(&other->_rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<I8ArrayObject>;
+	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
-	I8ArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, *other);
+	std::unique_ptr<I8ArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr);
+	other->_rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::I8ArrayObject::dealloc() {
@@ -771,14 +816,17 @@ Value I16ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) con
 }
 
 HostObjectRef<I16ArrayAccessorVarObject> slake::I16ArrayAccessorVarObject::alloc(Runtime *rt, I16ArrayObject *arrayObject) {
-	std::pmr::polymorphic_allocator<I16ArrayAccessorVarObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<I16ArrayAccessorVarObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	I16ArrayAccessorVarObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, arrayObject);
+	std::unique_ptr<I16ArrayAccessorVarObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, arrayObject);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::I16ArrayAccessorVarObject::dealloc() {
@@ -851,25 +899,31 @@ Object *I16ArrayObject::duplicate() const {
 }
 
 HostObjectRef<I16ArrayObject> slake::I16ArrayObject::alloc(Runtime *rt, size_t length) {
-	std::pmr::polymorphic_allocator<I16ArrayObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<I16ArrayObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	I16ArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, length);
+	std::unique_ptr<I16ArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, length);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 HostObjectRef<I16ArrayObject> slake::I16ArrayObject::alloc(const I16ArrayObject *other) {
-	std::pmr::polymorphic_allocator<I16ArrayObject> allocator(&other->_rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<I16ArrayObject>;
+	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
-	I16ArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, *other);
+	std::unique_ptr<I16ArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr);
+	other->_rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::I16ArrayObject::dealloc() {
@@ -911,14 +965,17 @@ Value I32ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) con
 }
 
 HostObjectRef<I32ArrayAccessorVarObject> slake::I32ArrayAccessorVarObject::alloc(Runtime *rt, I32ArrayObject *arrayObject) {
-	std::pmr::polymorphic_allocator<I32ArrayAccessorVarObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<I32ArrayAccessorVarObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	I32ArrayAccessorVarObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, arrayObject);
+	std::unique_ptr<I32ArrayAccessorVarObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, arrayObject);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::I32ArrayAccessorVarObject::dealloc() {
@@ -991,25 +1048,31 @@ Object *I32ArrayObject::duplicate() const {
 }
 
 HostObjectRef<I32ArrayObject> slake::I32ArrayObject::alloc(Runtime *rt, size_t length) {
-	std::pmr::polymorphic_allocator<I32ArrayObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<I32ArrayObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	I32ArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, length);
+	std::unique_ptr<I32ArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, length);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 HostObjectRef<I32ArrayObject> slake::I32ArrayObject::alloc(const I32ArrayObject *other) {
-	std::pmr::polymorphic_allocator<I32ArrayObject> allocator(&other->_rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<I32ArrayObject>;
+	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
-	I32ArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, *other);
+	std::unique_ptr<I32ArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr);
+	other->_rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::I32ArrayObject::dealloc() {
@@ -1051,14 +1114,17 @@ Value I64ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) con
 }
 
 HostObjectRef<I64ArrayAccessorVarObject> slake::I64ArrayAccessorVarObject::alloc(Runtime *rt, I64ArrayObject *arrayObject) {
-	std::pmr::polymorphic_allocator<I64ArrayAccessorVarObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<I64ArrayAccessorVarObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	I64ArrayAccessorVarObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, arrayObject);
+	std::unique_ptr<I64ArrayAccessorVarObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, arrayObject);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::I64ArrayAccessorVarObject::dealloc() {
@@ -1131,25 +1197,31 @@ Object *I64ArrayObject::duplicate() const {
 }
 
 HostObjectRef<I64ArrayObject> slake::I64ArrayObject::alloc(Runtime *rt, size_t length) {
-	std::pmr::polymorphic_allocator<I64ArrayObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<I64ArrayObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	I64ArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, length);
+	std::unique_ptr<I64ArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, length);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 HostObjectRef<I64ArrayObject> slake::I64ArrayObject::alloc(const I64ArrayObject *other) {
-	std::pmr::polymorphic_allocator<I64ArrayObject> allocator(&other->_rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<I64ArrayObject>;
+	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
-	I64ArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, *other);
+	std::unique_ptr<I64ArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr);
+	other->_rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::I64ArrayObject::dealloc() {
@@ -1191,14 +1263,17 @@ Value F32ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) con
 }
 
 HostObjectRef<F32ArrayAccessorVarObject> slake::F32ArrayAccessorVarObject::alloc(Runtime *rt, F32ArrayObject *arrayObject) {
-	std::pmr::polymorphic_allocator<F32ArrayAccessorVarObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<F32ArrayAccessorVarObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	F32ArrayAccessorVarObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, arrayObject);
+	std::unique_ptr<F32ArrayAccessorVarObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, arrayObject);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::F32ArrayAccessorVarObject::dealloc() {
@@ -1209,8 +1284,8 @@ void slake::F32ArrayAccessorVarObject::dealloc() {
 }
 
 void F32ArrayObject::_resizeUnchecked(size_t newLength) {
-	float_t *newData = (float_t *)_rt->globalHeapPoolResource.allocate(
-		sizeof(float_t) * newLength);
+	float *newData = (float *)_rt->globalHeapPoolResource.allocate(
+		sizeof(float) * newLength);
 
 	data = newData;
 	length = newLength;
@@ -1220,7 +1295,7 @@ void F32ArrayObject::clear() {
 	if (data) {
 		_rt->globalHeapPoolResource.deallocate(
 			data,
-			length * sizeof(float_t));
+			length * sizeof(float));
 		data = nullptr;
 		length = 0;
 	}
@@ -1235,14 +1310,14 @@ void F32ArrayObject::fill(size_t beginIndex, size_t length, const Value &value) 
 }
 
 void F32ArrayObject::resize(size_t newLength) {
-	float_t *newData = (float_t *)_rt->globalHeapPoolResource.allocate(
-		sizeof(float_t) * newLength);
+	float *newData = (float *)_rt->globalHeapPoolResource.allocate(
+		sizeof(float) * newLength);
 
 	if (length < newLength) {
-		memcpy(newData, data, length * sizeof(float_t));
-		memset(newData + newLength, 0, (newLength - length) * sizeof(float_t));
+		memcpy(newData, data, length * sizeof(float));
+		memset(newData + newLength, 0, (newLength - length) * sizeof(float));
 	} else {
-		memcpy(newData, data, newLength * sizeof(float_t));
+		memcpy(newData, data, newLength * sizeof(float));
 	}
 
 	clear();
@@ -1254,12 +1329,12 @@ void F32ArrayObject::resize(size_t newLength) {
 F32ArrayObject::F32ArrayObject(Runtime *rt, size_t length)
 	: ArrayObject(rt, Type(ValueType::F32), F32ArrayAccessorVarObject::alloc(rt, this).get()) {
 	_resizeUnchecked(length);
-	memset(data, 0, length * sizeof(int8_t));
+	memset(data, 0, length * sizeof(float));
 }
 
 F32ArrayObject::F32ArrayObject(const F32ArrayObject &x) : ArrayObject(x) {
 	_resizeUnchecked(x.length);
-	memcpy(data, x.data, length * sizeof(int8_t));
+	memcpy(data, x.data, length * sizeof(float));
 }
 
 F32ArrayObject::~F32ArrayObject() {
@@ -1271,25 +1346,31 @@ Object *F32ArrayObject::duplicate() const {
 }
 
 HostObjectRef<F32ArrayObject> slake::F32ArrayObject::alloc(Runtime *rt, size_t length) {
-	std::pmr::polymorphic_allocator<F32ArrayObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<F32ArrayObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	F32ArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, length);
+	std::unique_ptr<F32ArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, length);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 HostObjectRef<F32ArrayObject> slake::F32ArrayObject::alloc(const F32ArrayObject *other) {
-	std::pmr::polymorphic_allocator<F32ArrayObject> allocator(&other->_rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<F32ArrayObject>;
+	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
-	F32ArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, *other);
+	std::unique_ptr<F32ArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr);
+	other->_rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::F32ArrayObject::dealloc() {
@@ -1331,14 +1412,17 @@ Value F64ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) con
 }
 
 HostObjectRef<F64ArrayAccessorVarObject> slake::F64ArrayAccessorVarObject::alloc(Runtime *rt, F64ArrayObject *arrayObject) {
-	std::pmr::polymorphic_allocator<F64ArrayAccessorVarObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<F64ArrayAccessorVarObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	F64ArrayAccessorVarObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, arrayObject);
+	std::unique_ptr<F64ArrayAccessorVarObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, arrayObject);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::F64ArrayAccessorVarObject::dealloc() {
@@ -1349,8 +1433,8 @@ void slake::F64ArrayAccessorVarObject::dealloc() {
 }
 
 void F64ArrayObject::_resizeUnchecked(size_t newLength) {
-	double_t *newData = (double_t *)_rt->globalHeapPoolResource.allocate(
-		sizeof(double_t) * newLength);
+	double *newData = (double *)_rt->globalHeapPoolResource.allocate(
+		sizeof(double) * newLength);
 
 	data = newData;
 	length = newLength;
@@ -1360,7 +1444,7 @@ void F64ArrayObject::clear() {
 	if (data) {
 		_rt->globalHeapPoolResource.deallocate(
 			data,
-			length * sizeof(double_t));
+			length * sizeof(double));
 		data = nullptr;
 		length = 0;
 	}
@@ -1375,14 +1459,14 @@ void F64ArrayObject::fill(size_t beginIndex, size_t length, const Value &value) 
 }
 
 void F64ArrayObject::resize(size_t newLength) {
-	double_t *newData = (double_t *)_rt->globalHeapPoolResource.allocate(
-		sizeof(double_t) * newLength);
+	double *newData = (double *)_rt->globalHeapPoolResource.allocate(
+		sizeof(double) * newLength);
 
 	if (length < newLength) {
-		memcpy(newData, data, length * sizeof(double_t));
-		memset(newData + newLength, 0, (newLength - length) * sizeof(double_t));
+		memcpy(newData, data, length * sizeof(double));
+		memset(newData + newLength, 0, (newLength - length) * sizeof(double));
 	} else {
-		memcpy(newData, data, newLength * sizeof(double_t));
+		memcpy(newData, data, newLength * sizeof(double));
 	}
 
 	clear();
@@ -1394,12 +1478,12 @@ void F64ArrayObject::resize(size_t newLength) {
 F64ArrayObject::F64ArrayObject(Runtime *rt, size_t length)
 	: ArrayObject(rt, Type(ValueType::F64), F64ArrayAccessorVarObject::alloc(rt, this).get()) {
 	_resizeUnchecked(length);
-	memset(data, 0, length * sizeof(int8_t));
+	memset(data, 0, length * sizeof(double));
 }
 
 F64ArrayObject::F64ArrayObject(const F64ArrayObject &x) : ArrayObject(x) {
 	_resizeUnchecked(x.length);
-	memcpy(data, x.data, length * sizeof(int8_t));
+	memcpy(data, x.data, length * sizeof(double));
 }
 
 F64ArrayObject::~F64ArrayObject() {
@@ -1411,25 +1495,31 @@ Object *F64ArrayObject::duplicate() const {
 }
 
 HostObjectRef<F64ArrayObject> slake::F64ArrayObject::alloc(Runtime *rt, size_t length) {
-	std::pmr::polymorphic_allocator<F64ArrayObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<F64ArrayObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	F64ArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, length);
+	std::unique_ptr<F64ArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, length);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 HostObjectRef<F64ArrayObject> slake::F64ArrayObject::alloc(const F64ArrayObject *other) {
-	std::pmr::polymorphic_allocator<F64ArrayObject> allocator(&other->_rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<F64ArrayObject>;
+	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
-	F64ArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, *other);
+	std::unique_ptr<F64ArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr);
+	other->_rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::F64ArrayObject::dealloc() {
@@ -1471,14 +1561,17 @@ Value BoolArrayAccessorVarObject::getData(const VarRefContext &varRefContext) co
 }
 
 HostObjectRef<BoolArrayAccessorVarObject> slake::BoolArrayAccessorVarObject::alloc(Runtime *rt, BoolArrayObject *arrayObject) {
-	std::pmr::polymorphic_allocator<BoolArrayAccessorVarObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<BoolArrayAccessorVarObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	BoolArrayAccessorVarObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, arrayObject);
+	std::unique_ptr<BoolArrayAccessorVarObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, arrayObject);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::BoolArrayAccessorVarObject::dealloc() {
@@ -1511,7 +1604,7 @@ void BoolArrayObject::fill(size_t beginIndex, size_t length, const Value &value)
 		throw OutOfRangeError();
 	if (value.valueType != ValueType::Bool)
 		throw MismatchedTypeError("Mismatched array element type");
-	memset(data, value.getBool(), length * sizeof(bool));
+	std::fill_n(data + beginIndex, length, value.getBool());
 }
 
 void BoolArrayObject::resize(size_t newLength) {
@@ -1551,25 +1644,31 @@ Object *BoolArrayObject::duplicate() const {
 }
 
 HostObjectRef<BoolArrayObject> slake::BoolArrayObject::alloc(Runtime *rt, size_t length) {
-	std::pmr::polymorphic_allocator<BoolArrayObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<BoolArrayObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	BoolArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, length);
+	std::unique_ptr<BoolArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, length);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 HostObjectRef<BoolArrayObject> slake::BoolArrayObject::alloc(const BoolArrayObject *other) {
-	std::pmr::polymorphic_allocator<BoolArrayObject> allocator(&other->_rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<BoolArrayObject>;
+	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
-	BoolArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, *other);
+	std::unique_ptr<BoolArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr);
+	other->_rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::BoolArrayObject::dealloc() {
@@ -1615,14 +1714,17 @@ Value ObjectRefArrayAccessorVarObject::getData(const VarRefContext &varRefContex
 }
 
 HostObjectRef<ObjectRefArrayAccessorVarObject> slake::ObjectRefArrayAccessorVarObject::alloc(Runtime *rt, const Type &elementType, ObjectRefArrayObject *arrayObject) {
-	std::pmr::polymorphic_allocator<ObjectRefArrayAccessorVarObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<ObjectRefArrayAccessorVarObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	ObjectRefArrayAccessorVarObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, elementType, arrayObject);
+	std::unique_ptr<ObjectRefArrayAccessorVarObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, elementType, arrayObject);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::ObjectRefArrayAccessorVarObject::dealloc() {
@@ -1697,25 +1799,31 @@ Object *ObjectRefArrayObject::duplicate() const {
 }
 
 HostObjectRef<ObjectRefArrayObject> slake::ObjectRefArrayObject::alloc(Runtime *rt, const Type &elementType, size_t length) {
-	std::pmr::polymorphic_allocator<ObjectRefArrayObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<ObjectRefArrayObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	ObjectRefArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, elementType, length);
+	std::unique_ptr<ObjectRefArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, elementType, length);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 HostObjectRef<ObjectRefArrayObject> slake::ObjectRefArrayObject::alloc(const ObjectRefArrayObject *other) {
-	std::pmr::polymorphic_allocator<ObjectRefArrayObject> allocator(&other->_rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<ObjectRefArrayObject>;
+	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
-	ObjectRefArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, *other);
+	std::unique_ptr<ObjectRefArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr);
+	other->_rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::ObjectRefArrayObject::dealloc() {
@@ -1754,14 +1862,17 @@ Value AnyArrayAccessorVarObject::getData(const VarRefContext &varRefContext) con
 }
 
 HostObjectRef<AnyArrayAccessorVarObject> slake::AnyArrayAccessorVarObject::alloc(Runtime *rt, AnyArrayObject *arrayObject) {
-	std::pmr::polymorphic_allocator<AnyArrayAccessorVarObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<AnyArrayAccessorVarObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	AnyArrayAccessorVarObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, arrayObject);
+	std::unique_ptr<AnyArrayAccessorVarObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, arrayObject);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::AnyArrayAccessorVarObject::dealloc() {
@@ -1834,25 +1945,31 @@ Object *AnyArrayObject::duplicate() const {
 }
 
 HostObjectRef<AnyArrayObject> slake::AnyArrayObject::alloc(Runtime *rt, size_t length) {
-	std::pmr::polymorphic_allocator<AnyArrayObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<AnyArrayObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	AnyArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, length);
+	std::unique_ptr<AnyArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, length);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 HostObjectRef<AnyArrayObject> slake::AnyArrayObject::alloc(const AnyArrayObject *other) {
-	std::pmr::polymorphic_allocator<AnyArrayObject> allocator(&other->_rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<AnyArrayObject>;
+	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
-	AnyArrayObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, *other);
+	std::unique_ptr<AnyArrayObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr);
+	other->_rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::AnyArrayObject::dealloc() {

@@ -12,25 +12,31 @@ ContextObject::~ContextObject() {
 }
 
 HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt, std::shared_ptr<Context> context) {
-	std::pmr::polymorphic_allocator<ContextObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<ContextObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	ContextObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, context);
+	std::unique_ptr<ContextObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, context);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 HostObjectRef<ContextObject> slake::ContextObject::alloc(const ContextObject *other) {
-	std::pmr::polymorphic_allocator<ContextObject> allocator(&other->_rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<ContextObject>;
+	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
-	ContextObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, *other);
+	std::unique_ptr<ContextObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr);
+	other->_rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::ContextObject::dealloc() {

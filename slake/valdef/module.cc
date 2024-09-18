@@ -39,25 +39,31 @@ void ModuleObject::setParent(Object *parent) {
 }
 
 HostObjectRef<ModuleObject> slake::ModuleObject::alloc(Runtime *rt, AccessModifier access) {
-	std::pmr::polymorphic_allocator<ModuleObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<ModuleObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	ModuleObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, access);
+	std::unique_ptr<ModuleObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, access);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 HostObjectRef<ModuleObject> slake::ModuleObject::alloc(const ModuleObject *other) {
-	std::pmr::polymorphic_allocator<ModuleObject> allocator(&other->_rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<ModuleObject>;
+	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
-	ModuleObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, *other);
+	std::unique_ptr<ModuleObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr);
+	other->_rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::ModuleObject::dealloc() {

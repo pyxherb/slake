@@ -95,25 +95,31 @@ Object *ClassObject::duplicate() const {
 }
 
 HostObjectRef<ClassObject> slake::ClassObject::alloc(const ClassObject *other) {
-	std::pmr::polymorphic_allocator<ClassObject> allocator(&other->_rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<ClassObject>;
+	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
-	ClassObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, *other);
+	std::unique_ptr<ClassObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr);
+	other->_rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 HostObjectRef<ClassObject> slake::ClassObject::alloc(Runtime *rt, AccessModifier access, const Type &parentClass) {
-	std::pmr::polymorphic_allocator<ClassObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<ClassObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	ClassObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, access, parentClass);
+	std::unique_ptr<ClassObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, access, parentClass);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::ClassObject::dealloc() {
@@ -131,25 +137,31 @@ Object *InterfaceObject::duplicate() const {
 }
 
 HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Runtime *rt, AccessModifier access, const std::vector<Type> &parents) {
-	std::pmr::polymorphic_allocator<InterfaceObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<InterfaceObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	InterfaceObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, access, parents);
+	std::unique_ptr<InterfaceObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, access, parents);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(const InterfaceObject *other) {
-	std::pmr::polymorphic_allocator<InterfaceObject> allocator(&other->_rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<InterfaceObject>;
+	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
-	InterfaceObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, *other);
+	std::unique_ptr<InterfaceObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr);
+	other->_rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::InterfaceObject::dealloc() {

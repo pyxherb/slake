@@ -27,36 +27,45 @@ Object *StringObject::duplicate() const {
 }
 
 HostObjectRef<StringObject> slake::StringObject::alloc(Runtime *rt, const char *str, size_t size) {
-	std::pmr::polymorphic_allocator<StringObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<StringObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	StringObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, str, size);
+	std::unique_ptr<StringObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, str, size);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 HostObjectRef<StringObject> slake::StringObject::alloc(const StringObject *other) {
-	std::pmr::polymorphic_allocator<StringObject> allocator(&other->_rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<StringObject>;
+	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
-	StringObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, *other);
+	std::unique_ptr<StringObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr);
+	other->_rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 HostObjectRef<StringObject> slake::StringObject::alloc(Runtime *rt, std::string &&s) {
-	std::pmr::polymorphic_allocator<StringObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<StringObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	StringObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, std::move(s));
+	std::unique_ptr<StringObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, std::move(s));
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::StringObject::dealloc() {

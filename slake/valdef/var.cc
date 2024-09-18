@@ -45,25 +45,31 @@ void slake::RegularVarObject::dealloc() {
 }
 
 HostObjectRef<RegularVarObject> slake::RegularVarObject::alloc(Runtime *rt, AccessModifier access, const Type &type) {
-	std::pmr::polymorphic_allocator<RegularVarObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<RegularVarObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	RegularVarObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, access, type);
+	std::unique_ptr<RegularVarObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, access, type);
 
-	rt->createdObjects.insert((VarObject *)ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 HostObjectRef<RegularVarObject> slake::RegularVarObject::alloc(const RegularVarObject *other) {
-	std::pmr::polymorphic_allocator<RegularVarObject> allocator(&other->Object::_rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<RegularVarObject>;
+	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
-	RegularVarObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, *other);
+	std::unique_ptr<RegularVarObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), *other);
 
-	other->Object::_rt->createdObjects.insert((VarObject *)ptr);
+	other->Object::_rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 LocalVarAccessorVarObject::LocalVarAccessorVarObject(
@@ -185,14 +191,17 @@ HostObjectRef<LocalVarAccessorVarObject> slake::LocalVarAccessorVarObject::alloc
 	Runtime *rt,
 	Context *context,
 	MajorFrame *majorFrame) {
-	std::pmr::polymorphic_allocator<LocalVarAccessorVarObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<LocalVarAccessorVarObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	LocalVarAccessorVarObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, context, majorFrame);
+	std::unique_ptr<LocalVarAccessorVarObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, context, majorFrame);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::LocalVarAccessorVarObject::dealloc() {

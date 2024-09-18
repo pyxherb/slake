@@ -14,14 +14,17 @@ MemberObject* RootObject::getMember(
 }
 
 HostObjectRef<RootObject> slake::RootObject::alloc(Runtime *rt) {
-	std::pmr::polymorphic_allocator<RootObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<RootObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	RootObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt);
+	std::unique_ptr<RootObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::RootObject::dealloc() {

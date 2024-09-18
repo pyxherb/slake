@@ -14,25 +14,31 @@ Object *IdRefObject::duplicate() const {
 }
 
 HostObjectRef<IdRefObject> slake::IdRefObject::alloc(Runtime *rt) {
-	std::pmr::polymorphic_allocator<IdRefObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<IdRefObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	IdRefObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt);
+	std::unique_ptr<IdRefObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 HostObjectRef<IdRefObject> slake::IdRefObject::alloc(const IdRefObject *other) {
-	std::pmr::polymorphic_allocator<IdRefObject> allocator(&other->_rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<IdRefObject>;
+	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
-	IdRefObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, *other);
+	std::unique_ptr<IdRefObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr);
+	other->_rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::IdRefObject::dealloc() {

@@ -9,25 +9,31 @@ Object *TypeDefObject::duplicate() const {
 }
 
 HostObjectRef<TypeDefObject> slake::TypeDefObject::alloc(Runtime *rt, const Type &type) {
-	std::pmr::polymorphic_allocator<TypeDefObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<TypeDefObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	TypeDefObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, type);
+	std::unique_ptr<TypeDefObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, type);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 HostObjectRef<TypeDefObject> slake::TypeDefObject::alloc(const TypeDefObject *other) {
-	std::pmr::polymorphic_allocator<TypeDefObject> allocator(&other->_rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<TypeDefObject>;
+	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
-	TypeDefObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, *other);
+	std::unique_ptr<TypeDefObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr);
+	other->_rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::TypeDefObject::dealloc() {

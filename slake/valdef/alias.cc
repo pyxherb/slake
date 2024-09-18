@@ -38,25 +38,31 @@ void AliasObject::setParent(Object *parent) {
 }
 
 HostObjectRef<AliasObject> AliasObject::alloc(Runtime *rt, Object *src) {
-	std::pmr::polymorphic_allocator<AliasObject> allocator(&rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<AliasObject>;
+	Alloc allocator(&rt->globalHeapPoolResource);
 
-	AliasObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, rt, ACCESS_PUB, src);
+	std::unique_ptr<AliasObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), rt, ACCESS_PUB, src);
 
-	rt->createdObjects.insert(ptr);
+	rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 HostObjectRef<AliasObject> AliasObject::alloc(const AliasObject *other) {
-	std::pmr::polymorphic_allocator<AliasObject> allocator(&other->_rt->globalHeapPoolResource);
+	using Alloc = std::pmr::polymorphic_allocator<AliasObject>;
+	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
-	AliasObject *ptr = allocator.allocate(1);
-	allocator.construct(ptr, *other);
+	std::unique_ptr<AliasObject, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr);
+	other->_rt->createdObjects.insert(ptr.get());
 
-	return ptr;
+	return ptr.release();
 }
 
 void slake::AliasObject::dealloc() {

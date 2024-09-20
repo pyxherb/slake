@@ -68,8 +68,10 @@ void Parser::parseParams(
 }
 
 std::shared_ptr<FnOverloadingNode> Parser::parseFnDecl(std::string &nameOut) {
-	auto savedScope = curScope;
-	curScope = std::make_shared<Scope>();
+	ScopeContext savedScopeContext = saveScopeContext();
+	auto newScope = std::make_shared<Scope>();
+	newScope->parent = curScope.get();
+	curScope = newScope;
 
 	Token *fnKeywordToken = expectToken(TokenId::FnKeyword);
 	auto overloading = std::make_shared<FnOverloadingNode>(compiler, curScope);
@@ -91,7 +93,8 @@ std::shared_ptr<FnOverloadingNode> Parser::parseFnDecl(std::string &nameOut) {
 
 	if (lexer->peekToken()->tokenId == TokenId::LtOp) {
 		TokenRange genericParamsTokenRange;
-		overloading->setGenericParams(parseGenericParams(genericParamsTokenRange));
+		GenericParamNodeList genericParams = parseGenericParams(genericParamsTokenRange);
+		overloading->setGenericParams(genericParams);
 		overloading->tokenRange.endIndex = genericParamsTokenRange.endIndex;
 	}
 
@@ -138,9 +141,7 @@ std::shared_ptr<FnOverloadingNode> Parser::parseFnDecl(std::string &nameOut) {
 		overloading->returnType = parseTypeName();
 		overloading->tokenRange.endIndex = overloading->returnType->tokenRange.endIndex;
 	}
-
-	curScope->parent = savedScope.get();
-	curScope = savedScope;
+	restoreScopeContext(std::move(savedScopeContext));
 
 	return overloading;
 }
@@ -149,7 +150,7 @@ std::shared_ptr<FnOverloadingNode> Parser::parseFnDef(std::string &nameOut) {
 	std::shared_ptr<FnOverloadingNode> overloading = parseFnDecl(nameOut);
 
 	if (Token *token = lexer->peekToken(); token->tokenId == TokenId::LBrace) {
-		auto savedScope = curScope;
+		ScopeContext savedScopeContext = saveScopeContext();
 		curScope = overloading->scope;
 
 		overloading->tokenRange.endIndex = lexer->getTokenIndex(token);
@@ -172,7 +173,7 @@ std::shared_ptr<FnOverloadingNode> Parser::parseFnDef(std::string &nameOut) {
 			CodeBlock{ TokenRange{ lexer->getTokenIndex(token), lexer->getTokenIndex(rBraceToken) },
 				stmts });
 
-		curScope = savedScope;
+		restoreScopeContext(std::move(savedScopeContext));
 	} else {
 		Token *semicolonToken = expectToken(TokenId::Semicolon);
 		overloading->tokenRange.endIndex = lexer->getTokenIndex(semicolonToken);
@@ -182,7 +183,7 @@ std::shared_ptr<FnOverloadingNode> Parser::parseFnDef(std::string &nameOut) {
 }
 
 std::shared_ptr<FnOverloadingNode> Parser::parseOperatorDecl(std::string &nameOut) {
-	auto savedScope = curScope;
+	ScopeContext savedScopeContext = saveScopeContext();
 	curScope = std::make_shared<Scope>();
 
 	Token *operatorKeywordToken = expectToken(TokenId::OperatorKeyword);
@@ -264,8 +265,7 @@ std::shared_ptr<FnOverloadingNode> Parser::parseOperatorDecl(std::string &nameOu
 		overloading->returnType = parseTypeName();
 		overloading->tokenRange.endIndex = overloading->returnType->tokenRange.endIndex;
 	}
-
-	curScope = savedScope;
+	restoreScopeContext(std::move(savedScopeContext));
 
 	return overloading;
 }
@@ -274,7 +274,7 @@ std::shared_ptr<FnOverloadingNode> Parser::parseOperatorDef(std::string &nameOut
 	std::shared_ptr<FnOverloadingNode> overloading = parseOperatorDecl(nameOut);
 
 	if (Token *token = lexer->peekToken(); token->tokenId == TokenId::LBrace) {
-		auto savedScope = curScope;
+		ScopeContext savedScopeContext = saveScopeContext();
 		curScope = overloading->scope;
 
 		overloading->tokenRange.endIndex = lexer->getTokenIndex(token);
@@ -297,7 +297,7 @@ std::shared_ptr<FnOverloadingNode> Parser::parseOperatorDef(std::string &nameOut
 			CodeBlock{ TokenRange{ lexer->getTokenIndex(token), lexer->getTokenIndex(rBraceToken) },
 				stmts });
 
-		curScope = savedScope;
+		restoreScopeContext(std::move(savedScopeContext));
 	} else {
 		Token *semicolonToken = expectToken(TokenId::Semicolon);
 		overloading->tokenRange.endIndex = lexer->getTokenIndex(semicolonToken);

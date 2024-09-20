@@ -983,8 +983,6 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				if (j->body)
 					compileStmt(j->body);
 
-				mergeGenericParams(compiledFn->genericParams);
-
 				slxfmt::FnDesc fnd = {};
 
 				if (compiledFn->access & ACCESS_PUB)

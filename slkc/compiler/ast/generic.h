@@ -16,6 +16,7 @@ namespace slake {
 
 		public:
 			std::string name;
+			size_t index;
 			std::shared_ptr<TypeNameNode> baseType;
 			std::deque<std::shared_ptr<TypeNameNode>> interfaceTypes;
 
@@ -33,6 +34,7 @@ namespace slake {
 
 			inline GenericParamNode(const GenericParamNode &other) : AstNode(other) {
 				name = other.name;
+				index = other.index;
 				if (baseType)
 					baseType = other.baseType->duplicate<TypeNameNode>();
 
@@ -48,7 +50,7 @@ namespace slake {
 				idxImplInterfacesColonToken = other.idxImplInterfacesColonToken;
 				idxImplInterfacesSeparatorTokens = other.idxImplInterfacesSeparatorTokens;
 			}
-			inline GenericParamNode(std::string name) : name(name) {}
+			inline GenericParamNode(std::string name, size_t index) : name(name), index(index) {}
 
 			virtual inline NodeType getNodeType() const override { return NodeType::GenericParam; }
 		};

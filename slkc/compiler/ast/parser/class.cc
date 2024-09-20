@@ -48,7 +48,7 @@ GenericParamNodeList Parser::parseGenericParams(TokenRange &tokenRangeOut) {
 	while (true) {
 		Token *nameToken = expectToken(TokenId::Id);
 
-		auto param = std::make_shared<GenericParamNode>(nameToken->text);
+		auto param = std::make_shared<GenericParamNode>(nameToken->text, genericParams.size());
 
 		param->tokenRange = lexer->getTokenIndex(nameToken);
 		param->idxNameToken = lexer->getTokenIndex(nameToken);
@@ -98,13 +98,15 @@ std::shared_ptr<ClassNode> Parser::parseClassDef() {
 	classNode->idxNameToken = lexer->getTokenIndex(nameToken);
 
 	auto savedScope = curScope;
+	ScopeContext savedScopeContext = saveScopeContext();
 	try {
+		classNode->scope->parent = curScope.get();
 		curScope = classNode->scope;
-		curScope->parent = savedScope.get();
 
 		if (Token *token = lexer->peekToken(); token->tokenId == TokenId::LtOp) {
 			TokenRange genericParamsTokenRange;
-			classNode->setGenericParams(parseGenericParams(genericParamsTokenRange));
+			GenericParamNodeList genericParams = parseGenericParams(genericParamsTokenRange);
+			classNode->setGenericParams(genericParams);
 			classNode->tokenRange.endIndex = genericParamsTokenRange.endIndex;
 		}
 
@@ -144,7 +146,7 @@ std::shared_ptr<ClassNode> Parser::parseClassDef() {
 			MessageType::Error,
 			e.what()));
 	}
-	curScope = savedScope;
+	restoreScopeContext(std::move(savedScopeContext));
 
 	return classNode;
 }
@@ -263,14 +265,15 @@ std::shared_ptr<InterfaceNode> Parser::parseInterfaceDef() {
 	interfaceNode->tokenRange = TokenRange{ lexer->getTokenIndex(beginToken), lexer->getTokenIndex(nameToken) };
 	interfaceNode->idxNameToken = lexer->getTokenIndex(nameToken);
 
-	auto savedScope = curScope;
+	ScopeContext savedScopeContext = saveScopeContext();
 	try {
+		interfaceNode->scope->parent = curScope.get();
 		curScope = interfaceNode->scope;
-		curScope->parent = savedScope.get();
 
 		if (Token *token = lexer->peekToken(); token->tokenId == TokenId::LtOp) {
 			TokenRange genericParamsTokenRange;
-			interfaceNode->setGenericParams(parseGenericParams(genericParamsTokenRange));
+			GenericParamNodeList genericParams = parseGenericParams(genericParamsTokenRange);
+			interfaceNode->setGenericParams(genericParams);
 			interfaceNode->tokenRange.endIndex = genericParamsTokenRange.endIndex;
 		}
 
@@ -303,7 +306,7 @@ std::shared_ptr<InterfaceNode> Parser::parseInterfaceDef() {
 			MessageType::Error,
 			e.what()));
 	}
-	curScope = savedScope;
+	restoreScopeContext(std::move(savedScopeContext));
 
 	return interfaceNode;
 }

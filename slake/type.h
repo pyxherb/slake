@@ -46,10 +46,15 @@ namespace slake {
 	class Runtime;
 	class Object;
 	class IdRefObject;
+	class StringObject;
 
 	union TypeExData {
 		ValueType valueType;
 		Object *ptr;
+		struct {
+			StringObject *nameObject;
+			Object *ownerObject;
+		} genericArg;
 	};
 
 	struct Type final {
@@ -63,6 +68,10 @@ namespace slake {
 		inline Type(TypeId type) noexcept : typeId(type) {}
 		inline Type(TypeId type, Object *destObject) noexcept : typeId(type) {
 			exData.ptr = destObject;
+		}
+		inline Type(StringObject *nameObject, Object *ownerObject) noexcept : typeId(TypeId::GenericArg) {
+			exData.genericArg.nameObject = nameObject;
+			exData.genericArg.ownerObject = ownerObject;
 		}
 		Type(IdRefObject *ref);
 
@@ -99,13 +108,13 @@ namespace slake {
 
 		bool operator==(const Type &rhs) const;
 
-		inline bool operator!=(Type &&rhs) noexcept { return !(*this == rhs); }
-		inline bool operator!=(const Type &rhs) noexcept { return !(*this == rhs); }
+		inline bool operator!=(Type &&rhs) const noexcept { return !(*this == rhs); }
+		inline bool operator!=(const Type &rhs) const noexcept { return !(*this == rhs); }
 
-		inline bool operator==(TypeId rhs) noexcept {
+		inline bool operator==(TypeId rhs) const noexcept {
 			return this->typeId == rhs;
 		}
-		inline bool operator!=(TypeId rhs) noexcept {
+		inline bool operator!=(TypeId rhs) const noexcept {
 			return this->typeId != rhs;
 		}
 

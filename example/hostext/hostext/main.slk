@@ -110,6 +110,12 @@ class VirtualDerived(VirtualBase) {
 	}
 }
 
+fn genericFn<T, U>(t: T, u: U) {
+}
+
+fn genericFn<U, T>(t: T, u: U) {
+}
+
 pub fn main() async: i32 {
 	hostext.extfns.print("Entered main\n");
 

@@ -1,7 +1,6 @@
 #include <slake/runtime.h>
 
 #include <memory>
-#include <slake/util/stream.hh>
 
 using namespace slake;
 
@@ -20,21 +19,21 @@ static T _read(std::istream &fs) {
 /// @param rt Runtime for the new value.
 /// @param fs Stream to be read.
 /// @return Reference value loaded from the stream.
-HostObjectRef<IdRefObject> Runtime::_loadIdRef(std::istream &fs, HostRefHolder &holder) {
+HostObjectRef<IdRefObject> Runtime::_loadIdRef(LoaderContext &context, HostRefHolder &holder) {
 	auto ref = IdRefObject::alloc(this);
 
 	slxfmt::IdRefEntryDesc i = { 0 };
 	while (true) {
-		i = _read<slxfmt::IdRefEntryDesc>(fs);
+		i = _read<slxfmt::IdRefEntryDesc>(context.fs);
 
 		std::pmr::string name(i.lenName, '\0', &globalHeapPoolResource);
-		fs.read(name.data(), i.lenName);
+		context.fs.read(name.data(), i.lenName);
 
 		GenericArgList genericArgs(&globalHeapPoolResource);
 		genericArgs.resize(i.nGenericArgs);
 		genericArgs.shrink_to_fit();
 		for (size_t j = 0; j < i.nGenericArgs; ++j)
-			genericArgs[j] = _loadType(fs, holder);
+			genericArgs[j] = _loadType(context, holder);
 
 		bool hasArgs = i.flags & slxfmt::RSD_HASARG;
 		bool hasVarArg = false;
@@ -42,11 +41,11 @@ HostObjectRef<IdRefObject> Runtime::_loadIdRef(std::istream &fs, HostRefHolder &
 
 		if (hasArgs) {
 			hasVarArg = i.flags & slxfmt::RSD_VARARG;
-			
+
 			paramTypes.resize(i.nParams);
 			paramTypes.shrink_to_fit();
 			for (size_t j = 0; j < i.nParams; ++j)
-				paramTypes[j] = _loadType(fs, holder);
+				paramTypes[j] = _loadType(context, holder);
 		}
 
 		ref->entries.push_back(IdRefEntry(std::move(name), std::move(genericArgs), hasArgs, std::move(paramTypes), hasVarArg));
@@ -62,38 +61,38 @@ HostObjectRef<IdRefObject> Runtime::_loadIdRef(std::istream &fs, HostRefHolder &
 /// @param rt Runtime for the new value.
 /// @param fs Stream to be read.
 /// @return Object loaded from the stream.
-Value Runtime::_loadValue(std::istream &fs, HostRefHolder &holder) {
-	slxfmt::TypeId typeId = _read<slxfmt::TypeId>(fs);
+Value Runtime::_loadValue(LoaderContext &context, HostRefHolder &holder) {
+	slxfmt::TypeId typeId = _read<slxfmt::TypeId>(context.fs);
 
 	switch (typeId) {
 		case slxfmt::TypeId::None:
 			return Value(nullptr);
 		case slxfmt::TypeId::I8:
-			return Value(_read<std::int8_t>(fs));
+			return Value(_read<std::int8_t>(context.fs));
 		case slxfmt::TypeId::I16:
-			return Value(_read<std::int16_t>(fs));
+			return Value(_read<std::int16_t>(context.fs));
 		case slxfmt::TypeId::I32:
-			return Value(_read<std::int32_t>(fs));
+			return Value(_read<std::int32_t>(context.fs));
 		case slxfmt::TypeId::I64:
-			return Value(_read<std::int64_t>(fs));
+			return Value(_read<std::int64_t>(context.fs));
 		case slxfmt::TypeId::U8:
-			return Value(_read<uint8_t>(fs));
+			return Value(_read<uint8_t>(context.fs));
 		case slxfmt::TypeId::U16:
-			return Value(_read<uint16_t>(fs));
+			return Value(_read<uint16_t>(context.fs));
 		case slxfmt::TypeId::U32:
-			return Value(_read<uint32_t>(fs));
+			return Value(_read<uint32_t>(context.fs));
 		case slxfmt::TypeId::U64:
-			return Value(_read<uint64_t>(fs));
+			return Value(_read<uint64_t>(context.fs));
 		case slxfmt::TypeId::Bool:
-			return Value(_read<bool>(fs));
+			return Value(_read<bool>(context.fs));
 		case slxfmt::TypeId::F32:
-			return Value(_read<float>(fs));
+			return Value(_read<float>(context.fs));
 		case slxfmt::TypeId::F64:
-			return Value(_read<double>(fs));
+			return Value(_read<double>(context.fs));
 		case slxfmt::TypeId::String: {
-			auto len = _read<uint32_t>(fs);
+			auto len = _read<uint32_t>(context.fs);
 			std::string s(len, '\0');
-			fs.read(&(s[0]), len);
+			context.fs.read(&(s[0]), len);
 
 			auto object = StringObject::alloc(this, std::move(s));
 
@@ -102,17 +101,17 @@ Value Runtime::_loadValue(std::istream &fs, HostRefHolder &holder) {
 			return Value(object.get());
 		}
 		case slxfmt::TypeId::Array: {
-			auto elementType = _loadType(fs, holder);
+			auto elementType = _loadType(context, holder);
 
 			// stub for debugging.
 			// elementType = Type(TypeId::Any);
 
-			auto len = _read<uint32_t>(fs);
+			auto len = _read<uint32_t>(context.fs);
 
 			HostObjectRef<ArrayObject> value = newArrayInstance(this, elementType, len);
 
 			for (uint32_t i = 0; i < len; ++i) {
-				value->accessor->setData(VarRefContext::makeArrayContext(i), _loadValue(fs, holder));
+				value->accessor->setData(VarRefContext::makeArrayContext(i), _loadValue(context, holder));
 			}
 
 			holder.addObject(value.get());
@@ -120,11 +119,11 @@ Value Runtime::_loadValue(std::istream &fs, HostRefHolder &holder) {
 			return value.release();
 		}
 		case slxfmt::TypeId::IdRef:
-			return _loadIdRef(fs, holder).release();
+			return _loadIdRef(context, holder).release();
 		case slxfmt::TypeId::TypeName:
-			return Value(_loadType(fs, holder));
+			return Value(_loadType(context, holder));
 		case slxfmt::TypeId::Reg:
-			return Value(ValueType::RegRef, _read<uint32_t>(fs));
+			return Value(ValueType::RegRef, _read<uint32_t>(context.fs));
 		default:
 			throw LoaderError("Invalid object type detected");
 	}
@@ -134,8 +133,8 @@ Value Runtime::_loadValue(std::istream &fs, HostRefHolder &holder) {
 /// @param rt Runtime for the new type.
 /// @param fs Stream to be read.
 /// @return Loaded complete type name.
-Type Runtime::_loadType(std::istream &fs, HostRefHolder &holder) {
-	slxfmt::TypeId vt = _read<slxfmt::TypeId>(fs);
+Type Runtime::_loadType(LoaderContext &context, HostRefHolder &holder) {
+	slxfmt::TypeId vt = _read<slxfmt::TypeId>(context.fs);
 
 	switch (vt) {
 		case slxfmt::TypeId::I8:
@@ -161,7 +160,7 @@ Type Runtime::_loadType(std::istream &fs, HostRefHolder &holder) {
 		case slxfmt::TypeId::String:
 			return TypeId::String;
 		case slxfmt::TypeId::Object: {
-			auto idRef = _loadIdRef(fs, holder);
+			auto idRef = _loadIdRef(context, holder);
 
 			holder.addObject(idRef.get());
 
@@ -174,7 +173,7 @@ Type Runtime::_loadType(std::istream &fs, HostRefHolder &holder) {
 		case slxfmt::TypeId::None:
 			return TypeId::None;
 		case slxfmt::TypeId::Array: {
-			Type type = _loadType(fs, holder);
+			Type type = _loadType(context, holder);
 
 			if (type.typeId == TypeId::Array)
 				throw LoaderError("Nested array type detected");
@@ -182,40 +181,40 @@ Type Runtime::_loadType(std::istream &fs, HostRefHolder &holder) {
 			return Type::makeArrayTypeName(this, type);
 		}
 		case slxfmt::TypeId::Ref:
-			return Type::makeRefTypeName(this, _loadType(fs, holder));
+			return Type::makeRefTypeName(this, _loadType(context, holder));
 		case slxfmt::TypeId::TypeName:
 			return Type(ValueType::TypeName);
 		case slxfmt::TypeId::GenericArg: {
-			uint8_t length = _read<uint8_t>(fs);
+			uint8_t length = _read<uint8_t>(context.fs);
 
 			std::string name(length, '\0');
-			fs.read(name.data(), length);
+			context.fs.read(name.data(), length);
 
 			auto nameObject = StringObject::alloc(this, std::move(name));
 
-			return Type(TypeId::GenericArg, nameObject.get());
+			return Type(nameObject.get(), context.ownerObject);
 		}
 		default:
 			throw LoaderError("Invalid type ID");
 	}
 }
 
-GenericParam Runtime::_loadGenericParam(std::istream &fs, HostRefHolder &holder) {
-	auto gpd = _read<slxfmt::GenericParamDesc>(fs);
+GenericParam Runtime::_loadGenericParam(LoaderContext &context, HostRefHolder &holder) {
+	auto gpd = _read<slxfmt::GenericParamDesc>(context.fs);
 
 	std::string name(gpd.lenName, '\0');
-	fs.read(&(name[0]), gpd.lenName);
+	context.fs.read(&(name[0]), gpd.lenName);
 
 	GenericParam param((std::pmr::memory_resource *)&this->globalHeapPoolResource);
 	param.name = name;
 
 	if (gpd.hasBaseType)
-		param.baseType = _loadType(fs, holder);
+		param.baseType = _loadType(context, holder);
 
 	param.interfaces.resize(gpd.nInterfaces);
 	param.interfaces.shrink_to_fit();
 	for (size_t i = 0; i < gpd.nInterfaces; ++i) {
-		param.interfaces[i] = _loadType(fs, holder);
+		param.interfaces[i] = _loadType(context, holder);
 	}
 
 	return param;
@@ -224,9 +223,8 @@ GenericParam Runtime::_loadGenericParam(std::istream &fs, HostRefHolder &holder)
 /// @brief Load a single scope.
 /// @param mod Module value which is treated as a scope.
 /// @param fs The input stream.
-void Runtime::_loadScope(
+void Runtime::_loadScope(LoaderContext &context,
 	HostObjectRef<ModuleObject> mod,
-	std::istream &fs,
 	LoadModuleFlags loadModuleFlags,
 	HostRefHolder &holder) {
 	uint32_t nItemsToRead;
@@ -234,12 +232,12 @@ void Runtime::_loadScope(
 	//
 	// Load classes.
 	//
-	nItemsToRead = _read<uint32_t>(fs);
+	nItemsToRead = _read<uint32_t>(context.fs);
 	for (slxfmt::ClassTypeDesc i = {}; nItemsToRead--;) {
-		i = _read<slxfmt::ClassTypeDesc>(fs);
+		i = _read<slxfmt::ClassTypeDesc>(context.fs);
 
 		std::pmr::string name(i.lenName, '\0', &globalHeapPoolResource);
-		fs.read(name.data(), i.lenName);
+		context.fs.read(name.data(), i.lenName);
 
 		AccessModifier access = 0;
 		if (i.flags & slxfmt::CTD_PUB)
@@ -252,19 +250,21 @@ void Runtime::_loadScope(
 		value->genericParams.resize(i.nGenericParams);
 		value->genericParams.shrink_to_fit();
 		for (size_t j = 0; j < i.nGenericParams; ++j)
-			value->genericParams[j] = _loadGenericParam(fs, holder);
+			value->genericParams[j] = _loadGenericParam(context, holder);
 
 		// Load reference to the parent class.
 		if (i.flags & slxfmt::CTD_DERIVED)
-			value->parentClass = Type(TypeId::Instance, _loadIdRef(fs, holder).release());
+			value->parentClass = Type(TypeId::Instance, _loadIdRef(context, holder).release());
 
 		// Load references to implemented interfaces.
 		value->implInterfaces.resize(i.nImpls);
 		value->implInterfaces.shrink_to_fit();
 		for (auto j = 0; j < i.nImpls; ++j)
-			value->implInterfaces[j] = _loadIdRef(fs, holder).release();
+			value->implInterfaces[j] = _loadIdRef(context, holder).release();
 
-		_loadScope(value.get(), fs, loadModuleFlags, holder);
+		LoaderContext newContext = context;
+		newContext.ownerObject = value.get();
+		_loadScope(newContext, value.get(), loadModuleFlags, holder);
 
 		mod->scope->putMember(name, value.release());
 	}
@@ -272,12 +272,12 @@ void Runtime::_loadScope(
 	//
 	// Load interfaces.
 	//
-	nItemsToRead = _read<uint32_t>(fs);
+	nItemsToRead = _read<uint32_t>(context.fs);
 	for (slxfmt::InterfaceTypeDesc i = {}; nItemsToRead--;) {
-		i = _read<slxfmt::InterfaceTypeDesc>(fs);
+		i = _read<slxfmt::InterfaceTypeDesc>(context.fs);
 
 		std::pmr::string name(i.lenName, '\0', &globalHeapPoolResource);
-		fs.read(name.data(), i.lenName);
+		context.fs.read(name.data(), i.lenName);
 
 		AccessModifier access = 0;
 		if (i.flags & slxfmt::ITD_PUB)
@@ -288,14 +288,16 @@ void Runtime::_loadScope(
 		value->genericParams.resize(i.nGenericParams);
 		value->genericParams.shrink_to_fit();
 		for (size_t j = 0; j < i.nGenericParams; ++j)
-			value->genericParams.push_back(_loadGenericParam(fs, holder));
+			value->genericParams.push_back(_loadGenericParam(context, holder));
 
 		value->parents.resize(i.nParents);
 		value->parents.shrink_to_fit();
 		for (auto j = 0; j < i.nParents; ++j)
-			value->parents[j] = (_loadIdRef(fs, holder).release());
+			value->parents[j] = (_loadIdRef(context, holder).release());
 
-		_loadScope(value.get(), fs, loadModuleFlags, holder);
+		LoaderContext newContext = context;
+		newContext.ownerObject = value.get();
+		_loadScope(newContext, value.get(), loadModuleFlags, holder);
 
 		mod->scope->putMember(name, value.release());
 	}
@@ -303,12 +305,12 @@ void Runtime::_loadScope(
 	//
 	// Load variables.
 	//
-	nItemsToRead = _read<uint32_t>(fs);
+	nItemsToRead = _read<uint32_t>(context.fs);
 	for (slxfmt::VarDesc i = { 0 }; nItemsToRead--;) {
-		i = _read<slxfmt::VarDesc>(fs);
+		i = _read<slxfmt::VarDesc>(context.fs);
 
 		std::pmr::string name(i.lenName, '\0', &globalHeapPoolResource);
-		fs.read(name.data(), i.lenName);
+		context.fs.read(name.data(), i.lenName);
 
 		AccessModifier access = 0;
 		if (i.flags & slxfmt::VAD_PUB)
@@ -320,7 +322,7 @@ void Runtime::_loadScope(
 		if (i.flags & slxfmt::VAD_NATIVE)
 			access |= ACCESS_NATIVE;
 
-		auto varType = _loadType(fs, holder);
+		auto varType = _loadType(context, holder);
 		HostObjectRef<RegularVarObject> var =
 			RegularVarObject::alloc(
 				this,
@@ -330,7 +332,7 @@ void Runtime::_loadScope(
 
 		// Load initial value.
 		if (i.flags & slxfmt::VAD_INIT)
-			var->setData(VarRefContext(), _loadValue(fs, holder));
+			var->setData(VarRefContext(), _loadValue(context, holder));
 		else {
 			switch (varType.typeId) {
 				case TypeId::Value:
@@ -389,15 +391,15 @@ void Runtime::_loadScope(
 	//
 	// Load functions.
 	//
-	nItemsToRead = _read<uint32_t>(fs);
+	nItemsToRead = _read<uint32_t>(context.fs);
 	while (nItemsToRead--) {
-		uint32_t nOverloadings = _read<uint32_t>(fs);
+		uint32_t nOverloadings = _read<uint32_t>(context.fs);
 
 		for (slxfmt::FnDesc i = { 0 }; nOverloadings--;) {
-			i = _read<slxfmt::FnDesc>(fs);
+			i = _read<slxfmt::FnDesc>(context.fs);
 
 			std::pmr::string name(i.lenName, '\0', &globalHeapPoolResource);
-			fs.read(name.data(), i.lenName);
+			context.fs.read(name.data(), i.lenName);
 
 			AccessModifier access = 0;
 			if (i.flags & slxfmt::FND_PUB)
@@ -420,23 +422,26 @@ void Runtime::_loadScope(
 
 			HostObjectRef<RegularFnOverloadingObject> overloading = RegularFnOverloadingObject::alloc(fn.get(), access, std::pmr::vector<Type>(&globalHeapPoolResource), Type());
 
+			LoaderContext newContext = context;
+			newContext.ownerObject = overloading.get();
+
 			if (i.flags & slxfmt::FND_ASYNC)
 				overloading->overloadingFlags |= OL_ASYNC;
 			if (i.flags & slxfmt::FND_VIRTUAL)
 				overloading->overloadingFlags |= OL_VIRTUAL;
 
-			overloading->returnType = _loadType(fs, holder);
+			overloading->returnType = _loadType(newContext, holder);
 
 			overloading->genericParams.resize(i.nGenericParams);
 			overloading->genericParams.shrink_to_fit();
 			for (size_t j = 0; j < i.nGenericParams; ++j) {
-				overloading->genericParams[j] = _loadGenericParam(fs, holder);
+				overloading->genericParams[j] = _loadGenericParam(newContext, holder);
 			}
 
 			overloading->paramTypes.resize(i.nParams);
 			overloading->paramTypes.shrink_to_fit();
 			for (uint8_t j = 0; j < i.nParams; ++j) {
-				overloading->paramTypes[j] = _loadType(fs, holder);
+				overloading->paramTypes[j] = _loadType(context, holder);
 			}
 
 			if (i.flags & slxfmt::FND_VARG)
@@ -449,22 +454,22 @@ void Runtime::_loadScope(
 				for (uint32_t j = 0; j < i.lenBody; j++) {
 					auto &ins = overloading->instructions[j];
 
-					slxfmt::InsHeader ih = _read<slxfmt::InsHeader>(fs);
+					slxfmt::InsHeader ih = _read<slxfmt::InsHeader>(newContext.fs);
 
 					ins.opcode = ih.opcode;
 					ins.operands.resize(ih.nOperands);
 
 					if (ih.hasOutputOperand)
-						ins.output = _loadValue(fs, holder);
+						ins.output = _loadValue(newContext, holder);
 
 					for (uint8_t k = 0; k < ih.nOperands; k++)
-						ins.operands[k] = _loadValue(fs, holder);
+						ins.operands[k] = _loadValue(newContext, holder);
 				}
 			}
 
 			// Obsoleted.
 			for (uint32_t j = 0; j < i.nSourceLocDescs; ++j) {
-				slxfmt::SourceLocDesc sld = _read<slxfmt::SourceLocDesc>(fs);
+				slxfmt::SourceLocDesc sld = _read<slxfmt::SourceLocDesc>(context.fs);
 				overloading->sourceLocDescs.push_back(sld);
 			}
 
@@ -483,6 +488,8 @@ HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &fs, LoadMod
 
 	HostRefHolder holder;
 
+	LoaderContext context{ fs, mod.get() };
+
 	slxfmt::ImgHeader ih;
 	fs.read((char *)&ih, sizeof(ih));
 	if (memcmp(ih.magic, slxfmt::IMH_MAGIC, sizeof(slxfmt::IMH_MAGIC)))
@@ -491,7 +498,7 @@ HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &fs, LoadMod
 		throw LoaderError("Bad SLX format version");
 
 	if (ih.flags & slxfmt::IMH_MODNAME) {
-		auto modName = _loadIdRef(fs, holder);
+		auto modName = _loadIdRef(context, holder);
 		if (!modName->entries.size())
 			throw LoaderError("Empty module name with module name flag set");
 
@@ -543,7 +550,7 @@ HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &fs, LoadMod
 		std::pmr::string name(len, '\0', &globalHeapPoolResource);
 		fs.read(name.data(), len);
 
-		HostObjectRef<IdRefObject> moduleName = _loadIdRef(fs, holder);
+		HostObjectRef<IdRefObject> moduleName = _loadIdRef(context, holder);
 
 		if (!(flags & LMOD_NOIMPORT)) {
 			std::unique_ptr<std::istream> moduleStream(_moduleLocator(this, moduleName));
@@ -559,7 +566,7 @@ HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &fs, LoadMod
 		mod->imports[name] = moduleName.get();
 	}
 
-	_loadScope(mod.get(), fs, flags, holder);
+	_loadScope(context, mod.get(), flags, holder);
 	return mod;
 }
 

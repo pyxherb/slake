@@ -42,8 +42,24 @@ namespace slake {
 
 			static std::map<TokenId, OpRegistry> prefixOpRegistries, infixOpRegistries;
 
+			struct ScopeContext {
+				std::shared_ptr<Scope> curScope;
+				std::shared_ptr<ModuleNode> curModule;
+				size_t curGenericParamCount;
+			};
+
 			std::shared_ptr<Scope> curScope;
 			std::shared_ptr<ModuleNode> curModule;
+
+			inline ScopeContext saveScopeContext() {
+				return { curScope, curModule};
+			}
+
+			inline void restoreScopeContext(ScopeContext&& savedContext) {
+				curScope = std::move(savedContext.curScope);
+				curModule = std::move(savedContext.curModule);
+			}
+
 			Lexer *lexer;
 			Compiler *compiler;
 

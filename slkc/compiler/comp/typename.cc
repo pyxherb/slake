@@ -249,7 +249,7 @@ bool Compiler::isTypeNamesConvertible(std::shared_ptr<TypeNameNode> src, std::sh
 								auto gp = std::static_pointer_cast<GenericParamNode>(srcType);
 
 								for (auto &i : gp->interfaceTypes) {
-									auto st = std::static_pointer_cast<InterfaceNode>(resolveCustomTypeName((CustomTypeNameNode*)i.get()));
+									auto st = std::static_pointer_cast<InterfaceNode>(resolveCustomTypeName((CustomTypeNameNode *)i.get()));
 
 									if (_isTypeNamesConvertible(st, dt))
 										return true;
@@ -395,7 +395,23 @@ bool Compiler::isSameType(std::shared_ptr<TypeNameNode> x, std::shared_ptr<TypeN
 			std::shared_ptr<AstNode> xDest = resolveCustomTypeName((CustomTypeNameNode *)x.get()),
 									 yDest = resolveCustomTypeName((CustomTypeNameNode *)y.get());
 
-			return xDest == yDest;
+			auto xDestNodeType = xDest->getNodeType();
+
+			if (xDestNodeType != yDest->getNodeType())
+				return false;
+
+			switch (xDestNodeType) {
+				case NodeType::GenericParam: {
+					// Only for isFnOverloadingDuplicated()
+					std::shared_ptr<GenericParamNode> xGenericParam = std::static_pointer_cast<GenericParamNode>(xDest),
+													  yGenericParam = std::static_pointer_cast<GenericParamNode>(yDest);
+
+					return xGenericParam->index == yGenericParam->index;
+				}
+				default:
+					return xDest == yDest;
+			}
+			break;
 		}
 		case TypeId::Array:
 			return isSameType(

@@ -14,6 +14,7 @@
 #include "util/debug.h"
 #include "value.h"
 #include "dbg/adapter.h"
+#include <slake/util/stream.hh>
 
 namespace slake {
 	struct ExceptionHandler final {
@@ -226,13 +227,17 @@ namespace slake {
 		/// @brief Module locator for importing.
 		ModuleLocatorFn _moduleLocator;
 
-		HostObjectRef<IdRefObject> _loadIdRef(std::istream &fs, HostRefHolder &holder);
-		Value _loadValue(std::istream &fs, HostRefHolder &holder);
-		Type _loadType(std::istream &fs, HostRefHolder &holder);
-		GenericParam _loadGenericParam(std::istream &fs, HostRefHolder &holder);
-		void _loadScope(
+		struct LoaderContext {
+			std::istream &fs;
+			Object *ownerObject;
+		};
+
+		HostObjectRef<IdRefObject> _loadIdRef(LoaderContext &context, HostRefHolder &holder);
+		Value _loadValue(LoaderContext &context, HostRefHolder &holder);
+		Type _loadType(LoaderContext &context, HostRefHolder &holder);
+		GenericParam _loadGenericParam(LoaderContext &context, HostRefHolder &holder);
+		void _loadScope(LoaderContext &context,
 			HostObjectRef<ModuleObject> mod,
-			std::istream &fs,
 			LoadModuleFlags loadModuleFlags,
 			HostRefHolder &holder);
 

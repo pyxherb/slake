@@ -158,6 +158,41 @@ bool Type::operator==(const Type &rhs) const {
 
 			return lhsType == rhsType;
 		}
+		case TypeId::GenericArg: {
+			auto lhsOwnerObject = exData.genericArg.ownerObject,
+				 rhsOwnerObject = rhs.exData.genericArg.ownerObject;
+
+			auto objectKind = lhsOwnerObject->getKind();
+
+			if (objectKind != rhsOwnerObject->getKind())
+				return false;
+
+			auto lhsName = exData.genericArg.nameObject,
+				 rhsName = rhs.exData.genericArg.nameObject;
+
+			switch (objectKind) {
+				case ObjectKind::Class: {
+					auto l = (ClassObject *)lhsOwnerObject,
+						 r = (ClassObject *)rhsOwnerObject;
+
+					return getGenericParamIndex(l->genericParams, lhsName->data) == getGenericParamIndex(r->genericParams, rhsName->data);
+				}
+				case ObjectKind::Interface: {
+					auto l = (InterfaceObject *)lhsOwnerObject,
+						 r = (InterfaceObject *)rhsOwnerObject;
+
+					return getGenericParamIndex(l->genericParams, lhsName->data) == getGenericParamIndex(r->genericParams, rhsName->data);
+				}
+				case ObjectKind::FnOverloading: {
+					auto l = (FnOverloadingObject *)lhsOwnerObject,
+						 r = (FnOverloadingObject *)rhsOwnerObject;
+
+					return getGenericParamIndex(l->genericParams, lhsName->data) == getGenericParamIndex(r->genericParams, rhsName->data);
+				}
+				default:
+					return false;
+			}
+		}
 		case TypeId::Array:
 			return getArrayExData() == rhs.getArrayExData();
 		case TypeId::Ref:

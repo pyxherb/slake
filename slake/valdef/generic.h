@@ -50,6 +50,15 @@ namespace slake {
 			return true;
 		}
 	};
+
+	inline size_t getGenericParamIndex(const GenericParamList &genericParamList, const std::pmr::string &name) {
+		for (size_t i = 0; i < genericParamList.size(); ++i) {
+			if (genericParamList[i].name == name)
+				return i;
+		}
+
+		return SIZE_MAX;
+	}
 }
 
 #endif

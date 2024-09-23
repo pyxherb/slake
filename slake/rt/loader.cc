@@ -441,7 +441,7 @@ void Runtime::_loadScope(LoaderContext &context,
 			overloading->paramTypes.resize(i.nParams);
 			overloading->paramTypes.shrink_to_fit();
 			for (uint8_t j = 0; j < i.nParams; ++j) {
-				overloading->paramTypes[j] = _loadType(context, holder);
+				overloading->paramTypes[j] = _loadType(newContext, holder);
 			}
 
 			if (i.flags & slxfmt::FND_VARG)

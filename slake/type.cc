@@ -162,36 +162,42 @@ bool Type::operator==(const Type &rhs) const {
 			auto lhsOwnerObject = exData.genericArg.ownerObject,
 				 rhsOwnerObject = rhs.exData.genericArg.ownerObject;
 
-			auto objectKind = lhsOwnerObject->getKind();
-
-			if (objectKind != rhsOwnerObject->getKind())
-				return false;
+			auto lhsObjectKind = lhsOwnerObject->getKind();
 
 			auto lhsName = exData.genericArg.nameObject,
 				 rhsName = rhs.exData.genericArg.nameObject;
 
-			switch (objectKind) {
-				case ObjectKind::Class: {
-					auto l = (ClassObject *)lhsOwnerObject,
-						 r = (ClassObject *)rhsOwnerObject;
+			Object *lhsOwnerOut, *rhsOwnerOut;
 
-					return getGenericParamIndex(l->genericParams, lhsName->data) == getGenericParamIndex(r->genericParams, rhsName->data);
-				}
-				case ObjectKind::Interface: {
-					auto l = (InterfaceObject *)lhsOwnerObject,
-						 r = (InterfaceObject *)rhsOwnerObject;
+			GenericParam *lhsGenericParam = getGenericParam(lhsOwnerObject, lhsName->data, &lhsOwnerOut),
+						 *rhsGenericParam = getGenericParam(rhsOwnerObject, rhsName->data, &rhsOwnerOut);
 
-					return getGenericParamIndex(l->genericParams, lhsName->data) == getGenericParamIndex(r->genericParams, rhsName->data);
-				}
+			if ((!lhsGenericParam) ||
+				(!rhsGenericParam))
+				return false;
+
+			switch (lhsOwnerOut->getKind()) {
+				case ObjectKind::Class:
+				case ObjectKind::Interface:
+					return lhsGenericParam == rhsGenericParam;
 				case ObjectKind::FnOverloading: {
-					auto l = (FnOverloadingObject *)lhsOwnerObject,
-						 r = (FnOverloadingObject *)rhsOwnerObject;
+					auto l = (FnOverloadingObject *)lhsOwnerOut;
 
-					return getGenericParamIndex(l->genericParams, lhsName->data) == getGenericParamIndex(r->genericParams, rhsName->data);
+					switch (rhsOwnerOut->getKind()) {
+						case ObjectKind::Class:
+						case ObjectKind::Interface:
+							return false;
+						case ObjectKind::FnOverloading: {
+							auto r = (FnOverloadingObject *)rhsOwnerOut;
+							return getGenericParamIndex(l->genericParams, lhsName->data) != getGenericParamIndex(r->genericParams, rhsName->data);
+						}
+					}
+
+					break;
 				}
-				default:
-					return false;
 			}
+
+			return false;
 		}
 		case TypeId::Array:
 			return getArrayExData() == rhs.getArrayExData();

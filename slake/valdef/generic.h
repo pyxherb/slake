@@ -59,6 +59,8 @@ namespace slake {
 
 		return SIZE_MAX;
 	}
+
+	GenericParam *getGenericParam(Object *object, const std::pmr::string &name, Object **ownerOut = nullptr);
 }
 
 #endif

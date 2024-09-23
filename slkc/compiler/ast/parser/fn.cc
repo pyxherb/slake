@@ -93,7 +93,7 @@ std::shared_ptr<FnOverloadingNode> Parser::parseFnDecl(std::string &nameOut) {
 
 	if (lexer->peekToken()->tokenId == TokenId::LtOp) {
 		TokenRange genericParamsTokenRange;
-		GenericParamNodeList genericParams = parseGenericParams(genericParamsTokenRange);
+		GenericParamNodeList genericParams = parseGenericParams(genericParamsTokenRange, overloading.get());
 		overloading->setGenericParams(genericParams);
 		overloading->tokenRange.endIndex = genericParamsTokenRange.endIndex;
 	}

@@ -150,7 +150,7 @@ namespace slake {
 			std::shared_ptr<FnOverloadingNode> parseOperatorDecl(std::string &nameOut);
 			std::shared_ptr<FnOverloadingNode> parseOperatorDef(std::string &nameOut);
 
-			GenericParamNodeList parseGenericParams(TokenRange &tokenRangeOut);
+			GenericParamNodeList parseGenericParams(TokenRange &tokenRangeOut, AstNode *ownerNode);
 
 			std::shared_ptr<ClassNode> parseClassDef();
 			void parseClassStmt();

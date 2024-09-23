@@ -406,7 +406,22 @@ bool Compiler::isSameType(std::shared_ptr<TypeNameNode> x, std::shared_ptr<TypeN
 					std::shared_ptr<GenericParamNode> xGenericParam = std::static_pointer_cast<GenericParamNode>(xDest),
 													  yGenericParam = std::static_pointer_cast<GenericParamNode>(yDest);
 
-					return xGenericParam->index == yGenericParam->index;
+					AstNode *xNode = xGenericParam->ownerNode,
+							*yNode = yGenericParam->ownerNode;
+
+					if (xNode->getNodeType() != yNode->getNodeType())
+						return false;
+
+					switch (xNode->getNodeType()) {
+						case NodeType::Class:
+						case NodeType::Interface:
+							return xGenericParam == yGenericParam;
+						case NodeType::FnOverloadingValue:
+							return xGenericParam->index == yGenericParam->index;
+						default:
+							throw std::logic_error("Unhandled owner type");
+					}
+					break;
 				}
 				default:
 					return xDest == yDest;

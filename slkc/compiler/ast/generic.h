@@ -20,6 +20,7 @@ namespace slake {
 			std::shared_ptr<TypeNameNode> baseType;
 			std::deque<std::shared_ptr<TypeNameNode>> interfaceTypes;
 
+			AstNode *ownerNode;
 			std::weak_ptr<Scope> cachedMergedScope;
 
 			size_t idxNameToken = SIZE_MAX;
@@ -42,6 +43,9 @@ namespace slake {
 				for (size_t i = 0; i < other.interfaceTypes.size(); ++i)
 					interfaceTypes[i] = other.interfaceTypes[i]->duplicate<TypeNameNode>();
 
+				ownerNode = other.ownerNode;
+				// DO NOT copy cachedMergedScope.
+
 				idxNameToken = other.idxNameToken;
 
 				idxParentSlotLParentheseToken = other.idxParentSlotLParentheseToken;
@@ -50,7 +54,7 @@ namespace slake {
 				idxImplInterfacesColonToken = other.idxImplInterfacesColonToken;
 				idxImplInterfacesSeparatorTokens = other.idxImplInterfacesSeparatorTokens;
 			}
-			inline GenericParamNode(std::string name, size_t index) : name(name), index(index) {}
+			inline GenericParamNode(std::string name, AstNode *ownerNode, size_t index) : name(name), ownerNode(ownerNode), index(index) {}
 
 			virtual inline NodeType getNodeType() const override { return NodeType::GenericParam; }
 		};

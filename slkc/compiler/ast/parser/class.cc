@@ -39,7 +39,7 @@ void Parser::parseImplList(
 	}
 }
 
-GenericParamNodeList Parser::parseGenericParams(TokenRange &tokenRangeOut) {
+GenericParamNodeList Parser::parseGenericParams(TokenRange &tokenRangeOut, AstNode *ownerNode) {
 	GenericParamNodeList genericParams;
 
 	Token *startingToken = expectToken(TokenId::LtOp);
@@ -48,7 +48,7 @@ GenericParamNodeList Parser::parseGenericParams(TokenRange &tokenRangeOut) {
 	while (true) {
 		Token *nameToken = expectToken(TokenId::Id);
 
-		auto param = std::make_shared<GenericParamNode>(nameToken->text, genericParams.size());
+		auto param = std::make_shared<GenericParamNode>(nameToken->text, ownerNode, genericParams.size());
 
 		param->tokenRange = lexer->getTokenIndex(nameToken);
 		param->idxNameToken = lexer->getTokenIndex(nameToken);
@@ -105,7 +105,7 @@ std::shared_ptr<ClassNode> Parser::parseClassDef() {
 
 		if (Token *token = lexer->peekToken(); token->tokenId == TokenId::LtOp) {
 			TokenRange genericParamsTokenRange;
-			GenericParamNodeList genericParams = parseGenericParams(genericParamsTokenRange);
+			GenericParamNodeList genericParams = parseGenericParams(genericParamsTokenRange, classNode.get());
 			classNode->setGenericParams(genericParams);
 			classNode->tokenRange.endIndex = genericParamsTokenRange.endIndex;
 		}
@@ -272,7 +272,7 @@ std::shared_ptr<InterfaceNode> Parser::parseInterfaceDef() {
 
 		if (Token *token = lexer->peekToken(); token->tokenId == TokenId::LtOp) {
 			TokenRange genericParamsTokenRange;
-			GenericParamNodeList genericParams = parseGenericParams(genericParamsTokenRange);
+			GenericParamNodeList genericParams = parseGenericParams(genericParamsTokenRange, interfaceNode.get());
 			interfaceNode->setGenericParams(genericParams);
 			interfaceNode->tokenRange.endIndex = genericParamsTokenRange.endIndex;
 		}

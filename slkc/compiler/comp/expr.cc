@@ -3,10 +3,12 @@
 using namespace slake::slkc;
 
 void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
-	// slxfmt::SourceLocDesc sld;
-	// sld.offIns = curFn->body.size();
-	// sld.line = tokenRangeToSourceLocation(expr->tokenRange).beginPosition.line;
-	// sld.column = tokenRangeToSourceLocation(expr->tokenRange).beginPosition.column;
+	slxfmt::SourceLocDesc sld;
+	if (expr->tokenRange) {
+		sld.offIns = curFn->body.size();
+		sld.line = tokenRangeToSourceLocation(expr->tokenRange).beginPosition.line;
+		sld.column = tokenRangeToSourceLocation(expr->tokenRange).beginPosition.column;
+	}
 
 	if (!curMajorContext.curMinorContext.dryRun) {
 		if (auto ce = evalConstExpr(expr); ce) {
@@ -1179,7 +1181,9 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 	}
 
 	if (!curMajorContext.curMinorContext.dryRun) {
-		// sld.nIns = curFn->body.size() - sld.offIns;
-		// curFn->srcLocDescs.push_back(sld);
+		if (expr->tokenRange) {
+			sld.nIns = curFn->body.size() - sld.offIns;
+			curFn->srcLocDescs.push_back(sld);
+		}
 	}
 }

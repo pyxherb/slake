@@ -189,7 +189,7 @@ bool Type::operator==(const Type &rhs) const {
 							return false;
 						case ObjectKind::FnOverloading: {
 							auto r = (FnOverloadingObject *)rhsOwnerOut;
-							return getGenericParamIndex(l->genericParams, lhsName->data) != getGenericParamIndex(r->genericParams, rhsName->data);
+							return getGenericParamIndex(l->genericParams, lhsName->data) == getGenericParamIndex(r->genericParams, rhsName->data);
 						}
 					}
 

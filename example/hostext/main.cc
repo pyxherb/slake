@@ -92,6 +92,9 @@ void printTraceback(slake::Runtime *rt) {
 	printf("Traceback:\n");
 	for (auto i = ctxt->majorFrames.rbegin(); i != ctxt->majorFrames.rend(); ++i) {
 		printf("\t%s: 0x%08x", rt->getFullName((*i)->curFn->fnObject).c_str(), (*i)->curIns);
+		if (auto sld = (*i)->curFn->getSourceLocationDesc((*i)->curIns); sld) {
+			printf(" at %d:%d", sld->line, sld->column);
+		}
 		putchar('\n');
 	}
 }

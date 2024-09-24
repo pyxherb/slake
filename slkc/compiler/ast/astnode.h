@@ -81,7 +81,7 @@ namespace slake {
 			inline TokenRange(size_t beginIndex, size_t endIndex) : beginIndex(beginIndex), endIndex(endIndex) {}
 
 			operator bool() {
-				return beginIndex == SIZE_MAX;
+				return beginIndex != SIZE_MAX;
 			}
 		};
 

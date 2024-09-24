@@ -467,7 +467,6 @@ void Runtime::_loadScope(LoaderContext &context,
 				}
 			}
 
-			// Obsoleted.
 			for (uint32_t j = 0; j < i.nSourceLocDescs; ++j) {
 				slxfmt::SourceLocDesc sld = _read<slxfmt::SourceLocDesc>(context.fs);
 				overloading->sourceLocDescs.push_back(sld);

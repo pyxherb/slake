@@ -134,6 +134,24 @@ namespace slake {
 				}
 			}
 		}
+
+		inline const slxfmt::SourceLocDesc *getSourceLocationDesc(uint32_t offIns) const {
+			const slxfmt::SourceLocDesc *curDesc = nullptr;
+
+			for (auto &i : sourceLocDescs) {
+				if ((offIns >= i.offIns) &&
+					(offIns < i.offIns + i.nIns)) {
+					if (curDesc) {
+						if ((i.offIns >= curDesc->offIns) &&
+							(i.nIns < curDesc->nIns))
+							curDesc = &i;
+					} else
+						curDesc = &i;
+				}
+			}
+
+			return curDesc;
+		}
 		virtual ~RegularFnOverloadingObject() = default;
 
 		virtual FnOverloadingKind getOverloadingKind() const override;

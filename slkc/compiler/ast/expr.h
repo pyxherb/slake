@@ -101,11 +101,11 @@ namespace slake {
 		class HeadedIdRefExprNode : public ExprNode {
 		public:
 			std::shared_ptr<ExprNode> head;
-			IdRef ref;
+			std::shared_ptr<IdRefNode> ref;
 
 			size_t idxOpToken = SIZE_MAX;
 
-			inline HeadedIdRefExprNode(std::shared_ptr<ExprNode> head, IdRef ref) : head(head), ref(ref) {}
+			inline HeadedIdRefExprNode(std::shared_ptr<ExprNode> head, std::shared_ptr<IdRefNode> ref) : head(head), ref(ref) {}
 			virtual ~HeadedIdRefExprNode() = default;
 
 			virtual ExprType getExprType() const override { return ExprType::HeadedRef; }
@@ -237,11 +237,11 @@ namespace slake {
 
 		class IdRefExprNode : public ExprNode {
 		public:
-			IdRef ref;
+			std::shared_ptr<IdRefNode> ref;
 
-			inline IdRefExprNode(IdRef ref)
+			inline IdRefExprNode(std::shared_ptr<IdRefNode> ref)
 				: ref(ref) {
-				assert(!ref.empty());
+				assert(!ref->entries.empty());
 			}
 			virtual ~IdRefExprNode() = default;
 

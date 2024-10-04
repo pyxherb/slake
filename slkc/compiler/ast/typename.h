@@ -113,7 +113,7 @@ namespace slake {
 			virtual std::shared_ptr<AstNode> doDuplicate() override;
 
 		public:
-			IdRef ref;
+			std::shared_ptr<IdRefNode> ref;
 			std::weak_ptr<AstNode> cachedResolvedResult;
 
 			Compiler *compiler;
@@ -123,11 +123,11 @@ namespace slake {
 
 			inline CustomTypeNameNode(const CustomTypeNameNode &other)
 				: TypeNameNode(other),
-				  ref(duplicateIdRef(other.ref)),
+				  ref(other.ref->duplicate<IdRefNode>()),
 				  compiler(other.compiler),
 				  scope(other.scope) {
 			}
-			inline CustomTypeNameNode(IdRef ref, Compiler *compiler, Scope *scope, bool isRef = false)
+			inline CustomTypeNameNode(std::shared_ptr<IdRefNode> ref, Compiler *compiler, Scope *scope, bool isRef = false)
 				: TypeNameNode(isRef), ref(ref), compiler(compiler), scope(scope) {}
 			virtual ~CustomTypeNameNode() = default;
 

@@ -170,7 +170,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 						EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
 
-					IdRef operatorName = { overloading->getName() };
+					std::shared_ptr<IdRefNode> operatorName = std::make_shared<IdRefNode>(IdRefEntries{ overloading->getName() });
 
 					uint32_t callTargetRegIndex = allocReg();
 
@@ -181,7 +181,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 							{ std::make_shared<RegRefNode>(lhsRegIndex),
 								std::make_shared<IdRefExprNode>(operatorName) });
 					else {
-						IdRef fullName = getFullName(overloading.get());
+						std::shared_ptr<IdRefNode> fullName = getFullName(overloading.get());
 						_insertIns(
 							Opcode::LOAD,
 							std::make_shared<RegRefNode>(callTargetRegIndex),

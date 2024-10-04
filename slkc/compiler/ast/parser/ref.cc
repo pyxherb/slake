@@ -59,8 +59,8 @@ fail:
 	return {};
 }
 
-IdRef Parser::parseModuleRef() {
-	IdRef ref;
+std::shared_ptr<IdRefNode> Parser::parseModuleRef() {
+	IdRefEntries ref;
 	size_t idxPrecedingAccessOp = SIZE_MAX;
 
 	while (true) {
@@ -76,7 +76,7 @@ IdRef Parser::parseModuleRef() {
 				MessageType::Error,
 				"Expecting an identifier"));
 			ref.push_back(refEntry);
-			return ref;
+			return std::make_shared<IdRefNode>(ref);
 		} else {
 			// Push current reference scope.
 			lexer->nextToken();
@@ -92,11 +92,11 @@ IdRef Parser::parseModuleRef() {
 		idxPrecedingAccessOp = lexer->getTokenIndex(precedingAccessOpToken);
 	}
 
-	return ref;
+	return std::make_shared<IdRefNode>(ref);
 }
 
-IdRef Parser::parseRef(bool forTypeName) {
-	IdRef ref;
+std::shared_ptr<IdRefNode> Parser::parseRef(bool forTypeName) {
+	IdRefEntries ref;
 	size_t idxPrecedingAccessOp = SIZE_MAX;
 
 	switch (Token *token = lexer->peekToken(); token->tokenId) {
@@ -144,7 +144,7 @@ IdRef Parser::parseRef(bool forTypeName) {
 				MessageType::Error,
 				"Expecting an identifier"));
 			ref.push_back(refEntry);
-			return ref;
+			return std::make_shared<IdRefNode>(ref);
 		} else {
 			// Push current reference scope.
 			lexer->nextToken();
@@ -164,5 +164,5 @@ IdRef Parser::parseRef(bool forTypeName) {
 	}
 
 end:
-	return ref;
+	return std::make_shared<IdRefNode>(ref);
 }

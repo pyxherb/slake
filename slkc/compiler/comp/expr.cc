@@ -485,7 +485,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 									}
 								}
 
-								IdRef fullName = getFullName(overloading.get());
+								auto fullName = getFullName(overloading.get());
 
 								_insertIns(
 									Opcode::NEW,
@@ -591,12 +591,12 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			updateCompletionContext(e->ref, CompletionContext::Expr);
 #endif
 
-			std::deque<std::pair<IdRef, std::shared_ptr<AstNode>>> resolvedParts;
+			IdRefResolvedParts resolvedParts;
 			if (!resolveIdRef(e->ref, resolvedParts))
 				throw FatalCompilationError(
 					{ tokenRangeToSourceLocation(e->tokenRange),
 						MessageType::Error,
-						"Identifier not found: `" + std::to_string(e->ref, this) + "'" });
+						"Identifier not found: `" + std::to_string(e->ref->entries, this) + "'" });
 
 			uint32_t tmpRegIndex = allocReg();
 
@@ -704,7 +704,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 						case NodeType::Fn: {
 							std::shared_ptr<FnOverloadingNode> overloading = determineOverloadingRegistry(
 								std::static_pointer_cast<FnNode>(resolvedParts[i].second),
-								resolvedParts[i].first.back().genericArgs);
+								resolvedParts[i].first->entries.back().genericArgs);
 
 							if (!curMajorContext.curMinorContext.isLastCallTargetStatic) {
 								_insertIns(
@@ -714,7 +714,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							}
 
 #if SLKC_WITH_LANGUAGE_SERVER
-							updateTokenInfo(resolvedParts[i].first.back().idxToken, [&overloading](TokenInfo &tokenInfo) {
+							updateTokenInfo(resolvedParts[i].first->entries.back().idxToken, [&overloading](TokenInfo &tokenInfo) {
 								tokenInfo.semanticInfo.correspondingMember = overloading;
 							});
 #endif
@@ -737,9 +737,9 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							uint32_t newRegIndex = allocReg();
 							if (overloading->isVirtual) {
 								// Copy the parameter types to the reference.
-								resolvedParts[i].first.back().hasParamTypes = true;
-								resolvedParts[i].first.back().paramTypes = curMajorContext.curMinorContext.argTypes;
-								resolvedParts[i].first.back().hasVarArg = curMajorContext.curMinorContext.hasVarArgs;
+								resolvedParts[i].first->entries.back().hasParamTypes = true;
+								resolvedParts[i].first->entries.back().paramTypes = curMajorContext.curMinorContext.argTypes;
+								resolvedParts[i].first->entries.back().hasVarArg = curMajorContext.curMinorContext.hasVarArgs;
 
 								_insertIns(
 									Opcode::RLOAD,
@@ -747,7 +747,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 									{ std::make_shared<RegRefNode>(tmpRegIndex),
 										std::make_shared<IdRefExprNode>(resolvedParts[i].first) });
 							} else {
-								IdRef fullRef = getFullName(overloading.get());
+								auto fullRef = getFullName(overloading.get());
 								_insertIns(
 									Opcode::LOAD,
 									std::make_shared<RegRefNode>(newRegIndex),
@@ -886,7 +886,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 						case NodeType::Class:
 						case NodeType::Interface:
 						case NodeType::Module: {
-							IdRef ref = getFullName((MemberNode *)x.get());
+							auto ref = getFullName((MemberNode *)x.get());
 							_insertIns(
 								Opcode::LOAD,
 								std::make_shared<RegRefNode>(tmpRegIndex),
@@ -897,14 +897,14 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 									Message(
 										tokenRangeToSourceLocation(e->tokenRange),
 										MessageType::Error,
-										"`" + std::to_string(e->ref, this) + "' is a type"));
+										"`" + std::to_string(e->ref->entries, this) + "' is a type"));
 							}
 							break;
 						}
 						case NodeType::Var: {
 							auto varNode = (VarNode *)x.get();
 
-							IdRef ref = getFullName(varNode);
+							auto ref = getFullName(varNode);
 							_insertIns(
 								Opcode::LOAD,
 								std::make_shared<RegRefNode>(tmpRegIndex),
@@ -917,15 +917,15 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							break;
 						}
 						case NodeType::Fn: {
-							IdRef ref;
-
 							FnNode *fn = (FnNode *)x.get();
 
-							std::shared_ptr<FnOverloadingNode> overloading = determineOverloadingRegistry(std::static_pointer_cast<FnNode>(x), resolvedParts.front().first.back().genericArgs);
-							_getFullName(overloading.get(), ref);
+							std::shared_ptr<FnOverloadingNode> overloading = determineOverloadingRegistry(
+								std::static_pointer_cast<FnNode>(x),
+								resolvedParts.front().first->entries.back().genericArgs);
+							auto ref = getFullName(overloading.get());
 
 #if SLKC_WITH_LANGUAGE_SERVER
-							updateTokenInfo(resolvedParts.front().first.back().idxToken, [&overloading](TokenInfo &tokenInfo) {
+							updateTokenInfo(resolvedParts.front().first->entries.back().idxToken, [&overloading](TokenInfo &tokenInfo) {
 								tokenInfo.semanticInfo.correspondingMember = overloading;
 							});
 #endif
@@ -972,7 +972,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							_insertIns(
 								Opcode::LOAD,
 								std::make_shared<RegRefNode>(tmpRegIndex),
-								{ std::make_shared<IdRefExprNode>(IdRef{ IdRefEntry(e->tokenRange, SIZE_MAX, "base") }) });
+								{ std::make_shared<IdRefExprNode>(std::make_shared<IdRefNode>(IdRefEntries{ IdRefEntry(e->tokenRange, SIZE_MAX, "base") })) });
 							break;
 						default:
 							assert(false);

@@ -8,13 +8,13 @@
 namespace slake {
 	namespace slkc {
 		struct ImportItem {
-			IdRef ref;
+			std::shared_ptr<IdRefNode> ref;
 			size_t idxNameToken;
 		};
 
 		class ModuleNode : public MemberNode {
 		public:
-			IdRef moduleName;
+			std::shared_ptr<IdRefNode> moduleName;
 			std::unordered_map<std::string, ImportItem> imports;
 			std::deque<ImportItem> unnamedImports;
 			std::weak_ptr<ModuleNode> parentModule;
@@ -31,7 +31,7 @@ namespace slake {
 			virtual inline NodeType getNodeType() const override { return NodeType::Module; }
 
 			virtual inline IdRefEntry getName() const override {
-				return moduleName.back();
+				return moduleName->entries.back();
 			}
 		};
 	}

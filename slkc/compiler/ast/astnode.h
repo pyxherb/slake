@@ -28,6 +28,7 @@ namespace slake {
 			Comment,
 
 			RegRef,
+			IdRef,
 			ThisRef,
 			BaseRef,
 

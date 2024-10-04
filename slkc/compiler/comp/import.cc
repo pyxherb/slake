@@ -3,16 +3,16 @@
 
 using namespace slake::slkc;
 
-void Compiler::importModule(const IdRef &ref) {
-	if (importedModules.count(ref))
+void Compiler::importModule(std::shared_ptr<IdRefNode> ref) {
+	if (importedModules.count(ref->entries))
 		return;
-	importedModules.insert(ref);
+	importedModules.insert(ref->entries);
 
 	auto scope = completeModuleNamespaces(ref);
 
 	std::string path;
 
-	for (auto j : ref) {
+	for (auto j : ref->entries) {
 		path += "/" + j.name;
 	}
 
@@ -70,9 +70,9 @@ void Compiler::importModule(const IdRef &ref) {
 
 	throw FatalCompilationError(
 		Message(
-			tokenRangeToSourceLocation(ref[0].tokenRange),
+			tokenRangeToSourceLocation(ref->entries[0].tokenRange),
 			MessageType::Error,
-			"Cannot find module " + std::to_string(ref, this)));
+			"Cannot find module " + std::to_string(ref->entries, this)));
 
 succeeded:;
 #if SLKC_WITH_LANGUAGE_SERVER
@@ -283,7 +283,7 @@ std::shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 					return std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 				case slake::ValueType::TypeName: {
 					auto refs = _rt->getFullRef((MemberObject *)runtimeType.getCustomTypeExData());
-					IdRef ref;
+					std::shared_ptr<IdRefNode> ref = std::make_shared<IdRefNode>();
 
 					for (auto &i : refs) {
 						std::deque<std::shared_ptr<TypeNameNode>> genericArgs;
@@ -291,7 +291,7 @@ std::shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 							genericArgs.push_back(toTypeName(j));
 						}
 
-						ref.push_back(IdRefEntry({}, SIZE_MAX, std::string(i.name.c_str(), i.name.size()), genericArgs));
+						ref->entries.push_back(IdRefEntry({}, SIZE_MAX, std::string(i.name.c_str(), i.name.size()), genericArgs));
 					}
 
 					return std::make_shared<CustomTypeNameNode>(ref, this, nullptr);
@@ -311,8 +311,8 @@ std::shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 	throw std::logic_error("Unrecognized runtime value type");
 }
 
-slake::slkc::IdRef Compiler::toAstIdRef(std::pmr::deque<slake::IdRefEntry> runtimeRefEntries) {
-	IdRef ref;
+std::shared_ptr<IdRefNode> Compiler::toAstIdRef(std::pmr::deque<slake::IdRefEntry> runtimeRefEntries) {
+	std::shared_ptr<IdRefNode> ref = std::make_shared<IdRefNode>();
 
 	for (auto &i : runtimeRefEntries) {
 		std::deque<std::shared_ptr<TypeNameNode>> genericArgs;
@@ -320,14 +320,14 @@ slake::slkc::IdRef Compiler::toAstIdRef(std::pmr::deque<slake::IdRefEntry> runti
 		for (auto j : i.genericArgs)
 			genericArgs.push_back(toTypeName(j));
 
-		ref.push_back(IdRefEntry({}, SIZE_MAX, std::string(i.name.c_str(), i.name.size()), genericArgs));
+		ref->entries.push_back(IdRefEntry({}, SIZE_MAX, std::string(i.name.c_str(), i.name.size()), genericArgs));
 	}
 
 	return ref;
 }
 
-slake::slkc::IdRef Compiler::toAstIdRef(std::deque<slake::IdRefEntry> runtimeRefEntries) {
-	IdRef ref;
+std::shared_ptr<IdRefNode> Compiler::toAstIdRef(std::deque<slake::IdRefEntry> runtimeRefEntries) {
+	std::shared_ptr<IdRefNode> ref = std::make_shared<IdRefNode>();
 
 	for (auto &i : runtimeRefEntries) {
 		std::deque<std::shared_ptr<TypeNameNode>> genericArgs;
@@ -335,7 +335,7 @@ slake::slkc::IdRef Compiler::toAstIdRef(std::deque<slake::IdRefEntry> runtimeRef
 		for (auto j : i.genericArgs)
 			genericArgs.push_back(toTypeName(j));
 
-		ref.push_back(IdRefEntry({}, SIZE_MAX, std::string(i.name.c_str(), i.name.size()), genericArgs));
+		ref->entries.push_back(IdRefEntry({}, SIZE_MAX, std::string(i.name.c_str(), i.name.size()), genericArgs));
 	}
 
 	return ref;

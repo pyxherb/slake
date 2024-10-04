@@ -47,13 +47,25 @@ namespace slake {
 				  hasVarArg(hasVarArg) {}
 		};
 
-		using IdRef = std::deque<IdRefEntry>;
+		using IdRefEntries = std::deque<IdRefEntry>;
 
-		inline bool isCompleteIdRef(const IdRef &ref) {
+		class IdRefNode : public AstNode {
+		private:
+			virtual std::shared_ptr<AstNode> doDuplicate() override;
+
+		public:
+			IdRefEntries entries;
+
+			IdRefNode() = default;
+			IdRefNode(const IdRefEntries &entries);
+			IdRefNode(IdRefEntries &&entries);
+
+			virtual inline NodeType getNodeType() const override { return NodeType::IdRef; }
+		};
+
+		inline bool isCompleteIdRef(const IdRefEntries &ref) {
 			return ref.size() && (ref.back().idxToken != SIZE_MAX);
 		}
-
-		IdRef duplicateIdRef(const IdRef &other);
 
 		class ThisRefNode : public AstNode {
 		public:
@@ -76,7 +88,7 @@ namespace slake {
 }
 
 namespace std {
-	std::string to_string(const slake::slkc::IdRef &ref, slake::slkc::Compiler *compiler, bool forMangling = false);
+	std::string to_string(const slake::slkc::IdRefEntries &ref, slake::slkc::Compiler *compiler, bool forMangling = false);
 }
 
 #endif

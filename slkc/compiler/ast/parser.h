@@ -122,7 +122,7 @@ namespace slake {
 
 			std::shared_ptr<TypeNameNode> parseTypeName(bool required = false);
 			std::deque<std::shared_ptr<TypeNameNode>> parseGenericArgs(bool forTypeName = false);
-			IdRef parseRef(bool forTypeName = false);
+			std::shared_ptr<IdRefNode> parseRef(bool forTypeName = false);
 			void parseArgs(std::deque<std::shared_ptr<ExprNode>> &argsOut, std::deque<size_t> &idxCommaTokensOut);
 
 			std::shared_ptr<ExprNode> parseExpr(int precedence = 0);
@@ -160,7 +160,7 @@ namespace slake {
 
 			void parseProgramStmt();
 
-			IdRef parseModuleRef();
+			std::shared_ptr<IdRefNode> parseModuleRef();
 			void parseModuleDecl();
 			void parseImportList();
 

@@ -91,21 +91,21 @@ std::shared_ptr<TypeNameNode> Parser::parseTypeName(bool required) {
 		case TokenId::Id: {
 			LexerContext savedContext = lexer->context;
 			auto ref = parseRef(true);
-			if (!isCompleteIdRef(ref)) {
+			if (!isCompleteIdRef(ref->entries)) {
 				lexer->context = savedContext;
 				type = std::make_shared<BadTypeNameNode>(
-					ref[0].idxToken,
+					ref->entries[0].idxToken,
 					lexer->context.curIndex);
 				type->tokenRange = TokenRange{
-					ref[0].tokenRange.beginIndex,
-					ref.back().tokenRange.endIndex
+					ref->entries[0].tokenRange.beginIndex,
+					ref->entries.back().tokenRange.endIndex
 				};
 				return type;
 			}
 			type = std::make_shared<CustomTypeNameNode>(ref, compiler, curScope.get());
 			type->tokenRange = TokenRange{
-				ref[0].tokenRange.beginIndex,
-				ref.back().tokenRange.endIndex
+				ref->entries[0].tokenRange.beginIndex,
+				ref->entries.back().tokenRange.endIndex
 			};
 			break;
 		}

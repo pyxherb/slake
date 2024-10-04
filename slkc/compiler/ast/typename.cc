@@ -67,7 +67,7 @@ std::string std::to_string(std::shared_ptr<slake::slkc::TypeNameNode> typeName, 
 			break;
 		}
 		case TypeId::Custom: {
-			slake::slkc::IdRef ref;
+			std::shared_ptr<IdRefNode> ref = std::make_shared<IdRefNode>();
 			auto m = compiler->resolveCustomTypeName((CustomTypeNameNode *)typeName.get());
 
 			switch (m->getNodeType()) {
@@ -75,8 +75,8 @@ std::string std::to_string(std::shared_ptr<slake::slkc::TypeNameNode> typeName, 
 					s = (forMangling ? "!" : "") + std::static_pointer_cast<GenericParamNode>(m)->name;
 					break;
 				default:
-					compiler->_getFullName((MemberNode *)m.get(), ref);
-					s = std::to_string(ref, compiler, forMangling);
+					compiler->_getFullName((MemberNode *)m.get(), ref->entries);
+					s = std::to_string(ref->entries, compiler, forMangling);
 			}
 			break;
 		}

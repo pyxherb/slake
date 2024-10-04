@@ -654,7 +654,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 						EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
 
-					IdRef operatorName = { overloading->getName() };
+					std::shared_ptr<IdRefNode> operatorName = std::make_shared<IdRefNode>(IdRefEntries{ overloading->getName() });
 
 					uint32_t tmpRegIndex = allocReg();
 
@@ -685,7 +685,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							{ std::make_shared<RegRefNode>(lhsRegIndex),
 								std::make_shared<IdRefExprNode>(operatorName) });
 					} else {
-						IdRef fullName = getFullName(overloading.get());
+						auto fullName = getFullName(overloading.get());
 						_insertIns(Opcode::LOAD,
 							std::make_shared<RegRefNode>(callTargetRegIndex),
 							{ std::make_shared<IdRefExprNode>(fullName) });

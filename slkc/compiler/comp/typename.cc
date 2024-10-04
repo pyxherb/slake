@@ -85,9 +85,9 @@ bool Compiler::isCompoundTypeName(std::shared_ptr<TypeNameNode> node) {
 				default:
 					throw FatalCompilationError(
 						Message(
-							tokenRangeToSourceLocation(t->ref[0].tokenRange),
+							tokenRangeToSourceLocation(t->ref->entries[0].tokenRange),
 							MessageType::Error,
-							"`" + std::to_string(t->ref, this) + "' cannot be referenced as a type"));
+							"`" + std::to_string(t->ref->entries, this) + "' cannot be referenced as a type"));
 			}
 		}
 		default:
@@ -315,12 +315,12 @@ std::shared_ptr<AstNode> Compiler::_resolveCustomTypeName(CustomTypeNameNode *ty
 		return typeName->cachedResolvedResult.lock();
 
 	// Check if the type refers to a generic parameter.
-	if ((typeName->ref.size() == 1) && (typeName->ref[0].genericArgs.empty())) {
-		auto genericParam = lookupGenericParam(typeName->scope->owner->shared_from_this(), typeName->ref[0].name);
+	if ((typeName->ref->entries.size() == 1) && (typeName->ref->entries[0].genericArgs.empty())) {
+		auto genericParam = lookupGenericParam(typeName->scope->owner->shared_from_this(), typeName->ref->entries[0].name);
 		if (genericParam) {
 #if SLKC_WITH_LANGUAGE_SERVER
 			// Update corresponding semantic information.
-			updateTokenInfo(typeName->ref[0].idxToken, [this, &genericParam](TokenInfo &tokenInfo) {
+			updateTokenInfo(typeName->ref->entries[0].idxToken, [this, &genericParam](TokenInfo &tokenInfo) {
 				tokenInfo.semanticInfo.correspondingMember = genericParam;
 				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 				tokenInfo.semanticType = SemanticType::TypeParam;
@@ -334,7 +334,7 @@ std::shared_ptr<AstNode> Compiler::_resolveCustomTypeName(CustomTypeNameNode *ty
 
 	// Check the type with scope where the type name is created.
 	if (typeName->scope) {
-		std::deque<std::pair<IdRef, std::shared_ptr<AstNode>>> resolvedPartsOut;
+		IdRefResolvedParts resolvedPartsOut;
 		IdRefResolveContext resolveContext;
 		resolveContext.resolvingScopes = resolvingScopes;
 
@@ -353,7 +353,7 @@ std::shared_ptr<AstNode> Compiler::_resolveCustomTypeName(CustomTypeNameNode *ty
 
 	// Check the type with the global scope.
 	{
-		std::deque<std::pair<IdRef, std::shared_ptr<AstNode>>> resolvedPartsOut;
+		IdRefResolvedParts resolvedPartsOut;
 
 		if (resolveIdRef(typeName->ref, resolvedPartsOut, true)) {
 			if (resolvedPartsOut.size() > 1)
@@ -373,7 +373,7 @@ std::shared_ptr<AstNode> Compiler::_resolveCustomTypeName(CustomTypeNameNode *ty
 		Message(
 			tokenRangeToSourceLocation(typeName->tokenRange),
 			MessageType::Error,
-			"Type `" + std::to_string(typeName->ref, this) + "' was not found"));
+			"Type `" + std::to_string(typeName->ref->entries, this) + "' was not found"));
 }
 
 std::shared_ptr<AstNode> Compiler::resolveCustomTypeName(CustomTypeNameNode *typeName) {

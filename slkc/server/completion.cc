@@ -339,10 +339,10 @@ succeeded:
 		case CompletionContext::Import: {
 			std::string path;
 
-			for (size_t i = 0; i < tokenInfo.semanticInfo.importedPath.size(); ++i) {
+			for (size_t i = 0; i < tokenInfo.semanticInfo.importedPath->entries.size(); ++i) {
 				if (i)
 					path += "/";
-				path += tokenInfo.semanticInfo.importedPath[i].name;
+				path += tokenInfo.semanticInfo.importedPath->entries[i].name;
 			}
 
 			_getImportCompletionItems(path, completionItems);
@@ -351,10 +351,10 @@ succeeded:
 		case CompletionContext::ModuleName: {
 			std::string path;
 
-			for (size_t i = 0; i < tokenInfo.semanticInfo.importedPath.size(); ++i) {
+			for (size_t i = 0; i < tokenInfo.semanticInfo.importedPath->entries.size(); ++i) {
 				if (i)
 					path += "/";
-				path += tokenInfo.semanticInfo.importedPath[i].name;
+				path += tokenInfo.semanticInfo.importedPath->entries[i].name;
 			}
 
 			_getImportCompletionItems(path, completionItems);

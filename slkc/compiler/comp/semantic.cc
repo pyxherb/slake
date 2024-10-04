@@ -61,16 +61,16 @@ void Compiler::updateCompletionContext(std::shared_ptr<TypeNameNode> targetTypeN
 	}
 }
 
-void Compiler::updateCompletionContext(const IdRef &ref, CompletionContext completionContext) {
+void Compiler::updateCompletionContext(std::shared_ptr<IdRefNode> ref, CompletionContext completionContext) {
 	if (curMajorContext.isImport)
 		return;
 
-	for (size_t i = 0; i < ref.size(); ++i) {
-		if (ref[i].idxAccessOpToken != SIZE_MAX) {
-			tokenInfos[ref[i].idxAccessOpToken].completionContext = completionContext;
+	for (size_t i = 0; i < ref->entries.size(); ++i) {
+		if (ref->entries[i].idxAccessOpToken != SIZE_MAX) {
+			tokenInfos[ref->entries[i].idxAccessOpToken].completionContext = completionContext;
 		}
-		if (ref[i].idxToken != SIZE_MAX) {
-			tokenInfos[ref[i].idxToken].completionContext = completionContext;
+		if (ref->entries[i].idxToken != SIZE_MAX) {
+			tokenInfos[ref->entries[i].idxToken].completionContext = completionContext;
 		}
 	}
 }
@@ -131,16 +131,16 @@ void Compiler::updateSemanticType(std::shared_ptr<TypeNameNode> targetTypeName, 
 	}
 }
 
-void Compiler::updateSemanticType(const IdRef &ref, SemanticType type) {
+void Compiler::updateSemanticType(std::shared_ptr<IdRefNode> ref, SemanticType type) {
 	if (curMajorContext.isImport)
 		return;
 
-	for (size_t i = 0; i < ref.size(); ++i) {
-		if (ref[i].idxAccessOpToken != SIZE_MAX) {
-			tokenInfos[ref[i].idxAccessOpToken].semanticType = type;
+	for (size_t i = 0; i < ref->entries.size(); ++i) {
+		if (ref->entries[i].idxAccessOpToken != SIZE_MAX) {
+			tokenInfos[ref->entries[i].idxAccessOpToken].semanticType = type;
 		}
-		if (ref[i].idxToken != SIZE_MAX) {
-			tokenInfos[ref[i].idxToken].semanticType = type;
+		if (ref->entries[i].idxToken != SIZE_MAX) {
+			tokenInfos[ref->entries[i].idxToken].semanticType = type;
 		}
 	}
 }

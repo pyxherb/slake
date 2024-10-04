@@ -23,14 +23,14 @@ Compiler::~Compiler() {
 	flags |= COMP_DELETING;
 }
 
-std::shared_ptr<Scope> slake::slkc::Compiler::completeModuleNamespaces(const IdRef &ref) {
+std::shared_ptr<Scope> slake::slkc::Compiler::completeModuleNamespaces(std::shared_ptr<IdRefNode> ref) {
 	auto scope = _rootScope;
 
-	for (size_t i = 0; i < ref.size(); ++i) {
-		std::string name = ref[i].name;
+	for (size_t i = 0; i < ref->entries.size(); ++i) {
+		std::string name = ref->entries[i].name;
 
 #if SLKC_WITH_LANGUAGE_SERVER
-		updateTokenInfo(ref[i].idxToken, [i](TokenInfo &tokenInfo) {
+		updateTokenInfo(ref->entries[i].idxToken, [i](TokenInfo &tokenInfo) {
 			tokenInfo.semanticType = i == 0 ? SemanticType::Var : SemanticType::Property;
 		});
 #endif
@@ -48,7 +48,7 @@ std::shared_ptr<Scope> slake::slkc::Compiler::completeModuleNamespaces(const IdR
 					break;
 				default:
 					throw FatalCompilationError(Message{
-						tokenRangeToSourceLocation(ref[i].tokenRange),
+						tokenRangeToSourceLocation(ref->entries[i].tokenRange),
 						MessageType::Error,
 						"Cannot import a non-module member" });
 			}
@@ -56,7 +56,7 @@ std::shared_ptr<Scope> slake::slkc::Compiler::completeModuleNamespaces(const IdR
 			auto newMod = std::make_shared<ModuleNode>(this);
 			(scope->members[name] = newMod)->bind((MemberNode *)scope->owner);
 			newMod->scope->parent = scope.get();
-			newMod->moduleName = { IdRefEntry({}, SIZE_MAX, name, {}) };
+			newMod->moduleName = std::make_shared<IdRefNode>(IdRefEntries{ IdRefEntry({}, SIZE_MAX, name, {}) });
 			scope = newMod->scope;
 		}
 	}
@@ -260,19 +260,21 @@ void Compiler::compile(std::istream &is, std::ostream &os, std::shared_ptr<Modul
 
 #if SLKC_WITH_LANGUAGE_SERVER
 	if (!curMajorContext.isImport) {
-		updateCompletionContext(_targetModule->moduleName, CompletionContext::ModuleName);
-		updateSemanticType(_targetModule->moduleName, SemanticType::Var);
+		if (_targetModule->moduleName) {
+			updateCompletionContext(_targetModule->moduleName, CompletionContext::ModuleName);
+			updateSemanticType(_targetModule->moduleName, SemanticType::Var);
 
-		IdRef curRef;
-		for (size_t i = 0; i < _targetModule->moduleName.size(); ++i) {
-			updateTokenInfo(_targetModule->moduleName[i].idxToken, [&curRef](TokenInfo &tokenInfo) {
-				tokenInfo.semanticInfo.importedPath = curRef;
-			});
-			updateTokenInfo(_targetModule->moduleName[i].idxAccessOpToken, [&curRef](TokenInfo &tokenInfo) {
-				tokenInfo.semanticInfo.importedPath = curRef;
-			});
+			std::shared_ptr<IdRefNode> curRef = std::make_shared<IdRefNode>();
+			for (size_t i = 0; i < _targetModule->moduleName->entries.size(); ++i) {
+				updateTokenInfo(_targetModule->moduleName->entries[i].idxToken, [&curRef](TokenInfo &tokenInfo) {
+					tokenInfo.semanticInfo.importedPath = curRef->duplicate<IdRefNode>();
+				});
+				updateTokenInfo(_targetModule->moduleName->entries[i].idxAccessOpToken, [&curRef](TokenInfo &tokenInfo) {
+					tokenInfo.semanticInfo.importedPath = curRef->duplicate<IdRefNode>();
+				});
 
-			curRef.push_back(_targetModule->moduleName[i]);
+				curRef->entries.push_back(_targetModule->moduleName->entries[i]);
+			}
 		}
 	}
 #endif
@@ -284,26 +286,26 @@ void Compiler::compile(std::istream &is, std::ostream &os, std::shared_ptr<Modul
 		ih.fmtVer = 0;
 		ih.nImports = (uint16_t)(_targetModule->imports.size() + _targetModule->unnamedImports.size());
 
-		if (_targetModule->moduleName.size())
+		if (_targetModule->moduleName)
 			ih.flags |= slxfmt::IMH_MODNAME;
 
 		os.write((char *)&ih, sizeof(ih));
 	}
 
-	if (!isCompleteIdRef(_targetModule->moduleName)) {
+	if (_targetModule->moduleName && !isCompleteIdRef(_targetModule->moduleName->entries)) {
 		throw FatalCompilationError(Message(
-			tokenRangeToSourceLocation(_targetModule->moduleName.back().tokenRange),
+			tokenRangeToSourceLocation(_targetModule->moduleName->entries.back().tokenRange),
 			MessageType::Error,
 			"Expecting a complete module name"));
 	}
 
-	if (_targetModule->moduleName.size()) {
-		auto trimmedModuleName = _targetModule->moduleName;
-		trimmedModuleName.pop_back();
+	if (_targetModule->moduleName) {
+		auto trimmedModuleName = _targetModule->moduleName->duplicate<IdRefNode>();
+		trimmedModuleName->entries.pop_back();
 
 		auto scope = completeModuleNamespaces(trimmedModuleName);
 
-		(scope->members[_targetModule->moduleName.back().name] = _targetModule)->bind((MemberNode *)scope->owner);
+		(scope->members[_targetModule->moduleName->entries.back().name] = _targetModule)->bind((MemberNode *)scope->owner);
 		_targetModule->scope->parent = scope.get();
 
 		compileIdRef(os, _targetModule->moduleName);
@@ -321,16 +323,16 @@ void Compiler::compile(std::istream &is, std::ostream &os, std::shared_ptr<Modul
 		updateCompletionContext(i.second.ref, CompletionContext::Import);
 		updateSemanticType(i.second.ref, SemanticType::Property);
 
-		IdRef importedPath;
-		for (size_t j = 0; j < i.second.ref.size(); ++j) {
-			updateTokenInfo(i.second.ref[j].idxAccessOpToken, [&importedPath](TokenInfo &tokenInfo) {
+		std::shared_ptr<IdRefNode> importedPath = std::make_shared<IdRefNode>();
+		for (size_t j = 0; j < i.second.ref->entries.size(); ++j) {
+			updateTokenInfo(i.second.ref->entries[j].idxAccessOpToken, [&importedPath](TokenInfo &tokenInfo) {
 				tokenInfo.semanticInfo.importedPath = importedPath;
 			});
-			updateTokenInfo(i.second.ref[j].idxToken, [&importedPath](TokenInfo &tokenInfo) {
+			updateTokenInfo(i.second.ref->entries[j].idxToken, [&importedPath](TokenInfo &tokenInfo) {
 				tokenInfo.semanticInfo.importedPath = importedPath;
 			});
 
-			importedPath.push_back(i.second.ref[j]);
+			importedPath->entries.push_back(i.second.ref->entries[j]);
 		}
 	}
 
@@ -338,16 +340,16 @@ void Compiler::compile(std::istream &is, std::ostream &os, std::shared_ptr<Modul
 		updateCompletionContext(i.ref, CompletionContext::Import);
 		updateSemanticType(i.ref, SemanticType::Property);
 
-		IdRef importedPath;
-		for (size_t j = 0; j < i.ref.size(); ++j) {
-			updateTokenInfo(i.ref[j].idxAccessOpToken, [&importedPath](TokenInfo &tokenInfo) {
+		std::shared_ptr<IdRefNode> importedPath = std::make_shared<IdRefNode>();
+		for (size_t j = 0; j < i.ref->entries.size(); ++j) {
+			updateTokenInfo(i.ref->entries[j].idxAccessOpToken, [&importedPath](TokenInfo &tokenInfo) {
 				tokenInfo.semanticInfo.importedPath = importedPath;
 			});
-			updateTokenInfo(i.ref[j].idxToken, [&importedPath](TokenInfo &tokenInfo) {
+			updateTokenInfo(i.ref->entries[j].idxToken, [&importedPath](TokenInfo &tokenInfo) {
 				tokenInfo.semanticInfo.importedPath = importedPath;
 			});
 
-			importedPath.push_back(i.ref[j]);
+			importedPath->entries.push_back(i.ref->entries[j]);
 		}
 	}
 #endif
@@ -692,8 +694,8 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 		{
 			auto thisType = std::make_shared<CustomTypeNameNode>(getFullName(i.second.get()), this, i.second->scope.get());
 			for (auto &j : i.second->genericParams) {
-				thisType->ref.back().genericArgs.push_back(std::make_shared<CustomTypeNameNode>(
-					IdRef{ { j->tokenRange, SIZE_MAX, j->name, std::deque<std::shared_ptr<TypeNameNode>>{} } },
+				thisType->ref->entries.back().genericArgs.push_back(std::make_shared<CustomTypeNameNode>(
+					std::make_shared<IdRefNode>(IdRefEntries{ { j->tokenRange, SIZE_MAX, j->name, std::deque<std::shared_ptr<TypeNameNode>>{} } }),
 					this,
 					i.second->scope.get()));
 			}
@@ -1167,13 +1169,13 @@ void Compiler::compileTypeName(std::ostream &fs, std::shared_ptr<TypeNameNode> t
 	}
 }
 
-void Compiler::compileIdRef(std::ostream &fs, const IdRef &ref) {
-	for (size_t i = 0; i < ref.size(); ++i) {
+void Compiler::compileIdRef(std::ostream &fs, std::shared_ptr<IdRefNode> ref) {
+	for (size_t i = 0; i < ref->entries.size(); ++i) {
 		slxfmt::IdRefEntryDesc rsd = {};
 
-		auto &entry = ref[i];
+		auto &entry = ref->entries[i];
 
-		if (i + 1 < ref.size())
+		if (i + 1 < ref->entries.size())
 			rsd.flags |= slxfmt::RSD_NEXT;
 
 		rsd.lenName = entry.name.size();

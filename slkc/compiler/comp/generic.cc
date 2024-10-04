@@ -11,16 +11,16 @@ void Compiler::walkTypeNameNodeForGenericInstantiation(
 	if (type->getTypeId() == TypeId::Custom) {
 		auto t = std::static_pointer_cast<CustomTypeNameNode>(type);
 
-		if ((t->ref.size() == 1) &&
-			(t->ref[0].genericArgs.empty())) {
-			if (auto it = instantiationContext.mappedGenericArgs.find(t->ref[0].name);
+		if ((t->ref->entries.size() == 1) &&
+			(t->ref->entries[0].genericArgs.empty())) {
+			if (auto it = instantiationContext.mappedGenericArgs.find(t->ref->entries[0].name);
 				it != instantiationContext.mappedGenericArgs.end()) {
 				// Note that we use nullptr to identify irreplaceable generic parameters.
 				if (it->second)
 					type = it->second;
 			}
 		} else {
-			for (auto &i : t->ref) {
+			for (auto &i : t->ref->entries) {
 				for (auto &j : i.genericArgs)
 					walkTypeNameNodeForGenericInstantiation(j, instantiationContext);
 			}

@@ -92,7 +92,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					lhs,
 					parser->parseRef());
 
-				expr->tokenRange = TokenRange{ lhs->tokenRange.beginIndex, expr->ref.back().tokenRange.endIndex };
+				expr->tokenRange = TokenRange{ lhs->tokenRange.beginIndex, expr->ref->entries.back().tokenRange.endIndex };
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				return std::static_pointer_cast<ExprNode>(expr);
@@ -486,7 +486,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 					auto ref = parseRef();
 					lhs = std::static_pointer_cast<ExprNode>(
 						std::make_shared<IdRefExprNode>(ref));
-					lhs->tokenRange = TokenRange{ ref[0].tokenRange.beginIndex, ref.back().tokenRange.endIndex };
+					lhs->tokenRange = TokenRange{ ref->entries[0].tokenRange.beginIndex, ref->entries.back().tokenRange.endIndex };
 					break;
 				}
 				case TokenId::LParenthese: {

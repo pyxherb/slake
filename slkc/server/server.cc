@@ -5,6 +5,8 @@
 using namespace slake::slkc;
 
 slake::slkc::Server::Server() {
+	compiler = std::make_shared<Compiler>();
+
 	server.Post("/documentOpen", [this](const httplib::Request &request, httplib::Response &response) {
 		puts("/documentOpen");
 
@@ -72,23 +74,23 @@ slake::slkc::Server::Server() {
 		}
 
 		{
-			std::shared_ptr<Document> doc = std::make_shared<Document>();
+			auto doc = compiler->addDoc(uri);
 			std::lock_guard<std::mutex> docMutexGuard(doc->mutex);
 
-			doc->uri = uri;
-			doc->languageId = languageId;
-			doc->compiler = std::make_shared<Compiler>();
-
-			openedDocuments[uri] = doc;
+			//doc->uri = uri;
+			//doc->languageId = languageId;
 
 			doc->compiler->modulePaths = modulePaths;
 
 			try {
 				std::stringstream ss(content);
 				util::PseudoOutputStream pseudoOs;
-				doc->compiler->compile(ss, pseudoOs);
+				compiler->curDocName = uri;
+				compiler->compile(ss, pseudoOs);
 			} catch (FatalCompilationError e) {
-				doc->compiler->messages.push_back(e.message);
+				compiler->pushMessage(
+					uri,
+					e.message);
 			}
 
 			Json::Value responseValue;
@@ -99,10 +101,10 @@ slake::slkc::Server::Server() {
 						&compilerMessagesValue = responseBodyValue["compilerMessages"];
 
 			responseBodyValue["uri"] = uri;
-			for (auto &i : doc->compiler->messages)
+			for (auto &i : doc->messages)
 				compilerMessagesValue.insert(Json::Value::ArrayIndex(0), compilerMessageToJson(i));
 
-			doc->compiler->messages.clear();
+			doc->messages.clear();
 
 			response.body = responseValue.toStyledString();
 		}
@@ -147,20 +149,23 @@ slake::slkc::Server::Server() {
 		content = rootValue["content"].asString();
 
 		{
-			if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
-				std::lock_guard<std::mutex> docMutexGuard(it->second->mutex);
-				std::shared_ptr<Document> doc = it->second;
-
-				doc->compiler->reset();
-
-				doc->compiler->modulePaths = modulePaths;
+			if (auto it = compiler->sourceDocs.find(uri); it != compiler->sourceDocs.end()) {
+				auto doc = it->second.get();
+				std::lock_guard<std::mutex> docMutexGuard(doc->mutex);
 
 				try {
 					std::stringstream ss(content);
 					util::PseudoOutputStream pseudoOs;
-					doc->compiler->compile(ss, pseudoOs);
+
+					compiler->curDocName = uri;
+
+					compiler->reload();
+					compiler->reloadDoc(uri);
+
+					compiler->compile(ss, pseudoOs);
 				} catch (FatalCompilationError e) {
-					doc->compiler->messages.push_back(e.message);
+					compiler->pushMessage(
+						uri, e.message);
 				}
 
 				Json::Value responseValue;
@@ -171,10 +176,10 @@ slake::slkc::Server::Server() {
 							&compilerMessagesValue = responseBodyValue["compilerMessages"];
 
 				responseBodyValue["uri"] = uri;
-				for (auto &i : doc->compiler->messages)
+				for (auto &i : doc->messages)
 					compilerMessagesValue.insert(Json::Value::ArrayIndex(0), compilerMessageToJson(i));
 
-				doc->compiler->messages.clear();
+				doc->messages.clear();
 
 				response.body = responseValue.toStyledString();
 			} else {
@@ -217,9 +222,9 @@ slake::slkc::Server::Server() {
 		uri = rootValue["uri"].asString();
 
 		{
-			if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
+			if (auto it = compiler->sourceDocs.find(uri); it != compiler->sourceDocs.end()) {
 				std::lock_guard<std::mutex> docMutexGuard(it->second->mutex);
-				openedDocuments.erase(it);
+				compiler->sourceDocs.erase(it);
 
 				Json::Value responseValue;
 
@@ -280,9 +285,9 @@ slake::slkc::Server::Server() {
 		}
 
 		{
-			if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
-				std::lock_guard<std::mutex> docMutexGuard(it->second->mutex);
-				std::shared_ptr<Document> doc = it->second;
+			if (auto it = compiler->sourceDocs.find(uri); it != compiler->sourceDocs.end()) {
+				auto doc = it->second.get();
+				std::lock_guard<std::mutex> docMutexGuard(doc->mutex);
 
 				Json::Value responseValue;
 
@@ -291,13 +296,13 @@ slake::slkc::Server::Server() {
 				Json::Value &responseBodyValue = responseValue["body"],
 							&completionItemsValue = responseBodyValue["completionItems"];
 
-				auto completionItems = doc->getCompletionItems(pos);
+				auto completionItems = getCompletionItems(doc, pos);
 
 				responseBodyValue["uri"] = uri;
 				for (auto &i : completionItems)
 					completionItemsValue.insert(Json::Value::ArrayIndex(0), completionItemToJson(i));
 
-				doc->compiler->messages.clear();
+				doc->messages.clear();
 
 				response.body = responseValue.toStyledString();
 			} else {
@@ -340,9 +345,9 @@ slake::slkc::Server::Server() {
 		uri = rootValue["uri"].asString();
 
 		{
-			if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
-				std::lock_guard<std::mutex> docMutexGuard(it->second->mutex);
-				std::shared_ptr<Document> doc = it->second;
+			if (auto it = compiler->sourceDocs.find(uri); it != compiler->sourceDocs.end()) {
+				auto doc = it->second.get();
+				std::lock_guard<std::mutex> docMutexGuard(doc->mutex);
 
 				Json::Value responseValue;
 
@@ -353,10 +358,10 @@ slake::slkc::Server::Server() {
 
 				responseBodyValue["uri"] = uri;
 
-				const size_t nTokens = doc->compiler->lexer->tokens.size();
+				const size_t nTokens = doc->lexer->tokens.size();
 				for (size_t i = 0; i < nTokens; ++i) {
-					Token *token = doc->compiler->lexer->tokens[i].get();
-					const TokenInfo &tokenInfo = doc->compiler->tokenInfos[i];
+					Token *token = doc->lexer->tokens[i].get();
+					const TokenInfo &tokenInfo = doc->tokenInfos[i];
 
 					SemanticToken semanticToken = {};
 
@@ -419,9 +424,9 @@ slake::slkc::Server::Server() {
 		}
 
 		{
-			if (auto it = openedDocuments.find(uri); it != openedDocuments.end()) {
+			if (auto it = compiler->sourceDocs.find(uri); it != compiler->sourceDocs.end()) {
 				std::lock_guard<std::mutex> docMutexGuard(it->second->mutex);
-				std::shared_ptr<Document> doc = it->second;
+				auto doc = it->second.get();
 
 				Json::Value responseValue;
 
@@ -429,12 +434,12 @@ slake::slkc::Server::Server() {
 
 				Json::Value &responseBodyValue = responseValue["body"];
 
-				size_t idxToken = doc->compiler->lexer->getTokenByPosition(pos);
+				size_t idxToken = doc->lexer->getTokenByPosition(pos);
 
 				if (idxToken == SIZE_MAX)
 					goto badRequest;
 
-				TokenInfo &tokenInfo = doc->compiler->tokenInfos[idxToken];
+				TokenInfo &tokenInfo = doc->tokenInfos[idxToken];
 
 				responseBodyValue["uri"] = uri;
 
@@ -451,49 +456,49 @@ slake::slkc::Server::Server() {
 						case NodeType::Var: {
 							auto m = std::static_pointer_cast<VarNode>(member);
 
-							contentsValue = doc->extractDeclaration(m);
+							contentsValue = extractDeclaration(doc, m);
 							break;
 						}
 						case NodeType::Param: {
 							auto m = std::static_pointer_cast<ParamNode>(member);
 
-							contentsValue = doc->extractDeclaration(m);
+							contentsValue = extractDeclaration(doc, m);
 							break;
 						}
 						case NodeType::LocalVar: {
 							auto m = std::static_pointer_cast<LocalVarNode>(member);
 
-							contentsValue = doc->extractDeclaration(m);
+							contentsValue = extractDeclaration(doc, m);
 							break;
 						}
 						case NodeType::FnOverloadingValue: {
 							auto m = std::static_pointer_cast<FnOverloadingNode>(member);
 
-							contentsValue = doc->extractDeclaration(m);
+							contentsValue = extractDeclaration(doc, m);
 							break;
 						}
 						case NodeType::GenericParam: {
 							auto m = std::static_pointer_cast<GenericParamNode>(member);
 
-							contentsValue = doc->extractDeclaration(m);
+							contentsValue = extractDeclaration(doc, m);
 							break;
 						}
 						case NodeType::Class: {
 							auto m = std::static_pointer_cast<ClassNode>(member);
 
-							contentsValue = doc->extractDeclaration(m);
+							contentsValue = extractDeclaration(doc, m);
 							break;
 						}
 						case NodeType::Interface: {
 							auto m = std::static_pointer_cast<InterfaceNode>(member);
 
-							contentsValue = doc->extractDeclaration(m);
+							contentsValue = extractDeclaration(doc, m);
 							break;
 						}
 						case NodeType::Module: {
 							auto m = std::static_pointer_cast<ModuleNode>(member);
 
-							contentsValue = doc->extractDeclaration(m);
+							contentsValue = extractDeclaration(doc, m);
 							break;
 						}
 					}
@@ -550,12 +555,12 @@ Json::Value slake::slkc::Server::positionToJson(const SourcePosition &pos) {
 bool slake::slkc::Server::jsonToLocation(const Json::Value &value, SourceLocation &locationOut) {
 	if (!value.isMember("begin"))
 		return false;
-	if(!jsonToPosition(value["begin"], locationOut.beginPosition))
+	if (!jsonToPosition(value["begin"], locationOut.beginPosition))
 		return false;
 
 	if (!value.isMember("end"))
 		return false;
-	if(!jsonToPosition(value["end"], locationOut.beginPosition))
+	if (!jsonToPosition(value["end"], locationOut.beginPosition))
 		return false;
 
 	return true;

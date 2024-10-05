@@ -536,7 +536,9 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 				try {
 					compileStmt(i);
 				} catch (FatalCompilationError e) {
-					messages.push_back(e.message);
+					pushMessage(
+						curDocName,
+						e.message);
 				}
 			}
 

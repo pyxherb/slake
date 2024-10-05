@@ -209,7 +209,7 @@ namespace slake {
 			Token *nextToken(bool keepNewLine = false, bool keepWhitespace = false, bool keepComment = false);
 			Token *peekToken(bool keepNewLine = false, bool keepWhitespace = false, bool keepComment = false);
 
-			inline void reset() {
+			inline void reload() {
 				context = {};
 				_endToken = {};
 				tokens.clear();

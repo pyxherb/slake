@@ -44,24 +44,25 @@ namespace slake {
 
 			struct ScopeContext {
 				std::shared_ptr<Scope> curScope;
-				std::shared_ptr<ModuleNode> curModule;
+				std::string curDocName;
 				size_t curGenericParamCount;
 			};
 
 			std::shared_ptr<Scope> curScope;
-			std::shared_ptr<ModuleNode> curModule;
+			std::string curDocName;
 
 			inline ScopeContext saveScopeContext() {
-				return { curScope, curModule};
+				return { curScope, curDocName};
 			}
 
 			inline void restoreScopeContext(ScopeContext&& savedContext) {
 				curScope = std::move(savedContext.curScope);
-				curModule = std::move(savedContext.curModule);
+				curDocName = std::move(savedContext.curDocName);
 			}
 
 			Lexer *lexer;
 			Compiler *compiler;
+			SourceDocument *curDoc;
 
 			std::deque<std::string> curDocStringLines;
 			size_t curMinDocIndentLevel = SIZE_MAX;
@@ -71,9 +72,9 @@ namespace slake {
 			void updateLineCommentDocumentation(Token *token);
 			std::string extractLineCommentDocumentation();
 
-			inline void reset() {
+			inline void reload() {
 				curScope.reset();
-				curModule.reset();
+				curDocName.clear();
 				lexer = nullptr;
 				compiler = nullptr;
 			}
@@ -84,19 +85,19 @@ namespace slake {
 					lexer->nextToken();
 					return token;
 				}
-				throw SyntaxError(std::string("Expecting ") + getTokenName(tokenId), lexer->getTokenIndex(token));
+				throw SyntaxError(std::string("Expecting ") + getTokenName(tokenId), { curDoc, lexer->getTokenIndex(token) });
 			}
 
 			inline Token *expectToken(Token *token) {
 				if (token->tokenId == TokenId::End)
-					throw SyntaxError("Expecting more tokens", lexer->getTokenIndex(token));
+					throw SyntaxError("Expecting more tokens", { curDoc, lexer->getTokenIndex(token) });
 
 				return token;
 			}
 
 			inline Token *expectToken(Token *token, TokenId tokenId) {
 				if (token->tokenId != tokenId)
-					throw SyntaxError(std::string("Expecting ") + getTokenName(tokenId), lexer->getTokenIndex(token));
+					throw SyntaxError(std::string("Expecting ") + getTokenName(tokenId), { curDoc, lexer->getTokenIndex(token) });
 
 				return token;
 			}
@@ -105,7 +106,7 @@ namespace slake {
 				if (token->tokenId == tokenId)
 					return token;
 
-				throw SyntaxError(std::string("Unexpected ") + getTokenName(token->tokenId), lexer->getTokenIndex(token));
+				throw SyntaxError(std::string("Unexpected ") + getTokenName(token->tokenId), { curDoc, lexer->getTokenIndex(token) });
 			}
 
 			template <typename... Args>
@@ -164,7 +165,7 @@ namespace slake {
 			void parseModuleDecl();
 			void parseImportList();
 
-			void parse(Lexer *lexer, Compiler *compiler);
+			void parse(SourceDocument *curDoc, Compiler *compiler);
 		};
 	}
 }

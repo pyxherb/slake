@@ -237,13 +237,22 @@ namespace slake {
 		};
 #endif
 
+		struct SourceDocument {
+			Compiler *compiler;
+			std::shared_ptr<ModuleNode> targetModule;
+			std::unique_ptr<Lexer> lexer;
+			std::deque<Message> messages;
+			std::mutex mutex;
+#if SLKC_WITH_LANGUAGE_SERVER
+			std::deque<TokenInfo> tokenInfos;
+#endif
+		};
+
 		class Compiler {
 		private:
 			MajorContext curMajorContext;
 			std::shared_ptr<CompiledFnNode> curFn;
 
-			std::shared_ptr<Scope> _rootScope = std::make_shared<Scope>();
-			std::shared_ptr<ModuleNode> _targetModule;
 			std::unique_ptr<Runtime> _rt;
 			std::deque<MajorContext> _savedMajorContexts;
 
@@ -322,11 +331,6 @@ namespace slake {
 			std::shared_ptr<Scope> scopeOf(AstNode *node);
 
 			std::shared_ptr<AstNode> _resolveCustomTypeName(CustomTypeNameNode *typeName, const std::set<Scope *> &resolvingScopes);
-			/// @brief Resolve a custom type.
-			/// @note This method also updates resolved generic arguments.
-			/// @param typeName Type name to be resolved.
-			/// @return Resolved node, nullptr otherwise.
-			std::shared_ptr<AstNode> resolveCustomTypeName(CustomTypeNameNode *typeName);
 
 			bool isSameType(std::shared_ptr<TypeNameNode> x, std::shared_ptr<TypeNameNode> y);
 
@@ -411,7 +415,11 @@ namespace slake {
 					return true;
 				}
 			};
-			std::set<IdRefEntries, ModuleRefComparator> importedModules;
+
+			struct ModuleImportInfo {
+				std::string docName;
+			};
+			std::map<IdRefEntries, ModuleImportInfo, ModuleRefComparator> importedModules;
 
 			static std::unique_ptr<std::ifstream> moduleLocator(Runtime *rt, HostObjectRef<IdRefObject> ref);
 			std::shared_ptr<Scope> completeModuleNamespaces(std::shared_ptr<IdRefNode> ref);
@@ -434,58 +442,9 @@ namespace slake {
 			//
 
 			struct GenericNodeArgListComparator {
-				inline bool operator()(
+				bool operator()(
 					const std::deque<std::shared_ptr<TypeNameNode>> &lhs,
-					const std::deque<std::shared_ptr<TypeNameNode>> &rhs) const noexcept {
-					if (lhs.size() < rhs.size())
-						return true;
-					if (lhs.size() > rhs.size())
-						return false;
-
-					for (size_t i = 0; i < lhs.size(); ++i) {
-						auto l = lhs[i], r = rhs[i];
-						auto lhsTypeId = l->getTypeId(), rhsTypeId = r->getTypeId();
-
-						if (lhsTypeId < rhsTypeId)
-							return true;
-						else if (lhsTypeId > rhsTypeId)
-							return false;
-						else {
-							//
-							// Do some special checks for some kinds of type name - such as custom.
-							//
-							switch (lhsTypeId) {
-								case TypeId::Custom: {
-									auto lhsTypeName = std::static_pointer_cast<CustomTypeNameNode>(lhs[i]),
-										 rhsTypeName = std::static_pointer_cast<CustomTypeNameNode>(rhs[i]);
-
-									if (lhsTypeName->compiler < rhsTypeName->compiler)
-										return true;
-									else if (lhsTypeName->compiler > rhsTypeName->compiler)
-										return false;
-									else {
-										std::shared_ptr<AstNode> lhsNode, rhsNode;
-										try {
-											lhsNode = lhsTypeName->compiler->resolveCustomTypeName(lhsTypeName.get());
-											rhsNode = rhsTypeName->compiler->resolveCustomTypeName(rhsTypeName.get());
-										} catch (FatalCompilationError e) {
-											// Supress the exceptions - the function should be noexcept, we have to raise compilation errors out of the comparator.
-										}
-
-										if (lhsNode < rhsNode)
-											return true;
-										else if (lhsNode > rhsNode)
-											return false;
-									}
-
-									break;
-								}
-							}
-						}
-					}
-
-					return false;
-				}
+					const std::deque<std::shared_ptr<TypeNameNode>> &rhs) const noexcept;
 			};
 
 			bool isFnOverloadingDuplicated(std::shared_ptr<FnOverloadingNode> lhs, std::shared_ptr<FnOverloadingNode> rhs) {
@@ -593,36 +552,68 @@ namespace slake {
 
 			std::shared_ptr<Scope> mergeScope(Scope *a, Scope *b, bool keepStaticMembers = false);
 
-			friend class AstVisitor;
 			friend class MemberNode;
 			friend std::string std::to_string(std::shared_ptr<slake::slkc::TypeNameNode> typeName, slake::slkc::Compiler *compiler, bool forMangling);
 			friend class Parser;
-			friend struct Document;
 
 		public:
-#if SLKC_WITH_LANGUAGE_SERVER
-			std::deque<TokenInfo> tokenInfos;
-#endif
-			std::deque<Message> messages;
+			std::shared_ptr<Scope> _rootScope = std::make_shared<Scope>();
+			std::unordered_map<std::string, std::unique_ptr<SourceDocument>> sourceDocs;
+
+			std::string curDocName;
+			std::string mainDocName;
+
 			std::deque<std::string> modulePaths;
 			CompilerOptions options;
 			CompilerFlags flags = 0;
-			std::unique_ptr<Lexer> lexer;
 
 			inline Compiler(CompilerOptions options = {})
 				: options(options), _rt(std::make_unique<Runtime>(RT_NOJIT)) {}
 			~Compiler();
 
-			void compile(std::istream &is, std::ostream &os, std::shared_ptr<ModuleNode> targetModule = {});
+			/// @brief Resolve a custom type.
+			/// @note This method also updates resolved generic arguments.
+			/// @param typeName Type name to be resolved.
+			/// @return Resolved node, nullptr otherwise.
+			std::shared_ptr<AstNode> resolveCustomTypeName(CustomTypeNameNode *typeName);
 
-			void reset();
+			void pushMessage(const std::string &docName, const Message &message);
+
+			inline SourceDocument *addDoc(const std::string &docName) {
+				auto doc = std::make_unique<SourceDocument>();
+
+				SourceDocument *pDoc = doc.get();
+
+				doc->compiler = this;
+				doc->lexer = std::make_unique<Lexer>();
+				doc->targetModule = std::make_shared<ModuleNode>(this);
+
+				sourceDocs[docName] = std::move(doc);
+
+				return pDoc;
+			}
+			void reloadDoc(const std::string &docName);
+			inline void removeDoc(const std::string &docName) {
+				reloadDoc(docName);
+
+				sourceDocs.erase(docName);
+			}
+
+			void compile(std::istream &is, std::ostream &os);
+
+			void reload();
 
 			std::shared_ptr<IdRefNode> getFullName(MemberNode *member);
 
 			inline SourceLocation tokenRangeToSourceLocation(const TokenRange &tokenRange) {
 				return SourceLocation{
-							lexer->tokens[tokenRange.beginIndex]->location.beginPosition,
-							lexer->tokens[tokenRange.endIndex]->location.endPosition };
+					tokenRange.document->lexer->tokens[tokenRange.beginIndex]->location.beginPosition,
+					tokenRange.document->lexer->tokens[tokenRange.endIndex]->location.endPosition
+				};
+			}
+
+			SourceDocument* getCurDoc() {
+				return sourceDocs.at(curDocName).get();
 			}
 		};
 	}

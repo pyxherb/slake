@@ -25,63 +25,63 @@ std::shared_ptr<TypeNameNode> Parser::parseTypeName(bool required) {
 			switch (token->tokenId) {
 				case TokenId::I8TypeName:
 					type = std::make_shared<I8TypeNameNode>(lexer->getTokenIndex(token));
-					type->tokenRange = lexer->getTokenIndex(token);
+					type->tokenRange = { curDoc, lexer->getTokenIndex(token) };
 					break;
 				case TokenId::I16TypeName:
 					type = std::make_shared<I16TypeNameNode>(lexer->getTokenIndex(token));
-					type->tokenRange = lexer->getTokenIndex(token);
+					type->tokenRange = { curDoc, lexer->getTokenIndex(token) };
 					break;
 				case TokenId::I32TypeName:
 					type = std::make_shared<I32TypeNameNode>(lexer->getTokenIndex(token));
-					type->tokenRange = lexer->getTokenIndex(token);
+					type->tokenRange = { curDoc, lexer->getTokenIndex(token) };
 					break;
 				case TokenId::I64TypeName:
 					type = std::make_shared<I64TypeNameNode>(lexer->getTokenIndex(token));
-					type->tokenRange = lexer->getTokenIndex(token);
+					type->tokenRange = { curDoc, lexer->getTokenIndex(token) };
 					break;
 				case TokenId::U8TypeName:
 					type = std::make_shared<U8TypeNameNode>(lexer->getTokenIndex(token));
-					type->tokenRange = lexer->getTokenIndex(token);
+					type->tokenRange = { curDoc, lexer->getTokenIndex(token) };
 					break;
 				case TokenId::U16TypeName:
 					type = std::make_shared<U16TypeNameNode>(lexer->getTokenIndex(token));
-					type->tokenRange = lexer->getTokenIndex(token);
+					type->tokenRange = { curDoc, lexer->getTokenIndex(token) };
 					break;
 				case TokenId::U32TypeName:
 					type = std::make_shared<U32TypeNameNode>(lexer->getTokenIndex(token));
-					type->tokenRange = lexer->getTokenIndex(token);
+					type->tokenRange = { curDoc, lexer->getTokenIndex(token) };
 					break;
 				case TokenId::U64TypeName:
 					type = std::make_shared<U64TypeNameNode>(lexer->getTokenIndex(token));
-					type->tokenRange = lexer->getTokenIndex(token);
+					type->tokenRange = { curDoc, lexer->getTokenIndex(token) };
 					break;
 				case TokenId::F32TypeName:
 					type = std::make_shared<F32TypeNameNode>(lexer->getTokenIndex(token));
-					type->tokenRange = lexer->getTokenIndex(token);
+					type->tokenRange = { curDoc, lexer->getTokenIndex(token) };
 					break;
 				case TokenId::F64TypeName:
 					type = std::make_shared<F64TypeNameNode>(lexer->getTokenIndex(token));
-					type->tokenRange = lexer->getTokenIndex(token);
+					type->tokenRange = { curDoc, lexer->getTokenIndex(token) };
 					break;
 				case TokenId::StringTypeName:
 					type = std::make_shared<StringTypeNameNode>(lexer->getTokenIndex(token));
-					type->tokenRange = lexer->getTokenIndex(token);
+					type->tokenRange = { curDoc, lexer->getTokenIndex(token) };
 					break;
 				case TokenId::BoolTypeName:
 					type = std::make_shared<BoolTypeNameNode>(lexer->getTokenIndex(token));
-					type->tokenRange = lexer->getTokenIndex(token);
+					type->tokenRange = { curDoc, lexer->getTokenIndex(token) };
 					break;
 				case TokenId::AutoTypeName:
 					type = std::make_shared<AutoTypeNameNode>(lexer->getTokenIndex(token));
-					type->tokenRange = lexer->getTokenIndex(token);
+					type->tokenRange = { curDoc, lexer->getTokenIndex(token) };
 					break;
 				case TokenId::VoidTypeName:
 					type = std::make_shared<VoidTypeNameNode>(lexer->getTokenIndex(token));
-					type->tokenRange = lexer->getTokenIndex(token);
+					type->tokenRange = { curDoc, lexer->getTokenIndex(token) };
 					break;
 				case TokenId::AnyTypeName:
 					type = std::make_shared<AnyTypeNameNode>(lexer->getTokenIndex(token));
-					type->tokenRange = lexer->getTokenIndex(token);
+					type->tokenRange = { curDoc, lexer->getTokenIndex(token) };
 					break;
 			}
 			lexer->nextToken();
@@ -96,14 +96,16 @@ std::shared_ptr<TypeNameNode> Parser::parseTypeName(bool required) {
 				type = std::make_shared<BadTypeNameNode>(
 					ref->entries[0].idxToken,
 					lexer->context.curIndex);
-				type->tokenRange = TokenRange{
+				type->tokenRange = {
+					curDoc,
 					ref->entries[0].tokenRange.beginIndex,
 					ref->entries.back().tokenRange.endIndex
 				};
 				return type;
 			}
 			type = std::make_shared<CustomTypeNameNode>(ref, compiler, curScope.get());
-			type->tokenRange = TokenRange{
+			type->tokenRange = {
+				curDoc,
 				ref->entries[0].tokenRange.beginIndex,
 				ref->entries.back().tokenRange.endIndex
 			};
@@ -111,7 +113,8 @@ std::shared_ptr<TypeNameNode> Parser::parseTypeName(bool required) {
 		}
 		default:
 			if (required) {
-				compiler->messages.push_back(
+				compiler->pushMessage(
+					compiler->curDocName,
 					Message(
 						token->location,
 						MessageType::Error,
@@ -120,7 +123,7 @@ std::shared_ptr<TypeNameNode> Parser::parseTypeName(bool required) {
 			type = std::make_shared<BadTypeNameNode>(
 				lexer->getTokenIndex(token),
 				lexer->getTokenIndex(token));
-			type->tokenRange = lexer->getTokenIndex(token);
+			type->tokenRange = { curDoc, lexer->getTokenIndex(token) };
 			return type;
 	}
 
@@ -134,7 +137,8 @@ std::shared_ptr<TypeNameNode> Parser::parseTypeName(bool required) {
 
 		Token *rBracketToken = lexer->peekToken();
 		if (rBracketToken->tokenId != TokenId::RBracket) {
-			compiler->messages.push_back(
+			compiler->pushMessage(
+				compiler->curDocName,
 				Message(
 					rBracketToken->location,
 					MessageType::Error,

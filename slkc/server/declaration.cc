@@ -4,59 +4,61 @@
 using namespace slake;
 using namespace slake::slkc;
 
-Json::Value Document::extractTypeName(std::shared_ptr<TypeNameNode> typeName) {
-	return std::to_string(typeName, compiler.get());
+Json::Value slake::slkc::extractTypeName(SourceDocument *document, std::shared_ptr<TypeNameNode> typeName) {
+	return std::to_string(typeName, document->compiler);
 }
 
-Json::Value Document::extractDeclaration(std::shared_ptr<VarNode> m) {
+Json::Value slake::slkc::extractDeclaration(SourceDocument *document, std::shared_ptr<VarNode> m) {
 	Json::Value value;
 	Json::Value &metadataValue = value["metadata"];
 
 	value["declarationKind"] = m->isProperty ? (uint32_t)DeclarationKind::Property : (uint32_t)DeclarationKind::Var;
 
-	std::string fullName = std::to_string(compiler->getFullName(m.get())->entries, compiler.get());
+	std::string fullName = std::to_string(
+		document->compiler->getFullName(m.get())->entries,
+		document->compiler);
 
 	metadataValue["fullName"] = fullName;
-	metadataValue["type"] = extractTypeName(m->type ? m->type : std::make_shared<AnyTypeNameNode>(SIZE_MAX));
+	metadataValue["type"] = extractTypeName(document, m->type ? m->type : std::make_shared<AnyTypeNameNode>(SIZE_MAX));
 
 	return value;
 }
 
-Json::Value Document::extractDeclaration(std::shared_ptr<ParamNode> m) {
+Json::Value slake::slkc::extractDeclaration(SourceDocument *document, std::shared_ptr<ParamNode> m) {
 	Json::Value value;
 	Json::Value &metadataValue = value["metadata"];
 
 	value["declarationKind"] = (uint32_t)DeclarationKind::Param;
 
 	metadataValue["name"] = m->name;
-	metadataValue["type"] = extractTypeName(m->type ? m->type : std::make_shared<AnyTypeNameNode>(SIZE_MAX));
+	metadataValue["type"] = extractTypeName(document, m->type ? m->type : std::make_shared<AnyTypeNameNode>(SIZE_MAX));
 
 	return value;
 }
 
-Json::Value Document::extractDeclaration(std::shared_ptr<LocalVarNode> m) {
+Json::Value slake::slkc::extractDeclaration(SourceDocument *document, std::shared_ptr<LocalVarNode> m) {
 	Json::Value value;
 	Json::Value &metadataValue = value["metadata"];
 
 	value["declarationKind"] = (uint32_t)DeclarationKind::LocalVar;
 
 	metadataValue["name"] = m->name;
-	metadataValue["type"] = extractTypeName(m->type ? m->type : std::make_shared<AnyTypeNameNode>(SIZE_MAX));
+	metadataValue["type"] = extractTypeName(document, m->type ? m->type : std::make_shared<AnyTypeNameNode>(SIZE_MAX));
 
 	return value;
 }
 
-Json::Value Document::extractDeclaration(std::shared_ptr<FnOverloadingNode> m) {
+Json::Value slake::slkc::extractDeclaration(SourceDocument *document, std::shared_ptr<FnOverloadingNode> m) {
 	Json::Value value;
 	Json::Value &metadataValue = value["metadata"];
 
 	value["declarationKind"] = (uint32_t)DeclarationKind::FnOverloading;
 
-	metadataValue["fullName"] = std::to_string(compiler->getFullName(m.get())->entries, compiler.get());
-	metadataValue["returnType"] = extractTypeName((m->returnType ? m->returnType : std::make_shared<VoidTypeNameNode>(SIZE_MAX)));
+	metadataValue["fullName"] = std::to_string(document->compiler->getFullName(m.get())->entries, document->compiler);
+	metadataValue["returnType"] = extractTypeName(document, (m->returnType ? m->returnType : std::make_shared<VoidTypeNameNode>(SIZE_MAX)));
 
 	for (size_t i = 0; i < m->params.size(); ++i) {
-		metadataValue["paramDecls"].append(extractDeclaration(m->params[i]));
+		metadataValue["paramDecls"].append(extractDeclaration(document, m->params[i]));
 	}
 
 	metadataValue["hasVaridicParams"] = m->isVaridic();
@@ -64,7 +66,7 @@ Json::Value Document::extractDeclaration(std::shared_ptr<FnOverloadingNode> m) {
 	return value;
 }
 
-Json::Value Document::extractDeclaration(std::shared_ptr<GenericParamNode> m) {
+Json::Value slake::slkc::extractDeclaration(SourceDocument *document, std::shared_ptr<GenericParamNode> m) {
 	Json::Value value;
 	Json::Value &metadataValue = value["metadata"];
 
@@ -75,13 +77,15 @@ Json::Value Document::extractDeclaration(std::shared_ptr<GenericParamNode> m) {
 	return value;
 }
 
-Json::Value Document::extractDeclaration(std::shared_ptr<ClassNode> m) {
+Json::Value slake::slkc::extractDeclaration(SourceDocument *document, std::shared_ptr<ClassNode> m) {
 	Json::Value value;
 	Json::Value &metadataValue = value["metadata"];
 
 	value["declarationKind"] = (uint32_t)DeclarationKind::Class;
 
-	metadataValue["fullName"] = std::to_string(compiler->getFullName(m.get())->entries, compiler.get());
+	metadataValue["fullName"] = std::to_string(
+		document->compiler->getFullName(m.get())->entries,
+		document->compiler);
 	if (m->documentation.size()) {
 		value["documentation"] = m->documentation;
 	}
@@ -89,24 +93,31 @@ Json::Value Document::extractDeclaration(std::shared_ptr<ClassNode> m) {
 	return value;
 }
 
-Json::Value Document::extractDeclaration(std::shared_ptr<InterfaceNode> m) {
+Json::Value slake::slkc::extractDeclaration(SourceDocument *document, std::shared_ptr<InterfaceNode> m) {
 	Json::Value value;
 	Json::Value &metadataValue = value["metadata"];
 
 	value["declarationKind"] = (uint32_t)DeclarationKind::Interface;
 
-	metadataValue["fullName"] = std::to_string(compiler->getFullName(m.get())->entries, compiler.get());
+	metadataValue["fullName"] = std::to_string(
+		document->compiler
+			->getFullName(
+				m.get())
+			->entries,
+		document->compiler);
 
 	return value;
 }
 
-Json::Value Document::extractDeclaration(std::shared_ptr<ModuleNode> m) {
+Json::Value slake::slkc::extractDeclaration(SourceDocument *document, std::shared_ptr<ModuleNode> m) {
 	Json::Value value;
 	Json::Value &metadataValue = value["metadata"];
 
 	value["declarationKind"] = (uint32_t)DeclarationKind::Module;
 
-	metadataValue["fullName"] = std::to_string(compiler->getFullName(m.get())->entries, compiler.get());
+	metadataValue["fullName"] = std::to_string(
+		document->compiler->getFullName(m.get())->entries,
+		document->compiler);
 
 	return value;
 }

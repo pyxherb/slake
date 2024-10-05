@@ -179,7 +179,7 @@ namespace slake {
 
 			bool isAsync = false;
 
-			inline CompiledFnNode(const CompiledFnNode &other) {
+			inline CompiledFnNode(const CompiledFnNode &other) : MemberNode(other) {
 				name = other.name;
 				body = other.body;
 				labels = other.labels;

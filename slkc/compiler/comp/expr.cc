@@ -429,7 +429,8 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 												"No matching function was found"));
 									} else if (overloadings.size() > 1) {
 										for (auto i : overloadings) {
-											messages.push_back(
+											pushMessage(
+												curDocName,
 												Message(
 													tokenRangeToSourceLocation(i->tokenRange),
 													MessageType::Note,
@@ -635,7 +636,8 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 								"No matching function was found"));
 					} else if (overloadings.size() > 1) {
 						for (auto i : overloadings) {
-							messages.push_back(
+							pushMessage(
+								curDocName,
 								Message(
 									tokenRangeToSourceLocation(i->tokenRange),
 									MessageType::Note,
@@ -1065,7 +1067,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 				_insertIns(Opcode::MOV, curMajorContext.curMinorContext.evalDest, { ce });
 			} else {
 				auto initArray = std::make_shared<ArrayExprNode>();
-				tokenRangeToSourceLocation(initArray->tokenRange) = tokenRangeToSourceLocation(e->tokenRange);
+				initArray->tokenRange = e->tokenRange;
 				initArray->elements.resize(e->elements.size());
 
 				initArray->evaluatedElementType = type->elementType;

@@ -74,12 +74,15 @@ namespace slake {
 			SourcePosition beginPosition, endPosition;
 		};
 
-		struct TokenRange {
-			size_t beginIndex, endIndex;
+		struct SourceDocument;
 
-			inline TokenRange() : beginIndex(SIZE_MAX), endIndex(SIZE_MAX) {}
-			inline TokenRange(size_t index) : beginIndex(index), endIndex(index) {}
-			inline TokenRange(size_t beginIndex, size_t endIndex) : beginIndex(beginIndex), endIndex(endIndex) {}
+		struct TokenRange {
+			SourceDocument *document = nullptr;
+			size_t beginIndex = SIZE_MAX, endIndex = SIZE_MAX;
+
+			inline TokenRange() = default;
+			inline TokenRange(SourceDocument *document, size_t index) : document(document), beginIndex(index), endIndex(index) {}
+			inline TokenRange(SourceDocument *document, size_t beginIndex, size_t endIndex) : document(document), beginIndex(beginIndex), endIndex(endIndex) {}
 
 			operator bool() {
 				return beginIndex != SIZE_MAX;

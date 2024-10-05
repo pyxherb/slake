@@ -23,6 +23,35 @@ Compiler::~Compiler() {
 	flags |= COMP_DELETING;
 }
 
+void Compiler::reloadDoc(const std::string &docName) {
+	auto &doc = sourceDocs.at(docName);
+
+	doc->targetModule->scope->parent->members.erase(doc->targetModule->getName().name);
+
+	for (auto &i : doc->targetModule->imports) {
+		if (auto it = importedModules.find(i.second.ref->entries); it != importedModules.end()) {
+			std::string namedImportDocName = it->second.docName;
+			importedModules.erase(it->first);
+			reloadDoc(namedImportDocName);
+		}
+	}
+
+	for (auto &i : doc->targetModule->unnamedImports) {
+		if (auto it = importedModules.find(i.ref->entries); it != importedModules.end()) {
+			std::string importDocName = it->second.docName;
+			importedModules.erase(it);
+			reloadDoc(docName);
+		}
+	}
+
+	doc->lexer = std::make_unique<Lexer>();
+	doc->targetModule = std::make_shared<ModuleNode>(this);
+}
+
+void Compiler::pushMessage(const std::string &docName, const Message &message) {
+	sourceDocs.at(docName)->messages.push_back(message);
+}
+
 std::shared_ptr<Scope> slake::slkc::Compiler::completeModuleNamespaces(std::shared_ptr<IdRefNode> ref) {
 	auto scope = _rootScope;
 
@@ -141,9 +170,10 @@ void Compiler::verifyIfImplementationFulfilled(std::shared_ptr<ClassNode> node) 
 	collectMethodsForFulfillmentVerification(node.get(), unfilledMethodsOut);
 
 	if (unfilledMethodsOut.size()) {
-		messages.push_back(
+		pushMessage(
+			curDocName,
 			Message(
-				tokenRangeToSourceLocation(node->idxNameToken),
+				tokenRangeToSourceLocation({ getCurDoc(), node->idxNameToken }),
 				MessageType::Error,
 				"Not all abstract methods are implemented"));
 	}
@@ -196,11 +226,9 @@ void Compiler::validateScope(Scope *scope) {
 	popMajorContext();
 }
 
-void Compiler::compile(std::istream &is, std::ostream &os, std::shared_ptr<ModuleNode> targetModule) {
-	if (targetModule)
-		_targetModule = targetModule;
-	else
-		_targetModule = std::make_shared<ModuleNode>(this);
+void Compiler::compile(std::istream &is, std::ostream &os) {
+	auto &doc = sourceDocs.at(curDocName);
+	auto _targetModule = doc->targetModule;
 
 	//
 	// Clear the previous generic cache.
@@ -211,8 +239,6 @@ void Compiler::compile(std::istream &is, std::ostream &os, std::shared_ptr<Modul
 	//
 	_genericCacheDir.clear();
 
-	lexer.reset();
-
 	std::string s;
 	{
 		is.seekg(0, std::ios::end);
@@ -222,9 +248,9 @@ void Compiler::compile(std::istream &is, std::ostream &os, std::shared_ptr<Modul
 		is.read(s.data(), size);
 	}
 
-	lexer = std::make_unique<Lexer>();
+	doc->lexer = std::make_unique<Lexer>();
 	try {
-		lexer->lex(s);
+		doc->lexer->lex(s);
 	} catch (LexicalError e) {
 		throw FatalCompilationError(
 			Message(
@@ -234,13 +260,12 @@ void Compiler::compile(std::istream &is, std::ostream &os, std::shared_ptr<Modul
 	}
 
 #if SLKC_WITH_LANGUAGE_SERVER
-	if (!curMajorContext.isImport)
-		tokenInfos.resize(lexer->tokens.size());
+	doc->tokenInfos.resize(doc->lexer->tokens.size());
 #endif
 
 	Parser parser;
 	try {
-		parser.parse(lexer.get(), this);
+		parser.parse(doc.get(), this);
 	} catch (SyntaxError e) {
 		throw FatalCompilationError(
 			Message(
@@ -254,27 +279,24 @@ void Compiler::compile(std::istream &is, std::ostream &os, std::shared_ptr<Modul
 	// we have to resize the token information again for the new tokens.
 	//
 #if SLKC_WITH_LANGUAGE_SERVER
-	if (!curMajorContext.isImport)
-		tokenInfos.resize(lexer->tokens.size());
+	doc->tokenInfos.resize(doc->lexer->tokens.size());
 #endif
 
 #if SLKC_WITH_LANGUAGE_SERVER
-	if (!curMajorContext.isImport) {
-		if (_targetModule->moduleName) {
-			updateCompletionContext(_targetModule->moduleName, CompletionContext::ModuleName);
-			updateSemanticType(_targetModule->moduleName, SemanticType::Var);
+	if (_targetModule->moduleName) {
+		updateCompletionContext(_targetModule->moduleName, CompletionContext::ModuleName);
+		updateSemanticType(_targetModule->moduleName, SemanticType::Var);
 
-			std::shared_ptr<IdRefNode> curRef = std::make_shared<IdRefNode>();
-			for (size_t i = 0; i < _targetModule->moduleName->entries.size(); ++i) {
-				updateTokenInfo(_targetModule->moduleName->entries[i].idxToken, [&curRef](TokenInfo &tokenInfo) {
-					tokenInfo.semanticInfo.importedPath = curRef->duplicate<IdRefNode>();
-				});
-				updateTokenInfo(_targetModule->moduleName->entries[i].idxAccessOpToken, [&curRef](TokenInfo &tokenInfo) {
-					tokenInfo.semanticInfo.importedPath = curRef->duplicate<IdRefNode>();
-				});
+		std::shared_ptr<IdRefNode> curRef = std::make_shared<IdRefNode>();
+		for (size_t i = 0; i < _targetModule->moduleName->entries.size(); ++i) {
+			updateTokenInfo(_targetModule->moduleName->entries[i].idxToken, [&curRef](TokenInfo &tokenInfo) {
+				tokenInfo.semanticInfo.importedPath = curRef->duplicate<IdRefNode>();
+			});
+			updateTokenInfo(_targetModule->moduleName->entries[i].idxAccessOpToken, [&curRef](TokenInfo &tokenInfo) {
+				tokenInfo.semanticInfo.importedPath = curRef->duplicate<IdRefNode>();
+			});
 
-				curRef->entries.push_back(_targetModule->moduleName->entries[i]);
-			}
+			curRef->entries.push_back(_targetModule->moduleName->entries[i]);
 		}
 	}
 #endif
@@ -304,6 +326,8 @@ void Compiler::compile(std::istream &is, std::ostream &os, std::shared_ptr<Modul
 		trimmedModuleName->entries.pop_back();
 
 		auto scope = completeModuleNamespaces(trimmedModuleName);
+
+		importedModules[_targetModule->moduleName->entries] = { curDocName };
 
 		(scope->members[_targetModule->moduleName->entries.back().name] = _targetModule)->bind((MemberNode *)scope->owner);
 		_targetModule->scope->parent = scope.get();
@@ -364,7 +388,6 @@ void Compiler::compile(std::istream &is, std::ostream &os, std::shared_ptr<Modul
 		compileIdRef(os, i.second.ref);
 
 		pushMajorContext();
-		curMajorContext.isImport = true;
 
 		importModule(i.second.ref);
 
@@ -373,7 +396,7 @@ void Compiler::compile(std::istream &is, std::ostream &os, std::shared_ptr<Modul
 		if (_targetModule->scope->members.count(i.first))
 			throw FatalCompilationError(
 				Message(
-					lexer->tokens[i.second.idxNameToken]->location,
+					doc->lexer->tokens[i.second.idxNameToken]->location,
 					MessageType::Error,
 					"The import item shadows an existing member"));
 
@@ -389,7 +412,6 @@ void Compiler::compile(std::istream &is, std::ostream &os, std::shared_ptr<Modul
 		compileIdRef(os, i.ref);
 
 		pushMajorContext();
-		curMajorContext.isImport = true;
 
 		importModule(i.ref);
 
@@ -414,9 +436,6 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 	for (auto &i : scope->members) {
 		switch (i.second->getNodeType()) {
 			case NodeType::Var: {
-				if (i.second->isImported)
-					continue;
-
 				auto m = std::static_pointer_cast<VarNode>(i.second);
 				vars[i.first] = m;
 
@@ -437,9 +456,6 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				break;
 			}
 			case NodeType::Fn: {
-				if (i.second->isImported)
-					continue;
-
 				auto m = std::static_pointer_cast<FnNode>(i.second);
 				funcs[i.first] = m;
 
@@ -541,9 +557,6 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				break;
 			}
 			case NodeType::Class: {
-				if (i.second->isImported)
-					continue;
-
 				auto m = std::static_pointer_cast<ClassNode>(i.second);
 				classes[i.first] = m;
 
@@ -622,9 +635,6 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				break;
 			}
 			case NodeType::Interface: {
-				if (i.second->isImported)
-					continue;
-
 				auto m = std::static_pointer_cast<InterfaceNode>(i.second);
 				interfaces[i.first] = m;
 
@@ -672,7 +682,8 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 	auto mergeGenericParams = [this](const GenericParamNodeList &newParams) {
 		for (auto &i : newParams) {
 			if (curMajorContext.genericParamIndices.count(i->name))
-				messages.push_back(
+				pushMessage(
+					curDocName,
 					Message(
 						tokenRangeToSourceLocation(i->tokenRange),
 						MessageType::Error,
@@ -793,10 +804,12 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				while (j->parentClass) {
 					j = (ClassNode *)resolveCustomTypeName((CustomTypeNameNode *)j->parentClass.get()).get();
 					if (j->scope->members.count(i.first)) {
-						messages.push_back(Message(
-							tokenRangeToSourceLocation(i.second->tokenRange),
-							MessageType::Error,
-							"The member shadows another member from the parent"));
+						pushMessage(
+							curDocName,
+							Message(
+								tokenRangeToSourceLocation(i.second->tokenRange),
+								MessageType::Error,
+								"The member shadows another member from the parent"));
 
 						goto skipCurVar;
 					}
@@ -826,7 +839,8 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 			compileTypeName(os, varType);
 
 			if (isLValueType(varType)) {
-				messages.push_back(
+				pushMessage(
+					curDocName,
 					Message(
 						tokenRangeToSourceLocation(varType->tokenRange),
 						MessageType::Error,
@@ -838,7 +852,8 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				if (auto ce = evalConstExpr(i.second->initValue); ce)
 					compileValue(os, ce);
 				else {
-					messages.push_back(
+					pushMessage(
+						curDocName,
 						Message(
 							tokenRangeToSourceLocation(i.second->initValue->tokenRange),
 							MessageType::Error,
@@ -868,9 +883,10 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 
 			if (j->isVirtual) {
 				if (i.first == "new") {
-					messages.push_back(
+					pushMessage(
+						curDocName,
 						Message(
-							lexer->tokens[j->idxVirtualModifierToken]->location,
+							sourceDocs.at(curDocName)->lexer->tokens[j->idxVirtualModifierToken]->location,
 							MessageType::Error,
 							"new() method cannot be declared as virtual"));
 					goto skipCurOverloading;
@@ -881,18 +897,20 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 					case NodeType::Interface:
 						break;
 					default:
-						messages.push_back(
+						pushMessage(
+							curDocName,
 							Message(
-								lexer->tokens[j->idxVirtualModifierToken]->location,
+								sourceDocs.at(curDocName)->lexer->tokens[j->idxVirtualModifierToken]->location,
 								MessageType::Error,
 								"Virtual modifier is invalid in the context"));
 						goto skipCurOverloading;
 				}
 
 				if (j->genericParams.size()) {
-					messages.push_back(
+					pushMessage(
+						curDocName,
 						Message(
-							lexer->tokens[j->idxVirtualModifierToken]->location,
+							sourceDocs.at(curDocName)->lexer->tokens[j->idxVirtualModifierToken]->location,
 							MessageType::Error,
 							"Generic method cannot be declared as virtual"));
 					goto skipCurOverloading;
@@ -924,7 +942,8 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 						auto m = resolveCustomTypeName((CustomTypeNameNode *)curType.get());
 
 						if (m->getNodeType() == NodeType::GenericParam) {
-							messages.push_back(
+							pushMessage(
+								curDocName,
 								Message(
 									tokenRangeToSourceLocation(curType->tokenRange),
 									MessageType::Error,
@@ -935,7 +954,8 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 						break;
 					}
 					default:
-						messages.push_back(
+						pushMessage(
+							curDocName,
 							Message(
 								tokenRangeToSourceLocation(curType->tokenRange),
 								MessageType::Error,
@@ -954,7 +974,8 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 
 				if (isFnOverloadingDuplicated(k, j)) {
 					if (compiledOverloadingsWithDuplication.count(k)) {
-						messages.push_back(
+						pushMessage(
+							curDocName,
 							Message(
 								tokenRangeToSourceLocation(j->tokenRange),
 								MessageType::Error,
@@ -1028,12 +1049,15 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 					slxfmt::InsHeader ih;
 					ih.opcode = j.opcode;
 
-					if (j.operands.size() > 3)
-						throw FatalCompilationError(
+					if (j.operands.size() > 3) {
+						pushMessage(
+							curDocName,
 							Message(
 								tokenRangeToSourceLocation(compiledFn->tokenRange),
 								MessageType::Error,
 								"Too many operands"));
+						break;
+					}
 					ih.nOperands = (uint8_t)j.operands.size();
 					ih.hasOutputOperand = (bool)j.output;
 
@@ -1046,12 +1070,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 						if (k) {
 							if (k->getNodeType() == NodeType::LabelRef) {
 								auto &label = std::static_pointer_cast<LabelRefNode>(k)->label;
-								if (!compiledFn->labels.count(label))
-									throw FatalCompilationError(
-										Message(
-											tokenRangeToSourceLocation(compiledFn->tokenRange),
-											MessageType::Error,
-											"Undefined label: " + std::static_pointer_cast<LabelRefNode>(k)->label));
+								assert(compiledFn->labels.count(label));
 								k = std::make_shared<U32LiteralExprNode>(compiledFn->labels.at(label));
 							}
 						}
@@ -1350,26 +1369,21 @@ void slake::slkc::Compiler::compileGenericParam(std::ostream &fs, std::shared_pt
 		compileTypeName(fs, i);
 }
 
-void slake::slkc::Compiler::reset() {
+void slake::slkc::Compiler::reload() {
 	curMajorContext = MajorContext();
 	curFn.reset();
 
-	_rootScope = std::make_shared<Scope>();
-	_targetModule.reset();
+	// _rootScope = std::make_shared<Scope>();
 	_rt = std::make_unique<Runtime>(RT_NOJIT);
 	_savedMajorContexts.clear();
 
 	importedDefinitions.clear();
-	importedModules.clear();
+	// importedModules.clear();
 
-#if SLKC_WITH_LANGUAGE_SERVER
-	tokenInfos.clear();
-#endif
-	messages.clear();
-	modulePaths.clear();
+	// sourceDocs.clear();
+	// modulePaths.clear();
 	options = CompilerOptions();
 	flags = 0;
-	lexer.reset();
 
 	_genericCacheDir.clear();
 }

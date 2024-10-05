@@ -12,7 +12,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::prefixOpRegistries = {
 					lhs);
 
 				expr->tokenRange =
-					TokenRange{ lhs->tokenRange.beginIndex, parser->lexer->getTokenIndex(opToken) };
+					TokenRange{ parser->curDoc, lhs->tokenRange.beginIndex, parser->lexer->getTokenIndex(opToken) };
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				return std::static_pointer_cast<ExprNode>(expr);
@@ -25,7 +25,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::prefixOpRegistries = {
 					lhs);
 
 				expr->tokenRange =
-					TokenRange{ lhs->tokenRange.beginIndex, parser->lexer->getTokenIndex(opToken) };
+					TokenRange{ parser->curDoc, lhs->tokenRange.beginIndex, parser->lexer->getTokenIndex(opToken) };
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				return std::static_pointer_cast<ExprNode>(expr);
@@ -38,7 +38,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::prefixOpRegistries = {
 					lhs);
 
 				expr->tokenRange =
-					TokenRange{ lhs->tokenRange.beginIndex, parser->lexer->getTokenIndex(opToken) };
+					TokenRange{ parser->curDoc, lhs->tokenRange.beginIndex, parser->lexer->getTokenIndex(opToken) };
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				return std::static_pointer_cast<ExprNode>(expr);
@@ -52,7 +52,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 				auto expr = std::make_shared<CallExprNode>();
 
 				expr->target = lhs;
-				expr->tokenRange = TokenRange{ lhs->tokenRange.beginIndex, parser->lexer->getTokenIndex(opToken) };
+				expr->tokenRange = TokenRange{ parser->curDoc, lhs->tokenRange.beginIndex, parser->lexer->getTokenIndex(opToken) };
 				expr->idxLParentheseToken = parser->lexer->getTokenIndex(opToken);
 
 				parser->parseArgs(expr->args, expr->idxCommaTokens);
@@ -73,7 +73,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					BinaryOp::Subscript,
 					lhs);
 
-				expr->tokenRange = TokenRange{ lhs->tokenRange.beginIndex, parser->lexer->getTokenIndex(opToken) };
+				expr->tokenRange = TokenRange{ parser->curDoc, lhs->tokenRange.beginIndex, parser->lexer->getTokenIndex(opToken) };
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->rhs = parser->parseExpr();
@@ -92,7 +92,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 					lhs,
 					parser->parseRef());
 
-				expr->tokenRange = TokenRange{ lhs->tokenRange.beginIndex, expr->ref->entries.back().tokenRange.endIndex };
+				expr->tokenRange = TokenRange{ parser->curDoc, lhs->tokenRange.beginIndex, expr->ref->entries.back().tokenRange.endIndex };
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
 				return std::static_pointer_cast<ExprNode>(expr);
@@ -413,7 +413,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token *opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<TernaryOpExprNode>(lhs);
 
-				expr->tokenRange = TokenRange{ lhs->tokenRange.beginIndex, parser->lexer->getTokenIndex(opToken) };
+				expr->tokenRange = TokenRange{ parser->curDoc, lhs->tokenRange.beginIndex, parser->lexer->getTokenIndex(opToken) };
 				expr->idxQuestionToken = parser->lexer->getTokenIndex(opToken);
 
 				expr->x = parser->parseExpr(20);
@@ -486,7 +486,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 					auto ref = parseRef();
 					lhs = std::static_pointer_cast<ExprNode>(
 						std::make_shared<IdRefExprNode>(ref));
-					lhs->tokenRange = TokenRange{ ref->entries[0].tokenRange.beginIndex, ref->entries.back().tokenRange.endIndex };
+					lhs->tokenRange = TokenRange{ curDoc, ref->entries[0].tokenRange.beginIndex, ref->entries.back().tokenRange.endIndex };
 					break;
 				}
 				case TokenId::LParenthese: {
@@ -503,7 +503,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 					auto expr = std::make_shared<NewExprNode>();
 
 					Token *newToken = lexer->nextToken();
-					expr->tokenRange = lexer->getTokenIndex(prefixToken);
+					expr->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
 					expr->idxNewToken = lexer->getTokenIndex(newToken);
 
 					lhs = expr;
@@ -529,7 +529,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 						std::make_shared<I32LiteralExprNode>(
 							((IntLiteralTokenExtension *)prefixToken->exData.get())->data,
 							lexer->getTokenIndex(prefixToken)));
-					lhs->tokenRange = lexer->getTokenIndex(prefixToken);
+					lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
 					lexer->nextToken();
 					break;
 				case TokenId::LongLiteral:
@@ -537,7 +537,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 						std::make_shared<I64LiteralExprNode>(
 							((LongLiteralTokenExtension *)prefixToken->exData.get())->data,
 							lexer->getTokenIndex(prefixToken)));
-					lhs->tokenRange = lexer->getTokenIndex(prefixToken);
+					lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
 					lexer->nextToken();
 					break;
 				case TokenId::UIntLiteral:
@@ -545,7 +545,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 						std::make_shared<U32LiteralExprNode>(
 							((UIntLiteralTokenExtension *)prefixToken->exData.get())->data,
 							lexer->getTokenIndex(prefixToken)));
-					lhs->tokenRange = lexer->getTokenIndex(prefixToken);
+					lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
 					lexer->nextToken();
 					break;
 				case TokenId::ULongLiteral:
@@ -553,7 +553,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 						std::make_shared<U64LiteralExprNode>(
 							((ULongLiteralTokenExtension *)prefixToken->exData.get())->data,
 							lexer->getTokenIndex(prefixToken)));
-					lhs->tokenRange = lexer->getTokenIndex(prefixToken);
+					lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
 					lexer->nextToken();
 					break;
 				case TokenId::StringLiteral:
@@ -561,7 +561,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 						std::make_shared<StringLiteralExprNode>(
 							((StringLiteralTokenExtension *)prefixToken->exData.get())->data,
 							lexer->getTokenIndex(prefixToken)));
-					lhs->tokenRange = lexer->getTokenIndex(prefixToken);
+					lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
 					lexer->nextToken();
 					break;
 				case TokenId::F32Literal:
@@ -569,7 +569,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 						std::make_shared<F32LiteralExprNode>(
 							((F32LiteralTokenExtension *)prefixToken->exData.get())->data,
 							lexer->getTokenIndex(prefixToken)));
-					lhs->tokenRange = lexer->getTokenIndex(prefixToken);
+					lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
 					lexer->nextToken();
 					break;
 				case TokenId::F64Literal:
@@ -577,7 +577,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 						std::make_shared<F64LiteralExprNode>(
 							((F64LiteralTokenExtension *)prefixToken->exData.get())->data,
 							lexer->getTokenIndex(prefixToken)));
-					lhs->tokenRange = lexer->getTokenIndex(prefixToken);
+					lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
 					lexer->nextToken();
 					break;
 				case TokenId::TrueKeyword:
@@ -585,7 +585,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 						std::make_shared<BoolLiteralExprNode>(
 							true,
 							lexer->getTokenIndex(prefixToken)));
-					lhs->tokenRange = lexer->getTokenIndex(prefixToken);
+					lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
 					lexer->nextToken();
 					break;
 				case TokenId::FalseKeyword:
@@ -593,14 +593,14 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 						std::make_shared<BoolLiteralExprNode>(
 							false,
 							lexer->getTokenIndex(prefixToken)));
-					lhs->tokenRange = lexer->getTokenIndex(prefixToken);
+					lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
 					lexer->nextToken();
 					break;
 				case TokenId::NullKeyword:
 					lhs = std::static_pointer_cast<ExprNode>(
 						std::make_shared<NullLiteralExprNode>(
 							lexer->getTokenIndex(prefixToken)));
-					lhs->tokenRange = lexer->getTokenIndex(prefixToken);
+					lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
 					lexer->nextToken();
 					break;
 				case TokenId::LBrace: {
@@ -608,7 +608,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 
 					auto expr = std::make_shared<ArrayExprNode>();
 
-					expr->tokenRange = lexer->getTokenIndex(prefixToken);
+					expr->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
 					expr->idxLBraceToken = lexer->getTokenIndex(prefixToken);
 
 					while (true) {
@@ -632,7 +632,7 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 				}
 				default:
 					lexer->nextToken();
-					throw SyntaxError("Expecting an expression", lexer->getTokenIndex(prefixToken));
+					throw SyntaxError("Expecting an expression", { curDoc, lexer->getTokenIndex(prefixToken) });
 			}
 		}
 
@@ -652,13 +652,14 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 				break;
 		}
 	} catch (SyntaxError e) {
-		compiler->messages.push_back(
+		compiler->pushMessage(
+			compiler->curDocName,
 			Message(
 				compiler->tokenRangeToSourceLocation(e.tokenRange),
 				MessageType::Error,
 				e.what()));
 		lhs = std::make_shared<BadExprNode>(lhs);
-		lhs->tokenRange = TokenRange{ lexer->getTokenIndex(prefixToken), e.tokenRange.endIndex };
+		lhs->tokenRange = TokenRange{ curDoc, lexer->getTokenIndex(prefixToken), e.tokenRange.endIndex };
 	}
 
 	return lhs;

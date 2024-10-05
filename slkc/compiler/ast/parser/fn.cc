@@ -19,13 +19,13 @@ void Parser::parseParams(
 					std::make_shared<ArrayTypeNameNode>(
 						std::make_shared<AnyTypeNameNode>(
 							lexer->getTokenIndex(varArgToken)));
-				varArgParamType->elementType->tokenRange = lexer->getTokenIndex(varArgToken);
-				varArgParamType->tokenRange = lexer->getTokenIndex(varArgToken);
+				varArgParamType->elementType->tokenRange = { curDoc, lexer->getTokenIndex(varArgToken) };
+				varArgParamType->tokenRange = { curDoc, lexer->getTokenIndex(varArgToken) };
 				param->type = varArgParamType;
 			}
 
 			param->name = "...";
-			param->tokenRange = lexer->getTokenIndex(varArgToken);
+			param->tokenRange = { curDoc, lexer->getTokenIndex(varArgToken) };
 			param->idxNameToken = lexer->getTokenIndex(varArgToken);
 
 			varArgParamOut = param;
@@ -36,7 +36,8 @@ void Parser::parseParams(
 		Token *nameToken = lexer->peekToken();
 		std::string name;
 		if (nameToken->tokenId != TokenId::Id) {
-			compiler->messages.push_back(
+			compiler->pushMessage(
+				compiler->curDocName,
 				Message(
 					nameToken->location,
 					MessageType::Error,
@@ -47,7 +48,7 @@ void Parser::parseParams(
 		}
 
 		auto paramNode = std::make_shared<ParamNode>();
-		paramNode->tokenRange = lexer->getTokenIndex(nameToken);
+		paramNode->tokenRange = { curDoc, lexer->getTokenIndex(nameToken) };
 		paramNode->name = name;
 
 		if (Token *colonToken = lexer->peekToken(); colonToken->tokenId == TokenId::Colon) {
@@ -75,7 +76,7 @@ std::shared_ptr<FnOverloadingNode> Parser::parseFnDecl(std::string &nameOut) {
 
 	Token *fnKeywordToken = expectToken(TokenId::FnKeyword);
 	auto overloading = std::make_shared<FnOverloadingNode>(compiler, curScope);
-	overloading->tokenRange = lexer->getTokenIndex(fnKeywordToken);
+	overloading->tokenRange = { curDoc, lexer->getTokenIndex(fnKeywordToken) };
 
 	Token *nameToken = lexer->peekToken();
 	switch (nameToken->tokenId) {
@@ -85,7 +86,7 @@ std::shared_ptr<FnOverloadingNode> Parser::parseFnDecl(std::string &nameOut) {
 			lexer->nextToken();
 			break;
 		default:
-			throw SyntaxError("Expecting an identifier", lexer->getTokenIndex(nameToken));
+			throw SyntaxError("Expecting an identifier", { curDoc, lexer->getTokenIndex(nameToken) });
 	}
 	nameOut = nameToken->text;
 	overloading->tokenRange.endIndex = lexer->getTokenIndex(nameToken);
@@ -170,7 +171,7 @@ std::shared_ptr<FnOverloadingNode> Parser::parseFnDef(std::string &nameOut) {
 
 		Token *rBraceToken = expectToken(TokenId::RBrace);
 		overloading->body = std::make_shared<CodeBlockStmtNode>(
-			CodeBlock{ TokenRange{ lexer->getTokenIndex(token), lexer->getTokenIndex(rBraceToken) },
+			CodeBlock{ TokenRange{ curDoc, lexer->getTokenIndex(token), lexer->getTokenIndex(rBraceToken) },
 				stmts });
 
 		restoreScopeContext(std::move(savedScopeContext));
@@ -188,7 +189,7 @@ std::shared_ptr<FnOverloadingNode> Parser::parseOperatorDecl(std::string &nameOu
 
 	Token *operatorKeywordToken = expectToken(TokenId::OperatorKeyword);
 	auto overloading = std::make_shared<FnOverloadingNode>(compiler, curScope);
-	overloading->tokenRange = lexer->getTokenIndex(operatorKeywordToken);
+	overloading->tokenRange = { curDoc, lexer->getTokenIndex(operatorKeywordToken) };
 
 	Token *nameToken = lexer->nextToken();
 	std::string name;
@@ -232,7 +233,7 @@ std::shared_ptr<FnOverloadingNode> Parser::parseOperatorDecl(std::string &nameOu
 			expectToken(TokenId::RParenthese);
 			break;
 		default:
-			throw SyntaxError("Unrecognized operator name", lexer->getTokenIndex(nameToken));
+			throw SyntaxError("Unrecognized operator name", { curDoc, lexer->getTokenIndex(nameToken) });
 	}
 
 	nameOut = name;
@@ -294,7 +295,7 @@ std::shared_ptr<FnOverloadingNode> Parser::parseOperatorDef(std::string &nameOut
 
 		Token *rBraceToken = expectToken(TokenId::RBrace);
 		overloading->body = std::make_shared<CodeBlockStmtNode>(
-			CodeBlock{ TokenRange{ lexer->getTokenIndex(token), lexer->getTokenIndex(rBraceToken) },
+			CodeBlock{ TokenRange{ curDoc, lexer->getTokenIndex(token), lexer->getTokenIndex(rBraceToken) },
 				stmts });
 
 		restoreScopeContext(std::move(savedScopeContext));

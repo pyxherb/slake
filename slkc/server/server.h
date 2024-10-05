@@ -47,49 +47,48 @@ namespace slake {
 			std::set<SemanticTokenModifier> modifiers;
 		};
 
-		struct Document {
-			std::string uri;
-			std::string languageId;
-			std::string content;
-			ClientMarkupType markupType = ClientMarkupType::PlainText;
-			std::mutex mutex;
+		void _walkForCompletion(
+			SourceDocument *document,
+			Scope *scope,
+			std::unordered_map<std::string, MemberNode *> &membersOut,
+			std::set<Scope *> &walkedScopes,
+			bool isTopLevelRef,
+			bool isStatic);
+		void _walkForCompletion(
+			SourceDocument *document,
+			AstNode *m,
+			std::unordered_map<std::string, MemberNode *> &membersOut,
+			std::set<Scope *> &walkedScopes,
+			bool isStatic);
+		std::unordered_map<std::string, MemberNode *> _walkForCompletion(
+			SourceDocument *document,
+			Scope *scope,
+			bool isTopLevelRef,
+			bool isStatic);
 
-			std::shared_ptr<Compiler> compiler;
+		CompletionItemType _toCompletionItemType(NodeType nodeType);
+		void _getCompletionItems(
+			const std::unordered_map<std::string, MemberNode *> &members,
+			std::deque<CompletionItem> &completionItems,
+			const std::set<NodeType> &targetNodeTypes);
+		std::deque<CompletionItem> getCompletionItems(
+			SourceDocument *document,
+			SourcePosition location);
 
-			void _walkForCompletion(
-				Scope *scope,
-				std::unordered_map<std::string, MemberNode *> &membersOut,
-				std::set<Scope*> &walkedScopes,
-				bool isTopLevelRef,
-				bool isStatic);
-			void _walkForCompletion(
-				AstNode *m,
-				std::unordered_map<std::string, MemberNode *> &membersOut,
-				std::set<Scope *> &walkedScopes,
-				bool isStatic);
-			std::unordered_map<std::string, MemberNode *> _walkForCompletion(Scope *scope, bool isTopLevelRef, bool isStatic);
+		void _getImportCompletionItems(
+			Compiler *compiler,
+			std::string path,
+			std::deque<CompletionItem> &completionItems);
 
-			CompletionItemType _toCompletionItemType(NodeType nodeType);
-			void _getCompletionItems(
-				const std::unordered_map<std::string, MemberNode *> &members,
-				std::deque<CompletionItem> &completionItems,
-				const std::set<NodeType> &targetNodeTypes);
-			std::deque<CompletionItem> getCompletionItems(SourcePosition location);
-
-			void _getImportCompletionItems(
-				std::string path,
-				std::deque<CompletionItem> &completionItems);
-
-			Json::Value extractTypeName(std::shared_ptr<TypeNameNode> typeName);
-			Json::Value extractDeclaration(std::shared_ptr<VarNode> m);
-			Json::Value extractDeclaration(std::shared_ptr<ParamNode> m);
-			Json::Value extractDeclaration(std::shared_ptr<LocalVarNode> m);
-			Json::Value extractDeclaration(std::shared_ptr<FnOverloadingNode> m);
-			Json::Value extractDeclaration(std::shared_ptr<GenericParamNode> m);
-			Json::Value extractDeclaration(std::shared_ptr<ClassNode> m);
-			Json::Value extractDeclaration(std::shared_ptr<InterfaceNode> m);
-			Json::Value extractDeclaration(std::shared_ptr<ModuleNode> m);
-		};
+		Json::Value extractTypeName(SourceDocument *document, std::shared_ptr<TypeNameNode> typeName);
+		Json::Value extractDeclaration(SourceDocument *document, std::shared_ptr<VarNode> m);
+		Json::Value extractDeclaration(SourceDocument *document, std::shared_ptr<ParamNode> m);
+		Json::Value extractDeclaration(SourceDocument *document, std::shared_ptr<LocalVarNode> m);
+		Json::Value extractDeclaration(SourceDocument *document, std::shared_ptr<FnOverloadingNode> m);
+		Json::Value extractDeclaration(SourceDocument *document, std::shared_ptr<GenericParamNode> m);
+		Json::Value extractDeclaration(SourceDocument *document, std::shared_ptr<ClassNode> m);
+		Json::Value extractDeclaration(SourceDocument *document, std::shared_ptr<InterfaceNode> m);
+		Json::Value extractDeclaration(SourceDocument *document, std::shared_ptr<ModuleNode> m);
 
 		enum class DeclarationKind {
 			Property = 0,
@@ -129,8 +128,8 @@ namespace slake {
 		public:
 			httplib::Server server;
 
-			std::unordered_map<std::string, std::shared_ptr<Document>> openedDocuments;
 			std::deque<std::string> modulePaths;
+			std::shared_ptr<Compiler> compiler;
 
 			Server();
 

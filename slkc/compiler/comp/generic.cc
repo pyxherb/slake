@@ -2,6 +2,59 @@
 
 using namespace slake::slkc;
 
+bool Compiler::GenericNodeArgListComparator::operator()(
+	const std::deque<std::shared_ptr<TypeNameNode>> &lhs,
+	const std::deque<std::shared_ptr<TypeNameNode>> &rhs) const noexcept {
+	if (lhs.size() < rhs.size())
+		return true;
+	if (lhs.size() > rhs.size())
+		return false;
+
+	for (size_t i = 0; i < lhs.size(); ++i) {
+		auto l = lhs[i], r = rhs[i];
+		auto lhsTypeId = l->getTypeId(), rhsTypeId = r->getTypeId();
+
+		if (lhsTypeId < rhsTypeId)
+			return true;
+		else if (lhsTypeId > rhsTypeId)
+			return false;
+		else {
+			//
+			// Do some special checks for some kinds of type name - such as custom.
+			//
+			switch (lhsTypeId) {
+				case TypeId::Custom: {
+					auto lhsTypeName = std::static_pointer_cast<CustomTypeNameNode>(lhs[i]),
+						 rhsTypeName = std::static_pointer_cast<CustomTypeNameNode>(rhs[i]);
+
+					if (lhsTypeName->compiler < rhsTypeName->compiler)
+						return true;
+					else if (lhsTypeName->compiler > rhsTypeName->compiler)
+						return false;
+					else {
+						std::shared_ptr<AstNode> lhsNode, rhsNode;
+						try {
+							lhsNode = lhsTypeName->compiler->resolveCustomTypeName(lhsTypeName.get());
+							rhsNode = rhsTypeName->compiler->resolveCustomTypeName(rhsTypeName.get());
+						} catch (FatalCompilationError e) {
+							// Supress the exceptions - the function should be noexcept, we have to raise compilation errors out of the comparator.
+						}
+
+						if (lhsNode < rhsNode)
+							return true;
+						else if (lhsNode > rhsNode)
+							return false;
+					}
+
+					break;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
 void Compiler::walkTypeNameNodeForGenericInstantiation(
 	std::shared_ptr<TypeNameNode> &type,
 	GenericNodeInstantiationContext &instantiationContext) {
@@ -158,7 +211,8 @@ void Compiler::mapGenericParams(std::shared_ptr<MemberNode> node, GenericNodeIns
 		return;
 
 	if (instantiationContext.genericArgs->size() != node->genericParams.size()) {
-		messages.push_back(
+		pushMessage(
+			curDocName,
 			Message(
 				tokenRangeToSourceLocation(instantiationContext.genericArgs->at(0)->tokenRange),
 				MessageType::Error,

@@ -1,12 +1,16 @@
 #include "../compiler.h"
 #include <slake/util/stream.hh>
+#include <slake/util/scope_guard.h>
 
 using namespace slake::slkc;
 
 void Compiler::importModule(std::shared_ptr<IdRefNode> ref) {
 	if (importedModules.count(ref->entries))
 		return;
-	importedModules.insert(ref->entries);
+	ModuleImportInfo &importInfo = importedModules[ref->entries];
+	slake::util::ScopeGuard importInfoRemovalGuard([this, &importInfo, &ref]() {
+		importedModules.erase(ref->entries);
+	});
 
 	auto scope = completeModuleNamespaces(ref);
 
@@ -16,10 +20,7 @@ void Compiler::importModule(std::shared_ptr<IdRefNode> ref) {
 		path += "/" + j.name;
 	}
 
-	auto savedLexer = std::move(lexer);
-#if SLKC_WITH_LANGUAGE_SERVER
-	auto savedTokenInfos = tokenInfos;
-#endif
+	std::string savedCurDocName = std::move(curDocName);
 
 	std::ifstream is;
 	for (auto j : modulePaths) {
@@ -28,10 +29,12 @@ void Compiler::importModule(std::shared_ptr<IdRefNode> ref) {
 		if (is.good()) {
 			path = j + path + ".slk";
 
-			auto savedTargetModule = _targetModule;
 			util::PseudoOutputStream pseudoOs;
+
+			curDocName = path;
+			addDoc(curDocName);
+
 			compile(is, pseudoOs);
-			_targetModule = savedTargetModule;
 
 			goto succeeded;
 		}
@@ -63,10 +66,7 @@ void Compiler::importModule(std::shared_ptr<IdRefNode> ref) {
 		is.clear();
 	}
 
-#if SLKC_WITH_LANGUAGE_SERVER
-	tokenInfos = savedTokenInfos;
-#endif
-	lexer = std::move(savedLexer);
+	curDocName = std::move(savedCurDocName);
 
 	throw FatalCompilationError(
 		Message(
@@ -75,10 +75,8 @@ void Compiler::importModule(std::shared_ptr<IdRefNode> ref) {
 			"Cannot find module " + std::to_string(ref->entries, this)));
 
 succeeded:;
-#if SLKC_WITH_LANGUAGE_SERVER
-	tokenInfos = savedTokenInfos;
-#endif
-	lexer = std::move(savedLexer);
+	importInfoRemovalGuard.release();
+	curDocName = std::move(savedCurDocName);
 }
 
 void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, FnObject *value) {

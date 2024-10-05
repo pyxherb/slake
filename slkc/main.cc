@@ -126,6 +126,11 @@ int main(int argc, char **argv) {
 				std::unique_ptr<Compiler> compiler = std::make_unique<Compiler>();
 				compiler->modulePaths = modulePaths;
 
+				// Insert a new corresponding source document.
+				compiler->addDoc(srcPath);
+				compiler->curDocName = srcPath;
+				compiler->mainDocName = srcPath;
+
 				try {
 					compiler->compile(is, os);
 				} catch (FatalCompilationError e) {
@@ -134,7 +139,7 @@ int main(int argc, char **argv) {
 				}
 
 				bool foundErrors = false;
-				for (auto &i : compiler->messages) {
+				for (auto &i : compiler->sourceDocs.at(compiler->mainDocName)->messages) {
 					const char *msgType = "<Unknown Message Type>";
 					switch (i.type) {
 						case MessageType::Info:

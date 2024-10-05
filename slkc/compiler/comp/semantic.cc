@@ -5,15 +5,13 @@ using namespace slake::slkc;
 #if SLKC_WITH_LANGUAGE_SERVER
 
 void Compiler::updateCompletionContext(size_t idxToken, CompletionContext completionContext) {
-	if (curMajorContext.isImport)
-		return;
+	auto curDoc = sourceDocs.at(curDocName).get();
 
-	tokenInfos[idxToken].completionContext = completionContext;
+	curDoc->tokenInfos[idxToken].completionContext = completionContext;
 }
 
 void Compiler::updateCompletionContext(std::shared_ptr<TypeNameNode> targetTypeName, CompletionContext completionContext) {
-	if (curMajorContext.isImport)
-		return;
+	auto curDoc = sourceDocs.at(curDocName).get();
 
 	switch (targetTypeName->getTypeId()) {
 		case TypeId::I8:
@@ -34,7 +32,7 @@ void Compiler::updateCompletionContext(std::shared_ptr<TypeNameNode> targetTypeN
 			auto t = std::static_pointer_cast<BasicSimpleTypeNameNode>(targetTypeName);
 
 			if (t->idxToken != SIZE_MAX)
-				tokenInfos[t->idxToken].completionContext = completionContext;
+				curDoc->tokenInfos[t->idxToken].completionContext = completionContext;
 			break;
 		}
 		case TypeId::Array: {
@@ -52,7 +50,7 @@ void Compiler::updateCompletionContext(std::shared_ptr<TypeNameNode> targetTypeN
 			auto t = std::static_pointer_cast<BadTypeNameNode>(targetTypeName);
 
 			for (size_t i = t->idxStartToken; i < t->idxEndToken; ++i)
-				tokenInfos[i].completionContext = completionContext;
+				curDoc->tokenInfos[i].completionContext = completionContext;
 
 			break;
 		}
@@ -62,29 +60,26 @@ void Compiler::updateCompletionContext(std::shared_ptr<TypeNameNode> targetTypeN
 }
 
 void Compiler::updateCompletionContext(std::shared_ptr<IdRefNode> ref, CompletionContext completionContext) {
-	if (curMajorContext.isImport)
-		return;
+	auto curDoc = sourceDocs.at(curDocName).get();
 
 	for (size_t i = 0; i < ref->entries.size(); ++i) {
 		if (ref->entries[i].idxAccessOpToken != SIZE_MAX) {
-			tokenInfos[ref->entries[i].idxAccessOpToken].completionContext = completionContext;
+			curDoc->tokenInfos[ref->entries[i].idxAccessOpToken].completionContext = completionContext;
 		}
 		if (ref->entries[i].idxToken != SIZE_MAX) {
-			tokenInfos[ref->entries[i].idxToken].completionContext = completionContext;
+			curDoc->tokenInfos[ref->entries[i].idxToken].completionContext = completionContext;
 		}
 	}
 }
 
 void Compiler::updateSemanticType(size_t idxToken, SemanticType type) {
-	if (curMajorContext.isImport)
-		return;
+	auto curDoc = sourceDocs.at(curDocName).get();
 
-	tokenInfos[idxToken].semanticType = type;
+	curDoc->tokenInfos[idxToken].semanticType = type;
 }
 
 void Compiler::updateSemanticType(std::shared_ptr<TypeNameNode> targetTypeName, SemanticType type) {
-	if (curMajorContext.isImport)
-		return;
+	auto curDoc = sourceDocs.at(curDocName).get();
 
 	switch (targetTypeName->getTypeId()) {
 		case TypeId::I8:
@@ -104,7 +99,7 @@ void Compiler::updateSemanticType(std::shared_ptr<TypeNameNode> targetTypeName, 
 		case TypeId::Auto: {
 			auto t = std::static_pointer_cast<BasicSimpleTypeNameNode>(targetTypeName);
 			assert(t->idxToken != SIZE_MAX);
-			tokenInfos[t->idxToken].semanticType = type;
+			curDoc->tokenInfos[t->idxToken].semanticType = type;
 			break;
 		}
 		case TypeId::Array: {
@@ -122,7 +117,7 @@ void Compiler::updateSemanticType(std::shared_ptr<TypeNameNode> targetTypeName, 
 			auto t = std::static_pointer_cast<BadTypeNameNode>(targetTypeName);
 
 			for (size_t i = t->idxStartToken; i < t->idxEndToken; ++i)
-				tokenInfos[i].semanticType = type;
+				curDoc->tokenInfos[i].semanticType = type;
 
 			break;
 		}
@@ -132,27 +127,25 @@ void Compiler::updateSemanticType(std::shared_ptr<TypeNameNode> targetTypeName, 
 }
 
 void Compiler::updateSemanticType(std::shared_ptr<IdRefNode> ref, SemanticType type) {
-	if (curMajorContext.isImport)
-		return;
+	auto curDoc = sourceDocs.at(curDocName).get();
 
 	for (size_t i = 0; i < ref->entries.size(); ++i) {
 		if (ref->entries[i].idxAccessOpToken != SIZE_MAX) {
-			tokenInfos[ref->entries[i].idxAccessOpToken].semanticType = type;
+			curDoc->tokenInfos[ref->entries[i].idxAccessOpToken].semanticType = type;
 		}
 		if (ref->entries[i].idxToken != SIZE_MAX) {
-			tokenInfos[ref->entries[i].idxToken].semanticType = type;
+			curDoc->tokenInfos[ref->entries[i].idxToken].semanticType = type;
 		}
 	}
 }
 
 void Compiler::updateTokenInfo(size_t idxToken, std::function<void(TokenInfo &info)> updater) {
-	if (curMajorContext.isImport)
-		return;
+	auto curDoc = sourceDocs.at(curDocName).get();
 
 	if (idxToken == SIZE_MAX)
 		return;
 
-	updater(tokenInfos[idxToken]);
+	updater(curDoc->tokenInfos[idxToken]);
 }
 
 #endif

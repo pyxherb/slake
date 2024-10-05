@@ -7,7 +7,8 @@ void Parser::_putDefinition(
 	std::string name,
 	std::shared_ptr<MemberNode> member) {
 	if (curScope->members.count(name)) {
-		compiler->messages.push_back(
+		compiler->pushMessage(
+			compiler->curDocName,
 			Message(
 				compiler->tokenRangeToSourceLocation(member->tokenRange),
 				MessageType::Error,
@@ -27,7 +28,8 @@ void Parser::_putFnDefinition(
 	}
 
 	if (curScope->members.at(name)->getNodeType() != NodeType::Fn) {
-		compiler->messages.push_back(
+		compiler->pushMessage(
+			compiler->curDocName,
 			Message(
 				compiler->tokenRangeToSourceLocation(overloading->tokenRange),
 				MessageType::Error,
@@ -47,7 +49,7 @@ AccessModifier Parser::parseAccessModifier(TokenRange &tokenRangeOut, std::deque
 		Token *token = lexer->peekToken();
 
 		if (!accessModifier)
-			tokenRangeOut = lexer->getTokenIndex(token);
+			tokenRangeOut = { curDoc, lexer->getTokenIndex(token) };
 
 		switch (token->tokenId) {
 			case TokenId::PubKeyword:

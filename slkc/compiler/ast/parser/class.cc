@@ -43,14 +43,14 @@ GenericParamNodeList Parser::parseGenericParams(TokenRange &tokenRangeOut, AstNo
 	GenericParamNodeList genericParams;
 
 	Token *startingToken = expectToken(TokenId::LtOp);
-	tokenRangeOut = lexer->getTokenIndex(startingToken);
+	tokenRangeOut = { curDoc, lexer->getTokenIndex(startingToken) };
 
 	while (true) {
 		Token *nameToken = expectToken(TokenId::Id);
 
 		auto param = std::make_shared<GenericParamNode>(nameToken->text, ownerNode, genericParams.size());
 
-		param->tokenRange = lexer->getTokenIndex(nameToken);
+		param->tokenRange = { curDoc, lexer->getTokenIndex(nameToken) };
 		param->idxNameToken = lexer->getTokenIndex(nameToken);
 
 		parseParentSlot(
@@ -92,6 +92,7 @@ std::shared_ptr<ClassNode> Parser::parseClassDef() {
 		compiler,
 		nameToken->text);
 	classNode->tokenRange = TokenRange{
+		curDoc,
 		lexer->getTokenIndex(beginToken),
 		lexer->getTokenIndex(nameToken)
 	};
@@ -141,10 +142,12 @@ std::shared_ptr<ClassNode> Parser::parseClassDef() {
 		classNode->tokenRange.endIndex = lexer->getTokenIndex(rBraceToken);
 		classNode->idxRBraceToken = lexer->getTokenIndex(rBraceToken);
 	} catch (SyntaxError e) {
-		compiler->messages.push_back(Message(
-			compiler->tokenRangeToSourceLocation(e.tokenRange),
-			MessageType::Error,
-			e.what()));
+		compiler->pushMessage(
+			compiler->curDocName,
+			Message(
+				compiler->tokenRangeToSourceLocation(e.tokenRange),
+				MessageType::Error,
+				e.what()));
 	}
 	restoreScopeContext(std::move(savedScopeContext));
 
@@ -211,7 +214,7 @@ void Parser::parseClassStmt() {
 			Token *letToken = lexer->nextToken();
 
 			auto stmt = std::make_shared<VarDefStmtNode>();
-			stmt->tokenRange = lexer->getTokenIndex(letToken);
+			stmt->tokenRange = { curDoc, lexer->getTokenIndex(letToken) };
 
 			stmt->idxLetToken = lexer->getTokenIndex(letToken);
 
@@ -251,7 +254,7 @@ void Parser::parseClassStmt() {
 			break;
 		}
 		default:
-			throw SyntaxError("Unrecognized token", lexer->getTokenIndex(token));
+			throw SyntaxError("Unrecognized token", { curDoc, lexer->getTokenIndex(token) });
 	}
 }
 
@@ -262,7 +265,7 @@ std::shared_ptr<InterfaceNode> Parser::parseInterfaceDef() {
 	std::shared_ptr<InterfaceNode> interfaceNode = std::make_shared<InterfaceNode>(
 		nameToken->text);
 
-	interfaceNode->tokenRange = TokenRange{ lexer->getTokenIndex(beginToken), lexer->getTokenIndex(nameToken) };
+	interfaceNode->tokenRange = TokenRange{ curDoc, lexer->getTokenIndex(beginToken), lexer->getTokenIndex(nameToken) };
 	interfaceNode->idxNameToken = lexer->getTokenIndex(nameToken);
 
 	ScopeContext savedScopeContext = saveScopeContext();
@@ -301,10 +304,12 @@ std::shared_ptr<InterfaceNode> Parser::parseInterfaceDef() {
 		interfaceNode->tokenRange.endIndex = lexer->getTokenIndex(rBraceToken);
 		interfaceNode->idxRBraceToken = lexer->getTokenIndex(rBraceToken);
 	} catch (SyntaxError e) {
-		compiler->messages.push_back(Message(
-			compiler->tokenRangeToSourceLocation(e.tokenRange),
-			MessageType::Error,
-			e.what()));
+		compiler->pushMessage(
+			compiler->curDocName,
+			Message(
+				compiler->tokenRangeToSourceLocation(e.tokenRange),
+				MessageType::Error,
+				e.what()));
 	}
 	restoreScopeContext(std::move(savedScopeContext));
 
@@ -373,7 +378,7 @@ void Parser::parseInterfaceStmt() {
 			Token *letToken = lexer->nextToken();
 
 			auto stmt = std::make_shared<VarDefStmtNode>();
-			stmt->tokenRange = lexer->getTokenIndex(letToken);
+			stmt->tokenRange = { curDoc, lexer->getTokenIndex(letToken) };
 
 			stmt->idxLetToken = lexer->getTokenIndex(letToken);
 
@@ -413,6 +418,6 @@ void Parser::parseInterfaceStmt() {
 			break;
 		}
 		default:
-			throw SyntaxError("Unrecognized token", lexer->getTokenIndex(token));
+			throw SyntaxError("Unrecognized token", { curDoc, lexer->getTokenIndex(token) });
 	}
 }

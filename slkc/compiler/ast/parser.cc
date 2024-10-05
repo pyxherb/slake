@@ -70,7 +70,7 @@ void Parser::parseProgramStmt() {
 			Token *letToken = lexer->nextToken();
 
 			auto stmt = std::make_shared<VarDefStmtNode>();
-			stmt->tokenRange = lexer->getTokenIndex(letToken);
+			stmt->tokenRange = { curDoc, lexer->getTokenIndex(letToken) };
 
 			stmt->idxLetToken = lexer->getTokenIndex(letToken);
 
@@ -110,7 +110,7 @@ void Parser::parseProgramStmt() {
 			break;
 		}
 		default:
-			throw SyntaxError("Unrecognized token", lexer->getTokenIndex(token));
+			throw SyntaxError("Unrecognized token", { curDoc, lexer->getTokenIndex(token) });
 	}
 
 	if (token->tokenId != TokenId::NewLine)
@@ -121,7 +121,7 @@ void Parser::parseModuleDecl() {
 	if (Token *beginToken = lexer->peekToken(); beginToken->tokenId == TokenId::ModuleKeyword) {
 		lexer->nextToken();
 
-		curModule->moduleName = parseModuleRef();
+		compiler->sourceDocs.at(curDocName)->targetModule->moduleName = parseModuleRef();
 
 		expectToken(TokenId::Semicolon);
 	}
@@ -147,9 +147,9 @@ void Parser::parseImportList() {
 
 				Token *nameToken = expectToken(TokenId::Id);
 
-				curModule->imports[nameToken->text] = { ref, lexer->getTokenIndex(nameToken) };
+				compiler->sourceDocs.at(curDocName)->targetModule->imports[nameToken->text] = { ref, lexer->getTokenIndex(nameToken) };
 			} else
-				curModule->unnamedImports.push_back({ ref, SIZE_MAX });
+				compiler->sourceDocs.at(curDocName)->targetModule->unnamedImports.push_back({ ref, SIZE_MAX });
 
 			if (lexer->peekToken()->tokenId != TokenId::Comma)
 				break;
@@ -161,12 +161,13 @@ void Parser::parseImportList() {
 	}
 }
 
-void Parser::parse(Lexer *lexer, Compiler *compiler) {
+void Parser::parse(SourceDocument *curDoc, Compiler *compiler) {
 	this->compiler = compiler;
-	this->lexer = lexer;
+	this->curDoc = curDoc;
+	this->lexer = curDoc->lexer.get();
 
-	curModule = compiler->_targetModule;
-	curScope = curModule->scope;
+	curDocName = compiler->curDocName;
+	curScope = compiler->sourceDocs.at(compiler->curDocName)->targetModule->scope;
 
 	parseModuleDecl();
 	parseImportList();

@@ -8,7 +8,7 @@ void Parser::parseVarDefs(std::shared_ptr<VarDefStmtNode> varDefStmtOut) {
 		Token *nameToken = expectToken(TokenId::Id);
 
 		varDefStmtOut->varDefs[nameToken->text] = VarDefEntry(
-			lexer->getTokenIndex(nameToken),
+			{ curDoc, lexer->getTokenIndex(nameToken) },
 			nameToken->text,
 			lexer->getTokenIndex(nameToken));
 		VarDefEntry &entry = varDefStmtOut->varDefs[nameToken->text];
@@ -57,7 +57,7 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
 				Token *breakToken = lexer->nextToken();
-				stmt->tokenRange = lexer->getTokenIndex(breakToken);
+				stmt->tokenRange = { curDoc, lexer->getTokenIndex(breakToken) };
 				stmt->idxBreakToken = lexer->getTokenIndex(breakToken);
 
 				Token *semicolonToken = expectToken(TokenId::Semicolon);
@@ -70,7 +70,7 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
 				Token *breakToken = lexer->nextToken();
-				result->tokenRange = lexer->getTokenIndex(breakToken);
+				result->tokenRange = { curDoc, lexer->getTokenIndex(breakToken) };
 				stmt->idxBreakToken = lexer->getTokenIndex(breakToken);
 
 				Token *semicolonToken = expectToken(TokenId::Semicolon);
@@ -84,7 +84,7 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
 				Token *forToken = lexer->nextToken();
-				stmt->tokenRange = lexer->getTokenIndex(forToken);
+				stmt->tokenRange = { curDoc, lexer->getTokenIndex(forToken) };
 				stmt->idxForToken = lexer->getTokenIndex(forToken);
 
 				Token *lParentheseToken = expectToken(TokenId::LParenthese);
@@ -94,7 +94,7 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				if (Token *letToken = lexer->peekToken(); letToken->tokenId == TokenId::LetKeyword) {
 					stmt->varDefs = std::make_shared<VarDefStmtNode>();
 
-					stmt->varDefs->tokenRange = lexer->getTokenIndex(letToken);
+					stmt->varDefs->tokenRange = { curDoc, lexer->getTokenIndex(letToken) };
 					stmt->varDefs->idxLetToken = lexer->getTokenIndex(letToken);
 					stmt->tokenRange.endIndex = stmt->varDefs->tokenRange.endIndex;
 
@@ -133,7 +133,7 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
 				Token *whileToken = lexer->nextToken();
-				stmt->tokenRange = lexer->getTokenIndex(whileToken);
+				stmt->tokenRange = { curDoc, lexer->getTokenIndex(whileToken) };
 				stmt->idxWhileToken = lexer->getTokenIndex(whileToken);
 
 				Token *lParentheseToken = expectToken(TokenId::LParenthese);
@@ -155,7 +155,7 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
 				Token *returnToken = lexer->nextToken();
-				stmt->tokenRange = lexer->getTokenIndex(returnToken);
+				stmt->tokenRange = { curDoc, lexer->getTokenIndex(returnToken) };
 				stmt->idxReturnToken = lexer->getTokenIndex(returnToken);
 
 				if (Token *token = lexer->peekToken(); token->tokenId == TokenId::Semicolon) {
@@ -177,7 +177,7 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
 				Token *yieldToken = lexer->nextToken();
-				stmt->tokenRange = lexer->getTokenIndex(yieldToken);
+				stmt->tokenRange = { curDoc, lexer->getTokenIndex(yieldToken) };
 				stmt->idxYieldToken = lexer->getTokenIndex(yieldToken);
 
 				if (Token *token = lexer->peekToken(); token->tokenId == TokenId::Semicolon) {
@@ -199,7 +199,7 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
 				Token *ifToken = lexer->nextToken();
-				stmt->tokenRange = lexer->getTokenIndex(ifToken);
+				stmt->tokenRange = { curDoc, lexer->getTokenIndex(ifToken) };
 				stmt->idxIfToken = lexer->getTokenIndex(ifToken);
 
 				Token *lParentheseToken = expectToken(TokenId::LParenthese);
@@ -231,7 +231,7 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
 				Token *tryToken = lexer->nextToken();
-				stmt->tokenRange = lexer->getTokenIndex(tryToken);
+				stmt->tokenRange = { curDoc, lexer->getTokenIndex(tryToken) };
 				stmt->idxTryToken = lexer->getTokenIndex(tryToken);
 
 				stmt->body = parseStmt();
@@ -248,7 +248,7 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 					CatchBlock &catchBlock = stmt->catchBlocks.back();
 
 					catchBlock.idxCatchToken = lexer->getTokenIndex(catchToken);
-					catchBlock.tokenRange = lexer->getTokenIndex(catchToken);
+					catchBlock.tokenRange = { curDoc, lexer->getTokenIndex(catchToken) };
 
 					Token *lParentheseToken = expectToken(TokenId::LParenthese);
 					catchBlock.tokenRange.endIndex = lexer->getTokenIndex(lParentheseToken);
@@ -279,7 +279,7 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 
 				if (Token *finalToken = lexer->peekToken(); finalToken->tokenId == TokenId::FinalKeyword) {
 					lexer->nextToken();
-					stmt->finalBlock.tokenRange = lexer->getTokenIndex(finalToken);
+					stmt->finalBlock.tokenRange = { curDoc, lexer->getTokenIndex(finalToken) };
 					stmt->finalBlock.idxFinalToken = lexer->getTokenIndex(finalToken);
 
 					stmt->finalBlock.body = parseStmt();
@@ -295,7 +295,7 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
 				Token *switchToken = lexer->nextToken();
-				stmt->tokenRange = lexer->getTokenIndex(switchToken);
+				stmt->tokenRange = { curDoc, lexer->getTokenIndex(switchToken) };
 				stmt->idxSwitchToken = lexer->getTokenIndex(switchToken);
 
 				Token *lParentheseToken = expectToken(TokenId::LParenthese);
@@ -324,7 +324,7 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 					stmt->cases.push_back({});
 					SwitchCase &newCase = stmt->cases.back();
 
-					newCase.tokenRange = lexer->getTokenIndex(caseToken);
+					newCase.tokenRange = { curDoc, lexer->getTokenIndex(caseToken) };
 					newCase.idxCaseToken = lexer->getTokenIndex(caseToken);
 					;
 
@@ -355,7 +355,7 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 					stmt->cases.push_back({});
 					SwitchCase &defaultCase = stmt->cases.back();
 
-					defaultCase.tokenRange = lexer->getTokenIndex(defaultToken);
+					defaultCase.tokenRange = { curDoc, lexer->getTokenIndex(defaultToken) };
 					defaultCase.idxCaseToken = lexer->getTokenIndex(defaultToken);
 
 					Token *colonToken = expectToken(TokenId::Colon);
@@ -385,14 +385,14 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 				result = std::static_pointer_cast<StmtNode>(stmt);
 
 				Token *lBraceToken = lexer->nextToken();
-				stmt->body.tokenRange = lexer->getTokenIndex(lBraceToken);
+				stmt->body.tokenRange = { curDoc, lexer->getTokenIndex(lBraceToken) };
 				stmt->body.idxLBraceToken = lexer->getTokenIndex(lBraceToken);
 				stmt->tokenRange = stmt->body.tokenRange;
 
 				while (true) {
 					if (lexer->peekToken()->tokenId == TokenId::RBrace) {
 						Token *rBraceToken = lexer->nextToken();
-						stmt->body.tokenRange = lexer->getTokenIndex(rBraceToken);
+						stmt->body.tokenRange = { curDoc, lexer->getTokenIndex(rBraceToken) };
 						stmt->body.idxRBraceToken = lexer->getTokenIndex(rBraceToken);
 						break;
 					}
@@ -439,14 +439,15 @@ std::shared_ptr<StmtNode> Parser::parseStmt() {
 			}
 		}
 	} catch (SyntaxError e) {
-		compiler->messages.push_back(
+		compiler->pushMessage(
+			compiler->curDocName,
 			Message(
 				compiler->tokenRangeToSourceLocation(e.tokenRange),
 				MessageType::Error,
 				e.what()));
 
 		auto badStmt = std::make_shared<BadStmtNode>(result);
-		badStmt->tokenRange = TokenRange{ lexer->getTokenIndex(beginToken), e.tokenRange.endIndex };
+		badStmt->tokenRange = { curDoc, lexer->getTokenIndex(beginToken), e.tokenRange.endIndex };
 
 		return badStmt;
 	}

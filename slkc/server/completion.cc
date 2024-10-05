@@ -62,7 +62,8 @@ static std::string typeNameConditions[] = {
 	"any"
 };
 
-void slake::slkc::Document::_walkForCompletion(
+void slake::slkc::_walkForCompletion(
+	SourceDocument *document,
 	Scope *scope,
 	std::unordered_map<std::string, MemberNode *> &membersOut,
 	std::set<Scope *> &walkedScopes,
@@ -118,15 +119,16 @@ void slake::slkc::Document::_walkForCompletion(
 	}
 
 	if (scope->owner)
-		_walkForCompletion(scope->owner, membersOut, walkedScopes, isStatic);
+		_walkForCompletion(document, scope->owner, membersOut, walkedScopes, isStatic);
 
 	if (isTopLevelRef) {
 		if (scope->parent)
-			_walkForCompletion(scope->parent, membersOut, walkedScopes, isTopLevelRef, isStatic);
+			_walkForCompletion(document, scope->parent, membersOut, walkedScopes, isTopLevelRef, isStatic);
 	}
 }
 
-void slake::slkc::Document::_walkForCompletion(
+void slake::slkc::_walkForCompletion(
+	SourceDocument *document,
 	AstNode *m,
 	std::unordered_map<std::string, MemberNode *> &membersOut,
 	std::set<Scope *> &walkedScopes,
@@ -135,16 +137,16 @@ void slake::slkc::Document::_walkForCompletion(
 		case NodeType::Class: {
 			ClassNode *node = (ClassNode *)m;
 
-			_walkForCompletion(node->scope.get(), membersOut, walkedScopes, false, isStatic);
+			_walkForCompletion(document, node->scope.get(), membersOut, walkedScopes, false, isStatic);
 
 			if (node->parentClass) {
-				auto parent = compiler->resolveCustomTypeName((CustomTypeNameNode *)node->parentClass.get());
-				_walkForCompletion(parent.get(), membersOut, walkedScopes, isStatic);
+				auto parent = document->compiler->resolveCustomTypeName((CustomTypeNameNode *)node->parentClass.get());
+				_walkForCompletion(document, parent.get(), membersOut, walkedScopes, isStatic);
 			}
 
 			for (auto &i : node->implInterfaces) {
-				auto parent = compiler->resolveCustomTypeName((CustomTypeNameNode *)i.get());
-				_walkForCompletion(parent.get(), membersOut, walkedScopes, isStatic);
+				auto parent = document->compiler->resolveCustomTypeName((CustomTypeNameNode *)i.get());
+				_walkForCompletion(document, parent.get(), membersOut, walkedScopes, isStatic);
 			}
 			break;
 		}
@@ -152,26 +154,30 @@ void slake::slkc::Document::_walkForCompletion(
 			InterfaceNode *node = (InterfaceNode *)m;
 
 			for (auto &i : node->parentInterfaces) {
-				auto parent = compiler->resolveCustomTypeName((CustomTypeNameNode *)i.get());
-				_walkForCompletion(parent.get(), membersOut, walkedScopes, isStatic);
+				auto parent = document->compiler->resolveCustomTypeName((CustomTypeNameNode *)i.get());
+				_walkForCompletion(document, parent.get(), membersOut, walkedScopes, isStatic);
 			}
 			break;
 		}
 	}
 }
 
-std::unordered_map<std::string, MemberNode *> slake::slkc::Document::_walkForCompletion(Scope *scope, bool isTopLevelRef, bool isStatic) {
+std::unordered_map<std::string, MemberNode *> slake::slkc::_walkForCompletion(
+	SourceDocument *document,
+	Scope *scope,
+	bool isTopLevelRef,
+	bool isStatic) {
 	std::unordered_map<std::string, MemberNode *> membersOut;
 	std::set<Scope *> walkedScopes;
 
-	_walkForCompletion(scope, membersOut, walkedScopes, isTopLevelRef, isStatic);
+	_walkForCompletion(document, scope, membersOut, walkedScopes, isTopLevelRef, isStatic);
 	if (scope->owner)
-		_walkForCompletion(scope->owner, membersOut, walkedScopes, isStatic);
+		_walkForCompletion(document, scope->owner, membersOut, walkedScopes, isStatic);
 
 	return membersOut;
 }
 
-CompletionItemType slake::slkc::Document::_toCompletionItemType(NodeType nodeType) {
+CompletionItemType slake::slkc::_toCompletionItemType(NodeType nodeType) {
 	switch (nodeType) {
 		case NodeType::Var:
 			return CompletionItemType::Var;
@@ -200,7 +206,7 @@ CompletionItemType slake::slkc::Document::_toCompletionItemType(NodeType nodeTyp
 	throw std::logic_error("Unrecognized node type");
 }
 
-void slake::slkc::Document::_getCompletionItems(
+void slake::slkc::_getCompletionItems(
 	const std::unordered_map<std::string, MemberNode *> &members,
 	std::deque<CompletionItem> &completionItems,
 	const std::set<NodeType> &targetNodeTypes) {
@@ -217,14 +223,16 @@ void slake::slkc::Document::_getCompletionItems(
 	}
 }
 
-std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(SourcePosition location) {
+std::deque<CompletionItem> slake::slkc::getCompletionItems(
+	SourceDocument *document,
+	SourcePosition location) {
 	std::deque<CompletionItem> completionItems;
 
-	size_t idxToken = compiler->lexer->getTokenByPosition(location);
+	size_t idxToken = document->lexer->getTokenByPosition(location);
 
 	if (idxToken != SIZE_MAX) {
 		do {
-			switch (compiler->lexer->tokens[idxToken]->tokenId) {
+			switch (document->lexer->tokens[idxToken]->tokenId) {
 				case TokenId::Whitespace:
 				case TokenId::NewLine:
 				case TokenId::LineComment:
@@ -238,7 +246,7 @@ std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(SourcePosit
 	}
 
 	_getCompletionItems(
-		_walkForCompletion(compiler->_rootScope.get(), true, true),
+		_walkForCompletion(document, document->compiler->_rootScope.get(), true, true),
 		completionItems,
 		{ NodeType::GenericParam,
 			NodeType::Class,
@@ -248,8 +256,8 @@ std::deque<CompletionItem> slake::slkc::Document::getCompletionItems(SourcePosit
 	return completionItems;
 
 succeeded:
-	Token *token = compiler->lexer->tokens[idxToken].get();
-	TokenInfo &tokenInfo = compiler->tokenInfos[idxToken];
+	Token *token = document->lexer->tokens[idxToken].get();
+	TokenInfo &tokenInfo = document->tokenInfos[idxToken];
 
 	/*
 	for (size_t i = 0; i < keywordConditions->size(); ++i) {
@@ -269,7 +277,7 @@ succeeded:
 		case CompletionContext::TopLevel: {
 			if (tokenInfo.tokenContext.curScope)
 				_getCompletionItems(
-					_walkForCompletion(tokenInfo.tokenContext.curScope.get(), true, tokenInfo.semanticInfo.isStatic),
+					_walkForCompletion(document, tokenInfo.tokenContext.curScope.get(), true, tokenInfo.semanticInfo.isStatic),
 					completionItems,
 					{ NodeType::GenericParam,
 						NodeType::Class,
@@ -281,7 +289,7 @@ succeeded:
 		case CompletionContext::Class: {
 			if (tokenInfo.tokenContext.curScope)
 				_getCompletionItems(
-					_walkForCompletion(tokenInfo.tokenContext.curScope.get(), true, tokenInfo.semanticInfo.isStatic),
+					_walkForCompletion(document, tokenInfo.tokenContext.curScope.get(), true, tokenInfo.semanticInfo.isStatic),
 					completionItems,
 					{ NodeType::GenericParam,
 						NodeType::Class,
@@ -292,7 +300,7 @@ succeeded:
 		case CompletionContext::Interface: {
 			if (tokenInfo.tokenContext.curScope)
 				_getCompletionItems(
-					_walkForCompletion(tokenInfo.tokenContext.curScope.get(), true, tokenInfo.semanticInfo.isStatic),
+					_walkForCompletion(document, tokenInfo.tokenContext.curScope.get(), true, tokenInfo.semanticInfo.isStatic),
 					completionItems,
 					{ NodeType::GenericParam,
 						NodeType::Class,
@@ -304,6 +312,7 @@ succeeded:
 			if (tokenInfo.tokenContext.curScope)
 				_getCompletionItems(
 					_walkForCompletion(
+						document,
 						tokenInfo.tokenContext.curScope.get(),
 						tokenInfo.semanticInfo.isTopLevelRef,
 						tokenInfo.semanticInfo.isStatic),
@@ -345,7 +354,7 @@ succeeded:
 				path += tokenInfo.semanticInfo.importedPath->entries[i].name;
 			}
 
-			_getImportCompletionItems(path, completionItems);
+			_getImportCompletionItems(document->compiler, path, completionItems);
 			break;
 		}
 		case CompletionContext::ModuleName: {
@@ -357,13 +366,14 @@ succeeded:
 				path += tokenInfo.semanticInfo.importedPath->entries[i].name;
 			}
 
-			_getImportCompletionItems(path, completionItems);
+			_getImportCompletionItems(document->compiler, path, completionItems);
 			break;
 		}
 		case CompletionContext::Type: {
 			if (tokenInfo.tokenContext.curScope)
 				_getCompletionItems(
 					_walkForCompletion(
+						document,
 						tokenInfo.tokenContext.curScope.get(),
 						tokenInfo.semanticInfo.isTopLevelRef,
 						tokenInfo.semanticInfo.isStatic),
@@ -392,6 +402,7 @@ succeeded:
 				// scope.
 				_getCompletionItems(
 					_walkForCompletion(
+						document,
 						tokenInfo.tokenContext.curScope.get(),
 						tokenInfo.semanticInfo.isTopLevelRef,
 						tokenInfo.semanticInfo.isStatic),
@@ -429,6 +440,7 @@ succeeded:
 			if (tokenInfo.tokenContext.curScope)
 				_getCompletionItems(
 					_walkForCompletion(
+						document,
 						tokenInfo.tokenContext.curScope.get(),
 						false,
 						tokenInfo.semanticInfo.isStatic),
@@ -450,7 +462,7 @@ succeeded:
 	return completionItems;
 }
 
-void slake::slkc::Document::_getImportCompletionItems(std::string path, std::deque<CompletionItem> &completionItems) {
+void slake::slkc::_getImportCompletionItems(Compiler *compiler, std::string path, std::deque<CompletionItem> &completionItems) {
 	std::set<std::string> foundModuleNames;
 
 	for (auto i : compiler->modulePaths) {

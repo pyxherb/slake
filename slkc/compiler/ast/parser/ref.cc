@@ -20,7 +20,8 @@ std::deque<std::shared_ptr<TypeNameNode>> Parser::parseGenericArgs(bool forTypeN
 			genericArgs.push_back(type);
 		else {
 			if (forTypeName) {
-				compiler->messages.push_back(
+				compiler->pushMessage(
+					compiler->curDocName,
 					Message(
 						compiler->tokenRangeToSourceLocation(type->tokenRange),
 						MessageType::Error,
@@ -41,7 +42,8 @@ std::deque<std::shared_ptr<TypeNameNode>> Parser::parseGenericArgs(bool forTypeN
 
 	if (Token *token = lexer->peekToken(); token->tokenId != TokenId::GtOp) {
 		if (forTypeName) {
-			compiler->messages.push_back(
+			compiler->pushMessage(
+				compiler->curDocName,
 				Message(
 					token->location,
 					MessageType::Error,
@@ -66,15 +68,17 @@ std::shared_ptr<IdRefNode> Parser::parseModuleRef() {
 	while (true) {
 		Token *nameToken = lexer->peekToken();
 
-		auto refEntry = IdRefEntry(lexer->getTokenIndex(nameToken), SIZE_MAX, "");
+		auto refEntry = IdRefEntry({ curDoc, lexer->getTokenIndex(nameToken) }, SIZE_MAX, "");
 		refEntry.idxAccessOpToken = idxPrecedingAccessOp;
 
 		if (nameToken->tokenId != TokenId::Id) {
 			// Return the bad reference.
-			compiler->messages.push_back(Message(
-				nameToken->location,
-				MessageType::Error,
-				"Expecting an identifier"));
+			compiler->pushMessage(
+				compiler->curDocName,
+				Message(
+					nameToken->location,
+					MessageType::Error,
+					"Expecting an identifier"));
 			ref.push_back(refEntry);
 			return std::make_shared<IdRefNode>(ref);
 		} else {
@@ -103,7 +107,7 @@ std::shared_ptr<IdRefNode> Parser::parseRef(bool forTypeName) {
 		case TokenId::ThisKeyword:
 		case TokenId::BaseKeyword:
 		case TokenId::ScopeOp: {
-			auto refEntry = IdRefEntry(lexer->getTokenIndex(token), lexer->getTokenIndex(token), "", {});
+			auto refEntry = IdRefEntry({ curDoc, lexer->getTokenIndex(token) }, lexer->getTokenIndex(token), "", {});
 
 			switch (token->tokenId) {
 				case TokenId::ThisKeyword:
@@ -134,15 +138,17 @@ std::shared_ptr<IdRefNode> Parser::parseRef(bool forTypeName) {
 	while (true) {
 		Token *nameToken = lexer->peekToken();
 
-		auto refEntry = IdRefEntry(lexer->getTokenIndex(nameToken), SIZE_MAX, "");
+		auto refEntry = IdRefEntry({ curDoc, lexer->getTokenIndex(nameToken) }, SIZE_MAX, "");
 		refEntry.idxAccessOpToken = idxPrecedingAccessOp;
 
 		if (nameToken->tokenId != TokenId::Id) {
 			// Return the bad reference.
-			compiler->messages.push_back(Message(
-				nameToken->location,
-				MessageType::Error,
-				"Expecting an identifier"));
+			compiler->pushMessage(
+				compiler->curDocName,
+				Message(
+					nameToken->location,
+					MessageType::Error,
+					"Expecting an identifier"));
 			ref.push_back(refEntry);
 			return std::make_shared<IdRefNode>(ref);
 		} else {

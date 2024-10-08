@@ -1,6 +1,7 @@
 file(GLOB HEADERS *.h *.hh)
 file(GLOB SRC *.c *.cc)
 add_library(slake ${HEADERS} ${SRC})
+target_compile_definitions(slake PRIVATE SLAKE_IS_BUILDING=1)
 
 set_property(TARGET slake PROPERTY CXX_STANDARD 17)
 

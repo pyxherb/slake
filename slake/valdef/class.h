@@ -26,12 +26,12 @@ namespace slake {
 		std::pmr::vector<ObjectFieldRecord> fieldRecords;
 		std::pmr::unordered_map<std::pmr::string, size_t> fieldNameMap;
 
-		ObjectLayout(std::pmr::memory_resource *memoryResource);
+		SLAKE_API ObjectLayout(std::pmr::memory_resource *memoryResource);
 
-		ObjectLayout *duplicate() const;
+		SLAKE_API ObjectLayout *duplicate() const;
 
-		static ObjectLayout *alloc(std::pmr::memory_resource *memoryResource);
-		void dealloc();
+		SLAKE_API static ObjectLayout *alloc(std::pmr::memory_resource *memoryResource);
+		SLAKE_API void dealloc();
 	};
 
 	class ClassObject : public ModuleObject {
@@ -53,27 +53,27 @@ namespace slake {
 
 		std::pmr::vector<VarObject *> cachedFieldInitVars;
 
-		ClassObject(Runtime *rt, AccessModifier access, const Type &parentClass);
-		ClassObject(const ClassObject &x);
-		virtual ~ClassObject();
+		SLAKE_API ClassObject(Runtime *rt, AccessModifier access, const Type &parentClass);
+		SLAKE_API ClassObject(const ClassObject &x);
+		SLAKE_API virtual ~ClassObject();
 
-		virtual ObjectKind getKind() const override;
+		SLAKE_API virtual ObjectKind getKind() const override;
 
-		virtual GenericArgList getGenericArgs() const override;
+		SLAKE_API virtual GenericArgList getGenericArgs() const override;
 
 		/// @brief Check if the class has implemented the interface.
 		///
 		/// @param[in] pInterface Interface to check.
 		///
 		/// @return true if implemented, false otherwise.
-		bool hasImplemented(const InterfaceObject *pInterface) const;
-		bool isBaseOf(const ClassObject *pClass) const;
+		SLAKE_API bool hasImplemented(const InterfaceObject *pInterface) const;
+		SLAKE_API bool isBaseOf(const ClassObject *pClass) const;
 
-		virtual Object *duplicate() const override;
+		SLAKE_API virtual Object *duplicate() const override;
 
-		static HostObjectRef<ClassObject> alloc(Runtime *rt, AccessModifier access, const Type &parentClass = {});
-		static HostObjectRef<ClassObject> alloc(const ClassObject *other);
-		virtual void dealloc() override;
+		SLAKE_API static HostObjectRef<ClassObject> alloc(Runtime *rt, AccessModifier access, const Type &parentClass = {});
+		SLAKE_API static HostObjectRef<ClassObject> alloc(const ClassObject *other);
+		SLAKE_API virtual void dealloc() override;
 	};
 
 	class InterfaceObject : public ModuleObject {
@@ -88,24 +88,24 @@ namespace slake {
 
 		std::vector<Type> parents;
 
-		InterfaceObject(Runtime *rt, AccessModifier access, const std::vector<Type> &parents);
-		InterfaceObject(const InterfaceObject &x);
-		virtual ~InterfaceObject();
+		SLAKE_API InterfaceObject(Runtime *rt, AccessModifier access, const std::vector<Type> &parents);
+		SLAKE_API InterfaceObject(const InterfaceObject &x);
+		SLAKE_API virtual ~InterfaceObject();
 
-		virtual ObjectKind getKind() const override;
+		SLAKE_API virtual ObjectKind getKind() const override;
 
-		virtual Object *duplicate() const override;
+		SLAKE_API virtual Object *duplicate() const override;
 
-		virtual GenericArgList getGenericArgs() const override;
+		SLAKE_API virtual GenericArgList getGenericArgs() const override;
 
-		static HostObjectRef<InterfaceObject> alloc(Runtime *rt, AccessModifier access, const std::vector<Type> &parents = {});
-		static HostObjectRef<InterfaceObject> alloc(const InterfaceObject *other);
-		virtual void dealloc() override;
+		SLAKE_API static HostObjectRef<InterfaceObject> alloc(Runtime *rt, AccessModifier access, const std::vector<Type> &parents = {});
+		SLAKE_API static HostObjectRef<InterfaceObject> alloc(const InterfaceObject *other);
+		SLAKE_API virtual void dealloc() override;
 
 		/// @brief Check if the interface is derived from specified interface
 		/// @param pInterface Interface to check.
 		/// @return true if the interface is derived from specified interface, false otherwise.
-		bool isDerivedFrom(const InterfaceObject *pInterface) const;
+		SLAKE_API bool isDerivedFrom(const InterfaceObject *pInterface) const;
 	};
 }
 

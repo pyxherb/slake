@@ -3,33 +3,33 @@
 
 using namespace slake;
 
-MemberObject::MemberObject(Runtime *rt)
+SLAKE_API MemberObject::MemberObject(Runtime *rt)
 	: Object(rt) {
 }
 
-MemberObject::MemberObject(const MemberObject &x) : Object(x) {
+SLAKE_API MemberObject::MemberObject(const MemberObject &x) : Object(x) {
 	accessModifier = x.accessModifier;
 }
 
-MemberObject::~MemberObject() {
+SLAKE_API MemberObject::~MemberObject() {
 }
 
-const char* MemberObject::getName() const {
+SLAKE_API const char *MemberObject::getName() const {
 	return nullptr;
 }
 
-void MemberObject::setName(const char* name) {
+SLAKE_API void MemberObject::setName(const char *name) {
 	throw std::logic_error("The object did not implement setName()");
 }
 
-Object* MemberObject::getParent() const {
+SLAKE_API Object *MemberObject::getParent() const {
 	return nullptr;
 }
 
-void MemberObject::setParent(Object *parent) {
+SLAKE_API void MemberObject::setParent(Object *parent) {
 	throw std::logic_error("The object did not implement setParent()");
 }
 
-GenericArgList MemberObject::getGenericArgs() const {
+SLAKE_API GenericArgList MemberObject::getGenericArgs() const {
 	return {};
 }

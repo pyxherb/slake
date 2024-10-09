@@ -96,7 +96,7 @@ static Value _castToLiteralValue(Value x) {
 	}
 }
 
-VarRef slake::Runtime::_addLocalVar(MajorFrame *frame, Type type) {
+SLAKE_API VarRef slake::Runtime::_addLocalVar(MajorFrame *frame, Type type) {
 	LocalVarRecord localVarRecord;
 
 	switch (type.typeId) {
@@ -179,11 +179,11 @@ VarRef slake::Runtime::_addLocalVar(MajorFrame *frame, Type type) {
 	return VarRef(frame->localVarAccessor, VarRefContext::makeLocalVarContext(index));
 }
 
-void slake::Runtime::_addLocalReg(MajorFrame *frame) {
+SLAKE_API void slake::Runtime::_addLocalReg(MajorFrame *frame) {
 	frame->regs.push_back({});
 }
 
-void slake::Runtime::_execIns(Context *context, Instruction ins) {
+SLAKE_API void slake::Runtime::_execIns(Context *context, Instruction ins) {
 	if (((globalHeapPoolResource.szAllocated >> 1) > _szMemUsedAfterLastGc)) {
 		gc();
 	}

@@ -8,7 +8,7 @@ using namespace slake;
 /// @return Created instance of the class.
 ///
 /// @note This function normalizes loading-deferred types.
-HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassObject *cls, NewClassInstanceFlags flags) {
+SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassObject *cls, NewClassInstanceFlags flags) {
 	HostObjectRef<InstanceObject> parent = nullptr;
 
 	HostObjectRef<InstanceObject> instance;
@@ -256,7 +256,7 @@ HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassObject *cls,
 	return instance;
 }
 
-HostObjectRef<ArrayObject> Runtime::newArrayInstance(Runtime *rt, const Type &type, size_t length) {
+SLAKE_API HostObjectRef<ArrayObject> Runtime::newArrayInstance(Runtime *rt, const Type &type, size_t length) {
 	switch (type.typeId) {
 		case TypeId::Value:
 			switch (type.getValueTypeExData()) {

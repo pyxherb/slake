@@ -3,7 +3,7 @@
 
 using namespace slake;
 
-bool Instruction::operator==(const Instruction &rhs) const {
+SLAKE_API bool Instruction::operator==(const Instruction &rhs) const {
 	if (opcode != rhs.opcode)
 		return false;
 	if (output != rhs.output)
@@ -17,7 +17,7 @@ bool Instruction::operator==(const Instruction &rhs) const {
 	return true;
 }
 
-bool Instruction::operator<(const Instruction &rhs) const {
+SLAKE_API bool Instruction::operator<(const Instruction &rhs) const {
 	if (opcode < rhs.opcode)
 		return true;
 	if (opcode > rhs.opcode)
@@ -37,7 +37,7 @@ bool Instruction::operator<(const Instruction &rhs) const {
 	return false;
 }
 
-FnOverloadingObject::FnOverloadingObject(
+SLAKE_API FnOverloadingObject::FnOverloadingObject(
 	FnObject *fnObject,
 	AccessModifier access,
 	std::pmr::vector<Type> &&paramTypes,
@@ -49,7 +49,7 @@ FnOverloadingObject::FnOverloadingObject(
 	  returnType(returnType) {
 }
 
-FnOverloadingObject::FnOverloadingObject(const FnOverloadingObject &other) : Object(other) {
+SLAKE_API FnOverloadingObject::FnOverloadingObject(const FnOverloadingObject &other) : Object(other) {
 	fnObject = other.fnObject;
 
 	access = other.access;
@@ -63,12 +63,12 @@ FnOverloadingObject::FnOverloadingObject(const FnOverloadingObject &other) : Obj
 	overloadingFlags = other.overloadingFlags;
 }
 
-FnOverloadingObject::~FnOverloadingObject() {
+SLAKE_API FnOverloadingObject::~FnOverloadingObject() {
 }
 
-ObjectKind FnOverloadingObject::getKind() const { return ObjectKind::FnOverloading; }
+SLAKE_API ObjectKind FnOverloadingObject::getKind() const { return ObjectKind::FnOverloading; }
 
-RegularFnOverloadingObject::RegularFnOverloadingObject(
+SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(
 	FnObject *fnObject,
 	AccessModifier access,
 	std::pmr::vector<Type> &&paramTypes,
@@ -79,7 +79,7 @@ RegularFnOverloadingObject::RegularFnOverloadingObject(
 		  std::move(paramTypes),
 		  returnType) {}
 
-RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFnOverloadingObject &other) : FnOverloadingObject(other) {
+SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFnOverloadingObject &other) : FnOverloadingObject(other) {
 	sourceLocDescs = other.sourceLocDescs;
 
 	instructions.resize(other.instructions.size());
@@ -111,10 +111,10 @@ RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFnOverloadin
 	}
 }
 
-RegularFnOverloadingObject::~RegularFnOverloadingObject() {
+SLAKE_API RegularFnOverloadingObject::~RegularFnOverloadingObject() {
 }
 
-const slxfmt::SourceLocDesc *RegularFnOverloadingObject::getSourceLocationDesc(uint32_t offIns) const {
+SLAKE_API const slxfmt::SourceLocDesc *RegularFnOverloadingObject::getSourceLocationDesc(uint32_t offIns) const {
 	const slxfmt::SourceLocDesc *curDesc = nullptr;
 
 	for (auto &i : sourceLocDescs) {
@@ -132,15 +132,15 @@ const slxfmt::SourceLocDesc *RegularFnOverloadingObject::getSourceLocationDesc(u
 	return curDesc;
 }
 
-FnOverloadingKind slake::RegularFnOverloadingObject::getOverloadingKind() const {
+SLAKE_API FnOverloadingKind slake::RegularFnOverloadingObject::getOverloadingKind() const {
 	return FnOverloadingKind::Regular;
 }
 
-FnOverloadingObject *slake::RegularFnOverloadingObject::duplicate() const {
+SLAKE_API FnOverloadingObject *slake::RegularFnOverloadingObject::duplicate() const {
 	return (FnOverloadingObject *)alloc(this).get();
 }
 
-HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingObject::alloc(
+SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingObject::alloc(
 	FnObject *fnObject,
 	AccessModifier access,
 	std::pmr::vector<Type> &&paramTypes,
@@ -158,7 +158,7 @@ HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingObject::all
 	return ptr.release();
 }
 
-HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingObject::alloc(const RegularFnOverloadingObject *other) {
+SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingObject::alloc(const RegularFnOverloadingObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<RegularFnOverloadingObject>;
 	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
@@ -172,14 +172,14 @@ HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingObject::all
 	return ptr.release();
 }
 
-void slake::RegularFnOverloadingObject::dealloc() {
+SLAKE_API void slake::RegularFnOverloadingObject::dealloc() {
 	std::pmr::polymorphic_allocator<RegularFnOverloadingObject> allocator(&_rt->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
-NativeFnOverloadingObject::NativeFnOverloadingObject(
+SLAKE_API NativeFnOverloadingObject::NativeFnOverloadingObject(
 	FnObject *fnObject,
 	AccessModifier access,
 	std::pmr::vector<Type> &&paramTypes,
@@ -192,27 +192,27 @@ NativeFnOverloadingObject::NativeFnOverloadingObject(
 		  returnType),
 	  callback(callback) {}
 
-NativeFnOverloadingObject::NativeFnOverloadingObject(const NativeFnOverloadingObject &other) : FnOverloadingObject(other) {
+SLAKE_API NativeFnOverloadingObject::NativeFnOverloadingObject(const NativeFnOverloadingObject &other) : FnOverloadingObject(other) {
 	callback = other.callback;
 }
 
-NativeFnOverloadingObject::~NativeFnOverloadingObject() {
+SLAKE_API NativeFnOverloadingObject::~NativeFnOverloadingObject() {
 
 }
 
-FnOverloadingKind slake::NativeFnOverloadingObject::getOverloadingKind() const {
+SLAKE_API FnOverloadingKind slake::NativeFnOverloadingObject::getOverloadingKind() const {
 	return FnOverloadingKind::Native;
 }
 
-Value slake::NativeFnOverloadingObject::call(Object *thisObject, std::pmr::vector<Value> args, HostRefHolder *hostRefHolder) const {
+SLAKE_API Value slake::NativeFnOverloadingObject::call(Object *thisObject, std::pmr::vector<Value> args, HostRefHolder *hostRefHolder) const {
 	return callback(fnObject->_rt, thisObject, args, mappedGenericArgs);
 }
 
-FnOverloadingObject *slake::NativeFnOverloadingObject::duplicate() const {
+SLAKE_API FnOverloadingObject *slake::NativeFnOverloadingObject::duplicate() const {
 	return (FnOverloadingObject *)alloc(this).get();
 }
 
-HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObject::alloc(
+SLAKE_API HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObject::alloc(
 	FnObject *fnObject,
 	AccessModifier access,
 	const std::vector<Type> &paramTypes,
@@ -233,7 +233,7 @@ HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObject::alloc
 	return ptr.release();
 }
 
-HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObject::alloc(const NativeFnOverloadingObject *other) {
+SLAKE_API HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObject::alloc(const NativeFnOverloadingObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<NativeFnOverloadingObject>;
 	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
@@ -247,14 +247,14 @@ HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObject::alloc
 	return ptr.release();
 }
 
-void slake::NativeFnOverloadingObject::dealloc() {
+SLAKE_API void slake::NativeFnOverloadingObject::dealloc() {
 	std::pmr::polymorphic_allocator<NativeFnOverloadingObject> allocator(&_rt->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
-Value RegularFnOverloadingObject::call(Object *thisObject, std::pmr::vector<Value> args, HostRefHolder *hostRefHolder) const {
+SLAKE_API Value RegularFnOverloadingObject::call(Object *thisObject, std::pmr::vector<Value> args, HostRefHolder *hostRefHolder) const {
 	// trimFnInstructions((std::vector<Instruction> &)instructions);
 	Runtime *rt = fnObject->_rt;
 
@@ -339,10 +339,10 @@ Value RegularFnOverloadingObject::call(Object *thisObject, std::pmr::vector<Valu
 	return context->majorFrames.back()->returnValue;
 }
 
-FnObject::FnObject(Runtime *rt) : MemberObject(rt) {
+SLAKE_API FnObject::FnObject(Runtime *rt) : MemberObject(rt) {
 }
 
-FnObject::FnObject(const FnObject &x) : MemberObject(x) {
+SLAKE_API FnObject::FnObject(const FnObject &x) : MemberObject(x) {
 	for (auto &i : x.overloadings) {
 		FnOverloadingObject *ol = i->duplicate();
 
@@ -354,20 +354,20 @@ FnObject::FnObject(const FnObject &x) : MemberObject(x) {
 	parent = x.parent;
 }
 
-FnObject::~FnObject() {
+SLAKE_API FnObject::~FnObject() {
 }
 
-ObjectKind FnObject::getKind() const { return ObjectKind::Fn; }
+SLAKE_API ObjectKind FnObject::getKind() const { return ObjectKind::Fn; }
 
-const char *FnObject::getName() const { return name.c_str(); }
+SLAKE_API const char *FnObject::getName() const { return name.c_str(); }
 
-void FnObject::setName(const char *name) { this->name = name; }
+SLAKE_API void FnObject::setName(const char *name) { this->name = name; }
 
-Object *FnObject::getParent() const { return parent; }
+SLAKE_API Object *FnObject::getParent() const { return parent; }
 
-void FnObject::setParent(Object *parent) { this->parent = parent; }
+SLAKE_API void FnObject::setParent(Object *parent) { this->parent = parent; }
 
-FnOverloadingObject *FnObject::getOverloading(const std::pmr::vector<Type> &argTypes) const {
+SLAKE_API FnOverloadingObject *FnObject::getOverloading(const std::pmr::vector<Type> &argTypes) const {
 	const FnObject *i = this;
 
 	for (auto &j : overloadings) {
@@ -395,7 +395,7 @@ FnOverloadingObject *FnObject::getOverloading(const std::pmr::vector<Type> &argT
 	return nullptr;
 }
 
-Value FnObject::call(Object *thisObject, std::pmr::vector<Value> args, std::pmr::vector<Type> argTypes, HostRefHolder *hostRefHolder) const {
+SLAKE_API Value FnObject::call(Object *thisObject, std::pmr::vector<Value> args, std::pmr::vector<Type> argTypes, HostRefHolder *hostRefHolder) const {
 	FnOverloadingObject *overloading = getOverloading(argTypes);
 
 	if (overloading)
@@ -404,11 +404,11 @@ Value FnObject::call(Object *thisObject, std::pmr::vector<Value> args, std::pmr:
 	throw NoOverloadingError("No matching overloading was found");
 }
 
-Object *FnObject::duplicate() const {
+SLAKE_API Object *FnObject::duplicate() const {
 	return (Object *)alloc(this).get();
 }
 
-HostObjectRef<FnObject> slake::FnObject::alloc(Runtime *rt) {
+SLAKE_API HostObjectRef<FnObject> slake::FnObject::alloc(Runtime *rt) {
 	using Alloc = std::pmr::polymorphic_allocator<FnObject>;
 	Alloc allocator(&rt->globalHeapPoolResource);
 
@@ -422,7 +422,7 @@ HostObjectRef<FnObject> slake::FnObject::alloc(Runtime *rt) {
 	return ptr.release();
 }
 
-HostObjectRef<FnObject> slake::FnObject::alloc(const FnObject *other) {
+SLAKE_API HostObjectRef<FnObject> slake::FnObject::alloc(const FnObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<FnObject>;
 	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
@@ -436,14 +436,14 @@ HostObjectRef<FnObject> slake::FnObject::alloc(const FnObject *other) {
 	return ptr.release();
 }
 
-void slake::FnObject::dealloc() {
+SLAKE_API void slake::FnObject::dealloc() {
 	std::pmr::polymorphic_allocator<FnObject> allocator(&_rt->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
-bool slake::isDuplicatedOverloading(
+SLAKE_API bool slake::isDuplicatedOverloading(
 	const FnOverloadingObject *overloading,
 	const std::pmr::vector<Type> &paramTypes,
 	const GenericParamList &genericParams,

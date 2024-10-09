@@ -17,18 +17,18 @@ namespace slake {
 	public:
 		InstanceObject *instanceObject;
 
-		InstanceMemberAccessorVarObject(Runtime *rt, InstanceObject *instanceObject);
-		virtual ~InstanceMemberAccessorVarObject();
+		SLAKE_API InstanceMemberAccessorVarObject(Runtime *rt, InstanceObject *instanceObject);
+		SLAKE_API virtual ~InstanceMemberAccessorVarObject();
 
-		virtual Type getVarType(const VarRefContext &context) const override;
+		SLAKE_API virtual Type getVarType(const VarRefContext &context) const override;
 
-		virtual VarKind getVarKind() const override { return VarKind::InstanceMemberAccessor; }
+		SLAKE_API virtual VarKind getVarKind() const override { return VarKind::InstanceMemberAccessor; }
 
-		virtual void setData(const VarRefContext &varRefContext, const Value &value) override;
-		virtual Value getData(const VarRefContext &varRefContext) const override;
+		SLAKE_API virtual void setData(const VarRefContext &varRefContext, const Value &value) override;
+		SLAKE_API virtual Value getData(const VarRefContext &varRefContext) const override;
 
-		static HostObjectRef<InstanceMemberAccessorVarObject> alloc(Runtime *rt, InstanceObject *arrayObject);
-		virtual void dealloc() override;
+		SLAKE_API static HostObjectRef<InstanceMemberAccessorVarObject> alloc(Runtime *rt, InstanceObject *arrayObject);
+		SLAKE_API virtual void dealloc() override;
 	};
 
 	class InstanceObject final : public Object {
@@ -43,21 +43,21 @@ namespace slake {
 
 		InstanceMemberAccessorVarObject *memberAccessor;
 
-		InstanceObject(Runtime *rt);
-		InstanceObject(const InstanceObject &x);
-		virtual ~InstanceObject();
+		SLAKE_API InstanceObject(Runtime *rt);
+		SLAKE_API InstanceObject(const InstanceObject &x);
+		SLAKE_API virtual ~InstanceObject();
 
-		virtual ObjectKind getKind() const override;
+		SLAKE_API virtual ObjectKind getKind() const override;
 
-		virtual Object *duplicate() const override;
+		SLAKE_API virtual Object *duplicate() const override;
 
-		virtual MemberObject *getMember(
+		SLAKE_API virtual MemberObject *getMember(
 			const std::pmr::string &name,
 			VarRefContext *varRefContextOut) const;
 
-		static HostObjectRef<InstanceObject> alloc(Runtime *rt);
-		static HostObjectRef<InstanceObject> alloc(const InstanceObject *other);
-		virtual void dealloc() override;
+		SLAKE_API static HostObjectRef<InstanceObject> alloc(Runtime *rt);
+		SLAKE_API static HostObjectRef<InstanceObject> alloc(const InstanceObject *other);
+		SLAKE_API virtual void dealloc() override;
 	};
 }
 

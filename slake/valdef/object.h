@@ -60,9 +60,9 @@ namespace slake {
 
 		/// @brief The basic constructor.
 		/// @param rt Runtime that the value belongs to.
-		Object(Runtime *rt);
-		Object(const Object &x);
-		virtual ~Object();
+		SLAKE_API Object(Runtime *rt);
+		SLAKE_API Object(const Object &x);
+		SLAKE_API virtual ~Object();
 
 		ObjectFlags _flags = 0;
 
@@ -70,17 +70,17 @@ namespace slake {
 
 		/// @brief Get type of the value.
 		/// @return Type of the value.
-		virtual ObjectKind getKind() const = 0;
+		SLAKE_API virtual ObjectKind getKind() const = 0;
 
 		/// @brief Dulplicate the value if supported.
 		/// @return Duplicate of the value.
-		virtual Object *duplicate() const;
+		SLAKE_API virtual Object *duplicate() const;
 
-		virtual void dealloc() = 0;
+		SLAKE_API virtual void dealloc() = 0;
 
-		inline Runtime *getRuntime() const noexcept { return _rt; }
+		SLAKE_FORCEINLINE Runtime *getRuntime() const noexcept { return _rt; }
 
-		virtual MemberObject *getMember(
+		SLAKE_API virtual MemberObject *getMember(
 			const std::pmr::string &name,
 			VarRefContext *varRefContextOut) const;
 	};
@@ -91,47 +91,47 @@ namespace slake {
 		static_assert(std::is_base_of_v<Object, T>);
 		T *_value = nullptr;
 
-		inline void reset() {
+		SLAKE_FORCEINLINE void reset() {
 			if (_value) {
 				--_value->hostRefCount;
 				_value = nullptr;
 			}
 		}
 
-		inline T *release() {
+		SLAKE_FORCEINLINE T *release() {
 			T *v = _value;
 			--_value->hostRefCount;
 			_value = nullptr;
 			return v;
 		}
 
-		inline void discard() noexcept { _value = nullptr; }
+		SLAKE_FORCEINLINE void discard() noexcept { _value = nullptr; }
 
-		inline HostObjectRef(const HostObjectRef<T> &x) : _value(x._value) {
+		SLAKE_FORCEINLINE HostObjectRef(const HostObjectRef<T> &x) : _value(x._value) {
 			if (x._value) {
 				++_value->hostRefCount;
 			}
 		}
-		inline HostObjectRef(HostObjectRef<T> &&x) noexcept : _value(x._value) {
+		SLAKE_FORCEINLINE HostObjectRef(HostObjectRef<T> &&x) noexcept : _value(x._value) {
 			if (x._value) {
 				x._value = nullptr;
 			}
 		}
-		inline HostObjectRef(T *value = nullptr) noexcept : _value(value) {
+		SLAKE_FORCEINLINE HostObjectRef(T *value = nullptr) noexcept : _value(value) {
 			if (_value) {
 				++_value->hostRefCount;
 			}
 		}
-		inline ~HostObjectRef() {
+		SLAKE_FORCEINLINE ~HostObjectRef() {
 			reset();
 		}
 
-		inline const T *get() const { return _value; }
-		inline T *get() { return _value; }
-		inline const T *operator->() const { return _value; }
-		inline T *operator->() { return _value; }
+		SLAKE_FORCEINLINE const T *get() const { return _value; }
+		SLAKE_FORCEINLINE T *get() { return _value; }
+		SLAKE_FORCEINLINE const T *operator->() const { return _value; }
+		SLAKE_FORCEINLINE T *operator->() { return _value; }
 
-		inline HostObjectRef<T> &operator=(const HostObjectRef<T> &x) {
+		SLAKE_FORCEINLINE HostObjectRef<T> &operator=(const HostObjectRef<T> &x) {
 			reset();
 
 			if ((_value = x._value)) {
@@ -140,7 +140,7 @@ namespace slake {
 
 			return *this;
 		}
-		inline HostObjectRef<T> &operator=(HostObjectRef<T> &&x) noexcept {
+		SLAKE_FORCEINLINE HostObjectRef<T> &operator=(HostObjectRef<T> &&x) noexcept {
 			reset();
 
 			if ((_value = x._value)) {
@@ -150,7 +150,7 @@ namespace slake {
 			return *this;
 		}
 
-		inline HostObjectRef<T> &operator=(T *other) {
+		SLAKE_FORCEINLINE HostObjectRef<T> &operator=(T *other) {
 			reset();
 
 			if ((_value = other)) {
@@ -160,17 +160,17 @@ namespace slake {
 			return *this;
 		}
 
-		inline bool operator<(const HostObjectRef<T> &rhs) const noexcept {
+		SLAKE_FORCEINLINE bool operator<(const HostObjectRef<T> &rhs) const noexcept {
 			return _value < rhs._value;
 		}
-		inline bool operator>(const HostObjectRef<T> &rhs) const noexcept {
+		SLAKE_FORCEINLINE bool operator>(const HostObjectRef<T> &rhs) const noexcept {
 			return _value > rhs._value;
 		}
-		inline bool operator==(const HostObjectRef<T> &rhs) const noexcept {
+		SLAKE_FORCEINLINE bool operator==(const HostObjectRef<T> &rhs) const noexcept {
 			return _value == rhs._value;
 		}
 
-		inline operator bool() const {
+		SLAKE_FORCEINLINE operator bool() const {
 			return _value;
 		}
 	};
@@ -179,13 +179,13 @@ namespace slake {
 	public:
 		std::pmr::set<Object *> holdedObjects;
 
-		HostRefHolder(
+		SLAKE_API HostRefHolder(
 			std::pmr::memory_resource *memoryResource =
 				std::pmr::get_default_resource());
-		~HostRefHolder();
+		SLAKE_API ~HostRefHolder();
 
-		void addObject(Object *object);
-		void removeObject(Object *object) noexcept;
+		SLAKE_API void addObject(Object *object);
+		SLAKE_API void removeObject(Object *object) noexcept;
 	};
 }
 

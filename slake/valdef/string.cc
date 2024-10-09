@@ -2,7 +2,7 @@
 
 using namespace slake;
 
-void slake::StringObject::_setData(const char *str, size_t size) {
+SLAKE_API void slake::StringObject::_setData(const char *str, size_t size) {
 	if (!size)
 		data.clear();
 	else {
@@ -10,27 +10,29 @@ void slake::StringObject::_setData(const char *str, size_t size) {
 	}
 }
 
-slake::StringObject::StringObject(Runtime *rt, const char *s, size_t size) : Object(rt), data(&rt->globalHeapPoolResource) {
+SLAKE_API slake::StringObject::StringObject(Runtime *rt, const char *s, size_t size) : Object(rt), data(&rt->globalHeapPoolResource) {
 	_setData(s, size);
 }
 
-slake::StringObject::StringObject(Runtime *rt, std::string &&s) : Object(rt), data(&rt->globalHeapPoolResource) {
+SLAKE_API slake::StringObject::StringObject(Runtime *rt, std::string &&s) : Object(rt), data(&rt->globalHeapPoolResource) {
 	data = std::move(s);
 }
 
-StringObject::StringObject(const StringObject &x) : Object(x) {
+SLAKE_API StringObject::StringObject(const StringObject &x) : Object(x) {
 	_setData(x.data.c_str(), x.data.size());
 }
 
-StringObject::~StringObject() {
+SLAKE_API StringObject::~StringObject() {
 	_setData(nullptr, 0);
 }
 
-Object *StringObject::duplicate() const {
+SLAKE_API ObjectKind StringObject::getKind() const { return ObjectKind::String; }
+
+SLAKE_API Object *StringObject::duplicate() const {
 	return (Object *)alloc(this).get();
 }
 
-HostObjectRef<StringObject> slake::StringObject::alloc(Runtime *rt, const char *str, size_t size) {
+SLAKE_API HostObjectRef<StringObject> slake::StringObject::alloc(Runtime *rt, const char *str, size_t size) {
 	using Alloc = std::pmr::polymorphic_allocator<StringObject>;
 	Alloc allocator(&rt->globalHeapPoolResource);
 
@@ -44,7 +46,7 @@ HostObjectRef<StringObject> slake::StringObject::alloc(Runtime *rt, const char *
 	return ptr.release();
 }
 
-HostObjectRef<StringObject> slake::StringObject::alloc(const StringObject *other) {
+SLAKE_API HostObjectRef<StringObject> slake::StringObject::alloc(const StringObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<StringObject>;
 	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
@@ -58,7 +60,7 @@ HostObjectRef<StringObject> slake::StringObject::alloc(const StringObject *other
 	return ptr.release();
 }
 
-HostObjectRef<StringObject> slake::StringObject::alloc(Runtime *rt, std::string &&s) {
+SLAKE_API HostObjectRef<StringObject> slake::StringObject::alloc(Runtime *rt, std::string &&s) {
 	using Alloc = std::pmr::polymorphic_allocator<StringObject>;
 	Alloc allocator(&rt->globalHeapPoolResource);
 
@@ -72,7 +74,7 @@ HostObjectRef<StringObject> slake::StringObject::alloc(Runtime *rt, std::string 
 	return ptr.release();
 }
 
-void slake::StringObject::dealloc() {
+SLAKE_API void slake::StringObject::dealloc() {
 	std::pmr::polymorphic_allocator<StringObject> allocator(&_rt->globalHeapPoolResource);
 
 	std::destroy_at(this);

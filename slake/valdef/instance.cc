@@ -4,20 +4,20 @@
 
 using namespace slake;
 
-InstanceMemberAccessorVarObject::InstanceMemberAccessorVarObject(
+SLAKE_API InstanceMemberAccessorVarObject::InstanceMemberAccessorVarObject(
 	Runtime *rt,
 	InstanceObject *instanceObject)
 	: VarObject(rt), instanceObject(instanceObject) {
 }
 
-InstanceMemberAccessorVarObject::~InstanceMemberAccessorVarObject() {
+SLAKE_API InstanceMemberAccessorVarObject::~InstanceMemberAccessorVarObject() {
 }
 
-Type InstanceMemberAccessorVarObject::getVarType(const VarRefContext &context) const {
+SLAKE_API Type InstanceMemberAccessorVarObject::getVarType(const VarRefContext &context) const {
 	return instanceObject->objectLayout->fieldRecords[context.asInstance.fieldIndex].type;
 }
 
-void InstanceMemberAccessorVarObject::setData(const VarRefContext &context, const Value &value) {
+SLAKE_API void InstanceMemberAccessorVarObject::setData(const VarRefContext &context, const Value &value) {
 	ObjectFieldRecord &fieldRecord =
 		instanceObject->objectLayout->fieldRecords.at(
 			context.asInstance.fieldIndex);
@@ -76,7 +76,7 @@ void InstanceMemberAccessorVarObject::setData(const VarRefContext &context, cons
 	}
 }
 
-Value InstanceMemberAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API Value InstanceMemberAccessorVarObject::getData(const VarRefContext &varRefContext) const {
 	ObjectFieldRecord &fieldRecord =
 		instanceObject->objectLayout->fieldRecords.at(
 			varRefContext.asInstance.fieldIndex);
@@ -121,7 +121,7 @@ Value InstanceMemberAccessorVarObject::getData(const VarRefContext &varRefContex
 	throw std::logic_error("Unhandled value type");
 }
 
-HostObjectRef<InstanceMemberAccessorVarObject> slake::InstanceMemberAccessorVarObject::alloc(Runtime *rt, InstanceObject *instanceObject) {
+SLAKE_API HostObjectRef<InstanceMemberAccessorVarObject> slake::InstanceMemberAccessorVarObject::alloc(Runtime *rt, InstanceObject *instanceObject) {
 	using Alloc = std::pmr::polymorphic_allocator<InstanceMemberAccessorVarObject>;
 	Alloc allocator(&rt->globalHeapPoolResource);
 
@@ -135,26 +135,26 @@ HostObjectRef<InstanceMemberAccessorVarObject> slake::InstanceMemberAccessorVarO
 	return ptr.release();
 }
 
-void slake::InstanceMemberAccessorVarObject::dealloc() {
+SLAKE_API void slake::InstanceMemberAccessorVarObject::dealloc() {
 	std::pmr::polymorphic_allocator<InstanceMemberAccessorVarObject> allocator(&_rt->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
-InstanceObject::InstanceObject(Runtime *rt)
+SLAKE_API InstanceObject::InstanceObject(Runtime *rt)
 	: Object(rt) {
 	memberAccessor = InstanceMemberAccessorVarObject::alloc(rt, this).get();
 }
 
-InstanceObject::InstanceObject(const InstanceObject &x) : Object(x) {
+SLAKE_API InstanceObject::InstanceObject(const InstanceObject &x) : Object(x) {
 	_class = x._class;
 	objectLayout = x.objectLayout;
 	methodTable = x.methodTable;
 	// TODO: Copy the rawFieldData.
 }
 
-InstanceObject::~InstanceObject() {
+SLAKE_API InstanceObject::~InstanceObject() {
 	if (rawFieldData)
 		delete[] rawFieldData;
 
@@ -162,13 +162,13 @@ InstanceObject::~InstanceObject() {
 	// They are borrowed from the class.
 }
 
-ObjectKind InstanceObject::getKind() const { return ObjectKind::Instance; }
+SLAKE_API ObjectKind InstanceObject::getKind() const { return ObjectKind::Instance; }
 
-Object *InstanceObject::duplicate() const {
+SLAKE_API Object *InstanceObject::duplicate() const {
 	return (Object *)alloc(this).get();
 }
 
-MemberObject *InstanceObject::getMember(
+SLAKE_API MemberObject *InstanceObject::getMember(
 	const std::pmr::string &name,
 	VarRefContext *varRefContextOut) const {
 	if (auto it = methodTable->methods.find(name);
@@ -187,7 +187,7 @@ MemberObject *InstanceObject::getMember(
 	return nullptr;
 }
 
-HostObjectRef<InstanceObject> slake::InstanceObject::alloc(Runtime *rt) {
+SLAKE_API HostObjectRef<InstanceObject> slake::InstanceObject::alloc(Runtime *rt) {
 	using Alloc = std::pmr::polymorphic_allocator<InstanceObject>;
 	Alloc allocator(&rt->globalHeapPoolResource);
 
@@ -201,7 +201,7 @@ HostObjectRef<InstanceObject> slake::InstanceObject::alloc(Runtime *rt) {
 	return ptr.release();
 }
 
-HostObjectRef<InstanceObject> slake::InstanceObject::alloc(const InstanceObject *other) {
+SLAKE_API HostObjectRef<InstanceObject> slake::InstanceObject::alloc(const InstanceObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<InstanceObject>;
 	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
@@ -215,7 +215,7 @@ HostObjectRef<InstanceObject> slake::InstanceObject::alloc(const InstanceObject 
 	return ptr.release();
 }
 
-void slake::InstanceObject::dealloc() {
+SLAKE_API void slake::InstanceObject::dealloc() {
 	std::pmr::polymorphic_allocator<InstanceObject> allocator(&_rt->globalHeapPoolResource);
 
 	std::destroy_at(this);

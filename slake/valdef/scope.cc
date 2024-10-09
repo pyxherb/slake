@@ -2,31 +2,31 @@
 
 using namespace slake;
 
-Scope::Scope(std::pmr::memory_resource *memoryResource,
+SLAKE_API Scope::Scope(std::pmr::memory_resource *memoryResource,
 	Object *owner) : memoryResource(memoryResource),
 					 owner(owner),
 					 members(memoryResource) {}
 
-MemberObject *Scope::getMember(const std::pmr::string &name) {
+SLAKE_API MemberObject *Scope::getMember(const std::pmr::string &name) {
 	if (auto it = members.find(name); it != members.end())
 		return it->second;
 	return nullptr;
 }
 
-void Scope::addMember(const std::pmr::string &name, MemberObject *value) {
+SLAKE_API void Scope::addMember(const std::pmr::string &name, MemberObject *value) {
 	if (members.find(name) != members.end())
 		throw std::logic_error("The member is already exists");
 
 	putMember(name, value);
 }
 
-void Scope::putMember(const std::pmr::string &name, MemberObject *value) {
+SLAKE_API void Scope::putMember(const std::pmr::string &name, MemberObject *value) {
 	members[name] = value;
 	value->setParent(owner);
 	value->setName(name.c_str());
 }
 
-void Scope::removeMember(const std::pmr::string &name) {
+SLAKE_API void Scope::removeMember(const std::pmr::string &name) {
 	if (auto it = members.find(name); it != members.end()) {
 		it->second->setParent(nullptr);
 		it->second->setName("");
@@ -36,7 +36,7 @@ void Scope::removeMember(const std::pmr::string &name) {
 	throw std::logic_error("No such member");
 }
 
-Scope *Scope::alloc(std::pmr::memory_resource *memoryResource, Object *owner) {
+SLAKE_API Scope *Scope::alloc(std::pmr::memory_resource *memoryResource, Object *owner) {
 	using Alloc = std::pmr::polymorphic_allocator<Scope>;
 	Alloc allocator(memoryResource);
 
@@ -48,14 +48,14 @@ Scope *Scope::alloc(std::pmr::memory_resource *memoryResource, Object *owner) {
 	return ptr.release();
 }
 
-void Scope::dealloc() {
+SLAKE_API void Scope::dealloc() {
 	std::pmr::polymorphic_allocator<Scope> allocator(memoryResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
-Scope *Scope::duplicate() {
+SLAKE_API Scope *Scope::duplicate() {
 	std::unique_ptr<Scope, util::DeallocableDeleter<Scope>> newScope(alloc(memoryResource, owner));
 
 	for (auto &i : members) {
@@ -65,19 +65,19 @@ Scope *Scope::duplicate() {
 	return newScope.release();
 }
 
-MethodTable::MethodTable(std::pmr::memory_resource *memoryResource)
+SLAKE_API MethodTable::MethodTable(std::pmr::memory_resource *memoryResource)
 	: memoryResource(memoryResource),
 	  methods(memoryResource),
 	  destructors(memoryResource) {
 }
 
-FnObject *MethodTable::getMethod(const std::pmr::string &name) {
+SLAKE_API FnObject *MethodTable::getMethod(const std::pmr::string &name) {
 	if (auto it = methods.find(name); it != methods.end())
 		return it->second;
 	return nullptr;
 }
 
-MethodTable *MethodTable::alloc(std::pmr::memory_resource *memoryResource) {
+SLAKE_API MethodTable *MethodTable::alloc(std::pmr::memory_resource *memoryResource) {
 	using Alloc = std::pmr::polymorphic_allocator<MethodTable>;
 	Alloc allocator(memoryResource);
 
@@ -89,14 +89,14 @@ MethodTable *MethodTable::alloc(std::pmr::memory_resource *memoryResource) {
 	return ptr.release();
 }
 
-void MethodTable::dealloc() {
+SLAKE_API void MethodTable::dealloc() {
 	std::pmr::polymorphic_allocator<MethodTable> allocator(memoryResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
-MethodTable *MethodTable::duplicate() {
+SLAKE_API MethodTable *MethodTable::duplicate() {
 	using Alloc = std::pmr::polymorphic_allocator<MethodTable>;
 	Alloc allocator(memoryResource);
 

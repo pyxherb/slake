@@ -2,12 +2,12 @@
 
 using namespace slake;
 
-IdRefEntry::IdRefEntry(std::pmr::memory_resource *memoryResource)
+SLAKE_API IdRefEntry::IdRefEntry(std::pmr::memory_resource *memoryResource)
 	: name(memoryResource), genericArgs(memoryResource), paramTypes(memoryResource) {
 	// For resize() methods.
 }
 
-IdRefEntry::IdRefEntry(std::pmr::string &&name,
+SLAKE_API IdRefEntry::IdRefEntry(std::pmr::string &&name,
 	GenericArgList &&genericArgs,
 	bool hasParamTypes,
 	std::pmr::vector<Type> &&paramTypes,
@@ -18,22 +18,24 @@ IdRefEntry::IdRefEntry(std::pmr::string &&name,
 	  paramTypes(paramTypes),
 	  hasVarArg(hasVarArg) {}
 
-slake::IdRefObject::IdRefObject(Runtime *rt)
+SLAKE_API slake::IdRefObject::IdRefObject(Runtime *rt)
 	: Object(rt) {
 }
 
-IdRefObject::IdRefObject(const IdRefObject &x) : Object(x) {
+SLAKE_API IdRefObject::IdRefObject(const IdRefObject &x) : Object(x) {
 	entries = x.entries;
 }
 
-IdRefObject::~IdRefObject() {
+SLAKE_API IdRefObject::~IdRefObject() {
 }
 
-Object *IdRefObject::duplicate() const {
+SLAKE_API ObjectKind IdRefObject::getKind() const { return ObjectKind::IdRef; }
+
+SLAKE_API Object *IdRefObject::duplicate() const {
 	return (Object *)alloc(this).get();
 }
 
-HostObjectRef<IdRefObject> slake::IdRefObject::alloc(Runtime *rt) {
+SLAKE_API HostObjectRef<IdRefObject> slake::IdRefObject::alloc(Runtime *rt) {
 	using Alloc = std::pmr::polymorphic_allocator<IdRefObject>;
 	Alloc allocator(&rt->globalHeapPoolResource);
 
@@ -47,7 +49,7 @@ HostObjectRef<IdRefObject> slake::IdRefObject::alloc(Runtime *rt) {
 	return ptr.release();
 }
 
-HostObjectRef<IdRefObject> slake::IdRefObject::alloc(const IdRefObject *other) {
+SLAKE_API HostObjectRef<IdRefObject> slake::IdRefObject::alloc(const IdRefObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<IdRefObject>;
 	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
@@ -61,14 +63,14 @@ HostObjectRef<IdRefObject> slake::IdRefObject::alloc(const IdRefObject *other) {
 	return ptr.release();
 }
 
-void slake::IdRefObject::dealloc() {
+SLAKE_API void slake::IdRefObject::dealloc() {
 	std::pmr::polymorphic_allocator<IdRefObject> allocator(&_rt->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
-std::string std::to_string(const slake::IdRefObject *ref) {
+SLAKE_API std::string std::to_string(const slake::IdRefObject *ref) {
 	string s;
 	for (size_t i = 0; i < ref->entries.size(); ++i) {
 		auto &scope = ref->entries[i];

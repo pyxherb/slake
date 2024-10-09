@@ -15,26 +15,26 @@ namespace slake {
 		std::unordered_map<std::pmr::string, IdRefObject *> imports;
 		std::vector<IdRefObject *> unnamedImports;
 
-		ModuleObject(Runtime *rt, AccessModifier access);
-		ModuleObject(const ModuleObject &x);
-		virtual ~ModuleObject();
+		SLAKE_API ModuleObject(Runtime *rt, AccessModifier access);
+		SLAKE_API ModuleObject(const ModuleObject &x);
+		SLAKE_API virtual ~ModuleObject();
 
-		virtual ObjectKind getKind() const override;
+		SLAKE_API virtual ObjectKind getKind() const override;
 
-		virtual Object *duplicate() const override;
+		SLAKE_API virtual Object *duplicate() const override;
 
-		virtual MemberObject *getMember(
+		SLAKE_API virtual MemberObject *getMember(
 			const std::pmr::string &name,
 			VarRefContext *varRefContextOut) const;
 
-		virtual const char *getName() const override;
-		virtual void setName(const char *name) override;
-		virtual Object *getParent() const override;
-		virtual void setParent(Object *parent) override;
+		SLAKE_API virtual const char *getName() const override;
+		SLAKE_API virtual void setName(const char *name) override;
+		SLAKE_API virtual Object *getParent() const override;
+		SLAKE_API virtual void setParent(Object *parent) override;
 
-		static HostObjectRef<ModuleObject> alloc(Runtime *rt, AccessModifier access);
-		static HostObjectRef<ModuleObject> alloc(const ModuleObject *other);
-		virtual void dealloc() override;
+		SLAKE_API static HostObjectRef<ModuleObject> alloc(Runtime *rt, AccessModifier access);
+		SLAKE_API static HostObjectRef<ModuleObject> alloc(const ModuleObject *other);
+		SLAKE_API virtual void dealloc() override;
 	};
 }
 

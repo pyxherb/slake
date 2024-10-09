@@ -64,7 +64,7 @@ namespace slake {
 			const VarRefContext &context)
 			: varPtr(varPtr),
 			  context(context) {}
-		bool operator<(const VarRef &rhs) const;
+		SLAKE_API bool operator<(const VarRef &rhs) const;
 	};
 
 	struct Value {
@@ -148,7 +148,7 @@ namespace slake {
 			this->data.asVarRef = varRef;
 			valueType = ValueType::VarRef;
 		}
-		Value(const Type &type);
+		SLAKE_API Value(const Type &type);
 
 		SLAKE_FORCEINLINE int8_t getI8() const {
 			assert(valueType == ValueType::I8);
@@ -220,26 +220,26 @@ namespace slake {
 			return data.asVarRef;
 		}
 
-		Type &getTypeName();
-		const Type &getTypeName() const;
+		SLAKE_API Type &getTypeName();
+		SLAKE_API const Type &getTypeName() const;
 
 		SLAKE_FORCEINLINE Object *getObjectRef() const {
 			return data.asObjectRef;
 		}
 
 		Value &operator=(const Value &other) = default;
-		inline Value &operator=(Value &&other) noexcept = default;
+		Value &operator=(Value &&other) noexcept = default;
 
-		bool operator==(const Value &rhs) const;
+		SLAKE_API bool operator==(const Value &rhs) const;
 
-		inline bool operator!=(const Value &rhs) const {
+		SLAKE_FORCEINLINE bool operator!=(const Value &rhs) const {
 			return !(*this == rhs);
 		}
 
-		bool operator<(const Value &rhs) const;
+		SLAKE_API bool operator<(const Value &rhs) const;
 	};
 
-	bool isCompatible(const Type &type, const Value &value);
+	SLAKE_API bool isCompatible(const Type &type, const Value &value);
 }
 
 #include <slake/type.h>

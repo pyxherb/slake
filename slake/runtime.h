@@ -30,7 +30,7 @@ namespace slake {
 		uint32_t nLocalVars = 0, nRegs = 0;
 		size_t stackBase = 0;
 
-		MinorFrame(
+		SLAKE_API MinorFrame(
 			Runtime *rt,
 			uint32_t nLocalVars,
 			uint32_t nRegs,
@@ -68,19 +68,19 @@ namespace slake {
 
 		Value curExcept = nullptr;	// Current exception.
 
-		MajorFrame(Runtime *rt, Context *context);
+		SLAKE_API MajorFrame(Runtime *rt, Context *context);
 		// Default constructor is required by resize() methods from the
 		// containers.
 		SLAKE_FORCEINLINE MajorFrame() {
 			abort();
 		}
 
-		VarRef lload(uint32_t off);
+		SLAKE_API VarRef lload(uint32_t off);
 
-		VarRef larg(uint32_t off);
+		SLAKE_API VarRef larg(uint32_t off);
 
 		/// @brief Leave current minor frame.
-		void leave();
+		SLAKE_API void leave();
 	};
 
 	using ContextFlags = uint8_t;
@@ -96,11 +96,11 @@ namespace slake {
 		char *dataStack = nullptr;							   // Data stack
 		size_t stackTop = 0;								   // Stack top
 
-		char *stackAlloc(size_t size);
+		SLAKE_API char *stackAlloc(size_t size);
 
-		Context();
+		SLAKE_API Context();
 
-		~Context();
+		SLAKE_API ~Context();
 	};
 
 	class CountablePoolResource : public std::pmr::memory_resource {
@@ -108,12 +108,12 @@ namespace slake {
 		std::pmr::memory_resource *upstream;
 		size_t szAllocated = 0;
 
-		CountablePoolResource(std::pmr::memory_resource *upstream);
-		CountablePoolResource(const CountablePoolResource &) = delete;
+		SLAKE_API CountablePoolResource(std::pmr::memory_resource *upstream);
+		SLAKE_API CountablePoolResource(const CountablePoolResource &) = delete;
 
-		virtual void *do_allocate(size_t bytes, size_t alignment) override;
-		virtual void do_deallocate(void *p, size_t bytes, size_t alignment) override;
-		virtual bool do_is_equal(const std::pmr::memory_resource &other) const noexcept override;
+		SLAKE_API virtual void *do_allocate(size_t bytes, size_t alignment) override;
+		SLAKE_API virtual void do_deallocate(void *p, size_t bytes, size_t alignment) override;
+		SLAKE_API virtual bool do_is_equal(const std::pmr::memory_resource &other) const noexcept override;
 	};
 
 	using RuntimeFlags = uint32_t;
@@ -195,11 +195,11 @@ namespace slake {
 			Object *ownerObject;
 		};
 
-		HostObjectRef<IdRefObject> _loadIdRef(LoaderContext &context, HostRefHolder &holder);
-		Value _loadValue(LoaderContext &context, HostRefHolder &holder);
-		Type _loadType(LoaderContext &context, HostRefHolder &holder);
-		GenericParam _loadGenericParam(LoaderContext &context, HostRefHolder &holder);
-		void _loadScope(LoaderContext &context,
+		SLAKE_API HostObjectRef<IdRefObject> _loadIdRef(LoaderContext &context, HostRefHolder &holder);
+		SLAKE_API Value _loadValue(LoaderContext &context, HostRefHolder &holder);
+		SLAKE_API Type _loadType(LoaderContext &context, HostRefHolder &holder);
+		SLAKE_API GenericParam _loadGenericParam(LoaderContext &context, HostRefHolder &holder);
+		SLAKE_API void _loadScope(LoaderContext &context,
 			HostObjectRef<ModuleObject> mod,
 			LoadModuleFlags loadModuleFlags,
 			HostRefHolder &holder);
@@ -207,25 +207,25 @@ namespace slake {
 		/// @brief Execute a single instruction.
 		/// @param context Context for execution.
 		/// @param ins Instruction to be executed.
-		void _execIns(Context *context, Instruction ins);
+		SLAKE_API void _execIns(Context *context, Instruction ins);
 
-		void _gcWalk(Scope *scope);
-		void _gcWalk(MethodTable *methodTable);
-		void _gcWalk(GenericParamList &genericParamList);
-		void _gcWalk(const Type &type);
-		void _gcWalk(const Value &i);
-		void _gcWalk(Object *i);
-		void _gcWalk(Context &i);
+		SLAKE_API void _gcWalk(Scope *scope);
+		SLAKE_API void _gcWalk(MethodTable *methodTable);
+		SLAKE_API void _gcWalk(GenericParamList &genericParamList);
+		SLAKE_API void _gcWalk(const Type &type);
+		SLAKE_API void _gcWalk(const Value &i);
+		SLAKE_API void _gcWalk(Object *i);
+		SLAKE_API void _gcWalk(Context &i);
 
-		void _instantiateGenericObject(Type &type, GenericInstantiationContext &instantiationContext) const;
-		void _instantiateGenericObject(Value &value, GenericInstantiationContext &instantiationContext) const;
-		void _instantiateGenericObject(Object *v, GenericInstantiationContext &instantiationContext) const;
-		void _instantiateGenericObject(FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const;
+		SLAKE_API void _instantiateGenericObject(Type &type, GenericInstantiationContext &instantiationContext) const;
+		SLAKE_API void _instantiateGenericObject(Value &value, GenericInstantiationContext &instantiationContext) const;
+		SLAKE_API void _instantiateGenericObject(Object *v, GenericInstantiationContext &instantiationContext) const;
+		SLAKE_API void _instantiateGenericObject(FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const;
 
-		VarRef _addLocalVar(MajorFrame *frame, Type type);
-		void _addLocalReg(MajorFrame *frame);
+		SLAKE_API VarRef _addLocalVar(MajorFrame *frame, Type type);
+		SLAKE_API void _addLocalReg(MajorFrame *frame);
 
-		uint32_t _findAndDispatchExceptHandler(const Value &curExcept, const MinorFrame &minorFrame) const;
+		SLAKE_API uint32_t _findAndDispatchExceptHandler(const Value &curExcept, const MinorFrame &minorFrame) const;
 
 		friend class Object;
 		friend class RegularFnOverloadingObject;
@@ -245,48 +245,48 @@ namespace slake {
 		/// @brief Thread IDs of threads which are executing destructors.
 		std::unordered_set<std::thread::id> destructingThreads;
 
-		Runtime(Runtime &) = delete;
-		Runtime(Runtime &&) = delete;
-		Runtime &operator=(Runtime &) = delete;
-		Runtime &operator=(Runtime &&) = delete;
+		SLAKE_API Runtime(Runtime &) = delete;
+		SLAKE_API Runtime(Runtime &&) = delete;
+		SLAKE_API Runtime &operator=(Runtime &) = delete;
+		SLAKE_API Runtime &operator=(Runtime &&) = delete;
 
-		Runtime(std::pmr::memory_resource *upstreamMemoryResource, RuntimeFlags flags = 0);
-		virtual ~Runtime();
+		SLAKE_API Runtime(std::pmr::memory_resource *upstreamMemoryResource, RuntimeFlags flags = 0);
+		SLAKE_API virtual ~Runtime();
 
-		void invalidateGenericCache(Object *i);
+		SLAKE_API void invalidateGenericCache(Object *i);
 
-		void mapGenericParams(const Object *v, GenericInstantiationContext &instantiationContext) const;
-		void mapGenericParams(const FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const;
+		SLAKE_API void mapGenericParams(const Object *v, GenericInstantiationContext &instantiationContext) const;
+		SLAKE_API void mapGenericParams(const FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const;
 		/// @brief Instantiate an generic value (e.g. generic class, etc).
 		/// @param v Object to be instantiated.
 		/// @param genericArgs Generic arguments for instantiation.
 		/// @return Instantiated value.
-		Object *instantiateGenericObject(const Object *v, GenericInstantiationContext &instantiationContext) const;
+		SLAKE_API Object *instantiateGenericObject(const Object *v, GenericInstantiationContext &instantiationContext) const;
 
 		/// @brief Resolve a reference and get the referenced value.
 		/// @param ref Reference to be resolved.
 		/// @param scopeObject Scope value for resolving.
 		/// @return Resolved value which is referred by the reference.
-		Object *resolveIdRef(IdRefObject *ref, VarRefContext *varRefContextOut, Object *scopeObject = nullptr) const;
+		SLAKE_API Object *resolveIdRef(IdRefObject *ref, VarRefContext *varRefContextOut, Object *scopeObject = nullptr) const;
 
-		HostObjectRef<ModuleObject> loadModule(std::istream &fs, LoadModuleFlags flags);
-		HostObjectRef<ModuleObject> loadModule(const void *buf, size_t size, LoadModuleFlags flags);
+		SLAKE_API HostObjectRef<ModuleObject> loadModule(std::istream &fs, LoadModuleFlags flags);
+		SLAKE_API HostObjectRef<ModuleObject> loadModule(const void *buf, size_t size, LoadModuleFlags flags);
 
-		inline RootObject *getRootObject() { return _rootObject; }
+		SLAKE_FORCEINLINE RootObject *getRootObject() { return _rootObject; }
 
-		inline void setModuleLocator(ModuleLocatorFn locator) { _moduleLocator = locator; }
-		inline ModuleLocatorFn getModuleLocator() { return _moduleLocator; }
+		SLAKE_FORCEINLINE void setModuleLocator(ModuleLocatorFn locator) { _moduleLocator = locator; }
+		SLAKE_FORCEINLINE ModuleLocatorFn getModuleLocator() { return _moduleLocator; }
 
-		std::string getFullName(const MemberObject *v) const;
-		std::string getFullName(const IdRefObject *v) const;
+		SLAKE_API std::string getFullName(const MemberObject *v) const;
+		SLAKE_API std::string getFullName(const IdRefObject *v) const;
 
-		std::deque<IdRefEntry> getFullRef(const MemberObject *v) const;
+		SLAKE_API std::deque<IdRefEntry> getFullRef(const MemberObject *v) const;
 
 		/// @brief Do a GC cycle.
-		void gc();
+		SLAKE_API void gc();
 
-		HostObjectRef<InstanceObject> newClassInstance(ClassObject *cls, NewClassInstanceFlags flags);
-		HostObjectRef<ArrayObject> newArrayInstance(Runtime *rt, const Type &type, size_t length);
+		SLAKE_API HostObjectRef<InstanceObject> newClassInstance(ClassObject *cls, NewClassInstanceFlags flags);
+		SLAKE_API HostObjectRef<ArrayObject> newArrayInstance(Runtime *rt, const Type &type, size_t length);
 	};
 }
 

@@ -2,22 +2,24 @@
 
 using namespace slake;
 
-RootObject::RootObject(Runtime *rt)
+SLAKE_API RootObject::RootObject(Runtime *rt)
 	: Object(rt) {
 	scope = Scope::alloc(&rt->globalHeapPoolResource, this);
 }
 
-RootObject::~RootObject() {
+SLAKE_API RootObject::~RootObject() {
 	scope->dealloc();
 }
 
-MemberObject* RootObject::getMember(
+SLAKE_API ObjectKind RootObject::getKind() const { return ObjectKind::RootObject; }
+
+SLAKE_API MemberObject *RootObject::getMember(
 	const std::pmr::string& name,
 	VarRefContext* varRefContextOut) const {
 	return scope->getMember(name);
 }
 
-HostObjectRef<RootObject> slake::RootObject::alloc(Runtime *rt) {
+SLAKE_API HostObjectRef<RootObject> slake::RootObject::alloc(Runtime *rt) {
 	using Alloc = std::pmr::polymorphic_allocator<RootObject>;
 	Alloc allocator(&rt->globalHeapPoolResource);
 
@@ -31,7 +33,7 @@ HostObjectRef<RootObject> slake::RootObject::alloc(Runtime *rt) {
 	return ptr.release();
 }
 
-void slake::RootObject::dealloc() {
+SLAKE_API void slake::RootObject::dealloc() {
 	std::pmr::polymorphic_allocator<RootObject> allocator(&_rt->globalHeapPoolResource);
 
 	std::destroy_at(this);

@@ -2,20 +2,22 @@
 
 using namespace slake;
 
-ContextObject::ContextObject(
+SLAKE_API ContextObject::ContextObject(
 	Runtime *rt,
 	std::shared_ptr<Context> context)
 	: Object(rt), _context(context) {
 }
 
-ContextObject::ContextObject(const ContextObject &x) : Object(x) {
+SLAKE_API ContextObject::ContextObject(const ContextObject &x) : Object(x) {
 	_context = x._context;
 }
 
-ContextObject::~ContextObject() {
+SLAKE_API ContextObject::~ContextObject() {
 }
 
-HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt, std::shared_ptr<Context> context) {
+SLAKE_API ObjectKind ContextObject::getKind() const { return ObjectKind::Context; }
+
+SLAKE_API HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt, std::shared_ptr<Context> context) {
 	using Alloc = std::pmr::polymorphic_allocator<ContextObject>;
 	Alloc allocator(&rt->globalHeapPoolResource);
 
@@ -29,7 +31,7 @@ HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt, std::share
 	return ptr.release();
 }
 
-HostObjectRef<ContextObject> slake::ContextObject::alloc(const ContextObject *other) {
+SLAKE_API HostObjectRef<ContextObject> slake::ContextObject::alloc(const ContextObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<ContextObject>;
 	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
@@ -43,22 +45,22 @@ HostObjectRef<ContextObject> slake::ContextObject::alloc(const ContextObject *ot
 	return ptr.release();
 }
 
-void slake::ContextObject::dealloc() {
+SLAKE_API void slake::ContextObject::dealloc() {
 	std::pmr::polymorphic_allocator<ContextObject> allocator(&_rt->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
-Value ContextObject::resume(HostRefHolder *hostRefHolder) {
+SLAKE_API Value ContextObject::resume(HostRefHolder *hostRefHolder) {
 	_rt->activeContexts[std::this_thread::get_id()] = _context;
 	return _context->majorFrames.back()->curFn->call(nullptr, {}, hostRefHolder);
 }
 
-Value ContextObject::getResult() {
+SLAKE_API Value ContextObject::getResult() {
 	return _context->majorFrames.back()->returnValue;
 }
 
-bool ContextObject::isDone() {
+SLAKE_API bool ContextObject::isDone() {
 	return _context->flags & CTX_DONE;
 }

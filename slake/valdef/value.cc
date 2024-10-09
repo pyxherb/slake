@@ -2,7 +2,7 @@
 
 using namespace slake;
 
-bool VarRef::operator<(const VarRef &rhs) const {
+SLAKE_API bool VarRef::operator<(const VarRef &rhs) const {
 	if (varPtr < rhs.varPtr)
 		return true;
 	if (varPtr > rhs.varPtr)
@@ -23,20 +23,20 @@ bool VarRef::operator<(const VarRef &rhs) const {
 	return false;
 }
 
-Value::Value(const Type &type) {
+SLAKE_API Value::Value(const Type &type) {
 	*((Type *)data.asType) = type;
 	valueType = ValueType::TypeName;
 }
 
-Type &Value::getTypeName() {
+SLAKE_API Type &Value::getTypeName() {
 	return *((Type *)data.asType);
 }
 
-const Type &Value::getTypeName() const {
+SLAKE_API const Type &Value::getTypeName() const {
 	return ((Value *)this)->getTypeName();
 }
 
-bool Value::operator==(const Value &rhs) const {
+SLAKE_API bool Value::operator==(const Value &rhs) const {
 	if (valueType != rhs.valueType)
 		return false;
 
@@ -73,7 +73,7 @@ bool Value::operator==(const Value &rhs) const {
 	return true;
 }
 
-bool Value::operator<(const Value &rhs) const {
+SLAKE_API bool Value::operator<(const Value &rhs) const {
 	if (valueType < rhs.valueType)
 		return true;
 	if (valueType > rhs.valueType)

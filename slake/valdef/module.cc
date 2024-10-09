@@ -2,13 +2,13 @@
 
 using namespace slake;
 
-ModuleObject::ModuleObject(Runtime *rt, AccessModifier access)
+SLAKE_API ModuleObject::ModuleObject(Runtime *rt, AccessModifier access)
 	: MemberObject(rt) {
 	scope = Scope::alloc(&rt->globalHeapPoolResource, this);
 	this->accessModifier = access;
 }
 
-ModuleObject::ModuleObject(const ModuleObject &x) : MemberObject(x) {
+SLAKE_API ModuleObject::ModuleObject(const ModuleObject &x) : MemberObject(x) {
 	imports = x.imports;
 	unnamedImports = x.unnamedImports;
 	name = x.name;
@@ -16,39 +16,39 @@ ModuleObject::ModuleObject(const ModuleObject &x) : MemberObject(x) {
 	scope = x.scope->duplicate();
 }
 
-ModuleObject::~ModuleObject() {
+SLAKE_API ModuleObject::~ModuleObject() {
 	scope->dealloc();
 }
 
-ObjectKind ModuleObject::getKind() const { return ObjectKind::Module; }
+SLAKE_API ObjectKind ModuleObject::getKind() const { return ObjectKind::Module; }
 
-Object *ModuleObject::duplicate() const {
+SLAKE_API Object *ModuleObject::duplicate() const {
 	return (Object *)alloc(this).get();
 }
 
-MemberObject* ModuleObject::getMember(
+SLAKE_API MemberObject *ModuleObject::getMember(
 	const std::pmr::string& name,
 	VarRefContext* varRefContextOut) const {
 	return scope->getMember(name);
 }
 
-const char* ModuleObject::getName() const {
+SLAKE_API const char *ModuleObject::getName() const {
 	return name.c_str();
 }
 
-void ModuleObject::setName(const char *name) {
+SLAKE_API void ModuleObject::setName(const char *name) {
 	this->name = name;
 }
 
-Object *ModuleObject::getParent() const {
+SLAKE_API Object *ModuleObject::getParent() const {
 	return parent;
 }
 
-void ModuleObject::setParent(Object *parent) {
+SLAKE_API void ModuleObject::setParent(Object *parent) {
 	this->parent = parent;
 }
 
-HostObjectRef<ModuleObject> slake::ModuleObject::alloc(Runtime *rt, AccessModifier access) {
+SLAKE_API HostObjectRef<ModuleObject> slake::ModuleObject::alloc(Runtime *rt, AccessModifier access) {
 	using Alloc = std::pmr::polymorphic_allocator<ModuleObject>;
 	Alloc allocator(&rt->globalHeapPoolResource);
 
@@ -62,7 +62,7 @@ HostObjectRef<ModuleObject> slake::ModuleObject::alloc(Runtime *rt, AccessModifi
 	return ptr.release();
 }
 
-HostObjectRef<ModuleObject> slake::ModuleObject::alloc(const ModuleObject *other) {
+SLAKE_API HostObjectRef<ModuleObject> slake::ModuleObject::alloc(const ModuleObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<ModuleObject>;
 	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
@@ -76,7 +76,7 @@ HostObjectRef<ModuleObject> slake::ModuleObject::alloc(const ModuleObject *other
 	return ptr.release();
 }
 
-void slake::ModuleObject::dealloc() {
+SLAKE_API void slake::ModuleObject::dealloc() {
 	std::pmr::polymorphic_allocator<ModuleObject> allocator(&_rt->globalHeapPoolResource);
 
 	std::destroy_at(this);

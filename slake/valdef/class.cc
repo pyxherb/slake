@@ -2,13 +2,13 @@
 
 using namespace slake;
 
-ObjectLayout::ObjectLayout(std::pmr::memory_resource *memoryResource)
+SLAKE_API ObjectLayout::ObjectLayout(std::pmr::memory_resource *memoryResource)
 	: memoryResource(memoryResource),
 	  fieldRecords(memoryResource),
 	  fieldNameMap(memoryResource) {
 }
 
-ObjectLayout *ObjectLayout::duplicate() const {
+SLAKE_API ObjectLayout *ObjectLayout::duplicate() const {
 	using Alloc = std::pmr::polymorphic_allocator<ObjectLayout>;
 	Alloc allocator(memoryResource);
 
@@ -20,7 +20,7 @@ ObjectLayout *ObjectLayout::duplicate() const {
 	return ptr.release();
 }
 
-ObjectLayout *ObjectLayout::alloc(std::pmr::memory_resource *memoryResource) {
+SLAKE_API ObjectLayout *ObjectLayout::alloc(std::pmr::memory_resource *memoryResource) {
 	using Alloc = std::pmr::polymorphic_allocator<ObjectLayout>;
 	Alloc allocator(memoryResource);
 
@@ -32,24 +32,24 @@ ObjectLayout *ObjectLayout::alloc(std::pmr::memory_resource *memoryResource) {
 	return ptr.release();
 }
 
-void ObjectLayout::dealloc() {
+SLAKE_API void ObjectLayout::dealloc() {
 	std::pmr::polymorphic_allocator<ObjectLayout> allocator(memoryResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
-slake::ClassObject::ClassObject(Runtime *rt, AccessModifier access, const Type &parentClass)
+SLAKE_API slake::ClassObject::ClassObject(Runtime *rt, AccessModifier access, const Type &parentClass)
 	: ModuleObject(rt, access), parentClass(parentClass) {
 }
 
-ObjectKind ClassObject::getKind() const { return ObjectKind::Class; }
+SLAKE_API ObjectKind ClassObject::getKind() const { return ObjectKind::Class; }
 
-GenericArgList ClassObject::getGenericArgs() const {
+SLAKE_API GenericArgList ClassObject::getGenericArgs() const {
 	return genericArgs;
 }
 
-ClassObject::ClassObject(const ClassObject &x) : ModuleObject(x) {
+SLAKE_API ClassObject::ClassObject(const ClassObject &x) : ModuleObject(x) {
 	_flags = x._flags;
 
 	genericArgs = x.genericArgs;
@@ -61,14 +61,14 @@ ClassObject::ClassObject(const ClassObject &x) : ModuleObject(x) {
 	// DO NOT copy the cached instantiated method table.
 }
 
-ClassObject::~ClassObject() {
+SLAKE_API ClassObject::~ClassObject() {
 	if (cachedInstantiatedMethodTable)
 		cachedInstantiatedMethodTable->dealloc();
 	if (cachedObjectLayout)
 		cachedObjectLayout->dealloc();
 }
 
-bool ClassObject::hasImplemented(const InterfaceObject *pInterface) const {
+SLAKE_API bool ClassObject::hasImplemented(const InterfaceObject *pInterface) const {
 	for (auto &i : implInterfaces) {
 		const_cast<Type &>(i).loadDeferredType(_rt);
 
@@ -78,7 +78,7 @@ bool ClassObject::hasImplemented(const InterfaceObject *pInterface) const {
 	return false;
 }
 
-bool ClassObject::isBaseOf(const ClassObject *pClass) const {
+SLAKE_API bool ClassObject::isBaseOf(const ClassObject *pClass) const {
 	const ClassObject *i = pClass;
 	while (true) {
 		if (i == this)
@@ -95,11 +95,11 @@ bool ClassObject::isBaseOf(const ClassObject *pClass) const {
 	return false;
 }
 
-InterfaceObject::InterfaceObject(Runtime *rt, AccessModifier access, const std::vector<Type> &parents)
+SLAKE_API InterfaceObject::InterfaceObject(Runtime *rt, AccessModifier access, const std::vector<Type> &parents)
 	: ModuleObject(rt, access), parents(parents) {
 }
 
-InterfaceObject::InterfaceObject(const InterfaceObject &x) : ModuleObject(x) {
+SLAKE_API InterfaceObject::InterfaceObject(const InterfaceObject &x) : ModuleObject(x) {
 	genericArgs = x.genericArgs;
 
 	genericParams = x.genericParams;
@@ -107,7 +107,7 @@ InterfaceObject::InterfaceObject(const InterfaceObject &x) : ModuleObject(x) {
 	parents = x.parents;
 }
 
-bool InterfaceObject::isDerivedFrom(const InterfaceObject *pInterface) const {
+SLAKE_API bool InterfaceObject::isDerivedFrom(const InterfaceObject *pInterface) const {
 	if (pInterface == this)
 		return true;
 
@@ -126,17 +126,17 @@ bool InterfaceObject::isDerivedFrom(const InterfaceObject *pInterface) const {
 	return false;
 }
 
-ObjectKind InterfaceObject::getKind() const { return ObjectKind::Interface; }
+SLAKE_API ObjectKind InterfaceObject::getKind() const { return ObjectKind::Interface; }
 
-Object *ClassObject::duplicate() const {
+SLAKE_API Object *ClassObject::duplicate() const {
 	return (Object *)alloc(this).get();
 }
 
-GenericArgList InterfaceObject::getGenericArgs() const {
+SLAKE_API GenericArgList InterfaceObject::getGenericArgs() const {
 	return genericArgs;
 }
 
-HostObjectRef<ClassObject> slake::ClassObject::alloc(const ClassObject *other) {
+SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(const ClassObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<ClassObject>;
 	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
@@ -150,7 +150,7 @@ HostObjectRef<ClassObject> slake::ClassObject::alloc(const ClassObject *other) {
 	return ptr.release();
 }
 
-HostObjectRef<ClassObject> slake::ClassObject::alloc(Runtime *rt, AccessModifier access, const Type &parentClass) {
+SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(Runtime *rt, AccessModifier access, const Type &parentClass) {
 	using Alloc = std::pmr::polymorphic_allocator<ClassObject>;
 	Alloc allocator(&rt->globalHeapPoolResource);
 
@@ -164,21 +164,21 @@ HostObjectRef<ClassObject> slake::ClassObject::alloc(Runtime *rt, AccessModifier
 	return ptr.release();
 }
 
-void slake::ClassObject::dealloc() {
+SLAKE_API void slake::ClassObject::dealloc() {
 	std::pmr::polymorphic_allocator<ClassObject> allocator(&_rt->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
-InterfaceObject::~InterfaceObject() {
+SLAKE_API InterfaceObject::~InterfaceObject() {
 }
 
-Object *InterfaceObject::duplicate() const {
+SLAKE_API Object *InterfaceObject::duplicate() const {
 	return (Object *)alloc(this).get();
 }
 
-HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Runtime *rt, AccessModifier access, const std::vector<Type> &parents) {
+SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Runtime *rt, AccessModifier access, const std::vector<Type> &parents) {
 	using Alloc = std::pmr::polymorphic_allocator<InterfaceObject>;
 	Alloc allocator(&rt->globalHeapPoolResource);
 
@@ -192,7 +192,7 @@ HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Runtime *rt, Access
 	return ptr.release();
 }
 
-HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(const InterfaceObject *other) {
+SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(const InterfaceObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<InterfaceObject>;
 	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
@@ -206,7 +206,7 @@ HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(const InterfaceObje
 	return ptr.release();
 }
 
-void slake::InterfaceObject::dealloc() {
+SLAKE_API void slake::InterfaceObject::dealloc() {
 	std::pmr::polymorphic_allocator<InterfaceObject> allocator(&_rt->globalHeapPoolResource);
 
 	std::destroy_at(this);

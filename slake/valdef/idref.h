@@ -14,8 +14,8 @@ namespace slake {
 		std::pmr::vector<Type> paramTypes;
 		bool hasVarArg;
 
-		IdRefEntry(std::pmr::memory_resource *memoryResource);
-		IdRefEntry(std::pmr::string &&name,
+		SLAKE_API IdRefEntry(std::pmr::memory_resource *memoryResource);
+		SLAKE_API IdRefEntry(std::pmr::string &&name,
 			GenericArgList &&genericArgs = {},
 			bool hasParamTypes = false,
 			std::pmr::vector<Type> &&paramTypes = {},
@@ -26,23 +26,23 @@ namespace slake {
 	public:
 		std::pmr::deque<IdRefEntry> entries;
 
-		IdRefObject(Runtime *rt);
-		IdRefObject(const IdRefObject &x);
-		virtual ~IdRefObject();
+		SLAKE_API IdRefObject(Runtime *rt);
+		SLAKE_API IdRefObject(const IdRefObject &x);
+		SLAKE_API virtual ~IdRefObject();
 
-		virtual inline ObjectKind getKind() const override { return ObjectKind::IdRef; }
+		SLAKE_API virtual ObjectKind getKind() const override;
 
-		virtual Object *duplicate() const override;
+		SLAKE_API virtual Object *duplicate() const override;
 
-		static HostObjectRef<IdRefObject> alloc(Runtime *rt);
-		static HostObjectRef<IdRefObject> alloc(const IdRefObject *other);
-		virtual void dealloc() override;
+		SLAKE_API static HostObjectRef<IdRefObject> alloc(Runtime *rt);
+		SLAKE_API static HostObjectRef<IdRefObject> alloc(const IdRefObject *other);
+		SLAKE_API virtual void dealloc() override;
 	};
 }
 
 namespace std {
-	string to_string(std::vector<slake::IdRefEntry> &idRefEntries);
-	string to_string(const slake::IdRefObject *ref);
+	SLAKE_API string to_string(std::vector<slake::IdRefEntry> &idRefEntries);
+	SLAKE_API string to_string(const slake::IdRefObject *ref);
 }
 
 #endif

@@ -9,17 +9,17 @@ namespace slake {
 	public:
 		Scope *scope;
 
-		RootObject(Runtime *rt);
-		virtual ~RootObject();
+		SLAKE_API RootObject(Runtime *rt);
+		SLAKE_API virtual ~RootObject();
 
-		virtual inline ObjectKind getKind() const override { return ObjectKind::RootObject; }
+		SLAKE_API virtual ObjectKind getKind() const override;
 
-		virtual MemberObject *getMember(
+		SLAKE_API virtual MemberObject *getMember(
 			const std::pmr::string &name,
 			VarRefContext *varRefContextOut) const;
 
-		static HostObjectRef<RootObject> alloc(Runtime *rt);
-		virtual void dealloc() override;
+		SLAKE_API static HostObjectRef<RootObject> alloc(Runtime *rt);
+		SLAKE_API virtual void dealloc() override;
 	};
 }
 

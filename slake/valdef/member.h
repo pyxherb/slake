@@ -14,15 +14,15 @@ namespace slake {
 	public:
 		AccessModifier accessModifier = 0;
 
-		MemberObject(Runtime *rt);
-		MemberObject(const MemberObject &x);
-		virtual ~MemberObject();
+		SLAKE_API MemberObject(Runtime *rt);
+		SLAKE_API MemberObject(const MemberObject &x);
+		SLAKE_API virtual ~MemberObject();
 
-		virtual const char *getName() const;
-		virtual void setName(const char *name);
-		virtual Object *getParent() const;
-		virtual void setParent(Object *parent);
-		virtual GenericArgList getGenericArgs() const;
+		SLAKE_API virtual const char *getName() const;
+		SLAKE_API virtual void setName(const char *name);
+		SLAKE_API virtual Object *getParent() const;
+		SLAKE_API virtual void setParent(Object *parent);
+		SLAKE_API virtual GenericArgList getGenericArgs() const;
 	};
 }
 

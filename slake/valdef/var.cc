@@ -3,23 +3,23 @@
 
 using namespace slake;
 
-VarObject::VarObject(Runtime *rt) : MemberObject(rt) {
+SLAKE_API VarObject::VarObject(Runtime *rt) : MemberObject(rt) {
 }
 
-VarObject::VarObject(const VarObject &x) : MemberObject(x) {
+SLAKE_API VarObject::VarObject(const VarObject &x) : MemberObject(x) {
 }
 
-VarObject::~VarObject() {
+SLAKE_API VarObject::~VarObject() {
 }
 
-ObjectKind VarObject::getKind() const { return ObjectKind::Var; }
+SLAKE_API ObjectKind VarObject::getKind() const { return ObjectKind::Var; }
 
-slake::RegularVarObject::RegularVarObject(Runtime *rt, AccessModifier access, const Type &type)
+SLAKE_API slake::RegularVarObject::RegularVarObject(Runtime *rt, AccessModifier access, const Type &type)
 	: VarObject(rt), type(type) {
 	this->accessModifier = access;
 }
 
-RegularVarObject::RegularVarObject(const RegularVarObject &other) : VarObject(other) {
+SLAKE_API RegularVarObject::RegularVarObject(const RegularVarObject &other) : VarObject(other) {
 	value = other.value;
 	type = other.type;
 
@@ -27,47 +27,47 @@ RegularVarObject::RegularVarObject(const RegularVarObject &other) : VarObject(ot
 	parent = other.parent;
 }
 
-RegularVarObject::~RegularVarObject() {
+SLAKE_API RegularVarObject::~RegularVarObject() {
 }
 
-Object *RegularVarObject::duplicate() const {
+SLAKE_API Object *RegularVarObject::duplicate() const {
 	return (Object *)(VarObject *)alloc(this).get();
 }
 
-const char *RegularVarObject::getName() const {
+SLAKE_API const char *RegularVarObject::getName() const {
 	return name.c_str();
 }
 
-void RegularVarObject::setName(const char *name) {
+SLAKE_API void RegularVarObject::setName(const char *name) {
 	this->name = name;
 }
 
-Object *RegularVarObject::getParent() const {
+SLAKE_API Object *RegularVarObject::getParent() const {
 	return parent;
 }
 
-void RegularVarObject::setParent(Object *parent) {
+SLAKE_API void RegularVarObject::setParent(Object *parent) {
 	this->parent = parent;
 }
 
-void slake::RegularVarObject::dealloc() {
+SLAKE_API void slake::RegularVarObject::dealloc() {
 	std::pmr::polymorphic_allocator<RegularVarObject> allocator(&VarObject::_rt->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
-Value RegularVarObject::getData(const VarRefContext &context) const { return value; }
+SLAKE_API Value RegularVarObject::getData(const VarRefContext &context) const { return value; }
 
-void RegularVarObject::setData(const VarRefContext &context, const Value &value) {
+SLAKE_API void RegularVarObject::setData(const VarRefContext &context, const Value &value) {
 	if (!isCompatible(type, value))
 		throw MismatchedTypeError("Mismatched variable type");
 	this->value = value;
 }
 
-ObjectKind RegularVarObject::getKind() const { return ObjectKind::Var; }
+SLAKE_API ObjectKind RegularVarObject::getKind() const { return ObjectKind::Var; }
 
-HostObjectRef<RegularVarObject> slake::RegularVarObject::alloc(Runtime *rt, AccessModifier access, const Type &type) {
+SLAKE_API HostObjectRef<RegularVarObject> slake::RegularVarObject::alloc(Runtime *rt, AccessModifier access, const Type &type) {
 	using Alloc = std::pmr::polymorphic_allocator<RegularVarObject>;
 	Alloc allocator(&rt->globalHeapPoolResource);
 
@@ -81,7 +81,7 @@ HostObjectRef<RegularVarObject> slake::RegularVarObject::alloc(Runtime *rt, Acce
 	return ptr.release();
 }
 
-HostObjectRef<RegularVarObject> slake::RegularVarObject::alloc(const RegularVarObject *other) {
+SLAKE_API HostObjectRef<RegularVarObject> slake::RegularVarObject::alloc(const RegularVarObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<RegularVarObject>;
 	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
@@ -95,23 +95,23 @@ HostObjectRef<RegularVarObject> slake::RegularVarObject::alloc(const RegularVarO
 	return ptr.release();
 }
 
-LocalVarAccessorVarObject::LocalVarAccessorVarObject(
+SLAKE_API LocalVarAccessorVarObject::LocalVarAccessorVarObject(
 	Runtime *rt,
 	Context *context,
 	MajorFrame *majorFrame)
 	: VarObject(rt), context(context), majorFrame(majorFrame) {
 }
 
-LocalVarAccessorVarObject::~LocalVarAccessorVarObject() {
+SLAKE_API LocalVarAccessorVarObject::~LocalVarAccessorVarObject() {
 }
 
-Type LocalVarAccessorVarObject::getVarType(const VarRefContext &context) const {
+SLAKE_API Type LocalVarAccessorVarObject::getVarType(const VarRefContext &context) const {
 	return majorFrame->localVarRecords[context.asLocalVar.localVarIndex].type;
 }
 
-VarKind LocalVarAccessorVarObject::getVarKind() const { return VarKind::LocalVarAccessor; }
+SLAKE_API VarKind LocalVarAccessorVarObject::getVarKind() const { return VarKind::LocalVarAccessor; }
 
-void LocalVarAccessorVarObject::setData(const VarRefContext &context, const Value &value) {
+SLAKE_API void LocalVarAccessorVarObject::setData(const VarRefContext &context, const Value &value) {
 	LocalVarRecord &localVarRecord =
 		majorFrame->localVarRecords[context.asLocalVar.localVarIndex];
 
@@ -169,7 +169,7 @@ void LocalVarAccessorVarObject::setData(const VarRefContext &context, const Valu
 	}
 }
 
-Value LocalVarAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API Value LocalVarAccessorVarObject::getData(const VarRefContext &varRefContext) const {
 	LocalVarRecord &localVarRecord =
 		majorFrame->localVarRecords[varRefContext.asLocalVar.localVarIndex];
 
@@ -213,7 +213,7 @@ Value LocalVarAccessorVarObject::getData(const VarRefContext &varRefContext) con
 	throw std::logic_error("Unhandled value type");
 }
 
-HostObjectRef<LocalVarAccessorVarObject> slake::LocalVarAccessorVarObject::alloc(
+SLAKE_API HostObjectRef<LocalVarAccessorVarObject> slake::LocalVarAccessorVarObject::alloc(
 	Runtime *rt,
 	Context *context,
 	MajorFrame *majorFrame) {
@@ -230,7 +230,7 @@ HostObjectRef<LocalVarAccessorVarObject> slake::LocalVarAccessorVarObject::alloc
 	return ptr.release();
 }
 
-void slake::LocalVarAccessorVarObject::dealloc() {
+SLAKE_API void slake::LocalVarAccessorVarObject::dealloc() {
 	std::pmr::polymorphic_allocator<LocalVarAccessorVarObject> allocator(&_rt->globalHeapPoolResource);
 
 	std::destroy_at(this);

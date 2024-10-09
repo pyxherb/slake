@@ -8,24 +8,24 @@
 namespace slake {
 	class StringObject final : public Object {
 	private:
-		void _setData(const char *str, size_t size);
+		SLAKE_API void _setData(const char *str, size_t size);
 
 	public:
-		StringObject(Runtime *rt, const char *str, size_t size);
-		StringObject(Runtime *rt, std::string &&s);
-		StringObject(const StringObject &x);
-		virtual ~StringObject();
+		SLAKE_API StringObject(Runtime *rt, const char *str, size_t size);
+		SLAKE_API StringObject(Runtime *rt, std::string &&s);
+		SLAKE_API StringObject(const StringObject &x);
+		SLAKE_API virtual ~StringObject();
 
 		std::pmr::string data;
 
-		virtual inline ObjectKind getKind() const override { return ObjectKind::String; }
+		SLAKE_API virtual ObjectKind getKind() const override;
 
-		virtual Object *duplicate() const override;
+		SLAKE_API virtual Object *duplicate() const override;
 
-		static HostObjectRef<StringObject> alloc(Runtime *rt, const char *str, size_t size);
-		static HostObjectRef<StringObject> alloc(Runtime *rt, std::string &&s);
-		static HostObjectRef<StringObject> alloc(const StringObject *other);
-		virtual void dealloc() override;
+		SLAKE_API static HostObjectRef<StringObject> alloc(Runtime *rt, const char *str, size_t size);
+		SLAKE_API static HostObjectRef<StringObject> alloc(Runtime *rt, std::string &&s);
+		SLAKE_API static HostObjectRef<StringObject> alloc(const StringObject *other);
+		SLAKE_API virtual void dealloc() override;
 
 		StringObject &operator=(StringObject &&) = delete;
 	};

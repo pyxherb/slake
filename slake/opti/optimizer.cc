@@ -4,10 +4,10 @@
 
 using namespace slake;
 
-OptimizerContext::OptimizerContext(std::vector<Instruction> &instructions)
+SLAKE_API OptimizerContext::OptimizerContext(std::vector<Instruction> &instructions)
 	: instructions(instructions) {}
 
-bool slake::extractConstantValue(
+SLAKE_API bool slake::extractConstantValue(
 	OptimizerContext &optiContext,
 	const Value &value,
 	Value &valueOut) {
@@ -39,7 +39,7 @@ bool slake::extractConstantValue(
 	}
 }
 
-bool slake::isFnOptimizable(std::vector<Instruction> &instructions) {
+SLAKE_API bool slake::isFnOptimizable(std::vector<Instruction> &instructions) {
 	{
 		std::set<uint32_t> assignedRegisters;
 		for (auto i : instructions) {
@@ -1275,7 +1275,7 @@ static void _redirectJumpInstructions(
 	}
 }
 
-void slake::trimFnInstructions(std::vector<Instruction> &instructions) {
+SLAKE_API void slake::trimFnInstructions(std::vector<Instruction> &instructions) {
 	OptimizerContext optiContext(instructions);
 
 	_genControlFlowGraph(optiContext);

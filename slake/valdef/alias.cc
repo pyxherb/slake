@@ -2,50 +2,50 @@
 
 using namespace slake;
 
-slake::AliasObject::AliasObject(Runtime *rt, AccessModifier access, Object *src)
+SLAKE_API slake::AliasObject::AliasObject(Runtime *rt, AccessModifier access, Object *src)
 	: MemberObject(rt), src(src) {
 	_flags |= VF_ALIAS;
 	this->accessModifier = access;
 }
 
-AliasObject::AliasObject(const AliasObject &other) : MemberObject(other) {
+SLAKE_API AliasObject::AliasObject(const AliasObject &other) : MemberObject(other) {
 	src = other.src;
 	name = other.name;
 	parent = other.parent;
 }
 
-AliasObject::~AliasObject() {
+SLAKE_API AliasObject::~AliasObject() {
 }
 
-Object *AliasObject::duplicate() const {
+SLAKE_API Object *AliasObject::duplicate() const {
 	return (Object *)alloc(this).get();
 }
 
-MemberObject* AliasObject::getMember(
+SLAKE_API MemberObject *AliasObject::getMember(
 	const std::pmr::string& name,
 	VarRefContext* varRefContextOut) const {
 	return src->getMember(name, varRefContextOut);
 }
 
-const char *AliasObject::getName() const {
+SLAKE_API const char *AliasObject::getName() const {
 	return name.c_str();
 }
 
-void AliasObject::setName(const char *name) {
+SLAKE_API void AliasObject::setName(const char *name) {
 	this->name = name;
 }
 
-Object *AliasObject::getParent() const {
+SLAKE_API Object *AliasObject::getParent() const {
 	return parent;
 }
 
-void AliasObject::setParent(Object *parent) {
+SLAKE_API void AliasObject::setParent(Object *parent) {
 	this->parent = parent;
 }
 
-ObjectKind AliasObject::getKind() const { return ObjectKind::Alias; }
+SLAKE_API ObjectKind AliasObject::getKind() const { return ObjectKind::Alias; }
 
-HostObjectRef<AliasObject> AliasObject::alloc(Runtime *rt, Object *src) {
+SLAKE_API HostObjectRef<AliasObject> AliasObject::alloc(Runtime *rt, Object *src) {
 	using Alloc = std::pmr::polymorphic_allocator<AliasObject>;
 	Alloc allocator(&rt->globalHeapPoolResource);
 
@@ -59,7 +59,7 @@ HostObjectRef<AliasObject> AliasObject::alloc(Runtime *rt, Object *src) {
 	return ptr.release();
 }
 
-HostObjectRef<AliasObject> AliasObject::alloc(const AliasObject *other) {
+SLAKE_API HostObjectRef<AliasObject> AliasObject::alloc(const AliasObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<AliasObject>;
 	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
@@ -73,7 +73,7 @@ HostObjectRef<AliasObject> AliasObject::alloc(const AliasObject *other) {
 	return ptr.release();
 }
 
-void slake::AliasObject::dealloc() {
+SLAKE_API void slake::AliasObject::dealloc() {
 	std::pmr::polymorphic_allocator<AliasObject> allocator(&_rt->globalHeapPoolResource);
 
 	std::destroy_at(this);

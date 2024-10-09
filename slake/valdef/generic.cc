@@ -2,11 +2,11 @@
 
 using namespace slake;
 
-GenericParam::GenericParam() {}
-GenericParam::GenericParam(std::pmr::memory_resource *memoryResource) : name(memoryResource), interfaces(memoryResource) {
+SLAKE_API GenericParam::GenericParam() {}
+SLAKE_API GenericParam::GenericParam(std::pmr::memory_resource *memoryResource) : name(memoryResource), interfaces(memoryResource) {
 }
 
-bool GenericArgListComparator::operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept {
+SLAKE_API bool GenericArgListComparator::operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept {
 	if (lhs.size() < rhs.size())
 		return true;
 	if (lhs.size() > rhs.size())
@@ -20,7 +20,7 @@ bool GenericArgListComparator::operator()(const GenericArgList &lhs, const Gener
 	return false;
 }
 
-bool GenericArgListEqComparator::operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept {
+SLAKE_API bool GenericArgListEqComparator::operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept {
 	if (lhs.size() != rhs.size())
 		return false;
 
@@ -32,7 +32,7 @@ bool GenericArgListEqComparator::operator()(const GenericArgList &lhs, const Gen
 	return true;
 }
 
-size_t slake::getGenericParamIndex(const GenericParamList &genericParamList, const std::pmr::string &name) {
+SLAKE_API size_t slake::getGenericParamIndex(const GenericParamList &genericParamList, const std::pmr::string &name) {
 	for (size_t i = 0; i < genericParamList.size(); ++i) {
 		if (genericParamList[i].name == name)
 			return i;
@@ -41,7 +41,7 @@ size_t slake::getGenericParamIndex(const GenericParamList &genericParamList, con
 	return SIZE_MAX;
 }
 
-GenericParam *slake::getGenericParam(Object *object, const std::pmr::string &name, Object **ownerOut) {
+SLAKE_API GenericParam *slake::getGenericParam(Object *object, const std::pmr::string &name, Object **ownerOut) {
 	while (true) {
 		size_t idxGenericParam;
 

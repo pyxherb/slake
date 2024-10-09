@@ -2,7 +2,7 @@
 
 using namespace slake;
 
-void Runtime::invalidateGenericCache(Object *i) {
+SLAKE_API void Runtime::invalidateGenericCache(Object *i) {
 	if (_genericCacheLookupTable.count(i)) {
 		// Remove the value from generic cache if it is unreachable.
 		auto &lookupEntry = _genericCacheLookupTable.at(i);
@@ -17,7 +17,7 @@ void Runtime::invalidateGenericCache(Object *i) {
 	}
 }
 
-void slake::Runtime::_instantiateGenericObject(Type &type, GenericInstantiationContext &instantiationContext) const {
+SLAKE_API void slake::Runtime::_instantiateGenericObject(Type &type, GenericInstantiationContext &instantiationContext) const {
 	switch (type.typeId) {
 		case TypeId::Instance: {
 			if (type.isLoadingDeferred()) {
@@ -64,7 +64,7 @@ void slake::Runtime::_instantiateGenericObject(Type &type, GenericInstantiationC
 	}
 }
 
-void slake::Runtime::_instantiateGenericObject(Value &value, GenericInstantiationContext &instantiationContext) const {
+SLAKE_API void slake::Runtime::_instantiateGenericObject(Value &value, GenericInstantiationContext &instantiationContext) const {
 	switch (value.valueType) {
 		case ValueType::I8:
 		case ValueType::I16:
@@ -90,7 +90,7 @@ void slake::Runtime::_instantiateGenericObject(Value &value, GenericInstantiatio
 	}
 }
 
-void slake::Runtime::_instantiateGenericObject(Object *v, GenericInstantiationContext &instantiationContext) const {
+SLAKE_API void slake::Runtime::_instantiateGenericObject(Object *v, GenericInstantiationContext &instantiationContext) const {
 	// How do we instantiate generic classes:
 	// Duplicate the value, scan for references to generic parameters and
 	// replace them with generic arguments.
@@ -248,7 +248,7 @@ void Runtime::mapGenericParams(const Object *v, GenericInstantiationContext &ins
 	}
 }
 
-void Runtime::mapGenericParams(const FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const {
+SLAKE_API void Runtime::mapGenericParams(const FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const {
 	if (instantiationContext.genericArgs->size() != ol->genericParams.size())
 		throw GenericInstantiationError("Number of generic parameter does not match");
 
@@ -257,7 +257,7 @@ void Runtime::mapGenericParams(const FnOverloadingObject *ol, GenericInstantiati
 	}
 }
 
-Object *Runtime::instantiateGenericObject(const Object *v, GenericInstantiationContext &instantiationContext) const {
+SLAKE_API Object *Runtime::instantiateGenericObject(const Object *v, GenericInstantiationContext &instantiationContext) const {
 	// Try to look up in the cache.
 	if (_genericCacheDir.count(v)) {
 		auto &table = _genericCacheDir.at(v);
@@ -279,7 +279,7 @@ Object *Runtime::instantiateGenericObject(const Object *v, GenericInstantiationC
 	return value;
 }
 
-void Runtime::_instantiateGenericObject(FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const {
+SLAKE_API void Runtime::_instantiateGenericObject(FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const {
 	if (ol->genericParams.size() && ol->fnObject != instantiationContext.mappedObject) {
 		GenericInstantiationContext newInstantiationContext = instantiationContext;
 

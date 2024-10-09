@@ -11,8 +11,8 @@ namespace slake {
 		Type baseType = Type(TypeId::Any);
 		std::pmr::vector<Type> interfaces;
 
-		GenericParam();
-		GenericParam(std::pmr::memory_resource *memoryResource);
+		SLAKE_API GenericParam();
+		SLAKE_API GenericParam(std::pmr::memory_resource *memoryResource);
 	};
 
 
@@ -21,17 +21,17 @@ namespace slake {
 
 	/// @brief Less than ("<") comparator for containers.
 	struct GenericArgListComparator {
-		bool operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept;
+		SLAKE_API bool operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept;
 	};
 
 	/// @brief Equal ("<") comparator for containers.
 	struct GenericArgListEqComparator {
-		bool operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept;
+		SLAKE_API bool operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept;
 	};
 
-	size_t getGenericParamIndex(const GenericParamList &genericParamList, const std::pmr::string &name);
+	SLAKE_API size_t getGenericParamIndex(const GenericParamList &genericParamList, const std::pmr::string &name);
 
-	GenericParam *getGenericParam(Object *object, const std::pmr::string &name, Object **ownerOut = nullptr);
+	SLAKE_API GenericParam *getGenericParam(Object *object, const std::pmr::string &name, Object **ownerOut = nullptr);
 }
 
 #endif

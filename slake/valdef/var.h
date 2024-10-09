@@ -18,18 +18,18 @@ namespace slake {
 
 	class VarObject : public MemberObject {
 	public:
-		VarObject(Runtime *rt);
-		VarObject(const VarObject &x);
-		virtual ~VarObject();
+		SLAKE_API VarObject(Runtime *rt);
+		SLAKE_API VarObject(const VarObject &x);
+		SLAKE_API virtual ~VarObject();
 
-		virtual ObjectKind getKind() const override;
+		SLAKE_API virtual ObjectKind getKind() const override;
 
-		virtual Type getVarType(const VarRefContext &context) const = 0;
+		SLAKE_API virtual Type getVarType(const VarRefContext &context) const = 0;
 
-		virtual Value getData(const VarRefContext &context) const = 0;
-		virtual void setData(const VarRefContext &context, const Value &value) = 0;
+		SLAKE_API virtual Value getData(const VarRefContext &context) const = 0;
+		SLAKE_API virtual void setData(const VarRefContext &context, const Value &value) = 0;
 
-		virtual VarKind getVarKind() const = 0;
+		SLAKE_API virtual VarKind getVarKind() const = 0;
 	};
 
 	class RegularVarObject final : public VarObject {
@@ -40,28 +40,28 @@ namespace slake {
 		std::pmr::string name;
 		Object *parent = nullptr;
 
-		RegularVarObject(Runtime *rt, AccessModifier access, const Type &type);
-		RegularVarObject(const RegularVarObject &other);
-		virtual ~RegularVarObject();
+		SLAKE_API RegularVarObject(Runtime *rt, AccessModifier access, const Type &type);
+		SLAKE_API RegularVarObject(const RegularVarObject &other);
+		SLAKE_API virtual ~RegularVarObject();
 
-		virtual Object *duplicate() const override;
+		SLAKE_API virtual Object *duplicate() const override;
 
-		virtual const char *getName() const override;
-		virtual void setName(const char *name);
-		virtual Object *getParent() const override;
-		virtual void setParent(Object *parent);
+		SLAKE_API virtual const char *getName() const override;
+		SLAKE_API virtual void setName(const char *name);
+		SLAKE_API virtual Object *getParent() const override;
+		SLAKE_API virtual void setParent(Object *parent);
 
-		static HostObjectRef<RegularVarObject> alloc(Runtime *rt, AccessModifier access, const Type &type);
-		static HostObjectRef<RegularVarObject> alloc(const RegularVarObject *other);
-		virtual void dealloc() override;
+		SLAKE_API static HostObjectRef<RegularVarObject> alloc(Runtime *rt, AccessModifier access, const Type &type);
+		SLAKE_API static HostObjectRef<RegularVarObject> alloc(const RegularVarObject *other);
+		SLAKE_API virtual void dealloc() override;
 
-		virtual Value getData(const VarRefContext &context) const override;
-		virtual void setData(const VarRefContext &context, const Value &value) override;
+		SLAKE_API virtual Value getData(const VarRefContext &context) const override;
+		SLAKE_API virtual void setData(const VarRefContext &context, const Value &value) override;
 
-		virtual ObjectKind getKind() const override;
+		SLAKE_API virtual ObjectKind getKind() const override;
 
-		virtual Type getVarType(const VarRefContext &context) const override { return type; }
-		virtual VarKind getVarKind() const override { return VarKind::Regular; }
+		SLAKE_API virtual Type getVarType(const VarRefContext &context) const override { return type; }
+		SLAKE_API virtual VarKind getVarKind() const override { return VarKind::Regular; }
 	};
 
 	struct LocalVarRecord {
@@ -74,25 +74,25 @@ namespace slake {
 		Context *context;
 		MajorFrame *majorFrame;
 
-		LocalVarAccessorVarObject(
+		SLAKE_API LocalVarAccessorVarObject(
 			Runtime *rt,
 			Context *context,
 			MajorFrame *majorFrame);
-		virtual ~LocalVarAccessorVarObject();
+		SLAKE_API virtual ~LocalVarAccessorVarObject();
 
-		virtual Type getVarType(const VarRefContext &context) const override;
+		SLAKE_API virtual Type getVarType(const VarRefContext &context) const override;
 
-		virtual VarKind getVarKind() const override;
+		SLAKE_API virtual VarKind getVarKind() const override;
 
-		virtual void setData(const VarRefContext &varRefContext, const Value &value) override;
-		virtual Value getData(const VarRefContext &varRefContext) const override;
+		SLAKE_API virtual void setData(const VarRefContext &varRefContext, const Value &value) override;
+		SLAKE_API virtual Value getData(const VarRefContext &varRefContext) const override;
 
-		static HostObjectRef<LocalVarAccessorVarObject> alloc(
+		SLAKE_API static HostObjectRef<LocalVarAccessorVarObject> alloc(
 			Runtime *rt,
 			Context *context,
 			MajorFrame *majorFrame
 		);
-		virtual void dealloc() override;
+		SLAKE_API virtual void dealloc() override;
 	};
 }
 

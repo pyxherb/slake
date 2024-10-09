@@ -4,24 +4,24 @@
 
 using namespace slake;
 
-TypeDefObject::TypeDefObject(Runtime *rt, const Type &type)
+SLAKE_API TypeDefObject::TypeDefObject(Runtime *rt, const Type &type)
 	: Object(rt), type(type) {
 }
 
-TypeDefObject::TypeDefObject(const TypeDefObject &x) : Object(x) {
+SLAKE_API TypeDefObject::TypeDefObject(const TypeDefObject &x) : Object(x) {
 	type = x.type.duplicate();
 }
 
-TypeDefObject::~TypeDefObject() {
+SLAKE_API TypeDefObject::~TypeDefObject() {
 }
 
-ObjectKind TypeDefObject::getKind() const { return ObjectKind::TypeDef; }
+SLAKE_API ObjectKind TypeDefObject::getKind() const { return ObjectKind::TypeDef; }
 
-Object *TypeDefObject::duplicate() const {
+SLAKE_API Object *TypeDefObject::duplicate() const {
 	return (Object *)alloc(this).get();
 }
 
-HostObjectRef<TypeDefObject> slake::TypeDefObject::alloc(Runtime *rt, const Type &type) {
+SLAKE_API HostObjectRef<TypeDefObject> slake::TypeDefObject::alloc(Runtime *rt, const Type &type) {
 	using Alloc = std::pmr::polymorphic_allocator<TypeDefObject>;
 	Alloc allocator(&rt->globalHeapPoolResource);
 
@@ -35,7 +35,7 @@ HostObjectRef<TypeDefObject> slake::TypeDefObject::alloc(Runtime *rt, const Type
 	return ptr.release();
 }
 
-HostObjectRef<TypeDefObject> slake::TypeDefObject::alloc(const TypeDefObject *other) {
+SLAKE_API HostObjectRef<TypeDefObject> slake::TypeDefObject::alloc(const TypeDefObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<TypeDefObject>;
 	Alloc allocator(&other->_rt->globalHeapPoolResource);
 
@@ -49,7 +49,7 @@ HostObjectRef<TypeDefObject> slake::TypeDefObject::alloc(const TypeDefObject *ot
 	return ptr.release();
 }
 
-void slake::TypeDefObject::dealloc() {
+SLAKE_API void slake::TypeDefObject::dealloc() {
 	std::pmr::polymorphic_allocator<TypeDefObject> allocator(&_rt->globalHeapPoolResource);
 
 	std::destroy_at(this);

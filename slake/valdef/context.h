@@ -14,21 +14,21 @@ namespace slake {
 		friend class Runtime;
 
 	public:
-		ContextObject(Runtime *rt, std::shared_ptr<Context> context);
-		ContextObject(const ContextObject &x);
-		virtual ~ContextObject();
+		SLAKE_API ContextObject(Runtime *rt, std::shared_ptr<Context> context);
+		SLAKE_API ContextObject(const ContextObject &x);
+		SLAKE_API virtual ~ContextObject();
 
-		virtual inline ObjectKind getKind() const override { return ObjectKind::Context; }
+		SLAKE_API virtual ObjectKind getKind() const override;
 
-		static HostObjectRef<ContextObject> alloc(Runtime *rt, std::shared_ptr<Context> context);
-		static HostObjectRef<ContextObject> alloc(const ContextObject *other);
-		virtual void dealloc() override;
+		SLAKE_API static HostObjectRef<ContextObject> alloc(Runtime *rt, std::shared_ptr<Context> context);
+		SLAKE_API static HostObjectRef<ContextObject> alloc(const ContextObject *other);
+		SLAKE_API virtual void dealloc() override;
 
-		inline std::shared_ptr<Context> getContext() { return _context; }
+		SLAKE_FORCEINLINE std::shared_ptr<Context> getContext() { return _context; }
 
-		Value resume(HostRefHolder *hostRefHolder);
-		Value getResult();
-		bool isDone();
+		SLAKE_API Value resume(HostRefHolder *hostRefHolder);
+		SLAKE_API Value getResult();
+		SLAKE_API bool isDone();
 	};
 }
 

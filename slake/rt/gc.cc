@@ -2,7 +2,7 @@
 
 using namespace slake;
 
-void Runtime::_gcWalk(Scope *scope) {
+SLAKE_API void Runtime::_gcWalk(Scope *scope) {
 	if (!scope)
 		return;
 	for (auto &i : scope->members) {
@@ -13,7 +13,7 @@ void Runtime::_gcWalk(Scope *scope) {
 		_gcWalk(scope->owner);
 }
 
-void Runtime::_gcWalk(MethodTable *methodTable) {
+SLAKE_API void Runtime::_gcWalk(MethodTable *methodTable) {
 	if (!methodTable)
 		return;
 	for (auto &i : methodTable->methods) {
@@ -21,7 +21,7 @@ void Runtime::_gcWalk(MethodTable *methodTable) {
 	}
 }
 
-void Runtime::_gcWalk(GenericParamList &genericParamList) {
+SLAKE_API void Runtime::_gcWalk(GenericParamList &genericParamList) {
 	for (auto &i : genericParamList) {
 		i.baseType.loadDeferredType(this);
 		if (auto p = i.baseType.resolveCustomType(); p)
@@ -35,7 +35,7 @@ void Runtime::_gcWalk(GenericParamList &genericParamList) {
 	}
 }
 
-void Runtime::_gcWalk(const Type &type) {
+SLAKE_API void Runtime::_gcWalk(const Type &type) {
 	switch (type.typeId) {
 		case TypeId::Value:
 		case TypeId::String:
@@ -60,7 +60,7 @@ void Runtime::_gcWalk(const Type &type) {
 	}
 }
 
-void Runtime::_gcWalk(const Value &i) {
+SLAKE_API void Runtime::_gcWalk(const Value &i) {
 	switch (i.valueType) {
 		case ValueType::I8:
 		case ValueType::I16:
@@ -95,7 +95,7 @@ void Runtime::_gcWalk(const Value &i) {
 	}
 }
 
-void Runtime::_gcWalk(Object *v) {
+SLAKE_API void Runtime::_gcWalk(Object *v) {
 	if (!v)
 		return;
 
@@ -346,7 +346,7 @@ void Runtime::_gcWalk(Object *v) {
 	}
 }
 
-void Runtime::_gcWalk(Context &ctxt) {
+SLAKE_API void Runtime::_gcWalk(Context &ctxt) {
 	for (auto &j : ctxt.majorFrames) {
 		_gcWalk((FnOverloadingObject *)j->curFn);
 		_gcWalk(j->scopeObject);
@@ -387,7 +387,7 @@ void Runtime::_gcWalk(Context &ctxt) {
 	}
 }
 
-void Runtime::gc() {
+SLAKE_API void Runtime::gc() {
 	_flags |= _RT_INGC;
 
 	bool foundDestructibleObjects = false;

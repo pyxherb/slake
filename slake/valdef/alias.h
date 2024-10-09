@@ -10,26 +10,26 @@ namespace slake {
 		std::string name;
 		Object *parent;
 
-		AliasObject(Runtime *rt, AccessModifier access, Object *src);
-		AliasObject(const AliasObject &other);
-		virtual ~AliasObject();
+		SLAKE_API AliasObject(Runtime *rt, AccessModifier access, Object *src);
+		SLAKE_API AliasObject(const AliasObject &other);
+		SLAKE_API virtual ~AliasObject();
 
-		virtual const char *getName() const;
-		virtual void setName(const char *name);
-		virtual Object *getParent() const;
-		virtual void setParent(Object *parent);
+		SLAKE_API virtual const char *getName() const;
+		SLAKE_API virtual void setName(const char *name);
+		SLAKE_API virtual Object *getParent() const;
+		SLAKE_API virtual void setParent(Object *parent);
 
-		virtual ObjectKind getKind() const override;
+		SLAKE_API virtual ObjectKind getKind() const override;
 
-		virtual Object *duplicate() const override;
+		SLAKE_API virtual Object *duplicate() const override;
 
-		virtual MemberObject *getMember(
+		SLAKE_API virtual MemberObject *getMember(
 			const std::pmr::string &name,
 			VarRefContext *varRefContextOut) const;
 
-		static HostObjectRef<AliasObject> alloc(Runtime *rt, Object *src);
-		static HostObjectRef<AliasObject> alloc(const AliasObject *other);
-		virtual void dealloc() override;
+		SLAKE_API static HostObjectRef<AliasObject> alloc(Runtime *rt, Object *src);
+		SLAKE_API static HostObjectRef<AliasObject> alloc(const AliasObject *other);
+		SLAKE_API virtual void dealloc() override;
 	};
 }
 

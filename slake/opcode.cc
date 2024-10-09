@@ -61,7 +61,7 @@ using namespace slake;
 #define MNEMONIC_ENTRY(m) \
 	{ Opcode::m, #m }
 
-const std::map<Opcode, std::string> slake::OPCODE_MNEMONIC_MAP = {
+SLAKE_API const std::map<Opcode, std::string> slake::OPCODE_MNEMONIC_MAP = {
 	MNEMONIC_ENTRIES
 };
 
@@ -70,6 +70,6 @@ const std::map<Opcode, std::string> slake::OPCODE_MNEMONIC_MAP = {
 #define MNEMONIC_ENTRY(m) \
 	{ #m, Opcode::m }
 
-const std::map<std::string, Opcode> slake::MNEMONIC_OPCODE_MAP = {
+SLAKE_API const std::map<std::string, Opcode> slake::MNEMONIC_OPCODE_MAP = {
 	MNEMONIC_ENTRIES
 };

@@ -15,14 +15,22 @@
 
 #endif
 
-#if SLAKE_IS_BUILDING
+#if SLAKE_BUILD_SHARED
+	#if SLAKE_IS_BUILDING
 
-	#define SLAKE_API SLAKE_DLLEXPORT
+		#if SLAKE_BUILD_SHARED
+			#define SLAKE_API SLAKE_DLLEXPORT
+		#endif
 
+	#else
+
+		#if SLAKE_BUILD_SHARED
+			#define SLAKE_API SLAKE_DLLIMPORT
+		#endif
+
+	#endif
 #else
-
-	#define SLAKE_API SLAKE_DLLIMPORT
-
+	#define SLAKE_API
 #endif
 
 #endif

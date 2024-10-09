@@ -11,17 +11,17 @@ namespace slake {
 	public:
 		Type type;
 
-		TypeDefObject(Runtime *rt, const Type &type);
-		TypeDefObject(const TypeDefObject &x);
-		virtual ~TypeDefObject();
+		SLAKE_API TypeDefObject(Runtime *rt, const Type &type);
+		SLAKE_API TypeDefObject(const TypeDefObject &x);
+		SLAKE_API virtual ~TypeDefObject();
 
-		virtual ObjectKind getKind() const override;
+		SLAKE_API virtual ObjectKind getKind() const override;
 
-		virtual Object *duplicate() const override;
+		SLAKE_API virtual Object *duplicate() const override;
 
-		static HostObjectRef<TypeDefObject> alloc(Runtime *rt, const Type &type);
-		static HostObjectRef<TypeDefObject> alloc(const TypeDefObject *other);
-		virtual void dealloc() override;
+		SLAKE_API static HostObjectRef<TypeDefObject> alloc(Runtime *rt, const Type &type);
+		SLAKE_API static HostObjectRef<TypeDefObject> alloc(const TypeDefObject *other);
+		SLAKE_API virtual void dealloc() override;
 	};
 }
 

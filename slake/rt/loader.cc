@@ -19,7 +19,7 @@ static T _read(std::istream &fs) {
 /// @param rt Runtime for the new value.
 /// @param fs Stream to be read.
 /// @return Reference value loaded from the stream.
-HostObjectRef<IdRefObject> Runtime::_loadIdRef(LoaderContext &context, HostRefHolder &holder) {
+SLAKE_API HostObjectRef<IdRefObject> Runtime::_loadIdRef(LoaderContext &context, HostRefHolder &holder) {
 	auto ref = IdRefObject::alloc(this);
 
 	slxfmt::IdRefEntryDesc i = { 0 };
@@ -61,7 +61,7 @@ HostObjectRef<IdRefObject> Runtime::_loadIdRef(LoaderContext &context, HostRefHo
 /// @param rt Runtime for the new value.
 /// @param fs Stream to be read.
 /// @return Object loaded from the stream.
-Value Runtime::_loadValue(LoaderContext &context, HostRefHolder &holder) {
+SLAKE_API Value Runtime::_loadValue(LoaderContext &context, HostRefHolder &holder) {
 	slxfmt::TypeId typeId = _read<slxfmt::TypeId>(context.fs);
 
 	switch (typeId) {
@@ -133,7 +133,7 @@ Value Runtime::_loadValue(LoaderContext &context, HostRefHolder &holder) {
 /// @param rt Runtime for the new type.
 /// @param fs Stream to be read.
 /// @return Loaded complete type name.
-Type Runtime::_loadType(LoaderContext &context, HostRefHolder &holder) {
+SLAKE_API Type Runtime::_loadType(LoaderContext &context, HostRefHolder &holder) {
 	slxfmt::TypeId vt = _read<slxfmt::TypeId>(context.fs);
 
 	switch (vt) {
@@ -199,7 +199,7 @@ Type Runtime::_loadType(LoaderContext &context, HostRefHolder &holder) {
 	}
 }
 
-GenericParam Runtime::_loadGenericParam(LoaderContext &context, HostRefHolder &holder) {
+SLAKE_API GenericParam Runtime::_loadGenericParam(LoaderContext &context, HostRefHolder &holder) {
 	auto gpd = _read<slxfmt::GenericParamDesc>(context.fs);
 
 	std::string name(gpd.lenName, '\0');
@@ -223,7 +223,7 @@ GenericParam Runtime::_loadGenericParam(LoaderContext &context, HostRefHolder &h
 /// @brief Load a single scope.
 /// @param mod Module value which is treated as a scope.
 /// @param fs The input stream.
-void Runtime::_loadScope(LoaderContext &context,
+SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 	HostObjectRef<ModuleObject> mod,
 	LoadModuleFlags loadModuleFlags,
 	HostRefHolder &holder) {
@@ -482,7 +482,7 @@ void Runtime::_loadScope(LoaderContext &context,
 	}
 }
 
-HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &fs, LoadModuleFlags flags) {
+SLAKE_API HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &fs, LoadModuleFlags flags) {
 	HostObjectRef<ModuleObject> mod = ModuleObject::alloc(this, ACCESS_PUB);
 
 	HostRefHolder holder;
@@ -569,7 +569,7 @@ HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &fs, LoadMod
 	return mod;
 }
 
-HostObjectRef<ModuleObject> slake::Runtime::loadModule(const void *buf, size_t size, LoadModuleFlags flags) {
+SLAKE_API HostObjectRef<ModuleObject> slake::Runtime::loadModule(const void *buf, size_t size, LoadModuleFlags flags) {
 	util::InputMemStream fs(buf, size);
 	return loadModule(fs, flags);
 }

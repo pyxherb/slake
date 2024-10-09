@@ -4,11 +4,11 @@
 
 using namespace slake;
 
-Type::Type(IdRefObject *ref) : typeId(TypeId::Instance) {
+SLAKE_API Type::Type(IdRefObject *ref) : typeId(TypeId::Instance) {
 	exData.ptr = (Object *)ref;
 }
 
-Type Type::makeArrayTypeName(Runtime *runtime, const Type &elementType) {
+SLAKE_API Type Type::makeArrayTypeName(Runtime *runtime, const Type &elementType) {
 	Type type;
 
 	type.typeId = TypeId::Array;
@@ -17,7 +17,7 @@ Type Type::makeArrayTypeName(Runtime *runtime, const Type &elementType) {
 	return type;
 }
 
-Type Type::makeRefTypeName(Runtime *runtime, const Type &elementType) {
+SLAKE_API Type Type::makeRefTypeName(Runtime *runtime, const Type &elementType) {
 	Type type;
 
 	type.typeId = TypeId::Ref;
@@ -26,7 +26,7 @@ Type Type::makeRefTypeName(Runtime *runtime, const Type &elementType) {
 	return type;
 }
 
-Type Type::duplicate() const {
+SLAKE_API Type Type::duplicate() const {
 	Type newType(*this);
 
 	switch (typeId) {
@@ -40,10 +40,10 @@ Type Type::duplicate() const {
 	return newType;
 }
 
-Type &Type::getArrayExData() const { return ((TypeDefObject *)exData.ptr)->type; }
-Type &Type::getRefExData() const { return ((TypeDefObject *)exData.ptr)->type; }
+SLAKE_API Type &Type::getArrayExData() const { return ((TypeDefObject *)exData.ptr)->type; }
+SLAKE_API Type &Type::getRefExData() const { return ((TypeDefObject *)exData.ptr)->type; }
 
-bool Type::isLoadingDeferred() const noexcept {
+SLAKE_API bool Type::isLoadingDeferred() const noexcept {
 	switch (typeId) {
 		case TypeId::Instance:
 			return getCustomTypeExData()->getKind() == ObjectKind::IdRef;
@@ -52,7 +52,7 @@ bool Type::isLoadingDeferred() const noexcept {
 	}
 }
 
-void Type::loadDeferredType(const Runtime *rt) {
+SLAKE_API void Type::loadDeferredType(const Runtime *rt) {
 	if (!isLoadingDeferred())
 		return;
 
@@ -64,7 +64,7 @@ void Type::loadDeferredType(const Runtime *rt) {
 	exData.ptr = (Object *)typeObject;
 }
 
-bool Type::operator<(const Type &rhs) const {
+SLAKE_API bool Type::operator<(const Type &rhs) const {
 	if (typeId < rhs.typeId)
 		return true;
 	else if (typeId > rhs.typeId)
@@ -118,7 +118,7 @@ bool Type::operator<(const Type &rhs) const {
 	return false;
 }
 
-bool Type::operator==(const Type &rhs) const {
+SLAKE_API bool Type::operator==(const Type &rhs) const {
 	if (rhs.typeId != typeId)
 		return false;
 
@@ -207,7 +207,7 @@ bool Type::operator==(const Type &rhs) const {
 	return true;
 }
 
-bool slake::isCompatible(const Type &type, const Value &value) {
+SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 	if (type.typeId == TypeId::Any)
 		return true;
 
@@ -290,7 +290,7 @@ bool slake::isCompatible(const Type &type, const Value &value) {
 	return true;
 }
 
-std::string std::to_string(const slake::Type &type, const slake::Runtime *rt) {
+SLAKE_API std::string std::to_string(const slake::Type &type, const slake::Runtime *rt) {
 	switch (type.typeId) {
 		case TypeId::Value:
 			switch (type.getValueTypeExData()) {

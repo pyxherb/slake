@@ -2,7 +2,7 @@
 
 using namespace slake;
 
-Object *Runtime::resolveIdRef(
+SLAKE_API Object *Runtime::resolveIdRef(
 	IdRefObject *ref,
 	VarRefContext *varRefContextOut,
 	Object *scopeObject) const {
@@ -84,7 +84,7 @@ Object *Runtime::resolveIdRef(
 	return nullptr;
 }
 
-std::string Runtime::getFullName(const MemberObject *v) const {
+SLAKE_API std::string Runtime::getFullName(const MemberObject *v) const {
 	std::string s;
 
 	auto fullIdRef = getFullRef(v);
@@ -110,11 +110,11 @@ std::string Runtime::getFullName(const MemberObject *v) const {
 	return s;
 }
 
-std::string Runtime::getFullName(const IdRefObject *v) const {
+SLAKE_API std::string Runtime::getFullName(const IdRefObject *v) const {
 	return std::to_string(v);
 }
 
-std::deque<IdRefEntry> Runtime::getFullRef(const MemberObject *v) const {
+SLAKE_API std::deque<IdRefEntry> Runtime::getFullRef(const MemberObject *v) const {
 	std::deque<IdRefEntry> entries;
 	do {
 		switch (v->getKind()) {

@@ -22,21 +22,21 @@ namespace slake {
 		Object *owner;
 		std::pmr::unordered_map<std::pmr::string, MemberObject *> members;
 
-		Scope(std::pmr::memory_resource *memoryResource,
+		SLAKE_API Scope(std::pmr::memory_resource *memoryResource,
 			Object *owner);
 
-		MemberObject *getMember(const std::pmr::string &name);
+		SLAKE_API MemberObject *getMember(const std::pmr::string &name);
 
-		void putMember(const std::pmr::string &name, MemberObject *value);
+		SLAKE_API void putMember(const std::pmr::string &name, MemberObject *value);
 
-		void addMember(const std::pmr::string &name, MemberObject *value);
+		SLAKE_API void addMember(const std::pmr::string &name, MemberObject *value);
 
-		void removeMember(const std::pmr::string &name);
+		SLAKE_API void removeMember(const std::pmr::string &name);
 
-		Scope *duplicate();
+		SLAKE_API Scope *duplicate();
 
-		static Scope *alloc(std::pmr::memory_resource *memoryResource, Object *owner);
-		void dealloc();
+		SLAKE_API static Scope *alloc(std::pmr::memory_resource *memoryResource, Object *owner);
+		SLAKE_API void dealloc();
 	};
 
 	class MethodTable {
@@ -45,14 +45,14 @@ namespace slake {
 		std::pmr::unordered_map<std::pmr::string, FnObject *> methods;
 		std::pmr::deque<FnOverloadingObject *> destructors;
 
-		MethodTable(std::pmr::memory_resource *memoryResource);
+		SLAKE_API MethodTable(std::pmr::memory_resource *memoryResource);
 
-		FnObject *getMethod(const std::pmr::string &name);
+		SLAKE_API FnObject *getMethod(const std::pmr::string &name);
 
-		MethodTable *duplicate();
+		SLAKE_API MethodTable *duplicate();
 
-		static MethodTable *alloc(std::pmr::memory_resource *memoryResource);
-		void dealloc();
+		SLAKE_API static MethodTable *alloc(std::pmr::memory_resource *memoryResource);
+		SLAKE_API void dealloc();
 	};
 }
 

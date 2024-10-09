@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <map>
 #include <string>
+#include "basedefs.h"
 
 namespace slake {
 	enum class Opcode : uint16_t {
@@ -87,8 +88,8 @@ namespace slake {
 		OPCODE_MAX
 	};
 
-	extern const std::map<Opcode, std::string> OPCODE_MNEMONIC_MAP;
-	extern const std::map<std::string, Opcode> MNEMONIC_OPCODE_MAP;
+	SLAKE_API extern const std::map<Opcode, std::string> OPCODE_MNEMONIC_MAP;
+	SLAKE_API extern const std::map<std::string, Opcode> MNEMONIC_OPCODE_MAP;
 }
 
 #endif

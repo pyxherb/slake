@@ -43,15 +43,15 @@ namespace slake {
 		std::map<size_t, uint32_t> programBlocksOffsets;
 		std::map<uint32_t, uint32_t> regRemappingMap;
 
-		OptimizerContext(std::vector<Instruction> &instructions);
+		SLAKE_API OptimizerContext(std::vector<Instruction> &instructions);
 	};
 
-	bool extractConstantValue(
+	SLAKE_API bool extractConstantValue(
 		OptimizerContext &optiContext,
 		const Value &value,
 		Value &valueOut);
-	bool isFnOptimizable(std::vector<Instruction> &instructions);
-	void trimFnInstructions(std::vector<Instruction> &instructions);
+	SLAKE_API bool isFnOptimizable(std::vector<Instruction> &instructions);
+	SLAKE_API void trimFnInstructions(std::vector<Instruction> &instructions);
 }
 
 #endif

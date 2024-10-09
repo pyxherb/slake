@@ -62,66 +62,66 @@ namespace slake {
 
 		TypeExData exData;
 
-		inline Type() noexcept : typeId(TypeId::None) {}
-		inline Type(const Type &x) noexcept { *this = x; }
-		inline Type(ValueType valueType) noexcept : typeId(TypeId::Value) { exData.valueType = valueType; }
-		inline Type(TypeId type) noexcept : typeId(type) {}
-		inline Type(TypeId type, Object *destObject) noexcept : typeId(type) {
+		SLAKE_FORCEINLINE Type() noexcept : typeId(TypeId::None) {}
+		SLAKE_FORCEINLINE Type(const Type &x) noexcept { *this = x; }
+		SLAKE_FORCEINLINE Type(ValueType valueType) noexcept : typeId(TypeId::Value) { exData.valueType = valueType; }
+		SLAKE_FORCEINLINE Type(TypeId type) noexcept : typeId(type) {}
+		SLAKE_FORCEINLINE Type(TypeId type, Object *destObject) noexcept : typeId(type) {
 			exData.ptr = destObject;
 		}
-		inline Type(StringObject *nameObject, Object *ownerObject) noexcept : typeId(TypeId::GenericArg) {
+		SLAKE_FORCEINLINE Type(StringObject *nameObject, Object *ownerObject) noexcept : typeId(TypeId::GenericArg) {
 			exData.genericArg.nameObject = nameObject;
 			exData.genericArg.ownerObject = ownerObject;
 		}
-		Type(IdRefObject *ref);
+		SLAKE_API Type(IdRefObject *ref);
 
-		static Type makeArrayTypeName(Runtime *runtime, const Type &elementType);
-		static Type makeRefTypeName(Runtime *runtime, const Type &elementType);
+		SLAKE_API static Type makeArrayTypeName(Runtime *runtime, const Type &elementType);
+		SLAKE_API static Type makeRefTypeName(Runtime *runtime, const Type &elementType);
 
-		Type duplicate() const;
+		SLAKE_API Type duplicate() const;
 
-		inline ValueType getValueTypeExData() const { return exData.valueType; }
-		inline Object *getCustomTypeExData() const { return exData.ptr; }
-		Type &getArrayExData() const;
-		Type &getRefExData() const;
+		SLAKE_FORCEINLINE ValueType getValueTypeExData() const { return exData.valueType; }
+		SLAKE_FORCEINLINE Object *getCustomTypeExData() const { return exData.ptr; }
+		SLAKE_API Type &getArrayExData() const;
+		SLAKE_API Type &getRefExData() const;
 
-		bool isLoadingDeferred() const noexcept;
-		void loadDeferredType(const Runtime *rt);
+		SLAKE_API bool isLoadingDeferred() const noexcept;
+		SLAKE_API void loadDeferredType(const Runtime *rt);
 
-		inline operator bool() const noexcept {
+		SLAKE_FORCEINLINE operator bool() const noexcept {
 			return typeId != TypeId::None;
 		}
 
-		bool operator<(const Type &rhs) const;
+		SLAKE_API bool operator<(const Type &rhs) const;
 		/// @brief The less than operator is required by containers such as map and set.
 		/// @param rhs Right-hand side operand.
 		/// @return true if lesser, false otherwise.
-		inline bool operator<(Type &&rhs) const noexcept {
+		SLAKE_FORCEINLINE bool operator<(Type &&rhs) const noexcept {
 			auto r = rhs;
 			return *this == r;
 		}
 
-		inline bool operator==(Type &&rhs) const noexcept {
+		SLAKE_FORCEINLINE bool operator==(Type &&rhs) const noexcept {
 			auto r = rhs;
 			return *this == r;
 		}
 
-		bool operator==(const Type &rhs) const;
+		SLAKE_API bool operator==(const Type &rhs) const;
 
-		inline bool operator!=(Type &&rhs) const noexcept { return !(*this == rhs); }
-		inline bool operator!=(const Type &rhs) const noexcept { return !(*this == rhs); }
+		SLAKE_FORCEINLINE bool operator!=(Type &&rhs) const noexcept { return !(*this == rhs); }
+		SLAKE_FORCEINLINE bool operator!=(const Type &rhs) const noexcept { return !(*this == rhs); }
 
-		inline bool operator==(TypeId rhs) const noexcept {
+		SLAKE_FORCEINLINE bool operator==(TypeId rhs) const noexcept {
 			return this->typeId == rhs;
 		}
-		inline bool operator!=(TypeId rhs) const noexcept {
+		SLAKE_FORCEINLINE bool operator!=(TypeId rhs) const noexcept {
 			return this->typeId != rhs;
 		}
 
-		inline Type &operator=(const Type &rhs) noexcept = default;
-		inline Type &operator=(Type &&rhs) noexcept = default;
+		Type &operator=(const Type &rhs) noexcept = default;
+		Type &operator=(Type &&rhs) noexcept = default;
 
-		inline Object *resolveCustomType() const {
+		SLAKE_FORCEINLINE Object *resolveCustomType() const {
 			if (typeId == TypeId::Instance)
 				return (Object *)getCustomTypeExData();
 			return nullptr;
@@ -135,8 +135,8 @@ namespace slake {
 }
 
 namespace std {
-	string to_string(const slake::Type &type, const slake::Runtime *rt);
-	inline string to_string(slake::Type &&type, const slake::Runtime *rt) {
+	SLAKE_API string to_string(const slake::Type &type, const slake::Runtime *rt);
+	SLAKE_FORCEINLINE string to_string(slake::Type &&type, const slake::Runtime *rt) {
 		slake::Type t = type;
 		return to_string(t, rt);
 	}

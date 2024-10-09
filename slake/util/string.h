@@ -2,6 +2,7 @@
 #define _SLAKE_UTIL_STRING_H_
 
 #include <memory_resource>
+#include <cstring>
 
 namespace slake {
 	namespace util {

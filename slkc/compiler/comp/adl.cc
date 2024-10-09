@@ -42,20 +42,22 @@ void slake::slkc::Compiler::_argDependentLookup(
 			i = instantiateGenericFnOverloading(i, instantiationContext);
 		}
 
-		bool exactlyMatched = true;
+		{
+			bool exactlyMatched = true;
 
-		for (size_t j = 0; j < nParams; ++j) {
-			if (!isSameType(i->params[j]->type, argTypes[j])) {
-				exactlyMatched = false;
+			for (size_t j = 0; j < nParams; ++j) {
+				if (!isSameType(i->params[j]->type, argTypes[j])) {
+					exactlyMatched = false;
 
-				if (!isTypeNamesConvertible(argTypes[j], i->params[j]->type))
-					goto fail;
+					if (!isTypeNamesConvertible(argTypes[j], i->params[j]->type))
+						goto fail;
+				}
 			}
-		}
 
-		if (exactlyMatched) {
-			overloadingsOut = { i };
-			return;
+			if (exactlyMatched) {
+				overloadingsOut = { i };
+				return;
+			}
 		}
 
 		overloadingsOut.push_back(i);

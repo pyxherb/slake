@@ -290,7 +290,7 @@ HostObjectRef<ArrayObject> Runtime::newArrayInstance(Runtime *rt, const Type &ty
 			return ObjectRefArrayObject::alloc(rt, type, length).get();
 		case TypeId::Any:
 			return AnyArrayObject::alloc(rt, length).get();
-		default:
-			throw IncompatibleTypeError("Specified type is not constructible");
+		default:;
 	}
+	throw IncompatibleTypeError("Specified type is not constructible");
 }

@@ -65,7 +65,7 @@ void RegularVarObject::setData(const VarRefContext &context, const Value &value)
 	this->value = value;
 }
 
-ObjectKind RegularVarObject::getKind() const override { return ObjectKind::Var; }
+ObjectKind RegularVarObject::getKind() const { return ObjectKind::Var; }
 
 HostObjectRef<RegularVarObject> slake::RegularVarObject::alloc(Runtime *rt, AccessModifier access, const Type &type) {
 	using Alloc = std::pmr::polymorphic_allocator<RegularVarObject>;
@@ -109,9 +109,7 @@ Type LocalVarAccessorVarObject::getVarType(const VarRefContext &context) const {
 	return majorFrame->localVarRecords[context.asLocalVar.localVarIndex].type;
 }
 
-VarKind LocalVarAccessorVarObject::getVarKind() const { return VarKind::LocalVarAccessor; } {
-
-}
+VarKind LocalVarAccessorVarObject::getVarKind() const { return VarKind::LocalVarAccessor; }
 
 void LocalVarAccessorVarObject::setData(const VarRefContext &context, const Value &value) {
 	LocalVarRecord &localVarRecord =
@@ -167,7 +165,7 @@ void LocalVarAccessorVarObject::setData(const VarRefContext &context, const Valu
 			break;
 		default:
 			// All fields should be checked during the instantiation.
-			assert(false);
+			throw std::logic_error("Unhandled value type");
 	}
 }
 
@@ -210,8 +208,9 @@ Value LocalVarAccessorVarObject::getData(const VarRefContext &varRefContext) con
 			return Value(*((Object **)rawDataPtr));
 		default:
 			// All fields should be checked during the instantiation.
-			assert(false);
+			;
 	}
+	throw std::logic_error("Unhandled value type");
 }
 
 HostObjectRef<LocalVarAccessorVarObject> slake::LocalVarAccessorVarObject::alloc(

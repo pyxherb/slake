@@ -1334,7 +1334,7 @@ void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			Value returnValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
 			context->majorFrames.pop_back();
 			context->majorFrames.back()->returnValue = returnValue;
-			break;
+			return;
 		}
 		case Opcode::LRET: {
 			_checkOperandCount(ins, false, 0);

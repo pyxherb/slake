@@ -8,10 +8,10 @@ IdRefEntry::IdRefEntry(std::pmr::memory_resource *memoryResource)
 }
 
 IdRefEntry::IdRefEntry(std::pmr::string &&name,
-	GenericArgList &&genericArgs = {},
-	bool hasParamTypes = false,
-	std::pmr::vector<Type> &&paramTypes = {},
-	bool hasVarArg = false)
+	GenericArgList &&genericArgs,
+	bool hasParamTypes,
+	std::pmr::vector<Type> &&paramTypes,
+	bool hasVarArg)
 	: name(name),
 	  genericArgs(genericArgs),
 	  hasParamTypes(hasParamTypes),

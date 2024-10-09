@@ -5,6 +5,7 @@
 #include <deque>
 #include <stdexcept>
 #include <memory>
+#include <memory_resource>
 #include <string>
 #include <slake/util/memory.h>
 #include <slake/basedefs.h>

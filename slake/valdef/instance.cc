@@ -116,8 +116,9 @@ Value InstanceMemberAccessorVarObject::getData(const VarRefContext &varRefContex
 			return Value(*((Object **)rawFieldPtr));
 		default:
 			// All fields should be checked during the instantiation.
-			assert(false);
+			;
 	}
+	throw std::logic_error("Unhandled value type");
 }
 
 HostObjectRef<InstanceMemberAccessorVarObject> slake::InstanceMemberAccessorVarObject::alloc(Runtime *rt, InstanceObject *instanceObject) {

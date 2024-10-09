@@ -68,7 +68,9 @@ bool Value::operator==(const Value &rhs) const {
 			return getTypeName() == rhs.getTypeName();
 		case ValueType::Undefined:
 			return true;
+		default:;
 	}
+	return true;
 }
 
 bool Value::operator<(const Value &rhs) const {
@@ -106,5 +108,7 @@ bool Value::operator<(const Value &rhs) const {
 			return data.asVarRef < rhs.data.asVarRef;
 		case ValueType::Undefined:
 			return false;
+		default:;
 	}
+	return false;
 }

@@ -157,7 +157,7 @@ namespace slake {
 
 		virtual const char *getName() const override;
 		virtual void setName(const char *name) override;
-		virtual inline Object *getParent() const override;
+		virtual Object *getParent() const override;
 		virtual void setParent(Object *parent) override;
 
 		FnOverloadingObject *getOverloading(const std::pmr::vector<Type> &argTypes) const;

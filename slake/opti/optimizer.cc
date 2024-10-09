@@ -1,4 +1,5 @@
 #include "optimizer.h"
+#include <cmath>
 #include <algorithm>
 
 using namespace slake;

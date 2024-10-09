@@ -55,17 +55,14 @@ namespace slake {
 
 	class Object {
 	public:
+		// The object will never be freed if its host reference count is not 0.
+		mutable std::atomic_uint32_t hostRefCount = 0;
+
 		/// @brief The basic constructor.
 		/// @param rt Runtime that the value belongs to.
 		Object(Runtime *rt);
-		inline Object(const Object &x) {
-			_rt = x._rt;
-			_flags = x._flags & ~VF_WALKED;
-		}
+		Object(const Object &x);
 		virtual ~Object();
-
-		// The object will never be freed if its host reference count is not 0.
-		mutable std::atomic_uint32_t hostRefCount = 0;
 
 		ObjectFlags _flags = 0;
 

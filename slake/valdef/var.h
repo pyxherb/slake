@@ -19,11 +19,10 @@ namespace slake {
 	class VarObject : public MemberObject {
 	public:
 		VarObject(Runtime *rt);
-		inline VarObject(const VarObject &x) : MemberObject(x) {
-		}
+		VarObject(const VarObject &x);
 		virtual ~VarObject();
 
-		virtual inline ObjectKind getKind() const override { return ObjectKind::Var; }
+		virtual ObjectKind getKind() const override;
 
 		virtual Type getVarType(const VarRefContext &context) const = 0;
 
@@ -42,13 +41,7 @@ namespace slake {
 		Object *parent = nullptr;
 
 		RegularVarObject(Runtime *rt, AccessModifier access, const Type &type);
-		inline RegularVarObject(const RegularVarObject &other) : VarObject(other) {
-			value = other.value;
-			type = other.type;
-
-			name = other.name;
-			parent = other.parent;
-		}
+		RegularVarObject(const RegularVarObject &other);
 		virtual ~RegularVarObject();
 
 		virtual Object *duplicate() const override;
@@ -62,14 +55,10 @@ namespace slake {
 		static HostObjectRef<RegularVarObject> alloc(const RegularVarObject *other);
 		virtual void dealloc() override;
 
-		virtual inline Value getData(const VarRefContext &context) const override { return value; }
-		virtual inline void setData(const VarRefContext &context, const Value &value) override {
-			if (!isCompatible(type, value))
-				throw MismatchedTypeError("Mismatched variable type");
-			this->value = value;
-		}
+		virtual Value getData(const VarRefContext &context) const override;
+		virtual void setData(const VarRefContext &context, const Value &value) override;
 
-		virtual inline ObjectKind getKind() const override { return ObjectKind::Var; }
+		virtual ObjectKind getKind() const override;
 
 		virtual Type getVarType(const VarRefContext &context) const override { return type; }
 		virtual VarKind getVarKind() const override { return VarKind::Regular; }
@@ -93,7 +82,7 @@ namespace slake {
 
 		virtual Type getVarType(const VarRefContext &context) const override;
 
-		virtual VarKind getVarKind() const override { return VarKind::LocalVarAccessor; }
+		virtual VarKind getVarKind() const override;
 
 		virtual void setData(const VarRefContext &varRefContext, const Value &value) override;
 		virtual Value getData(const VarRefContext &varRefContext) const override;

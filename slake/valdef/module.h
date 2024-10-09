@@ -12,20 +12,14 @@ namespace slake {
 		Object *parent = nullptr;
 		Scope *scope;
 
-		ModuleObject(Runtime *rt, AccessModifier access);
-		inline ModuleObject(const ModuleObject &x) : MemberObject(x) {
-			imports = x.imports;
-			unnamedImports = x.unnamedImports;
-			name = x.name;
-			parent = x.parent;
-			scope = x.scope->duplicate();
-		}
-		virtual ~ModuleObject();
-
 		std::unordered_map<std::pmr::string, IdRefObject *> imports;
 		std::vector<IdRefObject *> unnamedImports;
 
-		virtual inline ObjectKind getKind() const override { return ObjectKind::Module; }
+		ModuleObject(Runtime *rt, AccessModifier access);
+		ModuleObject(const ModuleObject &x);
+		virtual ~ModuleObject();
+
+		virtual ObjectKind getKind() const override;
 
 		virtual Object *duplicate() const override;
 

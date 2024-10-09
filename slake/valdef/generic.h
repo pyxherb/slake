@@ -11,54 +11,25 @@ namespace slake {
 		Type baseType = Type(TypeId::Any);
 		std::pmr::vector<Type> interfaces;
 
-		inline GenericParam() {}
-		inline GenericParam(std::pmr::memory_resource *memoryResource) : name(memoryResource), interfaces(memoryResource) {
-		}
+		GenericParam();
+		GenericParam(std::pmr::memory_resource *memoryResource);
 	};
+
 
 	using GenericArgList = std::pmr::vector<Type>;
 	using GenericParamList = std::pmr::vector<GenericParam>;
 
 	/// @brief Less than ("<") comparator for containers.
 	struct GenericArgListComparator {
-		inline bool operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept {
-			if (lhs.size() < rhs.size())
-				return true;
-			if (lhs.size() > rhs.size())
-				return false;
-
-			for (size_t i = 0; i < lhs.size(); ++i) {
-				if (lhs[i] < rhs[i])
-					return true;
-			}
-
-			return false;
-		}
+		bool operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept;
 	};
 
 	/// @brief Equal ("<") comparator for containers.
 	struct GenericArgListEqComparator {
-		inline bool operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept {
-			if (lhs.size() != rhs.size())
-				return false;
-
-			for (size_t i = 0; i < lhs.size(); ++i) {
-				if (lhs[i] != rhs[i])
-					return false;
-			}
-
-			return true;
-		}
+		bool operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept;
 	};
 
-	inline size_t getGenericParamIndex(const GenericParamList &genericParamList, const std::pmr::string &name) {
-		for (size_t i = 0; i < genericParamList.size(); ++i) {
-			if (genericParamList[i].name == name)
-				return i;
-		}
-
-		return SIZE_MAX;
-	}
+	size_t getGenericParamIndex(const GenericParamList &genericParamList, const std::pmr::string &name);
 
 	GenericParam *getGenericParam(Object *object, const std::pmr::string &name, Object **ownerOut = nullptr);
 }

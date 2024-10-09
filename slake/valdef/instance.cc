@@ -141,6 +141,28 @@ void slake::InstanceMemberAccessorVarObject::dealloc() {
 	allocator.deallocate(this, 1);
 }
 
+InstanceObject::InstanceObject(Runtime *rt)
+	: Object(rt) {
+	memberAccessor = InstanceMemberAccessorVarObject::alloc(rt, this).get();
+}
+
+InstanceObject::InstanceObject(const InstanceObject &x) : Object(x) {
+	_class = x._class;
+	objectLayout = x.objectLayout;
+	methodTable = x.methodTable;
+	// TODO: Copy the rawFieldData.
+}
+
+InstanceObject::~InstanceObject() {
+	if (rawFieldData)
+		delete[] rawFieldData;
+
+	// DO NOT DELETE THE OBJECT LAYOUT AND THE METHOD TABLE!!!
+	// They are borrowed from the class.
+}
+
+ObjectKind InstanceObject::getKind() const { return ObjectKind::Instance; }
+
 Object *InstanceObject::duplicate() const {
 	return (Object *)alloc(this).get();
 }

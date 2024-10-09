@@ -2,6 +2,24 @@
 
 using namespace slake;
 
+Scope::Scope(std::pmr::memory_resource *memoryResource,
+	Object *owner) : memoryResource(memoryResource),
+					 owner(owner),
+					 members(memoryResource) {}
+
+MemberObject *Scope::getMember(const std::pmr::string &name) {
+	if (auto it = members.find(name); it != members.end())
+		return it->second;
+	return nullptr;
+}
+
+void Scope::addMember(const std::pmr::string &name, MemberObject *value) {
+	if (members.find(name) != members.end())
+		throw std::logic_error("The member is already exists");
+
+	putMember(name, value);
+}
+
 void Scope::putMember(const std::pmr::string &name, MemberObject *value) {
 	members[name] = value;
 	value->setParent(owner);
@@ -45,6 +63,18 @@ Scope *Scope::duplicate() {
 	}
 
 	return newScope.release();
+}
+
+MethodTable::MethodTable(std::pmr::memory_resource *memoryResource)
+	: memoryResource(memoryResource),
+	  methods(memoryResource),
+	  destructors(memoryResource) {
+}
+
+FnObject *MethodTable::getMethod(const std::pmr::string &name) {
+	if (auto it = methods.find(name); it != methods.end())
+		return it->second;
+	return nullptr;
 }
 
 MethodTable *MethodTable::alloc(std::pmr::memory_resource *memoryResource) {

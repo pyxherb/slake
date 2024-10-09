@@ -49,7 +49,87 @@ FnOverloadingObject::FnOverloadingObject(
 	  returnType(returnType) {
 }
 
+FnOverloadingObject::FnOverloadingObject(const FnOverloadingObject &other) : Object(other) {
+	fnObject = other.fnObject;
+
+	access = other.access;
+
+	genericParams = other.genericParams;
+	mappedGenericArgs = other.mappedGenericArgs;
+
+	paramTypes = other.paramTypes;
+	returnType = other.returnType;
+
+	overloadingFlags = other.overloadingFlags;
+}
+
 FnOverloadingObject::~FnOverloadingObject() {
+}
+
+ObjectKind FnOverloadingObject::getKind() const { return ObjectKind::FnOverloading; }
+
+RegularFnOverloadingObject::RegularFnOverloadingObject(
+	FnObject *fnObject,
+	AccessModifier access,
+	std::pmr::vector<Type> &&paramTypes,
+	const Type &returnType)
+	: FnOverloadingObject(
+		  fnObject,
+		  access,
+		  std::move(paramTypes),
+		  returnType) {}
+
+RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFnOverloadingObject &other) : FnOverloadingObject(other) {
+	sourceLocDescs = other.sourceLocDescs;
+
+	instructions.resize(other.instructions.size());
+	for (size_t i = 0; i < instructions.size(); ++i) {
+		instructions[i].opcode = other.instructions[i].opcode;
+
+		if (auto &output = other.instructions[i].output; output.valueType == ValueType::ObjectRef) {
+			if (auto ptr = output.getObjectRef(); ptr)
+				instructions[i].output = ptr->duplicate();
+			else
+				instructions[i].output = nullptr;
+		} else
+			instructions[i].output = output;
+
+		// Duplicate each of the operands.
+		instructions[i].operands.resize(other.instructions[i].operands.size());
+		for (size_t j = 0; j < other.instructions[i].operands.size(); ++j) {
+			auto &operand = other.instructions[i].operands[j];
+
+			if (operand.valueType == ValueType::ObjectRef) {
+				if (auto ptr = operand.getObjectRef(); ptr)
+					instructions[i].operands[j] =
+						ptr->duplicate();
+				else
+					instructions[i].operands[j] = nullptr;
+			} else
+				instructions[i].operands[j] = operand;
+		}
+	}
+}
+
+RegularFnOverloadingObject::~RegularFnOverloadingObject() {
+}
+
+const slxfmt::SourceLocDesc *RegularFnOverloadingObject::getSourceLocationDesc(uint32_t offIns) const {
+	const slxfmt::SourceLocDesc *curDesc = nullptr;
+
+	for (auto &i : sourceLocDescs) {
+		if ((offIns >= i.offIns) &&
+			(offIns < i.offIns + i.nIns)) {
+			if (curDesc) {
+				if ((i.offIns >= curDesc->offIns) &&
+					(i.nIns < curDesc->nIns))
+					curDesc = &i;
+			} else
+				curDesc = &i;
+		}
+	}
+
+	return curDesc;
 }
 
 FnOverloadingKind slake::RegularFnOverloadingObject::getOverloadingKind() const {
@@ -97,6 +177,27 @@ void slake::RegularFnOverloadingObject::dealloc() {
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
+}
+
+NativeFnOverloadingObject::NativeFnOverloadingObject(
+	FnObject *fnObject,
+	AccessModifier access,
+	std::pmr::vector<Type> &&paramTypes,
+	const Type &returnType,
+	NativeFnCallback callback)
+	: FnOverloadingObject(
+		  fnObject,
+		  access,
+		  std::move(paramTypes),
+		  returnType),
+	  callback(callback) {}
+
+NativeFnOverloadingObject::NativeFnOverloadingObject(const NativeFnOverloadingObject &other) : FnOverloadingObject(other) {
+	callback = other.callback;
+}
+
+NativeFnOverloadingObject::~NativeFnOverloadingObject() {
+
 }
 
 FnOverloadingKind slake::NativeFnOverloadingObject::getOverloadingKind() const {
@@ -238,6 +339,34 @@ Value RegularFnOverloadingObject::call(Object *thisObject, std::pmr::vector<Valu
 	return context->majorFrames.back()->returnValue;
 }
 
+FnObject::FnObject(Runtime *rt) : MemberObject(rt) {
+}
+
+FnObject::FnObject(const FnObject &x) : MemberObject(x) {
+	for (auto &i : x.overloadings) {
+		FnOverloadingObject *ol = i->duplicate();
+
+		ol->fnObject = this;
+
+		overloadings.insert(ol);
+	}
+
+	parent = x.parent;
+}
+
+FnObject::~FnObject() {
+}
+
+ObjectKind FnObject::getKind() const { return ObjectKind::Fn; }
+
+const char *FnObject::getName() const { return name.c_str(); }
+
+void FnObject::setName(const char *name) { this->name = name; }
+
+Object *FnObject::getParent() const { return parent; }
+
+void FnObject::setParent(Object *parent) { this->parent = parent; }
+
 FnOverloadingObject *FnObject::getOverloading(const std::pmr::vector<Type> &argTypes) const {
 	const FnObject *i = this;
 
@@ -312,4 +441,26 @@ void slake::FnObject::dealloc() {
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
+}
+
+bool slake::isDuplicatedOverloading(
+	const FnOverloadingObject *overloading,
+	const std::pmr::vector<Type> &paramTypes,
+	const GenericParamList &genericParams,
+	bool hasVarArg) {
+	if ((overloading->overloadingFlags & OL_VARG) != (hasVarArg ? OL_VARG : 0))
+		return false;
+
+	if (overloading->paramTypes.size() != paramTypes.size())
+		return false;
+
+	if (overloading->genericParams.size() != genericParams.size())
+		return false;
+
+	for (size_t j = 0; j < paramTypes.size(); ++j) {
+		if (overloading->paramTypes[j] != paramTypes[j])
+			return false;
+	}
+
+	return true;
 }

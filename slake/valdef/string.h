@@ -13,9 +13,7 @@ namespace slake {
 	public:
 		StringObject(Runtime *rt, const char *str, size_t size);
 		StringObject(Runtime *rt, std::string &&s);
-		inline StringObject(const StringObject &x) : Object(x) {
-			_setData(x.data.c_str(), x.data.size());
-		}
+		StringObject(const StringObject &x);
 		virtual ~StringObject();
 
 		std::pmr::string data;

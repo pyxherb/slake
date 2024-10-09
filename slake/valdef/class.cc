@@ -2,6 +2,12 @@
 
 using namespace slake;
 
+ObjectLayout::ObjectLayout(std::pmr::memory_resource *memoryResource)
+	: memoryResource(memoryResource),
+	  fieldRecords(memoryResource),
+	  fieldNameMap(memoryResource) {
+}
+
 ObjectLayout *ObjectLayout::duplicate() const {
 	using Alloc = std::pmr::polymorphic_allocator<ObjectLayout>;
 	Alloc allocator(memoryResource);
@@ -35,6 +41,24 @@ void ObjectLayout::dealloc() {
 
 slake::ClassObject::ClassObject(Runtime *rt, AccessModifier access, const Type &parentClass)
 	: ModuleObject(rt, access), parentClass(parentClass) {
+}
+
+ObjectKind ClassObject::getKind() const { return ObjectKind::Class; }
+
+GenericArgList ClassObject::getGenericArgs() const {
+	return genericArgs;
+}
+
+ClassObject::ClassObject(const ClassObject &x) : ModuleObject(x) {
+	_flags = x._flags;
+
+	genericArgs = x.genericArgs;
+	genericParams = x.genericParams;
+
+	parentClass = x.parentClass;
+	implInterfaces = x.implInterfaces;
+
+	// DO NOT copy the cached instantiated method table.
 }
 
 ClassObject::~ClassObject() {
@@ -71,6 +95,18 @@ bool ClassObject::isBaseOf(const ClassObject *pClass) const {
 	return false;
 }
 
+InterfaceObject::InterfaceObject(Runtime *rt, AccessModifier access, const std::vector<Type> &parents)
+	: ModuleObject(rt, access), parents(parents) {
+}
+
+InterfaceObject::InterfaceObject(const InterfaceObject &x) : ModuleObject(x) {
+	genericArgs = x.genericArgs;
+
+	genericParams = x.genericParams;
+
+	parents = x.parents;
+}
+
 bool InterfaceObject::isDerivedFrom(const InterfaceObject *pInterface) const {
 	if (pInterface == this)
 		return true;
@@ -90,8 +126,14 @@ bool InterfaceObject::isDerivedFrom(const InterfaceObject *pInterface) const {
 	return false;
 }
 
+ObjectKind InterfaceObject::getKind() const { return ObjectKind::Interface; }
+
 Object *ClassObject::duplicate() const {
 	return (Object *)alloc(this).get();
+}
+
+GenericArgList InterfaceObject::getGenericArgs() const {
+	return genericArgs;
 }
 
 HostObjectRef<ClassObject> slake::ClassObject::alloc(const ClassObject *other) {

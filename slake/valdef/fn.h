@@ -21,7 +21,7 @@ namespace slake {
 		std::vector<Value> operands;
 
 		bool operator==(const Instruction &rhs) const;
-		inline bool operator!=(const Instruction &rhs) const {
+		SLAKE_FORCEINLINE bool operator!=(const Instruction &rhs) const {
 			return !(*this == rhs);
 		}
 
@@ -64,22 +64,10 @@ namespace slake {
 			AccessModifier access,
 			std::pmr::vector<Type> &&paramTypes,
 			const Type &returnType);
-		inline FnOverloadingObject(const FnOverloadingObject &other) : Object(other) {
-			fnObject = other.fnObject;
-
-			access = other.access;
-
-			genericParams = other.genericParams;
-			mappedGenericArgs = other.mappedGenericArgs;
-
-			paramTypes = other.paramTypes;
-			returnType = other.returnType;
-
-			overloadingFlags = other.overloadingFlags;
-		}
+		FnOverloadingObject(const FnOverloadingObject &other);
 		virtual ~FnOverloadingObject();
 
-		virtual inline ObjectKind getKind() const { return ObjectKind::FnOverloading; }
+		virtual ObjectKind getKind() const;
 
 		virtual FnOverloadingKind getOverloadingKind() const = 0;
 
@@ -93,66 +81,15 @@ namespace slake {
 		std::vector<slxfmt::SourceLocDesc> sourceLocDescs;
 		std::vector<Instruction> instructions;
 
-		inline RegularFnOverloadingObject(
+		RegularFnOverloadingObject(
 			FnObject *fnObject,
 			AccessModifier access,
 			std::pmr::vector<Type> &&paramTypes,
-			const Type &returnType)
-			: FnOverloadingObject(
-				  fnObject,
-				  access,
-				  std::move(paramTypes),
-				  returnType) {}
-		inline RegularFnOverloadingObject(const RegularFnOverloadingObject &other) : FnOverloadingObject(other) {
-			sourceLocDescs = other.sourceLocDescs;
+			const Type &returnType);
+		RegularFnOverloadingObject(const RegularFnOverloadingObject &other);
+		virtual ~RegularFnOverloadingObject();
 
-			instructions.resize(other.instructions.size());
-			for (size_t i = 0; i < instructions.size(); ++i) {
-				instructions[i].opcode = other.instructions[i].opcode;
-
-				if (auto &output = other.instructions[i].output; output.valueType == ValueType::ObjectRef) {
-					if (auto ptr = output.getObjectRef(); ptr)
-						instructions[i].output = ptr->duplicate();
-					else
-						instructions[i].output = nullptr;
-				} else
-					instructions[i].output = output;
-
-				// Duplicate each of the operands.
-				instructions[i].operands.resize(other.instructions[i].operands.size());
-				for (size_t j = 0; j < other.instructions[i].operands.size(); ++j) {
-					auto &operand = other.instructions[i].operands[j];
-
-					if (operand.valueType == ValueType::ObjectRef) {
-						if (auto ptr = operand.getObjectRef(); ptr)
-							instructions[i].operands[j] =
-								ptr->duplicate();
-						else
-							instructions[i].operands[j] = nullptr;
-					} else
-						instructions[i].operands[j] = operand;
-				}
-			}
-		}
-
-		inline const slxfmt::SourceLocDesc *getSourceLocationDesc(uint32_t offIns) const {
-			const slxfmt::SourceLocDesc *curDesc = nullptr;
-
-			for (auto &i : sourceLocDescs) {
-				if ((offIns >= i.offIns) &&
-					(offIns < i.offIns + i.nIns)) {
-					if (curDesc) {
-						if ((i.offIns >= curDesc->offIns) &&
-							(i.nIns < curDesc->nIns))
-							curDesc = &i;
-					} else
-						curDesc = &i;
-				}
-			}
-
-			return curDesc;
-		}
-		virtual ~RegularFnOverloadingObject() = default;
+		const slxfmt::SourceLocDesc *getSourceLocationDesc(uint32_t offIns) const;
 
 		virtual FnOverloadingKind getOverloadingKind() const override;
 
@@ -178,22 +115,14 @@ namespace slake {
 
 	class NativeFnOverloadingObject : public FnOverloadingObject {
 	public:
-		inline NativeFnOverloadingObject(
+		NativeFnOverloadingObject(
 			FnObject *fnObject,
 			AccessModifier access,
 			std::pmr::vector<Type> &&paramTypes,
 			const Type &returnType,
-			NativeFnCallback callback)
-			: FnOverloadingObject(
-				  fnObject,
-				  access,
-				  std::move(paramTypes),
-				  returnType),
-			  callback(callback) {}
-		inline NativeFnOverloadingObject(const NativeFnOverloadingObject &other) : FnOverloadingObject(other) {
-			callback = other.callback;
-		}
-		virtual ~NativeFnOverloadingObject() = default;
+			NativeFnCallback callback);
+		NativeFnOverloadingObject(const NativeFnOverloadingObject &other);
+		virtual ~NativeFnOverloadingObject();
 
 		NativeFnCallback callback;
 
@@ -218,30 +147,18 @@ namespace slake {
 		std::string name;
 		Object *parent = nullptr;
 
-		inline FnObject(Runtime *rt) : MemberObject(rt) {
-		}
-		inline FnObject(const FnObject &x) : MemberObject(x) {
-			for (auto &i : x.overloadings) {
-				FnOverloadingObject *ol = i->duplicate();
-
-				ol->fnObject = this;
-
-				overloadings.insert(ol);
-			}
-
-			parent = x.parent;
-		}
-		virtual inline ~FnObject() {
-		}
+		FnObject(Runtime *rt);
+		FnObject(const FnObject &x);
+		virtual ~FnObject();
 
 		std::set<FnOverloadingObject *> overloadings;
 
-		virtual inline ObjectKind getKind() const override { return ObjectKind::Fn; }
+		virtual ObjectKind getKind() const override;
 
-		virtual inline const char *getName() const override { return name.c_str(); }
-		virtual void setName(const char *name) override { this->name = name; }
-		virtual inline Object *getParent() const override { return parent; }
-		virtual void setParent(Object *parent) override { this->parent = parent; }
+		virtual const char *getName() const override;
+		virtual void setName(const char *name) override;
+		virtual inline Object *getParent() const override;
+		virtual void setParent(Object *parent) override;
 
 		FnOverloadingObject *getOverloading(const std::pmr::vector<Type> &argTypes) const;
 
@@ -254,27 +171,11 @@ namespace slake {
 		virtual void dealloc() override;
 	};
 
-	inline bool isDuplicatedOverloading(
+	bool isDuplicatedOverloading(
 		const FnOverloadingObject *overloading,
 		const std::pmr::vector<Type> &paramTypes,
 		const GenericParamList &genericParams,
-		bool hasVarArg) {
-		if ((overloading->overloadingFlags & OL_VARG) != (hasVarArg ? OL_VARG : 0))
-			return false;
-
-		if (overloading->paramTypes.size() != paramTypes.size())
-			return false;
-
-		if (overloading->genericParams.size() != genericParams.size())
-			return false;
-
-		for (size_t j = 0; j < paramTypes.size(); ++j) {
-			if (overloading->paramTypes[j] != paramTypes[j])
-				return false;
-		}
-
-		return true;
-	}
+		bool hasVarArg);
 }
 
 #endif

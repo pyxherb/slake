@@ -1,0 +1,28 @@
+#ifndef _SLAKE_BASEDEFS_H_
+#define _SLAKE_BASEDEFS_H_
+
+#ifdef _MSC_VER
+
+	#define SLAKE_DLLEXPORT __declspec(dllexport)
+	#define SLAKE_DLLIMPORT __declspec(dllimport)
+	#define SLAKE_FORCEINLINE __forceinline
+
+#elif defined(__GNUC__)
+
+	#define SLAKE_DLLEXPORT __attribute__((visilibity("default"))
+	#define SLAKE_DLLIMPORT __attribute__((visilibity("default"))
+	#define SLAKE_FORCEINLINE __attribute__((__always_inline__)) inline
+
+#endif
+
+#if SLAKE_IS_BUILDING
+
+	#define SLAKE_API SLAKE_DLLEXPORT
+
+#else
+
+	#define SLAKE_API SLAKE_DLLIMPORT
+
+#endif
+
+#endif

@@ -6,12 +6,25 @@ using namespace slake;
 VarObject::VarObject(Runtime *rt) : MemberObject(rt) {
 }
 
+VarObject::VarObject(const VarObject &x) : MemberObject(x) {
+}
+
 VarObject::~VarObject() {
 }
+
+ObjectKind VarObject::getKind() const { return ObjectKind::Var; }
 
 slake::RegularVarObject::RegularVarObject(Runtime *rt, AccessModifier access, const Type &type)
 	: VarObject(rt), type(type) {
 	this->accessModifier = access;
+}
+
+RegularVarObject::RegularVarObject(const RegularVarObject &other) : VarObject(other) {
+	value = other.value;
+	type = other.type;
+
+	name = other.name;
+	parent = other.parent;
 }
 
 RegularVarObject::~RegularVarObject() {
@@ -43,6 +56,16 @@ void slake::RegularVarObject::dealloc() {
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
+
+Value RegularVarObject::getData(const VarRefContext &context) const { return value; }
+
+void RegularVarObject::setData(const VarRefContext &context, const Value &value) {
+	if (!isCompatible(type, value))
+		throw MismatchedTypeError("Mismatched variable type");
+	this->value = value;
+}
+
+ObjectKind RegularVarObject::getKind() const override { return ObjectKind::Var; }
 
 HostObjectRef<RegularVarObject> slake::RegularVarObject::alloc(Runtime *rt, AccessModifier access, const Type &type) {
 	using Alloc = std::pmr::polymorphic_allocator<RegularVarObject>;
@@ -84,6 +107,10 @@ LocalVarAccessorVarObject::~LocalVarAccessorVarObject() {
 
 Type LocalVarAccessorVarObject::getVarType(const VarRefContext &context) const {
 	return majorFrame->localVarRecords[context.asLocalVar.localVarIndex].type;
+}
+
+VarKind LocalVarAccessorVarObject::getVarKind() const { return VarKind::LocalVarAccessor; } {
+
 }
 
 void LocalVarAccessorVarObject::setData(const VarRefContext &context, const Value &value) {

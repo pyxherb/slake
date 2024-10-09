@@ -8,9 +8,19 @@ ModuleObject::ModuleObject(Runtime *rt, AccessModifier access)
 	this->accessModifier = access;
 }
 
+ModuleObject::ModuleObject(const ModuleObject &x) : MemberObject(x) {
+	imports = x.imports;
+	unnamedImports = x.unnamedImports;
+	name = x.name;
+	parent = x.parent;
+	scope = x.scope->duplicate();
+}
+
 ModuleObject::~ModuleObject() {
 	scope->dealloc();
 }
+
+ObjectKind ModuleObject::getKind() const { return ObjectKind::Module; }
 
 Object *ModuleObject::duplicate() const {
 	return (Object *)alloc(this).get();

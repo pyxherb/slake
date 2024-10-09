@@ -26,11 +26,7 @@ namespace slake {
 		std::pmr::vector<ObjectFieldRecord> fieldRecords;
 		std::pmr::unordered_map<std::pmr::string, size_t> fieldNameMap;
 
-		inline ObjectLayout(std::pmr::memory_resource *memoryResource)
-			: memoryResource(memoryResource),
-			  fieldRecords(memoryResource),
-			  fieldNameMap(memoryResource) {
-		}
+		ObjectLayout(std::pmr::memory_resource *memoryResource);
 
 		ObjectLayout *duplicate() const;
 
@@ -58,27 +54,12 @@ namespace slake {
 		std::pmr::vector<VarObject *> cachedFieldInitVars;
 
 		ClassObject(Runtime *rt, AccessModifier access, const Type &parentClass);
-		inline ClassObject(const ClassObject &x) : ModuleObject(x) {
-			_flags = x._flags;
-
-			genericArgs = x.genericArgs;
-			genericParams = x.genericParams;
-
-			parentClass = x.parentClass;
-			implInterfaces = x.implInterfaces;
-
-			// DO NOT copy the cached instantiated method table.
-		}
+		ClassObject(const ClassObject &x);
 		virtual ~ClassObject();
 
-		virtual inline ObjectKind getKind() const override { return ObjectKind::Class; }
+		virtual ObjectKind getKind() const override;
 
-		virtual inline GenericArgList getGenericArgs() const override {
-			return genericArgs;
-		}
-
-		virtual inline Type getParentType() const { return parentClass; }
-		virtual inline void setParentType(Type parent) { parentClass = parent; }
+		virtual GenericArgList getGenericArgs() const override;
 
 		/// @brief Check if the class has implemented the interface.
 		///
@@ -107,25 +88,15 @@ namespace slake {
 
 		std::vector<Type> parents;
 
-		inline InterfaceObject(Runtime *rt, AccessModifier access, const std::vector<Type> &parents)
-			: ModuleObject(rt, access), parents(parents) {
-		}
-		inline InterfaceObject(const InterfaceObject &x) : ModuleObject(x) {
-			genericArgs = x.genericArgs;
-
-			genericParams = x.genericParams;
-
-			parents = x.parents;
-		}
+		InterfaceObject(Runtime *rt, AccessModifier access, const std::vector<Type> &parents);
+		InterfaceObject(const InterfaceObject &x);
 		virtual ~InterfaceObject();
 
-		virtual inline ObjectKind getKind() const override { return ObjectKind::Interface; }
+		virtual ObjectKind getKind() const override;
 
 		virtual Object *duplicate() const override;
 
-		virtual inline GenericArgList getGenericArgs() const override {
-			return genericArgs;
-		}
+		virtual GenericArgList getGenericArgs() const override;
 
 		static HostObjectRef<InterfaceObject> alloc(Runtime *rt, AccessModifier access, const std::vector<Type> &parents = {});
 		static HostObjectRef<InterfaceObject> alloc(const InterfaceObject *other);

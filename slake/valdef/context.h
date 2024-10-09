@@ -15,9 +15,7 @@ namespace slake {
 
 	public:
 		ContextObject(Runtime *rt, std::shared_ptr<Context> context);
-		inline ContextObject(const ContextObject &x) : Object(x) {
-			_context = x._context;
-		}
+		ContextObject(const ContextObject &x);
 		virtual ~ContextObject();
 
 		virtual inline ObjectKind getKind() const override { return ObjectKind::Context; }

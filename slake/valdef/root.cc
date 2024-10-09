@@ -7,6 +7,10 @@ RootObject::RootObject(Runtime *rt)
 	scope = Scope::alloc(&rt->globalHeapPoolResource, this);
 }
 
+RootObject::~RootObject() {
+	scope->dealloc();
+}
+
 MemberObject* RootObject::getMember(
 	const std::pmr::string& name,
 	VarRefContext* varRefContextOut) const {

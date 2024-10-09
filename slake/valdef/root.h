@@ -10,9 +10,7 @@ namespace slake {
 		Scope *scope;
 
 		RootObject(Runtime *rt);
-		virtual inline ~RootObject() {
-			scope->dealloc();
-		}
+		virtual ~RootObject();
 
 		virtual inline ObjectKind getKind() const override { return ObjectKind::RootObject; }
 

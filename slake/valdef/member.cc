@@ -7,6 +7,10 @@ MemberObject::MemberObject(Runtime *rt)
 	: Object(rt) {
 }
 
+MemberObject::MemberObject(const MemberObject &x) : Object(x) {
+	accessModifier = x.accessModifier;
+}
+
 MemberObject::~MemberObject() {
 }
 

@@ -18,6 +18,10 @@ slake::StringObject::StringObject(Runtime *rt, std::string &&s) : Object(rt), da
 	data = std::move(s);
 }
 
+StringObject::StringObject(const StringObject &x) : Object(x) {
+	_setData(x.data.c_str(), x.data.size());
+}
+
 StringObject::~StringObject() {
 	_setData(nullptr, 0);
 }

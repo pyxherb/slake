@@ -2,8 +2,28 @@
 
 using namespace slake;
 
+IdRefEntry::IdRefEntry(std::pmr::memory_resource *memoryResource)
+	: name(memoryResource), genericArgs(memoryResource), paramTypes(memoryResource) {
+	// For resize() methods.
+}
+
+IdRefEntry::IdRefEntry(std::pmr::string &&name,
+	GenericArgList &&genericArgs = {},
+	bool hasParamTypes = false,
+	std::pmr::vector<Type> &&paramTypes = {},
+	bool hasVarArg = false)
+	: name(name),
+	  genericArgs(genericArgs),
+	  hasParamTypes(hasParamTypes),
+	  paramTypes(paramTypes),
+	  hasVarArg(hasVarArg) {}
+
 slake::IdRefObject::IdRefObject(Runtime *rt)
 	: Object(rt) {
+}
+
+IdRefObject::IdRefObject(const IdRefObject &x) : Object(x) {
+	entries = x.entries;
 }
 
 IdRefObject::~IdRefObject() {

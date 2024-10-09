@@ -8,6 +8,12 @@ slake::AliasObject::AliasObject(Runtime *rt, AccessModifier access, Object *src)
 	this->accessModifier = access;
 }
 
+AliasObject::AliasObject(const AliasObject &other) : MemberObject(other) {
+	src = other.src;
+	name = other.name;
+	parent = other.parent;
+}
+
 AliasObject::~AliasObject() {
 }
 

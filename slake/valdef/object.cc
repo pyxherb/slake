@@ -5,6 +5,11 @@ using namespace slake;
 Object::Object(Runtime *rt) : _rt(rt) {
 }
 
+Object::Object(const Object &x) {
+	_rt = x._rt;
+	_flags = x._flags & ~VF_WALKED;
+}
+
 Object::~Object() {
 	_rt->invalidateGenericCache(this);
 }

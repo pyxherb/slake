@@ -2,6 +2,45 @@
 
 using namespace slake;
 
+GenericParam::GenericParam() {}
+GenericParam::GenericParam(std::pmr::memory_resource *memoryResource) : name(memoryResource), interfaces(memoryResource) {
+}
+
+bool GenericArgListComparator::operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept {
+	if (lhs.size() < rhs.size())
+		return true;
+	if (lhs.size() > rhs.size())
+		return false;
+
+	for (size_t i = 0; i < lhs.size(); ++i) {
+		if (lhs[i] < rhs[i])
+			return true;
+	}
+
+	return false;
+}
+
+bool GenericArgListEqComparator::operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept {
+	if (lhs.size() != rhs.size())
+		return false;
+
+	for (size_t i = 0; i < lhs.size(); ++i) {
+		if (lhs[i] != rhs[i])
+			return false;
+	}
+
+	return true;
+}
+
+size_t slake::getGenericParamIndex(const GenericParamList &genericParamList, const std::pmr::string &name) {
+	for (size_t i = 0; i < genericParamList.size(); ++i) {
+		if (genericParamList[i].name == name)
+			return i;
+	}
+
+	return SIZE_MAX;
+}
+
 GenericParam *slake::getGenericParam(Object *object, const std::pmr::string &name, Object **ownerOut) {
 	while (true) {
 		size_t idxGenericParam;

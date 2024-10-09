@@ -11,11 +11,7 @@ namespace slake {
 		Object *parent;
 
 		AliasObject(Runtime *rt, AccessModifier access, Object *src);
-		inline AliasObject(const AliasObject &other) : MemberObject(other) {
-			src = other.src;
-			name = other.name;
-			parent = other.parent;
-		}
+		AliasObject(const AliasObject &other);
 		virtual ~AliasObject();
 
 		virtual const char *getName() const;

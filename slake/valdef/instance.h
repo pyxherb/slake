@@ -39,29 +39,15 @@ namespace slake {
 		char *rawFieldData = nullptr;
 		size_t szRawFieldData = 0;
 
-		InstanceMemberAccessorVarObject *memberAccessor;
-
-		inline InstanceObject(Runtime *rt)
-			: Object(rt) {
-			memberAccessor = InstanceMemberAccessorVarObject::alloc(rt, this).get();
-		}
-		inline InstanceObject(const InstanceObject &x) : Object(x) {
-			_class = x._class;
-			objectLayout = x.objectLayout;
-			methodTable = x.methodTable;
-			// TODO: Copy the rawFieldData.
-		}
-		virtual inline ~InstanceObject() {
-			if (rawFieldData)
-				delete[] rawFieldData;
-
-			// DO NOT DELETE THE OBJECT LAYOUT AND THE METHOD TABLE!!!
-			// They are borrowed from the class.
-		}
-
 		InstanceFlags instanceFlags = 0;
 
-		virtual inline ObjectKind getKind() const override { return ObjectKind::Instance; }
+		InstanceMemberAccessorVarObject *memberAccessor;
+
+		InstanceObject(Runtime *rt);
+		InstanceObject(const InstanceObject &x);
+		virtual ~InstanceObject();
+
+		virtual ObjectKind getKind() const override;
 
 		virtual Object *duplicate() const override;
 

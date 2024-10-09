@@ -8,6 +8,10 @@ ContextObject::ContextObject(
 	: Object(rt), _context(context) {
 }
 
+ContextObject::ContextObject(const ContextObject &x) : Object(x) {
+	_context = x._context;
+}
+
 ContextObject::~ContextObject() {
 }
 

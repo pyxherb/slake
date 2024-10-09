@@ -15,9 +15,7 @@ namespace slake {
 		AccessModifier accessModifier = 0;
 
 		MemberObject(Runtime *rt);
-		inline MemberObject(const MemberObject &x) : Object(x) {
-			accessModifier = x.accessModifier;
-		}
+		MemberObject(const MemberObject &x);
 		virtual ~MemberObject();
 
 		virtual const char *getName() const;

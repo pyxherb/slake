@@ -11,16 +11,11 @@ namespace slake {
 	public:
 		Type type;
 
-		inline TypeDefObject(Runtime *rt, const Type &type)
-			: Object(rt), type(type) {
-		}
-		inline TypeDefObject(const TypeDefObject &x) : Object(x) {
-			type = x.type.duplicate();
-		}
-		virtual inline ~TypeDefObject() {
-		}
+		TypeDefObject(Runtime *rt, const Type &type);
+		TypeDefObject(const TypeDefObject &x);
+		virtual ~TypeDefObject();
 
-		virtual inline ObjectKind getKind() const override { return ObjectKind::TypeDef; }
+		virtual ObjectKind getKind() const override;
 
 		virtual Object *duplicate() const override;
 

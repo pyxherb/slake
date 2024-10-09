@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 #include <slake/util/memory.h>
+#include <slake/basedefs.h>
 
 namespace slake {
 	class Object;
@@ -20,25 +21,14 @@ namespace slake {
 		Object *owner;
 		std::pmr::unordered_map<std::pmr::string, MemberObject *> members;
 
-		inline Scope(std::pmr::memory_resource *memoryResource,
-			Object *owner) : memoryResource(memoryResource),
-							 owner(owner),
-							 members(memoryResource) {}
+		Scope(std::pmr::memory_resource *memoryResource,
+			Object *owner);
 
-		inline MemberObject *getMember(const std::pmr::string &name) {
-			if (auto it = members.find(name); it != members.end())
-				return it->second;
-			return nullptr;
-		}
+		MemberObject *getMember(const std::pmr::string &name);
 
 		void putMember(const std::pmr::string &name, MemberObject *value);
 
-		inline void addMember(const std::pmr::string &name, MemberObject *value) {
-			if (members.find(name) != members.end())
-				throw std::logic_error("The member is already exists");
-
-			putMember(name, value);
-		}
+		void addMember(const std::pmr::string &name, MemberObject *value);
 
 		void removeMember(const std::pmr::string &name);
 
@@ -54,17 +44,9 @@ namespace slake {
 		std::pmr::unordered_map<std::pmr::string, FnObject *> methods;
 		std::pmr::deque<FnOverloadingObject *> destructors;
 
-		inline MethodTable(std::pmr::memory_resource *memoryResource)
-			: memoryResource(memoryResource),
-			  methods(memoryResource),
-			  destructors(memoryResource) {
-		}
+		MethodTable(std::pmr::memory_resource *memoryResource);
 
-		inline FnObject *getMethod(const std::pmr::string &name) {
-			if (auto it = methods.find(name); it != methods.end())
-				return it->second;
-			return nullptr;
-		}
+		FnObject *getMethod(const std::pmr::string &name);
 
 		MethodTable *duplicate();
 

@@ -4,6 +4,19 @@
 
 using namespace slake;
 
+TypeDefObject::TypeDefObject(Runtime *rt, const Type &type)
+	: Object(rt), type(type) {
+}
+
+TypeDefObject::TypeDefObject(const TypeDefObject &x) : Object(x) {
+	type = x.type.duplicate();
+}
+
+TypeDefObject::~TypeDefObject() {
+}
+
+ObjectKind TypeDefObject::getKind() const { return ObjectKind::TypeDef; }
+
 Object *TypeDefObject::duplicate() const {
 	return (Object *)alloc(this).get();
 }

@@ -37,7 +37,7 @@ namespace slake {
 			size_t stackBase);
 		// Default constructor is required by resize() methods from the
 		// containers.
-		inline MinorFrame() {
+		SLAKE_FORCEINLINE MinorFrame() {
 			abort();
 		}
 	};
@@ -71,23 +71,13 @@ namespace slake {
 		MajorFrame(Runtime *rt, Context *context);
 		// Default constructor is required by resize() methods from the
 		// containers.
-		inline MajorFrame() {
+		SLAKE_FORCEINLINE MajorFrame() {
 			abort();
 		}
 
-		inline VarRef lload(uint32_t off) {
-			if (off >= localVarRecords.size())
-				throw InvalidLocalVarIndexError("Invalid local variable index", off);
+		VarRef lload(uint32_t off);
 
-			return VarRef(localVarAccessor, VarRefContext::makeLocalVarContext(off));
-		}
-
-		inline VarRef larg(uint32_t off) {
-			if (off >= argStack.size())
-				throw InvalidArgumentIndexError("Invalid argument index", off);
-
-			return VarRef(argStack.at(off));
-		}
+		VarRef larg(uint32_t off);
 
 		/// @brief Leave current minor frame.
 		void leave();
@@ -106,51 +96,24 @@ namespace slake {
 		char *dataStack = nullptr;							   // Data stack
 		size_t stackTop = 0;								   // Stack top
 
-		char *stackAlloc(size_t size) {
-			char *stackBase = dataStack + size;
+		char *stackAlloc(size_t size);
 
-			if (size_t newStackTop = stackTop + size;
-				newStackTop > SLAKE_STACK_MAX)
-				throw StackOverflowError("Stack overflowed");
-			else
-				stackTop = newStackTop;
+		Context();
 
-			return stackBase;
-		}
-
-		Context() {
-			dataStack = new char[SLAKE_STACK_MAX];
-		}
-
-		~Context() {
-			if (dataStack)
-				delete[] dataStack;
-		}
+		~Context();
 	};
 
-	class SynchronizedCountablePoolResource : public std::pmr::synchronized_pool_resource {
+	class CountablePoolResource : public std::pmr::memory_resource {
 	public:
+		std::pmr::memory_resource *upstream;
 		size_t szAllocated = 0;
 
-		inline SynchronizedCountablePoolResource() : synchronized_pool_resource() {}
-		explicit inline SynchronizedCountablePoolResource(std::pmr::memory_resource *upstream) : synchronized_pool_resource(upstream) {}
-		explicit inline SynchronizedCountablePoolResource(const std::pmr::pool_options &opts) : synchronized_pool_resource(opts) {}
-		inline SynchronizedCountablePoolResource(const std::pmr::pool_options &opts, std::pmr::memory_resource *upstream) : synchronized_pool_resource(opts, upstream) {}
-		SynchronizedCountablePoolResource(const SynchronizedCountablePoolResource &) = delete;
+		CountablePoolResource(std::pmr::memory_resource *upstream);
+		CountablePoolResource(const CountablePoolResource &) = delete;
 
-		virtual void *do_allocate(size_t bytes, size_t alignment) override {
-			void *p = synchronized_pool_resource::do_allocate(bytes, alignment);
-
-			szAllocated += bytes;
-
-			return p;
-		}
-
-		virtual void do_deallocate(void *p, size_t bytes, size_t alignment) override {
-			synchronized_pool_resource::do_deallocate(p, bytes, alignment);
-
-			szAllocated -= bytes;
-		}
+		virtual void *do_allocate(size_t bytes, size_t alignment) override;
+		virtual void do_deallocate(void *p, size_t bytes, size_t alignment) override;
+		virtual bool do_is_equal(const std::pmr::memory_resource &other) const noexcept override;
 	};
 
 	using RuntimeFlags = uint32_t;
@@ -196,7 +159,7 @@ namespace slake {
 			std::unordered_map<std::pmr::string, Type> mappedGenericArgs;
 		};
 
-		mutable SynchronizedCountablePoolResource globalHeapPoolResource;
+		mutable CountablePoolResource globalHeapPoolResource;
 
 	private:
 		/// @brief Root value of the runtime.
@@ -287,23 +250,10 @@ namespace slake {
 		Runtime &operator=(Runtime &) = delete;
 		Runtime &operator=(Runtime &&) = delete;
 
-		Runtime(RuntimeFlags flags = 0);
+		Runtime(std::pmr::memory_resource *upstreamMemoryResource, RuntimeFlags flags = 0);
 		virtual ~Runtime();
 
-		inline void invalidateGenericCache(Object *i) {
-			if (_genericCacheLookupTable.count(i)) {
-				// Remove the value from generic cache if it is unreachable.
-				auto &lookupEntry = _genericCacheLookupTable.at(i);
-
-				auto &table = _genericCacheDir.at(lookupEntry.originalObject);
-				table.erase(lookupEntry.genericArgs);
-
-				if (!table.size())
-					_genericCacheLookupTable.erase(lookupEntry.originalObject);
-
-				_genericCacheLookupTable.erase(i);
-			}
-		}
+		void invalidateGenericCache(Object *i);
 
 		void mapGenericParams(const Object *v, GenericInstantiationContext &instantiationContext) const;
 		void mapGenericParams(const FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const;

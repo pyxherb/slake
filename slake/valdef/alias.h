@@ -19,7 +19,7 @@ namespace slake {
 		virtual Object *getParent() const;
 		virtual void setParent(Object *parent);
 
-		virtual inline ObjectKind getKind() const override { return ObjectKind::Alias; }
+		virtual ObjectKind getKind() const override;
 
 		virtual Object *duplicate() const override;
 

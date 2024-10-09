@@ -2,6 +2,21 @@
 
 using namespace slake;
 
+void Runtime::invalidateGenericCache(Object *i) {
+	if (_genericCacheLookupTable.count(i)) {
+		// Remove the value from generic cache if it is unreachable.
+		auto &lookupEntry = _genericCacheLookupTable.at(i);
+
+		auto &table = _genericCacheDir.at(lookupEntry.originalObject);
+		table.erase(lookupEntry.genericArgs);
+
+		if (!table.size())
+			_genericCacheLookupTable.erase(lookupEntry.originalObject);
+
+		_genericCacheLookupTable.erase(i);
+	}
+}
+
 void slake::Runtime::_instantiateGenericObject(Type &type, GenericInstantiationContext &instantiationContext) const {
 	switch (type.typeId) {
 		case TypeId::Instance: {

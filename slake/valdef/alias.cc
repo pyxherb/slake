@@ -43,6 +43,8 @@ void AliasObject::setParent(Object *parent) {
 	this->parent = parent;
 }
 
+ObjectKind AliasObject::getKind() const { return ObjectKind::Alias; }
+
 HostObjectRef<AliasObject> AliasObject::alloc(Runtime *rt, Object *src) {
 	using Alloc = std::pmr::polymorphic_allocator<AliasObject>;
 	Alloc allocator(&rt->globalHeapPoolResource);

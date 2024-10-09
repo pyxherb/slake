@@ -102,7 +102,9 @@ void printTraceback(slake::Runtime *rt) {
 int main(int argc, char **argv) {
 	slake::util::setupMemoryLeakDetector();
 
-	std::unique_ptr<slake::Runtime> rt = std::make_unique<slake::Runtime>(slake::RT_DEBUG | slake::RT_GCDBG);
+	std::unique_ptr<slake::Runtime> rt = std::make_unique<slake::Runtime>(
+		std::pmr::get_default_resource(),
+		slake::RT_DEBUG | slake::RT_GCDBG);
 
 	slake::HostObjectRef<slake::ModuleObject> mod;
 	{

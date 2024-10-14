@@ -15,7 +15,7 @@ static const char *_ctrlCharNames[] = {
 decompiler::DecompilerFlags decompiler::decompilerFlags = 0;
 
 void slake::decompiler::decompile(std::istream &fs, std::ostream &os) {
-	auto rt = std::make_unique<slake::Runtime>();
+	auto rt = std::make_unique<slake::Runtime>(std::pmr::get_default_resource());
 	auto mod = rt->loadModule(fs, LMOD_NOIMPORT);
 
 	auto modName = rt->getFullName(mod.get());

@@ -1,5 +1,6 @@
 #include <slake/runtime.h>
 #include <slake/opti/optimizer.h>
+#include <slake/util/scope_guard.h>
 
 using namespace slake;
 
@@ -197,7 +198,6 @@ SLAKE_API NativeFnOverloadingObject::NativeFnOverloadingObject(const NativeFnOve
 }
 
 SLAKE_API NativeFnOverloadingObject::~NativeFnOverloadingObject() {
-
 }
 
 SLAKE_API FnOverloadingKind slake::NativeFnOverloadingObject::getOverloadingKind() const {
@@ -259,36 +259,45 @@ SLAKE_API Value RegularFnOverloadingObject::call(Object *thisObject, std::pmr::v
 	Runtime *rt = fnObject->_rt;
 
 	// Save previous context
-	std::shared_ptr<Context> context;
+	std::shared_ptr<Context> prevContext, context;
 	if (auto it = rt->activeContexts.find(std::this_thread::get_id());
 		it != rt->activeContexts.end()) {
-		context = it->second;
+		if (it->second->flags & CTX_YIELDED) {
+			context = it->second;
+			context->flags &= ~CTX_YIELDED;
+		} else {
+			prevContext = it->second;
+
+			goto createNewContext;
+		}
 	} else {
+	createNewContext:
 		context = std::make_shared<Context>();
 
-		auto frame = std::make_unique<MajorFrame>(rt, context.get());
-		frame->curFn = this;
-		frame->curIns = UINT32_MAX;
-		context->majorFrames.push_back(std::move(frame));
+		{
+			auto frame = std::make_unique<MajorFrame>(rt, context.get());
+			frame->curFn = this;
+			frame->curIns = UINT32_MAX;
+			context->majorFrames.push_back(std::move(frame));
+		}
+
+		{
+			auto frame = std::make_unique<MajorFrame>(rt, context.get());
+			frame->curFn = this;
+			frame->curIns = 0;
+			frame->scopeObject = fnObject->getParent();
+			frame->thisObject = thisObject;
+			frame->argStack.resize(args.size());
+			for (size_t i = 0; i < args.size(); ++i) {
+				auto var = RegularVarObject::alloc(rt, 0, i < paramTypes.size() ? paramTypes[i] : TypeId::Any);
+				var->setData(VarRefContext(), args[i]);
+				frame->argStack[i] = var.release();
+			}
+			context->majorFrames.push_back(std::move(frame));
+		}
 
 		rt->activeContexts[std::this_thread::get_id()] = context;
 	}
-
-	if (!(context->flags & CTX_YIELDED)) {
-		auto frame = std::make_unique<MajorFrame>(rt, context.get());
-		frame->curFn = this;
-		frame->curIns = 0;
-		frame->scopeObject = fnObject->getParent();
-		frame->thisObject = thisObject;
-		frame->argStack.resize(args.size());
-		for (size_t i = 0; i < args.size(); ++i) {
-			auto var = RegularVarObject::alloc(rt, 0, i < paramTypes.size() ? paramTypes[i] : TypeId::Any);
-			var->setData(VarRefContext(), args[i]);
-			frame->argStack[i] = var.release();
-		}
-		context->majorFrames.push_back(std::move(frame));
-	} else
-		context->flags &= ~CTX_YIELDED;
 
 	bool isDestructing = rt->destructingThreads.count(std::this_thread::get_id());
 
@@ -297,9 +306,6 @@ SLAKE_API Value RegularFnOverloadingObject::call(Object *thisObject, std::pmr::v
 		for (;;) {
 			curMajorFrame = context->majorFrames.back().get();
 
-			if (context->majorFrames.back()->curFn != this)
-				break;
-
 			if (curMajorFrame->curIns == UINT32_MAX)
 				break;
 
@@ -307,6 +313,7 @@ SLAKE_API Value RegularFnOverloadingObject::call(Object *thisObject, std::pmr::v
 				context->majorFrames.back()->curFn->instructions.size())
 				throw OutOfFnBodyError("Out of function body");
 
+			// TODO: Check if the yield request is from the top level.
 			if (context->flags & CTX_YIELDED)
 				break;
 
@@ -323,6 +330,14 @@ SLAKE_API Value RegularFnOverloadingObject::call(Object *thisObject, std::pmr::v
 		std::rethrow_exception(std::current_exception());
 	}
 
+	util::ScopeGuard restorePrevContextGuard([rt, prevContext]() {
+		if (prevContext) {
+			rt->activeContexts[std::this_thread::get_id()] = prevContext;
+		} else {
+			rt->activeContexts.erase(std::this_thread::get_id());
+		}
+	});
+
 	if (context->flags & CTX_YIELDED) {
 		auto returnValue = ContextObject::alloc(rt, context);
 
@@ -331,10 +346,7 @@ SLAKE_API Value RegularFnOverloadingObject::call(Object *thisObject, std::pmr::v
 		return Value(returnValue.get());
 	}
 
-	if (context->majorFrames.back()->curIns == UINT32_MAX) {
-		rt->activeContexts.erase(std::this_thread::get_id());
-		context->flags |= CTX_DONE;
-	}
+	context->flags |= CTX_DONE;
 
 	return context->majorFrames.back()->returnValue;
 }

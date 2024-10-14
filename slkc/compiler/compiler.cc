@@ -1374,7 +1374,7 @@ void slake::slkc::Compiler::reload() {
 	curFn.reset();
 
 	// _rootScope = std::make_shared<Scope>();
-	_rt = std::make_unique<Runtime>(RT_NOJIT);
+	_rt = std::make_unique<Runtime>(std::pmr::get_default_resource(), RT_NOJIT);
 	_savedMajorContexts.clear();
 
 	importedDefinitions.clear();

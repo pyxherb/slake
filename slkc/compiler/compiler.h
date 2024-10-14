@@ -568,7 +568,7 @@ namespace slake {
 			CompilerFlags flags = 0;
 
 			inline Compiler(CompilerOptions options = {})
-				: options(options), _rt(std::make_unique<Runtime>(RT_NOJIT)) {}
+				: options(options), _rt(std::make_unique<Runtime>(std::pmr::get_default_resource(), RT_NOJIT)) {}
 			~Compiler();
 
 			/// @brief Resolve a custom type.

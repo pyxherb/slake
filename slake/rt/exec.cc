@@ -96,6 +96,51 @@ static Value _castToLiteralValue(Value x) {
 	}
 }
 
+SLAKE_API void slake::Runtime::_callRegularFn(Context *context, Object *thisObject, RegularFnOverloadingObject *fn) {
+	HostRefHolder holder;
+
+	MajorFrame *lastMajorFrame = context->majorFrames.back().get();
+	std::unique_ptr<MajorFrame> newMajorFrame = std::make_unique<MajorFrame>(this, context);
+
+	newMajorFrame->curFn = fn;
+	newMajorFrame->thisObject = thisObject;
+
+	if (lastMajorFrame->nextArgStack.size() < fn->paramTypes.size())
+		throw InvalidArgumentsError("Too few arguments");
+
+	newMajorFrame->argStack.resize(fn->paramTypes.size());
+	for (size_t i = 0; i < fn->paramTypes.size(); ++i) {
+		auto varObject = RegularVarObject::alloc(this, ACCESS_PUB, fn->paramTypes[i]);
+		holder.addObject(varObject.get());
+		newMajorFrame->argStack[i] = varObject.get();
+		varObject->setData({}, lastMajorFrame->nextArgStack[i]);
+	}
+
+	if (fn->overloadingFlags & OL_VARG) {
+		auto varArgTypeDefObject = TypeDefObject::alloc(this, Type(TypeId::Any));
+		holder.addObject(varArgTypeDefObject.get());
+
+		auto varArgEntryVarObject = RegularVarObject::alloc(this, ACCESS_PUB, Type(TypeId::Array, varArgTypeDefObject.release()));
+		holder.addObject(varArgEntryVarObject.get());
+		newMajorFrame->argStack.push_back(varArgEntryVarObject.get());
+
+		size_t szVarArgArray = lastMajorFrame->nextArgStack.size() - fn->paramTypes.size();
+		auto varArgArrayObject = AnyArrayObject::alloc(this, szVarArgArray);
+		holder.addObject(varArgArrayObject.get());
+
+		for (size_t i = 0; i < szVarArgArray; ++i) {
+			varArgArrayObject->data[i] = lastMajorFrame->nextArgStack[fn->paramTypes.size() + i];
+		}
+
+		varArgEntryVarObject->setData({}, Value(varArgArrayObject.get()));
+	}
+
+	context->majorFrames.push_back(std::move(newMajorFrame));
+
+	lastMajorFrame->nextArgStack.clear();
+	lastMajorFrame->nextArgTypes.clear();
+}
+
 SLAKE_API VarRef slake::Runtime::_addLocalVar(MajorFrame *frame, Type type) {
 	LocalVarRecord localVarRecord;
 
@@ -1272,17 +1317,6 @@ SLAKE_API void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_checkOperandCount(ins, false, 2);
 
 			curMajorFrame->nextArgStack.push_back(_unwrapRegOperand(curMajorFrame, ins.operands[0]));
-			switch (ins.operands[1].valueType) {
-				case ValueType::TypeName:
-					curMajorFrame->nextArgTypes.push_back(ins.operands[1].getTypeName());
-					break;
-				case ValueType::ObjectRef:
-					if (!ins.operands[1].getObjectRef())
-						break;
-					[[fallthrough]];
-				default:
-					throw InvalidOperandsError("Invalid operand combination");
-			}
 			break;
 		}
 		case Opcode::MCALL:
@@ -1315,16 +1349,23 @@ SLAKE_API void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 			HostRefHolder holder;
 
-			for(auto &i : curMajorFrame->nextArgTypes)
-				i.loadDeferredType(this);
-
-			curMajorFrame->returnValue = fn->call(
-				thisObject,
-				curMajorFrame->nextArgStack,
-				&holder);
-
-			curMajorFrame->nextArgStack.clear();
-			curMajorFrame->nextArgTypes.clear();
+			switch (fn->getOverloadingKind()) {
+				case FnOverloadingKind::Regular: {
+					_callRegularFn(context, thisObject, (RegularFnOverloadingObject*)fn);
+					break;
+				}
+				case FnOverloadingKind::Native: {
+					curMajorFrame->returnValue = fn->call(
+						thisObject,
+						curMajorFrame->nextArgStack,
+						&holder);
+					curMajorFrame->nextArgStack.clear();
+					curMajorFrame->nextArgTypes.clear();
+					break;
+				}
+				default:
+					throw std::logic_error("Not implemented yet");
+			}
 
 			break;
 		}

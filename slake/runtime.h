@@ -222,6 +222,8 @@ namespace slake {
 		SLAKE_API void _instantiateGenericObject(Object *v, GenericInstantiationContext &instantiationContext) const;
 		SLAKE_API void _instantiateGenericObject(FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const;
 
+		SLAKE_API void _callRegularFn(Context *context, Object *thisObject, RegularFnOverloadingObject *fn);
+
 		SLAKE_API VarRef _addLocalVar(MajorFrame *frame, Type type);
 		SLAKE_API void _addLocalReg(MajorFrame *frame);
 

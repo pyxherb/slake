@@ -8,7 +8,7 @@
 namespace slake {
 	enum class ErrorKind {
 		RuntimeExecError = 0,
-		LoaderError
+		SLXLoaderError
 	};
 
 	enum class RuntimeExecErrorCode : uint8_t {
@@ -57,8 +57,18 @@ namespace slake {
 		StackOverflow
 	};
 
-	class Excpetion {
+	enum class SLXLoaderErrorCode : uint8_t {
+		BadMagicNumber = 0,
+		IOError,
+		PrematuredEndOfStream,
+		DuplicatedMember
+	};
+
+	class InternalExcpetion {
 	public:
+		ErrorKind kind;
+
+
 	};
 
 	class RuntimeExecError : public std::runtime_error {

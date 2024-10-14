@@ -8,7 +8,7 @@ namespace slake {
 	public:
 		mutable Object *src;
 		std::string name;
-		Object *parent;
+		Object *parent = nullptr;
 
 		SLAKE_API AliasObject(Runtime *rt, AccessModifier access, Object *src);
 		SLAKE_API AliasObject(const AliasObject &other);

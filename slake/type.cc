@@ -233,7 +233,7 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 			if (objectPtr->getKind() != ObjectKind::Instance)
 				return false;
 
-			const_cast<Type &>(type).loadDeferredType(objectPtr->_rt);
+			const_cast<Type &>(type).loadDeferredType(objectPtr->associatedRuntime);
 			switch (type.getCustomTypeExData()->getKind()) {
 				case ObjectKind::Class: {
 					ClassObject *thisClass = (ClassObject *)type.getCustomTypeExData();

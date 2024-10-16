@@ -253,7 +253,7 @@ namespace slake {
 			MajorContext curMajorContext;
 			std::shared_ptr<CompiledFnNode> curFn;
 
-			std::unique_ptr<Runtime> _rt;
+			std::unique_ptr<Runtime> associatedRuntime;
 			std::deque<MajorContext> _savedMajorContexts;
 
 			std::shared_ptr<ClassNode> _i32Class;
@@ -568,7 +568,7 @@ namespace slake {
 			CompilerFlags flags = 0;
 
 			inline Compiler(CompilerOptions options = {})
-				: options(options), _rt(std::make_unique<Runtime>(std::pmr::get_default_resource(), RT_NOJIT)) {}
+				: options(options), associatedRuntime(std::make_unique<Runtime>(std::pmr::get_default_resource(), RT_NOJIT)) {}
 			~Compiler();
 
 			/// @brief Resolve a custom type.

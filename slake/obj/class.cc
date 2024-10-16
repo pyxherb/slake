@@ -70,7 +70,7 @@ SLAKE_API ClassObject::~ClassObject() {
 
 SLAKE_API bool ClassObject::hasImplemented(const InterfaceObject *pInterface) const {
 	for (auto &i : implInterfaces) {
-		const_cast<Type &>(i).loadDeferredType(_rt);
+		const_cast<Type &>(i).loadDeferredType(associatedRuntime);
 
 		if (((InterfaceObject *)i.getCustomTypeExData())->isDerivedFrom(pInterface))
 			return true;
@@ -86,7 +86,7 @@ SLAKE_API bool ClassObject::isBaseOf(const ClassObject *pClass) const {
 
 		if (i->parentClass.typeId == TypeId::None)
 			break;
-		const_cast<Type &>(i->parentClass).loadDeferredType(i->_rt);
+		const_cast<Type &>(i->parentClass).loadDeferredType(i->associatedRuntime);
 		auto parentClassObject = i->parentClass.getCustomTypeExData();
 		assert(parentClassObject->getKind() == ObjectKind::Class);
 		i = (ClassObject *)parentClassObject;
@@ -112,7 +112,7 @@ SLAKE_API bool InterfaceObject::isDerivedFrom(const InterfaceObject *pInterface)
 		return true;
 
 	for (auto &i : parents) {
-		const_cast<Type &>(i).loadDeferredType(_rt);
+		const_cast<Type &>(i).loadDeferredType(associatedRuntime);
 
 		InterfaceObject *interface = (InterfaceObject *)i.getCustomTypeExData();
 
@@ -138,14 +138,14 @@ SLAKE_API GenericArgList InterfaceObject::getGenericArgs() const {
 
 SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(const ClassObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<ClassObject>;
-	Alloc allocator(&other->_rt->globalHeapPoolResource);
+	Alloc allocator(&other->associatedRuntime->globalHeapPoolResource);
 
 	std::unique_ptr<ClassObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.insert(ptr.get());
 
 	return ptr.release();
 }
@@ -165,7 +165,7 @@ SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(Runtime *rt, Acce
 }
 
 SLAKE_API void slake::ClassObject::dealloc() {
-	std::pmr::polymorphic_allocator<ClassObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<ClassObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
@@ -194,20 +194,20 @@ SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Runtime *
 
 SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(const InterfaceObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<InterfaceObject>;
-	Alloc allocator(&other->_rt->globalHeapPoolResource);
+	Alloc allocator(&other->associatedRuntime->globalHeapPoolResource);
 
 	std::unique_ptr<InterfaceObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.insert(ptr.get());
 
 	return ptr.release();
 }
 
 SLAKE_API void slake::InterfaceObject::dealloc() {
-	std::pmr::polymorphic_allocator<InterfaceObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<InterfaceObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);

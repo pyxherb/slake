@@ -61,20 +61,20 @@ SLAKE_API HostObjectRef<AliasObject> AliasObject::alloc(Runtime *rt, Object *src
 
 SLAKE_API HostObjectRef<AliasObject> AliasObject::alloc(const AliasObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<AliasObject>;
-	Alloc allocator(&other->_rt->globalHeapPoolResource);
+	Alloc allocator(&other->associatedRuntime->globalHeapPoolResource);
 
 	std::unique_ptr<AliasObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.insert(ptr.get());
 
 	return ptr.release();
 }
 
 SLAKE_API void slake::AliasObject::dealloc() {
-	std::pmr::polymorphic_allocator<AliasObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<AliasObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);

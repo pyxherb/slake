@@ -67,7 +67,7 @@ namespace slake {
 
 		ObjectFlags _flags = 0;
 
-		Runtime *_rt;
+		Runtime *associatedRuntime;
 
 		/// @brief Get type of the value.
 		/// @return Type of the value.
@@ -79,7 +79,7 @@ namespace slake {
 
 		SLAKE_API virtual void dealloc() = 0;
 
-		SLAKE_FORCEINLINE Runtime *getRuntime() const noexcept { return _rt; }
+		SLAKE_FORCEINLINE Runtime *getRuntime() const noexcept { return associatedRuntime; }
 
 		SLAKE_API virtual MemberObject *getMember(
 			const std::pmr::string &name,

@@ -48,14 +48,14 @@ SLAKE_API HostObjectRef<StringObject> slake::StringObject::alloc(Runtime *rt, co
 
 SLAKE_API HostObjectRef<StringObject> slake::StringObject::alloc(const StringObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<StringObject>;
-	Alloc allocator(&other->_rt->globalHeapPoolResource);
+	Alloc allocator(&other->associatedRuntime->globalHeapPoolResource);
 
 	std::unique_ptr<StringObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.insert(ptr.get());
 
 	return ptr.release();
 }
@@ -75,7 +75,7 @@ SLAKE_API HostObjectRef<StringObject> slake::StringObject::alloc(Runtime *rt, st
 }
 
 SLAKE_API void slake::StringObject::dealloc() {
-	std::pmr::polymorphic_allocator<StringObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<StringObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);

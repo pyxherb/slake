@@ -34,7 +34,7 @@ SLAKE_API HostObjectRef<RootObject> slake::RootObject::alloc(Runtime *rt) {
 }
 
 SLAKE_API void slake::RootObject::dealloc() {
-	std::pmr::polymorphic_allocator<RootObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<RootObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);

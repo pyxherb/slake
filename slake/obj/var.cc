@@ -51,7 +51,7 @@ SLAKE_API void RegularVarObject::setParent(Object *parent) {
 }
 
 SLAKE_API void slake::RegularVarObject::dealloc() {
-	std::pmr::polymorphic_allocator<RegularVarObject> allocator(&VarObject::_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<RegularVarObject> allocator(&VarObject::associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
@@ -83,14 +83,14 @@ SLAKE_API HostObjectRef<RegularVarObject> slake::RegularVarObject::alloc(Runtime
 
 SLAKE_API HostObjectRef<RegularVarObject> slake::RegularVarObject::alloc(const RegularVarObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<RegularVarObject>;
-	Alloc allocator(&other->_rt->globalHeapPoolResource);
+	Alloc allocator(&other->associatedRuntime->globalHeapPoolResource);
 
 	std::unique_ptr<RegularVarObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->Object::_rt->createdObjects.insert(ptr.get());
+	other->Object::associatedRuntime->createdObjects.insert(ptr.get());
 
 	return ptr.release();
 }
@@ -231,7 +231,7 @@ SLAKE_API HostObjectRef<LocalVarAccessorVarObject> slake::LocalVarAccessorVarObj
 }
 
 SLAKE_API void slake::LocalVarAccessorVarObject::dealloc() {
-	std::pmr::polymorphic_allocator<LocalVarAccessorVarObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<LocalVarAccessorVarObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);

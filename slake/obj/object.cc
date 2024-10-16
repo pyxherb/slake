@@ -2,16 +2,16 @@
 
 using namespace slake;
 
-SLAKE_API Object::Object(Runtime *rt) : _rt(rt) {
+SLAKE_API Object::Object(Runtime *rt) : associatedRuntime(rt) {
 }
 
 SLAKE_API Object::Object(const Object &x) {
-	_rt = x._rt;
+	associatedRuntime = x.associatedRuntime;
 	_flags = x._flags & ~VF_WALKED;
 }
 
 SLAKE_API Object::~Object() {
-	_rt->invalidateGenericCache(this);
+	associatedRuntime->invalidateGenericCache(this);
 }
 
 SLAKE_API Object *Object::duplicate() const {

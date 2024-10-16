@@ -33,27 +33,27 @@ SLAKE_API HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt, 
 
 SLAKE_API HostObjectRef<ContextObject> slake::ContextObject::alloc(const ContextObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<ContextObject>;
-	Alloc allocator(&other->_rt->globalHeapPoolResource);
+	Alloc allocator(&other->associatedRuntime->globalHeapPoolResource);
 
 	std::unique_ptr<ContextObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.insert(ptr.get());
 
 	return ptr.release();
 }
 
 SLAKE_API void slake::ContextObject::dealloc() {
-	std::pmr::polymorphic_allocator<ContextObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<ContextObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
 SLAKE_API Value ContextObject::resume(HostRefHolder *hostRefHolder) {
-	_rt->activeContexts[std::this_thread::get_id()] = _context;
+	associatedRuntime->activeContexts[std::this_thread::get_id()] = _context;
 	return _context->majorFrames.back()->curFn->call(nullptr, {}, hostRefHolder);
 }
 

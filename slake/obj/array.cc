@@ -17,7 +17,7 @@ SLAKE_API ArrayAccessorVarObject::ArrayAccessorVarObject(const ArrayAccessorVarO
 SLAKE_API ArrayAccessorVarObject::~ArrayAccessorVarObject() {}
 
 SLAKE_API Type ArrayAccessorVarObject::getVarType(const VarRefContext &context) const {
-	return Type::makeArrayTypeName(_rt, elementType);
+	return Type::makeArrayTypeName(associatedRuntime, elementType);
 }
 
 SLAKE_API ArrayObject::ArrayObject(Runtime *rt, const Type &elementType, ArrayAccessorVarObject *accessor)
@@ -83,14 +83,14 @@ SLAKE_API HostObjectRef<U8ArrayAccessorVarObject> slake::U8ArrayAccessorVarObjec
 }
 
 SLAKE_API void slake::U8ArrayAccessorVarObject::dealloc() {
-	std::pmr::polymorphic_allocator<U8ArrayAccessorVarObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<U8ArrayAccessorVarObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
 SLAKE_API void U8ArrayObject::_resizeUnchecked(size_t newLength) {
-	uint8_t *newData = (uint8_t *)_rt->globalHeapPoolResource.allocate(
+	uint8_t *newData = (uint8_t *)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(uint8_t) * newLength);
 
 	data = newData;
@@ -99,7 +99,7 @@ SLAKE_API void U8ArrayObject::_resizeUnchecked(size_t newLength) {
 
 SLAKE_API void U8ArrayObject::clear() {
 	if (data) {
-		_rt->globalHeapPoolResource.deallocate(
+		associatedRuntime->globalHeapPoolResource.deallocate(
 			data,
 			length * sizeof(uint8_t));
 		data = nullptr;
@@ -116,7 +116,7 @@ SLAKE_API void U8ArrayObject::fill(size_t beginIndex, size_t length, const Value
 }
 
 SLAKE_API void U8ArrayObject::resize(size_t newLength) {
-	uint8_t *newData = (uint8_t *)_rt->globalHeapPoolResource.allocate(
+	uint8_t *newData = (uint8_t *)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(uint8_t) * newLength);
 
 	if (length < newLength) {
@@ -167,20 +167,20 @@ SLAKE_API HostObjectRef<U8ArrayObject> slake::U8ArrayObject::alloc(Runtime *rt, 
 
 SLAKE_API HostObjectRef<U8ArrayObject> slake::U8ArrayObject::alloc(const U8ArrayObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<U8ArrayObject>;
-	Alloc allocator(&other->_rt->globalHeapPoolResource);
+	Alloc allocator(&other->associatedRuntime->globalHeapPoolResource);
 
 	std::unique_ptr<U8ArrayObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.insert(ptr.get());
 
 	return ptr.release();
 }
 
 SLAKE_API void slake::U8ArrayObject::dealloc() {
-	std::pmr::polymorphic_allocator<U8ArrayObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<U8ArrayObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
@@ -232,14 +232,14 @@ SLAKE_API HostObjectRef<U16ArrayAccessorVarObject> slake::U16ArrayAccessorVarObj
 }
 
 SLAKE_API void slake::U16ArrayAccessorVarObject::dealloc() {
-	std::pmr::polymorphic_allocator<U16ArrayAccessorVarObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<U16ArrayAccessorVarObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
 SLAKE_API void U16ArrayObject::_resizeUnchecked(size_t newLength) {
-	uint16_t *newData = (uint16_t *)_rt->globalHeapPoolResource.allocate(
+	uint16_t *newData = (uint16_t *)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(uint16_t) * newLength);
 
 	data = newData;
@@ -248,7 +248,7 @@ SLAKE_API void U16ArrayObject::_resizeUnchecked(size_t newLength) {
 
 SLAKE_API void U16ArrayObject::clear() {
 	if (data) {
-		_rt->globalHeapPoolResource.deallocate(
+		associatedRuntime->globalHeapPoolResource.deallocate(
 			data,
 			length * sizeof(uint16_t));
 		data = nullptr;
@@ -265,7 +265,7 @@ SLAKE_API void U16ArrayObject::fill(size_t beginIndex, size_t length, const Valu
 }
 
 SLAKE_API void U16ArrayObject::resize(size_t newLength) {
-	uint16_t *newData = (uint16_t *)_rt->globalHeapPoolResource.allocate(
+	uint16_t *newData = (uint16_t *)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(uint16_t) * newLength);
 
 	if (length < newLength) {
@@ -316,20 +316,20 @@ SLAKE_API HostObjectRef<U16ArrayObject> slake::U16ArrayObject::alloc(Runtime *rt
 
 SLAKE_API HostObjectRef<U16ArrayObject> slake::U16ArrayObject::alloc(const U16ArrayObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<U16ArrayObject>;
-	Alloc allocator(&other->_rt->globalHeapPoolResource);
+	Alloc allocator(&other->associatedRuntime->globalHeapPoolResource);
 
 	std::unique_ptr<U16ArrayObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.insert(ptr.get());
 
 	return ptr.release();
 }
 
 SLAKE_API void slake::U16ArrayObject::dealloc() {
-	std::pmr::polymorphic_allocator<U16ArrayObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<U16ArrayObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
@@ -381,14 +381,14 @@ SLAKE_API HostObjectRef<U32ArrayAccessorVarObject> slake::U32ArrayAccessorVarObj
 }
 
 SLAKE_API void slake::U32ArrayAccessorVarObject::dealloc() {
-	std::pmr::polymorphic_allocator<U32ArrayAccessorVarObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<U32ArrayAccessorVarObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
 SLAKE_API void U32ArrayObject::_resizeUnchecked(size_t newLength) {
-	uint32_t *newData = (uint32_t *)_rt->globalHeapPoolResource.allocate(
+	uint32_t *newData = (uint32_t *)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(uint32_t) * newLength);
 
 	data = newData;
@@ -397,7 +397,7 @@ SLAKE_API void U32ArrayObject::_resizeUnchecked(size_t newLength) {
 
 SLAKE_API void U32ArrayObject::clear() {
 	if (data) {
-		_rt->globalHeapPoolResource.deallocate(
+		associatedRuntime->globalHeapPoolResource.deallocate(
 			data,
 			length * sizeof(uint32_t));
 		data = nullptr;
@@ -414,7 +414,7 @@ SLAKE_API void U32ArrayObject::fill(size_t beginIndex, size_t length, const Valu
 }
 
 SLAKE_API void U32ArrayObject::resize(size_t newLength) {
-	uint32_t *newData = (uint32_t *)_rt->globalHeapPoolResource.allocate(
+	uint32_t *newData = (uint32_t *)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(uint32_t) * newLength);
 
 	if (length < newLength) {
@@ -465,20 +465,20 @@ SLAKE_API HostObjectRef<U32ArrayObject> slake::U32ArrayObject::alloc(Runtime *rt
 
 SLAKE_API HostObjectRef<U32ArrayObject> slake::U32ArrayObject::alloc(const U32ArrayObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<U32ArrayObject>;
-	Alloc allocator(&other->_rt->globalHeapPoolResource);
+	Alloc allocator(&other->associatedRuntime->globalHeapPoolResource);
 
 	std::unique_ptr<U32ArrayObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.insert(ptr.get());
 
 	return ptr.release();
 }
 
 SLAKE_API void slake::U32ArrayObject::dealloc() {
-	std::pmr::polymorphic_allocator<U32ArrayObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<U32ArrayObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
@@ -530,14 +530,14 @@ SLAKE_API HostObjectRef<U64ArrayAccessorVarObject> slake::U64ArrayAccessorVarObj
 }
 
 SLAKE_API void slake::U64ArrayAccessorVarObject::dealloc() {
-	std::pmr::polymorphic_allocator<U64ArrayAccessorVarObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<U64ArrayAccessorVarObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
 SLAKE_API void U64ArrayObject::_resizeUnchecked(size_t newLength) {
-	uint64_t *newData = (uint64_t *)_rt->globalHeapPoolResource.allocate(
+	uint64_t *newData = (uint64_t *)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(uint64_t) * newLength);
 
 	data = newData;
@@ -546,7 +546,7 @@ SLAKE_API void U64ArrayObject::_resizeUnchecked(size_t newLength) {
 
 SLAKE_API void U64ArrayObject::clear() {
 	if (data) {
-		_rt->globalHeapPoolResource.deallocate(
+		associatedRuntime->globalHeapPoolResource.deallocate(
 			data,
 			length * sizeof(uint64_t));
 		data = nullptr;
@@ -563,7 +563,7 @@ SLAKE_API void U64ArrayObject::fill(size_t beginIndex, size_t length, const Valu
 }
 
 SLAKE_API void U64ArrayObject::resize(size_t newLength) {
-	uint64_t *newData = (uint64_t *)_rt->globalHeapPoolResource.allocate(
+	uint64_t *newData = (uint64_t *)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(uint64_t) * newLength);
 
 	if (length < newLength) {
@@ -614,20 +614,20 @@ SLAKE_API HostObjectRef<U64ArrayObject> slake::U64ArrayObject::alloc(Runtime *rt
 
 SLAKE_API HostObjectRef<U64ArrayObject> slake::U64ArrayObject::alloc(const U64ArrayObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<U64ArrayObject>;
-	Alloc allocator(&other->_rt->globalHeapPoolResource);
+	Alloc allocator(&other->associatedRuntime->globalHeapPoolResource);
 
 	std::unique_ptr<U64ArrayObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.insert(ptr.get());
 
 	return ptr.release();
 }
 
 SLAKE_API void slake::U64ArrayObject::dealloc() {
-	std::pmr::polymorphic_allocator<U64ArrayObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<U64ArrayObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
@@ -679,14 +679,14 @@ SLAKE_API HostObjectRef<I8ArrayAccessorVarObject> slake::I8ArrayAccessorVarObjec
 }
 
 SLAKE_API void slake::I8ArrayAccessorVarObject::dealloc() {
-	std::pmr::polymorphic_allocator<I8ArrayAccessorVarObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<I8ArrayAccessorVarObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
 SLAKE_API void I8ArrayObject::_resizeUnchecked(size_t newLength) {
-	int8_t *newData = (int8_t *)_rt->globalHeapPoolResource.allocate(
+	int8_t *newData = (int8_t *)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(int8_t) * newLength);
 
 	data = newData;
@@ -695,7 +695,7 @@ SLAKE_API void I8ArrayObject::_resizeUnchecked(size_t newLength) {
 
 SLAKE_API void I8ArrayObject::clear() {
 	if (data) {
-		_rt->globalHeapPoolResource.deallocate(
+		associatedRuntime->globalHeapPoolResource.deallocate(
 			data,
 			length * sizeof(int8_t));
 		data = nullptr;
@@ -714,7 +714,7 @@ SLAKE_API void I8ArrayObject::fill(size_t beginIndex, size_t length, const Value
 }
 
 SLAKE_API void I8ArrayObject::resize(size_t newLength) {
-	int8_t *newData = (int8_t *)_rt->globalHeapPoolResource.allocate(
+	int8_t *newData = (int8_t *)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(int8_t) * newLength);
 
 	if (length < newLength) {
@@ -765,20 +765,20 @@ SLAKE_API HostObjectRef<I8ArrayObject> slake::I8ArrayObject::alloc(Runtime *rt, 
 
 SLAKE_API HostObjectRef<I8ArrayObject> slake::I8ArrayObject::alloc(const I8ArrayObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<I8ArrayObject>;
-	Alloc allocator(&other->_rt->globalHeapPoolResource);
+	Alloc allocator(&other->associatedRuntime->globalHeapPoolResource);
 
 	std::unique_ptr<I8ArrayObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.insert(ptr.get());
 
 	return ptr.release();
 }
 
 SLAKE_API void slake::I8ArrayObject::dealloc() {
-	std::pmr::polymorphic_allocator<I8ArrayObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<I8ArrayObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
@@ -830,14 +830,14 @@ SLAKE_API HostObjectRef<I16ArrayAccessorVarObject> slake::I16ArrayAccessorVarObj
 }
 
 SLAKE_API void slake::I16ArrayAccessorVarObject::dealloc() {
-	std::pmr::polymorphic_allocator<I16ArrayAccessorVarObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<I16ArrayAccessorVarObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
 SLAKE_API void I16ArrayObject::_resizeUnchecked(size_t newLength) {
-	int16_t *newData = (int16_t *)_rt->globalHeapPoolResource.allocate(
+	int16_t *newData = (int16_t *)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(int16_t) * newLength);
 
 	data = newData;
@@ -846,7 +846,7 @@ SLAKE_API void I16ArrayObject::_resizeUnchecked(size_t newLength) {
 
 SLAKE_API void I16ArrayObject::clear() {
 	if (data) {
-		_rt->globalHeapPoolResource.deallocate(
+		associatedRuntime->globalHeapPoolResource.deallocate(
 			data,
 			length * sizeof(int16_t));
 		data = nullptr;
@@ -863,7 +863,7 @@ SLAKE_API void I16ArrayObject::fill(size_t beginIndex, size_t length, const Valu
 }
 
 SLAKE_API void I16ArrayObject::resize(size_t newLength) {
-	int16_t *newData = (int16_t *)_rt->globalHeapPoolResource.allocate(
+	int16_t *newData = (int16_t *)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(int16_t) * newLength);
 
 	if (length < newLength) {
@@ -914,20 +914,20 @@ SLAKE_API HostObjectRef<I16ArrayObject> slake::I16ArrayObject::alloc(Runtime *rt
 
 SLAKE_API HostObjectRef<I16ArrayObject> slake::I16ArrayObject::alloc(const I16ArrayObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<I16ArrayObject>;
-	Alloc allocator(&other->_rt->globalHeapPoolResource);
+	Alloc allocator(&other->associatedRuntime->globalHeapPoolResource);
 
 	std::unique_ptr<I16ArrayObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.insert(ptr.get());
 
 	return ptr.release();
 }
 
 SLAKE_API void slake::I16ArrayObject::dealloc() {
-	std::pmr::polymorphic_allocator<I16ArrayObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<I16ArrayObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
@@ -979,14 +979,14 @@ SLAKE_API HostObjectRef<I32ArrayAccessorVarObject> slake::I32ArrayAccessorVarObj
 }
 
 SLAKE_API void slake::I32ArrayAccessorVarObject::dealloc() {
-	std::pmr::polymorphic_allocator<I32ArrayAccessorVarObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<I32ArrayAccessorVarObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
 SLAKE_API void I32ArrayObject::_resizeUnchecked(size_t newLength) {
-	int32_t *newData = (int32_t *)_rt->globalHeapPoolResource.allocate(
+	int32_t *newData = (int32_t *)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(int32_t) * newLength);
 
 	data = newData;
@@ -995,7 +995,7 @@ SLAKE_API void I32ArrayObject::_resizeUnchecked(size_t newLength) {
 
 SLAKE_API void I32ArrayObject::clear() {
 	if (data) {
-		_rt->globalHeapPoolResource.deallocate(
+		associatedRuntime->globalHeapPoolResource.deallocate(
 			data,
 			length * sizeof(int32_t));
 		data = nullptr;
@@ -1012,7 +1012,7 @@ SLAKE_API void I32ArrayObject::fill(size_t beginIndex, size_t length, const Valu
 }
 
 SLAKE_API void I32ArrayObject::resize(size_t newLength) {
-	int32_t *newData = (int32_t *)_rt->globalHeapPoolResource.allocate(
+	int32_t *newData = (int32_t *)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(int32_t) * newLength);
 
 	if (length < newLength) {
@@ -1063,20 +1063,20 @@ SLAKE_API HostObjectRef<I32ArrayObject> slake::I32ArrayObject::alloc(Runtime *rt
 
 SLAKE_API HostObjectRef<I32ArrayObject> slake::I32ArrayObject::alloc(const I32ArrayObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<I32ArrayObject>;
-	Alloc allocator(&other->_rt->globalHeapPoolResource);
+	Alloc allocator(&other->associatedRuntime->globalHeapPoolResource);
 
 	std::unique_ptr<I32ArrayObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.insert(ptr.get());
 
 	return ptr.release();
 }
 
 SLAKE_API void slake::I32ArrayObject::dealloc() {
-	std::pmr::polymorphic_allocator<I32ArrayObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<I32ArrayObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
@@ -1128,14 +1128,14 @@ SLAKE_API HostObjectRef<I64ArrayAccessorVarObject> slake::I64ArrayAccessorVarObj
 }
 
 SLAKE_API void slake::I64ArrayAccessorVarObject::dealloc() {
-	std::pmr::polymorphic_allocator<I64ArrayAccessorVarObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<I64ArrayAccessorVarObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
 SLAKE_API void I64ArrayObject::_resizeUnchecked(size_t newLength) {
-	int64_t *newData = (int64_t *)_rt->globalHeapPoolResource.allocate(
+	int64_t *newData = (int64_t *)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(int64_t) * newLength);
 
 	data = newData;
@@ -1144,7 +1144,7 @@ SLAKE_API void I64ArrayObject::_resizeUnchecked(size_t newLength) {
 
 SLAKE_API void I64ArrayObject::clear() {
 	if (data) {
-		_rt->globalHeapPoolResource.deallocate(
+		associatedRuntime->globalHeapPoolResource.deallocate(
 			data,
 			length * sizeof(int64_t));
 		data = nullptr;
@@ -1161,7 +1161,7 @@ SLAKE_API void I64ArrayObject::fill(size_t beginIndex, size_t length, const Valu
 }
 
 SLAKE_API void I64ArrayObject::resize(size_t newLength) {
-	int64_t *newData = (int64_t *)_rt->globalHeapPoolResource.allocate(
+	int64_t *newData = (int64_t *)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(int64_t) * newLength);
 
 	if (length < newLength) {
@@ -1212,20 +1212,20 @@ SLAKE_API HostObjectRef<I64ArrayObject> slake::I64ArrayObject::alloc(Runtime *rt
 
 SLAKE_API HostObjectRef<I64ArrayObject> slake::I64ArrayObject::alloc(const I64ArrayObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<I64ArrayObject>;
-	Alloc allocator(&other->_rt->globalHeapPoolResource);
+	Alloc allocator(&other->associatedRuntime->globalHeapPoolResource);
 
 	std::unique_ptr<I64ArrayObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.insert(ptr.get());
 
 	return ptr.release();
 }
 
 SLAKE_API void slake::I64ArrayObject::dealloc() {
-	std::pmr::polymorphic_allocator<I64ArrayObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<I64ArrayObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
@@ -1277,14 +1277,14 @@ SLAKE_API HostObjectRef<F32ArrayAccessorVarObject> slake::F32ArrayAccessorVarObj
 }
 
 SLAKE_API void slake::F32ArrayAccessorVarObject::dealloc() {
-	std::pmr::polymorphic_allocator<F32ArrayAccessorVarObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<F32ArrayAccessorVarObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
 SLAKE_API void F32ArrayObject::_resizeUnchecked(size_t newLength) {
-	float *newData = (float *)_rt->globalHeapPoolResource.allocate(
+	float *newData = (float *)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(float) * newLength);
 
 	data = newData;
@@ -1293,7 +1293,7 @@ SLAKE_API void F32ArrayObject::_resizeUnchecked(size_t newLength) {
 
 SLAKE_API void F32ArrayObject::clear() {
 	if (data) {
-		_rt->globalHeapPoolResource.deallocate(
+		associatedRuntime->globalHeapPoolResource.deallocate(
 			data,
 			length * sizeof(float));
 		data = nullptr;
@@ -1310,7 +1310,7 @@ SLAKE_API void F32ArrayObject::fill(size_t beginIndex, size_t length, const Valu
 }
 
 SLAKE_API void F32ArrayObject::resize(size_t newLength) {
-	float *newData = (float *)_rt->globalHeapPoolResource.allocate(
+	float *newData = (float *)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(float) * newLength);
 
 	if (length < newLength) {
@@ -1361,20 +1361,20 @@ SLAKE_API HostObjectRef<F32ArrayObject> slake::F32ArrayObject::alloc(Runtime *rt
 
 SLAKE_API HostObjectRef<F32ArrayObject> slake::F32ArrayObject::alloc(const F32ArrayObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<F32ArrayObject>;
-	Alloc allocator(&other->_rt->globalHeapPoolResource);
+	Alloc allocator(&other->associatedRuntime->globalHeapPoolResource);
 
 	std::unique_ptr<F32ArrayObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.insert(ptr.get());
 
 	return ptr.release();
 }
 
 SLAKE_API void slake::F32ArrayObject::dealloc() {
-	std::pmr::polymorphic_allocator<F32ArrayObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<F32ArrayObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
@@ -1426,14 +1426,14 @@ SLAKE_API HostObjectRef<F64ArrayAccessorVarObject> slake::F64ArrayAccessorVarObj
 }
 
 SLAKE_API void slake::F64ArrayAccessorVarObject::dealloc() {
-	std::pmr::polymorphic_allocator<F64ArrayAccessorVarObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<F64ArrayAccessorVarObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
 SLAKE_API void F64ArrayObject::_resizeUnchecked(size_t newLength) {
-	double *newData = (double *)_rt->globalHeapPoolResource.allocate(
+	double *newData = (double *)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(double) * newLength);
 
 	data = newData;
@@ -1442,7 +1442,7 @@ SLAKE_API void F64ArrayObject::_resizeUnchecked(size_t newLength) {
 
 SLAKE_API void F64ArrayObject::clear() {
 	if (data) {
-		_rt->globalHeapPoolResource.deallocate(
+		associatedRuntime->globalHeapPoolResource.deallocate(
 			data,
 			length * sizeof(double));
 		data = nullptr;
@@ -1459,7 +1459,7 @@ SLAKE_API void F64ArrayObject::fill(size_t beginIndex, size_t length, const Valu
 }
 
 SLAKE_API void F64ArrayObject::resize(size_t newLength) {
-	double *newData = (double *)_rt->globalHeapPoolResource.allocate(
+	double *newData = (double *)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(double) * newLength);
 
 	if (length < newLength) {
@@ -1510,20 +1510,20 @@ SLAKE_API HostObjectRef<F64ArrayObject> slake::F64ArrayObject::alloc(Runtime *rt
 
 SLAKE_API HostObjectRef<F64ArrayObject> slake::F64ArrayObject::alloc(const F64ArrayObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<F64ArrayObject>;
-	Alloc allocator(&other->_rt->globalHeapPoolResource);
+	Alloc allocator(&other->associatedRuntime->globalHeapPoolResource);
 
 	std::unique_ptr<F64ArrayObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.insert(ptr.get());
 
 	return ptr.release();
 }
 
 SLAKE_API void slake::F64ArrayObject::dealloc() {
-	std::pmr::polymorphic_allocator<F64ArrayObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<F64ArrayObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
@@ -1575,14 +1575,14 @@ SLAKE_API HostObjectRef<BoolArrayAccessorVarObject> slake::BoolArrayAccessorVarO
 }
 
 SLAKE_API void slake::BoolArrayAccessorVarObject::dealloc() {
-	std::pmr::polymorphic_allocator<BoolArrayAccessorVarObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<BoolArrayAccessorVarObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
 SLAKE_API void BoolArrayObject::_resizeUnchecked(size_t newLength) {
-	bool *newData = (bool *)_rt->globalHeapPoolResource.allocate(
+	bool *newData = (bool *)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(bool) * newLength);
 
 	data = newData;
@@ -1591,7 +1591,7 @@ SLAKE_API void BoolArrayObject::_resizeUnchecked(size_t newLength) {
 
 SLAKE_API void BoolArrayObject::clear() {
 	if (data) {
-		_rt->globalHeapPoolResource.deallocate(
+		associatedRuntime->globalHeapPoolResource.deallocate(
 			data,
 			length * sizeof(bool));
 		data = nullptr;
@@ -1608,7 +1608,7 @@ SLAKE_API void BoolArrayObject::fill(size_t beginIndex, size_t length, const Val
 }
 
 SLAKE_API void BoolArrayObject::resize(size_t newLength) {
-	bool *newData = (bool *)_rt->globalHeapPoolResource.allocate(
+	bool *newData = (bool *)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(bool) * newLength);
 
 	if (length < newLength) {
@@ -1659,20 +1659,20 @@ SLAKE_API HostObjectRef<BoolArrayObject> slake::BoolArrayObject::alloc(Runtime *
 
 SLAKE_API HostObjectRef<BoolArrayObject> slake::BoolArrayObject::alloc(const BoolArrayObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<BoolArrayObject>;
-	Alloc allocator(&other->_rt->globalHeapPoolResource);
+	Alloc allocator(&other->associatedRuntime->globalHeapPoolResource);
 
 	std::unique_ptr<BoolArrayObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.insert(ptr.get());
 
 	return ptr.release();
 }
 
 SLAKE_API void slake::BoolArrayObject::dealloc() {
-	std::pmr::polymorphic_allocator<BoolArrayObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<BoolArrayObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
@@ -1728,14 +1728,14 @@ SLAKE_API HostObjectRef<ObjectRefArrayAccessorVarObject> slake::ObjectRefArrayAc
 }
 
 SLAKE_API void slake::ObjectRefArrayAccessorVarObject::dealloc() {
-	std::pmr::polymorphic_allocator<ObjectRefArrayAccessorVarObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<ObjectRefArrayAccessorVarObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
 SLAKE_API void ObjectRefArrayObject::_resizeUnchecked(size_t newLength) {
-	Object **newData = (Object **)_rt->globalHeapPoolResource.allocate(
+	Object **newData = (Object **)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(Object *) * newLength);
 
 	data = newData;
@@ -1744,7 +1744,7 @@ SLAKE_API void ObjectRefArrayObject::_resizeUnchecked(size_t newLength) {
 
 SLAKE_API void ObjectRefArrayObject::clear() {
 	if (data) {
-		_rt->globalHeapPoolResource.deallocate(
+		associatedRuntime->globalHeapPoolResource.deallocate(
 			data,
 			length * sizeof(Object *));
 		data = nullptr;
@@ -1763,7 +1763,7 @@ SLAKE_API void ObjectRefArrayObject::fill(size_t beginIndex, size_t length, cons
 }
 
 SLAKE_API void ObjectRefArrayObject::resize(size_t newLength) {
-	Object **newData = (Object **)_rt->globalHeapPoolResource.allocate(
+	Object **newData = (Object **)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(Object *) * newLength);
 
 	if (length < newLength) {
@@ -1814,20 +1814,20 @@ SLAKE_API HostObjectRef<ObjectRefArrayObject> slake::ObjectRefArrayObject::alloc
 
 SLAKE_API HostObjectRef<ObjectRefArrayObject> slake::ObjectRefArrayObject::alloc(const ObjectRefArrayObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<ObjectRefArrayObject>;
-	Alloc allocator(&other->_rt->globalHeapPoolResource);
+	Alloc allocator(&other->associatedRuntime->globalHeapPoolResource);
 
 	std::unique_ptr<ObjectRefArrayObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.insert(ptr.get());
 
 	return ptr.release();
 }
 
 SLAKE_API void slake::ObjectRefArrayObject::dealloc() {
-	std::pmr::polymorphic_allocator<ObjectRefArrayObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<ObjectRefArrayObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
@@ -1876,14 +1876,14 @@ SLAKE_API HostObjectRef<AnyArrayAccessorVarObject> slake::AnyArrayAccessorVarObj
 }
 
 SLAKE_API void slake::AnyArrayAccessorVarObject::dealloc() {
-	std::pmr::polymorphic_allocator<AnyArrayAccessorVarObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<AnyArrayAccessorVarObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
 }
 
 SLAKE_API void AnyArrayObject::_resizeUnchecked(size_t newLength) {
-	Value *newData = (Value *)_rt->globalHeapPoolResource.allocate(
+	Value *newData = (Value *)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(Value) * newLength);
 
 	data = newData;
@@ -1894,7 +1894,7 @@ SLAKE_API void AnyArrayObject::clear() {
 	if (data) {
 		for (size_t i = 0; i < length; ++i)
 			std::destroy_at(&data[i]);
-		_rt->globalHeapPoolResource.deallocate(
+		associatedRuntime->globalHeapPoolResource.deallocate(
 			data,
 			length * sizeof(Value));
 		data = nullptr;
@@ -1909,7 +1909,7 @@ SLAKE_API void AnyArrayObject::fill(size_t beginIndex, size_t length, const Valu
 }
 
 SLAKE_API void AnyArrayObject::resize(size_t newLength) {
-	Value *newData = (Value *)_rt->globalHeapPoolResource.allocate(
+	Value *newData = (Value *)associatedRuntime->globalHeapPoolResource.allocate(
 		sizeof(Value) * newLength);
 
 	if (length < newLength) {
@@ -1960,20 +1960,20 @@ SLAKE_API HostObjectRef<AnyArrayObject> slake::AnyArrayObject::alloc(Runtime *rt
 
 SLAKE_API HostObjectRef<AnyArrayObject> slake::AnyArrayObject::alloc(const AnyArrayObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<AnyArrayObject>;
-	Alloc allocator(&other->_rt->globalHeapPoolResource);
+	Alloc allocator(&other->associatedRuntime->globalHeapPoolResource);
 
 	std::unique_ptr<AnyArrayObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.insert(ptr.get());
 
 	return ptr.release();
 }
 
 SLAKE_API void slake::AnyArrayObject::dealloc() {
-	std::pmr::polymorphic_allocator<AnyArrayObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<AnyArrayObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);

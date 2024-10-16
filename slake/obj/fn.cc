@@ -43,7 +43,7 @@ SLAKE_API FnOverloadingObject::FnOverloadingObject(
 	AccessModifier access,
 	std::pmr::vector<Type> &&paramTypes,
 	const Type &returnType)
-	: Object(fnObject->_rt),
+	: Object(fnObject->associatedRuntime),
 	  fnObject(fnObject),
 	  access(access),
 	  paramTypes(paramTypes),
@@ -147,34 +147,34 @@ SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingO
 	std::pmr::vector<Type> &&paramTypes,
 	const Type &returnType) {
 	using Alloc = std::pmr::polymorphic_allocator<RegularFnOverloadingObject>;
-	Alloc allocator(&fnObject->_rt->globalHeapPoolResource);
+	Alloc allocator(&fnObject->associatedRuntime->globalHeapPoolResource);
 
 	std::unique_ptr<RegularFnOverloadingObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), fnObject, access, std::move(paramTypes), returnType);
 
-	fnObject->_rt->createdObjects.insert(ptr.get());
+	fnObject->associatedRuntime->createdObjects.insert(ptr.get());
 
 	return ptr.release();
 }
 
 SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingObject::alloc(const RegularFnOverloadingObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<RegularFnOverloadingObject>;
-	Alloc allocator(&other->_rt->globalHeapPoolResource);
+	Alloc allocator(&other->associatedRuntime->globalHeapPoolResource);
 
 	std::unique_ptr<RegularFnOverloadingObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.insert(ptr.get());
 
 	return ptr.release();
 }
 
 SLAKE_API void slake::RegularFnOverloadingObject::dealloc() {
-	std::pmr::polymorphic_allocator<RegularFnOverloadingObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<RegularFnOverloadingObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
@@ -205,7 +205,7 @@ SLAKE_API FnOverloadingKind slake::NativeFnOverloadingObject::getOverloadingKind
 }
 
 SLAKE_API Value slake::NativeFnOverloadingObject::call(Object *thisObject, std::pmr::vector<Value> args, HostRefHolder *hostRefHolder) const {
-	return callback(fnObject->_rt, thisObject, args, mappedGenericArgs);
+	return callback(fnObject->associatedRuntime, thisObject, args, mappedGenericArgs);
 }
 
 SLAKE_API FnOverloadingObject *slake::NativeFnOverloadingObject::duplicate() const {
@@ -219,36 +219,36 @@ SLAKE_API HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObj
 	const Type &returnType,
 	NativeFnCallback callback) {
 	using Alloc = std::pmr::polymorphic_allocator<NativeFnOverloadingObject>;
-	Alloc allocator(&fnObject->_rt->globalHeapPoolResource);
+	Alloc allocator(&fnObject->associatedRuntime->globalHeapPoolResource);
 
 	std::unique_ptr<NativeFnOverloadingObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
 
-	std::pmr::vector<Type> pmrParamTypes(&fnObject->_rt->globalHeapPoolResource);
+	std::pmr::vector<Type> pmrParamTypes(&fnObject->associatedRuntime->globalHeapPoolResource);
 	allocator.construct(ptr.get(), fnObject, access, std::move(pmrParamTypes), returnType, callback);
 
-	fnObject->_rt->createdObjects.insert(ptr.get());
+	fnObject->associatedRuntime->createdObjects.insert(ptr.get());
 
 	return ptr.release();
 }
 
 SLAKE_API HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObject::alloc(const NativeFnOverloadingObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<NativeFnOverloadingObject>;
-	Alloc allocator(&other->_rt->globalHeapPoolResource);
+	Alloc allocator(&other->associatedRuntime->globalHeapPoolResource);
 
 	std::unique_ptr<NativeFnOverloadingObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.insert(ptr.get());
 
 	return ptr.release();
 }
 
 SLAKE_API void slake::NativeFnOverloadingObject::dealloc() {
-	std::pmr::polymorphic_allocator<NativeFnOverloadingObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<NativeFnOverloadingObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
@@ -256,7 +256,7 @@ SLAKE_API void slake::NativeFnOverloadingObject::dealloc() {
 
 SLAKE_API Value RegularFnOverloadingObject::call(Object *thisObject, std::pmr::vector<Value> args, HostRefHolder *hostRefHolder) const {
 	// trimFnInstructions((std::vector<Instruction> &)instructions);
-	Runtime *rt = fnObject->_rt;
+	Runtime *rt = fnObject->associatedRuntime;
 
 	// Save previous context
 	std::shared_ptr<Context> prevContext, context;
@@ -394,7 +394,7 @@ SLAKE_API FnOverloadingObject *FnObject::getOverloading(const std::pmr::vector<T
 		for (size_t k = 0; k < argTypes.size(); ++k) {
 			assert(!argTypes[k].isLoadingDeferred());
 
-			j->paramTypes[k].loadDeferredType(_rt);
+			j->paramTypes[k].loadDeferredType(associatedRuntime);
 			if (argTypes[k] != j->paramTypes[k])
 				goto mismatched;
 		}
@@ -436,20 +436,20 @@ SLAKE_API HostObjectRef<FnObject> slake::FnObject::alloc(Runtime *rt) {
 
 SLAKE_API HostObjectRef<FnObject> slake::FnObject::alloc(const FnObject *other) {
 	using Alloc = std::pmr::polymorphic_allocator<FnObject>;
-	Alloc allocator(&other->_rt->globalHeapPoolResource);
+	Alloc allocator(&other->associatedRuntime->globalHeapPoolResource);
 
 	std::unique_ptr<FnObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->_rt->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.insert(ptr.get());
 
 	return ptr.release();
 }
 
 SLAKE_API void slake::FnObject::dealloc() {
-	std::pmr::polymorphic_allocator<FnObject> allocator(&_rt->globalHeapPoolResource);
+	std::pmr::polymorphic_allocator<FnObject> allocator(&associatedRuntime->globalHeapPoolResource);
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);

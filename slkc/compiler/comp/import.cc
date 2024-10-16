@@ -47,7 +47,7 @@ void Compiler::importModule(std::shared_ptr<IdRefNode> ref) {
 			path = j + path + ".slx";
 
 			try {
-				auto mod = _rt->loadModule(is, LMOD_NOIMPORT | LMOD_NORELOAD);
+				auto mod = associatedRuntime->loadModule(is, LMOD_NOIMPORT | LMOD_NORELOAD);
 
 				for (auto j : mod->imports)
 					importModule(toAstIdRef(j.second->entries));
@@ -129,7 +129,7 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 	if (importedDefinitions.count(value))
 		return;
 
-	auto fullRef = toAstIdRef(_rt->getFullRef(value));
+	auto fullRef = toAstIdRef(associatedRuntime->getFullRef(value));
 	auto s = completeModuleNamespaces(fullRef);
 	std::shared_ptr<MemberNode> owner = std::static_pointer_cast<MemberNode>(scope->owner->shared_from_this());
 
@@ -149,7 +149,7 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 
 	std::shared_ptr<CustomTypeNameNode> parentClassTypeName =
 		std::make_shared<CustomTypeNameNode>(
-			toAstIdRef(_rt->getFullRef(parentClassObject)),
+			toAstIdRef(associatedRuntime->getFullRef(parentClassObject)),
 			this,
 			scope.get());
 
@@ -159,7 +159,7 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 		if (!implInterfaceObject)
 			assert(false);
 
-		auto implInterfaceRef = _rt->getFullRef(implInterfaceObject);
+		auto implInterfaceRef = associatedRuntime->getFullRef(implInterfaceObject);
 
 		implInterfaceTypeNames.push_back(
 			std::make_shared<CustomTypeNameNode>(
@@ -280,7 +280,7 @@ std::shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 				case slake::ValueType::Bool:
 					return std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 				case slake::ValueType::TypeName: {
-					auto refs = _rt->getFullRef((MemberObject *)runtimeType.getCustomTypeExData());
+					auto refs = associatedRuntime->getFullRef((MemberObject *)runtimeType.getCustomTypeExData());
 					std::shared_ptr<IdRefNode> ref = std::make_shared<IdRefNode>();
 
 					for (auto &i : refs) {

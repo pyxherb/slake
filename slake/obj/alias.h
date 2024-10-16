@@ -1,5 +1,5 @@
-#ifndef _SLAKE_VALDEF_ALIAS_H_
-#define _SLAKE_VALDEF_ALIAS_H_
+#ifndef _SLAKE_OBJ_ALIAS_H_
+#define _SLAKE_OBJ_ALIAS_H_
 
 #include "member.h"
 

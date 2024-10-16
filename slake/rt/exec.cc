@@ -49,9 +49,9 @@ static Value &_fetchRegValue(
 	return curMajorFrame->regs[index];
 }
 
-static Value &_unwrapRegOperand(
+static const Value &_unwrapRegOperand(
 	MajorFrame *curMajorFrame,
-	Value &value) {
+	const Value &value) {
 	if (value.valueType == ValueType::RegRef)
 		return _fetchRegValue(curMajorFrame, value.getRegIndex());
 	return value;
@@ -228,7 +228,7 @@ SLAKE_API void slake::Runtime::_addLocalReg(MajorFrame *frame) {
 	frame->regs.push_back({});
 }
 
-SLAKE_API void slake::Runtime::_execIns(Context *context, Instruction ins) {
+SLAKE_API void slake::Runtime::_execIns(Context *context, const Instruction &ins) {
 	if (((globalHeapPoolResource.szAllocated >> 1) > _szMemUsedAfterLastGc)) {
 		gc();
 	}
@@ -243,7 +243,7 @@ SLAKE_API void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_checkOperandCount(ins, false, 1);
 			_checkOperandType(ins.operands[0], ValueType::TypeName);
 
-			auto &type = ins.operands[0].getTypeName();
+			Type type = ins.operands[0].getTypeName();
 			type.loadDeferredType(this);
 
 			_addLocalVar(curMajorFrame, type);
@@ -1263,9 +1263,9 @@ SLAKE_API void slake::Runtime::_execIns(Context *context, Instruction ins) {
 		case Opcode::AT: {
 			_checkOperandCount(ins, true, 2);
 
-			Value &arrayValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
+			const Value &arrayValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
 			_checkOperandType(arrayValue, ValueType::ObjectRef);
-			Value &index = _unwrapRegOperand(curMajorFrame, ins.operands[1]);
+			const Value &index = _unwrapRegOperand(curMajorFrame, ins.operands[1]);
 			_checkOperandType(index, ValueType::U32);
 
 			auto arrayIn = arrayValue.getObjectRef();
@@ -1298,7 +1298,7 @@ SLAKE_API void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_checkOperandCount(ins, false, 2);
 
 			_checkOperandType(ins.operands[0], ValueType::U32);
-			Value &condition = _unwrapRegOperand(curMajorFrame, ins.operands[1]);
+			const Value &condition = _unwrapRegOperand(curMajorFrame, ins.operands[1]);
 			_checkOperandType(condition, ValueType::Bool);
 
 			if (condition.getBool()) {
@@ -1413,7 +1413,7 @@ SLAKE_API void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 			auto constructorRef = ins.operands[1].getObjectRef();
 
-			Type &type = ins.operands[0].getTypeName();
+			Type type = ins.operands[0].getTypeName();
 			type.loadDeferredType(this);
 
 			switch (type.typeId) {
@@ -1452,7 +1452,7 @@ SLAKE_API void slake::Runtime::_execIns(Context *context, Instruction ins) {
 			_checkOperandType(ins.operands[0], ValueType::TypeName);
 			_checkOperandType(ins.operands[1], ValueType::U32);
 
-			Type &type = ins.operands[1].getTypeName();
+			Type type = ins.operands[1].getTypeName();
 			uint32_t size = ins.operands[2].getU32();
 			type.loadDeferredType(this);
 
@@ -1497,7 +1497,8 @@ SLAKE_API void slake::Runtime::_execIns(Context *context, Instruction ins) {
 
 			ExceptionHandler xh;
 
-			ins.operands[0].getTypeName().loadDeferredType(this);
+			Type type = ins.operands[0].getTypeName();
+			type.loadDeferredType(this);
 
 			xh.type = ins.operands[0].getTypeName();
 			xh.off = ins.operands[1].getU32();

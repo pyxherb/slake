@@ -12,7 +12,7 @@
 #include "except.h"
 #include "generated/config.h"
 #include "util/debug.h"
-#include "value.h"
+#include "object.h"
 #include "dbg/adapter.h"
 #include <slake/util/stream.hh>
 
@@ -207,7 +207,7 @@ namespace slake {
 		/// @brief Execute a single instruction.
 		/// @param context Context for execution.
 		/// @param ins Instruction to be executed.
-		SLAKE_API void _execIns(Context *context, Instruction ins);
+		SLAKE_API void _execIns(Context *context, const Instruction &ins);
 
 		SLAKE_API void _gcWalk(Scope *scope);
 		SLAKE_API void _gcWalk(MethodTable *methodTable);

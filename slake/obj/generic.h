@@ -1,5 +1,5 @@
-#ifndef _SLAKE_VALDEF_GENERIC_H_
-#define _SLAKE_VALDEF_GENERIC_H_
+#ifndef _SLAKE_OBJ_GENERIC_H_
+#define _SLAKE_OBJ_GENERIC_H_
 
 #include <slake/type.h>
 #include <cstdint>

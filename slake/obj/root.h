@@ -1,5 +1,5 @@
-#ifndef _SLAKE_VALDEF_ROOT_H_
-#define _SLAKE_VALDEF_ROOT_H_
+#ifndef _SLAKE_OBJ_ROOT_H_
+#define _SLAKE_OBJ_ROOT_H_
 
 #include "object.h"
 #include "member.h"

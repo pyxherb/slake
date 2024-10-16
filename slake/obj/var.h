@@ -1,5 +1,5 @@
-#ifndef _SLAKE_VALDEF_VAR_H_
-#define _SLAKE_VALDEF_VAR_H_
+#ifndef _SLAKE_OBJ_VAR_H_
+#define _SLAKE_OBJ_VAR_H_
 
 #include "member.h"
 #include <slake/except.h>

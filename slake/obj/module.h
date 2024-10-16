@@ -1,5 +1,5 @@
-#ifndef _SLAKE_VALDEF_MODULE_H_
-#define _SLAKE_VALDEF_MODULE_H_
+#ifndef _SLAKE_OBJ_MODULE_H_
+#define _SLAKE_OBJ_MODULE_H_
 
 #include "member.h"
 #include <unordered_map>

@@ -1,5 +1,5 @@
-#ifndef _SLAKE_VALDEF_CLASS_H_
-#define _SLAKE_VALDEF_CLASS_H_
+#ifndef _SLAKE_OBJ_CLASS_H_
+#define _SLAKE_OBJ_CLASS_H_
 
 #include <cassert>
 #include <unordered_map>

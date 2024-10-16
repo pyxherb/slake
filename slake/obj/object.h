@@ -1,6 +1,7 @@
-#ifndef _SLAKE_VALDEF_OBJECT_H_
-#define _SLAKE_VALDEF_OBJECT_H_
+#ifndef _SLAKE_OBJ_OBJECT_H_
+#define _SLAKE_OBJ_OBJECT_H_
 
+#include "../value.h"
 #include "scope.h"
 #include <atomic>
 #include <stdexcept>

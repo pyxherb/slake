@@ -6,6 +6,7 @@
 #include <cassert>
 #include <string>
 #include <variant>
+#include <slake/basedefs.h>
 
 namespace slake {
 	enum class ValueType : uint8_t {

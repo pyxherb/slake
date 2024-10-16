@@ -1,5 +1,5 @@
-#ifndef _SLAKE_VALDEF_CONTEXT_H_
-#define _SLAKE_VALDEF_CONTEXT_H_
+#ifndef _SLAKE_OBJ_CONTEXT_H_
+#define _SLAKE_OBJ_CONTEXT_H_
 
 #include "object.h"
 #include <memory>

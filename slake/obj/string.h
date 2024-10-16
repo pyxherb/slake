@@ -1,5 +1,5 @@
-#ifndef _SLAKE_VALDEF_STRING_H_
-#define _SLAKE_VALDEF_STRING_H_
+#ifndef _SLAKE_OBJ_STRING_H_
+#define _SLAKE_OBJ_STRING_H_
 
 #include "object.h"
 #include "generic.h"

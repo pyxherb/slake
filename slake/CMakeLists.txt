@@ -18,7 +18,7 @@ if(SLAKE_BUILD_SHARED)
 endif()
 
 add_subdirectory("util")
-add_subdirectory("valdef")
+add_subdirectory("obj")
 add_subdirectory("rt")
 add_subdirectory("jit")
 add_subdirectory("opti")

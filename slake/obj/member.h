@@ -1,5 +1,5 @@
-#ifndef _SLAKE_VALDEF_MEMBER_H_
-#define _SLAKE_VALDEF_MEMBER_H_
+#ifndef _SLAKE_OBJ_MEMBER_H_
+#define _SLAKE_OBJ_MEMBER_H_
 
 #include <slake/access.h>
 #include <cassert>

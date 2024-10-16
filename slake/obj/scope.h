@@ -1,5 +1,5 @@
-#ifndef _SLAKE_VALDEF_SCOPE_H_
-#define _SLAKE_VALDEF_SCOPE_H_
+#ifndef _SLAKE_OBJ_SCOPE_H_
+#define _SLAKE_OBJ_SCOPE_H_
 
 #include <unordered_map>
 #include <deque>

@@ -1,5 +1,5 @@
-#ifndef _SLAKE_VALDEF_FN_H_
-#define _SLAKE_VALDEF_FN_H_
+#ifndef _SLAKE_OBJ_FN_H_
+#define _SLAKE_OBJ_FN_H_
 
 #include <slake/opcode.h>
 #include <slake/slxfmt.h>

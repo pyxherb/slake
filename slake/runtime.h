@@ -156,7 +156,9 @@ namespace slake {
 		struct GenericInstantiationContext {
 			const Object *mappedObject;
 			const GenericArgList *genericArgs;
-			std::unordered_map<std::pmr::string, Type> mappedGenericArgs;
+			std::pmr::unordered_map<std::pmr::string, Type> mappedGenericArgs;
+
+			SLAKE_FORCEINLINE GenericInstantiationContext(std::pmr::memory_resource *memoryResource) : mappedGenericArgs(memoryResource) {}
 		};
 
 		mutable CountablePoolResource globalHeapPoolResource;

@@ -15,8 +15,6 @@ SLAKE_API Object *Runtime::resolveIdRef(
 
 	MemberObject *curObject;
 
-	GenericInstantiationContext genericInstantiationContext = { nullptr, {} };
-
 	while ((curObject = (MemberObject *)scopeObject)) {
 		for (auto &i : ref->entries) {
 			if (!scopeObject)
@@ -38,6 +36,8 @@ SLAKE_API Object *Runtime::resolveIdRef(
 			if (i.genericArgs.size()) {
 				for (auto &j : i.genericArgs)
 					j.loadDeferredType(this);
+
+				GenericInstantiationContext genericInstantiationContext(&globalHeapPoolResource);
 
 				genericInstantiationContext.genericArgs = &i.genericArgs;
 				scopeObject = instantiateGenericObject(scopeObject, genericInstantiationContext);

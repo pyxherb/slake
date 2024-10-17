@@ -51,7 +51,7 @@ SLAKE_API char *Context::stackAlloc(size_t size) {
 	return stackBase;
 }
 
-SLAKE_API Context::Context() {
+SLAKE_API Context::Context(Runtime *runtime) {
 	dataStack = new char[SLAKE_STACK_MAX];
 }
 

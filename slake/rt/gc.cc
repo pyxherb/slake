@@ -338,7 +338,7 @@ SLAKE_API void Runtime::_gcWalk(Object *v) {
 		case ObjectKind::Context: {
 			auto value = (ContextObject *)v;
 
-			_gcWalk(*value->_context);
+			_gcWalk(value->_context);
 			break;
 		}
 		default:
@@ -402,7 +402,7 @@ rescan:
 
 	// Walk contexts for each thread.
 	for (auto &i : activeContexts)
-		_gcWalk(*i.second);
+		_gcWalk(i.second);
 
 	// Walk all objects referenced by the host.
 	for (auto i : createdObjects) {

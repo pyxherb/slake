@@ -3,13 +3,8 @@
 using namespace slake;
 
 SLAKE_API ContextObject::ContextObject(
-	Runtime *rt,
-	std::shared_ptr<Context> context)
-	: Object(rt), _context(context) {
-}
-
-SLAKE_API ContextObject::ContextObject(const ContextObject &x) : Object(x) {
-	_context = x._context;
+	Runtime *rt)
+	: Object(rt), _context(rt) {
 }
 
 SLAKE_API ContextObject::~ContextObject() {
@@ -17,30 +12,16 @@ SLAKE_API ContextObject::~ContextObject() {
 
 SLAKE_API ObjectKind ContextObject::getKind() const { return ObjectKind::Context; }
 
-SLAKE_API HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt, std::shared_ptr<Context> context) {
+SLAKE_API HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt) {
 	using Alloc = std::pmr::polymorphic_allocator<ContextObject>;
 	Alloc allocator(&rt->globalHeapPoolResource);
 
 	std::unique_ptr<ContextObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), rt, context);
+	allocator.construct(ptr.get(), rt);
 
 	rt->createdObjects.insert(ptr.get());
-
-	return ptr.release();
-}
-
-SLAKE_API HostObjectRef<ContextObject> slake::ContextObject::alloc(const ContextObject *other) {
-	using Alloc = std::pmr::polymorphic_allocator<ContextObject>;
-	Alloc allocator(&other->associatedRuntime->globalHeapPoolResource);
-
-	std::unique_ptr<ContextObject, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), *other);
-
-	other->associatedRuntime->createdObjects.insert(ptr.get());
 
 	return ptr.release();
 }
@@ -53,14 +34,14 @@ SLAKE_API void slake::ContextObject::dealloc() {
 }
 
 SLAKE_API Value ContextObject::resume(HostRefHolder *hostRefHolder) {
-	associatedRuntime->activeContexts[std::this_thread::get_id()] = _context;
-	return _context->majorFrames.back()->curFn->call(nullptr, {}, hostRefHolder);
+	associatedRuntime->activeContexts[std::this_thread::get_id()] = this;
+	return _context.majorFrames.back()->curFn->call(nullptr, {}, hostRefHolder);
 }
 
 SLAKE_API Value ContextObject::getResult() {
-	return _context->majorFrames.back()->returnValue;
+	return _context.majorFrames.back()->returnValue;
 }
 
 SLAKE_API bool ContextObject::isDone() {
-	return _context->flags & CTX_DONE;
+	return _context.flags & CTX_DONE;
 }

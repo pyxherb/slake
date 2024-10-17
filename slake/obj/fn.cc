@@ -259,12 +259,21 @@ SLAKE_API Value RegularFnOverloadingObject::call(Object *thisObject, std::pmr::v
 	Runtime *rt = fnObject->associatedRuntime;
 
 	// Save previous context
-	std::shared_ptr<Context> prevContext, context;
+	HostObjectRef<ContextObject> prevContext, context;
+
+	util::ScopeGuard restorePrevContextGuard([this, rt, &prevContext]() {
+		if (prevContext) {
+			rt->activeContexts[std::this_thread::get_id()] = prevContext.get();
+		} else {
+			rt->activeContexts.erase(std::this_thread::get_id());
+		}
+	});
+
 	if (auto it = rt->activeContexts.find(std::this_thread::get_id());
 		it != rt->activeContexts.end()) {
-		if (it->second->flags & CTX_YIELDED) {
+		if (it->second->getContext().flags & CTX_YIELDED) {
 			context = it->second;
-			context->flags &= ~CTX_YIELDED;
+			context->getContext().flags &= ~CTX_YIELDED;
 		} else {
 			prevContext = it->second;
 
@@ -272,17 +281,17 @@ SLAKE_API Value RegularFnOverloadingObject::call(Object *thisObject, std::pmr::v
 		}
 	} else {
 	createNewContext:
-		context = std::make_shared<Context>();
+		context = ContextObject::alloc(rt);
 
 		{
-			auto frame = std::make_unique<MajorFrame>(rt, context.get());
+			auto frame = std::make_unique<MajorFrame>(rt, &context->getContext());
 			frame->curFn = this;
 			frame->curIns = UINT32_MAX;
-			context->majorFrames.push_back(std::move(frame));
+			context->getContext().majorFrames.push_back(std::move(frame));
 		}
 
 		{
-			auto frame = std::make_unique<MajorFrame>(rt, context.get());
+			auto frame = std::make_unique<MajorFrame>(rt, &context->getContext());
 			frame->curFn = this;
 			frame->curIns = 0;
 			frame->scopeObject = fnObject->getParent();
@@ -293,10 +302,10 @@ SLAKE_API Value RegularFnOverloadingObject::call(Object *thisObject, std::pmr::v
 				var->setData(VarRefContext(), args[i]);
 				frame->argStack[i] = var.release();
 			}
-			context->majorFrames.push_back(std::move(frame));
+			context->getContext().majorFrames.push_back(std::move(frame));
 		}
 
-		rt->activeContexts[std::this_thread::get_id()] = context;
+		rt->activeContexts[std::this_thread::get_id()] = context.get();
 	}
 
 	bool isDestructing = rt->destructingThreads.count(std::this_thread::get_id());
@@ -304,17 +313,17 @@ SLAKE_API Value RegularFnOverloadingObject::call(Object *thisObject, std::pmr::v
 	MajorFrame *curMajorFrame;
 	try {
 		for (;;) {
-			curMajorFrame = context->majorFrames.back().get();
+			curMajorFrame = context->getContext().majorFrames.back().get();
 
 			if (curMajorFrame->curIns == UINT32_MAX)
 				break;
 
-			if (context->majorFrames.back()->curIns >=
-				context->majorFrames.back()->curFn->instructions.size())
+			if (context->getContext().majorFrames.back()->curIns >=
+				context->getContext().majorFrames.back()->curFn->instructions.size())
 				throw OutOfFnBodyError("Out of function body");
 
 			// TODO: Check if the yield request is from the top level.
-			if (context->flags & CTX_YIELDED)
+			if (context->getContext().flags & CTX_YIELDED)
 				break;
 
 			// Pause if the runtime is in GC
@@ -322,33 +331,23 @@ SLAKE_API Value RegularFnOverloadingObject::call(Object *thisObject, std::pmr::v
 				std::this_thread::yield();
 
 			rt->_execIns(
-				context.get(),
+				&context->getContext(),
 				curMajorFrame->curFn->instructions[curMajorFrame->curIns]);
 		}
 	} catch (...) {
-		context->flags |= CTX_DONE;
+		context->getContext().flags |= CTX_DONE;
 		std::rethrow_exception(std::current_exception());
 	}
 
-	util::ScopeGuard restorePrevContextGuard([rt, prevContext]() {
-		if (prevContext) {
-			rt->activeContexts[std::this_thread::get_id()] = prevContext;
-		} else {
-			rt->activeContexts.erase(std::this_thread::get_id());
-		}
-	});
+	if (context->getContext().flags & CTX_YIELDED) {
+		hostRefHolder->addObject(context.get());
 
-	if (context->flags & CTX_YIELDED) {
-		auto returnValue = ContextObject::alloc(rt, context);
-
-		hostRefHolder->addObject(returnValue.get());
-
-		return Value(returnValue.get());
+		return Value(context.get());
 	}
 
-	context->flags |= CTX_DONE;
+	context->getContext().flags |= CTX_DONE;
 
-	return context->majorFrames.back()->returnValue;
+	return context->getContext().majorFrames.back()->returnValue;
 }
 
 SLAKE_API FnObject::FnObject(Runtime *rt) : MemberObject(rt) {

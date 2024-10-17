@@ -90,7 +90,7 @@ std::unique_ptr<std::istream> fsModuleLocator(slake::Runtime *rt, slake::HostObj
 void printTraceback(slake::Runtime *rt) {
 	auto ctxt = rt->activeContexts.at(std::this_thread::get_id());
 	printf("Traceback:\n");
-	for (auto i = ctxt->majorFrames.rbegin(); i != ctxt->majorFrames.rend(); ++i) {
+	for (auto i = ctxt->getContext().majorFrames.rbegin(); i != ctxt->getContext().majorFrames.rend(); ++i) {
 		printf("\t%s: 0x%08x", rt->getFullName((*i)->curFn->fnObject).c_str(), (*i)->curIns);
 		if (auto sld = (*i)->curFn->getSourceLocationDesc((*i)->curIns); sld) {
 			printf(" at %d:%d", sld->line, sld->column);
@@ -155,6 +155,8 @@ int main(int argc, char **argv) {
 
 				printf("%d\n", context->getResult().getI32());
 			}
+
+			puts("");
 		} catch (slake::NotFoundError e) {
 			printf("NotFoundError: %s, ref = %s\n", e.what(), std::to_string(e.ref).c_str());
 			printTraceback(rt.get());

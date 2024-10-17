@@ -34,11 +34,14 @@ SLAKE_API HostRefHolder::~HostRefHolder() {
 }
 
 SLAKE_API void HostRefHolder::addObject(Object *object) {
-	holdedObjects.insert(object);
-	++object->hostRefCount;
+	if (!holdedObjects.count(object)) {
+		holdedObjects.insert(object);
+		++object->hostRefCount;
+	}
 }
 
 SLAKE_API void HostRefHolder::removeObject(Object *object) noexcept {
+	assert(holdedObjects.count(object));
 	holdedObjects.erase(object);
-	++object->hostRefCount;
+	--object->hostRefCount;
 }

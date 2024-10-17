@@ -17,92 +17,6 @@
 #include <slake/util/stream.hh>
 
 namespace slake {
-	struct ExceptionHandler final {
-		Type type;
-		uint32_t off;
-	};
-
-	/// @brief Minor frames are created by ENTER instructions and destroyed by
-	/// LEAVE instructions.
-	struct MinorFrame final {
-		std::pmr::vector<ExceptionHandler> exceptHandlers;  // Exception handlers
-
-		uint32_t nLocalVars = 0, nRegs = 0;
-		size_t stackBase = 0;
-
-		SLAKE_API MinorFrame(
-			Runtime *rt,
-			uint32_t nLocalVars,
-			uint32_t nRegs,
-			size_t stackBase);
-		// Default constructor is required by resize() methods from the
-		// containers.
-		SLAKE_FORCEINLINE MinorFrame() {
-			abort();
-		}
-	};
-
-	/// @brief A major frame represents a single calling frame.
-	struct MajorFrame final {
-		Context *context = nullptr;		// Context
-		Object *scopeObject = nullptr;	// Scope value.
-
-		const RegularFnOverloadingObject *curFn = nullptr;	// Current function overloading.
-		uint32_t curIns = 0;								// Offset of current instruction in function body.
-
-		std::pmr::vector<RegularVarObject *> argStack;  // Argument stack.
-
-		std::pmr::vector<Value> nextArgStack;  // Argument stack for next call.
-		std::pmr::vector<Type> nextArgTypes;   // Types of argument stack for next call.
-
-		std::pmr::vector<LocalVarRecord> localVarRecords;  // Local variable records.
-		LocalVarAccessorVarObject *localVarAccessor;  // Local variable accessor.
-
-		std::pmr::vector<Value> regs;  // Local registers.
-
-		Object *thisObject = nullptr;  // `this' object.
-
-		Value returnValue = nullptr;  // Return value.
-
-		std::pmr::vector<MinorFrame> minorFrames;	 // Minor frames.
-
-		Value curExcept = nullptr;	// Current exception.
-
-		SLAKE_API MajorFrame(Runtime *rt, Context *context);
-		// Default constructor is required by resize() methods from the
-		// containers.
-		SLAKE_FORCEINLINE MajorFrame() {
-			abort();
-		}
-
-		SLAKE_API VarRef lload(uint32_t off);
-
-		SLAKE_API VarRef larg(uint32_t off);
-
-		/// @brief Leave current minor frame.
-		SLAKE_API void leave();
-	};
-
-	using ContextFlags = uint8_t;
-	constexpr static ContextFlags
-		// Done
-		CTX_DONE = 0x01,
-		// Yielded
-		CTX_YIELDED = 0x02;
-
-	struct Context {
-		std::vector<std::unique_ptr<MajorFrame>> majorFrames;  // Major frame
-		ContextFlags flags = 0;								   // Flags
-		char *dataStack = nullptr;							   // Data stack
-		size_t stackTop = 0;								   // Stack top
-
-		SLAKE_API char *stackAlloc(size_t size);
-
-		SLAKE_API Context();
-
-		SLAKE_API ~Context();
-	};
-
 	class CountablePoolResource : public std::pmr::memory_resource {
 	public:
 		std::pmr::memory_resource *upstream;
@@ -244,7 +158,7 @@ namespace slake {
 		std::set<Object *> createdObjects;
 
 		/// @brief Active contexts of threads.
-		std::map<std::thread::id, std::shared_ptr<Context>> activeContexts;
+		std::map<std::thread::id, ContextObject *> activeContexts;
 
 		/// @brief Thread IDs of threads which are executing destructors.
 		std::unordered_set<std::thread::id> destructingThreads;

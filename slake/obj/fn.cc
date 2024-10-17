@@ -204,10 +204,6 @@ SLAKE_API FnOverloadingKind slake::NativeFnOverloadingObject::getOverloadingKind
 	return FnOverloadingKind::Native;
 }
 
-SLAKE_API Value slake::NativeFnOverloadingObject::call(Object *thisObject, std::pmr::vector<Value> args, HostRefHolder *hostRefHolder) const {
-	return callback(fnObject->associatedRuntime, thisObject, args, mappedGenericArgs);
-}
-
 SLAKE_API FnOverloadingObject *slake::NativeFnOverloadingObject::duplicate() const {
 	return (FnOverloadingObject *)alloc(this).get();
 }
@@ -252,102 +248,6 @@ SLAKE_API void slake::NativeFnOverloadingObject::dealloc() {
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
-}
-
-SLAKE_API Value RegularFnOverloadingObject::call(Object *thisObject, std::pmr::vector<Value> args, HostRefHolder *hostRefHolder) const {
-	// trimFnInstructions((std::vector<Instruction> &)instructions);
-	Runtime *rt = fnObject->associatedRuntime;
-
-	// Save previous context
-	HostObjectRef<ContextObject> prevContext, context;
-
-	util::ScopeGuard restorePrevContextGuard([this, rt, &prevContext]() {
-		if (prevContext) {
-			rt->activeContexts[std::this_thread::get_id()] = prevContext.get();
-		} else {
-			rt->activeContexts.erase(std::this_thread::get_id());
-		}
-	});
-
-	if (auto it = rt->activeContexts.find(std::this_thread::get_id());
-		it != rt->activeContexts.end()) {
-		if (it->second->getContext().flags & CTX_YIELDED) {
-			context = it->second;
-			context->getContext().flags &= ~CTX_YIELDED;
-		} else {
-			prevContext = it->second;
-
-			goto createNewContext;
-		}
-	} else {
-	createNewContext:
-		context = ContextObject::alloc(rt);
-
-		{
-			auto frame = std::make_unique<MajorFrame>(rt, &context->getContext());
-			frame->curFn = this;
-			frame->curIns = UINT32_MAX;
-			context->getContext().majorFrames.push_back(std::move(frame));
-		}
-
-		{
-			auto frame = std::make_unique<MajorFrame>(rt, &context->getContext());
-			frame->curFn = this;
-			frame->curIns = 0;
-			frame->scopeObject = fnObject->getParent();
-			frame->thisObject = thisObject;
-			frame->argStack.resize(args.size());
-			for (size_t i = 0; i < args.size(); ++i) {
-				auto var = RegularVarObject::alloc(rt, 0, i < paramTypes.size() ? paramTypes[i] : TypeId::Any);
-				var->setData(VarRefContext(), args[i]);
-				frame->argStack[i] = var.release();
-			}
-			context->getContext().majorFrames.push_back(std::move(frame));
-		}
-
-		rt->activeContexts[std::this_thread::get_id()] = context.get();
-	}
-
-	bool isDestructing = rt->destructingThreads.count(std::this_thread::get_id());
-
-	MajorFrame *curMajorFrame;
-	try {
-		for (;;) {
-			curMajorFrame = context->getContext().majorFrames.back().get();
-
-			if (curMajorFrame->curIns == UINT32_MAX)
-				break;
-
-			if (context->getContext().majorFrames.back()->curIns >=
-				context->getContext().majorFrames.back()->curFn->instructions.size())
-				throw OutOfFnBodyError("Out of function body");
-
-			// TODO: Check if the yield request is from the top level.
-			if (context->getContext().flags & CTX_YIELDED)
-				break;
-
-			// Pause if the runtime is in GC
-			while ((rt->_flags & _RT_INGC) && !isDestructing)
-				std::this_thread::yield();
-
-			rt->_execIns(
-				&context->getContext(),
-				curMajorFrame->curFn->instructions[curMajorFrame->curIns]);
-		}
-	} catch (...) {
-		context->getContext().flags |= CTX_DONE;
-		std::rethrow_exception(std::current_exception());
-	}
-
-	if (context->getContext().flags & CTX_YIELDED) {
-		hostRefHolder->addObject(context.get());
-
-		return Value(context.get());
-	}
-
-	context->getContext().flags |= CTX_DONE;
-
-	return context->getContext().majorFrames.back()->returnValue;
 }
 
 SLAKE_API FnObject::FnObject(Runtime *rt) : MemberObject(rt) {
@@ -404,15 +304,6 @@ SLAKE_API FnOverloadingObject *FnObject::getOverloading(const std::pmr::vector<T
 	}
 
 	return nullptr;
-}
-
-SLAKE_API Value FnObject::call(Object *thisObject, std::pmr::vector<Value> args, std::pmr::vector<Type> argTypes, HostRefHolder *hostRefHolder) const {
-	FnOverloadingObject *overloading = getOverloading(argTypes);
-
-	if (overloading)
-		return overloading->call(thisObject, args, hostRefHolder);
-
-	throw NoOverloadingError("No matching overloading was found");
 }
 
 SLAKE_API Object *FnObject::duplicate() const {

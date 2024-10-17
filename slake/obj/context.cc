@@ -33,9 +33,9 @@ SLAKE_API void slake::ContextObject::dealloc() {
 	allocator.deallocate(this, 1);
 }
 
-SLAKE_API Value ContextObject::resume(HostRefHolder *hostRefHolder) {
-	associatedRuntime->activeContexts[std::this_thread::get_id()] = this;
-	return _context.majorFrames.back()->curFn->call(nullptr, {}, hostRefHolder);
+SLAKE_API void ContextObject::resume(HostRefHolder *hostRefHolder) {
+	_context.flags &= ~CTX_YIELDED;
+	associatedRuntime->execContext(this);
 }
 
 SLAKE_API Value ContextObject::getResult() {

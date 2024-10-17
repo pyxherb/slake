@@ -96,16 +96,20 @@ static Value _castToLiteralValue(Value x) {
 	}
 }
 
-SLAKE_API void slake::Runtime::_callRegularFn(Context *context, Object *thisObject, RegularFnOverloadingObject *fn) {
+SLAKE_API void slake::Runtime::_createNewMajorFrame(
+	Context *context,
+	Object *thisObject,
+	const FnOverloadingObject *fn,
+	const Value *args,
+	uint32_t nArgs) {
 	HostRefHolder holder;
 
-	MajorFrame *lastMajorFrame = context->majorFrames.back().get();
 	std::unique_ptr<MajorFrame> newMajorFrame = std::make_unique<MajorFrame>(this, context);
 
 	newMajorFrame->curFn = fn;
 	newMajorFrame->thisObject = thisObject;
 
-	if (lastMajorFrame->nextArgStack.size() < fn->paramTypes.size())
+	if (nArgs < fn->paramTypes.size())
 		throw InvalidArgumentsError("Too few arguments");
 
 	newMajorFrame->argStack.resize(fn->paramTypes.size());
@@ -113,7 +117,7 @@ SLAKE_API void slake::Runtime::_callRegularFn(Context *context, Object *thisObje
 		auto varObject = RegularVarObject::alloc(this, ACCESS_PUB, fn->paramTypes[i]);
 		holder.addObject(varObject.get());
 		newMajorFrame->argStack[i] = varObject.get();
-		varObject->setData({}, lastMajorFrame->nextArgStack[i]);
+		varObject->setData({}, args[i]);
 	}
 
 	if (fn->overloadingFlags & OL_VARG) {
@@ -124,21 +128,18 @@ SLAKE_API void slake::Runtime::_callRegularFn(Context *context, Object *thisObje
 		holder.addObject(varArgEntryVarObject.get());
 		newMajorFrame->argStack.push_back(varArgEntryVarObject.get());
 
-		size_t szVarArgArray = lastMajorFrame->nextArgStack.size() - fn->paramTypes.size();
+		size_t szVarArgArray = nArgs - fn->paramTypes.size();
 		auto varArgArrayObject = AnyArrayObject::alloc(this, szVarArgArray);
 		holder.addObject(varArgArrayObject.get());
 
 		for (size_t i = 0; i < szVarArgArray; ++i) {
-			varArgArrayObject->data[i] = lastMajorFrame->nextArgStack[fn->paramTypes.size() + i];
+			varArgArrayObject->data[i] = args[fn->paramTypes.size() + i];
 		}
 
 		varArgEntryVarObject->setData({}, Value(varArgArrayObject.get()));
 	}
 
 	context->majorFrames.push_back(std::move(newMajorFrame));
-
-	lastMajorFrame->nextArgStack.clear();
-	lastMajorFrame->nextArgTypes.clear();
 }
 
 SLAKE_API VarRef slake::Runtime::_addLocalVar(MajorFrame *frame, Type type) {
@@ -228,12 +229,12 @@ SLAKE_API void slake::Runtime::_addLocalReg(MajorFrame *frame) {
 	frame->regs.push_back({});
 }
 
-SLAKE_API void slake::Runtime::_execIns(Context *context, const Instruction &ins) {
+SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instruction &ins) {
 	if (((globalHeapPoolResource.szAllocated >> 1) > _szMemUsedAfterLastGc)) {
 		gc();
 	}
 
-	auto curMajorFrame = context->majorFrames.back().get();
+	MajorFrame *curMajorFrame = context->_context.majorFrames.back().get();
 	auto &curMinorFrame = curMajorFrame->minorFrames.back();
 
 	switch (ins.opcode) {
@@ -373,9 +374,6 @@ SLAKE_API void slake::Runtime::_execIns(Context *context, const Instruction &ins
 			if (!varRef.varPtr)
 				throw NullRefError();
 
-			if (((VarObject *)varRef.varPtr)->getVarKind() == VarKind::ArrayElementAccessor)
-				puts("");
-
 			_setRegisterValue(
 				curMajorFrame,
 				ins.output.getRegIndex(),
@@ -384,7 +382,11 @@ SLAKE_API void slake::Runtime::_execIns(Context *context, const Instruction &ins
 		}
 		case Opcode::ENTER: {
 			_checkOperandCount(ins, false, 0);
-			MinorFrame frame(this, (uint32_t)curMajorFrame->localVarRecords.size(), (uint32_t)curMajorFrame->regs.size(), context->stackTop);
+			MinorFrame frame(
+				this,
+				(uint32_t)curMajorFrame->localVarRecords.size(),
+				(uint32_t)curMajorFrame->regs.size(),
+				context->_context.stackTop);
 
 			curMajorFrame->minorFrames.push_back(frame);
 			break;
@@ -1356,25 +1358,13 @@ SLAKE_API void slake::Runtime::_execIns(Context *context, const Instruction &ins
 			if (!fn)
 				throw NullRefError();
 
-			HostRefHolder holder;
-
-			switch (fn->getOverloadingKind()) {
-				case FnOverloadingKind::Regular: {
-					_callRegularFn(context, thisObject, (RegularFnOverloadingObject *)fn);
-					break;
-				}
-				case FnOverloadingKind::Native: {
-					curMajorFrame->returnValue = fn->call(
-						thisObject,
-						curMajorFrame->nextArgStack,
-						&holder);
-					curMajorFrame->nextArgStack.clear();
-					curMajorFrame->nextArgTypes.clear();
-					break;
-				}
-				default:
-					throw std::logic_error("Not implemented yet");
-			}
+			_createNewMajorFrame(
+				&context->_context,
+				thisObject,
+				fn,
+				curMajorFrame->nextArgStack.data(),
+				curMajorFrame->nextArgStack.size());
+			curMajorFrame->nextArgStack.clear();
 
 			break;
 		}
@@ -1382,8 +1372,8 @@ SLAKE_API void slake::Runtime::_execIns(Context *context, const Instruction &ins
 			_checkOperandCount(ins, false, 1);
 
 			Value returnValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
-			context->majorFrames.pop_back();
-			context->majorFrames.back()->returnValue = returnValue;
+			context->_context.majorFrames.pop_back();
+			context->_context.majorFrames.back()->returnValue = returnValue;
 			return;
 		}
 		case Opcode::LRET: {
@@ -1400,8 +1390,8 @@ SLAKE_API void slake::Runtime::_execIns(Context *context, const Instruction &ins
 		case Opcode::YIELD: {
 			_checkOperandCount(ins, false, 1);
 
-			context->flags |= CTX_YIELDED;
 			curMajorFrame->returnValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
+			context->_context.flags |= CTX_YIELDED;
 			break;
 		}
 		case Opcode::AWAIT: {
@@ -1455,15 +1445,15 @@ SLAKE_API void slake::Runtime::_execIns(Context *context, const Instruction &ins
 
 			Value x = ins.operands[0];
 
-			for (size_t i = context->majorFrames.size(); i; --i) {
-				auto &majorFrame = context->majorFrames[i - 1];
+			for (size_t i = context->_context.majorFrames.size(); i; --i) {
+				auto &majorFrame = context->_context.majorFrames[i - 1];
 
 				for (size_t j = majorFrame->minorFrames.size(); j; --j) {
 					auto &minorFrame = majorFrame->minorFrames[j - 1];
 
 					if (uint32_t off = _findAndDispatchExceptHandler(majorFrame->curExcept, minorFrame);
 						off != UINT32_MAX) {
-						context->majorFrames.resize(i);
+						context->_context.majorFrames.resize(i);
 						majorFrame->minorFrames.resize(j);
 						// Do not increase the current instruction offset,
 						// the offset has been set to offset to first instruction

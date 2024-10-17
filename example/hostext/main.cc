@@ -6,65 +6,73 @@
 #include <iostream>
 
 slake::Value print(
-	slake::Runtime *rt,
+	slake::NativeFnOverloadingObject *overloading,
 	slake::Object *thisObject,
-	std::pmr::vector<slake::Value> args,
-	const std::unordered_map<std::string, slake::Type> &mappedGenericArgs) {
+	slake::RegularVarObject **args,
+	size_t nArgs) {
 	using namespace slake;
 
-	for (uint8_t i = 0; i < args.size(); ++i) {
-		switch (args[i].valueType) {
-			case ValueType::I8:
-				std::cout << args[i].getI8();
-				break;
-			case ValueType::I16:
-				std::cout << args[i].getI16();
-				break;
-			case ValueType::I32:
-				std::cout << args[i].getI32();
-				break;
-			case ValueType::I64:
-				std::cout << args[i].getI64();
-				break;
-			case ValueType::U8:
-				std::cout << args[i].getU8();
-				break;
-			case ValueType::U16:
-				std::cout << args[i].getU16();
-				break;
-			case ValueType::U32:
-				std::cout << args[i].getU32();
-				break;
-			case ValueType::U64:
-				std::cout << args[i].getU64();
-				break;
-			case ValueType::F32:
-				std::cout << args[i].getF32();
-				break;
-			case ValueType::F64:
-				std::cout << args[i].getF64();
-				break;
-			case ValueType::Bool:
-				fputs(args[i].getBool() ? "true" : "false", stdout);
-				break;
-			case ValueType::ObjectRef: {
-				Object *objectPtr = args[i].getObjectRef();
-				if (!objectPtr)
-					fputs("null", stdout);
-				else {
-					switch (objectPtr->getKind()) {
-						case ObjectKind::String:
-							std::cout << ((slake::StringObject *)objectPtr)->data;
-							break;
-						default:
-							std::cout << "<object at " << std::hex << objectPtr << ">";
-							break;
+	if (nArgs < 1)
+		putchar('\n');
+	else {
+		AnyArrayObject *varArgs = (AnyArrayObject *)args[0]->getData({}).getObjectRef();
+
+		for (uint8_t i = 0; i < nArgs; ++i) {
+			auto data = varArgs->accessor->getData(VarRefContext::makeArrayContext(i));
+
+			switch (data.valueType) {
+				case ValueType::I8:
+					std::cout << data.getI8();
+					break;
+				case ValueType::I16:
+					std::cout << data.getI16();
+					break;
+				case ValueType::I32:
+					std::cout << data.getI32();
+					break;
+				case ValueType::I64:
+					std::cout << data.getI64();
+					break;
+				case ValueType::U8:
+					std::cout << data.getU8();
+					break;
+				case ValueType::U16:
+					std::cout << data.getU16();
+					break;
+				case ValueType::U32:
+					std::cout << data.getU32();
+					break;
+				case ValueType::U64:
+					std::cout << data.getU64();
+					break;
+				case ValueType::F32:
+					std::cout << data.getF32();
+					break;
+				case ValueType::F64:
+					std::cout << data.getF64();
+					break;
+				case ValueType::Bool:
+					fputs(data.getBool() ? "true" : "false", stdout);
+					break;
+				case ValueType::ObjectRef: {
+					Object *objectPtr = data.getObjectRef();
+					if (!objectPtr)
+						fputs("null", stdout);
+					else {
+						switch (objectPtr->getKind()) {
+							case ObjectKind::String:
+								std::cout << ((slake::StringObject *)objectPtr)->data;
+								break;
+							default:
+								std::cout << "<object at " << std::hex << objectPtr << ">";
+								break;
+						}
 					}
+					break;
 				}
-				break;
+				default:
+					throw std::runtime_error("Invalid argument type");
 			}
-			default:
-				throw std::runtime_error("Invalid argument type");
 		}
 	}
 
@@ -92,8 +100,14 @@ void printTraceback(slake::Runtime *rt) {
 	printf("Traceback:\n");
 	for (auto i = ctxt->getContext().majorFrames.rbegin(); i != ctxt->getContext().majorFrames.rend(); ++i) {
 		printf("\t%s: 0x%08x", rt->getFullName((*i)->curFn->fnObject).c_str(), (*i)->curIns);
-		if (auto sld = (*i)->curFn->getSourceLocationDesc((*i)->curIns); sld) {
-			printf(" at %d:%d", sld->line, sld->column);
+		switch ((*i)->curFn->getOverloadingKind()) {
+			case slake::FnOverloadingKind::Regular: {
+				if (auto sld = ((slake::RegularFnOverloadingObject *)(*i)->curFn)->getSourceLocationDesc((*i)->curIns); sld) {
+					printf(" at %d:%d", sld->line, sld->column);
+				}
+				break;
+			}
+			default:;
 		}
 		putchar('\n');
 	}
@@ -133,21 +147,22 @@ int main(int argc, char **argv) {
 
 		std::vector<slake::Type> paramTypes;
 
-		fnObject->overloadings.insert(
-			slake::NativeFnOverloadingObject::alloc(
-				fnObject.get(),
-				slake::ACCESS_PUB,
-				paramTypes,
-				slake::ValueType::Undefined,
-				print).release());
+		auto printFn = slake::NativeFnOverloadingObject::alloc(
+			fnObject.get(),
+			slake::ACCESS_PUB,
+			paramTypes,
+			slake::ValueType::Undefined,
+			print);
+		printFn->overloadingFlags |= slake::OL_VARG;
+		fnObject->overloadings.insert(printFn.get());
 
 		((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext", nullptr))->getMember("extfns", nullptr))->scope->putMember("print", fnObject.get());
 
 		try {
-			slake::Value result =
-				((slake::FnObject *)mod->getMember("main", nullptr))->call(nullptr, {}, {}, &hostRefHolder);
+			auto fn = (slake::FnObject *)mod->getMember("main", nullptr);
 
-			slake::HostObjectRef<slake::ContextObject> context = (slake::ContextObject *)result.getObjectRef();
+			slake::HostObjectRef<slake::ContextObject> context =
+				rt->execFn(fn->getOverloading({}), nullptr, nullptr, nullptr, 0);
 			printf("%d\n", context->getResult().getI32());
 
 			while (!context->isDone()) {

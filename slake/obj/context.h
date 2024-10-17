@@ -35,13 +35,12 @@ namespace slake {
 		Context *context = nullptr;		// Context
 		Object *scopeObject = nullptr;	// Scope value.
 
-		const RegularFnOverloadingObject *curFn = nullptr;	// Current function overloading.
-		uint32_t curIns = 0;								// Offset of current instruction in function body.
+		const FnOverloadingObject *curFn = nullptr;	 // Current function overloading.
+		uint32_t curIns = 0;						 // Offset of current instruction in function body.
 
 		std::pmr::vector<RegularVarObject *> argStack;	// Argument stack.
 
 		std::pmr::vector<Value> nextArgStack;  // Argument stack for next call.
-		std::pmr::vector<Type> nextArgTypes;   // Types of argument stack for next call.
 
 		std::pmr::vector<LocalVarRecord> localVarRecords;  // Local variable records.
 		LocalVarAccessorVarObject *localVarAccessor;	   // Local variable accessor.
@@ -108,7 +107,7 @@ namespace slake {
 
 		SLAKE_FORCEINLINE Context &getContext() { return _context; }
 
-		SLAKE_API Value resume(HostRefHolder *hostRefHolder);
+		SLAKE_API void resume(HostRefHolder *hostRefHolder);
 		SLAKE_API Value getResult();
 		SLAKE_API bool isDone();
 	};

@@ -71,8 +71,6 @@ namespace slake {
 
 		SLAKE_API virtual FnOverloadingKind getOverloadingKind() const = 0;
 
-		SLAKE_API virtual Value call(Object *thisObject, std::pmr::vector<Value> args, HostRefHolder *hostRefHolder) const = 0;
-
 		SLAKE_API virtual FnOverloadingObject *duplicate() const = 0;
 	};
 
@@ -93,8 +91,6 @@ namespace slake {
 
 		SLAKE_API virtual FnOverloadingKind getOverloadingKind() const override;
 
-		SLAKE_API virtual Value call(Object *thisObject, std::pmr::vector<Value> args, HostRefHolder *hostRefHolder) const override;
-
 		SLAKE_API virtual FnOverloadingObject *duplicate() const override;
 
 		SLAKE_API static HostObjectRef<RegularFnOverloadingObject> alloc(
@@ -106,12 +102,13 @@ namespace slake {
 		SLAKE_API virtual void dealloc() override;
 	};
 
+	class NativeFnOverloadingObject;
 	using NativeFnCallback =
 		std::function<Value(
-			Runtime *rt,
+			NativeFnOverloadingObject *overloading,
 			Object *thisObject,
-			std::pmr::vector<Value> args,
-			const std::unordered_map<std::string, Type> &mappedGenericArgs)>;
+			RegularVarObject **args,
+			size_t nArgs)>;
 
 	class NativeFnOverloadingObject : public FnOverloadingObject {
 	public:
@@ -127,8 +124,6 @@ namespace slake {
 		NativeFnCallback callback;
 
 		SLAKE_API virtual FnOverloadingKind getOverloadingKind() const override;
-
-		SLAKE_API virtual Value call(Object *thisObject, std::pmr::vector<Value> args, HostRefHolder *hostRefHolder) const override;
 
 		SLAKE_API virtual FnOverloadingObject *duplicate() const override;
 
@@ -161,8 +156,6 @@ namespace slake {
 		SLAKE_API virtual void setParent(Object *parent) override;
 
 		SLAKE_API FnOverloadingObject *getOverloading(const std::pmr::vector<Type> &argTypes) const;
-
-		SLAKE_API virtual Value call(Object *thisObject, std::pmr::vector<Value> args, std::pmr::vector<Type> argTypes, HostRefHolder *hostRefHolder) const;
 
 		SLAKE_API virtual Object *duplicate() const override;
 

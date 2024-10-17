@@ -17,7 +17,6 @@ SLAKE_API MajorFrame::MajorFrame(Runtime *rt, Context *context)
 	: context(context),
 	  argStack(&rt->globalHeapPoolResource),
 	  nextArgStack(&rt->globalHeapPoolResource),
-	  nextArgTypes(&rt->globalHeapPoolResource),
 	  localVarRecords(&rt->globalHeapPoolResource),
 	  regs(&rt->globalHeapPoolResource),
 	  minorFrames(&rt->globalHeapPoolResource) {

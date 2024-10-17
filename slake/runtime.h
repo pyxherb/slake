@@ -123,7 +123,7 @@ namespace slake {
 		/// @brief Execute a single instruction.
 		/// @param context Context for execution.
 		/// @param ins Instruction to be executed.
-		SLAKE_API void _execIns(Context *context, const Instruction &ins);
+		SLAKE_API void _execIns(ContextObject *context, const Instruction &ins);
 
 		SLAKE_API void _gcWalk(Scope *scope);
 		SLAKE_API void _gcWalk(MethodTable *methodTable);
@@ -138,7 +138,12 @@ namespace slake {
 		SLAKE_API void _instantiateGenericObject(Object *v, GenericInstantiationContext &instantiationContext) const;
 		SLAKE_API void _instantiateGenericObject(FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const;
 
-		SLAKE_API void _callRegularFn(Context *context, Object *thisObject, RegularFnOverloadingObject *fn);
+		SLAKE_API void _createNewMajorFrame(
+			Context *context,
+			Object *thisObject,
+			const FnOverloadingObject *fn,
+			const Value *args,
+			uint32_t nArgs);
 
 		SLAKE_API VarRef _addLocalVar(MajorFrame *frame, Type type);
 		SLAKE_API void _addLocalReg(MajorFrame *frame);
@@ -205,6 +210,14 @@ namespace slake {
 
 		SLAKE_API HostObjectRef<InstanceObject> newClassInstance(ClassObject *cls, NewClassInstanceFlags flags);
 		SLAKE_API HostObjectRef<ArrayObject> newArrayInstance(Runtime *rt, const Type &type, size_t length);
+
+		SLAKE_API void execContext(ContextObject *context);
+		SLAKE_API HostObjectRef<ContextObject> execFn(
+			const FnOverloadingObject *overloading,
+			ContextObject *prevContext,
+			Object *thisObject,
+			const Value *args,
+			uint32_t nArgs);
 	};
 }
 

@@ -1319,29 +1319,38 @@ SLAKE_API void slake::Runtime::_execIns(Context *context, const Instruction &ins
 			curMajorFrame->nextArgStack.push_back(_unwrapRegOperand(curMajorFrame, ins.operands[0]));
 			break;
 		}
+		case Opcode::CTORCALL:
 		case Opcode::MCALL:
 		case Opcode::CALL: {
 			FnOverloadingObject *fn;
 			Object *thisObject = nullptr;
 
-			if (ins.opcode == Opcode::MCALL) {
-				_checkOperandCount(ins, false, 2);
+			switch (ins.opcode) {
+				case Opcode::CTORCALL:
+				case Opcode::MCALL: {
+					_checkOperandCount(ins, false, 2);
 
-				Value fnValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
-				_checkOperandType(fnValue, ValueType::ObjectRef);
-				_checkObjectOperandType(fnValue.getObjectRef(), ObjectKind::FnOverloading);
-				fn = (FnOverloadingObject *)fnValue.getObjectRef();
+					Value fnValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
+					_checkOperandType(fnValue, ValueType::ObjectRef);
+					_checkObjectOperandType(fnValue.getObjectRef(), ObjectKind::FnOverloading);
+					fn = (FnOverloadingObject *)fnValue.getObjectRef();
 
-				Value thisObjectValue = _unwrapRegOperand(curMajorFrame, ins.operands[1]);
-				_checkOperandType(thisObjectValue, ValueType::ObjectRef);
-				thisObject = thisObjectValue.getObjectRef();
-			} else {
-				_checkOperandCount(ins, false, 1);
+					Value thisObjectValue = _unwrapRegOperand(curMajorFrame, ins.operands[1]);
+					_checkOperandType(thisObjectValue, ValueType::ObjectRef);
+					thisObject = thisObjectValue.getObjectRef();
+					break;
+				}
+				case Opcode::CALL: {
+					_checkOperandCount(ins, false, 1);
 
-				Value fnValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
-				_checkOperandType(fnValue, ValueType::ObjectRef);
-				_checkObjectOperandType(fnValue.getObjectRef(), ObjectKind::FnOverloading);
-				fn = (FnOverloadingObject *)fnValue.getObjectRef();
+					Value fnValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
+					_checkOperandType(fnValue, ValueType::ObjectRef);
+					_checkObjectOperandType(fnValue.getObjectRef(), ObjectKind::FnOverloading);
+					fn = (FnOverloadingObject *)fnValue.getObjectRef();
+					break;
+				}
+				default:
+					assert(false);
 			}
 
 			if (!fn)
@@ -1351,7 +1360,7 @@ SLAKE_API void slake::Runtime::_execIns(Context *context, const Instruction &ins
 
 			switch (fn->getOverloadingKind()) {
 				case FnOverloadingKind::Regular: {
-					_callRegularFn(context, thisObject, (RegularFnOverloadingObject*)fn);
+					_callRegularFn(context, thisObject, (RegularFnOverloadingObject *)fn);
 					break;
 				}
 				case FnOverloadingKind::Native: {
@@ -1406,12 +1415,9 @@ SLAKE_API void slake::Runtime::_execIns(Context *context, const Instruction &ins
 			break;
 		}
 		case Opcode::NEW: {
-			_checkOperandCount(ins, true, 2);
+			_checkOperandCount(ins, true, 1);
 
 			_checkOperandType(ins.operands[0], ValueType::TypeName);
-			_checkOperandType(ins.operands[1], ValueType::ObjectRef);
-
-			auto constructorRef = ins.operands[1].getObjectRef();
 
 			Type type = ins.operands[0].getTypeName();
 			type.loadDeferredType(this);
@@ -1421,24 +1427,6 @@ SLAKE_API void slake::Runtime::_execIns(Context *context, const Instruction &ins
 					ClassObject *cls = (ClassObject *)type.getCustomTypeExData();
 					HostObjectRef<InstanceObject> instance = newClassInstance(cls, 0);
 					_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), instance.get());
-
-					if (constructorRef) {
-						_checkObjectOperandType(constructorRef, ObjectKind::IdRef);
-
-						if (auto v = resolveIdRef((IdRefObject *)constructorRef, nullptr); v) {
-							if ((v->getKind() != ObjectKind::FnOverloading))
-								throw InvalidOperandsError("Specified constructor is not a function");
-
-							FnOverloadingObject *constructor = (FnOverloadingObject *)v;
-
-							HostRefHolder holder;
-
-							constructor->call(instance.get(), curMajorFrame->nextArgStack, &holder);
-							curMajorFrame->nextArgStack.clear();
-							curMajorFrame->nextArgTypes.clear();
-						} else
-							throw InvalidOperandsError("Specified constructor is not found");
-					}
 					break;
 				}
 				default:

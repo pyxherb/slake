@@ -59,9 +59,10 @@ namespace slake {
 
 		PUSHARG,  // Push an value into the argument stack
 
-		CALL,	// Call
-		MCALL,	// Method Call
-		RET,	// Return
+		CALL,	   // Call
+		MCALL,	   // Method Call
+		CTORCALL,  // Constructor Call
+		RET,	   // Return
 
 		LRET,  // Load return value
 

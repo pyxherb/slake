@@ -487,18 +487,25 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 								}
 
 								auto fullName = getFullName(overloading.get());
+								uint32_t ctorIndex = allocReg();
+								_insertIns(
+									Opcode::LOAD,
+									std::make_shared<RegRefNode>(ctorIndex),
+									{ std::make_shared<IdRefExprNode>(fullName) });
 
 								_insertIns(
 									Opcode::NEW,
 									curMajorContext.curMinorContext.evalDest,
-									{ e->type,
-										std::make_shared<IdRefExprNode>(fullName) });
+									{ e->type });
+								_insertIns(
+									Opcode::CTORCALL,
+									{},
+									{ std::make_shared<RegRefNode>(ctorIndex), curMajorContext.curMinorContext.evalDest });
 							} else {
 								_insertIns(
 									Opcode::NEW,
 									curMajorContext.curMinorContext.evalDest,
-									{ e->type,
-										{} });
+									{ e->type });
 							}
 
 							break;

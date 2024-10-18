@@ -420,7 +420,7 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 				mod->scope->putMember(name, fn.get());
 			}
 
-			HostObjectRef<RegularFnOverloadingObject> overloading = RegularFnOverloadingObject::alloc(fn.get(), access, std::pmr::vector<Type>(&globalHeapPoolResource), Type());
+			HostObjectRef<RegularFnOverloadingObject> overloading = RegularFnOverloadingObject::alloc(fn.get(), access, std::pmr::vector<Type>(&globalHeapPoolResource), Type(), 0);
 
 			LoaderContext newContext = context;
 			newContext.ownerObject = overloading.get();

@@ -63,7 +63,8 @@ namespace slake {
 			FnObject *fnObject,
 			AccessModifier access,
 			std::pmr::vector<Type> &&paramTypes,
-			const Type &returnType);
+			const Type &returnType,
+			OverloadingFlags flags);
 		SLAKE_API FnOverloadingObject(const FnOverloadingObject &other);
 		SLAKE_API virtual ~FnOverloadingObject();
 
@@ -83,7 +84,8 @@ namespace slake {
 			FnObject *fnObject,
 			AccessModifier access,
 			std::pmr::vector<Type> &&paramTypes,
-			const Type &returnType);
+			const Type &returnType,
+			OverloadingFlags flags);
 		SLAKE_API RegularFnOverloadingObject(const RegularFnOverloadingObject &other);
 		SLAKE_API virtual ~RegularFnOverloadingObject();
 
@@ -97,7 +99,8 @@ namespace slake {
 			FnObject *fnObject,
 			AccessModifier access,
 			std::pmr::vector<Type> &&paramTypes,
-			const Type &returnType);
+			const Type &returnType,
+			OverloadingFlags flags);
 		SLAKE_API static HostObjectRef<RegularFnOverloadingObject> alloc(const RegularFnOverloadingObject *other);
 		SLAKE_API virtual void dealloc() override;
 	};
@@ -117,6 +120,7 @@ namespace slake {
 			AccessModifier access,
 			std::pmr::vector<Type> &&paramTypes,
 			const Type &returnType,
+			OverloadingFlags flags,
 			NativeFnCallback callback);
 		SLAKE_API NativeFnOverloadingObject(const NativeFnOverloadingObject &other);
 		SLAKE_API virtual ~NativeFnOverloadingObject();
@@ -132,6 +136,7 @@ namespace slake {
 			AccessModifier access,
 			const std::vector<Type> &paramTypes,
 			const Type &returnType,
+			OverloadingFlags flags,
 			NativeFnCallback callback);
 		SLAKE_API static HostObjectRef<NativeFnOverloadingObject> alloc(const NativeFnOverloadingObject *other);
 		SLAKE_API virtual void dealloc() override;

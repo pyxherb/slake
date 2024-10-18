@@ -42,12 +42,14 @@ SLAKE_API FnOverloadingObject::FnOverloadingObject(
 	FnObject *fnObject,
 	AccessModifier access,
 	std::pmr::vector<Type> &&paramTypes,
-	const Type &returnType)
+	const Type &returnType,
+	OverloadingFlags flags)
 	: Object(fnObject->associatedRuntime),
 	  fnObject(fnObject),
 	  access(access),
 	  paramTypes(paramTypes),
-	  returnType(returnType) {
+	  returnType(returnType),
+	  overloadingFlags(flags) {
 }
 
 SLAKE_API FnOverloadingObject::FnOverloadingObject(const FnOverloadingObject &other) : Object(other) {
@@ -73,12 +75,14 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(
 	FnObject *fnObject,
 	AccessModifier access,
 	std::pmr::vector<Type> &&paramTypes,
-	const Type &returnType)
+	const Type &returnType,
+	OverloadingFlags flags)
 	: FnOverloadingObject(
 		  fnObject,
 		  access,
 		  std::move(paramTypes),
-		  returnType) {}
+		  returnType,
+		  flags) {}
 
 SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFnOverloadingObject &other) : FnOverloadingObject(other) {
 	sourceLocDescs = other.sourceLocDescs;
@@ -145,14 +149,15 @@ SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingO
 	FnObject *fnObject,
 	AccessModifier access,
 	std::pmr::vector<Type> &&paramTypes,
-	const Type &returnType) {
+	const Type &returnType,
+	OverloadingFlags flags) {
 	using Alloc = std::pmr::polymorphic_allocator<RegularFnOverloadingObject>;
 	Alloc allocator(&fnObject->associatedRuntime->globalHeapPoolResource);
 
 	std::unique_ptr<RegularFnOverloadingObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), fnObject, access, std::move(paramTypes), returnType);
+	allocator.construct(ptr.get(), fnObject, access, std::move(paramTypes), returnType, flags);
 
 	fnObject->associatedRuntime->createdObjects.insert(ptr.get());
 
@@ -185,12 +190,14 @@ SLAKE_API NativeFnOverloadingObject::NativeFnOverloadingObject(
 	AccessModifier access,
 	std::pmr::vector<Type> &&paramTypes,
 	const Type &returnType,
+	OverloadingFlags flags,
 	NativeFnCallback callback)
 	: FnOverloadingObject(
 		  fnObject,
 		  access,
 		  std::move(paramTypes),
-		  returnType),
+		  returnType,
+		  flags),
 	  callback(callback) {}
 
 SLAKE_API NativeFnOverloadingObject::NativeFnOverloadingObject(const NativeFnOverloadingObject &other) : FnOverloadingObject(other) {
@@ -213,6 +220,7 @@ SLAKE_API HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObj
 	AccessModifier access,
 	const std::vector<Type> &paramTypes,
 	const Type &returnType,
+	OverloadingFlags flags,
 	NativeFnCallback callback) {
 	using Alloc = std::pmr::polymorphic_allocator<NativeFnOverloadingObject>;
 	Alloc allocator(&fnObject->associatedRuntime->globalHeapPoolResource);
@@ -222,7 +230,7 @@ SLAKE_API HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObj
 		util::StatefulDeleter<Alloc>(allocator));
 
 	std::pmr::vector<Type> pmrParamTypes(&fnObject->associatedRuntime->globalHeapPoolResource);
-	allocator.construct(ptr.get(), fnObject, access, std::move(pmrParamTypes), returnType, callback);
+	allocator.construct(ptr.get(), fnObject, access, std::move(pmrParamTypes), returnType, flags, callback);
 
 	fnObject->associatedRuntime->createdObjects.insert(ptr.get());
 

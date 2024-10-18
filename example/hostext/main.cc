@@ -151,9 +151,9 @@ int main(int argc, char **argv) {
 			fnObject.get(),
 			slake::ACCESS_PUB,
 			paramTypes,
-			slake::ValueType::Undefined,
+			slake::Type(slake::ValueType::Undefined),
+			slake::OL_VARG,
 			print);
-		printFn->overloadingFlags |= slake::OL_VARG;
 		fnObject->overloadings.insert(printFn.get());
 
 		((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext", nullptr))->getMember("extfns", nullptr))->scope->putMember("print", fnObject.get());

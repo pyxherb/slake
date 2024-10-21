@@ -56,6 +56,14 @@ void Parser::parseParams(
 			paramNode->tokenRange.endIndex = lexer->getTokenIndex(colonToken);
 			paramNode->idxColonToken = lexer->getTokenIndex(colonToken);
 			paramNode->type = parseTypeName(true);
+		} else {
+			paramNode->type = std::make_shared<BadTypeNameNode>(SIZE_MAX, SIZE_MAX);
+			compiler->pushMessage(
+				compiler->curDocName,
+				Message(
+					colonToken->location,
+					MessageType::Error,
+					"Expecting a colon"));
 		}
 
 		paramsOut.push_back(paramNode);

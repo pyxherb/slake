@@ -26,7 +26,8 @@ Compiler::~Compiler() {
 void Compiler::reloadDoc(const std::string &docName) {
 	auto &doc = sourceDocs.at(docName);
 
-	doc->targetModule->scope->parent->members.erase(doc->targetModule->getName().name);
+	if (doc->targetModule->scope->parent)
+		doc->targetModule->scope->parent->members.erase(doc->targetModule->getName().name);
 
 	for (auto &i : doc->targetModule->imports) {
 		if (auto it = importedModules.find(i.second.ref->entries); it != importedModules.end()) {
@@ -1044,7 +1045,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 					compileGenericParam(os, compiledFn->genericParams[j]);
 
 				for (size_t j = 0; j < compiledFn->params.size(); ++j)
-					compileTypeName(os, compiledFn->params[j]->type ? compiledFn->params[j]->type : std::make_shared<AnyTypeNameNode>(SIZE_MAX));
+					compileTypeName(os, compiledFn->params[j]->type);
 
 				for (auto &j : compiledFn->body) {
 					slxfmt::InsHeader ih;

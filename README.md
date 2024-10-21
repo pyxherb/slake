@@ -84,9 +84,9 @@ scripting.
 
 To build Slake, you will always need:
 
-* CMake (version > 3.13)
+* CMake (version > 3.23)
 * A C++ compiler with C++17 support
-* A C++17 standard library implementation
+* A C++17 STL
 
 ### Runtime
 

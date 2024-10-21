@@ -999,6 +999,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				compiledFn->genericParamIndices = j->genericParamIndices;
 				compiledFn->access = j->access;
 
+				compiledFn->hasVarArgs = j->isVaridic();
 				compiledFn->isAsync = j->isAsync;
 
 				curFn = compiledFn;

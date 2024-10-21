@@ -1,5 +1,5 @@
 module std.util.hash;
 
-pub trait IHashable<T> {
-	@T hash();
+pub interface IHashable {
+	fn hash(): u32;
 }

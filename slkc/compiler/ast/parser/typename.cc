@@ -21,6 +21,7 @@ std::shared_ptr<TypeNameNode> Parser::parseTypeName(bool required) {
 		case TokenId::BoolTypeName:
 		case TokenId::AutoTypeName:
 		case TokenId::VoidTypeName:
+		case TokenId::ObjectTypeName:
 		case TokenId::AnyTypeName: {
 			switch (token->tokenId) {
 				case TokenId::I8TypeName:
@@ -77,6 +78,10 @@ std::shared_ptr<TypeNameNode> Parser::parseTypeName(bool required) {
 					break;
 				case TokenId::VoidTypeName:
 					type = std::make_shared<VoidTypeNameNode>(lexer->getTokenIndex(token));
+					type->tokenRange = { curDoc, lexer->getTokenIndex(token) };
+					break;
+				case TokenId::ObjectTypeName:
+					type = std::make_shared<ObjectTypeNameNode>(lexer->getTokenIndex(token));
 					type->tokenRange = { curDoc, lexer->getTokenIndex(token) };
 					break;
 				case TokenId::AnyTypeName:

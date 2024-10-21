@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.23)
 project(slake VERSION 0.1.0)
 
 include_directories(${PROJECT_SOURCE_DIR})

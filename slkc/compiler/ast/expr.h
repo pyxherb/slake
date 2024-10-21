@@ -37,6 +37,8 @@ namespace slake {
 			Typeof,	 // Typeof
 			Cast,	 // Cast
 
+			VarArg,	 // Varidic arguments
+
 			Wrapper,  // Expression wrapper
 
 			Bad,  // Bad expression
@@ -330,6 +332,14 @@ namespace slake {
 			virtual ~CastExprNode() = default;
 
 			virtual ExprType getExprType() const override { return ExprType::Cast; }
+		};
+
+		class VarArgExprNode : public ExprNode {
+		public:
+			inline VarArgExprNode() {}
+			virtual ~VarArgExprNode() = default;
+
+			virtual ExprType getExprType() const override { return ExprType::VarArg; }
 		};
 
 		class WrapperExprNode : public ExprNode {

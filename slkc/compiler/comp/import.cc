@@ -93,7 +93,7 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 
 		std::deque<std::shared_ptr<ParamNode>> params;
 
-		for (auto i : i->paramTypes) {
+		for (auto &i : i->paramTypes) {
 			std::shared_ptr<ParamNode> param = std::make_shared<ParamNode>();
 			param->type = toTypeName(i);
 

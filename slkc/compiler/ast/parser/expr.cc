@@ -489,6 +489,14 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 					lhs->tokenRange = TokenRange{ curDoc, ref->entries[0].tokenRange.beginIndex, ref->entries.back().tokenRange.endIndex };
 					break;
 				}
+				case TokenId::VarArg: {
+					lexer->nextToken();
+
+					lhs = std::make_shared<VarArgExprNode>();
+					lhs->tokenRange = TokenRange{ curDoc, lexer->getTokenIndex(prefixToken) };
+
+					break;
+				}
 				case TokenId::LParenthese: {
 					lexer->nextToken();
 

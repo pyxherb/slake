@@ -1,29 +1,223 @@
 module core.atomic;
 
+[UniqueOptimizerID("core", "atomic_load_i8")]
+pub native fn load(i8 &dest): i8;
+[UniqueOptimizerID("core", "atomic_load_u8")]
+pub native fn load(u8 &dest): u8;
+[UniqueOptimizerID("core", "atomic_load_i16")]
+pub native fn load(i16 &dest): i16;
+[UniqueOptimizerID("core", "atomic_load_u16")]
+pub native fn load(u16 &dest): u16;
+[UniqueOptimizerID("core", "atomic_load_i32")]
 pub native fn load(i32 &dest): i32;
-pub native fn store(i32 &dest): i32;
-pub native fn increment(i32 &dest);
-pub native fn fetchIncrement(i32 &dest): i32;
-pub native fn fetchAdd(i32 &dest): i32;
-pub native fn fetchSub(i32 &dest): i32;
-pub native fn fetchMul(i32 &dest): i32;
-pub native fn fetchDiv(i32 &dest): i32;
-pub native fn fetchAnd(i32 &dest): i32;
-pub native fn fetchOr(i32 &dest): i32;
-pub native fn fetchXor(i32 &dest): i32;
-pub native fn exchange(i32 &dest, i32 value): i32;
-pub native fn compareExchange(i32 &dest, i32 value, i32 compared): i32;
+[UniqueOptimizerID("core", "atomic_load_u32")]
+pub native fn load(u32 &dest): u32;
+[UniqueOptimizerID("core", "atomic_load_i64")]
+pub native fn load(i64 &dest): i64;
+[UniqueOptimizerID("core", "atomic_load_u64")]
+pub native fn load(u64 &dest): u64;
+[UniqueOptimizerID("core", "atomic_load_f32")]
+pub native fn load(f32 &dest): f32;
+[UniqueOptimizerID("core", "atomic_load_f64")]
+pub native fn load(f64 &dest): f64;
+[UniqueOptimizerID("core", "atomic_load_bool")]
+pub native fn load(bool &dest): bool;
+[UniqueOptimizerID("core", "atomic_load_object")]
+pub native fn load(object &dest): object;
 
-pub native fn load(u32 &dest): i32;
-pub native fn store(u32 &dest): i32;
-pub native fn increment(u32 &dest);
-pub native fn fetchIncrement(u32 &dest): u32;
-pub native fn fetchAdd(u32 &dest): u32;
-pub native fn fetchSub(u32 &dest): u32;
-pub native fn fetchMul(u32 &dest): u32;
-pub native fn fetchDiv(u32 &dest): u32;
-pub native fn fetchAnd(u32 &dest): u32;
-pub native fn fetchOr(u32 &dest): u32;
-pub native fn fetchXor(u32 &dest): u32;
-pub native fn exchange(u32 &dest, u32 value): i32;
+[UniqueOptimizerID("core", "atomic_store_i8")]
+pub native fn store(i8 &dest): i8;
+[UniqueOptimizerID("core", "atomic_store_u8")]
+pub native fn store(u8 &dest): u8;
+[UniqueOptimizerID("core", "atomic_store_i16")]
+pub native fn store(i16 &dest): i16;
+[UniqueOptimizerID("core", "atomic_store_u16")]
+pub native fn store(u16 &dest): u16;
+[UniqueOptimizerID("core", "atomic_store_i32")]
+pub native fn store(i32 &dest): i32;
+[UniqueOptimizerID("core", "atomic_store_u32")]
+pub native fn store(u32 &dest): u32;
+[UniqueOptimizerID("core", "atomic_store_i64")]
+pub native fn store(i64 &dest): i64;
+[UniqueOptimizerID("core", "atomic_store_u64")]
+pub native fn store(u64 &dest): u64;
+[UniqueOptimizerID("core", "atomic_store_f32")]
+pub native fn store(f32 &dest): f32;
+[UniqueOptimizerID("core", "atomic_store_f64")]
+pub native fn store(f64 &dest): f64;
+[UniqueOptimizerID("core", "atomic_store_bool")]
+pub native fn store(bool &dest): bool;
+[UniqueOptimizerID("core", "atomic_store_object")]
+pub native fn store(object &dest): object;
+
+[UniqueOptimizerID("core", "atomic_inc_i8")]
+pub native fn increment(i8 &dest): i8;
+[UniqueOptimizerID("core", "atomic_inc_u8")]
+pub native fn increment(u8 &dest): u8;
+[UniqueOptimizerID("core", "atomic_inc_i16")]
+pub native fn increment(i16 &dest): i16;
+[UniqueOptimizerID("core", "atomic_inc_u16")]
+pub native fn increment(u16 &dest): u16;
+[UniqueOptimizerID("core", "atomic_inc_i32")]
+pub native fn increment(i32 &dest): i32;
+[UniqueOptimizerID("core", "atomic_inc_u32")]
+pub native fn increment(u32 &dest): u32;
+[UniqueOptimizerID("core", "atomic_inc_i64")]
+pub native fn increment(i64 &dest): i64;
+[UniqueOptimizerID("core", "atomic_inc_u64")]
+pub native fn increment(u64 &dest): u64;
+[UniqueOptimizerID("core", "atomic_inc_f32")]
+pub native fn increment(f32 &dest): f32;
+[UniqueOptimizerID("core", "atomic_inc_f64")]
+pub native fn increment(f64 &dest): f64;
+
+[UniqueOptimizerID("core", "atomic_add_i8")]
+pub native fn add(i8 &dest, i8 value): i8;
+[UniqueOptimizerID("core", "atomic_add_u8")]
+pub native fn add(u8 &dest, u8 value): u8;
+[UniqueOptimizerID("core", "atomic_add_i16")]
+pub native fn add(i16 &dest, i16 value): i16;
+[UniqueOptimizerID("core", "atomic_add_u16")]
+pub native fn add(u16 &dest, u16 value): u16;
+[UniqueOptimizerID("core", "atomic_add_i32")]
+pub native fn add(i32 &dest, i32 value): i32;
+[UniqueOptimizerID("core", "atomic_add_u32")]
+pub native fn add(u32 &dest, u32 value): u32;
+[UniqueOptimizerID("core", "atomic_add_i64")]
+pub native fn add(i64 &dest, i64 value): i64;
+[UniqueOptimizerID("core", "atomic_add_u64")]
+pub native fn add(u64 &dest, u64 value): u64;
+[UniqueOptimizerID("core", "atomic_add_f32")]
+pub native fn add(f32 &dest, f32 value): f32;
+[UniqueOptimizerID("core", "atomic_add_f64")]
+pub native fn add(f64 &dest, f64 value): f64;
+
+[UniqueOptimizerID("core", "atomic_sub_i8")]
+pub native fn sub(i8 &dest, i8 value): i8;
+[UniqueOptimizerID("core", "atomic_sub_u8")]
+pub native fn sub(u8 &dest, u8 value): u8;
+[UniqueOptimizerID("core", "atomic_sub_i16")]
+pub native fn sub(i16 &dest, i16 value): i16;
+[UniqueOptimizerID("core", "atomic_sub_u16")]
+pub native fn sub(u16 &dest, u16 value): u16;
+[UniqueOptimizerID("core", "atomic_sub_i32")]
+pub native fn sub(i32 &dest, i32 value): i32;
+[UniqueOptimizerID("core", "atomic_sub_u32")]
+pub native fn sub(u32 &dest, u32 value): u32;
+[UniqueOptimizerID("core", "atomic_sub_i64")]
+pub native fn sub(i64 &dest, i64 value): i64;
+[UniqueOptimizerID("core", "atomic_sub_u64")]
+pub native fn sub(u64 &dest, u64 value): u64;
+[UniqueOptimizerID("core", "atomic_sub_f32")]
+pub native fn sub(f32 &dest, f32 value): f32;
+[UniqueOptimizerID("core", "atomic_sub_f64")]
+pub native fn sub(f64 &dest, f64 value): f64;
+[UniqueOptimizerID("core", "atomic_sub_bool")]
+pub native fn sub(i32 &dest, i32 value): i32;
+
+[UniqueOptimizerID("core", "atomic_and_i8")]
+pub native fn and(i8 &dest, i8 value): i8;
+[UniqueOptimizerID("core", "atomic_and_u8")]
+pub native fn and(u8 &dest, u8 value): u8;
+[UniqueOptimizerID("core", "atomic_and_i16")]
+pub native fn and(i16 &dest, i16 value): i16;
+[UniqueOptimizerID("core", "atomic_and_u16")]
+pub native fn and(u16 &dest, u16 value): u16;
+[UniqueOptimizerID("core", "atomic_and_i32")]
+pub native fn and(i32 &dest, i32 value): i32;
+[UniqueOptimizerID("core", "atomic_and_u32")]
+pub native fn and(u32 &dest, u32 value): u32;
+[UniqueOptimizerID("core", "atomic_and_i64")]
+pub native fn and(i64 &dest, i64 value): i64;
+[UniqueOptimizerID("core", "atomic_and_u64")]
+pub native fn and(u64 &dest, u64 value): u64;
+[UniqueOptimizerID("core", "atomic_and_bool")]
+pub native fn and(bool &dest, bool value): bool;
+
+[UniqueOptimizerID("core", "atomic_or_i8")]
+pub native fn or(i8 &dest, i8 value): i8;
+[UniqueOptimizerID("core", "atomic_or_u8")]
+pub native fn or(u8 &dest, u8 value): u8;
+[UniqueOptimizerID("core", "atomic_or_i16")]
+pub native fn or(i16 &dest, i16 value): i16;
+[UniqueOptimizerID("core", "atomic_or_u16")]
+pub native fn or(u16 &dest, u16 value): u16;
+[UniqueOptimizerID("core", "atomic_or_i32")]
+pub native fn or(i32 &dest, i32 value): i32;
+[UniqueOptimizerID("core", "atomic_or_u32")]
+pub native fn or(u32 &dest, u32 value): u32;
+[UniqueOptimizerID("core", "atomic_or_i64")]
+pub native fn or(i64 &dest, i64 value): i64;
+[UniqueOptimizerID("core", "atomic_or_u64")]
+pub native fn or(u64 &dest, u64 value): u64;
+[UniqueOptimizerID("core", "atomic_or_bool")]
+pub native fn or(bool &dest, bool value): bool;
+
+[UniqueOptimizerID("core", "atomic_xor_i8")]
+pub native fn xor(i8 &dest, i8 value): i8;
+[UniqueOptimizerID("core", "atomic_xor_u8")]
+pub native fn xor(u8 &dest, u8 value): u8;
+[UniqueOptimizerID("core", "atomic_xor_i16")]
+pub native fn xor(i16 &dest, i16 value): i16;
+[UniqueOptimizerID("core", "atomic_xor_u16")]
+pub native fn xor(u16 &dest, u16 value): u16;
+[UniqueOptimizerID("core", "atomic_xor_i32")]
+pub native fn xor(i32 &dest, i32 value): i32;
+[UniqueOptimizerID("core", "atomic_xor_u32")]
+pub native fn xor(u32 &dest, u32 value): u32;
+[UniqueOptimizerID("core", "atomic_xor_i64")]
+pub native fn xor(i64 &dest, i64 value): i64;
+[UniqueOptimizerID("core", "atomic_xor_u64")]
+pub native fn xor(u64 &dest, u64 value): u64;
+[UniqueOptimizerID("core", "atomic_xor_bool")]
+pub native fn xor(bool &dest, bool value): bool;
+
+[UniqueOptimizerID("core", "atomic_xchg_i8")]
+pub native fn exchange(i8 &dest, i8 value): i8;
+[UniqueOptimizerID("core", "atomic_xchg_u8")]
+pub native fn exchange(u8 &dest, u8 value): u8;
+[UniqueOptimizerID("core", "atomic_xchg_i16")]
+pub native fn exchange(i16 &dest, i16 value): i16;
+[UniqueOptimizerID("core", "atomic_xchg_u16")]
+pub native fn exchange(u16 &dest, u16 value): u16;
+[UniqueOptimizerID("core", "atomic_xchg_i32")]
+pub native fn exchange(i32 &dest, i32 value): i32;
+[UniqueOptimizerID("core", "atomic_xchg_u32")]
+pub native fn exchange(u32 &dest, u32 value): u32;
+[UniqueOptimizerID("core", "atomic_xchg_i64")]
+pub native fn exchange(i64 &dest, i64 value): i64;
+[UniqueOptimizerID("core", "atomic_xchg_u64")]
+pub native fn exchange(u64 &dest, u64 value): u64;
+[UniqueOptimizerID("core", "atomic_xchg_f32")]
+pub native fn exchange(f32 &dest, f32 value): f32;
+[UniqueOptimizerID("core", "atomic_xchg_f64")]
+pub native fn exchange(f64 &dest, f64 value): f64;
+[UniqueOptimizerID("core", "atomic_xchg_bool")]
+pub native fn exchange(bool &dest, bool value): bool;
+[UniqueOptimizerID("core", "atomic_xchg_object")]
+pub native fn exchange(object &dest, object value): object;
+
+[UniqueOptimizerID("core", "atomic_cmp_xchg_i8")]
+pub native fn compareExchange(i8 &dest, i8 value, i8 compared): i8;
+[UniqueOptimizerID("core", "atomic_cmp_xchg_u8")]
+pub native fn compareExchange(u8 &dest, u8 value, u8 compared): u8;
+[UniqueOptimizerID("core", "atomic_cmp_xchg_i16")]
+pub native fn compareExchange(i16 &dest, i16 value, i16 compared): i16;
+[UniqueOptimizerID("core", "atomic_cmp_xchg_u16")]
+pub native fn compareExchange(u16 &dest, u16 value, u16 compared): u16;
+[UniqueOptimizerID("core", "atomic_cmp_xchg_i32")]
+pub native fn compareExchange(i32 &dest, i32 value, i32 compared): i32;
+[UniqueOptimizerID("core", "atomic_cmp_xchg_u32")]
 pub native fn compareExchange(u32 &dest, u32 value, u32 compared): u32;
+[UniqueOptimizerID("core", "atomic_cmp_xchg_i64")]
+pub native fn compareExchange(i64 &dest, i64 value, i64 compared): i64;
+[UniqueOptimizerID("core", "atomic_cmp_xchg_u64")]
+pub native fn compareExchange(u64 &dest, u64 value, u64 compared): u64;
+[UniqueOptimizerID("core", "atomic_cmp_xchg_f32")]
+pub native fn compareExchange(f32 &dest, f32 value, f32 compared): f32;
+[UniqueOptimizerID("core", "atomic_cmp_xchg_f64")]
+pub native fn compareExchange(f64 &dest, f64 value, f64 compared): f64;
+[UniqueOptimizerID("core", "atomic_cmp_xchg_bool")]
+pub native fn compareExchange(bool &dest, bool value, bool compared): bool;
+[UniqueOptimizerID("core", "atomic_cmp_xchg_object")]
+pub native fn compareExchange(object &dest, object value, object compared): object;

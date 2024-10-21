@@ -1,0 +1,21 @@
+attribute Deprecated {
+	reason?: string
+}
+
+attribute Keep {
+}
+
+pub enum JITMode {
+	Default = 0,
+	ForceJIT,
+	NoJIT
+}
+
+pub attribute JIT {
+	mode?: JITMode
+}
+
+pub attribute UniqueOptimizerID {
+	optimizerNamespace: string
+	itemId: string
+}

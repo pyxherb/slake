@@ -30,6 +30,7 @@ namespace slake {
 			Auto,
 			Void,
 
+			Object,
 			Any,
 
 			Array,
@@ -106,6 +107,7 @@ namespace slake {
 		using BoolTypeNameNode = SimpleTypeNameNode<TypeId::Bool>;
 		using AutoTypeNameNode = SimpleTypeNameNode<TypeId::Auto>;
 		using VoidTypeNameNode = SimpleTypeNameNode<TypeId::Void>;
+		using ObjectTypeNameNode = SimpleTypeNameNode<TypeId::Object>;
 		using AnyTypeNameNode = SimpleTypeNameNode<TypeId::Any>;
 
 		class CustomTypeNameNode : public TypeNameNode {

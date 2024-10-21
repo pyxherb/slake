@@ -129,6 +129,7 @@ namespace slake {
 			BoolTypeName,
 			AutoTypeName,
 			VoidTypeName,
+			ObjectTypeName,
 			AnyTypeName,
 
 			IntLiteral,

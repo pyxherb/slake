@@ -1014,6 +1014,32 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 
 			break;
 		}
+		case ExprType::VarArg: {
+			auto e = std::static_pointer_cast<VarArgExprNode>(expr);
+
+			if (!curFn->hasVarArgs) {
+				throw FatalCompilationError(
+					Message(
+						tokenRangeToSourceLocation(e->tokenRange),
+						MessageType::Error,
+						"Cannot reference varidic arguments in a function without the varidic parameter"));
+			}
+
+			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
+				throw FatalCompilationError(
+					Message(
+						tokenRangeToSourceLocation(expr->tokenRange),
+						MessageType::Error,
+						"Expecting a lvalue expression"));
+
+			uint32_t tmpRegIndex = allocReg();
+			_insertIns(Opcode::LARG, std::make_shared<RegRefNode>(tmpRegIndex), { std::make_shared<U32LiteralExprNode>(curFn->params.size()) });
+			_insertIns(Opcode::LVALUE, curMajorContext.curMinorContext.evalDest, { std::make_shared<RegRefNode>(tmpRegIndex) });
+
+			curMajorContext.curMinorContext.evaluatedType = std::make_shared<ArrayTypeNameNode>(std::make_shared<AnyTypeNameNode>(SIZE_MAX));
+
+			break;
+		}
 		case ExprType::Array: {
 			auto e = std::static_pointer_cast<ArrayExprNode>(expr);
 

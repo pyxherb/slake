@@ -1,10 +1,9 @@
-module std.util.iter;
+module std.util.iterator;
 
-pub trait Iterable<T> {
-	@T next();
-	@T cur();
+pub interface IIterable<T> {
+	fn next(): T;
 }
 
-pub trait BidirIterable<T>(@Iterator<T>) {
-	@T pre();
+pub interface BidirIterable<T>: IIterator<T> {
+	fn prev(): T;
 }

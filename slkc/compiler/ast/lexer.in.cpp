@@ -133,6 +133,7 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 				<InitialCondition>"bool"		{ token->tokenId = TokenId::BoolTypeName; break; }
 				<InitialCondition>"auto"		{ token->tokenId = TokenId::AutoTypeName; break; }
 				<InitialCondition>"void"		{ token->tokenId = TokenId::VoidTypeName; break; }
+				<InitialCondition>"object"		{ token->tokenId = TokenId::ObjectTypeName; break; }
 				<InitialCondition>"any"			{ token->tokenId = TokenId::AnyTypeName; break; }
 
 				<InitialCondition>","		{ token->tokenId = TokenId::Comma; break; }

@@ -1,12 +1,1 @@
 module std.math.rand;
-
-pub interface TRandomContext<T> {
-	@T next();
-}
-
-pub class MT19937RandomContext : @TRandomContext<u32> {
-	pub native operator new(u32 seed);
-
-	pub native u32 next();
-	pub native u32 getSeed();
-}

@@ -3,9 +3,6 @@
 using namespace slake::slkc;
 
 bool Compiler::isLiteralTypeName(std::shared_ptr<TypeNameNode> typeName) {
-	// stub
-	return false;
-
 	switch (typeName->getTypeId()) {
 		case TypeId::I8:
 		case TypeId::I16:
@@ -25,6 +22,7 @@ bool Compiler::isLiteralTypeName(std::shared_ptr<TypeNameNode> typeName) {
 		}
 		case TypeId::Auto:
 		case TypeId::Void:
+		case TypeId::Object:
 		case TypeId::Any:
 		case TypeId::Fn:
 		case TypeId::Custom:
@@ -66,6 +64,7 @@ bool Compiler::isCompoundTypeName(std::shared_ptr<TypeNameNode> node) {
 	switch (node->getTypeId()) {
 		case TypeId::Array:
 		case TypeId::Fn:
+		case TypeId::Object:
 			return true;
 		case TypeId::Custom: {
 			auto t = std::static_pointer_cast<CustomTypeNameNode>(node);
@@ -185,6 +184,8 @@ bool Compiler::isTypeNamesConvertible(std::shared_ptr<TypeNameNode> src, std::sh
 		return isTypeNamesConvertible(std::static_pointer_cast<RefTypeNameNode>(src)->referencedType, dest);*/
 
 	switch (dest->getTypeId()) {
+		case TypeId::Object:
+			return isCompoundTypeName(src);
 		case TypeId::Any:
 			return true;
 		case TypeId::I8:

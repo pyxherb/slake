@@ -215,6 +215,8 @@ const char *slake::slkc::getTokenName(slake::slkc::TokenId tokenId) {
 			return "auto";
 		case TokenId::VoidTypeName:
 			return "void";
+		case TokenId::ObjectTypeName:
+			return "object";
 		case TokenId::AnyTypeName:
 			return "any";
 		case TokenId::IntLiteral:

@@ -1,4 +1,4 @@
-module std.util.concurrent;
+module std.plat.concurrent.thread;
 
 use {
 	except = std::core::except
@@ -56,34 +56,4 @@ pub class Thread {
 
 	/// @brief Run the thread.
 	pub native void run();
-}
-
-pub interface ILock {
-	void lock();
-	void unlock();
-	bool isLocked();
-}
-
-class Mutex : @ILock {
-	bool _locked = false;
-
-	pub void lock() {
-		while(_locked) {
-			Thread.yield();
-		}
-		_locked = true;
-	}
-	pub void unlock() { _locked = false; }
-	pub bool isLocked() { return _locked; }
-}
-
-pub class LockGuard {
-	@ILock _lock;
-	pub operator new(@ILock lock) {
-		_lock = lock;
-		_lock.lock();
-	}
-	pub operator delete() {
-		_lock.unlock();
-	}
 }

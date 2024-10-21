@@ -1,67 +1,29 @@
 module std.core.except;
 
-/// @intro
-/// Interface for all exceptions.
-/// @end
-///
-/// @since 1.0
 pub interface Exception {
 	operator string();
 }
 
-/// @intro
-/// Logical error class.
-/// @end
-///
-/// @since 1.0
 pub native class LogicalError: @IException {
 	native operator new(string msg);
 }
 
-/// @intro
-/// Exception class which raises when dividing by 0.
-/// @end
-///
-/// @since 1.0
 pub native class DivideByZeroError: @IException {
 	native operator new(string msg);
 }
 
-/// @intro
-/// Exception class which raises when error allocating memory spaces.
-/// @end
-///
-/// @since 1.0
 pub native class OutOfMemoryError: @IException {
 	native operator new(string msg);
 }
 
-/// @intro
-/// Exception class which raises when the runtime executed an instruction with
-/// invalid opcode.
-/// @end
-///
-/// @since 1.0
 pub native class InvalidOpcodeError: @IException {
 	native operator new(string msg);
 }
 
-/// @intro
-/// Exception class which raises when the runtime executed an instruction with
-/// invalid operands.
-/// @end
-///
-/// @since 1.0
 pub native class InvalidOperandsError: @IException {
 	native operator new(string msg);
 }
 
-/// @intro
-/// Exception class which raises when the runtime executed an instruction with
-/// invalid operands.
-/// @end
-///
-/// @since 1.0
 pub native class UnsupportedError: @IException {
 	native operator new(string msg);
 }

@@ -17,13 +17,15 @@ SLAKE_API Type InstanceMemberAccessorVarObject::getVarType(const VarRefContext &
 	return instanceObject->objectLayout->fieldRecords[context.asInstance.fieldIndex].type;
 }
 
-SLAKE_API void InstanceMemberAccessorVarObject::setData(const VarRefContext &context, const Value &value) {
+SLAKE_API bool InstanceMemberAccessorVarObject::setData(const VarRefContext &context, const Value &value) {
 	ObjectFieldRecord &fieldRecord =
 		instanceObject->objectLayout->fieldRecords.at(
 			context.asInstance.fieldIndex);
 
-	if (!isCompatible(fieldRecord.type, value))
-		throw MismatchedTypeError("Mismatched variable type");
+	if (!isCompatible(fieldRecord.type, value)) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 
 	char *rawFieldPtr = instanceObject->rawFieldData + fieldRecord.offset;
 
@@ -74,9 +76,11 @@ SLAKE_API void InstanceMemberAccessorVarObject::setData(const VarRefContext &con
 			// All fields should be checked during the instantiation.
 			assert(false);
 	}
+
+	return true;
 }
 
-SLAKE_API Value InstanceMemberAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API Optional InstanceMemberAccessorVarObject::getData(const VarRefContext &varRefContext) const {
 	ObjectFieldRecord &fieldRecord =
 		instanceObject->objectLayout->fieldRecords.at(
 			varRefContext.asInstance.fieldIndex);

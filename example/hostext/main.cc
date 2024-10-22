@@ -15,10 +15,11 @@ slake::Value print(
 	if (nArgs < 1)
 		putchar('\n');
 	else {
-		AnyArrayObject *varArgs = (AnyArrayObject *)args[0]->getData({}).getObjectRef();
+		AnyArrayObject *varArgs = (AnyArrayObject *)args[0]->getData({}).unwrap().getObjectRef();
 
 		for (uint8_t i = 0; i < nArgs; ++i) {
-			auto data = varArgs->accessor->getData(VarRefContext::makeArrayContext(i));
+			Optional result = varArgs->accessor->getData(VarRefContext::makeArrayContext(i));
+			Value data = result.unwrap();
 
 			switch (data.valueType) {
 				case ValueType::I8:
@@ -95,10 +96,11 @@ std::unique_ptr<std::istream> fsModuleLocator(slake::Runtime *rt, slake::HostObj
 	return fs;
 }
 
-void printTraceback(slake::Runtime *rt) {
-	auto ctxt = rt->activeContexts.at(std::this_thread::get_id());
+void printTraceback(slake::Runtime *rt, slake::ContextObject *context) {
 	printf("Traceback:\n");
-	for (auto i = ctxt->getContext().majorFrames.rbegin(); i != ctxt->getContext().majorFrames.rend(); ++i) {
+	for (auto i = context->getContext().majorFrames.rbegin();
+		 i != context->getContext().majorFrames.rend();
+		 ++i) {
 		printf("\t%s: 0x%08x", rt->getFullName((*i)->curFn->fnObject).c_str(), (*i)->curIns);
 		switch ((*i)->curFn->getOverloadingKind()) {
 			case slake::FnOverloadingKind::Regular: {
@@ -158,29 +160,34 @@ int main(int argc, char **argv) {
 
 		((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext", nullptr))->getMember("extfns", nullptr))->scope->putMember("print", fnObject.get());
 
-		try {
-			auto fn = (slake::FnObject *)mod->getMember("main", nullptr);
+		auto fn = (slake::FnObject *)mod->getMember("main", nullptr);
 
-			slake::HostObjectRef<slake::ContextObject> context =
-				rt->execFn(fn->getOverloading({}), nullptr, nullptr, nullptr, 0);
-			printf("%d\n", context->getResult().getI32());
+		slake::HostObjectRef<slake::ContextObject> context =
+			rt->execFn(fn->getOverloading({}), nullptr, nullptr, nullptr, 0);
+		if (auto e = rt->getThreadLocalInternalException(std::this_thread::get_id());
+			e) {
+			printf("Internal exception: %s\n", e->what());
+			printTraceback(rt.get(), context.get());
+			goto end;
+		}
+		printf("%d\n", context->getResult().getI32());
 
-			while (!context->isDone()) {
-				context->resume(&hostRefHolder);
+		while (!context->isDone()) {
+			context->resume(&hostRefHolder);
 
-				printf("%d\n", context->getResult().getI32());
+			if (auto e = rt->getThreadLocalInternalException(std::this_thread::get_id());
+				e) {
+				printf("Internal exception: %s\n", e->what());
+				printTraceback(rt.get(), context.get());
+				goto end;
 			}
 
-			puts("");
-		} catch (slake::NotFoundError e) {
-			printf("NotFoundError: %s, ref = %s\n", e.what(), std::to_string(e.ref).c_str());
-			printTraceback(rt.get());
-		} catch (slake::RuntimeExecError e) {
-			auto ctxt = rt->activeContexts.at(std::this_thread::get_id());
-			printf("RuntimeExecError: %s\n", e.what());
-			printTraceback(rt.get());
+			printf("%d\n", context->getResult().getI32());
 		}
+
+		puts("");
 	}
+end:
 
 	mod.reset();
 

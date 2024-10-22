@@ -106,7 +106,7 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 				if (i)
 					os << ", ";
 
-				decompileValue(rt, v->accessor->getData(VarRefContext::makeArrayContext(i)), os, indentLevel);
+				decompileValue(rt, v->accessor->getData(VarRefContext::makeArrayContext(i)).unwrap(), os, indentLevel);
 			}
 
 			os << "]";
@@ -243,31 +243,31 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 void slake::decompiler::decompileValue(Runtime *rt, Value value, std::ostream &os, int indentLevel) {
 	switch (value.valueType) {
 		case ValueType::I8:
-			os << std::to_string(value.getI8());
+			os << std::to_string(value.getI8()) << "i8";
 			break;
 		case ValueType::I16:
-			os << std::to_string(value.getI16());
+			os << std::to_string(value.getI16()) << "i16";
 			break;
 		case ValueType::I32:
 			os << std::to_string(value.getI32());
 			break;
 		case ValueType::I64:
-			os << std::to_string(value.getI64());
+			os << std::to_string(value.getI64()) << "i64";
 			break;
 		case ValueType::U8:
-			os << std::to_string(value.getU8());
+			os << std::to_string(value.getU8()) << "u8";
 			break;
 		case ValueType::U16:
-			os << std::to_string(value.getU16());
+			os << std::to_string(value.getU16()) << "u16";
 			break;
 		case ValueType::U32:
-			os << std::to_string(value.getU32());
+			os << std::to_string(value.getU32()) << "u";
 			break;
 		case ValueType::U64:
-			os << std::to_string(value.getU64());
+			os << std::to_string(value.getU64()) << "u64";
 			break;
 		case ValueType::F32:
-			os << std::to_string(value.getF32());
+			os << std::to_string(value.getF32()) << "f";
 			break;
 		case ValueType::F64:
 			os << std::to_string(value.getF64());

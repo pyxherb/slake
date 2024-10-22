@@ -23,12 +23,12 @@ SLAKE_API void Runtime::_gcWalk(MethodTable *methodTable) {
 
 SLAKE_API void Runtime::_gcWalk(GenericParamList &genericParamList) {
 	for (auto &i : genericParamList) {
-		i.baseType.loadDeferredType(this);
+		//i.baseType.loadDeferredType(this);
 		if (auto p = i.baseType.resolveCustomType(); p)
 			_gcWalk(p);
 
 		for (auto &j : i.interfaces) {
-			j.loadDeferredType(this);
+			//j.loadDeferredType(this);
 			if (auto p = j.resolveCustomType(); p)
 				_gcWalk(p);
 		}
@@ -171,23 +171,23 @@ SLAKE_API void Runtime::_gcWalk(Object *v) {
 				case ObjectKind::Class: {
 					ClassObject *value = (ClassObject *)v;
 					for (auto &i : value->implInterfaces) {
-						i.loadDeferredType(this);
+						//i.loadDeferredType(this);
 						_gcWalk(i);
 					}
 					for (auto &i : value->genericParams) {
-						i.baseType.loadDeferredType(this);
+						//i.baseType.loadDeferredType(this);
 						_gcWalk(i.baseType);
 						for (auto &j : i.interfaces) {
-							j.loadDeferredType(this);
+							//j.loadDeferredType(this);
 							_gcWalk(j);
 						}
 					}
 					for (auto &i : value->genericArgs) {
-						i.loadDeferredType(this);
+						//i.loadDeferredType(this);
 						_gcWalk(i);
 					}
 
-					value->parentClass.loadDeferredType(this);
+					//value->parentClass.loadDeferredType(this);
 					_gcWalk(value->parentClass.resolveCustomType());
 
 					_gcWalk(value->genericParams);
@@ -197,11 +197,11 @@ SLAKE_API void Runtime::_gcWalk(Object *v) {
 					InterfaceObject *value = (InterfaceObject *)v;
 
 					for (auto &i : value->parents) {
-						i.loadDeferredType(this);
+						//i.loadDeferredType(this);
 						_gcWalk(i.getCustomTypeExData());
 					}
 					for (auto &i : value->genericParams) {
-						i.baseType.loadDeferredType(this);
+						//i.baseType.loadDeferredType(this);
 						_gcWalk(i.baseType);
 						for (auto &j : i.interfaces) {
 							j.loadDeferredType(this);
@@ -209,7 +209,7 @@ SLAKE_API void Runtime::_gcWalk(Object *v) {
 						}
 					}
 					for (auto &i : value->genericArgs) {
-						i.loadDeferredType(this);
+						//i.loadDeferredType(this);
 						_gcWalk(i);
 					}
 
@@ -227,7 +227,7 @@ SLAKE_API void Runtime::_gcWalk(Object *v) {
 				case VarKind::Regular: {
 					auto v = (RegularVarObject *)value;
 
-					_gcWalk(value->getData(VarRefContext()));
+					_gcWalk(value->getData(VarRefContext()).unwrap());
 
 					_gcWalk(v->parent);
 
@@ -275,15 +275,15 @@ SLAKE_API void Runtime::_gcWalk(Object *v) {
 			_gcWalk(fnOverloading->fnObject);
 
 			for (auto &i : fnOverloading->genericParams) {
-				i.baseType.loadDeferredType(this);
+				//i.baseType.loadDeferredType(this);
 				_gcWalk(i.baseType);
 				for (auto &j : i.interfaces) {
-					j.loadDeferredType(this);
+					//j.loadDeferredType(this);
 					_gcWalk(j);
 				}
 			}
 			for (auto &i : fnOverloading->mappedGenericArgs) {
-				i.second.loadDeferredType(this);
+				//i.second.loadDeferredType(this);
 				_gcWalk(i.second);
 			}
 

@@ -14,12 +14,14 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 	HostObjectRef<InstanceObject> instance;
 
 	if (cls->parentClass.typeId == TypeId::Instance) {
-		cls->parentClass.loadDeferredType(this);
+		if (!cls->parentClass.loadDeferredType(this))
+			return nullptr;
 
 		Object *parentClass = (ClassObject *)cls->parentClass.getCustomTypeExData();
 		assert(parentClass->getKind() == ObjectKind::Class);
 
-		parent = this->newClassInstance((ClassObject *)parentClass, _NEWCLSINST_PARENT);
+		if(!(parent = this->newClassInstance((ClassObject *)parentClass, _NEWCLSINST_PARENT)))
+			return false;
 	}
 
 	if (parent) {
@@ -246,7 +248,7 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 
 			instance->memberAccessor->setData(
 				VarRefContext::makeInstanceContext(i),
-				initVar->getData(VarRefContext()));
+				initVar->getData(VarRefContext()).unwrap());
 		}
 	}
 
@@ -282,6 +284,8 @@ SLAKE_API HostObjectRef<ArrayObject> Runtime::newArrayInstance(Runtime *rt, cons
 					return F64ArrayObject::alloc(rt, length).get();
 				case ValueType::Bool:
 					return BoolArrayObject::alloc(rt, length).get();
+				default:
+					throw std::logic_error("Unhandled value type");
 			}
 			break;
 		case TypeId::String:
@@ -290,7 +294,7 @@ SLAKE_API HostObjectRef<ArrayObject> Runtime::newArrayInstance(Runtime *rt, cons
 			return ObjectRefArrayObject::alloc(rt, type, length).get();
 		case TypeId::Any:
 			return AnyArrayObject::alloc(rt, length).get();
-		default:;
+		default:
+			throw std::logic_error("Unhandled element type");
 	}
-	throw IncompatibleTypeError("Specified type is not constructible");
 }

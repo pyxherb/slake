@@ -238,6 +238,27 @@ namespace slake {
 		SLAKE_API bool operator<(const Value &rhs) const;
 	};
 
+	struct Optional {
+		Value value;
+		bool hasValue;
+
+		SLAKE_FORCEINLINE Optional() : hasValue(false) {
+		}
+		SLAKE_FORCEINLINE Optional(Value value) : value(value), hasValue(true) {}
+
+		SLAKE_FORCEINLINE operator bool() {
+			return hasValue;
+		}
+		SLAKE_FORCEINLINE bool isEmpty() {
+			return !hasValue;
+		}
+
+		SLAKE_FORCEINLINE Value unwrap() {
+			assert(hasValue);
+			return value;
+		}
+	};
+
 	SLAKE_API bool isCompatible(const Type &type, const Value &value);
 }
 

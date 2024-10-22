@@ -301,7 +301,8 @@ SLAKE_API FnOverloadingObject *FnObject::getOverloading(const std::pmr::vector<T
 		for (size_t k = 0; k < argTypes.size(); ++k) {
 			assert(!argTypes[k].isLoadingDeferred());
 
-			j->paramTypes[k].loadDeferredType(associatedRuntime);
+			if (!j->paramTypes[k].loadDeferredType(associatedRuntime))
+				goto mismatched;
 			if (argTypes[k] != j->paramTypes[k])
 				goto mismatched;
 		}

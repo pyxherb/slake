@@ -3,7 +3,7 @@
 
 using namespace slake;
 
-SLAKE_API void Runtime::execContext(ContextObject *context) {
+SLAKE_API bool Runtime::execContext(ContextObject *context) {
 	const FnOverloadingObject *curFn;
 	MajorFrame *curMajorFrame;
 	bool interruptExecution = false;
@@ -16,7 +16,7 @@ SLAKE_API void Runtime::execContext(ContextObject *context) {
 
 		// TODO: Check if the yield request is from the top level.
 		if (context->getContext().flags & CTX_YIELDED)
-			return;
+			return true;
 
 		// Pause if the runtime is in GC
 		while ((_flags & _RT_INGC) && !isDestructing)
@@ -30,11 +30,13 @@ SLAKE_API void Runtime::execContext(ContextObject *context) {
 					interruptExecution = true;
 				else {
 					if (curMajorFrame->curIns >=
-						ol->instructions.size())
-						throw OutOfFnBodyError("Out of function body");
-					_execIns(
-						context,
-						ol->instructions[curMajorFrame->curIns]);
+						ol->instructions.size()) {
+						// Raise out of fn body error.
+					}
+					if (!_execIns(
+							context,
+							ol->instructions[curMajorFrame->curIns]))
+						return false;
 				}
 
 				break;
@@ -58,6 +60,7 @@ SLAKE_API void Runtime::execContext(ContextObject *context) {
 	}
 
 	context->_context.flags |= CTX_DONE;
+	return true;
 }
 
 SLAKE_API HostObjectRef<ContextObject> Runtime::execFn(
@@ -78,7 +81,10 @@ SLAKE_API HostObjectRef<ContextObject> Runtime::execFn(
 			context->getContext().majorFrames.push_back(std::move(frame));
 		}
 
-		_createNewMajorFrame(&context->_context, thisObject, overloading, args, nArgs);
+		if (!_createNewMajorFrame(&context->_context, thisObject, overloading, args, nArgs)) {
+			// Error creating new major frame - return anyway.
+			return context;
+		}
 	}
 
 	execContext(context.get());

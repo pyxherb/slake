@@ -3,58 +3,104 @@
 
 using namespace slake;
 
-static void _checkOperandCount(
+static [[nodiscard]] bool _checkOperandCount(
+	Runtime *rt,
 	const Instruction &ins,
 	bool hasOutput,
 	int_fast8_t nOperands) {
 	if (hasOutput) {
-		if (ins.output.valueType == ValueType::Undefined)
-			throw InvalidOperandsError("Invalid operand combination");
+		if (ins.output.valueType == ValueType::Undefined) {
+			rt->setThreadLocalInternalException(
+				std::this_thread::get_id(),
+				InvalidOperandsError::alloc(rt));
+			return false;
+		}
 	}
-	if (ins.operands.size() != nOperands)
-		throw InvalidOperandsError("Invalid operand combination");
+	if (ins.operands.size() != nOperands) {
+		rt->setThreadLocalInternalException(
+			std::this_thread::get_id(),
+			InvalidOperandsError::alloc(rt));
+		return false;
+	}
+
+	return true;
 }
 
-static void _checkOperandType(
+static [[nodiscard]] bool _checkOperandType(
+	Runtime *rt,
 	const Value &operand,
 	ValueType valueType) {
-	if (operand.valueType != valueType)
-		throw InvalidOperandsError("Invalid operand combination");
+	if (operand.valueType != valueType) {
+		rt->setThreadLocalInternalException(
+			std::this_thread::get_id(),
+			InvalidOperandsError::alloc(rt));
+		return false;
+	}
+	return true;
 }
 
-static void _checkObjectOperandType(
+static [[nodiscard]] bool _checkObjectOperandType(
+	Runtime *rt,
 	Object *object,
 	ObjectKind typeId) {
-	if (object->getKind() != typeId)
-		throw InvalidOperandsError("Invalid operand combination");
+	if (object->getKind() != typeId) {
+		rt->setThreadLocalInternalException(
+			std::this_thread::get_id(),
+			InvalidOperandsError::alloc(rt));
+		return false;
+	}
+	return true;
 }
 
-static void _setRegisterValue(
+static [[nodiscard]] bool _setRegisterValue(
+	Runtime *rt,
 	MajorFrame *curMajorFrame,
 	uint32_t index,
 	const Value &value) {
-	if (index >= curMajorFrame->regs.size())
-		throw InvalidRegisterIndexError("Invalid register index", index);
+	if (index >= curMajorFrame->regs.size()) {
+		// The register does not present.
+		rt->setThreadLocalInternalException(
+			std::this_thread::get_id(),
+			InvalidOperandsError::alloc(rt));
+		return false;
+	}
 	Value &reg = curMajorFrame->regs[index];
-	if (reg.valueType != ValueType::Undefined)
-		throw AccessViolationError("The register is already assigned");
+	if (reg.valueType != ValueType::Undefined) {
+		// The register is already assigned.
+		rt->setThreadLocalInternalException(
+			std::this_thread::get_id(),
+			InvalidOperandsError::alloc(rt));
+		return false;
+	}
 	curMajorFrame->regs[index] = value;
+	return true;
 }
 
-static Value &_fetchRegValue(
+static [[nodiscard]] bool _fetchRegValue(
+	Runtime *rt,
 	MajorFrame *curMajorFrame,
-	uint32_t index) {
-	if (index >= curMajorFrame->regs.size())
-		throw InvalidRegisterIndexError("Invalid register index", index);
-	return curMajorFrame->regs[index];
+	uint32_t index,
+	Value &valueOut) {
+	if (index >= curMajorFrame->regs.size()) {
+		// The register does not present.
+		rt->setThreadLocalInternalException(
+			std::this_thread::get_id(),
+			InvalidOperandsError::alloc(rt));
+		return false;
+	}
+	valueOut = curMajorFrame->regs[index];
+	return true;
 }
 
-static const Value &_unwrapRegOperand(
+static bool _unwrapRegOperand(
+	Runtime *rt,
 	MajorFrame *curMajorFrame,
-	const Value &value) {
+	const Value &value,
+	Value &valueOut) {
 	if (value.valueType == ValueType::RegRef)
-		return _fetchRegValue(curMajorFrame, value.getRegIndex());
-	return value;
+		return _fetchRegValue(rt, curMajorFrame, value.getRegIndex(), valueOut);
+	valueOut = value;
+	return true;
 }
 
 static Value _wrapObjectIntoValue(Object *object, VarRefContext &varRefContext) {
@@ -92,11 +138,11 @@ static Value _castToLiteralValue(Value x) {
 		case ValueType::Bool:
 			return Value((LT)(x.getBool()));
 		default:
-			throw IncompatibleTypeError("Invalid type conversion");
+			throw std::logic_error("Invalid type conversion");
 	}
 }
 
-SLAKE_API void slake::Runtime::_createNewMajorFrame(
+SLAKE_API bool slake::Runtime::_createNewMajorFrame(
 	Context *context,
 	Object *thisObject,
 	const FnOverloadingObject *fn,
@@ -109,15 +155,20 @@ SLAKE_API void slake::Runtime::_createNewMajorFrame(
 	newMajorFrame->curFn = fn;
 	newMajorFrame->thisObject = thisObject;
 
-	if (nArgs < fn->paramTypes.size())
-		throw InvalidArgumentsError("Too few arguments");
+	if (nArgs < fn->paramTypes.size()) {
+		setThreadLocalInternalException(
+			std::this_thread::get_id(),
+			InvalidArgumentNumberError::alloc(this, nArgs));
+		return false;
+	}
 
 	newMajorFrame->argStack.resize(fn->paramTypes.size());
 	for (size_t i = 0; i < fn->paramTypes.size(); ++i) {
 		auto varObject = RegularVarObject::alloc(this, ACCESS_PUB, fn->paramTypes[i]);
 		holder.addObject(varObject.get());
 		newMajorFrame->argStack[i] = varObject.get();
-		varObject->setData({}, args[i]);
+		bool result = varObject->setData({}, args[i]);
+		assert(result);
 	}
 
 	if (fn->overloadingFlags & OL_VARG) {
@@ -136,13 +187,18 @@ SLAKE_API void slake::Runtime::_createNewMajorFrame(
 			varArgArrayObject->data[i] = args[fn->paramTypes.size() + i];
 		}
 
-		varArgEntryVarObject->setData({}, Value(varArgArrayObject.get()));
+		bool result = varArgEntryVarObject->setData({}, Value(varArgArrayObject.get()));
+		assert(result);
 	}
 
 	context->majorFrames.push_back(std::move(newMajorFrame));
+	return true;
 }
 
-SLAKE_API VarRef slake::Runtime::_addLocalVar(MajorFrame *frame, Type type) {
+//
+// TODO: Check if the stackAlloc() was successful.
+//
+SLAKE_API bool slake::Runtime::_addLocalVar(MajorFrame *frame, Type type, VarRef &varRefOut) {
 	LocalVarRecord localVarRecord;
 
 	switch (type.typeId) {
@@ -150,69 +206,92 @@ SLAKE_API VarRef slake::Runtime::_addLocalVar(MajorFrame *frame, Type type) {
 			switch (type.getValueTypeExData()) {
 				case ValueType::I8:
 					localVarRecord.stackOffset = frame->context->stackTop;
-					frame->context->stackAlloc(sizeof(int8_t));
+					if (!frame->context->stackAlloc(sizeof(int8_t)))
+						return false;
 					break;
 				case ValueType::I16:
-					frame->context->stackAlloc((2 - (frame->context->stackTop & 1)));
+					if (!frame->context->stackAlloc((2 - (frame->context->stackTop & 1))))
+						return false;
 					localVarRecord.stackOffset = frame->context->stackTop;
-					frame->context->stackAlloc(sizeof(int16_t));
+					if (!frame->context->stackAlloc(sizeof(int16_t)))
+						return false;
 					break;
 				case ValueType::I32:
-					frame->context->stackAlloc((4 - (frame->context->stackTop & 3)));
+					if (!frame->context->stackAlloc((4 - (frame->context->stackTop & 3))))
+						return false;
 					localVarRecord.stackOffset = frame->context->stackTop;
-					frame->context->stackAlloc(sizeof(int32_t));
+					if (!frame->context->stackAlloc(sizeof(int32_t)))
+						return false;
 					break;
 				case ValueType::I64:
-					frame->context->stackAlloc((8 - (frame->context->stackTop & 7)));
+					if (!frame->context->stackAlloc((8 - (frame->context->stackTop & 7))))
+						return false;
 					localVarRecord.stackOffset = frame->context->stackTop;
-					frame->context->stackAlloc(sizeof(int64_t));
+					if (!frame->context->stackAlloc(sizeof(int64_t)))
+						return false;
 					break;
 				case ValueType::U8:
 					localVarRecord.stackOffset = frame->context->stackTop;
-					frame->context->stackAlloc(sizeof(uint8_t));
+					if (!frame->context->stackAlloc(sizeof(uint8_t)))
+						return false;
 					break;
 				case ValueType::U16:
-					frame->context->stackAlloc((2 - (frame->context->stackTop & 1)));
+					if (!frame->context->stackAlloc((2 - (frame->context->stackTop & 1))))
+						return false;
 					localVarRecord.stackOffset = frame->context->stackTop;
-					frame->context->stackAlloc(sizeof(uint16_t));
+					if (!frame->context->stackAlloc(sizeof(uint16_t)))
+						return false;
 					break;
 				case ValueType::U32:
-					frame->context->stackAlloc((4 - (frame->context->stackTop & 3)));
+					if (!frame->context->stackAlloc((4 - (frame->context->stackTop & 3))))
+						return false;
 					localVarRecord.stackOffset = frame->context->stackTop;
-					frame->context->stackAlloc(sizeof(uint32_t));
+					if (!frame->context->stackAlloc(sizeof(uint32_t)))
+						return false;
 					break;
 				case ValueType::U64:
-					frame->context->stackAlloc((8 - (frame->context->stackTop & 7)));
+					if (!frame->context->stackAlloc((8 - (frame->context->stackTop & 7))))
+						return false;
 					localVarRecord.stackOffset = frame->context->stackTop;
-					frame->context->stackAlloc(sizeof(uint64_t));
+					if (!frame->context->stackAlloc(sizeof(uint64_t)))
+						return false;
 					break;
 				case ValueType::F32:
-					frame->context->stackAlloc((4 - (frame->context->stackTop & 3)));
+					if (!frame->context->stackAlloc((4 - (frame->context->stackTop & 3))))
+						return false;
 					localVarRecord.stackOffset = frame->context->stackTop;
-					frame->context->stackAlloc(sizeof(float));
+					if (!frame->context->stackAlloc(sizeof(float)))
+						return false;
 					break;
 				case ValueType::F64:
-					frame->context->stackAlloc((8 - (frame->context->stackTop & 7)));
+					if (!frame->context->stackAlloc((8 - (frame->context->stackTop & 7))))
+						return false;
 					localVarRecord.stackOffset = frame->context->stackTop;
-					frame->context->stackAlloc(sizeof(double));
+					if (!frame->context->stackAlloc(sizeof(double)))
+						return false;
 					break;
 				case ValueType::Bool:
 					localVarRecord.stackOffset = frame->context->stackTop;
-					frame->context->stackAlloc(sizeof(bool));
+					if (!frame->context->stackAlloc(sizeof(bool)))
+						return false;
 					break;
 				case ValueType::ObjectRef:
-					frame->context->stackAlloc(sizeof(Object *) - (frame->context->stackTop & (sizeof(Object *) - 1)));
+					if (!frame->context->stackAlloc(sizeof(Object *) - (frame->context->stackTop & (sizeof(Object *) - 1))))
+						return false;
 					localVarRecord.stackOffset = frame->context->stackTop;
-					frame->context->stackAlloc(sizeof(Object *));
+					if (!frame->context->stackAlloc(sizeof(Object *)))
+						return false;
 					break;
 			}
 			break;
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array:
-			frame->context->stackAlloc(sizeof(Object *) - (frame->context->stackTop & (sizeof(Object *) - 1)));
+			if (!frame->context->stackAlloc(sizeof(Object *) - (frame->context->stackTop & (sizeof(Object *) - 1))))
+				return false;
 			localVarRecord.stackOffset = frame->context->stackTop;
-			frame->context->stackAlloc(sizeof(Object *));
+			if (!frame->context->stackAlloc(sizeof(Object *)))
+				return false;
 			break;
 		default:
 			throw std::runtime_error("The variable has an inconstructible type");
@@ -222,14 +301,15 @@ SLAKE_API VarRef slake::Runtime::_addLocalVar(MajorFrame *frame, Type type) {
 
 	size_t index = frame->localVarRecords.size();
 	frame->localVarRecords.push_back(std::move(localVarRecord));
-	return VarRef(frame->localVarAccessor, VarRefContext::makeLocalVarContext(index));
+	varRefOut = VarRef(frame->localVarAccessor, VarRefContext::makeLocalVarContext(index));
+	return true;
 }
 
 SLAKE_API void slake::Runtime::_addLocalReg(MajorFrame *frame) {
 	frame->regs.push_back({});
 }
 
-SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instruction &ins) {
+SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instruction &ins) {
 	if (((globalHeapPoolResource.szAllocated >> 1) > _szMemUsedAfterLastGc)) {
 		gc();
 	}
@@ -241,22 +321,32 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 		case Opcode::NOP:
 			break;
 		case Opcode::LVAR: {
-			_checkOperandCount(ins, false, 1);
-			_checkOperandType(ins.operands[0], ValueType::TypeName);
+			if (!_checkOperandCount(this, ins, false, 1))
+				return false;
+			if (!_checkOperandType(this, ins.operands[0], ValueType::TypeName))
+				return false;
 
 			Type type = ins.operands[0].getTypeName();
-			type.loadDeferredType(this);
+			if (!type.loadDeferredType(this))
+				return false;
 
-			_addLocalVar(curMajorFrame, type);
+			VarRef varRef;
+			if (!_addLocalVar(curMajorFrame, type, varRef))
+				return false;
 			break;
 		}
 		case Opcode::REG: {
-			_checkOperandCount(ins, false, 1);
-			_checkOperandType(ins.operands[0], ValueType::U32);
+			if (!_checkOperandCount(this, ins, false, 1))
+				return false;
+			if (!_checkOperandType(this, ins.operands[0], ValueType::U32))
+				return false;
 
 			uint32_t index = ins.operands[0].getU32();
 			if (index > curMajorFrame->regs.size()) {
-				throw InvalidOperandsError("");
+				setThreadLocalInternalException(
+					std::this_thread::get_id(),
+					InvalidOperandsError::alloc(this));
+				return false;
 			} else if (index < curMajorFrame->regs.size()) {
 				curMajorFrame->regs[index] = Value();
 			} else {
@@ -265,13 +355,17 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 			break;
 		}
 		case Opcode::LOAD: {
-			_checkOperandCount(ins, true, 1);
+			if (!_checkOperandCount(this, ins, true, 1))
+				return false;
 
-			_checkOperandType(ins.output, ValueType::RegRef);
+			if (!_checkOperandType(this, ins.output, ValueType::RegRef))
+				return false;
 
-			_checkOperandType(ins.operands[0], ValueType::ObjectRef);
+			if (!_checkOperandType(this, ins.operands[0], ValueType::ObjectRef))
+				return false;
 			auto refPtr = ins.operands[0].getObjectRef();
-			_checkObjectOperandType(refPtr, ObjectKind::IdRef);
+			if (!_checkObjectOperandType(this, refPtr, ObjectKind::IdRef))
+				return false;
 
 			VarRefContext varRefContext;
 
@@ -281,107 +375,184 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 					v = resolveIdRef((IdRefObject *)refPtr, &varRefContext);
 			}
 
-			if (!v)
-				throw NotFoundError("Member not found", (IdRefObject *)refPtr);
+			if (!v) {
+				setThreadLocalInternalException(
+					std::this_thread::get_id(),
+					ReferencedMemberNotFoundError::alloc(this, (IdRefObject *)refPtr));
+				return false;
+			}
 
-			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), _wrapObjectIntoValue(v, varRefContext));
+			if (!_setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), _wrapObjectIntoValue(v, varRefContext)))
+				return false;
 			break;
 		}
 		case Opcode::RLOAD: {
-			_checkOperandCount(ins, true, 2);
+			if (!_checkOperandCount(this, ins, true, 2))
+				return false;
 
-			_checkOperandType(ins.output, ValueType::RegRef);
+			if (!_checkOperandType(this, ins.output, ValueType::RegRef))
+				return false;
 
-			_checkOperandType(ins.operands[0], ValueType::RegRef);
-			auto &lhs = _fetchRegValue(curMajorFrame, ins.operands[0].getRegIndex());
-			_checkOperandType(lhs, ValueType::ObjectRef);
+			if (!_checkOperandType(this, ins.operands[0], ValueType::RegRef))
+				return false;
+
+			Value lhs;
+			if (!_fetchRegValue(this, curMajorFrame, ins.operands[0].getRegIndex(), lhs))
+				return false;
+			if (!_checkOperandType(this, lhs, ValueType::ObjectRef))
+				return false;
+
 			auto lhsPtr = lhs.getObjectRef();
 
-			_checkOperandType(ins.operands[1], ValueType::ObjectRef);
+			if (!_checkOperandType(this, ins.operands[1], ValueType::ObjectRef))
+				return false;
 			auto refPtr = ins.operands[1].getObjectRef();
 
-			if (!lhsPtr)
-				throw NullRefError();
+			if (!lhsPtr) {
+				setThreadLocalInternalException(
+					std::this_thread::get_id(),
+					NullRefError::alloc(this));
+				return false;
+			}
 
 			VarRefContext varRefContext;
 
 			if (!(lhsPtr = resolveIdRef((IdRefObject *)refPtr, &varRefContext, lhsPtr))) {
-				throw NotFoundError("Member not found", (IdRefObject *)refPtr);
+				setThreadLocalInternalException(
+					std::this_thread::get_id(),
+					ReferencedMemberNotFoundError::alloc(this, (IdRefObject *)refPtr));
 			}
 
-			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), _wrapObjectIntoValue(lhsPtr, varRefContext));
+			if (!_setRegisterValue(
+					this,
+					curMajorFrame,
+					ins.output.getRegIndex(),
+					_wrapObjectIntoValue(lhsPtr, varRefContext)))
+				return false;
 			break;
 		}
 		case Opcode::STORE: {
-			_checkOperandCount(ins, false, 2);
+			if (!_checkOperandCount(this, ins, false, 2))
+				return false;
 
-			Value destValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
-			_checkOperandType(destValue, ValueType::VarRef);
+			Value destValue;
+			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[0], destValue))
+				return false;
+			if (!_checkOperandType(this, destValue, ValueType::VarRef))
+				return false;
 
 			const VarRef varRef = destValue.getVarRef();
 
-			if (!varRef.varPtr)
-				throw NullRefError();
+			if (!varRef.varPtr) {
+				setThreadLocalInternalException(
+					std::this_thread::get_id(),
+					NullRefError::alloc(this));
+			}
 
-			varRef.varPtr->setData(
-				varRef.context,
-				_unwrapRegOperand(curMajorFrame, ins.operands[1]));
+			Value data;
+			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[1], data))
+				return false;
+			if (!varRef.varPtr->setData(
+					varRef.context,
+					data))
+				return false;
 			break;
 		}
 		case Opcode::MOV: {
-			_checkOperandCount(ins, true, 1);
+			if (!_checkOperandCount(this, ins, true, 1))
+				return false;
 
-			_setRegisterValue(
-				curMajorFrame,
-				ins.output.getRegIndex(),
-				_unwrapRegOperand(curMajorFrame, ins.operands[0]));
+			Value value;
+			if (!_unwrapRegOperand(
+					this,
+					curMajorFrame,
+					ins.operands[0],
+					value))
+				return false;
+			if (!_setRegisterValue(
+					this,
+					curMajorFrame,
+					ins.output.getRegIndex(),
+					value))
+				return false;
 			break;
 		}
 		case Opcode::LLOAD: {
-			_checkOperandCount(ins, true, 1);
+			if (!_checkOperandCount(this, ins, true, 1))
+				return false;
 
-			_checkOperandType(ins.output, ValueType::RegRef);
-			_checkOperandType(ins.operands[0], ValueType::U32);
+			if (!_checkOperandType(this, ins.output, ValueType::RegRef))
+				return false;
+			if (!_checkOperandType(this, ins.operands[0], ValueType::U32))
+				return false;
+
+			VarRef varRef;
+			if (!curMajorFrame->lload(this, ins.operands[0].getU32(), varRef))
+				return false;
 
 			_setRegisterValue(
+				this,
 				curMajorFrame,
 				ins.output.getRegIndex(),
-				Value(curMajorFrame->lload(ins.operands[0].getU32())));
+				Value(varRef));
 			break;
 		}
 		case Opcode::LARG: {
-			_checkOperandCount(ins, true, 1);
+			if (!_checkOperandCount(this, ins, true, 1))
+				return false;
 
-			_checkOperandType(ins.output, ValueType::RegRef);
-			_checkOperandType(ins.operands[0], ValueType::U32);
+			if (!_checkOperandType(this, ins.output, ValueType::RegRef))
+				return false;
+			if (!_checkOperandType(this, ins.operands[0], ValueType::U32))
+				return false;
 
-			_setRegisterValue(
-				curMajorFrame,
-				ins.output.getRegIndex(),
-				Value(curMajorFrame->larg(ins.operands[0].getU32())));
+			VarRef varRef;
+			if (!curMajorFrame->larg(this, ins.operands[0].getU32(), varRef))
+				return false;
+			if (!_setRegisterValue(
+					this,
+					curMajorFrame,
+					ins.output.getRegIndex(),
+					Value(varRef)))
+				return false;
 			break;
 		}
 		case Opcode::LVALUE: {
-			_checkOperandCount(ins, true, 1);
+			if (!_checkOperandCount(this, ins, true, 1))
+				return false;
 
-			_checkOperandType(ins.output, ValueType::RegRef);
+			if (!_checkOperandType(this, ins.output, ValueType::RegRef))
+				return false;
 
-			Value dest = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
-			_checkOperandType(dest, ValueType::VarRef);
+			Value dest;
+			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[0], dest))
+				return false;
+			if (!_checkOperandType(this, dest, ValueType::VarRef))
+				return false;
 
 			const VarRef varRef = dest.getVarRef();
 
-			if (!varRef.varPtr)
-				throw NullRefError();
+			if (!varRef.varPtr) {
+				setThreadLocalInternalException(
+					std::this_thread::get_id(),
+					NullRefError::alloc(this));
+				return false;
+			}
 
-			_setRegisterValue(
-				curMajorFrame,
-				ins.output.getRegIndex(),
-				((VarObject *)varRef.varPtr)->getData(varRef.context));
+			Optional result = ((VarObject *)varRef.varPtr)->getData(varRef.context);
+			if (!result)
+				return false;
+			if (!_setRegisterValue(
+					this,
+					curMajorFrame,
+					ins.output.getRegIndex(),
+					result.unwrap()))
+				return false;
 			break;
 		}
 		case Opcode::ENTER: {
-			_checkOperandCount(ins, false, 0);
+			if (!_checkOperandCount(this, ins, false, 0))
+				return false;
 			MinorFrame frame(
 				this,
 				(uint32_t)curMajorFrame->localVarRecords.size(),
@@ -392,9 +563,14 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 			break;
 		}
 		case Opcode::LEAVE: {
-			_checkOperandCount(ins, false, 0);
-			if (curMajorFrame->minorFrames.size() < 2)
-				throw FrameError("Leaving the only frame");
+			if (!_checkOperandCount(this, ins, false, 0))
+				return false;
+			if (curMajorFrame->minorFrames.size() < 2) {
+				setThreadLocalInternalException(
+					std::this_thread::get_id(),
+					FrameBoundaryExceededError::alloc(this));
+				return false;
+			}
 			curMajorFrame->leave();
 			break;
 		}
@@ -414,15 +590,24 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 		case Opcode::GT:
 		case Opcode::LTEQ:
 		case Opcode::GTEQ: {
-			_checkOperandCount(ins, true, 2);
+			if (!_checkOperandCount(this, ins, true, 2))
+				return false;
 
-			_checkOperandType(ins.output, ValueType::RegRef);
+			if (!_checkOperandType(this, ins.output, ValueType::RegRef))
+				return false;
 
-			Value x(_unwrapRegOperand(curMajorFrame, ins.operands[0])),
-				y(_unwrapRegOperand(curMajorFrame, ins.operands[1])),
-				valueOut;
-			if (x.valueType != y.valueType)
-				throw InvalidOperandsError("LHS and RHS must have the same type");
+			Value x, y, valueOut;
+
+			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[0], x))
+				return false;
+			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[1], y))
+				return false;
+			if (x.valueType != y.valueType) {
+				setThreadLocalInternalException(
+					std::this_thread::get_id(),
+					InvalidOperandsError::alloc(this));
+				return false;
+			}
 
 			switch (x.valueType) {
 				case ValueType::I8:
@@ -476,7 +661,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((bool)(x.getI8() >= y.getI8()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::I16:
@@ -530,7 +718,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((bool)(x.getI16() >= y.getI16()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::I32:
@@ -584,7 +775,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((bool)(x.getI32() >= y.getI32()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::I64:
@@ -638,7 +832,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((bool)(x.getI64() >= y.getI64()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::U8:
@@ -692,7 +889,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((bool)(x.getU8() >= y.getU8()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::U16:
@@ -746,7 +946,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((bool)(x.getU16() >= y.getU16()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::U32:
@@ -800,7 +1003,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((bool)(x.getU32() >= y.getU32()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::U64:
@@ -854,7 +1060,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((bool)(x.getU64() >= y.getU64()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::F32:
@@ -899,7 +1108,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((bool)(x.getF32() >= y.getF32()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::F64:
@@ -917,7 +1129,7 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((double)(x.getF64() / y.getF64()));
 							break;
 						case Opcode::MOD:
-							valueOut = Value((double)fmodf(x.getF64(), y.getF64()));
+							valueOut = Value((double)fmod(x.getF64(), y.getF64()));
 							break;
 						case Opcode::LAND:
 							valueOut = Value((bool)(x.getF64() && y.getF64()));
@@ -944,7 +1156,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((bool)(x.getF64() >= y.getF64()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::Bool:
@@ -962,25 +1177,39 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((bool)(x.getBool() != y.getBool()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				default:
-					throw InvalidOperandsError("Invalid operand combination");
+					setThreadLocalInternalException(
+						std::this_thread::get_id(),
+						InvalidOperandsError::alloc(this));
+					return false;
 			}
 
-			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), valueOut);
+			if (!_setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), valueOut))
+				return false;
 			break;
 		}
 		case Opcode::LSH:
 		case Opcode::RSH: {
-			_checkOperandCount(ins, true, 2);
+			if (!_checkOperandCount(this, ins, true, 2))
+				return false;
 
-			_checkOperandType(ins.output, ValueType::RegRef);
+			if (!_checkOperandType(this, ins.output, ValueType::RegRef))
+				return false;
 
-			Value x(_unwrapRegOperand(curMajorFrame, ins.operands[0])),
-				y(_unwrapRegOperand(curMajorFrame, ins.operands[1])),
+			Value x,
+				y,
 				valueOut;
+
+			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[0], x))
+				return false;
+			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[1], y))
+				return false;
 
 			switch (x.valueType) {
 				case ValueType::I8:
@@ -992,7 +1221,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((int8_t)(x.getI8() >> y.getU32()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::I16:
@@ -1005,7 +1237,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							break;
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::I32:
@@ -1018,7 +1253,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							break;
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::I64:
@@ -1030,7 +1268,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((int64_t)(x.getI64() >> y.getU32()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::U8:
@@ -1042,7 +1283,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((uint8_t)(x.getU8() >> y.getU32()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::U16:
@@ -1054,7 +1298,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((uint8_t)(x.getU16() >> y.getU32()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::U32:
@@ -1066,7 +1313,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((uint32_t)(x.getU32() >> y.getU32()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::U64:
@@ -1078,26 +1328,38 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((uint64_t)(x.getU64() >> y.getU32()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::F32:
 				case ValueType::F64:
 				case ValueType::Bool:
-					throw InvalidOperandsError("Unsupported operation");
+					setThreadLocalInternalException(
+						std::this_thread::get_id(),
+						InvalidOperandsError::alloc(this));
+					return false;
 				default:
-					throw InvalidOperandsError("Invalid operand combination");
+					setThreadLocalInternalException(
+						std::this_thread::get_id(),
+						InvalidOperandsError::alloc(this));
+					return false;
 			}
 
-			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), valueOut);
+			if (!_setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), valueOut))
+				return false;
 			break;
 		}
 		case Opcode::NOT:
 		case Opcode::LNOT:
 		case Opcode::NEG: {
-			_checkOperandCount(ins, true, 1);
+			if (!_checkOperandCount(this, ins, true, 1))
+				return false;
 
-			_checkOperandType(ins.output, ValueType::RegRef);
+			if (!_checkOperandType(this, ins.output, ValueType::RegRef))
+				return false;
 
 			Value x(ins.operands[1]), valueOut;
 
@@ -1114,7 +1376,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((int8_t)(-x.getI8()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::I16:
@@ -1129,7 +1394,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((int16_t)(-x.getI16()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::I32:
@@ -1144,7 +1412,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((int32_t)(-x.getI32()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::I64:
@@ -1159,7 +1430,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((int64_t)(-x.getI64()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::U8:
@@ -1174,7 +1448,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((uint8_t)(x.getU8()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::U16:
@@ -1189,7 +1466,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((uint16_t)(x.getU16()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::U32:
@@ -1204,7 +1484,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((uint32_t)(x.getU32()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::U64:
@@ -1219,7 +1502,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((uint64_t)(x.getU64()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::F32:
@@ -1231,7 +1517,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((float)(-x.getF32()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::F64:
@@ -1243,7 +1532,10 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((double)(-x.getF64()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				case ValueType::Bool:
@@ -1252,73 +1544,105 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							valueOut = Value((bool)(!x.getU64()));
 							break;
 						default:
-							throw InvalidOperandsError("Unsupported operation");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
 					break;
 				default:
-					throw InvalidOperandsError("Invalid operand combination");
+					setThreadLocalInternalException(
+						std::this_thread::get_id(),
+						InvalidOperandsError::alloc(this));
+					return false;
 			}
 
-			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), valueOut);
+			if (!_setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), valueOut))
+				return false;
 			break;
 		}
 		case Opcode::AT: {
-			_checkOperandCount(ins, true, 2);
+			if (!_checkOperandCount(this, ins, true, 2))
+				return false;
 
-			const Value &arrayValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
-			_checkOperandType(arrayValue, ValueType::ObjectRef);
-			const Value &index = _unwrapRegOperand(curMajorFrame, ins.operands[1]);
-			_checkOperandType(index, ValueType::U32);
+			Value arrayValue;
+			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[0], arrayValue))
+				return false;
+			if (!_checkOperandType(this, arrayValue, ValueType::ObjectRef))
+				return false;
+			Value index;
+			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[1], index))
+				return false;
+			if (!_checkOperandType(this, index, ValueType::U32))
+				return false;
 
 			auto arrayIn = arrayValue.getObjectRef();
-			_checkObjectOperandType(arrayIn, ObjectKind::Array);
+			if (!_checkObjectOperandType(this, arrayIn, ObjectKind::Array))
+				return false;
 
 			uint32_t indexIn = index.getU32();
 
-			if (indexIn > ((ArrayObject *)arrayIn)->length)
-				throw OutOfRangeError();
+			if (indexIn > ((ArrayObject *)arrayIn)->length) {
+				setThreadLocalInternalException(
+					std::this_thread::get_id(),
+					InvalidArrayIndexError::alloc(this, indexIn));
+				return false;
+			}
 
-			_setRegisterValue(
-				curMajorFrame,
-				ins.output.getRegIndex(),
-				Value(VarRef(
-					((ArrayObject *)arrayIn)->accessor,
-					VarRefContext::makeArrayContext(indexIn))));
+			if (!_setRegisterValue(
+					this,
+					curMajorFrame,
+					ins.output.getRegIndex(),
+					Value(VarRef(
+						((ArrayObject *)arrayIn)->accessor,
+						VarRefContext::makeArrayContext(indexIn)))))
+				return false;
 
 			break;
 		}
 		case Opcode::JMP: {
-			_checkOperandCount(ins, false, 1);
+			if (!_checkOperandCount(this, ins, false, 1))
+				return false;
 
-			_checkOperandType(ins.operands[0], ValueType::U32);
+			if (!_checkOperandType(this, ins.operands[0], ValueType::U32))
+				return false;
 
 			curMajorFrame->curIns = ins.operands[0].getU32();
-			return;
+			return true;
 		}
 		case Opcode::JT:
 		case Opcode::JF: {
-			_checkOperandCount(ins, false, 2);
+			if (!_checkOperandCount(this, ins, false, 2))
+				return false;
 
-			_checkOperandType(ins.operands[0], ValueType::U32);
-			const Value &condition = _unwrapRegOperand(curMajorFrame, ins.operands[1]);
-			_checkOperandType(condition, ValueType::Bool);
+			if (!_checkOperandType(this, ins.operands[0], ValueType::U32))
+				return false;
+			Value condition;
+			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[1], condition))
+				return false;
+			if (!_checkOperandType(this, condition, ValueType::Bool))
+				return false;
 
 			if (condition.getBool()) {
 				if (ins.opcode == Opcode::JT) {
 					curMajorFrame->curIns = ins.operands[0].getU32();
-					return;
+					return true;
 				}
 			} else if (ins.opcode == Opcode::JF) {
 				curMajorFrame->curIns = ins.operands[0].getU32();
-				return;
+				return true;
 			}
 
 			break;
 		}
 		case Opcode::PUSHARG: {
-			_checkOperandCount(ins, false, 2);
+			if (!_checkOperandCount(this, ins, false, 2))
+				return false;
 
-			curMajorFrame->nextArgStack.push_back(_unwrapRegOperand(curMajorFrame, ins.operands[0]));
+			Value value;
+			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[0], value))
+				return false;
+			curMajorFrame->nextArgStack.push_back(value);
 			break;
 		}
 		case Opcode::CTORCALL:
@@ -1330,24 +1654,37 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 			switch (ins.opcode) {
 				case Opcode::CTORCALL:
 				case Opcode::MCALL: {
-					_checkOperandCount(ins, false, 2);
+					if (!_checkOperandCount(this, ins, false, 2))
+						return false;
 
-					Value fnValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
-					_checkOperandType(fnValue, ValueType::ObjectRef);
-					_checkObjectOperandType(fnValue.getObjectRef(), ObjectKind::FnOverloading);
+					Value fnValue;
+					if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[0], fnValue))
+						return false;
+					if (!_checkOperandType(this, fnValue, ValueType::ObjectRef))
+						return false;
+					if (!_checkObjectOperandType(this, fnValue.getObjectRef(), ObjectKind::FnOverloading))
+						return false;
 					fn = (FnOverloadingObject *)fnValue.getObjectRef();
 
-					Value thisObjectValue = _unwrapRegOperand(curMajorFrame, ins.operands[1]);
-					_checkOperandType(thisObjectValue, ValueType::ObjectRef);
+					Value thisObjectValue;
+					if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[1], thisObjectValue))
+						return false;
+					if (!_checkOperandType(this, thisObjectValue, ValueType::ObjectRef))
+						return false;
 					thisObject = thisObjectValue.getObjectRef();
 					break;
 				}
 				case Opcode::CALL: {
-					_checkOperandCount(ins, false, 1);
+					if (!_checkOperandCount(this, ins, false, 1))
+						return false;
 
-					Value fnValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
-					_checkOperandType(fnValue, ValueType::ObjectRef);
-					_checkObjectOperandType(fnValue.getObjectRef(), ObjectKind::FnOverloading);
+					Value fnValue;
+					if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[0], fnValue))
+						return false;
+					if (!_checkOperandType(this, fnValue, ValueType::ObjectRef))
+						return false;
+					if (!_checkObjectOperandType(this, fnValue.getObjectRef(), ObjectKind::FnOverloading))
+						return false;
 					fn = (FnOverloadingObject *)fnValue.getObjectRef();
 					break;
 				}
@@ -1355,32 +1692,43 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 					assert(false);
 			}
 
-			if (!fn)
-				throw NullRefError();
+			if (!fn) {
+				setThreadLocalInternalException(
+					std::this_thread::get_id(),
+					NullRefError::alloc(this));
+				return false;
+			}
 
-			_createNewMajorFrame(
-				&context->_context,
-				thisObject,
-				fn,
-				curMajorFrame->nextArgStack.data(),
-				curMajorFrame->nextArgStack.size());
+			if (!_createNewMajorFrame(
+					&context->_context,
+					thisObject,
+					fn,
+					curMajorFrame->nextArgStack.data(),
+					curMajorFrame->nextArgStack.size()))
+				return false;
 			curMajorFrame->nextArgStack.clear();
 
 			break;
 		}
 		case Opcode::RET: {
-			_checkOperandCount(ins, false, 1);
+			if (!_checkOperandCount(this, ins, false, 1))
+				return false;
 
-			Value returnValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
+			Value returnValue;
+			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[0], returnValue))
+				return false;
 			context->_context.majorFrames.pop_back();
 			context->_context.majorFrames.back()->returnValue = returnValue;
-			return;
+			return true;
 		}
 		case Opcode::LRET: {
-			_checkOperandCount(ins, false, 0);
-			_checkOperandType(ins.output, ValueType::RegRef);
+			if (!_checkOperandCount(this, ins, false, 0))
+				return false;
+			if (!_checkOperandType(this, ins.output, ValueType::RegRef))
+				return false;
 
-			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), curMajorFrame->returnValue);
+			if (!_setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), curMajorFrame->returnValue))
+				return false;
 			break;
 		}
 		case Opcode::ACALL:
@@ -1388,9 +1736,11 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 			break;
 		}
 		case Opcode::YIELD: {
-			_checkOperandCount(ins, false, 1);
+			if (!_checkOperandCount(this, ins, false, 1))
+				return false;
 
-			curMajorFrame->returnValue = _unwrapRegOperand(curMajorFrame, ins.operands[0]);
+			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[0], curMajorFrame->returnValue))
+				return false;
 			context->_context.flags |= CTX_YIELDED;
 			break;
 		}
@@ -1398,52 +1748,74 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 			break;
 		}
 		case Opcode::LTHIS: {
-			_checkOperandCount(ins, false, 0);
-			_checkOperandType(ins.output, ValueType::RegRef);
+			if (!_checkOperandCount(this, ins, false, 0))
+				return false;
+			if (!_checkOperandType(this, ins.output, ValueType::RegRef))
+				return false;
 
-			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), curMajorFrame->thisObject);
+			if (!_setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), curMajorFrame->thisObject))
+				return false;
 			break;
 		}
 		case Opcode::NEW: {
-			_checkOperandCount(ins, true, 1);
+			if (!_checkOperandCount(this, ins, true, 1))
+				return false;
 
-			_checkOperandType(ins.operands[0], ValueType::TypeName);
+			if (!_checkOperandType(this, ins.operands[0], ValueType::TypeName))
+				return false;
 
 			Type type = ins.operands[0].getTypeName();
-			type.loadDeferredType(this);
+			if (!type.loadDeferredType(this))
+				return false;
 
 			switch (type.typeId) {
 				case TypeId::Instance: {
 					ClassObject *cls = (ClassObject *)type.getCustomTypeExData();
 					HostObjectRef<InstanceObject> instance = newClassInstance(cls, 0);
-					_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), instance.get());
+					if (!instance)
+						return false;
+					if (!_setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), instance.get()))
+						return false;
 					break;
 				}
 				default:
-					throw InvalidOperandsError("Specified type cannot be instantiated");
+					setThreadLocalInternalException(
+						std::this_thread::get_id(),
+						InvalidOperandsError::alloc(this));
+					return false;
 			}
 			break;
 		}
 		case Opcode::ARRNEW: {
-			_checkOperandCount(ins, true, 2);
+			if (!_checkOperandCount(this, ins, true, 2))
+				return false;
 
-			_checkOperandType(ins.operands[0], ValueType::TypeName);
-			_checkOperandType(ins.operands[1], ValueType::U32);
+			if (!_checkOperandType(this, ins.operands[0], ValueType::TypeName))
+				return false;
+			if (!_checkOperandType(this, ins.operands[1], ValueType::U32))
+				return false;
 
 			Type type = ins.operands[1].getTypeName();
 			uint32_t size = ins.operands[2].getU32();
-			type.loadDeferredType(this);
+			if (!type.loadDeferredType(this))
+				return false;
 
 			auto instance = newArrayInstance(this, type, size);
+			if (!instance)
+				return false;
 
-			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), instance.get());
+			if (!_setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), instance.get()))
+				return false;
 
 			break;
 		}
 		case Opcode::THROW: {
-			_checkOperandCount(ins, false, 1);
+			if (!_checkOperandCount(this, ins, false, 1))
+				return false;
 
-			Value x = ins.operands[0];
+			Value x;
+			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[0], x))
+				return false;
 
 			for (size_t i = context->_context.majorFrames.size(); i; --i) {
 				auto &majorFrame = context->_context.majorFrames[i - 1];
@@ -1459,24 +1831,31 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 						// the offset has been set to offset to first instruction
 						// of the exception handler.
 						majorFrame->curIns = off;
-						return;
+						return true;
 					}
 				}
 			}
 
 			curMajorFrame->curExcept = x;
-			throw UncaughtExceptionError("Uncaught exception", x);
+			setThreadLocalInternalException(
+				std::this_thread::get_id(),
+				UncaughtExceptionError::alloc(this, x));
+			return false;
 		}
 		case Opcode::PUSHXH: {
-			_checkOperandCount(ins, false, 2);
+			if (!_checkOperandCount(this, ins, false, 2))
+				return false;
 
-			_checkOperandType(ins.operands[0], ValueType::TypeName);
-			_checkOperandType(ins.operands[1], ValueType::U32);
+			if (!_checkOperandType(this, ins.operands[0], ValueType::TypeName))
+				return false;
+			if (!_checkOperandType(this, ins.operands[1], ValueType::U32))
+				return false;
 
 			ExceptionHandler xh;
 
 			Type type = ins.operands[0].getTypeName();
-			type.loadDeferredType(this);
+			if (!type.loadDeferredType(this))
+				return false;
 
 			xh.type = ins.operands[0].getTypeName();
 			xh.off = ins.operands[1].getU32();
@@ -1485,12 +1864,17 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 			break;
 		}
 		case Opcode::CAST: {
-			_checkOperandCount(ins, true, 2);
+			if (!_checkOperandCount(this, ins, true, 2))
+				return false;
 
-			_checkOperandType(ins.output, ValueType::RegRef);
-			_checkOperandType(ins.operands[0], ValueType::TypeName);
+			if (!_checkOperandType(this, ins.output, ValueType::RegRef))
+				return false;
+			if (!_checkOperandType(this, ins.operands[0], ValueType::TypeName))
+				return false;
 
-			Value v = _unwrapRegOperand(curMajorFrame, ins.operands[1]);
+			Value v;
+			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[1], v))
+				return false;
 
 			auto t = ins.operands[0].getTypeName();
 
@@ -1531,20 +1915,32 @@ SLAKE_API void slake::Runtime::_execIns(ContextObject *context, const Instructio
 							v = _castToLiteralValue<double>(v);
 							break;
 						default:
-							throw InvalidOperandsError("Invalid cast target type");
+							setThreadLocalInternalException(
+								std::this_thread::get_id(),
+								InvalidOperandsError::alloc(this));
+							return false;
 					}
+					break;
 				}
 				case TypeId::Instance:
 					break;
 				default:
-					throw InvalidOperandsError("Invalid cast target type");
+					setThreadLocalInternalException(
+						std::this_thread::get_id(),
+						InvalidOperandsError::alloc(this));
+					return false;
 			}
 
-			_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), v);
+			if (!_setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), v))
+				return false;
 			break;
 		}
 		default:
-			throw InvalidOpcodeError("Invalid opcode " + std::to_string((uint8_t)ins.opcode));
+			setThreadLocalInternalException(
+				std::this_thread::get_id(),
+				InvalidOpcodeError::alloc(this, ins.opcode));
+			return false;
 	}
 	++curMajorFrame->curIns;
+	return true;
 }

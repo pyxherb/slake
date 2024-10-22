@@ -70,7 +70,8 @@ SLAKE_API ClassObject::~ClassObject() {
 
 SLAKE_API bool ClassObject::hasImplemented(const InterfaceObject *pInterface) const {
 	for (auto &i : implInterfaces) {
-		const_cast<Type &>(i).loadDeferredType(associatedRuntime);
+		if (!const_cast<Type &>(i).loadDeferredType(associatedRuntime))
+			return false;
 
 		if (((InterfaceObject *)i.getCustomTypeExData())->isDerivedFrom(pInterface))
 			return true;
@@ -86,7 +87,8 @@ SLAKE_API bool ClassObject::isBaseOf(const ClassObject *pClass) const {
 
 		if (i->parentClass.typeId == TypeId::None)
 			break;
-		const_cast<Type &>(i->parentClass).loadDeferredType(i->associatedRuntime);
+		if (!const_cast<Type &>(i->parentClass).loadDeferredType(i->associatedRuntime))
+			return false;
 		auto parentClassObject = i->parentClass.getCustomTypeExData();
 		assert(parentClassObject->getKind() == ObjectKind::Class);
 		i = (ClassObject *)parentClassObject;
@@ -112,12 +114,16 @@ SLAKE_API bool InterfaceObject::isDerivedFrom(const InterfaceObject *pInterface)
 		return true;
 
 	for (auto &i : parents) {
-		const_cast<Type &>(i).loadDeferredType(associatedRuntime);
+		if (!const_cast<Type &>(i).loadDeferredType(associatedRuntime))
+			return false;
 
 		InterfaceObject *interface = (InterfaceObject *)i.getCustomTypeExData();
 
-		if (interface->getKind() != ObjectKind::Interface)
-			throw IncompatibleTypeError("Referenced type value is not an interface");
+		if (interface->getKind() != ObjectKind::Interface) {
+			// The parent is not an interface - this situation should not be here,
+			// but we have disabled exceptions, so return anyway.
+			return false;
+		}
 
 		if (interface->isDerivedFrom(pInterface))
 			return true;

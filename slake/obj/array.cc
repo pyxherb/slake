@@ -47,23 +47,30 @@ SLAKE_API U8ArrayAccessorVarObject::U8ArrayAccessorVarObject(Runtime *rt, U8Arra
 
 SLAKE_API U8ArrayAccessorVarObject::~U8ArrayAccessorVarObject() {}
 
-SLAKE_API void U8ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
-	if (value.valueType != ValueType::U8)
-		throw MismatchedTypeError("Mismatched array element type");
+SLAKE_API bool U8ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
+	if (value.valueType != ValueType::U8) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 
 	U8ArrayObject *arrayObject = ((U8ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return false;
+	}
 
 	arrayObject->data[index] = value.getU8();
+	return true;
 }
 
-SLAKE_API Value U8ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API Optional U8ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
 	U8ArrayObject *arrayObject = ((U8ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return {};
+	}
 
 	return Value(arrayObject->data[index]);
 }
@@ -107,12 +114,17 @@ SLAKE_API void U8ArrayObject::clear() {
 	}
 }
 
-SLAKE_API void U8ArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
-	if (beginIndex + length > this->length)
-		throw OutOfRangeError();
-	if (value.valueType != ValueType::U8)
-		throw MismatchedTypeError("Mismatched array element type");
+SLAKE_API bool U8ArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
+	if (beginIndex + length > this->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, beginIndex + length);
+		return false;
+	}
+	if (value.valueType != ValueType::U8) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 	memset(data + beginIndex, value.getU8(), length * sizeof(uint8_t));
+	return true;
 }
 
 SLAKE_API void U8ArrayObject::resize(size_t newLength) {
@@ -196,23 +208,30 @@ SLAKE_API U16ArrayAccessorVarObject::U16ArrayAccessorVarObject(Runtime *rt, U16A
 
 SLAKE_API U16ArrayAccessorVarObject::~U16ArrayAccessorVarObject() {}
 
-SLAKE_API void U16ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
-	if (value.valueType != ValueType::U16)
-		throw MismatchedTypeError("Mismatched array element type");
+SLAKE_API bool U16ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
+	if (value.valueType != ValueType::U16) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 
 	U16ArrayObject *arrayObject = ((U16ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return false;
+	}
 
 	arrayObject->data[index] = value.getU16();
+	return true;
 }
 
-SLAKE_API Value U16ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API Optional U16ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
 	U16ArrayObject *arrayObject = ((U16ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return {};
+	}
 
 	return Value(arrayObject->data[index]);
 }
@@ -256,12 +275,17 @@ SLAKE_API void U16ArrayObject::clear() {
 	}
 }
 
-SLAKE_API void U16ArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
-	if (beginIndex + length > this->length)
-		throw OutOfRangeError();
-	if (value.valueType != ValueType::U16)
-		throw MismatchedTypeError("Mismatched array element type");
+SLAKE_API bool U16ArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
+	if (beginIndex + length > this->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, beginIndex + length);
+		return false;
+	}
+	if (value.valueType != ValueType::U16) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 	std::fill_n(data + beginIndex, length, value.getU16());
+	return true;
 }
 
 SLAKE_API void U16ArrayObject::resize(size_t newLength) {
@@ -345,23 +369,30 @@ SLAKE_API U32ArrayAccessorVarObject::U32ArrayAccessorVarObject(Runtime *rt, U32A
 
 SLAKE_API U32ArrayAccessorVarObject::~U32ArrayAccessorVarObject() {}
 
-SLAKE_API void U32ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
-	if (value.valueType != ValueType::U32)
-		throw MismatchedTypeError("Mismatched array element type");
+SLAKE_API bool U32ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
+	if (value.valueType != ValueType::U32) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 
 	U32ArrayObject *arrayObject = ((U32ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return false;
+	}
 
 	arrayObject->data[index] = value.getU32();
+	return true;
 }
 
-SLAKE_API Value U32ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API Optional U32ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
 	U32ArrayObject *arrayObject = ((U32ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return {};
+	}
 
 	return Value(arrayObject->data[index]);
 }
@@ -405,12 +436,17 @@ SLAKE_API void U32ArrayObject::clear() {
 	}
 }
 
-SLAKE_API void U32ArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
-	if (beginIndex + length > this->length)
-		throw OutOfRangeError();
-	if (value.valueType != ValueType::U32)
-		throw MismatchedTypeError("Mismatched array element type");
+SLAKE_API bool U32ArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
+	if (beginIndex + length > this->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, beginIndex + length);
+		return false;
+	}
+	if (value.valueType != ValueType::U32) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 	std::fill_n(data + beginIndex, length, value.getU32());
+	return true;
 }
 
 SLAKE_API void U32ArrayObject::resize(size_t newLength) {
@@ -494,23 +530,30 @@ SLAKE_API U64ArrayAccessorVarObject::U64ArrayAccessorVarObject(Runtime *rt, U64A
 
 SLAKE_API U64ArrayAccessorVarObject::~U64ArrayAccessorVarObject() {}
 
-SLAKE_API void U64ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
-	if (value.valueType != ValueType::U64)
-		throw MismatchedTypeError("Mismatched array element type");
+SLAKE_API bool U64ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
+	if (value.valueType != ValueType::U64) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 
 	U64ArrayObject *arrayObject = ((U64ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return false;
+	}
 
 	arrayObject->data[index] = value.getU64();
+	return true;
 }
 
-SLAKE_API Value U64ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API Optional U64ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
 	U64ArrayObject *arrayObject = ((U64ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return {};
+	}
 
 	return Value(arrayObject->data[index]);
 }
@@ -554,12 +597,17 @@ SLAKE_API void U64ArrayObject::clear() {
 	}
 }
 
-SLAKE_API void U64ArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
-	if (beginIndex + length > this->length)
-		throw OutOfRangeError();
-	if (value.valueType != ValueType::U64)
-		throw MismatchedTypeError("Mismatched array element type");
+SLAKE_API bool U64ArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
+	if (beginIndex + length > this->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, beginIndex + length);
+		return false;
+	}
+	if (value.valueType != ValueType::U64) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 	std::fill_n(data + beginIndex, length, value.getU64());
+	return true;
 }
 
 SLAKE_API void U64ArrayObject::resize(size_t newLength) {
@@ -643,23 +691,30 @@ SLAKE_API I8ArrayAccessorVarObject::I8ArrayAccessorVarObject(Runtime *rt, I8Arra
 
 SLAKE_API I8ArrayAccessorVarObject::~I8ArrayAccessorVarObject() {}
 
-SLAKE_API void I8ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
-	if (value.valueType != ValueType::I8)
-		throw MismatchedTypeError("Mismatched array element type");
+SLAKE_API bool I8ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
+	if (value.valueType != ValueType::I8) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 
 	I8ArrayObject *arrayObject = ((I8ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return false;
+	}
 
 	arrayObject->data[index] = value.getI8();
+	return true;
 }
 
-SLAKE_API Value I8ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API Optional I8ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
 	I8ArrayObject *arrayObject = ((I8ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return {};
+	}
 
 	return Value(arrayObject->data[index]);
 }
@@ -703,14 +758,19 @@ SLAKE_API void I8ArrayObject::clear() {
 	}
 }
 
-SLAKE_API void I8ArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
-	if (beginIndex + length > this->length)
-		throw OutOfRangeError();
-	if (value.valueType != ValueType::I8)
-		throw MismatchedTypeError("Mismatched array element type");
+SLAKE_API bool I8ArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
+	if (beginIndex + length > this->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, beginIndex + length);
+		return false;
+	}
+	if (value.valueType != ValueType::I8) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 
 	int8_t v = value.getI8();
 	memset(data + beginIndex, *(uint8_t *)&v, length * sizeof(int8_t));
+	return true;
 }
 
 SLAKE_API void I8ArrayObject::resize(size_t newLength) {
@@ -794,23 +854,30 @@ SLAKE_API I16ArrayAccessorVarObject::I16ArrayAccessorVarObject(Runtime *rt, I16A
 
 SLAKE_API I16ArrayAccessorVarObject::~I16ArrayAccessorVarObject() {}
 
-SLAKE_API void I16ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
-	if (value.valueType != ValueType::I16)
-		throw MismatchedTypeError("Mismatched array element type");
+SLAKE_API bool I16ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
+	if (value.valueType != ValueType::I16) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 
 	I16ArrayObject *arrayObject = ((I16ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return false;
+	}
 
 	arrayObject->data[index] = value.getI16();
+	return true;
 }
 
-SLAKE_API Value I16ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API Optional I16ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
 	I16ArrayObject *arrayObject = ((I16ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return {};
+	}
 
 	return Value(arrayObject->data[index]);
 }
@@ -854,12 +921,17 @@ SLAKE_API void I16ArrayObject::clear() {
 	}
 }
 
-SLAKE_API void I16ArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
-	if (beginIndex + length > this->length)
-		throw OutOfRangeError();
-	if (value.valueType != ValueType::I16)
-		throw MismatchedTypeError("Mismatched array element type");
+SLAKE_API bool I16ArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
+	if (beginIndex + length > this->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, beginIndex + length);
+		return false;
+	}
+	if (value.valueType != ValueType::I16) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 	std::fill_n(data + beginIndex, length, value.getI16());
+	return true;
 }
 
 SLAKE_API void I16ArrayObject::resize(size_t newLength) {
@@ -943,23 +1015,30 @@ SLAKE_API I32ArrayAccessorVarObject::I32ArrayAccessorVarObject(Runtime *rt, I32A
 
 SLAKE_API I32ArrayAccessorVarObject::~I32ArrayAccessorVarObject() {}
 
-SLAKE_API void I32ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
-	if (value.valueType != ValueType::I32)
-		throw MismatchedTypeError("Mismatched array element type");
+SLAKE_API bool I32ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
+	if (value.valueType != ValueType::I32) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 
 	I32ArrayObject *arrayObject = ((I32ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return false;
+	}
 
 	arrayObject->data[index] = value.getI32();
+	return true;
 }
 
-SLAKE_API Value I32ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API Optional I32ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
 	I32ArrayObject *arrayObject = ((I32ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return {};
+	}
 
 	return Value(arrayObject->data[index]);
 }
@@ -1003,12 +1082,17 @@ SLAKE_API void I32ArrayObject::clear() {
 	}
 }
 
-SLAKE_API void I32ArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
-	if (beginIndex + length > this->length)
-		throw OutOfRangeError();
-	if (value.valueType != ValueType::I32)
-		throw MismatchedTypeError("Mismatched array element type");
+SLAKE_API bool I32ArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
+	if (beginIndex + length > this->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, beginIndex + length);
+		return false;
+	}
+	if (value.valueType != ValueType::I32) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 	std::fill_n(data + beginIndex, length, value.getI32());
+	return true;
 }
 
 SLAKE_API void I32ArrayObject::resize(size_t newLength) {
@@ -1092,23 +1176,30 @@ SLAKE_API I64ArrayAccessorVarObject::I64ArrayAccessorVarObject(Runtime *rt, I64A
 
 SLAKE_API I64ArrayAccessorVarObject::~I64ArrayAccessorVarObject() {}
 
-SLAKE_API void I64ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
-	if (value.valueType != ValueType::I64)
-		throw MismatchedTypeError("Mismatched array element type");
+SLAKE_API bool I64ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
+	if (value.valueType != ValueType::I64) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 
 	I64ArrayObject *arrayObject = ((I64ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return false;
+	}
 
 	arrayObject->data[index] = value.getI64();
+	return true;
 }
 
-SLAKE_API Value I64ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API Optional I64ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
 	I64ArrayObject *arrayObject = ((I64ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return {};
+	}
 
 	return Value(arrayObject->data[index]);
 }
@@ -1152,12 +1243,17 @@ SLAKE_API void I64ArrayObject::clear() {
 	}
 }
 
-SLAKE_API void I64ArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
-	if (beginIndex + length > this->length)
-		throw OutOfRangeError();
-	if (value.valueType != ValueType::I64)
-		throw MismatchedTypeError("Mismatched array element type");
+SLAKE_API bool I64ArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
+	if (beginIndex + length > this->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, beginIndex + length);
+		return false;
+	}
+	if (value.valueType != ValueType::I64) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 	std::fill_n(data + beginIndex, length, value.getI64());
+	return true;
 }
 
 SLAKE_API void I64ArrayObject::resize(size_t newLength) {
@@ -1241,23 +1337,30 @@ SLAKE_API F32ArrayAccessorVarObject::F32ArrayAccessorVarObject(Runtime *rt, F32A
 
 SLAKE_API F32ArrayAccessorVarObject::~F32ArrayAccessorVarObject() {}
 
-SLAKE_API void F32ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
-	if (value.valueType != ValueType::F32)
-		throw MismatchedTypeError("Mismatched array element type");
+SLAKE_API bool F32ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
+	if (value.valueType != ValueType::F32) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 
 	F32ArrayObject *arrayObject = ((F32ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return false;
+	}
 
 	arrayObject->data[index] = value.getF32();
+	return true;
 }
 
-SLAKE_API Value F32ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API Optional F32ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
 	F32ArrayObject *arrayObject = ((F32ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return {};
+	}
 
 	return Value(arrayObject->data[index]);
 }
@@ -1301,12 +1404,17 @@ SLAKE_API void F32ArrayObject::clear() {
 	}
 }
 
-SLAKE_API void F32ArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
-	if (beginIndex + length > this->length)
-		throw OutOfRangeError();
-	if (value.valueType != ValueType::F32)
-		throw MismatchedTypeError("Mismatched array element type");
+SLAKE_API bool F32ArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
+	if (beginIndex + length > this->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, beginIndex + length);
+		return false;
+	}
+	if (value.valueType != ValueType::F32) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 	std::fill_n(data + beginIndex, length, value.getF32());
+	return true;
 }
 
 SLAKE_API void F32ArrayObject::resize(size_t newLength) {
@@ -1390,23 +1498,30 @@ SLAKE_API F64ArrayAccessorVarObject::F64ArrayAccessorVarObject(Runtime *rt, F64A
 
 SLAKE_API F64ArrayAccessorVarObject::~F64ArrayAccessorVarObject() {}
 
-SLAKE_API void F64ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
-	if (value.valueType != ValueType::F64)
-		throw MismatchedTypeError("Mismatched array element type");
+SLAKE_API bool F64ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
+	if (value.valueType != ValueType::F64) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 
 	F64ArrayObject *arrayObject = ((F64ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return false;
+	}
 
 	arrayObject->data[index] = value.getF64();
+	return true;
 }
 
-SLAKE_API Value F64ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API Optional F64ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
 	F64ArrayObject *arrayObject = ((F64ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return {};
+	}
 
 	return Value(arrayObject->data[index]);
 }
@@ -1450,12 +1565,17 @@ SLAKE_API void F64ArrayObject::clear() {
 	}
 }
 
-SLAKE_API void F64ArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
-	if (beginIndex + length > this->length)
-		throw OutOfRangeError();
-	if (value.valueType != ValueType::F64)
-		throw MismatchedTypeError("Mismatched array element type");
+SLAKE_API bool F64ArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
+	if (beginIndex + length > this->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, beginIndex + length);
+		return false;
+	}
+	if (value.valueType != ValueType::F64) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 	std::fill_n(data + beginIndex, length, value.getF64());
+	return true;
 }
 
 SLAKE_API void F64ArrayObject::resize(size_t newLength) {
@@ -1539,23 +1659,30 @@ SLAKE_API BoolArrayAccessorVarObject::BoolArrayAccessorVarObject(Runtime *rt, Bo
 
 SLAKE_API BoolArrayAccessorVarObject::~BoolArrayAccessorVarObject() {}
 
-SLAKE_API void BoolArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
-	if (value.valueType != ValueType::Bool)
-		throw MismatchedTypeError("Mismatched array element type");
+SLAKE_API bool BoolArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
+	if (value.valueType != ValueType::Bool) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 
 	BoolArrayObject *arrayObject = ((BoolArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return false;
+	}
 
 	arrayObject->data[index] = value.getBool();
+	return true;
 }
 
-SLAKE_API Value BoolArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API Optional BoolArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
 	BoolArrayObject *arrayObject = ((BoolArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return {};
+	}
 
 	return Value(arrayObject->data[index]);
 }
@@ -1599,12 +1726,17 @@ SLAKE_API void BoolArrayObject::clear() {
 	}
 }
 
-SLAKE_API void BoolArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
-	if (beginIndex + length > this->length)
-		throw OutOfRangeError();
-	if (value.valueType != ValueType::Bool)
-		throw MismatchedTypeError("Mismatched array element type");
+SLAKE_API bool BoolArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
+	if (beginIndex + length > this->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, beginIndex + length);
+		return false;
+	}
+	if (value.valueType != ValueType::Bool) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 	std::fill_n(data + beginIndex, length, value.getBool());
+	return true;
 }
 
 SLAKE_API void BoolArrayObject::resize(size_t newLength) {
@@ -1688,27 +1820,36 @@ SLAKE_API ObjectRefArrayAccessorVarObject::ObjectRefArrayAccessorVarObject(Runti
 
 SLAKE_API ObjectRefArrayAccessorVarObject::~ObjectRefArrayAccessorVarObject() {}
 
-SLAKE_API void ObjectRefArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
-	if (value.valueType != ValueType::ObjectRef)
-		throw MismatchedTypeError("Mismatched array element type");
+SLAKE_API bool ObjectRefArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
+	if (value.valueType != ValueType::ObjectRef) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 
 	ObjectRefArrayObject *arrayObject = ((ObjectRefArrayObject *)this->arrayObject);
 
-	if (!isCompatible(arrayObject->elementType, value))
-		throw MismatchedTypeError("Mismatched array element type");
+	if (!isCompatible(arrayObject->elementType, value)) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return false;
+	}
 
 	arrayObject->data[index] = value.getObjectRef();
+	return true;
 }
 
-SLAKE_API Value ObjectRefArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API Optional ObjectRefArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
 	ObjectRefArrayObject *arrayObject = ((ObjectRefArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return {};
+	}
 
 	return Value(arrayObject->data[index]);
 }
@@ -1752,14 +1893,21 @@ SLAKE_API void ObjectRefArrayObject::clear() {
 	}
 }
 
-SLAKE_API void ObjectRefArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
-	if (beginIndex + length > this->length)
-		throw OutOfRangeError();
-	if (value.valueType != ValueType::ObjectRef)
-		throw MismatchedTypeError("Mismatched array element type");
-	if (!isCompatible(elementType, value))
-		throw MismatchedTypeError("Mismatched array element type");
+SLAKE_API bool ObjectRefArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
+	if (beginIndex + length > this->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, beginIndex + length);
+		return false;
+	}
+	if (value.valueType != ValueType::ObjectRef) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
+	if (!isCompatible(elementType, value)) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 	std::fill_n(data + beginIndex, length, value.getObjectRef());
+	return true;
 }
 
 SLAKE_API void ObjectRefArrayObject::resize(size_t newLength) {
@@ -1843,20 +1991,25 @@ SLAKE_API AnyArrayAccessorVarObject::AnyArrayAccessorVarObject(Runtime *rt, AnyA
 
 SLAKE_API AnyArrayAccessorVarObject::~AnyArrayAccessorVarObject() {}
 
-SLAKE_API void AnyArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
+SLAKE_API bool AnyArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
 	AnyArrayObject *arrayObject = ((AnyArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return false;
+	}
 
 	arrayObject->data[index] = value;
+	return true;
 }
 
-SLAKE_API Value AnyArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API Optional AnyArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
 	AnyArrayObject *arrayObject = ((AnyArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length)
-		throw OutOfRangeError();
+	if (index > arrayObject->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, index);
+		return {};
+	}
 
 	return Value(arrayObject->data[index]);
 }
@@ -1902,10 +2055,13 @@ SLAKE_API void AnyArrayObject::clear() {
 	}
 }
 
-SLAKE_API void AnyArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
-	if (beginIndex + length > this->length)
-		throw OutOfRangeError();
+SLAKE_API bool AnyArrayObject::fill(size_t beginIndex, size_t length, const Value &value) {
+	if (beginIndex + length > this->length) {
+		raiseInvalidArrayIndexError(associatedRuntime, beginIndex + length);
+		return false;
+	}
 	std::fill_n(data + beginIndex, length, value);
+	return true;
 }
 
 SLAKE_API void AnyArrayObject::resize(size_t newLength) {
@@ -1977,4 +2133,10 @@ SLAKE_API void slake::AnyArrayObject::dealloc() {
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
+}
+
+void slake::raiseInvalidArrayIndexError(Runtime *rt, size_t index) {
+	rt->setThreadLocalInternalException(
+		std::this_thread::get_id(),
+		InvalidArrayIndexError::alloc(rt, index));
 }

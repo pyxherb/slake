@@ -407,6 +407,7 @@ std::shared_ptr<ExprNode> Compiler::evalConstExpr(std::shared_ptr<ExprNode> expr
 			return {};	// stub
 		}
 		case ExprType::Cast: {
+			return {}; // stub
 			auto e = std::static_pointer_cast<CastExprNode>(expr);
 			if (!isLiteralTypeName(e->targetType))
 				return {};

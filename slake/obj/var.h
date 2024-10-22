@@ -26,8 +26,8 @@ namespace slake {
 
 		SLAKE_API virtual Type getVarType(const VarRefContext &context) const = 0;
 
-		SLAKE_API virtual Value getData(const VarRefContext &context) const = 0;
-		SLAKE_API virtual void setData(const VarRefContext &context, const Value &value) = 0;
+		SLAKE_API virtual Optional getData(const VarRefContext &context) const = 0;
+		SLAKE_API [[nodiscard]] virtual bool setData(const VarRefContext &context, const Value &value) = 0;
 
 		SLAKE_API virtual VarKind getVarKind() const = 0;
 	};
@@ -55,8 +55,8 @@ namespace slake {
 		SLAKE_API static HostObjectRef<RegularVarObject> alloc(const RegularVarObject *other);
 		SLAKE_API virtual void dealloc() override;
 
-		SLAKE_API virtual Value getData(const VarRefContext &context) const override;
-		SLAKE_API virtual void setData(const VarRefContext &context, const Value &value) override;
+		SLAKE_API virtual Optional getData(const VarRefContext &context) const override;
+		SLAKE_API [[nodiscard]] virtual bool setData(const VarRefContext &context, const Value &value) override;
 
 		SLAKE_API virtual ObjectKind getKind() const override;
 
@@ -84,8 +84,8 @@ namespace slake {
 
 		SLAKE_API virtual VarKind getVarKind() const override;
 
-		SLAKE_API virtual void setData(const VarRefContext &varRefContext, const Value &value) override;
-		SLAKE_API virtual Value getData(const VarRefContext &varRefContext) const override;
+		SLAKE_API [[nodiscard]] virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
+		SLAKE_API virtual Optional getData(const VarRefContext &varRefContext) const override;
 
 		SLAKE_API static HostObjectRef<LocalVarAccessorVarObject> alloc(
 			Runtime *rt,
@@ -94,6 +94,8 @@ namespace slake {
 		);
 		SLAKE_API virtual void dealloc() override;
 	};
+
+	void raiseMismatchedVarTypeError(Runtime *rt);
 }
 
 #endif

@@ -24,8 +24,8 @@ namespace slake {
 
 		SLAKE_API virtual VarKind getVarKind() const override { return VarKind::InstanceMemberAccessor; }
 
-		SLAKE_API virtual void setData(const VarRefContext &varRefContext, const Value &value) override;
-		SLAKE_API virtual Value getData(const VarRefContext &varRefContext) const override;
+		SLAKE_API virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
+		SLAKE_API virtual Optional getData(const VarRefContext &varRefContext) const override;
 
 		SLAKE_API static HostObjectRef<InstanceMemberAccessorVarObject> alloc(Runtime *rt, InstanceObject *arrayObject);
 		SLAKE_API virtual void dealloc() override;

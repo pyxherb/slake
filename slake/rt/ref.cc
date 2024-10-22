@@ -34,13 +34,16 @@ SLAKE_API Object *Runtime::resolveIdRef(
 			}
 
 			if (i.genericArgs.size()) {
-				for (auto &j : i.genericArgs)
-					j.loadDeferredType(this);
+				for (auto &j : i.genericArgs) {
+					if (!j.loadDeferredType(this))
+						return nullptr;
+				}
 
 				GenericInstantiationContext genericInstantiationContext(&globalHeapPoolResource);
 
 				genericInstantiationContext.genericArgs = &i.genericArgs;
-				scopeObject = instantiateGenericObject(scopeObject, genericInstantiationContext);
+				if(!(scopeObject = instantiateGenericObject(scopeObject, genericInstantiationContext)))
+					return nullptr;
 			}
 
 			if (i.hasParamTypes) {
@@ -49,7 +52,8 @@ SLAKE_API Object *Runtime::resolveIdRef(
 						FnObject *fnObject = ((FnObject *)scopeObject);
 
 						for (auto& j : i.paramTypes) {
-							j.loadDeferredType(this);
+							if (!j.loadDeferredType(this))
+								return nullptr;
 						}
 
 						scopeObject = fnObject->getOverloading(i.paramTypes);

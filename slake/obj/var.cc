@@ -57,12 +57,15 @@ SLAKE_API void slake::RegularVarObject::dealloc() {
 	allocator.deallocate(this, 1);
 }
 
-SLAKE_API Value RegularVarObject::getData(const VarRefContext &context) const { return value; }
+SLAKE_API Optional RegularVarObject::getData(const VarRefContext &context) const { return value; }
 
-SLAKE_API void RegularVarObject::setData(const VarRefContext &context, const Value &value) {
-	if (!isCompatible(type, value))
-		throw MismatchedTypeError("Mismatched variable type");
+SLAKE_API bool RegularVarObject::setData(const VarRefContext &context, const Value &value) {
+	if (!isCompatible(type, value)) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 	this->value = value;
+	return true;
 }
 
 SLAKE_API ObjectKind RegularVarObject::getKind() const { return ObjectKind::Var; }
@@ -111,12 +114,14 @@ SLAKE_API Type LocalVarAccessorVarObject::getVarType(const VarRefContext &contex
 
 SLAKE_API VarKind LocalVarAccessorVarObject::getVarKind() const { return VarKind::LocalVarAccessor; }
 
-SLAKE_API void LocalVarAccessorVarObject::setData(const VarRefContext &context, const Value &value) {
+SLAKE_API bool LocalVarAccessorVarObject::setData(const VarRefContext &context, const Value &value) {
 	LocalVarRecord &localVarRecord =
 		majorFrame->localVarRecords[context.asLocalVar.localVarIndex];
 
-	if (!isCompatible(localVarRecord.type, value))
-		throw MismatchedTypeError("Mismatched variable type");
+	if (!isCompatible(localVarRecord.type, value)) {
+		raiseMismatchedVarTypeError(associatedRuntime);
+		return false;
+	}
 
 	char *rawDataPtr = this->context->dataStack + localVarRecord.stackOffset;
 
@@ -167,9 +172,10 @@ SLAKE_API void LocalVarAccessorVarObject::setData(const VarRefContext &context, 
 			// All fields should be checked during the instantiation.
 			throw std::logic_error("Unhandled value type");
 	}
+	return true;
 }
 
-SLAKE_API Value LocalVarAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API Optional LocalVarAccessorVarObject::getData(const VarRefContext &varRefContext) const {
 	LocalVarRecord &localVarRecord =
 		majorFrame->localVarRecords[varRefContext.asLocalVar.localVarIndex];
 
@@ -235,4 +241,10 @@ SLAKE_API void slake::LocalVarAccessorVarObject::dealloc() {
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
+}
+
+void slake::raiseMismatchedVarTypeError(Runtime *rt) {
+	rt->setThreadLocalInternalException(
+		std::this_thread::get_id(),
+		MismatchedVarTypeError::alloc(rt));
 }

@@ -423,13 +423,13 @@ void Compiler::_getFullName(MemberNode *member, IdRefEntries &ref) {
 	switch (member->getNodeType()) {
 		case NodeType::FnOverloadingValue: {
 			auto m = (FnOverloadingNode *)member;
-			if (!m->owner->parent)
+			if (m->owner->parent == _rootNode.get())
 				return;
 			_getFullName(m->owner->parent, ref);
 			break;
 		}
 		default:
-			if (!member->parent)
+			if (member->parent == _rootNode.get())
 				return;
 			_getFullName(member->parent, ref);
 	}

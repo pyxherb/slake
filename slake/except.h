@@ -2,6 +2,7 @@
 #define _SLAKE_EXCEPT_H_
 
 #include <stdexcept>
+#include "opcode.h"
 #include "value.h"
 #include <slake/obj/idref.h>
 
@@ -32,9 +33,6 @@ namespace slake {
 		/// @brief Member referenced was not found.
 		ReferencedMemberNotFound,
 
-		/// @brief An error occurred during the generic instantiation of a member.
-		GenericInstantiationError,
-
 		/// @brief There's an uncaught Slake exception.
 		UncaughtException,
 
@@ -50,11 +48,17 @@ namespace slake {
 		/// @brief Invalid argument index.
 		InvalidArgumentIndex,
 
+		/// @brief Invalid argument number.
+		InvalidArgumentNumber,
+
 		/// @brief Invalid array index.
 		InvalidArrayIndex,
 
 		/// @brief Stack overflowed.
-		StackOverflow
+		StackOverflow,
+
+		/// @brief An error occurred during the generic instantiation of a member.
+		GenericInstantiationError,
 	};
 
 	enum class SLXLoaderErrorCode : uint8_t {
@@ -64,170 +68,245 @@ namespace slake {
 		DuplicatedMember
 	};
 
-	class InternalExcpetion {
+	class InternalException {
 	public:
+		Runtime *associatedRuntime;
 		ErrorKind kind;
 
+		SLAKE_API InternalException(Runtime *associatedRuntime, ErrorKind kind);
+		SLAKE_API virtual ~InternalException();
 
+		virtual const char *what() const = 0;
+
+		virtual void dealloc() = 0;
 	};
 
-	class RuntimeExecError : public std::runtime_error {
+	class RuntimeExecError : public InternalException {
 	public:
-		inline RuntimeExecError(std::string msg) : runtime_error(msg){};
-		virtual ~RuntimeExecError() = default;
+		RuntimeExecErrorCode errorCode;
+
+		SLAKE_API RuntimeExecError(Runtime *associatedRuntime, RuntimeExecErrorCode errorCode);
+		SLAKE_API virtual ~RuntimeExecError();
 	};
 
-	class NoOverloadingError : public RuntimeExecError {
+	class MismatchedVarTypeError : public RuntimeExecError {
 	public:
-		inline NoOverloadingError(std::string msg) : RuntimeExecError(msg){};
-		virtual ~NoOverloadingError() = default;
-	};
+		SLAKE_API MismatchedVarTypeError(Runtime *associatedRuntime);
+		SLAKE_API virtual ~MismatchedVarTypeError();
 
-	class OutOfFnBodyError : public RuntimeExecError {
-	public:
-		inline OutOfFnBodyError(std::string msg) : RuntimeExecError(msg){};
-		virtual ~OutOfFnBodyError() = default;
-	};
+		SLAKE_API virtual const char *what() const override;
 
-	/// @brief Raises when mismatched types were detected.
-	class MismatchedTypeError : public RuntimeExecError {
-	public:
-		inline MismatchedTypeError(std::string msg) : RuntimeExecError(msg){};
-		virtual ~MismatchedTypeError() = default;
-	};
+		SLAKE_API virtual void dealloc() override;
 
-	/// @brief Raises when incompatible types were detected.
-	class IncompatibleTypeError : public RuntimeExecError {
-	public:
-		inline IncompatibleTypeError(std::string msg) : RuntimeExecError(msg){};
-		virtual ~IncompatibleTypeError() = default;
-	};
-
-	/// @brief Raises when executing instructions with invalid opcode.
-	class InvalidOpcodeError : public RuntimeExecError {
-	public:
-		inline InvalidOpcodeError(std::string msg) : RuntimeExecError(msg){};
-		virtual ~InvalidOpcodeError() = default;
-	};
-
-	/// @brief Raises when executing instructions with invalid operand combination.
-	class InvalidOperandsError : public RuntimeExecError {
-	public:
-		inline InvalidOperandsError(std::string msg) : RuntimeExecError(msg){};
-		virtual ~InvalidOperandsError() = default;
-	};
-
-	class InvalidArgumentsError : public RuntimeExecError {
-	public:
-		inline InvalidArgumentsError(std::string msg = "Invalid arguments") : RuntimeExecError(msg){};
-		virtual ~InvalidArgumentsError() = default;
-	};
-
-	class InvalidRegisterError : public RuntimeExecError {
-	public:
-		inline InvalidRegisterError(std::string msg = "Invalid register") : RuntimeExecError(msg){};
-		virtual ~InvalidRegisterError() = default;
-	};
-
-	class NotFoundError : public RuntimeExecError {
-	public:
-		IdRefObject *ref;
-
-		NotFoundError(std::string msg, IdRefObject *ref);
-		virtual ~NotFoundError() = default;
-	};
-
-	class GenericInstantiationError : public RuntimeExecError {
-	public:
-		inline GenericInstantiationError(std::string msg)
-			: RuntimeExecError(msg) {}
-		virtual ~GenericInstantiationError() = default;
-	};
-
-	class AccessViolationError : public RuntimeExecError {
-	public:
-		inline AccessViolationError(std::string msg) : RuntimeExecError(msg){};
-		virtual ~AccessViolationError() = default;
-	};
-
-	class UncaughtExceptionError : public RuntimeExecError {
-	public:
-		Value source;
-
-		inline UncaughtExceptionError(std::string msg, const Value &source) : RuntimeExecError(msg), source(source){};
-		virtual ~UncaughtExceptionError() = default;
-	};
-
-	class AbortedError : public RuntimeExecError {
-	public:
-		inline AbortedError(std::string msg) : RuntimeExecError(msg){};
-		virtual ~AbortedError() = default;
+		SLAKE_API static MismatchedVarTypeError *alloc(Runtime *associatedRuntime);
 	};
 
 	class FrameBoundaryExceededError : public RuntimeExecError {
 	public:
-		inline FrameBoundaryExceededError(std::string msg) : RuntimeExecError(msg){};
-		virtual ~FrameBoundaryExceededError() = default;
+		SLAKE_API FrameBoundaryExceededError(Runtime *associatedRuntime);
+		SLAKE_API virtual ~FrameBoundaryExceededError();
+
+		SLAKE_API virtual const char *what() const override;
+
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API static FrameBoundaryExceededError *alloc(Runtime *associatedRuntime);
 	};
 
-	class InvalidLocalVarIndexError : public RuntimeExecError {
+	class InvalidOpcodeError : public RuntimeExecError {
 	public:
-		const uint32_t index;
+		Opcode opcode;
 
-		inline InvalidLocalVarIndexError(std::string msg, uint32_t index) : RuntimeExecError(msg), index(index){};
-		virtual ~InvalidLocalVarIndexError() = default;
+		SLAKE_API InvalidOpcodeError(Runtime *associatedRuntime, Opcode opcode);
+		SLAKE_API virtual ~InvalidOpcodeError();
+
+		SLAKE_API virtual const char *what() const override;
+
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API static InvalidOpcodeError *alloc(Runtime *associatedRuntime, Opcode index);
+	};
+
+	class InvalidOperandsError : public RuntimeExecError {
+	public:
+		SLAKE_API InvalidOperandsError(Runtime *associatedRuntime);
+		SLAKE_API virtual ~InvalidOperandsError();
+
+		SLAKE_API virtual const char *what() const override;
+
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API static InvalidOperandsError *alloc(Runtime *associatedRuntime);
 	};
 
 	class InvalidRegisterIndexError : public RuntimeExecError {
 	public:
-		const uint32_t index;
+		uint32_t index;
 
-		inline InvalidRegisterIndexError(std::string msg, uint32_t index) : RuntimeExecError(msg), index(index){};
-		virtual ~InvalidRegisterIndexError() = default;
+		SLAKE_API InvalidRegisterIndexError(Runtime *associatedRuntime, uint32_t index);
+		SLAKE_API virtual ~InvalidRegisterIndexError();
+
+		SLAKE_API virtual const char *what() const override;
+
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API static InvalidRegisterIndexError *alloc(Runtime *associatedRuntime, uint32_t index);
+	};
+
+	class InvalidLocalVarIndexError : public RuntimeExecError {
+	public:
+		uint32_t index;
+
+		SLAKE_API InvalidLocalVarIndexError(Runtime *associatedRuntime, uint32_t index);
+		SLAKE_API virtual ~InvalidLocalVarIndexError();
+
+		SLAKE_API virtual const char *what() const override;
+
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API static InvalidLocalVarIndexError *alloc(Runtime *associatedRuntime, uint32_t index);
 	};
 
 	class InvalidArgumentIndexError : public RuntimeExecError {
 	public:
-		const uint32_t index;
+		uint32_t index;
 
-		inline InvalidArgumentIndexError(std::string msg, uint32_t index) : RuntimeExecError(msg), index(index){};
-		virtual ~InvalidArgumentIndexError() = default;
+		SLAKE_API InvalidArgumentIndexError(Runtime *associatedRuntime, uint32_t index);
+		SLAKE_API virtual ~InvalidArgumentIndexError();
+
+		SLAKE_API virtual const char *what() const override;
+
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API static InvalidArgumentIndexError *alloc(Runtime *associatedRuntime, uint32_t index);
 	};
 
-	class InvalidSubscriptionError : public RuntimeExecError {
+	class InvalidArrayIndexError : public RuntimeExecError {
 	public:
-		inline InvalidSubscriptionError(std::string msg) : RuntimeExecError(msg){};
-		virtual ~InvalidSubscriptionError() = default;
+		size_t index;
+
+		SLAKE_API InvalidArrayIndexError(Runtime *associatedRuntime, size_t index);
+		SLAKE_API virtual ~InvalidArrayIndexError();
+
+		SLAKE_API virtual const char *what() const override;
+
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API static InvalidArrayIndexError *alloc(Runtime *associatedRuntime, size_t index);
 	};
 
-	class FrameError : public RuntimeExecError {
+	class InvalidArgumentNumberError : public RuntimeExecError {
 	public:
-		inline FrameError(std::string msg) : RuntimeExecError(msg){};
-		virtual ~FrameError() = default;
+		uint32_t nArgs;
+
+		SLAKE_API InvalidArgumentNumberError(Runtime *associatedRuntime, uint32_t nArgs);
+		SLAKE_API virtual ~InvalidArgumentNumberError();
+
+		SLAKE_API virtual const char *what() const override;
+
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API static InvalidArgumentNumberError *alloc(Runtime *associatedRuntime, uint32_t nArgs);
 	};
 
-	class StackOverflowError : public RuntimeExecError {
+	class ReferencedMemberNotFoundError : public RuntimeExecError {
 	public:
-		inline StackOverflowError(std::string msg) : RuntimeExecError(msg){};
-		virtual ~StackOverflowError() = default;
-	};
+		HostObjectRef<IdRefObject> idRef;
 
-	class LoaderError : public RuntimeExecError {
-	public:
-		inline LoaderError(std::string msg) : RuntimeExecError(msg){};
-		virtual ~LoaderError() = default;
+		SLAKE_API ReferencedMemberNotFoundError(
+			Runtime *associatedRuntime,
+			IdRefObject *idRef);
+		SLAKE_API virtual ~ReferencedMemberNotFoundError();
+
+		SLAKE_API virtual const char *what() const override;
+
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API static ReferencedMemberNotFoundError *alloc(
+			Runtime *associatedRuntime,
+			IdRefObject *idRef);
 	};
 
 	class NullRefError : public RuntimeExecError {
 	public:
-		inline NullRefError() : RuntimeExecError("Null reference detected"){};
-		virtual ~NullRefError() = default;
+		SLAKE_API NullRefError(Runtime *associatedRuntime);
+		SLAKE_API virtual ~NullRefError();
+
+		SLAKE_API virtual const char *what() const override;
+
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API static NullRefError *alloc(Runtime *associatedRuntime);
 	};
 
-	class OutOfRangeError : public RuntimeExecError {
+	class UncaughtExceptionError : public RuntimeExecError {
 	public:
-		inline OutOfRangeError() : RuntimeExecError("Out of range"){};
-		virtual ~OutOfRangeError() = default;
+		Value exceptionValue;
+
+		SLAKE_API UncaughtExceptionError(
+			Runtime *associatedRuntime,
+			Value exceptionValue);
+		SLAKE_API virtual ~UncaughtExceptionError();
+
+		SLAKE_API virtual const char *what() const override;
+
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API static UncaughtExceptionError *alloc(
+			Runtime *associatedRuntime,
+			Value exceptionValue);
+	};
+
+	enum class GenericInstantiationErrorCode : uint8_t {
+		MismatchedGenericArgumentNumber = 0,
+		GenericParameterNotFound,
+	};
+
+	class GenericInstantiationError : public RuntimeExecError {
+	public:
+		GenericInstantiationErrorCode instantiationErrorCode;
+
+		SLAKE_API GenericInstantiationError(
+			Runtime *associatedRuntime,
+			GenericInstantiationErrorCode instantiationErrorCode);
+		SLAKE_API virtual ~GenericInstantiationError();
+	};
+
+	class MismatchedGenericArgumentNumberError : public RuntimeExecError {
+	public:
+		SLAKE_API MismatchedGenericArgumentNumberError(Runtime *associatedRuntime);
+		SLAKE_API virtual ~MismatchedGenericArgumentNumberError();
+
+		SLAKE_API virtual const char *what() const override;
+
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API static MismatchedGenericArgumentNumberError *alloc(Runtime *associatedRuntime);
+	};
+
+	class GenericParameterNotFoundError : public RuntimeExecError {
+	public:
+		std::pmr::string name;
+
+		SLAKE_API GenericParameterNotFoundError(
+			Runtime *associatedRuntime,
+			std::pmr::string &&name);
+		SLAKE_API virtual ~GenericParameterNotFoundError();
+
+		SLAKE_API virtual const char *what() const override;
+
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API static GenericParameterNotFoundError *alloc(
+			Runtime *associatedRuntime,
+			std::pmr::string &&name);
+	};
+
+	// stub, remove it after work around SLXLoaderError is finished.
+	class LoaderError : public std::runtime_error {
+	public:
+		inline LoaderError(std::string msg) : runtime_error(msg){};
+		virtual ~LoaderError() = default;
 	};
 }
 

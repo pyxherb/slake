@@ -2,6 +2,7 @@
 #define _SLAKE_OBJ_CONTEXT_H_
 
 #include "object.h"
+#include <slake/except.h>
 #include <memory>
 
 namespace slake {
@@ -62,9 +63,9 @@ namespace slake {
 			abort();
 		}
 
-		SLAKE_API VarRef lload(uint32_t off);
+		SLAKE_API bool lload(Runtime *rt, uint32_t off, VarRef &varRefOut);
 
-		SLAKE_API VarRef larg(uint32_t off);
+		SLAKE_API bool larg(Runtime *rt, uint32_t off, VarRef &varRefOut);
 
 		/// @brief Leave current minor frame.
 		SLAKE_API void leave();

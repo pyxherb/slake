@@ -52,16 +52,20 @@ SLAKE_API bool Type::isLoadingDeferred() const noexcept {
 	}
 }
 
-SLAKE_API void Type::loadDeferredType(const Runtime *rt) {
+SLAKE_API Object *Type::loadDeferredType(const Runtime *rt) {
 	if (!isLoadingDeferred())
-		return;
+		return getCustomTypeExData();
 
 	auto ref = (IdRefObject *)getCustomTypeExData();
 	auto typeObject = rt->resolveIdRef(ref, nullptr);
-	if (!typeObject)
-		throw NotFoundError("Object referenced by the type was not found", ref);
+	if (!typeObject) {
+		rt->setThreadLocalInternalException(
+			std::this_thread::get_id(),
+			ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(rt), ref));
+		return nullptr;
+	}
 
-	exData.ptr = (Object *)typeObject;
+	return exData.ptr = (Object *)typeObject;
 }
 
 SLAKE_API bool Type::operator<(const Type &rhs) const {
@@ -233,7 +237,8 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 			if (objectPtr->getKind() != ObjectKind::Instance)
 				return false;
 
-			const_cast<Type &>(type).loadDeferredType(objectPtr->associatedRuntime);
+			if (!const_cast<Type &>(type).loadDeferredType(objectPtr->associatedRuntime))
+				return false;
 			switch (type.getCustomTypeExData()->getKind()) {
 				case ObjectKind::Class: {
 					ClassObject *thisClass = (ClassObject *)type.getCustomTypeExData();

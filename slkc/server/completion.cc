@@ -246,7 +246,7 @@ std::deque<CompletionItem> slake::slkc::getCompletionItems(
 	}
 
 	_getCompletionItems(
-		_walkForCompletion(document, document->compiler->_rootScope.get(), true, true),
+		_walkForCompletion(document, document->compiler->_rootNode->scope.get(), true, true),
 		completionItems,
 		{ NodeType::GenericParam,
 			NodeType::Class,

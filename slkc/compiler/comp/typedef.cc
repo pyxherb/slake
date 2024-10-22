@@ -12,5 +12,5 @@ void Compiler::registerBuiltinTypedefs() {
 					{ "traits" },
 					{ "IComparable", { std::make_shared<I32TypeNameNode>(SIZE_MAX) } } }),
 			this,
-			_rootScope.get()));
+			_rootNode->scope.get()));
 }

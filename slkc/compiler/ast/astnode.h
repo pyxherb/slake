@@ -32,6 +32,8 @@ namespace slake {
 			ThisRef,
 			BaseRef,
 
+			Root,
+
 			Bad
 		};
 

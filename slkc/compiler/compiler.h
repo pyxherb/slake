@@ -248,6 +248,22 @@ namespace slake {
 #endif
 		};
 
+		class RootNode : public MemberNode {
+		public:
+			RootNode() = default;
+			inline RootNode(Compiler *compiler)
+				: MemberNode(compiler, 0) {
+				setScope(std::make_shared<Scope>());
+			}
+			virtual ~RootNode() = default;
+
+			virtual inline NodeType getNodeType() const override { return NodeType::Root; }
+
+			virtual IdRefEntry getName() const override {
+				return IdRefEntry(tokenRange, SIZE_MAX, "::", {});
+			}
+		};
+
 		class Compiler {
 		private:
 			MajorContext curMajorContext;
@@ -557,7 +573,7 @@ namespace slake {
 			friend class Parser;
 
 		public:
-			std::shared_ptr<Scope> _rootScope = std::make_shared<Scope>();
+			std::shared_ptr<RootNode> _rootNode = std::make_shared<RootNode>(this);
 			std::unordered_map<std::string, std::unique_ptr<SourceDocument>> sourceDocs;
 
 			std::string curDocName;

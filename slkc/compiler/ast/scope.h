@@ -24,6 +24,8 @@ namespace slake {
 
 			void setOwner(MemberNode *owner);
 		};
+
+		MemberNode *parentOf(MemberNode *node);
 	}
 }
 

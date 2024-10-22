@@ -98,8 +98,8 @@ void Compiler::updateSemanticType(std::shared_ptr<TypeNameNode> targetTypeName, 
 		case TypeId::Any:
 		case TypeId::Auto: {
 			auto t = std::static_pointer_cast<BasicSimpleTypeNameNode>(targetTypeName);
-			assert(t->idxToken != SIZE_MAX);
-			curDoc->tokenInfos[t->idxToken].semanticType = type;
+			if (t->idxToken != SIZE_MAX)
+				curDoc->tokenInfos[t->idxToken].semanticType = type;
 			break;
 		}
 		case TypeId::Array: {

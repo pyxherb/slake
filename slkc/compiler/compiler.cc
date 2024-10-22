@@ -26,8 +26,7 @@ Compiler::~Compiler() {
 void Compiler::reloadDoc(const std::string &docName) {
 	auto &doc = sourceDocs.at(docName);
 
-	if (doc->targetModule->scope->parent)
-		doc->targetModule->scope->parent->members.erase(doc->targetModule->getName().name);
+	doc->targetModule->parent->scope->members.erase(doc->targetModule->getName().name);
 
 	for (auto &i : doc->targetModule->imports) {
 		if (auto it = importedModules.find(i.second.ref->entries); it != importedModules.end()) {
@@ -47,6 +46,7 @@ void Compiler::reloadDoc(const std::string &docName) {
 
 	doc->lexer = std::make_unique<Lexer>();
 	doc->targetModule = std::make_shared<ModuleNode>(this);
+	doc->tokenInfos.clear();
 }
 
 void Compiler::pushMessage(const std::string &docName, const Message &message) {
@@ -54,7 +54,7 @@ void Compiler::pushMessage(const std::string &docName, const Message &message) {
 }
 
 std::shared_ptr<Scope> slake::slkc::Compiler::completeModuleNamespaces(std::shared_ptr<IdRefNode> ref) {
-	auto scope = _rootScope;
+	auto scope = _rootNode->scope;
 
 	for (size_t i = 0; i < ref->entries.size(); ++i) {
 		std::string name = ref->entries[i].name;

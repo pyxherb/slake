@@ -3,102 +3,96 @@
 
 using namespace slake;
 
-static [[nodiscard]] bool _checkOperandCount(
-	Runtime *rt,
+bool Runtime::_checkOperandCount(
 	const Instruction &ins,
 	bool hasOutput,
 	int_fast8_t nOperands) {
 	if (hasOutput) {
 		if (ins.output.valueType == ValueType::Undefined) {
-			rt->setThreadLocalInternalException(
+			setThreadLocalInternalException(
 				std::this_thread::get_id(),
-				InvalidOperandsError::alloc(rt));
+				InvalidOperandsError::alloc(this));
 			return false;
 		}
 	}
 	if (ins.operands.size() != nOperands) {
-		rt->setThreadLocalInternalException(
+		setThreadLocalInternalException(
 			std::this_thread::get_id(),
-			InvalidOperandsError::alloc(rt));
+			InvalidOperandsError::alloc(this));
 		return false;
 	}
 
 	return true;
 }
 
-static [[nodiscard]] bool _checkOperandType(
-	Runtime *rt,
+bool Runtime::_checkOperandType(
 	const Value &operand,
 	ValueType valueType) {
 	if (operand.valueType != valueType) {
-		rt->setThreadLocalInternalException(
+		setThreadLocalInternalException(
 			std::this_thread::get_id(),
-			InvalidOperandsError::alloc(rt));
+			InvalidOperandsError::alloc(this));
 		return false;
 	}
 	return true;
 }
 
-static [[nodiscard]] bool _checkObjectOperandType(
-	Runtime *rt,
+bool Runtime::_checkObjectOperandType(
 	Object *object,
 	ObjectKind typeId) {
 	if (object->getKind() != typeId) {
-		rt->setThreadLocalInternalException(
+		setThreadLocalInternalException(
 			std::this_thread::get_id(),
-			InvalidOperandsError::alloc(rt));
+			InvalidOperandsError::alloc(this));
 		return false;
 	}
 	return true;
 }
 
-static [[nodiscard]] bool _setRegisterValue(
-	Runtime *rt,
+bool Runtime::_setRegisterValue(
 	MajorFrame *curMajorFrame,
 	uint32_t index,
 	const Value &value) {
 	if (index >= curMajorFrame->regs.size()) {
 		// The register does not present.
-		rt->setThreadLocalInternalException(
+		setThreadLocalInternalException(
 			std::this_thread::get_id(),
-			InvalidOperandsError::alloc(rt));
+			InvalidOperandsError::alloc(this));
 		return false;
 	}
 	Value &reg = curMajorFrame->regs[index];
 	if (reg.valueType != ValueType::Undefined) {
 		// The register is already assigned.
-		rt->setThreadLocalInternalException(
+		setThreadLocalInternalException(
 			std::this_thread::get_id(),
-			InvalidOperandsError::alloc(rt));
+			InvalidOperandsError::alloc(this));
 		return false;
 	}
 	curMajorFrame->regs[index] = value;
 	return true;
 }
 
-static [[nodiscard]] bool _fetchRegValue(
-	Runtime *rt,
+bool Runtime::_fetchRegValue(
 	MajorFrame *curMajorFrame,
 	uint32_t index,
 	Value &valueOut) {
 	if (index >= curMajorFrame->regs.size()) {
 		// The register does not present.
-		rt->setThreadLocalInternalException(
+		setThreadLocalInternalException(
 			std::this_thread::get_id(),
-			InvalidOperandsError::alloc(rt));
+			InvalidOperandsError::alloc(this));
 		return false;
 	}
 	valueOut = curMajorFrame->regs[index];
 	return true;
 }
 
-static bool _unwrapRegOperand(
-	Runtime *rt,
+bool Runtime::_unwrapRegOperand(
 	MajorFrame *curMajorFrame,
 	const Value &value,
 	Value &valueOut) {
 	if (value.valueType == ValueType::RegRef)
-		return _fetchRegValue(rt, curMajorFrame, value.getRegIndex(), valueOut);
+		return _fetchRegValue(curMajorFrame, value.getRegIndex(), valueOut);
 	valueOut = value;
 	return true;
 }
@@ -321,9 +315,9 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 		case Opcode::NOP:
 			break;
 		case Opcode::LVAR: {
-			if (!_checkOperandCount(this, ins, false, 1))
+			if (!_checkOperandCount(ins, false, 1))
 				return false;
-			if (!_checkOperandType(this, ins.operands[0], ValueType::TypeName))
+			if (!_checkOperandType(ins.operands[0], ValueType::TypeName))
 				return false;
 
 			Type type = ins.operands[0].getTypeName();
@@ -336,9 +330,9 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 			break;
 		}
 		case Opcode::REG: {
-			if (!_checkOperandCount(this, ins, false, 1))
+			if (!_checkOperandCount(ins, false, 1))
 				return false;
-			if (!_checkOperandType(this, ins.operands[0], ValueType::U32))
+			if (!_checkOperandType(ins.operands[0], ValueType::U32))
 				return false;
 
 			uint32_t index = ins.operands[0].getU32();
@@ -355,16 +349,16 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 			break;
 		}
 		case Opcode::LOAD: {
-			if (!_checkOperandCount(this, ins, true, 1))
+			if (!_checkOperandCount(ins, true, 1))
 				return false;
 
-			if (!_checkOperandType(this, ins.output, ValueType::RegRef))
+			if (!_checkOperandType(ins.output, ValueType::RegRef))
 				return false;
 
-			if (!_checkOperandType(this, ins.operands[0], ValueType::ObjectRef))
+			if (!_checkOperandType(ins.operands[0], ValueType::ObjectRef))
 				return false;
 			auto refPtr = ins.operands[0].getObjectRef();
-			if (!_checkObjectOperandType(this, refPtr, ObjectKind::IdRef))
+			if (!_checkObjectOperandType(refPtr, ObjectKind::IdRef))
 				return false;
 
 			VarRefContext varRefContext;
@@ -382,29 +376,29 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 				return false;
 			}
 
-			if (!_setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), _wrapObjectIntoValue(v, varRefContext)))
+			if (!_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), _wrapObjectIntoValue(v, varRefContext)))
 				return false;
 			break;
 		}
 		case Opcode::RLOAD: {
-			if (!_checkOperandCount(this, ins, true, 2))
+			if (!_checkOperandCount(ins, true, 2))
 				return false;
 
-			if (!_checkOperandType(this, ins.output, ValueType::RegRef))
+			if (!_checkOperandType(ins.output, ValueType::RegRef))
 				return false;
 
-			if (!_checkOperandType(this, ins.operands[0], ValueType::RegRef))
+			if (!_checkOperandType(ins.operands[0], ValueType::RegRef))
 				return false;
 
 			Value lhs;
-			if (!_fetchRegValue(this, curMajorFrame, ins.operands[0].getRegIndex(), lhs))
+			if (!_fetchRegValue(curMajorFrame, ins.operands[0].getRegIndex(), lhs))
 				return false;
-			if (!_checkOperandType(this, lhs, ValueType::ObjectRef))
+			if (!_checkOperandType(lhs, ValueType::ObjectRef))
 				return false;
 
 			auto lhsPtr = lhs.getObjectRef();
 
-			if (!_checkOperandType(this, ins.operands[1], ValueType::ObjectRef))
+			if (!_checkOperandType(ins.operands[1], ValueType::ObjectRef))
 				return false;
 			auto refPtr = ins.operands[1].getObjectRef();
 
@@ -424,7 +418,6 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 			}
 
 			if (!_setRegisterValue(
-					this,
 					curMajorFrame,
 					ins.output.getRegIndex(),
 					_wrapObjectIntoValue(lhsPtr, varRefContext)))
@@ -432,13 +425,13 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 			break;
 		}
 		case Opcode::STORE: {
-			if (!_checkOperandCount(this, ins, false, 2))
+			if (!_checkOperandCount(ins, false, 2))
 				return false;
 
 			Value destValue;
-			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[0], destValue))
+			if (!_unwrapRegOperand(curMajorFrame, ins.operands[0], destValue))
 				return false;
-			if (!_checkOperandType(this, destValue, ValueType::VarRef))
+			if (!_checkOperandType(destValue, ValueType::VarRef))
 				return false;
 
 			const VarRef varRef = destValue.getVarRef();
@@ -450,7 +443,7 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 			}
 
 			Value data;
-			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[1], data))
+			if (!_unwrapRegOperand(curMajorFrame, ins.operands[1], data))
 				return false;
 			if (!varRef.varPtr->setData(
 					varRef.context,
@@ -459,18 +452,16 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 			break;
 		}
 		case Opcode::MOV: {
-			if (!_checkOperandCount(this, ins, true, 1))
+			if (!_checkOperandCount(ins, true, 1))
 				return false;
 
 			Value value;
 			if (!_unwrapRegOperand(
-					this,
 					curMajorFrame,
 					ins.operands[0],
 					value))
 				return false;
 			if (!_setRegisterValue(
-					this,
 					curMajorFrame,
 					ins.output.getRegIndex(),
 					value))
@@ -478,39 +469,38 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 			break;
 		}
 		case Opcode::LLOAD: {
-			if (!_checkOperandCount(this, ins, true, 1))
+			if (!_checkOperandCount(ins, true, 1))
 				return false;
 
-			if (!_checkOperandType(this, ins.output, ValueType::RegRef))
+			if (!_checkOperandType(ins.output, ValueType::RegRef))
 				return false;
-			if (!_checkOperandType(this, ins.operands[0], ValueType::U32))
+			if (!_checkOperandType(ins.operands[0], ValueType::U32))
 				return false;
 
 			VarRef varRef;
 			if (!curMajorFrame->lload(this, ins.operands[0].getU32(), varRef))
 				return false;
 
-			_setRegisterValue(
-				this,
+			if(!_setRegisterValue(
 				curMajorFrame,
 				ins.output.getRegIndex(),
-				Value(varRef));
+				Value(varRef)))
+				return false;
 			break;
 		}
 		case Opcode::LARG: {
-			if (!_checkOperandCount(this, ins, true, 1))
+			if (!_checkOperandCount(ins, true, 1))
 				return false;
 
-			if (!_checkOperandType(this, ins.output, ValueType::RegRef))
+			if (!_checkOperandType(ins.output, ValueType::RegRef))
 				return false;
-			if (!_checkOperandType(this, ins.operands[0], ValueType::U32))
+			if (!_checkOperandType(ins.operands[0], ValueType::U32))
 				return false;
 
 			VarRef varRef;
 			if (!curMajorFrame->larg(this, ins.operands[0].getU32(), varRef))
 				return false;
 			if (!_setRegisterValue(
-					this,
 					curMajorFrame,
 					ins.output.getRegIndex(),
 					Value(varRef)))
@@ -518,16 +508,16 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 			break;
 		}
 		case Opcode::LVALUE: {
-			if (!_checkOperandCount(this, ins, true, 1))
+			if (!_checkOperandCount(ins, true, 1))
 				return false;
 
-			if (!_checkOperandType(this, ins.output, ValueType::RegRef))
+			if (!_checkOperandType(ins.output, ValueType::RegRef))
 				return false;
 
 			Value dest;
-			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[0], dest))
+			if (!_unwrapRegOperand(curMajorFrame, ins.operands[0], dest))
 				return false;
-			if (!_checkOperandType(this, dest, ValueType::VarRef))
+			if (!_checkOperandType(dest, ValueType::VarRef))
 				return false;
 
 			const VarRef varRef = dest.getVarRef();
@@ -543,7 +533,6 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 			if (!result)
 				return false;
 			if (!_setRegisterValue(
-					this,
 					curMajorFrame,
 					ins.output.getRegIndex(),
 					result.unwrap()))
@@ -551,7 +540,7 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 			break;
 		}
 		case Opcode::ENTER: {
-			if (!_checkOperandCount(this, ins, false, 0))
+			if (!_checkOperandCount(ins, false, 0))
 				return false;
 			MinorFrame frame(
 				this,
@@ -563,7 +552,7 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 			break;
 		}
 		case Opcode::LEAVE: {
-			if (!_checkOperandCount(this, ins, false, 0))
+			if (!_checkOperandCount(ins, false, 0))
 				return false;
 			if (curMajorFrame->minorFrames.size() < 2) {
 				setThreadLocalInternalException(
@@ -590,17 +579,17 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 		case Opcode::GT:
 		case Opcode::LTEQ:
 		case Opcode::GTEQ: {
-			if (!_checkOperandCount(this, ins, true, 2))
+			if (!_checkOperandCount(ins, true, 2))
 				return false;
 
-			if (!_checkOperandType(this, ins.output, ValueType::RegRef))
+			if (!_checkOperandType(ins.output, ValueType::RegRef))
 				return false;
 
 			Value x, y, valueOut;
 
-			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[0], x))
+			if (!_unwrapRegOperand(curMajorFrame, ins.operands[0], x))
 				return false;
-			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[1], y))
+			if (!_unwrapRegOperand(curMajorFrame, ins.operands[1], y))
 				return false;
 			if (x.valueType != y.valueType) {
 				setThreadLocalInternalException(
@@ -1190,25 +1179,25 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 					return false;
 			}
 
-			if (!_setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), valueOut))
+			if (!_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), valueOut))
 				return false;
 			break;
 		}
 		case Opcode::LSH:
 		case Opcode::RSH: {
-			if (!_checkOperandCount(this, ins, true, 2))
+			if (!_checkOperandCount(ins, true, 2))
 				return false;
 
-			if (!_checkOperandType(this, ins.output, ValueType::RegRef))
+			if (!_checkOperandType(ins.output, ValueType::RegRef))
 				return false;
 
 			Value x,
 				y,
 				valueOut;
 
-			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[0], x))
+			if (!_unwrapRegOperand(curMajorFrame, ins.operands[0], x))
 				return false;
-			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[1], y))
+			if (!_unwrapRegOperand(curMajorFrame, ins.operands[1], y))
 				return false;
 
 			switch (x.valueType) {
@@ -1348,17 +1337,17 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 					return false;
 			}
 
-			if (!_setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), valueOut))
+			if (!_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), valueOut))
 				return false;
 			break;
 		}
 		case Opcode::NOT:
 		case Opcode::LNOT:
 		case Opcode::NEG: {
-			if (!_checkOperandCount(this, ins, true, 1))
+			if (!_checkOperandCount(ins, true, 1))
 				return false;
 
-			if (!_checkOperandType(this, ins.output, ValueType::RegRef))
+			if (!_checkOperandType(ins.output, ValueType::RegRef))
 				return false;
 
 			Value x(ins.operands[1]), valueOut;
@@ -1557,27 +1546,27 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 					return false;
 			}
 
-			if (!_setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), valueOut))
+			if (!_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), valueOut))
 				return false;
 			break;
 		}
 		case Opcode::AT: {
-			if (!_checkOperandCount(this, ins, true, 2))
+			if (!_checkOperandCount(ins, true, 2))
 				return false;
 
 			Value arrayValue;
-			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[0], arrayValue))
+			if (!_unwrapRegOperand(curMajorFrame, ins.operands[0], arrayValue))
 				return false;
-			if (!_checkOperandType(this, arrayValue, ValueType::ObjectRef))
+			if (!_checkOperandType(arrayValue, ValueType::ObjectRef))
 				return false;
 			Value index;
-			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[1], index))
+			if (!_unwrapRegOperand(curMajorFrame, ins.operands[1], index))
 				return false;
-			if (!_checkOperandType(this, index, ValueType::U32))
+			if (!_checkOperandType(index, ValueType::U32))
 				return false;
 
 			auto arrayIn = arrayValue.getObjectRef();
-			if (!_checkObjectOperandType(this, arrayIn, ObjectKind::Array))
+			if (!_checkObjectOperandType(arrayIn, ObjectKind::Array))
 				return false;
 
 			uint32_t indexIn = index.getU32();
@@ -1590,7 +1579,6 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 			}
 
 			if (!_setRegisterValue(
-					this,
 					curMajorFrame,
 					ins.output.getRegIndex(),
 					Value(VarRef(
@@ -1601,10 +1589,10 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 			break;
 		}
 		case Opcode::JMP: {
-			if (!_checkOperandCount(this, ins, false, 1))
+			if (!_checkOperandCount(ins, false, 1))
 				return false;
 
-			if (!_checkOperandType(this, ins.operands[0], ValueType::U32))
+			if (!_checkOperandType(ins.operands[0], ValueType::U32))
 				return false;
 
 			curMajorFrame->curIns = ins.operands[0].getU32();
@@ -1612,15 +1600,15 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 		}
 		case Opcode::JT:
 		case Opcode::JF: {
-			if (!_checkOperandCount(this, ins, false, 2))
+			if (!_checkOperandCount(ins, false, 2))
 				return false;
 
-			if (!_checkOperandType(this, ins.operands[0], ValueType::U32))
+			if (!_checkOperandType(ins.operands[0], ValueType::U32))
 				return false;
 			Value condition;
-			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[1], condition))
+			if (!_unwrapRegOperand(curMajorFrame, ins.operands[1], condition))
 				return false;
-			if (!_checkOperandType(this, condition, ValueType::Bool))
+			if (!_checkOperandType(condition, ValueType::Bool))
 				return false;
 
 			if (condition.getBool()) {
@@ -1636,11 +1624,11 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 			break;
 		}
 		case Opcode::PUSHARG: {
-			if (!_checkOperandCount(this, ins, false, 2))
+			if (!_checkOperandCount(ins, false, 2))
 				return false;
 
 			Value value;
-			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[0], value))
+			if (!_unwrapRegOperand(curMajorFrame, ins.operands[0], value))
 				return false;
 			curMajorFrame->nextArgStack.push_back(value);
 			break;
@@ -1654,36 +1642,36 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 			switch (ins.opcode) {
 				case Opcode::CTORCALL:
 				case Opcode::MCALL: {
-					if (!_checkOperandCount(this, ins, false, 2))
+					if (!_checkOperandCount(ins, false, 2))
 						return false;
 
 					Value fnValue;
-					if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[0], fnValue))
+					if (!_unwrapRegOperand(curMajorFrame, ins.operands[0], fnValue))
 						return false;
-					if (!_checkOperandType(this, fnValue, ValueType::ObjectRef))
+					if (!_checkOperandType(fnValue, ValueType::ObjectRef))
 						return false;
-					if (!_checkObjectOperandType(this, fnValue.getObjectRef(), ObjectKind::FnOverloading))
+					if (!_checkObjectOperandType(fnValue.getObjectRef(), ObjectKind::FnOverloading))
 						return false;
 					fn = (FnOverloadingObject *)fnValue.getObjectRef();
 
 					Value thisObjectValue;
-					if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[1], thisObjectValue))
+					if (!_unwrapRegOperand(curMajorFrame, ins.operands[1], thisObjectValue))
 						return false;
-					if (!_checkOperandType(this, thisObjectValue, ValueType::ObjectRef))
+					if (!_checkOperandType(thisObjectValue, ValueType::ObjectRef))
 						return false;
 					thisObject = thisObjectValue.getObjectRef();
 					break;
 				}
 				case Opcode::CALL: {
-					if (!_checkOperandCount(this, ins, false, 1))
+					if (!_checkOperandCount(ins, false, 1))
 						return false;
 
 					Value fnValue;
-					if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[0], fnValue))
+					if (!_unwrapRegOperand(curMajorFrame, ins.operands[0], fnValue))
 						return false;
-					if (!_checkOperandType(this, fnValue, ValueType::ObjectRef))
+					if (!_checkOperandType(fnValue, ValueType::ObjectRef))
 						return false;
-					if (!_checkObjectOperandType(this, fnValue.getObjectRef(), ObjectKind::FnOverloading))
+					if (!_checkObjectOperandType(fnValue.getObjectRef(), ObjectKind::FnOverloading))
 						return false;
 					fn = (FnOverloadingObject *)fnValue.getObjectRef();
 					break;
@@ -1711,23 +1699,23 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 			break;
 		}
 		case Opcode::RET: {
-			if (!_checkOperandCount(this, ins, false, 1))
+			if (!_checkOperandCount(ins, false, 1))
 				return false;
 
 			Value returnValue;
-			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[0], returnValue))
+			if (!_unwrapRegOperand(curMajorFrame, ins.operands[0], returnValue))
 				return false;
 			context->_context.majorFrames.pop_back();
 			context->_context.majorFrames.back()->returnValue = returnValue;
 			return true;
 		}
 		case Opcode::LRET: {
-			if (!_checkOperandCount(this, ins, false, 0))
+			if (!_checkOperandCount(ins, false, 0))
 				return false;
-			if (!_checkOperandType(this, ins.output, ValueType::RegRef))
+			if (!_checkOperandType(ins.output, ValueType::RegRef))
 				return false;
 
-			if (!_setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), curMajorFrame->returnValue))
+			if (!_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), curMajorFrame->returnValue))
 				return false;
 			break;
 		}
@@ -1736,10 +1724,10 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 			break;
 		}
 		case Opcode::YIELD: {
-			if (!_checkOperandCount(this, ins, false, 1))
+			if (!_checkOperandCount(ins, false, 1))
 				return false;
 
-			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[0], curMajorFrame->returnValue))
+			if (!_unwrapRegOperand(curMajorFrame, ins.operands[0], curMajorFrame->returnValue))
 				return false;
 			context->_context.flags |= CTX_YIELDED;
 			break;
@@ -1748,20 +1736,20 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 			break;
 		}
 		case Opcode::LTHIS: {
-			if (!_checkOperandCount(this, ins, false, 0))
+			if (!_checkOperandCount(ins, false, 0))
 				return false;
-			if (!_checkOperandType(this, ins.output, ValueType::RegRef))
+			if (!_checkOperandType(ins.output, ValueType::RegRef))
 				return false;
 
-			if (!_setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), curMajorFrame->thisObject))
+			if (!_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), curMajorFrame->thisObject))
 				return false;
 			break;
 		}
 		case Opcode::NEW: {
-			if (!_checkOperandCount(this, ins, true, 1))
+			if (!_checkOperandCount(ins, true, 1))
 				return false;
 
-			if (!_checkOperandType(this, ins.operands[0], ValueType::TypeName))
+			if (!_checkOperandType(ins.operands[0], ValueType::TypeName))
 				return false;
 
 			Type type = ins.operands[0].getTypeName();
@@ -1774,7 +1762,7 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 					HostObjectRef<InstanceObject> instance = newClassInstance(cls, 0);
 					if (!instance)
 						return false;
-					if (!_setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), instance.get()))
+					if (!_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), instance.get()))
 						return false;
 					break;
 				}
@@ -1787,12 +1775,12 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 			break;
 		}
 		case Opcode::ARRNEW: {
-			if (!_checkOperandCount(this, ins, true, 2))
+			if (!_checkOperandCount(ins, true, 2))
 				return false;
 
-			if (!_checkOperandType(this, ins.operands[0], ValueType::TypeName))
+			if (!_checkOperandType(ins.operands[0], ValueType::TypeName))
 				return false;
-			if (!_checkOperandType(this, ins.operands[1], ValueType::U32))
+			if (!_checkOperandType(ins.operands[1], ValueType::U32))
 				return false;
 
 			Type type = ins.operands[1].getTypeName();
@@ -1804,17 +1792,17 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 			if (!instance)
 				return false;
 
-			if (!_setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), instance.get()))
+			if (!_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), instance.get()))
 				return false;
 
 			break;
 		}
 		case Opcode::THROW: {
-			if (!_checkOperandCount(this, ins, false, 1))
+			if (!_checkOperandCount(ins, false, 1))
 				return false;
 
 			Value x;
-			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[0], x))
+			if (!_unwrapRegOperand(curMajorFrame, ins.operands[0], x))
 				return false;
 
 			for (size_t i = context->_context.majorFrames.size(); i; --i) {
@@ -1843,12 +1831,12 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 			return false;
 		}
 		case Opcode::PUSHXH: {
-			if (!_checkOperandCount(this, ins, false, 2))
+			if (!_checkOperandCount(ins, false, 2))
 				return false;
 
-			if (!_checkOperandType(this, ins.operands[0], ValueType::TypeName))
+			if (!_checkOperandType(ins.operands[0], ValueType::TypeName))
 				return false;
-			if (!_checkOperandType(this, ins.operands[1], ValueType::U32))
+			if (!_checkOperandType(ins.operands[1], ValueType::U32))
 				return false;
 
 			ExceptionHandler xh;
@@ -1864,16 +1852,16 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 			break;
 		}
 		case Opcode::CAST: {
-			if (!_checkOperandCount(this, ins, true, 2))
+			if (!_checkOperandCount(ins, true, 2))
 				return false;
 
-			if (!_checkOperandType(this, ins.output, ValueType::RegRef))
+			if (!_checkOperandType(ins.output, ValueType::RegRef))
 				return false;
-			if (!_checkOperandType(this, ins.operands[0], ValueType::TypeName))
+			if (!_checkOperandType(ins.operands[0], ValueType::TypeName))
 				return false;
 
 			Value v;
-			if (!_unwrapRegOperand(this, curMajorFrame, ins.operands[1], v))
+			if (!_unwrapRegOperand(curMajorFrame, ins.operands[1], v))
 				return false;
 
 			auto t = ins.operands[0].getTypeName();
@@ -1931,7 +1919,7 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 					return false;
 			}
 
-			if (!_setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), v))
+			if (!_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), v))
 				return false;
 			break;
 		}

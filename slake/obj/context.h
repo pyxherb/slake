@@ -108,7 +108,7 @@ namespace slake {
 
 		SLAKE_FORCEINLINE Context &getContext() { return _context; }
 
-		SLAKE_API void resume(HostRefHolder *hostRefHolder);
+		SLAKE_API bool resume(HostRefHolder *hostRefHolder);
 		SLAKE_API Value getResult();
 		SLAKE_API bool isDone();
 	};

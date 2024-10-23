@@ -106,9 +106,9 @@ SLAKE_API void slake::ContextObject::dealloc() {
 	allocator.deallocate(this, 1);
 }
 
-SLAKE_API void ContextObject::resume(HostRefHolder *hostRefHolder) {
+SLAKE_API bool ContextObject::resume(HostRefHolder *hostRefHolder) {
 	_context.flags &= ~CTX_YIELDED;
-	associatedRuntime->execContext(this);
+	return associatedRuntime->execContext(this);
 }
 
 SLAKE_API Value ContextObject::getResult() {

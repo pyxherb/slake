@@ -120,6 +120,29 @@ namespace slake {
 			LoadModuleFlags loadModuleFlags,
 			HostRefHolder &holder);
 
+		[[nodiscard]] bool _checkOperandCount(
+			const Instruction &ins,
+			bool hasOutput,
+			int_fast8_t nOperands);
+		[[nodiscard]] bool _checkOperandType(
+			const Value &operand,
+			ValueType valueType);
+		[[nodiscard]] bool _checkObjectOperandType(
+			Object *object,
+			ObjectKind typeId);
+		[[nodiscard]] bool _setRegisterValue(
+			MajorFrame *curMajorFrame,
+			uint32_t index,
+			const Value &value);
+		[[nodiscard]] bool _fetchRegValue(
+			MajorFrame *curMajorFrame,
+			uint32_t index,
+			Value &valueOut);
+		[[nodiscard]] bool _unwrapRegOperand(
+			MajorFrame *curMajorFrame,
+			const Value &value,
+			Value &valueOut);
+
 		/// @brief Execute a single instruction.
 		/// @param context Context for execution.
 		/// @param ins Instruction to be executed.
@@ -219,12 +242,13 @@ namespace slake {
 		SLAKE_API HostObjectRef<ArrayObject> newArrayInstance(Runtime *rt, const Type &type, size_t length);
 
 		SLAKE_API [[nodiscard]] bool execContext(ContextObject *context);
-		SLAKE_API HostObjectRef<ContextObject> execFn(
+		SLAKE_API [[nodiscard]] bool execFn(
 			const FnOverloadingObject *overloading,
 			ContextObject *prevContext,
 			Object *thisObject,
 			const Value *args,
-			uint32_t nArgs);
+			uint32_t nArgs,
+			HostObjectRef<ContextObject> &contextOut);
 	};
 }
 

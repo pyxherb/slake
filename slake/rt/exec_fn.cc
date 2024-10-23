@@ -63,16 +63,19 @@ SLAKE_API bool Runtime::execContext(ContextObject *context) {
 	return true;
 }
 
-SLAKE_API HostObjectRef<ContextObject> Runtime::execFn(
+SLAKE_API bool Runtime::execFn(
 	const FnOverloadingObject *overloading,
 	ContextObject *prevContext,
 	Object *thisObject,
 	const Value *args,
-	uint32_t nArgs) {
+	uint32_t nArgs,
+	HostObjectRef<ContextObject> &contextOut) {
 	HostObjectRef<ContextObject> context(prevContext);
 
 	if (!context) {
 		context = ContextObject::alloc(this);
+
+		contextOut = context;
 
 		{
 			auto frame = std::make_unique<MajorFrame>(this, &context->getContext());
@@ -83,11 +86,14 @@ SLAKE_API HostObjectRef<ContextObject> Runtime::execFn(
 
 		if (!_createNewMajorFrame(&context->_context, thisObject, overloading, args, nArgs)) {
 			// Error creating new major frame - return anyway.
-			return context;
+			return false;
 		}
+	} else {
+		contextOut = context;
 	}
 
-	execContext(context.get());
+	if (!execContext(context.get()))
+		return false;
 
-	return context;
+	return true;
 }

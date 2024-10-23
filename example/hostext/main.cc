@@ -162,10 +162,9 @@ int main(int argc, char **argv) {
 
 		auto fn = (slake::FnObject *)mod->getMember("main", nullptr);
 
-		slake::HostObjectRef<slake::ContextObject> context =
-			rt->execFn(fn->getOverloading({}), nullptr, nullptr, nullptr, 0);
-		if (auto e = rt->getThreadLocalInternalException(std::this_thread::get_id());
-			e) {
+		slake::HostObjectRef<slake::ContextObject> context;
+		if (!rt->execFn(fn->getOverloading({}), nullptr, nullptr, nullptr, 0, context)) {
+			auto e = rt->getThreadLocalInternalException(std::this_thread::get_id());
 			printf("Internal exception: %s\n", e->what());
 			printTraceback(rt.get(), context.get());
 			goto end;
@@ -173,10 +172,8 @@ int main(int argc, char **argv) {
 		printf("%d\n", context->getResult().getI32());
 
 		while (!context->isDone()) {
-			context->resume(&hostRefHolder);
-
-			if (auto e = rt->getThreadLocalInternalException(std::this_thread::get_id());
-				e) {
+			if (!context->resume(&hostRefHolder)) {
+				auto e = rt->getThreadLocalInternalException(std::this_thread::get_id());
 				printf("Internal exception: %s\n", e->what());
 				printTraceback(rt.get(), context.get());
 				goto end;

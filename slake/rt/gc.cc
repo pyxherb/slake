@@ -424,7 +424,8 @@ rescan:
 				if (mt->destructors.size()) {
 					for (auto j : mt->destructors) {
 						HostRefHolder holder;
-						execFn(j, nullptr, i, nullptr, 0);
+						HostObjectRef<ContextObject> contextOut;
+						execFn(j, nullptr, i, nullptr, 0, contextOut);
 					}
 					foundDestructibleObjects = true;
 				}

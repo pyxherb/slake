@@ -120,25 +120,25 @@ namespace slake {
 			LoadModuleFlags loadModuleFlags,
 			HostRefHolder &holder);
 
-		[[nodiscard]] bool _checkOperandCount(
+		[[nodiscard]] InternalExceptionPointer _checkOperandCount(
 			const Instruction &ins,
 			bool hasOutput,
 			int_fast8_t nOperands);
-		[[nodiscard]] bool _checkOperandType(
+		[[nodiscard]] InternalExceptionPointer _checkOperandType(
 			const Value &operand,
 			ValueType valueType);
-		[[nodiscard]] bool _checkObjectOperandType(
+		[[nodiscard]] InternalExceptionPointer _checkObjectOperandType(
 			Object *object,
 			ObjectKind typeId);
-		[[nodiscard]] bool _setRegisterValue(
+		[[nodiscard]] InternalExceptionPointer _setRegisterValue(
 			MajorFrame *curMajorFrame,
 			uint32_t index,
 			const Value &value);
-		[[nodiscard]] bool _fetchRegValue(
+		[[nodiscard]] InternalExceptionPointer _fetchRegValue(
 			MajorFrame *curMajorFrame,
 			uint32_t index,
 			Value &valueOut);
-		[[nodiscard]] bool _unwrapRegOperand(
+		[[nodiscard]] InternalExceptionPointer _unwrapRegOperand(
 			MajorFrame *curMajorFrame,
 			const Value &value,
 			Value &valueOut);
@@ -146,7 +146,7 @@ namespace slake {
 		/// @brief Execute a single instruction.
 		/// @param context Context for execution.
 		/// @param ins Instruction to be executed.
-		SLAKE_API [[nodiscard]] bool _execIns(ContextObject *context, const Instruction &ins);
+		SLAKE_API [[nodiscard]] InternalExceptionPointer _execIns(ContextObject *context, const Instruction &ins);
 
 		SLAKE_API void _gcWalk(Scope *scope);
 		SLAKE_API void _gcWalk(MethodTable *methodTable);
@@ -156,19 +156,19 @@ namespace slake {
 		SLAKE_API void _gcWalk(Object *i);
 		SLAKE_API void _gcWalk(Context &i);
 
-		SLAKE_API [[nodiscard]] bool _instantiateGenericObject(Type &type, GenericInstantiationContext &instantiationContext) const;
-		SLAKE_API [[nodiscard]] bool _instantiateGenericObject(Value &value, GenericInstantiationContext &instantiationContext) const;
-		SLAKE_API [[nodiscard]] bool _instantiateGenericObject(Object *v, GenericInstantiationContext &instantiationContext) const;
-		SLAKE_API [[nodiscard]] bool _instantiateGenericObject(FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const;
+		SLAKE_API [[nodiscard]] InternalExceptionPointer _instantiateGenericObject(Type &type, GenericInstantiationContext &instantiationContext) const;
+		SLAKE_API [[nodiscard]] InternalExceptionPointer _instantiateGenericObject(Value &value, GenericInstantiationContext &instantiationContext) const;
+		SLAKE_API [[nodiscard]] InternalExceptionPointer _instantiateGenericObject(Object *v, GenericInstantiationContext &instantiationContext) const;
+		SLAKE_API [[nodiscard]] InternalExceptionPointer _instantiateGenericObject(FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const;
 
-		SLAKE_API [[nodiscard]] bool _createNewMajorFrame(
+		SLAKE_API [[nodiscard]] InternalExceptionPointer _createNewMajorFrame(
 			Context *context,
 			Object *thisObject,
 			const FnOverloadingObject *fn,
 			const Value *args,
 			uint32_t nArgs);
 
-		SLAKE_API [[nodiscard]] bool _addLocalVar(MajorFrame *frame, Type type, VarRef& varRefOut);
+		SLAKE_API [[nodiscard]] InternalExceptionPointer _addLocalVar(MajorFrame *frame, Type type, VarRef &varRefOut);
 		SLAKE_API void _addLocalReg(MajorFrame *frame);
 
 		SLAKE_API uint32_t _findAndDispatchExceptHandler(const Value &curExcept, const MinorFrame &minorFrame) const;
@@ -188,13 +188,6 @@ namespace slake {
 		/// @brief Active contexts of threads.
 		std::map<std::thread::id, ContextObject *> activeContexts;
 
-		using InternalExceptionStorage = std::unique_ptr<InternalException, util::DeallocableDeleter<InternalException>>;
-		mutable std::map<std::thread::id, InternalExceptionStorage> threadLocalInternalExceptions;
-
-		SLAKE_API void setThreadLocalInternalException(std::thread::id threadId, InternalException *exception) const;
-		SLAKE_API void unsetThreadLocalInternalException(std::thread::id threadId) const;
-		SLAKE_API InternalException *getThreadLocalInternalException(std::thread::id threadId) const;
-
 		/// @brief Thread IDs of threads which are executing destructors.
 		std::unordered_set<std::thread::id> destructingThreads;
 
@@ -208,8 +201,8 @@ namespace slake {
 
 		SLAKE_API void invalidateGenericCache(Object *i);
 
-		SLAKE_API [[nodiscard]] bool mapGenericParams(const Object *v, GenericInstantiationContext &instantiationContext) const;
-		SLAKE_API [[nodiscard]] bool mapGenericParams(const FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const;
+		SLAKE_API [[nodiscard]] InternalExceptionPointer mapGenericParams(const Object *v, GenericInstantiationContext &instantiationContext) const;
+		SLAKE_API [[nodiscard]] InternalExceptionPointer mapGenericParams(const FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const;
 		/// @brief Instantiate an generic value (e.g. generic class, etc).
 		/// @param v Object to be instantiated.
 		/// @param genericArgs Generic arguments for instantiation.
@@ -241,8 +234,8 @@ namespace slake {
 		SLAKE_API HostObjectRef<InstanceObject> newClassInstance(ClassObject *cls, NewClassInstanceFlags flags);
 		SLAKE_API HostObjectRef<ArrayObject> newArrayInstance(Runtime *rt, const Type &type, size_t length);
 
-		SLAKE_API [[nodiscard]] bool execContext(ContextObject *context);
-		SLAKE_API [[nodiscard]] bool execFn(
+		SLAKE_API [[nodiscard]] InternalExceptionPointer execContext(ContextObject *context);
+		SLAKE_API [[nodiscard]] InternalExceptionPointer execFn(
 			const FnOverloadingObject *overloading,
 			ContextObject *prevContext,
 			Object *thisObject,

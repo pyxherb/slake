@@ -3,10 +3,12 @@
 
 #include <stdexcept>
 #include "opcode.h"
-#include "value.h"
-#include <slake/obj/idref.h>
+#include "obj/object.h"
 
 namespace slake {
+	class Runtime;
+	class IdRefObject;
+
 	enum class ErrorKind {
 		RuntimeExecError = 0,
 		SLXLoaderError
@@ -195,6 +197,18 @@ namespace slake {
 		SLAKE_API static InvalidArrayIndexError *alloc(Runtime *associatedRuntime, size_t index);
 	};
 
+	class StackOverflowError : public RuntimeExecError {
+	public:
+		SLAKE_API StackOverflowError(Runtime *associatedRuntime);
+		SLAKE_API virtual ~StackOverflowError();
+
+		SLAKE_API virtual const char *what() const override;
+
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API static StackOverflowError *alloc(Runtime *associatedRuntime);
+	};
+
 	class InvalidArgumentNumberError : public RuntimeExecError {
 	public:
 		uint32_t nArgs;
@@ -308,6 +322,59 @@ namespace slake {
 		inline LoaderError(std::string msg) : runtime_error(msg){};
 		virtual ~LoaderError() = default;
 	};
+
+	class InternalExceptionPointer {
+	private:
+		std::unique_ptr<InternalException, util::DeallocableDeleter<InternalException>> _ptr;
+
+	public:
+		SLAKE_FORCEINLINE InternalExceptionPointer() = default;
+		SLAKE_FORCEINLINE InternalExceptionPointer(InternalException* exception) : _ptr(exception) {
+		}
+
+		SLAKE_FORCEINLINE ~InternalExceptionPointer() {
+			if (_ptr) {
+				assert(("Unhandled Slake internal exception: ", false));
+			}
+		}
+
+		InternalExceptionPointer(const InternalExceptionPointer &) = delete;
+		InternalExceptionPointer &operator=(const InternalExceptionPointer &) = delete;
+		SLAKE_FORCEINLINE InternalExceptionPointer(InternalExceptionPointer&& other) {
+			_ptr = std::move(other._ptr);
+		}
+		SLAKE_FORCEINLINE InternalExceptionPointer &operator=(InternalExceptionPointer &&other) {
+			_ptr = std::move(other._ptr);
+			return *this;
+		}
+
+		SLAKE_FORCEINLINE InternalException* get() {
+			return _ptr.get();
+		}
+		SLAKE_FORCEINLINE const InternalException *get() const {
+			return _ptr.get();
+		}
+
+		SLAKE_FORCEINLINE void reset() {
+			_ptr.reset();
+		}
+
+		SLAKE_FORCEINLINE explicit operator bool() {
+			return (bool)_ptr;
+		}
+
+		SLAKE_FORCEINLINE InternalException* operator->() {
+			return _ptr.get();
+		}
+
+		SLAKE_FORCEINLINE const InternalException *operator->() const {
+			return _ptr.get();
+		}
+	};
 }
+
+#define RETURN_IF_EXCEPT(expr)                        \
+	if (InternalExceptionPointer e = (expr); (bool)e) \
+	return e
 
 #endif

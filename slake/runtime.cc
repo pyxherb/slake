@@ -22,31 +22,6 @@ SLAKE_API bool CountablePoolResource::do_is_equal(const std::pmr::memory_resourc
 	return this == &other;
 }
 
-SLAKE_API void Runtime::setThreadLocalInternalException(std::thread::id threadId, InternalException *exception) const {
-	if (threadLocalInternalExceptions.count(threadId)) {
-		throw std::logic_error("Previous uncaught exception has not been disposed yet");
-	}
-
-	threadLocalInternalExceptions[threadId] = InternalExceptionStorage(exception);
-}
-
-SLAKE_API void Runtime::unsetThreadLocalInternalException(std::thread::id threadId) const {
-	if (auto it = threadLocalInternalExceptions.find(threadId);
-		it != threadLocalInternalExceptions.end()) {
-		threadLocalInternalExceptions.erase(it);
-	} else {
-		throw std::logic_error("Previous uncaught exception has not been set");
-	}
-}
-
-SLAKE_API InternalException *Runtime::getThreadLocalInternalException(std::thread::id threadId) const {
-	if (auto it = threadLocalInternalExceptions.find(threadId);
-		it != threadLocalInternalExceptions.end()) {
-		return it->second.get();
-	}
-	return nullptr;
-}
-
 SLAKE_API Runtime::Runtime(std::pmr::memory_resource *upstreamMemoryResource, RuntimeFlags flags)
 	: globalHeapPoolResource(upstreamMemoryResource),
 	  _flags(flags) {
@@ -60,7 +35,6 @@ SLAKE_API Runtime::~Runtime() {
 	_genericCacheLookupTable.clear();
 
 	_rootObject = nullptr;
-	threadLocalInternalExceptions.clear();
 	activeContexts.clear();
 
 	gc();

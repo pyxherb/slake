@@ -7,7 +7,7 @@
 #include <deque>
 #include <map>
 #include <cassert>
-#include <slake/type.h>
+#include "type.h"
 
 namespace slake {
 	struct Type;

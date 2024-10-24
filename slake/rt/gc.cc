@@ -228,8 +228,8 @@ SLAKE_API void Runtime::_gcWalk(Object *v) {
 					auto v = (RegularVarObject *)value;
 
 					Value data;
-					bool result = value->getData(VarRefContext(), data);
-					assert(result);
+					InternalExceptionPointer result = value->getData(VarRefContext(), data);
+					assert(!result);
 					_gcWalk(data);
 
 					_gcWalk(v->parent);

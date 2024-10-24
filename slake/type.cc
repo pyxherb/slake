@@ -52,20 +52,18 @@ SLAKE_API bool Type::isLoadingDeferred() const noexcept {
 	}
 }
 
-SLAKE_API Object *Type::loadDeferredType(const Runtime *rt) {
+SLAKE_API bool Type::loadDeferredType(const Runtime *rt) {
 	if (!isLoadingDeferred())
-		return getCustomTypeExData();
+		return true;
 
 	auto ref = (IdRefObject *)getCustomTypeExData();
 	auto typeObject = rt->resolveIdRef(ref, nullptr);
 	if (!typeObject) {
-		rt->setThreadLocalInternalException(
-			std::this_thread::get_id(),
-			ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(rt), ref));
-		return nullptr;
+		return false;
 	}
 
-	return exData.ptr = (Object *)typeObject;
+	exData.ptr = (Object *)typeObject;
+	return true;
 }
 
 SLAKE_API bool Type::operator<(const Type &rhs) const {

@@ -89,7 +89,6 @@ namespace slake {
 	template <typename T = Object>
 	class HostObjectRef final {
 	public:
-		static_assert(std::is_base_of_v<Object, T>);
 		T *_value = nullptr;
 
 		SLAKE_FORCEINLINE void reset() {

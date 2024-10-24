@@ -17,14 +17,13 @@ SLAKE_API Type InstanceMemberAccessorVarObject::getVarType(const VarRefContext &
 	return instanceObject->objectLayout->fieldRecords[context.asInstance.fieldIndex].type;
 }
 
-SLAKE_API bool InstanceMemberAccessorVarObject::setData(const VarRefContext &context, const Value &value) {
+SLAKE_API InternalExceptionPointer InstanceMemberAccessorVarObject::setData(const VarRefContext &context, const Value &value) {
 	ObjectFieldRecord &fieldRecord =
 		instanceObject->objectLayout->fieldRecords.at(
 			context.asInstance.fieldIndex);
 
 	if (!isCompatible(fieldRecord.type, value)) {
-		raiseMismatchedVarTypeError(associatedRuntime);
-		return false;
+		return raiseMismatchedVarTypeError(associatedRuntime);
 	}
 
 	char *rawFieldPtr = instanceObject->rawFieldData + fieldRecord.offset;
@@ -77,10 +76,10 @@ SLAKE_API bool InstanceMemberAccessorVarObject::setData(const VarRefContext &con
 			assert(false);
 	}
 
-	return true;
+	return {};
 }
 
-SLAKE_API bool InstanceMemberAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
+SLAKE_API InternalExceptionPointer InstanceMemberAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
 	ObjectFieldRecord &fieldRecord =
 		instanceObject->objectLayout->fieldRecords.at(
 			varRefContext.asInstance.fieldIndex);
@@ -134,7 +133,7 @@ SLAKE_API bool InstanceMemberAccessorVarObject::getData(const VarRefContext &var
 			// All fields should be checked during the instantiation.
 			throw std::logic_error("Unhandled value type");
 	}
-	return true;
+	return {};
 }
 
 SLAKE_API HostObjectRef<InstanceMemberAccessorVarObject> slake::InstanceMemberAccessorVarObject::alloc(Runtime *rt, InstanceObject *instanceObject) {

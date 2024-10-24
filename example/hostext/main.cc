@@ -21,7 +21,8 @@ slake::Value print(
 
 		for (uint8_t i = 0; i < nArgs; ++i) {
 			Value data;
-			if (!varArgs->accessor->getData(VarRefContext::makeArrayContext(i), data)) {
+			if (auto e = varArgs->accessor->getData(VarRefContext::makeArrayContext(i), data);
+				e) {
 				throw std::runtime_error("An exception has thrown");
 			}
 
@@ -167,8 +168,8 @@ int main(int argc, char **argv) {
 		auto fn = (slake::FnObject *)mod->getMember("main", nullptr);
 
 		slake::HostObjectRef<slake::ContextObject> context;
-		if (!rt->execFn(fn->getOverloading({}), nullptr, nullptr, nullptr, 0, context)) {
-			auto e = rt->getThreadLocalInternalException(std::this_thread::get_id());
+		if (auto e = rt->execFn(fn->getOverloading({}), nullptr, nullptr, nullptr, 0, context);
+			e) {
 			printf("Internal exception: %s\n", e->what());
 			printTraceback(rt.get(), context.get());
 			goto end;
@@ -176,8 +177,8 @@ int main(int argc, char **argv) {
 		printf("%d\n", context->getResult().getI32());
 
 		while (!context->isDone()) {
-			if (!context->resume(&hostRefHolder)) {
-				auto e = rt->getThreadLocalInternalException(std::this_thread::get_id());
+			if (auto e = context->resume(&hostRefHolder);
+				e) {
 				printf("Internal exception: %s\n", e->what());
 				printTraceback(rt.get(), context.get());
 				goto end;

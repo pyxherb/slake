@@ -17,15 +17,14 @@ SLAKE_API void Runtime::invalidateGenericCache(Object *i) {
 	}
 }
 
-SLAKE_API bool slake::Runtime::_instantiateGenericObject(Type &type, GenericInstantiationContext &instantiationContext) const {
+SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Type &type, GenericInstantiationContext &instantiationContext) const {
 	switch (type.typeId) {
 		case TypeId::Instance: {
 			if (type.isLoadingDeferred()) {
 				IdRefObject *exData = (IdRefObject *)type.getCustomTypeExData();
 				for (auto &i : exData->entries) {
 					for (auto &j : i.genericArgs) {
-						if (!_instantiateGenericObject(j, instantiationContext))
-							return false;
+						RETURN_IF_EXCEPT(_instantiateGenericObject(j, instantiationContext));
 					}
 				}
 			} else {
@@ -42,20 +41,17 @@ SLAKE_API bool slake::Runtime::_instantiateGenericObject(Type &type, GenericInst
 				// TODO: Add HostRefHolder for idRefObject.
 				type = Type(type.typeId, idRefObject.get());
 
-				if (!_instantiateGenericObject(type, instantiationContext))
-					return false;
+				RETURN_IF_EXCEPT(_instantiateGenericObject(type, instantiationContext));
 			}
 			break;
 		}
 		case TypeId::Array:
 			type = type.duplicate();
-			if (!_instantiateGenericObject(type.getArrayExData(), instantiationContext))
-				return false;
+			RETURN_IF_EXCEPT(_instantiateGenericObject(type.getArrayExData(), instantiationContext));
 			break;
 		case TypeId::Ref:
 			type = type.duplicate();
-			if (!_instantiateGenericObject(type.getRefExData(), instantiationContext))
-				return false;
+			RETURN_IF_EXCEPT(_instantiateGenericObject(type.getRefExData(), instantiationContext));
 			break;
 		case TypeId::GenericArg: {
 			HostObjectRef<StringObject> nameObject = (StringObject *)type.getCustomTypeExData();
@@ -65,19 +61,16 @@ SLAKE_API bool slake::Runtime::_instantiateGenericObject(Type &type, GenericInst
 			} else {
 				std::pmr::string paramName(nameObject->data);
 
-				setThreadLocalInternalException(
-					std::this_thread::get_id(),
-					GenericParameterNotFoundError::alloc(
+				RETURN_IF_EXCEPT(GenericParameterNotFoundError::alloc(
 						const_cast<Runtime *>(this),
 						std::move(paramName)));
-				return false;
 			}
 		}
 	}
-	return true;
+	return {};
 }
 
-SLAKE_API bool slake::Runtime::_instantiateGenericObject(Value &value, GenericInstantiationContext &instantiationContext) const {
+SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Value &value, GenericInstantiationContext &instantiationContext) const {
 	switch (value.valueType) {
 		case ValueType::I8:
 		case ValueType::I16:
@@ -94,18 +87,17 @@ SLAKE_API bool slake::Runtime::_instantiateGenericObject(Value &value, GenericIn
 		case ValueType::RegRef:
 			break;
 		case ValueType::TypeName:
-			if (!_instantiateGenericObject(value.getTypeName(), instantiationContext))
-				return false;
+			RETURN_IF_EXCEPT(_instantiateGenericObject(value.getTypeName(), instantiationContext));
 			break;
 		case ValueType::Undefined:
 			break;
 		default:
 			throw std::logic_error("Unhandled value type");
 	}
-	return true;
+	return {};
 }
 
-SLAKE_API bool slake::Runtime::_instantiateGenericObject(Object *v, GenericInstantiationContext &instantiationContext) const {
+SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Object *v, GenericInstantiationContext &instantiationContext) const {
 	// How do we instantiate generic classes:
 	// Duplicate the value, scan for references to generic parameters and
 	// replace them with generic arguments.
@@ -124,20 +116,16 @@ SLAKE_API bool slake::Runtime::_instantiateGenericObject(Object *v, GenericInsta
 
 				newInstantiationContext.mappedObject = value;
 
-				if (!_instantiateGenericObject(value->parentClass, newInstantiationContext))
-					return false;
+				RETURN_IF_EXCEPT(_instantiateGenericObject(value->parentClass, newInstantiationContext));
 
-				if (!_instantiateGenericObject(value, newInstantiationContext))
-					return false;
+				RETURN_IF_EXCEPT(_instantiateGenericObject(value, newInstantiationContext));
 			} else {
 				value->genericArgs = *instantiationContext.genericArgs;
 
-				if (!_instantiateGenericObject(value->parentClass, instantiationContext))
-					return false;
+				RETURN_IF_EXCEPT(_instantiateGenericObject(value->parentClass, instantiationContext));
 
 				for (auto &i : value->scope->members)
-					if (!_instantiateGenericObject(i.second, instantiationContext))
-						return false;
+					RETURN_IF_EXCEPT(_instantiateGenericObject(i.second, instantiationContext));
 			}
 
 			break;
@@ -148,8 +136,7 @@ SLAKE_API bool slake::Runtime::_instantiateGenericObject(Object *v, GenericInsta
 			value->genericArgs = *instantiationContext.genericArgs;
 
 			for (auto &i : value->scope->members) {
-				if (!_instantiateGenericObject(i.second, instantiationContext))
-					return false;
+				RETURN_IF_EXCEPT(_instantiateGenericObject(i.second, instantiationContext));
 			}
 
 			break;
@@ -160,14 +147,12 @@ SLAKE_API bool slake::Runtime::_instantiateGenericObject(Object *v, GenericInsta
 			switch (value->getVarKind()) {
 				case VarKind::Regular: {
 					RegularVarObject *v = (RegularVarObject *)value;
-					if (!_instantiateGenericObject(v->type, instantiationContext))
-						return false;
+					RETURN_IF_EXCEPT(_instantiateGenericObject(v->type, instantiationContext));
 					break;
 				}
 				case VarKind::ArrayElementAccessor: {
 					ArrayAccessorVarObject *v = (ArrayAccessorVarObject *)value;
-					if (!_instantiateGenericObject(v->arrayObject, instantiationContext))
-						return false;
+					RETURN_IF_EXCEPT(_instantiateGenericObject(v->arrayObject, instantiationContext));
 					break;
 				}
 			}
@@ -177,8 +162,7 @@ SLAKE_API bool slake::Runtime::_instantiateGenericObject(Object *v, GenericInsta
 			ModuleObject *value = (ModuleObject *)v;
 
 			for (auto &i : value->scope->members) {
-				if (!_instantiateGenericObject(i.second, instantiationContext))
-					return false;
+				RETURN_IF_EXCEPT(_instantiateGenericObject(i.second, instantiationContext));
 			}
 			break;
 		}
@@ -203,19 +187,17 @@ SLAKE_API bool slake::Runtime::_instantiateGenericObject(Object *v, GenericInsta
 								throw std::runtime_error("Specialization argument must be deterministic");
 
 							if (!curType.loadDeferredType(this))
-								return false;
+								throw std::runtime_error("Error loading specialization types");
 							if (curType != instantiationContext.genericArgs->at(j)) {
 								goto specializationArgsMismatched;
 							}
 						}
 
-						if (!_instantiateGenericObject(i, instantiationContext))
-							return false;
+						RETURN_IF_EXCEPT(_instantiateGenericObject(i, instantiationContext));
 						matchedSpecializedOverloading = i;
 						break;
 					} else {
-						if (!_instantiateGenericObject(i, instantiationContext))
-							return false;
+						RETURN_IF_EXCEPT(_instantiateGenericObject(i, instantiationContext));
 						matchedOverloading = i;
 					}
 
@@ -226,8 +208,7 @@ SLAKE_API bool slake::Runtime::_instantiateGenericObject(Object *v, GenericInsta
 					matchedSpecializedOverloading ? matchedSpecializedOverloading : matchedOverloading);
 			} else {
 				for (auto i : value->overloadings) {
-					if (!_instantiateGenericObject(i, instantiationContext))
-						return false;
+					RETURN_IF_EXCEPT(_instantiateGenericObject(i, instantiationContext));
 				}
 			}
 			break;
@@ -245,10 +226,10 @@ SLAKE_API bool slake::Runtime::_instantiateGenericObject(Object *v, GenericInsta
 		default:
 			throw std::logic_error("Unhandled object type");
 	}
-	return true;
+	return {};
 }
 
-bool Runtime::mapGenericParams(const Object *v, GenericInstantiationContext &instantiationContext) const {
+InternalExceptionPointer Runtime::mapGenericParams(const Object *v, GenericInstantiationContext &instantiationContext) const {
 	instantiationContext.mappedObject = v;
 
 	switch (v->getKind()) {
@@ -256,10 +237,8 @@ bool Runtime::mapGenericParams(const Object *v, GenericInstantiationContext &ins
 			ClassObject *value = (ClassObject *)v;
 
 			if (instantiationContext.genericArgs->size() != value->genericParams.size()) {
-				setThreadLocalInternalException(
-					std::this_thread::get_id(),
-					MismatchedGenericArgumentNumberError::alloc(
-						const_cast<Runtime *>(this)));
+				return MismatchedGenericArgumentNumberError::alloc(
+						const_cast<Runtime *>(this));
 				return false;
 			}
 
@@ -272,10 +251,8 @@ bool Runtime::mapGenericParams(const Object *v, GenericInstantiationContext &ins
 			InterfaceObject *value = (InterfaceObject *)v;
 
 			if (instantiationContext.genericArgs->size() != value->genericParams.size()) {
-				setThreadLocalInternalException(
-					std::this_thread::get_id(),
-					MismatchedGenericArgumentNumberError::alloc(
-						const_cast<Runtime *>(this)));
+				return MismatchedGenericArgumentNumberError::alloc(
+						const_cast<Runtime *>(this));
 				return false;
 			}
 
@@ -286,22 +263,19 @@ bool Runtime::mapGenericParams(const Object *v, GenericInstantiationContext &ins
 		}
 		default:;
 	}
-	return true;
+	return {};
 }
 
-SLAKE_API bool Runtime::mapGenericParams(const FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const {
+SLAKE_API InternalExceptionPointer Runtime::mapGenericParams(const FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const {
 	if (instantiationContext.genericArgs->size() != ol->genericParams.size()) {
-		setThreadLocalInternalException(
-			std::this_thread::get_id(),
-			MismatchedGenericArgumentNumberError::alloc(
-				const_cast<Runtime *>(this)));
-		return false;
+		return MismatchedGenericArgumentNumberError::alloc(
+				const_cast<Runtime *>(this));
 	}
 
 	for (size_t i = 0; i < ol->genericParams.size(); ++i) {
 		instantiationContext.mappedGenericArgs[ol->genericParams[i].name] = instantiationContext.genericArgs->at(i);
 	}
-	return true;
+	return {};
 }
 
 SLAKE_API Object *Runtime::instantiateGenericObject(const Object *v, GenericInstantiationContext &instantiationContext) const {
@@ -318,10 +292,10 @@ SLAKE_API Object *Runtime::instantiateGenericObject(const Object *v, GenericInst
 	// Cache missed, instantiate the value.
 	auto value = v->duplicate();									 // Make a duplicate of the original value.
 	_genericCacheDir[v][*instantiationContext.genericArgs] = value;	 // Store the instance into the cache.
-	if(!mapGenericParams(value, instantiationContext))
+	if (mapGenericParams(value, instantiationContext))
 		return nullptr;
 	// Instantiate the value.
-	if(!_instantiateGenericObject(value, instantiationContext))
+	if(_instantiateGenericObject(value, instantiationContext))
 		return nullptr;
 
 	_genericCacheLookupTable[value] = { v, *instantiationContext.genericArgs };
@@ -329,7 +303,7 @@ SLAKE_API Object *Runtime::instantiateGenericObject(const Object *v, GenericInst
 	return value;
 }
 
-SLAKE_API bool Runtime::_instantiateGenericObject(FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const {
+SLAKE_API InternalExceptionPointer Runtime::_instantiateGenericObject(FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const {
 	if (ol->genericParams.size() && ol->fnObject != instantiationContext.mappedObject) {
 		GenericInstantiationContext newInstantiationContext = instantiationContext;
 
@@ -341,17 +315,13 @@ SLAKE_API bool Runtime::_instantiateGenericObject(FnOverloadingObject *ol, Gener
 
 		newInstantiationContext.mappedObject = ol->fnObject;
 
-		if (!_instantiateGenericObject(ol, newInstantiationContext))
-			return false;
+		RETURN_IF_EXCEPT(_instantiateGenericObject(ol, newInstantiationContext));
 	} else {
 		for (auto &i : ol->paramTypes) {
-			if (!_instantiateGenericObject(i, instantiationContext)) {
-				return false;
-			}
+			RETURN_IF_EXCEPT(_instantiateGenericObject(i, instantiationContext));
 		}
 
-		if (!_instantiateGenericObject(ol->returnType, instantiationContext))
-			return false;
+		RETURN_IF_EXCEPT(_instantiateGenericObject(ol->returnType, instantiationContext));
 
 		switch (ol->getOverloadingKind()) {
 			case FnOverloadingKind::Regular: {
@@ -359,8 +329,7 @@ SLAKE_API bool Runtime::_instantiateGenericObject(FnOverloadingObject *ol, Gener
 
 				for (auto &i : overloading->instructions) {
 					for (auto &j : i.operands) {
-						if (!_instantiateGenericObject(j, instantiationContext))
-							return false;
+						RETURN_IF_EXCEPT(_instantiateGenericObject(j, instantiationContext));
 					}
 				}
 
@@ -373,5 +342,5 @@ SLAKE_API bool Runtime::_instantiateGenericObject(FnOverloadingObject *ol, Gener
 			}
 		}
 	}
-	return true;
+	return {};
 }

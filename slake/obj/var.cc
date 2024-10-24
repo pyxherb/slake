@@ -57,18 +57,17 @@ SLAKE_API void slake::RegularVarObject::dealloc() {
 	allocator.deallocate(this, 1);
 }
 
-SLAKE_API bool RegularVarObject::getData(const VarRefContext &context, Value &valueOut) const {
+SLAKE_API InternalExceptionPointer RegularVarObject::getData(const VarRefContext &context, Value &valueOut) const {
 	valueOut = value;
-	return true;
+	return {};
 }
 
-SLAKE_API bool RegularVarObject::setData(const VarRefContext &context, const Value &value) {
+SLAKE_API InternalExceptionPointer RegularVarObject::setData(const VarRefContext &context, const Value &value) {
 	if (!isCompatible(type, value)) {
-		raiseMismatchedVarTypeError(associatedRuntime);
-		return false;
+		return raiseMismatchedVarTypeError(associatedRuntime);
 	}
 	this->value = value;
-	return true;
+	return {};
 }
 
 SLAKE_API ObjectKind RegularVarObject::getKind() const { return ObjectKind::Var; }
@@ -117,13 +116,12 @@ SLAKE_API Type LocalVarAccessorVarObject::getVarType(const VarRefContext &contex
 
 SLAKE_API VarKind LocalVarAccessorVarObject::getVarKind() const { return VarKind::LocalVarAccessor; }
 
-SLAKE_API bool LocalVarAccessorVarObject::setData(const VarRefContext &context, const Value &value) {
+SLAKE_API InternalExceptionPointer LocalVarAccessorVarObject::setData(const VarRefContext &context, const Value &value) {
 	LocalVarRecord &localVarRecord =
 		majorFrame->localVarRecords[context.asLocalVar.localVarIndex];
 
 	if (!isCompatible(localVarRecord.type, value)) {
-		raiseMismatchedVarTypeError(associatedRuntime);
-		return false;
+		return raiseMismatchedVarTypeError(associatedRuntime);
 	}
 
 	char *rawDataPtr = this->context->dataStack + localVarRecord.stackOffset;
@@ -175,10 +173,10 @@ SLAKE_API bool LocalVarAccessorVarObject::setData(const VarRefContext &context, 
 			// All fields should be checked during the instantiation.
 			throw std::logic_error("Unhandled value type");
 	}
-	return true;
+	return {};
 }
 
-SLAKE_API bool LocalVarAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
+SLAKE_API InternalExceptionPointer LocalVarAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
 	LocalVarRecord &localVarRecord =
 		majorFrame->localVarRecords[varRefContext.asLocalVar.localVarIndex];
 
@@ -232,7 +230,7 @@ SLAKE_API bool LocalVarAccessorVarObject::getData(const VarRefContext &varRefCon
 			throw std::logic_error("Unhandled value type");
 	}
 
-	return true;
+	return {};
 }
 
 SLAKE_API HostObjectRef<LocalVarAccessorVarObject> slake::LocalVarAccessorVarObject::alloc(
@@ -259,8 +257,6 @@ SLAKE_API void slake::LocalVarAccessorVarObject::dealloc() {
 	allocator.deallocate(this, 1);
 }
 
-void slake::raiseMismatchedVarTypeError(Runtime *rt) {
-	rt->setThreadLocalInternalException(
-		std::this_thread::get_id(),
-		MismatchedVarTypeError::alloc(rt));
+MismatchedVarTypeError *slake::raiseMismatchedVarTypeError(Runtime *rt) {
+	return MismatchedVarTypeError::alloc(rt);
 }

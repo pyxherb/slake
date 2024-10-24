@@ -24,28 +24,22 @@ SLAKE_API MajorFrame::MajorFrame(Runtime *rt, Context *context)
 	minorFrames.push_back(MinorFrame(rt, 0, 0, context->stackTop));
 }
 
-SLAKE_API bool MajorFrame::lload(Runtime *rt, uint32_t off, VarRef &varRefOut) {
+SLAKE_API InternalExceptionPointer MajorFrame::lload(Runtime *rt, uint32_t off, VarRef &varRefOut) {
 	if (off >= localVarRecords.size()) {
-		rt->setThreadLocalInternalException(
-			std::this_thread::get_id(),
-			InvalidLocalVarIndexError::alloc(rt, off));
-		return false;
+		return InvalidLocalVarIndexError::alloc(rt, off);
 	}
 
 	varRefOut = VarRef(localVarAccessor, VarRefContext::makeLocalVarContext(off));
-	return true;
+	return {};
 }
 
-SLAKE_API bool MajorFrame::larg(Runtime *rt, uint32_t off, VarRef &varRefOut) {
+SLAKE_API InternalExceptionPointer MajorFrame::larg(Runtime *rt, uint32_t off, VarRef &varRefOut) {
 	if (off >= argStack.size()) {
-		rt->setThreadLocalInternalException(
-			std::this_thread::get_id(),
-			InvalidArgumentIndexError::alloc(rt, off));
-		return false;
+		return InvalidArgumentIndexError::alloc(rt, off);
 	}
 
 	varRefOut = argStack.at(off);
-	return true;
+	return {};
 }
 
 SLAKE_API void MajorFrame::leave() {
@@ -106,7 +100,7 @@ SLAKE_API void slake::ContextObject::dealloc() {
 	allocator.deallocate(this, 1);
 }
 
-SLAKE_API bool ContextObject::resume(HostRefHolder *hostRefHolder) {
+SLAKE_API InternalExceptionPointer ContextObject::resume(HostRefHolder *hostRefHolder) {
 	_context.flags &= ~CTX_YIELDED;
 	return associatedRuntime->execContext(this);
 }

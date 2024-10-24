@@ -237,6 +237,32 @@ SLAKE_API InvalidArrayIndexError *InvalidArrayIndexError::alloc(Runtime *associa
 	return ptr.release();
 }
 
+SLAKE_API StackOverflowError::StackOverflowError(Runtime *associatedRuntime) : RuntimeExecError(associatedRuntime, RuntimeExecErrorCode::StackOverflow) {}
+SLAKE_API StackOverflowError::~StackOverflowError() {}
+
+SLAKE_API const char *StackOverflowError::what() const {
+	return "Stack overflow";
+}
+
+SLAKE_API void StackOverflowError::dealloc() {
+	std::pmr::polymorphic_allocator<StackOverflowError> allocator(&associatedRuntime->globalHeapPoolResource);
+
+	std::destroy_at(this);
+	allocator.deallocate(this, 1);
+}
+
+SLAKE_API StackOverflowError *StackOverflowError::alloc(Runtime *associatedRuntime) {
+	using Alloc = std::pmr::polymorphic_allocator<StackOverflowError>;
+	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
+
+	std::unique_ptr<StackOverflowError, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), associatedRuntime);
+
+	return ptr.release();
+}
+
 SLAKE_API InvalidArgumentNumberError::InvalidArgumentNumberError(
 	Runtime *associatedRuntime,
 	uint32_t nArgs) : RuntimeExecError(associatedRuntime, RuntimeExecErrorCode::InvalidArgumentNumber), nArgs(nArgs) {}

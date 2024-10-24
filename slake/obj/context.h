@@ -63,9 +63,9 @@ namespace slake {
 			abort();
 		}
 
-		SLAKE_API bool lload(Runtime *rt, uint32_t off, VarRef &varRefOut);
+		SLAKE_API InternalExceptionPointer lload(Runtime *rt, uint32_t off, VarRef &varRefOut);
 
-		SLAKE_API bool larg(Runtime *rt, uint32_t off, VarRef &varRefOut);
+		SLAKE_API InternalExceptionPointer larg(Runtime *rt, uint32_t off, VarRef &varRefOut);
 
 		/// @brief Leave current minor frame.
 		SLAKE_API void leave();
@@ -108,7 +108,7 @@ namespace slake {
 
 		SLAKE_FORCEINLINE Context &getContext() { return _context; }
 
-		SLAKE_API bool resume(HostRefHolder *hostRefHolder);
+		SLAKE_API InternalExceptionPointer resume(HostRefHolder *hostRefHolder);
 		SLAKE_API Value getResult();
 		SLAKE_API bool isDone();
 	};

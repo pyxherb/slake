@@ -26,7 +26,7 @@ namespace slake {
 
 		SLAKE_API virtual Type getVarType(const VarRefContext &context) const = 0;
 
-		SLAKE_API [[nodiscard]] virtual Optional getData(const VarRefContext &context) const = 0;
+		SLAKE_API [[nodiscard]] virtual bool getData(const VarRefContext &context, Value &valueOut) const = 0;
 		SLAKE_API [[nodiscard]] virtual bool setData(const VarRefContext &context, const Value &value) = 0;
 
 		SLAKE_API virtual VarKind getVarKind() const = 0;
@@ -55,7 +55,17 @@ namespace slake {
 		SLAKE_API static HostObjectRef<RegularVarObject> alloc(const RegularVarObject *other);
 		SLAKE_API virtual void dealloc() override;
 
-		SLAKE_API [[nodiscard]] virtual Optional getData(const VarRefContext &context) const override;
+		/// @brief Get data of the variable.
+		/// @param context Variable context for fetching data.
+		/// @param valueOut Where to store the data fetched from the variable.
+		/// @return true if succeeded.
+		/// @return false if failed and an internal exception will be set.
+		SLAKE_API [[nodiscard]] virtual bool getData(const VarRefContext &context, Value &valueOut) const override;
+		/// @brief Set data of the variable.
+		/// @param context Variable context for setting data.
+		/// @param value Data to be assigned to the variable.
+		/// @return true if succeeded.
+		/// @return false if failed and an internal exception will be set.
 		SLAKE_API [[nodiscard]] virtual bool setData(const VarRefContext &context, const Value &value) override;
 
 		SLAKE_API virtual ObjectKind getKind() const override;
@@ -85,7 +95,7 @@ namespace slake {
 		SLAKE_API virtual VarKind getVarKind() const override;
 
 		SLAKE_API [[nodiscard]] virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
-		SLAKE_API [[nodiscard]] virtual Optional getData(const VarRefContext &varRefContext) const override;
+		SLAKE_API [[nodiscard]] virtual bool getData(const VarRefContext &varRefContext, Value &valueOut) const override;
 
 		SLAKE_API static HostObjectRef<LocalVarAccessorVarObject> alloc(
 			Runtime *rt,

@@ -64,15 +64,16 @@ SLAKE_API bool U8ArrayAccessorVarObject::setData(const VarRefContext &varRefCont
 	return true;
 }
 
-SLAKE_API Optional U8ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API bool U8ArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
 	U8ArrayObject *arrayObject = ((U8ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
 	if (index > arrayObject->length) {
 		raiseInvalidArrayIndexError(associatedRuntime, index);
-		return {};
+		return false;
 	}
 
-	return Value(arrayObject->data[index]);
+	valueOut = Value(arrayObject->data[index]);
+	return true;
 }
 
 SLAKE_API HostObjectRef<U8ArrayAccessorVarObject> slake::U8ArrayAccessorVarObject::alloc(Runtime *rt, U8ArrayObject *arrayObject) {
@@ -225,15 +226,16 @@ SLAKE_API bool U16ArrayAccessorVarObject::setData(const VarRefContext &varRefCon
 	return true;
 }
 
-SLAKE_API Optional U16ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API bool U16ArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
 	U16ArrayObject *arrayObject = ((U16ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
 	if (index > arrayObject->length) {
 		raiseInvalidArrayIndexError(associatedRuntime, index);
-		return {};
+		return false;
 	}
 
-	return Value(arrayObject->data[index]);
+	valueOut = Value(arrayObject->data[index]);
+	return true;
 }
 
 SLAKE_API HostObjectRef<U16ArrayAccessorVarObject> slake::U16ArrayAccessorVarObject::alloc(Runtime *rt, U16ArrayObject *arrayObject) {
@@ -386,15 +388,16 @@ SLAKE_API bool U32ArrayAccessorVarObject::setData(const VarRefContext &varRefCon
 	return true;
 }
 
-SLAKE_API Optional U32ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API bool U32ArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
 	U32ArrayObject *arrayObject = ((U32ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
 	if (index > arrayObject->length) {
 		raiseInvalidArrayIndexError(associatedRuntime, index);
-		return {};
+		return false;
 	}
 
-	return Value(arrayObject->data[index]);
+	valueOut = Value(arrayObject->data[index]);
+	return true;
 }
 
 SLAKE_API HostObjectRef<U32ArrayAccessorVarObject> slake::U32ArrayAccessorVarObject::alloc(Runtime *rt, U32ArrayObject *arrayObject) {
@@ -547,15 +550,16 @@ SLAKE_API bool U64ArrayAccessorVarObject::setData(const VarRefContext &varRefCon
 	return true;
 }
 
-SLAKE_API Optional U64ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API bool U64ArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
 	U64ArrayObject *arrayObject = ((U64ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
 	if (index > arrayObject->length) {
 		raiseInvalidArrayIndexError(associatedRuntime, index);
-		return {};
+		return false;
 	}
 
-	return Value(arrayObject->data[index]);
+	valueOut = Value(arrayObject->data[index]);
+	return true;
 }
 
 SLAKE_API HostObjectRef<U64ArrayAccessorVarObject> slake::U64ArrayAccessorVarObject::alloc(Runtime *rt, U64ArrayObject *arrayObject) {
@@ -708,15 +712,16 @@ SLAKE_API bool I8ArrayAccessorVarObject::setData(const VarRefContext &varRefCont
 	return true;
 }
 
-SLAKE_API Optional I8ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API bool I8ArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
 	I8ArrayObject *arrayObject = ((I8ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
 	if (index > arrayObject->length) {
 		raiseInvalidArrayIndexError(associatedRuntime, index);
-		return {};
+		return false;
 	}
 
-	return Value(arrayObject->data[index]);
+	valueOut = Value(arrayObject->data[index]);
+	return true;
 }
 
 SLAKE_API HostObjectRef<I8ArrayAccessorVarObject> slake::I8ArrayAccessorVarObject::alloc(Runtime *rt, I8ArrayObject *arrayObject) {
@@ -871,15 +876,15 @@ SLAKE_API bool I16ArrayAccessorVarObject::setData(const VarRefContext &varRefCon
 	return true;
 }
 
-SLAKE_API Optional I16ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API bool I16ArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
 	I16ArrayObject *arrayObject = ((I16ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
 	if (index > arrayObject->length) {
 		raiseInvalidArrayIndexError(associatedRuntime, index);
-		return {};
+		return false;
 	}
 
-	return Value(arrayObject->data[index]);
+	valueOut = Value(arrayObject->data[index]);
 }
 
 SLAKE_API HostObjectRef<I16ArrayAccessorVarObject> slake::I16ArrayAccessorVarObject::alloc(Runtime *rt, I16ArrayObject *arrayObject) {
@@ -1032,15 +1037,16 @@ SLAKE_API bool I32ArrayAccessorVarObject::setData(const VarRefContext &varRefCon
 	return true;
 }
 
-SLAKE_API Optional I32ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API bool I32ArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
 	I32ArrayObject *arrayObject = ((I32ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
 	if (index > arrayObject->length) {
 		raiseInvalidArrayIndexError(associatedRuntime, index);
-		return {};
+		return false;
 	}
 
-	return Value(arrayObject->data[index]);
+	valueOut = Value(arrayObject->data[index]);
+	return true;
 }
 
 SLAKE_API HostObjectRef<I32ArrayAccessorVarObject> slake::I32ArrayAccessorVarObject::alloc(Runtime *rt, I32ArrayObject *arrayObject) {
@@ -1193,15 +1199,16 @@ SLAKE_API bool I64ArrayAccessorVarObject::setData(const VarRefContext &varRefCon
 	return true;
 }
 
-SLAKE_API Optional I64ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API bool I64ArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
 	I64ArrayObject *arrayObject = ((I64ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
 	if (index > arrayObject->length) {
 		raiseInvalidArrayIndexError(associatedRuntime, index);
-		return {};
+		return false;
 	}
 
-	return Value(arrayObject->data[index]);
+	valueOut = Value(arrayObject->data[index]);
+	return true;
 }
 
 SLAKE_API HostObjectRef<I64ArrayAccessorVarObject> slake::I64ArrayAccessorVarObject::alloc(Runtime *rt, I64ArrayObject *arrayObject) {
@@ -1354,15 +1361,16 @@ SLAKE_API bool F32ArrayAccessorVarObject::setData(const VarRefContext &varRefCon
 	return true;
 }
 
-SLAKE_API Optional F32ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API bool F32ArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
 	F32ArrayObject *arrayObject = ((F32ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
 	if (index > arrayObject->length) {
 		raiseInvalidArrayIndexError(associatedRuntime, index);
-		return {};
+		return false;
 	}
 
-	return Value(arrayObject->data[index]);
+	valueOut = Value(arrayObject->data[index]);
+	return true;
 }
 
 SLAKE_API HostObjectRef<F32ArrayAccessorVarObject> slake::F32ArrayAccessorVarObject::alloc(Runtime *rt, F32ArrayObject *arrayObject) {
@@ -1515,15 +1523,16 @@ SLAKE_API bool F64ArrayAccessorVarObject::setData(const VarRefContext &varRefCon
 	return true;
 }
 
-SLAKE_API Optional F64ArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API bool F64ArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
 	F64ArrayObject *arrayObject = ((F64ArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
 	if (index > arrayObject->length) {
 		raiseInvalidArrayIndexError(associatedRuntime, index);
-		return {};
+		return false;
 	}
 
-	return Value(arrayObject->data[index]);
+	valueOut = Value(arrayObject->data[index]);
+	return true;
 }
 
 SLAKE_API HostObjectRef<F64ArrayAccessorVarObject> slake::F64ArrayAccessorVarObject::alloc(Runtime *rt, F64ArrayObject *arrayObject) {
@@ -1676,15 +1685,16 @@ SLAKE_API bool BoolArrayAccessorVarObject::setData(const VarRefContext &varRefCo
 	return true;
 }
 
-SLAKE_API Optional BoolArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API bool BoolArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
 	BoolArrayObject *arrayObject = ((BoolArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
 	if (index > arrayObject->length) {
 		raiseInvalidArrayIndexError(associatedRuntime, index);
-		return {};
+		return false;
 	}
 
-	return Value(arrayObject->data[index]);
+	valueOut = Value(arrayObject->data[index]);
+	return true;
 }
 
 SLAKE_API HostObjectRef<BoolArrayAccessorVarObject> slake::BoolArrayAccessorVarObject::alloc(Runtime *rt, BoolArrayObject *arrayObject) {
@@ -1843,15 +1853,16 @@ SLAKE_API bool ObjectRefArrayAccessorVarObject::setData(const VarRefContext &var
 	return true;
 }
 
-SLAKE_API Optional ObjectRefArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API bool ObjectRefArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
 	ObjectRefArrayObject *arrayObject = ((ObjectRefArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
 	if (index > arrayObject->length) {
 		raiseInvalidArrayIndexError(associatedRuntime, index);
-		return {};
+		return false;
 	}
 
-	return Value(arrayObject->data[index]);
+	valueOut = Value(arrayObject->data[index]);
+	return true;
 }
 
 SLAKE_API HostObjectRef<ObjectRefArrayAccessorVarObject> slake::ObjectRefArrayAccessorVarObject::alloc(Runtime *rt, const Type &elementType, ObjectRefArrayObject *arrayObject) {
@@ -2003,15 +2014,16 @@ SLAKE_API bool AnyArrayAccessorVarObject::setData(const VarRefContext &varRefCon
 	return true;
 }
 
-SLAKE_API Optional AnyArrayAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API bool AnyArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
 	AnyArrayObject *arrayObject = ((AnyArrayObject *)this->arrayObject);
 	size_t index = varRefContext.asArray.index;
 	if (index > arrayObject->length) {
 		raiseInvalidArrayIndexError(associatedRuntime, index);
-		return {};
+		return false;
 	}
 
-	return Value(arrayObject->data[index]);
+	valueOut = Value(arrayObject->data[index]);
+	return true;
 }
 
 SLAKE_API HostObjectRef<AnyArrayAccessorVarObject> slake::AnyArrayAccessorVarObject::alloc(Runtime *rt, AnyArrayObject *arrayObject) {

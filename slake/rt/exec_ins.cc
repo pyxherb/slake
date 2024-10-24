@@ -529,13 +529,13 @@ SLAKE_API bool slake::Runtime::_execIns(ContextObject *context, const Instructio
 				return false;
 			}
 
-			Optional result = ((VarObject *)varRef.varPtr)->getData(varRef.context);
-			if (!result)
+			Value data;
+			if (!((VarObject *)varRef.varPtr)->getData(varRef.context, data))
 				return false;
 			if (!_setRegisterValue(
 					curMajorFrame,
 					ins.output.getRegIndex(),
-					result.unwrap()))
+					data))
 				return false;
 			break;
 		}

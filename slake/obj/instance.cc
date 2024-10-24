@@ -80,7 +80,7 @@ SLAKE_API bool InstanceMemberAccessorVarObject::setData(const VarRefContext &con
 	return true;
 }
 
-SLAKE_API Optional InstanceMemberAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API bool InstanceMemberAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
 	ObjectFieldRecord &fieldRecord =
 		instanceObject->objectLayout->fieldRecords.at(
 			varRefContext.asInstance.fieldIndex);
@@ -91,38 +91,50 @@ SLAKE_API Optional InstanceMemberAccessorVarObject::getData(const VarRefContext 
 		case TypeId::Value:
 			switch (fieldRecord.type.getValueTypeExData()) {
 				case ValueType::I8:
-					return Value(*((int8_t *)rawFieldPtr));
+					valueOut = Value(*((int8_t *)rawFieldPtr));
+					break;
 				case ValueType::I16:
-					return Value(*((int16_t *)rawFieldPtr));
+					valueOut = Value(*((int16_t *)rawFieldPtr));
+					break;
 				case ValueType::I32:
-					return Value(*((int32_t *)rawFieldPtr));
+					valueOut = Value(*((int32_t *)rawFieldPtr));
+					break;
 				case ValueType::I64:
-					return Value(*((int64_t *)rawFieldPtr));
+					valueOut = Value(*((int64_t *)rawFieldPtr));
+					break;
 				case ValueType::U8:
-					return Value(*((uint8_t *)rawFieldPtr));
+					valueOut = Value(*((uint8_t *)rawFieldPtr));
+					break;
 				case ValueType::U16:
-					return Value(*((uint16_t *)rawFieldPtr));
+					valueOut = Value(*((uint16_t *)rawFieldPtr));
+					break;
 				case ValueType::U32:
-					return Value(*((uint32_t *)rawFieldPtr));
+					valueOut = Value(*((uint32_t *)rawFieldPtr));
+					break;
 				case ValueType::U64:
-					return Value(*((uint64_t *)rawFieldPtr));
+					valueOut = Value(*((uint64_t *)rawFieldPtr));
+					break;
 				case ValueType::F32:
-					return Value(*((float *)rawFieldPtr));
+					valueOut = Value(*((float *)rawFieldPtr));
+					break;
 				case ValueType::F64:
-					return Value(*((double *)rawFieldPtr));
+					valueOut = Value(*((double *)rawFieldPtr));
+					break;
 				case ValueType::Bool:
-					return Value(*((bool *)rawFieldPtr));
+					valueOut = Value(*((bool *)rawFieldPtr));
+					break;
 			}
 			break;
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array:
-			return Value(*((Object **)rawFieldPtr));
+			valueOut = Value(*((Object **)rawFieldPtr));
+			break;
 		default:
 			// All fields should be checked during the instantiation.
-			;
+			throw std::logic_error("Unhandled value type");
 	}
-	throw std::logic_error("Unhandled value type");
+	return true;
 }
 
 SLAKE_API HostObjectRef<InstanceMemberAccessorVarObject> slake::InstanceMemberAccessorVarObject::alloc(Runtime *rt, InstanceObject *instanceObject) {

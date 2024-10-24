@@ -15,11 +15,15 @@ slake::Value print(
 	if (nArgs < 1)
 		putchar('\n');
 	else {
-		AnyArrayObject *varArgs = (AnyArrayObject *)args[0]->getData({}).unwrap().getObjectRef();
+		Value varArgsValue;
+		args[0]->getData({}, varArgsValue);
+		AnyArrayObject *varArgs = (AnyArrayObject *)varArgsValue.getObjectRef();
 
 		for (uint8_t i = 0; i < nArgs; ++i) {
-			Optional result = varArgs->accessor->getData(VarRefContext::makeArrayContext(i));
-			Value data = result.unwrap();
+			Value data;
+			if (!varArgs->accessor->getData(VarRefContext::makeArrayContext(i), data)) {
+				throw std::runtime_error("An exception has thrown");
+			}
 
 			switch (data.valueType) {
 				case ValueType::I8:

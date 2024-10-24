@@ -57,7 +57,10 @@ SLAKE_API void slake::RegularVarObject::dealloc() {
 	allocator.deallocate(this, 1);
 }
 
-SLAKE_API Optional RegularVarObject::getData(const VarRefContext &context) const { return value; }
+SLAKE_API bool RegularVarObject::getData(const VarRefContext &context, Value &valueOut) const {
+	valueOut = value;
+	return true;
+}
 
 SLAKE_API bool RegularVarObject::setData(const VarRefContext &context, const Value &value) {
 	if (!isCompatible(type, value)) {
@@ -175,7 +178,7 @@ SLAKE_API bool LocalVarAccessorVarObject::setData(const VarRefContext &context, 
 	return true;
 }
 
-SLAKE_API Optional LocalVarAccessorVarObject::getData(const VarRefContext &varRefContext) const {
+SLAKE_API bool LocalVarAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
 	LocalVarRecord &localVarRecord =
 		majorFrame->localVarRecords[varRefContext.asLocalVar.localVarIndex];
 
@@ -185,38 +188,51 @@ SLAKE_API Optional LocalVarAccessorVarObject::getData(const VarRefContext &varRe
 		case TypeId::Value:
 			switch (localVarRecord.type.getValueTypeExData()) {
 				case ValueType::I8:
-					return Value(*((int8_t *)rawDataPtr));
+					valueOut = Value(*((int8_t *)rawDataPtr));
+					break;
 				case ValueType::I16:
-					return Value(*((int16_t *)rawDataPtr));
+					valueOut = Value(*((int16_t *)rawDataPtr));
+					break;
 				case ValueType::I32:
-					return Value(*((int32_t *)rawDataPtr));
+					valueOut = Value(*((int32_t *)rawDataPtr));
+					break;
 				case ValueType::I64:
-					return Value(*((int64_t *)rawDataPtr));
+					valueOut = Value(*((int64_t *)rawDataPtr));
+					break;
 				case ValueType::U8:
-					return Value(*((uint8_t *)rawDataPtr));
+					valueOut = Value(*((uint8_t *)rawDataPtr));
+					break;
 				case ValueType::U16:
-					return Value(*((uint16_t *)rawDataPtr));
+					valueOut = Value(*((uint16_t *)rawDataPtr));
+					break;
 				case ValueType::U32:
-					return Value(*((uint32_t *)rawDataPtr));
+					valueOut = Value(*((uint32_t *)rawDataPtr));
+					break;
 				case ValueType::U64:
-					return Value(*((uint64_t *)rawDataPtr));
+					valueOut = Value(*((uint64_t *)rawDataPtr));
+					break;
 				case ValueType::F32:
-					return Value(*((float *)rawDataPtr));
+					valueOut = Value(*((float *)rawDataPtr));
+					break;
 				case ValueType::F64:
-					return Value(*((double *)rawDataPtr));
+					valueOut = Value(*((double *)rawDataPtr));
+					break;
 				case ValueType::Bool:
-					return Value(*((bool *)rawDataPtr));
+					valueOut = Value(*((bool *)rawDataPtr));
+					break;
 			}
 			break;
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array:
-			return Value(*((Object **)rawDataPtr));
+			valueOut = Value(*((Object **)rawDataPtr));
+			break;
 		default:
 			// All fields should be checked during the instantiation.
-			;
+			throw std::logic_error("Unhandled value type");
 	}
-	throw std::logic_error("Unhandled value type");
+
+	return true;
 }
 
 SLAKE_API HostObjectRef<LocalVarAccessorVarObject> slake::LocalVarAccessorVarObject::alloc(

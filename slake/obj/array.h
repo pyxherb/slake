@@ -46,8 +46,8 @@ namespace slake {
 		SLAKE_API U8ArrayAccessorVarObject(Runtime *rt, U8ArrayObject *arrayObject);
 		SLAKE_API virtual ~U8ArrayAccessorVarObject();
 
-		SLAKE_API virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
-		SLAKE_API [[nodiscard]] virtual Optional getData(const VarRefContext &varRefContext) const override;
+		SLAKE_API [[nodiscard]] virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
+		SLAKE_API [[nodiscard]] virtual bool getData(const VarRefContext &varRefContext, Value &valueOut) const override;
 
 		SLAKE_API static HostObjectRef<U8ArrayAccessorVarObject> alloc(Runtime *rt, U8ArrayObject *arrayObject);
 		SLAKE_API virtual void dealloc() override;
@@ -83,8 +83,8 @@ namespace slake {
 		SLAKE_API U16ArrayAccessorVarObject(Runtime *rt, U16ArrayObject *arrayObject);
 		SLAKE_API virtual ~U16ArrayAccessorVarObject();
 
-		SLAKE_API virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
-		SLAKE_API [[nodiscard]] virtual Optional getData(const VarRefContext &varRefContext) const override;
+		SLAKE_API [[nodiscard]] virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
+		SLAKE_API [[nodiscard]] virtual bool getData(const VarRefContext &varRefContext, Value &valueOut) const override;
 
 		SLAKE_API static HostObjectRef<U16ArrayAccessorVarObject> alloc(Runtime *rt, U16ArrayObject *arrayObject);
 		SLAKE_API virtual void dealloc() override;
@@ -119,8 +119,8 @@ namespace slake {
 		SLAKE_API U32ArrayAccessorVarObject(Runtime *rt, U32ArrayObject *arrayObject);
 		SLAKE_API virtual ~U32ArrayAccessorVarObject();
 
-		SLAKE_API virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
-		SLAKE_API [[nodiscard]] virtual Optional getData(const VarRefContext &varRefContext) const override;
+		SLAKE_API [[nodiscard]] virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
+		SLAKE_API [[nodiscard]] virtual bool getData(const VarRefContext &varRefContext, Value &valueOut) const override;
 
 		SLAKE_API static HostObjectRef<U32ArrayAccessorVarObject> alloc(Runtime *rt, U32ArrayObject *arrayObject);
 		SLAKE_API virtual void dealloc() override;
@@ -155,8 +155,8 @@ namespace slake {
 		SLAKE_API U64ArrayAccessorVarObject(Runtime *rt, U64ArrayObject *arrayObject);
 		SLAKE_API virtual ~U64ArrayAccessorVarObject();
 
-		SLAKE_API virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
-		SLAKE_API [[nodiscard]] virtual Optional getData(const VarRefContext &varRefContext) const override;
+		SLAKE_API [[nodiscard]] virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
+		SLAKE_API [[nodiscard]] virtual bool getData(const VarRefContext &varRefContext, Value &valueOut) const override;
 
 		SLAKE_API static HostObjectRef<U64ArrayAccessorVarObject> alloc(Runtime *rt, U64ArrayObject *arrayObject);
 		SLAKE_API virtual void dealloc() override;
@@ -191,8 +191,8 @@ namespace slake {
 		SLAKE_API I8ArrayAccessorVarObject(Runtime *rt, I8ArrayObject *arrayObject);
 		SLAKE_API virtual ~I8ArrayAccessorVarObject();
 
-		SLAKE_API virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
-		SLAKE_API [[nodiscard]] virtual Optional getData(const VarRefContext &varRefContext) const override;
+		SLAKE_API [[nodiscard]] virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
+		SLAKE_API [[nodiscard]] virtual bool getData(const VarRefContext &varRefContext, Value &valueOut) const override;
 
 		SLAKE_API static HostObjectRef<I8ArrayAccessorVarObject> alloc(Runtime *rt, I8ArrayObject *arrayObject);
 		SLAKE_API virtual void dealloc() override;
@@ -227,8 +227,8 @@ namespace slake {
 		SLAKE_API I16ArrayAccessorVarObject(Runtime *rt, I16ArrayObject *arrayObject);
 		SLAKE_API virtual ~I16ArrayAccessorVarObject();
 
-		SLAKE_API virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
-		SLAKE_API [[nodiscard]] virtual Optional getData(const VarRefContext &varRefContext) const override;
+		SLAKE_API [[nodiscard]] virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
+		SLAKE_API [[nodiscard]] virtual bool getData(const VarRefContext &varRefContext, Value &valueOut) const override;
 
 		SLAKE_API static HostObjectRef<I16ArrayAccessorVarObject> alloc(Runtime *rt, I16ArrayObject *arrayObject);
 		SLAKE_API virtual void dealloc() override;
@@ -263,8 +263,8 @@ namespace slake {
 		SLAKE_API I32ArrayAccessorVarObject(Runtime *rt, I32ArrayObject *arrayObject);
 		SLAKE_API virtual ~I32ArrayAccessorVarObject();
 
-		SLAKE_API virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
-		SLAKE_API [[nodiscard]] virtual Optional getData(const VarRefContext &varRefContext) const override;
+		SLAKE_API [[nodiscard]] virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
+		SLAKE_API [[nodiscard]] virtual bool getData(const VarRefContext &varRefContext, Value &valueOut) const override;
 
 		SLAKE_API static HostObjectRef<I32ArrayAccessorVarObject> alloc(Runtime *rt, I32ArrayObject *arrayObject);
 		SLAKE_API virtual void dealloc() override;
@@ -299,8 +299,8 @@ namespace slake {
 		SLAKE_API I64ArrayAccessorVarObject(Runtime *rt, I64ArrayObject *arrayObject);
 		SLAKE_API virtual ~I64ArrayAccessorVarObject();
 
-		SLAKE_API virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
-		SLAKE_API [[nodiscard]] virtual Optional getData(const VarRefContext &varRefContext) const override;
+		SLAKE_API [[nodiscard]] virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
+		SLAKE_API [[nodiscard]] virtual bool getData(const VarRefContext &varRefContext, Value &valueOut) const override;
 
 		SLAKE_API static HostObjectRef<I64ArrayAccessorVarObject> alloc(Runtime *rt, I64ArrayObject *arrayObject);
 		SLAKE_API virtual void dealloc() override;
@@ -335,8 +335,8 @@ namespace slake {
 		SLAKE_API F32ArrayAccessorVarObject(Runtime *rt, F32ArrayObject *arrayObject);
 		SLAKE_API virtual ~F32ArrayAccessorVarObject();
 
-		SLAKE_API virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
-		SLAKE_API [[nodiscard]] virtual Optional getData(const VarRefContext &varRefContext) const override;
+		SLAKE_API [[nodiscard]] virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
+		SLAKE_API [[nodiscard]] virtual bool getData(const VarRefContext &varRefContext, Value &valueOut) const override;
 
 		SLAKE_API static HostObjectRef<F32ArrayAccessorVarObject> alloc(Runtime *rt, F32ArrayObject *arrayObject);
 		SLAKE_API virtual void dealloc() override;
@@ -371,8 +371,8 @@ namespace slake {
 		SLAKE_API F64ArrayAccessorVarObject(Runtime *rt, F64ArrayObject *arrayObject);
 		SLAKE_API virtual ~F64ArrayAccessorVarObject();
 
-		SLAKE_API virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
-		SLAKE_API [[nodiscard]] virtual Optional getData(const VarRefContext &varRefContext) const override;
+		SLAKE_API [[nodiscard]] virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
+		SLAKE_API [[nodiscard]] virtual bool getData(const VarRefContext &varRefContext, Value &valueOut) const override;
 
 		SLAKE_API static HostObjectRef<F64ArrayAccessorVarObject> alloc(Runtime *rt, F64ArrayObject *arrayObject);
 		SLAKE_API virtual void dealloc() override;
@@ -407,8 +407,8 @@ namespace slake {
 		SLAKE_API BoolArrayAccessorVarObject(Runtime *rt, BoolArrayObject *arrayObject);
 		SLAKE_API virtual ~BoolArrayAccessorVarObject();
 
-		SLAKE_API virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
-		SLAKE_API [[nodiscard]] virtual Optional getData(const VarRefContext &varRefContext) const override;
+		SLAKE_API [[nodiscard]] virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
+		SLAKE_API [[nodiscard]] virtual bool getData(const VarRefContext &varRefContext, Value &valueOut) const override;
 
 		SLAKE_API static HostObjectRef<BoolArrayAccessorVarObject> alloc(Runtime *rt, BoolArrayObject *arrayObject);
 		SLAKE_API virtual void dealloc() override;
@@ -443,8 +443,8 @@ namespace slake {
 		SLAKE_API ObjectRefArrayAccessorVarObject(Runtime *rt, const Type &elementType, ObjectRefArrayObject *arrayObject);
 		SLAKE_API virtual ~ObjectRefArrayAccessorVarObject();
 
-		SLAKE_API virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
-		SLAKE_API [[nodiscard]] virtual Optional getData(const VarRefContext &varRefContext) const override;
+		SLAKE_API [[nodiscard]] virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
+		SLAKE_API [[nodiscard]] virtual bool getData(const VarRefContext &varRefContext, Value &valueOut) const override;
 
 		SLAKE_API static HostObjectRef<ObjectRefArrayAccessorVarObject> alloc(Runtime *rt, const Type &elementType, ObjectRefArrayObject *arrayObject);
 		SLAKE_API virtual void dealloc() override;
@@ -479,8 +479,8 @@ namespace slake {
 		SLAKE_API AnyArrayAccessorVarObject(Runtime *rt, AnyArrayObject *arrayObject);
 		SLAKE_API virtual ~AnyArrayAccessorVarObject();
 
-		SLAKE_API virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
-		SLAKE_API [[nodiscard]] virtual Optional getData(const VarRefContext &varRefContext) const override;
+		SLAKE_API [[nodiscard]] virtual bool setData(const VarRefContext &varRefContext, const Value &value) override;
+		SLAKE_API [[nodiscard]] virtual bool getData(const VarRefContext &varRefContext, Value &valueOut) const override;
 
 		SLAKE_API static HostObjectRef<AnyArrayAccessorVarObject> alloc(Runtime *rt, AnyArrayObject *arrayObject);
 		SLAKE_API virtual void dealloc() override;

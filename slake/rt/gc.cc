@@ -227,7 +227,10 @@ SLAKE_API void Runtime::_gcWalk(Object *v) {
 				case VarKind::Regular: {
 					auto v = (RegularVarObject *)value;
 
-					_gcWalk(value->getData(VarRefContext()).unwrap());
+					Value data;
+					bool result = value->getData(VarRefContext(), data);
+					assert(result);
+					_gcWalk(data);
 
 					_gcWalk(v->parent);
 

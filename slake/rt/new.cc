@@ -20,7 +20,7 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 		Object *parentClass = (ClassObject *)cls->parentClass.getCustomTypeExData();
 		assert(parentClass->getKind() == ObjectKind::Class);
 
-		if(!(parent = this->newClassInstance((ClassObject *)parentClass, _NEWCLSINST_PARENT)))
+		if (!(parent = this->newClassInstance((ClassObject *)parentClass, _NEWCLSINST_PARENT)))
 			return false;
 	}
 
@@ -246,9 +246,11 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 
 			ObjectFieldRecord &fieldRecord = objectLayout->fieldRecords[i];
 
+			Value data;
+			initVar->getData(VarRefContext(), data);
 			instance->memberAccessor->setData(
 				VarRefContext::makeInstanceContext(i),
-				initVar->getData(VarRefContext()).unwrap());
+				data);
 		}
 	}
 

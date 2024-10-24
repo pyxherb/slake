@@ -7,6 +7,7 @@
 #include <string>
 #include <variant>
 #include <slake/basedefs.h>
+#include "except_base.h"
 
 namespace slake {
 	enum class ValueType : uint8_t {
@@ -87,7 +88,7 @@ namespace slake {
 		SLAKE_API Type &getRefExData() const;
 
 		SLAKE_API bool isLoadingDeferred() const noexcept;
-		SLAKE_API [[nodiscard]] bool loadDeferredType(const Runtime *rt);
+		SLAKE_API [[nodiscard]] InternalExceptionPointer loadDeferredType(const Runtime *rt);
 
 		SLAKE_FORCEINLINE operator bool() const noexcept {
 			return typeId != TypeId::None;

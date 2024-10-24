@@ -70,8 +70,11 @@ SLAKE_API ClassObject::~ClassObject() {
 
 SLAKE_API bool ClassObject::hasImplemented(const InterfaceObject *pInterface) const {
 	for (auto &i : implInterfaces) {
-		if (!const_cast<Type &>(i).loadDeferredType(associatedRuntime))
+		if (auto e = const_cast<Type &>(i).loadDeferredType(associatedRuntime);
+			e) {
+			e.reset();
 			return false;
+		}
 
 		if (((InterfaceObject *)i.getCustomTypeExData())->isDerivedFrom(pInterface))
 			return true;
@@ -87,8 +90,11 @@ SLAKE_API bool ClassObject::isBaseOf(const ClassObject *pClass) const {
 
 		if (i->parentClass.typeId == TypeId::None)
 			break;
-		if (!const_cast<Type &>(i->parentClass).loadDeferredType(i->associatedRuntime))
+		if (auto e = const_cast<Type &>(i->parentClass).loadDeferredType(i->associatedRuntime);
+			e) {
+			e.reset();
 			return false;
+		}
 		auto parentClassObject = i->parentClass.getCustomTypeExData();
 		assert(parentClassObject->getKind() == ObjectKind::Class);
 		i = (ClassObject *)parentClassObject;
@@ -114,8 +120,11 @@ SLAKE_API bool InterfaceObject::isDerivedFrom(const InterfaceObject *pInterface)
 		return true;
 
 	for (auto &i : parents) {
-		if (!const_cast<Type &>(i).loadDeferredType(associatedRuntime))
+		if (auto e = const_cast<Type &>(i).loadDeferredType(associatedRuntime);
+			e) {
+			e.reset();
 			return false;
+		}
 
 		InterfaceObject *interface = (InterfaceObject *)i.getCustomTypeExData();
 

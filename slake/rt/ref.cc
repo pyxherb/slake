@@ -2,9 +2,10 @@
 
 using namespace slake;
 
-SLAKE_API Object *Runtime::resolveIdRef(
+SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 	IdRefObject *ref,
 	VarRefContext *varRefContextOut,
+	Object *&objectOut,
 	Object *scopeObject) const {
 	if (!ref)
 		return nullptr;
@@ -35,15 +36,13 @@ SLAKE_API Object *Runtime::resolveIdRef(
 
 			if (i.genericArgs.size()) {
 				for (auto &j : i.genericArgs) {
-					if (!j.loadDeferredType(this))
-						return nullptr;
+					SLAKE_RETURN_IF_EXCEPT(j.loadDeferredType(this));
 				}
 
 				GenericInstantiationContext genericInstantiationContext(&globalHeapPoolResource);
 
 				genericInstantiationContext.genericArgs = &i.genericArgs;
-				if(!(scopeObject = instantiateGenericObject(scopeObject, genericInstantiationContext)))
-					return nullptr;
+				SLAKE_RETURN_IF_EXCEPT(instantiateGenericObject(scopeObject, scopeObject, genericInstantiationContext));
 			}
 
 			if (i.hasParamTypes) {
@@ -51,29 +50,30 @@ SLAKE_API Object *Runtime::resolveIdRef(
 					case ObjectKind::Fn: {
 						FnObject *fnObject = ((FnObject *)scopeObject);
 
-						for (auto& j : i.paramTypes) {
-							if (!j.loadDeferredType(this))
-								return nullptr;
+						for (auto &j : i.paramTypes) {
+							SLAKE_RETURN_IF_EXCEPT(j.loadDeferredType(this));
 						}
 
 						scopeObject = fnObject->getOverloading(i.paramTypes);
 						break;
 					}
 					default:
-						return nullptr;
+						return ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this), ref);
 				}
 			}
 		}
 
-		if (scopeObject)
-			return scopeObject;
+		if (scopeObject) {
+			objectOut = scopeObject;
+			return {};
+		}
 
 	fail:
 		switch (curObject->getKind()) {
 			case ObjectKind::Module:
 			case ObjectKind::Class:
 				if (!curObject->getParent())
-					return nullptr;
+					return ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this), ref);
 				scopeObject = (MemberObject *)curObject->getParent();
 				break;
 			case ObjectKind::Instance: {
@@ -81,11 +81,11 @@ SLAKE_API Object *Runtime::resolveIdRef(
 				break;
 			}
 			default:
-				return nullptr;
+				return ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this), ref);
 		}
 	}
 
-	return nullptr;
+	return ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this), ref);
 }
 
 SLAKE_API std::string Runtime::getFullName(const MemberObject *v) const {

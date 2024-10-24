@@ -52,18 +52,14 @@ SLAKE_API bool Type::isLoadingDeferred() const noexcept {
 	}
 }
 
-SLAKE_API bool Type::loadDeferredType(const Runtime *rt) {
+SLAKE_API InternalExceptionPointer Type::loadDeferredType(const Runtime *rt) {
 	if (!isLoadingDeferred())
-		return true;
+		return {};
 
 	auto ref = (IdRefObject *)getCustomTypeExData();
-	auto typeObject = rt->resolveIdRef(ref, nullptr);
-	if (!typeObject) {
-		return false;
-	}
+	SLAKE_RETURN_IF_EXCEPT(rt->resolveIdRef(ref, nullptr, exData.ptr));
 
-	exData.ptr = (Object *)typeObject;
-	return true;
+	return {};
 }
 
 SLAKE_API bool Type::operator<(const Type &rhs) const {
@@ -235,8 +231,11 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 			if (objectPtr->getKind() != ObjectKind::Instance)
 				return false;
 
-			if (!const_cast<Type &>(type).loadDeferredType(objectPtr->associatedRuntime))
+			if (auto e = const_cast<Type &>(type).loadDeferredType(objectPtr->associatedRuntime);
+				e) {
+				e.reset();
 				return false;
+			}
 			switch (type.getCustomTypeExData()->getKind()) {
 				case ObjectKind::Class: {
 					ClassObject *thisClass = (ClassObject *)type.getCustomTypeExData();

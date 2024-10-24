@@ -33,7 +33,7 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 						ol->instructions.size()) {
 						// Raise out of fn body error.
 					}
-					RETURN_IF_EXCEPT(_execIns(
+					SLAKE_RETURN_IF_EXCEPT(_execIns(
 						context,
 						ol->instructions[curMajorFrame->curIns]));
 				}
@@ -83,12 +83,12 @@ SLAKE_API InternalExceptionPointer Runtime::execFn(
 			context->getContext().majorFrames.push_back(std::move(frame));
 		}
 
-		RETURN_IF_EXCEPT(_createNewMajorFrame(&context->_context, thisObject, overloading, args, nArgs));
+		SLAKE_RETURN_IF_EXCEPT(_createNewMajorFrame(&context->_context, thisObject, overloading, args, nArgs));
 	} else {
 		contextOut = context;
 	}
 
-	RETURN_IF_EXCEPT(execContext(context.get()));
+	SLAKE_RETURN_IF_EXCEPT(execContext(context.get()));
 
 	return {};
 }

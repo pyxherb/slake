@@ -207,13 +207,13 @@ namespace slake {
 		/// @param v Object to be instantiated.
 		/// @param genericArgs Generic arguments for instantiation.
 		/// @return Instantiated value.
-		SLAKE_API [[nodiscard]] Object *instantiateGenericObject(const Object *v, GenericInstantiationContext &instantiationContext) const;
+		SLAKE_API [[nodiscard]] InternalExceptionPointer instantiateGenericObject(const Object *v, Object *&objectOut, GenericInstantiationContext &instantiationContext) const;
 
 		/// @brief Resolve a reference and get the referenced value.
 		/// @param ref Reference to be resolved.
 		/// @param scopeObject Scope value for resolving.
 		/// @return Resolved value which is referred by the reference.
-		SLAKE_API Object *resolveIdRef(IdRefObject *ref, VarRefContext *varRefContextOut, Object *scopeObject = nullptr) const;
+		SLAKE_API InternalExceptionPointer resolveIdRef(IdRefObject *ref, VarRefContext *varRefContextOut, Object *&objectOut, Object *scopeObject = nullptr) const;
 
 		SLAKE_API HostObjectRef<ModuleObject> loadModule(std::istream &fs, LoadModuleFlags flags);
 		SLAKE_API HostObjectRef<ModuleObject> loadModule(const void *buf, size_t size, LoadModuleFlags flags);

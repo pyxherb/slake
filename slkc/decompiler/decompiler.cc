@@ -106,7 +106,9 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 				if (i)
 					os << ", ";
 
-				decompileValue(rt, v->accessor->getData(VarRefContext::makeArrayContext(i)).unwrap(), os, indentLevel);
+				Value value;
+				v->accessor->getData(VarRefContext::makeArrayContext(i), value);
+				decompileValue(rt, value, os, indentLevel);
 			}
 
 			os << "]";

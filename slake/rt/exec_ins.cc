@@ -291,20 +291,19 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 		case Opcode::NOP:
 			break;
 		case Opcode::LVAR: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 1));
-			RETURN_IF_EXCEPT(_checkOperandType(ins.operands[0], ValueType::TypeName));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 1));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.operands[0], ValueType::TypeName));
 
 			Type type = ins.operands[0].getTypeName();
-			if(!type.loadDeferredType(this))
-				return ReferencedMemberNotFoundError::alloc(this, (IdRefObject*)type.getCustomTypeExData());
+			SLAKE_RETURN_IF_EXCEPT(type.loadDeferredType(this));
 
 			VarRef varRef;
-			RETURN_IF_EXCEPT(_addLocalVar(curMajorFrame, type, varRef));
+			SLAKE_RETURN_IF_EXCEPT(_addLocalVar(curMajorFrame, type, varRef));
 			break;
 		}
 		case Opcode::REG: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 1));
-			RETURN_IF_EXCEPT(_checkOperandType(ins.operands[0], ValueType::U32));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 1));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.operands[0], ValueType::U32));
 
 			uint32_t index = ins.operands[0].getU32();
 			if (index > curMajorFrame->regs.size()) {
@@ -317,40 +316,40 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 			break;
 		}
 		case Opcode::LOAD: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 1));
-			RETURN_IF_EXCEPT(_checkOperandType(ins.output, ValueType::RegRef));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 1));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.output, ValueType::RegRef));
 
-			RETURN_IF_EXCEPT(_checkOperandType(ins.operands[0], ValueType::ObjectRef));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.operands[0], ValueType::ObjectRef));
 			auto refPtr = ins.operands[0].getObjectRef();
-			RETURN_IF_EXCEPT(_checkObjectOperandType(refPtr, ObjectKind::IdRef));
+			SLAKE_RETURN_IF_EXCEPT(_checkObjectOperandType(refPtr, ObjectKind::IdRef));
 
 			VarRefContext varRefContext;
 
-			auto v = resolveIdRef((IdRefObject *)refPtr, &varRefContext, curMajorFrame->thisObject);
-			if (!v) {
-				if (!(v = resolveIdRef((IdRefObject *)refPtr, &varRefContext, curMajorFrame->scopeObject)))
-					v = resolveIdRef((IdRefObject *)refPtr, &varRefContext);
+			Object *v;
+			if (auto e = resolveIdRef((IdRefObject *)refPtr, &varRefContext, v, curMajorFrame->thisObject);
+				e) {
+				e.reset();
+				if (e = resolveIdRef((IdRefObject *)refPtr, &varRefContext, v, curMajorFrame->scopeObject)) {
+					e.reset();
+					SLAKE_RETURN_IF_EXCEPT(resolveIdRef((IdRefObject *)refPtr, &varRefContext, v));
+				}
 			}
 
-			if (!v) {
-				return ReferencedMemberNotFoundError::alloc(this, (IdRefObject *)refPtr);
-			}
-
-			RETURN_IF_EXCEPT(_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), _wrapObjectIntoValue(v, varRefContext)));
+			SLAKE_RETURN_IF_EXCEPT(_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), _wrapObjectIntoValue(v, varRefContext)));
 			break;
 		}
 		case Opcode::RLOAD: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 2));
-			RETURN_IF_EXCEPT(_checkOperandType(ins.output, ValueType::RegRef));
-			RETURN_IF_EXCEPT(_checkOperandType(ins.operands[0], ValueType::RegRef));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 2));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.output, ValueType::RegRef));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.operands[0], ValueType::RegRef));
 
 			Value lhs;
-			RETURN_IF_EXCEPT(_fetchRegValue(curMajorFrame, ins.operands[0].getRegIndex(), lhs));
-			RETURN_IF_EXCEPT(_checkOperandType(lhs, ValueType::ObjectRef));
+			SLAKE_RETURN_IF_EXCEPT(_fetchRegValue(curMajorFrame, ins.operands[0].getRegIndex(), lhs));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(lhs, ValueType::ObjectRef));
 
 			auto lhsPtr = lhs.getObjectRef();
 
-			RETURN_IF_EXCEPT(_checkOperandType(ins.operands[1], ValueType::ObjectRef));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.operands[1], ValueType::ObjectRef));
 			auto refPtr = ins.operands[1].getObjectRef();
 
 			if (!lhsPtr) {
@@ -359,22 +358,20 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 
 			VarRefContext varRefContext;
 
-			if (!(lhsPtr = resolveIdRef((IdRefObject *)refPtr, &varRefContext, lhsPtr))) {
-				return ReferencedMemberNotFoundError::alloc(this, (IdRefObject *)refPtr);
-			}
+			SLAKE_RETURN_IF_EXCEPT(resolveIdRef((IdRefObject *)refPtr, &varRefContext, lhsPtr, lhsPtr));
 
-			RETURN_IF_EXCEPT(_setRegisterValue(
+			SLAKE_RETURN_IF_EXCEPT(_setRegisterValue(
 				curMajorFrame,
 				ins.output.getRegIndex(),
 				_wrapObjectIntoValue(lhsPtr, varRefContext)));
 			break;
 		}
 		case Opcode::STORE: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 2));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 2));
 
 			Value destValue;
-			RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[0], destValue));
-			RETURN_IF_EXCEPT(_checkOperandType(destValue, ValueType::VarRef));
+			SLAKE_RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[0], destValue));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(destValue, ValueType::VarRef));
 
 			const VarRef varRef = destValue.getVarRef();
 
@@ -383,35 +380,35 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 			}
 
 			Value data;
-			RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[1], data));
-			RETURN_IF_EXCEPT(varRef.varPtr->setData(
+			SLAKE_RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[1], data));
+			SLAKE_RETURN_IF_EXCEPT(varRef.varPtr->setData(
 				varRef.context,
 				data));
 			break;
 		}
 		case Opcode::MOV: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 1));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 1));
 
 			Value value;
-			RETURN_IF_EXCEPT(_unwrapRegOperand(
+			SLAKE_RETURN_IF_EXCEPT(_unwrapRegOperand(
 				curMajorFrame,
 				ins.operands[0],
 				value));
-			RETURN_IF_EXCEPT(_setRegisterValue(
+			SLAKE_RETURN_IF_EXCEPT(_setRegisterValue(
 				curMajorFrame,
 				ins.output.getRegIndex(),
 				value));
 			break;
 		}
 		case Opcode::LLOAD: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 1));
-			RETURN_IF_EXCEPT(_checkOperandType(ins.output, ValueType::RegRef));
-			RETURN_IF_EXCEPT(_checkOperandType(ins.operands[0], ValueType::U32));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 1));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.output, ValueType::RegRef));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.operands[0], ValueType::U32));
 
 			VarRef varRef;
-			RETURN_IF_EXCEPT(curMajorFrame->lload(this, ins.operands[0].getU32(), varRef));
+			SLAKE_RETURN_IF_EXCEPT(curMajorFrame->lload(this, ins.operands[0].getU32(), varRef));
 
-			RETURN_IF_EXCEPT(
+			SLAKE_RETURN_IF_EXCEPT(
 				_setRegisterValue(
 					curMajorFrame,
 					ins.output.getRegIndex(),
@@ -419,27 +416,27 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 			break;
 		}
 		case Opcode::LARG: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 1));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 1));
 
-			RETURN_IF_EXCEPT(_checkOperandType(ins.output, ValueType::RegRef));
-			RETURN_IF_EXCEPT(_checkOperandType(ins.operands[0], ValueType::U32));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.output, ValueType::RegRef));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.operands[0], ValueType::U32));
 
 			VarRef varRef;
-			RETURN_IF_EXCEPT(curMajorFrame->larg(this, ins.operands[0].getU32(), varRef));
-			RETURN_IF_EXCEPT(_setRegisterValue(
+			SLAKE_RETURN_IF_EXCEPT(curMajorFrame->larg(this, ins.operands[0].getU32(), varRef));
+			SLAKE_RETURN_IF_EXCEPT(_setRegisterValue(
 				curMajorFrame,
 				ins.output.getRegIndex(),
 				Value(varRef)));
 			break;
 		}
 		case Opcode::LVALUE: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 1));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 1));
 
-			RETURN_IF_EXCEPT(_checkOperandType(ins.output, ValueType::RegRef));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.output, ValueType::RegRef));
 
 			Value dest;
-			RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[0], dest));
-			RETURN_IF_EXCEPT(_checkOperandType(dest, ValueType::VarRef));
+			SLAKE_RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[0], dest));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(dest, ValueType::VarRef));
 
 			const VarRef varRef = dest.getVarRef();
 
@@ -448,15 +445,15 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 			}
 
 			Value data;
-			RETURN_IF_EXCEPT(((VarObject *)varRef.varPtr)->getData(varRef.context, data));
-			RETURN_IF_EXCEPT(_setRegisterValue(
+			SLAKE_RETURN_IF_EXCEPT(((VarObject *)varRef.varPtr)->getData(varRef.context, data));
+			SLAKE_RETURN_IF_EXCEPT(_setRegisterValue(
 				curMajorFrame,
 				ins.output.getRegIndex(),
 				data));
 			break;
 		}
 		case Opcode::ENTER: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 0));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 0));
 			MinorFrame frame(
 				this,
 				(uint32_t)curMajorFrame->localVarRecords.size(),
@@ -467,7 +464,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 			break;
 		}
 		case Opcode::LEAVE: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 0));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 0));
 			if (curMajorFrame->minorFrames.size() < 2) {
 				return FrameBoundaryExceededError::alloc(this);
 			}
@@ -490,14 +487,14 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 		case Opcode::GT:
 		case Opcode::LTEQ:
 		case Opcode::GTEQ: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 2));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 2));
 
-			RETURN_IF_EXCEPT(_checkOperandType(ins.output, ValueType::RegRef));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.output, ValueType::RegRef));
 
 			Value x, y, valueOut;
 
-			RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[0], x));
-			RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[1], y));
+			SLAKE_RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[1], y));
 			if (x.valueType != y.valueType) {
 				return InvalidOperandsError::alloc(this);
 			}
@@ -1047,20 +1044,20 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 					return InvalidOperandsError::alloc(this);
 			}
 
-			RETURN_IF_EXCEPT(_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), valueOut));
+			SLAKE_RETURN_IF_EXCEPT(_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), valueOut));
 			break;
 		}
 		case Opcode::LSH:
 		case Opcode::RSH: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 2));
-			RETURN_IF_EXCEPT(_checkOperandType(ins.output, ValueType::RegRef));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 2));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.output, ValueType::RegRef));
 
 			Value x,
 				y,
 				valueOut;
 
-			RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[0], x));
-			RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[1], y));
+			SLAKE_RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[1], y));
 
 			switch (x.valueType) {
 				case ValueType::I8:
@@ -1168,14 +1165,14 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 					return InvalidOperandsError::alloc(this);
 			}
 
-			RETURN_IF_EXCEPT(_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), valueOut));
+			SLAKE_RETURN_IF_EXCEPT(_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), valueOut));
 			break;
 		}
 		case Opcode::NOT:
 		case Opcode::LNOT:
 		case Opcode::NEG: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 1));
-			RETURN_IF_EXCEPT(_checkOperandType(ins.output, ValueType::RegRef));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 1));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.output, ValueType::RegRef));
 
 			Value x(ins.operands[1]), valueOut;
 
@@ -1337,22 +1334,22 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 					return InvalidOperandsError::alloc(this);
 			}
 
-			RETURN_IF_EXCEPT(_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), valueOut));
+			SLAKE_RETURN_IF_EXCEPT(_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), valueOut));
 			break;
 		}
 		case Opcode::AT: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 2));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 2));
 
 			Value arrayValue;
-			RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[0], arrayValue));
-			RETURN_IF_EXCEPT(_checkOperandType(arrayValue, ValueType::ObjectRef));
+			SLAKE_RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[0], arrayValue));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(arrayValue, ValueType::ObjectRef));
 
 			Value index;
-			RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[1], index));
-			RETURN_IF_EXCEPT(_checkOperandType(index, ValueType::U32));
+			SLAKE_RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[1], index));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(index, ValueType::U32));
 
 			auto arrayIn = arrayValue.getObjectRef();
-			RETURN_IF_EXCEPT(_checkObjectOperandType(arrayIn, ObjectKind::Array));
+			SLAKE_RETURN_IF_EXCEPT(_checkObjectOperandType(arrayIn, ObjectKind::Array));
 
 			uint32_t indexIn = index.getU32();
 
@@ -1360,7 +1357,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 				return InvalidArrayIndexError::alloc(this, indexIn);
 			}
 
-			RETURN_IF_EXCEPT(_setRegisterValue(
+			SLAKE_RETURN_IF_EXCEPT(_setRegisterValue(
 				curMajorFrame,
 				ins.output.getRegIndex(),
 				Value(VarRef(
@@ -1370,19 +1367,19 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 			break;
 		}
 		case Opcode::JMP: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 1));
-			RETURN_IF_EXCEPT(_checkOperandType(ins.operands[0], ValueType::U32));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 1));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.operands[0], ValueType::U32));
 
 			curMajorFrame->curIns = ins.operands[0].getU32();
 			return {};
 		}
 		case Opcode::JT:
 		case Opcode::JF: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 2));
-			RETURN_IF_EXCEPT(_checkOperandType(ins.operands[0], ValueType::U32));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 2));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.operands[0], ValueType::U32));
 			Value condition;
-			RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[1], condition));
-			RETURN_IF_EXCEPT(_checkOperandType(condition, ValueType::Bool));
+			SLAKE_RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[1], condition));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(condition, ValueType::Bool));
 
 			if (condition.getBool()) {
 				if (ins.opcode == Opcode::JT) {
@@ -1397,10 +1394,10 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 			break;
 		}
 		case Opcode::PUSHARG: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 2));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 2));
 
 			Value value;
-			RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[0], value));
+			SLAKE_RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[0], value));
 			curMajorFrame->nextArgStack.push_back(value);
 			break;
 		}
@@ -1413,27 +1410,27 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 			switch (ins.opcode) {
 				case Opcode::CTORCALL:
 				case Opcode::MCALL: {
-					RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 2));
+					SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 2));
 
 					Value fnValue;
-					RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[0], fnValue));
-					RETURN_IF_EXCEPT(_checkOperandType(fnValue, ValueType::ObjectRef));
-					RETURN_IF_EXCEPT(_checkObjectOperandType(fnValue.getObjectRef(), ObjectKind::FnOverloading));
+					SLAKE_RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[0], fnValue));
+					SLAKE_RETURN_IF_EXCEPT(_checkOperandType(fnValue, ValueType::ObjectRef));
+					SLAKE_RETURN_IF_EXCEPT(_checkObjectOperandType(fnValue.getObjectRef(), ObjectKind::FnOverloading));
 					fn = (FnOverloadingObject *)fnValue.getObjectRef();
 
 					Value thisObjectValue;
-					RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[1], thisObjectValue));
-					RETURN_IF_EXCEPT(_checkOperandType(thisObjectValue, ValueType::ObjectRef));
+					SLAKE_RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[1], thisObjectValue));
+					SLAKE_RETURN_IF_EXCEPT(_checkOperandType(thisObjectValue, ValueType::ObjectRef));
 					thisObject = thisObjectValue.getObjectRef();
 					break;
 				}
 				case Opcode::CALL: {
-					RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 1));
+					SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 1));
 
 					Value fnValue;
-					RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[0], fnValue));
-					RETURN_IF_EXCEPT(_checkOperandType(fnValue, ValueType::ObjectRef));
-					RETURN_IF_EXCEPT(_checkObjectOperandType(fnValue.getObjectRef(), ObjectKind::FnOverloading));
+					SLAKE_RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[0], fnValue));
+					SLAKE_RETURN_IF_EXCEPT(_checkOperandType(fnValue, ValueType::ObjectRef));
+					SLAKE_RETURN_IF_EXCEPT(_checkObjectOperandType(fnValue.getObjectRef(), ObjectKind::FnOverloading));
 					fn = (FnOverloadingObject *)fnValue.getObjectRef();
 					break;
 				}
@@ -1445,7 +1442,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 				return NullRefError::alloc(this);
 			}
 
-			RETURN_IF_EXCEPT(_createNewMajorFrame(
+			SLAKE_RETURN_IF_EXCEPT(_createNewMajorFrame(
 				&context->_context,
 				thisObject,
 				fn,
@@ -1456,19 +1453,19 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 			break;
 		}
 		case Opcode::RET: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 1));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 1));
 
 			Value returnValue;
-			RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[0], returnValue));
+			SLAKE_RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[0], returnValue));
 			context->_context.majorFrames.pop_back();
 			context->_context.majorFrames.back()->returnValue = returnValue;
 			return {};
 		}
 		case Opcode::LRET: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 0));
-			RETURN_IF_EXCEPT(_checkOperandType(ins.output, ValueType::RegRef));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 0));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.output, ValueType::RegRef));
 
-			RETURN_IF_EXCEPT(_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), curMajorFrame->returnValue));
+			SLAKE_RETURN_IF_EXCEPT(_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), curMajorFrame->returnValue));
 			break;
 		}
 		case Opcode::ACALL:
@@ -1476,9 +1473,9 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 			break;
 		}
 		case Opcode::YIELD: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 1));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 1));
 
-			RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[0], curMajorFrame->returnValue));
+			SLAKE_RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[0], curMajorFrame->returnValue));
 			context->_context.flags |= CTX_YIELDED;
 			break;
 		}
@@ -1486,19 +1483,18 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 			break;
 		}
 		case Opcode::LTHIS: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 0));
-			RETURN_IF_EXCEPT(_checkOperandType(ins.output, ValueType::RegRef));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 0));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.output, ValueType::RegRef));
 
-			RETURN_IF_EXCEPT(_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), curMajorFrame->thisObject));
+			SLAKE_RETURN_IF_EXCEPT(_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), curMajorFrame->thisObject));
 			break;
 		}
 		case Opcode::NEW: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 1));
-			RETURN_IF_EXCEPT(_checkOperandType(ins.operands[0], ValueType::TypeName));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 1));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.operands[0], ValueType::TypeName));
 
 			Type type = ins.operands[0].getTypeName();
-			if(!type.loadDeferredType(this))
-				return ReferencedMemberNotFoundError::alloc(this, (IdRefObject*)type.getCustomTypeExData());
+			SLAKE_RETURN_IF_EXCEPT(type.loadDeferredType(this));
 
 			switch (type.typeId) {
 				case TypeId::Instance: {
@@ -1507,7 +1503,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 					if (!instance)
 						// TODO: Return more detail exceptions.
 						return InvalidOperandsError::alloc(this);
-					RETURN_IF_EXCEPT(_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), instance.get()));
+					SLAKE_RETURN_IF_EXCEPT(_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), instance.get()));
 					break;
 				}
 				default:
@@ -1516,30 +1512,29 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 			break;
 		}
 		case Opcode::ARRNEW: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 2));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 2));
 
-			RETURN_IF_EXCEPT(_checkOperandType(ins.operands[0], ValueType::TypeName));
-			RETURN_IF_EXCEPT(_checkOperandType(ins.operands[1], ValueType::U32));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.operands[0], ValueType::TypeName));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.operands[1], ValueType::U32));
 
 			Type type = ins.operands[1].getTypeName();
 			uint32_t size = ins.operands[2].getU32();
-			if(!type.loadDeferredType(this))
-				return ReferencedMemberNotFoundError::alloc(this, (IdRefObject*)type.getCustomTypeExData());
+			SLAKE_RETURN_IF_EXCEPT(type.loadDeferredType(this));
 
 			auto instance = newArrayInstance(this, type, size);
 			if (!instance)
 				// TODO: Return more detail exceptions.
 				return InvalidOperandsError::alloc(this);
 
-			RETURN_IF_EXCEPT(_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), instance.get()));
+			SLAKE_RETURN_IF_EXCEPT(_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), instance.get()));
 
 			break;
 		}
 		case Opcode::THROW: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 1));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 1));
 
 			Value x;
-			RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[0], x));
+			SLAKE_RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[0], x));
 
 			for (size_t i = context->_context.majorFrames.size(); i; --i) {
 				auto &majorFrame = context->_context.majorFrames[i - 1];
@@ -1564,16 +1559,15 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 			return UncaughtExceptionError::alloc(this, x);
 		}
 		case Opcode::PUSHXH: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 2));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, false, 2));
 
-			RETURN_IF_EXCEPT(_checkOperandType(ins.operands[0], ValueType::TypeName));
-			RETURN_IF_EXCEPT(_checkOperandType(ins.operands[1], ValueType::U32));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.operands[0], ValueType::TypeName));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.operands[1], ValueType::U32));
 
 			ExceptionHandler xh;
 
 			Type type = ins.operands[0].getTypeName();
-			if(!type.loadDeferredType(this))
-				return ReferencedMemberNotFoundError::alloc(this, (IdRefObject*)type.getCustomTypeExData());
+			SLAKE_RETURN_IF_EXCEPT(type.loadDeferredType(this));
 
 			xh.type = ins.operands[0].getTypeName();
 			xh.off = ins.operands[1].getU32();
@@ -1582,13 +1576,13 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 			break;
 		}
 		case Opcode::CAST: {
-			RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 2));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandCount(ins, true, 2));
 
-			RETURN_IF_EXCEPT(_checkOperandType(ins.output, ValueType::RegRef));
-			RETURN_IF_EXCEPT(_checkOperandType(ins.operands[0], ValueType::TypeName));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.output, ValueType::RegRef));
+			SLAKE_RETURN_IF_EXCEPT(_checkOperandType(ins.operands[0], ValueType::TypeName));
 
 			Value v;
-			RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[1], v));
+			SLAKE_RETURN_IF_EXCEPT(_unwrapRegOperand(curMajorFrame, ins.operands[1], v));
 
 			auto t = ins.operands[0].getTypeName();
 
@@ -1639,7 +1633,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 					return InvalidOperandsError::alloc(this);
 			}
 
-			RETURN_IF_EXCEPT(_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), v));
+			SLAKE_RETURN_IF_EXCEPT(_setRegisterValue(curMajorFrame, ins.output.getRegIndex(), v));
 			break;
 		}
 		default:

@@ -14,14 +14,17 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 	HostObjectRef<InstanceObject> instance;
 
 	if (cls->parentClass.typeId == TypeId::Instance) {
-		if (!cls->parentClass.loadDeferredType(this))
+		if (auto e = cls->parentClass.loadDeferredType(this);
+			e) {
+			e.reset();
 			return nullptr;
+		}
 
 		Object *parentClass = (ClassObject *)cls->parentClass.getCustomTypeExData();
 		assert(parentClass->getKind() == ObjectKind::Class);
 
 		if (!(parent = this->newClassInstance((ClassObject *)parentClass, _NEWCLSINST_PARENT)))
-			return false;
+			return nullptr;
 	}
 
 	if (parent) {

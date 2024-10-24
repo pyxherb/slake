@@ -2,13 +2,6 @@
 
 using namespace slake;
 
-SLAKE_API InternalException::InternalException(
-	Runtime *associatedRuntime,
-	ErrorKind kind)
-	: associatedRuntime(associatedRuntime),
-	  kind(kind) {}
-SLAKE_API InternalException::~InternalException() {}
-
 SLAKE_API RuntimeExecError::RuntimeExecError(
 	Runtime *associatedRuntime,
 	RuntimeExecErrorCode errorCode)

@@ -172,6 +172,7 @@ int main(int argc, char **argv) {
 			e) {
 			printf("Internal exception: %s\n", e->what());
 			printTraceback(rt.get(), context.get());
+			e.reset();
 			goto end;
 		}
 		printf("%d\n", context->getResult().getI32());
@@ -181,6 +182,7 @@ int main(int argc, char **argv) {
 				e) {
 				printf("Internal exception: %s\n", e->what());
 				printTraceback(rt.get(), context.get());
+				e.reset();
 				goto end;
 			}
 

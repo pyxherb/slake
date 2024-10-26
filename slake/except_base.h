@@ -33,7 +33,7 @@ namespace slake {
 
 	public:
 		SLAKE_FORCEINLINE InternalExceptionPointer() = default;
-		SLAKE_FORCEINLINE InternalExceptionPointer(InternalException* exception) : _ptr(exception) {
+		SLAKE_FORCEINLINE InternalExceptionPointer(InternalException *exception) : _ptr(exception) {
 		}
 
 		SLAKE_FORCEINLINE ~InternalExceptionPointer() {
@@ -44,7 +44,7 @@ namespace slake {
 
 		InternalExceptionPointer(const InternalExceptionPointer &) = delete;
 		InternalExceptionPointer &operator=(const InternalExceptionPointer &) = delete;
-		SLAKE_FORCEINLINE InternalExceptionPointer(InternalExceptionPointer&& other) {
+		SLAKE_FORCEINLINE InternalExceptionPointer(InternalExceptionPointer &&other) {
 			_ptr = std::move(other._ptr);
 		}
 		SLAKE_FORCEINLINE InternalExceptionPointer &operator=(InternalExceptionPointer &&other) {
@@ -52,7 +52,7 @@ namespace slake {
 			return *this;
 		}
 
-		SLAKE_FORCEINLINE InternalException* get() {
+		SLAKE_FORCEINLINE InternalException *get() {
 			return _ptr.get();
 		}
 		SLAKE_FORCEINLINE const InternalException *get() const {
@@ -67,7 +67,7 @@ namespace slake {
 			return (bool)_ptr;
 		}
 
-		SLAKE_FORCEINLINE InternalException* operator->() {
+		SLAKE_FORCEINLINE InternalException *operator->() {
 			return _ptr.get();
 		}
 
@@ -77,8 +77,11 @@ namespace slake {
 	};
 }
 
-#define SLAKE_RETURN_IF_EXCEPT(expr)                        \
+#define SLAKE_RETURN_IF_EXCEPT(expr)                  \
 	if (InternalExceptionPointer e = (expr); (bool)e) \
 	return e
+#define SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(name, expr)  \
+	if ((bool)(name = (expr))) \
+	return name;
 
 #endif

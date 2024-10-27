@@ -10,7 +10,7 @@ public:
 	char *ptr;
 	size_t size;
 	DWORD oldProtect;
-	bool firmed = false;
+	bool locked = false;
 
 	inline Win32CodePage(size_t size) : ptr(ptr), size(size) {
 		ptr = new char[size];
@@ -27,10 +27,10 @@ public:
 	virtual void firm() override {
 		DWORD tmp;
 		VirtualProtect(ptr, size, PAGE_EXECUTE_READ, &tmp);
-		firmed = true;
+		locked = true;
 	}
 	virtual inline void jump() override {
-		assert(firmed);
+		assert(locked);
 		((void (*)())ptr)();
 	}
 };

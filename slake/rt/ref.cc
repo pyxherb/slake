@@ -6,7 +6,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 	IdRefObject *ref,
 	VarRefContext *varRefContextOut,
 	Object *&objectOut,
-	Object *scopeObject) const {
+	Object *scopeObject) {
 	if (!ref)
 		return nullptr;
 

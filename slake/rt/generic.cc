@@ -17,7 +17,13 @@ SLAKE_API void Runtime::invalidateGenericCache(Object *i) {
 	}
 }
 
-SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Type &type, GenericInstantiationContext &instantiationContext) const {
+SLAKE_API void Runtime::setGenericCache(const Object *object, const GenericArgList &genericArgs, Object *instantiatedObject) {
+	// Store the instance into the cache.
+	_genericCacheDir[object][genericArgs] = instantiatedObject;
+	_genericCacheLookupTable[instantiatedObject] = { object, genericArgs };
+}
+
+SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Type &type, GenericInstantiationContext &instantiationContext) {
 	switch (type.typeId) {
 		case TypeId::Instance: {
 			if (type.isLoadingDeferred()) {
@@ -70,7 +76,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Typ
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Value &value, GenericInstantiationContext &instantiationContext) const {
+SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Value &value, GenericInstantiationContext &instantiationContext) {
 	switch (value.valueType) {
 		case ValueType::I8:
 		case ValueType::I16:
@@ -97,7 +103,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Val
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Object *v, GenericInstantiationContext &instantiationContext) const {
+SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Object *v, GenericInstantiationContext &instantiationContext) {
 	// How do we instantiate generic classes:
 	// Duplicate the value, scan for references to generic parameters and
 	// replace them with generic arguments.
@@ -275,7 +281,7 @@ SLAKE_API InternalExceptionPointer Runtime::mapGenericParams(const FnOverloading
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(const Object *v, Object *&objectOut, GenericInstantiationContext &instantiationContext) const {
+SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(const Object *v, Object *&objectOut, GenericInstantiationContext &instantiationContext) {
 	// Try to look up in the cache.
 	if (_genericCacheDir.count(v)) {
 		auto &table = _genericCacheDir.at(v);
@@ -289,19 +295,18 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(const Objec
 
 	// Cache missed, instantiate the value.
 	auto value = v->duplicate();									 // Make a duplicate of the original value.
-	_genericCacheDir[v][*instantiationContext.genericArgs] = value;	 // Store the instance into the cache.
 	SLAKE_RETURN_IF_EXCEPT(mapGenericParams(value, instantiationContext));
 	// Instantiate the value.
 	SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(value, instantiationContext));
 
-	_genericCacheLookupTable[value] = { v, *instantiationContext.genericArgs };
+	setGenericCache(v, *instantiationContext.genericArgs, value);
 
 	objectOut = value;
 
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer Runtime::_instantiateGenericObject(FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const {
+SLAKE_API InternalExceptionPointer Runtime::_instantiateGenericObject(FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) {
 	if (ol->genericParams.size() && ol->fnObject != instantiationContext.mappedObject) {
 		GenericInstantiationContext newInstantiationContext = instantiationContext;
 

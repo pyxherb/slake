@@ -9,7 +9,7 @@ namespace slake {
 		virtual ~ICodePage() = default;
 		virtual size_t getSize() = 0;
 		virtual void *getPtr() = 0;
-		virtual void firm() = 0;
+		virtual void lock() = 0;
 		virtual void jump() = 0;
 	};
 

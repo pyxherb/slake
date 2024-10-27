@@ -14,7 +14,7 @@ class LinuxCodePage : public slake::ICodePage {
 public:
 	char *ptr;
 	size_t size;
-	bool firmed = false;
+	bool locked = false;
 
 	inline LinuxCodePage(size_t size) : ptr(ptr), size(size) {
 		struct sysinfo info;
@@ -30,12 +30,12 @@ public:
 	virtual inline size_t getSize() override { return size; }
 	virtual inline void *getPtr() override { return ptr; }
 
-	virtual void firm() override {
+	virtual void lock() override {
 		mprotect(ptr, size, PROT_EXEC | PROT_READ);
-		firmed = true;
+		locked = true;
 	}
 	virtual inline void jump() override {
-		assert(firmed);
+		assert(locked);
 		((void (*)())ptr)();
 	}
 };

@@ -52,7 +52,7 @@ SLAKE_API bool Type::isLoadingDeferred() const noexcept {
 	}
 }
 
-SLAKE_API InternalExceptionPointer Type::loadDeferredType(const Runtime *rt) {
+SLAKE_API InternalExceptionPointer Type::loadDeferredType(Runtime *rt) {
 	if (!isLoadingDeferred())
 		return {};
 

@@ -352,7 +352,6 @@ SLAKE_API void Runtime::_gcWalk(Object *v) {
 SLAKE_API void Runtime::_gcWalk(Context &ctxt) {
 	for (auto &j : ctxt.majorFrames) {
 		_gcWalk((FnOverloadingObject *)j->curFn);
-		_gcWalk(j->scopeObject);
 		_gcWalk(j->returnValue);
 		_gcWalk(j->thisObject);
 		_gcWalk(j->curExcept);

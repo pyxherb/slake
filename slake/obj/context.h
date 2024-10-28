@@ -34,7 +34,6 @@ namespace slake {
 	/// @brief A major frame represents a single calling frame.
 	struct MajorFrame final {
 		Context *context = nullptr;		// Context
-		Object *scopeObject = nullptr;	// Scope value.
 
 		const FnOverloadingObject *curFn = nullptr;	 // Current function overloading.
 		uint32_t curIns = 0;						 // Offset of current instruction in function body.

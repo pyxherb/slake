@@ -142,11 +142,10 @@ pub fn main() async: i32 {
 
 	/* extfns.print(test + 123); */
 
-	let v : i32 = 1919810 + 0;
-	test.test(v);
+	let v : u32 = 1919810 + 0;
 	
 	let array: i32[] = { 12, 34, 56, 78, 114, 514, 1919, 810 };
-	v = array[2];
+	v = array[2] as u32;
 
 	extfns.print("Value:", v, "\n");
 

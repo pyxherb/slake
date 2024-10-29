@@ -339,7 +339,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 								: EvalPurpose::RValue,
 							std::make_shared<RegRefNode>(rhsRegIndex));
 					} else {
-						if (!opReg.isLhsLvalue) {
+						if (!opReg.isRhsLvalue) {
 							auto rvalueLhsType = lhsType->duplicate<TypeNameNode>();
 							rvalueLhsType->isRef = false;
 
@@ -450,7 +450,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 								: EvalPurpose::RValue,
 							std::make_shared<RegRefNode>(rhsRegIndex));
 					} else {
-						if (!opReg.isLhsLvalue) {
+						if (!opReg.isRhsLvalue) {
 							auto rvalueLhsType = lhsType->duplicate<TypeNameNode>();
 							rvalueLhsType->isRef = false;
 

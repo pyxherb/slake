@@ -325,6 +325,11 @@ namespace slake {
 			std::shared_ptr<TypeNameNode> targetType;
 			std::shared_ptr<ExprNode> target;
 
+			size_t idxAsKeyword = SIZE_MAX;
+
+			inline CastExprNode(
+				std::shared_ptr<ExprNode> target)
+				: target(target) {}
 			inline CastExprNode(
 				std::shared_ptr<TypeNameNode> targetType,
 				std::shared_ptr<ExprNode> target)

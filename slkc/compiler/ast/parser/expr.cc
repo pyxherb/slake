@@ -97,6 +97,21 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
+	{ TokenId::AsKeyword,
+		{ 130,
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token *opToken) -> std::shared_ptr<ExprNode> {
+				auto expr = std::make_shared<CastExprNode>(lhs);
+
+				expr->target = lhs;
+				expr->tokenRange = TokenRange{ parser->curDoc, lhs->tokenRange.beginIndex, parser->lexer->getTokenIndex(opToken) };
+				expr->idxAsKeyword = parser->lexer->getTokenIndex(opToken);
+
+				expr->targetType = parser->parseTypeName(true);
+
+				expr->tokenRange.endIndex = expr->targetType->tokenRange.endIndex;
+
+				return std::static_pointer_cast<ExprNode>(expr);
+			} } },
 
 	{ TokenId::MulOp,
 		{ 120,

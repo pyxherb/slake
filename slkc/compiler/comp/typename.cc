@@ -388,6 +388,9 @@ bool Compiler::isSameType(std::shared_ptr<TypeNameNode> x, std::shared_ptr<TypeN
 	if (y->getTypeId() == TypeId::Ref)
 		y = std::static_pointer_cast<RefTypeNameNode>(y)->referencedType;*/
 
+	if (x->isRef != y->isRef)
+		return false;
+
 	if (x->getTypeId() != y->getTypeId())
 		return false;
 

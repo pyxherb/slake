@@ -293,6 +293,8 @@ namespace slake {
 			bool isDecimalType(std::shared_ptr<TypeNameNode> typeName);
 			bool isCompoundTypeName(std::shared_ptr<TypeNameNode> typeName);
 			bool isLValueType(std::shared_ptr<TypeNameNode> typeName);
+			std::shared_ptr<TypeNameNode> toRValueTypeName(std::shared_ptr<TypeNameNode> typeName);
+			std::shared_ptr<TypeNameNode> toLValueTypeName(std::shared_ptr<TypeNameNode> typeName);
 
 			bool _isTypeNamesConvertible(std::shared_ptr<InterfaceNode> st, std::shared_ptr<ClassNode> dt);
 			bool _isTypeNamesConvertible(std::shared_ptr<ClassNode> st, std::shared_ptr<InterfaceNode> dt);

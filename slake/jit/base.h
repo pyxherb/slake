@@ -2,11 +2,14 @@
 #define _SLAKE_JIT_H_
 
 #include <cstddef>
+#include <slake/object.h>
 
 namespace slake {
-	class ICodePage {
+	class Runtime;
+
+	class CodePage {
 	public:
-		virtual ~ICodePage() = default;
+		virtual ~CodePage() = default;
 		virtual size_t getSize() = 0;
 		virtual void *getPtr() = 0;
 		virtual void lock() = 0;
@@ -15,8 +18,8 @@ namespace slake {
 
 	class FnObject;
 
-	ICodePage* genCodePage(size_t size);
-	ICodePage *compileFn(FnObject* fn);
+	CodePage* genCodePage(size_t size);
+	CodePage *compileRegularFn(RegularFnOverloadingObject* fn);
 }
 
 #endif

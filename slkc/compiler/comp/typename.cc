@@ -98,6 +98,24 @@ bool slake::slkc::Compiler::isLValueType(std::shared_ptr<TypeNameNode> typeName)
 	return typeName->isRef;
 }
 
+std::shared_ptr<TypeNameNode> Compiler::toRValueTypeName(std::shared_ptr<TypeNameNode> typeName) {
+	if (typeName->isRef) {
+		std::shared_ptr<TypeNameNode> newTypeName = typeName->duplicate<TypeNameNode>();
+		newTypeName->isRef = false;
+		return newTypeName;
+	}
+	return typeName;
+}
+
+std::shared_ptr<TypeNameNode> Compiler::toLValueTypeName(std::shared_ptr<TypeNameNode> typeName) {
+	if (!typeName->isRef) {
+		std::shared_ptr<TypeNameNode> newTypeName = typeName->duplicate<TypeNameNode>();
+		newTypeName->isRef = true;
+		return newTypeName;
+	}
+	return typeName;
+}
+
 bool Compiler::_isTypeNamesConvertible(std::shared_ptr<ClassNode> st, std::shared_ptr<InterfaceNode> dt) {
 	for (auto i : st->implInterfaces) {
 		auto interface = std::static_pointer_cast<InterfaceNode>(resolveCustomTypeName((CustomTypeNameNode *)i.get()));

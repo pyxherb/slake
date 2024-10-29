@@ -327,39 +327,16 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							: EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
 
-					if (isAssignBinaryOp(e->op)) {
-						auto rvalueLhsType = lhsType->duplicate<TypeNameNode>();
-						rvalueLhsType->isRef = false;
-
-						compileOrCastOperand(
-							e->rhs,
-							rhsType, rvalueLhsType,
-							opReg.isRhsLvalue
-								? EvalPurpose::LValue
-								: EvalPurpose::RValue,
-							std::make_shared<RegRefNode>(rhsRegIndex));
-					} else {
-						if (!opReg.isRhsLvalue) {
-							auto rvalueLhsType = lhsType->duplicate<TypeNameNode>();
-							rvalueLhsType->isRef = false;
-
-							compileOrCastOperand(
-								e->rhs,
-								rhsType, rvalueLhsType,
-								opReg.isRhsLvalue
-									? EvalPurpose::LValue
-									: EvalPurpose::RValue,
-								std::make_shared<RegRefNode>(rhsRegIndex));
-						} else {
-							compileOrCastOperand(
-								e->rhs,
-								rhsType, lhsType,
-								opReg.isRhsLvalue
-									? EvalPurpose::LValue
-									: EvalPurpose::RValue,
-								std::make_shared<RegRefNode>(rhsRegIndex));
-						}
-					}
+					compileOrCastOperand(
+						e->rhs,
+						rhsType,
+						opReg.isRhsLvalue
+							? toLValueTypeName(lhsType)
+							: toRValueTypeName(lhsType),
+						opReg.isRhsLvalue
+							? EvalPurpose::LValue
+							: EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(rhsRegIndex));
 
 					execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
 
@@ -438,39 +415,16 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							: EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
 
-					if (isAssignBinaryOp(e->op)) {
-						auto rvalueLhsType = lhsType->duplicate<TypeNameNode>();
-						rvalueLhsType->isRef = false;
-
-						compileOrCastOperand(
-							e->rhs,
-							rhsType, rvalueLhsType,
-							opReg.isRhsLvalue
-								? EvalPurpose::LValue
-								: EvalPurpose::RValue,
-							std::make_shared<RegRefNode>(rhsRegIndex));
-					} else {
-						if (!opReg.isRhsLvalue) {
-							auto rvalueLhsType = lhsType->duplicate<TypeNameNode>();
-							rvalueLhsType->isRef = false;
-
-							compileOrCastOperand(
-								e->rhs,
-								rhsType, rvalueLhsType,
-								opReg.isRhsLvalue
-									? EvalPurpose::LValue
-									: EvalPurpose::RValue,
-								std::make_shared<RegRefNode>(rhsRegIndex));
-						} else {
-							compileOrCastOperand(
-								e->rhs,
-								rhsType, lhsType,
-								opReg.isRhsLvalue
-									? EvalPurpose::LValue
-									: EvalPurpose::RValue,
-								std::make_shared<RegRefNode>(rhsRegIndex));
-						}
-					}
+					compileOrCastOperand(
+						e->rhs,
+						rhsType,
+						opReg.isRhsLvalue
+							? toLValueTypeName(lhsType)
+							: toRValueTypeName(lhsType),
+						opReg.isRhsLvalue
+							? EvalPurpose::LValue
+							: EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(rhsRegIndex));
 
 					execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
 

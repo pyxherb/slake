@@ -5,7 +5,7 @@
 
 #include <Windows.h>
 
-class Win32CodePage : public slake::ICodePage {
+class Win32CodePage : public slake::CodePage {
 public:
 	char *ptr;
 	size_t size;
@@ -24,7 +24,7 @@ public:
 	virtual inline size_t getSize() override { return size; }
 	virtual inline void *getPtr() override { return ptr; }
 
-	virtual void firm() override {
+	virtual void lock() override {
 		DWORD tmp;
 		VirtualProtect(ptr, size, PAGE_EXECUTE_READ, &tmp);
 		locked = true;
@@ -35,6 +35,6 @@ public:
 	}
 };
 
-slake::ICodePage *slake::genCodePage(size_t size) {
+slake::CodePage *slake::genCodePage(size_t size) {
 	return new Win32CodePage(size);
 }

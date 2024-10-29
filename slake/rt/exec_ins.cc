@@ -137,8 +137,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 		auto varObject = RegularVarObject::alloc(this, ACCESS_PUB, fn->paramTypes[i]);
 		holder.addObject(varObject.get());
 		newMajorFrame->argStack[i] = varObject.get();
-		InternalExceptionPointer result = varObject->setData({}, args[i]);
-		assert(!result);
+		SLAKE_RETURN_IF_EXCEPT(varObject->setData({}, args[i]));
 	}
 
 	if (fn->overloadingFlags & OL_VARG) {

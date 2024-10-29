@@ -10,7 +10,7 @@
 
 static size_t _PAGESIZE = 0;
 
-class LinuxCodePage : public slake::ICodePage {
+class LinuxCodePage : public slake::CodePage {
 public:
 	char *ptr;
 	size_t size;
@@ -40,6 +40,6 @@ public:
 	}
 };
 
-slake::ICodePage *slake::genCodePage(size_t size) {
+slake::CodePage *slake::genCodePage(size_t size) {
 	return new LinuxCodePage(size);
 }

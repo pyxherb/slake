@@ -338,6 +338,23 @@ SLAKE_API std::string std::to_string(const slake::Type &type, const slake::Runti
 			StringObject *nameObject = (StringObject *)type.exData.ptr;
 			return "!" + std::string(nameObject->data);
 		}
+		case TypeId::FnDelegate: {
+			FnTypeDefObject *fnTypeDefObject = (FnTypeDefObject *)type.exData.ptr;
+			std::string result = "fn ";
+
+			for (size_t i = 0; i < fnTypeDefObject->paramTypes.size(); ++i) {
+				if (i)
+					result += ", ";
+
+				result += std::to_string(fnTypeDefObject->paramTypes[i]);
+			}
+
+			if (fnTypeDefObject->hasVarArg) {
+				result += "...";
+			}
+
+			return result;
+		}
 		case TypeId::Any:
 			return "any";
 		case TypeId::None:

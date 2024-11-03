@@ -19,7 +19,7 @@ slake::Value print(
 		args[0]->getData({}, varArgsValue);
 		AnyArrayObject *varArgs = (AnyArrayObject *)varArgsValue.getObjectRef();
 
-		for (uint8_t i = 0; i < nArgs; ++i) {
+		for (uint8_t i = 0; i < varArgs->length; ++i) {
 			Value data;
 			if (auto e = varArgs->accessor->getData(VarRefContext::makeArrayContext(i), data);
 				e) {

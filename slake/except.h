@@ -296,6 +296,60 @@ namespace slake {
 			std::pmr::string &&name);
 	};
 
+	enum class OptimizerErrorCode {
+		MalformedProgram = 0,
+		ErrorEvaluatingObjectType
+	};
+
+	class OptimizerError : public InternalException {
+	public:
+		OptimizerErrorCode optimizerErrorCode;
+
+		SLAKE_API OptimizerError(Runtime *associatedRuntime, OptimizerErrorCode optimizerErrorCode);
+		SLAKE_API virtual ~OptimizerError();
+	};
+
+	class RegularFnOverloadingObject;
+
+	class MalformedProgramError : public OptimizerError {
+	public:
+		HostObjectRef<RegularFnOverloadingObject> fnOverloading;
+		size_t offIns;
+
+		SLAKE_API MalformedProgramError(
+			Runtime *associatedRuntime,
+			RegularFnOverloadingObject *fnOverloading,
+			size_t offIns);
+		SLAKE_API virtual ~MalformedProgramError();
+
+		SLAKE_API virtual const char *what() const override;
+
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API static MalformedProgramError *alloc(
+			Runtime *associatedRuntime,
+			RegularFnOverloadingObject *fnOverloading,
+			size_t offIns);
+	};
+
+	class ErrorEvaluatingObjectTypeError : public OptimizerError {
+	public:
+		HostObjectRef<Object> object;
+
+		SLAKE_API ErrorEvaluatingObjectTypeError(
+			Runtime *associatedRuntime,
+			Object *object);
+		SLAKE_API virtual ~ErrorEvaluatingObjectTypeError();
+
+		SLAKE_API virtual const char *what() const override;
+
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API static ErrorEvaluatingObjectTypeError *alloc(
+			Runtime *associatedRuntime,
+			Object *object);
+	};
+
 	// stub, remove it after work around SLXLoaderError is finished.
 	class LoaderError : public std::runtime_error {
 	public:

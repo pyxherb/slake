@@ -148,13 +148,35 @@ namespace slake {
 		/// @param ins Instruction to be executed.
 		SLAKE_API [[nodiscard]] InternalExceptionPointer _execIns(ContextObject *context, const Instruction &ins);
 
-		SLAKE_API void _gcWalk(Scope *scope);
-		SLAKE_API void _gcWalk(MethodTable *methodTable);
-		SLAKE_API void _gcWalk(GenericParamList &genericParamList);
-		SLAKE_API void _gcWalk(const Type &type);
-		SLAKE_API void _gcWalk(const Value &i);
-		SLAKE_API void _gcWalk(Object *i);
-		SLAKE_API void _gcWalk(Context &i);
+		struct GCHeaplessWalkContext {
+			Object *walkableList = nullptr;
+
+			SLAKE_API void pushObject(Object *object);
+		};
+
+		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, Scope *scope);
+		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, MethodTable *methodTable);
+		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, GenericParamList &genericParamList);
+		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, const Type &type);
+		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, const Value &i);
+		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, Object *i);
+		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, Context &i);
+		SLAKE_API void _gcHeapless();
+
+		struct GCDfsWalkContext {
+			std::set<Object *> objectStack;
+
+			SLAKE_API bool pushObject(Object *object);
+		};
+
+		SLAKE_API bool _gcWalkDfs(GCDfsWalkContext &context, Scope *scope);
+		SLAKE_API bool _gcWalkDfs(GCDfsWalkContext &context, MethodTable *methodTable);
+		SLAKE_API bool _gcWalkDfs(GCDfsWalkContext &context, GenericParamList &genericParamList);
+		SLAKE_API bool _gcWalkDfs(GCDfsWalkContext &context, const Type &type);
+		SLAKE_API bool _gcWalkDfs(GCDfsWalkContext &context, const Value &i);
+		SLAKE_API bool _gcWalkDfs(GCDfsWalkContext &context, Object *i);
+		SLAKE_API bool _gcWalkDfs(GCDfsWalkContext &context, Context &i);
+		SLAKE_API bool _gcDfs();
 
 		SLAKE_API [[nodiscard]] InternalExceptionPointer _instantiateGenericObject(Type &type, GenericInstantiationContext &instantiationContext);
 		SLAKE_API [[nodiscard]] InternalExceptionPointer _instantiateGenericObject(Value &value, GenericInstantiationContext &instantiationContext);
@@ -183,7 +205,7 @@ namespace slake {
 		/// @brief Runtime flags.
 		RuntimeFlags _flags = 0;
 
-		std::set<Object *> createdObjects;
+		std::list<Object *> createdObjects;
 
 		/// @brief Active contexts of threads.
 		std::map<std::thread::id, ContextObject *> activeContexts;

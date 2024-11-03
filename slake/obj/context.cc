@@ -88,7 +88,7 @@ SLAKE_API HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt) 
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }

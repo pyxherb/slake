@@ -42,6 +42,8 @@ namespace slake {
 		Array,	// Array
 		Ref,	// Reference
 
+		FnDelegate,	 // Function delegation
+
 		Any	 // Any
 	};
 

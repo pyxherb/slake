@@ -422,6 +422,17 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 
 			HostObjectRef<RegularFnOverloadingObject> overloading = RegularFnOverloadingObject::alloc(fn.get(), access, std::pmr::vector<Type>(&globalHeapPoolResource), Type(), 0);
 
+			if (!(overloading->access & ACCESS_STATIC)) {
+				switch (mod->getKind()) {
+					case ObjectKind::Class:
+					case ObjectKind::Interface:
+						overloading->thisObjectType = Type(TypeId::Instance, mod.get());
+						break;
+					default:
+						throw LoaderError("Non-static function in non-class type detected");
+				}
+			}
+
 			LoaderContext newContext = context;
 			newContext.ownerObject = overloading.get();
 

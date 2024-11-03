@@ -28,7 +28,7 @@ SLAKE_API HostObjectRef<RootObject> slake::RootObject::alloc(Runtime *rt) {
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }

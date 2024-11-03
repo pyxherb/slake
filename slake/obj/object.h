@@ -31,6 +31,7 @@ namespace slake {
 	enum class ObjectKind {
 		String,	  // String
 		TypeDef,  // Type definition
+		FnTypeDef,  // Function type definition
 
 		Fn,				// Function
 		FnOverloading,	// Function overloading
@@ -54,6 +55,12 @@ namespace slake {
 		Context,	 // Context
 	};
 
+	enum class ObjectGCStatus : uint8_t {
+		Unwalked = 0,
+		ReadyToWalk,
+		Walked
+	};
+
 	class Object {
 	public:
 		// The object will never be freed if its host reference count is not 0.
@@ -66,6 +73,15 @@ namespace slake {
 		SLAKE_API virtual ~Object();
 
 		ObjectFlags _flags = 0;
+		union {
+			struct {
+				ObjectGCStatus gcStatus;
+				Object *next;
+			} heapless;
+			struct {
+				ObjectGCStatus gcStatus;
+			} dfs;
+		} gcInfo;
 
 		Runtime *associatedRuntime;
 

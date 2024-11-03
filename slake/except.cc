@@ -439,3 +439,82 @@ SLAKE_API GenericParameterNotFoundError *GenericParameterNotFoundError::alloc(
 
 	return ptr.release();
 }
+
+SLAKE_API OptimizerError::OptimizerError(
+	Runtime *associatedRuntime,
+	OptimizerErrorCode optimizerErrorCode)
+	: InternalException(associatedRuntime, ErrorKind::OptimizerError),
+	  optimizerErrorCode(optimizerErrorCode) {
+}
+
+SLAKE_API OptimizerError::~OptimizerError() {
+}
+
+SLAKE_API MalformedProgramError::MalformedProgramError(
+	Runtime *associatedRuntime,
+	RegularFnOverloadingObject *fnOverloading,
+	size_t offIns)
+	: OptimizerError(associatedRuntime,
+		  OptimizerErrorCode::MalformedProgram),
+	  fnOverloading(fnOverloading),
+	  offIns(offIns) {}
+SLAKE_API MalformedProgramError::~MalformedProgramError() {}
+
+SLAKE_API const char *MalformedProgramError::what() const {
+	return "Malformed program";
+}
+
+SLAKE_API void MalformedProgramError::dealloc() {
+	std::pmr::polymorphic_allocator<MalformedProgramError> allocator(&associatedRuntime->globalHeapPoolResource);
+
+	std::destroy_at(this);
+	allocator.deallocate(this, 1);
+}
+
+SLAKE_API MalformedProgramError *MalformedProgramError::alloc(
+	Runtime *associatedRuntime,
+	RegularFnOverloadingObject *fnOverloading,
+	size_t offIns) {
+	using Alloc = std::pmr::polymorphic_allocator<MalformedProgramError>;
+	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
+
+	std::unique_ptr<MalformedProgramError, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), associatedRuntime, fnOverloading, offIns);
+
+	return ptr.release();
+}
+
+SLAKE_API ErrorEvaluatingObjectTypeError::ErrorEvaluatingObjectTypeError(
+	Runtime *associatedRuntime,
+	Object *object)
+	: OptimizerError(associatedRuntime,
+		  OptimizerErrorCode::ErrorEvaluatingObjectType),
+	  object(object) {}
+SLAKE_API ErrorEvaluatingObjectTypeError::~ErrorEvaluatingObjectTypeError() {}
+
+SLAKE_API const char *ErrorEvaluatingObjectTypeError::what() const {
+	return "Error evaluating object type";
+}
+
+SLAKE_API void ErrorEvaluatingObjectTypeError::dealloc() {
+	std::pmr::polymorphic_allocator<ErrorEvaluatingObjectTypeError> allocator(&associatedRuntime->globalHeapPoolResource);
+
+	std::destroy_at(this);
+	allocator.deallocate(this, 1);
+}
+
+SLAKE_API ErrorEvaluatingObjectTypeError *ErrorEvaluatingObjectTypeError::alloc(
+	Runtime *associatedRuntime,
+	Object *object) {
+	using Alloc = std::pmr::polymorphic_allocator<ErrorEvaluatingObjectTypeError>;
+	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
+
+	std::unique_ptr<ErrorEvaluatingObjectTypeError, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), associatedRuntime, object);
+
+	return ptr.release();
+}

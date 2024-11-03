@@ -81,7 +81,7 @@ SLAKE_API HostObjectRef<RegularVarObject> slake::RegularVarObject::alloc(Runtime
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, access, type);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -95,7 +95,7 @@ SLAKE_API HostObjectRef<RegularVarObject> slake::RegularVarObject::alloc(const R
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->Object::associatedRuntime->createdObjects.insert(ptr.get());
+	other->Object::associatedRuntime->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -245,7 +245,7 @@ SLAKE_API HostObjectRef<LocalVarAccessorVarObject> slake::LocalVarAccessorVarObj
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, context, majorFrame);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }

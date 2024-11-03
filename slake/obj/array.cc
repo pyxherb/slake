@@ -82,7 +82,7 @@ SLAKE_API HostObjectRef<U8ArrayAccessorVarObject> slake::U8ArrayAccessorVarObjec
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, arrayObject);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -168,7 +168,7 @@ SLAKE_API HostObjectRef<U8ArrayObject> slake::U8ArrayObject::alloc(Runtime *rt, 
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, length);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -182,7 +182,7 @@ SLAKE_API HostObjectRef<U8ArrayObject> slake::U8ArrayObject::alloc(const U8Array
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->associatedRuntime->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -239,7 +239,7 @@ SLAKE_API HostObjectRef<U16ArrayAccessorVarObject> slake::U16ArrayAccessorVarObj
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, arrayObject);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -325,7 +325,7 @@ SLAKE_API HostObjectRef<U16ArrayObject> slake::U16ArrayObject::alloc(Runtime *rt
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, length);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -339,7 +339,7 @@ SLAKE_API HostObjectRef<U16ArrayObject> slake::U16ArrayObject::alloc(const U16Ar
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->associatedRuntime->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -396,7 +396,7 @@ SLAKE_API HostObjectRef<U32ArrayAccessorVarObject> slake::U32ArrayAccessorVarObj
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, arrayObject);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -482,7 +482,7 @@ SLAKE_API HostObjectRef<U32ArrayObject> slake::U32ArrayObject::alloc(Runtime *rt
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, length);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -496,7 +496,7 @@ SLAKE_API HostObjectRef<U32ArrayObject> slake::U32ArrayObject::alloc(const U32Ar
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->associatedRuntime->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -553,7 +553,7 @@ SLAKE_API HostObjectRef<U64ArrayAccessorVarObject> slake::U64ArrayAccessorVarObj
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, arrayObject);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -639,7 +639,7 @@ SLAKE_API HostObjectRef<U64ArrayObject> slake::U64ArrayObject::alloc(Runtime *rt
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, length);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -653,7 +653,7 @@ SLAKE_API HostObjectRef<U64ArrayObject> slake::U64ArrayObject::alloc(const U64Ar
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->associatedRuntime->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -710,7 +710,7 @@ SLAKE_API HostObjectRef<I8ArrayAccessorVarObject> slake::I8ArrayAccessorVarObjec
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, arrayObject);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -798,7 +798,7 @@ SLAKE_API HostObjectRef<I8ArrayObject> slake::I8ArrayObject::alloc(Runtime *rt, 
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, length);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -812,7 +812,7 @@ SLAKE_API HostObjectRef<I8ArrayObject> slake::I8ArrayObject::alloc(const I8Array
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->associatedRuntime->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -869,7 +869,7 @@ SLAKE_API HostObjectRef<I16ArrayAccessorVarObject> slake::I16ArrayAccessorVarObj
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, arrayObject);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -955,7 +955,7 @@ SLAKE_API HostObjectRef<I16ArrayObject> slake::I16ArrayObject::alloc(Runtime *rt
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, length);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -969,7 +969,7 @@ SLAKE_API HostObjectRef<I16ArrayObject> slake::I16ArrayObject::alloc(const I16Ar
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->associatedRuntime->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -1026,7 +1026,7 @@ SLAKE_API HostObjectRef<I32ArrayAccessorVarObject> slake::I32ArrayAccessorVarObj
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, arrayObject);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -1112,7 +1112,7 @@ SLAKE_API HostObjectRef<I32ArrayObject> slake::I32ArrayObject::alloc(Runtime *rt
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, length);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -1126,7 +1126,7 @@ SLAKE_API HostObjectRef<I32ArrayObject> slake::I32ArrayObject::alloc(const I32Ar
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->associatedRuntime->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -1183,7 +1183,7 @@ SLAKE_API HostObjectRef<I64ArrayAccessorVarObject> slake::I64ArrayAccessorVarObj
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, arrayObject);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -1269,7 +1269,7 @@ SLAKE_API HostObjectRef<I64ArrayObject> slake::I64ArrayObject::alloc(Runtime *rt
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, length);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -1283,7 +1283,7 @@ SLAKE_API HostObjectRef<I64ArrayObject> slake::I64ArrayObject::alloc(const I64Ar
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->associatedRuntime->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -1340,7 +1340,7 @@ SLAKE_API HostObjectRef<F32ArrayAccessorVarObject> slake::F32ArrayAccessorVarObj
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, arrayObject);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -1426,7 +1426,7 @@ SLAKE_API HostObjectRef<F32ArrayObject> slake::F32ArrayObject::alloc(Runtime *rt
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, length);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -1440,7 +1440,7 @@ SLAKE_API HostObjectRef<F32ArrayObject> slake::F32ArrayObject::alloc(const F32Ar
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->associatedRuntime->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -1497,7 +1497,7 @@ SLAKE_API HostObjectRef<F64ArrayAccessorVarObject> slake::F64ArrayAccessorVarObj
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, arrayObject);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -1583,7 +1583,7 @@ SLAKE_API HostObjectRef<F64ArrayObject> slake::F64ArrayObject::alloc(Runtime *rt
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, length);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -1597,7 +1597,7 @@ SLAKE_API HostObjectRef<F64ArrayObject> slake::F64ArrayObject::alloc(const F64Ar
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->associatedRuntime->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -1654,7 +1654,7 @@ SLAKE_API HostObjectRef<BoolArrayAccessorVarObject> slake::BoolArrayAccessorVarO
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, arrayObject);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -1740,7 +1740,7 @@ SLAKE_API HostObjectRef<BoolArrayObject> slake::BoolArrayObject::alloc(Runtime *
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, length);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -1754,7 +1754,7 @@ SLAKE_API HostObjectRef<BoolArrayObject> slake::BoolArrayObject::alloc(const Boo
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->associatedRuntime->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -1816,7 +1816,7 @@ SLAKE_API HostObjectRef<ObjectRefArrayAccessorVarObject> slake::ObjectRefArrayAc
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, elementType, arrayObject);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -1905,7 +1905,7 @@ SLAKE_API HostObjectRef<ObjectRefArrayObject> slake::ObjectRefArrayObject::alloc
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, elementType, length);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -1919,7 +1919,7 @@ SLAKE_API HostObjectRef<ObjectRefArrayObject> slake::ObjectRefArrayObject::alloc
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->associatedRuntime->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -1972,7 +1972,7 @@ SLAKE_API HostObjectRef<AnyArrayAccessorVarObject> slake::AnyArrayAccessorVarObj
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, arrayObject);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -2057,7 +2057,7 @@ SLAKE_API HostObjectRef<AnyArrayObject> slake::AnyArrayObject::alloc(Runtime *rt
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, length);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -2071,7 +2071,7 @@ SLAKE_API HostObjectRef<AnyArrayObject> slake::AnyArrayObject::alloc(const AnyAr
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->associatedRuntime->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }

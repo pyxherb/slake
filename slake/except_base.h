@@ -11,7 +11,8 @@ namespace slake {
 
 	enum class ErrorKind {
 		RuntimeExecError = 0,
-		SLXLoaderError
+		SLXLoaderError,
+		OptimizerError
 	};
 
 	class InternalException {

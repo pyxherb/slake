@@ -54,7 +54,7 @@ SLAKE_API HostObjectRef<AliasObject> AliasObject::alloc(Runtime *rt, Object *src
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, ACCESS_PUB, src);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -68,7 +68,7 @@ SLAKE_API HostObjectRef<AliasObject> AliasObject::alloc(const AliasObject *other
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->associatedRuntime->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }

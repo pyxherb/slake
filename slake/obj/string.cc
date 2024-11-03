@@ -41,7 +41,7 @@ SLAKE_API HostObjectRef<StringObject> slake::StringObject::alloc(Runtime *rt, co
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, str, size);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -55,7 +55,7 @@ SLAKE_API HostObjectRef<StringObject> slake::StringObject::alloc(const StringObj
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->associatedRuntime->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -69,7 +69,7 @@ SLAKE_API HostObjectRef<StringObject> slake::StringObject::alloc(Runtime *rt, st
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, std::move(s));
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }

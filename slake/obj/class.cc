@@ -160,7 +160,7 @@ SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(const ClassObject
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->associatedRuntime->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -174,7 +174,7 @@ SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(Runtime *rt, Acce
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, access, parentClass);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -202,7 +202,7 @@ SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Runtime *
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt, access, parents);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -216,7 +216,7 @@ SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(const Int
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->associatedRuntime->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }

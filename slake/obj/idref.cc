@@ -44,7 +44,7 @@ SLAKE_API HostObjectRef<IdRefObject> slake::IdRefObject::alloc(Runtime *rt) {
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -58,7 +58,7 @@ SLAKE_API HostObjectRef<IdRefObject> slake::IdRefObject::alloc(const IdRefObject
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->associatedRuntime->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }

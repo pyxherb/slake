@@ -79,6 +79,7 @@ namespace slake {
 	public:
 		std::vector<slxfmt::SourceLocDesc> sourceLocDescs;
 		std::vector<Instruction> instructions;
+		Type thisObjectType = TypeId::None;
 
 		SLAKE_API RegularFnOverloadingObject(
 			FnObject *fnObject,

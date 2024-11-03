@@ -159,7 +159,7 @@ SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingO
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), fnObject, access, std::move(paramTypes), returnType, flags);
 
-	fnObject->associatedRuntime->createdObjects.insert(ptr.get());
+	fnObject->associatedRuntime->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -173,7 +173,7 @@ SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingO
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->associatedRuntime->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -232,7 +232,7 @@ SLAKE_API HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObj
 	std::pmr::vector<Type> pmrParamTypes(&fnObject->associatedRuntime->globalHeapPoolResource);
 	allocator.construct(ptr.get(), fnObject, access, std::move(pmrParamTypes), returnType, flags, callback);
 
-	fnObject->associatedRuntime->createdObjects.insert(ptr.get());
+	fnObject->associatedRuntime->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -246,7 +246,7 @@ SLAKE_API HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObj
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->associatedRuntime->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -331,7 +331,7 @@ SLAKE_API HostObjectRef<FnObject> slake::FnObject::alloc(Runtime *rt) {
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), rt);
 
-	rt->createdObjects.insert(ptr.get());
+	rt->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }
@@ -345,7 +345,7 @@ SLAKE_API HostObjectRef<FnObject> slake::FnObject::alloc(const FnObject *other) 
 		util::StatefulDeleter<Alloc>(allocator));
 	allocator.construct(ptr.get(), *other);
 
-	other->associatedRuntime->createdObjects.insert(ptr.get());
+	other->associatedRuntime->createdObjects.push_back(ptr.get());
 
 	return ptr.release();
 }

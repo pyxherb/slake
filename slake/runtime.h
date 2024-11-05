@@ -163,21 +163,6 @@ namespace slake {
 		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, Context &i);
 		SLAKE_API void _gcHeapless();
 
-		struct GCDfsWalkContext {
-			std::set<Object *> objectStack;
-
-			SLAKE_API bool pushObject(Object *object);
-		};
-
-		SLAKE_API bool _gcWalkDfs(GCDfsWalkContext &context, Scope *scope);
-		SLAKE_API bool _gcWalkDfs(GCDfsWalkContext &context, MethodTable *methodTable);
-		SLAKE_API bool _gcWalkDfs(GCDfsWalkContext &context, GenericParamList &genericParamList);
-		SLAKE_API bool _gcWalkDfs(GCDfsWalkContext &context, const Type &type);
-		SLAKE_API bool _gcWalkDfs(GCDfsWalkContext &context, const Value &i);
-		SLAKE_API bool _gcWalkDfs(GCDfsWalkContext &context, Object *i);
-		SLAKE_API bool _gcWalkDfs(GCDfsWalkContext &context, Context &i);
-		SLAKE_API bool _gcDfs();
-
 		SLAKE_API [[nodiscard]] InternalExceptionPointer _instantiateGenericObject(Type &type, GenericInstantiationContext &instantiationContext);
 		SLAKE_API [[nodiscard]] InternalExceptionPointer _instantiateGenericObject(Value &value, GenericInstantiationContext &instantiationContext);
 		SLAKE_API [[nodiscard]] InternalExceptionPointer _instantiateGenericObject(Object *v, GenericInstantiationContext &instantiationContext);

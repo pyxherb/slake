@@ -36,10 +36,22 @@ namespace slake {
 			HostRefHolder &hostRefHolder;
 			size_t idxCurIns = 0;
 			StackFrameState stackFrameState = {};
-			Object *lastCallTarget;
+			Type lastCallTargetType;
+			Value lastCallTarget;
+			Type lastCallReturnType;
 		};
 
 		InternalExceptionPointer wrapIntoRefType(
+			Runtime *runtime,
+			Type type,
+			HostRefHolder &hostRefHolder,
+			Type &typeOut);
+		InternalExceptionPointer wrapIntoArrayType(
+			Runtime *runtime,
+			Type type,
+			HostRefHolder &hostRefHolder,
+			Type &typeOut);
+		InternalExceptionPointer wrapIntoArrayType(
 			Runtime *runtime,
 			Type type,
 			HostRefHolder &hostRefHolder,
@@ -59,8 +71,10 @@ namespace slake {
 			Value &constValueOut);
 		InternalExceptionPointer analyzeExprIns(
 			ProgramAnalyzeContext &analyzeContext,
-			size_t regIndex
-		);
+			size_t regIndex);
+		InternalExceptionPointer analyzeCastIns(
+			ProgramAnalyzeContext &analyzeContext,
+			size_t regIndex);
 		InternalExceptionPointer analyzeProgramInfo(
 			Runtime *runtime,
 			RegularFnOverloadingObject *fnObject,

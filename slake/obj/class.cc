@@ -147,6 +147,18 @@ SLAKE_API Object *ClassObject::duplicate() const {
 	return (Object *)alloc(this).get();
 }
 
+SLAKE_API MemberObject *ClassObject::getMember(
+	const std::pmr::string &name,
+	VarRefContext *varRefContextOut) const {
+	if (auto m = scope->getMember(name); m)
+		return m;
+	if ((parentClass.typeId == TypeId::Instance)) {
+		assert(!parentClass.isLoadingDeferred());
+		return parentClass.getCustomTypeExData()->getMember(name, varRefContextOut);
+	}
+	return nullptr;
+}
+
 SLAKE_API GenericArgList InterfaceObject::getGenericArgs() const {
 	return genericArgs;
 }
@@ -226,4 +238,18 @@ SLAKE_API void slake::InterfaceObject::dealloc() {
 
 	std::destroy_at(this);
 	allocator.deallocate(this, 1);
+}
+
+SLAKE_API MemberObject *InterfaceObject::getMember(
+	const std::pmr::string &name,
+	VarRefContext *varRefContextOut) const {
+	if (auto m = scope->getMember(name); m)
+		return m;
+	for (auto& i : parents) {
+		if (i.typeId == TypeId::Instance) {
+			assert(!i.isLoadingDeferred());
+			return i.getCustomTypeExData()->getMember(name, varRefContextOut);
+		}
+	}
+	return nullptr;
 }

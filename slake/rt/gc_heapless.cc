@@ -127,6 +127,13 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 				case ObjectKind::TypeDef:
 					_gcWalkHeapless(context, ((TypeDefObject *)v)->type);
 					break;
+				case ObjectKind::FnTypeDef: {
+					auto typeDef = ((FnTypeDefObject *)v);
+					_gcWalkHeapless(context, typeDef->returnType);
+					for (auto &i : typeDef->paramTypes)
+						_gcWalkHeapless(context, i);
+					break;
+				}
 				case ObjectKind::Instance: {
 					auto value = (InstanceObject *)v;
 

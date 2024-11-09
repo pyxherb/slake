@@ -1,4 +1,5 @@
 #include <slake/runtime.h>
+#include <slake/opti/proganal.h>
 // #include <slake/lib/std.h>
 
 #include <cassert>
@@ -166,9 +167,24 @@ int main(int argc, char **argv) {
 		((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext", nullptr))->getMember("extfns", nullptr))->scope->putMember("print", fnObject.get());
 
 		auto fn = (slake::FnObject *)mod->getMember("main", nullptr);
+		auto overloading = fn->getOverloading({});
+
+		slake::opti::ProgramAnalyzedInfo analyzedInfo;
+		if (auto e = slake::opti::analyzeProgramInfo(rt.get(), (slake::RegularFnOverloadingObject *)overloading, analyzedInfo, hostRefHolder);
+			e) {
+			printf("Internal exception: %s\n", e->what());
+			e.reset();
+			goto end;
+		}
+		for (size_t i = 0; i < analyzedInfo.analyzedRegInfo.size(); ++i) {
+			auto &curRegInfo = analyzedInfo.analyzedRegInfo[i];
+
+			printf("Register #%zu\n", i);
+			printf("Lifetime: %zu-%zu\n", curRegInfo.lifetime.offBeginIns, curRegInfo.lifetime.offEndIns);
+		}
 
 		slake::HostObjectRef<slake::ContextObject> context;
-		if (auto e = rt->execFn(fn->getOverloading({}), nullptr, nullptr, nullptr, 0, context);
+		if (auto e = rt->execFn(overloading, nullptr, nullptr, nullptr, 0, context);
 			e) {
 			printf("Internal exception: %s\n", e->what());
 			printTraceback(rt.get(), context.get());

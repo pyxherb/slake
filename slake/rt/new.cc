@@ -3,6 +3,171 @@
 
 using namespace slake;
 
+SLAKE_API MethodTable *Runtime::initMethodTableForClass(ClassObject *cls, MethodTable *parentMethodTable) {
+	std::unique_ptr<MethodTable, util::DeallocableDeleter<MethodTable>> methodTable(
+		parentMethodTable
+			? parentMethodTable->duplicate()
+			: MethodTable::alloc(&globalHeapPoolResource));
+
+	for (const auto &i : cls->scope->members) {
+		switch (i.second->getKind()) {
+			case ObjectKind::Fn: {
+				std::deque<FnOverloadingObject *> overloadings;
+
+				for (auto j : ((FnObject *)i.second)->overloadings) {
+					if ((!(j->access & ACCESS_STATIC)) &&
+						(j->overloadingFlags & OL_VIRTUAL))
+						overloadings.push_back(j);
+				}
+
+				if (i.first == "delete") {
+					std::pmr::vector<Type> destructorParamTypes(&globalHeapPoolResource);
+					GenericParamList destructorGenericParamList;
+
+					for (auto &j : overloadings) {
+						if (isDuplicatedOverloading(j, destructorParamTypes, destructorGenericParamList, false)) {
+							methodTable->destructors.push_front(j);
+							break;
+						}
+					}
+				} else {
+					if (overloadings.size()) {
+						// Link the method with method inherited from the parent.
+						HostObjectRef<FnObject> fn;
+						auto &methodSlot = methodTable->methods[i.first];
+
+						if (auto m = methodTable->getMethod(i.first); m)
+							fn = m;
+						else {
+							fn = FnObject::alloc(this);
+							methodSlot = fn.get();
+						}
+
+						for (auto &j : overloadings) {
+							for (auto &k : methodSlot->overloadings) {
+								if (isDuplicatedOverloading(
+										k,
+										j->paramTypes,
+										j->genericParams,
+										j->overloadingFlags & OL_VARG)) {
+									methodSlot->overloadings.erase(k);
+									break;
+								}
+							}
+							methodSlot->overloadings.insert(j);
+						}
+					}
+				}
+
+				break;
+			}
+		}
+	}
+
+	return methodTable.release();
+}
+
+SLAKE_API ObjectLayout *Runtime::initObjectLayoutForClass(ClassObject *cls, ObjectLayout *parentObjectLayout) {
+	std::unique_ptr<ObjectLayout, util::DeallocableDeleter<ObjectLayout>> objectLayout(
+		parentObjectLayout
+			? parentObjectLayout->duplicate()
+			: ObjectLayout::alloc(&globalHeapPoolResource));
+
+	for (const auto &i : cls->scope->members) {
+		switch (i.second->getKind()) {
+			case ObjectKind::Var: {
+				ObjectFieldRecord fieldRecord;
+
+				RegularVarObject *var = (RegularVarObject *)i.second;
+				auto type = var->getVarType(VarRefContext());
+
+				switch (type.typeId) {
+					case TypeId::Value:
+						switch (type.getValueTypeExData()) {
+							case ValueType::I8:
+								fieldRecord.offset = objectLayout->totalSize;
+								objectLayout->totalSize += sizeof(int8_t);
+								break;
+							case ValueType::I16:
+								objectLayout->totalSize += (2 - (objectLayout->totalSize & 1));
+								fieldRecord.offset = objectLayout->totalSize;
+								objectLayout->totalSize += sizeof(int16_t);
+								break;
+							case ValueType::I32:
+								objectLayout->totalSize += (4 - (objectLayout->totalSize & 3));
+								fieldRecord.offset = objectLayout->totalSize;
+								objectLayout->totalSize += sizeof(int32_t);
+								break;
+							case ValueType::I64:
+								objectLayout->totalSize += (8 - (objectLayout->totalSize & 7));
+								fieldRecord.offset = objectLayout->totalSize;
+								objectLayout->totalSize += sizeof(int64_t);
+								break;
+							case ValueType::U8:
+								fieldRecord.offset = objectLayout->totalSize;
+								objectLayout->totalSize += sizeof(uint8_t);
+								break;
+							case ValueType::U16:
+								objectLayout->totalSize += (2 - (objectLayout->totalSize & 1));
+								fieldRecord.offset = objectLayout->totalSize;
+								objectLayout->totalSize += sizeof(uint16_t);
+								break;
+							case ValueType::U32:
+								objectLayout->totalSize += (4 - (objectLayout->totalSize & 3));
+								fieldRecord.offset = objectLayout->totalSize;
+								objectLayout->totalSize += sizeof(uint32_t);
+								break;
+							case ValueType::U64:
+								objectLayout->totalSize += (8 - (objectLayout->totalSize & 7));
+								fieldRecord.offset = objectLayout->totalSize;
+								objectLayout->totalSize += sizeof(uint64_t);
+								break;
+							case ValueType::F32:
+								objectLayout->totalSize += (4 - (objectLayout->totalSize & 3));
+								fieldRecord.offset = objectLayout->totalSize;
+								objectLayout->totalSize += sizeof(float);
+								break;
+							case ValueType::F64:
+								objectLayout->totalSize += (8 - (objectLayout->totalSize & 7));
+								fieldRecord.offset = objectLayout->totalSize;
+								objectLayout->totalSize += sizeof(double);
+								break;
+							case ValueType::Bool:
+								fieldRecord.offset = objectLayout->totalSize;
+								objectLayout->totalSize += sizeof(bool);
+								break;
+							case ValueType::ObjectRef:
+								objectLayout->totalSize += sizeof(Object *) - (objectLayout->totalSize & (sizeof(Object *) - 1));
+								fieldRecord.offset = objectLayout->totalSize;
+								objectLayout->totalSize += sizeof(Object *);
+								break;
+						}
+						break;
+					case TypeId::String:
+					case TypeId::Instance:
+					case TypeId::Array:
+						objectLayout->totalSize += sizeof(Object *) - (objectLayout->totalSize & (sizeof(Object *) - 1));
+						fieldRecord.offset = objectLayout->totalSize;
+						objectLayout->totalSize += sizeof(Object *);
+						break;
+					default:
+						throw std::runtime_error("The variable has an inconstructible type");
+				}
+
+				fieldRecord.type = type;
+
+				cls->cachedFieldInitVars.push_back(var);
+
+				objectLayout->fieldNameMap[i.first] = objectLayout->fieldRecords.size();
+				objectLayout->fieldRecords.push_back(std::move(fieldRecord));
+				break;
+			}
+		}
+	}
+
+	return objectLayout.release();
+}
+
 /// @brief Create a new class instance.
 /// @param cls Class for instance creation.
 /// @return Created instance of the class.
@@ -51,11 +216,9 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 		isMethodTablePresent = true;
 	} else {
 		if (parent) {
-			methodTable =
-				(cls->cachedInstantiatedMethodTable = parent->methodTable->duplicate());
+			methodTable = parent->methodTable;
 		} else
-			methodTable =
-				(cls->cachedInstantiatedMethodTable = MethodTable::alloc(&globalHeapPoolResource));
+			methodTable = nullptr;
 		isMethodTablePresent = false;
 	}
 
@@ -64,11 +227,9 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 		isObjectLayoutPresent = true;
 	} else {
 		if (parent) {
-			objectLayout =
-				(cls->cachedObjectLayout = parent->objectLayout->duplicate());
+			objectLayout = parent->objectLayout;
 		} else
-			objectLayout =
-				(cls->cachedObjectLayout = ObjectLayout::alloc(&globalHeapPoolResource));
+			objectLayout = nullptr;
 		isObjectLayoutPresent = false;
 
 		if (parent) {
@@ -77,156 +238,18 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 			cls->cachedFieldInitVars = std::pmr::vector<VarObject *>(&globalHeapPoolResource);
 	}
 
+	if (!isMethodTablePresent) {
+		methodTable = initMethodTableForClass(cls, methodTable);
+		cls->cachedInstantiatedMethodTable = methodTable;
+	}
+
+	if (!isObjectLayoutPresent) {
+		objectLayout = initObjectLayoutForClass(cls, objectLayout);
+		cls->cachedObjectLayout = objectLayout;
+	}
+
 	instance->methodTable = methodTable;
 	instance->objectLayout = objectLayout;
-
-	if ((!isMethodTablePresent) || (!isObjectLayoutPresent)) {
-		for (const auto &i : cls->scope->members) {
-			switch (i.second->getKind()) {
-				case ObjectKind::Var: {
-					if (!isObjectLayoutPresent) {
-						ObjectFieldRecord fieldRecord;
-
-						RegularVarObject *var = (RegularVarObject *)i.second;
-						auto type = var->getVarType(VarRefContext());
-
-						switch (type.typeId) {
-							case TypeId::Value:
-								switch (type.getValueTypeExData()) {
-									case ValueType::I8:
-										fieldRecord.offset = objectLayout->totalSize;
-										objectLayout->totalSize += sizeof(int8_t);
-										break;
-									case ValueType::I16:
-										objectLayout->totalSize += (2 - (objectLayout->totalSize & 1));
-										fieldRecord.offset = objectLayout->totalSize;
-										objectLayout->totalSize += sizeof(int16_t);
-										break;
-									case ValueType::I32:
-										objectLayout->totalSize += (4 - (objectLayout->totalSize & 3));
-										fieldRecord.offset = objectLayout->totalSize;
-										objectLayout->totalSize += sizeof(int32_t);
-										break;
-									case ValueType::I64:
-										objectLayout->totalSize += (8 - (objectLayout->totalSize & 7));
-										fieldRecord.offset = objectLayout->totalSize;
-										objectLayout->totalSize += sizeof(int64_t);
-										break;
-									case ValueType::U8:
-										fieldRecord.offset = objectLayout->totalSize;
-										objectLayout->totalSize += sizeof(uint8_t);
-										break;
-									case ValueType::U16:
-										objectLayout->totalSize += (2 - (objectLayout->totalSize & 1));
-										fieldRecord.offset = objectLayout->totalSize;
-										objectLayout->totalSize += sizeof(uint16_t);
-										break;
-									case ValueType::U32:
-										objectLayout->totalSize += (4 - (objectLayout->totalSize & 3));
-										fieldRecord.offset = objectLayout->totalSize;
-										objectLayout->totalSize += sizeof(uint32_t);
-										break;
-									case ValueType::U64:
-										objectLayout->totalSize += (8 - (objectLayout->totalSize & 7));
-										fieldRecord.offset = objectLayout->totalSize;
-										objectLayout->totalSize += sizeof(uint64_t);
-										break;
-									case ValueType::F32:
-										objectLayout->totalSize += (4 - (objectLayout->totalSize & 3));
-										fieldRecord.offset = objectLayout->totalSize;
-										objectLayout->totalSize += sizeof(float);
-										break;
-									case ValueType::F64:
-										objectLayout->totalSize += (8 - (objectLayout->totalSize & 7));
-										fieldRecord.offset = objectLayout->totalSize;
-										objectLayout->totalSize += sizeof(double);
-										break;
-									case ValueType::Bool:
-										fieldRecord.offset = objectLayout->totalSize;
-										objectLayout->totalSize += sizeof(bool);
-										break;
-									case ValueType::ObjectRef:
-										objectLayout->totalSize += sizeof(Object *) - (objectLayout->totalSize & (sizeof(Object *) - 1));
-										fieldRecord.offset = objectLayout->totalSize;
-										objectLayout->totalSize += sizeof(Object *);
-										break;
-								}
-								break;
-							case TypeId::String:
-							case TypeId::Instance:
-							case TypeId::Array:
-								objectLayout->totalSize += sizeof(Object *) - (objectLayout->totalSize & (sizeof(Object *) - 1));
-								fieldRecord.offset = objectLayout->totalSize;
-								objectLayout->totalSize += sizeof(Object *);
-								break;
-							default:
-								throw std::runtime_error("The variable has an inconstructible type");
-						}
-
-						fieldRecord.type = type;
-
-						cls->cachedFieldInitVars.push_back(var);
-
-						objectLayout->fieldNameMap[i.first] = objectLayout->fieldRecords.size();
-						objectLayout->fieldRecords.push_back(std::move(fieldRecord));
-					}
-					break;
-				}
-				case ObjectKind::Fn: {
-					if (!isMethodTablePresent) {
-						std::deque<FnOverloadingObject *> overloadings;
-
-						for (auto j : ((FnObject *)i.second)->overloadings) {
-							if ((!(j->access & ACCESS_STATIC)) &&
-								(j->overloadingFlags & OL_VIRTUAL))
-								overloadings.push_back(j);
-						}
-
-						if (i.first == "delete") {
-							std::pmr::vector<Type> destructorParamTypes(&globalHeapPoolResource);
-							GenericParamList destructorGenericParamList;
-
-							for (auto &j : overloadings) {
-								if (isDuplicatedOverloading(j, destructorParamTypes, destructorGenericParamList, false)) {
-									methodTable->destructors.push_front(j);
-									break;
-								}
-							}
-						} else {
-							if (overloadings.size()) {
-								// Link the method with method inherited from the parent.
-								HostObjectRef<FnObject> fn;
-								auto &methodSlot = methodTable->methods[i.first];
-
-								if (auto m = methodTable->getMethod(i.first); m)
-									fn = m;
-								else {
-									fn = FnObject::alloc(this);
-									methodSlot = fn.get();
-								}
-
-								for (auto &j : overloadings) {
-									for (auto &k : methodSlot->overloadings) {
-										if (isDuplicatedOverloading(
-												k,
-												j->paramTypes,
-												j->genericParams,
-												j->overloadingFlags & OL_VARG)) {
-											methodSlot->overloadings.erase(k);
-											break;
-										}
-									}
-									methodSlot->overloadings.insert(j);
-								}
-							}
-						}
-					}
-
-					break;
-				}
-			}
-		}
-	}
 
 	if (!(flags & _NEWCLSINST_PARENT)) {
 		if (objectLayout->totalSize)

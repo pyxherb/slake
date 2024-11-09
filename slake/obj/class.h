@@ -71,6 +71,10 @@ namespace slake {
 
 		SLAKE_API virtual Object *duplicate() const override;
 
+		SLAKE_API virtual MemberObject *getMember(
+			const std::pmr::string &name,
+			VarRefContext *varRefContextOut) const;
+
 		SLAKE_API static HostObjectRef<ClassObject> alloc(Runtime *rt, AccessModifier access, const Type &parentClass = {});
 		SLAKE_API static HostObjectRef<ClassObject> alloc(const ClassObject *other);
 		SLAKE_API virtual void dealloc() override;
@@ -95,6 +99,10 @@ namespace slake {
 		SLAKE_API virtual ObjectKind getKind() const override;
 
 		SLAKE_API virtual Object *duplicate() const override;
+
+		SLAKE_API virtual MemberObject *getMember(
+			const std::pmr::string &name,
+			VarRefContext *varRefContextOut) const;
 
 		SLAKE_API virtual GenericArgList getGenericArgs() const override;
 

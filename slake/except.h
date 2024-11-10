@@ -52,6 +52,9 @@ namespace slake {
 		/// @brief Stack overflowed.
 		StackOverflow,
 
+		/// @breif Malformed class structure.
+		MalformedClassStructure,
+
 		/// @brief An error occurred during the generic instantiation of a member.
 		GenericInstantiationError,
 	};
@@ -249,6 +252,24 @@ namespace slake {
 		SLAKE_API static UncaughtExceptionError *alloc(
 			Runtime *associatedRuntime,
 			Value exceptionValue);
+	};
+
+	class MalformedClassStructureError : public RuntimeExecError {
+	public:
+		ClassObject *classObject;
+
+		SLAKE_API MalformedClassStructureError(
+			Runtime *associatedRuntime,
+			ClassObject *classObject);
+		SLAKE_API virtual ~MalformedClassStructureError();
+
+		SLAKE_API virtual const char *what() const override;
+
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API static MalformedClassStructureError *alloc(
+			Runtime *associatedRuntime,
+			ClassObject *classObject);
 	};
 
 	enum class GenericInstantiationErrorCode : uint8_t {

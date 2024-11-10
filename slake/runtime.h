@@ -240,8 +240,9 @@ namespace slake {
 		/// @brief Do a GC cycle.
 		SLAKE_API void gc();
 
-		SLAKE_API MethodTable *initMethodTableForClass(ClassObject *cls, MethodTable *parentMethodTable);
-		SLAKE_API ObjectLayout *initObjectLayoutForClass(ClassObject *cls, ObjectLayout *parentObjectLayout);
+		SLAKE_API void initMethodTableForClass(ClassObject *cls, ClassObject *parentClass);
+		SLAKE_API void initObjectLayoutForClass(ClassObject *cls, ClassObject *parentClass);
+		SLAKE_API InternalExceptionPointer prepareClassForInstantiation(ClassObject *cls);
 		SLAKE_API HostObjectRef<InstanceObject> newClassInstance(ClassObject *cls, NewClassInstanceFlags flags);
 		SLAKE_API HostObjectRef<ArrayObject> newArrayInstance(Runtime *rt, const Type &type, size_t length);
 

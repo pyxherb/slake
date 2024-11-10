@@ -371,6 +371,36 @@ SLAKE_API UncaughtExceptionError *UncaughtExceptionError::alloc(
 	return ptr.release();
 }
 
+SLAKE_API MalformedClassStructureError::MalformedClassStructureError(
+	Runtime *associatedRuntime,
+	ClassObject *classObject) : RuntimeExecError(associatedRuntime, RuntimeExecErrorCode::MalformedClassStructure), classObject(classObject) {}
+SLAKE_API MalformedClassStructureError::~MalformedClassStructureError() {}
+
+SLAKE_API const char *MalformedClassStructureError::what() const {
+	return "Malformed class structure";
+}
+
+SLAKE_API void MalformedClassStructureError::dealloc() {
+	std::pmr::polymorphic_allocator<MalformedClassStructureError> allocator(&associatedRuntime->globalHeapPoolResource);
+
+	std::destroy_at(this);
+	allocator.deallocate(this, 1);
+}
+
+SLAKE_API MalformedClassStructureError *MalformedClassStructureError::alloc(
+	Runtime *associatedRuntime,
+	ClassObject *classObject) {
+	using Alloc = std::pmr::polymorphic_allocator<MalformedClassStructureError>;
+	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
+
+	std::unique_ptr<MalformedClassStructureError, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), associatedRuntime, classObject);
+
+	return ptr.release();
+}
+
 SLAKE_API GenericInstantiationError::GenericInstantiationError(
 	Runtime *associatedRuntime,
 	GenericInstantiationErrorCode instantiationErrorCode)

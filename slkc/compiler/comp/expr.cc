@@ -230,6 +230,26 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 						"Error deducing return type"));
 
 			for (size_t i = 0; i < e->args.size(); ++i) {
+				pushMinorContext();
+
+#if SLKC_WITH_LANGUAGE_SERVER
+				curMajorContext.curMinorContext.curCorrespondingArgIndex = i;
+				if (i < curMajorContext.curMinorContext.lastCallTargetParams.size()) {
+					curMajorContext.curMinorContext.curCorrespondingParam = curMajorContext.curMinorContext.lastCallTargetParams[i];
+					if (!i) {
+						updateCompletionContext(e->idxLParentheseToken, CompletionContext::Expr);
+						updateTokenInfo(e->idxLParentheseToken, [this, &i](TokenInfo &info) {
+							info.semanticInfo.correspondingParam = curMajorContext.curMinorContext.lastCallTargetParams[i];
+						});
+					} else {
+						updateCompletionContext(e->idxCommaTokens[i - 1], CompletionContext::Expr);
+						updateTokenInfo(e->idxCommaTokens[i - 1], [this, &i](TokenInfo &info) {
+							info.semanticInfo.correspondingParam = curMajorContext.curMinorContext.lastCallTargetParams[i];
+						});
+					}
+				}
+#endif
+
 				EvalPurpose evalPurpose = EvalPurpose::RValue;
 				if (i < curMajorContext.curMinorContext.lastCallTargetParams.size()) {
 					if (isLValueType(curMajorContext.curMinorContext.lastCallTargetParams[i]->type))
@@ -246,6 +266,8 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 						i < curMajorContext.curMinorContext.lastCallTargetParams.size()
 							? curMajorContext.curMinorContext.lastCallTargetParams[i]->type
 							: nullptr });
+
+				popMinorContext();
 			}
 
 			if (curMajorContext.curMinorContext.isLastCallTargetStatic)

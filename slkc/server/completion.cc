@@ -259,6 +259,14 @@ succeeded:
 	Token *token = document->lexer->tokens[idxToken].get();
 	TokenInfo &tokenInfo = document->tokenInfos[idxToken];
 
+	if (tokenInfo.semanticInfo.correspondingParam) {
+		CompletionItem item = {};
+
+		item.label = "*";
+
+		completionItems.push_back(item);
+	}
+
 	/*
 	for (size_t i = 0; i < keywordConditions->size(); ++i) {
 		std::string &s = keywordConditions[i];

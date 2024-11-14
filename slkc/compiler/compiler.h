@@ -93,6 +93,12 @@ namespace slake {
 			bool isArgTypesSet = false;
 
 			std::shared_ptr<AstNode> evalDest, thisDest;
+
+#if SLKC_WITH_LANGUAGE_SERVER
+			// For argument expression snippets.
+			size_t curCorrespondingArgIndex;
+			std::shared_ptr<ParamNode> curCorrespondingParam;
+#endif
 		};
 
 		/// @brief Block level context
@@ -170,6 +176,7 @@ namespace slake {
 			Name,		   // User is entering name of an identifier.
 			ModuleName,	   // User is entering name of a module.
 			Expr,		   // User is entering an expression.
+			ArgExpr,	   // User is entering an expression as an argument.
 			MemberAccess,  // User is accessing an member.
 		};
 
@@ -228,6 +235,8 @@ namespace slake {
 				bool isStatic = true;
 
 				std::shared_ptr<AstNode> correspondingMember;
+
+				std::shared_ptr<ParamNode> correspondingParam;
 
 				std::shared_ptr<IdRefNode> importedPath;
 			} semanticInfo;
@@ -630,7 +639,7 @@ namespace slake {
 				};
 			}
 
-			SourceDocument* getCurDoc() {
+			SourceDocument *getCurDoc() {
 				return sourceDocs.at(curDocName).get();
 			}
 		};

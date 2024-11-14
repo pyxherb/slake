@@ -31,6 +31,8 @@ bool Compiler::resolveIdRef(std::shared_ptr<IdRefNode> ref, IdRefResolvedParts &
 				tokenInfo.semanticInfo.isTopLevelRef = true;
 				if (!tokenInfo.semanticInfo.correspondingMember)
 					tokenInfo.semanticInfo.correspondingMember = localVar;
+				if (curMajorContext.curMinorContext.curCorrespondingParam)
+					tokenInfo.semanticInfo.correspondingParam = curMajorContext.curMinorContext.curCorrespondingParam;
 				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 				tokenInfo.semanticType = SemanticType::Var;
 			});
@@ -66,6 +68,8 @@ bool Compiler::resolveIdRef(std::shared_ptr<IdRefNode> ref, IdRefResolvedParts &
 					tokenInfo.semanticInfo.isTopLevelRef = true;
 					if (!tokenInfo.semanticInfo.correspondingMember)
 						tokenInfo.semanticInfo.correspondingMember = curFn->params[idxParam];
+					if (curMajorContext.curMinorContext.curCorrespondingParam)
+						tokenInfo.semanticInfo.correspondingParam = curMajorContext.curMinorContext.curCorrespondingParam;
 					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 					tokenInfo.semanticType = SemanticType::Param;
 				});
@@ -84,6 +88,8 @@ bool Compiler::resolveIdRef(std::shared_ptr<IdRefNode> ref, IdRefResolvedParts &
 				tokenInfo.semanticInfo.isTopLevelRef = true;
 				if (!tokenInfo.semanticInfo.correspondingMember)
 					tokenInfo.semanticInfo.correspondingMember = thisRefNode;
+				if (curMajorContext.curMinorContext.curCorrespondingParam)
+					tokenInfo.semanticInfo.correspondingParam = curMajorContext.curMinorContext.curCorrespondingParam;
 				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 				tokenInfo.semanticType = SemanticType::Keyword;
 			});
@@ -146,7 +152,9 @@ bool Compiler::_resolveIdRef(Scope *scope, std::shared_ptr<IdRefNode> ref, IdRef
 		if (!resolveContext.keepTokenScope)
 			tokenContext.curScope = scope->shared_from_this();
 
-		updateTokenInfo(curEntry.idxAccessOpToken, [&tokenContext, &resolveContext](TokenInfo &precedingAccessOpTokenInfo) {
+		updateTokenInfo(curEntry.idxAccessOpToken, [this, &tokenContext, &resolveContext](TokenInfo &precedingAccessOpTokenInfo) {
+			if (curMajorContext.curMinorContext.curCorrespondingParam)
+				precedingAccessOpTokenInfo.semanticInfo.correspondingParam = curMajorContext.curMinorContext.curCorrespondingParam;
 			precedingAccessOpTokenInfo.tokenContext = tokenContext;
 			precedingAccessOpTokenInfo.semanticInfo.isTopLevelRef = resolveContext.isTopLevel;
 			precedingAccessOpTokenInfo.semanticInfo.isStatic = resolveContext.isStatic;
@@ -155,7 +163,9 @@ bool Compiler::_resolveIdRef(Scope *scope, std::shared_ptr<IdRefNode> ref, IdRef
 				precedingAccessOpTokenInfo.completionContext = CompletionContext::MemberAccess;*/
 		});
 
-		updateTokenInfo(curEntry.idxToken, [&tokenContext, &resolveContext](TokenInfo &tokenInfo) {
+		updateTokenInfo(curEntry.idxToken, [this, &tokenContext, &resolveContext](TokenInfo &tokenInfo) {
+			if (curMajorContext.curMinorContext.curCorrespondingParam)
+				tokenInfo.semanticInfo.correspondingParam = curMajorContext.curMinorContext.curCorrespondingParam;
 			tokenInfo.tokenContext = tokenContext;
 			tokenInfo.semanticInfo.isTopLevelRef = resolveContext.isTopLevel;
 			tokenInfo.semanticInfo.isStatic = resolveContext.isStatic;

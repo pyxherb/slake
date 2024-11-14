@@ -26,7 +26,12 @@ Compiler::~Compiler() {
 void Compiler::reloadDoc(const std::string &docName) {
 	auto &doc = sourceDocs.at(docName);
 
-	doc->targetModule->parent->scope->members.erase(doc->targetModule->getName().name);
+	if (doc->targetModule->parent) {
+		doc->targetModule->parent->scope->members.erase(doc->targetModule->getName().name);
+	} else {
+		// The document is orphaned which may be caused by incomplete
+		// lexical analysis or parsing progress.
+	}
 
 	for (auto &i : doc->targetModule->imports) {
 		if (auto it = importedModules.find(i.second.ref->entries); it != importedModules.end()) {
@@ -229,7 +234,6 @@ void Compiler::validateScope(Scope *scope) {
 
 void Compiler::compile(std::istream &is, std::ostream &os) {
 	auto &doc = sourceDocs.at(curDocName);
-	auto _targetModule = doc->targetModule;
 
 	//
 	// Clear the previous generic cache.
@@ -253,6 +257,7 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 	try {
 		doc->lexer->lex(s);
 	} catch (LexicalError e) {
+		doc->lexer->tokens.clear();
 		throw FatalCompilationError(
 			Message(
 				SourceLocation{ e.position, e.position },
@@ -284,20 +289,20 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 #endif
 
 #if SLKC_WITH_LANGUAGE_SERVER
-	if (_targetModule->moduleName) {
-		updateCompletionContext(_targetModule->moduleName, CompletionContext::ModuleName);
-		updateSemanticType(_targetModule->moduleName, SemanticType::Var);
+	if (doc->targetModule->moduleName) {
+		updateCompletionContext(doc->targetModule->moduleName, CompletionContext::ModuleName);
+		updateSemanticType(doc->targetModule->moduleName, SemanticType::Var);
 
 		std::shared_ptr<IdRefNode> curRef = std::make_shared<IdRefNode>();
-		for (size_t i = 0; i < _targetModule->moduleName->entries.size(); ++i) {
-			updateTokenInfo(_targetModule->moduleName->entries[i].idxToken, [&curRef](TokenInfo &tokenInfo) {
+		for (size_t i = 0; i < doc->targetModule->moduleName->entries.size(); ++i) {
+			updateTokenInfo(doc->targetModule->moduleName->entries[i].idxToken, [&curRef](TokenInfo &tokenInfo) {
 				tokenInfo.semanticInfo.importedPath = curRef->duplicate<IdRefNode>();
 			});
-			updateTokenInfo(_targetModule->moduleName->entries[i].idxAccessOpToken, [&curRef](TokenInfo &tokenInfo) {
+			updateTokenInfo(doc->targetModule->moduleName->entries[i].idxAccessOpToken, [&curRef](TokenInfo &tokenInfo) {
 				tokenInfo.semanticInfo.importedPath = curRef->duplicate<IdRefNode>();
 			});
 
-			curRef->entries.push_back(_targetModule->moduleName->entries[i]);
+			curRef->entries.push_back(doc->targetModule->moduleName->entries[i]);
 		}
 	}
 #endif
@@ -307,39 +312,49 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 
 		memcpy(ih.magic, slxfmt::IMH_MAGIC, sizeof(ih.magic));
 		ih.fmtVer = 0;
-		ih.nImports = (uint16_t)(_targetModule->imports.size() + _targetModule->unnamedImports.size());
+		ih.nImports = (uint16_t)(doc->targetModule->imports.size() + doc->targetModule->unnamedImports.size());
 
-		if (_targetModule->moduleName)
+		if (doc->targetModule->moduleName)
 			ih.flags |= slxfmt::IMH_MODNAME;
 
 		os.write((char *)&ih, sizeof(ih));
 	}
 
-	if (_targetModule->moduleName && !isCompleteIdRef(_targetModule->moduleName->entries)) {
+	if (doc->targetModule->moduleName && !isCompleteIdRef(doc->targetModule->moduleName->entries)) {
 		throw FatalCompilationError(Message(
-			tokenRangeToSourceLocation(_targetModule->moduleName->entries.back().tokenRange),
+			tokenRangeToSourceLocation(doc->targetModule->moduleName->entries.back().tokenRange),
 			MessageType::Error,
 			"Expecting a complete module name"));
 	}
 
-	if (_targetModule->moduleName) {
-		auto trimmedModuleName = _targetModule->moduleName->duplicate<IdRefNode>();
+	if (doc->targetModule->moduleName) {
+		auto trimmedModuleName = doc->targetModule->moduleName->duplicate<IdRefNode>();
 		trimmedModuleName->entries.pop_back();
 
 		auto scope = completeModuleNamespaces(trimmedModuleName);
 
-		importedModules[_targetModule->moduleName->entries] = { curDocName };
+		importedModules[doc->targetModule->moduleName->entries] = { curDocName };
 
-		(scope->members[_targetModule->moduleName->entries.back().name] = _targetModule)->bind((MemberNode *)scope->owner);
-		_targetModule->scope->parent = scope.get();
+		(scope->members[doc->targetModule->moduleName->entries.back().name] = doc->targetModule)->bind((MemberNode *)scope->owner);
+		doc->targetModule->scope->parent = scope.get();
 
-		compileIdRef(os, _targetModule->moduleName);
+		compileIdRef(os, doc->targetModule->moduleName);
+	} else {
+		doc->targetModule->moduleName = std::make_shared<IdRefNode>(IdRefEntries{ IdRefEntry("<unnamed>") });
+		doc->messages.push_back(
+			Message(
+				SourceLocation {
+					SourcePosition{ 0, 0 },
+					SourcePosition{ 0, 0 } },
+				MessageType::Error,
+				"Missing module name"));
+		doc->targetModule->bind(_rootNode.get());
 	}
 
 	pushMajorContext();
 
 #if SLKC_WITH_LANGUAGE_SERVER
-	for (auto &i : _targetModule->imports) {
+	for (auto &i : doc->targetModule->imports) {
 		updateTokenInfo(i.second.idxNameToken, [this](TokenInfo &tokenInfo) {
 			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
 			tokenInfo.semanticType = SemanticType::Property;
@@ -361,7 +376,7 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 		}
 	}
 
-	for (auto &i : _targetModule->unnamedImports) {
+	for (auto &i : doc->targetModule->unnamedImports) {
 		updateCompletionContext(i.ref, CompletionContext::Import);
 		updateSemanticType(i.ref, SemanticType::Property);
 
@@ -379,7 +394,7 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 	}
 #endif
 
-	for (auto &i : _targetModule->imports) {
+	for (auto &i : doc->targetModule->imports) {
 		// Skip bad references.
 		// if (!isCompleteIdRef(i.second.ref))
 		//	continue;
@@ -394,17 +409,17 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 
 		popMajorContext();
 
-		if (_targetModule->scope->members.count(i.first))
+		if (doc->targetModule->scope->members.count(i.first))
 			throw FatalCompilationError(
 				Message(
 					doc->lexer->tokens[i.second.idxNameToken]->location,
 					MessageType::Error,
 					"The import item shadows an existing member"));
 
-		_targetModule->scope->members[i.first] = std::make_shared<AliasNode>(this, i.first, i.second.ref);
+		doc->targetModule->scope->members[i.first] = std::make_shared<AliasNode>(this, i.first, i.second.ref);
 	}
 
-	for (auto &i : _targetModule->unnamedImports) {
+	for (auto &i : doc->targetModule->unnamedImports) {
 		// Skip bad references.
 		// if (!isCompleteIdRef(i.ref))
 		//	continue;
@@ -421,9 +436,9 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 
 	popMajorContext();
 
-	validateScope(_targetModule->scope.get());
+	validateScope(doc->targetModule->scope.get());
 	curMajorContext = MajorContext();
-	compileScope(is, os, _targetModule->scope);
+	compileScope(is, os, doc->targetModule->scope);
 }
 
 void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<Scope> scope) {

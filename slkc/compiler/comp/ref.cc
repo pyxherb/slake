@@ -439,6 +439,10 @@ void Compiler::_getFullName(MemberNode *member, IdRefEntries &ref) {
 			break;
 		}
 		default:
+			if ((!member->parent)) {
+				ref.push_front(IdRefEntry("<orphaned>"));
+				return;
+			}
 			if (member->parent == _rootNode.get())
 				return;
 			_getFullName(member->parent, ref);

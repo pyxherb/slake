@@ -53,10 +53,10 @@ static std::map<BinaryOp, BinaryOp> _assignBinaryOpToOrdinaryBinaryOpMap = {
 	{ BinaryOp::AssignRsh, BinaryOp::Rsh }
 };
 
-void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::shared_ptr<TypeNameNode> lhsType, std::shared_ptr<TypeNameNode> rhsType) {
+void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_ptr<BinaryOpExprNode> e, std::shared_ptr<TypeNameNode> lhsType, std::shared_ptr<TypeNameNode> rhsType) {
 #if SLKC_WITH_LANGUAGE_SERVER
-	updateTokenInfo(e->idxOpToken, [this](TokenInfo &tokenInfo) {
-		tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+	updateTokenInfo(e->idxOpToken, [this, compileContext](TokenInfo &tokenInfo) {
+		tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curMajorContext);
 		tokenInfo.semanticType = SemanticType::Operator;
 	});
 	updateCompletionContext(e->idxOpToken, CompletionContext::Expr);
@@ -77,57 +77,57 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 	std::shared_ptr<TypeNameNode> resultType;
 
-	curMajorContext.curMinorContext.expectedType = lhsType;
+	compileContext->curMajorContext.curMinorContext.expectedType = lhsType;
 
 	bool isLhsTypeLValue = isLValueType(lhsType), isRhsTypeLValue = isLValueType(rhsType);
 
-	uint32_t resultRegIndex = allocReg();
+	uint32_t resultRegIndex = compileContext->allocReg();
 
 	auto &opReg = _binaryOpRegs.at(e->op);
 
 	auto compileOrCastOperand =
-		[this, e](
+		[this, e, &compileContext](
 			std::shared_ptr<ExprNode> operand,
 			std::shared_ptr<TypeNameNode> operandType,
 			std::shared_ptr<TypeNameNode> targetType,
 			EvalPurpose evalPurpose,
 			std::shared_ptr<AstNode> destOut) {
-			if (!isSameType(operandType, targetType)) {
-				if (!isTypeNamesConvertible(operandType, targetType))
+			if (!isSameType(compileContext, operandType, targetType)) {
+				if (!isTypeNamesConvertible(compileContext, operandType, targetType))
 					throw FatalCompilationError(
 						{ tokenRangeToSourceLocation(e->rhs->tokenRange),
 							MessageType::Error,
 							"Incompatible operand types" });
 
-				compileExpr(
+				compileExpr(compileContext, 
 					std::make_shared<CastExprNode>(targetType, operand),
 					evalPurpose,
 					destOut);
 			} else
-				compileExpr(e->rhs, evalPurpose, destOut);
+				compileExpr(compileContext, e->rhs, evalPurpose, destOut);
 		};
-	auto compileShortCircuitOperator = [this, e, lhsType, rhsType, &opReg, resultRegIndex]() {
-		uint32_t lhsRegIndex = allocReg();
+	auto compileShortCircuitOperator = [this, e, lhsType, rhsType, &opReg, resultRegIndex, &compileContext]() {
+		uint32_t lhsRegIndex = compileContext->allocReg();
 
 		auto boolType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 
 		// Compile the LHS.
 		// The LHS must be a boolean expression.
-		if (!isSameType(lhsType, boolType)) {
-			if (!isTypeNamesConvertible(lhsType, boolType))
+		if (!isSameType(compileContext, lhsType, boolType)) {
+			if (!isTypeNamesConvertible(compileContext, lhsType, boolType))
 				throw FatalCompilationError(
 					{ tokenRangeToSourceLocation(e->lhs->tokenRange),
 						MessageType::Error,
 						"Incompatible operand types" });
 
-			compileExpr(
+			compileExpr(compileContext, 
 				std::make_shared<CastExprNode>(boolType, e->lhs),
 				opReg.isLhsLvalue
 					? EvalPurpose::LValue
 					: EvalPurpose::RValue,
 				std::make_shared<RegRefNode>(lhsRegIndex));
 		} else
-			compileExpr(
+			compileExpr(compileContext, 
 				e->lhs,
 				opReg.isLhsLvalue
 					? EvalPurpose::LValue
@@ -138,7 +138,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 		std::string endLabel = "$short_circuit_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_end";
 
 		// Jump to the end if the left expression is enough to get the final result.
-		_insertIns(
+		compileContext->_insertIns(
 			e->op == BinaryOp::LOr ? Opcode::JT : Opcode::JF,
 			{},
 			{ std::make_shared<LabelRefNode>(endLabel),
@@ -146,78 +146,78 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 		// Compile the RHS.
 		// The RHS also must be a boolean expression.
-		uint32_t rhsRegIndex = allocReg();
+		uint32_t rhsRegIndex = compileContext->allocReg();
 
-		if (!isSameType(rhsType, boolType)) {
-			if (!isTypeNamesConvertible(rhsType, boolType))
+		if (!isSameType(compileContext, rhsType, boolType)) {
+			if (!isTypeNamesConvertible(compileContext, rhsType, boolType))
 				throw FatalCompilationError(
 					{ tokenRangeToSourceLocation(e->rhs->tokenRange),
 						MessageType::Error,
 						"Incompatible operand types" });
 
-			compileExpr(
+			compileExpr(compileContext, 
 				std::make_shared<CastExprNode>(boolType, e->rhs),
 				opReg.isRhsLvalue
 					? EvalPurpose::LValue
 					: EvalPurpose::RValue,
 				std::make_shared<RegRefNode>(lhsRegIndex));
 		} else
-			compileExpr(
+			compileExpr(compileContext, 
 				e->rhs,
 				opReg.isRhsLvalue
 					? EvalPurpose::LValue
 					: EvalPurpose::RValue,
 				std::make_shared<RegRefNode>(rhsRegIndex));
 
-		_insertIns(
+		compileContext->_insertIns(
 			opReg.opcode,
 			std::make_shared<RegRefNode>(resultRegIndex),
 			{ std::make_shared<RegRefNode>(lhsRegIndex),
 				std::make_shared<RegRefNode>(rhsRegIndex) });
 
-		_insertLabel(endLabel);
+		compileContext->_insertLabel(endLabel);
 	};
-	auto execOpAndStoreResult = [this, e, lhsType, &opReg, resultRegIndex](uint32_t lhsRegIndex, uint32_t rhsRegIndex) {
+	auto execOpAndStoreResult = [this, e, lhsType, &opReg, resultRegIndex, &compileContext](uint32_t lhsRegIndex, uint32_t rhsRegIndex) {
 		if (isAssignBinaryOp(e->op)) {
 			BinaryOp ordinaryOp = _assignBinaryOpToOrdinaryBinaryOpMap.at(e->op);
 
 			if (ordinaryOp != BinaryOp::Assign) {
-				uint32_t lhsValueRegIndex = allocReg();
+				uint32_t lhsValueRegIndex = compileContext->allocReg();
 
 				// Load value of the LHS.
-				_insertIns(
+				compileContext->_insertIns(
 					Opcode::LVALUE,
 					std::make_shared<RegRefNode>(lhsValueRegIndex),
 					{ std::make_shared<RegRefNode>(lhsRegIndex) });
 
 				// Execute the operation.
-				_insertIns(
+				compileContext->_insertIns(
 					_binaryOpRegs.at(ordinaryOp).opcode,
 					std::make_shared<RegRefNode>(resultRegIndex),
 					{ std::make_shared<RegRefNode>(lhsValueRegIndex),
 						std::make_shared<RegRefNode>(rhsRegIndex) });
 
 				// Store the result to the LHS.
-				_insertIns(
+				compileContext->_insertIns(
 					Opcode::STORE,
 					{},
 					{ std::make_shared<RegRefNode>(lhsRegIndex),
 						std::make_shared<RegRefNode>(resultRegIndex) });
 			} else {
 				// Ordinary assignment operation.
-				_insertIns(
+				compileContext->_insertIns(
 					Opcode::STORE,
 					{},
 					{ std::make_shared<RegRefNode>(lhsRegIndex),
 						std::make_shared<RegRefNode>(rhsRegIndex) });
-				_insertIns(
+				compileContext->_insertIns(
 					Opcode::MOV,
 					std::make_shared<RegRefNode>(resultRegIndex),
 					{ std::make_shared<RegRefNode>(lhsRegIndex) });
 			}
 		} else {
 			// Execute the operation.
-			_insertIns(
+			compileContext->_insertIns(
 				opReg.opcode,
 				std::make_shared<RegRefNode>(resultRegIndex),
 				{ std::make_shared<RegRefNode>(lhsRegIndex),
@@ -247,10 +247,10 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 				case BinaryOp::Gt:
 				case BinaryOp::LtEq:
 				case BinaryOp::GtEq: {
-					uint32_t lhsRegIndex = allocReg();
-					uint32_t rhsRegIndex = allocReg();
+					uint32_t lhsRegIndex = compileContext->allocReg();
+					uint32_t rhsRegIndex = compileContext->allocReg();
 
-					compileExpr(
+					compileExpr(compileContext, 
 						e->lhs,
 						opReg.isLhsLvalue
 							? EvalPurpose::LValue
@@ -275,10 +275,10 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 				case BinaryOp::Rsh:
 				case BinaryOp::AssignLsh:
 				case BinaryOp::AssignRsh: {
-					uint32_t lhsRegIndex = allocReg(),
-							 rhsRegIndex = allocReg();
+					uint32_t lhsRegIndex = compileContext->allocReg(),
+							 rhsRegIndex = compileContext->allocReg();
 
-					compileExpr(
+					compileExpr(compileContext, 
 						e->lhs,
 						opReg.isLhsLvalue
 							? EvalPurpose::LValue
@@ -317,10 +317,10 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 				case BinaryOp::AssignAnd:
 				case BinaryOp::AssignOr:
 				case BinaryOp::AssignXor: {
-					uint32_t lhsRegIndex = allocReg();
-					uint32_t rhsRegIndex = allocReg();
+					uint32_t lhsRegIndex = compileContext->allocReg();
+					uint32_t rhsRegIndex = compileContext->allocReg();
 
-					compileExpr(
+					compileExpr(compileContext, 
 						e->lhs,
 						opReg.isLhsLvalue
 							? EvalPurpose::LValue
@@ -370,10 +370,10 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 				case BinaryOp::Gt:
 				case BinaryOp::LtEq:
 				case BinaryOp::GtEq: {
-					uint32_t lhsRegIndex = allocReg();
-					uint32_t rhsRegIndex = allocReg();
+					uint32_t lhsRegIndex = compileContext->allocReg();
+					uint32_t rhsRegIndex = compileContext->allocReg();
 
-					compileExpr(
+					compileExpr(compileContext, 
 						e->lhs,
 						opReg.isLhsLvalue
 							? EvalPurpose::LValue
@@ -405,10 +405,10 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 				case BinaryOp::AssignMul:
 				case BinaryOp::AssignDiv:
 				case BinaryOp::AssignMod: {
-					uint32_t lhsRegIndex = allocReg();
-					uint32_t rhsRegIndex = allocReg();
+					uint32_t lhsRegIndex = compileContext->allocReg();
+					uint32_t rhsRegIndex = compileContext->allocReg();
 
-					compileExpr(
+					compileExpr(compileContext, 
 						e->lhs,
 						opReg.isLhsLvalue
 							? EvalPurpose::LValue
@@ -453,10 +453,10 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					break;
 				case BinaryOp::Eq:
 				case BinaryOp::Neq: {
-					uint32_t lhsRegIndex = allocReg();
-					uint32_t rhsRegIndex = allocReg();
+					uint32_t lhsRegIndex = compileContext->allocReg();
+					uint32_t rhsRegIndex = compileContext->allocReg();
 
-					compileExpr(
+					compileExpr(compileContext, 
 						e->lhs,
 						opReg.isLhsLvalue
 							? EvalPurpose::LValue
@@ -478,10 +478,10 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					break;
 				}
 				case BinaryOp::Assign: {
-					uint32_t lhsRegIndex = allocReg();
-					uint32_t rhsRegIndex = allocReg();
+					uint32_t lhsRegIndex = compileContext->allocReg();
+					uint32_t rhsRegIndex = compileContext->allocReg();
 
-					compileExpr(
+					compileExpr(compileContext, 
 						e->lhs,
 						opReg.isLhsLvalue
 							? EvalPurpose::LValue
@@ -516,10 +516,10 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 		case TypeId::String: {
 			switch (e->op) {
 				case BinaryOp::Add: {
-					uint32_t lhsRegIndex = allocReg(),
-							 rhsRegIndex = allocReg();
+					uint32_t lhsRegIndex = compileContext->allocReg(),
+							 rhsRegIndex = compileContext->allocReg();
 
-					compileExpr(
+					compileExpr(compileContext, 
 						e->lhs,
 						opReg.isLhsLvalue
 							? EvalPurpose::LValue
@@ -534,7 +534,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							: EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(rhsRegIndex));
 
-					_insertIns(
+					compileContext->_insertIns(
 						opReg.opcode,
 						std::make_shared<RegRefNode>(resultRegIndex),
 						{ std::make_shared<RegRefNode>(lhsRegIndex),
@@ -545,10 +545,10 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					break;
 				}
 				case BinaryOp::Subscript: {
-					uint32_t lhsRegIndex = allocReg(),
-							 rhsRegIndex = allocReg();
+					uint32_t lhsRegIndex = compileContext->allocReg(),
+							 rhsRegIndex = compileContext->allocReg();
 
-					compileExpr(
+					compileExpr(compileContext, 
 						e->lhs,
 						opReg.isLhsLvalue
 							? EvalPurpose::LValue
@@ -563,7 +563,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							: EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(rhsRegIndex));
 
-					_insertIns(
+					compileContext->_insertIns(
 						opReg.opcode,
 						std::make_shared<RegRefNode>(resultRegIndex),
 						{ std::make_shared<RegRefNode>(lhsRegIndex),
@@ -585,12 +585,12 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 		case TypeId::Array: {
 			switch (e->op) {
 				case BinaryOp::Subscript: {
-					uint32_t lhsRegIndex = allocReg(),
-							 rhsRegIndex = allocReg();
+					uint32_t lhsRegIndex = compileContext->allocReg(),
+							 rhsRegIndex = compileContext->allocReg();
 
 					auto u32Type = std::make_shared<U32TypeNameNode>(SIZE_MAX);
 
-					compileExpr(
+					compileExpr(compileContext, 
 						e->lhs,
 						opReg.isLhsLvalue
 							? EvalPurpose::LValue
@@ -605,7 +605,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							: EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(rhsRegIndex));
 
-					_insertIns(
+					compileContext->_insertIns(
 						opReg.opcode,
 						std::make_shared<RegRefNode>(resultRegIndex),
 						{ std::make_shared<RegRefNode>(lhsRegIndex),
@@ -629,10 +629,10 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 			break;
 		}
 		case TypeId::Custom: {
-			auto node = resolveCustomTypeName(std::static_pointer_cast<CustomTypeNameNode>(lhsType).get());
-			auto lhsType = evalExprType(e->lhs), rhsType = evalExprType(e->rhs);
+			auto node = resolveCustomTypeName(compileContext, std::static_pointer_cast<CustomTypeNameNode>(lhsType).get());
+			auto lhsType = evalExprType(compileContext, e->lhs), rhsType = evalExprType(compileContext, e->rhs);
 
-			auto determineOverloading = [this, e, rhsType, resultRegIndex, &resultType](std::shared_ptr<MemberNode> n, uint32_t lhsRegIndex) -> bool {
+			auto determineOverloading = [this, e, rhsType, resultRegIndex, &resultType, &compileContext](std::shared_ptr<MemberNode> n, uint32_t lhsRegIndex) -> bool {
 				if (auto it = n->scope->members.find("operator" + std::to_string(e->op));
 					it != n->scope->members.end()) {
 					assert(it->second->getNodeType() == NodeType::Fn);
@@ -640,7 +640,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					std::shared_ptr<FnOverloadingNode> overloading;
 
 					{
-						auto overloadings = argDependentLookup(operatorNode.get(), { rhsType }, {});
+						auto overloadings = argDependentLookup(compileContext, operatorNode.get(), { rhsType }, {});
 						if (overloadings.size() != 1)
 							return false;
 						overloading = overloadings[0];
@@ -655,16 +655,16 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 #endif
 					}
 
-					compileExpr(
+					compileExpr(compileContext, 
 						e->lhs,
 						EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
 
 					std::shared_ptr<IdRefNode> operatorName = std::make_shared<IdRefNode>(IdRefEntries{ overloading->getName() });
 
-					uint32_t tmpRegIndex = allocReg();
+					uint32_t tmpRegIndex = compileContext->allocReg();
 
-					if (auto ce = evalConstExpr(e->rhs); ce) {
+					if (auto ce = evalConstExpr(compileContext, e->rhs); ce) {
 						// Check if the parameter requires a lvalue argument.
 						if (isLValueType(overloading->params[0]->type))
 							throw FatalCompilationError(
@@ -673,30 +673,30 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 									MessageType::Error,
 									"Expecting a lvalue expression"));
 
-						_insertIns(Opcode::PUSHARG, {}, { ce, overloading->params[0]->type });
+						compileContext->_insertIns(Opcode::PUSHARG, {}, { ce, overloading->params[0]->type });
 					} else {
-						compileExpr(
+						compileExpr(compileContext, 
 							e->rhs,
 							isLValueType(overloading->params[0]->type)
 								? EvalPurpose::LValue
 								: EvalPurpose::RValue,
 							std::make_shared<RegRefNode>(tmpRegIndex));
-						_insertIns(Opcode::PUSHARG, {}, { std::make_shared<RegRefNode>(tmpRegIndex), overloading->params[0]->type });
+						compileContext->_insertIns(Opcode::PUSHARG, {}, { std::make_shared<RegRefNode>(tmpRegIndex), overloading->params[0]->type });
 					}
 
-					uint32_t callTargetRegIndex = allocReg();
+					uint32_t callTargetRegIndex = compileContext->allocReg();
 					if (overloading->isVirtual) {
-						_insertIns(Opcode::RLOAD,
+						compileContext->_insertIns(Opcode::RLOAD,
 							std::make_shared<RegRefNode>(callTargetRegIndex),
 							{ std::make_shared<RegRefNode>(lhsRegIndex),
 								std::make_shared<IdRefExprNode>(operatorName) });
 					} else {
 						auto fullName = getFullName(overloading.get());
-						_insertIns(Opcode::LOAD,
+						compileContext->_insertIns(Opcode::LOAD,
 							std::make_shared<RegRefNode>(callTargetRegIndex),
 							{ std::make_shared<IdRefExprNode>(fullName) });
 					}
-					_insertIns(Opcode::MCALL,
+					compileContext->_insertIns(Opcode::MCALL,
 						{},
 						{ std::make_shared<RegRefNode>(callTargetRegIndex), std::make_shared<RegRefNode>(lhsRegIndex) });
 
@@ -706,7 +706,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					});
 #endif
 
-					_insertIns(Opcode::LRET, std::make_shared<RegRefNode>(resultRegIndex), {});
+					compileContext->_insertIns(Opcode::LRET, std::make_shared<RegRefNode>(resultRegIndex), {});
 
 					resultType = overloading->returnType;
 
@@ -718,13 +718,13 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 			switch (node->getNodeType()) {
 				case NodeType::Class:
 				case NodeType::Interface: {
-					uint32_t lhsRegIndex = allocReg();
+					uint32_t lhsRegIndex = compileContext->allocReg();
 
 					switch (e->op) {
 						case BinaryOp::Assign: {
-							uint32_t rhsRegIndex = allocReg();
+							uint32_t rhsRegIndex = compileContext->allocReg();
 
-							compileExpr(
+							compileExpr(compileContext, 
 								e->lhs,
 								EvalPurpose::LValue,
 								std::make_shared<RegRefNode>(lhsRegIndex));
@@ -735,12 +735,12 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 								EvalPurpose::RValue,
 								std::make_shared<RegRefNode>(rhsRegIndex));
 
-							_insertIns(
+							compileContext->_insertIns(
 								Opcode::STORE,
 								{},
 								{ std::make_shared<RegRefNode>(lhsRegIndex),
 									std::make_shared<RegRefNode>(rhsRegIndex) });
-							_insertIns(
+							compileContext->_insertIns(
 								Opcode::MOV,
 								std::make_shared<RegRefNode>(resultRegIndex),
 								{ std::make_shared<RegRefNode>(lhsRegIndex) });
@@ -751,9 +751,9 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 						}
 						case BinaryOp::StrictEq:
 						case BinaryOp::StrictNeq: {
-							uint32_t rhsRegIndex = allocReg();
+							uint32_t rhsRegIndex = compileContext->allocReg();
 
-							compileExpr(
+							compileExpr(compileContext, 
 								e->lhs,
 								EvalPurpose::RValue,
 								std::make_shared<RegRefNode>(lhsRegIndex));
@@ -767,7 +767,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 								EvalPurpose::RValue,
 								std::make_shared<RegRefNode>(rhsRegIndex));
 
-							_insertIns(
+							compileContext->_insertIns(
 								opReg.opcode,
 								std::make_shared<RegRefNode>(resultRegIndex),
 								{ std::make_shared<RegRefNode>(lhsRegIndex),
@@ -791,15 +791,15 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					break;
 				}
 				case NodeType::GenericParam: {
-					uint32_t lhsRegIndex = allocReg();
+					uint32_t lhsRegIndex = compileContext->allocReg();
 
 					std::shared_ptr<GenericParamNode> n = std::static_pointer_cast<GenericParamNode>(node);
 
 					switch (e->op) {
 						case BinaryOp::Assign: {
-							uint32_t rhsRegIndex = allocReg();
+							uint32_t rhsRegIndex = compileContext->allocReg();
 
-							compileExpr(
+							compileExpr(compileContext, 
 								e->lhs,
 								EvalPurpose::LValue,
 								std::make_shared<RegRefNode>(lhsRegIndex));
@@ -810,12 +810,12 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 								EvalPurpose::RValue,
 								std::make_shared<RegRefNode>(rhsRegIndex));
 
-							_insertIns(
+							compileContext->_insertIns(
 								Opcode::STORE,
 								{},
 								{ std::make_shared<RegRefNode>(lhsRegIndex),
 									std::make_shared<RegRefNode>(rhsRegIndex) });
-							_insertIns(
+							compileContext->_insertIns(
 								Opcode::MOV,
 								std::make_shared<RegRefNode>(resultRegIndex),
 								{ std::make_shared<RegRefNode>(lhsRegIndex) });
@@ -826,9 +826,9 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 						}
 						case BinaryOp::StrictEq:
 						case BinaryOp::StrictNeq: {
-							uint32_t rhsRegIndex = allocReg();
+							uint32_t rhsRegIndex = compileContext->allocReg();
 
-							compileExpr(
+							compileExpr(compileContext, 
 								e->lhs,
 								EvalPurpose::RValue,
 								std::make_shared<RegRefNode>(lhsRegIndex));
@@ -842,7 +842,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 								EvalPurpose::RValue,
 								std::make_shared<RegRefNode>(rhsRegIndex));
 
-							_insertIns(
+							compileContext->_insertIns(
 								opReg.opcode,
 								std::make_shared<RegRefNode>(resultRegIndex),
 								{ std::make_shared<RegRefNode>(lhsRegIndex),
@@ -855,7 +855,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							std::shared_ptr<AstNode> curMember;
 
 							if (n->baseType) {
-								curMember = resolveCustomTypeName((CustomTypeNameNode *)n->baseType.get());
+								curMember = resolveCustomTypeName(compileContext, (CustomTypeNameNode *)n->baseType.get());
 
 								if (curMember->getNodeType() != NodeType::Class)
 									throw FatalCompilationError(
@@ -869,7 +869,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 							}
 
 							for (auto &i : n->interfaceTypes) {
-								curMember = resolveCustomTypeName((CustomTypeNameNode *)i.get());
+								curMember = resolveCustomTypeName(compileContext, (CustomTypeNameNode *)i.get());
 
 								if (curMember->getNodeType() != NodeType::Interface)
 									throw FatalCompilationError(
@@ -911,7 +911,7 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 
 	assert(resultType);
 
-	if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue) {
+	if (compileContext->curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue) {
 		if (!isLValueType(resultType))
 			throw FatalCompilationError(
 				Message(
@@ -920,8 +920,8 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 					"Expecting a lvalue expression"));
 	} else {
 		if (isLValueType(resultType)) {
-			uint32_t newResultRegIndex = allocReg();
-			_insertIns(
+			uint32_t newResultRegIndex = compileContext->allocReg();
+			compileContext->_insertIns(
 				Opcode::LVALUE,
 				std::make_shared<RegRefNode>(newResultRegIndex),
 				{ std::make_shared<RegRefNode>(resultRegIndex) });
@@ -929,11 +929,11 @@ void Compiler::compileBinaryOpExpr(std::shared_ptr<BinaryOpExprNode> e, std::sha
 		}
 	}
 
-	if (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt)
-		_insertIns(
+	if (compileContext->curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt)
+		compileContext->_insertIns(
 			Opcode::MOV,
-			curMajorContext.curMinorContext.evalDest,
+			compileContext->curMajorContext.curMinorContext.evalDest,
 			{ std::make_shared<RegRefNode>(resultRegIndex) });
 
-	curMajorContext.curMinorContext.evaluatedType = resultType;
+	compileContext->curMajorContext.curMinorContext.evaluatedType = resultType;
 }

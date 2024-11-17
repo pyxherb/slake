@@ -10,7 +10,7 @@ static void _throwCyclicInheritanceError(const SourceLocation &loc) {
 			"Cyclic inheritance detected"));
 }
 
-void Compiler::verifyInheritanceChain(ClassNode *node, std::set<AstNode *> &walkedNodes) {
+void Compiler::verifyInheritanceChain(CompileContext *compileContext, ClassNode *node, std::set<AstNode *> &walkedNodes) {
 	walkedNodes.insert(node);
 
 	if (node->parentClass) {
@@ -25,7 +25,7 @@ void Compiler::verifyInheritanceChain(ClassNode *node, std::set<AstNode *> &walk
 					MessageType::Error,
 					"The type cannot be inherited"));
 
-		auto cls = resolveCustomTypeName((CustomTypeNameNode *)node->parentClass.get());
+		auto cls = resolveCustomTypeName(compileContext, (CustomTypeNameNode *)node->parentClass.get());
 
 		if (cls->getNodeType() != NodeType::Class)
 			throw FatalCompilationError(
@@ -39,7 +39,7 @@ void Compiler::verifyInheritanceChain(ClassNode *node, std::set<AstNode *> &walk
 		if (walkedNodes.count(m.get()))
 			_throwCyclicInheritanceError(tokenRangeToSourceLocation(node->parentClass->tokenRange));
 
-		verifyInheritanceChain(m->originalValue ? (ClassNode *)m->originalValue : m.get(), walkedNodes);
+		verifyInheritanceChain(compileContext, m->originalValue ? (ClassNode *)m->originalValue : m.get(), walkedNodes);
 	}
 
 	for (auto &i : node->implInterfaces) {
@@ -54,7 +54,7 @@ void Compiler::verifyInheritanceChain(ClassNode *node, std::set<AstNode *> &walk
 					MessageType::Error,
 					"The type cannot be implemented"));
 
-		auto parent = resolveCustomTypeName((CustomTypeNameNode *)i.get());
+		auto parent = resolveCustomTypeName(compileContext, (CustomTypeNameNode *)i.get());
 
 		if (parent->getNodeType() != NodeType::Interface)
 			throw FatalCompilationError(
@@ -68,11 +68,11 @@ void Compiler::verifyInheritanceChain(ClassNode *node, std::set<AstNode *> &walk
 		if (walkedNodes.count(m.get()))
 			_throwCyclicInheritanceError(tokenRangeToSourceLocation(i->tokenRange));
 
-		verifyInheritanceChain(m->originalValue ? (InterfaceNode *)m->originalValue : m.get(), walkedNodes);
+		verifyInheritanceChain(compileContext, m->originalValue ? (InterfaceNode *)m->originalValue : m.get(), walkedNodes);
 	}
 }
 
-void Compiler::verifyInheritanceChain(InterfaceNode *node, std::set<AstNode *> &walkedNodes) {
+void Compiler::verifyInheritanceChain(CompileContext *compileContext, InterfaceNode *node, std::set<AstNode *> &walkedNodes) {
 	walkedNodes.insert(node);
 
 	for (auto &i : node->parentInterfaces) {
@@ -87,7 +87,7 @@ void Compiler::verifyInheritanceChain(InterfaceNode *node, std::set<AstNode *> &
 					MessageType::Error,
 					"Specified type cannot be implemented"));
 
-		auto parent = resolveCustomTypeName((CustomTypeNameNode *)i.get());
+		auto parent = resolveCustomTypeName(compileContext, (CustomTypeNameNode *)i.get());
 
 		if (parent->getNodeType() != NodeType::Interface)
 			throw FatalCompilationError(
@@ -101,11 +101,11 @@ void Compiler::verifyInheritanceChain(InterfaceNode *node, std::set<AstNode *> &
 		if (walkedNodes.count(m.get()))
 			_throwCyclicInheritanceError(tokenRangeToSourceLocation(i->tokenRange));
 
-		verifyInheritanceChain(m->originalValue ? (InterfaceNode *)m->originalValue : m.get(), walkedNodes);
+		verifyInheritanceChain(compileContext, m->originalValue ? (InterfaceNode *)m->originalValue : m.get(), walkedNodes);
 	}
 }
 
-void Compiler::verifyInheritanceChain(GenericParamNode *node, std::set<AstNode *> &walkedNodes) {
+void Compiler::verifyInheritanceChain(CompileContext *compileContext, GenericParamNode *node, std::set<AstNode *> &walkedNodes) {
 	walkedNodes.insert(node);
 
 	if (node->baseType) {
@@ -118,13 +118,13 @@ void Compiler::verifyInheritanceChain(GenericParamNode *node, std::set<AstNode *
 					"The type cannot be inherited"));
 
 		auto t = std::static_pointer_cast<CustomTypeNameNode>(typeName);
-		auto m = resolveCustomTypeName(t.get());
+		auto m = resolveCustomTypeName(compileContext, t.get());
 
 		if (walkedNodes.count(m.get()))
 			_throwCyclicInheritanceError(tokenRangeToSourceLocation(t->tokenRange));
 
 		if (m->getNodeType() == NodeType::GenericParam)
-			verifyInheritanceChain((GenericParamNode*)m.get(), walkedNodes);
+			verifyInheritanceChain(compileContext, (GenericParamNode *)m.get(), walkedNodes);
 	}
 
 	for (auto &i : node->interfaceTypes) {
@@ -136,28 +136,28 @@ void Compiler::verifyInheritanceChain(GenericParamNode *node, std::set<AstNode *
 					"The type cannot be implemented"));
 
 		auto t = std::static_pointer_cast<CustomTypeNameNode>(i);
-		auto m = resolveCustomTypeName(t.get());
+		auto m = resolveCustomTypeName(compileContext, t.get());
 
 		if (walkedNodes.count(m.get()))
 			_throwCyclicInheritanceError(tokenRangeToSourceLocation(t->tokenRange));
 
 		if (m->getNodeType() == NodeType::GenericParam)
-			verifyInheritanceChain((GenericParamNode *)m.get(), walkedNodes);
+			verifyInheritanceChain(compileContext, (GenericParamNode *)m.get(), walkedNodes);
 	}
 }
 
-void Compiler::verifyGenericParams(const GenericParamNodeList &params) {
+void Compiler::verifyGenericParams(CompileContext *compileContext, const GenericParamNodeList &params) {
 	auto indices = genGenericParamIndicies(params);
 
-	auto verifySingleParam = [this, &indices](std::shared_ptr<TypeNameNode> typeName) {
+	auto verifySingleParam = [this, &indices, &compileContext](std::shared_ptr<TypeNameNode> typeName) {
 		{
 			auto t = std::static_pointer_cast<CustomTypeNameNode>(typeName);
-			auto dest = resolveCustomTypeName(t.get());
+			auto dest = resolveCustomTypeName(compileContext, t.get());
 
 			if (dest->getNodeType() == NodeType::GenericParam) {
 				auto d = std::static_pointer_cast<GenericParamNode>(dest);
 
-				verifyInheritanceChain(d.get());
+				verifyInheritanceChain(compileContext, d.get());
 			}
 		}
 	};
@@ -173,12 +173,12 @@ void Compiler::verifyGenericParams(const GenericParamNodeList &params) {
 						"The type cannot be inherited"));
 
 			auto t = std::static_pointer_cast<CustomTypeNameNode>(typeName);
-			auto dest = resolveCustomTypeName(t.get());
+			auto dest = resolveCustomTypeName(compileContext, t.get());
 
 			if (dest->getNodeType() == NodeType::GenericParam) {
 				auto d = std::static_pointer_cast<GenericParamNode>(dest);
 
-				verifyInheritanceChain(d.get());
+				verifyInheritanceChain(compileContext, d.get());
 			}
 		}
 
@@ -191,12 +191,12 @@ void Compiler::verifyGenericParams(const GenericParamNodeList &params) {
 						"The type cannot be implemented"));
 
 			auto t = std::static_pointer_cast<CustomTypeNameNode>(j);
-			auto dest = resolveCustomTypeName(t.get());
+			auto dest = resolveCustomTypeName(compileContext, t.get());
 
 			if (dest->getNodeType() == NodeType::GenericParam) {
 				auto d = std::static_pointer_cast<GenericParamNode>(dest);
 
-				verifyInheritanceChain(d.get());
+				verifyInheritanceChain(compileContext, d.get());
 			}
 		}
 	}

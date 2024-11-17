@@ -2,14 +2,14 @@
 
 using namespace slake::slkc;
 
-uint32_t Compiler::allocLocalVar(std::string name, std::shared_ptr<TypeNameNode> type) {
+uint32_t CompileContext::allocLocalVar(std::string name, std::shared_ptr<TypeNameNode> type) {
 	if (curMajorContext.curMinorContext.dryRun)
 		return UINT32_MAX;
 
 	if (curMajorContext.curMinorContext.localVars.size() > UINT32_MAX)
 		throw FatalCompilationError(
 			Message(
-				tokenRangeToSourceLocation(type->tokenRange),
+				compiler->tokenRangeToSourceLocation(type->tokenRange),
 				MessageType::Error,
 				"Exceeded maximum number of local variables"));
 
@@ -21,7 +21,7 @@ uint32_t Compiler::allocLocalVar(std::string name, std::shared_ptr<TypeNameNode>
 	return index;
 }
 
-uint32_t Compiler::allocReg() {
+uint32_t CompileContext::allocReg() {
 	if (curMajorContext.curMinorContext.dryRun)
 		return UINT32_MAX;
 
@@ -32,19 +32,19 @@ uint32_t Compiler::allocReg() {
 	return idxReg;
 }
 
-void Compiler::pushMajorContext() {
-	_savedMajorContexts.push_back(curMajorContext);
+void CompileContext::pushMajorContext() {
+	savedMajorContexts.push_back(curMajorContext);
 }
 
-void Compiler::popMajorContext() {
-	curMajorContext = _savedMajorContexts.back();
-	_savedMajorContexts.pop_back();
+void CompileContext::popMajorContext() {
+	curMajorContext = savedMajorContexts.back();
+	savedMajorContexts.pop_back();
 }
 
-void Compiler::pushMinorContext() {
+void CompileContext::pushMinorContext() {
 	curMajorContext.pushMinorContext();
 }
 
-void Compiler::popMinorContext() {
+void CompileContext::popMinorContext() {
 	curMajorContext.popMinorContext();
 }

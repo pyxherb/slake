@@ -68,7 +68,7 @@ std::string std::to_string(std::shared_ptr<slake::slkc::TypeNameNode> typeName, 
 		}
 		case TypeId::Custom: {
 			std::shared_ptr<IdRefNode> ref = std::make_shared<IdRefNode>();
-			auto m = compiler->resolveCustomTypeName((CustomTypeNameNode *)typeName.get());
+			auto m = compiler->resolveCustomTypeName(nullptr, (CustomTypeNameNode *)typeName.get());
 
 			switch (m->getNodeType()) {
 				case NodeType::GenericParam:

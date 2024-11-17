@@ -8,9 +8,9 @@ std::map<UnaryOp, Compiler::UnaryOpRegistry> Compiler::_unaryOpRegs = {
 	{ UnaryOp::Neg, { slake::Opcode::NEG, false, false } }
 };
 
-void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> e, std::shared_ptr<TypeNameNode> lhsType) {
-	uint32_t resultRegIndex = allocReg(),
-			 lhsRegIndex = allocReg();
+void slake::slkc::Compiler::compileUnaryOpExpr(CompileContext *compileContext, std::shared_ptr<UnaryOpExprNode> e, std::shared_ptr<TypeNameNode> lhsType) {
+	uint32_t resultRegIndex = compileContext->allocReg(),
+			 lhsRegIndex = compileContext->allocReg();
 
 	if (!lhsType)
 		throw FatalCompilationError(
@@ -34,14 +34,14 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 		case TypeId::U64:
 			switch (e->op) {
 				case UnaryOp::LNot:
-					compileExpr(
+					compileExpr(compileContext,
 						e->x,
 						opReg.lvalueOperand
 							? EvalPurpose::LValue
 							: EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
 
-					_insertIns(
+					compileContext->_insertIns(
 						opReg.opcode,
 						std::make_shared<RegRefNode>(resultRegIndex),
 						{ std::make_shared<RegRefNode>(lhsRegIndex) });
@@ -50,14 +50,14 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 					break;
 				case UnaryOp::Not:
 				case UnaryOp::Neg:
-					compileExpr(
+					compileExpr(compileContext,
 						e->x,
 						opReg.lvalueOperand
 							? EvalPurpose::LValue
 							: EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
 
-					_insertIns(
+					compileContext->_insertIns(
 						opReg.opcode,
 						std::make_shared<RegRefNode>(resultRegIndex),
 						{ std::make_shared<RegRefNode>(lhsRegIndex) });
@@ -77,14 +77,14 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 		case TypeId::F64:
 			switch (e->op) {
 				case UnaryOp::LNot:
-					compileExpr(
+					compileExpr(compileContext,
 						e->x,
 						opReg.lvalueOperand
 							? EvalPurpose::LValue
 							: EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
 
-					_insertIns(
+					compileContext->_insertIns(
 						opReg.opcode,
 						std::make_shared<RegRefNode>(resultRegIndex),
 						{ std::make_shared<RegRefNode>(lhsRegIndex) });
@@ -92,14 +92,14 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				case UnaryOp::Neg:
-					compileExpr(
+					compileExpr(compileContext,
 						e->x,
 						opReg.lvalueOperand
 							? EvalPurpose::LValue
 							: EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
 
-					_insertIns(
+					compileContext->_insertIns(
 						opReg.opcode,
 						std::make_shared<RegRefNode>(resultRegIndex),
 						{ std::make_shared<RegRefNode>(lhsRegIndex) });
@@ -119,14 +119,14 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 			switch (e->op) {
 				case UnaryOp::LNot:
 				case UnaryOp::Not:
-					compileExpr(
+					compileExpr(compileContext,
 						e->x,
 						opReg.lvalueOperand
 							? EvalPurpose::LValue
 							: EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
 
-					_insertIns(
+					compileContext->_insertIns(
 						opReg.opcode,
 						std::make_shared<RegRefNode>(resultRegIndex),
 						{ std::make_shared<RegRefNode>(lhsRegIndex) });
@@ -143,9 +143,9 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 
 			break;
 		case TypeId::Custom: {
-			auto node = resolveCustomTypeName(std::static_pointer_cast<CustomTypeNameNode>(lhsType).get());
+			auto node = resolveCustomTypeName(compileContext, std::static_pointer_cast<CustomTypeNameNode>(lhsType).get());
 
-			auto determineOverloading = [this, e, resultRegIndex, &resultType](std::shared_ptr<MemberNode> n, uint32_t lhsRegIndex) -> bool {
+			auto determineOverloading = [this, e, resultRegIndex, &resultType, &compileContext](std::shared_ptr<MemberNode> n, uint32_t lhsRegIndex) -> bool {
 				if (auto it = n->scope->members.find("operator" + std::to_string(e->op));
 					it != n->scope->members.end()) {
 					assert(it->second->getNodeType() == NodeType::Fn);
@@ -153,7 +153,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 					std::shared_ptr<FnOverloadingNode> overloading;
 
 					{
-						auto overloadings = argDependentLookup(operatorNode.get(), {}, {});
+						auto overloadings = argDependentLookup(compileContext, operatorNode.get(), {}, {});
 						if (overloadings.size() != 1)
 							return false;
 						overloading = overloadings[0];
@@ -165,35 +165,35 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 					});
 #endif
 
-					compileExpr(
+					compileExpr(compileContext,
 						e->x,
 						EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
 
 					std::shared_ptr<IdRefNode> operatorName = std::make_shared<IdRefNode>(IdRefEntries{ overloading->getName() });
 
-					uint32_t callTargetRegIndex = allocReg();
+					uint32_t callTargetRegIndex = compileContext->allocReg();
 
 					if (overloading->isVirtual)
-						_insertIns(
+						compileContext->_insertIns(
 							Opcode::RLOAD,
 							std::make_shared<RegRefNode>(callTargetRegIndex),
 							{ std::make_shared<RegRefNode>(lhsRegIndex),
 								std::make_shared<IdRefExprNode>(operatorName) });
 					else {
 						std::shared_ptr<IdRefNode> fullName = getFullName(overloading.get());
-						_insertIns(
+						compileContext->_insertIns(
 							Opcode::LOAD,
 							std::make_shared<RegRefNode>(callTargetRegIndex),
 							{ std::make_shared<IdRefExprNode>(fullName) });
 					}
-					_insertIns(
+					compileContext->_insertIns(
 						Opcode::MCALL,
 						{},
 						{ std::make_shared<RegRefNode>(callTargetRegIndex),
 							std::make_shared<RegRefNode>(lhsRegIndex) });
 
-					_insertIns(Opcode::LRET, std::make_shared<RegRefNode>(resultRegIndex), {});
+					compileContext->_insertIns(Opcode::LRET, std::make_shared<RegRefNode>(resultRegIndex), {});
 
 					resultType = overloading->returnType;
 
@@ -205,7 +205,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 			switch (node->getNodeType()) {
 				case NodeType::Class:
 				case NodeType::Interface: {
-					uint32_t lhsRegIndex = allocReg();
+					uint32_t lhsRegIndex = compileContext->allocReg();
 
 					std::shared_ptr<MemberNode> n = std::static_pointer_cast<MemberNode>(node);
 
@@ -219,13 +219,13 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 					break;
 				}
 				case NodeType::GenericParam: {
-					uint32_t lhsRegIndex = allocReg();
+					uint32_t lhsRegIndex = compileContext->allocReg();
 
 					std::shared_ptr<GenericParamNode> n = std::static_pointer_cast<GenericParamNode>(node);
 
 					std::shared_ptr<AstNode> curMember;
 
-					curMember = resolveCustomTypeName((CustomTypeNameNode *)n->baseType.get());
+					curMember = resolveCustomTypeName(compileContext, (CustomTypeNameNode *)n->baseType.get());
 
 					if (curMember->getNodeType() != NodeType::Class)
 						throw FatalCompilationError(
@@ -238,7 +238,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 						break;
 
 					for (auto i : n->interfaceTypes) {
-						curMember = resolveCustomTypeName((CustomTypeNameNode *)i.get());
+						curMember = resolveCustomTypeName(compileContext, (CustomTypeNameNode *)i.get());
 
 						if (curMember->getNodeType() != NodeType::Interface)
 							throw FatalCompilationError(
@@ -277,7 +277,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 
 	assert(resultType);
 
-	if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue) {
+	if (compileContext->curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue) {
 		if (!isLValueType(resultType))
 			throw FatalCompilationError(
 				Message(
@@ -286,19 +286,19 @@ void slake::slkc::Compiler::compileUnaryOpExpr(std::shared_ptr<UnaryOpExprNode> 
 					"Expecting a lvalue expression"));
 	} else {
 		if (isLValueType(resultType)) {
-			uint32_t newResultRegIndex = allocReg();
-			_insertIns(
+			uint32_t newResultRegIndex = compileContext->allocReg();
+			compileContext->_insertIns(
 				Opcode::LVALUE,
 				std::make_shared<RegRefNode>(newResultRegIndex),
 				{ std::make_shared<RegRefNode>(resultRegIndex) });
 		}
 	}
 
-	if (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt)
-		_insertIns(
+	if (compileContext->curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt)
+		compileContext->_insertIns(
 			Opcode::MOV,
-			curMajorContext.curMinorContext.evalDest,
+			compileContext->curMajorContext.curMinorContext.evalDest,
 			{ std::make_shared<RegRefNode>(resultRegIndex) });
 
-	curMajorContext.curMinorContext.evaluatedType = resultType;
+	compileContext->curMajorContext.curMinorContext.evaluatedType = resultType;
 }

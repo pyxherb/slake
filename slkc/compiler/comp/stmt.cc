@@ -2,26 +2,26 @@
 
 using namespace slake::slkc;
 
-void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
+void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtNode> stmt) {
 	switch (stmt->getStmtType()) {
 		case StmtType::Expr: {
 			auto s = std::static_pointer_cast<ExprStmtNode>(stmt);
 
 			if (s->expr) {
 				slxfmt::SourceLocDesc sld;
-				sld.offIns = curFn->body.size();
+				sld.offIns = compileContext->curFn->body.size();
 				sld.line = tokenRangeToSourceLocation(stmt->tokenRange).beginPosition.line;
 				sld.column = tokenRangeToSourceLocation(stmt->tokenRange).beginPosition.column;
 
-				compileExpr(std::static_pointer_cast<ExprStmtNode>(stmt)->expr, EvalPurpose::Stmt, {});
+				compileExpr(compileContext, std::static_pointer_cast<ExprStmtNode>(stmt)->expr, EvalPurpose::Stmt, {});
 
-				sld.nIns = curFn->body.size() - sld.offIns;
-				curFn->srcLocDescs.push_back(sld);
+				sld.nIns = compileContext->curFn->body.size() - sld.offIns;
+				compileContext->curFn->srcLocDescs.push_back(sld);
 			}
 
 #if SLKC_WITH_LANGUAGE_SERVER
-			updateTokenInfo(s->idxSemicolonToken, [this](TokenInfo &tokenInfo) {
-				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+			updateTokenInfo(s->idxSemicolonToken, [this, &compileContext](TokenInfo &tokenInfo) {
+				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curMajorContext);
 				tokenInfo.completionContext = CompletionContext::Stmt;
 			});
 #endif
@@ -32,14 +32,14 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 
 			for (auto &i : s->varDefs) {
 #if SLKC_WITH_LANGUAGE_SERVER
-				updateTokenInfo(i.second.idxNameToken, [this](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+				updateTokenInfo(i.second.idxNameToken, [this, &compileContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curMajorContext);
 					tokenInfo.semanticType = SemanticType::Var;
 					tokenInfo.completionContext = CompletionContext::Name;
 				});
 
-				updateTokenInfo(i.second.idxColonToken, [this](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+				updateTokenInfo(i.second.idxColonToken, [this, &compileContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curMajorContext);
 					tokenInfo.completionContext = CompletionContext::Type;
 				});
 
@@ -47,7 +47,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 					updateCompletionContext(i.second.type, CompletionContext::Type);
 #endif
 
-				if (curMajorContext.curMinorContext.localVars.count(i.first))
+				if (compileContext->curMajorContext.curMinorContext.localVars.count(i.first))
 					throw FatalCompilationError(
 						{ tokenRangeToSourceLocation(i.second.tokenRange),
 							MessageType::Error,
@@ -55,9 +55,9 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 
 				std::shared_ptr<TypeNameNode> varType = i.second.type ? i.second.type : std::make_shared<AnyTypeNameNode>(SIZE_MAX);
 
-				uint32_t index = allocLocalVar(i.first, varType);
+				uint32_t index = compileContext->allocLocalVar(i.first, varType);
 
-				curMajorContext.curMinorContext.expectedType = varType;
+				compileContext->curMajorContext.curMinorContext.expectedType = varType;
 				if (isLValueType(varType)) {
 					if (!i.second.initValue) {
 						throw FatalCompilationError(
@@ -66,7 +66,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 								"Reference variables require an initial value" });
 					}
 
-					std::shared_ptr<TypeNameNode> initValueType = evalExprType(i.second.initValue);
+					std::shared_ptr<TypeNameNode> initValueType = evalExprType(compileContext, i.second.initValue);
 
 					if (!initValueType)
 						throw FatalCompilationError(
@@ -74,29 +74,29 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 								MessageType::Error,
 								"Error deducing type of the initial value" });
 
-					if (!isSameType(varType, initValueType)) {
+					if (!isSameType(compileContext, varType, initValueType)) {
 						throw FatalCompilationError(
 							{ tokenRangeToSourceLocation(i.second.initValue->tokenRange),
 								MessageType::Error,
 								"Incompatible initial value type" });
 					} else {
 						uint32_t
-							resultRegIndex = allocReg(),
-							tmpRegIndex = allocReg();
+							resultRegIndex = compileContext->allocReg(),
+							tmpRegIndex = compileContext->allocReg();
 
-						compileExpr(i.second.initValue, EvalPurpose::LValue, std::make_shared<RegRefNode>(resultRegIndex));
-						_insertIns(
+						compileExpr(compileContext, i.second.initValue, EvalPurpose::LValue, std::make_shared<RegRefNode>(resultRegIndex));
+						compileContext->_insertIns(
 							Opcode::LLOAD,
 							std::make_shared<RegRefNode>(tmpRegIndex),
 							{ std::make_shared<U32LiteralExprNode>(index) });
-						_insertIns(
+						compileContext->_insertIns(
 							Opcode::STORE,
 							{},
 							{ std::make_shared<RegRefNode>(tmpRegIndex), std::make_shared<RegRefNode>(resultRegIndex) });
 					}
 				} else {
 					if (i.second.initValue) {
-						std::shared_ptr<TypeNameNode> initValueType = evalExprType(i.second.initValue);
+						std::shared_ptr<TypeNameNode> initValueType = evalExprType(compileContext, i.second.initValue);
 
 						if (!initValueType)
 							throw FatalCompilationError(
@@ -104,37 +104,37 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 									MessageType::Error,
 									"Error deducing type of the initial value" });
 
-						if (!isSameType(varType, initValueType)) {
-							if (!isTypeNamesConvertible(initValueType, varType))
+						if (!isSameType(compileContext, varType, initValueType)) {
+							if (!isTypeNamesConvertible(compileContext, initValueType, varType))
 								throw FatalCompilationError(
 									{ tokenRangeToSourceLocation(i.second.initValue->tokenRange),
 										MessageType::Error,
 										"Incompatible initial value type" });
 
 							uint32_t
-								resultRegIndex = allocReg(),
-								tmpRegIndex = allocReg();
+								resultRegIndex = compileContext->allocReg(),
+								tmpRegIndex = compileContext->allocReg();
 
-							compileExpr(std::make_shared<CastExprNode>(varType, i.second.initValue), EvalPurpose::RValue, std::make_shared<RegRefNode>(resultRegIndex));
-							_insertIns(
+							compileExpr(compileContext, std::make_shared<CastExprNode>(varType, i.second.initValue), EvalPurpose::RValue, std::make_shared<RegRefNode>(resultRegIndex));
+							compileContext->_insertIns(
 								Opcode::LLOAD,
 								std::make_shared<RegRefNode>(tmpRegIndex),
 								{ std::make_shared<U32LiteralExprNode>(index) });
-							_insertIns(
+							compileContext->_insertIns(
 								Opcode::STORE,
 								{},
 								{ std::make_shared<RegRefNode>(tmpRegIndex), std::make_shared<RegRefNode>(resultRegIndex) });
 						} else {
 							uint32_t
-								resultRegIndex = allocReg(),
-								tmpRegIndex = allocReg();
+								resultRegIndex = compileContext->allocReg(),
+								tmpRegIndex = compileContext->allocReg();
 
-							compileExpr(i.second.initValue, EvalPurpose::RValue, std::make_shared<RegRefNode>(resultRegIndex));
-							_insertIns(
+							compileExpr(compileContext, i.second.initValue, EvalPurpose::RValue, std::make_shared<RegRefNode>(resultRegIndex));
+							compileContext->_insertIns(
 								Opcode::LLOAD,
 								std::make_shared<RegRefNode>(tmpRegIndex),
 								{ std::make_shared<U32LiteralExprNode>(index) });
-							_insertIns(
+							compileContext->_insertIns(
 								Opcode::STORE,
 								{},
 								{ std::make_shared<RegRefNode>(tmpRegIndex), std::make_shared<RegRefNode>(resultRegIndex) });
@@ -146,22 +146,22 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			break;
 		}
 		case StmtType::Break:
-			if (curMajorContext.curMinorContext.breakLabel.empty())
+			if (compileContext->curMajorContext.curMinorContext.breakLabel.empty())
 				throw FatalCompilationError({ tokenRangeToSourceLocation(stmt->tokenRange), MessageType::Error, "Unexpected break statement" });
 
-			if (curMajorContext.curMinorContext.breakScopeLevel < curMajorContext.curScopeLevel)
-				_insertIns(
+			if (compileContext->curMajorContext.curMinorContext.breakScopeLevel < compileContext->curMajorContext.curScopeLevel)
+				compileContext->_insertIns(
 					Opcode::LEAVE,
 					{},
-					{ std::make_shared<U32LiteralExprNode>(curMajorContext.curScopeLevel - curMajorContext.curMinorContext.breakScopeLevel) });
+					{ std::make_shared<U32LiteralExprNode>(compileContext->curMajorContext.curScopeLevel - compileContext->curMajorContext.curMinorContext.breakScopeLevel) });
 
-			_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(curMajorContext.curMinorContext.breakLabel) });
+			compileContext->_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(compileContext->curMajorContext.curMinorContext.breakLabel) });
 			break;
 		case StmtType::Continue:
-			if (curMajorContext.curMinorContext.continueLabel.size())
+			if (compileContext->curMajorContext.curMinorContext.continueLabel.size())
 				throw FatalCompilationError({ tokenRangeToSourceLocation(stmt->tokenRange), MessageType::Error, "Unexpected continue statement" });
 
-			_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(curMajorContext.curMinorContext.continueLabel) });
+			compileContext->_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(compileContext->curMajorContext.curMinorContext.continueLabel) });
 			break;
 		case StmtType::For: {
 			auto s = std::static_pointer_cast<ForStmtNode>(stmt);
@@ -170,64 +170,64 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			std::string beginLabel = "$for_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_begin",
 						endLabel = "$for_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_end";
 
-			pushMinorContext();
+			compileContext->pushMinorContext();
 
-			curMajorContext.curMinorContext.breakScopeLevel = curMajorContext.curScopeLevel;
-			curMajorContext.curMinorContext.continueScopeLevel = curMajorContext.curScopeLevel;
-			curMajorContext.curMinorContext.breakLabel = endLabel;
-			curMajorContext.curMinorContext.continueLabel = beginLabel;
+			compileContext->curMajorContext.curMinorContext.breakScopeLevel = compileContext->curMajorContext.curScopeLevel;
+			compileContext->curMajorContext.curMinorContext.continueScopeLevel = compileContext->curMajorContext.curScopeLevel;
+			compileContext->curMajorContext.curMinorContext.breakLabel = endLabel;
+			compileContext->curMajorContext.curMinorContext.continueLabel = beginLabel;
 
-			_insertIns(Opcode::ENTER, {}, {});
-			compileStmt(s->varDefs);
+			compileContext->_insertIns(Opcode::ENTER, {}, {});
+			compileStmt(compileContext, s->varDefs);
 
-			_insertLabel(beginLabel);
+			compileContext->_insertLabel(beginLabel);
 
 			uint32_t tmpRegIndex;
 
 			if (s->condition) {
-				tmpRegIndex = allocReg();
+				tmpRegIndex = compileContext->allocReg();
 
-				auto conditionType = evalExprType(s->condition);
+				auto conditionType = evalExprType(compileContext, s->condition);
 				auto boolType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 
-				if (!isSameType(conditionType, boolType)) {
-					if (!isTypeNamesConvertible(conditionType, boolType))
+				if (!isSameType(compileContext, conditionType, boolType)) {
+					if (!isTypeNamesConvertible(compileContext, conditionType, boolType))
 						throw FatalCompilationError(
 							{ tokenRangeToSourceLocation(s->condition->tokenRange),
 								MessageType::Error,
 								"Expecting a boolean expression" });
 
-					compileExpr(
+					compileExpr(compileContext,
 						std::make_shared<CastExprNode>(
 							boolType,
 							s->condition),
 						EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(tmpRegIndex));
 				} else
-					compileExpr(s->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
-				_insertIns(Opcode::JF, {}, { std::make_shared<LabelRefNode>(endLabel), std::make_shared<RegRefNode>(tmpRegIndex) });
+					compileExpr(compileContext, s->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
+				compileContext->_insertIns(Opcode::JF, {}, { std::make_shared<LabelRefNode>(endLabel), std::make_shared<RegRefNode>(tmpRegIndex) });
 			} else {
-				_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(endLabel) });
+				compileContext->_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(endLabel) });
 			}
 
-			compileStmt(s->body);
+			compileStmt(compileContext, s->body);
 
-			compileExpr(s->endExpr, EvalPurpose::Stmt, {});
+			compileExpr(compileContext, s->endExpr, EvalPurpose::Stmt, {});
 
-			_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(beginLabel) });
+			compileContext->_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(beginLabel) });
 
-			_insertLabel(endLabel);
-			_insertIns(Opcode::LEAVE, {}, {});
+			compileContext->_insertLabel(endLabel);
+			compileContext->_insertIns(Opcode::LEAVE, {}, {});
 
-			popMinorContext();
+			compileContext->popMinorContext();
 			break;
 		}
 		case StmtType::While: {
 			auto s = std::static_pointer_cast<WhileStmtNode>(stmt);
 
 #if SLKC_WITH_LANGUAGE_SERVER
-			updateTokenInfo(s->idxLParentheseToken, [this](TokenInfo &tokenInfo) {
-				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+			updateTokenInfo(s->idxLParentheseToken, [this, &compileContext](TokenInfo &tokenInfo) {
+				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curMajorContext);
 				tokenInfo.semanticType = SemanticType::Keyword;
 				tokenInfo.completionContext = CompletionContext::Expr;
 			});
@@ -237,44 +237,44 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			std::string beginLabel = "$while_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_begin",
 						endLabel = "$while_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_end";
 
-			pushMinorContext();
+			compileContext->pushMinorContext();
 
-			curMajorContext.curMinorContext.breakScopeLevel = curMajorContext.curScopeLevel;
-			curMajorContext.curMinorContext.continueScopeLevel = curMajorContext.curScopeLevel;
-			curMajorContext.curMinorContext.breakLabel = endLabel;
-			curMajorContext.curMinorContext.continueLabel = beginLabel;
+			compileContext->curMajorContext.curMinorContext.breakScopeLevel = compileContext->curMajorContext.curScopeLevel;
+			compileContext->curMajorContext.curMinorContext.continueScopeLevel = compileContext->curMajorContext.curScopeLevel;
+			compileContext->curMajorContext.curMinorContext.breakLabel = endLabel;
+			compileContext->curMajorContext.curMinorContext.continueLabel = beginLabel;
 
-			_insertLabel(beginLabel);
+			compileContext->_insertLabel(beginLabel);
 
-			uint32_t tmpRegIndex = allocReg();
+			uint32_t tmpRegIndex = compileContext->allocReg();
 
-			auto conditionType = evalExprType(s->condition);
+			auto conditionType = evalExprType(compileContext, s->condition);
 			auto boolType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 
-			if (!isSameType(conditionType, boolType)) {
-				if (!isTypeNamesConvertible(conditionType, boolType))
+			if (!isSameType(compileContext, conditionType, boolType)) {
+				if (!isTypeNamesConvertible(compileContext, conditionType, boolType))
 					throw FatalCompilationError(
 						{ tokenRangeToSourceLocation(s->condition->tokenRange),
 							MessageType::Error,
 							"Expecting a boolean expression" });
 
-				compileExpr(
+				compileExpr(compileContext,
 					std::make_shared<CastExprNode>(
 						boolType,
 						s->condition),
 					EvalPurpose::RValue,
 					std::make_shared<RegRefNode>(tmpRegIndex));
 			} else
-				compileExpr(s->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
+				compileExpr(compileContext, s->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
 
 			if (s->body)
-				compileStmt(s->body);
+				compileStmt(compileContext, s->body);
 
-			_insertLabel(endLabel);
+			compileContext->_insertLabel(endLabel);
 
-			_insertIns(Opcode::JT, {}, { std::make_shared<LabelRefNode>(beginLabel), std::make_shared<RegRefNode>(tmpRegIndex) });
+			compileContext->_insertIns(Opcode::JT, {}, { std::make_shared<LabelRefNode>(beginLabel), std::make_shared<RegRefNode>(tmpRegIndex) });
 
-			popMinorContext();
+			compileContext->popMinorContext();
 
 			break;
 		}
@@ -282,48 +282,48 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			auto s = std::static_pointer_cast<ReturnStmtNode>(stmt);
 
 #if SLKC_WITH_LANGUAGE_SERVER
-			updateTokenInfo(s->idxReturnToken, [this](TokenInfo &tokenInfo) {
-				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+			updateTokenInfo(s->idxReturnToken, [this, &compileContext](TokenInfo &tokenInfo) {
+				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curMajorContext);
 				tokenInfo.semanticType = SemanticType::Keyword;
 				tokenInfo.completionContext = CompletionContext::Expr;
 			});
 #endif
 
-			auto returnType = curFn->returnType;
+			auto returnType = compileContext->curFn->returnType;
 
 			if (!s->returnValue) {
 				if (returnType->getTypeId() != TypeId::Void)
 					throw FatalCompilationError({ tokenRangeToSourceLocation(stmt->tokenRange), MessageType::Error, "Must return a value" });
 				else
-					_insertIns(Opcode::RET, {}, { {} });
+					compileContext->_insertIns(Opcode::RET, {}, { {} });
 			} else {
-				if (auto e = evalConstExpr(s->returnValue); e) {
-					if (isSameType(evalExprType(e), returnType)) {
-						_insertIns(Opcode::RET, {}, { e });
+				if (auto e = evalConstExpr(compileContext, s->returnValue); e) {
+					if (isSameType(compileContext, evalExprType(compileContext, e), returnType)) {
+						compileContext->_insertIns(Opcode::RET, {}, { e });
 					} else {
 						if (auto ce = castLiteralExpr(e, returnType->getTypeId()); ce) {
-							_insertIns(Opcode::RET, {}, { ce });
+							compileContext->_insertIns(Opcode::RET, {}, { ce });
 						} else {
-							uint32_t tmpRegIndex = allocReg();
+							uint32_t tmpRegIndex = compileContext->allocReg();
 
-							compileExpr(std::make_shared<CastExprNode>(returnType, e), EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
-							_insertIns(Opcode::RET, {}, { std::make_shared<RegRefNode>(tmpRegIndex) });
+							compileExpr(compileContext, std::make_shared<CastExprNode>(returnType, e), EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
+							compileContext->_insertIns(Opcode::RET, {}, { std::make_shared<RegRefNode>(tmpRegIndex) });
 						}
 					}
 				} else {
-					uint32_t tmpRegIndex = allocReg();
+					uint32_t tmpRegIndex = compileContext->allocReg();
 
-					auto exprType = evalExprType(s->returnValue);
+					auto exprType = evalExprType(compileContext, s->returnValue);
 
 					if (!exprType)
 						throw FatalCompilationError({ tokenRangeToSourceLocation(s->returnValue->tokenRange), MessageType::Error, "Cannot deduce type of the return value" });
 
-					if (isSameType(exprType, returnType))
-						compileExpr(s->returnValue, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
+					if (isSameType(compileContext, exprType, returnType))
+						compileExpr(compileContext, s->returnValue, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
 					else
-						compileExpr(std::make_shared<CastExprNode>(returnType, s->returnValue), EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
+						compileExpr(compileContext, std::make_shared<CastExprNode>(returnType, s->returnValue), EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
 
-					_insertIns(Opcode::RET, {}, { std::make_shared<RegRefNode>(tmpRegIndex) });
+					compileContext->_insertIns(Opcode::RET, {}, { std::make_shared<RegRefNode>(tmpRegIndex) });
 				}
 			}
 
@@ -332,22 +332,22 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 		case StmtType::Yield: {
 			auto s = std::static_pointer_cast<YieldStmtNode>(stmt);
 
-			if (!(curFn->isAsync))
+			if (!(compileContext->curFn->isAsync))
 				throw FatalCompilationError({ tokenRangeToSourceLocation(stmt->tokenRange), MessageType::Error, "Cannot yield in a non-asynchronous function" });
 
 			if (!s->returnValue) {
-				if (curFn->returnType->getTypeId() != TypeId::Void)
+				if (compileContext->curFn->returnType->getTypeId() != TypeId::Void)
 					throw FatalCompilationError({ tokenRangeToSourceLocation(stmt->tokenRange), MessageType::Error, "Must yield a value" });
 				else
-					_insertIns(Opcode::YIELD, {}, {});
+					compileContext->_insertIns(Opcode::YIELD, {}, {});
 			} else {
-				if (auto e = evalConstExpr(s->returnValue); e) {
-					_insertIns(Opcode::YIELD, {}, { e });
+				if (auto e = evalConstExpr(compileContext, s->returnValue); e) {
+					compileContext->_insertIns(Opcode::YIELD, {}, { e });
 				} else {
-					uint32_t tmpRegIndex = allocReg();
+					uint32_t tmpRegIndex = compileContext->allocReg();
 
-					compileExpr(s->returnValue, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
-					_insertIns(Opcode::YIELD, {}, { std::make_shared<RegRefNode>(tmpRegIndex) });
+					compileExpr(compileContext, s->returnValue, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
+					compileContext->_insertIns(Opcode::YIELD, {}, { std::make_shared<RegRefNode>(tmpRegIndex) });
 				}
 			}
 
@@ -360,41 +360,41 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			std::string falseBranchLabel = "$if_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_false",
 						endLabel = "$if_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_end";
 
-			uint32_t tmpRegIndex = allocReg();
+			uint32_t tmpRegIndex = compileContext->allocReg();
 
-			auto conditionType = evalExprType(s->condition);
+			auto conditionType = evalExprType(compileContext, s->condition);
 			auto boolType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 
-			if (!isSameType(conditionType, boolType)) {
-				if (!isTypeNamesConvertible(conditionType, boolType))
+			if (!isSameType(compileContext, conditionType, boolType)) {
+				if (!isTypeNamesConvertible(compileContext, conditionType, boolType))
 					throw FatalCompilationError(
 						{ tokenRangeToSourceLocation(s->condition->tokenRange),
 							MessageType::Error,
 							"Expecting a boolean expression" });
 
-				compileExpr(
+				compileExpr(compileContext,
 					std::make_shared<CastExprNode>(
 						boolType,
 						s->condition),
 					EvalPurpose::RValue,
 					std::make_shared<RegRefNode>(tmpRegIndex));
 			} else
-				compileExpr(s->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
+				compileExpr(compileContext, s->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
 
-			_insertIns(Opcode::JF, {}, { std::make_shared<LabelRefNode>(falseBranchLabel), std::make_shared<RegRefNode>(tmpRegIndex) });
+			compileContext->_insertIns(Opcode::JF, {}, { std::make_shared<LabelRefNode>(falseBranchLabel), std::make_shared<RegRefNode>(tmpRegIndex) });
 
-			compileStmt(s->body);
+			compileStmt(compileContext, s->body);
 			if (s->elseBranch) {
-				_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(endLabel) });
+				compileContext->_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(endLabel) });
 			}
 
-			_insertLabel(falseBranchLabel);
+			compileContext->_insertLabel(falseBranchLabel);
 
 			if (s->elseBranch) {
-				compileStmt(s->elseBranch);
+				compileStmt(compileContext, s->elseBranch);
 			}
 
-			_insertLabel(endLabel);
+			compileContext->_insertLabel(endLabel);
 
 			break;
 		}
@@ -405,57 +405,57 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 			std::string labelPrefix = "$try_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column),
 						endLabel = labelPrefix + "_final";
 
-			_insertIns(Opcode::ENTER, {}, {});
+			compileContext->_insertIns(Opcode::ENTER, {}, {});
 
 			for (size_t i = 0; i < s->catchBlocks.size(); ++i)
-				_insertIns(
+				compileContext->_insertIns(
 					Opcode::PUSHXH,
 					{},
 					{ s->catchBlocks[i].targetType,
 						std::make_shared<LabelRefNode>(labelPrefix + "_xh_" + std::to_string(i)) });
 
-			compileStmt(s->body);
+			compileStmt(compileContext, s->body);
 
 			for (size_t i = 0; i < s->catchBlocks.size(); ++i) {
-				pushMajorContext();
+				compileContext->pushMajorContext();
 
 				auto &curBlock = s->catchBlocks[i];
-				_insertLabel(labelPrefix + "_xh_" + std::to_string(i));
+				compileContext->_insertLabel(labelPrefix + "_xh_" + std::to_string(i));
 
 				if (curBlock.exceptionVarName.size()) {
-					_insertIns(Opcode::ENTER, {}, {});
+					compileContext->_insertIns(Opcode::ENTER, {}, {});
 
-					uint32_t localVarIndex = allocLocalVar(curBlock.exceptionVarName, curBlock.targetType);
-					uint32_t tmpRegIndex = allocReg(),
-							 exceptRegIndex = allocReg();
+					uint32_t localVarIndex = compileContext->allocLocalVar(curBlock.exceptionVarName, curBlock.targetType);
+					uint32_t tmpRegIndex = compileContext->allocReg(),
+							 exceptRegIndex = compileContext->allocReg();
 
-					_insertIns(Opcode::LLOAD,
+					compileContext->_insertIns(Opcode::LLOAD,
 						std::make_shared<RegRefNode>(tmpRegIndex),
 						{ std::make_shared<U32LiteralExprNode>(localVarIndex) });
 
-					_insertIns(Opcode::LEXCEPT, std::make_shared<RegRefNode>(exceptRegIndex), {});
-					_insertIns(Opcode::STORE,
+					compileContext->_insertIns(Opcode::LEXCEPT, std::make_shared<RegRefNode>(exceptRegIndex), {});
+					compileContext->_insertIns(Opcode::STORE,
 						{},
 						{ std::make_shared<RegRefNode>(tmpRegIndex),
 							std::make_shared<RegRefNode>(exceptRegIndex) });
 				}
 
-				compileStmt(curBlock.body);
+				compileStmt(compileContext, curBlock.body);
 
 				if (curBlock.exceptionVarName.size())
-					_insertIns(Opcode::LEAVE, {}, {});
+					compileContext->_insertIns(Opcode::LEAVE, {}, {});
 
-				_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(endLabel) });
+				compileContext->_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(endLabel) });
 
-				popMajorContext();
+				compileContext->popMajorContext();
 			}
 
-			_insertIns(Opcode::LEAVE, {}, {});
+			compileContext->_insertIns(Opcode::LEAVE, {}, {});
 
-			_insertLabel(endLabel);
+			compileContext->_insertLabel(endLabel);
 
 			if (s->finalBlock.body)
-				compileStmt(s->finalBlock.body);
+				compileStmt(compileContext, s->finalBlock.body);
 
 			break;
 		}
@@ -468,15 +468,15 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 						defaultLabel = labelPrefix + "_label",
 						endLabel = labelPrefix + "_end";
 
-			pushMinorContext();
+			compileContext->pushMinorContext();
 
-			curMajorContext.curMinorContext.breakScopeLevel = curMajorContext.curScopeLevel;
-			curMajorContext.curMinorContext.breakLabel = endLabel;
+			compileContext->curMajorContext.curMinorContext.breakScopeLevel = compileContext->curMajorContext.curScopeLevel;
+			compileContext->curMajorContext.curMinorContext.breakLabel = endLabel;
 
-			uint32_t matcheeRegIndex = allocReg();
-			uint32_t conditionRegIndex = allocReg();
+			uint32_t matcheeRegIndex = compileContext->allocReg();
+			uint32_t conditionRegIndex = compileContext->allocReg();
 
-			compileExpr(s->expr, EvalPurpose::RValue, std::make_shared<RegRefNode>(matcheeRegIndex));
+			compileExpr(compileContext, s->expr, EvalPurpose::RValue, std::make_shared<RegRefNode>(matcheeRegIndex));
 
 			SwitchCase *defaultCase = nullptr;
 
@@ -485,7 +485,7 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 				std::string caseBeginLabel = labelPrefix + "_case" + std::to_string(i) + "_end",
 							caseEndLabel = labelPrefix + "_case" + std::to_string(i) + "_end";
 
-				_insertLabel(caseBeginLabel);
+				compileContext->_insertLabel(caseBeginLabel);
 
 				if (!curCase.condition) {
 					if (defaultCase)
@@ -497,44 +497,44 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 					defaultCase = &curCase;
 				}
 
-				compileExpr(curCase.condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(conditionRegIndex));
+				compileExpr(compileContext, curCase.condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(conditionRegIndex));
 
-				uint32_t cmpResultRegIndex = allocReg();
-				_insertIns(
+				uint32_t cmpResultRegIndex = compileContext->allocReg();
+				compileContext->_insertIns(
 					Opcode::EQ,
 					std::make_shared<RegRefNode>(cmpResultRegIndex),
 					{ std::make_shared<RegRefNode>(matcheeRegIndex),
 						std::make_shared<RegRefNode>(conditionRegIndex) });
-				_insertIns(Opcode::JF, {}, { std::make_shared<LabelRefNode>(caseEndLabel), std::make_shared<RegRefNode>(cmpResultRegIndex) });
+				compileContext->_insertIns(Opcode::JF, {}, { std::make_shared<LabelRefNode>(caseEndLabel), std::make_shared<RegRefNode>(cmpResultRegIndex) });
 
-				compileStmt(std::make_shared<CodeBlockStmtNode>(CodeBlock{ {}, curCase.body }));
+				compileStmt(compileContext, std::make_shared<CodeBlockStmtNode>(CodeBlock{ {}, curCase.body }));
 
-				_insertLabel(caseEndLabel);
+				compileContext->_insertLabel(caseEndLabel);
 
 				if (i + 1 < s->cases.size())
-					_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(labelPrefix + "_case" + std::to_string(i + 1) + "_end") });
+					compileContext->_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(labelPrefix + "_case" + std::to_string(i + 1) + "_end") });
 			}
 
 			if (defaultCase)
-				compileStmt(std::make_shared<CodeBlockStmtNode>(CodeBlock{ {}, defaultCase->body }));
+				compileStmt(compileContext, std::make_shared<CodeBlockStmtNode>(CodeBlock{ {}, defaultCase->body }));
 
-			_insertLabel(endLabel);
+			compileContext->_insertLabel(endLabel);
 
-			popMinorContext();
+			compileContext->popMinorContext();
 			break;
 		}
 		case StmtType::CodeBlock: {
 			auto s = std::static_pointer_cast<CodeBlockStmtNode>(stmt);
 
-			pushMajorContext();
+			compileContext->pushMajorContext();
 
-			if (curMajorContext.curScopeLevel)
-				_insertIns(Opcode::ENTER, {}, {});
-			++curMajorContext.curScopeLevel;
+			if (compileContext->curMajorContext.curScopeLevel)
+				compileContext->_insertIns(Opcode::ENTER, {}, {});
+			++compileContext->curMajorContext.curScopeLevel;
 
 			for (auto i : s->body.stmts) {
 				try {
-					compileStmt(i);
+					compileStmt(compileContext, i);
 				} catch (FatalCompilationError e) {
 					pushMessage(
 						curDocName,
@@ -542,18 +542,18 @@ void Compiler::compileStmt(std::shared_ptr<StmtNode> stmt) {
 				}
 			}
 
-			--curMajorContext.curScopeLevel;
-			if (curMajorContext.curScopeLevel)
-				_insertIns(Opcode::LEAVE, {}, {});
+			--compileContext->curMajorContext.curScopeLevel;
+			if (compileContext->curMajorContext.curScopeLevel)
+				compileContext->_insertIns(Opcode::LEAVE, {}, {});
 
-			popMajorContext();
+			compileContext->popMajorContext();
 			break;
 		}
 		case StmtType::Bad: {
 			auto s = std::static_pointer_cast<BadStmtNode>(stmt);
 
 			if (s->body)
-				compileStmt(s->body);
+				compileStmt(compileContext, s->body);
 			break;
 		}
 		default:

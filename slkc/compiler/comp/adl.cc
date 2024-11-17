@@ -3,6 +3,7 @@
 using namespace slake::slkc;
 
 void slake::slkc::Compiler::_argDependentLookup(
+	CompileContext *compileContext,
 	FnNode *fn,
 	const std::deque<std::shared_ptr<TypeNameNode>> &argTypes,
 	const std::deque<std::shared_ptr<TypeNameNode>> &genericArgs,
@@ -33,7 +34,7 @@ void slake::slkc::Compiler::_argDependentLookup(
 		for (size_t j = 0; j < i->specializationArgs.size(); ++j) {
 			std::shared_ptr<TypeNameNode> curType = i->specializationArgs[j];
 
-			if (!isSameType(curType, genericArgs[j]))
+			if (!isSameType(compileContext, curType, genericArgs[j]))
 				goto fail;
 		}
 
@@ -46,10 +47,10 @@ void slake::slkc::Compiler::_argDependentLookup(
 			bool exactlyMatched = true;
 
 			for (size_t j = 0; j < nParams; ++j) {
-				if (!isSameType(i->params[j]->type, argTypes[j])) {
+				if (!isSameType(compileContext, i->params[j]->type, argTypes[j])) {
 					exactlyMatched = false;
 
-					if (!isTypeNamesConvertible(argTypes[j], i->params[j]->type))
+					if (!isTypeNamesConvertible(compileContext, argTypes[j], i->params[j]->type))
 						goto fail;
 				}
 			}
@@ -65,17 +66,18 @@ void slake::slkc::Compiler::_argDependentLookup(
 	}
 
 	if ((!isStatic) && fn->parentFn)
-		_argDependentLookup(fn->parentFn, argTypes, genericArgs, overloadingsOut, isStatic);
+		_argDependentLookup(compileContext, fn->parentFn, argTypes, genericArgs, overloadingsOut, isStatic);
 }
 
 std::deque<std::shared_ptr<FnOverloadingNode>> Compiler::argDependentLookup(
+	CompileContext *compileContext,
 	FnNode *fn,
 	const std::deque<std::shared_ptr<TypeNameNode>> &argTypes,
 	const std::deque<std::shared_ptr<TypeNameNode>> &genericArgs,
 	bool isStatic) {
 	std::deque<std::shared_ptr<FnOverloadingNode>> matchedRegistries;
 
-	_argDependentLookup(fn, argTypes, genericArgs, matchedRegistries, isStatic);
+	_argDependentLookup(compileContext, fn, argTypes, genericArgs, matchedRegistries, isStatic);
 
 	return matchedRegistries;
 }

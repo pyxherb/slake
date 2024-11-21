@@ -261,7 +261,7 @@ static std::shared_ptr<ExprNode> _evalConstBinaryOpExpr(
 	}
 }
 
-std::shared_ptr<ExprNode> Compiler::evalConstExpr(std::shared_ptr<ExprNode> expr) {
+std::shared_ptr<ExprNode> Compiler::evalConstExpr(CompileContext *compileContext, std::shared_ptr<ExprNode> expr) {
 	switch (expr->getExprType()) {
 		case ExprType::I8:
 		case ExprType::I16:
@@ -282,7 +282,7 @@ std::shared_ptr<ExprNode> Compiler::evalConstExpr(std::shared_ptr<ExprNode> expr
 			if (!e->x)
 				return {};
 
-			if (!evalConstExpr(e->x))
+			if (!evalConstExpr(compileContext, e->x))
 				return {};
 
 			switch (e->x->getExprType()) {
@@ -312,7 +312,7 @@ std::shared_ptr<ExprNode> Compiler::evalConstExpr(std::shared_ptr<ExprNode> expr
 			if ((!e->lhs) || (!e->rhs))
 				return {};
 
-			auto lhs = evalConstExpr(e->lhs), rhs = evalConstExpr(e->rhs);
+			auto lhs = evalConstExpr(compileContext, e->lhs), rhs = evalConstExpr(compileContext, e->rhs);
 
 			if ((!lhs) || (!rhs))
 				return {};
@@ -367,20 +367,22 @@ std::shared_ptr<ExprNode> Compiler::evalConstExpr(std::shared_ptr<ExprNode> expr
 
 			auto resultExpr = std::make_shared<ArrayExprNode>();
 
-			if ((!curMajorContext.curMinorContext.expectedType) ||
-				curMajorContext.curMinorContext.expectedType->getTypeId() != TypeId::Array)
+			if ((!compileContext->curMajorContext.curMinorContext.expectedType) ||
+				compileContext->curMajorContext.curMinorContext.expectedType->getTypeId() != TypeId::Array)
 				return {};
 
-			auto et = std::static_pointer_cast<ArrayTypeNameNode>(curMajorContext.curMinorContext.expectedType);
+			auto et = std::static_pointer_cast<ArrayTypeNameNode>(compileContext->curMajorContext.curMinorContext.expectedType);
 
 			for (auto &i : e->elements) {
-				auto t = evalExprType(i);
+				auto t = evalExprType(compileContext, i);
 
-				if (!isSameType(t, et->elementType)) {
-					if (isTypeNamesConvertible(t, et->elementType)) {
-						auto element = evalConstExpr(std::make_shared<CastExprNode>(
-							et,
-							i));
+				if (!isSameType(compileContext, t, et->elementType)) {
+					if (isTypeNamesConvertible(compileContext, t, et->elementType)) {
+						auto element = evalConstExpr(
+							compileContext,
+							std::make_shared<CastExprNode>(
+								et,
+								i));
 
 						if (!element)
 							return {};
@@ -389,7 +391,7 @@ std::shared_ptr<ExprNode> Compiler::evalConstExpr(std::shared_ptr<ExprNode> expr
 					} else
 						return {};
 				} else {
-					auto element = evalConstExpr(i);
+					auto element = evalConstExpr(compileContext, i);
 					if (!element)
 						return {};
 
@@ -407,7 +409,7 @@ std::shared_ptr<ExprNode> Compiler::evalConstExpr(std::shared_ptr<ExprNode> expr
 			return {};	// stub
 		}
 		case ExprType::Cast: {
-			return {}; // stub
+			return {};	// stub
 			auto e = std::static_pointer_cast<CastExprNode>(expr);
 			if (!isLiteralTypeName(e->targetType))
 				return {};
@@ -452,7 +454,7 @@ std::shared_ptr<ExprNode> Compiler::evalConstExpr(std::shared_ptr<ExprNode> expr
 				case ExprType::Bool: {
 				}
 			}
-			return evalConstExpr(e->target);
+			return evalConstExpr(compileContext, e->target);
 		}
 		case ExprType::Match:
 			// stub
@@ -461,18 +463,18 @@ std::shared_ptr<ExprNode> Compiler::evalConstExpr(std::shared_ptr<ExprNode> expr
 	}
 }
 
-std::shared_ptr<TypeNameNode> Compiler::evalExprType(std::shared_ptr<ExprNode> expr) {
+std::shared_ptr<TypeNameNode> Compiler::evalExprType(CompileContext *compileContext, std::shared_ptr<ExprNode> expr) {
 	std::shared_ptr<TypeNameNode> t;
 
-	pushMinorContext();
+	compileContext->pushMinorContext();
 
-	curMajorContext.curMinorContext.dryRun = true;
-	curMajorContext.curMinorContext.evalPurpose = EvalPurpose::Stmt;
-	curMajorContext.curMinorContext.evaluatedType = {};
-	compileExpr(expr);
-	t = curMajorContext.curMinorContext.evaluatedType;
+	compileContext->curMajorContext.curMinorContext.dryRun = true;
+	compileContext->curMajorContext.curMinorContext.evalPurpose = EvalPurpose::Stmt;
+	compileContext->curMajorContext.curMinorContext.evaluatedType = {};
+	compileExpr(compileContext, expr);
+	t = compileContext->curMajorContext.curMinorContext.evaluatedType;
 
-	popMinorContext();
+	compileContext->popMinorContext();
 
 	return t;
 }

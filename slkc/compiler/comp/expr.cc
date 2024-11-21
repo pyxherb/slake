@@ -2,24 +2,24 @@
 
 using namespace slake::slkc;
 
-void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
+void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprNode> expr) {
 	slxfmt::SourceLocDesc sld;
 	if (expr->tokenRange) {
-		sld.offIns = curFn->body.size();
+		sld.offIns = compileContext->curFn->body.size();
 		sld.line = tokenRangeToSourceLocation(expr->tokenRange).beginPosition.line;
 		sld.column = tokenRangeToSourceLocation(expr->tokenRange).beginPosition.column;
 	}
 
-	if (!curMajorContext.curMinorContext.dryRun) {
-		if (auto ce = evalConstExpr(expr); ce) {
-			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
+	if (!compileContext->curMajorContext.curMinorContext.dryRun) {
+		if (auto ce = evalConstExpr(compileContext, expr); ce) {
+			if (compileContext->curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
 				throw FatalCompilationError(
 					Message(
 						tokenRangeToSourceLocation(expr->tokenRange),
 						MessageType::Error,
 						"Expecting a lvalue expression"));
 
-			_insertIns(Opcode::MOV, curMajorContext.curMinorContext.evalDest, { ce });
+			compileContext->_insertIns(Opcode::MOV, compileContext->curMajorContext.curMinorContext.evalDest, { ce });
 			return;
 		}
 	}
@@ -28,28 +28,28 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 		case ExprType::Unary: {
 			auto e = std::static_pointer_cast<UnaryOpExprNode>(expr);
 
-			compileUnaryOpExpr(e, evalExprType(e->x));
+			compileUnaryOpExpr(compileContext, e, evalExprType(compileContext, e->x));
 			break;
 		}
 		case ExprType::Binary: {
 			auto e = std::static_pointer_cast<BinaryOpExprNode>(expr);
 
-			compileBinaryOpExpr(e, evalExprType(e->lhs), evalExprType(e->rhs));
+			compileBinaryOpExpr(compileContext, e, evalExprType(compileContext, e->lhs), evalExprType(compileContext, e->rhs));
 			break;
 		}
 		case ExprType::Ternary: {
 			auto e = std::static_pointer_cast<TernaryOpExprNode>(expr);
 
-			uint32_t conditionRegIndex = allocReg(),
-					 resultRegIndex = allocReg();
+			uint32_t conditionRegIndex = compileContext->allocReg(),
+					 resultRegIndex = compileContext->allocReg();
 
 			auto loc = tokenRangeToSourceLocation(e->tokenRange);
 			std::string falseBranchLabel = "$ternary_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_false",
 						endLabel = "$ternary_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_end";
 
-			auto conditionType = evalExprType(e->condition),
-				 trueBranchType = evalExprType(e->x),
-				 falseBranchType = evalExprType(e->y);
+			auto conditionType = evalExprType(compileContext, e->condition),
+				 trueBranchType = evalExprType(compileContext, e->x),
+				 falseBranchType = evalExprType(compileContext, e->y);
 			auto boolType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 
 			if (!conditionType)
@@ -73,60 +73,60 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 
 			auto resultType = getStrongerTypeName(trueBranchType, falseBranchType);
 
-			if (!isSameType(conditionType, boolType)) {
-				if (!isTypeNamesConvertible(conditionType, boolType))
+			if (!isSameType(compileContext, conditionType, boolType)) {
+				if (!isTypeNamesConvertible(compileContext, conditionType, boolType))
 					throw FatalCompilationError(
 						{ tokenRangeToSourceLocation(e->condition->tokenRange),
 							MessageType::Error,
 							"Expecting a boolean expression" });
 
-				compileExpr(
+				compileExpr(compileContext,
 					std::make_shared<CastExprNode>(
 						boolType,
 						e->condition),
 					EvalPurpose::RValue,
 					std::make_shared<RegRefNode>(conditionRegIndex));
 			} else
-				compileExpr(e->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(conditionRegIndex));
+				compileExpr(compileContext, e->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(conditionRegIndex));
 
-			_insertIns(
+			compileContext->_insertIns(
 				Opcode::JF,
 				{},
 				{ std::make_shared<LabelRefNode>(falseBranchLabel),
 					std::make_shared<RegRefNode>(conditionRegIndex) });
 
 			// Compile the true expression.
-			if (isSameType(trueBranchType, resultType)) {
-				if (!isTypeNamesConvertible(trueBranchType, resultType))
+			if (isSameType(compileContext, trueBranchType, resultType)) {
+				if (!isTypeNamesConvertible(compileContext, trueBranchType, resultType))
 					throw FatalCompilationError(
 						{ tokenRangeToSourceLocation(e->x->tokenRange),
 							MessageType::Error,
 							"Incompatible operand types" });
-				compileExpr(
+				compileExpr(compileContext,
 					std::make_shared<CastExprNode>(resultType, e->x),
-					curMajorContext.curMinorContext.evalPurpose,
+					compileContext->curMajorContext.curMinorContext.evalPurpose,
 					std::make_shared<RegRefNode>(resultRegIndex));
 			} else
-				compileExpr(e->x, curMajorContext.curMinorContext.evalPurpose, std::make_shared<RegRefNode>(resultRegIndex));
-			_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(endLabel) });
+				compileExpr(compileContext, e->x, compileContext->curMajorContext.curMinorContext.evalPurpose, std::make_shared<RegRefNode>(resultRegIndex));
+			compileContext->_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(endLabel) });
 
 			// Compile the false expression.
-			if (isSameType(falseBranchType, resultType)) {
-				if (!isTypeNamesConvertible(falseBranchType, resultType))
+			if (isSameType(compileContext, falseBranchType, resultType)) {
+				if (!isTypeNamesConvertible(compileContext, falseBranchType, resultType))
 					throw FatalCompilationError(
 						{ tokenRangeToSourceLocation(e->y->tokenRange),
 							MessageType::Error,
 							"Incompatible operand types" });
-				compileExpr(
+				compileExpr(compileContext,
 					std::make_shared<CastExprNode>(resultType, e->y),
-					curMajorContext.curMinorContext.evalPurpose,
+					compileContext->curMajorContext.curMinorContext.evalPurpose,
 					std::make_shared<RegRefNode>(resultRegIndex));
 			} else
-				compileExpr(e->y, curMajorContext.curMinorContext.evalPurpose, std::make_shared<RegRefNode>(resultRegIndex));
+				compileExpr(compileContext, e->y, compileContext->curMajorContext.curMinorContext.evalPurpose, std::make_shared<RegRefNode>(resultRegIndex));
 
-			_insertLabel(endLabel);
+			compileContext->_insertLabel(endLabel);
 
-			curMajorContext.curMinorContext.evaluatedType = resultType;
+			compileContext->curMajorContext.curMinorContext.evaluatedType = resultType;
 			break;
 		}
 		case ExprType::Match: {
@@ -139,10 +139,10 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 						defaultLabel = labelPrefix + "_label",
 						endLabel = labelPrefix + "_end";
 
-			uint32_t matcheeRegIndex = allocReg();
+			uint32_t matcheeRegIndex = compileContext->allocReg();
 
 			// Create a local variable to store result of the condition expression.
-			compileExpr(e->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(matcheeRegIndex));
+			compileExpr(compileContext, e->condition, EvalPurpose::RValue, std::make_shared<RegRefNode>(matcheeRegIndex));
 
 			std::pair<std::shared_ptr<ExprNode>, std::shared_ptr<ExprNode>> defaultCase;
 
@@ -164,33 +164,33 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					defaultCase = i;
 				}
 
-				uint32_t conditionRegIndex = allocReg();
+				uint32_t conditionRegIndex = compileContext->allocReg();
 
-				compileExpr(i.first, EvalPurpose::RValue, std::make_shared<RegRefNode>(conditionRegIndex));
+				compileExpr(compileContext, i.first, EvalPurpose::RValue, std::make_shared<RegRefNode>(conditionRegIndex));
 
-				uint32_t eqResultRegIndex = allocReg();
-				_insertIns(
+				uint32_t eqResultRegIndex = compileContext->allocReg();
+				compileContext->_insertIns(
 					Opcode::EQ,
 					std::make_shared<RegRefNode>(eqResultRegIndex),
 					{ std::make_shared<RegRefNode>(matcheeRegIndex),
 						std::make_shared<RegRefNode>(conditionRegIndex) });
-				_insertIns(
+				compileContext->_insertIns(
 					Opcode::JF,
 					{},
 					{ std::make_shared<LabelRefNode>(caseEndLabel),
 						std::make_shared<RegRefNode>(eqResultRegIndex) });
 
 				// Leave the minor stack that is created for the local variable.
-				compileExpr(i.second, curMajorContext.curMinorContext.evalPurpose, curMajorContext.curMinorContext.evalDest);
+				compileExpr(compileContext, i.second, compileContext->curMajorContext.curMinorContext.evalPurpose, compileContext->curMajorContext.curMinorContext.evalDest);
 
-				_insertLabel(caseEndLabel);
-				_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(endLabel) });
+				compileContext->_insertLabel(caseEndLabel);
+				compileContext->_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(endLabel) });
 			}
 
 			if (defaultCase.second)
-				compileExpr(defaultCase.second);
+				compileExpr(compileContext, defaultCase.second);
 
-			_insertLabel(endLabel);
+			compileContext->_insertLabel(endLabel);
 
 			// TODO: Set evaluated type.
 
@@ -199,29 +199,29 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 		case ExprType::Call: {
 			auto e = std::static_pointer_cast<CallExprNode>(expr);
 
-			curMajorContext.curMinorContext.isArgTypesSet = true;
-			curMajorContext.curMinorContext.argTypes = {};
+			compileContext->curMajorContext.curMinorContext.isArgTypesSet = true;
+			compileContext->curMajorContext.curMinorContext.argTypes = {};
 
 			for (auto &i : e->args) {
-				auto type = evalExprType(i);
+				auto type = evalExprType(compileContext, i);
 				if (!type)
 					throw FatalCompilationError(
 						Message(
 							tokenRangeToSourceLocation(i->tokenRange),
 							MessageType::Error,
 							"Error deducing type of the argument"));
-				curMajorContext.curMinorContext.argTypes.push_back(type);
+				compileContext->curMajorContext.curMinorContext.argTypes.push_back(type);
 			}
 
-			uint32_t callTargetRegIndex = allocReg();
+			uint32_t callTargetRegIndex = compileContext->allocReg();
 
 			// Note that the register allocated for `thisRegIndex' may end up useless for static methods.
 			// The optimizer will (or should) remove it if the register is useless.
-			uint32_t thisRegIndex = allocReg();
+			uint32_t thisRegIndex = compileContext->allocReg();
 
-			compileExpr(e->target, EvalPurpose::Call, std::make_shared<RegRefNode>(callTargetRegIndex), std::make_shared<RegRefNode>(thisRegIndex));
+			compileExpr(compileContext, e->target, EvalPurpose::Call, std::make_shared<RegRefNode>(callTargetRegIndex), std::make_shared<RegRefNode>(thisRegIndex));
 
-			auto returnType = curMajorContext.curMinorContext.lastCallTargetReturnType;
+			auto returnType = compileContext->curMajorContext.curMinorContext.lastCallTargetReturnType;
 			if (!returnType)
 				throw FatalCompilationError(
 					Message(
@@ -230,37 +230,59 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 						"Error deducing return type"));
 
 			for (size_t i = 0; i < e->args.size(); ++i) {
+				compileContext->pushMinorContext();
+
+#if SLKC_WITH_LANGUAGE_SERVER
+				compileContext->curMajorContext.curMinorContext.curCorrespondingArgIndex = i;
+				if (i < compileContext->curMajorContext.curMinorContext.lastCallTargetParams.size()) {
+					compileContext->curMajorContext.curMinorContext.curCorrespondingParam = compileContext->curMajorContext.curMinorContext.lastCallTargetParams[i];
+					if (!i) {
+						updateCompletionContext(e->idxLParentheseToken, CompletionContext::Expr);
+						updateTokenInfo(e->idxLParentheseToken, [this, &i, &compileContext](TokenInfo &info) {
+							info.semanticInfo.correspondingParam = compileContext->curMajorContext.curMinorContext.lastCallTargetParams[i];
+						});
+					} else {
+						updateCompletionContext(e->idxCommaTokens[i - 1], CompletionContext::Expr);
+						updateTokenInfo(e->idxCommaTokens[i - 1], [this, &i, &compileContext](TokenInfo &info) {
+							info.semanticInfo.correspondingParam = compileContext->curMajorContext.curMinorContext.lastCallTargetParams[i];
+						});
+					}
+				}
+#endif
+
 				EvalPurpose evalPurpose = EvalPurpose::RValue;
-				if (i < curMajorContext.curMinorContext.lastCallTargetParams.size()) {
-					if (isLValueType(curMajorContext.curMinorContext.lastCallTargetParams[i]->type))
+				if (i < compileContext->curMajorContext.curMinorContext.lastCallTargetParams.size()) {
+					if (isLValueType(compileContext->curMajorContext.curMinorContext.lastCallTargetParams[i]->type))
 						evalPurpose = EvalPurpose::LValue;
 				}
 
-				uint32_t tmpRegIndex = allocReg();
+				uint32_t tmpRegIndex = compileContext->allocReg();
 
-				compileExpr(e->args[i], evalPurpose, std::make_shared<RegRefNode>(tmpRegIndex));
-				_insertIns(
+				compileExpr(compileContext, e->args[i], evalPurpose, std::make_shared<RegRefNode>(tmpRegIndex));
+				compileContext->_insertIns(
 					Opcode::PUSHARG,
 					{},
 					{ std::make_shared<RegRefNode>(tmpRegIndex),
-						i < curMajorContext.curMinorContext.lastCallTargetParams.size()
-							? curMajorContext.curMinorContext.lastCallTargetParams[i]->type
+						i < compileContext->curMajorContext.curMinorContext.lastCallTargetParams.size()
+							? compileContext->curMajorContext.curMinorContext.lastCallTargetParams[i]->type
 							: nullptr });
+
+				compileContext->popMinorContext();
 			}
 
-			if (curMajorContext.curMinorContext.isLastCallTargetStatic)
-				_insertIns(
+			if (compileContext->curMajorContext.curMinorContext.isLastCallTargetStatic)
+				compileContext->_insertIns(
 					e->isAsync ? Opcode::ACALL : Opcode::CALL,
 					{},
 					{ std::make_shared<RegRefNode>(callTargetRegIndex) });
 			else
-				_insertIns(
+				compileContext->_insertIns(
 					e->isAsync ? Opcode::AMCALL : Opcode::MCALL,
 					{},
 					{ std::make_shared<RegRefNode>(callTargetRegIndex),
 						std::make_shared<RegRefNode>(thisRegIndex) });
 
-			switch (curMajorContext.curMinorContext.evalPurpose) {
+			switch (compileContext->curMajorContext.curMinorContext.evalPurpose) {
 				case EvalPurpose::LValue: {
 					if (!isLValueType(returnType))
 						throw FatalCompilationError(
@@ -269,29 +291,29 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 								MessageType::Error,
 								"Expecting a lvalue expression"));
 
-					_insertIns(
+					compileContext->_insertIns(
 						Opcode::LRET,
-						curMajorContext.curMinorContext.evalDest,
+						compileContext->curMajorContext.curMinorContext.evalDest,
 						{});
 					break;
 				}
 				case EvalPurpose::RValue:
 				case EvalPurpose::Call: {
 					if (isLValueType(returnType)) {
-						uint32_t tmpRegIndex = allocReg();
+						uint32_t tmpRegIndex = compileContext->allocReg();
 
-						_insertIns(
+						compileContext->_insertIns(
 							Opcode::LRET,
 							std::make_shared<RegRefNode>(tmpRegIndex),
 							{});
-						_insertIns(
+						compileContext->_insertIns(
 							Opcode::LVALUE,
-							curMajorContext.curMinorContext.evalDest,
+							compileContext->curMajorContext.curMinorContext.evalDest,
 							{ std::make_shared<RegRefNode>(tmpRegIndex) });
 					} else {
-						_insertIns(
+						compileContext->_insertIns(
 							Opcode::LRET,
-							curMajorContext.curMinorContext.evalDest,
+							compileContext->curMajorContext.curMinorContext.evalDest,
 							{});
 					}
 
@@ -303,21 +325,21 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					assert(false);
 			}
 
-			curMajorContext.curMinorContext.evaluatedType = returnType;
+			compileContext->curMajorContext.curMinorContext.evaluatedType = returnType;
 
 			break;
 		}
 		case ExprType::Await: {
-			uint32_t awaitTargetRegIndex = allocReg();
+			uint32_t awaitTargetRegIndex = compileContext->allocReg();
 
 			auto e = std::static_pointer_cast<AwaitExprNode>(expr);
 
-			if (auto ce = evalConstExpr(e); ce) {
-				_insertIns(Opcode::AWAIT, {}, { ce });
+			if (auto ce = evalConstExpr(compileContext, e); ce) {
+				compileContext->_insertIns(Opcode::AWAIT, {}, { ce });
 			} else {
 				// TODO: Check if the target is a method.
-				// compileExpr(e->target, curMajorContext.curMinorContext.evalPurpose, std::make_shared<RegRefNode>(RegId::R0));
-				// _insertIns(Opcode::AWAIT, std::make_shared<RegRefNode>(RegId::R0));
+				// compileExpr(compileContext,e->target, compileContext->curMajorContext.curMinorContext.evalPurpose, std::make_shared<RegRefNode>(RegId::R0));
+				// compileContext->_insertIns(Opcode::AWAIT, std::make_shared<RegRefNode>(RegId::R0));
 			}
 
 			// TODO: Set evaluated type.
@@ -351,7 +373,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					}
 
 					auto sizeArg = e->args[0];
-					auto sizeArgType = evalExprType(sizeArg);
+					auto sizeArgType = evalExprType(compileContext, sizeArg);
 
 					auto u32Type = std::make_shared<U32TypeNameNode>(SIZE_MAX);
 
@@ -363,28 +385,28 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 								"Cannot deduce type of the argument"));
 					}
 
-					uint32_t sizeArgRegIndex = allocReg();
+					uint32_t sizeArgRegIndex = compileContext->allocReg();
 
-					if (!isSameType(sizeArgType, u32Type)) {
-						if (!isTypeNamesConvertible(sizeArgType, u32Type))
+					if (!isSameType(compileContext, sizeArgType, u32Type)) {
+						if (!isTypeNamesConvertible(compileContext, sizeArgType, u32Type))
 							throw FatalCompilationError(
 								{ tokenRangeToSourceLocation(sizeArg->tokenRange),
 									MessageType::Error,
 									"Incompatible argument type" });
-						compileExpr(
+						compileExpr(compileContext,
 							std::make_shared<CastExprNode>(u32Type, sizeArg),
 							EvalPurpose::RValue,
 							std::make_shared<RegRefNode>(sizeArgRegIndex));
 					} else {
-						compileExpr(
+						compileExpr(compileContext,
 							sizeArg,
 							EvalPurpose::RValue,
 							std::make_shared<RegRefNode>(sizeArgRegIndex));
 					}
 
-					_insertIns(
+					compileContext->_insertIns(
 						Opcode::ARRNEW,
-						curMajorContext.curMinorContext.evalDest,
+						compileContext->curMajorContext.curMinorContext.evalDest,
 						{ t->elementType,
 							std::make_shared<RegRefNode>(sizeArgRegIndex) });
 
@@ -394,7 +416,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					//
 					// Instantiate a custom type.
 					//
-					auto node = resolveCustomTypeName((CustomTypeNameNode *)e->type.get());
+					auto node = resolveCustomTypeName(compileContext, (CustomTypeNameNode *)e->type.get());
 
 					switch (node->getNodeType()) {
 						case NodeType::Class:
@@ -405,7 +427,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 								std::deque<std::shared_ptr<TypeNameNode>> argTypes;
 
 								for (auto &i : e->args) {
-									auto t = evalExprType(i);
+									auto t = evalExprType(compileContext, i);
 									if (!t)
 										throw FatalCompilationError(
 											Message(
@@ -420,7 +442,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 								std::shared_ptr<FnOverloadingNode> overloading;
 
 								{
-									auto overloadings = argDependentLookup((FnNode *)it->second.get(), argTypes, {});
+									auto overloadings = argDependentLookup(compileContext, (FnNode *)it->second.get(), argTypes, {});
 									if (!overloadings.size()) {
 										throw FatalCompilationError(
 											Message(
@@ -456,55 +478,55 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 
 								for (size_t i = 0; i < argTypes.size(); ++i) {
 									if (i < paramTypes.size()) {
-										if (isSameType(argTypes[i], paramTypes[i])) {
-											if (auto ce = evalConstExpr(e->args[i]); ce)
-												_insertIns(Opcode::PUSHARG, {}, { ce, paramTypes[i] });
+										if (isSameType(compileContext, argTypes[i], paramTypes[i])) {
+											if (auto ce = evalConstExpr(compileContext, e->args[i]); ce)
+												compileContext->_insertIns(Opcode::PUSHARG, {}, { ce, paramTypes[i] });
 											else {
-												uint32_t tmpRegIndex = allocReg();
+												uint32_t tmpRegIndex = compileContext->allocReg();
 
-												compileExpr(e->args[i], EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
-												_insertIns(Opcode::PUSHARG, {}, { std::make_shared<RegRefNode>(tmpRegIndex), paramTypes[i] });
+												compileExpr(compileContext, e->args[i], EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
+												compileContext->_insertIns(Opcode::PUSHARG, {}, { std::make_shared<RegRefNode>(tmpRegIndex), paramTypes[i] });
 											}
 										} else {
-											uint32_t tmpRegIndex = allocReg();
+											uint32_t tmpRegIndex = compileContext->allocReg();
 
-											compileExpr(
+											compileExpr(compileContext,
 												std::make_shared<CastExprNode>(argTypes[i], e->args[i]),
 												EvalPurpose::RValue,
 												std::make_shared<RegRefNode>(tmpRegIndex));
-											_insertIns(Opcode::PUSHARG, {}, { std::make_shared<RegRefNode>(tmpRegIndex), paramTypes[i] });
+											compileContext->_insertIns(Opcode::PUSHARG, {}, { std::make_shared<RegRefNode>(tmpRegIndex), paramTypes[i] });
 										}
 									} else {
-										if (auto ce = evalConstExpr(e->args[i]); ce)
-											_insertIns(Opcode::PUSHARG, {}, { ce, {} });
+										if (auto ce = evalConstExpr(compileContext, e->args[i]); ce)
+											compileContext->_insertIns(Opcode::PUSHARG, {}, { ce, {} });
 										else {
-											uint32_t tmpRegIndex = allocReg();
+											uint32_t tmpRegIndex = compileContext->allocReg();
 
-											compileExpr(e->args[i], EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
-											_insertIns(Opcode::PUSHARG, {}, { std::make_shared<RegRefNode>(tmpRegIndex), {} });
+											compileExpr(compileContext, e->args[i], EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
+											compileContext->_insertIns(Opcode::PUSHARG, {}, { std::make_shared<RegRefNode>(tmpRegIndex), {} });
 										}
 									}
 								}
 
 								auto fullName = getFullName(overloading.get());
-								uint32_t ctorIndex = allocReg();
-								_insertIns(
+								uint32_t ctorIndex = compileContext->allocReg();
+								compileContext->_insertIns(
 									Opcode::LOAD,
 									std::make_shared<RegRefNode>(ctorIndex),
 									{ std::make_shared<IdRefExprNode>(fullName) });
 
-								_insertIns(
+								compileContext->_insertIns(
 									Opcode::NEW,
-									curMajorContext.curMinorContext.evalDest,
+									compileContext->curMajorContext.curMinorContext.evalDest,
 									{ e->type });
-								_insertIns(
+								compileContext->_insertIns(
 									Opcode::CTORCALL,
 									{},
-									{ std::make_shared<RegRefNode>(ctorIndex), curMajorContext.curMinorContext.evalDest });
+									{ std::make_shared<RegRefNode>(ctorIndex), compileContext->curMajorContext.curMinorContext.evalDest });
 							} else {
-								_insertIns(
+								compileContext->_insertIns(
 									Opcode::NEW,
-									curMajorContext.curMinorContext.evalDest,
+									compileContext->curMajorContext.curMinorContext.evalDest,
 									{ e->type });
 							}
 
@@ -530,25 +552,25 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							"Specified type is not constructible"));
 			}
 
-			curMajorContext.curMinorContext.evaluatedType = e->type;
+			compileContext->curMajorContext.curMinorContext.evaluatedType = e->type;
 
 			break;
 		}
 		case ExprType::Typeof: {
 			auto e = std::static_pointer_cast<TypeofExprNode>(expr);
 
-			if (auto ce = evalConstExpr(e->target); ce) {
-				_insertIns(
+			if (auto ce = evalConstExpr(compileContext, e->target); ce) {
+				compileContext->_insertIns(
 					Opcode::TYPEOF,
-					curMajorContext.curMinorContext.evalDest,
+					compileContext->curMajorContext.curMinorContext.evalDest,
 					{ ce });
 			} else {
-				uint32_t tmpRegIndex = allocReg();
+				uint32_t tmpRegIndex = compileContext->allocReg();
 
-				compileExpr(e->target, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
-				_insertIns(
+				compileExpr(compileContext, e->target, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
+				compileContext->_insertIns(
 					Opcode::TYPEOF,
-					curMajorContext.curMinorContext.evalDest,
+					compileContext->curMajorContext.curMinorContext.evalDest,
 					{ std::make_shared<RegRefNode>(tmpRegIndex) });
 			}
 
@@ -559,31 +581,31 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 		case ExprType::Cast: {
 			auto e = std::static_pointer_cast<CastExprNode>(expr);
 
-			curMajorContext.curMinorContext.expectedType = e->targetType;
+			compileContext->curMajorContext.curMinorContext.expectedType = e->targetType;
 
-			if (auto ce = evalConstExpr(e->target); ce) {
-				if (isTypeNamesConvertible(evalExprType(ce), e->targetType)) {
-					_insertIns(Opcode::CAST, curMajorContext.curMinorContext.evalDest, { e->targetType, ce });
+			if (auto ce = evalConstExpr(compileContext, e->target); ce) {
+				if (isTypeNamesConvertible(compileContext, evalExprType(compileContext, ce), e->targetType)) {
+					compileContext->_insertIns(Opcode::CAST, compileContext->curMajorContext.curMinorContext.evalDest, { e->targetType, ce });
 				} else {
 					throw FatalCompilationError({ tokenRangeToSourceLocation(e->tokenRange), MessageType::Error, "Invalid type conversion" });
 				}
 			} else {
-				auto originalType = evalExprType(e->target);
+				auto originalType = evalExprType(compileContext, e->target);
 
 				if (!originalType)
 					break;
 
-				if (isTypeNamesConvertible(originalType, e->targetType)) {
-					uint32_t tmpRegIndex = allocReg();
+				if (isTypeNamesConvertible(compileContext, originalType, e->targetType)) {
+					uint32_t tmpRegIndex = compileContext->allocReg();
 
-					compileExpr(e->target, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
-					_insertIns(Opcode::CAST, curMajorContext.curMinorContext.evalDest, { e->targetType, std::make_shared<RegRefNode>(tmpRegIndex) });
+					compileExpr(compileContext, e->target, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
+					compileContext->_insertIns(Opcode::CAST, compileContext->curMajorContext.curMinorContext.evalDest, { e->targetType, std::make_shared<RegRefNode>(tmpRegIndex) });
 				} else {
 					throw FatalCompilationError({ tokenRangeToSourceLocation(e->tokenRange), MessageType::Error, "Invalid type conversion" });
 				}
 			}
 
-			curMajorContext.curMinorContext.evaluatedType = e->targetType;
+			compileContext->curMajorContext.curMinorContext.evaluatedType = e->targetType;
 
 			break;
 		}
@@ -600,16 +622,17 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 #endif
 
 			IdRefResolvedParts resolvedParts;
-			if (!resolveIdRef(e->ref, resolvedParts))
+			bool isStatic;
+			if (!resolveIdRef(compileContext, e->ref, resolvedParts, isStatic))
 				throw FatalCompilationError(
 					{ tokenRangeToSourceLocation(e->tokenRange),
 						MessageType::Error,
 						"Identifier not found: `" + std::to_string(e->ref->entries, this) + "'" });
 
-			uint32_t tmpRegIndex = allocReg();
+			uint32_t tmpRegIndex = compileContext->allocReg();
 
-			auto determineOverloadingRegistry = [this, expr, &resolvedParts](std::shared_ptr<FnNode> x, const std::deque<std::shared_ptr<TypeNameNode>> &genericArgs) -> std::shared_ptr<FnOverloadingNode> {
-				if ((resolvedParts.size() > 2) || (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Call)) {
+			auto determineOverloadingRegistry = [this, expr, &resolvedParts, &compileContext, &isStatic](std::shared_ptr<FnNode> x, const std::deque<std::shared_ptr<TypeNameNode>> &genericArgs) -> std::shared_ptr<FnOverloadingNode> {
+				if ((resolvedParts.size() > 2) || (compileContext->curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Call)) {
 					//
 					// Reference to a overloaded function is always ambiguous,
 					// because we cannot determine which overloading is the user wanted.
@@ -630,10 +653,11 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 				//
 				{
 					auto overloadings = argDependentLookup(
+						compileContext, 
 						x.get(),
-						curMajorContext.curMinorContext.argTypes,
+						compileContext->curMajorContext.curMinorContext.argTypes,
 						genericArgs,
-						curMajorContext.curMinorContext.isLastResolvedTargetStatic);
+						isStatic);
 
 					if (!overloadings.size()) {
 						throw FatalCompilationError(
@@ -657,36 +681,36 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 								"Ambiguous function call"));
 					}
 
-					curMajorContext.curMinorContext.lastCallTargetParams = overloadings[0]->params;
-					curMajorContext.curMinorContext.hasVarArgs = overloadings[0]->isVaridic();
+					compileContext->curMajorContext.curMinorContext.lastCallTargetParams = overloadings[0]->params;
+					compileContext->curMajorContext.curMinorContext.hasVarArgs = overloadings[0]->isVaridic();
 
-					curMajorContext.curMinorContext.lastCallTargetReturnType =
+					compileContext->curMajorContext.curMinorContext.lastCallTargetReturnType =
 						overloadings[0]->returnType
 							? overloadings[0]->returnType
 							: std::make_shared<AnyTypeNameNode>(SIZE_MAX);
-					curMajorContext.curMinorContext.isLastCallTargetStatic = overloadings[0]->access & ACCESS_STATIC;
+					compileContext->curMajorContext.curMinorContext.isLastCallTargetStatic = overloadings[0]->access & ACCESS_STATIC;
 					return overloadings[0];
 				}
 			};
 
-			auto loadRest = [this, &determineOverloadingRegistry, &expr, &tmpRegIndex, &resolvedParts]() -> uint32_t {
+			auto loadRest = [this, &determineOverloadingRegistry, &expr, &tmpRegIndex, &resolvedParts, &compileContext]() -> uint32_t {
 				for (size_t i = 1; i < resolvedParts.size(); ++i) {
 					switch (resolvedParts[i].second->getNodeType()) {
 						case NodeType::Var: {
 							auto varNode = std::static_pointer_cast<VarNode>(resolvedParts[i].second);
 
-							uint32_t resultRegIndex = allocReg();
-							_insertIns(
+							uint32_t resultRegIndex = compileContext->allocReg();
+							compileContext->_insertIns(
 								Opcode::RLOAD,
 								std::make_shared<RegRefNode>(resultRegIndex),
 								{ std::make_shared<RegRefNode>(tmpRegIndex),
 									std::make_shared<IdRefExprNode>(resolvedParts[i].first) });
 
 							if (varNode->type ? isLValueType(varNode->type) : false) {
-								uint32_t newResultRegIndex = allocReg();
+								uint32_t newResultRegIndex = compileContext->allocReg();
 
 								// Load once more for reference types.
-								_insertIns(
+								compileContext->_insertIns(
 									Opcode::LVALUE,
 									std::make_shared<RegRefNode>(newResultRegIndex),
 									{ std::make_shared<RegRefNode>(resultRegIndex) });
@@ -696,15 +720,15 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 
 							// Intermediate scopes should always be loaded as rvalue.
 							if ((i + 1 < resolvedParts.size())) {
-								uint32_t newResultRegIndex = allocReg();
-								_insertIns(
+								uint32_t newResultRegIndex = compileContext->allocReg();
+								compileContext->_insertIns(
 									Opcode::LVALUE,
 									std::make_shared<RegRefNode>(newResultRegIndex),
 									{ std::make_shared<RegRefNode>(resultRegIndex) });
 								resultRegIndex = newResultRegIndex;
 							} else {
-								curMajorContext.curMinorContext.evaluatedType = varNode->type->duplicate<TypeNameNode>();
-								curMajorContext.curMinorContext.evaluatedType->isRef = true;
+								compileContext->curMajorContext.curMinorContext.evaluatedType = varNode->type->duplicate<TypeNameNode>();
+								compileContext->curMajorContext.curMinorContext.evaluatedType->isRef = true;
 							}
 
 							tmpRegIndex = resultRegIndex;
@@ -715,10 +739,10 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 								std::static_pointer_cast<FnNode>(resolvedParts[i].second),
 								resolvedParts[i].first->entries.back().genericArgs);
 
-							if (!curMajorContext.curMinorContext.isLastCallTargetStatic) {
-								_insertIns(
+							if (!compileContext->curMajorContext.curMinorContext.isLastCallTargetStatic) {
+								compileContext->_insertIns(
 									Opcode::MOV,
-									curMajorContext.curMinorContext.thisDest,
+									compileContext->curMajorContext.curMinorContext.thisDest,
 									{ std::make_shared<RegRefNode>(tmpRegIndex) });
 							}
 
@@ -737,27 +761,27 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 								if (overloading->isVaridic())
 									paramTypes.pop_back();
 
-								curMajorContext.curMinorContext.evaluatedType =
+								compileContext->curMajorContext.curMinorContext.evaluatedType =
 									std::make_shared<FnTypeNameNode>(
 										overloading->returnType,
 										paramTypes);
 							}
 
-							uint32_t newRegIndex = allocReg();
+							uint32_t newRegIndex = compileContext->allocReg();
 							if (overloading->isVirtual) {
 								// Copy the parameter types to the reference.
 								resolvedParts[i].first->entries.back().hasParamTypes = true;
-								resolvedParts[i].first->entries.back().paramTypes = curMajorContext.curMinorContext.argTypes;
-								resolvedParts[i].first->entries.back().hasVarArg = curMajorContext.curMinorContext.hasVarArgs;
+								resolvedParts[i].first->entries.back().paramTypes = compileContext->curMajorContext.curMinorContext.argTypes;
+								resolvedParts[i].first->entries.back().hasVarArg = compileContext->curMajorContext.curMinorContext.hasVarArgs;
 
-								_insertIns(
+								compileContext->_insertIns(
 									Opcode::RLOAD,
 									std::make_shared<RegRefNode>(newRegIndex),
 									{ std::make_shared<RegRefNode>(tmpRegIndex),
 										std::make_shared<IdRefExprNode>(resolvedParts[i].first) });
 							} else {
 								auto fullRef = getFullName(overloading.get());
-								_insertIns(
+								compileContext->_insertIns(
 									Opcode::LOAD,
 									std::make_shared<RegRefNode>(newRegIndex),
 									{ std::make_shared<IdRefExprNode>(fullRef) });
@@ -779,7 +803,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 				case NodeType::LocalVar: {
 					auto localVarNode = std::static_pointer_cast<LocalVarNode>(x);
 
-					_insertIns(
+					compileContext->_insertIns(
 						Opcode::LLOAD,
 						std::make_shared<RegRefNode>(tmpRegIndex),
 						{ std::make_shared<U32LiteralExprNode>(localVarNode->index) });
@@ -788,12 +812,12 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					if (resolvedParts.size() > 1) {
 						unwrap = true;
 					} else {
-						unwrap = curMajorContext.curMinorContext.evalPurpose != EvalPurpose::LValue;
+						unwrap = compileContext->curMajorContext.curMinorContext.evalPurpose != EvalPurpose::LValue;
 					}
 
 					if (unwrap) {
-						uint32_t newTmpRegIndex = allocReg();
-						_insertIns(
+						uint32_t newTmpRegIndex = compileContext->allocReg();
+						compileContext->_insertIns(
 							Opcode::LVALUE,
 							std::make_shared<RegRefNode>(newTmpRegIndex),
 							{ std::make_shared<RegRefNode>(tmpRegIndex) });
@@ -801,15 +825,15 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					}
 
 					if (resolvedParts.size() == 1) {
-						curMajorContext.curMinorContext.evaluatedType = localVarNode->type->duplicate<TypeNameNode>();
-						curMajorContext.curMinorContext.evaluatedType->isRef = true;
+						compileContext->curMajorContext.curMinorContext.evaluatedType = localVarNode->type->duplicate<TypeNameNode>();
+						compileContext->curMajorContext.curMinorContext.evaluatedType->isRef = true;
 					}
 
 					uint32_t resultRegIndex = loadRest();
 					if (resolvedParts.back().second->getNodeType() == NodeType::Var) {
-						if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RValue) {
-							uint32_t newResultRegIndex = allocReg();
-							_insertIns(
+						if (compileContext->curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RValue) {
+							uint32_t newResultRegIndex = compileContext->allocReg();
+							compileContext->_insertIns(
 								Opcode::LVALUE,
 								std::make_shared<RegRefNode>(newResultRegIndex),
 								{ std::make_shared<RegRefNode>(resultRegIndex) });
@@ -817,24 +841,24 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 						}
 					}
 
-					if (curMajorContext.curMinorContext.evalDest)
-						_insertIns(
+					if (compileContext->curMajorContext.curMinorContext.evalDest)
+						compileContext->_insertIns(
 							Opcode::MOV,
-							curMajorContext.curMinorContext.evalDest,
+							compileContext->curMajorContext.curMinorContext.evalDest,
 							{ std::make_shared<RegRefNode>(resultRegIndex) });
 					break;
 				}
 				case NodeType::Param: {
 					auto paramNode = std::static_pointer_cast<ParamNode>(x);
 
-					_insertIns(
+					compileContext->_insertIns(
 						Opcode::LARG,
 						std::make_shared<RegRefNode>(tmpRegIndex),
-						{ std::make_shared<U32LiteralExprNode>(curFn->paramIndices[paramNode->name]) });
+						{ std::make_shared<U32LiteralExprNode>(compileContext->curFn->paramIndices[paramNode->name]) });
 
 					if (resolvedParts.size() > 1) {
-						uint32_t newTmpRegIndex = allocReg();
-						_insertIns(
+						uint32_t newTmpRegIndex = compileContext->allocReg();
+						compileContext->_insertIns(
 							Opcode::LVALUE,
 							std::make_shared<RegRefNode>(newTmpRegIndex),
 							{ std::make_shared<RegRefNode>(tmpRegIndex) });
@@ -842,9 +866,9 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					}
 
 					if (paramNode->type && isLValueType(paramNode->type)) {
-						uint32_t newTmpRegIndex = allocReg();
+						uint32_t newTmpRegIndex = compileContext->allocReg();
 						// Load once more for reference types.
-						_insertIns(
+						compileContext->_insertIns(
 							Opcode::LVALUE,
 							std::make_shared<RegRefNode>(newTmpRegIndex),
 							{ std::make_shared<RegRefNode>(tmpRegIndex) });
@@ -852,17 +876,17 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					}
 
 					if (resolvedParts.size() == 1) {
-						curMajorContext.curMinorContext.evaluatedType = paramNode->type->duplicate<TypeNameNode>();
-						curMajorContext.curMinorContext.evaluatedType->isRef = true;
+						compileContext->curMajorContext.curMinorContext.evaluatedType = paramNode->type->duplicate<TypeNameNode>();
+						compileContext->curMajorContext.curMinorContext.evaluatedType->isRef = true;
 					}
 
 					uint32_t resultRegIndex = loadRest();
 					switch (resolvedParts.back().second->getNodeType()) {
 						case NodeType::Var:
 						case NodeType::Param:
-							if (curMajorContext.curMinorContext.evalPurpose != EvalPurpose::LValue) {
-								uint32_t newResultRegIndex = allocReg();
-								_insertIns(
+							if (compileContext->curMajorContext.curMinorContext.evalPurpose != EvalPurpose::LValue) {
+								uint32_t newResultRegIndex = compileContext->allocReg();
+								compileContext->_insertIns(
 									Opcode::LVALUE,
 									std::make_shared<RegRefNode>(newResultRegIndex),
 									{ std::make_shared<RegRefNode>(resultRegIndex) });
@@ -873,10 +897,10 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							break;
 					}
 
-					if (curMajorContext.curMinorContext.evalDest)
-						_insertIns(
+					if (compileContext->curMajorContext.curMinorContext.evalDest)
+						compileContext->_insertIns(
 							Opcode::MOV,
-							curMajorContext.curMinorContext.evalDest,
+							compileContext->curMajorContext.curMinorContext.evalDest,
 							{ std::make_shared<RegRefNode>(resultRegIndex) });
 					break;
 				}
@@ -896,7 +920,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 						case NodeType::Interface:
 						case NodeType::Module: {
 							auto ref = getFullName((MemberNode *)x.get());
-							_insertIns(
+							compileContext->_insertIns(
 								Opcode::LOAD,
 								std::make_shared<RegRefNode>(tmpRegIndex),
 								{ std::make_shared<IdRefExprNode>(ref) });
@@ -914,14 +938,14 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							auto varNode = (VarNode *)x.get();
 
 							auto ref = getFullName(varNode);
-							_insertIns(
+							compileContext->_insertIns(
 								Opcode::LOAD,
 								std::make_shared<RegRefNode>(tmpRegIndex),
 								{ std::make_shared<IdRefExprNode>(ref) });
 
 							if (resolvedParts.size() == 1) {
-								curMajorContext.curMinorContext.evaluatedType = varNode->type->duplicate<TypeNameNode>();
-								curMajorContext.curMinorContext.evaluatedType->isRef = true;
+								compileContext->curMajorContext.curMinorContext.evaluatedType = varNode->type->duplicate<TypeNameNode>();
+								compileContext->curMajorContext.curMinorContext.evaluatedType->isRef = true;
 							}
 							break;
 						}
@@ -945,26 +969,26 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							}
 
 							if (resolvedParts.size() == 1) {
-								curMajorContext.curMinorContext.evaluatedType =
+								compileContext->curMajorContext.curMinorContext.evaluatedType =
 									std::make_shared<FnTypeNameNode>(
 										overloading->returnType,
 										paramTypes);
 							}
 
-							_insertIns(
+							compileContext->_insertIns(
 								Opcode::LOAD,
 								std::make_shared<RegRefNode>(tmpRegIndex),
 								{ std::make_shared<IdRefExprNode>(ref) });
 							break;
 						}
 						case NodeType::ThisRef: {
-							auto owner = curMajorContext.curMinorContext.curScope->owner;
+							auto owner = compileContext->curMajorContext.curMinorContext.curScope->owner;
 
 							switch (owner->getNodeType()) {
 								case NodeType::Class:
 								case NodeType::Interface: {
-									_insertIns(Opcode::LTHIS, std::make_shared<RegRefNode>(tmpRegIndex), {});
-									curMajorContext.curMinorContext.evaluatedType = curMajorContext.thisType;
+									compileContext->_insertIns(Opcode::LTHIS, std::make_shared<RegRefNode>(tmpRegIndex), {});
+									compileContext->curMajorContext.curMinorContext.evaluatedType = compileContext->curMajorContext.thisType;
 									break;
 								}
 								default:
@@ -978,7 +1002,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							break;
 						}
 						case NodeType::BaseRef:
-							_insertIns(
+							compileContext->_insertIns(
 								Opcode::LOAD,
 								std::make_shared<RegRefNode>(tmpRegIndex),
 								{ std::make_shared<IdRefExprNode>(std::make_shared<IdRefNode>(IdRefEntries{ IdRefEntry(e->tokenRange, SIZE_MAX, "base") })) });
@@ -991,9 +1015,9 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 					uint32_t resultRegIndex = loadRest();
 
 					if (resolvedParts.back().second->getNodeType() == NodeType::Var) {
-						if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RValue) {
-							uint32_t newResultRegIndex = allocReg();
-							_insertIns(
+						if (compileContext->curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RValue) {
+							uint32_t newResultRegIndex = compileContext->allocReg();
+							compileContext->_insertIns(
 								Opcode::LVALUE,
 								std::make_shared<RegRefNode>(newResultRegIndex),
 								{ std::make_shared<RegRefNode>(resultRegIndex) });
@@ -1001,10 +1025,10 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 						}
 					}
 
-					if (curMajorContext.curMinorContext.evalDest)
-						_insertIns(
+					if (compileContext->curMajorContext.curMinorContext.evalDest)
+						compileContext->_insertIns(
 							Opcode::MOV,
-							curMajorContext.curMinorContext.evalDest,
+							compileContext->curMajorContext.curMinorContext.evalDest,
 							{ std::make_shared<RegRefNode>(resultRegIndex) });
 					break;
 				}
@@ -1017,7 +1041,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 		case ExprType::VarArg: {
 			auto e = std::static_pointer_cast<VarArgExprNode>(expr);
 
-			if (!curFn->hasVarArgs) {
+			if (!compileContext->curFn->hasVarArgs) {
 				throw FatalCompilationError(
 					Message(
 						tokenRangeToSourceLocation(e->tokenRange),
@@ -1025,50 +1049,50 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 						"Cannot reference varidic arguments in a function without the varidic parameter"));
 			}
 
-			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
+			if (compileContext->curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
 				throw FatalCompilationError(
 					Message(
 						tokenRangeToSourceLocation(expr->tokenRange),
 						MessageType::Error,
 						"Expecting a lvalue expression"));
 
-			uint32_t tmpRegIndex = allocReg();
-			_insertIns(Opcode::LARG, std::make_shared<RegRefNode>(tmpRegIndex), { std::make_shared<U32LiteralExprNode>(curFn->params.size()) });
-			_insertIns(Opcode::LVALUE, curMajorContext.curMinorContext.evalDest, { std::make_shared<RegRefNode>(tmpRegIndex) });
+			uint32_t tmpRegIndex = compileContext->allocReg();
+			compileContext->_insertIns(Opcode::LARG, std::make_shared<RegRefNode>(tmpRegIndex), { std::make_shared<U32LiteralExprNode>(compileContext->curFn->params.size()) });
+			compileContext->_insertIns(Opcode::LVALUE, compileContext->curMajorContext.curMinorContext.evalDest, { std::make_shared<RegRefNode>(tmpRegIndex) });
 
-			curMajorContext.curMinorContext.evaluatedType = std::make_shared<ArrayTypeNameNode>(std::make_shared<AnyTypeNameNode>(SIZE_MAX));
+			compileContext->curMajorContext.curMinorContext.evaluatedType = std::make_shared<ArrayTypeNameNode>(std::make_shared<AnyTypeNameNode>(SIZE_MAX));
 
 			break;
 		}
 		case ExprType::Array: {
 			auto e = std::static_pointer_cast<ArrayExprNode>(expr);
 
-			if ((!curMajorContext.curMinorContext.expectedType) ||
-				curMajorContext.curMinorContext.expectedType->getTypeId() != TypeId::Array)
+			if ((!compileContext->curMajorContext.curMinorContext.expectedType) ||
+				compileContext->curMajorContext.curMinorContext.expectedType->getTypeId() != TypeId::Array)
 				throw FatalCompilationError(
 					Message(
 						tokenRangeToSourceLocation(e->tokenRange),
 						MessageType::Error,
 						"Error deducing type of the expression"));
 
-			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
+			if (compileContext->curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
 				throw FatalCompilationError(
 					Message(
 						tokenRangeToSourceLocation(expr->tokenRange),
 						MessageType::Error,
 						"Expecting a lvalue expression"));
 
-			auto type = std::static_pointer_cast<ArrayTypeNameNode>(curMajorContext.curMinorContext.expectedType);
+			auto type = std::static_pointer_cast<ArrayTypeNameNode>(compileContext->curMajorContext.curMinorContext.expectedType);
 
 #if SLKC_WITH_LANGUAGE_SERVER
-			updateTokenInfo(e->idxLBraceToken, [this](TokenInfo &tokenInfo) {
-				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+			updateTokenInfo(e->idxLBraceToken, [this, &compileContext](TokenInfo &tokenInfo) {
+				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curMajorContext);
 				tokenInfo.completionContext = CompletionContext::Expr;
 			});
 
 			for (size_t i = 0; i < e->idxCommaTokens.size(); ++i) {
-				updateTokenInfo(e->idxCommaTokens[i], [this](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+				updateTokenInfo(e->idxCommaTokens[i], [this, &compileContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curMajorContext);
 					tokenInfo.completionContext = CompletionContext::Expr;
 				});
 			}
@@ -1076,7 +1100,7 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 
 			// Check type of the members.
 			for (auto &i : e->elements) {
-				auto t = evalExprType(i);
+				auto t = evalExprType(compileContext, i);
 				if (!t)
 					throw FatalCompilationError(
 						Message(
@@ -1084,8 +1108,8 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 							MessageType::Error,
 							"Error deducing the element type"));
 
-				if (!isSameType(t, type->elementType)) {
-					if (!isTypeNamesConvertible(t, type->elementType))
+				if (!isSameType(compileContext, t, type->elementType)) {
+					if (!isTypeNamesConvertible(compileContext, t, type->elementType))
 						throw FatalCompilationError(
 							Message(
 								tokenRangeToSourceLocation(i->tokenRange),
@@ -1094,10 +1118,10 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 				}
 			}
 
-			curMajorContext.curMinorContext.evaluatedType = type;
+			compileContext->curMajorContext.curMinorContext.evaluatedType = type;
 
-			if (auto ce = evalConstExpr(e); ce) {
-				_insertIns(Opcode::MOV, curMajorContext.curMinorContext.evalDest, { ce });
+			if (auto ce = evalConstExpr(compileContext, e); ce) {
+				compileContext->_insertIns(Opcode::MOV, compileContext->curMajorContext.curMinorContext.evalDest, { ce });
 			} else {
 				auto initArray = std::make_shared<ArrayExprNode>();
 				initArray->tokenRange = e->tokenRange;
@@ -1107,13 +1131,13 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 
 				// We use nullptr to represent non-constexpr expressions.
 				for (size_t i = 0; i < e->elements.size(); ++i) {
-					initArray->elements[i] = evalConstExpr(initArray->elements[i]);
+					initArray->elements[i] = evalConstExpr(compileContext, initArray->elements[i]);
 				}
 
-				uint32_t idxTmpArrayRegIndex = allocReg(),
-						 idxTmpElementRegIndex = allocReg();
+				uint32_t idxTmpArrayRegIndex = compileContext->allocReg(),
+						 idxTmpElementRegIndex = compileContext->allocReg();
 
-				_insertIns(
+				compileContext->_insertIns(
 					Opcode::MOV,
 					std::make_shared<RegRefNode>(idxTmpArrayRegIndex),
 					{ initArray });
@@ -1121,12 +1145,12 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 				// Assign non-constexpr expressions to corresponding elements.
 				for (size_t i = 0; i < initArray->elements.size(); ++i) {
 					if (!initArray->elements[i]) {
-						_insertIns(
+						compileContext->_insertIns(
 							Opcode::AT,
 							std::make_shared<RegRefNode>(idxTmpElementRegIndex),
 							{ std::make_shared<RegRefNode>(idxTmpArrayRegIndex),
 								std::make_shared<U32LiteralExprNode>(idxTmpElementRegIndex, SIZE_MAX) });
-						compileExpr(
+						compileExpr(compileContext,
 							e->elements[i],
 							EvalPurpose::RValue,
 							std::make_shared<RegRefNode>(idxTmpElementRegIndex));
@@ -1148,66 +1172,66 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 		case ExprType::F64:
 		case ExprType::String:
 		case ExprType::Bool: {
-			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
+			if (compileContext->curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
 				throw FatalCompilationError(
 					Message(
 						tokenRangeToSourceLocation(expr->tokenRange),
 						MessageType::Error,
 						"Expecting a lvalue expression"));
 
-			_insertIns(Opcode::MOV, curMajorContext.curMinorContext.evalDest, { expr });
+			compileContext->_insertIns(Opcode::MOV, compileContext->curMajorContext.curMinorContext.evalDest, { expr });
 
 			switch (expr->getExprType()) {
 				case ExprType::I8:
-					curMajorContext.curMinorContext.evaluatedType = std::make_shared<I8TypeNameNode>(SIZE_MAX);
+					compileContext->curMajorContext.curMinorContext.evaluatedType = std::make_shared<I8TypeNameNode>(SIZE_MAX);
 					break;
 				case ExprType::I16:
-					curMajorContext.curMinorContext.evaluatedType = std::make_shared<I16TypeNameNode>(SIZE_MAX);
+					compileContext->curMajorContext.curMinorContext.evaluatedType = std::make_shared<I16TypeNameNode>(SIZE_MAX);
 					break;
 				case ExprType::I32:
-					curMajorContext.curMinorContext.evaluatedType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
+					compileContext->curMajorContext.curMinorContext.evaluatedType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
 					break;
 				case ExprType::I64:
-					curMajorContext.curMinorContext.evaluatedType = std::make_shared<I64TypeNameNode>(SIZE_MAX);
+					compileContext->curMajorContext.curMinorContext.evaluatedType = std::make_shared<I64TypeNameNode>(SIZE_MAX);
 					break;
 				case ExprType::U8:
-					curMajorContext.curMinorContext.evaluatedType = std::make_shared<U8TypeNameNode>(SIZE_MAX);
+					compileContext->curMajorContext.curMinorContext.evaluatedType = std::make_shared<U8TypeNameNode>(SIZE_MAX);
 					break;
 				case ExprType::U16:
-					curMajorContext.curMinorContext.evaluatedType = std::make_shared<U16TypeNameNode>(SIZE_MAX);
+					compileContext->curMajorContext.curMinorContext.evaluatedType = std::make_shared<U16TypeNameNode>(SIZE_MAX);
 					break;
 				case ExprType::U32:
-					curMajorContext.curMinorContext.evaluatedType = std::make_shared<U32TypeNameNode>(SIZE_MAX);
+					compileContext->curMajorContext.curMinorContext.evaluatedType = std::make_shared<U32TypeNameNode>(SIZE_MAX);
 					break;
 				case ExprType::U64:
-					curMajorContext.curMinorContext.evaluatedType = std::make_shared<U64TypeNameNode>(SIZE_MAX);
+					compileContext->curMajorContext.curMinorContext.evaluatedType = std::make_shared<U64TypeNameNode>(SIZE_MAX);
 					break;
 				case ExprType::F32:
-					curMajorContext.curMinorContext.evaluatedType = std::make_shared<F32TypeNameNode>(SIZE_MAX);
+					compileContext->curMajorContext.curMinorContext.evaluatedType = std::make_shared<F32TypeNameNode>(SIZE_MAX);
 					break;
 				case ExprType::F64:
-					curMajorContext.curMinorContext.evaluatedType = std::make_shared<F64TypeNameNode>(SIZE_MAX);
+					compileContext->curMajorContext.curMinorContext.evaluatedType = std::make_shared<F64TypeNameNode>(SIZE_MAX);
 					break;
 				case ExprType::String:
-					curMajorContext.curMinorContext.evaluatedType = std::make_shared<StringTypeNameNode>(SIZE_MAX);
+					compileContext->curMajorContext.curMinorContext.evaluatedType = std::make_shared<StringTypeNameNode>(SIZE_MAX);
 					break;
 				case ExprType::Bool:
-					curMajorContext.curMinorContext.evaluatedType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					compileContext->curMajorContext.curMinorContext.evaluatedType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 			}
 			break;
 		}
 		case ExprType::Null:
-			if (curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
+			if (compileContext->curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
 				throw FatalCompilationError(
 					Message(
 						tokenRangeToSourceLocation(expr->tokenRange),
 						MessageType::Error,
 						"Expecting a lvalue expression"));
 
-			_insertIns(Opcode::MOV, curMajorContext.curMinorContext.evalDest, { expr });
+			compileContext->_insertIns(Opcode::MOV, compileContext->curMajorContext.curMinorContext.evalDest, { expr });
 
-			curMajorContext.curMinorContext.evaluatedType = std::make_shared<AnyTypeNameNode>(SIZE_MAX);
+			compileContext->curMajorContext.curMinorContext.evaluatedType = std::make_shared<AnyTypeNameNode>(SIZE_MAX);
 			break;
 		case ExprType::Bad:
 			break;
@@ -1215,10 +1239,10 @@ void Compiler::compileExpr(std::shared_ptr<ExprNode> expr) {
 			assert(false);
 	}
 
-	if (!curMajorContext.curMinorContext.dryRun) {
+	if (!compileContext->curMajorContext.curMinorContext.dryRun) {
 		if (expr->tokenRange) {
-			sld.nIns = curFn->body.size() - sld.offIns;
-			curFn->srcLocDescs.push_back(sld);
+			sld.nIns = compileContext->curFn->body.size() - sld.offIns;
+			compileContext->curFn->srcLocDescs.push_back(sld);
 		}
 	}
 }

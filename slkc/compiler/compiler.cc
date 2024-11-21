@@ -26,7 +26,12 @@ Compiler::~Compiler() {
 void Compiler::reloadDoc(const std::string &docName) {
 	auto &doc = sourceDocs.at(docName);
 
-	doc->targetModule->parent->scope->members.erase(doc->targetModule->getName().name);
+	if (doc->targetModule->parent) {
+		doc->targetModule->parent->scope->members.erase(doc->targetModule->getName().name);
+	} else {
+		// The document is orphaned which may be caused by incomplete
+		// lexical analysis or parsing progress.
+	}
 
 	for (auto &i : doc->targetModule->imports) {
 		if (auto it = importedModules.find(i.second.ref->entries); it != importedModules.end()) {
@@ -109,7 +114,7 @@ void Compiler::scanAndLinkParentFns(Scope *scope, FnNode *fn, const std::string 
 				}
 
 				if (node->parentClass)
-					j = resolveCustomTypeName((CustomTypeNameNode *)node->parentClass.get()).get();
+					j = resolveCustomTypeName(nullptr, (CustomTypeNameNode *)node->parentClass.get()).get();
 				else
 					goto parentFnScanEnd;
 
@@ -123,7 +128,7 @@ void Compiler::scanAndLinkParentFns(Scope *scope, FnNode *fn, const std::string 
 parentFnScanEnd:;
 }
 
-void Compiler::collectMethodsForFulfillmentVerification(std::shared_ptr<Scope> scope, std::unordered_map<std::string, std::set<std::shared_ptr<FnOverloadingNode>>> &unfilledMethodsOut) {
+void Compiler::collectMethodsForFulfillmentVerification(CompileContext *compileContext, std::shared_ptr<Scope> scope, std::unordered_map<std::string, std::set<std::shared_ptr<FnOverloadingNode>>> &unfilledMethodsOut) {
 	for (auto i : scope->members) {
 		if (i.second->getNodeType() == NodeType::Fn) {
 			std::shared_ptr<FnNode> m = std::static_pointer_cast<FnNode>(i.second);
@@ -134,7 +139,7 @@ void Compiler::collectMethodsForFulfillmentVerification(std::shared_ptr<Scope> s
 				} else {
 					if (auto it = unfilledMethodsOut.find(i.first); it != unfilledMethodsOut.end()) {
 						for (auto k : it->second) {
-							if (isFnOverloadingDuplicated(j, k)) {
+							if (isFnOverloadingDuplicated(compileContext, j, k)) {
 								unfilledMethodsOut[i.first].erase(k);
 								break;
 							}
@@ -146,29 +151,29 @@ void Compiler::collectMethodsForFulfillmentVerification(std::shared_ptr<Scope> s
 	}
 }
 
-void Compiler::collectMethodsForFulfillmentVerification(InterfaceNode *node, std::unordered_map<std::string, std::set<std::shared_ptr<FnOverloadingNode>>> &unfilledMethodsOut) {
+void Compiler::collectMethodsForFulfillmentVerification(CompileContext *compileContext, InterfaceNode *node, std::unordered_map<std::string, std::set<std::shared_ptr<FnOverloadingNode>>> &unfilledMethodsOut) {
 	for (auto i : node->parentInterfaces) {
-		collectMethodsForFulfillmentVerification((InterfaceNode *)resolveCustomTypeName((CustomTypeNameNode *)i.get()).get(), unfilledMethodsOut);
+		collectMethodsForFulfillmentVerification(compileContext, (InterfaceNode *)resolveCustomTypeName(compileContext, (CustomTypeNameNode *)i.get()).get(), unfilledMethodsOut);
 	}
 
-	collectMethodsForFulfillmentVerification(node->scope, unfilledMethodsOut);
+	collectMethodsForFulfillmentVerification(compileContext, node->scope, unfilledMethodsOut);
 }
 
-void Compiler::collectMethodsForFulfillmentVerification(ClassNode *node, std::unordered_map<std::string, std::set<std::shared_ptr<FnOverloadingNode>>> &unfilledMethodsOut) {
+void Compiler::collectMethodsForFulfillmentVerification(CompileContext *compileContext, ClassNode *node, std::unordered_map<std::string, std::set<std::shared_ptr<FnOverloadingNode>>> &unfilledMethodsOut) {
 	for (auto i : node->implInterfaces) {
-		collectMethodsForFulfillmentVerification((InterfaceNode *)resolveCustomTypeName((CustomTypeNameNode *)i.get()).get(), unfilledMethodsOut);
+		collectMethodsForFulfillmentVerification(compileContext, (InterfaceNode *)resolveCustomTypeName(compileContext, (CustomTypeNameNode *)i.get()).get(), unfilledMethodsOut);
 	}
 	if (node->parentClass) {
-		collectMethodsForFulfillmentVerification((ClassNode *)resolveCustomTypeName((CustomTypeNameNode *)node->parentClass.get()).get(), unfilledMethodsOut);
+		collectMethodsForFulfillmentVerification(compileContext, (ClassNode *)resolveCustomTypeName(compileContext, (CustomTypeNameNode *)node->parentClass.get()).get(), unfilledMethodsOut);
 	}
 
-	collectMethodsForFulfillmentVerification(node->scope, unfilledMethodsOut);
+	collectMethodsForFulfillmentVerification(compileContext, node->scope, unfilledMethodsOut);
 }
 
-void Compiler::verifyIfImplementationFulfilled(std::shared_ptr<ClassNode> node) {
+void Compiler::verifyIfImplementationFulfilled(CompileContext *compileContext, std::shared_ptr<ClassNode> node) {
 	std::unordered_map<std::string, std::set<std::shared_ptr<FnOverloadingNode>>> unfilledMethodsOut;
 
-	collectMethodsForFulfillmentVerification(node.get(), unfilledMethodsOut);
+	collectMethodsForFulfillmentVerification(compileContext, node.get(), unfilledMethodsOut);
 
 	if (unfilledMethodsOut.size()) {
 		pushMessage(
@@ -180,14 +185,14 @@ void Compiler::verifyIfImplementationFulfilled(std::shared_ptr<ClassNode> node) 
 	}
 }
 
-void Compiler::validateScope(Scope *scope) {
+void Compiler::validateScope(CompileContext *compileContext, Scope *scope) {
 	std::deque<ClassNode *> classes;
 	std::deque<InterfaceNode *> interfaces;
 	std::deque<FnNode *> funcs;
 
-	pushMajorContext();
+	compileContext->pushMajorContext();
 
-	curMajorContext.curMinorContext.curScope = scope->shared_from_this();
+	compileContext->curMajorContext.curMinorContext.curScope = scope->shared_from_this();
 
 	for (auto &i : scope->members) {
 		switch (i.second->getNodeType()) {
@@ -205,31 +210,31 @@ void Compiler::validateScope(Scope *scope) {
 
 	// We must make sure the classes and interfaces are valid before we validating their child scope.
 	for (auto i : classes) {
-		verifyInheritanceChain(i);
-		verifyGenericParams(i->genericParams);
+		verifyInheritanceChain(compileContext, i);
+		verifyGenericParams(compileContext, i->genericParams);
 	}
 	for (auto i : interfaces) {
-		verifyInheritanceChain(i);
-		verifyGenericParams(i->genericParams);
+		verifyInheritanceChain(compileContext, i);
+		verifyGenericParams(compileContext, i->genericParams);
 	}
 
 	// Validate child scopes of classes and interfaces.
 	for (auto i : classes)
-		validateScope(i->scope.get());
+		validateScope(compileContext, i->scope.get());
 	for (auto i : interfaces)
-		validateScope(i->scope.get());
+		validateScope(compileContext, i->scope.get());
 
 	// Link the functions to their parent functions correctly.
 	for (auto i : funcs) {
 		scanAndLinkParentFns(scope, i, i->name);
 	}
 
-	popMajorContext();
+	compileContext->popMajorContext();
 }
 
 void Compiler::compile(std::istream &is, std::ostream &os) {
 	auto &doc = sourceDocs.at(curDocName);
-	auto _targetModule = doc->targetModule;
+	std::unique_ptr<CompileContext> compileContext = std::make_unique<CompileContext>();
 
 	//
 	// Clear the previous generic cache.
@@ -253,6 +258,7 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 	try {
 		doc->lexer->lex(s);
 	} catch (LexicalError e) {
+		doc->lexer->tokens.clear();
 		throw FatalCompilationError(
 			Message(
 				SourceLocation{ e.position, e.position },
@@ -284,20 +290,20 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 #endif
 
 #if SLKC_WITH_LANGUAGE_SERVER
-	if (_targetModule->moduleName) {
-		updateCompletionContext(_targetModule->moduleName, CompletionContext::ModuleName);
-		updateSemanticType(_targetModule->moduleName, SemanticType::Var);
+	if (doc->targetModule->moduleName) {
+		updateCompletionContext(doc->targetModule->moduleName, CompletionContext::ModuleName);
+		updateSemanticType(doc->targetModule->moduleName, SemanticType::Var);
 
 		std::shared_ptr<IdRefNode> curRef = std::make_shared<IdRefNode>();
-		for (size_t i = 0; i < _targetModule->moduleName->entries.size(); ++i) {
-			updateTokenInfo(_targetModule->moduleName->entries[i].idxToken, [&curRef](TokenInfo &tokenInfo) {
+		for (size_t i = 0; i < doc->targetModule->moduleName->entries.size(); ++i) {
+			updateTokenInfo(doc->targetModule->moduleName->entries[i].idxToken, [&curRef](TokenInfo &tokenInfo) {
 				tokenInfo.semanticInfo.importedPath = curRef->duplicate<IdRefNode>();
 			});
-			updateTokenInfo(_targetModule->moduleName->entries[i].idxAccessOpToken, [&curRef](TokenInfo &tokenInfo) {
+			updateTokenInfo(doc->targetModule->moduleName->entries[i].idxAccessOpToken, [&curRef](TokenInfo &tokenInfo) {
 				tokenInfo.semanticInfo.importedPath = curRef->duplicate<IdRefNode>();
 			});
 
-			curRef->entries.push_back(_targetModule->moduleName->entries[i]);
+			curRef->entries.push_back(doc->targetModule->moduleName->entries[i]);
 		}
 	}
 #endif
@@ -307,41 +313,51 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 
 		memcpy(ih.magic, slxfmt::IMH_MAGIC, sizeof(ih.magic));
 		ih.fmtVer = 0;
-		ih.nImports = (uint16_t)(_targetModule->imports.size() + _targetModule->unnamedImports.size());
+		ih.nImports = (uint16_t)(doc->targetModule->imports.size() + doc->targetModule->unnamedImports.size());
 
-		if (_targetModule->moduleName)
+		if (doc->targetModule->moduleName)
 			ih.flags |= slxfmt::IMH_MODNAME;
 
 		os.write((char *)&ih, sizeof(ih));
 	}
 
-	if (_targetModule->moduleName && !isCompleteIdRef(_targetModule->moduleName->entries)) {
+	if (doc->targetModule->moduleName && !isCompleteIdRef(doc->targetModule->moduleName->entries)) {
 		throw FatalCompilationError(Message(
-			tokenRangeToSourceLocation(_targetModule->moduleName->entries.back().tokenRange),
+			tokenRangeToSourceLocation(doc->targetModule->moduleName->entries.back().tokenRange),
 			MessageType::Error,
 			"Expecting a complete module name"));
 	}
 
-	if (_targetModule->moduleName) {
-		auto trimmedModuleName = _targetModule->moduleName->duplicate<IdRefNode>();
+	if (doc->targetModule->moduleName) {
+		auto trimmedModuleName = doc->targetModule->moduleName->duplicate<IdRefNode>();
 		trimmedModuleName->entries.pop_back();
 
 		auto scope = completeModuleNamespaces(trimmedModuleName);
 
-		importedModules[_targetModule->moduleName->entries] = { curDocName };
+		importedModules[doc->targetModule->moduleName->entries] = { curDocName };
 
-		(scope->members[_targetModule->moduleName->entries.back().name] = _targetModule)->bind((MemberNode *)scope->owner);
-		_targetModule->scope->parent = scope.get();
+		(scope->members[doc->targetModule->moduleName->entries.back().name] = doc->targetModule)->bind((MemberNode *)scope->owner);
+		doc->targetModule->scope->parent = scope.get();
 
-		compileIdRef(os, _targetModule->moduleName);
+		compileIdRef(compileContext.get(), os, doc->targetModule->moduleName);
+	} else {
+		doc->targetModule->moduleName = std::make_shared<IdRefNode>(IdRefEntries{ IdRefEntry("<unnamed>") });
+		doc->messages.push_back(
+			Message(
+				SourceLocation {
+					SourcePosition{ 0, 0 },
+					SourcePosition{ 0, 0 } },
+				MessageType::Error,
+				"Missing module name"));
+		doc->targetModule->bind(_rootNode.get());
 	}
 
-	pushMajorContext();
+	compileContext->pushMajorContext();
 
 #if SLKC_WITH_LANGUAGE_SERVER
-	for (auto &i : _targetModule->imports) {
-		updateTokenInfo(i.second.idxNameToken, [this](TokenInfo &tokenInfo) {
-			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+	for (auto &i : doc->targetModule->imports) {
+		updateTokenInfo(i.second.idxNameToken, [this, &compileContext](TokenInfo &tokenInfo) {
+			tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curMajorContext);
 			tokenInfo.semanticType = SemanticType::Property;
 		});
 
@@ -361,7 +377,7 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 		}
 	}
 
-	for (auto &i : _targetModule->unnamedImports) {
+	for (auto &i : doc->targetModule->unnamedImports) {
 		updateCompletionContext(i.ref, CompletionContext::Import);
 		updateSemanticType(i.ref, SemanticType::Property);
 
@@ -379,60 +395,60 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 	}
 #endif
 
-	for (auto &i : _targetModule->imports) {
+	for (auto &i : doc->targetModule->imports) {
 		// Skip bad references.
 		// if (!isCompleteIdRef(i.second.ref))
 		//	continue;
 
 		_write(os, (uint32_t)i.first.size());
 		_write(os, i.first.data(), i.first.length());
-		compileIdRef(os, i.second.ref);
+		compileIdRef(compileContext.get(), os, i.second.ref);
 
-		pushMajorContext();
+		compileContext->pushMajorContext();
 
 		importModule(i.second.ref);
 
-		popMajorContext();
+		compileContext->popMajorContext();
 
-		if (_targetModule->scope->members.count(i.first))
+		if (doc->targetModule->scope->members.count(i.first))
 			throw FatalCompilationError(
 				Message(
 					doc->lexer->tokens[i.second.idxNameToken]->location,
 					MessageType::Error,
 					"The import item shadows an existing member"));
 
-		_targetModule->scope->members[i.first] = std::make_shared<AliasNode>(this, i.first, i.second.ref);
+		doc->targetModule->scope->members[i.first] = std::make_shared<AliasNode>(this, i.first, i.second.ref);
 	}
 
-	for (auto &i : _targetModule->unnamedImports) {
+	for (auto &i : doc->targetModule->unnamedImports) {
 		// Skip bad references.
 		// if (!isCompleteIdRef(i.ref))
 		//	continue;
 
 		_write(os, (uint32_t)0);
-		compileIdRef(os, i.ref);
+		compileIdRef(compileContext.get(), os, i.ref);
 
-		pushMajorContext();
+		compileContext->pushMajorContext();
 
 		importModule(i.ref);
 
-		popMajorContext();
+		compileContext->popMajorContext();
 	}
 
-	popMajorContext();
+	compileContext->popMajorContext();
 
-	validateScope(_targetModule->scope.get());
-	curMajorContext = MajorContext();
-	compileScope(is, os, _targetModule->scope);
+	validateScope(compileContext.get(), doc->targetModule->scope.get());
+	compileContext->curMajorContext = MajorContext();
+	compileScope(compileContext.get(), is, os, doc->targetModule->scope);
 }
 
-void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<Scope> scope) {
+void Compiler::compileScope(CompileContext *compileContext, std::istream &is, std::ostream &os, std::shared_ptr<Scope> scope) {
 	std::unordered_map<std::string, std::shared_ptr<VarNode>> vars;
 	std::unordered_map<std::string, std::shared_ptr<FnNode>> funcs;
 	std::unordered_map<std::string, std::shared_ptr<ClassNode>> classes;
 	std::unordered_map<std::string, std::shared_ptr<InterfaceNode>> interfaces;
 
-	curMajorContext.curMinorContext.curScope = scope;
+	compileContext->curMajorContext.curMinorContext.curScope = scope;
 
 	for (auto &i : scope->members) {
 		switch (i.second->getNodeType()) {
@@ -441,13 +457,13 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				vars[i.first] = m;
 
 #if SLKC_WITH_LANGUAGE_SERVER
-				updateTokenInfo(m->idxNameToken, [this](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+				updateTokenInfo(m->idxNameToken, [this, &compileContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curMajorContext);
 					tokenInfo.semanticType = SemanticType::Var;
 				});
 
-				updateTokenInfo(m->idxColonToken, [this](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+				updateTokenInfo(m->idxColonToken, [this, &compileContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curMajorContext);
 					tokenInfo.completionContext = CompletionContext::Type;
 				});
 
@@ -462,11 +478,11 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 
 				for (auto &j : m->overloadingRegistries) {
 #if SLKC_WITH_LANGUAGE_SERVER
-					updateTokenInfo(j->idxNameToken, [this, &j](TokenInfo &tokenInfo) {
+					updateTokenInfo(j->idxNameToken, [this, &j, &compileContext](TokenInfo &tokenInfo) {
 						tokenInfo.tokenContext =
 							TokenContext(
 								{},
-								curMajorContext.curMinorContext.curScope,
+								compileContext->curMajorContext.curMinorContext.curScope,
 								j->genericParams,
 								j->genericParamIndices,
 								{},
@@ -474,11 +490,11 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 						tokenInfo.semanticType = SemanticType::Fn;
 					});
 
-					updateTokenInfo(j->idxParamLParentheseToken, [this, &j](TokenInfo &tokenInfo) {
+					updateTokenInfo(j->idxParamLParentheseToken, [this, &j, &compileContext](TokenInfo &tokenInfo) {
 						tokenInfo.tokenContext =
 							TokenContext(
 								{},
-								curMajorContext.curMinorContext.curScope,
+								compileContext->curMajorContext.curMinorContext.curScope,
 								j->genericParams,
 								j->genericParamIndices,
 								{},
@@ -486,11 +502,11 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 						tokenInfo.completionContext = CompletionContext::Type;
 					});
 
-					updateTokenInfo(j->idxReturnTypeColonToken, [this, &j](TokenInfo &tokenInfo) {
+					updateTokenInfo(j->idxReturnTypeColonToken, [this, &j, &compileContext](TokenInfo &tokenInfo) {
 						tokenInfo.tokenContext =
 							TokenContext(
 								{},
-								curMajorContext.curMinorContext.curScope,
+								compileContext->curMajorContext.curMinorContext.curScope,
 								j->genericParams,
 								j->genericParamIndices,
 								{},
@@ -502,11 +518,11 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 						updateCompletionContext(j->returnType, CompletionContext::Type);
 
 					for (auto &k : j->params) {
-						updateTokenInfo(k->idxNameToken, [this, &j](TokenInfo &tokenInfo) {
+						updateTokenInfo(k->idxNameToken, [this, &j, &compileContext](TokenInfo &tokenInfo) {
 							tokenInfo.tokenContext =
 								TokenContext(
 									{},
-									curMajorContext.curMinorContext.curScope,
+									compileContext->curMajorContext.curMinorContext.curScope,
 									j->genericParams,
 									j->genericParamIndices,
 									{},
@@ -520,16 +536,16 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 
 							// Resolve the type name to fill corresponding `curScope` field in token contexts for completion.
 							if (k->type->getTypeId() == TypeId::Custom)
-								resolveCustomTypeName((CustomTypeNameNode *)k->type.get());
+								resolveCustomTypeName(compileContext, (CustomTypeNameNode *)k->type.get());
 						}
 					}
 
 					for (auto &k : j->idxParamCommaTokens) {
-						updateTokenInfo(k, [this, &j, &k](TokenInfo &tokenInfo) {
+						updateTokenInfo(k, [this, &j, &k, &compileContext](TokenInfo &tokenInfo) {
 							tokenInfo.tokenContext =
 								TokenContext(
 									{},
-									curMajorContext.curMinorContext.curScope,
+									compileContext->curMajorContext.curMinorContext.curScope,
 									j->genericParams,
 									j->genericParamIndices,
 									{},
@@ -539,11 +555,11 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 					}
 
 					for (auto &k : j->genericParams) {
-						updateTokenInfo(k->idxNameToken, [this, &j](TokenInfo &tokenInfo) {
+						updateTokenInfo(k->idxNameToken, [this, &j, &compileContext](TokenInfo &tokenInfo) {
 							tokenInfo.tokenContext =
 								TokenContext(
 									{},
-									curMajorContext.curMinorContext.curScope,
+									compileContext->curMajorContext.curMinorContext.curScope,
 									j->genericParams,
 									j->genericParamIndices,
 									{},
@@ -562,11 +578,11 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				classes[i.first] = m;
 
 #if SLKC_WITH_LANGUAGE_SERVER
-				updateTokenInfo(m->idxNameToken, [this, &m](TokenInfo &tokenInfo) {
+				updateTokenInfo(m->idxNameToken, [this, &m, &compileContext](TokenInfo &tokenInfo) {
 					tokenInfo.tokenContext =
 						TokenContext(
 							{},
-							curMajorContext.curMinorContext.curScope,
+							compileContext->curMajorContext.curMinorContext.curScope,
 							m->genericParams,
 							m->genericParamIndices,
 							{},
@@ -574,11 +590,11 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 					tokenInfo.semanticType = SemanticType::Class;
 				});
 
-				updateTokenInfo(m->idxParentSlotLParentheseToken, [this, &m](TokenInfo &tokenInfo) {
+				updateTokenInfo(m->idxParentSlotLParentheseToken, [this, &m, &compileContext](TokenInfo &tokenInfo) {
 					tokenInfo.tokenContext =
 						TokenContext(
 							{},
-							curMajorContext.curMinorContext.curScope,
+							compileContext->curMajorContext.curMinorContext.curScope,
 							m->genericParams,
 							m->genericParamIndices,
 							{},
@@ -589,11 +605,11 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				if (m->parentClass)
 					updateCompletionContext(m->parentClass, CompletionContext::Type);
 
-				updateTokenInfo(m->idxImplInterfacesColonToken, [this, &m](TokenInfo &tokenInfo) {
+				updateTokenInfo(m->idxImplInterfacesColonToken, [this, &m, &compileContext](TokenInfo &tokenInfo) {
 					tokenInfo.tokenContext =
 						TokenContext(
 							{},
-							curMajorContext.curMinorContext.curScope,
+							compileContext->curMajorContext.curMinorContext.curScope,
 							m->genericParams,
 							m->genericParamIndices,
 							{},
@@ -602,11 +618,11 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				});
 
 				for (auto j : m->idxImplInterfacesSeparatorTokens) {
-					updateTokenInfo(j, [this, &m](TokenInfo &tokenInfo) {
+					updateTokenInfo(j, [this, &m, &compileContext](TokenInfo &tokenInfo) {
 						tokenInfo.tokenContext =
 							TokenContext(
 								{},
-								curMajorContext.curMinorContext.curScope,
+								compileContext->curMajorContext.curMinorContext.curScope,
 								m->genericParams,
 								m->genericParamIndices,
 								{},
@@ -620,11 +636,11 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				}
 
 				for (auto &j : m->genericParams) {
-					updateTokenInfo(j->idxNameToken, [this, &m](TokenInfo &tokenInfo) {
+					updateTokenInfo(j->idxNameToken, [this, &m, &compileContext](TokenInfo &tokenInfo) {
 						tokenInfo.tokenContext =
 							TokenContext(
 								{},
-								curMajorContext.curMinorContext.curScope,
+								compileContext->curMajorContext.curMinorContext.curScope,
 								m->genericParams,
 								m->genericParamIndices,
 								{},
@@ -640,11 +656,11 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				interfaces[i.first] = m;
 
 #if SLKC_WITH_LANGUAGE_SERVER
-				updateTokenInfo(m->idxNameToken, [this, &m](TokenInfo &tokenInfo) {
+				updateTokenInfo(m->idxNameToken, [this, &m, &compileContext](TokenInfo &tokenInfo) {
 					tokenInfo.tokenContext =
 						TokenContext(
 							{},
-							curMajorContext.curMinorContext.curScope,
+							compileContext->curMajorContext.curMinorContext.curScope,
 							m->genericParams,
 							m->genericParamIndices,
 							{},
@@ -657,11 +673,11 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				}
 
 				for (auto &j : m->genericParams) {
-					updateTokenInfo(j->idxNameToken, [this, &m](TokenInfo &tokenInfo) {
+					updateTokenInfo(j->idxNameToken, [this, &m, &compileContext](TokenInfo &tokenInfo) {
 						tokenInfo.tokenContext =
 							TokenContext(
 								{},
-								curMajorContext.curMinorContext.curScope,
+								compileContext->curMajorContext.curMinorContext.curScope,
 								m->genericParams,
 								m->genericParamIndices,
 								{},
@@ -680,17 +696,17 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 		}
 	}
 
-	auto mergeGenericParams = [this](const GenericParamNodeList &newParams) {
+	auto mergeGenericParams = [this, &compileContext](const GenericParamNodeList &newParams) {
 		for (auto &i : newParams) {
-			if (curMajorContext.genericParamIndices.count(i->name))
+			if (compileContext->curMajorContext.genericParamIndices.count(i->name))
 				pushMessage(
 					curDocName,
 					Message(
 						tokenRangeToSourceLocation(i->tokenRange),
 						MessageType::Error,
 						"This generic parameter shadows another generic parameter"));
-			curMajorContext.genericParams.push_back(i);
-			curMajorContext.genericParamIndices[i->name] = curMajorContext.genericParams.size() - 1;
+			compileContext->curMajorContext.genericParams.push_back(i);
+			compileContext->curMajorContext.genericParamIndices[i->name] = compileContext->curMajorContext.genericParams.size() - 1;
 		}
 	};
 
@@ -699,9 +715,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 	//
 	_write(os, (uint32_t)classes.size());
 	for (auto &i : classes) {
-		MemberNodeCompilingStatusGuard compilingStatusGuard(i.second);
-
-		pushMajorContext();
+		compileContext->pushMajorContext();
 
 		{
 			auto thisType = std::make_shared<CustomTypeNameNode>(getFullName(i.second.get()), this, i.second->scope.get());
@@ -711,7 +725,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 					this,
 					i.second->scope.get()));
 			}
-			curMajorContext.thisType = thisType;
+			compileContext->curMajorContext.thisType = thisType;
 		}
 
 		mergeGenericParams(i.second->genericParams);
@@ -732,21 +746,21 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 		_write(os, i.first.data(), i.first.length());
 
 		for (auto &j : i.second->genericParams) {
-			compileGenericParam(os, j);
+			compileGenericParam(compileContext, os, j);
 		}
 
 		if (i.second->parentClass) {
-			compileIdRef(os, getFullName((MemberNode *)resolveCustomTypeName((CustomTypeNameNode *)i.second->parentClass.get()).get()));
+			compileIdRef(compileContext, os, getFullName((MemberNode *)resolveCustomTypeName(compileContext, (CustomTypeNameNode *)i.second->parentClass.get()).get()));
 		}
 
 		for (auto &j : i.second->implInterfaces)
-			compileIdRef(os, std::static_pointer_cast<CustomTypeNameNode>(j)->ref);
+			compileIdRef(compileContext, os, std::static_pointer_cast<CustomTypeNameNode>(j)->ref);
 
-		compileScope(is, os, i.second->scope);
+		compileScope(compileContext, is, os, i.second->scope);
 
-		verifyIfImplementationFulfilled(i.second);
+		verifyIfImplementationFulfilled(compileContext, i.second);
 
-		popMajorContext();
+		compileContext->popMajorContext();
 	}
 
 	//
@@ -754,9 +768,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 	//
 	_write(os, (uint32_t)interfaces.size());
 	for (auto &i : interfaces) {
-		MemberNodeCompilingStatusGuard compilingStatusGuard(i.second);
-
-		pushMajorContext();
+		compileContext->pushMajorContext();
 
 		mergeGenericParams(i.second->genericParams);
 
@@ -774,16 +786,16 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 		_write(os, i.first.data(), i.first.length());
 
 		for (auto &j : i.second->genericParams) {
-			compileGenericParam(os, j);
+			compileGenericParam(compileContext, os, j);
 		}
 
 		for (auto j : i.second->parentInterfaces) {
-			compileIdRef(os, std::static_pointer_cast<CustomTypeNameNode>(j)->ref);
+			compileIdRef(compileContext, os, std::static_pointer_cast<CustomTypeNameNode>(j)->ref);
 		}
 
-		compileScope(is, os, i.second->scope);
+		compileScope(compileContext, is, os, i.second->scope);
 
-		popMajorContext();
+		compileContext->popMajorContext();
 	}
 
 	//
@@ -791,8 +803,6 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 	//
 	_write<uint32_t>(os, (uint32_t)vars.size());
 	for (auto &i : vars) {
-		MemberNodeCompilingStatusGuard compilingStatusGuard(i.second);
-
 		slxfmt::VarDesc vad = {};
 
 		//
@@ -803,7 +813,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				auto j = (ClassNode *)(scope->owner);
 
 				while (j->parentClass) {
-					j = (ClassNode *)resolveCustomTypeName((CustomTypeNameNode *)j->parentClass.get()).get();
+					j = (ClassNode *)resolveCustomTypeName(compileContext, (CustomTypeNameNode *)j->parentClass.get()).get();
 					if (j->scope->members.count(i.first)) {
 						pushMessage(
 							curDocName,
@@ -837,7 +847,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 
 		{
 			auto varType = i.second->type ? i.second->type : std::make_shared<AnyTypeNameNode>(SIZE_MAX);
-			compileTypeName(os, varType);
+			compileTypeName(compileContext, os, varType);
 
 			if (isLValueType(varType)) {
 				pushMessage(
@@ -850,8 +860,8 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 			}
 
 			if (i.second->initValue) {
-				if (auto ce = evalConstExpr(i.second->initValue); ce)
-					compileValue(os, ce);
+				if (auto ce = evalConstExpr(compileContext, i.second->initValue); ce)
+					compileValue(compileContext, os, ce);
 				else {
 					pushMessage(
 						curDocName,
@@ -876,7 +886,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 		std::set<std::shared_ptr<FnOverloadingNode>> compiledOverloadingsWithDuplication;
 
 		for (auto &j : i.second->overloadingRegistries) {
-			MemberNodeCompilingStatusGuard compilingStatusGuard(j);
+			compileContext->curFnOverloading = j;
 
 			if (i.first == "delete") {
 				j->isVirtual = true;
@@ -940,7 +950,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 					case TypeId::Fn:
 						break;
 					case TypeId::Custom: {
-						auto m = resolveCustomTypeName((CustomTypeNameNode *)curType.get());
+						auto m = resolveCustomTypeName(compileContext, (CustomTypeNameNode *)curType.get());
 
 						if (m->getNodeType() == NodeType::GenericParam) {
 							pushMessage(
@@ -965,7 +975,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				}
 			}
 
-			pushMajorContext();
+			compileContext->pushMajorContext();
 
 			mergeGenericParams(j->genericParams);
 
@@ -973,7 +983,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				if (j == k)
 					continue;
 
-				if (isFnOverloadingDuplicated(k, j)) {
+				if (isFnOverloadingDuplicated(compileContext, k, j)) {
 					if (compiledOverloadingsWithDuplication.count(k)) {
 						pushMessage(
 							curDocName,
@@ -981,7 +991,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 								tokenRangeToSourceLocation(j->tokenRange),
 								MessageType::Error,
 								"Duplicated function overloading"));
-						popMajorContext();
+						compileContext->popMajorContext();
 						goto skipCurOverloading;
 					}
 					compiledOverloadingsWithDuplication.insert(j);
@@ -1003,10 +1013,10 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				compiledFn->hasVarArgs = j->isVaridic();
 				compiledFn->isAsync = j->isAsync;
 
-				curFn = compiledFn;
+				compileContext->curFn = compiledFn;
 
 				if (j->body)
-					compileStmt(j->body);
+					compileStmt(compileContext, j->body);
 
 				slxfmt::FnDesc fnd = {};
 
@@ -1039,13 +1049,13 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				_write(os, fnd);
 				_write(os, i.first.data(), i.first.length());
 
-				compileTypeName(os, compiledFn->returnType);
+				compileTypeName(compileContext, os, compiledFn->returnType);
 
 				for (size_t j = 0; j < compiledFn->genericParams.size(); ++j)
-					compileGenericParam(os, compiledFn->genericParams[j]);
+					compileGenericParam(compileContext, os, compiledFn->genericParams[j]);
 
 				for (size_t j = 0; j < compiledFn->params.size(); ++j)
-					compileTypeName(os, compiledFn->params[j]->type);
+					compileTypeName(compileContext, os, compiledFn->params[j]->type);
 
 				for (auto &j : compiledFn->body) {
 					slxfmt::InsHeader ih;
@@ -1066,7 +1076,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 					_write(os, ih);
 
 					if (j.output)
-						compileValue(os, j.output);
+						compileValue(compileContext, os, j.output);
 
 					for (auto &k : j.operands) {
 						if (k) {
@@ -1076,7 +1086,7 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 								k = std::make_shared<U32LiteralExprNode>(compiledFn->labels.at(label));
 							}
 						}
-						compileValue(os, k);
+						compileValue(compileContext, os, k);
 					}
 				}
 
@@ -1085,20 +1095,20 @@ void Compiler::compileScope(std::istream &is, std::ostream &os, std::shared_ptr<
 				}
 			}
 
-			popMajorContext();
+			compileContext->popMajorContext();
 
 		skipCurOverloading:;
 		}
 	}
 }
 
-void Compiler::compileTypeName(std::ostream &fs, std::shared_ptr<TypeNameNode> typeName) {
+void Compiler::compileTypeName(CompileContext *compileContext, std::ostream &fs, std::shared_ptr<TypeNameNode> typeName) {
 	if (typeName->isRef) {
 		_write(fs, slxfmt::TypeId::Ref);
 
 		auto derefTypeName = typeName->duplicate<TypeNameNode>();
 		derefTypeName->isRef = false;
-		compileTypeName(fs, derefTypeName);
+		compileTypeName(compileContext, fs, derefTypeName);
 	} else {
 		switch (typeName->getTypeId()) {
 			case TypeId::I8: {
@@ -1160,7 +1170,7 @@ void Compiler::compileTypeName(std::ostream &fs, std::shared_ptr<TypeNameNode> t
 			case TypeId::Array: {
 				auto t = std::static_pointer_cast<ArrayTypeNameNode>(typeName);
 				_write(fs, slxfmt::TypeId::Array);
-				compileTypeName(fs, t->elementType);
+				compileTypeName(compileContext, fs, t->elementType);
 				break;
 			}
 			case TypeId::Fn: {
@@ -1168,7 +1178,7 @@ void Compiler::compileTypeName(std::ostream &fs, std::shared_ptr<TypeNameNode> t
 				break;
 			}
 			case TypeId::Custom: {
-				auto dest = resolveCustomTypeName((CustomTypeNameNode *)typeName.get());
+				auto dest = resolveCustomTypeName(compileContext, (CustomTypeNameNode *)typeName.get());
 
 				if (dest->getNodeType() == NodeType::GenericParam) {
 					_write(fs, slxfmt::TypeId::GenericArg);
@@ -1178,7 +1188,7 @@ void Compiler::compileTypeName(std::ostream &fs, std::shared_ptr<TypeNameNode> t
 					fs.write(d->name.c_str(), d->name.length());
 				} else {
 					_write(fs, slxfmt::TypeId::Object);
-					compileIdRef(fs, getFullName((MemberNode *)dest.get()));
+					compileIdRef(compileContext, fs, getFullName((MemberNode *)dest.get()));
 				}
 				break;
 			}
@@ -1190,7 +1200,7 @@ void Compiler::compileTypeName(std::ostream &fs, std::shared_ptr<TypeNameNode> t
 	}
 }
 
-void Compiler::compileIdRef(std::ostream &fs, std::shared_ptr<IdRefNode> ref) {
+void Compiler::compileIdRef(CompileContext *compileContext, std::ostream &fs, std::shared_ptr<IdRefNode> ref) {
 	for (size_t i = 0; i < ref->entries.size(); ++i) {
 		slxfmt::IdRefEntryDesc rsd = {};
 
@@ -1213,16 +1223,16 @@ void Compiler::compileIdRef(std::ostream &fs, std::shared_ptr<IdRefNode> ref) {
 		_write(fs, entry.name.data(), entry.name.length());
 
 		for (auto j : entry.genericArgs)
-			compileTypeName(fs, j);
+			compileTypeName(compileContext, fs, j);
 
 		if (entry.hasParamTypes) {
 			for (auto j : entry.paramTypes)
-				compileTypeName(fs, j);
+				compileTypeName(compileContext, fs, j);
 		}
 	}
 }
 
-void Compiler::compileValue(std::ostream &fs, std::shared_ptr<AstNode> value) {
+void Compiler::compileValue(CompileContext *compileContext, std::ostream &fs, std::shared_ptr<AstNode> value) {
 	if (!value) {
 		_write(fs, slxfmt::TypeId::None);
 		return;
@@ -1232,7 +1242,7 @@ void Compiler::compileValue(std::ostream &fs, std::shared_ptr<AstNode> value) {
 		case NodeType::TypeName:
 			_write(fs, slxfmt::TypeId::TypeName);
 
-			compileTypeName(fs, std::static_pointer_cast<TypeNameNode>(value));
+			compileTypeName(compileContext, fs, std::static_pointer_cast<TypeNameNode>(value));
 			break;
 		case NodeType::RegRef: {
 			auto v = std::static_pointer_cast<RegRefNode>(value);
@@ -1322,7 +1332,7 @@ void Compiler::compileValue(std::ostream &fs, std::shared_ptr<AstNode> value) {
 				case ExprType::IdRef: {
 					_write(fs, slxfmt::TypeId::IdRef);
 
-					compileIdRef(fs, std::static_pointer_cast<IdRefExprNode>(expr)->ref);
+					compileIdRef(compileContext, fs, std::static_pointer_cast<IdRefExprNode>(expr)->ref);
 					break;
 				}
 				case ExprType::Array: {
@@ -1330,12 +1340,12 @@ void Compiler::compileValue(std::ostream &fs, std::shared_ptr<AstNode> value) {
 
 					auto a = std::static_pointer_cast<ArrayExprNode>(expr);
 
-					compileTypeName(fs, a->evaluatedElementType);
+					compileTypeName(compileContext, fs, a->evaluatedElementType);
 
 					_write(fs, (uint32_t)a->elements.size());
 
 					for (auto i : a->elements)
-						compileValue(fs, i);
+						compileValue(compileContext, fs, i);
 
 					break;
 				}
@@ -1353,7 +1363,7 @@ void Compiler::compileValue(std::ostream &fs, std::shared_ptr<AstNode> value) {
 	}
 }
 
-void slake::slkc::Compiler::compileGenericParam(std::ostream &fs, std::shared_ptr<GenericParamNode> genericParam) {
+void slake::slkc::Compiler::compileGenericParam(CompileContext *compileContext, std::ostream &fs, std::shared_ptr<GenericParamNode> genericParam) {
 	slxfmt::GenericParamDesc gpd;
 
 	gpd.lenName = (uint8_t)genericParam->name.size();
@@ -1365,19 +1375,15 @@ void slake::slkc::Compiler::compileGenericParam(std::ostream &fs, std::shared_pt
 	fs.write(genericParam->name.c_str(), genericParam->name.size());
 
 	if (genericParam->baseType)
-		compileTypeName(fs, genericParam->baseType);
+		compileTypeName(compileContext, fs, genericParam->baseType);
 
 	for (auto i : genericParam->interfaceTypes)
-		compileTypeName(fs, i);
+		compileTypeName(compileContext, fs, i);
 }
 
 void slake::slkc::Compiler::reload() {
-	curMajorContext = MajorContext();
-	curFn.reset();
-
 	// _rootScope = std::make_shared<Scope>();
 	associatedRuntime = std::make_unique<Runtime>(std::pmr::get_default_resource(), RT_NOJIT);
-	_savedMajorContexts.clear();
 
 	importedDefinitions.clear();
 	// importedModules.clear();

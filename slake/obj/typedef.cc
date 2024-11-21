@@ -56,8 +56,8 @@ SLAKE_API void slake::TypeDefObject::dealloc() {
 	allocator.deallocate(this, 1);
 }
 
-SLAKE_API FnTypeDefObject::FnTypeDefObject(Runtime *rt, const Type &type, std::pmr::vector<Type> &&paramTypes)
-	: Object(rt), returnType(type), paramTypes(paramTypes) {
+SLAKE_API FnTypeDefObject::FnTypeDefObject(Runtime *rt, const Type &returnType, std::pmr::vector<Type> &&paramTypes)
+	: Object(rt), returnType(returnType), paramTypes(paramTypes) {
 }
 
 SLAKE_API FnTypeDefObject::FnTypeDefObject(const FnTypeDefObject &x) : Object(x) {

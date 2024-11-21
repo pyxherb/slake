@@ -34,8 +34,8 @@ bool Compiler::GenericNodeArgListComparator::operator()(
 					else {
 						std::shared_ptr<AstNode> lhsNode, rhsNode;
 						try {
-							lhsNode = lhsTypeName->compiler->resolveCustomTypeName(lhsTypeName.get());
-							rhsNode = rhsTypeName->compiler->resolveCustomTypeName(rhsTypeName.get());
+							lhsNode = lhsTypeName->compiler->resolveCustomTypeName(nullptr, lhsTypeName.get());
+							rhsNode = rhsTypeName->compiler->resolveCustomTypeName(nullptr, rhsTypeName.get());
 						} catch (FatalCompilationError e) {
 							// Supress the exceptions - the function should be noexcept, we have to raise compilation errors out of the comparator.
 						}
@@ -88,7 +88,7 @@ void Compiler::walkNodeForGenericInstantiation(
 		case NodeType::Fn: {
 			std::shared_ptr<FnNode> n = std::static_pointer_cast<FnNode>(node);
 
-			if (auto scope = scopeOf(n->parent); scope)
+			if (auto scope = scopeOf(nullptr, n->parent); scope)
 				scanAndLinkParentFns(scope.get(), n.get(), n->name);
 
 			for (auto &i : n->overloadingRegistries) {

@@ -96,20 +96,6 @@ namespace slake {
 				return placeholderGenericArgs;
 			}
 		};
-
-		struct MemberNodeCompilingStatusGuard {
-			std::shared_ptr<MemberNode> memberNode;
-			bool prevStatus;
-
-			inline MemberNodeCompilingStatusGuard(std::shared_ptr<MemberNode> memberNode)
-				: memberNode(memberNode),
-				  prevStatus(memberNode->isCompiling) {
-				memberNode->isCompiling = true;
-			}
-			inline ~MemberNodeCompilingStatusGuard() {
-				memberNode->isCompiling = prevStatus;
-			}
-		};
 	}
 }
 

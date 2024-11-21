@@ -17,10 +17,4 @@
 #define SLAKE_ENABLE_DEBUGGER false
 #endif
 
-#if @SLAKE_WITH_STRICT_MODE@==TRUE
-#define SLAKE_WITH_STRICT_MODE true
-#else
-#define SLAKE_WITH_STRICT_MODE false
-#endif
-
 #endif

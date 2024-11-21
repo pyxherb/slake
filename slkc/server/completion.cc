@@ -140,12 +140,12 @@ void slake::slkc::_walkForCompletion(
 			_walkForCompletion(document, node->scope.get(), membersOut, walkedScopes, false, isStatic);
 
 			if (node->parentClass) {
-				auto parent = document->compiler->resolveCustomTypeName((CustomTypeNameNode *)node->parentClass.get());
+				auto parent = document->compiler->resolveCustomTypeName(nullptr, (CustomTypeNameNode *)node->parentClass.get());
 				_walkForCompletion(document, parent.get(), membersOut, walkedScopes, isStatic);
 			}
 
 			for (auto &i : node->implInterfaces) {
-				auto parent = document->compiler->resolveCustomTypeName((CustomTypeNameNode *)i.get());
+				auto parent = document->compiler->resolveCustomTypeName(nullptr, (CustomTypeNameNode *)i.get());
 				_walkForCompletion(document, parent.get(), membersOut, walkedScopes, isStatic);
 			}
 			break;
@@ -154,7 +154,7 @@ void slake::slkc::_walkForCompletion(
 			InterfaceNode *node = (InterfaceNode *)m;
 
 			for (auto &i : node->parentInterfaces) {
-				auto parent = document->compiler->resolveCustomTypeName((CustomTypeNameNode *)i.get());
+				auto parent = document->compiler->resolveCustomTypeName(nullptr, (CustomTypeNameNode *)i.get());
 				_walkForCompletion(document, parent.get(), membersOut, walkedScopes, isStatic);
 			}
 			break;
@@ -258,6 +258,14 @@ std::deque<CompletionItem> slake::slkc::getCompletionItems(
 succeeded:
 	Token *token = document->lexer->tokens[idxToken].get();
 	TokenInfo &tokenInfo = document->tokenInfos[idxToken];
+
+	if (tokenInfo.semanticInfo.correspondingParam) {
+		CompletionItem item = {};
+
+		item.label = "*";
+
+		completionItems.push_back(item);
+	}
 
 	/*
 	for (size_t i = 0; i < keywordConditions->size(); ++i) {

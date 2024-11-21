@@ -3,23 +3,23 @@
 
 using namespace slake::slkc;
 
-bool Compiler::resolveIdRef(std::shared_ptr<IdRefNode> ref, IdRefResolvedParts &partsOut, bool ignoreDynamicPrecedings) {
+bool Compiler::resolveIdRef(CompileContext *compileContext, std::shared_ptr<IdRefNode> ref, IdRefResolvedParts &partsOut, bool &isStaticOut, bool ignoreDynamicPrecedings) {
 	assert(ref->entries.size());
 
 	if (!ignoreDynamicPrecedings) {
 		// Try to resolve the first entry as a local variable.
-		if (curMajorContext.curMinorContext.localVars.count(ref->entries[0].name) && (!ref->entries[0].genericArgs.size())) {
-			auto localVar = curMajorContext.curMinorContext.localVars.at(ref->entries[0].name);
+		if (compileContext->curMajorContext.curMinorContext.localVars.count(ref->entries[0].name) && (!ref->entries[0].genericArgs.size())) {
+			auto localVar = compileContext->curMajorContext.curMinorContext.localVars.at(ref->entries[0].name);
 			if (ref->entries.size() < 2)
 				goto lvarSucceeded;
 
-			if (auto scope = scopeOf(localVar->type.get()); scope) {
+			if (auto scope = scopeOf(compileContext, localVar->type.get()); scope) {
 				IdRefResolveContext newResolveContext;
 				newResolveContext.curIndex = 1;
 				newResolveContext.isTopLevel = false;
 				newResolveContext.isStatic = false;
 
-				if (_resolveIdRef(scope.get(), ref, partsOut, newResolveContext))
+				if (_resolveIdRef(compileContext, scope.get(), ref, partsOut, isStaticOut, newResolveContext))
 					goto lvarSucceeded;
 			}
 
@@ -27,11 +27,13 @@ bool Compiler::resolveIdRef(std::shared_ptr<IdRefNode> ref, IdRefResolvedParts &
 
 		lvarSucceeded:
 #if SLKC_WITH_LANGUAGE_SERVER
-			updateTokenInfo(ref->entries[0].idxToken, [this, &localVar](TokenInfo &tokenInfo) {
+			updateTokenInfo(ref->entries[0].idxToken, [this, &localVar, &compileContext](TokenInfo &tokenInfo) {
 				tokenInfo.semanticInfo.isTopLevelRef = true;
 				if (!tokenInfo.semanticInfo.correspondingMember)
 					tokenInfo.semanticInfo.correspondingMember = localVar;
-				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+				if (compileContext->curMajorContext.curMinorContext.curCorrespondingParam)
+					tokenInfo.semanticInfo.correspondingParam = compileContext->curMajorContext.curMinorContext.curCorrespondingParam;
+				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curMajorContext);
 				tokenInfo.semanticType = SemanticType::Var;
 			});
 #endif
@@ -40,21 +42,21 @@ bool Compiler::resolveIdRef(std::shared_ptr<IdRefNode> ref, IdRefResolvedParts &
 			return true;
 		}
 
-		if (curFn) {
+		if (compileContext->curFn) {
 			// Try to resolve the first entry as a parameter.
-			if (curFn->paramIndices.count(ref->entries[0].name)) {
-				auto idxParam = curFn->paramIndices.at(ref->entries[0].name);
+			if (compileContext->curFn->paramIndices.count(ref->entries[0].name)) {
+				auto idxParam = compileContext->curFn->paramIndices.at(ref->entries[0].name);
 
 				if (ref->entries.size() < 2)
 					goto paramSucceeded;
 
-				if (auto scope = scopeOf(curFn->params[idxParam]->type.get()); scope) {
+				if (auto scope = scopeOf(compileContext, compileContext->curFn->params[idxParam]->type.get()); scope) {
 					IdRefResolveContext newResolveContext;
 					newResolveContext.curIndex = 1;
 					newResolveContext.isTopLevel = false;
 					newResolveContext.isStatic = false;
 
-					if (_resolveIdRef(scope.get(), ref, partsOut, newResolveContext))
+					if (_resolveIdRef(compileContext, scope.get(), ref, partsOut, isStaticOut, newResolveContext))
 						goto paramSucceeded;
 				}
 
@@ -62,16 +64,18 @@ bool Compiler::resolveIdRef(std::shared_ptr<IdRefNode> ref, IdRefResolvedParts &
 
 			paramSucceeded:
 #if SLKC_WITH_LANGUAGE_SERVER
-				updateTokenInfo(ref->entries[0].idxToken, [this, idxParam](TokenInfo &tokenInfo) {
+				updateTokenInfo(ref->entries[0].idxToken, [this, idxParam, &compileContext](TokenInfo &tokenInfo) {
 					tokenInfo.semanticInfo.isTopLevelRef = true;
 					if (!tokenInfo.semanticInfo.correspondingMember)
-						tokenInfo.semanticInfo.correspondingMember = curFn->params[idxParam];
-					tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+						tokenInfo.semanticInfo.correspondingMember = compileContext->curFn->params[idxParam];
+					if (compileContext->curMajorContext.curMinorContext.curCorrespondingParam)
+						tokenInfo.semanticInfo.correspondingParam = compileContext->curMajorContext.curMinorContext.curCorrespondingParam;
+					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curMajorContext);
 					tokenInfo.semanticType = SemanticType::Param;
 				});
 #endif
 
-				partsOut.push_front({ std::make_shared<IdRefNode>(IdRefEntries{ ref->entries[0] }), curFn->params[idxParam] });
+				partsOut.push_front({ std::make_shared<IdRefNode>(IdRefEntries{ ref->entries[0] }), compileContext->curFn->params[idxParam] });
 				return true;
 			}
 		}
@@ -80,11 +84,13 @@ bool Compiler::resolveIdRef(std::shared_ptr<IdRefNode> ref, IdRefResolvedParts &
 			auto thisRefNode = std::make_shared<ThisRefNode>();
 
 #if SLKC_WITH_LANGUAGE_SERVER
-			updateTokenInfo(ref->entries[0].idxToken, [this, &thisRefNode](TokenInfo &tokenInfo) {
+			updateTokenInfo(ref->entries[0].idxToken, [this, &thisRefNode, &compileContext](TokenInfo &tokenInfo) {
 				tokenInfo.semanticInfo.isTopLevelRef = true;
 				if (!tokenInfo.semanticInfo.correspondingMember)
 					tokenInfo.semanticInfo.correspondingMember = thisRefNode;
-				tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+				if (compileContext->curMajorContext.curMinorContext.curCorrespondingParam)
+					tokenInfo.semanticInfo.correspondingParam = compileContext->curMajorContext.curMinorContext.curCorrespondingParam;
+				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curMajorContext);
 				tokenInfo.semanticType = SemanticType::Keyword;
 			});
 #endif
@@ -95,7 +101,7 @@ bool Compiler::resolveIdRef(std::shared_ptr<IdRefNode> ref, IdRefResolvedParts &
 				newResolveContext.isTopLevel = false;
 				newResolveContext.isStatic = false;
 
-				auto result = _resolveIdRef(curMajorContext.curMinorContext.curScope.get(), ref, partsOut, newResolveContext);
+				auto result = _resolveIdRef(compileContext, compileContext->curMajorContext.curMinorContext.curScope.get(), ref, partsOut, isStaticOut, newResolveContext);
 				partsOut.push_front({ std::make_shared<IdRefNode>(IdRefEntries{ ref->entries[0] }), thisRefNode });
 				return result;
 			} else {
@@ -106,16 +112,16 @@ bool Compiler::resolveIdRef(std::shared_ptr<IdRefNode> ref, IdRefResolvedParts &
 	}
 
 	IdRefResolveContext newResolveContext;
-	return _resolveIdRef(curMajorContext.curMinorContext.curScope.get(), ref, partsOut, newResolveContext);
+	return _resolveIdRef(compileContext, compileContext->curMajorContext.curMinorContext.curScope.get(), ref, partsOut, isStaticOut, newResolveContext);
 }
 
-bool Compiler::resolveIdRefWithScope(Scope *scope, std::shared_ptr<IdRefNode> ref, IdRefResolvedParts &partsOut) {
+bool Compiler::resolveIdRefWithScope(CompileContext *compileContext, Scope *scope, std::shared_ptr<IdRefNode> ref, bool &isStaticOut, IdRefResolvedParts &partsOut) {
 	IdRefResolveContext resolveContext;
 
-	return _resolveIdRef(scope, ref, partsOut, resolveContext);
+	return _resolveIdRef(compileContext, scope, ref, partsOut, isStaticOut, resolveContext);
 }
 
-bool Compiler::_resolveIdRef(Scope *scope, std::shared_ptr<IdRefNode> ref, IdRefResolvedParts &partsOut, IdRefResolveContext resolveContext) {
+bool Compiler::_resolveIdRef(CompileContext *compileContext, Scope *scope, std::shared_ptr<IdRefNode> ref, IdRefResolvedParts &partsOut, bool &isStaticOut, IdRefResolveContext resolveContext) {
 	// Break looping resolutions - For example, when a the scope's owner is a class and it has a
 	// parent class, where:
 	//
@@ -141,12 +147,14 @@ bool Compiler::_resolveIdRef(Scope *scope, std::shared_ptr<IdRefNode> ref, IdRef
 
 #if SLKC_WITH_LANGUAGE_SERVER
 	// Update corresponding semantic information.
-	{
-		TokenContext tokenContext = TokenContext(curFn, curMajorContext);
+	if (compileContext) {
+		TokenContext tokenContext = TokenContext(compileContext->curFn, compileContext->curMajorContext);
 		if (!resolveContext.keepTokenScope)
 			tokenContext.curScope = scope->shared_from_this();
 
-		updateTokenInfo(curEntry.idxAccessOpToken, [&tokenContext, &resolveContext](TokenInfo &precedingAccessOpTokenInfo) {
+		updateTokenInfo(curEntry.idxAccessOpToken, [this, &tokenContext, &resolveContext, &compileContext](TokenInfo &precedingAccessOpTokenInfo) {
+			if (compileContext->curMajorContext.curMinorContext.curCorrespondingParam)
+				precedingAccessOpTokenInfo.semanticInfo.correspondingParam = compileContext->curMajorContext.curMinorContext.curCorrespondingParam;
 			precedingAccessOpTokenInfo.tokenContext = tokenContext;
 			precedingAccessOpTokenInfo.semanticInfo.isTopLevelRef = resolveContext.isTopLevel;
 			precedingAccessOpTokenInfo.semanticInfo.isStatic = resolveContext.isStatic;
@@ -155,7 +163,9 @@ bool Compiler::_resolveIdRef(Scope *scope, std::shared_ptr<IdRefNode> ref, IdRef
 				precedingAccessOpTokenInfo.completionContext = CompletionContext::MemberAccess;*/
 		});
 
-		updateTokenInfo(curEntry.idxToken, [&tokenContext, &resolveContext](TokenInfo &tokenInfo) {
+		updateTokenInfo(curEntry.idxToken, [this, &tokenContext, &resolveContext, &compileContext](TokenInfo &tokenInfo) {
+			if (compileContext->curMajorContext.curMinorContext.curCorrespondingParam)
+				tokenInfo.semanticInfo.correspondingParam = compileContext->curMajorContext.curMinorContext.curCorrespondingParam;
 			tokenInfo.tokenContext = tokenContext;
 			tokenInfo.semanticInfo.isTopLevelRef = resolveContext.isTopLevel;
 			tokenInfo.semanticInfo.isStatic = resolveContext.isStatic;
@@ -179,15 +189,15 @@ bool Compiler::_resolveIdRef(Scope *scope, std::shared_ptr<IdRefNode> ref, IdRef
 			return false;
 
 #if SLKC_WITH_LANGUAGE_SERVER
-		updateTokenInfo(curEntry.idxToken, [this, scope](TokenInfo &tokenInfo) {
+		updateTokenInfo(curEntry.idxToken, [this, scope, &compileContext](TokenInfo &tokenInfo) {
 			if (!tokenInfo.semanticInfo.correspondingMember)
 				tokenInfo.semanticInfo.correspondingMember = scope->owner->shared_from_this();
-			tokenInfo.tokenContext = TokenContext(curFn, curMajorContext);
+			tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curMajorContext);
 			tokenInfo.semanticType = SemanticType::Keyword;
 		});
 #endif
 
-		bool result = _resolveIdRefWithOwner(scope, ref, partsOut, resolveContext);
+		bool result = _resolveIdRefWithOwner(compileContext, scope, ref, partsOut, isStaticOut, resolveContext);
 		partsOut.push_front({ std::make_shared<IdRefNode>(IdRefEntries{ curEntry }), std::make_shared<BaseRefNode>() });
 		return result;
 	}
@@ -277,17 +287,17 @@ bool Compiler::_resolveIdRef(Scope *scope, std::shared_ptr<IdRefNode> ref, IdRef
 		if (++resolveContext.curIndex >= ref->entries.size()) {
 			// All entries have been resolved, return true.
 			partsOut.push_front({ std::make_shared<IdRefNode>(IdRefEntries{ curEntry }), m });
-			curMajorContext.curMinorContext.isLastResolvedTargetStatic = resolveContext.isStatic;
+			isStaticOut = resolveContext.isStatic;
 			return true;
 		}
 
-		if (auto scope = scopeOf(m.get()); scope) {
+		if (auto scope = scopeOf(compileContext, m.get()); scope) {
 			IdRefResolveContext newResolveContext;
 			newResolveContext.curIndex = resolveContext.curIndex;
 			newResolveContext.isTopLevel = false;
 			newResolveContext.isStatic = resolveContext.isStatic;
 
-			if (_resolveIdRef(scope.get(), ref, partsOut, newResolveContext)) {
+			if (_resolveIdRef(compileContext, scope.get(), ref, partsOut, isStaticOut, newResolveContext)) {
 				switch (m->getNodeType()) {
 					case NodeType::Var:
 						partsOut.push_front({ std::make_shared<IdRefNode>(IdRefEntries{ curEntry }), m });
@@ -300,7 +310,7 @@ bool Compiler::_resolveIdRef(Scope *scope, std::shared_ptr<IdRefNode> ref, IdRef
 		}
 	}
 
-	if (_resolveIdRefWithOwner(scope, ref, partsOut, resolveContext))
+	if (_resolveIdRefWithOwner(compileContext, scope, ref, partsOut, isStaticOut, resolveContext))
 		return true;
 
 	// Resolve with the parent scope - we should only do this on the top level.
@@ -328,13 +338,13 @@ bool Compiler::_resolveIdRef(Scope *scope, std::shared_ptr<IdRefNode> ref, IdRef
 		IdRefResolveContext newResolveContext;
 		newResolveContext.keepTokenScope = true;
 
-		return _resolveIdRef(scope->parent, ref, partsOut, newResolveContext);
+		return _resolveIdRef(compileContext, scope->parent, ref, partsOut, isStaticOut, newResolveContext);
 	}
 
 	return false;
 }
 
-bool slake::slkc::Compiler::_resolveIdRefWithOwner(Scope *scope, std::shared_ptr<IdRefNode> ref, IdRefResolvedParts &partsOut, IdRefResolveContext resolveContext) {
+bool slake::slkc::Compiler::_resolveIdRefWithOwner(CompileContext *compileContext, Scope *scope, std::shared_ptr<IdRefNode> ref, IdRefResolvedParts &partsOut, bool &isStaticOut, IdRefResolveContext resolveContext) {
 	if (scope->owner) {
 		switch (scope->owner->getNodeType()) {
 			case NodeType::Class: {
@@ -344,13 +354,15 @@ bool slake::slkc::Compiler::_resolveIdRefWithOwner(Scope *scope, std::shared_ptr
 				if (owner->parentClass) {
 					if (owner->parentClass->getTypeId() == TypeId::Custom) {
 						if (_resolveIdRef(
-								scopeOf(
+								compileContext,
+								scopeOf(compileContext,
 									_resolveCustomTypeName(
+										compileContext,
 										(CustomTypeNameNode *)owner->parentClass.get(),
 										resolveContext.resolvingScopes)
 										.get())
 									.get(),
-								ref, partsOut, resolveContext))
+								ref, partsOut, isStaticOut, resolveContext))
 							return true;
 					}
 				}
@@ -359,13 +371,15 @@ bool slake::slkc::Compiler::_resolveIdRefWithOwner(Scope *scope, std::shared_ptr
 				for (auto i : owner->implInterfaces) {
 					if (i->getTypeId() == TypeId::Custom) {
 						if (_resolveIdRef(
-								scopeOf(
+								compileContext,
+								scopeOf(compileContext,
 									_resolveCustomTypeName(
+										compileContext,
 										(CustomTypeNameNode *)i.get(),
 										resolveContext.resolvingScopes)
 										.get())
 									.get(),
-								ref, partsOut, resolveContext))
+								ref, partsOut, isStaticOut, resolveContext))
 							return true;
 					}
 				}
@@ -378,13 +392,15 @@ bool slake::slkc::Compiler::_resolveIdRefWithOwner(Scope *scope, std::shared_ptr
 				for (auto i : owner->parentInterfaces) {
 					if (i->getTypeId() == TypeId::Custom) {
 						if (_resolveIdRef(
-								scopeOf(
+								compileContext,
+								scopeOf(compileContext,
 									_resolveCustomTypeName(
+										compileContext,
 										(CustomTypeNameNode *)i.get(),
 										resolveContext.resolvingScopes)
 										.get())
 									.get(),
-								ref, partsOut, resolveContext))
+								ref, partsOut, isStaticOut, resolveContext))
 							return true;
 					}
 				}
@@ -396,7 +412,7 @@ bool slake::slkc::Compiler::_resolveIdRefWithOwner(Scope *scope, std::shared_ptr
 				if (owner->parentModule.expired())
 					return false;
 
-				if (_resolveIdRef(owner->parentModule.lock()->scope.get(), ref, partsOut, resolveContext))
+				if (_resolveIdRef(compileContext, owner->parentModule.lock()->scope.get(), ref, partsOut, isStaticOut, resolveContext))
 					return true;
 
 				break;
@@ -406,7 +422,7 @@ bool slake::slkc::Compiler::_resolveIdRefWithOwner(Scope *scope, std::shared_ptr
 				if (!owner->parent)
 					return false;
 
-				if (_resolveIdRef(scopeOf((AstNode *)owner->parent).get(), ref, partsOut, resolveContext))
+				if (_resolveIdRef(compileContext, scopeOf(compileContext, (AstNode *)owner->parent).get(), ref, partsOut, isStaticOut, resolveContext))
 					return false;
 			}
 		}
@@ -429,6 +445,10 @@ void Compiler::_getFullName(MemberNode *member, IdRefEntries &ref) {
 			break;
 		}
 		default:
+			if ((!member->parent)) {
+				ref.push_front(IdRefEntry("<orphaned>"));
+				return;
+			}
 			if (member->parent == _rootNode.get())
 				return;
 			_getFullName(member->parent, ref);

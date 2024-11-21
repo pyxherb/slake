@@ -127,6 +127,15 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 				case ObjectKind::TypeDef:
 					_gcWalkHeapless(context, ((TypeDefObject *)v)->type);
 					break;
+				case ObjectKind::FnTypeDef: {
+					FnTypeDefObject *typeDef = (FnTypeDefObject *)v;
+
+					for (auto &i : typeDef->paramTypes) {
+						_gcWalkHeapless(context, i);
+					}
+					_gcWalkHeapless(context, typeDef->returnType);
+					break;
+				}
 				case ObjectKind::Instance: {
 					auto value = (InstanceObject *)v;
 
@@ -469,7 +478,7 @@ rescan:
 		if (i->getKind() == ObjectKind::Instance) {
 			InstanceObject *object = (InstanceObject *)i;
 
-			if (auto mt = object->methodTable; mt) {
+			/* if (auto mt = object->methodTable; mt) {
 				if (mt->destructors.size()) {
 					for (auto j : mt->destructors) {
 						HostRefHolder holder;
@@ -478,7 +487,7 @@ rescan:
 					}
 					foundDestructibleObjects = true;
 				}
-			}
+			}*/
 		}
 	}
 	destructingThreads.erase(std::this_thread::get_id());

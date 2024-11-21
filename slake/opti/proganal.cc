@@ -17,12 +17,38 @@ InternalExceptionPointer slake::opti::wrapIntoRefType(
 	return {};
 }
 
+InternalExceptionPointer slake::opti::wrapIntoArrayType(
+	Runtime *runtime,
+	Type type,
+	HostRefHolder &hostRefHolder,
+	Type &typeOut) {
+	HostObjectRef<TypeDefObject> typeDef = TypeDefObject::alloc(
+		runtime,
+		type);
+	hostRefHolder.addObject(typeDef.get());
+	typeOut = Type(TypeId::Ref, typeDef.get());
+
+	return {};
+}
+
 InternalExceptionPointer slake::opti::evalObjectType(
 	ProgramAnalyzeContext &analyzeContext,
 	const VarRefContext &varRefContext,
 	Object *object,
 	Type &typeOut) {
 	switch (object->getKind()) {
+		case ObjectKind::String: {
+			typeOut = Type(TypeId::String);
+			break;
+		}
+		case ObjectKind::Array: {
+			SLAKE_RETURN_IF_EXCEPT(wrapIntoArrayType(
+				analyzeContext.runtime,
+				((ArrayObject *)object)->elementType,
+				analyzeContext.hostRefHolder,
+				typeOut));
+			break;
+		}
 		case ObjectKind::Var: {
 			Type varType = (((VarObject *)object)->getVarType(varRefContext));
 
@@ -32,6 +58,18 @@ InternalExceptionPointer slake::opti::evalObjectType(
 					varType,
 					analyzeContext.hostRefHolder,
 					typeOut));
+			break;
+		}
+		case ObjectKind::FnOverloading: {
+			FnOverloadingObject *fnOverloadingObject = (FnOverloadingObject *)object;
+
+			auto paramTypes = fnOverloadingObject->paramTypes;
+			auto typeDef = FnTypeDefObject::alloc(
+				analyzeContext.runtime,
+				fnOverloadingObject->returnType,
+				std::move(paramTypes));
+			analyzeContext.hostRefHolder.addObject(typeDef.get());
+			typeOut = Type(TypeId::FnDelegate, typeDef.get());
 			break;
 		}
 		default:
@@ -98,6 +136,7 @@ InternalExceptionPointer slake::opti::evalValueType(
 				analyzeContext.idxCurIns);
 		}
 	}
+	return {};
 }
 
 InternalExceptionPointer slake::opti::evalConstValue(
@@ -167,7 +206,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 		if (curIns.output.valueType == ValueType::RegRef) {
 			regIndex = curIns.output.getRegIndex();
 
-			if (analyzedInfoOut.analyzedRegInfo.count(regIndex)) {
+			if (!analyzedInfoOut.analyzedRegInfo.count(regIndex)) {
 				// Malformed program, return.
 				return MalformedProgramError::alloc(
 					runtime,
@@ -175,12 +214,12 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					i);
 			}
 
-			analyzedInfoOut.analyzedRegInfo[regIndex].lifetime = { i, i };
+			analyzedInfoOut.analyzedRegInfo[regIndex].lifetime.offEndIns = i;
 		}
 
 		for (auto &j : curIns.operands) {
 			if (j.valueType == ValueType::RegRef) {
-				uint32_t index = curIns.output.getRegIndex();
+				uint32_t index = j.getRegIndex();
 
 				if (!analyzedInfoOut.analyzedRegInfo.count(index)) {
 					// Malformed program, return.
@@ -245,13 +284,15 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						varRefContext,
 						object,
 						analyzedInfoOut.analyzedRegInfo.at(regIndex).type);
-					if (e->kind != ErrorKind::OptimizerError) {
-						return e;
-					} else {
-						return MalformedProgramError::alloc(
-							runtime,
-							fnObject,
-							i);
+					if (e) {
+						if (e->kind != ErrorKind::OptimizerError) {
+							return e;
+						} else {
+							return MalformedProgramError::alloc(
+								runtime,
+								fnObject,
+								i);
+						}
 					}
 
 					analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = object;
@@ -285,7 +326,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 
 					IdRefObject *idRef;
 					{
-						Object *object = curIns.operands[0].getObjectRef();
+						Object *object = curIns.operands[1].getObjectRef();
 
 						if (object->getKind() != ObjectKind::IdRef) {
 							return MalformedProgramError::alloc(
@@ -296,8 +337,8 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						idRef = (IdRefObject *)object;
 					}
 
-					uint32_t regIndex = curIns.operands[0].getRegIndex();
-					Type type = analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].type;
+					uint32_t callTargetRegIndex = curIns.operands[0].getRegIndex();
+					Type type = analyzeContext.analyzedInfoOut.analyzedRegInfo[callTargetRegIndex].type;
 
 					switch (type.typeId) {
 						case TypeId::Instance: {
@@ -371,14 +412,41 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						i);
 				}
 
-				if (curIns.operands[0].valueType != ValueType::RegRef) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+				switch (curIns.operands[0].valueType) {
+					case ValueType::I8:
+					case ValueType::I16:
+					case ValueType::I32:
+					case ValueType::I64:
+					case ValueType::U8:
+					case ValueType::U16:
+					case ValueType::U32:
+					case ValueType::U64:
+					case ValueType::F32:
+					case ValueType::F64:
+					case ValueType::Bool:
+						analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+						analyzedInfoOut.analyzedRegInfo.at(regIndex).type = curIns.operands[0].valueType;
+						break;
+					case ValueType::ObjectRef: {
+						analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+						SLAKE_RETURN_IF_EXCEPT(evalObjectType(
+							analyzeContext,
+							VarRefContext{},
+							curIns.operands[0].getObjectRef(),
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).type));
+						break;
+					}
+					case ValueType::RegRef:
+						analyzedInfoOut.analyzedRegInfo.at(regIndex) = analyzedInfoOut.analyzedRegInfo.at(curIns.operands[0].getRegIndex());
+						break;
+					default: {
+						return MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i);
+					}
 				}
 
-				analyzedInfoOut.analyzedRegInfo.at(regIndex) = analyzedInfoOut.analyzedRegInfo.at(curIns.operands[0].getRegIndex());
 				break;
 			}
 			case Opcode::LLOAD: {
@@ -480,7 +548,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				break;
 			}
 			case Opcode::LVAR: {
-				if (regIndex == UINT32_MAX) {
+				if (regIndex != UINT32_MAX) {
 					return MalformedProgramError::alloc(
 						runtime,
 						fnObject,
@@ -506,7 +574,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				SLAKE_RETURN_IF_EXCEPT(typeName.loadDeferredType(runtime));
 
 				size_t index = stackFrameState.analyzedLocalVarInfo.size();
-				stackFrameState.analyzedLocalVarInfo[index] = { typeName };
+				stackFrameState.analyzedLocalVarInfo.push_back({ typeName });
 				break;
 			}
 			case Opcode::REG: {
@@ -533,12 +601,14 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 
 				uint32_t index = curIns.operands[0].getU32();
 
-				if (!analyzedInfoOut.analyzedRegInfo.count(index)) {
+				if (analyzedInfoOut.analyzedRegInfo.count(index)) {
 					return MalformedProgramError::alloc(
 						runtime,
 						fnObject,
 						i);
 				}
+
+				analyzedInfoOut.analyzedRegInfo[index].lifetime = { i, i };
 
 				break;
 			}
@@ -559,7 +629,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					}
 
 					uint32_t index = curIns.operands[0].getRegIndex();
-					Type type = analyzedInfoOut.analyzedRegInfo.at(regIndex).type;
+					Type type = analyzedInfoOut.analyzedRegInfo.at(index).type;
 
 					if (type.typeId != TypeId::Ref) {
 						return MalformedProgramError::alloc(
@@ -612,7 +682,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				break;
 			case Opcode::AT: {
 				if (regIndex != UINT32_MAX) {
-					if (curIns.operands.size() != 1) {
+					if (curIns.operands.size() != 2) {
 						return MalformedProgramError::alloc(
 							runtime,
 							fnObject,
@@ -627,7 +697,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					}
 
 					uint32_t index = curIns.operands[0].getRegIndex();
-					Type type = analyzedInfoOut.analyzedRegInfo.at(regIndex).type;
+					Type type = analyzedInfoOut.analyzedRegInfo.at(index).type;
 
 					if (type.typeId != TypeId::Array) {
 						return MalformedProgramError::alloc(
@@ -638,7 +708,11 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 
 					Type unwrappedType = type.getArrayExData();
 					SLAKE_RETURN_IF_EXCEPT(unwrappedType.loadDeferredType(runtime));
-					analyzedInfoOut.analyzedRegInfo.at(regIndex).type = unwrappedType;
+					SLAKE_RETURN_IF_EXCEPT(wrapIntoRefType(
+						analyzeContext.runtime,
+						unwrappedType,
+						analyzeContext.hostRefHolder,
+						analyzedInfoOut.analyzedRegInfo.at(regIndex).type));
 				}
 				break;
 			}
@@ -708,6 +782,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 
 				switch (callTargetType.typeId) {
 					case TypeId::FnDelegate:
+						analyzeContext.lastCallTargetType = callTargetType;
 						break;
 					default: {
 						return MalformedProgramError::alloc(
@@ -720,6 +795,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				break;
 			}
 			case Opcode::MCALL:
+			case Opcode::CTORCALL: {
 				if (regIndex != UINT32_MAX) {
 					return MalformedProgramError::alloc(
 						runtime,
@@ -732,21 +808,39 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						fnObject,
 						i);
 				}
-				break;
-			case Opcode::CTORCALL:
-				if (regIndex != UINT32_MAX) {
+
+				Value callTarget = curIns.operands[0];
+				if (callTarget.valueType != ValueType::RegRef) {
 					return MalformedProgramError::alloc(
 						runtime,
 						fnObject,
 						i);
 				}
-				if (curIns.operands.size() != 2) {
+
+				uint32_t callTargetRegIndex = callTarget.getRegIndex();
+				if (!analyzedInfoOut.analyzedRegInfo.count(callTargetRegIndex)) {
 					return MalformedProgramError::alloc(
 						runtime,
 						fnObject,
 						i);
 				}
+
+				Type callTargetType = analyzedInfoOut.analyzedRegInfo[callTargetRegIndex].type;
+
+				switch (callTargetType.typeId) {
+					case TypeId::FnDelegate:
+						analyzeContext.lastCallTargetType = callTargetType;
+						break;
+					default: {
+						return MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i);
+					}
+				}
+
 				break;
+			}
 			case Opcode::RET:
 				if (regIndex != UINT32_MAX) {
 					return MalformedProgramError::alloc(
@@ -756,7 +850,33 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				}
 				break;
 			case Opcode::LRET:
-				// stub
+				if (regIndex == UINT32_MAX) {
+					return MalformedProgramError::alloc(
+						runtime,
+						fnObject,
+						i);
+				}
+
+				switch (analyzeContext.lastCallTargetType.typeId) {
+					case TypeId::FnDelegate: {
+						Type returnType = ((FnTypeDefObject *)analyzeContext.lastCallTargetType.getCustomTypeExData())->returnType;
+						if (returnType.typeId == TypeId::None) {
+							return MalformedProgramError::alloc(
+								runtime,
+								fnObject,
+								i);
+						}
+						analyzedInfoOut.analyzedRegInfo[regIndex].type = ((FnTypeDefObject *)analyzeContext.lastCallTargetType.getCustomTypeExData())->returnType;
+						break;
+					}
+					default: {
+						return MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i);
+					}
+				}
+
 				break;
 			case Opcode::ACALL:
 			case Opcode::AMCALL:
@@ -779,14 +899,89 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				// stub
 				break;
 			case Opcode::LTHIS:
-				// stub
+				if (regIndex == UINT32_MAX) {
+					return MalformedProgramError::alloc(
+						runtime,
+						fnObject,
+						i);
+				}
+
+				if (analyzeContext.fnObject->thisObjectType.typeId == TypeId::None) {
+					return MalformedProgramError::alloc(
+						runtime,
+						fnObject,
+						i);
+				}
+				analyzedInfoOut.analyzedRegInfo[regIndex].type = analyzeContext.fnObject->thisObjectType;
 				break;
 			case Opcode::NEW:
-				// stub
+				if (regIndex == UINT32_MAX) {
+					return MalformedProgramError::alloc(
+						runtime,
+						fnObject,
+						i);
+				}
+
+				if (curIns.operands.size() != 1) {
+					return MalformedProgramError::alloc(
+						runtime,
+						fnObject,
+						i);
+				}
+
+				if (curIns.operands[0].valueType != ValueType::TypeName) {
+					return MalformedProgramError::alloc(
+						runtime,
+						fnObject,
+						i);
+				}
+
+				analyzedInfoOut.analyzedRegInfo[regIndex].type = curIns.operands[0].getTypeName();
 				break;
-			case Opcode::ARRNEW:
-				// stub
+			case Opcode::ARRNEW: {
+				if (regIndex == UINT32_MAX) {
+					return MalformedProgramError::alloc(
+						runtime,
+						fnObject,
+						i);
+				}
+
+				if (curIns.operands.size() != 2) {
+					return MalformedProgramError::alloc(
+						runtime,
+						fnObject,
+						i);
+				}
+
+				if (curIns.operands[0].valueType != ValueType::TypeName) {
+					return MalformedProgramError::alloc(
+						runtime,
+						fnObject,
+						i);
+				}
+
+				Type lengthType;
+				SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[1], lengthType));
+				if (lengthType.typeId != TypeId::Value) {
+					return MalformedProgramError::alloc(
+						runtime,
+						fnObject,
+						i);
+				}
+				if (lengthType.getValueTypeExData() != ValueType::U32) {
+					return MalformedProgramError::alloc(
+						runtime,
+						fnObject,
+						i);
+				}
+
+				SLAKE_RETURN_IF_EXCEPT(wrapIntoArrayType(
+					runtime,
+					curIns.operands[0].getTypeName(),
+					hostRefHolder,
+					analyzedInfoOut.analyzedRegInfo[regIndex].type));
 				break;
+			}
 			case Opcode::THROW:
 			case Opcode::PUSHXH:
 				if (regIndex != UINT32_MAX) {
@@ -799,9 +994,878 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 			case Opcode::LEXCEPT:
 				// stub
 				break;
-			case Opcode::CAST:
-				// stub
+			case Opcode::CAST: {
+				if (regIndex == UINT32_MAX) {
+					return MalformedProgramError::alloc(
+						runtime,
+						fnObject,
+						i);
+				}
+
+				if (curIns.operands.size() != 2) {
+					return MalformedProgramError::alloc(
+						runtime,
+						fnObject,
+						i);
+				}
+
+				if (curIns.operands[0].valueType != ValueType::TypeName) {
+					return MalformedProgramError::alloc(
+						runtime,
+						fnObject,
+						i);
+				}
+
+				Value constSrc;
+				Type srcType, destType = curIns.operands[0].getTypeName();
+				SLAKE_RETURN_IF_EXCEPT(evalConstValue(analyzeContext, curIns.operands[1], constSrc));
+				SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[1], srcType));
+
+				switch (srcType.typeId) {
+					case TypeId::Value: {
+						switch (srcType.getValueTypeExData()) {
+							case ValueType::I8:
+								switch (destType.typeId) {
+									case TypeId::Value:
+										switch (destType.getValueTypeExData()) {
+											case ValueType::I8:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int8_t)constSrc.getI8());
+												}
+												break;
+											case ValueType::I16:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int16_t)constSrc.getI8());
+												}
+												break;
+											case ValueType::I32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int32_t)constSrc.getI8());
+												}
+												break;
+											case ValueType::I64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int64_t)constSrc.getI8());
+												}
+												break;
+											case ValueType::U8:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint8_t)constSrc.getI8());
+												}
+												break;
+											case ValueType::U16:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint16_t)constSrc.getI8());
+												}
+												break;
+											case ValueType::U32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint32_t)constSrc.getI8());
+												}
+												break;
+											case ValueType::U64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint64_t)constSrc.getI8());
+												}
+												break;
+											case ValueType::F32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((float)constSrc.getI8());
+												}
+												break;
+											case ValueType::F64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((double)constSrc.getI8());
+												}
+												break;
+											case ValueType::Bool:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((bool)constSrc.getI8());
+												}
+												break;
+											default: {
+												return MalformedProgramError::alloc(
+													runtime,
+													fnObject,
+													i);
+											}
+										}
+										break;
+									default: {
+										return MalformedProgramError::alloc(
+											runtime,
+											fnObject,
+											i);
+									}
+								}
+								break;
+							case ValueType::I16:
+								switch (destType.typeId) {
+									case TypeId::Value:
+										switch (destType.getValueTypeExData()) {
+											case ValueType::I8:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int8_t)constSrc.getI16());
+												}
+												break;
+											case ValueType::I16:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int16_t)constSrc.getI16());
+												}
+												break;
+											case ValueType::I32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int32_t)constSrc.getI16());
+												}
+												break;
+											case ValueType::I64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int64_t)constSrc.getI16());
+												}
+												break;
+											case ValueType::U8:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint8_t)constSrc.getI16());
+												}
+												break;
+											case ValueType::U16:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint16_t)constSrc.getI16());
+												}
+												break;
+											case ValueType::U32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint32_t)constSrc.getI16());
+												}
+												break;
+											case ValueType::U64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint64_t)constSrc.getI16());
+												}
+												break;
+											case ValueType::F32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((float)constSrc.getI16());
+												}
+												break;
+											case ValueType::F64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((double)constSrc.getI16());
+												}
+												break;
+											case ValueType::Bool:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((bool)constSrc.getI16());
+												}
+												break;
+											default: {
+												return MalformedProgramError::alloc(
+													runtime,
+													fnObject,
+													i);
+											}
+										}
+										break;
+									default: {
+										return MalformedProgramError::alloc(
+											runtime,
+											fnObject,
+											i);
+									}
+								}
+								break;
+							case ValueType::I32:
+								switch (destType.typeId) {
+									case TypeId::Value:
+										switch (destType.getValueTypeExData()) {
+											case ValueType::I8:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int8_t)constSrc.getI32());
+												}
+												break;
+											case ValueType::I16:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int16_t)constSrc.getI32());
+												}
+												break;
+											case ValueType::I32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int32_t)constSrc.getI32());
+												}
+												break;
+											case ValueType::I64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int64_t)constSrc.getI32());
+												}
+												break;
+											case ValueType::U8:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint8_t)constSrc.getI32());
+												}
+												break;
+											case ValueType::U16:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint16_t)constSrc.getI32());
+												}
+												break;
+											case ValueType::U32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint32_t)constSrc.getI32());
+												}
+												break;
+											case ValueType::U64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint64_t)constSrc.getI32());
+												}
+												break;
+											case ValueType::F32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((float)constSrc.getI32());
+												}
+												break;
+											case ValueType::F64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((double)constSrc.getI32());
+												}
+												break;
+											case ValueType::Bool:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((bool)constSrc.getI32());
+												}
+												break;
+											default: {
+												return MalformedProgramError::alloc(
+													runtime,
+													fnObject,
+													i);
+											}
+										}
+										break;
+									default: {
+										return MalformedProgramError::alloc(
+											runtime,
+											fnObject,
+											i);
+									}
+								}
+								break;
+							case ValueType::I64:
+								switch (destType.typeId) {
+									case TypeId::Value:
+										switch (destType.getValueTypeExData()) {
+											case ValueType::I8:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int8_t)constSrc.getI64());
+												}
+												break;
+											case ValueType::I16:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int16_t)constSrc.getI64());
+												}
+												break;
+											case ValueType::I32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int32_t)constSrc.getI64());
+												}
+												break;
+											case ValueType::I64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int64_t)constSrc.getI64());
+												}
+												break;
+											case ValueType::U8:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint8_t)constSrc.getI64());
+												}
+												break;
+											case ValueType::U16:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint16_t)constSrc.getI64());
+												}
+												break;
+											case ValueType::U32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint32_t)constSrc.getI64());
+												}
+												break;
+											case ValueType::U64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint64_t)constSrc.getI64());
+												}
+												break;
+											case ValueType::F32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((float)constSrc.getI64());
+												}
+												break;
+											case ValueType::F64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((double)constSrc.getI64());
+												}
+												break;
+											case ValueType::Bool:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((bool)constSrc.getI64());
+												}
+												break;
+											default: {
+												return MalformedProgramError::alloc(
+													runtime,
+													fnObject,
+													i);
+											}
+										}
+										break;
+									default: {
+										return MalformedProgramError::alloc(
+											runtime,
+											fnObject,
+											i);
+									}
+								}
+								break;
+							case ValueType::U8:
+								switch (destType.typeId) {
+									case TypeId::Value:
+										switch (destType.getValueTypeExData()) {
+											case ValueType::I8:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int8_t)constSrc.getU8());
+												}
+												break;
+											case ValueType::I16:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int16_t)constSrc.getU8());
+												}
+												break;
+											case ValueType::I32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int32_t)constSrc.getU8());
+												}
+												break;
+											case ValueType::I64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int64_t)constSrc.getU8());
+												}
+												break;
+											case ValueType::U8:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint8_t)constSrc.getU8());
+												}
+												break;
+											case ValueType::U16:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint16_t)constSrc.getU8());
+												}
+												break;
+											case ValueType::U32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint32_t)constSrc.getU8());
+												}
+												break;
+											case ValueType::U64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint64_t)constSrc.getU8());
+												}
+												break;
+											case ValueType::F32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((float)constSrc.getU8());
+												}
+												break;
+											case ValueType::F64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((double)constSrc.getU8());
+												}
+												break;
+											case ValueType::Bool:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((bool)constSrc.getU8());
+												}
+												break;
+											default: {
+												return MalformedProgramError::alloc(
+													runtime,
+													fnObject,
+													i);
+											}
+										}
+										break;
+									default: {
+										return MalformedProgramError::alloc(
+											runtime,
+											fnObject,
+											i);
+									}
+								}
+								break;
+							case ValueType::U16:
+								switch (destType.typeId) {
+									case TypeId::Value:
+										switch (destType.getValueTypeExData()) {
+											case ValueType::I8:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int8_t)constSrc.getU16());
+												}
+												break;
+											case ValueType::I16:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int16_t)constSrc.getU16());
+												}
+												break;
+											case ValueType::I32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int32_t)constSrc.getU16());
+												}
+												break;
+											case ValueType::I64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int64_t)constSrc.getU16());
+												}
+												break;
+											case ValueType::U8:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint8_t)constSrc.getU16());
+												}
+												break;
+											case ValueType::U16:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint16_t)constSrc.getU16());
+												}
+												break;
+											case ValueType::U32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint32_t)constSrc.getU16());
+												}
+												break;
+											case ValueType::U64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint64_t)constSrc.getU16());
+												}
+												break;
+											case ValueType::F32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((float)constSrc.getU16());
+												}
+												break;
+											case ValueType::F64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((double)constSrc.getU16());
+												}
+												break;
+											case ValueType::Bool:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((bool)constSrc.getU16());
+												}
+												break;
+											default: {
+												return MalformedProgramError::alloc(
+													runtime,
+													fnObject,
+													i);
+											}
+										}
+										break;
+									default: {
+										return MalformedProgramError::alloc(
+											runtime,
+											fnObject,
+											i);
+									}
+								}
+								break;
+							case ValueType::U32:
+								switch (destType.typeId) {
+									case TypeId::Value:
+										switch (destType.getValueTypeExData()) {
+											case ValueType::I8:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int8_t)constSrc.getU32());
+												}
+												break;
+											case ValueType::I16:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int16_t)constSrc.getU32());
+												}
+												break;
+											case ValueType::I32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int32_t)constSrc.getU32());
+												}
+												break;
+											case ValueType::I64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int64_t)constSrc.getU32());
+												}
+												break;
+											case ValueType::U8:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint8_t)constSrc.getU32());
+												}
+												break;
+											case ValueType::U16:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint16_t)constSrc.getU32());
+												}
+												break;
+											case ValueType::U32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint32_t)constSrc.getU32());
+												}
+												break;
+											case ValueType::U64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint64_t)constSrc.getU32());
+												}
+												break;
+											case ValueType::F32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((float)constSrc.getU32());
+												}
+												break;
+											case ValueType::F64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((double)constSrc.getU32());
+												}
+												break;
+											case ValueType::Bool:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((bool)constSrc.getU32());
+												}
+												break;
+											default: {
+												return MalformedProgramError::alloc(
+													runtime,
+													fnObject,
+													i);
+											}
+										}
+										break;
+									default: {
+										return MalformedProgramError::alloc(
+											runtime,
+											fnObject,
+											i);
+									}
+								}
+								break;
+							case ValueType::U64:
+								switch (destType.typeId) {
+									case TypeId::Value:
+										switch (destType.getValueTypeExData()) {
+											case ValueType::I8:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int8_t)constSrc.getU64());
+												}
+												break;
+											case ValueType::I16:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int16_t)constSrc.getU64());
+												}
+												break;
+											case ValueType::I32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int32_t)constSrc.getU64());
+												}
+												break;
+											case ValueType::I64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int64_t)constSrc.getU64());
+												}
+												break;
+											case ValueType::U8:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint8_t)constSrc.getU64());
+												}
+												break;
+											case ValueType::U16:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint16_t)constSrc.getU64());
+												}
+												break;
+											case ValueType::U32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint32_t)constSrc.getU64());
+												}
+												break;
+											case ValueType::U64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint64_t)constSrc.getU64());
+												}
+												break;
+											case ValueType::F32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((float)constSrc.getU64());
+												}
+												break;
+											case ValueType::F64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((double)constSrc.getU64());
+												}
+												break;
+											case ValueType::Bool:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((bool)constSrc.getU64());
+												}
+												break;
+											default: {
+												return MalformedProgramError::alloc(
+													runtime,
+													fnObject,
+													i);
+											}
+										}
+										break;
+									default: {
+										return MalformedProgramError::alloc(
+											runtime,
+											fnObject,
+											i);
+									}
+								}
+								break;
+							case ValueType::Bool:
+								switch (destType.typeId) {
+									case TypeId::Value:
+										switch (destType.getValueTypeExData()) {
+											case ValueType::I8:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int8_t)constSrc.getBool());
+												}
+												break;
+											case ValueType::I16:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int16_t)constSrc.getBool());
+												}
+												break;
+											case ValueType::I32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int32_t)constSrc.getBool());
+												}
+												break;
+											case ValueType::I64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int64_t)constSrc.getBool());
+												}
+												break;
+											case ValueType::U8:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint8_t)constSrc.getBool());
+												}
+												break;
+											case ValueType::U16:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint16_t)constSrc.getBool());
+												}
+												break;
+											case ValueType::U32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint32_t)constSrc.getBool());
+												}
+												break;
+											case ValueType::U64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint64_t)constSrc.getBool());
+												}
+												break;
+											case ValueType::F32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((float)constSrc.getBool());
+												}
+												break;
+											case ValueType::F64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((double)constSrc.getBool());
+												}
+												break;
+											case ValueType::Bool:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((bool)constSrc.getBool());
+												}
+												break;
+											default: {
+												return MalformedProgramError::alloc(
+													runtime,
+													fnObject,
+													i);
+											}
+										}
+										break;
+									default: {
+										return MalformedProgramError::alloc(
+											runtime,
+											fnObject,
+											i);
+									}
+								}
+								break;
+							case ValueType::F32:
+								switch (destType.typeId) {
+									case TypeId::Value:
+										switch (destType.getValueTypeExData()) {
+											case ValueType::I8:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int8_t)constSrc.getF32());
+												}
+												break;
+											case ValueType::I16:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int16_t)constSrc.getF32());
+												}
+												break;
+											case ValueType::I32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int32_t)constSrc.getF32());
+												}
+												break;
+											case ValueType::I64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int64_t)constSrc.getF32());
+												}
+												break;
+											case ValueType::U8:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint8_t)constSrc.getF32());
+												}
+												break;
+											case ValueType::U16:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint16_t)constSrc.getF32());
+												}
+												break;
+											case ValueType::U32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint32_t)constSrc.getF32());
+												}
+												break;
+											case ValueType::U64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint64_t)constSrc.getF32());
+												}
+												break;
+											case ValueType::F32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((float)constSrc.getF32());
+												}
+												break;
+											case ValueType::F64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((double)constSrc.getF32());
+												}
+												break;
+											case ValueType::Bool:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((bool)constSrc.getF32());
+												}
+												break;
+											default: {
+												return MalformedProgramError::alloc(
+													runtime,
+													fnObject,
+													i);
+											}
+										}
+										break;
+									default: {
+										return MalformedProgramError::alloc(
+											runtime,
+											fnObject,
+											i);
+									}
+								}
+								break;
+							case ValueType::F64:
+								switch (destType.typeId) {
+									case TypeId::Value:
+										switch (destType.getValueTypeExData()) {
+											case ValueType::I8:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int8_t)constSrc.getF64());
+												}
+												break;
+											case ValueType::I16:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int16_t)constSrc.getF64());
+												}
+												break;
+											case ValueType::I32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int32_t)constSrc.getF64());
+												}
+												break;
+											case ValueType::I64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int64_t)constSrc.getF64());
+												}
+												break;
+											case ValueType::U8:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint8_t)constSrc.getF64());
+												}
+												break;
+											case ValueType::U16:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint16_t)constSrc.getF64());
+												}
+												break;
+											case ValueType::U32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint32_t)constSrc.getF64());
+												}
+												break;
+											case ValueType::U64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint64_t)constSrc.getF64());
+												}
+												break;
+											case ValueType::F32:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((float)constSrc.getF64());
+												}
+												break;
+											case ValueType::F64:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((double)constSrc.getF64());
+												}
+												break;
+											case ValueType::Bool:
+												if (constSrc.valueType != ValueType::Undefined) {
+													analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((bool)constSrc.getF64());
+												}
+												break;
+											default: {
+												return MalformedProgramError::alloc(
+													runtime,
+													fnObject,
+													i);
+											}
+										}
+										break;
+									default: {
+										return MalformedProgramError::alloc(
+											runtime,
+											fnObject,
+											i);
+									}
+								}
+								break;
+						}
+						break;
+					}
+					case TypeId::Instance: {
+						break;
+					}
+					default: {
+						return MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i);
+					}
+				}
+
+				analyzedInfoOut.analyzedRegInfo[regIndex].type = destType;
 				break;
+			}
 			default: {
 				// Malformed program, return.
 				return MalformedProgramError::alloc(

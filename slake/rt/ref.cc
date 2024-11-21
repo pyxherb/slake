@@ -71,11 +71,20 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 	fail:
 		switch (curObject->getKind()) {
 			case ObjectKind::Module:
-			case ObjectKind::Class:
 				if (!curObject->getParent())
 					return ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this), ref);
 				scopeObject = (MemberObject *)curObject->getParent();
 				break;
+			case ObjectKind::Class: {
+				ClassObject *cls = (ClassObject *)curObject;
+				if (cls->parentClass.typeId == TypeId::Instance) {
+					SLAKE_RETURN_IF_EXCEPT(cls->parentClass.loadDeferredType(this));
+					scopeObject = cls->parentClass.getCustomTypeExData();
+				} else {
+					return ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this), ref);
+				}
+				break;
+			}
 			case ObjectKind::Instance: {
 				scopeObject = ((InstanceObject *)curObject)->_class;
 				break;

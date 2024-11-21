@@ -457,7 +457,7 @@ SLAKE_API MalformedProgramError::MalformedProgramError(
 	: OptimizerError(associatedRuntime,
 		  OptimizerErrorCode::MalformedProgram),
 	  fnOverloading(fnOverloading),
-	  offIns(offIns) {}
+ 	  offIns(offIns) {}
 SLAKE_API MalformedProgramError::~MalformedProgramError() {}
 
 SLAKE_API const char *MalformedProgramError::what() const {

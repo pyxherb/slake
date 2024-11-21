@@ -3,7 +3,7 @@
 using namespace slake;
 using namespace slake::opti;
 
-InternalExceptionPointer analyzeExprIns(
+InternalExceptionPointer slake::opti::analyzeExprIns(
 	ProgramAnalyzeContext &analyzeContext,
 	size_t regIndex) {
 	Instruction &curIns = analyzeContext.fnObject->instructions[analyzeContext.idxCurIns];

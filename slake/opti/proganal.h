@@ -37,9 +37,15 @@ namespace slake {
 			size_t idxCurIns = 0;
 			StackFrameState stackFrameState = {};
 			Object *lastCallTarget;
+			Type lastCallTargetType;
 		};
 
 		InternalExceptionPointer wrapIntoRefType(
+			Runtime *runtime,
+			Type type,
+			HostRefHolder &hostRefHolder,
+			Type &typeOut);
+		InternalExceptionPointer wrapIntoArrayType(
 			Runtime *runtime,
 			Type type,
 			HostRefHolder &hostRefHolder,

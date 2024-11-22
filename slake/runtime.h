@@ -40,6 +40,8 @@ namespace slake {
 		RT_GCDBG = 0x0000004,
 		// Enable strict mode
 		RT_STRICT = 0x00000008,
+		// The runtime is destructing.
+		_RT_DEINITING = 0x20000000,
 		// The runtime is in a GC cycle.
 		_RT_INGC = 0x40000000,
 		// The runtime is initializing.

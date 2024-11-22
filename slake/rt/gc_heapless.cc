@@ -431,32 +431,34 @@ rescan:
 		}
 	}
 
-	// Walk the root node.
-	context.pushObject(_rootObject);
+	if (!(_flags & _RT_DEINITING)) {
+		// Walk the root node.
+		context.pushObject(_rootObject);
 
-	// Walk contexts for each thread.
-	for (auto &i : activeContexts)
-		context.pushObject(i.second);
+		// Walk contexts for each thread.
+		for (auto &i : activeContexts)
+			context.pushObject(i.second);
 
-	while (context.walkableList) {
-		Object *i = context.walkableList;
-		context.walkableList = nullptr;
+		while (context.walkableList) {
+			Object *i = context.walkableList;
+			context.walkableList = nullptr;
 
-		while (i) {
-			Object *next = i->gcInfo.heapless.next;
-			switch (i->gcInfo.heapless.gcStatus) {
-				case ObjectGCStatus::Unwalked:
-					assert(false);
-					break;
-				case ObjectGCStatus::ReadyToWalk:
-					_gcWalkHeapless(context, i);
-					break;
-				case ObjectGCStatus::Walked:
-					assert(false);
-					break;
+			while (i) {
+				Object *next = i->gcInfo.heapless.next;
+				switch (i->gcInfo.heapless.gcStatus) {
+					case ObjectGCStatus::Unwalked:
+						assert(false);
+						break;
+					case ObjectGCStatus::ReadyToWalk:
+						_gcWalkHeapless(context, i);
+						break;
+					case ObjectGCStatus::Walked:
+						assert(false);
+						break;
+				}
+				i->gcInfo.heapless.next = nullptr;
+				i = next;
 			}
-			i->gcInfo.heapless.next = nullptr;
-			i = next;
 		}
 	}
 
@@ -476,7 +478,7 @@ rescan:
 		if (i->getKind() == ObjectKind::Instance) {
 			InstanceObject *object = (InstanceObject *)i;
 
-			/* if (auto mt = object->methodTable; mt) {
+			if (auto mt = object->methodTable; mt) {
 				if (mt->destructors.size()) {
 					for (auto j : mt->destructors) {
 						HostRefHolder holder;
@@ -485,7 +487,7 @@ rescan:
 					}
 					foundDestructibleObjects = true;
 				}
-			}*/
+			}
 		}
 	}
 	destructingThreads.erase(std::this_thread::get_id());

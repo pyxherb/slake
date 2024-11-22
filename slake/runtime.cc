@@ -34,10 +34,13 @@ SLAKE_API Runtime::~Runtime() {
 	_genericCacheDir.clear();
 	_genericCacheLookupTable.clear();
 
-	_rootObject = nullptr;
 	activeContexts.clear();
 
+	_flags |= _RT_DEINITING;
+
 	gc();
+
+	_rootObject = nullptr;
 
 	assert(!createdObjects.size());
 	assert(!globalHeapPoolResource.szAllocated);

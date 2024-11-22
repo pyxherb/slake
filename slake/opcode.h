@@ -45,7 +45,6 @@ namespace slake {
 		GTEQ,  // Greater than or equal
 		LSH,   // Left shift
 		RSH,   // Right shift
-		SWAP,  // Swap
 
 		NOT,   // Bitwise NOT
 		LNOT,  // Logical NOT
@@ -66,10 +65,7 @@ namespace slake {
 
 		LRET,  // Load return value
 
-		ACALL,	 // Asynchronous Call
-		AMCALL,	 // Asynchronous Method Call
 		YIELD,	 // Yield
-		AWAIT,	 // Await
 
 		LTHIS,	// Load this register
 

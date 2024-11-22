@@ -272,12 +272,12 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 
 			if (compileContext->curMajorContext.curMinorContext.isLastCallTargetStatic)
 				compileContext->_insertIns(
-					e->isAsync ? Opcode::ACALL : Opcode::CALL,
+					Opcode::CALL,
 					{},
 					{ std::make_shared<RegRefNode>(callTargetRegIndex) });
 			else
 				compileContext->_insertIns(
-					e->isAsync ? Opcode::AMCALL : Opcode::MCALL,
+					Opcode::MCALL,
 					{},
 					{ std::make_shared<RegRefNode>(callTargetRegIndex),
 						std::make_shared<RegRefNode>(thisRegIndex) });
@@ -330,19 +330,7 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 			break;
 		}
 		case ExprType::Await: {
-			uint32_t awaitTargetRegIndex = compileContext->allocReg();
-
-			auto e = std::static_pointer_cast<AwaitExprNode>(expr);
-
-			if (auto ce = evalConstExpr(compileContext, e); ce) {
-				compileContext->_insertIns(Opcode::AWAIT, {}, { ce });
-			} else {
-				// TODO: Check if the target is a method.
-				// compileExpr(compileContext,e->target, compileContext->curMajorContext.curMinorContext.evalPurpose, std::make_shared<RegRefNode>(RegId::R0));
-				// compileContext->_insertIns(Opcode::AWAIT, std::make_shared<RegRefNode>(RegId::R0));
-			}
-
-			// TODO: Set evaluated type.
+			// stub
 
 			break;
 		}

@@ -5,6 +5,7 @@
 #include <thread>
 #include <unordered_set>
 #include <set>
+#include <list>
 #include <memory>
 #include <memory_resource>
 

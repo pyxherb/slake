@@ -113,7 +113,7 @@ InternalExceptionPointer slake::opti::evalValueType(
 		case ValueType::RegRef: {
 			uint32_t regIndex = value.getRegIndex();
 
-			if (regIndex >= analyzeContext.analyzedInfoOut.analyzedRegInfo.size()) {
+			if (!analyzeContext.analyzedInfoOut.analyzedRegInfo.count(regIndex)) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,
@@ -160,7 +160,7 @@ InternalExceptionPointer slake::opti::evalConstValue(
 		case ValueType::RegRef: {
 			uint32_t idxReg = value.getRegIndex();
 
-			if (idxReg > analyzeContext.analyzedInfoOut.analyzedRegInfo.size()) {
+			if (!analyzeContext.analyzedInfoOut.analyzedRegInfo.count(idxReg)) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,
@@ -206,7 +206,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 		if (curIns.output.valueType == ValueType::RegRef) {
 			regIndex = curIns.output.getRegIndex();
 
-			if (!analyzedInfoOut.analyzedRegInfo.count(regIndex)) {
+			if (analyzedInfoOut.analyzedRegInfo.count(regIndex)) {
 				// Malformed program, return.
 				return MalformedProgramError::alloc(
 					runtime,
@@ -214,7 +214,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					i);
 			}
 
-			analyzedInfoOut.analyzedRegInfo[regIndex].lifetime.offEndIns = i;
+			analyzedInfoOut.analyzedRegInfo[regIndex].lifetime = { i, i };
 		}
 
 		for (auto &j : curIns.operands) {
@@ -599,17 +599,6 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						i);
 				}
 
-				uint32_t index = curIns.operands[0].getU32();
-
-				if (analyzedInfoOut.analyzedRegInfo.count(index)) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
-				}
-
-				analyzedInfoOut.analyzedRegInfo[index].lifetime = { i, i };
-
 				break;
 			}
 			case Opcode::LVALUE: {
@@ -878,15 +867,6 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				}
 
 				break;
-			case Opcode::ACALL:
-			case Opcode::AMCALL:
-				if (regIndex != UINT32_MAX) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
-				}
-				break;
 			case Opcode::YIELD:
 				if (regIndex != UINT32_MAX) {
 					return MalformedProgramError::alloc(
@@ -894,9 +874,6 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						fnObject,
 						i);
 				}
-				break;
-			case Opcode::AWAIT:
-				// stub
 				break;
 			case Opcode::LTHIS:
 				if (regIndex == UINT32_MAX) {

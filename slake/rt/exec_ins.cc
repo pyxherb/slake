@@ -1466,18 +1466,11 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(curMajorFrame, ins.output.getRegIndex(), curMajorFrame->returnValue));
 			break;
 		}
-		case Opcode::ACALL:
-		case Opcode::AMCALL: {
-			break;
-		}
 		case Opcode::YIELD: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(ins, false, 1));
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(curMajorFrame, ins.operands[0], curMajorFrame->returnValue));
 			context->_context.flags |= CTX_YIELDED;
-			break;
-		}
-		case Opcode::AWAIT: {
 			break;
 		}
 		case Opcode::LTHIS: {

@@ -3,6 +3,7 @@
 
 #include <memory_resource>
 #include <cstring>
+#include <stdexcept>
 
 namespace slake {
 	namespace util {

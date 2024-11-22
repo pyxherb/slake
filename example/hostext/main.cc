@@ -176,11 +176,9 @@ int main(int argc, char **argv) {
 			e.reset();
 			goto end;
 		}
-		for (size_t i = 0; i < analyzedInfo.analyzedRegInfo.size(); ++i) {
-			auto &curRegInfo = analyzedInfo.analyzedRegInfo[i];
-
-			printf("Register #%zu\n", i);
-			printf("Lifetime: %zu-%zu\n", curRegInfo.lifetime.offBeginIns, curRegInfo.lifetime.offEndIns);
+		for (auto &i : analyzedInfo.analyzedRegInfo) {
+			printf("Register #%u\n", i.first);
+			printf("Lifetime: %zu-%zu\n", i.second.lifetime.offBeginIns, i.second.lifetime.offEndIns);
 		}
 
 		slake::HostObjectRef<slake::ContextObject> context;

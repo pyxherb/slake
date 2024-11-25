@@ -226,7 +226,6 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 								// i.baseType.loadDeferredType(this);
 								_gcWalkHeapless(context, i.baseType);
 								for (auto &j : i.interfaces) {
-									j.loadDeferredType(this);
 									_gcWalkHeapless(context, j);
 								}
 							}

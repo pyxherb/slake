@@ -38,9 +38,7 @@ namespace slake {
 		}
 
 		SLAKE_FORCEINLINE ~InternalExceptionPointer() {
-			if (_ptr) {
-				assert(("Unhandled Slake internal exception: ", false));
-			}
+			unwrap();
 		}
 
 		InternalExceptionPointer(const InternalExceptionPointer &) = delete;
@@ -64,6 +62,12 @@ namespace slake {
 			_ptr.reset();
 		}
 
+		SLAKE_FORCEINLINE void unwrap() {
+			if (_ptr) {
+				assert(("Unhandled Slake internal exception: ", false));
+			}
+		}
+
 		SLAKE_FORCEINLINE explicit operator bool() {
 			return (bool)_ptr;
 		}
@@ -78,6 +82,7 @@ namespace slake {
 	};
 }
 
+#define SLAKE_UNWRAP_EXCEPT(expr) (expr).unwrap()
 #define SLAKE_RETURN_IF_EXCEPT(expr)                  \
 	if (InternalExceptionPointer e = (expr); (bool)e) \
 	return e

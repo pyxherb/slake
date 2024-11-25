@@ -5,7 +5,7 @@ using namespace slake::opti;
 
 InternalExceptionPointer slake::opti::analyzeExprIns(
 	ProgramAnalyzeContext &analyzeContext,
-	size_t regIndex) {
+	uint32_t regIndex) {
 	Instruction &curIns = analyzeContext.fnObject->instructions[analyzeContext.idxCurIns];
 
 	switch (curIns.opcode) {
@@ -2002,25 +2002,25 @@ InternalExceptionPointer slake::opti::analyzeExprIns(
 						case ValueType::U8:
 							resultType = ValueType::U8;
 							if (evaluatedLhs.valueType != ValueType::Undefined) {
-								result = Value((uint8_t)-evaluatedLhs.getU8());
+								result = Value((uint8_t)evaluatedLhs.getU8());
 							}
 							break;
 						case ValueType::U16:
 							resultType = ValueType::U16;
 							if (evaluatedLhs.valueType != ValueType::Undefined) {
-								result = Value((uint16_t)-evaluatedLhs.getU16());
+								result = Value((uint16_t)evaluatedLhs.getU16());
 							}
 							break;
 						case ValueType::U32:
 							resultType = ValueType::U32;
 							if (evaluatedLhs.valueType != ValueType::Undefined) {
-								result = Value((uint32_t)-evaluatedLhs.getU32());
+								result = Value((uint32_t)evaluatedLhs.getU32());
 							}
 							break;
 						case ValueType::U64:
 							resultType = ValueType::U64;
 							if (evaluatedLhs.valueType != ValueType::Undefined) {
-								result = Value((uint64_t)-evaluatedLhs.getU64());
+								result = Value((uint64_t)evaluatedLhs.getU64());
 							}
 							break;
 						case ValueType::F32:

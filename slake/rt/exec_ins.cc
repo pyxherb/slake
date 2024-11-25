@@ -268,7 +268,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(MajorFrame *fram
 
 	localVarRecord.type = type;
 
-	size_t index = frame->localVarRecords.size();
+	uint32_t index = (uint32_t)frame->localVarRecords.size();
 	frame->localVarRecords.push_back(std::move(localVarRecord));
 	varRefOut = VarRef(frame->localVarAccessor, VarRefContext::makeLocalVarContext(index));
 	return {};
@@ -1514,7 +1514,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_execIns(ContextObject *conte
 
 			auto instance = newArrayInstance(this, type, size);
 			if (!instance)
-				// TODO: Return more detail exceptions.
+				// TODO: Return more detailed exceptions.
 				return InvalidOperandsError::alloc(this);
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(curMajorFrame, ins.output.getRegIndex(), instance.get()));

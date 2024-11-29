@@ -1,4 +1,4 @@
-#include "../../base.hh"
+#include <slake/jit/base.h>
 #include <cstdint>
 #include <cstring>
 #include <cassert>

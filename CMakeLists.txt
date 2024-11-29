@@ -44,4 +44,31 @@ endif()
 
 add_subdirectory("example")
 
-install(FILES "cmake/slakeConfig.cmake" DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/slake)
+# Generate the version file for the config file
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/slakeConfigVersion.cmake
+    VERSION ${PACKAGE_VERSION}
+    COMPATIBILITY SameMinorVersion
+)
+
+# Create config file
+configure_package_config_file(
+    cmake/slakeConfig.cmake.in slakeConfig.cmake
+    INSTALL_DESTINATION lib/cmake/slake
+)
+
+# Install config files
+install(
+    FILES   
+       ${CMAKE_CURRENT_BINARY_DIR}/slakeConfig.cmake
+       ${CMAKE_CURRENT_BINARY_DIR}/slakeConfigVersion.cmake
+    DESTINATION
+        lib/cmake/${PROJECT_NAME}
+)
+
+# Exporting Targets from the Build Tree
+install(EXPORT slakeTargets
+    FILE slakeTargets.cmake
+    DESTINATION lib/cmake/${PROJECT_NAME}
+)

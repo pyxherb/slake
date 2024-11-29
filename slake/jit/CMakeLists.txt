@@ -8,3 +8,4 @@ endif()
 install(FILES ${HEADERS} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/slake/jit)
 
 add_subdirectory("arch")
+add_subdirectory("os")

@@ -1,3 +1,5 @@
 if(WIN32)
     add_subdirectory("win32")
+elseif(LINUX)
+    add_subdirectory("linux")
 endif()

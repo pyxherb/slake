@@ -2,12 +2,6 @@
 
 using namespace slake::slkc;
 
-std::map<UnaryOp, Compiler::UnaryOpRegistry> Compiler::_unaryOpRegs = {
-	{ UnaryOp::LNot, { slake::Opcode::LNOT, false, false } },
-	{ UnaryOp::Not, { slake::Opcode::NOT, false, false } },
-	{ UnaryOp::Neg, { slake::Opcode::NEG, false, false } }
-};
-
 void slake::slkc::Compiler::compileUnaryOpExpr(CompileContext *compileContext, std::shared_ptr<UnaryOpExprNode> e, std::shared_ptr<TypeNameNode> lhsType) {
 	uint32_t resultRegIndex = compileContext->allocReg(),
 			 lhsRegIndex = compileContext->allocReg();
@@ -19,51 +13,440 @@ void slake::slkc::Compiler::compileUnaryOpExpr(CompileContext *compileContext, s
 				MessageType::Error,
 				"Error deducing type of the operand"));
 
-	auto &opReg = _unaryOpRegs.at(e->op);
-
 	std::shared_ptr<TypeNameNode> resultType;
+
+	auto compileOrCastOperand =
+		[this, e, &compileContext](
+			std::shared_ptr<ExprNode> operand,
+			std::shared_ptr<TypeNameNode> operandType,
+			std::shared_ptr<TypeNameNode> targetType,
+			EvalPurpose evalPurpose,
+			std::shared_ptr<AstNode> destOut) {
+			targetType = targetType->duplicate<TypeNameNode>();
+			targetType->isRef = (evalPurpose == EvalPurpose::LValue);
+			if (!isSameType(compileContext, operandType, targetType)) {
+				if (!isTypeNamesConvertible(compileContext, operandType, targetType))
+					throw FatalCompilationError(
+						{ tokenRangeToSourceLocation(operand->tokenRange),
+							MessageType::Error,
+							"Incompatible operand types" });
+
+				compileExpr(compileContext,
+					std::make_shared<CastExprNode>(targetType, operand),
+					evalPurpose,
+					destOut);
+			} else
+				compileExpr(compileContext, operand, evalPurpose, destOut);
+		};
 
 	switch (lhsType->getTypeId()) {
 		case TypeId::I8:
-		case TypeId::I16:
-		case TypeId::I32:
-		case TypeId::I64:
-		case TypeId::U8:
-		case TypeId::U16:
-		case TypeId::U32:
-		case TypeId::U64:
 			switch (e->op) {
 				case UnaryOp::LNot:
-					compileExpr(compileContext,
+					compileOrCastOperand(
 						e->x,
-						opReg.lvalueOperand
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
+						lhsType,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
-
 					compileContext->_insertIns(
-						opReg.opcode,
+						Opcode::LNOT,
 						std::make_shared<RegRefNode>(resultRegIndex),
 						{ std::make_shared<RegRefNode>(lhsRegIndex) });
 
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				case UnaryOp::Not:
-				case UnaryOp::Neg:
-					compileExpr(compileContext,
+					compileOrCastOperand(
 						e->x,
-						opReg.lvalueOperand
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
+						lhsType,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
-
 					compileContext->_insertIns(
-						opReg.opcode,
+						Opcode::NOT,
 						std::make_shared<RegRefNode>(resultRegIndex),
 						{ std::make_shared<RegRefNode>(lhsRegIndex) });
 
-					resultType = lhsType->duplicate<TypeNameNode>();
-					resultType->isRef = opReg.lvalueResult;
+					resultType = std::make_shared<I8TypeNameNode>(SIZE_MAX);
+					break;
+				case UnaryOp::Neg:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::NEG,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<I8TypeNameNode>(SIZE_MAX);
+					break;
+				default:
+					throw FatalCompilationError(
+						Message(
+							tokenRangeToSourceLocation(e->tokenRange),
+							MessageType::Error,
+							"No matching operator"));
+			}
+			break;
+		case TypeId::I16:
+			switch (e->op) {
+				case UnaryOp::LNot:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::LNOT,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				case UnaryOp::Not:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::NOT,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<I16TypeNameNode>(SIZE_MAX);
+					break;
+				case UnaryOp::Neg:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::NEG,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<I16TypeNameNode>(SIZE_MAX);
+					break;
+				default:
+					throw FatalCompilationError(
+						Message(
+							tokenRangeToSourceLocation(e->tokenRange),
+							MessageType::Error,
+							"No matching operator"));
+			}
+			break;
+		case TypeId::I32:
+			switch (e->op) {
+				case UnaryOp::LNot:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::LNOT,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				case UnaryOp::Not:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::NOT,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
+					break;
+				case UnaryOp::Neg:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::NEG,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
+					break;
+				default:
+					throw FatalCompilationError(
+						Message(
+							tokenRangeToSourceLocation(e->tokenRange),
+							MessageType::Error,
+							"No matching operator"));
+			}
+			break;
+		case TypeId::I64:
+			switch (e->op) {
+				case UnaryOp::LNot:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::LNOT,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				case UnaryOp::Not:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::NOT,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<I64TypeNameNode>(SIZE_MAX);
+					break;
+				case UnaryOp::Neg:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::NEG,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<I64TypeNameNode>(SIZE_MAX);
+					break;
+				default:
+					throw FatalCompilationError(
+						Message(
+							tokenRangeToSourceLocation(e->tokenRange),
+							MessageType::Error,
+							"No matching operator"));
+			}
+			break;
+		case TypeId::U8:
+			switch (e->op) {
+				case UnaryOp::LNot:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::LNOT,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				case UnaryOp::Not:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::NOT,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX);
+					break;
+				case UnaryOp::Neg:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::NEG,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX);
+					break;
+				default:
+					throw FatalCompilationError(
+						Message(
+							tokenRangeToSourceLocation(e->tokenRange),
+							MessageType::Error,
+							"No matching operator"));
+			}
+			break;
+		case TypeId::U16:
+			switch (e->op) {
+				case UnaryOp::LNot:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::LNOT,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				case UnaryOp::Not:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::NOT,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<U16TypeNameNode>(SIZE_MAX);
+					break;
+				case UnaryOp::Neg:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::NEG,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<U16TypeNameNode>(SIZE_MAX);
+					break;
+				default:
+					throw FatalCompilationError(
+						Message(
+							tokenRangeToSourceLocation(e->tokenRange),
+							MessageType::Error,
+							"No matching operator"));
+			}
+			break;
+		case TypeId::U32:
+			switch (e->op) {
+				case UnaryOp::LNot:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::LNOT,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				case UnaryOp::Not:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::NOT,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX);
+					break;
+				case UnaryOp::Neg:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::NEG,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX);
+					break;
+				default:
+					throw FatalCompilationError(
+						Message(
+							tokenRangeToSourceLocation(e->tokenRange),
+							MessageType::Error,
+							"No matching operator"));
+			}
+			break;
+		case TypeId::U64:
+			switch (e->op) {
+				case UnaryOp::LNot:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::LNOT,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				case UnaryOp::Not:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::NOT,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<U64TypeNameNode>(SIZE_MAX);
+					break;
+				case UnaryOp::Neg:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::NEG,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<U64TypeNameNode>(SIZE_MAX);
 					break;
 				default:
 					throw FatalCompilationError(
@@ -74,38 +457,72 @@ void slake::slkc::Compiler::compileUnaryOpExpr(CompileContext *compileContext, s
 			}
 			break;
 		case TypeId::F32:
-		case TypeId::F64:
 			switch (e->op) {
 				case UnaryOp::LNot:
-					compileExpr(compileContext,
+					compileOrCastOperand(
 						e->x,
-						opReg.lvalueOperand
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
+						lhsType,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
-
 					compileContext->_insertIns(
-						opReg.opcode,
+						Opcode::LNOT,
 						std::make_shared<RegRefNode>(resultRegIndex),
 						{ std::make_shared<RegRefNode>(lhsRegIndex) });
 
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				case UnaryOp::Neg:
-					compileExpr(compileContext,
+					compileOrCastOperand(
 						e->x,
-						opReg.lvalueOperand
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
+						lhsType,
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
-
 					compileContext->_insertIns(
-						opReg.opcode,
+						Opcode::NEG,
 						std::make_shared<RegRefNode>(resultRegIndex),
 						{ std::make_shared<RegRefNode>(lhsRegIndex) });
 
-					resultType = lhsType->duplicate<TypeNameNode>();
-					resultType->isRef = opReg.lvalueResult;
+					resultType = std::make_shared<F32TypeNameNode>(SIZE_MAX);
+					break;
+				default:
+					throw FatalCompilationError(
+						Message(
+							tokenRangeToSourceLocation(e->tokenRange),
+							MessageType::Error,
+							"No matching operator"));
+			}
+			break;
+		case TypeId::F64:
+			switch (e->op) {
+				case UnaryOp::LNot:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::LNOT,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				case UnaryOp::Neg:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::NEG,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<F64TypeNameNode>(SIZE_MAX);
 					break;
 				default:
 					throw FatalCompilationError(
@@ -118,16 +535,42 @@ void slake::slkc::Compiler::compileUnaryOpExpr(CompileContext *compileContext, s
 		case TypeId::Bool:
 			switch (e->op) {
 				case UnaryOp::LNot:
-				case UnaryOp::Not:
-					compileExpr(compileContext,
+					compileOrCastOperand(
 						e->x,
-						opReg.lvalueOperand
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
+						lhsType,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
-
 					compileContext->_insertIns(
-						opReg.opcode,
+						Opcode::LNOT,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				case UnaryOp::Not:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::NOT,
+						std::make_shared<RegRefNode>(resultRegIndex),
+						{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				case UnaryOp::Neg:
+					compileOrCastOperand(
+						e->x,
+						lhsType,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						EvalPurpose::RValue,
+						std::make_shared<RegRefNode>(lhsRegIndex));
+					compileContext->_insertIns(
+						Opcode::NEG,
 						std::make_shared<RegRefNode>(resultRegIndex),
 						{ std::make_shared<RegRefNode>(lhsRegIndex) });
 
@@ -140,7 +583,6 @@ void slake::slkc::Compiler::compileUnaryOpExpr(CompileContext *compileContext, s
 							MessageType::Error,
 							"No matching operator"));
 			}
-
 			break;
 		case TypeId::Custom: {
 			auto node = resolveCustomTypeName(compileContext, std::static_pointer_cast<CustomTypeNameNode>(lhsType).get());

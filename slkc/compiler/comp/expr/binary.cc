@@ -43,7 +43,7 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 			if (!isSameType(compileContext, operandType, targetType)) {
 				if (!isTypeNamesConvertible(compileContext, operandType, targetType))
 					throw FatalCompilationError(
-						{ tokenRangeToSourceLocation(e->rhs->tokenRange),
+						{ tokenRangeToSourceLocation(operand->tokenRange),
 							MessageType::Error,
 							"Incompatible operand types" });
 
@@ -52,7 +52,7 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					evalPurpose,
 					destOut);
 			} else
-				compileExpr(compileContext, e->rhs, evalPurpose, destOut);
+				compileExpr(compileContext, operand, evalPurpose, destOut);
 		};
 	auto compileSimpleAssignOp =
 		[this, e, &compileContext, compileOrCastOperand](

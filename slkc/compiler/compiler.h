@@ -390,21 +390,6 @@ namespace slake {
 
 			void _getFullName(MemberNode *member, IdRefEntries &ref);
 
-			struct UnaryOpRegistry {
-				slake::Opcode opcode;
-				bool lvalueOperand;
-				bool lvalueResult;
-			};
-			static std::map<UnaryOp, UnaryOpRegistry> _unaryOpRegs;
-
-			struct BinaryOpRegistry {
-				slake::Opcode opcode;
-				bool isLhsLvalue;
-				bool isRhsLvalue;
-				bool isResultLvalue;
-			};
-			static std::map<BinaryOp, BinaryOpRegistry> _binaryOpRegs;
-
 			void compileUnaryOpExpr(CompileContext *compileContext, std::shared_ptr<UnaryOpExprNode> e, std::shared_ptr<TypeNameNode> lhsType);
 			void compileBinaryOpExpr(CompileContext *compileContext, std::shared_ptr<BinaryOpExprNode> e, std::shared_ptr<TypeNameNode> lhsType, std::shared_ptr<TypeNameNode> rhsType);
 			void compileExpr(CompileContext *compileContext, std::shared_ptr<ExprNode> expr);

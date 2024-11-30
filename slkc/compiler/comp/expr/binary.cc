@@ -2,57 +2,6 @@
 
 using namespace slake::slkc;
 
-std::map<BinaryOp, Compiler::BinaryOpRegistry> Compiler::_binaryOpRegs = {
-	{ BinaryOp::Add, { slake::Opcode::ADD, false, false, false } },
-	{ BinaryOp::Sub, { slake::Opcode::SUB, false, false, false } },
-	{ BinaryOp::Mul, { slake::Opcode::MUL, false, false, false } },
-	{ BinaryOp::Div, { slake::Opcode::DIV, false, false, false } },
-	{ BinaryOp::Mod, { slake::Opcode::MOD, false, false, false } },
-	{ BinaryOp::And, { slake::Opcode::AND, false, false, false } },
-	{ BinaryOp::Or, { slake::Opcode::OR, false, false, false } },
-	{ BinaryOp::Xor, { slake::Opcode::XOR, false, false, false } },
-	{ BinaryOp::LAnd, { slake::Opcode::LAND, false, false, false } },
-	{ BinaryOp::LOr, { slake::Opcode::LOR, false, false, false } },
-	{ BinaryOp::Lsh, { slake::Opcode::LSH, false, false, false } },
-	{ BinaryOp::Rsh, { slake::Opcode::RSH, false, false, false } },
-
-	{ BinaryOp::Assign, { slake::Opcode::NOP, true, false, true } },
-	{ BinaryOp::AssignAdd, { slake::Opcode::NOP, true, false, true } },
-	{ BinaryOp::AssignSub, { slake::Opcode::NOP, true, false, true } },
-	{ BinaryOp::AssignMul, { slake::Opcode::NOP, true, false, true } },
-	{ BinaryOp::AssignDiv, { slake::Opcode::NOP, true, false, true } },
-	{ BinaryOp::AssignMod, { slake::Opcode::NOP, true, false, true } },
-	{ BinaryOp::AssignAnd, { slake::Opcode::NOP, true, false, true } },
-	{ BinaryOp::AssignOr, { slake::Opcode::NOP, true, false, true } },
-	{ BinaryOp::AssignXor, { slake::Opcode::NOP, true, false, true } },
-	{ BinaryOp::AssignLsh, { slake::Opcode::NOP, true, false, true } },
-	{ BinaryOp::AssignRsh, { slake::Opcode::NOP, true, false, true } },
-
-	{ BinaryOp::Eq, { slake::Opcode::EQ, false, false, false } },
-	{ BinaryOp::Neq, { slake::Opcode::NEQ, false, false, false } },
-	{ BinaryOp::StrictEq, { slake::Opcode::EQ, false, false, false } },
-	{ BinaryOp::StrictNeq, { slake::Opcode::NEQ, false, false, false } },
-	{ BinaryOp::Lt, { slake::Opcode::LT, false, false, false } },
-	{ BinaryOp::Gt, { slake::Opcode::GT, false, false, false } },
-	{ BinaryOp::LtEq, { slake::Opcode::LTEQ, false, false, false } },
-	{ BinaryOp::GtEq, { slake::Opcode::GTEQ, false, false, false } },
-	{ BinaryOp::Subscript, { slake::Opcode::AT, false, false, true } }
-};
-
-static std::map<BinaryOp, BinaryOp> _assignBinaryOpToOrdinaryBinaryOpMap = {
-	{ BinaryOp::Assign, BinaryOp::Assign },
-	{ BinaryOp::AssignAdd, BinaryOp::Add },
-	{ BinaryOp::AssignSub, BinaryOp::Sub },
-	{ BinaryOp::AssignMul, BinaryOp::Mul },
-	{ BinaryOp::AssignDiv, BinaryOp::Div },
-	{ BinaryOp::AssignMod, BinaryOp::Mod },
-	{ BinaryOp::AssignAnd, BinaryOp::And },
-	{ BinaryOp::AssignOr, BinaryOp::Or },
-	{ BinaryOp::AssignXor, BinaryOp::Xor },
-	{ BinaryOp::AssignLsh, BinaryOp::Lsh },
-	{ BinaryOp::AssignRsh, BinaryOp::Rsh }
-};
-
 void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_ptr<BinaryOpExprNode> e, std::shared_ptr<TypeNameNode> lhsType, std::shared_ptr<TypeNameNode> rhsType) {
 #if SLKC_WITH_LANGUAGE_SERVER
 	updateTokenInfo(e->idxOpToken, [this, compileContext](TokenInfo &tokenInfo) {
@@ -82,9 +31,6 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 	bool isLhsTypeLValue = isLValueType(lhsType), isRhsTypeLValue = isLValueType(rhsType);
 
 	uint32_t resultRegIndex = compileContext->allocReg();
-
-	auto &opReg = _binaryOpRegs.at(e->op);
-
 	auto compileOrCastOperand =
 		[this, e, &compileContext](
 			std::shared_ptr<ExprNode> operand,
@@ -92,6 +38,8 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 			std::shared_ptr<TypeNameNode> targetType,
 			EvalPurpose evalPurpose,
 			std::shared_ptr<AstNode> destOut) {
+			targetType = targetType->duplicate<TypeNameNode>();
+			targetType->isRef = (evalPurpose == EvalPurpose::LValue);
 			if (!isSameType(compileContext, operandType, targetType)) {
 				if (!isTypeNamesConvertible(compileContext, operandType, targetType))
 					throw FatalCompilationError(
@@ -99,250 +47,435 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 							MessageType::Error,
 							"Incompatible operand types" });
 
-				compileExpr(compileContext, 
+				compileExpr(compileContext,
 					std::make_shared<CastExprNode>(targetType, operand),
 					evalPurpose,
 					destOut);
 			} else
 				compileExpr(compileContext, e->rhs, evalPurpose, destOut);
 		};
-	auto compileShortCircuitOperator = [this, e, lhsType, rhsType, &opReg, resultRegIndex, &compileContext]() {
-		uint32_t lhsRegIndex = compileContext->allocReg();
-
-		auto boolType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
-
-		// Compile the LHS.
-		// The LHS must be a boolean expression.
-		if (!isSameType(compileContext, lhsType, boolType)) {
-			if (!isTypeNamesConvertible(compileContext, lhsType, boolType))
-				throw FatalCompilationError(
-					{ tokenRangeToSourceLocation(e->lhs->tokenRange),
-						MessageType::Error,
-						"Incompatible operand types" });
-
-			compileExpr(compileContext, 
-				std::make_shared<CastExprNode>(boolType, e->lhs),
-				opReg.isLhsLvalue
-					? EvalPurpose::LValue
-					: EvalPurpose::RValue,
-				std::make_shared<RegRefNode>(lhsRegIndex));
-		} else
-			compileExpr(compileContext, 
+	auto compileSimpleAssignOp =
+		[this, e, &compileContext, compileOrCastOperand](
+			uint32_t lhsRegIndex,
+			std::shared_ptr<TypeNameNode> lhsType,
+			uint32_t rhsRegIndex,
+			std::shared_ptr<TypeNameNode> rhsType,
+			uint32_t resultRegIndex,
+			std::shared_ptr<TypeNameNode> expectedLhsType,
+			std::shared_ptr<TypeNameNode> expectedRhsType) {
+			compileExpr(compileContext,
 				e->lhs,
-				opReg.isLhsLvalue
-					? EvalPurpose::LValue
-					: EvalPurpose::RValue,
+				expectedLhsType->isRef ? EvalPurpose::LValue : EvalPurpose::RValue,
 				std::make_shared<RegRefNode>(lhsRegIndex));
 
-		SourceLocation loc = tokenRangeToSourceLocation(e->tokenRange);
-		std::string endLabel = "$short_circuit_" + std::to_string(loc.beginPosition.line) + "_" + std::to_string(loc.beginPosition.column) + "_end";
-
-		// Jump to the end if the left expression is enough to get the final result.
-		compileContext->_insertIns(
-			e->op == BinaryOp::LOr ? Opcode::JT : Opcode::JF,
-			{},
-			{ std::make_shared<LabelRefNode>(endLabel),
-				std::make_shared<RegRefNode>(lhsRegIndex) });
-
-		// Compile the RHS.
-		// The RHS also must be a boolean expression.
-		uint32_t rhsRegIndex = compileContext->allocReg();
-
-		if (!isSameType(compileContext, rhsType, boolType)) {
-			if (!isTypeNamesConvertible(compileContext, rhsType, boolType))
-				throw FatalCompilationError(
-					{ tokenRangeToSourceLocation(e->rhs->tokenRange),
-						MessageType::Error,
-						"Incompatible operand types" });
-
-			compileExpr(compileContext, 
-				std::make_shared<CastExprNode>(boolType, e->rhs),
-				opReg.isRhsLvalue
-					? EvalPurpose::LValue
-					: EvalPurpose::RValue,
-				std::make_shared<RegRefNode>(lhsRegIndex));
-		} else
-			compileExpr(compileContext, 
+			compileOrCastOperand(
 				e->rhs,
-				opReg.isRhsLvalue
-					? EvalPurpose::LValue
-					: EvalPurpose::RValue,
+				rhsType, expectedRhsType,
+				expectedRhsType->isRef ? EvalPurpose::LValue : EvalPurpose::RValue,
 				std::make_shared<RegRefNode>(rhsRegIndex));
 
-		compileContext->_insertIns(
-			opReg.opcode,
-			std::make_shared<RegRefNode>(resultRegIndex),
-			{ std::make_shared<RegRefNode>(lhsRegIndex),
-				std::make_shared<RegRefNode>(rhsRegIndex) });
-
-		compileContext->_insertLabel(endLabel);
-	};
-	auto execOpAndStoreResult = [this, e, lhsType, &opReg, resultRegIndex, &compileContext](uint32_t lhsRegIndex, uint32_t rhsRegIndex) {
-		if (isAssignBinaryOp(e->op)) {
-			BinaryOp ordinaryOp = _assignBinaryOpToOrdinaryBinaryOpMap.at(e->op);
-
-			if (ordinaryOp != BinaryOp::Assign) {
-				uint32_t lhsValueRegIndex = compileContext->allocReg();
-
-				// Load value of the LHS.
-				compileContext->_insertIns(
-					Opcode::LVALUE,
-					std::make_shared<RegRefNode>(lhsValueRegIndex),
-					{ std::make_shared<RegRefNode>(lhsRegIndex) });
-
-				// Execute the operation.
-				compileContext->_insertIns(
-					_binaryOpRegs.at(ordinaryOp).opcode,
-					std::make_shared<RegRefNode>(resultRegIndex),
-					{ std::make_shared<RegRefNode>(lhsValueRegIndex),
-						std::make_shared<RegRefNode>(rhsRegIndex) });
-
-				// Store the result to the LHS.
-				compileContext->_insertIns(
-					Opcode::STORE,
-					{},
-					{ std::make_shared<RegRefNode>(lhsRegIndex),
-						std::make_shared<RegRefNode>(resultRegIndex) });
-			} else {
-				// Ordinary assignment operation.
-				compileContext->_insertIns(
-					Opcode::STORE,
-					{},
-					{ std::make_shared<RegRefNode>(lhsRegIndex),
-						std::make_shared<RegRefNode>(rhsRegIndex) });
-				compileContext->_insertIns(
-					Opcode::MOV,
-					std::make_shared<RegRefNode>(resultRegIndex),
-					{ std::make_shared<RegRefNode>(lhsRegIndex) });
-			}
-		} else {
-			// Execute the operation.
+			// Ordinary assignment operation.
 			compileContext->_insertIns(
-				opReg.opcode,
+				Opcode::STORE,
+				{},
+				{ std::make_shared<RegRefNode>(lhsRegIndex),
+					std::make_shared<RegRefNode>(rhsRegIndex) });
+			compileContext->_insertIns(
+				Opcode::MOV,
+				std::make_shared<RegRefNode>(resultRegIndex),
+				{ std::make_shared<RegRefNode>(lhsRegIndex) });
+		};
+	auto compileSimpleBinaryOp =
+		[this, e, &compileContext, compileOrCastOperand](
+			uint32_t lhsRegIndex,
+			std::shared_ptr<TypeNameNode> lhsType,
+			uint32_t rhsRegIndex,
+			std::shared_ptr<TypeNameNode> rhsType,
+			uint32_t resultRegIndex,
+			std::shared_ptr<TypeNameNode> expectedLhsType,
+			std::shared_ptr<TypeNameNode> expectedRhsType,
+			Opcode opcode) {
+			compileExpr(compileContext,
+				e->lhs,
+				expectedLhsType->isRef ? EvalPurpose::LValue : EvalPurpose::RValue,
+				std::make_shared<RegRefNode>(lhsRegIndex));
+
+			compileOrCastOperand(
+				e->rhs,
+				rhsType, expectedRhsType,
+				expectedRhsType->isRef ? EvalPurpose::LValue : EvalPurpose::RValue,
+				std::make_shared<RegRefNode>(rhsRegIndex));
+
+			compileContext->_insertIns(
+				opcode,
 				std::make_shared<RegRefNode>(resultRegIndex),
 				{ std::make_shared<RegRefNode>(lhsRegIndex),
 					std::make_shared<RegRefNode>(rhsRegIndex) });
-		}
-	};
+		};
+	auto compileSimpleAssignaryBinaryOp =
+		[this, e, &compileContext, compileOrCastOperand](
+			uint32_t lhsRegIndex,
+			std::shared_ptr<TypeNameNode> lhsType,
+			uint32_t rhsRegIndex,
+			std::shared_ptr<TypeNameNode> rhsType,
+			uint32_t resultRegIndex,
+			std::shared_ptr<TypeNameNode> expectedLhsType,
+			std::shared_ptr<TypeNameNode> expectedRhsType,
+			Opcode opcode) {
+			compileExpr(compileContext,
+				e->lhs,
+				expectedLhsType->isRef ? EvalPurpose::LValue : EvalPurpose::RValue,
+				std::make_shared<RegRefNode>(lhsRegIndex));
+
+			compileOrCastOperand(
+				e->rhs,
+				rhsType, expectedRhsType,
+				expectedRhsType->isRef ? EvalPurpose::LValue : EvalPurpose::RValue,
+				std::make_shared<RegRefNode>(rhsRegIndex));
+
+			uint32_t lhsValueRegIndex = compileContext->allocReg();
+
+			// Load value of the LHS.
+			compileContext->_insertIns(
+				Opcode::LVALUE,
+				std::make_shared<RegRefNode>(lhsValueRegIndex),
+				{ std::make_shared<RegRefNode>(lhsRegIndex) });
+
+			// Execute the operation.
+			compileContext->_insertIns(
+				opcode,
+				std::make_shared<RegRefNode>(resultRegIndex),
+				{ std::make_shared<RegRefNode>(lhsValueRegIndex),
+					std::make_shared<RegRefNode>(rhsRegIndex) });
+
+			// Store the result to the LHS.
+			compileContext->_insertIns(
+				Opcode::STORE,
+				{},
+				{ std::make_shared<RegRefNode>(lhsRegIndex),
+					std::make_shared<RegRefNode>(resultRegIndex) });
+		};
 
 	switch (lhsType->getTypeId()) {
-		case TypeId::I8:
-		case TypeId::I16:
-		case TypeId::I32:
-		case TypeId::I64:
-		case TypeId::U8:
-		case TypeId::U16:
-		case TypeId::U32:
-		case TypeId::U64: {
+		case TypeId::I8: {
+			uint32_t lhsRegIndex = compileContext->allocReg();
+			uint32_t rhsRegIndex = compileContext->allocReg();
+
 			switch (e->op) {
-				case BinaryOp::LAnd:
-				case BinaryOp::LOr:
-					compileShortCircuitOperator();
-
+				case BinaryOp::Assign: {
+					compileSimpleAssignOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I8TypeNameNode>(SIZE_MAX));
+					resultType = std::make_shared<I8TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::Add: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						Opcode::ADD);
+					resultType = std::make_shared<I8TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Sub: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						Opcode::SUB);
+					resultType = std::make_shared<I8TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Mul: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						Opcode::MUL);
+					resultType = std::make_shared<I8TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Div: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						Opcode::DIV);
+					resultType = std::make_shared<I8TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Mod: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						Opcode::MOD);
+					resultType = std::make_shared<I8TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::And: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						Opcode::AND);
+					resultType = std::make_shared<I8TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Or: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						Opcode::OR);
+					resultType = std::make_shared<I8TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Xor: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						Opcode::XOR);
+					resultType = std::make_shared<I8TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LAnd: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						Opcode::LAND);
+					resultType = std::make_shared<I8TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LOr: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						Opcode::LOR);
+					resultType = std::make_shared<I8TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Eq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						Opcode::EQ);
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
-				case BinaryOp::Eq:
-				case BinaryOp::Neq:
-				case BinaryOp::Lt:
-				case BinaryOp::Gt:
-				case BinaryOp::LtEq:
+				}
+				case BinaryOp::Neq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						Opcode::NEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Lt: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						Opcode::LT);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Gt: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						Opcode::GT);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LtEq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						Opcode::LTEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
 				case BinaryOp::GtEq: {
-					uint32_t lhsRegIndex = compileContext->allocReg();
-					uint32_t rhsRegIndex = compileContext->allocReg();
-
-					compileExpr(compileContext, 
-						e->lhs,
-						opReg.isLhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(lhsRegIndex));
-
-					compileOrCastOperand(
-						e->rhs,
-						rhsType, lhsType,
-						opReg.isRhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(rhsRegIndex));
-
-					execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
-
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						Opcode::GTEQ);
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
-
 					break;
 				}
-				case BinaryOp::Lsh:
-				case BinaryOp::Rsh:
-				case BinaryOp::AssignLsh:
-				case BinaryOp::AssignRsh: {
-					uint32_t lhsRegIndex = compileContext->allocReg(),
-							 rhsRegIndex = compileContext->allocReg();
-
-					compileExpr(compileContext, 
-						e->lhs,
-						opReg.isLhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(lhsRegIndex));
-
-					compileOrCastOperand(
-						e->rhs,
-						rhsType, std::make_shared<U32TypeNameNode>(SIZE_MAX),
-						opReg.isRhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(rhsRegIndex));
-
-					execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
-
-					resultType = lhsType->duplicate<TypeNameNode>();
-					resultType->isRef = opReg.isResultLvalue;
-
+				case BinaryOp::Lsh: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::LSH);
 					break;
 				}
-				case BinaryOp::Add:
-				case BinaryOp::Sub:
-				case BinaryOp::Mul:
-				case BinaryOp::Div:
-				case BinaryOp::Mod:
-				case BinaryOp::And:
-				case BinaryOp::Or:
-				case BinaryOp::Xor:
-				case BinaryOp::Assign:
-				case BinaryOp::AssignAdd:
-				case BinaryOp::AssignSub:
-				case BinaryOp::AssignMul:
-				case BinaryOp::AssignDiv:
-				case BinaryOp::AssignMod:
-				case BinaryOp::AssignAnd:
-				case BinaryOp::AssignOr:
+				case BinaryOp::Rsh: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::RSH);
+					break;
+				}
+				case BinaryOp::AssignAdd: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						Opcode::ADD);
+					resultType = std::make_shared<I8TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignSub: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						Opcode::SUB);
+					resultType = std::make_shared<I8TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignMul: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						Opcode::MUL);
+					resultType = std::make_shared<I8TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignDiv: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						Opcode::DIV);
+					resultType = std::make_shared<I8TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignMod: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						Opcode::MOD);
+					resultType = std::make_shared<I8TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignAnd: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						Opcode::AND);
+					resultType = std::make_shared<I8TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignOr: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						Opcode::OR);
+					resultType = std::make_shared<I8TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
 				case BinaryOp::AssignXor: {
-					uint32_t lhsRegIndex = compileContext->allocReg();
-					uint32_t rhsRegIndex = compileContext->allocReg();
-
-					compileExpr(compileContext, 
-						e->lhs,
-						opReg.isLhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(lhsRegIndex));
-
-					compileOrCastOperand(
-						e->rhs,
-						rhsType,
-						opReg.isRhsLvalue
-							? toLValueTypeName(lhsType)
-							: toRValueTypeName(lhsType),
-						opReg.isRhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(rhsRegIndex));
-
-					execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
-
-					resultType = lhsType->duplicate<TypeNameNode>();
-					resultType->isRef = opReg.isResultLvalue;
-
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						Opcode::XOR);
+					resultType = std::make_shared<I8TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignLsh: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::LSH);
+					resultType = std::make_shared<I8TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignRsh: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::RSH);
+					resultType = std::make_shared<I8TypeNameNode>(SIZE_MAX, true);
 					break;
 				}
 				default:
@@ -352,85 +485,329 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 							MessageType::Error,
 							"No matching operator"));
 			}
-
 			break;
 		}
-		case TypeId::F32:
-		case TypeId::F64: {
+		case TypeId::I16: {
+			uint32_t lhsRegIndex = compileContext->allocReg();
+			uint32_t rhsRegIndex = compileContext->allocReg();
+
 			switch (e->op) {
-				case BinaryOp::LAnd:
-				case BinaryOp::LOr:
-					compileShortCircuitOperator();
-
-					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
-					break;
-				case BinaryOp::Eq:
-				case BinaryOp::Neq:
-				case BinaryOp::Lt:
-				case BinaryOp::Gt:
-				case BinaryOp::LtEq:
-				case BinaryOp::GtEq: {
-					uint32_t lhsRegIndex = compileContext->allocReg();
-					uint32_t rhsRegIndex = compileContext->allocReg();
-
-					compileExpr(compileContext, 
-						e->lhs,
-						opReg.isLhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(lhsRegIndex));
-
-					compileOrCastOperand(
-						e->rhs,
-						rhsType, lhsType,
-						opReg.isRhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(rhsRegIndex));
-
-					execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
-
-					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
-
+				case BinaryOp::Assign: {
+					compileSimpleAssignOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I16TypeNameNode>(SIZE_MAX));
+					resultType = std::make_shared<I16TypeNameNode>(SIZE_MAX, true);
 					break;
 				}
-				case BinaryOp::Add:
-				case BinaryOp::Sub:
-				case BinaryOp::Mul:
-				case BinaryOp::Div:
-				case BinaryOp::Mod:
-				case BinaryOp::Assign:
-				case BinaryOp::AssignAdd:
-				case BinaryOp::AssignSub:
-				case BinaryOp::AssignMul:
-				case BinaryOp::AssignDiv:
+				case BinaryOp::Add: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						Opcode::ADD);
+					resultType = std::make_shared<I16TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Sub: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						Opcode::SUB);
+					resultType = std::make_shared<I16TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Mul: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						Opcode::MUL);
+					resultType = std::make_shared<I16TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Div: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						Opcode::DIV);
+					resultType = std::make_shared<I16TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Mod: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						Opcode::MOD);
+					resultType = std::make_shared<I16TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::And: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						Opcode::AND);
+					resultType = std::make_shared<I16TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Or: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						Opcode::OR);
+					resultType = std::make_shared<I16TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Xor: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						Opcode::XOR);
+					resultType = std::make_shared<I16TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LAnd: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						Opcode::LAND);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LOr: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						Opcode::LOR);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Eq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						Opcode::EQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Neq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						Opcode::NEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Lt: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						Opcode::LT);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Gt: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						Opcode::GT);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LtEq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						Opcode::LTEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::GtEq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						Opcode::GTEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Lsh: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::LSH);
+					resultType = std::make_shared<I16TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Rsh: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::RSH);
+					resultType = std::make_shared<I16TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::AssignAdd: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						Opcode::ADD);
+					resultType = std::make_shared<I16TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignSub: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						Opcode::SUB);
+					resultType = std::make_shared<I16TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignMul: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						Opcode::MUL);
+					resultType = std::make_shared<I16TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignDiv: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						Opcode::DIV);
+					resultType = std::make_shared<I16TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
 				case BinaryOp::AssignMod: {
-					uint32_t lhsRegIndex = compileContext->allocReg();
-					uint32_t rhsRegIndex = compileContext->allocReg();
-
-					compileExpr(compileContext, 
-						e->lhs,
-						opReg.isLhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(lhsRegIndex));
-
-					compileOrCastOperand(
-						e->rhs,
-						rhsType,
-						opReg.isRhsLvalue
-							? toLValueTypeName(lhsType)
-							: toRValueTypeName(lhsType),
-						opReg.isRhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(rhsRegIndex));
-
-					execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
-
-					resultType = lhsType->duplicate<TypeNameNode>();
-					resultType->isRef = opReg.isResultLvalue;
-
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						Opcode::MOD);
+					resultType = std::make_shared<I16TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignAnd: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						Opcode::AND);
+					resultType = std::make_shared<I16TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignOr: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						Opcode::OR);
+					resultType = std::make_shared<I16TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignXor: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						Opcode::XOR);
+					resultType = std::make_shared<I16TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignLsh: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::LSH);
+					resultType = std::make_shared<I16TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignRsh: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::RSH);
+					resultType = std::make_shared<I16TypeNameNode>(SIZE_MAX, true);
 					break;
 				}
 				default:
@@ -440,67 +817,2521 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 							MessageType::Error,
 							"No matching operator"));
 			}
+			break;
+		}
+		case TypeId::I32: {
+			uint32_t lhsRegIndex = compileContext->allocReg();
+			uint32_t rhsRegIndex = compileContext->allocReg();
 
+			switch (e->op) {
+				case BinaryOp::Assign: {
+					compileSimpleAssignOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I32TypeNameNode>(SIZE_MAX));
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::Add: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						Opcode::ADD);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Sub: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						Opcode::SUB);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Mul: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						Opcode::MUL);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Div: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						Opcode::DIV);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Mod: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						Opcode::MOD);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::And: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						Opcode::AND);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Or: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						Opcode::OR);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Xor: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						Opcode::XOR);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LAnd: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						Opcode::LAND);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LOr: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						Opcode::LOR);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Eq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						Opcode::EQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Neq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						Opcode::NEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Lt: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						Opcode::LT);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Gt: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						Opcode::GT);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LtEq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						Opcode::LTEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::GtEq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						Opcode::GTEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Lsh: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::LSH);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Rsh: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::RSH);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::AssignAdd: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						Opcode::ADD);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignSub: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						Opcode::SUB);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignMul: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						Opcode::MUL);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignDiv: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						Opcode::DIV);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignMod: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						Opcode::MOD);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignAnd: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						Opcode::AND);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignOr: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						Opcode::OR);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignXor: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						Opcode::XOR);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignLsh: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::LSH);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignRsh: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::RSH);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				default:
+					throw FatalCompilationError(
+						Message(
+							tokenRangeToSourceLocation(e->tokenRange),
+							MessageType::Error,
+							"No matching operator"));
+			}
+			break;
+		}
+		case TypeId::I64: {
+			uint32_t lhsRegIndex = compileContext->allocReg();
+			uint32_t rhsRegIndex = compileContext->allocReg();
+
+			switch (e->op) {
+				case BinaryOp::Assign: {
+					compileSimpleAssignOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I64TypeNameNode>(SIZE_MAX));
+					resultType = std::make_shared<I64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::Add: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						Opcode::ADD);
+					resultType = std::make_shared<I64TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Sub: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						Opcode::SUB);
+					resultType = std::make_shared<I64TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Mul: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						Opcode::MUL);
+					resultType = std::make_shared<I64TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Div: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						Opcode::DIV);
+					resultType = std::make_shared<I64TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Mod: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						Opcode::MOD);
+					resultType = std::make_shared<I64TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::And: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						Opcode::AND);
+					resultType = std::make_shared<I64TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Or: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						Opcode::OR);
+					resultType = std::make_shared<I64TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Xor: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						Opcode::XOR);
+					resultType = std::make_shared<I64TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LAnd: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						Opcode::LAND);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LOr: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						Opcode::LOR);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Eq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						Opcode::EQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Neq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						Opcode::NEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Lt: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						Opcode::LT);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Gt: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						Opcode::GT);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LtEq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						Opcode::LTEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::GtEq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						Opcode::GTEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Lsh: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::LSH);
+					resultType = std::make_shared<I64TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Rsh: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::RSH);
+					resultType = std::make_shared<I64TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::AssignAdd: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						Opcode::ADD);
+					resultType = std::make_shared<I64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignSub: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						Opcode::SUB);
+					resultType = std::make_shared<I64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignMul: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						Opcode::MUL);
+					resultType = std::make_shared<I64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignDiv: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						Opcode::DIV);
+					resultType = std::make_shared<I64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignMod: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						Opcode::MOD);
+					resultType = std::make_shared<I64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignAnd: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						Opcode::AND);
+					resultType = std::make_shared<I64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignOr: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						Opcode::OR);
+					resultType = std::make_shared<I64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignXor: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						Opcode::XOR);
+					resultType = std::make_shared<I64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignLsh: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::LSH);
+					resultType = std::make_shared<I64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignRsh: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::RSH);
+					resultType = std::make_shared<I64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				default:
+					throw FatalCompilationError(
+						Message(
+							tokenRangeToSourceLocation(e->tokenRange),
+							MessageType::Error,
+							"No matching operator"));
+			}
+			break;
+		}
+		case TypeId::U8: {
+			uint32_t lhsRegIndex = compileContext->allocReg();
+			uint32_t rhsRegIndex = compileContext->allocReg();
+
+			switch (e->op) {
+				case BinaryOp::Assign: {
+					compileSimpleAssignOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U8TypeNameNode>(SIZE_MAX));
+					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::Add: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						Opcode::ADD);
+					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Sub: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						Opcode::SUB);
+					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Mul: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						Opcode::MUL);
+					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Div: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						Opcode::DIV);
+					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Mod: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						Opcode::MOD);
+					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::And: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						Opcode::AND);
+					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Or: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						Opcode::OR);
+					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Xor: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						Opcode::XOR);
+					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LAnd: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						Opcode::LAND);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LOr: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						Opcode::LOR);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Eq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						Opcode::EQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Neq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						Opcode::NEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Lt: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						Opcode::LT);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Gt: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						Opcode::GT);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LtEq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						Opcode::LTEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::GtEq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						Opcode::GTEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Lsh: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::LSH);
+					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Rsh: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::RSH);
+					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::AssignAdd: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						Opcode::ADD);
+					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignSub: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						Opcode::SUB);
+					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignMul: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						Opcode::MUL);
+					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignDiv: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						Opcode::DIV);
+					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignMod: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						Opcode::MOD);
+					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignAnd: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						Opcode::AND);
+					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignOr: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						Opcode::OR);
+					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignXor: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						Opcode::XOR);
+					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignLsh: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::LSH);
+					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignRsh: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::RSH);
+					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				default:
+					throw FatalCompilationError(
+						Message(
+							tokenRangeToSourceLocation(e->tokenRange),
+							MessageType::Error,
+							"No matching operator"));
+			}
+			break;
+		}
+		case TypeId::U16: {
+			uint32_t lhsRegIndex = compileContext->allocReg();
+			uint32_t rhsRegIndex = compileContext->allocReg();
+
+			switch (e->op) {
+				case BinaryOp::Assign: {
+					compileSimpleAssignOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U16TypeNameNode>(SIZE_MAX));
+					resultType = std::make_shared<U16TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::Add: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						Opcode::ADD);
+					resultType = std::make_shared<U16TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Sub: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						Opcode::SUB);
+					resultType = std::make_shared<U16TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Mul: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						Opcode::MUL);
+					resultType = std::make_shared<U16TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Div: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						Opcode::DIV);
+					resultType = std::make_shared<U16TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Mod: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						Opcode::MOD);
+					resultType = std::make_shared<U16TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::And: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						Opcode::AND);
+					resultType = std::make_shared<U16TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Or: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						Opcode::OR);
+					resultType = std::make_shared<U16TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Xor: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						Opcode::XOR);
+					resultType = std::make_shared<U16TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LAnd: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						Opcode::LAND);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LOr: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						Opcode::LOR);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Eq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						Opcode::EQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Neq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						Opcode::NEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Lt: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						Opcode::LT);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Gt: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						Opcode::GT);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LtEq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						Opcode::LTEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::GtEq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						Opcode::GTEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Lsh: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::LSH);
+					resultType = std::make_shared<U16TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Rsh: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::RSH);
+					resultType = std::make_shared<U16TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::AssignAdd: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						Opcode::ADD);
+					resultType = std::make_shared<U16TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignSub: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						Opcode::SUB);
+					resultType = std::make_shared<U16TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignMul: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						Opcode::MUL);
+					resultType = std::make_shared<U16TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignDiv: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						Opcode::DIV);
+					resultType = std::make_shared<U16TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignMod: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						Opcode::MOD);
+					resultType = std::make_shared<U16TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignAnd: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						Opcode::AND);
+					resultType = std::make_shared<U16TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignOr: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						Opcode::OR);
+					resultType = std::make_shared<U16TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignXor: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						Opcode::XOR);
+					resultType = std::make_shared<U16TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignLsh: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::LSH);
+					resultType = std::make_shared<U16TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignRsh: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::RSH);
+					resultType = std::make_shared<U16TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				default:
+					throw FatalCompilationError(
+						Message(
+							tokenRangeToSourceLocation(e->tokenRange),
+							MessageType::Error,
+							"No matching operator"));
+			}
+			break;
+		}
+		case TypeId::U32: {
+			uint32_t lhsRegIndex = compileContext->allocReg();
+			uint32_t rhsRegIndex = compileContext->allocReg();
+
+			switch (e->op) {
+				case BinaryOp::Assign: {
+					compileSimpleAssignOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX));
+					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::Add: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::ADD);
+					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Sub: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::SUB);
+					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Mul: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::MUL);
+					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Div: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::DIV);
+					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Mod: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::MOD);
+					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::And: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::AND);
+					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Or: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::OR);
+					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Xor: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::XOR);
+					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LAnd: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						Opcode::LAND);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LOr: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						Opcode::LOR);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Eq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::EQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Neq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::NEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Lt: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::LT);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Gt: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::GT);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LtEq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::LTEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::GtEq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::GTEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Lsh: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::LSH);
+					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Rsh: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::RSH);
+					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::AssignAdd: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::ADD);
+					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignSub: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::SUB);
+					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignMul: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::MUL);
+					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignDiv: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::DIV);
+					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignMod: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::MOD);
+					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignAnd: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::AND);
+					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignOr: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::OR);
+					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignXor: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::XOR);
+					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignLsh: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::LSH);
+					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignRsh: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::RSH);
+					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				default:
+					throw FatalCompilationError(
+						Message(
+							tokenRangeToSourceLocation(e->tokenRange),
+							MessageType::Error,
+							"No matching operator"));
+			}
+			break;
+		}
+		case TypeId::U64: {
+			uint32_t lhsRegIndex = compileContext->allocReg();
+			uint32_t rhsRegIndex = compileContext->allocReg();
+
+			switch (e->op) {
+				case BinaryOp::Assign: {
+					compileSimpleAssignOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U64TypeNameNode>(SIZE_MAX));
+					resultType = std::make_shared<U64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::Add: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						Opcode::ADD);
+					resultType = std::make_shared<U64TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Sub: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						Opcode::SUB);
+					resultType = std::make_shared<U64TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Mul: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						Opcode::MUL);
+					resultType = std::make_shared<U64TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Div: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						Opcode::DIV);
+					resultType = std::make_shared<U64TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Mod: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						Opcode::MOD);
+					resultType = std::make_shared<U64TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::And: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						Opcode::AND);
+					resultType = std::make_shared<U64TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Or: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						Opcode::OR);
+					resultType = std::make_shared<U64TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Xor: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						Opcode::XOR);
+					resultType = std::make_shared<U64TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LAnd: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						Opcode::LAND);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LOr: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						Opcode::LOR);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Eq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						Opcode::EQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Neq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						Opcode::NEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Lt: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						Opcode::LT);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Gt: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						Opcode::GT);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LtEq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						Opcode::LTEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::GtEq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						Opcode::GTEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Lsh: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::LSH);
+					resultType = std::make_shared<U64TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Rsh: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::RSH);
+					resultType = std::make_shared<U64TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::AssignAdd: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						Opcode::ADD);
+					resultType = std::make_shared<U64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignSub: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						Opcode::SUB);
+					resultType = std::make_shared<U64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignMul: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						Opcode::MUL);
+					resultType = std::make_shared<U64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignDiv: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						Opcode::DIV);
+					resultType = std::make_shared<U64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignMod: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						Opcode::MOD);
+					resultType = std::make_shared<U64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignAnd: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						Opcode::AND);
+					resultType = std::make_shared<U64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignOr: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						Opcode::OR);
+					resultType = std::make_shared<U64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignXor: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						Opcode::XOR);
+					resultType = std::make_shared<U64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignLsh: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::LSH);
+					resultType = std::make_shared<U64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignRsh: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::RSH);
+					resultType = std::make_shared<U64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				default:
+					throw FatalCompilationError(
+						Message(
+							tokenRangeToSourceLocation(e->tokenRange),
+							MessageType::Error,
+							"No matching operator"));
+			}
+			break;
+		}
+		case TypeId::F32: {
+			uint32_t lhsRegIndex = compileContext->allocReg();
+			uint32_t rhsRegIndex = compileContext->allocReg();
+
+			switch (e->op) {
+				case BinaryOp::Assign: {
+					compileSimpleAssignOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<F32TypeNameNode>(SIZE_MAX));
+					resultType = std::make_shared<F32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::Add: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						Opcode::ADD);
+					resultType = std::make_shared<F32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Sub: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						Opcode::SUB);
+					resultType = std::make_shared<F32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Mul: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						Opcode::MUL);
+					resultType = std::make_shared<F32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Div: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						Opcode::DIV);
+					resultType = std::make_shared<F32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Mod: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						Opcode::MOD);
+					resultType = std::make_shared<F32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LAnd: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						Opcode::LAND);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LOr: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						Opcode::LOR);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Eq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						Opcode::EQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Neq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						Opcode::NEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Lt: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						Opcode::LT);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Gt: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						Opcode::GT);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LtEq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						Opcode::LTEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::GtEq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						Opcode::GTEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::AssignAdd: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						Opcode::ADD);
+					resultType = std::make_shared<F32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignSub: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						Opcode::SUB);
+					resultType = std::make_shared<F32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignMul: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						Opcode::MUL);
+					resultType = std::make_shared<F32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignDiv: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						Opcode::DIV);
+					resultType = std::make_shared<F32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignMod: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F32TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						Opcode::MOD);
+					resultType = std::make_shared<F32TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				default:
+					throw FatalCompilationError(
+						Message(
+							tokenRangeToSourceLocation(e->tokenRange),
+							MessageType::Error,
+							"No matching operator"));
+			}
+			break;
+		}
+		case TypeId::F64: {
+			uint32_t lhsRegIndex = compileContext->allocReg();
+			uint32_t rhsRegIndex = compileContext->allocReg();
+
+			switch (e->op) {
+				case BinaryOp::Assign: {
+					compileSimpleAssignOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<F64TypeNameNode>(SIZE_MAX));
+					resultType = std::make_shared<F64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::Add: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						Opcode::ADD);
+					resultType = std::make_shared<F64TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Sub: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						Opcode::SUB);
+					resultType = std::make_shared<F64TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Mul: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						Opcode::MUL);
+					resultType = std::make_shared<F64TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Div: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						Opcode::DIV);
+					resultType = std::make_shared<F64TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Mod: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						Opcode::MOD);
+					resultType = std::make_shared<F64TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LAnd: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						Opcode::LAND);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LOr: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						Opcode::LOR);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Eq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						Opcode::EQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Neq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						Opcode::NEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Lt: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						Opcode::LT);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Gt: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						Opcode::GT);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LtEq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						Opcode::LTEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::GtEq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						Opcode::GTEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Lsh: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::LSH);
+					break;
+				}
+				case BinaryOp::Rsh: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::RSH);
+					break;
+				}
+				case BinaryOp::AssignAdd: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						Opcode::ADD);
+					resultType = std::make_shared<F64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignSub: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						Opcode::SUB);
+					resultType = std::make_shared<F64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignMul: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						Opcode::MUL);
+					resultType = std::make_shared<F64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignDiv: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						Opcode::DIV);
+					resultType = std::make_shared<F64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				case BinaryOp::AssignMod: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F64TypeNameNode>(SIZE_MAX, true),
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						Opcode::MOD);
+					resultType = std::make_shared<F64TypeNameNode>(SIZE_MAX, true);
+					break;
+				}
+				default:
+					throw FatalCompilationError(
+						Message(
+							tokenRangeToSourceLocation(e->tokenRange),
+							MessageType::Error,
+							"No matching operator"));
+			}
 			break;
 		}
 		case TypeId::Bool: {
+			uint32_t lhsRegIndex = compileContext->allocReg();
+			uint32_t rhsRegIndex = compileContext->allocReg();
+
 			switch (e->op) {
-				case BinaryOp::LAnd:
-				case BinaryOp::LOr:
-					compileShortCircuitOperator();
-
-					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
-					break;
-				case BinaryOp::Eq:
-				case BinaryOp::Neq: {
-					uint32_t lhsRegIndex = compileContext->allocReg();
-					uint32_t rhsRegIndex = compileContext->allocReg();
-
-					compileExpr(compileContext, 
-						e->lhs,
-						opReg.isLhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(lhsRegIndex));
-
-					compileOrCastOperand(
-						e->rhs,
-						rhsType, lhsType,
-						opReg.isRhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(rhsRegIndex));
-
-					execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
-
-					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
-
+				case BinaryOp::Assign: {
+					compileSimpleAssignOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX, true),
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX));
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX, true);
 					break;
 				}
-				case BinaryOp::Assign: {
-					uint32_t lhsRegIndex = compileContext->allocReg();
-					uint32_t rhsRegIndex = compileContext->allocReg();
-
-					compileExpr(compileContext, 
-						e->lhs,
-						opReg.isLhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(lhsRegIndex));
-
-					compileOrCastOperand(
-						e->rhs,
-						rhsType, lhsType,
-						opReg.isRhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(rhsRegIndex));
-
-					execOpAndStoreResult(lhsRegIndex, rhsRegIndex);
-
-					resultType = lhsType->duplicate<TypeNameNode>();
-					resultType->isRef = opReg.isResultLvalue;
-
+				case BinaryOp::LAnd: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						Opcode::LAND);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::LOr: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						Opcode::LOR);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Eq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						Opcode::EQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Neq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						std::make_shared<BoolTypeNameNode>(SIZE_MAX),
+						Opcode::NEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				}
 				default:
@@ -510,67 +3341,76 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 							MessageType::Error,
 							"No matching operator"));
 			}
-
 			break;
 		}
 		case TypeId::String: {
+			uint32_t lhsRegIndex = compileContext->allocReg();
+			uint32_t rhsRegIndex = compileContext->allocReg();
+
 			switch (e->op) {
+				case BinaryOp::Assign: {
+					compileSimpleAssignOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<StringTypeNameNode>(SIZE_MAX, true),
+						std::make_shared<StringTypeNameNode>(SIZE_MAX));
+					resultType = std::make_shared<StringTypeNameNode>(SIZE_MAX, true);
+					break;
+				}
 				case BinaryOp::Add: {
-					uint32_t lhsRegIndex = compileContext->allocReg(),
-							 rhsRegIndex = compileContext->allocReg();
-
-					compileExpr(compileContext, 
-						e->lhs,
-						opReg.isLhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(lhsRegIndex));
-
-					compileOrCastOperand(
-						e->rhs,
-						rhsType, lhsType,
-						opReg.isRhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(rhsRegIndex));
-
-					compileContext->_insertIns(
-						opReg.opcode,
-						std::make_shared<RegRefNode>(resultRegIndex),
-						{ std::make_shared<RegRefNode>(lhsRegIndex),
-							std::make_shared<RegRefNode>(rhsRegIndex) });
-
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<StringTypeNameNode>(SIZE_MAX),
+						std::make_shared<StringTypeNameNode>(SIZE_MAX),
+						Opcode::ADD);
 					resultType = std::make_shared<StringTypeNameNode>(SIZE_MAX);
-
+					break;
+				}
+				case BinaryOp::Eq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<StringTypeNameNode>(SIZE_MAX),
+						std::make_shared<StringTypeNameNode>(SIZE_MAX),
+						Opcode::EQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Neq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<StringTypeNameNode>(SIZE_MAX),
+						std::make_shared<StringTypeNameNode>(SIZE_MAX),
+						Opcode::NEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				}
 				case BinaryOp::Subscript: {
-					uint32_t lhsRegIndex = compileContext->allocReg(),
-							 rhsRegIndex = compileContext->allocReg();
-
-					compileExpr(compileContext, 
-						e->lhs,
-						opReg.isLhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(lhsRegIndex));
-
-					compileOrCastOperand(
-						e->rhs,
-						rhsType, std::make_shared<U32TypeNameNode>(SIZE_MAX),
-						opReg.isRhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(rhsRegIndex));
-
-					compileContext->_insertIns(
-						opReg.opcode,
-						std::make_shared<RegRefNode>(resultRegIndex),
-						{ std::make_shared<RegRefNode>(lhsRegIndex),
-							std::make_shared<RegRefNode>(rhsRegIndex) });
-
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<StringTypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::AT);
 					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX, true);
-
+					break;
+				}
+				case BinaryOp::AssignAdd: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<StringTypeNameNode>(SIZE_MAX, true),
+						std::make_shared<StringTypeNameNode>(SIZE_MAX),
+						Opcode::ADD);
+					resultType = std::make_shared<StringTypeNameNode>(SIZE_MAX, true);
 					break;
 				}
 				default:
@@ -583,39 +3423,81 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 			break;
 		}
 		case TypeId::Array: {
+			uint32_t lhsRegIndex = compileContext->allocReg();
+			uint32_t rhsRegIndex = compileContext->allocReg();
+
+			std::shared_ptr<ArrayTypeNameNode>
+				lvalueLhsType = lhsType->duplicate<ArrayTypeNameNode>(),
+				nonLValueLhsType = lhsType->duplicate<ArrayTypeNameNode>();
+			lvalueLhsType->isRef = true;
+			nonLValueLhsType->isRef = false;
+
 			switch (e->op) {
+				case BinaryOp::Assign: {
+					compileSimpleAssignOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						lvalueLhsType,
+						nonLValueLhsType);
+					resultType = lhsType;
+					break;
+				}
+				case BinaryOp::Add: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						nonLValueLhsType,
+						nonLValueLhsType,
+						Opcode::ADD);
+					resultType = nonLValueLhsType;
+					break;
+				}
+				case BinaryOp::Eq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						nonLValueLhsType,
+						nonLValueLhsType,
+						Opcode::EQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Neq: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						nonLValueLhsType,
+						nonLValueLhsType,
+						Opcode::NEQ);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
 				case BinaryOp::Subscript: {
-					uint32_t lhsRegIndex = compileContext->allocReg(),
-							 rhsRegIndex = compileContext->allocReg();
-
-					auto u32Type = std::make_shared<U32TypeNameNode>(SIZE_MAX);
-
-					compileExpr(compileContext, 
-						e->lhs,
-						opReg.isLhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(lhsRegIndex));
-
-					compileOrCastOperand(
-						e->rhs,
-						rhsType, std::make_shared<U32TypeNameNode>(SIZE_MAX),
-						opReg.isRhsLvalue
-							? EvalPurpose::LValue
-							: EvalPurpose::RValue,
-						std::make_shared<RegRefNode>(rhsRegIndex));
-
-					compileContext->_insertIns(
-						opReg.opcode,
-						std::make_shared<RegRefNode>(resultRegIndex),
-						{ std::make_shared<RegRefNode>(lhsRegIndex),
-							std::make_shared<RegRefNode>(rhsRegIndex) });
-
-					auto arrayType = std::static_pointer_cast<ArrayTypeNameNode>(lhsType);
-
-					resultType = std::static_pointer_cast<ArrayTypeNameNode>(lhsType)->elementType->duplicate<TypeNameNode>();
-					resultType->isRef = true;
-
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						nonLValueLhsType,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::AT);
+					auto elementType = std::static_pointer_cast<ArrayTypeNameNode>(lhsType)->elementType->duplicate<TypeNameNode>();
+					elementType->isRef = true;
+					resultType = elementType;
+					break;
+				}
+				case BinaryOp::AssignAdd: {
+					compileSimpleAssignaryBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						lvalueLhsType,
+						nonLValueLhsType,
+						Opcode::ADD);
+					resultType = lhsType;
 					break;
 				}
 				default:
@@ -625,7 +3507,6 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 							MessageType::Error,
 							"No matching operator"));
 			}
-
 			break;
 		}
 		case TypeId::Custom: {
@@ -655,7 +3536,7 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 #endif
 					}
 
-					compileExpr(compileContext, 
+					compileExpr(compileContext,
 						e->lhs,
 						EvalPurpose::RValue,
 						std::make_shared<RegRefNode>(lhsRegIndex));
@@ -675,7 +3556,7 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 
 						compileContext->_insertIns(Opcode::PUSHARG, {}, { ce, overloading->params[0]->type });
 					} else {
-						compileExpr(compileContext, 
+						compileExpr(compileContext,
 							e->rhs,
 							isLValueType(overloading->params[0]->type)
 								? EvalPurpose::LValue
@@ -724,7 +3605,7 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 						case BinaryOp::Assign: {
 							uint32_t rhsRegIndex = compileContext->allocReg();
 
-							compileExpr(compileContext, 
+							compileExpr(compileContext,
 								e->lhs,
 								EvalPurpose::LValue,
 								std::make_shared<RegRefNode>(lhsRegIndex));
@@ -749,11 +3630,10 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 							resultType->isRef = true;
 							break;
 						}
-						case BinaryOp::StrictEq:
-						case BinaryOp::StrictNeq: {
+						case BinaryOp::StrictEq: {
 							uint32_t rhsRegIndex = compileContext->allocReg();
 
-							compileExpr(compileContext, 
+							compileExpr(compileContext,
 								e->lhs,
 								EvalPurpose::RValue,
 								std::make_shared<RegRefNode>(lhsRegIndex));
@@ -768,7 +3648,33 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 								std::make_shared<RegRefNode>(rhsRegIndex));
 
 							compileContext->_insertIns(
-								opReg.opcode,
+								Opcode::EQ,
+								std::make_shared<RegRefNode>(resultRegIndex),
+								{ std::make_shared<RegRefNode>(lhsRegIndex),
+									std::make_shared<RegRefNode>(rhsRegIndex) });
+
+							resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+							break;
+						}
+						case BinaryOp::StrictNeq: {
+							uint32_t rhsRegIndex = compileContext->allocReg();
+
+							compileExpr(compileContext,
+								e->lhs,
+								EvalPurpose::RValue,
+								std::make_shared<RegRefNode>(lhsRegIndex));
+
+							lhsType = lhsType->duplicate<TypeNameNode>();
+							lhsType->isRef = false;
+
+							compileOrCastOperand(
+								e->rhs,
+								rhsType, std::make_shared<U32TypeNameNode>(SIZE_MAX),
+								EvalPurpose::RValue,
+								std::make_shared<RegRefNode>(rhsRegIndex));
+
+							compileContext->_insertIns(
+								Opcode::NEQ,
 								std::make_shared<RegRefNode>(resultRegIndex),
 								{ std::make_shared<RegRefNode>(lhsRegIndex),
 									std::make_shared<RegRefNode>(rhsRegIndex) });
@@ -799,7 +3705,7 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 						case BinaryOp::Assign: {
 							uint32_t rhsRegIndex = compileContext->allocReg();
 
-							compileExpr(compileContext, 
+							compileExpr(compileContext,
 								e->lhs,
 								EvalPurpose::LValue,
 								std::make_shared<RegRefNode>(lhsRegIndex));
@@ -824,11 +3730,10 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 							resultType->isRef = true;
 							break;
 						}
-						case BinaryOp::StrictEq:
-						case BinaryOp::StrictNeq: {
+						case BinaryOp::StrictEq: {
 							uint32_t rhsRegIndex = compileContext->allocReg();
 
-							compileExpr(compileContext, 
+							compileExpr(compileContext,
 								e->lhs,
 								EvalPurpose::RValue,
 								std::make_shared<RegRefNode>(lhsRegIndex));
@@ -843,7 +3748,33 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 								std::make_shared<RegRefNode>(rhsRegIndex));
 
 							compileContext->_insertIns(
-								opReg.opcode,
+								Opcode::NEQ,
+								std::make_shared<RegRefNode>(resultRegIndex),
+								{ std::make_shared<RegRefNode>(lhsRegIndex),
+									std::make_shared<RegRefNode>(rhsRegIndex) });
+
+							resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+							break;
+						}
+						case BinaryOp::StrictNeq: {
+							uint32_t rhsRegIndex = compileContext->allocReg();
+
+							compileExpr(compileContext,
+								e->lhs,
+								EvalPurpose::RValue,
+								std::make_shared<RegRefNode>(lhsRegIndex));
+
+							lhsType = lhsType->duplicate<TypeNameNode>();
+							lhsType->isRef = false;
+
+							compileOrCastOperand(
+								e->rhs,
+								rhsType, std::make_shared<U32TypeNameNode>(SIZE_MAX),
+								EvalPurpose::RValue,
+								std::make_shared<RegRefNode>(rhsRegIndex));
+
+							compileContext->_insertIns(
+								Opcode::EQ,
 								std::make_shared<RegRefNode>(resultRegIndex),
 								{ std::make_shared<RegRefNode>(lhsRegIndex),
 									std::make_shared<RegRefNode>(rhsRegIndex) });

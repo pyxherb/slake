@@ -116,6 +116,7 @@ namespace slake {
 			uint8_t nParams : 8;			// Number of parameters, only used by compilers
 			uint32_t lenBody : 24;			// Length of body
 			uint32_t nSourceLocDescs : 32;	// Number of SLDs
+			uint32_t nRegisters : 32;		// Number of registers
 		};
 		constexpr static uint16_t
 			FND_PUB = 0x0001,		// Public

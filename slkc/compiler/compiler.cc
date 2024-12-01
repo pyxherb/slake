@@ -1045,6 +1045,7 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 				fnd.nParams = (uint8_t)compiledFn->params.size();
 				fnd.nSourceLocDescs = (uint32_t)compiledFn->srcLocDescs.size();
 				fnd.nGenericParams = compiledFn->genericParams.size();
+				fnd.nRegisters = compiledFn->maxRegCount;
 
 				_write(os, fnd);
 				_write(os, i.first.data(), i.first.length());

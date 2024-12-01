@@ -315,7 +315,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 						_gcWalkHeapless(context, j);
 					_gcWalkHeapless(context, fnOverloading->returnType);
 
-					switch (fnOverloading->getOverloadingKind()) {
+					switch (fnOverloading->overloadingKind) {
 						case FnOverloadingKind::Regular: {
 							RegularFnOverloadingObject *ol = (RegularFnOverloadingObject *)fnOverloading;
 

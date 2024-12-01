@@ -24,24 +24,6 @@ SLAKE_API MajorFrame::MajorFrame(Runtime *rt, Context *context)
 	minorFrames.push_back(MinorFrame(rt, 0, 0, context->stackTop));
 }
 
-SLAKE_API InternalExceptionPointer MajorFrame::lload(Runtime *rt, uint32_t off, VarRef &varRefOut) {
-	if (off >= localVarRecords.size()) {
-		return InvalidLocalVarIndexError::alloc(rt, off);
-	}
-
-	varRefOut = VarRef(localVarAccessor, VarRefContext::makeLocalVarContext(off));
-	return {};
-}
-
-SLAKE_API InternalExceptionPointer MajorFrame::larg(Runtime *rt, uint32_t off, VarRef &varRefOut) {
-	if (off >= argStack.size()) {
-		return InvalidArgumentIndexError::alloc(rt, off);
-	}
-
-	varRefOut = argStack.at(off);
-	return {};
-}
-
 SLAKE_API void MajorFrame::leave() {
 	context->stackTop = minorFrames.back().stackBase;
 	regs.resize(minorFrames.back().nRegs);

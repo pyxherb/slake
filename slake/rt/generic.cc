@@ -326,7 +326,7 @@ SLAKE_API InternalExceptionPointer Runtime::_instantiateGenericObject(FnOverload
 
 		SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(ol->returnType, instantiationContext));
 
-		switch (ol->getOverloadingKind()) {
+		switch (ol->overloadingKind) {
 			case FnOverloadingKind::Regular: {
 				RegularFnOverloadingObject *overloading = (RegularFnOverloadingObject *)ol;
 

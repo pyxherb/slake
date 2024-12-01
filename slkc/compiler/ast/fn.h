@@ -177,6 +177,8 @@ namespace slake {
 
 			std::deque<slxfmt::SourceLocDesc> srcLocDescs;
 
+			uint32_t maxRegCount = 0;
+
 			bool hasVarArgs = false, isAsync = false;
 
 			inline CompiledFnNode(const CompiledFnNode &other) : MemberNode(other) {

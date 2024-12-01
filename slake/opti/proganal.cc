@@ -577,30 +577,6 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				stackFrameState.analyzedLocalVarInfo.push_back({ typeName });
 				break;
 			}
-			case Opcode::REG: {
-				if (regIndex != UINT32_MAX) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
-				}
-
-				if (curIns.operands.size() != 1) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
-				}
-
-				if (curIns.operands[0].valueType != ValueType::U32) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
-				}
-
-				break;
-			}
 			case Opcode::LVALUE: {
 				if (regIndex != UINT32_MAX) {
 					if (curIns.operands.size() != 1) {

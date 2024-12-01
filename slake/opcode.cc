@@ -11,7 +11,6 @@ using namespace slake;
 		MNEMONIC_ENTRY(LLOAD),    \
 		MNEMONIC_ENTRY(LARG),     \
 		MNEMONIC_ENTRY(LVAR),     \
-		MNEMONIC_ENTRY(REG),      \
 		MNEMONIC_ENTRY(LVALUE),   \
 		MNEMONIC_ENTRY(ENTER),    \
 		MNEMONIC_ENTRY(LEAVE),    \

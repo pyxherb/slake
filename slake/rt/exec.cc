@@ -51,10 +51,6 @@ SLAKE_FORCEINLINE [[nodiscard]] InternalExceptionPointer _setRegisterValue(
 		return InvalidOperandsError::alloc(runtime);
 	}
 	Value &reg = curMajorFrame->regs[index];
-	if (reg.valueType != ValueType::Undefined) {
-		// The register is already assigned.
-		return InvalidOperandsError::alloc(runtime);
-	}
 	curMajorFrame->regs[index] = value;
 	return {};
 }
@@ -165,6 +161,14 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 
 		InternalExceptionPointer result = varArgEntryVarObject->setData({}, Value(varArgArrayObject.get()));
 		assert(!result);
+	}
+
+	switch (fn->overloadingKind) {
+		case FnOverloadingKind::Regular: {
+			RegularFnOverloadingObject *ol = (RegularFnOverloadingObject *)fn;
+			newMajorFrame->regs.resize(ol->nRegisters);
+			break;
+		}
 	}
 
 	context->majorFrames.push_back(std::move(newMajorFrame));
@@ -285,6 +289,24 @@ SLAKE_FORCEINLINE void _addLocalReg(MajorFrame *frame) noexcept {
 	frame->regs.push_back({});
 }
 
+SLAKE_FORCEINLINE InternalExceptionPointer lload(MajorFrame *majorFrame, Runtime *rt, uint32_t off, VarRef &varRefOut) {
+	if (off >= majorFrame->localVarRecords.size()) {
+		return InvalidLocalVarIndexError::alloc(rt, off);
+	}
+
+	varRefOut = VarRef(majorFrame->localVarAccessor, VarRefContext::makeLocalVarContext(off));
+	return {};
+}
+
+SLAKE_FORCEINLINE InternalExceptionPointer larg(MajorFrame *majorFrame, Runtime *rt, uint32_t off, VarRef &varRefOut) {
+	if (off >= majorFrame->argStack.size()) {
+		return InvalidArgumentIndexError::alloc(rt, off);
+	}
+
+	varRefOut = majorFrame->argStack.at(off);
+	return {};
+}
+
 SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) noexcept {
 	const FnOverloadingObject *curFn;
 	MajorFrame *curMajorFrame;
@@ -307,7 +329,7 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 		while ((_flags & _RT_INGC) && !isDestructing)
 			std::this_thread::yield();
 
-		switch (curFn->getOverloadingKind()) {
+		switch (curFn->overloadingKind) {
 			case FnOverloadingKind::Regular: {
 				RegularFnOverloadingObject *ol = (RegularFnOverloadingObject *)curFn;
 
@@ -341,21 +363,6 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _addLocalVar(curMajorFrame, type, varRef));
 							break;
 						}
-						case Opcode::REG:
-							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(this, ins, false, 1));
-							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.operands[0], ValueType::U32));
-
-							{
-								uint32_t index = ins.operands[0].getU32();
-								if (index > curMajorFrame->regs.size()) {
-									return InvalidOperandsError::alloc(this);
-								} else if (index < curMajorFrame->regs.size()) {
-									curMajorFrame->regs[index] = Value();
-								} else {
-									_addLocalReg(curMajorFrame);
-								}
-							}
-							break;
 						case Opcode::LOAD: {
 							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(this, ins, true, 1));
 							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.output, ValueType::RegRef));
@@ -444,7 +451,7 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.operands[0], ValueType::U32));
 
 							VarRef varRef;
-							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, curMajorFrame->lload(this, ins.operands[0].getU32(), varRef));
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, lload(curMajorFrame, this, ins.operands[0].getU32(), varRef));
 
 							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr,
 								_setRegisterValue(this,
@@ -460,7 +467,7 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.operands[0], ValueType::U32));
 
 							VarRef varRef;
-							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, curMajorFrame->larg(this, ins.operands[0].getU32(), varRef));
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, larg(curMajorFrame, this, ins.operands[0].getU32(), varRef));
 							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this,
 																			curMajorFrame,
 																			ins.output.getRegIndex(),

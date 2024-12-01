@@ -1,5 +1,4 @@
 #include <slake/runtime.h>
-#include <slake/opti/optimizer.h>
 #include <slake/util/scope_guard.h>
 
 using namespace slake;
@@ -39,12 +38,14 @@ SLAKE_API bool Instruction::operator<(const Instruction &rhs) const {
 }
 
 SLAKE_API FnOverloadingObject::FnOverloadingObject(
+	FnOverloadingKind overloadingKind,
 	FnObject *fnObject,
 	AccessModifier access,
 	std::pmr::vector<Type> &&paramTypes,
 	const Type &returnType,
 	OverloadingFlags flags)
 	: Object(fnObject->associatedRuntime),
+	  overloadingKind(overloadingKind),
 	  fnObject(fnObject),
 	  access(access),
 	  paramTypes(paramTypes),
@@ -76,13 +77,16 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(
 	AccessModifier access,
 	std::pmr::vector<Type> &&paramTypes,
 	const Type &returnType,
+	uint32_t nRegisters,
 	OverloadingFlags flags)
 	: FnOverloadingObject(
+		  FnOverloadingKind::Regular,
 		  fnObject,
 		  access,
 		  std::move(paramTypes),
 		  returnType,
-		  flags) {}
+		  flags),
+	  nRegisters(nRegisters) {}
 
 SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFnOverloadingObject &other) : FnOverloadingObject(other) {
 	sourceLocDescs = other.sourceLocDescs;
@@ -114,6 +118,8 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFn
 				instructions[i].operands[j] = operand;
 		}
 	}
+
+	nRegisters = other.nRegisters;
 }
 
 SLAKE_API RegularFnOverloadingObject::~RegularFnOverloadingObject() {
@@ -137,10 +143,6 @@ SLAKE_API const slxfmt::SourceLocDesc *RegularFnOverloadingObject::getSourceLoca
 	return curDesc;
 }
 
-SLAKE_API FnOverloadingKind slake::RegularFnOverloadingObject::getOverloadingKind() const {
-	return FnOverloadingKind::Regular;
-}
-
 SLAKE_API FnOverloadingObject *slake::RegularFnOverloadingObject::duplicate() const {
 	return (FnOverloadingObject *)alloc(this).get();
 }
@@ -150,6 +152,7 @@ SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingO
 	AccessModifier access,
 	std::pmr::vector<Type> &&paramTypes,
 	const Type &returnType,
+	uint32_t nRegisters,
 	OverloadingFlags flags) {
 	using Alloc = std::pmr::polymorphic_allocator<RegularFnOverloadingObject>;
 	Alloc allocator(&fnObject->associatedRuntime->globalHeapPoolResource);
@@ -157,7 +160,7 @@ SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingO
 	std::unique_ptr<RegularFnOverloadingObject, util::StatefulDeleter<Alloc>> ptr(
 		allocator.allocate(1),
 		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), fnObject, access, std::move(paramTypes), returnType, flags);
+	allocator.construct(ptr.get(), fnObject, access, std::move(paramTypes), returnType, nRegisters, flags);
 
 	fnObject->associatedRuntime->createdObjects.push_back(ptr.get());
 
@@ -193,6 +196,7 @@ SLAKE_API NativeFnOverloadingObject::NativeFnOverloadingObject(
 	OverloadingFlags flags,
 	NativeFnCallback callback)
 	: FnOverloadingObject(
+		  FnOverloadingKind::Native,
 		  fnObject,
 		  access,
 		  std::move(paramTypes),
@@ -205,10 +209,6 @@ SLAKE_API NativeFnOverloadingObject::NativeFnOverloadingObject(const NativeFnOve
 }
 
 SLAKE_API NativeFnOverloadingObject::~NativeFnOverloadingObject() {
-}
-
-SLAKE_API FnOverloadingKind slake::NativeFnOverloadingObject::getOverloadingKind() const {
-	return FnOverloadingKind::Native;
 }
 
 SLAKE_API FnOverloadingObject *slake::NativeFnOverloadingObject::duplicate() const {

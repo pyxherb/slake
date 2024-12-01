@@ -62,10 +62,6 @@ namespace slake {
 			abort();
 		}
 
-		SLAKE_API InternalExceptionPointer lload(Runtime *rt, uint32_t off, VarRef &varRefOut);
-
-		SLAKE_API InternalExceptionPointer larg(Runtime *rt, uint32_t off, VarRef &varRefOut);
-
 		/// @brief Leave current minor frame.
 		SLAKE_API void leave();
 	};

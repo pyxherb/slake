@@ -1,5 +1,4 @@
 #include "decompiler.h"
-#include <slake/opti/optimizer.h>
 
 #include <string>
 
@@ -144,7 +143,7 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 					os << std::string(indentLevel, '\t')
 					   << "\n";
 				} else {
-					switch (i->getOverloadingKind()) {
+					switch (i->overloadingKind) {
 						case FnOverloadingKind::Regular: {
 							RegularFnOverloadingObject *fn = (RegularFnOverloadingObject *)i;
 

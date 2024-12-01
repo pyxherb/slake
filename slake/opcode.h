@@ -20,7 +20,6 @@ namespace slake {
 		LARG,	// Load an argument.
 
 		LVAR,  // Create a new local variable
-		REG,   // Create a new register
 
 		LVALUE,	 // Load value of a variable
 

@@ -45,6 +45,8 @@ namespace slake {
 
 	class FnOverloadingObject : public Object {
 	public:
+		FnOverloadingKind overloadingKind;
+
 		FnObject *fnObject;
 
 		AccessModifier access;
@@ -60,6 +62,7 @@ namespace slake {
 		OverloadingFlags overloadingFlags = 0;
 
 		SLAKE_API FnOverloadingObject(
+			FnOverloadingKind overloadingKind,
 			FnObject *fnObject,
 			AccessModifier access,
 			std::pmr::vector<Type> &&paramTypes,
@@ -70,8 +73,6 @@ namespace slake {
 
 		SLAKE_API virtual ObjectKind getKind() const;
 
-		SLAKE_API virtual FnOverloadingKind getOverloadingKind() const = 0;
-
 		SLAKE_API virtual FnOverloadingObject *duplicate() const = 0;
 	};
 
@@ -80,19 +81,19 @@ namespace slake {
 		std::vector<slxfmt::SourceLocDesc> sourceLocDescs;
 		std::vector<Instruction> instructions;
 		Type thisObjectType = TypeId::None;
+		uint32_t nRegisters;
 
 		SLAKE_API RegularFnOverloadingObject(
 			FnObject *fnObject,
 			AccessModifier access,
 			std::pmr::vector<Type> &&paramTypes,
 			const Type &returnType,
+			uint32_t nRegisters,
 			OverloadingFlags flags);
 		SLAKE_API RegularFnOverloadingObject(const RegularFnOverloadingObject &other);
 		SLAKE_API virtual ~RegularFnOverloadingObject();
 
 		SLAKE_API const slxfmt::SourceLocDesc *getSourceLocationDesc(uint32_t offIns) const;
-
-		SLAKE_API virtual FnOverloadingKind getOverloadingKind() const override;
 
 		SLAKE_API virtual FnOverloadingObject *duplicate() const override;
 
@@ -101,6 +102,7 @@ namespace slake {
 			AccessModifier access,
 			std::pmr::vector<Type> &&paramTypes,
 			const Type &returnType,
+			uint32_t nRegisters,
 			OverloadingFlags flags);
 		SLAKE_API static HostObjectRef<RegularFnOverloadingObject> alloc(const RegularFnOverloadingObject *other);
 		SLAKE_API virtual void dealloc() override;
@@ -127,8 +129,6 @@ namespace slake {
 		SLAKE_API virtual ~NativeFnOverloadingObject();
 
 		NativeFnCallback callback;
-
-		SLAKE_API virtual FnOverloadingKind getOverloadingKind() const override;
 
 		SLAKE_API virtual FnOverloadingObject *duplicate() const override;
 

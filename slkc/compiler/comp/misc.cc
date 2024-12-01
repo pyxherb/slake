@@ -25,9 +25,9 @@ uint32_t CompileContext::allocReg() {
 	if (curMajorContext.curMinorContext.dryRun)
 		return UINT32_MAX;
 
-	auto idxReg = curMajorContext.curRegCount;
+	auto idxReg = curMajorContext.curRegCount++;
 
-	_insertIns(Opcode::REG, {}, { std::make_shared<U32LiteralExprNode>(curMajorContext.curRegCount++) });
+	curFn->maxRegCount = std::max(curFn->maxRegCount, idxReg + 1);
 
 	return idxReg;
 }

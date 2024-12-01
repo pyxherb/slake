@@ -108,7 +108,7 @@ void printTraceback(slake::Runtime *rt, slake::ContextObject *context) {
 		 i != context->getContext().majorFrames.rend();
 		 ++i) {
 		printf("\t%s: 0x%08x", rt->getFullName((*i)->curFn->fnObject).c_str(), (*i)->curIns);
-		switch ((*i)->curFn->getOverloadingKind()) {
+		switch ((*i)->curFn->overloadingKind) {
 			case slake::FnOverloadingKind::Regular: {
 				if (auto sld = ((slake::RegularFnOverloadingObject *)(*i)->curFn)->getSourceLocationDesc((*i)->curIns); sld) {
 					printf(" at %d:%d", sld->line, sld->column);

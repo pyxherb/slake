@@ -30,54 +30,60 @@ namespace slake {
 
 	class InternalExceptionPointer {
 	private:
-		std::unique_ptr<InternalException, util::DeallocableDeleter<InternalException>> _ptr;
+		InternalException *_ptr;
 
 	public:
-		SLAKE_FORCEINLINE InternalExceptionPointer() = default;
-		SLAKE_FORCEINLINE InternalExceptionPointer(InternalException *exception) : _ptr(exception) {
+		SLAKE_FORCEINLINE InternalExceptionPointer() noexcept = default;
+		SLAKE_FORCEINLINE InternalExceptionPointer(InternalException *exception) noexcept : _ptr(exception) {
 		}
 
-		SLAKE_FORCEINLINE ~InternalExceptionPointer() {
+		SLAKE_FORCEINLINE ~InternalExceptionPointer() noexcept {
 			unwrap();
+			reset();
 		}
 
 		InternalExceptionPointer(const InternalExceptionPointer &) = delete;
 		InternalExceptionPointer &operator=(const InternalExceptionPointer &) = delete;
-		SLAKE_FORCEINLINE InternalExceptionPointer(InternalExceptionPointer &&other) {
+		SLAKE_FORCEINLINE InternalExceptionPointer(InternalExceptionPointer &&other) noexcept {
 			_ptr = std::move(other._ptr);
+			other._ptr = nullptr;
 		}
-		SLAKE_FORCEINLINE InternalExceptionPointer &operator=(InternalExceptionPointer &&other) {
+		SLAKE_FORCEINLINE InternalExceptionPointer &operator=(InternalExceptionPointer &&other) noexcept {
 			_ptr = std::move(other._ptr);
+			other._ptr = nullptr;
 			return *this;
 		}
 
-		SLAKE_FORCEINLINE InternalException *get() {
-			return _ptr.get();
+		SLAKE_FORCEINLINE InternalException *get() noexcept {
+			return _ptr;
 		}
-		SLAKE_FORCEINLINE const InternalException *get() const {
-			return _ptr.get();
-		}
-
-		SLAKE_FORCEINLINE void reset() {
-			_ptr.reset();
+		SLAKE_FORCEINLINE const InternalException *get() const noexcept {
+			return _ptr;
 		}
 
-		SLAKE_FORCEINLINE void unwrap() {
+		SLAKE_FORCEINLINE void reset() noexcept {
+			if (_ptr) {
+				_ptr->dealloc();
+			}
+			_ptr = nullptr;
+		}
+
+		SLAKE_FORCEINLINE void unwrap() noexcept {
 			if (_ptr) {
 				assert(("Unhandled Slake internal exception: ", false));
 			}
 		}
 
-		SLAKE_FORCEINLINE explicit operator bool() {
+		SLAKE_FORCEINLINE explicit operator bool() noexcept {
 			return (bool)_ptr;
 		}
 
-		SLAKE_FORCEINLINE InternalException *operator->() {
-			return _ptr.get();
+		SLAKE_FORCEINLINE InternalException *operator->() noexcept {
+			return _ptr;
 		}
 
-		SLAKE_FORCEINLINE const InternalException *operator->() const {
-			return _ptr.get();
+		SLAKE_FORCEINLINE const InternalException *operator->() const noexcept {
+			return _ptr;
 		}
 	};
 }

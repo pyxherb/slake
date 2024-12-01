@@ -123,33 +123,10 @@ namespace slake {
 			LoadModuleFlags loadModuleFlags,
 			HostRefHolder &holder);
 
-		[[nodiscard]] InternalExceptionPointer _checkOperandCount(
-			const Instruction &ins,
-			bool hasOutput,
-			int_fast8_t nOperands);
-		[[nodiscard]] InternalExceptionPointer _checkOperandType(
-			const Value &operand,
-			ValueType valueType);
-		[[nodiscard]] InternalExceptionPointer _checkObjectOperandType(
-			Object *object,
-			ObjectKind typeId);
-		[[nodiscard]] InternalExceptionPointer _setRegisterValue(
-			MajorFrame *curMajorFrame,
-			uint32_t index,
-			const Value &value);
-		[[nodiscard]] InternalExceptionPointer _fetchRegValue(
-			MajorFrame *curMajorFrame,
-			uint32_t index,
-			Value &valueOut);
-		[[nodiscard]] InternalExceptionPointer _unwrapRegOperand(
-			MajorFrame *curMajorFrame,
-			const Value &value,
-			Value &valueOut);
-
 		/// @brief Execute a single instruction.
 		/// @param context Context for execution.
 		/// @param ins Instruction to be executed.
-		SLAKE_API [[nodiscard]] InternalExceptionPointer _execIns(ContextObject *context, const Instruction &ins);
+		SLAKE_API [[nodiscard]] InternalExceptionPointer _execIns(ContextObject *context, const Instruction &ins) noexcept;
 
 		struct GCHeaplessWalkContext {
 			Object *walkableList = nullptr;
@@ -176,10 +153,9 @@ namespace slake {
 			Object *thisObject,
 			const FnOverloadingObject *fn,
 			const Value *args,
-			uint32_t nArgs);
+			uint32_t nArgs) noexcept;
 
-		SLAKE_API [[nodiscard]] InternalExceptionPointer _addLocalVar(MajorFrame *frame, Type type, VarRef &varRefOut);
-		SLAKE_API void _addLocalReg(MajorFrame *frame);
+		SLAKE_API [[nodiscard]] InternalExceptionPointer _addLocalVar(MajorFrame *frame, Type type, VarRef &varRefOut) noexcept;
 
 		SLAKE_API uint32_t _findAndDispatchExceptHandler(const Value &curExcept, const MinorFrame &minorFrame) const;
 
@@ -249,7 +225,7 @@ namespace slake {
 		SLAKE_API HostObjectRef<InstanceObject> newClassInstance(ClassObject *cls, NewClassInstanceFlags flags);
 		SLAKE_API HostObjectRef<ArrayObject> newArrayInstance(Runtime *rt, const Type &type, size_t length);
 
-		SLAKE_API [[nodiscard]] InternalExceptionPointer execContext(ContextObject *context);
+		SLAKE_API [[nodiscard]] InternalExceptionPointer execContext(ContextObject *context) noexcept;
 		SLAKE_API [[nodiscard]] InternalExceptionPointer execFn(
 			const FnOverloadingObject *overloading,
 			ContextObject *prevContext,

@@ -65,6 +65,7 @@ SLAKE_API FnOverloadingObject::FnOverloadingObject(const FnOverloadingObject &ot
 	returnType = other.returnType;
 
 	overloadingFlags = other.overloadingFlags;
+	overloadingKind = other.overloadingKind;
 }
 
 SLAKE_API FnOverloadingObject::~FnOverloadingObject() {

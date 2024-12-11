@@ -169,17 +169,30 @@ int main(int argc, char **argv) {
 		auto fn = (slake::FnObject *)mod->getMember("main", nullptr);
 		auto overloading = fn->getOverloading({});
 
-		/* slake::opti::ProgramAnalyzedInfo analyzedInfo;
+		slake::opti::ProgramAnalyzedInfo analyzedInfo;
 		if (auto e = slake::opti::analyzeProgramInfo(rt.get(), (slake::RegularFnOverloadingObject *)overloading, analyzedInfo, hostRefHolder);
 			e) {
 			printf("Internal exception: %s\n", e->what());
+			switch (e->kind) {
+				case slake::ErrorKind::OptimizerError: {
+					slake::OptimizerError *err = (slake::OptimizerError*)e.get();
+
+					switch (err->optimizerErrorCode) {
+						case slake::OptimizerErrorCode::MalformedProgram: {
+							slake::MalformedProgramError *err = (slake::MalformedProgramError *)e.get();
+
+							printf("Malformed program error at instruction #%zu\n", err->offIns);
+						}
+					}
+				}
+			}
 			e.reset();
 			goto end;
 		}
 		for (auto &i : analyzedInfo.analyzedRegInfo) {
 			printf("Register #%u\n", i.first);
 			printf("Lifetime: %zu-%zu\n", i.second.lifetime.offBeginIns, i.second.lifetime.offEndIns);
-		}*/
+		}
 
 		slake::HostObjectRef<slake::ContextObject> context;
 		if (auto e = rt->execFn(overloading, nullptr, nullptr, nullptr, 0, context);

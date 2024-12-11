@@ -173,7 +173,7 @@ SLAKE_API InternalExceptionPointer LocalVarAccessorVarObject::setData(const VarR
 			// All fields should be checked during the instantiation.
 			throw std::logic_error("Unhandled value type");
 	}
-	return {};
+	return InternalExceptionPointer{};
 }
 
 SLAKE_API InternalExceptionPointer LocalVarAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
@@ -230,7 +230,7 @@ SLAKE_API InternalExceptionPointer LocalVarAccessorVarObject::getData(const VarR
 			throw std::logic_error("Unhandled value type");
 	}
 
-	return {};
+	return InternalExceptionPointer{};
 }
 
 SLAKE_API HostObjectRef<LocalVarAccessorVarObject> slake::LocalVarAccessorVarObject::alloc(

@@ -30,7 +30,8 @@ namespace slake {
 
 	enum class FnOverloadingKind {
 		Regular = 0,
-		Native
+		Native,
+		JITCompiled
 	};
 
 	using OverloadingFlags = uint32_t;
@@ -105,6 +106,33 @@ namespace slake {
 			uint32_t nRegisters,
 			OverloadingFlags flags);
 		SLAKE_API static HostObjectRef<RegularFnOverloadingObject> alloc(const RegularFnOverloadingObject *other);
+		SLAKE_API virtual void dealloc() override;
+	};
+
+	class JITCompiledFnOverloadingObject : public FnOverloadingObject {
+	public:
+		RegularFnOverloadingObject *uncompiledVersion;
+		std::pmr::set<Object *> referencedObjects;
+
+		SLAKE_API JITCompiledFnOverloadingObject(
+			FnObject *fnObject,
+			AccessModifier access,
+			std::pmr::vector<Type> &&paramTypes,
+			const Type &returnType,
+			uint32_t nRegisters,
+			OverloadingFlags flags);
+		SLAKE_API JITCompiledFnOverloadingObject(const RegularFnOverloadingObject &other);
+		SLAKE_API virtual ~JITCompiledFnOverloadingObject();
+
+		SLAKE_API virtual FnOverloadingObject *duplicate() const override;
+
+		SLAKE_API static HostObjectRef<JITCompiledFnOverloadingObject> alloc(
+			FnObject *fnObject,
+			AccessModifier access,
+			std::pmr::vector<Type> &&paramTypes,
+			const Type &returnType,
+			OverloadingFlags flags);
+		SLAKE_API static HostObjectRef<JITCompiledFnOverloadingObject> alloc(const RegularFnOverloadingObject *other);
 		SLAKE_API virtual void dealloc() override;
 	};
 

@@ -367,11 +367,11 @@ std::shared_ptr<ExprNode> Compiler::evalConstExpr(CompileContext *compileContext
 
 			auto resultExpr = std::make_shared<ArrayExprNode>();
 
-			if ((!compileContext->curMajorContext.curMinorContext.expectedType) ||
-				compileContext->curMajorContext.curMinorContext.expectedType->getTypeId() != TypeId::Array)
+			if ((!compileContext->curCollectiveContext.curMajorContext.curMinorContext.expectedType) ||
+				compileContext->curCollectiveContext.curMajorContext.curMinorContext.expectedType->getTypeId() != TypeId::Array)
 				return {};
 
-			auto et = std::static_pointer_cast<ArrayTypeNameNode>(compileContext->curMajorContext.curMinorContext.expectedType);
+			auto et = std::static_pointer_cast<ArrayTypeNameNode>(compileContext->curCollectiveContext.curMajorContext.curMinorContext.expectedType);
 
 			for (auto &i : e->elements) {
 				auto t = evalExprType(compileContext, i);
@@ -468,11 +468,11 @@ std::shared_ptr<TypeNameNode> Compiler::evalExprType(CompileContext *compileCont
 
 	compileContext->pushMinorContext();
 
-	compileContext->curMajorContext.curMinorContext.dryRun = true;
-	compileContext->curMajorContext.curMinorContext.evalPurpose = EvalPurpose::Stmt;
-	compileContext->curMajorContext.curMinorContext.evaluatedType = {};
+	compileContext->curCollectiveContext.curMajorContext.curMinorContext.dryRun = true;
+	compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalPurpose = EvalPurpose::Stmt;
+	compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = {};
 	compileExpr(compileContext, expr);
-	t = compileContext->curMajorContext.curMinorContext.evaluatedType;
+	t = compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType;
 
 	compileContext->popMinorContext();
 

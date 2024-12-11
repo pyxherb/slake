@@ -341,7 +341,7 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 						// Raise out of fn body error.
 					}
 
-					if (((globalHeapPoolResource.szAllocated >> 1) > _szMemUsedAfterLastGc)) {
+					if ((globalHeapPoolResource.szAllocated > _szComputedGcLimit)) {
 						gc();
 					}
 

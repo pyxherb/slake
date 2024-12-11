@@ -106,7 +106,6 @@ namespace slake {
 			std::deque<MinorContext> savedMinorContexts;
 			MinorContext curMinorContext;
 
-			uint32_t curRegCount = 0;
 			uint32_t curScopeLevel = 0;
 
 			GenericParamNodeList genericParams;
@@ -273,12 +272,21 @@ namespace slake {
 			}
 		};
 
+		struct CollectiveContext {
+			MajorContext curMajorContext;
+			std::deque<MajorContext> savedMajorContexts;
+			uint32_t curRegCount = 0;
+		};
+
 		struct CompileContext {
 			Compiler *compiler;
-			MajorContext curMajorContext;
 			std::shared_ptr<FnOverloadingNode> curFnOverloading;
 			std::shared_ptr<CompiledFnNode> curFn;
-			std::deque<MajorContext> savedMajorContexts;
+			CollectiveContext curCollectiveContext;
+			std::deque<CollectiveContext> savedCollectiveContexts;
+
+			void pushCollectiveContext();
+			void popCollectiveContext();
 
 			void pushMajorContext();
 			void popMajorContext();
@@ -287,7 +295,7 @@ namespace slake {
 			void popMinorContext();
 
 			inline void _insertIns(Ins ins) {
-				if (curMajorContext.curMinorContext.dryRun)
+				if (curCollectiveContext.curMajorContext.curMinorContext.dryRun)
 					return;
 				curFn->insertIns(ins);
 			}
@@ -298,7 +306,7 @@ namespace slake {
 				_insertIns(Ins{ opcode, output, operands });
 			}
 			inline void _insertLabel(std::string name) {
-				if (curMajorContext.curMinorContext.dryRun)
+				if (curCollectiveContext.curMajorContext.curMinorContext.dryRun)
 					return;
 				curFn->insertLabel(name);
 			}
@@ -396,9 +404,9 @@ namespace slake {
 			inline void compileExpr(CompileContext *compileContext, std::shared_ptr<ExprNode> expr, EvalPurpose evalPurpose, std::shared_ptr<AstNode> evalDest, std::shared_ptr<AstNode> thisDest = {}) {
 				compileContext->pushMinorContext();
 
-				compileContext->curMajorContext.curMinorContext.evalPurpose = evalPurpose;
-				compileContext->curMajorContext.curMinorContext.evalDest = evalDest;
-				compileContext->curMajorContext.curMinorContext.thisDest = thisDest;
+				compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalPurpose = evalPurpose;
+				compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest = evalDest;
+				compileContext->curCollectiveContext.curMajorContext.curMinorContext.thisDest = thisDest;
 				compileExpr(compileContext, expr);
 
 				compileContext->popMinorContext();

@@ -104,7 +104,8 @@ namespace slake {
 		mutable GenericCacheDirectory _genericCacheDir;
 
 		/// @brief Size of memory allocated for values after last GC cycle.
-		size_t _szMemUsedAfterLastGc = 0;
+		size_t _szMemUsedAfterLastGc = 0,
+			_szComputedGcLimit = 0;
 
 		/// @brief Module locator for importing.
 		ModuleLocatorFn _moduleLocator;

@@ -5,7 +5,7 @@ using namespace slake::slkc;
 void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_ptr<BinaryOpExprNode> e, std::shared_ptr<TypeNameNode> lhsType, std::shared_ptr<TypeNameNode> rhsType) {
 #if SLKC_WITH_LANGUAGE_SERVER
 	updateTokenInfo(e->idxOpToken, [this, compileContext](TokenInfo &tokenInfo) {
-		tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curMajorContext);
+		tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curCollectiveContext.curMajorContext);
 		tokenInfo.semanticType = SemanticType::Operator;
 	});
 	updateCompletionContext(e->idxOpToken, CompletionContext::Expr);
@@ -26,7 +26,7 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 
 	std::shared_ptr<TypeNameNode> resultType;
 
-	compileContext->curMajorContext.curMinorContext.expectedType = lhsType;
+	compileContext->curCollectiveContext.curMajorContext.curMinorContext.expectedType = lhsType;
 
 	bool isLhsTypeLValue = isLValueType(lhsType), isRhsTypeLValue = isLValueType(rhsType);
 
@@ -3842,7 +3842,7 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 
 	assert(resultType);
 
-	if (compileContext->curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue) {
+	if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue) {
 		if (!isLValueType(resultType))
 			throw FatalCompilationError(
 				Message(
@@ -3860,11 +3860,11 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 		}
 	}
 
-	if (compileContext->curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt)
+	if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt)
 		compileContext->_insertIns(
 			Opcode::MOV,
-			compileContext->curMajorContext.curMinorContext.evalDest,
+			compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest,
 			{ std::make_shared<RegRefNode>(resultRegIndex) });
 
-	compileContext->curMajorContext.curMinorContext.evaluatedType = resultType;
+	compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = resultType;
 }

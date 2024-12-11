@@ -30,7 +30,7 @@ namespace slake {
 
 	class InternalExceptionPointer {
 	private:
-		InternalException *_ptr;
+		InternalException *_ptr = nullptr;
 
 	public:
 		SLAKE_FORCEINLINE InternalExceptionPointer() noexcept = default;
@@ -45,11 +45,11 @@ namespace slake {
 		InternalExceptionPointer(const InternalExceptionPointer &) = delete;
 		InternalExceptionPointer &operator=(const InternalExceptionPointer &) = delete;
 		SLAKE_FORCEINLINE InternalExceptionPointer(InternalExceptionPointer &&other) noexcept {
-			_ptr = std::move(other._ptr);
+			_ptr = other._ptr;
 			other._ptr = nullptr;
 		}
 		SLAKE_FORCEINLINE InternalExceptionPointer &operator=(InternalExceptionPointer &&other) noexcept {
-			_ptr = std::move(other._ptr);
+			_ptr = other._ptr;
 			other._ptr = nullptr;
 			return *this;
 		}
@@ -86,6 +86,8 @@ namespace slake {
 			return _ptr;
 		}
 	};
+
+	constexpr bool isStatic = std::is_trivially_copyable_v<InternalExceptionPointer>;
 }
 
 #define SLAKE_UNWRAP_EXCEPT(expr) (expr).unwrap()

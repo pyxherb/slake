@@ -18,8 +18,13 @@ namespace slake {
 
 	class FnObject;
 
-	CodePage* genCodePage(size_t size);
-	CodePage *compileRegularFn(RegularFnOverloadingObject* fn);
+	struct JITCompilerOptions {
+		SLAKE_FORCEINLINE JITCompilerOptions() {
+		}
+	};
+
+	CodePage *genCodePage(size_t size);
+	InternalExceptionPointer compileRegularFn(RegularFnOverloadingObject *fn, const JITCompilerOptions &options);
 }
 
 #endif

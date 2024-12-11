@@ -21,7 +21,7 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 
 #if SLKC_WITH_LANGUAGE_SERVER
 			updateTokenInfo(s->idxSemicolonToken, [this, &compileContext](TokenInfo &tokenInfo) {
-				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curMajorContext);
+				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curCollectiveContext.curMajorContext);
 				tokenInfo.completionContext = CompletionContext::Stmt;
 			});
 #endif
@@ -33,13 +33,13 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 			for (auto &i : s->varDefs) {
 #if SLKC_WITH_LANGUAGE_SERVER
 				updateTokenInfo(i.second.idxNameToken, [this, &compileContext](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curMajorContext);
+					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curCollectiveContext.curMajorContext);
 					tokenInfo.semanticType = SemanticType::Var;
 					tokenInfo.completionContext = CompletionContext::Name;
 				});
 
 				updateTokenInfo(i.second.idxColonToken, [this, &compileContext](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curMajorContext);
+					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curCollectiveContext.curMajorContext);
 					tokenInfo.completionContext = CompletionContext::Type;
 				});
 
@@ -47,7 +47,7 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 					updateCompletionContext(i.second.type, CompletionContext::Type);
 #endif
 
-				if (compileContext->curMajorContext.curMinorContext.localVars.count(i.first))
+				if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.localVars.count(i.first))
 					throw FatalCompilationError(
 						{ tokenRangeToSourceLocation(i.second.tokenRange),
 							MessageType::Error,
@@ -57,7 +57,7 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 
 				uint32_t index = compileContext->allocLocalVar(i.first, varType);
 
-				compileContext->curMajorContext.curMinorContext.expectedType = varType;
+				compileContext->curCollectiveContext.curMajorContext.curMinorContext.expectedType = varType;
 				if (isLValueType(varType)) {
 					if (!i.second.initValue) {
 						throw FatalCompilationError(
@@ -146,22 +146,22 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 			break;
 		}
 		case StmtType::Break:
-			if (compileContext->curMajorContext.curMinorContext.breakLabel.empty())
+			if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.breakLabel.empty())
 				throw FatalCompilationError({ tokenRangeToSourceLocation(stmt->tokenRange), MessageType::Error, "Unexpected break statement" });
 
-			if (compileContext->curMajorContext.curMinorContext.breakScopeLevel < compileContext->curMajorContext.curScopeLevel)
+			if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.breakScopeLevel < compileContext->curCollectiveContext.curMajorContext.curScopeLevel)
 				compileContext->_insertIns(
 					Opcode::LEAVE,
 					{},
-					{ std::make_shared<U32LiteralExprNode>(compileContext->curMajorContext.curScopeLevel - compileContext->curMajorContext.curMinorContext.breakScopeLevel) });
+					{ std::make_shared<U32LiteralExprNode>(compileContext->curCollectiveContext.curMajorContext.curScopeLevel - compileContext->curCollectiveContext.curMajorContext.curMinorContext.breakScopeLevel) });
 
-			compileContext->_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(compileContext->curMajorContext.curMinorContext.breakLabel) });
+			compileContext->_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(compileContext->curCollectiveContext.curMajorContext.curMinorContext.breakLabel) });
 			break;
 		case StmtType::Continue:
-			if (compileContext->curMajorContext.curMinorContext.continueLabel.size())
+			if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.continueLabel.size())
 				throw FatalCompilationError({ tokenRangeToSourceLocation(stmt->tokenRange), MessageType::Error, "Unexpected continue statement" });
 
-			compileContext->_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(compileContext->curMajorContext.curMinorContext.continueLabel) });
+			compileContext->_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(compileContext->curCollectiveContext.curMajorContext.curMinorContext.continueLabel) });
 			break;
 		case StmtType::For: {
 			auto s = std::static_pointer_cast<ForStmtNode>(stmt);
@@ -172,10 +172,10 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 
 			compileContext->pushMinorContext();
 
-			compileContext->curMajorContext.curMinorContext.breakScopeLevel = compileContext->curMajorContext.curScopeLevel;
-			compileContext->curMajorContext.curMinorContext.continueScopeLevel = compileContext->curMajorContext.curScopeLevel;
-			compileContext->curMajorContext.curMinorContext.breakLabel = endLabel;
-			compileContext->curMajorContext.curMinorContext.continueLabel = beginLabel;
+			compileContext->curCollectiveContext.curMajorContext.curMinorContext.breakScopeLevel = compileContext->curCollectiveContext.curMajorContext.curScopeLevel;
+			compileContext->curCollectiveContext.curMajorContext.curMinorContext.continueScopeLevel = compileContext->curCollectiveContext.curMajorContext.curScopeLevel;
+			compileContext->curCollectiveContext.curMajorContext.curMinorContext.breakLabel = endLabel;
+			compileContext->curCollectiveContext.curMajorContext.curMinorContext.continueLabel = beginLabel;
 
 			compileContext->_insertIns(Opcode::ENTER, {}, {});
 			compileStmt(compileContext, s->varDefs);
@@ -227,7 +227,7 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 
 #if SLKC_WITH_LANGUAGE_SERVER
 			updateTokenInfo(s->idxLParentheseToken, [this, &compileContext](TokenInfo &tokenInfo) {
-				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curMajorContext);
+				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curCollectiveContext.curMajorContext);
 				tokenInfo.semanticType = SemanticType::Keyword;
 				tokenInfo.completionContext = CompletionContext::Expr;
 			});
@@ -239,10 +239,10 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 
 			compileContext->pushMinorContext();
 
-			compileContext->curMajorContext.curMinorContext.breakScopeLevel = compileContext->curMajorContext.curScopeLevel;
-			compileContext->curMajorContext.curMinorContext.continueScopeLevel = compileContext->curMajorContext.curScopeLevel;
-			compileContext->curMajorContext.curMinorContext.breakLabel = endLabel;
-			compileContext->curMajorContext.curMinorContext.continueLabel = beginLabel;
+			compileContext->curCollectiveContext.curMajorContext.curMinorContext.breakScopeLevel = compileContext->curCollectiveContext.curMajorContext.curScopeLevel;
+			compileContext->curCollectiveContext.curMajorContext.curMinorContext.continueScopeLevel = compileContext->curCollectiveContext.curMajorContext.curScopeLevel;
+			compileContext->curCollectiveContext.curMajorContext.curMinorContext.breakLabel = endLabel;
+			compileContext->curCollectiveContext.curMajorContext.curMinorContext.continueLabel = beginLabel;
 
 			compileContext->_insertLabel(beginLabel);
 
@@ -283,7 +283,7 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 
 #if SLKC_WITH_LANGUAGE_SERVER
 			updateTokenInfo(s->idxReturnToken, [this, &compileContext](TokenInfo &tokenInfo) {
-				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curMajorContext);
+				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curCollectiveContext.curMajorContext);
 				tokenInfo.semanticType = SemanticType::Keyword;
 				tokenInfo.completionContext = CompletionContext::Expr;
 			});
@@ -470,8 +470,8 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 
 			compileContext->pushMinorContext();
 
-			compileContext->curMajorContext.curMinorContext.breakScopeLevel = compileContext->curMajorContext.curScopeLevel;
-			compileContext->curMajorContext.curMinorContext.breakLabel = endLabel;
+			compileContext->curCollectiveContext.curMajorContext.curMinorContext.breakScopeLevel = compileContext->curCollectiveContext.curMajorContext.curScopeLevel;
+			compileContext->curCollectiveContext.curMajorContext.curMinorContext.breakLabel = endLabel;
 
 			uint32_t matcheeRegIndex = compileContext->allocReg();
 			uint32_t conditionRegIndex = compileContext->allocReg();
@@ -528,9 +528,9 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 
 			compileContext->pushMajorContext();
 
-			if (compileContext->curMajorContext.curScopeLevel)
+			if (compileContext->curCollectiveContext.curMajorContext.curScopeLevel)
 				compileContext->_insertIns(Opcode::ENTER, {}, {});
-			++compileContext->curMajorContext.curScopeLevel;
+			++compileContext->curCollectiveContext.curMajorContext.curScopeLevel;
 
 			for (auto i : s->body.stmts) {
 				try {
@@ -542,8 +542,8 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 				}
 			}
 
-			--compileContext->curMajorContext.curScopeLevel;
-			if (compileContext->curMajorContext.curScopeLevel)
+			--compileContext->curCollectiveContext.curMajorContext.curScopeLevel;
+			if (compileContext->curCollectiveContext.curMajorContext.curScopeLevel)
 				compileContext->_insertIns(Opcode::LEAVE, {}, {});
 
 			compileContext->popMajorContext();

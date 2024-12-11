@@ -169,13 +169,13 @@ InternalExceptionPointer slake::opti::evalConstValue(
 
 			constValueOut = analyzeContext.analyzedInfoOut.analyzedRegInfo[idxReg].expectedValue;
 			break;
-		}
+		} /*
 		case ValueType::VarRef: {
 			VarRef varRef = value.getVarRef();
 
 			SLAKE_RETURN_IF_EXCEPT(varRef.varPtr->getData(varRef.context, constValueOut));
 			break;
-		}
+		}*/
 		default:
 			constValueOut = Value();
 	}
@@ -338,7 +338,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					}
 
 					uint32_t callTargetRegIndex = curIns.operands[0].getRegIndex();
-					Type type = analyzeContext.analyzedInfoOut.analyzedRegInfo[callTargetRegIndex].type;
+					Type type = analyzeContext.analyzedInfoOut.analyzedRegInfo.at(callTargetRegIndex).type;
 
 					switch (type.typeId) {
 						case TypeId::Instance: {

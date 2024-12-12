@@ -3,6 +3,7 @@
 
 #include "emitters/add.h"
 #include "emitters/sub.h"
+#include "emitters/mul.h"
 #include "emitters/mov.h"
 #include "emitters/stackop.h"
 

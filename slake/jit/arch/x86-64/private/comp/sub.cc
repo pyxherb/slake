@@ -1,11 +1,11 @@
-#include "arithm.h"
+#include "sub.h"
 
 using namespace slake;
 using namespace slake::jit;
 using namespace slake::jit::x86_64;
 
 template <typename T>
-void compileIntAddInstruction(
+void compileIntSubInstruction(
 	JITCompileContext &compileContext,
 	const Instruction &curIns,
 	const Value &lhsExpectedValue,
@@ -78,24 +78,24 @@ void compileIntAddInstruction(
 
 		if constexpr (std::is_same_v<T, int8_t>) {
 			int8_t rhsData = curIns.operands[1].getI8();
-			compileContext.pushIns(emitAddImm8ToReg8Ins(lhsRegId, (uint8_t *)&rhsData));
+			compileContext.pushIns(emitSubImm8ToReg8Ins(lhsRegId, (uint8_t *)&rhsData));
 		} else if constexpr (std::is_same_v<T, int16_t>) {
 			int16_t rhsData = curIns.operands[1].getI16();
-			compileContext.pushIns(emitAddImm16ToReg16Ins(lhsRegId, (uint8_t *)&rhsData));
+			compileContext.pushIns(emitSubImm16ToReg16Ins(lhsRegId, (uint8_t *)&rhsData));
 		} else if constexpr (std::is_same_v<T, int32_t>) {
 			int32_t rhsData = curIns.operands[1].getI32();
-			compileContext.pushIns(emitAddImm32ToReg32Ins(lhsRegId, (uint8_t *)&rhsData));
+			compileContext.pushIns(emitSubImm32ToReg32Ins(lhsRegId, (uint8_t *)&rhsData));
 		} else if constexpr (std::is_same_v<T, int64_t>) {
 			// TODO: Implement it with 32-bit operands.
 		} else if constexpr (std::is_same_v<T, uint8_t>) {
 			uint8_t rhsData = curIns.operands[1].getU8();
-			compileContext.pushIns(emitAddImm8ToReg8Ins(lhsRegId, (uint8_t *)&rhsData));
+			compileContext.pushIns(emitSubImm8ToReg8Ins(lhsRegId, (uint8_t *)&rhsData));
 		} else if constexpr (std::is_same_v<T, uint16_t>) {
 			uint16_t rhsData = curIns.operands[1].getU16();
-			compileContext.pushIns(emitAddImm16ToReg16Ins(lhsRegId, (uint8_t *)&rhsData));
+			compileContext.pushIns(emitSubImm16ToReg16Ins(lhsRegId, (uint8_t *)&rhsData));
 		} else if constexpr (std::is_same_v<T, uint32_t>) {
 			uint32_t rhsData = curIns.operands[1].getU32();
-			compileContext.pushIns(emitAddImm32ToReg32Ins(lhsRegId, (uint8_t *)&rhsData));
+			compileContext.pushIns(emitSubImm32ToReg32Ins(lhsRegId, (uint8_t *)&rhsData));
 		} else if constexpr (std::is_same_v<T, uint64_t>) {
 			// TODO: Implement it with 32-bit operands.
 		} else {
@@ -168,24 +168,24 @@ void compileIntAddInstruction(
 
 			if constexpr (std::is_same_v<T, int8_t>) {
 				int8_t lhsData = curIns.operands[1].getI8();
-				compileContext.pushIns(emitAddImm8ToReg8Ins(rhsRegId, (uint8_t *)&lhsData));
+				compileContext.pushIns(emitSubImm8ToReg8Ins(rhsRegId, (uint8_t *)&lhsData));
 			} else if constexpr (std::is_same_v<T, int16_t>) {
 				int16_t lhsData = curIns.operands[1].getI16();
-				compileContext.pushIns(emitAddImm16ToReg16Ins(rhsRegId, (uint8_t *)&lhsData));
+				compileContext.pushIns(emitSubImm16ToReg16Ins(rhsRegId, (uint8_t *)&lhsData));
 			} else if constexpr (std::is_same_v<T, int32_t>) {
 				int32_t lhsData = curIns.operands[1].getI32();
-				compileContext.pushIns(emitAddImm32ToReg32Ins(rhsRegId, (uint8_t *)&lhsData));
+				compileContext.pushIns(emitSubImm32ToReg32Ins(rhsRegId, (uint8_t *)&lhsData));
 			} else if constexpr (std::is_same_v<T, int64_t>) {
 				// TODO: Implement it with 32-bit operands.
 			} else if constexpr (std::is_same_v<T, uint8_t>) {
 				uint8_t lhsData = curIns.operands[1].getU8();
-				compileContext.pushIns(emitAddImm8ToReg8Ins(rhsRegId, (uint8_t *)&lhsData));
+				compileContext.pushIns(emitSubImm8ToReg8Ins(rhsRegId, (uint8_t *)&lhsData));
 			} else if constexpr (std::is_same_v<T, uint16_t>) {
 				uint16_t lhsData = curIns.operands[1].getU16();
-				compileContext.pushIns(emitAddImm16ToReg16Ins(rhsRegId, (uint8_t *)&lhsData));
+				compileContext.pushIns(emitSubImm16ToReg16Ins(rhsRegId, (uint8_t *)&lhsData));
 			} else if constexpr (std::is_same_v<T, uint32_t>) {
 				uint32_t lhsData = curIns.operands[1].getU32();
-				compileContext.pushIns(emitAddImm32ToReg32Ins(rhsRegId, (uint8_t *)&lhsData));
+				compileContext.pushIns(emitSubImm32ToReg32Ins(rhsRegId, (uint8_t *)&lhsData));
 			} else if constexpr (std::is_same_v<T, uint64_t>) {
 				// TODO: Implement it with 32-bit operands.
 			} else {
@@ -257,32 +257,32 @@ void compileIntAddInstruction(
 			if (rhsVregState.saveOffset != INT32_MIN) {
 				if constexpr (std::is_same_v<T, int8_t> || std::is_same_v<T, uint8_t>) {
 					compileContext.pushIns(
-						emitAddMemToReg8Ins(lhsRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
+						emitSubMemToReg8Ins(lhsRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
 				} else if constexpr (std::is_same_v<T, int16_t> || std::is_same_v<T, uint16_t>) {
 					compileContext.pushIns(
-						emitAddMemToReg16Ins(lhsRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
+						emitSubMemToReg16Ins(lhsRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
 				} else if constexpr (std::is_same_v<T, int32_t> || std::is_same_v<T, uint32_t>) {
 					compileContext.pushIns(
-						emitAddMemToReg32Ins(lhsRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
+						emitSubMemToReg32Ins(lhsRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
 				} else if constexpr (std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t>) {
 					compileContext.pushIns(
-						emitAddMemToReg64Ins(lhsRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
+						emitSubMemToReg64Ins(lhsRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
 				} else {
 					static_assert((false, "Invalid operand type"));
 				}
 			} else {
 				if constexpr (std::is_same_v<T, int8_t> || std::is_same_v<T, uint8_t>) {
 					compileContext.pushIns(
-						emitAddReg8ToReg8Ins(lhsRegId, rhsVregState.phyReg));
+						emitSubReg8ToReg8Ins(lhsRegId, rhsVregState.phyReg));
 				} else if constexpr (std::is_same_v<T, int16_t> || std::is_same_v<T, uint16_t>) {
 					compileContext.pushIns(
-						emitAddReg16ToReg16Ins(lhsRegId, rhsVregState.phyReg));
+						emitSubReg16ToReg16Ins(lhsRegId, rhsVregState.phyReg));
 				} else if constexpr (std::is_same_v<T, int32_t> || std::is_same_v<T, uint32_t>) {
 					compileContext.pushIns(
-						emitAddReg32ToReg32Ins(lhsRegId, rhsVregState.phyReg));
+						emitSubReg32ToReg32Ins(lhsRegId, rhsVregState.phyReg));
 				} else if constexpr (std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t>) {
 					compileContext.pushIns(
-						emitAddReg64ToReg64Ins(lhsRegId, rhsVregState.phyReg));
+						emitSubReg64ToReg64Ins(lhsRegId, rhsVregState.phyReg));
 				} else {
 					static_assert((false, "Invalid operand type"));
 				}
@@ -294,7 +294,7 @@ void compileIntAddInstruction(
 }
 
 template <typename T>
-void compileFpAddInstruction(
+void compileFpSubInstruction(
 	JITCompileContext &compileContext,
 	const Instruction &curIns,
 	const Value &lhsExpectedValue,
@@ -336,7 +336,7 @@ void compileFpAddInstruction(
 			} else if constexpr (sizeof(T) == sizeof(double)) {
 				compileContext.pushIns(
 					emitMovqRegXmmToRegXmmIns(
-						lhsRegId,
+						lhsXmmRegId,
 						lhsVregState.phyReg));
 			} else {
 				static_assert((false, "Invalid operand size"));
@@ -360,7 +360,7 @@ void compileFpAddInstruction(
 
 			compileContext.pushIns(emitMovImm32ToReg32Ins(tmpGpRegId, (uint8_t *)&rhsData));
 			compileContext.pushIns(emitMovdReg32ToRegXmmIns(tmpXmmRegId, tmpGpRegId));
-			compileContext.pushIns(emitAddssRegXmmToRegXmmIns(lhsXmmRegId, tmpXmmRegId));
+			compileContext.pushIns(emitSubssRegXmmToRegXmmIns(lhsXmmRegId, tmpXmmRegId));
 
 			if (tmpGpOff != INT32_MIN) {
 				compileContext.popReg(tmpGpRegId, tmpGpOff, tmpGpSize);
@@ -383,7 +383,7 @@ void compileFpAddInstruction(
 
 			compileContext.pushIns(emitMovImm64ToReg64Ins(tmpGpRegId, (uint8_t *)&rhsData));
 			compileContext.pushIns(emitMovqReg64ToRegXmmIns(tmpXmmRegId, tmpGpRegId));
-			compileContext.pushIns(emitAddsdRegXmmToRegXmmIns(lhsXmmRegId, tmpXmmRegId));
+			compileContext.pushIns(emitSubsdRegXmmToRegXmmIns(lhsXmmRegId, tmpXmmRegId));
 
 			if (tmpGpOff != INT32_MIN) {
 				compileContext.popReg(tmpGpRegId, tmpGpOff, tmpGpSize);
@@ -429,7 +429,7 @@ void compileFpAddInstruction(
 				} else if constexpr (sizeof(T) == sizeof(double)) {
 					compileContext.pushIns(
 						emitMovqRegXmmToRegXmmIns(
-							rhsRegId,
+							rhsXmmRegId,
 							rhsVregState.phyReg));
 				} else {
 					static_assert((false, "Invalid operand size"));
@@ -453,7 +453,7 @@ void compileFpAddInstruction(
 
 				compileContext.pushIns(emitMovImm32ToReg32Ins(tmpGpRegId, (uint8_t *)&lhsData));
 				compileContext.pushIns(emitMovdReg32ToRegXmmIns(tmpXmmRegId, tmpGpRegId));
-				compileContext.pushIns(emitAddssRegXmmToRegXmmIns(rhsXmmRegId, tmpXmmRegId));
+				compileContext.pushIns(emitSubssRegXmmToRegXmmIns(rhsXmmRegId, tmpXmmRegId));
 
 				if (tmpGpOff != INT32_MIN) {
 					compileContext.popReg(tmpGpRegId, tmpGpOff, tmpGpSize);
@@ -476,7 +476,7 @@ void compileFpAddInstruction(
 
 				compileContext.pushIns(emitMovImm64ToReg64Ins(tmpGpRegId, (uint8_t *)&lhsData));
 				compileContext.pushIns(emitMovqReg64ToRegXmmIns(tmpXmmRegId, tmpGpRegId));
-				compileContext.pushIns(emitAddsdRegXmmToRegXmmIns(rhsXmmRegId, tmpXmmRegId));
+				compileContext.pushIns(emitSubsdRegXmmToRegXmmIns(rhsXmmRegId, tmpXmmRegId));
 
 				if (tmpGpOff != INT32_MIN) {
 					compileContext.popReg(tmpGpRegId, tmpGpOff, tmpGpSize);
@@ -510,21 +510,21 @@ void compileFpAddInstruction(
 					compileContext.pushIns(emitMovdMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 }));
 
 					if (rhsVregState.saveOffset != INT32_MIN) {
-						compileContext.pushIns(emitAddssMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
+						compileContext.pushIns(emitSubssMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
 					} else {
 						RegisterId rhsXmmRegId = rhsVregState.phyReg;
 
-						compileContext.pushIns(emitAddssRegXmmToRegXmmIns(lhsXmmRegId, rhsXmmRegId));
+						compileContext.pushIns(emitSubssRegXmmToRegXmmIns(lhsXmmRegId, rhsXmmRegId));
 					}
 				} else {
 					compileContext.pushIns(emitMovqRegXmmToRegXmmIns(lhsXmmRegId, lhsVregState.phyReg));
 
 					if (rhsVregState.saveOffset != INT32_MIN) {
-						compileContext.pushIns(emitAddssMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
+						compileContext.pushIns(emitSubssMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
 					} else {
 						RegisterId rhsXmmRegId = rhsVregState.phyReg;
 
-						compileContext.pushIns(emitAddssRegXmmToRegXmmIns(lhsXmmRegId, rhsXmmRegId));
+						compileContext.pushIns(emitSubssRegXmmToRegXmmIns(lhsXmmRegId, rhsXmmRegId));
 					}
 				}
 			} else if constexpr (std::is_same_v<T, double>) {
@@ -532,21 +532,21 @@ void compileFpAddInstruction(
 					compileContext.pushIns(emitMovqMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 }));
 
 					if (rhsVregState.saveOffset != INT32_MIN) {
-						compileContext.pushIns(emitAddsdMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
+						compileContext.pushIns(emitSubsdMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
 					} else {
 						RegisterId rhsXmmRegId = rhsVregState.phyReg;
 
-						compileContext.pushIns(emitAddsdRegXmmToRegXmmIns(lhsXmmRegId, rhsXmmRegId));
+						compileContext.pushIns(emitSubsdRegXmmToRegXmmIns(lhsXmmRegId, rhsXmmRegId));
 					}
 				} else {
 					compileContext.pushIns(emitMovqRegXmmToRegXmmIns(lhsXmmRegId, lhsVregState.phyReg));
 
 					if (rhsVregState.saveOffset != INT32_MIN) {
-						compileContext.pushIns(emitAddsdMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
+						compileContext.pushIns(emitSubsdMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
 					} else {
 						RegisterId rhsXmmRegId = rhsVregState.phyReg;
 
-						compileContext.pushIns(emitAddsdRegXmmToRegXmmIns(lhsXmmRegId, rhsXmmRegId));
+						compileContext.pushIns(emitSubsdRegXmmToRegXmmIns(lhsXmmRegId, rhsXmmRegId));
 					}
 				}
 			} else {
@@ -556,7 +556,7 @@ void compileFpAddInstruction(
 	}
 }
 
-InternalExceptionPointer slake::jit::x86_64::compileAddInstruction(
+InternalExceptionPointer slake::jit::x86_64::compileSubInstruction(
 	JITCompileContext &compileContext,
 	opti::ProgramAnalyzedInfo &analyzedInfo,
 	size_t offIns,
@@ -615,7 +615,7 @@ InternalExceptionPointer slake::jit::x86_64::compileAddInstruction(
 			case TypeId::Value: {
 				switch (outputRegInfo.type.getValueTypeExData()) {
 					case ValueType::I8: {
-						compileIntAddInstruction<int8_t>(
+						compileIntSubInstruction<int8_t>(
 							compileContext,
 							curIns,
 							lhsExpectedValue,
@@ -623,7 +623,7 @@ InternalExceptionPointer slake::jit::x86_64::compileAddInstruction(
 						break;
 					}
 					case ValueType::I16: {
-						compileIntAddInstruction<int16_t>(
+						compileIntSubInstruction<int16_t>(
 							compileContext,
 							curIns,
 							lhsExpectedValue,
@@ -631,7 +631,7 @@ InternalExceptionPointer slake::jit::x86_64::compileAddInstruction(
 						break;
 					}
 					case ValueType::I32: {
-						compileIntAddInstruction<int32_t>(
+						compileIntSubInstruction<int32_t>(
 							compileContext,
 							curIns,
 							lhsExpectedValue,
@@ -639,7 +639,7 @@ InternalExceptionPointer slake::jit::x86_64::compileAddInstruction(
 						break;
 					}
 					case ValueType::I64: {
-						compileIntAddInstruction<int64_t>(
+						compileIntSubInstruction<int64_t>(
 							compileContext,
 							curIns,
 							lhsExpectedValue,
@@ -647,7 +647,7 @@ InternalExceptionPointer slake::jit::x86_64::compileAddInstruction(
 						break;
 					}
 					case ValueType::U8: {
-						compileIntAddInstruction<uint8_t>(
+						compileIntSubInstruction<uint8_t>(
 							compileContext,
 							curIns,
 							lhsExpectedValue,
@@ -655,7 +655,7 @@ InternalExceptionPointer slake::jit::x86_64::compileAddInstruction(
 						break;
 					}
 					case ValueType::U16: {
-						compileIntAddInstruction<uint16_t>(
+						compileIntSubInstruction<uint16_t>(
 							compileContext,
 							curIns,
 							lhsExpectedValue,
@@ -663,7 +663,7 @@ InternalExceptionPointer slake::jit::x86_64::compileAddInstruction(
 						break;
 					}
 					case ValueType::U32: {
-						compileIntAddInstruction<uint32_t>(
+						compileIntSubInstruction<uint32_t>(
 							compileContext,
 							curIns,
 							lhsExpectedValue,
@@ -671,7 +671,7 @@ InternalExceptionPointer slake::jit::x86_64::compileAddInstruction(
 						break;
 					}
 					case ValueType::U64: {
-						compileIntAddInstruction<uint64_t>(
+						compileIntSubInstruction<uint64_t>(
 							compileContext,
 							curIns,
 							lhsExpectedValue,
@@ -679,7 +679,7 @@ InternalExceptionPointer slake::jit::x86_64::compileAddInstruction(
 						break;
 					}
 					case ValueType::F32: {
-						compileIntAddInstruction<float>(
+						compileFpSubInstruction<float>(
 							compileContext,
 							curIns,
 							lhsExpectedValue,
@@ -687,13 +687,15 @@ InternalExceptionPointer slake::jit::x86_64::compileAddInstruction(
 						break;
 					}
 					case ValueType::F64: {
-						compileIntAddInstruction<double>(
+						compileFpSubInstruction<double>(
 							compileContext,
 							curIns,
 							lhsExpectedValue,
 							rhsExpectedValue);
 						break;
 					}
+					default:
+						assert(("The function is malformed", false));
 				}
 				break;
 			}
@@ -703,4 +705,6 @@ InternalExceptionPointer slake::jit::x86_64::compileAddInstruction(
 	} else {
 		// The instruction is omitttable, do nothing.
 	}
+
+	return {};
 }

@@ -5,7 +5,8 @@
 #include <slake/opti/proganal.h>
 
 #include "emitters.h"
-#include "comp/arithm.h"
+#include "comp/add.h"
+#include "comp/sub.h"
 
 using namespace slake;
 using namespace slake::jit;
@@ -117,6 +118,10 @@ InternalExceptionPointer compileInstruction(
 		}
 		case Opcode::ADD: {
 			SLAKE_RETURN_IF_EXCEPT(compileAddInstruction(compileContext, analyzedInfo, offIns, curIns));
+			break;
+		}
+		case Opcode::SUB: {
+			SLAKE_RETURN_IF_EXCEPT(compileSubInstruction(compileContext, analyzedInfo, offIns, curIns));
 			break;
 		}
 		case Opcode::MOV: {

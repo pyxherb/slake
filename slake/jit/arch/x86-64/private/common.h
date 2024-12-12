@@ -1,9 +1,7 @@
 #ifndef _SLAKE_JIT_ARCH_X86_64_PRIVATE_COMMON_H_
 #define _SLAKE_JIT_ARCH_X86_64_PRIVATE_COMMON_H_
 
-#include "emitters/add.h"
-#include "emitters/sub.h"
-#include "emitters/mov.h"
+#include "emitters.h"
 
 namespace slake {
 	namespace jit {
@@ -293,7 +291,7 @@ namespace slake {
 			typedef void (*JITCompiledFnPtr)(JITExecContext *execContext);
 
 			void loadInsWrapper(
-				JITExecContext *rt,
+				JITExecContext *context,
 				IdRefObject *idRefObject,
 				Value *regOut,
 				InternalException **internalExceptionOut);

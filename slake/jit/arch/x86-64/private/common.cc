@@ -1,4 +1,6 @@
 #include "common.h"
+#include "../context.h"
+#include <slake/runtime.h>
 
 using namespace slake;
 using namespace slake::jit;
@@ -129,5 +131,27 @@ SLAKE_API void JITCompileContext::stackFree(int32_t saveOffset, size_t size) {
 			leftNeighbor->second += selfIt->second;
 			freeStackSpaces.erase(selfIt);
 		}
+	}
+}
+
+void slake::jit::x86_64::loadInsWrapper(
+	JITExecContext* context,
+	IdRefObject* idRefObject,
+	Value* regOut,
+	InternalException** internalExceptionOut) {
+	VarRefContext varRefContext;
+	Object *object;
+	InternalExceptionPointer e = context->runtime->resolveIdRef(idRefObject, &varRefContext, object, nullptr);
+	if (e) {
+		*internalExceptionOut = e.get();
+		e.reset();
+		return;
+	}
+	switch (object->getKind()) {
+		case ObjectKind::Var:
+			*regOut = Value(VarRef((VarObject *)object, varRefContext));
+			break;
+		default:
+			*regOut = Value(object);
 	}
 }

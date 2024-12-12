@@ -360,7 +360,7 @@ void compileFpAddInstruction(
 
 			compileContext.pushIns(emitMovImm32ToReg32Ins(tmpGpRegId, (uint8_t *)&rhsData));
 			compileContext.pushIns(emitMovdReg32ToRegXmmIns(tmpXmmRegId, tmpGpRegId));
-			compileContext.pushIns(emitAddssXmmRegToXmmRegIns(lhsXmmRegId, tmpXmmRegId));
+			compileContext.pushIns(emitAddssRegXmmToRegXmmIns(lhsXmmRegId, tmpXmmRegId));
 
 			if (tmpGpOff != INT32_MIN) {
 				compileContext.popReg(tmpGpRegId, tmpGpOff, tmpGpSize);
@@ -383,7 +383,7 @@ void compileFpAddInstruction(
 
 			compileContext.pushIns(emitMovImm64ToReg64Ins(tmpGpRegId, (uint8_t *)&rhsData));
 			compileContext.pushIns(emitMovqReg64ToRegXmmIns(tmpXmmRegId, tmpGpRegId));
-			compileContext.pushIns(emitAddsdXmmRegToXmmRegIns(lhsXmmRegId, tmpXmmRegId));
+			compileContext.pushIns(emitAddsdRegXmmToRegXmmIns(lhsXmmRegId, tmpXmmRegId));
 
 			if (tmpGpOff != INT32_MIN) {
 				compileContext.popReg(tmpGpRegId, tmpGpOff, tmpGpSize);
@@ -453,7 +453,7 @@ void compileFpAddInstruction(
 
 				compileContext.pushIns(emitMovImm32ToReg32Ins(tmpGpRegId, (uint8_t *)&lhsData));
 				compileContext.pushIns(emitMovdReg32ToRegXmmIns(tmpXmmRegId, tmpGpRegId));
-				compileContext.pushIns(emitAddssXmmRegToXmmRegIns(rhsXmmRegId, tmpXmmRegId));
+				compileContext.pushIns(emitAddssRegXmmToRegXmmIns(rhsXmmRegId, tmpXmmRegId));
 
 				if (tmpGpOff != INT32_MIN) {
 					compileContext.popReg(tmpGpRegId, tmpGpOff, tmpGpSize);
@@ -476,7 +476,7 @@ void compileFpAddInstruction(
 
 				compileContext.pushIns(emitMovImm64ToReg64Ins(tmpGpRegId, (uint8_t *)&lhsData));
 				compileContext.pushIns(emitMovqReg64ToRegXmmIns(tmpXmmRegId, tmpGpRegId));
-				compileContext.pushIns(emitAddsdXmmRegToXmmRegIns(rhsXmmRegId, tmpXmmRegId));
+				compileContext.pushIns(emitAddsdRegXmmToRegXmmIns(rhsXmmRegId, tmpXmmRegId));
 
 				if (tmpGpOff != INT32_MIN) {
 					compileContext.popReg(tmpGpRegId, tmpGpOff, tmpGpSize);
@@ -493,8 +493,7 @@ void compileFpAddInstruction(
 
 			VirtualRegState &lhsVregState = compileContext.virtualRegStates.at(lhsRegIndex);
 			VirtualRegState &rhsVregState = compileContext.virtualRegStates.at(rhsRegIndex);
-			const RegisterId lhsXmmRegId = compileContext.allocXmmReg(),
-							 rhsXmmRegId = rhsVregState.phyReg;
+			const RegisterId lhsXmmRegId = compileContext.allocXmmReg();
 			int32_t rhsOff = INT32_MIN;
 			size_t rhsSize;
 
@@ -503,42 +502,55 @@ void compileFpAddInstruction(
 				size_t size;
 				compileContext.pushRegXmm(lhsXmmRegId, off, size);
 			}
-			if (compileContext.isRegInUse(rhsXmmRegId)) {
-				compileContext.pushRegXmm(rhsXmmRegId, rhsOff, rhsSize);
-			}
 
 			VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsXmmRegId, sizeof(T));
 
 			if constexpr (std::is_same_v<T, float>) {
 				if (lhsVregState.saveOffset != INT32_MIN) {
 					compileContext.pushIns(emitMovdMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 }));
+
+					if (rhsVregState.saveOffset != INT32_MIN) {
+						compileContext.pushIns(emitAddssMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
+					} else {
+						RegisterId rhsXmmRegId = rhsVregState.phyReg;
+
+						compileContext.pushIns(emitAddssRegXmmToRegXmmIns(lhsXmmRegId, rhsXmmRegId));
+					}
 				} else {
 					compileContext.pushIns(emitMovqRegXmmToRegXmmIns(lhsXmmRegId, lhsVregState.phyReg));
+
+					if (rhsVregState.saveOffset != INT32_MIN) {
+						compileContext.pushIns(emitAddssMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
+					} else {
+						RegisterId rhsXmmRegId = rhsVregState.phyReg;
+
+						compileContext.pushIns(emitAddssRegXmmToRegXmmIns(lhsXmmRegId, rhsXmmRegId));
+					}
 				}
-				if (rhsVregState.saveOffset != INT32_MIN) {
-					compileContext.pushIns(emitMovdMemToRegXmmIns(rhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
-				} else {
-					compileContext.pushIns(emitMovqRegXmmToRegXmmIns(rhsXmmRegId, rhsVregState.phyReg));
-				}
-				compileContext.pushIns(emitAddssXmmRegToXmmRegIns(lhsXmmRegId, rhsXmmRegId));
 			} else if constexpr (std::is_same_v<T, double>) {
 				if (lhsVregState.saveOffset != INT32_MIN) {
 					compileContext.pushIns(emitMovqMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 }));
+
+					if (rhsVregState.saveOffset != INT32_MIN) {
+						compileContext.pushIns(emitAddsdMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
+					} else {
+						RegisterId rhsXmmRegId = rhsVregState.phyReg;
+
+						compileContext.pushIns(emitAddsdRegXmmToRegXmmIns(lhsXmmRegId, rhsXmmRegId));
+					}
 				} else {
 					compileContext.pushIns(emitMovqRegXmmToRegXmmIns(lhsXmmRegId, lhsVregState.phyReg));
+
+					if (rhsVregState.saveOffset != INT32_MIN) {
+						compileContext.pushIns(emitAddsdMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
+					} else {
+						RegisterId rhsXmmRegId = rhsVregState.phyReg;
+
+						compileContext.pushIns(emitAddsdRegXmmToRegXmmIns(lhsXmmRegId, rhsXmmRegId));
+					}
 				}
-				if (rhsVregState.saveOffset != INT32_MIN) {
-					compileContext.pushIns(emitMovqMemToRegXmmIns(rhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
-				} else {
-					compileContext.pushIns(emitMovqRegXmmToRegXmmIns(rhsXmmRegId, rhsVregState.phyReg));
-				}
-				compileContext.pushIns(emitAddsdXmmRegToXmmRegIns(lhsXmmRegId, rhsXmmRegId));
 			} else {
 				static_assert((false, "Invalid operand type"));
-			}
-
-			if (rhsOff != INT32_MIN) {
-				compileContext.popRegXmm(rhsXmmRegId, rhsOff, rhsSize);
 			}
 		}
 	}

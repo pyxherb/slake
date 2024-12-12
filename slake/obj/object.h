@@ -78,9 +78,6 @@ namespace slake {
 				ObjectGCStatus gcStatus;
 				Object *next;
 			} heapless;
-			struct {
-				ObjectGCStatus gcStatus;
-			} dfs;
 		} gcInfo;
 
 		Runtime *associatedRuntime;

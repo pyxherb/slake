@@ -18,8 +18,10 @@ namespace slake {
 			SLAKE_API DiscreteInstruction emitAddMemToReg16Ins(RegisterId srcRegisterId, const MemoryLocation &mem);
 			SLAKE_API DiscreteInstruction emitAddMemToReg32Ins(RegisterId srcRegisterId, const MemoryLocation &mem);
 			SLAKE_API DiscreteInstruction emitAddMemToReg64Ins(RegisterId srcRegisterId, const MemoryLocation &mem);
-			SLAKE_API DiscreteInstruction emitAddssXmmRegToXmmRegIns(RegisterId registerId, RegisterId srcRegisterId);
-			SLAKE_API DiscreteInstruction emitAddsdXmmRegToXmmRegIns(RegisterId registerId, RegisterId srcRegisterId);
+			SLAKE_API DiscreteInstruction emitAddssRegXmmToRegXmmIns(RegisterId registerId, RegisterId srcRegisterId);
+			SLAKE_API DiscreteInstruction emitAddssMemToRegXmmIns(RegisterId registerId, const MemoryLocation &mem);
+			SLAKE_API DiscreteInstruction emitAddsdRegXmmToRegXmmIns(RegisterId registerId, RegisterId srcRegisterId);
+			SLAKE_API DiscreteInstruction emitAddsdMemToRegXmmIns(RegisterId registerId, const MemoryLocation &mem);
 		}
 	}
 }

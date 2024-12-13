@@ -86,7 +86,26 @@ void compileIntAddInstruction(
 			int32_t rhsData = curIns.operands[1].getI32();
 			compileContext.pushIns(emitAddImm32ToReg32Ins(lhsRegId, (uint8_t *)&rhsData));
 		} else if constexpr (std::is_same_v<T, int64_t>) {
-			// TODO: Implement it with 32-bit operands.
+			int64_t rhsData = curIns.operands[1].getI64();
+
+			if (*((uint64_t*)&rhsData) & 0xffffffff00000000) {
+				compileContext.pushIns(emitAddImm32ToReg64Ins(lhsRegId, (uint8_t *)&rhsData));
+			} else {
+				RegisterId tmpGpRegId = compileContext.allocGpReg();
+
+				int32_t tmpGpRegSavedOff = INT32_MIN;
+				size_t tmpGpRegSavedSize;
+				if (compileContext.isRegInUse(tmpGpRegId)) {
+					compileContext.pushReg(tmpGpRegId, tmpGpRegSavedOff, tmpGpRegSavedSize);
+				}
+
+				compileContext.pushIns(emitMovImm64ToReg64Ins(tmpGpRegId, (uint8_t *)&rhsData));
+				compileContext.pushIns(emitAddReg64ToReg64Ins(lhsRegId, tmpGpRegId));
+
+				if (tmpGpRegSavedOff != INT32_MIN) {
+					compileContext.popReg(tmpGpRegId, tmpGpRegSavedOff, tmpGpRegSavedSize);
+				}
+			}
 		} else if constexpr (std::is_same_v<T, uint8_t>) {
 			uint8_t rhsData = curIns.operands[1].getU8();
 			compileContext.pushIns(emitAddImm8ToReg8Ins(lhsRegId, (uint8_t *)&rhsData));
@@ -97,7 +116,26 @@ void compileIntAddInstruction(
 			uint32_t rhsData = curIns.operands[1].getU32();
 			compileContext.pushIns(emitAddImm32ToReg32Ins(lhsRegId, (uint8_t *)&rhsData));
 		} else if constexpr (std::is_same_v<T, uint64_t>) {
-			// TODO: Implement it with 32-bit operands.
+			uint64_t rhsData = curIns.operands[1].getU64();
+
+			if (rhsData <= UINT32_MAX) {
+				compileContext.pushIns(emitAddImm32ToReg64Ins(lhsRegId, (uint8_t *)&rhsData));
+			} else {
+				RegisterId tmpGpRegId = compileContext.allocGpReg();
+
+				int32_t tmpGpRegSavedOff = INT32_MIN;
+				size_t tmpGpRegSavedSize;
+				if (compileContext.isRegInUse(tmpGpRegId)) {
+					compileContext.pushReg(tmpGpRegId, tmpGpRegSavedOff, tmpGpRegSavedSize);
+				}
+
+				compileContext.pushIns(emitMovImm64ToReg64Ins(tmpGpRegId, (uint8_t *)&rhsData));
+				compileContext.pushIns(emitAddReg64ToReg64Ins(lhsRegId, tmpGpRegId));
+
+				if (tmpGpRegSavedOff != INT32_MIN) {
+					compileContext.popReg(tmpGpRegId, tmpGpRegSavedOff, tmpGpRegSavedSize);
+				}
+			}
 		} else {
 			static_assert((false, "Invalid operand type"));
 		}
@@ -176,7 +214,26 @@ void compileIntAddInstruction(
 				int32_t lhsData = curIns.operands[1].getI32();
 				compileContext.pushIns(emitAddImm32ToReg32Ins(rhsRegId, (uint8_t *)&lhsData));
 			} else if constexpr (std::is_same_v<T, int64_t>) {
-				// TODO: Implement it with 32-bit operands.
+				int64_t lhsData = curIns.operands[1].getI64();
+
+				if (*((uint64_t *)&lhsData) & 0xffffffff00000000) {
+					compileContext.pushIns(emitAddImm32ToReg64Ins(rhsRegId, (uint8_t *)&lhsData));
+				} else {
+					RegisterId tmpGpRegId = compileContext.allocGpReg();
+
+					int32_t tmpGpRegSavedOff = INT32_MIN;
+					size_t tmpGpRegSavedSize;
+					if (compileContext.isRegInUse(tmpGpRegId)) {
+						compileContext.pushReg(tmpGpRegId, tmpGpRegSavedOff, tmpGpRegSavedSize);
+					}
+
+					compileContext.pushIns(emitMovImm64ToReg64Ins(tmpGpRegId, (uint8_t *)&lhsData));
+					compileContext.pushIns(emitAddReg64ToReg64Ins(rhsRegId, tmpGpRegId));
+
+					if (tmpGpRegSavedOff != INT32_MIN) {
+						compileContext.popReg(tmpGpRegId, tmpGpRegSavedOff, tmpGpRegSavedSize);
+					}
+				}
 			} else if constexpr (std::is_same_v<T, uint8_t>) {
 				uint8_t lhsData = curIns.operands[1].getU8();
 				compileContext.pushIns(emitAddImm8ToReg8Ins(rhsRegId, (uint8_t *)&lhsData));
@@ -187,7 +244,26 @@ void compileIntAddInstruction(
 				uint32_t lhsData = curIns.operands[1].getU32();
 				compileContext.pushIns(emitAddImm32ToReg32Ins(rhsRegId, (uint8_t *)&lhsData));
 			} else if constexpr (std::is_same_v<T, uint64_t>) {
-				// TODO: Implement it with 32-bit operands.
+				uint64_t lhsData = curIns.operands[1].getU64();
+
+				if (lhsData <= UINT32_MAX) {
+					compileContext.pushIns(emitAddImm32ToReg64Ins(rhsRegId, (uint8_t *)&lhsData));
+				} else {
+					RegisterId tmpGpRegId = compileContext.allocGpReg();
+
+					int32_t tmpGpRegSavedOff = INT32_MIN;
+					size_t tmpGpRegSavedSize;
+					if (compileContext.isRegInUse(tmpGpRegId)) {
+						compileContext.pushReg(tmpGpRegId, tmpGpRegSavedOff, tmpGpRegSavedSize);
+					}
+
+					compileContext.pushIns(emitMovImm64ToReg64Ins(tmpGpRegId, (uint8_t *)&lhsData));
+					compileContext.pushIns(emitAddReg64ToReg64Ins(rhsRegId, tmpGpRegId));
+
+					if (tmpGpRegSavedOff != INT32_MIN) {
+						compileContext.popReg(tmpGpRegId, tmpGpRegSavedOff, tmpGpRegSavedSize);
+					}
+				}
 			} else {
 				static_assert((false, "Invalid operand type"));
 			}

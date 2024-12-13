@@ -9,7 +9,9 @@ namespace slake {
 			SLAKE_API DiscreteInstruction emitAddImm8ToReg8Ins(RegisterId registerId, uint8_t imm0[1]);
 			SLAKE_API DiscreteInstruction emitAddImm16ToReg16Ins(RegisterId registerId, uint8_t imm0[2]);
 			SLAKE_API DiscreteInstruction emitAddImm32ToReg32Ins(RegisterId registerId, uint8_t imm0[4]);
+			SLAKE_API DiscreteInstruction emitAdcImm32ToReg32Ins(RegisterId registerId, uint8_t imm0[4]);
 			SLAKE_API DiscreteInstruction emitAddImm32ToReg64Ins(RegisterId registerId, uint8_t imm0[4]);
+			SLAKE_API DiscreteInstruction emitAdcImm32ToReg64Ins(RegisterId registerId, uint8_t imm0[4]);
 			SLAKE_API DiscreteInstruction emitAddReg8ToReg8Ins(RegisterId registerId, RegisterId srcRegisterId);
 			SLAKE_API DiscreteInstruction emitAddReg16ToReg16Ins(RegisterId registerId, RegisterId srcRegisterId);
 			SLAKE_API DiscreteInstruction emitAddReg32ToReg32Ins(RegisterId registerId, RegisterId srcRegisterId);

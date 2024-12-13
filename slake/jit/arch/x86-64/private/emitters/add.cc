@@ -112,6 +112,41 @@ SLAKE_API DiscreteInstruction slake::jit::x86_64::emitAddImm32ToReg32Ins(Registe
 	}
 }
 
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emitAdcImm32ToReg32Ins(RegisterId registerId, uint8_t imm0[4]) {
+	switch (registerId) {
+		case REG_RAX: {
+			DEF_INS_BUFFER(insBuf, 0x15,
+				imm0[0], imm0[1], imm0[2], imm0[3]);
+			return emitRawIns(sizeof(insBuf), insBuf);
+		}
+		case REG_RCX:
+		case REG_RDX:
+		case REG_RBX:
+		case REG_RSP:
+		case REG_RBP:
+		case REG_RSI:
+		case REG_RDI: {
+			DEF_INS_BUFFER(insBuf, 0x81, MODRM_BYTE(0b11, 2, (registerId - REG_RAX)),
+				imm0[0], imm0[1], imm0[2], imm0[3]);
+			return emitRawIns(sizeof(insBuf), insBuf);
+		}
+		case REG_R8:
+		case REG_R9:
+		case REG_R10:
+		case REG_R11:
+		case REG_R12:
+		case REG_R13:
+		case REG_R14:
+		case REG_R15: {
+			DEF_INS_BUFFER(insBuf, REX_PREFIX(0, 0, 0, 1), 0x81, MODRM_BYTE(0b11, 2, (registerId - REG_R8)),
+				imm0[0], imm0[1], imm0[2], imm0[3]);
+			return emitRawIns(sizeof(insBuf), insBuf);
+		}
+		default:
+			throw std::logic_error("Invalid register ID");
+	}
+}
+
 SLAKE_API DiscreteInstruction slake::jit::x86_64::emitAddImm32ToReg64Ins(RegisterId registerId, uint8_t imm0[4]) {
 	switch (registerId) {
 		case REG_RAX: {
@@ -139,6 +174,41 @@ SLAKE_API DiscreteInstruction slake::jit::x86_64::emitAddImm32ToReg64Ins(Registe
 		case REG_R14:
 		case REG_R15: {
 			DEF_INS_BUFFER(insBuf, REX_PREFIX(1, 0, 0, 1), 0x81, MODRM_BYTE(0b11, 0, (registerId - REG_R8)),
+				imm0[0], imm0[1], imm0[2], imm0[3]);
+			return emitRawIns(sizeof(insBuf), insBuf);
+		}
+		default:
+			throw std::logic_error("Invalid register ID");
+	}
+}
+
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emitAdcImm32ToReg64Ins(RegisterId registerId, uint8_t imm0[4]) {
+	switch (registerId) {
+		case REG_RAX: {
+			DEF_INS_BUFFER(insBuf, REX_PREFIX(1, 0, 0, 0), 0x15,
+				imm0[0], imm0[1], imm0[2], imm0[3]);
+			return emitRawIns(sizeof(insBuf), insBuf);
+		}
+		case REG_RCX:
+		case REG_RDX:
+		case REG_RBX:
+		case REG_RSP:
+		case REG_RBP:
+		case REG_RSI:
+		case REG_RDI: {
+			DEF_INS_BUFFER(insBuf, REX_PREFIX(1, 0, 0, 0), 0x81, MODRM_BYTE(0b11, 2, (registerId - REG_RAX)),
+				imm0[0], imm0[1], imm0[2], imm0[3]);
+			return emitRawIns(sizeof(insBuf), insBuf);
+		}
+		case REG_R8:
+		case REG_R9:
+		case REG_R10:
+		case REG_R11:
+		case REG_R12:
+		case REG_R13:
+		case REG_R14:
+		case REG_R15: {
+			DEF_INS_BUFFER(insBuf, REX_PREFIX(1, 0, 0, 1), 0x81, MODRM_BYTE(0b11, 2, (registerId - REG_R8)),
 				imm0[0], imm0[1], imm0[2], imm0[3]);
 			return emitRawIns(sizeof(insBuf), insBuf);
 		}

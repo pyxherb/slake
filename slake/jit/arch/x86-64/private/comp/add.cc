@@ -142,7 +142,7 @@ void compileIntAddInstruction(
 	} else {
 		if (lhsExpectedValue.valueType != ValueType::Undefined) {
 			// The RHS is an expectable value so we can just simply add it with a register.
-			uint32_t rhsRegIndex = curIns.operands[0].getRegIndex();
+			uint32_t rhsRegIndex = curIns.operands[1].getRegIndex();
 			const RegisterId rhsRegId = compileContext.allocGpReg();
 
 			if (compileContext.isRegInUse(rhsRegId)) {
@@ -205,16 +205,16 @@ void compileIntAddInstruction(
 			VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, rhsRegId, sizeof(T));
 
 			if constexpr (std::is_same_v<T, int8_t>) {
-				int8_t lhsData = curIns.operands[1].getI8();
+				int8_t lhsData = curIns.operands[0].getI8();
 				compileContext.pushIns(emitAddImm8ToReg8Ins(rhsRegId, (uint8_t *)&lhsData));
 			} else if constexpr (std::is_same_v<T, int16_t>) {
-				int16_t lhsData = curIns.operands[1].getI16();
+				int16_t lhsData = curIns.operands[0].getI16();
 				compileContext.pushIns(emitAddImm16ToReg16Ins(rhsRegId, (uint8_t *)&lhsData));
 			} else if constexpr (std::is_same_v<T, int32_t>) {
-				int32_t lhsData = curIns.operands[1].getI32();
+				int32_t lhsData = curIns.operands[0].getI32();
 				compileContext.pushIns(emitAddImm32ToReg32Ins(rhsRegId, (uint8_t *)&lhsData));
 			} else if constexpr (std::is_same_v<T, int64_t>) {
-				int64_t lhsData = curIns.operands[1].getI64();
+				int64_t lhsData = curIns.operands[0].getI64();
 
 				if (*((uint64_t *)&lhsData) & 0xffffffff00000000) {
 					compileContext.pushIns(emitAddImm32ToReg64Ins(rhsRegId, (uint8_t *)&lhsData));
@@ -235,16 +235,16 @@ void compileIntAddInstruction(
 					}
 				}
 			} else if constexpr (std::is_same_v<T, uint8_t>) {
-				uint8_t lhsData = curIns.operands[1].getU8();
+				uint8_t lhsData = curIns.operands[0].getU8();
 				compileContext.pushIns(emitAddImm8ToReg8Ins(rhsRegId, (uint8_t *)&lhsData));
 			} else if constexpr (std::is_same_v<T, uint16_t>) {
-				uint16_t lhsData = curIns.operands[1].getU16();
+				uint16_t lhsData = curIns.operands[0].getU16();
 				compileContext.pushIns(emitAddImm16ToReg16Ins(rhsRegId, (uint8_t *)&lhsData));
 			} else if constexpr (std::is_same_v<T, uint32_t>) {
-				uint32_t lhsData = curIns.operands[1].getU32();
+				uint32_t lhsData = curIns.operands[0].getU32();
 				compileContext.pushIns(emitAddImm32ToReg32Ins(rhsRegId, (uint8_t *)&lhsData));
 			} else if constexpr (std::is_same_v<T, uint64_t>) {
-				uint64_t lhsData = curIns.operands[1].getU64();
+				uint64_t lhsData = curIns.operands[0].getU64();
 
 				if (lhsData <= UINT32_MAX) {
 					compileContext.pushIns(emitAddImm32ToReg64Ins(rhsRegId, (uint8_t *)&lhsData));

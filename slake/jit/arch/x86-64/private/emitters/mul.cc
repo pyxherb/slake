@@ -535,3 +535,19 @@ SLAKE_API DiscreteInstruction slake::jit::x86_64::emitImul64WithMemIns(const Mem
 
 	return emitRawIns(off, ins);
 }
+
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emitMulssRegXmmToRegXmmIns(RegisterId registerId, RegisterId srcRegisterId) {
+	return emitSSESsArithmRegXmmToRegXmmIns(registerId, srcRegisterId, 0x59);
+}
+
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emitMulssMemToRegXmmIns(RegisterId registerId, const MemoryLocation &mem) {
+	return emitSSESsArithmMemToRegXmmIns(registerId, mem, 0x59);
+}
+
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emitMulsdRegXmmToRegXmmIns(RegisterId registerId, RegisterId srcRegisterId) {
+	return emitSSESdArithmRegXmmToRegXmmIns(registerId, srcRegisterId, 0x59);
+}
+
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emitMulsdMemToRegXmmIns(RegisterId registerId, const MemoryLocation &mem) {
+	return emitSSESdArithmMemToRegXmmIns(registerId, mem, 0x59);
+}

@@ -10,7 +10,7 @@ SLAKE_API DiscreteInstruction slake::jit::x86_64::emitMovImm8ToReg8Ins(RegisterI
 		case REG_RCX:
 		case REG_RDX:
 		case REG_RBX: {
-			DEF_INS_BUFFER(insBuf, 0xb0 + (registerId - REG_RAX),
+			DEF_INS_BUFFER(insBuf, 0xb0 + (uint8_t)(registerId - REG_RAX),
 				imm0[0]);
 			return emitRawIns(sizeof(insBuf), insBuf);
 		}
@@ -18,7 +18,7 @@ SLAKE_API DiscreteInstruction slake::jit::x86_64::emitMovImm8ToReg8Ins(RegisterI
 		case REG_RBP:
 		case REG_RSI:
 		case REG_RDI: {
-			DEF_INS_BUFFER(insBuf, REX_PREFIX(0, 0, 0, 0), 0xb0 + (registerId - REG_RAX),
+			DEF_INS_BUFFER(insBuf, REX_PREFIX(0, 0, 0, 0), 0xb0 + (uint8_t)(registerId - REG_RAX),
 				imm0[0]);
 			return emitRawIns(sizeof(insBuf), insBuf);
 		}
@@ -30,7 +30,7 @@ SLAKE_API DiscreteInstruction slake::jit::x86_64::emitMovImm8ToReg8Ins(RegisterI
 		case REG_R13:
 		case REG_R14:
 		case REG_R15: {
-			DEF_INS_BUFFER(insBuf, REX_PREFIX(0, 0, 0, 1), 0xb0 + (registerId - REG_R8),
+			DEF_INS_BUFFER(insBuf, REX_PREFIX(0, 0, 0, 1), 0xb0 + (uint8_t)(registerId - REG_R8),
 				imm0[0]);
 			return emitRawIns(sizeof(insBuf), insBuf);
 		}
@@ -130,6 +130,165 @@ SLAKE_API DiscreteInstruction slake::jit::x86_64::emitMovImm64ToReg64Ins(Registe
 		default:
 			throw std::logic_error("Invalid register ID");
 	}
+}
+
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emitMovImm8ToMemIns(const MemoryLocation &mem, uint8_t imm0[1]) {
+	uint8_t modRm = MODRM_BYTE(0, 0b000, 0);
+	uint8_t sib = 0b00000000;
+	uint8_t rexPrefix = 0;
+
+	bool isSibValid = memoryToModRmAndSib(mem, modRm, sib, rexPrefix);
+
+	uint8_t ins[16];
+	size_t off = 0;
+
+	if (rexPrefix) {
+		ins[off++] = rexPrefix;
+	}
+
+	{
+		DEF_INS_BUFFER(insBody, 0xc6, modRm);
+		memcpy(ins + off, insBody, sizeof(insBody));
+		off += sizeof(insBody);
+	}
+
+	if (isSibValid) {
+		ins[off++] = sib;
+	}
+
+	if (!mem.disp) {
+	} else if (mem.disp <= UINT8_MAX) {
+		int8_t disp = (int8_t)mem.disp;
+		ins[off++] = disp;
+	} else {
+		int32_t disp = (int32_t)mem.disp;
+		memcpy(ins + off, &disp, sizeof(disp));
+		off += sizeof(disp);
+	}
+
+	memcpy(ins + off, imm0, sizeof(uint8_t));
+	off += sizeof(uint8_t);
+
+	return emitRawIns(off, ins);
+}
+
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emitMovImm16ToMemIns(const MemoryLocation &mem, uint8_t imm0[2]) {
+	uint8_t modRm = MODRM_BYTE(0, 0b000, 0);
+	uint8_t sib = 0b00000000;
+	uint8_t rexPrefix = 0;
+
+	bool isSibValid = memoryToModRmAndSib(mem, modRm, sib, rexPrefix);
+
+	uint8_t ins[16];
+	size_t off = 0;
+
+	ins[off++] = 0x66;
+	if (rexPrefix) {
+		ins[off++] = rexPrefix;
+	}
+
+	{
+		DEF_INS_BUFFER(insBody, 0xc6, modRm);
+		memcpy(ins + off, insBody, sizeof(insBody));
+		off += sizeof(insBody);
+	}
+
+	if (isSibValid) {
+		ins[off++] = sib;
+	}
+
+	if (!mem.disp) {
+	} else if (mem.disp <= UINT8_MAX) {
+		int8_t disp = (int8_t)mem.disp;
+		ins[off++] = disp;
+	} else {
+		int32_t disp = (int32_t)mem.disp;
+		memcpy(ins + off, &disp, sizeof(disp));
+		off += sizeof(disp);
+	}
+
+	memcpy(ins + off, imm0, sizeof(uint16_t));
+	off += sizeof(uint16_t);
+
+	return emitRawIns(off, ins);
+}
+
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emitMovImm32ToMemIns(const MemoryLocation &mem, uint8_t imm0[4]) {
+	uint8_t modRm = MODRM_BYTE(0, 0b000, 0);
+	uint8_t sib = 0b00000000;
+	uint8_t rexPrefix = 0;
+
+	bool isSibValid = memoryToModRmAndSib(mem, modRm, sib, rexPrefix);
+
+	uint8_t ins[16];
+	size_t off = 0;
+
+	if (rexPrefix) {
+		ins[off++] = rexPrefix;
+	}
+
+	{
+		DEF_INS_BUFFER(insBody, 0xc6, modRm);
+		memcpy(ins + off, insBody, sizeof(insBody));
+		off += sizeof(insBody);
+	}
+
+	if (isSibValid) {
+		ins[off++] = sib;
+	}
+
+	if (!mem.disp) {
+	} else if (mem.disp <= UINT8_MAX) {
+		int8_t disp = (int8_t)mem.disp;
+		ins[off++] = disp;
+	} else {
+		int32_t disp = (int32_t)mem.disp;
+		memcpy(ins + off, &disp, sizeof(disp));
+		off += sizeof(disp);
+	}
+
+	memcpy(ins + off, imm0, sizeof(uint32_t));
+	off += sizeof(uint32_t);
+
+	return emitRawIns(off, ins);
+}
+
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emitMovImm64ToMemIns(const MemoryLocation &mem, uint8_t imm0[8]) {
+	uint8_t modRm = MODRM_BYTE(0, 0b000, 0);
+	uint8_t sib = 0b00000000;
+	uint8_t rexPrefix = REX_PREFIX(1, 0, 0, 0);
+
+	bool isSibValid = memoryToModRmAndSib(mem, modRm, sib, rexPrefix);
+
+	uint8_t ins[16];
+	size_t off = 0;
+
+	ins[off++] = rexPrefix;
+
+	{
+		DEF_INS_BUFFER(insBody, 0xc6, modRm);
+		memcpy(ins + off, insBody, sizeof(insBody));
+		off += sizeof(insBody);
+	}
+
+	if (isSibValid) {
+		ins[off++] = sib;
+	}
+
+	if (!mem.disp) {
+	} else if (mem.disp <= UINT8_MAX) {
+		int8_t disp = (int8_t)mem.disp;
+		ins[off++] = disp;
+	} else {
+		int32_t disp = (int32_t)mem.disp;
+		memcpy(ins + off, &disp, sizeof(disp));
+		off += sizeof(disp);
+	}
+
+	memcpy(ins + off, imm0, sizeof(uint32_t));
+	off += sizeof(uint32_t);
+
+	return emitRawIns(off, ins);
 }
 
 SLAKE_API DiscreteInstruction slake::jit::x86_64::emitMovReg8ToReg8Ins(RegisterId registerId, RegisterId srcRegisterId) {

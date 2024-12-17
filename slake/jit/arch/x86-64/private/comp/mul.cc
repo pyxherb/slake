@@ -1,11 +1,11 @@
-#include "sub.h"
+#include "mul.h"
 
 using namespace slake;
 using namespace slake::jit;
 using namespace slake::jit::x86_64;
 
 template <typename T>
-void compileIntSubInstruction(
+void compileIntMulInstruction(
 	JITCompileContext &compileContext,
 	const Instruction &curIns,
 	const Value &lhsExpectedValue,
@@ -15,12 +15,19 @@ void compileIntSubInstruction(
 	if (rhsExpectedValue.valueType != ValueType::Undefined) {
 		// The RHS is an expectable value so we can just simply add it with a register.
 		uint32_t lhsRegIndex = curIns.operands[0].getRegIndex();
-		const RegisterId lhsRegId = compileContext.allocGpReg();
+		int32_t savedRdxOff = INT32_MIN;
+		size_t savedRdxSize;
+		const RegisterId lhsRegId = REG_RAX;
 
-		if (compileContext.isRegInUse(lhsRegId)) {
+		if (compileContext.isRegInUse(REG_RAX)) {
 			int32_t off;
 			size_t size;
-			compileContext.pushReg(lhsRegId, off, size);
+			compileContext.pushReg(REG_RAX, off, size);
+		}
+		if constexpr (sizeof(T) > sizeof(uint8_t)) {
+			if (compileContext.isRegInUse(REG_RDX)) {
+				compileContext.pushReg(REG_RDX, savedRdxOff, savedRdxSize);
+			}
 		}
 
 		VirtualRegState &lhsVregState = compileContext.virtualRegStates.at(lhsRegIndex);
@@ -74,81 +81,110 @@ void compileIntSubInstruction(
 			}
 		}
 
+		// Try to allocate a new temporary register to store the right operand.
+		const RegisterId tmpRegId = compileContext.allocGpReg();
+		if (compileContext.isRegInUse(tmpRegId)) {
+			int32_t off = compileContext.stackAllocAligned(sizeof(T), sizeof(T));
+			if constexpr (std::is_same_v<T, int8_t>) {
+				int8_t rhsData = curIns.operands[1].getI8();
+				compileContext.pushIns(emitMovImm8ToMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }, (uint8_t *)&rhsData));
+				compileContext.pushIns(emitMul8WithMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }));
+			} else if constexpr (std::is_same_v<T, int16_t>) {
+				int16_t rhsData = curIns.operands[1].getI16();
+				compileContext.pushIns(emitMovImm16ToMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }, (uint8_t *)&rhsData));
+				compileContext.pushIns(emitMul16WithMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }));
+			} else if constexpr (std::is_same_v<T, int32_t>) {
+				int32_t rhsData = curIns.operands[1].getI32();
+				compileContext.pushIns(emitMovImm32ToMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }, (uint8_t *)&rhsData));
+				compileContext.pushIns(emitMul32WithMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }));
+			} else if constexpr (std::is_same_v<T, int64_t>) {
+				int64_t rhsData = curIns.operands[1].getI64();
+				compileContext.pushIns(emitMovImm64ToMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }, (uint8_t *)&rhsData));
+				compileContext.pushIns(emitMul64WithMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }));
+			} else if constexpr (std::is_same_v<T, uint8_t>) {
+				uint8_t rhsData = curIns.operands[1].getU8();
+				compileContext.pushIns(emitMovImm8ToMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }, (uint8_t *)&rhsData));
+				compileContext.pushIns(emitImul8WithMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }));
+			} else if constexpr (std::is_same_v<T, uint16_t>) {
+				uint16_t rhsData = curIns.operands[1].getU16();
+				compileContext.pushIns(emitMovImm16ToMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }, (uint8_t *)&rhsData));
+				compileContext.pushIns(emitImul16WithMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }));
+			} else if constexpr (std::is_same_v<T, uint32_t>) {
+				uint32_t rhsData = curIns.operands[1].getU32();
+				compileContext.pushIns(emitMovImm32ToMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }, (uint8_t *)&rhsData));
+				compileContext.pushIns(emitImul32WithMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }));
+			} else if constexpr (std::is_same_v<T, uint64_t>) {
+				uint64_t rhsData = curIns.operands[1].getU64();
+				compileContext.pushIns(emitMovImm64ToMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }, (uint8_t *)&rhsData));
+				compileContext.pushIns(emitImul64WithMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }));
+			} else {
+				static_assert((false, "Invalid operand type"));
+			}
+
+			compileContext.stackFree(off, sizeof(T));
+		} else {
+			if constexpr (std::is_same_v<T, int8_t>) {
+				int8_t rhsData = curIns.operands[1].getI8();
+				compileContext.pushIns(emitMovImm8ToReg8Ins(tmpRegId, (uint8_t *)&rhsData));
+				compileContext.pushIns(emitMul8WithReg8Ins(tmpRegId));
+			} else if constexpr (std::is_same_v<T, int16_t>) {
+				int16_t rhsData = curIns.operands[1].getI16();
+				compileContext.pushIns(emitMovImm16ToReg16Ins(tmpRegId, (uint8_t *)&rhsData));
+				compileContext.pushIns(emitMul16WithReg16Ins(tmpRegId));
+			} else if constexpr (std::is_same_v<T, int32_t>) {
+				int32_t rhsData = curIns.operands[1].getI32();
+				compileContext.pushIns(emitMovImm32ToReg32Ins(tmpRegId, (uint8_t *)&rhsData));
+				compileContext.pushIns(emitMul32WithReg32Ins(tmpRegId));
+			} else if constexpr (std::is_same_v<T, int64_t>) {
+				int64_t rhsData = curIns.operands[1].getI64();
+				compileContext.pushIns(emitMovImm64ToReg64Ins(tmpRegId, (uint8_t *)&rhsData));
+				compileContext.pushIns(emitMul64WithReg64Ins(tmpRegId));
+			} else if constexpr (std::is_same_v<T, uint8_t>) {
+				uint8_t rhsData = curIns.operands[1].getU8();
+				compileContext.pushIns(emitMovImm8ToReg8Ins(tmpRegId, (uint8_t *)&rhsData));
+				compileContext.pushIns(emitImul8WithReg8Ins(tmpRegId));
+			} else if constexpr (std::is_same_v<T, uint16_t>) {
+				uint16_t rhsData = curIns.operands[1].getU16();
+				compileContext.pushIns(emitMovImm16ToReg16Ins(tmpRegId, (uint8_t *)&rhsData));
+				compileContext.pushIns(emitImul16WithReg16Ins(tmpRegId));
+			} else if constexpr (std::is_same_v<T, uint32_t>) {
+				uint32_t rhsData = curIns.operands[1].getU32();
+				compileContext.pushIns(emitMovImm32ToReg32Ins(tmpRegId, (uint8_t *)&rhsData));
+				compileContext.pushIns(emitImul32WithReg32Ins(tmpRegId));
+			} else if constexpr (std::is_same_v<T, uint64_t>) {
+				uint64_t rhsData = curIns.operands[1].getU64();
+				compileContext.pushIns(emitMovImm64ToReg64Ins(tmpRegId, (uint8_t *)&rhsData));
+				compileContext.pushIns(emitImul64WithReg64Ins(tmpRegId));
+			} else {
+				static_assert((false, "Invalid operand type"));
+			}
+			compileContext.unallocReg(tmpRegId);
+		}
+
+		if constexpr (sizeof(T) > sizeof(uint8_t)) {
+			if (savedRdxOff != INT32_MIN) {
+				compileContext.popReg(REG_RDX, savedRdxOff, savedRdxSize);
+			}
+		}
+
 		VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
 
-		if constexpr (std::is_same_v<T, int8_t>) {
-			int8_t rhsData = curIns.operands[1].getI8();
-			compileContext.pushIns(emitSubImm8ToReg8Ins(lhsRegId, (uint8_t *)&rhsData));
-		} else if constexpr (std::is_same_v<T, int16_t>) {
-			int16_t rhsData = curIns.operands[1].getI16();
-			compileContext.pushIns(emitSubImm16ToReg16Ins(lhsRegId, (uint8_t *)&rhsData));
-		} else if constexpr (std::is_same_v<T, int32_t>) {
-			int32_t rhsData = curIns.operands[1].getI32();
-			compileContext.pushIns(emitSubImm32ToReg32Ins(lhsRegId, (uint8_t *)&rhsData));
-		} else if constexpr (std::is_same_v<T, int64_t>) {
-			int64_t rhsData = curIns.operands[1].getI64();
-
-			if (*((uint64_t *)&rhsData) & 0xffffffff00000000) {
-				compileContext.pushIns(emitAddImm32ToReg64Ins(lhsRegId, (uint8_t *)&rhsData));
-			} else {
-				RegisterId tmpGpRegId = compileContext.allocGpReg();
-
-				int32_t tmpGpRegSavedOff = INT32_MIN;
-				size_t tmpGpRegSavedSize;
-				if (compileContext.isRegInUse(tmpGpRegId)) {
-					compileContext.pushReg(tmpGpRegId, tmpGpRegSavedOff, tmpGpRegSavedSize);
-				}
-
-				compileContext.pushIns(emitMovImm64ToReg64Ins(tmpGpRegId, (uint8_t *)&rhsData));
-				compileContext.pushIns(emitSubReg64ToReg64Ins(lhsRegId, tmpGpRegId));
-
-				if (tmpGpRegSavedOff != INT32_MIN) {
-					compileContext.popReg(tmpGpRegId, tmpGpRegSavedOff, tmpGpRegSavedSize);
-				}
-			}
-		} else if constexpr (std::is_same_v<T, uint8_t>) {
-			uint8_t rhsData = curIns.operands[1].getU8();
-			compileContext.pushIns(emitSubImm8ToReg8Ins(lhsRegId, (uint8_t *)&rhsData));
-		} else if constexpr (std::is_same_v<T, uint16_t>) {
-			uint16_t rhsData = curIns.operands[1].getU16();
-			compileContext.pushIns(emitSubImm16ToReg16Ins(lhsRegId, (uint8_t *)&rhsData));
-		} else if constexpr (std::is_same_v<T, uint32_t>) {
-			uint32_t rhsData = curIns.operands[1].getU32();
-			compileContext.pushIns(emitSubImm32ToReg32Ins(lhsRegId, (uint8_t *)&rhsData));
-		} else if constexpr (std::is_same_v<T, uint64_t>) {
-			uint64_t rhsData = curIns.operands[1].getU64();
-
-			if (rhsData <= UINT32_MAX) {
-				compileContext.pushIns(emitAddImm32ToReg64Ins(lhsRegId, (uint8_t *)&rhsData));
-			} else {
-				RegisterId tmpGpRegId = compileContext.allocGpReg();
-
-				int32_t tmpGpRegSavedOff = INT32_MIN;
-				size_t tmpGpRegSavedSize;
-				if (compileContext.isRegInUse(tmpGpRegId)) {
-					compileContext.pushReg(tmpGpRegId, tmpGpRegSavedOff, tmpGpRegSavedSize);
-				}
-
-				compileContext.pushIns(emitMovImm64ToReg64Ins(tmpGpRegId, (uint8_t *)&rhsData));
-				compileContext.pushIns(emitSubReg64ToReg64Ins(lhsRegId, tmpGpRegId));
-
-				if (tmpGpRegSavedOff != INT32_MIN) {
-					compileContext.popReg(tmpGpRegId, tmpGpRegSavedOff, tmpGpRegSavedSize);
-				}
-			}
-		} else {
-			static_assert((false, "Invalid operand type"));
-		}
 	} else {
-		if (lhsExpectedValue.valueType != ValueType::Undefined) {
-			// The RHS is an expectable value so we can just simply add it with a register.
-			uint32_t rhsRegIndex = curIns.operands[0].getRegIndex();
-			const RegisterId rhsRegId = compileContext.allocGpReg();
+		if (lhsExpectedValue.valueType != ValueType::Undefined) {  // The RHS is an expectable value so we can just simply add it with a register.
+			uint32_t rhsRegIndex = curIns.operands[1].getRegIndex();
+			int32_t savedRdxOff = INT32_MIN;
+			size_t savedRdxSize;
+			const RegisterId rhsRegId = REG_RAX;
 
-			if (compileContext.isRegInUse(rhsRegId)) {
+			if (compileContext.isRegInUse(REG_RAX)) {
 				int32_t off;
 				size_t size;
-				compileContext.pushReg(rhsRegId, off, size);
+				compileContext.pushReg(REG_RAX, off, size);
+			}
+			if constexpr (sizeof(T) > sizeof(uint8_t)) {
+				if (compileContext.isRegInUse(REG_RDX)) {
+					compileContext.pushReg(REG_RDX, savedRdxOff, savedRdxSize);
+				}
 			}
 
 			VirtualRegState &rhsVregState = compileContext.virtualRegStates.at(rhsRegIndex);
@@ -202,80 +238,108 @@ void compileIntSubInstruction(
 				}
 			}
 
-			VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, rhsRegId, sizeof(T));
-
-			if constexpr (std::is_same_v<T, int8_t>) {
-				int8_t lhsData = curIns.operands[1].getI8();
-				compileContext.pushIns(emitSubImm8ToReg8Ins(rhsRegId, (uint8_t *)&lhsData));
-			} else if constexpr (std::is_same_v<T, int16_t>) {
-				int16_t lhsData = curIns.operands[1].getI16();
-				compileContext.pushIns(emitSubImm16ToReg16Ins(rhsRegId, (uint8_t *)&lhsData));
-			} else if constexpr (std::is_same_v<T, int32_t>) {
-				int32_t lhsData = curIns.operands[1].getI32();
-				compileContext.pushIns(emitSubImm32ToReg32Ins(rhsRegId, (uint8_t *)&lhsData));
-			} else if constexpr (std::is_same_v<T, int64_t>) {
-				int64_t lhsData = curIns.operands[1].getI64();
-
-				if (*((uint64_t *)&lhsData) & 0xffffffff00000000) {
-					compileContext.pushIns(emitAddImm32ToReg64Ins(rhsRegId, (uint8_t *)&lhsData));
+			// Try to allocate a new temporary register to store the right operand.
+			const RegisterId tmpRegId = compileContext.allocGpReg();
+			if (compileContext.isRegInUse(tmpRegId)) {
+				int32_t off = compileContext.stackAllocAligned(sizeof(T), sizeof(T));
+				if constexpr (std::is_same_v<T, int8_t>) {
+					int8_t lhsData = curIns.operands[0].getI8();
+					compileContext.pushIns(emitMovImm8ToMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }, (uint8_t *)&lhsData));
+					compileContext.pushIns(emitMul8WithMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }));
+				} else if constexpr (std::is_same_v<T, int16_t>) {
+					int16_t lhsData = curIns.operands[0].getI16();
+					compileContext.pushIns(emitMovImm16ToMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }, (uint8_t *)&lhsData));
+					compileContext.pushIns(emitMul16WithMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }));
+				} else if constexpr (std::is_same_v<T, int32_t>) {
+					int32_t lhsData = curIns.operands[0].getI32();
+					compileContext.pushIns(emitMovImm32ToMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }, (uint8_t *)&lhsData));
+					compileContext.pushIns(emitMul32WithMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }));
+				} else if constexpr (std::is_same_v<T, int64_t>) {
+					int64_t lhsData = curIns.operands[0].getI64();
+					compileContext.pushIns(emitMovImm64ToMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }, (uint8_t *)&lhsData));
+					compileContext.pushIns(emitMul64WithMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }));
+				} else if constexpr (std::is_same_v<T, uint8_t>) {
+					uint8_t lhsData = curIns.operands[0].getU8();
+					compileContext.pushIns(emitMovImm8ToMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }, (uint8_t *)&lhsData));
+					compileContext.pushIns(emitImul8WithMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }));
+				} else if constexpr (std::is_same_v<T, uint16_t>) {
+					uint16_t lhsData = curIns.operands[0].getU16();
+					compileContext.pushIns(emitMovImm16ToMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }, (uint8_t *)&lhsData));
+					compileContext.pushIns(emitImul16WithMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }));
+				} else if constexpr (std::is_same_v<T, uint32_t>) {
+					uint32_t lhsData = curIns.operands[0].getU32();
+					compileContext.pushIns(emitMovImm32ToMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }, (uint8_t *)&lhsData));
+					compileContext.pushIns(emitImul32WithMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }));
+				} else if constexpr (std::is_same_v<T, uint64_t>) {
+					uint64_t lhsData = curIns.operands[0].getU64();
+					compileContext.pushIns(emitMovImm64ToMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }, (uint8_t *)&lhsData));
+					compileContext.pushIns(emitImul64WithMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }));
 				} else {
-					RegisterId tmpGpRegId = compileContext.allocGpReg();
-
-					int32_t tmpGpRegSavedOff = INT32_MIN;
-					size_t tmpGpRegSavedSize;
-					if (compileContext.isRegInUse(tmpGpRegId)) {
-						compileContext.pushReg(tmpGpRegId, tmpGpRegSavedOff, tmpGpRegSavedSize);
-					}
-
-					compileContext.pushIns(emitMovImm64ToReg64Ins(tmpGpRegId, (uint8_t *)&lhsData));
-					compileContext.pushIns(emitSubReg64ToReg64Ins(rhsRegId, tmpGpRegId));
-
-					if (tmpGpRegSavedOff != INT32_MIN) {
-						compileContext.popReg(tmpGpRegId, tmpGpRegSavedOff, tmpGpRegSavedSize);
-					}
+					static_assert((false, "Invalid operand type"));
 				}
-			} else if constexpr (std::is_same_v<T, uint8_t>) {
-				uint8_t lhsData = curIns.operands[1].getU8();
-				compileContext.pushIns(emitSubImm8ToReg8Ins(rhsRegId, (uint8_t *)&lhsData));
-			} else if constexpr (std::is_same_v<T, uint16_t>) {
-				uint16_t lhsData = curIns.operands[1].getU16();
-				compileContext.pushIns(emitSubImm16ToReg16Ins(rhsRegId, (uint8_t *)&lhsData));
-			} else if constexpr (std::is_same_v<T, uint32_t>) {
-				uint32_t lhsData = curIns.operands[1].getU32();
-				compileContext.pushIns(emitSubImm32ToReg32Ins(rhsRegId, (uint8_t *)&lhsData));
-			} else if constexpr (std::is_same_v<T, uint64_t>) {
-				uint64_t lhsData = curIns.operands[1].getU64();
 
-				if (lhsData <= UINT32_MAX) {
-					compileContext.pushIns(emitAddImm32ToReg64Ins(rhsRegId, (uint8_t *)&lhsData));
-				} else {
-					RegisterId tmpGpRegId = compileContext.allocGpReg();
-
-					int32_t tmpGpRegSavedOff = INT32_MIN;
-					size_t tmpGpRegSavedSize;
-					if (compileContext.isRegInUse(tmpGpRegId)) {
-						compileContext.pushReg(tmpGpRegId, tmpGpRegSavedOff, tmpGpRegSavedSize);
-					}
-
-					compileContext.pushIns(emitMovImm64ToReg64Ins(tmpGpRegId, (uint8_t *)&lhsData));
-					compileContext.pushIns(emitSubReg64ToReg64Ins(rhsRegId, tmpGpRegId));
-
-					if (tmpGpRegSavedOff != INT32_MIN) {
-						compileContext.popReg(tmpGpRegId, tmpGpRegSavedOff, tmpGpRegSavedSize);
-					}
-				}
+				compileContext.stackFree(off, sizeof(T));
 			} else {
-				static_assert((false, "Invalid operand type"));
+				if constexpr (std::is_same_v<T, int8_t>) {
+					int8_t lhsData = curIns.operands[1].getI8();
+					compileContext.pushIns(emitMovImm8ToReg8Ins(tmpRegId, (uint8_t *)&lhsData));
+					compileContext.pushIns(emitMul8WithReg8Ins(tmpRegId));
+				} else if constexpr (std::is_same_v<T, int16_t>) {
+					int16_t lhsData = curIns.operands[1].getI16();
+					compileContext.pushIns(emitMovImm16ToReg16Ins(tmpRegId, (uint8_t *)&lhsData));
+					compileContext.pushIns(emitMul16WithReg16Ins(tmpRegId));
+				} else if constexpr (std::is_same_v<T, int32_t>) {
+					int32_t lhsData = curIns.operands[1].getI32();
+					compileContext.pushIns(emitMovImm32ToReg32Ins(tmpRegId, (uint8_t *)&lhsData));
+					compileContext.pushIns(emitMul32WithReg32Ins(tmpRegId));
+				} else if constexpr (std::is_same_v<T, int64_t>) {
+					int64_t lhsData = curIns.operands[1].getI64();
+					compileContext.pushIns(emitMovImm64ToReg64Ins(tmpRegId, (uint8_t *)&lhsData));
+					compileContext.pushIns(emitMul64WithReg64Ins(tmpRegId));
+				} else if constexpr (std::is_same_v<T, uint8_t>) {
+					uint8_t lhsData = curIns.operands[1].getU8();
+					compileContext.pushIns(emitMovImm8ToReg8Ins(tmpRegId, (uint8_t *)&lhsData));
+					compileContext.pushIns(emitImul8WithReg8Ins(tmpRegId));
+				} else if constexpr (std::is_same_v<T, uint16_t>) {
+					uint16_t lhsData = curIns.operands[1].getU16();
+					compileContext.pushIns(emitMovImm16ToReg16Ins(tmpRegId, (uint8_t *)&lhsData));
+					compileContext.pushIns(emitImul16WithReg16Ins(tmpRegId));
+				} else if constexpr (std::is_same_v<T, uint32_t>) {
+					uint32_t lhsData = curIns.operands[1].getU32();
+					compileContext.pushIns(emitMovImm32ToReg32Ins(tmpRegId, (uint8_t *)&lhsData));
+					compileContext.pushIns(emitImul32WithReg32Ins(tmpRegId));
+				} else if constexpr (std::is_same_v<T, uint64_t>) {
+					uint64_t lhsData = curIns.operands[1].getU64();
+					compileContext.pushIns(emitMovImm64ToReg64Ins(tmpRegId, (uint8_t *)&lhsData));
+					compileContext.pushIns(emitImul64WithReg64Ins(tmpRegId));
+				} else {
+					static_assert((false, "Invalid operand type"));
+				}
+				compileContext.unallocReg(tmpRegId);
 			}
+
+			if constexpr (sizeof(T) > sizeof(uint8_t)) {
+				if (savedRdxOff != INT32_MIN) {
+					compileContext.popReg(REG_RDX, savedRdxOff, savedRdxSize);
+				}
+			}
+
+			VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, rhsRegId, sizeof(T));
 		} else {
 			uint32_t rhsRegIndex = curIns.operands[1].getRegIndex();
-
-			const RegisterId lhsRegId = compileContext.allocGpReg();
+			int32_t savedRdxOff = INT32_MIN;
+			size_t savedRdxSize;
+			const RegisterId lhsRegId = REG_RAX;
 
 			if (compileContext.isRegInUse(lhsRegId)) {
 				int32_t off;
 				size_t size;
 				compileContext.pushReg(lhsRegId, off, size);
+			}
+			if constexpr (sizeof(T) > sizeof(uint8_t)) {
+				if (compileContext.isRegInUse(REG_RDX)) {
+					compileContext.pushReg(REG_RDX, savedRdxOff, savedRdxSize);
+				}
 			}
 
 			VirtualRegState &lhsVregState = compileContext.virtualRegStates.at(lhsRegId);
@@ -331,36 +395,66 @@ void compileIntSubInstruction(
 
 			VirtualRegState &rhsVregState = compileContext.virtualRegStates.at(rhsRegIndex);
 			if (rhsVregState.saveOffset != INT32_MIN) {
-				if constexpr (std::is_same_v<T, int8_t> || std::is_same_v<T, uint8_t>) {
+				if constexpr (std::is_same_v<T, int8_t>) {
 					compileContext.pushIns(
-						emitSubMemToReg8Ins(lhsRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
-				} else if constexpr (std::is_same_v<T, int16_t> || std::is_same_v<T, uint16_t>) {
+						emitImul8WithMemIns(MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
+				} else if constexpr (std::is_same_v<T, int16_t>) {
 					compileContext.pushIns(
-						emitSubMemToReg16Ins(lhsRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
-				} else if constexpr (std::is_same_v<T, int32_t> || std::is_same_v<T, uint32_t>) {
+						emitImul16WithMemIns(MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
+				} else if constexpr (std::is_same_v<T, int32_t>) {
 					compileContext.pushIns(
-						emitSubMemToReg32Ins(lhsRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
-				} else if constexpr (std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t>) {
+						emitImul32WithMemIns(MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
+				} else if constexpr (std::is_same_v<T, int64_t>) {
 					compileContext.pushIns(
-						emitSubMemToReg64Ins(lhsRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
+						emitImul64WithMemIns(MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
+				} else if constexpr (std::is_same_v<T, uint8_t>) {
+					compileContext.pushIns(
+						emitMul8WithMemIns(MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
+				} else if constexpr (std::is_same_v<T, uint16_t>) {
+					compileContext.pushIns(
+						emitMul16WithMemIns(MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
+				} else if constexpr (std::is_same_v<T, uint32_t>) {
+					compileContext.pushIns(
+						emitMul32WithMemIns(MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
+				} else if constexpr (std::is_same_v<T, uint64_t>) {
+					compileContext.pushIns(
+						emitMul64WithMemIns(MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
 				} else {
 					static_assert((false, "Invalid operand type"));
 				}
 			} else {
-				if constexpr (std::is_same_v<T, int8_t> || std::is_same_v<T, uint8_t>) {
+				if constexpr (std::is_same_v<T, int8_t>) {
 					compileContext.pushIns(
-						emitSubReg8ToReg8Ins(lhsRegId, rhsVregState.phyReg));
-				} else if constexpr (std::is_same_v<T, int16_t> || std::is_same_v<T, uint16_t>) {
+						emitImul8WithReg8Ins(rhsVregState.phyReg));
+				} else if constexpr (std::is_same_v<T, int16_t>) {
 					compileContext.pushIns(
-						emitSubReg16ToReg16Ins(lhsRegId, rhsVregState.phyReg));
-				} else if constexpr (std::is_same_v<T, int32_t> || std::is_same_v<T, uint32_t>) {
+						emitImul16WithReg16Ins(rhsVregState.phyReg));
+				} else if constexpr (std::is_same_v<T, int32_t>) {
 					compileContext.pushIns(
-						emitSubReg32ToReg32Ins(lhsRegId, rhsVregState.phyReg));
-				} else if constexpr (std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t>) {
+						emitImul32WithReg32Ins(rhsVregState.phyReg));
+				} else if constexpr (std::is_same_v<T, int64_t>) {
 					compileContext.pushIns(
-						emitSubReg64ToReg64Ins(lhsRegId, rhsVregState.phyReg));
+						emitImul64WithReg64Ins(rhsVregState.phyReg));
+				} else if constexpr (std::is_same_v<T, uint8_t>) {
+					compileContext.pushIns(
+						emitMul8WithReg8Ins(rhsVregState.phyReg));
+				} else if constexpr (std::is_same_v<T, uint16_t>) {
+					compileContext.pushIns(
+						emitMul16WithReg16Ins(rhsVregState.phyReg));
+				} else if constexpr (std::is_same_v<T, uint32_t>) {
+					compileContext.pushIns(
+						emitMul32WithReg32Ins(rhsVregState.phyReg));
+				} else if constexpr (std::is_same_v<T, uint64_t>) {
+					compileContext.pushIns(
+						emitMul64WithReg64Ins(rhsVregState.phyReg));
 				} else {
 					static_assert((false, "Invalid operand type"));
+				}
+			}
+
+			if constexpr (sizeof(T) > sizeof(uint8_t)) {
+				if (savedRdxOff != INT32_MIN) {
+					compileContext.popReg(REG_RDX, savedRdxOff, savedRdxSize);
 				}
 			}
 
@@ -370,7 +464,7 @@ void compileIntSubInstruction(
 }
 
 template <typename T>
-void compileFpSubInstruction(
+void compileFpMulInstruction(
 	JITCompileContext &compileContext,
 	const Instruction &curIns,
 	const Value &lhsExpectedValue,
@@ -436,7 +530,7 @@ void compileFpSubInstruction(
 
 			compileContext.pushIns(emitMovImm32ToReg32Ins(tmpGpRegId, (uint8_t *)&rhsData));
 			compileContext.pushIns(emitMovdReg32ToRegXmmIns(tmpXmmRegId, tmpGpRegId));
-			compileContext.pushIns(emitSubssRegXmmToRegXmmIns(lhsXmmRegId, tmpXmmRegId));
+			compileContext.pushIns(emitMulssRegXmmToRegXmmIns(lhsXmmRegId, tmpXmmRegId));
 
 			if (tmpGpOff != INT32_MIN) {
 				compileContext.popReg(tmpGpRegId, tmpGpOff, tmpGpSize);
@@ -459,7 +553,7 @@ void compileFpSubInstruction(
 
 			compileContext.pushIns(emitMovImm64ToReg64Ins(tmpGpRegId, (uint8_t *)&rhsData));
 			compileContext.pushIns(emitMovqReg64ToRegXmmIns(tmpXmmRegId, tmpGpRegId));
-			compileContext.pushIns(emitSubsdRegXmmToRegXmmIns(lhsXmmRegId, tmpXmmRegId));
+			compileContext.pushIns(emitMulsdRegXmmToRegXmmIns(lhsXmmRegId, tmpXmmRegId));
 
 			if (tmpGpOff != INT32_MIN) {
 				compileContext.popReg(tmpGpRegId, tmpGpOff, tmpGpSize);
@@ -529,7 +623,7 @@ void compileFpSubInstruction(
 
 				compileContext.pushIns(emitMovImm32ToReg32Ins(tmpGpRegId, (uint8_t *)&lhsData));
 				compileContext.pushIns(emitMovdReg32ToRegXmmIns(tmpXmmRegId, tmpGpRegId));
-				compileContext.pushIns(emitSubssRegXmmToRegXmmIns(rhsXmmRegId, tmpXmmRegId));
+				compileContext.pushIns(emitMulssRegXmmToRegXmmIns(rhsXmmRegId, tmpXmmRegId));
 
 				if (tmpGpOff != INT32_MIN) {
 					compileContext.popReg(tmpGpRegId, tmpGpOff, tmpGpSize);
@@ -552,7 +646,7 @@ void compileFpSubInstruction(
 
 				compileContext.pushIns(emitMovImm64ToReg64Ins(tmpGpRegId, (uint8_t *)&lhsData));
 				compileContext.pushIns(emitMovqReg64ToRegXmmIns(tmpXmmRegId, tmpGpRegId));
-				compileContext.pushIns(emitSubsdRegXmmToRegXmmIns(rhsXmmRegId, tmpXmmRegId));
+				compileContext.pushIns(emitMulsdRegXmmToRegXmmIns(rhsXmmRegId, tmpXmmRegId));
 
 				if (tmpGpOff != INT32_MIN) {
 					compileContext.popReg(tmpGpRegId, tmpGpOff, tmpGpSize);
@@ -586,21 +680,21 @@ void compileFpSubInstruction(
 					compileContext.pushIns(emitMovdMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 }));
 
 					if (rhsVregState.saveOffset != INT32_MIN) {
-						compileContext.pushIns(emitSubssMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
+						compileContext.pushIns(emitMulssMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
 					} else {
 						RegisterId rhsXmmRegId = rhsVregState.phyReg;
 
-						compileContext.pushIns(emitSubssRegXmmToRegXmmIns(lhsXmmRegId, rhsXmmRegId));
+						compileContext.pushIns(emitMulssRegXmmToRegXmmIns(lhsXmmRegId, rhsXmmRegId));
 					}
 				} else {
 					compileContext.pushIns(emitMovqRegXmmToRegXmmIns(lhsXmmRegId, lhsVregState.phyReg));
 
 					if (rhsVregState.saveOffset != INT32_MIN) {
-						compileContext.pushIns(emitSubssMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
+						compileContext.pushIns(emitMulssMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
 					} else {
 						RegisterId rhsXmmRegId = rhsVregState.phyReg;
 
-						compileContext.pushIns(emitSubssRegXmmToRegXmmIns(lhsXmmRegId, rhsXmmRegId));
+						compileContext.pushIns(emitMulssRegXmmToRegXmmIns(lhsXmmRegId, rhsXmmRegId));
 					}
 				}
 			} else if constexpr (std::is_same_v<T, double>) {
@@ -608,21 +702,21 @@ void compileFpSubInstruction(
 					compileContext.pushIns(emitMovqMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 }));
 
 					if (rhsVregState.saveOffset != INT32_MIN) {
-						compileContext.pushIns(emitSubsdMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
+						compileContext.pushIns(emitMulsdMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
 					} else {
 						RegisterId rhsXmmRegId = rhsVregState.phyReg;
 
-						compileContext.pushIns(emitSubsdRegXmmToRegXmmIns(lhsXmmRegId, rhsXmmRegId));
+						compileContext.pushIns(emitMulsdRegXmmToRegXmmIns(lhsXmmRegId, rhsXmmRegId));
 					}
 				} else {
 					compileContext.pushIns(emitMovqRegXmmToRegXmmIns(lhsXmmRegId, lhsVregState.phyReg));
 
 					if (rhsVregState.saveOffset != INT32_MIN) {
-						compileContext.pushIns(emitSubsdMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
+						compileContext.pushIns(emitMulsdMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
 					} else {
 						RegisterId rhsXmmRegId = rhsVregState.phyReg;
 
-						compileContext.pushIns(emitSubsdRegXmmToRegXmmIns(lhsXmmRegId, rhsXmmRegId));
+						compileContext.pushIns(emitMulsdRegXmmToRegXmmIns(lhsXmmRegId, rhsXmmRegId));
 					}
 				}
 			} else {
@@ -632,7 +726,7 @@ void compileFpSubInstruction(
 	}
 }
 
-InternalExceptionPointer slake::jit::x86_64::compileSubInstruction(
+InternalExceptionPointer slake::jit::x86_64::compileMulInstruction(
 	JITCompileContext &compileContext,
 	opti::ProgramAnalyzedInfo &analyzedInfo,
 	size_t offIns,
@@ -691,7 +785,7 @@ InternalExceptionPointer slake::jit::x86_64::compileSubInstruction(
 			case TypeId::Value: {
 				switch (outputRegInfo.type.getValueTypeExData()) {
 					case ValueType::I8: {
-						compileIntSubInstruction<int8_t>(
+						compileIntMulInstruction<int8_t>(
 							compileContext,
 							curIns,
 							lhsExpectedValue,
@@ -699,7 +793,7 @@ InternalExceptionPointer slake::jit::x86_64::compileSubInstruction(
 						break;
 					}
 					case ValueType::I16: {
-						compileIntSubInstruction<int16_t>(
+						compileIntMulInstruction<int16_t>(
 							compileContext,
 							curIns,
 							lhsExpectedValue,
@@ -707,7 +801,7 @@ InternalExceptionPointer slake::jit::x86_64::compileSubInstruction(
 						break;
 					}
 					case ValueType::I32: {
-						compileIntSubInstruction<int32_t>(
+						compileIntMulInstruction<int32_t>(
 							compileContext,
 							curIns,
 							lhsExpectedValue,
@@ -715,7 +809,7 @@ InternalExceptionPointer slake::jit::x86_64::compileSubInstruction(
 						break;
 					}
 					case ValueType::I64: {
-						compileIntSubInstruction<int64_t>(
+						compileIntMulInstruction<int64_t>(
 							compileContext,
 							curIns,
 							lhsExpectedValue,
@@ -723,7 +817,7 @@ InternalExceptionPointer slake::jit::x86_64::compileSubInstruction(
 						break;
 					}
 					case ValueType::U8: {
-						compileIntSubInstruction<uint8_t>(
+						compileIntMulInstruction<uint8_t>(
 							compileContext,
 							curIns,
 							lhsExpectedValue,
@@ -731,7 +825,7 @@ InternalExceptionPointer slake::jit::x86_64::compileSubInstruction(
 						break;
 					}
 					case ValueType::U16: {
-						compileIntSubInstruction<uint16_t>(
+						compileIntMulInstruction<uint16_t>(
 							compileContext,
 							curIns,
 							lhsExpectedValue,
@@ -739,7 +833,7 @@ InternalExceptionPointer slake::jit::x86_64::compileSubInstruction(
 						break;
 					}
 					case ValueType::U32: {
-						compileIntSubInstruction<uint32_t>(
+						compileIntMulInstruction<uint32_t>(
 							compileContext,
 							curIns,
 							lhsExpectedValue,
@@ -747,7 +841,7 @@ InternalExceptionPointer slake::jit::x86_64::compileSubInstruction(
 						break;
 					}
 					case ValueType::U64: {
-						compileIntSubInstruction<uint64_t>(
+						compileIntMulInstruction<uint64_t>(
 							compileContext,
 							curIns,
 							lhsExpectedValue,
@@ -755,7 +849,7 @@ InternalExceptionPointer slake::jit::x86_64::compileSubInstruction(
 						break;
 					}
 					case ValueType::F32: {
-						compileFpSubInstruction<float>(
+						compileFpMulInstruction<float>(
 							compileContext,
 							curIns,
 							lhsExpectedValue,
@@ -763,7 +857,7 @@ InternalExceptionPointer slake::jit::x86_64::compileSubInstruction(
 						break;
 					}
 					case ValueType::F64: {
-						compileFpSubInstruction<double>(
+						compileFpMulInstruction<double>(
 							compileContext,
 							curIns,
 							lhsExpectedValue,

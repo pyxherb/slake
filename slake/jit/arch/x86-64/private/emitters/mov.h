@@ -10,6 +10,10 @@ namespace slake {
 			SLAKE_API DiscreteInstruction emitMovImm16ToReg16Ins(RegisterId registerId, uint8_t imm0[2]);
 			SLAKE_API DiscreteInstruction emitMovImm32ToReg32Ins(RegisterId registerId, uint8_t imm0[4]);
 			SLAKE_API DiscreteInstruction emitMovImm64ToReg64Ins(RegisterId registerId, uint8_t imm0[8]);
+			SLAKE_API DiscreteInstruction emitMovImm8ToMemIns(const MemoryLocation &mem, uint8_t imm0[1]);
+			SLAKE_API DiscreteInstruction emitMovImm16ToMemIns(const MemoryLocation &mem, uint8_t imm0[2]);
+			SLAKE_API DiscreteInstruction emitMovImm32ToMemIns(const MemoryLocation &mem, uint8_t imm0[4]);
+			SLAKE_API DiscreteInstruction emitMovImm64ToMemIns(const MemoryLocation &mem, uint8_t imm0[8]);
 			SLAKE_API DiscreteInstruction emitMovReg8ToReg8Ins(RegisterId registerId, RegisterId srcRegisterId);
 			SLAKE_API DiscreteInstruction emitMovReg16ToReg16Ins(RegisterId registerId, RegisterId srcRegisterId);
 			SLAKE_API DiscreteInstruction emitMovReg32ToReg32Ins(RegisterId registerId, RegisterId srcRegisterId);

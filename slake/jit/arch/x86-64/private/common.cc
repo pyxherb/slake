@@ -70,6 +70,11 @@ realloc:
 	goto realloc;
 }
 
+SLAKE_API void JITCompileContext::unallocReg(RegisterId reg) {
+	assert(regAllocFlags.test(reg));
+	regAllocFlags.reset(reg);
+}
+
 SLAKE_API int32_t JITCompileContext::stackAllocAligned(uint32_t size, uint32_t alignment) {
 	for (auto &i : freeStackSpaces) {
 		int32_t allocBase = i.first;

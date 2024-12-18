@@ -7,6 +7,8 @@
 #include "emitters.h"
 #include "comp/add.h"
 #include "comp/sub.h"
+#include "comp/mul.h"
+#include "comp/div.h"
 
 using namespace slake;
 using namespace slake::jit;
@@ -122,6 +124,14 @@ InternalExceptionPointer compileInstruction(
 		}
 		case Opcode::SUB: {
 			SLAKE_RETURN_IF_EXCEPT(compileSubInstruction(compileContext, analyzedInfo, offIns, curIns));
+			break;
+		}
+		case Opcode::MUL: {
+			SLAKE_RETURN_IF_EXCEPT(compileMulInstruction(compileContext, analyzedInfo, offIns, curIns));
+			break;
+		}
+		case Opcode::DIV: {
+			SLAKE_RETURN_IF_EXCEPT(compileDivInstruction(compileContext, analyzedInfo, offIns, curIns));
 			break;
 		}
 		case Opcode::MOV: {

@@ -50,9 +50,9 @@ if(${SLAKE_ENABLE_DEBUGGER})
     add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/dbg")
 endif()
 
-#if(${SLAKE_WITH_STDLIB})
-#    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/lib")
-#endif()
+if(${SLAKE_WITH_STDLIB})
+    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/flib")
+endif()
 
 install(TARGETS slake slaked
     EXPORT slakeTargets

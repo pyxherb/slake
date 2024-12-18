@@ -24,12 +24,37 @@ float flib::fmodf(float n, float d) {
 				n -= d * (x * y);
 			}
 		} else {
-			if (n >= d)
-				return n - d;
-			else
+			if (n >= d) {
+				n -= d;
+			} else
 				return n;
 		}
 	}
+}
 
-	return n;
+SLAKE_API double flib::fmod(double n, double d) {
+	if (n < d)
+		return n;
+
+	while (true) {
+		double q = n / d;
+
+		uint64_t *qInt = (uint64_t *)&q;
+		int16_t exponent = (((int16_t)((*qInt & 0b0111111111110000000000000000000000000000000000000000000000000000ull) >> 52)) - 1024);
+
+		if (exponent > 0) {
+			double sum = 1.0;
+			while (exponent >= 64) {
+				sum *= (1ull << 63);
+				exponent -= 64;
+			}
+			sum *= (1ull << exponent);
+			n -= d * sum;
+		} else {
+			if (n >= d) {
+				n -= d;
+			} else
+				return n;
+		}
+	}
 }

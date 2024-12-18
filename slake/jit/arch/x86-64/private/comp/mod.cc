@@ -492,7 +492,7 @@ void compileFpModInstruction(
 
 	VirtualRegState &lhsVregState = compileContext.virtualRegStates.at(lhsRegIndex);
 	VirtualRegState &rhsVregState = compileContext.virtualRegStates.at(rhsRegIndex);
-	const RegisterId lhsXmmRegId = REG_XMM0;
+	const RegisterId lhsXmmRegId = REG_XMM0, rhsXmmRegId = REG_XMM1;
 	int32_t rhsOff = INT32_MIN;
 	size_t rhsSize;
 
@@ -502,46 +502,66 @@ void compileFpModInstruction(
 		compileContext.pushRegXmm(lhsXmmRegId, off, size);
 	}
 
+	if (compileContext.isRegInUse(rhsXmmRegId)) {
+		compileContext.pushRegXmm(rhsXmmRegId, rhsOff, rhsSize);
+	}
+
 	VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsXmmRegId, sizeof(T));
 
 	if constexpr (std::is_same_v<T, float>) {
 		if (lhsVregState.saveOffset != INT32_MIN) {
 			compileContext.pushIns(emitMovdMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 }));
-
-			if (rhsVregState.saveOffset != INT32_MIN) {
-				// TODO: Move the RHS reigster to the XMM1 register.
-			} else {
-				// TODO: Move the RHS reigster to the XMM1 register.
-			}
 		} else {
 			compileContext.pushIns(emitMovqRegXmmToRegXmmIns(lhsXmmRegId, lhsVregState.phyReg));
+		}
 
-			if (rhsVregState.saveOffset != INT32_MIN) {
-				// TODO: Move the RHS reigster to the XMM1 register.
-			} else {
-				// TODO: Move the RHS reigster to the XMM1 register.
-			}
+		if (rhsVregState.saveOffset != INT32_MIN) {
+			compileContext.pushIns(emitMovdMemToRegXmmIns(rhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }))
+		} else {
+			compileContext.pushIns(emitMovqRegXmmToRegXmmIns(rhsXmmRegId, rhsVregState.phyReg))
+		}
+
+		size_t padding = compileContext.curStackSize % 16;
+
+		if (padding) {
+			compileContext.addStackPtr(16 - padding);
+		}
+
+		// TODO: Call the target.
+
+		if (padding) {
+			compileContext.subStackPtr(16 - padding);
 		}
 	} else if constexpr (std::is_same_v<T, double>) {
 		if (lhsVregState.saveOffset != INT32_MIN) {
 			compileContext.pushIns(emitMovqMemToRegXmmIns(lhsXmmRegId, MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 }));
-
-			if (rhsVregState.saveOffset != INT32_MIN) {
-				// TODO: Move the RHS reigster to the XMM1 register.
-			} else {
-				// TODO: Move the RHS reigster to the XMM1 register.
-			}
 		} else {
 			compileContext.pushIns(emitMovqRegXmmToRegXmmIns(lhsXmmRegId, lhsVregState.phyReg));
+		}
 
-			if (rhsVregState.saveOffset != INT32_MIN) {
-				// TODO: Move the RHS reigster to the XMM1 register.
-			} else {
-				// TODO: Move the RHS reigster to the XMM1 register.
-			}
+		if (rhsVregState.saveOffset != INT32_MIN) {
+			compileContext.pushIns(emitMovqMemToRegXmmIns(rhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }))
+		} else {
+			compileContext.pushIns(emitMovqRegXmmToRegXmmIns(rhsXmmRegId, rhsVregState.phyReg))
+		}
+
+		size_t padding = compileContext.curStackSize % 16;
+
+		if (padding) {
+			compileContext.addStackPtr(16 - padding);
+		}
+
+		// TODO: Call the target.
+
+		if (padding) {
+			compileContext.subStackPtr(16 - padding);
 		}
 	} else {
 		static_assert((false, "Invalid operand type"));
+	}
+
+	if (rhsOff != INT32_MIN) {
+		compileContext.popRegXmm(rhsXmmRegId, rhsOff, rhsSize);
 	}
 }
 
@@ -700,4 +720,8 @@ InternalExceptionPointer slake::jit::x86_64::compileModInstruction(
 
 SLAKE_API float fmodfWrapper(float n, float d) {
 	return flib::fmodf(n, d);
+}
+
+SLAKE_API double fmodWrapper(double n, double d) {
+	return flib::fmod(n, d);
 }

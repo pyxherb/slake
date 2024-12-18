@@ -6,6 +6,7 @@
 #include "emitters/mul.h"
 #include "emitters/div.h"
 #include "emitters/mov.h"
+#include "emitters/ctrl.h"
 #include "emitters/bitshift.h"
 #include "emitters/stackop.h"
 

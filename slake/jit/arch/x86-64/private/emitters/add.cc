@@ -413,8 +413,8 @@ SLAKE_API DiscreteInstruction slake::jit::x86_64::emitAddReg32ToReg32Ins(Registe
 }
 
 SLAKE_API DiscreteInstruction slake::jit::x86_64::emitAddReg64ToReg64Ins(RegisterId registerId, RegisterId srcRegisterId) {
-	uint8_t modRm = REX_PREFIX(1, 0, 0, 0);
-	uint8_t rexPrefix = 0;
+	uint8_t modRm = 0b11000000;
+	uint8_t rexPrefix = REX_PREFIX(1, 0, 0, 0);
 
 	switch (registerId) {
 		case REG_RAX:

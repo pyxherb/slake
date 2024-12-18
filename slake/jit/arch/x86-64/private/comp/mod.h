@@ -14,6 +14,7 @@ namespace slake {
 				const Instruction &curIns);
 
 			SLAKE_API float fmodfWrapper(float n, float d);
+			SLAKE_API double fmodWrapper(double n, double d);
 		}
 	}
 }

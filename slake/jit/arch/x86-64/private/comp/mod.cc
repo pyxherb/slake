@@ -527,7 +527,7 @@ void compileFpModInstruction(
 			compileContext.addStackPtr(16 - padding);
 		}
 
-		// TODO: Call the target.
+		compileContext.pushIns(emitJumpIns((void *)fmodfWrapper));
 
 		if (padding) {
 			compileContext.subStackPtr(16 - padding);
@@ -551,7 +551,7 @@ void compileFpModInstruction(
 			compileContext.addStackPtr(16 - padding);
 		}
 
-		// TODO: Call the target.
+		compileContext.pushIns(emitJumpIns((void *)fmodWrapper));
 
 		if (padding) {
 			compileContext.subStackPtr(16 - padding);

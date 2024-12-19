@@ -9,61 +9,25 @@ namespace slake {
 			SLAKE_FORCEINLINE DiscreteInstruction emitRawIns(size_t szIns, const uint8_t *buffer) {
 				DiscreteInstruction ins;
 
-				ins.szIns = szIns;
-				memcpy(ins.buffer, buffer, szIns);
+				ins.data.asRawInsData.szIns = szIns;
+				memcpy(ins.data.asRawInsData.buffer, buffer, szIns);
+				ins.kind = DiscreteInstructionKind::Raw;
 
 				return ins;
 			}
 
-			using EmitRegularInsFlags = uint8_t;
-			constexpr static EmitRegularInsFlags
-				EMREGINS_MODRM = 0x01,
-				EMREGINS_SIB = 0x02;
-			SLAKE_FORCEINLINE DiscreteInstruction emitRegularIns(
-				uint8_t nLegacyPrefixes,
-				uint8_t legacyPrefixes[],
-				uint8_t rexPrefix,
-				uint8_t lenOpcode,
-				uint8_t opcode[],
-				EmitRegularInsFlags flags,
-				uint8_t modRm,
-				uint8_t sib,
-				uint8_t lenDisp,
-				uint8_t disp[],
-				uint8_t lenImm,
-				uint8_t imm[]) {
+			SLAKE_FORCEINLINE DiscreteInstruction emitJumpIns(void* dest) {
 				DiscreteInstruction ins;
-				size_t offIns = 0;
+				ins.kind = DiscreteInstructionKind::Jump;
+				ins.data.asJumpInsData.dest = dest;
+				return ins;
+			}
 
-				if (nLegacyPrefixes) {
-					memcpy(ins.buffer + offIns, legacyPrefixes, nLegacyPrefixes);
-					offIns += nLegacyPrefixes;
-				}
-
-				if (rexPrefix & 0b01000000) {
-					ins.buffer[offIns++] = rexPrefix;
-				}
-
-				memcpy(ins.buffer + offIns, opcode, lenOpcode);
-				offIns += lenOpcode;
-
-				if (flags & EMREGINS_MODRM) {
-					ins.buffer[offIns++] = modRm;
-				}
-
-				if (flags & EMREGINS_SIB) {
-					ins.buffer[offIns++] = sib;
-				}
-
-				if (lenDisp) {
-					memcpy(ins.buffer + offIns, disp, lenDisp);
-					offIns += lenDisp;
-				}
-
-				if (lenImm) {
-					memcpy(ins.buffer + offIns, imm, lenImm);
-					offIns += lenImm;
-				}
+			SLAKE_FORCEINLINE DiscreteInstruction emitCallIns(void *dest) {
+				DiscreteInstruction ins;
+				ins.kind = DiscreteInstructionKind::Call;
+				ins.data.asJumpInsData.dest = dest;
+				return ins;
 			}
 		}
 	}

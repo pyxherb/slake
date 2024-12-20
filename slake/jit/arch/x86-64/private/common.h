@@ -37,6 +37,17 @@ namespace slake {
 				size_t size;
 			};
 
+			struct CallingRegSavingInfo {
+				int32_t offSavedRax = INT32_MIN,
+						offSavedR10 = INT32_MIN,
+						offSavedR11 = INT32_MIN;
+				size_t szSavedRax,
+					szSavedR10,
+					szSavedR11;
+				int32_t offSavedRcx, offSavedRdx, offSavedR8, offSavedR9;
+				size_t szSavedRcx, szSavedRdx, szSavedR8, szSavedR9;
+			};
+
 			struct JITCompileContext {
 				std::deque<DiscreteInstruction> nativeInstructions;
 				std::map<size_t, JITRelAddrReplacingPoint32Storage> relativeAddrReplacingPoints;
@@ -286,6 +297,43 @@ namespace slake {
 				SLAKE_API int32_t stackAllocAligned(uint32_t size, uint32_t alignment);
 
 				SLAKE_API void stackFree(int32_t saveOffset, size_t size);
+
+				SLAKE_FORCEINLINE void saveCallingRegs(CallingRegSavingInfo &infoOut) {
+					// Save parameter registers.
+					pushReg(REG_RCX, infoOut.offSavedRcx, infoOut.szSavedRcx);
+					pushReg(REG_RDX, infoOut.offSavedRdx, infoOut.szSavedRdx);
+					pushReg(REG_R8, infoOut.offSavedR8, infoOut.szSavedR8);
+					pushReg(REG_R9, infoOut.offSavedR9, infoOut.szSavedR9);
+					// Save scratch registers.
+					if (isRegInUse(REG_RAX) > 0) {
+						pushReg(REG_RAX, infoOut.offSavedRax, infoOut.szSavedRax);
+					}
+					if (isRegInUse(REG_R10) > 0) {
+						pushReg(REG_R10, infoOut.offSavedR10, infoOut.szSavedR10);
+					}
+					if (isRegInUse(REG_R11) > 0) {
+						pushReg(REG_R11, infoOut.offSavedR11, infoOut.szSavedR11);
+					}
+				}
+
+				SLAKE_FORCEINLINE void restoreCallingRegs(const CallingRegSavingInfo &info) {
+					// Restore scratch registers.
+					if (info.offSavedR11 != INT32_MIN) {
+						popReg(REG_R11, info.offSavedR11, info.szSavedR11);
+					}
+					if (info.offSavedR10 != INT32_MIN) {
+						popReg(REG_R10, info.offSavedR10, info.szSavedR10);
+					}
+					if (info.offSavedRax != INT32_MIN) {
+						popReg(REG_RAX, info.offSavedRax, info.szSavedRax);
+					}
+
+					// Restore parameter registers.
+					popReg(REG_R9, info.offSavedR9, info.szSavedR9);
+					popReg(REG_R8, info.offSavedR8, info.szSavedR8);
+					popReg(REG_RDX, info.offSavedRdx, info.szSavedRdx);
+					popReg(REG_RCX, info.offSavedRcx, info.szSavedRcx);
+				}
 			};
 
 			struct JITExecContext;
@@ -297,6 +345,10 @@ namespace slake {
 				IdRefObject *idRefObject,
 				Value *regOut,
 				InternalException **internalExceptionOut);
+			void memcpyWrapper(
+				void *dest,
+				const void *src,
+				uint64_t size);
 		}
 	}
 }

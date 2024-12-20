@@ -160,3 +160,10 @@ void slake::jit::x86_64::loadInsWrapper(
 			*regOut = Value(object);
 	}
 }
+
+void slake::jit::x86_64::memcpyWrapper(
+	void* dest,
+	const void* src,
+	uint64_t size) {
+	memmove(dest, src, size);
+}

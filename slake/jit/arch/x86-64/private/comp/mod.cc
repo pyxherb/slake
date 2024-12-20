@@ -527,7 +527,13 @@ void compileFpModInstruction(
 			compileContext.addStackPtr(16 - padding);
 		}
 
-		compileContext.pushIns(emitJumpIns((void *)fmodfWrapper));
+		CallingRegSavingInfo callingRegSavingInfo;
+
+		compileContext.saveCallingRegs(callingRegSavingInfo);
+
+		compileContext.pushIns(emitCallIns((void *)fmodfWrapper));
+
+		compileContext.restoreCallingRegs(callingRegSavingInfo);
 
 		if (padding) {
 			compileContext.subStackPtr(16 - padding);
@@ -551,7 +557,13 @@ void compileFpModInstruction(
 			compileContext.addStackPtr(16 - padding);
 		}
 
-		compileContext.pushIns(emitJumpIns((void *)fmodWrapper));
+		CallingRegSavingInfo callingRegSavingInfo;
+
+		compileContext.saveCallingRegs(callingRegSavingInfo);
+
+		compileContext.pushIns(emitCallIns((void *)fmodWrapper));
+
+		compileContext.restoreCallingRegs(callingRegSavingInfo);
 
 		if (padding) {
 			compileContext.subStackPtr(16 - padding);

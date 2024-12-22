@@ -86,8 +86,6 @@ namespace slake {
 			return _ptr;
 		}
 	};
-
-	constexpr bool isStatic = std::is_trivially_copyable_v<InternalExceptionPointer>;
 }
 
 #define SLAKE_UNWRAP_EXCEPT(expr) (expr).unwrap()

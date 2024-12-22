@@ -13,7 +13,7 @@
 namespace slake {
 	namespace jit {
 		namespace x86_64 {
-			enum class DiscreteInstructionKind : uint8_t {
+			enum class DiscreteInstructionType : uint8_t {
 				Raw = 0,
 				Jump,
 				Call
@@ -32,7 +32,7 @@ namespace slake {
 						void *dest;
 					} asCallInsData;
 				} data;
-				DiscreteInstructionKind kind;
+				DiscreteInstructionType insType;
 			};
 
 			enum RegisterId : uint8_t {

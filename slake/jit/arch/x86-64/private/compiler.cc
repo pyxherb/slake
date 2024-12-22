@@ -63,9 +63,19 @@ InternalExceptionPointer compileInstruction(
 
 			compileContext.saveCallingRegs(callingRegSavingInfo);
 
-			IdRefObject *refObj = (IdRefObject *)curIns.operands[0].getObjectRef();
+			// Pass the first argument.
+			{
+				compileContext.pushIns(emitMovMemToReg64Ins(REG_RCX, MemoryLocation{REG_RBP, compileContext.jitContextOff, REG_MAX, 0}));
+			}
 
-			compileContext.pushIns(emitMovImm64ToReg64Ins(REG_RDX, (uint8_t *)&refObj));
+			// Pass the second argument.
+			{
+				IdRefObject *refObj = (IdRefObject *)curIns.operands[0].getObjectRef();
+
+				compileContext.pushIns(emitMovImm64ToReg64Ins(REG_RDX, (uint8_t *)&refObj));
+			}
+
+			compileContext.pushIns(emitCallIns((void *)loadInsWrapper));
 
 			compileContext.restoreCallingRegs(callingRegSavingInfo);
 

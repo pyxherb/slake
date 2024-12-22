@@ -631,11 +631,9 @@ void slake::slkc::Compiler::compileUnaryOpExpr(CompileContext *compileContext, s
 					}
 					compileContext->_insertIns(
 						Opcode::MCALL,
-						{},
+						std::make_shared<RegRefNode>(resultRegIndex),
 						{ std::make_shared<RegRefNode>(callTargetRegIndex),
 							std::make_shared<RegRefNode>(lhsRegIndex) });
-
-					compileContext->_insertIns(Opcode::LRET, std::make_shared<RegRefNode>(resultRegIndex), {});
 
 					resultType = overloading->returnType;
 

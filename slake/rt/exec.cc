@@ -123,7 +123,8 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 	Object *thisObject,
 	const FnOverloadingObject *fn,
 	const Value *args,
-	uint32_t nArgs) noexcept {
+	uint32_t nArgs,
+	uint32_t returnValueOut) noexcept {
 	HostRefHolder holder;
 
 	std::unique_ptr<MajorFrame> newMajorFrame = std::make_unique<MajorFrame>(this, context);
@@ -170,6 +171,8 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 			break;
 		}
 	}
+
+	newMajorFrame->returnValueOutReg = returnValueOut;
 
 	context->majorFrames.push_back(std::move(newMajorFrame));
 	return {};
@@ -1451,6 +1454,13 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 						case Opcode::CALL: {
 							FnOverloadingObject *fn;
 							Object *thisObject = nullptr;
+							uint32_t returnValueOutputReg = UINT32_MAX;
+
+							if (ins.output.valueType != ValueType::Undefined) {
+								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.output, ValueType::RegRef));
+
+								returnValueOutputReg = ins.output.getRegIndex();
+							}
 
 							switch (ins.opcode) {
 								case Opcode::CTORCALL:
@@ -1492,7 +1502,8 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 																			thisObject,
 																			fn,
 																			curMajorFrame->nextArgStack.data(),
-																			curMajorFrame->nextArgStack.size()));
+																			curMajorFrame->nextArgStack.size(),
+																			returnValueOutputReg));
 							curMajorFrame->nextArgStack.clear();
 
 							break;
@@ -1500,23 +1511,26 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 						case Opcode::RET: {
 							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(this, ins, false, 1));
 
+							uint32_t returnValueOutReg = curMajorFrame->returnValueOutReg;
 							Value returnValue;
 							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, curMajorFrame, ins.operands[0], returnValue));
 							context->_context.majorFrames.pop_back();
-							context->_context.majorFrames.back()->returnValue = returnValue;
-							goto insExecEnd;
-						}
-						case Opcode::LRET: {
-							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(this, ins, false, 0));
-							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.output, ValueType::RegRef));
 
-							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), curMajorFrame->returnValue));
-							break;
+							if (returnValueOutReg != UINT32_MAX) {
+								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, context->_context.majorFrames.back().get(), returnValueOutReg, returnValue));
+							}
+							goto insExecEnd;
 						}
 						case Opcode::YIELD: {
 							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(this, ins, false, 1));
 
-							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, curMajorFrame, ins.operands[0], curMajorFrame->returnValue));
+							uint32_t returnValueOutReg = curMajorFrame->returnValueOutReg;
+							Value returnValue;
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, curMajorFrame, ins.operands[0], returnValue));
+
+							if (returnValueOutReg != UINT32_MAX) {
+								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, context->_context.majorFrames.back().get(), returnValueOutReg, returnValue));
+							}
 							context->_context.flags |= CTX_YIELDED;
 							break;
 						}
@@ -1691,8 +1705,11 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 					curMajorFrame->thisObject,
 					curMajorFrame->argStack.data(),
 					curMajorFrame->argStack.size());
+				uint32_t returnValueOutReg = curMajorFrame->returnValueOutReg;
 				context->_context.majorFrames.pop_back();
-				context->_context.majorFrames.back()->returnValue = returnValue;
+				if (returnValueOutReg != UINT32_MAX) {
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, context->_context.majorFrames.back().get(), returnValueOutReg, returnValue));
+				}
 
 				break;
 			}
@@ -1723,10 +1740,11 @@ SLAKE_API InternalExceptionPointer Runtime::execFn(
 			auto frame = std::make_unique<MajorFrame>(this, &context->getContext());
 			frame->curFn = overloading;
 			frame->curIns = UINT32_MAX;
+			frame->regs.resize(1);
 			context->getContext().majorFrames.push_back(std::move(frame));
 		}
 
-		SLAKE_RETURN_IF_EXCEPT(_createNewMajorFrame(&context->_context, thisObject, overloading, args, nArgs));
+		SLAKE_RETURN_IF_EXCEPT(_createNewMajorFrame(&context->_context, thisObject, overloading, args, nArgs, 0));
 	} else {
 		contextOut = context;
 	}

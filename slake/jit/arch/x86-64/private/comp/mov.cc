@@ -336,7 +336,7 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 								compileContext.pushIns(emitMovReg64ToReg64Ins(tmpRegId, REG_RBP));
 								compileContext.pushIns(emitSubImm32ToReg64Ins(tmpRegId, (uint8_t *)&srcVregInfo.saveOffset));
 
-								compileContext.pushIns(emitMovImm64ToReg64Ins(REG_RCX, tmpRegId));
+								compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RCX, tmpRegId));
 
 								if (tmpRegOff != INT32_MIN) {
 									compileContext.popReg(tmpRegId, tmpRegOff, tmpRegSize);
@@ -353,7 +353,7 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 								compileContext.pushIns(emitMovReg64ToReg64Ins(tmpRegId, REG_RBP));
 								compileContext.pushIns(emitSubImm32ToReg64Ins(tmpRegId, (uint8_t *)&off));
 
-								compileContext.pushIns(emitMovImm64ToReg64Ins(REG_RDX, tmpRegId));
+								compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RDX, tmpRegId));
 
 								if (tmpRegOff != INT32_MIN) {
 									compileContext.popReg(tmpRegId, tmpRegOff, tmpRegSize);
@@ -371,6 +371,8 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 							compileContext.pushIns(emitCallIns((void *)memcpyWrapper));
 
 							compileContext.restoreCallingRegs(callingRegSavingInfo);
+
+							VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, off, sizeof(double));
 
 							break;
 						}

@@ -3578,7 +3578,7 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 							{ std::make_shared<IdRefExprNode>(fullName) });
 					}
 					compileContext->_insertIns(Opcode::MCALL,
-						{},
+						std::make_shared<RegRefNode>(resultRegIndex),
 						{ std::make_shared<RegRefNode>(callTargetRegIndex), std::make_shared<RegRefNode>(lhsRegIndex) });
 
 #if SLKC_WITH_LANGUAGE_SERVER
@@ -3586,8 +3586,6 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 						tokenInfo.semanticInfo.correspondingMember = overloading;
 					});
 #endif
-
-					compileContext->_insertIns(Opcode::LRET, std::make_shared<RegRefNode>(resultRegIndex), {});
 
 					resultType = overloading->returnType;
 

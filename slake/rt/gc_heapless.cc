@@ -378,7 +378,6 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Context 
 	bool isWalkableObjectDetected = false;
 	for (auto &j : ctxt.majorFrames) {
 		context.pushObject((FnOverloadingObject *)j->curFn);
-		_gcWalkHeapless(context, j->returnValue);
 		context.pushObject(j->thisObject);
 		_gcWalkHeapless(context, j->curExcept);
 		for (auto &k : j->argStack)

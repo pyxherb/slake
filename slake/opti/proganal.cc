@@ -714,12 +714,6 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				}
 				break;
 			case Opcode::CALL: {
-				if (regIndex != UINT32_MAX) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
-				}
 				if (curIns.operands.size() != 1) {
 					return MalformedProgramError::alloc(
 						runtime,
@@ -747,7 +741,10 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 
 				switch (callTargetType.typeId) {
 					case TypeId::FnDelegate:
-						analyzeContext.lastCallTargetType = callTargetType;
+						if (regIndex != UINT32_MAX) {
+							FnTypeDefObject *typeDef = (FnTypeDefObject*)callTargetType.getCustomTypeExData();
+							analyzedInfoOut.analyzedRegInfo[regIndex].type = typeDef->returnType;
+						}
 						break;
 					default: {
 						return MalformedProgramError::alloc(
@@ -761,12 +758,6 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 			}
 			case Opcode::MCALL:
 			case Opcode::CTORCALL: {
-				if (regIndex != UINT32_MAX) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
-				}
 				if (curIns.operands.size() != 2) {
 					return MalformedProgramError::alloc(
 						runtime,
@@ -794,7 +785,10 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 
 				switch (callTargetType.typeId) {
 					case TypeId::FnDelegate:
-						analyzeContext.lastCallTargetType = callTargetType;
+						if (regIndex != UINT32_MAX) {
+							FnTypeDefObject *typeDef = (FnTypeDefObject *)callTargetType.getCustomTypeExData();
+							analyzedInfoOut.analyzedRegInfo[regIndex].type = typeDef->returnType;
+						}
 						break;
 					default: {
 						return MalformedProgramError::alloc(
@@ -813,35 +807,6 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						fnObject,
 						i);
 				}
-				break;
-			case Opcode::LRET:
-				if (regIndex == UINT32_MAX) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
-				}
-
-				switch (analyzeContext.lastCallTargetType.typeId) {
-					case TypeId::FnDelegate: {
-						Type returnType = ((FnTypeDefObject *)analyzeContext.lastCallTargetType.getCustomTypeExData())->returnType;
-						if (returnType.typeId == TypeId::None) {
-							return MalformedProgramError::alloc(
-								runtime,
-								fnObject,
-								i);
-						}
-						analyzedInfoOut.analyzedRegInfo[regIndex].type = ((FnTypeDefObject *)analyzeContext.lastCallTargetType.getCustomTypeExData())->returnType;
-						break;
-					}
-					default: {
-						return MalformedProgramError::alloc(
-							runtime,
-							fnObject,
-							i);
-					}
-				}
-
 				break;
 			case Opcode::YIELD:
 				if (regIndex != UINT32_MAX) {

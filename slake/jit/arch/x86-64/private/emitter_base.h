@@ -11,21 +11,21 @@ namespace slake {
 
 				ins.data.asRawInsData.szIns = szIns;
 				memcpy(ins.data.asRawInsData.buffer, buffer, szIns);
-				ins.kind = DiscreteInstructionKind::Raw;
+				ins.insType = DiscreteInstructionType::Raw;
 
 				return ins;
 			}
 
 			SLAKE_FORCEINLINE DiscreteInstruction emitJumpIns(void* dest) {
 				DiscreteInstruction ins;
-				ins.kind = DiscreteInstructionKind::Jump;
+				ins.insType = DiscreteInstructionType::Jump;
 				ins.data.asJumpInsData.dest = dest;
 				return ins;
 			}
 
 			SLAKE_FORCEINLINE DiscreteInstruction emitCallIns(void *dest) {
 				DiscreteInstruction ins;
-				ins.kind = DiscreteInstructionKind::Call;
+				ins.insType = DiscreteInstructionType::Call;
 				ins.data.asJumpInsData.dest = dest;
 				return ins;
 			}

@@ -2,6 +2,7 @@
 #define _SLAKE_JIT_ARCH_X86_64_PRIVATE_COMMON_H_
 
 #include "emitters.h"
+#include "../context.h"
 
 namespace slake {
 	namespace jit {
@@ -58,6 +59,11 @@ namespace slake {
 				std::map<uint32_t, VirtualRegState> virtualRegStates;
 				std::map<size_t, std::list<uint32_t>> regRecycleBoundaries;
 				std::map<int32_t, size_t> freeStackSpaces;
+				int32_t jitContextOff;
+
+				SLAKE_FORCEINLINE void initJITContextStorage() {
+					jitContextOff = stackAllocAligned(sizeof(JITExecContext *), sizeof(JITExecContext *));
+				}
 
 				SLAKE_FORCEINLINE void pushIns(const DiscreteInstruction &ins) {
 					nativeInstructions.push_back(ins);
@@ -293,6 +299,14 @@ namespace slake {
 
 					return vregState;
 				}
+				SLAKE_FORCEINLINE VirtualRegState &defVirtualReg(uint32_t vreg, int32_t saveOffset, size_t size) {
+					VirtualRegState &vregState = virtualRegStates[vreg];
+					vregState.phyReg = REG_MAX;
+					vregState.size = size;
+					vregState.saveOffset = saveOffset;
+
+					return vregState;
+				}
 
 				SLAKE_API int32_t stackAllocAligned(uint32_t size, uint32_t alignment);
 
@@ -305,13 +319,13 @@ namespace slake {
 					pushReg(REG_R8, infoOut.offSavedR8, infoOut.szSavedR8);
 					pushReg(REG_R9, infoOut.offSavedR9, infoOut.szSavedR9);
 					// Save scratch registers.
-					if (isRegInUse(REG_RAX) > 0) {
+					if (isRegInUse(REG_RAX)) {
 						pushReg(REG_RAX, infoOut.offSavedRax, infoOut.szSavedRax);
 					}
-					if (isRegInUse(REG_R10) > 0) {
+					if (isRegInUse(REG_R10)) {
 						pushReg(REG_R10, infoOut.offSavedR10, infoOut.szSavedR10);
 					}
-					if (isRegInUse(REG_R11) > 0) {
+					if (isRegInUse(REG_R11)) {
 						pushReg(REG_R11, infoOut.offSavedR11, infoOut.szSavedR11);
 					}
 				}
@@ -342,9 +356,7 @@ namespace slake {
 
 			void loadInsWrapper(
 				JITExecContext *context,
-				IdRefObject *idRefObject,
-				Value *regOut,
-				InternalException **internalExceptionOut);
+				IdRefObject *idRefObject);
 			void memcpyWrapper(
 				void *dest,
 				const void *src,

@@ -88,7 +88,7 @@ SLAKE_API InternalExceptionPointer ContextObject::resume(HostRefHolder *hostRefH
 }
 
 SLAKE_API Value ContextObject::getResult() {
-	return _context.majorFrames.back()->returnValue;
+	return _context.majorFrames.back()->regs[0];
 }
 
 SLAKE_API bool ContextObject::isDone() {

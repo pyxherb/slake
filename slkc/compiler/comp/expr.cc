@@ -270,18 +270,6 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 				compileContext->popMinorContext();
 			}
 
-			if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.isLastCallTargetStatic)
-				compileContext->_insertIns(
-					Opcode::CALL,
-					{},
-					{ std::make_shared<RegRefNode>(callTargetRegIndex) });
-			else
-				compileContext->_insertIns(
-					Opcode::MCALL,
-					{},
-					{ std::make_shared<RegRefNode>(callTargetRegIndex),
-						std::make_shared<RegRefNode>(thisRegIndex) });
-
 			switch (compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalPurpose) {
 				case EvalPurpose::LValue: {
 					if (!isLValueType(returnType))
@@ -291,10 +279,17 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 								MessageType::Error,
 								"Expecting a lvalue expression"));
 
-					compileContext->_insertIns(
-						Opcode::LRET,
-						compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest,
-						{});
+					if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.isLastCallTargetStatic)
+						compileContext->_insertIns(
+							Opcode::CALL,
+							compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest,
+							{ std::make_shared<RegRefNode>(callTargetRegIndex) });
+					else
+						compileContext->_insertIns(
+							Opcode::MCALL,
+							compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest,
+							{ std::make_shared<RegRefNode>(callTargetRegIndex),
+								std::make_shared<RegRefNode>(thisRegIndex) });
 					break;
 				}
 				case EvalPurpose::RValue:
@@ -302,24 +297,49 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 					if (isLValueType(returnType)) {
 						uint32_t tmpRegIndex = compileContext->allocReg();
 
-						compileContext->_insertIns(
-							Opcode::LRET,
-							std::make_shared<RegRefNode>(tmpRegIndex),
-							{});
+						if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.isLastCallTargetStatic)
+							compileContext->_insertIns(
+								Opcode::CALL,
+								std::make_shared<RegRefNode>(tmpRegIndex),
+								{ std::make_shared<RegRefNode>(callTargetRegIndex) });
+						else
+							compileContext->_insertIns(
+								Opcode::MCALL,
+								std::make_shared<RegRefNode>(tmpRegIndex),
+								{ std::make_shared<RegRefNode>(callTargetRegIndex),
+									std::make_shared<RegRefNode>(thisRegIndex) });
 						compileContext->_insertIns(
 							Opcode::LVALUE,
 							compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest,
 							{ std::make_shared<RegRefNode>(tmpRegIndex) });
 					} else {
-						compileContext->_insertIns(
-							Opcode::LRET,
-							compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest,
-							{});
+						if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.isLastCallTargetStatic)
+							compileContext->_insertIns(
+								Opcode::CALL,
+								compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest,
+								{ std::make_shared<RegRefNode>(callTargetRegIndex) });
+						else
+							compileContext->_insertIns(
+								Opcode::MCALL,
+								compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest,
+								{ std::make_shared<RegRefNode>(callTargetRegIndex),
+									std::make_shared<RegRefNode>(thisRegIndex) });
 					}
 
 					break;
 				}
 				case EvalPurpose::Stmt:
+					if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.isLastCallTargetStatic)
+						compileContext->_insertIns(
+							Opcode::CALL,
+							{},
+							{ std::make_shared<RegRefNode>(callTargetRegIndex) });
+					else
+						compileContext->_insertIns(
+							Opcode::MCALL,
+							{},
+							{ std::make_shared<RegRefNode>(callTargetRegIndex),
+								std::make_shared<RegRefNode>(thisRegIndex) });
 					break;
 				default:
 					assert(false);

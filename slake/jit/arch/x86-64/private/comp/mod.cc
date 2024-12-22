@@ -516,9 +516,9 @@ void compileFpModInstruction(
 		}
 
 		if (rhsVregState.saveOffset != INT32_MIN) {
-			compileContext.pushIns(emitMovdMemToRegXmmIns(rhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }))
+			compileContext.pushIns(emitMovdMemToRegXmmIns(rhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
 		} else {
-			compileContext.pushIns(emitMovqRegXmmToRegXmmIns(rhsXmmRegId, rhsVregState.phyReg))
+			compileContext.pushIns(emitMovqRegXmmToRegXmmIns(rhsXmmRegId, rhsVregState.phyReg));
 		}
 
 		size_t padding = compileContext.curStackSize % 16;
@@ -546,9 +546,9 @@ void compileFpModInstruction(
 		}
 
 		if (rhsVregState.saveOffset != INT32_MIN) {
-			compileContext.pushIns(emitMovqMemToRegXmmIns(rhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }))
+			compileContext.pushIns(emitMovqMemToRegXmmIns(rhsXmmRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
 		} else {
-			compileContext.pushIns(emitMovqRegXmmToRegXmmIns(rhsXmmRegId, rhsVregState.phyReg))
+			compileContext.pushIns(emitMovqRegXmmToRegXmmIns(rhsXmmRegId, rhsVregState.phyReg));
 		}
 
 		size_t padding = compileContext.curStackSize % 16;
@@ -730,10 +730,10 @@ InternalExceptionPointer slake::jit::x86_64::compileModInstruction(
 	return {};
 }
 
-SLAKE_API float fmodfWrapper(float n, float d) {
+SLAKE_API float slake::jit::x86_64::fmodfWrapper(float n, float d) {
 	return flib::fmodf(n, d);
 }
 
-SLAKE_API double fmodWrapper(double n, double d) {
+SLAKE_API double slake::jit::x86_64::fmodWrapper(double n, double d) {
 	return flib::fmod(n, d);
 }

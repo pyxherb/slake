@@ -46,7 +46,6 @@ using namespace slake;
 		MNEMONIC_ENTRY(YIELD),    \
 		MNEMONIC_ENTRY(LTHIS),    \
 		MNEMONIC_ENTRY(RET),      \
-		MNEMONIC_ENTRY(LRET),     \
 		MNEMONIC_ENTRY(NEW),      \
 		MNEMONIC_ENTRY(ARRNEW),   \
 		MNEMONIC_ENTRY(THROW),    \

@@ -49,7 +49,7 @@ namespace slake {
 
 		Object *thisObject = nullptr;  // `this' object.
 
-		Value returnValue = nullptr;  // Return value.
+		uint32_t returnValueOutReg = UINT32_MAX;
 
 		std::pmr::vector<MinorFrame> minorFrames;  // Minor frames.
 

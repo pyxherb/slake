@@ -62,8 +62,6 @@ namespace slake {
 		CTORCALL,  // Constructor Call
 		RET,	   // Return
 
-		LRET,  // Load return value
-
 		YIELD,	 // Yield
 
 		LTHIS,	// Load this register

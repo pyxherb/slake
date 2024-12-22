@@ -154,7 +154,8 @@ namespace slake {
 			Object *thisObject,
 			const FnOverloadingObject *fn,
 			const Value *args,
-			uint32_t nArgs) noexcept;
+			uint32_t nArgs,
+			uint32_t returnValueOut) noexcept;
 
 		SLAKE_API [[nodiscard]] InternalExceptionPointer _addLocalVar(MajorFrame *frame, Type type, VarRef &varRefOut) noexcept;
 

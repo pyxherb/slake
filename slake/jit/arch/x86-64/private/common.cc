@@ -141,23 +141,21 @@ SLAKE_API void JITCompileContext::stackFree(int32_t saveOffset, size_t size) {
 
 void slake::jit::x86_64::loadInsWrapper(
 	JITExecContext* context,
-	IdRefObject* idRefObject,
-	Value* regOut,
-	InternalException** internalExceptionOut) {
+	IdRefObject* idRefObject) {
 	VarRefContext varRefContext;
 	Object *object;
 	InternalExceptionPointer e = context->runtime->resolveIdRef(idRefObject, &varRefContext, object, nullptr);
 	if (e) {
-		*internalExceptionOut = e.get();
+		context->exception = e.get();
 		e.reset();
 		return;
 	}
 	switch (object->getKind()) {
 		case ObjectKind::Var:
-			*regOut = Value(VarRef((VarObject *)object, varRefContext));
+			context->returnValue = Value(VarRef((VarObject *)object, varRefContext));
 			break;
 		default:
-			*regOut = Value(object);
+			context->returnValue = Value(object);
 	}
 }
 

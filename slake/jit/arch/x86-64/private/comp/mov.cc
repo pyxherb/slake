@@ -379,6 +379,61 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 					}
 					break;
 				}
+				case TypeId::Any: {
+					int32_t off = compileContext.stackAllocAligned(sizeof(Value), sizeof(Value));
+
+					{
+						RegisterId tmpRegId = compileContext.allocGpReg();
+						int32_t tmpRegOff = INT32_MIN;
+						size_t tmpRegSize;
+						if (compileContext.isRegInUse(tmpRegId)) {
+							compileContext.pushReg(tmpRegId, tmpRegOff, tmpRegSize);
+						}
+
+						compileContext.pushIns(emitMovReg64ToReg64Ins(tmpRegId, REG_RBP));
+						compileContext.pushIns(emitSubImm32ToReg64Ins(tmpRegId, (uint8_t *)&srcVregInfo.saveOffset));
+
+						compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RCX, tmpRegId));
+
+						if (tmpRegOff != INT32_MIN) {
+							compileContext.popReg(tmpRegId, tmpRegOff, tmpRegSize);
+						}
+					}
+					{
+						RegisterId tmpRegId = compileContext.allocGpReg();
+						int32_t tmpRegOff = INT32_MIN;
+						size_t tmpRegSize;
+						if (compileContext.isRegInUse(tmpRegId)) {
+							compileContext.pushReg(tmpRegId, tmpRegOff, tmpRegSize);
+						}
+
+						compileContext.pushIns(emitMovReg64ToReg64Ins(tmpRegId, REG_RBP));
+						compileContext.pushIns(emitSubImm32ToReg64Ins(tmpRegId, (uint8_t *)&off));
+
+						compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RDX, tmpRegId));
+
+						if (tmpRegOff != INT32_MIN) {
+							compileContext.popReg(tmpRegId, tmpRegOff, tmpRegSize);
+						}
+					}
+					{
+						uint64_t size = sizeof(Value);
+						compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&size));
+					}
+
+					CallingRegSavingInfo callingRegSavingInfo;
+
+					compileContext.saveCallingRegs(callingRegSavingInfo);
+
+					compileContext.pushIns(emitCallIns((void *)memcpyWrapper));
+
+					compileContext.restoreCallingRegs(callingRegSavingInfo);
+
+					VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, off, sizeof(double));
+
+					break;
+				}
+				break;
 			}
 			break;
 		}

@@ -20,12 +20,7 @@ namespace slake {
 		SLAKE_API InstanceMemberAccessorVarObject(Runtime *rt, InstanceObject *instanceObject);
 		SLAKE_API virtual ~InstanceMemberAccessorVarObject();
 
-		SLAKE_API virtual Type getVarType(const VarRefContext &context) const override;
-
 		SLAKE_API virtual VarKind getVarKind() const override { return VarKind::InstanceMemberAccessor; }
-
-		SLAKE_API [[nodiscard]] virtual InternalExceptionPointer setData(const VarRefContext &varRefContext, const Value &value) override;
-		SLAKE_API [[nodiscard]] virtual InternalExceptionPointer getData(const VarRefContext &varRefContext, Value &valueOut) const override;
 
 		SLAKE_API static HostObjectRef<InstanceMemberAccessorVarObject> alloc(Runtime *rt, InstanceObject *arrayObject);
 		SLAKE_API virtual void dealloc() override;

@@ -112,7 +112,7 @@ SLAKE_API Value Runtime::_loadValue(LoaderContext &context, HostRefHolder &holde
 			InternalExceptionPointer e;
 
 			for (uint32_t i = 0; i < len; ++i) {
-				if ((e = value->accessor->setData(VarRefContext::makeArrayContext(i), _loadValue(context, holder)))) {
+				if ((e = writeVar(value->accessor, VarRefContext::makeArrayContext(i), _loadValue(context, holder)))) {
 					throw LoaderError("Error setting value of element #" + std::to_string(i));
 				}
 			}
@@ -335,7 +335,7 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 
 		// Load initial value.
 		if (i.flags & slxfmt::VAD_INIT) {
-			if (auto e = var->setData(VarRefContext(), _loadValue(context, holder));
+			if (auto e = writeVar(var.get(), VarRefContext(), _loadValue(context, holder));
 				e) {
 				throw LoaderError("Error setting initial value for a variable");
 			}
@@ -344,31 +344,31 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 				case TypeId::Value:
 					switch (varType.getValueTypeExData()) {
 						case ValueType::I8:
-							SLAKE_UNWRAP_EXCEPT(var->setData(VarRefContext(), Value((int8_t)0)));
+							SLAKE_UNWRAP_EXCEPT(writeVar(var.get(), VarRefContext(), Value((int8_t)0)));
 							break;
 						case ValueType::I16:
-							SLAKE_UNWRAP_EXCEPT(var->setData(VarRefContext(), Value((int16_t)0)));
+							SLAKE_UNWRAP_EXCEPT(writeVar(var.get(), VarRefContext(), Value((int16_t)0)));
 							break;
 						case ValueType::I32:
-							SLAKE_UNWRAP_EXCEPT(var->setData(VarRefContext(), Value((int32_t)0)));
+							SLAKE_UNWRAP_EXCEPT(writeVar(var.get(), VarRefContext(), Value((int32_t)0)));
 							break;
 						case ValueType::I64:
-							SLAKE_UNWRAP_EXCEPT(var->setData(VarRefContext(), Value((int64_t)0)));
+							SLAKE_UNWRAP_EXCEPT(writeVar(var.get(), VarRefContext(), Value((int64_t)0)));
 							break;
 						case ValueType::U8:
-							SLAKE_UNWRAP_EXCEPT(var->setData(VarRefContext(), Value((uint8_t)0)));
+							SLAKE_UNWRAP_EXCEPT(writeVar(var.get(), VarRefContext(), Value((uint8_t)0)));
 							break;
 						case ValueType::U16:
-							SLAKE_UNWRAP_EXCEPT(var->setData(VarRefContext(), Value((uint16_t)0)));
+							SLAKE_UNWRAP_EXCEPT(writeVar(var.get(), VarRefContext(), Value((uint16_t)0)));
 							break;
 						case ValueType::U32:
-							SLAKE_UNWRAP_EXCEPT(var->setData(VarRefContext(), Value((uint32_t)0)));
+							SLAKE_UNWRAP_EXCEPT(writeVar(var.get(), VarRefContext(), Value((uint32_t)0)));
 							break;
 						case ValueType::U64:
-							SLAKE_UNWRAP_EXCEPT(var->setData(VarRefContext(), Value((uint64_t)0)));
+							SLAKE_UNWRAP_EXCEPT(writeVar(var.get(), VarRefContext(), Value((uint64_t)0)));
 							break;
 						case ValueType::Bool:
-							SLAKE_UNWRAP_EXCEPT(var->setData(VarRefContext(), Value((bool)false)));
+							SLAKE_UNWRAP_EXCEPT(writeVar(var.get(), VarRefContext(), Value((bool)false)));
 							break;
 						default:
 							// Unenumerated value types should never occur.
@@ -376,13 +376,13 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 					}
 					break;
 				case TypeId::String:
-					SLAKE_UNWRAP_EXCEPT(var->setData(VarRefContext(), Value(nullptr)));
+					SLAKE_UNWRAP_EXCEPT(writeVar(var.get(), VarRefContext(), Value(nullptr)));
 					break;
 				case TypeId::Instance:
-					SLAKE_UNWRAP_EXCEPT(var->setData(VarRefContext(), Value(nullptr)));
+					SLAKE_UNWRAP_EXCEPT(writeVar(var.get(), VarRefContext(), Value(nullptr)));
 					break;
 				case TypeId::Any:
-					SLAKE_UNWRAP_EXCEPT(var->setData(VarRefContext(), Value(nullptr)));
+					SLAKE_UNWRAP_EXCEPT(writeVar(var.get(), VarRefContext(), Value(nullptr)));
 					break;
 				case TypeId::GenericArg:
 					break;

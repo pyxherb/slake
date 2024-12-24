@@ -141,7 +141,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 		auto varObject = RegularVarObject::alloc(this, ACCESS_PUB, fn->paramTypes[i]);
 		holder.addObject(varObject.get());
 		newMajorFrame->argStack[i] = varObject.get();
-		SLAKE_RETURN_IF_EXCEPT(varObject->setData({}, args[i]));
+		SLAKE_RETURN_IF_EXCEPT(writeVar(varObject.get(), {}, args[i]));
 	}
 
 	if (fn->overloadingFlags & OL_VARG) {
@@ -160,7 +160,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 			varArgArrayObject->data[i] = args[fn->paramTypes.size() + i];
 		}
 
-		InternalExceptionPointer result = varArgEntryVarObject->setData({}, Value(varArgArrayObject.get()));
+		InternalExceptionPointer result = writeVar(varArgEntryVarObject.get(), {}, Value(varArgArrayObject.get()));
 		assert(!result);
 	}
 
@@ -429,7 +429,7 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 
 							Value data;
 							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, curMajorFrame, ins.operands[1], data));
-							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, varRef.varPtr->setData(
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, writeVar(varRef.varPtr,
 																			varRef.context,
 																			data));
 							break;
@@ -493,7 +493,8 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 							}
 
 							Value data;
-							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, ((VarObject *)varRef.varPtr)->getData(varRef.context, data));
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, tryAccessVar((VarObject *)varRef.varPtr, varRef.context));
+							data = readVar((VarObject *)varRef.varPtr, varRef.context);
 							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this,
 																			curMajorFrame,
 																			ins.output.getRegIndex(),

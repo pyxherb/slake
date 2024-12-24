@@ -281,7 +281,15 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 
 			auto varRef = value.getVarRef();
 
-			if (varRef.varPtr->getVarType(varRef.context) != type.getRefExData())
+			Type type;
+
+			InternalExceptionPointer e = varRef.varPtr->associatedRuntime->typeofVar(varRef.varPtr, varRef.context, type);
+			if (e) {
+				e.reset();
+				return false;
+			}
+
+			if (type != type.getRefExData())
 				return false;
 			break;
 		}

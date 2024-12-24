@@ -16,10 +16,6 @@ SLAKE_API ArrayAccessorVarObject::ArrayAccessorVarObject(const ArrayAccessorVarO
 
 SLAKE_API ArrayAccessorVarObject::~ArrayAccessorVarObject() {}
 
-SLAKE_API Type ArrayAccessorVarObject::getVarType(const VarRefContext &context) const {
-	return Type::makeArrayTypeName(associatedRuntime, elementType);
-}
-
 SLAKE_API ArrayObject::ArrayObject(Runtime *rt, const Type &elementType, ArrayAccessorVarObject *accessor)
 	: Object(rt),
 	  elementType(elementType),
@@ -46,32 +42,6 @@ SLAKE_API U8ArrayAccessorVarObject::U8ArrayAccessorVarObject(Runtime *rt, U8Arra
 }
 
 SLAKE_API U8ArrayAccessorVarObject::~U8ArrayAccessorVarObject() {}
-
-SLAKE_API InternalExceptionPointer U8ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
-	if (value.valueType != ValueType::U8) {
-		return raiseMismatchedVarTypeError(associatedRuntime);
-	}
-
-	U8ArrayObject *arrayObject = ((U8ArrayObject *)this->arrayObject);
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	arrayObject->data[index] = value.getU8();
-	return {};
-}
-
-SLAKE_API InternalExceptionPointer U8ArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
-	U8ArrayObject *arrayObject = ((U8ArrayObject *)this->arrayObject);
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	valueOut = Value(arrayObject->data[index]);
-	return {};
-}
 
 SLAKE_API HostObjectRef<U8ArrayAccessorVarObject> slake::U8ArrayAccessorVarObject::alloc(Runtime *rt, U8ArrayObject *arrayObject) {
 	using Alloc = std::pmr::polymorphic_allocator<U8ArrayAccessorVarObject>;
@@ -204,32 +174,6 @@ SLAKE_API U16ArrayAccessorVarObject::U16ArrayAccessorVarObject(Runtime *rt, U16A
 
 SLAKE_API U16ArrayAccessorVarObject::~U16ArrayAccessorVarObject() {}
 
-SLAKE_API InternalExceptionPointer U16ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
-	if (value.valueType != ValueType::U16) {
-		return raiseMismatchedVarTypeError(associatedRuntime);
-	}
-
-	U16ArrayObject *arrayObject = ((U16ArrayObject *)this->arrayObject);
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	arrayObject->data[index] = value.getU16();
-	return {};
-}
-
-SLAKE_API InternalExceptionPointer U16ArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
-	U16ArrayObject *arrayObject = ((U16ArrayObject *)this->arrayObject);
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	valueOut = Value(arrayObject->data[index]);
-	return {};
-}
-
 SLAKE_API HostObjectRef<U16ArrayAccessorVarObject> slake::U16ArrayAccessorVarObject::alloc(Runtime *rt, U16ArrayObject *arrayObject) {
 	using Alloc = std::pmr::polymorphic_allocator<U16ArrayAccessorVarObject>;
 	Alloc allocator(&rt->globalHeapPoolResource);
@@ -360,32 +304,6 @@ SLAKE_API U32ArrayAccessorVarObject::U32ArrayAccessorVarObject(Runtime *rt, U32A
 }
 
 SLAKE_API U32ArrayAccessorVarObject::~U32ArrayAccessorVarObject() {}
-
-SLAKE_API InternalExceptionPointer U32ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
-	if (value.valueType != ValueType::U32) {
-		return raiseMismatchedVarTypeError(associatedRuntime);
-	}
-
-	U32ArrayObject *arrayObject = ((U32ArrayObject *)this->arrayObject);
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	arrayObject->data[index] = value.getU32();
-	return {};
-}
-
-SLAKE_API InternalExceptionPointer U32ArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
-	U32ArrayObject *arrayObject = ((U32ArrayObject *)this->arrayObject);
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	valueOut = Value(arrayObject->data[index]);
-	return {};
-}
 
 SLAKE_API HostObjectRef<U32ArrayAccessorVarObject> slake::U32ArrayAccessorVarObject::alloc(Runtime *rt, U32ArrayObject *arrayObject) {
 	using Alloc = std::pmr::polymorphic_allocator<U32ArrayAccessorVarObject>;
@@ -518,32 +436,6 @@ SLAKE_API U64ArrayAccessorVarObject::U64ArrayAccessorVarObject(Runtime *rt, U64A
 
 SLAKE_API U64ArrayAccessorVarObject::~U64ArrayAccessorVarObject() {}
 
-SLAKE_API InternalExceptionPointer U64ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
-	if (value.valueType != ValueType::U64) {
-		return raiseMismatchedVarTypeError(associatedRuntime);
-	}
-
-	U64ArrayObject *arrayObject = ((U64ArrayObject *)this->arrayObject);
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	arrayObject->data[index] = value.getU64();
-	return {};
-}
-
-SLAKE_API InternalExceptionPointer U64ArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
-	U64ArrayObject *arrayObject = ((U64ArrayObject *)this->arrayObject);
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	valueOut = Value(arrayObject->data[index]);
-	return {};
-}
-
 SLAKE_API HostObjectRef<U64ArrayAccessorVarObject> slake::U64ArrayAccessorVarObject::alloc(Runtime *rt, U64ArrayObject *arrayObject) {
 	using Alloc = std::pmr::polymorphic_allocator<U64ArrayAccessorVarObject>;
 	Alloc allocator(&rt->globalHeapPoolResource);
@@ -674,32 +566,6 @@ SLAKE_API I8ArrayAccessorVarObject::I8ArrayAccessorVarObject(Runtime *rt, I8Arra
 }
 
 SLAKE_API I8ArrayAccessorVarObject::~I8ArrayAccessorVarObject() {}
-
-SLAKE_API InternalExceptionPointer I8ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
-	if (value.valueType != ValueType::I8) {
-		return raiseMismatchedVarTypeError(associatedRuntime);
-	}
-
-	I8ArrayObject *arrayObject = ((I8ArrayObject *)this->arrayObject);
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	arrayObject->data[index] = value.getI8();
-	return {};
-}
-
-SLAKE_API InternalExceptionPointer I8ArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
-	I8ArrayObject *arrayObject = ((I8ArrayObject *)this->arrayObject);
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	valueOut = Value(arrayObject->data[index]);
-	return {};
-}
 
 SLAKE_API HostObjectRef<I8ArrayAccessorVarObject> slake::I8ArrayAccessorVarObject::alloc(Runtime *rt, I8ArrayObject *arrayObject) {
 	using Alloc = std::pmr::polymorphic_allocator<I8ArrayAccessorVarObject>;
@@ -834,32 +700,6 @@ SLAKE_API I16ArrayAccessorVarObject::I16ArrayAccessorVarObject(Runtime *rt, I16A
 
 SLAKE_API I16ArrayAccessorVarObject::~I16ArrayAccessorVarObject() {}
 
-SLAKE_API InternalExceptionPointer I16ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
-	if (value.valueType != ValueType::I16) {
-		return raiseMismatchedVarTypeError(associatedRuntime);
-	}
-
-	I16ArrayObject *arrayObject = ((I16ArrayObject *)this->arrayObject);
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	arrayObject->data[index] = value.getI16();
-	return {};
-}
-
-SLAKE_API InternalExceptionPointer I16ArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
-	I16ArrayObject *arrayObject = ((I16ArrayObject *)this->arrayObject);
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	valueOut = Value(arrayObject->data[index]);
-	return {};
-}
-
 SLAKE_API HostObjectRef<I16ArrayAccessorVarObject> slake::I16ArrayAccessorVarObject::alloc(Runtime *rt, I16ArrayObject *arrayObject) {
 	using Alloc = std::pmr::polymorphic_allocator<I16ArrayAccessorVarObject>;
 	Alloc allocator(&rt->globalHeapPoolResource);
@@ -990,32 +830,6 @@ SLAKE_API I32ArrayAccessorVarObject::I32ArrayAccessorVarObject(Runtime *rt, I32A
 }
 
 SLAKE_API I32ArrayAccessorVarObject::~I32ArrayAccessorVarObject() {}
-
-SLAKE_API InternalExceptionPointer I32ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
-	if (value.valueType != ValueType::I32) {
-		return raiseMismatchedVarTypeError(associatedRuntime);
-	}
-
-	I32ArrayObject *arrayObject = ((I32ArrayObject *)this->arrayObject);
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	arrayObject->data[index] = value.getI32();
-	return {};
-}
-
-SLAKE_API InternalExceptionPointer I32ArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
-	I32ArrayObject *arrayObject = ((I32ArrayObject *)this->arrayObject);
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	valueOut = Value(arrayObject->data[index]);
-	return {};
-}
 
 SLAKE_API HostObjectRef<I32ArrayAccessorVarObject> slake::I32ArrayAccessorVarObject::alloc(Runtime *rt, I32ArrayObject *arrayObject) {
 	using Alloc = std::pmr::polymorphic_allocator<I32ArrayAccessorVarObject>;
@@ -1148,32 +962,6 @@ SLAKE_API I64ArrayAccessorVarObject::I64ArrayAccessorVarObject(Runtime *rt, I64A
 
 SLAKE_API I64ArrayAccessorVarObject::~I64ArrayAccessorVarObject() {}
 
-SLAKE_API InternalExceptionPointer I64ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
-	if (value.valueType != ValueType::I64) {
-		return raiseMismatchedVarTypeError(associatedRuntime);
-	}
-
-	I64ArrayObject *arrayObject = ((I64ArrayObject *)this->arrayObject);
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	arrayObject->data[index] = value.getI64();
-	return {};
-}
-
-SLAKE_API InternalExceptionPointer I64ArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
-	I64ArrayObject *arrayObject = ((I64ArrayObject *)this->arrayObject);
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	valueOut = Value(arrayObject->data[index]);
-	return {};
-}
-
 SLAKE_API HostObjectRef<I64ArrayAccessorVarObject> slake::I64ArrayAccessorVarObject::alloc(Runtime *rt, I64ArrayObject *arrayObject) {
 	using Alloc = std::pmr::polymorphic_allocator<I64ArrayAccessorVarObject>;
 	Alloc allocator(&rt->globalHeapPoolResource);
@@ -1304,32 +1092,6 @@ SLAKE_API F32ArrayAccessorVarObject::F32ArrayAccessorVarObject(Runtime *rt, F32A
 }
 
 SLAKE_API F32ArrayAccessorVarObject::~F32ArrayAccessorVarObject() {}
-
-SLAKE_API InternalExceptionPointer F32ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
-	if (value.valueType != ValueType::F32) {
-		return raiseMismatchedVarTypeError(associatedRuntime);
-	}
-
-	F32ArrayObject *arrayObject = ((F32ArrayObject *)this->arrayObject);
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	arrayObject->data[index] = value.getF32();
-	return {};
-}
-
-SLAKE_API InternalExceptionPointer F32ArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
-	F32ArrayObject *arrayObject = ((F32ArrayObject *)this->arrayObject);
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	valueOut = Value(arrayObject->data[index]);
-	return {};
-}
 
 SLAKE_API HostObjectRef<F32ArrayAccessorVarObject> slake::F32ArrayAccessorVarObject::alloc(Runtime *rt, F32ArrayObject *arrayObject) {
 	using Alloc = std::pmr::polymorphic_allocator<F32ArrayAccessorVarObject>;
@@ -1462,32 +1224,6 @@ SLAKE_API F64ArrayAccessorVarObject::F64ArrayAccessorVarObject(Runtime *rt, F64A
 
 SLAKE_API F64ArrayAccessorVarObject::~F64ArrayAccessorVarObject() {}
 
-SLAKE_API InternalExceptionPointer F64ArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
-	if (value.valueType != ValueType::F64) {
-		return raiseMismatchedVarTypeError(associatedRuntime);
-	}
-
-	F64ArrayObject *arrayObject = ((F64ArrayObject *)this->arrayObject);
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	arrayObject->data[index] = value.getF64();
-	return {};
-}
-
-SLAKE_API InternalExceptionPointer F64ArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
-	F64ArrayObject *arrayObject = ((F64ArrayObject *)this->arrayObject);
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	valueOut = Value(arrayObject->data[index]);
-	return {};
-}
-
 SLAKE_API HostObjectRef<F64ArrayAccessorVarObject> slake::F64ArrayAccessorVarObject::alloc(Runtime *rt, F64ArrayObject *arrayObject) {
 	using Alloc = std::pmr::polymorphic_allocator<F64ArrayAccessorVarObject>;
 	Alloc allocator(&rt->globalHeapPoolResource);
@@ -1619,32 +1355,6 @@ SLAKE_API BoolArrayAccessorVarObject::BoolArrayAccessorVarObject(Runtime *rt, Bo
 
 SLAKE_API BoolArrayAccessorVarObject::~BoolArrayAccessorVarObject() {}
 
-SLAKE_API InternalExceptionPointer BoolArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
-	if (value.valueType != ValueType::Bool) {
-		return raiseMismatchedVarTypeError(associatedRuntime);
-	}
-
-	BoolArrayObject *arrayObject = ((BoolArrayObject *)this->arrayObject);
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	arrayObject->data[index] = value.getBool();
-	return {};
-}
-
-SLAKE_API InternalExceptionPointer BoolArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
-	BoolArrayObject *arrayObject = ((BoolArrayObject *)this->arrayObject);
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	valueOut = Value(arrayObject->data[index]);
-	return {};
-}
-
 SLAKE_API HostObjectRef<BoolArrayAccessorVarObject> slake::BoolArrayAccessorVarObject::alloc(Runtime *rt, BoolArrayObject *arrayObject) {
 	using Alloc = std::pmr::polymorphic_allocator<BoolArrayAccessorVarObject>;
 	Alloc allocator(&rt->globalHeapPoolResource);
@@ -1775,37 +1485,6 @@ SLAKE_API ObjectRefArrayAccessorVarObject::ObjectRefArrayAccessorVarObject(Runti
 }
 
 SLAKE_API ObjectRefArrayAccessorVarObject::~ObjectRefArrayAccessorVarObject() {}
-
-SLAKE_API InternalExceptionPointer ObjectRefArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
-	if (value.valueType != ValueType::ObjectRef) {
-		return raiseMismatchedVarTypeError(associatedRuntime);
-	}
-
-	ObjectRefArrayObject *arrayObject = ((ObjectRefArrayObject *)this->arrayObject);
-
-	if (!isCompatible(arrayObject->elementType, value)) {
-		return raiseMismatchedVarTypeError(associatedRuntime);
-	}
-
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	arrayObject->data[index] = value.getObjectRef();
-	return {};
-}
-
-SLAKE_API InternalExceptionPointer ObjectRefArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
-	ObjectRefArrayObject *arrayObject = ((ObjectRefArrayObject *)this->arrayObject);
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	valueOut = Value(arrayObject->data[index]);
-	return {};
-}
 
 SLAKE_API HostObjectRef<ObjectRefArrayAccessorVarObject> slake::ObjectRefArrayAccessorVarObject::alloc(Runtime *rt, const Type &elementType, ObjectRefArrayObject *arrayObject) {
 	using Alloc = std::pmr::polymorphic_allocator<ObjectRefArrayAccessorVarObject>;
@@ -1940,28 +1619,6 @@ SLAKE_API AnyArrayAccessorVarObject::AnyArrayAccessorVarObject(Runtime *rt, AnyA
 }
 
 SLAKE_API AnyArrayAccessorVarObject::~AnyArrayAccessorVarObject() {}
-
-SLAKE_API InternalExceptionPointer AnyArrayAccessorVarObject::setData(const VarRefContext &varRefContext, const Value &value) {
-	AnyArrayObject *arrayObject = ((AnyArrayObject *)this->arrayObject);
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	arrayObject->data[index] = value;
-	return {};
-}
-
-SLAKE_API InternalExceptionPointer AnyArrayAccessorVarObject::getData(const VarRefContext &varRefContext, Value &valueOut) const {
-	AnyArrayObject *arrayObject = ((AnyArrayObject *)this->arrayObject);
-	size_t index = varRefContext.asArray.index;
-	if (index > arrayObject->length) {
-		return raiseInvalidArrayIndexError(associatedRuntime, index);
-	}
-
-	valueOut = Value(arrayObject->data[index]);
-	return {};
-}
 
 SLAKE_API HostObjectRef<AnyArrayAccessorVarObject> slake::AnyArrayAccessorVarObject::alloc(Runtime *rt, AnyArrayObject *arrayObject) {
 	using Alloc = std::pmr::polymorphic_allocator<AnyArrayAccessorVarObject>;

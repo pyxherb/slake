@@ -91,61 +91,47 @@ namespace slake {
 		Value() = default;
 		Value(const Value &other) = default;
 		Value(Value &&other) = default;
-		SLAKE_FORCEINLINE Value(int8_t data) {
+		SLAKE_FORCEINLINE Value(int8_t data) : valueType(ValueType::I8) {
 			this->data.asI8 = data;
-			valueType = ValueType::I8;
 		}
-		SLAKE_FORCEINLINE Value(int16_t data) {
+		SLAKE_FORCEINLINE Value(int16_t data) : valueType(ValueType::I16) {
 			this->data.asI16 = data;
-			valueType = ValueType::I16;
 		}
-		SLAKE_FORCEINLINE Value(int32_t data) {
+		SLAKE_FORCEINLINE Value(int32_t data) : valueType(ValueType::I32) {
 			this->data.asI32 = data;
-			valueType = ValueType::I32;
 		}
-		SLAKE_FORCEINLINE Value(int64_t data) {
+		SLAKE_FORCEINLINE Value(int64_t data) : valueType(ValueType::I64) {
 			this->data.asI64 = data;
-			valueType = ValueType::I64;
 		}
-		SLAKE_FORCEINLINE Value(uint8_t data) {
+		SLAKE_FORCEINLINE Value(uint8_t data) : valueType(ValueType::U8) {
 			this->data.asU8 = data;
-			valueType = ValueType::U8;
 		}
-		SLAKE_FORCEINLINE Value(uint16_t data) {
+		SLAKE_FORCEINLINE Value(uint16_t data) : valueType(ValueType::U16) {
 			this->data.asU16 = data;
-			valueType = ValueType::U16;
 		}
-		SLAKE_FORCEINLINE Value(uint32_t data) {
+		SLAKE_FORCEINLINE Value(uint32_t data) : valueType(ValueType::U32) {
 			this->data.asU32 = data;
-			valueType = ValueType::U32;
 		}
-		SLAKE_FORCEINLINE Value(uint64_t data) {
+		SLAKE_FORCEINLINE Value(uint64_t data) : valueType(ValueType::U64) {
 			this->data.asU64 = data;
-			valueType = ValueType::U64;
 		}
-		SLAKE_FORCEINLINE Value(float data) {
+		SLAKE_FORCEINLINE Value(float data) : valueType(ValueType::F32) {
 			this->data.asF32 = data;
-			valueType = ValueType::F32;
 		}
-		SLAKE_FORCEINLINE Value(double data) {
+		SLAKE_FORCEINLINE Value(double data) : valueType(ValueType::F64) {
 			this->data.asF64 = data;
-			valueType = ValueType::F64;
 		}
-		SLAKE_FORCEINLINE Value(bool data) {
+		SLAKE_FORCEINLINE Value(bool data) : valueType(ValueType::Bool) {
 			this->data.asBool = data;
-			valueType = ValueType::Bool;
 		}
-		SLAKE_FORCEINLINE Value(Object *objectPtr) {
+		SLAKE_FORCEINLINE Value(Object *objectPtr) : valueType(ValueType::ObjectRef) {
 			this->data.asObjectRef = objectPtr;
-			valueType = ValueType::ObjectRef;
 		}
-		SLAKE_FORCEINLINE Value(ValueType vt, uint32_t index) {
+		SLAKE_FORCEINLINE Value(ValueType vt, uint32_t index) : valueType(vt) {
 			this->data.asU32 = index;
-			valueType = vt;
 		}
-		SLAKE_FORCEINLINE Value(const VarRef &varRef) {
+		SLAKE_FORCEINLINE Value(const VarRef &varRef) : valueType(ValueType::VarRef) {
 			this->data.asVarRef = varRef;
-			valueType = ValueType::VarRef;
 		}
 		SLAKE_API Value(const Type &type);
 
@@ -226,7 +212,7 @@ namespace slake {
 			return data.asObjectRef;
 		}
 
-		Value &operator=(const Value &other) = default;
+		Value &operator=(const Value &other) noexcept = default;
 		Value &operator=(Value &&other) noexcept = default;
 
 		SLAKE_API bool operator==(const Value &rhs) const;

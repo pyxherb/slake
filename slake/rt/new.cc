@@ -89,7 +89,8 @@ SLAKE_API void Runtime::initObjectLayoutForClass(ClassObject *cls, ClassObject *
 				ObjectFieldRecord fieldRecord;
 
 				RegularVarObject *var = (RegularVarObject *)i.second;
-				auto type = var->getVarType(VarRefContext());
+				Type type;
+				SLAKE_UNWRAP_EXCEPT(typeofVar(var, VarRefContext(), type));
 
 				switch (type.typeId) {
 					case TypeId::Value:
@@ -237,12 +238,8 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 		ObjectFieldRecord &fieldRecord = cls->cachedObjectLayout->fieldRecords[i];
 
 		Value data;
-		e = initVar->getData(VarRefContext(), data);
-		assert(!e);
-		e = instance->memberAccessor->setData(
-			VarRefContext::makeInstanceContext(i),
-			data);
-		assert(!e);
+		data = readVar(initVar, VarRefContext());
+		SLAKE_UNWRAP_EXCEPT(writeVar(instance->memberAccessor, VarRefContext::makeInstanceContext(i), data));
 	}
 
 	return instance;

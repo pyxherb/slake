@@ -249,8 +249,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 							auto v = (RegularVarObject *)value;
 
 							Value data;
-							InternalExceptionPointer result = value->getData(VarRefContext(), data);
-							assert(!result);
+							data = readVar(value, VarRefContext());
 							_gcWalkHeapless(context, data);
 
 							context.pushObject(v->parent);

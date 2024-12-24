@@ -235,6 +235,11 @@ namespace slake {
 			const Value *args,
 			uint32_t nArgs,
 			HostObjectRef<ContextObject> &contextOut);
+
+		SLAKE_API [[nodiscard]] InternalExceptionPointer tryAccessVar(const VarObject *varObject, const VarRefContext &context);
+		SLAKE_API [[nodiscard]] InternalExceptionPointer typeofVar(const VarObject *varObject, const VarRefContext &context, Type &typeOut) const;
+		SLAKE_API [[nodiscard]] Value readVar(const VarObject *varObject, const VarRefContext &context) const;
+		SLAKE_API [[nodiscard]] InternalExceptionPointer writeVar(VarObject *varObject, const VarRefContext &context, const Value &value) const;
 	};
 }
 

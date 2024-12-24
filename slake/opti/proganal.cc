@@ -50,7 +50,8 @@ InternalExceptionPointer slake::opti::evalObjectType(
 			break;
 		}
 		case ObjectKind::Var: {
-			Type varType = (((VarObject *)object)->getVarType(varRefContext));
+			Type varType;
+			SLAKE_RETURN_IF_EXCEPT(analyzeContext.runtime->typeofVar((VarObject *)object, varRefContext, varType));
 
 			SLAKE_RETURN_IF_EXCEPT(
 				wrapIntoRefType(
@@ -126,7 +127,8 @@ InternalExceptionPointer slake::opti::evalValueType(
 		case ValueType::VarRef: {
 			VarRef varRef = value.getVarRef();
 
-			typeOut = varRef.varPtr->getVarType(varRef.context);
+			SLAKE_RETURN_IF_EXCEPT(analyzeContext.runtime->typeofVar(varRef.varPtr, varRef.context, typeOut));
+
 			break;
 		}
 		default: {

@@ -4,7 +4,7 @@
 
 using namespace slake;
 
-SLAKE_FORCEINLINE [[nosicard]] InternalExceptionPointer _checkOperandCount(
+[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer _checkOperandCount(
 	Runtime *runtime,
 	const Instruction &ins,
 	bool hasOutput,
@@ -21,7 +21,7 @@ SLAKE_FORCEINLINE [[nosicard]] InternalExceptionPointer _checkOperandCount(
 	return {};
 }
 
-SLAKE_FORCEINLINE [[nodiscard]] InternalExceptionPointer _checkOperandType(
+[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer _checkOperandType(
 	Runtime *runtime,
 	const Value &operand,
 	ValueType valueType) noexcept {
@@ -31,7 +31,7 @@ SLAKE_FORCEINLINE [[nodiscard]] InternalExceptionPointer _checkOperandType(
 	return {};
 }
 
-SLAKE_FORCEINLINE [[nodiscard]] InternalExceptionPointer _checkObjectOperandType(
+[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer _checkObjectOperandType(
 	Runtime *runtime,
 	Object *object,
 	ObjectKind typeId) noexcept {
@@ -41,7 +41,7 @@ SLAKE_FORCEINLINE [[nodiscard]] InternalExceptionPointer _checkObjectOperandType
 	return {};
 }
 
-SLAKE_FORCEINLINE [[nodiscard]] InternalExceptionPointer _setRegisterValue(
+[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer _setRegisterValue(
 	Runtime *runtime,
 	MajorFrame *curMajorFrame,
 	uint32_t index,
@@ -55,7 +55,7 @@ SLAKE_FORCEINLINE [[nodiscard]] InternalExceptionPointer _setRegisterValue(
 	return {};
 }
 
-SLAKE_FORCEINLINE [[nodiscard]] InternalExceptionPointer _fetchRegValue(
+[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer _fetchRegValue(
 	Runtime *runtime,
 	MajorFrame *curMajorFrame,
 	uint32_t index,
@@ -68,7 +68,7 @@ SLAKE_FORCEINLINE [[nodiscard]] InternalExceptionPointer _fetchRegValue(
 	return {};
 }
 
-SLAKE_FORCEINLINE [[nodiscard]] InternalExceptionPointer _unwrapRegOperand(
+[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer _unwrapRegOperand(
 	Runtime *runtime,
 	MajorFrame *curMajorFrame,
 	const Value &value,

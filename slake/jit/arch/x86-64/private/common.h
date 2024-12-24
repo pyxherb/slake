@@ -3,6 +3,7 @@
 
 #include "emitters.h"
 #include "../context.h"
+#include <list>
 
 namespace slake {
 	namespace jit {

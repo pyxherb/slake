@@ -106,7 +106,7 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 					os << ", ";
 
 				Value value;
-				v->accessor->getData(VarRefContext::makeArrayContext(i), value);
+				value = rt->readVar(v->accessor, VarRefContext::makeArrayContext(i));
 				decompileValue(rt, value, os, indentLevel);
 			}
 
@@ -212,8 +212,12 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 		}
 		case slake::ObjectKind::Var: {
 			RegularVarObject *v = (RegularVarObject *)object;
+			Type type;
+
+			SLAKE_UNWRAP_EXCEPT(rt->typeofVar(v, VarRefContext(), type));
+
 			os << std::string(indentLevel, '\t')
-			   << ".var " << decompileTypeName(v->getVarType(VarRefContext()), rt) << " " << v->getName() << "\n";
+			   << ".var " << decompileTypeName(type, rt) << " " << v->getName() << "\n";
 			break;
 		}
 		case slake::ObjectKind::Class: {

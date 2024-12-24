@@ -225,10 +225,14 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 			break;
 		case slake::ObjectKind::Var: {
 			RegularVarObject *v = (RegularVarObject *)value;
+
+			Type varType;
+			SLAKE_UNWRAP_EXCEPT(associatedRuntime->typeofVar(v, VarRefContext(), varType));
+
 			std::shared_ptr<VarNode> var = std::make_shared<VarNode>(
 				this,
 				v->accessModifier,
-				toTypeName(v->getVarType(VarRefContext())),
+				toTypeName(varType),
 				v->getName(),
 				std::shared_ptr<ExprNode>(),
 				SIZE_MAX, SIZE_MAX, SIZE_MAX, SIZE_MAX);

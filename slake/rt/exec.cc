@@ -317,9 +317,9 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 	bool interruptExecution = false;
 
 	auto thisThreadId = std::this_thread::get_id();
+	bool isExecutingDestructor = destructingThreads.count(thisThreadId);
 
 	while (!interruptExecution) {
-		bool isDestructing = destructingThreads.count(thisThreadId);
 
 		curMajorFrame = context->getContext().majorFrames.back().get();
 		curFn = curMajorFrame->curFn;
@@ -329,7 +329,7 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 			return {};
 
 		// Pause if the runtime is in GC
-		while ((_flags & _RT_INGC) && !isDestructing)
+		while ((_flags & _RT_INGC) && !isExecutingDestructor)
 			std::this_thread::yield();
 
 		switch (curFn->overloadingKind) {

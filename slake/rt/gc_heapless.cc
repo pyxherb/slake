@@ -249,7 +249,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 							auto v = (RegularVarObject *)value;
 
 							Value data;
-							data = readVar(value, VarRefContext());
+							data = readVarUnsafe(value, VarRefContext());
 							_gcWalkHeapless(context, data);
 
 							context.pushObject(v->parent);

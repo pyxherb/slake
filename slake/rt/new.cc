@@ -238,7 +238,7 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 		ObjectFieldRecord &fieldRecord = cls->cachedObjectLayout->fieldRecords[i];
 
 		Value data;
-		data = readVar(initVar, VarRefContext());
+		data = readVarUnsafe(initVar, VarRefContext());
 		SLAKE_UNWRAP_EXCEPT(writeVar(instance->memberAccessor, VarRefContext::makeInstanceContext(i), data));
 	}
 

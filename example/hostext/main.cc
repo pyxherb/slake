@@ -17,20 +17,17 @@ slake::Value print(
 		putchar('\n');
 	else {
 		Value varArgsValue;
-		varArgsValue = overloading->associatedRuntime->readVar(args[0], {});
+		varArgsValue = overloading->associatedRuntime->readVarUnsafe(args[0], {});
 		AnyArrayObject *varArgs = (AnyArrayObject *)varArgsValue.getObjectRef();
 
 		for (uint8_t i = 0; i < varArgs->length; ++i) {
 			Value data;
-			if (auto e = overloading->associatedRuntime->tryAccessVar(
+			if (auto e = overloading->associatedRuntime->readVar(
 				varArgs->accessor,
-				VarRefContext::makeArrayContext(i));
-				e) {
+				VarRefContext::makeArrayContext(i),
+				data)) {
 				throw std::runtime_error("An exception has thrown");
 			}
-			data = overloading->associatedRuntime->readVar(
-				varArgs->accessor,
-				VarRefContext::makeArrayContext(i));
 
 			switch (data.valueType) {
 				case ValueType::I8:

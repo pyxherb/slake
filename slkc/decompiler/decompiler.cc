@@ -106,7 +106,7 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 					os << ", ";
 
 				Value value;
-				value = rt->readVar(v->accessor, VarRefContext::makeArrayContext(i));
+				value = rt->readVarUnsafe(v->accessor, VarRefContext::makeArrayContext(i));
 				decompileValue(rt, value, os, indentLevel);
 			}
 

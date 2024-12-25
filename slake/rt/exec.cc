@@ -493,8 +493,7 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 							}
 
 							Value data;
-							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, tryAccessVar((VarObject *)varRef.varPtr, varRef.context));
-							data = readVar((VarObject *)varRef.varPtr, varRef.context);
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, readVar((VarObject *)varRef.varPtr, varRef.context, data));
 							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this,
 																			curMajorFrame,
 																			ins.output.getRegIndex(),

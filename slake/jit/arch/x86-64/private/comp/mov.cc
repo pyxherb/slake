@@ -334,7 +334,7 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 								}
 
 								compileContext.pushIns(emitMovReg64ToReg64Ins(tmpRegId, REG_RBP));
-								compileContext.pushIns(emitSubImm32ToReg64Ins(tmpRegId, (uint8_t *)&srcVregInfo.saveOffset));
+								compileContext.pushIns(emitAddImm32ToReg64Ins(tmpRegId, (uint8_t *)&srcVregInfo.saveOffset));
 
 								compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RCX, tmpRegId));
 
@@ -351,7 +351,7 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 								}
 
 								compileContext.pushIns(emitMovReg64ToReg64Ins(tmpRegId, REG_RBP));
-								compileContext.pushIns(emitSubImm32ToReg64Ins(tmpRegId, (uint8_t *)&off));
+								compileContext.pushIns(emitAddImm32ToReg64Ins(tmpRegId, (uint8_t *)&off));
 
 								compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RDX, tmpRegId));
 
@@ -391,7 +391,7 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 						}
 
 						compileContext.pushIns(emitMovReg64ToReg64Ins(tmpRegId, REG_RBP));
-						compileContext.pushIns(emitSubImm32ToReg64Ins(tmpRegId, (uint8_t *)&srcVregInfo.saveOffset));
+						compileContext.pushIns(emitAddImm32ToReg64Ins(tmpRegId, (uint8_t *)&srcVregInfo.saveOffset));
 
 						compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RCX, tmpRegId));
 
@@ -408,7 +408,7 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 						}
 
 						compileContext.pushIns(emitMovReg64ToReg64Ins(tmpRegId, REG_RBP));
-						compileContext.pushIns(emitSubImm32ToReg64Ins(tmpRegId, (uint8_t *)&off));
+						compileContext.pushIns(emitAddImm32ToReg64Ins(tmpRegId, (uint8_t *)&off));
 
 						compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RDX, tmpRegId));
 

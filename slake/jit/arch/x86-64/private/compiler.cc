@@ -65,7 +65,7 @@ InternalExceptionPointer compileInstruction(
 
 			// Pass the first argument.
 			{
-				compileContext.pushIns(emitMovMemToReg64Ins(REG_RCX, MemoryLocation{REG_RBP, compileContext.jitContextOff, REG_MAX, 0}));
+				compileContext.pushIns(emitMovMemToReg64Ins(REG_RCX, MemoryLocation{ REG_RBP, compileContext.jitContextOff, REG_MAX, 0 }));
 			}
 
 			// Pass the second argument.
@@ -76,6 +76,22 @@ InternalExceptionPointer compileInstruction(
 			}
 
 			compileContext.pushIns(emitCallIns((void *)loadInsWrapper));
+
+			int32_t stackOff = compileContext.stackAllocAligned(sizeof(Value), sizeof(Value));
+			compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RCX, REG_RBP));
+			compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RCX, (uint8_t *)&stackOff));
+
+			compileContext.pushIns(emitMovMemToReg64Ins(REG_RDX, MemoryLocation{ REG_RBP, compileContext.jitContextOff, REG_MAX, 0 }));
+
+			static int32_t returnValueOff = -offsetof(JITExecContext, returnValue);
+			compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RDX, (uint8_t *)&returnValueOff));
+
+			static uint64_t size = sizeof(Value);
+			compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&size));
+
+			compileContext.pushIns(emitCallIns((void *)memcpyWrapper));
+
+			VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, stackOff, sizeof(T));
 
 			compileContext.restoreCallingRegs(callingRegSavingInfo);
 

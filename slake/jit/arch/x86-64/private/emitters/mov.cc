@@ -10,7 +10,7 @@ SLAKE_API DiscreteInstruction slake::jit::x86_64::emitMovImm8ToReg8Ins(RegisterI
 		case REG_RCX:
 		case REG_RDX:
 		case REG_RBX: {
-			DEF_INS_BUFFER(insBuf, 0xb0 + (uint8_t)(registerId - REG_RAX),
+			DEF_INS_BUFFER(insBuf, (uint8_t)(0xb0 + (registerId - REG_RAX)),
 				imm0[0]);
 			return emitRawIns(sizeof(insBuf), insBuf);
 		}
@@ -18,7 +18,7 @@ SLAKE_API DiscreteInstruction slake::jit::x86_64::emitMovImm8ToReg8Ins(RegisterI
 		case REG_RBP:
 		case REG_RSI:
 		case REG_RDI: {
-			DEF_INS_BUFFER(insBuf, REX_PREFIX(0, 0, 0, 0), 0xb0 + (uint8_t)(registerId - REG_RAX),
+			DEF_INS_BUFFER(insBuf, REX_PREFIX(0, 0, 0, 0), (uint8_t)(0xb0 + (uint8_t)(registerId - REG_RAX)),
 				imm0[0]);
 			return emitRawIns(sizeof(insBuf), insBuf);
 		}
@@ -30,7 +30,7 @@ SLAKE_API DiscreteInstruction slake::jit::x86_64::emitMovImm8ToReg8Ins(RegisterI
 		case REG_R13:
 		case REG_R14:
 		case REG_R15: {
-			DEF_INS_BUFFER(insBuf, REX_PREFIX(0, 0, 0, 1), 0xb0 + (uint8_t)(registerId - REG_R8),
+			DEF_INS_BUFFER(insBuf, REX_PREFIX(0, 0, 0, 1), (uint8_t)(0xb0 + (uint8_t)(registerId - REG_R8)),
 				imm0[0]);
 			return emitRawIns(sizeof(insBuf), insBuf);
 		}
@@ -49,7 +49,7 @@ SLAKE_API DiscreteInstruction slake::jit::x86_64::emitMovImm16ToReg16Ins(Registe
 		case REG_RBP:
 		case REG_RSI:
 		case REG_RDI: {
-			DEF_INS_BUFFER(insBuf, 0x66, 0xb8 + (registerId - REG_RAX),
+			DEF_INS_BUFFER(insBuf, 0x66, (uint8_t)(0xb8 + (registerId - REG_RAX)),
 				imm0[0], imm0[1]);
 			return emitRawIns(sizeof(insBuf), insBuf);
 		}
@@ -61,7 +61,7 @@ SLAKE_API DiscreteInstruction slake::jit::x86_64::emitMovImm16ToReg16Ins(Registe
 		case REG_R13:
 		case REG_R14:
 		case REG_R15: {
-			DEF_INS_BUFFER(insBuf, 0x66, REX_PREFIX(0, 0, 0, 1), 0xb8 + (registerId - REG_R8),
+			DEF_INS_BUFFER(insBuf, 0x66, REX_PREFIX(0, 0, 0, 1), (uint8_t)(0xb8 + (registerId - REG_R8)),
 				imm0[0], imm0[1]);
 			return emitRawIns(sizeof(insBuf), insBuf);
 		}
@@ -80,7 +80,7 @@ SLAKE_API DiscreteInstruction slake::jit::x86_64::emitMovImm32ToReg32Ins(Registe
 		case REG_RBP:
 		case REG_RSI:
 		case REG_RDI: {
-			DEF_INS_BUFFER(insBuf, 0xb8 + (registerId - REG_RAX),
+			DEF_INS_BUFFER(insBuf, (uint8_t)(0xb8 + (registerId - REG_RAX)),
 				imm0[0], imm0[1], imm0[2], imm0[3]);
 			return emitRawIns(sizeof(insBuf), insBuf);
 		}
@@ -92,7 +92,7 @@ SLAKE_API DiscreteInstruction slake::jit::x86_64::emitMovImm32ToReg32Ins(Registe
 		case REG_R13:
 		case REG_R14:
 		case REG_R15: {
-			DEF_INS_BUFFER(insBuf, REX_PREFIX(0, 0, 0, 1), 0xb8 + (registerId - REG_R8),
+			DEF_INS_BUFFER(insBuf, REX_PREFIX(0, 0, 0, 1), (uint8_t)(0xb8 + (registerId - REG_R8)),
 				imm0[0], imm0[1], imm0[2], imm0[3]);
 			return emitRawIns(sizeof(insBuf), insBuf);
 		}
@@ -111,7 +111,7 @@ SLAKE_API DiscreteInstruction slake::jit::x86_64::emitMovImm64ToReg64Ins(Registe
 		case REG_RBP:
 		case REG_RSI:
 		case REG_RDI: {
-			DEF_INS_BUFFER(insBuf, REX_PREFIX(1, 0, 0, 0), 0xb8 + (registerId - REG_RAX),
+			DEF_INS_BUFFER(insBuf, REX_PREFIX(1, 0, 0, 0), (uint8_t)(0xb8 + (registerId - REG_RAX)),
 				imm0[0], imm0[1], imm0[2], imm0[3], imm0[4], imm0[5], imm0[6], imm0[7]);
 			return emitRawIns(sizeof(insBuf), insBuf);
 		}
@@ -123,7 +123,7 @@ SLAKE_API DiscreteInstruction slake::jit::x86_64::emitMovImm64ToReg64Ins(Registe
 		case REG_R13:
 		case REG_R14:
 		case REG_R15: {
-			DEF_INS_BUFFER(insBuf, REX_PREFIX(1, 0, 0, 1), 0xb8 + (registerId - REG_R8),
+			DEF_INS_BUFFER(insBuf, REX_PREFIX(1, 0, 0, 1), (uint8_t)(0xb8 + (registerId - REG_R8)),
 				imm0[0], imm0[1], imm0[2], imm0[3], imm0[4], imm0[5], imm0[6], imm0[7]);
 			return emitRawIns(sizeof(insBuf), insBuf);
 		}

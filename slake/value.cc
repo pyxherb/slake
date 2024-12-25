@@ -11,7 +11,7 @@ SLAKE_API bool VarRef::operator<(const VarRef &rhs) const {
 	if (!varPtr)
 		return false;
 
-	switch (varPtr->getVarKind()) {
+	switch (varPtr->varKind) {
 		case VarKind::ArrayElementAccessor:
 			if (context.asArray.index < rhs.context.asArray.index)
 				return true;

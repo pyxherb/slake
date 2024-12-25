@@ -3,10 +3,10 @@
 
 using namespace slake;
 
-SLAKE_API VarObject::VarObject(Runtime *rt) : MemberObject(rt) {
+SLAKE_API VarObject::VarObject(Runtime *rt, VarKind varKind) : MemberObject(rt), varKind(varKind) {
 }
 
-SLAKE_API VarObject::VarObject(const VarObject &x) : MemberObject(x) {
+SLAKE_API VarObject::VarObject(const VarObject &x) : MemberObject(x), varKind(x.varKind) {
 }
 
 SLAKE_API VarObject::~VarObject() {
@@ -15,7 +15,7 @@ SLAKE_API VarObject::~VarObject() {
 SLAKE_API ObjectKind VarObject::getKind() const { return ObjectKind::Var; }
 
 SLAKE_API slake::RegularVarObject::RegularVarObject(Runtime *rt, AccessModifier access, const Type &type)
-	: VarObject(rt), type(type) {
+	: VarObject(rt, VarKind::Regular), type(type) {
 	this->accessModifier = access;
 }
 
@@ -91,13 +91,11 @@ SLAKE_API LocalVarAccessorVarObject::LocalVarAccessorVarObject(
 	Runtime *rt,
 	Context *context,
 	MajorFrame *majorFrame)
-	: VarObject(rt), context(context), majorFrame(majorFrame) {
+	: VarObject(rt, VarKind::LocalVarAccessor), context(context), majorFrame(majorFrame) {
 }
 
 SLAKE_API LocalVarAccessorVarObject::~LocalVarAccessorVarObject() {
 }
-
-SLAKE_API VarKind LocalVarAccessorVarObject::getVarKind() const { return VarKind::LocalVarAccessor; }
 
 SLAKE_API HostObjectRef<LocalVarAccessorVarObject> slake::LocalVarAccessorVarObject::alloc(
 	Runtime *rt,

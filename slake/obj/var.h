@@ -18,13 +18,13 @@ namespace slake {
 
 	class VarObject : public MemberObject {
 	public:
-		SLAKE_API VarObject(Runtime *rt);
+		VarKind varKind;
+
+		SLAKE_API VarObject(Runtime *rt, VarKind varKind);
 		SLAKE_API VarObject(const VarObject &x);
 		SLAKE_API virtual ~VarObject();
 
 		SLAKE_API virtual ObjectKind getKind() const override;
-
-		SLAKE_API virtual VarKind getVarKind() const = 0;
 	};
 
 	class RegularVarObject final : public VarObject {
@@ -51,8 +51,6 @@ namespace slake {
 		SLAKE_API virtual void dealloc() override;
 
 		SLAKE_API virtual ObjectKind getKind() const override;
-
-		SLAKE_API virtual VarKind getVarKind() const override { return VarKind::Regular; }
 	};
 
 	struct LocalVarRecord {
@@ -70,8 +68,6 @@ namespace slake {
 			Context *context,
 			MajorFrame *majorFrame);
 		SLAKE_API virtual ~LocalVarAccessorVarObject();
-
-		SLAKE_API virtual VarKind getVarKind() const override;
 
 		SLAKE_API static HostObjectRef<LocalVarAccessorVarObject> alloc(
 			Runtime *rt,

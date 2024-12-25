@@ -15,8 +15,6 @@ namespace slake {
 		SLAKE_API ArrayAccessorVarObject(Runtime *rt, const Type &elementType, ArrayObject *arrayObject);
 		SLAKE_API ArrayAccessorVarObject(const ArrayAccessorVarObject &other);
 		SLAKE_API virtual ~ArrayAccessorVarObject();
-
-		SLAKE_API virtual VarKind getVarKind() const override { return VarKind::ArrayElementAccessor; }
 	};
 
 	class ArrayObject : public Object {

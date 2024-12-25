@@ -7,7 +7,7 @@ SLAKE_API ArrayAccessorVarObject::ArrayAccessorVarObject(
 	Runtime *rt,
 	const Type &elementType,
 	ArrayObject *arrayObject)
-	: VarObject(rt), arrayObject(arrayObject) {
+	: VarObject(rt, VarKind::ArrayElementAccessor), arrayObject(arrayObject) {
 }
 
 SLAKE_API ArrayAccessorVarObject::ArrayAccessorVarObject(const ArrayAccessorVarObject &other) : VarObject(other) {

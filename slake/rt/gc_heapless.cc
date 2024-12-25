@@ -244,7 +244,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 				case ObjectKind::Var: {
 					VarObject *value = (VarObject *)v;
 
-					switch (value->getVarKind()) {
+					switch (value->varKind) {
 						case VarKind::Regular: {
 							auto v = (RegularVarObject *)value;
 

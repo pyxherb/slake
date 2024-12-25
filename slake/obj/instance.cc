@@ -7,7 +7,7 @@ using namespace slake;
 SLAKE_API InstanceMemberAccessorVarObject::InstanceMemberAccessorVarObject(
 	Runtime *rt,
 	InstanceObject *instanceObject)
-	: VarObject(rt), instanceObject(instanceObject) {
+	: VarObject(rt, VarKind::InstanceMemberAccessor), instanceObject(instanceObject) {
 }
 
 SLAKE_API InstanceMemberAccessorVarObject::~InstanceMemberAccessorVarObject() {

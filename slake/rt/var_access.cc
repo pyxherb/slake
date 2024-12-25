@@ -3,7 +3,7 @@
 using namespace slake;
 
 SLAKE_API InternalExceptionPointer Runtime::tryAccessVar(const VarObject *varObject, const VarRefContext &context) const {
-	switch (varObject->getVarKind()) {
+	switch (varObject->varKind) {
 		case VarKind::Regular: {
 			break;
 		}
@@ -36,7 +36,7 @@ SLAKE_API InternalExceptionPointer Runtime::tryAccessVar(const VarObject *varObj
 }
 
 SLAKE_API InternalExceptionPointer Runtime::typeofVar(const VarObject *varObject, const VarRefContext &context, Type &typeOut) const {
-	switch (varObject->getVarKind()) {
+	switch (varObject->varKind) {
 		case VarKind::Regular: {
 			const RegularVarObject *v = (const RegularVarObject *)varObject;
 			typeOut = v->type;
@@ -64,15 +64,17 @@ SLAKE_API InternalExceptionPointer Runtime::typeofVar(const VarObject *varObject
 	return {};
 }
 
+#undef new
+
 SLAKE_API InternalExceptionPointer Runtime::readVar(const VarObject *varObject, const VarRefContext &context, Value &valueOut) const {
 	SLAKE_RETURN_IF_EXCEPT(tryAccessVar(varObject, context));
 
-	valueOut = readVarUnsafe(varObject, context);
+	new (&valueOut) Value(readVarUnsafe(varObject, context));
 	return {};
 }
 
 SLAKE_API Value Runtime::readVarUnsafe(const VarObject *varObject, const VarRefContext &context) const {
-	switch (varObject->getVarKind()) {
+	switch (varObject->varKind) {
 		case VarKind::Regular: {
 			const RegularVarObject *v = (const RegularVarObject *)varObject;
 			return v->value;
@@ -219,7 +221,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const VarObject *varObject, const VarRefC
 }
 
 SLAKE_API InternalExceptionPointer Runtime::writeVar(VarObject *varObject, const VarRefContext &context, const Value &value) const {
-	switch (varObject->getVarKind()) {
+	switch (varObject->varKind) {
 		case VarKind::Regular: {
 			RegularVarObject *v = (RegularVarObject *)varObject;
 			if (!isCompatible(v->type, value)) {

@@ -282,7 +282,8 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<I8TypeNameNode>(SIZE_MAX);
 					break;
 				}
-				case BinaryOp::Eq: {
+				case BinaryOp::Eq:
+				case BinaryOp::StrictEq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,
@@ -293,7 +294,8 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				}
-				case BinaryOp::Neq: {
+				case BinaryOp::Neq:
+				case BinaryOp::StrictNeq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,
@@ -612,7 +614,8 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				}
-				case BinaryOp::Eq: {
+				case BinaryOp::Eq:
+				case BinaryOp::StrictEq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,
@@ -623,7 +626,8 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				}
-				case BinaryOp::Neq: {
+				case BinaryOp::Neq:
+				case BinaryOp::StrictNeq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,
@@ -944,7 +948,8 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				}
-				case BinaryOp::Eq: {
+				case BinaryOp::Eq:
+				case BinaryOp::StrictEq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,
@@ -955,7 +960,8 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				}
-				case BinaryOp::Neq: {
+				case BinaryOp::Neq:
+				case BinaryOp::StrictNeq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,
@@ -1276,7 +1282,8 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				}
-				case BinaryOp::Eq: {
+				case BinaryOp::Eq:
+				case BinaryOp::StrictEq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,
@@ -1287,7 +1294,8 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				}
-				case BinaryOp::Neq: {
+				case BinaryOp::Neq:
+				case BinaryOp::StrictNeq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,
@@ -1608,7 +1616,8 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				}
-				case BinaryOp::Eq: {
+				case BinaryOp::Eq:
+				case BinaryOp::StrictEq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,
@@ -1619,7 +1628,8 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				}
-				case BinaryOp::Neq: {
+				case BinaryOp::Neq:
+				case BinaryOp::StrictNeq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,
@@ -1940,7 +1950,8 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				}
-				case BinaryOp::Eq: {
+				case BinaryOp::Eq:
+				case BinaryOp::StrictEq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,
@@ -1951,7 +1962,8 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				}
-				case BinaryOp::Neq: {
+				case BinaryOp::Neq:
+				case BinaryOp::StrictNeq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,
@@ -2272,7 +2284,8 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				}
-				case BinaryOp::Eq: {
+				case BinaryOp::Eq:
+				case BinaryOp::StrictEq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,
@@ -2283,7 +2296,8 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				}
-				case BinaryOp::Neq: {
+				case BinaryOp::Neq:
+				case BinaryOp::StrictNeq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,
@@ -2604,7 +2618,8 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				}
-				case BinaryOp::Eq: {
+				case BinaryOp::Eq:
+				case BinaryOp::StrictEq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,
@@ -2615,7 +2630,8 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				}
-				case BinaryOp::Neq: {
+				case BinaryOp::Neq:
+				case BinaryOp::StrictNeq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,
@@ -2903,7 +2919,8 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				}
-				case BinaryOp::Eq: {
+				case BinaryOp::Eq:
+				case BinaryOp::StrictEq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,
@@ -2914,7 +2931,8 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				}
-				case BinaryOp::Neq: {
+				case BinaryOp::Neq:
+				case BinaryOp::StrictNeq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,
@@ -3125,7 +3143,8 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				}
-				case BinaryOp::Eq: {
+				case BinaryOp::Eq:
+				case BinaryOp::StrictEq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,
@@ -3136,7 +3155,8 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				}
-				case BinaryOp::Neq: {
+				case BinaryOp::Neq:
+				case BinaryOp::StrictNeq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,
@@ -3312,7 +3332,8 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				}
-				case BinaryOp::Eq: {
+				case BinaryOp::Eq:
+				case BinaryOp::StrictEq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,
@@ -3323,7 +3344,8 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				}
-				case BinaryOp::Neq: {
+				case BinaryOp::Neq:
+				case BinaryOp::StrictNeq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,
@@ -3370,6 +3392,9 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					break;
 				}
 				case BinaryOp::Eq: {
+					// TODO: Implement this operation.
+				}
+				case BinaryOp::StrictEq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,
@@ -3381,6 +3406,9 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					break;
 				}
 				case BinaryOp::Neq: {
+					// TODO: Implement this operation.
+				}
+				case BinaryOp::StrictNeq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,
@@ -3455,6 +3483,9 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					break;
 				}
 				case BinaryOp::Eq: {
+					// TODO: Implement this operation.
+				}
+				case BinaryOp::StrictEq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,
@@ -3466,6 +3497,9 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					break;
 				}
 				case BinaryOp::Neq: {
+					// TODO: Implement this operation.
+				}
+				case BinaryOp::StrictNeq: {
 					compileSimpleBinaryOp(
 						lhsRegIndex, lhsType,
 						rhsRegIndex, rhsType,

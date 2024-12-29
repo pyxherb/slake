@@ -34,6 +34,15 @@ namespace slake {
 			DiscreteInstruction emitInsWithImm16AndMem16WithMinorOpcode(uint8_t majorOpcode, uint8_t minorOpcode, const MemoryLocation &mem, uint8_t imm0[2]);
 			DiscreteInstruction emitInsWithImm32AndMem32WithMinorOpcode(uint8_t majorOpcode, uint8_t minorOpcode, const MemoryLocation &mem, uint8_t imm0[4]);
 			DiscreteInstruction emitInsWithImm32AndMem64WithMinorOpcode(uint8_t majorOpcode, uint8_t minorOpcode, const MemoryLocation &mem, uint8_t imm0[4]);
+			DiscreteInstruction emitInsWithImm64AndMem64WithMinorOpcode(uint8_t majorOpcode, uint8_t minorOpcode, const MemoryLocation &mem, uint8_t imm0[8]);
+			DiscreteInstruction emitInsWithReg8Increment(uint8_t majorOpcode, RegisterId registerId);
+			DiscreteInstruction emitInsWithReg16Increment(uint8_t majorOpcode, RegisterId registerId);
+			DiscreteInstruction emitInsWithReg32Increment(uint8_t majorOpcode, RegisterId registerId);
+			DiscreteInstruction emitInsWithReg64Increment(uint8_t majorOpcode, RegisterId registerId);
+			DiscreteInstruction emitInsWithImm8AndReg8Increment(uint8_t majorOpcode, RegisterId registerId, uint8_t imm0[1]);
+			DiscreteInstruction emitInsWithImm16AndReg16Increment(uint8_t majorOpcode, RegisterId registerId, uint8_t imm0[2]);
+			DiscreteInstruction emitInsWithImm32AndReg32Increment(uint8_t majorOpcode, RegisterId registerId, uint8_t imm0[4]);
+			DiscreteInstruction emitInsWithImm64AndReg64Increment(uint8_t majorOpcode, RegisterId registerId, uint8_t imm0[8]);
 		}
 	}
 }

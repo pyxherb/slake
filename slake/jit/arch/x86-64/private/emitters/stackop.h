@@ -1,7 +1,7 @@
 #ifndef _SLAKE_JIT_ARCH_X86_64_PRIVATE_EMITTERS_STACKOP_H_
 #define _SLAKE_JIT_ARCH_X86_64_PRIVATE_EMITTERS_STACKOP_H_
 
-#include "../emitter_base.h"
+#include "regular.h"
 
 namespace slake {
 	namespace jit {

@@ -91,7 +91,7 @@ InternalExceptionPointer compileInstruction(
 
 			compileContext.pushIns(emitCallIns((void *)memcpyWrapper));
 
-			VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, stackOff, sizeof(T));
+			VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, stackOff, sizeof(Value));
 
 			compileContext.restoreCallingRegs(callingRegSavingInfo);
 

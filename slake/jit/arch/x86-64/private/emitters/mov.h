@@ -1,7 +1,7 @@
 #ifndef _SLAKE_JIT_ARCH_X86_64_PRIVATE_EMITTERS_MOV_H_
 #define _SLAKE_JIT_ARCH_X86_64_PRIVATE_EMITTERS_MOV_H_
 
-#include "../emitter_base.h"
+#include "sse.h"
 
 namespace slake {
 	namespace jit {

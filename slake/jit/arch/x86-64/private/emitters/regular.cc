@@ -972,32 +972,6 @@ DiscreteInstruction slake::jit::x86_64::emitInsWithImm16AndMem16WithMinorOpcode(
 	uint8_t sib = 0b00000000;
 	uint8_t rexPrefix = 0;
 
-	switch (srcRegisterId) {
-		case REG_RAX:
-		case REG_RCX:
-		case REG_RDX:
-		case REG_RBX:
-		case REG_RSP:
-		case REG_RBP:
-		case REG_RSI:
-		case REG_RDI:
-			modRm |= srcRegisterId << 3;
-			break;
-		case REG_R8:
-		case REG_R9:
-		case REG_R10:
-		case REG_R11:
-		case REG_R12:
-		case REG_R13:
-		case REG_R14:
-		case REG_R15:
-			rexPrefix |= REX_PREFIX(0, 1, 0, 0);
-			modRm |= (srcRegisterId - REG_R8) << 3;
-			break;
-		default:
-			throw std::logic_error("Invalid register ID");
-	}
-
 	bool isSibValid = memoryToModRmAndSib(mem, modRm, sib, rexPrefix);
 
 	uint8_t ins[16];

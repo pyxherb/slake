@@ -16,9 +16,9 @@ namespace slake {
 				return ins;
 			}
 
-			SLAKE_FORCEINLINE DiscreteInstruction emitJumpIns(void* dest) {
+			SLAKE_FORCEINLINE DiscreteInstruction emitJumpIns(void *dest, DiscreteInstructionType type = DiscreteInstructionType::Jump) {
 				DiscreteInstruction ins;
-				ins.insType = DiscreteInstructionType::Jump;
+				ins.insType = type;
 				ins.data.asJumpInsData.dest = dest;
 				return ins;
 			}

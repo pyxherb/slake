@@ -16,6 +16,14 @@ namespace slake {
 			enum class DiscreteInstructionType : uint8_t {
 				Raw = 0,
 				Jump,
+				JumpIfGt,
+				JumpIfNotGt,
+				JumpIfEq,
+				JumpIfNotEq,
+				JumpIfLt,
+				JumpIfNotLt,
+				JumpIfZero,
+				JumpIfNotZero,
 				Call
 			};
 

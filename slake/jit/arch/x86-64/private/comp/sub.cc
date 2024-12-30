@@ -46,7 +46,7 @@ void compileIntSubInstruction(
 						lhsRegId,
 						MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 }));
 			} else {
-				static_assert((false, "Invalid operand size"));
+				static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 			}
 		} else {
 			if constexpr (sizeof(T) == sizeof(uint8_t)) {
@@ -70,7 +70,7 @@ void compileIntSubInstruction(
 						lhsRegId,
 						lhsVregState.phyReg));
 			} else {
-				static_assert((false, "Invalid operand size"));
+				static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 			}
 		}
 
@@ -137,7 +137,7 @@ void compileIntSubInstruction(
 				}
 			}
 		} else {
-			static_assert((false, "Invalid operand type"));
+			static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 		}
 	} else {
 		if (lhsExpectedValue.valueType != ValueType::Undefined) {
@@ -174,7 +174,7 @@ void compileIntSubInstruction(
 							rhsRegId,
 							MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
 				} else {
-					static_assert((false, "Invalid operand size"));
+					static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 				}
 			} else {
 				if constexpr (sizeof(T) == sizeof(uint8_t)) {
@@ -198,7 +198,7 @@ void compileIntSubInstruction(
 							rhsRegId,
 							rhsVregState.phyReg));
 				} else {
-					static_assert((false, "Invalid operand size"));
+					static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 				}
 			}
 
@@ -265,7 +265,7 @@ void compileIntSubInstruction(
 					}
 				}
 			} else {
-				static_assert((false, "Invalid operand type"));
+				static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 			}
 		} else {
 			uint32_t rhsRegIndex = curIns.operands[1].getRegIndex();
@@ -301,7 +301,7 @@ void compileIntSubInstruction(
 							lhsRegId,
 							MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 }));
 				} else {
-					static_assert((false, "Invalid operand size"));
+					static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 				}
 			} else {
 				if constexpr (sizeof(T) == sizeof(uint8_t)) {
@@ -325,7 +325,7 @@ void compileIntSubInstruction(
 							lhsRegId,
 							lhsVregState.phyReg));
 				} else {
-					static_assert((false, "Invalid operand size"));
+					static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 				}
 			}
 
@@ -344,7 +344,7 @@ void compileIntSubInstruction(
 					compileContext.pushIns(
 						emitSubMemToReg64Ins(lhsRegId, MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
 				} else {
-					static_assert((false, "Invalid operand type"));
+					static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 				}
 			} else {
 				if constexpr (std::is_same_v<T, int8_t> || std::is_same_v<T, uint8_t>) {
@@ -360,7 +360,7 @@ void compileIntSubInstruction(
 					compileContext.pushIns(
 						emitSubReg64ToReg64Ins(lhsRegId, rhsVregState.phyReg));
 				} else {
-					static_assert((false, "Invalid operand type"));
+					static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 				}
 			}
 
@@ -401,7 +401,7 @@ void compileFpSubInstruction(
 						lhsXmmRegId,
 						MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 }));
 			} else {
-				static_assert((false, "Invalid operand size"));
+				static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 			}
 		} else {
 			if constexpr (sizeof(T) == sizeof(float)) {
@@ -415,7 +415,7 @@ void compileFpSubInstruction(
 						lhsXmmRegId,
 						lhsVregState.phyReg));
 			} else {
-				static_assert((false, "Invalid operand size"));
+				static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 			}
 		}
 
@@ -468,7 +468,7 @@ void compileFpSubInstruction(
 				compileContext.popRegXmm(tmpXmmRegId, tmpXmmOff, tmpXmmSize);
 			}
 		} else {
-			static_assert((false, "Invalid operand type"));
+			static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 		}
 	} else {
 		if (lhsExpectedValue.valueType != ValueType::Undefined) {
@@ -494,7 +494,7 @@ void compileFpSubInstruction(
 							rhsXmmRegId,
 							MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
 				} else {
-					static_assert((false, "Invalid operand size"));
+					static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 				}
 			} else {
 				if constexpr (sizeof(T) == sizeof(float)) {
@@ -508,7 +508,7 @@ void compileFpSubInstruction(
 							rhsXmmRegId,
 							rhsVregState.phyReg));
 				} else {
-					static_assert((false, "Invalid operand size"));
+					static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 				}
 			}
 
@@ -561,7 +561,7 @@ void compileFpSubInstruction(
 					compileContext.popRegXmm(tmpXmmRegId, tmpXmmOff, tmpXmmSize);
 				}
 			} else {
-				static_assert((false, "Invalid operand type"));
+				static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 			}
 		} else {
 			uint32_t lhsRegIndex = curIns.operands[0].getRegIndex(),
@@ -626,7 +626,7 @@ void compileFpSubInstruction(
 					}
 				}
 			} else {
-				static_assert((false, "Invalid operand type"));
+				static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 			}
 		}
 	}

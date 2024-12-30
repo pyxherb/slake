@@ -28,7 +28,7 @@ namespace slake {
 		SLAKE_API virtual ~ArrayObject();
 
 		SLAKE_API virtual void clear() = 0;
-		SLAKE_API [[nodiscard]] virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) = 0;
+		[[nodiscard]] SLAKE_API virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) = 0;
 		SLAKE_API virtual void resize(size_t newLength) = 0;
 
 		SLAKE_API virtual ObjectKind getKind() const override;
@@ -54,7 +54,7 @@ namespace slake {
 		U8ArrayAccessorVarObject *accessor;
 
 		SLAKE_API virtual void clear() override;
-		SLAKE_API [[nodiscard]] virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
+		[[nodiscard]] SLAKE_API virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
 		SLAKE_API virtual void resize(size_t newLength) override;
 
 		SLAKE_API U8ArrayObject(Runtime *rt, size_t length);
@@ -87,7 +87,7 @@ namespace slake {
 		uint16_t *data;
 
 		SLAKE_API virtual void clear() override;
-		SLAKE_API [[nodiscard]] virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
+		[[nodiscard]] SLAKE_API virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
 		SLAKE_API virtual void resize(size_t newLength) override;
 
 		SLAKE_API U16ArrayObject(Runtime *rt, size_t length);
@@ -120,7 +120,7 @@ namespace slake {
 		uint32_t *data;
 
 		SLAKE_API virtual void clear() override;
-		SLAKE_API [[nodiscard]] virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
+		[[nodiscard]] SLAKE_API virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
 		SLAKE_API virtual void resize(size_t newLength) override;
 
 		SLAKE_API U32ArrayObject(Runtime *rt, size_t length);
@@ -153,7 +153,7 @@ namespace slake {
 		uint64_t *data;
 
 		SLAKE_API virtual void clear() override;
-		SLAKE_API [[nodiscard]] virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
+		[[nodiscard]] SLAKE_API virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
 		SLAKE_API virtual void resize(size_t newLength) override;
 
 		SLAKE_API U64ArrayObject(Runtime *rt, size_t length);
@@ -186,7 +186,7 @@ namespace slake {
 		int8_t *data;
 
 		SLAKE_API virtual void clear() override;
-		SLAKE_API [[nodiscard]] virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
+		[[nodiscard]] SLAKE_API virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
 		SLAKE_API virtual void resize(size_t newLength) override;
 
 		SLAKE_API I8ArrayObject(Runtime *rt, size_t length);
@@ -219,7 +219,7 @@ namespace slake {
 		int16_t *data;
 
 		SLAKE_API virtual void clear() override;
-		SLAKE_API [[nodiscard]] virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
+		[[nodiscard]] SLAKE_API virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
 		SLAKE_API virtual void resize(size_t newLength) override;
 
 		SLAKE_API I16ArrayObject(Runtime *rt, size_t length);
@@ -252,7 +252,7 @@ namespace slake {
 		int32_t *data;
 
 		SLAKE_API virtual void clear() override;
-		SLAKE_API [[nodiscard]] virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
+		[[nodiscard]] SLAKE_API virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
 		SLAKE_API virtual void resize(size_t newLength) override;
 
 		SLAKE_API I32ArrayObject(Runtime *rt, size_t length);
@@ -285,7 +285,7 @@ namespace slake {
 		int64_t *data;
 
 		SLAKE_API virtual void clear() override;
-		SLAKE_API [[nodiscard]] virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
+		[[nodiscard]] SLAKE_API virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
 		SLAKE_API virtual void resize(size_t newLength) override;
 
 		SLAKE_API I64ArrayObject(Runtime *rt, size_t length);
@@ -318,7 +318,7 @@ namespace slake {
 		float *data;
 
 		SLAKE_API virtual void clear() override;
-		SLAKE_API [[nodiscard]] virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
+		[[nodiscard]] SLAKE_API virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
 		SLAKE_API virtual void resize(size_t newLength) override;
 
 		SLAKE_API F32ArrayObject(Runtime *rt, size_t length);
@@ -351,7 +351,7 @@ namespace slake {
 		double *data;
 
 		SLAKE_API virtual void clear() override;
-		SLAKE_API [[nodiscard]] virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
+		[[nodiscard]] SLAKE_API virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
 		SLAKE_API virtual void resize(size_t newLength) override;
 
 		SLAKE_API F64ArrayObject(Runtime *rt, size_t length);
@@ -384,7 +384,7 @@ namespace slake {
 		bool *data;
 
 		SLAKE_API virtual void clear() override;
-		SLAKE_API [[nodiscard]] virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
+		[[nodiscard]] SLAKE_API virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
 		SLAKE_API virtual void resize(size_t newLength) override;
 
 		SLAKE_API BoolArrayObject(Runtime *rt, size_t length);
@@ -417,7 +417,7 @@ namespace slake {
 		Object **data;
 
 		SLAKE_API virtual void clear() override;
-		SLAKE_API [[nodiscard]] virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
+		[[nodiscard]] SLAKE_API virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
 		SLAKE_API virtual void resize(size_t newLength) override;
 
 		SLAKE_API ObjectRefArrayObject(Runtime *rt, const Type &elementType, size_t length);
@@ -450,7 +450,7 @@ namespace slake {
 		Value *data;
 
 		SLAKE_API virtual void clear() override;
-		SLAKE_API [[nodiscard]] virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
+		[[nodiscard]] SLAKE_API virtual InternalExceptionPointer fill(size_t beginIndex, size_t length, const Value &value) override;
 		SLAKE_API virtual void resize(size_t newLength) override;
 
 		SLAKE_API AnyArrayObject(Runtime *rt, size_t length);

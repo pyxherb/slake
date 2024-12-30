@@ -67,7 +67,6 @@ namespace slake {
 	};
 
 	struct Value {
-	private:
 		union {
 			int8_t asI8;
 			int16_t asI16;
@@ -85,7 +84,6 @@ namespace slake {
 			VarRef asVarRef;
 		} data;
 
-	public:
 		ValueType valueType = ValueType::Undefined;
 
 		Value() = default;

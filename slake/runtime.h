@@ -127,7 +127,7 @@ namespace slake {
 		/// @brief Execute a single instruction.
 		/// @param context Context for execution.
 		/// @param ins Instruction to be executed.
-		SLAKE_API [[nodiscard]] InternalExceptionPointer _execIns(ContextObject *context, const Instruction &ins) noexcept;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _execIns(ContextObject *context, const Instruction &ins) noexcept;
 
 		struct GCHeaplessWalkContext {
 			Object *walkableList = nullptr;
@@ -144,12 +144,12 @@ namespace slake {
 		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, Context &i);
 		SLAKE_API void _gcHeapless();
 
-		SLAKE_API [[nodiscard]] InternalExceptionPointer _instantiateGenericObject(Type &type, GenericInstantiationContext &instantiationContext);
-		SLAKE_API [[nodiscard]] InternalExceptionPointer _instantiateGenericObject(Value &value, GenericInstantiationContext &instantiationContext);
-		SLAKE_API [[nodiscard]] InternalExceptionPointer _instantiateGenericObject(Object *v, GenericInstantiationContext &instantiationContext);
-		SLAKE_API [[nodiscard]] InternalExceptionPointer _instantiateGenericObject(FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(Type &type, GenericInstantiationContext &instantiationContext);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(Value &value, GenericInstantiationContext &instantiationContext);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(Object *v, GenericInstantiationContext &instantiationContext);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext);
 
-		SLAKE_API [[nodiscard]] InternalExceptionPointer _createNewMajorFrame(
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _createNewMajorFrame(
 			Context *context,
 			Object *thisObject,
 			const FnOverloadingObject *fn,
@@ -157,7 +157,7 @@ namespace slake {
 			uint32_t nArgs,
 			uint32_t returnValueOut) noexcept;
 
-		SLAKE_API [[nodiscard]] InternalExceptionPointer _addLocalVar(MajorFrame *frame, Type type, VarRef &varRefOut) noexcept;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _addLocalVar(MajorFrame *frame, Type type, VarRef &varRefOut) noexcept;
 
 		SLAKE_API uint32_t _findAndDispatchExceptHandler(const Value &curExcept, const MinorFrame &minorFrame) const;
 
@@ -189,13 +189,13 @@ namespace slake {
 
 		SLAKE_API void invalidateGenericCache(Object *i);
 
-		SLAKE_API [[nodiscard]] InternalExceptionPointer mapGenericParams(const Object *v, GenericInstantiationContext &instantiationContext) const;
-		SLAKE_API [[nodiscard]] InternalExceptionPointer mapGenericParams(const FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer mapGenericParams(const Object *v, GenericInstantiationContext &instantiationContext) const;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer mapGenericParams(const FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const;
 		/// @brief Instantiate an generic value (e.g. generic class, etc).
 		/// @param v Object to be instantiated.
 		/// @param genericArgs Generic arguments for instantiation.
 		/// @return Instantiated value.
-		SLAKE_API [[nodiscard]] InternalExceptionPointer instantiateGenericObject(const Object *v, Object *&objectOut, GenericInstantiationContext &instantiationContext);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer instantiateGenericObject(const Object *v, Object *&objectOut, GenericInstantiationContext &instantiationContext);
 
 		SLAKE_API void setGenericCache(const Object *object, const GenericArgList &genericArgs, Object *instantiatedObject);
 
@@ -227,8 +227,8 @@ namespace slake {
 		SLAKE_API HostObjectRef<InstanceObject> newClassInstance(ClassObject *cls, NewClassInstanceFlags flags);
 		SLAKE_API HostObjectRef<ArrayObject> newArrayInstance(Runtime *rt, const Type &type, size_t length);
 
-		SLAKE_API [[nodiscard]] InternalExceptionPointer execContext(ContextObject *context) noexcept;
-		SLAKE_API [[nodiscard]] InternalExceptionPointer execFn(
+		[[nodiscard]] SLAKE_API InternalExceptionPointer execContext(ContextObject *context) noexcept;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer execFn(
 			const FnOverloadingObject *overloading,
 			ContextObject *prevContext,
 			Object *thisObject,
@@ -236,12 +236,12 @@ namespace slake {
 			uint32_t nArgs,
 			HostObjectRef<ContextObject> &contextOut);
 
-		SLAKE_API [[nodiscard]] InternalExceptionPointer tryAccessVar(const VarObject *varObject, const VarRefContext &context) const;
-		SLAKE_API [[nodiscard]] InternalExceptionPointer typeofVar(const VarObject *varObject, const VarRefContext &context, Type &typeOut) const;
-		SLAKE_API [[nodiscard]] InternalExceptionPointer readVar(const VarObject *varObject, const VarRefContext &context, Value &valueOut) const;
-		SLAKE_API [[nodiscard]] Value readVarUnsafe(const VarObject *varObject, const VarRefContext &context) const;
-		SLAKE_API [[nodiscard]] InternalExceptionPointer writeVar(VarObject *varObject, const VarRefContext &context, const Value &value) const;
-		SLAKE_API [[nodiscard]] InternalExceptionPointer writeVarUnsafe(VarObject *varObject, const VarRefContext &context, const Value &value) const;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer tryAccessVar(const VarObject *varObject, const VarRefContext &context) const;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer typeofVar(const VarObject *varObject, const VarRefContext &context, Type &typeOut) const;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer readVar(const VarObject *varObject, const VarRefContext &context, Value &valueOut) const;
+		[[nodiscard]] SLAKE_API Value readVarUnsafe(const VarObject *varObject, const VarRefContext &context) const;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer writeVar(VarObject *varObject, const VarRefContext &context, const Value &value) const;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer writeVarUnsafe(VarObject *varObject, const VarRefContext &context, const Value &value) const;
 	};
 }
 

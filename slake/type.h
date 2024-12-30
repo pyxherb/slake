@@ -90,7 +90,7 @@ namespace slake {
 		SLAKE_API Type &getRefExData() const;
 
 		SLAKE_API bool isLoadingDeferred() const noexcept;
-		SLAKE_API [[nodiscard]] InternalExceptionPointer loadDeferredType(Runtime *rt);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer loadDeferredType(Runtime *rt);
 
 		SLAKE_FORCEINLINE operator bool() const noexcept {
 			return typeId != TypeId::None;

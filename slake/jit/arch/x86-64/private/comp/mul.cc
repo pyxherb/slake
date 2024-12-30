@@ -53,7 +53,7 @@ void compileIntMulInstruction(
 						lhsRegId,
 						MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 }));
 			} else {
-				static_assert((false, "Invalid operand size"));
+				static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 			}
 		} else {
 			if constexpr (sizeof(T) == sizeof(uint8_t)) {
@@ -77,7 +77,7 @@ void compileIntMulInstruction(
 						lhsRegId,
 						lhsVregState.phyReg));
 			} else {
-				static_assert((false, "Invalid operand size"));
+				static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 			}
 		}
 
@@ -118,7 +118,7 @@ void compileIntMulInstruction(
 				compileContext.pushIns(emitMovImm64ToMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }, (uint8_t *)&rhsData));
 				compileContext.pushIns(emitImul64WithMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }));
 			} else {
-				static_assert((false, "Invalid operand type"));
+				static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 			}
 
 			compileContext.stackFree(off, sizeof(T));
@@ -156,7 +156,7 @@ void compileIntMulInstruction(
 				compileContext.pushIns(emitMovImm64ToReg64Ins(tmpRegId, (uint8_t *)&rhsData));
 				compileContext.pushIns(emitImul64WithReg64Ins(tmpRegId));
 			} else {
-				static_assert((false, "Invalid operand type"));
+				static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 			}
 			compileContext.unallocReg(tmpRegId);
 		}
@@ -210,7 +210,7 @@ void compileIntMulInstruction(
 							rhsRegId,
 							MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
 				} else {
-					static_assert((false, "Invalid operand size"));
+					static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 				}
 			} else {
 				if constexpr (sizeof(T) == sizeof(uint8_t)) {
@@ -234,7 +234,7 @@ void compileIntMulInstruction(
 							rhsRegId,
 							rhsVregState.phyReg));
 				} else {
-					static_assert((false, "Invalid operand size"));
+					static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 				}
 			}
 
@@ -275,7 +275,7 @@ void compileIntMulInstruction(
 					compileContext.pushIns(emitMovImm64ToMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }, (uint8_t *)&lhsData));
 					compileContext.pushIns(emitImul64WithMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }));
 				} else {
-					static_assert((false, "Invalid operand type"));
+					static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 				}
 
 				compileContext.stackFree(off, sizeof(T));
@@ -313,7 +313,7 @@ void compileIntMulInstruction(
 					compileContext.pushIns(emitMovImm64ToReg64Ins(tmpRegId, (uint8_t *)&lhsData));
 					compileContext.pushIns(emitImul64WithReg64Ins(tmpRegId));
 				} else {
-					static_assert((false, "Invalid operand type"));
+					static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 				}
 				compileContext.unallocReg(tmpRegId);
 			}
@@ -365,7 +365,7 @@ void compileIntMulInstruction(
 							lhsRegId,
 							MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 }));
 				} else {
-					static_assert((false, "Invalid operand size"));
+					static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 				}
 			} else {
 				if constexpr (sizeof(T) == sizeof(uint8_t)) {
@@ -389,7 +389,7 @@ void compileIntMulInstruction(
 							lhsRegId,
 							lhsVregState.phyReg));
 				} else {
-					static_assert((false, "Invalid operand size"));
+					static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 				}
 			}
 
@@ -420,7 +420,7 @@ void compileIntMulInstruction(
 					compileContext.pushIns(
 						emitMul64WithMemIns(MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
 				} else {
-					static_assert((false, "Invalid operand type"));
+					static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 				}
 			} else {
 				if constexpr (std::is_same_v<T, int8_t>) {
@@ -448,7 +448,7 @@ void compileIntMulInstruction(
 					compileContext.pushIns(
 						emitMul64WithReg64Ins(rhsVregState.phyReg));
 				} else {
-					static_assert((false, "Invalid operand type"));
+					static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 				}
 			}
 
@@ -495,7 +495,7 @@ void compileFpMulInstruction(
 						lhsXmmRegId,
 						MemoryLocation{ REG_RBP, lhsVregState.saveOffset, REG_MAX, 0 }));
 			} else {
-				static_assert((false, "Invalid operand size"));
+				static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 			}
 		} else {
 			if constexpr (sizeof(T) == sizeof(float)) {
@@ -509,7 +509,7 @@ void compileFpMulInstruction(
 						lhsXmmRegId,
 						lhsVregState.phyReg));
 			} else {
-				static_assert((false, "Invalid operand size"));
+				static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 			}
 		}
 
@@ -562,7 +562,7 @@ void compileFpMulInstruction(
 				compileContext.popRegXmm(tmpXmmRegId, tmpXmmOff, tmpXmmSize);
 			}
 		} else {
-			static_assert((false, "Invalid operand type"));
+			static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 		}
 	} else {
 		if (lhsExpectedValue.valueType != ValueType::Undefined) {
@@ -588,7 +588,7 @@ void compileFpMulInstruction(
 							rhsXmmRegId,
 							MemoryLocation{ REG_RBP, rhsVregState.saveOffset, REG_MAX, 0 }));
 				} else {
-					static_assert((false, "Invalid operand size"));
+					static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 				}
 			} else {
 				if constexpr (sizeof(T) == sizeof(float)) {
@@ -602,7 +602,7 @@ void compileFpMulInstruction(
 							rhsXmmRegId,
 							rhsVregState.phyReg));
 				} else {
-					static_assert((false, "Invalid operand size"));
+					static_assert(!std::is_same_v<T, T>, "Invalid operand size");
 				}
 			}
 
@@ -655,7 +655,7 @@ void compileFpMulInstruction(
 					compileContext.popRegXmm(tmpXmmRegId, tmpXmmOff, tmpXmmSize);
 				}
 			} else {
-				static_assert((false, "Invalid operand type"));
+				static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 			}
 		} else {
 			uint32_t lhsRegIndex = curIns.operands[0].getRegIndex(),
@@ -720,7 +720,7 @@ void compileFpMulInstruction(
 					}
 				}
 			} else {
-				static_assert((false, "Invalid operand type"));
+				static_assert(!std::is_same_v<T, T>, "Invalid operand type");
 			}
 		}
 	}

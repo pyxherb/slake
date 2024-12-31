@@ -84,7 +84,7 @@ namespace slake {
 			VarRef asVarRef;
 		} data;
 
-		ValueType valueType = ValueType::Undefined;
+		ValueType valueType;
 
 		Value() = default;
 		Value(const Value &other) = default;
@@ -124,6 +124,8 @@ namespace slake {
 		}
 		SLAKE_FORCEINLINE Value(Object *objectPtr) : valueType(ValueType::ObjectRef) {
 			this->data.asObjectRef = objectPtr;
+		}
+		SLAKE_FORCEINLINE Value(ValueType vt) : valueType(vt) {
 		}
 		SLAKE_FORCEINLINE Value(ValueType vt, uint32_t index) : valueType(vt) {
 			this->data.asU32 = index;
@@ -220,27 +222,6 @@ namespace slake {
 		}
 
 		SLAKE_API bool operator<(const Value &rhs) const;
-	};
-
-	struct Optional {
-		Value value;
-		bool hasValue;
-
-		SLAKE_FORCEINLINE Optional() : hasValue(false) {
-		}
-		SLAKE_FORCEINLINE Optional(Value value) : value(value), hasValue(true) {}
-
-		SLAKE_FORCEINLINE operator bool() {
-			return hasValue;
-		}
-		SLAKE_FORCEINLINE bool isEmpty() {
-			return !hasValue;
-		}
-
-		SLAKE_FORCEINLINE Value unwrap() {
-			assert(hasValue);
-			return value;
-		}
 	};
 
 	SLAKE_API bool isCompatible(const Type &type, const Value &value);

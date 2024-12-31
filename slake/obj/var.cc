@@ -15,7 +15,7 @@ SLAKE_API VarObject::~VarObject() {
 SLAKE_API ObjectKind VarObject::getKind() const { return ObjectKind::Var; }
 
 SLAKE_API slake::RegularVarObject::RegularVarObject(Runtime *rt, AccessModifier access, const Type &type)
-	: VarObject(rt, VarKind::Regular), type(type) {
+	: VarObject(rt, VarKind::Regular), value(ValueType::Undefined), type(type) {
 	this->accessModifier = access;
 }
 

@@ -17,7 +17,11 @@ InternalExceptionPointer slake::opti::analyzeExprIns(
 					analyzeContext.idxCurIns);
 			}
 
-			Value lhs = curIns.operands[0], rhs = curIns.operands[1], evaluatedLhs, evaluatedRhs, result = Value();
+			Value lhs = curIns.operands[0],
+				  rhs = curIns.operands[1],
+				  evaluatedLhs(ValueType::Undefined),
+				  evaluatedRhs(ValueType::Undefined),
+				  result = (ValueType::Undefined);
 			Type lhsType, rhsType, resultType;
 
 			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[0], lhsType));
@@ -137,7 +141,11 @@ InternalExceptionPointer slake::opti::analyzeExprIns(
 					analyzeContext.idxCurIns);
 			}
 
-			Value lhs = curIns.operands[0], rhs = curIns.operands[1], evaluatedLhs, evaluatedRhs, result = Value();
+			Value lhs = curIns.operands[0],
+				  rhs = curIns.operands[1],
+				  evaluatedLhs(ValueType::Undefined),
+				  evaluatedRhs(ValueType::Undefined),
+				  result = (ValueType::Undefined);
 			Type lhsType, rhsType, resultType;
 
 			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[0], lhsType));
@@ -257,7 +265,11 @@ InternalExceptionPointer slake::opti::analyzeExprIns(
 					analyzeContext.idxCurIns);
 			}
 
-			Value lhs = curIns.operands[0], rhs = curIns.operands[1], evaluatedLhs, evaluatedRhs, result = Value();
+			Value lhs = curIns.operands[0],
+				  rhs = curIns.operands[1],
+				  evaluatedLhs(ValueType::Undefined),
+				  evaluatedRhs(ValueType::Undefined),
+				  result = (ValueType::Undefined);
 			Type lhsType, rhsType, resultType;
 
 			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[0], lhsType));
@@ -377,7 +389,11 @@ InternalExceptionPointer slake::opti::analyzeExprIns(
 					analyzeContext.idxCurIns);
 			}
 
-			Value lhs = curIns.operands[0], rhs = curIns.operands[1], evaluatedLhs, evaluatedRhs, result = Value();
+			Value lhs = curIns.operands[0],
+				  rhs = curIns.operands[1],
+				  evaluatedLhs(ValueType::Undefined),
+				  evaluatedRhs(ValueType::Undefined),
+				  result = (ValueType::Undefined);
 			Type lhsType, rhsType, resultType;
 
 			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[0], lhsType));
@@ -497,7 +513,11 @@ InternalExceptionPointer slake::opti::analyzeExprIns(
 					analyzeContext.idxCurIns);
 			}
 
-			Value lhs = curIns.operands[0], rhs = curIns.operands[1], evaluatedLhs, evaluatedRhs, result = Value();
+			Value lhs = curIns.operands[0],
+				  rhs = curIns.operands[1],
+				  evaluatedLhs(ValueType::Undefined),
+				  evaluatedRhs(ValueType::Undefined),
+				  result = (ValueType::Undefined);
 			Type lhsType, rhsType, resultType;
 
 			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[0], lhsType));
@@ -603,7 +623,11 @@ InternalExceptionPointer slake::opti::analyzeExprIns(
 					analyzeContext.idxCurIns);
 			}
 
-			Value lhs = curIns.operands[0], rhs = curIns.operands[1], evaluatedLhs, evaluatedRhs, result = Value();
+			Value lhs = curIns.operands[0],
+				  rhs = curIns.operands[1],
+				  evaluatedLhs(ValueType::Undefined),
+				  evaluatedRhs(ValueType::Undefined),
+				  result = (ValueType::Undefined);
 			Type lhsType, rhsType, resultType;
 
 			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[0], lhsType));
@@ -709,7 +733,11 @@ InternalExceptionPointer slake::opti::analyzeExprIns(
 					analyzeContext.idxCurIns);
 			}
 
-			Value lhs = curIns.operands[0], rhs = curIns.operands[1], evaluatedLhs, evaluatedRhs, result = Value();
+			Value lhs = curIns.operands[0],
+				  rhs = curIns.operands[1],
+				  evaluatedLhs(ValueType::Undefined),
+				  evaluatedRhs(ValueType::Undefined),
+				  result = (ValueType::Undefined);
 			Type lhsType, rhsType, resultType;
 
 			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[0], lhsType));
@@ -815,7 +843,11 @@ InternalExceptionPointer slake::opti::analyzeExprIns(
 					analyzeContext.idxCurIns);
 			}
 
-			Value lhs = curIns.operands[0], rhs = curIns.operands[1], evaluatedLhs, evaluatedRhs, result = Value();
+			Value lhs = curIns.operands[0],
+				  rhs = curIns.operands[1],
+				  evaluatedLhs(ValueType::Undefined),
+				  evaluatedRhs(ValueType::Undefined),
+				  result = (ValueType::Undefined);
 			Type lhsType, rhsType, resultType;
 
 			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[0], lhsType));
@@ -878,7 +910,11 @@ InternalExceptionPointer slake::opti::analyzeExprIns(
 					analyzeContext.idxCurIns);
 			}
 
-			Value lhs = curIns.operands[0], rhs = curIns.operands[1], evaluatedLhs, evaluatedRhs, result = Value();
+			Value lhs = curIns.operands[0],
+				  rhs = curIns.operands[1],
+				  evaluatedLhs(ValueType::Undefined),
+				  evaluatedRhs(ValueType::Undefined),
+				  result = (ValueType::Undefined);
 			Type lhsType, rhsType, resultType;
 
 			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[0], lhsType));
@@ -941,7 +977,11 @@ InternalExceptionPointer slake::opti::analyzeExprIns(
 					analyzeContext.idxCurIns);
 			}
 
-			Value lhs = curIns.operands[0], rhs = curIns.operands[1], evaluatedLhs, evaluatedRhs, result = Value();
+			Value lhs = curIns.operands[0],
+				  rhs = curIns.operands[1],
+				  evaluatedLhs(ValueType::Undefined),
+				  evaluatedRhs(ValueType::Undefined),
+				  result = (ValueType::Undefined);
 			Type lhsType, rhsType, resultType;
 
 			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[0], lhsType));
@@ -1058,7 +1098,11 @@ InternalExceptionPointer slake::opti::analyzeExprIns(
 					analyzeContext.idxCurIns);
 			}
 
-			Value lhs = curIns.operands[0], rhs = curIns.operands[1], evaluatedLhs, evaluatedRhs, result = Value();
+			Value lhs = curIns.operands[0],
+				  rhs = curIns.operands[1],
+				  evaluatedLhs(ValueType::Undefined),
+				  evaluatedRhs(ValueType::Undefined),
+				  result = (ValueType::Undefined);
 			Type lhsType, rhsType, resultType;
 
 			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[0], lhsType));
@@ -1175,7 +1219,11 @@ InternalExceptionPointer slake::opti::analyzeExprIns(
 					analyzeContext.idxCurIns);
 			}
 
-			Value lhs = curIns.operands[0], rhs = curIns.operands[1], evaluatedLhs, evaluatedRhs, result = Value();
+			Value lhs = curIns.operands[0],
+				  rhs = curIns.operands[1],
+				  evaluatedLhs(ValueType::Undefined),
+				  evaluatedRhs(ValueType::Undefined),
+				  result = (ValueType::Undefined);
 			Type lhsType, rhsType, resultType;
 
 			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[0], lhsType));
@@ -1286,7 +1334,11 @@ InternalExceptionPointer slake::opti::analyzeExprIns(
 					analyzeContext.idxCurIns);
 			}
 
-			Value lhs = curIns.operands[0], rhs = curIns.operands[1], evaluatedLhs, evaluatedRhs, result = Value();
+			Value lhs = curIns.operands[0],
+				  rhs = curIns.operands[1],
+				  evaluatedLhs(ValueType::Undefined),
+				  evaluatedRhs(ValueType::Undefined),
+				  result = (ValueType::Undefined);
 			Type lhsType, rhsType, resultType;
 
 			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[0], lhsType));
@@ -1397,7 +1449,11 @@ InternalExceptionPointer slake::opti::analyzeExprIns(
 					analyzeContext.idxCurIns);
 			}
 
-			Value lhs = curIns.operands[0], rhs = curIns.operands[1], evaluatedLhs, evaluatedRhs, result = Value();
+			Value lhs = curIns.operands[0],
+				  rhs = curIns.operands[1],
+				  evaluatedLhs(ValueType::Undefined),
+				  evaluatedRhs(ValueType::Undefined),
+				  result = (ValueType::Undefined);
 			Type lhsType, rhsType, resultType;
 
 			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[0], lhsType));
@@ -1508,7 +1564,11 @@ InternalExceptionPointer slake::opti::analyzeExprIns(
 					analyzeContext.idxCurIns);
 			}
 
-			Value lhs = curIns.operands[0], rhs = curIns.operands[1], evaluatedLhs, evaluatedRhs, result = Value();
+			Value lhs = curIns.operands[0],
+				  rhs = curIns.operands[1],
+				  evaluatedLhs(ValueType::Undefined),
+				  evaluatedRhs(ValueType::Undefined),
+				  result = (ValueType::Undefined);
 			Type lhsType, rhsType, resultType;
 
 			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[0], lhsType));
@@ -1619,7 +1679,11 @@ InternalExceptionPointer slake::opti::analyzeExprIns(
 					analyzeContext.idxCurIns);
 			}
 
-			Value lhs = curIns.operands[0], rhs = curIns.operands[1], evaluatedLhs, evaluatedRhs, result = Value();
+			Value lhs = curIns.operands[0],
+				  rhs = curIns.operands[1],
+				  evaluatedLhs(ValueType::Undefined),
+				  evaluatedRhs(ValueType::Undefined),
+				  result = (ValueType::Undefined);
 			Type lhsType, rhsType, resultType;
 
 			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[0], lhsType));
@@ -1725,7 +1789,11 @@ InternalExceptionPointer slake::opti::analyzeExprIns(
 					analyzeContext.idxCurIns);
 			}
 
-			Value lhs = curIns.operands[0], rhs = curIns.operands[1], evaluatedLhs, evaluatedRhs, result = Value();
+			Value lhs = curIns.operands[0],
+				  rhs = curIns.operands[1],
+				  evaluatedLhs(ValueType::Undefined),
+				  evaluatedRhs(ValueType::Undefined),
+				  result = (ValueType::Undefined);
 			Type lhsType, rhsType, resultType;
 
 			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[0], lhsType));
@@ -1831,7 +1899,11 @@ InternalExceptionPointer slake::opti::analyzeExprIns(
 					analyzeContext.idxCurIns);
 			}
 
-			Value lhs = curIns.operands[0], rhs = curIns.operands[1], evaluatedLhs, evaluatedRhs, result = Value();
+			Value lhs = curIns.operands[0],
+				  rhs = curIns.operands[1],
+				  evaluatedLhs(ValueType::Undefined),
+				  evaluatedRhs(ValueType::Undefined),
+				  result = (ValueType::Undefined);
 			Type lhsType, resultType;
 
 			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, lhs, lhsType));
@@ -1919,7 +1991,11 @@ InternalExceptionPointer slake::opti::analyzeExprIns(
 					analyzeContext.idxCurIns);
 			}
 
-			Value lhs = curIns.operands[0], rhs = curIns.operands[1], evaluatedLhs, evaluatedRhs, result = Value();
+			Value lhs = curIns.operands[0],
+				  rhs = curIns.operands[1],
+				  evaluatedLhs(ValueType::Undefined),
+				  evaluatedRhs(ValueType::Undefined),
+				  result = (ValueType::Undefined);
 			Type lhsType, resultType;
 
 			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, lhs, lhsType));
@@ -1965,7 +2041,11 @@ InternalExceptionPointer slake::opti::analyzeExprIns(
 					analyzeContext.idxCurIns);
 			}
 
-			Value lhs = curIns.operands[0], rhs = curIns.operands[1], evaluatedLhs, evaluatedRhs, result = Value();
+			Value lhs = curIns.operands[0],
+				  rhs = curIns.operands[1],
+				  evaluatedLhs(ValueType::Undefined),
+				  evaluatedRhs(ValueType::Undefined),
+				  result = (ValueType::Undefined);
 			Type lhsType, resultType;
 
 			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, lhs, lhsType));

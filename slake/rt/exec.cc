@@ -288,10 +288,6 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(MajorFrame *fram
 	return {};
 }
 
-SLAKE_FORCEINLINE void _addLocalReg(MajorFrame *frame) noexcept {
-	frame->regs.push_back({});
-}
-
 SLAKE_FORCEINLINE InternalExceptionPointer lload(MajorFrame *majorFrame, Runtime *rt, uint32_t off, VarRef &varRefOut) {
 	if (off >= majorFrame->localVarRecords.size()) {
 		return InvalidLocalVarIndexError::alloc(rt, off);

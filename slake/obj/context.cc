@@ -26,7 +26,7 @@ SLAKE_API MajorFrame::MajorFrame(Runtime *rt, Context *context)
 
 SLAKE_API void MajorFrame::leave() {
 	context->stackTop = minorFrames.back().stackBase;
-	regs.resize(minorFrames.back().nRegs);
+	regs.resize(minorFrames.back().nRegs, Value(ValueType::Undefined));
 	minorFrames.pop_back();
 }
 

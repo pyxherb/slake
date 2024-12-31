@@ -13,7 +13,7 @@ namespace slake {
 		struct RegAnalyzedInfo {
 			RegLifetime lifetime;
 			Type type;
-			Value expectedValue = Value();
+			Value expectedValue = Value(ValueType::Undefined);
 		};
 
 		struct LocalVarAnalyzedInfo {

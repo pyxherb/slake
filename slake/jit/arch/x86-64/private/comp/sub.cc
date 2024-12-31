@@ -643,7 +643,7 @@ InternalExceptionPointer slake::jit::x86_64::compileSubInstruction(
 	Value expectedValue = analyzedInfo.analyzedRegInfo.at(outputRegIndex).expectedValue;
 	if (expectedValue.valueType == ValueType::Undefined) {
 		Value lhs = curIns.operands[0], rhs = curIns.operands[1];
-		Value lhsExpectedValue, rhsExpectedValue;
+		Value lhsExpectedValue(ValueType::Undefined), rhsExpectedValue(ValueType::Undefined);
 
 		switch (lhs.valueType) {
 			case ValueType::I8:

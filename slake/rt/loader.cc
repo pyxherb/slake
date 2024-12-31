@@ -474,7 +474,7 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 					slxfmt::InsHeader ih = _read<slxfmt::InsHeader>(newContext.fs);
 
 					ins.opcode = ih.opcode;
-					ins.operands.resize(ih.nOperands);
+					ins.operands.resize(ih.nOperands, Value(ValueType::Undefined));
 
 					if (ih.hasOutputOperand)
 						ins.output = _loadValue(newContext, holder);

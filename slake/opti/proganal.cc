@@ -179,7 +179,7 @@ InternalExceptionPointer slake::opti::evalConstValue(
 			break;
 		}*/
 		default:
-			constValueOut = Value();
+			constValueOut = Value(ValueType::Undefined);
 	}
 	return {};
 }
@@ -936,7 +936,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						i);
 				}
 
-				Value constSrc;
+				Value constSrc(ValueType::Undefined);
 				Type srcType, destType = curIns.operands[0].getTypeName();
 				SLAKE_RETURN_IF_EXCEPT(evalConstValue(analyzeContext, curIns.operands[1], constSrc));
 				SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[1], srcType));

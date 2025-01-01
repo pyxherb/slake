@@ -6,8 +6,17 @@
 #include <map>
 
 namespace slake {
+	enum class ModuleLoadStatus {
+		ImplicitlyLoaded = 0,
+		Loading,
+		ManuallyLoaded
+	};
+
 	class ModuleObject : public MemberObject {
 	public:
+		ModuleLoadStatus loadStatus = ModuleLoadStatus::ImplicitlyLoaded;
+		std::atomic_size_t depCount = 0;
+
 		std::string name;
 		Object *parent = nullptr;
 		Scope *scope;

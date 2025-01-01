@@ -62,7 +62,9 @@ namespace slake {
 		// Do not import modules.
 		LMOD_NOIMPORT = 0x08,
 		// Load native members
-		LMOD_LOADNATIVE = 0x10;
+		LMOD_LOADNATIVE = 0x10,
+		// Load as implicitly loaded.
+		LMOD_IMPLICIT = 0x80;
 
 	using NewClassInstanceFlags = uint8_t;
 	constexpr static NewClassInstanceFlags

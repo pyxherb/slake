@@ -502,6 +502,8 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 SLAKE_API HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &fs, LoadModuleFlags flags) {
 	HostObjectRef<ModuleObject> mod = ModuleObject::alloc(this, ACCESS_PUB);
 
+	mod->loadStatus = ModuleLoadStatus::Loading;
+
 	HostRefHolder holder;
 
 	LoaderContext context{ fs, mod.get() };
@@ -548,10 +550,17 @@ SLAKE_API HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &f
 			auto moduleObject = (ModuleObject *)curObject;
 
 			if (auto member = moduleObject->getMember(lastName, nullptr); member) {
+				if (member->getKind() != ObjectKind::Module) {
+					throw LoaderError(
+						"Object which corresponds to module name \"" + std::to_string(modName.get(), this) + "\" was found, but is not a module");
+				}
+				ModuleObject *modMember = (ModuleObject *)member;
+				if (modMember->loadStatus == ModuleLoadStatus::Loading) {
+					throw LoaderError("Cyclic dependency detected");
+				}
 				if (flags & LMOD_NORELOAD) {
-					if (member->getKind() != ObjectKind::Module)
-						throw LoaderError(
-							"Object which corresponds to module name \"" + std::to_string(modName.get(), this) + "\" was found, but is not a module");
+					++modMember->depCount;
+					return modMember;
 				}
 				if (flags & LMOD_NOCONFLICT)
 					throw LoaderError("Module \"" + std::to_string(modName.get(), this) + "\" conflicted with existing value which is on the same path");
@@ -583,6 +592,13 @@ SLAKE_API HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &f
 	}
 
 	_loadScope(context, mod.get(), flags, holder);
+
+	if (flags & LMOD_IMPLICIT) {
+		mod->loadStatus = ModuleLoadStatus::ImplicitlyLoaded;
+	} else {
+		mod->loadStatus = ModuleLoadStatus::ManuallyLoaded;
+	}
+
 	return mod;
 }
 

@@ -1671,6 +1671,191 @@ InternalExceptionPointer slake::opti::analyzeExprIns(
 			}
 			break;
 		}
+		case Opcode::CMP: {
+			if (curIns.operands.size() != 2) {
+				return MalformedProgramError::alloc(
+					analyzeContext.runtime,
+					analyzeContext.fnObject,
+					analyzeContext.idxCurIns);
+			}
+
+			Value lhs = curIns.operands[0],
+				  rhs = curIns.operands[1],
+				  evaluatedLhs(ValueType::Undefined),
+				  evaluatedRhs(ValueType::Undefined),
+				  result = (ValueType::Undefined);
+			Type lhsType, rhsType, resultType;
+
+			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[0], lhsType));
+			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[1], rhsType));
+
+			if (lhsType != rhsType) {
+				return MalformedProgramError::alloc(
+					analyzeContext.runtime,
+					analyzeContext.fnObject,
+					analyzeContext.idxCurIns);
+			}
+
+			SLAKE_RETURN_IF_EXCEPT(evalConstValue(analyzeContext, lhs, lhs));
+			SLAKE_RETURN_IF_EXCEPT(evalConstValue(analyzeContext, rhs, rhs));
+
+			switch (lhsType.typeId) {
+				case TypeId::Value: {
+					resultType = ValueType::I32;
+					switch (lhsType.getValueTypeExData()) {
+						case ValueType::I8:
+							if (evaluatedLhs.valueType != ValueType::Undefined &&
+								evaluatedRhs.valueType != ValueType::Undefined) {
+								int8_t lhsData = evaluatedLhs.getI8(), rhsData = evaluatedRhs.getI8();
+								if (lhsData < rhsData) {
+									result = Value((int32_t)-1);
+								} else if (lhsData > rhsData) {
+									result = Value((int32_t)1);
+								} else {
+									result = Value((int32_t)0);
+								}
+							}
+							break;
+						case ValueType::I16:
+							if (evaluatedLhs.valueType != ValueType::Undefined &&
+								evaluatedRhs.valueType != ValueType::Undefined) {
+								int16_t lhsData = evaluatedLhs.getI16(), rhsData = evaluatedRhs.getI16();
+								if (lhsData < rhsData) {
+									result = Value((int32_t)-1);
+								} else if (lhsData > rhsData) {
+									result = Value((int32_t)1);
+								} else {
+									result = Value((int32_t)0);
+								}
+							}
+							break;
+						case ValueType::I32:
+							if (evaluatedLhs.valueType != ValueType::Undefined &&
+								evaluatedRhs.valueType != ValueType::Undefined) {
+								int32_t lhsData = evaluatedLhs.getI32(), rhsData = evaluatedRhs.getI32();
+								if (lhsData < rhsData) {
+									result = Value((int32_t)-1);
+								} else if (lhsData > rhsData) {
+									result = Value((int32_t)1);
+								} else {
+									result = Value((int32_t)0);
+								}
+							}
+							break;
+						case ValueType::I64:
+							if (evaluatedLhs.valueType != ValueType::Undefined &&
+								evaluatedRhs.valueType != ValueType::Undefined) {
+								int64_t lhsData = evaluatedLhs.getI64(), rhsData = evaluatedRhs.getI64();
+								if (lhsData < rhsData) {
+									result = Value((int32_t)-1);
+								} else if (lhsData > rhsData) {
+									result = Value((int32_t)1);
+								} else {
+									result = Value((int32_t)0);
+								}
+							}
+							break;
+						case ValueType::U8:
+							if (evaluatedLhs.valueType != ValueType::Undefined &&
+								evaluatedRhs.valueType != ValueType::Undefined) {
+								uint8_t lhsData = evaluatedLhs.getU8(), rhsData = evaluatedRhs.getU8();
+								if (lhsData < rhsData) {
+									result = Value((int32_t)-1);
+								} else if (lhsData > rhsData) {
+									result = Value((int32_t)1);
+								} else {
+									result = Value((int32_t)0);
+								}
+							}
+							break;
+						case ValueType::U16:
+							if (evaluatedLhs.valueType != ValueType::Undefined &&
+								evaluatedRhs.valueType != ValueType::Undefined) {
+								uint16_t lhsData = evaluatedLhs.getU16(), rhsData = evaluatedRhs.getU16();
+								if (lhsData < rhsData) {
+									result = Value((int32_t)-1);
+								} else if (lhsData > rhsData) {
+									result = Value((int32_t)1);
+								} else {
+									result = Value((int32_t)0);
+								}
+							}
+							break;
+						case ValueType::U32:
+							if (evaluatedLhs.valueType != ValueType::Undefined &&
+								evaluatedRhs.valueType != ValueType::Undefined) {
+								uint32_t lhsData = evaluatedLhs.getU32(), rhsData = evaluatedRhs.getU32();
+								if (lhsData < rhsData) {
+									result = Value((int32_t)-1);
+								} else if (lhsData > rhsData) {
+									result = Value((int32_t)1);
+								} else {
+									result = Value((int32_t)0);
+								}
+							}
+							break;
+						case ValueType::U64:
+							if (evaluatedLhs.valueType != ValueType::Undefined &&
+								evaluatedRhs.valueType != ValueType::Undefined) {
+								uint64_t lhsData = evaluatedLhs.getU64(), rhsData = evaluatedRhs.getU64();
+								if (lhsData < rhsData) {
+									result = Value((int32_t)-1);
+								} else if (lhsData > rhsData) {
+									result = Value((int32_t)1);
+								} else {
+									result = Value((int32_t)0);
+								}
+							}
+							break;
+						case ValueType::F32:
+							if (evaluatedLhs.valueType != ValueType::Undefined &&
+								evaluatedRhs.valueType != ValueType::Undefined) {
+								float lhsData = evaluatedLhs.getF32(), rhsData = evaluatedRhs.getF32();
+								if (lhsData < rhsData) {
+									result = Value((int32_t)-1);
+								} else if (lhsData > rhsData) {
+									result = Value((int32_t)1);
+								} else {
+									result = Value((int32_t)0);
+								}
+							}
+							break;
+						case ValueType::F64:
+							if (evaluatedLhs.valueType != ValueType::Undefined &&
+								evaluatedRhs.valueType != ValueType::Undefined) {
+								double lhsData = evaluatedLhs.getF64(), rhsData = evaluatedRhs.getF64();
+								if (lhsData < rhsData) {
+									result = Value((int32_t)-1);
+								} else if (lhsData > rhsData) {
+									result = Value((int32_t)1);
+								} else {
+									result = Value((int32_t)0);
+								}
+							}
+							break;
+						default: {
+							return MalformedProgramError::alloc(
+								analyzeContext.runtime,
+								analyzeContext.fnObject,
+								analyzeContext.idxCurIns);
+						}
+					}
+					break;
+				}
+				default: {
+					return MalformedProgramError::alloc(
+						analyzeContext.runtime,
+						analyzeContext.fnObject,
+						analyzeContext.idxCurIns);
+				}
+			}
+
+			analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
+			if (result.valueType != ValueType::Undefined) {
+				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+			}
+			break;
+		}
 		case Opcode::LSH: {
 			if (curIns.operands.size() != 2) {
 				return MalformedProgramError::alloc(

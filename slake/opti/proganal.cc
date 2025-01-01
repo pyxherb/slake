@@ -642,6 +642,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 			case Opcode::GTEQ:
 			case Opcode::LSH:
 			case Opcode::RSH:
+			case Opcode::CMP:
 			case Opcode::NOT:
 			case Opcode::LNOT:
 			case Opcode::NEG:

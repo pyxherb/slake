@@ -93,6 +93,7 @@ namespace slake {
 			Gt,
 			LtEq,
 			GtEq,
+			Cmp,
 			Subscript
 		};
 

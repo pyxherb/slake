@@ -530,7 +530,8 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 						case Opcode::LT:
 						case Opcode::GT:
 						case Opcode::LTEQ:
-						case Opcode::GTEQ: {
+						case Opcode::GTEQ:
+						case Opcode::CMP: {
 							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(this, ins, true, 2));
 
 							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.output, ValueType::RegRef));
@@ -594,6 +595,16 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 										case Opcode::GTEQ:
 											valueOut = Value((bool)(x.getI8() >= y.getI8()));
 											break;
+										case Opcode::CMP: {
+											int8_t lhs = x.getI8(), rhs = y.getI8();
+											if (lhs > rhs) {
+												valueOut = Value((int32_t)1);
+											} else if (lhs < rhs) {
+												valueOut = Value((int32_t)-1);
+											} else
+												valueOut = Value((int32_t)0);
+											break;
+										}
 										default:
 											return InvalidOperandsError::alloc(this);
 									}
@@ -648,6 +659,16 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 										case Opcode::GTEQ:
 											valueOut = Value((bool)(x.getI16() >= y.getI16()));
 											break;
+										case Opcode::CMP: {
+											int16_t lhs = x.getI16(), rhs = y.getI16();
+											if (lhs > rhs) {
+												valueOut = Value((int32_t)1);
+											} else if (lhs < rhs) {
+												valueOut = Value((int32_t)-1);
+											} else
+												valueOut = Value((int32_t)0);
+											break;
+										}
 										default:
 											return InvalidOperandsError::alloc(this);
 									}
@@ -702,6 +723,16 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 										case Opcode::GTEQ:
 											valueOut = Value((bool)(x.getI32() >= y.getI32()));
 											break;
+										case Opcode::CMP: {
+											int32_t lhs = x.getI32(), rhs = y.getI32();
+											if (lhs > rhs) {
+												valueOut = Value((int32_t)1);
+											} else if (lhs < rhs) {
+												valueOut = Value((int32_t)-1);
+											} else
+												valueOut = Value((int32_t)0);
+											break;
+										}
 										default:
 											return InvalidOperandsError::alloc(this);
 									}
@@ -756,6 +787,16 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 										case Opcode::GTEQ:
 											valueOut = Value((bool)(x.getI64() >= y.getI64()));
 											break;
+										case Opcode::CMP: {
+											int64_t lhs = x.getI64(), rhs = y.getI64();
+											if (lhs > rhs) {
+												valueOut = Value((int32_t)1);
+											} else if (lhs < rhs) {
+												valueOut = Value((int32_t)-1);
+											} else
+												valueOut = Value((int32_t)0);
+											break;
+										}
 										default:
 											return InvalidOperandsError::alloc(this);
 									}
@@ -810,6 +851,16 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 										case Opcode::GTEQ:
 											valueOut = Value((bool)(x.getU8() >= y.getU8()));
 											break;
+										case Opcode::CMP: {
+											uint8_t lhs = x.getU8(), rhs = y.getU8();
+											if (lhs > rhs) {
+												valueOut = Value((int32_t)1);
+											} else if (lhs < rhs) {
+												valueOut = Value((int32_t)-1);
+											} else
+												valueOut = Value((int32_t)0);
+											break;
+										}
 										default:
 											return InvalidOperandsError::alloc(this);
 									}
@@ -864,6 +915,16 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 										case Opcode::GTEQ:
 											valueOut = Value((bool)(x.getU16() >= y.getU16()));
 											break;
+										case Opcode::CMP: {
+											uint16_t lhs = x.getU16(), rhs = y.getU16();
+											if (lhs > rhs) {
+												valueOut = Value((int32_t)1);
+											} else if (lhs < rhs) {
+												valueOut = Value((int32_t)-1);
+											} else
+												valueOut = Value((int32_t)0);
+											break;
+										}
 										default:
 											return InvalidOperandsError::alloc(this);
 									}
@@ -918,6 +979,16 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 										case Opcode::GTEQ:
 											valueOut = Value((bool)(x.getU32() >= y.getU32()));
 											break;
+										case Opcode::CMP: {
+											uint32_t lhs = x.getU32(), rhs = y.getU32();
+											if (lhs > rhs) {
+												valueOut = Value((int32_t)1);
+											} else if (lhs < rhs) {
+												valueOut = Value((int32_t)-1);
+											} else
+												valueOut = Value((int32_t)0);
+											break;
+										}
 										default:
 											return InvalidOperandsError::alloc(this);
 									}
@@ -972,6 +1043,16 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 										case Opcode::GTEQ:
 											valueOut = Value((bool)(x.getU64() >= y.getU64()));
 											break;
+										case Opcode::CMP: {
+											uint64_t lhs = x.getU64(), rhs = y.getU64();
+											if (lhs > rhs) {
+												valueOut = Value((int32_t)1);
+											} else if (lhs < rhs) {
+												valueOut = Value((int32_t)-1);
+											} else
+												valueOut = Value((int32_t)0);
+											break;
+										}
 										default:
 											return InvalidOperandsError::alloc(this);
 									}
@@ -1017,6 +1098,16 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 										case Opcode::GTEQ:
 											valueOut = Value((bool)(x.getF32() >= y.getF32()));
 											break;
+										case Opcode::CMP: {
+											float lhs = x.getF32(), rhs = y.getF32();
+											if (lhs > rhs) {
+												valueOut = Value((int32_t)1);
+											} else if (lhs < rhs) {
+												valueOut = Value((int32_t)-1);
+											} else
+												valueOut = Value((int32_t)0);
+											break;
+										}
 										default:
 											return InvalidOperandsError::alloc(this);
 									}
@@ -1062,6 +1153,16 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 										case Opcode::GTEQ:
 											valueOut = Value((bool)(x.getF64() >= y.getF64()));
 											break;
+										case Opcode::CMP: {
+											double lhs = x.getF64(), rhs = y.getF64();
+											if (lhs > rhs) {
+												valueOut = Value((int32_t)1);
+											} else if (lhs < rhs) {
+												valueOut = Value((int32_t)-1);
+											} else
+												valueOut = Value((int32_t)0);
+											break;
+										}
 										default:
 											return InvalidOperandsError::alloc(this);
 									}

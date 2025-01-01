@@ -370,6 +370,17 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 						Opcode::RSH);
 					break;
 				}
+				case BinaryOp::Cmp: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						std::make_shared<I8TypeNameNode>(SIZE_MAX),
+						Opcode::CMP);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
+					break;
+				}
 				case BinaryOp::AssignAdd: {
 					compileSimpleAssignaryBinaryOp(
 						lhsRegIndex, lhsType,
@@ -704,6 +715,17 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<I16TypeNameNode>(SIZE_MAX);
 					break;
 				}
+				case BinaryOp::Cmp: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						std::make_shared<I16TypeNameNode>(SIZE_MAX),
+						Opcode::CMP);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
+					break;
+				}
 				case BinaryOp::AssignAdd: {
 					compileSimpleAssignaryBinaryOp(
 						lhsRegIndex, lhsType,
@@ -1035,6 +1057,17 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 						std::make_shared<I32TypeNameNode>(SIZE_MAX),
 						std::make_shared<U32TypeNameNode>(SIZE_MAX),
 						Opcode::RSH);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Cmp: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						std::make_shared<I32TypeNameNode>(SIZE_MAX),
+						Opcode::CMP);
 					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
 					break;
 				}
@@ -1372,6 +1405,17 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<I64TypeNameNode>(SIZE_MAX);
 					break;
 				}
+				case BinaryOp::Cmp: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						std::make_shared<I64TypeNameNode>(SIZE_MAX),
+						Opcode::CMP);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
+					break;
+				}
 				case BinaryOp::AssignAdd: {
 					compileSimpleAssignaryBinaryOp(
 						lhsRegIndex, lhsType,
@@ -1704,6 +1748,17 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 						std::make_shared<U32TypeNameNode>(SIZE_MAX),
 						Opcode::RSH);
 					resultType = std::make_shared<U8TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Cmp: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						std::make_shared<U8TypeNameNode>(SIZE_MAX),
+						Opcode::CMP);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
 					break;
 				}
 				case BinaryOp::AssignAdd: {
@@ -2040,6 +2095,17 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<U16TypeNameNode>(SIZE_MAX);
 					break;
 				}
+				case BinaryOp::Cmp: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						std::make_shared<U16TypeNameNode>(SIZE_MAX),
+						Opcode::CMP);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
+					break;
+				}
 				case BinaryOp::AssignAdd: {
 					compileSimpleAssignaryBinaryOp(
 						lhsRegIndex, lhsType,
@@ -2372,6 +2438,17 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 						std::make_shared<U32TypeNameNode>(SIZE_MAX),
 						Opcode::RSH);
 					resultType = std::make_shared<U32TypeNameNode>(SIZE_MAX);
+					break;
+				}
+				case BinaryOp::Cmp: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						std::make_shared<U32TypeNameNode>(SIZE_MAX),
+						Opcode::CMP);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
 					break;
 				}
 				case BinaryOp::AssignAdd: {
@@ -2708,6 +2785,17 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<U64TypeNameNode>(SIZE_MAX);
 					break;
 				}
+				case BinaryOp::Cmp: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						std::make_shared<U64TypeNameNode>(SIZE_MAX),
+						Opcode::CMP);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
+					break;
+				}
 				case BinaryOp::AssignAdd: {
 					compileSimpleAssignaryBinaryOp(
 						lhsRegIndex, lhsType,
@@ -2987,6 +3075,17 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
 				}
+				case BinaryOp::Cmp: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						std::make_shared<F32TypeNameNode>(SIZE_MAX),
+						Opcode::CMP);
+					resultType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+					break;
+				}
 				case BinaryOp::AssignAdd: {
 					compileSimpleAssignaryBinaryOp(
 						lhsRegIndex, lhsType,
@@ -2995,7 +3094,7 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 						std::make_shared<F32TypeNameNode>(SIZE_MAX, true),
 						std::make_shared<F32TypeNameNode>(SIZE_MAX),
 						Opcode::ADD);
-					resultType = std::make_shared<F32TypeNameNode>(SIZE_MAX, true);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX, true);
 					break;
 				}
 				case BinaryOp::AssignSub: {
@@ -3229,6 +3328,17 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 						std::make_shared<F64TypeNameNode>(SIZE_MAX),
 						std::make_shared<U32TypeNameNode>(SIZE_MAX),
 						Opcode::RSH);
+					break;
+				}
+				case BinaryOp::Cmp: {
+					compileSimpleBinaryOp(
+						lhsRegIndex, lhsType,
+						rhsRegIndex, rhsType,
+						resultRegIndex,
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						std::make_shared<F64TypeNameNode>(SIZE_MAX),
+						Opcode::CMP);
+					resultType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
 					break;
 				}
 				case BinaryOp::AssignAdd: {

@@ -221,8 +221,24 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
 
-	{ TokenId::GtOp,
+	{ TokenId::CmpOp,
 		{ 90,
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token *opToken) -> std::shared_ptr<ExprNode> {
+				auto expr = std::make_shared<BinaryOpExprNode>(
+					BinaryOp::Cmp,
+					lhs);
+
+				expr->tokenRange = lhs->tokenRange;
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				expr->rhs = parser->parseExpr(91);
+				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
+
+				return std::static_pointer_cast<ExprNode>(expr);
+			} } },
+
+	{ TokenId::GtOp,
+		{ 80,
 			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token *opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					BinaryOp::Gt,
@@ -231,13 +247,13 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
-				expr->rhs = parser->parseExpr(91);
+				expr->rhs = parser->parseExpr(81);
 				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
 	{ TokenId::GtEqOp,
-		{ 90,
+		{ 80,
 			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token *opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					BinaryOp::GtEq,
@@ -246,13 +262,13 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
-				expr->rhs = parser->parseExpr(91);
+				expr->rhs = parser->parseExpr(81);
 				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
 	{ TokenId::LtOp,
-		{ 90,
+		{ 80,
 			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token *opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					BinaryOp::Lt,
@@ -261,13 +277,13 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
-				expr->rhs = parser->parseExpr(91);
+				expr->rhs = parser->parseExpr(81);
 				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
 	{ TokenId::LtEqOp,
-		{ 90,
+		{ 80,
 			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token *opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					BinaryOp::LtEq,
@@ -276,14 +292,14 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
-				expr->rhs = parser->parseExpr(91);
+				expr->rhs = parser->parseExpr(81);
 				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
 
 	{ TokenId::EqOp,
-		{ 80,
+		{ 70,
 			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token *opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					BinaryOp::Eq,
@@ -292,13 +308,13 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
-				expr->rhs = parser->parseExpr(81);
+				expr->rhs = parser->parseExpr(71);
 				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
 	{ TokenId::NeqOp,
-		{ 80,
+		{ 70,
 			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token *opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					BinaryOp::Neq,
@@ -307,13 +323,13 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
-				expr->rhs = parser->parseExpr(81);
+				expr->rhs = parser->parseExpr(71);
 				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
 	{ TokenId::StrictEqOp,
-		{ 80,
+		{ 70,
 			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token *opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					BinaryOp::StrictEq,
@@ -322,32 +338,16 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
-				expr->rhs = parser->parseExpr(81);
+				expr->rhs = parser->parseExpr(71);
 				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
 	{ TokenId::StrictNeqOp,
-		{ 80,
-			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token *opToken) -> std::shared_ptr<ExprNode> {
-				auto expr = std::make_shared<BinaryOpExprNode>(
-					BinaryOp::StrictNeq,
-					lhs);
-
-				expr->tokenRange = lhs->tokenRange;
-				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
-
-				expr->rhs = parser->parseExpr(81);
-				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
-
-				return std::static_pointer_cast<ExprNode>(expr);
-			} } },
-
-	{ TokenId::AndOp,
 		{ 70,
 			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token *opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
-					BinaryOp::And,
+					BinaryOp::StrictNeq,
 					lhs);
 
 				expr->tokenRange = lhs->tokenRange;
@@ -359,11 +359,11 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
 
-	{ TokenId::XorOp,
+	{ TokenId::AndOp,
 		{ 60,
 			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token *opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
-					BinaryOp::Xor,
+					BinaryOp::And,
 					lhs);
 
 				expr->tokenRange = lhs->tokenRange;
@@ -375,11 +375,11 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
 
-	{ TokenId::OrOp,
+	{ TokenId::XorOp,
 		{ 50,
 			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token *opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
-					BinaryOp::Or,
+					BinaryOp::Xor,
 					lhs);
 
 				expr->tokenRange = lhs->tokenRange;
@@ -391,11 +391,11 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
 
-	{ TokenId::LAndOp,
+	{ TokenId::OrOp,
 		{ 40,
 			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token *opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
-					BinaryOp::LAnd,
+					BinaryOp::Or,
 					lhs);
 
 				expr->tokenRange = lhs->tokenRange;
@@ -407,11 +407,11 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
 
-	{ TokenId::LOrOp,
+	{ TokenId::LAndOp,
 		{ 30,
 			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token *opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
-					BinaryOp::LOr,
+					BinaryOp::LAnd,
 					lhs);
 
 				expr->tokenRange = lhs->tokenRange;
@@ -423,15 +423,31 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 				return std::static_pointer_cast<ExprNode>(expr);
 			} } },
 
+	{ TokenId::LOrOp,
+		{ 20,
+			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token *opToken) -> std::shared_ptr<ExprNode> {
+				auto expr = std::make_shared<BinaryOpExprNode>(
+					BinaryOp::LOr,
+					lhs);
+
+				expr->tokenRange = lhs->tokenRange;
+				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
+
+				expr->rhs = parser->parseExpr(21);
+				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
+
+				return std::static_pointer_cast<ExprNode>(expr);
+			} } },
+
 	{ TokenId::Question,
-		{ 21,
+		{ 11,
 			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token *opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<TernaryOpExprNode>(lhs);
 
 				expr->tokenRange = TokenRange{ parser->curDoc, lhs->tokenRange.beginIndex, parser->lexer->getTokenIndex(opToken) };
 				expr->idxQuestionToken = parser->lexer->getTokenIndex(opToken);
 
-				expr->x = parser->parseExpr(20);
+				expr->x = parser->parseExpr(10);
 				expr->tokenRange.endIndex = expr->x->tokenRange.endIndex;
 
 				Token *colonToken = parser->expectToken(parser->lexer->nextToken(), TokenId::Colon);
@@ -445,7 +461,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 			} } },
 
 	{ TokenId::AssignOp,
-		{ 11,
+		{ 1,
 			[](Parser *parser, std::shared_ptr<ExprNode> lhs, Token *opToken) -> std::shared_ptr<ExprNode> {
 				auto expr = std::make_shared<BinaryOpExprNode>(
 					BinaryOp::Assign,
@@ -454,7 +470,7 @@ std::map<TokenId, Parser::OpRegistry> Parser::infixOpRegistries = {
 				expr->tokenRange = lhs->tokenRange;
 				expr->idxOpToken = parser->lexer->getTokenIndex(opToken);
 
-				expr->rhs = parser->parseExpr(10);
+				expr->rhs = parser->parseExpr(0);
 				expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 				return std::static_pointer_cast<ExprNode>(expr);

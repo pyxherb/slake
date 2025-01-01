@@ -44,6 +44,7 @@ namespace slake {
 		GTEQ,  // Greater than or equal
 		LSH,   // Left shift
 		RSH,   // Right shift
+		CMP,   // Compare
 
 		NOT,   // Bitwise NOT
 		LNOT,  // Logical NOT
@@ -62,7 +63,7 @@ namespace slake {
 		CTORCALL,  // Constructor Call
 		RET,	   // Return
 
-		YIELD,	 // Yield
+		YIELD,	// Yield
 
 		LTHIS,	// Load this register
 

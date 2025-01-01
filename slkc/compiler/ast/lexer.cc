@@ -105,6 +105,8 @@ const char *slake::slkc::getTokenName(slake::slkc::TokenId tokenId) {
 			return "=>";
 		case TokenId::WrapOp:
 			return "->";
+		case TokenId::CmpOp:
+			return "<=>";
 		case TokenId::DollarOp:
 			return "$";
 		case TokenId::AsKeyword:

@@ -228,6 +228,7 @@ std::shared_ptr<FnOverloadingNode> Parser::parseOperatorDecl(std::string &nameOu
 		case TokenId::LtOp:
 		case TokenId::GtEqOp:
 		case TokenId::LtEqOp:
+		case TokenId::CmpOp:
 		case TokenId::NewKeyword:
 		case TokenId::DeleteKeyword:
 			name = "operator" + nameToken->text;

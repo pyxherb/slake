@@ -71,6 +71,7 @@ namespace slake {
 			GtEqOp,
 			LtOp,
 			GtOp,
+			CmpOp,
 			DollarOp,
 
 			AsKeyword,

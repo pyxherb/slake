@@ -79,6 +79,8 @@ std::string std::to_string(BinaryOp op) {
 			return "<=";
 		case BinaryOp::GtEq:
 			return ">=";
+		case BinaryOp::Cmp:
+			return "<=>";
 		case BinaryOp::Subscript:
 			return "[]";
 		default:

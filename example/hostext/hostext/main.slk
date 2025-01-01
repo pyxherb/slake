@@ -154,14 +154,16 @@ pub fn main() async: i32 {
 		yield test.getX();
 	}
 
-	let sum: i64 = 0, i: i64 = 0;
+	1 <=> 1;
+
+	/*let sum: i64 = 0, i: i64 = 0;
 
 	while(i < 10000000) {
 		sum = sum + i;
 		i = i + 1;
 	}
 
-	extfns.print("Sum: ", sum, "\n");
+	extfns.print("Sum: ", sum, "\n");*/
 
 	return 114514;
 }

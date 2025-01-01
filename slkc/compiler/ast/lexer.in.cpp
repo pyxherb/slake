@@ -39,6 +39,7 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 				<InitialCondition>"/*"		{ YYSETCONDITION(CommentCondition); token->tokenId = TokenId::BlockComment; continue; }
 
 				<InitialCondition>"::"		{ token->tokenId = TokenId::ScopeOp; break; }
+				<InitialCondition>"<=>"		{ token->tokenId = TokenId::CmpOp; break; }
 				<InitialCondition>"->"		{ token->tokenId = TokenId::WrapOp; break; }
 				<InitialCondition>"=>"		{ token->tokenId = TokenId::MatchOp; break; }
 				<InitialCondition>"&&"		{ token->tokenId = TokenId::LAndOp; break; }

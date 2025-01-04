@@ -10,7 +10,8 @@ namespace slake {
 	class Runtime;
 
 	enum class ErrorKind {
-		RuntimeExecError = 0,
+		OutOfMemoryError = 0,
+		RuntimeExecError,
 		SLXLoaderError,
 		OptimizerError
 	};

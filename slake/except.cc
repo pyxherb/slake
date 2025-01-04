@@ -2,6 +2,40 @@
 
 using namespace slake;
 
+SLAKE_API OutOfMemoryError::OutOfMemoryError(Runtime* associatedRuntime) : InternalException(associatedRuntime, ErrorKind::OutOfMemoryError) {
+}
+
+SLAKE_API OutOfMemoryError::~OutOfMemoryError() {
+}
+
+SLAKE_API const char* OutOfMemoryError::what() const {
+	return "Out of memory";
+}
+
+SLAKE_API void OutOfMemoryError::dealloc() {
+	// DO NOT free the global error object because it is not on the heap.
+	if (this != &g_globalOutOfMemoryError) {
+		std::pmr::polymorphic_allocator<OutOfMemoryError> allocator(&associatedRuntime->globalHeapPoolResource);
+
+		std::destroy_at(this);
+		allocator.deallocate(this, 1);
+	}
+}
+
+SLAKE_API OutOfMemoryError* OutOfMemoryError::alloc(Runtime* associatedRuntime) noexcept {
+	using Alloc = std::pmr::polymorphic_allocator<OutOfMemoryError>;
+	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
+
+	std::unique_ptr<OutOfMemoryError, util::StatefulDeleter<Alloc>> ptr(
+		allocator.allocate(1),
+		util::StatefulDeleter<Alloc>(allocator));
+	allocator.construct(ptr.get(), associatedRuntime);
+
+	return ptr.release();
+}
+
+OutOfMemoryError slake::g_globalOutOfMemoryError = OutOfMemoryError(nullptr);
+
 SLAKE_API RuntimeExecError::RuntimeExecError(
 	Runtime *associatedRuntime,
 	RuntimeExecErrorCode errorCode)

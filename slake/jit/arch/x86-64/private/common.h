@@ -358,6 +358,10 @@ namespace slake {
 			void loadInsWrapper(
 				JITExecContext *context,
 				IdRefObject *idRefObject);
+			void rloadInsWrapper(
+				JITExecContext *context,
+				Object *baseObject,
+				IdRefObject *idRefObject);
 			void memcpyWrapper(
 				void *dest,
 				const void *src,

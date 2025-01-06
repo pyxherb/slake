@@ -77,15 +77,91 @@ InternalExceptionPointer compileInstruction(
 
 			compileContext.pushIns(emitCallIns((void *)loadInsWrapper));
 
+			// Psas the first argument for the memcpy wrapper.
 			int32_t stackOff = compileContext.stackAllocAligned(sizeof(Value), sizeof(Value));
 			compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RCX, REG_RBP));
 			compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RCX, (uint8_t *)&stackOff));
 
 			compileContext.pushIns(emitMovMemToReg64Ins(REG_RDX, MemoryLocation{ REG_RBP, compileContext.jitContextOff, REG_MAX, 0 }));
 
+			// Psas the second argument for the memcpy wrapper.
 			static int32_t returnValueOff = -offsetof(JITExecContext, returnValue);
 			compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RDX, (uint8_t *)&returnValueOff));
 
+			// Psas the third argument for the memcpy wrapper.
+			static uint64_t size = sizeof(Value);
+			compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&size));
+
+			compileContext.pushIns(emitCallIns((void *)memcpyWrapper));
+
+			VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, stackOff, sizeof(Value));
+
+			compileContext.restoreCallingRegs(callingRegSavingInfo);
+
+			break;
+		}
+		case Opcode::RLOAD: {
+			uint32_t outputRegIndex = curIns.output.getRegIndex(),
+					 baseObjectRegIndex = curIns.operands[0].getRegIndex();
+
+			{
+				Value expectedValue = analyzedInfo.analyzedRegInfo.at(outputRegIndex).expectedValue;
+
+				if (expectedValue.valueType != ValueType::Undefined) {
+					Instruction ins = { Opcode::MOV, curIns.output, { expectedValue } };
+					compileInstruction(compileContext, analyzedInfo, SIZE_MAX, ins);
+					return {};
+				}
+			}
+
+			CallingRegSavingInfo callingRegSavingInfo;
+
+			compileContext.saveCallingRegs(callingRegSavingInfo);
+
+			// Pass the first argument.
+			{
+				compileContext.pushIns(emitMovMemToReg64Ins(REG_RCX, MemoryLocation{ REG_RBP, compileContext.jitContextOff, REG_MAX, 0 }));
+			}
+
+			// Pass the second argument.
+			{
+				auto &vregState = compileContext.virtualRegStates[baseObjectRegIndex];
+				if (vregState.saveOffset != INT32_MIN) {
+					compileContext.pushIns(emitMovMemToReg64Ins(
+						REG_RDX,
+						MemoryLocation{
+							REG_RBP,
+							compileContext.virtualRegStates[baseObjectRegIndex].saveOffset,
+							REG_MAX,
+							0 }));
+				} else {
+					if (vregState.phyReg != REG_RDX) {
+						compileContext.pushIns(emitMovReg64ToReg64Ins(vregState.phyReg, REG_RDX));
+					}
+				}
+			}
+
+			// Pass the third argument.
+			{
+				IdRefObject *refObj = (IdRefObject *)curIns.operands[1].getObjectRef();
+
+				compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&refObj));
+			}
+
+			compileContext.pushIns(emitCallIns((void *)rloadInsWrapper));
+
+			// Psas the first argument for the memcpy wrapper.
+			int32_t stackOff = compileContext.stackAllocAligned(sizeof(Value), sizeof(Value));
+			compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RCX, REG_RBP));
+			compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RCX, (uint8_t *)&stackOff));
+
+			compileContext.pushIns(emitMovMemToReg64Ins(REG_RDX, MemoryLocation{ REG_RBP, compileContext.jitContextOff, REG_MAX, 0 }));
+
+			// Psas the second argument for the memcpy wrapper.
+			static int32_t returnValueOff = -offsetof(JITExecContext, returnValue);
+			compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RDX, (uint8_t *)&returnValueOff));
+
+			// Psas the third argument for the memcpy wrapper.
 			static uint64_t size = sizeof(Value);
 			compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&size));
 

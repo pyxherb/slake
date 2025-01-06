@@ -158,6 +158,26 @@ void slake::jit::x86_64::loadInsWrapper(
 			context->returnValue = Value(object);
 	}
 }
+void slake::jit::x86_64::rloadInsWrapper(
+	JITExecContext* context,
+	Object* baseObject,
+	IdRefObject *idRefObject) {
+	VarRefContext varRefContext;
+	Object *object;
+	InternalExceptionPointer e = context->runtime->resolveIdRef(idRefObject, &varRefContext, object, baseObject);
+	if (e) {
+		context->exception = e.get();
+		e.reset();
+		return;
+	}
+	switch (object->getKind()) {
+		case ObjectKind::Var:
+			context->returnValue = Value(VarRef((VarObject *)object, varRefContext));
+			break;
+		default:
+			context->returnValue = Value(object);
+	}
+}
 
 void slake::jit::x86_64::memcpyWrapper(
 	void* dest,

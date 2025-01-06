@@ -10,10 +10,29 @@ namespace slake {
 			size_t offEndIns;
 		};
 
+		enum class RegPurpose : uint8_t {
+			Regular = 0,
+			LocalVar,
+			ArgRef,
+		};
+
+		struct LocalVarRegPurposeInfo {
+			uint32_t off;
+		};
+
+		struct ArgRefRegPurposeInfo {
+			uint32_t off;
+		};
+
 		struct RegAnalyzedInfo {
 			RegLifetime lifetime;
 			Type type;
 			Value expectedValue = Value(ValueType::Undefined);
+			union {
+				LocalVarRegPurposeInfo asLocalVar;
+				ArgRefRegPurposeInfo asArgRef;
+			} regPurposeExData;
+			RegPurpose purpose = RegPurpose::Regular;
 		};
 
 		struct LocalVarAnalyzedInfo {

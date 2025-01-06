@@ -316,7 +316,6 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 	bool isExecutingDestructor = destructingThreads.count(thisThreadId);
 
 	while (!interruptExecution) {
-
 		curMajorFrame = context->getContext().majorFrames.back().get();
 		curFn = curMajorFrame->curFn;
 
@@ -373,11 +372,7 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 							VarRefContext varRefContext;
 
 							Object *v;
-							if (auto e = resolveIdRef((IdRefObject *)refPtr, &varRefContext, v, curMajorFrame->thisObject);
-								e) {
-								e.reset();
-								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, resolveIdRef((IdRefObject *)refPtr, &varRefContext, v));
-							}
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, resolveIdRef((IdRefObject *)refPtr, &varRefContext, v));
 
 							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), _wrapObjectIntoValue(v, varRefContext)));
 							break;

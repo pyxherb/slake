@@ -20,7 +20,8 @@ std::shared_ptr<Scope> Compiler::scopeOf(CompileContext *compileContext, AstNode
 			IdRefResolvedParts resolvedParts;
 			bool isStatic;
 
-			resolveIdRef(compileContext, ((AliasNode *)node)->target, resolvedParts, isStatic);
+			if (!resolveIdRefWithScope(compileContext, ((AliasNode *)node)->scope, ((AliasNode *)node)->target, isStatic, resolvedParts))
+				return {};
 			return scopeOf(compileContext, resolvedParts.back().second.get());
 		}
 		case NodeType::Var: {

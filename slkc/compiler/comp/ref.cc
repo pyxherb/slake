@@ -431,6 +431,19 @@ bool slake::slkc::Compiler::_resolveIdRefWithOwner(CompileContext *compileContex
 	return false;
 }
 
+std::shared_ptr<MemberNode> Compiler::resolveAlias(AliasNode* aliasNode) {
+	bool isStatic;
+	IdRefResolvedParts resolvedParts;
+	if (!resolveIdRefWithScope(nullptr, aliasNode->scope, aliasNode->target, isStatic, resolvedParts)) {
+		throw FatalCompilationError(
+			Message(
+				SourceLocation(tokenRangeToSourceLocation(aliasNode->tokenRange)),
+				MessageType::Error,
+				"Referenced member not found"));
+	}
+	return std::static_pointer_cast<MemberNode>(resolvedParts.back().second);
+}
+
 void Compiler::_getFullName(MemberNode *member, IdRefEntries &ref) {
 	IdRefEntry entry = member->getName();
 
@@ -457,6 +470,11 @@ void Compiler::_getFullName(MemberNode *member, IdRefEntries &ref) {
 
 std::shared_ptr<IdRefNode> Compiler::getFullName(MemberNode *member) {
 	std::shared_ptr<IdRefNode> ref = std::make_shared<IdRefNode>();
+
+	if (ref->getNodeType() == NodeType::Alias) {
+		_getFullName(resolveAlias((AliasNode*)member).get(), ref->entries);
+		return ref;
+	}
 
 	_getFullName(member, ref->entries);
 

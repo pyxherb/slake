@@ -417,7 +417,7 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 					MessageType::Error,
 					"The import item shadows an existing member"));
 
-		doc->targetModule->scope->members[i.first] = std::make_shared<AliasNode>(this, i.first, i.second.ref);
+		doc->targetModule->scope->members[i.first] = std::make_shared<AliasNode>(this, i.first, doc->targetModule->scope.get(), i.second.ref);
 	}
 
 	for (auto &i : doc->targetModule->unnamedImports) {

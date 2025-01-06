@@ -604,6 +604,8 @@ namespace slake {
 			/// @return Resolved node, nullptr otherwise.
 			std::shared_ptr<AstNode> resolveCustomTypeName(CompileContext *compileContext, CustomTypeNameNode *typeName);
 
+			std::shared_ptr<MemberNode> resolveAlias(AliasNode *aliasNode);
+
 			void pushMessage(const std::string &docName, const Message &message);
 
 			inline SourceDocument *addDoc(const std::string &docName) {

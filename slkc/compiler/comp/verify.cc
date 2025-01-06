@@ -2,7 +2,7 @@
 
 using namespace slake::slkc;
 
-static void _throwCyclicInheritanceError(const SourceLocation &loc) {
+SLAKE_FORCEINLINE void _throwCyclicInheritanceError(const SourceLocation &loc) {
 	throw FatalCompilationError(
 		Message(
 			loc,

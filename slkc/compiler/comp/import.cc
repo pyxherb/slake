@@ -319,7 +319,7 @@ std::shared_ptr<IdRefNode> Compiler::toAstIdRef(std::pmr::deque<slake::IdRefEntr
 	for (auto &i : runtimeRefEntries) {
 		std::deque<std::shared_ptr<TypeNameNode>> genericArgs;
 
-		for (auto j : i.genericArgs)
+		for (auto &j : i.genericArgs)
 			genericArgs.push_back(toTypeName(j));
 
 		ref->entries.push_back(IdRefEntry({}, SIZE_MAX, std::string(i.name.c_str(), i.name.size()), genericArgs));
@@ -334,7 +334,7 @@ std::shared_ptr<IdRefNode> Compiler::toAstIdRef(std::deque<slake::IdRefEntry> ru
 	for (auto &i : runtimeRefEntries) {
 		std::deque<std::shared_ptr<TypeNameNode>> genericArgs;
 
-		for (auto j : i.genericArgs)
+		for (auto &j : i.genericArgs)
 			genericArgs.push_back(toTypeName(j));
 
 		ref->entries.push_back(IdRefEntry({}, SIZE_MAX, std::string(i.name.c_str(), i.name.size()), genericArgs));

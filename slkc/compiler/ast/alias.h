@@ -10,10 +10,11 @@ namespace slake {
 		class AliasNode : public MemberNode {
 		public:
 			std::string name;
+			Scope *scope;
 			std::shared_ptr<IdRefNode> target;
 
-			inline AliasNode(Compiler *compiler, std::string name, std::shared_ptr<IdRefNode> target)
-				: MemberNode(compiler, ACCESS_PUB), name(name), target(target) {}
+			inline AliasNode(Compiler *compiler, std::string name, Scope *scope, std::shared_ptr<IdRefNode> target)
+				: MemberNode(compiler, ACCESS_PUB), name(name), scope(scope), target(target) {}
 			virtual ~AliasNode() = default;
 
 			virtual inline NodeType getNodeType() const override { return NodeType::Alias; }

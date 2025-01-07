@@ -30,6 +30,7 @@ if(SLAKE_BUILD_SHARED)
 endif()
 
 add_subdirectory("util")
+add_subdirectory("flib")
 add_subdirectory("obj")
 add_subdirectory("rt")
 add_subdirectory("jit")
@@ -48,10 +49,6 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/generated/config.h DESTINATION ${CMAKE
 
 if(${SLAKE_ENABLE_DEBUGGER})
     add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/dbg")
-endif()
-
-if(${SLAKE_WITH_STDLIB})
-    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/flib")
 endif()
 
 install(TARGETS slake slaked

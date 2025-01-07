@@ -209,7 +209,7 @@ InternalExceptionPointer slake::compileRegularFn(RegularFnOverloadingObject *fn,
 	JITCompileContext compileContext;
 	size_t nIns = fn->instructions.size();
 
-	opti::ProgramAnalyzedInfo analyzedInfo;
+	opti::ProgramAnalyzedInfo analyzedInfo(fn->associatedRuntime);
 	HostRefHolder hostRefHolder;
 
 	InternalExceptionPointer exceptionPtr;

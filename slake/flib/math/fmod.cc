@@ -1,9 +1,10 @@
 #include "fmod.h"
+#include <cstdint>
 
 using namespace slake;
 using namespace slake::flib;
 
-float flib::fmodf(float n, float d) {
+SLAKE_API float flib::fmodf(float n, float d) {
 	if (n < d)
 		return n;
 

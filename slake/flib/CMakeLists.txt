@@ -5,4 +5,6 @@ if(SLAKE_BUILD_SHARED)
     target_sources(slaked PRIVATE ${HEADERS} ${SRC})
 endif()
 
-install(FILES ${HEADERS} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/slake/obj)
+install(FILES ${HEADERS} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/slake/flib)
+
+add_subdirectory("math")

@@ -1,4 +1,5 @@
 #include "../runtime.h"
+#include <slake/flib/math/fmod.h>
 #include <slake/util/scope_guard.h>
 #include <cmath>
 
@@ -1067,7 +1068,7 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 											valueOut = Value((float)(x.getF32() / y.getF32()));
 											break;
 										case Opcode::MOD:
-											valueOut = Value((float)fmodf(x.getF32(), y.getF32()));
+											valueOut = Value((float)flib::fmodf(x.getF32(), y.getF32()));
 											break;
 										case Opcode::LAND:
 											valueOut = Value((bool)(x.getF32() && y.getF32()));
@@ -1122,7 +1123,7 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 											valueOut = Value((double)(x.getF64() / y.getF64()));
 											break;
 										case Opcode::MOD:
-											valueOut = Value((double)fmod(x.getF64(), y.getF64()));
+											valueOut = Value((double)flib::fmod(x.getF64(), y.getF64()));
 											break;
 										case Opcode::LAND:
 											valueOut = Value((bool)(x.getF64() && y.getF64()));

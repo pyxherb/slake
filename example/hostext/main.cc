@@ -171,7 +171,7 @@ int main(int argc, char **argv) {
 		auto fn = (slake::FnObject *)mod->getMember("main", nullptr);
 		auto overloading = fn->getOverloading({});
 
-		slake::opti::ProgramAnalyzedInfo analyzedInfo;
+		slake::opti::ProgramAnalyzedInfo analyzedInfo(rt.get());
 		if (auto e = slake::opti::analyzeProgramInfo(rt.get(), (slake::RegularFnOverloadingObject *)overloading, analyzedInfo, hostRefHolder);
 			e) {
 			printf("Internal exception: %s\n", e->what());

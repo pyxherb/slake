@@ -296,6 +296,14 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						}
 					}
 
+					switch (object->getKind()) {
+						case ObjectKind::Var: {
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::GlobalVar;
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).storageInfo.asGlobalVar.varRefContext = varRefContext;
+							break;
+						}
+					}
+
 					analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = object;
 					SLAKE_RETURN_IF_EXCEPT(evalObjectType(analyzeContext, varRefContext, object, analyzedInfoOut.analyzedRegInfo.at(regIndex).type));
 				}
@@ -482,8 +490,8 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 							hostRefHolder,
 							analyzedInfoOut.analyzedRegInfo.at(regIndex).type));
 
-					analyzedInfoOut.analyzedRegInfo.at(regIndex).purpose = RegPurpose::LocalVar;
-					analyzedInfoOut.analyzedRegInfo.at(regIndex).regPurposeExData.asLocalVar.off = index;
+					analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::LocalVar;
+					analyzedInfoOut.analyzedRegInfo.at(regIndex).storageInfo.asLocalVar.off = index;
 				}
 				break;
 			}
@@ -549,8 +557,8 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 
 					analyzedInfoOut.analyzedRegInfo.at(regIndex).type = type;
 
-					analyzedInfoOut.analyzedRegInfo.at(regIndex).purpose = RegPurpose::ArgRef;
-					analyzedInfoOut.analyzedRegInfo.at(regIndex).regPurposeExData.asArgRef.off = index;
+					analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::ArgRef;
+					analyzedInfoOut.analyzedRegInfo.at(regIndex).storageInfo.asArgRef.off = index;
 				}
 				break;
 			}
@@ -763,7 +771,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					}
 				}
 
-				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.insert({i, FnCallAnalyzedInfo(&analyzeContext.runtime->globalHeapPoolResource)});
+				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.insert({ i, FnCallAnalyzedInfo(&analyzeContext.runtime->globalHeapPoolResource) });
 				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.at(i).argPushInsOffs = std::move(analyzeContext.argPushInsOffs);
 				analyzeContext.argPushInsOffs = {};
 

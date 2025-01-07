@@ -11,6 +11,7 @@
 #include "comp/div.h"
 #include "comp/mod.h"
 #include "comp/mov.h"
+#include "comp/store.h"
 
 using namespace slake;
 using namespace slake::jit;
@@ -171,6 +172,10 @@ InternalExceptionPointer compileInstruction(
 
 			compileContext.restoreCallingRegs(callingRegSavingInfo);
 
+			break;
+		}
+		case Opcode::STORE: {
+			SLAKE_RETURN_IF_EXCEPT(compileStoreInstruction(compileContext, analyzedInfo, offIns, curIns));
 			break;
 		}
 		case Opcode::ADD: {

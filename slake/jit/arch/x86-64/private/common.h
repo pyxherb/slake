@@ -50,6 +50,12 @@ namespace slake {
 				size_t szSavedRcx, szSavedRdx, szSavedR8, szSavedR9;
 			};
 
+			struct LocalVarState {
+				Type type;
+				int32_t stackOff;
+				size_t size;
+			};
+
 			struct JITCompileContext {
 				std::deque<DiscreteInstruction> nativeInstructions;
 				std::map<size_t, JITRelAddrReplacingPoint32Storage> relativeAddrReplacingPoints;
@@ -58,6 +64,7 @@ namespace slake {
 				JITCompilerOptions options;
 				std::bitset<REG_MAX> regAllocFlags;
 				std::map<uint32_t, VirtualRegState> virtualRegStates;
+				std::map<uint32_t, LocalVarState> localVarStates;
 				std::map<size_t, std::list<uint32_t>> regRecycleBoundaries;
 				std::map<int32_t, size_t> freeStackSpaces;
 				int32_t jitContextOff;
@@ -307,6 +314,14 @@ namespace slake {
 					vregState.saveOffset = saveOffset;
 
 					return vregState;
+				}
+
+				SLAKE_FORCEINLINE LocalVarState& defLocalVar(uint32_t index, int32_t stackOff, size_t size) {
+					LocalVarState &localVarState = localVarStates[index];
+					localVarState.stackOff = stackOff;
+					localVarState.size = size;
+
+					return localVarState;
 				}
 
 				SLAKE_API int32_t stackAllocAligned(uint32_t size, uint32_t alignment);

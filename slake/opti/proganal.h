@@ -11,17 +11,22 @@ namespace slake {
 			size_t offEndIns;
 		};
 
-		enum class RegPurpose : uint8_t {
-			Regular = 0,
-			LocalVar,
-			ArgRef,
+		enum class RegStorageType : uint8_t {
+			None = 0,	// Unrecognized
+			GlobalVar,	// Global variables
+			LocalVar,	// Local variables
+			ArgRef,		// Arguments
 		};
 
-		struct LocalVarRegPurposeInfo {
+		struct GlobalVarRegStorageInfo {
+			VarRefContext varRefContext;
+		};
+
+		struct LocalVarRegStorageInfo {
 			uint32_t off;
 		};
 
-		struct ArgRefRegPurposeInfo {
+		struct ArgRefRegStorageInfo {
 			uint32_t off;
 		};
 
@@ -30,10 +35,11 @@ namespace slake {
 			Type type;
 			Value expectedValue = Value(ValueType::Undefined);
 			union {
-				LocalVarRegPurposeInfo asLocalVar;
-				ArgRefRegPurposeInfo asArgRef;
-			} regPurposeExData;
-			RegPurpose purpose = RegPurpose::Regular;
+				GlobalVarRegStorageInfo asGlobalVar;
+				LocalVarRegStorageInfo asLocalVar;
+				ArgRefRegStorageInfo asArgRef;
+			} storageInfo;
+			RegStorageType storageType = RegStorageType::None;
 		};
 
 		struct LocalVarAnalyzedInfo {

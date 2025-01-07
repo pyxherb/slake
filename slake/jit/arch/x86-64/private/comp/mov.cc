@@ -264,8 +264,7 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 							break;
 						}
 						case ValueType::I64:
-						case ValueType::U64:
-						case ValueType::ObjectRef: {
+						case ValueType::U64:{
 							RegisterId regId = compileContext.allocGpReg();
 							if (compileContext.isRegInUse(regId)) {
 								int32_t off;
@@ -377,6 +376,28 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 							break;
 						}
 					}
+					break;
+				}
+				case TypeId::String:
+				case TypeId::Instance:
+				case TypeId::Array:
+				case TypeId::FnDelegate: {
+					RegisterId regId = compileContext.allocGpReg();
+					if (compileContext.isRegInUse(regId)) {
+						int32_t off;
+						size_t size;
+						compileContext.pushReg(regId, off, size);
+					}
+					if (srcVregInfo.saveOffset != INT32_MIN) {
+						compileContext.pushIns(
+							emitMovMemToReg64Ins(
+								regId,
+								MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 }));
+					} else {
+						compileContext.pushIns(emitMovReg64ToReg64Ins(regId, srcVregInfo.phyReg));
+					}
+
+					VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(uint64_t));
 					break;
 				}
 				case TypeId::Any: {

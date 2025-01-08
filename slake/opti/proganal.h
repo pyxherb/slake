@@ -20,15 +20,20 @@ namespace slake {
 
 		struct GlobalVarRegStorageInfo {
 			VarRefContext varRefContext;
+			bool isUsedForOutput;
 		};
 
 		struct LocalVarRegStorageInfo {
 			uint32_t off;
+			bool isUsedForOutput;
 		};
 
 		struct ArgRefRegStorageInfo {
 			uint32_t off;
+			bool isUsedForOutput;
 		};
+
+		using RegReferencedPoint = std::pair<uint32_t, uint32_t>;
 
 		struct RegAnalyzedInfo {
 			RegLifetime lifetime;
@@ -102,6 +107,7 @@ namespace slake {
 			}
 		};
 
+		void markRegAsForOutput(ProgramAnalyzeContext &analyzeContext, uint32_t i);
 		InternalExceptionPointer wrapIntoRefType(
 			Runtime *runtime,
 			Type type,

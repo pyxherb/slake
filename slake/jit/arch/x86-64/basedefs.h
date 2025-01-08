@@ -162,6 +162,8 @@ namespace slake {
 				sib = 0;
 
 				switch (mem.scaleIndex) {
+					case 0:
+						break;
 					case 1:
 						sib |= 0b00000000;
 						break;

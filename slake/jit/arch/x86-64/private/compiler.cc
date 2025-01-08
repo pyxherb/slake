@@ -86,7 +86,7 @@ InternalExceptionPointer compileInstruction(
 			compileContext.pushIns(emitMovMemToReg64Ins(REG_RDX, MemoryLocation{ REG_RBP, compileContext.jitContextOff, REG_MAX, 0 }));
 
 			// Psas the second argument for the memcpy wrapper.
-			static int32_t returnValueOff = -offsetof(JITExecContext, returnValue);
+			static int32_t returnValueOff = -(int32_t)offsetof(JITExecContext, returnValue);
 			compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RDX, (uint8_t *)&returnValueOff));
 
 			// Psas the third argument for the memcpy wrapper.
@@ -159,7 +159,7 @@ InternalExceptionPointer compileInstruction(
 			compileContext.pushIns(emitMovMemToReg64Ins(REG_RDX, MemoryLocation{ REG_RBP, compileContext.jitContextOff, REG_MAX, 0 }));
 
 			// Psas the second argument for the memcpy wrapper.
-			static int32_t returnValueOff = -offsetof(JITExecContext, returnValue);
+			static int32_t returnValueOff = -(int32_t)offsetof(JITExecContext, returnValue);
 			compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RDX, (uint8_t *)&returnValueOff));
 
 			// Psas the third argument for the memcpy wrapper.
@@ -223,6 +223,8 @@ InternalExceptionPointer slake::compileRegularFn(RegularFnOverloadingObject *fn,
 
 	for (size_t i = 0; i < nIns; ++i) {
 		const Instruction &curIns = fn->instructions[i];
+
+		compileInstruction(compileContext, analyzedInfo, i, curIns);
 	}
 
 	return {};

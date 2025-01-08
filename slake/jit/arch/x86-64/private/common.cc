@@ -112,7 +112,7 @@ SLAKE_API void JITCompileContext::stackFree(int32_t saveOffset, size_t size) {
 	freeStackSpaces[saveOffset] = size;
 	auto selfIt = freeStackSpaces.find(saveOffset);
 
-	// Try to merge the right neighbor.
+	// Try to merge with the right neighbor.
 	{
 		auto rightNeighbor = selfIt;
 		++rightNeighbor;

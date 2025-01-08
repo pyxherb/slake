@@ -3,6 +3,22 @@
 using namespace slake;
 using namespace slake::opti;
 
+void slake::opti::markRegAsForOutput(ProgramAnalyzeContext &analyzeContext, uint32_t i) {
+	switch (auto &regInfo = analyzeContext.analyzedInfoOut.analyzedRegInfo[i]; regInfo.storageType) {
+		case opti::RegStorageType::None:
+			break;
+		case opti::RegStorageType::GlobalVar:
+			regInfo.storageInfo.asGlobalVar.isUsedForOutput = true;
+			break;
+		case opti::RegStorageType::LocalVar:
+			regInfo.storageInfo.asLocalVar.isUsedForOutput = true;
+			break;
+		case opti::RegStorageType::ArgRef:
+			regInfo.storageInfo.asArgRef.isUsedForOutput = true;
+			break;
+	}
+}
+
 InternalExceptionPointer slake::opti::wrapIntoRefType(
 	Runtime *runtime,
 	Type type,
@@ -721,15 +737,45 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						i);
 				}
 				break;
-			case Opcode::PUSHARG:
+			case Opcode::PUSHARG: {
 				if (regIndex != UINT32_MAX) {
 					return MalformedProgramError::alloc(
 						runtime,
 						fnObject,
 						i);
 				}
+				if (curIns.operands.size() != 1) {
+					return MalformedProgramError::alloc(
+						runtime,
+						fnObject,
+						i);
+				}
+				switch (curIns.operands[0].valueType) {
+					case ValueType::I8:
+					case ValueType::I16:
+					case ValueType::I32:
+					case ValueType::I64:
+					case ValueType::U8:
+					case ValueType::U16:
+					case ValueType::U32:
+					case ValueType::U64:
+					case ValueType::Bool:
+					case ValueType::F32:
+					case ValueType::F64:
+					case ValueType::ObjectRef:
+						break;
+					case ValueType::RegRef:
+						markRegAsForOutput(analyzeContext, curIns.operands[0].getRegIndex());
+						break;
+					default:
+						return MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i);
+				}
 				analyzeContext.argPushInsOffs.push_back(i);
 				break;
+			}
 			case Opcode::CALL: {
 				if (curIns.operands.size() != 1) {
 					return MalformedProgramError::alloc(
@@ -850,6 +896,35 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						runtime,
 						fnObject,
 						i);
+				}
+				if (curIns.operands.size() != 1) {
+					return MalformedProgramError::alloc(
+						runtime,
+						fnObject,
+						i);
+				}
+				switch (curIns.operands[0].valueType) {
+					case ValueType::I8:
+					case ValueType::I16:
+					case ValueType::I32:
+					case ValueType::I64:
+					case ValueType::U8:
+					case ValueType::U16:
+					case ValueType::U32:
+					case ValueType::U64:
+					case ValueType::Bool:
+					case ValueType::F32:
+					case ValueType::F64:
+					case ValueType::ObjectRef:
+						break;
+					case ValueType::RegRef:
+						markRegAsForOutput(analyzeContext, curIns.operands[0].getRegIndex());
+						break;
+					default:
+						return MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i);
 				}
 				break;
 			case Opcode::YIELD:

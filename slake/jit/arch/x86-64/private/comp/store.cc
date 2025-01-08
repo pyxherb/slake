@@ -217,7 +217,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 										(uint8_t *)&imm0));
 								break;
 							}
-							case ValueType::I8: {
+							case ValueType::U8: {
 								uint8_t imm0 = rhs.getU8();
 								compileContext.pushIns(
 									emitMovImm8ToMemIns(

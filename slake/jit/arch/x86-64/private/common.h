@@ -315,6 +315,14 @@ namespace slake {
 
 					return vregState;
 				}
+				SLAKE_FORCEINLINE VirtualRegState &defDummyVirtualReg(uint32_t vreg) {
+					VirtualRegState &vregState = virtualRegStates[vreg];
+					vregState.phyReg = REG_MAX;
+					vregState.size = 0;
+					vregState.saveOffset = 0;
+
+					return vregState;
+				}
 
 				SLAKE_FORCEINLINE LocalVarState& defLocalVar(uint32_t index, int32_t stackOff, size_t size) {
 					LocalVarState &localVarState = localVarStates[index];

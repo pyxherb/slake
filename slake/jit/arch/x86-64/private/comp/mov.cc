@@ -264,7 +264,7 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 							break;
 						}
 						case ValueType::I64:
-						case ValueType::U64:{
+						case ValueType::U64: {
 							RegisterId regId = compileContext.allocGpReg();
 							if (compileContext.isRegInUse(regId)) {
 								int32_t off;
@@ -360,7 +360,7 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 							}
 							{
 								uint64_t size = sizeof(VarRef);
-								compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t*)&size));
+								compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&size));
 							}
 
 							CallingRegSavingInfo callingRegSavingInfo;
@@ -399,6 +399,30 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 
 					VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(uint64_t));
 					break;
+				}
+				case TypeId::Ref: {
+					switch (srcRegInfo.storageType) {
+						case opti::RegStorageType::None:
+							break;
+						case opti::RegStorageType::GlobalVar:
+							if (srcRegInfo.storageInfo.asGlobalVar.isUsedForOutput) {
+							} else {
+								VirtualRegState &outputVregState = compileContext.defDummyVirtualReg(outputRegIndex);
+							}
+							break;
+						case opti::RegStorageType::LocalVar:
+							if (srcRegInfo.storageInfo.asLocalVar.isUsedForOutput) {
+							} else {
+								VirtualRegState &outputVregState = compileContext.defDummyVirtualReg(outputRegIndex);
+							}
+							break;
+						case opti::RegStorageType::ArgRef:
+							if (srcRegInfo.storageInfo.asArgRef.isUsedForOutput) {
+							} else {
+								VirtualRegState &outputVregState = compileContext.defDummyVirtualReg(outputRegIndex);
+							}
+							break;
+					}
 				}
 				case TypeId::Any: {
 					int32_t off = compileContext.stackAllocAligned(sizeof(Value), sizeof(Value));
@@ -453,8 +477,7 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 					VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, off, sizeof(double));
 
 					break;
-				}
-				break;
+				} break;
 			}
 			break;
 		}

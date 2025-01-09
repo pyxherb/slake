@@ -70,6 +70,10 @@ realloc:
 	goto realloc;
 }
 
+SLAKE_API void JITCompileContext::setRegAllocated(RegisterId reg) {
+	regAllocFlags.set(reg);
+}
+
 SLAKE_API void JITCompileContext::unallocReg(RegisterId reg) {
 	assert(regAllocFlags.test(reg));
 	regAllocFlags.reset(reg);

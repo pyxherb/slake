@@ -91,6 +91,7 @@ namespace slake {
 				SLAKE_API RegisterId allocGpReg();
 				SLAKE_API RegisterId allocXmmReg();
 
+				SLAKE_API void setRegAllocated(RegisterId reg);
 				SLAKE_API void unallocReg(RegisterId reg);
 
 				SLAKE_FORCEINLINE void pushReg8(RegisterId reg, int32_t &offOut, size_t &sizeOut) {

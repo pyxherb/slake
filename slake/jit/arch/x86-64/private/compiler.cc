@@ -221,11 +221,48 @@ InternalExceptionPointer slake::compileRegularFn(RegularFnOverloadingObject *fn,
 
 	SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptionPtr, opti::analyzeProgramInfo(fn->associatedRuntime, fn, analyzedInfo, hostRefHolder));
 
+	compileContext.pushIns(emitPushReg64Ins(REG_RBP));
+
+	compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RBP, REG_RSP));
+
+	// Preserve unused parameter registers.
+	compileContext.setRegAllocated(REG_R8);
+	compileContext.setRegAllocated(REG_RDX);
+	compileContext.setRegAllocated(REG_RCX);
+
+	// Mark preserved registers as allocated and thus we can push them onto stack on-demand.
+	compileContext.setRegAllocated(REG_RBX);
+	compileContext.setRegAllocated(REG_RDI);
+	compileContext.setRegAllocated(REG_RSI);
+	compileContext.setRegAllocated(REG_R12);
+	compileContext.setRegAllocated(REG_R13);
+	compileContext.setRegAllocated(REG_R14);
+	compileContext.setRegAllocated(REG_R15);
+
+	compileContext.initJITContextStorage();
+	compileContext.pushIns(
+		emitMovReg64ToMemIns(
+			MemoryLocation{
+				REG_RBP, compileContext.jitContextOff,
+				REG_MAX, 0 },
+			REG_R9));
+
 	for (size_t i = 0; i < nIns; ++i) {
 		const Instruction &curIns = fn->instructions[i];
 
 		compileInstruction(compileContext, analyzedInfo, i, curIns);
 	}
+
+	compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RSP, REG_RBP));
+
+	// Restore unused parameter registers
+	compileContext.pushIns(emitPushReg64Ins(REG_RCX));
+	compileContext.pushIns(emitPushReg64Ins(REG_RDX));
+	compileContext.pushIns(emitPushReg64Ins(REG_R8));
+
+	compileContext.pushIns(emitPopReg64Ins(REG_RBP));
+
+	compileContext.pushIns(emitNearRetIns());
 
 	return {};
 }

@@ -20,6 +20,8 @@ namespace slake {
 				InternalException *exception;
 				size_t insOff;
 			};
+
+			typedef void (*JITCompiledBody)(JITExecContext *execContext);
 		}
 	}
 }

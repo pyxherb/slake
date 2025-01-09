@@ -131,6 +131,8 @@ namespace slake {
 			std::deque<std::string> modulePaths;
 			std::shared_ptr<Compiler> compiler;
 
+			std::mutex documentRwMutex;
+
 			Server();
 
 			static bool jsonToLocation(const Json::Value &value, SourceLocation &locationOut);

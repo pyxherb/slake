@@ -231,18 +231,7 @@ std::deque<CompletionItem> slake::slkc::getCompletionItems(
 	size_t idxToken = document->lexer->getTokenByPosition(location);
 
 	if (idxToken != SIZE_MAX) {
-		do {
-			switch (document->lexer->tokens[idxToken]->tokenId) {
-				case TokenId::Whitespace:
-				case TokenId::NewLine:
-				case TokenId::LineComment:
-				case TokenId::BlockComment:
-				case TokenId::DocumentationComment:
-					break;
-				default:
-					goto succeeded;
-			}
-		} while (idxToken--);
+		goto succeeded;
 	}
 
 	_getCompletionItems(

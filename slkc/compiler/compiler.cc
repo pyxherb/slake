@@ -235,6 +235,7 @@ void Compiler::validateScope(CompileContext *compileContext, Scope *scope) {
 void Compiler::compile(std::istream &is, std::ostream &os) {
 	auto &doc = sourceDocs.at(curDocName);
 	std::unique_ptr<CompileContext> compileContext = std::make_unique<CompileContext>();
+	compileContext->compiler = this;
 
 	//
 	// Clear the previous generic cache.
@@ -341,14 +342,7 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 
 		compileIdRef(compileContext.get(), os, doc->targetModule->moduleName);
 	} else {
-		doc->targetModule->moduleName = std::make_shared<IdRefNode>(IdRefEntries{ IdRefEntry("<unnamed>") });
-		doc->messages.push_back(
-			Message(
-				SourceLocation {
-					SourcePosition{ 0, 0 },
-					SourcePosition{ 0, 0 } },
-				MessageType::Error,
-				"Missing module name"));
+		doc->targetModule->moduleName = std::make_shared<IdRefNode>(IdRefEntries{});
 		doc->targetModule->bind(_rootNode.get());
 	}
 

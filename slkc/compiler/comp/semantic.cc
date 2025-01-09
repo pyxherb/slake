@@ -10,6 +10,26 @@ void Compiler::updateCompletionContext(size_t idxToken, CompletionContext comple
 	curDoc->tokenInfos[idxToken].completionContext = completionContext;
 }
 
+void Compiler::updateCompletionContextForTrailingSpaces(CompileContext *compileContext, size_t idxBegin, size_t idxEnd, CompletionContext completionContext) {
+	assert(idxEnd >= idxBegin);
+
+	auto curDoc = compileContext->compiler->sourceDocs.at(curDocName).get();
+
+	for (size_t i = idxBegin; i < idxEnd; ++i) {
+		switch (curDoc->lexer->tokens[i]->tokenId) {
+			case TokenId::Whitespace:
+			case TokenId::NewLine:
+				updateCompletionContext(i, completionContext);
+			case TokenId::BlockComment:
+			case TokenId::LineComment:
+				break;
+			default:
+				goto end;
+		}
+	}
+end:;
+}
+
 void Compiler::updateCompletionContext(std::shared_ptr<TypeNameNode> targetTypeName, CompletionContext completionContext) {
 	auto curDoc = sourceDocs.at(curDocName).get();
 
@@ -146,6 +166,27 @@ void Compiler::updateTokenInfo(size_t idxToken, std::function<void(TokenInfo &in
 		return;
 
 	updater(curDoc->tokenInfos[idxToken]);
+}
+
+void Compiler::updateTokenInfoForTrailingSpaces(CompileContext *compileContext, size_t idxBegin, size_t idxEnd, std::function<void(TokenInfo& info)> updater) {
+	assert(idxEnd >= idxBegin);
+
+	auto curDoc = compileContext->compiler->sourceDocs.at(curDocName).get();
+
+	for (size_t i = idxBegin; i < idxEnd; ++i) {
+		switch (curDoc->lexer->tokens[i]->tokenId) {
+			case TokenId::Whitespace:
+			case TokenId::NewLine:
+				updateTokenInfo(i, updater);
+				break;
+			case TokenId::BlockComment:
+			case TokenId::LineComment:
+				break;
+			default:
+				goto end;
+		}
+	}
+end:;
 }
 
 #endif

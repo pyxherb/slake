@@ -528,6 +528,7 @@ namespace slake {
 			//
 #if SLKC_WITH_LANGUAGE_SERVER
 			void updateCompletionContext(size_t idxToken, CompletionContext completionContext);
+			void updateCompletionContextForTrailingSpaces(CompileContext *compileContext, size_t idxBegin, size_t idxEnd, CompletionContext completionContext);
 			void updateCompletionContext(std::shared_ptr<TypeNameNode> targetTypeName, CompletionContext completionContext);
 			void updateCompletionContext(std::shared_ptr<IdRefNode> ref, CompletionContext completionContext);
 
@@ -536,6 +537,7 @@ namespace slake {
 			void updateSemanticType(std::shared_ptr<IdRefNode> ref, SemanticType type);
 
 			void updateTokenInfo(size_t idxToken, std::function<void(TokenInfo &info)> updater);
+			void updateTokenInfoForTrailingSpaces(CompileContext *compileContext, size_t idxBegin, size_t idxEnd, std::function<void(TokenInfo &info)> updater);
 #endif
 
 			//
@@ -608,7 +610,10 @@ namespace slake {
 
 			void pushMessage(const std::string &docName, const Message &message);
 
+			std::mutex addDocMutex;
+
 			inline SourceDocument *addDoc(const std::string &docName) {
+				std::lock_guard addDocMutexGuard(addDocMutex);
 				auto doc = std::make_unique<SourceDocument>();
 
 				SourceDocument *pDoc = doc.get();

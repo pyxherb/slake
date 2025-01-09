@@ -10,6 +10,8 @@ slake::slkc::Server::Server() {
 	server.Post("/documentOpen", [this](const httplib::Request &request, httplib::Response &response) {
 		puts("/documentOpen");
 
+		std::lock_guard documentRwMutexGuard(documentRwMutex);
+
 		Json::Value rootValue;
 
 		Json::Reader reader;
@@ -74,6 +76,9 @@ slake::slkc::Server::Server() {
 		}
 
 		{
+			if (auto it = compiler->sourceDocs.find(uri); it != compiler->sourceDocs.end()) {
+				std::lock_guard<std::mutex> docMutexGuard(it->second->mutex);
+			}
 			auto doc = compiler->addDoc(uri);
 			std::lock_guard<std::mutex> docMutexGuard(doc->mutex);
 
@@ -199,6 +204,8 @@ slake::slkc::Server::Server() {
 	});
 	server.Post("/documentClose", [this](const httplib::Request &request, httplib::Response &response) {
 		puts("/documentClose");
+
+		std::lock_guard documentRwMutexGuard(documentRwMutex);
 
 		Json::Value rootValue;
 

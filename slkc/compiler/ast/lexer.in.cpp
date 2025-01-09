@@ -319,7 +319,7 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 			(size_t)std::count(strToEnd.begin(), strToEnd.end(), '\n'),
 			(idxLastEndNewline == std::string::npos
 					? endIndex
-					: endIndex - idxLastEndNewline - 1)
+					: endIndex - idxLastEndNewline)
 		};
 		tokens.push_back(std::move(token));
 

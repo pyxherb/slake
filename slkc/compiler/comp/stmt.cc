@@ -3,6 +3,8 @@
 using namespace slake::slkc;
 
 void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtNode> stmt) {
+	SourceDocument *curDoc = compileContext->compiler->getCurDoc();
+
 	switch (stmt->getStmtType()) {
 		case StmtType::Expr: {
 			auto s = std::static_pointer_cast<ExprStmtNode>(stmt);
@@ -20,10 +22,13 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 			}
 
 #if SLKC_WITH_LANGUAGE_SERVER
-			updateTokenInfo(s->idxSemicolonToken, [this, &compileContext](TokenInfo &tokenInfo) {
-				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curCollectiveContext.curMajorContext);
-				tokenInfo.completionContext = CompletionContext::Stmt;
-			});
+			updateTokenInfoForTrailingSpaces(
+				compileContext,
+				s->idxSemicolonToken + 1, curDoc->lexer->tokens.size(),
+				[this, &compileContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curCollectiveContext.curMajorContext);
+					tokenInfo.completionContext = CompletionContext::Stmt;
+				});
 #endif
 			break;
 		}
@@ -38,10 +43,13 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 					tokenInfo.completionContext = CompletionContext::Name;
 				});
 
-				updateTokenInfo(i.second.idxColonToken, [this, &compileContext](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curCollectiveContext.curMajorContext);
-					tokenInfo.completionContext = CompletionContext::Type;
-				});
+				updateTokenInfoForTrailingSpaces(
+					compileContext, i.second.idxColonToken + 1,
+					curDoc->lexer->tokens.size(),
+					[this, &compileContext](TokenInfo &tokenInfo) {
+						tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curCollectiveContext.curMajorContext);
+						tokenInfo.completionContext = CompletionContext::Type;
+					});
 
 				if (i.second.type)
 					updateCompletionContext(i.second.type, CompletionContext::Type);
@@ -143,9 +151,29 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 				}
 			}
 
+#if SLKC_WITH_LANGUAGE_SERVER
+			updateTokenInfoForTrailingSpaces(
+				compileContext,
+				s->idxSemicolonToken + 1, curDoc->lexer->tokens.size(),
+				[this, &compileContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curCollectiveContext.curMajorContext);
+					tokenInfo.completionContext = CompletionContext::Stmt;
+				});
+#endif
 			break;
 		}
-		case StmtType::Break:
+		case StmtType::Break: {
+			std::shared_ptr<BreakStmtNode> s = std::static_pointer_cast<BreakStmtNode>(stmt);
+#if SLKC_WITH_LANGUAGE_SERVER
+			updateTokenInfoForTrailingSpaces(
+				compileContext,
+				s->idxSemicolonToken + 1, curDoc->lexer->tokens.size(),
+				[this, &compileContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curCollectiveContext.curMajorContext);
+					tokenInfo.completionContext = CompletionContext::Stmt;
+				});
+#endif
+
 			if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.breakLabel.empty())
 				throw FatalCompilationError({ tokenRangeToSourceLocation(stmt->tokenRange), MessageType::Error, "Unexpected break statement" });
 
@@ -157,12 +185,25 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 
 			compileContext->_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(compileContext->curCollectiveContext.curMajorContext.curMinorContext.breakLabel) });
 			break;
-		case StmtType::Continue:
+		}
+		case StmtType::Continue: {
+			std::shared_ptr<ContinueStmtNode> s = std::static_pointer_cast<ContinueStmtNode>(stmt);
+#if SLKC_WITH_LANGUAGE_SERVER
+			updateTokenInfoForTrailingSpaces(
+				compileContext,
+				s->idxSemicolonToken + 1, curDoc->lexer->tokens.size(),
+				[this, &compileContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curCollectiveContext.curMajorContext);
+					tokenInfo.completionContext = CompletionContext::Stmt;
+				});
+#endif
+
 			if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.continueLabel.size())
 				throw FatalCompilationError({ tokenRangeToSourceLocation(stmt->tokenRange), MessageType::Error, "Unexpected continue statement" });
 
 			compileContext->_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(compileContext->curCollectiveContext.curMajorContext.curMinorContext.continueLabel) });
 			break;
+		}
 		case StmtType::For: {
 			auto s = std::static_pointer_cast<ForStmtNode>(stmt);
 
@@ -220,6 +261,16 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 			compileContext->_insertIns(Opcode::LEAVE, {}, {});
 
 			compileContext->popMinorContext();
+
+#if SLKC_WITH_LANGUAGE_SERVER
+			updateTokenInfoForTrailingSpaces(
+				compileContext,
+				s->tokenRange.endIndex + 1, curDoc->lexer->tokens.size(),
+				[this, &compileContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curCollectiveContext.curMajorContext);
+					tokenInfo.completionContext = CompletionContext::Stmt;
+				});
+#endif
 			break;
 		}
 		case StmtType::While: {
@@ -276,6 +327,15 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 
 			compileContext->popMinorContext();
 
+#if SLKC_WITH_LANGUAGE_SERVER
+			updateTokenInfoForTrailingSpaces(
+				compileContext,
+				s->idxLParentheseToken + 1, curDoc->lexer->tokens.size(),
+				[this, &compileContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curCollectiveContext.curMajorContext);
+					tokenInfo.completionContext = CompletionContext::Expr;
+				});
+#endif
 			break;
 		}
 		case StmtType::Return: {
@@ -327,10 +387,27 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 				}
 			}
 
+#if SLKC_WITH_LANGUAGE_SERVER
+			updateTokenInfoForTrailingSpaces(
+				compileContext,
+				s->idxReturnToken + 1, curDoc->lexer->tokens.size(),
+				[this, &compileContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curCollectiveContext.curMajorContext);
+					tokenInfo.completionContext = CompletionContext::Expr;
+				});
+#endif
 			break;
 		}
 		case StmtType::Yield: {
 			auto s = std::static_pointer_cast<YieldStmtNode>(stmt);
+
+#if SLKC_WITH_LANGUAGE_SERVER
+			updateTokenInfo(s->idxYieldToken, [this, &compileContext](TokenInfo &tokenInfo) {
+				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curCollectiveContext.curMajorContext);
+				tokenInfo.semanticType = SemanticType::Keyword;
+				tokenInfo.completionContext = CompletionContext::Expr;
+			});
+#endif
 
 			if (!(compileContext->curFn->isAsync))
 				throw FatalCompilationError({ tokenRangeToSourceLocation(stmt->tokenRange), MessageType::Error, "Cannot yield in a non-asynchronous function" });
@@ -351,6 +428,15 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 				}
 			}
 
+#if SLKC_WITH_LANGUAGE_SERVER
+			updateTokenInfoForTrailingSpaces(
+				compileContext,
+				s->idxYieldToken + 1, curDoc->lexer->tokens.size(),
+				[this, &compileContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curCollectiveContext.curMajorContext);
+					tokenInfo.completionContext = CompletionContext::Expr;
+				});
+#endif
 			break;
 		}
 		case StmtType::If: {

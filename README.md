@@ -18,8 +18,6 @@ scripting.
 
 ⏸: Paused/Postponed
 
-❌: Cancelled
-
 * Bytecode Compiler ⏸
   * Lexer ⏸
   * Parser ⏸
@@ -28,7 +26,6 @@ scripting.
   * Lexer ✅
   * Parser ✅
   * Compiler ✅
-  * Optimizer ❌
   * Language Server 🕓
     * Linting ✅
     * Snippets 🕓
@@ -36,38 +33,18 @@ scripting.
     * Renaming 🕓
 
 * Language Standard 🕓
-  * Control Flow ✅
+  * Control Flow Statements ✅
+  * Expressions ✅
   * Exception ✅
   * OOP Mechanism ✅
     * Class ✅
     * Interface ✅
-    * Trait ❌
     * Operator ✅
-    * Accessor ❌
   * Coroutine 🕓
-  * Closure ❌
-  * Overloading ✅
-
-* Runtime Library 🕓
-  * Core Library (core) 🕓
-    * Coroutine (coroutine) 🕓
-    * Exceptions (except) 🕓
-    * Reflection (reflect) 🕓
-  * Standard Library (std) 🕓
-    * I/O (io) 🕓
-      * Stream (stream) 🕓
-    * Mathematic Facilities (math) 🕓
-      * RNG Facilities (rand) 🕓
-    * Utilities (utils) 🕓
-      * Concurrency (concurrent) 🕓
-      * File System (fs) 🕓
-      * Hashing (hash) 🕓
-      * Iterator (iterator) 🕓
-      * Range (range) 🕓
-      * String Manipulating (str) 🕓
+  * Function Overloading ✅
+  * Operator Overloading🕓
 
 * Runtime 🕓
-  * Built-in Compiler ❌
   * Exception Mechanism ✅
   * Type Checker ✅
   * Interpreting ✅
@@ -77,8 +54,12 @@ scripting.
     * Class Instantiation ✅
     * Class Inheritance ✅
     * Interface Implementing ✅
-  * Closure ❌
   * Coroutine 🕓
+  * Optimizer 🕓
+    * Program Analyzer 🕓
+  * JIT Recompiler 🕓
+    * x86 Backend 🕓
+  * Runtime Library 🕓
 
 ## Building
 

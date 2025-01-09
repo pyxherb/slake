@@ -1,29 +1,65 @@
 module std.core.except;
 
-pub interface Exception {
-	operator string();
+pub interface IException {
+	fn what(): string;
 }
 
-pub native class LogicalError: @IException {
-	native operator new(string msg);
+pub native class RuntimeError: IException {
+	fn what() virtual override: string;
 }
 
-pub native class DivideByZeroError: @IException {
-	native operator new(string msg);
+pub native class OutOfMemoryError(RuntimeError) {
+	fn what() virtual override: string;
 }
 
-pub native class OutOfMemoryError: @IException {
-	native operator new(string msg);
+pub native class LogicalError: IException {
+	fn what() virtual override: string;
 }
 
-pub native class InvalidOpcodeError: @IException {
-	native operator new(string msg);
+pub native class DivideByZeroError(LogicalError) {
+	fn what() virtual override: string;
 }
 
-pub native class InvalidOperandsError: @IException {
-	native operator new(string msg);
+pub native class InvalidOpcodeError(LogicalError) {
+	fn what() virtual override: string;
 }
 
-pub native class UnsupportedError: @IException {
-	native operator new(string msg);
+pub native class InvalidOperandsError(LogicalError) {
+	fn what() virtual override: string;
+}
+
+pub native class InvalidRegisterIndexError(LogicalError) {
+	fn what() virtual override: string;
+}
+
+pub native class UnsupportedError(LogicalError) {
+	fn what() virtual override: string;
+}
+
+pub native class ReferencedMemberNotFoundError(LogicalError) {
+	fn what() virtual override: string;
+}
+
+pub native class StackOverflowError(LogicalError) {
+	fn what() virtual override: string;
+}
+
+pub native class MalformedClassStructureError(LogicalError) {
+	fn what() virtual override: string;
+}
+
+pub native class GenericInstantiationError(LogicalError) {
+	fn what() virtual override: string;
+}
+
+pub native class InvalidArgumentIndexError(LogicalError) {
+	fn what() virtual override: string;
+}
+
+pub native class InvalidLocalVarIndexError(LogicalError) {
+	fn what() virtual override: string;
+}
+
+pub native class MismatchedVarTypeError(LogicalError) {
+	fn what() virtual override: string;
 }

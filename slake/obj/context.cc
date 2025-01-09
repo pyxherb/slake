@@ -5,11 +5,9 @@ using namespace slake;
 SLAKE_API MinorFrame::MinorFrame(
 	Runtime *rt,
 	uint32_t nLocalVars,
-	uint32_t nRegs,
 	size_t stackBase)
 	: exceptHandlers(&rt->globalHeapPoolResource),
 	  nLocalVars(nLocalVars),
-	  nRegs(nRegs),
 	  stackBase(stackBase) {
 }
 
@@ -21,12 +19,11 @@ SLAKE_API MajorFrame::MajorFrame(Runtime *rt, Context *context)
 	  regs(&rt->globalHeapPoolResource),
 	  minorFrames(&rt->globalHeapPoolResource) {
 	localVarAccessor = LocalVarAccessorVarObject::alloc(rt, context, this).get();
-	minorFrames.push_back(MinorFrame(rt, 0, 0, context->stackTop));
+	minorFrames.push_back(MinorFrame(rt, 0, context->stackTop));
 }
 
 SLAKE_API void MajorFrame::leave() {
 	context->stackTop = minorFrames.back().stackBase;
-	regs.resize(minorFrames.back().nRegs, Value(ValueType::Undefined));
 	minorFrames.pop_back();
 }
 

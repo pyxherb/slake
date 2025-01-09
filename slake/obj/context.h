@@ -16,13 +16,12 @@ namespace slake {
 	struct MinorFrame final {
 		std::pmr::vector<ExceptionHandler> exceptHandlers;	// Exception handlers
 
-		uint32_t nLocalVars = 0, nRegs = 0;
+		uint32_t nLocalVars = 0;
 		size_t stackBase = 0;
 
 		SLAKE_API MinorFrame(
 			Runtime *rt,
 			uint32_t nLocalVars,
-			uint32_t nRegs,
 			size_t stackBase);
 		// Default constructor is required by resize() methods from the
 		// containers.
@@ -46,6 +45,7 @@ namespace slake {
 		LocalVarAccessorVarObject *localVarAccessor;	   // Local variable accessor.
 
 		std::pmr::vector<Value> regs;  // Local registers.
+		size_t nRegs = 0;
 
 		Object *thisObject = nullptr;  // `this' object.
 
@@ -64,6 +64,11 @@ namespace slake {
 
 		/// @brief Leave current minor frame.
 		SLAKE_API void leave();
+
+		SLAKE_FORCEINLINE void resizeRegs(size_t nRegs) {
+			this->nRegs = nRegs;
+			regs.resize(nRegs);
+		}
 	};
 
 	using ContextFlags = uint8_t;

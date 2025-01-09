@@ -3,6 +3,8 @@
 #include <slake/util/scope_guard.h>
 #include <cmath>
 
+#undef new
+
 using namespace slake;
 
 [[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer _checkOperandCount(
@@ -47,12 +49,12 @@ using namespace slake;
 	MajorFrame *curMajorFrame,
 	uint32_t index,
 	const Value &value) noexcept {
-	if (index >= curMajorFrame->regs.size()) {
+	if (index >= curMajorFrame->nRegs) {
 		// The register does not present.
 		return InvalidOperandsError::alloc(runtime);
 	}
 	Value &reg = curMajorFrame->regs[index];
-	curMajorFrame->regs[index] = value;
+	new (&curMajorFrame->regs.at(index)) Value (value);
 	return {};
 }
 
@@ -61,7 +63,7 @@ using namespace slake;
 	MajorFrame *curMajorFrame,
 	uint32_t index,
 	Value &valueOut) noexcept {
-	if (index >= curMajorFrame->regs.size()) {
+	if (index >= curMajorFrame->nRegs) {
 		// The register does not present.
 		return InvalidOperandsError::alloc(runtime);
 	}
@@ -115,7 +117,7 @@ static Value _castToLiteralValue(Value x) noexcept {
 		case ValueType::Bool:
 			return Value((LT)(x.getBool()));
 		default:
-			throw std::logic_error("Invalid type conversion");
+			std::terminate();
 	}
 }
 
@@ -168,7 +170,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 	switch (fn->overloadingKind) {
 		case FnOverloadingKind::Regular: {
 			RegularFnOverloadingObject *ol = (RegularFnOverloadingObject *)fn;
-			newMajorFrame->regs.resize(ol->nRegisters);
+			newMajorFrame->resizeRegs(ol->nRegisters);
 			break;
 		}
 	}
@@ -346,8 +348,6 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 
 					const Instruction &ins = ol->instructions[curMajorFrame->curIns];
 
-					auto &curMinorFrame = curMajorFrame->minorFrames.back();
-
 					switch (ins.opcode) {
 						case Opcode::NOP:
 							break;
@@ -497,7 +497,6 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 							MinorFrame frame(
 								this,
 								(uint32_t)curMajorFrame->localVarRecords.size(),
-								(uint32_t)curMajorFrame->regs.size(),
 								context->_context.stackTop);
 
 							curMajorFrame->minorFrames.push_back(frame);
@@ -1535,7 +1534,7 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 							break;
 						}
 						case Opcode::PUSHARG: {
-							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(this, ins, false, 2));
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(this, ins, false, 1));
 
 							Value value;
 							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, curMajorFrame, ins.operands[0], value));
@@ -1807,7 +1806,7 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 				break;
 			}
 			default:
-				throw std::logic_error("Unhandled function overloading type");
+				std::terminate();
 		}
 	}
 
@@ -1833,7 +1832,7 @@ SLAKE_API InternalExceptionPointer Runtime::execFn(
 			auto frame = std::make_unique<MajorFrame>(this, &context->getContext());
 			frame->curFn = overloading;
 			frame->curIns = UINT32_MAX;
-			frame->regs.resize(1);
+			frame->resizeRegs(1);
 			context->getContext().majorFrames.push_back(std::move(frame));
 		}
 

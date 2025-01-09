@@ -3698,7 +3698,7 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 									MessageType::Error,
 									"Expecting a lvalue expression"));
 
-						compileContext->_insertIns(Opcode::PUSHARG, {}, { ce, overloading->params[0]->type });
+						compileContext->_insertIns(Opcode::PUSHARG, {}, { ce });
 					} else {
 						compileExpr(compileContext,
 							e->rhs,
@@ -3706,7 +3706,7 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 								? EvalPurpose::LValue
 								: EvalPurpose::RValue,
 							std::make_shared<RegRefNode>(tmpRegIndex));
-						compileContext->_insertIns(Opcode::PUSHARG, {}, { std::make_shared<RegRefNode>(tmpRegIndex), overloading->params[0]->type });
+						compileContext->_insertIns(Opcode::PUSHARG, {}, { std::make_shared<RegRefNode>(tmpRegIndex) });
 					}
 
 					uint32_t callTargetRegIndex = compileContext->allocReg();

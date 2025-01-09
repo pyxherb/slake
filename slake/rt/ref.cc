@@ -21,16 +21,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 			if (!scopeObject)
 				goto fail;
 
-			if (i.name == "base") {
-				switch (curObject->getKind()) {
-					case ObjectKind::Module:
-					case ObjectKind::Class:
-						scopeObject = (MemberObject *)curObject->getParent();
-						break;
-					default:
-						goto fail;
-				}
-			} else if (!(scopeObject = scopeObject->getMember(i.name, varRefContextOut))) {
+			if (!(scopeObject = scopeObject->getMember(i.name, varRefContextOut))) {
 				break;
 			}
 

@@ -819,7 +819,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 
 				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.insert({ i, FnCallAnalyzedInfo(&analyzeContext.runtime->globalHeapPoolResource) });
 				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.at(i).argPushInsOffs = std::move(analyzeContext.argPushInsOffs);
-				analyzeContext.argPushInsOffs = {};
+				analyzeContext.argPushInsOffs.clear();
 
 				Value expectedFnValue = analyzedInfoOut.analyzedRegInfo.at(callTargetRegIndex).expectedValue;
 

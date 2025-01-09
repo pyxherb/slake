@@ -262,10 +262,7 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 				compileContext->_insertIns(
 					Opcode::PUSHARG,
 					{},
-					{ std::make_shared<RegRefNode>(tmpRegIndex),
-						i < compileContext->curCollectiveContext.curMajorContext.curMinorContext.lastCallTargetParams.size()
-							? compileContext->curCollectiveContext.curMajorContext.curMinorContext.lastCallTargetParams[i]->type
-							: nullptr });
+					{ std::make_shared<RegRefNode>(tmpRegIndex) });
 
 				compileContext->popMinorContext();
 			}
@@ -488,12 +485,12 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 									if (i < paramTypes.size()) {
 										if (isSameType(compileContext, argTypes[i], paramTypes[i])) {
 											if (auto ce = evalConstExpr(compileContext, e->args[i]); ce)
-												compileContext->_insertIns(Opcode::PUSHARG, {}, { ce, paramTypes[i] });
+												compileContext->_insertIns(Opcode::PUSHARG, {}, { ce });
 											else {
 												uint32_t tmpRegIndex = compileContext->allocReg();
 
 												compileExpr(compileContext, e->args[i], EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
-												compileContext->_insertIns(Opcode::PUSHARG, {}, { std::make_shared<RegRefNode>(tmpRegIndex), paramTypes[i] });
+												compileContext->_insertIns(Opcode::PUSHARG, {}, { std::make_shared<RegRefNode>(tmpRegIndex) });
 											}
 										} else {
 											uint32_t tmpRegIndex = compileContext->allocReg();
@@ -502,7 +499,7 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 												std::make_shared<CastExprNode>(argTypes[i], e->args[i]),
 												EvalPurpose::RValue,
 												std::make_shared<RegRefNode>(tmpRegIndex));
-											compileContext->_insertIns(Opcode::PUSHARG, {}, { std::make_shared<RegRefNode>(tmpRegIndex), paramTypes[i] });
+											compileContext->_insertIns(Opcode::PUSHARG, {}, { std::make_shared<RegRefNode>(tmpRegIndex) });
 										}
 									} else {
 										if (auto ce = evalConstExpr(compileContext, e->args[i]); ce)

@@ -73,8 +73,8 @@ namespace slake {
 				SLAKE_API void pushPrologStackOpIns();
 				SLAKE_API void pushEpilogStackOpIns();
 
-				SLAKE_API void checkIfStackWillOverflow(uint32_t size);
-				SLAKE_API void checkIfStackWillOverflowOnProlog(uint32_t size);
+				SLAKE_API void checkAndPushStackPointer(uint32_t size);
+				SLAKE_API void checkAndPushStackPointerOnProlog(uint32_t size);
 
 				SLAKE_FORCEINLINE void initJITContextStorage() {
 					jitContextOff = stackAllocAligned(sizeof(JITExecContext *), sizeof(JITExecContext *));

@@ -556,9 +556,7 @@ void compileFpModInstruction(
 
 		if (padding) {
 			uint32_t szDiff = 16 - padding;
-			compileContext.checkIfStackWillOverflow(szDiff);
-			compileContext.pushIns(emitSubImm32ToReg64Ins(REG_RSP, &szDiff));
-			compileContext.addStackPtr(16 - padding);
+			compileContext.checkAndPushStackPointer(szDiff);
 		}
 
 		CallingRegSavingInfo callingRegSavingInfo;

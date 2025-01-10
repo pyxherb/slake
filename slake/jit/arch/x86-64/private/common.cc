@@ -15,7 +15,8 @@ static const RegisterId _s_gpRegs[] = {
 	REG_RDI,
 	REG_R8,
 	REG_R9,
-	// R10 and R11 will never be allocated since they are used for stack limit checking.
+	REG_R10,
+	// R11 will never be allocated since it is used for stack limit checking.
 	REG_R12,
 	REG_R13,
 	REG_R14,
@@ -42,7 +43,7 @@ static const RegisterId _s_xmmRegs[] = {
 };
 
 SLAKE_API void JITCompileContext::pushPrologStackOpIns() {
-	checkIfStackWillOverflowOnProlog(sizeof(uint64_t) * 11);
+	checkAndPushStackPointerOnProlog(sizeof(uint64_t) * 11);
 
 	pushIns(emitPushReg64Ins(REG_R8));
 	pushIns(emitPushReg64Ins(REG_RDX));
@@ -80,18 +81,18 @@ SLAKE_API void JITCompileContext::pushEpilogStackOpIns() {
 	pushIns(emitPopReg64Ins(REG_R8));
 }
 
-SLAKE_API void JITCompileContext::checkIfStackWillOverflow(uint32_t size) {
-	pushIns(emitMovReg64ToReg64Ins(REG_R10, REG_R11));
-	pushIns(emitAddImm32ToReg64Ins(REG_R10, (uint8_t *)&size));
-	pushIns(emitCmpReg64ToReg64Ins(REG_R10, REG_RSP));
+SLAKE_API void JITCompileContext::checkAndPushStackPointer(uint32_t size) {
+	pushIns(emitSubImm32ToReg64Ins(REG_RSP, (uint8_t *)&size));
+	pushIns(emitCmpReg64ToReg64Ins(REG_R11, REG_RSP));
 	pushIns(emitLabelledJumpIns("_report_stack_overflow", DiscreteInstructionType::JumpIfLtLabelled));
+	addStackPtr(size);
 }
 
-SLAKE_API void JITCompileContext::checkIfStackWillOverflowOnProlog(uint32_t size) {
-	pushIns(emitMovReg64ToReg64Ins(REG_R10, REG_R11));
-	pushIns(emitAddImm32ToReg64Ins(REG_R10, (uint8_t *)&size));
-	pushIns(emitCmpReg64ToReg64Ins(REG_R10, REG_RSP));
+SLAKE_API void JITCompileContext::checkAndPushStackPointerOnProlog(uint32_t size) {
+	pushIns(emitSubImm32ToReg64Ins(REG_RSP, (uint8_t *)&size));
+	pushIns(emitCmpReg64ToReg64Ins(REG_R11, REG_RSP));
 	pushIns(emitLabelledJumpIns("_report_stack_overflow_on_prolog", DiscreteInstructionType::JumpIfLtLabelled));
+	addStackPtr(size);
 }
 
 SLAKE_API RegisterId JITCompileContext::allocGpReg() {
@@ -161,10 +162,8 @@ SLAKE_API int32_t JITCompileContext::stackAllocAligned(uint32_t size, uint32_t a
 	}
 	size += alignment - diff;
 
-	checkIfStackWillOverflow(size);
+	checkAndPushStackPointer(size);
 
-	addStackPtr(size);
-	pushIns(emitSubImm32ToReg32Ins(REG_RSP, (uint8_t *)&size));
 	return -allocBase;
 }
 

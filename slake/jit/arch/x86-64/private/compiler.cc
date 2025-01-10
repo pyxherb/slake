@@ -221,13 +221,11 @@ InternalExceptionPointer slake::compileRegularFn(RegularFnOverloadingObject *fn,
 
 	SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptionPtr, opti::analyzeProgramInfo(fn->associatedRuntime, fn, analyzedInfo, hostRefHolder));
 
-	compileContext.pushIns(emitMovMemToReg64Ins(REG_R11, MemoryLocation{ REG_R9, offsetof(JITExecContext, stackBase), REG_MAX, 0 }));
-	compileContext.pushIns(emitMovMemToReg64Ins(REG_R10, MemoryLocation{ REG_R9, offsetof(JITExecContext, stackLimit), REG_MAX, 0 }));
+	compileContext.pushIns(emitMovMemToReg64Ins(REG_R11, MemoryLocation{ REG_R9, offsetof(JITExecContext, stackLimit), REG_MAX, 0 }));
 
 	compileContext.pushPrologStackOpIns();
 
-	// R11 and R10 are used for stack limit checking.
-	compileContext.setRegAllocated(REG_R10);
+	// R11 is used for stack limit checking.
 	compileContext.setRegAllocated(REG_R11);
 
 	{

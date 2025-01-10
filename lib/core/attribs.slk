@@ -16,6 +16,10 @@ pub attribute JIT {
 }
 
 pub attribute UniqueOptimizerID {
-	optimizerNamespace: string
+	optimizerNamespace: string,
 	itemId: string
+}
+
+pub attribute ReserveStackSize {
+	size: u32
 }

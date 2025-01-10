@@ -61,6 +61,8 @@ scripting.
     * x86 Backend 🕓
   * Runtime Library 🕓
 
+* AOT Compiler 🕓
+
 ## Building
 
 To build Slake, you will always need:

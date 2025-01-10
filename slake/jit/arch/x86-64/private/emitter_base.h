@@ -23,6 +23,13 @@ namespace slake {
 				return ins;
 			}
 
+			SLAKE_FORCEINLINE DiscreteInstruction emitLabelledJumpIns(const char *dest, DiscreteInstructionType type = DiscreteInstructionType::JumpLabelled) {
+				DiscreteInstruction ins;
+				ins.insType = type;
+				ins.data.asLabelledJumpInsData.dest = dest;
+				return ins;
+			}
+
 			SLAKE_FORCEINLINE DiscreteInstruction emitCallIns(void *dest) {
 				DiscreteInstruction ins;
 				ins.insType = DiscreteInstructionType::Call;

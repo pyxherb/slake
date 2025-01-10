@@ -18,7 +18,10 @@ namespace slake {
 				JITArgRegistry *args;
 				Value returnValue;
 				InternalException *exception;
+				StackOverflowError *stackOverflowError;
 				size_t insOff;
+				void *stackBase;
+				void *stackLimit;
 			};
 
 			typedef void (*JITCompiledBody)(JITExecContext *execContext);

@@ -24,6 +24,15 @@ namespace slake {
 				JumpIfNotLt,
 				JumpIfZero,
 				JumpIfNotZero,
+				JumpLabelled,
+				JumpIfGtLabelled,
+				JumpIfNotGtLabelled,
+				JumpIfEqLabelled,
+				JumpIfNotEqLabelled,
+				JumpIfLtLabelled,
+				JumpIfNotLtLabelled,
+				JumpIfZeroLabelled,
+				JumpIfNotZeroLabelled,
 				Call
 			};
 
@@ -39,6 +48,9 @@ namespace slake {
 					struct {
 						void *dest;
 					} asCallInsData;
+					struct {
+						const char *dest;
+					} asLabelledJumpInsData;
 				} data;
 				DiscreteInstructionType insType;
 			};

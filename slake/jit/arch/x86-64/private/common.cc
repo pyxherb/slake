@@ -15,8 +15,7 @@ static const RegisterId _s_gpRegs[] = {
 	REG_RDI,
 	REG_R8,
 	REG_R9,
-	REG_R10,
-	REG_R11,
+	// R10 and R11 will never be allocated since they are used for stack limit checking.
 	REG_R12,
 	REG_R13,
 	REG_R14,
@@ -41,6 +40,59 @@ static const RegisterId _s_xmmRegs[] = {
 	REG_XMM14,
 	REG_XMM15,
 };
+
+SLAKE_API void JITCompileContext::pushPrologStackOpIns() {
+	checkIfStackWillOverflowOnProlog(sizeof(uint64_t) * 11);
+
+	pushIns(emitPushReg64Ins(REG_R8));
+	pushIns(emitPushReg64Ins(REG_RDX));
+	pushIns(emitPushReg64Ins(REG_RCX));
+
+	pushIns(emitPushReg64Ins(REG_RBX));
+	pushIns(emitPushReg64Ins(REG_RDI));
+	pushIns(emitPushReg64Ins(REG_RSI));
+	pushIns(emitPushReg64Ins(REG_R12));
+	pushIns(emitPushReg64Ins(REG_R13));
+	pushIns(emitPushReg64Ins(REG_R14));
+	pushIns(emitPushReg64Ins(REG_R15));
+
+	pushIns(emitPushReg64Ins(REG_RBP));
+
+	pushIns(emitMovReg64ToReg64Ins(REG_RBP, REG_RSP));
+
+	addStackPtr(sizeof(uint64_t) * 11);
+}
+
+SLAKE_API void JITCompileContext::pushEpilogStackOpIns() {
+	pushIns(emitMovReg64ToReg64Ins(REG_RSP, REG_RBP));
+
+	pushIns(emitPopReg64Ins(REG_RBP));
+
+	pushIns(emitPopReg64Ins(REG_R15));
+	pushIns(emitPopReg64Ins(REG_R14));
+	pushIns(emitPopReg64Ins(REG_R13));
+	pushIns(emitPopReg64Ins(REG_R12));
+	pushIns(emitPopReg64Ins(REG_RSI));
+	pushIns(emitPopReg64Ins(REG_RDI));
+	pushIns(emitPopReg64Ins(REG_RBX));
+	pushIns(emitPopReg64Ins(REG_RCX));
+	pushIns(emitPopReg64Ins(REG_RDX));
+	pushIns(emitPopReg64Ins(REG_R8));
+}
+
+SLAKE_API void JITCompileContext::checkIfStackWillOverflow(uint32_t size) {
+	pushIns(emitMovReg64ToReg64Ins(REG_R10, REG_R11));
+	pushIns(emitAddImm32ToReg64Ins(REG_R10, (uint8_t *)&size));
+	pushIns(emitCmpReg64ToReg64Ins(REG_R10, REG_RSP));
+	pushIns(emitLabelledJumpIns("_report_stack_overflow", DiscreteInstructionType::JumpIfLtLabelled));
+}
+
+SLAKE_API void JITCompileContext::checkIfStackWillOverflowOnProlog(uint32_t size) {
+	pushIns(emitMovReg64ToReg64Ins(REG_R10, REG_R11));
+	pushIns(emitAddImm32ToReg64Ins(REG_R10, (uint8_t *)&size));
+	pushIns(emitCmpReg64ToReg64Ins(REG_R10, REG_RSP));
+	pushIns(emitLabelledJumpIns("_report_stack_overflow_on_prolog", DiscreteInstructionType::JumpIfLtLabelled));
+}
 
 SLAKE_API RegisterId JITCompileContext::allocGpReg() {
 realloc:
@@ -107,6 +159,10 @@ SLAKE_API int32_t JITCompileContext::stackAllocAligned(uint32_t size, uint32_t a
 	if (diff) {
 		allocBase += alignment - diff;
 	}
+	size += alignment - diff;
+
+	checkIfStackWillOverflow(size);
+
 	addStackPtr(size);
 	pushIns(emitSubImm32ToReg32Ins(REG_RSP, (uint8_t *)&size));
 	return -allocBase;
@@ -144,8 +200,8 @@ SLAKE_API void JITCompileContext::stackFree(int32_t saveOffset, size_t size) {
 }
 
 void slake::jit::x86_64::loadInsWrapper(
-	JITExecContext* context,
-	IdRefObject* idRefObject) {
+	JITExecContext *context,
+	IdRefObject *idRefObject) {
 	VarRefContext varRefContext;
 	Object *object;
 	InternalExceptionPointer e = context->runtime->resolveIdRef(idRefObject, &varRefContext, object, nullptr);
@@ -163,8 +219,8 @@ void slake::jit::x86_64::loadInsWrapper(
 	}
 }
 void slake::jit::x86_64::rloadInsWrapper(
-	JITExecContext* context,
-	Object* baseObject,
+	JITExecContext *context,
+	Object *baseObject,
 	IdRefObject *idRefObject) {
 	VarRefContext varRefContext;
 	Object *object;
@@ -184,8 +240,8 @@ void slake::jit::x86_64::rloadInsWrapper(
 }
 
 void slake::jit::x86_64::memcpyWrapper(
-	void* dest,
-	const void* src,
+	void *dest,
+	const void *src,
 	uint64_t size) {
 	memmove(dest, src, size);
 }

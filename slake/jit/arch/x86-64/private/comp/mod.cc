@@ -522,9 +522,10 @@ void compileFpModInstruction(
 		}
 
 		size_t padding = compileContext.curStackSize % 16;
+		int32_t paddingOff;
 
 		if (padding) {
-			compileContext.addStackPtr(16 - padding);
+			paddingOff = compileContext.stackAllocAligned(16 - padding);
 		}
 
 		CallingRegSavingInfo callingRegSavingInfo;
@@ -536,7 +537,7 @@ void compileFpModInstruction(
 		compileContext.restoreCallingRegs(callingRegSavingInfo);
 
 		if (padding) {
-			compileContext.subStackPtr(16 - padding);
+			compileContext.stackFree(paddingOff, 16 - padding);
 		}
 	} else if constexpr (std::is_same_v<T, double>) {
 		if (lhsVregState.saveOffset != INT32_MIN) {
@@ -551,9 +552,12 @@ void compileFpModInstruction(
 			compileContext.pushIns(emitMovqRegXmmToRegXmmIns(rhsXmmRegId, rhsVregState.phyReg));
 		}
 
-		size_t padding = compileContext.curStackSize % 16;
+		uint32_t padding = (uint32_t)compileContext.curStackSize % 16;
 
 		if (padding) {
+			uint32_t szDiff = 16 - padding;
+			compileContext.checkIfStackWillOverflow(szDiff);
+			compileContext.pushIns(emitSubImm32ToReg64Ins(REG_RSP, &szDiff));
 			compileContext.addStackPtr(16 - padding);
 		}
 
@@ -566,6 +570,8 @@ void compileFpModInstruction(
 		compileContext.restoreCallingRegs(callingRegSavingInfo);
 
 		if (padding) {
+			uint32_t szDiff = 16 - padding;
+			compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RSP, &szDiff));
 			compileContext.subStackPtr(16 - padding);
 		}
 	} else {

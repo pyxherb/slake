@@ -68,6 +68,13 @@ namespace slake {
 				std::map<size_t, std::list<uint32_t>> regRecycleBoundaries;
 				std::map<int32_t, size_t> freeStackSpaces;
 				int32_t jitContextOff;
+				std::unordered_map<std::string, size_t> labelOffsets;
+
+				SLAKE_API void pushPrologStackOpIns();
+				SLAKE_API void pushEpilogStackOpIns();
+
+				SLAKE_API void checkIfStackWillOverflow(uint32_t size);
+				SLAKE_API void checkIfStackWillOverflowOnProlog(uint32_t size);
 
 				SLAKE_FORCEINLINE void initJITContextStorage() {
 					jitContextOff = stackAllocAligned(sizeof(JITExecContext *), sizeof(JITExecContext *));
@@ -78,6 +85,10 @@ namespace slake {
 				}
 				SLAKE_FORCEINLINE void pushRelativeAddrReplacingPoint32(const JITRelAddrReplacingPoint32 &replacingPoint) {
 					relativeAddrReplacingPoints[nativeInstructions.size() - 1].pushReplacingPoint(replacingPoint);
+				}
+
+				SLAKE_FORCEINLINE void pushLabel(std::string &&label) {
+					labelOffsets.insert({ std::move(label), nativeInstructions.size() });
 				}
 
 				SLAKE_FORCEINLINE void addStackPtr(size_t size) {
@@ -325,7 +336,7 @@ namespace slake {
 					return vregState;
 				}
 
-				SLAKE_FORCEINLINE LocalVarState& defLocalVar(uint32_t index, int32_t stackOff, size_t size) {
+				SLAKE_FORCEINLINE LocalVarState &defLocalVar(uint32_t index, int32_t stackOff, size_t size) {
 					LocalVarState &localVarState = localVarStates[index];
 					localVarState.stackOff = stackOff;
 					localVarState.size = size;

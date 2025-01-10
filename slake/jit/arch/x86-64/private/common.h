@@ -73,6 +73,8 @@ namespace slake {
 				SLAKE_API void pushPrologStackOpIns();
 				SLAKE_API void pushEpilogStackOpIns();
 
+				SLAKE_API void checkStackPointer(uint32_t size);
+				SLAKE_API void checkStackPointerOnProlog(uint32_t size);
 				SLAKE_API void checkAndPushStackPointer(uint32_t size);
 				SLAKE_API void checkAndPushStackPointerOnProlog(uint32_t size);
 

@@ -43,7 +43,7 @@ static const RegisterId _s_xmmRegs[] = {
 };
 
 SLAKE_API void JITCompileContext::pushPrologStackOpIns() {
-	checkAndPushStackPointerOnProlog(sizeof(uint64_t) * 11);
+	checkStackPointerOnProlog(sizeof(uint64_t) * 11);
 
 	pushIns(emitPushReg64Ins(REG_R8));
 	pushIns(emitPushReg64Ins(REG_RDX));
@@ -79,6 +79,20 @@ SLAKE_API void JITCompileContext::pushEpilogStackOpIns() {
 	pushIns(emitPopReg64Ins(REG_RCX));
 	pushIns(emitPopReg64Ins(REG_RDX));
 	pushIns(emitPopReg64Ins(REG_R8));
+}
+
+SLAKE_API void JITCompileContext::checkStackPointer(uint32_t size) {
+	pushIns(emitSubImm32ToReg64Ins(REG_RSP, (uint8_t *)&size));
+	pushIns(emitCmpReg64ToReg64Ins(REG_R11, REG_RSP));
+	pushIns(emitLabelledJumpIns("_report_stack_overflow", DiscreteInstructionType::JumpIfLtLabelled));
+	pushIns(emitAddImm32ToReg64Ins(REG_RSP, (uint8_t *)&size));
+}
+
+SLAKE_API void JITCompileContext::checkStackPointerOnProlog(uint32_t size) {
+	pushIns(emitSubImm32ToReg64Ins(REG_RSP, (uint8_t *)&size));
+	pushIns(emitCmpReg64ToReg64Ins(REG_R11, REG_RSP));
+	pushIns(emitLabelledJumpIns("_report_stack_overflow_on_prolog", DiscreteInstructionType::JumpIfLtLabelled));
+	pushIns(emitAddImm32ToReg64Ins(REG_RSP, (uint8_t *)&size));
 }
 
 SLAKE_API void JITCompileContext::checkAndPushStackPointer(uint32_t size) {

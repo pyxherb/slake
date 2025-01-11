@@ -1899,7 +1899,9 @@ SLAKE_API InternalExceptionPointer Runtime::execFn(
 	Object *thisObject,
 	const Value *args,
 	uint32_t nArgs,
-	HostObjectRef<ContextObject> &contextOut) {
+	HostObjectRef<ContextObject> &contextOut,
+	void *nativeStackBaseCurrentPtr,
+	size_t nativeStackSize) {
 	HostObjectRef<ContextObject> context(prevContext);
 
 	if (!context) {
@@ -1920,11 +1922,16 @@ SLAKE_API InternalExceptionPointer Runtime::execFn(
 		contextOut = context;
 	}
 
-	AttachedExecutionThread *executionThread = createAttachedExecutionThreadForCurrentThread(this, context.get());
+	AttachedExecutionThread *executionThread = createAttachedExecutionThreadForCurrentThread(this, context.get(), nativeStackBaseCurrentPtr, nativeStackSize);
 	if (!executionThread) {
 		// Note: we use out of memory error as the placeholder, it originally should be ThreadCreationFailedError.
 		return OutOfMemoryError::alloc(this);
 	}
+
+#if SLAKE_IS_GET_THREAD_STACK_INFO_SUPPORTED
+	executionThread->nativeExecStackBase = getCurrentThreadStackBase();
+	executionThread->nativeExecStackSize = getCurrentThreadStackSize();
+#endif
 
 	managedThreads.insert({ executionThread->nativeThreadHandle, std::unique_ptr<ManagedThread, util::DeallocableDeleter<ManagedThread>>(executionThread) });
 

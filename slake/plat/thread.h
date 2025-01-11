@@ -135,11 +135,11 @@ namespace slake {
 		Cond _initCond;
 		Mutex _doneMutex;
 
-		friend AttachedExecutionThread *createAttachedExecutionThreadForCurrentThread(Runtime *runtime, ContextObject *context);
+		friend AttachedExecutionThread *createAttachedExecutionThreadForCurrentThread(Runtime *runtime, ContextObject *context, void *nativeStackBaseCurrentPtr, size_t nativeStackSize);
 
 	public:
 		ContextObject *context = nullptr;
-		void *nativeExecStackBase = nullptr;
+		void *nativeExecStackBase;
 		size_t nativeExecStackSize;
 
 		SLAKE_API AttachedExecutionThread(Runtime *associatedRuntime);
@@ -154,7 +154,7 @@ namespace slake {
 		virtual void kill() override;
 	};
 
-	AttachedExecutionThread *createAttachedExecutionThreadForCurrentThread(Runtime *runtime, ContextObject *context);
+	AttachedExecutionThread *createAttachedExecutionThreadForCurrentThread(Runtime *runtime, ContextObject *context, void *nativeStackBase, size_t nativeStackSize);
 
 	class ExecutionThread : public ManagedThread {
 	private:

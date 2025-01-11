@@ -119,7 +119,7 @@ void AttachedExecutionThread::kill() {
 	}
 }
 
-AttachedExecutionThread *slake::createAttachedExecutionThreadForCurrentThread(Runtime *runtime, ContextObject *context) {
+AttachedExecutionThread *slake::createAttachedExecutionThreadForCurrentThread(Runtime *runtime, ContextObject *context, void *nativeStackBaseCurrentPtr, size_t nativeStackSize) {
 	std::unique_ptr<AttachedExecutionThread, util::DeallocableDeleter<AttachedExecutionThread>>
 		executionThread(AttachedExecutionThread::alloc(runtime));
 
@@ -134,8 +134,13 @@ AttachedExecutionThread *slake::createAttachedExecutionThreadForCurrentThread(Ru
 
 	executionThread->_initialRunMutex.lock();
 
-	executionThread->nativeExecStackBase = getCurrentThreadStackBase();
-	executionThread->nativeExecStackSize = getCurrentThreadStackSize();
+	if (nativeStackBaseCurrentPtr) {
+		executionThread->nativeExecStackBase = (void *)(((char *)nativeStackBaseCurrentPtr) - nativeStackSize);
+		executionThread->nativeExecStackSize = nativeStackSize;
+	} else {
+		executionThread->nativeExecStackBase = nullptr;
+		executionThread->nativeExecStackSize = SIZE_MAX;
+	}
 	executionThread->context = context;
 
 	return executionThread.release();
@@ -227,7 +232,7 @@ void *slake::getCurrentThreadStackBase() {
 	void *stackAddr;
 	size_t stackSize;
 
-	if(!pthread_attr_getstack(&attr, &stackAddr, &stackSize))
+	if (!pthread_attr_getstack(&attr, &stackAddr, &stackSize))
 		return nullptr;
 
 	return stackAddr;
@@ -238,7 +243,7 @@ size_t slake::getCurrentThreadStackSize() {
 	void *stackAddr;
 	size_t stackSize;
 
-	if(!pthread_attr_getstack(&attr, &stackAddr, &stackSize))
+	if (!pthread_attr_getstack(&attr, &stackAddr, &stackSize))
 		return 0;
 
 	return stackSize;

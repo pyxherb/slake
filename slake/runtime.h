@@ -108,7 +108,7 @@ namespace slake {
 
 		/// @brief Size of memory allocated for values after last GC cycle.
 		size_t _szMemUsedAfterLastGc = 0,
-			_szComputedGcLimit = 0;
+			   _szComputedGcLimit = 0;
 
 		/// @brief Module locator for importing.
 		ModuleLocatorFn _moduleLocator;
@@ -232,13 +232,29 @@ namespace slake {
 		SLAKE_API HostObjectRef<ArrayObject> newArrayInstance(Runtime *rt, const Type &type, size_t length);
 
 		[[nodiscard]] SLAKE_API InternalExceptionPointer execContext(ContextObject *context) noexcept;
+		/// @brief Execute a function on current thread.
+		/// @param overloading Function overloading to be executed.
+		/// @param prevContext Previous context for execution.
+		/// @param thisObject This object for execution.
+		/// @param args Argument that will be passed to the function.
+		/// @param nArgs Number of arguments.
+		/// @param contextOut Where to receive the execution context.
+		/// @param nativeStackBaseCurrentPtr Approximate value of the initial stack pointer, used for platforms that do not support stack information features.
+		/// @param nativeStackSize Approximate value of the native stack size, used for platforms that do not support stack information features.
+		/// @note `nativeBaseCurrentPtr` and `nativeStackSize` is used for native
+		/// stack size estimation on platforms that do not support stack information features,
+		/// for platform with stack information features, the arguments are ignored.
+		///
+		/// @return
 		[[nodiscard]] SLAKE_API InternalExceptionPointer execFn(
 			const FnOverloadingObject *overloading,
 			ContextObject *prevContext,
 			Object *thisObject,
 			const Value *args,
 			uint32_t nArgs,
-			HostObjectRef<ContextObject> &contextOut);
+			HostObjectRef<ContextObject> &contextOut,
+			void *nativeStackBaseCurrentPtr = nullptr,
+			size_t nativeStackSize = 0);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer execFnWithSeparatedExecutionThread(
 			const FnOverloadingObject *overloading,
 			ContextObject *prevContext,

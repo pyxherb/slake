@@ -31,12 +31,14 @@ endif()
 
 add_subdirectory("util")
 add_subdirectory("flib")
+add_subdirectory("plat")
 add_subdirectory("obj")
 add_subdirectory("rt")
 add_subdirectory("jit")
 add_subdirectory("opti")
 
 set(SLAKE_STACK_MAX 1048576 CACHE STRING "Maximum stack size for Slake runtime")
+set(SLAKE_NATIVE_STACK_MAX 1048576 CACHE STRING "Maximum native stack size for Slake runtime")
 set(SLAKE_WITH_STDLIB TRUE CACHE BOOL "With Slake standard library")
 set(SLAKE_ENABLE_DEBUGGER TRUE CACHE BOOL "Enable runtime debugger")
 

@@ -46,6 +46,7 @@ namespace slake {
 				std::unordered_map<std::string, std::shared_ptr<AbstractMember>> protectedMembers;
 
 				AbstractModule(NodeKind nodeKind, std::string &&name);
+				virtual ~AbstractModule();
 
 				void addPublicMember(std::string &&name, std::shared_ptr<AbstractMember> memberNode);
 				void addProtectedMember(std::string &&name, std::shared_ptr<AbstractMember> memberNode);

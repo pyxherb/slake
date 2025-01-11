@@ -2,6 +2,7 @@
 #define _SLAKE_OBJ_CONTEXT_H_
 
 #include "object.h"
+#include "var.h"
 #include <slake/except.h>
 #include <memory>
 

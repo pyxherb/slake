@@ -525,7 +525,7 @@ void compileFpModInstruction(
 		int32_t paddingOff;
 
 		if (padding) {
-			paddingOff = compileContext.stackAllocAligned(16 - padding);
+			paddingOff = compileContext.stackAllocAligned(16 - padding, 1);
 		}
 
 		CallingRegSavingInfo callingRegSavingInfo;
@@ -569,7 +569,7 @@ void compileFpModInstruction(
 
 		if (padding) {
 			uint32_t szDiff = 16 - padding;
-			compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RSP, &szDiff));
+			compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RSP, (uint8_t*)&szDiff));
 			compileContext.subStackPtr(16 - padding);
 		}
 	} else {

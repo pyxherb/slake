@@ -1,0 +1,13 @@
+file(GLOB SRC *.h *.hh *.c *.cc)
+target_sources(slake PRIVATE ${SRC})
+if(SLAKE_BUILD_SHARED)
+    target_sources(slaked PRIVATE ${SRC})
+endif()
+
+if(WIN32)
+    add_subdirectory("win32")
+elseif(LINUX)
+    add_subdirectory("linux")
+else()
+    add_subdirectory("default")
+endif()

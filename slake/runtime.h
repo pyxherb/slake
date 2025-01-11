@@ -16,6 +16,7 @@
 #include "object.h"
 #include "dbg/adapter.h"
 #include <slake/util/stream.hh>
+#include "plat.h"
 
 namespace slake {
 	class CountablePoolResource : public std::pmr::memory_resource {
@@ -179,7 +180,8 @@ namespace slake {
 		std::map<std::thread::id, ContextObject *> activeContexts;
 
 		/// @brief Thread IDs of threads which are executing destructors.
-		std::unordered_set<std::thread::id> destructingThreads;
+		std::set<NativeThreadHandle> destructingThreads;
+		std::map<NativeThreadHandle, std::unique_ptr<ManagedThread, util::DeallocableDeleter<ManagedThread>>> managedThreads;
 
 		SLAKE_API Runtime(Runtime &) = delete;
 		SLAKE_API Runtime(Runtime &&) = delete;

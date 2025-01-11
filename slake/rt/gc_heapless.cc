@@ -460,7 +460,7 @@ rescan:
 	}
 
 	// Execute destructors for all destructible unreachable objects.
-	destructingThreads.insert(std::this_thread::get_id());
+	destructingThreads.insert(currentThreadHandle());
 	for (auto i : createdObjects) {
 		switch (i->gcInfo.heapless.gcStatus) {
 			case ObjectGCStatus::Unwalked:
@@ -480,14 +480,14 @@ rescan:
 					for (auto j : mt->destructors) {
 						HostRefHolder holder;
 						HostObjectRef<ContextObject> contextOut;
-						execFn(j, nullptr, i, nullptr, 0, contextOut);
+						// execFn(j, nullptr, i, nullptr, 0, contextOut);
 					}
 					foundDestructibleObjects = true;
 				}
 			}
 		}
 	}
-	destructingThreads.erase(std::this_thread::get_id());
+	destructingThreads.erase(currentThreadHandle());
 
 	// Delete unreachable objects.
 	for (auto it = createdObjects.begin(); it != createdObjects.end();) {

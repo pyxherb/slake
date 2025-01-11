@@ -315,8 +315,7 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 	InternalExceptionPointer exceptPtr;
 	bool interruptExecution = false;
 
-	auto thisThreadId = std::this_thread::get_id();
-	bool isExecutingDestructor = destructingThreads.count(thisThreadId);
+	bool isExecutingDestructor = destructingThreads.count(currentThreadHandle());
 
 	while (!interruptExecution) {
 		curMajorFrame = context->getContext().majorFrames.back().get();
@@ -1793,10 +1792,8 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 				NativeFnOverloadingObject *ol = (NativeFnOverloadingObject *)curFn;
 
 				Value returnValue = ol->callback(
-					ol,
-					curMajorFrame->thisObject,
-					curMajorFrame->argStack.data(),
-					curMajorFrame->argStack.size());
+					&context->getContext(),
+					curMajorFrame);
 				uint32_t returnValueOutReg = curMajorFrame->returnValueOutReg;
 				context->_context.majorFrames.pop_back();
 				if (returnValueOutReg != UINT32_MAX) {
@@ -1841,7 +1838,17 @@ SLAKE_API InternalExceptionPointer Runtime::execFn(
 		contextOut = context;
 	}
 
-	SLAKE_RETURN_IF_EXCEPT(execContext(context.get()));
+	ExecutionThread *executionThread = createExecutionThread(this, context.get(), SLAKE_NATIVE_STACK_MAX);
+	if(!executionThread) {
+		// Note: we use out of memory error as the placeholder, it originally should be ThreadCreationFailedError.
+		return OutOfMemoryError::alloc(this);
+	}
 
-	return {};
+	managedThreads.insert({executionThread->nativeThreadHandle, std::unique_ptr<ManagedThread, util::DeallocableDeleter<ManagedThread>>(executionThread)});
+	executionThread->join();
+
+	InternalExceptionPointer exceptPtr = std::move(executionThread->exceptionPtr);
+	managedThreads.erase(executionThread->nativeThreadHandle);
+
+	return std::move(exceptPtr);
 }

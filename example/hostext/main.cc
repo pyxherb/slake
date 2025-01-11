@@ -6,23 +6,19 @@
 #include <fstream>
 #include <iostream>
 
-slake::Value print(
-	slake::NativeFnOverloadingObject *overloading,
-	slake::Object *thisObject,
-	slake::RegularVarObject **args,
-	size_t nArgs) {
+slake::Value print(slake::Context *context, slake::MajorFrame *curMajorFrame) {
 	using namespace slake;
 
-	if (nArgs < 1)
+	if (curMajorFrame->argStack.size() < 1)
 		putchar('\n');
 	else {
 		Value varArgsValue;
-		varArgsValue = overloading->associatedRuntime->readVarUnsafe(args[0], {});
+		varArgsValue = curMajorFrame->curFn->associatedRuntime->readVarUnsafe(curMajorFrame->argStack[0], {});
 		AnyArrayObject *varArgs = (AnyArrayObject *)varArgsValue.getObjectRef();
 
 		for (uint8_t i = 0; i < varArgs->length; ++i) {
 			Value data;
-			if (auto e = overloading->associatedRuntime->readVar(
+			if (auto e = curMajorFrame->curFn->associatedRuntime->readVar(
 				varArgs->accessor,
 				VarRefContext::makeArrayContext(i),
 				data)) {

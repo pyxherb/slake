@@ -14,6 +14,7 @@
 
 namespace slake {
 	struct Context;
+	struct MajorFrame;
 
 	struct Instruction final {
 		Opcode opcode = (Opcode)0xffff;
@@ -138,11 +139,7 @@ namespace slake {
 
 	class NativeFnOverloadingObject;
 	using NativeFnCallback =
-		std::function<Value(
-			NativeFnOverloadingObject *overloading,
-			Object *thisObject,
-			RegularVarObject **args,
-			size_t nArgs)>;
+		std::function<Value(Context *context, MajorFrame *curMajorFrame)>;
 
 	class NativeFnOverloadingObject : public FnOverloadingObject {
 	public:

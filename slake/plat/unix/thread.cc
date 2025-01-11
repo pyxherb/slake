@@ -156,5 +156,9 @@ NativeThreadHandle slake::currentThreadHandle() {
 }
 
 void slake::yieldCurrentThread() {
+#if _POSIX_PRIORITY_SCHEDULING
+	sched_yield();
+#else
 	pthread_yield();
+#endif
 }

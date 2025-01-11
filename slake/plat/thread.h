@@ -7,40 +7,10 @@
 	#include <Windows.h>
 #elif __unix__
 	#include <pthread.h>
+	#include <unistd.h>
 #endif
 
 namespace slake {
-	enum class ThreadKind : uint8_t {
-		ExecutionThread,
-		RuntimeInternal
-	};
-
-#if _WIN32
-	using NativeThreadHandle = HANDLE;
-#elif __unix__
-	using NativeThreadHandle = pthread_t;
-#endif
-
-	enum class ThreadStatus : uint8_t {
-		Ready = 0,
-		Running,
-		Done,
-		Dead
-	};
-
-	class ManagedThread {
-	public:
-		Runtime *associatedRuntime;
-		ThreadKind threadKind;
-		NativeThreadHandle nativeThreadHandle;
-		ThreadStatus status = ThreadStatus::Ready;
-
-		SLAKE_API ManagedThread(Runtime *associatedRuntime, ThreadKind threadKind);
-		SLAKE_API ~ManagedThread();
-
-		virtual void dealloc() = 0;
-	};
-
 	class Mutex final {
 	public:
 #if _WIN32
@@ -74,6 +44,9 @@ namespace slake {
 		MutexGuard() = delete;
 		MutexGuard(const MutexGuard &) = delete;
 		MutexGuard(MutexGuard &&) = delete;
+		MutexGuard &operator=(const Mutex &) = delete;
+		MutexGuard &operator=(Mutex &&) = delete;
+
 		SLAKE_FORCEINLINE MutexGuard(Mutex &mutex) : _mutex(mutex) {
 			_mutex.lock();
 		}
@@ -116,11 +89,44 @@ namespace slake {
 		}
 	};
 
+	enum class ThreadKind : uint8_t {
+		SupervisorThread = 0,
+		ExecutionThread,
+		RuntimeThread,
+	};
+
+#if _WIN32
+	using NativeThreadHandle = HANDLE;
+#elif __unix__
+	using NativeThreadHandle = pthread_t;
+#endif
+
+	enum class ThreadStatus : uint8_t {
+		Ready = 0,
+		Running,
+		Done,
+		Dead
+	};
+
+	class ManagedThread {
+	public:
+		Runtime *associatedRuntime;
+		ThreadKind threadKind;
+		NativeThreadHandle nativeThreadHandle;
+		ThreadStatus status = ThreadStatus::Ready;
+
+		SLAKE_API ManagedThread(Runtime *associatedRuntime, ThreadKind threadKind);
+		SLAKE_API ~ManagedThread();
+
+		virtual void dealloc() = 0;
+	};
+
 	class ExecutionThread : public ManagedThread {
 	private:
 		Mutex _initialRunMutex;
 		Cond _initCond;
 		Mutex _doneMutex;
+
 #if _WIN32
 #elif __unix__
 

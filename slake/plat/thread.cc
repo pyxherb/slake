@@ -2,11 +2,6 @@
 
 using namespace slake;
 
-#if _WIN32
-#elif __unix__
-#else
-#endif
-
 SLAKE_API ManagedThread::ManagedThread(Runtime *associatedRuntime, ThreadKind threadKind) : associatedRuntime(associatedRuntime), threadKind(threadKind) {
 }
 

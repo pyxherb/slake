@@ -316,6 +316,7 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 	bool interruptExecution = false;
 
 	bool isExecutingDestructor = destructingThreads.count(currentThreadHandle());
+	ManagedThread *managedThread = managedThreads.at(currentThreadHandle()).get();
 
 	while (!interruptExecution) {
 		curMajorFrame = context->getContext().majorFrames.back().get();
@@ -328,6 +329,11 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 		// Pause if the runtime is in GC
 		while ((_flags & _RT_INGC) && !isExecutingDestructor)
 			yieldCurrentThread();
+
+		// Interrupt execution if the thread is explicitly specified to be killed.
+		if(managedThread->status == ThreadStatus::Dead) {
+			return {};
+		}
 
 		switch (curFn->overloadingKind) {
 			case FnOverloadingKind::Regular: {

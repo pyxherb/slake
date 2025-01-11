@@ -3,19 +3,12 @@
 
 #include <cstdint>
 
-#if @SLAKE_WITH_STDLIB@==TRUE
-#define SLAKE_WITH_STDLIB true
-#else
-#define SLAKE_WITH_STDLIB false
-#endif
+#cmakedefine01 SLAKE_WITH_STDLIB
 
+#cmakedefine01 SLAKE_WITH_SLKAOT
 #define SLAKE_STACK_MAX @SLAKE_STACK_MAX@
 #define SLAKE_NATIVE_STACK_MAX @SLAKE_NATIVE_STACK_MAX@
 
-#if @SLAKE_ENABLE_DEBUGGER@==TRUE
-#define SLAKE_ENABLE_DEBUGGER true
-#else
-#define SLAKE_ENABLE_DEBUGGER false
-#endif
+#cmakedefine01 SLAKE_ENABLE_DEBUGGER
 
 #endif

@@ -130,7 +130,7 @@ namespace slake {
 		/// @brief Execute a single instruction.
 		/// @param context Context for execution.
 		/// @param ins Instruction to be executed.
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _execIns(ContextObject *context, const Instruction &ins) noexcept;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _execIns(ContextObject *context, MajorFrame *curMajorFrame, const Instruction &ins) noexcept;
 
 		struct GCHeaplessWalkContext {
 			Object *walkableList = nullptr;
@@ -233,6 +233,13 @@ namespace slake {
 
 		[[nodiscard]] SLAKE_API InternalExceptionPointer execContext(ContextObject *context) noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer execFn(
+			const FnOverloadingObject *overloading,
+			ContextObject *prevContext,
+			Object *thisObject,
+			const Value *args,
+			uint32_t nArgs,
+			HostObjectRef<ContextObject> &contextOut);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer execFnWithSeparatedExecutionThread(
 			const FnOverloadingObject *overloading,
 			ContextObject *prevContext,
 			Object *thisObject,

@@ -5,9 +5,13 @@
 
 #if _WIN32
 	#include <Windows.h>
+	#define SLAKE_IS_GET_THREAD_STACK_INFO_SUPPORTED 1
 #elif __unix__
 	#include <pthread.h>
 	#include <unistd.h>
+	#define SLAKE_IS_GET_THREAD_STACK_INFO_SUPPORTED 1
+#else
+	#define SLAKE_IS_GET_THREAD_STACK_INFO_SUPPORTED 0
 #endif
 
 namespace slake {
@@ -90,7 +94,7 @@ namespace slake {
 	};
 
 	enum class ThreadKind : uint8_t {
-		SupervisorThread = 0,
+		AttachedExecutionThread = 0,
 		ExecutionThread,
 		RuntimeThread,
 	};
@@ -119,7 +123,38 @@ namespace slake {
 		SLAKE_API ~ManagedThread();
 
 		virtual void dealloc() = 0;
+
+		virtual void start() = 0;
+		virtual void join() = 0;
+		virtual void kill() = 0;
 	};
+
+	class AttachedExecutionThread : public ManagedThread {
+	private:
+		Mutex _initialRunMutex;
+		Cond _initCond;
+		Mutex _doneMutex;
+
+		friend AttachedExecutionThread *createAttachedExecutionThreadForCurrentThread(Runtime *runtime, ContextObject *context);
+
+	public:
+		ContextObject *context = nullptr;
+		void *nativeExecStackBase = nullptr;
+		size_t nativeExecStackSize;
+
+		SLAKE_API AttachedExecutionThread(Runtime *associatedRuntime);
+		SLAKE_API ~AttachedExecutionThread();
+
+		virtual void dealloc() override;
+
+		static AttachedExecutionThread *alloc(Runtime *associatedRuntime);
+
+		virtual void start() override;
+		virtual void join() override;
+		virtual void kill() override;
+	};
+
+	AttachedExecutionThread *createAttachedExecutionThreadForCurrentThread(Runtime *runtime, ContextObject *context);
 
 	class ExecutionThread : public ManagedThread {
 	private:
@@ -148,14 +183,17 @@ namespace slake {
 
 		static ExecutionThread *alloc(Runtime *associatedRuntime);
 
-		void start();
-		void join();
-		void kill();
+		virtual void start() override;
+		virtual void join() override;
+		virtual void kill() override;
 	};
 
 	ExecutionThread *createExecutionThread(Runtime *runtime, ContextObject *context, size_t nativeStackSize);
 	NativeThreadHandle currentThreadHandle();
 	void yieldCurrentThread();
+
+	void *getCurrentThreadStackBase();
+	size_t getCurrentThreadStackSize();
 }
 
 #endif

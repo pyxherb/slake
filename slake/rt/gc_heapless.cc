@@ -419,20 +419,27 @@ SLAKE_API void Runtime::_gcHeapless() {
 	GCHeaplessWalkContext context;
 
 rescan:
-	for (auto &i : managedThreads) {
-		switch (i.second->threadKind) {
-			case ThreadKind::ExecutionThread: {
-				ExecutionThread *t = (ExecutionThread *)i.second.get();
-				_gcWalkHeapless(context, t->context);
-			}
-		}
-	}
 	for (auto i : createdObjects) {
 		i->_flags |= VF_GCREADY;
 		i->gcInfo.heapless.gcStatus = ObjectGCStatus::Unwalked;
 		i->gcInfo.heapless.next = nullptr;
 		if (i->hostRefCount) {
 			context.pushObject(i);
+		}
+	}
+
+	for (auto &i : managedThreads) {
+		switch (i.second->threadKind) {
+			case ThreadKind::AttachedExecutionThread: {
+				AttachedExecutionThread *t = (AttachedExecutionThread *)i.second.get();
+				context.pushObject(t->context);
+				break;
+			}
+			case ThreadKind::ExecutionThread: {
+				ExecutionThread *t = (ExecutionThread *)i.second.get();
+				context.pushObject(t->context);
+				break;
+			}
 		}
 	}
 

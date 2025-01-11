@@ -82,6 +82,65 @@ void *ExecutionThread::_threadWrapperProc(void *arg) {
 	return nullptr;
 }
 
+SLAKE_API AttachedExecutionThread::AttachedExecutionThread(Runtime *associatedRuntime) : ManagedThread(associatedRuntime, ThreadKind::AttachedExecutionThread) {
+}
+
+SLAKE_API AttachedExecutionThread::~AttachedExecutionThread() {
+}
+
+void AttachedExecutionThread::start() {
+	_initialRunMutex.unlock();
+	_initCond.wait();
+}
+
+void AttachedExecutionThread::join() {
+	start();
+	_doneMutex.lock();
+	_doneMutex.unlock();
+}
+
+void AttachedExecutionThread::kill() {
+	switch (status) {
+		case ThreadStatus::Ready:
+			status = ThreadStatus::Dead;
+			start();
+
+			_doneMutex.lock();
+			_doneMutex.unlock();
+			break;
+		case ThreadStatus::Running:
+			status = ThreadStatus::Dead;
+			_doneMutex.lock();
+			_doneMutex.unlock();
+			break;
+		case ThreadStatus::Done:
+		case ThreadStatus::Dead:
+			break;
+	}
+}
+
+AttachedExecutionThread *slake::createAttachedExecutionThreadForCurrentThread(Runtime *runtime, ContextObject *context) {
+	std::unique_ptr<AttachedExecutionThread, util::DeallocableDeleter<AttachedExecutionThread>>
+		executionThread(AttachedExecutionThread::alloc(runtime));
+
+	if (!executionThread->_initialRunMutex.init())
+		return nullptr;
+	if (!executionThread->_initCond.init())
+		return nullptr;
+	if (!executionThread->_doneMutex.init())
+		return nullptr;
+
+	executionThread->nativeThreadHandle = currentThreadHandle();
+
+	executionThread->_initialRunMutex.lock();
+
+	executionThread->nativeExecStackBase = getCurrentThreadStackBase();
+	executionThread->nativeExecStackSize = getCurrentThreadStackSize();
+	executionThread->context = context;
+
+	return executionThread.release();
+}
+
 SLAKE_API ExecutionThread::ExecutionThread(Runtime *associatedRuntime) : ManagedThread(associatedRuntime, ThreadKind::ExecutionThread) {
 }
 
@@ -161,4 +220,26 @@ void slake::yieldCurrentThread() {
 #else
 	pthread_yield();
 #endif
+}
+
+void *slake::getCurrentThreadStackBase() {
+	pthread_attr_t attr;
+	void *stackAddr;
+	size_t stackSize;
+
+	if(!pthread_attr_getstack(&attr, &stackAddr, &stackSize))
+		return nullptr;
+
+	return stackAddr;
+}
+
+size_t slake::getCurrentThreadStackSize() {
+	pthread_attr_t attr;
+	void *stackAddr;
+	size_t stackSize;
+
+	if(!pthread_attr_getstack(&attr, &stackAddr, &stackSize))
+		return 0;
+
+	return stackSize;
 }

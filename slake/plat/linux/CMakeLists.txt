@@ -1,5 +1,0 @@
-file(GLOB SRC *.h *.hh *.c *.cc)
-target_sources(slake PRIVATE ${SRC})
-if(SLAKE_BUILD_SHARED)
-    target_sources(slaked PRIVATE ${SRC})
-endif()

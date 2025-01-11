@@ -327,7 +327,7 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 
 		// Pause if the runtime is in GC
 		while ((_flags & _RT_INGC) && !isExecutingDestructor)
-			std::this_thread::yield();
+			yieldCurrentThread();
 
 		switch (curFn->overloadingKind) {
 			case FnOverloadingKind::Regular: {

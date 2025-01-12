@@ -51,7 +51,6 @@ configure_file(
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/generated/config.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/slake/generated)
 
 if(${SLAKE_ENABLE_DEBUGGER})
-    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/dbg")
 endif()
 
 install(TARGETS slake slaked

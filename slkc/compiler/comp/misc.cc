@@ -1,5 +1,7 @@
 #include "../compiler.h"
 
+#undef max
+
 using namespace slake::slkc;
 
 uint32_t CompileContext::allocLocalVar(std::string name, std::shared_ptr<TypeNameNode> type) {

@@ -4,6 +4,7 @@
 #include <slake/object.h>
 
 #if _WIN32
+	#define WIN32_LEAN_AND_MEAN
 	#include <Windows.h>
 	#define SLAKE_IS_GET_THREAD_STACK_INFO_SUPPORTED 1
 #elif __unix__
@@ -18,6 +19,8 @@ namespace slake {
 	class Mutex final {
 	public:
 #if _WIN32
+		CRITICAL_SECTION nativeHandle;
+		bool isValid = false;
 #elif __unix__
 		pthread_mutex_t nativeHandle;
 		bool isValid = false;
@@ -71,6 +74,9 @@ namespace slake {
 	class Cond final {
 	public:
 #if _WIN32
+		CRITICAL_SECTION criticalSection;
+		CONDITION_VARIABLE nativeHandle;
+		bool isValid = false;
 #elif __unix__
 		Mutex internalMutex;
 		pthread_cond_t nativeHandle;
@@ -160,11 +166,11 @@ namespace slake {
 	private:
 		Mutex _initialRunMutex;
 		Cond _initCond;
-		Mutex _doneMutex;
 
 #if _WIN32
+		static DWORD WINAPI _threadWrapperProc(LPVOID lpThreadParameter);
 #elif __unix__
-
+		Mutex _doneMutex;
 		static void *_threadWrapperProc(void *arg);
 #endif
 
@@ -192,8 +198,7 @@ namespace slake {
 	NativeThreadHandle currentThreadHandle();
 	void yieldCurrentThread();
 
-	void *getCurrentThreadStackBase();
-	size_t getCurrentThreadStackSize();
+	void getCurrentThreadStackBounds(void *&baseOut, size_t &sizeOut);
 }
 
 #endif

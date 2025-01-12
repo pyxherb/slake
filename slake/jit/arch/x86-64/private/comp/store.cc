@@ -346,4 +346,6 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 			// TODO: Implement it.
 			break;
 	}
+
+	return {};
 }

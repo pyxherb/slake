@@ -14,7 +14,6 @@
 #include "generated/config.h"
 #include "util/debug.h"
 #include "object.h"
-#include "dbg/adapter.h"
 #include <slake/util/stream.hh>
 #include "plat.h"
 

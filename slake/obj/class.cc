@@ -126,15 +126,15 @@ SLAKE_API bool InterfaceObject::isDerivedFrom(const InterfaceObject *pInterface)
 			return false;
 		}
 
-		InterfaceObject *interface = (InterfaceObject *)i.getCustomTypeExData();
+		InterfaceObject *interfaceObj = (InterfaceObject *)i.getCustomTypeExData();
 
-		if (interface->getKind() != ObjectKind::Interface) {
+		if (interfaceObj->getKind() != ObjectKind::Interface) {
 			// The parent is not an interface - this situation should not be here,
 			// but we have disabled exceptions, so return anyway.
 			return false;
 		}
 
-		if (interface->isDerivedFrom(pInterface))
+		if (interfaceObj->isDerivedFrom(pInterface))
 			return true;
 	}
 

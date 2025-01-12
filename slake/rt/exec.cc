@@ -1928,11 +1928,6 @@ SLAKE_API InternalExceptionPointer Runtime::execFn(
 		return OutOfMemoryError::alloc(this);
 	}
 
-#if SLAKE_IS_GET_THREAD_STACK_INFO_SUPPORTED
-	executionThread->nativeExecStackBase = getCurrentThreadStackBase();
-	executionThread->nativeExecStackSize = getCurrentThreadStackSize();
-#endif
-
 	managedThreads.insert({ executionThread->nativeThreadHandle, std::unique_ptr<ManagedThread, util::DeallocableDeleter<ManagedThread>>(executionThread) });
 
 	InternalExceptionPointer exceptPtr = execContext(context.get());

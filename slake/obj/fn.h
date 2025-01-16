@@ -195,6 +195,12 @@ namespace slake {
 		SLAKE_API virtual void dealloc() override;
 	};
 
+	SLAKE_API FnOverloadingObject *findOverloading(
+		FnObject *fnObject,
+		const std::pmr::vector<Type> &paramTypes,
+		const GenericParamList &genericParams,
+		bool hasVarArg
+	);
 	SLAKE_API bool isDuplicatedOverloading(
 		const FnOverloadingObject *overloading,
 		const std::pmr::vector<Type> &paramTypes,

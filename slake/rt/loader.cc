@@ -489,11 +489,6 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 				overloading->sourceLocDescs.push_back(sld);
 			}
 
-			for (auto j : fn->overloadings) {
-				if (isDuplicatedOverloading(j, overloading->paramTypes, overloading->genericParams, overloading->overloadingFlags & OL_VARG))
-					throw LoaderError("Duplicated function overloading detected");
-			}
-
 			fn->overloadings.insert(overloading.release());
 		}
 	}

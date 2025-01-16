@@ -358,6 +358,20 @@ SLAKE_API void slake::FnObject::dealloc() {
 	allocator.deallocate(this, 1);
 }
 
+SLAKE_API FnOverloadingObject* slake::findOverloading(
+	FnObject* fnObject,
+	const std::pmr::vector<Type>& paramTypes,
+	const GenericParamList& genericParams,
+	bool hasVarArg) {
+	for (auto i : fnObject->overloadings) {
+		if (isDuplicatedOverloading(i, paramTypes, genericParams, hasVarArg)) {
+			return i;
+		}
+	}
+
+	return nullptr;
+}
+
 SLAKE_API bool slake::isDuplicatedOverloading(
 	const FnOverloadingObject *overloading,
 	const std::pmr::vector<Type> &paramTypes,

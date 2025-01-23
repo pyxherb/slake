@@ -54,11 +54,11 @@ namespace slake {
 		AccessModifier access;
 
 		GenericParamList genericParams;
-		std::unordered_map<std::string, Type> mappedGenericArgs;
+		peff::HashMap<peff::String, Type> mappedGenericArgs;
 
 		GenericArgList specializationArgs;
 
-		std::pmr::vector<Type> paramTypes;
+		peff::DynArray<Type> paramTypes;
 		Type returnType;
 
 		OverloadingFlags overloadingFlags = 0;
@@ -67,10 +67,10 @@ namespace slake {
 			FnOverloadingKind overloadingKind,
 			FnObject *fnObject,
 			AccessModifier access,
-			std::pmr::vector<Type> &&paramTypes,
+			peff::DynArray<Type> &&paramTypes,
 			const Type &returnType,
 			OverloadingFlags flags);
-		SLAKE_API FnOverloadingObject(const FnOverloadingObject &other);
+		SLAKE_API FnOverloadingObject(const FnOverloadingObject &other, bool &succeededOut);
 		SLAKE_API virtual ~FnOverloadingObject();
 
 		SLAKE_API virtual ObjectKind getKind() const;
@@ -80,19 +80,19 @@ namespace slake {
 
 	class RegularFnOverloadingObject : public FnOverloadingObject {
 	public:
-		std::vector<slxfmt::SourceLocDesc> sourceLocDescs;
-		std::vector<Instruction> instructions;
+		peff::DynArray<slxfmt::SourceLocDesc> sourceLocDescs;
+		peff::DynArray<Instruction> instructions;
 		Type thisObjectType = TypeId::None;
 		uint32_t nRegisters;
 
 		SLAKE_API RegularFnOverloadingObject(
 			FnObject *fnObject,
 			AccessModifier access,
-			std::pmr::vector<Type> &&paramTypes,
+			peff::DynArray<Type> &&paramTypes,
 			const Type &returnType,
 			uint32_t nRegisters,
 			OverloadingFlags flags);
-		SLAKE_API RegularFnOverloadingObject(const RegularFnOverloadingObject &other);
+		SLAKE_API RegularFnOverloadingObject(const RegularFnOverloadingObject &other, bool &succeededOut);
 		SLAKE_API virtual ~RegularFnOverloadingObject();
 
 		SLAKE_API const slxfmt::SourceLocDesc *getSourceLocationDesc(uint32_t offIns) const;
@@ -102,7 +102,7 @@ namespace slake {
 		SLAKE_API static HostObjectRef<RegularFnOverloadingObject> alloc(
 			FnObject *fnObject,
 			AccessModifier access,
-			std::pmr::vector<Type> &&paramTypes,
+			peff::DynArray<Type> &&paramTypes,
 			const Type &returnType,
 			uint32_t nRegisters,
 			OverloadingFlags flags);
@@ -113,16 +113,16 @@ namespace slake {
 	class JITCompiledFnOverloadingObject : public FnOverloadingObject {
 	public:
 		RegularFnOverloadingObject *uncompiledVersion;
-		std::pmr::set<Object *> referencedObjects;
+		peff::Set<Object *> referencedObjects;
 
 		SLAKE_API JITCompiledFnOverloadingObject(
 			FnObject *fnObject,
 			AccessModifier access,
-			std::pmr::vector<Type> &&paramTypes,
+			peff::DynArray<Type> &&paramTypes,
 			const Type &returnType,
 			uint32_t nRegisters,
 			OverloadingFlags flags);
-		SLAKE_API JITCompiledFnOverloadingObject(const RegularFnOverloadingObject &other);
+		SLAKE_API JITCompiledFnOverloadingObject(const RegularFnOverloadingObject &other, bool &succeededOut);
 		SLAKE_API virtual ~JITCompiledFnOverloadingObject();
 
 		SLAKE_API virtual FnOverloadingObject *duplicate() const override;
@@ -130,7 +130,7 @@ namespace slake {
 		SLAKE_API static HostObjectRef<JITCompiledFnOverloadingObject> alloc(
 			FnObject *fnObject,
 			AccessModifier access,
-			std::pmr::vector<Type> &&paramTypes,
+			peff::DynArray<Type> &&paramTypes,
 			const Type &returnType,
 			OverloadingFlags flags);
 		SLAKE_API static HostObjectRef<JITCompiledFnOverloadingObject> alloc(const RegularFnOverloadingObject *other);
@@ -146,11 +146,11 @@ namespace slake {
 		SLAKE_API NativeFnOverloadingObject(
 			FnObject *fnObject,
 			AccessModifier access,
-			std::pmr::vector<Type> &&paramTypes,
+			peff::DynArray<Type> &&paramTypes,
 			const Type &returnType,
 			OverloadingFlags flags,
 			NativeFnCallback callback);
-		SLAKE_API NativeFnOverloadingObject(const NativeFnOverloadingObject &other);
+		SLAKE_API NativeFnOverloadingObject(const NativeFnOverloadingObject &other, bool &succeededOut);
 		SLAKE_API virtual ~NativeFnOverloadingObject();
 
 		NativeFnCallback callback;
@@ -160,7 +160,7 @@ namespace slake {
 		SLAKE_API static HostObjectRef<NativeFnOverloadingObject> alloc(
 			FnObject *fnObject,
 			AccessModifier access,
-			const std::vector<Type> &paramTypes,
+			peff::DynArray<Type> &&paramTypes,
 			const Type &returnType,
 			OverloadingFlags flags,
 			NativeFnCallback callback);
@@ -170,23 +170,19 @@ namespace slake {
 
 	class FnObject : public MemberObject {
 	public:
-		std::string name;
 		Object *parent = nullptr;
+		peff::Set<FnOverloadingObject *> overloadings;
 
 		SLAKE_API FnObject(Runtime *rt);
-		SLAKE_API FnObject(const FnObject &x);
+		SLAKE_API FnObject(const FnObject &x, bool &succeededOut);
 		SLAKE_API virtual ~FnObject();
-
-		std::set<FnOverloadingObject *> overloadings;
 
 		SLAKE_API virtual ObjectKind getKind() const override;
 
-		SLAKE_API virtual const char *getName() const override;
-		SLAKE_API virtual void setName(const char *name) override;
 		SLAKE_API virtual Object *getParent() const override;
 		SLAKE_API virtual void setParent(Object *parent) override;
 
-		SLAKE_API FnOverloadingObject *getOverloading(const std::pmr::vector<Type> &argTypes) const;
+		SLAKE_API FnOverloadingObject *getOverloading(const peff::DynArray<Type> &argTypes) const;
 
 		SLAKE_API virtual Object *duplicate() const override;
 
@@ -197,13 +193,13 @@ namespace slake {
 
 	SLAKE_API FnOverloadingObject *findOverloading(
 		FnObject *fnObject,
-		const std::pmr::vector<Type> &paramTypes,
+		const peff::DynArray<Type> &paramTypes,
 		const GenericParamList &genericParams,
 		bool hasVarArg
 	);
 	SLAKE_API bool isDuplicatedOverloading(
 		const FnOverloadingObject *overloading,
-		const std::pmr::vector<Type> &paramTypes,
+		const peff::DynArray<Type> &paramTypes,
 		const GenericParamList &genericParams,
 		bool hasVarArg);
 }

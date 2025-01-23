@@ -817,7 +817,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					}
 				}
 
-				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.insert({ i, FnCallAnalyzedInfo(&analyzeContext.runtime->globalHeapPoolResource) });
+				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.insert({ i, FnCallAnalyzedInfo(&analyzeContext.runtime->globalHeapPoolAlloc) });
 				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.at(i).argPushInsOffs = std::move(analyzeContext.argPushInsOffs);
 				analyzeContext.argPushInsOffs.clear();
 
@@ -826,7 +826,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (expectedFnValue.valueType != ValueType::Undefined) {
 					FnOverloadingObject *expectedFnObject = (FnOverloadingObject *)expectedFnValue.getObjectRef();
 					if (!analyzeContext.analyzedInfoOut.fnCallMap.count(expectedFnObject)) {
-						analyzeContext.analyzedInfoOut.fnCallMap[expectedFnObject] = std::pmr::vector<uint32_t>(&analyzeContext.runtime->globalHeapPoolResource);
+						analyzeContext.analyzedInfoOut.fnCallMap[expectedFnObject] = std::pmr::vector<uint32_t>(&analyzeContext.runtime->globalHeapPoolAlloc);
 					}
 					analyzeContext.analyzedInfoOut.fnCallMap.at(expectedFnObject).push_back(i);
 				}
@@ -874,7 +874,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 							i);
 					}
 				}
-				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.insert({ i, FnCallAnalyzedInfo(&analyzeContext.runtime->globalHeapPoolResource) });
+				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.insert({ i, FnCallAnalyzedInfo(&analyzeContext.runtime->globalHeapPoolAlloc) });
 				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.at(i).argPushInsOffs = std::move(analyzeContext.argPushInsOffs);
 				analyzeContext.argPushInsOffs = {};
 
@@ -883,7 +883,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (expectedFnValue.valueType != ValueType::Undefined) {
 					FnOverloadingObject *expectedFnObject = (FnOverloadingObject *)expectedFnValue.getObjectRef();
 					if (!analyzeContext.analyzedInfoOut.fnCallMap.count(expectedFnObject)) {
-						analyzeContext.analyzedInfoOut.fnCallMap[expectedFnObject] = std::pmr::vector<uint32_t>(&analyzeContext.runtime->globalHeapPoolResource);
+						analyzeContext.analyzedInfoOut.fnCallMap[expectedFnObject] = std::pmr::vector<uint32_t>(&analyzeContext.runtime->globalHeapPoolAlloc);
 					}
 					analyzeContext.analyzedInfoOut.fnCallMap.at(expectedFnObject).push_back(i);
 				}

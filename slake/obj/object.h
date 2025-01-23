@@ -4,12 +4,9 @@
 #include "../value.h"
 #include "scope.h"
 #include <atomic>
-#include <stdexcept>
 #include <string>
-#include <deque>
-#include <map>
-#include <set>
 #include <memory_resource>
+#include <peff/containers/set.h>
 
 namespace slake {
 	class Runtime;
@@ -90,12 +87,12 @@ namespace slake {
 		/// @return Duplicate of the value.
 		SLAKE_API virtual Object *duplicate() const;
 
-		SLAKE_API virtual void dealloc() = 0;
+		virtual void dealloc() = 0;
 
 		SLAKE_FORCEINLINE Runtime *getRuntime() const noexcept { return associatedRuntime; }
 
 		SLAKE_API virtual MemberObject *getMember(
-			const std::pmr::string &name,
+			const std::string_view &name,
 			VarRefContext *varRefContextOut) const;
 	};
 
@@ -190,11 +187,10 @@ namespace slake {
 
 	class HostRefHolder final {
 	public:
-		std::pmr::set<Object *> holdedObjects;
+		peff::Set<Object *> holdedObjects;
 
 		SLAKE_API HostRefHolder(
-			std::pmr::memory_resource *memoryResource =
-				std::pmr::get_default_resource());
+			peff::Alloc *selfAllocator);
 		SLAKE_API ~HostRefHolder();
 
 		SLAKE_API void addObject(Object *object);

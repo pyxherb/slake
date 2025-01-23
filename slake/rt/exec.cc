@@ -53,8 +53,8 @@ using namespace slake;
 		// The register does not present.
 		return InvalidOperandsError::alloc(runtime);
 	}
-	Value &reg = curMajorFrame->regs[index];
-	new (&curMajorFrame->regs.at(index)) Value(value);
+	Value &reg = curMajorFrame->regs.at(index);
+	new (&reg) Value(value);
 	return {};
 }
 
@@ -67,7 +67,7 @@ using namespace slake;
 		// The register does not present.
 		return InvalidOperandsError::alloc(runtime);
 	}
-	valueOut = curMajorFrame->regs[index];
+	valueOut = curMajorFrame->regs.at(index);
 	return {};
 }
 
@@ -128,9 +128,13 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 	const Value *args,
 	uint32_t nArgs,
 	uint32_t returnValueOut) noexcept {
-	HostRefHolder holder;
+	HostRefHolder holder(&globalHeapPoolAlloc);
 
 	std::unique_ptr<MajorFrame> newMajorFrame = std::make_unique<MajorFrame>(this, context);
+
+	newMajorFrame->minorFrames.pushBack(MinorFrame(this, 0, context->stackTop));
+
+	newMajorFrame->localVarAccessor = LocalVarAccessorVarObject::alloc(this, context, newMajorFrame.get()).get();
 
 	newMajorFrame->curFn = fn;
 	newMajorFrame->thisObject = thisObject;
@@ -141,9 +145,9 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 
 	newMajorFrame->argStack.resize(fn->paramTypes.size());
 	for (size_t i = 0; i < fn->paramTypes.size(); ++i) {
-		auto varObject = RegularVarObject::alloc(this, ACCESS_PUB, fn->paramTypes[i]);
+		auto varObject = RegularVarObject::alloc(this, ACCESS_PUB, fn->paramTypes.at(i));
 		holder.addObject(varObject.get());
-		newMajorFrame->argStack[i] = varObject.get();
+		newMajorFrame->argStack.at(i) = varObject.get();
 		SLAKE_RETURN_IF_EXCEPT(writeVar(varObject.get(), {}, args[i]));
 	}
 
@@ -153,14 +157,14 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 
 		auto varArgEntryVarObject = RegularVarObject::alloc(this, ACCESS_PUB, Type(TypeId::Array, varArgTypeDefObject.release()));
 		holder.addObject(varArgEntryVarObject.get());
-		newMajorFrame->argStack.push_back(varArgEntryVarObject.get());
+		newMajorFrame->argStack.pushBack(varArgEntryVarObject.get());
 
 		size_t szVarArgArray = nArgs - fn->paramTypes.size();
-		auto varArgArrayObject = AnyArrayObject::alloc(this, szVarArgArray);
+		auto varArgArrayObject = newArrayInstance(this, Type(TypeId::Any), szVarArgArray);
 		holder.addObject(varArgArrayObject.get());
 
 		for (size_t i = 0; i < szVarArgArray; ++i) {
-			varArgArrayObject->data[i] = args[fn->paramTypes.size() + i];
+			((Value*)varArgArrayObject->data)[i] = args[fn->paramTypes.size() + i];
 		}
 
 		InternalExceptionPointer result = writeVar(varArgEntryVarObject.get(), {}, Value(varArgArrayObject.get()));
@@ -191,94 +195,101 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(MajorFrame *fram
 		case TypeId::Value:
 			switch (type.getValueTypeExData()) {
 				case ValueType::I8:
-					localVarRecord.stackOffset = frame->context->stackTop;
 					if (!frame->context->stackAlloc(sizeof(int8_t)))
 						return StackOverflowError::alloc(this);
+					localVarRecord.stackOffset = frame->context->stackTop;
 					break;
 				case ValueType::I16:
 					if (!frame->context->stackAlloc((2 - (frame->context->stackTop & 1))))
 						return StackOverflowError::alloc(this);
-					localVarRecord.stackOffset = frame->context->stackTop;
 					if (!frame->context->stackAlloc(sizeof(int16_t)))
 						return StackOverflowError::alloc(this);
+					localVarRecord.stackOffset = frame->context->stackTop;
 					break;
 				case ValueType::I32:
 					if (!frame->context->stackAlloc((4 - (frame->context->stackTop & 3))))
 						return StackOverflowError::alloc(this);
-					localVarRecord.stackOffset = frame->context->stackTop;
 					if (!frame->context->stackAlloc(sizeof(int32_t)))
 						return StackOverflowError::alloc(this);
+					localVarRecord.stackOffset = frame->context->stackTop;
 					break;
 				case ValueType::I64:
 					if (!frame->context->stackAlloc((8 - (frame->context->stackTop & 7))))
 						return StackOverflowError::alloc(this);
-					localVarRecord.stackOffset = frame->context->stackTop;
 					if (!frame->context->stackAlloc(sizeof(int64_t)))
 						return StackOverflowError::alloc(this);
+					localVarRecord.stackOffset = frame->context->stackTop;
 					break;
 				case ValueType::U8:
-					localVarRecord.stackOffset = frame->context->stackTop;
 					if (!frame->context->stackAlloc(sizeof(uint8_t)))
 						return StackOverflowError::alloc(this);
+					localVarRecord.stackOffset = frame->context->stackTop;
 					break;
 				case ValueType::U16:
 					if (!frame->context->stackAlloc((2 - (frame->context->stackTop & 1))))
 						return StackOverflowError::alloc(this);
-					localVarRecord.stackOffset = frame->context->stackTop;
 					if (!frame->context->stackAlloc(sizeof(uint16_t)))
 						return StackOverflowError::alloc(this);
+					localVarRecord.stackOffset = frame->context->stackTop;
 					break;
 				case ValueType::U32:
 					if (!frame->context->stackAlloc((4 - (frame->context->stackTop & 3))))
 						return StackOverflowError::alloc(this);
-					localVarRecord.stackOffset = frame->context->stackTop;
 					if (!frame->context->stackAlloc(sizeof(uint32_t)))
 						return StackOverflowError::alloc(this);
+					localVarRecord.stackOffset = frame->context->stackTop;
 					break;
 				case ValueType::U64:
 					if (!frame->context->stackAlloc((8 - (frame->context->stackTop & 7))))
 						return StackOverflowError::alloc(this);
-					localVarRecord.stackOffset = frame->context->stackTop;
 					if (!frame->context->stackAlloc(sizeof(uint64_t)))
 						return StackOverflowError::alloc(this);
+					localVarRecord.stackOffset = frame->context->stackTop;
 					break;
 				case ValueType::F32:
 					if (!frame->context->stackAlloc((4 - (frame->context->stackTop & 3))))
 						return StackOverflowError::alloc(this);
-					localVarRecord.stackOffset = frame->context->stackTop;
 					if (!frame->context->stackAlloc(sizeof(float)))
 						return StackOverflowError::alloc(this);
+					localVarRecord.stackOffset = frame->context->stackTop;
 					break;
 				case ValueType::F64:
 					if (!frame->context->stackAlloc((8 - (frame->context->stackTop & 7))))
 						return StackOverflowError::alloc(this);
-					localVarRecord.stackOffset = frame->context->stackTop;
 					if (!frame->context->stackAlloc(sizeof(double)))
 						return StackOverflowError::alloc(this);
+					localVarRecord.stackOffset = frame->context->stackTop;
 					break;
 				case ValueType::Bool:
-					localVarRecord.stackOffset = frame->context->stackTop;
 					if (!frame->context->stackAlloc(sizeof(bool)))
 						return StackOverflowError::alloc(this);
+					localVarRecord.stackOffset = frame->context->stackTop;
 					break;
-				case ValueType::ObjectRef:
+				case ValueType::ObjectRef: {
 					if (!frame->context->stackAlloc(sizeof(Object *) - (frame->context->stackTop & (sizeof(Object *) - 1))))
 						return StackOverflowError::alloc(this);
-					localVarRecord.stackOffset = frame->context->stackTop;
-					if (!frame->context->stackAlloc(sizeof(Object *)))
+					Object **ptr = (Object **)frame->context->stackAlloc(sizeof(Object *));
+					if (!ptr)
 						return StackOverflowError::alloc(this);
+					localVarRecord.stackOffset = frame->context->stackTop;
+					*ptr = nullptr;
 					break;
+				}
 			}
 			break;
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array:
+		case TypeId::Ref: {
 			if (!frame->context->stackAlloc(sizeof(Object *) - (frame->context->stackTop & (sizeof(Object *) - 1))))
 				return StackOverflowError::alloc(this);
-			localVarRecord.stackOffset = frame->context->stackTop;
-			if (!frame->context->stackAlloc(sizeof(Object *)))
+			Object **ptr = (Object**)frame->context->stackAlloc(sizeof(Object *));
+			if (!ptr)
 				return StackOverflowError::alloc(this);
+			localVarRecord.stackOffset = frame->context->stackTop;
+			*ptr = nullptr;
 			break;
+		}
 		default:
 			throw std::runtime_error("The variable has an inconstructible type");
 	}
@@ -286,7 +297,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(MajorFrame *fram
 	localVarRecord.type = type;
 
 	uint32_t index = (uint32_t)frame->localVarRecords.size();
-	frame->localVarRecords.push_back(std::move(localVarRecord));
+	frame->localVarRecords.pushBack(std::move(localVarRecord));
 	varRefOut = VarRef(frame->localVarAccessor, VarRefContext::makeLocalVarContext(index));
 	return {};
 }
@@ -302,7 +313,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer lload(MajorFrame *majorFrame, Runtime
 
 SLAKE_FORCEINLINE InternalExceptionPointer larg(MajorFrame *majorFrame, Runtime *rt, uint32_t off, VarRef &varRefOut) {
 	if (off >= majorFrame->argStack.size()) {
-		return InvalidArgumentIndexError::alloc(rt, off);
+		return InvalidOperandsError::alloc(rt);
 	}
 
 	varRefOut = majorFrame->argStack.at(off);
@@ -463,7 +474,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 				(uint32_t)curMajorFrame->localVarRecords.size(),
 				context->_context.stackTop);
 
-			curMajorFrame->minorFrames.push_back(frame);
+			if (!curMajorFrame->minorFrames.pushBack(std::move(frame)))
+				terminate();
 			break;
 		}
 		case Opcode::LEAVE: {
@@ -471,7 +483,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			if (curMajorFrame->minorFrames.size() < 2) {
 				return FrameBoundaryExceededError::alloc(this);
 			}
-			curMajorFrame->leave();
+			if (!curMajorFrame->leave())
+				terminate();
 			break;
 		}
 		case Opcode::ADD:
@@ -1502,7 +1515,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 
 			Value value;
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, curMajorFrame, ins.operands[0], value));
-			curMajorFrame->nextArgStack.push_back(value);
+			curMajorFrame->nextArgStack.pushBack(std::move(value));
 			break;
 		}
 		case Opcode::CTORCALL:
@@ -1648,7 +1661,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 				auto &majorFrame = context->_context.majorFrames[i - 1];
 
 				for (size_t j = majorFrame->minorFrames.size(); j; --j) {
-					auto &minorFrame = majorFrame->minorFrames[j - 1];
+					auto &minorFrame = majorFrame->minorFrames.at(j - 1);
 
 					if (uint32_t off = _findAndDispatchExceptHandler(majorFrame->curExcept, minorFrame);
 						off != UINT32_MAX) {
@@ -1680,7 +1693,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			xh.type = ins.operands[0].getTypeName();
 			xh.off = ins.operands[1].getU32();
 
-			curMajorFrame->minorFrames.back().exceptHandlers.push_back(xh);
+			curMajorFrame->minorFrames.back().exceptHandlers.pushBack(std::move(xh));
 			break;
 		}
 		case Opcode::CAST: {
@@ -1792,11 +1805,11 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 								// Raise out of fn body error.
 							}
 
-							if ((globalHeapPoolResource.szAllocated > _szComputedGcLimit)) {
+							if ((globalHeapPoolAlloc.szAllocated > _szComputedGcLimit)) {
 								gc();
 							}
 
-							const Instruction &ins = ol->instructions[curMajorFrame->curIns];
+							const Instruction &ins = ol->instructions.at(curMajorFrame->curIns);
 
 							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _execIns(context, curMajorFrame, ins));
 						}
@@ -1856,11 +1869,11 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 								// Raise out of fn body error.
 							}
 
-							if ((globalHeapPoolResource.szAllocated > _szComputedGcLimit)) {
+							if ((globalHeapPoolAlloc.szAllocated > _szComputedGcLimit)) {
 								gc();
 							}
 
-							const Instruction &ins = ol->instructions[curMajorFrame->curIns];
+							const Instruction &ins = ol->instructions.at(curMajorFrame->curIns);
 
 							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _execIns(context, curMajorFrame, ins));
 						}

@@ -9,22 +9,11 @@ SLAKE_API ManagedThread::~ManagedThread() {
 }
 
 void ExecutionThread::dealloc() {
-	std::pmr::polymorphic_allocator<ExecutionThread> allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::destroy_at(this);
-	allocator.deallocate(this, 1);
+	peff::destroyAndRelease<ExecutionThread>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
 ExecutionThread *ExecutionThread::alloc(Runtime *associatedRuntime) {
-	using Alloc = std::pmr::polymorphic_allocator<ExecutionThread>;
-	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::unique_ptr<ExecutionThread, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), associatedRuntime);
-
-	return ptr.release();
+	return peff::allocAndConstruct<ExecutionThread>(&associatedRuntime->globalHeapPoolAlloc, sizeof(std::max_align_t), associatedRuntime);
 }
 
 SLAKE_API void AttachedExecutionThread::start() {
@@ -59,20 +48,9 @@ SLAKE_API void AttachedExecutionThread::kill() {
 }
 
 void AttachedExecutionThread::dealloc() {
-	std::pmr::polymorphic_allocator<AttachedExecutionThread> allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::destroy_at(this);
-	allocator.deallocate(this, 1);
+	peff::destroyAndRelease<AttachedExecutionThread>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
 AttachedExecutionThread *AttachedExecutionThread::alloc(Runtime *associatedRuntime) {
-	using Alloc = std::pmr::polymorphic_allocator<AttachedExecutionThread>;
-	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::unique_ptr<AttachedExecutionThread, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), associatedRuntime);
-
-	return ptr.release();
+	return peff::allocAndConstruct<AttachedExecutionThread>(&associatedRuntime->globalHeapPoolAlloc, sizeof(std::max_align_t), associatedRuntime);
 }

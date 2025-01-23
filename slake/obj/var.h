@@ -21,7 +21,7 @@ namespace slake {
 		VarKind varKind;
 
 		SLAKE_API VarObject(Runtime *rt, VarKind varKind);
-		SLAKE_API VarObject(const VarObject &x);
+		SLAKE_API VarObject(const VarObject &x, bool &succeededOut);
 		SLAKE_API virtual ~VarObject();
 
 		SLAKE_API virtual ObjectKind getKind() const override;
@@ -32,17 +32,14 @@ namespace slake {
 		Value value;
 		Type type;
 
-		std::pmr::string name;
 		Object *parent = nullptr;
 
 		SLAKE_API RegularVarObject(Runtime *rt, AccessModifier access, const Type &type);
-		SLAKE_API RegularVarObject(const RegularVarObject &other);
+		SLAKE_API RegularVarObject(const RegularVarObject &other, bool &succeededOut);
 		SLAKE_API virtual ~RegularVarObject();
 
 		SLAKE_API virtual Object *duplicate() const override;
 
-		SLAKE_API virtual const char *getName() const override;
-		SLAKE_API virtual void setName(const char *name);
 		SLAKE_API virtual Object *getParent() const override;
 		SLAKE_API virtual void setParent(Object *parent);
 
@@ -69,12 +66,12 @@ namespace slake {
 			MajorFrame *majorFrame);
 		SLAKE_API virtual ~LocalVarAccessorVarObject();
 
+		SLAKE_API virtual void dealloc() override;
+
 		SLAKE_API static HostObjectRef<LocalVarAccessorVarObject> alloc(
 			Runtime *rt,
 			Context *context,
-			MajorFrame *majorFrame
-		);
-		SLAKE_API virtual void dealloc() override;
+			MajorFrame *majorFrame);
 	};
 
 	[[nodiscard]] MismatchedVarTypeError *raiseMismatchedVarTypeError(Runtime *rt);

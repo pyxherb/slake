@@ -3,31 +3,62 @@
 
 #include "object.h"
 #include "generic.h"
-#include <deque>
+#include <utility>
 
 namespace slake {
 	struct IdRefEntry final {
-		std::pmr::string name;
+		peff::String name;
 		GenericArgList genericArgs;
 
 		bool hasParamTypes = false;
-		std::pmr::vector<Type> paramTypes;
+		peff::DynArray<Type> paramTypes;
 		bool hasVarArg;
 
-		SLAKE_API IdRefEntry(std::pmr::memory_resource *memoryResource);
-		SLAKE_API IdRefEntry(std::pmr::string &&name,
-			GenericArgList &&genericArgs = {},
-			bool hasParamTypes = false,
-			std::pmr::vector<Type> &&paramTypes = {},
-			bool hasVarArg = false);
+		SLAKE_FORCEINLINE IdRefEntry() { terminate(); }
+		SLAKE_API IdRefEntry(peff::Alloc *selfAllocator);
+		SLAKE_API IdRefEntry(peff::String &&name,
+			GenericArgList &&genericArgs,
+			bool hasParamTypes,
+			peff::DynArray<Type> &&paramTypes,
+			bool hasVarArg);
+		SLAKE_FORCEINLINE IdRefEntry(IdRefEntry &&rhs)
+			: name(std::move(rhs.name)), genericArgs(std::move(rhs.genericArgs)), hasParamTypes(rhs.hasParamTypes), paramTypes(std::move(rhs.paramTypes)), hasVarArg(rhs.hasVarArg) {
+		}
+
+		SLAKE_FORCEINLINE bool copy(IdRefEntry &dest) const {
+			peff::constructAt<IdRefEntry>(&dest, paramTypes.allocator());
+
+			if (!peff::copyAssign(dest.name, name)) {
+				return false;
+			}
+			if (!peff::copyAssign(dest.genericArgs, genericArgs)) {
+				return false;
+			}
+			dest.hasParamTypes = hasParamTypes;
+			if (!peff::copyAssign(dest.paramTypes, paramTypes)) {
+				return false;
+			}
+			dest.hasVarArg = hasVarArg;
+
+			return true;
+		}
+		SLAKE_FORCEINLINE IdRefEntry &operator=(IdRefEntry &&rhs) noexcept {
+			name = std::move(rhs.name);
+			genericArgs = std::move(rhs.genericArgs);
+			hasParamTypes = rhs.hasParamTypes;
+			paramTypes = std::move(rhs.paramTypes);
+			hasVarArg = rhs.hasVarArg;
+
+			return *this;
+		}
 	};
 
 	class IdRefObject final : public Object {
 	public:
-		std::pmr::deque<IdRefEntry> entries;
+		peff::DynArray<IdRefEntry> entries;
 
 		SLAKE_API IdRefObject(Runtime *rt);
-		SLAKE_API IdRefObject(const IdRefObject &x);
+		SLAKE_API IdRefObject(const IdRefObject &x, bool &succeededOut);
 		SLAKE_API virtual ~IdRefObject();
 
 		SLAKE_API virtual ObjectKind getKind() const override;

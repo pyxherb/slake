@@ -16,20 +16,24 @@
 #include "object.h"
 #include <slake/util/stream.hh>
 #include "plat.h"
+#include <peff/containers/map.h>
 
 namespace slake {
-	class CountablePoolResource : public std::pmr::memory_resource {
+	class CountablePoolAlloc : public peff::Alloc {
 	public:
-		std::pmr::memory_resource *upstream;
+		peff::RcObjectPtr<peff::Alloc> upstream;
 		size_t szAllocated = 0;
+		peff::Map<void *, size_t> allocatedBlockSizes;
 
-		SLAKE_API CountablePoolResource(std::pmr::memory_resource *upstream);
-		SLAKE_API CountablePoolResource(const CountablePoolResource &) = delete;
+		SLAKE_API CountablePoolAlloc(peff::Alloc *upstream);
 
-		SLAKE_API virtual void *do_allocate(size_t bytes, size_t alignment) override;
-		SLAKE_API virtual void do_deallocate(void *p, size_t bytes, size_t alignment) override;
-		SLAKE_API virtual bool do_is_equal(const std::pmr::memory_resource &other) const noexcept override;
+		SLAKE_API virtual void *alloc(size_t size, size_t alignment) noexcept override;
+		SLAKE_API virtual void release(void *p, size_t size, size_t alignment) noexcept override;
+
+		SLAKE_API virtual peff::Alloc *getDefaultAlloc() const noexcept override;
+		SLAKE_API virtual void onRefZero() noexcept override;
 	};
+	SLAKE_API extern CountablePoolAlloc g_countablePoolDefaultAlloc;
 
 	using RuntimeFlags = uint32_t;
 	constexpr static RuntimeFlags
@@ -75,12 +79,20 @@ namespace slake {
 		struct GenericInstantiationContext {
 			const Object *mappedObject;
 			const GenericArgList *genericArgs;
-			std::pmr::unordered_map<std::pmr::string, Type> mappedGenericArgs;
+			peff::HashMap<peff::String, Type> mappedGenericArgs;
 
-			SLAKE_FORCEINLINE GenericInstantiationContext(std::pmr::memory_resource *memoryResource) : mappedGenericArgs(memoryResource) {}
+			SLAKE_FORCEINLINE GenericInstantiationContext(peff::Alloc *selfAllocator) : mappedGenericArgs(selfAllocator) {}
+			SLAKE_FORCEINLINE GenericInstantiationContext(
+				const Object *mappedObject,
+				const GenericArgList *genericArgs,
+				peff::HashMap<peff::String, Type> &&mappedGenericArgs)
+				: mappedObject(mappedObject),
+				  genericArgs(genericArgs),
+				  mappedGenericArgs(std::move(mappedGenericArgs)) {
+			}
 		};
 
-		mutable CountablePoolResource globalHeapPoolResource;
+		mutable CountablePoolAlloc globalHeapPoolAlloc;
 
 	private:
 		/// @brief Root value of the runtime.
@@ -90,15 +102,15 @@ namespace slake {
 			const Object *originalObject;
 			GenericArgList genericArgs;
 		};
-		mutable std::map<const Object *, GenericLookupEntry> _genericCacheLookupTable;
+		mutable peff::Map<const Object *, GenericLookupEntry> _genericCacheLookupTable;
 
 		using GenericCacheTable =
-			std::map<
+			peff::Map<
 				GenericArgList,	 // Generic arguments.
 				Object *,		 // Cached instantiated value.
 				GenericArgListComparator>;
 
-		using GenericCacheDirectory = std::map<
+		using GenericCacheDirectory = peff::Map<
 			const Object *,	 // Original uninstantiated generic value.
 			GenericCacheTable>;
 
@@ -173,7 +185,7 @@ namespace slake {
 		/// @brief Runtime flags.
 		RuntimeFlags _flags = 0;
 
-		std::list<Object *> createdObjects;
+		peff::List<Object *> createdObjects;
 
 		/// @brief Active contexts of threads.
 		std::map<std::thread::id, ContextObject *> activeContexts;
@@ -187,7 +199,7 @@ namespace slake {
 		SLAKE_API Runtime &operator=(Runtime &) = delete;
 		SLAKE_API Runtime &operator=(Runtime &&) = delete;
 
-		SLAKE_API Runtime(std::pmr::memory_resource *upstreamMemoryResource, RuntimeFlags flags = 0);
+		SLAKE_API Runtime(peff::Alloc *upstream, RuntimeFlags flags = 0);
 		SLAKE_API virtual ~Runtime();
 
 		SLAKE_API void invalidateGenericCache(Object *i);
@@ -219,7 +231,7 @@ namespace slake {
 		SLAKE_API std::string getFullName(const MemberObject *v) const;
 		SLAKE_API std::string getFullName(const IdRefObject *v) const;
 
-		SLAKE_API std::deque<IdRefEntry> getFullRef(const MemberObject *v) const;
+		SLAKE_API [[nodiscard]] bool getFullRef(const MemberObject *v, peff::DynArray<IdRefEntry> &idRefOut) const;
 
 		/// @brief Do a GC cycle.
 		SLAKE_API void gc();

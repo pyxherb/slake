@@ -21,8 +21,8 @@ SLAKE_API void Runtime::GCHeaplessWalkContext::pushObject(Object *object) {
 SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Scope *scope) {
 	if (!scope)
 		return;
-	for (auto &i : scope->members) {
-		context.pushObject(i.second);
+	for (auto i = scope->members.begin(); i != scope->members.end(); ++i) {
+		context.pushObject(i.value());
 	}
 
 	if (scope->owner)
@@ -32,8 +32,8 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Scope *s
 SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, MethodTable *methodTable) {
 	if (!methodTable)
 		return;
-	for (auto &i : methodTable->methods) {
-		context.pushObject(i.second);
+	for (auto i = methodTable->methods.begin(); i != methodTable->methods.end(); ++i) {
+		context.pushObject(i.value());
 	}
 }
 
@@ -170,74 +170,79 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 
 					switch (value->elementType.typeId) {
 						case TypeId::Instance: {
-							auto v = (ObjectRefArrayObject *)value;
-							for (size_t i = 0; i < v->length; ++i)
-								context.pushObject(v->data[i]);
+							for (size_t i = 0; i < value->length; ++i)
+								context.pushObject(((Object **)value->data)[i]);
 							break;
 						}
 					}
 					break;
 				}
-				case ObjectKind::Module:
-				case ObjectKind::Class:
-				case ObjectKind::Interface: {
-					// TODO: Walk generic parameters.
-
+				case ObjectKind::Module: {
 					_gcWalkHeapless(context, ((ModuleObject *)v)->scope);
 					context.pushObject(((ModuleObject *)v)->parent);
 
-					for (auto &i : ((ModuleObject *)v)->imports)
-						context.pushObject(i.second);
+					for (auto i = ((ModuleObject *)v)->imports.begin(); i != ((ModuleObject *)v)->imports.end(); ++i)
+						context.pushObject(i.value());
 
-					switch (typeId) {
-						case ObjectKind::Class: {
-							ClassObject *value = (ClassObject *)v;
-							for (auto &i : value->implInterfaces) {
-								// i.loadDeferredType(this);
-								_gcWalkHeapless(context, i);
-							}
-							for (auto &i : value->genericParams) {
-								// i.baseType.loadDeferredType(this);
-								_gcWalkHeapless(context, i.baseType);
-								for (auto &j : i.interfaces) {
-									// j.loadDeferredType(this);
-									_gcWalkHeapless(context, j);
-								}
-							}
-							for (auto &i : value->genericArgs) {
-								// i.loadDeferredType(this);
-								_gcWalkHeapless(context, i);
-							}
+					for (auto i : ((ModuleObject *)v)->unnamedImports)
+						context.pushObject(i);
 
-							// value->parentClass.loadDeferredType(this);
-							context.pushObject(value->parentClass.resolveCustomType());
+					break;
+				}
+				case ObjectKind::Class: {
+					_gcWalkHeapless(context, ((ClassObject *)v)->scope);
+					context.pushObject(((ClassObject *)v)->parent);
 
-							_gcWalkHeapless(context, value->genericParams);
-							break;
-						}
-						case ObjectKind::Interface: {
-							InterfaceObject *value = (InterfaceObject *)v;
-
-							for (auto &i : value->parents) {
-								// i.loadDeferredType(this);
-								context.pushObject(i.getCustomTypeExData());
-							}
-							for (auto &i : value->genericParams) {
-								// i.baseType.loadDeferredType(this);
-								_gcWalkHeapless(context, i.baseType);
-								for (auto &j : i.interfaces) {
-									_gcWalkHeapless(context, j);
-								}
-							}
-							for (auto &i : value->genericArgs) {
-								// i.loadDeferredType(this);
-								_gcWalkHeapless(context, i);
-							}
-
-							_gcWalkHeapless(context, value->genericParams);
-							break;
+					ClassObject *value = (ClassObject *)v;
+					for (auto &i : value->implInterfaces) {
+						// i.loadDeferredType(this);
+						_gcWalkHeapless(context, i);
+					}
+					for (auto &i : value->genericParams) {
+						// i.baseType.loadDeferredType(this);
+						_gcWalkHeapless(context, i.baseType);
+						for (auto &j : i.interfaces) {
+							// j.loadDeferredType(this);
+							_gcWalkHeapless(context, j);
 						}
 					}
+					for (auto &i : value->genericArgs) {
+						// i.loadDeferredType(this);
+						_gcWalkHeapless(context, i);
+					}
+
+					//value->parentClass.loadDeferredType(this);
+					_gcWalkHeapless(context, value->parentClass);
+
+					_gcWalkHeapless(context, value->genericParams);
+
+					break;
+				}
+				case ObjectKind::Interface: {
+					// TODO: Walk generic parameters.
+
+					_gcWalkHeapless(context, ((InterfaceObject *)v)->scope);
+					context.pushObject(((InterfaceObject *)v)->parent);
+
+					InterfaceObject *value = (InterfaceObject *)v;
+
+					for (auto &i : value->parents) {
+						// i.loadDeferredType(this);
+						context.pushObject(i.getCustomTypeExData());
+					}
+					for (auto &i : value->genericParams) {
+						// i.baseType.loadDeferredType(this);
+						_gcWalkHeapless(context, i.baseType);
+						for (auto &j : i.interfaces) {
+							_gcWalkHeapless(context, j);
+						}
+					}
+					for (auto &i : value->genericArgs) {
+						// i.loadDeferredType(this);
+						_gcWalkHeapless(context, i);
+					}
+
+					_gcWalkHeapless(context, value->genericParams);
 
 					break;
 				}
@@ -272,6 +277,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 						case VarKind::LocalVarAccessor: {
 							auto v = (LocalVarAccessorVarObject *)value;
 
+							_gcWalkHeapless(context, v->context);
 							break;
 						}
 					}
@@ -287,7 +293,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 
 					context.pushObject(fn->getParent());
 
-					for (auto &i : fn->overloadings) {
+					for (auto i : fn->overloadings) {
 						context.pushObject(i);
 					}
 					break;
@@ -305,9 +311,9 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 							_gcWalkHeapless(context, j);
 						}
 					}
-					for (auto &i : fnOverloading->mappedGenericArgs) {
-						// i.second.loadDeferredType(this);
-						_gcWalkHeapless(context, i.second);
+					for (auto i = fnOverloading->mappedGenericArgs.begin(); i != fnOverloading->mappedGenericArgs.end(); ++i) {
+						// i.value().loadDeferredType(this);
+						_gcWalkHeapless(context, i.value());
 					}
 
 					for (auto &j : fnOverloading->paramTypes)
@@ -352,12 +358,6 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 					}
 					break;
 				}
-				case ObjectKind::Alias: {
-					auto value = (AliasObject *)v;
-
-					context.pushObject(value->src);
-					break;
-				}
 				case ObjectKind::Context: {
 					auto value = (ContextObject *)v;
 
@@ -384,6 +384,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Context 
 		for (auto &k : j->nextArgStack)
 			_gcWalkHeapless(context, k);
 		for (auto &k : j->localVarRecords) {
+			assert(!k.type.isLoadingDeferred());
 			_gcWalkHeapless(context, k.type);
 
 			switch (k.type.typeId) {
@@ -400,6 +401,9 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Context 
 				case TypeId::Array:
 				case TypeId::Ref:
 					context.pushObject(*((Object **)(ctxt.dataStack + k.stackOffset)));
+					break;
+				case TypeId::Any:
+					_gcWalkHeapless(context, *(Value *)(ctxt.dataStack + k.stackOffset));
 					break;
 			}
 		}
@@ -493,7 +497,7 @@ rescan:
 			if (auto mt = object->methodTable; mt) {
 				if (mt->destructors.size()) {
 					for (auto j : mt->destructors) {
-						HostRefHolder holder;
+						HostRefHolder holder(&globalHeapPoolAlloc);
 						HostObjectRef<ContextObject> contextOut;
 						// execFn(j, nullptr, i, nullptr, 0, contextOut);
 					}
@@ -511,7 +515,7 @@ rescan:
 			case ObjectGCStatus::Unwalked:
 				if ((*it)->_flags & VF_GCREADY) {
 					(*it)->dealloc();
-					createdObjects.erase(it++);
+					createdObjects.remove((it++).node);
 					continue;
 				}
 				break;

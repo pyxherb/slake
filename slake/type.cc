@@ -26,16 +26,21 @@ SLAKE_API Type Type::makeRefTypeName(Runtime *runtime, const Type &elementType) 
 	return type;
 }
 
-SLAKE_API Type Type::duplicate() const {
+SLAKE_API Type Type::duplicate(bool &succeededOut) const {
 	Type newType(*this);
 
 	switch (typeId) {
 		case TypeId::Array:
 		case TypeId::Ref:
-			newType.exData.ptr = newType.exData.ptr->duplicate();
+			if (!(newType.exData.ptr = newType.exData.ptr->duplicate())) {
+				succeededOut = false;
+				return {};
+			}
 			break;
 		default:;
 	}
+
+	succeededOut = true;
 
 	return newType;
 }
@@ -86,8 +91,8 @@ SLAKE_API bool Type::operator<(const Type &rhs) const {
 						GenericArgListComparator genericArgListComparator;
 
 						for (size_t i = 0; i < lhsRef->entries.size(); ++i) {
-							auto &curLhsRefEntry = lhsRef->entries[i],
-								 &curRhsRefEntry = rhsRef->entries[i];
+							auto &curLhsRefEntry = lhsRef->entries.at(i),
+								 &curRhsRefEntry = rhsRef->entries.at(i);
 
 							if (curLhsRefEntry.name < curRhsRefEntry.name)
 								return true;
@@ -138,8 +143,8 @@ SLAKE_API bool Type::operator==(const Type &rhs) const {
 					GenericArgListEqComparator genericArgListComparator;
 
 					for (size_t i = 0; i < lhsRef->entries.size(); ++i) {
-						auto &curLhsRefEntry = lhsRef->entries[i],
-							 &curRhsRefEntry = rhsRef->entries[i];
+						auto &curLhsRefEntry = lhsRef->entries.at(i),
+							 &curRhsRefEntry = rhsRef->entries.at(i);
 
 						if (curLhsRefEntry.name != curRhsRefEntry.name)
 							return false;
@@ -354,7 +359,7 @@ SLAKE_API std::string std::to_string(const slake::Type &type, const slake::Runti
 				if (i)
 					result += ", ";
 
-				result += std::to_string(fnTypeDefObject->paramTypes[i]);
+				result += std::to_string(fnTypeDefObject->paramTypes.at(i));
 			}
 
 			if (fnTypeDefObject->hasVarArg) {

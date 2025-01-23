@@ -12,7 +12,7 @@ namespace slake {
 		Type type;
 
 		SLAKE_API TypeDefObject(Runtime *rt, const Type &type);
-		SLAKE_API TypeDefObject(const TypeDefObject &x);
+		SLAKE_API TypeDefObject(const TypeDefObject &x, bool &succeededOut);
 		SLAKE_API virtual ~TypeDefObject();
 
 		SLAKE_API virtual ObjectKind getKind() const override;
@@ -27,18 +27,18 @@ namespace slake {
 	class FnTypeDefObject final : public Object {
 	public:
 		Type returnType;
-		std::pmr::vector<Type> paramTypes;
+		peff::DynArray<Type> paramTypes;
 		bool hasVarArg = false;
 
-		SLAKE_API FnTypeDefObject(Runtime *rt, const Type &returnType, std::pmr::vector<Type> &&paramTypes);
-		SLAKE_API FnTypeDefObject(const FnTypeDefObject &x);
+		SLAKE_API FnTypeDefObject(Runtime *rt, const Type &returnType, peff::DynArray<Type> &&paramTypes);
+		SLAKE_API FnTypeDefObject(const FnTypeDefObject &x, bool &succeededOut);
 		SLAKE_API virtual ~FnTypeDefObject();
 
 		SLAKE_API virtual ObjectKind getKind() const override;
 
 		SLAKE_API virtual Object *duplicate() const override;
 
-		SLAKE_API static HostObjectRef<FnTypeDefObject> alloc(Runtime *rt, const Type &type, std::pmr::vector<Type> &&paramTypes);
+		SLAKE_API static HostObjectRef<FnTypeDefObject> alloc(Runtime *rt, const Type &type, peff::DynArray<Type> &&paramTypes);
 		SLAKE_API static HostObjectRef<FnTypeDefObject> alloc(const FnTypeDefObject *other);
 		SLAKE_API virtual void dealloc() override;
 	};

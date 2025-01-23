@@ -3,6 +3,7 @@
 
 #include "except_base.h"
 #include "obj/object.h"
+#include <peff/containers/string.h>
 
 namespace slake {
 	class OutOfMemoryError : public InternalException {
@@ -50,9 +51,6 @@ namespace slake {
 
 		/// @brief Invalid local variable index.
 		InvalidLocalVarIndex,
-
-		/// @brief Invalid register index.
-		InvalidRegisterIndex,
 
 		/// @brief Invalid argument index.
 		InvalidArgumentIndex,
@@ -138,20 +136,6 @@ namespace slake {
 		SLAKE_API static InvalidOperandsError *alloc(Runtime *associatedRuntime);
 	};
 
-	class InvalidRegisterIndexError : public RuntimeExecError {
-	public:
-		uint32_t index;
-
-		SLAKE_API InvalidRegisterIndexError(Runtime *associatedRuntime, uint32_t index);
-		SLAKE_API virtual ~InvalidRegisterIndexError();
-
-		SLAKE_API virtual const char *what() const override;
-
-		SLAKE_API virtual void dealloc() override;
-
-		SLAKE_API static InvalidRegisterIndexError *alloc(Runtime *associatedRuntime, uint32_t index);
-	};
-
 	class InvalidLocalVarIndexError : public RuntimeExecError {
 	public:
 		uint32_t index;
@@ -164,20 +148,6 @@ namespace slake {
 		SLAKE_API virtual void dealloc() override;
 
 		SLAKE_API static InvalidLocalVarIndexError *alloc(Runtime *associatedRuntime, uint32_t index);
-	};
-
-	class InvalidArgumentIndexError : public RuntimeExecError {
-	public:
-		uint32_t index;
-
-		SLAKE_API InvalidArgumentIndexError(Runtime *associatedRuntime, uint32_t index);
-		SLAKE_API virtual ~InvalidArgumentIndexError();
-
-		SLAKE_API virtual const char *what() const override;
-
-		SLAKE_API virtual void dealloc() override;
-
-		SLAKE_API static InvalidArgumentIndexError *alloc(Runtime *associatedRuntime, uint32_t index);
 	};
 
 	class InvalidArrayIndexError : public RuntimeExecError {
@@ -315,11 +285,11 @@ namespace slake {
 
 	class GenericParameterNotFoundError : public RuntimeExecError {
 	public:
-		std::pmr::string name;
+		peff::String name;
 
 		SLAKE_API GenericParameterNotFoundError(
 			Runtime *associatedRuntime,
-			std::pmr::string &&name);
+			peff::String &&name);
 		SLAKE_API virtual ~GenericParameterNotFoundError();
 
 		SLAKE_API virtual const char *what() const override;
@@ -328,7 +298,7 @@ namespace slake {
 
 		SLAKE_API static GenericParameterNotFoundError *alloc(
 			Runtime *associatedRuntime,
-			std::pmr::string &&name);
+			peff::String &&name);
 	};
 
 	enum class OptimizerErrorCode {

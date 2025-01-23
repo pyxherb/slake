@@ -19,13 +19,13 @@ SLAKE_API Object *Object::duplicate() const {
 }
 
 SLAKE_API MemberObject *Object::getMember(
-	const std::pmr::string &name,
+	const std::string_view &name,
 	VarRefContext *varRefContextOut) const {
 	return nullptr;
 }
 
-SLAKE_API HostRefHolder::HostRefHolder(std::pmr::memory_resource *memoryResource)
-	: holdedObjects(memoryResource) {
+SLAKE_API HostRefHolder::HostRefHolder(peff::Alloc *selfAllocator)
+	: holdedObjects(selfAllocator) {
 }
 
 SLAKE_API HostRefHolder::~HostRefHolder() {
@@ -34,14 +34,15 @@ SLAKE_API HostRefHolder::~HostRefHolder() {
 }
 
 SLAKE_API void HostRefHolder::addObject(Object *object) {
-	if (!holdedObjects.count(object)) {
-		holdedObjects.insert(object);
+	if (!holdedObjects.contains(object)) {
+		Object *copiedObject = object;
+		holdedObjects.insert(std::move(copiedObject));
 		++object->hostRefCount;
 	}
 }
 
 SLAKE_API void HostRefHolder::removeObject(Object *object) noexcept {
-	assert(holdedObjects.count(object));
-	holdedObjects.erase(object);
+	assert(holdedObjects.contains(object));
+	holdedObjects.remove(object);
 	--object->hostRefCount;
 }

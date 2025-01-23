@@ -1,11 +1,9 @@
 #ifndef _SLAKE_OBJ_SCOPE_H_
 #define _SLAKE_OBJ_SCOPE_H_
 
-#include <unordered_map>
-#include <deque>
-#include <stdexcept>
+#include <peff/containers/hashmap.h>
+#include <peff/containers/string.h>
 #include <memory>
-#include <memory_resource>
 #include <string>
 #include <slake/util/memory.h>
 #include <slake/basedefs.h>
@@ -16,42 +14,53 @@ namespace slake {
 	class FnObject;
 	class FnOverloadingObject;
 
-	class Scope {
+	class Scope final {
 	public:
-		std::pmr::memory_resource *memoryResource;
+		peff::RcObjectPtr<peff::Alloc> selfAllocator;
 		Object *owner;
-		std::pmr::unordered_map<std::pmr::string, MemberObject *> members;
+		peff::HashMap<std::string_view, MemberObject *> members;
 
-		SLAKE_API Scope(std::pmr::memory_resource *memoryResource,
+		SLAKE_API Scope(
+			peff::Alloc *selfAllocator,
 			Object *owner);
 
-		SLAKE_API MemberObject *getMember(const std::pmr::string &name);
+		SLAKE_API MemberObject *getMember(const std::string_view &name);
 
-		SLAKE_API void putMember(const std::pmr::string &name, MemberObject *value);
+		SLAKE_API [[nodiscard]] bool putMember(MemberObject *value);
 
-		SLAKE_API void addMember(const std::pmr::string &name, MemberObject *value);
+		/// @brief Remove a member with specified name.
+		/// @param name Name of the member object to be removed.
+		SLAKE_API void removeMember(const std::string_view &name);
 
-		SLAKE_API void removeMember(const std::pmr::string &name);
+		/// @brief Remove a member but fail if the resizing operation of buckets of member map fails.
+		/// @param name Name of the member object to be removed.
+		/// @return true if all operations are succeeded, false otherwise.
+		SLAKE_API bool removeMemberConservative(const std::string_view &name);
 
 		SLAKE_API Scope *duplicate();
 
-		SLAKE_API static Scope *alloc(std::pmr::memory_resource *memoryResource, Object *owner);
+		SLAKE_API static Scope *alloc(
+			peff::Alloc *selfAllocator,
+			Object *owner
+		);
 		SLAKE_API void dealloc();
 	};
 
+	using ScopeUniquePtr = std::unique_ptr<Scope, util::DeallocableDeleter<Scope>>;
+
 	class MethodTable {
 	public:
-		std::pmr::memory_resource *memoryResource;
-		std::pmr::unordered_map<std::pmr::string, FnObject *> methods;
-		std::pmr::deque<FnOverloadingObject *> destructors;
+		peff::RcObjectPtr<peff::Alloc> selfAllocator;
+		peff::HashMap<std::string_view, FnObject *> methods;
+		peff::DynArray<FnOverloadingObject *> destructors;
 
-		SLAKE_API MethodTable(std::pmr::memory_resource *memoryResource);
+		SLAKE_API MethodTable(peff::Alloc *selfAllocator);
 
-		SLAKE_API FnObject *getMethod(const std::pmr::string &name);
+		SLAKE_API FnObject *getMethod(const std::string_view &name);
 
 		SLAKE_API MethodTable *duplicate();
 
-		SLAKE_API static MethodTable *alloc(std::pmr::memory_resource *memoryResource);
+		SLAKE_API static MethodTable *alloc(peff::Alloc *selfAllocator);
 		SLAKE_API void dealloc();
 	};
 }

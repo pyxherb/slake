@@ -82,7 +82,7 @@ namespace slake {
 		SLAKE_API static Type makeArrayTypeName(Runtime *runtime, const Type &elementType);
 		SLAKE_API static Type makeRefTypeName(Runtime *runtime, const Type &elementType);
 
-		SLAKE_API Type duplicate() const;
+		SLAKE_API Type duplicate(bool &succeededOut) const;
 
 		SLAKE_FORCEINLINE ValueType getValueTypeExData() const { return exData.valueType; }
 		SLAKE_FORCEINLINE Object *getCustomTypeExData() const { return exData.ptr; }

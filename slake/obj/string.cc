@@ -2,28 +2,34 @@
 
 using namespace slake;
 
-SLAKE_API void slake::StringObject::_setData(const char *str, size_t size) {
+SLAKE_API bool slake::StringObject::_setData(const char *str, size_t size) {
 	if (!size)
 		data.clear();
 	else {
-		data = std::string(str, size);
+		peff::String s;
+
+		if (!s.resize(size))
+			return false;
+
+		memcpy(s.data(), str, size);
+
+		data = std::move(s);
 	}
+	return true;
 }
 
-SLAKE_API slake::StringObject::StringObject(Runtime *rt, const char *s, size_t size) : Object(rt), data(&rt->globalHeapPoolResource) {
-	_setData(s, size);
-}
-
-SLAKE_API slake::StringObject::StringObject(Runtime *rt, std::string &&s) : Object(rt), data(&rt->globalHeapPoolResource) {
+SLAKE_API slake::StringObject::StringObject(Runtime *rt, peff::String &&s) : Object(rt), data(&rt->globalHeapPoolAlloc) {
 	data = std::move(s);
 }
 
-SLAKE_API StringObject::StringObject(const StringObject &x) : Object(x) {
-	_setData(x.data.c_str(), x.data.size());
+SLAKE_API StringObject::StringObject(const StringObject &x, bool &succeededOut) : Object(x) {
+	if (!_setData(x.data.data(), x.data.size())) {
+		succeededOut = false;
+		return;
+	}
 }
 
 SLAKE_API StringObject::~StringObject() {
-	_setData(nullptr, 0);
 }
 
 SLAKE_API ObjectKind StringObject::getKind() const { return ObjectKind::String; }
@@ -32,51 +38,37 @@ SLAKE_API Object *StringObject::duplicate() const {
 	return (Object *)alloc(this).get();
 }
 
-SLAKE_API HostObjectRef<StringObject> slake::StringObject::alloc(Runtime *rt, const char *str, size_t size) {
-	using Alloc = std::pmr::polymorphic_allocator<StringObject>;
-	Alloc allocator(&rt->globalHeapPoolResource);
-
-	std::unique_ptr<StringObject, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), rt, str, size);
-
-	rt->createdObjects.push_back(ptr.get());
-
-	return ptr.release();
-}
-
 SLAKE_API HostObjectRef<StringObject> slake::StringObject::alloc(const StringObject *other) {
-	using Alloc = std::pmr::polymorphic_allocator<StringObject>;
-	Alloc allocator(&other->associatedRuntime->globalHeapPoolResource);
+	bool succeeded = true;
 
-	std::unique_ptr<StringObject, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), *other);
+	std::unique_ptr<StringObject, util::DeallocableDeleter<StringObject>> ptr(
+		peff::allocAndConstruct<StringObject>(
+			&other->associatedRuntime->globalHeapPoolAlloc,
+			sizeof(std::max_align_t),
+			*other, succeeded));
 
-	other->associatedRuntime->createdObjects.push_back(ptr.get());
+	if (!succeeded)
+		return nullptr;
+
+	if (!other->associatedRuntime->createdObjects.pushBack(ptr.get()))
+		return nullptr;
 
 	return ptr.release();
 }
 
-SLAKE_API HostObjectRef<StringObject> slake::StringObject::alloc(Runtime *rt, std::string &&s) {
-	using Alloc = std::pmr::polymorphic_allocator<StringObject>;
-	Alloc allocator(&rt->globalHeapPoolResource);
+SLAKE_API HostObjectRef<StringObject> slake::StringObject::alloc(Runtime *rt, peff::String &&s) {
+	std::unique_ptr<StringObject, util::DeallocableDeleter<StringObject>> ptr(
+		peff::allocAndConstruct<StringObject>(
+			&rt->globalHeapPoolAlloc,
+			sizeof(std::max_align_t),
+			rt, std::move(s)));
 
-	std::unique_ptr<StringObject, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), rt, std::move(s));
-
-	rt->createdObjects.push_back(ptr.get());
+	if (!rt->createdObjects.pushBack(ptr.get()))
+		return nullptr;
 
 	return ptr.release();
 }
 
 SLAKE_API void slake::StringObject::dealloc() {
-	std::pmr::polymorphic_allocator<StringObject> allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::destroy_at(this);
-	allocator.deallocate(this, 1);
+	peff::destroyAndRelease<StringObject>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }

@@ -3,27 +3,24 @@
 
 #include "object.h"
 #include "generic.h"
-#include <deque>
 
 namespace slake {
 	class StringObject final : public Object {
 	private:
-		SLAKE_API void _setData(const char *str, size_t size);
+		SLAKE_API [[nodiscard]] bool _setData(const char *str, size_t size);
 
 	public:
-		SLAKE_API StringObject(Runtime *rt, const char *str, size_t size);
-		SLAKE_API StringObject(Runtime *rt, std::string &&s);
-		SLAKE_API StringObject(const StringObject &x);
+		SLAKE_API StringObject(Runtime *rt, peff::String &&s);
+		SLAKE_API StringObject(const StringObject &x, bool &succeededOut);
 		SLAKE_API virtual ~StringObject();
 
-		std::pmr::string data;
+		peff::String data;
 
 		SLAKE_API virtual ObjectKind getKind() const override;
 
 		SLAKE_API virtual Object *duplicate() const override;
 
-		SLAKE_API static HostObjectRef<StringObject> alloc(Runtime *rt, const char *str, size_t size);
-		SLAKE_API static HostObjectRef<StringObject> alloc(Runtime *rt, std::string &&s);
+		SLAKE_API static HostObjectRef<StringObject> alloc(Runtime *rt, peff::String &&s);
 		SLAKE_API static HostObjectRef<StringObject> alloc(const StringObject *other);
 		SLAKE_API virtual void dealloc() override;
 

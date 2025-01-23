@@ -17,15 +17,14 @@ namespace slake {
 		ModuleLoadStatus loadStatus = ModuleLoadStatus::ImplicitlyLoaded;
 		std::atomic_size_t depCount = 0;
 
-		std::string name;
 		Object *parent = nullptr;
-		Scope *scope;
+		Scope *scope = nullptr;
 
-		std::unordered_map<std::pmr::string, IdRefObject *> imports;
-		std::vector<IdRefObject *> unnamedImports;
+		peff::HashMap<peff::String, IdRefObject *> imports;
+		peff::DynArray<IdRefObject *> unnamedImports;
 
-		SLAKE_API ModuleObject(Runtime *rt, AccessModifier access);
-		SLAKE_API ModuleObject(const ModuleObject &x);
+		SLAKE_API ModuleObject(Runtime *rt, ScopeUniquePtr &&scope, AccessModifier access);
+		SLAKE_API ModuleObject(const ModuleObject &x, bool &succeededOut);
 		SLAKE_API virtual ~ModuleObject();
 
 		SLAKE_API virtual ObjectKind getKind() const override;
@@ -33,15 +32,13 @@ namespace slake {
 		SLAKE_API virtual Object *duplicate() const override;
 
 		SLAKE_API virtual MemberObject *getMember(
-			const std::pmr::string &name,
+			const std::string_view &name,
 			VarRefContext *varRefContextOut) const;
 
-		SLAKE_API virtual const char *getName() const override;
-		SLAKE_API virtual void setName(const char *name) override;
 		SLAKE_API virtual Object *getParent() const override;
 		SLAKE_API virtual void setParent(Object *parent) override;
 
-		SLAKE_API static HostObjectRef<ModuleObject> alloc(Runtime *rt, AccessModifier access);
+		SLAKE_API static HostObjectRef<ModuleObject> alloc(Runtime *rt, ScopeUniquePtr &&scope, AccessModifier access);
 		SLAKE_API static HostObjectRef<ModuleObject> alloc(const ModuleObject *other);
 		SLAKE_API virtual void dealloc() override;
 	};

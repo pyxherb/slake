@@ -34,7 +34,7 @@ namespace slake {
 
 		InstanceFlags instanceFlags = 0;
 
-		InstanceMemberAccessorVarObject *memberAccessor;
+		InstanceMemberAccessorVarObject *memberAccessor = nullptr;
 
 		SLAKE_API InstanceObject(Runtime *rt);
 		SLAKE_API InstanceObject(const InstanceObject &x);
@@ -45,7 +45,7 @@ namespace slake {
 		SLAKE_API virtual Object *duplicate() const override;
 
 		SLAKE_API virtual MemberObject *getMember(
-			const std::pmr::string &name,
+			const peff::String &name,
 			VarRefContext *varRefContextOut) const;
 
 		SLAKE_API static HostObjectRef<InstanceObject> alloc(Runtime *rt);

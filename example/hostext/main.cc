@@ -13,8 +13,8 @@ slake::Value print(slake::Context *context, slake::MajorFrame *curMajorFrame) {
 		putchar('\n');
 	else {
 		Value varArgsValue;
-		varArgsValue = curMajorFrame->curFn->associatedRuntime->readVarUnsafe(curMajorFrame->argStack[0], {});
-		AnyArrayObject *varArgs = (AnyArrayObject *)varArgsValue.getObjectRef();
+		varArgsValue = curMajorFrame->curFn->associatedRuntime->readVarUnsafe(curMajorFrame->argStack.at(0), {});
+		ArrayObject *varArgs = (ArrayObject *)varArgsValue.getObjectRef();
 
 		for (uint8_t i = 0; i < varArgs->length; ++i) {
 			Value data;
@@ -66,7 +66,7 @@ slake::Value print(slake::Context *context, slake::MajorFrame *curMajorFrame) {
 					else {
 						switch (objectPtr->getKind()) {
 							case ObjectKind::String:
-								std::cout << ((slake::StringObject *)objectPtr)->data;
+								std::cout << ((slake::StringObject *)objectPtr)->data.data();
 								break;
 							default:
 								std::cout << "<object at " << std::hex << objectPtr << ">";
@@ -87,7 +87,7 @@ slake::Value print(slake::Context *context, slake::MajorFrame *curMajorFrame) {
 std::unique_ptr<std::istream> fsModuleLocator(slake::Runtime *rt, slake::HostObjectRef<slake::IdRefObject> ref) {
 	std::string path;
 	for (size_t i = 0; i < ref->entries.size(); ++i) {
-		path += ref->entries[i].name;
+		path += ref->entries.at(i).name;
 		if (i + 1 < ref->entries.size())
 			path += "/";
 	}
@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
 	slake::util::setupMemoryLeakDetector();
 
 	std::unique_ptr<slake::Runtime> rt = std::make_unique<slake::Runtime>(
-		std::pmr::get_default_resource(),
+		peff::getDefaultAlloc(),
 		slake::RT_DEBUG | slake::RT_GCDBG);
 
 	slake::HostObjectRef<slake::ModuleObject> mod;
@@ -147,26 +147,29 @@ int main(int argc, char **argv) {
 	}
 
 	{
-		slake::HostRefHolder hostRefHolder;
+		slake::HostRefHolder hostRefHolder(&rt->globalHeapPoolAlloc);
 
 		slake::HostObjectRef<slake::FnObject> fnObject = slake::FnObject::alloc(rt.get());
 
-		std::vector<slake::Type> paramTypes;
+		peff::DynArray<slake::Type> paramTypes(&rt->globalHeapPoolAlloc);
 
 		auto printFn = slake::NativeFnOverloadingObject::alloc(
 			fnObject.get(),
 			slake::ACCESS_PUB,
-			paramTypes,
+			std::move(paramTypes),
 			slake::Type(slake::ValueType::Undefined),
 			slake::OL_VARG,
 			print);
 		fnObject->overloadings.insert(printFn.get());
+		fnObject->name.resize(strlen("print"));
+		memcpy(fnObject->name.data(), "print", strlen("print"));
 
-		((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext", nullptr))->getMember("extfns", nullptr))->scope->putMember("print", fnObject.get());
+		((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext", nullptr))->getMember("extfns", nullptr))->scope->removeMember("print");
+		((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext", nullptr))->getMember("extfns", nullptr))->scope->putMember(fnObject.get());
 
 		auto fn = (slake::FnObject *)mod->getMember("main", nullptr);
 		auto overloading = fn->getOverloading({});
-
+		/*
 		slake::opti::ProgramAnalyzedInfo analyzedInfo(rt.get());
 		if (auto e = slake::opti::analyzeProgramInfo(rt.get(), (slake::RegularFnOverloadingObject *)overloading, analyzedInfo, hostRefHolder);
 			e) {
@@ -187,10 +190,10 @@ int main(int argc, char **argv) {
 			e.reset();
 			goto end;
 		}
-		for (auto &i : analyzedInfo.analyzedRegInfo) {
-			printf("Register #%u\n", i.first);
-			printf("Lifetime: %zu-%zu\n", i.second.lifetime.offBeginIns, i.second.lifetime.offEndIns);
-		}
+		for (auto it = analyzedInfo.analyzedRegInfo.begin(); it != analyzedInfo.analyzedRegInfo.end(); ++it) {
+			printf("Register #%u\n", it.key());
+			printf("Lifetime: %zu-%zu\n", it.value().lifetime.offBeginIns, it.value().lifetime.offEndIns);
+		}*/
 
 		slake::HostObjectRef<slake::ContextObject> context;
 		if (auto e = rt->execFn(overloading, nullptr, nullptr, nullptr, 0, context);

@@ -3,7 +3,6 @@
 
 #include "obj/string.h"
 #include "obj/typedef.h"
-#include "obj/alias.h"
 #include "obj/array.h"
 #include "obj/object.h"
 #include "obj/class.h"

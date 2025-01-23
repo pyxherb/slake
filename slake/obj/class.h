@@ -16,21 +16,36 @@ namespace slake {
 	class InstanceObject;
 
 	struct ObjectFieldRecord {
+		peff::String name;
 		size_t offset;
 		Type type;
+
+		PEFF_FORCEINLINE ObjectFieldRecord() { terminate(); }
+		PEFF_FORCEINLINE ObjectFieldRecord(peff::Alloc *selfAllocator) : name(selfAllocator) {}
+
+		PEFF_FORCEINLINE bool copy(ObjectFieldRecord& dest) const {
+			if (!peff::copy(dest.name, name)) {
+				return false;
+			}
+
+			dest.offset = offset;
+			dest.type = type;
+
+			return true;
+		}
 	};
 
 	struct ObjectLayout {
-		std::pmr::memory_resource *memoryResource;
+		peff::RcObjectPtr<peff::Alloc> selfAllocator;
 		size_t totalSize = 0;
-		std::pmr::vector<ObjectFieldRecord> fieldRecords;
-		std::pmr::unordered_map<std::pmr::string, size_t> fieldNameMap;
+		peff::DynArray<ObjectFieldRecord> fieldRecords;
+		peff::HashMap<std::string_view, size_t> fieldNameMap;
 
-		SLAKE_API ObjectLayout(std::pmr::memory_resource *memoryResource);
+		SLAKE_API ObjectLayout(peff::Alloc *selfAllocator);
 
 		SLAKE_API ObjectLayout *duplicate() const;
 
-		SLAKE_API static ObjectLayout *alloc(std::pmr::memory_resource *memoryResource);
+		SLAKE_API static ObjectLayout *alloc(peff::Alloc *selfAllocator);
 		SLAKE_API void dealloc();
 	};
 
@@ -46,20 +61,20 @@ namespace slake {
 		GenericParamList genericParams;
 
 		Type parentClass;
-		std::vector<Type> implInterfaces;  // Implemented interfaces
+		peff::DynArray<Type> implInterfaces;  // Implemented interfaces
 
 		MethodTable *cachedInstantiatedMethodTable = nullptr;
 		ObjectLayout *cachedObjectLayout = nullptr;
 
-		std::pmr::vector<VarObject *> cachedFieldInitVars;
+		peff::DynArray<VarObject *> cachedFieldInitVars;
 
-		SLAKE_API ClassObject(Runtime *rt, AccessModifier access, const Type &parentClass);
-		SLAKE_API ClassObject(const ClassObject &x);
+		SLAKE_API ClassObject(Runtime *rt, ScopeUniquePtr &&scope, AccessModifier access, const Type &parentClass);
+		SLAKE_API ClassObject(const ClassObject &x, bool &succeededOut);
 		SLAKE_API virtual ~ClassObject();
 
 		SLAKE_API virtual ObjectKind getKind() const override;
 
-		SLAKE_API virtual GenericArgList getGenericArgs() const override;
+		SLAKE_API virtual const GenericArgList *getGenericArgs() const override;
 
 		/// @brief Check if the class has implemented the interface.
 		///
@@ -71,7 +86,7 @@ namespace slake {
 
 		SLAKE_API virtual Object *duplicate() const override;
 
-		SLAKE_API static HostObjectRef<ClassObject> alloc(Runtime *rt, AccessModifier access, const Type &parentClass = {});
+		SLAKE_API static HostObjectRef<ClassObject> alloc(Runtime *rt, ScopeUniquePtr &&scope, AccessModifier access, const Type &parentClass = {});
 		SLAKE_API static HostObjectRef<ClassObject> alloc(const ClassObject *other);
 		SLAKE_API virtual void dealloc() override;
 	};
@@ -86,19 +101,19 @@ namespace slake {
 
 		GenericParamList genericParams;
 
-		std::vector<Type> parents;
+		peff::DynArray<Type> parents;
 
-		SLAKE_API InterfaceObject(Runtime *rt, AccessModifier access, const std::vector<Type> &parents);
-		SLAKE_API InterfaceObject(const InterfaceObject &x);
+		SLAKE_API InterfaceObject(Runtime *rt, ScopeUniquePtr &&scope, AccessModifier access, peff::DynArray<Type> &&parents);
+		SLAKE_API InterfaceObject(const InterfaceObject &x, bool &succeededOut);
 		SLAKE_API virtual ~InterfaceObject();
 
 		SLAKE_API virtual ObjectKind getKind() const override;
 
 		SLAKE_API virtual Object *duplicate() const override;
 
-		SLAKE_API virtual GenericArgList getGenericArgs() const override;
+		SLAKE_API virtual const GenericArgList *getGenericArgs() const override;
 
-		SLAKE_API static HostObjectRef<InterfaceObject> alloc(Runtime *rt, AccessModifier access, const std::vector<Type> &parents = {});
+		SLAKE_API static HostObjectRef<InterfaceObject> alloc(Runtime *rt, ScopeUniquePtr &&scope, AccessModifier access, peff::DynArray<Type> &&parents);
 		SLAKE_API static HostObjectRef<InterfaceObject> alloc(const InterfaceObject *other);
 		SLAKE_API virtual void dealloc() override;
 

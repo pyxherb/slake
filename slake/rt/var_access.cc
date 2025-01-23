@@ -10,7 +10,7 @@ SLAKE_API InternalExceptionPointer Runtime::tryAccessVar(const VarObject *varObj
 		case VarKind::LocalVarAccessor: {
 			const LocalVarAccessorVarObject *v = (const LocalVarAccessorVarObject *)varObject;
 			LocalVarRecord &localVarRecord =
-				v->majorFrame->localVarRecords[context.asLocalVar.localVarIndex];
+				v->majorFrame->localVarRecords.at(context.asLocalVar.localVarIndex);
 
 			break;
 		}
@@ -44,12 +44,12 @@ SLAKE_API InternalExceptionPointer Runtime::typeofVar(const VarObject *varObject
 		}
 		case VarKind::LocalVarAccessor: {
 			const LocalVarAccessorVarObject *v = (const LocalVarAccessorVarObject *)varObject;
-			typeOut = v->majorFrame->localVarRecords[context.asLocalVar.localVarIndex].type;
+			typeOut = v->majorFrame->localVarRecords.at(context.asLocalVar.localVarIndex).type;
 			break;
 		}
 		case VarKind::InstanceMemberAccessor: {
 			const InstanceMemberAccessorVarObject *v = (const InstanceMemberAccessorVarObject *)varObject;
-			typeOut = v->instanceObject->objectLayout->fieldRecords[context.asInstance.fieldIndex].type;
+			typeOut = v->instanceObject->objectLayout->fieldRecords.at(context.asInstance.fieldIndex).type;
 			break;
 		}
 		case VarKind::ArrayElementAccessor: {
@@ -82,7 +82,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const VarObject *varObject, const VarRefC
 		case VarKind::LocalVarAccessor: {
 			const LocalVarAccessorVarObject *v = (const LocalVarAccessorVarObject *)varObject;
 			const LocalVarRecord &localVarRecord =
-				v->majorFrame->localVarRecords[context.asLocalVar.localVarIndex];
+				v->majorFrame->localVarRecords.at(context.asLocalVar.localVarIndex);
 
 			const char *const rawDataPtr = v->context->dataStack + localVarRecord.stackOffset;
 
@@ -180,37 +180,37 @@ SLAKE_API Value Runtime::readVarUnsafe(const VarObject *varObject, const VarRefC
 				case TypeId::Value: {
 					switch (v->arrayObject->elementType.getValueTypeExData()) {
 						case ValueType::I8:
-							return Value(((I8ArrayObject *)v->arrayObject)->data[context.asArray.index]);
+							return Value(((int8_t *)v->arrayObject->data)[context.asArray.index]);
 						case ValueType::I16:
-							return Value(((I16ArrayObject *)v->arrayObject)->data[context.asArray.index]);
+							return Value(((int16_t *)v->arrayObject->data)[context.asArray.index]);
 						case ValueType::I32:
-							return Value(((I32ArrayObject *)v->arrayObject)->data[context.asArray.index]);
+							return Value(((int32_t *)v->arrayObject->data)[context.asArray.index]);
 						case ValueType::I64:
-							return Value(((I64ArrayObject *)v->arrayObject)->data[context.asArray.index]);
+							return Value(((int64_t *)v->arrayObject->data)[context.asArray.index]);
 						case ValueType::U8:
-							return Value(((U8ArrayObject *)v->arrayObject)->data[context.asArray.index]);
+							return Value(((uint8_t *)v->arrayObject->data)[context.asArray.index]);
 						case ValueType::U16:
-							return Value(((U16ArrayObject *)v->arrayObject)->data[context.asArray.index]);
+							return Value(((uint16_t *)v->arrayObject->data)[context.asArray.index]);
 						case ValueType::U32:
-							return Value(((U32ArrayObject *)v->arrayObject)->data[context.asArray.index]);
+							return Value(((uint32_t *)v->arrayObject->data)[context.asArray.index]);
 						case ValueType::U64:
-							return Value(((U64ArrayObject *)v->arrayObject)->data[context.asArray.index]);
+							return Value(((uint64_t *)v->arrayObject->data)[context.asArray.index]);
 						case ValueType::F32:
-							return Value(((F32ArrayObject *)v->arrayObject)->data[context.asArray.index]);
+							return Value(((float *)v->arrayObject->data)[context.asArray.index]);
 						case ValueType::F64:
-							return Value(((F64ArrayObject *)v->arrayObject)->data[context.asArray.index]);
+							return Value(((double *)v->arrayObject->data)[context.asArray.index]);
 						case ValueType::Bool:
-							return Value(((BoolArrayObject *)v->arrayObject)->data[context.asArray.index]);
+							return Value(((bool *)v->arrayObject->data)[context.asArray.index]);
 						default:
 							assert(false);
 					}
 					break;
 				}
 				case TypeId::Instance: {
-					return Value(((ObjectRefArrayObject *)v->arrayObject)->data[context.asArray.index]);
+					return Value(((Object **)v->arrayObject->data)[context.asArray.index]);
 				}
 				case TypeId::Any: {
-					return Value(((AnyArrayObject *)v->arrayObject)->data[context.asArray.index]);
+					return Value(((Value *)v->arrayObject->data)[context.asArray.index]);
 				}
 			}
 			break;
@@ -233,7 +233,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(VarObject *varObject, const
 		case VarKind::LocalVarAccessor: {
 			LocalVarAccessorVarObject *v = (LocalVarAccessorVarObject *)varObject;
 			const LocalVarRecord &localVarRecord =
-				v->majorFrame->localVarRecords[context.asLocalVar.localVarIndex];
+				v->majorFrame->localVarRecords.at(context.asLocalVar.localVarIndex);
 
 			if (!isCompatible(localVarRecord.type, value)) {
 				return raiseMismatchedVarTypeError(v->associatedRuntime);
@@ -368,37 +368,37 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(VarObject *varObject, const
 				case TypeId::Value: {
 					switch (v->arrayObject->elementType.getValueTypeExData()) {
 						case ValueType::I8:
-							((I8ArrayObject *)v->arrayObject)->data[context.asArray.index] = value.getI8();
+							((int8_t *)v->arrayObject->data)[context.asArray.index] = value.getI8();
 							break;
 						case ValueType::I16:
-							((I16ArrayObject *)v->arrayObject)->data[context.asArray.index] = value.getI16();
+							((int16_t *)v->arrayObject->data)[context.asArray.index] = value.getI16();
 							break;
 						case ValueType::I32:
-							((I32ArrayObject *)v->arrayObject)->data[context.asArray.index] = value.getI32();
+							((int32_t *)v->arrayObject->data)[context.asArray.index] = value.getI32();
 							break;
 						case ValueType::I64:
-							((I64ArrayObject *)v->arrayObject)->data[context.asArray.index] = value.getI64();
+							((int64_t *)v->arrayObject->data)[context.asArray.index] = value.getI64();
 							break;
 						case ValueType::U8:
-							((U8ArrayObject *)v->arrayObject)->data[context.asArray.index] = value.getU8();
+							((uint8_t *)v->arrayObject->data)[context.asArray.index] = value.getU8();
 							break;
 						case ValueType::U16:
-							((U16ArrayObject *)v->arrayObject)->data[context.asArray.index] = value.getU16();
+							((uint16_t *)v->arrayObject->data)[context.asArray.index] = value.getU16();
 							break;
 						case ValueType::U32:
-							((U32ArrayObject *)v->arrayObject)->data[context.asArray.index] = value.getU32();
+							((uint32_t *)v->arrayObject->data)[context.asArray.index] = value.getU32();
 							break;
 						case ValueType::U64:
-							((U64ArrayObject *)v->arrayObject)->data[context.asArray.index] = value.getU64();
+							((uint64_t *)v->arrayObject->data)[context.asArray.index] = value.getU64();
 							break;
 						case ValueType::F32:
-							((F32ArrayObject *)v->arrayObject)->data[context.asArray.index] = value.getF32();
+							((float *)v->arrayObject->data)[context.asArray.index] = value.getF32();
 							break;
 						case ValueType::F64:
-							((F64ArrayObject *)v->arrayObject)->data[context.asArray.index] = value.getF64();
+							((double *)v->arrayObject->data)[context.asArray.index] = value.getF64();
 							break;
 						case ValueType::Bool:
-							((BoolArrayObject *)v->arrayObject)->data[context.asArray.index] = value.getBool();
+							((bool *)v->arrayObject->data)[context.asArray.index] = value.getBool();
 							break;
 						default:
 							assert(false);
@@ -408,7 +408,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(VarObject *varObject, const
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array: {
-					((ObjectRefArrayObject *)v->arrayObject)->data[context.asArray.index] = value.getObjectRef();
+					((Object **)v->arrayObject->data)[context.asArray.index] = value.getObjectRef();
 					break;
 				}
 			}

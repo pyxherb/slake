@@ -2,7 +2,7 @@
 #define _SLAKE_OBJ_UTILS_H_
 
 #include <slake/basedefs.h>
-#include <set>
+#include <peff/containers/set.h>
 
 namespace slake {
 	class Object;
@@ -94,19 +94,6 @@ namespace slake {
 		SLAKE_FORCEINLINE operator bool() const {
 			return _value;
 		}
-	};
-
-	class HostRefHolder final {
-	public:
-		std::pmr::set<Object *> holdedObjects;
-
-		SLAKE_API HostRefHolder(
-			std::pmr::memory_resource *memoryResource =
-				std::pmr::get_default_resource());
-		SLAKE_API ~HostRefHolder();
-
-		SLAKE_API void addObject(Object *object);
-		SLAKE_API void removeObject(Object *object) noexcept;
 	};
 }
 

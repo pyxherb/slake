@@ -3,21 +3,36 @@
 
 #include <slake/type.h>
 #include <cstdint>
-#include <deque>
+#include <peff/containers/dynarray.h>
+#include <peff/containers/string.h>
 
 namespace slake {
 	struct GenericParam final {
-		std::pmr::string name;
+		peff::String name;
 		Type baseType = Type(TypeId::Any);
-		std::pmr::vector<Type> interfaces;
+		peff::DynArray<Type> interfaces;
 
 		SLAKE_API GenericParam();
-		SLAKE_API GenericParam(std::pmr::memory_resource *memoryResource);
+		SLAKE_API GenericParam(peff::Alloc *selfAllocator);
+		SLAKE_API GenericParam(GenericParam &&rhs);
+
+		SLAKE_FORCEINLINE bool copy(GenericParam& dest) const {
+			peff::constructAt<GenericParam>(&dest, interfaces.allocator());
+
+			if (!peff::copyAssign(dest.name, name))
+				return false;
+
+			dest.baseType = baseType;
+
+			if (!peff::copyAssign(dest.interfaces, interfaces))
+				return false;
+
+			return true;
+		}
 	};
 
-
-	using GenericArgList = std::pmr::vector<Type>;
-	using GenericParamList = std::pmr::vector<GenericParam>;
+	using GenericArgList = peff::DynArray<Type>;
+	using GenericParamList = peff::DynArray<GenericParam>;
 
 	/// @brief Less than ("<") comparator for containers.
 	struct GenericArgListComparator {
@@ -29,9 +44,9 @@ namespace slake {
 		SLAKE_API bool operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept;
 	};
 
-	SLAKE_API size_t getGenericParamIndex(const GenericParamList &genericParamList, const std::pmr::string &name);
+	SLAKE_API size_t getGenericParamIndex(const GenericParamList &genericParamList, const std::string_view &name);
 
-	SLAKE_API GenericParam *getGenericParam(Object *object, const std::pmr::string &name, Object **ownerOut = nullptr);
+	SLAKE_API GenericParam *getGenericParam(Object *object, const std::string_view &name, Object **ownerOut = nullptr);
 }
 
 #endif

@@ -10,27 +10,28 @@ SLAKE_API void Runtime::initMethodTableForClass(ClassObject *cls, ClassObject *p
 	if (parentClass && parentClass->cachedInstantiatedMethodTable) {
 		methodTable = decltype(methodTable)(parentClass->cachedInstantiatedMethodTable->duplicate());
 	} else {
-		methodTable = decltype(methodTable)(MethodTable::alloc(&globalHeapPoolResource));
+		methodTable = decltype(methodTable)(MethodTable::alloc(&globalHeapPoolAlloc));
 	}
 
-	for (const auto &i : cls->scope->members) {
-		switch (i.second->getKind()) {
+	for (auto it = cls->scope->members.begin(); it != cls->scope->members.end(); ++it) {
+		switch (it.value()->getKind()) {
 			case ObjectKind::Fn: {
 				std::deque<FnOverloadingObject *> overloadings;
 
-				for (auto j : ((FnObject *)i.second)->overloadings) {
+				for (auto j : ((FnObject *)it.value())->overloadings) {
 					if ((!(j->access & ACCESS_STATIC)) &&
 						(j->overloadingFlags & OL_VIRTUAL))
 						overloadings.push_back(j);
 				}
 
-				if (i.first == "delete") {
-					std::pmr::vector<Type> destructorParamTypes(&globalHeapPoolResource);
+				if (it.key() == "delete") {
+					peff::DynArray<Type> destructorParamTypes(&globalHeapPoolAlloc);
 					GenericParamList destructorGenericParamList;
 
 					for (auto &j : overloadings) {
 						if (isDuplicatedOverloading(j, destructorParamTypes, destructorGenericParamList, false)) {
-							methodTable->destructors.push_front(j);
+							auto copiedJ = j;
+							methodTable->destructors.pushFront(std::move(copiedJ));
 							break;
 						}
 					}
@@ -38,9 +39,12 @@ SLAKE_API void Runtime::initMethodTableForClass(ClassObject *cls, ClassObject *p
 					if (overloadings.size()) {
 						// Link the method with method inherited from the parent.
 						HostObjectRef<FnObject> fn;
-						auto &methodSlot = methodTable->methods[i.first];
+						if (!methodTable->methods.contains(it.key())) {
+							methodTable->methods.insert(it.value()->name, nullptr);
+						}
+						auto &methodSlot = methodTable->methods.at(it.key());
 
-						if (auto m = methodTable->getMethod(i.first); m)
+						if (auto m = methodTable->getMethod(it.key()); m)
 							fn = m;
 						else {
 							fn = FnObject::alloc(this);
@@ -48,17 +52,18 @@ SLAKE_API void Runtime::initMethodTableForClass(ClassObject *cls, ClassObject *p
 						}
 
 						for (auto &j : overloadings) {
-							for (auto &k : methodSlot->overloadings) {
+							for (auto k : methodSlot->overloadings) {
 								if (isDuplicatedOverloading(
 										k,
 										j->paramTypes,
 										j->genericParams,
 										j->overloadingFlags & OL_VARG)) {
-									methodSlot->overloadings.erase(k);
+									methodSlot->overloadings.remove(k);
 									break;
 								}
 							}
-							methodSlot->overloadings.insert(j);
+							auto copiedJ = j;
+							methodSlot->overloadings.insert(std::move(copiedJ));
 						}
 					}
 				}
@@ -77,18 +82,18 @@ SLAKE_API void Runtime::initObjectLayoutForClass(ClassObject *cls, ClassObject *
 
 	if (parentClass && parentClass->cachedObjectLayout) {
 		objectLayout = decltype(objectLayout)(parentClass->cachedObjectLayout->duplicate());
-		cls->cachedFieldInitVars = parentClass->cachedFieldInitVars;
+		peff::copyAssign(cls->cachedFieldInitVars, parentClass->cachedFieldInitVars);
 	} else {
-		objectLayout = decltype(objectLayout)(ObjectLayout::alloc(&globalHeapPoolResource));
-		cls->cachedFieldInitVars = std::pmr::vector<VarObject *>(&globalHeapPoolResource);
+		objectLayout = decltype(objectLayout)(ObjectLayout::alloc(&globalHeapPoolAlloc));
+		cls->cachedFieldInitVars = peff::DynArray<VarObject *>(&globalHeapPoolAlloc);
 	}
 
-	for (const auto &i : cls->scope->members) {
-		switch (i.second->getKind()) {
+	for (auto it = cls->scope->members.begin(); it != cls->scope->members.end(); ++it) {
+		switch (it.value()->getKind()) {
 			case ObjectKind::Var: {
-				ObjectFieldRecord fieldRecord;
+				ObjectFieldRecord fieldRecord(&globalHeapPoolAlloc);
 
-				RegularVarObject *var = (RegularVarObject *)i.second;
+				RegularVarObject *var = (RegularVarObject *)it.value();
 				Type type;
 				SLAKE_UNWRAP_EXCEPT(typeofVar(var, VarRefContext(), type));
 
@@ -166,17 +171,21 @@ SLAKE_API void Runtime::initObjectLayoutForClass(ClassObject *cls, ClassObject *
 				}
 
 				fieldRecord.type = type;
+				if (!peff::copy(fieldRecord.name, var->name)) {
+					// stub
+					terminate();
+				}
 
-				cls->cachedFieldInitVars.push_back(var);
+				cls->cachedFieldInitVars.pushBack(var);
 
-				objectLayout->fieldNameMap[i.first] = objectLayout->fieldRecords.size();
-				objectLayout->fieldRecords.push_back(std::move(fieldRecord));
+				objectLayout->fieldNameMap.insert(fieldRecord.name, objectLayout->fieldRecords.size());
+				objectLayout->fieldRecords.pushBack(std::move(fieldRecord));
 				break;
 			}
 		}
 	}
 
-	cls->cachedFieldInitVars.shrink_to_fit();
+	//cls->cachedFieldInitVars.shrink_to_fit();
 	cls->cachedObjectLayout = objectLayout.release();
 }
 
@@ -233,9 +242,9 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 	// Initialize the fields.
 	//
 	for (size_t i = 0; i < cls->cachedFieldInitVars.size(); ++i) {
-		VarObject *initVar = cls->cachedFieldInitVars[i];
+		VarObject *initVar = cls->cachedFieldInitVars.at(i);
 
-		ObjectFieldRecord &fieldRecord = cls->cachedObjectLayout->fieldRecords[i];
+		ObjectFieldRecord &fieldRecord = cls->cachedObjectLayout->fieldRecords.at(i);
 
 		Value data;
 		data = readVarUnsafe(initVar, VarRefContext());
@@ -249,38 +258,103 @@ SLAKE_API HostObjectRef<ArrayObject> Runtime::newArrayInstance(Runtime *rt, cons
 	switch (type.typeId) {
 		case TypeId::Value:
 			switch (type.getValueTypeExData()) {
-				case ValueType::I8:
-					return I8ArrayObject::alloc(rt, length).get();
-				case ValueType::I16:
-					return I16ArrayObject::alloc(rt, length).get();
-				case ValueType::I32:
-					return I32ArrayObject::alloc(rt, length).get();
-				case ValueType::I64:
-					return I64ArrayObject::alloc(rt, length).get();
-				case ValueType::U8:
-					return U8ArrayObject::alloc(rt, length).get();
-				case ValueType::U16:
-					return U16ArrayObject::alloc(rt, length).get();
-				case ValueType::U32:
-					return U32ArrayObject::alloc(rt, length).get();
-				case ValueType::U64:
-					return U64ArrayObject::alloc(rt, length).get();
-				case ValueType::F32:
-					return F32ArrayObject::alloc(rt, length).get();
-				case ValueType::F64:
-					return F64ArrayObject::alloc(rt, length).get();
-				case ValueType::Bool:
-					return BoolArrayObject::alloc(rt, length).get();
+				case ValueType::I8: {
+					HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int8_t));
+					if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(int8_t) * length, sizeof(int8_t))))
+						return nullptr;
+					obj->length = length;
+					return obj.get();
+				}
+				case ValueType::I16: {
+					HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int16_t));
+					if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(int16_t) * length, sizeof(int16_t))))
+						return nullptr;
+					obj->length = length;
+					return obj.get();
+				}
+				case ValueType::I32: {
+					HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int32_t));
+					if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(int32_t) * length, sizeof(int32_t))))
+						return nullptr;
+					obj->length = length;
+					return obj.get();
+				}
+				case ValueType::I64: {
+					HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int64_t));
+					if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(int64_t) * length, sizeof(int64_t))))
+						return nullptr;
+					obj->length = length;
+					return obj.get();
+				}
+				case ValueType::U8: {
+					HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint8_t));
+					if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(uint8_t) * length, sizeof(uint8_t))))
+						return nullptr;
+					obj->length = length;
+					return obj.get();
+				}
+				case ValueType::U16: {
+					HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint16_t));
+					if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(uint16_t) * length, sizeof(uint16_t))))
+						return nullptr;
+					obj->length = length;
+					return obj.get();
+				}
+				case ValueType::U32: {
+					HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint32_t));
+					if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(uint32_t) * length, sizeof(uint32_t))))
+						return nullptr;
+					obj->length = length;
+					return obj.get();
+				}
+				case ValueType::U64: {
+					HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint64_t));
+					if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(uint64_t) * length, sizeof(uint64_t))))
+						return nullptr;
+					obj->length = length;
+					return obj.get();
+				}
+				case ValueType::F32: {
+					HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(float));
+					if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(float) * length, sizeof(float))))
+						return nullptr;
+					obj->length = length;
+					return obj.get();
+				}
+				case ValueType::F64: {
+					HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(double));
+					if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(double) * length, sizeof(double))))
+						return nullptr;
+					obj->length = length;
+					return obj.get();
+				}
+				case ValueType::Bool: {
+					HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(bool));
+					if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(bool) * length, sizeof(bool))))
+						return nullptr;
+					obj->length = length;
+					return obj.get();
+				}
 				default:
 					throw std::logic_error("Unhandled value type");
 			}
 			break;
 		case TypeId::String:
 		case TypeId::Instance:
-		case TypeId::Array:
-			return ObjectRefArrayObject::alloc(rt, type, length).get();
-		case TypeId::Any:
-			return AnyArrayObject::alloc(rt, length).get();
+		case TypeId::Array: {
+			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(Object *));
+			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(Object *) * length, sizeof(Object *))))
+				return nullptr;
+			obj->length = length;
+			return obj.get();
+		}
+		case TypeId::Any: {
+			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(Value));
+			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(Value) * length, sizeof(Value))))
+				return nullptr;
+			obj->length = length;
+			return obj.get();
+		}
 		default:
 			throw std::logic_error("Unhandled element type");
 	}

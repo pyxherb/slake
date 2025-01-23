@@ -15,23 +15,12 @@ SLAKE_API const char* OutOfMemoryError::what() const {
 SLAKE_API void OutOfMemoryError::dealloc() {
 	// DO NOT free the global error object because it is not on the heap.
 	if (this != &g_globalOutOfMemoryError) {
-		std::pmr::polymorphic_allocator<OutOfMemoryError> allocator(&associatedRuntime->globalHeapPoolResource);
-
-		std::destroy_at(this);
-		allocator.deallocate(this, 1);
+		peff::destroyAndRelease<OutOfMemoryError>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 	}
 }
 
 SLAKE_API OutOfMemoryError* OutOfMemoryError::alloc(Runtime* associatedRuntime) noexcept {
-	using Alloc = std::pmr::polymorphic_allocator<OutOfMemoryError>;
-	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::unique_ptr<OutOfMemoryError, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), associatedRuntime);
-
-	return ptr.release();
+	return peff::allocAndConstruct<OutOfMemoryError>(&associatedRuntime->globalHeapPoolAlloc, sizeof(std::max_align_t), associatedRuntime);
 }
 
 OutOfMemoryError slake::g_globalOutOfMemoryError = OutOfMemoryError(nullptr);
@@ -52,22 +41,11 @@ SLAKE_API const char *MismatchedVarTypeError::what() const {
 }
 
 SLAKE_API void MismatchedVarTypeError::dealloc() {
-	std::pmr::polymorphic_allocator<MismatchedVarTypeError> allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::destroy_at(this);
-	allocator.deallocate(this, 1);
+	peff::destroyAndRelease<MismatchedVarTypeError>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
 SLAKE_API MismatchedVarTypeError *MismatchedVarTypeError::alloc(Runtime *associatedRuntime) {
-	using Alloc = std::pmr::polymorphic_allocator<MismatchedVarTypeError>;
-	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::unique_ptr<MismatchedVarTypeError, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), associatedRuntime);
-
-	return ptr.release();
+	return peff::allocAndConstruct<MismatchedVarTypeError>(&associatedRuntime->globalHeapPoolAlloc, sizeof(std::max_align_t), associatedRuntime);
 }
 
 SLAKE_API FrameBoundaryExceededError::FrameBoundaryExceededError(
@@ -75,10 +53,7 @@ SLAKE_API FrameBoundaryExceededError::FrameBoundaryExceededError(
 SLAKE_API FrameBoundaryExceededError::~FrameBoundaryExceededError() {}
 
 SLAKE_API void FrameBoundaryExceededError::dealloc() {
-	std::pmr::polymorphic_allocator<FrameBoundaryExceededError> allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::destroy_at(this);
-	allocator.deallocate(this, 1);
+	peff::destroyAndRelease<FrameBoundaryExceededError>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
 SLAKE_API const char *FrameBoundaryExceededError::what() const {
@@ -86,15 +61,7 @@ SLAKE_API const char *FrameBoundaryExceededError::what() const {
 }
 
 SLAKE_API FrameBoundaryExceededError *FrameBoundaryExceededError::alloc(Runtime *associatedRuntime) {
-	using Alloc = std::pmr::polymorphic_allocator<FrameBoundaryExceededError>;
-	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::unique_ptr<FrameBoundaryExceededError, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), associatedRuntime);
-
-	return ptr.release();
+	return peff::allocAndConstruct<FrameBoundaryExceededError>(&associatedRuntime->globalHeapPoolAlloc, sizeof(std::max_align_t), associatedRuntime);
 }
 
 SLAKE_API InvalidOpcodeError::InvalidOpcodeError(
@@ -107,22 +74,11 @@ SLAKE_API const char *InvalidOpcodeError::what() const {
 }
 
 SLAKE_API void InvalidOpcodeError::dealloc() {
-	std::pmr::polymorphic_allocator<InvalidOpcodeError> allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::destroy_at(this);
-	allocator.deallocate(this, 1);
+	peff::destroyAndRelease<InvalidOpcodeError>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
 SLAKE_API InvalidOpcodeError *InvalidOpcodeError::alloc(Runtime *associatedRuntime, Opcode opcode) {
-	using Alloc = std::pmr::polymorphic_allocator<InvalidOpcodeError>;
-	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::unique_ptr<InvalidOpcodeError, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), associatedRuntime, opcode);
-
-	return ptr.release();
+	return peff::allocAndConstruct<InvalidOpcodeError>(&associatedRuntime->globalHeapPoolAlloc, sizeof(std::max_align_t), associatedRuntime, opcode);
 }
 
 SLAKE_API InvalidOperandsError::InvalidOperandsError(
@@ -134,50 +90,11 @@ SLAKE_API const char *InvalidOperandsError::what() const {
 }
 
 SLAKE_API void InvalidOperandsError::dealloc() {
-	std::pmr::polymorphic_allocator<InvalidOperandsError> allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::destroy_at(this);
-	allocator.deallocate(this, 1);
+	peff::destroyAndRelease<InvalidOperandsError>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
 SLAKE_API InvalidOperandsError *InvalidOperandsError::alloc(Runtime *associatedRuntime) {
-	using Alloc = std::pmr::polymorphic_allocator<InvalidOperandsError>;
-	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::unique_ptr<InvalidOperandsError, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), associatedRuntime);
-
-	return ptr.release();
-}
-
-SLAKE_API InvalidRegisterIndexError::InvalidRegisterIndexError(
-	Runtime *associatedRuntime,
-	uint32_t index) : RuntimeExecError(associatedRuntime, RuntimeExecErrorCode::InvalidRegisterIndex), index(index) {}
-SLAKE_API InvalidRegisterIndexError::~InvalidRegisterIndexError() {}
-
-SLAKE_API const char *InvalidRegisterIndexError::what() const {
-	return "Invalid register index";
-}
-
-SLAKE_API void InvalidRegisterIndexError::dealloc() {
-	std::pmr::polymorphic_allocator<InvalidRegisterIndexError> allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::destroy_at(this);
-	allocator.deallocate(this, 1);
-}
-
-SLAKE_API InvalidRegisterIndexError *InvalidRegisterIndexError::alloc(Runtime *associatedRuntime, uint32_t index) {
-	using Alloc = std::pmr::polymorphic_allocator<InvalidRegisterIndexError>;
-	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::unique_ptr<InvalidRegisterIndexError, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), associatedRuntime, index);
-
-	return ptr.release();
+	return peff::allocAndConstruct<InvalidOperandsError>(&associatedRuntime->globalHeapPoolAlloc, sizeof(std::max_align_t), associatedRuntime);
 }
 
 SLAKE_API InvalidLocalVarIndexError::InvalidLocalVarIndexError(
@@ -190,50 +107,11 @@ SLAKE_API const char *InvalidLocalVarIndexError::what() const {
 }
 
 SLAKE_API void InvalidLocalVarIndexError::dealloc() {
-	std::pmr::polymorphic_allocator<InvalidLocalVarIndexError> allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::destroy_at(this);
-	allocator.deallocate(this, 1);
+	peff::destroyAndRelease<InvalidLocalVarIndexError>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
 SLAKE_API InvalidLocalVarIndexError *InvalidLocalVarIndexError::alloc(Runtime *associatedRuntime, uint32_t index) {
-	using Alloc = std::pmr::polymorphic_allocator<InvalidLocalVarIndexError>;
-	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::unique_ptr<InvalidLocalVarIndexError, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), associatedRuntime, index);
-
-	return ptr.release();
-}
-
-SLAKE_API InvalidArgumentIndexError::InvalidArgumentIndexError(
-	Runtime *associatedRuntime,
-	uint32_t index) : RuntimeExecError(associatedRuntime, RuntimeExecErrorCode::InvalidArgumentIndex), index(index) {}
-SLAKE_API InvalidArgumentIndexError::~InvalidArgumentIndexError() {}
-
-SLAKE_API const char *InvalidArgumentIndexError::what() const {
-	return "Invalid argument index";
-}
-
-SLAKE_API void InvalidArgumentIndexError::dealloc() {
-	std::pmr::polymorphic_allocator<InvalidArgumentIndexError> allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::destroy_at(this);
-	allocator.deallocate(this, 1);
-}
-
-SLAKE_API InvalidArgumentIndexError *InvalidArgumentIndexError::alloc(Runtime *associatedRuntime, uint32_t index) {
-	using Alloc = std::pmr::polymorphic_allocator<InvalidArgumentIndexError>;
-	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::unique_ptr<InvalidArgumentIndexError, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), associatedRuntime, index);
-
-	return ptr.release();
+	return peff::allocAndConstruct<InvalidLocalVarIndexError>(&associatedRuntime->globalHeapPoolAlloc, sizeof(std::max_align_t), associatedRuntime, index);
 }
 
 SLAKE_API InvalidArrayIndexError::InvalidArrayIndexError(
@@ -246,22 +124,11 @@ SLAKE_API const char *InvalidArrayIndexError::what() const {
 }
 
 SLAKE_API void InvalidArrayIndexError::dealloc() {
-	std::pmr::polymorphic_allocator<InvalidArrayIndexError> allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::destroy_at(this);
-	allocator.deallocate(this, 1);
+	peff::destroyAndRelease<InvalidArrayIndexError>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
 SLAKE_API InvalidArrayIndexError *InvalidArrayIndexError::alloc(Runtime *associatedRuntime, size_t index) {
-	using Alloc = std::pmr::polymorphic_allocator<InvalidArrayIndexError>;
-	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::unique_ptr<InvalidArrayIndexError, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), associatedRuntime, index);
-
-	return ptr.release();
+	return peff::allocAndConstruct<InvalidArrayIndexError>(&associatedRuntime->globalHeapPoolAlloc, sizeof(std::max_align_t), associatedRuntime, index);
 }
 
 SLAKE_API StackOverflowError::StackOverflowError(Runtime *associatedRuntime) : RuntimeExecError(associatedRuntime, RuntimeExecErrorCode::StackOverflow) {}
@@ -272,22 +139,11 @@ SLAKE_API const char *StackOverflowError::what() const {
 }
 
 SLAKE_API void StackOverflowError::dealloc() {
-	std::pmr::polymorphic_allocator<StackOverflowError> allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::destroy_at(this);
-	allocator.deallocate(this, 1);
+	peff::destroyAndRelease<StackOverflowError>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
 SLAKE_API StackOverflowError *StackOverflowError::alloc(Runtime *associatedRuntime) {
-	using Alloc = std::pmr::polymorphic_allocator<StackOverflowError>;
-	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::unique_ptr<StackOverflowError, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), associatedRuntime);
-
-	return ptr.release();
+	return peff::allocAndConstruct<StackOverflowError>(&associatedRuntime->globalHeapPoolAlloc, sizeof(std::max_align_t), associatedRuntime);
 }
 
 SLAKE_API InvalidArgumentNumberError::InvalidArgumentNumberError(
@@ -300,22 +156,11 @@ SLAKE_API const char *InvalidArgumentNumberError::what() const {
 }
 
 SLAKE_API void InvalidArgumentNumberError::dealloc() {
-	std::pmr::polymorphic_allocator<InvalidArgumentNumberError> allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::destroy_at(this);
-	allocator.deallocate(this, 1);
+	peff::destroyAndRelease<InvalidArgumentNumberError>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
 SLAKE_API InvalidArgumentNumberError *InvalidArgumentNumberError::alloc(Runtime *associatedRuntime, uint32_t nArgs) {
-	using Alloc = std::pmr::polymorphic_allocator<InvalidArgumentNumberError>;
-	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::unique_ptr<InvalidArgumentNumberError, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), associatedRuntime, nArgs);
-
-	return ptr.release();
+	return peff::allocAndConstruct<InvalidArgumentNumberError>(&associatedRuntime->globalHeapPoolAlloc, sizeof(std::max_align_t), associatedRuntime, nArgs);
 }
 
 SLAKE_API ReferencedMemberNotFoundError::ReferencedMemberNotFoundError(
@@ -328,24 +173,13 @@ SLAKE_API const char *ReferencedMemberNotFoundError::what() const {
 }
 
 SLAKE_API void ReferencedMemberNotFoundError::dealloc() {
-	std::pmr::polymorphic_allocator<ReferencedMemberNotFoundError> allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::destroy_at(this);
-	allocator.deallocate(this, 1);
+	peff::destroyAndRelease<ReferencedMemberNotFoundError>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
 SLAKE_API ReferencedMemberNotFoundError *ReferencedMemberNotFoundError::alloc(
 	Runtime *associatedRuntime,
 	IdRefObject *idRef) {
-	using Alloc = std::pmr::polymorphic_allocator<ReferencedMemberNotFoundError>;
-	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::unique_ptr<ReferencedMemberNotFoundError, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), associatedRuntime, idRef);
-
-	return ptr.release();
+	return peff::allocAndConstruct<ReferencedMemberNotFoundError>(&associatedRuntime->globalHeapPoolAlloc, sizeof(std::max_align_t), associatedRuntime, idRef);
 }
 
 SLAKE_API NullRefError::NullRefError(
@@ -357,22 +191,11 @@ SLAKE_API const char *NullRefError::what() const {
 }
 
 SLAKE_API void NullRefError::dealloc() {
-	std::pmr::polymorphic_allocator<NullRefError> allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::destroy_at(this);
-	allocator.deallocate(this, 1);
+	peff::destroyAndRelease<NullRefError>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
 SLAKE_API NullRefError *NullRefError::alloc(Runtime *associatedRuntime) {
-	using Alloc = std::pmr::polymorphic_allocator<NullRefError>;
-	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::unique_ptr<NullRefError, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), associatedRuntime);
-
-	return ptr.release();
+	return peff::allocAndConstruct<NullRefError>(&associatedRuntime->globalHeapPoolAlloc, sizeof(std::max_align_t), associatedRuntime);
 }
 
 SLAKE_API UncaughtExceptionError::UncaughtExceptionError(
@@ -385,24 +208,13 @@ SLAKE_API const char *UncaughtExceptionError::what() const {
 }
 
 SLAKE_API void UncaughtExceptionError::dealloc() {
-	std::pmr::polymorphic_allocator<UncaughtExceptionError> allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::destroy_at(this);
-	allocator.deallocate(this, 1);
+	peff::destroyAndRelease<UncaughtExceptionError>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
 SLAKE_API UncaughtExceptionError *UncaughtExceptionError::alloc(
 	Runtime *associatedRuntime,
 	Value exceptionValue) {
-	using Alloc = std::pmr::polymorphic_allocator<UncaughtExceptionError>;
-	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::unique_ptr<UncaughtExceptionError, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), associatedRuntime, exceptionValue);
-
-	return ptr.release();
+	return peff::allocAndConstruct<UncaughtExceptionError>(&associatedRuntime->globalHeapPoolAlloc, sizeof(std::max_align_t), associatedRuntime, exceptionValue);
 }
 
 SLAKE_API MalformedClassStructureError::MalformedClassStructureError(
@@ -415,24 +227,13 @@ SLAKE_API const char *MalformedClassStructureError::what() const {
 }
 
 SLAKE_API void MalformedClassStructureError::dealloc() {
-	std::pmr::polymorphic_allocator<MalformedClassStructureError> allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::destroy_at(this);
-	allocator.deallocate(this, 1);
+	peff::destroyAndRelease<MalformedClassStructureError>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
 SLAKE_API MalformedClassStructureError *MalformedClassStructureError::alloc(
 	Runtime *associatedRuntime,
 	ClassObject *classObject) {
-	using Alloc = std::pmr::polymorphic_allocator<MalformedClassStructureError>;
-	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::unique_ptr<MalformedClassStructureError, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), associatedRuntime, classObject);
-
-	return ptr.release();
+	return peff::allocAndConstruct<MalformedClassStructureError>(&associatedRuntime->globalHeapPoolAlloc, sizeof(std::max_align_t), associatedRuntime, classObject);
 }
 
 SLAKE_API GenericInstantiationError::GenericInstantiationError(
@@ -454,54 +255,32 @@ SLAKE_API const char *MismatchedGenericArgumentNumberError::what() const {
 }
 
 SLAKE_API void MismatchedGenericArgumentNumberError::dealloc() {
-	std::pmr::polymorphic_allocator<MismatchedGenericArgumentNumberError> allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::destroy_at(this);
-	allocator.deallocate(this, 1);
+	peff::destroyAndRelease<MismatchedGenericArgumentNumberError>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
 SLAKE_API MismatchedGenericArgumentNumberError *MismatchedGenericArgumentNumberError::alloc(Runtime *associatedRuntime) {
-	using Alloc = std::pmr::polymorphic_allocator<MismatchedGenericArgumentNumberError>;
-	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::unique_ptr<MismatchedGenericArgumentNumberError, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), associatedRuntime);
-
-	return ptr.release();
+	return peff::allocAndConstruct<MismatchedGenericArgumentNumberError>(&associatedRuntime->globalHeapPoolAlloc, sizeof(std::max_align_t), associatedRuntime);
 }
 
 SLAKE_API GenericParameterNotFoundError::GenericParameterNotFoundError(
 	Runtime *associatedRuntime,
-	std::pmr::string &&name)
+	peff::String &&name)
 	: RuntimeExecError(associatedRuntime, RuntimeExecErrorCode::InvalidArgumentIndex),
-	  name(name) {}
+	  name(std::move(name)) {}
 SLAKE_API GenericParameterNotFoundError::~GenericParameterNotFoundError() {}
 
 SLAKE_API const char *GenericParameterNotFoundError::what() const {
-	return "Mismatched generic argument number";
+	return "Generic parameter not found";
 }
 
 SLAKE_API void GenericParameterNotFoundError::dealloc() {
-	std::pmr::polymorphic_allocator<GenericParameterNotFoundError> allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::destroy_at(this);
-	allocator.deallocate(this, 1);
+	peff::destroyAndRelease<GenericParameterNotFoundError>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
 SLAKE_API GenericParameterNotFoundError *GenericParameterNotFoundError::alloc(
 	Runtime *associatedRuntime,
-	std::pmr::string &&name) {
-	using Alloc = std::pmr::polymorphic_allocator<GenericParameterNotFoundError>;
-	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::unique_ptr<GenericParameterNotFoundError, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), associatedRuntime, std::move(name));
-
-	return ptr.release();
+	peff::String &&name) {
+	return peff::allocAndConstruct<GenericParameterNotFoundError>(&associatedRuntime->globalHeapPoolAlloc, sizeof(std::max_align_t), associatedRuntime, std::move(name));
 }
 
 SLAKE_API OptimizerError::OptimizerError(
@@ -529,25 +308,14 @@ SLAKE_API const char *MalformedProgramError::what() const {
 }
 
 SLAKE_API void MalformedProgramError::dealloc() {
-	std::pmr::polymorphic_allocator<MalformedProgramError> allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::destroy_at(this);
-	allocator.deallocate(this, 1);
+	peff::destroyAndRelease<MalformedProgramError>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
 SLAKE_API MalformedProgramError *MalformedProgramError::alloc(
 	Runtime *associatedRuntime,
 	RegularFnOverloadingObject *fnOverloading,
 	size_t offIns) {
-	using Alloc = std::pmr::polymorphic_allocator<MalformedProgramError>;
-	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::unique_ptr<MalformedProgramError, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), associatedRuntime, fnOverloading, offIns);
-
-	return ptr.release();
+	return peff::allocAndConstruct<MalformedProgramError>(&associatedRuntime->globalHeapPoolAlloc, sizeof(std::max_align_t), associatedRuntime, fnOverloading, offIns);
 }
 
 SLAKE_API ErrorEvaluatingObjectTypeError::ErrorEvaluatingObjectTypeError(
@@ -563,22 +331,11 @@ SLAKE_API const char *ErrorEvaluatingObjectTypeError::what() const {
 }
 
 SLAKE_API void ErrorEvaluatingObjectTypeError::dealloc() {
-	std::pmr::polymorphic_allocator<ErrorEvaluatingObjectTypeError> allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::destroy_at(this);
-	allocator.deallocate(this, 1);
+	peff::destroyAndRelease<ErrorEvaluatingObjectTypeError>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
 SLAKE_API ErrorEvaluatingObjectTypeError *ErrorEvaluatingObjectTypeError::alloc(
 	Runtime *associatedRuntime,
 	Object *object) {
-	using Alloc = std::pmr::polymorphic_allocator<ErrorEvaluatingObjectTypeError>;
-	Alloc allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::unique_ptr<ErrorEvaluatingObjectTypeError, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), associatedRuntime, object);
-
-	return ptr.release();
+	return peff::allocAndConstruct<ErrorEvaluatingObjectTypeError>(&associatedRuntime->globalHeapPoolAlloc, sizeof(std::max_align_t), associatedRuntime, object);
 }

@@ -26,29 +26,31 @@ SLAKE_API HostObjectRef<IdRefObject> Runtime::_loadIdRef(LoaderContext &context,
 	while (true) {
 		i = _read<slxfmt::IdRefEntryDesc>(context.fs);
 
-		std::pmr::string name(i.lenName, '\0', &globalHeapPoolResource);
+		peff::String name(&globalHeapPoolAlloc);
+		name.resize(i.lenName);
 		context.fs.read(name.data(), i.lenName);
 
-		GenericArgList genericArgs(&globalHeapPoolResource);
+		GenericArgList genericArgs(&globalHeapPoolAlloc);
 		genericArgs.resize(i.nGenericArgs);
-		genericArgs.shrink_to_fit();
+		// genericArgs.shrink_to_fit();
 		for (size_t j = 0; j < i.nGenericArgs; ++j)
-			genericArgs[j] = _loadType(context, holder);
+			genericArgs.at(j) = _loadType(context, holder);
 
 		bool hasArgs = i.flags & slxfmt::RSD_HASARG;
 		bool hasVarArg = false;
-		std::pmr::vector<Type> paramTypes(&globalHeapPoolResource);
+		peff::DynArray<Type> paramTypes(&globalHeapPoolAlloc);
 
 		if (hasArgs) {
 			hasVarArg = i.flags & slxfmt::RSD_VARARG;
 
 			paramTypes.resize(i.nParams);
-			paramTypes.shrink_to_fit();
+			// paramTypes.shrink_to_fit();
 			for (size_t j = 0; j < i.nParams; ++j)
-				paramTypes[j] = _loadType(context, holder);
+				paramTypes.at(j) = _loadType(context, holder);
 		}
 
-		ref->entries.push_back(IdRefEntry(std::move(name), std::move(genericArgs), hasArgs, std::move(paramTypes), hasVarArg));
+		if(!ref->entries.pushBack(IdRefEntry(std::move(name), std::move(genericArgs), hasArgs, std::move(paramTypes), hasVarArg)))
+			terminate();
 
 		if (!(i.flags & slxfmt::RSD_NEXT))
 			break;
@@ -91,8 +93,9 @@ SLAKE_API Value Runtime::_loadValue(LoaderContext &context, HostRefHolder &holde
 			return Value(_read<double>(context.fs));
 		case slxfmt::TypeId::String: {
 			auto len = _read<uint32_t>(context.fs);
-			std::string s(len, '\0');
-			context.fs.read(&(s[0]), len);
+			peff::String s(&globalHeapPoolAlloc);
+			s.resize(len);
+			context.fs.read(s.data(), len);
 
 			auto object = StringObject::alloc(this, std::move(s));
 
@@ -190,7 +193,8 @@ SLAKE_API Type Runtime::_loadType(LoaderContext &context, HostRefHolder &holder)
 		case slxfmt::TypeId::GenericArg: {
 			uint8_t length = _read<uint8_t>(context.fs);
 
-			std::string name(length, '\0');
+			peff::String name(&globalHeapPoolAlloc);
+			name.resize(length);
 			context.fs.read(name.data(), length);
 
 			auto nameObject = StringObject::alloc(this, std::move(name));
@@ -205,19 +209,20 @@ SLAKE_API Type Runtime::_loadType(LoaderContext &context, HostRefHolder &holder)
 SLAKE_API GenericParam Runtime::_loadGenericParam(LoaderContext &context, HostRefHolder &holder) {
 	auto gpd = _read<slxfmt::GenericParamDesc>(context.fs);
 
-	std::string name(gpd.lenName, '\0');
-	context.fs.read(&(name[0]), gpd.lenName);
+	peff::String name(&globalHeapPoolAlloc);
+	name.resize(gpd.lenName);
+	context.fs.read(name.data(), gpd.lenName);
 
-	GenericParam param((std::pmr::memory_resource *)&this->globalHeapPoolResource);
-	param.name = name;
+	GenericParam param(&this->globalHeapPoolAlloc);
+	param.name = std::move(name);
 
 	if (gpd.hasBaseType)
 		param.baseType = _loadType(context, holder);
 
 	param.interfaces.resize(gpd.nInterfaces);
-	param.interfaces.shrink_to_fit();
+	// param.interfaces.shrink_to_fit();
 	for (size_t i = 0; i < gpd.nInterfaces; ++i) {
-		param.interfaces[i] = _loadType(context, holder);
+		param.interfaces.at(i) = _loadType(context, holder);
 	}
 
 	return param;
@@ -239,7 +244,8 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 	for (slxfmt::ClassTypeDesc i = {}; nItemsToRead--;) {
 		i = _read<slxfmt::ClassTypeDesc>(context.fs);
 
-		std::pmr::string name(i.lenName, '\0', &globalHeapPoolResource);
+		peff::String name(&globalHeapPoolAlloc);
+		name.resize(i.lenName);
 		context.fs.read(name.data(), i.lenName);
 
 		AccessModifier access = 0;
@@ -248,28 +254,32 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 		if (i.flags & slxfmt::CTD_FINAL)
 			access |= ACCESS_FINAL;
 
-		HostObjectRef<ClassObject> value = ClassObject::alloc(this, access);
+		ScopeUniquePtr scope(Scope::alloc(&globalHeapPoolAlloc, nullptr));
 
-		value->genericParams.resize(i.nGenericParams);
-		value->genericParams.shrink_to_fit();
+		HostObjectRef<ClassObject> value = ClassObject::alloc(this, std::move(scope), access);
+
+		value->name = std::move(name);
+
+		//value->genericParams.resizeWith(i.nGenericParams, GenericParam(&globalHeapPoolAlloc));
+		// value->genericParams.shrink_to_fit();
 		for (size_t j = 0; j < i.nGenericParams; ++j)
-			value->genericParams[j] = _loadGenericParam(context, holder);
+			value->genericParams.pushBack(_loadGenericParam(context, holder));
 
 		// Load reference to the parent class.
 		if (i.flags & slxfmt::CTD_DERIVED)
 			value->parentClass = Type(TypeId::Instance, _loadIdRef(context, holder).release());
 
 		// Load references to implemented interfaces.
-		value->implInterfaces.resize(i.nImpls);
-		value->implInterfaces.shrink_to_fit();
+		//value->implInterfaces.resize(i.nImpls);
+		// value->implInterfaces.shrink_to_fit();
 		for (auto j = 0; j < i.nImpls; ++j)
-			value->implInterfaces[j] = _loadIdRef(context, holder).release();
+			value->implInterfaces.pushBack(_loadIdRef(context, holder).release());
 
 		LoaderContext newContext = context;
 		newContext.ownerObject = value.get();
 		_loadScope(newContext, value.get(), loadModuleFlags, holder);
 
-		mod->scope->putMember(name, value.release());
+		mod->scope->putMember(value.release());
 	}
 
 	//
@@ -279,30 +289,34 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 	for (slxfmt::InterfaceTypeDesc i = {}; nItemsToRead--;) {
 		i = _read<slxfmt::InterfaceTypeDesc>(context.fs);
 
-		std::pmr::string name(i.lenName, '\0', &globalHeapPoolResource);
+		peff::String name(&globalHeapPoolAlloc);
+		name.resize(i.lenName);
 		context.fs.read(name.data(), i.lenName);
 
 		AccessModifier access = 0;
 		if (i.flags & slxfmt::ITD_PUB)
 			access |= ACCESS_PUB;
 
-		HostObjectRef<InterfaceObject> value = InterfaceObject::alloc(this, access);
+		ScopeUniquePtr scope(Scope::alloc(&globalHeapPoolAlloc, nullptr));
+		peff::DynArray<Type> parents(&globalHeapPoolAlloc);
+		HostObjectRef<InterfaceObject> value = InterfaceObject::alloc(this, std::move(scope), access, std::move(parents));
+		value->name = std::move(name);
 
 		value->genericParams.resize(i.nGenericParams);
-		value->genericParams.shrink_to_fit();
+		// value->genericParams.shrink_to_fit();
 		for (size_t j = 0; j < i.nGenericParams; ++j)
-			value->genericParams.push_back(_loadGenericParam(context, holder));
+			value->genericParams.pushBack(_loadGenericParam(context, holder));
 
 		value->parents.resize(i.nParents);
-		value->parents.shrink_to_fit();
+		// value->parents.shrink_to_fit();
 		for (auto j = 0; j < i.nParents; ++j)
-			value->parents[j] = (_loadIdRef(context, holder).release());
+			value->parents.at(j) = (_loadIdRef(context, holder).release());
 
 		LoaderContext newContext = context;
 		newContext.ownerObject = value.get();
 		_loadScope(newContext, value.get(), loadModuleFlags, holder);
 
-		mod->scope->putMember(name, value.release());
+		mod->scope->putMember(value.release());
 	}
 
 	//
@@ -312,7 +326,8 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 	for (slxfmt::VarDesc i = { 0 }; nItemsToRead--;) {
 		i = _read<slxfmt::VarDesc>(context.fs);
 
-		std::pmr::string name(i.lenName, '\0', &globalHeapPoolResource);
+		peff::String name(&globalHeapPoolAlloc);
+		name.resize(i.lenName);
 		context.fs.read(name.data(), i.lenName);
 
 		AccessModifier access = 0;
@@ -391,7 +406,8 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 			}
 		}
 
-		mod->scope->putMember(name, var.release());
+		var->name = std::move(name);
+		mod->scope->putMember(var.release());
 	}
 
 	//
@@ -404,7 +420,8 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 		for (slxfmt::FnDesc i = { 0 }; nOverloadings--;) {
 			i = _read<slxfmt::FnDesc>(context.fs);
 
-			std::pmr::string name(i.lenName, '\0', &globalHeapPoolResource);
+			peff::String name(&globalHeapPoolAlloc);
+			name.resize(i.lenName);
 			context.fs.read(name.data(), i.lenName);
 
 			AccessModifier access = 0;
@@ -423,10 +440,11 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 
 			if (!fn) {
 				fn = FnObject::alloc(this);
-				mod->scope->putMember(name, fn.get());
+				fn->name = std::move(name);
+				mod->scope->putMember(fn.get());
 			}
 
-			HostObjectRef<RegularFnOverloadingObject> overloading = RegularFnOverloadingObject::alloc(fn.get(), access, std::pmr::vector<Type>(&globalHeapPoolResource), Type(), i.nRegisters, 0);
+			HostObjectRef<RegularFnOverloadingObject> overloading = RegularFnOverloadingObject::alloc(fn.get(), access, peff::DynArray<Type>(&globalHeapPoolAlloc), Type(), i.nRegisters, 0);
 
 			if (!(overloading->access & ACCESS_STATIC)) {
 				switch (mod->getKind()) {
@@ -449,27 +467,28 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 
 			overloading->returnType = _loadType(newContext, holder);
 
-			overloading->genericParams.resize(i.nGenericParams);
-			overloading->genericParams.shrink_to_fit();
+			//overloading->genericParams.resize(i.nGenericParams);
+			// overloading->genericParams.shrink_to_fit();
 			for (size_t j = 0; j < i.nGenericParams; ++j) {
-				overloading->genericParams[j] = _loadGenericParam(newContext, holder);
+				overloading->genericParams.pushBack(_loadGenericParam(newContext, holder));
 			}
 
-			overloading->paramTypes.resize(i.nParams);
-			overloading->paramTypes.shrink_to_fit();
+			//overloading->paramTypes.resize(i.nParams);
+			// overloading->paramTypes.shrink_to_fit();
 			for (uint8_t j = 0; j < i.nParams; ++j) {
-				overloading->paramTypes[j] = _loadType(newContext, holder);
+				overloading->paramTypes.pushBack(_loadType(newContext, holder));
 			}
 
 			if (i.flags & slxfmt::FND_VARG)
 				overloading->overloadingFlags |= OL_VARG;
 
 			if (i.lenBody) {
-				overloading->instructions.resize(i.lenBody);
-				overloading->instructions.shrink_to_fit();
+				if(!overloading->instructions.resize(i.lenBody))
+					terminate();
+				// overloading->instructions.shrink_to_fit();
 
 				for (uint32_t j = 0; j < i.lenBody; j++) {
-					auto &ins = overloading->instructions[j];
+					auto &ins = overloading->instructions.at(j);
 
 					slxfmt::InsHeader ih = _read<slxfmt::InsHeader>(newContext.fs);
 
@@ -486,7 +505,7 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 
 			for (uint32_t j = 0; j < i.nSourceLocDescs; ++j) {
 				slxfmt::SourceLocDesc sld = _read<slxfmt::SourceLocDesc>(context.fs);
-				overloading->sourceLocDescs.push_back(sld);
+				overloading->sourceLocDescs.pushBack(std::move(sld));
 			}
 
 			fn->overloadings.insert(overloading.release());
@@ -495,11 +514,14 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 }
 
 SLAKE_API HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &fs, LoadModuleFlags flags) {
-	HostObjectRef<ModuleObject> mod = ModuleObject::alloc(this, ACCESS_PUB);
+	ScopeUniquePtr scope(Scope::alloc(&globalHeapPoolAlloc, nullptr));
+	if (!scope)
+		return nullptr;
+	HostObjectRef<ModuleObject> mod = ModuleObject::alloc(this, std::move(scope), ACCESS_PUB);
 
 	mod->loadStatus = ModuleLoadStatus::Loading;
 
-	HostRefHolder holder;
+	HostRefHolder holder(&globalHeapPoolAlloc);
 
 	LoaderContext context{ fs, mod.get() };
 
@@ -519,29 +541,41 @@ SLAKE_API HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &f
 
 		// Create parent modules.
 		for (size_t i = 0; i < modName->entries.size() - 1; ++i) {
-			std::pmr::string name = modName->entries[i].name;
+			if (!curObject->getMember(modName->entries.at(i).name, nullptr)) {
+				ScopeUniquePtr subscope(Scope::alloc(&globalHeapPoolAlloc, nullptr));
 
-			if (!curObject->getMember(name, nullptr)) {
+				peff::String name(&globalHeapPoolAlloc);
+				if (!peff::copyAssign(name, modName->entries.at(i).name)) {
+					terminate();
+				}
+
 				// Create a new one if corresponding module does not present.
-				auto mod = ModuleObject::alloc(this, ACCESS_PUB);
+				auto mod = ModuleObject::alloc(this, std::move(subscope), ACCESS_PUB);
+				mod->name = std::move(name);
 
 				if (curObject->getKind() == ObjectKind::RootObject)
-					((RootObject *)curObject)->scope->putMember(name, mod.get());
+					((RootObject *)curObject)->scope->putMember(mod.get());
 				else
-					((ModuleObject *)curObject)->scope->putMember(name, mod.get());
+					((ModuleObject *)curObject)->scope->putMember(mod.get());
 
 				curObject = (Object *)mod.get();
 			} else {
 				// Continue if the module presents.
-				curObject = curObject->getMember(name, nullptr);
+				curObject = curObject->getMember(modName->entries.at(i).name, nullptr);
 			}
 		}
 
-		std::pmr::string lastName = modName->entries.back().name;
+		peff::String lastName(&globalHeapPoolAlloc);
+		if (!peff::copyAssign(lastName, modName->entries.back().name)) {
+			terminate();
+		}
+
+		mod->name = std::move(lastName);
+
 		// Add current module.
-		if (curObject->getKind() == ObjectKind::RootObject)
-			((RootObject *)curObject)->scope->putMember(lastName, mod.get());
-		else {
+		if (curObject->getKind() == ObjectKind::RootObject) {
+			((RootObject *)curObject)->scope->putMember(mod.get());
+		} else {
 			auto moduleObject = (ModuleObject *)curObject;
 
 			if (auto member = moduleObject->getMember(lastName, nullptr); member) {
@@ -561,13 +595,14 @@ SLAKE_API HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &f
 					throw LoaderError("Module \"" + std::to_string(modName.get(), this) + "\" conflicted with existing value which is on the same path");
 			}
 
-			moduleObject->scope->putMember(lastName, mod.get());
+			moduleObject->scope->putMember(mod.get());
 		}
 	}
 
 	for (uint8_t i = 0; i < ih.nImports; i++) {
 		auto len = _read<uint32_t>(fs);
-		std::pmr::string name(len, '\0', &globalHeapPoolResource);
+		peff::String name(&globalHeapPoolAlloc);
+		name.resize(len);
 		fs.read(name.data(), len);
 
 		HostObjectRef<IdRefObject> moduleName = _loadIdRef(context, holder);
@@ -578,12 +613,9 @@ SLAKE_API HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &f
 				throw LoaderError("Error finding module `" + std::to_string(moduleName) + "' for dependencies");
 
 			auto mod = loadModule(*moduleStream.get(), LMOD_NORELOAD);
-
-			if (name.size())
-				mod->scope->putMember(name, (MemberObject *)AliasObject::alloc(this, mod.get()).release());
 		}
 
-		mod->imports[name] = moduleName.get();
+		mod->imports.insert(std::move(name), moduleName.get());
 	}
 
 	_loadScope(context, mod.get(), flags, holder);

@@ -14,13 +14,13 @@ static const char *_ctrlCharNames[] = {
 decompiler::DecompilerFlags decompiler::decompilerFlags = 0;
 
 void slake::decompiler::decompile(std::istream &fs, std::ostream &os) {
-	auto rt = std::make_unique<slake::Runtime>(std::pmr::get_default_resource());
+	auto rt = std::make_unique<slake::Runtime>(peff::getDefaultAlloc());
 	auto mod = rt->loadModule(fs, LMOD_NOIMPORT);
 
 	auto modName = rt->getFullName(mod.get());
 
-	for (auto &i : mod->scope->members)
-		decompileObject(rt.get(), i.second, os);
+	for (auto it = mod->scope->members.begin(); it != mod->scope->members.end(); ++it)
+		decompileObject(rt.get(), it.value(), os);
 }
 
 std::string slake::decompiler::decompileTypeName(const Type &type, Runtime *rt) {
@@ -41,27 +41,19 @@ std::string slake::decompiler::decompileIdRef(const IdRefObject *ref) {
 	std::string s;
 
 	for (size_t i = 0; i < ref->entries.size(); ++i) {
-		auto scope = ref->entries[i];
+		auto &scope = ref->entries.at(i);
 
 		if (i)
 			s += ".";
 
-		if ((scope.name.find('.') != std::string::npos) ||
-			(scope.name.find('<') != std::string::npos) ||
-			(scope.name.find('>') != std::string::npos)) {
-			s += "{";
-			s += scope.name;
-			s += "}";
-		} else {
-			s += scope.name;
-		}
+		s += scope.name.data();
 
 		if (auto nGenericParams = scope.genericArgs.size(); nGenericParams) {
 			s += "<";
 			for (size_t j = 0; j < nGenericParams; ++j) {
 				if (j)
 					s += ",";
-				s += decompileTypeName(scope.genericArgs[j], ref->getRuntime());
+				s += decompileTypeName(scope.genericArgs.at(j), ref->getRuntime());
 			}
 			s += ">";
 		}
@@ -71,7 +63,7 @@ std::string slake::decompiler::decompileIdRef(const IdRefObject *ref) {
 			for (size_t j = 0; j < scope.paramTypes.size(); ++j) {
 				if (j)
 					s += ",";
-				s += decompileTypeName(scope.paramTypes[j], ref->getRuntime());
+				s += decompileTypeName(scope.paramTypes.at(j), ref->getRuntime());
 			}
 			if (scope.hasVarArg)
 				s += "...";
@@ -150,7 +142,7 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 							// trimFnInstructions(fn->instructions);
 
 							for (size_t i = 0; i < fn->instructions.size(); ++i) {
-								auto &ins = fn->instructions[i];
+								auto &ins = fn->instructions.at(i);
 
 								if (!(decompilerFlags & DECOMP_SRCLOC)) {
 									for (auto &j : fn->sourceLocDescs) {
@@ -202,8 +194,8 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 			os << std::string(indentLevel, '\t')
 			   << ".module " << v->getName() << "\n";
 
-			for (auto &i : v->scope->members)
-				decompileObject(rt, i.second, os, indentLevel + 1);
+			for (auto it = v->scope->members.begin(); it != v->scope->members.end(); ++it)
+				decompileObject(rt, it.value(), os, indentLevel + 1);
 
 			os << std::string(indentLevel, '\t')
 			   << ".end"
@@ -231,8 +223,8 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 			os << std::string(indentLevel, '\t')
 			   << ".class " << v->getName() << "\n";
 
-			for (auto &i : v->scope->members)
-				decompileObject(rt, i.second, os, indentLevel + 1);
+			for (auto it = v->scope->members.begin(); it != v->scope->members.end(); ++it)
+				decompileObject(rt, it.value(), os, indentLevel + 1);
 
 			os << std::string(indentLevel, '\t')
 			   << ".end"

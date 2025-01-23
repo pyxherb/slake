@@ -30,7 +30,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 					SLAKE_RETURN_IF_EXCEPT(j.loadDeferredType(this));
 				}
 
-				GenericInstantiationContext genericInstantiationContext(&globalHeapPoolResource);
+				GenericInstantiationContext genericInstantiationContext(&globalHeapPoolAlloc);
 
 				genericInstantiationContext.genericArgs = &i.genericArgs;
 				SLAKE_RETURN_IF_EXCEPT(instantiateGenericObject(scopeObject, scopeObject, genericInstantiationContext));
@@ -91,10 +91,12 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 SLAKE_API std::string Runtime::getFullName(const MemberObject *v) const {
 	std::string s;
 
-	auto fullIdRef = getFullRef(v);
+	peff::DynArray<IdRefEntry> fullIdRef;
+	if (!getFullRef(v, fullIdRef))
+		throw std::bad_alloc();
 
 	for (size_t i = 0; i < fullIdRef.size(); ++i) {
-		auto &scope = fullIdRef[i];
+		auto &scope = fullIdRef.at(i);
 
 		if (i)
 			s += ".";
@@ -105,7 +107,7 @@ SLAKE_API std::string Runtime::getFullName(const MemberObject *v) const {
 			for (size_t j = 0; j < nGenericParams; ++j) {
 				if (j)
 					s += ",";
-				s += std::to_string(scope.genericArgs[j], this);
+				s += std::to_string(scope.genericArgs.at(j), this);
 			}
 			s += ">";
 		}
@@ -118,15 +120,31 @@ SLAKE_API std::string Runtime::getFullName(const IdRefObject *v) const {
 	return std::to_string(v);
 }
 
-SLAKE_API std::deque<IdRefEntry> Runtime::getFullRef(const MemberObject *v) const {
-	std::deque<IdRefEntry> entries;
+SLAKE_API bool Runtime::getFullRef(const MemberObject *v, peff::DynArray<IdRefEntry> &idRefOut) const {
 	do {
 		switch (v->getKind()) {
 			case ObjectKind::Instance:
 				v = (const MemberObject *)((InstanceObject *)v)->_class;
 				break;
 		}
-		entries.push_front({ v->getName(), v->getGenericArgs() });
+
+		const char *name = v->getName();
+		size_t szName = strlen(name);
+		peff::String copiedName(&globalHeapPoolAlloc);
+		if (!copiedName.resize(szName)) {
+			return false;
+		}
+		memcpy(copiedName.data(), name, szName);
+		GenericArgList copiedGenericArgs(&globalHeapPoolAlloc);
+		if (v->getGenericArgs()) {
+			if (!peff::copyAssign(copiedGenericArgs, *v->getGenericArgs()))
+				return false;
+		}
+
+		peff::DynArray<Type> paramList(&globalHeapPoolAlloc);
+		if (!idRefOut.pushFront(IdRefEntry(std::move(copiedName), std::move(copiedGenericArgs), false, std::move(paramList), false))) {
+			return false;
+		}
 	} while ((Object *)(v = (const MemberObject *)v->getParent()) != _rootObject);
-	return entries;
+	return true;
 }

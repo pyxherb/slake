@@ -14,29 +14,21 @@ SLAKE_API InstanceMemberAccessorVarObject::~InstanceMemberAccessorVarObject() {
 }
 
 SLAKE_API HostObjectRef<InstanceMemberAccessorVarObject> slake::InstanceMemberAccessorVarObject::alloc(Runtime *rt, InstanceObject *instanceObject) {
-	using Alloc = std::pmr::polymorphic_allocator<InstanceMemberAccessorVarObject>;
-	Alloc allocator(&rt->globalHeapPoolResource);
+	std::unique_ptr<InstanceMemberAccessorVarObject, util::DeallocableDeleter<InstanceMemberAccessorVarObject>>
+		ptr(peff::allocAndConstruct<InstanceMemberAccessorVarObject>(&rt->globalHeapPoolAlloc, sizeof(std::max_align_t), rt, instanceObject));
 
-	std::unique_ptr<InstanceMemberAccessorVarObject, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), rt, instanceObject);
-
-	rt->createdObjects.push_back(ptr.get());
+	if (!rt->createdObjects.pushBack(ptr.get()))
+		return nullptr;
 
 	return ptr.release();
 }
 
 SLAKE_API void slake::InstanceMemberAccessorVarObject::dealloc() {
-	std::pmr::polymorphic_allocator<InstanceMemberAccessorVarObject> allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::destroy_at(this);
-	allocator.deallocate(this, 1);
+	peff::destroyAndRelease<InstanceMemberAccessorVarObject>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
 SLAKE_API InstanceObject::InstanceObject(Runtime *rt)
 	: Object(rt) {
-	memberAccessor = InstanceMemberAccessorVarObject::alloc(rt, this).get();
 }
 
 SLAKE_API InstanceObject::InstanceObject(const InstanceObject &x) : Object(x) {
@@ -61,16 +53,16 @@ SLAKE_API Object *InstanceObject::duplicate() const {
 }
 
 SLAKE_API MemberObject *InstanceObject::getMember(
-	const std::pmr::string &name,
+	const peff::String &name,
 	VarRefContext *varRefContextOut) const {
-	if (auto it = methodTable->methods.find(name);
+	if (auto it = methodTable->methods.find((std::string_view)name);
 		it != methodTable->methods.end())
-		return it->second;
+		return it.value();
 
 	if (auto it = objectLayout->fieldNameMap.find(name);
 		it != objectLayout->fieldNameMap.end()) {
 		if (varRefContextOut) {
-			*varRefContextOut = VarRefContext::makeInstanceContext(it->second);
+			*varRefContextOut = VarRefContext::makeInstanceContext(it.value());
 		}
 
 		return memberAccessor;
@@ -80,36 +72,39 @@ SLAKE_API MemberObject *InstanceObject::getMember(
 }
 
 SLAKE_API HostObjectRef<InstanceObject> slake::InstanceObject::alloc(Runtime *rt) {
-	using Alloc = std::pmr::polymorphic_allocator<InstanceObject>;
-	Alloc allocator(&rt->globalHeapPoolResource);
+	std::unique_ptr<InstanceObject, util::DeallocableDeleter<InstanceObject>> ptr(
+		peff::allocAndConstruct<InstanceObject>(
+			&rt->globalHeapPoolAlloc,
+			sizeof(std::max_align_t),
+			rt));
 
-	std::unique_ptr<InstanceObject, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), rt);
+	if (!(ptr->memberAccessor = InstanceMemberAccessorVarObject::alloc(rt, ptr.get()).get())) {
+		return nullptr;
+	}
 
-	rt->createdObjects.push_back(ptr.get());
+	if (!rt->createdObjects.pushBack(ptr.get()))
+		return nullptr;
 
 	return ptr.release();
 }
 
 SLAKE_API HostObjectRef<InstanceObject> slake::InstanceObject::alloc(const InstanceObject *other) {
-	using Alloc = std::pmr::polymorphic_allocator<InstanceObject>;
-	Alloc allocator(&other->associatedRuntime->globalHeapPoolResource);
+	std::unique_ptr<InstanceObject, util::DeallocableDeleter<InstanceObject>> ptr(
+		peff::allocAndConstruct<InstanceObject>(
+			&other->associatedRuntime->globalHeapPoolAlloc,
+			sizeof(std::max_align_t),
+			*other));
 
-	std::unique_ptr<InstanceObject, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), *other);
+	if (!(ptr->memberAccessor = InstanceMemberAccessorVarObject::alloc(other->associatedRuntime, ptr.get()).get())) {
+		return nullptr;
+	}
 
-	other->associatedRuntime->createdObjects.push_back(ptr.get());
+	if (!other->associatedRuntime->createdObjects.pushBack(ptr.get()))
+		return nullptr;
 
 	return ptr.release();
 }
 
 SLAKE_API void slake::InstanceObject::dealloc() {
-	std::pmr::polymorphic_allocator<InstanceObject> allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::destroy_at(this);
-	allocator.deallocate(this, 1);
+	peff::destroyAndRelease<InstanceObject>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }

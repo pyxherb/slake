@@ -2,31 +2,38 @@
 
 using namespace slake;
 
-SLAKE_API CountablePoolResource::CountablePoolResource(std::pmr::memory_resource *upstream) : upstream(upstream) {}
+SLAKE_API CountablePoolAlloc slake::g_countablePoolDefaultAlloc(nullptr);
 
-SLAKE_API void *CountablePoolResource::do_allocate(size_t bytes, size_t alignment) {
-	void *p = upstream->allocate(bytes, alignment);
+SLAKE_API CountablePoolAlloc::CountablePoolAlloc(peff::Alloc *upstream) : upstream(upstream), allocatedBlockSizes(upstream) {}
 
-	szAllocated += bytes;
+SLAKE_API peff::Alloc *CountablePoolAlloc::getDefaultAlloc() const noexcept {
+	return &g_countablePoolDefaultAlloc;
+}
+
+SLAKE_API void CountablePoolAlloc::onRefZero() noexcept {
+
+}
+
+SLAKE_API void *CountablePoolAlloc::alloc(size_t size, size_t alignment) noexcept {
+	void *p = upstream->alloc(size, alignment);
+	if (!p)
+		return nullptr;
+
+	szAllocated += size;
 
 	return p;
 }
 
-SLAKE_API void CountablePoolResource::do_deallocate(void *p, size_t bytes, size_t alignment) {
-	upstream->deallocate(p, bytes, alignment);
+SLAKE_API void CountablePoolAlloc::release(void *p, size_t size, size_t alignment) noexcept {
+	upstream->release(p, size, alignment);
 
-	szAllocated -= bytes;
+	szAllocated -= size;
 }
 
-SLAKE_API bool CountablePoolResource::do_is_equal(const std::pmr::memory_resource &other) const noexcept {
-	return this == &other;
-}
-
-SLAKE_API Runtime::Runtime(std::pmr::memory_resource *upstreamMemoryResource, RuntimeFlags flags)
-	: globalHeapPoolResource(upstreamMemoryResource),
-	  _flags(flags) {
-	_flags |= _RT_INITING;
-	_rootObject = RootObject::alloc(this).release();
+SLAKE_API Runtime::Runtime(peff::Alloc *upstream, RuntimeFlags flags)
+	: globalHeapPoolAlloc(upstream),
+	  _flags(flags | _RT_INITING) {
+	_rootObject = RootObject::alloc(this);
 	_flags &= ~_RT_INITING;
 }
 
@@ -35,13 +42,16 @@ SLAKE_API Runtime::~Runtime() {
 	_genericCacheLookupTable.clear();
 
 	activeContexts.clear();
+	managedThreads.clear();
 
 	_flags |= _RT_DEINITING;
 
-	gc();
-
 	_rootObject = nullptr;
 
+	gc();
+
+	// No need to delete the root object explicitly.
+
 	assert(!createdObjects.size());
-	assert(!globalHeapPoolResource.szAllocated);
+	assert(!globalHeapPoolAlloc.szAllocated);
 }

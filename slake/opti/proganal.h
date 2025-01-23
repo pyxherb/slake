@@ -52,33 +52,33 @@ namespace slake {
 		};
 
 		struct StackFrameState {
-			std::pmr::vector<LocalVarAnalyzedInfo> analyzedLocalVarInfo;
-			std::pmr::vector<size_t> stackBases;
+			peff::DynArray<LocalVarAnalyzedInfo> analyzedLocalVarInfo;
+			peff::DynArray<size_t> stackBases;
 
-			SLAKE_FORCEINLINE StackFrameState(std::pmr::memory_resource *memoryResource)
-				: analyzedLocalVarInfo(memoryResource),
-				  stackBases(memoryResource) {
+			SLAKE_FORCEINLINE StackFrameState(peff::Alloc *selfAllocator)
+				: analyzedLocalVarInfo(selfAllocator),
+				  stackBases(selfAllocator) {
 			}
 		};
 
 		struct FnCallAnalyzedInfo {
 			FnOverloadingObject *fnObject = nullptr;
-			std::pmr::vector<uint32_t> argPushInsOffs;
+			peff::DynArray<uint32_t> argPushInsOffs;
 
-			SLAKE_FORCEINLINE FnCallAnalyzedInfo(std::pmr::memory_resource *memoryResource)
-				: argPushInsOffs(memoryResource) {
+			SLAKE_FORCEINLINE FnCallAnalyzedInfo(peff::Alloc *selfAllocator)
+				: argPushInsOffs(selfAllocator) {
 			}
 		};
 
 		struct ProgramAnalyzedInfo {
-			std::pmr::map<uint32_t, RegAnalyzedInfo> analyzedRegInfo;
-			std::pmr::map<uint32_t, FnCallAnalyzedInfo> analyzedFnCallInfo;
-			std::pmr::map<FnOverloadingObject *, std::pmr::vector<uint32_t>> fnCallMap;
+			peff::Map<uint32_t, RegAnalyzedInfo> analyzedRegInfo;
+			peff::Map<uint32_t, FnCallAnalyzedInfo> analyzedFnCallInfo;
+			peff::Map<FnOverloadingObject *, std::pmr::vector<uint32_t>> fnCallMap;
 
 			SLAKE_FORCEINLINE ProgramAnalyzedInfo(Runtime *runtime)
-				: analyzedRegInfo(&runtime->globalHeapPoolResource),
-				  analyzedFnCallInfo(&runtime->globalHeapPoolResource),
-				  fnCallMap(&runtime->globalHeapPoolResource) {
+				: analyzedRegInfo(&runtime->globalHeapPoolAlloc),
+				  analyzedFnCallInfo(&runtime->globalHeapPoolAlloc),
+				  fnCallMap(&runtime->globalHeapPoolAlloc) {
 			}
 		};
 
@@ -91,7 +91,7 @@ namespace slake {
 			StackFrameState stackFrameState;
 			Object *lastCallTarget;
 			Type lastCallTargetType;
-			std::pmr::vector<uint32_t> argPushInsOffs;
+			peff::DynArray<uint32_t> argPushInsOffs;
 
 			SLAKE_FORCEINLINE ProgramAnalyzeContext(
 				Runtime *runtime,
@@ -102,8 +102,8 @@ namespace slake {
 				  fnObject(fnObject),
 				  analyzedInfoOut(analyzedInfoOut),
 				  hostRefHolder(hostRefHolder),
-				  stackFrameState(&runtime->globalHeapPoolResource),
-				  argPushInsOffs(&runtime->globalHeapPoolResource) {
+				  stackFrameState(&runtime->globalHeapPoolAlloc),
+				  argPushInsOffs(&runtime->globalHeapPoolAlloc) {
 			}
 		};
 

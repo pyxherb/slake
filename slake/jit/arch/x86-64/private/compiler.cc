@@ -215,7 +215,7 @@ InternalExceptionPointer slake::compileRegularFn(RegularFnOverloadingObject *fn,
 	size_t nIns = fn->instructions.size();
 
 	opti::ProgramAnalyzedInfo analyzedInfo(fn->associatedRuntime);
-	HostRefHolder hostRefHolder;
+	HostRefHolder hostRefHolder(&fn->associatedRuntime->globalHeapPoolAlloc);
 
 	InternalExceptionPointer exceptionPtr;
 

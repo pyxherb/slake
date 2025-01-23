@@ -49,8 +49,8 @@ void Compiler::importModule(std::shared_ptr<IdRefNode> ref) {
 			try {
 				auto mod = associatedRuntime->loadModule(is, LMOD_NOIMPORT | LMOD_NORELOAD);
 
-				for (auto j : mod->imports)
-					importModule(toAstIdRef(j.second->entries));
+				for (auto j = mod->imports.begin(); j != mod->imports.end(); ++j)
+					importModule(toAstIdRef(j.value()->entries));
 
 				for (auto j : mod->unnamedImports)
 					importModule(toAstIdRef(j->entries));
@@ -129,12 +129,13 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 	if (importedDefinitions.count(value))
 		return;
 
-	auto fullRef = toAstIdRef(associatedRuntime->getFullRef(value));
-	auto s = completeModuleNamespaces(fullRef);
+	peff::DynArray<slake::IdRefEntry> fullRef;
+	associatedRuntime->getFullRef(value, fullRef);
+	auto s = completeModuleNamespaces(toAstIdRef(fullRef));
 	std::shared_ptr<MemberNode> owner = std::static_pointer_cast<MemberNode>(scope->owner->shared_from_this());
 
-	for (auto i : value->scope->members)
-		importDefinitions(s, owner, i.second);
+	for (auto it = value->scope->members.begin(); it != value->scope->members.end(); ++it)
+		importDefinitions(s, owner, it.value());
 }
 
 void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, ClassObject *value) {
@@ -147,9 +148,11 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 	if (!parentClassObject)
 		assert(false);
 
+	peff::DynArray<slake::IdRefEntry> ref;
+	associatedRuntime->getFullRef(parentClassObject, ref);
 	std::shared_ptr<CustomTypeNameNode> parentClassTypeName =
 		std::make_shared<CustomTypeNameNode>(
-			toAstIdRef(associatedRuntime->getFullRef(parentClassObject)),
+			toAstIdRef(ref),
 			this,
 			scope.get());
 
@@ -159,11 +162,11 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 		if (!implInterfaceObject)
 			assert(false);
 
-		auto implInterfaceRef = associatedRuntime->getFullRef(implInterfaceObject);
+		associatedRuntime->getFullRef(implInterfaceObject, ref);
 
 		implInterfaceTypeNames.push_back(
 			std::make_shared<CustomTypeNameNode>(
-				toAstIdRef(implInterfaceRef),
+				toAstIdRef(ref),
 				this,
 				scope.get()));
 	}
@@ -182,8 +185,8 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 
 	(scope->members[value->getName()] = cls)->bind(parent.get());
 
-	for (auto i : value->scope->members)
-		importDefinitions(cls->scope, cls, (Object *)i.second);
+	for (auto it = value->scope->members.begin(); it != value->scope->members.end(); ++it)
+		importDefinitions(cls->scope, cls, (Object *)it.value());
 }
 
 void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, InterfaceObject *value) {
@@ -200,8 +203,8 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 
 	(scope->members[value->getName()] = interface)->bind(parent.get());
 
-	for (auto i : value->scope->members)
-		importDefinitions(scope, interface, (Object *)i.second);
+	for (auto it = value->scope->members.begin(); it != value->scope->members.end(); ++it)
+		importDefinitions(scope, interface, (Object *)it.value());
 }
 
 void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, Object *value) {
@@ -212,8 +215,8 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 		case slake::ObjectKind::RootObject: {
 			RootObject *v = (RootObject *)value;
 
-			for (auto i : v->scope->members)
-				importDefinitions(scope, parent, i.second);
+			for (auto it = v->scope->members.begin(); it != v->scope->members.end(); ++it)
+				importDefinitions(scope, parent, it.value());
 
 			break;
 		}
@@ -284,7 +287,8 @@ std::shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 				case slake::ValueType::Bool:
 					return std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 				case slake::ValueType::TypeName: {
-					auto refs = associatedRuntime->getFullRef((MemberObject *)runtimeType.getCustomTypeExData());
+					peff::DynArray<slake::IdRefEntry> refs;
+					associatedRuntime->getFullRef((MemberObject *)runtimeType.getCustomTypeExData(), refs);
 					std::shared_ptr<IdRefNode> ref = std::make_shared<IdRefNode>();
 
 					for (auto &i : refs) {
@@ -293,7 +297,7 @@ std::shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 							genericArgs.push_back(toTypeName(j));
 						}
 
-						ref->entries.push_back(IdRefEntry({}, SIZE_MAX, std::string(i.name.c_str(), i.name.size()), genericArgs));
+						ref->entries.push_back(IdRefEntry({}, SIZE_MAX, std::string(i.name.data(), i.name.size()), genericArgs));
 					}
 
 					return std::make_shared<CustomTypeNameNode>(ref, this, nullptr);
@@ -313,7 +317,7 @@ std::shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 	throw std::logic_error("Unrecognized runtime value type");
 }
 
-std::shared_ptr<IdRefNode> Compiler::toAstIdRef(std::pmr::deque<slake::IdRefEntry> runtimeRefEntries) {
+std::shared_ptr<IdRefNode> Compiler::toAstIdRef(const peff::DynArray<slake::IdRefEntry> &runtimeRefEntries) {
 	std::shared_ptr<IdRefNode> ref = std::make_shared<IdRefNode>();
 
 	for (auto &i : runtimeRefEntries) {
@@ -322,22 +326,7 @@ std::shared_ptr<IdRefNode> Compiler::toAstIdRef(std::pmr::deque<slake::IdRefEntr
 		for (auto &j : i.genericArgs)
 			genericArgs.push_back(toTypeName(j));
 
-		ref->entries.push_back(IdRefEntry({}, SIZE_MAX, std::string(i.name.c_str(), i.name.size()), genericArgs));
-	}
-
-	return ref;
-}
-
-std::shared_ptr<IdRefNode> Compiler::toAstIdRef(std::deque<slake::IdRefEntry> runtimeRefEntries) {
-	std::shared_ptr<IdRefNode> ref = std::make_shared<IdRefNode>();
-
-	for (auto &i : runtimeRefEntries) {
-		std::deque<std::shared_ptr<TypeNameNode>> genericArgs;
-
-		for (auto &j : i.genericArgs)
-			genericArgs.push_back(toTypeName(j));
-
-		ref->entries.push_back(IdRefEntry({}, SIZE_MAX, std::string(i.name.c_str(), i.name.size()), genericArgs));
+		ref->entries.push_back(IdRefEntry({}, SIZE_MAX, std::string(i.name.data(), i.name.size()), genericArgs));
 	}
 
 	return ref;

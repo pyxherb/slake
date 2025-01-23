@@ -15,7 +15,7 @@ namespace slake {
 	/// @brief Minor frames are created by ENTER instructions and destroyed by
 	/// LEAVE instructions.
 	struct MinorFrame final {
-		std::pmr::vector<ExceptionHandler> exceptHandlers;	// Exception handlers
+		peff::DynArray<ExceptionHandler> exceptHandlers;  // Exception handlers
 
 		uint32_t nLocalVars = 0;
 		size_t stackBase = 0;
@@ -33,26 +33,26 @@ namespace slake {
 
 	/// @brief A major frame represents a single calling frame.
 	struct MajorFrame final {
-		Context *context = nullptr;		// Context
+		Context *context = nullptr;	 // Context
 
 		const FnOverloadingObject *curFn = nullptr;	 // Current function overloading.
 		uint32_t curIns = 0;						 // Offset of current instruction in function body.
 
-		std::pmr::vector<RegularVarObject *> argStack;	// Argument stack.
+		peff::DynArray<RegularVarObject *> argStack;  // Argument stack.
 
-		std::pmr::vector<Value> nextArgStack;  // Argument stack for next call.
+		peff::DynArray<Value> nextArgStack;	 // Argument stack for next call.
 
-		std::pmr::vector<LocalVarRecord> localVarRecords;  // Local variable records.
-		LocalVarAccessorVarObject *localVarAccessor;	   // Local variable accessor.
+		peff::DynArray<LocalVarRecord> localVarRecords;			// Local variable records.
+		LocalVarAccessorVarObject *localVarAccessor = nullptr;	// Local variable accessor.
 
-		std::pmr::vector<Value> regs;  // Local registers.
+		peff::DynArray<Value> regs;	 // Local registers.
 		size_t nRegs = 0;
 
 		Object *thisObject = nullptr;  // `this' object.
 
 		uint32_t returnValueOutReg = UINT32_MAX;
 
-		std::pmr::vector<MinorFrame> minorFrames;  // Minor frames.
+		peff::DynArray<MinorFrame> minorFrames;	 // Minor frames.
 
 		Value curExcept = nullptr;	// Current exception.
 
@@ -64,11 +64,11 @@ namespace slake {
 		}
 
 		/// @brief Leave current minor frame.
-		SLAKE_API void leave();
+		SLAKE_API [[nodiscard]] bool leave();
 
 		SLAKE_FORCEINLINE void resizeRegs(size_t nRegs) {
 			this->nRegs = nRegs;
-			regs.resize(nRegs);
+			regs.resizeWith(nRegs, Value(ValueType::Undefined));
 		}
 	};
 

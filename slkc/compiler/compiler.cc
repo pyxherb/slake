@@ -1378,7 +1378,7 @@ void slake::slkc::Compiler::compileGenericParam(CompileContext *compileContext, 
 
 void slake::slkc::Compiler::reload() {
 	// _rootScope = std::make_shared<Scope>();
-	associatedRuntime = std::make_unique<Runtime>(std::pmr::get_default_resource(), RT_NOJIT);
+	associatedRuntime = std::make_unique<Runtime>(peff::getDefaultAlloc(), RT_NOJIT);
 
 	importedDefinitions.clear();
 	// importedModules.clear();

@@ -6,37 +6,37 @@ SLAKE_API MinorFrame::MinorFrame(
 	Runtime *rt,
 	uint32_t nLocalVars,
 	size_t stackBase)
-	: exceptHandlers(&rt->globalHeapPoolResource),
+	: exceptHandlers(&rt->globalHeapPoolAlloc),
 	  nLocalVars(nLocalVars),
 	  stackBase(stackBase) {
 }
 
 SLAKE_API MajorFrame::MajorFrame(Runtime *rt, Context *context)
 	: context(context),
-	  argStack(&rt->globalHeapPoolResource),
-	  nextArgStack(&rt->globalHeapPoolResource),
-	  localVarRecords(&rt->globalHeapPoolResource),
-	  regs(&rt->globalHeapPoolResource),
-	  minorFrames(&rt->globalHeapPoolResource) {
-	localVarAccessor = LocalVarAccessorVarObject::alloc(rt, context, this).get();
-	minorFrames.push_back(MinorFrame(rt, 0, context->stackTop));
+	  argStack(&rt->globalHeapPoolAlloc),
+	  nextArgStack(&rt->globalHeapPoolAlloc),
+	  localVarRecords(&rt->globalHeapPoolAlloc),
+	  regs(&rt->globalHeapPoolAlloc),
+	  minorFrames(&rt->globalHeapPoolAlloc) {
 }
 
-SLAKE_API void MajorFrame::leave() {
+SLAKE_API bool MajorFrame::leave() {
 	context->stackTop = minorFrames.back().stackBase;
-	minorFrames.pop_back();
+	if (!localVarRecords.resize(minorFrames.back().nLocalVars))
+		return false;
+	if (!minorFrames.popBack())
+		return false;
+	return true;
 }
 
 SLAKE_API char *Context::stackAlloc(size_t size) {
-	char *stackBase = dataStack + size;
-
 	if (size_t newStackTop = stackTop + size;
 		newStackTop > SLAKE_STACK_MAX) {
 		return nullptr;
 	} else
 		stackTop = newStackTop;
 
-	return stackBase;
+	return dataStack + stackTop;
 }
 
 SLAKE_API Context::Context(Runtime *runtime) {
@@ -59,24 +59,22 @@ SLAKE_API ContextObject::~ContextObject() {
 SLAKE_API ObjectKind ContextObject::getKind() const { return ObjectKind::Context; }
 
 SLAKE_API HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt) {
-	using Alloc = std::pmr::polymorphic_allocator<ContextObject>;
-	Alloc allocator(&rt->globalHeapPoolResource);
+	std::unique_ptr<ContextObject, util::DeallocableDeleter<ContextObject>> ptr(
+		peff::allocAndConstruct<ContextObject>(
+			&rt->globalHeapPoolAlloc,
+			sizeof(std::max_align_t),
+			rt));
+	if (!ptr)
+		return nullptr;
 
-	std::unique_ptr<ContextObject, util::StatefulDeleter<Alloc>> ptr(
-		allocator.allocate(1),
-		util::StatefulDeleter<Alloc>(allocator));
-	allocator.construct(ptr.get(), rt);
-
-	rt->createdObjects.push_back(ptr.get());
+	if (!rt->createdObjects.pushBack(ptr.get()))
+		return nullptr;
 
 	return ptr.release();
 }
 
 SLAKE_API void slake::ContextObject::dealloc() {
-	std::pmr::polymorphic_allocator<ContextObject> allocator(&associatedRuntime->globalHeapPoolResource);
-
-	std::destroy_at(this);
-	allocator.deallocate(this, 1);
+	peff::destroyAndRelease<ContextObject>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
 SLAKE_API InternalExceptionPointer ContextObject::resume(HostRefHolder *hostRefHolder) {
@@ -85,7 +83,7 @@ SLAKE_API InternalExceptionPointer ContextObject::resume(HostRefHolder *hostRefH
 }
 
 SLAKE_API Value ContextObject::getResult() {
-	return _context.majorFrames.back()->regs[0];
+	return _context.majorFrames.back()->regs.at(0);
 }
 
 SLAKE_API bool ContextObject::isDone() {

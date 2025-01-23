@@ -15,10 +15,11 @@ namespace slake {
 		SLAKE_API virtual ObjectKind getKind() const override;
 
 		SLAKE_API virtual MemberObject *getMember(
-			const std::pmr::string &name,
+			const std::string_view &name,
 			VarRefContext *varRefContextOut) const;
 
-		SLAKE_API static HostObjectRef<RootObject> alloc(Runtime *rt);
+		SLAKE_API static RootObject *alloc(Runtime *rt);
+
 		SLAKE_API virtual void dealloc() override;
 	};
 }

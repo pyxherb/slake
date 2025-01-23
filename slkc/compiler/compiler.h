@@ -317,7 +317,6 @@ namespace slake {
 
 		class Compiler {
 		private:
-
 			std::unique_ptr<Runtime> associatedRuntime;
 
 			std::shared_ptr<ClassNode> _i32Class;
@@ -457,8 +456,7 @@ namespace slake {
 			void importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<MemberNode> parent, Object *value);
 			void importModule(std::shared_ptr<IdRefNode> ref);
 			std::shared_ptr<TypeNameNode> toTypeName(slake::Type runtimeType);
-			std::shared_ptr<IdRefNode> toAstIdRef(std::pmr::deque<slake::IdRefEntry> runtimeRefEntries);
-			std::shared_ptr<IdRefNode> toAstIdRef(std::deque<slake::IdRefEntry> runtimeRefEntries);
+			std::shared_ptr<IdRefNode> toAstIdRef(const peff::DynArray<slake::IdRefEntry> &runtimeRefEntries);
 
 			//
 			// Import end
@@ -597,7 +595,7 @@ namespace slake {
 			CompilerFlags flags = 0;
 
 			inline Compiler(CompilerOptions options = {})
-				: options(options), associatedRuntime(std::make_unique<Runtime>(std::pmr::get_default_resource(), RT_NOJIT)) {}
+				: options(options), associatedRuntime(std::make_unique<Runtime>(peff::getDefaultAlloc(), RT_NOJIT)) {}
 			~Compiler();
 
 			/// @brief Resolve a custom type.

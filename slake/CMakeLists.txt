@@ -1,3 +1,5 @@
+find_package(peff REQUIRED)
+
 file(GLOB HEADERS *.h *.hh)
 file(GLOB SRC *.c *.cc)
 
@@ -7,6 +9,7 @@ add_library(slake STATIC)
 target_compile_definitions(slake PRIVATE SLAKE_IS_BUILDING=1)
 set_property(TARGET slake PROPERTY CXX_STANDARD 17)
 target_include_directories(slake PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/> $<INSTALL_INTERFACE:include/>)
+target_link_libraries(slake PUBLIC peff_containers_static)
 set_target_properties(slake PROPERTIES
     VERSION ${PROJECT_VERSION}
 )
@@ -17,6 +20,7 @@ target_compile_definitions(slaked PUBLIC SLAKE_BUILD_SHARED=1)
 set_property(TARGET slaked PROPERTY CXX_STANDARD 17)
 set_property(TARGET slaked PROPERTY PUBLIC_HEADER "")
 target_include_directories(slaked PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/> $<INSTALL_INTERFACE:include/>)
+target_link_libraries(slake PUBLIC peff_containers)
 set_target_properties(slaked PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
@@ -34,8 +38,8 @@ add_subdirectory("flib")
 add_subdirectory("plat")
 add_subdirectory("obj")
 add_subdirectory("rt")
-add_subdirectory("jit")
-add_subdirectory("opti")
+#add_subdirectory("jit")
+#add_subdirectory("opti")
 
 set(SLAKE_STACK_MAX 1048576 CACHE STRING "Maximum stack size for Slake runtime")
 set(SLAKE_NATIVE_STACK_MAX 1048576 CACHE STRING "Maximum native stack size for Slake runtime")

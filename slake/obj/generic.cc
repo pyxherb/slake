@@ -3,7 +3,11 @@
 using namespace slake;
 
 SLAKE_API GenericParam::GenericParam() {}
-SLAKE_API GenericParam::GenericParam(std::pmr::memory_resource *memoryResource) : name(memoryResource), interfaces(memoryResource) {
+SLAKE_API GenericParam::GenericParam(peff::Alloc *selfAllocator) : name(selfAllocator), interfaces(selfAllocator) {
+}
+
+SLAKE_API GenericParam::GenericParam(GenericParam&& rhs) : name(std::move(rhs.name)), baseType(std::move(rhs.baseType)), interfaces(std::move(rhs.interfaces)) {
+
 }
 
 SLAKE_API bool GenericArgListComparator::operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept {
@@ -13,8 +17,10 @@ SLAKE_API bool GenericArgListComparator::operator()(const GenericArgList &lhs, c
 		return false;
 
 	for (size_t i = 0; i < lhs.size(); ++i) {
-		if (lhs[i] < rhs[i])
+		if (lhs.at(i) < rhs.at(i))
 			return true;
+		if (lhs.at(i) > rhs.at(i))
+			return false;
 	}
 
 	return false;
@@ -25,23 +31,23 @@ SLAKE_API bool GenericArgListEqComparator::operator()(const GenericArgList &lhs,
 		return false;
 
 	for (size_t i = 0; i < lhs.size(); ++i) {
-		if (lhs[i] != rhs[i])
+		if (lhs.at(i) != rhs.at(i))
 			return false;
 	}
 
 	return true;
 }
 
-SLAKE_API size_t slake::getGenericParamIndex(const GenericParamList &genericParamList, const std::pmr::string &name) {
+SLAKE_API size_t slake::getGenericParamIndex(const GenericParamList &genericParamList, const std::string_view &name) {
 	for (size_t i = 0; i < genericParamList.size(); ++i) {
-		if (genericParamList[i].name == name)
+		if (genericParamList.at(i).name == name)
 			return i;
 	}
 
 	return SIZE_MAX;
 }
 
-SLAKE_API GenericParam *slake::getGenericParam(Object *object, const std::pmr::string &name, Object **ownerOut) {
+SLAKE_API GenericParam *slake::getGenericParam(Object *object, const std::string_view &name, Object **ownerOut) {
 	while (true) {
 		size_t idxGenericParam;
 
@@ -52,7 +58,7 @@ SLAKE_API GenericParam *slake::getGenericParam(Object *object, const std::pmr::s
 				if (idxGenericParam != SIZE_MAX) {
 					if (ownerOut)
 						*ownerOut = object;
-					return &classObject->genericParams[idxGenericParam];
+					return &classObject->genericParams.at(idxGenericParam);
 				}
 
 				if (!classObject->parent)
@@ -68,7 +74,7 @@ SLAKE_API GenericParam *slake::getGenericParam(Object *object, const std::pmr::s
 				if (idxGenericParam != SIZE_MAX) {
 					if (ownerOut)
 						*ownerOut = object;
-					return &interfaceObject->genericParams[idxGenericParam];
+					return &interfaceObject->genericParams.at(idxGenericParam);
 				}
 
 				if (!interfaceObject->parent)
@@ -84,7 +90,7 @@ SLAKE_API GenericParam *slake::getGenericParam(Object *object, const std::pmr::s
 				if (idxGenericParam != SIZE_MAX) {
 					if (ownerOut)
 						*ownerOut = object;
-					return &fnOverloadingObject->genericParams[idxGenericParam];
+					return &fnOverloadingObject->genericParams.at(idxGenericParam);
 				}
 
 				if (!fnOverloadingObject->fnObject->parent)

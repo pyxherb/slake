@@ -21,7 +21,7 @@ SLAKE_API void Runtime::setGenericCache(const Object *object, const GenericArgLi
 	if (!_genericCacheDir.contains(object)) {
 		const Object *copiedObject = object;
 		if (!_genericCacheDir.insert(std::move(copiedObject), GenericCacheTable(&globalHeapPoolAlloc)))
-			terminate();
+			std::terminate();
 	}
 	// Store the instance into the cache.
 	auto &cacheTable = _genericCacheDir.at(object);
@@ -29,7 +29,7 @@ SLAKE_API void Runtime::setGenericCache(const Object *object, const GenericArgLi
 	if (!cacheTable.contains(genericArgs)) {
 		GenericArgList copiedGenericArgs;
 		if (!peff::copy(copiedGenericArgs, genericArgs)) {
-			terminate();
+			std::terminate();
 		}
 
 		Object *copiedInstantiatedObject = instantiatedObject;
@@ -43,9 +43,9 @@ SLAKE_API void Runtime::setGenericCache(const Object *object, const GenericArgLi
 	{
 		GenericArgList copiedGenericArgList;
 		if (!peff::copy(copiedGenericArgList, genericArgs)) {
-			terminate();
+			std::terminate();
 		}
-		_genericCacheLookupTable.insert(std::move(instantiatedObject), { object, std::move(copiedGenericArgList) });
+		_genericCacheLookupTable.insert((const Object*)instantiatedObject, { object, std::move(copiedGenericArgList) });
 	}
 }
 
@@ -63,7 +63,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Typ
 				peff::DynArray<IdRefEntry> idRefToResolvedType(&globalHeapPoolAlloc);
 
 				if (!getFullRef((MemberObject *)type.getCustomTypeExData(), idRefToResolvedType))
-					terminate();
+					std::terminate();
 
 				HostObjectRef<IdRefObject> idRefObject = IdRefObject::alloc((Runtime *)this);
 
@@ -72,7 +72,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Typ
 				idRefObject->entries.resizeWith(idRefToResolvedType.size(), IdRefEntry(&globalHeapPoolAlloc));
 				for (size_t i = 0; i < idRefToResolvedType.size(); ++i) {
 					if (!peff::copyAssign(idRefObject->entries.at(i), idRefToResolvedType.at(i))) {
-						terminate();
+						std::terminate();
 					}
 				}
 
@@ -87,7 +87,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Typ
 			bool isSucceeded;
 			type = type.duplicate(isSucceeded);
 			if (!isSucceeded)
-				terminate();
+				std::terminate();
 			SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(type.getArrayExData(), instantiationContext));
 			break;
 		}
@@ -95,7 +95,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Typ
 			bool isSucceeded;
 			type = type.duplicate(isSucceeded);
 			if (!isSucceeded)
-				terminate();
+				std::terminate();
 			SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(type.getRefExData(), instantiationContext));
 			break;
 		}
@@ -107,7 +107,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Typ
 			} else {
 				peff::String paramName(&globalHeapPoolAlloc);
 				if (!peff::copyAssign(paramName, nameObject->data)) {
-					terminate();
+					std::terminate();
 				}
 
 				SLAKE_RETURN_IF_EXCEPT(GenericParameterNotFoundError::alloc(
@@ -158,7 +158,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Obj
 				peff::HashMap<peff::String, Type> copiedMappedGenericArgs(&globalHeapPoolAlloc);
 
 				if (!peff::copyAssign(copiedMappedGenericArgs, instantiationContext.mappedGenericArgs))
-					terminate();
+					std::terminate();
 
 				GenericInstantiationContext newInstantiationContext = {
 					instantiationContext.mappedObject,
@@ -171,7 +171,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Obj
 				for (size_t i = 0; i < value->genericParams.size(); ++i) {
 					peff::String copiedName(&globalHeapPoolAlloc);
 					if (!peff::copyAssign(copiedName, value->genericParams.at(i).name))
-						terminate();
+						std::terminate();
 					newInstantiationContext.mappedGenericArgs.insert(std::move(copiedName), TypeId::None);
 				}
 
@@ -183,7 +183,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Obj
 			} else {
 				if (value == instantiationContext.mappedObject) {
 					if (!peff::copyAssign(value->genericArgs, *instantiationContext.genericArgs))
-						terminate();
+						std::terminate();
 				}
 
 				SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(value->parentClass, instantiationContext));
@@ -199,7 +199,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Obj
 			InterfaceObject *const value = (InterfaceObject *)v;
 
 			if (!peff::copyAssign(value->genericArgs, *instantiationContext.genericArgs))
-				terminate();
+				std::terminate();
 
 			for (auto it = value->scope->members.begin(); it != value->scope->members.end(); ++it) {
 				SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(it.value(), instantiationContext));
@@ -304,7 +304,7 @@ InternalExceptionPointer Runtime::mapGenericParams(const Object *v, GenericInsta
 				peff::String copiedName(&globalHeapPoolAlloc);
 
 				if (!peff::copyAssign(copiedName, value->genericParams.at(i).name)) {
-					terminate();
+					std::terminate();
 				}
 
 				Type copiedType = instantiationContext.genericArgs->at(i);
@@ -324,7 +324,7 @@ InternalExceptionPointer Runtime::mapGenericParams(const Object *v, GenericInsta
 			for (size_t i = 0; i < value->genericParams.size(); ++i) {
 				peff::String copiedName(&globalHeapPoolAlloc);
 				if (!peff::copyAssign(copiedName, value->genericParams.at(i).name))
-					terminate();
+					std::terminate();
 				Type copiedType = instantiationContext.genericArgs->at(i);
 				instantiationContext.mappedGenericArgs.insert(std::move(copiedName), std::move(copiedType));
 			}
@@ -345,7 +345,7 @@ SLAKE_API InternalExceptionPointer Runtime::mapGenericParams(const FnOverloading
 		peff::String copiedName(&globalHeapPoolAlloc);
 
 		if (!peff::copyAssign(copiedName, ol->genericParams.at(i).name)) {
-			terminate();
+			std::terminate();
 		}
 
 		Type copiedType = instantiationContext.genericArgs->at(i);
@@ -385,7 +385,7 @@ SLAKE_API InternalExceptionPointer Runtime::_instantiateGenericObject(FnOverload
 		peff::HashMap<peff::String, Type> copiedMappedGenericArgs(&globalHeapPoolAlloc);
 
 		if (!peff::copyAssign(copiedMappedGenericArgs, instantiationContext.mappedGenericArgs))
-			terminate();
+			std::terminate();
 
 		GenericInstantiationContext newInstantiationContext = {
 			instantiationContext.mappedObject,
@@ -398,7 +398,7 @@ SLAKE_API InternalExceptionPointer Runtime::_instantiateGenericObject(FnOverload
 		for (size_t i = 0; i < ol->genericParams.size(); ++i) {
 			peff::String copiedName(&globalHeapPoolAlloc);
 			if (!peff::copyAssign(copiedName, ol->genericParams.at(i).name))
-				terminate();
+				std::terminate();
 			newInstantiationContext.mappedGenericArgs.insert(std::move(copiedName), TypeId::None);
 		}
 

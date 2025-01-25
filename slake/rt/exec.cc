@@ -475,7 +475,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 				context->_context.stackTop);
 
 			if (!curMajorFrame->minorFrames.pushBack(std::move(frame)))
-				terminate();
+				std::terminate();
 			break;
 		}
 		case Opcode::LEAVE: {
@@ -484,7 +484,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 				return FrameBoundaryExceededError::alloc(this);
 			}
 			if (!curMajorFrame->leave())
-				terminate();
+				std::terminate();
 			break;
 		}
 		case Opcode::ADD:

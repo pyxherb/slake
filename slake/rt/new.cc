@@ -173,7 +173,7 @@ SLAKE_API void Runtime::initObjectLayoutForClass(ClassObject *cls, ClassObject *
 				fieldRecord.type = type;
 				if (!peff::copy(fieldRecord.name, var->name)) {
 					// stub
-					terminate();
+					std::terminate();
 				}
 
 				cls->cachedFieldInitVars.pushBack(var);

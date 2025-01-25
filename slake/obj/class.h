@@ -20,7 +20,7 @@ namespace slake {
 		size_t offset;
 		Type type;
 
-		PEFF_FORCEINLINE ObjectFieldRecord() { terminate(); }
+		PEFF_FORCEINLINE ObjectFieldRecord() { std::terminate(); }
 		PEFF_FORCEINLINE ObjectFieldRecord(peff::Alloc *selfAllocator) : name(selfAllocator) {}
 
 		PEFF_FORCEINLINE bool copy(ObjectFieldRecord& dest) const {

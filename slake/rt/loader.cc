@@ -50,7 +50,7 @@ SLAKE_API HostObjectRef<IdRefObject> Runtime::_loadIdRef(LoaderContext &context,
 		}
 
 		if(!ref->entries.pushBack(IdRefEntry(std::move(name), std::move(genericArgs), hasArgs, std::move(paramTypes), hasVarArg)))
-			terminate();
+			std::terminate();
 
 		if (!(i.flags & slxfmt::RSD_NEXT))
 			break;
@@ -484,7 +484,7 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 
 			if (i.lenBody) {
 				if(!overloading->instructions.resize(i.lenBody))
-					terminate();
+					std::terminate();
 				// overloading->instructions.shrink_to_fit();
 
 				for (uint32_t j = 0; j < i.lenBody; j++) {
@@ -546,7 +546,7 @@ SLAKE_API HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &f
 
 				peff::String name(&globalHeapPoolAlloc);
 				if (!peff::copyAssign(name, modName->entries.at(i).name)) {
-					terminate();
+					std::terminate();
 				}
 
 				// Create a new one if corresponding module does not present.
@@ -567,7 +567,7 @@ SLAKE_API HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &f
 
 		peff::String lastName(&globalHeapPoolAlloc);
 		if (!peff::copyAssign(lastName, modName->entries.back().name)) {
-			terminate();
+			std::terminate();
 		}
 
 		mod->name = std::move(lastName);

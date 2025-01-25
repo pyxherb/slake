@@ -36,7 +36,7 @@ SLAKE_API char *Context::stackAlloc(size_t size) {
 	} else
 		stackTop = newStackTop;
 
-	return dataStack + stackTop;
+	return dataStack + SLAKE_STACK_MAX - stackTop;
 }
 
 SLAKE_API Context::Context(Runtime *runtime) {

@@ -211,7 +211,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 						_gcWalkHeapless(context, i);
 					}
 
-					//value->parentClass.loadDeferredType(this);
+					// value->parentClass.loadDeferredType(this);
 					_gcWalkHeapless(context, value->parentClass);
 
 					_gcWalkHeapless(context, value->genericParams);
@@ -391,7 +391,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Context 
 				case TypeId::Value: {
 					switch (k.type.getValueTypeExData()) {
 						case ValueType::ObjectRef:
-							context.pushObject(*((Object **)(ctxt.dataStack + k.stackOffset)));
+							context.pushObject(*((Object **)(ctxt.dataStack + SLAKE_STACK_MAX - k.stackOffset)));
 							break;
 					}
 					break;
@@ -400,10 +400,10 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Context 
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::Ref:
-					context.pushObject(*((Object **)(ctxt.dataStack + k.stackOffset)));
+					context.pushObject(*((Object **)(ctxt.dataStack + SLAKE_STACK_MAX - k.stackOffset)));
 					break;
 				case TypeId::Any:
-					_gcWalkHeapless(context, *(Value *)(ctxt.dataStack + k.stackOffset));
+					_gcWalkHeapless(context, *(Value *)(ctxt.dataStack + SLAKE_STACK_MAX - k.stackOffset));
 					break;
 			}
 		}

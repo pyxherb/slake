@@ -21,11 +21,18 @@ SLAKE_API void *CountablePoolAlloc::alloc(size_t size, size_t alignment) noexcep
 
 	szAllocated += size;
 
+	allocatedBlockSizes.insert(std::move(p), std::move(size));
+
 	return p;
 }
 
 SLAKE_API void CountablePoolAlloc::release(void *p, size_t size, size_t alignment) noexcept {
+	assert(size <= szAllocated);
 	upstream->release(p, size, alignment);
+
+	assert(allocatedBlockSizes.at(p) == size);
+
+	allocatedBlockSizes.remove(p);
 
 	szAllocated -= size;
 }

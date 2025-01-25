@@ -74,7 +74,7 @@ SLAKE_API MethodTable *MethodTable::alloc(peff::Alloc *selfAllocator) {
 }
 
 SLAKE_API void MethodTable::dealloc() {
-	peff::destroyAndRelease(selfAllocator.get(), this, sizeof(std::max_align_t));
+	peff::destroyAndRelease<MethodTable>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
 SLAKE_API MethodTable *MethodTable::duplicate() {

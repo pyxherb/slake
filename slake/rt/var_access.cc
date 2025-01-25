@@ -84,7 +84,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const VarObject *varObject, const VarRefC
 			const LocalVarRecord &localVarRecord =
 				v->majorFrame->localVarRecords.at(context.asLocalVar.localVarIndex);
 
-			const char *const rawDataPtr = v->context->dataStack + localVarRecord.stackOffset;
+			const char *const rawDataPtr = v->context->dataStack + SLAKE_STACK_MAX - localVarRecord.stackOffset;
 
 			switch (localVarRecord.type.typeId) {
 				case TypeId::Value:
@@ -232,6 +232,11 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(VarObject *varObject, const
 		}
 		case VarKind::LocalVarAccessor: {
 			LocalVarAccessorVarObject *v = (LocalVarAccessorVarObject *)varObject;
+
+			if(context.asLocalVar.localVarIndex >= v->majorFrame->localVarRecords.size())
+				// TODO: Use a proper type of exception instead of this.
+				return raiseInvalidArrayIndexError(v->associatedRuntime, context.asArray.index);
+
 			const LocalVarRecord &localVarRecord =
 				v->majorFrame->localVarRecords.at(context.asLocalVar.localVarIndex);
 
@@ -239,7 +244,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(VarObject *varObject, const
 				return raiseMismatchedVarTypeError(v->associatedRuntime);
 			}
 
-			char *const rawDataPtr = v->context->dataStack + localVarRecord.stackOffset;
+			char *const rawDataPtr = v->context->dataStack + SLAKE_STACK_MAX - localVarRecord.stackOffset;
 
 			switch (localVarRecord.type.typeId) {
 				case TypeId::Value:

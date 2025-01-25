@@ -17,6 +17,7 @@ SLAKE_API ObjectLayout *ObjectLayout::duplicate() const {
 		return nullptr;
 	if (!peff::copyAssign(ptr->fieldNameMap, fieldNameMap))
 		return nullptr;
+	ptr->totalSize = totalSize;
 
 	return ptr.release();
 }
@@ -26,7 +27,7 @@ SLAKE_API ObjectLayout *ObjectLayout::alloc(peff::Alloc *selfAllocator) {
 }
 
 SLAKE_API void ObjectLayout::dealloc() {
-	peff::destroyAndRelease(selfAllocator.get(), this, sizeof(std::max_align_t));
+	peff::destroyAndRelease<ObjectLayout>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
 SLAKE_API Object *ClassObject::duplicate() const {
@@ -150,7 +151,7 @@ SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(Runtime *rt, Scop
 }
 
 SLAKE_API void slake::ClassObject::dealloc() {
-	peff::destroyAndRelease(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
+	peff::destroyAndRelease<ClassObject>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
 SLAKE_API InterfaceObject::InterfaceObject(Runtime *rt, ScopeUniquePtr &&scope, AccessModifier access, peff::DynArray<Type> &&parents)

@@ -215,9 +215,9 @@ SLAKE_API Value Runtime::readVarUnsafe(const VarObject *varObject, const VarRefC
 			}
 			break;
 		}
-		default:
-			assert(false);
+		default:;
 	}
+	std::terminate();
 }
 
 SLAKE_API InternalExceptionPointer Runtime::writeVar(VarObject *varObject, const VarRefContext &context, const Value &value) const {
@@ -233,7 +233,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(VarObject *varObject, const
 		case VarKind::LocalVarAccessor: {
 			LocalVarAccessorVarObject *v = (LocalVarAccessorVarObject *)varObject;
 
-			if(context.asLocalVar.localVarIndex >= v->majorFrame->localVarRecords.size())
+			if (context.asLocalVar.localVarIndex >= v->majorFrame->localVarRecords.size())
 				// TODO: Use a proper type of exception instead of this.
 				return raiseInvalidArrayIndexError(v->associatedRuntime, context.asArray.index);
 

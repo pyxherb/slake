@@ -212,7 +212,7 @@ namespace slake {
 		/// @return Instantiated value.
 		[[nodiscard]] SLAKE_API InternalExceptionPointer instantiateGenericObject(const Object *v, Object *&objectOut, GenericInstantiationContext &instantiationContext);
 
-		SLAKE_API void setGenericCache(const Object *object, const GenericArgList &genericArgs, Object *instantiatedObject);
+		SLAKE_API InternalExceptionPointer setGenericCache(const Object *object, const GenericArgList &genericArgs, Object *instantiatedObject);
 
 		/// @brief Resolve a reference and get the referenced value.
 		/// @param ref Reference to be resolved.

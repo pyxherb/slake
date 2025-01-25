@@ -19,9 +19,9 @@ slake::Value print(slake::Context *context, slake::MajorFrame *curMajorFrame) {
 		for (uint8_t i = 0; i < varArgs->length; ++i) {
 			Value data;
 			if (auto e = curMajorFrame->curFn->associatedRuntime->readVar(
-				varArgs->accessor,
-				VarRefContext::makeArrayContext(i),
-				data)) {
+					varArgs->accessor,
+					VarRefContext::makeArrayContext(i),
+					data)) {
 				throw std::runtime_error("An exception has thrown");
 			}
 
@@ -160,12 +160,14 @@ int main(int argc, char **argv) {
 			slake::Type(slake::ValueType::Undefined),
 			slake::OL_VARG,
 			print);
-		fnObject->overloadings.insert(printFn.get());
+		if (!fnObject->overloadings.insert(printFn.get()))
+			throw std::bad_alloc();
 		fnObject->name.resize(strlen("print"));
 		memcpy(fnObject->name.data(), "print", strlen("print"));
 
 		((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext", nullptr))->getMember("extfns", nullptr))->scope->removeMember("print");
-		((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext", nullptr))->getMember("extfns", nullptr))->scope->putMember(fnObject.get());
+		if(!((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext", nullptr))->getMember("extfns", nullptr))->scope->putMember(fnObject.get()))
+			throw std::bad_alloc();
 
 		auto fn = (slake::FnObject *)mod->getMember("main", nullptr);
 		auto overloading = fn->getOverloading({});

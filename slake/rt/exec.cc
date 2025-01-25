@@ -475,7 +475,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 				context->_context.stackTop);
 
 			if (!curMajorFrame->minorFrames.pushBack(std::move(frame)))
-				std::terminate();
+				return OutOfMemoryError::alloc();
 			break;
 		}
 		case Opcode::LEAVE: {
@@ -484,7 +484,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 				return FrameBoundaryExceededError::alloc(this);
 			}
 			if (!curMajorFrame->leave())
-				std::terminate();
+				return OutOfMemoryError::alloc();
 			break;
 		}
 		case Opcode::ADD:
@@ -1938,7 +1938,7 @@ SLAKE_API InternalExceptionPointer Runtime::execFn(
 	AttachedExecutionThread *executionThread = createAttachedExecutionThreadForCurrentThread(this, context.get(), nativeStackBaseCurrentPtr, nativeStackSize);
 	if (!executionThread) {
 		// Note: we use out of memory error as the placeholder, it originally should be ThreadCreationFailedError.
-		return OutOfMemoryError::alloc(this);
+		return OutOfMemoryError::alloc();
 	}
 
 	managedThreads.insert({ executionThread->nativeThreadHandle, std::unique_ptr<ManagedThread, util::DeallocableDeleter<ManagedThread>>(executionThread) });
@@ -1978,7 +1978,7 @@ SLAKE_API InternalExceptionPointer Runtime::execFnWithSeparatedExecutionThread(
 	ExecutionThread *executionThread = createExecutionThread(this, context.get(), SLAKE_NATIVE_STACK_MAX);
 	if (!executionThread) {
 		// Note: we use out of memory error as the placeholder, it originally should be ThreadCreationFailedError.
-		return OutOfMemoryError::alloc(this);
+		return OutOfMemoryError::alloc();
 	}
 
 	managedThreads.insert({ executionThread->nativeThreadHandle, std::unique_ptr<ManagedThread, util::DeallocableDeleter<ManagedThread>>(executionThread) });

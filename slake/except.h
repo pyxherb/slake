@@ -8,14 +8,14 @@
 namespace slake {
 	class OutOfMemoryError : public InternalException {
 	public:
-		SLAKE_API OutOfMemoryError(Runtime *associatedRuntime);
+		SLAKE_API OutOfMemoryError();
 		SLAKE_API virtual ~OutOfMemoryError();
 
 		SLAKE_API virtual const char *what() const override;
 
 		SLAKE_API virtual void dealloc() override;
 
-		SLAKE_API static OutOfMemoryError *alloc(Runtime *associatedRuntime) noexcept;
+		SLAKE_API static OutOfMemoryError *alloc() noexcept;
 	};
 
 	extern OutOfMemoryError g_globalOutOfMemoryError;

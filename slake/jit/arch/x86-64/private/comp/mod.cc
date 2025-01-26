@@ -6,7 +6,7 @@ using namespace slake::jit;
 using namespace slake::jit::x86_64;
 
 template <typename T>
-void compileIntModInstruction(
+InternalExceptionPointer compileIntModInstruction(
 	JITCompileContext &compileContext,
 	const Instruction &curIns,
 	const Value &lhsExpectedValue,
@@ -88,7 +88,8 @@ void compileIntModInstruction(
 		// Try to allocate a new temporary register to store the right operand.
 		const RegisterId tmpRegId = compileContext.allocGpReg();
 		if (compileContext.isRegInUse(tmpRegId)) {
-			int32_t off = compileContext.stackAllocAligned(sizeof(T), sizeof(T));
+			int32_t off;
+			SLAKE_RETURN_IF_EXCEPT(compileContext.stackAllocAligned(sizeof(T), sizeof(T), off));
 			if constexpr (std::is_same_v<T, int8_t>) {
 				int8_t rhsData = curIns.operands[1].getI8();
 				compileContext.pushIns(emitMovImm8ToMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }, (uint8_t *)&rhsData));
@@ -173,8 +174,9 @@ void compileIntModInstruction(
 			}
 		}
 
-		VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
-
+		VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
+		if (!outputVregState)
+			return OutOfMemoryError::alloc();
 	} else {
 		if (lhsExpectedValue.valueType != ValueType::Undefined) {  // The RHS is an expectable value so we can just simply add it with a register.
 			uint32_t rhsRegIndex = curIns.operands[1].getRegIndex();
@@ -250,7 +252,8 @@ void compileIntModInstruction(
 			// Try to allocate a new temporary register to store the right operand.
 			const RegisterId tmpRegId = compileContext.allocGpReg();
 			if (compileContext.isRegInUse(tmpRegId)) {
-				int32_t off = compileContext.stackAllocAligned(sizeof(T), sizeof(T));
+				int32_t off;
+				SLAKE_RETURN_IF_EXCEPT(compileContext.stackAllocAligned(sizeof(T), sizeof(T), off));
 				if constexpr (std::is_same_v<T, int8_t>) {
 					int8_t lhsData = curIns.operands[0].getI8();
 					compileContext.pushIns(emitMovImm8ToMemIns(MemoryLocation{ REG_RBP, off, REG_MAX, 0 }, (uint8_t *)&lhsData));
@@ -335,7 +338,9 @@ void compileIntModInstruction(
 				}
 			}
 
-			VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, rhsRegId, sizeof(T));
+			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, rhsRegId, sizeof(T));
+			if (!outputVregState)
+				return OutOfMemoryError::alloc();
 		} else {
 			uint32_t rhsRegIndex = curIns.operands[1].getRegIndex();
 			int32_t savedRaxOff = INT32_MIN;
@@ -474,13 +479,17 @@ void compileIntModInstruction(
 				}
 			}
 
-			VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
+			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
+			if (!outputVregState)
+				return OutOfMemoryError::alloc();
 		}
 	}
+
+	return {};
 }
 
 template <typename T>
-void compileFpModInstruction(
+InternalExceptionPointer compileFpModInstruction(
 	JITCompileContext &compileContext,
 	const Instruction &curIns,
 	const Value &lhsExpectedValue,
@@ -506,7 +515,9 @@ void compileFpModInstruction(
 		compileContext.pushRegXmm(rhsXmmRegId, rhsOff, rhsSize);
 	}
 
-	VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsXmmRegId, sizeof(T));
+	VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsXmmRegId, sizeof(T));
+	if(!outputVregState)
+		return OutOfMemoryError::alloc();
 
 	if constexpr (std::is_same_v<T, float>) {
 		if (lhsVregState.saveOffset != INT32_MIN) {
@@ -525,7 +536,7 @@ void compileFpModInstruction(
 		int32_t paddingOff;
 
 		if (padding) {
-			paddingOff = compileContext.stackAllocAligned(16 - padding, 1);
+			SLAKE_RETURN_IF_EXCEPT(compileContext.stackAllocAligned(16 - padding, 1, paddingOff));
 		}
 
 		CallingRegSavingInfo callingRegSavingInfo;
@@ -569,7 +580,7 @@ void compileFpModInstruction(
 
 		if (padding) {
 			uint32_t szDiff = 16 - padding;
-			compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RSP, (uint8_t*)&szDiff));
+			compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RSP, (uint8_t *)&szDiff));
 			compileContext.subStackPtr(16 - padding);
 		}
 	} else {
@@ -579,6 +590,8 @@ void compileFpModInstruction(
 	if (rhsOff != INT32_MIN) {
 		compileContext.popRegXmm(rhsXmmRegId, rhsOff, rhsSize);
 	}
+
+	return {};
 }
 
 InternalExceptionPointer slake::jit::x86_64::compileModInstruction(

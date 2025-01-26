@@ -5,7 +5,7 @@ using namespace slake::jit;
 using namespace slake::jit::x86_64;
 
 template <typename T>
-void compileIntAddInstruction(
+InternalExceptionPointer compileIntAddInstruction(
 	JITCompileContext &compileContext,
 	const Instruction &curIns,
 	const Value &lhsExpectedValue,
@@ -74,7 +74,9 @@ void compileIntAddInstruction(
 			}
 		}
 
-		VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
+		VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
+		if (!outputVregState)
+			return OutOfMemoryError::alloc();
 
 		if constexpr (std::is_same_v<T, int8_t>) {
 			int8_t rhsData = curIns.operands[1].getI8();
@@ -88,7 +90,7 @@ void compileIntAddInstruction(
 		} else if constexpr (std::is_same_v<T, int64_t>) {
 			int64_t rhsData = curIns.operands[1].getI64();
 
-			if (*((uint64_t*)&rhsData) & 0xffffffff00000000) {
+			if (*((uint64_t *)&rhsData) & 0xffffffff00000000) {
 				compileContext.pushIns(emitAddImm32ToReg64Ins(lhsRegId, (uint8_t *)&rhsData));
 			} else {
 				RegisterId tmpGpRegId = compileContext.allocGpReg();
@@ -202,7 +204,9 @@ void compileIntAddInstruction(
 				}
 			}
 
-			VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, rhsRegId, sizeof(T));
+			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, rhsRegId, sizeof(T));
+			if (!outputVregState)
+				return OutOfMemoryError::alloc();
 
 			if constexpr (std::is_same_v<T, int8_t>) {
 				int8_t lhsData = curIns.operands[0].getI8();
@@ -364,13 +368,17 @@ void compileIntAddInstruction(
 				}
 			}
 
-			VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
+			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsRegId, sizeof(T));
+			if (!outputVregState)
+				return OutOfMemoryError::alloc();
 		}
 	}
+
+	return {};
 }
 
 template <typename T>
-void compileFpAddInstruction(
+InternalExceptionPointer compileFpAddInstruction(
 	JITCompileContext &compileContext,
 	const Instruction &curIns,
 	const Value &lhsExpectedValue,
@@ -419,7 +427,9 @@ void compileFpAddInstruction(
 			}
 		}
 
-		VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsXmmRegId, sizeof(T));
+		VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsXmmRegId, sizeof(T));
+		if (!outputVregState)
+			return OutOfMemoryError::alloc();
 
 		if constexpr (std::is_same_v<T, float>) {
 			float rhsData = curIns.operands[1].getF32();
@@ -512,7 +522,9 @@ void compileFpAddInstruction(
 				}
 			}
 
-			VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, rhsXmmRegId, sizeof(T));
+			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, rhsXmmRegId, sizeof(T));
+			if (!outputVregState)
+				return OutOfMemoryError::alloc();
 
 			if constexpr (std::is_same_v<T, float>) {
 				float lhsData = curIns.operands[1].getF32();
@@ -579,7 +591,9 @@ void compileFpAddInstruction(
 				compileContext.pushRegXmm(lhsXmmRegId, off, size);
 			}
 
-			VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsXmmRegId, sizeof(T));
+			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, lhsXmmRegId, sizeof(T));
+			if (!outputVregState)
+				return OutOfMemoryError::alloc();
 
 			if constexpr (std::is_same_v<T, float>) {
 				if (lhsVregState.saveOffset != INT32_MIN) {

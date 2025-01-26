@@ -27,7 +27,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 							case ValueType::U8:
 							case ValueType::Bool: {
 								uint32_t regOff = rhs.getRegIndex();
-								VirtualRegState &vregState = compileContext.virtualRegStates[regOff];
+								VirtualRegState &vregState = compileContext.virtualRegStates.at(regOff);
 
 								if (vregState.saveOffset != INT32_MIN) {
 									RegisterId tmpGpRegId = compileContext.allocGpReg();
@@ -64,7 +64,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 							case ValueType::I16:
 							case ValueType::U16: {
 								uint32_t regOff = rhs.getRegIndex();
-								VirtualRegState &vregState = compileContext.virtualRegStates[regOff];
+								VirtualRegState &vregState = compileContext.virtualRegStates.at(regOff);
 
 								if (vregState.saveOffset != INT32_MIN) {
 									RegisterId tmpGpRegId = compileContext.allocGpReg();
@@ -102,7 +102,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 							case ValueType::U32:
 							case ValueType::F32: {
 								uint32_t regOff = rhs.getRegIndex();
-								VirtualRegState &vregState = compileContext.virtualRegStates[regOff];
+								VirtualRegState &vregState = compileContext.virtualRegStates.at(regOff);
 
 								if (vregState.saveOffset != INT32_MIN) {
 									RegisterId tmpGpRegId = compileContext.allocGpReg();
@@ -140,7 +140,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 							case ValueType::U64:
 							case ValueType::F64: {
 								uint32_t regOff = rhs.getRegIndex();
-								VirtualRegState &vregState = compileContext.virtualRegStates[regOff];
+								VirtualRegState &vregState = compileContext.virtualRegStates.at(regOff);
 
 								if (vregState.saveOffset != INT32_MIN) {
 									RegisterId tmpGpRegId = compileContext.allocGpReg();
@@ -296,7 +296,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 				case TypeId::FnDelegate: {
 					if (rhs.valueType == ValueType::RegRef) {
 						uint32_t regOff = rhs.getRegIndex();
-						VirtualRegState &vregState = compileContext.virtualRegStates[regOff];
+						VirtualRegState &vregState = compileContext.virtualRegStates.at(regOff);
 
 						if (vregState.saveOffset != INT32_MIN) {
 							RegisterId tmpGpRegId = compileContext.allocGpReg();

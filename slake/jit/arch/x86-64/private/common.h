@@ -3,7 +3,7 @@
 
 #include "emitters.h"
 #include "../context.h"
-#include <list>
+#include <peff/containers/map.h>
 
 namespace slake {
 	namespace jit {
@@ -30,7 +30,7 @@ namespace slake {
 
 			struct PhysicalRegState {
 				uint32_t lastVregId;
-				std::list<PhysicalRegSavingInfo> savingInfo;
+				peff::List<PhysicalRegSavingInfo> savingInfo;
 			};
 
 			struct VirtualRegState {
@@ -57,40 +57,41 @@ namespace slake {
 			};
 
 			struct JITCompileContext {
-				std::deque<DiscreteInstruction> nativeInstructions;
-				std::map<size_t, JITRelAddrReplacingPoint32Storage> relativeAddrReplacingPoints;
+				Runtime *runtime;
+				peff::List<DiscreteInstruction> nativeInstructions;
 				PhysicalRegState phyRegStates[REG_MAX];
 				size_t curStackSize;
 				JITCompilerOptions options;
 				std::bitset<REG_MAX> regAllocFlags;
-				std::map<uint32_t, VirtualRegState> virtualRegStates;
-				std::map<uint32_t, LocalVarState> localVarStates;
-				std::map<size_t, std::list<uint32_t>> regRecycleBoundaries;
-				std::map<int32_t, size_t> freeStackSpaces;
+				peff::Map<uint32_t, VirtualRegState> virtualRegStates;
+				peff::Map<uint32_t, LocalVarState> localVarStates;
+				peff::Map<size_t, peff::List<uint32_t>> regRecycleBoundaries;
+				peff::Map<int32_t, size_t> freeStackSpaces;
 				int32_t jitContextOff;
-				std::unordered_map<std::string, size_t> labelOffsets;
+				peff::HashMap<peff::String, size_t> labelOffsets;
 
-				SLAKE_API void pushPrologStackOpIns();
-				SLAKE_API void pushEpilogStackOpIns();
+				SLAKE_API InternalExceptionPointer pushPrologStackOpIns();
+				SLAKE_API InternalExceptionPointer pushEpilogStackOpIns();
 
-				SLAKE_API void checkStackPointer(uint32_t size);
-				SLAKE_API void checkStackPointerOnProlog(uint32_t size);
-				SLAKE_API void checkAndPushStackPointer(uint32_t size);
-				SLAKE_API void checkAndPushStackPointerOnProlog(uint32_t size);
+				SLAKE_API InternalExceptionPointer checkStackPointer(uint32_t size);
+				SLAKE_API InternalExceptionPointer checkStackPointerOnProlog(uint32_t size);
+				SLAKE_API InternalExceptionPointer checkAndPushStackPointer(uint32_t size);
+				SLAKE_API InternalExceptionPointer checkAndPushStackPointerOnProlog(uint32_t size);
 
-				SLAKE_FORCEINLINE void initJITContextStorage() {
-					jitContextOff = stackAllocAligned(sizeof(JITExecContext *), sizeof(JITExecContext *));
+				SLAKE_FORCEINLINE InternalExceptionPointer initJITContextStorage() {
+					SLAKE_RETURN_IF_EXCEPT(stackAllocAligned(sizeof(JITExecContext *), sizeof(JITExecContext *), jitContextOff));
 				}
 
-				SLAKE_FORCEINLINE void pushIns(const DiscreteInstruction &ins) {
-					nativeInstructions.push_back(ins);
-				}
-				SLAKE_FORCEINLINE void pushRelativeAddrReplacingPoint32(const JITRelAddrReplacingPoint32 &replacingPoint) {
-					relativeAddrReplacingPoints[nativeInstructions.size() - 1].pushReplacingPoint(replacingPoint);
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushIns(DiscreteInstruction &&ins) {
+					if (!nativeInstructions.pushBack(std::move(ins)))
+						return OutOfMemoryError::alloc();
+					return {};
 				}
 
-				SLAKE_FORCEINLINE void pushLabel(std::string &&label) {
-					labelOffsets.insert({ std::move(label), nativeInstructions.size() });
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushLabel(peff::String &&label) {
+					if (!labelOffsets.insert(std::move(label), nativeInstructions.size()))
+						return OutOfMemoryError::alloc();
+					return {};
 				}
 
 				SLAKE_FORCEINLINE void addStackPtr(size_t size) {
@@ -107,284 +108,335 @@ namespace slake {
 				SLAKE_API void setRegAllocated(RegisterId reg);
 				SLAKE_API void unallocReg(RegisterId reg);
 
-				SLAKE_FORCEINLINE void pushReg8(RegisterId reg, int32_t &offOut, size_t &sizeOut) {
-					int32_t lhsRegStackSaveOff = stackAllocAligned(sizeof(uint8_t), sizeof(uint8_t));
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushReg8(RegisterId reg, int32_t &offOut, size_t &sizeOut) {
+					int32_t lhsRegStackSaveOff;
+					SLAKE_RETURN_IF_EXCEPT(stackAllocAligned(sizeof(uint8_t), sizeof(uint8_t), lhsRegStackSaveOff));
 
-					pushIns(emitMovReg8ToMemIns(MemoryLocation{ REG_RBP, lhsRegStackSaveOff, REG_MAX, 0 }, reg));
+					SLAKE_RETURN_IF_EXCEPT(pushIns(emitMovReg8ToMemIns(MemoryLocation{ REG_RBP, lhsRegStackSaveOff, REG_MAX, 0 }, reg)));
 
 					offOut = lhsRegStackSaveOff;
 					sizeOut = sizeof(uint8_t);
 
 					virtualRegStates.at(phyRegStates[reg].lastVregId).saveOffset = lhsRegStackSaveOff;
-					phyRegStates[reg].savingInfo.push_back({ phyRegStates[reg].lastVregId });
+					if (!phyRegStates[reg].savingInfo.pushBack({ phyRegStates[reg].lastVregId }))
+						return OutOfMemoryError::alloc();
+
+					return {};
 				}
 
-				SLAKE_FORCEINLINE void pushReg16(RegisterId reg, int32_t &offOut, size_t &sizeOut) {
-					int32_t lhsRegStackSaveOff = stackAllocAligned(sizeof(uint16_t), sizeof(uint16_t));
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushReg16(RegisterId reg, int32_t &offOut, size_t &sizeOut) {
+					int32_t lhsRegStackSaveOff;
+					SLAKE_RETURN_IF_EXCEPT(stackAllocAligned(sizeof(uint16_t), sizeof(uint16_t), lhsRegStackSaveOff));
 
-					pushIns(emitMovReg8ToMemIns(MemoryLocation{ REG_RBP, lhsRegStackSaveOff, REG_MAX, 0 }, reg));
+					SLAKE_RETURN_IF_EXCEPT(pushIns(emitMovReg8ToMemIns(MemoryLocation{ REG_RBP, lhsRegStackSaveOff, REG_MAX, 0 }, reg)));
 
 					offOut = lhsRegStackSaveOff;
 					sizeOut = sizeof(uint16_t);
 
 					virtualRegStates.at(phyRegStates[reg].lastVregId).saveOffset = lhsRegStackSaveOff;
-					phyRegStates[reg].savingInfo.push_back({ phyRegStates[reg].lastVregId });
+					if (!phyRegStates[reg].savingInfo.pushBack({ phyRegStates[reg].lastVregId }))
+						return OutOfMemoryError::alloc();
+
+					return {};
 				}
 
-				SLAKE_FORCEINLINE void pushReg32(RegisterId reg, int32_t &offOut, size_t &sizeOut) {
-					int32_t lhsRegStackSaveOff = stackAllocAligned(sizeof(uint32_t), sizeof(uint32_t));
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushReg32(RegisterId reg, int32_t &offOut, size_t &sizeOut) {
+					int32_t lhsRegStackSaveOff;
+					SLAKE_RETURN_IF_EXCEPT(stackAllocAligned(sizeof(uint32_t), sizeof(uint32_t), lhsRegStackSaveOff));
 
-					pushIns(emitMovReg8ToMemIns(MemoryLocation{ REG_RBP, lhsRegStackSaveOff, REG_MAX, 0 }, reg));
+					SLAKE_RETURN_IF_EXCEPT(pushIns(emitMovReg8ToMemIns(MemoryLocation{ REG_RBP, lhsRegStackSaveOff, REG_MAX, 0 }, reg)));
 
 					offOut = lhsRegStackSaveOff;
 					sizeOut = sizeof(uint32_t);
 
 					virtualRegStates.at(phyRegStates[reg].lastVregId).saveOffset = lhsRegStackSaveOff;
-					phyRegStates[reg].savingInfo.push_back({ phyRegStates[reg].lastVregId });
+					if (!phyRegStates[reg].savingInfo.pushBack({ phyRegStates[reg].lastVregId }))
+						return OutOfMemoryError::alloc();
+
+					return {};
 				}
 
-				SLAKE_FORCEINLINE void pushReg64(RegisterId reg, int32_t &offOut, size_t &sizeOut) {
-					int32_t lhsRegStackSaveOff = stackAllocAligned(sizeof(uint64_t), sizeof(uint64_t));
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushReg64(RegisterId reg, int32_t &offOut, size_t &sizeOut) {
+					int32_t lhsRegStackSaveOff;
+					SLAKE_RETURN_IF_EXCEPT(stackAllocAligned(sizeof(uint64_t), sizeof(uint64_t), lhsRegStackSaveOff));
 
-					pushIns(emitMovReg8ToMemIns(MemoryLocation{ REG_RBP, lhsRegStackSaveOff, REG_MAX, 0 }, reg));
+					SLAKE_RETURN_IF_EXCEPT(pushIns(emitMovReg8ToMemIns(MemoryLocation{ REG_RBP, lhsRegStackSaveOff, REG_MAX, 0 }, reg)));
 
 					offOut = lhsRegStackSaveOff;
 					sizeOut = sizeof(uint64_t);
 
 					virtualRegStates.at(phyRegStates[reg].lastVregId).saveOffset = lhsRegStackSaveOff;
-					phyRegStates[reg].savingInfo.push_back({ phyRegStates[reg].lastVregId });
+					if (!phyRegStates[reg].savingInfo.pushBack({ phyRegStates[reg].lastVregId }))
+						return OutOfMemoryError::alloc();
+
+					return {};
 				}
 
-				SLAKE_FORCEINLINE void pushReg(RegisterId reg, int32_t &offOut, size_t &sizeOut) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushReg(RegisterId reg, int32_t &offOut, size_t &sizeOut) {
 					switch (virtualRegStates.at(phyRegStates[reg].lastVregId).size) {
 						case sizeof(uint8_t):
-							pushReg8(reg, offOut, sizeOut);
+							SLAKE_RETURN_IF_EXCEPT(pushReg8(reg, offOut, sizeOut));
 							break;
 						case sizeof(uint16_t):
-							pushReg16(reg, offOut, sizeOut);
+							SLAKE_RETURN_IF_EXCEPT(pushReg16(reg, offOut, sizeOut));
 							break;
 						case sizeof(uint32_t):
-							pushReg32(reg, offOut, sizeOut);
+							SLAKE_RETURN_IF_EXCEPT(pushReg32(reg, offOut, sizeOut));
 							break;
 						case sizeof(uint64_t):
-							pushReg64(reg, offOut, sizeOut);
+							SLAKE_RETURN_IF_EXCEPT(pushReg64(reg, offOut, sizeOut));
 							break;
 						default:
 							assert(("Invalid register size", false));
 					}
+
+					return {};
 				}
 
-				SLAKE_FORCEINLINE void pushRegXmm32(RegisterId reg, int32_t &offOut, size_t &sizeOut) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushRegXmm32(RegisterId reg, int32_t &offOut, size_t &sizeOut) {
 					int32_t tmpOff;
 					size_t tmpSize;
 					RegisterId gpReg = allocGpReg();
 
-					pushReg(gpReg, tmpOff, tmpSize);
+					SLAKE_RETURN_IF_EXCEPT(pushReg(gpReg, tmpOff, tmpSize));
 
-					pushIns(emitMovdRegXmmToReg32Ins(gpReg, reg));
-					pushReg32(gpReg, offOut, sizeOut);
+					SLAKE_RETURN_IF_EXCEPT(pushIns(emitMovdRegXmmToReg32Ins(gpReg, reg)));
+					SLAKE_RETURN_IF_EXCEPT(pushReg32(gpReg, offOut, sizeOut));
 
-					popReg(gpReg, tmpOff, tmpSize);
+					SLAKE_RETURN_IF_EXCEPT(popReg(gpReg, tmpOff, tmpSize));
+
+					return {};
 				}
 
-				SLAKE_FORCEINLINE void pushRegXmm64(RegisterId reg, int32_t &offOut, size_t &sizeOut) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushRegXmm64(RegisterId reg, int32_t &offOut, size_t &sizeOut) {
 					int32_t tmpOff;
 					size_t tmpSize;
 					RegisterId gpReg = allocGpReg();
 
-					pushReg(gpReg, tmpOff, tmpSize);
+					SLAKE_RETURN_IF_EXCEPT(pushReg(gpReg, tmpOff, tmpSize));
 
-					pushIns(emitMovqRegXmmToReg64Ins(gpReg, reg));
-					pushReg64(gpReg, offOut, sizeOut);
+					SLAKE_RETURN_IF_EXCEPT(pushIns(emitMovqRegXmmToReg64Ins(gpReg, reg)));
+					SLAKE_RETURN_IF_EXCEPT(pushReg64(gpReg, offOut, sizeOut));
 
-					popReg(gpReg, tmpOff, tmpSize);
+					SLAKE_RETURN_IF_EXCEPT(popReg(gpReg, tmpOff, tmpSize));
+
+					return {};
 				}
 
-				SLAKE_FORCEINLINE void pushRegXmm(RegisterId reg, int32_t &offOut, size_t &sizeOut) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushRegXmm(RegisterId reg, int32_t &offOut, size_t &sizeOut) {
 					switch (virtualRegStates.at(phyRegStates[reg].lastVregId).size) {
 						case sizeof(float):
-							pushRegXmm32(reg, offOut, sizeOut);
+							SLAKE_RETURN_IF_EXCEPT(pushRegXmm32(reg, offOut, sizeOut));
 							break;
 						case sizeof(double):
-							pushRegXmm64(reg, offOut, sizeOut);
+							SLAKE_RETURN_IF_EXCEPT(pushRegXmm64(reg, offOut, sizeOut));
 							break;
 						default:
 							assert(("Invalid register size", false));
 					}
+
+					return {};
 				}
 
-				SLAKE_FORCEINLINE void popReg8(RegisterId reg, int32_t off) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popReg8(RegisterId reg, int32_t off) {
 					virtualRegStates.at(phyRegStates[reg].lastVregId).saveOffset = INT32_MIN;
-					pushIns(emitMovMemToReg8Ins(reg, MemoryLocation{ REG_RBP, off, REG_MAX, 0 }));
+					SLAKE_RETURN_IF_EXCEPT(pushIns(emitMovMemToReg8Ins(reg, MemoryLocation{ REG_RBP, off, REG_MAX, 0 })));
 					stackFree(off, sizeof(uint8_t));
 
 					virtualRegStates.at(phyRegStates[reg].savingInfo.back().vregId).saveOffset = INT32_MIN;
-					phyRegStates[reg].savingInfo.pop_back();
+					phyRegStates[reg].savingInfo.popBack();
+
+					return {};
 				}
 
-				SLAKE_FORCEINLINE void popReg16(RegisterId reg, int32_t off) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popReg16(RegisterId reg, int32_t off) {
 					virtualRegStates.at(phyRegStates[reg].lastVregId).saveOffset = INT32_MIN;
-					pushIns(emitMovMemToReg16Ins(reg, MemoryLocation{ REG_RBP, off, REG_MAX, 0 }));
+					SLAKE_RETURN_IF_EXCEPT(pushIns(emitMovMemToReg16Ins(reg, MemoryLocation{ REG_RBP, off, REG_MAX, 0 })));
 					stackFree(off, sizeof(uint16_t));
 
 					virtualRegStates.at(phyRegStates[reg].savingInfo.back().vregId).saveOffset = INT32_MIN;
-					phyRegStates[reg].savingInfo.pop_back();
+					phyRegStates[reg].savingInfo.popBack();
+
+					return {};
 				}
 
-				SLAKE_FORCEINLINE void popReg32(RegisterId reg, int32_t off) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popReg32(RegisterId reg, int32_t off) {
 					virtualRegStates.at(phyRegStates[reg].lastVregId).saveOffset = INT32_MIN;
-					pushIns(emitMovMemToReg32Ins(reg, MemoryLocation{ REG_RBP, off, REG_MAX, 0 }));
+					SLAKE_RETURN_IF_EXCEPT(pushIns(emitMovMemToReg32Ins(reg, MemoryLocation{ REG_RBP, off, REG_MAX, 0 })));
 					stackFree(off, sizeof(uint32_t));
 
 					virtualRegStates.at(phyRegStates[reg].savingInfo.back().vregId).saveOffset = INT32_MIN;
-					phyRegStates[reg].savingInfo.pop_back();
+					phyRegStates[reg].savingInfo.popBack();
+
+					return {};
 				}
 
-				SLAKE_FORCEINLINE void popReg64(RegisterId reg, int32_t off) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popReg64(RegisterId reg, int32_t off) {
 					virtualRegStates.at(phyRegStates[reg].lastVregId).saveOffset = INT32_MIN;
-					pushIns(emitMovMemToReg64Ins(reg, MemoryLocation{ REG_RBP, off, REG_MAX, 0 }));
+					SLAKE_RETURN_IF_EXCEPT(pushIns(emitMovMemToReg64Ins(reg, MemoryLocation{ REG_RBP, off, REG_MAX, 0 })));
 					stackFree(off, sizeof(uint64_t));
 
 					virtualRegStates.at(phyRegStates[reg].savingInfo.back().vregId).saveOffset = INT32_MIN;
-					phyRegStates[reg].savingInfo.pop_back();
+					phyRegStates[reg].savingInfo.popBack();
+
+					return {};
 				}
 
-				SLAKE_FORCEINLINE void popReg(RegisterId reg, int32_t off, size_t size) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popReg(RegisterId reg, int32_t off, size_t size) {
 					switch (size) {
 						case sizeof(uint8_t):
-							popReg8(reg, off);
+							SLAKE_RETURN_IF_EXCEPT(popReg8(reg, off));
 							break;
 						case sizeof(uint16_t):
-							popReg16(reg, off);
+							SLAKE_RETURN_IF_EXCEPT(popReg16(reg, off));
 							break;
 						case sizeof(uint32_t):
-							popReg32(reg, off);
+							SLAKE_RETURN_IF_EXCEPT(popReg32(reg, off));
 							break;
 						case sizeof(uint64_t):
-							popReg64(reg, off);
+							SLAKE_RETURN_IF_EXCEPT(popReg64(reg, off));
 							break;
 						default:
 							assert(("Invalid register size", false));
 					}
+
+					return {};
 				}
 
-				SLAKE_FORCEINLINE void popRegXmm32(RegisterId reg, int32_t off) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popRegXmm32(RegisterId reg, int32_t off) {
 					int32_t tmpOff;
 					size_t tmpSize;
 					RegisterId gpReg = allocGpReg();
 
-					pushReg(gpReg, tmpOff, tmpSize);
+					SLAKE_RETURN_IF_EXCEPT(pushReg(gpReg, tmpOff, tmpSize));
 
-					popReg32(gpReg, off);
-					pushIns(emitMovdReg32ToRegXmmIns(gpReg, reg));
+					SLAKE_RETURN_IF_EXCEPT(popReg32(gpReg, off));
+					SLAKE_RETURN_IF_EXCEPT(pushIns(emitMovdReg32ToRegXmmIns(gpReg, reg)));
 
-					popReg(gpReg, tmpOff, tmpSize);
+					SLAKE_RETURN_IF_EXCEPT(popReg(gpReg, tmpOff, tmpSize));
+
+					return {};
 				}
 
-				SLAKE_FORCEINLINE void popRegXmm64(RegisterId reg, int32_t off) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popRegXmm64(RegisterId reg, int32_t off) {
 					int32_t tmpOff;
 					size_t tmpSize;
 					RegisterId gpReg = allocGpReg();
 
-					pushReg(gpReg, tmpOff, tmpSize);
+					SLAKE_RETURN_IF_EXCEPT(pushReg(gpReg, tmpOff, tmpSize));
 
-					popReg64(gpReg, off);
-					pushIns(emitMovqReg64ToRegXmmIns(gpReg, reg));
+					SLAKE_RETURN_IF_EXCEPT(popReg64(gpReg, off));
+					SLAKE_RETURN_IF_EXCEPT(pushIns(emitMovqReg64ToRegXmmIns(gpReg, reg)));
 
-					popReg(gpReg, tmpOff, tmpSize);
+					SLAKE_RETURN_IF_EXCEPT(popReg(gpReg, tmpOff, tmpSize));
+
+					return {};
 				}
 
-				SLAKE_FORCEINLINE void popRegXmm(RegisterId reg, int32_t off, size_t size) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popRegXmm(RegisterId reg, int32_t off, size_t size) {
 					switch (size) {
 						case sizeof(float):
-							popRegXmm32(reg, off);
+							SLAKE_RETURN_IF_EXCEPT(popRegXmm32(reg, off));
 							break;
 						case sizeof(double):
-							popRegXmm64(reg, off);
+							SLAKE_RETURN_IF_EXCEPT(popRegXmm64(reg, off));
 							break;
 						default:
 							assert(("Invalid register size", false));
 					}
+
+					return {};
 				}
 
 				SLAKE_FORCEINLINE bool isRegInUse(RegisterId reg) {
 					return phyRegStates[reg].lastVregId == UINT32_MAX;
 				}
 
-				SLAKE_FORCEINLINE VirtualRegState &defVirtualReg(uint32_t vreg, RegisterId phyReg, size_t size) {
-					VirtualRegState &vregState = virtualRegStates[vreg];
+				[[nodiscard]] SLAKE_FORCEINLINE VirtualRegState *defVirtualReg(uint32_t vreg, RegisterId phyReg, size_t size) {
+					if(!virtualRegStates.insert(+vreg, {}))
+						return nullptr;
+					VirtualRegState &vregState = virtualRegStates.at(vreg);
 					vregState.phyReg = phyReg;
 					vregState.size = size;
 					vregState.saveOffset = INT32_MIN;
 
 					phyRegStates[phyReg].lastVregId = vreg;
 
-					return vregState;
+					return &vregState;
 				}
-				SLAKE_FORCEINLINE VirtualRegState &defVirtualReg(uint32_t vreg, int32_t saveOffset, size_t size) {
-					VirtualRegState &vregState = virtualRegStates[vreg];
+				[[nodiscard]] SLAKE_FORCEINLINE VirtualRegState *defVirtualReg(uint32_t vreg, int32_t saveOffset, size_t size) {
+					if(!virtualRegStates.insert(+vreg, {}))
+						return nullptr;
+					VirtualRegState &vregState = virtualRegStates.at(vreg);
 					vregState.phyReg = REG_MAX;
 					vregState.size = size;
 					vregState.saveOffset = saveOffset;
 
-					return vregState;
+					return &vregState;
 				}
-				SLAKE_FORCEINLINE VirtualRegState &defDummyVirtualReg(uint32_t vreg) {
-					VirtualRegState &vregState = virtualRegStates[vreg];
+				[[nodiscard]] SLAKE_FORCEINLINE VirtualRegState *defDummyVirtualReg(uint32_t vreg) {
+					if(!virtualRegStates.insert(+vreg, {}))
+						return nullptr;
+					VirtualRegState &vregState = virtualRegStates.at(vreg);
 					vregState.phyReg = REG_MAX;
 					vregState.size = 0;
 					vregState.saveOffset = 0;
 
-					return vregState;
+					return &vregState;
 				}
 
-				SLAKE_FORCEINLINE LocalVarState &defLocalVar(uint32_t index, int32_t stackOff, size_t size) {
-					LocalVarState &localVarState = localVarStates[index];
+				[[nodiscard]] SLAKE_FORCEINLINE LocalVarState *defLocalVar(uint32_t index, int32_t stackOff, size_t size) {
+					if(!localVarStates.insert(+index, {}))
+						return nullptr;
+					LocalVarState &localVarState = localVarStates.at(index);
 					localVarState.stackOff = stackOff;
 					localVarState.size = size;
 
-					return localVarState;
+					return &localVarState;
 				}
 
-				SLAKE_API int32_t stackAllocAligned(uint32_t size, uint32_t alignment);
+				SLAKE_API InternalExceptionPointer stackAllocAligned(uint32_t size, uint32_t alignment, int32_t &offOut);
 
 				SLAKE_API void stackFree(int32_t saveOffset, size_t size);
 
-				SLAKE_FORCEINLINE void saveCallingRegs(CallingRegSavingInfo &infoOut) {
+				SLAKE_FORCEINLINE InternalExceptionPointer saveCallingRegs(CallingRegSavingInfo &infoOut) {
 					// Save parameter registers.
-					pushReg(REG_RCX, infoOut.offSavedRcx, infoOut.szSavedRcx);
-					pushReg(REG_RDX, infoOut.offSavedRdx, infoOut.szSavedRdx);
-					pushReg(REG_R8, infoOut.offSavedR8, infoOut.szSavedR8);
-					pushReg(REG_R9, infoOut.offSavedR9, infoOut.szSavedR9);
+					SLAKE_RETURN_IF_EXCEPT(pushReg(REG_RCX, infoOut.offSavedRcx, infoOut.szSavedRcx));
+					SLAKE_RETURN_IF_EXCEPT(pushReg(REG_RDX, infoOut.offSavedRdx, infoOut.szSavedRdx));
+					SLAKE_RETURN_IF_EXCEPT(pushReg(REG_R8, infoOut.offSavedR8, infoOut.szSavedR8));
+					SLAKE_RETURN_IF_EXCEPT(pushReg(REG_R9, infoOut.offSavedR9, infoOut.szSavedR9));
 					// Save scratch registers.
 					if (isRegInUse(REG_RAX)) {
-						pushReg(REG_RAX, infoOut.offSavedRax, infoOut.szSavedRax);
+						SLAKE_RETURN_IF_EXCEPT(pushReg(REG_RAX, infoOut.offSavedRax, infoOut.szSavedRax));
 					}
 					if (isRegInUse(REG_R10)) {
-						pushReg(REG_R10, infoOut.offSavedR10, infoOut.szSavedR10);
+						SLAKE_RETURN_IF_EXCEPT(pushReg(REG_R10, infoOut.offSavedR10, infoOut.szSavedR10));
 					}
 					if (isRegInUse(REG_R11)) {
-						pushReg(REG_R11, infoOut.offSavedR11, infoOut.szSavedR11);
+						SLAKE_RETURN_IF_EXCEPT(pushReg(REG_R11, infoOut.offSavedR11, infoOut.szSavedR11));
 					}
+					return {};
 				}
 
-				SLAKE_FORCEINLINE void restoreCallingRegs(const CallingRegSavingInfo &info) {
+				SLAKE_FORCEINLINE InternalExceptionPointer restoreCallingRegs(const CallingRegSavingInfo &info) {
 					// Restore scratch registers.
 					if (info.offSavedR11 != INT32_MIN) {
-						popReg(REG_R11, info.offSavedR11, info.szSavedR11);
+						SLAKE_RETURN_IF_EXCEPT(popReg(REG_R11, info.offSavedR11, info.szSavedR11));
 					}
 					if (info.offSavedR10 != INT32_MIN) {
-						popReg(REG_R10, info.offSavedR10, info.szSavedR10);
+						SLAKE_RETURN_IF_EXCEPT(popReg(REG_R10, info.offSavedR10, info.szSavedR10));
 					}
 					if (info.offSavedRax != INT32_MIN) {
-						popReg(REG_RAX, info.offSavedRax, info.szSavedRax);
+						SLAKE_RETURN_IF_EXCEPT(popReg(REG_RAX, info.offSavedRax, info.szSavedRax));
 					}
 
 					// Restore parameter registers.
-					popReg(REG_R9, info.offSavedR9, info.szSavedR9);
-					popReg(REG_R8, info.offSavedR8, info.szSavedR8);
-					popReg(REG_RDX, info.offSavedRdx, info.szSavedRdx);
-					popReg(REG_RCX, info.offSavedRcx, info.szSavedRcx);
+					SLAKE_RETURN_IF_EXCEPT(popReg(REG_R9, info.offSavedR9, info.szSavedR9));
+					SLAKE_RETURN_IF_EXCEPT(popReg(REG_R8, info.offSavedR8, info.szSavedR8));
+					SLAKE_RETURN_IF_EXCEPT(popReg(REG_RDX, info.offSavedRdx, info.szSavedRdx));
+					SLAKE_RETURN_IF_EXCEPT(popReg(REG_RCX, info.offSavedRcx, info.szSavedRcx));
+
+					return {};
 				}
 			};
 

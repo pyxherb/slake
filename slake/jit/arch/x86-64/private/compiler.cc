@@ -27,12 +27,17 @@ InternalExceptionPointer compileInstruction(
 		outputRegIndex = curIns.output.getRegIndex();
 		size_t offTimelineEnd = analyzedInfo.analyzedRegInfo.at(outputRegIndex).lifetime.offEndIns;
 
-		compileContext.regRecycleBoundaries[offTimelineEnd].push_back(outputRegIndex);
+		if(!compileContext.regRecycleBoundaries.contains(offTimelineEnd)) {
+			compileContext.regRecycleBoundaries.insert(+offTimelineEnd, peff::List<uint32_t>(&compileContext.runtime->globalHeapPoolAlloc));
+		}
+
+		if(!compileContext.regRecycleBoundaries.at(offTimelineEnd).pushBack(+outputRegIndex))
+			return OutOfMemoryError::alloc();
 	}
 
 	if (auto it = compileContext.regRecycleBoundaries.find(offIns);
 		it != compileContext.regRecycleBoundaries.end()) {
-		for (auto i : it->second) {
+		for (auto i : it.value()) {
 			VirtualRegState &vregState = compileContext.virtualRegStates.at(i);
 
 			if (vregState.saveOffset != INT32_MIN) {
@@ -41,7 +46,7 @@ InternalExceptionPointer compileInstruction(
 				compileContext.regAllocFlags.reset(vregState.phyReg);
 			}
 		}
-		compileContext.regRecycleBoundaries.erase(it);
+		compileContext.regRecycleBoundaries.remove(it);
 	}
 
 	switch (curIns.opcode) {
@@ -79,7 +84,8 @@ InternalExceptionPointer compileInstruction(
 			compileContext.pushIns(emitCallIns((void *)loadInsWrapper));
 
 			// Psas the first argument for the memcpy wrapper.
-			int32_t stackOff = compileContext.stackAllocAligned(sizeof(Value), sizeof(Value));
+			int32_t stackOff;
+			SLAKE_RETURN_IF_EXCEPT(compileContext.stackAllocAligned(sizeof(Value), sizeof(Value), stackOff));
 			compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RCX, REG_RBP));
 			compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RCX, (uint8_t *)&stackOff));
 
@@ -95,7 +101,9 @@ InternalExceptionPointer compileInstruction(
 
 			compileContext.pushIns(emitCallIns((void *)memcpyWrapper));
 
-			VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, stackOff, sizeof(Value));
+			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, stackOff, sizeof(Value));
+			if (!outputVregState)
+				return OutOfMemoryError::alloc();
 
 			compileContext.restoreCallingRegs(callingRegSavingInfo);
 
@@ -126,13 +134,13 @@ InternalExceptionPointer compileInstruction(
 
 			// Pass the second argument.
 			{
-				auto &vregState = compileContext.virtualRegStates[baseObjectRegIndex];
+				auto &vregState = compileContext.virtualRegStates.at(baseObjectRegIndex);
 				if (vregState.saveOffset != INT32_MIN) {
 					compileContext.pushIns(emitMovMemToReg64Ins(
 						REG_RDX,
 						MemoryLocation{
 							REG_RBP,
-							compileContext.virtualRegStates[baseObjectRegIndex].saveOffset,
+							compileContext.virtualRegStates.at(baseObjectRegIndex).saveOffset,
 							REG_MAX,
 							0 }));
 				} else {
@@ -152,7 +160,8 @@ InternalExceptionPointer compileInstruction(
 			compileContext.pushIns(emitCallIns((void *)rloadInsWrapper));
 
 			// Psas the first argument for the memcpy wrapper.
-			int32_t stackOff = compileContext.stackAllocAligned(sizeof(Value), sizeof(Value));
+			int32_t stackOff;
+			SLAKE_RETURN_IF_EXCEPT(compileContext.stackAllocAligned(sizeof(Value), sizeof(Value), stackOff));
 			compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RCX, REG_RBP));
 			compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RCX, (uint8_t *)&stackOff));
 
@@ -168,7 +177,9 @@ InternalExceptionPointer compileInstruction(
 
 			compileContext.pushIns(emitCallIns((void *)memcpyWrapper));
 
-			VirtualRegState &outputVregState = compileContext.defVirtualReg(outputRegIndex, stackOff, sizeof(Value));
+			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, stackOff, sizeof(Value));
+			if (!outputVregState)
+				return OutOfMemoryError::alloc();
 
 			compileContext.restoreCallingRegs(callingRegSavingInfo);
 
@@ -238,7 +249,7 @@ InternalExceptionPointer slake::compileRegularFn(RegularFnOverloadingObject *fn,
 				REG_R9));
 
 		for (size_t i = 0; i < nIns; ++i) {
-			const Instruction &curIns = fn->instructions[i];
+			const Instruction &curIns = fn->instructions.at(i);
 
 			compileInstruction(compileContext, analyzedInfo, i, curIns);
 		}
@@ -249,7 +260,10 @@ InternalExceptionPointer slake::compileRegularFn(RegularFnOverloadingObject *fn,
 	}
 
 	{
-		compileContext.pushLabel(std::string("_report_stack_overflow"));
+		peff::String labelName;
+		if(!labelName.build("_report_stack_overflow"))
+			return OutOfMemoryError::alloc();
+		compileContext.pushLabel(std::move(labelName));
 
 		compileContext.pushEpilogStackOpIns();
 
@@ -260,7 +274,10 @@ InternalExceptionPointer slake::compileRegularFn(RegularFnOverloadingObject *fn,
 	}
 
 	{
-		compileContext.pushLabel(std::string("_report_stack_overflow_on_prolog"));
+		peff::String labelName;
+		if(!labelName.build("_report_stack_overflow_on_prolog"))
+			return OutOfMemoryError::alloc();
+		compileContext.pushLabel(std::move(labelName));
 
 		compileContext.pushIns(emitMovMemToReg64Ins(REG_R11, MemoryLocation{ REG_R9, offsetof(JITExecContext, stackOverflowError), REG_MAX, 0 }));
 		compileContext.pushIns(emitMovReg64ToMemIns(MemoryLocation{ REG_R9, offsetof(JITExecContext, exception), REG_MAX, 0 }, REG_R11));

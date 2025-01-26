@@ -42,70 +42,70 @@ static const RegisterId _s_xmmRegs[] = {
 	REG_XMM15,
 };
 
-SLAKE_API void JITCompileContext::pushPrologStackOpIns() {
+SLAKE_API InternalExceptionPointer JITCompileContext::pushPrologStackOpIns() {
 	checkStackPointerOnProlog(sizeof(uint64_t) * 11);
 
-	pushIns(emitPushReg64Ins(REG_R8));
-	pushIns(emitPushReg64Ins(REG_RDX));
-	pushIns(emitPushReg64Ins(REG_RCX));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPushReg64Ins(REG_R8)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPushReg64Ins(REG_RDX)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPushReg64Ins(REG_RCX)));
 
-	pushIns(emitPushReg64Ins(REG_RBX));
-	pushIns(emitPushReg64Ins(REG_RDI));
-	pushIns(emitPushReg64Ins(REG_RSI));
-	pushIns(emitPushReg64Ins(REG_R12));
-	pushIns(emitPushReg64Ins(REG_R13));
-	pushIns(emitPushReg64Ins(REG_R14));
-	pushIns(emitPushReg64Ins(REG_R15));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPushReg64Ins(REG_RBX)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPushReg64Ins(REG_RDI)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPushReg64Ins(REG_RSI)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPushReg64Ins(REG_R12)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPushReg64Ins(REG_R13)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPushReg64Ins(REG_R14)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPushReg64Ins(REG_R15)));
 
-	pushIns(emitPushReg64Ins(REG_RBP));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPushReg64Ins(REG_RBP)));
 
-	pushIns(emitMovReg64ToReg64Ins(REG_RBP, REG_RSP));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitMovReg64ToReg64Ins(REG_RBP, REG_RSP)));
 
 	addStackPtr(sizeof(uint64_t) * 11);
 }
 
-SLAKE_API void JITCompileContext::pushEpilogStackOpIns() {
-	pushIns(emitMovReg64ToReg64Ins(REG_RSP, REG_RBP));
+SLAKE_API InternalExceptionPointer JITCompileContext::pushEpilogStackOpIns() {
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitMovReg64ToReg64Ins(REG_RSP, REG_RBP)));
 
-	pushIns(emitPopReg64Ins(REG_RBP));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPopReg64Ins(REG_RBP)));
 
-	pushIns(emitPopReg64Ins(REG_R15));
-	pushIns(emitPopReg64Ins(REG_R14));
-	pushIns(emitPopReg64Ins(REG_R13));
-	pushIns(emitPopReg64Ins(REG_R12));
-	pushIns(emitPopReg64Ins(REG_RSI));
-	pushIns(emitPopReg64Ins(REG_RDI));
-	pushIns(emitPopReg64Ins(REG_RBX));
-	pushIns(emitPopReg64Ins(REG_RCX));
-	pushIns(emitPopReg64Ins(REG_RDX));
-	pushIns(emitPopReg64Ins(REG_R8));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPopReg64Ins(REG_R15)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPopReg64Ins(REG_R14)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPopReg64Ins(REG_R13)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPopReg64Ins(REG_R12)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPopReg64Ins(REG_RSI)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPopReg64Ins(REG_RDI)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPopReg64Ins(REG_RBX)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPopReg64Ins(REG_RCX)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPopReg64Ins(REG_RDX)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPopReg64Ins(REG_R8)));
 }
 
-SLAKE_API void JITCompileContext::checkStackPointer(uint32_t size) {
-	pushIns(emitSubImm32ToReg64Ins(REG_RSP, (uint8_t *)&size));
-	pushIns(emitCmpReg64ToReg64Ins(REG_R11, REG_RSP));
-	pushIns(emitLabelledJumpIns("_report_stack_overflow", DiscreteInstructionType::JumpIfLtLabelled));
-	pushIns(emitAddImm32ToReg64Ins(REG_RSP, (uint8_t *)&size));
+SLAKE_API InternalExceptionPointer JITCompileContext::checkStackPointer(uint32_t size) {
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitSubImm32ToReg64Ins(REG_RSP, (uint8_t *)&size)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitCmpReg64ToReg64Ins(REG_R11, REG_RSP)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitLabelledJumpIns("_report_stack_overflow", DiscreteInstructionType::JumpIfLtLabelled)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitAddImm32ToReg64Ins(REG_RSP, (uint8_t *)&size)));
 }
 
-SLAKE_API void JITCompileContext::checkStackPointerOnProlog(uint32_t size) {
-	pushIns(emitSubImm32ToReg64Ins(REG_RSP, (uint8_t *)&size));
-	pushIns(emitCmpReg64ToReg64Ins(REG_R11, REG_RSP));
-	pushIns(emitLabelledJumpIns("_report_stack_overflow_on_prolog", DiscreteInstructionType::JumpIfLtLabelled));
-	pushIns(emitAddImm32ToReg64Ins(REG_RSP, (uint8_t *)&size));
+SLAKE_API InternalExceptionPointer JITCompileContext::checkStackPointerOnProlog(uint32_t size) {
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitSubImm32ToReg64Ins(REG_RSP, (uint8_t *)&size)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitCmpReg64ToReg64Ins(REG_R11, REG_RSP)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitLabelledJumpIns("_report_stack_overflow_on_prolog", DiscreteInstructionType::JumpIfLtLabelled)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitAddImm32ToReg64Ins(REG_RSP, (uint8_t *)&size)));
 }
 
-SLAKE_API void JITCompileContext::checkAndPushStackPointer(uint32_t size) {
-	pushIns(emitSubImm32ToReg64Ins(REG_RSP, (uint8_t *)&size));
-	pushIns(emitCmpReg64ToReg64Ins(REG_R11, REG_RSP));
-	pushIns(emitLabelledJumpIns("_report_stack_overflow", DiscreteInstructionType::JumpIfLtLabelled));
+SLAKE_API InternalExceptionPointer JITCompileContext::checkAndPushStackPointer(uint32_t size) {
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitSubImm32ToReg64Ins(REG_RSP, (uint8_t *)&size)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitCmpReg64ToReg64Ins(REG_R11, REG_RSP)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitLabelledJumpIns("_report_stack_overflow", DiscreteInstructionType::JumpIfLtLabelled)));
 	addStackPtr(size);
 }
 
-SLAKE_API void JITCompileContext::checkAndPushStackPointerOnProlog(uint32_t size) {
-	pushIns(emitSubImm32ToReg64Ins(REG_RSP, (uint8_t *)&size));
-	pushIns(emitCmpReg64ToReg64Ins(REG_R11, REG_RSP));
-	pushIns(emitLabelledJumpIns("_report_stack_overflow_on_prolog", DiscreteInstructionType::JumpIfLtLabelled));
+SLAKE_API InternalExceptionPointer JITCompileContext::checkAndPushStackPointerOnProlog(uint32_t size) {
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitSubImm32ToReg64Ins(REG_RSP, (uint8_t *)&size)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitCmpReg64ToReg64Ins(REG_R11, REG_RSP)));
+	SLAKE_RETURN_IF_EXCEPT(pushIns(emitLabelledJumpIns("_report_stack_overflow_on_prolog", DiscreteInstructionType::JumpIfLtLabelled)));
 	addStackPtr(size);
 }
 
@@ -146,26 +146,28 @@ SLAKE_API void JITCompileContext::unallocReg(RegisterId reg) {
 	regAllocFlags.reset(reg);
 }
 
-SLAKE_API int32_t JITCompileContext::stackAllocAligned(uint32_t size, uint32_t alignment) {
-	for (auto &i : freeStackSpaces) {
-		int32_t allocBase = i.first;
+SLAKE_API InternalExceptionPointer JITCompileContext::stackAllocAligned(uint32_t size, uint32_t alignment, int32_t &offOut) {
+	for (auto i = freeStackSpaces.begin(); i != freeStackSpaces.end(); ++i) {
+		int32_t allocBase = i.key();
 		size_t diff = allocBase % alignment;
 		if (diff) {
 			allocBase += alignment - diff;
 		}
 
-		if (i.second > size) {
-			int32_t newBase = (int32_t)i.first + size;
+		if (i.value() > size) {
+			int32_t newBase = (int32_t)i.key() + size;
 
 			// We don't merge here, just shrink the space.
-			freeStackSpaces[newBase] = i.second - size;
-			freeStackSpaces.erase(i.first);
+			freeStackSpaces.insert(std::move(newBase), i.value() - size);
+			freeStackSpaces.remove(i.key());
 
-			return (int32_t)-allocBase;
-		} else if (i.second == size) {
-			int32_t off = i.first;
-			freeStackSpaces.erase(i.first);
-			return -off;
+			offOut = (int32_t)-allocBase;
+			return {};
+		} else if (i.value() == size) {
+			int32_t off = i.key();
+			freeStackSpaces.remove(i.key());
+			offOut = -off;
+			return {};
 		}
 	}
 
@@ -176,13 +178,14 @@ SLAKE_API int32_t JITCompileContext::stackAllocAligned(uint32_t size, uint32_t a
 	}
 	size += alignment - diff;
 
-	checkAndPushStackPointer(size);
+	SLAKE_RETURN_IF_EXCEPT(checkAndPushStackPointer(size));
 
-	return -allocBase;
+	offOut = -allocBase;
+	return {};
 }
 
 SLAKE_API void JITCompileContext::stackFree(int32_t saveOffset, size_t size) {
-	freeStackSpaces[saveOffset] = size;
+	freeStackSpaces.insert(+saveOffset, +size);
 	auto selfIt = freeStackSpaces.find(saveOffset);
 
 	// Try to merge with the right neighbor.
@@ -191,10 +194,10 @@ SLAKE_API void JITCompileContext::stackFree(int32_t saveOffset, size_t size) {
 		++rightNeighbor;
 
 		if (rightNeighbor != freeStackSpaces.end()) {
-			assert(rightNeighbor->second >= saveOffset + sizeof(uint64_t));
-			if (rightNeighbor->first == saveOffset + sizeof(uint64_t)) {
-				selfIt->second += rightNeighbor->second;
-				freeStackSpaces.erase(rightNeighbor);
+			assert(rightNeighbor.value() >= saveOffset + sizeof(uint64_t));
+			if (rightNeighbor.key() == saveOffset + sizeof(uint64_t)) {
+				selfIt.value() += rightNeighbor.value();
+				freeStackSpaces.remove(rightNeighbor);
 			}
 		}
 	}
@@ -204,10 +207,10 @@ SLAKE_API void JITCompileContext::stackFree(int32_t saveOffset, size_t size) {
 		auto leftNeighbor = selfIt;
 		--leftNeighbor;
 
-		assert(leftNeighbor->first + leftNeighbor->second <= saveOffset);
-		if (leftNeighbor->first + leftNeighbor->second == saveOffset) {
-			leftNeighbor->second += selfIt->second;
-			freeStackSpaces.erase(selfIt);
+		assert(leftNeighbor.key() + leftNeighbor.value() <= saveOffset);
+		if (leftNeighbor.key() + leftNeighbor.value() == saveOffset) {
+			leftNeighbor.value() += selfIt.value();
+			freeStackSpaces.remove(selfIt);
 		}
 	}
 }

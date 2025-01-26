@@ -35,8 +35,7 @@ SLAKE_API HostRefHolder::~HostRefHolder() {
 
 SLAKE_API void HostRefHolder::addObject(Object *object) {
 	if (!holdedObjects.contains(object)) {
-		Object *copiedObject = object;
-		holdedObjects.insert(std::move(copiedObject));
+		holdedObjects.insert(+object);
 		++object->hostRefCount;
 	}
 }

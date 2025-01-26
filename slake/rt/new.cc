@@ -30,8 +30,7 @@ SLAKE_API void Runtime::initMethodTableForClass(ClassObject *cls, ClassObject *p
 
 					for (auto &j : overloadings) {
 						if (isDuplicatedOverloading(j, destructorParamTypes, destructorGenericParamList, false)) {
-							auto copiedJ = j;
-							methodTable->destructors.pushFront(std::move(copiedJ));
+							methodTable->destructors.pushFront(+j);
 							break;
 						}
 					}
@@ -62,8 +61,7 @@ SLAKE_API void Runtime::initMethodTableForClass(ClassObject *cls, ClassObject *p
 									break;
 								}
 							}
-							auto copiedJ = j;
-							methodSlot->overloadings.insert(std::move(copiedJ));
+							methodSlot->overloadings.insert(+j);
 						}
 					}
 				}

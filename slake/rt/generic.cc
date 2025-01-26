@@ -19,8 +19,7 @@ SLAKE_API void Runtime::invalidateGenericCache(Object *i) {
 
 SLAKE_API InternalExceptionPointer Runtime::setGenericCache(const Object *object, const GenericArgList &genericArgs, Object *instantiatedObject) {
 	if (!_genericCacheDir.contains(object)) {
-		const Object *copiedObject = object;
-		if (!_genericCacheDir.insert(std::move(copiedObject), GenericCacheTable(&globalHeapPoolAlloc)))
+		if (!_genericCacheDir.insert(+object, GenericCacheTable(&globalHeapPoolAlloc)))
 			return OutOfMemoryError::alloc();
 	}
 	// Store the instance into the cache.

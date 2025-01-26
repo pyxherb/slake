@@ -24,7 +24,7 @@ SLAKE_API bool MajorFrame::leave() {
 	context->stackTop = minorFrames.back().stackBase;
 	if (!localVarRecords.resize(minorFrames.back().nLocalVars))
 		return false;
-	if (!minorFrames.popBack())
+	if (!minorFrames.popBackAndResizeCapacity())
 		return false;
 	return true;
 }

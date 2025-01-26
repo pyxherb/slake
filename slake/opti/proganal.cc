@@ -4,7 +4,7 @@ using namespace slake;
 using namespace slake::opti;
 
 void slake::opti::markRegAsForOutput(ProgramAnalyzeContext &analyzeContext, uint32_t i) {
-	switch (auto &regInfo = analyzeContext.analyzedInfoOut.analyzedRegInfo[i]; regInfo.storageType) {
+	switch (auto &regInfo = analyzeContext.analyzedInfoOut.analyzedRegInfo.at(i); regInfo.storageType) {
 		case opti::RegStorageType::None:
 			break;
 		case opti::RegStorageType::GlobalVar:
@@ -80,7 +80,10 @@ InternalExceptionPointer slake::opti::evalObjectType(
 		case ObjectKind::FnOverloading: {
 			FnOverloadingObject *fnOverloadingObject = (FnOverloadingObject *)object;
 
-			auto paramTypes = fnOverloadingObject->paramTypes;
+			peff::DynArray<Type> paramTypes;
+			if (!(peff::copy(paramTypes, fnOverloadingObject->paramTypes))) {
+				return OutOfMemoryError::alloc();
+			}
 			auto typeDef = FnTypeDefObject::alloc(
 				analyzeContext.runtime,
 				fnOverloadingObject->returnType,
@@ -130,7 +133,7 @@ InternalExceptionPointer slake::opti::evalValueType(
 		case ValueType::RegRef: {
 			uint32_t regIndex = value.getRegIndex();
 
-			if (!analyzeContext.analyzedInfoOut.analyzedRegInfo.count(regIndex)) {
+			if (!analyzeContext.analyzedInfoOut.analyzedRegInfo.contains(regIndex)) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,
@@ -178,14 +181,14 @@ InternalExceptionPointer slake::opti::evalConstValue(
 		case ValueType::RegRef: {
 			uint32_t idxReg = value.getRegIndex();
 
-			if (!analyzeContext.analyzedInfoOut.analyzedRegInfo.count(idxReg)) {
+			if (!analyzeContext.analyzedInfoOut.analyzedRegInfo.contains(idxReg)) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,
 					analyzeContext.idxCurIns);
 			}
 
-			constValueOut = analyzeContext.analyzedInfoOut.analyzedRegInfo[idxReg].expectedValue;
+			constValueOut = analyzeContext.analyzedInfoOut.analyzedRegInfo.at(idxReg).expectedValue;
 			break;
 		} /*
 		case ValueType::VarRef: {
@@ -216,14 +219,14 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 
 	// Analyze lifetime of virtual registers.
 	for (size_t &i = analyzeContext.idxCurIns; i < nIns; ++i) {
-		const Instruction &curIns = fnObject->instructions[i];
+		const Instruction &curIns = fnObject->instructions.at(i);
 
 		uint32_t regIndex = UINT32_MAX;
 
 		if (curIns.output.valueType == ValueType::RegRef) {
 			regIndex = curIns.output.getRegIndex();
 
-			if (analyzedInfoOut.analyzedRegInfo.count(regIndex)) {
+			if (analyzedInfoOut.analyzedRegInfo.contains(regIndex)) {
 				// Malformed program, return.
 				return MalformedProgramError::alloc(
 					runtime,
@@ -231,14 +234,16 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					i);
 			}
 
-			analyzedInfoOut.analyzedRegInfo[regIndex].lifetime = { i, i };
+			if(!analyzedInfoOut.analyzedRegInfo.insert(+regIndex, {}))
+				return OutOfMemoryError::alloc();
+			analyzedInfoOut.analyzedRegInfo.at(regIndex).lifetime = { i, i };
 		}
 
 		for (auto &j : curIns.operands) {
 			if (j.valueType == ValueType::RegRef) {
 				uint32_t index = j.getRegIndex();
 
-				if (!analyzedInfoOut.analyzedRegInfo.count(index)) {
+				if (!analyzedInfoOut.analyzedRegInfo.contains(index)) {
 					// Malformed program, return.
 					return MalformedProgramError::alloc(
 						runtime,
@@ -502,7 +507,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					SLAKE_RETURN_IF_EXCEPT(
 						wrapIntoRefType(
 							runtime,
-							analyzeContext.stackFrameState.analyzedLocalVarInfo[index].type,
+							analyzeContext.stackFrameState.analyzedLocalVarInfo.at(index).type,
 							hostRefHolder,
 							analyzedInfoOut.analyzedRegInfo.at(regIndex).type));
 
@@ -551,7 +556,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 							SLAKE_RETURN_IF_EXCEPT(
 								wrapIntoRefType(
 									runtime,
-									fnObject->paramTypes[i],
+									fnObject->paramTypes.at(i),
 									hostRefHolder,
 									type));
 						}
@@ -565,7 +570,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 							SLAKE_RETURN_IF_EXCEPT(
 								wrapIntoRefType(
 									runtime,
-									fnObject->paramTypes[i],
+									fnObject->paramTypes.at(i),
 									hostRefHolder,
 									type));
 						}
@@ -605,7 +610,8 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				SLAKE_RETURN_IF_EXCEPT(typeName.loadDeferredType(runtime));
 
 				size_t index = analyzeContext.stackFrameState.analyzedLocalVarInfo.size();
-				analyzeContext.stackFrameState.analyzedLocalVarInfo.push_back({ typeName });
+				if (!analyzeContext.stackFrameState.analyzedLocalVarInfo.pushBack({ typeName }))
+					return OutOfMemoryError::alloc();
 				break;
 			}
 			case Opcode::LVALUE: {
@@ -641,17 +647,18 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				break;
 			}
 			case Opcode::ENTER: {
-				analyzeContext.stackFrameState.stackBases.push_back(analyzeContext.stackFrameState.analyzedLocalVarInfo.size());
+				if (!analyzeContext.stackFrameState.stackBases.pushBack(analyzeContext.stackFrameState.analyzedLocalVarInfo.size()))
+					return OutOfMemoryError::alloc();
 				break;
 			}
 			case Opcode::LEAVE: {
-				if (analyzeContext.stackFrameState.stackBases.empty()) {
+				if (!analyzeContext.stackFrameState.stackBases.size()) {
 					return MalformedProgramError::alloc(
 						runtime,
 						fnObject,
 						i);
 				}
-				analyzeContext.stackFrameState.stackBases.pop_back();
+				analyzeContext.stackFrameState.stackBases.popBack();
 				break;
 			}
 			case Opcode::ADD:
@@ -773,7 +780,8 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 							fnObject,
 							i);
 				}
-				analyzeContext.argPushInsOffs.push_back(i);
+				if (!analyzeContext.argPushInsOffs.pushBack(i))
+					return OutOfMemoryError::alloc();
 				break;
 			}
 			case Opcode::CALL: {
@@ -793,20 +801,20 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				}
 
 				uint32_t callTargetRegIndex = callTarget.getRegIndex();
-				if (!analyzedInfoOut.analyzedRegInfo.count(callTargetRegIndex)) {
+				if (!analyzedInfoOut.analyzedRegInfo.contains(callTargetRegIndex)) {
 					return MalformedProgramError::alloc(
 						runtime,
 						fnObject,
 						i);
 				}
 
-				Type callTargetType = analyzedInfoOut.analyzedRegInfo[callTargetRegIndex].type;
+				Type callTargetType = analyzedInfoOut.analyzedRegInfo.at(callTargetRegIndex).type;
 
 				switch (callTargetType.typeId) {
 					case TypeId::FnDelegate:
 						if (regIndex != UINT32_MAX) {
 							FnTypeDefObject *typeDef = (FnTypeDefObject *)callTargetType.getCustomTypeExData();
-							analyzedInfoOut.analyzedRegInfo[regIndex].type = typeDef->returnType;
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).type = typeDef->returnType;
 						}
 						break;
 					default: {
@@ -817,18 +825,19 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					}
 				}
 
-				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.insert({ i, FnCallAnalyzedInfo(&analyzeContext.runtime->globalHeapPoolAlloc) });
+				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.insert(i, FnCallAnalyzedInfo(&analyzeContext.runtime->globalHeapPoolAlloc));
 				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.at(i).argPushInsOffs = std::move(analyzeContext.argPushInsOffs);
-				analyzeContext.argPushInsOffs.clear();
+				analyzeContext.argPushInsOffs = peff::DynArray<uint32_t>(&analyzeContext.runtime->globalHeapPoolAlloc);
 
 				Value expectedFnValue = analyzedInfoOut.analyzedRegInfo.at(callTargetRegIndex).expectedValue;
 
 				if (expectedFnValue.valueType != ValueType::Undefined) {
 					FnOverloadingObject *expectedFnObject = (FnOverloadingObject *)expectedFnValue.getObjectRef();
-					if (!analyzeContext.analyzedInfoOut.fnCallMap.count(expectedFnObject)) {
-						analyzeContext.analyzedInfoOut.fnCallMap[expectedFnObject] = std::pmr::vector<uint32_t>(&analyzeContext.runtime->globalHeapPoolAlloc);
+					if (!analyzeContext.analyzedInfoOut.fnCallMap.contains(expectedFnObject)) {
+						analyzeContext.analyzedInfoOut.fnCallMap.insert(+expectedFnObject, peff::DynArray<uint32_t>(&analyzeContext.runtime->globalHeapPoolAlloc));
 					}
-					analyzeContext.analyzedInfoOut.fnCallMap.at(expectedFnObject).push_back(i);
+					if (!analyzeContext.analyzedInfoOut.fnCallMap.at(expectedFnObject).pushBack(i))
+						return OutOfMemoryError::alloc();
 				}
 
 				break;
@@ -851,20 +860,20 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				}
 
 				uint32_t callTargetRegIndex = callTarget.getRegIndex();
-				if (!analyzedInfoOut.analyzedRegInfo.count(callTargetRegIndex)) {
+				if (!analyzedInfoOut.analyzedRegInfo.contains(callTargetRegIndex)) {
 					return MalformedProgramError::alloc(
 						runtime,
 						fnObject,
 						i);
 				}
 
-				Type callTargetType = analyzedInfoOut.analyzedRegInfo[callTargetRegIndex].type;
+				Type callTargetType = analyzedInfoOut.analyzedRegInfo.at(callTargetRegIndex).type;
 
 				switch (callTargetType.typeId) {
 					case TypeId::FnDelegate:
 						if (regIndex != UINT32_MAX) {
 							FnTypeDefObject *typeDef = (FnTypeDefObject *)callTargetType.getCustomTypeExData();
-							analyzedInfoOut.analyzedRegInfo[regIndex].type = typeDef->returnType;
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).type = typeDef->returnType;
 						}
 						break;
 					default: {
@@ -874,18 +883,19 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 							i);
 					}
 				}
-				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.insert({ i, FnCallAnalyzedInfo(&analyzeContext.runtime->globalHeapPoolAlloc) });
+				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.insert(i, FnCallAnalyzedInfo(&analyzeContext.runtime->globalHeapPoolAlloc));
 				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.at(i).argPushInsOffs = std::move(analyzeContext.argPushInsOffs);
-				analyzeContext.argPushInsOffs = {};
+				analyzeContext.argPushInsOffs = peff::DynArray<uint32_t>(&analyzeContext.runtime->globalHeapPoolAlloc);
 
 				Value expectedFnValue = analyzedInfoOut.analyzedRegInfo.at(callTargetRegIndex).expectedValue;
 
 				if (expectedFnValue.valueType != ValueType::Undefined) {
 					FnOverloadingObject *expectedFnObject = (FnOverloadingObject *)expectedFnValue.getObjectRef();
-					if (!analyzeContext.analyzedInfoOut.fnCallMap.count(expectedFnObject)) {
-						analyzeContext.analyzedInfoOut.fnCallMap[expectedFnObject] = std::pmr::vector<uint32_t>(&analyzeContext.runtime->globalHeapPoolAlloc);
+					if (!analyzeContext.analyzedInfoOut.fnCallMap.contains(expectedFnObject)) {
+						analyzeContext.analyzedInfoOut.fnCallMap.insert(+expectedFnObject, peff::DynArray<uint32_t>(&analyzeContext.runtime->globalHeapPoolAlloc));
 					}
-					analyzeContext.analyzedInfoOut.fnCallMap.at(expectedFnObject).push_back(i);
+					if (!analyzeContext.analyzedInfoOut.fnCallMap.at(expectedFnObject).pushBack(i))
+						return OutOfMemoryError::alloc();
 				}
 
 				break;
@@ -949,7 +959,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						fnObject,
 						i);
 				}
-				analyzedInfoOut.analyzedRegInfo[regIndex].type = analyzeContext.fnObject->thisObjectType;
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).type = analyzeContext.fnObject->thisObjectType;
 				break;
 			case Opcode::NEW:
 				if (regIndex == UINT32_MAX) {
@@ -973,7 +983,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						i);
 				}
 
-				analyzedInfoOut.analyzedRegInfo[regIndex].type = curIns.operands[0].getTypeName();
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).type = curIns.operands[0].getTypeName();
 				break;
 			case Opcode::ARRNEW: {
 				if (regIndex == UINT32_MAX) {
@@ -1016,7 +1026,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					runtime,
 					curIns.operands[0].getTypeName(),
 					hostRefHolder,
-					analyzedInfoOut.analyzedRegInfo[regIndex].type));
+					analyzedInfoOut.analyzedRegInfo.at(regIndex).type));
 				break;
 			}
 			case Opcode::THROW:

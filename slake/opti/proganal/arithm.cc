@@ -7,7 +7,7 @@ using namespace slake::opti;
 InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 	ProgramAnalyzeContext &analyzeContext,
 	uint32_t regIndex) {
-	Instruction &curIns = analyzeContext.fnObject->instructions[analyzeContext.idxCurIns];
+	Instruction &curIns = analyzeContext.fnObject->instructions.at(analyzeContext.idxCurIns);
 
 	switch (curIns.opcode) {
 		case Opcode::ADD: {

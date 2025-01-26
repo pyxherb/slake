@@ -73,7 +73,7 @@ namespace slake {
 		struct ProgramAnalyzedInfo {
 			peff::Map<uint32_t, RegAnalyzedInfo> analyzedRegInfo;
 			peff::Map<uint32_t, FnCallAnalyzedInfo> analyzedFnCallInfo;
-			peff::Map<FnOverloadingObject *, std::pmr::vector<uint32_t>> fnCallMap;
+			peff::Map<FnOverloadingObject *, peff::DynArray<uint32_t>> fnCallMap;
 
 			SLAKE_FORCEINLINE ProgramAnalyzedInfo(Runtime *runtime)
 				: analyzedRegInfo(&runtime->globalHeapPoolAlloc),

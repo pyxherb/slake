@@ -6,7 +6,7 @@ using namespace slake::opti;
 InternalExceptionPointer slake::opti::analyzeCastIns(
 	ProgramAnalyzeContext& analyzeContext,
 	size_t regIndex) {
-	Instruction &curIns = analyzeContext.fnObject->instructions[analyzeContext.idxCurIns];
+	Instruction &curIns = analyzeContext.fnObject->instructions.at(analyzeContext.idxCurIns);
 
 	if (regIndex == UINT32_MAX) {
 		return MalformedProgramError::alloc(
@@ -43,57 +43,57 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 							switch (destType.getValueTypeExData()) {
 								case ValueType::I8:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int8_t)constSrc.getI8());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int8_t)constSrc.getI8());
 									}
 									break;
 								case ValueType::I16:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int16_t)constSrc.getI8());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int16_t)constSrc.getI8());
 									}
 									break;
 								case ValueType::I32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int32_t)constSrc.getI8());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int32_t)constSrc.getI8());
 									}
 									break;
 								case ValueType::I64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int64_t)constSrc.getI8());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int64_t)constSrc.getI8());
 									}
 									break;
 								case ValueType::U8:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint8_t)constSrc.getI8());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint8_t)constSrc.getI8());
 									}
 									break;
 								case ValueType::U16:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint16_t)constSrc.getI8());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint16_t)constSrc.getI8());
 									}
 									break;
 								case ValueType::U32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint32_t)constSrc.getI8());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint32_t)constSrc.getI8());
 									}
 									break;
 								case ValueType::U64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint64_t)constSrc.getI8());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint64_t)constSrc.getI8());
 									}
 									break;
 								case ValueType::F32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((float)constSrc.getI8());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((float)constSrc.getI8());
 									}
 									break;
 								case ValueType::F64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((double)constSrc.getI8());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((double)constSrc.getI8());
 									}
 									break;
 								case ValueType::Bool:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((bool)constSrc.getI8());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((bool)constSrc.getI8());
 									}
 									break;
 								default: {
@@ -118,57 +118,57 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 							switch (destType.getValueTypeExData()) {
 								case ValueType::I8:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int8_t)constSrc.getI16());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int8_t)constSrc.getI16());
 									}
 									break;
 								case ValueType::I16:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int16_t)constSrc.getI16());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int16_t)constSrc.getI16());
 									}
 									break;
 								case ValueType::I32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int32_t)constSrc.getI16());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int32_t)constSrc.getI16());
 									}
 									break;
 								case ValueType::I64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int64_t)constSrc.getI16());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int64_t)constSrc.getI16());
 									}
 									break;
 								case ValueType::U8:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint8_t)constSrc.getI16());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint8_t)constSrc.getI16());
 									}
 									break;
 								case ValueType::U16:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint16_t)constSrc.getI16());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint16_t)constSrc.getI16());
 									}
 									break;
 								case ValueType::U32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint32_t)constSrc.getI16());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint32_t)constSrc.getI16());
 									}
 									break;
 								case ValueType::U64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint64_t)constSrc.getI16());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint64_t)constSrc.getI16());
 									}
 									break;
 								case ValueType::F32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((float)constSrc.getI16());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((float)constSrc.getI16());
 									}
 									break;
 								case ValueType::F64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((double)constSrc.getI16());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((double)constSrc.getI16());
 									}
 									break;
 								case ValueType::Bool:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((bool)constSrc.getI16());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((bool)constSrc.getI16());
 									}
 									break;
 								default: {
@@ -193,57 +193,57 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 							switch (destType.getValueTypeExData()) {
 								case ValueType::I8:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int8_t)constSrc.getI32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int8_t)constSrc.getI32());
 									}
 									break;
 								case ValueType::I16:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int16_t)constSrc.getI32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int16_t)constSrc.getI32());
 									}
 									break;
 								case ValueType::I32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int32_t)constSrc.getI32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int32_t)constSrc.getI32());
 									}
 									break;
 								case ValueType::I64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int64_t)constSrc.getI32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int64_t)constSrc.getI32());
 									}
 									break;
 								case ValueType::U8:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint8_t)constSrc.getI32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint8_t)constSrc.getI32());
 									}
 									break;
 								case ValueType::U16:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint16_t)constSrc.getI32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint16_t)constSrc.getI32());
 									}
 									break;
 								case ValueType::U32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint32_t)constSrc.getI32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint32_t)constSrc.getI32());
 									}
 									break;
 								case ValueType::U64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint64_t)constSrc.getI32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint64_t)constSrc.getI32());
 									}
 									break;
 								case ValueType::F32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((float)constSrc.getI32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((float)constSrc.getI32());
 									}
 									break;
 								case ValueType::F64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((double)constSrc.getI32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((double)constSrc.getI32());
 									}
 									break;
 								case ValueType::Bool:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((bool)constSrc.getI32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((bool)constSrc.getI32());
 									}
 									break;
 								default: {
@@ -268,57 +268,57 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 							switch (destType.getValueTypeExData()) {
 								case ValueType::I8:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int8_t)constSrc.getI64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int8_t)constSrc.getI64());
 									}
 									break;
 								case ValueType::I16:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int16_t)constSrc.getI64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int16_t)constSrc.getI64());
 									}
 									break;
 								case ValueType::I32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int32_t)constSrc.getI64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int32_t)constSrc.getI64());
 									}
 									break;
 								case ValueType::I64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int64_t)constSrc.getI64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int64_t)constSrc.getI64());
 									}
 									break;
 								case ValueType::U8:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint8_t)constSrc.getI64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint8_t)constSrc.getI64());
 									}
 									break;
 								case ValueType::U16:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint16_t)constSrc.getI64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint16_t)constSrc.getI64());
 									}
 									break;
 								case ValueType::U32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint32_t)constSrc.getI64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint32_t)constSrc.getI64());
 									}
 									break;
 								case ValueType::U64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint64_t)constSrc.getI64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint64_t)constSrc.getI64());
 									}
 									break;
 								case ValueType::F32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((float)constSrc.getI64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((float)constSrc.getI64());
 									}
 									break;
 								case ValueType::F64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((double)constSrc.getI64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((double)constSrc.getI64());
 									}
 									break;
 								case ValueType::Bool:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((bool)constSrc.getI64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((bool)constSrc.getI64());
 									}
 									break;
 								default: {
@@ -343,57 +343,57 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 							switch (destType.getValueTypeExData()) {
 								case ValueType::I8:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int8_t)constSrc.getU8());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int8_t)constSrc.getU8());
 									}
 									break;
 								case ValueType::I16:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int16_t)constSrc.getU8());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int16_t)constSrc.getU8());
 									}
 									break;
 								case ValueType::I32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int32_t)constSrc.getU8());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int32_t)constSrc.getU8());
 									}
 									break;
 								case ValueType::I64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int64_t)constSrc.getU8());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int64_t)constSrc.getU8());
 									}
 									break;
 								case ValueType::U8:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint8_t)constSrc.getU8());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint8_t)constSrc.getU8());
 									}
 									break;
 								case ValueType::U16:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint16_t)constSrc.getU8());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint16_t)constSrc.getU8());
 									}
 									break;
 								case ValueType::U32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint32_t)constSrc.getU8());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint32_t)constSrc.getU8());
 									}
 									break;
 								case ValueType::U64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint64_t)constSrc.getU8());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint64_t)constSrc.getU8());
 									}
 									break;
 								case ValueType::F32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((float)constSrc.getU8());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((float)constSrc.getU8());
 									}
 									break;
 								case ValueType::F64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((double)constSrc.getU8());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((double)constSrc.getU8());
 									}
 									break;
 								case ValueType::Bool:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((bool)constSrc.getU8());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((bool)constSrc.getU8());
 									}
 									break;
 								default: {
@@ -418,57 +418,57 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 							switch (destType.getValueTypeExData()) {
 								case ValueType::I8:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int8_t)constSrc.getU16());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int8_t)constSrc.getU16());
 									}
 									break;
 								case ValueType::I16:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int16_t)constSrc.getU16());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int16_t)constSrc.getU16());
 									}
 									break;
 								case ValueType::I32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int32_t)constSrc.getU16());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int32_t)constSrc.getU16());
 									}
 									break;
 								case ValueType::I64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int64_t)constSrc.getU16());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int64_t)constSrc.getU16());
 									}
 									break;
 								case ValueType::U8:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint8_t)constSrc.getU16());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint8_t)constSrc.getU16());
 									}
 									break;
 								case ValueType::U16:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint16_t)constSrc.getU16());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint16_t)constSrc.getU16());
 									}
 									break;
 								case ValueType::U32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint32_t)constSrc.getU16());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint32_t)constSrc.getU16());
 									}
 									break;
 								case ValueType::U64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint64_t)constSrc.getU16());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint64_t)constSrc.getU16());
 									}
 									break;
 								case ValueType::F32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((float)constSrc.getU16());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((float)constSrc.getU16());
 									}
 									break;
 								case ValueType::F64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((double)constSrc.getU16());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((double)constSrc.getU16());
 									}
 									break;
 								case ValueType::Bool:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((bool)constSrc.getU16());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((bool)constSrc.getU16());
 									}
 									break;
 								default: {
@@ -493,57 +493,57 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 							switch (destType.getValueTypeExData()) {
 								case ValueType::I8:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int8_t)constSrc.getU32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int8_t)constSrc.getU32());
 									}
 									break;
 								case ValueType::I16:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int16_t)constSrc.getU32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int16_t)constSrc.getU32());
 									}
 									break;
 								case ValueType::I32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int32_t)constSrc.getU32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int32_t)constSrc.getU32());
 									}
 									break;
 								case ValueType::I64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int64_t)constSrc.getU32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int64_t)constSrc.getU32());
 									}
 									break;
 								case ValueType::U8:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint8_t)constSrc.getU32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint8_t)constSrc.getU32());
 									}
 									break;
 								case ValueType::U16:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint16_t)constSrc.getU32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint16_t)constSrc.getU32());
 									}
 									break;
 								case ValueType::U32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint32_t)constSrc.getU32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint32_t)constSrc.getU32());
 									}
 									break;
 								case ValueType::U64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint64_t)constSrc.getU32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint64_t)constSrc.getU32());
 									}
 									break;
 								case ValueType::F32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((float)constSrc.getU32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((float)constSrc.getU32());
 									}
 									break;
 								case ValueType::F64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((double)constSrc.getU32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((double)constSrc.getU32());
 									}
 									break;
 								case ValueType::Bool:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((bool)constSrc.getU32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((bool)constSrc.getU32());
 									}
 									break;
 								default: {
@@ -568,57 +568,57 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 							switch (destType.getValueTypeExData()) {
 								case ValueType::I8:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int8_t)constSrc.getU64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int8_t)constSrc.getU64());
 									}
 									break;
 								case ValueType::I16:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int16_t)constSrc.getU64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int16_t)constSrc.getU64());
 									}
 									break;
 								case ValueType::I32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int32_t)constSrc.getU64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int32_t)constSrc.getU64());
 									}
 									break;
 								case ValueType::I64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int64_t)constSrc.getU64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int64_t)constSrc.getU64());
 									}
 									break;
 								case ValueType::U8:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint8_t)constSrc.getU64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint8_t)constSrc.getU64());
 									}
 									break;
 								case ValueType::U16:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint16_t)constSrc.getU64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint16_t)constSrc.getU64());
 									}
 									break;
 								case ValueType::U32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint32_t)constSrc.getU64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint32_t)constSrc.getU64());
 									}
 									break;
 								case ValueType::U64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint64_t)constSrc.getU64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint64_t)constSrc.getU64());
 									}
 									break;
 								case ValueType::F32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((float)constSrc.getU64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((float)constSrc.getU64());
 									}
 									break;
 								case ValueType::F64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((double)constSrc.getU64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((double)constSrc.getU64());
 									}
 									break;
 								case ValueType::Bool:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((bool)constSrc.getU64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((bool)constSrc.getU64());
 									}
 									break;
 								default: {
@@ -643,57 +643,57 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 							switch (destType.getValueTypeExData()) {
 								case ValueType::I8:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int8_t)constSrc.getBool());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int8_t)constSrc.getBool());
 									}
 									break;
 								case ValueType::I16:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int16_t)constSrc.getBool());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int16_t)constSrc.getBool());
 									}
 									break;
 								case ValueType::I32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int32_t)constSrc.getBool());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int32_t)constSrc.getBool());
 									}
 									break;
 								case ValueType::I64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int64_t)constSrc.getBool());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int64_t)constSrc.getBool());
 									}
 									break;
 								case ValueType::U8:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint8_t)constSrc.getBool());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint8_t)constSrc.getBool());
 									}
 									break;
 								case ValueType::U16:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint16_t)constSrc.getBool());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint16_t)constSrc.getBool());
 									}
 									break;
 								case ValueType::U32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint32_t)constSrc.getBool());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint32_t)constSrc.getBool());
 									}
 									break;
 								case ValueType::U64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint64_t)constSrc.getBool());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint64_t)constSrc.getBool());
 									}
 									break;
 								case ValueType::F32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((float)constSrc.getBool());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((float)constSrc.getBool());
 									}
 									break;
 								case ValueType::F64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((double)constSrc.getBool());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((double)constSrc.getBool());
 									}
 									break;
 								case ValueType::Bool:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((bool)constSrc.getBool());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((bool)constSrc.getBool());
 									}
 									break;
 								default: {
@@ -718,57 +718,57 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 							switch (destType.getValueTypeExData()) {
 								case ValueType::I8:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int8_t)constSrc.getF32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int8_t)constSrc.getF32());
 									}
 									break;
 								case ValueType::I16:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int16_t)constSrc.getF32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int16_t)constSrc.getF32());
 									}
 									break;
 								case ValueType::I32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int32_t)constSrc.getF32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int32_t)constSrc.getF32());
 									}
 									break;
 								case ValueType::I64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int64_t)constSrc.getF32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int64_t)constSrc.getF32());
 									}
 									break;
 								case ValueType::U8:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint8_t)constSrc.getF32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint8_t)constSrc.getF32());
 									}
 									break;
 								case ValueType::U16:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint16_t)constSrc.getF32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint16_t)constSrc.getF32());
 									}
 									break;
 								case ValueType::U32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint32_t)constSrc.getF32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint32_t)constSrc.getF32());
 									}
 									break;
 								case ValueType::U64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint64_t)constSrc.getF32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint64_t)constSrc.getF32());
 									}
 									break;
 								case ValueType::F32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((float)constSrc.getF32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((float)constSrc.getF32());
 									}
 									break;
 								case ValueType::F64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((double)constSrc.getF32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((double)constSrc.getF32());
 									}
 									break;
 								case ValueType::Bool:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((bool)constSrc.getF32());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((bool)constSrc.getF32());
 									}
 									break;
 								default: {
@@ -793,57 +793,57 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 							switch (destType.getValueTypeExData()) {
 								case ValueType::I8:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int8_t)constSrc.getF64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int8_t)constSrc.getF64());
 									}
 									break;
 								case ValueType::I16:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int16_t)constSrc.getF64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int16_t)constSrc.getF64());
 									}
 									break;
 								case ValueType::I32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int32_t)constSrc.getF64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int32_t)constSrc.getF64());
 									}
 									break;
 								case ValueType::I64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((int64_t)constSrc.getF64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((int64_t)constSrc.getF64());
 									}
 									break;
 								case ValueType::U8:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint8_t)constSrc.getF64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint8_t)constSrc.getF64());
 									}
 									break;
 								case ValueType::U16:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint16_t)constSrc.getF64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint16_t)constSrc.getF64());
 									}
 									break;
 								case ValueType::U32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint32_t)constSrc.getF64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint32_t)constSrc.getF64());
 									}
 									break;
 								case ValueType::U64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((uint64_t)constSrc.getF64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((uint64_t)constSrc.getF64());
 									}
 									break;
 								case ValueType::F32:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((float)constSrc.getF64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((float)constSrc.getF64());
 									}
 									break;
 								case ValueType::F64:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((double)constSrc.getF64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((double)constSrc.getF64());
 									}
 									break;
 								case ValueType::Bool:
 									if (constSrc.valueType != ValueType::Undefined) {
-										analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].expectedValue = Value((bool)constSrc.getF64());
+										analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value((bool)constSrc.getF64());
 									}
 									break;
 								default: {
@@ -876,7 +876,7 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 		}
 	}
 
-	analyzeContext.analyzedInfoOut.analyzedRegInfo[regIndex].type = destType;
+	analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = destType;
 
 	return {};
 }

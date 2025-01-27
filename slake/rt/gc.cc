@@ -9,5 +9,6 @@ SLAKE_API void Runtime::gc() {
 
 	_szMemUsedAfterLastGc = globalHeapPoolAlloc.szAllocated;
 	_szComputedGcLimit = _szMemUsedAfterLastGc + (_szMemUsedAfterLastGc >> 1);
+
 	_flags &= ~_RT_INGC;
 }

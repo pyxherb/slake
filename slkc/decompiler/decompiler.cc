@@ -13,9 +13,44 @@ static const char *_ctrlCharNames[] = {
 
 decompiler::DecompilerFlags decompiler::decompilerFlags = 0;
 
+static std::unique_ptr<std::istream> fsModuleLocator(slake::Runtime *rt, slake::HostObjectRef<slake::IdRefObject> ref) {
+	std::string path;
+	for (size_t i = 0; i < ref->entries.size(); ++i) {
+		path += ref->entries.at(i).name;
+		if (i + 1 < ref->entries.size())
+			path += "/";
+	}
+	path += ".slx";
+
+	std::unique_ptr<std::ifstream> fs = std::make_unique<std::ifstream>();
+	fs->exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
+	for (auto i : modulePaths) {
+		try {
+			fs->open(i + "/" + path, std::ios_base::binary);
+			return fs;
+		} catch (std::ios::failure) {
+			fs->clear();
+		}
+	}
+
+	return nullptr;
+}
+
 void slake::decompiler::decompile(std::istream &fs, std::ostream &os) {
 	auto rt = std::make_unique<slake::Runtime>(peff::getDefaultAlloc());
-	auto mod = rt->loadModule(fs, LMOD_NOIMPORT);
+	rt->setModuleLocator(fsModuleLocator);
+
+	HostObjectRef<ModuleObject> mod;
+	try {
+		mod = rt->loadModule(fs, 0);
+	} catch (slake::LoaderError e) {
+		try {
+			mod = rt->loadModule(fs, LMOD_NOIMPORT);
+		} catch (slake::LoaderError e) {
+			os << "Error loading the module: " << e.what() << std::endl;
+			return;
+		}
+	}
 
 	auto modName = rt->getFullName(mod.get());
 
@@ -139,10 +174,23 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 						case FnOverloadingKind::Regular: {
 							RegularFnOverloadingObject *fn = (RegularFnOverloadingObject *)i;
 
+							HostRefHolder hostRefHolder(&rt->globalHeapPoolAlloc);
+
+							opti::ProgramAnalyzedInfo analyzedInfo(rt);
+							if (auto e = opti::analyzeProgramInfo(rt, fn, analyzedInfo, hostRefHolder);
+								e) {
+								e.reset();
+							}
+
 							// trimFnInstructions(fn->instructions);
 
 							for (size_t i = 0; i < fn->instructions.size(); ++i) {
 								auto &ins = fn->instructions.at(i);
+
+								if (analyzedInfo.codeBlockFrontiers.contains(i)) {
+									os << std::string(indentLevel + 1, '\t')
+									   << "//" << std::string(80, '=') << std::endl;
+								}
 
 								if (!(decompilerFlags & DECOMP_SRCLOC)) {
 									for (auto &j : fn->sourceLocDescs) {

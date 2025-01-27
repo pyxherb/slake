@@ -8,9 +8,11 @@ SLAKE_API void Runtime::initMethodTableForClass(ClassObject *cls, ClassObject *p
 	std::unique_ptr<MethodTable, util::DeallocableDeleter<MethodTable>> methodTable;
 
 	if (parentClass && parentClass->cachedInstantiatedMethodTable) {
-		methodTable = decltype(methodTable)(parentClass->cachedInstantiatedMethodTable->duplicate());
+		methodTable = std::unique_ptr<MethodTable, util::DeallocableDeleter<MethodTable>>(
+			parentClass->cachedInstantiatedMethodTable->duplicate());
 	} else {
-		methodTable = decltype(methodTable)(MethodTable::alloc(&globalHeapPoolAlloc));
+		methodTable = std::unique_ptr<MethodTable, util::DeallocableDeleter<MethodTable>>(
+			MethodTable::alloc(&globalHeapPoolAlloc));
 	}
 
 	for (auto it = cls->scope->members.begin(); it != cls->scope->members.end(); ++it) {

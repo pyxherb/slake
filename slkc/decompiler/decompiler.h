@@ -3,6 +3,7 @@
 
 #include <slake/slxfmt.h>
 #include <slake/runtime.h>
+#include <slake/opti/proganal.h>
 
 #include <fstream>
 #include <stdexcept>
@@ -33,9 +34,11 @@ namespace slake {
 		std::string decompileTypeName(const Type &type, Runtime *rt);
 		std::string decompileIdRef(const IdRefObject *ref);
 		void decompileObject(Runtime *rt, Object *object, std::ostream &os, int indentLevel = 0);
-		void decompileValue(Runtime* rt, Value value, std::ostream &os, int indentLevel = 0);
+		void decompileValue(Runtime *rt, Value value, std::ostream &os, int indentLevel = 0);
 		std::string accessToString(AccessModifier access);
 	}
 }
+
+extern std::deque<std::string> modulePaths;
 
 #endif

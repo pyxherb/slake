@@ -234,7 +234,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					i);
 			}
 
-			if(!analyzedInfoOut.analyzedRegInfo.insert(+regIndex, {}))
+			if (!analyzedInfoOut.analyzedRegInfo.insert(+regIndex, {}))
 				return OutOfMemoryError::alloc();
 			analyzedInfoOut.analyzedRegInfo.at(regIndex).lifetime = { i, i };
 		}
@@ -556,7 +556,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 							SLAKE_RETURN_IF_EXCEPT(
 								wrapIntoRefType(
 									runtime,
-									fnObject->paramTypes.at(i),
+									fnObject->paramTypes.at(index),
 									hostRefHolder,
 									type));
 						}
@@ -570,7 +570,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 							SLAKE_RETURN_IF_EXCEPT(
 								wrapIntoRefType(
 									runtime,
-									fnObject->paramTypes.at(i),
+									fnObject->paramTypes.at(index),
 									hostRefHolder,
 									type));
 						}
@@ -727,6 +727,11 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						fnObject,
 						i);
 				}
+
+				if (!analyzeContext.analyzedInfoOut.codeBlockBoundaries.insert(i + 1))
+					return OutOfMemoryError::alloc();
+				if (!analyzeContext.analyzedInfoOut.codeBlockBoundaries.insert(+regIndex))
+					return OutOfMemoryError::alloc();
 				break;
 			case Opcode::JT:
 				if (regIndex != UINT32_MAX) {
@@ -735,6 +740,11 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						fnObject,
 						i);
 				}
+
+				if (!analyzeContext.analyzedInfoOut.codeBlockBoundaries.insert(i + 1))
+					return OutOfMemoryError::alloc();
+				if (!analyzeContext.analyzedInfoOut.codeBlockBoundaries.insert(+regIndex))
+					return OutOfMemoryError::alloc();
 				break;
 			case Opcode::JF:
 				if (regIndex != UINT32_MAX) {
@@ -743,6 +753,11 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						fnObject,
 						i);
 				}
+
+				if (!analyzeContext.analyzedInfoOut.codeBlockBoundaries.insert(i + 1))
+					return OutOfMemoryError::alloc();
+				if (!analyzeContext.analyzedInfoOut.codeBlockBoundaries.insert(+regIndex))
+					return OutOfMemoryError::alloc();
 				break;
 			case Opcode::PUSHARG: {
 				if (regIndex != UINT32_MAX) {
@@ -936,6 +951,8 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 							fnObject,
 							i);
 				}
+				if (!analyzeContext.analyzedInfoOut.codeBlockBoundaries.insert(i + 1))
+					return OutOfMemoryError::alloc();
 				break;
 			case Opcode::YIELD:
 				if (regIndex != UINT32_MAX) {
@@ -944,6 +961,8 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						fnObject,
 						i);
 				}
+				if (!analyzeContext.analyzedInfoOut.codeBlockBoundaries.insert(i + 1))
+					return OutOfMemoryError::alloc();
 				break;
 			case Opcode::LTHIS:
 				if (regIndex == UINT32_MAX) {

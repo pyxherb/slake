@@ -74,11 +74,13 @@ namespace slake {
 			peff::Map<uint32_t, RegAnalyzedInfo> analyzedRegInfo;
 			peff::Map<uint32_t, FnCallAnalyzedInfo> analyzedFnCallInfo;
 			peff::Map<FnOverloadingObject *, peff::DynArray<uint32_t>> fnCallMap;
+			peff::Set<uint32_t> codeBlockBoundaries;
 
 			SLAKE_FORCEINLINE ProgramAnalyzedInfo(Runtime *runtime)
 				: analyzedRegInfo(&runtime->globalHeapPoolAlloc),
 				  analyzedFnCallInfo(&runtime->globalHeapPoolAlloc),
-				  fnCallMap(&runtime->globalHeapPoolAlloc) {
+				  fnCallMap(&runtime->globalHeapPoolAlloc),
+				  codeBlockBoundaries(&runtime->globalHeapPoolAlloc) {
 			}
 		};
 

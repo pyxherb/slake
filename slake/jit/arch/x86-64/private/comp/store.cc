@@ -35,29 +35,29 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 									size_t tmpGpRegSize;
 
 									if (compileContext.isRegInUse(tmpGpRegId)) {
-										compileContext.pushReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize);
+										SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
 									}
 
-									compileContext.pushIns(emitMovMemToReg8Ins(
+									SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovMemToReg8Ins(
 										tmpGpRegId,
 										MemoryLocation{
 											REG_RBP, vregState.saveOffset,
-											REG_MAX, 0 }));
-									compileContext.pushIns(emitMovReg8ToMemIns(
+											REG_MAX, 0 })));
+									SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg8ToMemIns(
 										MemoryLocation{
 											REG_RBP, localVarState.stackOff,
 											REG_MAX, 0 },
-										tmpGpRegId));
+										tmpGpRegId)));
 
 									if (tmpGpRegOff != INT32_MIN) {
-										compileContext.popReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize);
+										SLAKE_RETURN_IF_EXCEPT(compileContext.popReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
 									}
 								} else {
-									compileContext.pushIns(emitMovReg8ToMemIns(
+									SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg8ToMemIns(
 										MemoryLocation{
 											REG_RBP, localVarState.stackOff,
 											REG_MAX, 0 },
-										vregState.phyReg));
+										vregState.phyReg)));
 								}
 								break;
 							}
@@ -72,29 +72,29 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 									size_t tmpGpRegSize;
 
 									if (compileContext.isRegInUse(tmpGpRegId)) {
-										compileContext.pushReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize);
+										SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
 									}
 
-									compileContext.pushIns(emitMovMemToReg16Ins(
+									SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovMemToReg16Ins(
 										tmpGpRegId,
 										MemoryLocation{
 											REG_RBP, vregState.saveOffset,
-											REG_MAX, 0 }));
-									compileContext.pushIns(emitMovReg16ToMemIns(
+											REG_MAX, 0 })));
+									SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg16ToMemIns(
 										MemoryLocation{
 											REG_RBP, localVarState.stackOff,
 											REG_MAX, 0 },
-										tmpGpRegId));
+										tmpGpRegId)));
 
 									if (tmpGpRegOff != INT32_MIN) {
-										compileContext.popReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize);
+										SLAKE_RETURN_IF_EXCEPT(compileContext.popReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
 									}
 								} else {
-									compileContext.pushIns(emitMovReg16ToMemIns(
+									SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg16ToMemIns(
 										MemoryLocation{
 											REG_RBP, localVarState.stackOff,
 											REG_MAX, 0 },
-										vregState.phyReg));
+										vregState.phyReg)));
 								}
 								break;
 							}
@@ -110,29 +110,29 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 									size_t tmpGpRegSize;
 
 									if (compileContext.isRegInUse(tmpGpRegId)) {
-										compileContext.pushReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize);
+										SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
 									}
 
-									compileContext.pushIns(emitMovMemToReg32Ins(
+									SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovMemToReg32Ins(
 										tmpGpRegId,
 										MemoryLocation{
 											REG_RBP, vregState.saveOffset,
-											REG_MAX, 0 }));
-									compileContext.pushIns(emitMovReg32ToMemIns(
+											REG_MAX, 0 })));
+									SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg32ToMemIns(
 										MemoryLocation{
 											REG_RBP, localVarState.stackOff,
 											REG_MAX, 0 },
-										tmpGpRegId));
+										tmpGpRegId)));
 
 									if (tmpGpRegOff != INT32_MIN) {
-										compileContext.popReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize);
+										SLAKE_RETURN_IF_EXCEPT(compileContext.popReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
 									}
 								} else {
-									compileContext.pushIns(emitMovReg32ToMemIns(
+									SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg32ToMemIns(
 										MemoryLocation{
 											REG_RBP, localVarState.stackOff,
 											REG_MAX, 0 },
-										vregState.phyReg));
+										vregState.phyReg)));
 								}
 								break;
 							}
@@ -148,29 +148,29 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 									size_t tmpGpRegSize;
 
 									if (compileContext.isRegInUse(tmpGpRegId)) {
-										compileContext.pushReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize);
+										SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
 									}
 
-									compileContext.pushIns(emitMovMemToReg64Ins(
+									SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovMemToReg64Ins(
 										tmpGpRegId,
 										MemoryLocation{
 											REG_RBP, vregState.saveOffset,
-											REG_MAX, 0 }));
-									compileContext.pushIns(emitMovReg64ToMemIns(
+											REG_MAX, 0 })));
+									SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg64ToMemIns(
 										MemoryLocation{
 											REG_RBP, localVarState.stackOff,
 											REG_MAX, 0 },
-										tmpGpRegId));
+										tmpGpRegId)));
 
 									if (tmpGpRegOff != INT32_MIN) {
-										compileContext.popReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize);
+										SLAKE_RETURN_IF_EXCEPT(compileContext.popReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
 									}
 								} else {
-									compileContext.pushIns(emitMovReg64ToMemIns(
+									SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg64ToMemIns(
 										MemoryLocation{
 											REG_RBP, localVarState.stackOff,
 											REG_MAX, 0 },
-										vregState.phyReg));
+										vregState.phyReg)));
 								}
 								break;
 							}
@@ -179,112 +179,112 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 						switch (localVarState.type.getValueTypeExData()) {
 							case ValueType::I8: {
 								int8_t imm0 = rhs.getI8();
-								compileContext.pushIns(
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(
 									emitMovImm8ToMemIns(
 										MemoryLocation{
 											REG_RBP, localVarState.stackOff,
 											REG_MAX, 0 },
-										(uint8_t *)&imm0));
+										(uint8_t *)&imm0)));
 								break;
 							}
 							case ValueType::I16: {
 								int16_t imm0 = rhs.getI16();
-								compileContext.pushIns(
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(
 									emitMovImm16ToMemIns(
 										MemoryLocation{
 											REG_RBP, localVarState.stackOff,
 											REG_MAX, 0 },
-										(uint8_t *)&imm0));
+										(uint8_t *)&imm0)));
 								break;
 							}
 							case ValueType::I32: {
 								int32_t imm0 = rhs.getI32();
-								compileContext.pushIns(
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(
 									emitMovImm32ToMemIns(
 										MemoryLocation{
 											REG_RBP, localVarState.stackOff,
 											REG_MAX, 0 },
-										(uint8_t *)&imm0));
+										(uint8_t *)&imm0)));
 								break;
 							}
 							case ValueType::I64: {
 								int64_t imm0 = rhs.getI64();
-								compileContext.pushIns(
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(
 									emitMovImm64ToMemIns(
 										MemoryLocation{
 											REG_RBP, localVarState.stackOff,
 											REG_MAX, 0 },
-										(uint8_t *)&imm0));
+										(uint8_t *)&imm0)));
 								break;
 							}
 							case ValueType::U8: {
 								uint8_t imm0 = rhs.getU8();
-								compileContext.pushIns(
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(
 									emitMovImm8ToMemIns(
 										MemoryLocation{
 											REG_RBP, localVarState.stackOff,
 											REG_MAX, 0 },
-										(uint8_t *)&imm0));
+										(uint8_t *)&imm0)));
 								break;
 							}
 							case ValueType::U16: {
 								uint16_t imm0 = rhs.getU16();
-								compileContext.pushIns(
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(
 									emitMovImm16ToMemIns(
 										MemoryLocation{
 											REG_RBP, localVarState.stackOff,
 											REG_MAX, 0 },
-										(uint8_t *)&imm0));
+										(uint8_t *)&imm0)));
 								break;
 							}
 							case ValueType::U32: {
 								uint16_t imm0 = rhs.getU16();
-								compileContext.pushIns(
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(
 									emitMovImm16ToMemIns(
 										MemoryLocation{
 											REG_RBP, localVarState.stackOff,
 											REG_MAX, 0 },
-										(uint8_t *)&imm0));
+										(uint8_t *)&imm0)));
 								break;
 							}
 							case ValueType::U64: {
 								uint64_t imm0 = rhs.getU64();
-								compileContext.pushIns(
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(
 									emitMovImm64ToMemIns(
 										MemoryLocation{
 											REG_RBP, localVarState.stackOff,
 											REG_MAX, 0 },
-										(uint8_t *)&imm0));
+										(uint8_t *)&imm0)));
 								break;
 							}
 							case ValueType::Bool: {
 								bool imm0 = rhs.getBool();
-								compileContext.pushIns(
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(
 									emitMovImm8ToMemIns(
 										MemoryLocation{
 											REG_RBP, localVarState.stackOff,
 											REG_MAX, 0 },
-										(uint8_t *)&imm0));
+										(uint8_t *)&imm0)));
 								break;
 							}
 							case ValueType::F32: {
 								float imm0 = rhs.getF32();
-								compileContext.pushIns(
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(
 									emitMovImm32ToMemIns(
 										MemoryLocation{
 											REG_RBP, localVarState.stackOff,
 											REG_MAX, 0 },
-										(uint8_t *)&imm0));
+										(uint8_t *)&imm0)));
 								break;
 							}
 							case ValueType::F64: {
 								double imm0 = rhs.getF64();
-								compileContext.pushIns(
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(
 									emitMovImm64ToMemIns(
 										MemoryLocation{
 											REG_RBP, localVarState.stackOff,
 											REG_MAX, 0 },
-										(uint8_t *)&imm0));
+										(uint8_t *)&imm0)));
 								break;
 							}
 						}
@@ -304,38 +304,38 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 							size_t tmpGpRegSize;
 
 							if (compileContext.isRegInUse(tmpGpRegId)) {
-								compileContext.pushReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize);
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
 							}
 
-							compileContext.pushIns(emitMovMemToReg64Ins(
+							SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovMemToReg64Ins(
 								tmpGpRegId,
 								MemoryLocation{
 									REG_RBP, vregState.saveOffset,
-									REG_MAX, 0 }));
-							compileContext.pushIns(emitMovReg64ToMemIns(
+									REG_MAX, 0 })));
+							SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg64ToMemIns(
 								MemoryLocation{
 									REG_RBP, localVarState.stackOff,
 									REG_MAX, 0 },
-								tmpGpRegId));
+								tmpGpRegId)));
 
 							if (tmpGpRegOff != INT32_MIN) {
-								compileContext.popReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize);
+								SLAKE_RETURN_IF_EXCEPT(compileContext.popReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
 							}
 						} else {
-							compileContext.pushIns(emitMovReg64ToMemIns(
+							SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg64ToMemIns(
 								MemoryLocation{
 									REG_RBP, localVarState.stackOff,
 									REG_MAX, 0 },
-								vregState.phyReg));
+								vregState.phyReg)));
 						}
 					} else {
 						Object *imm0 = rhs.getObjectRef();
-						compileContext.pushIns(
+						SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(
 							emitMovImm64ToMemIns(
 								MemoryLocation{
 									REG_RBP, localVarState.stackOff,
 									REG_MAX, 0 },
-								(uint8_t *)&imm0));
+								(uint8_t *)&imm0)));
 					}
 					break;
 				}

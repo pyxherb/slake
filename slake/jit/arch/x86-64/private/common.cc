@@ -43,7 +43,7 @@ static const RegisterId _s_xmmRegs[] = {
 };
 
 SLAKE_API InternalExceptionPointer JITCompileContext::pushPrologStackOpIns() {
-	checkStackPointerOnProlog(sizeof(uint64_t) * 11);
+	SLAKE_RETURN_IF_EXCEPT(checkStackPointerOnProlog(sizeof(uint64_t) * 11));
 
 	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPushReg64Ins(REG_R8)));
 	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPushReg64Ins(REG_RDX)));
@@ -62,6 +62,8 @@ SLAKE_API InternalExceptionPointer JITCompileContext::pushPrologStackOpIns() {
 	SLAKE_RETURN_IF_EXCEPT(pushIns(emitMovReg64ToReg64Ins(REG_RBP, REG_RSP)));
 
 	addStackPtr(sizeof(uint64_t) * 11);
+
+	return {};
 }
 
 SLAKE_API InternalExceptionPointer JITCompileContext::pushEpilogStackOpIns() {
@@ -79,6 +81,8 @@ SLAKE_API InternalExceptionPointer JITCompileContext::pushEpilogStackOpIns() {
 	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPopReg64Ins(REG_RCX)));
 	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPopReg64Ins(REG_RDX)));
 	SLAKE_RETURN_IF_EXCEPT(pushIns(emitPopReg64Ins(REG_R8)));
+
+	return {};
 }
 
 SLAKE_API InternalExceptionPointer JITCompileContext::checkStackPointer(uint32_t size) {
@@ -86,6 +90,8 @@ SLAKE_API InternalExceptionPointer JITCompileContext::checkStackPointer(uint32_t
 	SLAKE_RETURN_IF_EXCEPT(pushIns(emitCmpReg64ToReg64Ins(REG_R11, REG_RSP)));
 	SLAKE_RETURN_IF_EXCEPT(pushIns(emitLabelledJumpIns("_report_stack_overflow", DiscreteInstructionType::JumpIfLtLabelled)));
 	SLAKE_RETURN_IF_EXCEPT(pushIns(emitAddImm32ToReg64Ins(REG_RSP, (uint8_t *)&size)));
+
+	return {};
 }
 
 SLAKE_API InternalExceptionPointer JITCompileContext::checkStackPointerOnProlog(uint32_t size) {
@@ -93,6 +99,8 @@ SLAKE_API InternalExceptionPointer JITCompileContext::checkStackPointerOnProlog(
 	SLAKE_RETURN_IF_EXCEPT(pushIns(emitCmpReg64ToReg64Ins(REG_R11, REG_RSP)));
 	SLAKE_RETURN_IF_EXCEPT(pushIns(emitLabelledJumpIns("_report_stack_overflow_on_prolog", DiscreteInstructionType::JumpIfLtLabelled)));
 	SLAKE_RETURN_IF_EXCEPT(pushIns(emitAddImm32ToReg64Ins(REG_RSP, (uint8_t *)&size)));
+
+	return {};
 }
 
 SLAKE_API InternalExceptionPointer JITCompileContext::checkAndPushStackPointer(uint32_t size) {
@@ -100,6 +108,8 @@ SLAKE_API InternalExceptionPointer JITCompileContext::checkAndPushStackPointer(u
 	SLAKE_RETURN_IF_EXCEPT(pushIns(emitCmpReg64ToReg64Ins(REG_R11, REG_RSP)));
 	SLAKE_RETURN_IF_EXCEPT(pushIns(emitLabelledJumpIns("_report_stack_overflow", DiscreteInstructionType::JumpIfLtLabelled)));
 	addStackPtr(size);
+
+	return {};
 }
 
 SLAKE_API InternalExceptionPointer JITCompileContext::checkAndPushStackPointerOnProlog(uint32_t size) {
@@ -107,6 +117,8 @@ SLAKE_API InternalExceptionPointer JITCompileContext::checkAndPushStackPointerOn
 	SLAKE_RETURN_IF_EXCEPT(pushIns(emitCmpReg64ToReg64Ins(REG_R11, REG_RSP)));
 	SLAKE_RETURN_IF_EXCEPT(pushIns(emitLabelledJumpIns("_report_stack_overflow_on_prolog", DiscreteInstructionType::JumpIfLtLabelled)));
 	addStackPtr(size);
+
+	return {};
 }
 
 SLAKE_API RegisterId JITCompileContext::allocGpReg() {

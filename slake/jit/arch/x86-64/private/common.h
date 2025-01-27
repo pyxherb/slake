@@ -70,16 +70,18 @@ namespace slake {
 				int32_t jitContextOff;
 				peff::HashMap<peff::String, size_t> labelOffsets;
 
-				SLAKE_API InternalExceptionPointer pushPrologStackOpIns();
-				SLAKE_API InternalExceptionPointer pushEpilogStackOpIns();
+				[[nodiscard]] SLAKE_API InternalExceptionPointer pushPrologStackOpIns();
+				[[nodiscard]] SLAKE_API InternalExceptionPointer pushEpilogStackOpIns();
 
-				SLAKE_API InternalExceptionPointer checkStackPointer(uint32_t size);
-				SLAKE_API InternalExceptionPointer checkStackPointerOnProlog(uint32_t size);
-				SLAKE_API InternalExceptionPointer checkAndPushStackPointer(uint32_t size);
-				SLAKE_API InternalExceptionPointer checkAndPushStackPointerOnProlog(uint32_t size);
+				[[nodiscard]] SLAKE_API InternalExceptionPointer checkStackPointer(uint32_t size);
+				[[nodiscard]] SLAKE_API InternalExceptionPointer checkStackPointerOnProlog(uint32_t size);
+				[[nodiscard]] SLAKE_API InternalExceptionPointer checkAndPushStackPointer(uint32_t size);
+				[[nodiscard]] SLAKE_API InternalExceptionPointer checkAndPushStackPointerOnProlog(uint32_t size);
 
-				SLAKE_FORCEINLINE InternalExceptionPointer initJITContextStorage() {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer initJITContextStorage() {
 					SLAKE_RETURN_IF_EXCEPT(stackAllocAligned(sizeof(JITExecContext *), sizeof(JITExecContext *), jitContextOff));
+
+					return {};
 				}
 
 				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushIns(DiscreteInstruction &&ins) {
@@ -395,11 +397,11 @@ namespace slake {
 					return &localVarState;
 				}
 
-				SLAKE_API InternalExceptionPointer stackAllocAligned(uint32_t size, uint32_t alignment, int32_t &offOut);
+				[[nodiscard]] SLAKE_API InternalExceptionPointer stackAllocAligned(uint32_t size, uint32_t alignment, int32_t &offOut);
 
 				SLAKE_API void stackFree(int32_t saveOffset, size_t size);
 
-				SLAKE_FORCEINLINE InternalExceptionPointer saveCallingRegs(CallingRegSavingInfo &infoOut) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer saveCallingRegs(CallingRegSavingInfo &infoOut) {
 					// Save parameter registers.
 					SLAKE_RETURN_IF_EXCEPT(pushReg(REG_RCX, infoOut.offSavedRcx, infoOut.szSavedRcx));
 					SLAKE_RETURN_IF_EXCEPT(pushReg(REG_RDX, infoOut.offSavedRdx, infoOut.szSavedRdx));

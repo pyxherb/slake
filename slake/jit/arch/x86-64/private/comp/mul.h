@@ -7,7 +7,7 @@
 namespace slake {
 	namespace jit {
 		namespace x86_64 {
-			InternalExceptionPointer compileMulInstruction(
+			[[nodiscard]] InternalExceptionPointer compileMulInstruction(
 				JITCompileContext &compileContext,
 				opti::ProgramAnalyzedInfo &analyzedInfo,
 				size_t offIns,

@@ -21,9 +21,9 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 			if (compileContext.isRegInUse(regId)) {
 				int32_t off;
 				size_t size;
-				compileContext.pushReg(regId, off, size);
+				SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(regId, off, size));
 			}
-			compileContext.pushIns(emitMovImm8ToReg8Ins(regId, (uint8_t *)&imm0));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm8ToReg8Ins(regId, (uint8_t *)&imm0)));
 			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(int8_t));
 			if (!outputVregState)
 				return OutOfMemoryError::alloc();
@@ -36,9 +36,9 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 			if (compileContext.isRegInUse(regId)) {
 				int32_t off;
 				size_t size;
-				compileContext.pushReg(regId, off, size);
+				SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(regId, off, size));
 			}
-			compileContext.pushIns(emitMovImm16ToReg16Ins(regId, (uint8_t *)&imm0));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm16ToReg16Ins(regId, (uint8_t *)&imm0)));
 			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(int16_t));
 			if (!outputVregState)
 				return OutOfMemoryError::alloc();
@@ -51,9 +51,9 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 			if (compileContext.isRegInUse(regId)) {
 				int32_t off;
 				size_t size;
-				compileContext.pushReg(regId, off, size);
+				SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(regId, off, size));
 			}
-			compileContext.pushIns(emitMovImm32ToReg32Ins(regId, (uint8_t *)&imm0));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm32ToReg32Ins(regId, (uint8_t *)&imm0)));
 			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(int32_t));
 			if (!outputVregState)
 				return OutOfMemoryError::alloc();
@@ -66,9 +66,9 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 			if (compileContext.isRegInUse(regId)) {
 				int32_t off;
 				size_t size;
-				compileContext.pushReg(regId, off, size);
+				SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(regId, off, size));
 			}
-			compileContext.pushIns(emitMovImm64ToReg64Ins(regId, (uint8_t *)&imm0));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm64ToReg64Ins(regId, (uint8_t *)&imm0)));
 			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(int64_t));
 			if (!outputVregState)
 				return OutOfMemoryError::alloc();
@@ -81,9 +81,9 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 			if (compileContext.isRegInUse(regId)) {
 				int32_t off;
 				size_t size;
-				compileContext.pushReg(regId, off, size);
+				SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(regId, off, size));
 			}
-			compileContext.pushIns(emitMovImm8ToReg8Ins(regId, (uint8_t *)&imm0));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm8ToReg8Ins(regId, (uint8_t *)&imm0)));
 			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(uint8_t));
 			if (!outputVregState)
 				return OutOfMemoryError::alloc();
@@ -96,9 +96,9 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 			if (compileContext.isRegInUse(regId)) {
 				int32_t off;
 				size_t size;
-				compileContext.pushReg(regId, off, size);
+				SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(regId, off, size));
 			}
-			compileContext.pushIns(emitMovImm16ToReg16Ins(regId, (uint8_t *)&imm0));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm16ToReg16Ins(regId, (uint8_t *)&imm0)));
 			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(uint16_t));
 			if (!outputVregState)
 				return OutOfMemoryError::alloc();
@@ -111,9 +111,9 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 			if (compileContext.isRegInUse(regId)) {
 				int32_t off;
 				size_t size;
-				compileContext.pushReg(regId, off, size);
+				SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(regId, off, size));
 			}
-			compileContext.pushIns(emitMovImm32ToReg32Ins(regId, (uint8_t *)&imm0));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm32ToReg32Ins(regId, (uint8_t *)&imm0)));
 			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(uint32_t));
 			if (!outputVregState)
 				return OutOfMemoryError::alloc();
@@ -126,9 +126,9 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 			if (compileContext.isRegInUse(regId)) {
 				int32_t off;
 				size_t size;
-				compileContext.pushReg(regId, off, size);
+				SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(regId, off, size));
 			}
-			compileContext.pushIns(emitMovImm64ToReg64Ins(regId, (uint8_t *)&imm0));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm64ToReg64Ins(regId, (uint8_t *)&imm0)));
 			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(uint64_t));
 			if (!outputVregState)
 				return OutOfMemoryError::alloc();
@@ -141,9 +141,9 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 			if (compileContext.isRegInUse(regId)) {
 				int32_t off;
 				size_t size;
-				compileContext.pushReg(regId, off, size);
+				SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(regId, off, size));
 			}
-			compileContext.pushIns(emitMovImm8ToReg8Ins(regId, (uint8_t *)&imm0));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm8ToReg8Ins(regId, (uint8_t *)&imm0)));
 			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(bool));
 			if (!outputVregState)
 				return OutOfMemoryError::alloc();
@@ -156,22 +156,22 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 			int32_t tmpRegOff = INT32_MIN;
 			size_t tmpRegSize;
 			if (compileContext.isRegInUse(tmpRegId)) {
-				compileContext.pushReg(tmpRegId, tmpRegOff, tmpRegSize);
+				SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(tmpRegId, tmpRegOff, tmpRegSize));
 			}
-			compileContext.pushIns(emitMovImm32ToReg32Ins(tmpRegId, (uint8_t *)&imm0));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm32ToReg32Ins(tmpRegId, (uint8_t *)&imm0)));
 
 			RegisterId xmmRegId = compileContext.allocXmmReg();
 			if (compileContext.isRegInUse(xmmRegId)) {
 				int32_t off;
 				size_t size;
-				compileContext.pushRegXmm(xmmRegId, off, size);
+				SLAKE_RETURN_IF_EXCEPT(compileContext.pushRegXmm(xmmRegId, off, size));
 			}
-			compileContext.pushIns(emitMovdReg32ToRegXmmIns(xmmRegId, tmpRegId));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovdReg32ToRegXmmIns(xmmRegId, tmpRegId)));
 			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, xmmRegId, sizeof(float));
 			if (!outputVregState)
 				return OutOfMemoryError::alloc();
 			if (tmpRegOff != INT32_MIN) {
-				compileContext.popReg(tmpRegId, tmpRegOff, tmpRegSize);
+				SLAKE_RETURN_IF_EXCEPT(compileContext.popReg(tmpRegId, tmpRegOff, tmpRegSize));
 			}
 			break;
 		}
@@ -182,22 +182,22 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 			int32_t tmpRegOff = INT32_MIN;
 			size_t tmpRegSize;
 			if (compileContext.isRegInUse(tmpRegId)) {
-				compileContext.pushReg(tmpRegId, tmpRegOff, tmpRegSize);
+				SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(tmpRegId, tmpRegOff, tmpRegSize));
 			}
-			compileContext.pushIns(emitMovImm32ToReg32Ins(tmpRegId, (uint8_t *)&imm0));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm32ToReg32Ins(tmpRegId, (uint8_t *)&imm0)));
 
 			RegisterId xmmRegId = compileContext.allocXmmReg();
 			if (compileContext.isRegInUse(xmmRegId)) {
 				int32_t off;
 				size_t size;
-				compileContext.pushRegXmm(xmmRegId, off, size);
+				SLAKE_RETURN_IF_EXCEPT(compileContext.pushRegXmm(xmmRegId, off, size));
 			}
-			compileContext.pushIns(emitMovdReg32ToRegXmmIns(xmmRegId, tmpRegId));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovdReg32ToRegXmmIns(xmmRegId, tmpRegId)));
 			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, xmmRegId, sizeof(double));
 			if (!outputVregState)
 				return OutOfMemoryError::alloc();
 			if (tmpRegOff != INT32_MIN) {
-				compileContext.popReg(tmpRegId, tmpRegOff, tmpRegSize);
+				SLAKE_RETURN_IF_EXCEPT(compileContext.popReg(tmpRegId, tmpRegOff, tmpRegSize));
 			}
 			break;
 		}
@@ -208,9 +208,9 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 			if (compileContext.isRegInUse(regId)) {
 				int32_t off;
 				size_t size;
-				compileContext.pushReg(regId, off, size);
+				SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(regId, off, size));
 			}
-			compileContext.pushIns(emitMovImm64ToReg64Ins(regId, (uint8_t *)&imm0));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm64ToReg64Ins(regId, (uint8_t *)&imm0)));
 			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(Object *));
 			if (!outputVregState)
 				return OutOfMemoryError::alloc();
@@ -231,15 +231,15 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 							if (compileContext.isRegInUse(regId)) {
 								int32_t off;
 								size_t size;
-								compileContext.pushReg(regId, off, size);
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(regId, off, size));
 							}
 							if (srcVregInfo.saveOffset != INT32_MIN) {
-								compileContext.pushIns(
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(
 									emitMovMemToReg8Ins(
 										regId,
-										MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 }));
+										MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 })));
 							} else {
-								compileContext.pushIns(emitMovReg8ToReg8Ins(regId, srcVregInfo.phyReg));
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg8ToReg8Ins(regId, srcVregInfo.phyReg)));
 							}
 
 							VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(uint8_t));
@@ -253,15 +253,15 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 							if (compileContext.isRegInUse(regId)) {
 								int32_t off;
 								size_t size;
-								compileContext.pushReg(regId, off, size);
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(regId, off, size));
 							}
 							if (srcVregInfo.saveOffset != INT32_MIN) {
-								compileContext.pushIns(
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(
 									emitMovMemToReg16Ins(
 										regId,
-										MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 }));
+										MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 })));
 							} else {
-								compileContext.pushIns(emitMovReg16ToReg16Ins(regId, srcVregInfo.phyReg));
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg16ToReg16Ins(regId, srcVregInfo.phyReg)));
 							}
 
 							VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(uint16_t));
@@ -275,15 +275,15 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 							if (compileContext.isRegInUse(regId)) {
 								int32_t off;
 								size_t size;
-								compileContext.pushReg(regId, off, size);
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(regId, off, size));
 							}
 							if (srcVregInfo.saveOffset != INT32_MIN) {
-								compileContext.pushIns(
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(
 									emitMovMemToReg32Ins(
 										regId,
-										MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 }));
+										MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 })));
 							} else {
-								compileContext.pushIns(emitMovReg32ToReg32Ins(regId, srcVregInfo.phyReg));
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg32ToReg32Ins(regId, srcVregInfo.phyReg)));
 							}
 
 							VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(uint32_t));
@@ -297,15 +297,15 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 							if (compileContext.isRegInUse(regId)) {
 								int32_t off;
 								size_t size;
-								compileContext.pushReg(regId, off, size);
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(regId, off, size));
 							}
 							if (srcVregInfo.saveOffset != INT32_MIN) {
-								compileContext.pushIns(
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(
 									emitMovMemToReg64Ins(
 										regId,
-										MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 }));
+										MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 })));
 							} else {
-								compileContext.pushIns(emitMovReg64ToReg64Ins(regId, srcVregInfo.phyReg));
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg64ToReg64Ins(regId, srcVregInfo.phyReg)));
 							}
 
 							VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(uint64_t));
@@ -318,15 +318,15 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 							if (compileContext.isRegInUse(regId)) {
 								int32_t off;
 								size_t size;
-								compileContext.pushRegXmm(regId, off, size);
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushRegXmm(regId, off, size));
 							}
 							if (srcVregInfo.saveOffset != INT32_MIN) {
-								compileContext.pushIns(
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(
 									emitMovdMemToRegXmmIns(
 										regId,
-										MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 }));
+										MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 })));
 							} else {
-								compileContext.pushIns(emitMovqRegXmmToRegXmmIns(regId, srcVregInfo.phyReg));
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovqRegXmmToRegXmmIns(regId, srcVregInfo.phyReg)));
 							}
 
 							VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(float));
@@ -339,15 +339,15 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 							if (compileContext.isRegInUse(regId)) {
 								int32_t off;
 								size_t size;
-								compileContext.pushRegXmm(regId, off, size);
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushRegXmm(regId, off, size));
 							}
 							if (srcVregInfo.saveOffset != INT32_MIN) {
-								compileContext.pushIns(
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(
 									emitMovqMemToRegXmmIns(
 										regId,
-										MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 }));
+										MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 })));
 							} else {
-								compileContext.pushIns(emitMovqRegXmmToRegXmmIns(regId, srcVregInfo.phyReg));
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovqRegXmmToRegXmmIns(regId, srcVregInfo.phyReg)));
 							}
 
 							VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(double));
@@ -364,16 +364,16 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 								int32_t tmpRegOff = INT32_MIN;
 								size_t tmpRegSize;
 								if (compileContext.isRegInUse(tmpRegId)) {
-									compileContext.pushReg(tmpRegId, tmpRegOff, tmpRegSize);
+									SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(tmpRegId, tmpRegOff, tmpRegSize));
 								}
 
-								compileContext.pushIns(emitMovReg64ToReg64Ins(tmpRegId, REG_RBP));
-								compileContext.pushIns(emitAddImm32ToReg64Ins(tmpRegId, (uint8_t *)&srcVregInfo.saveOffset));
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg64ToReg64Ins(tmpRegId, REG_RBP)));
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitAddImm32ToReg64Ins(tmpRegId, (uint8_t *)&srcVregInfo.saveOffset)));
 
-								compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RCX, tmpRegId));
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RCX, tmpRegId)));
 
 								if (tmpRegOff != INT32_MIN) {
-									compileContext.popReg(tmpRegId, tmpRegOff, tmpRegSize);
+									SLAKE_RETURN_IF_EXCEPT(compileContext.popReg(tmpRegId, tmpRegOff, tmpRegSize));
 								}
 							}
 							{
@@ -381,30 +381,30 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 								int32_t tmpRegOff = INT32_MIN;
 								size_t tmpRegSize;
 								if (compileContext.isRegInUse(tmpRegId)) {
-									compileContext.pushReg(tmpRegId, tmpRegOff, tmpRegSize);
+									SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(tmpRegId, tmpRegOff, tmpRegSize));
 								}
 
-								compileContext.pushIns(emitMovReg64ToReg64Ins(tmpRegId, REG_RBP));
-								compileContext.pushIns(emitAddImm32ToReg64Ins(tmpRegId, (uint8_t *)&off));
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg64ToReg64Ins(tmpRegId, REG_RBP)));
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitAddImm32ToReg64Ins(tmpRegId, (uint8_t *)&off)));
 
-								compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RDX, tmpRegId));
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RDX, tmpRegId)));
 
 								if (tmpRegOff != INT32_MIN) {
-									compileContext.popReg(tmpRegId, tmpRegOff, tmpRegSize);
+									SLAKE_RETURN_IF_EXCEPT(compileContext.popReg(tmpRegId, tmpRegOff, tmpRegSize));
 								}
 							}
 							{
 								uint64_t size = sizeof(VarRef);
-								compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&size));
+								SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&size)));
 							}
 
 							CallingRegSavingInfo callingRegSavingInfo;
 
-							compileContext.saveCallingRegs(callingRegSavingInfo);
+							SLAKE_RETURN_IF_EXCEPT(compileContext.saveCallingRegs(callingRegSavingInfo));
 
-							compileContext.pushIns(emitCallIns((void *)memcpyWrapper));
+							SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitCallIns((void *)memcpyWrapper)));
 
-							compileContext.restoreCallingRegs(callingRegSavingInfo);
+							SLAKE_RETURN_IF_EXCEPT(compileContext.restoreCallingRegs(callingRegSavingInfo));
 
 							VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, off, sizeof(double));
 							if (!outputVregState)
@@ -422,15 +422,15 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 					if (compileContext.isRegInUse(regId)) {
 						int32_t off;
 						size_t size;
-						compileContext.pushReg(regId, off, size);
+						SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(regId, off, size));
 					}
 					if (srcVregInfo.saveOffset != INT32_MIN) {
-						compileContext.pushIns(
+						SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(
 							emitMovMemToReg64Ins(
 								regId,
-								MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 }));
+								MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 })));
 					} else {
-						compileContext.pushIns(emitMovReg64ToReg64Ins(regId, srcVregInfo.phyReg));
+						SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg64ToReg64Ins(regId, srcVregInfo.phyReg)));
 					}
 
 					VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(uint64_t));
@@ -477,16 +477,16 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 						int32_t tmpRegOff = INT32_MIN;
 						size_t tmpRegSize;
 						if (compileContext.isRegInUse(tmpRegId)) {
-							compileContext.pushReg(tmpRegId, tmpRegOff, tmpRegSize);
+							SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(tmpRegId, tmpRegOff, tmpRegSize));
 						}
 
-						compileContext.pushIns(emitMovReg64ToReg64Ins(tmpRegId, REG_RBP));
-						compileContext.pushIns(emitAddImm32ToReg64Ins(tmpRegId, (uint8_t *)&srcVregInfo.saveOffset));
+						SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg64ToReg64Ins(tmpRegId, REG_RBP)));
+						SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitAddImm32ToReg64Ins(tmpRegId, (uint8_t *)&srcVregInfo.saveOffset)));
 
-						compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RCX, tmpRegId));
+						SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RCX, tmpRegId)));
 
 						if (tmpRegOff != INT32_MIN) {
-							compileContext.popReg(tmpRegId, tmpRegOff, tmpRegSize);
+							SLAKE_RETURN_IF_EXCEPT(compileContext.popReg(tmpRegId, tmpRegOff, tmpRegSize));
 						}
 					}
 					{
@@ -494,30 +494,30 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 						int32_t tmpRegOff = INT32_MIN;
 						size_t tmpRegSize;
 						if (compileContext.isRegInUse(tmpRegId)) {
-							compileContext.pushReg(tmpRegId, tmpRegOff, tmpRegSize);
+							SLAKE_RETURN_IF_EXCEPT(compileContext.pushReg(tmpRegId, tmpRegOff, tmpRegSize));
 						}
 
-						compileContext.pushIns(emitMovReg64ToReg64Ins(tmpRegId, REG_RBP));
-						compileContext.pushIns(emitAddImm32ToReg64Ins(tmpRegId, (uint8_t *)&off));
+						SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg64ToReg64Ins(tmpRegId, REG_RBP)));
+						SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitAddImm32ToReg64Ins(tmpRegId, (uint8_t *)&off)));
 
-						compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RDX, tmpRegId));
+						SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RDX, tmpRegId)));
 
 						if (tmpRegOff != INT32_MIN) {
-							compileContext.popReg(tmpRegId, tmpRegOff, tmpRegSize);
+							SLAKE_RETURN_IF_EXCEPT(compileContext.popReg(tmpRegId, tmpRegOff, tmpRegSize));
 						}
 					}
 					{
 						uint64_t size = sizeof(Value);
-						compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&size));
+						SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&size)));
 					}
 
 					CallingRegSavingInfo callingRegSavingInfo;
 
-					compileContext.saveCallingRegs(callingRegSavingInfo);
+					SLAKE_RETURN_IF_EXCEPT(compileContext.saveCallingRegs(callingRegSavingInfo));
 
-					compileContext.pushIns(emitCallIns((void *)memcpyWrapper));
+					SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitCallIns((void *)memcpyWrapper)));
 
-					compileContext.restoreCallingRegs(callingRegSavingInfo);
+					SLAKE_RETURN_IF_EXCEPT(compileContext.restoreCallingRegs(callingRegSavingInfo));
 
 					VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, off, sizeof(double));
 					if (!outputVregState)

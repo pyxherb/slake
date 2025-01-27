@@ -67,45 +67,45 @@ InternalExceptionPointer compileInstruction(
 
 			CallingRegSavingInfo callingRegSavingInfo;
 
-			compileContext.saveCallingRegs(callingRegSavingInfo);
+			SLAKE_RETURN_IF_EXCEPT(compileContext.saveCallingRegs(callingRegSavingInfo));
 
 			// Pass the first argument.
 			{
-				compileContext.pushIns(emitMovMemToReg64Ins(REG_RCX, MemoryLocation{ REG_RBP, compileContext.jitContextOff, REG_MAX, 0 }));
+				SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovMemToReg64Ins(REG_RCX, MemoryLocation{ REG_RBP, compileContext.jitContextOff, REG_MAX, 0 })));
 			}
 
 			// Pass the second argument.
 			{
 				IdRefObject *refObj = (IdRefObject *)curIns.operands[0].getObjectRef();
 
-				compileContext.pushIns(emitMovImm64ToReg64Ins(REG_RDX, (uint8_t *)&refObj));
+				SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm64ToReg64Ins(REG_RDX, (uint8_t *)&refObj)));
 			}
 
-			compileContext.pushIns(emitCallIns((void *)loadInsWrapper));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitCallIns((void *)loadInsWrapper)));
 
 			// Psas the first argument for the memcpy wrapper.
 			int32_t stackOff;
 			SLAKE_RETURN_IF_EXCEPT(compileContext.stackAllocAligned(sizeof(Value), sizeof(Value), stackOff));
-			compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RCX, REG_RBP));
-			compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RCX, (uint8_t *)&stackOff));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RCX, REG_RBP)));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RCX, (uint8_t *)&stackOff)));
 
-			compileContext.pushIns(emitMovMemToReg64Ins(REG_RDX, MemoryLocation{ REG_RBP, compileContext.jitContextOff, REG_MAX, 0 }));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovMemToReg64Ins(REG_RDX, MemoryLocation{ REG_RBP, compileContext.jitContextOff, REG_MAX, 0 })));
 
 			// Psas the second argument for the memcpy wrapper.
 			static int32_t returnValueOff = -(int32_t)offsetof(JITExecContext, returnValue);
-			compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RDX, (uint8_t *)&returnValueOff));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RDX, (uint8_t *)&returnValueOff)));
 
 			// Psas the third argument for the memcpy wrapper.
 			static uint64_t size = sizeof(Value);
-			compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&size));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&size)));
 
-			compileContext.pushIns(emitCallIns((void *)memcpyWrapper));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitCallIns((void *)memcpyWrapper)));
 
 			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, stackOff, sizeof(Value));
 			if (!outputVregState)
 				return OutOfMemoryError::alloc();
 
-			compileContext.restoreCallingRegs(callingRegSavingInfo);
+			SLAKE_RETURN_IF_EXCEPT(compileContext.restoreCallingRegs(callingRegSavingInfo));
 
 			break;
 		}
@@ -125,27 +125,27 @@ InternalExceptionPointer compileInstruction(
 
 			CallingRegSavingInfo callingRegSavingInfo;
 
-			compileContext.saveCallingRegs(callingRegSavingInfo);
+			SLAKE_RETURN_IF_EXCEPT(compileContext.saveCallingRegs(callingRegSavingInfo));
 
 			// Pass the first argument.
 			{
-				compileContext.pushIns(emitMovMemToReg64Ins(REG_RCX, MemoryLocation{ REG_RBP, compileContext.jitContextOff, REG_MAX, 0 }));
+				SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovMemToReg64Ins(REG_RCX, MemoryLocation{ REG_RBP, compileContext.jitContextOff, REG_MAX, 0 })));
 			}
 
 			// Pass the second argument.
 			{
 				auto &vregState = compileContext.virtualRegStates.at(baseObjectRegIndex);
 				if (vregState.saveOffset != INT32_MIN) {
-					compileContext.pushIns(emitMovMemToReg64Ins(
+					SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovMemToReg64Ins(
 						REG_RDX,
 						MemoryLocation{
 							REG_RBP,
 							compileContext.virtualRegStates.at(baseObjectRegIndex).saveOffset,
 							REG_MAX,
-							0 }));
+							0 })));
 				} else {
 					if (vregState.phyReg != REG_RDX) {
-						compileContext.pushIns(emitMovReg64ToReg64Ins(vregState.phyReg, REG_RDX));
+						SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg64ToReg64Ins(vregState.phyReg, REG_RDX)));
 					}
 				}
 			}
@@ -154,34 +154,34 @@ InternalExceptionPointer compileInstruction(
 			{
 				IdRefObject *refObj = (IdRefObject *)curIns.operands[1].getObjectRef();
 
-				compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&refObj));
+				SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&refObj)));
 			}
 
-			compileContext.pushIns(emitCallIns((void *)rloadInsWrapper));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitCallIns((void *)rloadInsWrapper)));
 
 			// Psas the first argument for the memcpy wrapper.
 			int32_t stackOff;
 			SLAKE_RETURN_IF_EXCEPT(compileContext.stackAllocAligned(sizeof(Value), sizeof(Value), stackOff));
-			compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RCX, REG_RBP));
-			compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RCX, (uint8_t *)&stackOff));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RCX, REG_RBP)));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RCX, (uint8_t *)&stackOff)));
 
-			compileContext.pushIns(emitMovMemToReg64Ins(REG_RDX, MemoryLocation{ REG_RBP, compileContext.jitContextOff, REG_MAX, 0 }));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovMemToReg64Ins(REG_RDX, MemoryLocation{ REG_RBP, compileContext.jitContextOff, REG_MAX, 0 })));
 
 			// Psas the second argument for the memcpy wrapper.
 			static int32_t returnValueOff = -(int32_t)offsetof(JITExecContext, returnValue);
-			compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RDX, (uint8_t *)&returnValueOff));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RDX, (uint8_t *)&returnValueOff)));
 
 			// Psas the third argument for the memcpy wrapper.
 			static uint64_t size = sizeof(Value);
-			compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&size));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&size)));
 
-			compileContext.pushIns(emitCallIns((void *)memcpyWrapper));
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitCallIns((void *)memcpyWrapper)));
 
 			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, stackOff, sizeof(Value));
 			if (!outputVregState)
 				return OutOfMemoryError::alloc();
 
-			compileContext.restoreCallingRegs(callingRegSavingInfo);
+			SLAKE_RETURN_IF_EXCEPT(compileContext.restoreCallingRegs(callingRegSavingInfo));
 
 			break;
 		}
@@ -232,57 +232,57 @@ InternalExceptionPointer slake::compileRegularFn(RegularFnOverloadingObject *fn,
 
 	SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptionPtr, opti::analyzeProgramInfo(fn->associatedRuntime, fn, analyzedInfo, hostRefHolder));
 
-	compileContext.pushIns(emitMovMemToReg64Ins(REG_R11, MemoryLocation{ REG_R9, offsetof(JITExecContext, stackLimit), REG_MAX, 0 }));
+	SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovMemToReg64Ins(REG_R11, MemoryLocation{ REG_R9, offsetof(JITExecContext, stackLimit), REG_MAX, 0 })));
 
-	compileContext.pushPrologStackOpIns();
+	SLAKE_RETURN_IF_EXCEPT(compileContext.pushPrologStackOpIns());
 
 	// R11 is used for stack limit checking.
 	compileContext.setRegAllocated(REG_R11);
 
 	{
-		compileContext.initJITContextStorage();
-		compileContext.pushIns(
+		SLAKE_RETURN_IF_EXCEPT(compileContext.initJITContextStorage());
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(
 			emitMovReg64ToMemIns(
 				MemoryLocation{
 					REG_RBP, compileContext.jitContextOff,
 					REG_MAX, 0 },
-				REG_R9));
+				REG_R9)));
 
 		for (size_t i = 0; i < nIns; ++i) {
 			const Instruction &curIns = fn->instructions.at(i);
 
-			compileInstruction(compileContext, analyzedInfo, i, curIns);
+			SLAKE_RETURN_IF_EXCEPT(compileInstruction(compileContext, analyzedInfo, i, curIns));
 		}
 
-		compileContext.pushEpilogStackOpIns();
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushEpilogStackOpIns());
 
-		compileContext.pushIns(emitNearRetIns());
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitNearRetIns()));
 	}
 
 	{
 		peff::String labelName;
 		if(!labelName.build("_report_stack_overflow"))
 			return OutOfMemoryError::alloc();
-		compileContext.pushLabel(std::move(labelName));
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushLabel(std::move(labelName)));
 
-		compileContext.pushEpilogStackOpIns();
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushEpilogStackOpIns());
 
-		compileContext.pushIns(emitMovMemToReg64Ins(REG_R11, MemoryLocation{ REG_R9, offsetof(JITExecContext, stackOverflowError), REG_MAX, 0 }));
-		compileContext.pushIns(emitMovReg64ToMemIns(MemoryLocation{ REG_R9, offsetof(JITExecContext, exception), REG_MAX, 0 }, REG_R11));
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovMemToReg64Ins(REG_R11, MemoryLocation{ REG_R9, offsetof(JITExecContext, stackOverflowError), REG_MAX, 0 })));
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg64ToMemIns(MemoryLocation{ REG_R9, offsetof(JITExecContext, exception), REG_MAX, 0 }, REG_R11)));
 
-		compileContext.pushIns(emitNearRetIns());
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitNearRetIns()));
 	}
 
 	{
 		peff::String labelName;
 		if(!labelName.build("_report_stack_overflow_on_prolog"))
 			return OutOfMemoryError::alloc();
-		compileContext.pushLabel(std::move(labelName));
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushLabel(std::move(labelName)));
 
-		compileContext.pushIns(emitMovMemToReg64Ins(REG_R11, MemoryLocation{ REG_R9, offsetof(JITExecContext, stackOverflowError), REG_MAX, 0 }));
-		compileContext.pushIns(emitMovReg64ToMemIns(MemoryLocation{ REG_R9, offsetof(JITExecContext, exception), REG_MAX, 0 }, REG_R11));
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovMemToReg64Ins(REG_R11, MemoryLocation{ REG_R9, offsetof(JITExecContext, stackOverflowError), REG_MAX, 0 })));
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg64ToMemIns(MemoryLocation{ REG_R9, offsetof(JITExecContext, exception), REG_MAX, 0 }, REG_R11)));
 
-		compileContext.pushIns(emitNearRetIns());
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitNearRetIns()));
 	}
 
 	return {};

@@ -127,6 +127,7 @@ namespace slake {
 		struct LoaderContext {
 			std::istream &fs;
 			Object *ownerObject;
+			bool isInGenericScope;
 		};
 
 		SLAKE_API HostObjectRef<IdRefObject> _loadIdRef(LoaderContext &context, HostRefHolder &holder);

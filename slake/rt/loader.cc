@@ -49,7 +49,7 @@ SLAKE_API HostObjectRef<IdRefObject> Runtime::_loadIdRef(LoaderContext &context,
 				paramTypes.at(j) = _loadType(context, holder);
 		}
 
-		if(!ref->entries.pushBack(IdRefEntry(std::move(name), std::move(genericArgs), hasArgs, std::move(paramTypes), hasVarArg)))
+		if (!ref->entries.pushBack(IdRefEntry(std::move(name), std::move(genericArgs), hasArgs, std::move(paramTypes), hasVarArg)))
 			std::terminate();
 
 		if (!(i.flags & slxfmt::RSD_NEXT))
@@ -260,23 +260,27 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 
 		value->name = std::move(name);
 
-		//value->genericParams.resizeWith(i.nGenericParams, GenericParam(&globalHeapPoolAlloc));
-		// value->genericParams.shrink_to_fit();
-		for (size_t j = 0; j < i.nGenericParams; ++j)
-			value->genericParams.pushBack(_loadGenericParam(context, holder));
+		LoaderContext newContext = context;
+		newContext.ownerObject = value.get();
+
+		// value->genericParams.resizeWith(i.nGenericParams, GenericParam(&globalHeapPoolAlloc));
+		//  value->genericParams.shrink_to_fit();
+		if (i.nGenericParams) {
+			newContext.isInGenericScope = true;
+			for (size_t j = 0; j < i.nGenericParams; ++j)
+				value->genericParams.pushBack(_loadGenericParam(context, holder));
+		}
 
 		// Load reference to the parent class.
 		if (i.flags & slxfmt::CTD_DERIVED)
 			value->parentClass = Type(TypeId::Instance, _loadIdRef(context, holder).release());
 
 		// Load references to implemented interfaces.
-		//value->implInterfaces.resize(i.nImpls);
+		// value->implInterfaces.resize(i.nImpls);
 		// value->implInterfaces.shrink_to_fit();
 		for (auto j = 0; j < i.nImpls; ++j)
 			value->implInterfaces.pushBack(_loadIdRef(context, holder).release());
 
-		LoaderContext newContext = context;
-		newContext.ownerObject = value.get();
 		_loadScope(newContext, value.get(), loadModuleFlags, holder);
 
 		mod->scope->putMember(value.release());
@@ -302,18 +306,22 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 		HostObjectRef<InterfaceObject> value = InterfaceObject::alloc(this, std::move(scope), access, std::move(parents));
 		value->name = std::move(name);
 
+		LoaderContext newContext = context;
+		newContext.ownerObject = value.get();
+
 		value->genericParams.resize(i.nGenericParams);
 		// value->genericParams.shrink_to_fit();
-		for (size_t j = 0; j < i.nGenericParams; ++j)
-			value->genericParams.pushBack(_loadGenericParam(context, holder));
+		if (i.nGenericParams) {
+			newContext.isInGenericScope = true;
+			for (size_t j = 0; j < i.nGenericParams; ++j)
+				value->genericParams.pushBack(_loadGenericParam(context, holder));
+		}
 
 		value->parents.resize(i.nParents);
 		// value->parents.shrink_to_fit();
 		for (auto j = 0; j < i.nParents; ++j)
 			value->parents.at(j) = (_loadIdRef(context, holder).release());
 
-		LoaderContext newContext = context;
-		newContext.ownerObject = value.get();
 		_loadScope(newContext, value.get(), loadModuleFlags, holder);
 
 		mod->scope->putMember(value.release());
@@ -322,6 +330,8 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 	//
 	// Load variables.
 	//
+	size_t szLocalFieldStorage = 0;
+	peff::DynArray<FieldRecord> fieldRecords(&globalHeapPoolAlloc);
 	nItemsToRead = _read<uint32_t>(context.fs);
 	for (slxfmt::VarDesc i = { 0 }; nItemsToRead--;) {
 		i = _read<slxfmt::VarDesc>(context.fs);
@@ -341,20 +351,107 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 			access |= ACCESS_NATIVE;
 
 		auto varType = _loadType(context, holder);
-		HostObjectRef<RegularVarObject> var =
-			RegularVarObject::alloc(
-				this,
-				access,
-				varType);
-		holder.addObject(var.get());
 
-		// Load initial value.
-		if (i.flags & slxfmt::VAD_INIT) {
-			if (auto e = writeVar(var.get(), VarRefContext(), _loadValue(context, holder));
-				e) {
-				throw LoaderError("Error setting initial value for a variable");
+		if (!context.isInGenericScope) {
+			FieldRecord curFieldRecord(&globalHeapPoolAlloc);
+			curFieldRecord.name = std::move(name);
+			curFieldRecord.type = varType;
+			curFieldRecord.accessModifier = access;
+
+			switch (varType.typeId) {
+				case TypeId::Value:
+					switch (varType.getValueTypeExData()) {
+						case ValueType::I8:
+							curFieldRecord.offset = szLocalFieldStorage;
+							szLocalFieldStorage += sizeof(int8_t);
+							break;
+						case ValueType::I16:
+							if (szLocalFieldStorage & 1) {
+								szLocalFieldStorage += (2 - (szLocalFieldStorage & 1));
+							}
+							curFieldRecord.offset = szLocalFieldStorage;
+							szLocalFieldStorage += sizeof(int16_t);
+							break;
+						case ValueType::I32:
+							if (szLocalFieldStorage & 3) {
+								szLocalFieldStorage += (4 - (szLocalFieldStorage & 3));
+							}
+							curFieldRecord.offset = szLocalFieldStorage;
+							szLocalFieldStorage += sizeof(int32_t);
+							break;
+						case ValueType::I64:
+							if (szLocalFieldStorage & 7) {
+								szLocalFieldStorage += (8 - (szLocalFieldStorage & 7));
+							}
+							curFieldRecord.offset = szLocalFieldStorage;
+							szLocalFieldStorage += sizeof(int64_t);
+							break;
+						case ValueType::U8:
+							curFieldRecord.offset = szLocalFieldStorage;
+							szLocalFieldStorage += sizeof(uint8_t);
+							break;
+						case ValueType::U16:
+							if (szLocalFieldStorage & 1) {
+								szLocalFieldStorage += (2 - (szLocalFieldStorage & 1));
+							}
+							curFieldRecord.offset = szLocalFieldStorage;
+							szLocalFieldStorage += sizeof(uint16_t);
+							break;
+						case ValueType::U32:
+							if (szLocalFieldStorage & 3) {
+								szLocalFieldStorage += (4 - (szLocalFieldStorage & 3));
+							}
+							curFieldRecord.offset = szLocalFieldStorage;
+							szLocalFieldStorage += sizeof(uint32_t);
+							break;
+						case ValueType::U64:
+							if (szLocalFieldStorage & 7) {
+								szLocalFieldStorage += (8 - (szLocalFieldStorage & 7));
+							}
+							curFieldRecord.offset = szLocalFieldStorage;
+							szLocalFieldStorage += sizeof(uint64_t);
+							break;
+						case ValueType::Bool:
+							curFieldRecord.offset = szLocalFieldStorage;
+							szLocalFieldStorage += sizeof(bool);
+							break;
+						default:
+							// Unenumerated value types should never occur.
+							throw std::logic_error("Invalid value type");
+					}
+					break;
+				case TypeId::String:
+				case TypeId::Instance:
+					if (szLocalFieldStorage & (sizeof(void *) - 1)) {
+						szLocalFieldStorage += (sizeof(void *) - (szLocalFieldStorage & (sizeof(void *) - 1)));
+					}
+					curFieldRecord.offset = szLocalFieldStorage;
+					szLocalFieldStorage += sizeof(Object *);
+					break;
+				case TypeId::Any:
+					if (szLocalFieldStorage % sizeof(Value)) {
+						szLocalFieldStorage += (sizeof(Value) - (szLocalFieldStorage % sizeof(Value)));
+					}
+					curFieldRecord.offset = szLocalFieldStorage;
+					szLocalFieldStorage += sizeof(Value);
+					break;
+				default:
+					throw LoaderError("Invalid variable type");
 			}
+
+			if (!fieldRecords.pushBack(std::move(curFieldRecord)))
+				throw std::bad_alloc();
 		} else {
+			HostObjectRef<RegularVarObject> var =
+				RegularVarObject::alloc(
+					this,
+					access,
+					varType);
+			var->name = std::move(name);
+			holder.addObject(var.get());
+			if (!mod->scope->putMember(var.get()))
+				throw std::bad_alloc();
+
 			switch (varType.typeId) {
 				case TypeId::Value:
 					switch (varType.getValueTypeExData()) {
@@ -405,9 +502,74 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 					throw LoaderError("Invalid variable type");
 			}
 		}
+	}
 
-		var->name = std::move(name);
-		mod->scope->putMember(var.release());
+	if (!context.isInGenericScope) {
+		auto accessor = FieldAccessorVarObject::alloc(this, mod.get());
+		if (!accessor)
+			throw std::bad_alloc();
+		mod->fieldAccessor = accessor.get();
+
+		char *fieldStorage = (char *)globalHeapPoolAlloc.alloc(szLocalFieldStorage, sizeof(std::max_align_t));
+		if (!fieldStorage)
+			throw std::bad_alloc();
+		mod->localFieldStorage = fieldStorage;
+		mod->szLocalFieldStorage = szLocalFieldStorage;
+
+		for (size_t i = 0; i < fieldRecords.size(); ++i) {
+			FieldRecord &curFieldRecord = fieldRecords.at(i);
+
+			if (!mod->fieldRecordIndices.insert(curFieldRecord.name, +i))
+				throw std::bad_alloc();
+
+			char *rawDataPtr = fieldStorage + curFieldRecord.offset;
+			switch (curFieldRecord.type.typeId) {
+				case TypeId::Value:
+					switch (curFieldRecord.type.getValueTypeExData()) {
+						case ValueType::I8:
+							*((int8_t *)rawDataPtr) = 0;
+							break;
+						case ValueType::I16:
+							*((int16_t *)rawDataPtr) = 0;
+							break;
+						case ValueType::I32:
+							*((int32_t *)rawDataPtr) = 0;
+							break;
+						case ValueType::I64:
+							*((int64_t *)rawDataPtr) = 0;
+							break;
+						case ValueType::U8:
+							*((uint8_t *)rawDataPtr) = 0;
+							break;
+						case ValueType::U16:
+							*((uint16_t *)rawDataPtr) = 0;
+							break;
+						case ValueType::U32:
+							*((int32_t *)rawDataPtr) = 0;
+							break;
+						case ValueType::U64:
+							*((int64_t *)rawDataPtr) = 0;
+							break;
+						case ValueType::Bool:
+							*((bool *)rawDataPtr) = false;
+							break;
+						default:
+							// Unenumerated value types should never occur.
+							throw std::logic_error("Invalid value type");
+					}
+					break;
+				case TypeId::String:
+				case TypeId::Instance:
+					*((Object **)rawDataPtr) = nullptr;
+					break;
+				case TypeId::Any:
+					*((Value *)rawDataPtr) = Value(nullptr);
+					break;
+				default:
+					throw LoaderError("Invalid variable type");
+			}
+		}
+		mod->fieldRecords = std::move(fieldRecords);
 	}
 
 	//
@@ -467,14 +629,17 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 
 			overloading->returnType = _loadType(newContext, holder);
 
-			//overloading->genericParams.resize(i.nGenericParams);
-			// overloading->genericParams.shrink_to_fit();
-			for (size_t j = 0; j < i.nGenericParams; ++j) {
-				overloading->genericParams.pushBack(_loadGenericParam(newContext, holder));
+			// overloading->genericParams.resize(i.nGenericParams);
+			//  overloading->genericParams.shrink_to_fit();
+			if (i.nGenericParams) {
+				newContext.isInGenericScope = true;
+				for (size_t j = 0; j < i.nGenericParams; ++j) {
+					overloading->genericParams.pushBack(_loadGenericParam(newContext, holder));
+				}
 			}
 
-			//overloading->paramTypes.resize(i.nParams);
-			// overloading->paramTypes.shrink_to_fit();
+			// overloading->paramTypes.resize(i.nParams);
+			//  overloading->paramTypes.shrink_to_fit();
 			for (uint8_t j = 0; j < i.nParams; ++j) {
 				overloading->paramTypes.pushBack(_loadType(newContext, holder));
 			}
@@ -483,7 +648,7 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 				overloading->overloadingFlags |= OL_VARG;
 
 			if (i.lenBody) {
-				if(!overloading->instructions.resize(i.lenBody))
+				if (!overloading->instructions.resize(i.lenBody))
 					std::terminate();
 				// overloading->instructions.shrink_to_fit();
 
@@ -523,7 +688,7 @@ SLAKE_API HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &f
 
 	HostRefHolder holder(&globalHeapPoolAlloc);
 
-	LoaderContext context{ fs, mod.get() };
+	LoaderContext context{ fs, mod.get(), false };
 
 	slxfmt::ImgHeader ih;
 	fs.read((char *)&ih, sizeof(ih));
@@ -595,7 +760,8 @@ SLAKE_API HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &f
 					throw LoaderError("Module \"" + std::to_string(modName.get(), this) + "\" conflicted with existing value which is on the same path");
 			}
 
-			moduleObject->scope->putMember(mod.get());
+			if (!moduleObject->scope->putMember(mod.get()))
+				throw std::bad_alloc();
 		}
 	}
 

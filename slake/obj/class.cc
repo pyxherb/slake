@@ -40,7 +40,7 @@ SLAKE_API slake::ClassObject::ClassObject(Runtime *rt, ScopeUniquePtr &&scope, A
 	  genericArgs(&rt->globalHeapPoolAlloc),
 	  genericParams(&rt->globalHeapPoolAlloc),
 	  implInterfaces(&rt->globalHeapPoolAlloc),
-	  cachedFieldInitVars(&rt->globalHeapPoolAlloc) {
+	  cachedFieldInitValues(&rt->globalHeapPoolAlloc) {
 }
 
 SLAKE_API ObjectKind ClassObject::getKind() const { return ObjectKind::Class; }
@@ -54,7 +54,7 @@ SLAKE_API ClassObject::ClassObject(const ClassObject &x, bool &succeededOut)
 	  genericArgs(&x.associatedRuntime->globalHeapPoolAlloc),
 	  genericParams(&x.associatedRuntime->globalHeapPoolAlloc),
 	  implInterfaces(&x.associatedRuntime->globalHeapPoolAlloc),
-	  cachedFieldInitVars(&x.associatedRuntime->globalHeapPoolAlloc) {
+	  cachedFieldInitValues(&x.associatedRuntime->globalHeapPoolAlloc) {
 	if (succeededOut) {
 		_flags = x._flags;
 

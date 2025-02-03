@@ -21,8 +21,44 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 			if (!scopeObject)
 				goto fail;
 
-			if (!(scopeObject = scopeObject->getMember(i.name, varRefContextOut))) {
-				break;
+			switch (scopeObject->getKind()) {
+				case ObjectKind::Module: {
+					ModuleObject *obj = (ModuleObject *)scopeObject;
+
+					if (auto it = obj->fieldRecordIndices.find(i.name); it != obj->fieldRecordIndices.end()) {
+						scopeObject = obj->fieldAccessor;
+						if (varRefContextOut)
+							*varRefContextOut = VarRefContext::makeFieldContext(it.value());
+						break;
+					}
+
+					if (!(scopeObject = scopeObject->getMember(i.name, varRefContextOut))) {
+						goto fail;
+					}
+
+					break;
+				}
+				case ObjectKind::Class: {
+					ClassObject *obj = (ClassObject *)scopeObject;
+
+					if (auto it = obj->fieldRecordIndices.find(i.name); it != obj->fieldRecordIndices.end()) {
+						scopeObject = obj->fieldAccessor;
+						if (varRefContextOut)
+							*varRefContextOut = VarRefContext::makeFieldContext(it.value());
+						break;
+					}
+
+					if (!(scopeObject = scopeObject->getMember(i.name, varRefContextOut))) {
+						goto fail;
+					}
+
+					break;
+				}
+				default: {
+					if (!(scopeObject = scopeObject->getMember(i.name, varRefContextOut))) {
+						goto fail;
+					}
+				}
 			}
 
 			if (i.genericArgs.size()) {

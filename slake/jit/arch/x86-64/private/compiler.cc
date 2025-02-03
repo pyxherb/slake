@@ -189,6 +189,19 @@ InternalExceptionPointer compileInstruction(
 			SLAKE_RETURN_IF_EXCEPT(compileStoreInstruction(compileContext, analyzedInfo, offIns, curIns));
 			break;
 		}
+		case Opcode::LLOAD: {
+			break;
+		}
+		case Opcode::LARG: {
+			break;
+		}
+		case Opcode::LVALUE: {
+
+		}
+		case Opcode::MOV: {
+			SLAKE_RETURN_IF_EXCEPT(compileMovInstruction(compileContext, analyzedInfo, offIns, curIns));
+			break;
+		}
 		case Opcode::ADD: {
 			SLAKE_RETURN_IF_EXCEPT(compileAddInstruction(compileContext, analyzedInfo, offIns, curIns));
 			break;
@@ -207,10 +220,6 @@ InternalExceptionPointer compileInstruction(
 		}
 		case Opcode::MOD: {
 			SLAKE_RETURN_IF_EXCEPT(compileDivInstruction(compileContext, analyzedInfo, offIns, curIns));
-			break;
-		}
-		case Opcode::MOV: {
-			SLAKE_RETURN_IF_EXCEPT(compileMovInstruction(compileContext, analyzedInfo, offIns, curIns));
 			break;
 		}
 	}

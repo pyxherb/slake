@@ -66,7 +66,7 @@ namespace slake {
 		MethodTable *cachedInstantiatedMethodTable = nullptr;
 		ObjectLayout *cachedObjectLayout = nullptr;
 
-		peff::DynArray<VarObject *> cachedFieldInitVars;
+		peff::DynArray<Value> cachedFieldInitValues;
 
 		SLAKE_API ClassObject(Runtime *rt, ScopeUniquePtr &&scope, AccessModifier access, const Type &parentClass);
 		SLAKE_API ClassObject(const ClassObject &x, bool &succeededOut);

@@ -7,6 +7,12 @@ SLAKE_API InternalExceptionPointer Runtime::tryAccessVar(const VarObject *varObj
 		case VarKind::Regular: {
 			break;
 		}
+		case VarKind::FieldAccessor: {
+			const FieldAccessorVarObject *v = (const FieldAccessorVarObject*)varObject;
+			FieldRecord &fieldRecord = v->moduleObject->fieldRecords.at(context.asField.index);
+
+			break;
+		}
 		case VarKind::LocalVarAccessor: {
 			const LocalVarAccessorVarObject *v = (const LocalVarAccessorVarObject *)varObject;
 			LocalVarRecord &localVarRecord =
@@ -40,6 +46,12 @@ SLAKE_API InternalExceptionPointer Runtime::typeofVar(const VarObject *varObject
 		case VarKind::Regular: {
 			const RegularVarObject *v = (const RegularVarObject *)varObject;
 			typeOut = v->type;
+			break;
+		}
+		case VarKind::FieldAccessor: {
+			const FieldAccessorVarObject *v = (const FieldAccessorVarObject*)varObject;
+			FieldRecord &fieldRecord = v->moduleObject->fieldRecords.at(context.asField.index);
+			typeOut = fieldRecord.type;
 			break;
 		}
 		case VarKind::LocalVarAccessor: {
@@ -78,6 +90,51 @@ SLAKE_API Value Runtime::readVarUnsafe(const VarObject *varObject, const VarRefC
 		case VarKind::Regular: {
 			const RegularVarObject *v = (const RegularVarObject *)varObject;
 			return v->value;
+		}
+		case VarKind::FieldAccessor: {
+			const FieldAccessorVarObject *v = (const FieldAccessorVarObject*)varObject;
+			FieldRecord &fieldRecord = v->moduleObject->fieldRecords.at(context.asField.index);
+
+			const char *const rawDataPtr = v->moduleObject->localFieldStorage + fieldRecord.offset;
+
+			switch (fieldRecord.type.typeId) {
+				case TypeId::Value:
+					switch (fieldRecord.type.getValueTypeExData()) {
+						case ValueType::I8:
+							return Value(*((int8_t *)rawDataPtr));
+						case ValueType::I16:
+							return Value(*((int16_t *)rawDataPtr));
+						case ValueType::I32:
+							return Value(*((int32_t *)rawDataPtr));
+						case ValueType::I64:
+							return Value(*((int64_t *)rawDataPtr));
+						case ValueType::U8:
+							return Value(*((uint8_t *)rawDataPtr));
+						case ValueType::U16:
+							return Value(*((uint16_t *)rawDataPtr));
+						case ValueType::U32:
+							return Value(*((uint32_t *)rawDataPtr));
+						case ValueType::U64:
+							return Value(*((uint64_t *)rawDataPtr));
+						case ValueType::F32:
+							return Value(*((float *)rawDataPtr));
+						case ValueType::F64:
+							return Value(*((double *)rawDataPtr));
+						case ValueType::Bool:
+							return Value(*((bool *)rawDataPtr));
+					}
+					break;
+				case TypeId::String:
+				case TypeId::Instance:
+				case TypeId::Array:
+					return Value(*((Object **)rawDataPtr));
+					break;
+				default:
+					// All fields should be checked during the instantiation.
+					throw std::logic_error("Unhandled value type");
+			}
+
+			break;
 		}
 		case VarKind::LocalVarAccessor: {
 			const LocalVarAccessorVarObject *v = (const LocalVarAccessorVarObject *)varObject;
@@ -228,6 +285,72 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(VarObject *varObject, const
 				return raiseMismatchedVarTypeError(v->associatedRuntime);
 			}
 			v->value = value;
+			break;
+		}
+		case VarKind::FieldAccessor: {
+			FieldAccessorVarObject *v = (FieldAccessorVarObject *)varObject;
+
+			if (context.asLocalVar.localVarIndex >= v->moduleObject->fieldRecords.size())
+				// TODO: Use a proper type of exception instead of this.
+				return raiseInvalidArrayIndexError(v->associatedRuntime, context.asArray.index);
+
+			const FieldRecord &fieldRecord =
+				v->moduleObject->fieldRecords.at(context.asLocalVar.localVarIndex);
+
+			if (!isCompatible(fieldRecord.type, value)) {
+				return raiseMismatchedVarTypeError(v->associatedRuntime);
+			}
+
+			char *const rawDataPtr = v->moduleObject->localFieldStorage + fieldRecord.offset;
+
+			switch (fieldRecord.type.typeId) {
+				case TypeId::Value:
+					switch (fieldRecord.type.getValueTypeExData()) {
+						case ValueType::I8:
+							*((int8_t *)rawDataPtr) = value.getI8();
+							break;
+						case ValueType::I16:
+							*((int16_t *)rawDataPtr) = value.getI16();
+							break;
+						case ValueType::I32:
+							*((int32_t *)rawDataPtr) = value.getI32();
+							break;
+						case ValueType::I64:
+							*((int64_t *)rawDataPtr) = value.getI64();
+							break;
+						case ValueType::U8:
+							*((uint8_t *)rawDataPtr) = value.getU8();
+							break;
+						case ValueType::U16:
+							*((uint16_t *)rawDataPtr) = value.getU16();
+							break;
+						case ValueType::U32:
+							*((uint32_t *)rawDataPtr) = value.getU32();
+							break;
+						case ValueType::U64:
+							*((uint64_t *)rawDataPtr) = value.getU64();
+							break;
+						case ValueType::F32:
+							*((float *)rawDataPtr) = value.getF32();
+							break;
+						case ValueType::F64:
+							*((double *)rawDataPtr) = value.getF64();
+							break;
+						case ValueType::Bool:
+							*((bool *)rawDataPtr) = value.getBool();
+							break;
+					}
+					break;
+				case TypeId::String:
+				case TypeId::Instance:
+				case TypeId::Array:
+					*((Object **)rawDataPtr) = value.getObjectRef();
+					break;
+				default:
+					// All fields should be checked during the instantiation.
+					throw std::logic_error("Unhandled value type");
+			}
+
 			break;
 		}
 		case VarKind::LocalVarAccessor: {

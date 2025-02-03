@@ -82,10 +82,10 @@ SLAKE_API void Runtime::initObjectLayoutForClass(ClassObject *cls, ClassObject *
 
 	if (parentClass && parentClass->cachedObjectLayout) {
 		objectLayout = decltype(objectLayout)(parentClass->cachedObjectLayout->duplicate());
-		peff::copyAssign(cls->cachedFieldInitVars, parentClass->cachedFieldInitVars);
+		peff::copyAssign(cls->cachedFieldInitValues, parentClass->cachedFieldInitValues);
 	} else {
 		objectLayout = decltype(objectLayout)(ObjectLayout::alloc(&globalHeapPoolAlloc));
-		cls->cachedFieldInitVars = peff::DynArray<VarObject *>(&globalHeapPoolAlloc);
+		cls->cachedFieldInitValues = peff::DynArray<Value>(&globalHeapPoolAlloc);
 	}
 
 	for (auto it = cls->scope->members.begin(); it != cls->scope->members.end(); ++it) {
@@ -176,7 +176,7 @@ SLAKE_API void Runtime::initObjectLayoutForClass(ClassObject *cls, ClassObject *
 					std::terminate();
 				}
 
-				cls->cachedFieldInitVars.pushBack(var);
+				cls->cachedFieldInitValues.pushBack(readVarUnsafe((VarObject *)it.value(), VarRefContext{}));
 
 				objectLayout->fieldNameMap.insert(fieldRecord.name, objectLayout->fieldRecords.size());
 				objectLayout->fieldRecords.pushBack(std::move(fieldRecord));
@@ -185,7 +185,100 @@ SLAKE_API void Runtime::initObjectLayoutForClass(ClassObject *cls, ClassObject *
 		}
 	}
 
-	//cls->cachedFieldInitVars.shrink_to_fit();
+	for (size_t i = 0; i < cls->fieldRecords.size(); ++i) {
+		ObjectFieldRecord fieldRecord(&globalHeapPoolAlloc);
+
+		FieldAccessorVarObject *var = cls->fieldAccessor;
+		Type type;
+		SLAKE_UNWRAP_EXCEPT(typeofVar(var, VarRefContext(), type));
+
+		switch (type.typeId) {
+			case TypeId::Value:
+				switch (type.getValueTypeExData()) {
+					case ValueType::I8:
+						fieldRecord.offset = objectLayout->totalSize;
+						objectLayout->totalSize += sizeof(int8_t);
+						break;
+					case ValueType::I16:
+						objectLayout->totalSize += (2 - (objectLayout->totalSize & 1));
+						fieldRecord.offset = objectLayout->totalSize;
+						objectLayout->totalSize += sizeof(int16_t);
+						break;
+					case ValueType::I32:
+						objectLayout->totalSize += (4 - (objectLayout->totalSize & 3));
+						fieldRecord.offset = objectLayout->totalSize;
+						objectLayout->totalSize += sizeof(int32_t);
+						break;
+					case ValueType::I64:
+						objectLayout->totalSize += (8 - (objectLayout->totalSize & 7));
+						fieldRecord.offset = objectLayout->totalSize;
+						objectLayout->totalSize += sizeof(int64_t);
+						break;
+					case ValueType::U8:
+						fieldRecord.offset = objectLayout->totalSize;
+						objectLayout->totalSize += sizeof(uint8_t);
+						break;
+					case ValueType::U16:
+						objectLayout->totalSize += (2 - (objectLayout->totalSize & 1));
+						fieldRecord.offset = objectLayout->totalSize;
+						objectLayout->totalSize += sizeof(uint16_t);
+						break;
+					case ValueType::U32:
+						objectLayout->totalSize += (4 - (objectLayout->totalSize & 3));
+						fieldRecord.offset = objectLayout->totalSize;
+						objectLayout->totalSize += sizeof(uint32_t);
+						break;
+					case ValueType::U64:
+						objectLayout->totalSize += (8 - (objectLayout->totalSize & 7));
+						fieldRecord.offset = objectLayout->totalSize;
+						objectLayout->totalSize += sizeof(uint64_t);
+						break;
+					case ValueType::F32:
+						objectLayout->totalSize += (4 - (objectLayout->totalSize & 3));
+						fieldRecord.offset = objectLayout->totalSize;
+						objectLayout->totalSize += sizeof(float);
+						break;
+					case ValueType::F64:
+						objectLayout->totalSize += (8 - (objectLayout->totalSize & 7));
+						fieldRecord.offset = objectLayout->totalSize;
+						objectLayout->totalSize += sizeof(double);
+						break;
+					case ValueType::Bool:
+						fieldRecord.offset = objectLayout->totalSize;
+						objectLayout->totalSize += sizeof(bool);
+						break;
+					case ValueType::ObjectRef:
+						objectLayout->totalSize += sizeof(Object *) - (objectLayout->totalSize & (sizeof(Object *) - 1));
+						fieldRecord.offset = objectLayout->totalSize;
+						objectLayout->totalSize += sizeof(Object *);
+						break;
+				}
+				break;
+			case TypeId::String:
+			case TypeId::Instance:
+			case TypeId::Array:
+				objectLayout->totalSize += sizeof(Object *) - (objectLayout->totalSize & (sizeof(Object *) - 1));
+				fieldRecord.offset = objectLayout->totalSize;
+				objectLayout->totalSize += sizeof(Object *);
+				break;
+			default:
+				throw std::runtime_error("The variable has an inconstructible type");
+		}
+
+		fieldRecord.type = type;
+		if (!peff::copy(fieldRecord.name, var->name)) {
+			// stub
+			std::terminate();
+		}
+
+		cls->cachedFieldInitValues.pushBack(readVarUnsafe(var, VarRefContext::makeFieldContext(i)));
+
+		objectLayout->fieldNameMap.insert(fieldRecord.name, objectLayout->fieldRecords.size());
+		objectLayout->fieldRecords.pushBack(std::move(fieldRecord));
+		break;
+	}
+
+	// cls->cachedFieldInitVars.shrink_to_fit();
 	cls->cachedObjectLayout = objectLayout.release();
 }
 
@@ -241,13 +334,10 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 	//
 	// Initialize the fields.
 	//
-	for (size_t i = 0; i < cls->cachedFieldInitVars.size(); ++i) {
-		VarObject *initVar = cls->cachedFieldInitVars.at(i);
-
+	for (size_t i = 0; i < cls->cachedFieldInitValues.size(); ++i) {
 		ObjectFieldRecord &fieldRecord = cls->cachedObjectLayout->fieldRecords.at(i);
 
-		Value data;
-		data = readVarUnsafe(initVar, VarRefContext());
+		Value data = cls->cachedFieldInitValues.at(i);
 		SLAKE_UNWRAP_EXCEPT(writeVar(instance->memberAccessor, VarRefContext::makeInstanceContext(i), data));
 	}
 

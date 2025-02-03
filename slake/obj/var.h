@@ -11,6 +11,7 @@ namespace slake {
 
 	enum class VarKind {
 		Regular = 0,
+		FieldAccessor,
 		ArrayElementAccessor,
 		InstanceMemberAccessor,
 		LocalVarAccessor

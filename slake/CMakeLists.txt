@@ -38,7 +38,7 @@ add_subdirectory("flib")
 add_subdirectory("plat")
 add_subdirectory("obj")
 add_subdirectory("rt")
-add_subdirectory("jit")
+# add_subdirectory("jit")
 add_subdirectory("opti")
 
 set(SLAKE_STACK_MAX 1048576 CACHE STRING "Maximum stack size for Slake runtime")

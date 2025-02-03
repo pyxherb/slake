@@ -179,6 +179,12 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 				}
 				case ObjectKind::Module: {
 					_gcWalkHeapless(context, ((ModuleObject *)v)->scope);
+
+					context.pushObject(((ModuleObject *)v)->fieldAccessor);
+					for(size_t i = 0 ; i < ((ModuleObject *)v)->fieldRecords.size(); ++i) {
+						_gcWalkHeapless(context, readVarUnsafe(((ModuleObject *)v)->fieldAccessor, VarRefContext::makeFieldContext(i)));
+					}
+
 					context.pushObject(((ModuleObject *)v)->parent);
 
 					for (auto i = ((ModuleObject *)v)->imports.begin(); i != ((ModuleObject *)v)->imports.end(); ++i)
@@ -194,6 +200,12 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 					context.pushObject(((ClassObject *)v)->parent);
 
 					ClassObject *value = (ClassObject *)v;
+
+					context.pushObject(value->fieldAccessor);
+					for(size_t i = 0 ; i < value->fieldRecords.size(); ++i) {
+						_gcWalkHeapless(context, readVarUnsafe(value->fieldAccessor, VarRefContext::makeFieldContext(i)));
+					}
+
 					for (auto &i : value->implInterfaces) {
 						// i.loadDeferredType(this);
 						_gcWalkHeapless(context, i);
@@ -225,6 +237,11 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 					context.pushObject(((InterfaceObject *)v)->parent);
 
 					InterfaceObject *value = (InterfaceObject *)v;
+
+					context.pushObject(value->fieldAccessor);
+					for(size_t i = 0 ; i < value->fieldRecords.size(); ++i) {
+						_gcWalkHeapless(context, readVarUnsafe(value->fieldAccessor, VarRefContext::makeFieldContext(i)));
+					}
 
 					for (auto &i : value->parents) {
 						// i.loadDeferredType(this);
@@ -260,6 +277,12 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 							context.pushObject(v->parent);
 
 							_gcWalkHeapless(context, v->type);
+							break;
+						}
+						case VarKind::FieldAccessor: {
+							auto v = (FieldAccessorVarObject *)value;
+
+							context.pushObject(v->moduleObject);
 							break;
 						}
 						case VarKind::ArrayElementAccessor: {

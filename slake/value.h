@@ -19,6 +19,9 @@ namespace slake {
 	union VarRefContext {
 		struct {
 			uint32_t index;
+		} asField;
+		struct {
+			uint32_t index;
 		} asArray;
 		struct {
 			size_t fieldIndex;
@@ -26,6 +29,14 @@ namespace slake {
 		struct {
 			uint32_t localVarIndex;
 		} asLocalVar;
+
+		static SLAKE_FORCEINLINE VarRefContext makeFieldContext(uint32_t index) {
+			VarRefContext context = {};
+
+			context.asField.index = index;
+
+			return context;
+		}
 
 		static SLAKE_FORCEINLINE VarRefContext makeArrayContext(uint32_t index) {
 			VarRefContext context = {};

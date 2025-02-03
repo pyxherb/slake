@@ -2,13 +2,40 @@
 
 using namespace slake;
 
+SLAKE_API FieldAccessorVarObject::FieldAccessorVarObject(
+	Runtime *rt,
+	ModuleObject *moduleObject) : VarObject(rt, VarKind::FieldAccessor), moduleObject(moduleObject) {
+}
+
+SLAKE_API FieldAccessorVarObject::~FieldAccessorVarObject() {
+}
+
+SLAKE_API void FieldAccessorVarObject::dealloc() {
+	peff::destroyAndRelease<FieldAccessorVarObject>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
+}
+
+SLAKE_API HostObjectRef<FieldAccessorVarObject> FieldAccessorVarObject::alloc(
+	Runtime *rt,
+	ModuleObject *moduleObject) {
+	std::unique_ptr<FieldAccessorVarObject, util::DeallocableDeleter<FieldAccessorVarObject>> ptr(
+		peff::allocAndConstruct<FieldAccessorVarObject>(&rt->globalHeapPoolAlloc, sizeof(std::max_align_t), rt, moduleObject));
+
+	if(!ptr)
+		return nullptr;
+
+	if (!rt->createdObjects.pushBack(ptr.get()))
+		return nullptr;
+
+	return ptr.release();
+}
+
 SLAKE_API ModuleObject::ModuleObject(Runtime *rt, ScopeUniquePtr &&scope, AccessModifier access)
-	: MemberObject(rt), scope(scope.release()) {
+	: MemberObject(rt), scope(scope.release()), fieldRecords(&rt->globalHeapPoolAlloc) {
 	this->scope->owner = this;
 	this->accessModifier = access;
 }
 
-SLAKE_API ModuleObject::ModuleObject(const ModuleObject &x, bool &succeededOut) : MemberObject(x, succeededOut) {
+SLAKE_API ModuleObject::ModuleObject(const ModuleObject &x, bool &succeededOut) : MemberObject(x, succeededOut), fieldRecords(&x.associatedRuntime->globalHeapPoolAlloc) {
 	if (succeededOut) {
 		if (!peff::copyAssign(imports, x.imports)) {
 			succeededOut = false;
@@ -32,6 +59,8 @@ SLAKE_API ModuleObject::ModuleObject(const ModuleObject &x, bool &succeededOut) 
 }
 
 SLAKE_API ModuleObject::~ModuleObject() {
+	if(localFieldStorage)
+		associatedRuntime->globalHeapPoolAlloc.release(localFieldStorage, szLocalFieldStorage, sizeof(std::max_align_t));
 	scope->dealloc();
 }
 

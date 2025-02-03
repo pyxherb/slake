@@ -20,7 +20,7 @@ SLAKE_API HostObjectRef<FieldAccessorVarObject> FieldAccessorVarObject::alloc(
 	std::unique_ptr<FieldAccessorVarObject, util::DeallocableDeleter<FieldAccessorVarObject>> ptr(
 		peff::allocAndConstruct<FieldAccessorVarObject>(&rt->globalHeapPoolAlloc, sizeof(std::max_align_t), rt, moduleObject));
 
-	if(!ptr)
+	if (!ptr)
 		return nullptr;
 
 	if (!rt->createdObjects.pushBack(ptr.get()))
@@ -35,8 +35,31 @@ SLAKE_API ModuleObject::ModuleObject(Runtime *rt, ScopeUniquePtr &&scope, Access
 	this->accessModifier = access;
 }
 
-SLAKE_API ModuleObject::ModuleObject(const ModuleObject &x, bool &succeededOut) : MemberObject(x, succeededOut), fieldRecords(&x.associatedRuntime->globalHeapPoolAlloc) {
+SLAKE_API ModuleObject::ModuleObject(const ModuleObject &x, bool &succeededOut) : MemberObject(x, succeededOut), fieldRecords(&x.associatedRuntime->globalHeapPoolAlloc), fieldRecordIndices(&x.associatedRuntime->globalHeapPoolAlloc) {
 	if (succeededOut) {
+		auto fieldAccessor = FieldAccessorVarObject::alloc(x.associatedRuntime, this);
+		if (!fieldAccessor) {
+			succeededOut = false;
+			return;
+		}
+		this->fieldAccessor = fieldAccessor.get();
+		if (!peff::copyAssign(fieldRecords, x.fieldRecords)) {
+			succeededOut = false;
+			return;
+		}
+		for (size_t i = 0; i < fieldRecords.size(); ++i) {
+			if (!fieldRecordIndices.insert(fieldRecords.at(i).name, +i)) {
+				succeededOut = false;
+				return;
+			}
+		}
+		if (!(this->localFieldStorage = (char *)x.associatedRuntime->globalHeapPoolAlloc.alloc(x.szLocalFieldStorage, sizeof(std::max_align_t)))) {
+			succeededOut = false;
+			return;
+		}
+		memcpy(this->localFieldStorage, x.localFieldStorage, x.szLocalFieldStorage);
+		szLocalFieldStorage = x.szLocalFieldStorage;
+
 		if (!peff::copyAssign(imports, x.imports)) {
 			succeededOut = false;
 			return;
@@ -59,8 +82,8 @@ SLAKE_API ModuleObject::ModuleObject(const ModuleObject &x, bool &succeededOut) 
 }
 
 SLAKE_API ModuleObject::~ModuleObject() {
-	if(localFieldStorage)
-		associatedRuntime->globalHeapPoolAlloc.release(localFieldStorage, szLocalFieldStorage, sizeof(std::max_align_t));
+	if (this->localFieldStorage)
+		associatedRuntime->globalHeapPoolAlloc.release(this->localFieldStorage, szLocalFieldStorage, sizeof(std::max_align_t));
 	scope->dealloc();
 }
 

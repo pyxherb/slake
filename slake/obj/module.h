@@ -19,6 +19,16 @@ namespace slake {
 			  offset(rhs.offset),
 			  type(rhs.type) {
 		}
+
+		SLAKE_FORCEINLINE bool copy(FieldRecord &dest) const noexcept {
+			if(!peff::copy(dest.name, name)) {
+				return false;
+			}
+			dest.accessModifier = accessModifier;
+			dest.offset = offset;
+			dest.type = type;
+			return true;
+		}
 	};
 
 	class ModuleObject;

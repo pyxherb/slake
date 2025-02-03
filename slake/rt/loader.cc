@@ -352,225 +352,166 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 
 		auto varType = _loadType(context, holder);
 
-		if (!context.isInGenericScope) {
-			FieldRecord curFieldRecord(&globalHeapPoolAlloc);
-			curFieldRecord.name = std::move(name);
-			curFieldRecord.type = varType;
-			curFieldRecord.accessModifier = access;
+		FieldRecord curFieldRecord(&globalHeapPoolAlloc);
+		curFieldRecord.name = std::move(name);
+		curFieldRecord.type = varType;
+		curFieldRecord.accessModifier = access;
 
-			switch (varType.typeId) {
-				case TypeId::Value:
-					switch (varType.getValueTypeExData()) {
-						case ValueType::I8:
-							curFieldRecord.offset = szLocalFieldStorage;
-							szLocalFieldStorage += sizeof(int8_t);
-							break;
-						case ValueType::I16:
-							if (szLocalFieldStorage & 1) {
-								szLocalFieldStorage += (2 - (szLocalFieldStorage & 1));
-							}
-							curFieldRecord.offset = szLocalFieldStorage;
-							szLocalFieldStorage += sizeof(int16_t);
-							break;
-						case ValueType::I32:
-							if (szLocalFieldStorage & 3) {
-								szLocalFieldStorage += (4 - (szLocalFieldStorage & 3));
-							}
-							curFieldRecord.offset = szLocalFieldStorage;
-							szLocalFieldStorage += sizeof(int32_t);
-							break;
-						case ValueType::I64:
-							if (szLocalFieldStorage & 7) {
-								szLocalFieldStorage += (8 - (szLocalFieldStorage & 7));
-							}
-							curFieldRecord.offset = szLocalFieldStorage;
-							szLocalFieldStorage += sizeof(int64_t);
-							break;
-						case ValueType::U8:
-							curFieldRecord.offset = szLocalFieldStorage;
-							szLocalFieldStorage += sizeof(uint8_t);
-							break;
-						case ValueType::U16:
-							if (szLocalFieldStorage & 1) {
-								szLocalFieldStorage += (2 - (szLocalFieldStorage & 1));
-							}
-							curFieldRecord.offset = szLocalFieldStorage;
-							szLocalFieldStorage += sizeof(uint16_t);
-							break;
-						case ValueType::U32:
-							if (szLocalFieldStorage & 3) {
-								szLocalFieldStorage += (4 - (szLocalFieldStorage & 3));
-							}
-							curFieldRecord.offset = szLocalFieldStorage;
-							szLocalFieldStorage += sizeof(uint32_t);
-							break;
-						case ValueType::U64:
-							if (szLocalFieldStorage & 7) {
-								szLocalFieldStorage += (8 - (szLocalFieldStorage & 7));
-							}
-							curFieldRecord.offset = szLocalFieldStorage;
-							szLocalFieldStorage += sizeof(uint64_t);
-							break;
-						case ValueType::Bool:
-							curFieldRecord.offset = szLocalFieldStorage;
-							szLocalFieldStorage += sizeof(bool);
-							break;
-						default:
-							// Unenumerated value types should never occur.
-							throw std::logic_error("Invalid value type");
-					}
-					break;
-				case TypeId::String:
-				case TypeId::Instance:
-					if (szLocalFieldStorage & (sizeof(void *) - 1)) {
-						szLocalFieldStorage += (sizeof(void *) - (szLocalFieldStorage & (sizeof(void *) - 1)));
-					}
-					curFieldRecord.offset = szLocalFieldStorage;
-					szLocalFieldStorage += sizeof(Object *);
-					break;
-				case TypeId::Any:
-					if (szLocalFieldStorage % sizeof(Value)) {
-						szLocalFieldStorage += (sizeof(Value) - (szLocalFieldStorage % sizeof(Value)));
-					}
-					curFieldRecord.offset = szLocalFieldStorage;
-					szLocalFieldStorage += sizeof(Value);
-					break;
-				default:
-					throw LoaderError("Invalid variable type");
-			}
-
-			if (!fieldRecords.pushBack(std::move(curFieldRecord)))
-				throw std::bad_alloc();
-		} else {
-			HostObjectRef<RegularVarObject> var =
-				RegularVarObject::alloc(
-					this,
-					access,
-					varType);
-			var->name = std::move(name);
-			holder.addObject(var.get());
-			if (!mod->scope->putMember(var.get()))
-				throw std::bad_alloc();
-
-			switch (varType.typeId) {
-				case TypeId::Value:
-					switch (varType.getValueTypeExData()) {
-						case ValueType::I8:
-							SLAKE_UNWRAP_EXCEPT(writeVar(var.get(), VarRefContext(), Value((int8_t)0)));
-							break;
-						case ValueType::I16:
-							SLAKE_UNWRAP_EXCEPT(writeVar(var.get(), VarRefContext(), Value((int16_t)0)));
-							break;
-						case ValueType::I32:
-							SLAKE_UNWRAP_EXCEPT(writeVar(var.get(), VarRefContext(), Value((int32_t)0)));
-							break;
-						case ValueType::I64:
-							SLAKE_UNWRAP_EXCEPT(writeVar(var.get(), VarRefContext(), Value((int64_t)0)));
-							break;
-						case ValueType::U8:
-							SLAKE_UNWRAP_EXCEPT(writeVar(var.get(), VarRefContext(), Value((uint8_t)0)));
-							break;
-						case ValueType::U16:
-							SLAKE_UNWRAP_EXCEPT(writeVar(var.get(), VarRefContext(), Value((uint16_t)0)));
-							break;
-						case ValueType::U32:
-							SLAKE_UNWRAP_EXCEPT(writeVar(var.get(), VarRefContext(), Value((uint32_t)0)));
-							break;
-						case ValueType::U64:
-							SLAKE_UNWRAP_EXCEPT(writeVar(var.get(), VarRefContext(), Value((uint64_t)0)));
-							break;
-						case ValueType::Bool:
-							SLAKE_UNWRAP_EXCEPT(writeVar(var.get(), VarRefContext(), Value((bool)false)));
-							break;
-						default:
-							// Unenumerated value types should never occur.
-							throw std::logic_error("Invalid value type");
-					}
-					break;
-				case TypeId::String:
-					SLAKE_UNWRAP_EXCEPT(writeVar(var.get(), VarRefContext(), Value(nullptr)));
-					break;
-				case TypeId::Instance:
-					SLAKE_UNWRAP_EXCEPT(writeVar(var.get(), VarRefContext(), Value(nullptr)));
-					break;
-				case TypeId::Any:
-					SLAKE_UNWRAP_EXCEPT(writeVar(var.get(), VarRefContext(), Value(nullptr)));
-					break;
-				case TypeId::GenericArg:
-					break;
-				default:
-					throw LoaderError("Invalid variable type");
-			}
+		switch (varType.typeId) {
+			case TypeId::Value:
+				switch (varType.getValueTypeExData()) {
+					case ValueType::I8:
+						curFieldRecord.offset = szLocalFieldStorage;
+						szLocalFieldStorage += sizeof(int8_t);
+						break;
+					case ValueType::I16:
+						if (szLocalFieldStorage & 1) {
+							szLocalFieldStorage += (2 - (szLocalFieldStorage & 1));
+						}
+						curFieldRecord.offset = szLocalFieldStorage;
+						szLocalFieldStorage += sizeof(int16_t);
+						break;
+					case ValueType::I32:
+						if (szLocalFieldStorage & 3) {
+							szLocalFieldStorage += (4 - (szLocalFieldStorage & 3));
+						}
+						curFieldRecord.offset = szLocalFieldStorage;
+						szLocalFieldStorage += sizeof(int32_t);
+						break;
+					case ValueType::I64:
+						if (szLocalFieldStorage & 7) {
+							szLocalFieldStorage += (8 - (szLocalFieldStorage & 7));
+						}
+						curFieldRecord.offset = szLocalFieldStorage;
+						szLocalFieldStorage += sizeof(int64_t);
+						break;
+					case ValueType::U8:
+						curFieldRecord.offset = szLocalFieldStorage;
+						szLocalFieldStorage += sizeof(uint8_t);
+						break;
+					case ValueType::U16:
+						if (szLocalFieldStorage & 1) {
+							szLocalFieldStorage += (2 - (szLocalFieldStorage & 1));
+						}
+						curFieldRecord.offset = szLocalFieldStorage;
+						szLocalFieldStorage += sizeof(uint16_t);
+						break;
+					case ValueType::U32:
+						if (szLocalFieldStorage & 3) {
+							szLocalFieldStorage += (4 - (szLocalFieldStorage & 3));
+						}
+						curFieldRecord.offset = szLocalFieldStorage;
+						szLocalFieldStorage += sizeof(uint32_t);
+						break;
+					case ValueType::U64:
+						if (szLocalFieldStorage & 7) {
+							szLocalFieldStorage += (8 - (szLocalFieldStorage & 7));
+						}
+						curFieldRecord.offset = szLocalFieldStorage;
+						szLocalFieldStorage += sizeof(uint64_t);
+						break;
+					case ValueType::Bool:
+						curFieldRecord.offset = szLocalFieldStorage;
+						szLocalFieldStorage += sizeof(bool);
+						break;
+					default:
+						// Unenumerated value types should never occur.
+						throw std::logic_error("Invalid value type");
+				}
+				break;
+			case TypeId::String:
+			case TypeId::Instance:
+				if (szLocalFieldStorage & (sizeof(void *) - 1)) {
+					szLocalFieldStorage += (sizeof(void *) - (szLocalFieldStorage & (sizeof(void *) - 1)));
+				}
+				curFieldRecord.offset = szLocalFieldStorage;
+				szLocalFieldStorage += sizeof(Object *);
+				break;
+			case TypeId::Any:
+				if (szLocalFieldStorage % sizeof(Value)) {
+					szLocalFieldStorage += (sizeof(Value) - (szLocalFieldStorage % sizeof(Value)));
+				}
+				curFieldRecord.offset = szLocalFieldStorage;
+				szLocalFieldStorage += sizeof(Value);
+				break;
+			case TypeId::GenericArg:
+				curFieldRecord.offset = SIZE_MAX;
+				break;
+			default:
+				throw LoaderError("Invalid variable type");
 		}
+
+		if (!fieldRecords.pushBack(std::move(curFieldRecord)))
+			throw std::bad_alloc();
 	}
 
-	if (!context.isInGenericScope) {
-		auto accessor = FieldAccessorVarObject::alloc(this, mod.get());
-		if (!accessor)
+	auto accessor = FieldAccessorVarObject::alloc(this, mod.get());
+	if (!accessor)
+		throw std::bad_alloc();
+	mod->fieldAccessor = accessor.get();
+
+	char *fieldStorage = (char *)globalHeapPoolAlloc.alloc(szLocalFieldStorage, sizeof(std::max_align_t));
+	if (!fieldStorage)
+		throw std::bad_alloc();
+	mod->localFieldStorage = fieldStorage;
+	mod->szLocalFieldStorage = szLocalFieldStorage;
+
+	for (size_t i = 0; i < fieldRecords.size(); ++i) {
+		FieldRecord &curFieldRecord = fieldRecords.at(i);
+
+		if (!mod->fieldRecordIndices.insert(curFieldRecord.name, +i))
 			throw std::bad_alloc();
-		mod->fieldAccessor = accessor.get();
 
-		char *fieldStorage = (char *)globalHeapPoolAlloc.alloc(szLocalFieldStorage, sizeof(std::max_align_t));
-		if (!fieldStorage)
-			throw std::bad_alloc();
-		mod->localFieldStorage = fieldStorage;
-		mod->szLocalFieldStorage = szLocalFieldStorage;
-
-		for (size_t i = 0; i < fieldRecords.size(); ++i) {
-			FieldRecord &curFieldRecord = fieldRecords.at(i);
-
-			if (!mod->fieldRecordIndices.insert(curFieldRecord.name, +i))
-				throw std::bad_alloc();
-
-			char *rawDataPtr = fieldStorage + curFieldRecord.offset;
-			switch (curFieldRecord.type.typeId) {
-				case TypeId::Value:
-					switch (curFieldRecord.type.getValueTypeExData()) {
-						case ValueType::I8:
-							*((int8_t *)rawDataPtr) = 0;
-							break;
-						case ValueType::I16:
-							*((int16_t *)rawDataPtr) = 0;
-							break;
-						case ValueType::I32:
-							*((int32_t *)rawDataPtr) = 0;
-							break;
-						case ValueType::I64:
-							*((int64_t *)rawDataPtr) = 0;
-							break;
-						case ValueType::U8:
-							*((uint8_t *)rawDataPtr) = 0;
-							break;
-						case ValueType::U16:
-							*((uint16_t *)rawDataPtr) = 0;
-							break;
-						case ValueType::U32:
-							*((int32_t *)rawDataPtr) = 0;
-							break;
-						case ValueType::U64:
-							*((int64_t *)rawDataPtr) = 0;
-							break;
-						case ValueType::Bool:
-							*((bool *)rawDataPtr) = false;
-							break;
-						default:
-							// Unenumerated value types should never occur.
-							throw std::logic_error("Invalid value type");
-					}
-					break;
-				case TypeId::String:
-				case TypeId::Instance:
-					*((Object **)rawDataPtr) = nullptr;
-					break;
-				case TypeId::Any:
-					*((Value *)rawDataPtr) = Value(nullptr);
-					break;
-				default:
-					throw LoaderError("Invalid variable type");
-			}
+		char *rawDataPtr = fieldStorage + curFieldRecord.offset;
+		switch (curFieldRecord.type.typeId) {
+			case TypeId::Value:
+				switch (curFieldRecord.type.getValueTypeExData()) {
+					case ValueType::I8:
+						*((int8_t *)rawDataPtr) = 0;
+						break;
+					case ValueType::I16:
+						*((int16_t *)rawDataPtr) = 0;
+						break;
+					case ValueType::I32:
+						*((int32_t *)rawDataPtr) = 0;
+						break;
+					case ValueType::I64:
+						*((int64_t *)rawDataPtr) = 0;
+						break;
+					case ValueType::U8:
+						*((uint8_t *)rawDataPtr) = 0;
+						break;
+					case ValueType::U16:
+						*((uint16_t *)rawDataPtr) = 0;
+						break;
+					case ValueType::U32:
+						*((int32_t *)rawDataPtr) = 0;
+						break;
+					case ValueType::U64:
+						*((int64_t *)rawDataPtr) = 0;
+						break;
+					case ValueType::Bool:
+						*((bool *)rawDataPtr) = false;
+						break;
+					default:
+						// Unenumerated value types should never occur.
+						throw std::logic_error("Invalid value type");
+				}
+				break;
+			case TypeId::String:
+			case TypeId::Instance:
+				*((Object **)rawDataPtr) = nullptr;
+				break;
+			case TypeId::Any:
+				*((Value *)rawDataPtr) = Value(nullptr);
+				break;
+			case TypeId::GenericArg:
+				break;
+			default:
+				throw LoaderError("Invalid variable type");
 		}
-		mod->fieldRecords = std::move(fieldRecords);
 	}
+	mod->fieldRecords = std::move(fieldRecords);
 
 	//
 	// Load functions.

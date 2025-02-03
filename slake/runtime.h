@@ -205,6 +205,8 @@ namespace slake {
 
 		SLAKE_API void invalidateGenericCache(Object *i);
 
+		[[nodiscard]] SLAKE_API InternalExceptionPointer instantiateModuleFields(ModuleObject *mod, GenericInstantiationContext &instantiationContext);
+
 		[[nodiscard]] SLAKE_API InternalExceptionPointer mapGenericParams(const Object *v, GenericInstantiationContext &instantiationContext) const;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer mapGenericParams(const FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const;
 		/// @brief Instantiate an generic value (e.g. generic class, etc).

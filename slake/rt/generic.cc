@@ -44,8 +44,199 @@ SLAKE_API InternalExceptionPointer Runtime::setGenericCache(const Object *object
 		if (!peff::copy(copiedGenericArgList, genericArgs)) {
 			return OutOfMemoryError::alloc();
 		}
-		_genericCacheLookupTable.insert((const Object*)instantiatedObject, { object, std::move(copiedGenericArgList) });
+		_genericCacheLookupTable.insert((const Object *)instantiatedObject, { object, std::move(copiedGenericArgList) });
 	}
+
+	return {};
+}
+
+SLAKE_API InternalExceptionPointer slake::Runtime::instantiateModuleFields(ModuleObject *mod, GenericInstantiationContext &instantiationContext) {
+	size_t szRelocatedLocalFieldStorage = 0;
+	peff::DynArray<FieldRecord> relocatedFieldRecords(&globalHeapPoolAlloc);
+
+	for (size_t i = 0; i < mod->fieldRecords.size(); ++i) {
+		FieldRecord &curOldFieldRecord = mod->fieldRecords.at(i);
+
+		if (!mod->fieldRecordIndices.insert(curOldFieldRecord.name, +i))
+			return OutOfMemoryError::alloc();
+
+		FieldRecord curFieldRecord(&globalHeapPoolAlloc);
+		if (!peff::copy(curFieldRecord.name, curOldFieldRecord.name))
+			return OutOfMemoryError::alloc();
+		curFieldRecord.type = curOldFieldRecord.type;
+		curFieldRecord.accessModifier = curOldFieldRecord.accessModifier;
+		curFieldRecord.name = std::move(curOldFieldRecord.name);
+
+		SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(curFieldRecord.type, instantiationContext));
+
+		switch (curFieldRecord.type.typeId) {
+			case TypeId::Value:
+				switch (curFieldRecord.type.getValueTypeExData()) {
+					case ValueType::I8:
+						curFieldRecord.offset = szRelocatedLocalFieldStorage;
+						szRelocatedLocalFieldStorage += sizeof(int8_t);
+						break;
+					case ValueType::I16:
+						if (szRelocatedLocalFieldStorage & 1) {
+							szRelocatedLocalFieldStorage += (2 - (szRelocatedLocalFieldStorage & 1));
+						}
+						curFieldRecord.offset = szRelocatedLocalFieldStorage;
+						szRelocatedLocalFieldStorage += sizeof(int16_t);
+						break;
+					case ValueType::I32:
+						if (szRelocatedLocalFieldStorage & 3) {
+							szRelocatedLocalFieldStorage += (4 - (szRelocatedLocalFieldStorage & 3));
+						}
+						curFieldRecord.offset = szRelocatedLocalFieldStorage;
+						szRelocatedLocalFieldStorage += sizeof(int32_t);
+						break;
+					case ValueType::I64:
+						if (szRelocatedLocalFieldStorage & 7) {
+							szRelocatedLocalFieldStorage += (8 - (szRelocatedLocalFieldStorage & 7));
+						}
+						curFieldRecord.offset = szRelocatedLocalFieldStorage;
+						szRelocatedLocalFieldStorage += sizeof(int64_t);
+						break;
+					case ValueType::U8:
+						curFieldRecord.offset = szRelocatedLocalFieldStorage;
+						szRelocatedLocalFieldStorage += sizeof(uint8_t);
+						break;
+					case ValueType::U16:
+						if (szRelocatedLocalFieldStorage & 1) {
+							szRelocatedLocalFieldStorage += (2 - (szRelocatedLocalFieldStorage & 1));
+						}
+						curFieldRecord.offset = szRelocatedLocalFieldStorage;
+						szRelocatedLocalFieldStorage += sizeof(uint16_t);
+						break;
+					case ValueType::U32:
+						if (szRelocatedLocalFieldStorage & 3) {
+							szRelocatedLocalFieldStorage += (4 - (szRelocatedLocalFieldStorage & 3));
+						}
+						curFieldRecord.offset = szRelocatedLocalFieldStorage;
+						szRelocatedLocalFieldStorage += sizeof(uint32_t);
+						break;
+					case ValueType::U64:
+						if (szRelocatedLocalFieldStorage & 7) {
+							szRelocatedLocalFieldStorage += (8 - (szRelocatedLocalFieldStorage & 7));
+						}
+						curFieldRecord.offset = szRelocatedLocalFieldStorage;
+						szRelocatedLocalFieldStorage += sizeof(uint64_t);
+						break;
+					case ValueType::Bool:
+						curFieldRecord.offset = szRelocatedLocalFieldStorage;
+						szRelocatedLocalFieldStorage += sizeof(bool);
+						break;
+					default:
+						// Unenumerated value types should never occur.
+						throw std::logic_error("Invalid value type");
+				}
+				break;
+			case TypeId::String:
+			case TypeId::Instance:
+				if (szRelocatedLocalFieldStorage & (sizeof(void *) - 1)) {
+					szRelocatedLocalFieldStorage += (sizeof(void *) - (szRelocatedLocalFieldStorage & (sizeof(void *) - 1)));
+				}
+				curFieldRecord.offset = szRelocatedLocalFieldStorage;
+				szRelocatedLocalFieldStorage += sizeof(Object *);
+				break;
+			case TypeId::Any:
+				if (szRelocatedLocalFieldStorage % sizeof(Value)) {
+					szRelocatedLocalFieldStorage += (sizeof(Value) - (szRelocatedLocalFieldStorage % sizeof(Value)));
+				}
+				curFieldRecord.offset = szRelocatedLocalFieldStorage;
+				szRelocatedLocalFieldStorage += sizeof(Value);
+				break;
+			case TypeId::GenericArg:
+				curFieldRecord.offset = SIZE_MAX;
+				break;
+			default:
+				std::terminate();
+		}
+
+		if (!relocatedFieldRecords.pushBack(std::move(curFieldRecord)))
+			return OutOfMemoryError::alloc();
+	}
+	char *localFieldStorage = (char *)globalHeapPoolAlloc.alloc(szRelocatedLocalFieldStorage, sizeof(std::max_align_t));
+	if (!localFieldStorage)
+		return OutOfMemoryError::alloc();
+	peff::ScopeGuard releaseLocalFieldStorageGuard([this, localFieldStorage, szRelocatedLocalFieldStorage]() noexcept {
+		globalHeapPoolAlloc.release(localFieldStorage, szRelocatedLocalFieldStorage, sizeof(std::max_align_t));
+	});
+
+	mod->fieldRecordIndices.clear();
+
+	peff::DynArray<FieldRecord> oldFieldRecords = std::move(mod->fieldRecords);
+	mod->fieldRecords = std::move(relocatedFieldRecords);
+
+	for (size_t i = 0; i < mod->fieldRecords.size(); ++i) {
+		FieldRecord &curFieldRecord = oldFieldRecords.at(i);
+		FieldRecord &curRelocatedFieldRecord = mod->fieldRecords.at(i);
+
+		if (!mod->fieldRecordIndices.insert(curRelocatedFieldRecord.name, +i))
+			throw std::bad_alloc();
+
+		char *rawDataPtr = mod->localFieldStorage + curFieldRecord.offset,
+			 *rawRelocatedDataPtr = localFieldStorage + curRelocatedFieldRecord.offset;
+		switch (curFieldRecord.type.typeId) {
+			case TypeId::Value:
+				switch (curRelocatedFieldRecord.type.getValueTypeExData()) {
+					case ValueType::I8:
+						*((int8_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int8_t *)rawDataPtr) : 0);
+						break;
+					case ValueType::I16:
+						*((int16_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int16_t *)rawDataPtr) : 0);
+						break;
+					case ValueType::I32:
+						*((int32_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int32_t *)rawDataPtr) : 0);
+						break;
+					case ValueType::I64:
+						*((int64_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int64_t *)rawDataPtr) : 0);
+						break;
+					case ValueType::U8:
+						*((uint8_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((uint8_t *)rawDataPtr) : 0);
+						break;
+					case ValueType::U16:
+						*((uint16_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int16_t *)rawDataPtr) : 0);
+						break;
+					case ValueType::U32:
+						*((uint32_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((uint32_t *)rawDataPtr) : 0);
+						break;
+					case ValueType::U64:
+						*((uint64_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((uint64_t *)rawDataPtr) : 0);
+						break;
+					case ValueType::F32:
+						*((float *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((float *)rawDataPtr) : 0);
+						break;
+					case ValueType::F64:
+						*((double *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((double *)rawDataPtr) : 0);
+						break;
+					case ValueType::Bool:
+						*((bool *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((bool *)rawDataPtr) : 0);
+						break;
+					default:
+						// Unenumerated value types should never occur.
+						throw std::logic_error("Invalid value type");
+				}
+				break;
+			case TypeId::String:
+			case TypeId::Instance:
+				*((Object **)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((Object **)rawDataPtr) : 0);
+				break;
+			case TypeId::Any:
+				*((Value *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((Value *)rawDataPtr) : 0);
+				break;
+			case TypeId::GenericArg:
+				break;
+			default:
+				throw LoaderError("Invalid variable type");
+		}
+	}
+
+	if (mod->localFieldStorage)
+		globalHeapPoolAlloc.release(mod->localFieldStorage, mod->szLocalFieldStorage, sizeof(std::max_align_t));
+	mod->localFieldStorage = localFieldStorage;
+	mod->szLocalFieldStorage = szRelocatedLocalFieldStorage;
+	releaseLocalFieldStorageGuard.release();
 
 	return {};
 }
@@ -181,6 +372,8 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Obj
 				for (auto it = value->scope->members.begin(); it != value->scope->members.end(); ++it) {
 					SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(it.value(), newInstantiationContext));
 				}
+
+				SLAKE_RETURN_IF_EXCEPT(instantiateModuleFields(value, newInstantiationContext));
 			} else {
 				if (value == instantiationContext.mappedObject) {
 					if (!peff::copyAssign(value->genericArgs, *instantiationContext.genericArgs))
@@ -192,6 +385,8 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Obj
 				for (auto it = value->scope->members.begin(); it != value->scope->members.end(); ++it) {
 					SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(it.value(), instantiationContext));
 				}
+
+				SLAKE_RETURN_IF_EXCEPT(instantiateModuleFields(value, instantiationContext));
 			}
 
 			break;
@@ -205,6 +400,8 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Obj
 			for (auto it = value->scope->members.begin(); it != value->scope->members.end(); ++it) {
 				SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(it.value(), instantiationContext));
 			}
+
+			SLAKE_RETURN_IF_EXCEPT(instantiateModuleFields(value, instantiationContext));
 
 			break;
 		}
@@ -231,6 +428,8 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Obj
 			for (auto it = value->scope->members.begin(); it != value->scope->members.end(); ++it) {
 				SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(it.value(), instantiationContext));
 			}
+
+			SLAKE_RETURN_IF_EXCEPT(instantiateModuleFields(value, instantiationContext));
 			break;
 		}
 		case ObjectKind::Fn: {
@@ -270,8 +469,8 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Obj
 				specializationArgsMismatched:;
 				}
 
-				if(!value->overloadings.insert(
-					matchedSpecializedOverloading ? std::move(matchedSpecializedOverloading) : std::move(matchedOverloading)))
+				if (!value->overloadings.insert(
+						matchedSpecializedOverloading ? std::move(matchedSpecializedOverloading) : std::move(matchedOverloading)))
 					return OutOfMemoryError::alloc();
 			} else {
 				for (auto i : value->overloadings) {

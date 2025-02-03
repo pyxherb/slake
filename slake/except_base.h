@@ -91,8 +91,8 @@ namespace slake {
 
 #define SLAKE_UNWRAP_EXCEPT(expr) (expr).unwrap()
 #define SLAKE_RETURN_IF_EXCEPT(expr)                  \
-	if (InternalExceptionPointer e = (expr); (bool)e) \
-	return e
+	if (InternalExceptionPointer _ = (expr); (bool)_) \
+	return _
 #define SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(name, expr)  \
 	if ((bool)(name = (expr))) \
 	return name;

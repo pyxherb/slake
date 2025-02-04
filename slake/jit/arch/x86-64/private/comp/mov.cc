@@ -442,8 +442,8 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 					switch (srcRegInfo.storageType) {
 						case opti::RegStorageType::None:
 							break;
-						case opti::RegStorageType::GlobalVar:
-							if (srcRegInfo.storageInfo.asGlobalVar.isUsedForOutput) {
+						case opti::RegStorageType::FieldVar:
+							if (srcRegInfo.storageInfo.asFieldVar.isUsedForOutput) {
 							} else {
 								VirtualRegState *outputVregState = compileContext.defDummyVirtualReg(outputRegIndex);
 								if (!outputVregState)

@@ -5,7 +5,7 @@ using namespace slake::jit;
 using namespace slake::jit::x86_64;
 
 template <size_t size>
-InternalExceptionPointer compileRegToGlobalVarStoreInstruction(
+InternalExceptionPointer compileRegToFieldVarStoreInstruction(
 	JITCompileContext &compileContext,
 	opti::ProgramAnalyzedInfo &analyzedInfo,
 	size_t offIns,
@@ -255,6 +255,8 @@ InternalExceptionPointer compileRegToGlobalVarStoreInstruction(
 			compileContext.unallocReg(baseRegId);
 		}
 	}
+
+	return {};
 }
 
 InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
@@ -266,9 +268,9 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 	Value rhs = curIns.operands[1];
 
 	switch (regAnalyzedInfo.storageType) {
-		case opti::RegStorageType::GlobalVar: {
+		case opti::RegStorageType::FieldVar: {
 			FieldAccessorVarObject *accessor = (FieldAccessorVarObject *)regAnalyzedInfo.expectedValue.getObjectRef();
-			FieldRecord &fieldRecord = accessor->moduleObject->fieldRecords.at(regAnalyzedInfo.storageInfo.asGlobalVar.varRefContext.asField.index);
+			FieldRecord &fieldRecord = accessor->moduleObject->fieldRecords.at(regAnalyzedInfo.storageInfo.asFieldVar.varRefContext.asField.index);
 			char *rawDataPtr = accessor->moduleObject->localFieldStorage + fieldRecord.offset;
 
 			switch (fieldRecord.type.typeId) {
@@ -278,24 +280,24 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 							case ValueType::I8:
 							case ValueType::U8:
 							case ValueType::Bool: {
-								compileRegToGlobalVarStoreInstruction<1>(compileContext, analyzedInfo, offIns, curIns, fieldRecord, rawDataPtr, rhs.getRegIndex());
+								compileRegToFieldVarStoreInstruction<1>(compileContext, analyzedInfo, offIns, curIns, fieldRecord, rawDataPtr, rhs.getRegIndex());
 								break;
 							}
 							case ValueType::I16:
 							case ValueType::U16: {
-								compileRegToGlobalVarStoreInstruction<2>(compileContext, analyzedInfo, offIns, curIns, fieldRecord, rawDataPtr, rhs.getRegIndex());
+								compileRegToFieldVarStoreInstruction<2>(compileContext, analyzedInfo, offIns, curIns, fieldRecord, rawDataPtr, rhs.getRegIndex());
 								break;
 							}
 							case ValueType::I32:
 							case ValueType::U32:
 							case ValueType::F32: {
-								compileRegToGlobalVarStoreInstruction<4>(compileContext, analyzedInfo, offIns, curIns, fieldRecord, rawDataPtr, rhs.getRegIndex());
+								compileRegToFieldVarStoreInstruction<4>(compileContext, analyzedInfo, offIns, curIns, fieldRecord, rawDataPtr, rhs.getRegIndex());
 								break;
 							}
 							case ValueType::I64:
 							case ValueType::U64:
 							case ValueType::F64: {
-								compileRegToGlobalVarStoreInstruction<8>(compileContext, analyzedInfo, offIns, curIns, fieldRecord, rawDataPtr, rhs.getRegIndex());
+								compileRegToFieldVarStoreInstruction<8>(compileContext, analyzedInfo, offIns, curIns, fieldRecord, rawDataPtr, rhs.getRegIndex());
 								break;
 							}
 						}

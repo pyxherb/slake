@@ -13,12 +13,12 @@ namespace slake {
 
 		enum class RegStorageType : uint8_t {
 			None = 0,	// Unrecognized
-			GlobalVar,	// Global variables
+			FieldVar,	// Fields
 			LocalVar,	// Local variables
 			ArgRef,		// Arguments
 		};
 
-		struct GlobalVarRegStorageInfo {
+		struct FieldVarRegStorageInfo {
 			VarRefContext varRefContext;
 			bool isUsedForOutput;
 		};
@@ -40,7 +40,7 @@ namespace slake {
 			Type type;
 			Value expectedValue = Value(ValueType::Undefined);
 			union {
-				GlobalVarRegStorageInfo asGlobalVar;
+				FieldVarRegStorageInfo asFieldVar;
 				LocalVarRegStorageInfo asLocalVar;
 				ArgRefRegStorageInfo asArgRef;
 			} storageInfo;

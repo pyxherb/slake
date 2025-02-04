@@ -7,8 +7,8 @@ void slake::opti::markRegAsForOutput(ProgramAnalyzeContext &analyzeContext, uint
 	switch (auto &regInfo = analyzeContext.analyzedInfoOut.analyzedRegInfo.at(i); regInfo.storageType) {
 		case opti::RegStorageType::None:
 			break;
-		case opti::RegStorageType::GlobalVar:
-			regInfo.storageInfo.asGlobalVar.isUsedForOutput = true;
+		case opti::RegStorageType::FieldVar:
+			regInfo.storageInfo.asFieldVar.isUsedForOutput = true;
 			break;
 		case opti::RegStorageType::LocalVar:
 			regInfo.storageInfo.asLocalVar.isUsedForOutput = true;
@@ -319,8 +319,8 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 
 					switch (object->getKind()) {
 						case ObjectKind::Var: {
-							analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::GlobalVar;
-							analyzedInfoOut.analyzedRegInfo.at(regIndex).storageInfo.asGlobalVar.varRefContext = varRefContext;
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::FieldVar;
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).storageInfo.asFieldVar.varRefContext = varRefContext;
 							break;
 						}
 					}

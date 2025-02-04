@@ -81,5 +81,13 @@ pub interface IAssignXor<T, Result> {
 }
 
 pub interface IComparable<T> {
-	fn compareTo(rhs: T): i32;
+	operator <=>(rhs: T): i32;
+}
+
+pub interface IHashable {
+	fn hashCode(): u32;
+}
+
+pub interface IHashable64 {
+	fn hashCode64(): u64;
 }

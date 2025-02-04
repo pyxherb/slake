@@ -65,7 +65,7 @@ class Test {
 		extfns.print("Called testFunc from Test");
 		return;
 	}
-	
+
 	pub operator +(rhs: i32) : i32 {
 		return this.x + rhs;
 	}
@@ -89,7 +89,7 @@ class Derived(Test) {
 		extfns.print("Fetched y: ", this.y, "\n");
 		return this.y;
 	}
-	
+
 	pub fn testFunc(x: i32) {
 		extfns.print("Called testFunc from Derived");
 		return;
@@ -143,7 +143,7 @@ pub fn main() async: i32 {
 	/* extfns.print(test + 123); */
 
 	let v : u32 = 1919810 + 0;
-	
+
 	let array: i32[] = { 12, 34, 56, 78, 114, 514, 1919, 810 };
 	v = array[2] as u32;
 

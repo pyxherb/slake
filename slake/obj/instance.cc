@@ -52,23 +52,17 @@ SLAKE_API Object *InstanceObject::duplicate() const {
 	return (Object *)alloc(this).get();
 }
 
-SLAKE_API MemberObject *InstanceObject::getMember(
-	const peff::String &name,
-	VarRefContext *varRefContextOut) const {
-	if (auto it = methodTable->methods.find((std::string_view)name);
+SLAKE_API ObjectRef InstanceObject::getMember(const std::string_view &name) const {
+	if (auto it = methodTable->methods.find(name);
 		it != methodTable->methods.end())
-		return it.value();
+		return ObjectRef::makeInstanceRef(it.value());
 
 	if (auto it = objectLayout->fieldNameMap.find(name);
 		it != objectLayout->fieldNameMap.end()) {
-		if (varRefContextOut) {
-			*varRefContextOut = VarRefContext::makeInstanceContext(it.value());
-		}
-
-		return memberAccessor;
+		return ObjectRef::makeInstanceFieldRef((InstanceObject *)this, it.value());
 	}
 
-	return nullptr;
+	return ObjectRef::makeInstanceRef(nullptr);
 }
 
 SLAKE_API HostObjectRef<InstanceObject> slake::InstanceObject::alloc(Runtime *rt) {

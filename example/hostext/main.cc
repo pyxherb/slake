@@ -13,14 +13,13 @@ slake::Value print(slake::Context *context, slake::MajorFrame *curMajorFrame) {
 		putchar('\n');
 	else {
 		Value varArgsValue;
-		varArgsValue = curMajorFrame->curFn->associatedRuntime->readVarUnsafe(curMajorFrame->argStack.at(0), {});
-		ArrayObject *varArgs = (ArrayObject *)varArgsValue.getObjectRef();
+		varArgsValue = curMajorFrame->curFn->associatedRuntime->readVarUnsafe(slake::ObjectRef::makeArgRef(curMajorFrame, 0));
+		ArrayObject *varArgs = (ArrayObject *)varArgsValue.getObjectRef().asInstance.instanceObject;
 
 		for (uint8_t i = 0; i < varArgs->length; ++i) {
 			Value data;
 			if (auto e = curMajorFrame->curFn->associatedRuntime->readVar(
-					varArgs->accessor,
-					VarRefContext::makeArrayContext(i),
+					ObjectRef::makeArrayElementRef(varArgs, i),
 					data)) {
 				throw std::runtime_error("An exception has thrown");
 			}
@@ -60,7 +59,7 @@ slake::Value print(slake::Context *context, slake::MajorFrame *curMajorFrame) {
 					fputs(data.getBool() ? "true" : "false", stdout);
 					break;
 				case ValueType::ObjectRef: {
-					Object *objectPtr = data.getObjectRef();
+					Object *objectPtr = data.getObjectRef().asInstance.instanceObject;
 					if (!objectPtr)
 						fputs("null", stdout);
 					else {
@@ -165,20 +164,28 @@ int main(int argc, char **argv) {
 		fnObject->name.resize(strlen("print"));
 		memcpy(fnObject->name.data(), "print", strlen("print"));
 
-		((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext", nullptr))->getMember("extfns", nullptr))->scope->removeMember("print");
-		if(!((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext", nullptr))->getMember("extfns", nullptr))->scope->putMember(fnObject.get()))
+		((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext").asInstance.instanceObject)
+				->getMember("extfns")
+				.asInstance.instanceObject)
+			->scope->removeMember("print");
+		if (!((slake::ModuleObject *)(
+			(slake::ModuleObject *)rt->getRootObject()->getMember("hostext").asInstance.instanceObject)
+					->getMember("extfns")
+					.asInstance.instanceObject)
+				 ->scope->putMember(fnObject.get()))
 			throw std::bad_alloc();
 
-		auto fn = (slake::FnObject *)mod->getMember("main", nullptr);
+		auto fn = (slake::FnObject *)mod->getMember("main").asInstance.instanceObject;
 		auto overloading = fn->getOverloading({});
 
+		/*
 		slake::opti::ProgramAnalyzedInfo analyzedInfo(rt.get());
 		if (auto e = slake::opti::analyzeProgramInfo(rt.get(), (slake::RegularFnOverloadingObject *)overloading, analyzedInfo, hostRefHolder);
 			e) {
 			printf("Internal exception: %s\n", e->what());
 			switch (e->kind) {
 				case slake::ErrorKind::OptimizerError: {
-					slake::OptimizerError *err = (slake::OptimizerError*)e.get();
+					slake::OptimizerError *err = (slake::OptimizerError *)e.get();
 
 					switch (err->optimizerErrorCode) {
 						case slake::OptimizerErrorCode::MalformedProgram: {
@@ -195,7 +202,7 @@ int main(int argc, char **argv) {
 		for (auto it = analyzedInfo.analyzedRegInfo.begin(); it != analyzedInfo.analyzedRegInfo.end(); ++it) {
 			printf("Register #%u\n", it.key());
 			printf("Lifetime: %zu-%zu\n", it.value().lifetime.offBeginIns, it.value().lifetime.offEndIns);
-		}
+		}*/
 
 		slake::HostObjectRef<slake::ContextObject> context;
 		if (auto e = rt->execFn(overloading, nullptr, nullptr, nullptr, 0, context);

@@ -81,9 +81,7 @@ namespace slake {
 
 		SLAKE_API virtual Object *duplicate() const override;
 
-		SLAKE_API virtual MemberObject *getMember(
-			const std::string_view &name,
-			VarRefContext *varRefContextOut) const;
+		SLAKE_API virtual ObjectRef getMember(const std::string_view &name) const;
 
 		SLAKE_API virtual Object *getParent() const override;
 		SLAKE_API virtual void setParent(Object *parent) override;

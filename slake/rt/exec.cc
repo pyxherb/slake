@@ -34,6 +34,16 @@ using namespace slake;
 	return {};
 }
 
+[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer _checkObjectRefOperandType(
+	Runtime *runtime,
+	const ObjectRef &operand,
+	ObjectRefKind kind) noexcept {
+	if (operand.kind != kind) {
+		return InvalidOperandsError::alloc(runtime);
+	}
+	return {};
+}
+
 [[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer _checkObjectOperandType(
 	Runtime *runtime,
 	Object *object,
@@ -80,15 +90,6 @@ using namespace slake;
 		return _fetchRegValue(runtime, curMajorFrame, value.getRegIndex(), valueOut);
 	valueOut = value;
 	return {};
-}
-
-static Value _wrapObjectIntoValue(Object *object, VarRefContext &varRefContext) noexcept {
-	switch (object->getKind()) {
-		case ObjectKind::Var:
-			return Value(VarRef((VarObject *)object, varRefContext));
-		default:
-			return Value(object);
-	}
 }
 
 template <typename LT>
@@ -145,30 +146,23 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 
 	newMajorFrame->argStack.resize(fn->paramTypes.size());
 	for (size_t i = 0; i < fn->paramTypes.size(); ++i) {
-		auto varObject = RegularVarObject::alloc(this, ACCESS_PUB, fn->paramTypes.at(i));
-		holder.addObject(varObject.get());
-		newMajorFrame->argStack.at(i) = varObject.get();
-		SLAKE_RETURN_IF_EXCEPT(writeVar(varObject.get(), {}, args[i]));
+		newMajorFrame->argStack.at(i) = { Value(), fn->paramTypes.at(i) };
+		SLAKE_RETURN_IF_EXCEPT(writeVar(ObjectRef::makeArgRef(newMajorFrame.get(), i), args[i]));
 	}
 
 	if (fn->overloadingFlags & OL_VARG) {
 		auto varArgTypeDefObject = TypeDefObject::alloc(this, Type(TypeId::Any));
 		holder.addObject(varArgTypeDefObject.get());
 
-		auto varArgEntryVarObject = RegularVarObject::alloc(this, ACCESS_PUB, Type(TypeId::Array, varArgTypeDefObject.release()));
-		holder.addObject(varArgEntryVarObject.get());
-		newMajorFrame->argStack.pushBack(varArgEntryVarObject.get());
-
 		size_t szVarArgArray = nArgs - fn->paramTypes.size();
 		auto varArgArrayObject = newArrayInstance(this, Type(TypeId::Any), szVarArgArray);
 		holder.addObject(varArgArrayObject.get());
 
 		for (size_t i = 0; i < szVarArgArray; ++i) {
-			((Value*)varArgArrayObject->data)[i] = args[fn->paramTypes.size() + i];
+			((Value *)varArgArrayObject->data)[i] = args[fn->paramTypes.size() + i];
 		}
 
-		InternalExceptionPointer result = writeVar(varArgEntryVarObject.get(), {}, Value(varArgArrayObject.get()));
-		assert(!result);
+		newMajorFrame->argStack.pushBack({ ObjectRef::makeInstanceRef(varArgArrayObject.get()), Type(TypeId::Array, varArgTypeDefObject.get()) });
 	}
 
 	switch (fn->overloadingKind) {
@@ -188,7 +182,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 //
 // TODO: Check if the stackAlloc() was successful.
 //
-SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(MajorFrame *frame, Type type, VarRef &varRefOut) noexcept {
+SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(MajorFrame *frame, Type type, ObjectRef &objectRefOut) noexcept {
 	LocalVarRecord localVarRecord;
 
 	switch (type.typeId) {
@@ -283,7 +277,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(MajorFrame *fram
 		case TypeId::Ref: {
 			if (!frame->context->stackAlloc(sizeof(Object *) - (frame->context->stackTop & (sizeof(Object *) - 1))))
 				return StackOverflowError::alloc(this);
-			Object **ptr = (Object**)frame->context->stackAlloc(sizeof(Object *));
+			Object **ptr = (Object **)frame->context->stackAlloc(sizeof(Object *));
 			if (!ptr)
 				return StackOverflowError::alloc(this);
 			localVarRecord.stackOffset = frame->context->stackTop;
@@ -298,25 +292,25 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(MajorFrame *fram
 
 	uint32_t index = (uint32_t)frame->localVarRecords.size();
 	frame->localVarRecords.pushBack(std::move(localVarRecord));
-	varRefOut = VarRef(frame->localVarAccessor, VarRefContext::makeLocalVarContext(index));
+	objectRefOut = ObjectRef::makeLocalVarRef(frame, index);
 	return {};
 }
 
-SLAKE_FORCEINLINE InternalExceptionPointer lload(MajorFrame *majorFrame, Runtime *rt, uint32_t off, VarRef &varRefOut) {
+SLAKE_FORCEINLINE InternalExceptionPointer lload(MajorFrame *majorFrame, Runtime *rt, uint32_t off, ObjectRef &objectRefOut) {
 	if (off >= majorFrame->localVarRecords.size()) {
 		return InvalidLocalVarIndexError::alloc(rt, off);
 	}
 
-	varRefOut = VarRef(majorFrame->localVarAccessor, VarRefContext::makeLocalVarContext(off));
+	objectRefOut = ObjectRef::makeLocalVarRef(majorFrame, off);
 	return {};
 }
 
-SLAKE_FORCEINLINE InternalExceptionPointer larg(MajorFrame *majorFrame, Runtime *rt, uint32_t off, VarRef &varRefOut) {
+SLAKE_FORCEINLINE InternalExceptionPointer larg(MajorFrame *majorFrame, Runtime *rt, uint32_t off, ObjectRef &objectRefOut) {
 	if (off >= majorFrame->argStack.size()) {
 		return InvalidOperandsError::alloc(rt);
 	}
 
-	varRefOut = majorFrame->argStack.at(off);
+	objectRefOut = ObjectRef::makeArgRef(majorFrame, off);
 	return {};
 }
 
@@ -333,8 +327,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			Type type = ins.operands[0].getTypeName();
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, type.loadDeferredType(this));
 
-			VarRef varRef;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _addLocalVar(curMajorFrame, type, varRef));
+			ObjectRef objectRef;
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _addLocalVar(curMajorFrame, type, objectRef));
 			break;
 		}
 		case Opcode::LOAD: {
@@ -343,14 +337,14 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.operands[0], ValueType::ObjectRef));
 			auto refPtr = ins.operands[0].getObjectRef();
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectOperandType(this, refPtr, ObjectKind::IdRef));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectRefOperandType(this, refPtr, ObjectRefKind::InstanceRef));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectOperandType(this, refPtr.asInstance.instanceObject, ObjectKind::IdRef));
 
-			VarRefContext varRefContext;
+			ObjectRef objectRef;
 
-			Object *v;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, resolveIdRef((IdRefObject *)refPtr, &varRefContext, v));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, resolveIdRef((IdRefObject *)refPtr.asInstance.instanceObject, objectRef));
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), _wrapObjectIntoValue(v, varRefContext)));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), Value(objectRef)));
 			break;
 		}
 		case Opcode::RLOAD: {
@@ -363,22 +357,24 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, lhs, ValueType::ObjectRef));
 
 			auto lhsPtr = lhs.getObjectRef();
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectRefOperandType(this, lhsPtr, ObjectRefKind::InstanceRef));
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.operands[1], ValueType::ObjectRef));
 			auto refPtr = ins.operands[1].getObjectRef();
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectRefOperandType(this, refPtr, ObjectRefKind::InstanceRef));
 
 			if (!lhsPtr) {
 				return NullRefError::alloc(this);
 			}
 
-			VarRefContext varRefContext;
+			ObjectRef objectRef;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, resolveIdRef((IdRefObject *)refPtr, &varRefContext, lhsPtr, lhsPtr));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, resolveIdRef((IdRefObject *)refPtr.asInstance.instanceObject, objectRef, lhsPtr.asInstance.instanceObject));
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this,
 															curMajorFrame,
 															ins.output.getRegIndex(),
-															_wrapObjectIntoValue(lhsPtr, varRefContext)));
+															Value(objectRef)));
 			break;
 		}
 		case Opcode::STORE: {
@@ -386,19 +382,11 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 
 			Value destValue;
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, curMajorFrame, ins.operands[0], destValue));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, destValue, ValueType::VarRef));
-
-			const VarRef varRef = destValue.getVarRef();
-
-			if (!varRef.varPtr) {
-				return NullRefError::alloc(this);
-			}
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, destValue, ValueType::ObjectRef));
 
 			Value data;
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, curMajorFrame, ins.operands[1], data));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, writeVar(varRef.varPtr,
-															varRef.context,
-															data));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, writeVar(destValue.getObjectRef(), data));
 			break;
 		}
 		case Opcode::MOV: {
@@ -420,14 +408,14 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.output, ValueType::RegRef));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.operands[0], ValueType::U32));
 
-			VarRef varRef;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, lload(curMajorFrame, this, ins.operands[0].getU32(), varRef));
+			ObjectRef objectRef;
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, lload(curMajorFrame, this, ins.operands[0].getU32(), objectRef));
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr,
 				_setRegisterValue(this,
 					curMajorFrame,
 					ins.output.getRegIndex(),
-					Value(varRef)));
+					Value(objectRef)));
 			break;
 		}
 		case Opcode::LARG: {
@@ -436,12 +424,12 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.output, ValueType::RegRef));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.operands[0], ValueType::U32));
 
-			VarRef varRef;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, larg(curMajorFrame, this, ins.operands[0].getU32(), varRef));
+			ObjectRef objectRef;
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, larg(curMajorFrame, this, ins.operands[0].getU32(), objectRef));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this,
 															curMajorFrame,
 															ins.output.getRegIndex(),
-															Value(varRef)));
+															Value(objectRef)));
 			break;
 		}
 		case Opcode::LVALUE: {
@@ -451,16 +439,12 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 
 			Value dest;
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, curMajorFrame, ins.operands[0], dest));
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, dest, ValueType::VarRef));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, dest, ValueType::ObjectRef));
 
-			const VarRef varRef = dest.getVarRef();
-
-			if (!varRef.varPtr) {
-				return NullRefError::alloc(this);
-			}
+			const ObjectRef &objectRef = dest.getObjectRef();
 
 			Value data;
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, readVar((VarObject *)varRef.varPtr, varRef.context, data));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, readVar(objectRef, data));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this,
 															curMajorFrame,
 															ins.output.getRegIndex(),
@@ -1466,20 +1450,20 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, index, ValueType::U32));
 
 			auto arrayIn = arrayValue.getObjectRef();
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectOperandType(this, arrayIn, ObjectKind::Array));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectRefOperandType(this, arrayIn, ObjectRefKind::InstanceRef));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectOperandType(this, arrayIn.asInstance.instanceObject, ObjectKind::Array));
+			ArrayObject *arrayObject = (ArrayObject*)arrayIn.asInstance.instanceObject;
 
 			uint32_t indexIn = index.getU32();
 
-			if (indexIn > ((ArrayObject *)arrayIn)->length) {
+			if (indexIn > arrayObject->length) {
 				return InvalidArrayIndexError::alloc(this, indexIn);
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this,
 															curMajorFrame,
 															ins.output.getRegIndex(),
-															Value(VarRef(
-																((ArrayObject *)arrayIn)->accessor,
-																VarRefContext::makeArrayContext(indexIn)))));
+															Value(ObjectRef::makeArrayElementRef(arrayObject, indexIn))));
 
 			break;
 		}
@@ -1539,13 +1523,17 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					Value fnValue;
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, curMajorFrame, ins.operands[0], fnValue));
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, fnValue, ValueType::ObjectRef));
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectOperandType(this, fnValue.getObjectRef(), ObjectKind::FnOverloading));
-					fn = (FnOverloadingObject *)fnValue.getObjectRef();
+					const ObjectRef &fnObjectRef = fnValue.getObjectRef();
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectRefOperandType(this, fnObjectRef, ObjectRefKind::InstanceRef));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectOperandType(this, fnObjectRef.asInstance.instanceObject, ObjectKind::FnOverloading));
+					fn = (FnOverloadingObject *)fnObjectRef.asInstance.instanceObject;
 
 					Value thisObjectValue;
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, curMajorFrame, ins.operands[1], thisObjectValue));
+					const ObjectRef &thisObjectRef = thisObjectValue.getObjectRef();
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, thisObjectValue, ValueType::ObjectRef));
-					thisObject = thisObjectValue.getObjectRef();
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectRefOperandType(this, thisObjectRef, ObjectRefKind::InstanceRef));
+					thisObject = thisObjectRef.asInstance.instanceObject;
 					break;
 				}
 				case Opcode::CALL: {
@@ -1554,8 +1542,10 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					Value fnValue;
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, curMajorFrame, ins.operands[0], fnValue));
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, fnValue, ValueType::ObjectRef));
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectOperandType(this, fnValue.getObjectRef(), ObjectKind::FnOverloading));
-					fn = (FnOverloadingObject *)fnValue.getObjectRef();
+					const ObjectRef &fnObjectRef = fnValue.getObjectRef();
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectRefOperandType(this, fnObjectRef, ObjectRefKind::InstanceRef));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectOperandType(this, fnObjectRef.asInstance.instanceObject, ObjectKind::FnOverloading));
+					fn = (FnOverloadingObject *)fnObjectRef.asInstance.instanceObject;
 					break;
 				}
 				default:
@@ -1607,7 +1597,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(this, ins, false, 0));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.output, ValueType::RegRef));
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), curMajorFrame->thisObject));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), ObjectRef::makeInstanceRef(curMajorFrame->thisObject)));
 			break;
 		}
 		case Opcode::NEW: {
@@ -1624,7 +1614,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					if (!instance)
 						// TODO: Return more detail exceptions.
 						return InvalidOperandsError::alloc(this);
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), instance.get()));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), ObjectRef::makeInstanceRef(instance.get())));
 					break;
 				}
 				default:

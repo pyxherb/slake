@@ -133,7 +133,7 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 					os << ", ";
 
 				Value value;
-				value = rt->readVarUnsafe(v->accessor, VarRefContext::makeArrayContext(i));
+				value = rt->readVarUnsafe(ObjectRef::makeArrayElementRef(v, i));
 				decompileValue(rt, value, os, indentLevel);
 			}
 
@@ -176,21 +176,23 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 
 							HostRefHolder hostRefHolder(&rt->globalHeapPoolAlloc);
 
+							/*
 							opti::ProgramAnalyzedInfo analyzedInfo(rt);
 							if (auto e = opti::analyzeProgramInfo(rt, fn, analyzedInfo, hostRefHolder);
 								e) {
 								e.reset();
-							}
+							}*/
 
 							// trimFnInstructions(fn->instructions);
 
 							for (size_t i = 0; i < fn->instructions.size(); ++i) {
 								auto &ins = fn->instructions.at(i);
 
+								/*
 								if (analyzedInfo.codeBlockBoundaries.contains(i)) {
 									os << std::string(indentLevel + 1, '\t')
 									   << "//" << std::string(80, '=') << std::endl;
-								}
+								}*/
 
 								if (!(decompilerFlags & DECOMP_SRCLOC)) {
 									for (auto &j : fn->sourceLocDescs) {
@@ -248,16 +250,6 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 			os << std::string(indentLevel, '\t')
 			   << ".end"
 			   << "\n\n";
-			break;
-		}
-		case slake::ObjectKind::Var: {
-			RegularVarObject *v = (RegularVarObject *)object;
-			Type type;
-
-			SLAKE_UNWRAP_EXCEPT(rt->typeofVar(v, VarRefContext(), type));
-
-			os << std::string(indentLevel, '\t')
-			   << ".var " << decompileTypeName(type, rt) << " " << v->getName() << "\n";
 			break;
 		}
 		case slake::ObjectKind::Class: {
@@ -329,7 +321,7 @@ void slake::decompiler::decompileValue(Runtime *rt, Value value, std::ostream &o
 			if (!ptr)
 				os << "null";
 			else
-				decompileObject(rt, ptr, os, indentLevel);
+				decompileObject(rt, ptr.asInstance.instanceObject, os, indentLevel);
 			break;
 		}
 		case ValueType::TypeName:

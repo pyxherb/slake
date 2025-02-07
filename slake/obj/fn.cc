@@ -59,8 +59,7 @@ SLAKE_API FnOverloadingObject::FnOverloadingObject(const FnOverloadingObject &ot
 	: Object(other),
 	  genericParams(&other.associatedRuntime->globalHeapPoolAlloc),
 	  mappedGenericArgs(&other.associatedRuntime->globalHeapPoolAlloc),
-	  paramTypes(&other.associatedRuntime->globalHeapPoolAlloc)
-{
+	  paramTypes(&other.associatedRuntime->globalHeapPoolAlloc) {
 	fnObject = other.fnObject;
 
 	access = other.access;
@@ -120,10 +119,15 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFn
 			instructions.at(i).opcode = other.instructions.at(i).opcode;
 
 			if (auto &output = other.instructions.at(i).output; output.valueType == ValueType::ObjectRef) {
-				if (auto ptr = output.getObjectRef(); ptr)
-					instructions.at(i).output = ptr->duplicate();
-				else
-					instructions.at(i).output = nullptr;
+				const ObjectRef &objectRef = output.getObjectRef();
+				switch (objectRef.kind) {
+					case ObjectRefKind::InstanceRef:
+						if (objectRef.asInstance.instanceObject)
+							instructions.at(i).output = ObjectRef::makeInstanceRef(objectRef.asInstance.instanceObject->duplicate());
+						break;
+					default:
+						instructions.at(i).output = output;
+				}
 			} else
 				instructions.at(i).output = output;
 
@@ -133,11 +137,15 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFn
 				auto &operand = other.instructions.at(i).operands[j];
 
 				if (operand.valueType == ValueType::ObjectRef) {
-					if (auto ptr = operand.getObjectRef(); ptr)
-						instructions.at(i).operands[j] =
-							ptr->duplicate();
-					else
-						instructions.at(i).operands[j] = nullptr;
+					const ObjectRef &objectRef = operand.getObjectRef();
+					switch (objectRef.kind) {
+						case ObjectRefKind::InstanceRef:
+							if (objectRef.asInstance.instanceObject)
+								instructions.at(i).operands[j] = ObjectRef::makeInstanceRef(objectRef.asInstance.instanceObject->duplicate());
+							break;
+						default:
+							instructions.at(i).operands[j] = operand;
+					}
 				} else
 					instructions.at(i).operands[j] = operand;
 			}

@@ -19,7 +19,7 @@ namespace slake {
 		};
 
 		struct FieldVarRegStorageInfo {
-			VarRefContext varRefContext;
+			// VarRefContext varRefContext;
 			bool isUsedForOutput;
 		};
 
@@ -122,7 +122,7 @@ namespace slake {
 			Type &typeOut);
 		InternalExceptionPointer evalObjectType(
 			ProgramAnalyzeContext &analyzeContext,
-			const VarRefContext &varRefContext,
+			// const VarRefContext &varRefContext,
 			Object *object,
 			Type &typeOut);
 		InternalExceptionPointer evalValueType(

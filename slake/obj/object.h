@@ -22,7 +22,6 @@ namespace slake {
 		;
 
 	struct Type;
-	union VarRefContext;
 	class Scope;
 
 	enum class ObjectKind {
@@ -91,9 +90,7 @@ namespace slake {
 
 		SLAKE_FORCEINLINE Runtime *getRuntime() const noexcept { return associatedRuntime; }
 
-		SLAKE_API virtual MemberObject *getMember(
-			const std::string_view &name,
-			VarRefContext *varRefContextOut) const;
+		SLAKE_API virtual ObjectRef getMember(const std::string_view &name) const;
 	};
 
 	template <typename T = Object>

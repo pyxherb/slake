@@ -4,8 +4,7 @@ using namespace slake;
 
 SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 	IdRefObject *ref,
-	VarRefContext *varRefContextOut,
-	Object *&objectOut,
+	ObjectRef &objectRefOut,
 	Object *scopeObject) {
 	if (!ref)
 		return nullptr;
@@ -17,47 +16,56 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 	MemberObject *curObject;
 
 	while ((curObject = (MemberObject *)scopeObject)) {
-		for (auto &i : ref->entries) {
+		for (size_t i = 0; i < ref->entries.size(); ++i) {
+			auto &curName = ref->entries.at(i);
+
 			if (!scopeObject)
 				goto fail;
 
-			if (!(scopeObject = scopeObject->getMember(i.name, varRefContextOut))) {
+			objectRefOut = scopeObject->getMember(curName.name);
+
+			if (!objectRefOut) {
 				goto fail;
 			}
 
-			if (i.genericArgs.size()) {
-				for (auto &j : i.genericArgs) {
-					SLAKE_RETURN_IF_EXCEPT(j.loadDeferredType(this));
-				}
+			if (objectRefOut.kind == ObjectRefKind::InstanceRef) {
+				scopeObject = objectRefOut.asInstance.instanceObject;
 
-				GenericInstantiationContext genericInstantiationContext(&globalHeapPoolAlloc);
-
-				genericInstantiationContext.genericArgs = &i.genericArgs;
-				SLAKE_RETURN_IF_EXCEPT(instantiateGenericObject(scopeObject, scopeObject, genericInstantiationContext));
-			}
-
-			if (i.hasParamTypes) {
-				switch (scopeObject->getKind()) {
-					case ObjectKind::Fn: {
-						FnObject *fnObject = ((FnObject *)scopeObject);
-
-						for (auto &j : i.paramTypes) {
-							SLAKE_RETURN_IF_EXCEPT(j.loadDeferredType(this));
-						}
-
-						scopeObject = fnObject->getOverloading(i.paramTypes);
-						break;
+				if (curName.genericArgs.size()) {
+					for (auto &j : curName.genericArgs) {
+						SLAKE_RETURN_IF_EXCEPT(j.loadDeferredType(this));
 					}
-					default:
-						return ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this), ref);
+
+					GenericInstantiationContext genericInstantiationContext(&globalHeapPoolAlloc);
+
+					genericInstantiationContext.genericArgs = &curName.genericArgs;
+					SLAKE_RETURN_IF_EXCEPT(instantiateGenericObject(scopeObject, scopeObject, genericInstantiationContext));
+					objectRefOut = ObjectRef::makeInstanceRef(scopeObject);
 				}
+
+				if (curName.hasParamTypes) {
+					switch (scopeObject->getKind()) {
+						case ObjectKind::Fn: {
+							FnObject *fnObject = ((FnObject *)scopeObject);
+
+							for (auto &j : curName.paramTypes) {
+								SLAKE_RETURN_IF_EXCEPT(j.loadDeferredType(this));
+							}
+
+							objectRefOut = ObjectRef::makeInstanceRef(scopeObject = fnObject->getOverloading(curName.paramTypes));
+							break;
+						}
+						default:
+							return ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this), ref);
+					}
+				}
+			} else {
+				if (i + 1 != ref->entries.size())
+					return ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this), ref);
 			}
 		}
 
-		if (scopeObject) {
-			objectOut = scopeObject;
-			return {};
-		}
+		return {};
 
 	fail:
 		switch (curObject->getKind()) {

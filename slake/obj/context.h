@@ -31,6 +31,11 @@ namespace slake {
 		}
 	};
 
+	struct ArgRecord {
+		Value value;
+		Type type;
+	};
+
 	/// @brief A major frame represents a single calling frame.
 	struct MajorFrame final {
 		Context *context = nullptr;	 // Context
@@ -38,7 +43,7 @@ namespace slake {
 		const FnOverloadingObject *curFn = nullptr;	 // Current function overloading.
 		uint32_t curIns = 0;						 // Offset of current instruction in function body.
 
-		peff::DynArray<RegularVarObject *> argStack;  // Argument stack.
+		peff::DynArray<ArgRecord> argStack;	 // Argument stack.
 
 		peff::DynArray<Value> nextArgStack;	 // Argument stack for next call.
 

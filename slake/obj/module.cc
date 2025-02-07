@@ -93,15 +93,11 @@ SLAKE_API Object *ModuleObject::duplicate() const {
 	return (Object *)alloc(this).get();
 }
 
-SLAKE_API MemberObject *ModuleObject::getMember(
-	const std::string_view &name,
-	VarRefContext *varRefContextOut) const {
+SLAKE_API ObjectRef ModuleObject::getMember(const std::string_view &name) const {
 	if (auto it = fieldRecordIndices.find(name); it != fieldRecordIndices.endConst()) {
-		if (varRefContextOut)
-			*varRefContextOut = VarRefContext::makeFieldContext(it.value());
-		return fieldAccessor;
+		return ObjectRef::makeFieldRef((ModuleObject*)this, it.value());
 	}
-	return scope->getMember(name);
+	return ObjectRef::makeInstanceRef(scope->getMember(name));
 }
 
 SLAKE_API Object *ModuleObject::getParent() const {

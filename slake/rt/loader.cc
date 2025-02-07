@@ -68,7 +68,7 @@ SLAKE_API Value Runtime::_loadValue(LoaderContext &context, HostRefHolder &holde
 
 	switch (typeId) {
 		case slxfmt::TypeId::None:
-			return Value(nullptr);
+			return Value(ObjectRef::makeInstanceRef(nullptr));
 		case slxfmt::TypeId::I8:
 			return Value(_read<std::int8_t>(context.fs));
 		case slxfmt::TypeId::I16:
@@ -101,7 +101,7 @@ SLAKE_API Value Runtime::_loadValue(LoaderContext &context, HostRefHolder &holde
 
 			holder.addObject(object.get());
 
-			return Value(object.get());
+			return Value(ObjectRef::makeInstanceRef(object.get()));
 		}
 		case slxfmt::TypeId::Array: {
 			auto elementType = _loadType(context, holder);
@@ -115,17 +115,17 @@ SLAKE_API Value Runtime::_loadValue(LoaderContext &context, HostRefHolder &holde
 			InternalExceptionPointer e;
 
 			for (uint32_t i = 0; i < len; ++i) {
-				if ((e = writeVar(value->accessor, VarRefContext::makeArrayContext(i), _loadValue(context, holder)))) {
+				if ((e = writeVar(ObjectRef::makeArrayElementRef(value.get(), i), _loadValue(context, holder)))) {
 					throw LoaderError("Error setting value of element #" + std::to_string(i));
 				}
 			}
 
 			holder.addObject(value.get());
 
-			return value.release();
+			return ObjectRef::makeInstanceRef(value.release());
 		}
 		case slxfmt::TypeId::IdRef:
-			return _loadIdRef(context, holder).release();
+			return ObjectRef::makeInstanceRef(_loadIdRef(context, holder).release());
 		case slxfmt::TypeId::TypeName:
 			return Value(_loadType(context, holder));
 		case slxfmt::TypeId::Reg:
@@ -503,7 +503,7 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 				*((Object **)rawDataPtr) = nullptr;
 				break;
 			case TypeId::Any:
-				*((Value *)rawDataPtr) = Value(nullptr);
+				*((Value *)rawDataPtr) = Value(ObjectRef::makeInstanceRef(nullptr));
 				break;
 			case TypeId::GenericArg:
 				break;
@@ -647,7 +647,10 @@ SLAKE_API HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &f
 
 		// Create parent modules.
 		for (size_t i = 0; i < modName->entries.size() - 1; ++i) {
-			if (!curObject->getMember(modName->entries.at(i).name, nullptr)) {
+			ObjectRef objectRef = curObject->getMember(modName->entries.at(i).name);
+
+			if ((objectRef.kind != ObjectRefKind::InstanceRef) ||
+				(!objectRef)) {
 				ScopeUniquePtr subscope(Scope::alloc(&globalHeapPoolAlloc, nullptr));
 
 				peff::String name(&globalHeapPoolAlloc);
@@ -667,7 +670,7 @@ SLAKE_API HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &f
 				curObject = (Object *)mod.get();
 			} else {
 				// Continue if the module presents.
-				curObject = curObject->getMember(modName->entries.at(i).name, nullptr);
+				curObject = objectRef.asInstance.instanceObject;
 			}
 		}
 
@@ -684,12 +687,13 @@ SLAKE_API HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &f
 		} else {
 			auto moduleObject = (ModuleObject *)curObject;
 
-			if (auto member = moduleObject->getMember(lastName, nullptr); member) {
-				if (member->getKind() != ObjectKind::Module) {
+			if (auto member = moduleObject->getMember(lastName); member) {
+				if ((member.kind != ObjectRefKind::InstanceRef) ||
+					(member.asInstance.instanceObject->getKind() != ObjectKind::Module)) {
 					throw LoaderError(
 						"Object which corresponds to module name \"" + std::to_string(modName.get(), this) + "\" was found, but is not a module");
 				}
-				ModuleObject *modMember = (ModuleObject *)member;
+				ModuleObject *modMember = (ModuleObject *)member.asInstance.instanceObject;
 				if (modMember->loadStatus == ModuleLoadStatus::Loading) {
 					throw LoaderError("Cyclic dependency detected");
 				}
@@ -707,7 +711,7 @@ SLAKE_API HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &f
 	}
 
 	for (uint8_t i = 0; i < ih.nImports; i++) {
-		auto len = _read<uint32_t>(fs);
+		uint32_t len = _read<uint32_t>(fs);
 		peff::String name(&globalHeapPoolAlloc);
 		name.resize(len);
 		fs.read(name.data(), len);

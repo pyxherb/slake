@@ -226,24 +226,6 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 		case slake::ObjectKind::Module:
 			importDefinitions(scope, parent, (ModuleObject *)value);
 			break;
-		case slake::ObjectKind::Var: {
-			RegularVarObject *v = (RegularVarObject *)value;
-
-			Type varType;
-			SLAKE_UNWRAP_EXCEPT(associatedRuntime->typeofVar(v, VarRefContext(), varType));
-
-			std::shared_ptr<VarNode> var = std::make_shared<VarNode>(
-				this,
-				v->accessModifier,
-				toTypeName(varType),
-				v->getName(),
-				std::shared_ptr<ExprNode>(),
-				SIZE_MAX, SIZE_MAX, SIZE_MAX, SIZE_MAX);
-
-			scope->members[v->getName()] = var;
-			var->bind(parent.get());
-			break;
-		}
 		case slake::ObjectKind::Class:
 			importDefinitions(scope, parent, (ClassObject *)value);
 			break;

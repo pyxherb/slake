@@ -2,36 +2,35 @@
 
 using namespace slake;
 
-SLAKE_API InternalExceptionPointer Runtime::tryAccessVar(const VarObject *varObject, const VarRefContext &context) const {
-	switch (varObject->varKind) {
-		case VarKind::Regular: {
-			break;
-		}
-		case VarKind::FieldAccessor: {
-			const FieldAccessorVarObject *v = (const FieldAccessorVarObject*)varObject;
-			FieldRecord &fieldRecord = v->moduleObject->fieldRecords.at(context.asField.index);
+SLAKE_API InternalExceptionPointer Runtime::tryAccessVar(const ObjectRef &objectRef) const {
+	switch (objectRef.kind) {
+		case ObjectRefKind::FieldRef: {
+			FieldRecord &fieldRecord = objectRef.asField.moduleObject->fieldRecords.at(objectRef.asField.index);
 
 			break;
 		}
-		case VarKind::LocalVarAccessor: {
-			const LocalVarAccessorVarObject *v = (const LocalVarAccessorVarObject *)varObject;
+		case ObjectRefKind::LocalVarRef: {
 			LocalVarRecord &localVarRecord =
-				v->majorFrame->localVarRecords.at(context.asLocalVar.localVarIndex);
+				objectRef.asLocalVar.majorFrame->localVarRecords.at(objectRef.asLocalVar.localVarIndex);
 
 			break;
 		}
-		case VarKind::InstanceMemberAccessor: {
-			const InstanceMemberAccessorVarObject *v = (const InstanceMemberAccessorVarObject *)varObject;
+		case ObjectRefKind::InstanceFieldRef: {
+			const InstanceObject *v = (const InstanceObject *)objectRef.asArray.arrayObject;
 
 			break;
 		}
-		case VarKind::ArrayElementAccessor: {
-			const ArrayAccessorVarObject *v = (const ArrayAccessorVarObject *)varObject;
+		case ObjectRefKind::ArrayElementRef: {
+			const ArrayObject *v = (const ArrayObject *)objectRef.asArray.arrayObject;
 
-			if (context.asArray.index > v->arrayObject->length) {
-				return raiseInvalidArrayIndexError(v->associatedRuntime, context.asArray.index);
+			if (objectRef.asArray.index > v->length) {
+				return raiseInvalidArrayIndexError(v->associatedRuntime, objectRef.asArray.index);
 			}
 
+			break;
+		}
+		case ObjectRefKind::ArgRef: {
+			ArgRecord &argRecord = objectRef.asArg.majorFrame->argStack.at(objectRef.asArg.argIndex);
 			break;
 		}
 		default:
@@ -41,32 +40,41 @@ SLAKE_API InternalExceptionPointer Runtime::tryAccessVar(const VarObject *varObj
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer Runtime::typeofVar(const VarObject *varObject, const VarRefContext &context, Type &typeOut) const {
-	switch (varObject->varKind) {
-		case VarKind::Regular: {
-			const RegularVarObject *v = (const RegularVarObject *)varObject;
-			typeOut = v->type;
-			break;
-		}
-		case VarKind::FieldAccessor: {
-			const FieldAccessorVarObject *v = (const FieldAccessorVarObject*)varObject;
-			FieldRecord &fieldRecord = v->moduleObject->fieldRecords.at(context.asField.index);
+SLAKE_API InternalExceptionPointer Runtime::typeofVar(const ObjectRef &objectRef, Type &typeOut) const {
+	switch (objectRef.kind) {
+		case ObjectRefKind::FieldRef: {
+			FieldRecord &fieldRecord = objectRef.asField.moduleObject->fieldRecords.at(objectRef.asField.index);
+
 			typeOut = fieldRecord.type;
 			break;
 		}
-		case VarKind::LocalVarAccessor: {
-			const LocalVarAccessorVarObject *v = (const LocalVarAccessorVarObject *)varObject;
-			typeOut = v->majorFrame->localVarRecords.at(context.asLocalVar.localVarIndex).type;
+		case ObjectRefKind::LocalVarRef: {
+			LocalVarRecord &localVarRecord =
+				objectRef.asLocalVar.majorFrame->localVarRecords.at(objectRef.asLocalVar.localVarIndex);
+
+			typeOut = localVarRecord.type;
 			break;
 		}
-		case VarKind::InstanceMemberAccessor: {
-			const InstanceMemberAccessorVarObject *v = (const InstanceMemberAccessorVarObject *)varObject;
-			typeOut = v->instanceObject->objectLayout->fieldRecords.at(context.asInstance.fieldIndex).type;
+		case ObjectRefKind::InstanceFieldRef: {
+			const InstanceObject *v = (const InstanceObject *)objectRef.asArray.arrayObject;
+
+			typeOut = v->objectLayout->fieldRecords.at(objectRef.asArray.index).type;
 			break;
 		}
-		case VarKind::ArrayElementAccessor: {
-			const ArrayAccessorVarObject *v = (const ArrayAccessorVarObject *)varObject;
-			typeOut = Type::makeArrayTypeName(v->associatedRuntime, v->arrayObject->elementType);
+		case ObjectRefKind::ArrayElementRef: {
+			const ArrayObject *v = (const ArrayObject *)objectRef.asArray.arrayObject;
+
+			if (objectRef.asArray.index > v->length) {
+				return raiseInvalidArrayIndexError(v->associatedRuntime, objectRef.asArray.index);
+			}
+
+			typeOut = v->elementType;
+			break;
+		}
+		case ObjectRefKind::ArgRef: {
+			ArgRecord &argRecord = objectRef.asArg.majorFrame->argStack.at(objectRef.asArg.argIndex);
+
+			typeOut = argRecord.type;
 			break;
 		}
 		default:
@@ -78,24 +86,19 @@ SLAKE_API InternalExceptionPointer Runtime::typeofVar(const VarObject *varObject
 
 #undef new
 
-SLAKE_API InternalExceptionPointer Runtime::readVar(const VarObject *varObject, const VarRefContext &context, Value &valueOut) const {
-	SLAKE_RETURN_IF_EXCEPT(tryAccessVar(varObject, context));
+SLAKE_API InternalExceptionPointer Runtime::readVar(const ObjectRef &objectRef, Value &valueOut) const {
+	SLAKE_RETURN_IF_EXCEPT(tryAccessVar(objectRef));
 
-	new (&valueOut) Value(readVarUnsafe(varObject, context));
+	new (&valueOut) Value(readVarUnsafe(objectRef));
 	return {};
 }
 
-SLAKE_API Value Runtime::readVarUnsafe(const VarObject *varObject, const VarRefContext &context) const {
-	switch (varObject->varKind) {
-		case VarKind::Regular: {
-			const RegularVarObject *v = (const RegularVarObject *)varObject;
-			return v->value;
-		}
-		case VarKind::FieldAccessor: {
-			const FieldAccessorVarObject *v = (const FieldAccessorVarObject*)varObject;
-			FieldRecord &fieldRecord = v->moduleObject->fieldRecords.at(context.asField.index);
+SLAKE_API Value Runtime::readVarUnsafe(const ObjectRef &objectRef) const {
+	switch (objectRef.kind) {
+		case ObjectRefKind::FieldRef: {
+			FieldRecord &fieldRecord = objectRef.asField.moduleObject->fieldRecords.at(objectRef.asField.index);
 
-			const char *const rawDataPtr = v->moduleObject->localFieldStorage + fieldRecord.offset;
+			const char *const rawDataPtr = objectRef.asField.moduleObject->localFieldStorage + fieldRecord.offset;
 
 			switch (fieldRecord.type.typeId) {
 				case TypeId::Value:
@@ -127,7 +130,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const VarObject *varObject, const VarRefC
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
-					return Value(*((Object **)rawDataPtr));
+					return Value(ObjectRef::makeInstanceRef(*((Object **)rawDataPtr)));
 					break;
 				default:
 					// All fields should be checked during the instantiation.
@@ -136,12 +139,11 @@ SLAKE_API Value Runtime::readVarUnsafe(const VarObject *varObject, const VarRefC
 
 			break;
 		}
-		case VarKind::LocalVarAccessor: {
-			const LocalVarAccessorVarObject *v = (const LocalVarAccessorVarObject *)varObject;
+		case ObjectRefKind::LocalVarRef: {
 			const LocalVarRecord &localVarRecord =
-				v->majorFrame->localVarRecords.at(context.asLocalVar.localVarIndex);
+				objectRef.asLocalVar.majorFrame->localVarRecords.at(objectRef.asLocalVar.localVarIndex);
 
-			const char *const rawDataPtr = v->context->dataStack + SLAKE_STACK_MAX - localVarRecord.stackOffset;
+			const char *const rawDataPtr = objectRef.asLocalVar.majorFrame->context->dataStack + SLAKE_STACK_MAX - localVarRecord.stackOffset;
 
 			switch (localVarRecord.type.typeId) {
 				case TypeId::Value:
@@ -173,7 +175,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const VarObject *varObject, const VarRefC
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
-					return Value(*((Object **)rawDataPtr));
+					return Value(ObjectRef::makeInstanceRef(*((Object **)rawDataPtr)));
 					break;
 				default:
 					// All fields should be checked during the instantiation.
@@ -182,14 +184,12 @@ SLAKE_API Value Runtime::readVarUnsafe(const VarObject *varObject, const VarRefC
 
 			break;
 		}
-		case VarKind::InstanceMemberAccessor: {
-			const InstanceMemberAccessorVarObject *v = (const InstanceMemberAccessorVarObject *)varObject;
-
+		case ObjectRefKind::InstanceFieldRef: {
 			ObjectFieldRecord &fieldRecord =
-				v->instanceObject->objectLayout->fieldRecords.at(
-					context.asInstance.fieldIndex);
+				objectRef.asInstanceField.instanceObject->objectLayout->fieldRecords.at(
+					objectRef.asInstanceField.fieldIndex);
 
-			const char *const rawFieldPtr = v->instanceObject->rawFieldData + fieldRecord.offset;
+			const char *const rawFieldPtr = objectRef.asInstanceField.instanceObject->rawFieldData + fieldRecord.offset;
 
 			switch (fieldRecord.type.typeId) {
 				case TypeId::Value:
@@ -221,87 +221,80 @@ SLAKE_API Value Runtime::readVarUnsafe(const VarObject *varObject, const VarRefC
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
-					return Value(*((Object **)rawFieldPtr));
+					return Value(ObjectRef::makeInstanceRef(*((Object **)rawFieldPtr)));
 				default:
 					// All fields should be checked during the instantiation.
 					throw std::logic_error("Unhandled value type");
 			}
 			break;
 		}
-		case VarKind::ArrayElementAccessor: {
-			const ArrayAccessorVarObject *v = (const ArrayAccessorVarObject *)varObject;
+		case ObjectRefKind::ArrayElementRef: {
+			assert(objectRef.asArray.index < objectRef.asArray.arrayObject->length);
 
-			assert(context.asArray.index < v->arrayObject->length);
-
-			switch (v->arrayObject->elementType.typeId) {
+			switch (objectRef.asArray.arrayObject->elementType.typeId) {
 				case TypeId::Value: {
-					switch (v->arrayObject->elementType.getValueTypeExData()) {
+					switch (objectRef.asArray.arrayObject->elementType.getValueTypeExData()) {
 						case ValueType::I8:
-							return Value(((int8_t *)v->arrayObject->data)[context.asArray.index]);
+							return Value(((int8_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]);
 						case ValueType::I16:
-							return Value(((int16_t *)v->arrayObject->data)[context.asArray.index]);
+							return Value(((int16_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]);
 						case ValueType::I32:
-							return Value(((int32_t *)v->arrayObject->data)[context.asArray.index]);
+							return Value(((int32_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]);
 						case ValueType::I64:
-							return Value(((int64_t *)v->arrayObject->data)[context.asArray.index]);
+							return Value(((int64_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]);
 						case ValueType::U8:
-							return Value(((uint8_t *)v->arrayObject->data)[context.asArray.index]);
+							return Value(((uint8_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]);
 						case ValueType::U16:
-							return Value(((uint16_t *)v->arrayObject->data)[context.asArray.index]);
+							return Value(((uint16_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]);
 						case ValueType::U32:
-							return Value(((uint32_t *)v->arrayObject->data)[context.asArray.index]);
+							return Value(((uint32_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]);
 						case ValueType::U64:
-							return Value(((uint64_t *)v->arrayObject->data)[context.asArray.index]);
+							return Value(((uint64_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]);
 						case ValueType::F32:
-							return Value(((float *)v->arrayObject->data)[context.asArray.index]);
+							return Value(((float *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]);
 						case ValueType::F64:
-							return Value(((double *)v->arrayObject->data)[context.asArray.index]);
+							return Value(((double *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]);
 						case ValueType::Bool:
-							return Value(((bool *)v->arrayObject->data)[context.asArray.index]);
+							return Value(((bool *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]);
 						default:
 							assert(false);
 					}
 					break;
 				}
 				case TypeId::Instance: {
-					return Value(((Object **)v->arrayObject->data)[context.asArray.index]);
+					return Value(ObjectRef::makeInstanceRef(((Object **)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]));
 				}
 				case TypeId::Any: {
-					return Value(((Value *)v->arrayObject->data)[context.asArray.index]);
+					return Value(((Value *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]);
 				}
 			}
 			break;
+		}
+		case ObjectRefKind::ArgRef: {
+			const ArgRecord &argRecord = objectRef.asArg.majorFrame->argStack.at(objectRef.asArg.argIndex);
+
+			return argRecord.value;
 		}
 		default:;
 	}
 	std::terminate();
 }
 
-SLAKE_API InternalExceptionPointer Runtime::writeVar(VarObject *varObject, const VarRefContext &context, const Value &value) const {
-	switch (varObject->varKind) {
-		case VarKind::Regular: {
-			RegularVarObject *v = (RegularVarObject *)varObject;
-			if (!isCompatible(v->type, value)) {
-				return raiseMismatchedVarTypeError(v->associatedRuntime);
-			}
-			v->value = value;
-			break;
-		}
-		case VarKind::FieldAccessor: {
-			FieldAccessorVarObject *v = (FieldAccessorVarObject *)varObject;
-
-			if (context.asLocalVar.localVarIndex >= v->moduleObject->fieldRecords.size())
+SLAKE_API InternalExceptionPointer Runtime::writeVar(const ObjectRef &objectRef, const Value &value) const {
+	switch (objectRef.kind) {
+		case ObjectRefKind::FieldRef: {
+			if (objectRef.asLocalVar.localVarIndex >= objectRef.asField.moduleObject->fieldRecords.size())
 				// TODO: Use a proper type of exception instead of this.
-				return raiseInvalidArrayIndexError(v->associatedRuntime, context.asArray.index);
+				return raiseInvalidArrayIndexError(objectRef.asField.moduleObject->associatedRuntime, objectRef.asArray.index);
 
 			const FieldRecord &fieldRecord =
-				v->moduleObject->fieldRecords.at(context.asLocalVar.localVarIndex);
+				objectRef.asField.moduleObject->fieldRecords.at(objectRef.asLocalVar.localVarIndex);
 
 			if (!isCompatible(fieldRecord.type, value)) {
-				return raiseMismatchedVarTypeError(v->associatedRuntime);
+				return raiseMismatchedVarTypeError(objectRef.asField.moduleObject->associatedRuntime);
 			}
 
-			char *const rawDataPtr = v->moduleObject->localFieldStorage + fieldRecord.offset;
+			char *const rawDataPtr = objectRef.asField.moduleObject->localFieldStorage + fieldRecord.offset;
 
 			switch (fieldRecord.type.typeId) {
 				case TypeId::Value:
@@ -344,7 +337,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(VarObject *varObject, const
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
-					*((Object **)rawDataPtr) = value.getObjectRef();
+					*((Object **)rawDataPtr) = value.getObjectRef().asInstance.instanceObject;
 					break;
 				default:
 					// All fields should be checked during the instantiation.
@@ -353,21 +346,19 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(VarObject *varObject, const
 
 			break;
 		}
-		case VarKind::LocalVarAccessor: {
-			LocalVarAccessorVarObject *v = (LocalVarAccessorVarObject *)varObject;
-
-			if (context.asLocalVar.localVarIndex >= v->majorFrame->localVarRecords.size())
+		case ObjectRefKind::LocalVarRef: {
+			if (objectRef.asLocalVar.localVarIndex >= objectRef.asLocalVar.majorFrame->localVarRecords.size())
 				// TODO: Use a proper type of exception instead of this.
-				return raiseInvalidArrayIndexError(v->associatedRuntime, context.asArray.index);
+				return raiseInvalidArrayIndexError((Runtime *)this, objectRef.asArray.index);
 
 			const LocalVarRecord &localVarRecord =
-				v->majorFrame->localVarRecords.at(context.asLocalVar.localVarIndex);
+				objectRef.asLocalVar.majorFrame->localVarRecords.at(objectRef.asLocalVar.localVarIndex);
 
 			if (!isCompatible(localVarRecord.type, value)) {
-				return raiseMismatchedVarTypeError(v->associatedRuntime);
+				return raiseMismatchedVarTypeError((Runtime *)this);
 			}
 
-			char *const rawDataPtr = v->context->dataStack + SLAKE_STACK_MAX - localVarRecord.stackOffset;
+			char *const rawDataPtr = objectRef.asLocalVar.majorFrame->context->dataStack + SLAKE_STACK_MAX - localVarRecord.stackOffset;
 
 			switch (localVarRecord.type.typeId) {
 				case TypeId::Value:
@@ -410,7 +401,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(VarObject *varObject, const
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
-					*((Object **)rawDataPtr) = value.getObjectRef();
+					*((Object **)rawDataPtr) = value.getObjectRef().asInstance.instanceObject;
 					break;
 				default:
 					// All fields should be checked during the instantiation.
@@ -419,18 +410,16 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(VarObject *varObject, const
 
 			break;
 		}
-		case VarKind::InstanceMemberAccessor: {
-			InstanceMemberAccessorVarObject *v = (InstanceMemberAccessorVarObject *)varObject;
-
+		case ObjectRefKind::InstanceFieldRef: {
 			ObjectFieldRecord &fieldRecord =
-				v->instanceObject->objectLayout->fieldRecords.at(
-					context.asInstance.fieldIndex);
+				objectRef.asInstanceField.instanceObject->objectLayout->fieldRecords.at(
+					objectRef.asInstanceField.fieldIndex);
 
 			if (!isCompatible(fieldRecord.type, value)) {
-				return raiseMismatchedVarTypeError(v->associatedRuntime);
+				return raiseMismatchedVarTypeError((Runtime *)this);
 			}
 
-			char *const rawFieldPtr = v->instanceObject->rawFieldData + fieldRecord.offset;
+			char *const rawFieldPtr = objectRef.asInstanceField.instanceObject->rawFieldData + fieldRecord.offset;
 
 			switch (fieldRecord.type.typeId) {
 				case TypeId::Value:
@@ -473,7 +462,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(VarObject *varObject, const
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
-					*((Object **)rawFieldPtr) = value.getObjectRef();
+					*((Object **)rawFieldPtr) = value.getObjectRef().asInstance.instanceObject;
 					break;
 				default:
 					// All fields should be checked during the instantiation.
@@ -481,52 +470,50 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(VarObject *varObject, const
 			}
 			break;
 		}
-		case VarKind::ArrayElementAccessor: {
-			const ArrayAccessorVarObject *v = (const ArrayAccessorVarObject *)varObject;
-
-			if (context.asArray.index > v->arrayObject->length) {
-				return raiseInvalidArrayIndexError(v->associatedRuntime, context.asArray.index);
+		case ObjectRefKind::ArrayElementRef: {
+			if (objectRef.asArray.index > objectRef.asArray.arrayObject->length) {
+				return raiseInvalidArrayIndexError((Runtime *)this, objectRef.asArray.index);
 			}
 
-			if (!isCompatible(v->arrayObject->elementType, value)) {
-				return raiseMismatchedVarTypeError(v->associatedRuntime);
+			if (!isCompatible(objectRef.asArray.arrayObject->elementType, value)) {
+				return raiseMismatchedVarTypeError((Runtime *)this);
 			}
 
-			switch (v->arrayObject->elementType.typeId) {
+			switch (objectRef.asArray.arrayObject->elementType.typeId) {
 				case TypeId::Value: {
-					switch (v->arrayObject->elementType.getValueTypeExData()) {
+					switch (objectRef.asArray.arrayObject->elementType.getValueTypeExData()) {
 						case ValueType::I8:
-							((int8_t *)v->arrayObject->data)[context.asArray.index] = value.getI8();
+							((int8_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index] = value.getI8();
 							break;
 						case ValueType::I16:
-							((int16_t *)v->arrayObject->data)[context.asArray.index] = value.getI16();
+							((int16_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index] = value.getI16();
 							break;
 						case ValueType::I32:
-							((int32_t *)v->arrayObject->data)[context.asArray.index] = value.getI32();
+							((int32_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index] = value.getI32();
 							break;
 						case ValueType::I64:
-							((int64_t *)v->arrayObject->data)[context.asArray.index] = value.getI64();
+							((int64_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index] = value.getI64();
 							break;
 						case ValueType::U8:
-							((uint8_t *)v->arrayObject->data)[context.asArray.index] = value.getU8();
+							((uint8_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index] = value.getU8();
 							break;
 						case ValueType::U16:
-							((uint16_t *)v->arrayObject->data)[context.asArray.index] = value.getU16();
+							((uint16_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index] = value.getU16();
 							break;
 						case ValueType::U32:
-							((uint32_t *)v->arrayObject->data)[context.asArray.index] = value.getU32();
+							((uint32_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index] = value.getU32();
 							break;
 						case ValueType::U64:
-							((uint64_t *)v->arrayObject->data)[context.asArray.index] = value.getU64();
+							((uint64_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index] = value.getU64();
 							break;
 						case ValueType::F32:
-							((float *)v->arrayObject->data)[context.asArray.index] = value.getF32();
+							((float *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index] = value.getF32();
 							break;
 						case ValueType::F64:
-							((double *)v->arrayObject->data)[context.asArray.index] = value.getF64();
+							((double *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index] = value.getF64();
 							break;
 						case ValueType::Bool:
-							((bool *)v->arrayObject->data)[context.asArray.index] = value.getBool();
+							((bool *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index] = value.getBool();
 							break;
 						default:
 							assert(false);
@@ -536,10 +523,20 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(VarObject *varObject, const
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array: {
-					((Object **)v->arrayObject->data)[context.asArray.index] = value.getObjectRef();
+					((Object **)objectRef.asArray.arrayObject->data)[objectRef.asArray.index] = value.getObjectRef().asInstance.instanceObject;
 					break;
 				}
 			}
+			break;
+		}
+		case ObjectRefKind::ArgRef: {
+			ArgRecord &argRecord = objectRef.asArg.majorFrame->argStack.at(objectRef.asArg.argIndex);
+
+			if (!isCompatible(argRecord.type, value)) {
+				return raiseMismatchedVarTypeError((Runtime *)this);
+			}
+
+			argRecord.value = value;
 			break;
 		}
 		default:

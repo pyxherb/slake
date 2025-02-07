@@ -26,7 +26,6 @@ namespace slake {
 
 		RegRef,	   // Register reference
 		TypeName,  // Type name
-		VarRef,	   // Variable reference
 
 		Undefined = UINT8_MAX,
 	};
@@ -51,10 +50,122 @@ namespace slake {
 	class Object;
 	class IdRefObject;
 	class StringObject;
+	class ModuleObject;
+	class ArrayObject;
+	class InstanceObject;
+	class TypeDefObject;
+	struct MajorFrame;
+
+	enum class ObjectRefKind : uint8_t {
+		FieldRef,
+		ArrayElementRef,
+		InstanceRef,
+		InstanceFieldRef,
+		LocalVarRef,
+		ArgRef
+	};
+
+	struct ObjectRef {
+		union {
+			struct {
+				ModuleObject *moduleObject;
+				uint32_t index;
+			} asField;
+			struct {
+				ArrayObject *arrayObject;
+				uint32_t index;
+			} asArray;
+			struct {
+				Object *instanceObject;
+			} asInstance;
+			struct {
+				InstanceObject *instanceObject;
+				size_t fieldIndex;
+			} asInstanceField;
+			struct {
+				MajorFrame *majorFrame;
+				uint32_t localVarIndex;
+			} asLocalVar;
+			struct {
+				MajorFrame *majorFrame;
+				uint32_t argIndex;
+			} asArg;
+		};
+		ObjectRefKind kind;
+
+		static SLAKE_FORCEINLINE ObjectRef makeFieldRef(ModuleObject *moduleObject, uint32_t index) {
+			ObjectRef ref = {};
+
+			ref.asField.moduleObject = moduleObject;
+			ref.asField.index = index;
+			ref.kind = ObjectRefKind::FieldRef;
+
+			return ref;
+		}
+
+		static SLAKE_FORCEINLINE ObjectRef makeArrayElementRef(ArrayObject *arrayObject, uint32_t index) {
+			ObjectRef ref = {};
+
+			ref.asArray.arrayObject = arrayObject;
+			ref.asArray.index = index;
+			ref.kind = ObjectRefKind::ArrayElementRef;
+
+			return ref;
+		}
+
+		static SLAKE_FORCEINLINE ObjectRef makeInstanceRef(Object *instanceObject) {
+			ObjectRef ref = {};
+
+			ref.asInstance.instanceObject = instanceObject;
+			ref.kind = ObjectRefKind::InstanceRef;
+
+			return ref;
+		}
+
+		static SLAKE_FORCEINLINE ObjectRef makeInstanceFieldRef(InstanceObject *instanceObject, size_t fieldIndex) {
+			ObjectRef ref = {};
+
+			ref.asInstanceField.instanceObject = instanceObject;
+			ref.asInstanceField.fieldIndex = fieldIndex;
+			ref.kind = ObjectRefKind::InstanceFieldRef;
+
+			return ref;
+		}
+
+		static SLAKE_FORCEINLINE ObjectRef makeLocalVarRef(MajorFrame *majorFrame, uint32_t localVarIndex) {
+			ObjectRef ref = {};
+
+			ref.asLocalVar.majorFrame = majorFrame;
+			ref.asLocalVar.localVarIndex = localVarIndex;
+			ref.kind = ObjectRefKind::LocalVarRef;
+
+			return ref;
+		}
+
+		static SLAKE_FORCEINLINE ObjectRef makeArgRef(MajorFrame *majorFrame, uint32_t argIndex) {
+			ObjectRef ref = {};
+
+			ref.asArg.majorFrame = majorFrame;
+			ref.asArg.argIndex = argIndex;
+			ref.kind = ObjectRefKind::ArgRef;
+
+			return ref;
+		}
+
+		SLAKE_FORCEINLINE operator bool() const {
+			if (kind != ObjectRefKind::InstanceRef)
+				return true;
+			return asInstance.instanceObject;
+		}
+
+		SLAKE_API bool operator==(const ObjectRef &rhs) const;
+		SLAKE_API bool operator<(const ObjectRef &rhs) const;
+	};
 
 	union TypeExData {
 		ValueType valueType;
-		Object *ptr;
+		Object *object;
+		TypeDefObject *typeDef;
 		struct {
 			StringObject *nameObject;
 			Object *ownerObject;
@@ -71,7 +182,7 @@ namespace slake {
 		SLAKE_FORCEINLINE Type(ValueType valueType) noexcept : typeId(TypeId::Value) { exData.valueType = valueType; }
 		SLAKE_FORCEINLINE Type(TypeId type) noexcept : typeId(type) {}
 		SLAKE_FORCEINLINE Type(TypeId type, Object *destObject) noexcept : typeId(type) {
-			exData.ptr = destObject;
+			exData.object = destObject;
 		}
 		SLAKE_FORCEINLINE Type(StringObject *nameObject, Object *ownerObject) noexcept : typeId(TypeId::GenericArg) {
 			exData.genericArg.nameObject = nameObject;
@@ -85,7 +196,7 @@ namespace slake {
 		SLAKE_API Type duplicate(bool &succeededOut) const;
 
 		SLAKE_FORCEINLINE ValueType getValueTypeExData() const { return exData.valueType; }
-		SLAKE_FORCEINLINE Object *getCustomTypeExData() const { return exData.ptr; }
+		SLAKE_FORCEINLINE Object *getCustomTypeExData() const { return exData.object; }
 		SLAKE_API Type &getArrayExData() const;
 		SLAKE_API Type &getRefExData() const;
 

@@ -12,70 +12,8 @@
 namespace slake {
 	struct Type;
 	class Object;
-	class VarObject;
 
 	// Value type definitions are defined in <slake/type.h>.
-
-	union VarRefContext {
-		struct {
-			uint32_t index;
-		} asField;
-		struct {
-			uint32_t index;
-		} asArray;
-		struct {
-			size_t fieldIndex;
-		} asInstance;
-		struct {
-			uint32_t localVarIndex;
-		} asLocalVar;
-
-		static SLAKE_FORCEINLINE VarRefContext makeFieldContext(uint32_t index) {
-			VarRefContext context = {};
-
-			context.asField.index = index;
-
-			return context;
-		}
-
-		static SLAKE_FORCEINLINE VarRefContext makeArrayContext(uint32_t index) {
-			VarRefContext context = {};
-
-			context.asArray.index = index;
-
-			return context;
-		}
-
-		static SLAKE_FORCEINLINE VarRefContext makeInstanceContext(size_t fieldIndex) {
-			VarRefContext context = {};
-
-			context.asInstance.fieldIndex = fieldIndex;
-
-			return context;
-		}
-
-		static SLAKE_FORCEINLINE VarRefContext makeLocalVarContext(uint32_t localVarIndex) {
-			VarRefContext context = {};
-
-			context.asLocalVar.localVarIndex = localVarIndex;
-
-			return context;
-		}
-	};
-
-	struct VarRef {
-		VarObject *varPtr;
-		VarRefContext context;
-
-		VarRef() = default;
-		SLAKE_FORCEINLINE VarRef(VarObject *varPtr) : varPtr(varPtr) {}
-		SLAKE_FORCEINLINE VarRef(
-			VarObject *varPtr,
-			const VarRefContext &context)
-			: varPtr(varPtr),
-			  context(context) {}
-		SLAKE_API bool operator<(const VarRef &rhs) const;
-	};
 
 	struct Value {
 		union {
@@ -90,9 +28,8 @@ namespace slake {
 			float asF32;
 			double asF64;
 			bool asBool;
-			Object *asObjectRef;
 			char asType[sizeof(Type)];
-			VarRef asVarRef;
+			ObjectRef asObjectRef;
 		} data;
 
 		ValueType valueType;
@@ -133,16 +70,13 @@ namespace slake {
 		SLAKE_FORCEINLINE Value(bool data) noexcept : valueType(ValueType::Bool) {
 			this->data.asBool = data;
 		}
-		SLAKE_FORCEINLINE Value(Object *objectPtr) noexcept : valueType(ValueType::ObjectRef) {
-			this->data.asObjectRef = objectPtr;
+		SLAKE_FORCEINLINE Value(const ObjectRef &objectRef) noexcept : valueType(ValueType::ObjectRef) {
+			this->data.asObjectRef = objectRef;
 		}
 		SLAKE_FORCEINLINE Value(ValueType vt) noexcept : valueType(vt) {
 		}
 		SLAKE_FORCEINLINE Value(ValueType vt, uint32_t index) noexcept : valueType(vt) {
 			this->data.asU32 = index;
-		}
-		SLAKE_FORCEINLINE Value(const VarRef &varRef) noexcept : valueType(ValueType::VarRef) {
-			this->data.asVarRef = varRef;
 		}
 		SLAKE_FORCEINLINE Value(const Type &type) noexcept : valueType(ValueType::TypeName) {
 			memcpy(data.asType, &type, sizeof(Type));
@@ -208,16 +142,6 @@ namespace slake {
 			return data.asU32;
 		}
 
-		SLAKE_FORCEINLINE VarRef &getVarRef() noexcept {
-			assert(valueType == ValueType::VarRef);
-			return data.asVarRef;
-		}
-
-		SLAKE_FORCEINLINE const VarRef &getVarRef() const noexcept {
-			assert(valueType == ValueType::VarRef);
-			return data.asVarRef;
-		}
-
 		SLAKE_FORCEINLINE Type &getTypeName() noexcept {
 			return *((Type *)data.asType);
 		}
@@ -225,7 +149,10 @@ namespace slake {
 			return *((const Type *)data.asType);
 		}
 
-		SLAKE_FORCEINLINE Object *getObjectRef() const noexcept {
+		SLAKE_FORCEINLINE ObjectRef &getObjectRef() noexcept {
+			return data.asObjectRef;
+		}
+		SLAKE_FORCEINLINE const ObjectRef &getObjectRef() const noexcept {
 			return data.asObjectRef;
 		}
 

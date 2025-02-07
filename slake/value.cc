@@ -2,27 +2,6 @@
 
 using namespace slake;
 
-SLAKE_API bool VarRef::operator<(const VarRef &rhs) const {
-	if (varPtr < rhs.varPtr)
-		return true;
-	if (varPtr > rhs.varPtr)
-		return false;
-
-	if (!varPtr)
-		return false;
-
-	switch (varPtr->varKind) {
-		case VarKind::ArrayElementAccessor:
-			if (context.asArray.index < rhs.context.asArray.index)
-				return true;
-			break;
-		case VarKind::Regular:
-			break;
-	}
-
-	return false;
-}
-
 SLAKE_API bool Value::operator==(const Value &rhs) const {
 	if (valueType != rhs.valueType)
 		return false;
@@ -91,8 +70,6 @@ SLAKE_API bool Value::operator<(const Value &rhs) const {
 			return data.asU32 < rhs.data.asU32;
 		case ValueType::TypeName:
 			return getTypeName() < rhs.getTypeName();
-		case ValueType::VarRef:
-			return data.asVarRef < rhs.data.asVarRef;
 		case ValueType::Undefined:
 			return false;
 		default:;

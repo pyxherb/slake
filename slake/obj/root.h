@@ -14,9 +14,8 @@ namespace slake {
 
 		SLAKE_API virtual ObjectKind getKind() const override;
 
-		SLAKE_API virtual MemberObject *getMember(
-			const std::string_view &name,
-			VarRefContext *varRefContextOut) const;
+		SLAKE_API virtual ObjectRef getMember(
+			const std::string_view &name) const;
 
 		SLAKE_API static RootObject *alloc(Runtime *rt);
 

@@ -4,15 +4,89 @@
 
 using namespace slake;
 
+SLAKE_API bool ObjectRef::operator==(const ObjectRef &rhs) const {
+	if (kind != rhs.kind)
+		return false;
+	switch (kind) {
+		case ObjectRefKind::FieldRef:
+			if (asField.moduleObject != rhs.asField.moduleObject)
+				return false;
+			return asField.index == rhs.asField.index;
+		case ObjectRefKind::ArrayElementRef:
+			if (asArray.arrayObject != rhs.asArray.arrayObject)
+				return false;
+			return asField.index == rhs.asField.index;
+		case ObjectRefKind::InstanceRef:
+			return asInstance.instanceObject == rhs.asInstance.instanceObject;
+		case ObjectRefKind::InstanceFieldRef:
+			if (asInstanceField.instanceObject != rhs.asInstanceField.instanceObject)
+				return false;
+			return asInstanceField.fieldIndex == rhs.asInstanceField.fieldIndex;
+		case ObjectRefKind::LocalVarRef:
+			if (asLocalVar.majorFrame != rhs.asLocalVar.majorFrame)
+				return false;
+			return asLocalVar.localVarIndex == rhs.asLocalVar.localVarIndex;
+		case ObjectRefKind::ArgRef:
+			if (asArg.majorFrame != rhs.asArg.majorFrame)
+				return false;
+			return asArg.argIndex == rhs.asArg.argIndex;
+		default:
+			std::terminate();
+	}
+}
+
+SLAKE_API bool ObjectRef::operator<(const ObjectRef &rhs) const {
+	if (kind < rhs.kind)
+		return true;
+	if (kind > rhs.kind)
+		return false;
+	switch (kind) {
+		case ObjectRefKind::FieldRef:
+			if (asField.moduleObject < rhs.asField.moduleObject)
+				return true;
+			if (asField.moduleObject > rhs.asField.moduleObject)
+				return false;
+			return asField.index < rhs.asField.index;
+		case ObjectRefKind::ArrayElementRef:
+			if (asArray.arrayObject < rhs.asArray.arrayObject)
+				return true;
+			if (asArray.arrayObject > rhs.asArray.arrayObject)
+				return false;
+			return asField.index < rhs.asField.index;
+		case ObjectRefKind::InstanceRef:
+			return asInstance.instanceObject < rhs.asInstance.instanceObject;
+		case ObjectRefKind::InstanceFieldRef:
+			if (asInstanceField.instanceObject < rhs.asInstanceField.instanceObject)
+				return true;
+			if (asInstanceField.instanceObject > rhs.asInstanceField.instanceObject)
+				return false;
+			return asInstanceField.fieldIndex < rhs.asInstanceField.fieldIndex;
+		case ObjectRefKind::LocalVarRef:
+			if (asLocalVar.majorFrame < rhs.asLocalVar.majorFrame)
+				return true;
+			if (asLocalVar.majorFrame > rhs.asLocalVar.majorFrame)
+				return false;
+			return asLocalVar.localVarIndex < rhs.asLocalVar.localVarIndex;
+		case ObjectRefKind::ArgRef:
+			if (asArg.majorFrame < rhs.asArg.majorFrame)
+				return true;
+			if (asArg.majorFrame > rhs.asArg.majorFrame)
+				return false;
+			return asArg.argIndex < rhs.asArg.argIndex;
+		default:
+			std::terminate();
+	}
+}
+
 SLAKE_API Type::Type(IdRefObject *ref) : typeId(TypeId::Instance) {
-	exData.ptr = (Object *)ref;
+	exData.object = (Object *)ref;
 }
 
 SLAKE_API Type Type::makeArrayTypeName(Runtime *runtime, const Type &elementType) {
 	Type type;
 
 	type.typeId = TypeId::Array;
-	type.exData.ptr = TypeDefObject::alloc(runtime, elementType).get();
+	type.exData.typeDef = TypeDefObject::alloc(runtime, elementType).get();
 
 	return type;
 }
@@ -21,7 +95,7 @@ SLAKE_API Type Type::makeRefTypeName(Runtime *runtime, const Type &elementType) 
 	Type type;
 
 	type.typeId = TypeId::Ref;
-	type.exData.ptr = TypeDefObject::alloc(runtime, elementType).get();
+	type.exData.typeDef = TypeDefObject::alloc(runtime, elementType).get();
 
 	return type;
 }
@@ -32,7 +106,7 @@ SLAKE_API Type Type::duplicate(bool &succeededOut) const {
 	switch (typeId) {
 		case TypeId::Array:
 		case TypeId::Ref:
-			if (!(newType.exData.ptr = newType.exData.ptr->duplicate())) {
+			if (!(newType.exData.typeDef = (TypeDefObject *)newType.exData.typeDef->duplicate())) {
 				succeededOut = false;
 				return {};
 			}
@@ -45,8 +119,8 @@ SLAKE_API Type Type::duplicate(bool &succeededOut) const {
 	return newType;
 }
 
-SLAKE_API Type &Type::getArrayExData() const { return ((TypeDefObject *)exData.ptr)->type; }
-SLAKE_API Type &Type::getRefExData() const { return ((TypeDefObject *)exData.ptr)->type; }
+SLAKE_API Type &Type::getArrayExData() const { return exData.typeDef->type; }
+SLAKE_API Type &Type::getRefExData() const { return exData.typeDef->type; }
 
 SLAKE_API bool Type::isLoadingDeferred() const noexcept {
 	switch (typeId) {
@@ -62,7 +136,13 @@ SLAKE_API InternalExceptionPointer Type::loadDeferredType(Runtime *rt) {
 		return {};
 
 	auto ref = (IdRefObject *)getCustomTypeExData();
-	SLAKE_RETURN_IF_EXCEPT(rt->resolveIdRef(ref, nullptr, exData.ptr));
+	ObjectRef objectRef;
+	SLAKE_RETURN_IF_EXCEPT(rt->resolveIdRef(ref, objectRef));
+
+	if (objectRef.kind != ObjectRefKind::InstanceRef)
+		return ReferencedMemberNotFoundError::alloc(rt, ref);
+
+	exData.object = objectRef.asInstance.instanceObject;
 
 	return {};
 }
@@ -220,21 +300,24 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 				return false;
 			break;
 		}
-		case TypeId::String:
+		case TypeId::String: {
 			if (value.valueType != ValueType::ObjectRef)
 				return false;
-			if (value.getObjectRef()->getKind() != ObjectKind::String)
+			const ObjectRef &objectRef = value.getObjectRef();
+			if (objectRef.kind != ObjectRefKind::InstanceRef)
+				return false;
+			if (objectRef.asInstance.instanceObject->getKind() != ObjectKind::String)
 				return false;
 			break;
+		}
 		case TypeId::Instance: {
 			if (value.valueType != ValueType::ObjectRef)
 				return false;
 
-			auto objectPtr = value.getObjectRef();
-			if (!objectPtr)
-				return true;
-			if (objectPtr->getKind() != ObjectKind::Instance)
+			const ObjectRef &objectRef = value.getObjectRef();
+			if (objectRef.kind != ObjectRefKind::InstanceRef)
 				return false;
+			Object *objectPtr = objectRef.asInstance.instanceObject;
 
 			if (auto e = const_cast<Type &>(type).loadDeferredType(objectPtr->associatedRuntime);
 				e) {
@@ -270,7 +353,10 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 			if (value.valueType != ValueType::ObjectRef)
 				return false;
 
-			auto objectPtr = value.getObjectRef();
+			const ObjectRef &objectRef = value.getObjectRef();
+			if (objectRef.kind != ObjectRefKind::InstanceRef)
+				return false;
+			Object *objectPtr = objectRef.asInstance.instanceObject;
 			if (objectPtr->getKind() != ObjectKind::Array)
 				return false;
 
@@ -281,14 +367,33 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 			break;
 		}
 		case TypeId::Ref: {
-			if (value.valueType != ValueType::VarRef)
+			if (value.valueType != ValueType::ObjectRef)
 				return false;
 
-			auto varRef = value.getVarRef();
-
+			const ObjectRef &objectRef = value.getObjectRef();
+			Runtime *rt;
+			switch (objectRef.kind) {
+				case ObjectRefKind::FieldRef:
+					rt = objectRef.asField.moduleObject->associatedRuntime;
+					break;
+				case ObjectRefKind::InstanceFieldRef:
+					rt = objectRef.asInstanceField.instanceObject->associatedRuntime;
+					break;
+				case ObjectRefKind::LocalVarRef:
+					rt = objectRef.asLocalVar.majorFrame->curFn->associatedRuntime;
+					break;
+				case ObjectRefKind::ArrayElementRef:
+					rt = objectRef.asArray.arrayObject->associatedRuntime;
+					break;
+				case ObjectRefKind::ArgRef:
+					rt = objectRef.asLocalVar.majorFrame->curFn->associatedRuntime;
+					break;
+				default:
+					return false;
+			}
 			Type type;
 
-			InternalExceptionPointer e = varRef.varPtr->associatedRuntime->typeofVar(varRef.varPtr, varRef.context, type);
+			InternalExceptionPointer e = rt->typeofVar(objectRef, type);
 			if (e) {
 				e.reset();
 				return false;
@@ -348,11 +453,11 @@ SLAKE_API std::string std::to_string(const slake::Type &type, const slake::Runti
 			}
 		}
 		case TypeId::GenericArg: {
-			StringObject *nameObject = (StringObject *)type.exData.ptr;
+			StringObject *nameObject = (StringObject *)type.exData.genericArg.nameObject;
 			return "!" + std::string(nameObject->data);
 		}
 		case TypeId::FnDelegate: {
-			FnTypeDefObject *fnTypeDefObject = (FnTypeDefObject *)type.exData.ptr;
+			FnTypeDefObject *fnTypeDefObject = (FnTypeDefObject *)type.exData.typeDef;
 			std::string result = "fn ";
 
 			for (size_t i = 0; i < fnTypeDefObject->paramTypes.size(); ++i) {

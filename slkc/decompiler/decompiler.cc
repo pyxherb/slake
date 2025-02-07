@@ -187,7 +187,7 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 							for (size_t i = 0; i < fn->instructions.size(); ++i) {
 								auto &ins = fn->instructions.at(i);
 
-								if (analyzedInfo.codeBlockFrontiers.contains(i)) {
+								if (analyzedInfo.codeBlockBoundaries.contains(i)) {
 									os << std::string(indentLevel + 1, '\t')
 									   << "//" << std::string(80, '=') << std::endl;
 								}

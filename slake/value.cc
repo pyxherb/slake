@@ -23,19 +23,6 @@ SLAKE_API bool VarRef::operator<(const VarRef &rhs) const {
 	return false;
 }
 
-SLAKE_API Value::Value(const Type &type) {
-	*((Type *)data.asType) = type;
-	valueType = ValueType::TypeName;
-}
-
-SLAKE_API Type &Value::getTypeName() {
-	return *((Type *)data.asType);
-}
-
-SLAKE_API const Type &Value::getTypeName() const {
-	return ((Value *)this)->getTypeName();
-}
-
 SLAKE_API bool Value::operator==(const Value &rhs) const {
 	if (valueType != rhs.valueType)
 		return false;

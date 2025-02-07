@@ -158,6 +158,78 @@ SLAKE_API void JITCompileContext::unallocReg(RegisterId reg) {
 	regAllocFlags.reset(reg);
 }
 
+SLAKE_API InternalExceptionPointer JITCompileContext::pushReg(RegisterId reg, int32_t &offOut, size_t &sizeOut) noexcept {
+	switch (virtualRegStates.at(phyRegStates[reg].lastVregId).size) {
+		case sizeof(uint8_t):
+			SLAKE_RETURN_IF_EXCEPT(pushReg8(reg, offOut, sizeOut));
+			break;
+		case sizeof(uint16_t):
+			SLAKE_RETURN_IF_EXCEPT(pushReg16(reg, offOut, sizeOut));
+			break;
+		case sizeof(uint32_t):
+			SLAKE_RETURN_IF_EXCEPT(pushReg32(reg, offOut, sizeOut));
+			break;
+		case sizeof(uint64_t):
+			SLAKE_RETURN_IF_EXCEPT(pushReg64(reg, offOut, sizeOut));
+			break;
+		default:
+			assert(("Invalid register size", false));
+	}
+
+	return {};
+}
+
+SLAKE_API InternalExceptionPointer JITCompileContext::pushRegXmm(RegisterId reg, int32_t &offOut, size_t &sizeOut) noexcept {
+	switch (virtualRegStates.at(phyRegStates[reg].lastVregId).size) {
+		case sizeof(float):
+			SLAKE_RETURN_IF_EXCEPT(pushRegXmm32(reg, offOut, sizeOut));
+			break;
+		case sizeof(double):
+			SLAKE_RETURN_IF_EXCEPT(pushRegXmm64(reg, offOut, sizeOut));
+			break;
+		default:
+			assert(("Invalid register size", false));
+	}
+
+	return {};
+}
+
+SLAKE_API InternalExceptionPointer JITCompileContext::popReg(RegisterId reg, int32_t off, size_t size) noexcept {
+	switch (size) {
+		case sizeof(uint8_t):
+			SLAKE_RETURN_IF_EXCEPT(popReg8(reg, off));
+			break;
+		case sizeof(uint16_t):
+			SLAKE_RETURN_IF_EXCEPT(popReg16(reg, off));
+			break;
+		case sizeof(uint32_t):
+			SLAKE_RETURN_IF_EXCEPT(popReg32(reg, off));
+			break;
+		case sizeof(uint64_t):
+			SLAKE_RETURN_IF_EXCEPT(popReg64(reg, off));
+			break;
+		default:
+			assert(("Invalid register size", false));
+	}
+
+	return {};
+}
+
+SLAKE_API InternalExceptionPointer JITCompileContext::popRegXmm(RegisterId reg, int32_t off, size_t size) noexcept {
+	switch (size) {
+		case sizeof(float):
+			SLAKE_RETURN_IF_EXCEPT(popRegXmm32(reg, off));
+			break;
+		case sizeof(double):
+			SLAKE_RETURN_IF_EXCEPT(popRegXmm64(reg, off));
+			break;
+		default:
+			assert(("Invalid register size", false));
+	}
+
+	return {};
+}
+
 SLAKE_API InternalExceptionPointer JITCompileContext::stackAllocAligned(uint32_t size, uint32_t alignment, int32_t &offOut) noexcept {
 	for (auto i = freeStackSpaces.begin(); i != freeStackSpaces.end(); ++i) {
 		int32_t allocBase = i.key();

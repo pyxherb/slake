@@ -20,6 +20,7 @@ generated/
 .vscode/
 .idea/
 .VSCodeCounter/
+.DS_Store/
 CMakePresets.json
 CMakeSettings.json
 *.user

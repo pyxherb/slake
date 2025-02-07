@@ -174,26 +174,7 @@ namespace slake {
 					return {};
 				}
 
-				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushReg(RegisterId reg, int32_t &offOut, size_t &sizeOut) noexcept {
-					switch (virtualRegStates.at(phyRegStates[reg].lastVregId).size) {
-						case sizeof(uint8_t):
-							SLAKE_RETURN_IF_EXCEPT(pushReg8(reg, offOut, sizeOut));
-							break;
-						case sizeof(uint16_t):
-							SLAKE_RETURN_IF_EXCEPT(pushReg16(reg, offOut, sizeOut));
-							break;
-						case sizeof(uint32_t):
-							SLAKE_RETURN_IF_EXCEPT(pushReg32(reg, offOut, sizeOut));
-							break;
-						case sizeof(uint64_t):
-							SLAKE_RETURN_IF_EXCEPT(pushReg64(reg, offOut, sizeOut));
-							break;
-						default:
-							assert(("Invalid register size", false));
-					}
-
-					return {};
-				}
+				[[nodiscard]] SLAKE_API InternalExceptionPointer pushReg(RegisterId reg, int32_t &offOut, size_t &sizeOut) noexcept;
 
 				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushRegXmm32(RegisterId reg, int32_t &offOut, size_t &sizeOut) noexcept {
 					int32_t tmpOff;
@@ -225,20 +206,7 @@ namespace slake {
 					return {};
 				}
 
-				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushRegXmm(RegisterId reg, int32_t &offOut, size_t &sizeOut) noexcept {
-					switch (virtualRegStates.at(phyRegStates[reg].lastVregId).size) {
-						case sizeof(float):
-							SLAKE_RETURN_IF_EXCEPT(pushRegXmm32(reg, offOut, sizeOut));
-							break;
-						case sizeof(double):
-							SLAKE_RETURN_IF_EXCEPT(pushRegXmm64(reg, offOut, sizeOut));
-							break;
-						default:
-							assert(("Invalid register size", false));
-					}
-
-					return {};
-				}
+				[[nodiscard]] SLAKE_API InternalExceptionPointer pushRegXmm(RegisterId reg, int32_t &offOut, size_t &sizeOut) noexcept;
 
 				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popReg8(RegisterId reg, int32_t off) noexcept {
 					virtualRegStates.at(phyRegStates[reg].lastVregId).saveOffset = INT32_MIN;
@@ -284,26 +252,7 @@ namespace slake {
 					return {};
 				}
 
-				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popReg(RegisterId reg, int32_t off, size_t size) noexcept {
-					switch (size) {
-						case sizeof(uint8_t):
-							SLAKE_RETURN_IF_EXCEPT(popReg8(reg, off));
-							break;
-						case sizeof(uint16_t):
-							SLAKE_RETURN_IF_EXCEPT(popReg16(reg, off));
-							break;
-						case sizeof(uint32_t):
-							SLAKE_RETURN_IF_EXCEPT(popReg32(reg, off));
-							break;
-						case sizeof(uint64_t):
-							SLAKE_RETURN_IF_EXCEPT(popReg64(reg, off));
-							break;
-						default:
-							assert(("Invalid register size", false));
-					}
-
-					return {};
-				}
+				[[nodiscard]] SLAKE_API InternalExceptionPointer popReg(RegisterId reg, int32_t off, size_t size) noexcept;
 
 				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popRegXmm32(RegisterId reg, int32_t off) noexcept {
 					int32_t tmpOff;
@@ -335,20 +284,7 @@ namespace slake {
 					return {};
 				}
 
-				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popRegXmm(RegisterId reg, int32_t off, size_t size) noexcept {
-					switch (size) {
-						case sizeof(float):
-							SLAKE_RETURN_IF_EXCEPT(popRegXmm32(reg, off));
-							break;
-						case sizeof(double):
-							SLAKE_RETURN_IF_EXCEPT(popRegXmm64(reg, off));
-							break;
-						default:
-							assert(("Invalid register size", false));
-					}
-
-					return {};
-				}
+				[[nodiscard]] SLAKE_API InternalExceptionPointer popRegXmm(RegisterId reg, int32_t off, size_t size) noexcept;
 
 				SLAKE_FORCEINLINE bool isRegInUse(RegisterId reg) noexcept {
 					return phyRegStates[reg].lastVregId == UINT32_MAX;

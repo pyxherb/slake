@@ -135,7 +135,7 @@ namespace slake {
 			Value &constValueOut);
 		InternalExceptionPointer analyzeArithmeticIns(
 			ProgramAnalyzeContext &analyzeContext,
-			uint32_t regIndex);
+			uint32_t regIndex) noexcept;
 		InternalExceptionPointer analyzeCastIns(
 			ProgramAnalyzeContext &analyzeContext,
 			size_t regIndex);

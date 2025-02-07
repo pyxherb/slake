@@ -8,7 +8,7 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 	JITCompileContext &compileContext,
 	opti::ProgramAnalyzedInfo &analyzedInfo,
 	size_t offIns,
-	const Instruction &curIns) {
+	const Instruction &curIns) noexcept {
 	uint32_t outputRegIndex = curIns.output.getRegIndex();
 
 	Value src = curIns.operands[0];
@@ -467,6 +467,7 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 							}
 							break;
 					}
+					break;
 				}
 				case TypeId::Any: {
 					int32_t off;

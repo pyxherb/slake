@@ -78,39 +78,39 @@ namespace slake {
 				[[nodiscard]] SLAKE_API InternalExceptionPointer checkAndPushStackPointer(uint32_t size);
 				[[nodiscard]] SLAKE_API InternalExceptionPointer checkAndPushStackPointerOnProlog(uint32_t size);
 
-				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer initJITContextStorage() {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer initJITContextStorage() noexcept {
 					SLAKE_RETURN_IF_EXCEPT(stackAllocAligned(sizeof(JITExecContext *), sizeof(JITExecContext *), jitContextOff));
 
 					return {};
 				}
 
-				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushIns(DiscreteInstruction &&ins) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushIns(DiscreteInstruction &&ins) noexcept {
 					if (!nativeInstructions.pushBack(std::move(ins)))
 						return OutOfMemoryError::alloc();
 					return {};
 				}
 
-				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushLabel(peff::String &&label) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushLabel(peff::String &&label) noexcept {
 					if (!labelOffsets.insert(std::move(label), nativeInstructions.size()))
 						return OutOfMemoryError::alloc();
 					return {};
 				}
 
-				SLAKE_FORCEINLINE void addStackPtr(size_t size) {
+				SLAKE_FORCEINLINE void addStackPtr(size_t size) noexcept {
 					curStackSize += size;
 				}
 
-				SLAKE_FORCEINLINE void subStackPtr(size_t size) {
+				SLAKE_FORCEINLINE void subStackPtr(size_t size) noexcept {
 					curStackSize -= size;
 				}
 
-				SLAKE_API RegisterId allocGpReg();
-				SLAKE_API RegisterId allocXmmReg();
+				SLAKE_API RegisterId allocGpReg() noexcept;
+				SLAKE_API RegisterId allocXmmReg() noexcept;
 
 				SLAKE_API void setRegAllocated(RegisterId reg);
 				SLAKE_API void unallocReg(RegisterId reg);
 
-				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushReg8(RegisterId reg, int32_t &offOut, size_t &sizeOut) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushReg8(RegisterId reg, int32_t &offOut, size_t &sizeOut) noexcept {
 					int32_t lhsRegStackSaveOff;
 					SLAKE_RETURN_IF_EXCEPT(stackAllocAligned(sizeof(uint8_t), sizeof(uint8_t), lhsRegStackSaveOff));
 
@@ -126,7 +126,7 @@ namespace slake {
 					return {};
 				}
 
-				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushReg16(RegisterId reg, int32_t &offOut, size_t &sizeOut) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushReg16(RegisterId reg, int32_t &offOut, size_t &sizeOut) noexcept {
 					int32_t lhsRegStackSaveOff;
 					SLAKE_RETURN_IF_EXCEPT(stackAllocAligned(sizeof(uint16_t), sizeof(uint16_t), lhsRegStackSaveOff));
 
@@ -142,7 +142,7 @@ namespace slake {
 					return {};
 				}
 
-				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushReg32(RegisterId reg, int32_t &offOut, size_t &sizeOut) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushReg32(RegisterId reg, int32_t &offOut, size_t &sizeOut) noexcept {
 					int32_t lhsRegStackSaveOff;
 					SLAKE_RETURN_IF_EXCEPT(stackAllocAligned(sizeof(uint32_t), sizeof(uint32_t), lhsRegStackSaveOff));
 
@@ -158,7 +158,7 @@ namespace slake {
 					return {};
 				}
 
-				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushReg64(RegisterId reg, int32_t &offOut, size_t &sizeOut) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushReg64(RegisterId reg, int32_t &offOut, size_t &sizeOut) noexcept {
 					int32_t lhsRegStackSaveOff;
 					SLAKE_RETURN_IF_EXCEPT(stackAllocAligned(sizeof(uint64_t), sizeof(uint64_t), lhsRegStackSaveOff));
 
@@ -174,7 +174,7 @@ namespace slake {
 					return {};
 				}
 
-				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushReg(RegisterId reg, int32_t &offOut, size_t &sizeOut) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushReg(RegisterId reg, int32_t &offOut, size_t &sizeOut) noexcept {
 					switch (virtualRegStates.at(phyRegStates[reg].lastVregId).size) {
 						case sizeof(uint8_t):
 							SLAKE_RETURN_IF_EXCEPT(pushReg8(reg, offOut, sizeOut));
@@ -195,7 +195,7 @@ namespace slake {
 					return {};
 				}
 
-				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushRegXmm32(RegisterId reg, int32_t &offOut, size_t &sizeOut) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushRegXmm32(RegisterId reg, int32_t &offOut, size_t &sizeOut) noexcept {
 					int32_t tmpOff;
 					size_t tmpSize;
 					RegisterId gpReg = allocGpReg();
@@ -210,7 +210,7 @@ namespace slake {
 					return {};
 				}
 
-				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushRegXmm64(RegisterId reg, int32_t &offOut, size_t &sizeOut) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushRegXmm64(RegisterId reg, int32_t &offOut, size_t &sizeOut) noexcept {
 					int32_t tmpOff;
 					size_t tmpSize;
 					RegisterId gpReg = allocGpReg();
@@ -225,7 +225,7 @@ namespace slake {
 					return {};
 				}
 
-				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushRegXmm(RegisterId reg, int32_t &offOut, size_t &sizeOut) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer pushRegXmm(RegisterId reg, int32_t &offOut, size_t &sizeOut) noexcept {
 					switch (virtualRegStates.at(phyRegStates[reg].lastVregId).size) {
 						case sizeof(float):
 							SLAKE_RETURN_IF_EXCEPT(pushRegXmm32(reg, offOut, sizeOut));
@@ -240,7 +240,7 @@ namespace slake {
 					return {};
 				}
 
-				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popReg8(RegisterId reg, int32_t off) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popReg8(RegisterId reg, int32_t off) noexcept {
 					virtualRegStates.at(phyRegStates[reg].lastVregId).saveOffset = INT32_MIN;
 					SLAKE_RETURN_IF_EXCEPT(pushIns(emitMovMemToReg8Ins(reg, MemoryLocation{ REG_RBP, off, REG_MAX, 0 })));
 					stackFree(off, sizeof(uint8_t));
@@ -251,7 +251,7 @@ namespace slake {
 					return {};
 				}
 
-				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popReg16(RegisterId reg, int32_t off) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popReg16(RegisterId reg, int32_t off) noexcept {
 					virtualRegStates.at(phyRegStates[reg].lastVregId).saveOffset = INT32_MIN;
 					SLAKE_RETURN_IF_EXCEPT(pushIns(emitMovMemToReg16Ins(reg, MemoryLocation{ REG_RBP, off, REG_MAX, 0 })));
 					stackFree(off, sizeof(uint16_t));
@@ -262,7 +262,7 @@ namespace slake {
 					return {};
 				}
 
-				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popReg32(RegisterId reg, int32_t off) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popReg32(RegisterId reg, int32_t off) noexcept {
 					virtualRegStates.at(phyRegStates[reg].lastVregId).saveOffset = INT32_MIN;
 					SLAKE_RETURN_IF_EXCEPT(pushIns(emitMovMemToReg32Ins(reg, MemoryLocation{ REG_RBP, off, REG_MAX, 0 })));
 					stackFree(off, sizeof(uint32_t));
@@ -273,7 +273,7 @@ namespace slake {
 					return {};
 				}
 
-				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popReg64(RegisterId reg, int32_t off) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popReg64(RegisterId reg, int32_t off) noexcept {
 					virtualRegStates.at(phyRegStates[reg].lastVregId).saveOffset = INT32_MIN;
 					SLAKE_RETURN_IF_EXCEPT(pushIns(emitMovMemToReg64Ins(reg, MemoryLocation{ REG_RBP, off, REG_MAX, 0 })));
 					stackFree(off, sizeof(uint64_t));
@@ -284,7 +284,7 @@ namespace slake {
 					return {};
 				}
 
-				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popReg(RegisterId reg, int32_t off, size_t size) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popReg(RegisterId reg, int32_t off, size_t size) noexcept {
 					switch (size) {
 						case sizeof(uint8_t):
 							SLAKE_RETURN_IF_EXCEPT(popReg8(reg, off));
@@ -305,7 +305,7 @@ namespace slake {
 					return {};
 				}
 
-				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popRegXmm32(RegisterId reg, int32_t off) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popRegXmm32(RegisterId reg, int32_t off) noexcept {
 					int32_t tmpOff;
 					size_t tmpSize;
 					RegisterId gpReg = allocGpReg();
@@ -320,7 +320,7 @@ namespace slake {
 					return {};
 				}
 
-				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popRegXmm64(RegisterId reg, int32_t off) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popRegXmm64(RegisterId reg, int32_t off) noexcept {
 					int32_t tmpOff;
 					size_t tmpSize;
 					RegisterId gpReg = allocGpReg();
@@ -335,7 +335,7 @@ namespace slake {
 					return {};
 				}
 
-				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popRegXmm(RegisterId reg, int32_t off, size_t size) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer popRegXmm(RegisterId reg, int32_t off, size_t size) noexcept {
 					switch (size) {
 						case sizeof(float):
 							SLAKE_RETURN_IF_EXCEPT(popRegXmm32(reg, off));
@@ -350,11 +350,11 @@ namespace slake {
 					return {};
 				}
 
-				SLAKE_FORCEINLINE bool isRegInUse(RegisterId reg) {
+				SLAKE_FORCEINLINE bool isRegInUse(RegisterId reg) noexcept {
 					return phyRegStates[reg].lastVregId == UINT32_MAX;
 				}
 
-				[[nodiscard]] SLAKE_FORCEINLINE VirtualRegState *defVirtualReg(uint32_t vreg, RegisterId phyReg, size_t size) {
+				[[nodiscard]] SLAKE_FORCEINLINE VirtualRegState *defVirtualReg(uint32_t vreg, RegisterId phyReg, size_t size) noexcept {
 					if(!virtualRegStates.insert(+vreg, {}))
 						return nullptr;
 					VirtualRegState &vregState = virtualRegStates.at(vreg);
@@ -366,7 +366,7 @@ namespace slake {
 
 					return &vregState;
 				}
-				[[nodiscard]] SLAKE_FORCEINLINE VirtualRegState *defVirtualReg(uint32_t vreg, int32_t saveOffset, size_t size) {
+				[[nodiscard]] SLAKE_FORCEINLINE VirtualRegState *defVirtualReg(uint32_t vreg, int32_t saveOffset, size_t size) noexcept {
 					if(!virtualRegStates.insert(+vreg, {}))
 						return nullptr;
 					VirtualRegState &vregState = virtualRegStates.at(vreg);
@@ -376,7 +376,7 @@ namespace slake {
 
 					return &vregState;
 				}
-				[[nodiscard]] SLAKE_FORCEINLINE VirtualRegState *defDummyVirtualReg(uint32_t vreg) {
+				[[nodiscard]] SLAKE_FORCEINLINE VirtualRegState *defDummyVirtualReg(uint32_t vreg) noexcept {
 					if(!virtualRegStates.insert(+vreg, {}))
 						return nullptr;
 					VirtualRegState &vregState = virtualRegStates.at(vreg);
@@ -387,7 +387,7 @@ namespace slake {
 					return &vregState;
 				}
 
-				[[nodiscard]] SLAKE_FORCEINLINE LocalVarState *defLocalVar(uint32_t index, int32_t stackOff, size_t size) {
+				[[nodiscard]] SLAKE_FORCEINLINE LocalVarState *defLocalVar(uint32_t index, int32_t stackOff, size_t size) noexcept {
 					if(!localVarStates.insert(+index, {}))
 						return nullptr;
 					LocalVarState &localVarState = localVarStates.at(index);
@@ -397,11 +397,11 @@ namespace slake {
 					return &localVarState;
 				}
 
-				[[nodiscard]] SLAKE_API InternalExceptionPointer stackAllocAligned(uint32_t size, uint32_t alignment, int32_t &offOut);
+				[[nodiscard]] SLAKE_API InternalExceptionPointer stackAllocAligned(uint32_t size, uint32_t alignment, int32_t &offOut) noexcept;
 
 				SLAKE_API void stackFree(int32_t saveOffset, size_t size);
 
-				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer saveCallingRegs(CallingRegSavingInfo &infoOut) {
+				[[nodiscard]] SLAKE_FORCEINLINE InternalExceptionPointer saveCallingRegs(CallingRegSavingInfo &infoOut) noexcept {
 					// Save parameter registers.
 					SLAKE_RETURN_IF_EXCEPT(pushReg(REG_RCX, infoOut.offSavedRcx, infoOut.szSavedRcx));
 					SLAKE_RETURN_IF_EXCEPT(pushReg(REG_RDX, infoOut.offSavedRdx, infoOut.szSavedRdx));
@@ -420,7 +420,7 @@ namespace slake {
 					return {};
 				}
 
-				SLAKE_FORCEINLINE InternalExceptionPointer restoreCallingRegs(const CallingRegSavingInfo &info) {
+				SLAKE_FORCEINLINE InternalExceptionPointer restoreCallingRegs(const CallingRegSavingInfo &info) noexcept {
 					// Restore scratch registers.
 					if (info.offSavedR11 != INT32_MIN) {
 						SLAKE_RETURN_IF_EXCEPT(popReg(REG_R11, info.offSavedR11, info.szSavedR11));

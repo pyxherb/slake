@@ -9,7 +9,7 @@ template <typename T>
 	JITCompileContext &compileContext,
 	const Instruction &curIns,
 	const Value &lhsExpectedValue,
-	const Value &rhsExpectedValue) {
+	const Value &rhsExpectedValue) noexcept {
 	uint32_t outputRegIndex = curIns.output.getRegIndex();
 
 	if (rhsExpectedValue.valueType != ValueType::Undefined) {
@@ -477,7 +477,7 @@ template <typename T>
 	JITCompileContext &compileContext,
 	const Instruction &curIns,
 	const Value &lhsExpectedValue,
-	const Value &rhsExpectedValue) {
+	const Value &rhsExpectedValue) noexcept {
 	uint32_t outputRegIndex = curIns.output.getRegIndex();
 
 	if (rhsExpectedValue.valueType != ValueType::Undefined) {
@@ -747,7 +747,7 @@ InternalExceptionPointer slake::jit::x86_64::compileDivInstruction(
 	JITCompileContext &compileContext,
 	opti::ProgramAnalyzedInfo &analyzedInfo,
 	size_t offIns,
-	const Instruction &curIns) {
+	const Instruction &curIns) noexcept {
 	uint32_t outputRegIndex = UINT32_MAX;
 	auto &outputRegInfo = analyzedInfo.analyzedRegInfo.at(outputRegIndex);
 

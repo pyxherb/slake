@@ -12,7 +12,7 @@ InternalExceptionPointer compileRegToFieldVarStoreInstruction(
 	const Instruction &curIns,
 	FieldRecord &fieldRecord,
 	char *rawDataPtr,
-	uint32_t regOff) {
+	uint32_t regOff) noexcept {
 	VirtualRegState &vregState = compileContext.virtualRegStates.at(regOff);
 
 	if (vregState.saveOffset != INT32_MIN) {
@@ -263,7 +263,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 	JITCompileContext &compileContext,
 	opti::ProgramAnalyzedInfo &analyzedInfo,
 	size_t offIns,
-	const Instruction &curIns) {
+	const Instruction &curIns) noexcept {
 	opti::RegAnalyzedInfo &regAnalyzedInfo = analyzedInfo.analyzedRegInfo.at(curIns.operands[0].getRegIndex());
 	Value rhs = curIns.operands[1];
 
@@ -978,6 +978,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 							}
 						}
 					}
+					break;
 				}
 				case TypeId::String:
 				case TypeId::Instance:

@@ -11,7 +11,7 @@ namespace slake {
 				JITCompileContext &compileContext,
 				opti::ProgramAnalyzedInfo &analyzedInfo,
 				size_t offIns,
-				const Instruction &curIns);
+				const Instruction &curIns) noexcept;
 		}
 	}
 }

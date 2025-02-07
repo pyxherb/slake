@@ -121,7 +121,7 @@ SLAKE_API InternalExceptionPointer JITCompileContext::checkAndPushStackPointerOn
 	return {};
 }
 
-SLAKE_API RegisterId JITCompileContext::allocGpReg() {
+SLAKE_API RegisterId JITCompileContext::allocGpReg() noexcept {
 realloc:
 	for (auto i : _s_gpRegs) {
 		if (!regAllocFlags.test(i)) {
@@ -135,7 +135,7 @@ realloc:
 	goto realloc;
 }
 
-SLAKE_API RegisterId JITCompileContext::allocXmmReg() {
+SLAKE_API RegisterId JITCompileContext::allocXmmReg() noexcept {
 realloc:
 	for (auto i : _s_xmmRegs) {
 		if (!regAllocFlags.test(i)) {
@@ -158,7 +158,7 @@ SLAKE_API void JITCompileContext::unallocReg(RegisterId reg) {
 	regAllocFlags.reset(reg);
 }
 
-SLAKE_API InternalExceptionPointer JITCompileContext::stackAllocAligned(uint32_t size, uint32_t alignment, int32_t &offOut) {
+SLAKE_API InternalExceptionPointer JITCompileContext::stackAllocAligned(uint32_t size, uint32_t alignment, int32_t &offOut) noexcept {
 	for (auto i = freeStackSpaces.begin(); i != freeStackSpaces.end(); ++i) {
 		int32_t allocBase = i.key();
 		size_t diff = allocBase % alignment;

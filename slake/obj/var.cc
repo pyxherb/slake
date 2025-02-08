@@ -12,7 +12,7 @@ SLAKE_API VarObject::VarObject(const VarObject &x, bool &succeededOut) : MemberO
 SLAKE_API VarObject::~VarObject() {
 }
 
-SLAKE_API ObjectKind VarObject::getKind() const { return ObjectKind::Var; }
+SLAKE_API ObjectKind VarObject::getKind() const { return ObjectKind::String; }
 
 SLAKE_API slake::RegularVarObject::RegularVarObject(Runtime *rt, AccessModifier access, const Type &type)
 	: VarObject(rt, VarKind::Regular), value(ValueType::Undefined), type(type) {
@@ -47,7 +47,7 @@ SLAKE_API void slake::RegularVarObject::dealloc() {
 	peff::destroyAndRelease<RegularVarObject>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
-SLAKE_API ObjectKind RegularVarObject::getKind() const { return ObjectKind::Var; }
+SLAKE_API ObjectKind RegularVarObject::getKind() const { return ObjectKind::String; }
 
 SLAKE_API HostObjectRef<RegularVarObject> slake::RegularVarObject::alloc(Runtime *rt, AccessModifier access, const Type &type) {
 	std::unique_ptr<RegularVarObject, util::DeallocableDeleter<RegularVarObject>> ptr(

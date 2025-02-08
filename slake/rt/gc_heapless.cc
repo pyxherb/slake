@@ -279,37 +279,6 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 
 					break;
 				}
-				case ObjectKind::Var: {
-					VarObject *value = (VarObject *)v;
-
-					switch (value->varKind) {
-						case VarKind::FieldAccessor: {
-							auto v = (FieldAccessorVarObject *)value;
-
-							context.pushObject(v->moduleObject);
-							break;
-						}
-						case VarKind::ArrayElementAccessor: {
-							auto v = (ArrayAccessorVarObject *)value;
-
-							context.pushObject(v->arrayObject);
-							break;
-						}
-						case VarKind::InstanceMemberAccessor: {
-							auto v = (InstanceMemberAccessorVarObject *)value;
-
-							context.pushObject(v->instanceObject);
-							break;
-						}
-						case VarKind::LocalVarAccessor: {
-							auto v = (LocalVarAccessorVarObject *)value;
-
-							_gcWalkHeapless(context, v->context);
-							break;
-						}
-					}
-					break;
-				}
 				case ObjectKind::RootObject: {
 					RootObject *value = (RootObject *)v;
 					_gcWalkHeapless(context, value->scope);

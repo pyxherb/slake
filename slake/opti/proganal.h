@@ -19,17 +19,14 @@ namespace slake {
 		};
 
 		struct FieldVarRegStorageInfo {
-			// VarRefContext varRefContext;
 			bool isUsedForOutput;
 		};
 
 		struct LocalVarRegStorageInfo {
-			uint32_t off;
 			bool isUsedForOutput;
 		};
 
 		struct ArgRefRegStorageInfo {
-			uint32_t off;
 			bool isUsedForOutput;
 		};
 
@@ -52,12 +49,10 @@ namespace slake {
 		};
 
 		struct StackFrameState {
-			peff::DynArray<LocalVarAnalyzedInfo> analyzedLocalVarInfo;
 			peff::DynArray<size_t> stackBases;
 
 			SLAKE_FORCEINLINE StackFrameState(peff::Alloc *selfAllocator)
-				: analyzedLocalVarInfo(selfAllocator),
-				  stackBases(selfAllocator) {
+				: stackBases(selfAllocator) {
 			}
 		};
 
@@ -71,6 +66,7 @@ namespace slake {
 		};
 
 		struct ProgramAnalyzedInfo {
+			HostObjectRef<ContextObject> contextObject;
 			peff::Map<uint32_t, RegAnalyzedInfo> analyzedRegInfo;
 			peff::Map<uint32_t, FnCallAnalyzedInfo> analyzedFnCallInfo;
 			peff::Map<FnOverloadingObject *, peff::DynArray<uint32_t>> fnCallMap;
@@ -122,8 +118,7 @@ namespace slake {
 			Type &typeOut);
 		InternalExceptionPointer evalObjectType(
 			ProgramAnalyzeContext &analyzeContext,
-			// const VarRefContext &varRefContext,
-			Object *object,
+			const ObjectRef &objectRef,
 			Type &typeOut);
 		InternalExceptionPointer evalValueType(
 			ProgramAnalyzeContext &analyzeContext,

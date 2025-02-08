@@ -143,16 +143,20 @@ namespace slake {
 		}
 
 		SLAKE_FORCEINLINE Type &getTypeName() noexcept {
+			assert(valueType == ValueType::TypeName);
 			return *((Type *)data.asType);
 		}
 		SLAKE_FORCEINLINE const Type &getTypeName() const noexcept {
+			assert(valueType == ValueType::TypeName);
 			return *((const Type *)data.asType);
 		}
 
 		SLAKE_FORCEINLINE ObjectRef &getObjectRef() noexcept {
+			assert(valueType == ValueType::ObjectRef);
 			return data.asObjectRef;
 		}
 		SLAKE_FORCEINLINE const ObjectRef &getObjectRef() const noexcept {
+			assert(valueType == ValueType::ObjectRef);
 			return data.asObjectRef;
 		}
 

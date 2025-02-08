@@ -405,23 +405,6 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Obj
 
 			break;
 		}
-		case ObjectKind::Var: {
-			VarObject *value = (VarObject *)v;
-
-			switch (value->varKind) {
-				case VarKind::Regular: {
-					RegularVarObject *v = (RegularVarObject *)value;
-					SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(v->type, instantiationContext));
-					break;
-				}
-				case VarKind::ArrayElementAccessor: {
-					ArrayAccessorVarObject *v = (ArrayAccessorVarObject *)value;
-					SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(v->arrayObject, instantiationContext));
-					break;
-				}
-			}
-			break;
-		}
 		case ObjectKind::Module: {
 			ModuleObject *value = (ModuleObject *)v;
 

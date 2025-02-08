@@ -172,8 +172,6 @@ namespace slake {
 			uint32_t nArgs,
 			uint32_t returnValueOut) noexcept;
 
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _addLocalVar(MajorFrame *frame, Type type, ObjectRef &objectRefOut) noexcept;
-
 		SLAKE_API uint32_t _findAndDispatchExceptHandler(const Value &curExcept, const MinorFrame &minorFrame) const;
 
 		friend class Object;
@@ -183,6 +181,8 @@ namespace slake {
 		friend class ModuleObject;
 
 	public:
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _addLocalVar(MajorFrame *frame, Type type, ObjectRef &objectRefOut) noexcept;
+
 		/// @brief Runtime flags.
 		RuntimeFlags _flags = 0;
 

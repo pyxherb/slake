@@ -32,7 +32,6 @@ namespace slake {
 		Fn,				// Function
 		FnOverloading,	// Function overloading
 		Module,			// Module
-		Var,			// Variable
 		Array,			// Array
 		Ref,			// Reference
 

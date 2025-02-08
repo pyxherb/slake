@@ -59,7 +59,7 @@ namespace slake {
 
 		peff::DynArray<MinorFrame> minorFrames;	 // Minor frames.
 
-		Value curExcept = nullptr;	// Current exception.
+		Value curExcept = Value();	// Current exception.
 
 		SLAKE_API MajorFrame(Runtime *rt, Context *context);
 		// Default constructor is required by resize() methods from the
@@ -98,12 +98,9 @@ namespace slake {
 	};
 
 	class ContextObject final : public Object {
-	private:
+	public:
 		Context _context;
 
-		friend class Runtime;
-
-	public:
 		SLAKE_API ContextObject(Runtime *rt);
 		SLAKE_API virtual ~ContextObject();
 

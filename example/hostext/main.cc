@@ -178,7 +178,6 @@ int main(int argc, char **argv) {
 		auto fn = (slake::FnObject *)mod->getMember("main").asInstance.instanceObject;
 		auto overloading = fn->getOverloading({});
 
-		/*
 		slake::opti::ProgramAnalyzedInfo analyzedInfo(rt.get());
 		if (auto e = slake::opti::analyzeProgramInfo(rt.get(), (slake::RegularFnOverloadingObject *)overloading, analyzedInfo, hostRefHolder);
 			e) {
@@ -202,7 +201,7 @@ int main(int argc, char **argv) {
 		for (auto it = analyzedInfo.analyzedRegInfo.begin(); it != analyzedInfo.analyzedRegInfo.end(); ++it) {
 			printf("Register #%u\n", it.key());
 			printf("Lifetime: %zu-%zu\n", it.value().lifetime.offBeginIns, it.value().lifetime.offEndIns);
-		}*/
+		}
 
 		slake::HostObjectRef<slake::ContextObject> context;
 		if (auto e = rt->execFn(overloading, nullptr, nullptr, nullptr, 0, context);

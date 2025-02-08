@@ -1160,108 +1160,193 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, curMajorFrame, ins.operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, curMajorFrame, ins.operands[1], y));
 
+			uint32_t rhs = y.getU32();
+
 			switch (x.valueType) {
-				case ValueType::I8:
-					switch (ins.opcode) {
-						case Opcode::LSH:
-							valueOut = Value((int8_t)(x.getI8() << y.getU32()));
-							break;
-						case Opcode::RSH:
-							valueOut = Value((int8_t)(x.getI8() >> y.getU32()));
-							break;
-						default:
-							return InvalidOperandsError::alloc(this);
+				case ValueType::I8: {
+					if (rhs >= 8) {
+						valueOut = Value((int8_t)0);
+					} else {
+						int8_t lhs = x.getI8();
+						switch (ins.opcode) {
+							case Opcode::LSH:
+								valueOut = Value((int8_t)(lhs << rhs));
+								break;
+							case Opcode::RSH:
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386__)
+								valueOut = Value((int8_t)(lhs >> rhs));
+#else
+								if (*((uint8_t *)&lhs) & 0x80) {
+									uint8_t unsignedLhs = *((uint8_t *)&lhs);
+
+									unsignedRhs >>= rhs;
+
+									unsignedRhs |= 0xff << (8 - rhs);
+								} else {
+									valueOut = Value((int8_t)(lhs >> rhs));
+								}
+#endif
+								break;
+							default:
+								return InvalidOperandsError::alloc(this);
+						}
 					}
 					break;
-				case ValueType::I16:
-					switch (ins.opcode) {
-						case Opcode::LSH:
-							valueOut = Value((int16_t)(x.getI16() << y.getU32()));
-							break;
-						case Opcode::RSH:
-							valueOut = Value((int16_t)(x.getI16() >> y.getU32()));
-							break;
-							break;
-						default:
-							return InvalidOperandsError::alloc(this);
+				}
+				case ValueType::I16: {
+					if (rhs >= 16) {
+						valueOut = Value((int16_t)0);
+					} else {
+						int16_t lhs = x.getI16();
+						switch (ins.opcode) {
+							case Opcode::LSH:
+								valueOut = Value((int16_t)(x.getI16() << rhs));
+								break;
+							case Opcode::RSH:
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386__)
+								valueOut = Value((int16_t)(x.getI16() >> rhs));
+#else
+								if (*((uint16_t *)&lhs) & 0x8000) {
+									uint16_t unsignedLhs = *((uint16_t *)&lhs);
+
+									unsignedRhs >>= rhs;
+
+									unsignedRhs |= 0xffff << (16 - rhs);
+								} else {
+									valueOut = Value((int16_t)(lhs >> rhs));
+								}
+#endif
+								break;
+							default:
+								return InvalidOperandsError::alloc(this);
+						}
 					}
 					break;
-				case ValueType::I32:
-					switch (ins.opcode) {
-						case Opcode::LSH:
-							valueOut = Value((int32_t)(x.getI32() << y.getU32()));
-							break;
-						case Opcode::RSH:
-							valueOut = Value((int32_t)(x.getI32() >> y.getU32()));
-							break;
-						default:
-							return InvalidOperandsError::alloc(this);
+				}
+				case ValueType::I32: {
+					if (rhs >= 32) {
+						valueOut = Value((int32_t)0);
+					} else {
+						int32_t lhs = x.getI32();
+						switch (ins.opcode) {
+							case Opcode::LSH:
+								valueOut = Value((int32_t)(x.getI32() << rhs));
+								break;
+							case Opcode::RSH:
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386__)
+								valueOut = Value((int32_t)(x.getI32() >> rhs));
+#else
+								if (*((uint32_t *)&lhs) & 0x80000000) {
+									uint32_t unsignedLhs = *((uint32_t *)&lhs);
+
+									unsignedRhs >>= rhs;
+
+									unsignedRhs |= 0xffffffff << (32 - rhs);
+								} else {
+									valueOut = Value((int32_t)(lhs >> rhs));
+								}
+#endif
+								break;
+							default:
+								return InvalidOperandsError::alloc(this);
+						}
 					}
 					break;
-				case ValueType::I64:
-					switch (ins.opcode) {
-						case Opcode::LSH:
-							valueOut = Value((int64_t)(x.getI64() << y.getU32()));
-							break;
-						case Opcode::RSH:
-							valueOut = Value((int64_t)(x.getI64() >> y.getU32()));
-							break;
-						default:
-							return InvalidOperandsError::alloc(this);
+				}
+				case ValueType::I64: {
+					if (rhs >= 64) {
+						valueOut = Value((int64_t)0);
+					} else {
+						int64_t lhs = x.getI64();
+						switch (ins.opcode) {
+							case Opcode::LSH:
+								valueOut = Value((int64_t)(x.getI64() << rhs));
+								break;
+							case Opcode::RSH:
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386__)
+								valueOut = Value((int64_t)(x.getI64() >> rhs));
+#else
+								if (*((uint64_t *)&lhs) & 0x8000000000000000ULL) {
+									uint64_t unsignedLhs = *((uint64_t *)&lhs);
+
+									unsignedRhs >>= rhs;
+
+									unsignedRhs |= 0xffffffffffffffffULL << (64 - rhs);
+								} else {
+									valueOut = Value((int64_t)(lhs >> rhs));
+								}
+#endif
+								break;
+							default:
+								return InvalidOperandsError::alloc(this);
+						}
 					}
 					break;
+				}
 				case ValueType::U8:
-					switch (ins.opcode) {
-						case Opcode::LSH:
-							valueOut = Value((uint8_t)(x.getU8() << y.getU32()));
-							break;
-						case Opcode::RSH:
-							valueOut = Value((uint8_t)(x.getU8() >> y.getU32()));
-							break;
-						default:
-							return InvalidOperandsError::alloc(this);
+					if (rhs >= 8) {
+						valueOut = Value((uint8_t)0);
+					} else {
+						switch (ins.opcode) {
+							case Opcode::LSH:
+								valueOut = Value((uint8_t)(x.getU8() << rhs));
+								break;
+							case Opcode::RSH:
+								valueOut = Value((uint8_t)(x.getU8() >> rhs));
+								break;
+							default:
+								return InvalidOperandsError::alloc(this);
+						}
 					}
 					break;
 				case ValueType::U16:
-					switch (ins.opcode) {
-						case Opcode::LSH:
-							valueOut = Value((uint8_t)(x.getU16() << y.getU32()));
-							break;
-						case Opcode::RSH:
-							valueOut = Value((uint8_t)(x.getU16() >> y.getU32()));
-							break;
-						default:
-							return InvalidOperandsError::alloc(this);
+					if (rhs >= 16) {
+						valueOut = Value((uint16_t)0);
+					} else {
+						switch (ins.opcode) {
+							case Opcode::LSH:
+								valueOut = Value((uint8_t)(x.getU16() << rhs));
+								break;
+							case Opcode::RSH:
+								valueOut = Value((uint8_t)(x.getU16() >> rhs));
+								break;
+							default:
+								return InvalidOperandsError::alloc(this);
+						}
 					}
 					break;
 				case ValueType::U32:
-					switch (ins.opcode) {
-						case Opcode::LSH:
-							valueOut = Value((uint32_t)(x.getU32() << y.getU32()));
-							break;
-						case Opcode::RSH:
-							valueOut = Value((uint32_t)(x.getU32() >> y.getU32()));
-							break;
-						default:
-							return InvalidOperandsError::alloc(this);
+					if (rhs >= 32) {
+						valueOut = Value((uint32_t)0);
+					} else {
+						switch (ins.opcode) {
+							case Opcode::LSH:
+								valueOut = Value((uint32_t)(x.getU32() << rhs));
+								break;
+							case Opcode::RSH:
+								valueOut = Value((uint32_t)(x.getU32() >> rhs));
+								break;
+							default:
+								return InvalidOperandsError::alloc(this);
+						}
 					}
 					break;
 				case ValueType::U64:
-					switch (ins.opcode) {
-						case Opcode::LSH:
-							valueOut = Value((uint64_t)(x.getU64() << y.getU32()));
-							break;
-						case Opcode::RSH:
-							valueOut = Value((uint64_t)(x.getU64() >> y.getU32()));
-							break;
-						default:
-							return InvalidOperandsError::alloc(this);
+					if (rhs >= 64) {
+						valueOut = Value((uint64_t)0);
+					} else {
+						switch (ins.opcode) {
+							case Opcode::LSH:
+								valueOut = Value((uint64_t)(x.getU64() << rhs));
+								break;
+							case Opcode::RSH:
+								valueOut = Value((uint64_t)(x.getU64() >> rhs));
+								break;
+							default:
+								return InvalidOperandsError::alloc(this);
+						}
 					}
 					break;
-				case ValueType::F32:
-				case ValueType::F64:
-				case ValueType::Bool:
-					return InvalidOperandsError::alloc(this);
 				default:
 					return InvalidOperandsError::alloc(this);
 			}
@@ -1452,7 +1537,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			auto arrayIn = arrayValue.getObjectRef();
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectRefOperandType(this, arrayIn, ObjectRefKind::InstanceRef));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectOperandType(this, arrayIn.asInstance.instanceObject, ObjectKind::Array));
-			ArrayObject *arrayObject = (ArrayObject*)arrayIn.asInstance.instanceObject;
+			ArrayObject *arrayObject = (ArrayObject *)arrayIn.asInstance.instanceObject;
 
 			uint32_t indexIn = index.getU32();
 

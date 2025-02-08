@@ -99,3 +99,51 @@ SLAKE_API DiscreteInstruction slake::jit::x86_64::emitShrReg32WithClIns(Register
 SLAKE_API DiscreteInstruction slake::jit::x86_64::emitShrReg64WithClIns(RegisterId registerId) {
 	return emitInsWithReg64WithMinorOpcode(0xd3, 5, registerId);
 }
+
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emitSarReg8WithImm8Ins(RegisterId registerId, uint8_t times) {
+	if (times == 1) {
+		return emitInsWithReg8WithMinorOpcode(0xd0, 7, registerId);
+	} else {
+		return emitInsWithReg8WithMinorOpcode(0xc0, 7, registerId);
+	}
+}
+
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emitSarReg16WithImm8Ins(RegisterId registerId, uint8_t times) {
+	if (times == 1) {
+		return emitInsWithReg16WithMinorOpcode(0xd1, 7, registerId);
+	} else {
+		return emitInsWithReg16WithMinorOpcode(0xc1, 7, registerId);
+	}
+}
+
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emitSarReg32WithImm8Ins(RegisterId registerId, uint8_t times) {
+	if (times == 1) {
+		return emitInsWithReg32WithMinorOpcode(0xd1, 7, registerId);
+	} else {
+		return emitInsWithReg32WithMinorOpcode(0xc1, 7, registerId);
+	}
+}
+
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emitSarReg64WithImm8Ins(RegisterId registerId, uint8_t times) {
+	if (times == 1) {
+		return emitInsWithReg64WithMinorOpcode(0xd1, 7, registerId);
+	} else {
+		return emitInsWithReg64WithMinorOpcode(0xc1, 7, registerId);
+	}
+}
+
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emitSarReg8WithClIns(RegisterId registerId) {
+	return emitInsWithReg8WithMinorOpcode(0xd2, 7, registerId);
+}
+
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emitSarReg16WithClIns(RegisterId registerId) {
+	return emitInsWithReg16WithMinorOpcode(0xd3, 7, registerId);
+}
+
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emitSarReg32WithClIns(RegisterId registerId) {
+	return emitInsWithReg32WithMinorOpcode(0xd3, 7, registerId);
+}
+
+SLAKE_API DiscreteInstruction slake::jit::x86_64::emitSarReg64WithClIns(RegisterId registerId) {
+	return emitInsWithReg64WithMinorOpcode(0xd3, 7, registerId);
+}

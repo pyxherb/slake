@@ -12,6 +12,7 @@
 #include "comp/mod.h"
 #include "comp/mov.h"
 #include "comp/store.h"
+#include "comp/bitshift.h"
 
 using namespace slake;
 using namespace slake::jit;
@@ -220,6 +221,14 @@ InternalExceptionPointer compileInstruction(
 		}
 		case Opcode::MOD: {
 			SLAKE_RETURN_IF_EXCEPT(compileDivInstruction(compileContext, analyzedInfo, offIns, curIns));
+			break;
+		}
+		case Opcode::LSH: {
+			SLAKE_RETURN_IF_EXCEPT(compileShlInstruction(compileContext, analyzedInfo, offIns, curIns));
+			break;
+		}
+		case Opcode::RSH: {
+			SLAKE_RETURN_IF_EXCEPT(compileShrInstruction(compileContext, analyzedInfo, offIns, curIns));
 			break;
 		}
 	}

@@ -22,6 +22,15 @@ namespace slake {
 			SLAKE_API DiscreteInstruction emitShrReg16WithClIns(RegisterId registerId);
 			SLAKE_API DiscreteInstruction emitShrReg32WithClIns(RegisterId registerId);
 			SLAKE_API DiscreteInstruction emitShrReg64WithClIns(RegisterId registerId);
+
+			SLAKE_API DiscreteInstruction emitSarReg8WithImm8Ins(RegisterId registerId, uint8_t times);
+			SLAKE_API DiscreteInstruction emitSarReg16WithImm8Ins(RegisterId registerId, uint8_t times);
+			SLAKE_API DiscreteInstruction emitSarReg32WithImm8Ins(RegisterId registerId, uint8_t times);
+			SLAKE_API DiscreteInstruction emitSarReg64WithImm8Ins(RegisterId registerId, uint8_t times);
+			SLAKE_API DiscreteInstruction emitSarReg8WithClIns(RegisterId registerId);
+			SLAKE_API DiscreteInstruction emitSarReg16WithClIns(RegisterId registerId);
+			SLAKE_API DiscreteInstruction emitSarReg32WithClIns(RegisterId registerId);
+			SLAKE_API DiscreteInstruction emitSarReg64WithClIns(RegisterId registerId);
 		}
 	}
 }

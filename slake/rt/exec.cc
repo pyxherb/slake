@@ -1179,9 +1179,9 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 								if (*((uint8_t *)&lhs) & 0x80) {
 									uint8_t unsignedLhs = *((uint8_t *)&lhs);
 
-									unsignedRhs >>= rhs;
+									unsignedLhs >>= rhs;
 
-									unsignedRhs |= 0xff << (8 - rhs);
+									unsignedLhs |= 0xff << (8 - rhs);
 								} else {
 									valueOut = Value((int8_t)(lhs >> rhs));
 								}
@@ -1209,9 +1209,9 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 								if (*((uint16_t *)&lhs) & 0x8000) {
 									uint16_t unsignedLhs = *((uint16_t *)&lhs);
 
-									unsignedRhs >>= rhs;
+									unsignedLhs >>= rhs;
 
-									unsignedRhs |= 0xffff << (16 - rhs);
+									unsignedLhs |= 0xffff << (16 - rhs);
 								} else {
 									valueOut = Value((int16_t)(lhs >> rhs));
 								}
@@ -1239,9 +1239,9 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 								if (*((uint32_t *)&lhs) & 0x80000000) {
 									uint32_t unsignedLhs = *((uint32_t *)&lhs);
 
-									unsignedRhs >>= rhs;
+									unsignedLhs >>= rhs;
 
-									unsignedRhs |= 0xffffffff << (32 - rhs);
+									unsignedLhs |= 0xffffffff << (32 - rhs);
 								} else {
 									valueOut = Value((int32_t)(lhs >> rhs));
 								}
@@ -1269,9 +1269,9 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 								if (*((uint64_t *)&lhs) & 0x8000000000000000ULL) {
 									uint64_t unsignedLhs = *((uint64_t *)&lhs);
 
-									unsignedRhs >>= rhs;
+									unsignedLhs >>= rhs;
 
-									unsignedRhs |= 0xffffffffffffffffULL << (64 - rhs);
+									unsignedLhs |= 0xffffffffffffffffULL << (64 - rhs);
 								} else {
 									valueOut = Value((int64_t)(lhs >> rhs));
 								}

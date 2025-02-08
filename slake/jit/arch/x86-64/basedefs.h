@@ -119,6 +119,7 @@ namespace slake {
 				REG_MAX,
 			};
 
+			/// @brief The memory structure which represents x86-64 address in [base + disp + scaleIndex * scale]
 			struct MemoryLocation {
 				RegisterId base;
 				int32_t disp;

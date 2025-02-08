@@ -271,9 +271,9 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 
 	switch (regAnalyzedInfo.storageType) {
 		case opti::RegStorageType::FieldVar: {
-			FieldAccessorVarObject *accessor = (FieldAccessorVarObject *)regAnalyzedInfo.expectedValue.getObjectRef();
-			FieldRecord &fieldRecord = accessor->moduleObject->fieldRecords.at(regAnalyzedInfo.storageInfo.asFieldVar.varRefContext.asField.index);
-			char *rawDataPtr = accessor->moduleObject->localFieldStorage + fieldRecord.offset;
+			const ObjectRef &objectRef = regAnalyzedInfo.expectedValue.getObjectRef();
+			FieldRecord &fieldRecord = objectRef.asField.moduleObject->fieldRecords.at(objectRef.asField.index);
+			char *rawDataPtr = objectRef.asField.moduleObject->localFieldStorage + fieldRecord.offset;
 
 			switch (fieldRecord.type.typeId) {
 				case TypeId::Value: {
@@ -708,7 +708,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 			break;
 		}
 		case opti::RegStorageType::LocalVar: {
-			LocalVarState &localVarState = compileContext.localVarStates.at(regAnalyzedInfo.storageInfo.asLocalVar.off);
+			LocalVarState &localVarState = compileContext.localVarStates.at(regAnalyzedInfo.expectedValue.getObjectRef().asLocalVar.localVarIndex);
 
 			switch (localVarState.type.typeId) {
 				case TypeId::Value: {
@@ -1021,7 +1021,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 								vregState.phyReg)));
 						}
 					} else {
-						Object *imm0 = rhs.getObjectRef();
+						Object *imm0 = rhs.getObjectRef().asInstance.instanceObject;
 						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
 							emitMovImm64ToMemIns(
 								MemoryLocation{

@@ -11,7 +11,7 @@ namespace slake {
 				Type type;
 			};
 
-			// JIT execution context, note that rbx is used for its storage.
+			/// @brief The JIT execution context.
 			struct JITExecContext {
 				Runtime *runtime;
 				JITCompiledFnOverloadingObject *fn;

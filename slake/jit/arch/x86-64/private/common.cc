@@ -302,41 +302,27 @@ SLAKE_API void JITCompileContext::stackFree(int32_t saveOffset, size_t size) {
 void slake::jit::x86_64::loadInsWrapper(
 	JITExecContext *context,
 	IdRefObject *idRefObject) {
-	VarRefContext varRefContext;
-	Object *object;
-	InternalExceptionPointer e = context->runtime->resolveIdRef(idRefObject, &varRefContext, object, nullptr);
+	ObjectRef objectRef;
+	InternalExceptionPointer e = context->runtime->resolveIdRef(idRefObject, objectRef, nullptr);
 	if (e) {
 		context->exception = e.get();
 		e.reset();
 		return;
 	}
-	switch (object->getKind()) {
-		case ObjectKind::Var:
-			context->returnValue = Value(VarRef((VarObject *)object, varRefContext));
-			break;
-		default:
-			context->returnValue = Value(object);
-	}
+	context->returnValue = Value(objectRef);
 }
 void slake::jit::x86_64::rloadInsWrapper(
 	JITExecContext *context,
 	Object *baseObject,
 	IdRefObject *idRefObject) {
-	VarRefContext varRefContext;
-	Object *object;
-	InternalExceptionPointer e = context->runtime->resolveIdRef(idRefObject, &varRefContext, object, baseObject);
+	ObjectRef objectRef;
+	InternalExceptionPointer e = context->runtime->resolveIdRef(idRefObject, objectRef, baseObject);
 	if (e) {
 		context->exception = e.get();
 		e.reset();
 		return;
 	}
-	switch (object->getKind()) {
-		case ObjectKind::Var:
-			context->returnValue = Value(VarRef((VarObject *)object, varRefContext));
-			break;
-		default:
-			context->returnValue = Value(object);
-	}
+	context->returnValue = Value(objectRef);
 }
 
 void slake::jit::x86_64::memcpyWrapper(

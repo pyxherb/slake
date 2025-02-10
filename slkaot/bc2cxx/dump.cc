@@ -143,7 +143,7 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 				os << "\n";
 
 				os << std::string(indentLevel, '\t');
-				os << "};";
+				os << "};\n";
 			}
 
 			break;
@@ -173,7 +173,7 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 				os << "\n";
 
 				os << std::string(indentLevel, '\t');
-				os << "};";
+				os << "};\n";
 			}
 
 			break;
@@ -194,10 +194,13 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 					for (auto &i : namespaceNode->publicMembers) {
 						_dumpAstNode(os, i.second, dumpMode, indentLevel + 1);
 					}
+					for (auto &i : namespaceNode->protectedMembers) {
+						_dumpAstNode(os, i.second, dumpMode, indentLevel + 1);
+					}
 					os << "\n";
 
 					os << std::string(indentLevel, '\t');
-					os << "}";
+					os << "}\n";
 				}
 			}
 
@@ -208,10 +211,20 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 
 			if (dumpMode == ASTDumpMode::Header) {
 				os << std::string(indentLevel, '\t');
-				if (varNode->storageClass == cxxast::StorageClass::Static)
-					os << "static ";
-				else
-					os << "extern ";
+
+				switch (varNode->storageClass) {
+					case cxxast::StorageClass::Unspecified:
+						break;
+					case cxxast::StorageClass::Static:
+						os << "static ";
+						break;
+					case cxxast::StorageClass::Extern:
+						os << "extern ";
+						break;
+					case cxxast::StorageClass::Mutable:
+						os << "mutable ";
+						break;
+				}
 				_dumpAstNode(os, varNode->type, dumpMode, 0);
 				os << " " << varNode->name << ";\n";
 			} else {
@@ -238,6 +251,36 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 				case cxxast::TypeNameKind::Void:
 					os << "void";
 					break;
+				case cxxast::TypeNameKind::Int: {
+					std::shared_ptr<cxxast::IntTypeName> i = std::static_pointer_cast<cxxast::IntTypeName>(tn);
+
+					switch(i->signKind) {
+						case cxxast::SignKind::Unspecified:
+							break;
+						case cxxast::SignKind::Signed:
+							os << "signed ";
+							break;
+						case cxxast::SignKind::Unsigned:
+							os << "unsigned ";
+							break;
+					}
+
+					switch(i->modifierKind) {
+						case cxxast::IntModifierKind::Unspecified:
+							os << "int";
+							break;
+						case cxxast::IntModifierKind::Short:
+							os << "short";
+							break;
+						case cxxast::IntModifierKind::Long:
+							os << "long";
+							break;
+						case cxxast::IntModifierKind::LongLong:
+							os << "long long";
+							break;
+					}
+					break;
+				}
 				case cxxast::TypeNameKind::Bool:
 					os << "bool";
 					break;
@@ -294,6 +337,7 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 					break;
 				}
 			}
+			break;
 		}
 		case cxxast::NodeKind::Stmt: {
 			std::shared_ptr<cxxast::Stmt> stmt = std::static_pointer_cast<cxxast::Stmt>(astNode);
@@ -762,24 +806,36 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 							os << "]";
 							break;
 						case cxxast::BinaryOp::Scope:
-							os << "(";
-							_dumpAstNode(os, e->lhs, dumpMode, 0);
-							os << ")";
+							if (!_isSimpleIdExpr(e->lhs)) {
+								os << "(";
+								_dumpAstNode(os, e->lhs, dumpMode, 0);
+								os << ")";
+							} else {
+								_dumpAstNode(os, e->lhs, dumpMode, 0);
+							}
 							os << "::";
 							_dumpAstNode(os, e->rhs, dumpMode, 0);
 							break;
 						case cxxast::BinaryOp::MemberAccess:
-							os << "(";
-							_dumpAstNode(os, e->lhs, dumpMode, 0);
-							os << ")";
+							if (!_isSimpleIdExpr(e->lhs)) {
+								os << "(";
+								_dumpAstNode(os, e->lhs, dumpMode, 0);
+								os << ")";
+							} else {
+								_dumpAstNode(os, e->lhs, dumpMode, 0);
+							}
 							os << ".";
 							_dumpAstNode(os, e->rhs, dumpMode, 0);
 							break;
 						case cxxast::BinaryOp::PtrAccess:
-							os << "(";
-							_dumpAstNode(os, e->lhs, dumpMode, 0);
+							if (!_isSimpleIdExpr(e->lhs)) {
+								os << "(";
+								_dumpAstNode(os, e->lhs, dumpMode, 0);
+								os << ")";
+							} else {
+								_dumpAstNode(os, e->lhs, dumpMode, 0);
+							}
 							os << "->";
-							os << ")";
 							_dumpAstNode(os, e->rhs, dumpMode, 0);
 							break;
 					}

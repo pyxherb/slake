@@ -15,16 +15,19 @@ namespace slake {
 					Source
 				};
 
-			private:
-				void _dumpStmt(std::ostream &os, std::shared_ptr<cxxast::ASTNode> astNode, ASTDumpMode dumpMode, size_t indentLevel);
-				void _dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> astNode, ASTDumpMode dumpMode, size_t indentLevel);
-
-			public:
 				enum class CompilationTarget {
 					None = 0,
 					Module,
+					Class,
 					Fn
 				};
+
+			private:
+				void _dumpStmt(std::ostream &os, std::shared_ptr<cxxast::ASTNode> astNode, ASTDumpMode dumpMode, size_t indentLevel);
+				void _dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> astNode, ASTDumpMode dumpMode, size_t indentLevel);
+				bool _isSimpleIdExpr(std::shared_ptr<cxxast::Expr> expr);
+
+			public:
 
 				struct DynamicCompileContextContents {
 					CompilationTarget compilationTarget = CompilationTarget::None;
@@ -73,6 +76,7 @@ namespace slake {
 				std::shared_ptr<cxxast::Expr> compileRef(CompileContext &compileContext, const peff::DynArray<IdRefEntry> &entries);
 				std::shared_ptr<cxxast::Expr> compileValue(CompileContext &compileContext, const Value &value);
 				std::shared_ptr<cxxast::TypeName> compileType(CompileContext &compileContext, const Type &type);
+				std::shared_ptr<cxxast::Class> compileClass(CompileContext &compileContext, ClassObject *moduleObject);
 				void compileModule(CompileContext &compileContext, ModuleObject *moduleObject);
 				std::pair<std::shared_ptr<cxxast::IfndefDirective>, std::shared_ptr<cxxast::Namespace>> compile(ModuleObject *moduleObject);
 

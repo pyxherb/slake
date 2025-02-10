@@ -4,6 +4,28 @@ using namespace slake;
 using namespace slake::slkaot;
 using namespace slake::slkaot::bc2cxx;
 
+bool BC2CXX::_isSimpleIdExpr(std::shared_ptr<cxxast::Expr> expr) {
+	switch (expr->exprKind) {
+		case cxxast::ExprKind::Id:
+			return true;
+		case cxxast::ExprKind::Binary: {
+			std::shared_ptr<cxxast::BinaryExpr> e = std::static_pointer_cast<cxxast::BinaryExpr>(expr);
+
+			switch (e->op) {
+				case cxxast::BinaryOp::Scope:
+				case cxxast::BinaryOp::MemberAccess:
+				case cxxast::BinaryOp::PtrAccess:
+					return _isSimpleIdExpr(e->lhs) && _isSimpleIdExpr(e->rhs);
+				default:
+					return false;
+			}
+			break;
+		}
+	}
+
+	return false;
+}
+
 std::shared_ptr<cxxast::Namespace> BC2CXX::completeModuleNamespace(CompileContext &compileContext, const peff::DynArray<IdRefEntry> &entries) {
 	std::shared_ptr<cxxast::Namespace> ns = compileContext.rootNamespace;
 
@@ -103,7 +125,6 @@ std::shared_ptr<cxxast::Expr> BC2CXX::compileValue(CompileContext &compileContex
 			break;
 		case ValueType::ObjectRef: {
 			const ObjectRef &objectRef = value.getObjectRef();
-			e = std::make_shared<cxxast::BoolLiteralExpr>(value.getBool());
 			if (objectRef.kind != ObjectRefKind::InstanceRef)
 				std::terminate();
 			Object *object = objectRef.asInstance.instanceObject;
@@ -150,6 +171,8 @@ std::shared_ptr<cxxast::Expr> BC2CXX::compileValue(CompileContext &compileContex
 			// Invalid type name, terminate.
 			std::terminate();
 	}
+
+	return e;
 }
 
 std::shared_ptr<cxxast::TypeName> BC2CXX::compileType(CompileContext &compileContext, const Type &type) {
@@ -244,6 +267,61 @@ std::shared_ptr<cxxast::TypeName> BC2CXX::compileType(CompileContext &compileCon
 	return tn;
 }
 
+std::shared_ptr<cxxast::Class> BC2CXX::compileClass(CompileContext &compileContext, ClassObject *moduleObject) {
+	compileContext.pushDynamicContents();
+	compileContext.dynamicContents.compilationTarget = CompilationTarget::Class;
+
+	std::shared_ptr<cxxast::Class> cls = std::make_shared<cxxast::Class>((std::string)(std::string_view)moduleObject->name);
+
+	for (size_t i = 0; i < moduleObject->fieldRecords.size(); ++i) {
+		const FieldRecord &fr = moduleObject->fieldRecords.at(i);
+
+		std::shared_ptr<cxxast::Var> varObject;
+
+		{
+			std::string name((std::string_view)fr.name);
+			cxxast::StorageClass storageClass;
+
+			if (fr.accessModifier & ACCESS_STATIC)
+				storageClass = cxxast::StorageClass::Static;
+			else
+				storageClass = cxxast::StorageClass::Unspecified;
+
+			varObject = std::make_shared<cxxast::Var>(
+				std::move(name),
+				storageClass,
+				compileType(compileContext, fr.type),
+				compileValue(compileContext,
+					compileContext.runtime->readVarUnsafe(
+						ObjectRef::makeFieldRef(moduleObject, i))));
+		}
+
+		if (fr.accessModifier & ACCESS_PUB) {
+			cls->addPublicMember(varObject);
+		} else {
+			cls->addProtectedMember(varObject);
+		}
+	}
+
+	for (auto i = moduleObject->scope->members.begin(); i != moduleObject->scope->members.end(); ++i) {
+		switch (i.value()->getKind()) {
+			case ObjectKind::Class: {
+				ClassObject *m = (ClassObject *)i.value();
+				std::shared_ptr<cxxast::Class> compiledCls = compileClass(compileContext, (ClassObject *)m);
+				if (m->accessModifier & ACCESS_PUB)
+					cls->addPublicMember(compiledCls);
+				else
+					cls->addProtectedMember(compiledCls);
+				break;
+			}
+		}
+	}
+
+	compileContext.popDynamicContents();
+
+	return cls;
+}
+
 void BC2CXX::compileModule(CompileContext &compileContext, ModuleObject *moduleObject) {
 	compileContext.pushDynamicContents();
 	compileContext.dynamicContents.compilationTarget = CompilationTarget::Module;
@@ -288,6 +366,15 @@ void BC2CXX::compileModule(CompileContext &compileContext, ModuleObject *moduleO
 		switch (i.value()->getKind()) {
 			case ObjectKind::Module: {
 				compileModule(compileContext, (ModuleObject *)i.value());
+				break;
+			}
+			case ObjectKind::Class: {
+				ClassObject *m = (ClassObject *)i.value();
+				std::shared_ptr<cxxast::Class> compiledCls = compileClass(compileContext, (ClassObject *)m);
+				if (m->accessModifier & ACCESS_PUB)
+					ns->addPublicMember(compiledCls);
+				else
+					ns->addProtectedMember(compiledCls);
 				break;
 			}
 		}

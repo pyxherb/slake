@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
 
 				HostObjectRef<ModuleObject> mod;
 				try {
-					mod = rt->loadModule(is, 0);
+					mod = rt->loadModule(is, LMOD_NOIMPORT);
 				} catch (slake::LoaderError e) {
 					try {
 						mod = rt->loadModule(is, 0);

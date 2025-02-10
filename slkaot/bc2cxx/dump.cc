@@ -103,7 +103,7 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 				(overloading->properties.isOverriden))
 				os << " override";
 			if (dumpMode == ASTDumpMode::Header) {
-				os << ";";
+				os << ";\n";
 			} else {
 				os << " {\n";
 

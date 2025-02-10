@@ -28,7 +28,6 @@ namespace slake {
 				bool _isSimpleIdExpr(std::shared_ptr<cxxast::Expr> expr);
 
 			public:
-
 				struct DynamicCompileContextContents {
 					CompilationTarget compilationTarget = CompilationTarget::None;
 					std::map<uint32_t, std::string> vregNames;
@@ -72,10 +71,19 @@ namespace slake {
 								std::make_shared<cxxast::IdExpr>("Value"))));
 				}
 
+				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genSizeTypeName() {
+					return std::make_shared<cxxast::CustomTypeName>(
+						false,
+						std::make_shared<cxxast::IdExpr>("size_t"));
+				}
+
 				std::shared_ptr<cxxast::Namespace> completeModuleNamespace(CompileContext &compileContext, const peff::DynArray<IdRefEntry> &entries);
 				std::shared_ptr<cxxast::Expr> compileRef(CompileContext &compileContext, const peff::DynArray<IdRefEntry> &entries);
 				std::shared_ptr<cxxast::Expr> compileValue(CompileContext &compileContext, const Value &value);
 				std::shared_ptr<cxxast::TypeName> compileType(CompileContext &compileContext, const Type &type);
+				std::shared_ptr<cxxast::FnOverloading> compileFnOverloading(CompileContext &compileContext, FnOverloadingObject *fnOverloadingObject);
+				std::shared_ptr<cxxast::Fn> compileFn(CompileContext &compileContext, FnObject *fnObject);
+				std::pair<std::shared_ptr<cxxast::Fn>, std::shared_ptr<cxxast::Fn>> separatePublicAndPrivateFn(CompileContext &compileContext, std::shared_ptr<cxxast::Fn> fn);
 				std::shared_ptr<cxxast::Class> compileClass(CompileContext &compileContext, ClassObject *moduleObject);
 				void compileModule(CompileContext &compileContext, ModuleObject *moduleObject);
 				std::pair<std::shared_ptr<cxxast::IfndefDirective>, std::shared_ptr<cxxast::Namespace>> compile(ModuleObject *moduleObject);

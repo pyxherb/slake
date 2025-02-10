@@ -179,6 +179,9 @@ std::shared_ptr<cxxast::TypeName> BC2CXX::compileType(CompileContext &compileCon
 	std::shared_ptr<cxxast::TypeName> tn;
 
 	switch (type.typeId) {
+		case TypeId::None:
+			tn = std::make_shared<cxxast::VoidTypeName>();
+			break;
 		case TypeId::Value: {
 			switch (type.getValueTypeExData()) {
 				case ValueType::I8:
@@ -267,6 +270,63 @@ std::shared_ptr<cxxast::TypeName> BC2CXX::compileType(CompileContext &compileCon
 	return tn;
 }
 
+std::shared_ptr<cxxast::FnOverloading> BC2CXX::compileFnOverloading(CompileContext &compileContext, FnOverloadingObject *fnOverloadingObject) {
+	std::shared_ptr<cxxast::FnOverloading> fnOverloading = std::make_shared<cxxast::FnOverloading>();
+
+	for (size_t i = 0; i < fnOverloadingObject->paramTypes.size(); ++i) {
+		fnOverloading->signature.paramTypes.push_back(compileType(compileContext, fnOverloadingObject->paramTypes.at(i)));
+	}
+
+	fnOverloading->returnType = compileType(compileContext, fnOverloadingObject->returnType);
+
+	fnOverloading->properties = {};
+
+	if (fnOverloadingObject->overloadingFlags & OL_VIRTUAL) {
+		fnOverloading->properties.isVirtual = true;
+	}
+	if (fnOverloadingObject->overloadingFlags & OL_VARG) {
+		fnOverloading->signature.paramTypes.push_back(
+			std::make_shared<cxxast::PointerTypeName>(
+				genAnyTypeName()));	 // varArgs
+		fnOverloading->signature.paramTypes.push_back(
+			genSizeTypeName());	 // nVarArgs
+	}
+
+	return fnOverloading;
+}
+
+std::shared_ptr<cxxast::Fn> BC2CXX::compileFn(CompileContext &compileContext, FnObject *fnObject) {
+	compileContext.pushDynamicContents();
+	compileContext.dynamicContents.compilationTarget = CompilationTarget::Fn;
+
+	std::shared_ptr<cxxast::Fn> fn = std::make_shared<cxxast::Fn>((std::string)(std::string_view)fnObject->name);
+
+	for (auto i : fnObject->overloadings) {
+		fn->pushOverloading(compileFnOverloading(compileContext, i));
+	}
+
+	compileContext.popDynamicContents();
+
+	return fn;
+}
+
+std::pair<std::shared_ptr<cxxast::Fn>, std::shared_ptr<cxxast::Fn>> BC2CXX::separatePublicAndPrivateFn(CompileContext &compileContext, std::shared_ptr<cxxast::Fn> fn) {
+	std::shared_ptr<cxxast::Fn> publics = std::make_shared<cxxast::Fn>(std::string(fn->name)), privates = std::make_shared<cxxast::Fn>(std::string(fn->name));
+	for (size_t i = 0; i < fn->overloadings.size(); ++i) {
+		std::shared_ptr<cxxast::FnOverloading> overloading = fn->overloadings[i];
+
+		if (overloading->properties.isPublic) {
+			publics->pushOverloading(overloading);
+		} else {
+			privates->pushOverloading(overloading);
+		}
+	}
+
+	fn->overloadings.clear();
+
+	return { publics, privates };
+}
+
 std::shared_ptr<cxxast::Class> BC2CXX::compileClass(CompileContext &compileContext, ClassObject *moduleObject) {
 	compileContext.pushDynamicContents();
 	compileContext.dynamicContents.compilationTarget = CompilationTarget::Class;
@@ -307,11 +367,27 @@ std::shared_ptr<cxxast::Class> BC2CXX::compileClass(CompileContext &compileConte
 		switch (i.value()->getKind()) {
 			case ObjectKind::Class: {
 				ClassObject *m = (ClassObject *)i.value();
-				std::shared_ptr<cxxast::Class> compiledCls = compileClass(compileContext, (ClassObject *)m);
+				std::shared_ptr<cxxast::Class> compiledCls = compileClass(compileContext, m);
 				if (m->accessModifier & ACCESS_PUB)
 					cls->addPublicMember(compiledCls);
 				else
 					cls->addProtectedMember(compiledCls);
+				break;
+			}
+			case ObjectKind::Fn: {
+				FnObject *m = (FnObject *)i.value();
+
+				std::shared_ptr<cxxast::Fn> publicFn, privateFn;
+				{
+					std::shared_ptr<cxxast::Fn> compiledFn = compileFn(compileContext, m);
+
+					auto result = separatePublicAndPrivateFn(compileContext, compiledFn);
+					publicFn = result.first, privateFn = result.second;
+				}
+
+				cls->addPublicMember(publicFn);
+				cls->addProtectedMember(privateFn);
+
 				break;
 			}
 		}
@@ -370,7 +446,7 @@ void BC2CXX::compileModule(CompileContext &compileContext, ModuleObject *moduleO
 			}
 			case ObjectKind::Class: {
 				ClassObject *m = (ClassObject *)i.value();
-				std::shared_ptr<cxxast::Class> compiledCls = compileClass(compileContext, (ClassObject *)m);
+				std::shared_ptr<cxxast::Class> compiledCls = compileClass(compileContext, m);
 				if (m->accessModifier & ACCESS_PUB)
 					ns->addPublicMember(compiledCls);
 				else

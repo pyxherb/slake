@@ -273,7 +273,7 @@ NullptrLiteralExpr::NullptrLiteralExpr() : Expr(ExprKind::NullptrLiteral) {
 NullptrLiteralExpr::~NullptrLiteralExpr() {
 }
 
-IdExpr::IdExpr(std::string &&name) : Expr(ExprKind::Id), name(std::move(name)) {
+IdExpr::IdExpr(std::string &&name, std::vector<std::shared_ptr<TypeName>> &&genericArgs) : Expr(ExprKind::Id), name(std::move(name)), genericArgs(genericArgs) {
 }
 
 IdExpr::~IdExpr() {

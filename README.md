@@ -57,9 +57,10 @@ scripting.
   * Coroutine 🕓
   * Optimizer 🕓
     * Program Analyzer 🕓
-  * JIT Recompiler 🕓
-    * x86 Backend 🕓
   * Runtime Library 🕓
+
+* JIT Recompiler 🕓
+    * x86 Backend 🕓
 
 * AOT Compiler 🕓
 

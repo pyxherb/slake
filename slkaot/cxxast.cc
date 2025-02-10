@@ -4,26 +4,6 @@ using namespace slake;
 using namespace slake::slkaot;
 using namespace slake::slkaot::cxxast;
 
-bool FnOverloadingSignatureComparator::operator()(const FnOverloadingSignature &lhs, const FnOverloadingSignature &rhs) {
-	if(lhs.isConst < rhs.isConst)
-		return true;
-	if(lhs.isConst > rhs.isConst)
-		return false;
-	if (lhs.paramTypes.size() < rhs.paramTypes.size())
-		return true;
-	if (lhs.paramTypes.size() > rhs.paramTypes.size())
-		return false;
-	for (size_t i = 0; i < lhs.paramTypes.size(); ++i) {
-		const Type &lhsType = lhs.paramTypes.at(i), &rhsType = rhs.paramTypes.at(i);
-
-		if (lhsType < rhsType)
-			return true;
-		if (lhsType > rhsType)
-			return false;
-	}
-	return false;
-}
-
 ASTNode::ASTNode(NodeKind nodeKind) : nodeKind(nodeKind) {
 }
 
@@ -42,26 +22,29 @@ AbstractModule::AbstractModule(NodeKind nodeKind, std::string &&name) : Abstract
 AbstractModule::~AbstractModule() {
 }
 
-void AbstractModule::addPublicMember(std::string &&name, std::shared_ptr<AbstractMember> memberNode) {
-	removeMember(name);
-	publicMembers.insert({ std::move(name), memberNode });
+void AbstractModule::addPublicMember(std::shared_ptr<AbstractMember> memberNode) {
+	removeMember(memberNode->name);
+	publicMembers.insert({ memberNode->name, memberNode });
+	memberNode->parent = weak_from_this();
 }
 
-void AbstractModule::addProtectedMember(std::string &&name, std::shared_ptr<AbstractMember> memberNode) {
-	removeMember(name);
-	protectedMembers.insert({ std::move(name), memberNode });
+void AbstractModule::addProtectedMember(std::shared_ptr<AbstractMember> memberNode) {
+	removeMember(memberNode->name);
+	protectedMembers.insert({ memberNode->name, memberNode });
+	memberNode->parent = weak_from_this();
 }
 
-std::shared_ptr<AbstractMember> AbstractModule::getMember() {
+std::shared_ptr<AbstractMember> AbstractModule::getMember(const std::string_view &name) {
 	if (auto it = publicMembers.find(name); it != publicMembers.end()) {
 		return it->second;
 	}
 	if (auto it = protectedMembers.find(name); it != protectedMembers.end()) {
 		return it->second;
 	}
+	return {};
 }
 
-void AbstractModule::removeMember(const std::string &name) {
+void AbstractModule::removeMember(const std::string_view &name) {
 	if (auto it = publicMembers.find(name); it != publicMembers.end()) {
 		publicMembers.erase(it);
 	}
@@ -150,7 +133,7 @@ DoubleTypeName::DoubleTypeName() : TypeName(TypeNameKind::Double) {
 DoubleTypeName::~DoubleTypeName() {
 }
 
-ArrayTypeName::ArrayTypeName(std::shared_ptr<TypeName> elementType, size_t rank) : TypeName(TypeNameKind::Array), elementType(elementType), rank(rank) {
+ArrayTypeName::ArrayTypeName(std::shared_ptr<TypeName> elementType) : TypeName(TypeNameKind::Array), elementType(elementType) {
 }
 
 ArrayTypeName::~ArrayTypeName() {
@@ -161,6 +144,29 @@ PointerTypeName::PointerTypeName(std::shared_ptr<TypeName> pointedType)
 }
 
 PointerTypeName::~PointerTypeName() {
+}
+
+RefTypeName::RefTypeName(std::shared_ptr<TypeName> refType)
+	: TypeName(TypeNameKind::Pointer), refType(refType) {
+}
+
+RefTypeName::~RefTypeName() {
+}
+
+RvalueTypeName::RvalueTypeName(std::shared_ptr<TypeName> refType)
+	: TypeName(TypeNameKind::Pointer), refType(refType) {
+}
+
+RvalueTypeName::~RvalueTypeName() {
+}
+
+FnPointerTypeName::FnPointerTypeName(std::shared_ptr<TypeName> returnType,
+	std::vector<std::shared_ptr<TypeName>> &&paramTypes,
+	bool hasVarArgs)
+	: TypeName(TypeNameKind::FnPointer), returnType(returnType), paramTypes(std::move(paramTypes)), hasVarArgs(hasVarArgs) {
+}
+
+FnPointerTypeName::~FnPointerTypeName() {
 }
 
 CustomTypeName::CustomTypeName(
@@ -180,7 +186,82 @@ Stmt::Stmt(StmtKind stmtKind) : ASTNode(NodeKind::Stmt) {
 Stmt::~Stmt() {
 }
 
-Expr::Expr(ExprKind stmtKind) : ASTNode(NodeKind::Expr) {
+ExprStmt::ExprStmt(std::shared_ptr<Expr> expr) : Stmt(StmtKind::Expr), expr(expr) {
+}
+
+ExprStmt::~ExprStmt() {
+}
+
+LocalVarDefStmt::LocalVarDefStmt(std::shared_ptr<TypeName> type,
+	std::vector<VarDefPair> &&varDefPairs)
+	: Stmt(StmtKind::LocalVarDef),
+	  type(type),
+	  varDefPairs(std::move(varDefPairs)) {
+}
+
+LocalVarDefStmt::~LocalVarDefStmt() {
+}
+
+IfStmt::IfStmt(
+	std::shared_ptr<Expr> condition,
+	std::shared_ptr<Stmt> trueBranch,
+	std::shared_ptr<Stmt> elseBranch)
+	: Stmt(StmtKind::If),
+	  condition(condition),
+	  trueBranch(trueBranch),
+	  elseBranch(elseBranch) {
+}
+
+IfStmt::~IfStmt() {
+}
+
+ForStmt::ForStmt(
+	std::shared_ptr<LocalVarDefStmt> varDefs,
+	std::shared_ptr<Expr> condition,
+	std::shared_ptr<Expr> endExpr,
+	std::shared_ptr<Stmt> body)
+	: Stmt(StmtKind::For),
+	  varDefs(varDefs),
+	  condition(condition),
+	  endExpr(endExpr),
+	  body(body) {
+}
+
+ForStmt::~ForStmt() {
+}
+
+WhileStmt::WhileStmt(
+	std::shared_ptr<Expr> condition,
+	std::shared_ptr<Stmt> body)
+	: Stmt(StmtKind::While),
+	  condition(condition),
+	  body(body) {
+}
+
+WhileStmt::~WhileStmt() {
+}
+
+BreakStmt::BreakStmt()
+	: Stmt(StmtKind::Break) {
+}
+
+BreakStmt::~BreakStmt() {
+}
+
+ContinueStmt::ContinueStmt()
+	: Stmt(StmtKind::Continue) {
+}
+
+ContinueStmt::~ContinueStmt() {
+}
+
+ReturnStmt::ReturnStmt(std::shared_ptr<Expr> value) : Stmt(StmtKind::Expr), value(value) {
+}
+
+ReturnStmt::~ReturnStmt() {
+}
+
+Expr::Expr(ExprKind stmtKind) : ASTNode(NodeKind::Expr), exprKind(stmtKind) {
 }
 
 Expr::~Expr() {
@@ -196,6 +277,17 @@ IdExpr::IdExpr(std::string &&name) : Expr(ExprKind::Id), name(std::move(name)) {
 }
 
 IdExpr::~IdExpr() {
+}
+
+InitializerListExpr::InitializerListExpr(
+	std::shared_ptr<TypeName> type,
+	std::vector<std::shared_ptr<Expr>> args)
+	: Expr(ExprKind::InitializerList),
+	  type(type),
+	  args(std::move(args)) {
+}
+
+InitializerListExpr::~InitializerListExpr() {
 }
 
 UnaryExpr::UnaryExpr(UnaryOp op, std::shared_ptr<Expr> operand) : Expr(ExprKind::Unary), op(op), operand(operand) {
@@ -274,4 +366,76 @@ ThisExpr::ThisExpr() : Expr(ExprKind::This) {
 }
 
 ThisExpr::~ThisExpr() {
+}
+
+Directive::Directive(std::string &&name, std::vector<std::shared_ptr<Expr>> &&args)
+	: ASTNode(NodeKind::Directive),
+	  name(std::move(name)),
+	  args(std::move(args)) {
+}
+
+Directive::~Directive() {
+}
+
+IncludeDirective::IncludeDirective(
+	std::string &&name,
+	bool isSystem)
+	: ASTNode(NodeKind::IncludeDirective),
+	  name(std::move(name)),
+	  isSystem(isSystem) {
+}
+
+IncludeDirective::~IncludeDirective() {
+}
+
+IfDirective::IfDirective(std::shared_ptr<Expr> condition,
+	std::shared_ptr<ASTNode> trueBranch,
+	std::shared_ptr<ASTNode> elseBranch)
+	: ASTNode(NodeKind::IfDirective),
+	  condition(condition),
+	  trueBranch(trueBranch),
+	  elseBranch(elseBranch) {
+}
+
+IfDirective::~IfDirective() {
+}
+
+IfdefDirective::IfdefDirective(
+	std::string &&name,
+	std::shared_ptr<ASTNode> trueBranch,
+	std::shared_ptr<ASTNode> elseBranch)
+	: ASTNode(NodeKind::IfdefDirective),
+	  name(std::move(name)),
+	  trueBranch(trueBranch),
+	  elseBranch(elseBranch) {
+}
+
+IfdefDirective::~IfdefDirective() {
+}
+
+IfndefDirective::IfndefDirective(
+	std::string &&name,
+	std::vector<std::shared_ptr<ASTNode>> &&trueBranch,
+	std::vector<std::shared_ptr<ASTNode>> &&elseBranch)
+	: ASTNode(NodeKind::IfndefDirective),
+	  name(std::move(name)),
+	  trueBranch(std::move(trueBranch)),
+	  elseBranch(std::move(elseBranch)) {
+}
+
+IfndefDirective::~IfndefDirective() {
+}
+
+Var::Var(
+	std::string &&name,
+	StorageClass storageClass,
+	std::shared_ptr<TypeName> type,
+	std::shared_ptr<Expr> initialValue)
+	: AbstractMember(NodeKind::Var, std::move(name)),
+	  storageClass(storageClass),
+	  type(type),
+	  initialValue(initialValue) {
+}
+
+Var::~Var() {
 }

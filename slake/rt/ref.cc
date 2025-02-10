@@ -100,7 +100,7 @@ SLAKE_API std::string Runtime::getFullName(const MemberObject *v) const {
 	std::string s;
 
 	peff::DynArray<IdRefEntry> fullIdRef;
-	if (!getFullRef(v, fullIdRef))
+	if (!getFullRef(peff::getDefaultAlloc(), v, fullIdRef))
 		throw std::bad_alloc();
 
 	for (size_t i = 0; i < fullIdRef.size(); ++i) {
@@ -128,7 +128,7 @@ SLAKE_API std::string Runtime::getFullName(const IdRefObject *v) const {
 	return std::to_string(v);
 }
 
-SLAKE_API bool Runtime::getFullRef(const MemberObject *v, peff::DynArray<IdRefEntry> &idRefOut) const {
+SLAKE_API bool Runtime::getFullRef(peff::Alloc *allocator, const MemberObject *v, peff::DynArray<IdRefEntry> &idRefOut) const {
 	do {
 		switch (v->getKind()) {
 			case ObjectKind::Instance:
@@ -138,18 +138,18 @@ SLAKE_API bool Runtime::getFullRef(const MemberObject *v, peff::DynArray<IdRefEn
 
 		const char *name = v->getName();
 		size_t szName = strlen(name);
-		peff::String copiedName(&globalHeapPoolAlloc);
+		peff::String copiedName(allocator);
 		if (!copiedName.resize(szName)) {
 			return false;
 		}
 		memcpy(copiedName.data(), name, szName);
-		GenericArgList copiedGenericArgs(&globalHeapPoolAlloc);
+		GenericArgList copiedGenericArgs(allocator);
 		if (v->getGenericArgs()) {
 			if (!peff::copyAssign(copiedGenericArgs, *v->getGenericArgs()))
 				return false;
 		}
 
-		peff::DynArray<Type> paramList(&globalHeapPoolAlloc);
+		peff::DynArray<Type> paramList(allocator);
 		if (!idRefOut.pushFront(IdRefEntry(std::move(copiedName), std::move(copiedGenericArgs), false, std::move(paramList), false))) {
 			return false;
 		}

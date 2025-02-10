@@ -2,15 +2,81 @@
 #define _SLKAOT_BC2CXX_H_
 
 #include "cxxast.h"
+#include <iostream>
+#include <slake/opti/proganal.h>
 
 namespace slake {
 	namespace slkaot {
 		namespace bc2cxx {
 			class BC2CXX {
 			public:
-				std::shared_ptr<cxxast::Namespace> rootNamespace;
+				enum class ASTDumpMode {
+					Header = 0,
+					Source
+				};
 
-				void compileModule(ModuleObject *moduleObject);
+			private:
+				void _dumpStmt(std::ostream &os, std::shared_ptr<cxxast::ASTNode> astNode, ASTDumpMode dumpMode, size_t indentLevel);
+				void _dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> astNode, ASTDumpMode dumpMode, size_t indentLevel);
+
+			public:
+				enum class CompilationTarget {
+					None = 0,
+					Module,
+					Fn
+				};
+
+				struct DynamicCompileContextContents {
+					CompilationTarget compilationTarget = CompilationTarget::None;
+					std::map<uint32_t, std::string> vregNames;
+				};
+
+				struct CompileContext {
+					Runtime *runtime;
+					std::shared_ptr<cxxast::Namespace> rootNamespace;
+					std::list<DynamicCompileContextContents> savedDynamicContents;
+					DynamicCompileContextContents dynamicContents;
+
+					SLAKE_FORCEINLINE CompileContext(Runtime *runtime, std::shared_ptr<cxxast::Namespace> rootNamespace) : runtime(runtime), rootNamespace(rootNamespace) {}
+
+					SLAKE_FORCEINLINE void pushDynamicContents() {
+						savedDynamicContents.push_back(dynamicContents);
+					}
+
+					SLAKE_FORCEINLINE void popDynamicContents() {
+						dynamicContents = savedDynamicContents.back();
+						savedDynamicContents.pop_back();
+					}
+				};
+
+				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genInstanceObjectTypeName() {
+					return std::make_shared<cxxast::PointerTypeName>(
+						std::make_shared<cxxast::CustomTypeName>(
+							false,
+							std::make_shared<cxxast::BinaryExpr>(
+								cxxast::BinaryOp::Scope,
+								std::make_shared<cxxast::IdExpr>("slake"),
+								std::make_shared<cxxast::IdExpr>("Object"))));
+				}
+
+				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genAnyTypeName() {
+					return std::make_shared<cxxast::PointerTypeName>(
+						std::make_shared<cxxast::CustomTypeName>(
+							false,
+							std::make_shared<cxxast::BinaryExpr>(
+								cxxast::BinaryOp::Scope,
+								std::make_shared<cxxast::IdExpr>("slake"),
+								std::make_shared<cxxast::IdExpr>("Value"))));
+				}
+
+				std::shared_ptr<cxxast::Namespace> completeModuleNamespace(CompileContext &compileContext, const peff::DynArray<IdRefEntry> &entries);
+				std::shared_ptr<cxxast::Expr> compileRef(CompileContext &compileContext, const peff::DynArray<IdRefEntry> &entries);
+				std::shared_ptr<cxxast::Expr> compileValue(CompileContext &compileContext, const Value &value);
+				std::shared_ptr<cxxast::TypeName> compileType(CompileContext &compileContext, const Type &type);
+				void compileModule(CompileContext &compileContext, ModuleObject *moduleObject);
+				std::pair<std::shared_ptr<cxxast::IfndefDirective>, std::shared_ptr<cxxast::Namespace>> compile(ModuleObject *moduleObject);
+
+				void dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> astNode, ASTDumpMode dumpMode);
 			};
 		}
 	}

@@ -254,7 +254,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Typ
 			} else {
 				peff::DynArray<IdRefEntry> idRefToResolvedType(&globalHeapPoolAlloc);
 
-				if (!getFullRef((MemberObject *)type.getCustomTypeExData(), idRefToResolvedType))
+				if (!getFullRef(&globalHeapPoolAlloc, (MemberObject *)type.getCustomTypeExData(), idRefToResolvedType))
 					return OutOfMemoryError::alloc();
 
 				HostObjectRef<IdRefObject> idRefObject = IdRefObject::alloc((Runtime *)this);

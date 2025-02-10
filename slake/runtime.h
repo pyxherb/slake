@@ -234,7 +234,7 @@ namespace slake {
 		SLAKE_API std::string getFullName(const MemberObject *v) const;
 		SLAKE_API std::string getFullName(const IdRefObject *v) const;
 
-		SLAKE_API [[nodiscard]] bool getFullRef(const MemberObject *v, peff::DynArray<IdRefEntry> &idRefOut) const;
+		SLAKE_API [[nodiscard]] bool getFullRef(peff::Alloc *allocator, const MemberObject *v, peff::DynArray<IdRefEntry> &idRefOut) const;
 
 		/// @brief Do a GC cycle.
 		SLAKE_API void gc();

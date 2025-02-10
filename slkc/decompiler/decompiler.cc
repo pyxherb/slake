@@ -20,13 +20,12 @@ static std::unique_ptr<std::istream> fsModuleLocator(slake::Runtime *rt, slake::
 		if (i + 1 < ref->entries.size())
 			path += "/";
 	}
-	path += ".slx";
 
 	std::unique_ptr<std::ifstream> fs = std::make_unique<std::ifstream>();
 	fs->exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
 	for (auto i : modulePaths) {
 		try {
-			fs->open(i + "/" + path, std::ios_base::binary);
+			fs->open(i + "/" + path + ".slx", std::ios_base::binary);
 			return fs;
 		} catch (std::ios::failure) {
 			fs->clear();

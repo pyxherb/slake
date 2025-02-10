@@ -12,19 +12,29 @@ namespace slake {
 			class AbstractModule;
 
 			enum class NodeKind : uint8_t {
+				Directive,
+				IncludeDirective,
+				IfDirective,
+				IfdefDirective,
+				IfndefDirective,
 				FnOverloading,
 				Fn,
 				Struct,
 				Class,
 				Namespace,
+				Var,
 				TypeName,
 				Stmt,
-				Expr
+				Expr,
 			};
 
-			class ASTNode : std::enable_shared_from_this<ASTNode> {
+			class ASTNode {
 			public:
 				NodeKind nodeKind;
+				std::vector<std::shared_ptr<ASTNode>> defPrecedingNodes;
+				std::vector<std::shared_ptr<ASTNode>> defTrailingNodes;
+				std::vector<std::shared_ptr<ASTNode>> declPrecedingNodes;
+				std::vector<std::shared_ptr<ASTNode>> declTrailingNodes;
 
 				ASTNode(NodeKind nodeKind);
 				virtual ~ASTNode();
@@ -39,29 +49,26 @@ namespace slake {
 				virtual ~AbstractMember();
 			};
 
-			class AbstractModule : public AbstractMember {
+			class AbstractModule : public AbstractMember, public std::enable_shared_from_this<AbstractModule> {
 			public:
-				std::string name;
-				std::unordered_map<std::string, std::shared_ptr<AbstractMember>> publicMembers;
-				std::unordered_map<std::string, std::shared_ptr<AbstractMember>> protectedMembers;
+				std::unordered_map<std::string_view, std::shared_ptr<AbstractMember>> publicMembers;
+				std::unordered_map<std::string_view, std::shared_ptr<AbstractMember>> protectedMembers;
 
 				AbstractModule(NodeKind nodeKind, std::string &&name);
 				virtual ~AbstractModule();
 
-				void addPublicMember(std::string &&name, std::shared_ptr<AbstractMember> memberNode);
-				void addProtectedMember(std::string &&name, std::shared_ptr<AbstractMember> memberNode);
-				std::shared_ptr<AbstractMember> getMember();
-				void removeMember(const std::string &name);
+				void addPublicMember(std::shared_ptr<AbstractMember> memberNode);
+				void addProtectedMember(std::shared_ptr<AbstractMember> memberNode);
+				std::shared_ptr<AbstractMember> getMember(const std::string_view &name);
+				void removeMember(const std::string_view &name);
 			};
 
-			using ParamList = std::vector<Type>;
+			class TypeName;
+
+			using ParamList = std::vector<std::shared_ptr<TypeName>>;
 			struct FnOverloadingSignature {
 				bool isConst;
 				ParamList paramTypes;
-			};
-
-			struct FnOverloadingSignatureComparator {
-				bool operator()(const FnOverloadingSignature &lhs, const FnOverloadingSignature &rhs);
 			};
 
 			struct FnOverloadingProperties {
@@ -72,12 +79,16 @@ namespace slake {
 
 			class Stmt;
 
+			class Fn;
+			class TypeName;
+
 			class FnOverloading : public ASTNode {
 			public:
-				Type returnType;
-				ParamList paramTypes;
+				std::shared_ptr<TypeName> returnType;
+				FnOverloadingSignature signature;
 				FnOverloadingProperties properties;
 				std::vector<std::shared_ptr<Stmt>> body;
+				std::weak_ptr<Fn> fn;
 
 				FnOverloading();
 				virtual ~FnOverloading();
@@ -85,7 +96,7 @@ namespace slake {
 
 			class Fn : public AbstractMember {
 			public:
-				std::map<FnOverloadingSignature, std::shared_ptr<FnOverloading>, FnOverloadingSignatureComparator> overloadings;
+				std::vector<std::shared_ptr<FnOverloading>> overloadings;
 
 				Fn(std::string &&name);
 				virtual ~Fn();
@@ -117,13 +128,17 @@ namespace slake {
 				Float,
 				Double,
 				Pointer,
+				FnPointer,
 				Array,
+				Ref,
+				Rvalue,
 				Custom
 			};
 
 			class TypeName : public ASTNode {
 			public:
 				bool isConst = false;
+				bool isVolatile = false;
 				TypeNameKind typeNameKind;
 
 				TypeName(TypeNameKind typeNameKind);
@@ -187,9 +202,8 @@ namespace slake {
 			class ArrayTypeName : public TypeName {
 			public:
 				std::shared_ptr<TypeName> elementType;
-				size_t rank;
 
-				ArrayTypeName(std::shared_ptr<TypeName> elementType, size_t rank);
+				ArrayTypeName(std::shared_ptr<TypeName> elementType);
 				virtual ~ArrayTypeName();
 			};
 
@@ -199,6 +213,34 @@ namespace slake {
 
 				PointerTypeName(std::shared_ptr<TypeName> pointedType);
 				virtual ~PointerTypeName();
+			};
+
+			class FnPointerTypeName : public TypeName {
+			public:
+				std::shared_ptr<TypeName> returnType;
+				std::vector<std::shared_ptr<TypeName>> paramTypes;
+				bool hasVarArgs;
+
+				FnPointerTypeName(std::shared_ptr<TypeName> returnType,
+					std::vector<std::shared_ptr<TypeName>> &&paramTypes,
+					bool hasVarArgs);
+				virtual ~FnPointerTypeName();
+			};
+
+			class RefTypeName : public TypeName {
+			public:
+				std::shared_ptr<TypeName> refType;
+
+				RefTypeName(std::shared_ptr<TypeName> refType);
+				virtual ~RefTypeName();
+			};
+
+			class RvalueTypeName : public TypeName {
+			public:
+				std::shared_ptr<TypeName> refType;
+
+				RvalueTypeName(std::shared_ptr<TypeName> refType);
+				virtual ~RvalueTypeName();
 			};
 
 			class Expr;
@@ -231,6 +273,86 @@ namespace slake {
 				virtual ~Stmt();
 			};
 
+			class ExprStmt : public Stmt {
+			public:
+				std::shared_ptr<Expr> expr;
+
+				ExprStmt(std::shared_ptr<Expr> expr);
+				virtual ~ExprStmt();
+			};
+
+			struct VarDefPair {
+				std::string name;
+				std::shared_ptr<Expr> initialValue;
+			};
+
+			class LocalVarDefStmt : public Stmt {
+			public:
+				std::shared_ptr<TypeName> type;
+				std::vector<VarDefPair> varDefPairs;
+
+				LocalVarDefStmt(std::shared_ptr<TypeName> type,
+					std::vector<VarDefPair> &&varDefPairs);
+				virtual ~LocalVarDefStmt();
+			};
+
+			class IfStmt : public Stmt {
+			public:
+				std::shared_ptr<Expr> condition;
+				std::shared_ptr<Stmt> trueBranch, elseBranch;
+
+				IfStmt(
+					std::shared_ptr<Expr> condition,
+					std::shared_ptr<Stmt> trueBranch,
+					std::shared_ptr<Stmt> elseBranch);
+				virtual ~IfStmt();
+			};
+
+			class ForStmt : public Stmt {
+			public:
+				std::shared_ptr<LocalVarDefStmt> varDefs;
+				std::shared_ptr<Expr> condition, endExpr;
+				std::shared_ptr<Stmt> body;
+
+				ForStmt(
+					std::shared_ptr<LocalVarDefStmt> varDefs,
+					std::shared_ptr<Expr> condition,
+					std::shared_ptr<Expr> endExpr,
+					std::shared_ptr<Stmt> body);
+				virtual ~ForStmt();
+			};
+
+			class WhileStmt : public Stmt {
+			public:
+				std::shared_ptr<Expr> condition;
+				std::shared_ptr<Stmt> body;
+
+				WhileStmt(
+					std::shared_ptr<Expr> condition,
+					std::shared_ptr<Stmt> body);
+				virtual ~WhileStmt();
+			};
+
+			class BreakStmt : public Stmt {
+			public:
+				BreakStmt();
+				virtual ~BreakStmt();
+			};
+
+			class ContinueStmt : public Stmt {
+			public:
+				ContinueStmt();
+				virtual ~ContinueStmt();
+			};
+
+			class ReturnStmt : public Stmt {
+			public:
+				std::shared_ptr<Expr> value;
+
+				ReturnStmt(std::shared_ptr<Expr> value);
+				virtual ~ReturnStmt();
+			};
+
 			enum class ExprKind : uint8_t {
 				IntLiteral = 0,
 				LongLiteral,
@@ -240,8 +362,10 @@ namespace slake {
 				StringLiteral,
 				FloatLiteral,
 				DoubleLiteral,
+				BoolLiteral,
 				NullptrLiteral,
 				Id,
+				InitializerList,
 
 				Unary,
 				Binary,
@@ -279,6 +403,7 @@ namespace slake {
 			using StringLiteralExpr = LiteralExpr<std::string, ExprKind::StringLiteral>;
 			using FloatLiteralExpr = LiteralExpr<float, ExprKind::FloatLiteral>;
 			using DoubleLiteralExpr = LiteralExpr<double, ExprKind::DoubleLiteral>;
+			using BoolLiteralExpr = LiteralExpr<bool, ExprKind::BoolLiteral>;
 
 			class NullptrLiteralExpr : public Expr {
 			public:
@@ -292,6 +417,17 @@ namespace slake {
 
 				IdExpr(std::string &&name);
 				virtual ~IdExpr();
+			};
+
+			class InitializerListExpr : public Expr {
+			public:
+				std::shared_ptr<TypeName> type;
+				std::vector<std::shared_ptr<Expr>> args;
+
+				InitializerListExpr(
+					std::shared_ptr<TypeName> type,
+					std::vector<std::shared_ptr<Expr>> args);
+				virtual ~InitializerListExpr();
 			};
 
 			enum class UnaryOp {
@@ -341,8 +477,6 @@ namespace slake {
 				Scope,
 				MemberAccess,
 				PtrAccess,
-				TypedMemberAccess,
-				TypedPtrAccess
 			};
 
 			class BinaryExpr : public Expr {
@@ -409,6 +543,82 @@ namespace slake {
 			public:
 				ThisExpr();
 				virtual ~ThisExpr();
+			};
+
+			class Directive : public ASTNode {
+			public:
+				std::string name;
+				std::vector<std::shared_ptr<Expr>> args;
+
+				Directive(std::string &&name, std::vector<std::shared_ptr<Expr>> &&args);
+				virtual ~Directive();
+			};
+
+			class IncludeDirective : public ASTNode {
+			public:
+				std::string name;
+				bool isSystem;
+
+				IncludeDirective(
+					std::string &&name,
+					bool isSystem);
+				virtual ~IncludeDirective();
+			};
+
+			class IfDirective : public ASTNode {
+			public:
+				std::shared_ptr<Expr> condition;
+				std::shared_ptr<ASTNode> trueBranch, elseBranch;
+
+				IfDirective(std::shared_ptr<Expr> condition,
+					std::shared_ptr<ASTNode> trueBranch,
+					std::shared_ptr<ASTNode> elseBranch);
+				virtual ~IfDirective();
+			};
+
+			class IfdefDirective : public ASTNode {
+			public:
+				std::string name;
+				std::shared_ptr<ASTNode> trueBranch, elseBranch;
+
+				IfdefDirective(
+					std::string &&name,
+					std::shared_ptr<ASTNode> trueBranch,
+					std::shared_ptr<ASTNode> elseBranch);
+				virtual ~IfdefDirective();
+			};
+
+			class IfndefDirective : public ASTNode {
+			public:
+				std::string name;
+				std::vector<std::shared_ptr<ASTNode>> trueBranch, elseBranch;
+
+				IfndefDirective(
+					std::string &&name,
+					std::vector<std::shared_ptr<ASTNode>> &&trueBranch,
+					std::vector<std::shared_ptr<ASTNode>> &&elseBranch);
+				virtual ~IfndefDirective();
+			};
+
+			enum class StorageClass {
+				Unspecified = 0,
+				Static,
+				Extern,
+				Mutable
+			};
+
+			class Var : public AbstractMember {
+			public:
+				StorageClass storageClass;
+				std::shared_ptr<TypeName> type;
+				std::shared_ptr<Expr> initialValue;
+
+				Var(
+					std::string &&name,
+					StorageClass storageClass,
+					std::shared_ptr<TypeName> type,
+					std::shared_ptr<Expr> initialValue);
+				virtual ~Var();
 			};
 		}
 	}

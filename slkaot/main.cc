@@ -6,11 +6,12 @@
 #include <filesystem>
 #include <fstream>
 
+using namespace slake;
 using namespace slake::slkaot;
 
 class ArgumentError : public std::runtime_error {
 public:
-	inline ArgumentError(std::string msg) : runtime_error(msg){};
+	inline ArgumentError(std::string msg) : runtime_error(msg) {};
 	virtual ~ArgumentError() = default;
 };
 
@@ -27,7 +28,6 @@ enum class AppAction : uint8_t {
 std::string srcPath = "", outPath = "";
 
 AppAction action = AppAction::Compile;
-std::deque<std::string> modulePaths;
 
 struct CmdLineAction {
 	const char *options;
@@ -83,16 +83,38 @@ int main(int argc, char **argv) {
 				}
 
 				std::ifstream is;
-				std::ofstream os;
+				std::ostream &os = std::cout;
+				// std::ofstream os;
 
 				is.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
-				os.exceptions(std::ios::failbit | std::ios::badbit);
+				// os.exceptions(std::ios::failbit | std::ios::badbit);
 
 				is.open(srcPath, std::ios::binary);
-				os.open(outPath, std::ios::binary);
+				// os.open(outPath, std::ios::binary);
+
+				auto rt = std::make_unique<slake::Runtime>(peff::getDefaultAlloc());
+				rt->setModuleLocator(moduleLocator);
+
+				HostObjectRef<ModuleObject> mod;
+				try {
+					mod = rt->loadModule(is, 0);
+				} catch (slake::LoaderError e) {
+					try {
+						mod = rt->loadModule(is, 0);
+					} catch (slake::LoaderError e) {
+						os << "Error loading the module: " << e.what() << std::endl;
+						return -1;
+					}
+				}
+
+				bc2cxx::BC2CXX bc2cxxCompiler;
+
+				auto result = bc2cxxCompiler.compile(mod.get());
+
+				bc2cxxCompiler.dumpAstNode(os, result.first, bc2cxx::BC2CXX::ASTDumpMode::Header);
 
 				is.close();
-				os.close();
+				// os.close();
 
 				break;
 			}

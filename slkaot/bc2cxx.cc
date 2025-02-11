@@ -44,6 +44,23 @@ std::shared_ptr<cxxast::Expr> BC2CXX::_getAbsRef(std::shared_ptr<cxxast::Abstrac
 	return e;
 }
 
+std::shared_ptr<cxxast::Expr> BC2CXX::_getLastExpr(std::shared_ptr<cxxast::Expr> e) {
+	switch (e->exprKind) {
+		case cxxast::ExprKind::Unary:
+			return _getLastExpr(std::static_pointer_cast<cxxast::UnaryExpr>(e)->operand);
+		case cxxast::ExprKind::Binary:
+			return _getLastExpr(std::static_pointer_cast<cxxast::BinaryExpr>(e)->rhs);
+		default:
+			return e;
+	}
+}
+
+void BC2CXX::_applyGenericArgs(std::shared_ptr<cxxast::Expr> expr, cxxast::GenericArgList &&args) {
+	std::shared_ptr<cxxast::Expr> e = _getLastExpr(expr);
+	assert(e->exprKind == cxxast::ExprKind::Id);
+	std::static_pointer_cast<cxxast::IdExpr>(e)->genericArgs = std::move(args);
+}
+
 std::shared_ptr<cxxast::Namespace> BC2CXX::completeModuleNamespace(CompileContext &compileContext, const peff::DynArray<IdRefEntry> &entries) {
 	std::shared_ptr<cxxast::Namespace> ns = compileContext.rootNamespace;
 
@@ -291,6 +308,12 @@ std::shared_ptr<cxxast::TypeName> BC2CXX::compileType(CompileContext &compileCon
 std::shared_ptr<cxxast::FnOverloading> BC2CXX::compileFnOverloading(CompileContext &compileContext, FnOverloadingObject *fnOverloadingObject) {
 	std::shared_ptr<cxxast::FnOverloading> fnOverloading = std::make_shared<cxxast::FnOverloading>();
 
+	for (size_t i = 0; i < fnOverloadingObject->genericParams.size(); ++i) {
+		GenericParam &genericParam = fnOverloadingObject->genericParams.at(i);
+		cxxast::GenericParam cxxGenericParam = { (std::string)(std::string_view)genericParam.name };
+		fnOverloading->signature.genericParams.push_back(std::move(cxxGenericParam));
+	}
+
 	for (size_t i = 0; i < fnOverloadingObject->paramTypes.size(); ++i) {
 		fnOverloading->signature.paramTypes.push_back(compileType(compileContext, fnOverloadingObject->paramTypes.at(i)));
 	}
@@ -350,6 +373,12 @@ std::shared_ptr<cxxast::Class> BC2CXX::compileClass(CompileContext &compileConte
 	compileContext.dynamicContents.compilationTarget = CompilationTarget::Class;
 
 	std::shared_ptr<cxxast::Class> cls = std::make_shared<cxxast::Class>((std::string)(std::string_view)moduleObject->name);
+
+	for (size_t i = 0; i < moduleObject->genericParams.size(); ++i) {
+		GenericParam &genericParam = moduleObject->genericParams.at(i);
+		cxxast::GenericParam cxxGenericParam = { (std::string)(std::string_view)genericParam.name };
+		cls->genericParams.push_back(std::move(cxxGenericParam));
+	}
 
 	for (size_t i = 0; i < moduleObject->fieldRecords.size(); ++i) {
 		const FieldRecord &fr = moduleObject->fieldRecords.at(i);

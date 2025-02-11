@@ -99,12 +99,8 @@ int main(int argc, char **argv) {
 				try {
 					mod = rt->loadModule(is, LMOD_NOIMPORT);
 				} catch (slake::LoaderError e) {
-					try {
-						mod = rt->loadModule(is, 0);
-					} catch (slake::LoaderError e) {
-						os << "Error loading the module: " << e.what() << std::endl;
-						return -1;
-					}
+					os << "Error loading the module: " << e.what() << std::endl;
+					return -1;
 				}
 
 				bc2cxx::BC2CXX bc2cxxCompiler;
@@ -112,6 +108,7 @@ int main(int argc, char **argv) {
 				auto result = bc2cxxCompiler.compile(mod.get());
 
 				bc2cxxCompiler.dumpAstNode(os, result.first, bc2cxx::BC2CXX::ASTDumpMode::Header);
+				bc2cxxCompiler.dumpAstNode(os, result.first, bc2cxx::BC2CXX::ASTDumpMode::Source);
 
 				is.close();
 				// os.close();

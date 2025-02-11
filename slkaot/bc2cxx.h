@@ -27,6 +27,8 @@ namespace slake {
 				void _dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> astNode, ASTDumpMode dumpMode, size_t indentLevel);
 				bool _isSimpleIdExpr(std::shared_ptr<cxxast::Expr> expr);
 				std::shared_ptr<cxxast::Expr> _getAbsRef(std::shared_ptr<cxxast::AbstractMember> m);
+				std::shared_ptr<cxxast::Expr> _getLastExpr(std::shared_ptr<cxxast::Expr> e);
+				void _applyGenericArgs(std::shared_ptr<cxxast::Expr> expr, cxxast::GenericArgList &&args);
 
 			public:
 				struct DynamicCompileContextContents {
@@ -76,6 +78,19 @@ namespace slake {
 					return std::make_shared<cxxast::CustomTypeName>(
 						false,
 						std::make_shared<cxxast::IdExpr>("size_t"));
+				}
+
+				SLAKE_FORCEINLINE cxxast::GenericArgList genSelfGenericArgs(const cxxast::GenericParamList &genericParams) {
+					cxxast::GenericArgList args;
+
+					for (size_t i = 0; i < genericParams.size(); ++i) {
+						args.push_back(std::make_shared<cxxast::CustomTypeName>(
+							false,
+							std::make_shared<cxxast::IdExpr>(
+								std::string(genericParams[i].name))));
+					}
+
+					return args;
 				}
 
 				std::shared_ptr<cxxast::Namespace> completeModuleNamespace(CompileContext &compileContext, const peff::DynArray<IdRefEntry> &entries);

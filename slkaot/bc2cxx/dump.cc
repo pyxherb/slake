@@ -83,6 +83,24 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 		case cxxast::NodeKind::FnOverloading: {
 			std::shared_ptr<cxxast::FnOverloading> overloading = std::static_pointer_cast<cxxast::FnOverloading>(astNode);
 
+			if (overloading->signature.genericParams.size()) {
+				if(dumpMode == ASTDumpMode::Header)
+					break;
+
+				os << std::string(indentLevel, '\t');
+				os << "template <";
+				for (size_t i = 0; i < overloading->signature.genericParams.size(); ++i) {
+					cxxast::GenericParam &genericParam = overloading->signature.genericParams.at(i);
+
+					if (i)
+						os << ", ";
+
+					os << "typename ";
+					os << genericParam.name;
+				}
+				os << ">\n";
+			}
+
 			if (dumpMode == ASTDumpMode::Header)
 				os << std::string(indentLevel, '\t');
 
@@ -166,6 +184,20 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 			std::shared_ptr<cxxast::Struct> classNode = std::static_pointer_cast<cxxast::Struct>(astNode);
 
 			if (dumpMode == ASTDumpMode::Header) {
+				if (classNode->genericParams.size()) {
+					os << std::string(indentLevel, '\t');
+					os << "template <";
+					for (size_t i = 0; i < classNode->genericParams.size(); ++i) {
+						cxxast::GenericParam &genericParam = classNode->genericParams.at(i);
+
+						if (i)
+							os << ", ";
+
+						os << "typename ";
+						os << genericParam.name;
+					}
+					os << ">\n";
+				}
 				os << std::string(indentLevel, '\t');
 				os << "class " << classNode->name << " {\n";
 
@@ -189,11 +221,13 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 				os << std::string(indentLevel, '\t');
 				os << "};\n";
 			} else {
-				for (auto &i : classNode->protectedMembers) {
-					_dumpAstNode(os, i.second, dumpMode, indentLevel + 1);
-				}
-				for (auto &i : classNode->publicMembers) {
-					_dumpAstNode(os, i.second, dumpMode, indentLevel + 1);
+				if (!classNode->genericParams.size()) {
+					for (auto &i : classNode->protectedMembers) {
+						_dumpAstNode(os, i.second, dumpMode, indentLevel + 1);
+					}
+					for (auto &i : classNode->publicMembers) {
+						_dumpAstNode(os, i.second, dumpMode, indentLevel + 1);
+					}
 				}
 			}
 

@@ -49,6 +49,11 @@ namespace slake {
 				virtual ~AbstractMember();
 			};
 
+			struct GenericParam {
+				std::string name;
+			};
+			using GenericParamList = std::vector<GenericParam>;
+
 			class AbstractModule : public AbstractMember, public std::enable_shared_from_this<AbstractModule> {
 			public:
 				std::unordered_map<std::string_view, std::shared_ptr<AbstractMember>> publicMembers;
@@ -66,9 +71,11 @@ namespace slake {
 			class TypeName;
 
 			using ParamList = std::vector<std::shared_ptr<TypeName>>;
+			using GenericArgList = std::vector<std::shared_ptr<TypeName>>;
 			struct FnOverloadingSignature {
 				bool isConst = false;
 				ParamList paramTypes;
+				GenericParamList genericParams;
 			};
 
 			struct FnOverloadingProperties {
@@ -81,7 +88,6 @@ namespace slake {
 			class Stmt;
 
 			class Fn;
-			class TypeName;
 
 			class FnOverloading : public ASTNode {
 			public:
@@ -110,12 +116,16 @@ namespace slake {
 
 			class Struct : public AbstractModule {
 			public:
+				GenericParamList genericParams;
+
 				Struct(std::string &&name);
 				virtual ~Struct();
 			};
 
 			class Class : public AbstractModule {
 			public:
+				GenericParamList genericParams;
+
 				Class(std::string &&name);
 				virtual ~Class();
 			};
@@ -420,9 +430,9 @@ namespace slake {
 			class IdExpr : public Expr {
 			public:
 				std::string name;
-				std::vector<std::shared_ptr<TypeName>> genericArgs;
+				GenericArgList genericArgs;
 
-				IdExpr(std::string &&name, std::vector<std::shared_ptr<TypeName>> &&genericArgs = {});
+				IdExpr(std::string &&name, GenericArgList &&genericArgs = {});
 				virtual ~IdExpr();
 			};
 

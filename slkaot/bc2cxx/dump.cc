@@ -84,7 +84,7 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 			std::shared_ptr<cxxast::FnOverloading> overloading = std::static_pointer_cast<cxxast::FnOverloading>(astNode);
 
 			if (overloading->signature.genericParams.size()) {
-				if(dumpMode == ASTDumpMode::Header)
+				if (dumpMode == ASTDumpMode::Header)
 					break;
 
 				os << std::string(indentLevel, '\t');
@@ -128,12 +128,21 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 			if ((dumpMode == ASTDumpMode::Header) &&
 				(overloading->properties.isOverriden))
 				os << " override";
-			if (dumpMode == ASTDumpMode::Header) {
-				os << ";\n";
-			} else {
-				os << " {\n";
+			if (overloading->signature.genericParams.size()) {
+				if (dumpMode == ASTDumpMode::Header) {
+					os << " {\n";
 
-				os << "}\n";
+					os << std::string(indentLevel, '\t');
+					os << "}\n";
+				}
+			} else {
+				if (dumpMode == ASTDumpMode::Header) {
+					os << ";\n";
+				} else {
+					os << " {\n";
+
+					os << "}\n";
+				}
 			}
 			break;
 		}
@@ -301,6 +310,7 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 							default:
 								std::terminate();
 						}
+						break;
 					}
 					case cxxast::StorageClass::Extern: {
 						_dumpAstNode(os, varNode->type, dumpMode, 0);
@@ -327,10 +337,12 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 									_dumpAstNode(os, varNode->initialValue, dumpMode, 0);
 								}
 								os << ";\n";
+								break;
 							}
 							default:
 								std::terminate();
 						}
+						break;
 					}
 					case cxxast::StorageClass::Mutable:
 						break;

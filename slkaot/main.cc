@@ -108,7 +108,8 @@ int main(int argc, char **argv) {
 				auto result = bc2cxxCompiler.compile(mod.get());
 
 				bc2cxxCompiler.dumpAstNode(os, result.first, bc2cxx::BC2CXX::ASTDumpMode::Header);
-				bc2cxxCompiler.dumpAstNode(os, result.first, bc2cxx::BC2CXX::ASTDumpMode::Source);
+				os << "\n";
+				bc2cxxCompiler.dumpAstNode(os, result.second, bc2cxx::BC2CXX::ASTDumpMode::Source);
 
 				is.close();
 				// os.close();

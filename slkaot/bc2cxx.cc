@@ -61,6 +61,30 @@ void BC2CXX::_applyGenericArgs(std::shared_ptr<cxxast::Expr> expr, cxxast::Gener
 	std::static_pointer_cast<cxxast::IdExpr>(e)->genericArgs = std::move(args);
 }
 
+std::string BC2CXX::mangleFnName(const std::string &fnName) {
+	return "_slkaot_" + fnName;
+}
+
+std::string BC2CXX::mangleOperatorName(const std::string &operatorName) {
+	std::string mangledName = "_slkaotop_";
+
+	for (size_t i = 0; i < operatorName.size(); ++i) {
+		char c[3];
+
+		c[0] = (operatorName[i] & 0xf) + 'A';
+		c[1] = (operatorName[i] >> 4) + 'A';
+		c[2] = '\0';
+
+		mangledName += c;
+	}
+
+	return mangledName;
+}
+
+std::string BC2CXX::mangleFieldName(const std::string &fieldName) {
+	return "_slkaot_" + fieldName;
+}
+
 std::shared_ptr<cxxast::Namespace> BC2CXX::completeModuleNamespace(CompileContext &compileContext, const peff::DynArray<IdRefEntry> &entries) {
 	std::shared_ptr<cxxast::Namespace> ns = compileContext.rootNamespace;
 
@@ -340,7 +364,16 @@ std::shared_ptr<cxxast::Fn> BC2CXX::compileFn(CompileContext &compileContext, Fn
 	compileContext.pushDynamicContents();
 	compileContext.dynamicContents.compilationTarget = CompilationTarget::Fn;
 
-	std::shared_ptr<cxxast::Fn> fn = std::make_shared<cxxast::Fn>((std::string)(std::string_view)fnObject->name);
+	std::string name = (std::string)(std::string_view)fnObject->name;
+
+	if (!name.compare(0, sizeof("operator") - 1, "operator")) {
+		std::string operatorName = name.substr(sizeof("operator") - 1);
+		name = mangleOperatorName(operatorName);
+	} else {
+		name = mangleFnName(name);
+	}
+
+	std::shared_ptr<cxxast::Fn> fn = std::make_shared<cxxast::Fn>(std::move(name));
 
 	for (auto i : fnObject->overloadings) {
 		fn->pushOverloading(compileFnOverloading(compileContext, i));
@@ -395,7 +428,7 @@ std::shared_ptr<cxxast::Class> BC2CXX::compileClass(CompileContext &compileConte
 				storageClass = cxxast::StorageClass::Unspecified;
 
 			varObject = std::make_shared<cxxast::Var>(
-				std::move(name),
+				mangleFieldName(name),
 				storageClass,
 				compileType(compileContext, fr.type),
 				compileValue(compileContext,
@@ -470,7 +503,7 @@ void BC2CXX::compileModule(CompileContext &compileContext, ModuleObject *moduleO
 				storageClass = cxxast::StorageClass::Unspecified;
 
 			varObject = std::make_shared<cxxast::Var>(
-				std::move(name),
+				mangleFieldName(name),
 				storageClass,
 				compileType(compileContext, fr.type),
 				compileValue(compileContext,
@@ -548,6 +581,7 @@ std::pair<std::shared_ptr<cxxast::IfndefDirective>, std::shared_ptr<cxxast::Name
 		headerPath += name;
 	}
 
+	headerPath += ".h";
 	includeGuardName += "_";
 
 	compileModule(cc, moduleObject);

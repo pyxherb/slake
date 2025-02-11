@@ -93,6 +93,9 @@ namespace slake {
 					return args;
 				}
 
+				std::string mangleFnName(const std::string &fnName);
+				std::string mangleOperatorName(const std::string &operatorName);
+				std::string mangleFieldName(const std::string &fieldName);
 				std::shared_ptr<cxxast::Namespace> completeModuleNamespace(CompileContext &compileContext, const peff::DynArray<IdRefEntry> &entries);
 				std::shared_ptr<cxxast::Expr> compileRef(CompileContext &compileContext, const peff::DynArray<IdRefEntry> &entries);
 				std::shared_ptr<cxxast::Expr> compileValue(CompileContext &compileContext, const Value &value);

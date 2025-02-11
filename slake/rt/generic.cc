@@ -378,6 +378,8 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Obj
 				if (value == instantiationContext.mappedObject) {
 					if (!peff::copyAssign(value->genericArgs, *instantiationContext.genericArgs))
 						return OutOfMemoryError::alloc();
+					if (!peff::copyAssign(value->mappedGenericArgs, instantiationContext.mappedGenericArgs))
+						return OutOfMemoryError::alloc();
 				}
 
 				SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(value->parentClass, instantiationContext));
@@ -395,6 +397,8 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Obj
 			InterfaceObject *const value = (InterfaceObject *)v;
 
 			if (!peff::copyAssign(value->genericArgs, *instantiationContext.genericArgs))
+				return OutOfMemoryError::alloc();
+			if (!peff::copyAssign(value->mappedGenericArgs, instantiationContext.mappedGenericArgs))
 				return OutOfMemoryError::alloc();
 
 			for (auto it = value->scope->members.begin(); it != value->scope->members.end(); ++it) {

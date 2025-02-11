@@ -23,7 +23,7 @@ namespace slake {
 		PEFF_FORCEINLINE ObjectFieldRecord() { std::terminate(); }
 		PEFF_FORCEINLINE ObjectFieldRecord(peff::Alloc *selfAllocator) : name(selfAllocator) {}
 
-		PEFF_FORCEINLINE bool copy(ObjectFieldRecord& dest) const {
+		PEFF_FORCEINLINE bool copy(ObjectFieldRecord &dest) const {
 			if (!peff::copy(dest.name, name)) {
 				return false;
 			}
@@ -57,6 +57,7 @@ namespace slake {
 
 	public:
 		GenericArgList genericArgs;
+		peff::HashMap<peff::String, Type> mappedGenericArgs;
 
 		GenericParamList genericParams;
 
@@ -98,6 +99,7 @@ namespace slake {
 
 	public:
 		GenericArgList genericArgs;
+		peff::HashMap<peff::String, Type> mappedGenericArgs;
 
 		GenericParamList genericParams;
 

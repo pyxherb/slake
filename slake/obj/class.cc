@@ -38,6 +38,7 @@ SLAKE_API slake::ClassObject::ClassObject(Runtime *rt, ScopeUniquePtr &&scope, A
 	: ModuleObject(rt, std::move(scope), access),
 	  parentClass(parentClass),
 	  genericArgs(&rt->globalHeapPoolAlloc),
+	  mappedGenericArgs(&rt->globalHeapPoolAlloc),
 	  genericParams(&rt->globalHeapPoolAlloc),
 	  implInterfaces(&rt->globalHeapPoolAlloc),
 	  cachedFieldInitValues(&rt->globalHeapPoolAlloc) {
@@ -52,6 +53,7 @@ SLAKE_API const GenericArgList *ClassObject::getGenericArgs() const {
 SLAKE_API ClassObject::ClassObject(const ClassObject &x, bool &succeededOut)
 	: ModuleObject(x, succeededOut),
 	  genericArgs(&x.associatedRuntime->globalHeapPoolAlloc),
+	  mappedGenericArgs(&x.associatedRuntime->globalHeapPoolAlloc),
 	  genericParams(&x.associatedRuntime->globalHeapPoolAlloc),
 	  implInterfaces(&x.associatedRuntime->globalHeapPoolAlloc),
 	  cachedFieldInitValues(&x.associatedRuntime->globalHeapPoolAlloc) {
@@ -59,6 +61,10 @@ SLAKE_API ClassObject::ClassObject(const ClassObject &x, bool &succeededOut)
 		_flags = x._flags;
 
 		if (!peff::copyAssign(genericArgs, x.genericArgs)) {
+			succeededOut = false;
+			return;
+		}
+		if (!peff::copyAssign(mappedGenericArgs, x.mappedGenericArgs)) {
 			succeededOut = false;
 			return;
 		}
@@ -155,10 +161,19 @@ SLAKE_API void slake::ClassObject::dealloc() {
 }
 
 SLAKE_API InterfaceObject::InterfaceObject(Runtime *rt, ScopeUniquePtr &&scope, AccessModifier access, peff::DynArray<Type> &&parents)
-	: ModuleObject(rt, std::move(scope), access), parents(std::move(parents)) {
+	: ModuleObject(rt, std::move(scope), access),
+	  genericArgs(&rt->globalHeapPoolAlloc),
+	  mappedGenericArgs(&rt->globalHeapPoolAlloc),
+	  genericParams(&rt->globalHeapPoolAlloc),
+	  parents(std::move(parents)) {
 }
 
-SLAKE_API InterfaceObject::InterfaceObject(const InterfaceObject &x, bool &succeededOut) : ModuleObject(x, succeededOut) {
+SLAKE_API InterfaceObject::InterfaceObject(const InterfaceObject &x, bool &succeededOut)
+	: ModuleObject(x, succeededOut),
+	  genericArgs(&x.associatedRuntime->globalHeapPoolAlloc),
+	  mappedGenericArgs(&x.associatedRuntime->globalHeapPoolAlloc),
+	  genericParams(&x.associatedRuntime->globalHeapPoolAlloc),
+	  parents(&x.associatedRuntime->globalHeapPoolAlloc) {
 	if (succeededOut) {
 		if (!peff::copyAssign(genericArgs, x.genericArgs)) {
 			succeededOut = false;

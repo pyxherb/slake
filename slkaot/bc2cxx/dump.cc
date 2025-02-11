@@ -956,9 +956,13 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 				case cxxast::ExprKind::Call: {
 					std::shared_ptr<cxxast::CallExpr> e = std::static_pointer_cast<cxxast::CallExpr>(expr);
 
-					os << "(";
-					_dumpAstNode(os, e->callee, dumpMode, 0);
-					os << ")";
+					if (!_isSimpleIdExpr(e->callee)) {
+						os << "(";
+						_dumpAstNode(os, e->callee, dumpMode, 0);
+						os << ")";
+					} else {
+						_dumpAstNode(os, e->callee, dumpMode, 0);
+					}
 
 					os << "(";
 

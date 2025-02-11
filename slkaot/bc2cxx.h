@@ -19,7 +19,9 @@ namespace slake {
 					None = 0,
 					Module,
 					Class,
-					Fn
+					Fn,
+					VarDef,
+					Param
 				};
 
 			private:
@@ -74,6 +76,16 @@ namespace slake {
 								std::make_shared<cxxast::IdExpr>("Value"))));
 				}
 
+				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genObjectRefTypeName() {
+					return std::make_shared<cxxast::PointerTypeName>(
+						std::make_shared<cxxast::CustomTypeName>(
+							false,
+							std::make_shared<cxxast::BinaryExpr>(
+								cxxast::BinaryOp::Scope,
+								std::make_shared<cxxast::IdExpr>("slake"),
+								std::make_shared<cxxast::IdExpr>("ObjectRef"))));
+				}
+
 				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genSizeTypeName() {
 					return std::make_shared<cxxast::CustomTypeName>(
 						false,
@@ -93,6 +105,8 @@ namespace slake {
 					return args;
 				}
 
+				std::string mangleTypeName(const Type &type);
+				std::string mangleClassName(const std::string &className, const cxxast::GenericArgList &genericArgs);
 				std::string mangleFnName(const std::string &fnName);
 				std::string mangleOperatorName(const std::string &operatorName);
 				std::string mangleFieldName(const std::string &fieldName);

@@ -26,6 +26,24 @@ bool BC2CXX::_isSimpleIdExpr(std::shared_ptr<cxxast::Expr> expr) {
 	return false;
 }
 
+std::shared_ptr<cxxast::Expr> BC2CXX::_getAbsRef(std::shared_ptr<cxxast::AbstractMember> m) {
+	std::shared_ptr<cxxast::Expr> e = std::make_shared<cxxast::IdExpr>(std::string(m->name));
+	std::weak_ptr<cxxast::AbstractModule> mod = m->parent;
+
+	while (!mod.expired()) {
+		std::shared_ptr<cxxast::AbstractModule> modPtr = mod.lock();
+
+		e = std::make_shared<cxxast::BinaryExpr>(
+			cxxast::BinaryOp::Scope,
+			std::make_shared<cxxast::IdExpr>(std::string(modPtr->name)),
+			e);
+
+		mod = modPtr->parent;
+	}
+
+	return e;
+}
+
 std::shared_ptr<cxxast::Namespace> BC2CXX::completeModuleNamespace(CompileContext &compileContext, const peff::DynArray<IdRefEntry> &entries) {
 	std::shared_ptr<cxxast::Namespace> ns = compileContext.rootNamespace;
 
@@ -460,7 +478,7 @@ void BC2CXX::compileModule(CompileContext &compileContext, ModuleObject *moduleO
 }
 
 std::pair<std::shared_ptr<cxxast::IfndefDirective>, std::shared_ptr<cxxast::Namespace>> BC2CXX::compile(ModuleObject *moduleObject) {
-	std::shared_ptr<cxxast::Namespace> rootNamespace = std::make_shared<cxxast::Namespace>("");
+	std::shared_ptr<cxxast::Namespace> rootNamespace = std::make_shared<cxxast::Namespace>("slkaot");
 	CompileContext cc(moduleObject->associatedRuntime, rootNamespace);
 
 	std::string headerPath;

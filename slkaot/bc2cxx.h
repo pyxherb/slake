@@ -26,6 +26,7 @@ namespace slake {
 				void _dumpStmt(std::ostream &os, std::shared_ptr<cxxast::ASTNode> astNode, ASTDumpMode dumpMode, size_t indentLevel);
 				void _dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> astNode, ASTDumpMode dumpMode, size_t indentLevel);
 				bool _isSimpleIdExpr(std::shared_ptr<cxxast::Expr> expr);
+				std::shared_ptr<cxxast::Expr> _getAbsRef(std::shared_ptr<cxxast::AbstractMember> m);
 
 			public:
 				struct DynamicCompileContextContents {

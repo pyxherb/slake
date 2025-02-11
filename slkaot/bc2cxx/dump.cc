@@ -83,7 +83,8 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 		case cxxast::NodeKind::FnOverloading: {
 			std::shared_ptr<cxxast::FnOverloading> overloading = std::static_pointer_cast<cxxast::FnOverloading>(astNode);
 
-			os << std::string(indentLevel, '\t');
+			if (dumpMode == ASTDumpMode::Header)
+				os << std::string(indentLevel, '\t');
 
 			if ((dumpMode == ASTDumpMode::Header) &&
 				(overloading->properties.isVirtual))
@@ -92,11 +93,18 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 				(overloading->properties.isStatic))
 				os << "static ";
 			_dumpAstNode(os, overloading->returnType, dumpMode, 0);
-			os << " " << overloading->fn.lock()->name << "(";
+			if (dumpMode == ASTDumpMode::Source) {
+				os << " ";
+				_dumpAstNode(os, _getAbsRef(overloading->fn.lock()), dumpMode, 0);
+				os << "(";
+			} else {
+				os << " " << overloading->fn.lock()->name << "(";
+			}
 			for (size_t i = 0; i < overloading->signature.paramTypes.size(); ++i) {
 				if (i)
 					os << ", ";
 				_dumpAstNode(os, overloading->signature.paramTypes[i], dumpMode, 0);
+				os << " param" << i;
 			}
 			os << ")";
 			if ((dumpMode == ASTDumpMode::Header) &&
@@ -107,7 +115,6 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 			} else {
 				os << " {\n";
 
-				os << std::string(indentLevel, '\t');
 				os << "}\n";
 			}
 			break;
@@ -144,6 +151,13 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 
 				os << std::string(indentLevel, '\t');
 				os << "};\n";
+			} else {
+				for (auto &i : structNode->publicMembers) {
+					_dumpAstNode(os, i.second, dumpMode, indentLevel + 1);
+				}
+				for (auto &i : structNode->protectedMembers) {
+					_dumpAstNode(os, i.second, dumpMode, indentLevel + 1);
+				}
 			}
 
 			break;
@@ -174,6 +188,13 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 
 				os << std::string(indentLevel, '\t');
 				os << "};\n";
+			} else {
+				for (auto &i : classNode->protectedMembers) {
+					_dumpAstNode(os, i.second, dumpMode, indentLevel + 1);
+				}
+				for (auto &i : classNode->publicMembers) {
+					_dumpAstNode(os, i.second, dumpMode, indentLevel + 1);
+				}
 			}
 
 			break;
@@ -202,6 +223,13 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 					os << std::string(indentLevel, '\t');
 					os << "}\n";
 				}
+			} else {
+				for (auto &i : namespaceNode->publicMembers) {
+					_dumpAstNode(os, i.second, dumpMode, indentLevel + 1);
+				}
+				for (auto &i : namespaceNode->protectedMembers) {
+					_dumpAstNode(os, i.second, dumpMode, indentLevel + 1);
+				}
 			}
 
 			break;
@@ -228,13 +256,51 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 				_dumpAstNode(os, varNode->type, dumpMode, 0);
 				os << " " << varNode->name << ";\n";
 			} else {
-				_dumpAstNode(os, varNode->type, dumpMode, 0);
-				os << " " << varNode->name;
-				if (varNode->initialValue) {
-					os << " = ";
-					_dumpAstNode(os, varNode->initialValue, dumpMode, 0);
+				switch (varNode->storageClass) {
+					case cxxast::StorageClass::Unspecified: {
+						std::shared_ptr<cxxast::AbstractModule> parent = varNode->parent.lock();
+
+						switch (parent->nodeKind) {
+							case cxxast::NodeKind::Class:
+							case cxxast::NodeKind::Struct:
+								break;
+							default:
+								std::terminate();
+						}
+					}
+					case cxxast::StorageClass::Extern: {
+						_dumpAstNode(os, varNode->type, dumpMode, 0);
+						os << " ";
+						_dumpAstNode(os, _getAbsRef(varNode), dumpMode, 0);
+						if (varNode->initialValue) {
+							os << " = ";
+							_dumpAstNode(os, varNode->initialValue, dumpMode, 0);
+						}
+						os << ";\n";
+						break;
+					}
+					case cxxast::StorageClass::Static: {
+						std::shared_ptr<cxxast::AbstractModule> parent = varNode->parent.lock();
+
+						switch (parent->nodeKind) {
+							case cxxast::NodeKind::Class:
+							case cxxast::NodeKind::Struct: {
+								_dumpAstNode(os, varNode->type, dumpMode, 0);
+								os << " ";
+								_dumpAstNode(os, _getAbsRef(varNode), dumpMode, 0);
+								if (varNode->initialValue) {
+									os << " = ";
+									_dumpAstNode(os, varNode->initialValue, dumpMode, 0);
+								}
+								os << ";\n";
+							}
+							default:
+								std::terminate();
+						}
+					}
+					case cxxast::StorageClass::Mutable:
+						break;
 				}
-				os << ";\n";
 			}
 
 			break;
@@ -254,7 +320,7 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 				case cxxast::TypeNameKind::Int: {
 					std::shared_ptr<cxxast::IntTypeName> i = std::static_pointer_cast<cxxast::IntTypeName>(tn);
 
-					switch(i->signKind) {
+					switch (i->signKind) {
 						case cxxast::SignKind::Unspecified:
 							break;
 						case cxxast::SignKind::Signed:
@@ -265,7 +331,7 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 							break;
 					}
 
-					switch(i->modifierKind) {
+					switch (i->modifierKind) {
 						case cxxast::IntModifierKind::Unspecified:
 							os << "int";
 							break;

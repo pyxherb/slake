@@ -198,7 +198,7 @@ std::string BC2CXX::mangleFnName(const std::string_view &fnName) {
 		mangledName += c;
 	}
 
-	return mangledName + std::string(fnName);
+	return mangledName;
 }
 
 std::string BC2CXX::mangleOperatorName(const std::string_view &operatorName) {

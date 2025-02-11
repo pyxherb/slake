@@ -15,6 +15,9 @@ generated/
 *.xz
 *.7z
 
+*.out.cc
+*.out.h
+
 # Development artifacts
 .vs/
 .vscode/

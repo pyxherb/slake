@@ -39,6 +39,16 @@ CmdLineAction cmdLineActions[] = {
 	  "--module-path\0",
 		[](int argc, char **argv, int &i) {
 			modulePaths.push_back(fetchArg(argc, argv, i));
+		} },
+	{ "-H\0"
+	  "--header-output\0",
+		[](int argc, char **argv, int &i) {
+			headerOutPath = fetchArg(argc, argv, i);
+		} },
+	{ "-S\0"
+	  "--source-output\0",
+		[](int argc, char **argv, int &i) {
+			sourceOutPath = fetchArg(argc, argv, i);
 		} }
 };
 
@@ -84,14 +94,17 @@ int main(int argc, char **argv) {
 				}
 
 				std::ifstream is;
-				std::ostream &os = std::cout;
+				std::ofstream ohs, oss;
 				// std::ofstream os;
 
 				is.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
-				// os.exceptions(std::ios::failbit | std::ios::badbit);
-
 				is.open(srcPath, std::ios::binary);
-				// os.open(outPath, std::ios::binary);
+
+				ohs.exceptions(std::ios::failbit | std::ios::badbit);
+				ohs.open(headerOutPath, std::ios::binary);
+
+				oss.exceptions(std::ios::failbit | std::ios::badbit);
+				oss.open(sourceOutPath, std::ios::binary);
 
 				auto rt = std::make_unique<slake::Runtime>(peff::getDefaultAlloc());
 				rt->setModuleLocator(moduleLocator);
@@ -100,7 +113,7 @@ int main(int argc, char **argv) {
 				try {
 					mod = rt->loadModule(is, LMOD_NOIMPORT);
 				} catch (slake::LoaderError e) {
-					os << "Error loading the module: " << e.what() << std::endl;
+					std::cerr << "Error loading the module: " << e.what() << std::endl;
 					return -1;
 				}
 
@@ -108,9 +121,8 @@ int main(int argc, char **argv) {
 
 				auto result = bc2cxxCompiler.compile(mod.get());
 
-				bc2cxxCompiler.dumpAstNode(os, result.first, bc2cxx::BC2CXX::ASTDumpMode::Header);
-				os << "\n";
-				bc2cxxCompiler.dumpAstNode(os, result.second, bc2cxx::BC2CXX::ASTDumpMode::Source);
+				bc2cxxCompiler.dumpAstNode(ohs, result.first, bc2cxx::BC2CXX::ASTDumpMode::Header);
+				bc2cxxCompiler.dumpAstNode(oss, result.second, bc2cxx::BC2CXX::ASTDumpMode::Source);
 
 				is.close();
 				// os.close();

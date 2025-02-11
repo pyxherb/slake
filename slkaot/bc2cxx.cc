@@ -61,18 +61,147 @@ void BC2CXX::_applyGenericArgs(std::shared_ptr<cxxast::Expr> expr, cxxast::Gener
 	std::static_pointer_cast<cxxast::IdExpr>(e)->genericArgs = std::move(args);
 }
 
-std::string mangleTypeName(const Type &type) {
+std::string BC2CXX::mangleRefForTypeName(const peff::DynArray<IdRefEntry> &entries) {
+	std::string name;
+
+	for (size_t i = 0; i < entries.size(); ++i) {
+		const IdRefEntry &idRefEntry = entries.at(i);
+
+		if (i)
+			name += "_";
+
+		for (size_t j = 0; j < idRefEntry.name.size(); ++j) {
+			char c[3];
+
+			c[0] = (idRefEntry.name.at(j) & 0xf) + 'A';
+			c[1] = (idRefEntry.name.at(j) >> 4) + 'A';
+			c[2] = '\0';
+
+			name += c;
+		}
+
+		name += "0";
+
+		for (size_t j = 0; j < idRefEntry.genericArgs.size(); ++j) {
+			if (j)
+				name += "2";
+			name += mangleTypeName(idRefEntry.genericArgs.at(j));
+		}
+
+		name += "1";
+	}
+
+	return name;
 }
 
-std::string BC2CXX::mangleClassName(const std::string &className, const cxxast::GenericArgList &genericArgs) {
-	std::string name = "_SLKAOT_" + className;
+std::string BC2CXX::mangleTypeName(const Type &type) {
+	switch (type.typeId) {
+		case TypeId::None:
+			return "void";
+		case TypeId::Value: {
+			switch (type.getValueTypeExData()) {
+				case ValueType::I8:
+					return "i8";
+				case ValueType::I16:
+					return "i16";
+				case ValueType::I32:
+					return "i32";
+				case ValueType::I64:
+					return "i64";
+				case ValueType::U8:
+					return "u8";
+				case ValueType::U16:
+					return "u16";
+				case ValueType::U32:
+					return "u32";
+				case ValueType::U64:
+					return "u64";
+				case ValueType::F32:
+					return "f32";
+				case ValueType::F64:
+					return "f64";
+				case ValueType::Bool:
+					return "bool";
+				default:
+					// Invalid type name, terminate.
+					std::terminate();
+			}
+			break;
+		}
+		case TypeId::String:
+			return "string";
+		case TypeId::Instance: {
+			if (type.isLoadingDeferred()) {
+				HostObjectRef<IdRefObject> id = (IdRefObject *)type.getCustomTypeExData();
+
+				return "obj" + mangleRefForTypeName(id->entries);
+			} else {
+				HostObjectRef<MemberObject> id = (MemberObject *)type.getCustomTypeExData();
+
+				peff::DynArray<IdRefEntry> entries;
+				if (!id->associatedRuntime->getFullRef(peff::getDefaultAlloc(), id.get(), entries))
+					throw std::bad_alloc();
+
+				return "obj" + mangleRefForTypeName(entries);
+			}
+		}
+		case TypeId::Array: {
+			return "arr" + mangleTypeName(type.getArrayExData());
+		}
+		case TypeId::FnDelegate: {
+			std::string name = "fn";
+
+			FnTypeDefObject *typeDef = (FnTypeDefObject *)type.exData.typeDef;
+
+			name += mangleTypeName(typeDef->returnType);
+
+			name += "0";
+
+			for (size_t i = 0; i < typeDef->paramTypes.size(); ++i) {
+				if (i)
+					name += "2";
+				name += mangleTypeName(typeDef->paramTypes.at(i));
+			}
+
+			name += "1";
+
+			return name;
+		}
+		case TypeId::Ref:
+			return "ref" + mangleTypeName(type.getRefExData());
+		case TypeId::Any:
+			return "any";
+		default:
+			std::terminate();
+	}
 }
 
-std::string BC2CXX::mangleFnName(const std::string &fnName) {
-	return "_slkaot_" + fnName;
+std::string BC2CXX::mangleClassName(const std::string &className, const GenericArgList &genericArgs) {
+	return "_SLKAOT_" + className;
 }
 
-std::string BC2CXX::mangleOperatorName(const std::string &operatorName) {
+std::string BC2CXX::mangleFnName(const std::string_view &fnName) {
+	if (!fnName.compare(0, sizeof("operator") - 1, "operator")) {
+		const std::string_view operatorName = fnName.substr(sizeof("operator") - 1);
+		return mangleOperatorName(operatorName);
+	}
+
+	std::string mangledName = "_slkaot_";
+
+	for (size_t i = 0; i < fnName.size(); ++i) {
+		char c[3];
+
+		c[0] = (fnName[i] & 0xf) + 'A';
+		c[1] = (fnName[i] >> 4) + 'A';
+		c[2] = '\0';
+
+		mangledName += c;
+	}
+
+	return mangledName + std::string(fnName);
+}
+
+std::string BC2CXX::mangleOperatorName(const std::string_view &operatorName) {
 	std::string mangledName = "_slkaotop_";
 
 	for (size_t i = 0; i < operatorName.size(); ++i) {
@@ -318,14 +447,28 @@ std::shared_ptr<cxxast::TypeName> BC2CXX::compileType(CompileContext &compileCon
 	return tn;
 }
 
-std::shared_ptr<cxxast::FnOverloading> BC2CXX::compileFnOverloading(CompileContext &compileContext, FnOverloadingObject *fnOverloadingObject) {
+std::shared_ptr<cxxast::Fn> BC2CXX::compileFnOverloading(CompileContext &compileContext, FnOverloadingObject *fnOverloadingObject) {
 	if ((fnOverloadingObject->genericParams.size()) && (!fnOverloadingObject->mappedGenericArgs.size())) {
 		return {};
 	} else {
-		std::shared_ptr<cxxast::FnOverloading> fnOverloading = std::make_shared<cxxast::FnOverloading>();
+		std::shared_ptr<cxxast::Fn> fnOverloading = std::make_shared<cxxast::Fn>(mangleFnName((std::string_view)fnOverloadingObject->fnObject->name));
+
+		fnOverloading->name += "4";
 
 		for (size_t i = 0; i < fnOverloadingObject->paramTypes.size(); ++i) {
+			if (i)
+				fnOverloading->name += "3";
+			fnOverloading->name += mangleTypeName(fnOverloadingObject->paramTypes.at(i));
 			fnOverloading->signature.paramTypes.push_back(compileType(compileContext, fnOverloadingObject->paramTypes.at(i)));
+		}
+
+		if (fnOverloadingObject->overloadingFlags & OL_VARG) {
+			fnOverloading->name += "9";
+			fnOverloading->signature.paramTypes.push_back(
+				std::make_shared<cxxast::PointerTypeName>(
+					genAnyTypeName()));	 // varArgs
+			fnOverloading->signature.paramTypes.push_back(
+				genSizeTypeName());	 // nVarArgs
 		}
 
 		fnOverloading->returnType = compileType(compileContext, fnOverloadingObject->returnType);
@@ -335,60 +478,11 @@ std::shared_ptr<cxxast::FnOverloading> BC2CXX::compileFnOverloading(CompileConte
 		if (fnOverloadingObject->overloadingFlags & OL_VIRTUAL) {
 			fnOverloading->properties.isVirtual = true;
 		}
-		if (fnOverloadingObject->overloadingFlags & OL_VARG) {
-			fnOverloading->signature.paramTypes.push_back(
-				std::make_shared<cxxast::PointerTypeName>(
-					genAnyTypeName()));	 // varArgs
-			fnOverloading->signature.paramTypes.push_back(
-				genSizeTypeName());	 // nVarArgs
-		}
+
+		runtimeFnToAstFnMap[fnOverloadingObject] = fnOverloading;
 
 		return fnOverloading;
 	}
-}
-
-std::shared_ptr<cxxast::Fn> BC2CXX::compileFn(CompileContext &compileContext, FnObject *fnObject) {
-	compileContext.pushDynamicContents();
-	compileContext.dynamicContents.compilationTarget = CompilationTarget::Fn;
-
-	std::string name = (std::string)(std::string_view)fnObject->name;
-
-	if (!name.compare(0, sizeof("operator") - 1, "operator")) {
-		std::string operatorName = name.substr(sizeof("operator") - 1);
-		name = mangleOperatorName(operatorName);
-	} else {
-		name = mangleFnName(name);
-	}
-
-	std::shared_ptr<cxxast::Fn> fn = std::make_shared<cxxast::Fn>(std::move(name));
-
-	for (auto i : fnObject->overloadings) {
-		std::shared_ptr<cxxast::FnOverloading> overloading = compileFnOverloading(compileContext, i);
-		if (overloading) {
-			fn->pushOverloading(overloading);
-		}
-	}
-
-	compileContext.popDynamicContents();
-
-	return fn;
-}
-
-std::pair<std::shared_ptr<cxxast::Fn>, std::shared_ptr<cxxast::Fn>> BC2CXX::separatePublicAndPrivateFn(CompileContext &compileContext, std::shared_ptr<cxxast::Fn> fn) {
-	std::shared_ptr<cxxast::Fn> publics = std::make_shared<cxxast::Fn>(std::string(fn->name)), privates = std::make_shared<cxxast::Fn>(std::string(fn->name));
-	for (size_t i = 0; i < fn->overloadings.size(); ++i) {
-		std::shared_ptr<cxxast::FnOverloading> overloading = fn->overloadings[i];
-
-		if (overloading->properties.isPublic) {
-			publics->pushOverloading(overloading);
-		} else {
-			privates->pushOverloading(overloading);
-		}
-	}
-
-	fn->overloadings.clear();
-
-	return { publics, privates };
 }
 
 std::shared_ptr<cxxast::Class> BC2CXX::compileClass(CompileContext &compileContext, ClassObject *moduleObject) {
@@ -398,7 +492,7 @@ std::shared_ptr<cxxast::Class> BC2CXX::compileClass(CompileContext &compileConte
 		compileContext.pushDynamicContents();
 		compileContext.dynamicContents.compilationTarget = CompilationTarget::Class;
 
-		std::shared_ptr<cxxast::Class> cls = std::make_shared<cxxast::Class>((std::string)(std::string_view)moduleObject->name);
+		std::shared_ptr<cxxast::Class> cls = std::make_shared<cxxast::Class>(mangleClassName((std::string)(std::string_view)moduleObject->name, moduleObject->genericArgs));
 
 		for (size_t i = 0; i < moduleObject->fieldRecords.size(); ++i) {
 			const FieldRecord &fr = moduleObject->fieldRecords.at(i);
@@ -446,16 +540,17 @@ std::shared_ptr<cxxast::Class> BC2CXX::compileClass(CompileContext &compileConte
 				case ObjectKind::Fn: {
 					FnObject *m = (FnObject *)i.value();
 
-					std::shared_ptr<cxxast::Fn> publicFn, privateFn;
-					{
-						std::shared_ptr<cxxast::Fn> compiledFn = compileFn(compileContext, m);
+					for (auto j : m->overloadings) {
+						std::shared_ptr<cxxast::Fn> compiledFn = compileFnOverloading(compileContext, j);
 
-						auto result = separatePublicAndPrivateFn(compileContext, compiledFn);
-						publicFn = result.first, privateFn = result.second;
+						if (compiledFn) {
+							if (compiledFn->properties.isPublic) {
+								cls->addPublicMember(compiledFn);
+							} else {
+								cls->addProtectedMember(compiledFn);
+							}
+						}
 					}
-
-					cls->addPublicMember(publicFn);
-					cls->addProtectedMember(privateFn);
 
 					break;
 				}

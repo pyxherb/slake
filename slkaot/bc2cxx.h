@@ -24,6 +24,8 @@ namespace slake {
 					Param
 				};
 
+				std::map<FnOverloadingObject *, std::shared_ptr<cxxast::Fn>> runtimeFnToAstFnMap;
+
 			private:
 				void _dumpStmt(std::ostream &os, std::shared_ptr<cxxast::ASTNode> astNode, ASTDumpMode dumpMode, size_t indentLevel);
 				void _dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> astNode, ASTDumpMode dumpMode, size_t indentLevel);
@@ -105,18 +107,17 @@ namespace slake {
 					return args;
 				}
 
+				std::string mangleRefForTypeName(const peff::DynArray<IdRefEntry> &entries);
 				std::string mangleTypeName(const Type &type);
-				std::string mangleClassName(const std::string &className, const cxxast::GenericArgList &genericArgs);
-				std::string mangleFnName(const std::string &fnName);
-				std::string mangleOperatorName(const std::string &operatorName);
+				std::string mangleClassName(const std::string &className, const GenericArgList &genericArgs);
+				std::string mangleFnName(const std::string_view &fnName);
+				std::string mangleOperatorName(const std::string_view &operatorName);
 				std::string mangleFieldName(const std::string &fieldName);
 				std::shared_ptr<cxxast::Namespace> completeModuleNamespace(CompileContext &compileContext, const peff::DynArray<IdRefEntry> &entries);
 				std::shared_ptr<cxxast::Expr> compileRef(CompileContext &compileContext, const peff::DynArray<IdRefEntry> &entries);
 				std::shared_ptr<cxxast::Expr> compileValue(CompileContext &compileContext, const Value &value);
 				std::shared_ptr<cxxast::TypeName> compileType(CompileContext &compileContext, const Type &type);
-				std::shared_ptr<cxxast::FnOverloading> compileFnOverloading(CompileContext &compileContext, FnOverloadingObject *fnOverloadingObject);
-				std::shared_ptr<cxxast::Fn> compileFn(CompileContext &compileContext, FnObject *fnObject);
-				std::pair<std::shared_ptr<cxxast::Fn>, std::shared_ptr<cxxast::Fn>> separatePublicAndPrivateFn(CompileContext &compileContext, std::shared_ptr<cxxast::Fn> fn);
+				std::shared_ptr<cxxast::Fn> compileFnOverloading(CompileContext &compileContext, FnOverloadingObject *fnOverloadingObject);
 				std::shared_ptr<cxxast::Class> compileClass(CompileContext &compileContext, ClassObject *moduleObject);
 				void compileModule(CompileContext &compileContext, ModuleObject *moduleObject);
 				std::pair<std::shared_ptr<cxxast::IfndefDirective>, std::shared_ptr<cxxast::Namespace>> compile(ModuleObject *moduleObject);

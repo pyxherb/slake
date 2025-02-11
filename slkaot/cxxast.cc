@@ -53,12 +53,6 @@ void AbstractModule::removeMember(const std::string_view &name) {
 	}
 }
 
-FnOverloading::FnOverloading() : ASTNode(NodeKind::FnOverloading) {
-}
-
-FnOverloading::~FnOverloading() {
-}
-
 Fn::Fn(std::string &&name) : AbstractMember(NodeKind::Fn, std::move(name)) {
 }
 

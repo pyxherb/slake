@@ -80,8 +80,8 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 			os << "#endif\n";
 			break;
 		}
-		case cxxast::NodeKind::FnOverloading: {
-			std::shared_ptr<cxxast::FnOverloading> overloading = std::static_pointer_cast<cxxast::FnOverloading>(astNode);
+		case cxxast::NodeKind::Fn: {
+			std::shared_ptr<cxxast::Fn> overloading = std::static_pointer_cast<cxxast::Fn>(astNode);
 
 			if (overloading->signature.genericParams.size()) {
 				if (dumpMode == ASTDumpMode::Header)
@@ -113,10 +113,10 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 			_dumpAstNode(os, overloading->returnType, dumpMode, 0);
 			if (dumpMode == ASTDumpMode::Source) {
 				os << " ";
-				_dumpAstNode(os, _getAbsRef(overloading->fn.lock()), dumpMode, 0);
+				_dumpAstNode(os, _getAbsRef(overloading), dumpMode, 0);
 				os << "(";
 			} else {
-				os << " " << overloading->fn.lock()->name << "(";
+				os << " " << overloading->name << "(";
 			}
 			for (size_t i = 0; i < overloading->signature.paramTypes.size(); ++i) {
 				if (i)
@@ -143,14 +143,6 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 
 					os << "}\n";
 				}
-			}
-			break;
-		}
-		case cxxast::NodeKind::Fn: {
-			std::shared_ptr<cxxast::Fn> fn = std::static_pointer_cast<cxxast::Fn>(astNode);
-
-			for (size_t i = 0; i < fn->overloadings.size(); ++i) {
-				_dumpAstNode(os, fn->overloadings[i], dumpMode, indentLevel);
 			}
 
 			break;

@@ -87,31 +87,15 @@ namespace slake {
 
 			class Stmt;
 
-			class Fn;
-
-			class FnOverloading : public ASTNode {
+			class Fn : public AbstractMember, public std::enable_shared_from_this<Fn> {
 			public:
 				std::shared_ptr<TypeName> returnType;
 				FnOverloadingSignature signature;
 				FnOverloadingProperties properties;
 				std::vector<std::shared_ptr<Stmt>> body;
-				std::weak_ptr<Fn> fn;
-
-				FnOverloading();
-				virtual ~FnOverloading();
-			};
-
-			class Fn : public AbstractMember, public std::enable_shared_from_this<Fn> {
-			public:
-				std::vector<std::shared_ptr<FnOverloading>> overloadings;
 
 				Fn(std::string &&name);
 				virtual ~Fn();
-
-				SLAKE_FORCEINLINE void pushOverloading(std::shared_ptr<FnOverloading> overloading) {
-					overloadings.push_back(overloading);
-					overloading->fn = weak_from_this();
-				}
 			};
 
 			class Struct : public AbstractModule {

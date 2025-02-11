@@ -4,7 +4,7 @@
 #include <slake/runtime.h>
 
 namespace slake {
-	struct AOTFnContext {
+	struct AOTFnExecArgs {
 		peff::HashMap<peff::String, Type> mappedGenericArgs;
 	};
 }

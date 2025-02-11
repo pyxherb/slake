@@ -25,7 +25,7 @@ enum class AppAction : uint8_t {
 	Compile = 0,
 };
 
-std::string srcPath = "", outPath = "";
+std::string srcPath = "", headerOutPath = "", sourceOutPath = "";
 
 AppAction action = AppAction::Compile;
 
@@ -73,13 +73,14 @@ int main(int argc, char **argv) {
 					return EINVAL;
 				}
 
-				if (!outPath.length()) {
-					auto i = srcPath.find_last_of('.');
-					if (i == srcPath.npos) {
-						outPath = srcPath + ".slx";
-					} else {
-						outPath = srcPath.substr(0, i) + ".slx";
-					}
+				if (!headerOutPath.length()) {
+					fputs("Error: Missing header output path\n", stderr);
+					return EINVAL;
+				}
+
+				if (!sourceOutPath.length()) {
+					fputs("Error: Missing source output path\n", stderr);
+					return EINVAL;
 				}
 
 				std::ifstream is;

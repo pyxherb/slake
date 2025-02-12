@@ -17,7 +17,7 @@ using namespace slake;
 			return InvalidOperandsError::alloc(runtime);
 		}
 	}
-	if (ins.operands.size() != nOperands) {
+	if (ins.nOperands != nOperands) {
 		return InvalidOperandsError::alloc(runtime);
 	}
 

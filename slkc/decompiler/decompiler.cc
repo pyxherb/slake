@@ -220,7 +220,7 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 								else
 									os << (uint16_t)ins.opcode;
 
-								for (size_t j = 0; j < ins.operands.size(); ++j) {
+								for (size_t j = 0; j < ins.nOperands; ++j) {
 									os << (j ? ", " : " ");
 									decompileValue(rt, ins.operands[j], os, indentLevel);
 								}

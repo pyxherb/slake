@@ -130,7 +130,8 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 		return;
 
 	peff::DynArray<slake::IdRefEntry> fullRef;
-	associatedRuntime->getFullRef(value, fullRef);
+	if(!associatedRuntime->getFullRef(peff::getDefaultAlloc(), value, fullRef))
+		throw std::bad_alloc();
 	auto s = completeModuleNamespaces(toAstIdRef(fullRef));
 	std::shared_ptr<MemberNode> owner = std::static_pointer_cast<MemberNode>(scope->owner->shared_from_this());
 
@@ -149,7 +150,8 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 		assert(false);
 
 	peff::DynArray<slake::IdRefEntry> ref;
-	associatedRuntime->getFullRef(parentClassObject, ref);
+	if(!associatedRuntime->getFullRef(peff::getDefaultAlloc(), parentClassObject, ref))
+		throw std::bad_alloc();
 	std::shared_ptr<CustomTypeNameNode> parentClassTypeName =
 		std::make_shared<CustomTypeNameNode>(
 			toAstIdRef(ref),
@@ -162,7 +164,8 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 		if (!implInterfaceObject)
 			assert(false);
 
-		associatedRuntime->getFullRef(implInterfaceObject, ref);
+		if(!associatedRuntime->getFullRef(peff::getDefaultAlloc(), implInterfaceObject, ref))
+			throw std::bad_alloc();
 
 		implInterfaceTypeNames.push_back(
 			std::make_shared<CustomTypeNameNode>(
@@ -270,7 +273,8 @@ std::shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 					return std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 				case slake::ValueType::TypeName: {
 					peff::DynArray<slake::IdRefEntry> refs;
-					associatedRuntime->getFullRef((MemberObject *)runtimeType.getCustomTypeExData(), refs);
+					if(!associatedRuntime->getFullRef(peff::getDefaultAlloc(), (MemberObject *)runtimeType.getCustomTypeExData(), refs))
+						throw std::bad_alloc();
 					std::shared_ptr<IdRefNode> ref = std::make_shared<IdRefNode>();
 
 					for (auto &i : refs) {

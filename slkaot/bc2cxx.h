@@ -111,7 +111,6 @@ namespace slake {
 				std::string mangleTypeName(const Type &type);
 				std::string mangleClassName(const std::string &className, const GenericArgList &genericArgs);
 				std::string mangleFnName(const std::string_view &fnName);
-				std::string mangleOperatorName(const std::string_view &operatorName);
 				std::string mangleFieldName(const std::string &fieldName);
 				std::shared_ptr<cxxast::Namespace> completeModuleNamespace(CompileContext &compileContext, const peff::DynArray<IdRefEntry> &entries);
 				std::shared_ptr<cxxast::Expr> compileRef(CompileContext &compileContext, const peff::DynArray<IdRefEntry> &entries);

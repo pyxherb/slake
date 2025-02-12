@@ -15,7 +15,7 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 			analyzeContext.idxCurIns);
 	}
 
-	if (curIns.operands.size() != 2) {
+	if (curIns.nOperands != 2) {
 		return MalformedProgramError::alloc(
 			analyzeContext.runtime,
 			analyzeContext.fnObject,

@@ -19,7 +19,8 @@ namespace slake {
 	struct Instruction final {
 		Opcode opcode = (Opcode)0xffff;
 		Value output = Value(ValueType::Undefined);
-		std::vector<Value> operands;
+		Value operands[3];
+		size_t nOperands;
 
 		SLAKE_API bool operator==(const Instruction &rhs) const;
 		SLAKE_FORCEINLINE bool operator!=(const Instruction &rhs) const {

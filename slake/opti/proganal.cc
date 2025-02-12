@@ -282,7 +282,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				break;
 			case Opcode::LOAD: {
 				if (regIndex != UINT32_MAX) {
-					if (curIns.operands.size() != 1) {
+					if (curIns.nOperands != 1) {
 						return MalformedProgramError::alloc(
 							runtime,
 							fnObject,
@@ -351,7 +351,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 			}
 			case Opcode::RLOAD: {
 				if (regIndex != UINT32_MAX) {
-					if (curIns.operands.size() != 2) {
+					if (curIns.nOperands != 2) {
 						return MalformedProgramError::alloc(
 							runtime,
 							fnObject,
@@ -503,7 +503,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 			}
 			case Opcode::LLOAD: {
 				if (regIndex != UINT32_MAX) {
-					if (curIns.operands.size() != 1) {
+					if (curIns.nOperands != 1) {
 						return MalformedProgramError::alloc(
 							runtime,
 							fnObject,
@@ -540,7 +540,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 			}
 			case Opcode::LARG: {
 				if (regIndex != UINT32_MAX) {
-					if (curIns.operands.size() != 1) {
+					if (curIns.nOperands != 1) {
 						return MalformedProgramError::alloc(
 							runtime,
 							fnObject,
@@ -613,7 +613,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						i);
 				}
 
-				if (curIns.operands.size() != 1) {
+				if (curIns.nOperands != 1) {
 					return MalformedProgramError::alloc(
 						runtime,
 						fnObject,
@@ -637,7 +637,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 			}
 			case Opcode::LVALUE: {
 				if (regIndex != UINT32_MAX) {
-					if (curIns.operands.size() != 1) {
+					if (curIns.nOperands != 1) {
 						return MalformedProgramError::alloc(
 							runtime,
 							fnObject,
@@ -707,7 +707,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				break;
 			case Opcode::AT: {
 				if (regIndex != UINT32_MAX) {
-					if (curIns.operands.size() != 2) {
+					if (curIns.nOperands != 2) {
 						return MalformedProgramError::alloc(
 							runtime,
 							fnObject,
@@ -787,7 +787,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						fnObject,
 						i);
 				}
-				if (curIns.operands.size() != 1) {
+				if (curIns.nOperands != 1) {
 					return MalformedProgramError::alloc(
 						runtime,
 						fnObject,
@@ -821,7 +821,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				break;
 			}
 			case Opcode::CALL: {
-				if (curIns.operands.size() != 1) {
+				if (curIns.nOperands != 1) {
 					return MalformedProgramError::alloc(
 						runtime,
 						fnObject,
@@ -880,7 +880,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 			}
 			case Opcode::MCALL:
 			case Opcode::CTORCALL: {
-				if (curIns.operands.size() != 2) {
+				if (curIns.nOperands != 2) {
 					return MalformedProgramError::alloc(
 						runtime,
 						fnObject,
@@ -943,7 +943,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						fnObject,
 						i);
 				}
-				if (curIns.operands.size() != 1) {
+				if (curIns.nOperands != 1) {
 					return MalformedProgramError::alloc(
 						runtime,
 						fnObject,
@@ -1009,7 +1009,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						i);
 				}
 
-				if (curIns.operands.size() != 1) {
+				if (curIns.nOperands != 1) {
 					return MalformedProgramError::alloc(
 						runtime,
 						fnObject,
@@ -1033,7 +1033,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						i);
 				}
 
-				if (curIns.operands.size() != 2) {
+				if (curIns.nOperands != 2) {
 					return MalformedProgramError::alloc(
 						runtime,
 						fnObject,

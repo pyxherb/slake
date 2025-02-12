@@ -605,8 +605,8 @@ SLAKE_API InternalExceptionPointer Runtime::_instantiateGenericObject(FnOverload
 				RegularFnOverloadingObject *overloading = (RegularFnOverloadingObject *)ol;
 
 				for (auto &i : overloading->instructions) {
-					for (auto &j : i.operands) {
-						SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(j, instantiationContext));
+					for (size_t j = 0 ; j < i.nOperands; ++j) {
+						SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(i.operands[j], instantiationContext));
 					}
 				}
 

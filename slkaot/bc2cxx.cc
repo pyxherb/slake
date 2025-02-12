@@ -181,11 +181,6 @@ std::string BC2CXX::mangleClassName(const std::string &className, const GenericA
 }
 
 std::string BC2CXX::mangleFnName(const std::string_view &fnName) {
-	if (!fnName.compare(0, sizeof("operator") - 1, "operator")) {
-		const std::string_view operatorName = fnName.substr(sizeof("operator") - 1);
-		return mangleOperatorName(operatorName);
-	}
-
 	std::string mangledName = "_slkaot_";
 
 	for (size_t i = 0; i < fnName.size(); ++i) {
@@ -193,22 +188,6 @@ std::string BC2CXX::mangleFnName(const std::string_view &fnName) {
 
 		c[0] = (fnName[i] & 0xf) + 'A';
 		c[1] = (fnName[i] >> 4) + 'A';
-		c[2] = '\0';
-
-		mangledName += c;
-	}
-
-	return mangledName;
-}
-
-std::string BC2CXX::mangleOperatorName(const std::string_view &operatorName) {
-	std::string mangledName = "_slkaotop_";
-
-	for (size_t i = 0; i < operatorName.size(); ++i) {
-		char c[3];
-
-		c[0] = (operatorName[i] & 0xf) + 'A';
-		c[1] = (operatorName[i] >> 4) + 'A';
 		c[2] = '\0';
 
 		mangledName += c;

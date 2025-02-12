@@ -8,9 +8,9 @@ SLAKE_API bool Instruction::operator==(const Instruction &rhs) const {
 		return false;
 	if (output != rhs.output)
 		return false;
-	if (operands.size() != rhs.operands.size())
+	if (nOperands != nOperands)
 		return false;
-	for (size_t i = 0; i < operands.size(); ++i) {
+	for (size_t i = 0; i < nOperands; ++i) {
 		if (operands[i] != rhs.operands[i])
 			return false;
 	}
@@ -24,11 +24,11 @@ SLAKE_API bool Instruction::operator<(const Instruction &rhs) const {
 		return false;
 	if (output < rhs.output)
 		return true;
-	if (operands.size() < rhs.operands.size())
+	if (nOperands < nOperands)
 		return true;
-	if (operands.size() > rhs.operands.size())
+	if (nOperands > nOperands)
 		return false;
-	for (size_t i = 0; i < operands.size(); ++i) {
+	for (size_t i = 0; i < nOperands; ++i) {
 		if (operands[i] < rhs.operands[i])
 			return true;
 		if (operands[i] != rhs.operands[i])
@@ -116,39 +116,45 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFn
 			return;
 		}
 		for (size_t i = 0; i < instructions.size(); ++i) {
-			instructions.at(i).opcode = other.instructions.at(i).opcode;
+			Instruction &curIns = instructions.at(i), otherCurIns = other.instructions.at(i);
+			curIns.opcode = otherCurIns.opcode;
 
-			if (auto &output = other.instructions.at(i).output; output.valueType == ValueType::ObjectRef) {
+			if (auto &output = otherCurIns.output; output.valueType == ValueType::ObjectRef) {
 				const ObjectRef &objectRef = output.getObjectRef();
 				switch (objectRef.kind) {
 					case ObjectRefKind::InstanceRef:
 						if (objectRef.asInstance.instanceObject)
-							instructions.at(i).output = ObjectRef::makeInstanceRef(objectRef.asInstance.instanceObject->duplicate());
+							curIns.output = ObjectRef::makeInstanceRef(objectRef.asInstance.instanceObject->duplicate());
 						break;
 					default:
-						instructions.at(i).output = output;
+						curIns.output = output;
 				}
 			} else
-				instructions.at(i).output = output;
+				curIns.output = output;
 
 			// Duplicate each of the operands.
-			instructions.at(i).operands.resize(other.instructions.at(i).operands.size());
-			for (size_t j = 0; j < other.instructions.at(i).operands.size(); ++j) {
-				auto &operand = other.instructions.at(i).operands[j];
+			for (size_t j = 0; j < otherCurIns.nOperands; ++j) {
+				auto &operand = otherCurIns.operands[j];
 
 				if (operand.valueType == ValueType::ObjectRef) {
 					const ObjectRef &objectRef = operand.getObjectRef();
 					switch (objectRef.kind) {
 						case ObjectRefKind::InstanceRef:
 							if (objectRef.asInstance.instanceObject)
-								instructions.at(i).operands[j] = ObjectRef::makeInstanceRef(objectRef.asInstance.instanceObject->duplicate());
+								curIns.operands[j] = ObjectRef::makeInstanceRef(objectRef.asInstance.instanceObject->duplicate());
+							else
+								curIns.operands[j] = operand;
 							break;
 						default:
-							instructions.at(i).operands[j] = operand;
+							curIns.operands[j] = operand;
 					}
 				} else
-					instructions.at(i).operands[j] = operand;
+					curIns.operands[j] = operand;
 			}
+			for (size_t j = otherCurIns.nOperands; j < 3; ++j) {
+				curIns.operands[j] = Value(ValueType::Undefined);
+			}
+			curIns.nOperands = otherCurIns.nOperands;
 		}
 
 		nRegisters = other.nRegisters;

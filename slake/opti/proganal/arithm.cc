@@ -18,7 +18,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 
 	switch (curIns.opcode) {
 		case Opcode::ADD: {
-			if (curIns.operands.size() != 2) {
+			if (curIns.nOperands != 2) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,
@@ -135,7 +135,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			break;
 		}
 		case Opcode::SUB: {
-			if (curIns.operands.size() != 2) {
+			if (curIns.nOperands != 2) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,
@@ -252,7 +252,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			break;
 		}
 		case Opcode::MUL: {
-			if (curIns.operands.size() != 2) {
+			if (curIns.nOperands != 2) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,
@@ -369,7 +369,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			break;
 		}
 		case Opcode::DIV: {
-			if (curIns.operands.size() != 2) {
+			if (curIns.nOperands != 2) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,
@@ -486,7 +486,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			break;
 		}
 		case Opcode::MOD: {
-			if (curIns.operands.size() != 2) {
+			if (curIns.nOperands != 2) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,
@@ -603,7 +603,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			break;
 		}
 		case Opcode::AND: {
-			if (curIns.operands.size() != 2) {
+			if (curIns.nOperands != 2) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,
@@ -706,7 +706,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			break;
 		}
 		case Opcode::OR: {
-			if (curIns.operands.size() != 2) {
+			if (curIns.nOperands != 2) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,
@@ -809,7 +809,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			break;
 		}
 		case Opcode::XOR: {
-			if (curIns.operands.size() != 2) {
+			if (curIns.nOperands != 2) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,
@@ -912,7 +912,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			break;
 		}
 		case Opcode::LAND: {
-			if (curIns.operands.size() != 2) {
+			if (curIns.nOperands != 2) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,
@@ -972,7 +972,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			break;
 		}
 		case Opcode::LOR: {
-			if (curIns.operands.size() != 2) {
+			if (curIns.nOperands != 2) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,
@@ -1032,7 +1032,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			break;
 		}
 		case Opcode::EQ: {
-			if (curIns.operands.size() != 2) {
+			if (curIns.nOperands != 2) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,
@@ -1146,7 +1146,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			break;
 		}
 		case Opcode::NEQ: {
-			if (curIns.operands.size() != 2) {
+			if (curIns.nOperands != 2) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,
@@ -1260,7 +1260,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			break;
 		}
 		case Opcode::LT: {
-			if (curIns.operands.size() != 2) {
+			if (curIns.nOperands != 2) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,
@@ -1368,7 +1368,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			break;
 		}
 		case Opcode::GT: {
-			if (curIns.operands.size() != 2) {
+			if (curIns.nOperands != 2) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,
@@ -1476,7 +1476,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			break;
 		}
 		case Opcode::LTEQ: {
-			if (curIns.operands.size() != 2) {
+			if (curIns.nOperands != 2) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,
@@ -1584,7 +1584,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			break;
 		}
 		case Opcode::GTEQ: {
-			if (curIns.operands.size() != 2) {
+			if (curIns.nOperands != 2) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,
@@ -1692,7 +1692,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			break;
 		}
 		case Opcode::CMP: {
-			if (curIns.operands.size() != 2) {
+			if (curIns.nOperands != 2) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,
@@ -1870,7 +1870,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			break;
 		}
 		case Opcode::LSH: {
-			if (curIns.operands.size() != 2) {
+			if (curIns.nOperands != 2) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,
@@ -1973,7 +1973,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			break;
 		}
 		case Opcode::RSH: {
-			if (curIns.operands.size() != 2) {
+			if (curIns.nOperands != 2) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,
@@ -2076,7 +2076,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			break;
 		}
 		case Opcode::NOT: {
-			if (curIns.operands.size() != 1) {
+			if (curIns.nOperands != 1) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,
@@ -2168,7 +2168,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			break;
 		}
 		case Opcode::LNOT: {
-			if (curIns.operands.size() != 1) {
+			if (curIns.nOperands != 1) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,
@@ -2218,7 +2218,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			break;
 		}
 		case Opcode::NEG: {
-			if (curIns.operands.size() != 1) {
+			if (curIns.nOperands != 1) {
 				return MalformedProgramError::alloc(
 					analyzeContext.runtime,
 					analyzeContext.fnObject,

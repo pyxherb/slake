@@ -233,10 +233,10 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 			} else {
 				if (!classNode->genericParams.size()) {
 					for (auto &i : classNode->protectedMembers) {
-						_dumpAstNode(os, i.second, dumpMode, indentLevel + 1);
+						_dumpAstNode(os, i.second, dumpMode, indentLevel);
 					}
 					for (auto &i : classNode->publicMembers) {
-						_dumpAstNode(os, i.second, dumpMode, indentLevel + 1);
+						_dumpAstNode(os, i.second, dumpMode, indentLevel);
 					}
 				}
 			}
@@ -269,10 +269,10 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 				}
 			} else {
 				for (auto &i : namespaceNode->publicMembers) {
-					_dumpAstNode(os, i.second, dumpMode, indentLevel + 1);
+					_dumpAstNode(os, i.second, dumpMode, indentLevel);
 				}
 				for (auto &i : namespaceNode->protectedMembers) {
-					_dumpAstNode(os, i.second, dumpMode, indentLevel + 1);
+					_dumpAstNode(os, i.second, dumpMode, indentLevel);
 				}
 			}
 

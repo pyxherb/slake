@@ -174,7 +174,7 @@ CustomTypeName::CustomTypeName(
 CustomTypeName::~CustomTypeName() {
 }
 
-Stmt::Stmt(StmtKind stmtKind) : ASTNode(NodeKind::Stmt) {
+Stmt::Stmt(StmtKind stmtKind) : ASTNode(NodeKind::Stmt), stmtKind(stmtKind) {
 }
 
 Stmt::~Stmt() {

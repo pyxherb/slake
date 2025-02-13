@@ -222,6 +222,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 		hostRefHolder
 	};
 
+	pseudoMajorFrame->argStack.resizeWith(fnObject->paramTypes.size(), ArgRecord{});
 	for (size_t i = 0; i < fnObject->paramTypes.size(); ++i) {
 		pseudoMajorFrame->argStack.at(i) = { Value(), fnObject->paramTypes.at(i) };
 	}

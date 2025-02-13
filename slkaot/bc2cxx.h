@@ -24,7 +24,27 @@ namespace slake {
 					Param
 				};
 
-				std::map<FnOverloadingObject *, std::shared_ptr<cxxast::Fn>> runtimeFnToAstFnMap;
+				std::map<ObjectRef, std::shared_ptr<cxxast::AbstractMember>> runtimeObjectToAstNodeMap;
+				std::map<std::shared_ptr<cxxast::AbstractMember>, ObjectRef> astNodeToRuntimeObjectMap;
+				std::set<std::shared_ptr<cxxast::Fn>> recompilableFns;
+
+				SLAKE_FORCEINLINE std::shared_ptr<cxxast::AbstractMember> getMappedAstNode(Object *object) {
+					if (auto it = runtimeObjectToAstNodeMap.find(ObjectRef::makeInstanceRef(object));
+						it != runtimeObjectToAstNodeMap.end()) {
+						return it->second;
+					}
+					return nullptr;
+				}
+
+				SLAKE_FORCEINLINE void registerRuntimeObjectToAstNodeRegistry(Object *object, std::shared_ptr<cxxast::AbstractMember> m) {
+					runtimeObjectToAstNodeMap[ObjectRef::makeInstanceRef(object)] = m;
+					astNodeToRuntimeObjectMap[m] = ObjectRef::makeInstanceRef(object);
+				}
+
+				SLAKE_FORCEINLINE void registerRuntimeObjectToAstNodeRegistry(ObjectRef objectRef, std::shared_ptr<cxxast::AbstractMember> m) {
+					runtimeObjectToAstNodeMap[objectRef] = m;
+					astNodeToRuntimeObjectMap[m] = objectRef;
+				}
 
 			private:
 				void _dumpStmt(std::ostream &os, std::shared_ptr<cxxast::ASTNode> astNode, ASTDumpMode dumpMode, size_t indentLevel);
@@ -79,13 +99,12 @@ namespace slake {
 				}
 
 				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genObjectRefTypeName() {
-					return std::make_shared<cxxast::PointerTypeName>(
-						std::make_shared<cxxast::CustomTypeName>(
+					return std::make_shared<cxxast::CustomTypeName>(
 							false,
 							std::make_shared<cxxast::BinaryExpr>(
 								cxxast::BinaryOp::Scope,
 								std::make_shared<cxxast::IdExpr>("slake"),
-								std::make_shared<cxxast::IdExpr>("ObjectRef"))));
+								std::make_shared<cxxast::IdExpr>("ObjectRef")));
 				}
 
 				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genSizeTypeName() {
@@ -117,6 +136,7 @@ namespace slake {
 				std::shared_ptr<cxxast::Expr> compileValue(CompileContext &compileContext, const Value &value);
 				std::shared_ptr<cxxast::TypeName> compileType(CompileContext &compileContext, const Type &type);
 				std::shared_ptr<cxxast::Fn> compileFnOverloading(CompileContext &compileContext, FnOverloadingObject *fnOverloadingObject);
+				void recompileFnOverloading(CompileContext &compileContext, std::shared_ptr<cxxast::Fn> fnOverloading);
 				std::shared_ptr<cxxast::Class> compileClass(CompileContext &compileContext, ClassObject *moduleObject);
 				void compileModule(CompileContext &compileContext, ModuleObject *moduleObject);
 				std::pair<std::shared_ptr<cxxast::IfndefDirective>, std::shared_ptr<cxxast::Namespace>> compile(ModuleObject *moduleObject);

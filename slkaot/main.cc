@@ -111,7 +111,7 @@ int main(int argc, char **argv) {
 
 				HostObjectRef<ModuleObject> mod;
 				try {
-					mod = rt->loadModule(is, LMOD_NOIMPORT);
+					mod = rt->loadModule(is, 0);
 				} catch (slake::LoaderError e) {
 					std::cerr << "Error loading the module: " << e.what() << std::endl;
 					return -1;

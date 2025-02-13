@@ -427,6 +427,8 @@ std::shared_ptr<cxxast::TypeName> BC2CXX::compileType(CompileContext &compileCon
 }
 
 std::shared_ptr<cxxast::Fn> BC2CXX::compileFnOverloading(CompileContext &compileContext, FnOverloadingObject *fnOverloadingObject) {
+	if (auto p = getMappedAstNode(fnOverloadingObject); p)
+		return std::static_pointer_cast<cxxast::Fn>(p);
 	if ((fnOverloadingObject->genericParams.size()) && (!fnOverloadingObject->mappedGenericArgs.size())) {
 		return {};
 	} else {
@@ -454,17 +456,121 @@ std::shared_ptr<cxxast::Fn> BC2CXX::compileFnOverloading(CompileContext &compile
 
 		fnOverloading->properties = {};
 
+		fnOverloading->rtOverloading = fnOverloadingObject;
+
 		if (fnOverloadingObject->overloadingFlags & OL_VIRTUAL) {
 			fnOverloading->properties.isVirtual = true;
 		}
 
-		runtimeFnToAstFnMap[fnOverloadingObject] = fnOverloading;
+		registerRuntimeObjectToAstNodeRegistry(fnOverloadingObject, fnOverloading);
+
+		switch (fnOverloadingObject->overloadingKind) {
+			case FnOverloadingKind::Regular: {
+				recompilableFns.insert(fnOverloading);
+				break;
+			}
+		}
 
 		return fnOverloading;
 	}
 }
 
+void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_ptr<cxxast::Fn> fnOverloading) {
+	FnOverloadingObject *fnOverloadingObject = fnOverloading->rtOverloading.get();
+
+	switch (fnOverloadingObject->overloadingKind) {
+		case FnOverloadingKind::Regular: {
+			RegularFnOverloadingObject *fo = (RegularFnOverloadingObject *)fnOverloadingObject;
+
+			opti::ProgramAnalyzedInfo programInfo(compileContext.runtime);
+			HostRefHolder hostRefHolder(peff::getDefaultAlloc());
+			opti::analyzeProgramInfo(compileContext.runtime, fo, programInfo, hostRefHolder);
+
+			for (size_t i = 0; i < fo->instructions.size(); ++i) {
+				Instruction &ins = fo->instructions.at(i);
+
+				switch (ins.opcode) {
+					case Opcode::NOP:
+						break;
+					case Opcode::LOAD: {
+						opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex());
+
+						switch (outputRegInfo.expectedValue.valueType) {
+							case ValueType::ObjectRef: {
+								ObjectRef &objectRef = outputRegInfo.expectedValue.getObjectRef();
+
+								switch (objectRef.kind) {
+									case ObjectRefKind::InstanceRef: {
+										Object *object = objectRef.asInstance.instanceObject;
+
+										compileContext.pushDynamicContents();
+										compileContext.dynamicContents.compilationTarget = CompilationTarget::VarDef;
+
+										std::shared_ptr<cxxast::TypeName> t = genObjectRefTypeName();
+
+										std::string varName = "local_load_" + std::to_string(ins.output.getRegIndex());
+										cxxast::VarDefPair varDefPair;
+
+										if (auto astNode = getMappedAstNode(object);
+											astNode) {
+											varDefPair = {
+												varName,
+												std::make_shared<cxxast::CallExpr>(
+													std::make_shared<cxxast::BinaryExpr>(
+														cxxast::BinaryOp::Scope,
+														std::make_shared<cxxast::BinaryExpr>(
+															cxxast::BinaryOp::Scope,
+															std::make_shared<cxxast::IdExpr>("slake"),
+															std::make_shared<cxxast::IdExpr>("ObjectRef")),
+														std::make_shared<cxxast::IdExpr>("makeAotPtrRef")),
+													std::vector<std::shared_ptr<cxxast::Expr>>{ _getAbsRef(astNode) })
+											};
+										} else {
+											varDefPair = { varName, {} };
+										}
+
+										std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(t, std::vector<cxxast::VarDefPair>{ varDefPair });
+
+										fnOverloading->body.push_back(stmt);
+
+										compileContext.popDynamicContents();
+										break;
+									}
+									case ObjectRefKind::FieldRef: {
+										FieldRecord &fieldRecord = objectRef.asField.moduleObject->fieldRecords.at(objectRef.asField.index);
+
+										compileContext.pushDynamicContents();
+										compileContext.dynamicContents.compilationTarget = CompilationTarget::VarDef;
+
+										std::shared_ptr<cxxast::TypeName> t = compileType(compileContext, fieldRecord.type);
+
+										cxxast::VarDefPair varDefPair = { "local_load_" + std::to_string(ins.output.getRegIndex()), {} };
+
+										std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(t, std::vector<cxxast::VarDefPair>{ varDefPair });
+
+										fnOverloading->body.push_back(stmt);
+
+										compileContext.popDynamicContents();
+										break;
+									}
+									default:
+										std::terminate();
+								}
+								break;
+							}
+						}
+						break;
+					}
+				}
+			}
+			break;
+		}
+	}
+}
+
 std::shared_ptr<cxxast::Class> BC2CXX::compileClass(CompileContext &compileContext, ClassObject *moduleObject) {
+	if (auto p = getMappedAstNode(moduleObject); p)
+		return std::static_pointer_cast<cxxast::Class>(p);
 	if (moduleObject->genericParams.size() && (!moduleObject->mappedGenericArgs.size())) {
 		return {};
 	} else {
@@ -472,6 +578,8 @@ std::shared_ptr<cxxast::Class> BC2CXX::compileClass(CompileContext &compileConte
 		compileContext.dynamicContents.compilationTarget = CompilationTarget::Class;
 
 		std::shared_ptr<cxxast::Class> cls = std::make_shared<cxxast::Class>(mangleClassName((std::string)(std::string_view)moduleObject->name, moduleObject->genericArgs));
+
+		registerRuntimeObjectToAstNodeRegistry(moduleObject, cls);
 
 		for (size_t i = 0; i < moduleObject->fieldRecords.size(); ++i) {
 			const FieldRecord &fr = moduleObject->fieldRecords.at(i);
@@ -495,6 +603,8 @@ std::shared_ptr<cxxast::Class> BC2CXX::compileClass(CompileContext &compileConte
 						compileContext.runtime->readVarUnsafe(
 							ObjectRef::makeFieldRef(moduleObject, i))));
 			}
+
+			registerRuntimeObjectToAstNodeRegistry(ObjectRef::makeFieldRef(moduleObject, i), varObject);
 
 			if (fr.accessModifier & ACCESS_PUB) {
 				cls->addPublicMember(varObject);
@@ -543,6 +653,9 @@ std::shared_ptr<cxxast::Class> BC2CXX::compileClass(CompileContext &compileConte
 }
 
 void BC2CXX::compileModule(CompileContext &compileContext, ModuleObject *moduleObject) {
+	if (auto p = getMappedAstNode(moduleObject); p)
+		return;
+
 	compileContext.pushDynamicContents();
 	compileContext.dynamicContents.compilationTarget = CompilationTarget::Module;
 
@@ -552,6 +665,9 @@ void BC2CXX::compileModule(CompileContext &compileContext, ModuleObject *moduleO
 	}
 
 	std::shared_ptr<cxxast::Namespace> ns = completeModuleNamespace(compileContext, fullModuleName);
+
+	registerRuntimeObjectToAstNodeRegistry(moduleObject, ns);
+
 	for (size_t i = 0; i < moduleObject->fieldRecords.size(); ++i) {
 		const FieldRecord &fr = moduleObject->fieldRecords.at(i);
 
@@ -575,6 +691,8 @@ void BC2CXX::compileModule(CompileContext &compileContext, ModuleObject *moduleO
 						ObjectRef::makeFieldRef(moduleObject, i))));
 		}
 
+		registerRuntimeObjectToAstNodeRegistry(ObjectRef::makeFieldRef(moduleObject, i), varObject);
+
 		if (fr.accessModifier & ACCESS_PUB) {
 			ns->addPublicMember(varObject);
 		} else {
@@ -597,6 +715,23 @@ void BC2CXX::compileModule(CompileContext &compileContext, ModuleObject *moduleO
 					else
 						ns->addProtectedMember(compiledCls);
 				}
+				break;
+			}
+			case ObjectKind::Fn: {
+				FnObject *m = (FnObject *)i.value();
+
+				for (auto j : m->overloadings) {
+					std::shared_ptr<cxxast::Fn> compiledFn = compileFnOverloading(compileContext, j);
+
+					if (compiledFn) {
+						if (compiledFn->properties.isPublic) {
+							ns->addPublicMember(compiledFn);
+						} else {
+							ns->addProtectedMember(compiledFn);
+						}
+					}
+				}
+
 				break;
 			}
 		}
@@ -651,6 +786,10 @@ std::pair<std::shared_ptr<cxxast::IfndefDirective>, std::shared_ptr<cxxast::Name
 	includeGuardName += "_";
 
 	compileModule(cc, moduleObject);
+
+	for (auto i : recompilableFns) {
+		recompileFnOverloading(cc, i);
+	}
 
 	std::shared_ptr<cxxast::IfndefDirective> includeGuardWrapper =
 		std::make_shared<cxxast::IfndefDirective>(

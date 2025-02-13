@@ -62,7 +62,8 @@ namespace slake {
 		InstanceRef,
 		InstanceFieldRef,
 		LocalVarRef,
-		ArgRef
+		ArgRef,
+		AotPtrRef,
 	};
 
 	struct ObjectRef {
@@ -90,6 +91,9 @@ namespace slake {
 				MajorFrame *majorFrame;
 				uint32_t argIndex;
 			} asArg;
+			struct {
+				void *ptr;
+			} asAotPtr;
 		};
 		ObjectRefKind kind;
 
@@ -147,6 +151,15 @@ namespace slake {
 
 			ref.asArg.majorFrame = majorFrame;
 			ref.asArg.argIndex = argIndex;
+			ref.kind = ObjectRefKind::ArgRef;
+
+			return ref;
+		}
+
+		static SLAKE_FORCEINLINE ObjectRef makeAotPtrRef(void *ptr) {
+			ObjectRef ref = {};
+
+			ref.asAotPtr.ptr = ptr;
 			ref.kind = ObjectRefKind::ArgRef;
 
 			return ref;

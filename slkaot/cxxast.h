@@ -93,6 +93,7 @@ namespace slake {
 				FnOverloadingSignature signature;
 				FnOverloadingProperties properties;
 				std::vector<std::shared_ptr<Stmt>> body;
+				HostObjectRef<FnOverloadingObject> rtOverloading;
 
 				Fn(std::string &&name);
 				virtual ~Fn();

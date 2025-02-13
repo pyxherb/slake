@@ -73,6 +73,8 @@ SLAKE_API bool ObjectRef::operator<(const ObjectRef &rhs) const {
 			if (asArg.majorFrame > rhs.asArg.majorFrame)
 				return false;
 			return asArg.argIndex < rhs.asArg.argIndex;
+		case ObjectRefKind::AotPtrRef:
+			return asAotPtr.ptr < rhs.asAotPtr.ptr;
 		default:
 			std::terminate();
 	}

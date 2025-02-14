@@ -126,6 +126,7 @@ namespace slake {
 					return args;
 				}
 
+				std::string mangleRegLocalVarName(uint32_t idxReg);
 				std::string mangleRefForTypeName(const peff::DynArray<IdRefEntry> &entries);
 				std::string mangleTypeName(const Type &type);
 				std::string mangleClassName(const std::string &className, const GenericArgList &genericArgs);

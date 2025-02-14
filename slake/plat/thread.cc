@@ -29,21 +29,21 @@ SLAKE_API void AttachedExecutionThread::join() {
 
 SLAKE_API void AttachedExecutionThread::kill() {
 	switch (status) {
-		case ThreadStatus::Ready:
-			status = ThreadStatus::Dead;
-			start();
+	case ThreadStatus::Ready:
+		status = ThreadStatus::Dead;
+		start();
 
-			_doneMutex.lock();
-			_doneMutex.unlock();
-			break;
-		case ThreadStatus::Running:
-			status = ThreadStatus::Dead;
-			_doneMutex.lock();
-			_doneMutex.unlock();
-			break;
-		case ThreadStatus::Done:
-		case ThreadStatus::Dead:
-			break;
+		_doneMutex.lock();
+		_doneMutex.unlock();
+		break;
+	case ThreadStatus::Running:
+		status = ThreadStatus::Dead;
+		_doneMutex.lock();
+		_doneMutex.unlock();
+		break;
+	case ThreadStatus::Done:
+	case ThreadStatus::Dead:
+		break;
 	}
 }
 

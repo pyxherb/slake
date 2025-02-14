@@ -39,13 +39,15 @@ SLAKE_API char *Context::stackAlloc(size_t size) {
 	return dataStack + SLAKE_STACK_MAX - stackTop;
 }
 
-SLAKE_API Context::Context(Runtime *runtime) {
-	dataStack = new char[SLAKE_STACK_MAX];
+SLAKE_API Context::Context(Runtime *runtime): runtime(runtime) {
+	// TODO: Move the allocation out of the constructor.
+	dataStack = (char*)runtime->globalHeapPoolAlloc.alloc(SLAKE_STACK_MAX, sizeof(std::max_align_t));
 }
 
 SLAKE_API Context::~Context() {
-	if (dataStack)
-		delete[] dataStack;
+	if (dataStack) {
+		runtime->globalHeapPoolAlloc.release(dataStack, SLAKE_STACK_MAX, sizeof(std::max_align_t));
+	}
 }
 
 SLAKE_API ContextObject::ContextObject(

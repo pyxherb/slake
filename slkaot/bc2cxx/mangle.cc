@@ -43,83 +43,83 @@ std::string BC2CXX::mangleRefForTypeName(const peff::DynArray<IdRefEntry> &entri
 
 std::string BC2CXX::mangleTypeName(const Type &type) {
 	switch (type.typeId) {
-		case TypeId::None:
-			return "void";
-		case TypeId::Value: {
-			switch (type.getValueTypeExData()) {
-				case ValueType::I8:
-					return "i8";
-				case ValueType::I16:
-					return "i16";
-				case ValueType::I32:
-					return "i32";
-				case ValueType::I64:
-					return "i64";
-				case ValueType::U8:
-					return "u8";
-				case ValueType::U16:
-					return "u16";
-				case ValueType::U32:
-					return "u32";
-				case ValueType::U64:
-					return "u64";
-				case ValueType::F32:
-					return "f32";
-				case ValueType::F64:
-					return "f64";
-				case ValueType::Bool:
-					return "bool";
-				default:
-					// Invalid type name, terminate.
-					std::terminate();
-			}
-			break;
-		}
-		case TypeId::String:
-			return "string";
-		case TypeId::Instance: {
-			if (type.isLoadingDeferred()) {
-				HostObjectRef<IdRefObject> id = (IdRefObject *)type.getCustomTypeExData();
-
-				return "obj" + mangleRefForTypeName(id->entries);
-			} else {
-				HostObjectRef<MemberObject> id = (MemberObject *)type.getCustomTypeExData();
-
-				peff::DynArray<IdRefEntry> entries;
-				if (!id->associatedRuntime->getFullRef(peff::getDefaultAlloc(), id.get(), entries))
-					throw std::bad_alloc();
-
-				return "obj" + mangleRefForTypeName(entries);
-			}
-		}
-		case TypeId::Array: {
-			return "arr" + mangleTypeName(type.getArrayExData());
-		}
-		case TypeId::FnDelegate: {
-			std::string name = "fn";
-
-			FnTypeDefObject *typeDef = (FnTypeDefObject *)type.exData.typeDef;
-
-			name += mangleTypeName(typeDef->returnType);
-
-			name += "0";
-
-			for (size_t i = 0; i < typeDef->paramTypes.size(); ++i) {
-				if (i)
-					name += "2";
-				name += mangleTypeName(typeDef->paramTypes.at(i));
-			}
-
-			name += "1";
-
-			return name;
-		}
-		case TypeId::Ref:
-			return "ref" + mangleTypeName(type.getRefExData());
-		case TypeId::Any:
-			return "any";
+	case TypeId::None:
+		return "void";
+	case TypeId::Value: {
+		switch (type.getValueTypeExData()) {
+		case ValueType::I8:
+			return "i8";
+		case ValueType::I16:
+			return "i16";
+		case ValueType::I32:
+			return "i32";
+		case ValueType::I64:
+			return "i64";
+		case ValueType::U8:
+			return "u8";
+		case ValueType::U16:
+			return "u16";
+		case ValueType::U32:
+			return "u32";
+		case ValueType::U64:
+			return "u64";
+		case ValueType::F32:
+			return "f32";
+		case ValueType::F64:
+			return "f64";
+		case ValueType::Bool:
+			return "bool";
 		default:
+			// Invalid type name, terminate.
 			std::terminate();
+		}
+		break;
+	}
+	case TypeId::String:
+		return "string";
+	case TypeId::Instance: {
+		if (type.isLoadingDeferred()) {
+			HostObjectRef<IdRefObject> id = (IdRefObject *)type.getCustomTypeExData();
+
+			return "obj" + mangleRefForTypeName(id->entries);
+		} else {
+			HostObjectRef<MemberObject> id = (MemberObject *)type.getCustomTypeExData();
+
+			peff::DynArray<IdRefEntry> entries;
+			if (!id->associatedRuntime->getFullRef(peff::getDefaultAlloc(), id.get(), entries))
+				throw std::bad_alloc();
+
+			return "obj" + mangleRefForTypeName(entries);
+		}
+	}
+	case TypeId::Array: {
+		return "arr" + mangleTypeName(type.getArrayExData());
+	}
+	case TypeId::FnDelegate: {
+		std::string name = "fn";
+
+		FnTypeDefObject *typeDef = (FnTypeDefObject *)type.exData.typeDef;
+
+		name += mangleTypeName(typeDef->returnType);
+
+		name += "0";
+
+		for (size_t i = 0; i < typeDef->paramTypes.size(); ++i) {
+			if (i)
+				name += "2";
+			name += mangleTypeName(typeDef->paramTypes.at(i));
+		}
+
+		name += "1";
+
+		return name;
+	}
+	case TypeId::Ref:
+		return "ref" + mangleTypeName(type.getRefExData());
+	case TypeId::Any:
+		return "any";
+	default:
+		std::terminate();
 	}
 }
 

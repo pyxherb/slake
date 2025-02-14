@@ -18,7 +18,7 @@ SLAKE_API ObjectRef RootObject::getMember(
 	return ObjectRef::makeInstanceRef(scope->getMember(name));
 }
 
-SLAKE_API RootObject* RootObject::alloc(Runtime* rt) {
+SLAKE_API RootObject *RootObject::alloc(Runtime *rt) {
 	std::unique_ptr<RootObject, util::DeallocableDeleter<RootObject>> ptr(peff::allocAndConstruct<RootObject>(&rt->globalHeapPoolAlloc, sizeof(std::max_align_t), rt));
 	if (!ptr)
 		return nullptr;

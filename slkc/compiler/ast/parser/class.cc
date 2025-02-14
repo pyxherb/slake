@@ -160,101 +160,101 @@ void Parser::parseClassStmt() {
 	AccessModifier accessModifier = parseAccessModifier(tokenRange, idxAccessModifierTokens);
 
 	switch (Token *token = lexer->peekToken(); token->tokenId) {
-		case TokenId::End:
-		case TokenId::RBrace:
-			return;
-		case TokenId::ClassKeyword: {
-			auto def = parseClassDef();
+	case TokenId::End:
+	case TokenId::RBrace:
+		return;
+	case TokenId::ClassKeyword: {
+		auto def = parseClassDef();
 
-			def->tokenRange.beginIndex = tokenRange.beginIndex;
-			def->access = accessModifier | ACCESS_STATIC;
-			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
+		def->tokenRange.beginIndex = tokenRange.beginIndex;
+		def->access = accessModifier | ACCESS_STATIC;
+		def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
 
-			_putDefinition(
-				def->name,
-				def);
-			break;
-		}
-		case TokenId::InterfaceKeyword: {
-			auto def = parseInterfaceDef();
+		_putDefinition(
+			def->name,
+			def);
+		break;
+	}
+	case TokenId::InterfaceKeyword: {
+		auto def = parseInterfaceDef();
 
-			def->tokenRange.beginIndex = tokenRange.beginIndex;
-			def->access = accessModifier | ACCESS_STATIC;
-			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
+		def->tokenRange.beginIndex = tokenRange.beginIndex;
+		def->access = accessModifier | ACCESS_STATIC;
+		def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
 
-			_putDefinition(
-				def->name,
-				def);
-			break;
-		}
-		case TokenId::OperatorKeyword: {
-			std::string name;
-			auto overloading = parseOperatorDef(name);
+		_putDefinition(
+			def->name,
+			def);
+		break;
+	}
+	case TokenId::OperatorKeyword: {
+		std::string name;
+		auto overloading = parseOperatorDef(name);
 
-			overloading->tokenRange.beginIndex = tokenRange.beginIndex;
-			overloading->access = accessModifier;
-			overloading->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
+		overloading->tokenRange.beginIndex = tokenRange.beginIndex;
+		overloading->access = accessModifier;
+		overloading->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
 
-			_putFnDefinition(name, overloading);
-			break;
-		}
-		case TokenId::FnKeyword: {
-			std::string name;
-			auto overloading = parseFnDef(name);
+		_putFnDefinition(name, overloading);
+		break;
+	}
+	case TokenId::FnKeyword: {
+		std::string name;
+		auto overloading = parseFnDef(name);
 
-			overloading->tokenRange.beginIndex = tokenRange.beginIndex;
-			overloading->access = accessModifier;
-			overloading->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
+		overloading->tokenRange.beginIndex = tokenRange.beginIndex;
+		overloading->access = accessModifier;
+		overloading->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
 
-			_putFnDefinition(name, overloading);
+		_putFnDefinition(name, overloading);
 
-			break;
-		}
-		case TokenId::LetKeyword: {
-			Token *letToken = lexer->nextToken();
+		break;
+	}
+	case TokenId::LetKeyword: {
+		Token *letToken = lexer->nextToken();
 
-			auto stmt = std::make_shared<VarDefStmtNode>();
-			stmt->tokenRange = { curDoc, lexer->getTokenIndex(letToken) };
+		auto stmt = std::make_shared<VarDefStmtNode>();
+		stmt->tokenRange = { curDoc, lexer->getTokenIndex(letToken) };
 
-			stmt->idxLetToken = lexer->getTokenIndex(letToken);
+		stmt->idxLetToken = lexer->getTokenIndex(letToken);
 
-			// TODO: Apply indices of access modifier tokens to the variables.
+		// TODO: Apply indices of access modifier tokens to the variables.
 
-			parseVarDefs(stmt);
+		parseVarDefs(stmt);
 
-			Token *semicolonToken = expectToken(TokenId::Semicolon);
-			stmt->tokenRange.endIndex = lexer->getTokenIndex(semicolonToken);
-			stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
+		Token *semicolonToken = expectToken(TokenId::Semicolon);
+		stmt->tokenRange.endIndex = lexer->getTokenIndex(semicolonToken);
+		stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
 
-			bool idxAccessModifierTokensMoved = false;
+		bool idxAccessModifierTokensMoved = false;
 
-			for (auto &i : stmt->varDefs) {
-				auto varNode = std::make_shared<VarNode>(
-					compiler,
-					accessModifier,
-					i.second.type,
-					i.first,
-					i.second.initValue,
-					i.second.idxNameToken,
-					i.second.idxColonToken,
-					i.second.idxAssignOpToken,
-					i.second.idxCommaToken,
-					true);
-				varNode->tokenRange = i.second.tokenRange;
+		for (auto &i : stmt->varDefs) {
+			auto varNode = std::make_shared<VarNode>(
+				compiler,
+				accessModifier,
+				i.second.type,
+				i.first,
+				i.second.initValue,
+				i.second.idxNameToken,
+				i.second.idxColonToken,
+				i.second.idxAssignOpToken,
+				i.second.idxCommaToken,
+				true);
+			varNode->tokenRange = i.second.tokenRange;
 
-				if (!idxAccessModifierTokensMoved) {
-					varNode->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
-					idxAccessModifierTokensMoved = true;
-				}
-
-				_putDefinition(
-					i.first,
-					varNode);
+			if (!idxAccessModifierTokensMoved) {
+				varNode->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
+				idxAccessModifierTokensMoved = true;
 			}
-			break;
+
+			_putDefinition(
+				i.first,
+				varNode);
 		}
-		default:
-			throw SyntaxError("Unrecognized token", { curDoc, lexer->getTokenIndex(token) });
+		break;
+	}
+	default:
+		throw SyntaxError("Unrecognized token", { curDoc, lexer->getTokenIndex(token) });
 	}
 }
 
@@ -322,102 +322,102 @@ void Parser::parseInterfaceStmt() {
 	AccessModifier accessModifier = parseAccessModifier(tokenRange, idxAccessModifierTokens);
 
 	switch (Token *token = lexer->peekToken(); token->tokenId) {
-		case TokenId::End:
-		case TokenId::RBrace:
-			return;
-		case TokenId::ClassKeyword: {
-			auto def = parseClassDef();
+	case TokenId::End:
+	case TokenId::RBrace:
+		return;
+	case TokenId::ClassKeyword: {
+		auto def = parseClassDef();
 
-			def->tokenRange = tokenRange;
-			def->access = accessModifier | ACCESS_STATIC;
-			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
+		def->tokenRange = tokenRange;
+		def->access = accessModifier | ACCESS_STATIC;
+		def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
 
-			_putDefinition(
-				def->name,
-				def);
-			break;
-		}
-		case TokenId::InterfaceKeyword: {
-			auto def = parseInterfaceDef();
+		_putDefinition(
+			def->name,
+			def);
+		break;
+	}
+	case TokenId::InterfaceKeyword: {
+		auto def = parseInterfaceDef();
 
-			def->tokenRange = tokenRange;
-			def->access = accessModifier | ACCESS_STATIC;
-			def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
+		def->tokenRange = tokenRange;
+		def->access = accessModifier | ACCESS_STATIC;
+		def->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
 
-			_putDefinition(
-				def->name,
-				def);
-			break;
-		}
-		case TokenId::OperatorKeyword: {
-			std::string name;
+		_putDefinition(
+			def->name,
+			def);
+		break;
+	}
+	case TokenId::OperatorKeyword: {
+		std::string name;
 
-			auto overloading = parseOperatorDef(name);
+		auto overloading = parseOperatorDef(name);
 
-			overloading->tokenRange = tokenRange;
-			overloading->access = accessModifier;
-			overloading->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
-			overloading->isVirtual = true;
+		overloading->tokenRange = tokenRange;
+		overloading->access = accessModifier;
+		overloading->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
+		overloading->isVirtual = true;
 
-			_putFnDefinition(name, overloading);
-			break;
-		}
-		case TokenId::FnKeyword: {
-			std::string name;
-			auto overloading = parseFnDef(name);
+		_putFnDefinition(name, overloading);
+		break;
+	}
+	case TokenId::FnKeyword: {
+		std::string name;
+		auto overloading = parseFnDef(name);
 
-			overloading->tokenRange = tokenRange;
-			overloading->access = accessModifier;
-			overloading->isVirtual = true;
+		overloading->tokenRange = tokenRange;
+		overloading->access = accessModifier;
+		overloading->isVirtual = true;
 
-			_putFnDefinition(name, overloading);
+		_putFnDefinition(name, overloading);
 
-			break;
-		}
-		case TokenId::LetKeyword: {
-			Token *letToken = lexer->nextToken();
+		break;
+	}
+	case TokenId::LetKeyword: {
+		Token *letToken = lexer->nextToken();
 
-			auto stmt = std::make_shared<VarDefStmtNode>();
-			stmt->tokenRange = { curDoc, lexer->getTokenIndex(letToken) };
+		auto stmt = std::make_shared<VarDefStmtNode>();
+		stmt->tokenRange = { curDoc, lexer->getTokenIndex(letToken) };
 
-			stmt->idxLetToken = lexer->getTokenIndex(letToken);
+		stmt->idxLetToken = lexer->getTokenIndex(letToken);
 
-			// TODO: Apply indices of access modifier tokens to the variables.
+		// TODO: Apply indices of access modifier tokens to the variables.
 
-			parseVarDefs(stmt);
+		parseVarDefs(stmt);
 
-			Token *semicolonToken = expectToken(TokenId::Semicolon);
-			stmt->tokenRange.endIndex = lexer->getTokenIndex(semicolonToken);
-			stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
+		Token *semicolonToken = expectToken(TokenId::Semicolon);
+		stmt->tokenRange.endIndex = lexer->getTokenIndex(semicolonToken);
+		stmt->idxSemicolonToken = lexer->getTokenIndex(semicolonToken);
 
-			bool idxAccessModifierTokensMoved = false;
+		bool idxAccessModifierTokensMoved = false;
 
-			for (auto &i : stmt->varDefs) {
-				auto varNode = std::make_shared<VarNode>(
-					compiler,
-					accessModifier,
-					i.second.type,
-					i.first,
-					i.second.initValue,
-					i.second.idxNameToken,
-					i.second.idxColonToken,
-					i.second.idxAssignOpToken,
-					i.second.idxCommaToken,
-					true);
-				varNode->tokenRange = i.second.tokenRange;
+		for (auto &i : stmt->varDefs) {
+			auto varNode = std::make_shared<VarNode>(
+				compiler,
+				accessModifier,
+				i.second.type,
+				i.first,
+				i.second.initValue,
+				i.second.idxNameToken,
+				i.second.idxColonToken,
+				i.second.idxAssignOpToken,
+				i.second.idxCommaToken,
+				true);
+			varNode->tokenRange = i.second.tokenRange;
 
-				if (!idxAccessModifierTokensMoved) {
-					varNode->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
-					idxAccessModifierTokensMoved = true;
-				}
-
-				_putDefinition(
-					i.first,
-					varNode);
+			if (!idxAccessModifierTokensMoved) {
+				varNode->idxAccessModifierTokens = std::move(idxAccessModifierTokens);
+				idxAccessModifierTokensMoved = true;
 			}
-			break;
+
+			_putDefinition(
+				i.first,
+				varNode);
 		}
-		default:
-			throw SyntaxError("Unrecognized token", { curDoc, lexer->getTokenIndex(token) });
+		break;
+	}
+	default:
+		throw SyntaxError("Unrecognized token", { curDoc, lexer->getTokenIndex(token) });
 	}
 }

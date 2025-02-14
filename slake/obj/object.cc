@@ -33,7 +33,7 @@ SLAKE_API HostRefHolder::~HostRefHolder() {
 
 SLAKE_API bool HostRefHolder::addObject(Object *object) {
 	if (!holdedObjects.contains(object)) {
-		if(!holdedObjects.insert(+object))
+		if (!holdedObjects.insert(+object))
 			return false;
 		++object->hostRefCount;
 	}

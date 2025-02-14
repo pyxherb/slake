@@ -28,11 +28,11 @@ InternalExceptionPointer compileInstruction(
 		outputRegIndex = curIns.output.getRegIndex();
 		size_t offTimelineEnd = analyzedInfo.analyzedRegInfo.at(outputRegIndex).lifetime.offEndIns;
 
-		if(!compileContext.regRecycleBoundaries.contains(offTimelineEnd)) {
+		if (!compileContext.regRecycleBoundaries.contains(offTimelineEnd)) {
 			compileContext.regRecycleBoundaries.insert(+offTimelineEnd, peff::List<uint32_t>(&compileContext.runtime->globalHeapPoolAlloc));
 		}
 
-		if(!compileContext.regRecycleBoundaries.at(offTimelineEnd).pushBack(+outputRegIndex))
+		if (!compileContext.regRecycleBoundaries.at(offTimelineEnd).pushBack(+outputRegIndex))
 			return OutOfMemoryError::alloc();
 	}
 
@@ -51,186 +51,185 @@ InternalExceptionPointer compileInstruction(
 	}
 
 	switch (curIns.opcode) {
-		case Opcode::NOP:
-			break;
-		case Opcode::LOAD: {
-			uint32_t outputRegIndex = curIns.output.getRegIndex();
+	case Opcode::NOP:
+		break;
+	case Opcode::LOAD: {
+		uint32_t outputRegIndex = curIns.output.getRegIndex();
 
-			{
-				Value expectedValue = analyzedInfo.analyzedRegInfo.at(outputRegIndex).expectedValue;
+		{
+			Value expectedValue = analyzedInfo.analyzedRegInfo.at(outputRegIndex).expectedValue;
 
-				if (expectedValue.valueType != ValueType::Undefined) {
-					Instruction ins = { Opcode::MOV, curIns.output, { expectedValue } };
-					compileInstruction(compileContext, analyzedInfo, SIZE_MAX, ins);
-					return {};
+			if (expectedValue.valueType != ValueType::Undefined) {
+				Instruction ins = { Opcode::MOV, curIns.output, { expectedValue } };
+				compileInstruction(compileContext, analyzedInfo, SIZE_MAX, ins);
+				return {};
+			}
+		}
+
+		CallingRegSavingInfo callingRegSavingInfo;
+
+		SLAKE_RETURN_IF_EXCEPT(compileContext.saveCallingRegs(callingRegSavingInfo));
+
+		// Pass the first argument.
+		{
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovMemToReg64Ins(REG_RCX, MemoryLocation{ REG_RBP, compileContext.jitContextOff, REG_MAX, 0 })));
+		}
+
+		// Pass the second argument.
+		{
+			IdRefObject *refObj = (IdRefObject *)curIns.operands[0].getObjectRef().asInstance.instanceObject;
+
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm64ToReg64Ins(REG_RDX, (uint8_t *)&refObj)));
+		}
+
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitCallIns((void *)loadInsWrapper)));
+
+		// Psas the first argument for the memcpy wrapper.
+		int32_t stackOff;
+		SLAKE_RETURN_IF_EXCEPT(compileContext.stackAllocAligned(sizeof(Value), sizeof(Value), stackOff));
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RCX, REG_RBP)));
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RCX, (uint8_t *)&stackOff)));
+
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovMemToReg64Ins(REG_RDX, MemoryLocation{ REG_RBP, compileContext.jitContextOff, REG_MAX, 0 })));
+
+		// Psas the second argument for the memcpy wrapper.
+		static int32_t returnValueOff = -(int32_t)offsetof(JITExecContext, returnValue);
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RDX, (uint8_t *)&returnValueOff)));
+
+		// Psas the third argument for the memcpy wrapper.
+		static uint64_t size = sizeof(Value);
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&size)));
+
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitCallIns((void *)memcpyWrapper)));
+
+		VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, stackOff, sizeof(Value));
+		if (!outputVregState)
+			return OutOfMemoryError::alloc();
+
+		SLAKE_RETURN_IF_EXCEPT(compileContext.restoreCallingRegs(callingRegSavingInfo));
+
+		break;
+	}
+	case Opcode::RLOAD: {
+		uint32_t outputRegIndex = curIns.output.getRegIndex(),
+				 baseObjectRegIndex = curIns.operands[0].getRegIndex();
+
+		{
+			Value expectedValue = analyzedInfo.analyzedRegInfo.at(outputRegIndex).expectedValue;
+
+			if (expectedValue.valueType != ValueType::Undefined) {
+				Instruction ins = { Opcode::MOV, curIns.output, { expectedValue } };
+				compileInstruction(compileContext, analyzedInfo, SIZE_MAX, ins);
+				return {};
+			}
+		}
+
+		CallingRegSavingInfo callingRegSavingInfo;
+
+		SLAKE_RETURN_IF_EXCEPT(compileContext.saveCallingRegs(callingRegSavingInfo));
+
+		// Pass the first argument.
+		{
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovMemToReg64Ins(REG_RCX, MemoryLocation{ REG_RBP, compileContext.jitContextOff, REG_MAX, 0 })));
+		}
+
+		// Pass the second argument.
+		{
+			auto &vregState = compileContext.virtualRegStates.at(baseObjectRegIndex);
+			if (vregState.saveOffset != INT32_MIN) {
+				SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovMemToReg64Ins(
+					REG_RDX,
+					MemoryLocation{
+						REG_RBP,
+						compileContext.virtualRegStates.at(baseObjectRegIndex).saveOffset,
+						REG_MAX,
+						0 })));
+			} else {
+				if (vregState.phyReg != REG_RDX) {
+					SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg64ToReg64Ins(vregState.phyReg, REG_RDX)));
 				}
 			}
-
-			CallingRegSavingInfo callingRegSavingInfo;
-
-			SLAKE_RETURN_IF_EXCEPT(compileContext.saveCallingRegs(callingRegSavingInfo));
-
-			// Pass the first argument.
-			{
-				SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovMemToReg64Ins(REG_RCX, MemoryLocation{ REG_RBP, compileContext.jitContextOff, REG_MAX, 0 })));
-			}
-
-			// Pass the second argument.
-			{
-				IdRefObject *refObj = (IdRefObject *)curIns.operands[0].getObjectRef().asInstance.instanceObject;
-
-				SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm64ToReg64Ins(REG_RDX, (uint8_t *)&refObj)));
-			}
-
-			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitCallIns((void *)loadInsWrapper)));
-
-			// Psas the first argument for the memcpy wrapper.
-			int32_t stackOff;
-			SLAKE_RETURN_IF_EXCEPT(compileContext.stackAllocAligned(sizeof(Value), sizeof(Value), stackOff));
-			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RCX, REG_RBP)));
-			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RCX, (uint8_t *)&stackOff)));
-
-			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovMemToReg64Ins(REG_RDX, MemoryLocation{ REG_RBP, compileContext.jitContextOff, REG_MAX, 0 })));
-
-			// Psas the second argument for the memcpy wrapper.
-			static int32_t returnValueOff = -(int32_t)offsetof(JITExecContext, returnValue);
-			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RDX, (uint8_t *)&returnValueOff)));
-
-			// Psas the third argument for the memcpy wrapper.
-			static uint64_t size = sizeof(Value);
-			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&size)));
-
-			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitCallIns((void *)memcpyWrapper)));
-
-			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, stackOff, sizeof(Value));
-			if (!outputVregState)
-				return OutOfMemoryError::alloc();
-
-			SLAKE_RETURN_IF_EXCEPT(compileContext.restoreCallingRegs(callingRegSavingInfo));
-
-			break;
 		}
-		case Opcode::RLOAD: {
-			uint32_t outputRegIndex = curIns.output.getRegIndex(),
-					 baseObjectRegIndex = curIns.operands[0].getRegIndex();
 
-			{
-				Value expectedValue = analyzedInfo.analyzedRegInfo.at(outputRegIndex).expectedValue;
+		// Pass the third argument.
+		{
+			IdRefObject *refObj = (IdRefObject *)curIns.operands[1].getObjectRef().asInstance.instanceObject;
 
-				if (expectedValue.valueType != ValueType::Undefined) {
-					Instruction ins = { Opcode::MOV, curIns.output, { expectedValue } };
-					compileInstruction(compileContext, analyzedInfo, SIZE_MAX, ins);
-					return {};
-				}
-			}
-
-			CallingRegSavingInfo callingRegSavingInfo;
-
-			SLAKE_RETURN_IF_EXCEPT(compileContext.saveCallingRegs(callingRegSavingInfo));
-
-			// Pass the first argument.
-			{
-				SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovMemToReg64Ins(REG_RCX, MemoryLocation{ REG_RBP, compileContext.jitContextOff, REG_MAX, 0 })));
-			}
-
-			// Pass the second argument.
-			{
-				auto &vregState = compileContext.virtualRegStates.at(baseObjectRegIndex);
-				if (vregState.saveOffset != INT32_MIN) {
-					SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovMemToReg64Ins(
-						REG_RDX,
-						MemoryLocation{
-							REG_RBP,
-							compileContext.virtualRegStates.at(baseObjectRegIndex).saveOffset,
-							REG_MAX,
-							0 })));
-				} else {
-					if (vregState.phyReg != REG_RDX) {
-						SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg64ToReg64Ins(vregState.phyReg, REG_RDX)));
-					}
-				}
-			}
-
-			// Pass the third argument.
-			{
-				IdRefObject *refObj = (IdRefObject *)curIns.operands[1].getObjectRef().asInstance.instanceObject;
-
-				SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&refObj)));
-			}
-
-			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitCallIns((void *)rloadInsWrapper)));
-
-			// Psas the first argument for the memcpy wrapper.
-			int32_t stackOff;
-			SLAKE_RETURN_IF_EXCEPT(compileContext.stackAllocAligned(sizeof(Value), sizeof(Value), stackOff));
-			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RCX, REG_RBP)));
-			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RCX, (uint8_t *)&stackOff)));
-
-			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovMemToReg64Ins(REG_RDX, MemoryLocation{ REG_RBP, compileContext.jitContextOff, REG_MAX, 0 })));
-
-			// Psas the second argument for the memcpy wrapper.
-			static int32_t returnValueOff = -(int32_t)offsetof(JITExecContext, returnValue);
-			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RDX, (uint8_t *)&returnValueOff)));
-
-			// Psas the third argument for the memcpy wrapper.
-			static uint64_t size = sizeof(Value);
-			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&size)));
-
-			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitCallIns((void *)memcpyWrapper)));
-
-			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, stackOff, sizeof(Value));
-			if (!outputVregState)
-				return OutOfMemoryError::alloc();
-
-			SLAKE_RETURN_IF_EXCEPT(compileContext.restoreCallingRegs(callingRegSavingInfo));
-
-			break;
+			SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&refObj)));
 		}
-		case Opcode::STORE: {
-			SLAKE_RETURN_IF_EXCEPT(compileStoreInstruction(compileContext, analyzedInfo, offIns, curIns));
-			break;
-		}
-		case Opcode::LLOAD: {
-			break;
-		}
-		case Opcode::LARG: {
-			break;
-		}
-		case Opcode::LVALUE: {
 
-		}
-		case Opcode::MOV: {
-			SLAKE_RETURN_IF_EXCEPT(compileMovInstruction(compileContext, analyzedInfo, offIns, curIns));
-			break;
-		}
-		case Opcode::ADD: {
-			SLAKE_RETURN_IF_EXCEPT(compileAddInstruction(compileContext, analyzedInfo, offIns, curIns));
-			break;
-		}
-		case Opcode::SUB: {
-			SLAKE_RETURN_IF_EXCEPT(compileSubInstruction(compileContext, analyzedInfo, offIns, curIns));
-			break;
-		}
-		case Opcode::MUL: {
-			SLAKE_RETURN_IF_EXCEPT(compileMulInstruction(compileContext, analyzedInfo, offIns, curIns));
-			break;
-		}
-		case Opcode::DIV: {
-			SLAKE_RETURN_IF_EXCEPT(compileDivInstruction(compileContext, analyzedInfo, offIns, curIns));
-			break;
-		}
-		case Opcode::MOD: {
-			SLAKE_RETURN_IF_EXCEPT(compileDivInstruction(compileContext, analyzedInfo, offIns, curIns));
-			break;
-		}
-		case Opcode::LSH: {
-			SLAKE_RETURN_IF_EXCEPT(compileShlInstruction(compileContext, analyzedInfo, offIns, curIns));
-			break;
-		}
-		case Opcode::RSH: {
-			SLAKE_RETURN_IF_EXCEPT(compileShrInstruction(compileContext, analyzedInfo, offIns, curIns));
-			break;
-		}
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitCallIns((void *)rloadInsWrapper)));
+
+		// Psas the first argument for the memcpy wrapper.
+		int32_t stackOff;
+		SLAKE_RETURN_IF_EXCEPT(compileContext.stackAllocAligned(sizeof(Value), sizeof(Value), stackOff));
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RCX, REG_RBP)));
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RCX, (uint8_t *)&stackOff)));
+
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovMemToReg64Ins(REG_RDX, MemoryLocation{ REG_RBP, compileContext.jitContextOff, REG_MAX, 0 })));
+
+		// Psas the second argument for the memcpy wrapper.
+		static int32_t returnValueOff = -(int32_t)offsetof(JITExecContext, returnValue);
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitAddImm32ToReg64Ins(REG_RDX, (uint8_t *)&returnValueOff)));
+
+		// Psas the third argument for the memcpy wrapper.
+		static uint64_t size = sizeof(Value);
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&size)));
+
+		SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitCallIns((void *)memcpyWrapper)));
+
+		VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, stackOff, sizeof(Value));
+		if (!outputVregState)
+			return OutOfMemoryError::alloc();
+
+		SLAKE_RETURN_IF_EXCEPT(compileContext.restoreCallingRegs(callingRegSavingInfo));
+
+		break;
+	}
+	case Opcode::STORE: {
+		SLAKE_RETURN_IF_EXCEPT(compileStoreInstruction(compileContext, analyzedInfo, offIns, curIns));
+		break;
+	}
+	case Opcode::LLOAD: {
+		break;
+	}
+	case Opcode::LARG: {
+		break;
+	}
+	case Opcode::LVALUE: {
+	}
+	case Opcode::MOV: {
+		SLAKE_RETURN_IF_EXCEPT(compileMovInstruction(compileContext, analyzedInfo, offIns, curIns));
+		break;
+	}
+	case Opcode::ADD: {
+		SLAKE_RETURN_IF_EXCEPT(compileAddInstruction(compileContext, analyzedInfo, offIns, curIns));
+		break;
+	}
+	case Opcode::SUB: {
+		SLAKE_RETURN_IF_EXCEPT(compileSubInstruction(compileContext, analyzedInfo, offIns, curIns));
+		break;
+	}
+	case Opcode::MUL: {
+		SLAKE_RETURN_IF_EXCEPT(compileMulInstruction(compileContext, analyzedInfo, offIns, curIns));
+		break;
+	}
+	case Opcode::DIV: {
+		SLAKE_RETURN_IF_EXCEPT(compileDivInstruction(compileContext, analyzedInfo, offIns, curIns));
+		break;
+	}
+	case Opcode::MOD: {
+		SLAKE_RETURN_IF_EXCEPT(compileDivInstruction(compileContext, analyzedInfo, offIns, curIns));
+		break;
+	}
+	case Opcode::LSH: {
+		SLAKE_RETURN_IF_EXCEPT(compileShlInstruction(compileContext, analyzedInfo, offIns, curIns));
+		break;
+	}
+	case Opcode::RSH: {
+		SLAKE_RETURN_IF_EXCEPT(compileShrInstruction(compileContext, analyzedInfo, offIns, curIns));
+		break;
+	}
 	}
 
 	return {};
@@ -279,7 +278,7 @@ InternalExceptionPointer slake::compileRegularFn(RegularFnOverloadingObject *fn,
 
 	{
 		peff::String labelName;
-		if(!labelName.build("_report_stack_overflow"))
+		if (!labelName.build("_report_stack_overflow"))
 			return OutOfMemoryError::alloc();
 		SLAKE_RETURN_IF_EXCEPT(compileContext.pushLabel(std::move(labelName)));
 
@@ -293,7 +292,7 @@ InternalExceptionPointer slake::compileRegularFn(RegularFnOverloadingObject *fn,
 
 	{
 		peff::String labelName;
-		if(!labelName.build("_report_stack_overflow_on_prolog"))
+		if (!labelName.build("_report_stack_overflow_on_prolog"))
 			return OutOfMemoryError::alloc();
 		SLAKE_RETURN_IF_EXCEPT(compileContext.pushLabel(std::move(labelName)));
 

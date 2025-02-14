@@ -510,168 +510,168 @@ std::shared_ptr<ExprNode> Parser::parseExpr(int precedence) {
 			lhs = it->second.parselet(this, parseExpr(it->second.leftPrecedence), prefixToken);
 		} else {
 			switch (prefixToken->tokenId) {
-				case TokenId::ThisKeyword:
-				case TokenId::BaseKeyword:
-				case TokenId::ScopeOp:
-				case TokenId::Id: {
-					auto ref = parseRef();
-					lhs = std::static_pointer_cast<ExprNode>(
-						std::make_shared<IdRefExprNode>(ref));
-					lhs->tokenRange = TokenRange{ curDoc, ref->entries[0].tokenRange.beginIndex, ref->entries.back().tokenRange.endIndex };
-					break;
+			case TokenId::ThisKeyword:
+			case TokenId::BaseKeyword:
+			case TokenId::ScopeOp:
+			case TokenId::Id: {
+				auto ref = parseRef();
+				lhs = std::static_pointer_cast<ExprNode>(
+					std::make_shared<IdRefExprNode>(ref));
+				lhs->tokenRange = TokenRange{ curDoc, ref->entries[0].tokenRange.beginIndex, ref->entries.back().tokenRange.endIndex };
+				break;
+			}
+			case TokenId::VarArg: {
+				lexer->nextToken();
+
+				lhs = std::make_shared<VarArgExprNode>();
+				lhs->tokenRange = TokenRange{ curDoc, lexer->getTokenIndex(prefixToken) };
+
+				break;
+			}
+			case TokenId::LParenthese: {
+				lexer->nextToken();
+
+				lhs = parseExpr();
+				lhs->tokenRange.beginIndex = lexer->getTokenIndex(prefixToken);
+
+				Token *rParentheseToken = expectToken(TokenId::RParenthese);
+				lhs->tokenRange.endIndex = lexer->getTokenIndex(rParentheseToken);
+				break;
+			}
+			case TokenId::NewKeyword: {
+				auto expr = std::make_shared<NewExprNode>();
+
+				Token *newToken = lexer->nextToken();
+				expr->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
+				expr->idxNewToken = lexer->getTokenIndex(newToken);
+
+				lhs = expr;
+
+				expr->type = parseTypeName();
+
+				Token *lParentheseToken = expectToken(TokenId::LParenthese);
+				expr->tokenRange.endIndex = lexer->getTokenIndex(lParentheseToken);
+				expr->idxLParentheseToken = lexer->getTokenIndex(lParentheseToken);
+
+				parseArgs(expr->args, expr->idxCommaTokens);
+
+				if (expr->args.size())
+					expr->tokenRange.endIndex = expr->args.back()->tokenRange.endIndex;
+
+				Token *rParentheseToken = expectToken(TokenId::RParenthese);
+				expr->tokenRange.endIndex = lexer->getTokenIndex(rParentheseToken);
+				expr->idxRParentheseToken = lexer->getTokenIndex(rParentheseToken);
+				break;
+			}
+			case TokenId::IntLiteral:
+				lhs = std::static_pointer_cast<ExprNode>(
+					std::make_shared<I32LiteralExprNode>(
+						((IntLiteralTokenExtension *)prefixToken->exData.get())->data,
+						lexer->getTokenIndex(prefixToken)));
+				lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
+				lexer->nextToken();
+				break;
+			case TokenId::LongLiteral:
+				lhs = std::static_pointer_cast<ExprNode>(
+					std::make_shared<I64LiteralExprNode>(
+						((LongLiteralTokenExtension *)prefixToken->exData.get())->data,
+						lexer->getTokenIndex(prefixToken)));
+				lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
+				lexer->nextToken();
+				break;
+			case TokenId::UIntLiteral:
+				lhs = std::static_pointer_cast<ExprNode>(
+					std::make_shared<U32LiteralExprNode>(
+						((UIntLiteralTokenExtension *)prefixToken->exData.get())->data,
+						lexer->getTokenIndex(prefixToken)));
+				lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
+				lexer->nextToken();
+				break;
+			case TokenId::ULongLiteral:
+				lhs = std::static_pointer_cast<ExprNode>(
+					std::make_shared<U64LiteralExprNode>(
+						((ULongLiteralTokenExtension *)prefixToken->exData.get())->data,
+						lexer->getTokenIndex(prefixToken)));
+				lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
+				lexer->nextToken();
+				break;
+			case TokenId::StringLiteral:
+				lhs = std::static_pointer_cast<ExprNode>(
+					std::make_shared<StringLiteralExprNode>(
+						((StringLiteralTokenExtension *)prefixToken->exData.get())->data,
+						lexer->getTokenIndex(prefixToken)));
+				lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
+				lexer->nextToken();
+				break;
+			case TokenId::F32Literal:
+				lhs = std::static_pointer_cast<ExprNode>(
+					std::make_shared<F32LiteralExprNode>(
+						((F32LiteralTokenExtension *)prefixToken->exData.get())->data,
+						lexer->getTokenIndex(prefixToken)));
+				lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
+				lexer->nextToken();
+				break;
+			case TokenId::F64Literal:
+				lhs = std::static_pointer_cast<ExprNode>(
+					std::make_shared<F64LiteralExprNode>(
+						((F64LiteralTokenExtension *)prefixToken->exData.get())->data,
+						lexer->getTokenIndex(prefixToken)));
+				lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
+				lexer->nextToken();
+				break;
+			case TokenId::TrueKeyword:
+				lhs = std::static_pointer_cast<ExprNode>(
+					std::make_shared<BoolLiteralExprNode>(
+						true,
+						lexer->getTokenIndex(prefixToken)));
+				lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
+				lexer->nextToken();
+				break;
+			case TokenId::FalseKeyword:
+				lhs = std::static_pointer_cast<ExprNode>(
+					std::make_shared<BoolLiteralExprNode>(
+						false,
+						lexer->getTokenIndex(prefixToken)));
+				lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
+				lexer->nextToken();
+				break;
+			case TokenId::NullKeyword:
+				lhs = std::static_pointer_cast<ExprNode>(
+					std::make_shared<NullLiteralExprNode>(
+						lexer->getTokenIndex(prefixToken)));
+				lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
+				lexer->nextToken();
+				break;
+			case TokenId::LBrace: {
+				lexer->nextToken();
+
+				auto expr = std::make_shared<ArrayExprNode>();
+
+				expr->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
+				expr->idxLBraceToken = lexer->getTokenIndex(prefixToken);
+
+				while (true) {
+					auto element = parseExpr();
+
+					expr->tokenRange.endIndex = element->tokenRange.endIndex;
+					expr->elements.push_back(element);
+
+					if (Token *commaToken = lexer->peekToken(); commaToken->tokenId == TokenId::Comma) {
+						lexer->nextToken();
+						expr->tokenRange.endIndex = lexer->getTokenIndex(commaToken);
+						expr->idxCommaTokens.push_back(lexer->getTokenIndex(commaToken));
+					} else
+						break;
 				}
-				case TokenId::VarArg: {
-					lexer->nextToken();
 
-					lhs = std::make_shared<VarArgExprNode>();
-					lhs->tokenRange = TokenRange{ curDoc, lexer->getTokenIndex(prefixToken) };
+				lhs = std::static_pointer_cast<ExprNode>(expr);
 
-					break;
-				}
-				case TokenId::LParenthese: {
-					lexer->nextToken();
-
-					lhs = parseExpr();
-					lhs->tokenRange.beginIndex = lexer->getTokenIndex(prefixToken);
-
-					Token *rParentheseToken = expectToken(TokenId::RParenthese);
-					lhs->tokenRange.endIndex = lexer->getTokenIndex(rParentheseToken);
-					break;
-				}
-				case TokenId::NewKeyword: {
-					auto expr = std::make_shared<NewExprNode>();
-
-					Token *newToken = lexer->nextToken();
-					expr->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
-					expr->idxNewToken = lexer->getTokenIndex(newToken);
-
-					lhs = expr;
-
-					expr->type = parseTypeName();
-
-					Token *lParentheseToken = expectToken(TokenId::LParenthese);
-					expr->tokenRange.endIndex = lexer->getTokenIndex(lParentheseToken);
-					expr->idxLParentheseToken = lexer->getTokenIndex(lParentheseToken);
-
-					parseArgs(expr->args, expr->idxCommaTokens);
-
-					if (expr->args.size())
-						expr->tokenRange.endIndex = expr->args.back()->tokenRange.endIndex;
-
-					Token *rParentheseToken = expectToken(TokenId::RParenthese);
-					expr->tokenRange.endIndex = lexer->getTokenIndex(rParentheseToken);
-					expr->idxRParentheseToken = lexer->getTokenIndex(rParentheseToken);
-					break;
-				}
-				case TokenId::IntLiteral:
-					lhs = std::static_pointer_cast<ExprNode>(
-						std::make_shared<I32LiteralExprNode>(
-							((IntLiteralTokenExtension *)prefixToken->exData.get())->data,
-							lexer->getTokenIndex(prefixToken)));
-					lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
-					lexer->nextToken();
-					break;
-				case TokenId::LongLiteral:
-					lhs = std::static_pointer_cast<ExprNode>(
-						std::make_shared<I64LiteralExprNode>(
-							((LongLiteralTokenExtension *)prefixToken->exData.get())->data,
-							lexer->getTokenIndex(prefixToken)));
-					lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
-					lexer->nextToken();
-					break;
-				case TokenId::UIntLiteral:
-					lhs = std::static_pointer_cast<ExprNode>(
-						std::make_shared<U32LiteralExprNode>(
-							((UIntLiteralTokenExtension *)prefixToken->exData.get())->data,
-							lexer->getTokenIndex(prefixToken)));
-					lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
-					lexer->nextToken();
-					break;
-				case TokenId::ULongLiteral:
-					lhs = std::static_pointer_cast<ExprNode>(
-						std::make_shared<U64LiteralExprNode>(
-							((ULongLiteralTokenExtension *)prefixToken->exData.get())->data,
-							lexer->getTokenIndex(prefixToken)));
-					lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
-					lexer->nextToken();
-					break;
-				case TokenId::StringLiteral:
-					lhs = std::static_pointer_cast<ExprNode>(
-						std::make_shared<StringLiteralExprNode>(
-							((StringLiteralTokenExtension *)prefixToken->exData.get())->data,
-							lexer->getTokenIndex(prefixToken)));
-					lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
-					lexer->nextToken();
-					break;
-				case TokenId::F32Literal:
-					lhs = std::static_pointer_cast<ExprNode>(
-						std::make_shared<F32LiteralExprNode>(
-							((F32LiteralTokenExtension *)prefixToken->exData.get())->data,
-							lexer->getTokenIndex(prefixToken)));
-					lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
-					lexer->nextToken();
-					break;
-				case TokenId::F64Literal:
-					lhs = std::static_pointer_cast<ExprNode>(
-						std::make_shared<F64LiteralExprNode>(
-							((F64LiteralTokenExtension *)prefixToken->exData.get())->data,
-							lexer->getTokenIndex(prefixToken)));
-					lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
-					lexer->nextToken();
-					break;
-				case TokenId::TrueKeyword:
-					lhs = std::static_pointer_cast<ExprNode>(
-						std::make_shared<BoolLiteralExprNode>(
-							true,
-							lexer->getTokenIndex(prefixToken)));
-					lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
-					lexer->nextToken();
-					break;
-				case TokenId::FalseKeyword:
-					lhs = std::static_pointer_cast<ExprNode>(
-						std::make_shared<BoolLiteralExprNode>(
-							false,
-							lexer->getTokenIndex(prefixToken)));
-					lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
-					lexer->nextToken();
-					break;
-				case TokenId::NullKeyword:
-					lhs = std::static_pointer_cast<ExprNode>(
-						std::make_shared<NullLiteralExprNode>(
-							lexer->getTokenIndex(prefixToken)));
-					lhs->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
-					lexer->nextToken();
-					break;
-				case TokenId::LBrace: {
-					lexer->nextToken();
-
-					auto expr = std::make_shared<ArrayExprNode>();
-
-					expr->tokenRange = { curDoc, lexer->getTokenIndex(prefixToken) };
-					expr->idxLBraceToken = lexer->getTokenIndex(prefixToken);
-
-					while (true) {
-						auto element = parseExpr();
-
-						expr->tokenRange.endIndex = element->tokenRange.endIndex;
-						expr->elements.push_back(element);
-
-						if (Token *commaToken = lexer->peekToken(); commaToken->tokenId == TokenId::Comma) {
-							lexer->nextToken();
-							expr->tokenRange.endIndex = lexer->getTokenIndex(commaToken);
-							expr->idxCommaTokens.push_back(lexer->getTokenIndex(commaToken));
-						} else
-							break;
-					}
-
-					lhs = std::static_pointer_cast<ExprNode>(expr);
-
-					expectToken(TokenId::RBrace);
-					break;
-				}
-				default:
-					lexer->nextToken();
-					throw SyntaxError("Expecting an expression", { curDoc, lexer->getTokenIndex(prefixToken) });
+				expectToken(TokenId::RBrace);
+				break;
+			}
+			default:
+				lexer->nextToken();
+				throw SyntaxError("Expecting an expression", { curDoc, lexer->getTokenIndex(prefixToken) });
 			}
 		}
 

@@ -196,8 +196,7 @@ namespace slake {
 		FnObject *fnObject,
 		const peff::DynArray<Type> &paramTypes,
 		const GenericParamList &genericParams,
-		bool hasVarArg
-	);
+		bool hasVarArg);
 	SLAKE_API bool isDuplicatedOverloading(
 		const FnOverloadingObject *overloading,
 		const peff::DynArray<Type> &paramTypes,

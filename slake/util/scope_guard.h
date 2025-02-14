@@ -21,7 +21,7 @@ namespace slake {
 				callback = {};
 			}
 
-			inline ScopeGuard& operator=(ScopeGuardCallback&& callback) {
+			inline ScopeGuard &operator=(ScopeGuardCallback &&callback) {
 				this->callback = callback;
 				return *this;
 			}

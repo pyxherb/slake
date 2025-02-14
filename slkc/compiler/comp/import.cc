@@ -130,7 +130,7 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 		return;
 
 	peff::DynArray<slake::IdRefEntry> fullRef;
-	if(!associatedRuntime->getFullRef(peff::getDefaultAlloc(), value, fullRef))
+	if (!associatedRuntime->getFullRef(peff::getDefaultAlloc(), value, fullRef))
 		throw std::bad_alloc();
 	auto s = completeModuleNamespaces(toAstIdRef(fullRef));
 	std::shared_ptr<MemberNode> owner = std::static_pointer_cast<MemberNode>(scope->owner->shared_from_this());
@@ -150,7 +150,7 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 		assert(false);
 
 	peff::DynArray<slake::IdRefEntry> ref;
-	if(!associatedRuntime->getFullRef(peff::getDefaultAlloc(), parentClassObject, ref))
+	if (!associatedRuntime->getFullRef(peff::getDefaultAlloc(), parentClassObject, ref))
 		throw std::bad_alloc();
 	std::shared_ptr<CustomTypeNameNode> parentClassTypeName =
 		std::make_shared<CustomTypeNameNode>(
@@ -164,7 +164,7 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 		if (!implInterfaceObject)
 			assert(false);
 
-		if(!associatedRuntime->getFullRef(peff::getDefaultAlloc(), implInterfaceObject, ref))
+		if (!associatedRuntime->getFullRef(peff::getDefaultAlloc(), implInterfaceObject, ref))
 			throw std::bad_alloc();
 
 		implInterfaceTypeNames.push_back(
@@ -215,90 +215,90 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 		return;
 
 	switch (value->getKind()) {
-		case slake::ObjectKind::RootObject: {
-			RootObject *v = (RootObject *)value;
+	case slake::ObjectKind::RootObject: {
+		RootObject *v = (RootObject *)value;
 
-			for (auto it = v->scope->members.begin(); it != v->scope->members.end(); ++it)
-				importDefinitions(scope, parent, it.value());
+		for (auto it = v->scope->members.begin(); it != v->scope->members.end(); ++it)
+			importDefinitions(scope, parent, it.value());
 
-			break;
-		}
-		case slake::ObjectKind::Fn:
-			importDefinitions(scope, parent, (FnObject *)value);
-			break;
-		case slake::ObjectKind::Module:
-			importDefinitions(scope, parent, (ModuleObject *)value);
-			break;
-		case slake::ObjectKind::Class:
-			importDefinitions(scope, parent, (ClassObject *)value);
-			break;
-		case slake::ObjectKind::Interface:
-			importDefinitions(scope, parent, (InterfaceObject *)value);
-			break;
-			/*
-		case slake::ObjectKind::Alias: {
-			AliasValue *v = (AliasValue *)value;
-		}*/
-		default:
-			// Ignored.
-			;
+		break;
+	}
+	case slake::ObjectKind::Fn:
+		importDefinitions(scope, parent, (FnObject *)value);
+		break;
+	case slake::ObjectKind::Module:
+		importDefinitions(scope, parent, (ModuleObject *)value);
+		break;
+	case slake::ObjectKind::Class:
+		importDefinitions(scope, parent, (ClassObject *)value);
+		break;
+	case slake::ObjectKind::Interface:
+		importDefinitions(scope, parent, (InterfaceObject *)value);
+		break;
+		/*
+	case slake::ObjectKind::Alias: {
+		AliasValue *v = (AliasValue *)value;
+	}*/
+	default:
+		// Ignored.
+		;
 	}
 }
 
 std::shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 	switch (runtimeType.typeId) {
-		case slake::TypeId::Value:
-			switch (runtimeType.getValueTypeExData()) {
-				case slake::ValueType::I8:
-					return std::make_shared<I8TypeNameNode>(SIZE_MAX);
-				case slake::ValueType::I16:
-					return std::make_shared<I16TypeNameNode>(SIZE_MAX);
-				case slake::ValueType::I32:
-					return std::make_shared<I32TypeNameNode>(SIZE_MAX);
-				case slake::ValueType::I64:
-					return std::make_shared<I64TypeNameNode>(SIZE_MAX);
-				case slake::ValueType::U8:
-					return std::make_shared<U8TypeNameNode>(SIZE_MAX);
-				case slake::ValueType::U16:
-					return std::make_shared<U16TypeNameNode>(SIZE_MAX);
-				case slake::ValueType::U32:
-					return std::make_shared<U32TypeNameNode>(SIZE_MAX);
-				case slake::ValueType::U64:
-					return std::make_shared<U64TypeNameNode>(SIZE_MAX);
-				case slake::ValueType::F32:
-					return std::make_shared<F32TypeNameNode>(SIZE_MAX);
-				case slake::ValueType::F64:
-					return std::make_shared<F64TypeNameNode>(SIZE_MAX);
-				case slake::ValueType::Bool:
-					return std::make_shared<BoolTypeNameNode>(SIZE_MAX);
-				case slake::ValueType::TypeName: {
-					peff::DynArray<slake::IdRefEntry> refs;
-					if(!associatedRuntime->getFullRef(peff::getDefaultAlloc(), (MemberObject *)runtimeType.getCustomTypeExData(), refs))
-						throw std::bad_alloc();
-					std::shared_ptr<IdRefNode> ref = std::make_shared<IdRefNode>();
+	case slake::TypeId::Value:
+		switch (runtimeType.getValueTypeExData()) {
+		case slake::ValueType::I8:
+			return std::make_shared<I8TypeNameNode>(SIZE_MAX);
+		case slake::ValueType::I16:
+			return std::make_shared<I16TypeNameNode>(SIZE_MAX);
+		case slake::ValueType::I32:
+			return std::make_shared<I32TypeNameNode>(SIZE_MAX);
+		case slake::ValueType::I64:
+			return std::make_shared<I64TypeNameNode>(SIZE_MAX);
+		case slake::ValueType::U8:
+			return std::make_shared<U8TypeNameNode>(SIZE_MAX);
+		case slake::ValueType::U16:
+			return std::make_shared<U16TypeNameNode>(SIZE_MAX);
+		case slake::ValueType::U32:
+			return std::make_shared<U32TypeNameNode>(SIZE_MAX);
+		case slake::ValueType::U64:
+			return std::make_shared<U64TypeNameNode>(SIZE_MAX);
+		case slake::ValueType::F32:
+			return std::make_shared<F32TypeNameNode>(SIZE_MAX);
+		case slake::ValueType::F64:
+			return std::make_shared<F64TypeNameNode>(SIZE_MAX);
+		case slake::ValueType::Bool:
+			return std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+		case slake::ValueType::TypeName: {
+			peff::DynArray<slake::IdRefEntry> refs;
+			if (!associatedRuntime->getFullRef(peff::getDefaultAlloc(), (MemberObject *)runtimeType.getCustomTypeExData(), refs))
+				throw std::bad_alloc();
+			std::shared_ptr<IdRefNode> ref = std::make_shared<IdRefNode>();
 
-					for (auto &i : refs) {
-						std::deque<std::shared_ptr<TypeNameNode>> genericArgs;
-						for (auto j : i.genericArgs) {
-							genericArgs.push_back(toTypeName(j));
-						}
-
-						ref->entries.push_back(IdRefEntry({}, SIZE_MAX, std::string(i.name.data(), i.name.size()), genericArgs));
-					}
-
-					return std::make_shared<CustomTypeNameNode>(ref, this, nullptr);
+			for (auto &i : refs) {
+				std::deque<std::shared_ptr<TypeNameNode>> genericArgs;
+				for (auto j : i.genericArgs) {
+					genericArgs.push_back(toTypeName(j));
 				}
+
+				ref->entries.push_back(IdRefEntry({}, SIZE_MAX, std::string(i.name.data(), i.name.size()), genericArgs));
 			}
-		case slake::TypeId::String:
-			return std::make_shared<StringTypeNameNode>(SIZE_MAX);
-		case slake::TypeId::None:
-			return std::make_shared<VoidTypeNameNode>(SIZE_MAX);
-		case slake::TypeId::Any:
-			return std::make_shared<AnyTypeNameNode>(SIZE_MAX);
-		case slake::TypeId::Array:
-			return std::make_shared<ArrayTypeNameNode>(toTypeName(runtimeType.getArrayExData()));
-		default:
-			break;
+
+			return std::make_shared<CustomTypeNameNode>(ref, this, nullptr);
+		}
+		}
+	case slake::TypeId::String:
+		return std::make_shared<StringTypeNameNode>(SIZE_MAX);
+	case slake::TypeId::None:
+		return std::make_shared<VoidTypeNameNode>(SIZE_MAX);
+	case slake::TypeId::Any:
+		return std::make_shared<AnyTypeNameNode>(SIZE_MAX);
+	case slake::TypeId::Array:
+		return std::make_shared<ArrayTypeNameNode>(toTypeName(runtimeType.getArrayExData()));
+	default:
+		break;
 	}
 	throw std::logic_error("Unrecognized runtime value type");
 }

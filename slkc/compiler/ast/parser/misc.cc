@@ -52,36 +52,36 @@ AccessModifier Parser::parseAccessModifier(TokenRange &tokenRangeOut, std::deque
 			tokenRangeOut = { curDoc, lexer->getTokenIndex(token) };
 
 		switch (token->tokenId) {
+		case TokenId::PubKeyword:
+		case TokenId::FinalKeyword:
+		case TokenId::OverrideKeyword:
+		case TokenId::StaticKeyword:
+		case TokenId::NativeKeyword:
+			lexer->nextToken();
+			tokenRangeOut.endIndex = lexer->getTokenIndex(token);
+			switch (token->tokenId) {
 			case TokenId::PubKeyword:
+				accessModifier |= ACCESS_PUB;
+				break;
 			case TokenId::FinalKeyword:
+				accessModifier |= ACCESS_FINAL;
+				break;
 			case TokenId::OverrideKeyword:
+				accessModifier |= ACCESS_OVERRIDE;
+				break;
 			case TokenId::StaticKeyword:
+				accessModifier |= ACCESS_STATIC;
+				break;
 			case TokenId::NativeKeyword:
-				lexer->nextToken();
-				tokenRangeOut.endIndex = lexer->getTokenIndex(token);
-				switch (token->tokenId) {
-					case TokenId::PubKeyword:
-						accessModifier |= ACCESS_PUB;
-						break;
-					case TokenId::FinalKeyword:
-						accessModifier |= ACCESS_FINAL;
-						break;
-					case TokenId::OverrideKeyword:
-						accessModifier |= ACCESS_OVERRIDE;
-						break;
-					case TokenId::StaticKeyword:
-						accessModifier |= ACCESS_STATIC;
-						break;
-					case TokenId::NativeKeyword:
-						accessModifier |= ACCESS_NATIVE;
-						break;
-					default:
-						std::terminate();
-				}
-				idxAccessModifierTokensOut.push_back(lexer->getTokenIndex(token));
+				accessModifier |= ACCESS_NATIVE;
 				break;
 			default:
-				goto end;
+				std::terminate();
+			}
+			idxAccessModifierTokensOut.push_back(lexer->getTokenIndex(token));
+			break;
+		default:
+			goto end;
 		}
 	}
 
@@ -91,26 +91,26 @@ end:
 
 void Parser::splitRshOpToken() {
 	switch (Token *token = lexer->peekToken(); token->tokenId) {
-		case TokenId::RshOp: {
-			token->tokenId = TokenId::GtOp;
-			token->text = ">";
-			token->location.endPosition.column -= 1;
+	case TokenId::RshOp: {
+		token->tokenId = TokenId::GtOp;
+		token->text = ">";
+		token->location.endPosition.column -= 1;
 
-			std::unique_ptr<Token> extraClosingToken = std::make_unique<Token>();
-			*(extraClosingToken.get()) = {
-				SIZE_MAX,
-				TokenId::GtOp,
-				SourceLocation{
-					SourcePosition{ token->location.beginPosition.line, token->location.beginPosition.column + 1 },
-					token->location.endPosition },
-				">",
-				nullptr
-			};
+		std::unique_ptr<Token> extraClosingToken = std::make_unique<Token>();
+		*(extraClosingToken.get()) = {
+			SIZE_MAX,
+			TokenId::GtOp,
+			SourceLocation{
+				SourcePosition{ token->location.beginPosition.line, token->location.beginPosition.column + 1 },
+				token->location.endPosition },
+			">",
+			nullptr
+		};
 
-			lexer->tokens.insert(std::next(lexer->tokens.begin(), lexer->context.curIndex + 1), std::move(extraClosingToken));
+		lexer->tokens.insert(std::next(lexer->tokens.begin(), lexer->context.curIndex + 1), std::move(extraClosingToken));
 
-			break;
-		}
-		default:;
+		break;
+	}
+	default:;
 	}
 }

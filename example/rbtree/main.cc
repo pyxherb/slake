@@ -14,44 +14,44 @@ slake::ValueRef<> print(
 
 	for (uint8_t i = 0; i < args.size(); ++i) {
 		switch (args[i]->getType().typeId) {
-			case TypeId::I8:
-				std::cout << ((I8Value *)args[i])->getData();
-				break;
-			case TypeId::I16:
-				std::cout << ((I16Value *)args[i])->getData();
-				break;
-			case TypeId::I32:
-				std::cout << ((I32Value *)args[i])->getData();
-				break;
-			case TypeId::I64:
-				std::cout << ((I64Value *)args[i])->getData();
-				break;
-			case TypeId::U8:
-				std::cout << ((U8Value *)args[i])->getData();
-				break;
-			case TypeId::U16:
-				std::cout << ((U16Value *)args[i])->getData();
-				break;
-			case TypeId::U32:
-				std::cout << ((U32Value *)args[i])->getData();
-				break;
-			case TypeId::U64:
-				std::cout << ((U64Value *)args[i])->getData();
-				break;
-			case TypeId::F32:
-				std::cout << ((F32Value *)args[i])->getData();
-				break;
-			case TypeId::F64:
-				std::cout << ((F64Value *)args[i])->getData();
-				break;
-			case TypeId::Bool:
-				fputs(((BoolValue *)args[i])->getData() ? "true" : "false", stdout);
-				break;
-			case TypeId::String:
-				fputs(((StringValue *)args[i])->getData().c_str(), stdout);
-				break;
-			default:
-				throw std::runtime_error("Invalid argument type");
+		case TypeId::I8:
+			std::cout << ((I8Value *)args[i])->getData();
+			break;
+		case TypeId::I16:
+			std::cout << ((I16Value *)args[i])->getData();
+			break;
+		case TypeId::I32:
+			std::cout << ((I32Value *)args[i])->getData();
+			break;
+		case TypeId::I64:
+			std::cout << ((I64Value *)args[i])->getData();
+			break;
+		case TypeId::U8:
+			std::cout << ((U8Value *)args[i])->getData();
+			break;
+		case TypeId::U16:
+			std::cout << ((U16Value *)args[i])->getData();
+			break;
+		case TypeId::U32:
+			std::cout << ((U32Value *)args[i])->getData();
+			break;
+		case TypeId::U64:
+			std::cout << ((U64Value *)args[i])->getData();
+			break;
+		case TypeId::F32:
+			std::cout << ((F32Value *)args[i])->getData();
+			break;
+		case TypeId::F64:
+			std::cout << ((F64Value *)args[i])->getData();
+			break;
+		case TypeId::Bool:
+			fputs(((BoolValue *)args[i])->getData() ? "true" : "false", stdout);
+			break;
+		case TypeId::String:
+			fputs(((StringValue *)args[i])->getData().c_str(), stdout);
+			break;
+		default:
+			throw std::runtime_error("Invalid argument type");
 		}
 	}
 
@@ -66,12 +66,12 @@ slake::ValueRef<> getSlakeBuildVersionInfo(
 	using namespace slake;
 
 	switch (((I32Value *)args[0])->getData()) {
-		case 0:
-			return new StringValue(rt, __DATE__);
-		case 1:
-			return new StringValue(rt, __TIME__);
-		default:
-			return new StringValue(rt, __DATE__ " " __TIME__);
+	case 0:
+		return new StringValue(rt, __DATE__);
+	case 1:
+		return new StringValue(rt, __TIME__);
+	default:
+		return new StringValue(rt, __DATE__ " " __TIME__);
 	}
 }
 

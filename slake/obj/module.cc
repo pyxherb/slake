@@ -95,7 +95,7 @@ SLAKE_API Object *ModuleObject::duplicate() const {
 
 SLAKE_API ObjectRef ModuleObject::getMember(const std::string_view &name) const {
 	if (auto it = fieldRecordIndices.find(name); it != fieldRecordIndices.endConst()) {
-		return ObjectRef::makeFieldRef((ModuleObject*)this, it.value());
+		return ObjectRef::makeFieldRef((ModuleObject *)this, it.value());
 	}
 	return ObjectRef::makeInstanceRef(scope->getMember(name));
 }

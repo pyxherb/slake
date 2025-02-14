@@ -270,766 +270,766 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 	Value rhs = curIns.operands[1];
 
 	switch (regAnalyzedInfo.storageType) {
-		case opti::RegStorageType::None:
-			std::terminate();
-		case opti::RegStorageType::FieldVar: {
-			const ObjectRef &objectRef = regAnalyzedInfo.expectedValue.getObjectRef();
-			FieldRecord &fieldRecord = objectRef.asField.moduleObject->fieldRecords.at(objectRef.asField.index);
-			char *rawDataPtr = objectRef.asField.moduleObject->localFieldStorage + fieldRecord.offset;
-
-			switch (fieldRecord.type.typeId) {
-				case TypeId::Value: {
-					if (rhs.valueType == ValueType::RegRef) {
-						switch (fieldRecord.type.getValueTypeExData()) {
-							case ValueType::I8:
-							case ValueType::U8:
-							case ValueType::Bool: {
-								compileRegToFieldVarStoreInstruction<1>(compileContext, analyzedInfo, offIns, curIns, fieldRecord, rawDataPtr, rhs.getRegIndex());
-								break;
-							}
-							case ValueType::I16:
-							case ValueType::U16: {
-								compileRegToFieldVarStoreInstruction<2>(compileContext, analyzedInfo, offIns, curIns, fieldRecord, rawDataPtr, rhs.getRegIndex());
-								break;
-							}
-							case ValueType::I32:
-							case ValueType::U32:
-							case ValueType::F32: {
-								compileRegToFieldVarStoreInstruction<4>(compileContext, analyzedInfo, offIns, curIns, fieldRecord, rawDataPtr, rhs.getRegIndex());
-								break;
-							}
-							case ValueType::I64:
-							case ValueType::U64:
-							case ValueType::F64: {
-								compileRegToFieldVarStoreInstruction<8>(compileContext, analyzedInfo, offIns, curIns, fieldRecord, rawDataPtr, rhs.getRegIndex());
-								break;
-							}
-							default:
-								std::terminate();
-						}
-					} else {
-						switch (fieldRecord.type.getValueTypeExData()) {
-							case ValueType::I8: {
-								int8_t imm0 = rhs.getI8();
-								if (((uintptr_t)rawDataPtr) < INT32_MAX) {
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																					emitMovImm8ToMemIns(
-																						MemoryLocation{
-																							REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-																							REG_MAX, 0 },
-																						(uint8_t *)&imm0)));
-								} else {
-									RegisterId baseRegId = compileContext.allocGpReg();
-
-									int32_t baseRegOff = INT32_MIN;
-									size_t baseRegSize;
-
-									uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
-																					baseRegId,
-																					(uint8_t *)&baseRegImm0)));
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm8ToMemIns(
-																					MemoryLocation{
-																						baseRegId, 0,
-																						REG_MAX, 0 },
-																					(uint8_t *)&imm0)));
-
-									if (compileContext.isRegInUse(baseRegId)) {
-										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
-									}
-
-									compileContext.unallocReg(baseRegId);
-								}
-								break;
-							}
-							case ValueType::I16: {
-								int16_t imm0 = rhs.getI16();
-								if (((uintptr_t)rawDataPtr) < INT32_MAX) {
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																					emitMovImm16ToMemIns(
-																						MemoryLocation{
-																							REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-																							REG_MAX, 0 },
-																						(uint8_t *)&imm0)));
-								} else {
-									RegisterId baseRegId = compileContext.allocGpReg();
-
-									int32_t baseRegOff = INT32_MIN;
-									size_t baseRegSize;
-
-									uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
-																					baseRegId,
-																					(uint8_t *)&baseRegImm0)));
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm16ToMemIns(
-																					MemoryLocation{
-																						baseRegId, 0,
-																						REG_MAX, 0 },
-																					(uint8_t *)&imm0)));
-
-									if (compileContext.isRegInUse(baseRegId)) {
-										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
-									}
-
-									compileContext.unallocReg(baseRegId);
-								}
-								break;
-							}
-							case ValueType::I32: {
-								int32_t imm0 = rhs.getI32();
-								if (((uintptr_t)rawDataPtr) < INT32_MAX) {
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																					emitMovImm32ToMemIns(
-																						MemoryLocation{
-																							REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-																							REG_MAX, 0 },
-																						(uint8_t *)&imm0)));
-								} else {
-									RegisterId baseRegId = compileContext.allocGpReg();
-
-									int32_t baseRegOff = INT32_MIN;
-									size_t baseRegSize;
-
-									uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
-																					baseRegId,
-																					(uint8_t *)&baseRegImm0)));
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm32ToMemIns(
-																					MemoryLocation{
-																						baseRegId, 0,
-																						REG_MAX, 0 },
-																					(uint8_t *)&imm0)));
-
-									if (compileContext.isRegInUse(baseRegId)) {
-										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
-									}
-
-									compileContext.unallocReg(baseRegId);
-								}
-								break;
-							}
-							case ValueType::I64: {
-								int64_t imm0 = rhs.getI64();
-								if (((uintptr_t)rawDataPtr) < INT32_MAX) {
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																					emitMovImm64ToMemIns(
-																						MemoryLocation{
-																							REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-																							REG_MAX, 0 },
-																						(uint8_t *)&imm0)));
-								} else {
-									RegisterId baseRegId = compileContext.allocGpReg();
-
-									int32_t baseRegOff = INT32_MIN;
-									size_t baseRegSize;
-
-									uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
-																					baseRegId,
-																					(uint8_t *)&baseRegImm0)));
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToMemIns(
-																					MemoryLocation{
-																						baseRegId, 0,
-																						REG_MAX, 0 },
-																					(uint8_t *)&imm0)));
-
-									if (compileContext.isRegInUse(baseRegId)) {
-										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
-									}
-
-									compileContext.unallocReg(baseRegId);
-								}
-								break;
-							}
-							case ValueType::U8: {
-								uint8_t imm0 = rhs.getU8();
-								if (((uintptr_t)rawDataPtr) < INT32_MAX) {
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																					emitMovImm8ToMemIns(
-																						MemoryLocation{
-																							REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-																							REG_MAX, 0 },
-																						(uint8_t *)&imm0)));
-								} else {
-									RegisterId baseRegId = compileContext.allocGpReg();
-
-									int32_t baseRegOff = INT32_MIN;
-									size_t baseRegSize;
-
-									uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
-																					baseRegId,
-																					(uint8_t *)&baseRegImm0)));
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm8ToMemIns(
-																					MemoryLocation{
-																						baseRegId, 0,
-																						REG_MAX, 0 },
-																					(uint8_t *)&imm0)));
-
-									if (compileContext.isRegInUse(baseRegId)) {
-										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
-									}
-
-									compileContext.unallocReg(baseRegId);
-								}
-								break;
-							}
-							case ValueType::U16: {
-								uint16_t imm0 = rhs.getU16();
-								if (((uintptr_t)rawDataPtr) < INT32_MAX) {
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																					emitMovImm16ToMemIns(
-																						MemoryLocation{
-																							REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-																							REG_MAX, 0 },
-																						(uint8_t *)&imm0)));
-								} else {
-									RegisterId baseRegId = compileContext.allocGpReg();
-
-									int32_t baseRegOff = INT32_MIN;
-									size_t baseRegSize;
-
-									uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
-																					baseRegId,
-																					(uint8_t *)&baseRegImm0)));
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm16ToMemIns(
-																					MemoryLocation{
-																						baseRegId, 0,
-																						REG_MAX, 0 },
-																					(uint8_t *)&imm0)));
-
-									if (compileContext.isRegInUse(baseRegId)) {
-										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
-									}
-
-									compileContext.unallocReg(baseRegId);
-								}
-								break;
-							}
-							case ValueType::U32: {
-								uint16_t imm0 = rhs.getU16();
-								if (((uintptr_t)rawDataPtr) < INT32_MAX) {
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																					emitMovImm32ToMemIns(
-																						MemoryLocation{
-																							REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-																							REG_MAX, 0 },
-																						(uint8_t *)&imm0)));
-								} else {
-									RegisterId baseRegId = compileContext.allocGpReg();
-
-									int32_t baseRegOff = INT32_MIN;
-									size_t baseRegSize;
-
-									uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
-																					baseRegId,
-																					(uint8_t *)&baseRegImm0)));
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm32ToMemIns(
-																					MemoryLocation{
-																						baseRegId, 0,
-																						REG_MAX, 0 },
-																					(uint8_t *)&imm0)));
-
-									if (compileContext.isRegInUse(baseRegId)) {
-										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
-									}
-
-									compileContext.unallocReg(baseRegId);
-								}
-								break;
-							}
-							case ValueType::U64: {
-								uint64_t imm0 = rhs.getU64();
-								if (((uintptr_t)rawDataPtr) < INT32_MAX) {
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																					emitMovImm64ToMemIns(
-																						MemoryLocation{
-																							REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-																							REG_MAX, 0 },
-																						(uint8_t *)&imm0)));
-								} else {
-									RegisterId baseRegId = compileContext.allocGpReg();
-
-									int32_t baseRegOff = INT32_MIN;
-									size_t baseRegSize;
-
-									uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
-																					baseRegId,
-																					(uint8_t *)&baseRegImm0)));
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToMemIns(
-																					MemoryLocation{
-																						baseRegId, 0,
-																						REG_MAX, 0 },
-																					(uint8_t *)&imm0)));
-
-									if (compileContext.isRegInUse(baseRegId)) {
-										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
-									}
-
-									compileContext.unallocReg(baseRegId);
-								}
-								break;
-							}
-							case ValueType::Bool: {
-								bool imm0 = rhs.getBool();
-								if (((uintptr_t)rawDataPtr) < INT32_MAX) {
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																					emitMovImm8ToMemIns(
-																						MemoryLocation{
-																							REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-																							REG_MAX, 0 },
-																						(uint8_t *)&imm0)));
-								} else {
-									RegisterId baseRegId = compileContext.allocGpReg();
-
-									int32_t baseRegOff = INT32_MIN;
-									size_t baseRegSize;
-
-									uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
-																					baseRegId,
-																					(uint8_t *)&baseRegImm0)));
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm8ToMemIns(
-																					MemoryLocation{
-																						baseRegId, 0,
-																						REG_MAX, 0 },
-																					(uint8_t *)&imm0)));
-
-									if (compileContext.isRegInUse(baseRegId)) {
-										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
-									}
-
-									compileContext.unallocReg(baseRegId);
-								}
-								break;
-							}
-							case ValueType::F32: {
-								float imm0 = rhs.getF32();
-								if (((uintptr_t)rawDataPtr) < INT32_MAX) {
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																					emitMovImm32ToMemIns(
-																						MemoryLocation{
-																							REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-																							REG_MAX, 0 },
-																						(uint8_t *)&imm0)));
-								} else {
-									RegisterId baseRegId = compileContext.allocGpReg();
-
-									int32_t baseRegOff = INT32_MIN;
-									size_t baseRegSize;
-
-									uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
-																					baseRegId,
-																					(uint8_t *)&baseRegImm0)));
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm32ToMemIns(
-																					MemoryLocation{
-																						baseRegId, 0,
-																						REG_MAX, 0 },
-																					(uint8_t *)&imm0)));
-
-									if (compileContext.isRegInUse(baseRegId)) {
-										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
-									}
-
-									compileContext.unallocReg(baseRegId);
-								}
-								break;
-							}
-							case ValueType::F64: {
-								double imm0 = rhs.getF64();
-								if (((uintptr_t)rawDataPtr) < INT32_MAX) {
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																					emitMovImm64ToMemIns(
-																						MemoryLocation{
-																							REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-																							REG_MAX, 0 },
-																						(uint8_t *)&imm0)));
-								} else {
-									RegisterId baseRegId = compileContext.allocGpReg();
-
-									int32_t baseRegOff = INT32_MIN;
-									size_t baseRegSize;
-
-									uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
-																					baseRegId,
-																					(uint8_t *)&baseRegImm0)));
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToMemIns(
-																					MemoryLocation{
-																						baseRegId, 0,
-																						REG_MAX, 0 },
-																					(uint8_t *)&imm0)));
-
-									if (compileContext.isRegInUse(baseRegId)) {
-										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
-									}
-
-									compileContext.unallocReg(baseRegId);
-								}
-								break;
-							}
-						}
-					}
+	case opti::RegStorageType::None:
+		std::terminate();
+	case opti::RegStorageType::FieldVar: {
+		const ObjectRef &objectRef = regAnalyzedInfo.expectedValue.getObjectRef();
+		FieldRecord &fieldRecord = objectRef.asField.moduleObject->fieldRecords.at(objectRef.asField.index);
+		char *rawDataPtr = objectRef.asField.moduleObject->localFieldStorage + fieldRecord.offset;
+
+		switch (fieldRecord.type.typeId) {
+		case TypeId::Value: {
+			if (rhs.valueType == ValueType::RegRef) {
+				switch (fieldRecord.type.getValueTypeExData()) {
+				case ValueType::I8:
+				case ValueType::U8:
+				case ValueType::Bool: {
+					compileRegToFieldVarStoreInstruction<1>(compileContext, analyzedInfo, offIns, curIns, fieldRecord, rawDataPtr, rhs.getRegIndex());
+					break;
 				}
-			}
-			break;
-		}
-		case opti::RegStorageType::LocalVar: {
-			LocalVarState &localVarState = compileContext.localVarStates.at(regAnalyzedInfo.expectedValue.getObjectRef().asLocalVar.localVarIndex);
-
-			switch (localVarState.type.typeId) {
-				case TypeId::Value: {
-					if (rhs.valueType == ValueType::RegRef) {
-						switch (localVarState.type.getValueTypeExData()) {
-							case ValueType::I8:
-							case ValueType::U8:
-							case ValueType::Bool: {
-								uint32_t regOff = rhs.getRegIndex();
-								VirtualRegState &vregState = compileContext.virtualRegStates.at(regOff);
-
-								if (vregState.saveOffset != INT32_MIN) {
-									RegisterId tmpGpRegId = compileContext.allocGpReg();
-									int32_t tmpGpRegOff = INT32_MIN;
-									size_t tmpGpRegSize;
-
-									if (compileContext.isRegInUse(tmpGpRegId)) {
-										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
-									}
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovMemToReg8Ins(
-																					tmpGpRegId,
-																					MemoryLocation{
-																						REG_RBP, vregState.saveOffset,
-																						REG_MAX, 0 })));
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg8ToMemIns(
-																					MemoryLocation{
-																						REG_RBP, localVarState.stackOff,
-																						REG_MAX, 0 },
-																					tmpGpRegId)));
-
-									if (tmpGpRegOff != INT32_MIN) {
-										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.popReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
-									}
-								} else {
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg8ToMemIns(
-																					MemoryLocation{
-																						REG_RBP, localVarState.stackOff,
-																						REG_MAX, 0 },
-																					vregState.phyReg)));
-								}
-								break;
-							}
-							case ValueType::I16:
-							case ValueType::U16: {
-								uint32_t regOff = rhs.getRegIndex();
-								VirtualRegState &vregState = compileContext.virtualRegStates.at(regOff);
-
-								if (vregState.saveOffset != INT32_MIN) {
-									RegisterId tmpGpRegId = compileContext.allocGpReg();
-									int32_t tmpGpRegOff = INT32_MIN;
-									size_t tmpGpRegSize;
-
-									if (compileContext.isRegInUse(tmpGpRegId)) {
-										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
-									}
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovMemToReg16Ins(
-																					tmpGpRegId,
-																					MemoryLocation{
-																						REG_RBP, vregState.saveOffset,
-																						REG_MAX, 0 })));
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg16ToMemIns(
-																					MemoryLocation{
-																						REG_RBP, localVarState.stackOff,
-																						REG_MAX, 0 },
-																					tmpGpRegId)));
-
-									if (tmpGpRegOff != INT32_MIN) {
-										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.popReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
-									}
-								} else {
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg16ToMemIns(
-																					MemoryLocation{
-																						REG_RBP, localVarState.stackOff,
-																						REG_MAX, 0 },
-																					vregState.phyReg)));
-								}
-								break;
-							}
-							case ValueType::I32:
-							case ValueType::U32:
-							case ValueType::F32: {
-								uint32_t regOff = rhs.getRegIndex();
-								VirtualRegState &vregState = compileContext.virtualRegStates.at(regOff);
-
-								if (vregState.saveOffset != INT32_MIN) {
-									RegisterId tmpGpRegId = compileContext.allocGpReg();
-									int32_t tmpGpRegOff = INT32_MIN;
-									size_t tmpGpRegSize;
-
-									if (compileContext.isRegInUse(tmpGpRegId)) {
-										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
-									}
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovMemToReg32Ins(
-																					tmpGpRegId,
-																					MemoryLocation{
-																						REG_RBP, vregState.saveOffset,
-																						REG_MAX, 0 })));
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg32ToMemIns(
-																					MemoryLocation{
-																						REG_RBP, localVarState.stackOff,
-																						REG_MAX, 0 },
-																					tmpGpRegId)));
-
-									if (tmpGpRegOff != INT32_MIN) {
-										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.popReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
-									}
-								} else {
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg32ToMemIns(
-																					MemoryLocation{
-																						REG_RBP, localVarState.stackOff,
-																						REG_MAX, 0 },
-																					vregState.phyReg)));
-								}
-								break;
-							}
-							case ValueType::I64:
-							case ValueType::U64:
-							case ValueType::F64: {
-								uint32_t regOff = rhs.getRegIndex();
-								VirtualRegState &vregState = compileContext.virtualRegStates.at(regOff);
-
-								if (vregState.saveOffset != INT32_MIN) {
-									RegisterId tmpGpRegId = compileContext.allocGpReg();
-									int32_t tmpGpRegOff = INT32_MIN;
-									size_t tmpGpRegSize;
-
-									if (compileContext.isRegInUse(tmpGpRegId)) {
-										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
-									}
-
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovMemToReg64Ins(
-																					tmpGpRegId,
-																					MemoryLocation{
-																						REG_RBP, vregState.saveOffset,
-																						REG_MAX, 0 })));
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToMemIns(
-																					MemoryLocation{
-																						REG_RBP, localVarState.stackOff,
-																						REG_MAX, 0 },
-																					tmpGpRegId)));
-
-									if (tmpGpRegOff != INT32_MIN) {
-										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.popReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
-									}
-								} else {
-									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToMemIns(
-																					MemoryLocation{
-																						REG_RBP, localVarState.stackOff,
-																						REG_MAX, 0 },
-																					vregState.phyReg)));
-								}
-								break;
-							}
-						}
+				case ValueType::I16:
+				case ValueType::U16: {
+					compileRegToFieldVarStoreInstruction<2>(compileContext, analyzedInfo, offIns, curIns, fieldRecord, rawDataPtr, rhs.getRegIndex());
+					break;
+				}
+				case ValueType::I32:
+				case ValueType::U32:
+				case ValueType::F32: {
+					compileRegToFieldVarStoreInstruction<4>(compileContext, analyzedInfo, offIns, curIns, fieldRecord, rawDataPtr, rhs.getRegIndex());
+					break;
+				}
+				case ValueType::I64:
+				case ValueType::U64:
+				case ValueType::F64: {
+					compileRegToFieldVarStoreInstruction<8>(compileContext, analyzedInfo, offIns, curIns, fieldRecord, rawDataPtr, rhs.getRegIndex());
+					break;
+				}
+				default:
+					std::terminate();
+				}
+			} else {
+				switch (fieldRecord.type.getValueTypeExData()) {
+				case ValueType::I8: {
+					int8_t imm0 = rhs.getI8();
+					if (((uintptr_t)rawDataPtr) < INT32_MAX) {
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																		emitMovImm8ToMemIns(
+																			MemoryLocation{
+																				REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																				REG_MAX, 0 },
+																			(uint8_t *)&imm0)));
 					} else {
-						switch (localVarState.type.getValueTypeExData()) {
-							case ValueType::I8: {
-								int8_t imm0 = rhs.getI8();
-								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																				emitMovImm8ToMemIns(
-																					MemoryLocation{
-																						REG_RBP, localVarState.stackOff,
-																						REG_MAX, 0 },
-																					(uint8_t *)&imm0)));
-								break;
-							}
-							case ValueType::I16: {
-								int16_t imm0 = rhs.getI16();
-								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																				emitMovImm16ToMemIns(
-																					MemoryLocation{
-																						REG_RBP, localVarState.stackOff,
-																						REG_MAX, 0 },
-																					(uint8_t *)&imm0)));
-								break;
-							}
-							case ValueType::I32: {
-								int32_t imm0 = rhs.getI32();
-								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																				emitMovImm32ToMemIns(
-																					MemoryLocation{
-																						REG_RBP, localVarState.stackOff,
-																						REG_MAX, 0 },
-																					(uint8_t *)&imm0)));
-								break;
-							}
-							case ValueType::I64: {
-								int64_t imm0 = rhs.getI64();
-								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																				emitMovImm64ToMemIns(
-																					MemoryLocation{
-																						REG_RBP, localVarState.stackOff,
-																						REG_MAX, 0 },
-																					(uint8_t *)&imm0)));
-								break;
-							}
-							case ValueType::U8: {
-								uint8_t imm0 = rhs.getU8();
-								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																				emitMovImm8ToMemIns(
-																					MemoryLocation{
-																						REG_RBP, localVarState.stackOff,
-																						REG_MAX, 0 },
-																					(uint8_t *)&imm0)));
-								break;
-							}
-							case ValueType::U16: {
-								uint16_t imm0 = rhs.getU16();
-								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																				emitMovImm16ToMemIns(
-																					MemoryLocation{
-																						REG_RBP, localVarState.stackOff,
-																						REG_MAX, 0 },
-																					(uint8_t *)&imm0)));
-								break;
-							}
-							case ValueType::U32: {
-								uint16_t imm0 = rhs.getU16();
-								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																				emitMovImm16ToMemIns(
-																					MemoryLocation{
-																						REG_RBP, localVarState.stackOff,
-																						REG_MAX, 0 },
-																					(uint8_t *)&imm0)));
-								break;
-							}
-							case ValueType::U64: {
-								uint64_t imm0 = rhs.getU64();
-								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																				emitMovImm64ToMemIns(
-																					MemoryLocation{
-																						REG_RBP, localVarState.stackOff,
-																						REG_MAX, 0 },
-																					(uint8_t *)&imm0)));
-								break;
-							}
-							case ValueType::Bool: {
-								bool imm0 = rhs.getBool();
-								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																				emitMovImm8ToMemIns(
-																					MemoryLocation{
-																						REG_RBP, localVarState.stackOff,
-																						REG_MAX, 0 },
-																					(uint8_t *)&imm0)));
-								break;
-							}
-							case ValueType::F32: {
-								float imm0 = rhs.getF32();
-								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																				emitMovImm32ToMemIns(
-																					MemoryLocation{
-																						REG_RBP, localVarState.stackOff,
-																						REG_MAX, 0 },
-																					(uint8_t *)&imm0)));
-								break;
-							}
-							case ValueType::F64: {
-								double imm0 = rhs.getF64();
-								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																				emitMovImm64ToMemIns(
-																					MemoryLocation{
-																						REG_RBP, localVarState.stackOff,
-																						REG_MAX, 0 },
-																					(uint8_t *)&imm0)));
-								break;
-							}
+						RegisterId baseRegId = compileContext.allocGpReg();
+
+						int32_t baseRegOff = INT32_MIN;
+						size_t baseRegSize;
+
+						uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
+																		baseRegId,
+																		(uint8_t *)&baseRegImm0)));
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm8ToMemIns(
+																		MemoryLocation{
+																			baseRegId, 0,
+																			REG_MAX, 0 },
+																		(uint8_t *)&imm0)));
+
+						if (compileContext.isRegInUse(baseRegId)) {
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
 						}
+
+						compileContext.unallocReg(baseRegId);
 					}
 					break;
 				}
-				case TypeId::String:
-				case TypeId::Instance:
-				case TypeId::Array:
-				case TypeId::FnDelegate: {
-					if (rhs.valueType == ValueType::RegRef) {
-						uint32_t regOff = rhs.getRegIndex();
-						VirtualRegState &vregState = compileContext.virtualRegStates.at(regOff);
-
-						if (vregState.saveOffset != INT32_MIN) {
-							RegisterId tmpGpRegId = compileContext.allocGpReg();
-							int32_t tmpGpRegOff = INT32_MIN;
-							size_t tmpGpRegSize;
-
-							if (compileContext.isRegInUse(tmpGpRegId)) {
-								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
-							}
-
-							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovMemToReg64Ins(
-																			tmpGpRegId,
+				case ValueType::I16: {
+					int16_t imm0 = rhs.getI16();
+					if (((uintptr_t)rawDataPtr) < INT32_MAX) {
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																		emitMovImm16ToMemIns(
 																			MemoryLocation{
-																				REG_RBP, vregState.saveOffset,
-																				REG_MAX, 0 })));
-							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToMemIns(
-																			MemoryLocation{
-																				REG_RBP, localVarState.stackOff,
+																				REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
 																				REG_MAX, 0 },
-																			tmpGpRegId)));
-
-							if (tmpGpRegOff != INT32_MIN) {
-								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.popReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
-							}
-						} else {
-							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToMemIns(
-																			MemoryLocation{
-																				REG_RBP, localVarState.stackOff,
-																				REG_MAX, 0 },
-																			vregState.phyReg)));
-						}
+																			(uint8_t *)&imm0)));
 					} else {
-						Object *imm0 = rhs.getObjectRef().asInstance.instanceObject;
+						RegisterId baseRegId = compileContext.allocGpReg();
+
+						int32_t baseRegOff = INT32_MIN;
+						size_t baseRegSize;
+
+						uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
+																		baseRegId,
+																		(uint8_t *)&baseRegImm0)));
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm16ToMemIns(
+																		MemoryLocation{
+																			baseRegId, 0,
+																			REG_MAX, 0 },
+																		(uint8_t *)&imm0)));
+
+						if (compileContext.isRegInUse(baseRegId)) {
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
+						}
+
+						compileContext.unallocReg(baseRegId);
+					}
+					break;
+				}
+				case ValueType::I32: {
+					int32_t imm0 = rhs.getI32();
+					if (((uintptr_t)rawDataPtr) < INT32_MAX) {
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																		emitMovImm32ToMemIns(
+																			MemoryLocation{
+																				REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																				REG_MAX, 0 },
+																			(uint8_t *)&imm0)));
+					} else {
+						RegisterId baseRegId = compileContext.allocGpReg();
+
+						int32_t baseRegOff = INT32_MIN;
+						size_t baseRegSize;
+
+						uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
+																		baseRegId,
+																		(uint8_t *)&baseRegImm0)));
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm32ToMemIns(
+																		MemoryLocation{
+																			baseRegId, 0,
+																			REG_MAX, 0 },
+																		(uint8_t *)&imm0)));
+
+						if (compileContext.isRegInUse(baseRegId)) {
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
+						}
+
+						compileContext.unallocReg(baseRegId);
+					}
+					break;
+				}
+				case ValueType::I64: {
+					int64_t imm0 = rhs.getI64();
+					if (((uintptr_t)rawDataPtr) < INT32_MAX) {
 						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
 																		emitMovImm64ToMemIns(
 																			MemoryLocation{
-																				REG_RBP, localVarState.stackOff,
+																				REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
 																				REG_MAX, 0 },
 																			(uint8_t *)&imm0)));
+					} else {
+						RegisterId baseRegId = compileContext.allocGpReg();
+
+						int32_t baseRegOff = INT32_MIN;
+						size_t baseRegSize;
+
+						uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
+																		baseRegId,
+																		(uint8_t *)&baseRegImm0)));
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToMemIns(
+																		MemoryLocation{
+																			baseRegId, 0,
+																			REG_MAX, 0 },
+																		(uint8_t *)&imm0)));
+
+						if (compileContext.isRegInUse(baseRegId)) {
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
+						}
+
+						compileContext.unallocReg(baseRegId);
 					}
 					break;
+				}
+				case ValueType::U8: {
+					uint8_t imm0 = rhs.getU8();
+					if (((uintptr_t)rawDataPtr) < INT32_MAX) {
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																		emitMovImm8ToMemIns(
+																			MemoryLocation{
+																				REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																				REG_MAX, 0 },
+																			(uint8_t *)&imm0)));
+					} else {
+						RegisterId baseRegId = compileContext.allocGpReg();
+
+						int32_t baseRegOff = INT32_MIN;
+						size_t baseRegSize;
+
+						uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
+																		baseRegId,
+																		(uint8_t *)&baseRegImm0)));
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm8ToMemIns(
+																		MemoryLocation{
+																			baseRegId, 0,
+																			REG_MAX, 0 },
+																		(uint8_t *)&imm0)));
+
+						if (compileContext.isRegInUse(baseRegId)) {
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
+						}
+
+						compileContext.unallocReg(baseRegId);
+					}
+					break;
+				}
+				case ValueType::U16: {
+					uint16_t imm0 = rhs.getU16();
+					if (((uintptr_t)rawDataPtr) < INT32_MAX) {
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																		emitMovImm16ToMemIns(
+																			MemoryLocation{
+																				REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																				REG_MAX, 0 },
+																			(uint8_t *)&imm0)));
+					} else {
+						RegisterId baseRegId = compileContext.allocGpReg();
+
+						int32_t baseRegOff = INT32_MIN;
+						size_t baseRegSize;
+
+						uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
+																		baseRegId,
+																		(uint8_t *)&baseRegImm0)));
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm16ToMemIns(
+																		MemoryLocation{
+																			baseRegId, 0,
+																			REG_MAX, 0 },
+																		(uint8_t *)&imm0)));
+
+						if (compileContext.isRegInUse(baseRegId)) {
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
+						}
+
+						compileContext.unallocReg(baseRegId);
+					}
+					break;
+				}
+				case ValueType::U32: {
+					uint16_t imm0 = rhs.getU16();
+					if (((uintptr_t)rawDataPtr) < INT32_MAX) {
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																		emitMovImm32ToMemIns(
+																			MemoryLocation{
+																				REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																				REG_MAX, 0 },
+																			(uint8_t *)&imm0)));
+					} else {
+						RegisterId baseRegId = compileContext.allocGpReg();
+
+						int32_t baseRegOff = INT32_MIN;
+						size_t baseRegSize;
+
+						uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
+																		baseRegId,
+																		(uint8_t *)&baseRegImm0)));
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm32ToMemIns(
+																		MemoryLocation{
+																			baseRegId, 0,
+																			REG_MAX, 0 },
+																		(uint8_t *)&imm0)));
+
+						if (compileContext.isRegInUse(baseRegId)) {
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
+						}
+
+						compileContext.unallocReg(baseRegId);
+					}
+					break;
+				}
+				case ValueType::U64: {
+					uint64_t imm0 = rhs.getU64();
+					if (((uintptr_t)rawDataPtr) < INT32_MAX) {
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																		emitMovImm64ToMemIns(
+																			MemoryLocation{
+																				REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																				REG_MAX, 0 },
+																			(uint8_t *)&imm0)));
+					} else {
+						RegisterId baseRegId = compileContext.allocGpReg();
+
+						int32_t baseRegOff = INT32_MIN;
+						size_t baseRegSize;
+
+						uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
+																		baseRegId,
+																		(uint8_t *)&baseRegImm0)));
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToMemIns(
+																		MemoryLocation{
+																			baseRegId, 0,
+																			REG_MAX, 0 },
+																		(uint8_t *)&imm0)));
+
+						if (compileContext.isRegInUse(baseRegId)) {
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
+						}
+
+						compileContext.unallocReg(baseRegId);
+					}
+					break;
+				}
+				case ValueType::Bool: {
+					bool imm0 = rhs.getBool();
+					if (((uintptr_t)rawDataPtr) < INT32_MAX) {
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																		emitMovImm8ToMemIns(
+																			MemoryLocation{
+																				REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																				REG_MAX, 0 },
+																			(uint8_t *)&imm0)));
+					} else {
+						RegisterId baseRegId = compileContext.allocGpReg();
+
+						int32_t baseRegOff = INT32_MIN;
+						size_t baseRegSize;
+
+						uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
+																		baseRegId,
+																		(uint8_t *)&baseRegImm0)));
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm8ToMemIns(
+																		MemoryLocation{
+																			baseRegId, 0,
+																			REG_MAX, 0 },
+																		(uint8_t *)&imm0)));
+
+						if (compileContext.isRegInUse(baseRegId)) {
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
+						}
+
+						compileContext.unallocReg(baseRegId);
+					}
+					break;
+				}
+				case ValueType::F32: {
+					float imm0 = rhs.getF32();
+					if (((uintptr_t)rawDataPtr) < INT32_MAX) {
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																		emitMovImm32ToMemIns(
+																			MemoryLocation{
+																				REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																				REG_MAX, 0 },
+																			(uint8_t *)&imm0)));
+					} else {
+						RegisterId baseRegId = compileContext.allocGpReg();
+
+						int32_t baseRegOff = INT32_MIN;
+						size_t baseRegSize;
+
+						uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
+																		baseRegId,
+																		(uint8_t *)&baseRegImm0)));
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm32ToMemIns(
+																		MemoryLocation{
+																			baseRegId, 0,
+																			REG_MAX, 0 },
+																		(uint8_t *)&imm0)));
+
+						if (compileContext.isRegInUse(baseRegId)) {
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
+						}
+
+						compileContext.unallocReg(baseRegId);
+					}
+					break;
+				}
+				case ValueType::F64: {
+					double imm0 = rhs.getF64();
+					if (((uintptr_t)rawDataPtr) < INT32_MAX) {
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																		emitMovImm64ToMemIns(
+																			MemoryLocation{
+																				REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																				REG_MAX, 0 },
+																			(uint8_t *)&imm0)));
+					} else {
+						RegisterId baseRegId = compileContext.allocGpReg();
+
+						int32_t baseRegOff = INT32_MIN;
+						size_t baseRegSize;
+
+						uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
+																		baseRegId,
+																		(uint8_t *)&baseRegImm0)));
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToMemIns(
+																		MemoryLocation{
+																			baseRegId, 0,
+																			REG_MAX, 0 },
+																		(uint8_t *)&imm0)));
+
+						if (compileContext.isRegInUse(baseRegId)) {
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
+						}
+
+						compileContext.unallocReg(baseRegId);
+					}
+					break;
+				}
+				}
+			}
+		}
+		}
+		break;
+	}
+	case opti::RegStorageType::LocalVar: {
+		LocalVarState &localVarState = compileContext.localVarStates.at(regAnalyzedInfo.expectedValue.getObjectRef().asLocalVar.localVarIndex);
+
+		switch (localVarState.type.typeId) {
+		case TypeId::Value: {
+			if (rhs.valueType == ValueType::RegRef) {
+				switch (localVarState.type.getValueTypeExData()) {
+				case ValueType::I8:
+				case ValueType::U8:
+				case ValueType::Bool: {
+					uint32_t regOff = rhs.getRegIndex();
+					VirtualRegState &vregState = compileContext.virtualRegStates.at(regOff);
+
+					if (vregState.saveOffset != INT32_MIN) {
+						RegisterId tmpGpRegId = compileContext.allocGpReg();
+						int32_t tmpGpRegOff = INT32_MIN;
+						size_t tmpGpRegSize;
+
+						if (compileContext.isRegInUse(tmpGpRegId)) {
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
+						}
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovMemToReg8Ins(
+																		tmpGpRegId,
+																		MemoryLocation{
+																			REG_RBP, vregState.saveOffset,
+																			REG_MAX, 0 })));
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg8ToMemIns(
+																		MemoryLocation{
+																			REG_RBP, localVarState.stackOff,
+																			REG_MAX, 0 },
+																		tmpGpRegId)));
+
+						if (tmpGpRegOff != INT32_MIN) {
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.popReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
+						}
+					} else {
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg8ToMemIns(
+																		MemoryLocation{
+																			REG_RBP, localVarState.stackOff,
+																			REG_MAX, 0 },
+																		vregState.phyReg)));
+					}
+					break;
+				}
+				case ValueType::I16:
+				case ValueType::U16: {
+					uint32_t regOff = rhs.getRegIndex();
+					VirtualRegState &vregState = compileContext.virtualRegStates.at(regOff);
+
+					if (vregState.saveOffset != INT32_MIN) {
+						RegisterId tmpGpRegId = compileContext.allocGpReg();
+						int32_t tmpGpRegOff = INT32_MIN;
+						size_t tmpGpRegSize;
+
+						if (compileContext.isRegInUse(tmpGpRegId)) {
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
+						}
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovMemToReg16Ins(
+																		tmpGpRegId,
+																		MemoryLocation{
+																			REG_RBP, vregState.saveOffset,
+																			REG_MAX, 0 })));
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg16ToMemIns(
+																		MemoryLocation{
+																			REG_RBP, localVarState.stackOff,
+																			REG_MAX, 0 },
+																		tmpGpRegId)));
+
+						if (tmpGpRegOff != INT32_MIN) {
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.popReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
+						}
+					} else {
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg16ToMemIns(
+																		MemoryLocation{
+																			REG_RBP, localVarState.stackOff,
+																			REG_MAX, 0 },
+																		vregState.phyReg)));
+					}
+					break;
+				}
+				case ValueType::I32:
+				case ValueType::U32:
+				case ValueType::F32: {
+					uint32_t regOff = rhs.getRegIndex();
+					VirtualRegState &vregState = compileContext.virtualRegStates.at(regOff);
+
+					if (vregState.saveOffset != INT32_MIN) {
+						RegisterId tmpGpRegId = compileContext.allocGpReg();
+						int32_t tmpGpRegOff = INT32_MIN;
+						size_t tmpGpRegSize;
+
+						if (compileContext.isRegInUse(tmpGpRegId)) {
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
+						}
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovMemToReg32Ins(
+																		tmpGpRegId,
+																		MemoryLocation{
+																			REG_RBP, vregState.saveOffset,
+																			REG_MAX, 0 })));
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg32ToMemIns(
+																		MemoryLocation{
+																			REG_RBP, localVarState.stackOff,
+																			REG_MAX, 0 },
+																		tmpGpRegId)));
+
+						if (tmpGpRegOff != INT32_MIN) {
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.popReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
+						}
+					} else {
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg32ToMemIns(
+																		MemoryLocation{
+																			REG_RBP, localVarState.stackOff,
+																			REG_MAX, 0 },
+																		vregState.phyReg)));
+					}
+					break;
+				}
+				case ValueType::I64:
+				case ValueType::U64:
+				case ValueType::F64: {
+					uint32_t regOff = rhs.getRegIndex();
+					VirtualRegState &vregState = compileContext.virtualRegStates.at(regOff);
+
+					if (vregState.saveOffset != INT32_MIN) {
+						RegisterId tmpGpRegId = compileContext.allocGpReg();
+						int32_t tmpGpRegOff = INT32_MIN;
+						size_t tmpGpRegSize;
+
+						if (compileContext.isRegInUse(tmpGpRegId)) {
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
+						}
+
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovMemToReg64Ins(
+																		tmpGpRegId,
+																		MemoryLocation{
+																			REG_RBP, vregState.saveOffset,
+																			REG_MAX, 0 })));
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToMemIns(
+																		MemoryLocation{
+																			REG_RBP, localVarState.stackOff,
+																			REG_MAX, 0 },
+																		tmpGpRegId)));
+
+						if (tmpGpRegOff != INT32_MIN) {
+							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.popReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
+						}
+					} else {
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToMemIns(
+																		MemoryLocation{
+																			REG_RBP, localVarState.stackOff,
+																			REG_MAX, 0 },
+																		vregState.phyReg)));
+					}
+					break;
+				}
+				}
+			} else {
+				switch (localVarState.type.getValueTypeExData()) {
+				case ValueType::I8: {
+					int8_t imm0 = rhs.getI8();
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																	emitMovImm8ToMemIns(
+																		MemoryLocation{
+																			REG_RBP, localVarState.stackOff,
+																			REG_MAX, 0 },
+																		(uint8_t *)&imm0)));
+					break;
+				}
+				case ValueType::I16: {
+					int16_t imm0 = rhs.getI16();
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																	emitMovImm16ToMemIns(
+																		MemoryLocation{
+																			REG_RBP, localVarState.stackOff,
+																			REG_MAX, 0 },
+																		(uint8_t *)&imm0)));
+					break;
+				}
+				case ValueType::I32: {
+					int32_t imm0 = rhs.getI32();
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																	emitMovImm32ToMemIns(
+																		MemoryLocation{
+																			REG_RBP, localVarState.stackOff,
+																			REG_MAX, 0 },
+																		(uint8_t *)&imm0)));
+					break;
+				}
+				case ValueType::I64: {
+					int64_t imm0 = rhs.getI64();
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																	emitMovImm64ToMemIns(
+																		MemoryLocation{
+																			REG_RBP, localVarState.stackOff,
+																			REG_MAX, 0 },
+																		(uint8_t *)&imm0)));
+					break;
+				}
+				case ValueType::U8: {
+					uint8_t imm0 = rhs.getU8();
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																	emitMovImm8ToMemIns(
+																		MemoryLocation{
+																			REG_RBP, localVarState.stackOff,
+																			REG_MAX, 0 },
+																		(uint8_t *)&imm0)));
+					break;
+				}
+				case ValueType::U16: {
+					uint16_t imm0 = rhs.getU16();
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																	emitMovImm16ToMemIns(
+																		MemoryLocation{
+																			REG_RBP, localVarState.stackOff,
+																			REG_MAX, 0 },
+																		(uint8_t *)&imm0)));
+					break;
+				}
+				case ValueType::U32: {
+					uint16_t imm0 = rhs.getU16();
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																	emitMovImm16ToMemIns(
+																		MemoryLocation{
+																			REG_RBP, localVarState.stackOff,
+																			REG_MAX, 0 },
+																		(uint8_t *)&imm0)));
+					break;
+				}
+				case ValueType::U64: {
+					uint64_t imm0 = rhs.getU64();
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																	emitMovImm64ToMemIns(
+																		MemoryLocation{
+																			REG_RBP, localVarState.stackOff,
+																			REG_MAX, 0 },
+																		(uint8_t *)&imm0)));
+					break;
+				}
+				case ValueType::Bool: {
+					bool imm0 = rhs.getBool();
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																	emitMovImm8ToMemIns(
+																		MemoryLocation{
+																			REG_RBP, localVarState.stackOff,
+																			REG_MAX, 0 },
+																		(uint8_t *)&imm0)));
+					break;
+				}
+				case ValueType::F32: {
+					float imm0 = rhs.getF32();
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																	emitMovImm32ToMemIns(
+																		MemoryLocation{
+																			REG_RBP, localVarState.stackOff,
+																			REG_MAX, 0 },
+																		(uint8_t *)&imm0)));
+					break;
+				}
+				case ValueType::F64: {
+					double imm0 = rhs.getF64();
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																	emitMovImm64ToMemIns(
+																		MemoryLocation{
+																			REG_RBP, localVarState.stackOff,
+																			REG_MAX, 0 },
+																		(uint8_t *)&imm0)));
+					break;
+				}
 				}
 			}
 			break;
 		}
-		case opti::RegStorageType::ArgRef:
-			// TODO: Implement it.
+		case TypeId::String:
+		case TypeId::Instance:
+		case TypeId::Array:
+		case TypeId::FnDelegate: {
+			if (rhs.valueType == ValueType::RegRef) {
+				uint32_t regOff = rhs.getRegIndex();
+				VirtualRegState &vregState = compileContext.virtualRegStates.at(regOff);
+
+				if (vregState.saveOffset != INT32_MIN) {
+					RegisterId tmpGpRegId = compileContext.allocGpReg();
+					int32_t tmpGpRegOff = INT32_MIN;
+					size_t tmpGpRegSize;
+
+					if (compileContext.isRegInUse(tmpGpRegId)) {
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
+					}
+
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovMemToReg64Ins(
+																	tmpGpRegId,
+																	MemoryLocation{
+																		REG_RBP, vregState.saveOffset,
+																		REG_MAX, 0 })));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToMemIns(
+																	MemoryLocation{
+																		REG_RBP, localVarState.stackOff,
+																		REG_MAX, 0 },
+																	tmpGpRegId)));
+
+					if (tmpGpRegOff != INT32_MIN) {
+						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.popReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
+					}
+				} else {
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToMemIns(
+																	MemoryLocation{
+																		REG_RBP, localVarState.stackOff,
+																		REG_MAX, 0 },
+																	vregState.phyReg)));
+				}
+			} else {
+				Object *imm0 = rhs.getObjectRef().asInstance.instanceObject;
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																emitMovImm64ToMemIns(
+																	MemoryLocation{
+																		REG_RBP, localVarState.stackOff,
+																		REG_MAX, 0 },
+																	(uint8_t *)&imm0)));
+			}
 			break;
+		}
+		}
+		break;
+	}
+	case opti::RegStorageType::ArgRef:
+		// TODO: Implement it.
+		break;
 	}
 
 	return {};

@@ -48,7 +48,7 @@ namespace slake {
 		class TypeNameNode : public AstNode {
 		public:
 			bool isRef = false;
-			size_t idxRefIndicatorToken = SIZE_MAX;  // Reference indicator token.
+			size_t idxRefIndicatorToken = SIZE_MAX;	 // Reference indicator token.
 
 			inline TypeNameNode(const TypeNameNode &other) : AstNode(other) {
 				isRef = other.isRef;

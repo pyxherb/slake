@@ -3,327 +3,499 @@
 		{
 			"opcode": 0,
 			"mnemonic": "nop",
-			"operands": [ "" ]
+			"operands": [
+				""
+			]
 		},
 		{
 			"opcode": 1,
 			"mnemonic": "push",
-			"operands": [ "v" ]
+			"operands": [
+				"v"
+			]
 		},
 		{
 			"opcode": 2,
 			"mnemonic": "pop",
-			"operands": [ "" ]
+			"operands": [
+				""
+			]
 		},
 		{
 			"opcode": 3,
 			"mnemonic": "load",
-			"operands": [ "r" ]
+			"operands": [
+				"r"
+			]
 		},
 		{
 			"opcode": 4,
 			"mnemonic": "rload",
-			"operands": [ "r" ]
+			"operands": [
+				"r"
+			]
 		},
 		{
 			"opcode": 5,
 			"mnemonic": "store",
-			"operands": [ "", "r" ]
+			"operands": [
+				"",
+				"r"
+			]
 		},
 		{
 			"opcode": 6,
 			"mnemonic": "lvar",
-			"operands": [ "t" ]
+			"operands": [
+				"t"
+			]
 		},
 		{
 			"opcode": 7,
 			"mnemonic": "lload",
-			"operands": [ "i" ]
+			"operands": [
+				"i"
+			]
 		},
 		{
 			"opcode": 8,
 			"mnemonic": "lstore",
-			"operands": [ "i" ]
+			"operands": [
+				"i"
+			]
 		},
 		{
 			"opcode": 9,
 			"mnemonic": "lvalue",
-			"operands": [ "" ]
+			"operands": [
+				""
+			]
 		},
 		{
 			"opcode": 10,
 			"mnemonic": "expand",
-			"operands": [ "i", "" ]
+			"operands": [
+				"i",
+				""
+			]
 		},
 		{
 			"opcode": 11,
 			"mnemonic": "shrink",
-			"operands": [ "i", "" ]
+			"operands": [
+				"i",
+				""
+			]
 		},
 		{
 			"opcode": 12,
 			"mnemonic": "enter",
-			"operands": [ "" ]
+			"operands": [
+				""
+			]
 		},
 		{
 			"opcode": 13,
 			"mnemonic": "leave",
-			"operands": [ "", "i" ]
+			"operands": [
+				"",
+				"i"
+			]
 		},
 		{
 			"opcode": 14,
 			"mnemonic": "add",
-			"operands": [ "", "**" ]
+			"operands": [
+				"",
+				"**"
+			]
 		},
 		{
 			"opcode": 15,
 			"mnemonic": "sub",
-			"operands": [ "", "**" ]
+			"operands": [
+				"",
+				"**"
+			]
 		},
 		{
 			"opcode": 16,
 			"mnemonic": "mul",
-			"operands": [ "", "**" ]
+			"operands": [
+				"",
+				"**"
+			]
 		},
 		{
 			"opcode": 17,
 			"mnemonic": "div",
-			"operands": [ "", "**" ]
+			"operands": [
+				"",
+				"**"
+			]
 		},
 		{
 			"opcode": 18,
 			"mnemonic": "mod",
-			"operands": [ "", "**" ]
+			"operands": [
+				"",
+				"**"
+			]
 		},
 		{
 			"opcode": 19,
 			"mnemonic": "and",
-			"operands": [ "", "**" ]
+			"operands": [
+				"",
+				"**"
+			]
 		},
 		{
 			"opcode": 20,
 			"mnemonic": "or",
-			"operands": [ "", "**" ]
+			"operands": [
+				"",
+				"**"
+			]
 		},
 		{
 			"opcode": 21,
 			"mnemonic": "xor",
-			"operands": [ "", "**" ]
+			"operands": [
+				"",
+				"**"
+			]
 		},
 		{
 			"opcode": 22,
 			"mnemonic": "land",
-			"operands": [ "", "**" ]
+			"operands": [
+				"",
+				"**"
+			]
 		},
 		{
 			"opcode": 23,
 			"mnemonic": "lor",
-			"operands": [ "", "**" ]
+			"operands": [
+				"",
+				"**"
+			]
 		},
 		{
 			"opcode": 24,
 			"mnemonic": "eq",
-			"operands": [ "", "**" ]
+			"operands": [
+				"",
+				"**"
+			]
 		},
 		{
 			"opcode": 25,
 			"mnemonic": "neq",
-			"operands": [ "", "**" ]
+			"operands": [
+				"",
+				"**"
+			]
 		},
 		{
 			"opcode": 26,
 			"mnemonic": "seq",
-			"operands": [ "", "**" ]
+			"operands": [
+				"",
+				"**"
+			]
 		},
 		{
 			"opcode": 27,
 			"mnemonic": "sneq",
-			"operands": [ "", "**" ]
+			"operands": [
+				"",
+				"**"
+			]
 		},
 		{
 			"opcode": 28,
 			"mnemonic": "lt",
-			"operands": [ "", "**" ]
+			"operands": [
+				"",
+				"**"
+			]
 		},
 		{
 			"opcode": 29,
 			"mnemonic": "gt",
-			"operands": [ "", "**" ]
+			"operands": [
+				"",
+				"**"
+			]
 		},
 		{
 			"opcode": 30,
 			"mnemonic": "lteq",
-			"operands": [ "", "**" ]
+			"operands": [
+				"",
+				"**"
+			]
 		},
 		{
 			"opcode": 31,
 			"mnemonic": "gteq",
-			"operands": [ "", "**" ]
+			"operands": [
+				"",
+				"**"
+			]
 		},
 		{
 			"opcode": 32,
 			"mnemonic": "lsh",
-			"operands": [ "", "*i" ]
+			"operands": [
+				"",
+				"*i"
+			]
 		},
 		{
 			"opcode": 33,
 			"mnemonic": "rsh",
-			"operands": [ "", "*i" ]
+			"operands": [
+				"",
+				"*i"
+			]
 		},
 		{
 			"opcode": 34,
 			"mnemonic": "swap",
-			"operands": [ "", "*i" ]
+			"operands": [
+				"",
+				"*i"
+			]
 		},
 		{
 			"opcode": 35,
 			"mnemonic": "rev",
-			"operands": [ "", "*" ]
+			"operands": [
+				"",
+				"*"
+			]
 		},
 		{
 			"opcode": 36,
 			"mnemonic": "not",
-			"operands": [ "", "*" ]
+			"operands": [
+				"",
+				"*"
+			]
 		},
 		{
 			"opcode": 37,
 			"mnemonic": "incf",
-			"operands": [ "", "*" ]
+			"operands": [
+				"",
+				"*"
+			]
 		},
 		{
 			"opcode": 38,
 			"mnemonic": "decf",
-			"operands": [ "", "*" ]
+			"operands": [
+				"",
+				"*"
+			]
 		},
 		{
 			"opcode": 39,
 			"mnemonic": "incb",
-			"operands": [ "", "*" ]
+			"operands": [
+				"",
+				"*"
+			]
 		},
 		{
 			"opcode": 40,
 			"mnemonic": "decb",
-			"operands": [ "", "*" ]
+			"operands": [
+				"",
+				"*"
+			]
 		},
 		{
 			"opcode": 41,
 			"mnemonic": "neg",
-			"operands": [ "", "*" ]
+			"operands": [
+				"",
+				"*"
+			]
 		},
 		{
 			"opcode": 42,
 			"mnemonic": "at",
-			"operands": [ "", "**" ]
+			"operands": [
+				"",
+				"**"
+			]
 		},
 		{
 			"opcode": 43,
 			"mnemonic": "jmp",
-			"operands": [ "i" ]
+			"operands": [
+				"i"
+			]
 		},
 		{
 			"opcode": 44,
 			"mnemonic": "jt",
-			"operands": [ "i" ]
+			"operands": [
+				"i"
+			]
 		},
 		{
 			"opcode": 45,
 			"mnemonic": "jf",
-			"operands": [ "i" ]
+			"operands": [
+				"i"
+			]
 		},
 		{
 			"opcode": 46,
 			"mnemonic": "jtf",
-			"operands": [ "ii" ]
+			"operands": [
+				"ii"
+			]
 		},
 		{
 			"opcode": 47,
 			"mnemonic": "pusharg",
-			"operands": [ "", "*" ]
+			"operands": [
+				"",
+				"*"
+			]
 		},
 		{
 			"opcode": 48,
 			"mnemonic": "larg",
-			"operands": [ "", "i" ]
+			"operands": [
+				"",
+				"i"
+			]
 		},
 		{
 			"opcode": 49,
 			"mnemonic": "lthis",
-			"operands": [ "" ]
+			"operands": [
+				""
+			]
 		},
 		{
 			"opcode": 50,
 			"mnemonic": "call",
-			"operands": [ "r", "" ]
+			"operands": [
+				"r",
+				""
+			]
 		},
 		{
 			"opcode": 51,
 			"mnemonic": "mcall",
-			"operands": [ "r", "" ]
+			"operands": [
+				"r",
+				""
+			]
 		},
 		{
 			"opcode": 52,
 			"mnemonic": "ret",
-			"operands": [ "*", "" ]
+			"operands": [
+				"*",
+				""
+			]
 		},
 		{
 			"opcode": 53,
 			"mnemonic": "acall",
-			"operands": [ "r", "" ]
+			"operands": [
+				"r",
+				""
+			]
 		},
 		{
 			"opcode": 54,
 			"mnemonic": "amcall",
-			"operands": [ "r", "" ]
+			"operands": [
+				"r",
+				""
+			]
 		},
 		{
 			"opcode": 55,
 			"mnemonic": "yield",
-			"operands": [ "*", "" ]
+			"operands": [
+				"*",
+				""
+			]
 		},
 		{
 			"opcode": 56,
 			"mnemonic": "await",
-			"operands": [ "" ]
+			"operands": [
+				""
+			]
 		},
 		{
 			"opcode": 57,
 			"mnemonic": "new",
-			"operands": [ "t" ]
+			"operands": [
+				"t"
+			]
 		},
 		{
 			"opcode": 58,
 			"mnemonic": "throw",
-			"operands": [ "*", "" ]
+			"operands": [
+				"*",
+				""
+			]
 		},
 		{
 			"opcode": 59,
 			"mnemonic": "pushxh",
-			"operands": [ "i" ]
+			"operands": [
+				"i"
+			]
 		},
 		{
 			"opcode": 60,
 			"mnemonic": "lexcept",
-			"operands": [ "" ]
+			"operands": [
+				""
+			]
 		},
 		{
 			"opcode": 61,
 			"mnemonic": "abort",
-			"operands": [ "" ]
+			"operands": [
+				""
+			]
 		},
 		{
 			"opcode": 62,
 			"mnemonic": "cast",
-			"operands": [ "t" ]
+			"operands": [
+				"t"
+			]
 		},
 		{
 			"opcode": 63,
 			"mnemonic": "typeof",
-			"operands": [ "" ]
+			"operands": [
+				""
+			]
 		},
 		{
 			"opcode": 64,
 			"mnemonic": "constsw",
-			"operands": [ "M" ]
+			"operands": [
+				"M"
+			]
 		}
 	]
 }

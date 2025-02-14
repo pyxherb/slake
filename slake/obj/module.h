@@ -21,7 +21,7 @@ namespace slake {
 		}
 
 		SLAKE_FORCEINLINE bool copy(FieldRecord &dest) const noexcept {
-			if(!peff::copy(dest.name, name)) {
+			if (!peff::copy(dest.name, name)) {
 				return false;
 			}
 			dest.accessModifier = accessModifier;

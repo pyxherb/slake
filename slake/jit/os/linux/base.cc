@@ -19,9 +19,9 @@ public:
 	inline LinuxCodePage(size_t size) : ptr(ptr), size(size) {
 		struct sysinfo info;
 		sysinfo(&info);
-		if(!_PAGESIZE)
+		if (!_PAGESIZE)
 			_PAGESIZE = info.mem_unit;
-		ptr = (char*)aligned_alloc(_PAGESIZE, size);
+		ptr = (char *)aligned_alloc(_PAGESIZE, size);
 	}
 	virtual inline ~LinuxCodePage() {
 		mprotect(ptr, size, PROT_READ);

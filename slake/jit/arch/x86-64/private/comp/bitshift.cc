@@ -404,119 +404,119 @@ InternalExceptionPointer slake::jit::x86_64::compileShlInstruction(
 	Value lhsExpectedValue(ValueType::Undefined), rhsExpectedValue(ValueType::Undefined);
 
 	switch (lhs.valueType) {
-		case ValueType::I8:
-		case ValueType::I16:
-		case ValueType::I32:
-		case ValueType::I64:
-		case ValueType::U8:
-		case ValueType::U16:
-		case ValueType::U32:
-		case ValueType::U64:
-			lhsExpectedValue = lhs;
-			break;
-		case ValueType::RegRef:
-			lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(lhs.getRegIndex()).expectedValue;
-			break;
-		default:
-			// Malformed function
-			std::terminate();
+	case ValueType::I8:
+	case ValueType::I16:
+	case ValueType::I32:
+	case ValueType::I64:
+	case ValueType::U8:
+	case ValueType::U16:
+	case ValueType::U32:
+	case ValueType::U64:
+		lhsExpectedValue = lhs;
+		break;
+	case ValueType::RegRef:
+		lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(lhs.getRegIndex()).expectedValue;
+		break;
+	default:
+		// Malformed function
+		std::terminate();
 	}
 
 	switch (rhs.valueType) {
-		case ValueType::I8:
-		case ValueType::I16:
-		case ValueType::I32:
-		case ValueType::I64:
-		case ValueType::U8:
-		case ValueType::U16:
-		case ValueType::U32:
-		case ValueType::U64:
-			lhsExpectedValue = rhs;
-			break;
-		case ValueType::RegRef:
-			lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(rhs.getRegIndex()).expectedValue;
-			break;
-		default:
-			// Malformed function
-			std::terminate();
+	case ValueType::I8:
+	case ValueType::I16:
+	case ValueType::I32:
+	case ValueType::I64:
+	case ValueType::U8:
+	case ValueType::U16:
+	case ValueType::U32:
+	case ValueType::U64:
+		lhsExpectedValue = rhs;
+		break;
+	case ValueType::RegRef:
+		lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(rhs.getRegIndex()).expectedValue;
+		break;
+	default:
+		// Malformed function
+		std::terminate();
 	}
 
 	switch (outputRegInfo.type.typeId) {
-		case TypeId::Value: {
-			switch (outputRegInfo.type.getValueTypeExData()) {
-				case ValueType::I8: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShlInstruction<int8_t>(
-																	compileContext,
-																	curIns,
-																	lhsExpectedValue,
-																	rhsExpectedValue));
-					break;
-				}
-				case ValueType::I16: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShlInstruction<int16_t>(
-																	compileContext,
-																	curIns,
-																	lhsExpectedValue,
-																	rhsExpectedValue));
-					break;
-				}
-				case ValueType::I32: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShlInstruction<int32_t>(
-																	compileContext,
-																	curIns,
-																	lhsExpectedValue,
-																	rhsExpectedValue));
-					break;
-				}
-				case ValueType::I64: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShlInstruction<int64_t>(
-																	compileContext,
-																	curIns,
-																	lhsExpectedValue,
-																	rhsExpectedValue));
-					break;
-				}
-				case ValueType::U8: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShlInstruction<uint8_t>(
-																	compileContext,
-																	curIns,
-																	lhsExpectedValue,
-																	rhsExpectedValue));
-					break;
-				}
-				case ValueType::U16: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShlInstruction<uint16_t>(
-																	compileContext,
-																	curIns,
-																	lhsExpectedValue,
-																	rhsExpectedValue));
-					break;
-				}
-				case ValueType::U32: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShlInstruction<uint32_t>(
-																	compileContext,
-																	curIns,
-																	lhsExpectedValue,
-																	rhsExpectedValue));
-					break;
-				}
-				case ValueType::U64: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShlInstruction<uint64_t>(
-																	compileContext,
-																	curIns,
-																	lhsExpectedValue,
-																	rhsExpectedValue));
-					break;
-				}
-				default:
-					// The function is malformed
-					std::terminate();
-			}
+	case TypeId::Value: {
+		switch (outputRegInfo.type.getValueTypeExData()) {
+		case ValueType::I8: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShlInstruction<int8_t>(
+															compileContext,
+															curIns,
+															lhsExpectedValue,
+															rhsExpectedValue));
+			break;
+		}
+		case ValueType::I16: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShlInstruction<int16_t>(
+															compileContext,
+															curIns,
+															lhsExpectedValue,
+															rhsExpectedValue));
+			break;
+		}
+		case ValueType::I32: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShlInstruction<int32_t>(
+															compileContext,
+															curIns,
+															lhsExpectedValue,
+															rhsExpectedValue));
+			break;
+		}
+		case ValueType::I64: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShlInstruction<int64_t>(
+															compileContext,
+															curIns,
+															lhsExpectedValue,
+															rhsExpectedValue));
+			break;
+		}
+		case ValueType::U8: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShlInstruction<uint8_t>(
+															compileContext,
+															curIns,
+															lhsExpectedValue,
+															rhsExpectedValue));
+			break;
+		}
+		case ValueType::U16: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShlInstruction<uint16_t>(
+															compileContext,
+															curIns,
+															lhsExpectedValue,
+															rhsExpectedValue));
+			break;
+		}
+		case ValueType::U32: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShlInstruction<uint32_t>(
+															compileContext,
+															curIns,
+															lhsExpectedValue,
+															rhsExpectedValue));
+			break;
+		}
+		case ValueType::U64: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShlInstruction<uint64_t>(
+															compileContext,
+															curIns,
+															lhsExpectedValue,
+															rhsExpectedValue));
 			break;
 		}
 		default:
 			// The function is malformed
 			std::terminate();
+		}
+		break;
+	}
+	default:
+		// The function is malformed
+		std::terminate();
 	}
 
 	return {};
@@ -922,119 +922,119 @@ InternalExceptionPointer slake::jit::x86_64::compileShrInstruction(
 	Value lhsExpectedValue(ValueType::Undefined), rhsExpectedValue(ValueType::Undefined);
 
 	switch (lhs.valueType) {
-		case ValueType::I8:
-		case ValueType::I16:
-		case ValueType::I32:
-		case ValueType::I64:
-		case ValueType::U8:
-		case ValueType::U16:
-		case ValueType::U32:
-		case ValueType::U64:
-			lhsExpectedValue = lhs;
-			break;
-		case ValueType::RegRef:
-			lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(lhs.getRegIndex()).expectedValue;
-			break;
-		default:
-			// Malformed function
-			std::terminate();
+	case ValueType::I8:
+	case ValueType::I16:
+	case ValueType::I32:
+	case ValueType::I64:
+	case ValueType::U8:
+	case ValueType::U16:
+	case ValueType::U32:
+	case ValueType::U64:
+		lhsExpectedValue = lhs;
+		break;
+	case ValueType::RegRef:
+		lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(lhs.getRegIndex()).expectedValue;
+		break;
+	default:
+		// Malformed function
+		std::terminate();
 	}
 
 	switch (rhs.valueType) {
-		case ValueType::I8:
-		case ValueType::I16:
-		case ValueType::I32:
-		case ValueType::I64:
-		case ValueType::U8:
-		case ValueType::U16:
-		case ValueType::U32:
-		case ValueType::U64:
-			lhsExpectedValue = rhs;
-			break;
-		case ValueType::RegRef:
-			lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(rhs.getRegIndex()).expectedValue;
-			break;
-		default:
-			// Malformed function
-			std::terminate();
+	case ValueType::I8:
+	case ValueType::I16:
+	case ValueType::I32:
+	case ValueType::I64:
+	case ValueType::U8:
+	case ValueType::U16:
+	case ValueType::U32:
+	case ValueType::U64:
+		lhsExpectedValue = rhs;
+		break;
+	case ValueType::RegRef:
+		lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(rhs.getRegIndex()).expectedValue;
+		break;
+	default:
+		// Malformed function
+		std::terminate();
 	}
 
 	switch (outputRegInfo.type.typeId) {
-		case TypeId::Value: {
-			switch (outputRegInfo.type.getValueTypeExData()) {
-				case ValueType::I8: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShrInstruction<int8_t>(
-																	compileContext,
-																	curIns,
-																	lhsExpectedValue,
-																	rhsExpectedValue));
-					break;
-				}
-				case ValueType::I16: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShrInstruction<int16_t>(
-																	compileContext,
-																	curIns,
-																	lhsExpectedValue,
-																	rhsExpectedValue));
-					break;
-				}
-				case ValueType::I32: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShrInstruction<int32_t>(
-																	compileContext,
-																	curIns,
-																	lhsExpectedValue,
-																	rhsExpectedValue));
-					break;
-				}
-				case ValueType::I64: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShrInstruction<int64_t>(
-																	compileContext,
-																	curIns,
-																	lhsExpectedValue,
-																	rhsExpectedValue));
-					break;
-				}
-				case ValueType::U8: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShrInstruction<uint8_t>(
-																	compileContext,
-																	curIns,
-																	lhsExpectedValue,
-																	rhsExpectedValue));
-					break;
-				}
-				case ValueType::U16: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShrInstruction<uint16_t>(
-																	compileContext,
-																	curIns,
-																	lhsExpectedValue,
-																	rhsExpectedValue));
-					break;
-				}
-				case ValueType::U32: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShrInstruction<uint32_t>(
-																	compileContext,
-																	curIns,
-																	lhsExpectedValue,
-																	rhsExpectedValue));
-					break;
-				}
-				case ValueType::U64: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShrInstruction<uint64_t>(
-																	compileContext,
-																	curIns,
-																	lhsExpectedValue,
-																	rhsExpectedValue));
-					break;
-				}
-				default:
-					// The function is malformed
-					std::terminate();
-			}
+	case TypeId::Value: {
+		switch (outputRegInfo.type.getValueTypeExData()) {
+		case ValueType::I8: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShrInstruction<int8_t>(
+															compileContext,
+															curIns,
+															lhsExpectedValue,
+															rhsExpectedValue));
+			break;
+		}
+		case ValueType::I16: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShrInstruction<int16_t>(
+															compileContext,
+															curIns,
+															lhsExpectedValue,
+															rhsExpectedValue));
+			break;
+		}
+		case ValueType::I32: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShrInstruction<int32_t>(
+															compileContext,
+															curIns,
+															lhsExpectedValue,
+															rhsExpectedValue));
+			break;
+		}
+		case ValueType::I64: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShrInstruction<int64_t>(
+															compileContext,
+															curIns,
+															lhsExpectedValue,
+															rhsExpectedValue));
+			break;
+		}
+		case ValueType::U8: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShrInstruction<uint8_t>(
+															compileContext,
+															curIns,
+															lhsExpectedValue,
+															rhsExpectedValue));
+			break;
+		}
+		case ValueType::U16: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShrInstruction<uint16_t>(
+															compileContext,
+															curIns,
+															lhsExpectedValue,
+															rhsExpectedValue));
+			break;
+		}
+		case ValueType::U32: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShrInstruction<uint32_t>(
+															compileContext,
+															curIns,
+															lhsExpectedValue,
+															rhsExpectedValue));
+			break;
+		}
+		case ValueType::U64: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntShrInstruction<uint64_t>(
+															compileContext,
+															curIns,
+															lhsExpectedValue,
+															rhsExpectedValue));
 			break;
 		}
 		default:
 			// The function is malformed
 			std::terminate();
+		}
+		break;
+	}
+	default:
+		// The function is malformed
+		std::terminate();
 	}
 
 	return {};
@@ -1440,119 +1440,119 @@ InternalExceptionPointer slake::jit::x86_64::compileSarInstruction(
 	Value lhsExpectedValue(ValueType::Undefined), rhsExpectedValue(ValueType::Undefined);
 
 	switch (lhs.valueType) {
-		case ValueType::I8:
-		case ValueType::I16:
-		case ValueType::I32:
-		case ValueType::I64:
-		case ValueType::U8:
-		case ValueType::U16:
-		case ValueType::U32:
-		case ValueType::U64:
-			lhsExpectedValue = lhs;
-			break;
-		case ValueType::RegRef:
-			lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(lhs.getRegIndex()).expectedValue;
-			break;
-		default:
-			// Malformed function
-			std::terminate();
+	case ValueType::I8:
+	case ValueType::I16:
+	case ValueType::I32:
+	case ValueType::I64:
+	case ValueType::U8:
+	case ValueType::U16:
+	case ValueType::U32:
+	case ValueType::U64:
+		lhsExpectedValue = lhs;
+		break;
+	case ValueType::RegRef:
+		lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(lhs.getRegIndex()).expectedValue;
+		break;
+	default:
+		// Malformed function
+		std::terminate();
 	}
 
 	switch (rhs.valueType) {
-		case ValueType::I8:
-		case ValueType::I16:
-		case ValueType::I32:
-		case ValueType::I64:
-		case ValueType::U8:
-		case ValueType::U16:
-		case ValueType::U32:
-		case ValueType::U64:
-			lhsExpectedValue = rhs;
-			break;
-		case ValueType::RegRef:
-			lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(rhs.getRegIndex()).expectedValue;
-			break;
-		default:
-			// Malformed function
-			std::terminate();
+	case ValueType::I8:
+	case ValueType::I16:
+	case ValueType::I32:
+	case ValueType::I64:
+	case ValueType::U8:
+	case ValueType::U16:
+	case ValueType::U32:
+	case ValueType::U64:
+		lhsExpectedValue = rhs;
+		break;
+	case ValueType::RegRef:
+		lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(rhs.getRegIndex()).expectedValue;
+		break;
+	default:
+		// Malformed function
+		std::terminate();
 	}
 
 	switch (outputRegInfo.type.typeId) {
-		case TypeId::Value: {
-			switch (outputRegInfo.type.getValueTypeExData()) {
-				case ValueType::I8: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSarInstruction<int8_t>(
-																	compileContext,
-																	curIns,
-																	lhsExpectedValue,
-																	rhsExpectedValue));
-					break;
-				}
-				case ValueType::I16: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSarInstruction<int16_t>(
-																	compileContext,
-																	curIns,
-																	lhsExpectedValue,
-																	rhsExpectedValue));
-					break;
-				}
-				case ValueType::I32: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSarInstruction<int32_t>(
-																	compileContext,
-																	curIns,
-																	lhsExpectedValue,
-																	rhsExpectedValue));
-					break;
-				}
-				case ValueType::I64: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSarInstruction<int64_t>(
-																	compileContext,
-																	curIns,
-																	lhsExpectedValue,
-																	rhsExpectedValue));
-					break;
-				}
-				case ValueType::U8: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSarInstruction<uint8_t>(
-																	compileContext,
-																	curIns,
-																	lhsExpectedValue,
-																	rhsExpectedValue));
-					break;
-				}
-				case ValueType::U16: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSarInstruction<uint16_t>(
-																	compileContext,
-																	curIns,
-																	lhsExpectedValue,
-																	rhsExpectedValue));
-					break;
-				}
-				case ValueType::U32: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSarInstruction<uint32_t>(
-																	compileContext,
-																	curIns,
-																	lhsExpectedValue,
-																	rhsExpectedValue));
-					break;
-				}
-				case ValueType::U64: {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSarInstruction<uint64_t>(
-																	compileContext,
-																	curIns,
-																	lhsExpectedValue,
-																	rhsExpectedValue));
-					break;
-				}
-				default:
-					// The function is malformed
-					std::terminate();
-			}
+	case TypeId::Value: {
+		switch (outputRegInfo.type.getValueTypeExData()) {
+		case ValueType::I8: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSarInstruction<int8_t>(
+															compileContext,
+															curIns,
+															lhsExpectedValue,
+															rhsExpectedValue));
+			break;
+		}
+		case ValueType::I16: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSarInstruction<int16_t>(
+															compileContext,
+															curIns,
+															lhsExpectedValue,
+															rhsExpectedValue));
+			break;
+		}
+		case ValueType::I32: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSarInstruction<int32_t>(
+															compileContext,
+															curIns,
+															lhsExpectedValue,
+															rhsExpectedValue));
+			break;
+		}
+		case ValueType::I64: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSarInstruction<int64_t>(
+															compileContext,
+															curIns,
+															lhsExpectedValue,
+															rhsExpectedValue));
+			break;
+		}
+		case ValueType::U8: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSarInstruction<uint8_t>(
+															compileContext,
+															curIns,
+															lhsExpectedValue,
+															rhsExpectedValue));
+			break;
+		}
+		case ValueType::U16: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSarInstruction<uint16_t>(
+															compileContext,
+															curIns,
+															lhsExpectedValue,
+															rhsExpectedValue));
+			break;
+		}
+		case ValueType::U32: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSarInstruction<uint32_t>(
+															compileContext,
+															curIns,
+															lhsExpectedValue,
+															rhsExpectedValue));
+			break;
+		}
+		case ValueType::U64: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSarInstruction<uint64_t>(
+															compileContext,
+															curIns,
+															lhsExpectedValue,
+															rhsExpectedValue));
 			break;
 		}
 		default:
 			// The function is malformed
 			std::terminate();
+		}
+		break;
+	}
+	default:
+		// The function is malformed
+		std::terminate();
 	}
 
 	return {};

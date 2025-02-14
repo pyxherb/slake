@@ -123,19 +123,19 @@ void ExecutionThread::join() {
 
 void ExecutionThread::kill() {
 	switch (status) {
-		case ThreadStatus::Ready:
-			status = ThreadStatus::Dead;
-			start();
+	case ThreadStatus::Ready:
+		status = ThreadStatus::Dead;
+		start();
 
-			WaitForSingleObject(nativeThreadHandle, INFINITE);
-			break;
-		case ThreadStatus::Running:
-			status = ThreadStatus::Dead;
-			WaitForSingleObject(nativeThreadHandle, INFINITE);
-			break;
-		case ThreadStatus::Done:
-		case ThreadStatus::Dead:
-			break;
+		WaitForSingleObject(nativeThreadHandle, INFINITE);
+		break;
+	case ThreadStatus::Running:
+		status = ThreadStatus::Dead;
+		WaitForSingleObject(nativeThreadHandle, INFINITE);
+		break;
+	case ThreadStatus::Done:
+	case ThreadStatus::Dead:
+		break;
 	}
 }
 
@@ -179,7 +179,7 @@ void slake::getCurrentThreadStackBounds(void *&baseOut, size_t &sizeOut) {
 	ULONG_PTR low;
 	ULONG_PTR high;
 	GetCurrentThreadStackLimits(&low, &high);
-	baseOut = (void*)low;
+	baseOut = (void *)low;
 	sizeOut = (size_t)high - low;
 #else
 	MEMORY_BASIC_INFORMATION memInfo;

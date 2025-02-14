@@ -85,6 +85,7 @@ namespace slake {
 		CTX_YIELDED = 0x02;
 
 	struct Context {
+		Runtime *runtime;
 		std::vector<std::unique_ptr<MajorFrame>> majorFrames;  // Major frame
 		ContextFlags flags = 0;								   // Flags
 		char *dataStack = nullptr;							   // Data stack

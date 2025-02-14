@@ -101,7 +101,7 @@ namespace slake {
 			TokenRange tokenRange;
 
 			AstNode() = default;
-			inline AstNode(const AstNode& other) {
+			inline AstNode(const AstNode &other) {
 				tokenRange = other.tokenRange;
 			}
 			virtual ~AstNode() = default;
@@ -112,7 +112,7 @@ namespace slake {
 			/// @note Some members may not be duplicated, because duplication is only used by generic mechanism and it does not overwrite anything.
 			/// @tparam T
 			/// @return
-			template<typename T>
+			template <typename T>
 			inline std::shared_ptr<T> duplicate() {
 				return std::static_pointer_cast<T>(doDuplicate());
 			}

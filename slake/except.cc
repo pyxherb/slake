@@ -8,7 +8,7 @@ SLAKE_API OutOfMemoryError::OutOfMemoryError() : InternalException(nullptr, Erro
 SLAKE_API OutOfMemoryError::~OutOfMemoryError() {
 }
 
-SLAKE_API const char* OutOfMemoryError::what() const {
+SLAKE_API const char *OutOfMemoryError::what() const {
 	return "Out of memory";
 }
 
@@ -16,7 +16,7 @@ SLAKE_API void OutOfMemoryError::dealloc() {
 	// DO NOT free the object since it is not on the heap.
 }
 
-SLAKE_API OutOfMemoryError* OutOfMemoryError::alloc() noexcept {
+SLAKE_API OutOfMemoryError *OutOfMemoryError::alloc() noexcept {
 	return &g_globalOutOfMemoryError;
 }
 
@@ -297,7 +297,7 @@ SLAKE_API MalformedProgramError::MalformedProgramError(
 	: OptimizerError(associatedRuntime,
 		  OptimizerErrorCode::MalformedProgram),
 	  fnOverloading(fnOverloading),
- 	  offIns(offIns) {}
+	  offIns(offIns) {}
 SLAKE_API MalformedProgramError::~MalformedProgramError() {}
 
 SLAKE_API const char *MalformedProgramError::what() const {

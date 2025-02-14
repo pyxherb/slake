@@ -14,7 +14,7 @@ namespace slake {
 			return __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__;
 #else
 			uint16_t value = 0xff00;
-			return *((uint8_t*)&value);
+			return *((uint8_t *)&value);
 #endif
 		}
 

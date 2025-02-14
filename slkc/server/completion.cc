@@ -76,44 +76,44 @@ void slake::slkc::_walkForCompletion(
 	for (auto &i : scope->members) {
 		if (!membersOut.count(i.first)) {
 			switch (i.second->getNodeType()) {
-				case NodeType::Class:
-				case NodeType::Interface:
-				case NodeType::Module:
-					if (isStatic)
-						membersOut[i.first] = i.second.get();
-					break;
-				case NodeType::Var: {
-					auto m = std::static_pointer_cast<VarNode>(i.second);
+			case NodeType::Class:
+			case NodeType::Interface:
+			case NodeType::Module:
+				if (isStatic)
+					membersOut[i.first] = i.second.get();
+				break;
+			case NodeType::Var: {
+				auto m = std::static_pointer_cast<VarNode>(i.second);
 
+				if (isStatic) {
+					if (m->access & ACCESS_STATIC) {
+						membersOut[i.first] = m.get();
+					}
+				} else {
+					if (!(m->access & ACCESS_STATIC)) {
+						membersOut[i.first] = m.get();
+					}
+				}
+				break;
+			}
+			case NodeType::Fn: {
+				auto m = std::static_pointer_cast<FnNode>(i.second);
+
+				for (auto &j : m->overloadingRegistries) {
 					if (isStatic) {
-						if (m->access & ACCESS_STATIC) {
+						if (j->access & ACCESS_STATIC) {
 							membersOut[i.first] = m.get();
+							break;
 						}
 					} else {
-						if (!(m->access & ACCESS_STATIC)) {
+						if (!(j->access & ACCESS_STATIC)) {
 							membersOut[i.first] = m.get();
+							break;
 						}
 					}
-					break;
 				}
-				case NodeType::Fn: {
-					auto m = std::static_pointer_cast<FnNode>(i.second);
-
-					for (auto &j : m->overloadingRegistries) {
-						if (isStatic) {
-							if (j->access & ACCESS_STATIC) {
-								membersOut[i.first] = m.get();
-								break;
-							}
-						} else {
-							if (!(j->access & ACCESS_STATIC)) {
-								membersOut[i.first] = m.get();
-								break;
-							}
-						}
-					}
-					break;
-				}
+				break;
+			}
 			}
 		}
 	}
@@ -134,31 +134,31 @@ void slake::slkc::_walkForCompletion(
 	std::set<Scope *> &walkedScopes,
 	bool isStatic) {
 	switch (m->getNodeType()) {
-		case NodeType::Class: {
-			ClassNode *node = (ClassNode *)m;
+	case NodeType::Class: {
+		ClassNode *node = (ClassNode *)m;
 
-			_walkForCompletion(document, node->scope.get(), membersOut, walkedScopes, false, isStatic);
+		_walkForCompletion(document, node->scope.get(), membersOut, walkedScopes, false, isStatic);
 
-			if (node->parentClass) {
-				auto parent = document->compiler->resolveCustomTypeName(nullptr, (CustomTypeNameNode *)node->parentClass.get());
-				_walkForCompletion(document, parent.get(), membersOut, walkedScopes, isStatic);
-			}
-
-			for (auto &i : node->implInterfaces) {
-				auto parent = document->compiler->resolveCustomTypeName(nullptr, (CustomTypeNameNode *)i.get());
-				_walkForCompletion(document, parent.get(), membersOut, walkedScopes, isStatic);
-			}
-			break;
+		if (node->parentClass) {
+			auto parent = document->compiler->resolveCustomTypeName(nullptr, (CustomTypeNameNode *)node->parentClass.get());
+			_walkForCompletion(document, parent.get(), membersOut, walkedScopes, isStatic);
 		}
-		case NodeType::Interface: {
-			InterfaceNode *node = (InterfaceNode *)m;
 
-			for (auto &i : node->parentInterfaces) {
-				auto parent = document->compiler->resolveCustomTypeName(nullptr, (CustomTypeNameNode *)i.get());
-				_walkForCompletion(document, parent.get(), membersOut, walkedScopes, isStatic);
-			}
-			break;
+		for (auto &i : node->implInterfaces) {
+			auto parent = document->compiler->resolveCustomTypeName(nullptr, (CustomTypeNameNode *)i.get());
+			_walkForCompletion(document, parent.get(), membersOut, walkedScopes, isStatic);
 		}
+		break;
+	}
+	case NodeType::Interface: {
+		InterfaceNode *node = (InterfaceNode *)m;
+
+		for (auto &i : node->parentInterfaces) {
+			auto parent = document->compiler->resolveCustomTypeName(nullptr, (CustomTypeNameNode *)i.get());
+			_walkForCompletion(document, parent.get(), membersOut, walkedScopes, isStatic);
+		}
+		break;
+	}
 	}
 }
 
@@ -179,28 +179,28 @@ std::unordered_map<std::string, MemberNode *> slake::slkc::_walkForCompletion(
 
 CompletionItemType slake::slkc::_toCompletionItemType(NodeType nodeType) {
 	switch (nodeType) {
-		case NodeType::Var:
-			return CompletionItemType::Var;
-		case NodeType::LocalVar:
-			return CompletionItemType::LocalVar;
-		case NodeType::Param:
-			return CompletionItemType::Param;
-		case NodeType::Fn:
-			return CompletionItemType::Fn;
-		case NodeType::TypeName:
-			return CompletionItemType::Type;
-		case NodeType::GenericParam:
-			return CompletionItemType::GenericParam;
-		case NodeType::Class:
-			return CompletionItemType::Class;
-		case NodeType::Interface:
-			return CompletionItemType::Interface;
-		case NodeType::Module:
-			return CompletionItemType::Module;
-			/*case NodeType::Enum:
-				return CompletionItemType::Enum;
-			case NodeType::EnumConst:
-				return CompletionItemType::EnumConst;*/
+	case NodeType::Var:
+		return CompletionItemType::Var;
+	case NodeType::LocalVar:
+		return CompletionItemType::LocalVar;
+	case NodeType::Param:
+		return CompletionItemType::Param;
+	case NodeType::Fn:
+		return CompletionItemType::Fn;
+	case NodeType::TypeName:
+		return CompletionItemType::Type;
+	case NodeType::GenericParam:
+		return CompletionItemType::GenericParam;
+	case NodeType::Class:
+		return CompletionItemType::Class;
+	case NodeType::Interface:
+		return CompletionItemType::Interface;
+	case NodeType::Module:
+		return CompletionItemType::Module;
+		/*case NodeType::Enum:
+			return CompletionItemType::Enum;
+		case NodeType::EnumConst:
+			return CompletionItemType::EnumConst;*/
 	}
 
 	throw std::logic_error("Unrecognized node type");
@@ -271,189 +271,189 @@ succeeded:
 	*/
 
 	switch (tokenInfo.completionContext) {
-		case CompletionContext::TopLevel: {
-			if (tokenInfo.tokenContext.curScope)
-				_getCompletionItems(
-					_walkForCompletion(document, tokenInfo.tokenContext.curScope.get(), true, tokenInfo.semanticInfo.isStatic),
-					completionItems,
-					{ NodeType::GenericParam,
-						NodeType::Class,
-						NodeType::Interface,
-						NodeType::Module });
+	case CompletionContext::TopLevel: {
+		if (tokenInfo.tokenContext.curScope)
+			_getCompletionItems(
+				_walkForCompletion(document, tokenInfo.tokenContext.curScope.get(), true, tokenInfo.semanticInfo.isStatic),
+				completionItems,
+				{ NodeType::GenericParam,
+					NodeType::Class,
+					NodeType::Interface,
+					NodeType::Module });
 
-			break;
-		}
-		case CompletionContext::Class: {
-			if (tokenInfo.tokenContext.curScope)
-				_getCompletionItems(
-					_walkForCompletion(document, tokenInfo.tokenContext.curScope.get(), true, tokenInfo.semanticInfo.isStatic),
-					completionItems,
-					{ NodeType::GenericParam,
-						NodeType::Class,
-						NodeType::Interface,
-						NodeType::Module });
-			break;
-		}
-		case CompletionContext::Interface: {
-			if (tokenInfo.tokenContext.curScope)
-				_getCompletionItems(
-					_walkForCompletion(document, tokenInfo.tokenContext.curScope.get(), true, tokenInfo.semanticInfo.isStatic),
-					completionItems,
-					{ NodeType::GenericParam,
-						NodeType::Class,
-						NodeType::Interface,
-						NodeType::Module });
-			break;
-		}
-		case CompletionContext::Stmt: {
-			if (tokenInfo.tokenContext.curScope)
-				_getCompletionItems(
-					_walkForCompletion(
-						document,
-						tokenInfo.tokenContext.curScope.get(),
-						tokenInfo.semanticInfo.isTopLevelRef,
-						tokenInfo.semanticInfo.isStatic),
-					completionItems,
-					{ NodeType::Var,
-						NodeType::Fn,
-						NodeType::GenericParam,
-						NodeType::Class,
-						NodeType::Interface,
-						NodeType::Module });
+		break;
+	}
+	case CompletionContext::Class: {
+		if (tokenInfo.tokenContext.curScope)
+			_getCompletionItems(
+				_walkForCompletion(document, tokenInfo.tokenContext.curScope.get(), true, tokenInfo.semanticInfo.isStatic),
+				completionItems,
+				{ NodeType::GenericParam,
+					NodeType::Class,
+					NodeType::Interface,
+					NodeType::Module });
+		break;
+	}
+	case CompletionContext::Interface: {
+		if (tokenInfo.tokenContext.curScope)
+			_getCompletionItems(
+				_walkForCompletion(document, tokenInfo.tokenContext.curScope.get(), true, tokenInfo.semanticInfo.isStatic),
+				completionItems,
+				{ NodeType::GenericParam,
+					NodeType::Class,
+					NodeType::Interface,
+					NodeType::Module });
+		break;
+	}
+	case CompletionContext::Stmt: {
+		if (tokenInfo.tokenContext.curScope)
+			_getCompletionItems(
+				_walkForCompletion(
+					document,
+					tokenInfo.tokenContext.curScope.get(),
+					tokenInfo.semanticInfo.isTopLevelRef,
+					tokenInfo.semanticInfo.isStatic),
+				completionItems,
+				{ NodeType::Var,
+					NodeType::Fn,
+					NodeType::GenericParam,
+					NodeType::Class,
+					NodeType::Interface,
+					NodeType::Module });
 
-			if (tokenInfo.semanticInfo.isTopLevelRef) {
-				for (auto &i : tokenInfo.tokenContext.localVars) {
-					CompletionItem item = {};
-
-					item.label = i.first;
-					item.type = CompletionItemType::LocalVar;
-
-					completionItems.push_back(item);
-				}
-
-				for (auto &i : tokenInfo.tokenContext.paramIndices) {
-					CompletionItem item = {};
-
-					item.label = i.first;
-					item.type = CompletionItemType::GenericParam;
-
-					completionItems.push_back(item);
-				}
-			}
-			break;
-		}
-		case CompletionContext::Import: {
-			std::string path;
-
-			for (size_t i = 0; i < tokenInfo.semanticInfo.importedPath->entries.size(); ++i) {
-				if (i)
-					path += "/";
-				path += tokenInfo.semanticInfo.importedPath->entries[i].name;
-			}
-
-			_getImportCompletionItems(document->compiler, path, completionItems);
-			break;
-		}
-		case CompletionContext::ModuleName: {
-			std::string path;
-
-			for (size_t i = 0; i < tokenInfo.semanticInfo.importedPath->entries.size(); ++i) {
-				if (i)
-					path += "/";
-				path += tokenInfo.semanticInfo.importedPath->entries[i].name;
-			}
-
-			_getImportCompletionItems(document->compiler, path, completionItems);
-			break;
-		}
-		case CompletionContext::Type: {
-			if (tokenInfo.tokenContext.curScope)
-				_getCompletionItems(
-					_walkForCompletion(
-						document,
-						tokenInfo.tokenContext.curScope.get(),
-						tokenInfo.semanticInfo.isTopLevelRef,
-						tokenInfo.semanticInfo.isStatic),
-					completionItems,
-					{ NodeType::GenericParam,
-						NodeType::Class,
-						NodeType::Interface,
-						NodeType::Module });
-
-			for (auto &i : tokenInfo.tokenContext.genericParams) {
+		if (tokenInfo.semanticInfo.isTopLevelRef) {
+			for (auto &i : tokenInfo.tokenContext.localVars) {
 				CompletionItem item = {};
 
-				item.label = i->name;
+				item.label = i.first;
+				item.type = CompletionItemType::LocalVar;
+
+				completionItems.push_back(item);
+			}
+
+			for (auto &i : tokenInfo.tokenContext.paramIndices) {
+				CompletionItem item = {};
+
+				item.label = i.first;
 				item.type = CompletionItemType::GenericParam;
 
 				completionItems.push_back(item);
 			}
-			break;
 		}
-		case CompletionContext::Name:
-			return {};
-		case CompletionContext::Expr: {
-			if (tokenInfo.tokenContext.curScope) {
-				// A token has `expr` type means it is the top level scope of
-				// a reference, which means we can resolve it with its parent
-				// scope.
-				_getCompletionItems(
-					_walkForCompletion(
-						document,
-						tokenInfo.tokenContext.curScope.get(),
-						tokenInfo.semanticInfo.isTopLevelRef,
-						tokenInfo.semanticInfo.isStatic),
-					completionItems,
-					{ NodeType::Var,
-						NodeType::Fn,
-						NodeType::GenericParam,
-						NodeType::Class,
-						NodeType::Interface,
-						NodeType::Module });
+		break;
+	}
+	case CompletionContext::Import: {
+		std::string path;
+
+		for (size_t i = 0; i < tokenInfo.semanticInfo.importedPath->entries.size(); ++i) {
+			if (i)
+				path += "/";
+			path += tokenInfo.semanticInfo.importedPath->entries[i].name;
+		}
+
+		_getImportCompletionItems(document->compiler, path, completionItems);
+		break;
+	}
+	case CompletionContext::ModuleName: {
+		std::string path;
+
+		for (size_t i = 0; i < tokenInfo.semanticInfo.importedPath->entries.size(); ++i) {
+			if (i)
+				path += "/";
+			path += tokenInfo.semanticInfo.importedPath->entries[i].name;
+		}
+
+		_getImportCompletionItems(document->compiler, path, completionItems);
+		break;
+	}
+	case CompletionContext::Type: {
+		if (tokenInfo.tokenContext.curScope)
+			_getCompletionItems(
+				_walkForCompletion(
+					document,
+					tokenInfo.tokenContext.curScope.get(),
+					tokenInfo.semanticInfo.isTopLevelRef,
+					tokenInfo.semanticInfo.isStatic),
+				completionItems,
+				{ NodeType::GenericParam,
+					NodeType::Class,
+					NodeType::Interface,
+					NodeType::Module });
+
+		for (auto &i : tokenInfo.tokenContext.genericParams) {
+			CompletionItem item = {};
+
+			item.label = i->name;
+			item.type = CompletionItemType::GenericParam;
+
+			completionItems.push_back(item);
+		}
+		break;
+	}
+	case CompletionContext::Name:
+		return {};
+	case CompletionContext::Expr: {
+		if (tokenInfo.tokenContext.curScope) {
+			// A token has `expr` type means it is the top level scope of
+			// a reference, which means we can resolve it with its parent
+			// scope.
+			_getCompletionItems(
+				_walkForCompletion(
+					document,
+					tokenInfo.tokenContext.curScope.get(),
+					tokenInfo.semanticInfo.isTopLevelRef,
+					tokenInfo.semanticInfo.isStatic),
+				completionItems,
+				{ NodeType::Var,
+					NodeType::Fn,
+					NodeType::GenericParam,
+					NodeType::Class,
+					NodeType::Interface,
+					NodeType::Module });
+		}
+
+		if (tokenInfo.semanticInfo.isTopLevelRef) {
+			for (auto &i : tokenInfo.tokenContext.localVars) {
+				CompletionItem item = {};
+
+				item.label = i.first;
+				item.type = CompletionItemType::LocalVar;
+
+				completionItems.push_back(item);
 			}
 
-			if (tokenInfo.semanticInfo.isTopLevelRef) {
-				for (auto &i : tokenInfo.tokenContext.localVars) {
-					CompletionItem item = {};
+			for (auto &i : tokenInfo.tokenContext.paramIndices) {
+				CompletionItem item = {};
 
-					item.label = i.first;
-					item.type = CompletionItemType::LocalVar;
+				item.label = i.first;
+				item.type = CompletionItemType::GenericParam;
 
-					completionItems.push_back(item);
-				}
-
-				for (auto &i : tokenInfo.tokenContext.paramIndices) {
-					CompletionItem item = {};
-
-					item.label = i.first;
-					item.type = CompletionItemType::GenericParam;
-
-					completionItems.push_back(item);
-				}
+				completionItems.push_back(item);
 			}
-			break;
 		}
-		case CompletionContext::MemberAccess: {
-			if (tokenInfo.tokenContext.curScope)
-				_getCompletionItems(
-					_walkForCompletion(
-						document,
-						tokenInfo.tokenContext.curScope.get(),
-						false,
-						tokenInfo.semanticInfo.isStatic),
-					completionItems,
-					{ NodeType::Var,
-						NodeType::Fn,
-						NodeType::GenericParam,
-						NodeType::Class,
-						NodeType::Interface,
-						NodeType::Module });
-			break;
-		}
-		case CompletionContext::None:
-			break;
-		default:
-			assert(false);
+		break;
+	}
+	case CompletionContext::MemberAccess: {
+		if (tokenInfo.tokenContext.curScope)
+			_getCompletionItems(
+				_walkForCompletion(
+					document,
+					tokenInfo.tokenContext.curScope.get(),
+					false,
+					tokenInfo.semanticInfo.isStatic),
+				completionItems,
+				{ NodeType::Var,
+					NodeType::Fn,
+					NodeType::GenericParam,
+					NodeType::Class,
+					NodeType::Interface,
+					NodeType::Module });
+		break;
+	}
+	case CompletionContext::None:
+		break;
+	default:
+		assert(false);
 	}
 
 	return completionItems;

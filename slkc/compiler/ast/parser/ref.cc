@@ -104,35 +104,35 @@ std::shared_ptr<IdRefNode> Parser::parseRef(bool forTypeName) {
 	size_t idxPrecedingAccessOp = SIZE_MAX;
 
 	switch (Token *token = lexer->peekToken(); token->tokenId) {
+	case TokenId::ThisKeyword:
+	case TokenId::BaseKeyword:
+	case TokenId::ScopeOp: {
+		auto refEntry = IdRefEntry({ curDoc, lexer->getTokenIndex(token) }, lexer->getTokenIndex(token), "", {});
+
+		switch (token->tokenId) {
 		case TokenId::ThisKeyword:
+			refEntry.name = "this";
+			ref.push_back(refEntry);
+			break;
 		case TokenId::BaseKeyword:
-		case TokenId::ScopeOp: {
-			auto refEntry = IdRefEntry({ curDoc, lexer->getTokenIndex(token) }, lexer->getTokenIndex(token), "", {});
-
-			switch (token->tokenId) {
-				case TokenId::ThisKeyword:
-					refEntry.name = "this";
-					ref.push_back(refEntry);
-					break;
-				case TokenId::BaseKeyword:
-					refEntry.name = "base";
-					ref.push_back(refEntry);
-					break;
-				case TokenId::ScopeOp:
-					refEntry.name = "";
-					ref.push_back(refEntry);
-					break;
-			}
-
-			lexer->nextToken();
-			if (lexer->peekToken()->tokenId != TokenId::Dot)
-				goto end;
-
-			Token *precedingAccessOpToken = lexer->nextToken();
-			idxPrecedingAccessOp = lexer->getTokenIndex(precedingAccessOpToken);
-
+			refEntry.name = "base";
+			ref.push_back(refEntry);
+			break;
+		case TokenId::ScopeOp:
+			refEntry.name = "";
+			ref.push_back(refEntry);
 			break;
 		}
+
+		lexer->nextToken();
+		if (lexer->peekToken()->tokenId != TokenId::Dot)
+			goto end;
+
+		Token *precedingAccessOpToken = lexer->nextToken();
+		idxPrecedingAccessOp = lexer->getTokenIndex(precedingAccessOpToken);
+
+		break;
+	}
 	}
 
 	while (true) {

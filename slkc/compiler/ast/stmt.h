@@ -91,7 +91,7 @@ namespace slake {
 			size_t idxNameToken = SIZE_MAX,
 				   idxColonToken = SIZE_MAX,
 				   idxAssignOpToken = SIZE_MAX,
-				idxCommaToken = SIZE_MAX;
+				   idxCommaToken = SIZE_MAX;
 
 			VarDefEntry() = default;
 			inline VarDefEntry(TokenRange tokenRange, std::string name, size_t idxNameToken) : tokenRange(tokenRange), name(name), idxNameToken(idxNameToken) {}

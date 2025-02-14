@@ -42,8 +42,7 @@ namespace slake {
 
 		SLAKE_API static Scope *alloc(
 			peff::Alloc *selfAllocator,
-			Object *owner
-		);
+			Object *owner);
 		SLAKE_API void dealloc();
 	};
 

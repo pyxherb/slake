@@ -16,7 +16,7 @@ namespace slake {
 		SLAKE_API GenericParam(peff::Alloc *selfAllocator);
 		SLAKE_API GenericParam(GenericParam &&rhs);
 
-		SLAKE_FORCEINLINE bool copy(GenericParam& dest) const {
+		SLAKE_FORCEINLINE bool copy(GenericParam &dest) const {
 			peff::constructAt<GenericParam>(&dest, interfaces.allocator());
 
 			if (!peff::copyAssign(dest.name, name))

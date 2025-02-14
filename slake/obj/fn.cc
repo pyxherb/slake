@@ -122,12 +122,12 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFn
 			if (auto &output = otherCurIns.output; output.valueType == ValueType::ObjectRef) {
 				const ObjectRef &objectRef = output.getObjectRef();
 				switch (objectRef.kind) {
-					case ObjectRefKind::InstanceRef:
-						if (objectRef.asInstance.instanceObject)
-							curIns.output = ObjectRef::makeInstanceRef(objectRef.asInstance.instanceObject->duplicate());
-						break;
-					default:
-						curIns.output = output;
+				case ObjectRefKind::InstanceRef:
+					if (objectRef.asInstance.instanceObject)
+						curIns.output = ObjectRef::makeInstanceRef(objectRef.asInstance.instanceObject->duplicate());
+					break;
+				default:
+					curIns.output = output;
 				}
 			} else
 				curIns.output = output;
@@ -139,14 +139,14 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFn
 				if (operand.valueType == ValueType::ObjectRef) {
 					const ObjectRef &objectRef = operand.getObjectRef();
 					switch (objectRef.kind) {
-						case ObjectRefKind::InstanceRef:
-							if (objectRef.asInstance.instanceObject)
-								curIns.operands[j] = ObjectRef::makeInstanceRef(objectRef.asInstance.instanceObject->duplicate());
-							else
-								curIns.operands[j] = operand;
-							break;
-						default:
+					case ObjectRefKind::InstanceRef:
+						if (objectRef.asInstance.instanceObject)
+							curIns.operands[j] = ObjectRef::makeInstanceRef(objectRef.asInstance.instanceObject->duplicate());
+						else
 							curIns.operands[j] = operand;
+						break;
+					default:
+						curIns.operands[j] = operand;
 					}
 				} else
 					curIns.operands[j] = operand;

@@ -291,7 +291,7 @@ namespace slake {
 				}
 
 				[[nodiscard]] SLAKE_FORCEINLINE VirtualRegState *defVirtualReg(uint32_t vreg, RegisterId phyReg, size_t size) noexcept {
-					if(!virtualRegStates.insert(+vreg, {}))
+					if (!virtualRegStates.insert(+vreg, {}))
 						return nullptr;
 					VirtualRegState &vregState = virtualRegStates.at(vreg);
 					vregState.phyReg = phyReg;
@@ -303,7 +303,7 @@ namespace slake {
 					return &vregState;
 				}
 				[[nodiscard]] SLAKE_FORCEINLINE VirtualRegState *defVirtualReg(uint32_t vreg, int32_t saveOffset, size_t size) noexcept {
-					if(!virtualRegStates.insert(+vreg, {}))
+					if (!virtualRegStates.insert(+vreg, {}))
 						return nullptr;
 					VirtualRegState &vregState = virtualRegStates.at(vreg);
 					vregState.phyReg = REG_MAX;
@@ -313,7 +313,7 @@ namespace slake {
 					return &vregState;
 				}
 				[[nodiscard]] SLAKE_FORCEINLINE VirtualRegState *defDummyVirtualReg(uint32_t vreg) noexcept {
-					if(!virtualRegStates.insert(+vreg, {}))
+					if (!virtualRegStates.insert(+vreg, {}))
 						return nullptr;
 					VirtualRegState &vregState = virtualRegStates.at(vreg);
 					vregState.phyReg = REG_MAX;
@@ -324,7 +324,7 @@ namespace slake {
 				}
 
 				[[nodiscard]] SLAKE_FORCEINLINE LocalVarState *defLocalVar(uint32_t index, int32_t stackOff, size_t size) noexcept {
-					if(!localVarStates.insert(+index, {}))
+					if (!localVarStates.insert(+index, {}))
 						return nullptr;
 					LocalVarState &localVarState = localVarStates.at(index);
 					localVarState.stackOff = stackOff;

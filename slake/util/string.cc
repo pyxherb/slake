@@ -113,7 +113,7 @@ ANSIString ANSIString::substr(size_t index, size_t length) const {
 	return newStr;
 }
 
-void ANSIString::set(const char* s) {
+void ANSIString::set(const char *s) {
 	size_t len = strlen(s);
 
 	data = (char *)memoryResource->allocate(len + 1);

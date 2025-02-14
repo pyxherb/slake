@@ -17,47 +17,47 @@ SLAKE_API void Runtime::initMethodTableForClass(ClassObject *cls, ClassObject *p
 
 	for (auto it = cls->scope->members.begin(); it != cls->scope->members.end(); ++it) {
 		switch (it.value()->getKind()) {
-			case ObjectKind::Fn: {
-				std::deque<FnOverloadingObject *> overloadings;
+		case ObjectKind::Fn: {
+			std::deque<FnOverloadingObject *> overloadings;
 
-				for (auto j : ((FnObject *)it.value())->overloadings) {
-					if ((!(j->access & ACCESS_STATIC)) &&
-						(j->overloadingFlags & OL_VIRTUAL))
-						overloadings.push_back(j);
-				}
-
-				if (overloadings.size()) {
-					// Link the method with method inherited from the parent.
-					HostObjectRef<FnObject> fn;
-					if (!methodTable->methods.contains(it.key())) {
-						methodTable->methods.insert(it.value()->name, nullptr);
-					}
-					auto &methodSlot = methodTable->methods.at(it.key());
-
-					if (auto m = methodTable->getMethod(it.key()); m)
-						fn = m;
-					else {
-						fn = FnObject::alloc(this);
-						methodSlot = fn.get();
-					}
-
-					for (auto &j : overloadings) {
-						for (auto k : methodSlot->overloadings) {
-							if (isDuplicatedOverloading(
-									k,
-									j->paramTypes,
-									j->genericParams,
-									j->overloadingFlags & OL_VARG)) {
-								methodSlot->overloadings.remove(k);
-								break;
-							}
-						}
-						methodSlot->overloadings.insert(+j);
-					}
-				}
-
-				break;
+			for (auto j : ((FnObject *)it.value())->overloadings) {
+				if ((!(j->access & ACCESS_STATIC)) &&
+					(j->overloadingFlags & OL_VIRTUAL))
+					overloadings.push_back(j);
 			}
+
+			if (overloadings.size()) {
+				// Link the method with method inherited from the parent.
+				HostObjectRef<FnObject> fn;
+				if (!methodTable->methods.contains(it.key())) {
+					methodTable->methods.insert(it.value()->name, nullptr);
+				}
+				auto &methodSlot = methodTable->methods.at(it.key());
+
+				if (auto m = methodTable->getMethod(it.key()); m)
+					fn = m;
+				else {
+					fn = FnObject::alloc(this);
+					methodSlot = fn.get();
+				}
+
+				for (auto &j : overloadings) {
+					for (auto k : methodSlot->overloadings) {
+						if (isDuplicatedOverloading(
+								k,
+								j->paramTypes,
+								j->genericParams,
+								j->overloadingFlags & OL_VARG)) {
+							methodSlot->overloadings.remove(k);
+							break;
+						}
+					}
+					methodSlot->overloadings.insert(+j);
+				}
+			}
+
+			break;
+		}
 		}
 	}
 
@@ -83,76 +83,76 @@ SLAKE_API void Runtime::initObjectLayoutForClass(ClassObject *cls, ClassObject *
 		Type type = clsFieldRecord.type;
 
 		switch (type.typeId) {
-			case TypeId::Value:
-				switch (type.getValueTypeExData()) {
-					case ValueType::I8:
-						fieldRecord.offset = objectLayout->totalSize;
-						objectLayout->totalSize += sizeof(int8_t);
-						break;
-					case ValueType::I16:
-						objectLayout->totalSize += (2 - (objectLayout->totalSize & 1));
-						fieldRecord.offset = objectLayout->totalSize;
-						objectLayout->totalSize += sizeof(int16_t);
-						break;
-					case ValueType::I32:
-						objectLayout->totalSize += (4 - (objectLayout->totalSize & 3));
-						fieldRecord.offset = objectLayout->totalSize;
-						objectLayout->totalSize += sizeof(int32_t);
-						break;
-					case ValueType::I64:
-						objectLayout->totalSize += (8 - (objectLayout->totalSize & 7));
-						fieldRecord.offset = objectLayout->totalSize;
-						objectLayout->totalSize += sizeof(int64_t);
-						break;
-					case ValueType::U8:
-						fieldRecord.offset = objectLayout->totalSize;
-						objectLayout->totalSize += sizeof(uint8_t);
-						break;
-					case ValueType::U16:
-						objectLayout->totalSize += (2 - (objectLayout->totalSize & 1));
-						fieldRecord.offset = objectLayout->totalSize;
-						objectLayout->totalSize += sizeof(uint16_t);
-						break;
-					case ValueType::U32:
-						objectLayout->totalSize += (4 - (objectLayout->totalSize & 3));
-						fieldRecord.offset = objectLayout->totalSize;
-						objectLayout->totalSize += sizeof(uint32_t);
-						break;
-					case ValueType::U64:
-						objectLayout->totalSize += (8 - (objectLayout->totalSize & 7));
-						fieldRecord.offset = objectLayout->totalSize;
-						objectLayout->totalSize += sizeof(uint64_t);
-						break;
-					case ValueType::F32:
-						objectLayout->totalSize += (4 - (objectLayout->totalSize & 3));
-						fieldRecord.offset = objectLayout->totalSize;
-						objectLayout->totalSize += sizeof(float);
-						break;
-					case ValueType::F64:
-						objectLayout->totalSize += (8 - (objectLayout->totalSize & 7));
-						fieldRecord.offset = objectLayout->totalSize;
-						objectLayout->totalSize += sizeof(double);
-						break;
-					case ValueType::Bool:
-						fieldRecord.offset = objectLayout->totalSize;
-						objectLayout->totalSize += sizeof(bool);
-						break;
-					case ValueType::ObjectRef:
-						objectLayout->totalSize += sizeof(void *) - (objectLayout->totalSize & (sizeof(void *) - 1));
-						fieldRecord.offset = objectLayout->totalSize;
-						objectLayout->totalSize += sizeof(void *);
-						break;
-				}
+		case TypeId::Value:
+			switch (type.getValueTypeExData()) {
+			case ValueType::I8:
+				fieldRecord.offset = objectLayout->totalSize;
+				objectLayout->totalSize += sizeof(int8_t);
 				break;
-			case TypeId::String:
-			case TypeId::Instance:
-			case TypeId::Array:
+			case ValueType::I16:
+				objectLayout->totalSize += (2 - (objectLayout->totalSize & 1));
+				fieldRecord.offset = objectLayout->totalSize;
+				objectLayout->totalSize += sizeof(int16_t);
+				break;
+			case ValueType::I32:
+				objectLayout->totalSize += (4 - (objectLayout->totalSize & 3));
+				fieldRecord.offset = objectLayout->totalSize;
+				objectLayout->totalSize += sizeof(int32_t);
+				break;
+			case ValueType::I64:
+				objectLayout->totalSize += (8 - (objectLayout->totalSize & 7));
+				fieldRecord.offset = objectLayout->totalSize;
+				objectLayout->totalSize += sizeof(int64_t);
+				break;
+			case ValueType::U8:
+				fieldRecord.offset = objectLayout->totalSize;
+				objectLayout->totalSize += sizeof(uint8_t);
+				break;
+			case ValueType::U16:
+				objectLayout->totalSize += (2 - (objectLayout->totalSize & 1));
+				fieldRecord.offset = objectLayout->totalSize;
+				objectLayout->totalSize += sizeof(uint16_t);
+				break;
+			case ValueType::U32:
+				objectLayout->totalSize += (4 - (objectLayout->totalSize & 3));
+				fieldRecord.offset = objectLayout->totalSize;
+				objectLayout->totalSize += sizeof(uint32_t);
+				break;
+			case ValueType::U64:
+				objectLayout->totalSize += (8 - (objectLayout->totalSize & 7));
+				fieldRecord.offset = objectLayout->totalSize;
+				objectLayout->totalSize += sizeof(uint64_t);
+				break;
+			case ValueType::F32:
+				objectLayout->totalSize += (4 - (objectLayout->totalSize & 3));
+				fieldRecord.offset = objectLayout->totalSize;
+				objectLayout->totalSize += sizeof(float);
+				break;
+			case ValueType::F64:
+				objectLayout->totalSize += (8 - (objectLayout->totalSize & 7));
+				fieldRecord.offset = objectLayout->totalSize;
+				objectLayout->totalSize += sizeof(double);
+				break;
+			case ValueType::Bool:
+				fieldRecord.offset = objectLayout->totalSize;
+				objectLayout->totalSize += sizeof(bool);
+				break;
+			case ValueType::ObjectRef:
 				objectLayout->totalSize += sizeof(void *) - (objectLayout->totalSize & (sizeof(void *) - 1));
 				fieldRecord.offset = objectLayout->totalSize;
 				objectLayout->totalSize += sizeof(void *);
 				break;
-			default:
-				throw std::runtime_error("The variable has an inconstructible type");
+			}
+			break;
+		case TypeId::String:
+		case TypeId::Instance:
+		case TypeId::Array:
+			objectLayout->totalSize += sizeof(void *) - (objectLayout->totalSize & (sizeof(void *) - 1));
+			fieldRecord.offset = objectLayout->totalSize;
+			objectLayout->totalSize += sizeof(void *);
+			break;
+		default:
+			throw std::runtime_error("The variable has an inconstructible type");
 		}
 
 		fieldRecord.type = type;
@@ -236,106 +236,106 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 
 SLAKE_API HostObjectRef<ArrayObject> Runtime::newArrayInstance(Runtime *rt, const Type &type, size_t length) {
 	switch (type.typeId) {
-		case TypeId::Value:
-			switch (type.getValueTypeExData()) {
-				case ValueType::I8: {
-					HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int8_t));
-					if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(int8_t) * length, sizeof(int8_t))))
-						return nullptr;
-					obj->length = length;
-					return obj.get();
-				}
-				case ValueType::I16: {
-					HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int16_t));
-					if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(int16_t) * length, sizeof(int16_t))))
-						return nullptr;
-					obj->length = length;
-					return obj.get();
-				}
-				case ValueType::I32: {
-					HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int32_t));
-					if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(int32_t) * length, sizeof(int32_t))))
-						return nullptr;
-					obj->length = length;
-					return obj.get();
-				}
-				case ValueType::I64: {
-					HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int64_t));
-					if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(int64_t) * length, sizeof(int64_t))))
-						return nullptr;
-					obj->length = length;
-					return obj.get();
-				}
-				case ValueType::U8: {
-					HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint8_t));
-					if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(uint8_t) * length, sizeof(uint8_t))))
-						return nullptr;
-					obj->length = length;
-					return obj.get();
-				}
-				case ValueType::U16: {
-					HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint16_t));
-					if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(uint16_t) * length, sizeof(uint16_t))))
-						return nullptr;
-					obj->length = length;
-					return obj.get();
-				}
-				case ValueType::U32: {
-					HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint32_t));
-					if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(uint32_t) * length, sizeof(uint32_t))))
-						return nullptr;
-					obj->length = length;
-					return obj.get();
-				}
-				case ValueType::U64: {
-					HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint64_t));
-					if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(uint64_t) * length, sizeof(uint64_t))))
-						return nullptr;
-					obj->length = length;
-					return obj.get();
-				}
-				case ValueType::F32: {
-					HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(float));
-					if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(float) * length, sizeof(float))))
-						return nullptr;
-					obj->length = length;
-					return obj.get();
-				}
-				case ValueType::F64: {
-					HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(double));
-					if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(double) * length, sizeof(double))))
-						return nullptr;
-					obj->length = length;
-					return obj.get();
-				}
-				case ValueType::Bool: {
-					HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(bool));
-					if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(bool) * length, sizeof(bool))))
-						return nullptr;
-					obj->length = length;
-					return obj.get();
-				}
-				default:
-					throw std::logic_error("Unhandled value type");
-			}
-			break;
-		case TypeId::String:
-		case TypeId::Instance:
-		case TypeId::Array: {
-			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(ObjectRef));
-			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(ObjectRef) * length, sizeof(ObjectRef))))
+	case TypeId::Value:
+		switch (type.getValueTypeExData()) {
+		case ValueType::I8: {
+			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int8_t));
+			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(int8_t) * length, sizeof(int8_t))))
 				return nullptr;
 			obj->length = length;
 			return obj.get();
 		}
-		case TypeId::Any: {
-			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(Value));
-			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(Value) * length, sizeof(Value))))
+		case ValueType::I16: {
+			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int16_t));
+			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(int16_t) * length, sizeof(int16_t))))
+				return nullptr;
+			obj->length = length;
+			return obj.get();
+		}
+		case ValueType::I32: {
+			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int32_t));
+			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(int32_t) * length, sizeof(int32_t))))
+				return nullptr;
+			obj->length = length;
+			return obj.get();
+		}
+		case ValueType::I64: {
+			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int64_t));
+			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(int64_t) * length, sizeof(int64_t))))
+				return nullptr;
+			obj->length = length;
+			return obj.get();
+		}
+		case ValueType::U8: {
+			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint8_t));
+			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(uint8_t) * length, sizeof(uint8_t))))
+				return nullptr;
+			obj->length = length;
+			return obj.get();
+		}
+		case ValueType::U16: {
+			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint16_t));
+			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(uint16_t) * length, sizeof(uint16_t))))
+				return nullptr;
+			obj->length = length;
+			return obj.get();
+		}
+		case ValueType::U32: {
+			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint32_t));
+			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(uint32_t) * length, sizeof(uint32_t))))
+				return nullptr;
+			obj->length = length;
+			return obj.get();
+		}
+		case ValueType::U64: {
+			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint64_t));
+			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(uint64_t) * length, sizeof(uint64_t))))
+				return nullptr;
+			obj->length = length;
+			return obj.get();
+		}
+		case ValueType::F32: {
+			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(float));
+			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(float) * length, sizeof(float))))
+				return nullptr;
+			obj->length = length;
+			return obj.get();
+		}
+		case ValueType::F64: {
+			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(double));
+			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(double) * length, sizeof(double))))
+				return nullptr;
+			obj->length = length;
+			return obj.get();
+		}
+		case ValueType::Bool: {
+			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(bool));
+			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(bool) * length, sizeof(bool))))
 				return nullptr;
 			obj->length = length;
 			return obj.get();
 		}
 		default:
-			throw std::logic_error("Unhandled element type");
+			throw std::logic_error("Unhandled value type");
+		}
+		break;
+	case TypeId::String:
+	case TypeId::Instance:
+	case TypeId::Array: {
+		HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(ObjectRef));
+		if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(ObjectRef) * length, sizeof(ObjectRef))))
+			return nullptr;
+		obj->length = length;
+		return obj.get();
+	}
+	case TypeId::Any: {
+		HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(Value));
+		if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(Value) * length, sizeof(Value))))
+			return nullptr;
+		obj->length = length;
+		return obj.get();
+	}
+	default:
+		throw std::logic_error("Unhandled element type");
 	}
 }

@@ -52,10 +52,10 @@ namespace slake {
 			std::string curDocName;
 
 			inline ScopeContext saveScopeContext() {
-				return { curScope, curDocName};
+				return { curScope, curDocName };
 			}
 
-			inline void restoreScopeContext(ScopeContext&& savedContext) {
+			inline void restoreScopeContext(ScopeContext &&savedContext) {
 				curScope = std::move(savedContext.curScope);
 				curDocName = std::move(savedContext.curDocName);
 			}

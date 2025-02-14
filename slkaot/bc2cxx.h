@@ -100,11 +100,11 @@ namespace slake {
 
 				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genObjectRefTypeName() {
 					return std::make_shared<cxxast::CustomTypeName>(
-							false,
-							std::make_shared<cxxast::BinaryExpr>(
-								cxxast::BinaryOp::Scope,
-								std::make_shared<cxxast::IdExpr>("slake"),
-								std::make_shared<cxxast::IdExpr>("ObjectRef")));
+						false,
+						std::make_shared<cxxast::BinaryExpr>(
+							cxxast::BinaryOp::Scope,
+							std::make_shared<cxxast::IdExpr>("slake"),
+							std::make_shared<cxxast::IdExpr>("ObjectRef")));
 				}
 
 				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genSizeTypeName() {

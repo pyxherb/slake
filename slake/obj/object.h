@@ -25,9 +25,9 @@ namespace slake {
 	class Scope;
 
 	enum class ObjectKind {
-		String,	  // String
-		TypeDef,  // Type definition
-		FnTypeDef,  // Function type definition
+		String,		// String
+		TypeDef,	// Type definition
+		FnTypeDef,	// Function type definition
 
 		Fn,				// Function
 		FnOverloading,	// Function overloading

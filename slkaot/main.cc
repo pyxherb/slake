@@ -11,7 +11,7 @@ using namespace slake::slkaot;
 
 class ArgumentError : public std::runtime_error {
 public:
-	inline ArgumentError(std::string msg) : runtime_error(msg) {};
+	inline ArgumentError(std::string msg) : runtime_error(msg){};
 	virtual ~ArgumentError() = default;
 };
 
@@ -77,60 +77,60 @@ int main(int argc, char **argv) {
 		}
 
 		switch (action) {
-			case AppAction::Compile: {
-				if (!srcPath.length()) {
-					fputs("Error: Missing input file\n", stderr);
-					return EINVAL;
-				}
-
-				if (!headerOutPath.length()) {
-					fputs("Error: Missing header output path\n", stderr);
-					return EINVAL;
-				}
-
-				if (!sourceOutPath.length()) {
-					fputs("Error: Missing source output path\n", stderr);
-					return EINVAL;
-				}
-
-				std::ifstream is;
-				std::ofstream ohs, oss;
-				// std::ofstream os;
-
-				is.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
-				is.open(srcPath, std::ios::binary);
-
-				ohs.exceptions(std::ios::failbit | std::ios::badbit);
-				ohs.open(headerOutPath, std::ios::binary);
-
-				oss.exceptions(std::ios::failbit | std::ios::badbit);
-				oss.open(sourceOutPath, std::ios::binary);
-
-				auto rt = std::make_unique<slake::Runtime>(peff::getDefaultAlloc());
-				rt->setModuleLocator(moduleLocator);
-
-				HostObjectRef<ModuleObject> mod;
-				try {
-					mod = rt->loadModule(is, 0);
-				} catch (slake::LoaderError e) {
-					std::cerr << "Error loading the module: " << e.what() << std::endl;
-					return -1;
-				}
-
-				bc2cxx::BC2CXX bc2cxxCompiler;
-
-				auto result = bc2cxxCompiler.compile(mod.get());
-
-				bc2cxxCompiler.dumpAstNode(ohs, result.first, bc2cxx::BC2CXX::ASTDumpMode::Header);
-				bc2cxxCompiler.dumpAstNode(oss, result.second, bc2cxx::BC2CXX::ASTDumpMode::Source);
-
-				is.close();
-				// os.close();
-
-				break;
+		case AppAction::Compile: {
+			if (!srcPath.length()) {
+				fputs("Error: Missing input file\n", stderr);
+				return EINVAL;
 			}
-			default:
-				std::terminate();
+
+			if (!headerOutPath.length()) {
+				fputs("Error: Missing header output path\n", stderr);
+				return EINVAL;
+			}
+
+			if (!sourceOutPath.length()) {
+				fputs("Error: Missing source output path\n", stderr);
+				return EINVAL;
+			}
+
+			std::ifstream is;
+			std::ofstream ohs, oss;
+			// std::ofstream os;
+
+			is.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
+			is.open(srcPath, std::ios::binary);
+
+			ohs.exceptions(std::ios::failbit | std::ios::badbit);
+			ohs.open(headerOutPath, std::ios::binary);
+
+			oss.exceptions(std::ios::failbit | std::ios::badbit);
+			oss.open(sourceOutPath, std::ios::binary);
+
+			auto rt = std::make_unique<slake::Runtime>(peff::getDefaultAlloc());
+			rt->setModuleLocator(moduleLocator);
+
+			HostObjectRef<ModuleObject> mod;
+			try {
+				mod = rt->loadModule(is, 0);
+			} catch (slake::LoaderError e) {
+				std::cerr << "Error loading the module: " << e.what() << std::endl;
+				return -1;
+			}
+
+			bc2cxx::BC2CXX bc2cxxCompiler;
+
+			auto result = bc2cxxCompiler.compile(mod.get());
+
+			bc2cxxCompiler.dumpAstNode(ohs, result.first, bc2cxx::BC2CXX::ASTDumpMode::Header);
+			bc2cxxCompiler.dumpAstNode(oss, result.second, bc2cxx::BC2CXX::ASTDumpMode::Source);
+
+			is.close();
+			// os.close();
+
+			break;
+		}
+		default:
+			std::terminate();
 		}
 	} catch (std::bad_alloc) {
 		perror("Out of memory");

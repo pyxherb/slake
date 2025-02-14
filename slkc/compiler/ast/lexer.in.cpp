@@ -332,7 +332,7 @@ end:
 	*(_endToken.get()) = {
 		tokens.size(),
 		TokenId::End,
-		SourceLocation { token->location.endPosition, token->location.endPosition },
+		SourceLocation{ token->location.endPosition, token->location.endPosition },
 		""
 	};
 }

@@ -12,10 +12,10 @@ namespace slake {
 		};
 
 		enum class RegStorageType : uint8_t {
-			None = 0,	// Unrecognized
-			FieldVar,	// Fields
-			LocalVar,	// Local variables
-			ArgRef,		// Arguments
+			None = 0,  // Unrecognized
+			FieldVar,  // Fields
+			LocalVar,  // Local variables
+			ArgRef,	   // Arguments
 		};
 
 		struct FieldVarRegStorageInfo {

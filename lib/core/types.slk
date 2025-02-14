@@ -32,25 +32,25 @@ pub interface I32
 
 	pub native operator %(rhs: i32): I32;
 	pub native operator %(rhs: I32): I32;
-	
+
 	pub native operator &(rhs: i32): I32;
 	pub native operator &(rhs: I32): I32;
-	
+
 	pub native operator |(rhs: i32): I32;
 	pub native operator |(rhs: I32): I32;
-	
+
 	pub native operator ^(rhs: i32): I32;
 	pub native operator ^(rhs: I32): I32;
-	
+
 	pub native operator &&(rhs: i32): bool;
 	pub native operator &&(rhs: I32): bool;
-	
+
 	pub native operator ||(rhs: i32): bool;
 	pub native operator ||(rhs: I32): bool;
-	
+
 	pub native operator <<(rhs: u32): I32;
 	pub native operator <<(rhs: U32): I32;
-	
+
 	pub native operator >>(rhs: u32): I32;
 	pub native operator >>(rhs: U32): I32;
 

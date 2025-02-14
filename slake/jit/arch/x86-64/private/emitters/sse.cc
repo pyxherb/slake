@@ -9,55 +9,55 @@ SLAKE_API DiscreteInstruction slake::jit::x86_64::emitSSESsArithmRegXmmToRegXmmI
 	uint8_t rexPrefix = 0;
 
 	switch (registerId) {
-		case REG_XMM0:
-		case REG_XMM1:
-		case REG_XMM2:
-		case REG_XMM3:
-		case REG_XMM4:
-		case REG_XMM5:
-		case REG_XMM6:
-		case REG_XMM7:
-			modRm |= registerId;
-			break;
-		case REG_XMM8:
-		case REG_XMM9:
-		case REG_XMM10:
-		case REG_XMM11:
-		case REG_XMM12:
-		case REG_XMM13:
-		case REG_XMM14:
-		case REG_XMM15:
-			rexPrefix |= REX_PREFIX(0, 0, 0, 1);
-			modRm |= (registerId - REG_XMM8);
-			break;
-		default:
-			throw std::logic_error("Invalid register ID");
+	case REG_XMM0:
+	case REG_XMM1:
+	case REG_XMM2:
+	case REG_XMM3:
+	case REG_XMM4:
+	case REG_XMM5:
+	case REG_XMM6:
+	case REG_XMM7:
+		modRm |= registerId;
+		break;
+	case REG_XMM8:
+	case REG_XMM9:
+	case REG_XMM10:
+	case REG_XMM11:
+	case REG_XMM12:
+	case REG_XMM13:
+	case REG_XMM14:
+	case REG_XMM15:
+		rexPrefix |= REX_PREFIX(0, 0, 0, 1);
+		modRm |= (registerId - REG_XMM8);
+		break;
+	default:
+		throw std::logic_error("Invalid register ID");
 	}
 
 	switch (srcRegisterId) {
-		case REG_XMM0:
-		case REG_XMM1:
-		case REG_XMM2:
-		case REG_XMM3:
-		case REG_XMM4:
-		case REG_XMM5:
-		case REG_XMM6:
-		case REG_XMM7:
-			modRm |= registerId << 3;
-			break;
-		case REG_XMM8:
-		case REG_XMM9:
-		case REG_XMM10:
-		case REG_XMM11:
-		case REG_XMM12:
-		case REG_XMM13:
-		case REG_XMM14:
-		case REG_XMM15:
-			rexPrefix |= REX_PREFIX(0, 1, 0, 0);
-			modRm |= (registerId - REG_XMM8) << 3;
-			break;
-		default:
-			throw std::logic_error("Invalid register ID");
+	case REG_XMM0:
+	case REG_XMM1:
+	case REG_XMM2:
+	case REG_XMM3:
+	case REG_XMM4:
+	case REG_XMM5:
+	case REG_XMM6:
+	case REG_XMM7:
+		modRm |= registerId << 3;
+		break;
+	case REG_XMM8:
+	case REG_XMM9:
+	case REG_XMM10:
+	case REG_XMM11:
+	case REG_XMM12:
+	case REG_XMM13:
+	case REG_XMM14:
+	case REG_XMM15:
+		rexPrefix |= REX_PREFIX(0, 1, 0, 0);
+		modRm |= (registerId - REG_XMM8) << 3;
+		break;
+	default:
+		throw std::logic_error("Invalid register ID");
 	}
 
 	if (rexPrefix) {
@@ -74,29 +74,29 @@ SLAKE_API DiscreteInstruction slake::jit::x86_64::emitSSESsArithmMemToRegXmmIns(
 	uint8_t rexPrefix = 0, sib = 0;
 
 	switch (registerId) {
-		case REG_XMM0:
-		case REG_XMM1:
-		case REG_XMM2:
-		case REG_XMM3:
-		case REG_XMM4:
-		case REG_XMM5:
-		case REG_XMM6:
-		case REG_XMM7:
-			modRm |= registerId;
-			break;
-		case REG_XMM8:
-		case REG_XMM9:
-		case REG_XMM10:
-		case REG_XMM11:
-		case REG_XMM12:
-		case REG_XMM13:
-		case REG_XMM14:
-		case REG_XMM15:
-			rexPrefix |= REX_PREFIX(0, 0, 0, 1);
-			modRm |= (registerId - REG_XMM8);
-			break;
-		default:
-			throw std::logic_error("Invalid register ID");
+	case REG_XMM0:
+	case REG_XMM1:
+	case REG_XMM2:
+	case REG_XMM3:
+	case REG_XMM4:
+	case REG_XMM5:
+	case REG_XMM6:
+	case REG_XMM7:
+		modRm |= registerId;
+		break;
+	case REG_XMM8:
+	case REG_XMM9:
+	case REG_XMM10:
+	case REG_XMM11:
+	case REG_XMM12:
+	case REG_XMM13:
+	case REG_XMM14:
+	case REG_XMM15:
+		rexPrefix |= REX_PREFIX(0, 0, 0, 1);
+		modRm |= (registerId - REG_XMM8);
+		break;
+	default:
+		throw std::logic_error("Invalid register ID");
 	}
 
 	bool isSibValid = memoryToModRmAndSib(mem, modRm, sib, rexPrefix);
@@ -136,55 +136,55 @@ SLAKE_API DiscreteInstruction slake::jit::x86_64::emitSSESdArithmRegXmmToRegXmmI
 	uint8_t rexPrefix = 0;
 
 	switch (registerId) {
-		case REG_XMM0:
-		case REG_XMM1:
-		case REG_XMM2:
-		case REG_XMM3:
-		case REG_XMM4:
-		case REG_XMM5:
-		case REG_XMM6:
-		case REG_XMM7:
-			modRm |= registerId;
-			break;
-		case REG_XMM8:
-		case REG_XMM9:
-		case REG_XMM10:
-		case REG_XMM11:
-		case REG_XMM12:
-		case REG_XMM13:
-		case REG_XMM14:
-		case REG_XMM15:
-			rexPrefix |= REX_PREFIX(0, 0, 0, 1);
-			modRm |= (registerId - REG_XMM8);
-			break;
-		default:
-			throw std::logic_error("Invalid register ID");
+	case REG_XMM0:
+	case REG_XMM1:
+	case REG_XMM2:
+	case REG_XMM3:
+	case REG_XMM4:
+	case REG_XMM5:
+	case REG_XMM6:
+	case REG_XMM7:
+		modRm |= registerId;
+		break;
+	case REG_XMM8:
+	case REG_XMM9:
+	case REG_XMM10:
+	case REG_XMM11:
+	case REG_XMM12:
+	case REG_XMM13:
+	case REG_XMM14:
+	case REG_XMM15:
+		rexPrefix |= REX_PREFIX(0, 0, 0, 1);
+		modRm |= (registerId - REG_XMM8);
+		break;
+	default:
+		throw std::logic_error("Invalid register ID");
 	}
 
 	switch (srcRegisterId) {
-		case REG_XMM0:
-		case REG_XMM1:
-		case REG_XMM2:
-		case REG_XMM3:
-		case REG_XMM4:
-		case REG_XMM5:
-		case REG_XMM6:
-		case REG_XMM7:
-			modRm |= registerId << 3;
-			break;
-		case REG_XMM8:
-		case REG_XMM9:
-		case REG_XMM10:
-		case REG_XMM11:
-		case REG_XMM12:
-		case REG_XMM13:
-		case REG_XMM14:
-		case REG_XMM15:
-			rexPrefix |= REX_PREFIX(0, 1, 0, 0);
-			modRm |= (registerId - REG_XMM8) << 3;
-			break;
-		default:
-			throw std::logic_error("Invalid register ID");
+	case REG_XMM0:
+	case REG_XMM1:
+	case REG_XMM2:
+	case REG_XMM3:
+	case REG_XMM4:
+	case REG_XMM5:
+	case REG_XMM6:
+	case REG_XMM7:
+		modRm |= registerId << 3;
+		break;
+	case REG_XMM8:
+	case REG_XMM9:
+	case REG_XMM10:
+	case REG_XMM11:
+	case REG_XMM12:
+	case REG_XMM13:
+	case REG_XMM14:
+	case REG_XMM15:
+		rexPrefix |= REX_PREFIX(0, 1, 0, 0);
+		modRm |= (registerId - REG_XMM8) << 3;
+		break;
+	default:
+		throw std::logic_error("Invalid register ID");
 	}
 
 	if (rexPrefix) {
@@ -201,29 +201,29 @@ SLAKE_API DiscreteInstruction slake::jit::x86_64::emitSSESdArithmMemToRegXmmIns(
 	uint8_t rexPrefix = 0, sib = 0;
 
 	switch (registerId) {
-		case REG_XMM0:
-		case REG_XMM1:
-		case REG_XMM2:
-		case REG_XMM3:
-		case REG_XMM4:
-		case REG_XMM5:
-		case REG_XMM6:
-		case REG_XMM7:
-			modRm |= registerId;
-			break;
-		case REG_XMM8:
-		case REG_XMM9:
-		case REG_XMM10:
-		case REG_XMM11:
-		case REG_XMM12:
-		case REG_XMM13:
-		case REG_XMM14:
-		case REG_XMM15:
-			rexPrefix |= REX_PREFIX(0, 0, 0, 1);
-			modRm |= (registerId - REG_XMM8);
-			break;
-		default:
-			throw std::logic_error("Invalid register ID");
+	case REG_XMM0:
+	case REG_XMM1:
+	case REG_XMM2:
+	case REG_XMM3:
+	case REG_XMM4:
+	case REG_XMM5:
+	case REG_XMM6:
+	case REG_XMM7:
+		modRm |= registerId;
+		break;
+	case REG_XMM8:
+	case REG_XMM9:
+	case REG_XMM10:
+	case REG_XMM11:
+	case REG_XMM12:
+	case REG_XMM13:
+	case REG_XMM14:
+	case REG_XMM15:
+		rexPrefix |= REX_PREFIX(0, 0, 0, 1);
+		modRm |= (registerId - REG_XMM8);
+		break;
+	default:
+		throw std::logic_error("Invalid register ID");
 	}
 
 	bool isSibValid = memoryToModRmAndSib(mem, modRm, sib, rexPrefix);

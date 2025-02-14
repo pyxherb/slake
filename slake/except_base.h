@@ -72,7 +72,7 @@ namespace slake {
 
 		SLAKE_FORCEINLINE void unwrap() noexcept {
 			// Check if the exception object was handled.
-			if(_ptr)
+			if (_ptr)
 				std::terminate();
 		}
 

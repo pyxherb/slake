@@ -1223,6 +1223,7 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 				case ExprType::Bool:
 					compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 					break;
+				default:;
 			}
 			break;
 		}

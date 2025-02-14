@@ -42,7 +42,7 @@ namespace slake {
 		SLAKE_API virtual Object *duplicate() const override;
 
 		SLAKE_API virtual Object *getParent() const override;
-		SLAKE_API virtual void setParent(Object *parent);
+		SLAKE_API virtual void setParent(Object *parent) override;
 
 		SLAKE_API static HostObjectRef<RegularVarObject> alloc(Runtime *rt, AccessModifier access, const Type &type);
 		SLAKE_API static HostObjectRef<RegularVarObject> alloc(const RegularVarObject *other);

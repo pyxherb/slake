@@ -416,30 +416,6 @@ std::shared_ptr<ExprNode> Compiler::evalConstExpr(CompileContext *compileContext
 
 			switch (e->getExprType()) {
 				case ExprType::I32: {
-					switch (e->targetType->getTypeId()) {
-						case TypeId::I8: {
-						}
-						case TypeId::I16: {
-						}
-						case TypeId::I32: {
-						}
-						case TypeId::I64: {
-						}
-						case TypeId::U8: {
-						}
-						case TypeId::U16: {
-						}
-						case TypeId::U32: {
-						}
-						case TypeId::U64: {
-						}
-						case TypeId::F32: {
-						}
-						case TypeId::F64: {
-						}
-						case TypeId::Bool: {
-						}
-					}
 				}
 				case ExprType::U32: {
 				}
@@ -453,6 +429,7 @@ std::shared_ptr<ExprNode> Compiler::evalConstExpr(CompileContext *compileContext
 				}
 				case ExprType::Bool: {
 				}
+				default:;
 			}
 			return evalConstExpr(compileContext, e->target);
 		}

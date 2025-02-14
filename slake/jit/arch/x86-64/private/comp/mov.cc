@@ -540,7 +540,8 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 			break;
 		}
 		default:
-			assert(("Unhandled value type", false));
+			// Unhandled value type
+			std::terminate();
 	}
 
 	return {};

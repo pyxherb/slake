@@ -774,7 +774,8 @@ InternalExceptionPointer slake::jit::x86_64::compileMulInstruction(
 			lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(lhs.getRegIndex()).expectedValue;
 			break;
 		default:
-			assert(("Malformed function", false));
+			// Malformed function
+			std::terminate();
 	}
 
 	switch (rhs.valueType) {
@@ -795,7 +796,8 @@ InternalExceptionPointer slake::jit::x86_64::compileMulInstruction(
 			lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(rhs.getRegIndex()).expectedValue;
 			break;
 		default:
-			assert(("Malformed function", false));
+			// Malformed function
+			std::terminate();
 	}
 
 	switch (outputRegInfo.type.typeId) {
@@ -882,12 +884,14 @@ InternalExceptionPointer slake::jit::x86_64::compileMulInstruction(
 					break;
 				}
 				default:
-					assert(("The function is malformed", false));
+					// The function is malformed
+					std::terminate();
 			}
 			break;
 		}
 		default:
-			assert(("The function is malformed", false));
+			// The function is malformed
+			std::terminate();
 	}
 
 	return {};

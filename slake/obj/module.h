@@ -1,7 +1,7 @@
 #ifndef _SLAKE_OBJ_MODULE_H_
 #define _SLAKE_OBJ_MODULE_H_
 
-#include "member.h"
+#include "var.h"
 #include <unordered_map>
 #include <map>
 
@@ -81,7 +81,7 @@ namespace slake {
 
 		SLAKE_API virtual Object *duplicate() const override;
 
-		SLAKE_API virtual ObjectRef getMember(const std::string_view &name) const;
+		SLAKE_API virtual ObjectRef getMember(const std::string_view &name) const override;
 
 		SLAKE_API virtual Object *getParent() const override;
 		SLAKE_API virtual void setParent(Object *parent) override;

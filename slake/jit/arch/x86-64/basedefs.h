@@ -4,7 +4,6 @@
 #include <slake/jit/base.h>
 #include <map>
 #include <bitset>
-#include "private/emitter_base.h"
 
 #define DEF_INS_BUFFER(name, ...) uint8_t name[] = { __VA_ARGS__ }
 #define REX_PREFIX(w, r, x, b) ((uint8_t)(0b01000000 | ((w) << 3) | ((r) << 2) | ((x) << 1) | (b)))
@@ -189,6 +188,9 @@ namespace slake {
 					case 8:
 						sib |= 0b11000000;
 						break;
+					default:
+						// Invalid scale index
+						std::terminate();
 				}
 
 				switch (mem.base) {
@@ -249,7 +251,8 @@ namespace slake {
 						sib |= 0b00000111;
 						break;
 					default:
-						assert(("Invalid base register", false));
+						// Invalid base register
+						std::terminate();
 				}
 
 				switch (mem.scaleIndex) {
@@ -310,7 +313,8 @@ namespace slake {
 						sib |= 0b00111000;
 						break;
 					default:
-						assert(("Invalid scale index register", false));
+						// Invalid scale index register
+						std::terminate();
 				}
 
 				return true;

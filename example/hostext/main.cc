@@ -192,8 +192,10 @@ int main(int argc, char **argv) {
 
 							printf("Malformed program error at instruction #%zu\n", err->offIns);
 						}
+						default:;
 					}
 				}
+				default:;
 			}
 			e.reset();
 			goto end;

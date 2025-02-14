@@ -62,6 +62,7 @@ static std::shared_ptr<ExprNode> _castLiteralExpr(
 				return std::make_shared<BoolLiteralExprNode>((bool)expr->data);
 			} else
 				return {};
+		default:;
 	}
 
 	return {};
@@ -83,6 +84,7 @@ std::shared_ptr<ExprNode> Compiler::castLiteralExpr(std::shared_ptr<ExprNode> ex
 			return _castLiteralExpr<double>(std::static_pointer_cast<F64LiteralExprNode>(expr), targetType);
 		case ExprType::Bool:
 			return _castLiteralExpr<bool>(std::static_pointer_cast<BoolLiteralExprNode>(expr), targetType);
+		default:;
 	}
 
 	return {};

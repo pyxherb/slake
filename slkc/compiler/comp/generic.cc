@@ -48,6 +48,7 @@ bool Compiler::GenericNodeArgListComparator::operator()(
 
 					break;
 				}
+				default:;
 			}
 		}
 	}
@@ -202,6 +203,7 @@ void Compiler::walkNodeForGenericInstantiation(
 
 			break;
 		}
+		default:;
 	}
 }
 

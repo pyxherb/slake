@@ -173,7 +173,8 @@ SLAKE_API InternalExceptionPointer JITCompileContext::pushReg(RegisterId reg, in
 			SLAKE_RETURN_IF_EXCEPT(pushReg64(reg, offOut, sizeOut));
 			break;
 		default:
-			assert(("Invalid register size", false));
+			// Invalid register size
+			std::terminate();
 	}
 
 	return {};
@@ -188,7 +189,8 @@ SLAKE_API InternalExceptionPointer JITCompileContext::pushRegXmm(RegisterId reg,
 			SLAKE_RETURN_IF_EXCEPT(pushRegXmm64(reg, offOut, sizeOut));
 			break;
 		default:
-			assert(("Invalid register size", false));
+			// Invalid register size
+			std::terminate();
 	}
 
 	return {};
@@ -209,7 +211,8 @@ SLAKE_API InternalExceptionPointer JITCompileContext::popReg(RegisterId reg, int
 			SLAKE_RETURN_IF_EXCEPT(popReg64(reg, off));
 			break;
 		default:
-			assert(("Invalid register size", false));
+			// Invalid register size
+			std::terminate();
 	}
 
 	return {};
@@ -224,7 +227,8 @@ SLAKE_API InternalExceptionPointer JITCompileContext::popRegXmm(RegisterId reg, 
 			SLAKE_RETURN_IF_EXCEPT(popRegXmm64(reg, off));
 			break;
 		default:
-			assert(("Invalid register size", false));
+			// Invalid register size
+			std::terminate();
 	}
 
 	return {};

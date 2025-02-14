@@ -5,6 +5,7 @@
 #include "basedefs.h"
 #include "util/memory.h"
 #include <memory>
+#include <cassert>
 
 namespace slake {
 	class Runtime;
@@ -70,9 +71,9 @@ namespace slake {
 		}
 
 		SLAKE_FORCEINLINE void unwrap() noexcept {
-			if (_ptr) {
-				assert(("Unhandled Slake internal exception: ", false));
-			}
+			// Check if the exception object was handled.
+			if(_ptr)
+				std::terminate();
 		}
 
 		SLAKE_FORCEINLINE explicit operator bool() noexcept {
@@ -93,8 +94,8 @@ namespace slake {
 #define SLAKE_RETURN_IF_EXCEPT(expr)                  \
 	if (InternalExceptionPointer _ = (expr); (bool)_) \
 	return _
-#define SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(name, expr)  \
-	if ((bool)(name = (expr))) \
-	return name;
+#define SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(name, expr) \
+	if ((bool)(name = (expr)))                       \
+		return name;
 
 #endif

@@ -5,6 +5,7 @@
 #include <peff/containers/string.h>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <slake/util/memory.h>
 #include <slake/basedefs.h>
 

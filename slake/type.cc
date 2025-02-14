@@ -159,6 +159,7 @@ SLAKE_API bool Type::operator<(const Type &rhs) const {
 			case TypeId::Instance: {
 				auto lhsType = getCustomTypeExData(), rhsType = rhs.getCustomTypeExData();
 
+				// TODO: Use comparison instead of the simple assert.
 				assert(lhsType->getKind() == rhsType->getKind());
 				switch (lhsType->getKind()) {
 					case ObjectKind::IdRef: {
@@ -197,6 +198,7 @@ SLAKE_API bool Type::operator<(const Type &rhs) const {
 				return getArrayExData() < rhs.getArrayExData();
 			case TypeId::Ref:
 				return getRefExData() < rhs.getRefExData();
+			default:;
 		}
 	}
 
@@ -237,8 +239,9 @@ SLAKE_API bool Type::operator==(const Type &rhs) const {
 							return false;
 					}
 
-					return false;
+					break;
 				}
+				default:;
 			}
 
 			return lhsType == rhsType;
@@ -280,6 +283,7 @@ SLAKE_API bool Type::operator==(const Type &rhs) const {
 
 					break;
 				}
+				default:;
 			}
 
 			return false;
@@ -288,6 +292,7 @@ SLAKE_API bool Type::operator==(const Type &rhs) const {
 			return getArrayExData() == rhs.getArrayExData();
 		case TypeId::Ref:
 			return getRefExData() == rhs.getRefExData();
+		default:;
 	}
 	return true;
 }

@@ -19,7 +19,7 @@ namespace slake {
 
 			virtual inline NodeType getNodeType() const override { return NodeType::Alias; }
 
-			virtual inline IdRefEntry getName() const { return { tokenRange, SIZE_MAX, name, genericArgs }; }
+			virtual inline IdRefEntry getName() const override { return { tokenRange, SIZE_MAX, name, genericArgs }; }
 		};
 	}
 }

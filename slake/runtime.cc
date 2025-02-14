@@ -11,7 +11,6 @@ SLAKE_API peff::Alloc *CountablePoolAlloc::getDefaultAlloc() const noexcept {
 }
 
 SLAKE_API void CountablePoolAlloc::onRefZero() noexcept {
-
 }
 
 SLAKE_API void *CountablePoolAlloc::alloc(size_t size, size_t alignment) noexcept {

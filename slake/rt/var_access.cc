@@ -125,6 +125,8 @@ SLAKE_API Value Runtime::readVarUnsafe(const ObjectRef &objectRef) const {
 							return Value(*((double *)rawDataPtr));
 						case ValueType::Bool:
 							return Value(*((bool *)rawDataPtr));
+						default:
+							std::terminate();
 					}
 					break;
 				case TypeId::String:
@@ -170,6 +172,8 @@ SLAKE_API Value Runtime::readVarUnsafe(const ObjectRef &objectRef) const {
 							return Value(*((double *)rawDataPtr));
 						case ValueType::Bool:
 							return Value(*((bool *)rawDataPtr));
+						default:
+							std::terminate();
 					}
 					break;
 				case TypeId::String:
@@ -216,6 +220,8 @@ SLAKE_API Value Runtime::readVarUnsafe(const ObjectRef &objectRef) const {
 							return Value(*((double *)rawFieldPtr));
 						case ValueType::Bool:
 							return Value(*((bool *)rawFieldPtr));
+						default:
+							std::terminate();
 					}
 					break;
 				case TypeId::String:
@@ -257,7 +263,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const ObjectRef &objectRef) const {
 						case ValueType::Bool:
 							return Value(((bool *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]);
 						default:
-							assert(false);
+							std::terminate();
 					}
 					break;
 				}
@@ -332,6 +338,8 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const ObjectRef &objectRef,
 						case ValueType::Bool:
 							*((bool *)rawDataPtr) = value.getBool();
 							break;
+						default:
+							std::terminate();
 					}
 					break;
 				case TypeId::String:
@@ -457,6 +465,8 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const ObjectRef &objectRef,
 						case ValueType::Bool:
 							*((bool *)rawFieldPtr) = value.getBool();
 							break;
+						default:
+							std::terminate();
 					}
 					break;
 				case TypeId::String:

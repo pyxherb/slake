@@ -75,6 +75,8 @@ AccessModifier Parser::parseAccessModifier(TokenRange &tokenRangeOut, std::deque
 					case TokenId::NativeKeyword:
 						accessModifier |= ACCESS_NATIVE;
 						break;
+					default:
+						std::terminate();
 				}
 				idxAccessModifierTokensOut.push_back(lexer->getTokenIndex(token));
 				break;
@@ -109,5 +111,6 @@ void Parser::splitRshOpToken() {
 
 			break;
 		}
+		default:;
 	}
 }

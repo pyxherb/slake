@@ -150,18 +150,18 @@ SLAKE_API void Runtime::initObjectLayoutForClass(ClassObject *cls, ClassObject *
 						objectLayout->totalSize += sizeof(bool);
 						break;
 					case ValueType::ObjectRef:
-						objectLayout->totalSize += sizeof(Object *) - (objectLayout->totalSize & (sizeof(Object *) - 1));
+						objectLayout->totalSize += sizeof(void *) - (objectLayout->totalSize & (sizeof(void *) - 1));
 						fieldRecord.offset = objectLayout->totalSize;
-						objectLayout->totalSize += sizeof(Object *);
+						objectLayout->totalSize += sizeof(void *);
 						break;
 				}
 				break;
 			case TypeId::String:
 			case TypeId::Instance:
 			case TypeId::Array:
-				objectLayout->totalSize += sizeof(Object *) - (objectLayout->totalSize & (sizeof(Object *) - 1));
+				objectLayout->totalSize += sizeof(void *) - (objectLayout->totalSize & (sizeof(void *) - 1));
 				fieldRecord.offset = objectLayout->totalSize;
-				objectLayout->totalSize += sizeof(Object *);
+				objectLayout->totalSize += sizeof(void *);
 				break;
 			default:
 				throw std::runtime_error("The variable has an inconstructible type");

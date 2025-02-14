@@ -189,7 +189,7 @@ namespace slake {
 			peff::Alloc *selfAllocator);
 		SLAKE_API ~HostRefHolder();
 
-		SLAKE_API void addObject(Object *object);
+		SLAKE_API [[nodiscard]] bool addObject(Object *object);
 		SLAKE_API void removeObject(Object *object) noexcept;
 	};
 }

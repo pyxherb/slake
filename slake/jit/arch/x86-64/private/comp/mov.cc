@@ -216,7 +216,7 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(regId, off, size));
 					}
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(regId, (uint8_t *)&imm0)));
-					VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(Object *));
+					VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(void *));
 					if (!outputVregState)
 						return OutOfMemoryError::alloc();
 					break;

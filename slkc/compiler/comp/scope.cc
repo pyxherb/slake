@@ -91,7 +91,7 @@ std::shared_ptr<Scope> slake::slkc::Compiler::mergeScope(CompileContext *compile
 			switch (i.second->getNodeType()) {
 				case NodeType::Fn: {
 					auto fnNew = std::static_pointer_cast<FnNode>(newScope->members.at(i.first)),
-						 fnB = std::static_pointer_cast<FnNode> (i.second);
+						 fnB = std::static_pointer_cast<FnNode>(i.second);
 
 					// Check if the overloading registry is duplicated.
 					for (auto &j : fnB->overloadingRegistries) {
@@ -104,6 +104,7 @@ std::shared_ptr<Scope> slake::slkc::Compiler::mergeScope(CompileContext *compile
 					fnOverloadingDuplicated:;
 					}
 				}
+				default:;
 			}
 		} else
 			newScope->members[i.first] = i.second;

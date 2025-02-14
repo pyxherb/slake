@@ -137,7 +137,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::instantiateModuleFields(Modul
 					szRelocatedLocalFieldStorage += (sizeof(void *) - (szRelocatedLocalFieldStorage & (sizeof(void *) - 1)));
 				}
 				curFieldRecord.offset = szRelocatedLocalFieldStorage;
-				szRelocatedLocalFieldStorage += sizeof(Object *);
+				szRelocatedLocalFieldStorage += sizeof(void *);
 				break;
 			case TypeId::Any:
 				if (szRelocatedLocalFieldStorage % sizeof(Value)) {

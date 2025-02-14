@@ -99,7 +99,8 @@ SLAKE_API Value Runtime::_loadValue(LoaderContext &context, HostRefHolder &holde
 
 			auto object = StringObject::alloc(this, std::move(s));
 
-			holder.addObject(object.get());
+			if (!holder.addObject(object.get()))
+				throw std::bad_alloc();
 
 			return Value(ObjectRef::makeInstanceRef(object.get()));
 		}
@@ -120,7 +121,8 @@ SLAKE_API Value Runtime::_loadValue(LoaderContext &context, HostRefHolder &holde
 				}
 			}
 
-			holder.addObject(value.get());
+			if (!holder.addObject(value.get()))
+				throw std::bad_alloc();
 
 			return ObjectRef::makeInstanceRef(value.release());
 		}
@@ -168,7 +170,8 @@ SLAKE_API Type Runtime::_loadType(LoaderContext &context, HostRefHolder &holder)
 		case slxfmt::TypeId::Object: {
 			auto idRef = _loadIdRef(context, holder);
 
-			holder.addObject(idRef.get());
+			if (!holder.addObject(idRef.get()))
+				throw std::bad_alloc();
 
 			return idRef.release();
 		}
@@ -425,7 +428,7 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 					szLocalFieldStorage += (sizeof(void *) - (szLocalFieldStorage & (sizeof(void *) - 1)));
 				}
 				curFieldRecord.offset = szLocalFieldStorage;
-				szLocalFieldStorage += sizeof(Object *);
+				szLocalFieldStorage += sizeof(void *);
 				break;
 			case TypeId::Any:
 				if (szLocalFieldStorage % sizeof(Value)) {

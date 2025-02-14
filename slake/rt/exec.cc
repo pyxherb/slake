@@ -133,7 +133,8 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 
 	std::unique_ptr<MajorFrame> newMajorFrame = std::make_unique<MajorFrame>(this, context);
 
-	newMajorFrame->minorFrames.pushBack(MinorFrame(this, 0, context->stackTop));
+	if (!newMajorFrame->minorFrames.pushBack(MinorFrame(this, 0, context->stackTop)))
+		return OutOfMemoryError::alloc();
 
 	newMajorFrame->localVarAccessor = LocalVarAccessorVarObject::alloc(this, context, newMajorFrame.get()).get();
 
@@ -152,17 +153,20 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 
 	if (fn->overloadingFlags & OL_VARG) {
 		auto varArgTypeDefObject = TypeDefObject::alloc(this, Type(TypeId::Any));
-		holder.addObject(varArgTypeDefObject.get());
+		if (!holder.addObject(varArgTypeDefObject.get()))
+			return OutOfMemoryError::alloc();
 
 		size_t szVarArgArray = nArgs - fn->paramTypes.size();
 		auto varArgArrayObject = newArrayInstance(this, Type(TypeId::Any), szVarArgArray);
-		holder.addObject(varArgArrayObject.get());
+		if (!holder.addObject(varArgArrayObject.get()))
+			return OutOfMemoryError::alloc();
 
 		for (size_t i = 0; i < szVarArgArray; ++i) {
 			((Value *)varArgArrayObject->data)[i] = args[fn->paramTypes.size() + i];
 		}
 
-		newMajorFrame->argStack.pushBack({ ObjectRef::makeInstanceRef(varArgArrayObject.get()), Type(TypeId::Array, varArgTypeDefObject.get()) });
+		if (!newMajorFrame->argStack.pushBack({ ObjectRef::makeInstanceRef(varArgArrayObject.get()), Type(TypeId::Array, varArgTypeDefObject.get()) }))
+			return OutOfMemoryError::alloc();
 	}
 
 	switch (fn->overloadingKind) {
@@ -171,6 +175,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 			newMajorFrame->resizeRegs(ol->nRegisters);
 			break;
 		}
+		default:;
 	}
 
 	newMajorFrame->returnValueOutReg = returnValueOut;
@@ -260,9 +265,9 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(MajorFrame *fram
 					localVarRecord.stackOffset = frame->context->stackTop;
 					break;
 				case ValueType::ObjectRef: {
-					if (!frame->context->stackAlloc(sizeof(Object *) - (frame->context->stackTop & (sizeof(Object *) - 1))))
+					if (!frame->context->stackAlloc(sizeof(void *) - (frame->context->stackTop & (sizeof(void *) - 1))))
 						return StackOverflowError::alloc(this);
-					Object **ptr = (Object **)frame->context->stackAlloc(sizeof(Object *));
+					Object **ptr = (Object **)frame->context->stackAlloc(sizeof(void *));
 					if (!ptr)
 						return StackOverflowError::alloc(this);
 					localVarRecord.stackOffset = frame->context->stackTop;
@@ -275,9 +280,9 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(MajorFrame *fram
 		case TypeId::Instance:
 		case TypeId::Array:
 		case TypeId::Ref: {
-			if (!frame->context->stackAlloc(sizeof(Object *) - (frame->context->stackTop & (sizeof(Object *) - 1))))
+			if (!frame->context->stackAlloc(sizeof(void *) - (frame->context->stackTop & (sizeof(void *) - 1))))
 				return StackOverflowError::alloc(this);
-			Object **ptr = (Object **)frame->context->stackAlloc(sizeof(Object *));
+			Object **ptr = (Object **)frame->context->stackAlloc(sizeof(void *));
 			if (!ptr)
 				return StackOverflowError::alloc(this);
 			localVarRecord.stackOffset = frame->context->stackTop;
@@ -285,13 +290,14 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(MajorFrame *fram
 			break;
 		}
 		default:
-			throw std::runtime_error("The variable has an inconstructible type");
+			std::terminate();
 	}
 
 	localVarRecord.type = type;
 
 	uint32_t index = (uint32_t)frame->localVarRecords.size();
-	frame->localVarRecords.pushBack(std::move(localVarRecord));
+	if (!frame->localVarRecords.pushBack(std::move(localVarRecord)))
+		return OutOfMemoryError::alloc();
 	objectRefOut = ObjectRef::makeLocalVarRef(frame, index);
 	return {};
 }
@@ -1756,7 +1762,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 
 			Value value;
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, curMajorFrame, ins.operands[0], value));
-			curMajorFrame->nextArgStack.pushBack(std::move(value));
+			if (!curMajorFrame->nextArgStack.pushBack(std::move(value)))
+				return OutOfMemoryError::alloc();
 			break;
 		}
 		case Opcode::CTORCALL:
@@ -1940,7 +1947,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			xh.type = ins.operands[0].getTypeName();
 			xh.off = ins.operands[1].getU32();
 
-			curMajorFrame->minorFrames.back().exceptHandlers.pushBack(std::move(xh));
+			if (!curMajorFrame->minorFrames.back().exceptHandlers.pushBack(std::move(xh)))
+				return OutOfMemoryError::alloc();
 			break;
 		}
 		case Opcode::CAST: {

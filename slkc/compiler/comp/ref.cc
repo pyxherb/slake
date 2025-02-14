@@ -225,6 +225,7 @@ bool Compiler::_resolveIdRef(CompileContext *compileContext, Scope *scope, std::
 				case NodeType::Fn:
 					tokenInfo.semanticType = resolveContext.isTopLevel ? SemanticType::Fn : SemanticType::Method;
 					break;
+				default:;
 			}
 		});
 #endif
@@ -277,6 +278,7 @@ bool Compiler::_resolveIdRef(CompileContext *compileContext, Scope *scope, std::
 			case NodeType::GenericParam: {
 				break;
 			}
+			default:;
 		}
 
 		if (curEntry.genericArgs.size()) {
@@ -425,13 +427,14 @@ bool slake::slkc::Compiler::_resolveIdRefWithOwner(CompileContext *compileContex
 				if (_resolveIdRef(compileContext, scopeOf(compileContext, (AstNode *)owner->parent).get(), ref, partsOut, isStaticOut, resolveContext))
 					return false;
 			}
+			default:;
 		}
 	}
 
 	return false;
 }
 
-std::shared_ptr<MemberNode> Compiler::resolveAlias(AliasNode* aliasNode) {
+std::shared_ptr<MemberNode> Compiler::resolveAlias(AliasNode *aliasNode) {
 	bool isStatic;
 	IdRefResolvedParts resolvedParts;
 	if (!resolveIdRefWithScope(nullptr, aliasNode->scope, aliasNode->target, isStatic, resolvedParts)) {
@@ -472,7 +475,7 @@ std::shared_ptr<IdRefNode> Compiler::getFullName(MemberNode *member) {
 	std::shared_ptr<IdRefNode> ref = std::make_shared<IdRefNode>();
 
 	if (ref->getNodeType() == NodeType::Alias) {
-		_getFullName(resolveAlias((AliasNode*)member).get(), ref->entries);
+		_getFullName(resolveAlias((AliasNode *)member).get(), ref->entries);
 		return ref;
 	}
 

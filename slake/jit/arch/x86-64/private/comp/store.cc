@@ -27,56 +27,56 @@ InternalExceptionPointer compileRegToFieldVarStoreInstruction(
 
 		if constexpr (size == 1) {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovMemToReg8Ins(
-				tmpGpRegId,
-				MemoryLocation{
-					REG_RBP, vregState.saveOffset,
-					REG_MAX, 0 })));
+															tmpGpRegId,
+															MemoryLocation{
+																REG_RBP, vregState.saveOffset,
+																REG_MAX, 0 })));
 		} else if constexpr (size == 2) {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovMemToReg16Ins(
-				tmpGpRegId,
-				MemoryLocation{
-					REG_RBP, vregState.saveOffset,
-					REG_MAX, 0 })));
+															tmpGpRegId,
+															MemoryLocation{
+																REG_RBP, vregState.saveOffset,
+																REG_MAX, 0 })));
 		} else if constexpr (size == 4) {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovMemToReg32Ins(
-				tmpGpRegId,
-				MemoryLocation{
-					REG_RBP, vregState.saveOffset,
-					REG_MAX, 0 })));
+															tmpGpRegId,
+															MemoryLocation{
+																REG_RBP, vregState.saveOffset,
+																REG_MAX, 0 })));
 		} else if constexpr (size == 8) {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovMemToReg64Ins(
-				tmpGpRegId,
-				MemoryLocation{
-					REG_RBP, vregState.saveOffset,
-					REG_MAX, 0 })));
+															tmpGpRegId,
+															MemoryLocation{
+																REG_RBP, vregState.saveOffset,
+																REG_MAX, 0 })));
 		} else {
 			static_assert(size != size, "Invalid operand size");
 		}
 		if (((uintptr_t)rawDataPtr) < INT32_MAX) {
 			if constexpr (size == 1) {
 				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg8ToMemIns(
-					MemoryLocation{
-						REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-						REG_MAX, 0 },
-					tmpGpRegId)));
+																MemoryLocation{
+																	REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																	REG_MAX, 0 },
+																tmpGpRegId)));
 			} else if constexpr (size == 2) {
 				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg16ToMemIns(
-					MemoryLocation{
-						REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-						REG_MAX, 0 },
-					tmpGpRegId)));
+																MemoryLocation{
+																	REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																	REG_MAX, 0 },
+																tmpGpRegId)));
 			} else if constexpr (size == 4) {
 				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg32ToMemIns(
-					MemoryLocation{
-						REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-						REG_MAX, 0 },
-					tmpGpRegId)));
+																MemoryLocation{
+																	REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																	REG_MAX, 0 },
+																tmpGpRegId)));
 			} else if constexpr (size == 8) {
 				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToMemIns(
-					MemoryLocation{
-						REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-						REG_MAX, 0 },
-					tmpGpRegId)));
+																MemoryLocation{
+																	REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																	REG_MAX, 0 },
+																tmpGpRegId)));
 			} else {
 				static_assert(size != size, "Invalid operand size");
 			}
@@ -92,13 +92,13 @@ InternalExceptionPointer compileRegToFieldVarStoreInstruction(
 			uint64_t imm0 = (uint64_t)rawDataPtr;
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
-				baseRegId,
-				(uint8_t *)&imm0)));
+															baseRegId,
+															(uint8_t *)&imm0)));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToMemIns(
-				MemoryLocation{
-					baseRegId, 0,
-					REG_MAX, 0 },
-				tmpGpRegId)));
+															MemoryLocation{
+																baseRegId, 0,
+																REG_MAX, 0 },
+															tmpGpRegId)));
 
 			if (baseRegOff != INT32_MIN) {
 				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.popReg(baseRegId, baseRegOff, baseRegSize));
@@ -112,28 +112,28 @@ InternalExceptionPointer compileRegToFieldVarStoreInstruction(
 		if (((uintptr_t)rawDataPtr) < INT32_MAX) {
 			if constexpr (size == 1) {
 				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg8ToMemIns(
-					MemoryLocation{
-						REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-						REG_MAX, 0 },
-					vregState.phyReg)));
+																MemoryLocation{
+																	REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																	REG_MAX, 0 },
+																vregState.phyReg)));
 			} else if constexpr (size == 2) {
 				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg16ToMemIns(
-					MemoryLocation{
-						REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-						REG_MAX, 0 },
-					vregState.phyReg)));
+																MemoryLocation{
+																	REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																	REG_MAX, 0 },
+																vregState.phyReg)));
 			} else if constexpr (size == 4) {
 				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg32ToMemIns(
-					MemoryLocation{
-						REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-						REG_MAX, 0 },
-					vregState.phyReg)));
+																MemoryLocation{
+																	REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																	REG_MAX, 0 },
+																vregState.phyReg)));
 			} else if constexpr (size == 8) {
 				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToMemIns(
-					MemoryLocation{
-						REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-						REG_MAX, 0 },
-					vregState.phyReg)));
+																MemoryLocation{
+																	REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																	REG_MAX, 0 },
+																vregState.phyReg)));
 			}
 		} else {
 			RegisterId baseRegId = compileContext.allocGpReg();
@@ -147,8 +147,8 @@ InternalExceptionPointer compileRegToFieldVarStoreInstruction(
 				uint64_t imm0 = (uint64_t)rawDataPtr;
 
 				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
-					baseRegId,
-					(uint8_t *)&imm0)));
+																baseRegId,
+																(uint8_t *)&imm0)));
 
 				RegisterId tmpGpRegId = compileContext.allocGpReg();
 				int32_t tmpGpRegOff = INT32_MIN;
@@ -160,48 +160,48 @@ InternalExceptionPointer compileRegToFieldVarStoreInstruction(
 
 				if constexpr (size == 1) {
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovMemToReg8Ins(
-						tmpGpRegId,
-						MemoryLocation{
-							REG_RBP, vregState.saveOffset,
-							REG_MAX, 0 })));
+																	tmpGpRegId,
+																	MemoryLocation{
+																		REG_RBP, vregState.saveOffset,
+																		REG_MAX, 0 })));
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg8ToMemIns(
-						MemoryLocation{
-							baseRegId, 0,
-							REG_MAX, 0 },
-						tmpGpRegId)));
+																	MemoryLocation{
+																		baseRegId, 0,
+																		REG_MAX, 0 },
+																	tmpGpRegId)));
 				} else if constexpr (size == 2) {
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovMemToReg16Ins(
-						tmpGpRegId,
-						MemoryLocation{
-							REG_RBP, vregState.saveOffset,
-							REG_MAX, 0 })));
+																	tmpGpRegId,
+																	MemoryLocation{
+																		REG_RBP, vregState.saveOffset,
+																		REG_MAX, 0 })));
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg16ToMemIns(
-						MemoryLocation{
-							baseRegId, 0,
-							REG_MAX, 0 },
-						tmpGpRegId)));
+																	MemoryLocation{
+																		baseRegId, 0,
+																		REG_MAX, 0 },
+																	tmpGpRegId)));
 				} else if constexpr (size == 4) {
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovMemToReg32Ins(
-						tmpGpRegId,
-						MemoryLocation{
-							REG_RBP, vregState.saveOffset,
-							REG_MAX, 0 })));
+																	tmpGpRegId,
+																	MemoryLocation{
+																		REG_RBP, vregState.saveOffset,
+																		REG_MAX, 0 })));
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg32ToMemIns(
-						MemoryLocation{
-							baseRegId, 0,
-							REG_MAX, 0 },
-						tmpGpRegId)));
+																	MemoryLocation{
+																		baseRegId, 0,
+																		REG_MAX, 0 },
+																	tmpGpRegId)));
 				} else if constexpr (size == 8) {
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovMemToReg64Ins(
-						tmpGpRegId,
-						MemoryLocation{
-							REG_RBP, vregState.saveOffset,
-							REG_MAX, 0 })));
+																	tmpGpRegId,
+																	MemoryLocation{
+																		REG_RBP, vregState.saveOffset,
+																		REG_MAX, 0 })));
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToMemIns(
-						MemoryLocation{
-							baseRegId, 0,
-							REG_MAX, 0 },
-						tmpGpRegId)));
+																	MemoryLocation{
+																		baseRegId, 0,
+																		REG_MAX, 0 },
+																	tmpGpRegId)));
 				}
 
 				if (tmpGpRegOff != INT32_MIN) {
@@ -219,33 +219,33 @@ InternalExceptionPointer compileRegToFieldVarStoreInstruction(
 				uint64_t imm0 = (uint64_t)rawDataPtr;
 
 				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
-					baseRegId,
-					(uint8_t *)&imm0)));
+																baseRegId,
+																(uint8_t *)&imm0)));
 
 				if constexpr (size == 1) {
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg8ToMemIns(
-						MemoryLocation{
-							baseRegId, 0,
-							REG_MAX, 0 },
-						vregState.phyReg)));
+																	MemoryLocation{
+																		baseRegId, 0,
+																		REG_MAX, 0 },
+																	vregState.phyReg)));
 				} else if constexpr (size == 2) {
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg16ToMemIns(
-						MemoryLocation{
-							baseRegId, 0,
-							REG_MAX, 0 },
-						vregState.phyReg)));
+																	MemoryLocation{
+																		baseRegId, 0,
+																		REG_MAX, 0 },
+																	vregState.phyReg)));
 				} else if constexpr (size == 4) {
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg32ToMemIns(
-						MemoryLocation{
-							baseRegId, 0,
-							REG_MAX, 0 },
-						vregState.phyReg)));
+																	MemoryLocation{
+																		baseRegId, 0,
+																		REG_MAX, 0 },
+																	vregState.phyReg)));
 				} else if constexpr (size == 8) {
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToMemIns(
-						MemoryLocation{
-							baseRegId, 0,
-							REG_MAX, 0 },
-						vregState.phyReg)));
+																	MemoryLocation{
+																		baseRegId, 0,
+																		REG_MAX, 0 },
+																	vregState.phyReg)));
 				}
 
 				if (baseRegOff != INT32_MIN) {
@@ -270,6 +270,8 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 	Value rhs = curIns.operands[1];
 
 	switch (regAnalyzedInfo.storageType) {
+		case opti::RegStorageType::None:
+			std::terminate();
 		case opti::RegStorageType::FieldVar: {
 			const ObjectRef &objectRef = regAnalyzedInfo.expectedValue.getObjectRef();
 			FieldRecord &fieldRecord = objectRef.asField.moduleObject->fieldRecords.at(objectRef.asField.index);
@@ -302,6 +304,8 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 								compileRegToFieldVarStoreInstruction<8>(compileContext, analyzedInfo, offIns, curIns, fieldRecord, rawDataPtr, rhs.getRegIndex());
 								break;
 							}
+							default:
+								std::terminate();
 						}
 					} else {
 						switch (fieldRecord.type.getValueTypeExData()) {
@@ -309,11 +313,11 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 								int8_t imm0 = rhs.getI8();
 								if (((uintptr_t)rawDataPtr) < INT32_MAX) {
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-										emitMovImm8ToMemIns(
-											MemoryLocation{
-												REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-												REG_MAX, 0 },
-											(uint8_t *)&imm0)));
+																					emitMovImm8ToMemIns(
+																						MemoryLocation{
+																							REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																							REG_MAX, 0 },
+																						(uint8_t *)&imm0)));
 								} else {
 									RegisterId baseRegId = compileContext.allocGpReg();
 
@@ -323,15 +327,14 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 									uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
-										baseRegId,
-										(uint8_t *)&baseRegImm0)));
+																					baseRegId,
+																					(uint8_t *)&baseRegImm0)));
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm8ToMemIns(
-										MemoryLocation{
-											baseRegId, 0,
-											REG_MAX, 0
-										},
-										(uint8_t *)&imm0)));
+																					MemoryLocation{
+																						baseRegId, 0,
+																						REG_MAX, 0 },
+																					(uint8_t *)&imm0)));
 
 									if (compileContext.isRegInUse(baseRegId)) {
 										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
@@ -345,11 +348,11 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 								int16_t imm0 = rhs.getI16();
 								if (((uintptr_t)rawDataPtr) < INT32_MAX) {
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-										emitMovImm16ToMemIns(
-											MemoryLocation{
-												REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-												REG_MAX, 0 },
-											(uint8_t *)&imm0)));
+																					emitMovImm16ToMemIns(
+																						MemoryLocation{
+																							REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																							REG_MAX, 0 },
+																						(uint8_t *)&imm0)));
 								} else {
 									RegisterId baseRegId = compileContext.allocGpReg();
 
@@ -359,15 +362,14 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 									uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
-										baseRegId,
-										(uint8_t *)&baseRegImm0)));
+																					baseRegId,
+																					(uint8_t *)&baseRegImm0)));
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm16ToMemIns(
-										MemoryLocation{
-											baseRegId, 0,
-											REG_MAX, 0
-										},
-										(uint8_t *)&imm0)));
+																					MemoryLocation{
+																						baseRegId, 0,
+																						REG_MAX, 0 },
+																					(uint8_t *)&imm0)));
 
 									if (compileContext.isRegInUse(baseRegId)) {
 										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
@@ -381,11 +383,11 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 								int32_t imm0 = rhs.getI32();
 								if (((uintptr_t)rawDataPtr) < INT32_MAX) {
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-										emitMovImm32ToMemIns(
-											MemoryLocation{
-												REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-												REG_MAX, 0 },
-											(uint8_t *)&imm0)));
+																					emitMovImm32ToMemIns(
+																						MemoryLocation{
+																							REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																							REG_MAX, 0 },
+																						(uint8_t *)&imm0)));
 								} else {
 									RegisterId baseRegId = compileContext.allocGpReg();
 
@@ -395,15 +397,14 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 									uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
-										baseRegId,
-										(uint8_t *)&baseRegImm0)));
+																					baseRegId,
+																					(uint8_t *)&baseRegImm0)));
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm32ToMemIns(
-										MemoryLocation{
-											baseRegId, 0,
-											REG_MAX, 0
-										},
-										(uint8_t *)&imm0)));
+																					MemoryLocation{
+																						baseRegId, 0,
+																						REG_MAX, 0 },
+																					(uint8_t *)&imm0)));
 
 									if (compileContext.isRegInUse(baseRegId)) {
 										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
@@ -417,11 +418,11 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 								int64_t imm0 = rhs.getI64();
 								if (((uintptr_t)rawDataPtr) < INT32_MAX) {
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-										emitMovImm64ToMemIns(
-											MemoryLocation{
-												REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-												REG_MAX, 0 },
-											(uint8_t *)&imm0)));
+																					emitMovImm64ToMemIns(
+																						MemoryLocation{
+																							REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																							REG_MAX, 0 },
+																						(uint8_t *)&imm0)));
 								} else {
 									RegisterId baseRegId = compileContext.allocGpReg();
 
@@ -431,15 +432,14 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 									uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
-										baseRegId,
-										(uint8_t *)&baseRegImm0)));
+																					baseRegId,
+																					(uint8_t *)&baseRegImm0)));
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToMemIns(
-										MemoryLocation{
-											baseRegId, 0,
-											REG_MAX, 0
-										},
-										(uint8_t *)&imm0)));
+																					MemoryLocation{
+																						baseRegId, 0,
+																						REG_MAX, 0 },
+																					(uint8_t *)&imm0)));
 
 									if (compileContext.isRegInUse(baseRegId)) {
 										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
@@ -453,11 +453,11 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 								uint8_t imm0 = rhs.getU8();
 								if (((uintptr_t)rawDataPtr) < INT32_MAX) {
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-										emitMovImm8ToMemIns(
-											MemoryLocation{
-												REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-												REG_MAX, 0 },
-											(uint8_t *)&imm0)));
+																					emitMovImm8ToMemIns(
+																						MemoryLocation{
+																							REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																							REG_MAX, 0 },
+																						(uint8_t *)&imm0)));
 								} else {
 									RegisterId baseRegId = compileContext.allocGpReg();
 
@@ -467,15 +467,14 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 									uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
-										baseRegId,
-										(uint8_t *)&baseRegImm0)));
+																					baseRegId,
+																					(uint8_t *)&baseRegImm0)));
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm8ToMemIns(
-										MemoryLocation{
-											baseRegId, 0,
-											REG_MAX, 0
-										},
-										(uint8_t *)&imm0)));
+																					MemoryLocation{
+																						baseRegId, 0,
+																						REG_MAX, 0 },
+																					(uint8_t *)&imm0)));
 
 									if (compileContext.isRegInUse(baseRegId)) {
 										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
@@ -489,11 +488,11 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 								uint16_t imm0 = rhs.getU16();
 								if (((uintptr_t)rawDataPtr) < INT32_MAX) {
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-										emitMovImm16ToMemIns(
-											MemoryLocation{
-												REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-												REG_MAX, 0 },
-											(uint8_t *)&imm0)));
+																					emitMovImm16ToMemIns(
+																						MemoryLocation{
+																							REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																							REG_MAX, 0 },
+																						(uint8_t *)&imm0)));
 								} else {
 									RegisterId baseRegId = compileContext.allocGpReg();
 
@@ -503,15 +502,14 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 									uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
-										baseRegId,
-										(uint8_t *)&baseRegImm0)));
+																					baseRegId,
+																					(uint8_t *)&baseRegImm0)));
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm16ToMemIns(
-										MemoryLocation{
-											baseRegId, 0,
-											REG_MAX, 0
-										},
-										(uint8_t *)&imm0)));
+																					MemoryLocation{
+																						baseRegId, 0,
+																						REG_MAX, 0 },
+																					(uint8_t *)&imm0)));
 
 									if (compileContext.isRegInUse(baseRegId)) {
 										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
@@ -525,11 +523,11 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 								uint16_t imm0 = rhs.getU16();
 								if (((uintptr_t)rawDataPtr) < INT32_MAX) {
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-										emitMovImm32ToMemIns(
-											MemoryLocation{
-												REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-												REG_MAX, 0 },
-											(uint8_t *)&imm0)));
+																					emitMovImm32ToMemIns(
+																						MemoryLocation{
+																							REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																							REG_MAX, 0 },
+																						(uint8_t *)&imm0)));
 								} else {
 									RegisterId baseRegId = compileContext.allocGpReg();
 
@@ -539,15 +537,14 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 									uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
-										baseRegId,
-										(uint8_t *)&baseRegImm0)));
+																					baseRegId,
+																					(uint8_t *)&baseRegImm0)));
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm32ToMemIns(
-										MemoryLocation{
-											baseRegId, 0,
-											REG_MAX, 0
-										},
-										(uint8_t *)&imm0)));
+																					MemoryLocation{
+																						baseRegId, 0,
+																						REG_MAX, 0 },
+																					(uint8_t *)&imm0)));
 
 									if (compileContext.isRegInUse(baseRegId)) {
 										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
@@ -561,11 +558,11 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 								uint64_t imm0 = rhs.getU64();
 								if (((uintptr_t)rawDataPtr) < INT32_MAX) {
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-										emitMovImm64ToMemIns(
-											MemoryLocation{
-												REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-												REG_MAX, 0 },
-											(uint8_t *)&imm0)));
+																					emitMovImm64ToMemIns(
+																						MemoryLocation{
+																							REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																							REG_MAX, 0 },
+																						(uint8_t *)&imm0)));
 								} else {
 									RegisterId baseRegId = compileContext.allocGpReg();
 
@@ -575,15 +572,14 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 									uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
-										baseRegId,
-										(uint8_t *)&baseRegImm0)));
+																					baseRegId,
+																					(uint8_t *)&baseRegImm0)));
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToMemIns(
-										MemoryLocation{
-											baseRegId, 0,
-											REG_MAX, 0
-										},
-										(uint8_t *)&imm0)));
+																					MemoryLocation{
+																						baseRegId, 0,
+																						REG_MAX, 0 },
+																					(uint8_t *)&imm0)));
 
 									if (compileContext.isRegInUse(baseRegId)) {
 										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
@@ -597,11 +593,11 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 								bool imm0 = rhs.getBool();
 								if (((uintptr_t)rawDataPtr) < INT32_MAX) {
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-										emitMovImm8ToMemIns(
-											MemoryLocation{
-												REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-												REG_MAX, 0 },
-											(uint8_t *)&imm0)));
+																					emitMovImm8ToMemIns(
+																						MemoryLocation{
+																							REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																							REG_MAX, 0 },
+																						(uint8_t *)&imm0)));
 								} else {
 									RegisterId baseRegId = compileContext.allocGpReg();
 
@@ -611,15 +607,14 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 									uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
-										baseRegId,
-										(uint8_t *)&baseRegImm0)));
+																					baseRegId,
+																					(uint8_t *)&baseRegImm0)));
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm8ToMemIns(
-										MemoryLocation{
-											baseRegId, 0,
-											REG_MAX, 0
-										},
-										(uint8_t *)&imm0)));
+																					MemoryLocation{
+																						baseRegId, 0,
+																						REG_MAX, 0 },
+																					(uint8_t *)&imm0)));
 
 									if (compileContext.isRegInUse(baseRegId)) {
 										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
@@ -633,11 +628,11 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 								float imm0 = rhs.getF32();
 								if (((uintptr_t)rawDataPtr) < INT32_MAX) {
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-										emitMovImm32ToMemIns(
-											MemoryLocation{
-												REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-												REG_MAX, 0 },
-											(uint8_t *)&imm0)));
+																					emitMovImm32ToMemIns(
+																						MemoryLocation{
+																							REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																							REG_MAX, 0 },
+																						(uint8_t *)&imm0)));
 								} else {
 									RegisterId baseRegId = compileContext.allocGpReg();
 
@@ -647,15 +642,14 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 									uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
-										baseRegId,
-										(uint8_t *)&baseRegImm0)));
+																					baseRegId,
+																					(uint8_t *)&baseRegImm0)));
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm32ToMemIns(
-										MemoryLocation{
-											baseRegId, 0,
-											REG_MAX, 0
-										},
-										(uint8_t *)&imm0)));
+																					MemoryLocation{
+																						baseRegId, 0,
+																						REG_MAX, 0 },
+																					(uint8_t *)&imm0)));
 
 									if (compileContext.isRegInUse(baseRegId)) {
 										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
@@ -669,11 +663,11 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 								double imm0 = rhs.getF64();
 								if (((uintptr_t)rawDataPtr) < INT32_MAX) {
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-										emitMovImm64ToMemIns(
-											MemoryLocation{
-												REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
-												REG_MAX, 0 },
-											(uint8_t *)&imm0)));
+																					emitMovImm64ToMemIns(
+																						MemoryLocation{
+																							REG_MAX, (int32_t)(uintptr_t)rawDataPtr,
+																							REG_MAX, 0 },
+																						(uint8_t *)&imm0)));
 								} else {
 									RegisterId baseRegId = compileContext.allocGpReg();
 
@@ -683,15 +677,14 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 									uint64_t baseRegImm0 = (uint64_t)rawDataPtr;
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(
-										baseRegId,
-										(uint8_t *)&baseRegImm0)));
+																					baseRegId,
+																					(uint8_t *)&baseRegImm0)));
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToMemIns(
-										MemoryLocation{
-											baseRegId, 0,
-											REG_MAX, 0
-										},
-										(uint8_t *)&imm0)));
+																					MemoryLocation{
+																						baseRegId, 0,
+																						REG_MAX, 0 },
+																					(uint8_t *)&imm0)));
 
 									if (compileContext.isRegInUse(baseRegId)) {
 										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(baseRegId, baseRegOff, baseRegSize));
@@ -730,25 +723,25 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 									}
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovMemToReg8Ins(
-										tmpGpRegId,
-										MemoryLocation{
-											REG_RBP, vregState.saveOffset,
-											REG_MAX, 0 })));
+																					tmpGpRegId,
+																					MemoryLocation{
+																						REG_RBP, vregState.saveOffset,
+																						REG_MAX, 0 })));
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg8ToMemIns(
-										MemoryLocation{
-											REG_RBP, localVarState.stackOff,
-											REG_MAX, 0 },
-										tmpGpRegId)));
+																					MemoryLocation{
+																						REG_RBP, localVarState.stackOff,
+																						REG_MAX, 0 },
+																					tmpGpRegId)));
 
 									if (tmpGpRegOff != INT32_MIN) {
 										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.popReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
 									}
 								} else {
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg8ToMemIns(
-										MemoryLocation{
-											REG_RBP, localVarState.stackOff,
-											REG_MAX, 0 },
-										vregState.phyReg)));
+																					MemoryLocation{
+																						REG_RBP, localVarState.stackOff,
+																						REG_MAX, 0 },
+																					vregState.phyReg)));
 								}
 								break;
 							}
@@ -767,25 +760,25 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 									}
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovMemToReg16Ins(
-										tmpGpRegId,
-										MemoryLocation{
-											REG_RBP, vregState.saveOffset,
-											REG_MAX, 0 })));
+																					tmpGpRegId,
+																					MemoryLocation{
+																						REG_RBP, vregState.saveOffset,
+																						REG_MAX, 0 })));
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg16ToMemIns(
-										MemoryLocation{
-											REG_RBP, localVarState.stackOff,
-											REG_MAX, 0 },
-										tmpGpRegId)));
+																					MemoryLocation{
+																						REG_RBP, localVarState.stackOff,
+																						REG_MAX, 0 },
+																					tmpGpRegId)));
 
 									if (tmpGpRegOff != INT32_MIN) {
 										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.popReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
 									}
 								} else {
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg16ToMemIns(
-										MemoryLocation{
-											REG_RBP, localVarState.stackOff,
-											REG_MAX, 0 },
-										vregState.phyReg)));
+																					MemoryLocation{
+																						REG_RBP, localVarState.stackOff,
+																						REG_MAX, 0 },
+																					vregState.phyReg)));
 								}
 								break;
 							}
@@ -805,25 +798,25 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 									}
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovMemToReg32Ins(
-										tmpGpRegId,
-										MemoryLocation{
-											REG_RBP, vregState.saveOffset,
-											REG_MAX, 0 })));
+																					tmpGpRegId,
+																					MemoryLocation{
+																						REG_RBP, vregState.saveOffset,
+																						REG_MAX, 0 })));
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg32ToMemIns(
-										MemoryLocation{
-											REG_RBP, localVarState.stackOff,
-											REG_MAX, 0 },
-										tmpGpRegId)));
+																					MemoryLocation{
+																						REG_RBP, localVarState.stackOff,
+																						REG_MAX, 0 },
+																					tmpGpRegId)));
 
 									if (tmpGpRegOff != INT32_MIN) {
 										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.popReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
 									}
 								} else {
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg32ToMemIns(
-										MemoryLocation{
-											REG_RBP, localVarState.stackOff,
-											REG_MAX, 0 },
-										vregState.phyReg)));
+																					MemoryLocation{
+																						REG_RBP, localVarState.stackOff,
+																						REG_MAX, 0 },
+																					vregState.phyReg)));
 								}
 								break;
 							}
@@ -843,25 +836,25 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 									}
 
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovMemToReg64Ins(
-										tmpGpRegId,
-										MemoryLocation{
-											REG_RBP, vregState.saveOffset,
-											REG_MAX, 0 })));
+																					tmpGpRegId,
+																					MemoryLocation{
+																						REG_RBP, vregState.saveOffset,
+																						REG_MAX, 0 })));
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToMemIns(
-										MemoryLocation{
-											REG_RBP, localVarState.stackOff,
-											REG_MAX, 0 },
-										tmpGpRegId)));
+																					MemoryLocation{
+																						REG_RBP, localVarState.stackOff,
+																						REG_MAX, 0 },
+																					tmpGpRegId)));
 
 									if (tmpGpRegOff != INT32_MIN) {
 										SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.popReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
 									}
 								} else {
 									SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToMemIns(
-										MemoryLocation{
-											REG_RBP, localVarState.stackOff,
-											REG_MAX, 0 },
-										vregState.phyReg)));
+																					MemoryLocation{
+																						REG_RBP, localVarState.stackOff,
+																						REG_MAX, 0 },
+																					vregState.phyReg)));
 								}
 								break;
 							}
@@ -871,111 +864,111 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 							case ValueType::I8: {
 								int8_t imm0 = rhs.getI8();
 								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-									emitMovImm8ToMemIns(
-										MemoryLocation{
-											REG_RBP, localVarState.stackOff,
-											REG_MAX, 0 },
-										(uint8_t *)&imm0)));
+																				emitMovImm8ToMemIns(
+																					MemoryLocation{
+																						REG_RBP, localVarState.stackOff,
+																						REG_MAX, 0 },
+																					(uint8_t *)&imm0)));
 								break;
 							}
 							case ValueType::I16: {
 								int16_t imm0 = rhs.getI16();
 								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-									emitMovImm16ToMemIns(
-										MemoryLocation{
-											REG_RBP, localVarState.stackOff,
-											REG_MAX, 0 },
-										(uint8_t *)&imm0)));
+																				emitMovImm16ToMemIns(
+																					MemoryLocation{
+																						REG_RBP, localVarState.stackOff,
+																						REG_MAX, 0 },
+																					(uint8_t *)&imm0)));
 								break;
 							}
 							case ValueType::I32: {
 								int32_t imm0 = rhs.getI32();
 								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-									emitMovImm32ToMemIns(
-										MemoryLocation{
-											REG_RBP, localVarState.stackOff,
-											REG_MAX, 0 },
-										(uint8_t *)&imm0)));
+																				emitMovImm32ToMemIns(
+																					MemoryLocation{
+																						REG_RBP, localVarState.stackOff,
+																						REG_MAX, 0 },
+																					(uint8_t *)&imm0)));
 								break;
 							}
 							case ValueType::I64: {
 								int64_t imm0 = rhs.getI64();
 								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-									emitMovImm64ToMemIns(
-										MemoryLocation{
-											REG_RBP, localVarState.stackOff,
-											REG_MAX, 0 },
-										(uint8_t *)&imm0)));
+																				emitMovImm64ToMemIns(
+																					MemoryLocation{
+																						REG_RBP, localVarState.stackOff,
+																						REG_MAX, 0 },
+																					(uint8_t *)&imm0)));
 								break;
 							}
 							case ValueType::U8: {
 								uint8_t imm0 = rhs.getU8();
 								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-									emitMovImm8ToMemIns(
-										MemoryLocation{
-											REG_RBP, localVarState.stackOff,
-											REG_MAX, 0 },
-										(uint8_t *)&imm0)));
+																				emitMovImm8ToMemIns(
+																					MemoryLocation{
+																						REG_RBP, localVarState.stackOff,
+																						REG_MAX, 0 },
+																					(uint8_t *)&imm0)));
 								break;
 							}
 							case ValueType::U16: {
 								uint16_t imm0 = rhs.getU16();
 								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-									emitMovImm16ToMemIns(
-										MemoryLocation{
-											REG_RBP, localVarState.stackOff,
-											REG_MAX, 0 },
-										(uint8_t *)&imm0)));
+																				emitMovImm16ToMemIns(
+																					MemoryLocation{
+																						REG_RBP, localVarState.stackOff,
+																						REG_MAX, 0 },
+																					(uint8_t *)&imm0)));
 								break;
 							}
 							case ValueType::U32: {
 								uint16_t imm0 = rhs.getU16();
 								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-									emitMovImm16ToMemIns(
-										MemoryLocation{
-											REG_RBP, localVarState.stackOff,
-											REG_MAX, 0 },
-										(uint8_t *)&imm0)));
+																				emitMovImm16ToMemIns(
+																					MemoryLocation{
+																						REG_RBP, localVarState.stackOff,
+																						REG_MAX, 0 },
+																					(uint8_t *)&imm0)));
 								break;
 							}
 							case ValueType::U64: {
 								uint64_t imm0 = rhs.getU64();
 								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-									emitMovImm64ToMemIns(
-										MemoryLocation{
-											REG_RBP, localVarState.stackOff,
-											REG_MAX, 0 },
-										(uint8_t *)&imm0)));
+																				emitMovImm64ToMemIns(
+																					MemoryLocation{
+																						REG_RBP, localVarState.stackOff,
+																						REG_MAX, 0 },
+																					(uint8_t *)&imm0)));
 								break;
 							}
 							case ValueType::Bool: {
 								bool imm0 = rhs.getBool();
 								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-									emitMovImm8ToMemIns(
-										MemoryLocation{
-											REG_RBP, localVarState.stackOff,
-											REG_MAX, 0 },
-										(uint8_t *)&imm0)));
+																				emitMovImm8ToMemIns(
+																					MemoryLocation{
+																						REG_RBP, localVarState.stackOff,
+																						REG_MAX, 0 },
+																					(uint8_t *)&imm0)));
 								break;
 							}
 							case ValueType::F32: {
 								float imm0 = rhs.getF32();
 								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-									emitMovImm32ToMemIns(
-										MemoryLocation{
-											REG_RBP, localVarState.stackOff,
-											REG_MAX, 0 },
-										(uint8_t *)&imm0)));
+																				emitMovImm32ToMemIns(
+																					MemoryLocation{
+																						REG_RBP, localVarState.stackOff,
+																						REG_MAX, 0 },
+																					(uint8_t *)&imm0)));
 								break;
 							}
 							case ValueType::F64: {
 								double imm0 = rhs.getF64();
 								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-									emitMovImm64ToMemIns(
-										MemoryLocation{
-											REG_RBP, localVarState.stackOff,
-											REG_MAX, 0 },
-										(uint8_t *)&imm0)));
+																				emitMovImm64ToMemIns(
+																					MemoryLocation{
+																						REG_RBP, localVarState.stackOff,
+																						REG_MAX, 0 },
+																					(uint8_t *)&imm0)));
 								break;
 							}
 						}
@@ -1000,34 +993,34 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 							}
 
 							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovMemToReg64Ins(
-								tmpGpRegId,
-								MemoryLocation{
-									REG_RBP, vregState.saveOffset,
-									REG_MAX, 0 })));
+																			tmpGpRegId,
+																			MemoryLocation{
+																				REG_RBP, vregState.saveOffset,
+																				REG_MAX, 0 })));
 							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToMemIns(
-								MemoryLocation{
-									REG_RBP, localVarState.stackOff,
-									REG_MAX, 0 },
-								tmpGpRegId)));
+																			MemoryLocation{
+																				REG_RBP, localVarState.stackOff,
+																				REG_MAX, 0 },
+																			tmpGpRegId)));
 
 							if (tmpGpRegOff != INT32_MIN) {
 								SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.popReg(tmpGpRegId, tmpGpRegOff, tmpGpRegSize));
 							}
 						} else {
 							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToMemIns(
-								MemoryLocation{
-									REG_RBP, localVarState.stackOff,
-									REG_MAX, 0 },
-								vregState.phyReg)));
+																			MemoryLocation{
+																				REG_RBP, localVarState.stackOff,
+																				REG_MAX, 0 },
+																			vregState.phyReg)));
 						}
 					} else {
 						Object *imm0 = rhs.getObjectRef().asInstance.instanceObject;
 						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-							emitMovImm64ToMemIns(
-								MemoryLocation{
-									REG_RBP, localVarState.stackOff,
-									REG_MAX, 0 },
-								(uint8_t *)&imm0)));
+																		emitMovImm64ToMemIns(
+																			MemoryLocation{
+																				REG_RBP, localVarState.stackOff,
+																				REG_MAX, 0 },
+																			(uint8_t *)&imm0)));
 					}
 					break;
 				}

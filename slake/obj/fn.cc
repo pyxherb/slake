@@ -8,7 +8,7 @@ SLAKE_API bool Instruction::operator==(const Instruction &rhs) const {
 		return false;
 	if (output != rhs.output)
 		return false;
-	if (nOperands != nOperands)
+	if (nOperands != rhs.nOperands)
 		return false;
 	for (size_t i = 0; i < nOperands; ++i) {
 		if (operands[i] != rhs.operands[i])
@@ -24,9 +24,9 @@ SLAKE_API bool Instruction::operator<(const Instruction &rhs) const {
 		return false;
 	if (output < rhs.output)
 		return true;
-	if (nOperands < nOperands)
+	if (nOperands < rhs.nOperands)
 		return true;
-	if (nOperands > nOperands)
+	if (nOperands > rhs.nOperands)
 		return false;
 	for (size_t i = 0; i < nOperands; ++i) {
 		if (operands[i] < rhs.operands[i])

@@ -309,7 +309,7 @@ void slake::decompiler::decompileValue(Runtime *rt, Value value, std::ostream &o
 			os << std::to_string(value.getF64());
 			break;
 		case ValueType::Bool:
-			os << value.getBool() ? "true" : "false";
+			os << (value.getBool() ? "true" : "false");
 			break;
 		case ValueType::RegRef:
 			os << "%" << std::to_string(value.getRegIndex());

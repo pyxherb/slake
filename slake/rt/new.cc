@@ -26,45 +26,33 @@ SLAKE_API void Runtime::initMethodTableForClass(ClassObject *cls, ClassObject *p
 						overloadings.push_back(j);
 				}
 
-				if (it.key() == "delete") {
-					peff::DynArray<Type> destructorParamTypes(&globalHeapPoolAlloc);
-					GenericParamList destructorGenericParamList;
+				if (overloadings.size()) {
+					// Link the method with method inherited from the parent.
+					HostObjectRef<FnObject> fn;
+					if (!methodTable->methods.contains(it.key())) {
+						methodTable->methods.insert(it.value()->name, nullptr);
+					}
+					auto &methodSlot = methodTable->methods.at(it.key());
+
+					if (auto m = methodTable->getMethod(it.key()); m)
+						fn = m;
+					else {
+						fn = FnObject::alloc(this);
+						methodSlot = fn.get();
+					}
 
 					for (auto &j : overloadings) {
-						if (isDuplicatedOverloading(j, destructorParamTypes, destructorGenericParamList, false)) {
-							methodTable->destructors.pushFront(+j);
-							break;
-						}
-					}
-				} else {
-					if (overloadings.size()) {
-						// Link the method with method inherited from the parent.
-						HostObjectRef<FnObject> fn;
-						if (!methodTable->methods.contains(it.key())) {
-							methodTable->methods.insert(it.value()->name, nullptr);
-						}
-						auto &methodSlot = methodTable->methods.at(it.key());
-
-						if (auto m = methodTable->getMethod(it.key()); m)
-							fn = m;
-						else {
-							fn = FnObject::alloc(this);
-							methodSlot = fn.get();
-						}
-
-						for (auto &j : overloadings) {
-							for (auto k : methodSlot->overloadings) {
-								if (isDuplicatedOverloading(
-										k,
-										j->paramTypes,
-										j->genericParams,
-										j->overloadingFlags & OL_VARG)) {
-									methodSlot->overloadings.remove(k);
-									break;
-								}
+						for (auto k : methodSlot->overloadings) {
+							if (isDuplicatedOverloading(
+									k,
+									j->paramTypes,
+									j->genericParams,
+									j->overloadingFlags & OL_VARG)) {
+								methodSlot->overloadings.remove(k);
+								break;
 							}
-							methodSlot->overloadings.insert(+j);
 						}
+						methodSlot->overloadings.insert(+j);
 					}
 				}
 

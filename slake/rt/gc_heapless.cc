@@ -414,11 +414,8 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Context 
 }
 
 SLAKE_API void Runtime::_gcHeapless() {
-	bool foundDestructibleObjects = false;
-
 	GCHeaplessWalkContext context;
 
-rescan:
 	for (auto i : createdObjects) {
 		i->_flags |= VF_GCREADY;
 		i->gcInfo.heapless.gcStatus = ObjectGCStatus::Unwalked;
@@ -474,36 +471,6 @@ rescan:
 		}
 	}
 
-	// Execute destructors for all destructible unreachable objects.
-	destructingThreads.insert(currentThreadHandle());
-	for (auto i : createdObjects) {
-		switch (i->gcInfo.heapless.gcStatus) {
-			case ObjectGCStatus::Unwalked:
-				break;
-			case ObjectGCStatus::ReadyToWalk:
-				assert(false);
-				break;
-			case ObjectGCStatus::Walked:
-				continue;
-		}
-
-		if (i->getKind() == ObjectKind::Instance) {
-			InstanceObject *object = (InstanceObject *)i;
-
-			if (auto mt = object->methodTable; mt) {
-				if (mt->destructors.size()) {
-					for (auto j : mt->destructors) {
-						HostRefHolder holder(&globalHeapPoolAlloc);
-						HostObjectRef<ContextObject> contextOut;
-						// execFn(j, nullptr, i, nullptr, 0, contextOut);
-					}
-					foundDestructibleObjects = true;
-				}
-			}
-		}
-	}
-	destructingThreads.erase(currentThreadHandle());
-
 	// Delete unreachable objects.
 	for (auto it = createdObjects.begin(); it != createdObjects.end();) {
 		Object *i = *it;
@@ -524,10 +491,5 @@ rescan:
 		}
 
 		++it;
-	}
-
-	if (foundDestructibleObjects) {
-		foundDestructibleObjects = false;
-		goto rescan;
 	}
 }

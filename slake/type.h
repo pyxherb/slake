@@ -264,10 +264,6 @@ namespace slake {
 
 namespace std {
 	SLAKE_API string to_string(const slake::Type &type, const slake::Runtime *rt);
-	SLAKE_FORCEINLINE string to_string(slake::Type &&type, const slake::Runtime *rt) {
-		slake::Type t = type;
-		return to_string(t, rt);
-	}
 }
 
 #endif

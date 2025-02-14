@@ -2029,7 +2029,6 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 		case ThreadKind::AttachedExecutionThread: {
 			bool interruptExecution = false;
 
-			bool isExecutingDestructor = destructingThreads.count(currentThreadHandle());
 			while (!interruptExecution) {
 				curMajorFrame = context->getContext().majorFrames.back().get();
 				curFn = curMajorFrame->curFn;
@@ -2039,7 +2038,7 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 					return {};
 
 				// Pause if the runtime is in GC
-				while ((_flags & _RT_INGC) && !isExecutingDestructor)
+				while (_flags & _RT_INGC)
 					yieldCurrentThread();
 
 				// Interrupt execution if the thread is explicitly specified to be killed.
@@ -2094,7 +2093,6 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 		case ThreadKind::ExecutionThread: {
 			bool interruptExecution = false;
 
-			bool isExecutingDestructor = destructingThreads.count(currentThreadHandle());
 			while (!interruptExecution) {
 				curMajorFrame = context->getContext().majorFrames.back().get();
 				curFn = curMajorFrame->curFn;
@@ -2104,7 +2102,7 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 					return {};
 
 				// Pause if the runtime is in GC
-				while ((_flags & _RT_INGC) && !isExecutingDestructor)
+				while (_flags & _RT_INGC)
 					yieldCurrentThread();
 
 				// Interrupt execution if the thread is explicitly specified to be killed.

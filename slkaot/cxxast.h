@@ -83,6 +83,7 @@ namespace slake {
 				bool isStatic : 1;
 				bool isOverriden : 1;
 				bool isVirtual : 1;
+				bool isNothrow : 1;
 			};
 
 			class Stmt;

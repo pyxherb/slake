@@ -141,14 +141,14 @@ PointerTypeName::~PointerTypeName() {
 }
 
 RefTypeName::RefTypeName(std::shared_ptr<TypeName> refType)
-	: TypeName(TypeNameKind::Pointer), refType(refType) {
+	: TypeName(TypeNameKind::Ref), refType(refType) {
 }
 
 RefTypeName::~RefTypeName() {
 }
 
 RvalueTypeName::RvalueTypeName(std::shared_ptr<TypeName> refType)
-	: TypeName(TypeNameKind::Pointer), refType(refType) {
+	: TypeName(TypeNameKind::Rvalue), refType(refType) {
 }
 
 RvalueTypeName::~RvalueTypeName() {

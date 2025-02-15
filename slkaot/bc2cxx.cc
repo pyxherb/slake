@@ -569,6 +569,9 @@ std::pair<std::shared_ptr<cxxast::IfndefDirective>, std::shared_ptr<cxxast::Name
 				std::make_shared<cxxast::IncludeDirective>(
 					"slake/runtime.h",
 					true),
+				std::make_shared<cxxast::IncludeDirective>(
+					"slake/aot/context.h",
+					true),
 				rootNamespace },
 			std::vector<std::shared_ptr<cxxast::ASTNode>>{});
 

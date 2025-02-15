@@ -123,11 +123,12 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 		} else {
 			os << " " << overloading->name << "(";
 		}
+		_dumpAstNode(os, std::make_shared<cxxast::RefTypeName>(genAotContextTypeName()), dumpMode, 0);
+		os << " " << genAotContextParamName();
 		for (size_t i = 0; i < overloading->signature.paramTypes.size(); ++i) {
-			if (i)
-				os << ", ";
+			os << ", ";
 			_dumpAstNode(os, overloading->signature.paramTypes[i], dumpMode, 0);
-			os << " param" << i;
+			os << " " << mangleParamName(i);
 		}
 		os << ")";
 		if ((dumpMode == ASTDumpMode::Header) &&

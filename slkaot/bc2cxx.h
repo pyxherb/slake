@@ -113,6 +113,34 @@ namespace slake {
 						std::make_shared<cxxast::IdExpr>("size_t"));
 				}
 
+				SLAKE_FORCEINLINE std::shared_ptr<cxxast::Stmt> genReturnIfExceptStmt(std::shared_ptr<cxxast::Expr> expr) {
+					return std::make_shared<cxxast::ExprStmt>(
+						std::make_shared<cxxast::CallExpr>(
+							std::make_shared<cxxast::IdExpr>("SLAKE_RETURN_IF_EXCEPT"),
+							std::vector<std::shared_ptr<cxxast::Expr>>{ expr }));
+				}
+
+				SLAKE_FORCEINLINE std::shared_ptr<cxxast::Expr> genRegLocalVarRefExpr(uint32_t index) {
+					return std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(index));
+				}
+
+				SLAKE_FORCEINLINE std::string genAotContextParamName() {
+					return "aotContext";
+				}
+
+				SLAKE_FORCEINLINE std::shared_ptr<cxxast::Expr> genAotContextRef() {
+					return std::make_shared<cxxast::IdExpr>(genAotContextParamName(), cxxast::GenericArgList{});
+				}
+
+				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genAotContextTypeName() {
+					return std::make_shared<cxxast::CustomTypeName>(
+						false,
+						std::make_shared<cxxast::BinaryExpr>(
+						cxxast::BinaryOp::Scope,
+						std::make_shared<cxxast::IdExpr>("slake", cxxast::GenericArgList{}),
+							std::make_shared<cxxast::IdExpr>("AOTFnExecContext", cxxast::GenericArgList{})));
+				}
+
 				SLAKE_FORCEINLINE cxxast::GenericArgList genSelfGenericArgs(const cxxast::GenericParamList &genericParams) {
 					cxxast::GenericArgList args;
 
@@ -127,6 +155,7 @@ namespace slake {
 				}
 
 				std::string mangleRegLocalVarName(uint32_t idxReg);
+				std::string mangleParamName(uint32_t idxArg);
 				std::string mangleRefForTypeName(const peff::DynArray<IdRefEntry> &entries);
 				std::string mangleTypeName(const Type &type);
 				std::string mangleClassName(const std::string &className, const GenericArgList &genericArgs);

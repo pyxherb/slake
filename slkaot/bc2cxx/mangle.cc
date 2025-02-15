@@ -8,6 +8,10 @@ std::string BC2CXX::mangleRegLocalVarName(uint32_t idxReg) {
 	return "local_reg_" + std::to_string(idxReg);
 }
 
+std::string BC2CXX::mangleParamName(uint32_t idxArg) {
+	return "param_" + std::to_string(idxArg);
+}
+
 std::string BC2CXX::mangleRefForTypeName(const peff::DynArray<IdRefEntry> &entries) {
 	std::string name;
 

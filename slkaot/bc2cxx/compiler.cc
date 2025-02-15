@@ -37,7 +37,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 
 						std::shared_ptr<cxxast::TypeName> t = genObjectRefTypeName();
 
-						std::string varName = "local_reg_" + std::to_string(ins.output.getRegIndex());
+						std::string varName = mangleRegLocalVarName(ins.output.getRegIndex());
 						cxxast::VarDefPair varDefPair;
 
 						if (auto astNode = getMappedAstNode(object);
@@ -73,7 +73,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 
 						std::shared_ptr<cxxast::TypeName> t = compileType(compileContext, fieldRecord.type);
 
-						cxxast::VarDefPair varDefPair = { "local_load_" + std::to_string(ins.output.getRegIndex()), {} };
+						cxxast::VarDefPair varDefPair = { mangleRegLocalVarName(ins.output.getRegIndex()), {} };
 
 						std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(t, std::vector<cxxast::VarDefPair>{ varDefPair });
 
@@ -88,6 +88,33 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 					break;
 				}
 				}
+				break;
+			}
+			case Opcode::RLOAD: {
+				uint32_t idxBaseReg = ins.operands[0].getRegIndex();
+				HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[1].getObjectRef().asInstance.instanceObject;
+
+				std::shared_ptr<cxxast::TypeName> t = genObjectRefTypeName();
+
+				cxxast::VarDefPair varDefPair = { mangleRegLocalVarName(ins.output.getRegIndex()), {} };
+
+				std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(t, std::vector<cxxast::VarDefPair>{ varDefPair });
+
+				fnOverloading->body.push_back(stmt);
+
+				fnOverloading->body.push_back(genReturnIfExceptStmt(
+					std::make_shared<cxxast::CallExpr>(
+						std::make_shared<cxxast::BinaryExpr>(
+							cxxast::BinaryOp::MemberAccess,
+							genAotContextRef(),
+							std::make_shared<cxxast::BinaryExpr>(
+								cxxast::BinaryOp::PtrAccess,
+								std::make_shared<cxxast::IdExpr>("runtime"),
+								std::make_shared<cxxast::IdExpr>("resolveIdRef"))),
+						std::vector<std::shared_ptr<cxxast::Expr>>{
+							std::make_shared<cxxast::NullptrLiteralExpr>(),	 // stub
+							std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.output.getRegIndex())),
+							std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(idxBaseReg)) })));
 				break;
 			}
 			}

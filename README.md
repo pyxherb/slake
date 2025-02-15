@@ -60,7 +60,9 @@ scripting.
   * Runtime Library 🕓
 
 * JIT Recompiler 🕓
-    * x86 Backend 🕓
+    * x86-64 Backend 🕓
+    * ARM64 Backend 🕓
+    * RISC-V Backend 🕓
 
 * AOT Compiler 🕓
 

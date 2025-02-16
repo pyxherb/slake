@@ -559,6 +559,14 @@ std::pair<std::shared_ptr<cxxast::IfndefDirective>, std::shared_ptr<cxxast::Name
 		recompileFnOverloading(cc, i);
 	}
 
+	for (auto i : cc.constantObjects) {
+		rootNamespace->addPublicMember(std::make_shared<cxxast::Var>(
+			mangleConstantObjectName(i.get()),
+			cxxast::StorageClass::Extern,
+			genInstanceObjectTypeName(),
+			std::shared_ptr<cxxast::Expr>{}));
+	}
+
 	std::shared_ptr<cxxast::IfndefDirective> includeGuardWrapper =
 		std::make_shared<cxxast::IfndefDirective>(
 			std::string(includeGuardName),

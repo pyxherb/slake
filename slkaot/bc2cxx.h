@@ -65,6 +65,7 @@ namespace slake {
 					std::shared_ptr<cxxast::Namespace> rootNamespace;
 					std::list<DynamicCompileContextContents> savedDynamicContents;
 					DynamicCompileContextContents dynamicContents;
+					std::set<HostObjectRef<>> constantObjects;
 
 					SLAKE_FORCEINLINE CompileContext(Runtime *runtime, std::shared_ptr<cxxast::Namespace> rootNamespace) : runtime(runtime), rootNamespace(rootNamespace) {}
 
@@ -154,6 +155,7 @@ namespace slake {
 					return args;
 				}
 
+				std::string mangleConstantObjectName(Object *object);
 				std::string mangleRegLocalVarName(uint32_t idxReg);
 				std::string mangleParamName(uint32_t idxArg);
 				std::string mangleRefForTypeName(const peff::DynArray<IdRefEntry> &entries);

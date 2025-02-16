@@ -94,6 +94,8 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 				uint32_t idxBaseReg = ins.operands[0].getRegIndex();
 				HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[1].getObjectRef().asInstance.instanceObject;
 
+				compileContext.constantObjects.insert((Object*)id.get());
+
 				std::shared_ptr<cxxast::TypeName> t = genObjectRefTypeName();
 
 				cxxast::VarDefPair varDefPair = { mangleRegLocalVarName(ins.output.getRegIndex()), {} };
@@ -112,7 +114,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 								std::make_shared<cxxast::IdExpr>("runtime"),
 								std::make_shared<cxxast::IdExpr>("resolveIdRef"))),
 						std::vector<std::shared_ptr<cxxast::Expr>>{
-							std::make_shared<cxxast::NullptrLiteralExpr>(),	 // stub
+							std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(id.get())),
 							std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.output.getRegIndex())),
 							std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(idxBaseReg)) })));
 				break;

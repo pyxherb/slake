@@ -4,6 +4,10 @@ using namespace slake;
 using namespace slake::slkaot;
 using namespace slake::slkaot::bc2cxx;
 
+std::string BC2CXX::mangleConstantObjectName(Object *object) {
+	return "constobj_" + std::to_string((uintptr_t)object);
+}
+
 std::string BC2CXX::mangleRegLocalVarName(uint32_t idxReg) {
 	return "local_reg_" + std::to_string(idxReg);
 }

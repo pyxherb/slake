@@ -136,8 +136,6 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 	if (!newMajorFrame->minorFrames.pushBack(MinorFrame(this, 0, context->stackTop)))
 		return OutOfMemoryError::alloc();
 
-	newMajorFrame->localVarAccessor = LocalVarAccessorVarObject::alloc(this, context, newMajorFrame.get()).get();
-
 	newMajorFrame->curFn = fn;
 	newMajorFrame->thisObject = thisObject;
 

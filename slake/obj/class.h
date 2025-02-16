@@ -2,7 +2,6 @@
 #define _SLAKE_OBJ_CLASS_H_
 
 #include <cassert>
-#include <unordered_map>
 
 #include "fn.h"
 #include "module.h"
@@ -62,7 +61,8 @@ namespace slake {
 		GenericParamList genericParams;
 
 		Type parentClass;
-		peff::DynArray<Type> implInterfaces;  // Implemented interfaces
+		peff::DynArray<Type> implInterfaces;				 // Implemented interfaces
+		peff::Set<ClassNativeDestructor> nativeDestructors;	 // Native destructors
 
 		MethodTable *cachedInstantiatedMethodTable = nullptr;
 		ObjectLayout *cachedObjectLayout = nullptr;

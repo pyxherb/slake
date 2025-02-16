@@ -61,6 +61,10 @@ SLAKE_API void Runtime::initMethodTableForClass(ClassObject *cls, ClassObject *p
 		}
 	}
 
+	for(auto i : cls->nativeDestructors) {
+		methodTable->nativeDestructors.pushBack(+i);
+	}
+
 	cls->cachedInstantiatedMethodTable = methodTable.release();
 }
 

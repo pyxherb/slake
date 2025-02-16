@@ -33,22 +33,6 @@ namespace slake {
 
 	class ModuleObject;
 
-	class FieldAccessorVarObject : public VarObject {
-	public:
-		ModuleObject *moduleObject;
-
-		SLAKE_API FieldAccessorVarObject(
-			Runtime *rt,
-			ModuleObject *moduleObject);
-		SLAKE_API virtual ~FieldAccessorVarObject();
-
-		SLAKE_API virtual void dealloc() override;
-
-		SLAKE_API static HostObjectRef<FieldAccessorVarObject> alloc(
-			Runtime *rt,
-			ModuleObject *moduleObject);
-	};
-
 	enum class ModuleLoadStatus {
 		ImplicitlyLoaded = 0,
 		Loading,
@@ -67,8 +51,6 @@ namespace slake {
 		size_t szLocalFieldStorage = 0;
 		peff::DynArray<FieldRecord> fieldRecords;
 		peff::HashMap<std::string_view, size_t> fieldRecordIndices;
-
-		FieldAccessorVarObject *fieldAccessor = nullptr;
 
 		peff::HashMap<peff::String, IdRefObject *> imports;
 		peff::DynArray<IdRefObject *> unnamedImports;

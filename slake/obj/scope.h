@@ -3,6 +3,7 @@
 
 #include <peff/containers/hashmap.h>
 #include <peff/containers/string.h>
+#include <peff/containers/list.h>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -46,12 +47,16 @@ namespace slake {
 		SLAKE_API void dealloc();
 	};
 
+	class InstanceObject;
+
 	using ScopeUniquePtr = std::unique_ptr<Scope, util::DeallocableDeleter<Scope>>;
+	typedef void (*ClassNativeDestructor)(InstanceObject *instanceObject);
 
 	class MethodTable {
 	public:
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
 		peff::HashMap<std::string_view, FnObject *> methods;
+		peff::List<ClassNativeDestructor> nativeDestructors;
 
 		SLAKE_API MethodTable(peff::Alloc *selfAllocator);
 

@@ -448,11 +448,6 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 			throw std::bad_alloc();
 	}
 
-	auto accessor = FieldAccessorVarObject::alloc(this, mod.get());
-	if (!accessor)
-		throw std::bad_alloc();
-	mod->fieldAccessor = accessor.get();
-
 	char *fieldStorage = (char *)globalHeapPoolAlloc.alloc(szLocalFieldStorage, sizeof(std::max_align_t));
 	if (!fieldStorage)
 		throw std::bad_alloc();

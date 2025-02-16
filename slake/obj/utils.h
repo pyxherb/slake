@@ -47,10 +47,8 @@ namespace slake {
 			reset();
 		}
 
-		SLAKE_FORCEINLINE const T *get() const { return _value; }
-		SLAKE_FORCEINLINE T *get() { return _value; }
-		SLAKE_FORCEINLINE const T *operator->() const { return _value; }
-		SLAKE_FORCEINLINE T *operator->() { return _value; }
+		SLAKE_FORCEINLINE T *get() const { return _value; }
+		SLAKE_FORCEINLINE T *operator->() const { return _value; }
 
 		SLAKE_FORCEINLINE HostObjectRef<T> &operator=(const HostObjectRef<T> &x) {
 			reset();

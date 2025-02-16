@@ -7,24 +7,11 @@
 namespace slake {
 	class ArrayObject;
 
-	class ArrayAccessorVarObject : public VarObject {
-	public:
-		ArrayObject *arrayObject = nullptr;
-
-		SLAKE_API ArrayAccessorVarObject(Runtime *rt, ArrayObject *arrayObject);
-		SLAKE_API virtual ~ArrayAccessorVarObject();
-
-		SLAKE_API static ArrayAccessorVarObject *alloc(Runtime *rt, ArrayObject *arrayObject);
-
-		SLAKE_API virtual void dealloc() override;
-	};
-
 	class ArrayObject : public Object {
 	public:
 		size_t length = 0;
 		Type elementType;
 		size_t elementSize;
-		ArrayAccessorVarObject *accessor = nullptr;
 		void *data = nullptr;
 
 		SLAKE_API ArrayObject(Runtime *rt, const Type &elementType, size_t elementSize);

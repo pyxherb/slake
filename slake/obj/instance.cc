@@ -4,29 +4,6 @@
 
 using namespace slake;
 
-SLAKE_API InstanceMemberAccessorVarObject::InstanceMemberAccessorVarObject(
-	Runtime *rt,
-	InstanceObject *instanceObject)
-	: VarObject(rt, VarKind::InstanceMemberAccessor), instanceObject(instanceObject) {
-}
-
-SLAKE_API InstanceMemberAccessorVarObject::~InstanceMemberAccessorVarObject() {
-}
-
-SLAKE_API HostObjectRef<InstanceMemberAccessorVarObject> slake::InstanceMemberAccessorVarObject::alloc(Runtime *rt, InstanceObject *instanceObject) {
-	std::unique_ptr<InstanceMemberAccessorVarObject, util::DeallocableDeleter<InstanceMemberAccessorVarObject>>
-		ptr(peff::allocAndConstruct<InstanceMemberAccessorVarObject>(&rt->globalHeapPoolAlloc, sizeof(std::max_align_t), rt, instanceObject));
-
-	if (!rt->createdObjects.pushBack(ptr.get()))
-		return nullptr;
-
-	return ptr.release();
-}
-
-SLAKE_API void slake::InstanceMemberAccessorVarObject::dealloc() {
-	peff::destroyAndRelease<InstanceMemberAccessorVarObject>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
-}
-
 SLAKE_API InstanceObject::InstanceObject(Runtime *rt)
 	: Object(rt) {
 }
@@ -39,6 +16,9 @@ SLAKE_API InstanceObject::InstanceObject(const InstanceObject &x) : Object(x) {
 }
 
 SLAKE_API InstanceObject::~InstanceObject() {
+	for (auto i : methodTable->nativeDestructors)
+		i(this);
+
 	if (rawFieldData)
 		delete[] rawFieldData;
 
@@ -72,10 +52,6 @@ SLAKE_API HostObjectRef<InstanceObject> slake::InstanceObject::alloc(Runtime *rt
 			sizeof(std::max_align_t),
 			rt));
 
-	if (!(ptr->memberAccessor = InstanceMemberAccessorVarObject::alloc(rt, ptr.get()).get())) {
-		return nullptr;
-	}
-
 	if (!rt->createdObjects.pushBack(ptr.get()))
 		return nullptr;
 
@@ -88,10 +64,6 @@ SLAKE_API HostObjectRef<InstanceObject> slake::InstanceObject::alloc(const Insta
 			&other->associatedRuntime->globalHeapPoolAlloc,
 			sizeof(std::max_align_t),
 			*other));
-
-	if (!(ptr->memberAccessor = InstanceMemberAccessorVarObject::alloc(other->associatedRuntime, ptr.get()).get())) {
-		return nullptr;
-	}
 
 	if (!other->associatedRuntime->createdObjects.pushBack(ptr.get()))
 		return nullptr;

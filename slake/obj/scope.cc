@@ -84,6 +84,9 @@ SLAKE_API MethodTable *MethodTable::duplicate() {
 	if (!peff::copyAssign(newMethodTable->methods, methods)) {
 		return nullptr;
 	}
+	if (!peff::copyAssign(newMethodTable->nativeDestructors, nativeDestructors)) {
+		return nullptr;
+	}
 
 	return newMethodTable.release();
 }

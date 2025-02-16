@@ -48,7 +48,6 @@ namespace slake {
 		peff::DynArray<Value> nextArgStack;	 // Argument stack for next call.
 
 		peff::DynArray<LocalVarRecord> localVarRecords;			// Local variable records.
-		LocalVarAccessorVarObject *localVarAccessor = nullptr;	// Local variable accessor.
 
 		peff::DynArray<Value> regs;	 // Local registers.
 		size_t nRegs = 0;

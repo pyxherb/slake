@@ -10,19 +10,7 @@
 namespace slake {
 	using InstanceFlags = uint32_t;
 
-	class InstanceObject;
 	struct ObjectLayout;
-
-	class InstanceMemberAccessorVarObject : public VarObject {
-	public:
-		InstanceObject *instanceObject;
-
-		SLAKE_API InstanceMemberAccessorVarObject(Runtime *rt, InstanceObject *instanceObject);
-		SLAKE_API virtual ~InstanceMemberAccessorVarObject();
-
-		SLAKE_API static HostObjectRef<InstanceMemberAccessorVarObject> alloc(Runtime *rt, InstanceObject *arrayObject);
-		SLAKE_API virtual void dealloc() override;
-	};
 
 	class InstanceObject final : public Object {
 	public:
@@ -33,8 +21,6 @@ namespace slake {
 		size_t szRawFieldData = 0;
 
 		InstanceFlags instanceFlags = 0;
-
-		InstanceMemberAccessorVarObject *memberAccessor = nullptr;
 
 		SLAKE_API InstanceObject(Runtime *rt);
 		SLAKE_API InstanceObject(const InstanceObject &x);

@@ -5,7 +5,12 @@ using namespace slake::slkaot;
 using namespace slake::slkaot::bc2cxx;
 
 std::string BC2CXX::mangleConstantObjectName(Object *object) {
-	return "constobj_" + std::to_string((uintptr_t)object);
+	char s[sizeof("constobj_") - 1 + sizeof(void *) * 2 + 1];
+
+	memcpy(s, "constobj_", sizeof("constobj_") - 1);
+
+	sprintf(s + (sizeof("constobj_") - 1), "%0*zx", (int)sizeof(void*) * 2, (uintptr_t)object);
+	return s;
 }
 
 std::string BC2CXX::mangleRegLocalVarName(uint32_t idxReg) {

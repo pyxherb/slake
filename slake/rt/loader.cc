@@ -723,7 +723,7 @@ SLAKE_API HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &f
 		HostObjectRef<IdRefObject> moduleName = _loadIdRef(context, holder);
 
 		if (!(flags & LMOD_NOIMPORT)) {
-			std::unique_ptr<std::istream> moduleStream(_moduleLocator(this, moduleName));
+			std::unique_ptr<std::istream> moduleStream(_moduleLocator(this, moduleName->entries));
 			if (!moduleStream)
 				throw LoaderError("Error finding module `" + std::to_string(moduleName.get()) + "' for dependencies");
 

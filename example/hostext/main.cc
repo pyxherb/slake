@@ -83,11 +83,11 @@ slake::Value print(slake::Context *context, slake::MajorFrame *curMajorFrame) {
 	return {};
 }
 
-std::unique_ptr<std::istream> fsModuleLocator(slake::Runtime *rt, slake::HostObjectRef<slake::IdRefObject> ref) {
+std::unique_ptr<std::istream> fsModuleLocator(slake::Runtime *rt, const peff::DynArray<slake::IdRefEntry> &entries) {
 	std::string path;
-	for (size_t i = 0; i < ref->entries.size(); ++i) {
-		path += ref->entries.at(i).name;
-		if (i + 1 < ref->entries.size())
+	for (size_t i = 0; i < entries.size(); ++i) {
+		path += entries.at(i).name;
+		if (i + 1 < entries.size())
 			path += "/";
 	}
 	path += ".slx";

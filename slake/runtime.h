@@ -52,8 +52,7 @@ namespace slake {
 		// The runtime is initializing.
 		_RT_INITING = 0x80000000;
 
-	using ModuleLocatorFn = std::function<
-		std::unique_ptr<std::istream>(Runtime *rt, HostObjectRef<IdRefObject> ref)>;
+	typedef std::unique_ptr<std::istream> (*ModuleLocatorFn)(Runtime *rt, const peff::DynArray<IdRefEntry> &ref);
 
 	using LoadModuleFlags = uint8_t;
 	constexpr LoadModuleFlags

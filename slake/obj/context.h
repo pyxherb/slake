@@ -38,6 +38,7 @@ namespace slake {
 
 	/// @brief A major frame represents a single calling frame.
 	struct MajorFrame final {
+		MajorFrame *next = nullptr;
 		Context *context = nullptr;	 // Context
 
 		const FnOverloadingObject *curFn = nullptr;	 // Current function overloading.
@@ -47,7 +48,7 @@ namespace slake {
 
 		peff::DynArray<Value> nextArgStack;	 // Argument stack for next call.
 
-		peff::DynArray<LocalVarRecord> localVarRecords;			// Local variable records.
+		peff::DynArray<LocalVarRecord> localVarRecords;	 // Local variable records.
 
 		peff::DynArray<Value> regs;	 // Local registers.
 		size_t nRegs = 0;
@@ -57,6 +58,7 @@ namespace slake {
 		uint32_t returnValueOutReg = UINT32_MAX;
 
 		peff::DynArray<MinorFrame> minorFrames;	 // Minor frames.
+		size_t stackBase = 0;
 
 		Value curExcept = Value();	// Current exception.
 
@@ -66,6 +68,7 @@ namespace slake {
 		SLAKE_FORCEINLINE MajorFrame() {
 			abort();
 		}
+		SLAKE_API ~MajorFrame();
 
 		/// @brief Leave current minor frame.
 		SLAKE_API [[nodiscard]] bool leave();
@@ -85,12 +88,13 @@ namespace slake {
 
 	struct Context {
 		Runtime *runtime;
-		std::vector<std::unique_ptr<MajorFrame>> majorFrames;  // Major frame
-		ContextFlags flags = 0;								   // Flags
-		char *dataStack = nullptr;							   // Data stack
-		size_t stackTop = 0;								   // Stack top
+		MajorFrame *majorFrameList, *stackTopMajorFrame;  // Major frame list
+		ContextFlags flags = 0;							  // Flags
+		char *dataStack = nullptr;						  // Data stack
+		size_t stackTop = 0;							  // Stack top
 
 		SLAKE_API char *stackAlloc(size_t size);
+		SLAKE_API void leaveMajor();
 
 		SLAKE_API Context(Runtime *runtime);
 
@@ -114,6 +118,8 @@ namespace slake {
 		SLAKE_API InternalExceptionPointer resume(HostRefHolder *hostRefHolder);
 		SLAKE_API Value getResult();
 		SLAKE_API bool isDone();
+
+		SLAKE_API void leaveMajorFrame();
 	};
 }
 

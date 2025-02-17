@@ -145,8 +145,10 @@ namespace slake {
 
 		struct GCHeaplessWalkContext {
 			Object *walkableList = nullptr;
+			Object *instanceList = nullptr;
 
 			SLAKE_API void pushObject(Object *object);
+			SLAKE_API void pushInstanceObject(Object *object);
 		};
 
 		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, Scope *scope);
@@ -163,14 +165,6 @@ namespace slake {
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(Object *v, GenericInstantiationContext &instantiationContext);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext);
 
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _createNewMajorFrame(
-			Context *context,
-			Object *thisObject,
-			const FnOverloadingObject *fn,
-			const Value *args,
-			uint32_t nArgs,
-			uint32_t returnValueOut) noexcept;
-
 		SLAKE_API uint32_t _findAndDispatchExceptHandler(const Value &curExcept, const MinorFrame &minorFrame) const;
 
 		friend class Object;
@@ -181,11 +175,18 @@ namespace slake {
 
 	public:
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _addLocalVar(MajorFrame *frame, Type type, ObjectRef &objectRefOut) noexcept;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _createNewMajorFrame(
+			Context *context,
+			Object *thisObject,
+			const FnOverloadingObject *fn,
+			const Value *args,
+			uint32_t nArgs,
+			uint32_t returnValueOut) noexcept;
 
 		/// @brief Runtime flags.
 		RuntimeFlags _flags = 0;
 
-		peff::List<Object *> createdObjects;
+		peff::Set<Object *> createdObjects;
 
 		/// @brief Active contexts of threads.
 		std::map<std::thread::id, ContextObject *> activeContexts;

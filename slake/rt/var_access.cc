@@ -58,7 +58,7 @@ SLAKE_API InternalExceptionPointer Runtime::typeofVar(const ObjectRef &objectRef
 	case ObjectRefKind::InstanceFieldRef: {
 		const InstanceObject *v = (const InstanceObject *)objectRef.asArray.arrayObject;
 
-		typeOut = v->objectLayout->fieldRecords.at(objectRef.asArray.index).type;
+		typeOut = v->_class->cachedObjectLayout->fieldRecords.at(objectRef.asArray.index).type;
 		break;
 	}
 	case ObjectRefKind::ArrayElementRef: {
@@ -190,7 +190,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const ObjectRef &objectRef) const {
 	}
 	case ObjectRefKind::InstanceFieldRef: {
 		ObjectFieldRecord &fieldRecord =
-			objectRef.asInstanceField.instanceObject->objectLayout->fieldRecords.at(
+			objectRef.asInstanceField.instanceObject->_class->cachedObjectLayout->fieldRecords.at(
 				objectRef.asInstanceField.fieldIndex);
 
 		const char *const rawFieldPtr = objectRef.asInstanceField.instanceObject->rawFieldData + fieldRecord.offset;
@@ -420,7 +420,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const ObjectRef &objectRef,
 	}
 	case ObjectRefKind::InstanceFieldRef: {
 		ObjectFieldRecord &fieldRecord =
-			objectRef.asInstanceField.instanceObject->objectLayout->fieldRecords.at(
+			objectRef.asInstanceField.instanceObject->_class->cachedObjectLayout->fieldRecords.at(
 				objectRef.asInstanceField.fieldIndex);
 
 		if (!isCompatible(fieldRecord.type, value)) {

@@ -13,11 +13,11 @@ static const char *_ctrlCharNames[] = {
 
 decompiler::DecompilerFlags decompiler::decompilerFlags = 0;
 
-static std::unique_ptr<std::istream> fsModuleLocator(slake::Runtime *rt, slake::HostObjectRef<slake::IdRefObject> ref) {
+static std::unique_ptr<std::istream> fsModuleLocator(slake::Runtime *rt, const peff::DynArray<slake::IdRefEntry> &ref) {
 	std::string path;
-	for (size_t i = 0; i < ref->entries.size(); ++i) {
-		path += ref->entries.at(i).name;
-		if (i + 1 < ref->entries.size())
+	for (size_t i = 0; i < ref.size(); ++i) {
+		path += ref.at(i).name;
+		if (i + 1 < ref.size())
 			path += "/";
 	}
 

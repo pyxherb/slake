@@ -72,6 +72,7 @@ namespace slake {
 			struct {
 				ObjectGCStatus gcStatus;
 				Object *next;
+				Object *nextInstance;
 			} heapless;
 		} gcInfo;
 

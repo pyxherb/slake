@@ -15,8 +15,6 @@ namespace slake {
 	class InstanceObject final : public Object {
 	public:
 		ClassObject *_class = nullptr;
-		ObjectLayout *objectLayout = nullptr;
-		MethodTable *methodTable = nullptr;
 		char *rawFieldData = nullptr;
 		size_t szRawFieldData = 0;
 

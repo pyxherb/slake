@@ -101,13 +101,17 @@ std::unique_ptr<std::istream> fsModuleLocator(slake::Runtime *rt, const peff::Dy
 
 void printTraceback(slake::Runtime *rt, slake::ContextObject *context) {
 	printf("Traceback:\n");
-	for (auto i = context->getContext().majorFrames.rbegin();
-		 i != context->getContext().majorFrames.rend();
-		 ++i) {
-		printf("\t%s: 0x%08x", rt->getFullName((*i)->curFn->fnObject).c_str(), (*i)->curIns);
-		switch ((*i)->curFn->overloadingKind) {
+	for (auto i = context->getContext().majorFrameList;
+		 i;
+		 i = i->next) {
+		if (!i->curFn) {
+			printf("(Stack top)\n");
+			continue;
+		}
+		printf("\t%s: 0x%08x", rt->getFullName(i->curFn->fnObject).c_str(), i->curIns);
+		switch (i->curFn->overloadingKind) {
 		case slake::FnOverloadingKind::Regular: {
-			if (auto sld = ((slake::RegularFnOverloadingObject *)(*i)->curFn)->getSourceLocationDesc((*i)->curIns); sld) {
+			if (auto sld = ((slake::RegularFnOverloadingObject *)i->curFn)->getSourceLocationDesc(i->curIns); sld) {
 				printf(" at %d:%d", sld->line, sld->column);
 			}
 			break;

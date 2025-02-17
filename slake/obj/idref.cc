@@ -50,7 +50,7 @@ SLAKE_API HostObjectRef<IdRefObject> slake::IdRefObject::alloc(Runtime *rt) {
 	if (!ptr)
 		return nullptr;
 
-	if (!rt->createdObjects.pushBack(ptr.get()))
+	if (!rt->createdObjects.insert(ptr.get()))
 		return nullptr;
 
 	return ptr.release();
@@ -70,7 +70,7 @@ SLAKE_API HostObjectRef<IdRefObject> slake::IdRefObject::alloc(const IdRefObject
 	if (!succeeded)
 		return nullptr;
 
-	if (!other->associatedRuntime->createdObjects.pushBack(ptr.get()))
+	if (!other->associatedRuntime->createdObjects.insert(ptr.get()))
 		return nullptr;
 
 	return ptr.release();

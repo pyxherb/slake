@@ -29,6 +29,13 @@ SLAKE_API bool MajorFrame::leave() {
 	return true;
 }
 
+SLAKE_API void Context::leaveMajor() {
+	MajorFrame *frameToBeDestroyed = majorFrameList;
+	stackTop = frameToBeDestroyed->stackBase;
+	majorFrameList = majorFrameList->next;
+	std::destroy_at<MajorFrame>(frameToBeDestroyed);
+}
+
 SLAKE_API char *Context::stackAlloc(size_t size) {
 	if (size_t newStackTop = stackTop + size;
 		newStackTop > SLAKE_STACK_MAX) {
@@ -39,12 +46,14 @@ SLAKE_API char *Context::stackAlloc(size_t size) {
 	return dataStack + SLAKE_STACK_MAX - stackTop;
 }
 
-SLAKE_API Context::Context(Runtime *runtime): runtime(runtime) {
+SLAKE_API Context::Context(Runtime *runtime) : runtime(runtime), majorFrameList(nullptr), stackTopMajorFrame(nullptr) {
 	// TODO: Move the allocation out of the constructor.
-	dataStack = (char*)runtime->globalHeapPoolAlloc.alloc(SLAKE_STACK_MAX, sizeof(std::max_align_t));
+	dataStack = (char *)runtime->globalHeapPoolAlloc.alloc(SLAKE_STACK_MAX, sizeof(std::max_align_t));
 }
 
 SLAKE_API Context::~Context() {
+	while(majorFrameList)
+		leaveMajor();
 	if (dataStack) {
 		runtime->globalHeapPoolAlloc.release(dataStack, SLAKE_STACK_MAX, sizeof(std::max_align_t));
 	}
@@ -69,10 +78,13 @@ SLAKE_API HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt) 
 	if (!ptr)
 		return nullptr;
 
-	if (!rt->createdObjects.pushBack(ptr.get()))
+	if (!rt->createdObjects.insert(ptr.get()))
 		return nullptr;
 
 	return ptr.release();
+}
+
+SLAKE_API MajorFrame::~MajorFrame() {
 }
 
 SLAKE_API void slake::ContextObject::dealloc() {
@@ -85,7 +97,7 @@ SLAKE_API InternalExceptionPointer ContextObject::resume(HostRefHolder *hostRefH
 }
 
 SLAKE_API Value ContextObject::getResult() {
-	return _context.majorFrames.back()->regs.at(0);
+	return _context.majorFrameList->regs.at(0);
 }
 
 SLAKE_API bool ContextObject::isDone() {

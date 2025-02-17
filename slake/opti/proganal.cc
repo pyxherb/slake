@@ -210,9 +210,8 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 	analyzedInfoOut.contextObject = ContextObject::alloc(runtime);
 	MajorFrame *pseudoMajorFrame;
 	{
-		std::unique_ptr<MajorFrame> majorFrame(std::make_unique<MajorFrame>(runtime, &analyzedInfoOut.contextObject->_context));
-		pseudoMajorFrame = majorFrame.get();
-		analyzedInfoOut.contextObject->_context.majorFrames.push_back(std::move(majorFrame));
+		SLAKE_RETURN_IF_EXCEPT(runtime->_createNewMajorFrame(&analyzedInfoOut.contextObject->_context, nullptr, fnObject, nullptr, 0, UINT32_MAX));
+		pseudoMajorFrame = analyzedInfoOut.contextObject->_context.majorFrameList;
 	}
 
 	ProgramAnalyzeContext analyzeContext = {

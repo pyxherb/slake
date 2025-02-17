@@ -131,54 +131,78 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 	uint32_t returnValueOut) noexcept {
 	HostRefHolder holder(&globalHeapPoolAlloc);
 
-	std::unique_ptr<MajorFrame> newMajorFrame = std::make_unique<MajorFrame>(this, context);
+	size_t prevStackTop = context->stackTop;
+	peff::ScopeGuard restoreStackTopGuard([context, prevStackTop]() noexcept {
+		context->stackTop = prevStackTop;
+	});
+	MajorFrame *newMajorFrame = (MajorFrame *)context->stackAlloc(sizeof(MajorFrame));
+	if (!newMajorFrame)
+		return OutOfMemoryError::alloc();
+	peff::constructAt<MajorFrame>(newMajorFrame, this, context);
+	peff::ScopeGuard releaseNewMajorFrameGuard([newMajorFrame]() noexcept {
+		std::destroy_at<MajorFrame>(newMajorFrame);
+	});
 
 	if (!newMajorFrame->minorFrames.pushBack(MinorFrame(this, 0, context->stackTop)))
 		return OutOfMemoryError::alloc();
 
-	newMajorFrame->curFn = fn;
-	newMajorFrame->thisObject = thisObject;
+	if (!fn) {
+		// Used in the creation of top major frame.
+		newMajorFrame->curFn = nullptr;
+		newMajorFrame->resizeRegs(1);
+	} else {
+		newMajorFrame->curFn = fn;
+		newMajorFrame->thisObject = thisObject;
 
-	if (nArgs < fn->paramTypes.size()) {
-		return InvalidArgumentNumberError::alloc(this, nArgs);
-	}
-
-	newMajorFrame->argStack.resize(fn->paramTypes.size());
-	for (size_t i = 0; i < fn->paramTypes.size(); ++i) {
-		newMajorFrame->argStack.at(i) = { Value(), fn->paramTypes.at(i) };
-		SLAKE_RETURN_IF_EXCEPT(writeVar(ObjectRef::makeArgRef(newMajorFrame.get(), i), args[i]));
-	}
-
-	if (fn->overloadingFlags & OL_VARG) {
-		auto varArgTypeDefObject = TypeDefObject::alloc(this, Type(TypeId::Any));
-		if (!holder.addObject(varArgTypeDefObject.get()))
-			return OutOfMemoryError::alloc();
-
-		size_t szVarArgArray = nArgs - fn->paramTypes.size();
-		auto varArgArrayObject = newArrayInstance(this, Type(TypeId::Any), szVarArgArray);
-		if (!holder.addObject(varArgArrayObject.get()))
-			return OutOfMemoryError::alloc();
-
-		for (size_t i = 0; i < szVarArgArray; ++i) {
-			((Value *)varArgArrayObject->data)[i] = args[fn->paramTypes.size() + i];
+		if (nArgs < fn->paramTypes.size()) {
+			return InvalidArgumentNumberError::alloc(this, nArgs);
 		}
 
-		if (!newMajorFrame->argStack.pushBack({ ObjectRef::makeInstanceRef(varArgArrayObject.get()), Type(TypeId::Array, varArgTypeDefObject.get()) }))
+		if (!newMajorFrame->argStack.resize(fn->paramTypes.size()))
 			return OutOfMemoryError::alloc();
-	}
+		for (size_t i = 0; i < fn->paramTypes.size(); ++i) {
+			newMajorFrame->argStack.at(i) = { Value(), fn->paramTypes.at(i) };
+			SLAKE_RETURN_IF_EXCEPT(writeVar(ObjectRef::makeArgRef(newMajorFrame, i), args[i]));
+		}
 
-	switch (fn->overloadingKind) {
-	case FnOverloadingKind::Regular: {
-		RegularFnOverloadingObject *ol = (RegularFnOverloadingObject *)fn;
-		newMajorFrame->resizeRegs(ol->nRegisters);
-		break;
-	}
-	default:;
+		if (fn->overloadingFlags & OL_VARG) {
+			auto varArgTypeDefObject = TypeDefObject::alloc(this, Type(TypeId::Any));
+			if (!holder.addObject(varArgTypeDefObject.get()))
+				return OutOfMemoryError::alloc();
+
+			size_t szVarArgArray = nArgs - fn->paramTypes.size();
+			auto varArgArrayObject = newArrayInstance(this, Type(TypeId::Any), szVarArgArray);
+			if (!holder.addObject(varArgArrayObject.get()))
+				return OutOfMemoryError::alloc();
+
+			for (size_t i = 0; i < szVarArgArray; ++i) {
+				((Value *)varArgArrayObject->data)[i] = args[fn->paramTypes.size() + i];
+			}
+
+			if (!newMajorFrame->argStack.pushBack({ ObjectRef::makeInstanceRef(varArgArrayObject.get()), Type(TypeId::Array, varArgTypeDefObject.get()) }))
+				return OutOfMemoryError::alloc();
+		}
+
+		switch (fn->overloadingKind) {
+		case FnOverloadingKind::Regular: {
+			RegularFnOverloadingObject *ol = (RegularFnOverloadingObject *)fn;
+			newMajorFrame->resizeRegs(ol->nRegisters);
+			break;
+		}
+		default:;
+		}
 	}
 
 	newMajorFrame->returnValueOutReg = returnValueOut;
 
-	context->majorFrames.push_back(std::move(newMajorFrame));
+	releaseNewMajorFrameGuard.release();
+	restoreStackTopGuard.release();
+
+	if (!context->majorFrameList)
+		context->stackTopMajorFrame = newMajorFrame;
+	newMajorFrame->stackBase = context->stackTop;
+	newMajorFrame->next = context->majorFrameList;
+	context->majorFrameList = newMajorFrame;
 	return {};
 }
 
@@ -1835,10 +1859,10 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 		uint32_t returnValueOutReg = curMajorFrame->returnValueOutReg;
 		Value returnValue;
 		SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, curMajorFrame, ins.operands[0], returnValue));
-		context->_context.majorFrames.pop_back();
+		context->_context.leaveMajor();
 
 		if (returnValueOutReg != UINT32_MAX) {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, context->_context.majorFrames.back().get(), returnValueOutReg, returnValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, context->_context.majorFrameList, returnValueOutReg, returnValue));
 		}
 		return {};
 	}
@@ -1850,7 +1874,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 		SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, curMajorFrame, ins.operands[0], returnValue));
 
 		if (returnValueOutReg != UINT32_MAX) {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, context->_context.majorFrames.back().get(), returnValueOutReg, returnValue));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, context->_context.majorFrameList, returnValueOutReg, returnValue));
 		}
 		context->_context.flags |= CTX_YIELDED;
 		break;
@@ -1909,20 +1933,22 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 		Value x;
 		SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, curMajorFrame, ins.operands[0], x));
 
-		for (size_t i = context->_context.majorFrames.size(); i; --i) {
-			auto &majorFrame = context->_context.majorFrames[i - 1];
+		for (MajorFrame *i = context->_context.majorFrameList; i; i = i->next) {
+			for (size_t j = i->minorFrames.size(); j; --j) {
+				auto &minorFrame = i->minorFrames.at(j - 1);
 
-			for (size_t j = majorFrame->minorFrames.size(); j; --j) {
-				auto &minorFrame = majorFrame->minorFrames.at(j - 1);
-
-				if (uint32_t off = _findAndDispatchExceptHandler(majorFrame->curExcept, minorFrame);
+				if (uint32_t off = _findAndDispatchExceptHandler(i->curExcept, minorFrame);
 					off != UINT32_MAX) {
-					context->_context.majorFrames.resize(i);
-					majorFrame->minorFrames.resize(j);
+					for (MajorFrame *k = context->_context.majorFrameList, *next; k != i; k = next) {
+						next = k->next;
+						context->_context.leaveMajor();
+					}
+					context->_context.majorFrameList = i;
+					i->minorFrames.resize(j);
 					// Do not increase the current instruction offset,
 					// the offset has been set to offset to first instruction
 					// of the exception handler.
-					majorFrame->curIns = off;
+					i->curIns = off;
 					return {};
 				}
 			}
@@ -2028,8 +2054,13 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 		bool interruptExecution = false;
 
 		while (!interruptExecution) {
-			curMajorFrame = context->getContext().majorFrames.back().get();
+			curMajorFrame = context->getContext().majorFrameList;
 			curFn = curMajorFrame->curFn;
+
+			if (!curFn) {
+				managedThreads.erase(currentThreadHandle());
+				break;
+			}
 
 			// TODO: Check if the yield request is from the top level.
 			if (context->getContext().flags & CTX_YIELDED)
@@ -2048,23 +2079,18 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 			case FnOverloadingKind::Regular: {
 				RegularFnOverloadingObject *ol = (RegularFnOverloadingObject *)curFn;
 
-				if (curMajorFrame->curIns == UINT32_MAX) {
-					managedThreads.erase(currentThreadHandle());
-					interruptExecution = true;
-				} else {
-					if (curMajorFrame->curIns >=
-						ol->instructions.size()) {
-						// Raise out of fn body error.
-					}
-
-					if ((globalHeapPoolAlloc.szAllocated > _szComputedGcLimit)) {
-						gc();
-					}
-
-					const Instruction &ins = ol->instructions.at(curMajorFrame->curIns);
-
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _execIns(context, curMajorFrame, ins));
+				if (curMajorFrame->curIns >=
+					ol->instructions.size()) {
+					// Raise out of fn body error.
 				}
+
+				if ((globalHeapPoolAlloc.szAllocated > _szComputedGcLimit)) {
+					gc();
+				}
+
+				const Instruction &ins = ol->instructions.at(curMajorFrame->curIns);
+
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _execIns(context, curMajorFrame, ins));
 
 				break;
 			}
@@ -2075,9 +2101,9 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 					&context->getContext(),
 					curMajorFrame);
 				uint32_t returnValueOutReg = curMajorFrame->returnValueOutReg;
-				context->_context.majorFrames.pop_back();
+				context->_context.leaveMajor();
 				if (returnValueOutReg != UINT32_MAX) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, context->_context.majorFrames.back().get(), returnValueOutReg, returnValue));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, context->_context.majorFrameList, returnValueOutReg, returnValue));
 				}
 
 				break;
@@ -2092,8 +2118,12 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 		bool interruptExecution = false;
 
 		while (!interruptExecution) {
-			curMajorFrame = context->getContext().majorFrames.back().get();
+			curMajorFrame = context->getContext().majorFrameList;
 			curFn = curMajorFrame->curFn;
+
+			if (!curFn) {
+				break;
+			}
 
 			// TODO: Check if the yield request is from the top level.
 			if (context->getContext().flags & CTX_YIELDED)
@@ -2112,22 +2142,18 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 			case FnOverloadingKind::Regular: {
 				RegularFnOverloadingObject *ol = (RegularFnOverloadingObject *)curFn;
 
-				if (curMajorFrame->curIns == UINT32_MAX)
-					interruptExecution = true;
-				else {
-					if (curMajorFrame->curIns >=
-						ol->instructions.size()) {
-						// Raise out of fn body error.
-					}
-
-					if ((globalHeapPoolAlloc.szAllocated > _szComputedGcLimit)) {
-						gc();
-					}
-
-					const Instruction &ins = ol->instructions.at(curMajorFrame->curIns);
-
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _execIns(context, curMajorFrame, ins));
+				if (curMajorFrame->curIns >=
+					ol->instructions.size()) {
+					// Raise out of fn body error.
 				}
+
+				if ((globalHeapPoolAlloc.szAllocated > _szComputedGcLimit)) {
+					gc();
+				}
+
+				const Instruction &ins = ol->instructions.at(curMajorFrame->curIns);
+
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _execIns(context, curMajorFrame, ins));
 
 				break;
 			}
@@ -2138,9 +2164,9 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 					&context->getContext(),
 					curMajorFrame);
 				uint32_t returnValueOutReg = curMajorFrame->returnValueOutReg;
-				context->_context.majorFrames.pop_back();
+				context->_context.leaveMajor();
 				if (returnValueOutReg != UINT32_MAX) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, context->_context.majorFrames.back().get(), returnValueOutReg, returnValue));
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, context->_context.majorFrameList, returnValueOutReg, returnValue));
 				}
 
 				break;
@@ -2173,14 +2199,7 @@ SLAKE_API InternalExceptionPointer Runtime::execFn(
 
 		contextOut = context;
 
-		{
-			auto frame = std::make_unique<MajorFrame>(this, &context->getContext());
-			frame->curFn = overloading;
-			frame->curIns = UINT32_MAX;
-			frame->resizeRegs(1);
-			context->getContext().majorFrames.push_back(std::move(frame));
-		}
-
+		SLAKE_RETURN_IF_EXCEPT(_createNewMajorFrame(&context->_context, nullptr, nullptr, nullptr, 0, 0));
 		SLAKE_RETURN_IF_EXCEPT(_createNewMajorFrame(&context->_context, thisObject, overloading, args, nArgs, 0));
 	} else {
 		contextOut = context;
@@ -2213,14 +2232,7 @@ SLAKE_API InternalExceptionPointer Runtime::execFnWithSeparatedExecutionThread(
 
 		contextOut = context;
 
-		{
-			auto frame = std::make_unique<MajorFrame>(this, &context->getContext());
-			frame->curFn = overloading;
-			frame->curIns = UINT32_MAX;
-			frame->resizeRegs(1);
-			context->getContext().majorFrames.push_back(std::move(frame));
-		}
-
+		SLAKE_RETURN_IF_EXCEPT(_createNewMajorFrame(&context->_context, nullptr, nullptr, nullptr, 0, 0));
 		SLAKE_RETURN_IF_EXCEPT(_createNewMajorFrame(&context->_context, thisObject, overloading, args, nArgs, 0));
 	} else {
 		contextOut = context;

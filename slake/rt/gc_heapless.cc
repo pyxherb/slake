@@ -18,6 +18,21 @@ SLAKE_API void Runtime::GCHeaplessWalkContext::pushObject(Object *object) {
 	}
 }
 
+SLAKE_API void Runtime::GCHeaplessWalkContext::pushInstanceObject(Object *object) {
+	if (!object)
+		return;
+	switch (object->gcInfo.heapless.gcStatus) {
+	case ObjectGCStatus::Unwalked:
+		object->gcInfo.heapless.nextInstance = instanceList;
+		instanceList = object;
+		break;
+	case ObjectGCStatus::ReadyToWalk:
+		break;
+	case ObjectGCStatus::Walked:
+		break;
+	}
+}
+
 SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Scope *scope) {
 	if (!scope)
 		return;
@@ -154,26 +169,30 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 			auto value = (InstanceObject *)v;
 
 			context.pushObject(value->_class);
-			_gcWalkHeapless(context, value->methodTable);
+			if (value->_class->cachedInstantiatedMethodTable) {
+				_gcWalkHeapless(context, value->_class->cachedInstantiatedMethodTable);
+			}
 
-			for (auto &i : value->objectLayout->fieldRecords) {
-				_gcWalkHeapless(context, i.type);
+			if (value->_class->cachedObjectLayout) {
+				for (auto &i : value->_class->cachedObjectLayout->fieldRecords) {
+					_gcWalkHeapless(context, i.type);
 
-				switch (i.type.typeId) {
-				case TypeId::Value: {
-					switch (i.type.getValueTypeExData()) {
-					case ValueType::ObjectRef:
+					switch (i.type.typeId) {
+					case TypeId::Value: {
+						switch (i.type.getValueTypeExData()) {
+						case ValueType::ObjectRef:
+							context.pushObject(*((Object **)(value->rawFieldData + i.offset)));
+							break;
+						}
+						break;
+					}
+					case TypeId::String:
+					case TypeId::Instance:
+					case TypeId::Array:
+					case TypeId::Ref:
 						context.pushObject(*((Object **)(value->rawFieldData + i.offset)));
 						break;
 					}
-					break;
-				}
-				case TypeId::String:
-				case TypeId::Instance:
-				case TypeId::Array:
-				case TypeId::Ref:
-					context.pushObject(*((Object **)(value->rawFieldData + i.offset)));
-					break;
 				}
 			}
 			break;
@@ -367,7 +386,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 
 SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Context &ctxt) {
 	bool isWalkableObjectDetected = false;
-	for (auto &j : ctxt.majorFrames) {
+	for (MajorFrame *j = ctxt.majorFrameList; j; j = j->next) {
 		context.pushObject((FnOverloadingObject *)j->curFn);
 		context.pushObject(j->thisObject);
 		_gcWalkHeapless(context, j->curExcept);
@@ -418,6 +437,17 @@ SLAKE_API void Runtime::_gcHeapless() {
 		if (i->hostRefCount) {
 			context.pushObject(i);
 		}
+		switch(i->getKind()) {
+			case ObjectKind::Instance:
+				context.pushInstanceObject(i);
+				break;
+		}
+	}
+
+	for (auto i = _genericCacheDir.begin(); i != _genericCacheDir.end(); ++i) {
+		for (auto j = i.value().begin(); j != i.value().end(); ++j) {
+			context.pushObject(j.value());
+		}
 	}
 
 	for (auto &i : managedThreads) {
@@ -466,6 +496,26 @@ SLAKE_API void Runtime::_gcHeapless() {
 		}
 	}
 
+	// Delete instance objects first before the class objects are destroyed.
+	for(Object *i = context.instanceList, *next; i; i = next) {
+		next = i->gcInfo.heapless.next;
+		switch (i->gcInfo.heapless.gcStatus) {
+			case ObjectGCStatus::Unwalked:
+				if (i->_flags & VF_GCREADY) {
+					i->dealloc();
+					createdObjects.remove(i);
+					continue;
+				}
+				break;
+			case ObjectGCStatus::ReadyToWalk:
+				assert(false);
+				break;
+			case ObjectGCStatus::Walked:
+				i->gcInfo.heapless.gcStatus = ObjectGCStatus::Unwalked;
+				break;
+			}
+	}
+
 	// Delete unreachable objects.
 	for (auto it = createdObjects.begin(); it != createdObjects.end();) {
 		Object *i = *it;
@@ -473,7 +523,7 @@ SLAKE_API void Runtime::_gcHeapless() {
 		case ObjectGCStatus::Unwalked:
 			if ((*it)->_flags & VF_GCREADY) {
 				(*it)->dealloc();
-				createdObjects.remove((it++).node);
+				createdObjects.remove((it++));
 				continue;
 			}
 			break;

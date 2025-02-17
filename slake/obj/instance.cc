@@ -10,13 +10,11 @@ SLAKE_API InstanceObject::InstanceObject(Runtime *rt)
 
 SLAKE_API InstanceObject::InstanceObject(const InstanceObject &x) : Object(x) {
 	_class = x._class;
-	objectLayout = x.objectLayout;
-	methodTable = x.methodTable;
 	// TODO: Copy the rawFieldData.
 }
 
 SLAKE_API InstanceObject::~InstanceObject() {
-	for (auto i : methodTable->nativeDestructors)
+	for (auto i : _class->cachedInstantiatedMethodTable->nativeDestructors)
 		i(this);
 
 	if (rawFieldData)
@@ -33,12 +31,12 @@ SLAKE_API Object *InstanceObject::duplicate() const {
 }
 
 SLAKE_API ObjectRef InstanceObject::getMember(const std::string_view &name) const {
-	if (auto it = methodTable->methods.find(name);
-		it != methodTable->methods.end())
+	if (auto it = _class->cachedInstantiatedMethodTable->methods.find(name);
+		it != _class->cachedInstantiatedMethodTable->methods.end())
 		return ObjectRef::makeInstanceRef(it.value());
 
-	if (auto it = objectLayout->fieldNameMap.find(name);
-		it != objectLayout->fieldNameMap.end()) {
+	if (auto it = _class->cachedObjectLayout->fieldNameMap.find(name);
+		it != _class->cachedObjectLayout->fieldNameMap.end()) {
 		return ObjectRef::makeInstanceFieldRef((InstanceObject *)this, it.value());
 	}
 
@@ -52,7 +50,7 @@ SLAKE_API HostObjectRef<InstanceObject> slake::InstanceObject::alloc(Runtime *rt
 			sizeof(std::max_align_t),
 			rt));
 
-	if (!rt->createdObjects.pushBack(ptr.get()))
+	if (!rt->createdObjects.insert(ptr.get()))
 		return nullptr;
 
 	return ptr.release();
@@ -65,7 +63,7 @@ SLAKE_API HostObjectRef<InstanceObject> slake::InstanceObject::alloc(const Insta
 			sizeof(std::max_align_t),
 			*other));
 
-	if (!other->associatedRuntime->createdObjects.pushBack(ptr.get()))
+	if (!other->associatedRuntime->createdObjects.insert(ptr.get()))
 		return nullptr;
 
 	return ptr.release();

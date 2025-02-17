@@ -82,7 +82,7 @@ SLAKE_API HostObjectRef<ModuleObject> slake::ModuleObject::alloc(Runtime *rt, Sc
 	if (!ptr)
 		return nullptr;
 
-	if (!rt->createdObjects.pushBack(ptr.get()))
+	if (!rt->createdObjects.insert(ptr.get()))
 		return nullptr;
 
 	return ptr.release();

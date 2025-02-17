@@ -216,9 +216,6 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 
 	instance = InstanceObject::alloc(this);
 
-	instance->methodTable = cls->cachedInstantiatedMethodTable;
-	instance->objectLayout = cls->cachedObjectLayout;
-
 	if (cls->cachedObjectLayout->totalSize)
 		instance->rawFieldData = new char[cls->cachedObjectLayout->totalSize];
 	instance->szRawFieldData = cls->cachedObjectLayout->totalSize;

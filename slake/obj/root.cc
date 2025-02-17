@@ -23,7 +23,7 @@ SLAKE_API RootObject *RootObject::alloc(Runtime *rt) {
 	if (!ptr)
 		return nullptr;
 
-	if (!rt->createdObjects.pushBack(ptr.get()))
+	if (!rt->createdObjects.insert(ptr.get()))
 		return nullptr;
 
 	return ptr.release();

@@ -15,6 +15,125 @@ namespace slake {
 
 	// Value type definitions are defined in <slake/type.h>.
 
+	enum class ObjectRefKind : uint8_t {
+		FieldRef,
+		ArrayElementRef,
+		InstanceRef,
+		InstanceFieldRef,
+		LocalVarRef,
+		ArgRef,
+		AotPtrRef,
+	};
+
+	struct ObjectRef {
+		union {
+			struct {
+				ModuleObject *moduleObject;
+				uint32_t index;
+			} asField;
+			struct {
+				ArrayObject *arrayObject;
+				uint32_t index;
+			} asArray;
+			struct {
+				Object *instanceObject;
+			} asInstance;
+			struct {
+				InstanceObject *instanceObject;
+				size_t fieldIndex;
+			} asInstanceField;
+			struct {
+				MajorFrame *majorFrame;
+				uint32_t localVarIndex;
+			} asLocalVar;
+			struct {
+				MajorFrame *majorFrame;
+				uint32_t argIndex;
+			} asArg;
+			struct {
+				void *ptr;
+			} asAotPtr;
+		};
+		ObjectRefKind kind;
+
+		static SLAKE_FORCEINLINE ObjectRef makeFieldRef(ModuleObject *moduleObject, uint32_t index) {
+			ObjectRef ref = {};
+
+			ref.asField.moduleObject = moduleObject;
+			ref.asField.index = index;
+			ref.kind = ObjectRefKind::FieldRef;
+
+			return ref;
+		}
+
+		static SLAKE_FORCEINLINE ObjectRef makeArrayElementRef(ArrayObject *arrayObject, uint32_t index) {
+			ObjectRef ref = {};
+
+			ref.asArray.arrayObject = arrayObject;
+			ref.asArray.index = index;
+			ref.kind = ObjectRefKind::ArrayElementRef;
+
+			return ref;
+		}
+
+		static SLAKE_FORCEINLINE ObjectRef makeInstanceRef(Object *instanceObject) {
+			ObjectRef ref = {};
+
+			ref.asInstance.instanceObject = instanceObject;
+			ref.kind = ObjectRefKind::InstanceRef;
+
+			return ref;
+		}
+
+		static SLAKE_FORCEINLINE ObjectRef makeInstanceFieldRef(InstanceObject *instanceObject, size_t fieldIndex) {
+			ObjectRef ref = {};
+
+			ref.asInstanceField.instanceObject = instanceObject;
+			ref.asInstanceField.fieldIndex = fieldIndex;
+			ref.kind = ObjectRefKind::InstanceFieldRef;
+
+			return ref;
+		}
+
+		static SLAKE_FORCEINLINE ObjectRef makeLocalVarRef(MajorFrame *majorFrame, uint32_t localVarIndex) {
+			ObjectRef ref = {};
+
+			ref.asLocalVar.majorFrame = majorFrame;
+			ref.asLocalVar.localVarIndex = localVarIndex;
+			ref.kind = ObjectRefKind::LocalVarRef;
+
+			return ref;
+		}
+
+		static SLAKE_FORCEINLINE ObjectRef makeArgRef(MajorFrame *majorFrame, uint32_t argIndex) {
+			ObjectRef ref = {};
+
+			ref.asArg.majorFrame = majorFrame;
+			ref.asArg.argIndex = argIndex;
+			ref.kind = ObjectRefKind::ArgRef;
+
+			return ref;
+		}
+
+		static SLAKE_FORCEINLINE ObjectRef makeAotPtrRef(void *ptr) {
+			ObjectRef ref = {};
+
+			ref.asAotPtr.ptr = ptr;
+			ref.kind = ObjectRefKind::ArgRef;
+
+			return ref;
+		}
+
+		SLAKE_FORCEINLINE operator bool() const {
+			if (kind != ObjectRefKind::InstanceRef)
+				return true;
+			return asInstance.instanceObject;
+		}
+
+		SLAKE_API bool operator==(const ObjectRef &rhs) const;
+		SLAKE_API bool operator<(const ObjectRef &rhs) const;
+	};
+
 	struct Value {
 		union {
 			int8_t asI8;
@@ -28,7 +147,7 @@ namespace slake {
 			float asF32;
 			double asF64;
 			bool asBool;
-			char asType[sizeof(Type)];
+			Type asType;
 			ObjectRef asObjectRef;
 		} data;
 
@@ -79,7 +198,7 @@ namespace slake {
 			this->data.asU32 = index;
 		}
 		SLAKE_FORCEINLINE Value(const Type &type) noexcept : valueType(ValueType::TypeName) {
-			memcpy(data.asType, &type, sizeof(Type));
+			data.asType = type;
 		}
 
 		SLAKE_FORCEINLINE int8_t getI8() const noexcept {
@@ -144,11 +263,11 @@ namespace slake {
 
 		SLAKE_FORCEINLINE Type &getTypeName() noexcept {
 			assert(valueType == ValueType::TypeName);
-			return *((Type *)data.asType);
+			return data.asType;
 		}
 		SLAKE_FORCEINLINE const Type &getTypeName() const noexcept {
 			assert(valueType == ValueType::TypeName);
-			return *((const Type *)data.asType);
+			return data.asType;
 		}
 
 		SLAKE_FORCEINLINE ObjectRef &getObjectRef() noexcept {

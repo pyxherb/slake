@@ -289,7 +289,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const ObjectRef &objectRef) const {
 SLAKE_API InternalExceptionPointer Runtime::writeVar(const ObjectRef &objectRef, const Value &value) const {
 	switch (objectRef.kind) {
 	case ObjectRefKind::FieldRef: {
-		if (objectRef.asLocalVar.localVarIndex >= objectRef.asField.moduleObject->fieldRecords.size())
+		if (objectRef.asField.index >= objectRef.asField.moduleObject->fieldRecords.size())
 			// TODO: Use a proper type of exception instead of this.
 			return raiseInvalidArrayIndexError(objectRef.asField.moduleObject->associatedRuntime, objectRef.asArray.index);
 

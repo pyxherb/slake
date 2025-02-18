@@ -16,7 +16,6 @@ SLAKE_API MajorFrame::MajorFrame(Runtime *rt, Context *context)
 	  argStack(&rt->globalHeapPoolAlloc),
 	  nextArgStack(&rt->globalHeapPoolAlloc),
 	  localVarRecords(&rt->globalHeapPoolAlloc),
-	  regs(&rt->globalHeapPoolAlloc),
 	  minorFrames(&rt->globalHeapPoolAlloc) {
 }
 
@@ -97,7 +96,7 @@ SLAKE_API InternalExceptionPointer ContextObject::resume(HostRefHolder *hostRefH
 }
 
 SLAKE_API Value ContextObject::getResult() {
-	return _context.majorFrameList->regs.at(0);
+	return _context.majorFrameList->regs[0];
 }
 
 SLAKE_API bool ContextObject::isDone() {

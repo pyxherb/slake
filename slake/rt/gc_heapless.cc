@@ -418,8 +418,8 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Context 
 				break;
 			}
 		}
-		for (auto &k : j->regs)
-			_gcWalkHeapless(context, k);
+		for (size_t i = 0 ; i < j->nRegs; ++i)
+			_gcWalkHeapless(context, j->regs[i]);
 		for (auto &k : j->minorFrames) {
 			for (auto &l : k.exceptHandlers)
 				_gcWalkHeapless(context, l.type);

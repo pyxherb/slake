@@ -50,7 +50,7 @@ namespace slake {
 
 		peff::DynArray<LocalVarRecord> localVarRecords;	 // Local variable records.
 
-		peff::DynArray<Value> regs;	 // Local registers.
+		Value *regs;  // Local registers.
 		size_t nRegs = 0;
 
 		Object *thisObject = nullptr;  // `this' object.
@@ -72,11 +72,6 @@ namespace slake {
 
 		/// @brief Leave current minor frame.
 		SLAKE_API [[nodiscard]] bool leave();
-
-		SLAKE_FORCEINLINE void resizeRegs(size_t nRegs) {
-			this->nRegs = nRegs;
-			regs.resizeWith(nRegs, Value(ValueType::Undefined));
-		}
 	};
 
 	using ContextFlags = uint8_t;

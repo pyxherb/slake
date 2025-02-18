@@ -63,8 +63,7 @@ using namespace slake;
 		// The register does not present.
 		return InvalidOperandsError::alloc(runtime);
 	}
-	Value &reg = curMajorFrame->regs.at(index);
-	new (&reg) Value(value);
+	curMajorFrame->regs[index] = value;
 	return {};
 }
 
@@ -77,7 +76,7 @@ using namespace slake;
 		// The register does not present.
 		return InvalidOperandsError::alloc(runtime);
 	}
-	valueOut = curMajorFrame->regs.at(index);
+	valueOut = curMajorFrame->regs[index];
 	return {};
 }
 
@@ -149,7 +148,9 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 	if (!fn) {
 		// Used in the creation of top major frame.
 		newMajorFrame->curFn = nullptr;
-		newMajorFrame->resizeRegs(1);
+		newMajorFrame->nRegs = 1;
+		newMajorFrame->regs = (Value*)context->stackAlloc(sizeof(Value) * 1);
+		*newMajorFrame->regs = Value(ValueType::Undefined);
 	} else {
 		newMajorFrame->curFn = fn;
 		newMajorFrame->thisObject = thisObject;
@@ -186,7 +187,10 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 		switch (fn->overloadingKind) {
 		case FnOverloadingKind::Regular: {
 			RegularFnOverloadingObject *ol = (RegularFnOverloadingObject *)fn;
-			newMajorFrame->resizeRegs(ol->nRegisters);
+			newMajorFrame->nRegs = ol->nRegisters;
+			newMajorFrame->regs = (Value*)context->stackAlloc(sizeof(Value) * ol->nRegisters);
+			for(size_t i = 0 ; i < ol->nRegisters; ++i)
+				newMajorFrame->regs[i] = Value(ValueType::Undefined);
 			break;
 		}
 		default:;

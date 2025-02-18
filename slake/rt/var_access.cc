@@ -10,9 +10,6 @@ SLAKE_API InternalExceptionPointer Runtime::tryAccessVar(const ObjectRef &object
 		break;
 	}
 	case ObjectRefKind::LocalVarRef: {
-		LocalVarRecord &localVarRecord =
-			objectRef.asLocalVar.majorFrame->localVarRecords.at(objectRef.asLocalVar.localVarIndex);
-
 		break;
 	}
 	case ObjectRefKind::InstanceFieldRef: {
@@ -49,10 +46,7 @@ SLAKE_API InternalExceptionPointer Runtime::typeofVar(const ObjectRef &objectRef
 		break;
 	}
 	case ObjectRefKind::LocalVarRef: {
-		LocalVarRecord &localVarRecord =
-			objectRef.asLocalVar.majorFrame->localVarRecords.at(objectRef.asLocalVar.localVarIndex);
-
-		typeOut = localVarRecord.type;
+		typeOut = objectRef.asLocalVar.type;
 		break;
 	}
 	case ObjectRefKind::InstanceFieldRef: {
@@ -142,14 +136,11 @@ SLAKE_API Value Runtime::readVarUnsafe(const ObjectRef &objectRef) const {
 		break;
 	}
 	case ObjectRefKind::LocalVarRef: {
-		const LocalVarRecord &localVarRecord =
-			objectRef.asLocalVar.majorFrame->localVarRecords.at(objectRef.asLocalVar.localVarIndex);
+		const char *const rawDataPtr = objectRef.asLocalVar.context->dataStack + SLAKE_STACK_MAX - objectRef.asLocalVar.stackOff;
 
-		const char *const rawDataPtr = objectRef.asLocalVar.majorFrame->context->dataStack + SLAKE_STACK_MAX - localVarRecord.stackOffset;
-
-		switch (localVarRecord.type.typeId) {
+		switch (objectRef.asLocalVar.type.typeId) {
 		case TypeId::Value:
-			switch (localVarRecord.type.getValueTypeExData()) {
+			switch (objectRef.asLocalVar.type.getValueTypeExData()) {
 			case ValueType::I8:
 				return Value(*((int8_t *)rawDataPtr));
 			case ValueType::I16:
@@ -294,7 +285,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const ObjectRef &objectRef,
 			return raiseInvalidArrayIndexError(objectRef.asField.moduleObject->associatedRuntime, objectRef.asArray.index);
 
 		const FieldRecord &fieldRecord =
-			objectRef.asField.moduleObject->fieldRecords.at(objectRef.asLocalVar.localVarIndex);
+			objectRef.asField.moduleObject->fieldRecords.at(objectRef.asField.index);
 
 		if (!isCompatible(fieldRecord.type, value)) {
 			return raiseMismatchedVarTypeError(objectRef.asField.moduleObject->associatedRuntime);
@@ -355,22 +346,19 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const ObjectRef &objectRef,
 		break;
 	}
 	case ObjectRefKind::LocalVarRef: {
-		if (objectRef.asLocalVar.localVarIndex >= objectRef.asLocalVar.majorFrame->localVarRecords.size())
+		if (objectRef.asLocalVar.stackOff >= SLAKE_STACK_MAX)
 			// TODO: Use a proper type of exception instead of this.
 			return raiseInvalidArrayIndexError((Runtime *)this, objectRef.asArray.index);
 
-		const LocalVarRecord &localVarRecord =
-			objectRef.asLocalVar.majorFrame->localVarRecords.at(objectRef.asLocalVar.localVarIndex);
-
-		if (!isCompatible(localVarRecord.type, value)) {
+		if (!isCompatible(objectRef.asLocalVar.type, value)) {
 			return raiseMismatchedVarTypeError((Runtime *)this);
 		}
 
-		char *const rawDataPtr = objectRef.asLocalVar.majorFrame->context->dataStack + SLAKE_STACK_MAX - localVarRecord.stackOffset;
+		char *const rawDataPtr = objectRef.asLocalVar.context->dataStack + SLAKE_STACK_MAX - objectRef.asLocalVar.stackOff;
 
-		switch (localVarRecord.type.typeId) {
+		switch (objectRef.asLocalVar.type.typeId) {
 		case TypeId::Value:
-			switch (localVarRecord.type.getValueTypeExData()) {
+			switch (objectRef.asLocalVar.type.getValueTypeExData()) {
 			case ValueType::I8:
 				*((int8_t *)rawDataPtr) = value.getI8();
 				break;

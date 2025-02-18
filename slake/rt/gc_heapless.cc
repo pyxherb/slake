@@ -123,10 +123,9 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, const Va
 			context.pushObject(objectRef.asInstanceField.instanceObject);
 			break;
 		case ObjectRefKind::LocalVarRef:
-			_gcWalkHeapless(context, objectRef.asLocalVar.majorFrame->context);
 			break;
 		case ObjectRefKind::ArgRef:
-			_gcWalkHeapless(context, objectRef.asLocalVar.majorFrame->context);
+			_gcWalkHeapless(context, objectRef.asArg.majorFrame->context);
 			break;
 		}
 		break;
@@ -394,30 +393,6 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Context 
 			_gcWalkHeapless(context, k.value);
 		for (auto &k : j->nextArgStack)
 			_gcWalkHeapless(context, k);
-		for (auto &k : j->localVarRecords) {
-			assert(!k.type.isLoadingDeferred());
-			_gcWalkHeapless(context, k.type);
-
-			switch (k.type.typeId) {
-			case TypeId::Value: {
-				switch (k.type.getValueTypeExData()) {
-				case ValueType::ObjectRef:
-					context.pushObject(*((Object **)(ctxt.dataStack + SLAKE_STACK_MAX - k.stackOffset)));
-					break;
-				}
-				break;
-			}
-			case TypeId::String:
-			case TypeId::Instance:
-			case TypeId::Array:
-			case TypeId::Ref:
-				context.pushObject(*((Object **)(ctxt.dataStack + SLAKE_STACK_MAX - k.stackOffset)));
-				break;
-			case TypeId::Any:
-				_gcWalkHeapless(context, *(Value *)(ctxt.dataStack + SLAKE_STACK_MAX - k.stackOffset));
-				break;
-			}
-		}
 		for (size_t i = 0 ; i < j->nRegs; ++i)
 			_gcWalkHeapless(context, j->regs[i]);
 		for (auto &k : j->minorFrames) {

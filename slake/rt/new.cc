@@ -331,7 +331,7 @@ SLAKE_API HostObjectRef<ArrayObject> Runtime::newArrayInstance(Runtime *rt, cons
 	}
 	case TypeId::Any: {
 		HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(Value));
-		if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(Value) * length, sizeof(Value))))
+		if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(Value) * length, sizeof(std::max_align_t))))
 			return nullptr;
 		obj->length = length;
 		return obj.get();

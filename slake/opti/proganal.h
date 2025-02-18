@@ -48,14 +48,6 @@ namespace slake {
 			Type type;
 		};
 
-		struct StackFrameState {
-			peff::DynArray<size_t> stackBases;
-
-			SLAKE_FORCEINLINE StackFrameState(peff::Alloc *selfAllocator)
-				: stackBases(selfAllocator) {
-			}
-		};
-
 		struct FnCallAnalyzedInfo {
 			FnOverloadingObject *fnObject = nullptr;
 			peff::DynArray<uint32_t> argPushInsOffs;
@@ -86,7 +78,6 @@ namespace slake {
 			ProgramAnalyzedInfo &analyzedInfoOut;
 			HostRefHolder &hostRefHolder;
 			size_t idxCurIns = 0;
-			StackFrameState stackFrameState;
 			Object *lastCallTarget;
 			Type lastCallTargetType;
 			peff::DynArray<uint32_t> argPushInsOffs;
@@ -100,7 +91,6 @@ namespace slake {
 				  fnObject(fnObject),
 				  analyzedInfoOut(analyzedInfoOut),
 				  hostRefHolder(hostRefHolder),
-				  stackFrameState(&runtime->globalHeapPoolAlloc),
 				  argPushInsOffs(&runtime->globalHeapPoolAlloc) {
 			}
 		};

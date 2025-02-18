@@ -17,12 +17,10 @@ namespace slake {
 	struct MinorFrame final {
 		peff::DynArray<ExceptionHandler> exceptHandlers;  // Exception handlers
 
-		uint32_t nLocalVars = 0;
 		size_t stackBase = 0;
 
 		SLAKE_API MinorFrame(
 			Runtime *rt,
-			uint32_t nLocalVars,
 			size_t stackBase);
 		// Default constructor is required by resize() methods from the
 		// containers.
@@ -47,8 +45,6 @@ namespace slake {
 		peff::DynArray<ArgRecord> argStack;	 // Argument stack.
 
 		peff::DynArray<Value> nextArgStack;	 // Argument stack for next call.
-
-		peff::DynArray<LocalVarRecord> localVarRecords;	 // Local variable records.
 
 		Value *regs;  // Local registers.
 		size_t nRegs = 0;

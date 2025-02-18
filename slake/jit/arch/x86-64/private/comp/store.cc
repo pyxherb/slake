@@ -701,7 +701,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 		break;
 	}
 	case opti::RegStorageType::LocalVar: {
-		LocalVarState &localVarState = compileContext.localVarStates.at(regAnalyzedInfo.expectedValue.getObjectRef().asLocalVar.localVarIndex);
+		/*LocalVarState &localVarState = compileContext.localVarStates.at(regAnalyzedInfo.expectedValue.getObjectRef().asLocalVar.localVarIndex);
 
 		switch (localVarState.type.typeId) {
 		case TypeId::Value: {
@@ -1025,7 +1025,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 			break;
 		}
 		}
-		break;
+		break;*/
 	}
 	case opti::RegStorageType::ArgRef:
 		// TODO: Implement it.

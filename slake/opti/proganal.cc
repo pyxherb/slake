@@ -642,7 +642,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					analyzedInfoOut.analyzedRegInfo.at(regIndex).type));
 
 			analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::LocalVar;
-			analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value(ObjectRef::makeLocalVarRef(pseudoMajorFrame, pseudoMajorFrame->localVarRecords.size() - 1));
+			analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value(objectRef);
 			break;
 		}
 		case Opcode::LVALUE: {
@@ -678,18 +678,9 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 			break;
 		}
 		case Opcode::ENTER: {
-			if (!analyzeContext.stackFrameState.stackBases.pushBack(pseudoMajorFrame->localVarRecords.size()))
-				return OutOfMemoryError::alloc();
 			break;
 		}
 		case Opcode::LEAVE: {
-			if (!analyzeContext.stackFrameState.stackBases.size()) {
-				return MalformedProgramError::alloc(
-					runtime,
-					fnObject,
-					i);
-			}
-			analyzeContext.stackFrameState.stackBases.popBack();
 			break;
 		}
 		case Opcode::ADD:

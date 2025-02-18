@@ -23,9 +23,11 @@ SLAKE_API bool ObjectRef::operator==(const ObjectRef &rhs) const {
 			return false;
 		return asInstanceField.fieldIndex == rhs.asInstanceField.fieldIndex;
 	case ObjectRefKind::LocalVarRef:
-		if (asLocalVar.majorFrame != rhs.asLocalVar.majorFrame)
+		if (asLocalVar.context != rhs.asLocalVar.context)
 			return false;
-		return asLocalVar.localVarIndex == rhs.asLocalVar.localVarIndex;
+		if (asLocalVar.stackOff != rhs.asLocalVar.stackOff)
+			return false;
+		return asLocalVar.type == rhs.asLocalVar.type;
 	case ObjectRefKind::ArgRef:
 		if (asArg.majorFrame != rhs.asArg.majorFrame)
 			return false;
@@ -62,11 +64,15 @@ SLAKE_API bool ObjectRef::operator<(const ObjectRef &rhs) const {
 			return false;
 		return asInstanceField.fieldIndex < rhs.asInstanceField.fieldIndex;
 	case ObjectRefKind::LocalVarRef:
-		if (asLocalVar.majorFrame < rhs.asLocalVar.majorFrame)
+		if (asLocalVar.context < rhs.asLocalVar.context)
 			return true;
-		if (asLocalVar.majorFrame > rhs.asLocalVar.majorFrame)
+		if (asLocalVar.context > rhs.asLocalVar.context)
 			return false;
-		return asLocalVar.localVarIndex < rhs.asLocalVar.localVarIndex;
+		if (asLocalVar.stackOff < rhs.asLocalVar.stackOff)
+			return true;
+		if (asLocalVar.stackOff > rhs.asLocalVar.stackOff)
+			return false;
+		return asLocalVar.type < rhs.asLocalVar.type;
 	case ObjectRefKind::ArgRef:
 		if (asArg.majorFrame < rhs.asArg.majorFrame)
 			return true;
@@ -387,13 +393,12 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 			rt = objectRef.asInstanceField.instanceObject->associatedRuntime;
 			break;
 		case ObjectRefKind::LocalVarRef:
-			rt = objectRef.asLocalVar.majorFrame->curFn->associatedRuntime;
 			break;
 		case ObjectRefKind::ArrayElementRef:
 			rt = objectRef.asArray.arrayObject->associatedRuntime;
 			break;
 		case ObjectRefKind::ArgRef:
-			rt = objectRef.asLocalVar.majorFrame->curFn->associatedRuntime;
+			rt = objectRef.asArg.majorFrame->curFn->associatedRuntime;
 			break;
 		default:
 			return false;

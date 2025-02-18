@@ -8,10 +8,12 @@
 #include <map>
 #include <cassert>
 #include "type.h"
+#include <slake/generated/config.h>
 
 namespace slake {
 	struct Type;
 	class Object;
+	class Context;
 
 	// Value type definitions are defined in <slake/type.h>.
 
@@ -43,8 +45,9 @@ namespace slake {
 				size_t fieldIndex;
 			} asInstanceField;
 			struct {
-				MajorFrame *majorFrame;
-				uint32_t localVarIndex;
+				Context *context;
+				size_t stackOff;
+				Type type;
 			} asLocalVar;
 			struct {
 				MajorFrame *majorFrame;
@@ -95,11 +98,12 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE ObjectRef makeLocalVarRef(MajorFrame *majorFrame, uint32_t localVarIndex) {
+		static SLAKE_FORCEINLINE ObjectRef makeLocalVarRef(Context *context, size_t offset, const Type &type) {
 			ObjectRef ref = {};
 
-			ref.asLocalVar.majorFrame = majorFrame;
-			ref.asLocalVar.localVarIndex = localVarIndex;
+			ref.asLocalVar.context = context;
+			ref.asLocalVar.stackOff = offset;
+			ref.asLocalVar.type = type;
 			ref.kind = ObjectRefKind::LocalVarRef;
 
 			return ref;

@@ -4,10 +4,8 @@ using namespace slake;
 
 SLAKE_API MinorFrame::MinorFrame(
 	Runtime *rt,
-	uint32_t nLocalVars,
 	size_t stackBase)
 	: exceptHandlers(&rt->globalHeapPoolAlloc),
-	  nLocalVars(nLocalVars),
 	  stackBase(stackBase) {
 }
 
@@ -15,14 +13,11 @@ SLAKE_API MajorFrame::MajorFrame(Runtime *rt, Context *context)
 	: context(context),
 	  argStack(&rt->globalHeapPoolAlloc),
 	  nextArgStack(&rt->globalHeapPoolAlloc),
-	  localVarRecords(&rt->globalHeapPoolAlloc),
 	  minorFrames(&rt->globalHeapPoolAlloc) {
 }
 
 SLAKE_API bool MajorFrame::leave() {
 	context->stackTop = minorFrames.back().stackBase;
-	if (!localVarRecords.resize(minorFrames.back().nLocalVars))
-		return false;
 	if (!minorFrames.popBackAndResizeCapacity())
 		return false;
 	return true;

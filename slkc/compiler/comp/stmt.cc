@@ -94,9 +94,9 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 
 					compileExpr(compileContext, i.second.initValue, EvalPurpose::LValue, std::make_shared<RegRefNode>(resultRegIndex));
 					compileContext->_insertIns(
-						Opcode::LLOAD,
+						Opcode::MOV,
 						std::make_shared<RegRefNode>(tmpRegIndex),
-						{ std::make_shared<U32LiteralExprNode>(index) });
+						{ std::make_shared<RegRefNode>(index) });
 					compileContext->_insertIns(
 						Opcode::STORE,
 						{},
@@ -125,9 +125,9 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 
 						compileExpr(compileContext, std::make_shared<CastExprNode>(varType, i.second.initValue), EvalPurpose::RValue, std::make_shared<RegRefNode>(resultRegIndex));
 						compileContext->_insertIns(
-							Opcode::LLOAD,
+							Opcode::MOV,
 							std::make_shared<RegRefNode>(tmpRegIndex),
-							{ std::make_shared<U32LiteralExprNode>(index) });
+							{ std::make_shared<RegRefNode>(index) });
 						compileContext->_insertIns(
 							Opcode::STORE,
 							{},
@@ -139,9 +139,9 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 
 						compileExpr(compileContext, i.second.initValue, EvalPurpose::RValue, std::make_shared<RegRefNode>(resultRegIndex));
 						compileContext->_insertIns(
-							Opcode::LLOAD,
+							Opcode::MOV,
 							std::make_shared<RegRefNode>(tmpRegIndex),
-							{ std::make_shared<U32LiteralExprNode>(index) });
+							{ std::make_shared<RegRefNode>(index) });
 						compileContext->_insertIns(
 							Opcode::STORE,
 							{},
@@ -515,9 +515,9 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 				uint32_t tmpRegIndex = compileContext->allocReg(),
 						 exceptRegIndex = compileContext->allocReg();
 
-				compileContext->_insertIns(Opcode::LLOAD,
+				compileContext->_insertIns(Opcode::MOV,
 					std::make_shared<RegRefNode>(tmpRegIndex),
-					{ std::make_shared<U32LiteralExprNode>(localVarIndex) });
+					{ std::make_shared<RegRefNode>(localVarIndex) });
 
 				compileContext->_insertIns(Opcode::LEXCEPT, std::make_shared<RegRefNode>(exceptRegIndex), {});
 				compileContext->_insertIns(Opcode::STORE,

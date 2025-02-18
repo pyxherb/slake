@@ -809,9 +809,9 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 			auto localVarNode = std::static_pointer_cast<LocalVarNode>(x);
 
 			compileContext->_insertIns(
-				Opcode::LLOAD,
+				Opcode::MOV,
 				std::make_shared<RegRefNode>(tmpRegIndex),
-				{ std::make_shared<U32LiteralExprNode>(localVarNode->index) });
+				{ std::make_shared<RegRefNode>(localVarNode->refRegId) });
 
 			bool unwrap = false;
 			if (resolvedParts.size() > 1) {

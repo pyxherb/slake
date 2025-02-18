@@ -15,12 +15,12 @@ uint32_t CompileContext::allocLocalVar(std::string name, std::shared_ptr<TypeNam
 				MessageType::Error,
 				"Exceeded maximum number of local variables"));
 
-	uint32_t index = (uint32_t)curCollectiveContext.curMajorContext.curMinorContext.localVars.size();
+	uint32_t refRegId = allocReg();
 
-	curCollectiveContext.curMajorContext.curMinorContext.localVars[name] = std::make_shared<LocalVarNode>(name, index, type);
-	_insertIns(Opcode::LVAR, {}, { type });
+	curCollectiveContext.curMajorContext.curMinorContext.localVars[name] = std::make_shared<LocalVarNode>(name, refRegId, type);
+	_insertIns(Opcode::LVAR, std::make_shared<RegRefNode>(refRegId), { type });
 
-	return index;
+	return refRegId;
 }
 
 uint32_t CompileContext::allocReg() {

@@ -8,7 +8,6 @@ using namespace slake;
 		MNEMONIC_ENTRY(RLOAD),    \
 		MNEMONIC_ENTRY(STORE),    \
 		MNEMONIC_ENTRY(MOV),      \
-		MNEMONIC_ENTRY(LLOAD),    \
 		MNEMONIC_ENTRY(LARG),     \
 		MNEMONIC_ENTRY(LVAR),     \
 		MNEMONIC_ENTRY(LVALUE),   \

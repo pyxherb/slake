@@ -361,6 +361,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 
 		ObjectRef objectRef;
 		SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _addLocalVar(curMajorFrame, type, objectRef));
+		SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, curMajorFrame, ins.output.getRegIndex(), objectRef));
 		break;
 	}
 	case Opcode::LOAD: {
@@ -433,21 +434,6 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 														curMajorFrame,
 														ins.output.getRegIndex(),
 														value));
-		break;
-	}
-	case Opcode::LLOAD: {
-		SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(this, ins, true, 1));
-		SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.output, ValueType::RegRef));
-		SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.operands[0], ValueType::U32));
-
-		ObjectRef objectRef;
-		SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, lload(curMajorFrame, this, ins.operands[0].getU32(), objectRef));
-
-		SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr,
-			_setRegisterValue(this,
-				curMajorFrame,
-				ins.output.getRegIndex(),
-				Value(objectRef)));
 		break;
 	}
 	case Opcode::LARG: {

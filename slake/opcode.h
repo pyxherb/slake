@@ -16,7 +16,6 @@ namespace slake {
 
 		MOV,  // Move values between registers
 
-		LLOAD,	// Load a local variable.
 		LARG,	// Load an argument.
 
 		LVAR,  // Create a new local variable

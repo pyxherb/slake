@@ -65,11 +65,11 @@ namespace slake {
 		class LocalVarNode : public AstNode {
 		public:
 			std::string name;
-			uint32_t index;
+			uint32_t refRegId;
 			std::shared_ptr<TypeNameNode> type;
 
-			inline LocalVarNode(std::string name, uint32_t index, std::shared_ptr<TypeNameNode> type)
-				: name(name), index(index), type(type) {}
+			inline LocalVarNode(std::string name, uint32_t refRegId, std::shared_ptr<TypeNameNode> type)
+				: name(name), refRegId(refRegId), type(type) {}
 			virtual ~LocalVarNode() = default;
 
 			virtual inline NodeType getNodeType() const override { return NodeType::LocalVar; }

@@ -190,9 +190,6 @@ InternalExceptionPointer compileInstruction(
 		SLAKE_RETURN_IF_EXCEPT(compileStoreInstruction(compileContext, analyzedInfo, offIns, curIns));
 		break;
 	}
-	case Opcode::LLOAD: {
-		break;
-	}
 	case Opcode::LARG: {
 		break;
 	}

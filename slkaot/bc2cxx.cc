@@ -559,10 +559,16 @@ std::pair<std::shared_ptr<cxxast::IfndefDirective>, std::shared_ptr<cxxast::Name
 		recompileFnOverloading(cc, i);
 	}
 
+	std::shared_ptr<cxxast::Struct> constantObjectsStruct = std::make_shared<cxxast::Struct>("ConstantObjects");
+
+	rootNamespace->addPublicMember(
+		constantObjectsStruct
+	);
+
 	for (auto i : cc.constantObjects) {
-		rootNamespace->addPublicMember(std::make_shared<cxxast::Var>(
+		constantObjectsStruct->addPublicMember(std::make_shared<cxxast::Var>(
 			mangleConstantObjectName(i.get()),
-			cxxast::StorageClass::Extern,
+			cxxast::StorageClass::Unspecified,
 			genInstanceObjectTypeName(),
 			std::shared_ptr<cxxast::Expr>{}));
 	}

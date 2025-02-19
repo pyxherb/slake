@@ -149,7 +149,7 @@ SLAKE_API InvalidArgumentNumberError::InvalidArgumentNumberError(
 SLAKE_API InvalidArgumentNumberError::~InvalidArgumentNumberError() {}
 
 SLAKE_API const char *InvalidArgumentNumberError::what() const {
-	return "Invalid array index";
+	return "Invalid argument number";
 }
 
 SLAKE_API void InvalidArgumentNumberError::dealloc() {

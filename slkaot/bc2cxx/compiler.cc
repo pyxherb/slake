@@ -13,7 +13,12 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 
 		opti::ProgramAnalyzedInfo programInfo(compileContext.runtime);
 		HostRefHolder hostRefHolder(peff::getDefaultAlloc());
-		opti::analyzeProgramInfo(compileContext.runtime, fo, programInfo, hostRefHolder);
+		InternalExceptionPointer e = opti::analyzeProgramInfo(compileContext.runtime, fo, programInfo, hostRefHolder);
+		if (e) {
+			fprintf(stderr, "Error analyzing the program: %s\n", e->what());
+			e.reset();
+			return;
+		}
 
 		for (size_t i = 0; i < fo->instructions.size(); ++i) {
 			Instruction &ins = fo->instructions.at(i);
@@ -94,7 +99,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 				uint32_t idxBaseReg = ins.operands[0].getRegIndex();
 				HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[1].getObjectRef().asInstance.instanceObject;
 
-				compileContext.constantObjects.insert((Object*)id.get());
+				compileContext.constantObjects.insert((Object *)id.get());
 
 				std::shared_ptr<cxxast::TypeName> t = genObjectRefTypeName();
 
@@ -114,7 +119,17 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 								std::make_shared<cxxast::IdExpr>("runtime"),
 								std::make_shared<cxxast::IdExpr>("resolveIdRef"))),
 						std::vector<std::shared_ptr<cxxast::Expr>>{
-							std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(id.get())),
+							std::make_shared<cxxast::BinaryExpr>(cxxast::BinaryOp::PtrAccess,
+								std::make_shared<cxxast::CastExpr>(
+									std::make_shared<cxxast::PointerTypeName>(
+										std::make_shared<cxxast::CustomTypeName>(
+											false,
+											std::make_shared<cxxast::BinaryExpr>(
+												cxxast::BinaryOp::Scope,
+												_getAbsRef(compileContext.rootNamespace),
+												std::make_shared<cxxast::IdExpr>("ConstantObjects")))),
+												genConstantObjectsRef()),
+								std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(id.get()))),
 							std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.output.getRegIndex())),
 							std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(idxBaseReg)) })));
 				break;

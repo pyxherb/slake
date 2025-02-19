@@ -8,7 +8,7 @@ namespace slake {
 	namespace slkaot {
 		extern std::vector<std::string> modulePaths;
 
-		std::unique_ptr<std::ifstream> moduleLocator(Runtime *rt, HostObjectRef<IdRefObject> ref);
+		std::unique_ptr<std::istream> moduleLocator(Runtime *rt, const peff::DynArray<IdRefEntry> &ref);
 	}
 }
 

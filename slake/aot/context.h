@@ -7,6 +7,7 @@ namespace slake {
 	struct AOTFnExecContext {
 		Runtime *runtime;
 		peff::HashMap<peff::String, Type> mappedGenericArgs;
+		void *constantObjects;
 	};
 }
 

@@ -17,8 +17,8 @@ std::string BC2CXX::mangleRegLocalVarName(uint32_t idxReg) {
 	return "local_reg_" + std::to_string(idxReg);
 }
 
-std::string BC2CXX::mangleLocalVarName(uint32_t idxVar) {
-	return "local_var_" + std::to_string(idxVar);
+std::string BC2CXX::mangleLocalVarName(uint32_t idxReg) {
+	return "local_var_" + std::to_string(idxReg);
 }
 
 std::string BC2CXX::mangleParamName(uint32_t idxArg) {

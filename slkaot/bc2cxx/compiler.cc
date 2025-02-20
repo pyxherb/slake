@@ -149,6 +149,39 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 								std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.operands[0].getRegIndex())),
 								std::make_shared<cxxast::IdExpr>("asAotPtr")),
 							std::make_shared<cxxast::IdExpr>("ptr"));
+					switch (ins.operands[1].valueType) {
+					case ValueType::I8:
+					case ValueType::I16:
+					case ValueType::I32:
+					case ValueType::I64:
+					case ValueType::U8:
+					case ValueType::U16:
+					case ValueType::U32:
+					case ValueType::U64:
+					case ValueType::F32:
+					case ValueType::F64:
+					case ValueType::Bool:
+					case ValueType::ObjectRef:
+						lhs =
+							std::make_shared<cxxast::UnaryExpr>(
+								cxxast::UnaryOp::Dereference,
+								std::make_shared<cxxast::CastExpr>(
+									std::make_shared<cxxast::PointerTypeName>(compileType(compileContext, ins.operands[1].valueType)),
+									lhs));
+						rhs = compileValue(compileContext, ins.operands[1]);
+						break;
+					case ValueType::RegRef:
+						lhs =
+							std::make_shared<cxxast::UnaryExpr>(
+								cxxast::UnaryOp::Dereference,
+								std::make_shared<cxxast::CastExpr>(
+									std::make_shared<cxxast::PointerTypeName>(compileType(compileContext, programInfo.analyzedRegInfo.at(ins.operands[1].getRegIndex()).type)),
+									lhs));
+						rhs = std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.operands[1].getRegIndex()));
+						break;
+					default:
+						std::terminate();
+					}
 					break;
 				case opti::RegStorageType::FieldVar:
 					lhs =
@@ -159,62 +192,78 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 								std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.operands[0].getRegIndex())),
 								std::make_shared<cxxast::IdExpr>("asAotPtr")),
 							std::make_shared<cxxast::IdExpr>("ptr"));
+					// TODO: Implement it.
 					break;
 				case opti::RegStorageType::LocalVar:
-					lhs =
-						std::make_shared<cxxast::BinaryExpr>(
-							cxxast::BinaryOp::MemberAccess,
-							std::make_shared<cxxast::BinaryExpr>(
-								cxxast::BinaryOp::MemberAccess,
-								std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.operands[0].getRegIndex())),
-								std::make_shared<cxxast::IdExpr>("asAotPtr")),
-							std::make_shared<cxxast::IdExpr>("ptr"));
+					lhs = std::make_shared<cxxast::IdExpr>(mangleLocalVarName(programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).storageInfo.asLocalVar.definitionReg));
 					break;
 				case opti::RegStorageType::ArgRef:
-					lhs =
-						std::make_shared<cxxast::BinaryExpr>(
-							cxxast::BinaryOp::MemberAccess,
-							std::make_shared<cxxast::BinaryExpr>(
-								cxxast::BinaryOp::MemberAccess,
-								std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.operands[0].getRegIndex())),
-								std::make_shared<cxxast::IdExpr>("asAotPtr")),
-							std::make_shared<cxxast::IdExpr>("ptr"));
+					lhs = std::make_shared<cxxast::IdExpr>(mangleParamName(programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).expectedValue.getObjectRef().asArg.argIndex));
 					break;
 				}
 
-				switch (ins.operands[1].valueType) {
-				case ValueType::I8:
-				case ValueType::I16:
-				case ValueType::I32:
-				case ValueType::I64:
-				case ValueType::U8:
-				case ValueType::U16:
-				case ValueType::U32:
-				case ValueType::U64:
-				case ValueType::F32:
-				case ValueType::F64:
-				case ValueType::Bool:
-				case ValueType::ObjectRef:
+				switch (regInfo.storageType) {
+				case opti::RegStorageType::None:
 					lhs =
-						std::make_shared<cxxast::UnaryExpr>(
-							cxxast::UnaryOp::Dereference,
-							std::make_shared<cxxast::CastExpr>(
-								std::make_shared<cxxast::PointerTypeName>(compileType(compileContext, ins.operands[1].valueType)),
-								lhs));
-					rhs = compileValue(compileContext, ins.operands[1]);
+						std::make_shared<cxxast::BinaryExpr>(
+							cxxast::BinaryOp::MemberAccess,
+							std::make_shared<cxxast::BinaryExpr>(
+								cxxast::BinaryOp::MemberAccess,
+								std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.operands[0].getRegIndex())),
+								std::make_shared<cxxast::IdExpr>("asAotPtr")),
+							std::make_shared<cxxast::IdExpr>("ptr"));
+					switch (ins.operands[1].valueType) {
+					case ValueType::I8:
+					case ValueType::I16:
+					case ValueType::I32:
+					case ValueType::I64:
+					case ValueType::U8:
+					case ValueType::U16:
+					case ValueType::U32:
+					case ValueType::U64:
+					case ValueType::F32:
+					case ValueType::F64:
+					case ValueType::Bool:
+					case ValueType::ObjectRef:
+						lhs =
+							std::make_shared<cxxast::UnaryExpr>(
+								cxxast::UnaryOp::Dereference,
+								std::make_shared<cxxast::CastExpr>(
+									std::make_shared<cxxast::PointerTypeName>(compileType(compileContext, ins.operands[1].valueType)),
+									lhs));
+						break;
+					case ValueType::RegRef:
+						lhs =
+							std::make_shared<cxxast::UnaryExpr>(
+								cxxast::UnaryOp::Dereference,
+								std::make_shared<cxxast::CastExpr>(
+									std::make_shared<cxxast::PointerTypeName>(compileType(compileContext, programInfo.analyzedRegInfo.at(ins.operands[1].getRegIndex()).type)),
+									lhs));
+						break;
+					default:
+						std::terminate();
+					}
 					break;
-				case ValueType::RegRef:
+				case opti::RegStorageType::FieldVar:
 					lhs =
-						std::make_shared<cxxast::UnaryExpr>(
-							cxxast::UnaryOp::Dereference,
-							std::make_shared<cxxast::CastExpr>(
-								std::make_shared<cxxast::PointerTypeName>(compileType(compileContext, programInfo.analyzedRegInfo.at(ins.operands[1].getRegIndex()).type)),
-								lhs));
-					rhs = std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.operands[1].getRegIndex()));
+						std::make_shared<cxxast::BinaryExpr>(
+							cxxast::BinaryOp::MemberAccess,
+							std::make_shared<cxxast::BinaryExpr>(
+								cxxast::BinaryOp::MemberAccess,
+								std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.operands[0].getRegIndex())),
+								std::make_shared<cxxast::IdExpr>("asAotPtr")),
+							std::make_shared<cxxast::IdExpr>("ptr"));
+					// TODO: Implement it.
 					break;
-				default:
-					std::terminate();
+				case opti::RegStorageType::LocalVar:
+					lhs = std::make_shared<cxxast::IdExpr>(mangleLocalVarName(programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).storageInfo.asLocalVar.definitionReg));
+					break;
+				case opti::RegStorageType::ArgRef:
+					lhs = std::make_shared<cxxast::IdExpr>(mangleParamName(programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).expectedValue.getObjectRef().asArg.argIndex));
+					break;
 				}
+
+				rhs = std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.operands[1].getRegIndex()));
 
 				fnOverloading->body.push_back(std::make_shared<cxxast::ExprStmt>(
 					std::make_shared<cxxast::BinaryExpr>(cxxast::BinaryOp::Assign,
@@ -240,8 +289,10 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 				case ValueType::F32:
 				case ValueType::F64:
 				case ValueType::Bool:
-				case ValueType::ObjectRef:
 					type = compileType(compileContext, Type(ins.operands[0].valueType));
+					break;
+				case ValueType::ObjectRef:
+					type = genInstanceObjectTypeName();
 					break;
 				case ValueType::RegRef:
 					type = compileType(compileContext, programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).type);
@@ -255,6 +306,51 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 						type,
 						std::vector<cxxast::VarDefPair>{
 							{ mangleRegLocalVarName(ins.output.getRegIndex()),
+								rhs } }));
+				break;
+			}
+			case Opcode::LARG: {
+				compileContext.pushDynamicContents();
+				compileContext.dynamicContents.compilationTarget = CompilationTarget::VarDef;
+
+				std::shared_ptr<cxxast::TypeName> t = genObjectRefTypeName();
+
+				std::string varName = mangleRegLocalVarName(ins.output.getRegIndex());
+				cxxast::VarDefPair varDefPair;
+
+				varDefPair = { varName, std::make_shared<cxxast::CallExpr>(
+											std::make_shared<cxxast::BinaryExpr>(
+												cxxast::BinaryOp::Scope,
+												std::make_shared<cxxast::BinaryExpr>(
+													cxxast::BinaryOp::Scope,
+													std::make_shared<cxxast::IdExpr>("slake"),
+													std::make_shared<cxxast::IdExpr>("ObjectRef")),
+												std::make_shared<cxxast::IdExpr>("makeAotPtrRef")),
+											std::vector<std::shared_ptr<cxxast::Expr>>{
+												std::make_shared<cxxast::UnaryExpr>(
+													cxxast::UnaryOp::AddressOf,
+													std::make_shared<cxxast::IdExpr>(mangleParamName(ins.operands[0].getU32()))) }) };
+
+				std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(t, std::vector<cxxast::VarDefPair>{ varDefPair });
+
+				fnOverloading->body.push_back(stmt);
+
+				compileContext.popDynamicContents();
+				break;
+			}
+			case Opcode::LVAR: {
+				std::shared_ptr<cxxast::Expr> rhs;
+				std::shared_ptr<cxxast::TypeName> type;
+
+				std::vector<cxxast::VarDefPair> varDefPairs;
+
+				type = compileType(compileContext, ins.operands[0].getTypeName());
+
+				fnOverloading->body.push_back(
+					std::make_shared<cxxast::LocalVarDefStmt>(
+						type,
+						std::vector<cxxast::VarDefPair>{
+							{ mangleLocalVarName(ins.output.getRegIndex()),
 								rhs } }));
 				break;
 			}

@@ -24,6 +24,7 @@ namespace slake {
 
 		struct LocalVarRegStorageInfo {
 			bool isUsedForOutput;
+			uint32_t definitionReg;
 		};
 
 		struct ArgRefRegStorageInfo {

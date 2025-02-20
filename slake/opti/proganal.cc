@@ -500,44 +500,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 			}
 
 			break;
-		}/*
-		case Opcode::LLOAD: {
-			if (regIndex != UINT32_MAX) {
-				if (curIns.nOperands != 1) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
-				}
-
-				if (curIns.operands[0].valueType != ValueType::U32) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
-				}
-
-				uint32_t index = curIns.operands[0].getU32();
-
-				if (index >= pseudoMajorFrame->localVarRecords.size()) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
-				}
-
-				SLAKE_RETURN_IF_EXCEPT(
-					wrapIntoRefType(
-						runtime,
-						pseudoMajorFrame->localVarRecords.at(index).type,
-						hostRefHolder,
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).type));
-
-				analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::LocalVar;
-				analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value(ObjectRef::makeLocalVarRef(pseudoMajorFrame, index));
-			}
-			break;
-		}*/
+		}
 		case Opcode::LARG: {
 			if (regIndex != UINT32_MAX) {
 				if (curIns.nOperands != 1) {
@@ -642,6 +605,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					analyzedInfoOut.analyzedRegInfo.at(regIndex).type));
 
 			analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::LocalVar;
+			analyzedInfoOut.analyzedRegInfo.at(regIndex).storageInfo.asLocalVar.definitionReg = curIns.output.getRegIndex();
 			analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value(objectRef);
 			break;
 		}

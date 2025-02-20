@@ -241,9 +241,6 @@ std::shared_ptr<cxxast::TypeName> BC2CXX::compileType(CompileContext &compileCon
 		case ValueType::Bool:
 			tn = std::make_shared<cxxast::BoolTypeName>();
 			break;
-		case ValueType::ObjectRef:
-			tn = genObjectRefTypeName();
-			break;
 		default:
 			// Invalid type name, terminate.
 			std::terminate();

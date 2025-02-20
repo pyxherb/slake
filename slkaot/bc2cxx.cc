@@ -176,7 +176,7 @@ std::shared_ptr<cxxast::Expr> BC2CXX::compileValue(CompileContext &compileContex
 			std::terminate();
 		Object *object = objectRef.asInstance.instanceObject;
 		if (object) {
-			compileContext.constantObjects.insert(object);
+			compileContext.mappedObjects.insert(object);
 			e = std::make_shared<cxxast::BinaryExpr>(cxxast::BinaryOp::PtrAccess,
 				std::make_shared<cxxast::CastExpr>(
 					std::make_shared<cxxast::PointerTypeName>(
@@ -185,8 +185,8 @@ std::shared_ptr<cxxast::Expr> BC2CXX::compileValue(CompileContext &compileContex
 							std::make_shared<cxxast::BinaryExpr>(
 								cxxast::BinaryOp::Scope,
 								_getAbsRef(compileContext.rootNamespace),
-								std::make_shared<cxxast::IdExpr>("ConstantObjects")))),
-					genConstantObjectsRef()),
+								std::make_shared<cxxast::IdExpr>("MappedObjects")))),
+					genMappedObjectsRef()),
 				std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(object)));
 		} else {
 			e = std::make_shared<cxxast::NullptrLiteralExpr>();
@@ -263,7 +263,7 @@ std::shared_ptr<cxxast::TypeName> BC2CXX::compileType(CompileContext &compileCon
 	case TypeId::Instance:
 	case TypeId::Array:
 	case TypeId::FnDelegate: {
-		tn = genObjectRefTypeName();
+		tn = genInstanceObjectTypeName();
 		break;
 	}
 	case TypeId::Ref: {
@@ -340,6 +340,7 @@ std::shared_ptr<cxxast::Fn> BC2CXX::compileFnOverloading(CompileContext &compile
 		}
 
 		registerRuntimeObjectToAstNodeRegistry(fnOverloadingObject, fnOverloading);
+		compileContext.mappedObjects.insert(fnOverloadingObject);
 
 		switch (fnOverloadingObject->overloadingKind) {
 		case FnOverloadingKind::Regular: {
@@ -361,6 +362,7 @@ std::shared_ptr<cxxast::Class> BC2CXX::compileClass(CompileContext &compileConte
 		std::shared_ptr<cxxast::Class> cls = std::make_shared<cxxast::Class>(mangleClassName((std::string)(std::string_view)moduleObject->name, moduleObject->genericArgs));
 
 		registerRuntimeObjectToAstNodeRegistry(moduleObject, cls);
+		compileContext.mappedObjects.insert(moduleObject);
 
 		for (size_t i = 0; i < moduleObject->fieldRecords.size(); ++i) {
 			const FieldRecord &fr = moduleObject->fieldRecords.at(i);
@@ -443,6 +445,7 @@ void BC2CXX::compileModule(CompileContext &compileContext, ModuleObject *moduleO
 	std::shared_ptr<cxxast::Namespace> ns = completeModuleNamespace(compileContext, fullModuleName);
 
 	registerRuntimeObjectToAstNodeRegistry(moduleObject, ns);
+	compileContext.mappedObjects.insert(moduleObject);
 
 	for (size_t i = 0; i < moduleObject->fieldRecords.size(); ++i) {
 		const FieldRecord &fr = moduleObject->fieldRecords.at(i);
@@ -584,13 +587,13 @@ std::pair<std::shared_ptr<cxxast::IfndefDirective>, std::shared_ptr<cxxast::Name
 		recompileFnOverloading(cc, i);
 	}
 
-	std::shared_ptr<cxxast::Struct> constantObjectsStruct = std::make_shared<cxxast::Struct>("ConstantObjects");
+	std::shared_ptr<cxxast::Struct> mappedObjectsStruct = std::make_shared<cxxast::Struct>("MappedObjects");
 
 	rootNamespace->addPublicMember(
-		constantObjectsStruct);
+		mappedObjectsStruct);
 
-	for (auto i : cc.constantObjects) {
-		constantObjectsStruct->addPublicMember(std::make_shared<cxxast::Var>(
+	for (auto i : cc.mappedObjects) {
+		mappedObjectsStruct->addPublicMember(std::make_shared<cxxast::Var>(
 			mangleConstantObjectName(i.get()),
 			cxxast::StorageClass::Unspecified,
 			genInstanceObjectTypeName(),

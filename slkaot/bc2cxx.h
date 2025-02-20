@@ -55,7 +55,7 @@ namespace slake {
 					std::shared_ptr<cxxast::Namespace> rootNamespace;
 					std::list<DynamicCompileContextContents> savedDynamicContents;
 					DynamicCompileContextContents dynamicContents;
-					std::set<HostObjectRef<>> constantObjects;
+					std::set<HostObjectRef<>> mappedObjects;
 
 					SLAKE_FORCEINLINE CompileContext(Runtime *runtime, std::shared_ptr<cxxast::Namespace> rootNamespace) : runtime(runtime), rootNamespace(rootNamespace) {}
 
@@ -137,11 +137,11 @@ namespace slake {
 					return std::make_shared<cxxast::IdExpr>(genAotContextParamName(), cxxast::GenericArgList{});
 				}
 
-				SLAKE_FORCEINLINE std::shared_ptr<cxxast::Expr> genConstantObjectsRef() {
+				SLAKE_FORCEINLINE std::shared_ptr<cxxast::Expr> genMappedObjectsRef() {
 					return std::make_shared<cxxast::BinaryExpr>(
 						cxxast::BinaryOp::MemberAccess,
 						genAotContextRef(),
-						std::make_shared<cxxast::IdExpr>("constantObjects", cxxast::GenericArgList{}));
+						std::make_shared<cxxast::IdExpr>("mappedObjects", cxxast::GenericArgList{}));
 				}
 
 				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genAotContextTypeName() {

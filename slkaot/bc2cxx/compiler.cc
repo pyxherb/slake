@@ -30,6 +30,8 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex());
 				HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[0].getObjectRef().asInstance.instanceObject;
 
+				compileContext.mappedObjects.insert(id.get());
+
 				switch (outputRegInfo.expectedValue.valueType) {
 				case ValueType::ObjectRef: {
 					ObjectRef &objectRef = outputRegInfo.expectedValue.getObjectRef();
@@ -37,8 +39,6 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 					switch (objectRef.kind) {
 					case ObjectRefKind::InstanceRef: {
 						Object *object = objectRef.asInstance.instanceObject;
-
-						std::shared_ptr<cxxast::TypeName> t = genObjectRefTypeName();
 
 						std::string varName = mangleRegLocalVarName(ins.output.getRegIndex());
 
@@ -50,21 +50,20 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 							// If so, we can just simply use the reference to the native member.
 							varDefPair = {
 								varName,
-								std::make_shared<cxxast::CallExpr>(
-									std::make_shared<cxxast::BinaryExpr>(
-										cxxast::BinaryOp::Scope,
-										std::make_shared<cxxast::BinaryExpr>(
-											cxxast::BinaryOp::Scope,
-											std::make_shared<cxxast::IdExpr>("slake"),
-											std::make_shared<cxxast::IdExpr>("ObjectRef")),
-										std::make_shared<cxxast::IdExpr>("makeAotPtrRef")),
-									std::vector<std::shared_ptr<cxxast::Expr>>{
-										std::make_shared<cxxast::CastExpr>(
-											std::make_shared<cxxast::PointerTypeName>(std::make_shared<cxxast::VoidTypeName>()),
-											_getAbsRef(astNode)) })
+								std::make_shared<cxxast::BinaryExpr>(cxxast::BinaryOp::PtrAccess,
+									std::make_shared<cxxast::CastExpr>(
+										std::make_shared<cxxast::PointerTypeName>(
+											std::make_shared<cxxast::CustomTypeName>(
+												false,
+												std::make_shared<cxxast::BinaryExpr>(
+													cxxast::BinaryOp::Scope,
+													_getAbsRef(compileContext.rootNamespace),
+													std::make_shared<cxxast::IdExpr>("MappedObjects")))),
+										genMappedObjectsRef()),
+									std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(object)))
 							};
 
-							std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(t, std::vector<cxxast::VarDefPair>{ varDefPair });
+							std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(genInstanceObjectTypeName(), std::vector<cxxast::VarDefPair>{ varDefPair });
 
 							fnOverloading->body.push_back(stmt);
 						} else {
@@ -72,7 +71,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 
 							varDefPair = { varName, {} };
 
-							std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(t, std::vector<cxxast::VarDefPair>{ varDefPair });
+							std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(genObjectRefTypeName(), std::vector<cxxast::VarDefPair>{ varDefPair });
 
 							fnOverloading->body.push_back(stmt);
 
@@ -94,8 +93,8 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 														std::make_shared<cxxast::BinaryExpr>(
 															cxxast::BinaryOp::Scope,
 															_getAbsRef(compileContext.rootNamespace),
-															std::make_shared<cxxast::IdExpr>("ConstantObjects")))),
-												genConstantObjectsRef()),
+															std::make_shared<cxxast::IdExpr>("MappedObjects")))),
+												genMappedObjectsRef()),
 											std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(id.get()))),
 										std::make_shared<cxxast::IdExpr>(std::string(varName)) })));
 						}
@@ -131,8 +130,8 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 													std::make_shared<cxxast::BinaryExpr>(
 														cxxast::BinaryOp::Scope,
 														_getAbsRef(compileContext.rootNamespace),
-														std::make_shared<cxxast::IdExpr>("ConstantObjects")))),
-											genConstantObjectsRef()),
+														std::make_shared<cxxast::IdExpr>("MappedObjects")))),
+											genMappedObjectsRef()),
 										std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(id.get()))),
 									std::make_shared<cxxast::IdExpr>(std::string(varName)) })));
 						break;
@@ -149,7 +148,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 				uint32_t idxBaseReg = ins.operands[0].getRegIndex();
 				HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[1].getObjectRef().asInstance.instanceObject;
 
-				compileContext.constantObjects.insert((Object *)id.get());
+				compileContext.mappedObjects.insert((Object *)id.get());
 
 				cxxast::VarDefPair varDefPair = { mangleRegLocalVarName(ins.output.getRegIndex()), {} };
 
@@ -175,8 +174,8 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 											std::make_shared<cxxast::BinaryExpr>(
 												cxxast::BinaryOp::Scope,
 												_getAbsRef(compileContext.rootNamespace),
-												std::make_shared<cxxast::IdExpr>("ConstantObjects")))),
-									genConstantObjectsRef()),
+												std::make_shared<cxxast::IdExpr>("MappedObjects")))),
+									genMappedObjectsRef()),
 								std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(id.get()))),
 							std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.output.getRegIndex())),
 							std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(idxBaseReg)) })));
@@ -340,10 +339,20 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 					type = compileType(compileContext, Type(ins.operands[0].valueType));
 					rhs = compileValue(compileContext, ins.operands[0]);
 					break;
-				case ValueType::ObjectRef:
-					type = genObjectRefTypeName();
+				case ValueType::ObjectRef: {
+					ObjectRef &objectRef = ins.operands[0].getObjectRef();
+
+					switch (objectRef.kind) {
+					case ObjectRefKind::InstanceRef:
+						compileContext.mappedObjects.insert(objectRef.asInstance.instanceObject);
+						type = genInstanceObjectTypeName();
+						break;
+					default:
+						type = genObjectRefTypeName();
+					}
 					rhs = compileValue(compileContext, ins.operands[0]);
 					break;
+				}
 				case ValueType::RegRef: {
 					uint32_t regIndex = ins.operands[0].getRegIndex();
 					type = compileType(compileContext, programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).type);

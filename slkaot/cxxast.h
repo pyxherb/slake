@@ -477,6 +477,8 @@ namespace slake {
 				Cmp,
 				Subscript,
 
+				Assign,
+
 				Scope,
 				MemberAccess,
 				PtrAccess,

@@ -164,6 +164,7 @@ namespace slake {
 
 				std::string mangleConstantObjectName(Object *object);
 				std::string mangleRegLocalVarName(uint32_t idxReg);
+				std::string mangleLocalVarName(uint32_t idxVar);
 				std::string mangleParamName(uint32_t idxArg);
 				std::string mangleRefForTypeName(const peff::DynArray<IdRefEntry> &entries);
 				std::string mangleTypeName(const Type &type);

@@ -164,29 +164,18 @@ std::shared_ptr<cxxast::Expr> BC2CXX::compileValue(CompileContext &compileContex
 			std::terminate();
 		Object *object = objectRef.asInstance.instanceObject;
 		if (object) {
-			switch (object->getKind()) {
-			case ObjectKind::String: {
-				std::string name((std::string_view)((StringObject *)object)->data);
-
-				e = std::make_shared<cxxast::StringLiteralExpr>(std::move(name));
-				break;
-			}
-			case ObjectKind::Array: {
-				std::vector<std::shared_ptr<cxxast::Expr>> args;
-
-				for (size_t i = 0; i < ((ArrayObject *)object)->length; ++i) {
-					ObjectRef elementRef = ObjectRef::makeArrayElementRef(((ArrayObject *)object), i);
-					args.push_back(
-						compileValue(compileContext,
-							compileContext.runtime->readVarUnsafe(elementRef)));
-				}
-
-				e = std::make_shared<cxxast::InitializerListExpr>(
-					compileType(compileContext, ((ArrayObject *)object)->elementType),
-					std::move(args));
-				break;
-			}
-			}
+			compileContext.constantObjects.insert(object);
+			e = std::make_shared<cxxast::BinaryExpr>(cxxast::BinaryOp::PtrAccess,
+				std::make_shared<cxxast::CastExpr>(
+					std::make_shared<cxxast::PointerTypeName>(
+						std::make_shared<cxxast::CustomTypeName>(
+							false,
+							std::make_shared<cxxast::BinaryExpr>(
+								cxxast::BinaryOp::Scope,
+								_getAbsRef(compileContext.rootNamespace),
+								std::make_shared<cxxast::IdExpr>("ConstantObjects")))),
+					genConstantObjectsRef()),
+				std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(object)));
 		} else {
 			e = std::make_shared<cxxast::NullptrLiteralExpr>();
 		}
@@ -252,6 +241,9 @@ std::shared_ptr<cxxast::TypeName> BC2CXX::compileType(CompileContext &compileCon
 		case ValueType::Bool:
 			tn = std::make_shared<cxxast::BoolTypeName>();
 			break;
+		case ValueType::ObjectRef:
+			tn = genObjectRefTypeName();
+			break;
 		default:
 			// Invalid type name, terminate.
 			std::terminate();
@@ -267,13 +259,13 @@ std::shared_ptr<cxxast::TypeName> BC2CXX::compileType(CompileContext &compileCon
 	}
 	case TypeId::Ref: {
 		switch (compileContext.dynamicContents.compilationTarget) {
-		case CompilationTarget::VarDef:
-			tn = genObjectRefTypeName();
-			break;
-		default:
+		case CompilationTarget::Param:
 			tn = std::make_shared<cxxast::RefTypeName>(
 				genObjectRefTypeName());
 			tn->isConst = true;
+			break;
+		default:
+			tn = genObjectRefTypeName();
 		}
 		break;
 	}
@@ -562,8 +554,7 @@ std::pair<std::shared_ptr<cxxast::IfndefDirective>, std::shared_ptr<cxxast::Name
 	std::shared_ptr<cxxast::Struct> constantObjectsStruct = std::make_shared<cxxast::Struct>("ConstantObjects");
 
 	rootNamespace->addPublicMember(
-		constantObjectsStruct
-	);
+		constantObjectsStruct);
 
 	for (auto i : cc.constantObjects) {
 		constantObjectsStruct->addPublicMember(std::make_shared<cxxast::Var>(

@@ -431,7 +431,7 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 			std::shared_ptr<cxxast::RefTypeName> ptn = std::static_pointer_cast<cxxast::RefTypeName>(tn);
 
 			_dumpAstNode(os, ptn->refType, dumpMode, 0);
-			os << " &";
+			os << "&";
 
 			break;
 		}
@@ -439,7 +439,7 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 			std::shared_ptr<cxxast::RvalueTypeName> ptn = std::static_pointer_cast<cxxast::RvalueTypeName>(tn);
 
 			_dumpAstNode(os, ptn->refType, dumpMode, 0);
-			os << " &&";
+			os << "&&";
 
 			break;
 		}
@@ -921,6 +921,15 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 				os << "[";
 				_dumpAstNode(os, e->rhs, dumpMode, 0);
 				os << "]";
+				break;
+			case cxxast::BinaryOp::Assign:
+				os << "(";
+				_dumpAstNode(os, e->lhs, dumpMode, 0);
+				os << ")";
+				os << " = ";
+				os << "(";
+				_dumpAstNode(os, e->rhs, dumpMode, 0);
+				os << ")";
 				break;
 			case cxxast::BinaryOp::Scope:
 				if (!_isSimpleIdExpr(e->lhs)) {

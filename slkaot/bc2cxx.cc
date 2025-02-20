@@ -1,4 +1,5 @@
 #include "bc2cxx.h"
+#include "compiler.h"
 
 using namespace slake;
 using namespace slake::slkaot;
@@ -6,6 +7,17 @@ using namespace slake::slkaot::bc2cxx;
 
 bool BC2CXX::_isSimpleIdExpr(std::shared_ptr<cxxast::Expr> expr) {
 	switch (expr->exprKind) {
+	case cxxast::ExprKind::IntLiteral:
+	case cxxast::ExprKind::UIntLiteral:
+	case cxxast::ExprKind::LongLiteral:
+	case cxxast::ExprKind::ULongLiteral:
+	case cxxast::ExprKind::CharLiteral:
+	case cxxast::ExprKind::StringLiteral:
+	case cxxast::ExprKind::FloatLiteral:
+	case cxxast::ExprKind::DoubleLiteral:
+	case cxxast::ExprKind::BoolLiteral:
+	case cxxast::ExprKind::NullptrLiteral:
+	case cxxast::ExprKind::InitializerList:
 	case cxxast::ExprKind::Id:
 		return true;
 	case cxxast::ExprKind::Binary: {
@@ -251,19 +263,11 @@ std::shared_ptr<cxxast::TypeName> BC2CXX::compileType(CompileContext &compileCon
 	case TypeId::Instance:
 	case TypeId::Array:
 	case TypeId::FnDelegate: {
-		tn = genInstanceObjectTypeName();
+		tn = genObjectRefTypeName();
 		break;
 	}
 	case TypeId::Ref: {
-		switch (compileContext.dynamicContents.compilationTarget) {
-		case CompilationTarget::Param:
-			tn = std::make_shared<cxxast::RefTypeName>(
-				genObjectRefTypeName());
-			tn->isConst = true;
-			break;
-		default:
-			tn = genObjectRefTypeName();
-		}
+		tn = genObjectRefTypeName();
 		break;
 	}
 	case TypeId::Any: {
@@ -274,6 +278,29 @@ std::shared_ptr<cxxast::TypeName> BC2CXX::compileType(CompileContext &compileCon
 		std::terminate();
 	}
 	return tn;
+}
+
+std::shared_ptr<cxxast::TypeName> BC2CXX::compileParamType(CompileContext &compileContext, const Type &type) {
+	std::shared_ptr<cxxast::TypeName> tn;
+
+	switch (type.typeId) {
+	case TypeId::None:
+		return compileType(compileContext, type);
+	case TypeId::Value:
+		return compileType(compileContext, type);
+	case TypeId::String:
+	case TypeId::Instance:
+	case TypeId::Array:
+	case TypeId::FnDelegate:
+		return std::make_shared<cxxast::RefTypeName>(compileType(compileContext, type));
+	case TypeId::Ref:
+		return compileType(compileContext, type);
+	case TypeId::Any:
+		return compileType(compileContext, type);
+	default:;
+	}
+
+	std::terminate();
 }
 
 std::shared_ptr<cxxast::Fn> BC2CXX::compileFnOverloading(CompileContext &compileContext, FnOverloadingObject *fnOverloadingObject) {
@@ -290,7 +317,7 @@ std::shared_ptr<cxxast::Fn> BC2CXX::compileFnOverloading(CompileContext &compile
 			if (i)
 				fnOverloading->name += "3";
 			fnOverloading->name += mangleTypeName(fnOverloadingObject->paramTypes.at(i));
-			fnOverloading->signature.paramTypes.push_back(compileType(compileContext, fnOverloadingObject->paramTypes.at(i)));
+			fnOverloading->signature.paramTypes.push_back(compileParamType(compileContext, fnOverloadingObject->paramTypes.at(i)));
 		}
 
 		if (fnOverloadingObject->overloadingFlags & OL_VARG) {
@@ -302,7 +329,7 @@ std::shared_ptr<cxxast::Fn> BC2CXX::compileFnOverloading(CompileContext &compile
 				genSizeTypeName());	 // nVarArgs
 		}
 
-		fnOverloading->returnType = compileType(compileContext, fnOverloadingObject->returnType);
+		fnOverloading->returnType = genInternalExceptionPtrTypeName();
 
 		fnOverloading->properties = {};
 
@@ -331,9 +358,6 @@ std::shared_ptr<cxxast::Class> BC2CXX::compileClass(CompileContext &compileConte
 	if (moduleObject->genericParams.size() && (!moduleObject->mappedGenericArgs.size())) {
 		return {};
 	} else {
-		compileContext.pushDynamicContents();
-		compileContext.dynamicContents.compilationTarget = CompilationTarget::Class;
-
 		std::shared_ptr<cxxast::Class> cls = std::make_shared<cxxast::Class>(mangleClassName((std::string)(std::string_view)moduleObject->name, moduleObject->genericArgs));
 
 		registerRuntimeObjectToAstNodeRegistry(moduleObject, cls);
@@ -403,8 +427,6 @@ std::shared_ptr<cxxast::Class> BC2CXX::compileClass(CompileContext &compileConte
 			}
 		}
 
-		compileContext.popDynamicContents();
-
 		return cls;
 	}
 }
@@ -412,9 +434,6 @@ std::shared_ptr<cxxast::Class> BC2CXX::compileClass(CompileContext &compileConte
 void BC2CXX::compileModule(CompileContext &compileContext, ModuleObject *moduleObject) {
 	if (auto p = getMappedAstNode(moduleObject); p)
 		return;
-
-	compileContext.pushDynamicContents();
-	compileContext.dynamicContents.compilationTarget = CompilationTarget::Module;
 
 	peff::DynArray<IdRefEntry> fullModuleName;
 	if (!compileContext.runtime->getFullRef(peff::getDefaultAlloc(), moduleObject, fullModuleName)) {
@@ -493,8 +512,6 @@ void BC2CXX::compileModule(CompileContext &compileContext, ModuleObject *moduleO
 		}
 		}
 	}
-
-	compileContext.popDynamicContents();
 }
 
 std::pair<std::shared_ptr<cxxast::IfndefDirective>, std::shared_ptr<cxxast::Namespace>> BC2CXX::compile(ModuleObject *moduleObject) {
@@ -509,6 +526,9 @@ std::pair<std::shared_ptr<cxxast::IfndefDirective>, std::shared_ptr<cxxast::Name
 		throw std::bad_alloc();
 	}
 
+	bool useGeneratedHeaderPath = includeName.empty();
+	bool isUserIncludeSystem = false;
+
 	for (size_t i = 0; i < fullModuleName.size(); ++i) {
 		IdRefEntry &idRefEntry = fullModuleName.at(i);
 
@@ -516,10 +536,14 @@ std::pair<std::shared_ptr<cxxast::IfndefDirective>, std::shared_ptr<cxxast::Name
 
 		if (!i) {
 			includeGuardName += "_SLKAOT_";
-			headerPath += "slkaot/";
+			if (useGeneratedHeaderPath) {
+				headerPath += "slkaot/";
+			}
 		} else {
 			includeGuardName += "_";
-			headerPath += "/";
+			if (useGeneratedHeaderPath) {
+				headerPath += "/";
+			}
 		}
 
 		{
@@ -536,10 +560,22 @@ std::pair<std::shared_ptr<cxxast::IfndefDirective>, std::shared_ptr<cxxast::Name
 
 			includeGuardName += uppercaseName;
 		}
-		headerPath += name;
+		if (useGeneratedHeaderPath) {
+			headerPath += name;
+		}
 	}
 
-	headerPath += ".h";
+	if (useGeneratedHeaderPath) {
+		headerPath += ".h";
+		isUserIncludeSystem = true;
+	} else {
+		if (includeName[0] == '+') {
+			isUserIncludeSystem = true;
+			headerPath = includeName.substr(1);
+		} else {
+			headerPath = includeName;
+		}
+	}
 	includeGuardName += "_";
 
 	compileModule(cc, moduleObject);
@@ -580,7 +616,7 @@ std::pair<std::shared_ptr<cxxast::IfndefDirective>, std::shared_ptr<cxxast::Name
 	rootNamespace->defPrecedingNodes.push_back(
 		std::make_shared<cxxast::IncludeDirective>(
 			std::string(headerPath),
-			true));
+			isUserIncludeSystem));
 
 	return { includeGuardWrapper, rootNamespace };
 }

@@ -15,15 +15,6 @@ namespace slake {
 					Source
 				};
 
-				enum class CompilationTarget {
-					None = 0,
-					Module,
-					Class,
-					Fn,
-					VarDef,
-					Param
-				};
-
 				std::map<ObjectRef, std::shared_ptr<cxxast::AbstractMember>> runtimeObjectToAstNodeMap;
 				std::map<std::shared_ptr<cxxast::AbstractMember>, ObjectRef> astNodeToRuntimeObjectMap;
 				std::set<std::shared_ptr<cxxast::Fn>> recompilableFns;
@@ -56,7 +47,6 @@ namespace slake {
 
 			public:
 				struct DynamicCompileContextContents {
-					CompilationTarget compilationTarget = CompilationTarget::None;
 					std::map<uint32_t, std::string> vregNames;
 				};
 
@@ -89,6 +79,11 @@ namespace slake {
 								std::make_shared<cxxast::IdExpr>("Object"))));
 				}
 
+				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genNativeAotPtrTypeName() {
+					return std::make_shared<cxxast::PointerTypeName>(
+						std::make_shared<cxxast::VoidTypeName>());
+				}
+
 				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genAnyTypeName() {
 					return std::make_shared<cxxast::PointerTypeName>(
 						std::make_shared<cxxast::CustomTypeName>(
@@ -112,6 +107,15 @@ namespace slake {
 					return std::make_shared<cxxast::CustomTypeName>(
 						false,
 						std::make_shared<cxxast::IdExpr>("size_t"));
+				}
+
+				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genInternalExceptionPtrTypeName() {
+					return std::make_shared<cxxast::CustomTypeName>(
+						false,
+						std::make_shared<cxxast::BinaryExpr>(
+							cxxast::BinaryOp::Scope,
+							std::make_shared<cxxast::IdExpr>("slake"),
+							std::make_shared<cxxast::IdExpr>("InternalExceptionPointer")));
 				}
 
 				SLAKE_FORCEINLINE std::shared_ptr<cxxast::Stmt> genReturnIfExceptStmt(std::shared_ptr<cxxast::Expr> expr) {
@@ -144,8 +148,8 @@ namespace slake {
 					return std::make_shared<cxxast::CustomTypeName>(
 						false,
 						std::make_shared<cxxast::BinaryExpr>(
-						cxxast::BinaryOp::Scope,
-						std::make_shared<cxxast::IdExpr>("slake", cxxast::GenericArgList{}),
+							cxxast::BinaryOp::Scope,
+							std::make_shared<cxxast::IdExpr>("slake", cxxast::GenericArgList{}),
 							std::make_shared<cxxast::IdExpr>("AOTFnExecContext", cxxast::GenericArgList{})));
 				}
 
@@ -175,6 +179,7 @@ namespace slake {
 				std::shared_ptr<cxxast::Expr> compileRef(CompileContext &compileContext, const peff::DynArray<IdRefEntry> &entries);
 				std::shared_ptr<cxxast::Expr> compileValue(CompileContext &compileContext, const Value &value);
 				std::shared_ptr<cxxast::TypeName> compileType(CompileContext &compileContext, const Type &type);
+				std::shared_ptr<cxxast::TypeName> compileParamType(CompileContext &compileContext, const Type &type);
 				std::shared_ptr<cxxast::Fn> compileFnOverloading(CompileContext &compileContext, FnOverloadingObject *fnOverloadingObject);
 				void recompileFnOverloading(CompileContext &compileContext, std::shared_ptr<cxxast::Fn> fnOverloading);
 				std::shared_ptr<cxxast::Class> compileClass(CompileContext &compileContext, ClassObject *moduleObject);

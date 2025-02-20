@@ -25,8 +25,6 @@ enum class AppAction : uint8_t {
 	Compile = 0,
 };
 
-std::string srcPath = "", headerOutPath = "", sourceOutPath = "";
-
 AppAction action = AppAction::Compile;
 
 struct CmdLineAction {
@@ -49,6 +47,11 @@ CmdLineAction cmdLineActions[] = {
 	  "--source-output\0",
 		[](int argc, char **argv, int &i) {
 			sourceOutPath = fetchArg(argc, argv, i);
+		} },
+	{ "-i\0"
+	  "--source-include\0",
+		[](int argc, char **argv, int &i) {
+			includeName = fetchArg(argc, argv, i);
 		} }
 };
 
@@ -78,17 +81,17 @@ int main(int argc, char **argv) {
 
 		switch (action) {
 		case AppAction::Compile: {
-			if (!srcPath.length()) {
+			if (srcPath.empty()) {
 				fputs("Error: Missing input file\n", stderr);
 				return EINVAL;
 			}
 
-			if (!headerOutPath.length()) {
+			if (headerOutPath.empty()) {
 				fputs("Error: Missing header output path\n", stderr);
 				return EINVAL;
 			}
 
-			if (!sourceOutPath.length()) {
+			if (sourceOutPath.empty()) {
 				fputs("Error: Missing source output path\n", stderr);
 				return EINVAL;
 			}
@@ -97,7 +100,7 @@ int main(int argc, char **argv) {
 			std::ofstream ohs, oss;
 			// std::ofstream os;
 
-			is.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
+			is.exceptions(std::ios::failbit | std::ios::badbit);
 			is.open(srcPath, std::ios::binary);
 
 			ohs.exceptions(std::ios::failbit | std::ios::badbit);

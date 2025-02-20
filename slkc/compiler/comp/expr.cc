@@ -10,16 +10,16 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 		sld.column = tokenRangeToSourceLocation(expr->tokenRange).beginPosition.column;
 	}
 
-	if (!compileContext->curCollectiveContext.curMajorContext.curMinorContext.dryRun) {
+	if (!compileContext->curTopLevelContext.curMajorContext.curMinorContext.dryRun) {
 		if (auto ce = evalConstExpr(compileContext, expr); ce) {
-			if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
+			if (compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
 				throw FatalCompilationError(
 					Message(
 						tokenRangeToSourceLocation(expr->tokenRange),
 						MessageType::Error,
 						"Expecting a lvalue expression"));
 
-			compileContext->_insertIns(Opcode::MOV, compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest, { ce });
+			compileContext->_insertIns(Opcode::MOV, compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest, { ce });
 			return;
 		}
 	}
@@ -104,10 +104,10 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 						"Incompatible operand types" });
 			compileExpr(compileContext,
 				std::make_shared<CastExprNode>(resultType, e->x),
-				compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalPurpose,
+				compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalPurpose,
 				std::make_shared<RegRefNode>(resultRegIndex));
 		} else
-			compileExpr(compileContext, e->x, compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalPurpose, std::make_shared<RegRefNode>(resultRegIndex));
+			compileExpr(compileContext, e->x, compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalPurpose, std::make_shared<RegRefNode>(resultRegIndex));
 		compileContext->_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(endLabel) });
 
 		// Compile the false expression.
@@ -119,14 +119,14 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 						"Incompatible operand types" });
 			compileExpr(compileContext,
 				std::make_shared<CastExprNode>(resultType, e->y),
-				compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalPurpose,
+				compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalPurpose,
 				std::make_shared<RegRefNode>(resultRegIndex));
 		} else
-			compileExpr(compileContext, e->y, compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalPurpose, std::make_shared<RegRefNode>(resultRegIndex));
+			compileExpr(compileContext, e->y, compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalPurpose, std::make_shared<RegRefNode>(resultRegIndex));
 
 		compileContext->_insertLabel(endLabel);
 
-		compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = resultType;
+		compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = resultType;
 		break;
 	}
 	case ExprType::Match: {
@@ -181,7 +181,7 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 					std::make_shared<RegRefNode>(eqResultRegIndex) });
 
 			// Leave the minor stack that is created for the local variable.
-			compileExpr(compileContext, i.second, compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalPurpose, compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest);
+			compileExpr(compileContext, i.second, compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalPurpose, compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest);
 
 			compileContext->_insertLabel(caseEndLabel);
 			compileContext->_insertIns(Opcode::JMP, {}, { std::make_shared<LabelRefNode>(endLabel) });
@@ -199,8 +199,8 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 	case ExprType::Call: {
 		auto e = std::static_pointer_cast<CallExprNode>(expr);
 
-		compileContext->curCollectiveContext.curMajorContext.curMinorContext.isArgTypesSet = true;
-		compileContext->curCollectiveContext.curMajorContext.curMinorContext.argTypes = {};
+		compileContext->curTopLevelContext.curMajorContext.curMinorContext.isArgTypesSet = true;
+		compileContext->curTopLevelContext.curMajorContext.curMinorContext.argTypes = {};
 
 		for (auto &i : e->args) {
 			auto type = evalExprType(compileContext, i);
@@ -210,7 +210,7 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 						tokenRangeToSourceLocation(i->tokenRange),
 						MessageType::Error,
 						"Error deducing type of the argument"));
-			compileContext->curCollectiveContext.curMajorContext.curMinorContext.argTypes.push_back(type);
+			compileContext->curTopLevelContext.curMajorContext.curMinorContext.argTypes.push_back(type);
 		}
 
 		uint32_t callTargetRegIndex = compileContext->allocReg();
@@ -221,7 +221,7 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 
 		compileExpr(compileContext, e->target, EvalPurpose::Call, std::make_shared<RegRefNode>(callTargetRegIndex), std::make_shared<RegRefNode>(thisRegIndex));
 
-		auto returnType = compileContext->curCollectiveContext.curMajorContext.curMinorContext.lastCallTargetReturnType;
+		auto returnType = compileContext->curTopLevelContext.curMajorContext.curMinorContext.lastCallTargetReturnType;
 		if (!returnType)
 			throw FatalCompilationError(
 				Message(
@@ -233,26 +233,26 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 			compileContext->pushMinorContext();
 
 #if SLKC_WITH_LANGUAGE_SERVER
-			compileContext->curCollectiveContext.curMajorContext.curMinorContext.curCorrespondingArgIndex = i;
-			if (i < compileContext->curCollectiveContext.curMajorContext.curMinorContext.lastCallTargetParams.size()) {
-				compileContext->curCollectiveContext.curMajorContext.curMinorContext.curCorrespondingParam = compileContext->curCollectiveContext.curMajorContext.curMinorContext.lastCallTargetParams[i];
+			compileContext->curTopLevelContext.curMajorContext.curMinorContext.curCorrespondingArgIndex = i;
+			if (i < compileContext->curTopLevelContext.curMajorContext.curMinorContext.lastCallTargetParams.size()) {
+				compileContext->curTopLevelContext.curMajorContext.curMinorContext.curCorrespondingParam = compileContext->curTopLevelContext.curMajorContext.curMinorContext.lastCallTargetParams[i];
 				if (!i) {
 					updateCompletionContext(e->idxLParentheseToken, CompletionContext::Expr);
 					updateTokenInfo(e->idxLParentheseToken, [this, &i, &compileContext](TokenInfo &info) {
-						info.semanticInfo.correspondingParam = compileContext->curCollectiveContext.curMajorContext.curMinorContext.lastCallTargetParams[i];
+						info.semanticInfo.correspondingParam = compileContext->curTopLevelContext.curMajorContext.curMinorContext.lastCallTargetParams[i];
 					});
 				} else {
 					updateCompletionContext(e->idxCommaTokens[i - 1], CompletionContext::Expr);
 					updateTokenInfo(e->idxCommaTokens[i - 1], [this, &i, &compileContext](TokenInfo &info) {
-						info.semanticInfo.correspondingParam = compileContext->curCollectiveContext.curMajorContext.curMinorContext.lastCallTargetParams[i];
+						info.semanticInfo.correspondingParam = compileContext->curTopLevelContext.curMajorContext.curMinorContext.lastCallTargetParams[i];
 					});
 				}
 			}
 #endif
 
 			EvalPurpose evalPurpose = EvalPurpose::RValue;
-			if (i < compileContext->curCollectiveContext.curMajorContext.curMinorContext.lastCallTargetParams.size()) {
-				if (isLValueType(compileContext->curCollectiveContext.curMajorContext.curMinorContext.lastCallTargetParams[i]->type))
+			if (i < compileContext->curTopLevelContext.curMajorContext.curMinorContext.lastCallTargetParams.size()) {
+				if (isLValueType(compileContext->curTopLevelContext.curMajorContext.curMinorContext.lastCallTargetParams[i]->type))
 					evalPurpose = EvalPurpose::LValue;
 			}
 
@@ -267,7 +267,7 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 			compileContext->popMinorContext();
 		}
 
-		switch (compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalPurpose) {
+		switch (compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalPurpose) {
 		case EvalPurpose::LValue: {
 			if (!isLValueType(returnType))
 				throw FatalCompilationError(
@@ -276,15 +276,15 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 						MessageType::Error,
 						"Expecting a lvalue expression"));
 
-			if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.isLastCallTargetStatic)
+			if (compileContext->curTopLevelContext.curMajorContext.curMinorContext.isLastCallTargetStatic)
 				compileContext->_insertIns(
 					Opcode::CALL,
-					compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest,
+					compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest,
 					{ std::make_shared<RegRefNode>(callTargetRegIndex) });
 			else
 				compileContext->_insertIns(
 					Opcode::MCALL,
-					compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest,
+					compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest,
 					{ std::make_shared<RegRefNode>(callTargetRegIndex),
 						std::make_shared<RegRefNode>(thisRegIndex) });
 			break;
@@ -294,7 +294,7 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 			if (isLValueType(returnType)) {
 				uint32_t tmpRegIndex = compileContext->allocReg();
 
-				if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.isLastCallTargetStatic)
+				if (compileContext->curTopLevelContext.curMajorContext.curMinorContext.isLastCallTargetStatic)
 					compileContext->_insertIns(
 						Opcode::CALL,
 						std::make_shared<RegRefNode>(tmpRegIndex),
@@ -307,18 +307,18 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 							std::make_shared<RegRefNode>(thisRegIndex) });
 				compileContext->_insertIns(
 					Opcode::LVALUE,
-					compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest,
+					compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest,
 					{ std::make_shared<RegRefNode>(tmpRegIndex) });
 			} else {
-				if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.isLastCallTargetStatic)
+				if (compileContext->curTopLevelContext.curMajorContext.curMinorContext.isLastCallTargetStatic)
 					compileContext->_insertIns(
 						Opcode::CALL,
-						compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest,
+						compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest,
 						{ std::make_shared<RegRefNode>(callTargetRegIndex) });
 				else
 					compileContext->_insertIns(
 						Opcode::MCALL,
-						compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest,
+						compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest,
 						{ std::make_shared<RegRefNode>(callTargetRegIndex),
 							std::make_shared<RegRefNode>(thisRegIndex) });
 			}
@@ -326,7 +326,7 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 			break;
 		}
 		case EvalPurpose::Stmt:
-			if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.isLastCallTargetStatic)
+			if (compileContext->curTopLevelContext.curMajorContext.curMinorContext.isLastCallTargetStatic)
 				compileContext->_insertIns(
 					Opcode::CALL,
 					{},
@@ -342,7 +342,7 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 			assert(false);
 		}
 
-		compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = returnType;
+		compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = returnType;
 
 		break;
 	}
@@ -411,7 +411,7 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 
 			compileContext->_insertIns(
 				Opcode::ARRNEW,
-				compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest,
+				compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest,
 				{ t->elementType,
 					std::make_shared<RegRefNode>(sizeArgRegIndex) });
 
@@ -522,16 +522,16 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 
 					compileContext->_insertIns(
 						Opcode::NEW,
-						compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest,
+						compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest,
 						{ e->type });
 					compileContext->_insertIns(
 						Opcode::CTORCALL,
 						{},
-						{ std::make_shared<RegRefNode>(ctorIndex), compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest });
+						{ std::make_shared<RegRefNode>(ctorIndex), compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest });
 				} else {
 					compileContext->_insertIns(
 						Opcode::NEW,
-						compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest,
+						compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest,
 						{ e->type });
 				}
 
@@ -557,7 +557,7 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 					"Specified type is not constructible"));
 		}
 
-		compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = e->type;
+		compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = e->type;
 
 		break;
 	}
@@ -567,7 +567,7 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 		if (auto ce = evalConstExpr(compileContext, e->target); ce) {
 			compileContext->_insertIns(
 				Opcode::TYPEOF,
-				compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest,
+				compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest,
 				{ ce });
 		} else {
 			uint32_t tmpRegIndex = compileContext->allocReg();
@@ -575,7 +575,7 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 			compileExpr(compileContext, e->target, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
 			compileContext->_insertIns(
 				Opcode::TYPEOF,
-				compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest,
+				compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest,
 				{ std::make_shared<RegRefNode>(tmpRegIndex) });
 		}
 
@@ -586,11 +586,11 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 	case ExprType::Cast: {
 		auto e = std::static_pointer_cast<CastExprNode>(expr);
 
-		compileContext->curCollectiveContext.curMajorContext.curMinorContext.expectedType = e->targetType;
+		compileContext->curTopLevelContext.curMajorContext.curMinorContext.expectedType = e->targetType;
 
 		if (auto ce = evalConstExpr(compileContext, e->target); ce) {
 			if (isTypeNamesConvertible(compileContext, evalExprType(compileContext, ce), e->targetType)) {
-				compileContext->_insertIns(Opcode::CAST, compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest, { e->targetType, ce });
+				compileContext->_insertIns(Opcode::CAST, compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest, { e->targetType, ce });
 			} else {
 				throw FatalCompilationError({ tokenRangeToSourceLocation(e->tokenRange), MessageType::Error, "Invalid type conversion" });
 			}
@@ -604,13 +604,13 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 				uint32_t tmpRegIndex = compileContext->allocReg();
 
 				compileExpr(compileContext, e->target, EvalPurpose::RValue, std::make_shared<RegRefNode>(tmpRegIndex));
-				compileContext->_insertIns(Opcode::CAST, compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest, { e->targetType, std::make_shared<RegRefNode>(tmpRegIndex) });
+				compileContext->_insertIns(Opcode::CAST, compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest, { e->targetType, std::make_shared<RegRefNode>(tmpRegIndex) });
 			} else {
 				throw FatalCompilationError({ tokenRangeToSourceLocation(e->tokenRange), MessageType::Error, "Invalid type conversion" });
 			}
 		}
 
-		compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = e->targetType;
+		compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = e->targetType;
 
 		break;
 	}
@@ -637,7 +637,7 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 		uint32_t tmpRegIndex = compileContext->allocReg();
 
 		auto determineOverloadingRegistry = [this, expr, &resolvedParts, &compileContext, &isStatic](std::shared_ptr<FnNode> x, const std::deque<std::shared_ptr<TypeNameNode>> &genericArgs) -> std::shared_ptr<FnOverloadingNode> {
-			if ((resolvedParts.size() > 2) || (compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Call)) {
+			if ((resolvedParts.size() > 2) || (compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Call)) {
 				//
 				// Reference to a overloaded function is always ambiguous,
 				// because we cannot determine which overloading is the user wanted.
@@ -660,7 +660,7 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 				auto overloadings = argDependentLookup(
 					compileContext,
 					x.get(),
-					compileContext->curCollectiveContext.curMajorContext.curMinorContext.argTypes,
+					compileContext->curTopLevelContext.curMajorContext.curMinorContext.argTypes,
 					genericArgs,
 					isStatic);
 
@@ -686,14 +686,14 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 							"Ambiguous function call"));
 				}
 
-				compileContext->curCollectiveContext.curMajorContext.curMinorContext.lastCallTargetParams = overloadings[0]->params;
-				compileContext->curCollectiveContext.curMajorContext.curMinorContext.hasVarArgs = overloadings[0]->isVaridic();
+				compileContext->curTopLevelContext.curMajorContext.curMinorContext.lastCallTargetParams = overloadings[0]->params;
+				compileContext->curTopLevelContext.curMajorContext.curMinorContext.hasVarArgs = overloadings[0]->isVaridic();
 
-				compileContext->curCollectiveContext.curMajorContext.curMinorContext.lastCallTargetReturnType =
+				compileContext->curTopLevelContext.curMajorContext.curMinorContext.lastCallTargetReturnType =
 					overloadings[0]->returnType
 						? overloadings[0]->returnType
 						: std::make_shared<AnyTypeNameNode>(SIZE_MAX);
-				compileContext->curCollectiveContext.curMajorContext.curMinorContext.isLastCallTargetStatic = overloadings[0]->access & ACCESS_STATIC;
+				compileContext->curTopLevelContext.curMajorContext.curMinorContext.isLastCallTargetStatic = overloadings[0]->access & ACCESS_STATIC;
 				return overloadings[0];
 			}
 		};
@@ -732,8 +732,8 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 							{ std::make_shared<RegRefNode>(resultRegIndex) });
 						resultRegIndex = newResultRegIndex;
 					} else {
-						compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = varNode->type->duplicate<TypeNameNode>();
-						compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType->isRef = true;
+						compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = varNode->type->duplicate<TypeNameNode>();
+						compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType->isRef = true;
 					}
 
 					tmpRegIndex = resultRegIndex;
@@ -744,10 +744,10 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 						std::static_pointer_cast<FnNode>(resolvedParts[i].second),
 						resolvedParts[i].first->entries.back().genericArgs);
 
-					if (!compileContext->curCollectiveContext.curMajorContext.curMinorContext.isLastCallTargetStatic) {
+					if (!compileContext->curTopLevelContext.curMajorContext.curMinorContext.isLastCallTargetStatic) {
 						compileContext->_insertIns(
 							Opcode::MOV,
-							compileContext->curCollectiveContext.curMajorContext.curMinorContext.thisDest,
+							compileContext->curTopLevelContext.curMajorContext.curMinorContext.thisDest,
 							{ std::make_shared<RegRefNode>(tmpRegIndex) });
 					}
 
@@ -766,7 +766,7 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 						if (overloading->isVaridic())
 							paramTypes.pop_back();
 
-						compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType =
+						compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType =
 							std::make_shared<FnTypeNameNode>(
 								overloading->returnType,
 								paramTypes);
@@ -776,8 +776,8 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 					if (overloading->isVirtual) {
 						// Copy the parameter types to the reference.
 						resolvedParts[i].first->entries.back().hasParamTypes = true;
-						resolvedParts[i].first->entries.back().paramTypes = compileContext->curCollectiveContext.curMajorContext.curMinorContext.argTypes;
-						resolvedParts[i].first->entries.back().hasVarArg = compileContext->curCollectiveContext.curMajorContext.curMinorContext.hasVarArgs;
+						resolvedParts[i].first->entries.back().paramTypes = compileContext->curTopLevelContext.curMajorContext.curMinorContext.argTypes;
+						resolvedParts[i].first->entries.back().hasVarArg = compileContext->curTopLevelContext.curMajorContext.curMinorContext.hasVarArgs;
 
 						compileContext->_insertIns(
 							Opcode::RLOAD,
@@ -817,7 +817,7 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 			if (resolvedParts.size() > 1) {
 				unwrap = true;
 			} else {
-				unwrap = compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalPurpose != EvalPurpose::LValue;
+				unwrap = compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalPurpose != EvalPurpose::LValue;
 			}
 
 			if (unwrap) {
@@ -830,13 +830,13 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 			}
 
 			if (resolvedParts.size() == 1) {
-				compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = localVarNode->type->duplicate<TypeNameNode>();
-				compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType->isRef = true;
+				compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = localVarNode->type->duplicate<TypeNameNode>();
+				compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType->isRef = true;
 			}
 
 			uint32_t resultRegIndex = loadRest();
 			if (resolvedParts.back().second->getNodeType() == NodeType::Var) {
-				if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RValue) {
+				if (compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RValue) {
 					uint32_t newResultRegIndex = compileContext->allocReg();
 					compileContext->_insertIns(
 						Opcode::LVALUE,
@@ -846,10 +846,10 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 				}
 			}
 
-			if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest)
+			if (compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest)
 				compileContext->_insertIns(
 					Opcode::MOV,
-					compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest,
+					compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest,
 					{ std::make_shared<RegRefNode>(resultRegIndex) });
 			break;
 		}
@@ -881,15 +881,15 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 			}
 
 			if (resolvedParts.size() == 1) {
-				compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = paramNode->type->duplicate<TypeNameNode>();
-				compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType->isRef = true;
+				compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = paramNode->type->duplicate<TypeNameNode>();
+				compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType->isRef = true;
 			}
 
 			uint32_t resultRegIndex = loadRest();
 			switch (resolvedParts.back().second->getNodeType()) {
 			case NodeType::Var:
 			case NodeType::Param:
-				if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalPurpose != EvalPurpose::LValue) {
+				if (compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalPurpose != EvalPurpose::LValue) {
 					uint32_t newResultRegIndex = compileContext->allocReg();
 					compileContext->_insertIns(
 						Opcode::LVALUE,
@@ -902,10 +902,10 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 				break;
 			}
 
-			if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest)
+			if (compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest)
 				compileContext->_insertIns(
 					Opcode::MOV,
-					compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest,
+					compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest,
 					{ std::make_shared<RegRefNode>(resultRegIndex) });
 			break;
 		}
@@ -949,8 +949,8 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 					{ std::make_shared<IdRefExprNode>(ref) });
 
 				if (resolvedParts.size() == 1) {
-					compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = varNode->type->duplicate<TypeNameNode>();
-					compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType->isRef = true;
+					compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = varNode->type->duplicate<TypeNameNode>();
+					compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType->isRef = true;
 				}
 				break;
 			}
@@ -974,7 +974,7 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 				}
 
 				if (resolvedParts.size() == 1) {
-					compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType =
+					compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType =
 						std::make_shared<FnTypeNameNode>(
 							overloading->returnType,
 							paramTypes);
@@ -987,13 +987,13 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 				break;
 			}
 			case NodeType::ThisRef: {
-				auto owner = compileContext->curCollectiveContext.curMajorContext.curMinorContext.curScope->owner;
+				auto owner = compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope->owner;
 
 				switch (owner->getNodeType()) {
 				case NodeType::Class:
 				case NodeType::Interface: {
 					compileContext->_insertIns(Opcode::LTHIS, std::make_shared<RegRefNode>(tmpRegIndex), {});
-					compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = compileContext->curCollectiveContext.curMajorContext.thisType;
+					compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = compileContext->curTopLevelContext.curMajorContext.thisType;
 					break;
 				}
 				default:
@@ -1020,7 +1020,7 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 			uint32_t resultRegIndex = loadRest();
 
 			if (resolvedParts.back().second->getNodeType() == NodeType::Var) {
-				if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RValue) {
+				if (compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalPurpose == EvalPurpose::RValue) {
 					uint32_t newResultRegIndex = compileContext->allocReg();
 					compileContext->_insertIns(
 						Opcode::LVALUE,
@@ -1030,10 +1030,10 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 				}
 			}
 
-			if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest)
+			if (compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest)
 				compileContext->_insertIns(
 					Opcode::MOV,
-					compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest,
+					compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest,
 					{ std::make_shared<RegRefNode>(resultRegIndex) });
 			break;
 		}
@@ -1054,7 +1054,7 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 					"Cannot reference varidic arguments in a function without the varidic parameter"));
 		}
 
-		if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
+		if (compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
 			throw FatalCompilationError(
 				Message(
 					tokenRangeToSourceLocation(expr->tokenRange),
@@ -1063,41 +1063,41 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 
 		uint32_t tmpRegIndex = compileContext->allocReg();
 		compileContext->_insertIns(Opcode::LARG, std::make_shared<RegRefNode>(tmpRegIndex), { std::make_shared<U32LiteralExprNode>(compileContext->curFn->params.size()) });
-		compileContext->_insertIns(Opcode::LVALUE, compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest, { std::make_shared<RegRefNode>(tmpRegIndex) });
+		compileContext->_insertIns(Opcode::LVALUE, compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest, { std::make_shared<RegRefNode>(tmpRegIndex) });
 
-		compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<ArrayTypeNameNode>(std::make_shared<AnyTypeNameNode>(SIZE_MAX));
+		compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<ArrayTypeNameNode>(std::make_shared<AnyTypeNameNode>(SIZE_MAX));
 
 		break;
 	}
 	case ExprType::Array: {
 		auto e = std::static_pointer_cast<ArrayExprNode>(expr);
 
-		if ((!compileContext->curCollectiveContext.curMajorContext.curMinorContext.expectedType) ||
-			compileContext->curCollectiveContext.curMajorContext.curMinorContext.expectedType->getTypeId() != TypeId::Array)
+		if ((!compileContext->curTopLevelContext.curMajorContext.curMinorContext.expectedType) ||
+			compileContext->curTopLevelContext.curMajorContext.curMinorContext.expectedType->getTypeId() != TypeId::Array)
 			throw FatalCompilationError(
 				Message(
 					tokenRangeToSourceLocation(e->tokenRange),
 					MessageType::Error,
 					"Error deducing type of the expression"));
 
-		if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
+		if (compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
 			throw FatalCompilationError(
 				Message(
 					tokenRangeToSourceLocation(expr->tokenRange),
 					MessageType::Error,
 					"Expecting a lvalue expression"));
 
-		auto type = std::static_pointer_cast<ArrayTypeNameNode>(compileContext->curCollectiveContext.curMajorContext.curMinorContext.expectedType);
+		auto type = std::static_pointer_cast<ArrayTypeNameNode>(compileContext->curTopLevelContext.curMajorContext.curMinorContext.expectedType);
 
 #if SLKC_WITH_LANGUAGE_SERVER
 		updateTokenInfo(e->idxLBraceToken, [this, &compileContext](TokenInfo &tokenInfo) {
-			tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curCollectiveContext.curMajorContext);
+			tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
 			tokenInfo.completionContext = CompletionContext::Expr;
 		});
 
 		for (size_t i = 0; i < e->idxCommaTokens.size(); ++i) {
 			updateTokenInfo(e->idxCommaTokens[i], [this, &compileContext](TokenInfo &tokenInfo) {
-				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curCollectiveContext.curMajorContext);
+				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
 				tokenInfo.completionContext = CompletionContext::Expr;
 			});
 		}
@@ -1123,10 +1123,10 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 			}
 		}
 
-		compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = type;
+		compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = type;
 
 		if (auto ce = evalConstExpr(compileContext, e); ce) {
-			compileContext->_insertIns(Opcode::MOV, compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest, { ce });
+			compileContext->_insertIns(Opcode::MOV, compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest, { ce });
 		} else {
 			auto initArray = std::make_shared<ArrayExprNode>();
 			initArray->tokenRange = e->tokenRange;
@@ -1177,67 +1177,67 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 	case ExprType::F64:
 	case ExprType::String:
 	case ExprType::Bool: {
-		if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
+		if (compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
 			throw FatalCompilationError(
 				Message(
 					tokenRangeToSourceLocation(expr->tokenRange),
 					MessageType::Error,
 					"Expecting a lvalue expression"));
 
-		compileContext->_insertIns(Opcode::MOV, compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest, { expr });
+		compileContext->_insertIns(Opcode::MOV, compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest, { expr });
 
 		switch (expr->getExprType()) {
 		case ExprType::I8:
-			compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<I8TypeNameNode>(SIZE_MAX);
+			compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<I8TypeNameNode>(SIZE_MAX);
 			break;
 		case ExprType::I16:
-			compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<I16TypeNameNode>(SIZE_MAX);
+			compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<I16TypeNameNode>(SIZE_MAX);
 			break;
 		case ExprType::I32:
-			compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
+			compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<I32TypeNameNode>(SIZE_MAX);
 			break;
 		case ExprType::I64:
-			compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<I64TypeNameNode>(SIZE_MAX);
+			compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<I64TypeNameNode>(SIZE_MAX);
 			break;
 		case ExprType::U8:
-			compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<U8TypeNameNode>(SIZE_MAX);
+			compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<U8TypeNameNode>(SIZE_MAX);
 			break;
 		case ExprType::U16:
-			compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<U16TypeNameNode>(SIZE_MAX);
+			compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<U16TypeNameNode>(SIZE_MAX);
 			break;
 		case ExprType::U32:
-			compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<U32TypeNameNode>(SIZE_MAX);
+			compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<U32TypeNameNode>(SIZE_MAX);
 			break;
 		case ExprType::U64:
-			compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<U64TypeNameNode>(SIZE_MAX);
+			compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<U64TypeNameNode>(SIZE_MAX);
 			break;
 		case ExprType::F32:
-			compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<F32TypeNameNode>(SIZE_MAX);
+			compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<F32TypeNameNode>(SIZE_MAX);
 			break;
 		case ExprType::F64:
-			compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<F64TypeNameNode>(SIZE_MAX);
+			compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<F64TypeNameNode>(SIZE_MAX);
 			break;
 		case ExprType::String:
-			compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<StringTypeNameNode>(SIZE_MAX);
+			compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<StringTypeNameNode>(SIZE_MAX);
 			break;
 		case ExprType::Bool:
-			compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+			compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 			break;
 		default:;
 		}
 		break;
 	}
 	case ExprType::Null:
-		if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
+		if (compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue)
 			throw FatalCompilationError(
 				Message(
 					tokenRangeToSourceLocation(expr->tokenRange),
 					MessageType::Error,
 					"Expecting a lvalue expression"));
 
-		compileContext->_insertIns(Opcode::MOV, compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest, { expr });
+		compileContext->_insertIns(Opcode::MOV, compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest, { expr });
 
-		compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<AnyTypeNameNode>(SIZE_MAX);
+		compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = std::make_shared<AnyTypeNameNode>(SIZE_MAX);
 		break;
 	case ExprType::Bad:
 		break;
@@ -1245,7 +1245,7 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 		assert(false);
 	}
 
-	if (!compileContext->curCollectiveContext.curMajorContext.curMinorContext.dryRun) {
+	if (!compileContext->curTopLevelContext.curMajorContext.curMinorContext.dryRun) {
 		if (expr->tokenRange) {
 			sld.nIns = compileContext->curFn->body.size() - sld.offIns;
 			compileContext->curFn->srcLocDescs.push_back(sld);

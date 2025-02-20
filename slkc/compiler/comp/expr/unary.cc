@@ -717,7 +717,7 @@ void slake::slkc::Compiler::compileUnaryOpExpr(CompileContext *compileContext, s
 
 	assert(resultType);
 
-	if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue) {
+	if (compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue) {
 		if (!isLValueType(resultType))
 			throw FatalCompilationError(
 				Message(
@@ -734,11 +734,11 @@ void slake::slkc::Compiler::compileUnaryOpExpr(CompileContext *compileContext, s
 		}
 	}
 
-	if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt)
+	if (compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt)
 		compileContext->_insertIns(
 			Opcode::MOV,
-			compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest,
+			compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest,
 			{ std::make_shared<RegRefNode>(resultRegIndex) });
 
-	compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = resultType;
+	compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = resultType;
 }

@@ -4,6 +4,7 @@ using namespace slake;
 using namespace slake::slkaot;
 
 std::vector<std::string> slkaot::modulePaths;
+std::string slkaot::srcPath, slkaot::headerOutPath, slkaot::sourceOutPath, slkaot::includeName;
 
 std::unique_ptr<std::istream> slkaot::moduleLocator(Runtime *rt, const peff::DynArray<IdRefEntry> &ref) {
 	std::string path;

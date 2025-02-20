@@ -190,9 +190,9 @@ void Compiler::validateScope(CompileContext *compileContext, Scope *scope) {
 	std::deque<InterfaceNode *> interfaces;
 	std::deque<FnNode *> funcs;
 
-	compileContext->pushCollectiveContext();
+	compileContext->pushTopLevelContext();
 
-	compileContext->curCollectiveContext.curMajorContext.curMinorContext.curScope = scope->shared_from_this();
+	compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope = scope->shared_from_this();
 
 	for (auto &i : scope->members) {
 		switch (i.second->getNodeType()) {
@@ -229,7 +229,7 @@ void Compiler::validateScope(CompileContext *compileContext, Scope *scope) {
 		scanAndLinkParentFns(scope, i, i->name);
 	}
 
-	compileContext->popCollectiveContext();
+	compileContext->popTopLevelContext();
 }
 
 void Compiler::compile(std::istream &is, std::ostream &os) {
@@ -346,12 +346,12 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 		doc->targetModule->bind(_rootNode.get());
 	}
 
-	compileContext->pushCollectiveContext();
+	compileContext->pushTopLevelContext();
 
 #if SLKC_WITH_LANGUAGE_SERVER
 	for (auto &i : doc->targetModule->imports) {
 		updateTokenInfo(i.second.idxNameToken, [this, &compileContext](TokenInfo &tokenInfo) {
-			tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curCollectiveContext.curMajorContext);
+			tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
 			tokenInfo.semanticType = SemanticType::Property;
 		});
 
@@ -398,11 +398,11 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 		_write(os, i.first.data(), i.first.length());
 		compileIdRef(compileContext.get(), os, i.second.ref);
 
-		compileContext->pushCollectiveContext();
+		compileContext->pushTopLevelContext();
 
 		importModule(i.second.ref);
 
-		compileContext->popCollectiveContext();
+		compileContext->popTopLevelContext();
 
 		if (doc->targetModule->scope->members.count(i.first))
 			throw FatalCompilationError(
@@ -422,17 +422,17 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 		_write(os, (uint32_t)0);
 		compileIdRef(compileContext.get(), os, i.ref);
 
-		compileContext->pushCollectiveContext();
+		compileContext->pushTopLevelContext();
 
 		importModule(i.ref);
 
-		compileContext->popCollectiveContext();
+		compileContext->popTopLevelContext();
 	}
 
-	compileContext->popCollectiveContext();
+	compileContext->popTopLevelContext();
 
 	validateScope(compileContext.get(), doc->targetModule->scope.get());
-	compileContext->curCollectiveContext.curMajorContext = MajorContext();
+	compileContext->curTopLevelContext.curMajorContext = MajorContext();
 	compileScope(compileContext.get(), is, os, doc->targetModule->scope);
 }
 
@@ -442,7 +442,7 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 	std::unordered_map<std::string, std::shared_ptr<ClassNode>> classes;
 	std::unordered_map<std::string, std::shared_ptr<InterfaceNode>> interfaces;
 
-	compileContext->curCollectiveContext.curMajorContext.curMinorContext.curScope = scope;
+	compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope = scope;
 
 	for (auto &i : scope->members) {
 		switch (i.second->getNodeType()) {
@@ -452,12 +452,12 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 
 #if SLKC_WITH_LANGUAGE_SERVER
 			updateTokenInfo(m->idxNameToken, [this, &compileContext](TokenInfo &tokenInfo) {
-				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curCollectiveContext.curMajorContext);
+				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
 				tokenInfo.semanticType = SemanticType::Var;
 			});
 
 			updateTokenInfo(m->idxColonToken, [this, &compileContext](TokenInfo &tokenInfo) {
-				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curCollectiveContext.curMajorContext);
+				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
 				tokenInfo.completionContext = CompletionContext::Type;
 			});
 
@@ -476,7 +476,7 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 					tokenInfo.tokenContext =
 						TokenContext(
 							{},
-							compileContext->curCollectiveContext.curMajorContext.curMinorContext.curScope,
+							compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
 							j->genericParams,
 							j->genericParamIndices,
 							{},
@@ -488,7 +488,7 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 					tokenInfo.tokenContext =
 						TokenContext(
 							{},
-							compileContext->curCollectiveContext.curMajorContext.curMinorContext.curScope,
+							compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
 							j->genericParams,
 							j->genericParamIndices,
 							{},
@@ -500,7 +500,7 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 					tokenInfo.tokenContext =
 						TokenContext(
 							{},
-							compileContext->curCollectiveContext.curMajorContext.curMinorContext.curScope,
+							compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
 							j->genericParams,
 							j->genericParamIndices,
 							{},
@@ -516,7 +516,7 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 						tokenInfo.tokenContext =
 							TokenContext(
 								{},
-								compileContext->curCollectiveContext.curMajorContext.curMinorContext.curScope,
+								compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
 								j->genericParams,
 								j->genericParamIndices,
 								{},
@@ -539,7 +539,7 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 						tokenInfo.tokenContext =
 							TokenContext(
 								{},
-								compileContext->curCollectiveContext.curMajorContext.curMinorContext.curScope,
+								compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
 								j->genericParams,
 								j->genericParamIndices,
 								{},
@@ -553,7 +553,7 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 						tokenInfo.tokenContext =
 							TokenContext(
 								{},
-								compileContext->curCollectiveContext.curMajorContext.curMinorContext.curScope,
+								compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
 								j->genericParams,
 								j->genericParamIndices,
 								{},
@@ -576,7 +576,7 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 				tokenInfo.tokenContext =
 					TokenContext(
 						{},
-						compileContext->curCollectiveContext.curMajorContext.curMinorContext.curScope,
+						compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
 						m->genericParams,
 						m->genericParamIndices,
 						{},
@@ -588,7 +588,7 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 				tokenInfo.tokenContext =
 					TokenContext(
 						{},
-						compileContext->curCollectiveContext.curMajorContext.curMinorContext.curScope,
+						compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
 						m->genericParams,
 						m->genericParamIndices,
 						{},
@@ -603,7 +603,7 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 				tokenInfo.tokenContext =
 					TokenContext(
 						{},
-						compileContext->curCollectiveContext.curMajorContext.curMinorContext.curScope,
+						compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
 						m->genericParams,
 						m->genericParamIndices,
 						{},
@@ -616,7 +616,7 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 					tokenInfo.tokenContext =
 						TokenContext(
 							{},
-							compileContext->curCollectiveContext.curMajorContext.curMinorContext.curScope,
+							compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
 							m->genericParams,
 							m->genericParamIndices,
 							{},
@@ -634,7 +634,7 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 					tokenInfo.tokenContext =
 						TokenContext(
 							{},
-							compileContext->curCollectiveContext.curMajorContext.curMinorContext.curScope,
+							compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
 							m->genericParams,
 							m->genericParamIndices,
 							{},
@@ -654,7 +654,7 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 				tokenInfo.tokenContext =
 					TokenContext(
 						{},
-						compileContext->curCollectiveContext.curMajorContext.curMinorContext.curScope,
+						compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
 						m->genericParams,
 						m->genericParamIndices,
 						{},
@@ -671,7 +671,7 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 					tokenInfo.tokenContext =
 						TokenContext(
 							{},
-							compileContext->curCollectiveContext.curMajorContext.curMinorContext.curScope,
+							compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
 							m->genericParams,
 							m->genericParamIndices,
 							{},
@@ -692,15 +692,15 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 
 	auto mergeGenericParams = [this, &compileContext](const GenericParamNodeList &newParams) {
 		for (auto &i : newParams) {
-			if (compileContext->curCollectiveContext.curMajorContext.genericParamIndices.count(i->name))
+			if (compileContext->curTopLevelContext.curMajorContext.genericParamIndices.count(i->name))
 				pushMessage(
 					curDocName,
 					Message(
 						tokenRangeToSourceLocation(i->tokenRange),
 						MessageType::Error,
 						"This generic parameter shadows another generic parameter"));
-			compileContext->curCollectiveContext.curMajorContext.genericParams.push_back(i);
-			compileContext->curCollectiveContext.curMajorContext.genericParamIndices[i->name] = compileContext->curCollectiveContext.curMajorContext.genericParams.size() - 1;
+			compileContext->curTopLevelContext.curMajorContext.genericParams.push_back(i);
+			compileContext->curTopLevelContext.curMajorContext.genericParamIndices[i->name] = compileContext->curTopLevelContext.curMajorContext.genericParams.size() - 1;
 		}
 	};
 
@@ -709,7 +709,7 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 	//
 	_write(os, (uint32_t)classes.size());
 	for (auto &i : classes) {
-		compileContext->pushCollectiveContext();
+		compileContext->pushTopLevelContext();
 
 		{
 			auto thisType = std::make_shared<CustomTypeNameNode>(getFullName(i.second.get()), this, i.second->scope.get());
@@ -719,7 +719,7 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 					this,
 					i.second->scope.get()));
 			}
-			compileContext->curCollectiveContext.curMajorContext.thisType = thisType;
+			compileContext->curTopLevelContext.curMajorContext.thisType = thisType;
 		}
 
 		mergeGenericParams(i.second->genericParams);
@@ -754,7 +754,7 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 
 		verifyIfImplementationFulfilled(compileContext, i.second);
 
-		compileContext->popCollectiveContext();
+		compileContext->popTopLevelContext();
 	}
 
 	//
@@ -762,7 +762,7 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 	//
 	_write(os, (uint32_t)interfaces.size());
 	for (auto &i : interfaces) {
-		compileContext->pushCollectiveContext();
+		compileContext->pushTopLevelContext();
 
 		mergeGenericParams(i.second->genericParams);
 
@@ -789,7 +789,7 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 
 		compileScope(compileContext, is, os, i.second->scope);
 
-		compileContext->popCollectiveContext();
+		compileContext->popTopLevelContext();
 	}
 
 	//
@@ -969,7 +969,7 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 				}
 			}
 
-			compileContext->pushCollectiveContext();
+			compileContext->pushTopLevelContext();
 
 			mergeGenericParams(j->genericParams);
 
@@ -985,7 +985,7 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 								tokenRangeToSourceLocation(j->tokenRange),
 								MessageType::Error,
 								"Duplicated function overloading"));
-						compileContext->popCollectiveContext();
+						compileContext->popTopLevelContext();
 						goto skipCurOverloading;
 					}
 					compiledOverloadingsWithDuplication.insert(j);
@@ -1090,7 +1090,7 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 				}
 			}
 
-			compileContext->popCollectiveContext();
+			compileContext->popTopLevelContext();
 
 		skipCurOverloading:;
 		}

@@ -5,7 +5,7 @@ using namespace slake::slkc;
 void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_ptr<BinaryOpExprNode> e, std::shared_ptr<TypeNameNode> lhsType, std::shared_ptr<TypeNameNode> rhsType) {
 #if SLKC_WITH_LANGUAGE_SERVER
 	updateTokenInfo(e->idxOpToken, [this, compileContext](TokenInfo &tokenInfo) {
-		tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curCollectiveContext.curMajorContext);
+		tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
 		tokenInfo.semanticType = SemanticType::Operator;
 	});
 	updateCompletionContext(e->idxOpToken, CompletionContext::Expr);
@@ -26,7 +26,7 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 
 	std::shared_ptr<TypeNameNode> resultType;
 
-	compileContext->curCollectiveContext.curMajorContext.curMinorContext.expectedType = lhsType;
+	compileContext->curTopLevelContext.curMajorContext.curMinorContext.expectedType = lhsType;
 
 	bool isLhsTypeLValue = isLValueType(lhsType), isRhsTypeLValue = isLValueType(rhsType);
 
@@ -3984,7 +3984,7 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 
 	assert(resultType);
 
-	if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue) {
+	if (compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalPurpose == EvalPurpose::LValue) {
 		if (!isLValueType(resultType))
 			throw FatalCompilationError(
 				Message(
@@ -4002,11 +4002,11 @@ void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_p
 		}
 	}
 
-	if (compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt)
+	if (compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalPurpose != EvalPurpose::Stmt)
 		compileContext->_insertIns(
 			Opcode::MOV,
-			compileContext->curCollectiveContext.curMajorContext.curMinorContext.evalDest,
+			compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest,
 			{ std::make_shared<RegRefNode>(resultRegIndex) });
 
-	compileContext->curCollectiveContext.curMajorContext.curMinorContext.evaluatedType = resultType;
+	compileContext->curTopLevelContext.curMajorContext.curMinorContext.evaluatedType = resultType;
 }

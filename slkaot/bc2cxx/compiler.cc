@@ -28,6 +28,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 				break;
 			case Opcode::LOAD: {
 				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex());
+				HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[0].getObjectRef().asInstance.instanceObject;
 
 				switch (outputRegInfo.expectedValue.valueType) {
 				case ValueType::ObjectRef: {
@@ -37,16 +38,16 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 					case ObjectRefKind::InstanceRef: {
 						Object *object = objectRef.asInstance.instanceObject;
 
-						compileContext.pushDynamicContents();
-						compileContext.dynamicContents.compilationTarget = CompilationTarget::VarDef;
-
 						std::shared_ptr<cxxast::TypeName> t = genObjectRefTypeName();
 
 						std::string varName = mangleRegLocalVarName(ins.output.getRegIndex());
-						cxxast::VarDefPair varDefPair;
 
 						if (auto astNode = getMappedAstNode(object);
 							astNode) {
+							cxxast::VarDefPair varDefPair;
+
+							// Check if the object is already mapped in the module.
+							// If so, we can just simply use the reference to the native member.
 							varDefPair = {
 								varName,
 								std::make_shared<cxxast::CallExpr>(
@@ -57,34 +58,83 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 											std::make_shared<cxxast::IdExpr>("slake"),
 											std::make_shared<cxxast::IdExpr>("ObjectRef")),
 										std::make_shared<cxxast::IdExpr>("makeAotPtrRef")),
-									std::vector<std::shared_ptr<cxxast::Expr>>{ _getAbsRef(astNode) })
+									std::vector<std::shared_ptr<cxxast::Expr>>{
+										std::make_shared<cxxast::CastExpr>(
+											std::make_shared<cxxast::PointerTypeName>(std::make_shared<cxxast::VoidTypeName>()),
+											_getAbsRef(astNode)) })
 							};
+
+							std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(t, std::vector<cxxast::VarDefPair>{ varDefPair });
+
+							fnOverloading->body.push_back(stmt);
 						} else {
+							cxxast::VarDefPair varDefPair;
+
 							varDefPair = { varName, {} };
+
+							std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(t, std::vector<cxxast::VarDefPair>{ varDefPair });
+
+							fnOverloading->body.push_back(stmt);
+
+							fnOverloading->body.push_back(genReturnIfExceptStmt(
+								std::make_shared<cxxast::CallExpr>(
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::MemberAccess,
+										genAotContextRef(),
+										std::make_shared<cxxast::BinaryExpr>(
+											cxxast::BinaryOp::PtrAccess,
+											std::make_shared<cxxast::IdExpr>("runtime"),
+											std::make_shared<cxxast::IdExpr>("resolveIdRef"))),
+									std::vector<std::shared_ptr<cxxast::Expr>>{
+										std::make_shared<cxxast::BinaryExpr>(cxxast::BinaryOp::PtrAccess,
+											std::make_shared<cxxast::CastExpr>(
+												std::make_shared<cxxast::PointerTypeName>(
+													std::make_shared<cxxast::CustomTypeName>(
+														false,
+														std::make_shared<cxxast::BinaryExpr>(
+															cxxast::BinaryOp::Scope,
+															_getAbsRef(compileContext.rootNamespace),
+															std::make_shared<cxxast::IdExpr>("ConstantObjects")))),
+												genConstantObjectsRef()),
+											std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(id.get()))),
+										std::make_shared<cxxast::IdExpr>(std::string(varName)) })));
 						}
-
-						std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(t, std::vector<cxxast::VarDefPair>{ varDefPair });
-
-						fnOverloading->body.push_back(stmt);
-
-						compileContext.popDynamicContents();
 						break;
 					}
 					case ObjectRefKind::FieldRef: {
 						FieldRecord &fieldRecord = objectRef.asField.moduleObject->fieldRecords.at(objectRef.asField.index);
 
-						compileContext.pushDynamicContents();
-						compileContext.dynamicContents.compilationTarget = CompilationTarget::VarDef;
-
 						std::shared_ptr<cxxast::TypeName> t = compileType(compileContext, fieldRecord.type);
 
-						cxxast::VarDefPair varDefPair = { mangleRegLocalVarName(ins.output.getRegIndex()), {} };
+						std::string varName = mangleRegLocalVarName(ins.output.getRegIndex());
+						cxxast::VarDefPair varDefPair = { varName, {} };
 
 						std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(t, std::vector<cxxast::VarDefPair>{ varDefPair });
 
 						fnOverloading->body.push_back(stmt);
 
-						compileContext.popDynamicContents();
+						fnOverloading->body.push_back(genReturnIfExceptStmt(
+							std::make_shared<cxxast::CallExpr>(
+								std::make_shared<cxxast::BinaryExpr>(
+									cxxast::BinaryOp::MemberAccess,
+									genAotContextRef(),
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::PtrAccess,
+										std::make_shared<cxxast::IdExpr>("runtime"),
+										std::make_shared<cxxast::IdExpr>("resolveIdRef"))),
+								std::vector<std::shared_ptr<cxxast::Expr>>{
+									std::make_shared<cxxast::BinaryExpr>(cxxast::BinaryOp::PtrAccess,
+										std::make_shared<cxxast::CastExpr>(
+											std::make_shared<cxxast::PointerTypeName>(
+												std::make_shared<cxxast::CustomTypeName>(
+													false,
+													std::make_shared<cxxast::BinaryExpr>(
+														cxxast::BinaryOp::Scope,
+														_getAbsRef(compileContext.rootNamespace),
+														std::make_shared<cxxast::IdExpr>("ConstantObjects")))),
+											genConstantObjectsRef()),
+										std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(id.get()))),
+									std::make_shared<cxxast::IdExpr>(std::string(varName)) })));
 						break;
 					}
 					default:
@@ -101,11 +151,9 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 
 				compileContext.constantObjects.insert((Object *)id.get());
 
-				std::shared_ptr<cxxast::TypeName> t = genObjectRefTypeName();
-
 				cxxast::VarDefPair varDefPair = { mangleRegLocalVarName(ins.output.getRegIndex()), {} };
 
-				std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(t, std::vector<cxxast::VarDefPair>{ varDefPair });
+				std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(genObjectRefTypeName(), std::vector<cxxast::VarDefPair>{ varDefPair });
 
 				fnOverloading->body.push_back(stmt);
 
@@ -290,13 +338,18 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 				case ValueType::F64:
 				case ValueType::Bool:
 					type = compileType(compileContext, Type(ins.operands[0].valueType));
+					rhs = compileValue(compileContext, ins.operands[0]);
 					break;
 				case ValueType::ObjectRef:
-					type = genInstanceObjectTypeName();
+					type = genObjectRefTypeName();
+					rhs = compileValue(compileContext, ins.operands[0]);
 					break;
-				case ValueType::RegRef:
+				case ValueType::RegRef: {
+					uint32_t regIndex = ins.operands[0].getRegIndex();
 					type = compileType(compileContext, programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).type);
+					rhs = std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(regIndex));
 					break;
+				}
 				default:
 					std::terminate();
 				}
@@ -310,9 +363,6 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 				break;
 			}
 			case Opcode::LARG: {
-				compileContext.pushDynamicContents();
-				compileContext.dynamicContents.compilationTarget = CompilationTarget::VarDef;
-
 				std::shared_ptr<cxxast::TypeName> t = genObjectRefTypeName();
 
 				std::string varName = mangleRegLocalVarName(ins.output.getRegIndex());
@@ -327,15 +377,15 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 													std::make_shared<cxxast::IdExpr>("ObjectRef")),
 												std::make_shared<cxxast::IdExpr>("makeAotPtrRef")),
 											std::vector<std::shared_ptr<cxxast::Expr>>{
-												std::make_shared<cxxast::UnaryExpr>(
-													cxxast::UnaryOp::AddressOf,
-													std::make_shared<cxxast::IdExpr>(mangleParamName(ins.operands[0].getU32()))) }) };
+												std::make_shared<cxxast::CastExpr>(
+													std::make_shared<cxxast::PointerTypeName>(std::make_shared<cxxast::VoidTypeName>()),
+													std::make_shared<cxxast::UnaryExpr>(
+														cxxast::UnaryOp::AddressOf,
+														std::make_shared<cxxast::IdExpr>(mangleParamName(ins.operands[0].getU32())))) }) };
 
 				std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(t, std::vector<cxxast::VarDefPair>{ varDefPair });
 
 				fnOverloading->body.push_back(stmt);
-
-				compileContext.popDynamicContents();
 				break;
 			}
 			case Opcode::LVAR: {
@@ -343,6 +393,56 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 				std::shared_ptr<cxxast::TypeName> type;
 
 				std::vector<cxxast::VarDefPair> varDefPairs;
+
+				switch (ins.operands[0].getTypeName().typeId) {
+				case TypeId::Value:
+					switch (ins.operands[0].getTypeName().getValueTypeExData()) {
+					case ValueType::I8:
+						rhs = compileValue(compileContext, Value((int8_t)0));
+						break;
+					case ValueType::I16:
+						rhs = compileValue(compileContext, Value((int16_t)0));
+						break;
+					case ValueType::I32:
+						rhs = compileValue(compileContext, Value((int32_t)0));
+						break;
+					case ValueType::I64:
+						rhs = compileValue(compileContext, Value((int64_t)0));
+						break;
+					case ValueType::U8:
+						rhs = compileValue(compileContext, Value((uint8_t)0));
+						break;
+					case ValueType::U16:
+						rhs = compileValue(compileContext, Value((uint16_t)0));
+						break;
+					case ValueType::U32:
+						rhs = compileValue(compileContext, Value((uint32_t)0));
+						break;
+					case ValueType::U64:
+						rhs = compileValue(compileContext, Value((uint64_t)0));
+						break;
+					case ValueType::Bool:
+						rhs = compileValue(compileContext, Value((bool)false));
+						break;
+					default:
+						std::terminate();
+					}
+					break;
+				case TypeId::String:
+				case TypeId::Instance:
+				case TypeId::Array:
+				case TypeId::FnDelegate:
+					rhs = compileValue(compileContext, Value(ObjectRef::makeInstanceRef(nullptr)));
+					break;
+				case TypeId::Ref:
+					// Should not be initialized
+					break;
+				case TypeId::Any:
+					rhs = compileValue(compileContext, Value(ObjectRef::makeInstanceRef(nullptr)));
+					break;
+				default:
+					std::terminate();
+				}
 
 				type = compileType(compileContext, ins.operands[0].getTypeName());
 

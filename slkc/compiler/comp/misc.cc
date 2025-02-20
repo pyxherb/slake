@@ -5,10 +5,10 @@
 using namespace slake::slkc;
 
 uint32_t CompileContext::allocLocalVar(std::string name, std::shared_ptr<TypeNameNode> type) {
-	if (curCollectiveContext.curMajorContext.curMinorContext.dryRun)
+	if (curTopLevelContext.curMajorContext.curMinorContext.dryRun)
 		return UINT32_MAX;
 
-	if (curCollectiveContext.curMajorContext.curMinorContext.localVars.size() > UINT32_MAX)
+	if (curTopLevelContext.curMajorContext.curMinorContext.localVars.size() > UINT32_MAX)
 		throw FatalCompilationError(
 			Message(
 				compiler->tokenRangeToSourceLocation(type->tokenRange),
@@ -17,45 +17,45 @@ uint32_t CompileContext::allocLocalVar(std::string name, std::shared_ptr<TypeNam
 
 	uint32_t refRegId = allocReg();
 
-	curCollectiveContext.curMajorContext.curMinorContext.localVars[name] = std::make_shared<LocalVarNode>(name, refRegId, type);
+	curTopLevelContext.curMajorContext.curMinorContext.localVars[name] = std::make_shared<LocalVarNode>(name, refRegId, type);
 	_insertIns(Opcode::LVAR, std::make_shared<RegRefNode>(refRegId), { type });
 
 	return refRegId;
 }
 
 uint32_t CompileContext::allocReg() {
-	if (curCollectiveContext.curMajorContext.curMinorContext.dryRun)
+	if (curTopLevelContext.curMajorContext.curMinorContext.dryRun)
 		return UINT32_MAX;
 
-	auto idxReg = curCollectiveContext.curRegCount++;
+	auto idxReg = curTopLevelContext.curRegCount++;
 
 	curFn->maxRegCount = std::max(curFn->maxRegCount, idxReg + 1);
 
 	return idxReg;
 }
 
-void CompileContext::pushCollectiveContext() {
-	savedCollectiveContexts.push_back(curCollectiveContext);
+void CompileContext::pushTopLevelContext() {
+	savedTopLevelContexts.push_back(curTopLevelContext);
 }
 
-void CompileContext::popCollectiveContext() {
-	curCollectiveContext = savedCollectiveContexts.back();
-	savedCollectiveContexts.pop_back();
+void CompileContext::popTopLevelContext() {
+	curTopLevelContext = savedTopLevelContexts.back();
+	savedTopLevelContexts.pop_back();
 }
 
 void CompileContext::pushMajorContext() {
-	curCollectiveContext.savedMajorContexts.push_back(curCollectiveContext.curMajorContext);
+	curTopLevelContext.savedMajorContexts.push_back(curTopLevelContext.curMajorContext);
 }
 
 void CompileContext::popMajorContext() {
-	curCollectiveContext.curMajorContext = curCollectiveContext.savedMajorContexts.back();
-	curCollectiveContext.savedMajorContexts.pop_back();
+	curTopLevelContext.curMajorContext = curTopLevelContext.savedMajorContexts.back();
+	curTopLevelContext.savedMajorContexts.pop_back();
 }
 
 void CompileContext::pushMinorContext() {
-	curCollectiveContext.curMajorContext.pushMinorContext();
+	curTopLevelContext.curMajorContext.pushMinorContext();
 }
 
 void CompileContext::popMinorContext() {
-	curCollectiveContext.curMajorContext.popMinorContext();
+	curTopLevelContext.curMajorContext.popMinorContext();
 }

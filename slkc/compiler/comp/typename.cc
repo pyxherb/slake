@@ -340,7 +340,7 @@ std::shared_ptr<AstNode> Compiler::_resolveCustomTypeName(CompileContext *compil
 			if (compileContext) {
 				updateTokenInfo(typeName->ref->entries[0].idxToken, [this, &genericParam, &compileContext](TokenInfo &tokenInfo) {
 					tokenInfo.semanticInfo.correspondingMember = genericParam;
-					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curCollectiveContext.curMajorContext);
+					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
 					tokenInfo.semanticType = SemanticType::TypeParam;
 				});
 			}

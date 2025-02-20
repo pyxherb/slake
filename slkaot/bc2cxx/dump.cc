@@ -994,11 +994,15 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 			std::shared_ptr<cxxast::CastExpr> e = std::static_pointer_cast<cxxast::CastExpr>(expr);
 
 			os << "(";
+
+			os << "(";
 			_dumpAstNode(os, e->destType, dumpMode, 0);
 			os << ")";
 
 			os << "(";
 			_dumpAstNode(os, e->source, dumpMode, 0);
+			os << ")";
+
 			os << ")";
 
 			break;

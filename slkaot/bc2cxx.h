@@ -48,6 +48,7 @@ namespace slake {
 			public:
 				struct DynamicCompileContextContents {
 					std::map<uint32_t, std::string> vregNames;
+					std::set<uint32_t> loadInsResultRegs;
 				};
 
 				struct CompileContext {

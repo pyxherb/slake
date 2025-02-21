@@ -7,6 +7,8 @@ using namespace slake::slkaot::bc2cxx;
 void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_ptr<cxxast::Fn> fnOverloading) {
 	FnOverloadingObject *fnOverloadingObject = fnOverloading->rtOverloading.get();
 
+	compileContext.pushDynamicContents();
+
 	switch (fnOverloadingObject->overloadingKind) {
 	case FnOverloadingKind::Regular: {
 		RegularFnOverloadingObject *fo = (RegularFnOverloadingObject *)fnOverloadingObject;
@@ -97,6 +99,8 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 												genMappedObjectsRef()),
 											std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(id.get()))),
 										std::make_shared<cxxast::IdExpr>(std::string(varName)) })));
+
+							compileContext.dynamicContents.loadInsResultRegs.insert(ins.output.getRegIndex());
 						}
 						break;
 					}
@@ -179,6 +183,8 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 								std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(id.get()))),
 							std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.output.getRegIndex())),
 							std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(idxBaseReg)) })));
+
+				compileContext.dynamicContents.loadInsResultRegs.insert(ins.output.getRegIndex());
 				break;
 			}
 			case Opcode::STORE: {
@@ -355,8 +361,31 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 				}
 				case ValueType::RegRef: {
 					uint32_t regIndex = ins.operands[0].getRegIndex();
-					type = compileType(compileContext, programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).type);
-					rhs = std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(regIndex));
+
+					Type &regType = programInfo.analyzedRegInfo.at(regIndex).type;
+
+					type = compileType(compileContext, regType);
+
+					switch (regType.typeId) {
+					case TypeId::String:
+					case TypeId::Instance:
+					case TypeId::Array:
+					case TypeId::FnDelegate:
+						if ((compileContext.dynamicContents.loadInsResultRegs.count(regIndex))) {
+							rhs = std::make_shared<cxxast::BinaryExpr>(
+								cxxast::BinaryOp::MemberAccess,
+								std::make_shared<cxxast::BinaryExpr>(
+									cxxast::BinaryOp::MemberAccess,
+									std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(regIndex)),
+									std::make_shared<cxxast::IdExpr>("asInstance")),
+								std::make_shared<cxxast::IdExpr>("instanceObject"));
+						} else {
+							rhs = std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(regIndex));
+						}
+						break;
+					default:
+						rhs = std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(regIndex));
+					}
 					break;
 				}
 				default:
@@ -400,8 +429,6 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 			case Opcode::LVAR: {
 				std::shared_ptr<cxxast::Expr> rhs;
 				std::shared_ptr<cxxast::TypeName> type;
-
-				std::vector<cxxast::VarDefPair> varDefPairs;
 
 				switch (ins.operands[0].getTypeName().typeId) {
 				case TypeId::Value:
@@ -455,12 +482,33 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 
 				type = compileType(compileContext, ins.operands[0].getTypeName());
 
+				std::string lvarName = mangleLocalVarName(ins.output.getRegIndex());
+
 				fnOverloading->body.push_back(
 					std::make_shared<cxxast::LocalVarDefStmt>(
 						type,
 						std::vector<cxxast::VarDefPair>{
-							{ mangleLocalVarName(ins.output.getRegIndex()),
+							{ lvarName,
 								rhs } }));
+				fnOverloading->body.push_back(
+					std::make_shared<cxxast::LocalVarDefStmt>(
+						genObjectRefTypeName(),
+						std::vector<cxxast::VarDefPair>{
+							{ mangleRegLocalVarName(ins.output.getRegIndex()),
+								std::make_shared<cxxast::CallExpr>(
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::Scope,
+										std::make_shared<cxxast::BinaryExpr>(
+											cxxast::BinaryOp::Scope,
+											std::make_shared<cxxast::IdExpr>("slake"),
+											std::make_shared<cxxast::IdExpr>("EntityRef")),
+										std::make_shared<cxxast::IdExpr>("makeAotPtrRef")),
+									std::vector<std::shared_ptr<cxxast::Expr>>{
+										std::make_shared<cxxast::CastExpr>(
+											std::make_shared<cxxast::PointerTypeName>(std::make_shared<cxxast::VoidTypeName>()),
+											std::make_shared<cxxast::UnaryExpr>(
+												cxxast::UnaryOp::AddressOf,
+												std::make_shared<cxxast::IdExpr>(std::string(lvarName)))) }) } }));
 				break;
 			}
 			}
@@ -468,4 +516,6 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 		break;
 	}
 	}
+
+	compileContext.popDynamicContents();
 }

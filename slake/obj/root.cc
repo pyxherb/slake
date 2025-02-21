@@ -15,7 +15,7 @@ SLAKE_API ObjectKind RootObject::getKind() const { return ObjectKind::RootObject
 
 SLAKE_API EntityRef RootObject::getMember(
 	const std::string_view &name) const {
-	return EntityRef::makeInstanceRef(scope->getMember(name));
+	return EntityRef::makeObjectRef(scope->getMember(name));
 }
 
 SLAKE_API RootObject *RootObject::alloc(Runtime *rt) {

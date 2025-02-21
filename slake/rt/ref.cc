@@ -28,8 +28,8 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 				goto fail;
 			}
 
-			if (objectRefOut.kind == ObjectRefKind::InstanceRef) {
-				scopeObject = objectRefOut.asInstance.instanceObject;
+			if (objectRefOut.kind == ObjectRefKind::ObjectRef) {
+				scopeObject = objectRefOut.asObject.instanceObject;
 
 				if (curName.genericArgs.size()) {
 					for (auto &j : curName.genericArgs) {
@@ -40,7 +40,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 
 					genericInstantiationContext.genericArgs = &curName.genericArgs;
 					SLAKE_RETURN_IF_EXCEPT(instantiateGenericObject(scopeObject, scopeObject, genericInstantiationContext));
-					objectRefOut = EntityRef::makeInstanceRef(scopeObject);
+					objectRefOut = EntityRef::makeObjectRef(scopeObject);
 				}
 
 				if (curName.hasParamTypes) {
@@ -52,7 +52,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 							SLAKE_RETURN_IF_EXCEPT(j.loadDeferredType(this));
 						}
 
-						objectRefOut = EntityRef::makeInstanceRef(scopeObject = fnObject->getOverloading(curName.paramTypes));
+						objectRefOut = EntityRef::makeObjectRef(scopeObject = fnObject->getOverloading(curName.paramTypes));
 						break;
 					}
 					default:

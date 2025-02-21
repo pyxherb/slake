@@ -126,7 +126,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const {
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array:
-			return Value(EntityRef::makeInstanceRef(*((Object **)rawDataPtr)));
+			return Value(EntityRef::makeObjectRef(*((Object **)rawDataPtr)));
 			break;
 		default:
 			// All fields should be checked during the instantiation.
@@ -170,7 +170,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const {
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array:
-			return Value(EntityRef::makeInstanceRef(*((Object **)rawDataPtr)));
+			return Value(EntityRef::makeObjectRef(*((Object **)rawDataPtr)));
 			break;
 		default:
 			// All fields should be checked during the instantiation.
@@ -181,10 +181,10 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const {
 	}
 	case ObjectRefKind::InstanceFieldRef: {
 		ObjectFieldRecord &fieldRecord =
-			entityRef.asInstanceField.instanceObject->_class->cachedObjectLayout->fieldRecords.at(
-				entityRef.asInstanceField.fieldIndex);
+			entityRef.asObjectField.instanceObject->_class->cachedObjectLayout->fieldRecords.at(
+				entityRef.asObjectField.fieldIndex);
 
-		const char *const rawFieldPtr = entityRef.asInstanceField.instanceObject->rawFieldData + fieldRecord.offset;
+		const char *const rawFieldPtr = entityRef.asObjectField.instanceObject->rawFieldData + fieldRecord.offset;
 
 		switch (fieldRecord.type.typeId) {
 		case TypeId::Value:
@@ -218,7 +218,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const {
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array:
-			return Value(EntityRef::makeInstanceRef(*((Object **)rawFieldPtr)));
+			return Value(EntityRef::makeObjectRef(*((Object **)rawFieldPtr)));
 		default:
 			// All fields should be checked during the instantiation.
 			throw std::logic_error("Unhandled value type");
@@ -259,7 +259,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const {
 			break;
 		}
 		case TypeId::Instance: {
-			return Value(EntityRef::makeInstanceRef(((Object **)entityRef.asArray.arrayObject->data)[entityRef.asArray.index]));
+			return Value(EntityRef::makeObjectRef(((Object **)entityRef.asArray.arrayObject->data)[entityRef.asArray.index]));
 		}
 		case TypeId::Any: {
 			return Value(((Value *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index]);
@@ -336,7 +336,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array:
-			*((Object **)rawDataPtr) = value.getEntityRef().asInstance.instanceObject;
+			*((Object **)rawDataPtr) = value.getEntityRef().asObject.instanceObject;
 			break;
 		default:
 			// All fields should be checked during the instantiation.
@@ -397,7 +397,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array:
-			*((Object **)rawDataPtr) = value.getEntityRef().asInstance.instanceObject;
+			*((Object **)rawDataPtr) = value.getEntityRef().asObject.instanceObject;
 			break;
 		default:
 			// All fields should be checked during the instantiation.
@@ -408,14 +408,14 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 	}
 	case ObjectRefKind::InstanceFieldRef: {
 		ObjectFieldRecord &fieldRecord =
-			entityRef.asInstanceField.instanceObject->_class->cachedObjectLayout->fieldRecords.at(
-				entityRef.asInstanceField.fieldIndex);
+			entityRef.asObjectField.instanceObject->_class->cachedObjectLayout->fieldRecords.at(
+				entityRef.asObjectField.fieldIndex);
 
 		if (!isCompatible(fieldRecord.type, value)) {
 			return raiseMismatchedVarTypeError((Runtime *)this);
 		}
 
-		char *const rawFieldPtr = entityRef.asInstanceField.instanceObject->rawFieldData + fieldRecord.offset;
+		char *const rawFieldPtr = entityRef.asObjectField.instanceObject->rawFieldData + fieldRecord.offset;
 
 		switch (fieldRecord.type.typeId) {
 		case TypeId::Value:
@@ -460,7 +460,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array:
-			*((Object **)rawFieldPtr) = value.getEntityRef().asInstance.instanceObject;
+			*((Object **)rawFieldPtr) = value.getEntityRef().asObject.instanceObject;
 			break;
 		default:
 			// All fields should be checked during the instantiation.
@@ -521,7 +521,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array: {
-			((Object **)entityRef.asArray.arrayObject->data)[entityRef.asArray.index] = value.getEntityRef().asInstance.instanceObject;
+			((Object **)entityRef.asArray.arrayObject->data)[entityRef.asArray.index] = value.getEntityRef().asObject.instanceObject;
 			break;
 		}
 		}

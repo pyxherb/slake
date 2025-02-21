@@ -68,7 +68,7 @@ SLAKE_API Value Runtime::_loadValue(LoaderContext &context, HostRefHolder &holde
 
 	switch (typeId) {
 	case slxfmt::TypeId::None:
-		return Value(EntityRef::makeInstanceRef(nullptr));
+		return Value(EntityRef::makeObjectRef(nullptr));
 	case slxfmt::TypeId::I8:
 		return Value(_read<std::int8_t>(context.fs));
 	case slxfmt::TypeId::I16:
@@ -102,7 +102,7 @@ SLAKE_API Value Runtime::_loadValue(LoaderContext &context, HostRefHolder &holde
 		if (!holder.addObject(object.get()))
 			throw std::bad_alloc();
 
-		return Value(EntityRef::makeInstanceRef(object.get()));
+		return Value(EntityRef::makeObjectRef(object.get()));
 	}
 	case slxfmt::TypeId::Array: {
 		auto elementType = _loadType(context, holder);
@@ -124,10 +124,10 @@ SLAKE_API Value Runtime::_loadValue(LoaderContext &context, HostRefHolder &holde
 		if (!holder.addObject(value.get()))
 			throw std::bad_alloc();
 
-		return EntityRef::makeInstanceRef(value.release());
+		return EntityRef::makeObjectRef(value.release());
 	}
 	case slxfmt::TypeId::IdRef:
-		return EntityRef::makeInstanceRef(_loadIdRef(context, holder).release());
+		return EntityRef::makeObjectRef(_loadIdRef(context, holder).release());
 	case slxfmt::TypeId::TypeName:
 		return Value(_loadType(context, holder));
 	case slxfmt::TypeId::Reg:
@@ -501,7 +501,7 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 			*((Object **)rawDataPtr) = nullptr;
 			break;
 		case TypeId::Any:
-			*((Value *)rawDataPtr) = Value(EntityRef::makeInstanceRef(nullptr));
+			*((Value *)rawDataPtr) = Value(EntityRef::makeObjectRef(nullptr));
 			break;
 		case TypeId::GenericArg:
 			break;
@@ -653,7 +653,7 @@ SLAKE_API HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &f
 		for (size_t i = 0; i < modName->entries.size() - 1; ++i) {
 			EntityRef entityRef = curObject->getMember(modName->entries.at(i).name);
 
-			if ((entityRef.kind != ObjectRefKind::InstanceRef) ||
+			if ((entityRef.kind != ObjectRefKind::ObjectRef) ||
 				(!entityRef)) {
 				ScopeUniquePtr subscope(Scope::alloc(&globalHeapPoolAlloc, nullptr));
 
@@ -674,7 +674,7 @@ SLAKE_API HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &f
 				curObject = (Object *)mod.get();
 			} else {
 				// Continue if the module presents.
-				curObject = entityRef.asInstance.instanceObject;
+				curObject = entityRef.asObject.instanceObject;
 			}
 		}
 
@@ -692,12 +692,12 @@ SLAKE_API HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &f
 			auto moduleObject = (ModuleObject *)curObject;
 
 			if (auto member = moduleObject->getMember(lastName); member) {
-				if ((member.kind != ObjectRefKind::InstanceRef) ||
-					(member.asInstance.instanceObject->getKind() != ObjectKind::Module)) {
+				if ((member.kind != ObjectRefKind::ObjectRef) ||
+					(member.asObject.instanceObject->getKind() != ObjectKind::Module)) {
 					throw LoaderError(
 						"Object which corresponds to module name \"" + std::to_string(modName.get(), this) + "\" was found, but is not a module");
 				}
-				ModuleObject *modMember = (ModuleObject *)member.asInstance.instanceObject;
+				ModuleObject *modMember = (ModuleObject *)member.asObject.instanceObject;
 				if (modMember->loadStatus == ModuleLoadStatus::Loading) {
 					throw LoaderError("Cyclic dependency detected");
 				}

@@ -20,7 +20,7 @@ namespace slake {
 				std::set<std::shared_ptr<cxxast::Fn>> recompilableFns;
 
 				SLAKE_FORCEINLINE std::shared_ptr<cxxast::AbstractMember> getMappedAstNode(Object *object) {
-					if (auto it = runtimeEntityToAstNodeMap.find(EntityRef::makeInstanceRef(object));
+					if (auto it = runtimeEntityToAstNodeMap.find(EntityRef::makeObjectRef(object));
 						it != runtimeEntityToAstNodeMap.end()) {
 						return it->second;
 					}
@@ -28,8 +28,8 @@ namespace slake {
 				}
 
 				SLAKE_FORCEINLINE void registerRuntimeEntityToAstNodeRegistry(Object *object, std::shared_ptr<cxxast::AbstractMember> m) {
-					runtimeEntityToAstNodeMap[EntityRef::makeInstanceRef(object)] = m;
-					astNodeToRuntimeEntityMap[m] = EntityRef::makeInstanceRef(object);
+					runtimeEntityToAstNodeMap[EntityRef::makeObjectRef(object)] = m;
+					astNodeToRuntimeEntityMap[m] = EntityRef::makeObjectRef(object);
 				}
 
 				SLAKE_FORCEINLINE void registerRuntimeEntityToAstNodeRegistry(EntityRef entityRef, std::shared_ptr<cxxast::AbstractMember> m) {

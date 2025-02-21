@@ -68,8 +68,8 @@ InternalExceptionPointer slake::opti::evalObjectType(
 				typeOut));
 		break;
 	}
-	case ObjectRefKind::InstanceRef: {
-		Object *object = entityRef.asInstance.instanceObject;
+	case ObjectRefKind::ObjectRef: {
+		Object *object = entityRef.asObject.instanceObject;
 		switch (object->getKind()) {
 		case ObjectKind::String: {
 			typeOut = Type(TypeId::String);
@@ -300,14 +300,14 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				{
 					EntityRef object = curIns.operands[0].getEntityRef();
 
-					if ((object.kind != ObjectRefKind::InstanceRef) ||
-						(object.asInstance.instanceObject->getKind() != ObjectKind::IdRef)) {
+					if ((object.kind != ObjectRefKind::ObjectRef) ||
+						(object.asObject.instanceObject->getKind() != ObjectKind::IdRef)) {
 						return MalformedProgramError::alloc(
 							runtime,
 							fnObject,
 							i);
 					}
-					idRef = (IdRefObject *)object.asInstance.instanceObject;
+					idRef = (IdRefObject *)object.asObject.instanceObject;
 				}
 
 				EntityRef entityRef;
@@ -338,7 +338,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				case ObjectRefKind::ArgRef:
 				case ObjectRefKind::InstanceFieldRef: {
 				}
-				case ObjectRefKind::InstanceRef: {
+				case ObjectRefKind::ObjectRef: {
 					analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::FieldVar;
 				}
 				}
@@ -376,14 +376,14 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				{
 					const EntityRef &object = curIns.operands[1].getEntityRef();
 
-					if ((object.kind != ObjectRefKind::InstanceRef) ||
-						(object.asInstance.instanceObject->getKind() != ObjectKind::IdRef)) {
+					if ((object.kind != ObjectRefKind::ObjectRef) ||
+						(object.asObject.instanceObject->getKind() != ObjectKind::IdRef)) {
 						return MalformedProgramError::alloc(
 							runtime,
 							fnObject,
 							i);
 					}
-					idRef = (IdRefObject *)object.asInstance.instanceObject;
+					idRef = (IdRefObject *)object.asObject.instanceObject;
 				}
 
 				uint32_t callTargetRegIndex = curIns.operands[0].getRegIndex();
@@ -402,8 +402,8 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 							type.getCustomTypeExData()));
 
 					switch (entityRef.kind) {
-					case ObjectRefKind::InstanceRef: {
-						Object *object = entityRef.asInstance.instanceObject;
+					case ObjectRefKind::ObjectRef: {
+						Object *object = entityRef.asObject.instanceObject;
 						switch (object->getKind()) {
 						case ObjectKind::FnOverloading:
 							if (((FnOverloadingObject *)object)->access & ACCESS_STATIC) {
@@ -833,7 +833,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 			Value expectedFnValue = analyzedInfoOut.analyzedRegInfo.at(callTargetRegIndex).expectedValue;
 
 			if (expectedFnValue.valueType != ValueType::Undefined) {
-				FnOverloadingObject *expectedFnObject = (FnOverloadingObject *)expectedFnValue.getEntityRef().asInstance.instanceObject;
+				FnOverloadingObject *expectedFnObject = (FnOverloadingObject *)expectedFnValue.getEntityRef().asObject.instanceObject;
 				if (!analyzeContext.analyzedInfoOut.fnCallMap.contains(expectedFnObject)) {
 					analyzeContext.analyzedInfoOut.fnCallMap.insert(+expectedFnObject, peff::DynArray<uint32_t>(&analyzeContext.runtime->globalHeapPoolAlloc));
 				}
@@ -891,7 +891,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 			Value expectedFnValue = analyzedInfoOut.analyzedRegInfo.at(callTargetRegIndex).expectedValue;
 
 			if (expectedFnValue.valueType != ValueType::Undefined) {
-				FnOverloadingObject *expectedFnObject = (FnOverloadingObject *)expectedFnValue.getEntityRef().asInstance.instanceObject;
+				FnOverloadingObject *expectedFnObject = (FnOverloadingObject *)expectedFnValue.getEntityRef().asObject.instanceObject;
 				if (!analyzeContext.analyzedInfoOut.fnCallMap.contains(expectedFnObject)) {
 					analyzeContext.analyzedInfoOut.fnCallMap.insert(+expectedFnObject, peff::DynArray<uint32_t>(&analyzeContext.runtime->globalHeapPoolAlloc));
 				}

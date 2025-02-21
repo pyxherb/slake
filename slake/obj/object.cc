@@ -19,7 +19,7 @@ SLAKE_API Object *Object::duplicate() const {
 }
 
 SLAKE_API EntityRef Object::getMember(const std::string_view &name) const {
-	return EntityRef::makeInstanceRef(nullptr);
+	return EntityRef::makeObjectRef(nullptr);
 }
 
 SLAKE_API HostRefHolder::HostRefHolder(peff::Alloc *selfAllocator)

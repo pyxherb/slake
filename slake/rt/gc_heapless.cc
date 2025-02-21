@@ -116,11 +116,11 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, const Va
 		case ObjectRefKind::ArrayElementRef:
 			context.pushObject(entityRef.asArray.arrayObject);
 			break;
-		case ObjectRefKind::InstanceRef:
-			context.pushObject(entityRef.asInstance.instanceObject);
+		case ObjectRefKind::ObjectRef:
+			context.pushObject(entityRef.asObject.instanceObject);
 			break;
 		case ObjectRefKind::InstanceFieldRef:
-			context.pushObject(entityRef.asInstanceField.instanceObject);
+			context.pushObject(entityRef.asObjectField.instanceObject);
 			break;
 		case ObjectRefKind::LocalVarRef:
 			break;

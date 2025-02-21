@@ -30,7 +30,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 				break;
 			case Opcode::LOAD: {
 				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex());
-				HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[0].getEntityRef().asInstance.instanceObject;
+				HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[0].getEntityRef().asObject.instanceObject;
 
 				compileContext.mappedObjects.insert(id.get());
 
@@ -39,8 +39,8 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 					EntityRef &entityRef = outputRegInfo.expectedValue.getEntityRef();
 
 					switch (entityRef.kind) {
-					case ObjectRefKind::InstanceRef: {
-						Object *object = entityRef.asInstance.instanceObject;
+					case ObjectRefKind::ObjectRef: {
+						Object *object = entityRef.asObject.instanceObject;
 
 						std::string varName = mangleRegLocalVarName(ins.output.getRegIndex());
 
@@ -150,7 +150,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 			}
 			case Opcode::RLOAD: {
 				uint32_t idxBaseReg = ins.operands[0].getRegIndex();
-				HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[1].getEntityRef().asInstance.instanceObject;
+				HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[1].getEntityRef().asObject.instanceObject;
 
 				compileContext.mappedObjects.insert((Object *)id.get());
 
@@ -349,8 +349,8 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 					EntityRef &entityRef = ins.operands[0].getEntityRef();
 
 					switch (entityRef.kind) {
-					case ObjectRefKind::InstanceRef:
-						compileContext.mappedObjects.insert(entityRef.asInstance.instanceObject);
+					case ObjectRefKind::ObjectRef:
+						compileContext.mappedObjects.insert(entityRef.asObject.instanceObject);
 						type = genInstanceObjectTypeName();
 						break;
 					default:
@@ -377,7 +377,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 								std::make_shared<cxxast::BinaryExpr>(
 									cxxast::BinaryOp::MemberAccess,
 									std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(regIndex)),
-									std::make_shared<cxxast::IdExpr>("asInstance")),
+									std::make_shared<cxxast::IdExpr>("asObject")),
 								std::make_shared<cxxast::IdExpr>("instanceObject"));
 						} else {
 							rhs = std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(regIndex));
@@ -468,13 +468,13 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::FnDelegate:
-					rhs = compileValue(compileContext, Value(EntityRef::makeInstanceRef(nullptr)));
+					rhs = compileValue(compileContext, Value(EntityRef::makeObjectRef(nullptr)));
 					break;
 				case TypeId::Ref:
 					// Should not be initialized
 					break;
 				case TypeId::Any:
-					rhs = compileValue(compileContext, Value(EntityRef::makeInstanceRef(nullptr)));
+					rhs = compileValue(compileContext, Value(EntityRef::makeObjectRef(nullptr)));
 					break;
 				default:
 					std::terminate();

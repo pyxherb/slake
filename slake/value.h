@@ -20,7 +20,7 @@ namespace slake {
 	enum class ObjectRefKind : uint8_t {
 		FieldRef,
 		ArrayElementRef,
-		InstanceRef,
+		ObjectRef,
 		InstanceFieldRef,
 		LocalVarRef,
 		ArgRef,
@@ -39,11 +39,11 @@ namespace slake {
 			} asArray;
 			struct {
 				Object *instanceObject;
-			} asInstance;
+			} asObject;
 			struct {
 				InstanceObject *instanceObject;
 				size_t fieldIndex;
-			} asInstanceField;
+			} asObjectField;
 			struct {
 				Context *context;
 				size_t stackOff;
@@ -79,11 +79,11 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE EntityRef makeInstanceRef(Object *instanceObject) {
+		static SLAKE_FORCEINLINE EntityRef makeObjectRef(Object *instanceObject) {
 			EntityRef ref = {};
 
-			ref.asInstance.instanceObject = instanceObject;
-			ref.kind = ObjectRefKind::InstanceRef;
+			ref.asObject.instanceObject = instanceObject;
+			ref.kind = ObjectRefKind::ObjectRef;
 
 			return ref;
 		}
@@ -91,8 +91,8 @@ namespace slake {
 		static SLAKE_FORCEINLINE EntityRef makeInstanceFieldRef(InstanceObject *instanceObject, size_t fieldIndex) {
 			EntityRef ref = {};
 
-			ref.asInstanceField.instanceObject = instanceObject;
-			ref.asInstanceField.fieldIndex = fieldIndex;
+			ref.asObjectField.instanceObject = instanceObject;
+			ref.asObjectField.fieldIndex = fieldIndex;
 			ref.kind = ObjectRefKind::InstanceFieldRef;
 
 			return ref;
@@ -129,9 +129,9 @@ namespace slake {
 		}
 
 		SLAKE_FORCEINLINE operator bool() const {
-			if (kind != ObjectRefKind::InstanceRef)
+			if (kind != ObjectRefKind::ObjectRef)
 				return true;
-			return asInstance.instanceObject;
+			return asObject.instanceObject;
 		}
 
 		SLAKE_API bool operator==(const EntityRef &rhs) const;

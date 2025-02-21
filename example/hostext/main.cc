@@ -14,7 +14,7 @@ slake::Value print(slake::Context *context, slake::MajorFrame *curMajorFrame) {
 	else {
 		Value varArgsValue;
 		varArgsValue = curMajorFrame->curFn->associatedRuntime->readVarUnsafe(slake::EntityRef::makeArgRef(curMajorFrame, 0));
-		ArrayObject *varArgs = (ArrayObject *)varArgsValue.getEntityRef().asInstance.instanceObject;
+		ArrayObject *varArgs = (ArrayObject *)varArgsValue.getEntityRef().asObject.instanceObject;
 
 		for (uint8_t i = 0; i < varArgs->length; ++i) {
 			Value data;
@@ -59,7 +59,7 @@ slake::Value print(slake::Context *context, slake::MajorFrame *curMajorFrame) {
 				fputs(data.getBool() ? "true" : "false", stdout);
 				break;
 			case ValueType::EntityRef: {
-				Object *objectPtr = data.getEntityRef().asInstance.instanceObject;
+				Object *objectPtr = data.getEntityRef().asObject.instanceObject;
 				if (!objectPtr)
 					fputs("null", stdout);
 				else {
@@ -168,17 +168,17 @@ int main(int argc, char **argv) {
 		fnObject->name.resize(strlen("print"));
 		memcpy(fnObject->name.data(), "print", strlen("print"));
 
-		((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext").asInstance.instanceObject)
+		((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext").asObject.instanceObject)
 				->getMember("extfns")
-				.asInstance.instanceObject)
+				.asObject.instanceObject)
 			->scope->removeMember("print");
-		if (!((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext").asInstance.instanceObject)
+		if (!((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext").asObject.instanceObject)
 					->getMember("extfns")
-					.asInstance.instanceObject)
+					.asObject.instanceObject)
 				 ->scope->putMember(fnObject.get()))
 			throw std::bad_alloc();
 
-		auto fn = (slake::FnObject *)mod->getMember("main").asInstance.instanceObject;
+		auto fn = (slake::FnObject *)mod->getMember("main").asObject.instanceObject;
 		auto overloading = fn->getOverloading({});
 
 		slake::opti::ProgramAnalyzedInfo analyzedInfo(rt.get());

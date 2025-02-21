@@ -16,12 +16,12 @@ SLAKE_API bool EntityRef::operator==(const EntityRef &rhs) const {
 		if (asArray.arrayObject != rhs.asArray.arrayObject)
 			return false;
 		return asField.index == rhs.asField.index;
-	case ObjectRefKind::InstanceRef:
-		return asInstance.instanceObject == rhs.asInstance.instanceObject;
+	case ObjectRefKind::ObjectRef:
+		return asObject.instanceObject == rhs.asObject.instanceObject;
 	case ObjectRefKind::InstanceFieldRef:
-		if (asInstanceField.instanceObject != rhs.asInstanceField.instanceObject)
+		if (asObjectField.instanceObject != rhs.asObjectField.instanceObject)
 			return false;
-		return asInstanceField.fieldIndex == rhs.asInstanceField.fieldIndex;
+		return asObjectField.fieldIndex == rhs.asObjectField.fieldIndex;
 	case ObjectRefKind::LocalVarRef:
 		if (asLocalVar.context != rhs.asLocalVar.context)
 			return false;
@@ -55,14 +55,14 @@ SLAKE_API bool EntityRef::operator<(const EntityRef &rhs) const {
 		if (asArray.arrayObject > rhs.asArray.arrayObject)
 			return false;
 		return asField.index < rhs.asField.index;
-	case ObjectRefKind::InstanceRef:
-		return asInstance.instanceObject < rhs.asInstance.instanceObject;
+	case ObjectRefKind::ObjectRef:
+		return asObject.instanceObject < rhs.asObject.instanceObject;
 	case ObjectRefKind::InstanceFieldRef:
-		if (asInstanceField.instanceObject < rhs.asInstanceField.instanceObject)
+		if (asObjectField.instanceObject < rhs.asObjectField.instanceObject)
 			return true;
-		if (asInstanceField.instanceObject > rhs.asInstanceField.instanceObject)
+		if (asObjectField.instanceObject > rhs.asObjectField.instanceObject)
 			return false;
-		return asInstanceField.fieldIndex < rhs.asInstanceField.fieldIndex;
+		return asObjectField.fieldIndex < rhs.asObjectField.fieldIndex;
 	case ObjectRefKind::LocalVarRef:
 		if (asLocalVar.context < rhs.asLocalVar.context)
 			return true;
@@ -147,10 +147,10 @@ SLAKE_API InternalExceptionPointer Type::loadDeferredType(Runtime *rt) {
 	EntityRef entityRef;
 	SLAKE_RETURN_IF_EXCEPT(rt->resolveIdRef(ref, entityRef));
 
-	if (entityRef.kind != ObjectRefKind::InstanceRef)
+	if (entityRef.kind != ObjectRefKind::ObjectRef)
 		return ReferencedMemberNotFoundError::alloc(rt, ref);
 
-	exData.object = entityRef.asInstance.instanceObject;
+	exData.object = entityRef.asObject.instanceObject;
 
 	return {};
 }
@@ -317,9 +317,9 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 		if (value.valueType != ValueType::EntityRef)
 			return false;
 		const EntityRef &entityRef = value.getEntityRef();
-		if (entityRef.kind != ObjectRefKind::InstanceRef)
+		if (entityRef.kind != ObjectRefKind::ObjectRef)
 			return false;
-		if (entityRef.asInstance.instanceObject->getKind() != ObjectKind::String)
+		if (entityRef.asObject.instanceObject->getKind() != ObjectKind::String)
 			return false;
 		break;
 	}
@@ -328,9 +328,9 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 			return false;
 
 		const EntityRef &entityRef = value.getEntityRef();
-		if (entityRef.kind != ObjectRefKind::InstanceRef)
+		if (entityRef.kind != ObjectRefKind::ObjectRef)
 			return false;
-		Object *objectPtr = entityRef.asInstance.instanceObject;
+		Object *objectPtr = entityRef.asObject.instanceObject;
 
 		if (auto e = const_cast<Type &>(type).loadDeferredType(objectPtr->associatedRuntime);
 			e) {
@@ -367,9 +367,9 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 			return false;
 
 		const EntityRef &entityRef = value.getEntityRef();
-		if (entityRef.kind != ObjectRefKind::InstanceRef)
+		if (entityRef.kind != ObjectRefKind::ObjectRef)
 			return false;
-		Object *objectPtr = entityRef.asInstance.instanceObject;
+		Object *objectPtr = entityRef.asObject.instanceObject;
 		if (objectPtr->getKind() != ObjectKind::Array)
 			return false;
 
@@ -390,7 +390,7 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 			rt = entityRef.asField.moduleObject->associatedRuntime;
 			break;
 		case ObjectRefKind::InstanceFieldRef:
-			rt = entityRef.asInstanceField.instanceObject->associatedRuntime;
+			rt = entityRef.asObjectField.instanceObject->associatedRuntime;
 			break;
 		case ObjectRefKind::LocalVarRef:
 			break;

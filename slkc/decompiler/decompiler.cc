@@ -320,7 +320,7 @@ void slake::decompiler::decompileValue(Runtime *rt, Value value, std::ostream &o
 		if (!ptr)
 			os << "null";
 		else
-			decompileObject(rt, ptr.asInstance.instanceObject, os, indentLevel);
+			decompileObject(rt, ptr.asObject.instanceObject, os, indentLevel);
 		break;
 	}
 	case ValueType::TypeName:

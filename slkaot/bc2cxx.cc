@@ -172,9 +172,9 @@ std::shared_ptr<cxxast::Expr> BC2CXX::compileValue(CompileContext &compileContex
 		break;
 	case ValueType::EntityRef: {
 		const EntityRef &entityRef = value.getEntityRef();
-		if (entityRef.kind != ObjectRefKind::InstanceRef)
+		if (entityRef.kind != ObjectRefKind::ObjectRef)
 			std::terminate();
-		Object *object = entityRef.asInstance.instanceObject;
+		Object *object = entityRef.asObject.instanceObject;
 		if (object) {
 			compileContext.mappedObjects.insert(object);
 			e = std::make_shared<cxxast::BinaryExpr>(cxxast::BinaryOp::PtrAccess,

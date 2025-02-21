@@ -219,7 +219,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 							std::make_shared<cxxast::UnaryExpr>(
 								cxxast::UnaryOp::Dereference,
 								std::make_shared<cxxast::CastExpr>(
-									std::make_shared<cxxast::PointerTypeName>(compileType(compileContext, ins.operands[1].valueType)),
+									std::make_shared<cxxast::PointerTypeName>(compileType(compileContext, valueTypeToTypeId(ins.operands[1].valueType))),
 									lhs));
 						rhs = compileValue(compileContext, ins.operands[1]);
 						break;
@@ -282,7 +282,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 							std::make_shared<cxxast::UnaryExpr>(
 								cxxast::UnaryOp::Dereference,
 								std::make_shared<cxxast::CastExpr>(
-									std::make_shared<cxxast::PointerTypeName>(compileType(compileContext, ins.operands[1].valueType)),
+									std::make_shared<cxxast::PointerTypeName>(compileType(compileContext, valueTypeToTypeId(ins.operands[1].valueType))),
 									lhs));
 						break;
 					case ValueType::RegRef:
@@ -342,7 +342,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 				case ValueType::F32:
 				case ValueType::F64:
 				case ValueType::Bool:
-					type = compileType(compileContext, Type(ins.operands[0].valueType));
+					type = compileType(compileContext, Type(valueTypeToTypeId(ins.operands[0].valueType)));
 					rhs = compileValue(compileContext, ins.operands[0]);
 					break;
 				case ValueType::EntityRef: {
@@ -431,38 +431,32 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 				std::shared_ptr<cxxast::TypeName> type;
 
 				switch (ins.operands[0].getTypeName().typeId) {
-				case TypeId::Value:
-					switch (ins.operands[0].getTypeName().getValueTypeExData()) {
-					case ValueType::I8:
-						rhs = compileValue(compileContext, Value((int8_t)0));
-						break;
-					case ValueType::I16:
-						rhs = compileValue(compileContext, Value((int16_t)0));
-						break;
-					case ValueType::I32:
-						rhs = compileValue(compileContext, Value((int32_t)0));
-						break;
-					case ValueType::I64:
-						rhs = compileValue(compileContext, Value((int64_t)0));
-						break;
-					case ValueType::U8:
-						rhs = compileValue(compileContext, Value((uint8_t)0));
-						break;
-					case ValueType::U16:
-						rhs = compileValue(compileContext, Value((uint16_t)0));
-						break;
-					case ValueType::U32:
-						rhs = compileValue(compileContext, Value((uint32_t)0));
-						break;
-					case ValueType::U64:
-						rhs = compileValue(compileContext, Value((uint64_t)0));
-						break;
-					case ValueType::Bool:
-						rhs = compileValue(compileContext, Value((bool)false));
-						break;
-					default:
-						std::terminate();
-					}
+				case TypeId::I8:
+					rhs = compileValue(compileContext, Value((int8_t)0));
+					break;
+				case TypeId::I16:
+					rhs = compileValue(compileContext, Value((int16_t)0));
+					break;
+				case TypeId::I32:
+					rhs = compileValue(compileContext, Value((int32_t)0));
+					break;
+				case TypeId::I64:
+					rhs = compileValue(compileContext, Value((int64_t)0));
+					break;
+				case TypeId::U8:
+					rhs = compileValue(compileContext, Value((uint8_t)0));
+					break;
+				case TypeId::U16:
+					rhs = compileValue(compileContext, Value((uint16_t)0));
+					break;
+				case TypeId::U32:
+					rhs = compileValue(compileContext, Value((uint32_t)0));
+					break;
+				case TypeId::U64:
+					rhs = compileValue(compileContext, Value((uint64_t)0));
+					break;
+				case TypeId::Bool:
+					rhs = compileValue(compileContext, Value((bool)false));
 					break;
 				case TypeId::String:
 				case TypeId::Instance:

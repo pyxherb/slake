@@ -232,198 +232,193 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 		auto &srcVregInfo = compileContext.virtualRegStates.at(srcRegIndex);
 		Type &srcRegType = srcRegInfo.type;
 		switch (srcRegType.typeId) {
-		case TypeId::Value: {
-			switch (srcRegType.getValueTypeExData()) {
-			case ValueType::I8:
-			case ValueType::U8:
-			case ValueType::Bool: {
-				RegisterId regId = compileContext.allocGpReg();
-				if (compileContext.isRegInUse(regId)) {
-					int32_t off;
-					size_t size;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(regId, off, size));
-				}
-				if (srcVregInfo.saveOffset != INT32_MIN) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg8Ins(
-																		regId,
-																		MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 })));
-				} else {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg8ToReg8Ins(regId, srcVregInfo.phyReg)));
-				}
-
-				VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(uint8_t));
-				if (!outputVregState)
-					return OutOfMemoryError::alloc();
-				break;
-			}
-			case ValueType::I16:
-			case ValueType::U16: {
-				RegisterId regId = compileContext.allocGpReg();
-				if (compileContext.isRegInUse(regId)) {
-					int32_t off;
-					size_t size;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(regId, off, size));
-				}
-				if (srcVregInfo.saveOffset != INT32_MIN) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg16Ins(
-																		regId,
-																		MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 })));
-				} else {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg16ToReg16Ins(regId, srcVregInfo.phyReg)));
-				}
-
-				VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(uint16_t));
-				if (!outputVregState)
-					return OutOfMemoryError::alloc();
-				break;
-			}
-			case ValueType::I32:
-			case ValueType::U32: {
-				RegisterId regId = compileContext.allocGpReg();
-				if (compileContext.isRegInUse(regId)) {
-					int32_t off;
-					size_t size;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(regId, off, size));
-				}
-				if (srcVregInfo.saveOffset != INT32_MIN) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg32Ins(
-																		regId,
-																		MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 })));
-				} else {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg32ToReg32Ins(regId, srcVregInfo.phyReg)));
-				}
-
-				VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(uint32_t));
-				if (!outputVregState)
-					return OutOfMemoryError::alloc();
-				break;
-			}
-			case ValueType::I64:
-			case ValueType::U64: {
-				RegisterId regId = compileContext.allocGpReg();
-				if (compileContext.isRegInUse(regId)) {
-					int32_t off;
-					size_t size;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(regId, off, size));
-				}
-				if (srcVregInfo.saveOffset != INT32_MIN) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovMemToReg64Ins(
-																		regId,
-																		MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 })));
-				} else {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToReg64Ins(regId, srcVregInfo.phyReg)));
-				}
-
-				VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(uint64_t));
-				if (!outputVregState)
-					return OutOfMemoryError::alloc();
-				break;
-			}
-			case ValueType::F32: {
-				RegisterId regId = compileContext.allocXmmReg();
-				if (compileContext.isRegInUse(regId)) {
-					int32_t off;
-					size_t size;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushRegXmm(regId, off, size));
-				}
-				if (srcVregInfo.saveOffset != INT32_MIN) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovdMemToRegXmmIns(
-																		regId,
-																		MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 })));
-				} else {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovqRegXmmToRegXmmIns(regId, srcVregInfo.phyReg)));
-				}
-
-				VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(float));
-				if (!outputVregState)
-					return OutOfMemoryError::alloc();
-				break;
-			}
-			case ValueType::F64: {
-				RegisterId regId = compileContext.allocXmmReg();
-				if (compileContext.isRegInUse(regId)) {
-					int32_t off;
-					size_t size;
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushRegXmm(regId, off, size));
-				}
-				if (srcVregInfo.saveOffset != INT32_MIN) {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
-																	emitMovqMemToRegXmmIns(
-																		regId,
-																		MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 })));
-				} else {
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovqRegXmmToRegXmmIns(regId, srcVregInfo.phyReg)));
-				}
-
-				VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(double));
-				if (!outputVregState)
-					return OutOfMemoryError::alloc();
-				break;
-			}
-			case ValueType::EntityRef: {
+		case TypeId::I8:
+		case TypeId::U8:
+		case TypeId::Bool: {
+			RegisterId regId = compileContext.allocGpReg();
+			if (compileContext.isRegInUse(regId)) {
 				int32_t off;
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.stackAllocAligned(sizeof(EntityRef), sizeof(EntityRef), off));
-
-				{
-					RegisterId tmpRegId = compileContext.allocGpReg();
-					int32_t tmpRegOff = INT32_MIN;
-					size_t tmpRegSize;
-					if (compileContext.isRegInUse(tmpRegId)) {
-						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(tmpRegId, tmpRegOff, tmpRegSize));
-					}
-
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToReg64Ins(tmpRegId, REG_RBP)));
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitAddImm32ToReg64Ins(tmpRegId, (uint8_t *)&srcVregInfo.saveOffset)));
-
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RCX, tmpRegId)));
-
-					if (tmpRegOff != INT32_MIN) {
-						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.popReg(tmpRegId, tmpRegOff, tmpRegSize));
-					}
-				}
-				{
-					RegisterId tmpRegId = compileContext.allocGpReg();
-					int32_t tmpRegOff = INT32_MIN;
-					size_t tmpRegSize;
-					if (compileContext.isRegInUse(tmpRegId)) {
-						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(tmpRegId, tmpRegOff, tmpRegSize));
-					}
-
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToReg64Ins(tmpRegId, REG_RBP)));
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitAddImm32ToReg64Ins(tmpRegId, (uint8_t *)&off)));
-
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RDX, tmpRegId)));
-
-					if (tmpRegOff != INT32_MIN) {
-						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.popReg(tmpRegId, tmpRegOff, tmpRegSize));
-					}
-				}
-				{
-					uint64_t size = sizeof(EntityRef);
-					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&size)));
-				}
-
-				CallingRegSavingInfo callingRegSavingInfo;
-
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.saveCallingRegs(callingRegSavingInfo));
-
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitCallIns((void *)memcpyWrapper)));
-
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.restoreCallingRegs(callingRegSavingInfo));
-
-				VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, off, sizeof(double));
-				if (!outputVregState)
-					return OutOfMemoryError::alloc();
-				break;
+				size_t size;
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(regId, off, size));
 			}
+			if (srcVregInfo.saveOffset != INT32_MIN) {
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																emitMovMemToReg8Ins(
+																	regId,
+																	MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 })));
+			} else {
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg8ToReg8Ins(regId, srcVregInfo.phyReg)));
 			}
+
+			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(uint8_t));
+			if (!outputVregState)
+				return OutOfMemoryError::alloc();
 			break;
 		}
+		case TypeId::I16:
+		case TypeId::U16: {
+			RegisterId regId = compileContext.allocGpReg();
+			if (compileContext.isRegInUse(regId)) {
+				int32_t off;
+				size_t size;
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(regId, off, size));
+			}
+			if (srcVregInfo.saveOffset != INT32_MIN) {
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																emitMovMemToReg16Ins(
+																	regId,
+																	MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 })));
+			} else {
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg16ToReg16Ins(regId, srcVregInfo.phyReg)));
+			}
+
+			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(uint16_t));
+			if (!outputVregState)
+				return OutOfMemoryError::alloc();
+			break;
+		}
+		case TypeId::I32:
+		case TypeId::U32: {
+			RegisterId regId = compileContext.allocGpReg();
+			if (compileContext.isRegInUse(regId)) {
+				int32_t off;
+				size_t size;
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(regId, off, size));
+			}
+			if (srcVregInfo.saveOffset != INT32_MIN) {
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																emitMovMemToReg32Ins(
+																	regId,
+																	MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 })));
+			} else {
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg32ToReg32Ins(regId, srcVregInfo.phyReg)));
+			}
+
+			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(uint32_t));
+			if (!outputVregState)
+				return OutOfMemoryError::alloc();
+			break;
+		}
+		case TypeId::I64:
+		case TypeId::U64: {
+			RegisterId regId = compileContext.allocGpReg();
+			if (compileContext.isRegInUse(regId)) {
+				int32_t off;
+				size_t size;
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(regId, off, size));
+			}
+			if (srcVregInfo.saveOffset != INT32_MIN) {
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																emitMovMemToReg64Ins(
+																	regId,
+																	MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 })));
+			} else {
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToReg64Ins(regId, srcVregInfo.phyReg)));
+			}
+
+			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(uint64_t));
+			if (!outputVregState)
+				return OutOfMemoryError::alloc();
+			break;
+		}
+		case TypeId::F32: {
+			RegisterId regId = compileContext.allocXmmReg();
+			if (compileContext.isRegInUse(regId)) {
+				int32_t off;
+				size_t size;
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushRegXmm(regId, off, size));
+			}
+			if (srcVregInfo.saveOffset != INT32_MIN) {
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																emitMovdMemToRegXmmIns(
+																	regId,
+																	MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 })));
+			} else {
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovqRegXmmToRegXmmIns(regId, srcVregInfo.phyReg)));
+			}
+
+			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(float));
+			if (!outputVregState)
+				return OutOfMemoryError::alloc();
+			break;
+		}
+		case TypeId::F64: {
+			RegisterId regId = compileContext.allocXmmReg();
+			if (compileContext.isRegInUse(regId)) {
+				int32_t off;
+				size_t size;
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushRegXmm(regId, off, size));
+			}
+			if (srcVregInfo.saveOffset != INT32_MIN) {
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
+																emitMovqMemToRegXmmIns(
+																	regId,
+																	MemoryLocation{ REG_RBP, srcVregInfo.saveOffset, REG_MAX, 0 })));
+			} else {
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovqRegXmmToRegXmmIns(regId, srcVregInfo.phyReg)));
+			}
+
+			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, regId, sizeof(double));
+			if (!outputVregState)
+				return OutOfMemoryError::alloc();
+			break;
+		}/*
+		case TypeId::EntityRef: {
+			int32_t off;
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.stackAllocAligned(sizeof(EntityRef), sizeof(EntityRef), off));
+
+			{
+				RegisterId tmpRegId = compileContext.allocGpReg();
+				int32_t tmpRegOff = INT32_MIN;
+				size_t tmpRegSize;
+				if (compileContext.isRegInUse(tmpRegId)) {
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(tmpRegId, tmpRegOff, tmpRegSize));
+				}
+
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToReg64Ins(tmpRegId, REG_RBP)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitAddImm32ToReg64Ins(tmpRegId, (uint8_t *)&srcVregInfo.saveOffset)));
+
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RCX, tmpRegId)));
+
+				if (tmpRegOff != INT32_MIN) {
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.popReg(tmpRegId, tmpRegOff, tmpRegSize));
+				}
+			}
+			{
+				RegisterId tmpRegId = compileContext.allocGpReg();
+				int32_t tmpRegOff = INT32_MIN;
+				size_t tmpRegSize;
+				if (compileContext.isRegInUse(tmpRegId)) {
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushReg(tmpRegId, tmpRegOff, tmpRegSize));
+				}
+
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToReg64Ins(tmpRegId, REG_RBP)));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitAddImm32ToReg64Ins(tmpRegId, (uint8_t *)&off)));
+
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovReg64ToReg64Ins(REG_RDX, tmpRegId)));
+
+				if (tmpRegOff != INT32_MIN) {
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.popReg(tmpRegId, tmpRegOff, tmpRegSize));
+				}
+			}
+			{
+				uint64_t size = sizeof(EntityRef);
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&size)));
+			}
+
+			CallingRegSavingInfo callingRegSavingInfo;
+
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.saveCallingRegs(callingRegSavingInfo));
+
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitCallIns((void *)memcpyWrapper)));
+
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.restoreCallingRegs(callingRegSavingInfo));
+
+			VirtualRegState *outputVregState = compileContext.defVirtualReg(outputRegIndex, off, sizeof(double));
+			if (!outputVregState)
+				return OutOfMemoryError::alloc();
+			break;
+		}*/
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array:

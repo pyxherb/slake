@@ -70,66 +70,59 @@ SLAKE_API InternalExceptionPointer slake::Runtime::instantiateModuleFields(Modul
 		SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(curFieldRecord.type, instantiationContext));
 
 		switch (curFieldRecord.type.typeId) {
-		case TypeId::Value:
-			switch (curFieldRecord.type.getValueTypeExData()) {
-			case ValueType::I8:
-				curFieldRecord.offset = szRelocatedLocalFieldStorage;
-				szRelocatedLocalFieldStorage += sizeof(int8_t);
-				break;
-			case ValueType::I16:
-				if (szRelocatedLocalFieldStorage & 1) {
-					szRelocatedLocalFieldStorage += (2 - (szRelocatedLocalFieldStorage & 1));
-				}
-				curFieldRecord.offset = szRelocatedLocalFieldStorage;
-				szRelocatedLocalFieldStorage += sizeof(int16_t);
-				break;
-			case ValueType::I32:
-				if (szRelocatedLocalFieldStorage & 3) {
-					szRelocatedLocalFieldStorage += (4 - (szRelocatedLocalFieldStorage & 3));
-				}
-				curFieldRecord.offset = szRelocatedLocalFieldStorage;
-				szRelocatedLocalFieldStorage += sizeof(int32_t);
-				break;
-			case ValueType::I64:
-				if (szRelocatedLocalFieldStorage & 7) {
-					szRelocatedLocalFieldStorage += (8 - (szRelocatedLocalFieldStorage & 7));
-				}
-				curFieldRecord.offset = szRelocatedLocalFieldStorage;
-				szRelocatedLocalFieldStorage += sizeof(int64_t);
-				break;
-			case ValueType::U8:
-				curFieldRecord.offset = szRelocatedLocalFieldStorage;
-				szRelocatedLocalFieldStorage += sizeof(uint8_t);
-				break;
-			case ValueType::U16:
-				if (szRelocatedLocalFieldStorage & 1) {
-					szRelocatedLocalFieldStorage += (2 - (szRelocatedLocalFieldStorage & 1));
-				}
-				curFieldRecord.offset = szRelocatedLocalFieldStorage;
-				szRelocatedLocalFieldStorage += sizeof(uint16_t);
-				break;
-			case ValueType::U32:
-				if (szRelocatedLocalFieldStorage & 3) {
-					szRelocatedLocalFieldStorage += (4 - (szRelocatedLocalFieldStorage & 3));
-				}
-				curFieldRecord.offset = szRelocatedLocalFieldStorage;
-				szRelocatedLocalFieldStorage += sizeof(uint32_t);
-				break;
-			case ValueType::U64:
-				if (szRelocatedLocalFieldStorage & 7) {
-					szRelocatedLocalFieldStorage += (8 - (szRelocatedLocalFieldStorage & 7));
-				}
-				curFieldRecord.offset = szRelocatedLocalFieldStorage;
-				szRelocatedLocalFieldStorage += sizeof(uint64_t);
-				break;
-			case ValueType::Bool:
-				curFieldRecord.offset = szRelocatedLocalFieldStorage;
-				szRelocatedLocalFieldStorage += sizeof(bool);
-				break;
-			default:
-				// Unenumerated value types should never occur.
-				throw std::logic_error("Invalid value type");
+		case TypeId::I8:
+			curFieldRecord.offset = szRelocatedLocalFieldStorage;
+			szRelocatedLocalFieldStorage += sizeof(int8_t);
+			break;
+		case TypeId::I16:
+			if (szRelocatedLocalFieldStorage & 1) {
+				szRelocatedLocalFieldStorage += (2 - (szRelocatedLocalFieldStorage & 1));
 			}
+			curFieldRecord.offset = szRelocatedLocalFieldStorage;
+			szRelocatedLocalFieldStorage += sizeof(int16_t);
+			break;
+		case TypeId::I32:
+			if (szRelocatedLocalFieldStorage & 3) {
+				szRelocatedLocalFieldStorage += (4 - (szRelocatedLocalFieldStorage & 3));
+			}
+			curFieldRecord.offset = szRelocatedLocalFieldStorage;
+			szRelocatedLocalFieldStorage += sizeof(int32_t);
+			break;
+		case TypeId::I64:
+			if (szRelocatedLocalFieldStorage & 7) {
+				szRelocatedLocalFieldStorage += (8 - (szRelocatedLocalFieldStorage & 7));
+			}
+			curFieldRecord.offset = szRelocatedLocalFieldStorage;
+			szRelocatedLocalFieldStorage += sizeof(int64_t);
+			break;
+		case TypeId::U8:
+			curFieldRecord.offset = szRelocatedLocalFieldStorage;
+			szRelocatedLocalFieldStorage += sizeof(uint8_t);
+			break;
+		case TypeId::U16:
+			if (szRelocatedLocalFieldStorage & 1) {
+				szRelocatedLocalFieldStorage += (2 - (szRelocatedLocalFieldStorage & 1));
+			}
+			curFieldRecord.offset = szRelocatedLocalFieldStorage;
+			szRelocatedLocalFieldStorage += sizeof(uint16_t);
+			break;
+		case TypeId::U32:
+			if (szRelocatedLocalFieldStorage & 3) {
+				szRelocatedLocalFieldStorage += (4 - (szRelocatedLocalFieldStorage & 3));
+			}
+			curFieldRecord.offset = szRelocatedLocalFieldStorage;
+			szRelocatedLocalFieldStorage += sizeof(uint32_t);
+			break;
+		case TypeId::U64:
+			if (szRelocatedLocalFieldStorage & 7) {
+				szRelocatedLocalFieldStorage += (8 - (szRelocatedLocalFieldStorage & 7));
+			}
+			curFieldRecord.offset = szRelocatedLocalFieldStorage;
+			szRelocatedLocalFieldStorage += sizeof(uint64_t);
+			break;
+		case TypeId::Bool:
+			curFieldRecord.offset = szRelocatedLocalFieldStorage;
+			szRelocatedLocalFieldStorage += sizeof(bool);
 			break;
 		case TypeId::String:
 		case TypeId::Instance:
@@ -178,45 +171,38 @@ SLAKE_API InternalExceptionPointer slake::Runtime::instantiateModuleFields(Modul
 		char *rawDataPtr = mod->localFieldStorage + curFieldRecord.offset,
 			 *rawRelocatedDataPtr = localFieldStorage + curRelocatedFieldRecord.offset;
 		switch (curFieldRecord.type.typeId) {
-		case TypeId::Value:
-			switch (curRelocatedFieldRecord.type.getValueTypeExData()) {
-			case ValueType::I8:
-				*((int8_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int8_t *)rawDataPtr) : 0);
-				break;
-			case ValueType::I16:
-				*((int16_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int16_t *)rawDataPtr) : 0);
-				break;
-			case ValueType::I32:
-				*((int32_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int32_t *)rawDataPtr) : 0);
-				break;
-			case ValueType::I64:
-				*((int64_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int64_t *)rawDataPtr) : 0);
-				break;
-			case ValueType::U8:
-				*((uint8_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((uint8_t *)rawDataPtr) : 0);
-				break;
-			case ValueType::U16:
-				*((uint16_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int16_t *)rawDataPtr) : 0);
-				break;
-			case ValueType::U32:
-				*((uint32_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((uint32_t *)rawDataPtr) : 0);
-				break;
-			case ValueType::U64:
-				*((uint64_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((uint64_t *)rawDataPtr) : 0);
-				break;
-			case ValueType::F32:
-				*((float *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((float *)rawDataPtr) : 0);
-				break;
-			case ValueType::F64:
-				*((double *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((double *)rawDataPtr) : 0);
-				break;
-			case ValueType::Bool:
-				*((bool *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((bool *)rawDataPtr) : 0);
-				break;
-			default:
-				// Unenumerated value types should never occur.
-				throw std::logic_error("Invalid value type");
-			}
+		case TypeId::I8:
+			*((int8_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int8_t *)rawDataPtr) : 0);
+			break;
+		case TypeId::I16:
+			*((int16_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int16_t *)rawDataPtr) : 0);
+			break;
+		case TypeId::I32:
+			*((int32_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int32_t *)rawDataPtr) : 0);
+			break;
+		case TypeId::I64:
+			*((int64_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int64_t *)rawDataPtr) : 0);
+			break;
+		case TypeId::U8:
+			*((uint8_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((uint8_t *)rawDataPtr) : 0);
+			break;
+		case TypeId::U16:
+			*((uint16_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int16_t *)rawDataPtr) : 0);
+			break;
+		case TypeId::U32:
+			*((uint32_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((uint32_t *)rawDataPtr) : 0);
+			break;
+		case TypeId::U64:
+			*((uint64_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((uint64_t *)rawDataPtr) : 0);
+			break;
+		case TypeId::F32:
+			*((float *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((float *)rawDataPtr) : 0);
+			break;
+		case TypeId::F64:
+			*((double *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((double *)rawDataPtr) : 0);
+			break;
+		case TypeId::Bool:
+			*((bool *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((bool *)rawDataPtr) : 0);
 			break;
 		case TypeId::String:
 		case TypeId::Instance:

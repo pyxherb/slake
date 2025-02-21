@@ -247,48 +247,28 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 
 std::shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 	switch (runtimeType.typeId) {
-	case slake::TypeId::Value:
-		switch (runtimeType.getValueTypeExData()) {
-		case slake::ValueType::I8:
-			return std::make_shared<I8TypeNameNode>(SIZE_MAX);
-		case slake::ValueType::I16:
-			return std::make_shared<I16TypeNameNode>(SIZE_MAX);
-		case slake::ValueType::I32:
-			return std::make_shared<I32TypeNameNode>(SIZE_MAX);
-		case slake::ValueType::I64:
-			return std::make_shared<I64TypeNameNode>(SIZE_MAX);
-		case slake::ValueType::U8:
-			return std::make_shared<U8TypeNameNode>(SIZE_MAX);
-		case slake::ValueType::U16:
-			return std::make_shared<U16TypeNameNode>(SIZE_MAX);
-		case slake::ValueType::U32:
-			return std::make_shared<U32TypeNameNode>(SIZE_MAX);
-		case slake::ValueType::U64:
-			return std::make_shared<U64TypeNameNode>(SIZE_MAX);
-		case slake::ValueType::F32:
-			return std::make_shared<F32TypeNameNode>(SIZE_MAX);
-		case slake::ValueType::F64:
-			return std::make_shared<F64TypeNameNode>(SIZE_MAX);
-		case slake::ValueType::Bool:
-			return std::make_shared<BoolTypeNameNode>(SIZE_MAX);
-		case slake::ValueType::TypeName: {
-			peff::DynArray<slake::IdRefEntry> refs;
-			if (!associatedRuntime->getFullRef(peff::getDefaultAlloc(), (MemberObject *)runtimeType.getCustomTypeExData(), refs))
-				throw std::bad_alloc();
-			std::shared_ptr<IdRefNode> ref = std::make_shared<IdRefNode>();
-
-			for (auto &i : refs) {
-				std::deque<std::shared_ptr<TypeNameNode>> genericArgs;
-				for (auto j : i.genericArgs) {
-					genericArgs.push_back(toTypeName(j));
-				}
-
-				ref->entries.push_back(IdRefEntry({}, SIZE_MAX, std::string(i.name.data(), i.name.size()), genericArgs));
-			}
-
-			return std::make_shared<CustomTypeNameNode>(ref, this, nullptr);
-		}
-		}
+	case slake::TypeId::I8:
+		return std::make_shared<I8TypeNameNode>(SIZE_MAX);
+	case slake::TypeId::I16:
+		return std::make_shared<I16TypeNameNode>(SIZE_MAX);
+	case slake::TypeId::I32:
+		return std::make_shared<I32TypeNameNode>(SIZE_MAX);
+	case slake::TypeId::I64:
+		return std::make_shared<I64TypeNameNode>(SIZE_MAX);
+	case slake::TypeId::U8:
+		return std::make_shared<U8TypeNameNode>(SIZE_MAX);
+	case slake::TypeId::U16:
+		return std::make_shared<U16TypeNameNode>(SIZE_MAX);
+	case slake::TypeId::U32:
+		return std::make_shared<U32TypeNameNode>(SIZE_MAX);
+	case slake::TypeId::U64:
+		return std::make_shared<U64TypeNameNode>(SIZE_MAX);
+	case slake::TypeId::F32:
+		return std::make_shared<F32TypeNameNode>(SIZE_MAX);
+	case slake::TypeId::F64:
+		return std::make_shared<F64TypeNameNode>(SIZE_MAX);
+	case slake::TypeId::Bool:
+		return std::make_shared<BoolTypeNameNode>(SIZE_MAX);
 	case slake::TypeId::String:
 		return std::make_shared<StringTypeNameNode>(SIZE_MAX);
 	case slake::TypeId::None:

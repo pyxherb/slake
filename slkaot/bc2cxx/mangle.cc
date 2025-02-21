@@ -9,7 +9,7 @@ std::string BC2CXX::mangleConstantObjectName(Object *object) {
 
 	memcpy(s, "constobj_", sizeof("constobj_") - 1);
 
-	sprintf(s + (sizeof("constobj_") - 1), "%0*zx", (int)sizeof(void*) * 2, (uintptr_t)object);
+	sprintf(s + (sizeof("constobj_") - 1), "%0*zx", (int)sizeof(void *) * 2, (uintptr_t)object);
 	return s;
 }
 
@@ -62,36 +62,28 @@ std::string BC2CXX::mangleTypeName(const Type &type) {
 	switch (type.typeId) {
 	case TypeId::None:
 		return "void";
-	case TypeId::Value: {
-		switch (type.getValueTypeExData()) {
-		case ValueType::I8:
-			return "i8";
-		case ValueType::I16:
-			return "i16";
-		case ValueType::I32:
-			return "i32";
-		case ValueType::I64:
-			return "i64";
-		case ValueType::U8:
-			return "u8";
-		case ValueType::U16:
-			return "u16";
-		case ValueType::U32:
-			return "u32";
-		case ValueType::U64:
-			return "u64";
-		case ValueType::F32:
-			return "f32";
-		case ValueType::F64:
-			return "f64";
-		case ValueType::Bool:
-			return "bool";
-		default:
-			// Invalid type name, terminate.
-			std::terminate();
-		}
-		break;
-	}
+	case TypeId::I8:
+		return "i8";
+	case TypeId::I16:
+		return "i16";
+	case TypeId::I32:
+		return "i32";
+	case TypeId::I64:
+		return "i64";
+	case TypeId::U8:
+		return "u8";
+	case TypeId::U16:
+		return "u16";
+	case TypeId::U32:
+		return "u32";
+	case TypeId::U64:
+		return "u64";
+	case TypeId::F32:
+		return "f32";
+	case TypeId::F64:
+		return "f64";
+	case TypeId::Bool:
+		return "bool";
 	case TypeId::String:
 		return "string";
 	case TypeId::Instance: {

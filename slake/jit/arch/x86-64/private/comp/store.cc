@@ -278,29 +278,39 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 		char *rawDataPtr = entityRef.asField.moduleObject->localFieldStorage + fieldRecord.offset;
 
 		switch (fieldRecord.type.typeId) {
-		case TypeId::Value: {
+		case TypeId::I8:
+		case TypeId::I16:
+		case TypeId::I32:
+		case TypeId::I64:
+		case TypeId::U8:
+		case TypeId::U16:
+		case TypeId::U32:
+		case TypeId::U64:
+		case TypeId::F32:
+		case TypeId::F64:
+		case TypeId::Bool: {
 			if (rhs.valueType == ValueType::RegRef) {
-				switch (fieldRecord.type.getValueTypeExData()) {
-				case ValueType::I8:
-				case ValueType::U8:
-				case ValueType::Bool: {
+				switch (fieldRecord.type.typeId) {
+				case TypeId::I8:
+				case TypeId::U8:
+				case TypeId::Bool: {
 					compileRegToFieldVarStoreInstruction<1>(compileContext, analyzedInfo, offIns, curIns, fieldRecord, rawDataPtr, rhs.getRegIndex());
 					break;
 				}
-				case ValueType::I16:
-				case ValueType::U16: {
+				case TypeId::I16:
+				case TypeId::U16: {
 					compileRegToFieldVarStoreInstruction<2>(compileContext, analyzedInfo, offIns, curIns, fieldRecord, rawDataPtr, rhs.getRegIndex());
 					break;
 				}
-				case ValueType::I32:
-				case ValueType::U32:
-				case ValueType::F32: {
+				case TypeId::I32:
+				case TypeId::U32:
+				case TypeId::F32: {
 					compileRegToFieldVarStoreInstruction<4>(compileContext, analyzedInfo, offIns, curIns, fieldRecord, rawDataPtr, rhs.getRegIndex());
 					break;
 				}
-				case ValueType::I64:
-				case ValueType::U64:
-				case ValueType::F64: {
+				case TypeId::I64:
+				case TypeId::U64:
+				case TypeId::F64: {
 					compileRegToFieldVarStoreInstruction<8>(compileContext, analyzedInfo, offIns, curIns, fieldRecord, rawDataPtr, rhs.getRegIndex());
 					break;
 				}
@@ -308,8 +318,8 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 					std::terminate();
 				}
 			} else {
-				switch (fieldRecord.type.getValueTypeExData()) {
-				case ValueType::I8: {
+				switch (fieldRecord.type.typeId) {
+				case TypeId::I8: {
 					int8_t imm0 = rhs.getI8();
 					if (((uintptr_t)rawDataPtr) < INT32_MAX) {
 						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
@@ -344,7 +354,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 					}
 					break;
 				}
-				case ValueType::I16: {
+				case TypeId::I16: {
 					int16_t imm0 = rhs.getI16();
 					if (((uintptr_t)rawDataPtr) < INT32_MAX) {
 						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
@@ -379,7 +389,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 					}
 					break;
 				}
-				case ValueType::I32: {
+				case TypeId::I32: {
 					int32_t imm0 = rhs.getI32();
 					if (((uintptr_t)rawDataPtr) < INT32_MAX) {
 						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
@@ -414,7 +424,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 					}
 					break;
 				}
-				case ValueType::I64: {
+				case TypeId::I64: {
 					int64_t imm0 = rhs.getI64();
 					if (((uintptr_t)rawDataPtr) < INT32_MAX) {
 						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
@@ -449,7 +459,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 					}
 					break;
 				}
-				case ValueType::U8: {
+				case TypeId::U8: {
 					uint8_t imm0 = rhs.getU8();
 					if (((uintptr_t)rawDataPtr) < INT32_MAX) {
 						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
@@ -484,7 +494,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 					}
 					break;
 				}
-				case ValueType::U16: {
+				case TypeId::U16: {
 					uint16_t imm0 = rhs.getU16();
 					if (((uintptr_t)rawDataPtr) < INT32_MAX) {
 						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
@@ -519,7 +529,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 					}
 					break;
 				}
-				case ValueType::U32: {
+				case TypeId::U32: {
 					uint16_t imm0 = rhs.getU16();
 					if (((uintptr_t)rawDataPtr) < INT32_MAX) {
 						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
@@ -554,7 +564,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 					}
 					break;
 				}
-				case ValueType::U64: {
+				case TypeId::U64: {
 					uint64_t imm0 = rhs.getU64();
 					if (((uintptr_t)rawDataPtr) < INT32_MAX) {
 						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
@@ -589,7 +599,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 					}
 					break;
 				}
-				case ValueType::Bool: {
+				case TypeId::Bool: {
 					bool imm0 = rhs.getBool();
 					if (((uintptr_t)rawDataPtr) < INT32_MAX) {
 						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
@@ -624,7 +634,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 					}
 					break;
 				}
-				case ValueType::F32: {
+				case TypeId::F32: {
 					float imm0 = rhs.getF32();
 					if (((uintptr_t)rawDataPtr) < INT32_MAX) {
 						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
@@ -659,7 +669,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 					}
 					break;
 				}
-				case ValueType::F64: {
+				case TypeId::F64: {
 					double imm0 = rhs.getF64();
 					if (((uintptr_t)rawDataPtr) < INT32_MAX) {
 						SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
@@ -707,9 +717,9 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 		case TypeId::Value: {
 			if (rhs.valueType == ValueType::RegRef) {
 				switch (localVarState.type.getValueTypeExData()) {
-				case ValueType::I8:
-				case ValueType::U8:
-				case ValueType::Bool: {
+				case TypeId::I8:
+				case TypeId::U8:
+				case TypeId::Bool: {
 					uint32_t regOff = rhs.getRegIndex();
 					VirtualRegState &vregState = compileContext.virtualRegStates.at(regOff);
 
@@ -745,8 +755,8 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 					}
 					break;
 				}
-				case ValueType::I16:
-				case ValueType::U16: {
+				case TypeId::I16:
+				case TypeId::U16: {
 					uint32_t regOff = rhs.getRegIndex();
 					VirtualRegState &vregState = compileContext.virtualRegStates.at(regOff);
 
@@ -782,9 +792,9 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 					}
 					break;
 				}
-				case ValueType::I32:
-				case ValueType::U32:
-				case ValueType::F32: {
+				case TypeId::I32:
+				case TypeId::U32:
+				case TypeId::F32: {
 					uint32_t regOff = rhs.getRegIndex();
 					VirtualRegState &vregState = compileContext.virtualRegStates.at(regOff);
 
@@ -820,9 +830,9 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 					}
 					break;
 				}
-				case ValueType::I64:
-				case ValueType::U64:
-				case ValueType::F64: {
+				case TypeId::I64:
+				case TypeId::U64:
+				case TypeId::F64: {
 					uint32_t regOff = rhs.getRegIndex();
 					VirtualRegState &vregState = compileContext.virtualRegStates.at(regOff);
 
@@ -861,7 +871,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 				}
 			} else {
 				switch (localVarState.type.getValueTypeExData()) {
-				case ValueType::I8: {
+				case TypeId::I8: {
 					int8_t imm0 = rhs.getI8();
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
 																	emitMovImm8ToMemIns(
@@ -871,7 +881,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 																		(uint8_t *)&imm0)));
 					break;
 				}
-				case ValueType::I16: {
+				case TypeId::I16: {
 					int16_t imm0 = rhs.getI16();
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
 																	emitMovImm16ToMemIns(
@@ -881,7 +891,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 																		(uint8_t *)&imm0)));
 					break;
 				}
-				case ValueType::I32: {
+				case TypeId::I32: {
 					int32_t imm0 = rhs.getI32();
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
 																	emitMovImm32ToMemIns(
@@ -891,7 +901,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 																		(uint8_t *)&imm0)));
 					break;
 				}
-				case ValueType::I64: {
+				case TypeId::I64: {
 					int64_t imm0 = rhs.getI64();
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
 																	emitMovImm64ToMemIns(
@@ -901,7 +911,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 																		(uint8_t *)&imm0)));
 					break;
 				}
-				case ValueType::U8: {
+				case TypeId::U8: {
 					uint8_t imm0 = rhs.getU8();
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
 																	emitMovImm8ToMemIns(
@@ -911,7 +921,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 																		(uint8_t *)&imm0)));
 					break;
 				}
-				case ValueType::U16: {
+				case TypeId::U16: {
 					uint16_t imm0 = rhs.getU16();
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
 																	emitMovImm16ToMemIns(
@@ -921,7 +931,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 																		(uint8_t *)&imm0)));
 					break;
 				}
-				case ValueType::U32: {
+				case TypeId::U32: {
 					uint16_t imm0 = rhs.getU16();
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
 																	emitMovImm16ToMemIns(
@@ -931,7 +941,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 																		(uint8_t *)&imm0)));
 					break;
 				}
-				case ValueType::U64: {
+				case TypeId::U64: {
 					uint64_t imm0 = rhs.getU64();
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
 																	emitMovImm64ToMemIns(
@@ -941,7 +951,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 																		(uint8_t *)&imm0)));
 					break;
 				}
-				case ValueType::Bool: {
+				case TypeId::Bool: {
 					bool imm0 = rhs.getBool();
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
 																	emitMovImm8ToMemIns(
@@ -951,7 +961,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 																		(uint8_t *)&imm0)));
 					break;
 				}
-				case ValueType::F32: {
+				case TypeId::F32: {
 					float imm0 = rhs.getF32();
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
 																	emitMovImm32ToMemIns(
@@ -961,7 +971,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 																		(uint8_t *)&imm0)));
 					break;
 				}
-				case ValueType::F64: {
+				case TypeId::F64: {
 					double imm0 = rhs.getF64();
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
 																	emitMovImm64ToMemIns(

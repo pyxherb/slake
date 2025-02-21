@@ -4,6 +4,83 @@
 
 using namespace slake;
 
+SLAKE_API TypeId slake::valueTypeToTypeId(ValueType valueType) {
+	switch (valueType) {
+	case ValueType::I8:
+		return TypeId::I8;
+	case ValueType::I16:
+		return TypeId::I16;
+	case ValueType::I32:
+		return TypeId::I32;
+	case ValueType::I64:
+		return TypeId::I64;
+	case ValueType::U8:
+		return TypeId::U8;
+	case ValueType::U16:
+		return TypeId::U16;
+	case ValueType::U32:
+		return TypeId::U32;
+	case ValueType::U64:
+		return TypeId::U64;
+	case ValueType::F32:
+		return TypeId::F32;
+	case ValueType::F64:
+		return TypeId::F64;
+	case ValueType::Bool:
+		return TypeId::Bool;
+	default:;
+	}
+	std::terminate();
+}
+
+SLAKE_API bool slake::isValueTypeCompatibleTypeId(TypeId typeId) {
+	switch (typeId) {
+	case TypeId::I8:
+	case TypeId::I16:
+	case TypeId::I32:
+	case TypeId::I64:
+	case TypeId::U8:
+	case TypeId::U16:
+	case TypeId::U32:
+	case TypeId::U64:
+	case TypeId::F32:
+	case TypeId::F64:
+	case TypeId::Bool:
+		return true;
+	default:;
+	}
+	return false;
+}
+
+SLAKE_API ValueType typeIdToValueType(TypeId typeId) {
+	switch (typeId) {
+	case TypeId::I8:
+		return ValueType::I8;
+	case TypeId::I16:
+		return ValueType::I16;
+	case TypeId::I32:
+		return ValueType::I32;
+	case TypeId::I64:
+		return ValueType::I64;
+	case TypeId::U8:
+		return ValueType::U8;
+	case TypeId::U16:
+		return ValueType::U16;
+	case TypeId::U32:
+		return ValueType::U32;
+	case TypeId::U64:
+		return ValueType::U64;
+	case TypeId::F32:
+		return ValueType::F32;
+	case TypeId::F64:
+		return ValueType::F64;
+	case TypeId::Bool:
+		return ValueType::Bool;
+	default:;
+	}
+	std::terminate();
+}
+
 SLAKE_API bool EntityRef::operator==(const EntityRef &rhs) const {
 	if (kind != rhs.kind)
 		return false;
@@ -216,8 +293,16 @@ SLAKE_API bool Type::operator==(const Type &rhs) const {
 		return false;
 
 	switch (rhs.typeId) {
-	case TypeId::Value:
-		return getValueTypeExData() == rhs.getValueTypeExData();
+	case TypeId::None:
+	case TypeId::I8:
+	case TypeId::I16:
+	case TypeId::I32:
+	case TypeId::I64:
+	case TypeId::U8:
+	case TypeId::U16:
+	case TypeId::U32:
+	case TypeId::U64:
+		break;
 	case TypeId::Instance: {
 		auto lhsType = getCustomTypeExData(), rhsType = rhs.getCustomTypeExData();
 
@@ -308,8 +393,15 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 		return true;
 
 	switch (type.typeId) {
-	case TypeId::Value: {
-		if (type.exData.valueType != value.valueType)
+	case TypeId::I8:
+	case TypeId::I16:
+	case TypeId::I32:
+	case TypeId::I64:
+	case TypeId::U8:
+	case TypeId::U16:
+	case TypeId::U32:
+	case TypeId::U64: {
+		if (type.typeId != valueTypeToTypeId(value.valueType))
 			return false;
 		break;
 	}
@@ -424,33 +516,28 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 
 SLAKE_API std::string std::to_string(const slake::Type &type, const slake::Runtime *rt) {
 	switch (type.typeId) {
-	case TypeId::Value:
-		switch (type.getValueTypeExData()) {
-		case ValueType::I8:
-			return "i8";
-		case ValueType::I16:
-			return "i16";
-		case ValueType::I32:
-			return "i32";
-		case ValueType::I64:
-			return "i64";
-		case ValueType::U8:
-			return "u8";
-		case ValueType::U16:
-			return "u16";
-		case ValueType::U32:
-			return "u32";
-		case ValueType::U64:
-			return "u64";
-		case ValueType::F32:
-			return "f32";
-		case ValueType::F64:
-			return "f64";
-		case ValueType::Bool:
-			return "bool";
-		default:
-			return "<Unknown value type>";
-		}
+	case TypeId::I8:
+		return "i8";
+	case TypeId::I16:
+		return "i16";
+	case TypeId::I32:
+		return "i32";
+	case TypeId::I64:
+		return "i64";
+	case TypeId::U8:
+		return "u8";
+	case TypeId::U16:
+		return "u16";
+	case TypeId::U32:
+		return "u32";
+	case TypeId::U64:
+		return "u64";
+	case TypeId::F32:
+		return "f32";
+	case TypeId::F64:
+		return "f64";
+	case TypeId::Bool:
+		return "bool";
 	case TypeId::String:
 		return "string";
 	case TypeId::Array:

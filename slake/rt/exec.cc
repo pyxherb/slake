@@ -149,7 +149,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 		// Used in the creation of top major frame.
 		newMajorFrame->curFn = nullptr;
 		newMajorFrame->nRegs = 1;
-		newMajorFrame->regs = (Value*)context->stackAlloc(sizeof(Value) * 1);
+		newMajorFrame->regs = (Value *)context->stackAlloc(sizeof(Value) * 1);
 		*newMajorFrame->regs = Value(ValueType::Undefined);
 	} else {
 		newMajorFrame->curFn = fn;
@@ -188,8 +188,8 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_createNewMajorFrame(
 		case FnOverloadingKind::Regular: {
 			RegularFnOverloadingObject *ol = (RegularFnOverloadingObject *)fn;
 			newMajorFrame->nRegs = ol->nRegisters;
-			newMajorFrame->regs = (Value*)context->stackAlloc(sizeof(Value) * ol->nRegisters);
-			for(size_t i = 0 ; i < ol->nRegisters; ++i)
+			newMajorFrame->regs = (Value *)context->stackAlloc(sizeof(Value) * ol->nRegisters);
+			for (size_t i = 0; i < ol->nRegisters; ++i)
 				newMajorFrame->regs[i] = Value(ValueType::Undefined);
 			break;
 		}
@@ -217,90 +217,77 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(MajorFrame *fram
 	size_t stackOffset;
 
 	switch (type.typeId) {
-	case TypeId::Value:
-		switch (type.getValueTypeExData()) {
-		case ValueType::I8:
-			if (!frame->context->stackAlloc(sizeof(int8_t)))
-				return StackOverflowError::alloc(this);
-			stackOffset = frame->context->stackTop;
-			break;
-		case ValueType::I16:
-			if (!frame->context->stackAlloc((2 - (frame->context->stackTop & 1))))
-				return StackOverflowError::alloc(this);
-			if (!frame->context->stackAlloc(sizeof(int16_t)))
-				return StackOverflowError::alloc(this);
-			stackOffset = frame->context->stackTop;
-			break;
-		case ValueType::I32:
-			if (!frame->context->stackAlloc((4 - (frame->context->stackTop & 3))))
-				return StackOverflowError::alloc(this);
-			if (!frame->context->stackAlloc(sizeof(int32_t)))
-				return StackOverflowError::alloc(this);
-			stackOffset = frame->context->stackTop;
-			break;
-		case ValueType::I64:
-			if (!frame->context->stackAlloc((8 - (frame->context->stackTop & 7))))
-				return StackOverflowError::alloc(this);
-			if (!frame->context->stackAlloc(sizeof(int64_t)))
-				return StackOverflowError::alloc(this);
-			stackOffset = frame->context->stackTop;
-			break;
-		case ValueType::U8:
-			if (!frame->context->stackAlloc(sizeof(uint8_t)))
-				return StackOverflowError::alloc(this);
-			stackOffset = frame->context->stackTop;
-			break;
-		case ValueType::U16:
-			if (!frame->context->stackAlloc((2 - (frame->context->stackTop & 1))))
-				return StackOverflowError::alloc(this);
-			if (!frame->context->stackAlloc(sizeof(uint16_t)))
-				return StackOverflowError::alloc(this);
-			stackOffset = frame->context->stackTop;
-			break;
-		case ValueType::U32:
-			if (!frame->context->stackAlloc((4 - (frame->context->stackTop & 3))))
-				return StackOverflowError::alloc(this);
-			if (!frame->context->stackAlloc(sizeof(uint32_t)))
-				return StackOverflowError::alloc(this);
-			stackOffset = frame->context->stackTop;
-			break;
-		case ValueType::U64:
-			if (!frame->context->stackAlloc((8 - (frame->context->stackTop & 7))))
-				return StackOverflowError::alloc(this);
-			if (!frame->context->stackAlloc(sizeof(uint64_t)))
-				return StackOverflowError::alloc(this);
-			stackOffset = frame->context->stackTop;
-			break;
-		case ValueType::F32:
-			if (!frame->context->stackAlloc((4 - (frame->context->stackTop & 3))))
-				return StackOverflowError::alloc(this);
-			if (!frame->context->stackAlloc(sizeof(float)))
-				return StackOverflowError::alloc(this);
-			stackOffset = frame->context->stackTop;
-			break;
-		case ValueType::F64:
-			if (!frame->context->stackAlloc((8 - (frame->context->stackTop & 7))))
-				return StackOverflowError::alloc(this);
-			if (!frame->context->stackAlloc(sizeof(double)))
-				return StackOverflowError::alloc(this);
-			stackOffset = frame->context->stackTop;
-			break;
-		case ValueType::Bool:
-			if (!frame->context->stackAlloc(sizeof(bool)))
-				return StackOverflowError::alloc(this);
-			stackOffset = frame->context->stackTop;
-			break;
-		case ValueType::EntityRef: {
-			if (!frame->context->stackAlloc(sizeof(void *) - (frame->context->stackTop & (sizeof(void *) - 1))))
-				return StackOverflowError::alloc(this);
-			Object **ptr = (Object **)frame->context->stackAlloc(sizeof(void *));
-			if (!ptr)
-				return StackOverflowError::alloc(this);
-			stackOffset = frame->context->stackTop;
-			*ptr = nullptr;
-			break;
-		}
-		}
+	case TypeId::I8:
+		if (!frame->context->stackAlloc(sizeof(int8_t)))
+			return StackOverflowError::alloc(this);
+		stackOffset = frame->context->stackTop;
+		break;
+	case TypeId::I16:
+		if (!frame->context->stackAlloc((2 - (frame->context->stackTop & 1))))
+			return StackOverflowError::alloc(this);
+		if (!frame->context->stackAlloc(sizeof(int16_t)))
+			return StackOverflowError::alloc(this);
+		stackOffset = frame->context->stackTop;
+		break;
+	case TypeId::I32:
+		if (!frame->context->stackAlloc((4 - (frame->context->stackTop & 3))))
+			return StackOverflowError::alloc(this);
+		if (!frame->context->stackAlloc(sizeof(int32_t)))
+			return StackOverflowError::alloc(this);
+		stackOffset = frame->context->stackTop;
+		break;
+	case TypeId::I64:
+		if (!frame->context->stackAlloc((8 - (frame->context->stackTop & 7))))
+			return StackOverflowError::alloc(this);
+		if (!frame->context->stackAlloc(sizeof(int64_t)))
+			return StackOverflowError::alloc(this);
+		stackOffset = frame->context->stackTop;
+		break;
+	case TypeId::U8:
+		if (!frame->context->stackAlloc(sizeof(uint8_t)))
+			return StackOverflowError::alloc(this);
+		stackOffset = frame->context->stackTop;
+		break;
+	case TypeId::U16:
+		if (!frame->context->stackAlloc((2 - (frame->context->stackTop & 1))))
+			return StackOverflowError::alloc(this);
+		if (!frame->context->stackAlloc(sizeof(uint16_t)))
+			return StackOverflowError::alloc(this);
+		stackOffset = frame->context->stackTop;
+		break;
+	case TypeId::U32:
+		if (!frame->context->stackAlloc((4 - (frame->context->stackTop & 3))))
+			return StackOverflowError::alloc(this);
+		if (!frame->context->stackAlloc(sizeof(uint32_t)))
+			return StackOverflowError::alloc(this);
+		stackOffset = frame->context->stackTop;
+		break;
+	case TypeId::U64:
+		if (!frame->context->stackAlloc((8 - (frame->context->stackTop & 7))))
+			return StackOverflowError::alloc(this);
+		if (!frame->context->stackAlloc(sizeof(uint64_t)))
+			return StackOverflowError::alloc(this);
+		stackOffset = frame->context->stackTop;
+		break;
+	case TypeId::F32:
+		if (!frame->context->stackAlloc((4 - (frame->context->stackTop & 3))))
+			return StackOverflowError::alloc(this);
+		if (!frame->context->stackAlloc(sizeof(float)))
+			return StackOverflowError::alloc(this);
+		stackOffset = frame->context->stackTop;
+		break;
+	case TypeId::F64:
+		if (!frame->context->stackAlloc((8 - (frame->context->stackTop & 7))))
+			return StackOverflowError::alloc(this);
+		if (!frame->context->stackAlloc(sizeof(double)))
+			return StackOverflowError::alloc(this);
+		stackOffset = frame->context->stackTop;
+		break;
+	case TypeId::Bool:
+		if (!frame->context->stackAlloc(sizeof(bool)))
+			return StackOverflowError::alloc(this);
+		stackOffset = frame->context->stackTop;
+		break;
 		break;
 	case TypeId::String:
 	case TypeId::Instance:
@@ -1962,46 +1949,39 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 		auto t = ins.operands[0].getTypeName();
 
 		switch (t.typeId) {
-		case TypeId::Value: {
-			switch (t.getValueTypeExData()) {
-			case ValueType::I8:
-				v = _castToLiteralValue<int8_t>(v);
-				break;
-			case ValueType::I16:
-				v = _castToLiteralValue<int16_t>(v);
-				break;
-			case ValueType::I32:
-				v = _castToLiteralValue<int32_t>(v);
-				break;
-			case ValueType::I64:
-				v = _castToLiteralValue<int64_t>(v);
-				break;
-			case ValueType::U8:
-				v = _castToLiteralValue<uint8_t>(v);
-				break;
-			case ValueType::U16:
-				v = _castToLiteralValue<uint16_t>(v);
-				break;
-			case ValueType::U32:
-				v = _castToLiteralValue<uint32_t>(v);
-				break;
-			case ValueType::U64:
-				v = _castToLiteralValue<uint64_t>(v);
-				break;
-			case ValueType::Bool:
-				v = _castToLiteralValue<bool>(v);
-				break;
-			case ValueType::F32:
-				v = _castToLiteralValue<float>(v);
-				break;
-			case ValueType::F64:
-				v = _castToLiteralValue<double>(v);
-				break;
-			default:
-				return InvalidOperandsError::alloc(this);
-			}
+		case TypeId::I8:
+			v = _castToLiteralValue<int8_t>(v);
 			break;
-		}
+		case TypeId::I16:
+			v = _castToLiteralValue<int16_t>(v);
+			break;
+		case TypeId::I32:
+			v = _castToLiteralValue<int32_t>(v);
+			break;
+		case TypeId::I64:
+			v = _castToLiteralValue<int64_t>(v);
+			break;
+		case TypeId::U8:
+			v = _castToLiteralValue<uint8_t>(v);
+			break;
+		case TypeId::U16:
+			v = _castToLiteralValue<uint16_t>(v);
+			break;
+		case TypeId::U32:
+			v = _castToLiteralValue<uint32_t>(v);
+			break;
+		case TypeId::U64:
+			v = _castToLiteralValue<uint64_t>(v);
+			break;
+		case TypeId::Bool:
+			v = _castToLiteralValue<bool>(v);
+			break;
+		case TypeId::F32:
+			v = _castToLiteralValue<float>(v);
+			break;
+		case TypeId::F64:
+			v = _castToLiteralValue<double>(v);
+			break;
 		case TypeId::Instance:
 			break;
 		default:

@@ -116,19 +116,38 @@ InternalExceptionPointer slake::opti::evalValueType(
 	Type &typeOut) {
 	switch (value.valueType) {
 	case ValueType::I8:
-	case ValueType::I16:
-	case ValueType::I32:
-	case ValueType::I64:
-	case ValueType::U8:
-	case ValueType::U16:
-	case ValueType::U32:
-	case ValueType::U64:
-	case ValueType::F32:
-	case ValueType::F64:
-	case ValueType::Bool: {
-		typeOut = Type(value.valueType);
+		typeOut = TypeId::I8;
 		break;
-	}
+	case ValueType::I16:
+		typeOut = TypeId::I16;
+		break;
+	case ValueType::I32:
+		typeOut = TypeId::I32;
+		break;
+	case ValueType::I64:
+		typeOut = TypeId::I64;
+		break;
+	case ValueType::U8:
+		typeOut = TypeId::U8;
+		break;
+	case ValueType::U16:
+		typeOut = TypeId::U16;
+		break;
+	case ValueType::U32:
+		typeOut = TypeId::U32;
+		break;
+	case ValueType::U64:
+		typeOut = TypeId::U64;
+		break;
+	case ValueType::F32:
+		typeOut = TypeId::F32;
+		break;
+	case ValueType::F64:
+		typeOut = TypeId::F64;
+		break;
+	case ValueType::Bool:
+		typeOut = TypeId::Bool;
+		break;
 	case ValueType::EntityRef: {
 		const EntityRef &entityRef = value.getEntityRef();
 
@@ -467,19 +486,49 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 
 			switch (curIns.operands[0].valueType) {
 			case ValueType::I8:
+			analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+			analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::I8;
+			break;
 			case ValueType::I16:
+			analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+			analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::I16;
+			break;
 			case ValueType::I32:
+			analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+			analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::I32;
+			break;
 			case ValueType::I64:
+			analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+			analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::I64;
+			break;
 			case ValueType::U8:
+			analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+			analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::U8;
+			break;
 			case ValueType::U16:
+			analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+			analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::U16;
+			break;
 			case ValueType::U32:
+			analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+			analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::U32;
+			break;
 			case ValueType::U64:
+			analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+			analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::U64;
+			break;
 			case ValueType::F32:
+			analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+			analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::F32;
+			break;
 			case ValueType::F64:
+			analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+			analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::F64;
+			break;
 			case ValueType::Bool:
-				analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
-				analyzedInfoOut.analyzedRegInfo.at(regIndex).type = curIns.operands[0].valueType;
-				break;
+			analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+			analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::Bool;
+			break;
 			case ValueType::EntityRef: {
 				analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
 				SLAKE_RETURN_IF_EXCEPT(evalObjectType(
@@ -1014,13 +1063,13 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 
 			Type lengthType;
 			SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[1], lengthType));
-			if (lengthType.typeId != TypeId::Value) {
+			if (!isValueTypeCompatibleTypeId(lengthType.typeId)) {
 				return MalformedProgramError::alloc(
 					runtime,
 					fnObject,
 					i);
 			}
-			if (lengthType.getValueTypeExData() != ValueType::U32) {
+			if (lengthType != TypeId::U32) {
 				return MalformedProgramError::alloc(
 					runtime,
 					fnObject,

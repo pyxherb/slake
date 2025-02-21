@@ -704,92 +704,84 @@ InternalExceptionPointer slake::jit::x86_64::compileSubInstruction(
 	}
 
 	switch (outputRegInfo.type.typeId) {
-	case TypeId::Value: {
-		switch (outputRegInfo.type.getValueTypeExData()) {
-		case ValueType::I8: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSubInstruction<int8_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
-			break;
-		}
-		case ValueType::I16: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSubInstruction<int16_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
-			break;
-		}
-		case ValueType::I32: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSubInstruction<int32_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
-			break;
-		}
-		case ValueType::I64: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSubInstruction<int64_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
-			break;
-		}
-		case ValueType::U8: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSubInstruction<uint8_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
-			break;
-		}
-		case ValueType::U16: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSubInstruction<uint16_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
-			break;
-		}
-		case ValueType::U32: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSubInstruction<uint32_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
-			break;
-		}
-		case ValueType::U64: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSubInstruction<uint64_t>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
-			break;
-		}
-		case ValueType::F32: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileFpSubInstruction<float>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
-			break;
-		}
-		case ValueType::F64: {
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileFpSubInstruction<double>(
-															compileContext,
-															curIns,
-															lhsExpectedValue,
-															rhsExpectedValue));
-			break;
-		}
-		default:
-			// The function is malformed
-			std::terminate();
-		}
+	case TypeId::I8: {
+		SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSubInstruction<int8_t>(
+														compileContext,
+														curIns,
+														lhsExpectedValue,
+														rhsExpectedValue));
+		break;
+	}
+	case TypeId::I16: {
+		SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSubInstruction<int16_t>(
+														compileContext,
+														curIns,
+														lhsExpectedValue,
+														rhsExpectedValue));
+		break;
+	}
+	case TypeId::I32: {
+		SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSubInstruction<int32_t>(
+														compileContext,
+														curIns,
+														lhsExpectedValue,
+														rhsExpectedValue));
+		break;
+	}
+	case TypeId::I64: {
+		SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSubInstruction<int64_t>(
+														compileContext,
+														curIns,
+														lhsExpectedValue,
+														rhsExpectedValue));
+		break;
+	}
+	case TypeId::U8: {
+		SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSubInstruction<uint8_t>(
+														compileContext,
+														curIns,
+														lhsExpectedValue,
+														rhsExpectedValue));
+		break;
+	}
+	case TypeId::U16: {
+		SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSubInstruction<uint16_t>(
+														compileContext,
+														curIns,
+														lhsExpectedValue,
+														rhsExpectedValue));
+		break;
+	}
+	case TypeId::U32: {
+		SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSubInstruction<uint32_t>(
+														compileContext,
+														curIns,
+														lhsExpectedValue,
+														rhsExpectedValue));
+		break;
+	}
+	case TypeId::U64: {
+		SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileIntSubInstruction<uint64_t>(
+														compileContext,
+														curIns,
+														lhsExpectedValue,
+														rhsExpectedValue));
+		break;
+	}
+	case TypeId::F32: {
+		SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileFpSubInstruction<float>(
+														compileContext,
+														curIns,
+														lhsExpectedValue,
+														rhsExpectedValue));
+		break;
+	}
+	case TypeId::F64: {
+		SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileFpSubInstruction<double>(
+														compileContext,
+														curIns,
+														lhsExpectedValue,
+														rhsExpectedValue));
 		break;
 	}
 	default:

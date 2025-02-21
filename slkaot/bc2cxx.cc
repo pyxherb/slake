@@ -218,47 +218,39 @@ std::shared_ptr<cxxast::TypeName> BC2CXX::compileType(CompileContext &compileCon
 	case TypeId::None:
 		tn = std::make_shared<cxxast::VoidTypeName>();
 		break;
-	case TypeId::Value: {
-		switch (type.getValueTypeExData()) {
-		case ValueType::I8:
-			tn = std::make_shared<cxxast::CharTypeName>(cxxast::SignKind::Signed);
-			break;
-		case ValueType::I16:
-			tn = std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Signed, cxxast::IntModifierKind::Short);
-			break;
-		case ValueType::I32:
-			tn = std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Signed, cxxast::IntModifierKind::Unspecified);
-			break;
-		case ValueType::I64:
-			tn = std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Signed, cxxast::IntModifierKind::LongLong);
-			break;
-		case ValueType::U8:
-			tn = std::make_shared<cxxast::CharTypeName>(cxxast::SignKind::Unsigned);
-			break;
-		case ValueType::U16:
-			tn = std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Unsigned, cxxast::IntModifierKind::Short);
-			break;
-		case ValueType::U32:
-			tn = std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Unsigned, cxxast::IntModifierKind::Unspecified);
-			break;
-		case ValueType::U64:
-			tn = std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Unsigned, cxxast::IntModifierKind::LongLong);
-			break;
-		case ValueType::F32:
-			tn = std::make_shared<cxxast::FloatTypeName>();
-			break;
-		case ValueType::F64:
-			tn = std::make_shared<cxxast::DoubleTypeName>();
-			break;
-		case ValueType::Bool:
-			tn = std::make_shared<cxxast::BoolTypeName>();
-			break;
-		default:
-			// Invalid type name, terminate.
-			std::terminate();
-		}
+	case TypeId::I8:
+		tn = std::make_shared<cxxast::CharTypeName>(cxxast::SignKind::Signed);
 		break;
-	}
+	case TypeId::I16:
+		tn = std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Signed, cxxast::IntModifierKind::Short);
+		break;
+	case TypeId::I32:
+		tn = std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Signed, cxxast::IntModifierKind::Unspecified);
+		break;
+	case TypeId::I64:
+		tn = std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Signed, cxxast::IntModifierKind::LongLong);
+		break;
+	case TypeId::U8:
+		tn = std::make_shared<cxxast::CharTypeName>(cxxast::SignKind::Unsigned);
+		break;
+	case TypeId::U16:
+		tn = std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Unsigned, cxxast::IntModifierKind::Short);
+		break;
+	case TypeId::U32:
+		tn = std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Unsigned, cxxast::IntModifierKind::Unspecified);
+		break;
+	case TypeId::U64:
+		tn = std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Unsigned, cxxast::IntModifierKind::LongLong);
+		break;
+	case TypeId::F32:
+		tn = std::make_shared<cxxast::FloatTypeName>();
+		break;
+	case TypeId::F64:
+		tn = std::make_shared<cxxast::DoubleTypeName>();
+		break;
+	case TypeId::Bool:
+		tn = std::make_shared<cxxast::BoolTypeName>();
+		break;
 	case TypeId::String:
 	case TypeId::Instance:
 	case TypeId::Array:
@@ -286,7 +278,17 @@ std::shared_ptr<cxxast::TypeName> BC2CXX::compileParamType(CompileContext &compi
 	switch (type.typeId) {
 	case TypeId::None:
 		return compileType(compileContext, type);
-	case TypeId::Value:
+	case TypeId::I8:
+	case TypeId::I16:
+	case TypeId::I32:
+	case TypeId::I64:
+	case TypeId::U8:
+	case TypeId::U16:
+	case TypeId::U32:
+	case TypeId::U64:
+	case TypeId::F32:
+	case TypeId::F64:
+	case TypeId::Bool:
 		return compileType(compileContext, type);
 	case TypeId::String:
 	case TypeId::Instance:

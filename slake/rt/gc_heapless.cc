@@ -68,7 +68,17 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, GenericP
 
 SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, const Type &type) {
 	switch (type.typeId) {
-	case TypeId::Value:
+	case TypeId::I8:
+	case TypeId::I16:
+	case TypeId::I32:
+	case TypeId::I64:
+	case TypeId::U8:
+	case TypeId::U16:
+	case TypeId::U32:
+	case TypeId::U64:
+	case TypeId::F32:
+	case TypeId::F64:
+	case TypeId::Bool:
 	case TypeId::String:
 		break;
 	case TypeId::Instance:
@@ -177,14 +187,6 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 					_gcWalkHeapless(context, i.type);
 
 					switch (i.type.typeId) {
-					case TypeId::Value: {
-						switch (i.type.getValueTypeExData()) {
-						case ValueType::EntityRef:
-							context.pushObject(*((Object **)(value->rawFieldData + i.offset)));
-							break;
-						}
-						break;
-					}
 					case TypeId::String:
 					case TypeId::Instance:
 					case TypeId::Array:
@@ -393,7 +395,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Context 
 			_gcWalkHeapless(context, k.value);
 		for (auto &k : j->nextArgStack)
 			_gcWalkHeapless(context, k);
-		for (size_t i = 0 ; i < j->nRegs; ++i)
+		for (size_t i = 0; i < j->nRegs; ++i)
 			_gcWalkHeapless(context, j->regs[i]);
 		for (auto &k : j->minorFrames) {
 			for (auto &l : k.exceptHandlers)
@@ -412,10 +414,10 @@ SLAKE_API void Runtime::_gcHeapless() {
 		if (i->hostRefCount) {
 			context.pushObject(i);
 		}
-		switch(i->getKind()) {
-			case ObjectKind::Instance:
-				context.pushInstanceObject(i);
-				break;
+		switch (i->getKind()) {
+		case ObjectKind::Instance:
+			context.pushInstanceObject(i);
+			break;
 		}
 	}
 
@@ -472,23 +474,23 @@ SLAKE_API void Runtime::_gcHeapless() {
 	}
 
 	// Delete instance objects first before the class objects are destroyed.
-	for(Object *i = context.instanceList, *next; i; i = next) {
+	for (Object *i = context.instanceList, *next; i; i = next) {
 		next = i->gcInfo.heapless.next;
 		switch (i->gcInfo.heapless.gcStatus) {
-			case ObjectGCStatus::Unwalked:
-				if (i->_flags & VF_GCREADY) {
-					i->dealloc();
-					createdObjects.remove(i);
-					continue;
-				}
-				break;
-			case ObjectGCStatus::ReadyToWalk:
-				assert(false);
-				break;
-			case ObjectGCStatus::Walked:
-				i->gcInfo.heapless.gcStatus = ObjectGCStatus::Unwalked;
-				break;
+		case ObjectGCStatus::Unwalked:
+			if (i->_flags & VF_GCREADY) {
+				i->dealloc();
+				createdObjects.remove(i);
+				continue;
 			}
+			break;
+		case ObjectGCStatus::ReadyToWalk:
+			assert(false);
+			break;
+		case ObjectGCStatus::Walked:
+			i->gcInfo.heapless.gcStatus = ObjectGCStatus::Unwalked;
+			break;
+		}
 	}
 
 	// Delete unreachable objects.

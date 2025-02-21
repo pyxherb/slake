@@ -160,7 +160,7 @@ int main(int argc, char **argv) {
 			fnObject.get(),
 			slake::ACCESS_PUB,
 			std::move(paramTypes),
-			slake::Type(slake::ValueType::Undefined),
+			slake::TypeId::None,
 			slake::OL_VARG,
 			print);
 		if (!fnObject->overloadings.insert(printFn.get()))

@@ -146,25 +146,25 @@ SLAKE_API Type Runtime::_loadType(LoaderContext &context, HostRefHolder &holder)
 
 	switch (vt) {
 	case slxfmt::TypeId::I8:
-		return Type(ValueType::I8);
+		return Type(TypeId::I8);
 	case slxfmt::TypeId::I16:
-		return Type(ValueType::I16);
+		return Type(TypeId::I16);
 	case slxfmt::TypeId::I32:
-		return Type(ValueType::I32);
+		return Type(TypeId::I32);
 	case slxfmt::TypeId::I64:
-		return Type(ValueType::I64);
+		return Type(TypeId::I64);
 	case slxfmt::TypeId::U8:
-		return Type(ValueType::U8);
+		return Type(TypeId::U8);
 	case slxfmt::TypeId::U16:
-		return Type(ValueType::U16);
+		return Type(TypeId::U16);
 	case slxfmt::TypeId::U32:
-		return Type(ValueType::U32);
+		return Type(TypeId::U32);
 	case slxfmt::TypeId::U64:
-		return Type(ValueType::U64);
+		return Type(TypeId::U64);
 	case slxfmt::TypeId::F32:
-		return Type(ValueType::F32);
+		return Type(TypeId::F32);
 	case slxfmt::TypeId::F64:
-		return Type(ValueType::F64);
+		return Type(TypeId::F64);
 	case slxfmt::TypeId::String:
 		return TypeId::String;
 	case slxfmt::TypeId::Object: {
@@ -178,7 +178,7 @@ SLAKE_API Type Runtime::_loadType(LoaderContext &context, HostRefHolder &holder)
 	case slxfmt::TypeId::Any:
 		return TypeId::Any;
 	case slxfmt::TypeId::Bool:
-		return Type(ValueType::Bool);
+		return Type(TypeId::Bool);
 	case slxfmt::TypeId::None:
 		return TypeId::None;
 	case slxfmt::TypeId::Array: {
@@ -191,8 +191,6 @@ SLAKE_API Type Runtime::_loadType(LoaderContext &context, HostRefHolder &holder)
 	}
 	case slxfmt::TypeId::Ref:
 		return Type::makeRefTypeName(this, _loadType(context, holder));
-	case slxfmt::TypeId::TypeName:
-		return Type(ValueType::TypeName);
 	case slxfmt::TypeId::GenericArg: {
 		uint8_t length = _read<uint8_t>(context.fs);
 
@@ -361,66 +359,59 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 		curFieldRecord.accessModifier = access;
 
 		switch (varType.typeId) {
-		case TypeId::Value:
-			switch (varType.getValueTypeExData()) {
-			case ValueType::I8:
-				curFieldRecord.offset = szLocalFieldStorage;
-				szLocalFieldStorage += sizeof(int8_t);
-				break;
-			case ValueType::I16:
-				if (szLocalFieldStorage & 1) {
-					szLocalFieldStorage += (2 - (szLocalFieldStorage & 1));
-				}
-				curFieldRecord.offset = szLocalFieldStorage;
-				szLocalFieldStorage += sizeof(int16_t);
-				break;
-			case ValueType::I32:
-				if (szLocalFieldStorage & 3) {
-					szLocalFieldStorage += (4 - (szLocalFieldStorage & 3));
-				}
-				curFieldRecord.offset = szLocalFieldStorage;
-				szLocalFieldStorage += sizeof(int32_t);
-				break;
-			case ValueType::I64:
-				if (szLocalFieldStorage & 7) {
-					szLocalFieldStorage += (8 - (szLocalFieldStorage & 7));
-				}
-				curFieldRecord.offset = szLocalFieldStorage;
-				szLocalFieldStorage += sizeof(int64_t);
-				break;
-			case ValueType::U8:
-				curFieldRecord.offset = szLocalFieldStorage;
-				szLocalFieldStorage += sizeof(uint8_t);
-				break;
-			case ValueType::U16:
-				if (szLocalFieldStorage & 1) {
-					szLocalFieldStorage += (2 - (szLocalFieldStorage & 1));
-				}
-				curFieldRecord.offset = szLocalFieldStorage;
-				szLocalFieldStorage += sizeof(uint16_t);
-				break;
-			case ValueType::U32:
-				if (szLocalFieldStorage & 3) {
-					szLocalFieldStorage += (4 - (szLocalFieldStorage & 3));
-				}
-				curFieldRecord.offset = szLocalFieldStorage;
-				szLocalFieldStorage += sizeof(uint32_t);
-				break;
-			case ValueType::U64:
-				if (szLocalFieldStorage & 7) {
-					szLocalFieldStorage += (8 - (szLocalFieldStorage & 7));
-				}
-				curFieldRecord.offset = szLocalFieldStorage;
-				szLocalFieldStorage += sizeof(uint64_t);
-				break;
-			case ValueType::Bool:
-				curFieldRecord.offset = szLocalFieldStorage;
-				szLocalFieldStorage += sizeof(bool);
-				break;
-			default:
-				// Unenumerated value types should never occur.
-				throw std::logic_error("Invalid value type");
+		case TypeId::I8:
+			curFieldRecord.offset = szLocalFieldStorage;
+			szLocalFieldStorage += sizeof(int8_t);
+			break;
+		case TypeId::I16:
+			if (szLocalFieldStorage & 1) {
+				szLocalFieldStorage += (2 - (szLocalFieldStorage & 1));
 			}
+			curFieldRecord.offset = szLocalFieldStorage;
+			szLocalFieldStorage += sizeof(int16_t);
+			break;
+		case TypeId::I32:
+			if (szLocalFieldStorage & 3) {
+				szLocalFieldStorage += (4 - (szLocalFieldStorage & 3));
+			}
+			curFieldRecord.offset = szLocalFieldStorage;
+			szLocalFieldStorage += sizeof(int32_t);
+			break;
+		case TypeId::I64:
+			if (szLocalFieldStorage & 7) {
+				szLocalFieldStorage += (8 - (szLocalFieldStorage & 7));
+			}
+			curFieldRecord.offset = szLocalFieldStorage;
+			szLocalFieldStorage += sizeof(int64_t);
+			break;
+		case TypeId::U8:
+			curFieldRecord.offset = szLocalFieldStorage;
+			szLocalFieldStorage += sizeof(uint8_t);
+			break;
+		case TypeId::U16:
+			if (szLocalFieldStorage & 1) {
+				szLocalFieldStorage += (2 - (szLocalFieldStorage & 1));
+			}
+			curFieldRecord.offset = szLocalFieldStorage;
+			szLocalFieldStorage += sizeof(uint16_t);
+			break;
+		case TypeId::U32:
+			if (szLocalFieldStorage & 3) {
+				szLocalFieldStorage += (4 - (szLocalFieldStorage & 3));
+			}
+			curFieldRecord.offset = szLocalFieldStorage;
+			szLocalFieldStorage += sizeof(uint32_t);
+			break;
+		case TypeId::U64:
+			if (szLocalFieldStorage & 7) {
+				szLocalFieldStorage += (8 - (szLocalFieldStorage & 7));
+			}
+			curFieldRecord.offset = szLocalFieldStorage;
+			szLocalFieldStorage += sizeof(uint64_t);
+			break;
+		case TypeId::Bool:
+			curFieldRecord.offset = szLocalFieldStorage;
+			szLocalFieldStorage += sizeof(bool);
 			break;
 		case TypeId::String:
 		case TypeId::Instance:
@@ -462,39 +453,32 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 
 		char *rawDataPtr = fieldStorage + curFieldRecord.offset;
 		switch (curFieldRecord.type.typeId) {
-		case TypeId::Value:
-			switch (curFieldRecord.type.getValueTypeExData()) {
-			case ValueType::I8:
-				*((int8_t *)rawDataPtr) = 0;
-				break;
-			case ValueType::I16:
-				*((int16_t *)rawDataPtr) = 0;
-				break;
-			case ValueType::I32:
-				*((int32_t *)rawDataPtr) = 0;
-				break;
-			case ValueType::I64:
-				*((int64_t *)rawDataPtr) = 0;
-				break;
-			case ValueType::U8:
-				*((uint8_t *)rawDataPtr) = 0;
-				break;
-			case ValueType::U16:
-				*((uint16_t *)rawDataPtr) = 0;
-				break;
-			case ValueType::U32:
-				*((int32_t *)rawDataPtr) = 0;
-				break;
-			case ValueType::U64:
-				*((int64_t *)rawDataPtr) = 0;
-				break;
-			case ValueType::Bool:
-				*((bool *)rawDataPtr) = false;
-				break;
-			default:
-				// Unenumerated value types should never occur.
-				throw std::logic_error("Invalid value type");
-			}
+		case TypeId::I8:
+			*((int8_t *)rawDataPtr) = 0;
+			break;
+		case TypeId::I16:
+			*((int16_t *)rawDataPtr) = 0;
+			break;
+		case TypeId::I32:
+			*((int32_t *)rawDataPtr) = 0;
+			break;
+		case TypeId::I64:
+			*((int64_t *)rawDataPtr) = 0;
+			break;
+		case TypeId::U8:
+			*((uint8_t *)rawDataPtr) = 0;
+			break;
+		case TypeId::U16:
+			*((uint16_t *)rawDataPtr) = 0;
+			break;
+		case TypeId::U32:
+			*((int32_t *)rawDataPtr) = 0;
+			break;
+		case TypeId::U64:
+			*((int64_t *)rawDataPtr) = 0;
+			break;
+		case TypeId::Bool:
+			*((bool *)rawDataPtr) = false;
 			break;
 		case TypeId::String:
 		case TypeId::Instance:

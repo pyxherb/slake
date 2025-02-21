@@ -11,18 +11,19 @@
 
 namespace slake {
 	enum class ValueType : uint8_t {
-		I8 = 0,		// Signed 8-bit integer
-		I16,		// Signed 16-bit integer
-		I32,		// Signed 32-bit integer
-		I64,		// Signed 64-bit integer
-		U8,			// Unsigned 8-bit integer
-		U16,		// Unsigned 16-bit integer
-		U32,		// Unsigned 32-bit integer
-		U64,		// Unsigned 64-bit integer
-		F32,		// 32-bit floating point number
-		F64,		// 64-bit floating point number
-		Bool,		// Boolean
-		EntityRef,	// Object reference
+		I8 = 0,	 // Signed 8-bit integer
+		I16,	 // Signed 16-bit integer
+		I32,	 // Signed 32-bit integer
+		I64,	 // Signed 64-bit integer
+		U8,		 // Unsigned 8-bit integer
+		U16,	 // Unsigned 16-bit integer
+		U32,	 // Unsigned 32-bit integer
+		U64,	 // Unsigned 64-bit integer
+		F32,	 // 32-bit floating point number
+		F64,	 // 64-bit floating point number
+		Bool,	 // Boolean
+
+		EntityRef,	// Entity reference
 
 		RegRef,	   // Register reference
 		TypeName,  // Type name
@@ -31,9 +32,20 @@ namespace slake {
 	};
 
 	enum class TypeId : uint8_t {
-		None,  // None, aka `null'
+		None = 0,  // None, aka `null'
 
-		Value,		 // Value type
+		I8,	   // Signed 8-bit integer
+		I16,   // Signed 16-bit integer
+		I32,   // Signed 32-bit integer
+		I64,   // Signed 64-bit integer
+		U8,	   // Unsigned 8-bit integer
+		U16,   // Unsigned 16-bit integer
+		U32,   // Unsigned 32-bit integer
+		U64,   // Unsigned 64-bit integer
+		F32,   // 32-bit floating point number
+		F64,   // 64-bit floating point number
+		Bool,  // Boolean
+
 		String,		 // String
 		Instance,	 // Object instance
 		GenericArg,	 // Generic argument
@@ -46,6 +58,10 @@ namespace slake {
 		Any	 // Any
 	};
 
+	SLAKE_API TypeId valueTypeToTypeId(ValueType valueType);
+	SLAKE_API bool isValueTypeCompatibleTypeId(TypeId typeId);
+	SLAKE_API ValueType typeIdToValueType(TypeId typeId);
+
 	class Runtime;
 	class Object;
 	class IdRefObject;
@@ -57,7 +73,6 @@ namespace slake {
 	struct MajorFrame;
 
 	union TypeExData {
-		ValueType valueType;
 		Object *object;
 		TypeDefObject *typeDef;
 		struct {
@@ -74,7 +89,6 @@ namespace slake {
 		SLAKE_FORCEINLINE Type() = default;
 		SLAKE_FORCEINLINE Type(const Type &x) = default;
 		SLAKE_FORCEINLINE Type(Type &&x) = default;
-		SLAKE_FORCEINLINE Type(ValueType valueType) noexcept : typeId(TypeId::Value) { exData.valueType = valueType; }
 		SLAKE_FORCEINLINE Type(TypeId type) noexcept : typeId(type) {}
 		SLAKE_FORCEINLINE Type(TypeId type, Object *destObject) noexcept : typeId(type) {
 			exData.object = destObject;
@@ -90,7 +104,6 @@ namespace slake {
 
 		SLAKE_API Type duplicate(bool &succeededOut) const;
 
-		SLAKE_FORCEINLINE ValueType getValueTypeExData() const { return exData.valueType; }
 		SLAKE_FORCEINLINE Object *getCustomTypeExData() const { return exData.object; }
 		SLAKE_API Type &getArrayExData() const;
 		SLAKE_API Type &getRefExData() const;

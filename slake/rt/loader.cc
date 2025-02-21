@@ -68,7 +68,7 @@ SLAKE_API Value Runtime::_loadValue(LoaderContext &context, HostRefHolder &holde
 
 	switch (typeId) {
 	case slxfmt::TypeId::None:
-		return Value(ObjectRef::makeInstanceRef(nullptr));
+		return Value(EntityRef::makeInstanceRef(nullptr));
 	case slxfmt::TypeId::I8:
 		return Value(_read<std::int8_t>(context.fs));
 	case slxfmt::TypeId::I16:
@@ -102,7 +102,7 @@ SLAKE_API Value Runtime::_loadValue(LoaderContext &context, HostRefHolder &holde
 		if (!holder.addObject(object.get()))
 			throw std::bad_alloc();
 
-		return Value(ObjectRef::makeInstanceRef(object.get()));
+		return Value(EntityRef::makeInstanceRef(object.get()));
 	}
 	case slxfmt::TypeId::Array: {
 		auto elementType = _loadType(context, holder);
@@ -116,7 +116,7 @@ SLAKE_API Value Runtime::_loadValue(LoaderContext &context, HostRefHolder &holde
 		InternalExceptionPointer e;
 
 		for (uint32_t i = 0; i < len; ++i) {
-			if ((e = writeVar(ObjectRef::makeArrayElementRef(value.get(), i), _loadValue(context, holder)))) {
+			if ((e = writeVar(EntityRef::makeArrayElementRef(value.get(), i), _loadValue(context, holder)))) {
 				throw LoaderError("Error setting value of element #" + std::to_string(i));
 			}
 		}
@@ -124,10 +124,10 @@ SLAKE_API Value Runtime::_loadValue(LoaderContext &context, HostRefHolder &holde
 		if (!holder.addObject(value.get()))
 			throw std::bad_alloc();
 
-		return ObjectRef::makeInstanceRef(value.release());
+		return EntityRef::makeInstanceRef(value.release());
 	}
 	case slxfmt::TypeId::IdRef:
-		return ObjectRef::makeInstanceRef(_loadIdRef(context, holder).release());
+		return EntityRef::makeInstanceRef(_loadIdRef(context, holder).release());
 	case slxfmt::TypeId::TypeName:
 		return Value(_loadType(context, holder));
 	case slxfmt::TypeId::Reg:
@@ -501,7 +501,7 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 			*((Object **)rawDataPtr) = nullptr;
 			break;
 		case TypeId::Any:
-			*((Value *)rawDataPtr) = Value(ObjectRef::makeInstanceRef(nullptr));
+			*((Value *)rawDataPtr) = Value(EntityRef::makeInstanceRef(nullptr));
 			break;
 		case TypeId::GenericArg:
 			break;
@@ -651,10 +651,10 @@ SLAKE_API HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &f
 
 		// Create parent modules.
 		for (size_t i = 0; i < modName->entries.size() - 1; ++i) {
-			ObjectRef objectRef = curObject->getMember(modName->entries.at(i).name);
+			EntityRef entityRef = curObject->getMember(modName->entries.at(i).name);
 
-			if ((objectRef.kind != ObjectRefKind::InstanceRef) ||
-				(!objectRef)) {
+			if ((entityRef.kind != ObjectRefKind::InstanceRef) ||
+				(!entityRef)) {
 				ScopeUniquePtr subscope(Scope::alloc(&globalHeapPoolAlloc, nullptr));
 
 				peff::String name(&globalHeapPoolAlloc);
@@ -674,7 +674,7 @@ SLAKE_API HostObjectRef<ModuleObject> slake::Runtime::loadModule(std::istream &f
 				curObject = (Object *)mod.get();
 			} else {
 				// Continue if the module presents.
-				curObject = objectRef.asInstance.instanceObject;
+				curObject = entityRef.asInstance.instanceObject;
 			}
 		}
 

@@ -273,9 +273,9 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 	case opti::RegStorageType::None:
 		std::terminate();
 	case opti::RegStorageType::FieldVar: {
-		const ObjectRef &objectRef = regAnalyzedInfo.expectedValue.getObjectRef();
-		FieldRecord &fieldRecord = objectRef.asField.moduleObject->fieldRecords.at(objectRef.asField.index);
-		char *rawDataPtr = objectRef.asField.moduleObject->localFieldStorage + fieldRecord.offset;
+		const EntityRef &entityRef = regAnalyzedInfo.expectedValue.getEntityRef();
+		FieldRecord &fieldRecord = entityRef.asField.moduleObject->fieldRecords.at(entityRef.asField.index);
+		char *rawDataPtr = entityRef.asField.moduleObject->localFieldStorage + fieldRecord.offset;
 
 		switch (fieldRecord.type.typeId) {
 		case TypeId::Value: {
@@ -701,7 +701,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 		break;
 	}
 	case opti::RegStorageType::LocalVar: {
-		/*LocalVarState &localVarState = compileContext.localVarStates.at(regAnalyzedInfo.expectedValue.getObjectRef().asLocalVar.localVarIndex);
+		/*LocalVarState &localVarState = compileContext.localVarStates.at(regAnalyzedInfo.expectedValue.getEntityRef().asLocalVar.localVarIndex);
 
 		switch (localVarState.type.typeId) {
 		case TypeId::Value: {
@@ -1014,7 +1014,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 																	vregState.phyReg)));
 				}
 			} else {
-				Object *imm0 = rhs.getObjectRef().asInstance.instanceObject;
+				Object *imm0 = rhs.getEntityRef().asInstance.instanceObject;
 				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(
 																emitMovImm64ToMemIns(
 																	MemoryLocation{

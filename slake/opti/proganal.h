@@ -109,7 +109,7 @@ namespace slake {
 			Type &typeOut);
 		InternalExceptionPointer evalObjectType(
 			ProgramAnalyzeContext &analyzeContext,
-			const ObjectRef &objectRef,
+			const EntityRef &entityRef,
 			Type &typeOut);
 		InternalExceptionPointer evalValueType(
 			ProgramAnalyzeContext &analyzeContext,

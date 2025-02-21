@@ -106,26 +106,26 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, const Va
 	case ValueType::F64:
 	case ValueType::Bool:
 		break;
-	case ValueType::ObjectRef: {
-		const ObjectRef &objectRef = i.getObjectRef();
+	case ValueType::EntityRef: {
+		const EntityRef &entityRef = i.getEntityRef();
 
-		switch (objectRef.kind) {
+		switch (entityRef.kind) {
 		case ObjectRefKind::FieldRef:
-			context.pushObject(objectRef.asField.moduleObject);
+			context.pushObject(entityRef.asField.moduleObject);
 			break;
 		case ObjectRefKind::ArrayElementRef:
-			context.pushObject(objectRef.asArray.arrayObject);
+			context.pushObject(entityRef.asArray.arrayObject);
 			break;
 		case ObjectRefKind::InstanceRef:
-			context.pushObject(objectRef.asInstance.instanceObject);
+			context.pushObject(entityRef.asInstance.instanceObject);
 			break;
 		case ObjectRefKind::InstanceFieldRef:
-			context.pushObject(objectRef.asInstanceField.instanceObject);
+			context.pushObject(entityRef.asInstanceField.instanceObject);
 			break;
 		case ObjectRefKind::LocalVarRef:
 			break;
 		case ObjectRefKind::ArgRef:
-			_gcWalkHeapless(context, objectRef.asArg.majorFrame->context);
+			_gcWalkHeapless(context, entityRef.asArg.majorFrame->context);
 			break;
 		}
 		break;
@@ -179,7 +179,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 					switch (i.type.typeId) {
 					case TypeId::Value: {
 						switch (i.type.getValueTypeExData()) {
-						case ValueType::ObjectRef:
+						case ValueType::EntityRef:
 							context.pushObject(*((Object **)(value->rawFieldData + i.offset)));
 							break;
 						}
@@ -214,7 +214,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 			_gcWalkHeapless(context, ((ModuleObject *)v)->scope);
 
 			for (size_t i = 0; i < ((ModuleObject *)v)->fieldRecords.size(); ++i) {
-				_gcWalkHeapless(context, readVarUnsafe(ObjectRef::makeFieldRef((ModuleObject *)v, i)));
+				_gcWalkHeapless(context, readVarUnsafe(EntityRef::makeFieldRef((ModuleObject *)v, i)));
 			}
 
 			context.pushObject(((ModuleObject *)v)->parent);
@@ -234,7 +234,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 			ClassObject *value = (ClassObject *)v;
 
 			for (size_t i = 0; i < value->fieldRecords.size(); ++i) {
-				_gcWalkHeapless(context, readVarUnsafe(ObjectRef::makeFieldRef(value, i)));
+				_gcWalkHeapless(context, readVarUnsafe(EntityRef::makeFieldRef(value, i)));
 			}
 
 			for (auto &i : value->implInterfaces) {
@@ -270,7 +270,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 			InterfaceObject *value = (InterfaceObject *)v;
 
 			for (size_t i = 0; i < value->fieldRecords.size(); ++i) {
-				_gcWalkHeapless(context, readVarUnsafe(ObjectRef::makeFieldRef(value, i)));
+				_gcWalkHeapless(context, readVarUnsafe(EntityRef::makeFieldRef(value, i)));
 			}
 
 			for (auto &i : value->parents) {

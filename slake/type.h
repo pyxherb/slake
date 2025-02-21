@@ -22,7 +22,7 @@ namespace slake {
 		F32,		// 32-bit floating point number
 		F64,		// 64-bit floating point number
 		Bool,		// Boolean
-		ObjectRef,	// Object reference
+		EntityRef,	// Object reference
 
 		RegRef,	   // Register reference
 		TypeName,  // Type name

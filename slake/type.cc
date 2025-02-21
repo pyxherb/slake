@@ -4,7 +4,7 @@
 
 using namespace slake;
 
-SLAKE_API bool ObjectRef::operator==(const ObjectRef &rhs) const {
+SLAKE_API bool EntityRef::operator==(const EntityRef &rhs) const {
 	if (kind != rhs.kind)
 		return false;
 	switch (kind) {
@@ -37,7 +37,7 @@ SLAKE_API bool ObjectRef::operator==(const ObjectRef &rhs) const {
 	}
 }
 
-SLAKE_API bool ObjectRef::operator<(const ObjectRef &rhs) const {
+SLAKE_API bool EntityRef::operator<(const EntityRef &rhs) const {
 	if (kind < rhs.kind)
 		return true;
 	if (kind > rhs.kind)
@@ -144,13 +144,13 @@ SLAKE_API InternalExceptionPointer Type::loadDeferredType(Runtime *rt) {
 		return {};
 
 	auto ref = (IdRefObject *)getCustomTypeExData();
-	ObjectRef objectRef;
-	SLAKE_RETURN_IF_EXCEPT(rt->resolveIdRef(ref, objectRef));
+	EntityRef entityRef;
+	SLAKE_RETURN_IF_EXCEPT(rt->resolveIdRef(ref, entityRef));
 
-	if (objectRef.kind != ObjectRefKind::InstanceRef)
+	if (entityRef.kind != ObjectRefKind::InstanceRef)
 		return ReferencedMemberNotFoundError::alloc(rt, ref);
 
-	exData.object = objectRef.asInstance.instanceObject;
+	exData.object = entityRef.asInstance.instanceObject;
 
 	return {};
 }
@@ -314,23 +314,23 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 		break;
 	}
 	case TypeId::String: {
-		if (value.valueType != ValueType::ObjectRef)
+		if (value.valueType != ValueType::EntityRef)
 			return false;
-		const ObjectRef &objectRef = value.getObjectRef();
-		if (objectRef.kind != ObjectRefKind::InstanceRef)
+		const EntityRef &entityRef = value.getEntityRef();
+		if (entityRef.kind != ObjectRefKind::InstanceRef)
 			return false;
-		if (objectRef.asInstance.instanceObject->getKind() != ObjectKind::String)
+		if (entityRef.asInstance.instanceObject->getKind() != ObjectKind::String)
 			return false;
 		break;
 	}
 	case TypeId::Instance: {
-		if (value.valueType != ValueType::ObjectRef)
+		if (value.valueType != ValueType::EntityRef)
 			return false;
 
-		const ObjectRef &objectRef = value.getObjectRef();
-		if (objectRef.kind != ObjectRefKind::InstanceRef)
+		const EntityRef &entityRef = value.getEntityRef();
+		if (entityRef.kind != ObjectRefKind::InstanceRef)
 			return false;
-		Object *objectPtr = objectRef.asInstance.instanceObject;
+		Object *objectPtr = entityRef.asInstance.instanceObject;
 
 		if (auto e = const_cast<Type &>(type).loadDeferredType(objectPtr->associatedRuntime);
 			e) {
@@ -363,13 +363,13 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 		break;
 	}
 	case TypeId::Array: {
-		if (value.valueType != ValueType::ObjectRef)
+		if (value.valueType != ValueType::EntityRef)
 			return false;
 
-		const ObjectRef &objectRef = value.getObjectRef();
-		if (objectRef.kind != ObjectRefKind::InstanceRef)
+		const EntityRef &entityRef = value.getEntityRef();
+		if (entityRef.kind != ObjectRefKind::InstanceRef)
 			return false;
-		Object *objectPtr = objectRef.asInstance.instanceObject;
+		Object *objectPtr = entityRef.asInstance.instanceObject;
 		if (objectPtr->getKind() != ObjectKind::Array)
 			return false;
 
@@ -380,32 +380,32 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 		break;
 	}
 	case TypeId::Ref: {
-		if (value.valueType != ValueType::ObjectRef)
+		if (value.valueType != ValueType::EntityRef)
 			return false;
 
-		const ObjectRef &objectRef = value.getObjectRef();
+		const EntityRef &entityRef = value.getEntityRef();
 		Runtime *rt;
-		switch (objectRef.kind) {
+		switch (entityRef.kind) {
 		case ObjectRefKind::FieldRef:
-			rt = objectRef.asField.moduleObject->associatedRuntime;
+			rt = entityRef.asField.moduleObject->associatedRuntime;
 			break;
 		case ObjectRefKind::InstanceFieldRef:
-			rt = objectRef.asInstanceField.instanceObject->associatedRuntime;
+			rt = entityRef.asInstanceField.instanceObject->associatedRuntime;
 			break;
 		case ObjectRefKind::LocalVarRef:
 			break;
 		case ObjectRefKind::ArrayElementRef:
-			rt = objectRef.asArray.arrayObject->associatedRuntime;
+			rt = entityRef.asArray.arrayObject->associatedRuntime;
 			break;
 		case ObjectRefKind::ArgRef:
-			rt = objectRef.asArg.majorFrame->curFn->associatedRuntime;
+			rt = entityRef.asArg.majorFrame->curFn->associatedRuntime;
 			break;
 		default:
 			return false;
 		}
 		Type type;
 
-		InternalExceptionPointer e = rt->typeofVar(objectRef, type);
+		InternalExceptionPointer e = rt->typeofVar(entityRef, type);
 		if (e) {
 			e.reset();
 			return false;

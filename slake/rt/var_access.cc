@@ -2,10 +2,10 @@
 
 using namespace slake;
 
-SLAKE_API InternalExceptionPointer Runtime::tryAccessVar(const ObjectRef &objectRef) const {
-	switch (objectRef.kind) {
+SLAKE_API InternalExceptionPointer Runtime::tryAccessVar(const EntityRef &entityRef) const {
+	switch (entityRef.kind) {
 	case ObjectRefKind::FieldRef: {
-		FieldRecord &fieldRecord = objectRef.asField.moduleObject->fieldRecords.at(objectRef.asField.index);
+		FieldRecord &fieldRecord = entityRef.asField.moduleObject->fieldRecords.at(entityRef.asField.index);
 
 		break;
 	}
@@ -13,21 +13,21 @@ SLAKE_API InternalExceptionPointer Runtime::tryAccessVar(const ObjectRef &object
 		break;
 	}
 	case ObjectRefKind::InstanceFieldRef: {
-		const InstanceObject *v = (const InstanceObject *)objectRef.asArray.arrayObject;
+		const InstanceObject *v = (const InstanceObject *)entityRef.asArray.arrayObject;
 
 		break;
 	}
 	case ObjectRefKind::ArrayElementRef: {
-		const ArrayObject *v = (const ArrayObject *)objectRef.asArray.arrayObject;
+		const ArrayObject *v = (const ArrayObject *)entityRef.asArray.arrayObject;
 
-		if (objectRef.asArray.index > v->length) {
-			return raiseInvalidArrayIndexError(v->associatedRuntime, objectRef.asArray.index);
+		if (entityRef.asArray.index > v->length) {
+			return raiseInvalidArrayIndexError(v->associatedRuntime, entityRef.asArray.index);
 		}
 
 		break;
 	}
 	case ObjectRefKind::ArgRef: {
-		ArgRecord &argRecord = objectRef.asArg.majorFrame->argStack.at(objectRef.asArg.argIndex);
+		ArgRecord &argRecord = entityRef.asArg.majorFrame->argStack.at(entityRef.asArg.argIndex);
 		break;
 	}
 	default:
@@ -37,36 +37,36 @@ SLAKE_API InternalExceptionPointer Runtime::tryAccessVar(const ObjectRef &object
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer Runtime::typeofVar(const ObjectRef &objectRef, Type &typeOut) const {
-	switch (objectRef.kind) {
+SLAKE_API InternalExceptionPointer Runtime::typeofVar(const EntityRef &entityRef, Type &typeOut) const {
+	switch (entityRef.kind) {
 	case ObjectRefKind::FieldRef: {
-		FieldRecord &fieldRecord = objectRef.asField.moduleObject->fieldRecords.at(objectRef.asField.index);
+		FieldRecord &fieldRecord = entityRef.asField.moduleObject->fieldRecords.at(entityRef.asField.index);
 
 		typeOut = fieldRecord.type;
 		break;
 	}
 	case ObjectRefKind::LocalVarRef: {
-		typeOut = objectRef.asLocalVar.type;
+		typeOut = entityRef.asLocalVar.type;
 		break;
 	}
 	case ObjectRefKind::InstanceFieldRef: {
-		const InstanceObject *v = (const InstanceObject *)objectRef.asArray.arrayObject;
+		const InstanceObject *v = (const InstanceObject *)entityRef.asArray.arrayObject;
 
-		typeOut = v->_class->cachedObjectLayout->fieldRecords.at(objectRef.asArray.index).type;
+		typeOut = v->_class->cachedObjectLayout->fieldRecords.at(entityRef.asArray.index).type;
 		break;
 	}
 	case ObjectRefKind::ArrayElementRef: {
-		const ArrayObject *v = (const ArrayObject *)objectRef.asArray.arrayObject;
+		const ArrayObject *v = (const ArrayObject *)entityRef.asArray.arrayObject;
 
-		if (objectRef.asArray.index > v->length) {
-			return raiseInvalidArrayIndexError(v->associatedRuntime, objectRef.asArray.index);
+		if (entityRef.asArray.index > v->length) {
+			return raiseInvalidArrayIndexError(v->associatedRuntime, entityRef.asArray.index);
 		}
 
 		typeOut = v->elementType;
 		break;
 	}
 	case ObjectRefKind::ArgRef: {
-		ArgRecord &argRecord = objectRef.asArg.majorFrame->argStack.at(objectRef.asArg.argIndex);
+		ArgRecord &argRecord = entityRef.asArg.majorFrame->argStack.at(entityRef.asArg.argIndex);
 
 		typeOut = argRecord.type;
 		break;
@@ -80,19 +80,19 @@ SLAKE_API InternalExceptionPointer Runtime::typeofVar(const ObjectRef &objectRef
 
 #undef new
 
-SLAKE_API InternalExceptionPointer Runtime::readVar(const ObjectRef &objectRef, Value &valueOut) const {
-	SLAKE_RETURN_IF_EXCEPT(tryAccessVar(objectRef));
+SLAKE_API InternalExceptionPointer Runtime::readVar(const EntityRef &entityRef, Value &valueOut) const {
+	SLAKE_RETURN_IF_EXCEPT(tryAccessVar(entityRef));
 
-	new (&valueOut) Value(readVarUnsafe(objectRef));
+	new (&valueOut) Value(readVarUnsafe(entityRef));
 	return {};
 }
 
-SLAKE_API Value Runtime::readVarUnsafe(const ObjectRef &objectRef) const {
-	switch (objectRef.kind) {
+SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const {
+	switch (entityRef.kind) {
 	case ObjectRefKind::FieldRef: {
-		FieldRecord &fieldRecord = objectRef.asField.moduleObject->fieldRecords.at(objectRef.asField.index);
+		FieldRecord &fieldRecord = entityRef.asField.moduleObject->fieldRecords.at(entityRef.asField.index);
 
-		const char *const rawDataPtr = objectRef.asField.moduleObject->localFieldStorage + fieldRecord.offset;
+		const char *const rawDataPtr = entityRef.asField.moduleObject->localFieldStorage + fieldRecord.offset;
 
 		switch (fieldRecord.type.typeId) {
 		case TypeId::Value:
@@ -126,7 +126,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const ObjectRef &objectRef) const {
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array:
-			return Value(ObjectRef::makeInstanceRef(*((Object **)rawDataPtr)));
+			return Value(EntityRef::makeInstanceRef(*((Object **)rawDataPtr)));
 			break;
 		default:
 			// All fields should be checked during the instantiation.
@@ -136,11 +136,11 @@ SLAKE_API Value Runtime::readVarUnsafe(const ObjectRef &objectRef) const {
 		break;
 	}
 	case ObjectRefKind::LocalVarRef: {
-		const char *const rawDataPtr = objectRef.asLocalVar.context->dataStack + SLAKE_STACK_MAX - objectRef.asLocalVar.stackOff;
+		const char *const rawDataPtr = entityRef.asLocalVar.context->dataStack + SLAKE_STACK_MAX - entityRef.asLocalVar.stackOff;
 
-		switch (objectRef.asLocalVar.type.typeId) {
+		switch (entityRef.asLocalVar.type.typeId) {
 		case TypeId::Value:
-			switch (objectRef.asLocalVar.type.getValueTypeExData()) {
+			switch (entityRef.asLocalVar.type.getValueTypeExData()) {
 			case ValueType::I8:
 				return Value(*((int8_t *)rawDataPtr));
 			case ValueType::I16:
@@ -170,7 +170,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const ObjectRef &objectRef) const {
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array:
-			return Value(ObjectRef::makeInstanceRef(*((Object **)rawDataPtr)));
+			return Value(EntityRef::makeInstanceRef(*((Object **)rawDataPtr)));
 			break;
 		default:
 			// All fields should be checked during the instantiation.
@@ -181,10 +181,10 @@ SLAKE_API Value Runtime::readVarUnsafe(const ObjectRef &objectRef) const {
 	}
 	case ObjectRefKind::InstanceFieldRef: {
 		ObjectFieldRecord &fieldRecord =
-			objectRef.asInstanceField.instanceObject->_class->cachedObjectLayout->fieldRecords.at(
-				objectRef.asInstanceField.fieldIndex);
+			entityRef.asInstanceField.instanceObject->_class->cachedObjectLayout->fieldRecords.at(
+				entityRef.asInstanceField.fieldIndex);
 
-		const char *const rawFieldPtr = objectRef.asInstanceField.instanceObject->rawFieldData + fieldRecord.offset;
+		const char *const rawFieldPtr = entityRef.asInstanceField.instanceObject->rawFieldData + fieldRecord.offset;
 
 		switch (fieldRecord.type.typeId) {
 		case TypeId::Value:
@@ -218,7 +218,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const ObjectRef &objectRef) const {
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array:
-			return Value(ObjectRef::makeInstanceRef(*((Object **)rawFieldPtr)));
+			return Value(EntityRef::makeInstanceRef(*((Object **)rawFieldPtr)));
 		default:
 			// All fields should be checked during the instantiation.
 			throw std::logic_error("Unhandled value type");
@@ -226,49 +226,49 @@ SLAKE_API Value Runtime::readVarUnsafe(const ObjectRef &objectRef) const {
 		break;
 	}
 	case ObjectRefKind::ArrayElementRef: {
-		assert(objectRef.asArray.index < objectRef.asArray.arrayObject->length);
+		assert(entityRef.asArray.index < entityRef.asArray.arrayObject->length);
 
-		switch (objectRef.asArray.arrayObject->elementType.typeId) {
+		switch (entityRef.asArray.arrayObject->elementType.typeId) {
 		case TypeId::Value: {
-			switch (objectRef.asArray.arrayObject->elementType.getValueTypeExData()) {
+			switch (entityRef.asArray.arrayObject->elementType.getValueTypeExData()) {
 			case ValueType::I8:
-				return Value(((int8_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]);
+				return Value(((int8_t *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index]);
 			case ValueType::I16:
-				return Value(((int16_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]);
+				return Value(((int16_t *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index]);
 			case ValueType::I32:
-				return Value(((int32_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]);
+				return Value(((int32_t *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index]);
 			case ValueType::I64:
-				return Value(((int64_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]);
+				return Value(((int64_t *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index]);
 			case ValueType::U8:
-				return Value(((uint8_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]);
+				return Value(((uint8_t *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index]);
 			case ValueType::U16:
-				return Value(((uint16_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]);
+				return Value(((uint16_t *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index]);
 			case ValueType::U32:
-				return Value(((uint32_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]);
+				return Value(((uint32_t *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index]);
 			case ValueType::U64:
-				return Value(((uint64_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]);
+				return Value(((uint64_t *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index]);
 			case ValueType::F32:
-				return Value(((float *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]);
+				return Value(((float *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index]);
 			case ValueType::F64:
-				return Value(((double *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]);
+				return Value(((double *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index]);
 			case ValueType::Bool:
-				return Value(((bool *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]);
+				return Value(((bool *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index]);
 			default:
 				std::terminate();
 			}
 			break;
 		}
 		case TypeId::Instance: {
-			return Value(ObjectRef::makeInstanceRef(((Object **)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]));
+			return Value(EntityRef::makeInstanceRef(((Object **)entityRef.asArray.arrayObject->data)[entityRef.asArray.index]));
 		}
 		case TypeId::Any: {
-			return Value(((Value *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index]);
+			return Value(((Value *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index]);
 		}
 		}
 		break;
 	}
 	case ObjectRefKind::ArgRef: {
-		const ArgRecord &argRecord = objectRef.asArg.majorFrame->argStack.at(objectRef.asArg.argIndex);
+		const ArgRecord &argRecord = entityRef.asArg.majorFrame->argStack.at(entityRef.asArg.argIndex);
 
 		return argRecord.value;
 	}
@@ -277,21 +277,21 @@ SLAKE_API Value Runtime::readVarUnsafe(const ObjectRef &objectRef) const {
 	std::terminate();
 }
 
-SLAKE_API InternalExceptionPointer Runtime::writeVar(const ObjectRef &objectRef, const Value &value) const {
-	switch (objectRef.kind) {
+SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef, const Value &value) const {
+	switch (entityRef.kind) {
 	case ObjectRefKind::FieldRef: {
-		if (objectRef.asField.index >= objectRef.asField.moduleObject->fieldRecords.size())
+		if (entityRef.asField.index >= entityRef.asField.moduleObject->fieldRecords.size())
 			// TODO: Use a proper type of exception instead of this.
-			return raiseInvalidArrayIndexError(objectRef.asField.moduleObject->associatedRuntime, objectRef.asArray.index);
+			return raiseInvalidArrayIndexError(entityRef.asField.moduleObject->associatedRuntime, entityRef.asArray.index);
 
 		const FieldRecord &fieldRecord =
-			objectRef.asField.moduleObject->fieldRecords.at(objectRef.asField.index);
+			entityRef.asField.moduleObject->fieldRecords.at(entityRef.asField.index);
 
 		if (!isCompatible(fieldRecord.type, value)) {
-			return raiseMismatchedVarTypeError(objectRef.asField.moduleObject->associatedRuntime);
+			return raiseMismatchedVarTypeError(entityRef.asField.moduleObject->associatedRuntime);
 		}
 
-		char *const rawDataPtr = objectRef.asField.moduleObject->localFieldStorage + fieldRecord.offset;
+		char *const rawDataPtr = entityRef.asField.moduleObject->localFieldStorage + fieldRecord.offset;
 
 		switch (fieldRecord.type.typeId) {
 		case TypeId::Value:
@@ -336,7 +336,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const ObjectRef &objectRef,
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array:
-			*((Object **)rawDataPtr) = value.getObjectRef().asInstance.instanceObject;
+			*((Object **)rawDataPtr) = value.getEntityRef().asInstance.instanceObject;
 			break;
 		default:
 			// All fields should be checked during the instantiation.
@@ -346,19 +346,19 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const ObjectRef &objectRef,
 		break;
 	}
 	case ObjectRefKind::LocalVarRef: {
-		if (objectRef.asLocalVar.stackOff >= SLAKE_STACK_MAX)
+		if (entityRef.asLocalVar.stackOff >= SLAKE_STACK_MAX)
 			// TODO: Use a proper type of exception instead of this.
-			return raiseInvalidArrayIndexError((Runtime *)this, objectRef.asArray.index);
+			return raiseInvalidArrayIndexError((Runtime *)this, entityRef.asArray.index);
 
-		if (!isCompatible(objectRef.asLocalVar.type, value)) {
+		if (!isCompatible(entityRef.asLocalVar.type, value)) {
 			return raiseMismatchedVarTypeError((Runtime *)this);
 		}
 
-		char *const rawDataPtr = objectRef.asLocalVar.context->dataStack + SLAKE_STACK_MAX - objectRef.asLocalVar.stackOff;
+		char *const rawDataPtr = entityRef.asLocalVar.context->dataStack + SLAKE_STACK_MAX - entityRef.asLocalVar.stackOff;
 
-		switch (objectRef.asLocalVar.type.typeId) {
+		switch (entityRef.asLocalVar.type.typeId) {
 		case TypeId::Value:
-			switch (objectRef.asLocalVar.type.getValueTypeExData()) {
+			switch (entityRef.asLocalVar.type.getValueTypeExData()) {
 			case ValueType::I8:
 				*((int8_t *)rawDataPtr) = value.getI8();
 				break;
@@ -397,7 +397,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const ObjectRef &objectRef,
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array:
-			*((Object **)rawDataPtr) = value.getObjectRef().asInstance.instanceObject;
+			*((Object **)rawDataPtr) = value.getEntityRef().asInstance.instanceObject;
 			break;
 		default:
 			// All fields should be checked during the instantiation.
@@ -408,14 +408,14 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const ObjectRef &objectRef,
 	}
 	case ObjectRefKind::InstanceFieldRef: {
 		ObjectFieldRecord &fieldRecord =
-			objectRef.asInstanceField.instanceObject->_class->cachedObjectLayout->fieldRecords.at(
-				objectRef.asInstanceField.fieldIndex);
+			entityRef.asInstanceField.instanceObject->_class->cachedObjectLayout->fieldRecords.at(
+				entityRef.asInstanceField.fieldIndex);
 
 		if (!isCompatible(fieldRecord.type, value)) {
 			return raiseMismatchedVarTypeError((Runtime *)this);
 		}
 
-		char *const rawFieldPtr = objectRef.asInstanceField.instanceObject->rawFieldData + fieldRecord.offset;
+		char *const rawFieldPtr = entityRef.asInstanceField.instanceObject->rawFieldData + fieldRecord.offset;
 
 		switch (fieldRecord.type.typeId) {
 		case TypeId::Value:
@@ -460,7 +460,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const ObjectRef &objectRef,
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array:
-			*((Object **)rawFieldPtr) = value.getObjectRef().asInstance.instanceObject;
+			*((Object **)rawFieldPtr) = value.getEntityRef().asInstance.instanceObject;
 			break;
 		default:
 			// All fields should be checked during the instantiation.
@@ -469,49 +469,49 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const ObjectRef &objectRef,
 		break;
 	}
 	case ObjectRefKind::ArrayElementRef: {
-		if (objectRef.asArray.index > objectRef.asArray.arrayObject->length) {
-			return raiseInvalidArrayIndexError((Runtime *)this, objectRef.asArray.index);
+		if (entityRef.asArray.index > entityRef.asArray.arrayObject->length) {
+			return raiseInvalidArrayIndexError((Runtime *)this, entityRef.asArray.index);
 		}
 
-		if (!isCompatible(objectRef.asArray.arrayObject->elementType, value)) {
+		if (!isCompatible(entityRef.asArray.arrayObject->elementType, value)) {
 			return raiseMismatchedVarTypeError((Runtime *)this);
 		}
 
-		switch (objectRef.asArray.arrayObject->elementType.typeId) {
+		switch (entityRef.asArray.arrayObject->elementType.typeId) {
 		case TypeId::Value: {
-			switch (objectRef.asArray.arrayObject->elementType.getValueTypeExData()) {
+			switch (entityRef.asArray.arrayObject->elementType.getValueTypeExData()) {
 			case ValueType::I8:
-				((int8_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index] = value.getI8();
+				((int8_t *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index] = value.getI8();
 				break;
 			case ValueType::I16:
-				((int16_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index] = value.getI16();
+				((int16_t *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index] = value.getI16();
 				break;
 			case ValueType::I32:
-				((int32_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index] = value.getI32();
+				((int32_t *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index] = value.getI32();
 				break;
 			case ValueType::I64:
-				((int64_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index] = value.getI64();
+				((int64_t *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index] = value.getI64();
 				break;
 			case ValueType::U8:
-				((uint8_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index] = value.getU8();
+				((uint8_t *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index] = value.getU8();
 				break;
 			case ValueType::U16:
-				((uint16_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index] = value.getU16();
+				((uint16_t *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index] = value.getU16();
 				break;
 			case ValueType::U32:
-				((uint32_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index] = value.getU32();
+				((uint32_t *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index] = value.getU32();
 				break;
 			case ValueType::U64:
-				((uint64_t *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index] = value.getU64();
+				((uint64_t *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index] = value.getU64();
 				break;
 			case ValueType::F32:
-				((float *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index] = value.getF32();
+				((float *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index] = value.getF32();
 				break;
 			case ValueType::F64:
-				((double *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index] = value.getF64();
+				((double *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index] = value.getF64();
 				break;
 			case ValueType::Bool:
-				((bool *)objectRef.asArray.arrayObject->data)[objectRef.asArray.index] = value.getBool();
+				((bool *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index] = value.getBool();
 				break;
 			default:
 				assert(false);
@@ -521,14 +521,14 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const ObjectRef &objectRef,
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array: {
-			((Object **)objectRef.asArray.arrayObject->data)[objectRef.asArray.index] = value.getObjectRef().asInstance.instanceObject;
+			((Object **)entityRef.asArray.arrayObject->data)[entityRef.asArray.index] = value.getEntityRef().asInstance.instanceObject;
 			break;
 		}
 		}
 		break;
 	}
 	case ObjectRefKind::ArgRef: {
-		ArgRecord &argRecord = objectRef.asArg.majorFrame->argStack.at(objectRef.asArg.argIndex);
+		ArgRecord &argRecord = entityRef.asArg.majorFrame->argStack.at(entityRef.asArg.argIndex);
 
 		if (!isCompatible(argRecord.type, value)) {
 			return raiseMismatchedVarTypeError((Runtime *)this);

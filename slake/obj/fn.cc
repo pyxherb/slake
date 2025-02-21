@@ -119,12 +119,12 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFn
 			Instruction &curIns = instructions.at(i), otherCurIns = other.instructions.at(i);
 			curIns.opcode = otherCurIns.opcode;
 
-			if (auto &output = otherCurIns.output; output.valueType == ValueType::ObjectRef) {
-				const ObjectRef &objectRef = output.getObjectRef();
-				switch (objectRef.kind) {
+			if (auto &output = otherCurIns.output; output.valueType == ValueType::EntityRef) {
+				const EntityRef &entityRef = output.getEntityRef();
+				switch (entityRef.kind) {
 				case ObjectRefKind::InstanceRef:
-					if (objectRef.asInstance.instanceObject)
-						curIns.output = ObjectRef::makeInstanceRef(objectRef.asInstance.instanceObject->duplicate());
+					if (entityRef.asInstance.instanceObject)
+						curIns.output = EntityRef::makeInstanceRef(entityRef.asInstance.instanceObject->duplicate());
 					break;
 				default:
 					curIns.output = output;
@@ -136,12 +136,12 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFn
 			for (size_t j = 0; j < otherCurIns.nOperands; ++j) {
 				auto &operand = otherCurIns.operands[j];
 
-				if (operand.valueType == ValueType::ObjectRef) {
-					const ObjectRef &objectRef = operand.getObjectRef();
-					switch (objectRef.kind) {
+				if (operand.valueType == ValueType::EntityRef) {
+					const EntityRef &entityRef = operand.getEntityRef();
+					switch (entityRef.kind) {
 					case ObjectRefKind::InstanceRef:
-						if (objectRef.asInstance.instanceObject)
-							curIns.operands[j] = ObjectRef::makeInstanceRef(objectRef.asInstance.instanceObject->duplicate());
+						if (entityRef.asInstance.instanceObject)
+							curIns.operands[j] = EntityRef::makeInstanceRef(entityRef.asInstance.instanceObject->duplicate());
 						else
 							curIns.operands[j] = operand;
 						break;

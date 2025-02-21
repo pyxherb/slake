@@ -132,7 +132,7 @@ void slake::decompiler::decompileObject(Runtime *rt, Object *object, std::ostrea
 				os << ", ";
 
 			Value value;
-			value = rt->readVarUnsafe(ObjectRef::makeArrayElementRef(v, i));
+			value = rt->readVarUnsafe(EntityRef::makeArrayElementRef(v, i));
 			decompileValue(rt, value, os, indentLevel);
 		}
 
@@ -314,8 +314,8 @@ void slake::decompiler::decompileValue(Runtime *rt, Value value, std::ostream &o
 	case ValueType::RegRef:
 		os << "%" << std::to_string(value.getRegIndex());
 		break;
-	case ValueType::ObjectRef: {
-		auto ptr = value.getObjectRef();
+	case ValueType::EntityRef: {
+		auto ptr = value.getEntityRef();
 
 		if (!ptr)
 			os << "null";

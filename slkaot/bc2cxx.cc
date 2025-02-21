@@ -170,11 +170,11 @@ std::shared_ptr<cxxast::Expr> BC2CXX::compileValue(CompileContext &compileContex
 	case ValueType::Bool:
 		e = std::make_shared<cxxast::BoolLiteralExpr>(value.getBool());
 		break;
-	case ValueType::ObjectRef: {
-		const ObjectRef &objectRef = value.getObjectRef();
-		if (objectRef.kind != ObjectRefKind::InstanceRef)
+	case ValueType::EntityRef: {
+		const EntityRef &entityRef = value.getEntityRef();
+		if (entityRef.kind != ObjectRefKind::InstanceRef)
 			std::terminate();
-		Object *object = objectRef.asInstance.instanceObject;
+		Object *object = entityRef.asInstance.instanceObject;
 		if (object) {
 			compileContext.mappedObjects.insert(object);
 			e = std::make_shared<cxxast::BinaryExpr>(cxxast::BinaryOp::PtrAccess,
@@ -339,7 +339,7 @@ std::shared_ptr<cxxast::Fn> BC2CXX::compileFnOverloading(CompileContext &compile
 			fnOverloading->properties.isVirtual = true;
 		}
 
-		registerRuntimeObjectToAstNodeRegistry(fnOverloadingObject, fnOverloading);
+		registerRuntimeEntityToAstNodeRegistry(fnOverloadingObject, fnOverloading);
 		compileContext.mappedObjects.insert(fnOverloadingObject);
 
 		switch (fnOverloadingObject->overloadingKind) {
@@ -361,7 +361,7 @@ std::shared_ptr<cxxast::Class> BC2CXX::compileClass(CompileContext &compileConte
 	} else {
 		std::shared_ptr<cxxast::Class> cls = std::make_shared<cxxast::Class>(mangleClassName((std::string)(std::string_view)moduleObject->name, moduleObject->genericArgs));
 
-		registerRuntimeObjectToAstNodeRegistry(moduleObject, cls);
+		registerRuntimeEntityToAstNodeRegistry(moduleObject, cls);
 		compileContext.mappedObjects.insert(moduleObject);
 
 		for (size_t i = 0; i < moduleObject->fieldRecords.size(); ++i) {
@@ -384,10 +384,10 @@ std::shared_ptr<cxxast::Class> BC2CXX::compileClass(CompileContext &compileConte
 					compileType(compileContext, fr.type),
 					compileValue(compileContext,
 						compileContext.runtime->readVarUnsafe(
-							ObjectRef::makeFieldRef(moduleObject, i))));
+							EntityRef::makeFieldRef(moduleObject, i))));
 			}
 
-			registerRuntimeObjectToAstNodeRegistry(ObjectRef::makeFieldRef(moduleObject, i), varObject);
+			registerRuntimeEntityToAstNodeRegistry(EntityRef::makeFieldRef(moduleObject, i), varObject);
 
 			if (fr.accessModifier & ACCESS_PUB) {
 				cls->addPublicMember(varObject);
@@ -444,7 +444,7 @@ void BC2CXX::compileModule(CompileContext &compileContext, ModuleObject *moduleO
 
 	std::shared_ptr<cxxast::Namespace> ns = completeModuleNamespace(compileContext, fullModuleName);
 
-	registerRuntimeObjectToAstNodeRegistry(moduleObject, ns);
+	registerRuntimeEntityToAstNodeRegistry(moduleObject, ns);
 	compileContext.mappedObjects.insert(moduleObject);
 
 	for (size_t i = 0; i < moduleObject->fieldRecords.size(); ++i) {
@@ -467,10 +467,10 @@ void BC2CXX::compileModule(CompileContext &compileContext, ModuleObject *moduleO
 				compileType(compileContext, fr.type),
 				compileValue(compileContext,
 					compileContext.runtime->readVarUnsafe(
-						ObjectRef::makeFieldRef(moduleObject, i))));
+						EntityRef::makeFieldRef(moduleObject, i))));
 		}
 
-		registerRuntimeObjectToAstNodeRegistry(ObjectRef::makeFieldRef(moduleObject, i), varObject);
+		registerRuntimeEntityToAstNodeRegistry(EntityRef::makeFieldRef(moduleObject, i), varObject);
 
 		if (fr.accessModifier & ACCESS_PUB) {
 			ns->addPublicMember(varObject);

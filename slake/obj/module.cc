@@ -60,11 +60,11 @@ SLAKE_API Object *ModuleObject::duplicate() const {
 	return (Object *)alloc(this).get();
 }
 
-SLAKE_API ObjectRef ModuleObject::getMember(const std::string_view &name) const {
+SLAKE_API EntityRef ModuleObject::getMember(const std::string_view &name) const {
 	if (auto it = fieldRecordIndices.find(name); it != fieldRecordIndices.endConst()) {
-		return ObjectRef::makeFieldRef((ModuleObject *)this, it.value());
+		return EntityRef::makeFieldRef((ModuleObject *)this, it.value());
 	}
-	return ObjectRef::makeInstanceRef(scope->getMember(name));
+	return EntityRef::makeInstanceRef(scope->getMember(name));
 }
 
 SLAKE_API Object *ModuleObject::getParent() const {

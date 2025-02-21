@@ -27,7 +27,7 @@ namespace slake {
 		AotPtrRef,
 	};
 
-	struct ObjectRef {
+	struct EntityRef {
 		union {
 			struct {
 				ModuleObject *moduleObject;
@@ -59,8 +59,8 @@ namespace slake {
 		};
 		ObjectRefKind kind;
 
-		static SLAKE_FORCEINLINE ObjectRef makeFieldRef(ModuleObject *moduleObject, uint32_t index) {
-			ObjectRef ref = {};
+		static SLAKE_FORCEINLINE EntityRef makeFieldRef(ModuleObject *moduleObject, uint32_t index) {
+			EntityRef ref = {};
 
 			ref.asField.moduleObject = moduleObject;
 			ref.asField.index = index;
@@ -69,8 +69,8 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE ObjectRef makeArrayElementRef(ArrayObject *arrayObject, uint32_t index) {
-			ObjectRef ref = {};
+		static SLAKE_FORCEINLINE EntityRef makeArrayElementRef(ArrayObject *arrayObject, uint32_t index) {
+			EntityRef ref = {};
 
 			ref.asArray.arrayObject = arrayObject;
 			ref.asArray.index = index;
@@ -79,8 +79,8 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE ObjectRef makeInstanceRef(Object *instanceObject) {
-			ObjectRef ref = {};
+		static SLAKE_FORCEINLINE EntityRef makeInstanceRef(Object *instanceObject) {
+			EntityRef ref = {};
 
 			ref.asInstance.instanceObject = instanceObject;
 			ref.kind = ObjectRefKind::InstanceRef;
@@ -88,8 +88,8 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE ObjectRef makeInstanceFieldRef(InstanceObject *instanceObject, size_t fieldIndex) {
-			ObjectRef ref = {};
+		static SLAKE_FORCEINLINE EntityRef makeInstanceFieldRef(InstanceObject *instanceObject, size_t fieldIndex) {
+			EntityRef ref = {};
 
 			ref.asInstanceField.instanceObject = instanceObject;
 			ref.asInstanceField.fieldIndex = fieldIndex;
@@ -98,8 +98,8 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE ObjectRef makeLocalVarRef(Context *context, size_t offset, const Type &type) {
-			ObjectRef ref = {};
+		static SLAKE_FORCEINLINE EntityRef makeLocalVarRef(Context *context, size_t offset, const Type &type) {
+			EntityRef ref = {};
 
 			ref.asLocalVar.context = context;
 			ref.asLocalVar.stackOff = offset;
@@ -109,8 +109,8 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE ObjectRef makeArgRef(MajorFrame *majorFrame, uint32_t argIndex) {
-			ObjectRef ref = {};
+		static SLAKE_FORCEINLINE EntityRef makeArgRef(MajorFrame *majorFrame, uint32_t argIndex) {
+			EntityRef ref = {};
 
 			ref.asArg.majorFrame = majorFrame;
 			ref.asArg.argIndex = argIndex;
@@ -119,8 +119,8 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE ObjectRef makeAotPtrRef(void *ptr) {
-			ObjectRef ref = {};
+		static SLAKE_FORCEINLINE EntityRef makeAotPtrRef(void *ptr) {
+			EntityRef ref = {};
 
 			ref.asAotPtr.ptr = ptr;
 			ref.kind = ObjectRefKind::ArgRef;
@@ -134,8 +134,8 @@ namespace slake {
 			return asInstance.instanceObject;
 		}
 
-		SLAKE_API bool operator==(const ObjectRef &rhs) const;
-		SLAKE_API bool operator<(const ObjectRef &rhs) const;
+		SLAKE_API bool operator==(const EntityRef &rhs) const;
+		SLAKE_API bool operator<(const EntityRef &rhs) const;
 	};
 
 	struct Value {
@@ -152,7 +152,7 @@ namespace slake {
 			double asF64;
 			bool asBool;
 			Type asType;
-			ObjectRef asObjectRef;
+			EntityRef asObjectRef;
 		} data;
 
 		ValueType valueType;
@@ -193,8 +193,8 @@ namespace slake {
 		SLAKE_FORCEINLINE Value(bool data) noexcept : valueType(ValueType::Bool) {
 			this->data.asBool = data;
 		}
-		SLAKE_FORCEINLINE Value(const ObjectRef &objectRef) noexcept : valueType(ValueType::ObjectRef) {
-			this->data.asObjectRef = objectRef;
+		SLAKE_FORCEINLINE Value(const EntityRef &entityRef) noexcept : valueType(ValueType::EntityRef) {
+			this->data.asObjectRef = entityRef;
 		}
 		SLAKE_FORCEINLINE Value(ValueType vt) noexcept : valueType(vt) {
 		}
@@ -274,12 +274,12 @@ namespace slake {
 			return data.asType;
 		}
 
-		SLAKE_FORCEINLINE ObjectRef &getObjectRef() noexcept {
-			assert(valueType == ValueType::ObjectRef);
+		SLAKE_FORCEINLINE EntityRef &getEntityRef() noexcept {
+			assert(valueType == ValueType::EntityRef);
 			return data.asObjectRef;
 		}
-		SLAKE_FORCEINLINE const ObjectRef &getObjectRef() const noexcept {
-			assert(valueType == ValueType::ObjectRef);
+		SLAKE_FORCEINLINE const EntityRef &getEntityRef() const noexcept {
+			assert(valueType == ValueType::EntityRef);
 			return data.asObjectRef;
 		}
 

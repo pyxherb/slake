@@ -18,8 +18,8 @@ SLAKE_API Object *Object::duplicate() const {
 	throw std::logic_error("duplicate() method is not supported");
 }
 
-SLAKE_API ObjectRef Object::getMember(const std::string_view &name) const {
-	return ObjectRef::makeInstanceRef(nullptr);
+SLAKE_API EntityRef Object::getMember(const std::string_view &name) const {
+	return EntityRef::makeInstanceRef(nullptr);
 }
 
 SLAKE_API HostRefHolder::HostRefHolder(peff::Alloc *selfAllocator)

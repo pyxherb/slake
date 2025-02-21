@@ -15,26 +15,26 @@ namespace slake {
 					Source
 				};
 
-				std::map<ObjectRef, std::shared_ptr<cxxast::AbstractMember>> runtimeObjectToAstNodeMap;
-				std::map<std::shared_ptr<cxxast::AbstractMember>, ObjectRef> astNodeToRuntimeObjectMap;
+				std::map<EntityRef, std::shared_ptr<cxxast::AbstractMember>> runtimeEntityToAstNodeMap;
+				std::map<std::shared_ptr<cxxast::AbstractMember>, EntityRef> astNodeToRuntimeEntityMap;
 				std::set<std::shared_ptr<cxxast::Fn>> recompilableFns;
 
 				SLAKE_FORCEINLINE std::shared_ptr<cxxast::AbstractMember> getMappedAstNode(Object *object) {
-					if (auto it = runtimeObjectToAstNodeMap.find(ObjectRef::makeInstanceRef(object));
-						it != runtimeObjectToAstNodeMap.end()) {
+					if (auto it = runtimeEntityToAstNodeMap.find(EntityRef::makeInstanceRef(object));
+						it != runtimeEntityToAstNodeMap.end()) {
 						return it->second;
 					}
 					return nullptr;
 				}
 
-				SLAKE_FORCEINLINE void registerRuntimeObjectToAstNodeRegistry(Object *object, std::shared_ptr<cxxast::AbstractMember> m) {
-					runtimeObjectToAstNodeMap[ObjectRef::makeInstanceRef(object)] = m;
-					astNodeToRuntimeObjectMap[m] = ObjectRef::makeInstanceRef(object);
+				SLAKE_FORCEINLINE void registerRuntimeEntityToAstNodeRegistry(Object *object, std::shared_ptr<cxxast::AbstractMember> m) {
+					runtimeEntityToAstNodeMap[EntityRef::makeInstanceRef(object)] = m;
+					astNodeToRuntimeEntityMap[m] = EntityRef::makeInstanceRef(object);
 				}
 
-				SLAKE_FORCEINLINE void registerRuntimeObjectToAstNodeRegistry(ObjectRef objectRef, std::shared_ptr<cxxast::AbstractMember> m) {
-					runtimeObjectToAstNodeMap[objectRef] = m;
-					astNodeToRuntimeObjectMap[m] = objectRef;
+				SLAKE_FORCEINLINE void registerRuntimeEntityToAstNodeRegistry(EntityRef entityRef, std::shared_ptr<cxxast::AbstractMember> m) {
+					runtimeEntityToAstNodeMap[entityRef] = m;
+					astNodeToRuntimeEntityMap[m] = entityRef;
 				}
 
 			private:
@@ -100,7 +100,7 @@ namespace slake {
 						std::make_shared<cxxast::BinaryExpr>(
 							cxxast::BinaryOp::Scope,
 							std::make_shared<cxxast::IdExpr>("slake"),
-							std::make_shared<cxxast::IdExpr>("ObjectRef")));
+							std::make_shared<cxxast::IdExpr>("EntityRef")));
 				}
 
 				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genSizeTypeName() {

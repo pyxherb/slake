@@ -28,17 +28,17 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 				break;
 			case Opcode::LOAD: {
 				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex());
-				HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[0].getObjectRef().asInstance.instanceObject;
+				HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[0].getEntityRef().asInstance.instanceObject;
 
 				compileContext.mappedObjects.insert(id.get());
 
 				switch (outputRegInfo.expectedValue.valueType) {
-				case ValueType::ObjectRef: {
-					ObjectRef &objectRef = outputRegInfo.expectedValue.getObjectRef();
+				case ValueType::EntityRef: {
+					EntityRef &entityRef = outputRegInfo.expectedValue.getEntityRef();
 
-					switch (objectRef.kind) {
+					switch (entityRef.kind) {
 					case ObjectRefKind::InstanceRef: {
-						Object *object = objectRef.asInstance.instanceObject;
+						Object *object = entityRef.asInstance.instanceObject;
 
 						std::string varName = mangleRegLocalVarName(ins.output.getRegIndex());
 
@@ -101,7 +101,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 						break;
 					}
 					case ObjectRefKind::FieldRef: {
-						FieldRecord &fieldRecord = objectRef.asField.moduleObject->fieldRecords.at(objectRef.asField.index);
+						FieldRecord &fieldRecord = entityRef.asField.moduleObject->fieldRecords.at(entityRef.asField.index);
 
 						std::shared_ptr<cxxast::TypeName> t = compileType(compileContext, fieldRecord.type);
 
@@ -146,7 +146,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 			}
 			case Opcode::RLOAD: {
 				uint32_t idxBaseReg = ins.operands[0].getRegIndex();
-				HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[1].getObjectRef().asInstance.instanceObject;
+				HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[1].getEntityRef().asInstance.instanceObject;
 
 				compileContext.mappedObjects.insert((Object *)id.get());
 
@@ -208,7 +208,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 					case ValueType::F32:
 					case ValueType::F64:
 					case ValueType::Bool:
-					case ValueType::ObjectRef:
+					case ValueType::EntityRef:
 						lhs =
 							std::make_shared<cxxast::UnaryExpr>(
 								cxxast::UnaryOp::Dereference,
@@ -245,7 +245,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 					lhs = std::make_shared<cxxast::IdExpr>(mangleLocalVarName(programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).storageInfo.asLocalVar.definitionReg));
 					break;
 				case opti::RegStorageType::ArgRef:
-					lhs = std::make_shared<cxxast::IdExpr>(mangleParamName(programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).expectedValue.getObjectRef().asArg.argIndex));
+					lhs = std::make_shared<cxxast::IdExpr>(mangleParamName(programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).expectedValue.getEntityRef().asArg.argIndex));
 					break;
 				}
 
@@ -271,7 +271,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 					case ValueType::F32:
 					case ValueType::F64:
 					case ValueType::Bool:
-					case ValueType::ObjectRef:
+					case ValueType::EntityRef:
 						lhs =
 							std::make_shared<cxxast::UnaryExpr>(
 								cxxast::UnaryOp::Dereference,
@@ -306,7 +306,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 					lhs = std::make_shared<cxxast::IdExpr>(mangleLocalVarName(programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).storageInfo.asLocalVar.definitionReg));
 					break;
 				case opti::RegStorageType::ArgRef:
-					lhs = std::make_shared<cxxast::IdExpr>(mangleParamName(programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).expectedValue.getObjectRef().asArg.argIndex));
+					lhs = std::make_shared<cxxast::IdExpr>(mangleParamName(programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).expectedValue.getEntityRef().asArg.argIndex));
 					break;
 				}
 
@@ -339,12 +339,12 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 					type = compileType(compileContext, Type(ins.operands[0].valueType));
 					rhs = compileValue(compileContext, ins.operands[0]);
 					break;
-				case ValueType::ObjectRef: {
-					ObjectRef &objectRef = ins.operands[0].getObjectRef();
+				case ValueType::EntityRef: {
+					EntityRef &entityRef = ins.operands[0].getEntityRef();
 
-					switch (objectRef.kind) {
+					switch (entityRef.kind) {
 					case ObjectRefKind::InstanceRef:
-						compileContext.mappedObjects.insert(objectRef.asInstance.instanceObject);
+						compileContext.mappedObjects.insert(entityRef.asInstance.instanceObject);
 						type = genInstanceObjectTypeName();
 						break;
 					default:
@@ -383,7 +383,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 												std::make_shared<cxxast::BinaryExpr>(
 													cxxast::BinaryOp::Scope,
 													std::make_shared<cxxast::IdExpr>("slake"),
-													std::make_shared<cxxast::IdExpr>("ObjectRef")),
+													std::make_shared<cxxast::IdExpr>("EntityRef")),
 												std::make_shared<cxxast::IdExpr>("makeAotPtrRef")),
 											std::vector<std::shared_ptr<cxxast::Expr>>{
 												std::make_shared<cxxast::CastExpr>(
@@ -441,13 +441,13 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 				case TypeId::Instance:
 				case TypeId::Array:
 				case TypeId::FnDelegate:
-					rhs = compileValue(compileContext, Value(ObjectRef::makeInstanceRef(nullptr)));
+					rhs = compileValue(compileContext, Value(EntityRef::makeInstanceRef(nullptr)));
 					break;
 				case TypeId::Ref:
 					// Should not be initialized
 					break;
 				case TypeId::Any:
-					rhs = compileValue(compileContext, Value(ObjectRef::makeInstanceRef(nullptr)));
+					rhs = compileValue(compileContext, Value(EntityRef::makeInstanceRef(nullptr)));
 					break;
 				default:
 					std::terminate();

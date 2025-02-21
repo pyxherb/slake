@@ -202,12 +202,12 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 		}
 		break;
 	}
-	case ValueType::ObjectRef: {
-		ObjectRef objectRef = src.getObjectRef();
+	case ValueType::EntityRef: {
+		EntityRef entityRef = src.getEntityRef();
 
-		switch (objectRef.kind) {
+		switch (entityRef.kind) {
 		case ObjectRefKind::InstanceRef: {
-			Object *imm0 = objectRef.asInstance.instanceObject;
+			Object *imm0 = entityRef.asInstance.instanceObject;
 
 			RegisterId regId = compileContext.allocGpReg();
 			if (compileContext.isRegInUse(regId)) {
@@ -365,9 +365,9 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 					return OutOfMemoryError::alloc();
 				break;
 			}
-			case ValueType::ObjectRef: {
+			case ValueType::EntityRef: {
 				int32_t off;
-				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.stackAllocAligned(sizeof(ObjectRef), sizeof(ObjectRef), off));
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.stackAllocAligned(sizeof(EntityRef), sizeof(EntityRef), off));
 
 				{
 					RegisterId tmpRegId = compileContext.allocGpReg();
@@ -404,7 +404,7 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 					}
 				}
 				{
-					uint64_t size = sizeof(ObjectRef);
+					uint64_t size = sizeof(EntityRef);
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exception, compileContext.pushIns(emitMovImm64ToReg64Ins(REG_R8, (uint8_t *)&size)));
 				}
 

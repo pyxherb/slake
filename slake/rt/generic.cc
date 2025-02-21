@@ -324,7 +324,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Val
 	case ValueType::F32:
 	case ValueType::F64:
 	case ValueType::Bool:
-	case ValueType::ObjectRef:
+	case ValueType::EntityRef:
 	case ValueType::RegRef:
 		break;
 	case ValueType::TypeName:

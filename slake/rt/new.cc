@@ -141,7 +141,7 @@ SLAKE_API void Runtime::initObjectLayoutForClass(ClassObject *cls, ClassObject *
 				fieldRecord.offset = objectLayout->totalSize;
 				objectLayout->totalSize += sizeof(bool);
 				break;
-			case ValueType::ObjectRef:
+			case ValueType::EntityRef:
 				objectLayout->totalSize += sizeof(void *) - (objectLayout->totalSize & (sizeof(void *) - 1));
 				fieldRecord.offset = objectLayout->totalSize;
 				objectLayout->totalSize += sizeof(void *);
@@ -165,7 +165,7 @@ SLAKE_API void Runtime::initObjectLayoutForClass(ClassObject *cls, ClassObject *
 			std::terminate();
 		}
 
-		cls->cachedFieldInitValues.pushBack(readVarUnsafe(ObjectRef::makeFieldRef(cls, i)));
+		cls->cachedFieldInitValues.pushBack(readVarUnsafe(EntityRef::makeFieldRef(cls, i)));
 
 		objectLayout->fieldNameMap.insert(fieldRecord.name, objectLayout->fieldRecords.size());
 		objectLayout->fieldRecords.pushBack(std::move(fieldRecord));
@@ -229,7 +229,7 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 		ObjectFieldRecord &fieldRecord = cls->cachedObjectLayout->fieldRecords.at(i);
 
 		Value data = cls->cachedFieldInitValues.at(i);
-		SLAKE_UNWRAP_EXCEPT(writeVar(ObjectRef::makeInstanceFieldRef(instance.get(), i), data));
+		SLAKE_UNWRAP_EXCEPT(writeVar(EntityRef::makeInstanceFieldRef(instance.get(), i), data));
 	}
 
 	return instance;
@@ -323,8 +323,8 @@ SLAKE_API HostObjectRef<ArrayObject> Runtime::newArrayInstance(Runtime *rt, cons
 	case TypeId::String:
 	case TypeId::Instance:
 	case TypeId::Array: {
-		HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(ObjectRef));
-		if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(ObjectRef) * length, sizeof(ObjectRef))))
+		HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(EntityRef));
+		if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(EntityRef) * length, sizeof(EntityRef))))
 			return nullptr;
 		obj->length = length;
 		return obj.get();

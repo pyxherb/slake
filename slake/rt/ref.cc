@@ -4,7 +4,7 @@ using namespace slake;
 
 SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 	IdRefObject *ref,
-	ObjectRef &objectRefOut,
+	EntityRef &objectRefOut,
 	Object *scopeObject) {
 	if (!ref)
 		return nullptr;
@@ -40,7 +40,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 
 					genericInstantiationContext.genericArgs = &curName.genericArgs;
 					SLAKE_RETURN_IF_EXCEPT(instantiateGenericObject(scopeObject, scopeObject, genericInstantiationContext));
-					objectRefOut = ObjectRef::makeInstanceRef(scopeObject);
+					objectRefOut = EntityRef::makeInstanceRef(scopeObject);
 				}
 
 				if (curName.hasParamTypes) {
@@ -52,7 +52,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 							SLAKE_RETURN_IF_EXCEPT(j.loadDeferredType(this));
 						}
 
-						objectRefOut = ObjectRef::makeInstanceRef(scopeObject = fnObject->getOverloading(curName.paramTypes));
+						objectRefOut = EntityRef::makeInstanceRef(scopeObject = fnObject->getOverloading(curName.paramTypes));
 						break;
 					}
 					default:

@@ -138,15 +138,28 @@ std::string BC2CXX::mangleClassName(const std::string &className, const GenericA
 
 std::string BC2CXX::mangleFnName(const std::string_view &fnName) {
 	std::string mangledName = "_slkaot_";
+	bool mangleFnName = false;
 
-	for (size_t i = 0; i < fnName.size(); ++i) {
-		char c[3];
+	for (auto i : fnName) {
+		if ((!isalnum(i)) && (i != '_')) {
+			mangledName = "_slkaotmg_";
+			mangleFnName = true;
+			break;
+		}
+	}
 
-		c[0] = (fnName[i] & 0xf) + 'A';
-		c[1] = (fnName[i] >> 4) + 'A';
-		c[2] = '\0';
+	if (mangleFnName) {
+		for (size_t i = 0; i < fnName.size(); ++i) {
+			char c[3];
 
-		mangledName += c;
+			c[0] = (fnName[i] & 0xf) + 'A';
+			c[1] = (fnName[i] >> 4) + 'A';
+			c[2] = '\0';
+
+			mangledName += c;
+		}
+	} else {
+		mangledName += fnName;
 	}
 
 	return mangledName;

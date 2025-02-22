@@ -80,19 +80,28 @@ namespace slake {
 								std::make_shared<cxxast::IdExpr>("Object"))));
 				}
 
-				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genNativeAotPtrTypeName() {
-					return std::make_shared<cxxast::PointerTypeName>(
-						std::make_shared<cxxast::VoidTypeName>());
-				}
-
-				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genAnyTypeName() {
+				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genIdRefObjectTypeName() {
 					return std::make_shared<cxxast::PointerTypeName>(
 						std::make_shared<cxxast::CustomTypeName>(
 							false,
 							std::make_shared<cxxast::BinaryExpr>(
 								cxxast::BinaryOp::Scope,
 								std::make_shared<cxxast::IdExpr>("slake"),
-								std::make_shared<cxxast::IdExpr>("Value"))));
+								std::make_shared<cxxast::IdExpr>("IdRefObject"))));
+				}
+
+				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genNativeAotPtrTypeName() {
+					return std::make_shared<cxxast::PointerTypeName>(
+						std::make_shared<cxxast::VoidTypeName>());
+				}
+
+				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genAnyTypeName() {
+					return std::make_shared<cxxast::CustomTypeName>(
+							false,
+							std::make_shared<cxxast::BinaryExpr>(
+								cxxast::BinaryOp::Scope,
+								std::make_shared<cxxast::IdExpr>("slake"),
+								std::make_shared<cxxast::IdExpr>("Value")));
 				}
 
 				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genObjectRefTypeName() {
@@ -166,6 +175,8 @@ namespace slake {
 
 					return args;
 				}
+
+				std::shared_ptr<cxxast::Expr> genGetValueDataExpr(const Type &type, std::shared_ptr<cxxast::Expr> expr);
 
 				std::string mangleConstantObjectName(Object *object);
 				std::string mangleRegLocalVarName(uint32_t idxReg);

@@ -12,10 +12,12 @@ namespace slake {
 		};
 
 		enum class RegStorageType : uint8_t {
-			None = 0,  // Unrecognized
-			FieldVar,  // Fields
-			LocalVar,  // Local variables
-			ArgRef,	   // Arguments
+			None = 0,		   // Unrecognized, may from indirect access
+			FieldVar,		   // Fields
+			InstanceFieldVar,  // Instance fields
+			LocalVar,		   // Local variables
+			ArgRef,			   // Arguments
+			ArrayElement,	   // Array element
 		};
 
 		struct FieldVarRegStorageInfo {
@@ -24,11 +26,13 @@ namespace slake {
 
 		struct LocalVarRegStorageInfo {
 			bool isUsedForOutput;
+			/// @brief Register where the local variable is defined and received
 			uint32_t definitionReg;
 		};
 
 		struct ArgRefRegStorageInfo {
 			bool isUsedForOutput;
+			uint32_t idxArg;
 		};
 
 		using RegReferencedPoint = std::pair<uint32_t, uint32_t>;

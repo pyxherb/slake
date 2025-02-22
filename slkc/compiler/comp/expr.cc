@@ -1062,6 +1062,7 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 					"Expecting a lvalue expression"));
 
 		uint32_t tmpRegIndex = compileContext->allocReg();
+
 		compileContext->_insertIns(Opcode::LARG, std::make_shared<RegRefNode>(tmpRegIndex), { std::make_shared<U32LiteralExprNode>(compileContext->curFn->params.size()) });
 		compileContext->_insertIns(Opcode::LVALUE, compileContext->curTopLevelContext.curMajorContext.curMinorContext.evalDest, { std::make_shared<RegRefNode>(tmpRegIndex) });
 

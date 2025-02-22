@@ -352,14 +352,16 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 
 				switch (entityRef.kind) {
 				case ObjectRefKind::FieldRef:
-				case ObjectRefKind::ArrayElementRef:
-				case ObjectRefKind::LocalVarRef:
-				case ObjectRefKind::ArgRef:
-				case ObjectRefKind::InstanceFieldRef: {
-				}
-				case ObjectRefKind::ObjectRef: {
 					analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::FieldVar;
+					break;
+				case ObjectRefKind::InstanceFieldRef:
+					analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::InstanceFieldVar;
+					break;
+				case ObjectRefKind::ObjectRef: {
+					break;
 				}
+				default:
+					std::terminate();
 				}
 
 				analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = entityRef;
@@ -441,7 +443,10 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						}
 					}
 					case ObjectRefKind::InstanceFieldRef:
+						analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::InstanceFieldVar;
+						break;
 					case ObjectRefKind::FieldRef:
+						analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::FieldVar;
 						break;
 					default: {
 						return MalformedProgramError::alloc(
@@ -486,49 +491,49 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 
 			switch (curIns.operands[0].valueType) {
 			case ValueType::I8:
-			analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
-			analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::I8;
-			break;
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::I8;
+				break;
 			case ValueType::I16:
-			analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
-			analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::I16;
-			break;
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::I16;
+				break;
 			case ValueType::I32:
-			analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
-			analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::I32;
-			break;
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::I32;
+				break;
 			case ValueType::I64:
-			analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
-			analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::I64;
-			break;
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::I64;
+				break;
 			case ValueType::U8:
-			analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
-			analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::U8;
-			break;
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::U8;
+				break;
 			case ValueType::U16:
-			analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
-			analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::U16;
-			break;
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::U16;
+				break;
 			case ValueType::U32:
-			analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
-			analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::U32;
-			break;
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::U32;
+				break;
 			case ValueType::U64:
-			analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
-			analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::U64;
-			break;
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::U64;
+				break;
 			case ValueType::F32:
-			analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
-			analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::F32;
-			break;
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::F32;
+				break;
 			case ValueType::F64:
-			analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
-			analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::F64;
-			break;
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::F64;
+				break;
 			case ValueType::Bool:
-			analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
-			analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::Bool;
-			break;
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::Bool;
+				break;
 			case ValueType::EntityRef: {
 				analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
 				SLAKE_RETURN_IF_EXCEPT(evalObjectType(
@@ -613,6 +618,8 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				analyzedInfoOut.analyzedRegInfo.at(regIndex).type = type;
 
 				analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::ArgRef;
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).storageInfo.asArgRef = {};
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).storageInfo.asArgRef.idxArg = index;
 				analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value(EntityRef::makeArgRef(pseudoMajorFrame, index));
 			}
 			break;
@@ -752,6 +759,8 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					unwrappedType,
 					analyzeContext.hostRefHolder,
 					analyzedInfoOut.analyzedRegInfo.at(regIndex).type));
+
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::ArrayElement;
 			}
 			break;
 		}

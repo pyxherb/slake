@@ -5,6 +5,101 @@ using namespace slake;
 using namespace slake::slkaot;
 using namespace slake::slkaot::bc2cxx;
 
+std::shared_ptr<cxxast::Expr> BC2CXX::genGetValueDataExpr(const Type &type, std::shared_ptr<cxxast::Expr> expr) {
+	switch (type.typeId) {
+	case TypeId::I8:
+		return std::make_shared<cxxast::CallExpr>(
+			std::make_shared<cxxast::BinaryExpr>(
+				cxxast::BinaryOp::MemberAccess,
+				expr,
+				std::make_shared<cxxast::IdExpr>("getI8")),
+			std::vector<std::shared_ptr<cxxast::Expr>>{});
+	case TypeId::I16:
+		return std::make_shared<cxxast::CallExpr>(
+			std::make_shared<cxxast::BinaryExpr>(
+				cxxast::BinaryOp::MemberAccess,
+				expr,
+				std::make_shared<cxxast::IdExpr>("getI16")),
+			std::vector<std::shared_ptr<cxxast::Expr>>{});
+	case TypeId::I32:
+		return std::make_shared<cxxast::CallExpr>(
+			std::make_shared<cxxast::BinaryExpr>(
+				cxxast::BinaryOp::MemberAccess,
+				expr,
+				std::make_shared<cxxast::IdExpr>("getI32")),
+			std::vector<std::shared_ptr<cxxast::Expr>>{});
+	case TypeId::I64:
+		return std::make_shared<cxxast::CallExpr>(
+			std::make_shared<cxxast::BinaryExpr>(
+				cxxast::BinaryOp::MemberAccess,
+				expr,
+				std::make_shared<cxxast::IdExpr>("getI64")),
+			std::vector<std::shared_ptr<cxxast::Expr>>{});
+	case TypeId::U8:
+		return std::make_shared<cxxast::CallExpr>(
+			std::make_shared<cxxast::BinaryExpr>(
+				cxxast::BinaryOp::MemberAccess,
+				expr,
+				std::make_shared<cxxast::IdExpr>("getU8")),
+			std::vector<std::shared_ptr<cxxast::Expr>>{});
+	case TypeId::U16:
+		return std::make_shared<cxxast::CallExpr>(
+			std::make_shared<cxxast::BinaryExpr>(
+				cxxast::BinaryOp::MemberAccess,
+				expr,
+				std::make_shared<cxxast::IdExpr>("getU16")),
+			std::vector<std::shared_ptr<cxxast::Expr>>{});
+	case TypeId::U32:
+		return std::make_shared<cxxast::CallExpr>(
+			std::make_shared<cxxast::BinaryExpr>(
+				cxxast::BinaryOp::MemberAccess,
+				expr,
+				std::make_shared<cxxast::IdExpr>("getU32")),
+			std::vector<std::shared_ptr<cxxast::Expr>>{});
+	case TypeId::U64:
+		return std::make_shared<cxxast::CallExpr>(
+			std::make_shared<cxxast::BinaryExpr>(
+				cxxast::BinaryOp::MemberAccess,
+				expr,
+				std::make_shared<cxxast::IdExpr>("getU64")),
+			std::vector<std::shared_ptr<cxxast::Expr>>{});
+	case TypeId::Bool:
+		return std::make_shared<cxxast::CallExpr>(
+			std::make_shared<cxxast::BinaryExpr>(
+				cxxast::BinaryOp::MemberAccess,
+				expr,
+				std::make_shared<cxxast::IdExpr>("getBool")),
+			std::vector<std::shared_ptr<cxxast::Expr>>{});
+	case TypeId::String:
+	case TypeId::Instance:
+	case TypeId::Array:
+	case TypeId::FnDelegate:
+		return std::make_shared<cxxast::BinaryExpr>(
+			cxxast::BinaryOp::MemberAccess,
+			std::make_shared<cxxast::BinaryExpr>(
+				cxxast::BinaryOp::MemberAccess,
+				std::make_shared<cxxast::CallExpr>(
+					std::make_shared<cxxast::BinaryExpr>(
+						cxxast::BinaryOp::MemberAccess,
+						expr,
+						std::make_shared<cxxast::IdExpr>("getEntityRef")),
+					std::vector<std::shared_ptr<cxxast::Expr>>{}),
+				std::make_shared<cxxast::IdExpr>("asObject")),
+			std::make_shared<cxxast::IdExpr>("instanceObject"));
+	case TypeId::Ref:
+		return std::make_shared<cxxast::CallExpr>(
+			std::make_shared<cxxast::BinaryExpr>(
+				cxxast::BinaryOp::MemberAccess,
+				expr,
+				std::make_shared<cxxast::IdExpr>("getEntityRef")),
+			std::vector<std::shared_ptr<cxxast::Expr>>{});
+	case TypeId::Any:
+		return expr;
+	default:
+		std::terminate();
+	}
+}
+
 bool BC2CXX::_isSimpleIdExpr(std::shared_ptr<cxxast::Expr> expr) {
 	switch (expr->exprKind) {
 	case cxxast::ExprKind::IntLiteral:
@@ -313,12 +408,8 @@ std::shared_ptr<cxxast::Fn> BC2CXX::compileFnOverloading(CompileContext &compile
 	} else {
 		std::shared_ptr<cxxast::Fn> fnOverloading = std::make_shared<cxxast::Fn>(mangleFnName((std::string_view)fnOverloadingObject->fnObject->name));
 
-		fnOverloading->name += "4";
-
 		for (size_t i = 0; i < fnOverloadingObject->paramTypes.size(); ++i) {
-			if (i)
-				fnOverloading->name += "3";
-			fnOverloading->name += mangleTypeName(fnOverloadingObject->paramTypes.at(i));
+			fnOverloading->name = mangleTypeName(fnOverloadingObject->paramTypes.at(i)) + fnOverloading->name;
 			fnOverloading->signature.paramTypes.push_back(compileParamType(compileContext, fnOverloadingObject->paramTypes.at(i)));
 		}
 

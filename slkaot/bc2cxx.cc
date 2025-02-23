@@ -291,8 +291,8 @@ std::shared_ptr<cxxast::Expr> BC2CXX::compileValue(CompileContext &compileContex
 	case ValueType::RegRef: {
 		uint32_t index = value.getRegIndex();
 
-		if (auto it = compileContext.dynamicContents.vregNames.find(index); it != compileContext.dynamicContents.vregNames.end()) {
-			e = std::make_shared<cxxast::IdExpr>(std::string(it->second));
+		if (auto it = compileContext.vregInfo.find(index); it != compileContext.vregInfo.end()) {
+			e = std::make_shared<cxxast::IdExpr>(std::string(it->second.vregVarName));
 		} else {
 			std::terminate();
 		}

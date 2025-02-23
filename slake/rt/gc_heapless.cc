@@ -133,6 +133,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, const Va
 			context.pushObject(entityRef.asObjectField.instanceObject);
 			break;
 		case ObjectRefKind::LocalVarRef:
+			_gcWalkHeapless(context, readVarUnsafe(entityRef));
 			break;
 		case ObjectRefKind::ArgRef:
 			_gcWalkHeapless(context, entityRef.asArg.majorFrame->context);

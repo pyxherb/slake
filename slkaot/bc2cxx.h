@@ -46,27 +46,43 @@ namespace slake {
 				void _applyGenericArgs(std::shared_ptr<cxxast::Expr> expr, cxxast::GenericArgList &&args);
 
 			public:
-				struct DynamicCompileContextContents {
-					std::map<uint32_t, std::string> vregNames;
-					std::set<uint32_t> loadInsResultRegs;
+				struct VirtualRegInfo {
+					std::string vregVarName;
+					uint32_t nameBorrowedReg = UINT32_MAX;
+					bool isLoadInsResult = false;
+
+					SLAKE_FORCEINLINE VirtualRegInfo(std::string &&vregVarName) : vregVarName(vregVarName) {}
 				};
 
 				struct CompileContext {
 					Runtime *runtime;
 					std::shared_ptr<cxxast::Namespace> rootNamespace;
-					std::list<DynamicCompileContextContents> savedDynamicContents;
-					DynamicCompileContextContents dynamicContents;
+					std::map<uint32_t, VirtualRegInfo> vregInfo;
+					// Each entry represents a boundary of register lifetime, each element in the entry represents a recyclable register.
+					std::map<uint32_t, std::set<uint32_t>> recyclableRegs;
+					std::set<uint32_t> recycledRegs;
 					std::set<HostObjectRef<>> mappedObjects;
 
 					SLAKE_FORCEINLINE CompileContext(Runtime *runtime, std::shared_ptr<cxxast::Namespace> rootNamespace) : runtime(runtime), rootNamespace(rootNamespace) {}
 
-					SLAKE_FORCEINLINE void pushDynamicContents() {
-						savedDynamicContents.push_back(dynamicContents);
+					SLAKE_FORCEINLINE VirtualRegInfo &defineVirtualReg(uint32_t reg, std::string &&vregVarName) {
+						return vregInfo.insert({ reg, VirtualRegInfo(std::move(vregVarName)) }).first->second;
 					}
 
-					SLAKE_FORCEINLINE void popDynamicContents() {
-						dynamicContents = savedDynamicContents.back();
-						savedDynamicContents.pop_back();
+					SLAKE_FORCEINLINE VirtualRegInfo &getVirtualRegInfo(uint32_t reg) {
+						return vregInfo.at(reg);
+					}
+
+					SLAKE_FORCEINLINE void markVirtualRegAsLoadInsResult(uint32_t reg) {
+						vregInfo.at(reg).isLoadInsResult = true;
+					}
+
+					SLAKE_API bool allocRecycledReg(BC2CXX &bc2cxx, const opti::ProgramAnalyzedInfo &analyzedInfo, uint32_t reg, const Type &type);
+
+					SLAKE_FORCEINLINE void resetForCompilation() {
+						vregInfo.clear();
+						recyclableRegs.clear();
+						recycledRegs.clear();
 					}
 				};
 
@@ -97,11 +113,11 @@ namespace slake {
 
 				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genAnyTypeName() {
 					return std::make_shared<cxxast::CustomTypeName>(
-							false,
-							std::make_shared<cxxast::BinaryExpr>(
-								cxxast::BinaryOp::Scope,
-								std::make_shared<cxxast::IdExpr>("slake"),
-								std::make_shared<cxxast::IdExpr>("Value")));
+						false,
+						std::make_shared<cxxast::BinaryExpr>(
+							cxxast::BinaryOp::Scope,
+							std::make_shared<cxxast::IdExpr>("slake"),
+							std::make_shared<cxxast::IdExpr>("Value")));
 				}
 
 				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genObjectRefTypeName() {

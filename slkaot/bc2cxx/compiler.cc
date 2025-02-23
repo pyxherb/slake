@@ -4,10 +4,64 @@ using namespace slake;
 using namespace slake::slkaot;
 using namespace slake::slkaot::bc2cxx;
 
-void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_ptr<cxxast::Fn> fnOverloading) {
-	FnOverloadingObject *fnOverloadingObject = fnOverloading->rtOverloading.get();
+SLAKE_FORCEINLINE bool BC2CXX::CompileContext::allocRecycledReg(BC2CXX &bc2cxx, const opti::ProgramAnalyzedInfo &analyzedInfo, uint32_t reg, const Type &type) {
+	VirtualRegInfo &targetVregInfo = vregInfo.at(reg);
+	for (auto i : recycledRegs) {
+		const opti::RegAnalyzedInfo &regInfo = analyzedInfo.analyzedRegInfo.at(i);
 
-	compileContext.pushDynamicContents();
+		switch (regInfo.type.typeId) {
+		case TypeId::I8:
+		case TypeId::I16:
+		case TypeId::I32:
+		case TypeId::I64:
+		case TypeId::U8:
+		case TypeId::U16:
+		case TypeId::U32:
+		case TypeId::U64:
+		case TypeId::F32:
+		case TypeId::F64:
+		case TypeId::Bool:
+			if (regInfo.type == type)
+				goto succeeded;
+			break;
+		case TypeId::String:
+		case TypeId::Instance:
+		case TypeId::Array:
+		case TypeId::FnDelegate:
+			switch (type.typeId) {
+			case TypeId::String:
+			case TypeId::Instance:
+			case TypeId::Array:
+			case TypeId::FnDelegate:
+				goto succeeded;
+			default:;
+			}
+			break;
+		case TypeId::Ref: {
+			if (type.typeId == TypeId::Ref) {
+				goto succeeded;
+			}
+			break;
+		}
+		default:
+			std::terminate();
+		}
+
+		continue;
+	succeeded:
+		printf("Reused register #%u for #%u\n", i, reg);
+		targetVregInfo.vregVarName = bc2cxx.mangleRegLocalVarName(i);
+		targetVregInfo.nameBorrowedReg = i;
+		recycledRegs.erase(i);
+		return true;
+	}
+	return false;
+}
+
+void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_ptr<cxxast::Fn> fnOverloading) {
+	compileContext.resetForCompilation();
+
+	FnOverloadingObject *fnOverloadingObject = fnOverloading->rtOverloading.get();
 
 	switch (fnOverloadingObject->overloadingKind) {
 	case FnOverloadingKind::Regular: {
@@ -24,6 +78,14 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 
 		for (size_t i = 0; i < fo->instructions.size(); ++i) {
 			Instruction &ins = fo->instructions.at(i);
+
+			if (ins.output.valueType != ValueType::Undefined) {
+				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex());
+
+				compileContext.defineVirtualReg(ins.output.getRegIndex(), mangleRegLocalVarName(ins.output.getRegIndex()));
+
+				compileContext.recyclableRegs[programInfo.analyzedRegInfo.at(ins.output.getRegIndex()).lifetime.offEndIns].insert(ins.output.getRegIndex());
+			}
 
 			switch (ins.opcode) {
 			case Opcode::NOP:
@@ -42,40 +104,57 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 					case ObjectRefKind::ObjectRef: {
 						Object *object = entityRef.asObject.instanceObject;
 
-						std::string varName = mangleRegLocalVarName(ins.output.getRegIndex());
+						std::string &varName = compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName;
 
 						if (auto astNode = getMappedAstNode(object);
 							astNode) {
-							cxxast::VarDefPair varDefPair;
+							std::shared_ptr<cxxast::Expr> rhs = std::make_shared<cxxast::BinaryExpr>(cxxast::BinaryOp::PtrAccess,
+								std::make_shared<cxxast::CastExpr>(
+									std::make_shared<cxxast::PointerTypeName>(
+										std::make_shared<cxxast::CustomTypeName>(
+											false,
+											std::make_shared<cxxast::BinaryExpr>(
+												cxxast::BinaryOp::Scope,
+												_getAbsRef(compileContext.rootNamespace),
+												std::make_shared<cxxast::IdExpr>("MappedObjects")))),
+									genMappedObjectsRef()),
+								std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(object)));
 
-							// Check if the object is already mapped in the module.
-							// If so, we can just simply use the reference to the native member.
-							varDefPair = {
-								varName,
-								std::make_shared<cxxast::BinaryExpr>(cxxast::BinaryOp::PtrAccess,
-									std::make_shared<cxxast::CastExpr>(
-										std::make_shared<cxxast::PointerTypeName>(
-											std::make_shared<cxxast::CustomTypeName>(
-												false,
-												std::make_shared<cxxast::BinaryExpr>(
-													cxxast::BinaryOp::Scope,
-													_getAbsRef(compileContext.rootNamespace),
-													std::make_shared<cxxast::IdExpr>("MappedObjects")))),
-										genMappedObjectsRef()),
-									std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(object)))
-							};
+							if (compileContext.allocRecycledReg(*this, programInfo, ins.output.getRegIndex(), outputRegInfo.type)) {
+								fnOverloading->body.push_back(
+									std::make_shared<cxxast::ExprStmt>(
+										std::make_shared<cxxast::BinaryExpr>(
+											cxxast::BinaryOp::Assign,
+											std::make_shared<cxxast::IdExpr>(std::string(varName)),
+											rhs)));
+							} else {
+								cxxast::VarDefPair varDefPair;
 
-							std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(genInstanceObjectTypeName(), std::vector<cxxast::VarDefPair>{ varDefPair });
+								// Check if the object is already mapped in the module.
+								// If so, we can just simply use the reference to the native member.
+								varDefPair = {
+									varName,
+									rhs
+								};
 
-							fnOverloading->body.push_back(stmt);
+								std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(genInstanceObjectTypeName(), std::vector<cxxast::VarDefPair>{ varDefPair });
+
+								fnOverloading->body.push_back(stmt);
+							}
 						} else {
-							cxxast::VarDefPair varDefPair;
+							std::shared_ptr<cxxast::Expr> rhs;
 
-							varDefPair = { varName, {} };
+							if (!compileContext.allocRecycledReg(*this, programInfo, ins.output.getRegIndex(), Type(TypeId::Ref, nullptr))) {
+								cxxast::VarDefPair varDefPair;
 
-							std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(genObjectRefTypeName(), std::vector<cxxast::VarDefPair>{ varDefPair });
+								varDefPair = { varName, {} };
 
-							fnOverloading->body.push_back(stmt);
+								std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(genObjectRefTypeName(), std::vector<cxxast::VarDefPair>{ varDefPair });
+
+								fnOverloading->body.push_back(stmt);
+							}
+
+							rhs = std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName));
 
 							fnOverloading->body.push_back(genReturnIfExceptStmt(
 								std::make_shared<cxxast::CallExpr>(
@@ -100,9 +179,9 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 																std::make_shared<cxxast::IdExpr>("MappedObjects")))),
 													genMappedObjectsRef()),
 												std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(id.get())))),
-										std::make_shared<cxxast::IdExpr>(std::string(varName)) })));
+										rhs })));
 
-							compileContext.dynamicContents.loadInsResultRegs.insert(ins.output.getRegIndex());
+							compileContext.markVirtualRegAsLoadInsResult(ins.output.getRegIndex());
 						}
 						break;
 					}
@@ -111,12 +190,13 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 
 						std::shared_ptr<cxxast::TypeName> t = compileType(compileContext, fieldRecord.type);
 
-						std::string varName = mangleRegLocalVarName(ins.output.getRegIndex());
-						cxxast::VarDefPair varDefPair = { varName, {} };
+						if (!compileContext.allocRecycledReg(*this, programInfo, ins.output.getRegIndex(), outputRegInfo.type)) {
+							cxxast::VarDefPair varDefPair = { std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName), {} };
 
-						std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(t, std::vector<cxxast::VarDefPair>{ varDefPair });
+							std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(t, std::vector<cxxast::VarDefPair>{ varDefPair });
 
-						fnOverloading->body.push_back(stmt);
+							fnOverloading->body.push_back(stmt);
+						}
 
 						fnOverloading->body.push_back(genReturnIfExceptStmt(
 							std::make_shared<cxxast::CallExpr>(
@@ -141,7 +221,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 															std::make_shared<cxxast::IdExpr>("MappedObjects")))),
 												genMappedObjectsRef()),
 											std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(id.get())))),
-									std::make_shared<cxxast::IdExpr>(std::string(varName)) })));
+									std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName)) })));
 						break;
 					}
 					default:
@@ -158,11 +238,13 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 
 				compileContext.mappedObjects.insert((Object *)id.get());
 
-				cxxast::VarDefPair varDefPair = { mangleRegLocalVarName(ins.output.getRegIndex()), {} };
+				if (!compileContext.allocRecycledReg(*this, programInfo, ins.output.getRegIndex(), Type(TypeId::Ref, nullptr))) {
+					cxxast::VarDefPair varDefPair = { std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName), {} };
 
-				std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(genObjectRefTypeName(), std::vector<cxxast::VarDefPair>{ varDefPair });
+					std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(genObjectRefTypeName(), std::vector<cxxast::VarDefPair>{ varDefPair });
 
-				fnOverloading->body.push_back(stmt);
+					fnOverloading->body.push_back(stmt);
+				}
 
 				fnOverloading->body.push_back(genReturnIfExceptStmt(
 					std::make_shared<cxxast::CallExpr>(
@@ -187,10 +269,10 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 													std::make_shared<cxxast::IdExpr>("MappedObjects")))),
 										genMappedObjectsRef()),
 									std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(id.get())))),
-							std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.output.getRegIndex())),
-							std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(idxBaseReg)) })));
+							std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName)),
+							std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(idxBaseReg).vregVarName)) })));
 
-				compileContext.dynamicContents.loadInsResultRegs.insert(ins.output.getRegIndex());
+				compileContext.markVirtualRegAsLoadInsResult(ins.output.getRegIndex());
 				break;
 			}
 			case Opcode::STORE: {
@@ -205,7 +287,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 							cxxast::BinaryOp::MemberAccess,
 							std::make_shared<cxxast::BinaryExpr>(
 								cxxast::BinaryOp::MemberAccess,
-								std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.operands[0].getRegIndex())),
+								std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
 								std::make_shared<cxxast::IdExpr>("asAotPtr")),
 							std::make_shared<cxxast::IdExpr>("ptr"));
 					switch (ins.operands[1].valueType) {
@@ -236,7 +318,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 								std::make_shared<cxxast::CastExpr>(
 									std::make_shared<cxxast::PointerTypeName>(compileType(compileContext, programInfo.analyzedRegInfo.at(ins.operands[1].getRegIndex()).type)),
 									lhs));
-						rhs = std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.operands[1].getRegIndex()));
+						rhs = std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[1].getRegIndex()).vregVarName));
 						break;
 					default:
 						std::terminate();
@@ -248,7 +330,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 							cxxast::BinaryOp::MemberAccess,
 							std::make_shared<cxxast::BinaryExpr>(
 								cxxast::BinaryOp::MemberAccess,
-								std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.operands[0].getRegIndex())),
+								std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
 								std::make_shared<cxxast::IdExpr>("asAotPtr")),
 							std::make_shared<cxxast::IdExpr>("ptr"));
 					// TODO: Implement it.
@@ -268,7 +350,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 							cxxast::BinaryOp::MemberAccess,
 							std::make_shared<cxxast::BinaryExpr>(
 								cxxast::BinaryOp::MemberAccess,
-								std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.operands[0].getRegIndex())),
+								std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
 								std::make_shared<cxxast::IdExpr>("asAotPtr")),
 							std::make_shared<cxxast::IdExpr>("ptr"));
 					switch (ins.operands[1].valueType) {
@@ -309,7 +391,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 							cxxast::BinaryOp::MemberAccess,
 							std::make_shared<cxxast::BinaryExpr>(
 								cxxast::BinaryOp::MemberAccess,
-								std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.operands[0].getRegIndex())),
+								std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
 								std::make_shared<cxxast::IdExpr>("asAotPtr")),
 							std::make_shared<cxxast::IdExpr>("ptr"));
 					// TODO: Implement it.
@@ -322,7 +404,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 					break;
 				}
 
-				rhs = std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.operands[1].getRegIndex()));
+				rhs = std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[1].getRegIndex()).vregVarName));
 
 				fnOverloading->body.push_back(std::make_shared<cxxast::ExprStmt>(
 					std::make_shared<cxxast::BinaryExpr>(cxxast::BinaryOp::Assign,
@@ -333,6 +415,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 			case Opcode::MOV: {
 				std::shared_ptr<cxxast::Expr> rhs;
 				std::shared_ptr<cxxast::TypeName> type;
+				Type regType;
 
 				std::vector<cxxast::VarDefPair> varDefPairs;
 
@@ -348,6 +431,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 				case ValueType::F32:
 				case ValueType::F64:
 				case ValueType::Bool:
+					regType = valueTypeToTypeId(ins.operands[0].valueType);
 					type = compileType(compileContext, Type(valueTypeToTypeId(ins.operands[0].valueType)));
 					rhs = compileValue(compileContext, ins.operands[0]);
 					break;
@@ -356,10 +440,12 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 
 					switch (entityRef.kind) {
 					case ObjectRefKind::ObjectRef:
+						regType = Type(TypeId::Instance);
 						compileContext.mappedObjects.insert(entityRef.asObject.instanceObject);
 						type = genInstanceObjectTypeName();
 						break;
 					default:
+						regType = Type(TypeId::Ref, nullptr);
 						type = genObjectRefTypeName();
 					}
 					rhs = compileValue(compileContext, ins.operands[0]);
@@ -368,7 +454,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 				case ValueType::RegRef: {
 					uint32_t regIndex = ins.operands[0].getRegIndex();
 
-					Type &regType = programInfo.analyzedRegInfo.at(regIndex).type;
+					regType = programInfo.analyzedRegInfo.at(regIndex).type;
 
 					type = compileType(compileContext, regType);
 
@@ -377,20 +463,20 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 					case TypeId::Instance:
 					case TypeId::Array:
 					case TypeId::FnDelegate:
-						if ((compileContext.dynamicContents.loadInsResultRegs.count(regIndex))) {
+						if ((compileContext.getVirtualRegInfo(regIndex).isLoadInsResult)) {
 							rhs = std::make_shared<cxxast::BinaryExpr>(
 								cxxast::BinaryOp::MemberAccess,
 								std::make_shared<cxxast::BinaryExpr>(
 									cxxast::BinaryOp::MemberAccess,
-									std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(regIndex)),
+									std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(regIndex).vregVarName)),
 									std::make_shared<cxxast::IdExpr>("asObject")),
 								std::make_shared<cxxast::IdExpr>("instanceObject"));
 						} else {
-							rhs = std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(regIndex));
+							rhs = std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(regIndex).vregVarName));
 						}
 						break;
 					default:
-						rhs = std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(regIndex));
+						rhs = std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(regIndex).vregVarName));
 					}
 					break;
 				}
@@ -398,34 +484,43 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 					std::terminate();
 				}
 
-				fnOverloading->body.push_back(
-					std::make_shared<cxxast::LocalVarDefStmt>(
-						type,
-						std::vector<cxxast::VarDefPair>{
-							{ mangleRegLocalVarName(ins.output.getRegIndex()),
-								rhs } }));
+				if (compileContext.allocRecycledReg(*this, programInfo, ins.output.getRegIndex(), regType)) {
+					fnOverloading->body.push_back(
+						std::make_shared<cxxast::ExprStmt>(
+							std::make_shared<cxxast::BinaryExpr>(
+								cxxast::BinaryOp::Assign,
+								std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName)),
+								rhs)));
+				} else {
+					fnOverloading->body.push_back(
+						std::make_shared<cxxast::LocalVarDefStmt>(
+							type,
+							std::vector<cxxast::VarDefPair>{
+								{ compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName,
+									rhs } }));
+				}
 				break;
 			}
 			case Opcode::LARG: {
 				std::shared_ptr<cxxast::TypeName> t = genObjectRefTypeName();
 
-				std::string varName = mangleRegLocalVarName(ins.output.getRegIndex());
 				cxxast::VarDefPair varDefPair;
 
-				varDefPair = { varName, std::make_shared<cxxast::CallExpr>(
-											std::make_shared<cxxast::BinaryExpr>(
-												cxxast::BinaryOp::Scope,
-												std::make_shared<cxxast::BinaryExpr>(
-													cxxast::BinaryOp::Scope,
-													std::make_shared<cxxast::IdExpr>("slake"),
-													std::make_shared<cxxast::IdExpr>("EntityRef")),
-												std::make_shared<cxxast::IdExpr>("makeAotPtrRef")),
-											std::vector<std::shared_ptr<cxxast::Expr>>{
-												std::make_shared<cxxast::CastExpr>(
-													std::make_shared<cxxast::PointerTypeName>(std::make_shared<cxxast::VoidTypeName>()),
-													std::make_shared<cxxast::UnaryExpr>(
-														cxxast::UnaryOp::AddressOf,
-														std::make_shared<cxxast::IdExpr>(mangleParamName(ins.operands[0].getU32())))) }) };
+				varDefPair = { compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName,
+					std::make_shared<cxxast::CallExpr>(
+						std::make_shared<cxxast::BinaryExpr>(
+							cxxast::BinaryOp::Scope,
+							std::make_shared<cxxast::BinaryExpr>(
+								cxxast::BinaryOp::Scope,
+								std::make_shared<cxxast::IdExpr>("slake"),
+								std::make_shared<cxxast::IdExpr>("EntityRef")),
+							std::make_shared<cxxast::IdExpr>("makeAotPtrRef")),
+						std::vector<std::shared_ptr<cxxast::Expr>>{
+							std::make_shared<cxxast::CastExpr>(
+								std::make_shared<cxxast::PointerTypeName>(std::make_shared<cxxast::VoidTypeName>()),
+								std::make_shared<cxxast::UnaryExpr>(
+									cxxast::UnaryOp::AddressOf,
+									std::make_shared<cxxast::IdExpr>(mangleParamName(ins.operands[0].getU32())))) }) };
 
 				std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(t, std::vector<cxxast::VarDefPair>{ varDefPair });
 
@@ -494,7 +589,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 					std::make_shared<cxxast::LocalVarDefStmt>(
 						genObjectRefTypeName(),
 						std::vector<cxxast::VarDefPair>{
-							{ mangleRegLocalVarName(ins.output.getRegIndex()),
+							{ compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName,
 								std::make_shared<cxxast::CallExpr>(
 									std::make_shared<cxxast::BinaryExpr>(
 										cxxast::BinaryOp::Scope,
@@ -515,11 +610,11 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 				if (ins.output.valueType != ValueType::Undefined) {
 					opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex()),
 										  &sourceRegInfo = programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex());
-					std::string varName = mangleRegLocalVarName(ins.output.getRegIndex());
+					std::string &varName = compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName;
 
 					switch (sourceRegInfo.storageType) {
 					case opti::RegStorageType::None: {
-						std::string tmpLocalVarName = mangleRegLocalVarName(ins.operands[0].getRegIndex()) + "_tmp";
+						std::string tmpLocalVarName = compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName + "_tmp";
 						fnOverloading->body.push_back(std::make_shared<cxxast::LocalVarDefStmt>(
 							genAnyTypeName(),
 							std::vector<cxxast::VarDefPair>{
@@ -538,22 +633,33 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 											std::make_shared<cxxast::IdExpr>("runtime")),
 										std::make_shared<cxxast::IdExpr>("readVar")),
 									std::vector<std::shared_ptr<cxxast::Expr>>{
-										std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.operands[0].getRegIndex())),
+										std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
 										std::make_shared<cxxast::IdExpr>(std::string(tmpLocalVarName)) })));
 
-						cxxast::VarDefPair varDefPair = {
-							varName,
-							genGetValueDataExpr(
-								outputRegInfo.type,
-								std::make_shared<cxxast::IdExpr>(std::string(tmpLocalVarName)))
-						};
+						if (compileContext.allocRecycledReg(*this, programInfo, ins.output.getRegIndex(), outputRegInfo.type)) {
+							fnOverloading->body.push_back(
+								std::make_shared<cxxast::ExprStmt>(
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::Assign,
+										std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName)),
+										genGetValueDataExpr(
+											outputRegInfo.type,
+											std::make_shared<cxxast::IdExpr>(std::string(tmpLocalVarName))))));
+						} else {
+							cxxast::VarDefPair varDefPair = {
+								varName,
+								genGetValueDataExpr(
+									outputRegInfo.type,
+									std::make_shared<cxxast::IdExpr>(std::string(tmpLocalVarName)))
+							};
 
-						fnOverloading->body.push_back(std::make_shared<cxxast::LocalVarDefStmt>(compileType(compileContext, outputRegInfo.type), std::vector<cxxast::VarDefPair>{ varDefPair }));
+							fnOverloading->body.push_back(std::make_shared<cxxast::LocalVarDefStmt>(compileType(compileContext, outputRegInfo.type), std::vector<cxxast::VarDefPair>{ varDefPair }));
+						}
 
 						break;
 					}
 					case opti::RegStorageType::FieldVar: {
-						std::string tmpLocalVarName = mangleRegLocalVarName(ins.operands[0].getRegIndex()) + "_tmp";
+						std::string tmpLocalVarName = compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName + "_tmp";
 						fnOverloading->body.push_back(std::make_shared<cxxast::LocalVarDefStmt>(
 							genAnyTypeName(),
 							std::vector<cxxast::VarDefPair>{
@@ -572,21 +678,32 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 											std::make_shared<cxxast::IdExpr>("runtime")),
 										std::make_shared<cxxast::IdExpr>("readVar")),
 									std::vector<std::shared_ptr<cxxast::Expr>>{
-										std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.operands[0].getRegIndex())),
+										std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
 										std::make_shared<cxxast::IdExpr>(std::string(tmpLocalVarName)) })));
 
-						cxxast::VarDefPair varDefPair = {
-							varName,
-							genGetValueDataExpr(
-								outputRegInfo.type,
-								std::make_shared<cxxast::IdExpr>(std::string(tmpLocalVarName)))
-						};
+						if (compileContext.allocRecycledReg(*this, programInfo, ins.output.getRegIndex(), outputRegInfo.type)) {
+							fnOverloading->body.push_back(
+								std::make_shared<cxxast::ExprStmt>(
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::Assign,
+										std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName)),
+										genGetValueDataExpr(
+											outputRegInfo.type,
+											std::make_shared<cxxast::IdExpr>(std::string(tmpLocalVarName))))));
+						} else {
+							cxxast::VarDefPair varDefPair = {
+								varName,
+								genGetValueDataExpr(
+									outputRegInfo.type,
+									std::make_shared<cxxast::IdExpr>(std::string(tmpLocalVarName)))
+							};
 
-						fnOverloading->body.push_back(std::make_shared<cxxast::LocalVarDefStmt>(compileType(compileContext, outputRegInfo.type), std::vector<cxxast::VarDefPair>{ varDefPair }));
+							fnOverloading->body.push_back(std::make_shared<cxxast::LocalVarDefStmt>(compileType(compileContext, outputRegInfo.type), std::vector<cxxast::VarDefPair>{ varDefPair }));
+						}
 						break;
 					}
 					case opti::RegStorageType::InstanceFieldVar: {
-						std::string tmpLocalVarName = mangleRegLocalVarName(ins.operands[0].getRegIndex()) + "_tmp";
+						std::string tmpLocalVarName = compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName + "_tmp";
 						fnOverloading->body.push_back(std::make_shared<cxxast::LocalVarDefStmt>(
 							genAnyTypeName(),
 							std::vector<cxxast::VarDefPair>{
@@ -605,17 +722,28 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 											std::make_shared<cxxast::IdExpr>("runtime")),
 										std::make_shared<cxxast::IdExpr>("readVar")),
 									std::vector<std::shared_ptr<cxxast::Expr>>{
-										std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.operands[0].getRegIndex())),
+										std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
 										std::make_shared<cxxast::IdExpr>(std::string(tmpLocalVarName)) })));
 
-						cxxast::VarDefPair varDefPair = {
-							varName,
-							genGetValueDataExpr(
-								outputRegInfo.type,
-								std::make_shared<cxxast::IdExpr>(std::string(tmpLocalVarName)))
-						};
+						if (compileContext.allocRecycledReg(*this, programInfo, ins.output.getRegIndex(), outputRegInfo.type)) {
+							fnOverloading->body.push_back(
+								std::make_shared<cxxast::ExprStmt>(
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::Assign,
+										std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName)),
+										genGetValueDataExpr(
+											outputRegInfo.type,
+											std::make_shared<cxxast::IdExpr>(std::string(tmpLocalVarName))))));
+						} else {
+							cxxast::VarDefPair varDefPair = {
+								varName,
+								genGetValueDataExpr(
+									outputRegInfo.type,
+									std::make_shared<cxxast::IdExpr>(std::string(tmpLocalVarName)))
+							};
 
-						fnOverloading->body.push_back(std::make_shared<cxxast::LocalVarDefStmt>(compileType(compileContext, outputRegInfo.type), std::vector<cxxast::VarDefPair>{ varDefPair }));
+							fnOverloading->body.push_back(std::make_shared<cxxast::LocalVarDefStmt>(compileType(compileContext, outputRegInfo.type), std::vector<cxxast::VarDefPair>{ varDefPair }));
+						}
 
 						break;
 					}
@@ -633,7 +761,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 										cxxast::BinaryOp::MemberAccess,
 										std::make_shared<cxxast::BinaryExpr>(
 											cxxast::BinaryOp::MemberAccess,
-											std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.operands[0].getRegIndex())),
+											std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
 											std::make_shared<cxxast::IdExpr>("asEntityRef")),
 										std::make_shared<cxxast::IdExpr>("asArray")),
 									std::make_shared<cxxast::IdExpr>("index"));
@@ -647,7 +775,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 											cxxast::BinaryOp::MemberAccess,
 											std::make_shared<cxxast::BinaryExpr>(
 												cxxast::BinaryOp::MemberAccess,
-												std::make_shared<cxxast::IdExpr>(mangleRegLocalVarName(ins.operands[0].getRegIndex())),
+												std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
 												std::make_shared<cxxast::IdExpr>("asEntityRef")),
 											std::make_shared<cxxast::IdExpr>("asArray")),
 										std::make_shared<cxxast::IdExpr>("data")));
@@ -656,33 +784,62 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 								dataPtrExpr,
 								indexRefExpr);
 
-							cxxast::VarDefPair varDefPair = {
-								varName,
-								elementExpr
-							};
+							if (compileContext.allocRecycledReg(*this, programInfo, ins.output.getRegIndex(), outputRegInfo.type)) {
+								fnOverloading->body.push_back(
+									std::make_shared<cxxast::ExprStmt>(
+										std::make_shared<cxxast::BinaryExpr>(
+											cxxast::BinaryOp::Assign,
+											std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName)),
+											elementExpr)));
+							} else {
+								cxxast::VarDefPair varDefPair = {
+									varName,
+									elementExpr
+								};
 
-							fnOverloading->body.push_back(
-								std::make_shared<cxxast::LocalVarDefStmt>(
-									compileType(compileContext, outputRegInfo.type),
-									std::vector<cxxast::VarDefPair>{ varDefPair }));
+								fnOverloading->body.push_back(
+									std::make_shared<cxxast::LocalVarDefStmt>(
+										compileType(compileContext, outputRegInfo.type),
+										std::vector<cxxast::VarDefPair>{ varDefPair }));
+							}
 						}
 						break;
 					}
 					case opti::RegStorageType::LocalVar: {
-						cxxast::VarDefPair varDefPair = {
-							varName,
-							std::make_shared<cxxast::IdExpr>(
-								mangleLocalVarName(programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).storageInfo.asLocalVar.definitionReg))
-						};
-						fnOverloading->body.push_back(std::make_shared<cxxast::LocalVarDefStmt>(compileType(compileContext, outputRegInfo.type), std::vector<cxxast::VarDefPair>{ varDefPair }));
+						if (compileContext.allocRecycledReg(*this, programInfo, ins.output.getRegIndex(), outputRegInfo.type)) {
+							fnOverloading->body.push_back(
+								std::make_shared<cxxast::ExprStmt>(
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::Assign,
+										std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName)),
+										std::make_shared<cxxast::IdExpr>(
+											mangleLocalVarName(programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).storageInfo.asLocalVar.definitionReg)))));
+						} else {
+							cxxast::VarDefPair varDefPair = {
+								varName,
+								std::make_shared<cxxast::IdExpr>(
+									mangleLocalVarName(programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).storageInfo.asLocalVar.definitionReg))
+							};
+							fnOverloading->body.push_back(std::make_shared<cxxast::LocalVarDefStmt>(compileType(compileContext, outputRegInfo.type), std::vector<cxxast::VarDefPair>{ varDefPair }));
+						}
 						break;
 					}
 					case opti::RegStorageType::ArgRef: {
-						cxxast::VarDefPair varDefPair = { varName,
-							std::make_shared<cxxast::IdExpr>(
-								mangleLocalVarName(programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).storageInfo.asArgRef.idxArg)) };
+						if (compileContext.allocRecycledReg(*this, programInfo, ins.output.getRegIndex(), outputRegInfo.type)) {
+							fnOverloading->body.push_back(
+								std::make_shared<cxxast::ExprStmt>(
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::Assign,
+										std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName)),
+										std::make_shared<cxxast::IdExpr>(
+											mangleLocalVarName(programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).storageInfo.asArgRef.idxArg)))));
+						} else {
+							cxxast::VarDefPair varDefPair = { varName,
+								std::make_shared<cxxast::IdExpr>(
+									mangleLocalVarName(programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).storageInfo.asArgRef.idxArg)) };
 
-						fnOverloading->body.push_back(std::make_shared<cxxast::LocalVarDefStmt>(compileType(compileContext, outputRegInfo.type), std::vector<cxxast::VarDefPair>{ varDefPair }));
+							fnOverloading->body.push_back(std::make_shared<cxxast::LocalVarDefStmt>(compileType(compileContext, outputRegInfo.type), std::vector<cxxast::VarDefPair>{ varDefPair }));
+						}
 						break;
 					}
 					}
@@ -690,10 +847,18 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 				}
 			}
 			}
+
+			if (auto it = compileContext.recyclableRegs.find(i); it != compileContext.recyclableRegs.end()) {
+				for (auto j : it->second) {
+					VirtualRegInfo &vregInfo = compileContext.getVirtualRegInfo(j);
+					if (vregInfo.nameBorrowedReg != UINT32_MAX)
+						compileContext.recycledRegs.insert(vregInfo.nameBorrowedReg);
+					else
+						compileContext.recycledRegs.insert(j);
+				}
+			}
 		}
 		break;
 	}
 	}
-
-	compileContext.popDynamicContents();
 }

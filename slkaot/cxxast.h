@@ -264,7 +264,8 @@ namespace slake {
 				While,
 				Break,
 				Continue,
-				Return
+				Return,
+				Block
 			};
 
 			class Stmt : public ASTNode {
@@ -353,6 +354,14 @@ namespace slake {
 
 				ReturnStmt(std::shared_ptr<Expr> value);
 				virtual ~ReturnStmt();
+			};
+
+			class BlockStmt : public Stmt {
+			public:
+				std::vector<std::shared_ptr<Stmt>> body;
+
+				BlockStmt(std::vector<std::shared_ptr<Stmt>> &&body = {});
+				virtual ~BlockStmt();
 			};
 
 			enum class ExprKind : uint8_t {

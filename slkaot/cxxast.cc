@@ -255,6 +255,12 @@ ReturnStmt::ReturnStmt(std::shared_ptr<Expr> value) : Stmt(StmtKind::Expr), valu
 ReturnStmt::~ReturnStmt() {
 }
 
+BlockStmt::BlockStmt(std::vector<std::shared_ptr<Stmt>> &&body) : Stmt(StmtKind::Block), body(std::move(body)) {
+}
+
+BlockStmt::~BlockStmt() {
+}
+
 Expr::Expr(ExprKind stmtKind) : ASTNode(NodeKind::Expr), exprKind(stmtKind) {
 }
 

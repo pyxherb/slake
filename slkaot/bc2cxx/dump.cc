@@ -545,6 +545,18 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 			os << ";";
 			break;
 		}
+		case cxxast::StmtKind::Block: {
+			std::shared_ptr<cxxast::BlockStmt> s = std::static_pointer_cast<cxxast::BlockStmt>(stmt);
+			// Auto-indented
+			os << "{\n";
+
+			for (std::shared_ptr<cxxast::Stmt> i : s->body) {
+				_dumpAstNode(os, i, dumpMode, indentLevel + 1);
+			}
+
+			os << std::string(indentLevel, '\t') << "}";
+			break;
+		}
 		}
 
 		os << "\n";

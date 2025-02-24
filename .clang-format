@@ -22,7 +22,7 @@ BreakBeforeBraces: Custom
 ColumnLimit: 0
 Cpp11BracedListStyle: false
 FixNamespaceComments: false
-IndentCaseLabels: false
+IndentCaseLabels: true
 IndentPPDirectives: BeforeHash
 IndentWidth: 4
 MaxEmptyLinesToKeep: 1

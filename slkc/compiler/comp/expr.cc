@@ -1091,16 +1091,20 @@ void Compiler::compileExpr(CompileContext *compileContext, std::shared_ptr<ExprN
 			auto type = std::static_pointer_cast<ArrayTypeNameNode>(compileContext->curTopLevelContext.curMajorContext.curMinorContext.expectedType);
 
 #if SLKC_WITH_LANGUAGE_SERVER
-			updateTokenInfo(e->idxLBraceToken, [this, &compileContext](TokenInfo &tokenInfo) {
-				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
-				tokenInfo.completionContext = CompletionContext::Expr;
-			});
+			{
+				auto tokenContext = std::make_shared<TokenContext>(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
 
-			for (size_t i = 0; i < e->idxCommaTokens.size(); ++i) {
-				updateTokenInfo(e->idxCommaTokens[i], [this, &compileContext](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+				updateTokenInfo(e->idxLBraceToken, [this, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = tokenContext;
 					tokenInfo.completionContext = CompletionContext::Expr;
 				});
+
+				for (size_t i = 0; i < e->idxCommaTokens.size(); ++i) {
+					updateTokenInfo(e->idxCommaTokens[i], [this, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+						tokenInfo.tokenContext = tokenContext;
+						tokenInfo.completionContext = CompletionContext::Expr;
+					});
+				}
 			}
 #endif
 

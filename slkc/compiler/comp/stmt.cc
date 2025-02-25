@@ -5,6 +5,10 @@ using namespace slake::slkc;
 void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtNode> stmt) {
 	SourceDocument *curDoc = compileContext->compiler->getCurDoc();
 
+	#if SLKC_WITH_LANGUAGE_SERVER
+	std::shared_ptr<TokenContext> tokenContext = std::make_shared<TokenContext>(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+	#endif
+
 	switch (stmt->getStmtType()) {
 		case StmtType::Expr: {
 			auto s = std::static_pointer_cast<ExprStmtNode>(stmt);
@@ -25,8 +29,8 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 			updateTokenInfoForTrailingSpaces(
 				compileContext,
 				s->idxSemicolonToken + 1, curDoc->lexer->tokens.size(),
-				[this, &compileContext](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+				[this, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = tokenContext;
 					tokenInfo.completionContext = CompletionContext::Stmt;
 				});
 #endif
@@ -37,8 +41,8 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 
 			for (auto &i : s->varDefs) {
 #if SLKC_WITH_LANGUAGE_SERVER
-				updateTokenInfo(i.second.idxNameToken, [this, &compileContext](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+				updateTokenInfo(i.second.idxNameToken, [this, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = tokenContext;
 					tokenInfo.semanticType = SemanticType::Var;
 					tokenInfo.completionContext = CompletionContext::Name;
 				});
@@ -46,8 +50,8 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 				updateTokenInfoForTrailingSpaces(
 					compileContext, i.second.idxColonToken + 1,
 					curDoc->lexer->tokens.size(),
-					[this, &compileContext](TokenInfo &tokenInfo) {
-						tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+					[this, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+						tokenInfo.tokenContext = tokenContext;
 						tokenInfo.completionContext = CompletionContext::Type;
 					});
 
@@ -155,8 +159,8 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 			updateTokenInfoForTrailingSpaces(
 				compileContext,
 				s->idxSemicolonToken + 1, curDoc->lexer->tokens.size(),
-				[this, &compileContext](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+				[this, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = tokenContext;
 					tokenInfo.completionContext = CompletionContext::Stmt;
 				});
 #endif
@@ -168,8 +172,8 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 			updateTokenInfoForTrailingSpaces(
 				compileContext,
 				s->idxSemicolonToken + 1, curDoc->lexer->tokens.size(),
-				[this, &compileContext](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+				[this, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = tokenContext;
 					tokenInfo.completionContext = CompletionContext::Stmt;
 				});
 #endif
@@ -192,8 +196,8 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 			updateTokenInfoForTrailingSpaces(
 				compileContext,
 				s->idxSemicolonToken + 1, curDoc->lexer->tokens.size(),
-				[this, &compileContext](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+				[this, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = tokenContext;
 					tokenInfo.completionContext = CompletionContext::Stmt;
 				});
 #endif
@@ -266,8 +270,8 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 			updateTokenInfoForTrailingSpaces(
 				compileContext,
 				s->tokenRange.endIndex + 1, curDoc->lexer->tokens.size(),
-				[this, &compileContext](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+				[this, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = tokenContext;
 					tokenInfo.completionContext = CompletionContext::Stmt;
 				});
 #endif
@@ -277,8 +281,8 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 			auto s = std::static_pointer_cast<WhileStmtNode>(stmt);
 
 #if SLKC_WITH_LANGUAGE_SERVER
-			updateTokenInfo(s->idxLParentheseToken, [this, &compileContext](TokenInfo &tokenInfo) {
-				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+			updateTokenInfo(s->idxLParentheseToken, [this, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+				tokenInfo.tokenContext = tokenContext;
 				tokenInfo.semanticType = SemanticType::Keyword;
 				tokenInfo.completionContext = CompletionContext::Expr;
 			});
@@ -331,8 +335,8 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 			updateTokenInfoForTrailingSpaces(
 				compileContext,
 				s->idxLParentheseToken + 1, curDoc->lexer->tokens.size(),
-				[this, &compileContext](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+				[this, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = tokenContext;
 					tokenInfo.completionContext = CompletionContext::Expr;
 				});
 #endif
@@ -342,8 +346,8 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 			auto s = std::static_pointer_cast<ReturnStmtNode>(stmt);
 
 #if SLKC_WITH_LANGUAGE_SERVER
-			updateTokenInfo(s->idxReturnToken, [this, &compileContext](TokenInfo &tokenInfo) {
-				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+			updateTokenInfo(s->idxReturnToken, [this, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+				tokenInfo.tokenContext = tokenContext;
 				tokenInfo.semanticType = SemanticType::Keyword;
 				tokenInfo.completionContext = CompletionContext::Expr;
 			});
@@ -391,8 +395,8 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 			updateTokenInfoForTrailingSpaces(
 				compileContext,
 				s->idxReturnToken + 1, curDoc->lexer->tokens.size(),
-				[this, &compileContext](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+				[this, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = tokenContext;
 					tokenInfo.completionContext = CompletionContext::Expr;
 				});
 #endif
@@ -402,8 +406,8 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 			auto s = std::static_pointer_cast<YieldStmtNode>(stmt);
 
 #if SLKC_WITH_LANGUAGE_SERVER
-			updateTokenInfo(s->idxYieldToken, [this, &compileContext](TokenInfo &tokenInfo) {
-				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+			updateTokenInfo(s->idxYieldToken, [this, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+				tokenInfo.tokenContext = tokenContext;
 				tokenInfo.semanticType = SemanticType::Keyword;
 				tokenInfo.completionContext = CompletionContext::Expr;
 			});
@@ -432,8 +436,8 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 			updateTokenInfoForTrailingSpaces(
 				compileContext,
 				s->idxYieldToken + 1, curDoc->lexer->tokens.size(),
-				[this, &compileContext](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+				[this, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = tokenContext;
 					tokenInfo.completionContext = CompletionContext::Expr;
 				});
 #endif

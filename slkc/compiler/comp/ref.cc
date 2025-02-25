@@ -6,6 +6,10 @@ using namespace slake::slkc;
 bool Compiler::resolveIdRef(CompileContext *compileContext, std::shared_ptr<IdRefNode> ref, IdRefResolvedParts &partsOut, bool &isStaticOut, bool ignoreDynamicPrecedings) {
 	assert(ref->entries.size());
 
+#if SLKC_WITH_LANGUAGE_SERVER
+	std::shared_ptr<TokenContext> tokenContext = std::make_shared<TokenContext>(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+#endif
+
 	if (!ignoreDynamicPrecedings) {
 		// Try to resolve the first entry as a local variable.
 		if (compileContext->curTopLevelContext.curMajorContext.curMinorContext.localVars.count(ref->entries[0].name) && (!ref->entries[0].genericArgs.size())) {
@@ -27,13 +31,13 @@ bool Compiler::resolveIdRef(CompileContext *compileContext, std::shared_ptr<IdRe
 
 		lvarSucceeded:
 #if SLKC_WITH_LANGUAGE_SERVER
-			updateTokenInfo(ref->entries[0].idxToken, [this, &localVar, &compileContext](TokenInfo &tokenInfo) {
+			updateTokenInfo(ref->entries[0].idxToken, [this, &localVar, &compileContext, tokenContext](TokenInfo &tokenInfo) {
 				tokenInfo.semanticInfo.isTopLevelRef = true;
 				if (!tokenInfo.semanticInfo.correspondingMember)
 					tokenInfo.semanticInfo.correspondingMember = localVar;
 				if (compileContext->curTopLevelContext.curMajorContext.curMinorContext.curCorrespondingParam)
 					tokenInfo.semanticInfo.correspondingParam = compileContext->curTopLevelContext.curMajorContext.curMinorContext.curCorrespondingParam;
-				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+				tokenInfo.tokenContext = tokenContext;
 				tokenInfo.semanticType = SemanticType::Var;
 			});
 #endif
@@ -64,13 +68,13 @@ bool Compiler::resolveIdRef(CompileContext *compileContext, std::shared_ptr<IdRe
 
 			paramSucceeded:
 #if SLKC_WITH_LANGUAGE_SERVER
-				updateTokenInfo(ref->entries[0].idxToken, [this, idxParam, &compileContext](TokenInfo &tokenInfo) {
+				updateTokenInfo(ref->entries[0].idxToken, [this, idxParam, &compileContext, tokenContext](TokenInfo &tokenInfo) {
 					tokenInfo.semanticInfo.isTopLevelRef = true;
 					if (!tokenInfo.semanticInfo.correspondingMember)
 						tokenInfo.semanticInfo.correspondingMember = compileContext->curFn->params[idxParam];
 					if (compileContext->curTopLevelContext.curMajorContext.curMinorContext.curCorrespondingParam)
 						tokenInfo.semanticInfo.correspondingParam = compileContext->curTopLevelContext.curMajorContext.curMinorContext.curCorrespondingParam;
-					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+					tokenInfo.tokenContext = tokenContext;
 					tokenInfo.semanticType = SemanticType::Param;
 				});
 #endif
@@ -84,13 +88,13 @@ bool Compiler::resolveIdRef(CompileContext *compileContext, std::shared_ptr<IdRe
 			auto thisRefNode = std::make_shared<ThisRefNode>();
 
 #if SLKC_WITH_LANGUAGE_SERVER
-			updateTokenInfo(ref->entries[0].idxToken, [this, &thisRefNode, &compileContext](TokenInfo &tokenInfo) {
+			updateTokenInfo(ref->entries[0].idxToken, [this, &thisRefNode, &compileContext, tokenContext](TokenInfo &tokenInfo) {
 				tokenInfo.semanticInfo.isTopLevelRef = true;
 				if (!tokenInfo.semanticInfo.correspondingMember)
 					tokenInfo.semanticInfo.correspondingMember = thisRefNode;
 				if (compileContext->curTopLevelContext.curMajorContext.curMinorContext.curCorrespondingParam)
 					tokenInfo.semanticInfo.correspondingParam = compileContext->curTopLevelContext.curMajorContext.curMinorContext.curCorrespondingParam;
-				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+				tokenInfo.tokenContext = tokenContext;
 				tokenInfo.semanticType = SemanticType::Keyword;
 			});
 #endif
@@ -146,13 +150,16 @@ bool Compiler::_resolveIdRef(CompileContext *compileContext, Scope *scope, std::
 	auto &curEntry = ref->entries[resolveContext.curIndex];
 
 #if SLKC_WITH_LANGUAGE_SERVER
+	std::shared_ptr<TokenContext> tokenContext;
+	if (compileContext)
+		tokenContext = std::make_shared<TokenContext>(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+
 	// Update corresponding semantic information.
 	if (compileContext) {
-		TokenContext tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
 		if (!resolveContext.keepTokenScope)
-			tokenContext.curScope = scope->shared_from_this();
+			tokenContext->curScope = scope->shared_from_this();
 
-		updateTokenInfo(curEntry.idxAccessOpToken, [this, &tokenContext, &resolveContext, &compileContext](TokenInfo &precedingAccessOpTokenInfo) {
+		updateTokenInfo(curEntry.idxAccessOpToken, [this, tokenContext, &resolveContext, &compileContext](TokenInfo &precedingAccessOpTokenInfo) {
 			if (compileContext->curTopLevelContext.curMajorContext.curMinorContext.curCorrespondingParam)
 				precedingAccessOpTokenInfo.semanticInfo.correspondingParam = compileContext->curTopLevelContext.curMajorContext.curMinorContext.curCorrespondingParam;
 			precedingAccessOpTokenInfo.tokenContext = tokenContext;
@@ -163,7 +170,7 @@ bool Compiler::_resolveIdRef(CompileContext *compileContext, Scope *scope, std::
 				precedingAccessOpTokenInfo.completionContext = CompletionContext::MemberAccess;*/
 		});
 
-		updateTokenInfo(curEntry.idxToken, [this, &tokenContext, &resolveContext, &compileContext](TokenInfo &tokenInfo) {
+		updateTokenInfo(curEntry.idxToken, [this, tokenContext, &resolveContext, &compileContext](TokenInfo &tokenInfo) {
 			if (compileContext->curTopLevelContext.curMajorContext.curMinorContext.curCorrespondingParam)
 				tokenInfo.semanticInfo.correspondingParam = compileContext->curTopLevelContext.curMajorContext.curMinorContext.curCorrespondingParam;
 			tokenInfo.tokenContext = tokenContext;
@@ -189,10 +196,10 @@ bool Compiler::_resolveIdRef(CompileContext *compileContext, Scope *scope, std::
 			return false;
 
 #if SLKC_WITH_LANGUAGE_SERVER
-		updateTokenInfo(curEntry.idxToken, [this, scope, &compileContext](TokenInfo &tokenInfo) {
+		updateTokenInfo(curEntry.idxToken, [this, scope, &compileContext, tokenContext](TokenInfo &tokenInfo) {
 			if (!tokenInfo.semanticInfo.correspondingMember)
 				tokenInfo.semanticInfo.correspondingMember = scope->owner->shared_from_this();
-			tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+			tokenInfo.tokenContext = tokenContext;
 			tokenInfo.semanticType = SemanticType::Keyword;
 		});
 #endif

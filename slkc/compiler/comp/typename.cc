@@ -331,6 +331,13 @@ std::shared_ptr<AstNode> Compiler::_resolveCustomTypeName(CompileContext *compil
 	if (!typeName->cachedResolvedResult.expired())
 		return typeName->cachedResolvedResult.lock();
 
+#if SLKC_WITH_LANGUAGE_SERVER
+	std::shared_ptr<TokenContext> tokenContext;
+	if (compileContext) {
+		tokenContext = std::make_shared<TokenContext>(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+	}
+#endif
+
 	// Check if the type refers to a generic parameter.
 	if ((typeName->ref->entries.size() == 1) && (typeName->ref->entries[0].genericArgs.empty())) {
 		auto genericParam = lookupGenericParam(typeName->scope->owner->shared_from_this(), typeName->ref->entries[0].name);
@@ -338,9 +345,9 @@ std::shared_ptr<AstNode> Compiler::_resolveCustomTypeName(CompileContext *compil
 #if SLKC_WITH_LANGUAGE_SERVER
 			// Update corresponding semantic information.
 			if (compileContext) {
-				updateTokenInfo(typeName->ref->entries[0].idxToken, [this, &genericParam, &compileContext](TokenInfo &tokenInfo) {
+				updateTokenInfo(typeName->ref->entries[0].idxToken, [this, &genericParam, &compileContext, tokenContext](TokenInfo &tokenInfo) {
 					tokenInfo.semanticInfo.correspondingMember = genericParam;
-					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+					tokenInfo.tokenContext = tokenContext;
 					tokenInfo.semanticType = SemanticType::TypeParam;
 				});
 			}

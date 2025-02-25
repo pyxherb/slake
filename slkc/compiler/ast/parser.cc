@@ -20,7 +20,7 @@ void Parser::parseProgramStmt() {
 			isLastTokenNewline = true;
 			break;
 		case TokenId::LineComment:
-		case TokensId::BlockComment:
+		case TokenId::BlockComment:
 			lexer->nextToken(true, false, true);
 			resetLineCommentDocumentation();
 			break;

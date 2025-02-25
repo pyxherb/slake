@@ -205,7 +205,7 @@ namespace slake {
 			}
 
 			inline TokenContext(
-				const std::unordered_map<std::string, std::shared_ptr<LocalVarNode>> localVars,
+				const std::unordered_map<std::string, std::shared_ptr<LocalVarNode>> &localVars,
 				std::shared_ptr<Scope> curScope,
 				const GenericParamNodeList &genericParams,
 				const std::unordered_map<std::string, size_t> &genericParamIndices,
@@ -241,7 +241,7 @@ namespace slake {
 			} semanticInfo;
 
 			// Corresponding token context, for completion.
-			TokenContext tokenContext;
+			std::shared_ptr<TokenContext> tokenContext;
 		};
 #endif
 

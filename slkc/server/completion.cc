@@ -272,9 +272,9 @@ succeeded:
 
 	switch (tokenInfo.completionContext) {
 		case CompletionContext::TopLevel: {
-			if (tokenInfo.tokenContext.curScope)
+			if (tokenInfo.tokenContext->curScope)
 				_getCompletionItems(
-					_walkForCompletion(document, tokenInfo.tokenContext.curScope.get(), true, tokenInfo.semanticInfo.isStatic),
+					_walkForCompletion(document, tokenInfo.tokenContext->curScope.get(), true, tokenInfo.semanticInfo.isStatic),
 					completionItems,
 					{ NodeType::GenericParam,
 						NodeType::Class,
@@ -284,9 +284,9 @@ succeeded:
 			break;
 		}
 		case CompletionContext::Class: {
-			if (tokenInfo.tokenContext.curScope)
+			if (tokenInfo.tokenContext->curScope)
 				_getCompletionItems(
-					_walkForCompletion(document, tokenInfo.tokenContext.curScope.get(), true, tokenInfo.semanticInfo.isStatic),
+					_walkForCompletion(document, tokenInfo.tokenContext->curScope.get(), true, tokenInfo.semanticInfo.isStatic),
 					completionItems,
 					{ NodeType::GenericParam,
 						NodeType::Class,
@@ -295,9 +295,9 @@ succeeded:
 			break;
 		}
 		case CompletionContext::Interface: {
-			if (tokenInfo.tokenContext.curScope)
+			if (tokenInfo.tokenContext->curScope)
 				_getCompletionItems(
-					_walkForCompletion(document, tokenInfo.tokenContext.curScope.get(), true, tokenInfo.semanticInfo.isStatic),
+					_walkForCompletion(document, tokenInfo.tokenContext->curScope.get(), true, tokenInfo.semanticInfo.isStatic),
 					completionItems,
 					{ NodeType::GenericParam,
 						NodeType::Class,
@@ -306,11 +306,11 @@ succeeded:
 			break;
 		}
 		case CompletionContext::Stmt: {
-			if (tokenInfo.tokenContext.curScope)
+			if (tokenInfo.tokenContext->curScope)
 				_getCompletionItems(
 					_walkForCompletion(
 						document,
-						tokenInfo.tokenContext.curScope.get(),
+						tokenInfo.tokenContext->curScope.get(),
 						tokenInfo.semanticInfo.isTopLevelRef,
 						tokenInfo.semanticInfo.isStatic),
 					completionItems,
@@ -322,7 +322,7 @@ succeeded:
 						NodeType::Module });
 
 			if (tokenInfo.semanticInfo.isTopLevelRef) {
-				for (auto &i : tokenInfo.tokenContext.localVars) {
+				for (auto &i : tokenInfo.tokenContext->localVars) {
 					CompletionItem item = {};
 
 					item.label = i.first;
@@ -331,7 +331,7 @@ succeeded:
 					completionItems.push_back(item);
 				}
 
-				for (auto &i : tokenInfo.tokenContext.paramIndices) {
+				for (auto &i : tokenInfo.tokenContext->paramIndices) {
 					CompletionItem item = {};
 
 					item.label = i.first;
@@ -367,11 +367,11 @@ succeeded:
 			break;
 		}
 		case CompletionContext::Type: {
-			if (tokenInfo.tokenContext.curScope)
+			if (tokenInfo.tokenContext->curScope)
 				_getCompletionItems(
 					_walkForCompletion(
 						document,
-						tokenInfo.tokenContext.curScope.get(),
+						tokenInfo.tokenContext->curScope.get(),
 						tokenInfo.semanticInfo.isTopLevelRef,
 						tokenInfo.semanticInfo.isStatic),
 					completionItems,
@@ -380,7 +380,7 @@ succeeded:
 						NodeType::Interface,
 						NodeType::Module });
 
-			for (auto &i : tokenInfo.tokenContext.genericParams) {
+			for (auto &i : tokenInfo.tokenContext->genericParams) {
 				CompletionItem item = {};
 
 				item.label = i->name;
@@ -393,14 +393,14 @@ succeeded:
 		case CompletionContext::Name:
 			return {};
 		case CompletionContext::Expr: {
-			if (tokenInfo.tokenContext.curScope) {
+			if (tokenInfo.tokenContext->curScope) {
 				// A token has `expr` type means it is the top level scope of
 				// a reference, which means we can resolve it with its parent
 				// scope.
 				_getCompletionItems(
 					_walkForCompletion(
 						document,
-						tokenInfo.tokenContext.curScope.get(),
+						tokenInfo.tokenContext->curScope.get(),
 						tokenInfo.semanticInfo.isTopLevelRef,
 						tokenInfo.semanticInfo.isStatic),
 					completionItems,
@@ -413,7 +413,7 @@ succeeded:
 			}
 
 			if (tokenInfo.semanticInfo.isTopLevelRef) {
-				for (auto &i : tokenInfo.tokenContext.localVars) {
+				for (auto &i : tokenInfo.tokenContext->localVars) {
 					CompletionItem item = {};
 
 					item.label = i.first;
@@ -422,7 +422,7 @@ succeeded:
 					completionItems.push_back(item);
 				}
 
-				for (auto &i : tokenInfo.tokenContext.paramIndices) {
+				for (auto &i : tokenInfo.tokenContext->paramIndices) {
 					CompletionItem item = {};
 
 					item.label = i.first;
@@ -434,11 +434,11 @@ succeeded:
 			break;
 		}
 		case CompletionContext::MemberAccess: {
-			if (tokenInfo.tokenContext.curScope)
+			if (tokenInfo.tokenContext->curScope)
 				_getCompletionItems(
 					_walkForCompletion(
 						document,
-						tokenInfo.tokenContext.curScope.get(),
+						tokenInfo.tokenContext->curScope.get(),
 						false,
 						tokenInfo.semanticInfo.isStatic),
 					completionItems,

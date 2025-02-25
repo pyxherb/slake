@@ -349,9 +349,11 @@ void Compiler::compile(std::istream &is, std::ostream &os) {
 	compileContext->pushTopLevelContext();
 
 #if SLKC_WITH_LANGUAGE_SERVER
+	auto tokenContext = std::make_shared<TokenContext>(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+
 	for (auto &i : doc->targetModule->imports) {
-		updateTokenInfo(i.second.idxNameToken, [this, &compileContext](TokenInfo &tokenInfo) {
-			tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+		updateTokenInfo(i.second.idxNameToken, [this, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+			tokenInfo.tokenContext = tokenContext;
 			tokenInfo.semanticType = SemanticType::Property;
 		});
 
@@ -444,6 +446,10 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 
 	compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope = scope;
 
+#if SLKC_WITH_LANGUAGE_SERVER
+	std::shared_ptr<TokenContext> tokenContext = std::make_shared<TokenContext>(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+#endif
+
 	for (auto &i : scope->members) {
 		switch (i.second->getNodeType()) {
 			case NodeType::Var: {
@@ -451,13 +457,13 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 				vars[i.first] = m;
 
 #if SLKC_WITH_LANGUAGE_SERVER
-				updateTokenInfo(m->idxNameToken, [this, &compileContext](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+				updateTokenInfo(m->idxNameToken, [this, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = tokenContext;
 					tokenInfo.semanticType = SemanticType::Var;
 				});
 
-				updateTokenInfo(m->idxColonToken, [this, &compileContext](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+				updateTokenInfo(m->idxColonToken, [this, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = tokenContext;
 					tokenInfo.completionContext = CompletionContext::Type;
 				});
 
@@ -472,39 +478,25 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 
 				for (auto &j : m->overloadingRegistries) {
 #if SLKC_WITH_LANGUAGE_SERVER
-					updateTokenInfo(j->idxNameToken, [this, &j, &compileContext](TokenInfo &tokenInfo) {
-						tokenInfo.tokenContext =
-							TokenContext(
-								{},
-								compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
-								j->genericParams,
-								j->genericParamIndices,
-								{},
-								{});
+					std::shared_ptr<TokenContext> tokenContext = std::make_shared<TokenContext>(
+						std::unordered_map<std::string, std::shared_ptr<LocalVarNode>>{},
+						compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
+						j->genericParams,
+						j->genericParamIndices,
+						std::deque<std::shared_ptr<ParamNode>>{},
+						std::unordered_map<std::string, size_t>{});
+					updateTokenInfo(j->idxNameToken, [this, &j, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+						tokenInfo.tokenContext = tokenContext;
 						tokenInfo.semanticType = SemanticType::Fn;
 					});
 
-					updateTokenInfo(j->idxParamLParentheseToken, [this, &j, &compileContext](TokenInfo &tokenInfo) {
-						tokenInfo.tokenContext =
-							TokenContext(
-								{},
-								compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
-								j->genericParams,
-								j->genericParamIndices,
-								{},
-								{});
+					updateTokenInfo(j->idxParamLParentheseToken, [this, &j, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+						tokenInfo.tokenContext = tokenContext;
 						tokenInfo.completionContext = CompletionContext::Type;
 					});
 
-					updateTokenInfo(j->idxReturnTypeColonToken, [this, &j, &compileContext](TokenInfo &tokenInfo) {
-						tokenInfo.tokenContext =
-							TokenContext(
-								{},
-								compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
-								j->genericParams,
-								j->genericParamIndices,
-								{},
-								{});
+					updateTokenInfo(j->idxReturnTypeColonToken, [this, &j, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+						tokenInfo.tokenContext = tokenContext;
 						tokenInfo.completionContext = CompletionContext::Type;
 					});
 
@@ -512,15 +504,8 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 						updateCompletionContext(j->returnType, CompletionContext::Type);
 
 					for (auto &k : j->params) {
-						updateTokenInfo(k->idxNameToken, [this, &j, &compileContext](TokenInfo &tokenInfo) {
-							tokenInfo.tokenContext =
-								TokenContext(
-									{},
-									compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
-									j->genericParams,
-									j->genericParamIndices,
-									{},
-									{});
+						updateTokenInfo(k->idxNameToken, [this, &j, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+							tokenInfo.tokenContext = tokenContext;
 							tokenInfo.semanticType = SemanticType::Param;
 						});
 
@@ -535,29 +520,15 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 					}
 
 					for (auto &k : j->idxParamCommaTokens) {
-						updateTokenInfo(k, [this, &j, &k, &compileContext](TokenInfo &tokenInfo) {
-							tokenInfo.tokenContext =
-								TokenContext(
-									{},
-									compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
-									j->genericParams,
-									j->genericParamIndices,
-									{},
-									{});
+						updateTokenInfo(k, [this, &j, &k, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+							tokenInfo.tokenContext = tokenContext;
 							updateCompletionContext(k, CompletionContext::Type);
 						});
 					}
 
 					for (auto &k : j->genericParams) {
-						updateTokenInfo(k->idxNameToken, [this, &j, &compileContext](TokenInfo &tokenInfo) {
-							tokenInfo.tokenContext =
-								TokenContext(
-									{},
-									compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
-									j->genericParams,
-									j->genericParamIndices,
-									{},
-									{});
+						updateTokenInfo(k->idxNameToken, [this, &j, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+							tokenInfo.tokenContext = tokenContext;
 							tokenInfo.semanticType = SemanticType::TypeParam;
 						});
 					}
@@ -572,55 +543,27 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 				classes[i.first] = m;
 
 #if SLKC_WITH_LANGUAGE_SERVER
-				updateTokenInfo(m->idxNameToken, [this, &m, &compileContext](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext =
-						TokenContext(
-							{},
-							compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
-							m->genericParams,
-							m->genericParamIndices,
-							{},
-							{});
+				updateTokenInfo(m->idxNameToken, [this, &m, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = tokenContext;
 					tokenInfo.semanticType = SemanticType::Class;
 				});
 
-				updateTokenInfo(m->idxParentSlotLParentheseToken, [this, &m, &compileContext](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext =
-						TokenContext(
-							{},
-							compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
-							m->genericParams,
-							m->genericParamIndices,
-							{},
-							{});
+				updateTokenInfo(m->idxParentSlotLParentheseToken, [this, &m, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = tokenContext;
 					tokenInfo.completionContext = CompletionContext::Type;
 				});
 
 				if (m->parentClass)
 					updateCompletionContext(m->parentClass, CompletionContext::Type);
 
-				updateTokenInfo(m->idxImplInterfacesColonToken, [this, &m, &compileContext](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext =
-						TokenContext(
-							{},
-							compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
-							m->genericParams,
-							m->genericParamIndices,
-							{},
-							{});
+				updateTokenInfo(m->idxImplInterfacesColonToken, [this, &m, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = tokenContext;
 					tokenInfo.completionContext = CompletionContext::Type;
 				});
 
 				for (auto j : m->idxImplInterfacesSeparatorTokens) {
-					updateTokenInfo(j, [this, &m, &compileContext](TokenInfo &tokenInfo) {
-						tokenInfo.tokenContext =
-							TokenContext(
-								{},
-								compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
-								m->genericParams,
-								m->genericParamIndices,
-								{},
-								{});
+					updateTokenInfo(j, [this, &m, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+						tokenInfo.tokenContext = tokenContext;
 						tokenInfo.completionContext = CompletionContext::Type;
 					});
 				}
@@ -630,15 +573,8 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 				}
 
 				for (auto &j : m->genericParams) {
-					updateTokenInfo(j->idxNameToken, [this, &m, &compileContext](TokenInfo &tokenInfo) {
-						tokenInfo.tokenContext =
-							TokenContext(
-								{},
-								compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
-								m->genericParams,
-								m->genericParamIndices,
-								{},
-								{});
+					updateTokenInfo(j->idxNameToken, [this, &m, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+						tokenInfo.tokenContext = tokenContext;
 						tokenInfo.semanticType = SemanticType::TypeParam;
 					});
 				}
@@ -650,15 +586,8 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 				interfaces[i.first] = m;
 
 #if SLKC_WITH_LANGUAGE_SERVER
-				updateTokenInfo(m->idxNameToken, [this, &m, &compileContext](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext =
-						TokenContext(
-							{},
-							compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
-							m->genericParams,
-							m->genericParamIndices,
-							{},
-							{});
+				updateTokenInfo(m->idxNameToken, [this, &m, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = tokenContext;
 					tokenInfo.semanticType = SemanticType::Interface;
 				});
 
@@ -667,15 +596,8 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 				}
 
 				for (auto &j : m->genericParams) {
-					updateTokenInfo(j->idxNameToken, [this, &m, &compileContext](TokenInfo &tokenInfo) {
-						tokenInfo.tokenContext =
-							TokenContext(
-								{},
-								compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
-								m->genericParams,
-								m->genericParamIndices,
-								{},
-								{});
+					updateTokenInfo(j->idxNameToken, [this, &m, &compileContext, tokenContext](TokenInfo &tokenInfo) {
+						tokenInfo.tokenContext = tokenContext;
 						tokenInfo.semanticType = SemanticType::TypeParam;
 					});
 				}

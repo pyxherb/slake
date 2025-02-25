@@ -4,8 +4,9 @@ using namespace slake::slkc;
 
 void Compiler::compileBinaryOpExpr(CompileContext *compileContext, std::shared_ptr<BinaryOpExprNode> e, std::shared_ptr<TypeNameNode> lhsType, std::shared_ptr<TypeNameNode> rhsType) {
 #if SLKC_WITH_LANGUAGE_SERVER
-	updateTokenInfo(e->idxOpToken, [this, compileContext](TokenInfo &tokenInfo) {
-		tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+	std::shared_ptr<TokenContext> tokenContext = std::make_shared<TokenContext>(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+	updateTokenInfo(e->idxOpToken, [this, compileContext, tokenContext](TokenInfo &tokenInfo) {
+		tokenInfo.tokenContext = tokenContext;
 		tokenInfo.semanticType = SemanticType::Operator;
 	});
 	updateCompletionContext(e->idxOpToken, CompletionContext::Expr);

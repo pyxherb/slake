@@ -45,18 +45,18 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 
 				if (curName.hasParamTypes) {
 					switch (scopeObject->getKind()) {
-					case ObjectKind::Fn: {
-						FnObject *fnObject = ((FnObject *)scopeObject);
+						case ObjectKind::Fn: {
+							FnObject *fnObject = ((FnObject *)scopeObject);
 
-						for (auto &j : curName.paramTypes) {
-							SLAKE_RETURN_IF_EXCEPT(j.loadDeferredType(this));
+							for (auto &j : curName.paramTypes) {
+								SLAKE_RETURN_IF_EXCEPT(j.loadDeferredType(this));
+							}
+
+							objectRefOut = EntityRef::makeObjectRef(scopeObject = fnObject->getOverloading(curName.paramTypes));
+							break;
 						}
-
-						objectRefOut = EntityRef::makeObjectRef(scopeObject = fnObject->getOverloading(curName.paramTypes));
-						break;
-					}
-					default:
-						return ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this), ref);
+						default:
+							return ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this), ref);
 					}
 				}
 			} else {
@@ -69,27 +69,27 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 
 	fail:
 		switch (curObject->getKind()) {
-		case ObjectKind::Module:
-			if (!curObject->getParent())
-				return ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this), ref);
-			scopeObject = (MemberObject *)curObject->getParent();
-			break;
-		case ObjectKind::Class: {
-			ClassObject *cls = (ClassObject *)curObject;
-			if (cls->parentClass.typeId == TypeId::Instance) {
-				SLAKE_RETURN_IF_EXCEPT(cls->parentClass.loadDeferredType(this));
-				scopeObject = cls->parentClass.getCustomTypeExData();
-			} else {
-				return ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this), ref);
+			case ObjectKind::Module:
+				if (!curObject->getParent())
+					return ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this), ref);
+				scopeObject = (MemberObject *)curObject->getParent();
+				break;
+			case ObjectKind::Class: {
+				ClassObject *cls = (ClassObject *)curObject;
+				if (cls->parentClass.typeId == TypeId::Instance) {
+					SLAKE_RETURN_IF_EXCEPT(cls->parentClass.loadDeferredType(this));
+					scopeObject = cls->parentClass.getCustomTypeExData();
+				} else {
+					return ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this), ref);
+				}
+				break;
 			}
-			break;
-		}
-		case ObjectKind::Instance: {
-			scopeObject = ((InstanceObject *)curObject)->_class;
-			break;
-		}
-		default:
-			return ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this), ref);
+			case ObjectKind::Instance: {
+				scopeObject = ((InstanceObject *)curObject)->_class;
+				break;
+			}
+			default:
+				return ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this), ref);
 		}
 	}
 
@@ -131,9 +131,9 @@ SLAKE_API std::string Runtime::getFullName(const IdRefObject *v) const {
 SLAKE_API bool Runtime::getFullRef(peff::Alloc *allocator, const MemberObject *v, peff::DynArray<IdRefEntry> &idRefOut) const {
 	do {
 		switch (v->getKind()) {
-		case ObjectKind::Instance:
-			v = (const MemberObject *)((InstanceObject *)v)->_class;
-			break;
+			case ObjectKind::Instance:
+				v = (const MemberObject *)((InstanceObject *)v)->_class;
+				break;
 		}
 
 		const char *name = v->getName();

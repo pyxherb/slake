@@ -99,100 +99,100 @@ int main(int argc, char **argv) {
 		}
 
 		switch (action) {
-		case AppAction::Compile: {
-			if (!srcPath.length()) {
-				fputs("Error: Missing input file\n", stderr);
-				return EINVAL;
-			}
-
-			if (!outPath.length()) {
-				auto i = srcPath.find_last_of('.');
-				if (i == srcPath.npos) {
-					outPath = srcPath + ".slx";
-				} else {
-					outPath = srcPath.substr(0, i) + ".slx";
-				}
-			}
-
-			std::ifstream is;
-			std::ofstream os;
-
-			is.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
-			os.exceptions(std::ios::failbit | std::ios::badbit);
-
-			is.open(srcPath, std::ios::binary);
-			os.open(outPath, std::ios::binary);
-
-			std::unique_ptr<Compiler> compiler = std::make_unique<Compiler>();
-			compiler->modulePaths = modulePaths;
-
-			// Insert a new corresponding source document.
-			compiler->addDoc(srcPath);
-			compiler->curDocName = srcPath;
-			compiler->mainDocName = srcPath;
-
-			try {
-				compiler->compile(is, os);
-			} catch (FatalCompilationError e) {
-				std::cerr << "Error at " << std::to_string(e.message.sourceLocation) << ": " << e.message.msg << std::endl;
-				return -1;
-			}
-
-			bool foundErrors = false;
-			for (auto &i : compiler->sourceDocs.at(compiler->mainDocName)->messages) {
-				const char *msgType = "<Unknown Message Type>";
-				switch (i.type) {
-				case MessageType::Info:
-					msgType = "Info";
-					break;
-				case MessageType::Note:
-					msgType = "Note";
-					break;
-				case MessageType::Warn:
-					msgType = "Warn";
-					break;
-				case MessageType::Error:
-					foundErrors = true;
-					msgType = "error";
-					break;
+			case AppAction::Compile: {
+				if (!srcPath.length()) {
+					fputs("Error: Missing input file\n", stderr);
+					return EINVAL;
 				}
 
-				std::cout << msgType << " at " << std::to_string(i.sourceLocation) << ": " << i.msg << std::endl;
+				if (!outPath.length()) {
+					auto i = srcPath.find_last_of('.');
+					if (i == srcPath.npos) {
+						outPath = srcPath + ".slx";
+					} else {
+						outPath = srcPath.substr(0, i) + ".slx";
+					}
+				}
+
+				std::ifstream is;
+				std::ofstream os;
+
+				is.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
+				os.exceptions(std::ios::failbit | std::ios::badbit);
+
+				is.open(srcPath, std::ios::binary);
+				os.open(outPath, std::ios::binary);
+
+				std::unique_ptr<Compiler> compiler = std::make_unique<Compiler>();
+				compiler->modulePaths = modulePaths;
+
+				// Insert a new corresponding source document.
+				compiler->addDoc(srcPath);
+				compiler->curDocName = srcPath;
+				compiler->mainDocName = srcPath;
+
+				try {
+					compiler->compile(is, os);
+				} catch (FatalCompilationError e) {
+					std::cerr << "Error at " << std::to_string(e.message.sourceLocation) << ": " << e.message.msg << std::endl;
+					return -1;
+				}
+
+				bool foundErrors = false;
+				for (auto &i : compiler->sourceDocs.at(compiler->mainDocName)->messages) {
+					const char *msgType = "<Unknown Message Type>";
+					switch (i.type) {
+						case MessageType::Info:
+							msgType = "Info";
+							break;
+						case MessageType::Note:
+							msgType = "Note";
+							break;
+						case MessageType::Warn:
+							msgType = "Warn";
+							break;
+						case MessageType::Error:
+							foundErrors = true;
+							msgType = "error";
+							break;
+					}
+
+					std::cout << msgType << " at " << std::to_string(i.sourceLocation) << ": " << i.msg << std::endl;
+				}
+
+				is.close();
+				os.close();
+
+				if (foundErrors)
+					return -1;
+				break;
 			}
+			case AppAction::Dump: {
+				std::ifstream fs(srcPath, std::ios::binary);
 
-			is.close();
-			os.close();
+				slake::decompiler::decompile(fs, std::cout);
 
-			if (foundErrors)
-				return -1;
-			break;
-		}
-		case AppAction::Dump: {
-			std::ifstream fs(srcPath, std::ios::binary);
-
-			slake::decompiler::decompile(fs, std::cout);
-
-			fs.close();
-			break;
-		}
-		case AppAction::LanguageServer:
+				fs.close();
+				break;
+			}
+			case AppAction::LanguageServer:
 #if SLKC_WITH_LANGUAGE_SERVER
-		{
-			printf("Language server started on local port %hu\n", lspServerPort);
+			{
+				printf("Language server started on local port %hu\n", lspServerPort);
 
-			slake::slkc::Server server;
-			server.modulePaths = modulePaths;
+				slake::slkc::Server server;
+				server.modulePaths = modulePaths;
 
-			server.start(lspServerPort);
+				server.start(lspServerPort);
 
-			break;
-		}
+				break;
+			}
 #else
-			fputs("This version of SLKC is not compiled with language server support", stderr);
-			break;
+				fputs("This version of SLKC is not compiled with language server support", stderr);
+				break;
 #endif
-		default:
-			assert(false);
+			default:
+				assert(false);
 		}
 	} catch (std::bad_alloc) {
 		perror("Out of memory");

@@ -122,12 +122,12 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFn
 			if (auto &output = otherCurIns.output; output.valueType == ValueType::EntityRef) {
 				const EntityRef &entityRef = output.getEntityRef();
 				switch (entityRef.kind) {
-				case ObjectRefKind::ObjectRef:
-					if (entityRef.asObject.instanceObject)
-						curIns.output = EntityRef::makeObjectRef(entityRef.asObject.instanceObject->duplicate());
-					break;
-				default:
-					curIns.output = output;
+					case ObjectRefKind::ObjectRef:
+						if (entityRef.asObject.instanceObject)
+							curIns.output = EntityRef::makeObjectRef(entityRef.asObject.instanceObject->duplicate());
+						break;
+					default:
+						curIns.output = output;
 				}
 			} else
 				curIns.output = output;
@@ -139,14 +139,14 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFn
 				if (operand.valueType == ValueType::EntityRef) {
 					const EntityRef &entityRef = operand.getEntityRef();
 					switch (entityRef.kind) {
-					case ObjectRefKind::ObjectRef:
-						if (entityRef.asObject.instanceObject)
-							curIns.operands[j] = EntityRef::makeObjectRef(entityRef.asObject.instanceObject->duplicate());
-						else
+						case ObjectRefKind::ObjectRef:
+							if (entityRef.asObject.instanceObject)
+								curIns.operands[j] = EntityRef::makeObjectRef(entityRef.asObject.instanceObject->duplicate());
+							else
+								curIns.operands[j] = operand;
+							break;
+						default:
 							curIns.operands[j] = operand;
-						break;
-					default:
-						curIns.operands[j] = operand;
 					}
 				} else
 					curIns.operands[j] = operand;

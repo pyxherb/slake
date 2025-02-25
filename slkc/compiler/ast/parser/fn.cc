@@ -88,13 +88,13 @@ std::shared_ptr<FnOverloadingNode> Parser::parseFnDecl(std::string &nameOut) {
 
 	Token *nameToken = lexer->peekToken();
 	switch (nameToken->tokenId) {
-	case TokenId::Id:
-	case TokenId::NewKeyword:
-	case TokenId::DeleteKeyword:
-		lexer->nextToken();
-		break;
-	default:
-		throw SyntaxError("Expecting an identifier", { curDoc, lexer->getTokenIndex(nameToken) });
+		case TokenId::Id:
+		case TokenId::NewKeyword:
+		case TokenId::DeleteKeyword:
+			lexer->nextToken();
+			break;
+		default:
+			throw SyntaxError("Expecting an identifier", { curDoc, lexer->getTokenIndex(nameToken) });
 	}
 	nameOut = nameToken->text;
 	overloading->tokenRange.endIndex = lexer->getTokenIndex(nameToken);
@@ -202,47 +202,47 @@ std::shared_ptr<FnOverloadingNode> Parser::parseOperatorDecl(std::string &nameOu
 	Token *nameToken = lexer->nextToken();
 	std::string name;
 	switch (nameToken->tokenId) {
-	case TokenId::AddOp:
-	case TokenId::SubOp:
-	case TokenId::MulOp:
-	case TokenId::DivOp:
-	case TokenId::ModOp:
-	case TokenId::AndOp:
-	case TokenId::OrOp:
-	case TokenId::XorOp:
-	case TokenId::LAndOp:
-	case TokenId::LOrOp:
-	case TokenId::NotOp:
-	case TokenId::LNotOp:
-	case TokenId::AddAssignOp:
-	case TokenId::SubAssignOp:
-	case TokenId::MulAssignOp:
-	case TokenId::DivAssignOp:
-	case TokenId::ModAssignOp:
-	case TokenId::AndAssignOp:
-	case TokenId::OrAssignOp:
-	case TokenId::XorAssignOp:
-	case TokenId::EqOp:
-	case TokenId::NeqOp:
-	case TokenId::GtOp:
-	case TokenId::LtOp:
-	case TokenId::GtEqOp:
-	case TokenId::LtEqOp:
-	case TokenId::CmpOp:
-	case TokenId::NewKeyword:
-	case TokenId::DeleteKeyword:
-		name = "operator" + nameToken->text;
-		break;
-	case TokenId::LBracket:
-		name = "operator[]";
-		expectToken(TokenId::RBracket);
-		break;
-	case TokenId::LParenthese:
-		name = "operator()";
-		expectToken(TokenId::RParenthese);
-		break;
-	default:
-		throw SyntaxError("Unrecognized operator name", { curDoc, lexer->getTokenIndex(nameToken) });
+		case TokenId::AddOp:
+		case TokenId::SubOp:
+		case TokenId::MulOp:
+		case TokenId::DivOp:
+		case TokenId::ModOp:
+		case TokenId::AndOp:
+		case TokenId::OrOp:
+		case TokenId::XorOp:
+		case TokenId::LAndOp:
+		case TokenId::LOrOp:
+		case TokenId::NotOp:
+		case TokenId::LNotOp:
+		case TokenId::AddAssignOp:
+		case TokenId::SubAssignOp:
+		case TokenId::MulAssignOp:
+		case TokenId::DivAssignOp:
+		case TokenId::ModAssignOp:
+		case TokenId::AndAssignOp:
+		case TokenId::OrAssignOp:
+		case TokenId::XorAssignOp:
+		case TokenId::EqOp:
+		case TokenId::NeqOp:
+		case TokenId::GtOp:
+		case TokenId::LtOp:
+		case TokenId::GtEqOp:
+		case TokenId::LtEqOp:
+		case TokenId::CmpOp:
+		case TokenId::NewKeyword:
+		case TokenId::DeleteKeyword:
+			name = "operator" + nameToken->text;
+			break;
+		case TokenId::LBracket:
+			name = "operator[]";
+			expectToken(TokenId::RBracket);
+			break;
+		case TokenId::LParenthese:
+			name = "operator()";
+			expectToken(TokenId::RParenthese);
+			break;
+		default:
+			throw SyntaxError("Unrecognized operator name", { curDoc, lexer->getTokenIndex(nameToken) });
 	}
 
 	nameOut = name;

@@ -51,56 +51,56 @@ SLAKE_API GenericParam *slake::getGenericParam(Object *object, const std::string
 		size_t idxGenericParam;
 
 		switch (object->getKind()) {
-		case ObjectKind::Class: {
-			ClassObject *classObject = (ClassObject *)object;
-			idxGenericParam = getGenericParamIndex(classObject->genericParams, name);
-			if (idxGenericParam != SIZE_MAX) {
-				if (ownerOut)
-					*ownerOut = object;
-				return &classObject->genericParams.at(idxGenericParam);
+			case ObjectKind::Class: {
+				ClassObject *classObject = (ClassObject *)object;
+				idxGenericParam = getGenericParamIndex(classObject->genericParams, name);
+				if (idxGenericParam != SIZE_MAX) {
+					if (ownerOut)
+						*ownerOut = object;
+					return &classObject->genericParams.at(idxGenericParam);
+				}
+
+				if (!classObject->parent)
+					return nullptr;
+
+				object = classObject->parent;
+
+				break;
 			}
+			case ObjectKind::Interface: {
+				InterfaceObject *interfaceObject = (InterfaceObject *)object;
+				idxGenericParam = getGenericParamIndex(interfaceObject->genericParams, name);
+				if (idxGenericParam != SIZE_MAX) {
+					if (ownerOut)
+						*ownerOut = object;
+					return &interfaceObject->genericParams.at(idxGenericParam);
+				}
 
-			if (!classObject->parent)
-				return nullptr;
+				if (!interfaceObject->parent)
+					return nullptr;
 
-			object = classObject->parent;
+				object = interfaceObject->parent;
 
-			break;
-		}
-		case ObjectKind::Interface: {
-			InterfaceObject *interfaceObject = (InterfaceObject *)object;
-			idxGenericParam = getGenericParamIndex(interfaceObject->genericParams, name);
-			if (idxGenericParam != SIZE_MAX) {
-				if (ownerOut)
-					*ownerOut = object;
-				return &interfaceObject->genericParams.at(idxGenericParam);
+				break;
 			}
+			case ObjectKind::FnOverloading: {
+				FnOverloadingObject *fnOverloadingObject = (FnOverloadingObject *)object;
+				idxGenericParam = getGenericParamIndex(fnOverloadingObject->genericParams, name);
+				if (idxGenericParam != SIZE_MAX) {
+					if (ownerOut)
+						*ownerOut = object;
+					return &fnOverloadingObject->genericParams.at(idxGenericParam);
+				}
 
-			if (!interfaceObject->parent)
-				return nullptr;
+				if (!fnOverloadingObject->fnObject->parent)
+					return nullptr;
 
-			object = interfaceObject->parent;
+				object = fnOverloadingObject->fnObject->parent;
 
-			break;
-		}
-		case ObjectKind::FnOverloading: {
-			FnOverloadingObject *fnOverloadingObject = (FnOverloadingObject *)object;
-			idxGenericParam = getGenericParamIndex(fnOverloadingObject->genericParams, name);
-			if (idxGenericParam != SIZE_MAX) {
-				if (ownerOut)
-					*ownerOut = object;
-				return &fnOverloadingObject->genericParams.at(idxGenericParam);
+				break;
 			}
-
-			if (!fnOverloadingObject->fnObject->parent)
+			default:
 				return nullptr;
-
-			object = fnOverloadingObject->fnObject->parent;
-
-			break;
-		}
-		default:
-			return nullptr;
 		}
 	}
 }

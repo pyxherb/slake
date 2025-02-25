@@ -4,62 +4,62 @@ using namespace slake::slkc;
 
 std::shared_ptr<Scope> Compiler::scopeOf(CompileContext *compileContext, AstNode *node) {
 	switch (node->getNodeType()) {
-	case NodeType::Class:
-		return ((ClassNode *)node)->scope;
-	case NodeType::Interface:
-		return ((InterfaceNode *)node)->scope;
-	case NodeType::Module:
-		return ((ModuleNode *)node)->scope;
-	case NodeType::TypeName: {
-		auto t = ((TypeNameNode *)node);
-		if (t->getTypeId() == TypeId::Custom)
-			return scopeOf(compileContext, resolveCustomTypeName(compileContext, (CustomTypeNameNode *)t).get());
-		return {};
-	}
-	case NodeType::Alias: {
-		IdRefResolvedParts resolvedParts;
-		bool isStatic;
-
-		if (!resolveIdRefWithScope(compileContext, ((AliasNode *)node)->scope, ((AliasNode *)node)->target, isStatic, resolvedParts))
+		case NodeType::Class:
+			return ((ClassNode *)node)->scope;
+		case NodeType::Interface:
+			return ((InterfaceNode *)node)->scope;
+		case NodeType::Module:
+			return ((ModuleNode *)node)->scope;
+		case NodeType::TypeName: {
+			auto t = ((TypeNameNode *)node);
+			if (t->getTypeId() == TypeId::Custom)
+				return scopeOf(compileContext, resolveCustomTypeName(compileContext, (CustomTypeNameNode *)t).get());
 			return {};
-		return scopeOf(compileContext, resolvedParts.back().second.get());
-	}
-	case NodeType::Var: {
-		auto n = (VarNode *)node;
-		if (n->type) {
-			if (n->type->getTypeId() == TypeId::Custom)
-				return scopeOf(compileContext, resolveCustomTypeName(compileContext, (CustomTypeNameNode *)n->type.get()).get());
 		}
-		return {};
-	}
-	case NodeType::GenericParam: {
-		auto n = (GenericParamNode *)node;
+		case NodeType::Alias: {
+			IdRefResolvedParts resolvedParts;
+			bool isStatic;
 
-		if (!n->cachedMergedScope.expired())
-			return n->cachedMergedScope.lock();
-
-		std::shared_ptr<Scope> newScope = std::make_shared<Scope>();
-
-		if (n->baseType) {
-			auto baseTypeScope = scopeOf(compileContext, n->baseType.get());
-
-			if (baseTypeScope)
-				newScope = mergeScope(compileContext, newScope.get(), baseTypeScope.get());
+			if (!resolveIdRefWithScope(compileContext, ((AliasNode *)node)->scope, ((AliasNode *)node)->target, isStatic, resolvedParts))
+				return {};
+			return scopeOf(compileContext, resolvedParts.back().second.get());
 		}
-
-		for (auto i : n->interfaceTypes) {
-			auto interfaceTypeScope = scopeOf(compileContext, i.get());
-
-			if (interfaceTypeScope)
-				newScope = mergeScope(compileContext, newScope.get(), interfaceTypeScope.get());
+		case NodeType::Var: {
+			auto n = (VarNode *)node;
+			if (n->type) {
+				if (n->type->getTypeId() == TypeId::Custom)
+					return scopeOf(compileContext, resolveCustomTypeName(compileContext, (CustomTypeNameNode *)n->type.get()).get());
+			}
+			return {};
 		}
+		case NodeType::GenericParam: {
+			auto n = (GenericParamNode *)node;
 
-		n->cachedMergedScope = newScope;
+			if (!n->cachedMergedScope.expired())
+				return n->cachedMergedScope.lock();
 
-		return newScope;
-	}
-	default:
-		return {};
+			std::shared_ptr<Scope> newScope = std::make_shared<Scope>();
+
+			if (n->baseType) {
+				auto baseTypeScope = scopeOf(compileContext, n->baseType.get());
+
+				if (baseTypeScope)
+					newScope = mergeScope(compileContext, newScope.get(), baseTypeScope.get());
+			}
+
+			for (auto i : n->interfaceTypes) {
+				auto interfaceTypeScope = scopeOf(compileContext, i.get());
+
+				if (interfaceTypeScope)
+					newScope = mergeScope(compileContext, newScope.get(), interfaceTypeScope.get());
+			}
+
+			n->cachedMergedScope = newScope;
+
+			return newScope;
+		}
+		default:
+			return {};
 	}
 }
 
@@ -89,22 +89,22 @@ std::shared_ptr<Scope> slake::slkc::Compiler::mergeScope(CompileContext *compile
 				continue;
 
 			switch (i.second->getNodeType()) {
-			case NodeType::Fn: {
-				auto fnNew = std::static_pointer_cast<FnNode>(newScope->members.at(i.first)),
-					 fnB = std::static_pointer_cast<FnNode>(i.second);
+				case NodeType::Fn: {
+					auto fnNew = std::static_pointer_cast<FnNode>(newScope->members.at(i.first)),
+						 fnB = std::static_pointer_cast<FnNode>(i.second);
 
-				// Check if the overloading registry is duplicated.
-				for (auto &j : fnB->overloadingRegistries) {
-					for (auto &k : fnNew->overloadingRegistries) {
-						if (isFnOverloadingDuplicated(compileContext, j, k))
-							goto fnOverloadingDuplicated;
+					// Check if the overloading registry is duplicated.
+					for (auto &j : fnB->overloadingRegistries) {
+						for (auto &k : fnNew->overloadingRegistries) {
+							if (isFnOverloadingDuplicated(compileContext, j, k))
+								goto fnOverloadingDuplicated;
+						}
+
+						fnNew->overloadingRegistries.push_back(j);
+					fnOverloadingDuplicated:;
 					}
-
-					fnNew->overloadingRegistries.push_back(j);
-				fnOverloadingDuplicated:;
 				}
-			}
-			default:;
+				default:;
 			}
 		} else
 			newScope->members[i.first] = i.second;

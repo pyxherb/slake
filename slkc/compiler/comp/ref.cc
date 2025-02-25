@@ -213,72 +213,72 @@ bool Compiler::_resolveIdRef(CompileContext *compileContext, Scope *scope, std::
 				tokenInfo.semanticInfo.correspondingMember = m;
 
 			switch (m->getNodeType()) {
-			case NodeType::Class:
-				tokenInfo.semanticType = SemanticType::Class;
-				break;
-			case NodeType::Interface:
-				tokenInfo.semanticType = SemanticType::Interface;
-				break;
-			case NodeType::Var:
-				tokenInfo.semanticType = resolveContext.isTopLevel ? SemanticType::Var : SemanticType::Property;
-				break;
-			case NodeType::Fn:
-				tokenInfo.semanticType = resolveContext.isTopLevel ? SemanticType::Fn : SemanticType::Method;
-				break;
-			default:;
+				case NodeType::Class:
+					tokenInfo.semanticType = SemanticType::Class;
+					break;
+				case NodeType::Interface:
+					tokenInfo.semanticType = SemanticType::Interface;
+					break;
+				case NodeType::Var:
+					tokenInfo.semanticType = resolveContext.isTopLevel ? SemanticType::Var : SemanticType::Property;
+					break;
+				case NodeType::Fn:
+					tokenInfo.semanticType = resolveContext.isTopLevel ? SemanticType::Fn : SemanticType::Method;
+					break;
+				default:;
 			}
 		});
 #endif
 
 		switch (m->getNodeType()) {
-		case NodeType::Class:
-			if (!resolveContext.isStatic)
-				return false;
-			break;
-		case NodeType::Interface:
-			if (!resolveContext.isStatic)
-				return false;
-			break;
-		case NodeType::Var: {
-			auto member = std::static_pointer_cast<VarNode>(m);
-
-			if (!resolveContext.isStatic) {
-				if (member->access & ACCESS_STATIC) {
+			case NodeType::Class:
+				if (!resolveContext.isStatic)
 					return false;
-				}
-			} else if (resolveContext.isStatic) {
-				if (!(member->access & ACCESS_STATIC)) {
+				break;
+			case NodeType::Interface:
+				if (!resolveContext.isStatic)
 					return false;
-				}
-			}
+				break;
+			case NodeType::Var: {
+				auto member = std::static_pointer_cast<VarNode>(m);
 
-			resolveContext.isStatic = false;
-			break;
-		}
-		case NodeType::Fn: {
-			auto member = std::static_pointer_cast<FnNode>(m);
-
-			for (auto i : member->overloadingRegistries) {
-				if (resolveContext.isStatic) {
-					if (i->access & ACCESS_STATIC) {
-						goto foundReachableOverloading;
+				if (!resolveContext.isStatic) {
+					if (member->access & ACCESS_STATIC) {
+						return false;
 					}
-				} else if (!resolveContext.isStatic) {
-					if (!(i->access & ACCESS_STATIC)) {
-						goto foundReachableOverloading;
+				} else if (resolveContext.isStatic) {
+					if (!(member->access & ACCESS_STATIC)) {
+						return false;
 					}
 				}
+
+				resolveContext.isStatic = false;
+				break;
 			}
+			case NodeType::Fn: {
+				auto member = std::static_pointer_cast<FnNode>(m);
 
-			return false;
+				for (auto i : member->overloadingRegistries) {
+					if (resolveContext.isStatic) {
+						if (i->access & ACCESS_STATIC) {
+							goto foundReachableOverloading;
+						}
+					} else if (!resolveContext.isStatic) {
+						if (!(i->access & ACCESS_STATIC)) {
+							goto foundReachableOverloading;
+						}
+					}
+				}
 
-		foundReachableOverloading:
-			break;
-		}
-		case NodeType::GenericParam: {
-			break;
-		}
-		default:;
+				return false;
+
+			foundReachableOverloading:
+				break;
+			}
+			case NodeType::GenericParam: {
+				break;
+			}
+			default:;
 		}
 
 		if (curEntry.genericArgs.size()) {
@@ -301,11 +301,11 @@ bool Compiler::_resolveIdRef(CompileContext *compileContext, Scope *scope, std::
 
 			if (_resolveIdRef(compileContext, scope.get(), ref, partsOut, isStaticOut, newResolveContext)) {
 				switch (m->getNodeType()) {
-				case NodeType::Var:
-					partsOut.push_front({ std::make_shared<IdRefNode>(IdRefEntries{ curEntry }), m });
-					break;
-				default:
-					partsOut.front().first->entries.push_front(curEntry);
+					case NodeType::Var:
+						partsOut.push_front({ std::make_shared<IdRefNode>(IdRefEntries{ curEntry }), m });
+						break;
+					default:
+						partsOut.front().first->entries.push_front(curEntry);
 				}
 				return true;
 			}
@@ -349,85 +349,85 @@ bool Compiler::_resolveIdRef(CompileContext *compileContext, Scope *scope, std::
 bool slake::slkc::Compiler::_resolveIdRefWithOwner(CompileContext *compileContext, Scope *scope, std::shared_ptr<IdRefNode> ref, IdRefResolvedParts &partsOut, bool &isStaticOut, IdRefResolveContext resolveContext) {
 	if (scope->owner) {
 		switch (scope->owner->getNodeType()) {
-		case NodeType::Class: {
-			ClassNode *owner = (ClassNode *)scope->owner;
+			case NodeType::Class: {
+				ClassNode *owner = (ClassNode *)scope->owner;
 
-			// Resolve with the parent class.
-			if (owner->parentClass) {
-				if (owner->parentClass->getTypeId() == TypeId::Custom) {
-					if (_resolveIdRef(
-							compileContext,
-							scopeOf(compileContext,
-								_resolveCustomTypeName(
-									compileContext,
-									(CustomTypeNameNode *)owner->parentClass.get(),
-									resolveContext.resolvingScopes)
-									.get())
-								.get(),
-							ref, partsOut, isStaticOut, resolveContext))
-						return true;
+				// Resolve with the parent class.
+				if (owner->parentClass) {
+					if (owner->parentClass->getTypeId() == TypeId::Custom) {
+						if (_resolveIdRef(
+								compileContext,
+								scopeOf(compileContext,
+									_resolveCustomTypeName(
+										compileContext,
+										(CustomTypeNameNode *)owner->parentClass.get(),
+										resolveContext.resolvingScopes)
+										.get())
+									.get(),
+								ref, partsOut, isStaticOut, resolveContext))
+							return true;
+					}
 				}
-			}
 
-			// Resolve with the implemented interfaces.
-			for (auto i : owner->implInterfaces) {
-				if (i->getTypeId() == TypeId::Custom) {
-					if (_resolveIdRef(
-							compileContext,
-							scopeOf(compileContext,
-								_resolveCustomTypeName(
-									compileContext,
-									(CustomTypeNameNode *)i.get(),
-									resolveContext.resolvingScopes)
-									.get())
-								.get(),
-							ref, partsOut, isStaticOut, resolveContext))
-						return true;
+				// Resolve with the implemented interfaces.
+				for (auto i : owner->implInterfaces) {
+					if (i->getTypeId() == TypeId::Custom) {
+						if (_resolveIdRef(
+								compileContext,
+								scopeOf(compileContext,
+									_resolveCustomTypeName(
+										compileContext,
+										(CustomTypeNameNode *)i.get(),
+										resolveContext.resolvingScopes)
+										.get())
+									.get(),
+								ref, partsOut, isStaticOut, resolveContext))
+							return true;
+					}
 				}
+				break;
 			}
-			break;
-		}
-		case NodeType::Interface: {
-			auto owner = (InterfaceNode *)scope->owner;
+			case NodeType::Interface: {
+				auto owner = (InterfaceNode *)scope->owner;
 
-			// Resolve with the inherited interfaces.
-			for (auto i : owner->parentInterfaces) {
-				if (i->getTypeId() == TypeId::Custom) {
-					if (_resolveIdRef(
-							compileContext,
-							scopeOf(compileContext,
-								_resolveCustomTypeName(
-									compileContext,
-									(CustomTypeNameNode *)i.get(),
-									resolveContext.resolvingScopes)
-									.get())
-								.get(),
-							ref, partsOut, isStaticOut, resolveContext))
-						return true;
+				// Resolve with the inherited interfaces.
+				for (auto i : owner->parentInterfaces) {
+					if (i->getTypeId() == TypeId::Custom) {
+						if (_resolveIdRef(
+								compileContext,
+								scopeOf(compileContext,
+									_resolveCustomTypeName(
+										compileContext,
+										(CustomTypeNameNode *)i.get(),
+										resolveContext.resolvingScopes)
+										.get())
+									.get(),
+								ref, partsOut, isStaticOut, resolveContext))
+							return true;
+					}
 				}
+				break;
 			}
-			break;
-		}
-		case NodeType::Module: {
-			// Resolve with the parent module.
-			auto owner = (ModuleNode *)scope->owner;
-			if (owner->parentModule.expired())
-				return false;
+			case NodeType::Module: {
+				// Resolve with the parent module.
+				auto owner = (ModuleNode *)scope->owner;
+				if (owner->parentModule.expired())
+					return false;
 
-			if (_resolveIdRef(compileContext, owner->parentModule.lock()->scope.get(), ref, partsOut, isStaticOut, resolveContext))
-				return true;
+				if (_resolveIdRef(compileContext, owner->parentModule.lock()->scope.get(), ref, partsOut, isStaticOut, resolveContext))
+					return true;
 
-			break;
-		}
-		case NodeType::Var: {
-			auto owner = (VarNode *)scope->owner;
-			if (!owner->parent)
-				return false;
+				break;
+			}
+			case NodeType::Var: {
+				auto owner = (VarNode *)scope->owner;
+				if (!owner->parent)
+					return false;
 
-			if (_resolveIdRef(compileContext, scopeOf(compileContext, (AstNode *)owner->parent).get(), ref, partsOut, isStaticOut, resolveContext))
-				return false;
-		}
-		default:;
+				if (_resolveIdRef(compileContext, scopeOf(compileContext, (AstNode *)owner->parent).get(), ref, partsOut, isStaticOut, resolveContext))
+					return false;
+			}
+			default:;
 		}
 	}
 
@@ -453,21 +453,21 @@ void Compiler::_getFullName(MemberNode *member, IdRefEntries &ref) {
 	ref.push_front(entry);
 
 	switch (member->getNodeType()) {
-	case NodeType::FnOverloadingValue: {
-		auto m = (FnOverloadingNode *)member;
-		if (m->owner->parent == _rootNode.get())
-			return;
-		_getFullName(m->owner->parent, ref);
-		break;
-	}
-	default:
-		if ((!member->parent)) {
-			ref.push_front(IdRefEntry("<orphaned>"));
-			return;
+		case NodeType::FnOverloadingValue: {
+			auto m = (FnOverloadingNode *)member;
+			if (m->owner->parent == _rootNode.get())
+				return;
+			_getFullName(m->owner->parent, ref);
+			break;
 		}
-		if (member->parent == _rootNode.get())
-			return;
-		_getFullName(member->parent, ref);
+		default:
+			if ((!member->parent)) {
+				ref.push_front(IdRefEntry("<orphaned>"));
+				return;
+			}
+			if (member->parent == _rootNode.get())
+				return;
+			_getFullName(member->parent, ref);
 	}
 }
 

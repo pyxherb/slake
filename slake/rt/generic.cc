@@ -70,80 +70,80 @@ SLAKE_API InternalExceptionPointer slake::Runtime::instantiateModuleFields(Modul
 		SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(curFieldRecord.type, instantiationContext));
 
 		switch (curFieldRecord.type.typeId) {
-		case TypeId::I8:
-			curFieldRecord.offset = szRelocatedLocalFieldStorage;
-			szRelocatedLocalFieldStorage += sizeof(int8_t);
-			break;
-		case TypeId::I16:
-			if (szRelocatedLocalFieldStorage & 1) {
-				szRelocatedLocalFieldStorage += (2 - (szRelocatedLocalFieldStorage & 1));
-			}
-			curFieldRecord.offset = szRelocatedLocalFieldStorage;
-			szRelocatedLocalFieldStorage += sizeof(int16_t);
-			break;
-		case TypeId::I32:
-			if (szRelocatedLocalFieldStorage & 3) {
-				szRelocatedLocalFieldStorage += (4 - (szRelocatedLocalFieldStorage & 3));
-			}
-			curFieldRecord.offset = szRelocatedLocalFieldStorage;
-			szRelocatedLocalFieldStorage += sizeof(int32_t);
-			break;
-		case TypeId::I64:
-			if (szRelocatedLocalFieldStorage & 7) {
-				szRelocatedLocalFieldStorage += (8 - (szRelocatedLocalFieldStorage & 7));
-			}
-			curFieldRecord.offset = szRelocatedLocalFieldStorage;
-			szRelocatedLocalFieldStorage += sizeof(int64_t);
-			break;
-		case TypeId::U8:
-			curFieldRecord.offset = szRelocatedLocalFieldStorage;
-			szRelocatedLocalFieldStorage += sizeof(uint8_t);
-			break;
-		case TypeId::U16:
-			if (szRelocatedLocalFieldStorage & 1) {
-				szRelocatedLocalFieldStorage += (2 - (szRelocatedLocalFieldStorage & 1));
-			}
-			curFieldRecord.offset = szRelocatedLocalFieldStorage;
-			szRelocatedLocalFieldStorage += sizeof(uint16_t);
-			break;
-		case TypeId::U32:
-			if (szRelocatedLocalFieldStorage & 3) {
-				szRelocatedLocalFieldStorage += (4 - (szRelocatedLocalFieldStorage & 3));
-			}
-			curFieldRecord.offset = szRelocatedLocalFieldStorage;
-			szRelocatedLocalFieldStorage += sizeof(uint32_t);
-			break;
-		case TypeId::U64:
-			if (szRelocatedLocalFieldStorage & 7) {
-				szRelocatedLocalFieldStorage += (8 - (szRelocatedLocalFieldStorage & 7));
-			}
-			curFieldRecord.offset = szRelocatedLocalFieldStorage;
-			szRelocatedLocalFieldStorage += sizeof(uint64_t);
-			break;
-		case TypeId::Bool:
-			curFieldRecord.offset = szRelocatedLocalFieldStorage;
-			szRelocatedLocalFieldStorage += sizeof(bool);
-			break;
-		case TypeId::String:
-		case TypeId::Instance:
-			if (szRelocatedLocalFieldStorage & (sizeof(void *) - 1)) {
-				szRelocatedLocalFieldStorage += (sizeof(void *) - (szRelocatedLocalFieldStorage & (sizeof(void *) - 1)));
-			}
-			curFieldRecord.offset = szRelocatedLocalFieldStorage;
-			szRelocatedLocalFieldStorage += sizeof(void *);
-			break;
-		case TypeId::Any:
-			if (szRelocatedLocalFieldStorage % sizeof(Value)) {
-				szRelocatedLocalFieldStorage += (sizeof(Value) - (szRelocatedLocalFieldStorage % sizeof(Value)));
-			}
-			curFieldRecord.offset = szRelocatedLocalFieldStorage;
-			szRelocatedLocalFieldStorage += sizeof(Value);
-			break;
-		case TypeId::GenericArg:
-			curFieldRecord.offset = SIZE_MAX;
-			break;
-		default:
-			std::terminate();
+			case TypeId::I8:
+				curFieldRecord.offset = szRelocatedLocalFieldStorage;
+				szRelocatedLocalFieldStorage += sizeof(int8_t);
+				break;
+			case TypeId::I16:
+				if (szRelocatedLocalFieldStorage & 1) {
+					szRelocatedLocalFieldStorage += (2 - (szRelocatedLocalFieldStorage & 1));
+				}
+				curFieldRecord.offset = szRelocatedLocalFieldStorage;
+				szRelocatedLocalFieldStorage += sizeof(int16_t);
+				break;
+			case TypeId::I32:
+				if (szRelocatedLocalFieldStorage & 3) {
+					szRelocatedLocalFieldStorage += (4 - (szRelocatedLocalFieldStorage & 3));
+				}
+				curFieldRecord.offset = szRelocatedLocalFieldStorage;
+				szRelocatedLocalFieldStorage += sizeof(int32_t);
+				break;
+			case TypeId::I64:
+				if (szRelocatedLocalFieldStorage & 7) {
+					szRelocatedLocalFieldStorage += (8 - (szRelocatedLocalFieldStorage & 7));
+				}
+				curFieldRecord.offset = szRelocatedLocalFieldStorage;
+				szRelocatedLocalFieldStorage += sizeof(int64_t);
+				break;
+			case TypeId::U8:
+				curFieldRecord.offset = szRelocatedLocalFieldStorage;
+				szRelocatedLocalFieldStorage += sizeof(uint8_t);
+				break;
+			case TypeId::U16:
+				if (szRelocatedLocalFieldStorage & 1) {
+					szRelocatedLocalFieldStorage += (2 - (szRelocatedLocalFieldStorage & 1));
+				}
+				curFieldRecord.offset = szRelocatedLocalFieldStorage;
+				szRelocatedLocalFieldStorage += sizeof(uint16_t);
+				break;
+			case TypeId::U32:
+				if (szRelocatedLocalFieldStorage & 3) {
+					szRelocatedLocalFieldStorage += (4 - (szRelocatedLocalFieldStorage & 3));
+				}
+				curFieldRecord.offset = szRelocatedLocalFieldStorage;
+				szRelocatedLocalFieldStorage += sizeof(uint32_t);
+				break;
+			case TypeId::U64:
+				if (szRelocatedLocalFieldStorage & 7) {
+					szRelocatedLocalFieldStorage += (8 - (szRelocatedLocalFieldStorage & 7));
+				}
+				curFieldRecord.offset = szRelocatedLocalFieldStorage;
+				szRelocatedLocalFieldStorage += sizeof(uint64_t);
+				break;
+			case TypeId::Bool:
+				curFieldRecord.offset = szRelocatedLocalFieldStorage;
+				szRelocatedLocalFieldStorage += sizeof(bool);
+				break;
+			case TypeId::String:
+			case TypeId::Instance:
+				if (szRelocatedLocalFieldStorage & (sizeof(void *) - 1)) {
+					szRelocatedLocalFieldStorage += (sizeof(void *) - (szRelocatedLocalFieldStorage & (sizeof(void *) - 1)));
+				}
+				curFieldRecord.offset = szRelocatedLocalFieldStorage;
+				szRelocatedLocalFieldStorage += sizeof(void *);
+				break;
+			case TypeId::Any:
+				if (szRelocatedLocalFieldStorage % sizeof(Value)) {
+					szRelocatedLocalFieldStorage += (sizeof(Value) - (szRelocatedLocalFieldStorage % sizeof(Value)));
+				}
+				curFieldRecord.offset = szRelocatedLocalFieldStorage;
+				szRelocatedLocalFieldStorage += sizeof(Value);
+				break;
+			case TypeId::GenericArg:
+				curFieldRecord.offset = SIZE_MAX;
+				break;
+			default:
+				std::terminate();
 		}
 
 		if (!relocatedFieldRecords.pushBack(std::move(curFieldRecord)))
@@ -171,50 +171,50 @@ SLAKE_API InternalExceptionPointer slake::Runtime::instantiateModuleFields(Modul
 		char *rawDataPtr = mod->localFieldStorage + curFieldRecord.offset,
 			 *rawRelocatedDataPtr = localFieldStorage + curRelocatedFieldRecord.offset;
 		switch (curFieldRecord.type.typeId) {
-		case TypeId::I8:
-			*((int8_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int8_t *)rawDataPtr) : 0);
-			break;
-		case TypeId::I16:
-			*((int16_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int16_t *)rawDataPtr) : 0);
-			break;
-		case TypeId::I32:
-			*((int32_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int32_t *)rawDataPtr) : 0);
-			break;
-		case TypeId::I64:
-			*((int64_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int64_t *)rawDataPtr) : 0);
-			break;
-		case TypeId::U8:
-			*((uint8_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((uint8_t *)rawDataPtr) : 0);
-			break;
-		case TypeId::U16:
-			*((uint16_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int16_t *)rawDataPtr) : 0);
-			break;
-		case TypeId::U32:
-			*((uint32_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((uint32_t *)rawDataPtr) : 0);
-			break;
-		case TypeId::U64:
-			*((uint64_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((uint64_t *)rawDataPtr) : 0);
-			break;
-		case TypeId::F32:
-			*((float *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((float *)rawDataPtr) : 0);
-			break;
-		case TypeId::F64:
-			*((double *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((double *)rawDataPtr) : 0);
-			break;
-		case TypeId::Bool:
-			*((bool *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((bool *)rawDataPtr) : 0);
-			break;
-		case TypeId::String:
-		case TypeId::Instance:
-			*((Object **)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((Object **)rawDataPtr) : 0);
-			break;
-		case TypeId::Any:
-			*((Value *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((Value *)rawDataPtr) : 0);
-			break;
-		case TypeId::GenericArg:
-			break;
-		default:
-			throw LoaderError("Invalid variable type");
+			case TypeId::I8:
+				*((int8_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int8_t *)rawDataPtr) : 0);
+				break;
+			case TypeId::I16:
+				*((int16_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int16_t *)rawDataPtr) : 0);
+				break;
+			case TypeId::I32:
+				*((int32_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int32_t *)rawDataPtr) : 0);
+				break;
+			case TypeId::I64:
+				*((int64_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int64_t *)rawDataPtr) : 0);
+				break;
+			case TypeId::U8:
+				*((uint8_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((uint8_t *)rawDataPtr) : 0);
+				break;
+			case TypeId::U16:
+				*((uint16_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int16_t *)rawDataPtr) : 0);
+				break;
+			case TypeId::U32:
+				*((uint32_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((uint32_t *)rawDataPtr) : 0);
+				break;
+			case TypeId::U64:
+				*((uint64_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((uint64_t *)rawDataPtr) : 0);
+				break;
+			case TypeId::F32:
+				*((float *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((float *)rawDataPtr) : 0);
+				break;
+			case TypeId::F64:
+				*((double *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((double *)rawDataPtr) : 0);
+				break;
+			case TypeId::Bool:
+				*((bool *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((bool *)rawDataPtr) : 0);
+				break;
+			case TypeId::String:
+			case TypeId::Instance:
+				*((Object **)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((Object **)rawDataPtr) : 0);
+				break;
+			case TypeId::Any:
+				*((Value *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((Value *)rawDataPtr) : 0);
+				break;
+			case TypeId::GenericArg:
+				break;
+			default:
+				throw LoaderError("Invalid variable type");
 		}
 	}
 
@@ -229,97 +229,97 @@ SLAKE_API InternalExceptionPointer slake::Runtime::instantiateModuleFields(Modul
 
 SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Type &type, GenericInstantiationContext &instantiationContext) {
 	switch (type.typeId) {
-	case TypeId::Instance: {
-		if (type.isLoadingDeferred()) {
-			IdRefObject *exData = (IdRefObject *)type.getCustomTypeExData();
-			for (auto &i : exData->entries) {
-				for (auto &j : i.genericArgs) {
-					SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(j, instantiationContext));
+		case TypeId::Instance: {
+			if (type.isLoadingDeferred()) {
+				IdRefObject *exData = (IdRefObject *)type.getCustomTypeExData();
+				for (auto &i : exData->entries) {
+					for (auto &j : i.genericArgs) {
+						SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(j, instantiationContext));
+					}
 				}
+			} else {
+				peff::DynArray<IdRefEntry> idRefToResolvedType(&globalHeapPoolAlloc);
+
+				if (!getFullRef(&globalHeapPoolAlloc, (MemberObject *)type.getCustomTypeExData(), idRefToResolvedType))
+					return OutOfMemoryError::alloc();
+
+				HostObjectRef<IdRefObject> idRefObject = IdRefObject::alloc((Runtime *)this);
+
+				// TODO: If we use std::pmr version for getFullRef, remove these code and use following code:
+				// idRefObject->entries = idRefToResolvedType;
+				idRefObject->entries.resizeWith(idRefToResolvedType.size(), IdRefEntry(&globalHeapPoolAlloc));
+				for (size_t i = 0; i < idRefToResolvedType.size(); ++i) {
+					if (!peff::copyAssign(idRefObject->entries.at(i), idRefToResolvedType.at(i))) {
+						return OutOfMemoryError::alloc();
+					}
+				}
+
+				// TODO: Add HostRefHolder for idRefObject.
+				type = Type(type.typeId, idRefObject.get());
+
+				SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(type, instantiationContext));
 			}
-		} else {
-			peff::DynArray<IdRefEntry> idRefToResolvedType(&globalHeapPoolAlloc);
-
-			if (!getFullRef(&globalHeapPoolAlloc, (MemberObject *)type.getCustomTypeExData(), idRefToResolvedType))
+			break;
+		}
+		case TypeId::Array: {
+			bool isSucceeded;
+			type = type.duplicate(isSucceeded);
+			if (!isSucceeded)
 				return OutOfMemoryError::alloc();
-
-			HostObjectRef<IdRefObject> idRefObject = IdRefObject::alloc((Runtime *)this);
-
-			// TODO: If we use std::pmr version for getFullRef, remove these code and use following code:
-			// idRefObject->entries = idRefToResolvedType;
-			idRefObject->entries.resizeWith(idRefToResolvedType.size(), IdRefEntry(&globalHeapPoolAlloc));
-			for (size_t i = 0; i < idRefToResolvedType.size(); ++i) {
-				if (!peff::copyAssign(idRefObject->entries.at(i), idRefToResolvedType.at(i))) {
+			SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(type.getArrayExData(), instantiationContext));
+			break;
+		}
+		case TypeId::Ref: {
+			bool isSucceeded;
+			type = type.duplicate(isSucceeded);
+			if (!isSucceeded)
+				return OutOfMemoryError::alloc();
+			SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(type.getRefExData(), instantiationContext));
+			break;
+		}
+		case TypeId::GenericArg: {
+			HostObjectRef<StringObject> nameObject = (StringObject *)type.getCustomTypeExData();
+			if (auto it = instantiationContext.mappedGenericArgs.find(nameObject->data); it != instantiationContext.mappedGenericArgs.end()) {
+				if (it.value().typeId != TypeId::None)
+					type = it.value();
+			} else {
+				peff::String paramName(&globalHeapPoolAlloc);
+				if (!peff::copyAssign(paramName, nameObject->data)) {
 					return OutOfMemoryError::alloc();
 				}
+
+				SLAKE_RETURN_IF_EXCEPT(GenericParameterNotFoundError::alloc(
+					const_cast<Runtime *>(this),
+					std::move(paramName)));
 			}
-
-			// TODO: Add HostRefHolder for idRefObject.
-			type = Type(type.typeId, idRefObject.get());
-
-			SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(type, instantiationContext));
 		}
-		break;
-	}
-	case TypeId::Array: {
-		bool isSucceeded;
-		type = type.duplicate(isSucceeded);
-		if (!isSucceeded)
-			return OutOfMemoryError::alloc();
-		SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(type.getArrayExData(), instantiationContext));
-		break;
-	}
-	case TypeId::Ref: {
-		bool isSucceeded;
-		type = type.duplicate(isSucceeded);
-		if (!isSucceeded)
-			return OutOfMemoryError::alloc();
-		SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(type.getRefExData(), instantiationContext));
-		break;
-	}
-	case TypeId::GenericArg: {
-		HostObjectRef<StringObject> nameObject = (StringObject *)type.getCustomTypeExData();
-		if (auto it = instantiationContext.mappedGenericArgs.find(nameObject->data); it != instantiationContext.mappedGenericArgs.end()) {
-			if (it.value().typeId != TypeId::None)
-				type = it.value();
-		} else {
-			peff::String paramName(&globalHeapPoolAlloc);
-			if (!peff::copyAssign(paramName, nameObject->data)) {
-				return OutOfMemoryError::alloc();
-			}
-
-			SLAKE_RETURN_IF_EXCEPT(GenericParameterNotFoundError::alloc(
-				const_cast<Runtime *>(this),
-				std::move(paramName)));
-		}
-	}
 	}
 	return {};
 }
 
 SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Value &value, GenericInstantiationContext &instantiationContext) {
 	switch (value.valueType) {
-	case ValueType::I8:
-	case ValueType::I16:
-	case ValueType::I32:
-	case ValueType::I64:
-	case ValueType::U8:
-	case ValueType::U16:
-	case ValueType::U32:
-	case ValueType::U64:
-	case ValueType::F32:
-	case ValueType::F64:
-	case ValueType::Bool:
-	case ValueType::EntityRef:
-	case ValueType::RegRef:
-		break;
-	case ValueType::TypeName:
-		SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(value.getTypeName(), instantiationContext));
-		break;
-	case ValueType::Undefined:
-		break;
-	default:
-		throw std::logic_error("Unhandled value type");
+		case ValueType::I8:
+		case ValueType::I16:
+		case ValueType::I32:
+		case ValueType::I64:
+		case ValueType::U8:
+		case ValueType::U16:
+		case ValueType::U32:
+		case ValueType::U64:
+		case ValueType::F32:
+		case ValueType::F64:
+		case ValueType::Bool:
+		case ValueType::EntityRef:
+		case ValueType::RegRef:
+			break;
+		case ValueType::TypeName:
+			SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(value.getTypeName(), instantiationContext));
+			break;
+		case ValueType::Undefined:
+			break;
+		default:
+			throw std::logic_error("Unhandled value type");
 	}
 	return {};
 }
@@ -329,135 +329,135 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Obj
 	// Duplicate the value, scan for references to generic parameters and
 	// replace them with generic arguments.
 	switch (v->getKind()) {
-	case ObjectKind::Class: {
-		ClassObject *const value = (ClassObject *)v;
+		case ObjectKind::Class: {
+			ClassObject *const value = (ClassObject *)v;
 
-		if (value->genericParams.size() && value != instantiationContext.mappedObject) {
-			peff::HashMap<peff::String, Type> copiedMappedGenericArgs(&globalHeapPoolAlloc);
+			if (value->genericParams.size() && value != instantiationContext.mappedObject) {
+				peff::HashMap<peff::String, Type> copiedMappedGenericArgs(&globalHeapPoolAlloc);
 
-			if (!peff::copyAssign(copiedMappedGenericArgs, instantiationContext.mappedGenericArgs))
+				if (!peff::copyAssign(copiedMappedGenericArgs, instantiationContext.mappedGenericArgs))
+					return OutOfMemoryError::alloc();
+
+				GenericInstantiationContext newInstantiationContext = {
+					instantiationContext.mappedObject,
+					instantiationContext.genericArgs,
+					std::move(copiedMappedGenericArgs)
+				};
+
+				// Map irreplaceable parameters to corresponding generic parameter reference type
+				// and thus the generic types will keep unchanged.
+				for (size_t i = 0; i < value->genericParams.size(); ++i) {
+					peff::String copiedName(&globalHeapPoolAlloc);
+					if (!peff::copyAssign(copiedName, value->genericParams.at(i).name))
+						return OutOfMemoryError::alloc();
+					newInstantiationContext.mappedGenericArgs.insert(std::move(copiedName), TypeId::None);
+				}
+
+				SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(value->parentClass, newInstantiationContext));
+
+				for (auto it = value->scope->members.begin(); it != value->scope->members.end(); ++it) {
+					SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(it.value(), newInstantiationContext));
+				}
+
+				SLAKE_RETURN_IF_EXCEPT(instantiateModuleFields(value, newInstantiationContext));
+			} else {
+				if (value == instantiationContext.mappedObject) {
+					if (!peff::copyAssign(value->genericArgs, *instantiationContext.genericArgs))
+						return OutOfMemoryError::alloc();
+					if (!peff::copyAssign(value->mappedGenericArgs, instantiationContext.mappedGenericArgs))
+						return OutOfMemoryError::alloc();
+				}
+
+				SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(value->parentClass, instantiationContext));
+
+				for (auto it = value->scope->members.begin(); it != value->scope->members.end(); ++it) {
+					SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(it.value(), instantiationContext));
+				}
+
+				SLAKE_RETURN_IF_EXCEPT(instantiateModuleFields(value, instantiationContext));
+			}
+
+			break;
+		}
+		case ObjectKind::Interface: {
+			InterfaceObject *const value = (InterfaceObject *)v;
+
+			if (!peff::copyAssign(value->genericArgs, *instantiationContext.genericArgs))
 				return OutOfMemoryError::alloc();
-
-			GenericInstantiationContext newInstantiationContext = {
-				instantiationContext.mappedObject,
-				instantiationContext.genericArgs,
-				std::move(copiedMappedGenericArgs)
-			};
-
-			// Map irreplaceable parameters to corresponding generic parameter reference type
-			// and thus the generic types will keep unchanged.
-			for (size_t i = 0; i < value->genericParams.size(); ++i) {
-				peff::String copiedName(&globalHeapPoolAlloc);
-				if (!peff::copyAssign(copiedName, value->genericParams.at(i).name))
-					return OutOfMemoryError::alloc();
-				newInstantiationContext.mappedGenericArgs.insert(std::move(copiedName), TypeId::None);
-			}
-
-			SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(value->parentClass, newInstantiationContext));
-
-			for (auto it = value->scope->members.begin(); it != value->scope->members.end(); ++it) {
-				SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(it.value(), newInstantiationContext));
-			}
-
-			SLAKE_RETURN_IF_EXCEPT(instantiateModuleFields(value, newInstantiationContext));
-		} else {
-			if (value == instantiationContext.mappedObject) {
-				if (!peff::copyAssign(value->genericArgs, *instantiationContext.genericArgs))
-					return OutOfMemoryError::alloc();
-				if (!peff::copyAssign(value->mappedGenericArgs, instantiationContext.mappedGenericArgs))
-					return OutOfMemoryError::alloc();
-			}
-
-			SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(value->parentClass, instantiationContext));
+			if (!peff::copyAssign(value->mappedGenericArgs, instantiationContext.mappedGenericArgs))
+				return OutOfMemoryError::alloc();
 
 			for (auto it = value->scope->members.begin(); it != value->scope->members.end(); ++it) {
 				SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(it.value(), instantiationContext));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT(instantiateModuleFields(value, instantiationContext));
+
+			break;
 		}
+		case ObjectKind::Module: {
+			ModuleObject *value = (ModuleObject *)v;
 
-		break;
-	}
-	case ObjectKind::Interface: {
-		InterfaceObject *const value = (InterfaceObject *)v;
+			for (auto it = value->scope->members.begin(); it != value->scope->members.end(); ++it) {
+				SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(it.value(), instantiationContext));
+			}
 
-		if (!peff::copyAssign(value->genericArgs, *instantiationContext.genericArgs))
-			return OutOfMemoryError::alloc();
-		if (!peff::copyAssign(value->mappedGenericArgs, instantiationContext.mappedGenericArgs))
-			return OutOfMemoryError::alloc();
-
-		for (auto it = value->scope->members.begin(); it != value->scope->members.end(); ++it) {
-			SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(it.value(), instantiationContext));
+			SLAKE_RETURN_IF_EXCEPT(instantiateModuleFields(value, instantiationContext));
+			break;
 		}
+		case ObjectKind::Fn: {
+			FnObject *value = (FnObject *)v;
 
-		SLAKE_RETURN_IF_EXCEPT(instantiateModuleFields(value, instantiationContext));
+			if (instantiationContext.mappedObject == value) {
+				FnOverloadingObject *matchedOverloading = nullptr, *matchedSpecializedOverloading = nullptr;
 
-		break;
-	}
-	case ObjectKind::Module: {
-		ModuleObject *value = (ModuleObject *)v;
-
-		for (auto it = value->scope->members.begin(); it != value->scope->members.end(); ++it) {
-			SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(it.value(), instantiationContext));
-		}
-
-		SLAKE_RETURN_IF_EXCEPT(instantiateModuleFields(value, instantiationContext));
-		break;
-	}
-	case ObjectKind::Fn: {
-		FnObject *value = (FnObject *)v;
-
-		if (instantiationContext.mappedObject == value) {
-			FnOverloadingObject *matchedOverloading = nullptr, *matchedSpecializedOverloading = nullptr;
-
-			for (auto i : value->overloadings) {
-				if (i->genericParams.size() != instantiationContext.genericArgs->size()) {
-					continue;
-				}
-
-				assert(instantiationContext.genericArgs->size() == i->specializationArgs.size());
-
-				if (i->specializationArgs.size()) {
-					for (size_t j = 0; j < i->specializationArgs.size(); ++j) {
-						auto &curType = i->specializationArgs.at(j);
-
-						if (curType.typeId == TypeId::GenericArg)
-							throw std::runtime_error("Specialization argument must be deterministic");
-
-						SLAKE_RETURN_IF_EXCEPT(curType.loadDeferredType(this));
-						if (curType != instantiationContext.genericArgs->at(j)) {
-							goto specializationArgsMismatched;
-						}
+				for (auto i : value->overloadings) {
+					if (i->genericParams.size() != instantiationContext.genericArgs->size()) {
+						continue;
 					}
 
-					SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(i, instantiationContext));
-					matchedSpecializedOverloading = i;
-					break;
-				} else {
-					SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(i, instantiationContext));
-					matchedOverloading = i;
+					assert(instantiationContext.genericArgs->size() == i->specializationArgs.size());
+
+					if (i->specializationArgs.size()) {
+						for (size_t j = 0; j < i->specializationArgs.size(); ++j) {
+							auto &curType = i->specializationArgs.at(j);
+
+							if (curType.typeId == TypeId::GenericArg)
+								throw std::runtime_error("Specialization argument must be deterministic");
+
+							SLAKE_RETURN_IF_EXCEPT(curType.loadDeferredType(this));
+							if (curType != instantiationContext.genericArgs->at(j)) {
+								goto specializationArgsMismatched;
+							}
+						}
+
+						SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(i, instantiationContext));
+						matchedSpecializedOverloading = i;
+						break;
+					} else {
+						SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(i, instantiationContext));
+						matchedOverloading = i;
+					}
+
+				specializationArgsMismatched:;
 				}
 
-			specializationArgsMismatched:;
+				if (!value->overloadings.insert(
+						matchedSpecializedOverloading ? std::move(matchedSpecializedOverloading) : std::move(matchedOverloading)))
+					return OutOfMemoryError::alloc();
+			} else {
+				for (auto i : value->overloadings) {
+					SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(i, instantiationContext));
+				}
 			}
-
-			if (!value->overloadings.insert(
-					matchedSpecializedOverloading ? std::move(matchedSpecializedOverloading) : std::move(matchedOverloading)))
-				return OutOfMemoryError::alloc();
-		} else {
-			for (auto i : value->overloadings) {
-				SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(i, instantiationContext));
-			}
+			break;
 		}
-		break;
-	}
-	case ObjectKind::String:
-	case ObjectKind::RootObject:
-	case ObjectKind::IdRef:
-		break;
-	default:
-		throw std::logic_error("Unhandled object type");
+		case ObjectKind::String:
+		case ObjectKind::RootObject:
+		case ObjectKind::IdRef:
+			break;
+		default:
+			throw std::logic_error("Unhandled object type");
 	}
 	return {};
 }
@@ -466,45 +466,45 @@ InternalExceptionPointer Runtime::mapGenericParams(const Object *v, GenericInsta
 	instantiationContext.mappedObject = v;
 
 	switch (v->getKind()) {
-	case ObjectKind::Class: {
-		ClassObject *value = (ClassObject *)v;
+		case ObjectKind::Class: {
+			ClassObject *value = (ClassObject *)v;
 
-		if (instantiationContext.genericArgs->size() != value->genericParams.size()) {
-			return MismatchedGenericArgumentNumberError::alloc(
-				const_cast<Runtime *>(this));
-		}
-
-		for (size_t i = 0; i < value->genericParams.size(); ++i) {
-			peff::String copiedName(&globalHeapPoolAlloc);
-
-			if (!peff::copyAssign(copiedName, value->genericParams.at(i).name)) {
-				return OutOfMemoryError::alloc();
+			if (instantiationContext.genericArgs->size() != value->genericParams.size()) {
+				return MismatchedGenericArgumentNumberError::alloc(
+					const_cast<Runtime *>(this));
 			}
 
-			Type copiedType = instantiationContext.genericArgs->at(i);
+			for (size_t i = 0; i < value->genericParams.size(); ++i) {
+				peff::String copiedName(&globalHeapPoolAlloc);
 
-			instantiationContext.mappedGenericArgs.insert(std::move(copiedName), std::move(copiedType));
-		}
-		break;
-	}
-	case ObjectKind::Interface: {
-		InterfaceObject *value = (InterfaceObject *)v;
+				if (!peff::copyAssign(copiedName, value->genericParams.at(i).name)) {
+					return OutOfMemoryError::alloc();
+				}
 
-		if (instantiationContext.genericArgs->size() != value->genericParams.size()) {
-			return MismatchedGenericArgumentNumberError::alloc(
-				const_cast<Runtime *>(this));
-		}
+				Type copiedType = instantiationContext.genericArgs->at(i);
 
-		for (size_t i = 0; i < value->genericParams.size(); ++i) {
-			peff::String copiedName(&globalHeapPoolAlloc);
-			if (!peff::copyAssign(copiedName, value->genericParams.at(i).name))
-				return OutOfMemoryError::alloc();
-			Type copiedType = instantiationContext.genericArgs->at(i);
-			instantiationContext.mappedGenericArgs.insert(std::move(copiedName), std::move(copiedType));
+				instantiationContext.mappedGenericArgs.insert(std::move(copiedName), std::move(copiedType));
+			}
+			break;
 		}
-		break;
-	}
-	default:;
+		case ObjectKind::Interface: {
+			InterfaceObject *value = (InterfaceObject *)v;
+
+			if (instantiationContext.genericArgs->size() != value->genericParams.size()) {
+				return MismatchedGenericArgumentNumberError::alloc(
+					const_cast<Runtime *>(this));
+			}
+
+			for (size_t i = 0; i < value->genericParams.size(); ++i) {
+				peff::String copiedName(&globalHeapPoolAlloc);
+				if (!peff::copyAssign(copiedName, value->genericParams.at(i).name))
+					return OutOfMemoryError::alloc();
+				Type copiedType = instantiationContext.genericArgs->at(i);
+				instantiationContext.mappedGenericArgs.insert(std::move(copiedName), std::move(copiedType));
+			}
+			break;
+		}
+		default:;
 	}
 	return {};
 }
@@ -587,22 +587,22 @@ SLAKE_API InternalExceptionPointer Runtime::_instantiateGenericObject(FnOverload
 		SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(ol->returnType, instantiationContext));
 
 		switch (ol->overloadingKind) {
-		case FnOverloadingKind::Regular: {
-			RegularFnOverloadingObject *overloading = (RegularFnOverloadingObject *)ol;
+			case FnOverloadingKind::Regular: {
+				RegularFnOverloadingObject *overloading = (RegularFnOverloadingObject *)ol;
 
-			for (auto &i : overloading->instructions) {
-				for (size_t j = 0; j < i.nOperands; ++j) {
-					SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(i.operands[j], instantiationContext));
+				for (auto &i : overloading->instructions) {
+					for (size_t j = 0; j < i.nOperands; ++j) {
+						SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(i.operands[j], instantiationContext));
+					}
 				}
+
+				break;
 			}
+			case FnOverloadingKind::Native: {
+				NativeFnOverloadingObject *overloading = (NativeFnOverloadingObject *)ol;
 
-			break;
-		}
-		case FnOverloadingKind::Native: {
-			NativeFnOverloadingObject *overloading = (NativeFnOverloadingObject *)ol;
-
-			break;
-		}
+				break;
+			}
 		}
 	}
 	return {};

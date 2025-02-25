@@ -72,20 +72,20 @@ std::shared_ptr<Scope> slake::slkc::Compiler::completeModuleNamespaces(std::shar
 
 		if (auto it = scope->members.find(name); it != scope->members.end()) {
 			switch (it->second->getNodeType()) {
-			case NodeType::Class:
-				scope = std::static_pointer_cast<ClassNode>(it->second)->scope;
-				break;
-			case NodeType::Interface:
-				scope = std::static_pointer_cast<InterfaceNode>(it->second)->scope;
-				break;
-			case NodeType::Module:
-				scope = std::static_pointer_cast<ModuleNode>(it->second)->scope;
-				break;
-			default:
-				throw FatalCompilationError(Message{
-					tokenRangeToSourceLocation(ref->entries[i].tokenRange),
-					MessageType::Error,
-					"Cannot import a non-module member" });
+				case NodeType::Class:
+					scope = std::static_pointer_cast<ClassNode>(it->second)->scope;
+					break;
+				case NodeType::Interface:
+					scope = std::static_pointer_cast<InterfaceNode>(it->second)->scope;
+					break;
+				case NodeType::Module:
+					scope = std::static_pointer_cast<ModuleNode>(it->second)->scope;
+					break;
+				default:
+					throw FatalCompilationError(Message{
+						tokenRangeToSourceLocation(ref->entries[i].tokenRange),
+						MessageType::Error,
+						"Cannot import a non-module member" });
 			}
 		} else {
 			auto newMod = std::make_shared<ModuleNode>(this);
@@ -102,26 +102,26 @@ std::shared_ptr<Scope> slake::slkc::Compiler::completeModuleNamespaces(std::shar
 void Compiler::scanAndLinkParentFns(Scope *scope, FnNode *fn, const std::string &name) {
 	for (AstNode *j = scope->owner; j;) {
 		switch (j->getNodeType()) {
-		case NodeType::Class: {
-			ClassNode *node = (ClassNode *)j;
+			case NodeType::Class: {
+				ClassNode *node = (ClassNode *)j;
 
-			if (j != scope->owner) {
-				if (auto it = node->scope->members.find(name);
-					(it != node->scope->members.end()) && (it->second->getNodeType() == NodeType::Fn)) {
-					((FnNode *)fn)->parentFn = (FnNode *)it->second.get();
-					goto parentFnScanEnd;
+				if (j != scope->owner) {
+					if (auto it = node->scope->members.find(name);
+						(it != node->scope->members.end()) && (it->second->getNodeType() == NodeType::Fn)) {
+						((FnNode *)fn)->parentFn = (FnNode *)it->second.get();
+						goto parentFnScanEnd;
+					}
 				}
+
+				if (node->parentClass)
+					j = resolveCustomTypeName(nullptr, (CustomTypeNameNode *)node->parentClass.get()).get();
+				else
+					goto parentFnScanEnd;
+
+				break;
 			}
-
-			if (node->parentClass)
-				j = resolveCustomTypeName(nullptr, (CustomTypeNameNode *)node->parentClass.get()).get();
-			else
+			default:
 				goto parentFnScanEnd;
-
-			break;
-		}
-		default:
-			goto parentFnScanEnd;
 		}
 	}
 
@@ -196,15 +196,15 @@ void Compiler::validateScope(CompileContext *compileContext, Scope *scope) {
 
 	for (auto &i : scope->members) {
 		switch (i.second->getNodeType()) {
-		case NodeType::Class:
-			classes.push_back((ClassNode *)i.second.get());
-			break;
-		case NodeType::Interface:
-			interfaces.push_back((InterfaceNode *)i.second.get());
-			break;
-		case NodeType::Fn:
-			funcs.push_back((FnNode *)i.second.get());
-			break;
+			case NodeType::Class:
+				classes.push_back((ClassNode *)i.second.get());
+				break;
+			case NodeType::Interface:
+				interfaces.push_back((InterfaceNode *)i.second.get());
+				break;
+			case NodeType::Fn:
+				funcs.push_back((FnNode *)i.second.get());
+				break;
 		}
 	}
 
@@ -446,73 +446,33 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 
 	for (auto &i : scope->members) {
 		switch (i.second->getNodeType()) {
-		case NodeType::Var: {
-			auto m = std::static_pointer_cast<VarNode>(i.second);
-			vars[i.first] = m;
+			case NodeType::Var: {
+				auto m = std::static_pointer_cast<VarNode>(i.second);
+				vars[i.first] = m;
 
 #if SLKC_WITH_LANGUAGE_SERVER
-			updateTokenInfo(m->idxNameToken, [this, &compileContext](TokenInfo &tokenInfo) {
-				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
-				tokenInfo.semanticType = SemanticType::Var;
-			});
+				updateTokenInfo(m->idxNameToken, [this, &compileContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+					tokenInfo.semanticType = SemanticType::Var;
+				});
 
-			updateTokenInfo(m->idxColonToken, [this, &compileContext](TokenInfo &tokenInfo) {
-				tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
-				tokenInfo.completionContext = CompletionContext::Type;
-			});
+				updateTokenInfo(m->idxColonToken, [this, &compileContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext = TokenContext(compileContext->curFn, compileContext->curTopLevelContext.curMajorContext);
+					tokenInfo.completionContext = CompletionContext::Type;
+				});
 
-			if (m->type)
-				updateCompletionContext(m->type, CompletionContext::Type);
+				if (m->type)
+					updateCompletionContext(m->type, CompletionContext::Type);
 #endif
-			break;
-		}
-		case NodeType::Fn: {
-			auto m = std::static_pointer_cast<FnNode>(i.second);
-			funcs[i.first] = m;
+				break;
+			}
+			case NodeType::Fn: {
+				auto m = std::static_pointer_cast<FnNode>(i.second);
+				funcs[i.first] = m;
 
-			for (auto &j : m->overloadingRegistries) {
+				for (auto &j : m->overloadingRegistries) {
 #if SLKC_WITH_LANGUAGE_SERVER
-				updateTokenInfo(j->idxNameToken, [this, &j, &compileContext](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext =
-						TokenContext(
-							{},
-							compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
-							j->genericParams,
-							j->genericParamIndices,
-							{},
-							{});
-					tokenInfo.semanticType = SemanticType::Fn;
-				});
-
-				updateTokenInfo(j->idxParamLParentheseToken, [this, &j, &compileContext](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext =
-						TokenContext(
-							{},
-							compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
-							j->genericParams,
-							j->genericParamIndices,
-							{},
-							{});
-					tokenInfo.completionContext = CompletionContext::Type;
-				});
-
-				updateTokenInfo(j->idxReturnTypeColonToken, [this, &j, &compileContext](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext =
-						TokenContext(
-							{},
-							compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
-							j->genericParams,
-							j->genericParamIndices,
-							{},
-							{});
-					tokenInfo.completionContext = CompletionContext::Type;
-				});
-
-				if (j->returnType)
-					updateCompletionContext(j->returnType, CompletionContext::Type);
-
-				for (auto &k : j->params) {
-					updateTokenInfo(k->idxNameToken, [this, &j, &compileContext](TokenInfo &tokenInfo) {
+					updateTokenInfo(j->idxNameToken, [this, &j, &compileContext](TokenInfo &tokenInfo) {
 						tokenInfo.tokenContext =
 							TokenContext(
 								{},
@@ -521,98 +481,176 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 								j->genericParamIndices,
 								{},
 								{});
-						tokenInfo.semanticType = SemanticType::Param;
+						tokenInfo.semanticType = SemanticType::Fn;
 					});
 
-					if (k->type) {
-						updateCompletionContext(k->type, CompletionContext::Type);
-						updateSemanticType(k->type, SemanticType::Type);
+					updateTokenInfo(j->idxParamLParentheseToken, [this, &j, &compileContext](TokenInfo &tokenInfo) {
+						tokenInfo.tokenContext =
+							TokenContext(
+								{},
+								compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
+								j->genericParams,
+								j->genericParamIndices,
+								{},
+								{});
+						tokenInfo.completionContext = CompletionContext::Type;
+					});
 
-						// Resolve the type name to fill corresponding `curScope` field in token contexts for completion.
-						if (k->type->getTypeId() == TypeId::Custom)
-							resolveCustomTypeName(compileContext, (CustomTypeNameNode *)k->type.get());
+					updateTokenInfo(j->idxReturnTypeColonToken, [this, &j, &compileContext](TokenInfo &tokenInfo) {
+						tokenInfo.tokenContext =
+							TokenContext(
+								{},
+								compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
+								j->genericParams,
+								j->genericParamIndices,
+								{},
+								{});
+						tokenInfo.completionContext = CompletionContext::Type;
+					});
+
+					if (j->returnType)
+						updateCompletionContext(j->returnType, CompletionContext::Type);
+
+					for (auto &k : j->params) {
+						updateTokenInfo(k->idxNameToken, [this, &j, &compileContext](TokenInfo &tokenInfo) {
+							tokenInfo.tokenContext =
+								TokenContext(
+									{},
+									compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
+									j->genericParams,
+									j->genericParamIndices,
+									{},
+									{});
+							tokenInfo.semanticType = SemanticType::Param;
+						});
+
+						if (k->type) {
+							updateCompletionContext(k->type, CompletionContext::Type);
+							updateSemanticType(k->type, SemanticType::Type);
+
+							// Resolve the type name to fill corresponding `curScope` field in token contexts for completion.
+							if (k->type->getTypeId() == TypeId::Custom)
+								resolveCustomTypeName(compileContext, (CustomTypeNameNode *)k->type.get());
+						}
 					}
-				}
 
-				for (auto &k : j->idxParamCommaTokens) {
-					updateTokenInfo(k, [this, &j, &k, &compileContext](TokenInfo &tokenInfo) {
+					for (auto &k : j->idxParamCommaTokens) {
+						updateTokenInfo(k, [this, &j, &k, &compileContext](TokenInfo &tokenInfo) {
+							tokenInfo.tokenContext =
+								TokenContext(
+									{},
+									compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
+									j->genericParams,
+									j->genericParamIndices,
+									{},
+									{});
+							updateCompletionContext(k, CompletionContext::Type);
+						});
+					}
+
+					for (auto &k : j->genericParams) {
+						updateTokenInfo(k->idxNameToken, [this, &j, &compileContext](TokenInfo &tokenInfo) {
+							tokenInfo.tokenContext =
+								TokenContext(
+									{},
+									compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
+									j->genericParams,
+									j->genericParamIndices,
+									{},
+									{});
+							tokenInfo.semanticType = SemanticType::TypeParam;
+						});
+					}
+#endif
+
+					j->updateParamIndices();
+				}
+				break;
+			}
+			case NodeType::Class: {
+				auto m = std::static_pointer_cast<ClassNode>(i.second);
+				classes[i.first] = m;
+
+#if SLKC_WITH_LANGUAGE_SERVER
+				updateTokenInfo(m->idxNameToken, [this, &m, &compileContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext =
+						TokenContext(
+							{},
+							compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
+							m->genericParams,
+							m->genericParamIndices,
+							{},
+							{});
+					tokenInfo.semanticType = SemanticType::Class;
+				});
+
+				updateTokenInfo(m->idxParentSlotLParentheseToken, [this, &m, &compileContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext =
+						TokenContext(
+							{},
+							compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
+							m->genericParams,
+							m->genericParamIndices,
+							{},
+							{});
+					tokenInfo.completionContext = CompletionContext::Type;
+				});
+
+				if (m->parentClass)
+					updateCompletionContext(m->parentClass, CompletionContext::Type);
+
+				updateTokenInfo(m->idxImplInterfacesColonToken, [this, &m, &compileContext](TokenInfo &tokenInfo) {
+					tokenInfo.tokenContext =
+						TokenContext(
+							{},
+							compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
+							m->genericParams,
+							m->genericParamIndices,
+							{},
+							{});
+					tokenInfo.completionContext = CompletionContext::Type;
+				});
+
+				for (auto j : m->idxImplInterfacesSeparatorTokens) {
+					updateTokenInfo(j, [this, &m, &compileContext](TokenInfo &tokenInfo) {
 						tokenInfo.tokenContext =
 							TokenContext(
 								{},
 								compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
-								j->genericParams,
-								j->genericParamIndices,
+								m->genericParams,
+								m->genericParamIndices,
 								{},
 								{});
-						updateCompletionContext(k, CompletionContext::Type);
+						tokenInfo.completionContext = CompletionContext::Type;
 					});
 				}
 
-				for (auto &k : j->genericParams) {
-					updateTokenInfo(k->idxNameToken, [this, &j, &compileContext](TokenInfo &tokenInfo) {
+				for (auto &j : m->implInterfaces) {
+					updateCompletionContext(j, CompletionContext::Type);
+				}
+
+				for (auto &j : m->genericParams) {
+					updateTokenInfo(j->idxNameToken, [this, &m, &compileContext](TokenInfo &tokenInfo) {
 						tokenInfo.tokenContext =
 							TokenContext(
 								{},
 								compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
-								j->genericParams,
-								j->genericParamIndices,
+								m->genericParams,
+								m->genericParamIndices,
 								{},
 								{});
 						tokenInfo.semanticType = SemanticType::TypeParam;
 					});
 				}
 #endif
-
-				j->updateParamIndices();
+				break;
 			}
-			break;
-		}
-		case NodeType::Class: {
-			auto m = std::static_pointer_cast<ClassNode>(i.second);
-			classes[i.first] = m;
+			case NodeType::Interface: {
+				auto m = std::static_pointer_cast<InterfaceNode>(i.second);
+				interfaces[i.first] = m;
 
 #if SLKC_WITH_LANGUAGE_SERVER
-			updateTokenInfo(m->idxNameToken, [this, &m, &compileContext](TokenInfo &tokenInfo) {
-				tokenInfo.tokenContext =
-					TokenContext(
-						{},
-						compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
-						m->genericParams,
-						m->genericParamIndices,
-						{},
-						{});
-				tokenInfo.semanticType = SemanticType::Class;
-			});
-
-			updateTokenInfo(m->idxParentSlotLParentheseToken, [this, &m, &compileContext](TokenInfo &tokenInfo) {
-				tokenInfo.tokenContext =
-					TokenContext(
-						{},
-						compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
-						m->genericParams,
-						m->genericParamIndices,
-						{},
-						{});
-				tokenInfo.completionContext = CompletionContext::Type;
-			});
-
-			if (m->parentClass)
-				updateCompletionContext(m->parentClass, CompletionContext::Type);
-
-			updateTokenInfo(m->idxImplInterfacesColonToken, [this, &m, &compileContext](TokenInfo &tokenInfo) {
-				tokenInfo.tokenContext =
-					TokenContext(
-						{},
-						compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
-						m->genericParams,
-						m->genericParamIndices,
-						{},
-						{});
-				tokenInfo.completionContext = CompletionContext::Type;
-			});
-
-			for (auto j : m->idxImplInterfacesSeparatorTokens) {
-				updateTokenInfo(j, [this, &m, &compileContext](TokenInfo &tokenInfo) {
+				updateTokenInfo(m->idxNameToken, [this, &m, &compileContext](TokenInfo &tokenInfo) {
 					tokenInfo.tokenContext =
 						TokenContext(
 							{},
@@ -621,72 +659,34 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 							m->genericParamIndices,
 							{},
 							{});
-					tokenInfo.completionContext = CompletionContext::Type;
+					tokenInfo.semanticType = SemanticType::Interface;
 				});
-			}
 
-			for (auto &j : m->implInterfaces) {
-				updateCompletionContext(j, CompletionContext::Type);
-			}
+				for (auto &j : m->parentInterfaces) {
+					updateCompletionContext(j, CompletionContext::Type);
+				}
 
-			for (auto &j : m->genericParams) {
-				updateTokenInfo(j->idxNameToken, [this, &m, &compileContext](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext =
-						TokenContext(
-							{},
-							compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
-							m->genericParams,
-							m->genericParamIndices,
-							{},
-							{});
-					tokenInfo.semanticType = SemanticType::TypeParam;
-				});
-			}
+				for (auto &j : m->genericParams) {
+					updateTokenInfo(j->idxNameToken, [this, &m, &compileContext](TokenInfo &tokenInfo) {
+						tokenInfo.tokenContext =
+							TokenContext(
+								{},
+								compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
+								m->genericParams,
+								m->genericParamIndices,
+								{},
+								{});
+						tokenInfo.semanticType = SemanticType::TypeParam;
+					});
+				}
 #endif
-			break;
-		}
-		case NodeType::Interface: {
-			auto m = std::static_pointer_cast<InterfaceNode>(i.second);
-			interfaces[i.first] = m;
-
-#if SLKC_WITH_LANGUAGE_SERVER
-			updateTokenInfo(m->idxNameToken, [this, &m, &compileContext](TokenInfo &tokenInfo) {
-				tokenInfo.tokenContext =
-					TokenContext(
-						{},
-						compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
-						m->genericParams,
-						m->genericParamIndices,
-						{},
-						{});
-				tokenInfo.semanticType = SemanticType::Interface;
-			});
-
-			for (auto &j : m->parentInterfaces) {
-				updateCompletionContext(j, CompletionContext::Type);
+				break;
 			}
-
-			for (auto &j : m->genericParams) {
-				updateTokenInfo(j->idxNameToken, [this, &m, &compileContext](TokenInfo &tokenInfo) {
-					tokenInfo.tokenContext =
-						TokenContext(
-							{},
-							compileContext->curTopLevelContext.curMajorContext.curMinorContext.curScope,
-							m->genericParams,
-							m->genericParamIndices,
-							{},
-							{});
-					tokenInfo.semanticType = SemanticType::TypeParam;
-				});
-			}
-#endif
-			break;
-		}
-		case NodeType::Alias:
-		case NodeType::Module:
-			break;
-		default:
-			assert(false);
+			case NodeType::Alias:
+			case NodeType::Module:
+				break;
+			default:
+				assert(false);
 		}
 	}
 
@@ -803,25 +803,25 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 		// Check if the member will shadow member(s) from parent scopes.
 		//
 		switch (scope->owner->getNodeType()) {
-		case NodeType::Class: {
-			auto j = (ClassNode *)(scope->owner);
+			case NodeType::Class: {
+				auto j = (ClassNode *)(scope->owner);
 
-			while (j->parentClass) {
-				j = (ClassNode *)resolveCustomTypeName(compileContext, (CustomTypeNameNode *)j->parentClass.get()).get();
-				if (j->scope->members.count(i.first)) {
-					pushMessage(
-						curDocName,
-						Message(
-							tokenRangeToSourceLocation(i.second->tokenRange),
-							MessageType::Error,
-							"The member shadows another member from the parent"));
+				while (j->parentClass) {
+					j = (ClassNode *)resolveCustomTypeName(compileContext, (CustomTypeNameNode *)j->parentClass.get()).get();
+					if (j->scope->members.count(i.first)) {
+						pushMessage(
+							curDocName,
+							Message(
+								tokenRangeToSourceLocation(i.second->tokenRange),
+								MessageType::Error,
+								"The member shadows another member from the parent"));
 
-					goto skipCurVar;
-				}
-			};
+						goto skipCurVar;
+					}
+				};
 
-			break;
-		}
+				break;
+			}
 		}
 
 		if (i.second->access & ACCESS_PUB)
@@ -898,17 +898,17 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 				}
 
 				switch (scope->owner->getNodeType()) {
-				case NodeType::Class:
-				case NodeType::Interface:
-					break;
-				default:
-					pushMessage(
-						curDocName,
-						Message(
-							sourceDocs.at(curDocName)->lexer->tokens[j->idxVirtualModifierToken]->location,
-							MessageType::Error,
-							"Virtual modifier is invalid in the context"));
-					goto skipCurOverloading;
+					case NodeType::Class:
+					case NodeType::Interface:
+						break;
+					default:
+						pushMessage(
+							curDocName,
+							Message(
+								sourceDocs.at(curDocName)->lexer->tokens[j->idxVirtualModifierToken]->location,
+								MessageType::Error,
+								"Virtual modifier is invalid in the context"));
+						goto skipCurOverloading;
 				}
 
 				if (j->genericParams.size()) {
@@ -926,46 +926,46 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 				auto curType = j->specializationArgs[k];
 
 				switch (curType->getTypeId()) {
-				case TypeId::I8:
-				case TypeId::I16:
-				case TypeId::I32:
-				case TypeId::I64:
-				case TypeId::U8:
-				case TypeId::U16:
-				case TypeId::U32:
-				case TypeId::U64:
-				case TypeId::F32:
-				case TypeId::F64:
-				case TypeId::String:
-				case TypeId::Bool:
-				case TypeId::Any:
-				case TypeId::Void:
-				case TypeId::Array:
-				case TypeId::Fn:
-					break;
-				case TypeId::Custom: {
-					auto m = resolveCustomTypeName(compileContext, (CustomTypeNameNode *)curType.get());
+					case TypeId::I8:
+					case TypeId::I16:
+					case TypeId::I32:
+					case TypeId::I64:
+					case TypeId::U8:
+					case TypeId::U16:
+					case TypeId::U32:
+					case TypeId::U64:
+					case TypeId::F32:
+					case TypeId::F64:
+					case TypeId::String:
+					case TypeId::Bool:
+					case TypeId::Any:
+					case TypeId::Void:
+					case TypeId::Array:
+					case TypeId::Fn:
+						break;
+					case TypeId::Custom: {
+						auto m = resolveCustomTypeName(compileContext, (CustomTypeNameNode *)curType.get());
 
-					if (m->getNodeType() == NodeType::GenericParam) {
+						if (m->getNodeType() == NodeType::GenericParam) {
+							pushMessage(
+								curDocName,
+								Message(
+									tokenRangeToSourceLocation(curType->tokenRange),
+									MessageType::Error,
+									"Specialization argument must be deterministic"));
+							goto skipCurOverloading;
+						}
+
+						break;
+					}
+					default:
 						pushMessage(
 							curDocName,
 							Message(
 								tokenRangeToSourceLocation(curType->tokenRange),
 								MessageType::Error,
-								"Specialization argument must be deterministic"));
+								"Specified type cannot be used as a specialization argument"));
 						goto skipCurOverloading;
-					}
-
-					break;
-				}
-				default:
-					pushMessage(
-						curDocName,
-						Message(
-							tokenRangeToSourceLocation(curType->tokenRange),
-							MessageType::Error,
-							"Specified type cannot be used as a specialization argument"));
-					goto skipCurOverloading;
 				}
 			}
 
@@ -1106,91 +1106,91 @@ void Compiler::compileTypeName(CompileContext *compileContext, std::ostream &fs,
 		compileTypeName(compileContext, fs, derefTypeName);
 	} else {
 		switch (typeName->getTypeId()) {
-		case TypeId::I8: {
-			_write(fs, slxfmt::TypeId::I8);
-			break;
-		}
-		case TypeId::I16: {
-			_write(fs, slxfmt::TypeId::I16);
-			break;
-		}
-		case TypeId::I32: {
-			_write(fs, slxfmt::TypeId::I32);
-			break;
-		}
-		case TypeId::I64: {
-			_write(fs, slxfmt::TypeId::I64);
-			break;
-		}
-		case TypeId::U8: {
-			_write(fs, slxfmt::TypeId::U8);
-			break;
-		}
-		case TypeId::U16: {
-			_write(fs, slxfmt::TypeId::U16);
-			break;
-		}
-		case TypeId::U32: {
-			_write(fs, slxfmt::TypeId::U32);
-			break;
-		}
-		case TypeId::U64: {
-			_write(fs, slxfmt::TypeId::U64);
-			break;
-		}
-		case TypeId::F32: {
-			_write(fs, slxfmt::TypeId::F32);
-			break;
-		}
-		case TypeId::F64: {
-			_write(fs, slxfmt::TypeId::F64);
-			break;
-		}
-		case TypeId::Bool: {
-			_write(fs, slxfmt::TypeId::Bool);
-			break;
-		}
-		case TypeId::String: {
-			_write(fs, slxfmt::TypeId::String);
-			break;
-		}
-		case TypeId::Void: {
-			_write(fs, slxfmt::TypeId::None);
-			break;
-		}
-		case TypeId::Any: {
-			_write(fs, slxfmt::TypeId::Any);
-			break;
-		}
-		case TypeId::Array: {
-			auto t = std::static_pointer_cast<ArrayTypeNameNode>(typeName);
-			_write(fs, slxfmt::TypeId::Array);
-			compileTypeName(compileContext, fs, t->elementType);
-			break;
-		}
-		case TypeId::Fn: {
-			// stub
-			break;
-		}
-		case TypeId::Custom: {
-			auto dest = resolveCustomTypeName(compileContext, (CustomTypeNameNode *)typeName.get());
-
-			if (dest->getNodeType() == NodeType::GenericParam) {
-				_write(fs, slxfmt::TypeId::GenericArg);
-
-				auto d = std::static_pointer_cast<GenericParamNode>(dest);
-				_write(fs, (uint8_t)d->name.length());
-				fs.write(d->name.c_str(), d->name.length());
-			} else {
-				_write(fs, slxfmt::TypeId::Object);
-				compileIdRef(compileContext, fs, getFullName((MemberNode *)dest.get()));
+			case TypeId::I8: {
+				_write(fs, slxfmt::TypeId::I8);
+				break;
 			}
-			break;
-		}
-		case TypeId::Bad:
-			break;
-		default:
-			assert(false);
+			case TypeId::I16: {
+				_write(fs, slxfmt::TypeId::I16);
+				break;
+			}
+			case TypeId::I32: {
+				_write(fs, slxfmt::TypeId::I32);
+				break;
+			}
+			case TypeId::I64: {
+				_write(fs, slxfmt::TypeId::I64);
+				break;
+			}
+			case TypeId::U8: {
+				_write(fs, slxfmt::TypeId::U8);
+				break;
+			}
+			case TypeId::U16: {
+				_write(fs, slxfmt::TypeId::U16);
+				break;
+			}
+			case TypeId::U32: {
+				_write(fs, slxfmt::TypeId::U32);
+				break;
+			}
+			case TypeId::U64: {
+				_write(fs, slxfmt::TypeId::U64);
+				break;
+			}
+			case TypeId::F32: {
+				_write(fs, slxfmt::TypeId::F32);
+				break;
+			}
+			case TypeId::F64: {
+				_write(fs, slxfmt::TypeId::F64);
+				break;
+			}
+			case TypeId::Bool: {
+				_write(fs, slxfmt::TypeId::Bool);
+				break;
+			}
+			case TypeId::String: {
+				_write(fs, slxfmt::TypeId::String);
+				break;
+			}
+			case TypeId::Void: {
+				_write(fs, slxfmt::TypeId::None);
+				break;
+			}
+			case TypeId::Any: {
+				_write(fs, slxfmt::TypeId::Any);
+				break;
+			}
+			case TypeId::Array: {
+				auto t = std::static_pointer_cast<ArrayTypeNameNode>(typeName);
+				_write(fs, slxfmt::TypeId::Array);
+				compileTypeName(compileContext, fs, t->elementType);
+				break;
+			}
+			case TypeId::Fn: {
+				// stub
+				break;
+			}
+			case TypeId::Custom: {
+				auto dest = resolveCustomTypeName(compileContext, (CustomTypeNameNode *)typeName.get());
+
+				if (dest->getNodeType() == NodeType::GenericParam) {
+					_write(fs, slxfmt::TypeId::GenericArg);
+
+					auto d = std::static_pointer_cast<GenericParamNode>(dest);
+					_write(fs, (uint8_t)d->name.length());
+					fs.write(d->name.c_str(), d->name.length());
+				} else {
+					_write(fs, slxfmt::TypeId::Object);
+					compileIdRef(compileContext, fs, getFullName((MemberNode *)dest.get()));
+				}
+				break;
+			}
+			case TypeId::Bad:
+				break;
+			default:
+				assert(false);
 		}
 	}
 }
@@ -1234,127 +1234,127 @@ void Compiler::compileValue(CompileContext *compileContext, std::ostream &fs, st
 	}
 
 	switch (value->getNodeType()) {
-	case NodeType::TypeName:
-		_write(fs, slxfmt::TypeId::TypeName);
+		case NodeType::TypeName:
+			_write(fs, slxfmt::TypeId::TypeName);
 
-		compileTypeName(compileContext, fs, std::static_pointer_cast<TypeNameNode>(value));
-		break;
-	case NodeType::RegRef: {
-		auto v = std::static_pointer_cast<RegRefNode>(value);
-		_write(fs, slxfmt::TypeId::Reg);
+			compileTypeName(compileContext, fs, std::static_pointer_cast<TypeNameNode>(value));
+			break;
+		case NodeType::RegRef: {
+			auto v = std::static_pointer_cast<RegRefNode>(value);
+			_write(fs, slxfmt::TypeId::Reg);
 
-		_write(fs, v->index);
-		break;
-	}
-	case NodeType::Expr: {
-		std::shared_ptr<ExprNode> expr = std::static_pointer_cast<ExprNode>(value);
-		switch (expr->getExprType()) {
-		case ExprType::I8: {
-			_write(fs, slxfmt::TypeId::I8);
-
-			_write(fs, std::static_pointer_cast<I8LiteralExprNode>(expr)->data);
+			_write(fs, v->index);
 			break;
 		}
-		case ExprType::I16: {
-			_write(fs, slxfmt::TypeId::I16);
+		case NodeType::Expr: {
+			std::shared_ptr<ExprNode> expr = std::static_pointer_cast<ExprNode>(value);
+			switch (expr->getExprType()) {
+				case ExprType::I8: {
+					_write(fs, slxfmt::TypeId::I8);
 
-			_write(fs, std::static_pointer_cast<I16LiteralExprNode>(expr)->data);
-			break;
-		}
-		case ExprType::I32: {
-			_write(fs, slxfmt::TypeId::I32);
+					_write(fs, std::static_pointer_cast<I8LiteralExprNode>(expr)->data);
+					break;
+				}
+				case ExprType::I16: {
+					_write(fs, slxfmt::TypeId::I16);
 
-			_write(fs, std::static_pointer_cast<I32LiteralExprNode>(expr)->data);
-			break;
-		}
-		case ExprType::I64: {
-			_write(fs, slxfmt::TypeId::I64);
+					_write(fs, std::static_pointer_cast<I16LiteralExprNode>(expr)->data);
+					break;
+				}
+				case ExprType::I32: {
+					_write(fs, slxfmt::TypeId::I32);
 
-			_write(fs, std::static_pointer_cast<I64LiteralExprNode>(expr)->data);
-			break;
-		}
-		case ExprType::U8: {
-			_write(fs, slxfmt::TypeId::U8);
+					_write(fs, std::static_pointer_cast<I32LiteralExprNode>(expr)->data);
+					break;
+				}
+				case ExprType::I64: {
+					_write(fs, slxfmt::TypeId::I64);
 
-			_write(fs, std::static_pointer_cast<U8LiteralExprNode>(expr)->data);
-			break;
-		}
-		case ExprType::U16: {
-			_write(fs, slxfmt::TypeId::U16);
+					_write(fs, std::static_pointer_cast<I64LiteralExprNode>(expr)->data);
+					break;
+				}
+				case ExprType::U8: {
+					_write(fs, slxfmt::TypeId::U8);
 
-			_write(fs, std::static_pointer_cast<U16LiteralExprNode>(expr)->data);
-			break;
-		}
-		case ExprType::U32: {
-			_write(fs, slxfmt::TypeId::U32);
+					_write(fs, std::static_pointer_cast<U8LiteralExprNode>(expr)->data);
+					break;
+				}
+				case ExprType::U16: {
+					_write(fs, slxfmt::TypeId::U16);
 
-			_write(fs, std::static_pointer_cast<U32LiteralExprNode>(expr)->data);
-			break;
-		}
-		case ExprType::U64: {
-			_write(fs, slxfmt::TypeId::U64);
+					_write(fs, std::static_pointer_cast<U16LiteralExprNode>(expr)->data);
+					break;
+				}
+				case ExprType::U32: {
+					_write(fs, slxfmt::TypeId::U32);
 
-			_write(fs, std::static_pointer_cast<U64LiteralExprNode>(expr)->data);
-			break;
-		}
-		case ExprType::F32: {
-			_write(fs, slxfmt::TypeId::F32);
+					_write(fs, std::static_pointer_cast<U32LiteralExprNode>(expr)->data);
+					break;
+				}
+				case ExprType::U64: {
+					_write(fs, slxfmt::TypeId::U64);
 
-			_write(fs, std::static_pointer_cast<F32LiteralExprNode>(expr)->data);
-			break;
-		}
-		case ExprType::F64: {
-			_write(fs, slxfmt::TypeId::F64);
+					_write(fs, std::static_pointer_cast<U64LiteralExprNode>(expr)->data);
+					break;
+				}
+				case ExprType::F32: {
+					_write(fs, slxfmt::TypeId::F32);
 
-			_write(fs, std::static_pointer_cast<F64LiteralExprNode>(expr)->data);
-			break;
-		}
-		case ExprType::Bool: {
-			_write(fs, slxfmt::TypeId::Bool);
+					_write(fs, std::static_pointer_cast<F32LiteralExprNode>(expr)->data);
+					break;
+				}
+				case ExprType::F64: {
+					_write(fs, slxfmt::TypeId::F64);
 
-			_write(fs, std::static_pointer_cast<BoolLiteralExprNode>(expr)->data);
-			break;
-		}
-		case ExprType::String: {
-			_write(fs, slxfmt::TypeId::String);
+					_write(fs, std::static_pointer_cast<F64LiteralExprNode>(expr)->data);
+					break;
+				}
+				case ExprType::Bool: {
+					_write(fs, slxfmt::TypeId::Bool);
 
-			auto s = std::static_pointer_cast<StringLiteralExprNode>(expr)->data;
+					_write(fs, std::static_pointer_cast<BoolLiteralExprNode>(expr)->data);
+					break;
+				}
+				case ExprType::String: {
+					_write(fs, slxfmt::TypeId::String);
 
-			_write(fs, (uint32_t)s.length());
-			_write(fs, s.data(), s.size());
-			break;
-		}
-		case ExprType::IdRef: {
-			_write(fs, slxfmt::TypeId::IdRef);
+					auto s = std::static_pointer_cast<StringLiteralExprNode>(expr)->data;
 
-			compileIdRef(compileContext, fs, std::static_pointer_cast<IdRefExprNode>(expr)->ref);
-			break;
-		}
-		case ExprType::Array: {
-			_write(fs, slxfmt::TypeId::Array);
+					_write(fs, (uint32_t)s.length());
+					_write(fs, s.data(), s.size());
+					break;
+				}
+				case ExprType::IdRef: {
+					_write(fs, slxfmt::TypeId::IdRef);
 
-			auto a = std::static_pointer_cast<ArrayExprNode>(expr);
+					compileIdRef(compileContext, fs, std::static_pointer_cast<IdRefExprNode>(expr)->ref);
+					break;
+				}
+				case ExprType::Array: {
+					_write(fs, slxfmt::TypeId::Array);
 
-			compileTypeName(compileContext, fs, a->evaluatedElementType);
+					auto a = std::static_pointer_cast<ArrayExprNode>(expr);
 
-			_write(fs, (uint32_t)a->elements.size());
+					compileTypeName(compileContext, fs, a->evaluatedElementType);
 
-			for (auto i : a->elements)
-				compileValue(compileContext, fs, i);
+					_write(fs, (uint32_t)a->elements.size());
 
-			break;
-		}
-		case ExprType::Null: {
-			_write(fs, slxfmt::TypeId::None);
+					for (auto i : a->elements)
+						compileValue(compileContext, fs, i);
+
+					break;
+				}
+				case ExprType::Null: {
+					_write(fs, slxfmt::TypeId::None);
+					break;
+				}
+				default:
+					assert(false);
+			}
 			break;
 		}
 		default:
 			assert(false);
-		}
-		break;
-	}
-	default:
-		assert(false);
 	}
 }
 

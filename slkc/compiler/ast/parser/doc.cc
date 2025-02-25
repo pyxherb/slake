@@ -14,15 +14,15 @@ void Parser::updateLineCommentDocumentation(Token *token) {
 	size_t i = 0, indentLevel = 0;
 	while (i < content.size()) {
 		switch (content[i]) {
-		case ' ':
-			indentLevel += 1;
-			break;
-		case '\t':
-			// TODO: Replace 4 with the indent size specified by the user
-			indentLevel += 4;
-			break;
-		default:
-			goto indentLevelDetectionEnd;
+			case ' ':
+				indentLevel += 1;
+				break;
+			case '\t':
+				// TODO: Replace 4 with the indent size specified by the user
+				indentLevel += 4;
+				break;
+			default:
+				goto indentLevelDetectionEnd;
 		}
 		++i;
 	}

@@ -137,32 +137,32 @@ namespace slake {
 
 				if (mem.scale == REG_MAX) {
 					switch (mem.base) {
-					case REG_RAX:
-						modRm |= 0b00000000;
-						break;
-					case REG_RCX:
-						modRm |= 0b00000001;
-						break;
-					case REG_RDX:
-						modRm |= 0b00000010;
-						break;
-					case REG_RBX:
-						modRm |= 0b00000011;
-						break;
-					case REG_RBP:
-						if (!mem.disp) {
+						case REG_RAX:
+							modRm |= 0b00000000;
+							break;
+						case REG_RCX:
+							modRm |= 0b00000001;
+							break;
+						case REG_RDX:
+							modRm |= 0b00000010;
+							break;
+						case REG_RBX:
+							modRm |= 0b00000011;
+							break;
+						case REG_RBP:
+							if (!mem.disp) {
+								goto fallback;
+							}
+							modRm |= 0b00000101;
+							break;
+						case REG_RSI:
+							modRm |= 0b00000110;
+							break;
+						case REG_RDI:
+							modRm |= 0b00000111;
+							break;
+						default:
 							goto fallback;
-						}
-						modRm |= 0b00000101;
-						break;
-					case REG_RSI:
-						modRm |= 0b00000110;
-						break;
-					case REG_RDI:
-						modRm |= 0b00000111;
-						break;
-					default:
-						goto fallback;
 					}
 
 					return false;
@@ -174,147 +174,147 @@ namespace slake {
 				sib = 0;
 
 				switch (mem.scaleIndex) {
-				case 0:
-					break;
-				case 1:
-					sib |= 0b00000000;
-					break;
-				case 2:
-					sib |= 0b01000000;
-					break;
-				case 4:
-					sib |= 0b10000000;
-					break;
-				case 8:
-					sib |= 0b11000000;
-					break;
-				default:
-					// Invalid scale index
-					std::terminate();
+					case 0:
+						break;
+					case 1:
+						sib |= 0b00000000;
+						break;
+					case 2:
+						sib |= 0b01000000;
+						break;
+					case 4:
+						sib |= 0b10000000;
+						break;
+					case 8:
+						sib |= 0b11000000;
+						break;
+					default:
+						// Invalid scale index
+						std::terminate();
 				}
 
 				switch (mem.base) {
-				case REG_RAX:
-					sib |= 0b00000000;
-					break;
-				case REG_RCX:
-					sib |= 0b00000001;
-					break;
-				case REG_RDX:
-					sib |= 0b00000010;
-					break;
-				case REG_RBX:
-					sib |= 0b00000011;
-					break;
-				case REG_RSP:
-					sib |= 0b00000100;
-					break;
-				case REG_RBP:
-					sib |= 0b00000101;
-					break;
-				case REG_RSI:
-					sib |= 0b00000110;
-					break;
-				case REG_RDI:
-					sib |= 0b00000111;
-					break;
-				case REG_R8:
-					rexPrefix |= REX_PREFIX(0, 0, 0, 1);
-					sib |= 0b00000000;
-					break;
-				case REG_R9:
-					rexPrefix |= REX_PREFIX(0, 0, 0, 1);
-					sib |= 0b00000001;
-					break;
-				case REG_R10:
-					rexPrefix |= REX_PREFIX(0, 0, 0, 1);
-					sib |= 0b00000010;
-					break;
-				case REG_R11:
-					rexPrefix |= REX_PREFIX(0, 0, 0, 1);
-					sib |= 0b00000011;
-					break;
-				case REG_R12:
-					rexPrefix |= REX_PREFIX(0, 0, 0, 1);
-					sib |= 0b00000100;
-					break;
-				case REG_R13:
-					rexPrefix |= REX_PREFIX(0, 0, 0, 1);
-					sib |= 0b00000101;
-					break;
-				case REG_R14:
-					rexPrefix |= REX_PREFIX(0, 0, 0, 1);
-					sib |= 0b00000110;
-					break;
-				case REG_R15:
-					rexPrefix |= REX_PREFIX(0, 0, 0, 1);
-					sib |= 0b00000111;
-					break;
-				default:
-					// Invalid base register
-					std::terminate();
+					case REG_RAX:
+						sib |= 0b00000000;
+						break;
+					case REG_RCX:
+						sib |= 0b00000001;
+						break;
+					case REG_RDX:
+						sib |= 0b00000010;
+						break;
+					case REG_RBX:
+						sib |= 0b00000011;
+						break;
+					case REG_RSP:
+						sib |= 0b00000100;
+						break;
+					case REG_RBP:
+						sib |= 0b00000101;
+						break;
+					case REG_RSI:
+						sib |= 0b00000110;
+						break;
+					case REG_RDI:
+						sib |= 0b00000111;
+						break;
+					case REG_R8:
+						rexPrefix |= REX_PREFIX(0, 0, 0, 1);
+						sib |= 0b00000000;
+						break;
+					case REG_R9:
+						rexPrefix |= REX_PREFIX(0, 0, 0, 1);
+						sib |= 0b00000001;
+						break;
+					case REG_R10:
+						rexPrefix |= REX_PREFIX(0, 0, 0, 1);
+						sib |= 0b00000010;
+						break;
+					case REG_R11:
+						rexPrefix |= REX_PREFIX(0, 0, 0, 1);
+						sib |= 0b00000011;
+						break;
+					case REG_R12:
+						rexPrefix |= REX_PREFIX(0, 0, 0, 1);
+						sib |= 0b00000100;
+						break;
+					case REG_R13:
+						rexPrefix |= REX_PREFIX(0, 0, 0, 1);
+						sib |= 0b00000101;
+						break;
+					case REG_R14:
+						rexPrefix |= REX_PREFIX(0, 0, 0, 1);
+						sib |= 0b00000110;
+						break;
+					case REG_R15:
+						rexPrefix |= REX_PREFIX(0, 0, 0, 1);
+						sib |= 0b00000111;
+						break;
+					default:
+						// Invalid base register
+						std::terminate();
 				}
 
 				switch (mem.scaleIndex) {
-				case REG_RAX:
-					sib |= 0b00000000;
-					break;
-				case REG_RCX:
-					sib |= 0b00001000;
-					break;
-				case REG_RDX:
-					sib |= 0b00010000;
-					break;
-				case REG_RBX:
-					sib |= 0b00011000;
-					break;
-				case REG_RBP:
-					sib |= 0b00101000;
-					break;
-				case REG_RSI:
-					sib |= 0b00110000;
-					break;
-				case REG_RDI:
-					sib |= 0b00111000;
-					break;
-				case REG_MAX:
-					sib |= 0b00100000;
-					break;
-				case REG_R8:
-					rexPrefix |= REX_PREFIX(0, 0, 1, 0);
-					sib |= 0b00000000;
-					break;
-				case REG_R9:
-					rexPrefix |= REX_PREFIX(0, 0, 1, 0);
-					sib |= 0b00001000;
-					break;
-				case REG_R10:
-					rexPrefix |= REX_PREFIX(0, 0, 1, 0);
-					sib |= 0b00010000;
-					break;
-				case REG_R11:
-					rexPrefix |= REX_PREFIX(0, 0, 1, 0);
-					sib |= 0b00011000;
-					break;
-				case REG_R12:
-					rexPrefix |= REX_PREFIX(0, 0, 1, 0);
-					sib |= 0b00100000;
-					break;
-				case REG_R13:
-					rexPrefix |= REX_PREFIX(0, 0, 1, 0);
-					sib |= 0b00101000;
-					break;
-				case REG_R14:
-					rexPrefix |= REX_PREFIX(0, 0, 1, 0);
-					sib |= 0b00110000;
-					break;
-				case REG_R15:
-					rexPrefix |= REX_PREFIX(0, 0, 1, 0);
-					sib |= 0b00111000;
-					break;
-				default:
-					// Invalid scale index register
-					std::terminate();
+					case REG_RAX:
+						sib |= 0b00000000;
+						break;
+					case REG_RCX:
+						sib |= 0b00001000;
+						break;
+					case REG_RDX:
+						sib |= 0b00010000;
+						break;
+					case REG_RBX:
+						sib |= 0b00011000;
+						break;
+					case REG_RBP:
+						sib |= 0b00101000;
+						break;
+					case REG_RSI:
+						sib |= 0b00110000;
+						break;
+					case REG_RDI:
+						sib |= 0b00111000;
+						break;
+					case REG_MAX:
+						sib |= 0b00100000;
+						break;
+					case REG_R8:
+						rexPrefix |= REX_PREFIX(0, 0, 1, 0);
+						sib |= 0b00000000;
+						break;
+					case REG_R9:
+						rexPrefix |= REX_PREFIX(0, 0, 1, 0);
+						sib |= 0b00001000;
+						break;
+					case REG_R10:
+						rexPrefix |= REX_PREFIX(0, 0, 1, 0);
+						sib |= 0b00010000;
+						break;
+					case REG_R11:
+						rexPrefix |= REX_PREFIX(0, 0, 1, 0);
+						sib |= 0b00011000;
+						break;
+					case REG_R12:
+						rexPrefix |= REX_PREFIX(0, 0, 1, 0);
+						sib |= 0b00100000;
+						break;
+					case REG_R13:
+						rexPrefix |= REX_PREFIX(0, 0, 1, 0);
+						sib |= 0b00101000;
+						break;
+					case REG_R14:
+						rexPrefix |= REX_PREFIX(0, 0, 1, 0);
+						sib |= 0b00110000;
+						break;
+					case REG_R15:
+						rexPrefix |= REX_PREFIX(0, 0, 1, 0);
+						sib |= 0b00111000;
+						break;
+					default:
+						// Invalid scale index register
+						std::terminate();
 				}
 
 				return true;

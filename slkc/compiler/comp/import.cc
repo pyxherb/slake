@@ -215,70 +215,70 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 		return;
 
 	switch (value->getKind()) {
-	case slake::ObjectKind::RootObject: {
-		RootObject *v = (RootObject *)value;
+		case slake::ObjectKind::RootObject: {
+			RootObject *v = (RootObject *)value;
 
-		for (auto it = v->scope->members.begin(); it != v->scope->members.end(); ++it)
-			importDefinitions(scope, parent, it.value());
+			for (auto it = v->scope->members.begin(); it != v->scope->members.end(); ++it)
+				importDefinitions(scope, parent, it.value());
 
-		break;
-	}
-	case slake::ObjectKind::Fn:
-		importDefinitions(scope, parent, (FnObject *)value);
-		break;
-	case slake::ObjectKind::Module:
-		importDefinitions(scope, parent, (ModuleObject *)value);
-		break;
-	case slake::ObjectKind::Class:
-		importDefinitions(scope, parent, (ClassObject *)value);
-		break;
-	case slake::ObjectKind::Interface:
-		importDefinitions(scope, parent, (InterfaceObject *)value);
-		break;
-		/*
-	case slake::ObjectKind::Alias: {
-		AliasValue *v = (AliasValue *)value;
-	}*/
-	default:
-		// Ignored.
-		;
+			break;
+		}
+		case slake::ObjectKind::Fn:
+			importDefinitions(scope, parent, (FnObject *)value);
+			break;
+		case slake::ObjectKind::Module:
+			importDefinitions(scope, parent, (ModuleObject *)value);
+			break;
+		case slake::ObjectKind::Class:
+			importDefinitions(scope, parent, (ClassObject *)value);
+			break;
+		case slake::ObjectKind::Interface:
+			importDefinitions(scope, parent, (InterfaceObject *)value);
+			break;
+			/*
+		case slake::ObjectKind::Alias: {
+			AliasValue *v = (AliasValue *)value;
+		}*/
+		default:
+			// Ignored.
+			;
 	}
 }
 
 std::shared_ptr<TypeNameNode> Compiler::toTypeName(slake::Type runtimeType) {
 	switch (runtimeType.typeId) {
-	case slake::TypeId::I8:
-		return std::make_shared<I8TypeNameNode>(SIZE_MAX);
-	case slake::TypeId::I16:
-		return std::make_shared<I16TypeNameNode>(SIZE_MAX);
-	case slake::TypeId::I32:
-		return std::make_shared<I32TypeNameNode>(SIZE_MAX);
-	case slake::TypeId::I64:
-		return std::make_shared<I64TypeNameNode>(SIZE_MAX);
-	case slake::TypeId::U8:
-		return std::make_shared<U8TypeNameNode>(SIZE_MAX);
-	case slake::TypeId::U16:
-		return std::make_shared<U16TypeNameNode>(SIZE_MAX);
-	case slake::TypeId::U32:
-		return std::make_shared<U32TypeNameNode>(SIZE_MAX);
-	case slake::TypeId::U64:
-		return std::make_shared<U64TypeNameNode>(SIZE_MAX);
-	case slake::TypeId::F32:
-		return std::make_shared<F32TypeNameNode>(SIZE_MAX);
-	case slake::TypeId::F64:
-		return std::make_shared<F64TypeNameNode>(SIZE_MAX);
-	case slake::TypeId::Bool:
-		return std::make_shared<BoolTypeNameNode>(SIZE_MAX);
-	case slake::TypeId::String:
-		return std::make_shared<StringTypeNameNode>(SIZE_MAX);
-	case slake::TypeId::None:
-		return std::make_shared<VoidTypeNameNode>(SIZE_MAX);
-	case slake::TypeId::Any:
-		return std::make_shared<AnyTypeNameNode>(SIZE_MAX);
-	case slake::TypeId::Array:
-		return std::make_shared<ArrayTypeNameNode>(toTypeName(runtimeType.getArrayExData()));
-	default:
-		break;
+		case slake::TypeId::I8:
+			return std::make_shared<I8TypeNameNode>(SIZE_MAX);
+		case slake::TypeId::I16:
+			return std::make_shared<I16TypeNameNode>(SIZE_MAX);
+		case slake::TypeId::I32:
+			return std::make_shared<I32TypeNameNode>(SIZE_MAX);
+		case slake::TypeId::I64:
+			return std::make_shared<I64TypeNameNode>(SIZE_MAX);
+		case slake::TypeId::U8:
+			return std::make_shared<U8TypeNameNode>(SIZE_MAX);
+		case slake::TypeId::U16:
+			return std::make_shared<U16TypeNameNode>(SIZE_MAX);
+		case slake::TypeId::U32:
+			return std::make_shared<U32TypeNameNode>(SIZE_MAX);
+		case slake::TypeId::U64:
+			return std::make_shared<U64TypeNameNode>(SIZE_MAX);
+		case slake::TypeId::F32:
+			return std::make_shared<F32TypeNameNode>(SIZE_MAX);
+		case slake::TypeId::F64:
+			return std::make_shared<F64TypeNameNode>(SIZE_MAX);
+		case slake::TypeId::Bool:
+			return std::make_shared<BoolTypeNameNode>(SIZE_MAX);
+		case slake::TypeId::String:
+			return std::make_shared<StringTypeNameNode>(SIZE_MAX);
+		case slake::TypeId::None:
+			return std::make_shared<VoidTypeNameNode>(SIZE_MAX);
+		case slake::TypeId::Any:
+			return std::make_shared<AnyTypeNameNode>(SIZE_MAX);
+		case slake::TypeId::Array:
+			return std::make_shared<ArrayTypeNameNode>(toTypeName(runtimeType.getArrayExData()));
+		default:
+			break;
 	}
 	throw std::logic_error("Unrecognized runtime value type");
 }

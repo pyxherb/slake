@@ -4,72 +4,72 @@ using namespace slake::slkc;
 
 bool Compiler::isLiteralTypeName(std::shared_ptr<TypeNameNode> typeName) {
 	switch (typeName->getTypeId()) {
-	case TypeId::I8:
-	case TypeId::I16:
-	case TypeId::I32:
-	case TypeId::I64:
-	case TypeId::U8:
-	case TypeId::U16:
-	case TypeId::U32:
-	case TypeId::U64:
-	case TypeId::F32:
-	case TypeId::F64:
-	case TypeId::String:
-	case TypeId::Bool:
-		return true;
-	case TypeId::Array: {
-		return isLiteralTypeName(std::static_pointer_cast<ArrayTypeNameNode>(typeName));
-	}
-	case TypeId::Auto:
-	case TypeId::Void:
-	case TypeId::Object:
-	case TypeId::Any:
-	case TypeId::Fn:
-	case TypeId::Custom:
-		return false;
-	default:
-		throw std::logic_error("Unrecognized type");
+		case TypeId::I8:
+		case TypeId::I16:
+		case TypeId::I32:
+		case TypeId::I64:
+		case TypeId::U8:
+		case TypeId::U16:
+		case TypeId::U32:
+		case TypeId::U64:
+		case TypeId::F32:
+		case TypeId::F64:
+		case TypeId::String:
+		case TypeId::Bool:
+			return true;
+		case TypeId::Array: {
+			return isLiteralTypeName(std::static_pointer_cast<ArrayTypeNameNode>(typeName));
+		}
+		case TypeId::Auto:
+		case TypeId::Void:
+		case TypeId::Object:
+		case TypeId::Any:
+		case TypeId::Fn:
+		case TypeId::Custom:
+			return false;
+		default:
+			throw std::logic_error("Unrecognized type");
 	}
 }
 
 bool Compiler::isNumericTypeName(std::shared_ptr<TypeNameNode> node) {
 	switch (node->getTypeId()) {
-	case TypeId::I8:
-	case TypeId::I16:
-	case TypeId::I32:
-	case TypeId::I64:
-	case TypeId::U8:
-	case TypeId::U16:
-	case TypeId::U32:
-	case TypeId::U64:
-	case TypeId::F32:
-	case TypeId::F64:
-		return true;
-	default:
-		return false;
+		case TypeId::I8:
+		case TypeId::I16:
+		case TypeId::I32:
+		case TypeId::I64:
+		case TypeId::U8:
+		case TypeId::U16:
+		case TypeId::U32:
+		case TypeId::U64:
+		case TypeId::F32:
+		case TypeId::F64:
+			return true;
+		default:
+			return false;
 	}
 }
 
 bool Compiler::isDecimalType(std::shared_ptr<TypeNameNode> node) {
 	switch (node->getTypeId()) {
-	case TypeId::F32:
-	case TypeId::F64:
-		return true;
-	default:
-		return false;
+		case TypeId::F32:
+		case TypeId::F64:
+			return true;
+		default:
+			return false;
 	}
 }
 
 bool Compiler::isCompoundTypeName(std::shared_ptr<TypeNameNode> node) {
 	switch (node->getTypeId()) {
-	case TypeId::Array:
-	case TypeId::Fn:
-	case TypeId::Object:
-		return true;
-	case TypeId::Custom:
-		return true;
-	default:
-		return false;
+		case TypeId::Array:
+		case TypeId::Fn:
+		case TypeId::Object:
+			return true;
+		case TypeId::Custom:
+			return true;
+		default:
+			return false;
 	}
 }
 
@@ -200,117 +200,117 @@ bool Compiler::isTypeNamesConvertible(CompileContext *compileContext, std::share
 		return isTypeNamesConvertible(std::static_pointer_cast<RefTypeNameNode>(src)->referencedType, dest);*/
 
 	switch (dest->getTypeId()) {
-	case TypeId::Object:
-		return isCompoundTypeName(src);
-	case TypeId::Any:
-		return true;
-	case TypeId::I8:
-	case TypeId::I16:
-	case TypeId::I32:
-	case TypeId::I64:
-	case TypeId::U8:
-	case TypeId::U16:
-	case TypeId::U32:
-	case TypeId::U64:
-	case TypeId::F32:
-	case TypeId::F64:
-		if (isNumericTypeName(src))
+		case TypeId::Object:
+			return isCompoundTypeName(src);
+		case TypeId::Any:
 			return true;
-		if (src->getTypeId() == TypeId::Any)
+		case TypeId::I8:
+		case TypeId::I16:
+		case TypeId::I32:
+		case TypeId::I64:
+		case TypeId::U8:
+		case TypeId::U16:
+		case TypeId::U32:
+		case TypeId::U64:
+		case TypeId::F32:
+		case TypeId::F64:
+			if (isNumericTypeName(src))
+				return true;
+			if (src->getTypeId() == TypeId::Any)
+				return true;
+			break;
+		case TypeId::Bool:
 			return true;
-		break;
-	case TypeId::Bool:
-		return true;
-	case TypeId::String:
-	case TypeId::Array:
-		if (src->getTypeId() == TypeId::Any)
-			return true;
-		break;
-	case TypeId::Custom: {
-		if (src->getTypeId() == TypeId::Any)
-			return true;
+		case TypeId::String:
+		case TypeId::Array:
+			if (src->getTypeId() == TypeId::Any)
+				return true;
+			break;
+		case TypeId::Custom: {
+			if (src->getTypeId() == TypeId::Any)
+				return true;
 
-		auto destType = resolveCustomTypeName(compileContext, (CustomTypeNameNode *)dest.get());
+			auto destType = resolveCustomTypeName(compileContext, (CustomTypeNameNode *)dest.get());
 
-		switch (destType->getNodeType()) {
-		case NodeType::Class: {
-			auto dt = std::static_pointer_cast<ClassNode>(destType);
+			switch (destType->getNodeType()) {
+				case NodeType::Class: {
+					auto dt = std::static_pointer_cast<ClassNode>(destType);
 
-			if (src->getTypeId() == TypeId::Custom) {
-				auto srcType = resolveCustomTypeName(compileContext, (CustomTypeNameNode *)src.get());
+					if (src->getTypeId() == TypeId::Custom) {
+						auto srcType = resolveCustomTypeName(compileContext, (CustomTypeNameNode *)src.get());
 
-				switch (srcType->getNodeType()) {
-				case NodeType::Class:
-					return _isTypeNamesConvertible(compileContext, std::static_pointer_cast<ClassNode>(srcType), dt);
-				case NodeType::Interface:
-					return _isTypeNamesConvertible(compileContext, std::static_pointer_cast<InterfaceNode>(srcType), dt);
-				default:
-					throw std::logic_error("Unresolved node type");
-				}
-			}
-
-			return false;
-		}
-		case NodeType::Interface: {
-			auto dt = std::static_pointer_cast<InterfaceNode>(destType);
-
-			if (src->getTypeId() == TypeId::Custom) {
-				auto srcType = resolveCustomTypeName(compileContext, (CustomTypeNameNode *)src.get());
-
-				switch (srcType->getNodeType()) {
-				case NodeType::Class:
-					return _isTypeNamesConvertible(compileContext, std::static_pointer_cast<ClassNode>(srcType), dt);
-				case NodeType::Interface:
-					return _isTypeNamesConvertible(compileContext, std::static_pointer_cast<InterfaceNode>(srcType), dt);
-				case NodeType::GenericParam: {
-					auto gp = std::static_pointer_cast<GenericParamNode>(srcType);
-
-					for (auto &i : gp->interfaceTypes) {
-						auto st = std::static_pointer_cast<InterfaceNode>(resolveCustomTypeName(compileContext, (CustomTypeNameNode *)i.get()));
-
-						if (_isTypeNamesConvertible(compileContext, st, dt))
-							return true;
+						switch (srcType->getNodeType()) {
+							case NodeType::Class:
+								return _isTypeNamesConvertible(compileContext, std::static_pointer_cast<ClassNode>(srcType), dt);
+							case NodeType::Interface:
+								return _isTypeNamesConvertible(compileContext, std::static_pointer_cast<InterfaceNode>(srcType), dt);
+							default:
+								throw std::logic_error("Unresolved node type");
+						}
 					}
 
+					return false;
+				}
+				case NodeType::Interface: {
+					auto dt = std::static_pointer_cast<InterfaceNode>(destType);
+
+					if (src->getTypeId() == TypeId::Custom) {
+						auto srcType = resolveCustomTypeName(compileContext, (CustomTypeNameNode *)src.get());
+
+						switch (srcType->getNodeType()) {
+							case NodeType::Class:
+								return _isTypeNamesConvertible(compileContext, std::static_pointer_cast<ClassNode>(srcType), dt);
+							case NodeType::Interface:
+								return _isTypeNamesConvertible(compileContext, std::static_pointer_cast<InterfaceNode>(srcType), dt);
+							case NodeType::GenericParam: {
+								auto gp = std::static_pointer_cast<GenericParamNode>(srcType);
+
+								for (auto &i : gp->interfaceTypes) {
+									auto st = std::static_pointer_cast<InterfaceNode>(resolveCustomTypeName(compileContext, (CustomTypeNameNode *)i.get()));
+
+									if (_isTypeNamesConvertible(compileContext, st, dt))
+										return true;
+								}
+
+								break;
+							}
+							default:
+								throw std::logic_error("Unresolved node type");
+						}
+					}
+
+					return false;
+				}
+				case NodeType::Alias: {
+					auto dt = std::static_pointer_cast<AliasNode>(destType);
 					break;
 				}
-				default:
-					throw std::logic_error("Unresolved node type");
+				case NodeType::GenericParam: {
+					auto dt = std::static_pointer_cast<GenericParamNode>(destType);
+
+					if (dt->baseType) {
+						if (!isTypeNamesConvertible(compileContext, src, dt->baseType))
+							return false;
+					}
+
+					for (auto &i : dt->interfaceTypes) {
+						if (!isTypeNamesConvertible(compileContext, src, i))
+							return false;
+					}
+
+					return true;
 				}
 			}
-
-			return false;
-		}
-		case NodeType::Alias: {
-			auto dt = std::static_pointer_cast<AliasNode>(destType);
 			break;
 		}
-		case NodeType::GenericParam: {
-			auto dt = std::static_pointer_cast<GenericParamNode>(destType);
-
-			if (dt->baseType) {
-				if (!isTypeNamesConvertible(compileContext, src, dt->baseType))
-					return false;
-			}
-
-			for (auto &i : dt->interfaceTypes) {
-				if (!isTypeNamesConvertible(compileContext, src, i))
-					return false;
-			}
-
-			return true;
-		}
-		}
-		break;
-	}
-	case TypeId::Fn:
-		if (src->getTypeId() == TypeId::Any)
-			return true;
-		return false;
-	case TypeId::Void:
-		return false;
-	case TypeId::Auto:
-		throw std::logic_error("Invalid destination type");
+		case TypeId::Fn:
+			if (src->getTypeId() == TypeId::Any)
+				return true;
+			return false;
+		case TypeId::Void:
+			return false;
+		case TypeId::Auto:
+			throw std::logic_error("Invalid destination type");
 	}
 
 	if (src->getTypeId() == TypeId::Custom) {
@@ -415,79 +415,79 @@ bool Compiler::isSameType(CompileContext *compileContext, std::shared_ptr<TypeNa
 		return false;
 
 	switch (x->getTypeId()) {
-	case TypeId::Custom: {
-		std::shared_ptr<AstNode> xDest = resolveCustomTypeName(compileContext, (CustomTypeNameNode *)x.get()),
-								 yDest = resolveCustomTypeName(compileContext, (CustomTypeNameNode *)y.get());
+		case TypeId::Custom: {
+			std::shared_ptr<AstNode> xDest = resolveCustomTypeName(compileContext, (CustomTypeNameNode *)x.get()),
+									 yDest = resolveCustomTypeName(compileContext, (CustomTypeNameNode *)y.get());
 
-		auto xDestNodeType = xDest->getNodeType();
+			auto xDestNodeType = xDest->getNodeType();
 
-		if (xDestNodeType != yDest->getNodeType())
-			return false;
-
-		switch (xDestNodeType) {
-		case NodeType::GenericParam: {
-			// Only for isFnOverloadingDuplicated()
-			std::shared_ptr<GenericParamNode> xGenericParam = std::static_pointer_cast<GenericParamNode>(xDest),
-											  yGenericParam = std::static_pointer_cast<GenericParamNode>(yDest);
-
-			AstNode *xNode = xGenericParam->ownerNode,
-					*yNode = yGenericParam->ownerNode;
-
-			if (xNode->getNodeType() != yNode->getNodeType())
+			if (xDestNodeType != yDest->getNodeType())
 				return false;
 
-			switch (xNode->getNodeType()) {
-			case NodeType::Class:
-			case NodeType::Interface:
-				return xGenericParam == yGenericParam;
-			case NodeType::FnOverloadingValue:
-				return xGenericParam->index == yGenericParam->index;
-			default:
-				throw std::logic_error("Unhandled owner type");
+			switch (xDestNodeType) {
+				case NodeType::GenericParam: {
+					// Only for isFnOverloadingDuplicated()
+					std::shared_ptr<GenericParamNode> xGenericParam = std::static_pointer_cast<GenericParamNode>(xDest),
+													  yGenericParam = std::static_pointer_cast<GenericParamNode>(yDest);
+
+					AstNode *xNode = xGenericParam->ownerNode,
+							*yNode = yGenericParam->ownerNode;
+
+					if (xNode->getNodeType() != yNode->getNodeType())
+						return false;
+
+					switch (xNode->getNodeType()) {
+						case NodeType::Class:
+						case NodeType::Interface:
+							return xGenericParam == yGenericParam;
+						case NodeType::FnOverloadingValue:
+							return xGenericParam->index == yGenericParam->index;
+						default:
+							throw std::logic_error("Unhandled owner type");
+					}
+					break;
+				}
+				default:
+					return xDest == yDest;
 			}
 			break;
 		}
+		case TypeId::Array:
+			return isSameType(
+				compileContext,
+				std::static_pointer_cast<ArrayTypeNameNode>(x)->elementType,
+				std::static_pointer_cast<ArrayTypeNameNode>(y)->elementType);
 		default:
-			return xDest == yDest;
-		}
-		break;
-	}
-	case TypeId::Array:
-		return isSameType(
-			compileContext,
-			std::static_pointer_cast<ArrayTypeNameNode>(x)->elementType,
-			std::static_pointer_cast<ArrayTypeNameNode>(y)->elementType);
-	default:
-		return true;
+			return true;
 	}
 }
 
 int Compiler::getTypeNameWeight(std::shared_ptr<TypeNameNode> t) {
 	switch (t->getTypeId()) {
-	case TypeId::Bool:
-		return 0;
-	case TypeId::I8:
-		return 10;
-	case TypeId::I16:
-		return 11;
-	case TypeId::I32:
-		return 12;
-	case TypeId::I64:
-		return 13;
-	case TypeId::U8:
-		return 20;
-	case TypeId::U16:
-		return 21;
-	case TypeId::U32:
-		return 22;
-	case TypeId::U64:
-		return 23;
-	case TypeId::F32:
-		return 31;
-	case TypeId::F64:
-		return 32;
-	default:
-		return -1;
+		case TypeId::Bool:
+			return 0;
+		case TypeId::I8:
+			return 10;
+		case TypeId::I16:
+			return 11;
+		case TypeId::I32:
+			return 12;
+		case TypeId::I64:
+			return 13;
+		case TypeId::U8:
+			return 20;
+		case TypeId::U16:
+			return 21;
+		case TypeId::U32:
+			return 22;
+		case TypeId::U64:
+			return 23;
+		case TypeId::F32:
+			return 31;
+		case TypeId::F64:
+			return 32;
+		default:
+			return -1;
 	}
 }
 

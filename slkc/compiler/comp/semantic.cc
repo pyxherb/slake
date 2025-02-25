@@ -17,14 +17,14 @@ void Compiler::updateCompletionContextForTrailingSpaces(CompileContext *compileC
 
 	for (size_t i = idxBegin; i < idxEnd; ++i) {
 		switch (curDoc->lexer->tokens[i]->tokenId) {
-		case TokenId::Whitespace:
-		case TokenId::NewLine:
-			updateCompletionContext(i, completionContext);
-		case TokenId::BlockComment:
-		case TokenId::LineComment:
-			break;
-		default:
-			goto end;
+			case TokenId::Whitespace:
+			case TokenId::NewLine:
+				updateCompletionContext(i, completionContext);
+			case TokenId::BlockComment:
+			case TokenId::LineComment:
+				break;
+			default:
+				goto end;
 		}
 	}
 end:;
@@ -34,48 +34,48 @@ void Compiler::updateCompletionContext(std::shared_ptr<TypeNameNode> targetTypeN
 	auto curDoc = sourceDocs.at(curDocName).get();
 
 	switch (targetTypeName->getTypeId()) {
-	case TypeId::I8:
-	case TypeId::I16:
-	case TypeId::I32:
-	case TypeId::I64:
-	case TypeId::U8:
-	case TypeId::U16:
-	case TypeId::U32:
-	case TypeId::U64:
-	case TypeId::F32:
-	case TypeId::F64:
-	case TypeId::String:
-	case TypeId::Bool:
-	case TypeId::Void:
-	case TypeId::Any:
-	case TypeId::Auto: {
-		auto t = std::static_pointer_cast<BasicSimpleTypeNameNode>(targetTypeName);
+		case TypeId::I8:
+		case TypeId::I16:
+		case TypeId::I32:
+		case TypeId::I64:
+		case TypeId::U8:
+		case TypeId::U16:
+		case TypeId::U32:
+		case TypeId::U64:
+		case TypeId::F32:
+		case TypeId::F64:
+		case TypeId::String:
+		case TypeId::Bool:
+		case TypeId::Void:
+		case TypeId::Any:
+		case TypeId::Auto: {
+			auto t = std::static_pointer_cast<BasicSimpleTypeNameNode>(targetTypeName);
 
-		if (t->idxToken != SIZE_MAX)
-			curDoc->tokenInfos[t->idxToken].completionContext = completionContext;
-		break;
-	}
-	case TypeId::Array: {
-		auto t = std::static_pointer_cast<ArrayTypeNameNode>(targetTypeName);
-		updateCompletionContext(t->elementType, completionContext);
-		break;
-	}
-	case TypeId::Custom: {
-		auto t = std::static_pointer_cast<CustomTypeNameNode>(targetTypeName);
+			if (t->idxToken != SIZE_MAX)
+				curDoc->tokenInfos[t->idxToken].completionContext = completionContext;
+			break;
+		}
+		case TypeId::Array: {
+			auto t = std::static_pointer_cast<ArrayTypeNameNode>(targetTypeName);
+			updateCompletionContext(t->elementType, completionContext);
+			break;
+		}
+		case TypeId::Custom: {
+			auto t = std::static_pointer_cast<CustomTypeNameNode>(targetTypeName);
 
-		updateCompletionContext(t->ref, completionContext);
-		break;
-	}
-	case TypeId::Bad: {
-		auto t = std::static_pointer_cast<BadTypeNameNode>(targetTypeName);
+			updateCompletionContext(t->ref, completionContext);
+			break;
+		}
+		case TypeId::Bad: {
+			auto t = std::static_pointer_cast<BadTypeNameNode>(targetTypeName);
 
-		for (size_t i = t->idxStartToken; i < t->idxEndToken; ++i)
-			curDoc->tokenInfos[i].completionContext = completionContext;
+			for (size_t i = t->idxStartToken; i < t->idxEndToken; ++i)
+				curDoc->tokenInfos[i].completionContext = completionContext;
 
-		break;
-	}
-	default:
-		assert(false);
+			break;
+		}
+		default:
+			assert(false);
 	}
 }
 
@@ -102,47 +102,47 @@ void Compiler::updateSemanticType(std::shared_ptr<TypeNameNode> targetTypeName, 
 	auto curDoc = sourceDocs.at(curDocName).get();
 
 	switch (targetTypeName->getTypeId()) {
-	case TypeId::I8:
-	case TypeId::I16:
-	case TypeId::I32:
-	case TypeId::I64:
-	case TypeId::U8:
-	case TypeId::U16:
-	case TypeId::U32:
-	case TypeId::U64:
-	case TypeId::F32:
-	case TypeId::F64:
-	case TypeId::String:
-	case TypeId::Bool:
-	case TypeId::Void:
-	case TypeId::Any:
-	case TypeId::Auto: {
-		auto t = std::static_pointer_cast<BasicSimpleTypeNameNode>(targetTypeName);
-		if (t->idxToken != SIZE_MAX)
-			curDoc->tokenInfos[t->idxToken].semanticType = type;
-		break;
-	}
-	case TypeId::Array: {
-		auto t = std::static_pointer_cast<ArrayTypeNameNode>(targetTypeName);
-		updateSemanticType(t->elementType, type);
-		break;
-	}
-	case TypeId::Custom: {
-		auto t = std::static_pointer_cast<CustomTypeNameNode>(targetTypeName);
+		case TypeId::I8:
+		case TypeId::I16:
+		case TypeId::I32:
+		case TypeId::I64:
+		case TypeId::U8:
+		case TypeId::U16:
+		case TypeId::U32:
+		case TypeId::U64:
+		case TypeId::F32:
+		case TypeId::F64:
+		case TypeId::String:
+		case TypeId::Bool:
+		case TypeId::Void:
+		case TypeId::Any:
+		case TypeId::Auto: {
+			auto t = std::static_pointer_cast<BasicSimpleTypeNameNode>(targetTypeName);
+			if (t->idxToken != SIZE_MAX)
+				curDoc->tokenInfos[t->idxToken].semanticType = type;
+			break;
+		}
+		case TypeId::Array: {
+			auto t = std::static_pointer_cast<ArrayTypeNameNode>(targetTypeName);
+			updateSemanticType(t->elementType, type);
+			break;
+		}
+		case TypeId::Custom: {
+			auto t = std::static_pointer_cast<CustomTypeNameNode>(targetTypeName);
 
-		updateSemanticType(t->ref, type);
-		break;
-	}
-	case TypeId::Bad: {
-		auto t = std::static_pointer_cast<BadTypeNameNode>(targetTypeName);
+			updateSemanticType(t->ref, type);
+			break;
+		}
+		case TypeId::Bad: {
+			auto t = std::static_pointer_cast<BadTypeNameNode>(targetTypeName);
 
-		for (size_t i = t->idxStartToken; i < t->idxEndToken; ++i)
-			curDoc->tokenInfos[i].semanticType = type;
+			for (size_t i = t->idxStartToken; i < t->idxEndToken; ++i)
+				curDoc->tokenInfos[i].semanticType = type;
 
-		break;
-	}
-	default:
-		assert(false);
+			break;
+		}
+		default:
+			assert(false);
 	}
 }
 
@@ -175,15 +175,15 @@ void Compiler::updateTokenInfoForTrailingSpaces(CompileContext *compileContext, 
 
 	for (size_t i = idxBegin; i < idxEnd; ++i) {
 		switch (curDoc->lexer->tokens[i]->tokenId) {
-		case TokenId::Whitespace:
-		case TokenId::NewLine:
-			updateTokenInfo(i, updater);
-			break;
-		case TokenId::BlockComment:
-		case TokenId::LineComment:
-			break;
-		default:
-			goto end;
+			case TokenId::Whitespace:
+			case TokenId::NewLine:
+				updateTokenInfo(i, updater);
+				break;
+			case TokenId::BlockComment:
+			case TokenId::LineComment:
+				break;
+			default:
+				goto end;
 		}
 	}
 end:;

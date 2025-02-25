@@ -123,19 +123,19 @@ void ExecutionThread::join() {
 
 void ExecutionThread::kill() {
 	switch (status) {
-	case ThreadStatus::Ready:
-		status = ThreadStatus::Dead;
-		start();
+		case ThreadStatus::Ready:
+			status = ThreadStatus::Dead;
+			start();
 
-		WaitForSingleObject(nativeThreadHandle, INFINITE);
-		break;
-	case ThreadStatus::Running:
-		status = ThreadStatus::Dead;
-		WaitForSingleObject(nativeThreadHandle, INFINITE);
-		break;
-	case ThreadStatus::Done:
-	case ThreadStatus::Dead:
-		break;
+			WaitForSingleObject(nativeThreadHandle, INFINITE);
+			break;
+		case ThreadStatus::Running:
+			status = ThreadStatus::Dead;
+			WaitForSingleObject(nativeThreadHandle, INFINITE);
+			break;
+		case ThreadStatus::Done:
+		case ThreadStatus::Dead:
+			break;
 	}
 }
 

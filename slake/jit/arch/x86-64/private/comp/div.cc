@@ -756,47 +756,47 @@ InternalExceptionPointer slake::jit::x86_64::compileDivInstruction(
 	Value lhsExpectedValue(ValueType::Undefined), rhsExpectedValue(ValueType::Undefined);
 
 	switch (lhs.valueType) {
-	case ValueType::I8:
-	case ValueType::I16:
-	case ValueType::I32:
-	case ValueType::I64:
-	case ValueType::U8:
-	case ValueType::U16:
-	case ValueType::U32:
-	case ValueType::U64:
-	case ValueType::F32:
-	case ValueType::F64:
-	case ValueType::Bool:
-		lhsExpectedValue = lhs;
-		break;
-	case ValueType::RegRef:
-		lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(lhs.getRegIndex()).expectedValue;
-		break;
-	default:
-		// Malformed function
-		std::terminate();
+		case ValueType::I8:
+		case ValueType::I16:
+		case ValueType::I32:
+		case ValueType::I64:
+		case ValueType::U8:
+		case ValueType::U16:
+		case ValueType::U32:
+		case ValueType::U64:
+		case ValueType::F32:
+		case ValueType::F64:
+		case ValueType::Bool:
+			lhsExpectedValue = lhs;
+			break;
+		case ValueType::RegRef:
+			lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(lhs.getRegIndex()).expectedValue;
+			break;
+		default:
+			// Malformed function
+			std::terminate();
 	}
 
 	switch (rhs.valueType) {
-	case ValueType::I8:
-	case ValueType::I16:
-	case ValueType::I32:
-	case ValueType::I64:
-	case ValueType::U8:
-	case ValueType::U16:
-	case ValueType::U32:
-	case ValueType::U64:
-	case ValueType::F32:
-	case ValueType::F64:
-	case ValueType::Bool:
-		lhsExpectedValue = rhs;
-		break;
-	case ValueType::RegRef:
-		lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(rhs.getRegIndex()).expectedValue;
-		break;
-	default:
-		// Malformed function
-		std::terminate();
+		case ValueType::I8:
+		case ValueType::I16:
+		case ValueType::I32:
+		case ValueType::I64:
+		case ValueType::U8:
+		case ValueType::U16:
+		case ValueType::U32:
+		case ValueType::U64:
+		case ValueType::F32:
+		case ValueType::F64:
+		case ValueType::Bool:
+			lhsExpectedValue = rhs;
+			break;
+		case ValueType::RegRef:
+			lhsExpectedValue = analyzedInfo.analyzedRegInfo.at(rhs.getRegIndex()).expectedValue;
+			break;
+		default:
+			// Malformed function
+			std::terminate();
 	}
 
 	switch (outputRegInfo.type.typeId) {
@@ -880,9 +880,9 @@ InternalExceptionPointer slake::jit::x86_64::compileDivInstruction(
 															rhsExpectedValue));
 			break;
 		}
-	default:
-		// The function is malformed
-		std::terminate();
+		default:
+			// The function is malformed
+			std::terminate();
 	}
 
 	return {};

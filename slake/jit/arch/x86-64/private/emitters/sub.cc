@@ -6,37 +6,37 @@ using namespace slake::jit::x86_64;
 
 SLAKE_API DiscreteInstruction slake::jit::x86_64::emitSubImm8ToReg8Ins(RegisterId registerId, uint8_t imm0[1]) {
 	switch (registerId) {
-	case REG_RAX:
-		return emitInsWithImm8AndAlReg(0x2c, imm0);
-	default:
-		return emitInsWithImm8AndReg8WithMinorOpcode(0x80, 0b101, registerId, imm0);
+		case REG_RAX:
+			return emitInsWithImm8AndAlReg(0x2c, imm0);
+		default:
+			return emitInsWithImm8AndReg8WithMinorOpcode(0x80, 0b101, registerId, imm0);
 	}
 }
 
 SLAKE_API DiscreteInstruction slake::jit::x86_64::emitSubImm16ToReg16Ins(RegisterId registerId, uint8_t imm0[2]) {
 	switch (registerId) {
-	case REG_RAX:
-		return emitInsWithImm16AndAxReg(0x2d, imm0);
-	default:
-		return emitInsWithImm16AndReg16WithMinorOpcode(0x81, 0b101, registerId, imm0);
+		case REG_RAX:
+			return emitInsWithImm16AndAxReg(0x2d, imm0);
+		default:
+			return emitInsWithImm16AndReg16WithMinorOpcode(0x81, 0b101, registerId, imm0);
 	}
 }
 
 SLAKE_API DiscreteInstruction slake::jit::x86_64::emitSubImm32ToReg32Ins(RegisterId registerId, uint8_t imm0[4]) {
 	switch (registerId) {
-	case REG_RAX:
-		return emitInsWithImm32AndEaxReg(0x2d, imm0);
-	default:
-		return emitInsWithImm32AndReg32WithMinorOpcode(0x81, 0b101, registerId, imm0);
+		case REG_RAX:
+			return emitInsWithImm32AndEaxReg(0x2d, imm0);
+		default:
+			return emitInsWithImm32AndReg32WithMinorOpcode(0x81, 0b101, registerId, imm0);
 	}
 }
 
 SLAKE_API DiscreteInstruction slake::jit::x86_64::emitSubImm32ToReg64Ins(RegisterId registerId, uint8_t imm0[4]) {
 	switch (registerId) {
-	case REG_RAX:
-		return emitInsWithImm32AndRaxReg(0x2d, imm0);
-	default:
-		return emitInsWithImm32AndReg64WithMinorOpcode(0x81, 0b101, registerId, imm0);
+		case REG_RAX:
+			return emitInsWithImm32AndRaxReg(0x2d, imm0);
+		default:
+			return emitInsWithImm32AndReg64WithMinorOpcode(0x81, 0b101, registerId, imm0);
 	}
 }
 

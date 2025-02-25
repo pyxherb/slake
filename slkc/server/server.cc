@@ -67,12 +67,12 @@ slake::slkc::Server::Server() {
 		clientMarkupType = (ClientMarkupType)rootValue["markupType"].asUInt();
 
 		switch (clientMarkupType) {
-		case ClientMarkupType::PlainText:
-		case ClientMarkupType::Markdown:
-			break;
-		default:
-			response.body = "Invalid markup kind";
-			goto badRequest;
+			case ClientMarkupType::PlainText:
+			case ClientMarkupType::Markdown:
+				break;
+			default:
+				response.body = "Invalid markup kind";
+				goto badRequest;
 		}
 
 		{
@@ -460,54 +460,54 @@ slake::slkc::Server::Server() {
 					auto &contentsValue = responseBodyValue["contents"];
 
 					switch (member->getNodeType()) {
-					case NodeType::Var: {
-						auto m = std::static_pointer_cast<VarNode>(member);
+						case NodeType::Var: {
+							auto m = std::static_pointer_cast<VarNode>(member);
 
-						contentsValue = extractDeclaration(doc, m);
-						break;
-					}
-					case NodeType::Param: {
-						auto m = std::static_pointer_cast<ParamNode>(member);
+							contentsValue = extractDeclaration(doc, m);
+							break;
+						}
+						case NodeType::Param: {
+							auto m = std::static_pointer_cast<ParamNode>(member);
 
-						contentsValue = extractDeclaration(doc, m);
-						break;
-					}
-					case NodeType::LocalVar: {
-						auto m = std::static_pointer_cast<LocalVarNode>(member);
+							contentsValue = extractDeclaration(doc, m);
+							break;
+						}
+						case NodeType::LocalVar: {
+							auto m = std::static_pointer_cast<LocalVarNode>(member);
 
-						contentsValue = extractDeclaration(doc, m);
-						break;
-					}
-					case NodeType::FnOverloadingValue: {
-						auto m = std::static_pointer_cast<FnOverloadingNode>(member);
+							contentsValue = extractDeclaration(doc, m);
+							break;
+						}
+						case NodeType::FnOverloadingValue: {
+							auto m = std::static_pointer_cast<FnOverloadingNode>(member);
 
-						contentsValue = extractDeclaration(doc, m);
-						break;
-					}
-					case NodeType::GenericParam: {
-						auto m = std::static_pointer_cast<GenericParamNode>(member);
+							contentsValue = extractDeclaration(doc, m);
+							break;
+						}
+						case NodeType::GenericParam: {
+							auto m = std::static_pointer_cast<GenericParamNode>(member);
 
-						contentsValue = extractDeclaration(doc, m);
-						break;
-					}
-					case NodeType::Class: {
-						auto m = std::static_pointer_cast<ClassNode>(member);
+							contentsValue = extractDeclaration(doc, m);
+							break;
+						}
+						case NodeType::Class: {
+							auto m = std::static_pointer_cast<ClassNode>(member);
 
-						contentsValue = extractDeclaration(doc, m);
-						break;
-					}
-					case NodeType::Interface: {
-						auto m = std::static_pointer_cast<InterfaceNode>(member);
+							contentsValue = extractDeclaration(doc, m);
+							break;
+						}
+						case NodeType::Interface: {
+							auto m = std::static_pointer_cast<InterfaceNode>(member);
 
-						contentsValue = extractDeclaration(doc, m);
-						break;
-					}
-					case NodeType::Module: {
-						auto m = std::static_pointer_cast<ModuleNode>(member);
+							contentsValue = extractDeclaration(doc, m);
+							break;
+						}
+						case NodeType::Module: {
+							auto m = std::static_pointer_cast<ModuleNode>(member);
 
-						contentsValue = extractDeclaration(doc, m);
-						break;
-					}
+							contentsValue = extractDeclaration(doc, m);
+							break;
+						}
 					}
 				}
 

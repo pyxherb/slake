@@ -25,57 +25,57 @@ slake::Value print(slake::Context *context, slake::MajorFrame *curMajorFrame) {
 			}
 
 			switch (data.valueType) {
-			case ValueType::I8:
-				std::cout << data.getI8();
-				break;
-			case ValueType::I16:
-				std::cout << data.getI16();
-				break;
-			case ValueType::I32:
-				std::cout << data.getI32();
-				break;
-			case ValueType::I64:
-				std::cout << data.getI64();
-				break;
-			case ValueType::U8:
-				std::cout << data.getU8();
-				break;
-			case ValueType::U16:
-				std::cout << data.getU16();
-				break;
-			case ValueType::U32:
-				std::cout << data.getU32();
-				break;
-			case ValueType::U64:
-				std::cout << data.getU64();
-				break;
-			case ValueType::F32:
-				std::cout << data.getF32();
-				break;
-			case ValueType::F64:
-				std::cout << data.getF64();
-				break;
-			case ValueType::Bool:
-				fputs(data.getBool() ? "true" : "false", stdout);
-				break;
-			case ValueType::EntityRef: {
-				Object *objectPtr = data.getEntityRef().asObject.instanceObject;
-				if (!objectPtr)
-					fputs("null", stdout);
-				else {
-					switch (objectPtr->getKind()) {
-					case ObjectKind::String:
-						std::cout << ((slake::StringObject *)objectPtr)->data.data();
-						break;
-					default:
-						std::cout << "<object at " << std::hex << objectPtr << ">";
-						break;
+				case ValueType::I8:
+					std::cout << data.getI8();
+					break;
+				case ValueType::I16:
+					std::cout << data.getI16();
+					break;
+				case ValueType::I32:
+					std::cout << data.getI32();
+					break;
+				case ValueType::I64:
+					std::cout << data.getI64();
+					break;
+				case ValueType::U8:
+					std::cout << data.getU8();
+					break;
+				case ValueType::U16:
+					std::cout << data.getU16();
+					break;
+				case ValueType::U32:
+					std::cout << data.getU32();
+					break;
+				case ValueType::U64:
+					std::cout << data.getU64();
+					break;
+				case ValueType::F32:
+					std::cout << data.getF32();
+					break;
+				case ValueType::F64:
+					std::cout << data.getF64();
+					break;
+				case ValueType::Bool:
+					fputs(data.getBool() ? "true" : "false", stdout);
+					break;
+				case ValueType::EntityRef: {
+					Object *objectPtr = data.getEntityRef().asObject.instanceObject;
+					if (!objectPtr)
+						fputs("null", stdout);
+					else {
+						switch (objectPtr->getKind()) {
+							case ObjectKind::String:
+								std::cout << ((slake::StringObject *)objectPtr)->data.data();
+								break;
+							default:
+								std::cout << "<object at " << std::hex << objectPtr << ">";
+								break;
+						}
 					}
+					break;
 				}
-				break;
-			}
-			default:
-				throw std::runtime_error("Invalid argument type");
+				default:
+					throw std::runtime_error("Invalid argument type");
 			}
 		}
 	}
@@ -110,13 +110,13 @@ void printTraceback(slake::Runtime *rt, slake::ContextObject *context) {
 		}
 		printf("\t%s: 0x%08x", rt->getFullName(i->curFn->fnObject).c_str(), i->curIns);
 		switch (i->curFn->overloadingKind) {
-		case slake::FnOverloadingKind::Regular: {
-			if (auto sld = ((slake::RegularFnOverloadingObject *)i->curFn)->getSourceLocationDesc(i->curIns); sld) {
-				printf(" at %d:%d", sld->line, sld->column);
+			case slake::FnOverloadingKind::Regular: {
+				if (auto sld = ((slake::RegularFnOverloadingObject *)i->curFn)->getSourceLocationDesc(i->curIns); sld) {
+					printf(" at %d:%d", sld->line, sld->column);
+				}
+				break;
 			}
-			break;
-		}
-		default:;
+			default:;
 		}
 		putchar('\n');
 	}
@@ -186,19 +186,19 @@ int main(int argc, char **argv) {
 			e) {
 			printf("Internal exception: %s\n", e->what());
 			switch (e->kind) {
-			case slake::ErrorKind::OptimizerError: {
-				slake::OptimizerError *err = (slake::OptimizerError *)e.get();
+				case slake::ErrorKind::OptimizerError: {
+					slake::OptimizerError *err = (slake::OptimizerError *)e.get();
 
-				switch (err->optimizerErrorCode) {
-				case slake::OptimizerErrorCode::MalformedProgram: {
-					slake::MalformedProgramError *err = (slake::MalformedProgramError *)e.get();
+					switch (err->optimizerErrorCode) {
+						case slake::OptimizerErrorCode::MalformedProgram: {
+							slake::MalformedProgramError *err = (slake::MalformedProgramError *)e.get();
 
-					printf("Malformed program error at instruction #%zu\n", err->offIns);
+							printf("Malformed program error at instruction #%zu\n", err->offIns);
+						}
+						default:;
+					}
 				}
 				default:;
-				}
-			}
-			default:;
 			}
 			e.reset();
 			goto end;

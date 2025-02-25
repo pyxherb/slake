@@ -23,32 +23,32 @@ bool Compiler::GenericNodeArgListComparator::operator()(
 			// Do some special checks for some kinds of type name - such as custom.
 			//
 			switch (lhsTypeId) {
-			case TypeId::Custom: {
-				auto lhsTypeName = std::static_pointer_cast<CustomTypeNameNode>(lhs[i]),
-					 rhsTypeName = std::static_pointer_cast<CustomTypeNameNode>(rhs[i]);
+				case TypeId::Custom: {
+					auto lhsTypeName = std::static_pointer_cast<CustomTypeNameNode>(lhs[i]),
+						 rhsTypeName = std::static_pointer_cast<CustomTypeNameNode>(rhs[i]);
 
-				if (lhsTypeName->compiler < rhsTypeName->compiler)
-					return true;
-				else if (lhsTypeName->compiler > rhsTypeName->compiler)
-					return false;
-				else {
-					std::shared_ptr<AstNode> lhsNode, rhsNode;
-					try {
-						lhsNode = lhsTypeName->compiler->resolveCustomTypeName(nullptr, lhsTypeName.get());
-						rhsNode = rhsTypeName->compiler->resolveCustomTypeName(nullptr, rhsTypeName.get());
-					} catch (FatalCompilationError e) {
-						// Supress the exceptions - the function should be noexcept, we have to raise compilation errors out of the comparator.
+					if (lhsTypeName->compiler < rhsTypeName->compiler)
+						return true;
+					else if (lhsTypeName->compiler > rhsTypeName->compiler)
+						return false;
+					else {
+						std::shared_ptr<AstNode> lhsNode, rhsNode;
+						try {
+							lhsNode = lhsTypeName->compiler->resolveCustomTypeName(nullptr, lhsTypeName.get());
+							rhsNode = rhsTypeName->compiler->resolveCustomTypeName(nullptr, rhsTypeName.get());
+						} catch (FatalCompilationError e) {
+							// Supress the exceptions - the function should be noexcept, we have to raise compilation errors out of the comparator.
+						}
+
+						if (lhsNode < rhsNode)
+							return true;
+						else if (lhsNode > rhsNode)
+							return false;
 					}
 
-					if (lhsNode < rhsNode)
-						return true;
-					else if (lhsNode > rhsNode)
-						return false;
+					break;
 				}
-
-				break;
-			}
-			default:;
+				default:;
 			}
 		}
 	}
@@ -86,124 +86,124 @@ void Compiler::walkNodeForGenericInstantiation(
 	std::shared_ptr<AstNode> node,
 	GenericNodeInstantiationContext &instantiationContext) {
 	switch (node->getNodeType()) {
-	case NodeType::Fn: {
-		std::shared_ptr<FnNode> n = std::static_pointer_cast<FnNode>(node);
+		case NodeType::Fn: {
+			std::shared_ptr<FnNode> n = std::static_pointer_cast<FnNode>(node);
 
-		if (auto scope = scopeOf(nullptr, n->parent); scope)
-			scanAndLinkParentFns(scope.get(), n.get(), n->name);
+			if (auto scope = scopeOf(nullptr, n->parent); scope)
+				scanAndLinkParentFns(scope.get(), n.get(), n->name);
 
-		for (auto &i : n->overloadingRegistries) {
-			if (i->genericParams.size() && n != instantiationContext.mappedNode) {
+			for (auto &i : n->overloadingRegistries) {
+				if (i->genericParams.size() && n != instantiationContext.mappedNode) {
+					GenericNodeInstantiationContext newInstantiationContext = instantiationContext;
+
+					// Mark the generic parameters in the overloading as irreplaceable.
+					// Note that we use nullptr to identify irreplaceable generic parameters.
+					for (size_t j = 0; j < i->genericParams.size(); ++j) {
+						newInstantiationContext.mappedGenericArgs[i->genericParams[j]->name] = {};
+					}
+
+					walkTypeNameNodeForGenericInstantiation(i->returnType, newInstantiationContext);
+
+					for (auto &j : i->genericParams)
+						walkNodeForGenericInstantiation(j, newInstantiationContext);
+
+					for (auto &j : i->params) {
+						j->originalType = j->type;
+						walkTypeNameNodeForGenericInstantiation(j->type, newInstantiationContext);
+					}
+				} else {
+					walkTypeNameNodeForGenericInstantiation(i->returnType, instantiationContext);
+
+					for (auto &j : i->genericParams)
+						walkNodeForGenericInstantiation(j, instantiationContext);
+
+					for (auto &j : i->params) {
+						j->originalType = j->type
+											  ? j->type->duplicate<TypeNameNode>()
+											  : std::make_shared<AnyTypeNameNode>(SIZE_MAX);
+						walkTypeNameNodeForGenericInstantiation(j->type, instantiationContext);
+					}
+				}
+			}
+			break;
+		}
+		case NodeType::Var: {
+			std::shared_ptr<VarNode> n = std::static_pointer_cast<VarNode>(node);
+
+			walkTypeNameNodeForGenericInstantiation(n->type, instantiationContext);
+
+			break;
+		}
+		case NodeType::Class: {
+			std::shared_ptr<ClassNode> n = std::static_pointer_cast<ClassNode>(node);
+
+			if (n->genericParams.size() && n != instantiationContext.mappedNode) {
 				GenericNodeInstantiationContext newInstantiationContext = instantiationContext;
 
 				// Mark the generic parameters in the overloading as irreplaceable.
 				// Note that we use nullptr to identify irreplaceable generic parameters.
-				for (size_t j = 0; j < i->genericParams.size(); ++j) {
-					newInstantiationContext.mappedGenericArgs[i->genericParams[j]->name] = {};
+				for (size_t j = 0; j < n->genericParams.size(); ++j) {
+					newInstantiationContext.mappedGenericArgs[n->genericParams[j]->name] = {};
 				}
 
-				walkTypeNameNodeForGenericInstantiation(i->returnType, newInstantiationContext);
+				for (auto &i : n->genericParams)
+					walkNodeForGenericInstantiation(i, newInstantiationContext);
 
-				for (auto &j : i->genericParams)
-					walkNodeForGenericInstantiation(j, newInstantiationContext);
+				if (n->parentClass)
+					walkTypeNameNodeForGenericInstantiation(n->parentClass, newInstantiationContext);
 
-				for (auto &j : i->params) {
-					j->originalType = j->type;
-					walkTypeNameNodeForGenericInstantiation(j->type, newInstantiationContext);
+				for (auto &i : n->implInterfaces) {
+					walkTypeNameNodeForGenericInstantiation(i, newInstantiationContext);
+				}
+
+				for (auto &i : n->scope->members) {
+					walkNodeForGenericInstantiation(i.second, newInstantiationContext);
 				}
 			} else {
-				walkTypeNameNodeForGenericInstantiation(i->returnType, instantiationContext);
+				for (auto &i : n->genericParams)
+					walkNodeForGenericInstantiation(i, instantiationContext);
 
-				for (auto &j : i->genericParams)
-					walkNodeForGenericInstantiation(j, instantiationContext);
+				if (n->parentClass)
+					walkTypeNameNodeForGenericInstantiation(n->parentClass, instantiationContext);
 
-				for (auto &j : i->params) {
-					j->originalType = j->type
-										  ? j->type->duplicate<TypeNameNode>()
-										  : std::make_shared<AnyTypeNameNode>(SIZE_MAX);
-					walkTypeNameNodeForGenericInstantiation(j->type, instantiationContext);
+				for (auto &i : n->implInterfaces) {
+					walkTypeNameNodeForGenericInstantiation(i, instantiationContext);
+				}
+
+				for (auto &i : n->scope->members) {
+					walkNodeForGenericInstantiation(i.second, instantiationContext);
 				}
 			}
+
+			break;
 		}
-		break;
-	}
-	case NodeType::Var: {
-		std::shared_ptr<VarNode> n = std::static_pointer_cast<VarNode>(node);
+		case NodeType::Interface: {
+			std::shared_ptr<InterfaceNode> n = std::static_pointer_cast<InterfaceNode>(node);
 
-		walkTypeNameNodeForGenericInstantiation(n->type, instantiationContext);
-
-		break;
-	}
-	case NodeType::Class: {
-		std::shared_ptr<ClassNode> n = std::static_pointer_cast<ClassNode>(node);
-
-		if (n->genericParams.size() && n != instantiationContext.mappedNode) {
-			GenericNodeInstantiationContext newInstantiationContext = instantiationContext;
-
-			// Mark the generic parameters in the overloading as irreplaceable.
-			// Note that we use nullptr to identify irreplaceable generic parameters.
-			for (size_t j = 0; j < n->genericParams.size(); ++j) {
-				newInstantiationContext.mappedGenericArgs[n->genericParams[j]->name] = {};
-			}
-
-			for (auto &i : n->genericParams)
-				walkNodeForGenericInstantiation(i, newInstantiationContext);
-
-			if (n->parentClass)
-				walkTypeNameNodeForGenericInstantiation(n->parentClass, newInstantiationContext);
-
-			for (auto &i : n->implInterfaces) {
-				walkTypeNameNodeForGenericInstantiation(i, newInstantiationContext);
-			}
-
-			for (auto &i : n->scope->members) {
-				walkNodeForGenericInstantiation(i.second, newInstantiationContext);
-			}
-		} else {
 			for (auto &i : n->genericParams)
 				walkNodeForGenericInstantiation(i, instantiationContext);
 
-			if (n->parentClass)
-				walkTypeNameNodeForGenericInstantiation(n->parentClass, instantiationContext);
-
-			for (auto &i : n->implInterfaces) {
+			for (auto &i : n->parentInterfaces) {
 				walkTypeNameNodeForGenericInstantiation(i, instantiationContext);
 			}
 
 			for (auto &i : n->scope->members) {
 				walkNodeForGenericInstantiation(i.second, instantiationContext);
 			}
+
+			break;
 		}
+		case NodeType::GenericParam: {
+			std::shared_ptr<GenericParamNode> n = std::static_pointer_cast<GenericParamNode>(node);
 
-		break;
-	}
-	case NodeType::Interface: {
-		std::shared_ptr<InterfaceNode> n = std::static_pointer_cast<InterfaceNode>(node);
+			if (n->baseType)
+				walkTypeNameNodeForGenericInstantiation(n->baseType, instantiationContext);
+			for (auto &i : n->interfaceTypes)
+				walkTypeNameNodeForGenericInstantiation(i, instantiationContext);
 
-		for (auto &i : n->genericParams)
-			walkNodeForGenericInstantiation(i, instantiationContext);
-
-		for (auto &i : n->parentInterfaces) {
-			walkTypeNameNodeForGenericInstantiation(i, instantiationContext);
+			break;
 		}
-
-		for (auto &i : n->scope->members) {
-			walkNodeForGenericInstantiation(i.second, instantiationContext);
-		}
-
-		break;
-	}
-	case NodeType::GenericParam: {
-		std::shared_ptr<GenericParamNode> n = std::static_pointer_cast<GenericParamNode>(node);
-
-		if (n->baseType)
-			walkTypeNameNodeForGenericInstantiation(n->baseType, instantiationContext);
-		for (auto &i : n->interfaceTypes)
-			walkTypeNameNodeForGenericInstantiation(i, instantiationContext);
-
-		break;
-	}
-	default:;
+		default:;
 	}
 }
 

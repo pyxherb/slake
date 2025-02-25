@@ -67,73 +67,73 @@ SLAKE_API Value Runtime::_loadValue(LoaderContext &context, HostRefHolder &holde
 	slxfmt::TypeId typeId = _read<slxfmt::TypeId>(context.fs);
 
 	switch (typeId) {
-	case slxfmt::TypeId::None:
-		return Value(EntityRef::makeObjectRef(nullptr));
-	case slxfmt::TypeId::I8:
-		return Value(_read<std::int8_t>(context.fs));
-	case slxfmt::TypeId::I16:
-		return Value(_read<std::int16_t>(context.fs));
-	case slxfmt::TypeId::I32:
-		return Value(_read<std::int32_t>(context.fs));
-	case slxfmt::TypeId::I64:
-		return Value(_read<std::int64_t>(context.fs));
-	case slxfmt::TypeId::U8:
-		return Value(_read<uint8_t>(context.fs));
-	case slxfmt::TypeId::U16:
-		return Value(_read<uint16_t>(context.fs));
-	case slxfmt::TypeId::U32:
-		return Value(_read<uint32_t>(context.fs));
-	case slxfmt::TypeId::U64:
-		return Value(_read<uint64_t>(context.fs));
-	case slxfmt::TypeId::Bool:
-		return Value(_read<bool>(context.fs));
-	case slxfmt::TypeId::F32:
-		return Value(_read<float>(context.fs));
-	case slxfmt::TypeId::F64:
-		return Value(_read<double>(context.fs));
-	case slxfmt::TypeId::String: {
-		auto len = _read<uint32_t>(context.fs);
-		peff::String s(&globalHeapPoolAlloc);
-		s.resize(len);
-		context.fs.read(s.data(), len);
+		case slxfmt::TypeId::None:
+			return Value(EntityRef::makeObjectRef(nullptr));
+		case slxfmt::TypeId::I8:
+			return Value(_read<std::int8_t>(context.fs));
+		case slxfmt::TypeId::I16:
+			return Value(_read<std::int16_t>(context.fs));
+		case slxfmt::TypeId::I32:
+			return Value(_read<std::int32_t>(context.fs));
+		case slxfmt::TypeId::I64:
+			return Value(_read<std::int64_t>(context.fs));
+		case slxfmt::TypeId::U8:
+			return Value(_read<uint8_t>(context.fs));
+		case slxfmt::TypeId::U16:
+			return Value(_read<uint16_t>(context.fs));
+		case slxfmt::TypeId::U32:
+			return Value(_read<uint32_t>(context.fs));
+		case slxfmt::TypeId::U64:
+			return Value(_read<uint64_t>(context.fs));
+		case slxfmt::TypeId::Bool:
+			return Value(_read<bool>(context.fs));
+		case slxfmt::TypeId::F32:
+			return Value(_read<float>(context.fs));
+		case slxfmt::TypeId::F64:
+			return Value(_read<double>(context.fs));
+		case slxfmt::TypeId::String: {
+			auto len = _read<uint32_t>(context.fs);
+			peff::String s(&globalHeapPoolAlloc);
+			s.resize(len);
+			context.fs.read(s.data(), len);
 
-		auto object = StringObject::alloc(this, std::move(s));
+			auto object = StringObject::alloc(this, std::move(s));
 
-		if (!holder.addObject(object.get()))
-			throw std::bad_alloc();
+			if (!holder.addObject(object.get()))
+				throw std::bad_alloc();
 
-		return Value(EntityRef::makeObjectRef(object.get()));
-	}
-	case slxfmt::TypeId::Array: {
-		auto elementType = _loadType(context, holder);
-
-		// stub for debugging.
-		// elementType = Type(TypeId::Any);
-
-		auto len = _read<uint32_t>(context.fs);
-
-		HostObjectRef<ArrayObject> value = newArrayInstance(this, elementType, len);
-		InternalExceptionPointer e;
-
-		for (uint32_t i = 0; i < len; ++i) {
-			if ((e = writeVar(EntityRef::makeArrayElementRef(value.get(), i), _loadValue(context, holder)))) {
-				throw LoaderError("Error setting value of element #" + std::to_string(i));
-			}
+			return Value(EntityRef::makeObjectRef(object.get()));
 		}
+		case slxfmt::TypeId::Array: {
+			auto elementType = _loadType(context, holder);
 
-		if (!holder.addObject(value.get()))
-			throw std::bad_alloc();
+			// stub for debugging.
+			// elementType = Type(TypeId::Any);
 
-		return EntityRef::makeObjectRef(value.release());
-	}
-	case slxfmt::TypeId::IdRef:
-		return EntityRef::makeObjectRef(_loadIdRef(context, holder).release());
-	case slxfmt::TypeId::TypeName:
-		return Value(_loadType(context, holder));
-	case slxfmt::TypeId::Reg:
-		return Value(ValueType::RegRef, _read<uint32_t>(context.fs));
-	default:
-		throw LoaderError("Invalid object type detected");
+			auto len = _read<uint32_t>(context.fs);
+
+			HostObjectRef<ArrayObject> value = newArrayInstance(this, elementType, len);
+			InternalExceptionPointer e;
+
+			for (uint32_t i = 0; i < len; ++i) {
+				if ((e = writeVar(EntityRef::makeArrayElementRef(value.get(), i), _loadValue(context, holder)))) {
+					throw LoaderError("Error setting value of element #" + std::to_string(i));
+				}
+			}
+
+			if (!holder.addObject(value.get()))
+				throw std::bad_alloc();
+
+			return EntityRef::makeObjectRef(value.release());
+		}
+		case slxfmt::TypeId::IdRef:
+			return EntityRef::makeObjectRef(_loadIdRef(context, holder).release());
+		case slxfmt::TypeId::TypeName:
+			return Value(_loadType(context, holder));
+		case slxfmt::TypeId::Reg:
+			return Value(ValueType::RegRef, _read<uint32_t>(context.fs));
+		default:
+			throw LoaderError("Invalid object type detected");
 	}
 }
 
@@ -145,65 +145,65 @@ SLAKE_API Type Runtime::_loadType(LoaderContext &context, HostRefHolder &holder)
 	slxfmt::TypeId vt = _read<slxfmt::TypeId>(context.fs);
 
 	switch (vt) {
-	case slxfmt::TypeId::I8:
-		return Type(TypeId::I8);
-	case slxfmt::TypeId::I16:
-		return Type(TypeId::I16);
-	case slxfmt::TypeId::I32:
-		return Type(TypeId::I32);
-	case slxfmt::TypeId::I64:
-		return Type(TypeId::I64);
-	case slxfmt::TypeId::U8:
-		return Type(TypeId::U8);
-	case slxfmt::TypeId::U16:
-		return Type(TypeId::U16);
-	case slxfmt::TypeId::U32:
-		return Type(TypeId::U32);
-	case slxfmt::TypeId::U64:
-		return Type(TypeId::U64);
-	case slxfmt::TypeId::F32:
-		return Type(TypeId::F32);
-	case slxfmt::TypeId::F64:
-		return Type(TypeId::F64);
-	case slxfmt::TypeId::String:
-		return TypeId::String;
-	case slxfmt::TypeId::Object: {
-		auto idRef = _loadIdRef(context, holder);
+		case slxfmt::TypeId::I8:
+			return Type(TypeId::I8);
+		case slxfmt::TypeId::I16:
+			return Type(TypeId::I16);
+		case slxfmt::TypeId::I32:
+			return Type(TypeId::I32);
+		case slxfmt::TypeId::I64:
+			return Type(TypeId::I64);
+		case slxfmt::TypeId::U8:
+			return Type(TypeId::U8);
+		case slxfmt::TypeId::U16:
+			return Type(TypeId::U16);
+		case slxfmt::TypeId::U32:
+			return Type(TypeId::U32);
+		case slxfmt::TypeId::U64:
+			return Type(TypeId::U64);
+		case slxfmt::TypeId::F32:
+			return Type(TypeId::F32);
+		case slxfmt::TypeId::F64:
+			return Type(TypeId::F64);
+		case slxfmt::TypeId::String:
+			return TypeId::String;
+		case slxfmt::TypeId::Object: {
+			auto idRef = _loadIdRef(context, holder);
 
-		if (!holder.addObject(idRef.get()))
-			throw std::bad_alloc();
+			if (!holder.addObject(idRef.get()))
+				throw std::bad_alloc();
 
-		return idRef.release();
-	}
-	case slxfmt::TypeId::Any:
-		return TypeId::Any;
-	case slxfmt::TypeId::Bool:
-		return Type(TypeId::Bool);
-	case slxfmt::TypeId::None:
-		return TypeId::None;
-	case slxfmt::TypeId::Array: {
-		Type type = _loadType(context, holder);
+			return idRef.release();
+		}
+		case slxfmt::TypeId::Any:
+			return TypeId::Any;
+		case slxfmt::TypeId::Bool:
+			return Type(TypeId::Bool);
+		case slxfmt::TypeId::None:
+			return TypeId::None;
+		case slxfmt::TypeId::Array: {
+			Type type = _loadType(context, holder);
 
-		if (type.typeId == TypeId::Array)
-			throw LoaderError("Nested array type detected");
+			if (type.typeId == TypeId::Array)
+				throw LoaderError("Nested array type detected");
 
-		return Type::makeArrayTypeName(this, type);
-	}
-	case slxfmt::TypeId::Ref:
-		return Type::makeRefTypeName(this, _loadType(context, holder));
-	case slxfmt::TypeId::GenericArg: {
-		uint8_t length = _read<uint8_t>(context.fs);
+			return Type::makeArrayTypeName(this, type);
+		}
+		case slxfmt::TypeId::Ref:
+			return Type::makeRefTypeName(this, _loadType(context, holder));
+		case slxfmt::TypeId::GenericArg: {
+			uint8_t length = _read<uint8_t>(context.fs);
 
-		peff::String name(&globalHeapPoolAlloc);
-		name.resize(length);
-		context.fs.read(name.data(), length);
+			peff::String name(&globalHeapPoolAlloc);
+			name.resize(length);
+			context.fs.read(name.data(), length);
 
-		auto nameObject = StringObject::alloc(this, std::move(name));
+			auto nameObject = StringObject::alloc(this, std::move(name));
 
-		return Type(nameObject.get(), context.ownerObject);
-	}
-	default:
-		throw LoaderError("Invalid type ID");
+			return Type(nameObject.get(), context.ownerObject);
+		}
+		default:
+			throw LoaderError("Invalid type ID");
 	}
 }
 
@@ -359,80 +359,80 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 		curFieldRecord.accessModifier = access;
 
 		switch (varType.typeId) {
-		case TypeId::I8:
-			curFieldRecord.offset = szLocalFieldStorage;
-			szLocalFieldStorage += sizeof(int8_t);
-			break;
-		case TypeId::I16:
-			if (szLocalFieldStorage & 1) {
-				szLocalFieldStorage += (2 - (szLocalFieldStorage & 1));
-			}
-			curFieldRecord.offset = szLocalFieldStorage;
-			szLocalFieldStorage += sizeof(int16_t);
-			break;
-		case TypeId::I32:
-			if (szLocalFieldStorage & 3) {
-				szLocalFieldStorage += (4 - (szLocalFieldStorage & 3));
-			}
-			curFieldRecord.offset = szLocalFieldStorage;
-			szLocalFieldStorage += sizeof(int32_t);
-			break;
-		case TypeId::I64:
-			if (szLocalFieldStorage & 7) {
-				szLocalFieldStorage += (8 - (szLocalFieldStorage & 7));
-			}
-			curFieldRecord.offset = szLocalFieldStorage;
-			szLocalFieldStorage += sizeof(int64_t);
-			break;
-		case TypeId::U8:
-			curFieldRecord.offset = szLocalFieldStorage;
-			szLocalFieldStorage += sizeof(uint8_t);
-			break;
-		case TypeId::U16:
-			if (szLocalFieldStorage & 1) {
-				szLocalFieldStorage += (2 - (szLocalFieldStorage & 1));
-			}
-			curFieldRecord.offset = szLocalFieldStorage;
-			szLocalFieldStorage += sizeof(uint16_t);
-			break;
-		case TypeId::U32:
-			if (szLocalFieldStorage & 3) {
-				szLocalFieldStorage += (4 - (szLocalFieldStorage & 3));
-			}
-			curFieldRecord.offset = szLocalFieldStorage;
-			szLocalFieldStorage += sizeof(uint32_t);
-			break;
-		case TypeId::U64:
-			if (szLocalFieldStorage & 7) {
-				szLocalFieldStorage += (8 - (szLocalFieldStorage & 7));
-			}
-			curFieldRecord.offset = szLocalFieldStorage;
-			szLocalFieldStorage += sizeof(uint64_t);
-			break;
-		case TypeId::Bool:
-			curFieldRecord.offset = szLocalFieldStorage;
-			szLocalFieldStorage += sizeof(bool);
-			break;
-		case TypeId::String:
-		case TypeId::Instance:
-			if (szLocalFieldStorage & (sizeof(void *) - 1)) {
-				szLocalFieldStorage += (sizeof(void *) - (szLocalFieldStorage & (sizeof(void *) - 1)));
-			}
-			curFieldRecord.offset = szLocalFieldStorage;
-			szLocalFieldStorage += sizeof(void *);
-			break;
-		case TypeId::Any:
-			if (szLocalFieldStorage % sizeof(Value)) {
-				szLocalFieldStorage += (sizeof(Value) - (szLocalFieldStorage % sizeof(Value)));
-			}
-			curFieldRecord.offset = szLocalFieldStorage;
-			szLocalFieldStorage += sizeof(Value);
-			break;
-		case TypeId::GenericArg:
-			curFieldRecord.offset = SIZE_MAX;
-			break;
-		default:
-			throw LoaderError("Invalid variable type");
+			case TypeId::I8:
+				curFieldRecord.offset = szLocalFieldStorage;
+				szLocalFieldStorage += sizeof(int8_t);
+				break;
+			case TypeId::I16:
+				if (szLocalFieldStorage & 1) {
+					szLocalFieldStorage += (2 - (szLocalFieldStorage & 1));
+				}
+				curFieldRecord.offset = szLocalFieldStorage;
+				szLocalFieldStorage += sizeof(int16_t);
+				break;
+			case TypeId::I32:
+				if (szLocalFieldStorage & 3) {
+					szLocalFieldStorage += (4 - (szLocalFieldStorage & 3));
+				}
+				curFieldRecord.offset = szLocalFieldStorage;
+				szLocalFieldStorage += sizeof(int32_t);
+				break;
+			case TypeId::I64:
+				if (szLocalFieldStorage & 7) {
+					szLocalFieldStorage += (8 - (szLocalFieldStorage & 7));
+				}
+				curFieldRecord.offset = szLocalFieldStorage;
+				szLocalFieldStorage += sizeof(int64_t);
+				break;
+			case TypeId::U8:
+				curFieldRecord.offset = szLocalFieldStorage;
+				szLocalFieldStorage += sizeof(uint8_t);
+				break;
+			case TypeId::U16:
+				if (szLocalFieldStorage & 1) {
+					szLocalFieldStorage += (2 - (szLocalFieldStorage & 1));
+				}
+				curFieldRecord.offset = szLocalFieldStorage;
+				szLocalFieldStorage += sizeof(uint16_t);
+				break;
+			case TypeId::U32:
+				if (szLocalFieldStorage & 3) {
+					szLocalFieldStorage += (4 - (szLocalFieldStorage & 3));
+				}
+				curFieldRecord.offset = szLocalFieldStorage;
+				szLocalFieldStorage += sizeof(uint32_t);
+				break;
+			case TypeId::U64:
+				if (szLocalFieldStorage & 7) {
+					szLocalFieldStorage += (8 - (szLocalFieldStorage & 7));
+				}
+				curFieldRecord.offset = szLocalFieldStorage;
+				szLocalFieldStorage += sizeof(uint64_t);
+				break;
+			case TypeId::Bool:
+				curFieldRecord.offset = szLocalFieldStorage;
+				szLocalFieldStorage += sizeof(bool);
+				break;
+			case TypeId::String:
+			case TypeId::Instance:
+				if (szLocalFieldStorage & (sizeof(void *) - 1)) {
+					szLocalFieldStorage += (sizeof(void *) - (szLocalFieldStorage & (sizeof(void *) - 1)));
+				}
+				curFieldRecord.offset = szLocalFieldStorage;
+				szLocalFieldStorage += sizeof(void *);
+				break;
+			case TypeId::Any:
+				if (szLocalFieldStorage % sizeof(Value)) {
+					szLocalFieldStorage += (sizeof(Value) - (szLocalFieldStorage % sizeof(Value)));
+				}
+				curFieldRecord.offset = szLocalFieldStorage;
+				szLocalFieldStorage += sizeof(Value);
+				break;
+			case TypeId::GenericArg:
+				curFieldRecord.offset = SIZE_MAX;
+				break;
+			default:
+				throw LoaderError("Invalid variable type");
 		}
 
 		if (!fieldRecords.pushBack(std::move(curFieldRecord)))
@@ -453,44 +453,44 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 
 		char *rawDataPtr = fieldStorage + curFieldRecord.offset;
 		switch (curFieldRecord.type.typeId) {
-		case TypeId::I8:
-			*((int8_t *)rawDataPtr) = 0;
-			break;
-		case TypeId::I16:
-			*((int16_t *)rawDataPtr) = 0;
-			break;
-		case TypeId::I32:
-			*((int32_t *)rawDataPtr) = 0;
-			break;
-		case TypeId::I64:
-			*((int64_t *)rawDataPtr) = 0;
-			break;
-		case TypeId::U8:
-			*((uint8_t *)rawDataPtr) = 0;
-			break;
-		case TypeId::U16:
-			*((uint16_t *)rawDataPtr) = 0;
-			break;
-		case TypeId::U32:
-			*((int32_t *)rawDataPtr) = 0;
-			break;
-		case TypeId::U64:
-			*((int64_t *)rawDataPtr) = 0;
-			break;
-		case TypeId::Bool:
-			*((bool *)rawDataPtr) = false;
-			break;
-		case TypeId::String:
-		case TypeId::Instance:
-			*((Object **)rawDataPtr) = nullptr;
-			break;
-		case TypeId::Any:
-			*((Value *)rawDataPtr) = Value(EntityRef::makeObjectRef(nullptr));
-			break;
-		case TypeId::GenericArg:
-			break;
-		default:
-			throw LoaderError("Invalid variable type");
+			case TypeId::I8:
+				*((int8_t *)rawDataPtr) = 0;
+				break;
+			case TypeId::I16:
+				*((int16_t *)rawDataPtr) = 0;
+				break;
+			case TypeId::I32:
+				*((int32_t *)rawDataPtr) = 0;
+				break;
+			case TypeId::I64:
+				*((int64_t *)rawDataPtr) = 0;
+				break;
+			case TypeId::U8:
+				*((uint8_t *)rawDataPtr) = 0;
+				break;
+			case TypeId::U16:
+				*((uint16_t *)rawDataPtr) = 0;
+				break;
+			case TypeId::U32:
+				*((int32_t *)rawDataPtr) = 0;
+				break;
+			case TypeId::U64:
+				*((int64_t *)rawDataPtr) = 0;
+				break;
+			case TypeId::Bool:
+				*((bool *)rawDataPtr) = false;
+				break;
+			case TypeId::String:
+			case TypeId::Instance:
+				*((Object **)rawDataPtr) = nullptr;
+				break;
+			case TypeId::Any:
+				*((Value *)rawDataPtr) = Value(EntityRef::makeObjectRef(nullptr));
+				break;
+			case TypeId::GenericArg:
+				break;
+			default:
+				throw LoaderError("Invalid variable type");
 		}
 	}
 	mod->fieldRecords = std::move(fieldRecords);
@@ -533,12 +533,12 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 
 			if (!(overloading->access & ACCESS_STATIC)) {
 				switch (mod->getKind()) {
-				case ObjectKind::Class:
-				case ObjectKind::Interface:
-					overloading->thisObjectType = Type(TypeId::Instance, mod.get());
-					break;
-				default:
-					throw LoaderError("Non-static function in non-class type detected");
+					case ObjectKind::Class:
+					case ObjectKind::Interface:
+						overloading->thisObjectType = Type(TypeId::Instance, mod.get());
+						break;
+					default:
+						throw LoaderError("Non-static function in non-class type detected");
 				}
 			}
 

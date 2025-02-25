@@ -841,11 +841,11 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 													cxxast::BinaryOp::Assign,
 													std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName)),
 													std::make_shared<cxxast::IdExpr>(
-														mangleLocalVarName(programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).storageInfo.asArgRef.idxArg)))));
+														mangleParamName(programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).storageInfo.asArgRef.idxArg)))));
 									} else {
 										cxxast::VarDefPair varDefPair = { varName,
 											std::make_shared<cxxast::IdExpr>(
-												mangleLocalVarName(programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).storageInfo.asArgRef.idxArg)) };
+												mangleParamName(programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).storageInfo.asArgRef.idxArg)) };
 
 										curStmtContainer->push_back(std::make_shared<cxxast::LocalVarDefStmt>(compileType(compileContext, outputRegInfo.type), std::vector<cxxast::VarDefPair>{ varDefPair }));
 									}

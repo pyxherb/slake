@@ -413,8 +413,8 @@ void Compiler::compileStmt(CompileContext *compileContext, std::shared_ptr<StmtN
 			});
 #endif
 
-			if (!(compileContext->curFn->isAsync))
-				throw FatalCompilationError({ tokenRangeToSourceLocation(stmt->tokenRange), MessageType::Error, "Cannot yield in a non-asynchronous function" });
+			if (!(compileContext->curFn->isGenerator))
+				throw FatalCompilationError({ tokenRangeToSourceLocation(stmt->tokenRange), MessageType::Error, "Cannot yield in a non-generator function" });
 
 			if (!s->returnValue) {
 				if (compileContext->curFn->returnType->getTypeId() != TypeId::Void)

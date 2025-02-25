@@ -86,6 +86,15 @@ std::shared_ptr<FnOverloadingNode> Parser::parseFnDecl(std::string &nameOut) {
 	auto overloading = std::make_shared<FnOverloadingNode>(compiler, curScope);
 	overloading->tokenRange = { curDoc, lexer->getTokenIndex(fnKeywordToken) };
 
+	if (Token *token = lexer->peekToken(); token->tokenId == TokenId::MulOp) {
+		lexer->nextToken();
+
+		overloading->tokenRange.endIndex = lexer->getTokenIndex(token);
+		overloading->idxGeneratorToken = lexer->getTokenIndex(token);
+
+		overloading->isGenerator = true;
+	}
+
 	Token *nameToken = lexer->peekToken();
 	switch (nameToken->tokenId) {
 		case TokenId::Id:
@@ -121,15 +130,6 @@ std::shared_ptr<FnOverloadingNode> Parser::parseFnDecl(std::string &nameOut) {
 		Token *paramRParentheseToken = expectToken(TokenId::RParenthese);
 		overloading->tokenRange.endIndex = lexer->getTokenIndex(paramRParentheseToken);
 		overloading->idxParamRParentheseToken = lexer->getTokenIndex(paramRParentheseToken);
-	}
-
-	if (Token *token = lexer->peekToken(); token->tokenId == TokenId::AsyncKeyword) {
-		lexer->nextToken();
-
-		overloading->tokenRange.endIndex = lexer->getTokenIndex(token);
-		overloading->idxAsyncModifierToken = lexer->getTokenIndex(token);
-
-		overloading->isAsync = true;
 	}
 
 	if (Token *token = lexer->peekToken(); token->tokenId == TokenId::VirtualKeyword) {

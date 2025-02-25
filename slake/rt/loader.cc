@@ -545,8 +545,8 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 			LoaderContext newContext = context;
 			newContext.ownerObject = overloading.get();
 
-			if (i.flags & slxfmt::FND_ASYNC)
-				overloading->overloadingFlags |= OL_ASYNC;
+			if (i.flags & slxfmt::FND_GENERATOR)
+				overloading->overloadingFlags |= OL_GENERATOR;
 			if (i.flags & slxfmt::FND_VIRTUAL)
 				overloading->overloadingFlags |= OL_VIRTUAL;
 

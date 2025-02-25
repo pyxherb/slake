@@ -120,7 +120,7 @@ fn test(...) {
 	...;
 }
 
-pub fn main() async: i32 {
+pub fn *main(): i32 {
 	hostext.extfns.print("Entered main\n");
 
 	let vt: VirtualBase = new VirtualDerived();

@@ -927,7 +927,7 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 				compiledFn->access = j->access;
 
 				compiledFn->hasVarArgs = j->isVaridic();
-				compiledFn->isAsync = j->isAsync;
+				compiledFn->isGenerator = j->isGenerator;
 
 				compileContext->curFn = compiledFn;
 
@@ -947,8 +947,8 @@ void Compiler::compileScope(CompileContext *compileContext, std::istream &is, st
 				if (compiledFn->access & ACCESS_FINAL)
 					fnd.flags |= slxfmt::FND_FINAL;
 
-				if (compiledFn->isAsync)
-					fnd.flags |= slxfmt::FND_ASYNC;
+				if (compiledFn->isGenerator)
+					fnd.flags |= slxfmt::FND_GENERATOR;
 
 				if (j->isVirtual)
 					fnd.flags |= slxfmt::FND_VIRTUAL;

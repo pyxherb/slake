@@ -54,6 +54,10 @@ namespace slake {
 
 	typedef std::unique_ptr<std::istream> (*ModuleLocatorFn)(Runtime *rt, const peff::DynArray<IdRefEntry> &ref);
 
+	struct SecurityPolicy {
+		bool allowUnsafe;
+	};
+
 	using LoadModuleFlags = uint8_t;
 	constexpr LoadModuleFlags
 		// Do not put the module onto the path where corresponds to the module name.

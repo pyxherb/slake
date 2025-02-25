@@ -119,15 +119,15 @@ namespace slake {
 			uint32_t nRegisters : 32;		// Number of registers
 		};
 		constexpr static uint16_t
-			FND_PUB = 0x0001,		// Public
-			FND_FINAL = 0x0002,		// Final
-			FND_OVERRIDE = 0x0004,	// Override
-			FND_STATIC = 0x0008,	// Static
-			FND_NATIVE = 0x0010,	// Native
-			FND_DBG = 0x0040,		// With debugging information
-			FND_VARG = 0x0080,		// Varidic arguments
-			FND_ASYNC = 0x0100,		// Asynchronous
-			FND_VIRTUAL = 0x200		// Virtual
+			FND_PUB = 0x0001,		 // Public
+			FND_FINAL = 0x0002,		 // Final
+			FND_OVERRIDE = 0x0004,	 // Override
+			FND_STATIC = 0x0008,	 // Static
+			FND_NATIVE = 0x0010,	 // Native
+			FND_DBG = 0x0040,		 // With debugging information
+			FND_VARG = 0x0080,		 // Varidic arguments
+			FND_GENERATOR = 0x0100,	 // Generator
+			FND_VIRTUAL = 0x200		 // Virtual
 			;
 
 		struct SrcInfoEntry {

@@ -60,13 +60,13 @@ namespace slake {
 			FnNode *owner = nullptr;
 			AccessModifier access = 0;
 
-			bool isAsync = false,
+			bool isGenerator = false,
 				 isVirtual = false;
 
 			size_t idxNameToken = SIZE_MAX,
 				   idxParamLParentheseToken = SIZE_MAX,
 				   idxParamRParentheseToken = SIZE_MAX,
-				   idxAsyncModifierToken = SIZE_MAX,
+				   idxGeneratorToken = SIZE_MAX,
 				   idxReturnTypeColonToken = SIZE_MAX,
 				   idxVirtualModifierToken = SIZE_MAX;
 			std::deque<size_t> idxParamCommaTokens;
@@ -85,13 +85,13 @@ namespace slake {
 				owner = other.owner;
 				access = other.access;
 
-				isAsync = other.isAsync;
+				isGenerator = other.isGenerator;
 				isVirtual = other.isVirtual;
 
 				idxNameToken = other.idxNameToken;
 				idxParamLParentheseToken = other.idxParamLParentheseToken;
 				idxParamRParentheseToken = other.idxParamRParentheseToken;
-				idxAsyncModifierToken = other.idxAsyncModifierToken;
+				idxGeneratorToken = other.idxGeneratorToken;
 				idxReturnTypeColonToken = other.idxReturnTypeColonToken;
 				idxVirtualModifierToken = other.idxVirtualModifierToken;
 				idxParamCommaTokens = other.idxParamCommaTokens;
@@ -179,7 +179,7 @@ namespace slake {
 
 			uint32_t maxRegCount = 0;
 
-			bool hasVarArgs = false, isAsync = false;
+			bool hasVarArgs = false, isGenerator = false;
 
 			inline CompiledFnNode(const CompiledFnNode &other) : MemberNode(other) {
 				name = other.name;

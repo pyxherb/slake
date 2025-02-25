@@ -315,7 +315,7 @@ Token *Lexer::peekToken(bool keepNewLine, bool keepWhitespace, bool keepComment)
 
 size_t Lexer::getTokenByPosition(const SourcePosition &position) {
 	for (size_t i = 0; i < tokens.size(); ++i) {
-		if (tokens[i]->location.beginPosition <= position && tokens[i]->location.endPosition >= position)
+		if ((tokens[i]->location.beginPosition <= position) && (tokens[i]->location.endPosition >= position))
 			return i;
 	}
 

@@ -64,11 +64,19 @@ namespace slake {
 			}
 
 			inline bool operator>=(const SourcePosition &loc) const {
-				return ((*this) == loc) || ((*this) > loc);
+				if (line >= loc.line)
+					return true;
+				if (line < loc.line)
+					return false;
+				return column >= loc.column;
 			}
 
 			inline bool operator<=(const SourcePosition &loc) const {
-				return ((*this) == loc) || ((*this) < loc);
+				if (line <= loc.line)
+					return true;
+				if (line > loc.line)
+					return false;
+				return column <= loc.column;
 			}
 		};
 

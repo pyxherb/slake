@@ -96,6 +96,16 @@ namespace slake {
 								std::make_shared<cxxast::IdExpr>("Object"))));
 				}
 
+				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genArrayObjectTypeName() {
+					return std::make_shared<cxxast::PointerTypeName>(
+						std::make_shared<cxxast::CustomTypeName>(
+							false,
+							std::make_shared<cxxast::BinaryExpr>(
+								cxxast::BinaryOp::Scope,
+								std::make_shared<cxxast::IdExpr>("slake"),
+								std::make_shared<cxxast::IdExpr>("ArrayObject"))));
+				}
+
 				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genIdRefObjectTypeName() {
 					return std::make_shared<cxxast::PointerTypeName>(
 						std::make_shared<cxxast::CustomTypeName>(

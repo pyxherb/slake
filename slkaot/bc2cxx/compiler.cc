@@ -779,14 +779,17 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 												std::make_shared<cxxast::PointerTypeName>(
 													compileType(compileContext, elementType)),
 												std::make_shared<cxxast::BinaryExpr>(
-													cxxast::BinaryOp::MemberAccess,
+													cxxast::BinaryOp::PtrAccess,
 													std::make_shared<cxxast::BinaryExpr>(
 														cxxast::BinaryOp::MemberAccess,
 														std::make_shared<cxxast::BinaryExpr>(
 															cxxast::BinaryOp::MemberAccess,
-															std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
-															std::make_shared<cxxast::IdExpr>("asEntityRef")),
-														std::make_shared<cxxast::IdExpr>("asArray")),
+															std::make_shared<cxxast::BinaryExpr>(
+																cxxast::BinaryOp::MemberAccess,
+																std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
+																std::make_shared<cxxast::IdExpr>("asEntityRef")),
+															std::make_shared<cxxast::IdExpr>("asArray")),
+														std::make_shared<cxxast::IdExpr>("arrayObject")),
 													std::make_shared<cxxast::IdExpr>("data")));
 										std::shared_ptr<cxxast::Expr> elementExpr = std::make_shared<cxxast::BinaryExpr>(
 											cxxast::BinaryOp::Subscript,
@@ -1555,20 +1558,11 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 						Type &elementType = regInfo.type.getArrayExData();
 
 						std::shared_ptr<cxxast::Expr>
-							indexRefExpr = std::make_shared<cxxast::BinaryExpr>(
-								cxxast::BinaryOp::MemberAccess,
-								std::make_shared<cxxast::BinaryExpr>(
-									cxxast::BinaryOp::MemberAccess,
-									std::make_shared<cxxast::BinaryExpr>(
-										cxxast::BinaryOp::MemberAccess,
-										std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
-										std::make_shared<cxxast::IdExpr>("asEntityRef")),
-									std::make_shared<cxxast::IdExpr>("asArray")),
-								std::make_shared<cxxast::IdExpr>("index"));
-						std::shared_ptr<cxxast::Expr> dataPtrExpr =
-							std::make_shared<cxxast::CastExpr>(
-								std::make_shared<cxxast::PointerTypeName>(
-									compileType(compileContext, elementType)),
+							indexRefExpr = compileValue(compileContext, ins.operands[1]);
+						std::shared_ptr<cxxast::Expr> arrayObjectPtrExpr;
+
+						if (compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).isLoadInsResult) {
+							arrayObjectPtrExpr =
 								std::make_shared<cxxast::BinaryExpr>(
 									cxxast::BinaryOp::MemberAccess,
 									std::make_shared<cxxast::BinaryExpr>(
@@ -1578,11 +1572,12 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 											std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
 											std::make_shared<cxxast::IdExpr>("asEntityRef")),
 										std::make_shared<cxxast::IdExpr>("asArray")),
-									std::make_shared<cxxast::IdExpr>("data")));
-						std::shared_ptr<cxxast::Expr> elementExpr = std::make_shared<cxxast::BinaryExpr>(
-							cxxast::BinaryOp::Add,
-							dataPtrExpr,
-							indexRefExpr);
+									std::make_shared<cxxast::IdExpr>("arrayObject"));
+						} else {
+							arrayObjectPtrExpr = std::make_shared<cxxast::CastExpr>(
+								genArrayObjectTypeName(),
+								compileValue(compileContext, ins.operands[0]));
+						}
 
 						std::shared_ptr<cxxast::Expr> expr = std::make_shared<cxxast::CallExpr>(
 							std::make_shared<cxxast::BinaryExpr>(
@@ -1591,11 +1586,10 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 									cxxast::BinaryOp::Scope,
 									std::make_shared<cxxast::IdExpr>("slake"),
 									std::make_shared<cxxast::IdExpr>("EntityRef")),
-								std::make_shared<cxxast::IdExpr>("makeAotPtrRef")),
+								std::make_shared<cxxast::IdExpr>("makeArrayElementRef")),
 							std::vector<std::shared_ptr<cxxast::Expr>>{
-								std::make_shared<cxxast::CastExpr>(
-									std::make_shared<cxxast::PointerTypeName>(std::make_shared<cxxast::VoidTypeName>()),
-									elementExpr) });
+								arrayObjectPtrExpr,
+								indexRefExpr });
 
 						if (compileContext.allocRecycledReg(*this, programInfo, ins.output.getRegIndex(), outputRegInfo.type)) {
 							curStmtContainer->push_back(

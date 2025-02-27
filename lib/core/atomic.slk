@@ -1,223 +1,223 @@
 module core.atomic;
 
-[UniqueOptimizerID("core", "atomic_load_i8")]
+[UniqueOptimizerID(uuid="a6fe5e02-61e7-4ef2-8823-4dafd34a1315")]
 pub native fn load(i8 &dest): i8;
-[UniqueOptimizerID("core", "atomic_load_u8")]
+[UniqueOptimizerID(uuid="4ce1f2f6-96a6-4b65-bee4-5ef3741a3f77")]
 pub native fn load(u8 &dest): u8;
-[UniqueOptimizerID("core", "atomic_load_i16")]
+[UniqueOptimizerID(uuid="409ab81f-a20b-4d1f-84dc-0e6633a45c33")]
 pub native fn load(i16 &dest): i16;
-[UniqueOptimizerID("core", "atomic_load_u16")]
+[UniqueOptimizerID(uuid="dfbeb214-7e36-4aa1-9ef9-c05ad2a489b6")]
 pub native fn load(u16 &dest): u16;
-[UniqueOptimizerID("core", "atomic_load_i32")]
+[UniqueOptimizerID(uuid="6bf13fee-a076-4e6b-acc2-8de39935dd67")]
 pub native fn load(i32 &dest): i32;
-[UniqueOptimizerID("core", "atomic_load_u32")]
+[UniqueOptimizerID(uuid="c11e460a-eb8f-47f3-95a9-865505e079fc")]
 pub native fn load(u32 &dest): u32;
-[UniqueOptimizerID("core", "atomic_load_i64")]
+[UniqueOptimizerID(uuid="c08d0be0-9625-45fa-97f5-3bb8708f35fc")]
 pub native fn load(i64 &dest): i64;
-[UniqueOptimizerID("core", "atomic_load_u64")]
+[UniqueOptimizerID(uuid="138fe907-8fb8-47f9-9b90-1137ac455115")]
 pub native fn load(u64 &dest): u64;
-[UniqueOptimizerID("core", "atomic_load_f32")]
+[UniqueOptimizerID(uuid="b966c29a-9d64-4311-bce1-a605a2616335")]
 pub native fn load(f32 &dest): f32;
-[UniqueOptimizerID("core", "atomic_load_f64")]
+[UniqueOptimizerID(uuid="12a792ad-91cc-4008-bce0-eeb51171d206")]
 pub native fn load(f64 &dest): f64;
-[UniqueOptimizerID("core", "atomic_load_bool")]
+[UniqueOptimizerID(uuid="77a3f8ad-9944-4575-ba05-9fc2a3d9bb51")]
 pub native fn load(bool &dest): bool;
-[UniqueOptimizerID("core", "atomic_load_object")]
+[UniqueOptimizerID(uuid="3bc7569e-28e8-4a8a-9b65-d7770cb8d700")]
 pub native fn load(object &dest): object;
 
-[UniqueOptimizerID("core", "atomic_store_i8")]
+[UniqueOptimizerID(uuid="b457855a-a384-43ef-b324-57497703e7e3")]
 pub native fn store(i8 &dest): i8;
-[UniqueOptimizerID("core", "atomic_store_u8")]
+[UniqueOptimizerID(uuid="54b633b9-8595-46ec-9a3c-3535eac488f2")]
 pub native fn store(u8 &dest): u8;
-[UniqueOptimizerID("core", "atomic_store_i16")]
+[UniqueOptimizerID(uuid="0faf5817-7bb7-41ae-940a-a4f72547ea13")]
 pub native fn store(i16 &dest): i16;
-[UniqueOptimizerID("core", "atomic_store_u16")]
+[UniqueOptimizerID(uuid="ff91a5ab-9335-42c3-94e2-9be19be18a03")]
 pub native fn store(u16 &dest): u16;
-[UniqueOptimizerID("core", "atomic_store_i32")]
+[UniqueOptimizerID(uuid="5a2a9170-c61a-42f5-af36-1b08004ed900")]
 pub native fn store(i32 &dest): i32;
-[UniqueOptimizerID("core", "atomic_store_u32")]
+[UniqueOptimizerID(uuid="03130424-d518-4a37-816e-2b35c044f3d6")]
 pub native fn store(u32 &dest): u32;
-[UniqueOptimizerID("core", "atomic_store_i64")]
+[UniqueOptimizerID(uuid="89ab6e01-5325-4449-acbc-9e30ae55df51")]
 pub native fn store(i64 &dest): i64;
-[UniqueOptimizerID("core", "atomic_store_u64")]
+[UniqueOptimizerID(uuid="798c8869-9cf8-4c2c-9d65-538992af5638")]
 pub native fn store(u64 &dest): u64;
-[UniqueOptimizerID("core", "atomic_store_f32")]
+[UniqueOptimizerID(uuid="9ce94d64-0ee4-4d80-98c5-70ecc6e999ce")]
 pub native fn store(f32 &dest): f32;
-[UniqueOptimizerID("core", "atomic_store_f64")]
+[UniqueOptimizerID(uuid="ffdfae0f-872d-4333-9eb8-592c4f1960f6")]
 pub native fn store(f64 &dest): f64;
-[UniqueOptimizerID("core", "atomic_store_bool")]
+[UniqueOptimizerID(uuid="17ae9b87-886d-458a-9857-987eb71670a8")]
 pub native fn store(bool &dest): bool;
-[UniqueOptimizerID("core", "atomic_store_object")]
+[UniqueOptimizerID(uuid="b76d5d9a-bdb4-46a2-b2b2-08fa7c66bfc5")]
 pub native fn store(object &dest): object;
 
-[UniqueOptimizerID("core", "atomic_inc_i8")]
+[UniqueOptimizerID(uuid="d9173af9-4107-4638-a643-4d9b6a0a99aa")]
 pub native fn increment(i8 &dest): i8;
-[UniqueOptimizerID("core", "atomic_inc_u8")]
+[UniqueOptimizerID(uuid="f0636af1-13a1-4ff9-820f-0c619d798cd9")]
 pub native fn increment(u8 &dest): u8;
-[UniqueOptimizerID("core", "atomic_inc_i16")]
+[UniqueOptimizerID(uuid="4612d0ad-f65d-4747-92c5-d989a1a3ee5d")]
 pub native fn increment(i16 &dest): i16;
-[UniqueOptimizerID("core", "atomic_inc_u16")]
+[UniqueOptimizerID(uuid="a1561841-01d7-4b49-8c0e-06ab464e6e25")]
 pub native fn increment(u16 &dest): u16;
-[UniqueOptimizerID("core", "atomic_inc_i32")]
+[UniqueOptimizerID(uuid="84fc3e3a-83ed-4abe-8add-684d97b779c1")]
 pub native fn increment(i32 &dest): i32;
-[UniqueOptimizerID("core", "atomic_inc_u32")]
+[UniqueOptimizerID(uuid="8f61ca10-881f-41b2-bfef-244947289936")]
 pub native fn increment(u32 &dest): u32;
-[UniqueOptimizerID("core", "atomic_inc_i64")]
+[UniqueOptimizerID(uuid="987caf1f-829c-4a0d-a346-5c663a363b40")]
 pub native fn increment(i64 &dest): i64;
-[UniqueOptimizerID("core", "atomic_inc_u64")]
+[UniqueOptimizerID(uuid="40e2cb30-a17c-4cb6-97ee-fbad0f7b805c")]
 pub native fn increment(u64 &dest): u64;
-[UniqueOptimizerID("core", "atomic_inc_f32")]
+[UniqueOptimizerID(uuid="4b54b7f3-1db7-41d8-9b15-4bc75f42c9f9")]
 pub native fn increment(f32 &dest): f32;
-[UniqueOptimizerID("core", "atomic_inc_f64")]
+[UniqueOptimizerID(uuid="bf05582e-fbff-48f2-8fb1-9af39284882a")]
 pub native fn increment(f64 &dest): f64;
 
-[UniqueOptimizerID("core", "atomic_add_i8")]
+[UniqueOptimizerID(uuid="40d8276d-c4f1-490b-bad2-2d62fe1d7fea")]
 pub native fn add(i8 &dest, i8 value): i8;
-[UniqueOptimizerID("core", "atomic_add_u8")]
+[UniqueOptimizerID(uuid="7d016310-96f5-455b-ac9d-119e2e33db0b")]
 pub native fn add(u8 &dest, u8 value): u8;
-[UniqueOptimizerID("core", "atomic_add_i16")]
+[UniqueOptimizerID(uuid="1dfc0e83-699f-452e-81d8-05b54e546d3f")]
 pub native fn add(i16 &dest, i16 value): i16;
-[UniqueOptimizerID("core", "atomic_add_u16")]
+[UniqueOptimizerID(uuid="2939463f-cae3-4552-b420-adda08881090")]
 pub native fn add(u16 &dest, u16 value): u16;
-[UniqueOptimizerID("core", "atomic_add_i32")]
+[UniqueOptimizerID(uuid="76ce5666-2d96-41c1-84f2-ffea84359a68")]
 pub native fn add(i32 &dest, i32 value): i32;
-[UniqueOptimizerID("core", "atomic_add_u32")]
+[UniqueOptimizerID(uuid="82050c3f-c324-489d-b40e-096d6bb30122")]
 pub native fn add(u32 &dest, u32 value): u32;
-[UniqueOptimizerID("core", "atomic_add_i64")]
+[UniqueOptimizerID(uuid="e109efab-911e-45b8-8f54-e8b7324c8fbf")]
 pub native fn add(i64 &dest, i64 value): i64;
-[UniqueOptimizerID("core", "atomic_add_u64")]
+[UniqueOptimizerID(uuid="a90adfa2-c387-42c2-a6eb-1b9653e43d83")]
 pub native fn add(u64 &dest, u64 value): u64;
-[UniqueOptimizerID("core", "atomic_add_f32")]
+[UniqueOptimizerID(uuid="e663077b-1079-4245-9e55-3760e40c573e")]
 pub native fn add(f32 &dest, f32 value): f32;
-[UniqueOptimizerID("core", "atomic_add_f64")]
+[UniqueOptimizerID(uuid="b94b24e3-b149-4fb1-8972-236297a8048b")]
 pub native fn add(f64 &dest, f64 value): f64;
 
-[UniqueOptimizerID("core", "atomic_sub_i8")]
+[UniqueOptimizerID(uuid="c369a7b1-c1da-4cff-b6ff-9b444f148c8c")]
 pub native fn sub(i8 &dest, i8 value): i8;
-[UniqueOptimizerID("core", "atomic_sub_u8")]
+[UniqueOptimizerID(uuid="27397a8b-5b34-48e1-b3e6-e6566a69c619")]
 pub native fn sub(u8 &dest, u8 value): u8;
-[UniqueOptimizerID("core", "atomic_sub_i16")]
+[UniqueOptimizerID(uuid="ebb71509-65ce-469e-92ab-3af48716dba4")]
 pub native fn sub(i16 &dest, i16 value): i16;
-[UniqueOptimizerID("core", "atomic_sub_u16")]
+[UniqueOptimizerID(uuid="1a2ee93c-15ca-4222-81fe-eecb28b62811")]
 pub native fn sub(u16 &dest, u16 value): u16;
-[UniqueOptimizerID("core", "atomic_sub_i32")]
+[UniqueOptimizerID(uuid="1e628e0f-d083-4242-af8d-76b5a1c5a0d0")]
 pub native fn sub(i32 &dest, i32 value): i32;
-[UniqueOptimizerID("core", "atomic_sub_u32")]
+[UniqueOptimizerID(uuid="bc86e07d-4e3b-43fe-b450-55f614829668")]
 pub native fn sub(u32 &dest, u32 value): u32;
-[UniqueOptimizerID("core", "atomic_sub_i64")]
+[UniqueOptimizerID(uuid="d5e657a0-d9dd-4de6-a72a-1fc9ba52810a")]
 pub native fn sub(i64 &dest, i64 value): i64;
-[UniqueOptimizerID("core", "atomic_sub_u64")]
+[UniqueOptimizerID(uuid="d00a4679-1373-41a1-8289-3a534e4fb4c1")]
 pub native fn sub(u64 &dest, u64 value): u64;
-[UniqueOptimizerID("core", "atomic_sub_f32")]
+[UniqueOptimizerID(uuid="94764fc7-06c1-451b-8a7c-6e872d21a4e0")]
 pub native fn sub(f32 &dest, f32 value): f32;
-[UniqueOptimizerID("core", "atomic_sub_f64")]
+[UniqueOptimizerID(uuid="dd2c6a79-1a79-4cfa-bb1e-5238eccd1ca0")]
 pub native fn sub(f64 &dest, f64 value): f64;
-[UniqueOptimizerID("core", "atomic_sub_bool")]
+[UniqueOptimizerID(uuid="c996310f-acb4-4866-a85a-54151d5d0d3b")]
 pub native fn sub(i32 &dest, i32 value): i32;
 
-[UniqueOptimizerID("core", "atomic_and_i8")]
+[UniqueOptimizerID(uuid="d4765aba-8307-49ec-9281-3b08a9928ad7")]
 pub native fn and(i8 &dest, i8 value): i8;
-[UniqueOptimizerID("core", "atomic_and_u8")]
+[UniqueOptimizerID(uuid="91e25e55-47fe-4e2d-afdc-8bd5830b6605")]
 pub native fn and(u8 &dest, u8 value): u8;
-[UniqueOptimizerID("core", "atomic_and_i16")]
+[UniqueOptimizerID(uuid="a4b682ef-7b09-4dfe-8ceb-e2c796191df8")]
 pub native fn and(i16 &dest, i16 value): i16;
-[UniqueOptimizerID("core", "atomic_and_u16")]
+[UniqueOptimizerID(uuid="4a1740a8-1c5f-41e1-a87b-625f6dd0704e")]
 pub native fn and(u16 &dest, u16 value): u16;
-[UniqueOptimizerID("core", "atomic_and_i32")]
+[UniqueOptimizerID(uuid="4b3c7a49-7756-456d-bce8-ff9b55a79dd2")]
 pub native fn and(i32 &dest, i32 value): i32;
-[UniqueOptimizerID("core", "atomic_and_u32")]
+[UniqueOptimizerID(uuid="abc00768-fe3c-4266-b65d-1d2e7884dc84")]
 pub native fn and(u32 &dest, u32 value): u32;
-[UniqueOptimizerID("core", "atomic_and_i64")]
+[UniqueOptimizerID(uuid="f155d0f6-5984-4768-af54-542e29ec4e26")]
 pub native fn and(i64 &dest, i64 value): i64;
-[UniqueOptimizerID("core", "atomic_and_u64")]
+[UniqueOptimizerID(uuid="dd80a740-bd92-4b74-a687-dea3a3b8845b")]
 pub native fn and(u64 &dest, u64 value): u64;
-[UniqueOptimizerID("core", "atomic_and_bool")]
+[UniqueOptimizerID(uuid="35919e58-c01d-4c39-baf3-48efe9006e5b")]
 pub native fn and(bool &dest, bool value): bool;
 
-[UniqueOptimizerID("core", "atomic_or_i8")]
+[UniqueOptimizerID(uuid="6c8e5cbc-b52b-44e6-89a8-4e2a228dd033")]
 pub native fn or(i8 &dest, i8 value): i8;
-[UniqueOptimizerID("core", "atomic_or_u8")]
+[UniqueOptimizerID(uuid="3011da5e-1de8-4eb1-830b-ec8614dac37f")]
 pub native fn or(u8 &dest, u8 value): u8;
-[UniqueOptimizerID("core", "atomic_or_i16")]
+[UniqueOptimizerID(uuid="d55ea6ff-14af-4f7c-b174-eae0861c8906")]
 pub native fn or(i16 &dest, i16 value): i16;
-[UniqueOptimizerID("core", "atomic_or_u16")]
+[UniqueOptimizerID(uuid="7995aea7-e585-45c5-b67a-0ac54650e274")]
 pub native fn or(u16 &dest, u16 value): u16;
-[UniqueOptimizerID("core", "atomic_or_i32")]
+[UniqueOptimizerID(uuid="26e0fb16-4690-416e-bb2b-40cde5e7e9bb")]
 pub native fn or(i32 &dest, i32 value): i32;
-[UniqueOptimizerID("core", "atomic_or_u32")]
+[UniqueOptimizerID(uuid="76811317-e80b-4786-b8a2-3c4ab5eb934a")]
 pub native fn or(u32 &dest, u32 value): u32;
-[UniqueOptimizerID("core", "atomic_or_i64")]
+[UniqueOptimizerID(uuid="489c8c38-e0aa-46ee-a096-c536e4ed2f14")]
 pub native fn or(i64 &dest, i64 value): i64;
-[UniqueOptimizerID("core", "atomic_or_u64")]
+[UniqueOptimizerID(uuid="dc7b2383-e413-4ab0-be90-5ee780942428")]
 pub native fn or(u64 &dest, u64 value): u64;
-[UniqueOptimizerID("core", "atomic_or_bool")]
+[UniqueOptimizerID(uuid="8a3a591f-3934-466e-a25d-bcf7d9d6ecb4")]
 pub native fn or(bool &dest, bool value): bool;
 
-[UniqueOptimizerID("core", "atomic_xor_i8")]
+[UniqueOptimizerID(uuid="20907da8-81ba-4b1f-be17-2b730fb235fa")]
 pub native fn xor(i8 &dest, i8 value): i8;
-[UniqueOptimizerID("core", "atomic_xor_u8")]
+[UniqueOptimizerID(uuid="3ca7c405-a4a9-4215-8c5c-12cb5019c15f")]
 pub native fn xor(u8 &dest, u8 value): u8;
-[UniqueOptimizerID("core", "atomic_xor_i16")]
+[UniqueOptimizerID(uuid="fa9c4250-11a4-47c5-a8b8-4b786cde2a4d")]
 pub native fn xor(i16 &dest, i16 value): i16;
-[UniqueOptimizerID("core", "atomic_xor_u16")]
+[UniqueOptimizerID(uuid="99fc0c42-1080-4f9d-bc2c-e85edcb15d6a")]
 pub native fn xor(u16 &dest, u16 value): u16;
-[UniqueOptimizerID("core", "atomic_xor_i32")]
+[UniqueOptimizerID(uuid="b43996e6-8f56-429c-bd96-c3c7f091c36e")]
 pub native fn xor(i32 &dest, i32 value): i32;
-[UniqueOptimizerID("core", "atomic_xor_u32")]
+[UniqueOptimizerID(uuid="3923acf0-6e9a-4a5e-922c-501cb08d3ade")]
 pub native fn xor(u32 &dest, u32 value): u32;
-[UniqueOptimizerID("core", "atomic_xor_i64")]
+[UniqueOptimizerID(uuid="b16f2bea-c9c6-4d33-8461-60a314136963")]
 pub native fn xor(i64 &dest, i64 value): i64;
-[UniqueOptimizerID("core", "atomic_xor_u64")]
+[UniqueOptimizerID(uuid="c0a53d7c-6100-4462-a7a8-936004855bb3")]
 pub native fn xor(u64 &dest, u64 value): u64;
-[UniqueOptimizerID("core", "atomic_xor_bool")]
+[UniqueOptimizerID(uuid="1f3b3ca0-1213-46f6-9bc2-d93ac5877875")]
 pub native fn xor(bool &dest, bool value): bool;
 
-[UniqueOptimizerID("core", "atomic_xchg_i8")]
+[UniqueOptimizerID(uuid="8ada499b-dcbd-4f14-b0db-737c37c157fa")]
 pub native fn exchange(i8 &dest, i8 value): i8;
-[UniqueOptimizerID("core", "atomic_xchg_u8")]
+[UniqueOptimizerID(uuid="00574922-e948-4ea0-91ab-1cd8fa4dc055")]
 pub native fn exchange(u8 &dest, u8 value): u8;
-[UniqueOptimizerID("core", "atomic_xchg_i16")]
+[UniqueOptimizerID(uuid="a45b6757-b0d3-44f5-b983-84f33eefa7c1")]
 pub native fn exchange(i16 &dest, i16 value): i16;
-[UniqueOptimizerID("core", "atomic_xchg_u16")]
+[UniqueOptimizerID(uuid="4a99e49d-3c83-43a9-8be9-fdf56d68bc34")]
 pub native fn exchange(u16 &dest, u16 value): u16;
-[UniqueOptimizerID("core", "atomic_xchg_i32")]
+[UniqueOptimizerID(uuid="9d01e714-9652-4ba5-8f6a-38d316de3dd6")]
 pub native fn exchange(i32 &dest, i32 value): i32;
-[UniqueOptimizerID("core", "atomic_xchg_u32")]
+[UniqueOptimizerID(uuid="83dc2622-8c32-4b82-9b41-8a44cf4114e9")]
 pub native fn exchange(u32 &dest, u32 value): u32;
-[UniqueOptimizerID("core", "atomic_xchg_i64")]
+[UniqueOptimizerID(uuid="ca5b7df7-8848-4c44-813b-e309866a816a")]
 pub native fn exchange(i64 &dest, i64 value): i64;
-[UniqueOptimizerID("core", "atomic_xchg_u64")]
+[UniqueOptimizerID(uuid="de2fc825-bb89-40ae-bde1-3321b6373ade")]
 pub native fn exchange(u64 &dest, u64 value): u64;
-[UniqueOptimizerID("core", "atomic_xchg_f32")]
+[UniqueOptimizerID(uuid="100cb5e9-2821-4d4b-95cf-d6e51fb56db3")]
 pub native fn exchange(f32 &dest, f32 value): f32;
-[UniqueOptimizerID("core", "atomic_xchg_f64")]
+[UniqueOptimizerID(uuid="0a1098cc-01d1-4093-8d46-33bf433b99f8")]
 pub native fn exchange(f64 &dest, f64 value): f64;
-[UniqueOptimizerID("core", "atomic_xchg_bool")]
+[UniqueOptimizerID(uuid="68bcbe01-df2e-4b8a-9ea7-0d16c59ed1d2")]
 pub native fn exchange(bool &dest, bool value): bool;
-[UniqueOptimizerID("core", "atomic_xchg_object")]
+[UniqueOptimizerID(uuid="f3a053b0-88a1-4661-a161-b8db8f466c34")]
 pub native fn exchange(object &dest, object value): object;
 
-[UniqueOptimizerID("core", "atomic_cmp_xchg_i8")]
+[UniqueOptimizerID(uuid="4c267f6a-59cb-4e99-8d1e-d7e2ab383204")]
 pub native fn compareExchange(i8 &dest, i8 value, i8 compared): i8;
-[UniqueOptimizerID("core", "atomic_cmp_xchg_u8")]
+[UniqueOptimizerID(uuid="41a06722-d22a-4960-8a4f-329c2333acd4")]
 pub native fn compareExchange(u8 &dest, u8 value, u8 compared): u8;
-[UniqueOptimizerID("core", "atomic_cmp_xchg_i16")]
+[UniqueOptimizerID(uuid="3b907d3f-7508-4a3a-9683-ace49acfc93c")]
 pub native fn compareExchange(i16 &dest, i16 value, i16 compared): i16;
-[UniqueOptimizerID("core", "atomic_cmp_xchg_u16")]
+[UniqueOptimizerID(uuid="813c5faa-5cbf-4747-9a10-72db01738226")]
 pub native fn compareExchange(u16 &dest, u16 value, u16 compared): u16;
-[UniqueOptimizerID("core", "atomic_cmp_xchg_i32")]
+[UniqueOptimizerID(uuid="ccab9d50-a4d6-4d51-b033-27c656a7155e")]
 pub native fn compareExchange(i32 &dest, i32 value, i32 compared): i32;
-[UniqueOptimizerID("core", "atomic_cmp_xchg_u32")]
+[UniqueOptimizerID(uuid="1f34e995-3634-433e-8b89-e266913be30f")]
 pub native fn compareExchange(u32 &dest, u32 value, u32 compared): u32;
-[UniqueOptimizerID("core", "atomic_cmp_xchg_i64")]
+[UniqueOptimizerID(uuid="1394a997-7104-4d0f-9433-da7b5a96c76d")]
 pub native fn compareExchange(i64 &dest, i64 value, i64 compared): i64;
-[UniqueOptimizerID("core", "atomic_cmp_xchg_u64")]
+[UniqueOptimizerID(uuid="9931c46b-921b-4d59-b1b2-3be86971709d")]
 pub native fn compareExchange(u64 &dest, u64 value, u64 compared): u64;
-[UniqueOptimizerID("core", "atomic_cmp_xchg_f32")]
+[UniqueOptimizerID(uuid="76e61c12-df2b-4325-a3fd-aafa1699b900")]
 pub native fn compareExchange(f32 &dest, f32 value, f32 compared): f32;
-[UniqueOptimizerID("core", "atomic_cmp_xchg_f64")]
+[UniqueOptimizerID(uuid="3e032f20-7daa-40b1-a49c-8a8100330678")]
 pub native fn compareExchange(f64 &dest, f64 value, f64 compared): f64;
-[UniqueOptimizerID("core", "atomic_cmp_xchg_bool")]
+[UniqueOptimizerID(uuid="be31f3fd-5f6d-44fa-a2a1-a1f4354a7667")]
 pub native fn compareExchange(bool &dest, bool value, bool compared): bool;
-[UniqueOptimizerID("core", "atomic_cmp_xchg_object")]
+[UniqueOptimizerID(uuid="8eeffe08-1e18-4a9b-8d3c-872fd16581e7")]
 pub native fn compareExchange(object &dest, object value, object compared): object;

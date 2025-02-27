@@ -854,6 +854,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 							}
 							break;
 						}
+						break;
 					}
 					case Opcode::ENTER: {
 						std::shared_ptr<cxxast::BlockStmt> blockStmt = std::make_shared<cxxast::BlockStmt>();
@@ -971,15 +972,22 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 						opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex());
 						std::shared_ptr<cxxast::Expr> expr;
 
-						switch (ins.operands[0].valueType) {
-							case ValueType::I8:
-							case ValueType::I16:
-							case ValueType::I32:
-							case ValueType::I64:
-							case ValueType::U8:
-							case ValueType::U16:
-							case ValueType::U32:
-							case ValueType::U64:
+						Type type;
+						if (ins.operands[0].valueType == ValueType::RegRef) {
+							type = programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).type;
+						} else {
+							type = valueTypeToTypeId(ins.operands[0].valueType);
+						}
+
+						switch (type.typeId) {
+							case TypeId::I8:
+							case TypeId::I16:
+							case TypeId::I32:
+							case TypeId::I64:
+							case TypeId::U8:
+							case TypeId::U16:
+							case TypeId::U32:
+							case TypeId::U64:
 								expr =
 									std::make_shared<cxxast::CastExpr>(
 										compileType(compileContext, outputRegInfo.type),
@@ -988,7 +996,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 											compileValue(compileContext, ins.operands[0]),
 											compileValue(compileContext, ins.operands[1])));
 								break;
-							case ValueType::F32:
+							case TypeId::F32:
 								expr = std::make_shared<cxxast::CallExpr>(
 									std::make_shared<cxxast::BinaryExpr>(
 										cxxast::BinaryOp::Scope,
@@ -1001,7 +1009,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 										compileValue(compileContext, ins.operands[0]),
 										compileValue(compileContext, ins.operands[1]) });
 								break;
-							case ValueType::F64:
+							case TypeId::F64:
 								expr = std::make_shared<cxxast::CallExpr>(
 									std::make_shared<cxxast::BinaryExpr>(
 										cxxast::BinaryOp::Scope,
@@ -1044,8 +1052,15 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 						opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex());
 						std::shared_ptr<cxxast::Expr> expr;
 
-						switch (ins.operands[0].valueType) {
-							case ValueType::I8:
+						Type type;
+						if (ins.operands[0].valueType == ValueType::RegRef) {
+							type = programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).type;
+						} else {
+							type = valueTypeToTypeId(ins.operands[0].valueType);
+						}
+
+						switch (type.typeId) {
+							case TypeId::I8:
 								expr = std::make_shared<cxxast::CallExpr>(
 									std::make_shared<cxxast::BinaryExpr>(
 										cxxast::BinaryOp::Scope,
@@ -1058,7 +1073,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 										compileValue(compileContext, ins.operands[0]),
 										compileValue(compileContext, ins.operands[1]) });
 								break;
-							case ValueType::I16:
+							case TypeId::I16:
 								expr = std::make_shared<cxxast::CallExpr>(
 									std::make_shared<cxxast::BinaryExpr>(
 										cxxast::BinaryOp::Scope,
@@ -1071,7 +1086,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 										compileValue(compileContext, ins.operands[0]),
 										compileValue(compileContext, ins.operands[1]) });
 								break;
-							case ValueType::I32:
+							case TypeId::I32:
 								expr = std::make_shared<cxxast::CallExpr>(
 									std::make_shared<cxxast::BinaryExpr>(
 										cxxast::BinaryOp::Scope,
@@ -1084,7 +1099,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 										compileValue(compileContext, ins.operands[0]),
 										compileValue(compileContext, ins.operands[1]) });
 								break;
-							case ValueType::I64:
+							case TypeId::I64:
 								expr = std::make_shared<cxxast::CallExpr>(
 									std::make_shared<cxxast::BinaryExpr>(
 										cxxast::BinaryOp::Scope,
@@ -1097,7 +1112,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 										compileValue(compileContext, ins.operands[0]),
 										compileValue(compileContext, ins.operands[1]) });
 								break;
-							case ValueType::U8:
+							case TypeId::U8:
 								expr = std::make_shared<cxxast::CallExpr>(
 									std::make_shared<cxxast::BinaryExpr>(
 										cxxast::BinaryOp::Scope,
@@ -1110,7 +1125,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 										compileValue(compileContext, ins.operands[0]),
 										compileValue(compileContext, ins.operands[1]) });
 								break;
-							case ValueType::U16:
+							case TypeId::U16:
 								expr = std::make_shared<cxxast::CallExpr>(
 									std::make_shared<cxxast::BinaryExpr>(
 										cxxast::BinaryOp::Scope,
@@ -1123,7 +1138,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 										compileValue(compileContext, ins.operands[0]),
 										compileValue(compileContext, ins.operands[1]) });
 								break;
-							case ValueType::U32:
+							case TypeId::U32:
 								expr = std::make_shared<cxxast::CallExpr>(
 									std::make_shared<cxxast::BinaryExpr>(
 										cxxast::BinaryOp::Scope,
@@ -1136,7 +1151,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 										compileValue(compileContext, ins.operands[0]),
 										compileValue(compileContext, ins.operands[1]) });
 								break;
-							case ValueType::U64:
+							case TypeId::U64:
 								expr = std::make_shared<cxxast::CallExpr>(
 									std::make_shared<cxxast::BinaryExpr>(
 										cxxast::BinaryOp::Scope,
@@ -1179,8 +1194,15 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 						opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex());
 						std::shared_ptr<cxxast::Expr> expr;
 
-						switch (ins.operands[0].valueType) {
-							case ValueType::I8:
+						Type type;
+						if (ins.operands[0].valueType == ValueType::RegRef) {
+							type = programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).type;
+						} else {
+							type = valueTypeToTypeId(ins.operands[0].valueType);
+						}
+
+						switch (type.typeId) {
+							case TypeId::I8:
 								expr = std::make_shared<cxxast::CallExpr>(
 									std::make_shared<cxxast::BinaryExpr>(
 										cxxast::BinaryOp::Scope,
@@ -1193,7 +1215,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 										compileValue(compileContext, ins.operands[0]),
 										compileValue(compileContext, ins.operands[1]) });
 								break;
-							case ValueType::I16:
+							case TypeId::I16:
 								expr = std::make_shared<cxxast::CallExpr>(
 									std::make_shared<cxxast::BinaryExpr>(
 										cxxast::BinaryOp::Scope,
@@ -1206,7 +1228,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 										compileValue(compileContext, ins.operands[0]),
 										compileValue(compileContext, ins.operands[1]) });
 								break;
-							case ValueType::I32:
+							case TypeId::I32:
 								expr = std::make_shared<cxxast::CallExpr>(
 									std::make_shared<cxxast::BinaryExpr>(
 										cxxast::BinaryOp::Scope,
@@ -1219,7 +1241,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 										compileValue(compileContext, ins.operands[0]),
 										compileValue(compileContext, ins.operands[1]) });
 								break;
-							case ValueType::I64:
+							case TypeId::I64:
 								expr = std::make_shared<cxxast::CallExpr>(
 									std::make_shared<cxxast::BinaryExpr>(
 										cxxast::BinaryOp::Scope,
@@ -1232,7 +1254,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 										compileValue(compileContext, ins.operands[0]),
 										compileValue(compileContext, ins.operands[1]) });
 								break;
-							case ValueType::U8:
+							case TypeId::U8:
 								expr = std::make_shared<cxxast::CallExpr>(
 									std::make_shared<cxxast::BinaryExpr>(
 										cxxast::BinaryOp::Scope,
@@ -1245,7 +1267,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 										compileValue(compileContext, ins.operands[0]),
 										compileValue(compileContext, ins.operands[1]) });
 								break;
-							case ValueType::U16:
+							case TypeId::U16:
 								expr = std::make_shared<cxxast::CallExpr>(
 									std::make_shared<cxxast::BinaryExpr>(
 										cxxast::BinaryOp::Scope,
@@ -1258,7 +1280,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 										compileValue(compileContext, ins.operands[0]),
 										compileValue(compileContext, ins.operands[1]) });
 								break;
-							case ValueType::U32:
+							case TypeId::U32:
 								expr = std::make_shared<cxxast::CallExpr>(
 									std::make_shared<cxxast::BinaryExpr>(
 										cxxast::BinaryOp::Scope,
@@ -1271,7 +1293,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 										compileValue(compileContext, ins.operands[0]),
 										compileValue(compileContext, ins.operands[1]) });
 								break;
-							case ValueType::U64:
+							case TypeId::U64:
 								expr = std::make_shared<cxxast::CallExpr>(
 									std::make_shared<cxxast::BinaryExpr>(
 										cxxast::BinaryOp::Scope,
@@ -1280,6 +1302,174 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 											std::make_shared<cxxast::IdExpr>("slake"),
 											std::make_shared<cxxast::IdExpr>("flib")),
 										std::make_shared<cxxast::IdExpr>("shrUnsigned64")),
+									std::vector<std::shared_ptr<cxxast::Expr>>{
+										compileValue(compileContext, ins.operands[0]),
+										compileValue(compileContext, ins.operands[1]) });
+								break;
+							default:
+								std::terminate();
+						}
+
+						if (compileContext.allocRecycledReg(*this, programInfo, ins.output.getRegIndex(), outputRegInfo.type)) {
+							curStmtContainer->push_back(
+								std::make_shared<cxxast::ExprStmt>(
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::Assign,
+										std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName)),
+										expr)));
+						} else {
+							std::string &varName = compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName;
+
+							cxxast::VarDefPair varDefPair = {
+								varName,
+								expr
+							};
+
+							curStmtContainer->push_back(
+								std::make_shared<cxxast::LocalVarDefStmt>(
+									compileType(compileContext, outputRegInfo.type),
+									std::vector<cxxast::VarDefPair>{ varDefPair }));
+						}
+						break;
+					}
+					case Opcode::CMP: {
+						opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex());
+						std::shared_ptr<cxxast::Expr> expr;
+
+						Type type;
+						if (ins.operands[0].valueType == ValueType::RegRef) {
+							type = programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).type;
+						} else {
+							type = valueTypeToTypeId(ins.operands[0].valueType);
+						}
+
+						switch (type.typeId) {
+							case TypeId::I8:
+								expr = std::make_shared<cxxast::CallExpr>(
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::Scope,
+										std::make_shared<cxxast::BinaryExpr>(
+											cxxast::BinaryOp::Scope,
+											std::make_shared<cxxast::IdExpr>("slake"),
+											std::make_shared<cxxast::IdExpr>("flib")),
+										std::make_shared<cxxast::IdExpr>("compareI8")),
+									std::vector<std::shared_ptr<cxxast::Expr>>{
+										compileValue(compileContext, ins.operands[0]),
+										compileValue(compileContext, ins.operands[1]) });
+								break;
+							case TypeId::I16:
+								expr = std::make_shared<cxxast::CallExpr>(
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::Scope,
+										std::make_shared<cxxast::BinaryExpr>(
+											cxxast::BinaryOp::Scope,
+											std::make_shared<cxxast::IdExpr>("slake"),
+											std::make_shared<cxxast::IdExpr>("flib")),
+										std::make_shared<cxxast::IdExpr>("compareI16")),
+									std::vector<std::shared_ptr<cxxast::Expr>>{
+										compileValue(compileContext, ins.operands[0]),
+										compileValue(compileContext, ins.operands[1]) });
+								break;
+							case TypeId::I32:
+								expr = std::make_shared<cxxast::CallExpr>(
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::Scope,
+										std::make_shared<cxxast::BinaryExpr>(
+											cxxast::BinaryOp::Scope,
+											std::make_shared<cxxast::IdExpr>("slake"),
+											std::make_shared<cxxast::IdExpr>("flib")),
+										std::make_shared<cxxast::IdExpr>("compareI32")),
+									std::vector<std::shared_ptr<cxxast::Expr>>{
+										compileValue(compileContext, ins.operands[0]),
+										compileValue(compileContext, ins.operands[1]) });
+								break;
+							case TypeId::I64:
+								expr = std::make_shared<cxxast::CallExpr>(
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::Scope,
+										std::make_shared<cxxast::BinaryExpr>(
+											cxxast::BinaryOp::Scope,
+											std::make_shared<cxxast::IdExpr>("slake"),
+											std::make_shared<cxxast::IdExpr>("flib")),
+										std::make_shared<cxxast::IdExpr>("compareI64")),
+									std::vector<std::shared_ptr<cxxast::Expr>>{
+										compileValue(compileContext, ins.operands[0]),
+										compileValue(compileContext, ins.operands[1]) });
+								break;
+							case TypeId::U8:
+								expr = std::make_shared<cxxast::CallExpr>(
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::Scope,
+										std::make_shared<cxxast::BinaryExpr>(
+											cxxast::BinaryOp::Scope,
+											std::make_shared<cxxast::IdExpr>("slake"),
+											std::make_shared<cxxast::IdExpr>("flib")),
+										std::make_shared<cxxast::IdExpr>("compareU8")),
+									std::vector<std::shared_ptr<cxxast::Expr>>{
+										compileValue(compileContext, ins.operands[0]),
+										compileValue(compileContext, ins.operands[1]) });
+								break;
+							case TypeId::U16:
+								expr = std::make_shared<cxxast::CallExpr>(
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::Scope,
+										std::make_shared<cxxast::BinaryExpr>(
+											cxxast::BinaryOp::Scope,
+											std::make_shared<cxxast::IdExpr>("slake"),
+											std::make_shared<cxxast::IdExpr>("flib")),
+										std::make_shared<cxxast::IdExpr>("compareU16")),
+									std::vector<std::shared_ptr<cxxast::Expr>>{
+										compileValue(compileContext, ins.operands[0]),
+										compileValue(compileContext, ins.operands[1]) });
+								break;
+							case TypeId::U32:
+								expr = std::make_shared<cxxast::CallExpr>(
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::Scope,
+										std::make_shared<cxxast::BinaryExpr>(
+											cxxast::BinaryOp::Scope,
+											std::make_shared<cxxast::IdExpr>("slake"),
+											std::make_shared<cxxast::IdExpr>("flib")),
+										std::make_shared<cxxast::IdExpr>("compareU32")),
+									std::vector<std::shared_ptr<cxxast::Expr>>{
+										compileValue(compileContext, ins.operands[0]),
+										compileValue(compileContext, ins.operands[1]) });
+								break;
+							case TypeId::U64:
+								expr = std::make_shared<cxxast::CallExpr>(
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::Scope,
+										std::make_shared<cxxast::BinaryExpr>(
+											cxxast::BinaryOp::Scope,
+											std::make_shared<cxxast::IdExpr>("slake"),
+											std::make_shared<cxxast::IdExpr>("flib")),
+										std::make_shared<cxxast::IdExpr>("compareU64")),
+									std::vector<std::shared_ptr<cxxast::Expr>>{
+										compileValue(compileContext, ins.operands[0]),
+										compileValue(compileContext, ins.operands[1]) });
+								break;
+							case TypeId::F32:
+								expr = std::make_shared<cxxast::CallExpr>(
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::Scope,
+										std::make_shared<cxxast::BinaryExpr>(
+											cxxast::BinaryOp::Scope,
+											std::make_shared<cxxast::IdExpr>("slake"),
+											std::make_shared<cxxast::IdExpr>("flib")),
+										std::make_shared<cxxast::IdExpr>("compareF32")),
+									std::vector<std::shared_ptr<cxxast::Expr>>{
+										compileValue(compileContext, ins.operands[0]),
+										compileValue(compileContext, ins.operands[1]) });
+								break;
+							case TypeId::F64:
+								expr = std::make_shared<cxxast::CallExpr>(
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::Scope,
+										std::make_shared<cxxast::BinaryExpr>(
+											cxxast::BinaryOp::Scope,
+											std::make_shared<cxxast::IdExpr>("slake"),
+											std::make_shared<cxxast::IdExpr>("flib")),
+										std::make_shared<cxxast::IdExpr>("compareF64")),
 									std::vector<std::shared_ptr<cxxast::Expr>>{
 										compileValue(compileContext, ins.operands[0]),
 										compileValue(compileContext, ins.operands[1]) });
@@ -1335,6 +1525,77 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 								std::make_shared<cxxast::UnaryExpr>(
 									op,
 									compileValue(compileContext, ins.operands[0])));
+
+						if (compileContext.allocRecycledReg(*this, programInfo, ins.output.getRegIndex(), outputRegInfo.type)) {
+							curStmtContainer->push_back(
+								std::make_shared<cxxast::ExprStmt>(
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::Assign,
+										std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName)),
+										expr)));
+						} else {
+							std::string &varName = compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName;
+
+							cxxast::VarDefPair varDefPair = {
+								varName,
+								expr
+							};
+
+							curStmtContainer->push_back(
+								std::make_shared<cxxast::LocalVarDefStmt>(
+									compileType(compileContext, outputRegInfo.type),
+									std::vector<cxxast::VarDefPair>{ varDefPair }));
+						}
+						break;
+					}
+					case Opcode::AT: {
+						opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex());
+
+						opti::RegAnalyzedInfo &regInfo = programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex());
+						Type &elementType = regInfo.type.getArrayExData();
+
+						std::shared_ptr<cxxast::Expr>
+							indexRefExpr = std::make_shared<cxxast::BinaryExpr>(
+								cxxast::BinaryOp::MemberAccess,
+								std::make_shared<cxxast::BinaryExpr>(
+									cxxast::BinaryOp::MemberAccess,
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::MemberAccess,
+										std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
+										std::make_shared<cxxast::IdExpr>("asEntityRef")),
+									std::make_shared<cxxast::IdExpr>("asArray")),
+								std::make_shared<cxxast::IdExpr>("index"));
+						std::shared_ptr<cxxast::Expr> dataPtrExpr =
+							std::make_shared<cxxast::CastExpr>(
+								std::make_shared<cxxast::PointerTypeName>(
+									compileType(compileContext, elementType)),
+								std::make_shared<cxxast::BinaryExpr>(
+									cxxast::BinaryOp::MemberAccess,
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::MemberAccess,
+										std::make_shared<cxxast::BinaryExpr>(
+											cxxast::BinaryOp::MemberAccess,
+											std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
+											std::make_shared<cxxast::IdExpr>("asEntityRef")),
+										std::make_shared<cxxast::IdExpr>("asArray")),
+									std::make_shared<cxxast::IdExpr>("data")));
+						std::shared_ptr<cxxast::Expr> elementExpr = std::make_shared<cxxast::BinaryExpr>(
+							cxxast::BinaryOp::Add,
+							dataPtrExpr,
+							indexRefExpr);
+
+						std::shared_ptr<cxxast::Expr> expr = std::make_shared<cxxast::CallExpr>(
+							std::make_shared<cxxast::BinaryExpr>(
+								cxxast::BinaryOp::Scope,
+								std::make_shared<cxxast::BinaryExpr>(
+									cxxast::BinaryOp::Scope,
+									std::make_shared<cxxast::IdExpr>("slake"),
+									std::make_shared<cxxast::IdExpr>("EntityRef")),
+								std::make_shared<cxxast::IdExpr>("makeAotPtrRef")),
+							std::vector<std::shared_ptr<cxxast::Expr>>{
+								std::make_shared<cxxast::CastExpr>(
+									std::make_shared<cxxast::PointerTypeName>(std::make_shared<cxxast::VoidTypeName>()),
+									elementExpr) });
 
 						if (compileContext.allocRecycledReg(*this, programInfo, ins.output.getRegIndex(), outputRegInfo.type)) {
 							curStmtContainer->push_back(

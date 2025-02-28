@@ -204,6 +204,7 @@ namespace slake {
 
 				std::shared_ptr<cxxast::Expr> genGetValueDataExpr(const Type &type, std::shared_ptr<cxxast::Expr> expr);
 
+				std::string mangleJumpDestLabelName(uint32_t offIns);
 				std::string mangleConstantObjectName(Object *object);
 				std::string mangleRegLocalVarName(uint32_t idxReg);
 				std::string mangleLocalVarName(uint32_t idxReg);

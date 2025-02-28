@@ -261,6 +261,18 @@ BlockStmt::BlockStmt(std::vector<std::shared_ptr<Stmt>> &&body) : Stmt(StmtKind:
 BlockStmt::~BlockStmt() {
 }
 
+LabelStmt::LabelStmt(std::string &&name) : Stmt(StmtKind::Label), name(std::move(name)) {
+}
+
+LabelStmt::~LabelStmt() {
+}
+
+GotoStmt::GotoStmt(std::string &&name) : Stmt(StmtKind::Goto), name(std::move(name)) {
+}
+
+GotoStmt::~GotoStmt() {
+}
+
 Expr::Expr(ExprKind stmtKind) : ASTNode(NodeKind::Expr), exprKind(stmtKind) {
 }
 

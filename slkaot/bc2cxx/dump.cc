@@ -455,14 +455,15 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 		}
 		case cxxast::NodeKind::Stmt: {
 			std::shared_ptr<cxxast::Stmt> stmt = std::static_pointer_cast<cxxast::Stmt>(astNode);
-			os << std::string(indentLevel, '\t');
 
 			switch (stmt->stmtKind) {
 				case cxxast::StmtKind::Expr:
+					os << std::string(indentLevel, '\t');
 					_dumpAstNode(os, std::static_pointer_cast<cxxast::ExprStmt>(stmt)->expr, dumpMode, 0);
 					os << ";";
 					break;
 				case cxxast::StmtKind::LocalVarDef: {
+					os << std::string(indentLevel, '\t');
 					std::shared_ptr<cxxast::LocalVarDefStmt> s = std::static_pointer_cast<cxxast::LocalVarDefStmt>(stmt);
 					_dumpAstNode(os, s->type, dumpMode, 0);
 					os << " ";
@@ -479,6 +480,7 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 					break;
 				}
 				case cxxast::StmtKind::If: {
+					os << std::string(indentLevel, '\t');
 					std::shared_ptr<cxxast::IfStmt> s = std::static_pointer_cast<cxxast::IfStmt>(stmt);
 					os << "if (";
 
@@ -496,6 +498,7 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 					break;
 				}
 				case cxxast::StmtKind::For: {
+					os << std::string(indentLevel, '\t');
 					std::shared_ptr<cxxast::ForStmt> s = std::static_pointer_cast<cxxast::ForStmt>(stmt);
 					os << "for (";
 
@@ -521,6 +524,7 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 					break;
 				}
 				case cxxast::StmtKind::While: {
+					os << std::string(indentLevel, '\t');
 					std::shared_ptr<cxxast::ForStmt> s = std::static_pointer_cast<cxxast::ForStmt>(stmt);
 					os << "while (";
 					_dumpAstNode(os, s->condition, dumpMode, 0);
@@ -530,12 +534,15 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 					break;
 				}
 				case cxxast::StmtKind::Break:
+					os << std::string(indentLevel, '\t');
 					os << "break;";
 					break;
 				case cxxast::StmtKind::Continue:
+					os << std::string(indentLevel, '\t');
 					os << "continue;";
 					break;
 				case cxxast::StmtKind::Return: {
+					os << std::string(indentLevel, '\t');
 					std::shared_ptr<cxxast::ReturnStmt> s = std::static_pointer_cast<cxxast::ReturnStmt>(stmt);
 					os << "return ";
 
@@ -546,8 +553,8 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 					break;
 				}
 				case cxxast::StmtKind::Block: {
+					os << std::string(indentLevel, '\t');
 					std::shared_ptr<cxxast::BlockStmt> s = std::static_pointer_cast<cxxast::BlockStmt>(stmt);
-					// Auto-indented
 					os << "{\n";
 
 					for (std::shared_ptr<cxxast::Stmt> i : s->body) {
@@ -555,6 +562,20 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 					}
 
 					os << std::string(indentLevel, '\t') << "}";
+					break;
+				}
+				case cxxast::StmtKind::Label: {
+					os << std::string(indentLevel ? indentLevel - 1 : 0, '\t');
+					std::shared_ptr<cxxast::LabelStmt> s = std::static_pointer_cast<cxxast::LabelStmt>(stmt);
+
+					os << s->name << ":;";
+					break;
+				}
+				case cxxast::StmtKind::Goto: {
+					os << std::string(indentLevel, '\t');
+					std::shared_ptr<cxxast::GotoStmt> s = std::static_pointer_cast<cxxast::GotoStmt>(stmt);
+
+					os << "goto " << s->name << ";";
 					break;
 				}
 			}

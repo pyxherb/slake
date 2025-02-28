@@ -88,6 +88,9 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 			for (size_t i = 0; i < fo->instructions.size(); ++i) {
 				Instruction &ins = fo->instructions.at(i);
 
+				curStmtContainer->push_back(
+					std::make_shared<cxxast::LabelStmt>(mangleJumpDestLabelName(i)));
+
 				if (ins.output.valueType != ValueType::Undefined) {
 					opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex());
 
@@ -1613,6 +1616,29 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 						}
 						break;
 					}
+					case Opcode::JMP: {
+						curStmtContainer->push_back(
+							std::make_shared<cxxast::GotoStmt>(mangleJumpDestLabelName(ins.operands[0].getU32())));
+						break;
+					}
+					case Opcode::JT: {
+						curStmtContainer->push_back(
+							std::make_shared<cxxast::IfStmt>(
+								compileValue(compileContext, ins.operands[1]),
+								std::make_shared<cxxast::GotoStmt>(mangleJumpDestLabelName(ins.operands[0].getU32())),
+								std::shared_ptr<cxxast::Stmt>{}));
+						break;
+					}
+					case Opcode::JF: {
+						curStmtContainer->push_back(
+							std::make_shared<cxxast::IfStmt>(
+								compileValue(compileContext, ins.operands[1]),
+								std::shared_ptr<cxxast::Stmt>{},
+								std::make_shared<cxxast::GotoStmt>(mangleJumpDestLabelName(ins.operands[0].getU32()))));
+						break;
+					}
+					case Opcode::PUSHARG:
+						break;
 				}
 
 				if (auto it = compileContext.recyclableRegs.find(i); it != compileContext.recyclableRegs.end()) {

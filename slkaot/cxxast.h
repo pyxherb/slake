@@ -265,7 +265,9 @@ namespace slake {
 				Break,
 				Continue,
 				Return,
-				Block
+				Block,
+				Label,
+				Goto
 			};
 
 			class Stmt : public ASTNode {
@@ -362,6 +364,22 @@ namespace slake {
 
 				BlockStmt(std::vector<std::shared_ptr<Stmt>> &&body = {});
 				virtual ~BlockStmt();
+			};
+
+			class LabelStmt : public Stmt {
+			public:
+				std::string name;
+
+				LabelStmt(std::string &&name);
+				virtual ~LabelStmt();
+			};
+
+			class GotoStmt : public Stmt {
+			public:
+				std::string name;
+
+				GotoStmt(std::string &&name);
+				virtual ~GotoStmt();
 			};
 
 			enum class ExprKind : uint8_t {

@@ -189,6 +189,16 @@ namespace slake {
 							std::make_shared<cxxast::IdExpr>("AOTFnExecContext", cxxast::GenericArgList{})));
 				}
 
+				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genFnOverloadingPtrTypeName() {
+					return std::make_shared<cxxast::PointerTypeName>(
+						std::make_shared<cxxast::CustomTypeName>(
+							false,
+							std::make_shared<cxxast::BinaryExpr>(
+								cxxast::BinaryOp::Scope,
+								std::make_shared<cxxast::IdExpr>("slake", cxxast::GenericArgList{}),
+								std::make_shared<cxxast::IdExpr>("FnOverloadingObject", cxxast::GenericArgList{}))));
+				}
+
 				SLAKE_FORCEINLINE cxxast::GenericArgList genSelfGenericArgs(const cxxast::GenericParamList &genericParams) {
 					cxxast::GenericArgList args;
 
@@ -207,6 +217,7 @@ namespace slake {
 				std::string mangleJumpDestLabelName(uint32_t offIns);
 				std::string mangleConstantObjectName(Object *object);
 				std::string mangleRegLocalVarName(uint32_t idxReg);
+				std::string mangleArgListLocalVarName(uint32_t idxReg);
 				std::string mangleLocalVarName(uint32_t idxReg);
 				std::string mangleParamName(uint32_t idxArg);
 				std::string mangleRefForTypeName(const peff::DynArray<IdRefEntry> &entries);

@@ -293,7 +293,7 @@ IdExpr::~IdExpr() {
 
 InitializerListExpr::InitializerListExpr(
 	std::shared_ptr<TypeName> type,
-	std::vector<std::shared_ptr<Expr>> args)
+	std::vector<std::shared_ptr<Expr>> &&args)
 	: Expr(ExprKind::InitializerList),
 	  type(type),
 	  args(std::move(args)) {

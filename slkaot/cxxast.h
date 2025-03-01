@@ -289,6 +289,7 @@ namespace slake {
 			struct VarDefPair {
 				std::string name;
 				std::shared_ptr<Expr> initialValue;
+				size_t arrayLength = SIZE_MAX;
 			};
 
 			class LocalVarDefStmt : public Stmt {
@@ -456,7 +457,7 @@ namespace slake {
 
 				InitializerListExpr(
 					std::shared_ptr<TypeName> type,
-					std::vector<std::shared_ptr<Expr>> args);
+					std::vector<std::shared_ptr<Expr>> &&args);
 				virtual ~InitializerListExpr();
 			};
 

@@ -470,6 +470,15 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 
 					for (size_t i = 0; i < s->varDefPairs.size(); ++i) {
 						os << s->varDefPairs[i].name;
+						switch (s->varDefPairs[i].arrayLength) {
+							case 0:
+								os << "[]";
+								break;
+							case SIZE_MAX:
+								break;
+							default:
+								os << "[" << std::to_string(s->varDefPairs[i].arrayLength) << "]";
+						}
 						if (s->varDefPairs[i].initialValue) {
 							os << " = ";
 							_dumpAstNode(os, s->varDefPairs[i].initialValue, dumpMode, 0);

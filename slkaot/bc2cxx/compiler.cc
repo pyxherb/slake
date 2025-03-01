@@ -68,6 +68,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 			RegularFnOverloadingObject *fo = (RegularFnOverloadingObject *)fnOverloadingObject;
 			std::vector<std::shared_ptr<cxxast::Stmt>> *curStmtContainer = &fnOverloading->body;
 			std::list<std::vector<std::shared_ptr<cxxast::Stmt>> *> curStmtContainerStack;
+			std::list<size_t> branchBlockLeavingBoundaries;
 			auto pushCurStmtContainer = [&curStmtContainer, &curStmtContainerStack]() {
 				curStmtContainerStack.push_back(curStmtContainer);
 			};
@@ -87,6 +88,11 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 
 			for (size_t i = 0; i < fo->instructions.size(); ++i) {
 				Instruction &ins = fo->instructions.at(i);
+
+				if (branchBlockLeavingBoundaries.size() && i == branchBlockLeavingBoundaries.back()) {
+					popCurStmtContainer();
+					branchBlockLeavingBoundaries.pop_back();
+				}
 
 				curStmtContainer->push_back(
 					std::make_shared<cxxast::LabelStmt>(mangleJumpDestLabelName(i)));
@@ -1617,28 +1623,108 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 						break;
 					}
 					case Opcode::JMP: {
+						uint32_t offDest = ins.operands[0].getU32();
+						if (offDest > i) {
+							branchBlockLeavingBoundaries.push_back(offDest);
+							std::shared_ptr<cxxast::BlockStmt> blockStmt = std::make_shared<cxxast::BlockStmt>();
+
+							curStmtContainer->push_back(blockStmt);
+
+							pushCurStmtContainer();
+
+							curStmtContainer = &blockStmt->body;
+						}
 						curStmtContainer->push_back(
-							std::make_shared<cxxast::GotoStmt>(mangleJumpDestLabelName(ins.operands[0].getU32())));
+							std::make_shared<cxxast::GotoStmt>(mangleJumpDestLabelName(offDest)));
 						break;
 					}
 					case Opcode::JT: {
+						uint32_t offDest = ins.operands[0].getU32();
+						if (offDest > i) {
+							branchBlockLeavingBoundaries.push_back(offDest);
+							std::shared_ptr<cxxast::BlockStmt> blockStmt = std::make_shared<cxxast::BlockStmt>();
+
+							curStmtContainer->push_back(blockStmt);
+
+							pushCurStmtContainer();
+
+							curStmtContainer = &blockStmt->body;
+						}
 						curStmtContainer->push_back(
 							std::make_shared<cxxast::IfStmt>(
 								compileValue(compileContext, ins.operands[1]),
-								std::make_shared<cxxast::GotoStmt>(mangleJumpDestLabelName(ins.operands[0].getU32())),
+								std::make_shared<cxxast::GotoStmt>(mangleJumpDestLabelName(offDest)),
 								std::shared_ptr<cxxast::Stmt>{}));
 						break;
 					}
 					case Opcode::JF: {
+						uint32_t offDest = ins.operands[0].getU32();
+						if (offDest > i) {
+							branchBlockLeavingBoundaries.push_back(offDest);
+							std::shared_ptr<cxxast::BlockStmt> blockStmt = std::make_shared<cxxast::BlockStmt>();
+
+							curStmtContainer->push_back(blockStmt);
+
+							pushCurStmtContainer();
+
+							curStmtContainer = &blockStmt->body;
+						}
 						curStmtContainer->push_back(
 							std::make_shared<cxxast::IfStmt>(
 								compileValue(compileContext, ins.operands[1]),
 								std::shared_ptr<cxxast::Stmt>{},
-								std::make_shared<cxxast::GotoStmt>(mangleJumpDestLabelName(ins.operands[0].getU32()))));
+								std::make_shared<cxxast::GotoStmt>(mangleJumpDestLabelName(offDest))));
 						break;
 					}
 					case Opcode::PUSHARG:
 						break;
+					case Opcode::CALL: {
+						std::shared_ptr<cxxast::Expr> targetExpr;
+
+						if (compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).isLoadInsResult) {
+							targetExpr =
+								std::make_shared<cxxast::BinaryExpr>(
+									cxxast::BinaryOp::MemberAccess,
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::MemberAccess,
+										std::make_shared<cxxast::BinaryExpr>(
+											cxxast::BinaryOp::MemberAccess,
+											std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
+											std::make_shared<cxxast::IdExpr>("asEntityRef")),
+										std::make_shared<cxxast::IdExpr>("asObject")),
+									std::make_shared<cxxast::IdExpr>("instanceObject"));
+						} else {
+							targetExpr = compileValue(compileContext, ins.operands[0]);
+						}
+
+						std::vector<std::shared_ptr<cxxast::Expr>> args;
+
+						for (auto j : programInfo.analyzedFnCallInfo.at(i).argPushInsOffs) {
+							Instruction &ins = fo->instructions.at(j);
+
+							args.push_back(compileValue(compileContext, ins.operands[0]));
+						}
+
+						/*if (ins.output.valueType != ValueType::Undefined) {
+							curStmtContainer->push_back(
+								std::make_shared<cxxast::LocalVarDefStmt>(
+									compileType(compileContext, programInfo.analyzedRegInfo.at(ins.output.getRegIndex()).type),
+									std::vector<cxxast::VarDefPair>{
+										{ mangleRegLocalVarName(ins.output.getRegIndex()) } }));
+
+							curStmtContainer->push_back(genReturnIfExceptStmt(
+								std::make_shared<cxxast::CallExpr>(
+									targetExpr,
+									std::move(args))));
+						} else {
+							curStmtContainer->push_back(genReturnIfExceptStmt(
+								std::make_shared<cxxast::CallExpr>(
+									targetExpr,
+									std::move(args))));
+						}*/
+
+						break;
+					}
 				}
 
 				if (auto it = compileContext.recyclableRegs.find(i); it != compileContext.recyclableRegs.end()) {
@@ -1650,6 +1736,10 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 							compileContext.recycledRegs.insert(j);
 					}
 				}
+			}
+
+			if (branchBlockLeavingBoundaries.size()) {
+				// TODO: Warn the user that the program is malformed.
 			}
 			break;
 		}

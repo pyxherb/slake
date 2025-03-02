@@ -1723,7 +1723,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 										cxxast::BinaryOp::MemberAccess,
 										std::make_shared<cxxast::IdExpr>("aotContext"),
 										std::make_shared<cxxast::IdExpr>("runtime")),
-									std::make_shared<cxxast::IdExpr>("execFn")),
+									std::make_shared<cxxast::IdExpr>("execFnInAotFn")),
 								std::vector<std::shared_ptr<cxxast::Expr>>{
 									std::make_shared<cxxast::CastExpr>(
 										genFnOverloadingPtrTypeName(),

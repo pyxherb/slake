@@ -883,7 +883,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 											std::make_shared<cxxast::IdExpr>(
 												mangleParamName(programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex()).storageInfo.asArgRef.idxArg)) };
 
-												compileContext.addStackSize(getLocalVarSizeAndAlignmentInfoOfType(outputRegInfo.type));
+										compileContext.addStackSize(getLocalVarSizeAndAlignmentInfoOfType(outputRegInfo.type));
 										curStmtContainer->push_back(std::make_shared<cxxast::LocalVarDefStmt>(compileType(compileContext, outputRegInfo.type), std::vector<cxxast::VarDefPair>{ varDefPair }));
 									}
 									break;
@@ -1739,7 +1739,11 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 							args.push_back(compileValue(compileContext, ins.operands[0]));
 						}
 
-						compileContext.addStackSize(getLocalVarSizeAndAlignmentInfoOfType(Type(TypeId::Any)));
+						{
+							auto info = getLocalVarSizeAndAlignmentInfoOfType(Type(TypeId::Any));
+							compileContext.addStackSize(info.first * nArgs, info.second);
+						}
+
 						curStmtContainer->push_back(
 							std::make_shared<cxxast::LocalVarDefStmt>(
 								genAnyTypeName(),
@@ -1812,7 +1816,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 
 			if (branchBlockLeavingBoundaries.size()) {
 				// TODO: Warn the user that the program is malformed.
-				while(branchBlockLeavingBoundaries.size()) {
+				while (branchBlockLeavingBoundaries.size()) {
 					branchBlockLeavingBoundaries.pop_back();
 					popCurStmtContainer();
 				}

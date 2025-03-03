@@ -5,6 +5,44 @@ using namespace slake;
 using namespace slake::slkaot;
 using namespace slake::slkaot::bc2cxx;
 
+std::pair<size_t, size_t> BC2CXX::getLocalVarSizeAndAlignmentInfoOfType(const Type &type) {
+	switch (type.typeId) {
+		case TypeId::I8:
+			return { sizeof(int8_t), sizeof(int8_t) };
+		case TypeId::I16:
+			return { sizeof(int16_t), sizeof(int16_t) };
+		case TypeId::I32:
+			return { sizeof(int32_t), sizeof(int32_t) };
+		case TypeId::I64:
+			return { sizeof(int64_t), sizeof(int64_t) };
+		case TypeId::U8:
+			return { sizeof(uint8_t), sizeof(uint8_t) };
+		case TypeId::U16:
+			return { sizeof(uint16_t), sizeof(uint16_t) };
+		case TypeId::U32:
+			return { sizeof(uint32_t), sizeof(uint32_t) };
+		case TypeId::U64:
+			return { sizeof(uint64_t), sizeof(uint64_t) };
+		case TypeId::F32:
+			return { sizeof(float), sizeof(float) };
+		case TypeId::F64:
+			return { sizeof(double), sizeof(double) };
+		case TypeId::Bool:
+			return { sizeof(bool), sizeof(bool) };
+		case TypeId::String:
+		case TypeId::Instance:
+		case TypeId::Array:
+		case TypeId::FnDelegate:
+			return { sizeof(Object *), sizeof(void *) };
+		case TypeId::Ref:
+			return { sizeof(EntityRef), sizeof(size_t) };
+		case TypeId::Any:
+			return { sizeof(Value), sizeof(size_t) };
+		default:
+			std::terminate();
+	}
+}
+
 std::shared_ptr<cxxast::Expr> BC2CXX::genGetValueDataExpr(const Type &type, std::shared_ptr<cxxast::Expr> expr) {
 	switch (type.typeId) {
 		case TypeId::I8:

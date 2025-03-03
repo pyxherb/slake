@@ -62,8 +62,24 @@ namespace slake {
 					std::map<uint32_t, std::set<uint32_t>> recyclableRegs;
 					std::set<uint32_t> recycledRegs;
 					std::set<HostObjectRef<>> mappedObjects;
+					size_t estimatedStackSize = 0;
 
 					SLAKE_FORCEINLINE CompileContext(Runtime *runtime, std::shared_ptr<cxxast::Namespace> rootNamespace) : runtime(runtime), rootNamespace(rootNamespace) {}
+
+					SLAKE_FORCEINLINE void alignStackSize(size_t alignment) {
+						if(size_t i = estimatedStackSize % alignment; i) {
+							estimatedStackSize += alignment - i;
+						}
+					}
+
+					SLAKE_FORCEINLINE void addStackSize(size_t size, size_t alignment) {
+						alignStackSize(alignment);
+						estimatedStackSize += size;
+					}
+
+					SLAKE_FORCEINLINE void addStackSize(const std::pair<size_t, size_t> &sizeAlignmentPair) {
+						addStackSize(sizeAlignmentPair.first, sizeAlignmentPair.second);;
+					}
 
 					SLAKE_FORCEINLINE VirtualRegInfo &defineVirtualReg(uint32_t reg, std::string &&vregVarName) {
 						return vregInfo.insert({ reg, VirtualRegInfo(std::move(vregVarName)) }).first->second;
@@ -83,6 +99,7 @@ namespace slake {
 						vregInfo.clear();
 						recyclableRegs.clear();
 						recycledRegs.clear();
+						estimatedStackSize = 0;
 					}
 				};
 
@@ -189,6 +206,16 @@ namespace slake {
 							std::make_shared<cxxast::IdExpr>("AOTFnExecContext", cxxast::GenericArgList{})));
 				}
 
+				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genFnOverloadingPtrTypeName() {
+					return std::make_shared<cxxast::PointerTypeName>(
+						std::make_shared<cxxast::CustomTypeName>(
+							false,
+							std::make_shared<cxxast::BinaryExpr>(
+								cxxast::BinaryOp::Scope,
+								std::make_shared<cxxast::IdExpr>("slake", cxxast::GenericArgList{}),
+								std::make_shared<cxxast::IdExpr>("FnOverloadingObject", cxxast::GenericArgList{}))));
+				}
+
 				SLAKE_FORCEINLINE cxxast::GenericArgList genSelfGenericArgs(const cxxast::GenericParamList &genericParams) {
 					cxxast::GenericArgList args;
 
@@ -204,8 +231,12 @@ namespace slake {
 
 				std::shared_ptr<cxxast::Expr> genGetValueDataExpr(const Type &type, std::shared_ptr<cxxast::Expr> expr);
 
+				std::pair<size_t, size_t> getLocalVarSizeAndAlignmentInfoOfType(const Type &type);
+
+				std::string mangleJumpDestLabelName(uint32_t offIns);
 				std::string mangleConstantObjectName(Object *object);
 				std::string mangleRegLocalVarName(uint32_t idxReg);
+				std::string mangleArgListLocalVarName(uint32_t idxReg);
 				std::string mangleLocalVarName(uint32_t idxReg);
 				std::string mangleParamName(uint32_t idxArg);
 				std::string mangleRefForTypeName(const peff::DynArray<IdRefEntry> &entries);

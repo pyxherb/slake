@@ -272,6 +272,14 @@ namespace slake {
 			HostObjectRef<ContextObject> &contextOut,
 			void *nativeStackBaseCurrentPtr = nullptr,
 			size_t nativeStackSize = 0);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer execFnInAotFn(
+			const FnOverloadingObject *overloading,
+			ContextObject *context,
+			Object *thisObject,
+			const Value *args,
+			uint32_t nArgs,
+			void *nativeStackBaseCurrentPtr = nullptr,
+			size_t nativeStackSize = 0);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer execFnWithSeparatedExecutionThread(
 			const FnOverloadingObject *overloading,
 			ContextObject *prevContext,

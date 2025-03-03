@@ -1982,6 +1982,23 @@ SLAKE_API InternalExceptionPointer Runtime::execFn(
 	return std::move(exceptPtr);
 }
 
+[[nodiscard]] SLAKE_API InternalExceptionPointer Runtime::execFnInAotFn(
+	const FnOverloadingObject *overloading,
+	ContextObject *context,
+	Object *thisObject,
+	const Value *args,
+	uint32_t nArgs,
+	void *nativeStackBaseCurrentPtr,
+	size_t nativeStackSize) {
+	HostObjectRef<ContextObject> contextPtr(context);
+
+	SLAKE_RETURN_IF_EXCEPT(_createNewMajorFrame(&context->_context, thisObject, overloading, args, nArgs, 0));
+
+	InternalExceptionPointer exceptPtr = execContext(context);
+
+	return std::move(exceptPtr);
+}
+
 SLAKE_API InternalExceptionPointer Runtime::execFnWithSeparatedExecutionThread(
 	const FnOverloadingObject *overloading,
 	ContextObject *prevContext,

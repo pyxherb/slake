@@ -265,7 +265,9 @@ namespace slake {
 				Break,
 				Continue,
 				Return,
-				Block
+				Block,
+				Label,
+				Goto
 			};
 
 			class Stmt : public ASTNode {
@@ -287,6 +289,7 @@ namespace slake {
 			struct VarDefPair {
 				std::string name;
 				std::shared_ptr<Expr> initialValue;
+				size_t arrayLength = SIZE_MAX;
 			};
 
 			class LocalVarDefStmt : public Stmt {
@@ -364,6 +367,22 @@ namespace slake {
 				virtual ~BlockStmt();
 			};
 
+			class LabelStmt : public Stmt {
+			public:
+				std::string name;
+
+				LabelStmt(std::string &&name);
+				virtual ~LabelStmt();
+			};
+
+			class GotoStmt : public Stmt {
+			public:
+				std::string name;
+
+				GotoStmt(std::string &&name);
+				virtual ~GotoStmt();
+			};
+
 			enum class ExprKind : uint8_t {
 				IntLiteral = 0,
 				LongLiteral,
@@ -438,7 +457,7 @@ namespace slake {
 
 				InitializerListExpr(
 					std::shared_ptr<TypeName> type,
-					std::vector<std::shared_ptr<Expr>> args);
+					std::vector<std::shared_ptr<Expr>> &&args);
 				virtual ~InitializerListExpr();
 			};
 

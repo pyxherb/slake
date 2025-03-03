@@ -4,6 +4,10 @@ using namespace slake;
 using namespace slake::slkaot;
 using namespace slake::slkaot::bc2cxx;
 
+std::string BC2CXX::mangleJumpDestLabelName(uint32_t offIns) {
+	return "ins_" + std::to_string(offIns);
+}
+
 std::string BC2CXX::mangleConstantObjectName(Object *object) {
 	char s[sizeof("constobj_") - 1 + sizeof(void *) * 2 + 1];
 
@@ -15,6 +19,10 @@ std::string BC2CXX::mangleConstantObjectName(Object *object) {
 
 std::string BC2CXX::mangleRegLocalVarName(uint32_t idxReg) {
 	return "local_reg_" + std::to_string(idxReg);
+}
+
+std::string BC2CXX::mangleArgListLocalVarName(uint32_t idxReg) {
+	return "args_" + std::to_string(idxReg);
 }
 
 std::string BC2CXX::mangleLocalVarName(uint32_t idxReg) {

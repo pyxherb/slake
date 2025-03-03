@@ -15,13 +15,19 @@ find_package_handle_standard_args(
     REQUIRED_VARS RE2C_EXECUTABLE)
 
 if(RE2C_EXECUTABLE)
-    macro(add_re2c_target Name Re2cInput Re2cOutput)
+    macro(add_re2c_target Name Re2cInput)
+		string(RANDOM OutputFileName)
         add_custom_target(
-			${Name}
-            COMMAND ${RE2C_EXECUTABLE} -c ${Re2cInput} -o ${Re2cOutput}
+			${Name}_re2c
+            COMMAND ${RE2C_EXECUTABLE} -c ${Re2cInput} -o ${CMAKE_CURRENT_BINARY_DIR}/re2c_${OutputFileName}.cc
             DEPENDS ${Re2cInput}
-            BYPRODUCTS ${Re2cOutput}
+            BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/re2c_${OutputFileName}.cc
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         )
+		add_library(
+			${Name}
+			INTERFACE
+		)
+		target_sources(${Name} PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/re2c_${OutputFileName}.cc)
     endmacro()
 endif()

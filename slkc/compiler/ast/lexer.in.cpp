@@ -268,7 +268,7 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 						c += prevYYCURSOR[i] - '0';
 					}
 
-					strLiteral += "\0";
+					strLiteral += c;
 				}
 				<EscapeCondition>[xX][0-9a-fA-F]{1,2}	{
 					YYSETCONDITION(StringCondition);
@@ -289,7 +289,7 @@ void slake::slkc::Lexer::lex(std::string_view src) {
 							c += prevYYCURSOR[i] - 'A';
 					}
 
-					strLiteral += "\0";
+					strLiteral += c;
 				}
 
 				<CommentCondition>"*"[/]	{ YYSETCONDITION(InitialCondition); break; }

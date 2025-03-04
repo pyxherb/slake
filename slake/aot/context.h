@@ -6,10 +6,10 @@
 namespace slake {
 	struct AOTFnExecContext {
 		Runtime *runtime;
-		ContextObject *context;
 		HostObjectRef<ContextObject> hostContext;
 		peff::HashMap<peff::String, Type> *mappedGenericArgs;
 		void *mappedObjects;
+		Value returnValue;
 	};
 }
 

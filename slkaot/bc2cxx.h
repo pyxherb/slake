@@ -190,6 +190,18 @@ namespace slake {
 					return std::make_shared<cxxast::IdExpr>(genAotContextParamName(), cxxast::GenericArgList{});
 				}
 
+				SLAKE_FORCEINLINE std::shared_ptr<cxxast::Expr> genUnwrappedHostContextRef() {
+					return std::make_shared<cxxast::CallExpr>(
+						std::make_shared<cxxast::BinaryExpr>(
+							cxxast::BinaryOp::MemberAccess,
+							std::make_shared<cxxast::BinaryExpr>(
+								cxxast::BinaryOp::MemberAccess,
+								std::make_shared<cxxast::IdExpr>("aotContext"),
+								std::make_shared<cxxast::IdExpr>("hostContext")),
+							std::make_shared<cxxast::IdExpr>("get")),
+						std::vector<std::shared_ptr<cxxast::Expr>>{});
+				}
+
 				SLAKE_FORCEINLINE std::shared_ptr<cxxast::Expr> genMappedObjectsRef() {
 					return std::make_shared<cxxast::BinaryExpr>(
 						cxxast::BinaryOp::MemberAccess,

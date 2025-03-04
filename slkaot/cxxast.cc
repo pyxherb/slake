@@ -249,7 +249,7 @@ ContinueStmt::ContinueStmt()
 ContinueStmt::~ContinueStmt() {
 }
 
-ReturnStmt::ReturnStmt(std::shared_ptr<Expr> value) : Stmt(StmtKind::Expr), value(value) {
+ReturnStmt::ReturnStmt(std::shared_ptr<Expr> value) : Stmt(StmtKind::Return), value(value) {
 }
 
 ReturnStmt::~ReturnStmt() {

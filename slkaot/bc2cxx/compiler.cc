@@ -1765,14 +1765,10 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 									std::make_shared<cxxast::CastExpr>(
 										genFnOverloadingPtrTypeName(),
 										targetExpr),
+									genUnwrappedHostContextRef(),
 									std::make_shared<cxxast::NullptrLiteralExpr>(),
-									/* stub */ std::make_shared<cxxast::NullptrLiteralExpr>(),
 									std::make_shared<cxxast::IdExpr>(mangleArgListLocalVarName(i)),
-									std::make_shared<cxxast::IntLiteralExpr>(nArgs),
-									std::make_shared<cxxast::BinaryExpr>(
-										cxxast::BinaryOp::MemberAccess,
-										std::make_shared<cxxast::IdExpr>("aotContext"),
-										std::make_shared<cxxast::IdExpr>("hostContext"))
+									std::make_shared<cxxast::IntLiteralExpr>(nArgs)
 									// TODO: Pass the stack information
 								})));
 
@@ -1799,6 +1795,111 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 										std::vector<std::shared_ptr<cxxast::Expr>>{}))));
 						}
 
+						break;
+					}
+					case Opcode::MCALL:
+					case Opcode::CTORCALL: {
+						std::shared_ptr<cxxast::Expr> targetExpr;
+
+						if (compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).isLoadInsResult) {
+							targetExpr =
+								std::make_shared<cxxast::BinaryExpr>(
+									cxxast::BinaryOp::MemberAccess,
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::MemberAccess,
+										std::make_shared<cxxast::BinaryExpr>(
+											cxxast::BinaryOp::MemberAccess,
+											std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
+											std::make_shared<cxxast::IdExpr>("asEntityRef")),
+										std::make_shared<cxxast::IdExpr>("asObject")),
+									std::make_shared<cxxast::IdExpr>("instanceObject"));
+						} else {
+							targetExpr = compileValue(compileContext, ins.operands[0]);
+						}
+
+						std::vector<std::shared_ptr<cxxast::Expr>> args;
+
+						size_t nArgs = programInfo.analyzedFnCallInfo.at(i).argPushInsOffs.size();
+
+						for (auto j : programInfo.analyzedFnCallInfo.at(i).argPushInsOffs) {
+							Instruction &ins = fo->instructions.at(j);
+
+							args.push_back(compileValue(compileContext, ins.operands[0]));
+						}
+
+						{
+							auto info = getLocalVarSizeAndAlignmentInfoOfType(Type(TypeId::Any));
+							compileContext.addStackSize(info.first * nArgs, info.second);
+						}
+
+						curStmtContainer->push_back(
+							std::make_shared<cxxast::LocalVarDefStmt>(
+								genAnyTypeName(),
+								std::vector<cxxast::VarDefPair>{
+									{ mangleArgListLocalVarName(i),
+										std::make_shared<cxxast::InitializerListExpr>(std::shared_ptr<cxxast::TypeName>{}, std::move(args)),
+										0 } }));
+
+						curStmtContainer->push_back(genReturnIfExceptStmt(
+							std::make_shared<cxxast::CallExpr>(
+								std::make_shared<cxxast::BinaryExpr>(
+									cxxast::BinaryOp::PtrAccess,
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::MemberAccess,
+										std::make_shared<cxxast::IdExpr>("aotContext"),
+										std::make_shared<cxxast::IdExpr>("runtime")),
+									std::make_shared<cxxast::IdExpr>("execFnInAotFn")),
+								std::vector<std::shared_ptr<cxxast::Expr>>{
+									std::make_shared<cxxast::CastExpr>(
+										genFnOverloadingPtrTypeName(),
+										targetExpr),
+									genUnwrappedHostContextRef(),
+									compileValue(compileContext, ins.operands[1]),
+									std::make_shared<cxxast::IdExpr>(mangleArgListLocalVarName(i)),
+									std::make_shared<cxxast::IntLiteralExpr>(nArgs)
+									// TODO: Pass the stack information
+								})));
+
+						if (ins.output.valueType != ValueType::Undefined) {
+							compileContext.addStackSize(getLocalVarSizeAndAlignmentInfoOfType(programInfo.analyzedRegInfo.at(ins.output.getRegIndex()).type));
+							curStmtContainer->push_back(
+								std::make_shared<cxxast::LocalVarDefStmt>(
+									compileType(compileContext, programInfo.analyzedRegInfo.at(ins.output.getRegIndex()).type),
+									std::vector<cxxast::VarDefPair>{
+										{ mangleArgListLocalVarName(i) } }));
+
+							curStmtContainer->push_back(std::make_shared<cxxast::ExprStmt>(
+								std::make_shared<cxxast::BinaryExpr>(
+									cxxast::BinaryOp::Assign,
+									std::make_shared<cxxast::IdExpr>(mangleArgListLocalVarName(i)),
+									std::make_shared<cxxast::CallExpr>(
+										std::make_shared<cxxast::BinaryExpr>(
+											cxxast::BinaryOp::PtrAccess,
+											std::make_shared<cxxast::BinaryExpr>(
+												cxxast::BinaryOp::MemberAccess,
+												std::make_shared<cxxast::IdExpr>("aotContext"),
+												std::make_shared<cxxast::IdExpr>("hostContext")),
+											std::make_shared<cxxast::IdExpr>("getResult")),
+										std::vector<std::shared_ptr<cxxast::Expr>>{}))));
+						}
+
+						break;
+					}
+					case Opcode::RET: {
+						curStmtContainer->push_back(std::make_shared<cxxast::ExprStmt>(
+							std::make_shared<cxxast::BinaryExpr>(
+								cxxast::BinaryOp::Assign,
+								std::make_shared<cxxast::BinaryExpr>(
+									cxxast::BinaryOp::MemberAccess,
+									std::make_shared<cxxast::IdExpr>("aotContext"),
+									std::make_shared<cxxast::IdExpr>("returnValue")),
+								compileValue(compileContext, ins.operands[0]))));
+
+						curStmtContainer->push_back(
+							std::make_shared<cxxast::ReturnStmt>(
+								std::make_shared<cxxast::InitializerListExpr>(
+									std::shared_ptr<cxxast::TypeName>{},
+									std::vector<std::shared_ptr<cxxast::Expr>>{})));
 						break;
 					}
 				}

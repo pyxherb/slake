@@ -7,7 +7,7 @@
 namespace slake {
 	class StringObject final : public Object {
 	private:
-		SLAKE_API [[nodiscard]] bool _setData(const char *str, size_t size);
+		[[nodiscard]] SLAKE_API bool _setData(const char *str, size_t size);
 
 	public:
 		SLAKE_API StringObject(Runtime *rt, peff::String &&s);

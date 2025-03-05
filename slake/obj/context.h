@@ -67,7 +67,7 @@ namespace slake {
 		SLAKE_API ~MajorFrame();
 
 		/// @brief Leave current minor frame.
-		SLAKE_API [[nodiscard]] bool leave();
+		[[nodiscard]] SLAKE_API bool leave();
 	};
 
 	using ContextFlags = uint8_t;

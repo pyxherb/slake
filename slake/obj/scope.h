@@ -28,7 +28,7 @@ namespace slake {
 
 		SLAKE_API MemberObject *getMember(const std::string_view &name);
 
-		SLAKE_API [[nodiscard]] bool putMember(MemberObject *value);
+		[[nodiscard]] SLAKE_API bool putMember(MemberObject *value);
 
 		/// @brief Remove a member with specified name.
 		/// @param name Name of the member object to be removed.

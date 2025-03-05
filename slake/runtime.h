@@ -237,14 +237,14 @@ namespace slake {
 		SLAKE_API std::string getFullName(const MemberObject *v) const;
 		SLAKE_API std::string getFullName(const IdRefObject *v) const;
 
-		SLAKE_API [[nodiscard]] bool getFullRef(peff::Alloc *allocator, const MemberObject *v, peff::DynArray<IdRefEntry> &idRefOut) const;
+		[[nodiscard]] SLAKE_API bool getFullRef(peff::Alloc *allocator, const MemberObject *v, peff::DynArray<IdRefEntry> &idRefOut) const;
 
-		/// @brief Do a GC cycle.
+		/// @brief Run a cycle of GC.
 		SLAKE_API void gc();
 
-		SLAKE_API void initMethodTableForClass(ClassObject *cls, ClassObject *parentClass);
-		SLAKE_API void initObjectLayoutForClass(ClassObject *cls, ClassObject *parentClass);
-		SLAKE_API InternalExceptionPointer prepareClassForInstantiation(ClassObject *cls);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer initMethodTableForClass(ClassObject *cls, ClassObject *parentClass);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer initObjectLayoutForClass(ClassObject *cls, ClassObject *parentClass);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer prepareClassForInstantiation(ClassObject *cls);
 		SLAKE_API HostObjectRef<InstanceObject> newClassInstance(ClassObject *cls, NewClassInstanceFlags flags);
 		SLAKE_API HostObjectRef<ArrayObject> newArrayInstance(Runtime *rt, const Type &type, size_t length);
 
@@ -288,12 +288,12 @@ namespace slake {
 			uint32_t nArgs,
 			HostObjectRef<ContextObject> &contextOut);
 
-		[[nodiscard]] SLAKE_API InternalExceptionPointer tryAccessVar(const EntityRef &entityRef) const;
-		[[nodiscard]] SLAKE_API InternalExceptionPointer typeofVar(const EntityRef &entityRef, Type &typeOut) const;
-		[[nodiscard]] SLAKE_API InternalExceptionPointer readVar(const EntityRef &entityRef, Value &valueOut) const;
-		[[nodiscard]] SLAKE_API Value readVarUnsafe(const EntityRef &entityRef) const;
-		[[nodiscard]] SLAKE_API InternalExceptionPointer writeVar(const EntityRef &entityRef, const Value &value) const;
-		[[nodiscard]] SLAKE_API InternalExceptionPointer writeVarUnsafe(const EntityRef &entityRef, const Value &value) const;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer tryAccessVar(const EntityRef &entityRef) const noexcept;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer typeofVar(const EntityRef &entityRef, Type &typeOut) const noexcept;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer readVar(const EntityRef &entityRef, Value &valueOut) const noexcept;
+		[[nodiscard]] SLAKE_API Value readVarUnsafe(const EntityRef &entityRef) const noexcept;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer writeVar(const EntityRef &entityRef, const Value &value) const noexcept;
+		SLAKE_API void writeVarUnsafe(const EntityRef &entityRef, const Value &value) const noexcept;
 	};
 }
 

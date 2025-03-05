@@ -2,7 +2,7 @@
 
 using namespace slake;
 
-SLAKE_API InternalExceptionPointer Runtime::tryAccessVar(const EntityRef &entityRef) const {
+SLAKE_API InternalExceptionPointer Runtime::tryAccessVar(const EntityRef &entityRef) const noexcept {
 	switch (entityRef.kind) {
 		case ObjectRefKind::FieldRef: {
 			FieldRecord &fieldRecord = entityRef.asField.moduleObject->fieldRecords.at(entityRef.asField.index);
@@ -37,7 +37,7 @@ SLAKE_API InternalExceptionPointer Runtime::tryAccessVar(const EntityRef &entity
 	return {};
 }
 
-SLAKE_API InternalExceptionPointer Runtime::typeofVar(const EntityRef &entityRef, Type &typeOut) const {
+SLAKE_API InternalExceptionPointer Runtime::typeofVar(const EntityRef &entityRef, Type &typeOut) const noexcept {
 	switch (entityRef.kind) {
 		case ObjectRefKind::FieldRef: {
 			FieldRecord &fieldRecord = entityRef.asField.moduleObject->fieldRecords.at(entityRef.asField.index);
@@ -80,14 +80,14 @@ SLAKE_API InternalExceptionPointer Runtime::typeofVar(const EntityRef &entityRef
 
 #undef new
 
-SLAKE_API InternalExceptionPointer Runtime::readVar(const EntityRef &entityRef, Value &valueOut) const {
+SLAKE_API InternalExceptionPointer Runtime::readVar(const EntityRef &entityRef, Value &valueOut) const noexcept {
 	SLAKE_RETURN_IF_EXCEPT(tryAccessVar(entityRef));
 
 	new (&valueOut) Value(readVarUnsafe(entityRef));
 	return {};
 }
 
-SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const {
+SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcept {
 	switch (entityRef.kind) {
 		case ObjectRefKind::FieldRef: {
 			FieldRecord &fieldRecord = entityRef.asField.moduleObject->fieldRecords.at(entityRef.asField.index);
@@ -252,7 +252,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const {
 	std::terminate();
 }
 
-SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef, const Value &value) const {
+SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef, const Value &value) const noexcept {
 	switch (entityRef.kind) {
 		case ObjectRefKind::FieldRef: {
 			if (entityRef.asField.index >= entityRef.asField.moduleObject->fieldRecords.size())

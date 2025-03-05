@@ -3,7 +3,7 @@
 
 using namespace slake;
 
-SLAKE_API void Runtime::initMethodTableForClass(ClassObject *cls, ClassObject *parentClass) {
+SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject *cls, ClassObject *parentClass) {
 	assert(!cls->cachedInstantiatedMethodTable);
 	std::unique_ptr<MethodTable, util::DeallocableDeleter<MethodTable>> methodTable;
 
@@ -52,7 +52,8 @@ SLAKE_API void Runtime::initMethodTableForClass(ClassObject *cls, ClassObject *p
 								break;
 							}
 						}
-						methodSlot->overloadings.insert(+j);
+						if(!methodSlot->overloadings.insert(+j))
+							return OutOfMemoryError::alloc();
 					}
 				}
 
@@ -62,13 +63,16 @@ SLAKE_API void Runtime::initMethodTableForClass(ClassObject *cls, ClassObject *p
 	}
 
 	for (auto i : cls->nativeDestructors) {
-		methodTable->nativeDestructors.pushBack(+i);
+		if(!methodTable->nativeDestructors.pushBack(+i))
+			return OutOfMemoryError::alloc();
 	}
 
 	cls->cachedInstantiatedMethodTable = methodTable.release();
+
+	return {};
 }
 
-SLAKE_API void Runtime::initObjectLayoutForClass(ClassObject *cls, ClassObject *parentClass) {
+SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForClass(ClassObject *cls, ClassObject *parentClass) {
 	assert(!cls->cachedObjectLayout);
 	std::unique_ptr<ObjectLayout, util::DeallocableDeleter<ObjectLayout>> objectLayout;
 
@@ -156,15 +160,20 @@ SLAKE_API void Runtime::initObjectLayoutForClass(ClassObject *cls, ClassObject *
 			std::terminate();
 		}
 
-		cls->cachedFieldInitValues.pushBack(readVarUnsafe(EntityRef::makeFieldRef(cls, i)));
+		if(!cls->cachedFieldInitValues.pushBack(readVarUnsafe(EntityRef::makeFieldRef(cls, i))))
+			return OutOfMemoryError::alloc();
 
-		objectLayout->fieldNameMap.insert(fieldRecord.name, objectLayout->fieldRecords.size());
-		objectLayout->fieldRecords.pushBack(std::move(fieldRecord));
+		if(!objectLayout->fieldNameMap.insert(fieldRecord.name, objectLayout->fieldRecords.size()))
+			return OutOfMemoryError::alloc();
+		if(!objectLayout->fieldRecords.pushBack(std::move(fieldRecord)))
+			return OutOfMemoryError::alloc();
 		break;
 	}
 
 	// cls->cachedFieldInitVars.shrink_to_fit();
 	cls->cachedObjectLayout = objectLayout.release();
+
+	return {};
 }
 
 SLAKE_API InternalExceptionPointer Runtime::prepareClassForInstantiation(ClassObject *cls) {
@@ -184,9 +193,9 @@ SLAKE_API InternalExceptionPointer Runtime::prepareClassForInstantiation(ClassOb
 	}
 
 	if (!cls->cachedObjectLayout)
-		initObjectLayoutForClass(cls, p);
+		SLAKE_RETURN_IF_EXCEPT(initObjectLayoutForClass(cls, p));
 	if (!cls->cachedInstantiatedMethodTable)
-		initMethodTableForClass(cls, p);
+		SLAKE_RETURN_IF_EXCEPT(initMethodTableForClass(cls, p));
 
 	return {};
 }

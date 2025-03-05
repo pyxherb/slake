@@ -1902,6 +1902,34 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 									std::vector<std::shared_ptr<cxxast::Expr>>{})));
 						break;
 					}
+					case Opcode::LTHIS: {
+						const opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex());
+
+						if (compileContext.allocRecycledReg(*this, programInfo, ins.output.getRegIndex(), outputRegInfo.type)) {
+							curStmtContainer->push_back(
+								std::make_shared<cxxast::ExprStmt>(
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::Assign,
+										std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName)),
+										genGetValueDataExpr(
+											outputRegInfo.type,
+											genThisRef()))));
+						} else {
+							std::string &varName = compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName;
+
+							cxxast::VarDefPair varDefPair = {
+								varName,
+								genGetValueDataExpr(
+									outputRegInfo.type,
+									genGetValueDataExpr(
+										outputRegInfo.type,
+										genThisRef()))
+							};
+
+							compileContext.addStackSize(getLocalVarSizeAndAlignmentInfoOfType(outputRegInfo.type));
+							curStmtContainer->push_back(std::make_shared<cxxast::LocalVarDefStmt>(compileType(compileContext, outputRegInfo.type), std::vector<cxxast::VarDefPair>{ varDefPair }));
+						}
+					}
 				}
 
 				if (auto it = compileContext.recyclableRegs.find(i); it != compileContext.recyclableRegs.end()) {

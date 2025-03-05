@@ -67,7 +67,7 @@ namespace slake {
 					SLAKE_FORCEINLINE CompileContext(Runtime *runtime, std::shared_ptr<cxxast::Namespace> rootNamespace) : runtime(runtime), rootNamespace(rootNamespace) {}
 
 					SLAKE_FORCEINLINE void alignStackSize(size_t alignment) {
-						if(size_t i = estimatedStackSize % alignment; i) {
+						if (size_t i = estimatedStackSize % alignment; i) {
 							estimatedStackSize += alignment - i;
 						}
 					}
@@ -78,7 +78,8 @@ namespace slake {
 					}
 
 					SLAKE_FORCEINLINE void addStackSize(const std::pair<size_t, size_t> &sizeAlignmentPair) {
-						addStackSize(sizeAlignmentPair.first, sizeAlignmentPair.second);;
+						addStackSize(sizeAlignmentPair.first, sizeAlignmentPair.second);
+						;
 					}
 
 					SLAKE_FORCEINLINE VirtualRegInfo &defineVirtualReg(uint32_t reg, std::string &&vregVarName) {
@@ -200,6 +201,13 @@ namespace slake {
 								std::make_shared<cxxast::IdExpr>("hostContext")),
 							std::make_shared<cxxast::IdExpr>("get")),
 						std::vector<std::shared_ptr<cxxast::Expr>>{});
+				}
+
+				SLAKE_FORCEINLINE std::shared_ptr<cxxast::Expr> genThisRef() {
+					return std::make_shared<cxxast::BinaryExpr>(
+						cxxast::BinaryOp::MemberAccess,
+						std::make_shared<cxxast::IdExpr>("aotContext"),
+						std::make_shared<cxxast::IdExpr>("thisObject"));
 				}
 
 				SLAKE_FORCEINLINE std::shared_ptr<cxxast::Expr> genMappedObjectsRef() {

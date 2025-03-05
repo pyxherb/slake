@@ -9,6 +9,7 @@ namespace slake {
 		HostObjectRef<ContextObject> hostContext;
 		peff::HashMap<peff::String, Type> *mappedGenericArgs;
 		void *mappedObjects;
+		Value thisObject;
 		Value returnValue;
 	};
 }

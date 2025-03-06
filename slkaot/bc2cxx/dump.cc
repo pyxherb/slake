@@ -957,17 +957,23 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 							// TODO: Implement it.
 							break;
 						case cxxast::BinaryOp::Subscript:
-							os << "(";
-							_dumpAstNode(os, e->lhs, dumpMode, 0);
-							os << ")";
+							if (!_isSimpleIdExpr(e->lhs)) {
+								os << "(";
+								_dumpAstNode(os, e->lhs, dumpMode, 0);
+								os << ")";
+							}
 							os << "[";
 							_dumpAstNode(os, e->rhs, dumpMode, 0);
 							os << "]";
 							break;
 						case cxxast::BinaryOp::Assign:
-							os << "(";
-							_dumpAstNode(os, e->lhs, dumpMode, 0);
-							os << ")";
+							if (!_isSimpleIdExpr(e->lhs)) {
+								os << "(";
+								_dumpAstNode(os, e->lhs, dumpMode, 0);
+								os << ")";
+							} else {
+								_dumpAstNode(os, e->lhs, dumpMode, 0);
+							}
 							os << " = ";
 							os << "(";
 							_dumpAstNode(os, e->rhs, dumpMode, 0);

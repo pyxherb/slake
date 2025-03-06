@@ -8,6 +8,7 @@ namespace slake {
 		Runtime *runtime;
 		HostObjectRef<ContextObject> hostContext;
 		peff::HashMap<peff::String, Type> *mappedGenericArgs;
+		Value *args;
 		void *mappedObjects;
 		Value thisObject;
 		Value returnValue;

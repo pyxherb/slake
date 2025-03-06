@@ -799,10 +799,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 												cxxast::BinaryOp::MemberAccess,
 												std::make_shared<cxxast::BinaryExpr>(
 													cxxast::BinaryOp::MemberAccess,
-													std::make_shared<cxxast::BinaryExpr>(
-														cxxast::BinaryOp::MemberAccess,
-														std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
-														std::make_shared<cxxast::IdExpr>("asEntityRef")),
+													std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
 													std::make_shared<cxxast::IdExpr>("asArray")),
 												std::make_shared<cxxast::IdExpr>("index"));
 										std::shared_ptr<cxxast::Expr> dataPtrExpr =
@@ -815,10 +812,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 														cxxast::BinaryOp::MemberAccess,
 														std::make_shared<cxxast::BinaryExpr>(
 															cxxast::BinaryOp::MemberAccess,
-															std::make_shared<cxxast::BinaryExpr>(
-																cxxast::BinaryOp::MemberAccess,
-																std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
-																std::make_shared<cxxast::IdExpr>("asEntityRef")),
+															std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
 															std::make_shared<cxxast::IdExpr>("asArray")),
 														std::make_shared<cxxast::IdExpr>("arrayObject")),
 													std::make_shared<cxxast::IdExpr>("data")));
@@ -1607,10 +1601,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 									cxxast::BinaryOp::MemberAccess,
 									std::make_shared<cxxast::BinaryExpr>(
 										cxxast::BinaryOp::MemberAccess,
-										std::make_shared<cxxast::BinaryExpr>(
-											cxxast::BinaryOp::MemberAccess,
-											std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
-											std::make_shared<cxxast::IdExpr>("asEntityRef")),
+										std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
 										std::make_shared<cxxast::IdExpr>("asArray")),
 									std::make_shared<cxxast::IdExpr>("arrayObject"));
 						} else {
@@ -1719,10 +1710,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 									cxxast::BinaryOp::MemberAccess,
 									std::make_shared<cxxast::BinaryExpr>(
 										cxxast::BinaryOp::MemberAccess,
-										std::make_shared<cxxast::BinaryExpr>(
-											cxxast::BinaryOp::MemberAccess,
-											std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
-											std::make_shared<cxxast::IdExpr>("asEntityRef")),
+										std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
 										std::make_shared<cxxast::IdExpr>("asObject")),
 									std::make_shared<cxxast::IdExpr>("instanceObject"));
 						} else {
@@ -1807,10 +1795,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 									cxxast::BinaryOp::MemberAccess,
 									std::make_shared<cxxast::BinaryExpr>(
 										cxxast::BinaryOp::MemberAccess,
-										std::make_shared<cxxast::BinaryExpr>(
-											cxxast::BinaryOp::MemberAccess,
-											std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
-											std::make_shared<cxxast::IdExpr>("asEntityRef")),
+										std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.operands[0].getRegIndex()).vregVarName)),
 										std::make_shared<cxxast::IdExpr>("asObject")),
 									std::make_shared<cxxast::IdExpr>("instanceObject"));
 						} else {
@@ -1893,7 +1878,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 									cxxast::BinaryOp::MemberAccess,
 									std::make_shared<cxxast::IdExpr>("aotContext"),
 									std::make_shared<cxxast::IdExpr>("returnValue")),
-								compileValue(compileContext, ins.operands[0]))));
+								compileValueAsAny(compileContext, ins.operands[0]))));
 
 						curStmtContainer->push_back(
 							std::make_shared<cxxast::ReturnStmt>(
@@ -1921,9 +1906,7 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 								varName,
 								genGetValueDataExpr(
 									outputRegInfo.type,
-									genGetValueDataExpr(
-										outputRegInfo.type,
-										genThisRef()))
+									genThisRef())
 							};
 
 							compileContext.addStackSize(getLocalVarSizeAndAlignmentInfoOfType(outputRegInfo.type));

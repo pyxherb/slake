@@ -63,6 +63,7 @@ namespace slake {
 					std::set<uint32_t> recycledRegs;
 					std::set<HostObjectRef<>> mappedObjects;
 					size_t estimatedStackSize = 0;
+					FnOverloadingKind fnOverloadingKind = FnOverloadingKind::Regular;
 
 					SLAKE_FORCEINLINE CompileContext(Runtime *runtime, std::shared_ptr<cxxast::Namespace> rootNamespace) : runtime(runtime), rootNamespace(rootNamespace) {}
 
@@ -101,6 +102,7 @@ namespace slake {
 						recyclableRegs.clear();
 						recycledRegs.clear();
 						estimatedStackSize = 0;
+						fnOverloadingKind = FnOverloadingKind::Regular;
 					}
 				};
 
@@ -139,13 +141,17 @@ namespace slake {
 						std::make_shared<cxxast::VoidTypeName>());
 				}
 
+				SLAKE_FORCEINLINE std::shared_ptr<cxxast::Expr> genValueRefExpr() {
+					return std::make_shared<cxxast::BinaryExpr>(
+						cxxast::BinaryOp::Scope,
+						std::make_shared<cxxast::IdExpr>("slake"),
+						std::make_shared<cxxast::IdExpr>("Value"));
+				}
+
 				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genAnyTypeName() {
 					return std::make_shared<cxxast::CustomTypeName>(
 						false,
-						std::make_shared<cxxast::BinaryExpr>(
-							cxxast::BinaryOp::Scope,
-							std::make_shared<cxxast::IdExpr>("slake"),
-							std::make_shared<cxxast::IdExpr>("Value")));
+						genValueRefExpr());
 				}
 
 				SLAKE_FORCEINLINE std::shared_ptr<cxxast::TypeName> genObjectRefTypeName() {
@@ -267,6 +273,7 @@ namespace slake {
 				std::shared_ptr<cxxast::Namespace> completeModuleNamespace(CompileContext &compileContext, const peff::DynArray<IdRefEntry> &entries);
 				std::shared_ptr<cxxast::Expr> compileRef(CompileContext &compileContext, const peff::DynArray<IdRefEntry> &entries);
 				std::shared_ptr<cxxast::Expr> compileValue(CompileContext &compileContext, const Value &value);
+				std::shared_ptr<cxxast::Expr> compileValueAsAny(CompileContext &compileContext, const Value &value);
 				std::shared_ptr<cxxast::TypeName> compileType(CompileContext &compileContext, const Type &type);
 				std::shared_ptr<cxxast::TypeName> compileParamType(CompileContext &compileContext, const Type &type);
 				std::shared_ptr<cxxast::Fn> compileFnOverloading(CompileContext &compileContext, FnOverloadingObject *fnOverloadingObject);

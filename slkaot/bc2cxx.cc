@@ -344,6 +344,140 @@ std::shared_ptr<cxxast::Expr> BC2CXX::compileValue(CompileContext &compileContex
 	return e;
 }
 
+std::shared_ptr<cxxast::Expr> BC2CXX::compileValueAsAny(CompileContext &compileContext, const Value &value) {
+	std::shared_ptr<cxxast::Expr> e;
+
+	switch (value.valueType) {
+		case ValueType::I8:
+			e = std::make_shared<cxxast::CallExpr>(
+				genValueRefExpr(),
+				std::vector<std::shared_ptr<cxxast::Expr>>{
+					std::make_shared<cxxast::CastExpr>(
+						std::make_shared<cxxast::CharTypeName>(cxxast::SignKind::Signed),
+						std::make_shared<cxxast::IntLiteralExpr>(value.getI8())) });
+			break;
+		case ValueType::I16:
+			e = std::make_shared<cxxast::CallExpr>(
+				genValueRefExpr(),
+				std::vector<std::shared_ptr<cxxast::Expr>>{ std::make_shared<cxxast::CastExpr>(
+					std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Signed, cxxast::IntModifierKind::Short),
+					std::make_shared<cxxast::IntLiteralExpr>(value.getI16())) });
+			break;
+		case ValueType::I32:
+			e = std::make_shared<cxxast::CallExpr>(
+				genValueRefExpr(),
+				std::vector<std::shared_ptr<cxxast::Expr>>{ std::make_shared<cxxast::CastExpr>(
+					std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Signed, cxxast::IntModifierKind::Unspecified),
+					std::make_shared<cxxast::IntLiteralExpr>(value.getI32())) });
+			break;
+		case ValueType::I64:
+			e = std::make_shared<cxxast::CallExpr>(
+				genValueRefExpr(),
+				std::vector<std::shared_ptr<cxxast::Expr>>{ std::make_shared<cxxast::CastExpr>(
+					std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Signed, cxxast::IntModifierKind::LongLong),
+					std::make_shared<cxxast::IntLiteralExpr>(value.getI64())) });
+			break;
+		case ValueType::U8:
+			e = std::make_shared<cxxast::CallExpr>(
+				genValueRefExpr(),
+				std::vector<std::shared_ptr<cxxast::Expr>>{ std::make_shared<cxxast::CastExpr>(
+					std::make_shared<cxxast::CharTypeName>(cxxast::SignKind::Unsigned),
+					std::make_shared<cxxast::IntLiteralExpr>(value.getU8())) });
+			break;
+		case ValueType::U16:
+			e = std::make_shared<cxxast::CallExpr>(
+				genValueRefExpr(),
+				std::vector<std::shared_ptr<cxxast::Expr>>{ std::make_shared<cxxast::CastExpr>(
+					std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Unsigned, cxxast::IntModifierKind::Short),
+					std::make_shared<cxxast::IntLiteralExpr>(value.getU16())) });
+			break;
+		case ValueType::U32:
+			e = std::make_shared<cxxast::CallExpr>(
+				genValueRefExpr(),
+				std::vector<std::shared_ptr<cxxast::Expr>>{ std::make_shared<cxxast::CastExpr>(
+					std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Unsigned, cxxast::IntModifierKind::Unspecified),
+					std::make_shared<cxxast::IntLiteralExpr>(value.getU32())) });
+			break;
+		case ValueType::U64:
+			e = std::make_shared<cxxast::CallExpr>(
+				genValueRefExpr(),
+				std::vector<std::shared_ptr<cxxast::Expr>>{ std::make_shared<cxxast::CastExpr>(
+					std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Unsigned, cxxast::IntModifierKind::LongLong),
+					std::make_shared<cxxast::IntLiteralExpr>(value.getU64())) });
+			break;
+		case ValueType::F32:
+			e = std::make_shared<cxxast::CallExpr>(
+				genValueRefExpr(),
+				std::vector<std::shared_ptr<cxxast::Expr>>{
+					std::make_shared<cxxast::FloatLiteralExpr>(value.getF32()) });
+			break;
+		case ValueType::F64:
+			e = std::make_shared<cxxast::CallExpr>(
+				genValueRefExpr(),
+				std::vector<std::shared_ptr<cxxast::Expr>>{
+					std::make_shared<cxxast::DoubleLiteralExpr>(value.getF64()) });
+			break;
+		case ValueType::Bool:
+			e = std::make_shared<cxxast::CallExpr>(
+				genValueRefExpr(),
+				std::vector<std::shared_ptr<cxxast::Expr>>{
+					std::make_shared<cxxast::BoolLiteralExpr>(value.getBool()) });
+			break;
+		case ValueType::EntityRef: {
+			const EntityRef &entityRef = value.getEntityRef();
+			if (entityRef.kind != ObjectRefKind::ObjectRef)
+				std::terminate();
+			Object *object = entityRef.asObject.instanceObject;
+			if (object) {
+				compileContext.mappedObjects.insert(object);
+				e = std::make_shared<cxxast::BinaryExpr>(cxxast::BinaryOp::PtrAccess,
+					std::make_shared<cxxast::CastExpr>(
+						std::make_shared<cxxast::PointerTypeName>(
+							std::make_shared<cxxast::CustomTypeName>(
+								false,
+								std::make_shared<cxxast::BinaryExpr>(
+									cxxast::BinaryOp::Scope,
+									_getAbsRef(compileContext.rootNamespace),
+									std::make_shared<cxxast::IdExpr>("MappedObjects")))),
+						genMappedObjectsRef()),
+					std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(object)));
+			} else {
+				e = std::make_shared<cxxast::NullptrLiteralExpr>();
+			}
+
+			e = std::make_shared<cxxast::CallExpr>(
+				genValueRefExpr(),
+				std::vector<std::shared_ptr<cxxast::Expr>>{
+					std::make_shared<cxxast::CallExpr>(
+						std::make_shared<cxxast::BinaryExpr>(
+							cxxast::BinaryOp::Scope,
+							std::make_shared<cxxast::BinaryExpr>(
+								cxxast::BinaryOp::Scope,
+								std::make_shared<cxxast::IdExpr>("slake"),
+								std::make_shared<cxxast::IdExpr>("EntityRef")),
+							std::make_shared<cxxast::IdExpr>("makeObjectRef")),
+						std::vector<std::shared_ptr<cxxast::Expr>>{
+							e }) });
+			break;
+		}
+		case ValueType::RegRef: {
+			uint32_t index = value.getRegIndex();
+
+			if (auto it = compileContext.vregInfo.find(index); it != compileContext.vregInfo.end()) {
+				e = std::make_shared<cxxast::IdExpr>(std::string(it->second.vregVarName));
+			} else {
+				std::terminate();
+			}
+			break;
+		}
+		default:
+			// Invalid type name, terminate.
+			std::terminate();
+	}
+
+	return e;
+}
+
 std::shared_ptr<cxxast::TypeName> BC2CXX::compileType(CompileContext &compileContext, const Type &type) {
 	std::shared_ptr<cxxast::TypeName> tn;
 

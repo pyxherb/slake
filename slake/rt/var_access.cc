@@ -120,11 +120,15 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
+				case TypeId::FnDelegate:
 					return Value(EntityRef::makeObjectRef(*((Object **)rawDataPtr)));
-					break;
+				case TypeId::Ref:
+					return Value(*((EntityRef *)rawDataPtr));
+				case TypeId::Any:
+					return Value(*((Value *)rawDataPtr));
 				default:
 					// All fields should be checked during the instantiation.
-					throw std::logic_error("Unhandled value type");
+					std::terminate();
 			}
 
 			break;
@@ -158,11 +162,15 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
+				case TypeId::FnDelegate:
 					return Value(EntityRef::makeObjectRef(*((Object **)rawDataPtr)));
-					break;
+				case TypeId::Ref:
+					return Value(*((EntityRef *)rawDataPtr));
+				case TypeId::Any:
+					return Value(*((Value *)rawDataPtr));
 				default:
 					// All fields should be checked during the instantiation.
-					throw std::logic_error("Unhandled value type");
+					std::terminate();
 			}
 
 			break;
@@ -200,10 +208,15 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 				case TypeId::String:
 				case TypeId::Instance:
 				case TypeId::Array:
+				case TypeId::FnDelegate:
 					return Value(EntityRef::makeObjectRef(*((Object **)rawFieldPtr)));
+				case TypeId::Ref:
+					return Value(*((EntityRef *)rawFieldPtr));
+				case TypeId::Any:
+					return Value(*((Value *)rawFieldPtr));
 				default:
 					// All fields should be checked during the instantiation.
-					throw std::logic_error("Unhandled value type");
+					std::terminate();
 			}
 			break;
 		}
@@ -233,12 +246,17 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 					return Value(((double *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index]);
 				case TypeId::Bool:
 					return Value(((bool *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index]);
-				case TypeId::Instance: {
+				case TypeId::Instance:
+				case TypeId::String:
+				case TypeId::Array:
+				case TypeId::FnDelegate:
 					return Value(EntityRef::makeObjectRef(((Object **)entityRef.asArray.arrayObject->data)[entityRef.asArray.index]));
-				}
-				case TypeId::Any: {
+				case TypeId::Ref:
+					return Value(((EntityRef *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index]);
+				case TypeId::Any:
 					return Value(((Value *)entityRef.asArray.arrayObject->data)[entityRef.asArray.index]);
-				}
+				default:
+					std::terminate();
 			}
 			break;
 		}
@@ -309,7 +327,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 					break;
 				default:
 					// All fields should be checked during the instantiation.
-					throw std::logic_error("Unhandled value type");
+					std::terminate();
 			}
 
 			break;
@@ -366,7 +384,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 					break;
 				default:
 					// All fields should be checked during the instantiation.
-					throw std::logic_error("Unhandled value type");
+					std::terminate();
 			}
 
 			break;
@@ -423,7 +441,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 					break;
 				default:
 					// All fields should be checked during the instantiation.
-					throw std::logic_error("Unhandled value type");
+					std::terminate();
 			}
 			break;
 		}

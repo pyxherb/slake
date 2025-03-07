@@ -82,9 +82,9 @@ namespace slake {
 	};
 
 	struct Type final {
-		TypeId typeId;	// Type ID
-
 		TypeExData exData;
+
+		TypeId typeId;	// Type ID
 
 		SLAKE_FORCEINLINE Type() = default;
 		SLAKE_FORCEINLINE Type(const Type &x) = default;

@@ -259,6 +259,7 @@ namespace slake {
 
 				std::pair<size_t, size_t> getLocalVarSizeAndAlignmentInfoOfType(const Type &type);
 
+				std::string mangleGeneratorStateClassName(const std::string_view &fnName);
 				std::string mangleJumpDestLabelName(uint32_t offIns);
 				std::string mangleConstantObjectName(Object *object);
 				std::string mangleRegLocalVarName(uint32_t idxReg);

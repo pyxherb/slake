@@ -451,3 +451,19 @@ Var::Var(
 
 Var::~Var() {
 }
+
+std::shared_ptr<Expr> cxxast::getFullRefOf(std::shared_ptr<AbstractMember> member) {
+	std::shared_ptr<Expr> expr = std::make_shared<IdExpr>(std::string(member->name));
+
+	while(!member->parent.expired()) {
+		member = member->parent.lock();
+
+		expr = std::make_shared<BinaryExpr>(
+			BinaryOp::Scope,
+			std::make_shared<IdExpr>(std::string(member->name)),
+			expr
+		);
+	}
+
+	return expr;
+}

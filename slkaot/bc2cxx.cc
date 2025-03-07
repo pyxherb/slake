@@ -580,11 +580,6 @@ std::shared_ptr<cxxast::Fn> BC2CXX::compileFnOverloading(CompileContext &compile
 	} else {
 		std::shared_ptr<cxxast::Fn> fnOverloading = std::make_shared<cxxast::Fn>(mangleFnName((std::string_view)fnOverloadingObject->fnObject->name));
 
-		for (size_t i = 0; i < fnOverloadingObject->paramTypes.size(); ++i) {
-			fnOverloading->name = mangleTypeName(fnOverloadingObject->paramTypes.at(i)) + fnOverloading->name;
-			fnOverloading->signature.paramTypes.push_back(compileParamType(compileContext, fnOverloadingObject->paramTypes.at(i)));
-		}
-
 		if (fnOverloadingObject->overloadingFlags & OL_VARG) {
 			fnOverloading->name += "9";
 			fnOverloading->signature.paramTypes.push_back(
@@ -609,9 +604,15 @@ std::shared_ptr<cxxast::Fn> BC2CXX::compileFnOverloading(CompileContext &compile
 
 		switch (fnOverloadingObject->overloadingKind) {
 			case FnOverloadingKind::Regular: {
+				// DO NOT set parameter types, we deferred for generator functions.
 				recompilableFns.insert(fnOverloading);
 				break;
 			}
+			default:
+				for (size_t i = 0; i < fnOverloadingObject->paramTypes.size(); ++i) {
+					fnOverloading->name = mangleTypeName(fnOverloadingObject->paramTypes.at(i)) + fnOverloading->name;
+					fnOverloading->signature.paramTypes.push_back(compileParamType(compileContext, fnOverloadingObject->paramTypes.at(i)));
+				}
 		}
 
 		return fnOverloading;

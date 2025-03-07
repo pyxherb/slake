@@ -4,6 +4,10 @@ using namespace slake;
 using namespace slake::slkaot;
 using namespace slake::slkaot::bc2cxx;
 
+std::string BC2CXX::mangleGeneratorStateClassName(const std::string_view &fnName) {
+	return std::string("_SLKAOTGeneratorState_") + std::string(fnName);
+}
+
 std::string BC2CXX::mangleJumpDestLabelName(uint32_t offIns) {
 	return "ins_" + std::to_string(offIns);
 }

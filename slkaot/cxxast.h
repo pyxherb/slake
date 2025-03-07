@@ -653,6 +653,8 @@ namespace slake {
 					std::shared_ptr<Expr> initialValue);
 				virtual ~Var();
 			};
+
+			std::shared_ptr<Expr> getFullRefOf(std::shared_ptr<AbstractMember> member);
 		}
 	}
 }

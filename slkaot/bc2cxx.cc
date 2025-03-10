@@ -138,6 +138,85 @@ std::shared_ptr<cxxast::Expr> BC2CXX::genGetValueDataExpr(const Type &type, std:
 	}
 }
 
+std::shared_ptr<cxxast::Expr> BC2CXX::genDefaultValue(const Type &type) {
+	std::shared_ptr<cxxast::Expr> e;
+
+	switch (type.typeId) {
+		case TypeId::I8:
+			e = std::make_shared<cxxast::CastExpr>(
+				std::make_shared<cxxast::CharTypeName>(cxxast::SignKind::Signed),
+				std::make_shared<cxxast::IntLiteralExpr>(0));
+			break;
+		case TypeId::I16:
+			e = std::make_shared<cxxast::CastExpr>(
+				std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Signed, cxxast::IntModifierKind::Short),
+				std::make_shared<cxxast::IntLiteralExpr>(0));
+			break;
+		case TypeId::I32:
+			e = std::make_shared<cxxast::CastExpr>(
+				std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Signed, cxxast::IntModifierKind::Unspecified),
+				std::make_shared<cxxast::IntLiteralExpr>(0));
+			break;
+		case TypeId::I64:
+			e = std::make_shared<cxxast::CastExpr>(
+				std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Signed, cxxast::IntModifierKind::LongLong),
+				std::make_shared<cxxast::IntLiteralExpr>(0));
+			break;
+		case TypeId::U8:
+			e = std::make_shared<cxxast::CastExpr>(
+				std::make_shared<cxxast::CharTypeName>(cxxast::SignKind::Unsigned),
+				std::make_shared<cxxast::IntLiteralExpr>(0));
+			break;
+		case TypeId::U16:
+			e = std::make_shared<cxxast::CastExpr>(
+				std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Unsigned, cxxast::IntModifierKind::Short),
+				std::make_shared<cxxast::IntLiteralExpr>(0));
+			break;
+		case TypeId::U32:
+			e = std::make_shared<cxxast::CastExpr>(
+				std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Unsigned, cxxast::IntModifierKind::Unspecified),
+				std::make_shared<cxxast::IntLiteralExpr>(0));
+			break;
+		case TypeId::U64:
+			e = std::make_shared<cxxast::CastExpr>(
+				std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Unsigned, cxxast::IntModifierKind::LongLong),
+				std::make_shared<cxxast::IntLiteralExpr>(0));
+			break;
+		case TypeId::F32:
+			e = std::make_shared<cxxast::FloatLiteralExpr>(0);
+			break;
+		case TypeId::F64:
+			e = std::make_shared<cxxast::DoubleLiteralExpr>(0);
+			break;
+		case TypeId::Bool:
+			e = std::make_shared<cxxast::BoolLiteralExpr>(0);
+			break;
+		case TypeId::String:
+		case TypeId::Instance:
+		case TypeId::Array:
+		case TypeId::FnDelegate:
+			e = std::make_shared<cxxast::NullptrLiteralExpr>();
+			break;
+		case TypeId::Any:
+			e = std::make_shared<cxxast::CallExpr>(
+				genValueRefExpr(),
+				std::vector<std::shared_ptr<cxxast::Expr>>{
+					std::make_shared<cxxast::BinaryExpr>(
+						cxxast::BinaryOp::Scope,
+						std::make_shared<cxxast::BinaryExpr>(
+							cxxast::BinaryOp::Scope,
+							std::make_shared<cxxast::IdExpr>("slake"),
+							std::make_shared<cxxast::IdExpr>("ValueType")),
+						std::make_shared<cxxast::IdExpr>("Undefined")) });
+			break;
+		default:
+			// Invalid type name, terminate.
+			std::terminate();
+	}
+
+	return e;
+}
+
 bool BC2CXX::_isSimpleIdExpr(std::shared_ptr<cxxast::Expr> expr) {
 	switch (expr->exprKind) {
 		case cxxast::ExprKind::IntLiteral:

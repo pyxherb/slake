@@ -103,13 +103,35 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 					fnOverloading->name = mangleTypeName(fnOverloadingObject->paramTypes.at(i)) + fnOverloading->name;
 				}
 
-				std::shared_ptr<cxxast::Var> currentStateVar = std::make_shared<cxxast::Var>(
-					"currentState",
-					cxxast::StorageClass::Unspecified,
-					std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Unspecified, cxxast::IntModifierKind::Unspecified),
-					std::shared_ptr<cxxast::Expr>{});
+				{
+					std::shared_ptr<cxxast::Var> currentStateVar = std::make_shared<cxxast::Var>(
+						"currentState",
+						cxxast::StorageClass::Unspecified,
+						std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Unspecified, cxxast::IntModifierKind::Unspecified),
+						std::shared_ptr<cxxast::Expr>{});
 
-				stateClass->addPublicMember(currentStateVar);
+					stateClass->addPublicMember(currentStateVar);
+				}
+
+				{
+					std::shared_ptr<cxxast::Var> stackFrameVersionVar = std::make_shared<cxxast::Var>(
+						"stackFrameVersion",
+						cxxast::StorageClass::Unspecified,
+						std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Unspecified, cxxast::IntModifierKind::Unspecified),
+						std::shared_ptr<cxxast::IntLiteralExpr>(0));
+
+					stateClass->addPublicMember(stackFrameVersionVar);
+				}
+
+				{
+					std::shared_ptr<cxxast::Var> stackVarNumVar = std::make_shared<cxxast::Var>(
+						"nLocalVars",
+						cxxast::StorageClass::Unspecified,
+						std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Unspecified, cxxast::IntModifierKind::Unspecified),
+						std::shared_ptr<cxxast::IntLiteralExpr>(0));
+
+					stateClass->addPublicMember(stackVarNumVar);
+				}
 
 				{
 					fnOverloading->signature.paramTypes.push_back(
@@ -135,7 +157,8 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 
 				fnOverloading->body.push_back(rootSwitchStmt);
 
-				int idxCurState = 0;
+				int idxCurState = 0, stackFrameVersion = 0;
+				std::list<size_t> nLocalVarsPerStackFrame;
 
 				cxxast::SwitchCase switchCase;
 
@@ -177,10 +200,313 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 						case Opcode::NOP:
 							break;
 						case Opcode::LOAD: {
+							opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex());
+
 							HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[0].getEntityRef().asObject.instanceObject;
 
 							compileContext.mappedObjects.insert((Object *)id.get());
 
+							std::shared_ptr<cxxast::Expr> rhs;
+
+							switch (outputRegInfo.expectedValue.valueType) {
+								case ValueType::EntityRef: {
+									EntityRef &entityRef = outputRegInfo.expectedValue.getEntityRef();
+
+									switch (entityRef.kind) {
+										case ObjectRefKind::ObjectRef: {
+											Object *object = entityRef.asObject.instanceObject;
+
+											if (auto astNode = getMappedAstNode(object);
+												astNode) {
+												rhs = std::make_shared<cxxast::BinaryExpr>(cxxast::BinaryOp::PtrAccess,
+													std::make_shared<cxxast::CastExpr>(
+														std::make_shared<cxxast::PointerTypeName>(
+															std::make_shared<cxxast::CustomTypeName>(
+																false,
+																std::make_shared<cxxast::BinaryExpr>(
+																	cxxast::BinaryOp::Scope,
+																	_getAbsRef(compileContext.rootNamespace),
+																	std::make_shared<cxxast::IdExpr>("MappedObjects")))),
+														genMappedObjectsRef()),
+													std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(object)));
+											} else {
+												curStmtContainer->push_back(genReturnIfExceptStmt(
+													std::make_shared<cxxast::CallExpr>(
+														std::make_shared<cxxast::BinaryExpr>(
+															cxxast::BinaryOp::MemberAccess,
+															genAotContextRef(),
+															std::make_shared<cxxast::BinaryExpr>(
+																cxxast::BinaryOp::PtrAccess,
+																std::make_shared<cxxast::IdExpr>("runtime"),
+																std::make_shared<cxxast::IdExpr>("resolveIdRef"))),
+														std::vector<std::shared_ptr<cxxast::Expr>>{
+															std::make_shared<cxxast::CastExpr>(
+																genIdRefObjectTypeName(),
+																std::make_shared<cxxast::BinaryExpr>(cxxast::BinaryOp::PtrAccess,
+																	std::make_shared<cxxast::CastExpr>(
+																		std::make_shared<cxxast::PointerTypeName>(
+																			std::make_shared<cxxast::CustomTypeName>(
+																				false,
+																				std::make_shared<cxxast::BinaryExpr>(
+																					cxxast::BinaryOp::Scope,
+																					_getAbsRef(compileContext.rootNamespace),
+																					std::make_shared<cxxast::IdExpr>("MappedObjects")))),
+																		genMappedObjectsRef()),
+																	std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(id.get())))),
+															std::make_shared<cxxast::IdExpr>("load_tmp") })));
+
+												rhs = std::make_shared<cxxast::BinaryExpr>(
+													cxxast::BinaryOp::MemberAccess,
+													std::make_shared<cxxast::BinaryExpr>(
+														cxxast::BinaryOp::MemberAccess,
+														std::make_shared<cxxast::IdExpr>("load_tmp"),
+														std::make_shared<cxxast::IdExpr>("asObject")),
+													std::make_shared<cxxast::IdExpr>("instanceObject"));
+											}
+											break;
+										}
+										case ObjectRefKind::FieldRef: {
+											FieldRecord &fieldRecord = entityRef.asField.moduleObject->fieldRecords.at(entityRef.asField.index);
+
+											curStmtContainer->push_back(genReturnIfExceptStmt(
+												std::make_shared<cxxast::CallExpr>(
+													std::make_shared<cxxast::BinaryExpr>(
+														cxxast::BinaryOp::MemberAccess,
+														genAotContextRef(),
+														std::make_shared<cxxast::BinaryExpr>(
+															cxxast::BinaryOp::PtrAccess,
+															std::make_shared<cxxast::IdExpr>("runtime"),
+															std::make_shared<cxxast::IdExpr>("resolveIdRef"))),
+													std::vector<std::shared_ptr<cxxast::Expr>>{
+														std::make_shared<cxxast::CastExpr>(
+															genIdRefObjectTypeName(),
+															std::make_shared<cxxast::BinaryExpr>(cxxast::BinaryOp::PtrAccess,
+																std::make_shared<cxxast::CastExpr>(
+																	std::make_shared<cxxast::PointerTypeName>(
+																		std::make_shared<cxxast::CustomTypeName>(
+																			false,
+																			std::make_shared<cxxast::BinaryExpr>(
+																				cxxast::BinaryOp::Scope,
+																				_getAbsRef(compileContext.rootNamespace),
+																				std::make_shared<cxxast::IdExpr>("MappedObjects")))),
+																	genMappedObjectsRef()),
+																std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(id.get())))),
+														std::make_shared<cxxast::IdExpr>("load_tmp") })));
+
+											rhs = std::make_shared<cxxast::IdExpr>("load_tmp");
+											break;
+										}
+										default:
+											std::terminate();
+									}
+									break;
+								}
+							}
+
+							curStmtContainer->push_back(std::make_shared<cxxast::ExprStmt>(
+								std::make_shared<cxxast::BinaryExpr>(
+									cxxast::BinaryOp::Assign,
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::PtrAccess,
+										std::make_shared<cxxast::IdExpr>(mangleParamName(0)),
+										std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName))),
+									rhs)));
+
+							break;
+						}
+						case Opcode::RLOAD: {
+							opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex());
+							uint32_t idxBaseReg = ins.operands[0].getRegIndex();
+							HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[1].getEntityRef().asObject.instanceObject;
+
+							compileContext.mappedObjects.insert((Object *)id.get());
+
+							curStmtContainer->push_back(genReturnIfExceptStmt(
+								std::make_shared<cxxast::CallExpr>(
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::MemberAccess,
+										genAotContextRef(),
+										std::make_shared<cxxast::BinaryExpr>(
+											cxxast::BinaryOp::PtrAccess,
+											std::make_shared<cxxast::IdExpr>("runtime"),
+											std::make_shared<cxxast::IdExpr>("resolveIdRef"))),
+									std::vector<std::shared_ptr<cxxast::Expr>>{
+										std::make_shared<cxxast::CastExpr>(
+											genIdRefObjectTypeName(),
+											std::make_shared<cxxast::BinaryExpr>(cxxast::BinaryOp::PtrAccess,
+												std::make_shared<cxxast::CastExpr>(
+													std::make_shared<cxxast::PointerTypeName>(
+														std::make_shared<cxxast::CustomTypeName>(
+															false,
+															std::make_shared<cxxast::BinaryExpr>(
+																cxxast::BinaryOp::Scope,
+																_getAbsRef(compileContext.rootNamespace),
+																std::make_shared<cxxast::IdExpr>("MappedObjects")))),
+													genMappedObjectsRef()),
+												std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(id.get())))),
+										std::make_shared<cxxast::IdExpr>("load_tmp"),
+										std::make_shared<cxxast::BinaryExpr>(
+											cxxast::BinaryOp::PtrAccess,
+											std::make_shared<cxxast::IdExpr>(mangleParamName(0)),
+											std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(idxBaseReg).vregVarName))) })));
+
+							std::shared_ptr<cxxast::Expr> rhs;
+
+							switch (outputRegInfo.expectedValue.valueType) {
+								case ValueType::EntityRef: {
+									EntityRef &entityRef = outputRegInfo.expectedValue.getEntityRef();
+
+									switch (entityRef.kind) {
+										case ObjectRefKind::ObjectRef: {
+											Object *object = entityRef.asObject.instanceObject;
+
+											if (auto astNode = getMappedAstNode(object);
+												astNode) {
+												rhs = std::make_shared<cxxast::BinaryExpr>(cxxast::BinaryOp::PtrAccess,
+													std::make_shared<cxxast::CastExpr>(
+														std::make_shared<cxxast::PointerTypeName>(
+															std::make_shared<cxxast::CustomTypeName>(
+																false,
+																std::make_shared<cxxast::BinaryExpr>(
+																	cxxast::BinaryOp::Scope,
+																	_getAbsRef(compileContext.rootNamespace),
+																	std::make_shared<cxxast::IdExpr>("MappedObjects")))),
+														genMappedObjectsRef()),
+													std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(object)));
+											} else {
+												curStmtContainer->push_back(genReturnIfExceptStmt(
+													std::make_shared<cxxast::CallExpr>(
+														std::make_shared<cxxast::BinaryExpr>(
+															cxxast::BinaryOp::MemberAccess,
+															genAotContextRef(),
+															std::make_shared<cxxast::BinaryExpr>(
+																cxxast::BinaryOp::PtrAccess,
+																std::make_shared<cxxast::IdExpr>("runtime"),
+																std::make_shared<cxxast::IdExpr>("resolveIdRef"))),
+														std::vector<std::shared_ptr<cxxast::Expr>>{
+															std::make_shared<cxxast::CastExpr>(
+																genIdRefObjectTypeName(),
+																std::make_shared<cxxast::BinaryExpr>(cxxast::BinaryOp::PtrAccess,
+																	std::make_shared<cxxast::CastExpr>(
+																		std::make_shared<cxxast::PointerTypeName>(
+																			std::make_shared<cxxast::CustomTypeName>(
+																				false,
+																				std::make_shared<cxxast::BinaryExpr>(
+																					cxxast::BinaryOp::Scope,
+																					_getAbsRef(compileContext.rootNamespace),
+																					std::make_shared<cxxast::IdExpr>("MappedObjects")))),
+																		genMappedObjectsRef()),
+																	std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(id.get())))),
+															std::make_shared<cxxast::IdExpr>("load_tmp") })));
+
+												rhs = std::make_shared<cxxast::BinaryExpr>(
+													cxxast::BinaryOp::MemberAccess,
+													std::make_shared<cxxast::BinaryExpr>(
+														cxxast::BinaryOp::MemberAccess,
+														std::make_shared<cxxast::IdExpr>("load_tmp"),
+														std::make_shared<cxxast::IdExpr>("asObject")),
+													std::make_shared<cxxast::IdExpr>("instanceObject"));
+											}
+											break;
+										}
+										case ObjectRefKind::FieldRef: {
+											FieldRecord &fieldRecord = entityRef.asField.moduleObject->fieldRecords.at(entityRef.asField.index);
+
+											curStmtContainer->push_back(genReturnIfExceptStmt(
+												std::make_shared<cxxast::CallExpr>(
+													std::make_shared<cxxast::BinaryExpr>(
+														cxxast::BinaryOp::MemberAccess,
+														genAotContextRef(),
+														std::make_shared<cxxast::BinaryExpr>(
+															cxxast::BinaryOp::PtrAccess,
+															std::make_shared<cxxast::IdExpr>("runtime"),
+															std::make_shared<cxxast::IdExpr>("resolveIdRef"))),
+													std::vector<std::shared_ptr<cxxast::Expr>>{
+														std::make_shared<cxxast::CastExpr>(
+															genIdRefObjectTypeName(),
+															std::make_shared<cxxast::BinaryExpr>(cxxast::BinaryOp::PtrAccess,
+																std::make_shared<cxxast::CastExpr>(
+																	std::make_shared<cxxast::PointerTypeName>(
+																		std::make_shared<cxxast::CustomTypeName>(
+																			false,
+																			std::make_shared<cxxast::BinaryExpr>(
+																				cxxast::BinaryOp::Scope,
+																				_getAbsRef(compileContext.rootNamespace),
+																				std::make_shared<cxxast::IdExpr>("MappedObjects")))),
+																	genMappedObjectsRef()),
+																std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(id.get())))),
+														std::make_shared<cxxast::IdExpr>("load_tmp") })));
+
+											rhs = std::make_shared<cxxast::IdExpr>("load_tmp");
+											break;
+										}
+										default:
+											std::terminate();
+									}
+									break;
+								}
+							}
+
+							curStmtContainer->push_back(std::make_shared<cxxast::ExprStmt>(
+								std::make_shared<cxxast::BinaryExpr>(
+									cxxast::BinaryOp::Assign,
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::PtrAccess,
+										std::make_shared<cxxast::IdExpr>(mangleParamName(0)),
+										std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName))),
+									rhs)));
+							break;
+						}
+						case Opcode::LVAR: {
+							std::shared_ptr<cxxast::Var> lvarVar = std::make_shared<cxxast::Var>(
+								mangleGeneratorLocalVarName(ins.output.getRegIndex(), stackFrameVersion),
+								cxxast::StorageClass::Unspecified,
+								compileType(compileContext, ins.operands[0].getTypeName()),
+								std::shared_ptr<cxxast::Expr>{});
+
+							stateClass->addPublicMember(lvarVar);
+
+							GeneratorLocalVarInfo info;
+							info.version = stackFrameVersion;
+
+							compileContext.generatorLocalVarInfo.push_back(std::move(info));
+
+							curStmtContainer->push_back(std::make_shared<cxxast::ExprStmt>(
+								std::make_shared<cxxast::BinaryExpr>(
+									cxxast::BinaryOp::Assign,
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::PtrAccess,
+										std::make_shared<cxxast::IdExpr>(mangleParamName(0)),
+										std::make_shared<cxxast::IdExpr>("nLocalVars")),
+									std::make_shared<cxxast::IntLiteralExpr>(compileContext.generatorLocalVarInfo.size()))));
+
+							curStmtContainer->push_back(std::make_shared<cxxast::ExprStmt>(
+								std::make_shared<cxxast::BinaryExpr>(
+									cxxast::BinaryOp::Assign,
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::PtrAccess,
+										std::make_shared<cxxast::IdExpr>(mangleParamName(0)),
+										std::make_shared<cxxast::IdExpr>(mangleGeneratorLocalVarName(ins.output.getRegIndex(), stackFrameVersion))),
+									genDefaultValue(ins.operands[0].getTypeName()))));
+							break;
+						}
+						case Opcode::ENTER: {
+							nLocalVarsPerStackFrame.push_back(compileContext.generatorLocalVarInfo.size());
+
+							curStmtContainer->push_back(std::make_shared<cxxast::ExprStmt>(
+								std::make_shared<cxxast::BinaryExpr>(
+									cxxast::BinaryOp::Assign,
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::PtrAccess,
+										std::make_shared<cxxast::IdExpr>(mangleParamName(0)),
+										std::make_shared<cxxast::IdExpr>("stackFrameVersion")),
+									std::make_shared<cxxast::IntLiteralExpr>(+stackFrameVersion))));
+							break;
+						}
+						case Opcode::LEAVE: {
+							++stackFrameVersion;
+							compileContext.generatorLocalVarInfo.resize(nLocalVarsPerStackFrame.back());
+							nLocalVarsPerStackFrame.pop_back();
 							break;
 						}
 						case Opcode::JMP: {
@@ -424,16 +750,6 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 
 											std::shared_ptr<cxxast::TypeName> t = compileType(compileContext, fieldRecord.type);
 
-											if (!compileContext.allocRecycledReg(*this, programInfo, ins.output.getRegIndex(), outputRegInfo.type)) {
-												cxxast::VarDefPair varDefPair = { std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName), {} };
-
-												std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(t, std::vector<cxxast::VarDefPair>{ varDefPair });
-
-												compileContext.addStackSize(getLocalVarSizeAndAlignmentInfoOfType(outputRegInfo.type));
-
-												curStmtContainer->push_back(stmt);
-											}
-
 											curStmtContainer->push_back(genReturnIfExceptStmt(
 												std::make_shared<cxxast::CallExpr>(
 													std::make_shared<cxxast::BinaryExpr>(
@@ -457,7 +773,10 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 																				std::make_shared<cxxast::IdExpr>("MappedObjects")))),
 																	genMappedObjectsRef()),
 																std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(id.get())))),
-														std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName)) })));
+														std::make_shared<cxxast::BinaryExpr>(
+															cxxast::BinaryOp::PtrAccess,
+															std::make_shared<cxxast::IdExpr>(mangleParamName(0)),
+															std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName))) })));
 											break;
 										}
 										default:
@@ -507,8 +826,14 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 																std::make_shared<cxxast::IdExpr>("MappedObjects")))),
 													genMappedObjectsRef()),
 												std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(id.get())))),
-										std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName)),
-										std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(idxBaseReg).vregVarName)) })));
+										std::make_shared<cxxast::BinaryExpr>(
+											cxxast::BinaryOp::PtrAccess,
+											std::make_shared<cxxast::IdExpr>(mangleParamName(0)),
+											std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName))),
+										std::make_shared<cxxast::BinaryExpr>(
+											cxxast::BinaryOp::PtrAccess,
+											std::make_shared<cxxast::IdExpr>(mangleParamName(0)),
+											std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(idxBaseReg).vregVarName))) })));
 
 							compileContext.markVirtualRegAsLoadInsResult(ins.output.getRegIndex());
 							break;

@@ -54,6 +54,10 @@ namespace slake {
 					SLAKE_FORCEINLINE VirtualRegInfo(std::string &&vregVarName) : vregVarName(vregVarName) {}
 				};
 
+				struct GeneratorLocalVarInfo {
+					int version;
+				};
+
 				struct CompileContext {
 					Runtime *runtime;
 					std::shared_ptr<cxxast::Namespace> rootNamespace;
@@ -62,6 +66,7 @@ namespace slake {
 					std::map<uint32_t, std::set<uint32_t>> recyclableRegs;
 					std::set<uint32_t> recycledRegs;
 					std::set<HostObjectRef<>> mappedObjects;
+					std::vector<GeneratorLocalVarInfo> generatorLocalVarInfo;
 					size_t estimatedStackSize = 0;
 					bool isGenerator = false;
 
@@ -103,6 +108,7 @@ namespace slake {
 						recycledRegs.clear();
 						estimatedStackSize = 0;
 						isGenerator = false;
+						generatorLocalVarInfo.clear();
 					}
 				};
 
@@ -256,6 +262,7 @@ namespace slake {
 				}
 
 				std::shared_ptr<cxxast::Expr> genGetValueDataExpr(const Type &type, std::shared_ptr<cxxast::Expr> expr);
+				std::shared_ptr<cxxast::Expr> genDefaultValue(const Type &type);
 
 				std::pair<size_t, size_t> getLocalVarSizeAndAlignmentInfoOfType(const Type &type);
 
@@ -265,6 +272,7 @@ namespace slake {
 				std::string mangleRegLocalVarName(uint32_t idxReg);
 				std::string mangleArgListLocalVarName(uint32_t idxReg);
 				std::string mangleLocalVarName(uint32_t idxReg);
+				std::string mangleGeneratorLocalVarName(uint32_t idxReg, int version);
 				std::string mangleParamName(uint32_t idxArg);
 				std::string mangleRefForTypeName(const peff::DynArray<IdRefEntry> &entries);
 				std::string mangleTypeName(const Type &type);

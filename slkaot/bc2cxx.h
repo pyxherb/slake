@@ -63,7 +63,7 @@ namespace slake {
 					std::set<uint32_t> recycledRegs;
 					std::set<HostObjectRef<>> mappedObjects;
 					size_t estimatedStackSize = 0;
-					FnOverloadingKind fnOverloadingKind = FnOverloadingKind::Regular;
+					bool isGenerator = false;
 
 					SLAKE_FORCEINLINE CompileContext(Runtime *runtime, std::shared_ptr<cxxast::Namespace> rootNamespace) : runtime(runtime), rootNamespace(rootNamespace) {}
 
@@ -102,7 +102,7 @@ namespace slake {
 						recyclableRegs.clear();
 						recycledRegs.clear();
 						estimatedStackSize = 0;
-						fnOverloadingKind = FnOverloadingKind::Regular;
+						isGenerator = false;
 					}
 				};
 

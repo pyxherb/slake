@@ -273,6 +273,12 @@ GotoStmt::GotoStmt(std::string &&name) : Stmt(StmtKind::Goto), name(std::move(na
 GotoStmt::~GotoStmt() {
 }
 
+SwitchStmt::SwitchStmt(std::shared_ptr<Expr> expr) : Stmt(StmtKind::Switch), expr(expr) {
+}
+
+SwitchStmt::~SwitchStmt() {
+}
+
 Expr::Expr(ExprKind stmtKind) : ASTNode(NodeKind::Expr), exprKind(stmtKind) {
 }
 

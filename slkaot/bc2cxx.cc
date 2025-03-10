@@ -330,7 +330,14 @@ std::shared_ptr<cxxast::Expr> BC2CXX::compileValue(CompileContext &compileContex
 			uint32_t index = value.getRegIndex();
 
 			if (auto it = compileContext.vregInfo.find(index); it != compileContext.vregInfo.end()) {
-				e = std::make_shared<cxxast::IdExpr>(std::string(it->second.vregVarName));
+				if (compileContext.isGenerator) {
+					e = std::make_shared<cxxast::BinaryExpr>(
+						cxxast::BinaryOp::PtrAccess,
+						std::make_shared<cxxast::IdExpr>(mangleParamName(0)),
+						std::make_shared<cxxast::IdExpr>(std::string(it->second.vregVarName)));
+				} else {
+					e = std::make_shared<cxxast::IdExpr>(std::string(it->second.vregVarName));
+				}
 			} else {
 				std::terminate();
 			}
@@ -464,7 +471,14 @@ std::shared_ptr<cxxast::Expr> BC2CXX::compileValueAsAny(CompileContext &compileC
 			uint32_t index = value.getRegIndex();
 
 			if (auto it = compileContext.vregInfo.find(index); it != compileContext.vregInfo.end()) {
-				e = std::make_shared<cxxast::IdExpr>(std::string(it->second.vregVarName));
+				if (compileContext.isGenerator) {
+					e = std::make_shared<cxxast::BinaryExpr>(
+						cxxast::BinaryOp::PtrAccess,
+						std::make_shared<cxxast::IdExpr>(mangleParamName(0)),
+						std::make_shared<cxxast::IdExpr>(std::string(it->second.vregVarName)));
+				} else {
+					e = std::make_shared<cxxast::IdExpr>(std::string(it->second.vregVarName));
+				}
 			} else {
 				std::terminate();
 			}

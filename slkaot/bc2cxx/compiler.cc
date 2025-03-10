@@ -67,6 +67,16 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 		case FnOverloadingKind::Regular: {
 			RegularFnOverloadingObject *fo = (RegularFnOverloadingObject *)fnOverloadingObject;
 
+			std::vector<std::shared_ptr<cxxast::Stmt>> *curStmtContainer;
+			std::list<std::vector<std::shared_ptr<cxxast::Stmt>> *> curStmtContainerStack;
+			auto pushCurStmtContainer = [&curStmtContainer, &curStmtContainerStack]() {
+				curStmtContainerStack.push_back(curStmtContainer);
+			};
+			auto popCurStmtContainer = [&curStmtContainer, &curStmtContainerStack]() {
+				curStmtContainer = curStmtContainerStack.back();
+				curStmtContainerStack.pop_back();
+			};
+
 			if (fo->overloadingFlags & OL_GENERATOR) {
 				std::shared_ptr<cxxast::Class> stateClass = std::make_shared<cxxast::Class>(mangleGeneratorStateClassName(fnOverloading->name));
 
@@ -78,6 +88,8 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 					e.reset();
 					return;
 				}
+
+				compileContext.isGenerator = true;
 
 				for (size_t i = 0; i < fo->paramTypes.size(); ++i) {
 					std::shared_ptr<cxxast::Var> regVar = std::make_shared<cxxast::Var>(
@@ -91,6 +103,14 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 					fnOverloading->name = mangleTypeName(fnOverloadingObject->paramTypes.at(i)) + fnOverloading->name;
 				}
 
+				std::shared_ptr<cxxast::Var> currentStateVar = std::make_shared<cxxast::Var>(
+					"currentState",
+					cxxast::StorageClass::Unspecified,
+					std::make_shared<cxxast::IntTypeName>(cxxast::SignKind::Unspecified, cxxast::IntModifierKind::Unspecified),
+					std::shared_ptr<cxxast::Expr>{});
+
+				stateClass->addPublicMember(currentStateVar);
+
 				{
 					fnOverloading->signature.paramTypes.push_back(
 						std::make_shared<cxxast::PointerTypeName>(
@@ -98,6 +118,35 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 								false,
 								cxxast::getFullRefOf(stateClass))));
 				}
+
+				cxxast::VarDefPair varDefPair = { std::string("load_tmp"), {} };
+
+				std::shared_ptr<cxxast::LocalVarDefStmt> stmt = std::make_shared<cxxast::LocalVarDefStmt>(genObjectRefTypeName(), std::vector<cxxast::VarDefPair>{ varDefPair });
+
+				compileContext.addStackSize(getLocalVarSizeAndAlignmentInfoOfType(Type(TypeId::Ref, nullptr)));
+
+				fnOverloading->body.push_back(stmt);
+
+				std::shared_ptr<cxxast::SwitchStmt> rootSwitchStmt = std::make_shared<cxxast::SwitchStmt>(
+					std::make_shared<cxxast::BinaryExpr>(
+						cxxast::BinaryOp::PtrAccess,
+						std::make_shared<cxxast::IdExpr>(mangleParamName(0)),
+						std::make_shared<cxxast::IdExpr>("currentState")));
+
+				fnOverloading->body.push_back(rootSwitchStmt);
+
+				int idxCurState = 0;
+
+				cxxast::SwitchCase switchCase;
+
+				auto clearCurSwitchCase = [&switchCase, &idxCurState]() {
+					switchCase.expr = std::make_shared<cxxast::IntLiteralExpr>(idxCurState++);
+					switchCase.body.clear();
+				};
+
+				switchCase.expr = std::make_shared<cxxast::IntLiteralExpr>(idxCurState++);
+
+				curStmtContainer = &switchCase.body;
 
 				for (size_t i = 0; i < fo->instructions.size(); ++i) {
 					Instruction &ins = fo->instructions.at(i);
@@ -121,6 +170,100 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 						}
 					}
 
+					curStmtContainer->push_back(
+						std::make_shared<cxxast::LabelStmt>(mangleJumpDestLabelName(i)));
+
+					switch (ins.opcode) {
+						case Opcode::NOP:
+							break;
+						case Opcode::LOAD: {
+							HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[0].getEntityRef().asObject.instanceObject;
+
+							compileContext.mappedObjects.insert((Object *)id.get());
+
+							break;
+						}
+						case Opcode::JMP: {
+							uint32_t offDest = ins.operands[0].getU32();
+							curStmtContainer->push_back(
+								std::make_shared<cxxast::GotoStmt>(mangleJumpDestLabelName(offDest)));
+							break;
+						}
+						case Opcode::JT: {
+							uint32_t offDest = ins.operands[0].getU32();
+							curStmtContainer->push_back(
+								std::make_shared<cxxast::IfStmt>(
+									compileValue(compileContext, ins.operands[1]),
+									std::make_shared<cxxast::GotoStmt>(mangleJumpDestLabelName(offDest)),
+									std::shared_ptr<cxxast::Stmt>{}));
+							break;
+						}
+						case Opcode::JF: {
+							uint32_t offDest = ins.operands[0].getU32();
+							curStmtContainer->push_back(
+								std::make_shared<cxxast::IfStmt>(
+									compileValue(compileContext, ins.operands[1]),
+									std::shared_ptr<cxxast::Stmt>{},
+									std::make_shared<cxxast::GotoStmt>(mangleJumpDestLabelName(offDest))));
+							break;
+						}
+						case Opcode::RET: {
+							curStmtContainer->push_back(std::make_shared<cxxast::ExprStmt>(
+								std::make_shared<cxxast::BinaryExpr>(
+									cxxast::BinaryOp::Assign,
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::PtrAccess,
+										std::make_shared<cxxast::IdExpr>(mangleParamName(0)),
+										std::make_shared<cxxast::IdExpr>("currentState")),
+									std::make_shared<cxxast::IntLiteralExpr>(-1))));
+
+							curStmtContainer->push_back(std::make_shared<cxxast::ExprStmt>(
+								std::make_shared<cxxast::BinaryExpr>(
+									cxxast::BinaryOp::Assign,
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::MemberAccess,
+										std::make_shared<cxxast::IdExpr>("aotContext"),
+										std::make_shared<cxxast::IdExpr>("returnValue")),
+									compileValueAsAny(compileContext, ins.operands[0]))));
+
+							curStmtContainer->push_back(
+								std::make_shared<cxxast::ReturnStmt>(
+									std::make_shared<cxxast::InitializerListExpr>(
+										std::shared_ptr<cxxast::TypeName>{},
+										std::vector<std::shared_ptr<cxxast::Expr>>{})));
+							break;
+						}
+						case Opcode::YIELD: {
+							curStmtContainer->push_back(std::make_shared<cxxast::ExprStmt>(
+								std::make_shared<cxxast::BinaryExpr>(
+									cxxast::BinaryOp::Assign,
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::PtrAccess,
+										std::make_shared<cxxast::IdExpr>(mangleParamName(0)),
+										std::make_shared<cxxast::IdExpr>("currentState")),
+									std::make_shared<cxxast::IntLiteralExpr>(+idxCurState))));
+
+							curStmtContainer->push_back(std::make_shared<cxxast::ExprStmt>(
+								std::make_shared<cxxast::BinaryExpr>(
+									cxxast::BinaryOp::Assign,
+									std::make_shared<cxxast::BinaryExpr>(
+										cxxast::BinaryOp::MemberAccess,
+										std::make_shared<cxxast::IdExpr>("aotContext"),
+										std::make_shared<cxxast::IdExpr>("returnValue")),
+									compileValueAsAny(compileContext, ins.operands[0]))));
+
+							curStmtContainer->push_back(
+								std::make_shared<cxxast::ReturnStmt>(
+									std::make_shared<cxxast::InitializerListExpr>(
+										std::shared_ptr<cxxast::TypeName>{},
+										std::vector<std::shared_ptr<cxxast::Expr>>{})));
+
+							rootSwitchStmt->switchCases.push_back(std::move(switchCase));
+							clearCurSwitchCase();
+							break;
+						}
+					}
+
 					if (auto it = compileContext.recyclableRegs.find(i); it != compileContext.recyclableRegs.end()) {
 						for (auto j : it->second) {
 							VirtualRegInfo &vregInfo = compileContext.getVirtualRegInfo(j);
@@ -133,22 +276,18 @@ void BC2CXX::recompileFnOverloading(CompileContext &compileContext, std::shared_
 
 					fnOverloading->parent.lock()->addPublicMember(stateClass);
 				}
+
+				rootSwitchStmt->switchCases.push_back(std::move(switchCase));
+				clearCurSwitchCase();
 			} else {
 				for (size_t i = 0; i < fnOverloadingObject->paramTypes.size(); ++i) {
 					fnOverloading->name = mangleTypeName(fnOverloadingObject->paramTypes.at(i)) + fnOverloading->name;
 					fnOverloading->signature.paramTypes.push_back(compileParamType(compileContext, fnOverloadingObject->paramTypes.at(i)));
 				}
 
-				std::vector<std::shared_ptr<cxxast::Stmt>> *curStmtContainer = &fnOverloading->body;
-				std::list<std::vector<std::shared_ptr<cxxast::Stmt>> *> curStmtContainerStack;
+				curStmtContainer = &fnOverloading->body;
+
 				std::list<size_t> branchBlockLeavingBoundaries;
-				auto pushCurStmtContainer = [&curStmtContainer, &curStmtContainerStack]() {
-					curStmtContainerStack.push_back(curStmtContainer);
-				};
-				auto popCurStmtContainer = [&curStmtContainer, &curStmtContainerStack]() {
-					curStmtContainer = curStmtContainerStack.back();
-					curStmtContainerStack.pop_back();
-				};
 
 				opti::ProgramAnalyzedInfo programInfo(compileContext.runtime);
 				HostRefHolder hostRefHolder(peff::getDefaultAlloc());

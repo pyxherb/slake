@@ -267,7 +267,8 @@ namespace slake {
 				Return,
 				Block,
 				Label,
-				Goto
+				Goto,
+				Switch
 			};
 
 			class Stmt : public ASTNode {
@@ -381,6 +382,20 @@ namespace slake {
 
 				GotoStmt(std::string &&name);
 				virtual ~GotoStmt();
+			};
+
+			struct SwitchCase {
+				std::shared_ptr<Expr> expr;
+				std::vector<std::shared_ptr<Stmt>> body;
+			};
+
+			class SwitchStmt : public Stmt {
+			public:
+				std::shared_ptr<Expr> expr;
+				std::vector<SwitchCase> switchCases;
+
+				SwitchStmt(std::shared_ptr<Expr> expr);
+				virtual ~SwitchStmt();
 			};
 
 			enum class ExprKind : uint8_t {

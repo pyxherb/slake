@@ -587,6 +587,28 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 					os << "goto " << s->name << ";";
 					break;
 				}
+				case cxxast::StmtKind::Switch: {
+					os << std::string(indentLevel, '\t');
+					std::shared_ptr<cxxast::SwitchStmt> s = std::static_pointer_cast<cxxast::SwitchStmt>(stmt);
+					os << "switch (";
+
+					_dumpAstNode(os, s->expr, dumpMode, 0);
+
+					os << ") {\n";
+
+					for(const auto &i : s->switchCases) {
+						os << std::string(indentLevel + 1, '\t');
+						os << "case ";
+						_dumpAstNode(os, i.expr, dumpMode, 0);
+						os << ":\n";
+						for(auto j : i.body) {
+							_dumpAstNode(os, j, dumpMode, indentLevel + 2);
+						}
+					}
+
+					os << std::string(indentLevel, '\t');
+					os << "}";
+				}
 			}
 
 			os << "\n";

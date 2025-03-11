@@ -4,8 +4,14 @@ using namespace slake;
 using namespace slake::slkaot;
 using namespace slake::slkaot::bc2cxx;
 
-std::string BC2CXX::mangleGeneratorStateClassName(const std::string_view &fnName) {
-	return std::string("_SLKAOTGeneratorState_") + std::string(fnName);
+std::string BC2CXX::mangleGeneratorStateClassName(Object *object) {
+	char s[sizeof("_SLKAOTGeneratorState_") - 1 + sizeof(void *) * 2 + 1];
+
+	memcpy(s, "_SLKAOTGeneratorState_", sizeof("_SLKAOTGeneratorState_") - 1);
+
+	sprintf(s + (sizeof("_SLKAOTGeneratorState_") - 1), "%0*zx", (int)sizeof(void *) * 2, (uintptr_t)object);
+
+	return std::string(s);
 }
 
 std::string BC2CXX::mangleJumpDestLabelName(uint32_t offIns) {
@@ -37,7 +43,7 @@ std::string BC2CXX::mangleParamName(uint32_t idxArg) {
 	return "param_" + std::to_string(idxArg);
 }
 
-std::string BC2CXX::mangleRefForTypeName(const peff::DynArray<IdRefEntry> &entries) {
+std::string BC2CXX::mangleRef(const peff::DynArray<IdRefEntry> &entries) {
 	std::string name;
 
 	for (size_t i = 0; i < entries.size(); ++i) {
@@ -102,7 +108,7 @@ std::string BC2CXX::mangleTypeName(const Type &type) {
 			if (type.isLoadingDeferred()) {
 				HostObjectRef<IdRefObject> id = (IdRefObject *)type.getCustomTypeExData();
 
-				return "obj" + mangleRefForTypeName(id->entries);
+				return "obj" + mangleRef(id->entries);
 			} else {
 				HostObjectRef<MemberObject> id = (MemberObject *)type.getCustomTypeExData();
 
@@ -110,7 +116,7 @@ std::string BC2CXX::mangleTypeName(const Type &type) {
 				if (!id->associatedRuntime->getFullRef(peff::getDefaultAlloc(), id.get(), entries))
 					throw std::bad_alloc();
 
-				return "obj" + mangleRefForTypeName(entries);
+				return "obj" + mangleRef(entries);
 			}
 		}
 		case TypeId::Array: {
@@ -144,7 +150,7 @@ std::string BC2CXX::mangleTypeName(const Type &type) {
 	}
 }
 
-std::string BC2CXX::mangleClassName(const std::string &className, const GenericArgList &genericArgs) {
+std::string BC2CXX::mangleClassName(const std::string &className) {
 	return "_SLKAOT_" + className;
 }
 

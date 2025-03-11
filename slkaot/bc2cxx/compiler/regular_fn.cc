@@ -184,10 +184,7 @@ void BC2CXX::recompileRegularFnOverloading(CompileContext &compileContext, std::
 																	std::make_shared<cxxast::IdExpr>("MappedObjects")))),
 														genMappedObjectsRef()),
 													std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(id.get())))),
-											std::make_shared<cxxast::BinaryExpr>(
-												cxxast::BinaryOp::PtrAccess,
-												std::make_shared<cxxast::IdExpr>(mangleParamName(0)),
-												std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName))) })));
+											compileValue(compileContext, ins.output) })));
 								break;
 							}
 							default:
@@ -237,14 +234,8 @@ void BC2CXX::recompileRegularFnOverloading(CompileContext &compileContext, std::
 													std::make_shared<cxxast::IdExpr>("MappedObjects")))),
 										genMappedObjectsRef()),
 									std::make_shared<cxxast::IdExpr>(mangleConstantObjectName(id.get())))),
-							std::make_shared<cxxast::BinaryExpr>(
-								cxxast::BinaryOp::PtrAccess,
-								std::make_shared<cxxast::IdExpr>(mangleParamName(0)),
-								std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName))),
-							std::make_shared<cxxast::BinaryExpr>(
-								cxxast::BinaryOp::PtrAccess,
-								std::make_shared<cxxast::IdExpr>(mangleParamName(0)),
-								std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(idxBaseReg).vregVarName))) })));
+							compileValue(compileContext, ins.output),
+							compileValue(compileContext, ins.operands[0]) })));
 
 				compileContext.markVirtualRegAsLoadInsResult(ins.output.getRegIndex());
 				break;

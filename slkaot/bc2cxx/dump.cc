@@ -264,6 +264,11 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 
 			if ((dumpMode == ASTDumpMode::Header) || (dumpMode == ASTDumpMode::PrecedingDecl)) {
 				if (namespaceNode->name.empty()) {
+					if (dumpMode == ASTDumpMode::Header) {
+						for (auto &i : namespaceNode->publicMembers) {
+							_dumpAstNode(os, i.second, ASTDumpMode::PrecedingDecl, indentLevel);
+						}
+					}
 					for (auto &i : namespaceNode->publicMembers) {
 						_dumpAstNode(os, i.second, dumpMode, indentLevel);
 					}
@@ -272,6 +277,14 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 					os << std::string(indentLevel, '\t');
 					os << "namespace " << namespaceNode->name << " {\n";
 
+					if ((dumpMode == ASTDumpMode::Header) && namespaceNode->parent.expired()) {
+						for (auto &i : namespaceNode->publicMembers) {
+							_dumpAstNode(os, i.second, ASTDumpMode::PrecedingDecl, indentLevel + 1);
+						}
+						for (auto &i : namespaceNode->protectedMembers) {
+							_dumpAstNode(os, i.second, ASTDumpMode::PrecedingDecl, indentLevel + 1);
+						}
+					}
 					for (auto &i : namespaceNode->publicMembers) {
 						_dumpAstNode(os, i.second, dumpMode, indentLevel + 1);
 					}

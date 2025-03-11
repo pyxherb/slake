@@ -144,9 +144,12 @@ SLAKE_API bool Runtime::getFullRef(peff::Alloc *allocator, const MemberObject *v
 		}
 		memcpy(copiedName.data(), name, szName);
 		GenericArgList copiedGenericArgs(allocator);
-		if (v->getGenericArgs()) {
-			if (!peff::copyAssign(copiedGenericArgs, *v->getGenericArgs()))
-				return false;
+		if (auto p = v->getGenericArgs(); p) {
+			copiedGenericArgs.resize(p->size());
+			for (size_t i = 0; i < copiedGenericArgs.size(); ++i) {
+				if (!peff::copyAssign(copiedGenericArgs.at(i), p->at(i)))
+					return false;
+			}
 		}
 
 		peff::DynArray<Type> paramList(allocator);

@@ -17,9 +17,9 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 		curStmtContainerStack.pop_back();
 	};
 
-	std::shared_ptr<cxxast::Class> stateClass = std::make_shared<cxxast::Class>(mangleGeneratorStateClassName(fnOverloading->name));
+	std::shared_ptr<cxxast::Class> stateClass = std::make_shared<cxxast::Class>(mangleGeneratorStateClassName(fo));
 
-	fnOverloading->declPrecedingNodes.push_back(stateClass);
+	compileContext.rootNamespace->addPublicMember(stateClass);
 
 	opti::ProgramAnalyzedInfo programInfo(compileContext.runtime);
 	HostRefHolder hostRefHolder(peff::getDefaultAlloc());

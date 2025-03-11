@@ -267,16 +267,16 @@ namespace slake {
 
 				std::pair<size_t, size_t> getLocalVarSizeAndAlignmentInfoOfType(const Type &type);
 
-				std::string mangleGeneratorStateClassName(const std::string_view &fnName);
+				std::string mangleGeneratorStateClassName(Object *object);
 				std::string mangleJumpDestLabelName(uint32_t offIns);
 				std::string mangleConstantObjectName(Object *object);
 				std::string mangleRegLocalVarName(uint32_t idxReg);
 				std::string mangleArgListLocalVarName(uint32_t idxReg);
 				std::string mangleLocalVarName(uint32_t idxReg);
 				std::string mangleParamName(uint32_t idxArg);
-				std::string mangleRefForTypeName(const peff::DynArray<IdRefEntry> &entries);
+				std::string mangleRef(const peff::DynArray<IdRefEntry> &entries);
 				std::string mangleTypeName(const Type &type);
-				std::string mangleClassName(const std::string &className, const GenericArgList &genericArgs);
+				std::string mangleClassName(const std::string &className);
 				std::string mangleFnName(const std::string_view &fnName);
 				std::string mangleFieldName(const std::string &fieldName);
 				std::shared_ptr<cxxast::Namespace> completeModuleNamespace(CompileContext &compileContext, const peff::DynArray<IdRefEntry> &entries);

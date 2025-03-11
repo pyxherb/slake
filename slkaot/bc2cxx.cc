@@ -718,7 +718,11 @@ std::shared_ptr<cxxast::Class> BC2CXX::compileClass(CompileContext &compileConte
 	if (moduleObject->genericParams.size() && (!moduleObject->mappedGenericArgs.size())) {
 		return {};
 	} else {
-		std::shared_ptr<cxxast::Class> cls = std::make_shared<cxxast::Class>(mangleClassName((std::string)(std::string_view)moduleObject->name, moduleObject->genericArgs));
+		peff::DynArray<IdRefEntry> fullRef(peff::getDefaultAlloc());
+		if (!compileContext.runtime->getFullRef(peff::getDefaultAlloc(), moduleObject, fullRef))
+			throw std::bad_alloc();
+		std::string className = mangleClassName(mangleRef(fullRef));
+		std::shared_ptr<cxxast::Class> cls = std::make_shared<cxxast::Class>(std::move(className));
 
 		registerRuntimeEntityToAstNodeRegistry(moduleObject, cls);
 		compileContext.mappedObjects.insert(moduleObject);
@@ -762,9 +766,9 @@ std::shared_ptr<cxxast::Class> BC2CXX::compileClass(CompileContext &compileConte
 					std::shared_ptr<cxxast::Class> compiledCls = compileClass(compileContext, m);
 					if (compiledCls) {
 						if (m->accessModifier & ACCESS_PUB)
-							cls->addPublicMember(compiledCls);
+							compileContext.rootNamespace->addPublicMember(compiledCls);
 						else
-							cls->addProtectedMember(compiledCls);
+							compileContext.rootNamespace->addProtectedMember(compiledCls);
 					}
 					break;
 				}
@@ -849,9 +853,9 @@ void BC2CXX::compileModule(CompileContext &compileContext, ModuleObject *moduleO
 				std::shared_ptr<cxxast::Class> compiledCls = compileClass(compileContext, m);
 				if (compiledCls) {
 					if (m->accessModifier & ACCESS_PUB)
-						ns->addPublicMember(compiledCls);
+						compileContext.rootNamespace->addPublicMember(compiledCls);
 					else
-						ns->addProtectedMember(compiledCls);
+						compileContext.rootNamespace->addProtectedMember(compiledCls);
 				}
 				break;
 			}

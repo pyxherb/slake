@@ -35,6 +35,8 @@ namespace slake {
 				std::vector<std::shared_ptr<ASTNode>> defTrailingNodes;
 				std::vector<std::shared_ptr<ASTNode>> declPrecedingNodes;
 				std::vector<std::shared_ptr<ASTNode>> declTrailingNodes;
+				std::vector<std::shared_ptr<ASTNode>> precedingDeclPrecedingNodes;
+				std::vector<std::shared_ptr<ASTNode>> precedingDeclTrailingNodes;
 
 				ASTNode(NodeKind nodeKind);
 				virtual ~ASTNode();

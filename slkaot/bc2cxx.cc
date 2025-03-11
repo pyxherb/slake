@@ -876,7 +876,7 @@ void BC2CXX::compileModule(CompileContext &compileContext, ModuleObject *moduleO
 	}
 }
 
-std::pair<std::shared_ptr<cxxast::IfndefDirective>, std::shared_ptr<cxxast::Namespace>> BC2CXX::compile(ModuleObject *moduleObject) {
+std::shared_ptr<cxxast::Namespace> BC2CXX::compile(ModuleObject *moduleObject) {
 	std::shared_ptr<cxxast::Namespace> rootNamespace = std::make_shared<cxxast::Namespace>("slkaot");
 	CompileContext cc(moduleObject->associatedRuntime, rootNamespace);
 
@@ -959,26 +959,32 @@ std::pair<std::shared_ptr<cxxast::IfndefDirective>, std::shared_ptr<cxxast::Name
 			std::shared_ptr<cxxast::Expr>{}));
 	}
 
-	std::shared_ptr<cxxast::IfndefDirective> includeGuardWrapper =
-		std::make_shared<cxxast::IfndefDirective>(
-			std::string(includeGuardName),
-			std::vector<std::shared_ptr<cxxast::ASTNode>>{
-				std::make_shared<cxxast::Directive>(
-					"define",
-					std::vector<std::shared_ptr<cxxast::Expr>>{ std::make_shared<cxxast::IdExpr>(std::string(includeGuardName)) }),
-				std::make_shared<cxxast::IncludeDirective>(
-					"slake/runtime.h",
-					true),
-				std::make_shared<cxxast::IncludeDirective>(
-					"slake/aot/context.h",
-					true),
-				rootNamespace },
-			std::vector<std::shared_ptr<cxxast::ASTNode>>{});
+	rootNamespace->declPrecedingNodes.push_back(
+		std::make_shared<cxxast::Directive>(
+			"ifndef",
+			std::vector<std::shared_ptr<cxxast::Expr>>{
+				std::make_shared<cxxast::IdExpr>(std::string(includeGuardName)) }));
+	rootNamespace->declPrecedingNodes.push_back(
+		std::make_shared<cxxast::Directive>(
+			"define",
+			std::vector<std::shared_ptr<cxxast::Expr>>{ std::make_shared<cxxast::IdExpr>(std::string(includeGuardName)) }));
+	rootNamespace->declPrecedingNodes.push_back(
+		std::make_shared<cxxast::IncludeDirective>(
+			"slake/runtime.h",
+			true));
+	rootNamespace->declPrecedingNodes.push_back(
+		std::make_shared<cxxast::IncludeDirective>(
+			"slake/aot/context.h",
+			true));
+	rootNamespace->declTrailingNodes.push_back(
+		std::make_shared<cxxast::Directive>(
+			"endif",
+			std::vector<std::shared_ptr<cxxast::Expr>>{}));
 
 	rootNamespace->defPrecedingNodes.push_back(
 		std::make_shared<cxxast::IncludeDirective>(
 			std::string(headerPath),
 			isUserIncludeSystem));
 
-	return { includeGuardWrapper, rootNamespace };
+	return rootNamespace;
 }

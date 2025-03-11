@@ -124,8 +124,8 @@ int main(int argc, char **argv) {
 
 				auto result = bc2cxxCompiler.compile(mod.get());
 
-				bc2cxxCompiler.dumpAstNode(ohs, result.first, bc2cxx::BC2CXX::ASTDumpMode::Header);
-				bc2cxxCompiler.dumpAstNode(oss, result.second, bc2cxx::BC2CXX::ASTDumpMode::Source);
+				bc2cxxCompiler.dumpAstNode(ohs, result, bc2cxx::BC2CXX::ASTDumpMode::Header);
+				bc2cxxCompiler.dumpAstNode(oss, result, bc2cxx::BC2CXX::ASTDumpMode::Source);
 
 				is.close();
 				// os.close();

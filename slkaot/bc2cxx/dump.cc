@@ -18,6 +18,12 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 			}
 			break;
 		}
+		case ASTDumpMode::PrecedingDecl: {
+			for (size_t i = 0; i < astNode->precedingDeclPrecedingNodes.size(); ++i) {
+				_dumpAstNode(os, astNode->precedingDeclPrecedingNodes[i], dumpMode, indentLevel);
+			}
+			break;
+		}
 		default:
 			std::terminate();
 	}
@@ -82,6 +88,9 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 		}
 		case cxxast::NodeKind::Fn: {
 			std::shared_ptr<cxxast::Fn> overloading = std::static_pointer_cast<cxxast::Fn>(astNode);
+
+			if (dumpMode == ASTDumpMode::PrecedingDecl)
+				break;
 
 			if (!overloading->body.size()) {
 				if (dumpMode != ASTDumpMode::Header)
@@ -180,13 +189,16 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 
 				os << std::string(indentLevel, '\t');
 				os << "};\n";
-			} else {
+			} else if (dumpMode == ASTDumpMode::Source) {
 				for (auto &i : structNode->publicMembers) {
 					_dumpAstNode(os, i.second, dumpMode, indentLevel + 1);
 				}
 				for (auto &i : structNode->protectedMembers) {
 					_dumpAstNode(os, i.second, dumpMode, indentLevel + 1);
 				}
+			} else if (dumpMode == ASTDumpMode::PrecedingDecl) {
+				os << std::string(indentLevel, '\t');
+				os << "struct " << structNode->name << ";\n";
 			}
 
 			break;
@@ -231,7 +243,7 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 
 				os << std::string(indentLevel, '\t');
 				os << "};\n";
-			} else {
+			} else if (dumpMode == ASTDumpMode::Source) {
 				if (!classNode->genericParams.size()) {
 					for (auto &i : classNode->protectedMembers) {
 						_dumpAstNode(os, i.second, dumpMode, indentLevel);
@@ -240,6 +252,9 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 						_dumpAstNode(os, i.second, dumpMode, indentLevel);
 					}
 				}
+			} else if (dumpMode == ASTDumpMode::PrecedingDecl) {
+				os << std::string(indentLevel, '\t');
+				os << "class " << classNode->name << ";\n";
 			}
 
 			break;
@@ -247,7 +262,7 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 		case cxxast::NodeKind::Namespace: {
 			std::shared_ptr<cxxast::Namespace> namespaceNode = std::static_pointer_cast<cxxast::Namespace>(astNode);
 
-			if (dumpMode == ASTDumpMode::Header) {
+			if ((dumpMode == ASTDumpMode::Header) || (dumpMode == ASTDumpMode::PrecedingDecl)) {
 				if (namespaceNode->name.empty()) {
 					for (auto &i : namespaceNode->publicMembers) {
 						_dumpAstNode(os, i.second, dumpMode, indentLevel);
@@ -268,7 +283,7 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 					os << std::string(indentLevel, '\t');
 					os << "}\n";
 				}
-			} else {
+			} else if (dumpMode == ASTDumpMode::Source) {
 				for (auto &i : namespaceNode->publicMembers) {
 					_dumpAstNode(os, i.second, dumpMode, indentLevel);
 				}
@@ -300,7 +315,7 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 				}
 				_dumpAstNode(os, varNode->type, dumpMode, 0);
 				os << " " << varNode->name << ";\n";
-			} else {
+			} else if (dumpMode == ASTDumpMode::Source) {
 				switch (varNode->storageClass) {
 					case cxxast::StorageClass::Unspecified: {
 						std::shared_ptr<cxxast::AbstractModule> parent = varNode->parent.lock();
@@ -596,12 +611,12 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 
 					os << ") {\n";
 
-					for(const auto &i : s->switchCases) {
+					for (const auto &i : s->switchCases) {
 						os << std::string(indentLevel + 1, '\t');
 						os << "case ";
 						_dumpAstNode(os, i.expr, dumpMode, 0);
 						os << ":\n";
-						for(auto j : i.body) {
+						for (auto j : i.body) {
 							_dumpAstNode(os, j, dumpMode, indentLevel + 2);
 						}
 					}
@@ -1151,6 +1166,12 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 		case ASTDumpMode::Source: {
 			for (size_t i = 0; i < astNode->defTrailingNodes.size(); ++i) {
 				_dumpAstNode(os, astNode->defTrailingNodes[i], dumpMode, indentLevel);
+			}
+			break;
+		}
+		case ASTDumpMode::PrecedingDecl: {
+			for (size_t i = 0; i < astNode->precedingDeclTrailingNodes.size(); ++i) {
+				_dumpAstNode(os, astNode->precedingDeclTrailingNodes[i], dumpMode, indentLevel);
 			}
 			break;
 		}

@@ -11,7 +11,8 @@ namespace slake {
 			class BC2CXX {
 			public:
 				enum class ASTDumpMode {
-					Header = 0,
+					PrecedingDecl = 0,
+					Header,
 					Source
 				};
 
@@ -100,7 +101,7 @@ namespace slake {
 						vregInfo.at(reg).isLoadInsResult = true;
 					}
 
-					SLAKE_API bool allocRecycledReg(BC2CXX &bc2cxx, const opti::ProgramAnalyzedInfo &analyzedInfo, uint32_t reg, const Type &type);
+					bool allocRecycledReg(BC2CXX &bc2cxx, const opti::ProgramAnalyzedInfo &analyzedInfo, uint32_t reg, const Type &type);
 
 					SLAKE_FORCEINLINE void resetForCompilation() {
 						vregInfo.clear();
@@ -286,9 +287,11 @@ namespace slake {
 				std::shared_ptr<cxxast::TypeName> compileParamType(CompileContext &compileContext, const Type &type);
 				std::shared_ptr<cxxast::Fn> compileFnOverloading(CompileContext &compileContext, FnOverloadingObject *fnOverloadingObject);
 				void recompileFnOverloading(CompileContext &compileContext, std::shared_ptr<cxxast::Fn> fnOverloading);
+				void recompileRegularFnOverloading(CompileContext &compileContext, std::shared_ptr<cxxast::Fn> fnOverloading);
+				void recompileGeneratorFnOverloading(CompileContext &compileContext, std::shared_ptr<cxxast::Fn> fnOverloading);
 				std::shared_ptr<cxxast::Class> compileClass(CompileContext &compileContext, ClassObject *moduleObject);
 				void compileModule(CompileContext &compileContext, ModuleObject *moduleObject);
-				std::pair<std::shared_ptr<cxxast::IfndefDirective>, std::shared_ptr<cxxast::Namespace>> compile(ModuleObject *moduleObject);
+				std::shared_ptr<cxxast::Namespace> compile(ModuleObject *moduleObject);
 
 				void dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> astNode, ASTDumpMode dumpMode);
 			};

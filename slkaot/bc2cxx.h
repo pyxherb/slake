@@ -66,7 +66,7 @@ namespace slake {
 					std::map<uint32_t, std::set<uint32_t>> recyclableRegs;
 					std::set<uint32_t> recycledRegs;
 					std::set<HostObjectRef<>> mappedObjects;
-					std::vector<GeneratorLocalVarInfo> generatorLocalVarInfo;
+					std::map<uint32_t, GeneratorLocalVarInfo> generatorLocalVarInfo;
 					size_t estimatedStackSize = 0;
 					bool isGenerator = false;
 
@@ -272,7 +272,6 @@ namespace slake {
 				std::string mangleRegLocalVarName(uint32_t idxReg);
 				std::string mangleArgListLocalVarName(uint32_t idxReg);
 				std::string mangleLocalVarName(uint32_t idxReg);
-				std::string mangleGeneratorLocalVarName(uint32_t idxReg, int version);
 				std::string mangleParamName(uint32_t idxArg);
 				std::string mangleRefForTypeName(const peff::DynArray<IdRefEntry> &entries);
 				std::string mangleTypeName(const Type &type);

@@ -6,7 +6,7 @@ SLAKE_API bool slake::StringObject::_setData(const char *str, size_t size) {
 	if (!size)
 		data.clear();
 	else {
-		peff::String s;
+		peff::String s(&associatedRuntime->globalHeapPoolAlloc);
 
 		if (!s.resize(size))
 			return false;
@@ -22,7 +22,7 @@ SLAKE_API slake::StringObject::StringObject(Runtime *rt, peff::String &&s) : Obj
 	data = std::move(s);
 }
 
-SLAKE_API StringObject::StringObject(const StringObject &x, bool &succeededOut) : Object(x) {
+SLAKE_API StringObject::StringObject(const StringObject &x, bool &succeededOut) : Object(x), data(&x.associatedRuntime->globalHeapPoolAlloc) {
 	if (!_setData(x.data.data(), x.data.size())) {
 		succeededOut = false;
 		return;

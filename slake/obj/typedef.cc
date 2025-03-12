@@ -67,7 +67,7 @@ SLAKE_API FnTypeDefObject::FnTypeDefObject(Runtime *rt, const Type &returnType, 
 	: Object(rt), returnType(returnType), paramTypes(std::move(paramTypes)) {
 }
 
-SLAKE_API FnTypeDefObject::FnTypeDefObject(const FnTypeDefObject &x, bool &succeededOut) : Object(x) {
+SLAKE_API FnTypeDefObject::FnTypeDefObject(const FnTypeDefObject &x, bool &succeededOut) : Object(x), paramTypes(&x.associatedRuntime->globalHeapPoolAlloc) {
 	returnType = x.returnType.duplicate(succeededOut);
 	if (!succeededOut) {
 		return;

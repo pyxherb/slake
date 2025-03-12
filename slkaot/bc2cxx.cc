@@ -800,7 +800,7 @@ void BC2CXX::compileModule(CompileContext &compileContext, ModuleObject *moduleO
 	if (auto p = getMappedAstNode(moduleObject); p)
 		return;
 
-	peff::DynArray<IdRefEntry> fullModuleName;
+	peff::DynArray<IdRefEntry> fullModuleName(peff::getDefaultAlloc());
 	if (!compileContext.runtime->getFullRef(peff::getDefaultAlloc(), moduleObject, fullModuleName)) {
 		throw std::bad_alloc();
 	}
@@ -887,7 +887,7 @@ std::shared_ptr<cxxast::Namespace> BC2CXX::compile(ModuleObject *moduleObject) {
 	std::string headerPath;
 	std::string includeGuardName;
 
-	peff::DynArray<IdRefEntry> fullModuleName;
+	peff::DynArray<IdRefEntry> fullModuleName(peff::getDefaultAlloc());
 	if (!cc.runtime->getFullRef(peff::getDefaultAlloc(), moduleObject, fullModuleName)) {
 		throw std::bad_alloc();
 	}

@@ -50,6 +50,7 @@ SLAKE_API FnOverloadingObject::FnOverloadingObject(
 	  access(access),
 	  genericParams(&fnObject->associatedRuntime->globalHeapPoolAlloc),
 	  mappedGenericArgs(&fnObject->associatedRuntime->globalHeapPoolAlloc),
+	  specializationArgs(&fnObject->associatedRuntime->globalHeapPoolAlloc),
 	  paramTypes(std::move(paramTypes)),
 	  returnType(returnType),
 	  overloadingFlags(flags) {
@@ -59,7 +60,8 @@ SLAKE_API FnOverloadingObject::FnOverloadingObject(const FnOverloadingObject &ot
 	: Object(other),
 	  genericParams(&other.associatedRuntime->globalHeapPoolAlloc),
 	  mappedGenericArgs(&other.associatedRuntime->globalHeapPoolAlloc),
-	  paramTypes(&other.associatedRuntime->globalHeapPoolAlloc) {
+	  paramTypes(&other.associatedRuntime->globalHeapPoolAlloc),
+	  specializationArgs(&other.associatedRuntime->globalHeapPoolAlloc) {
 	fnObject = other.fnObject;
 
 	access = other.access;
@@ -102,9 +104,11 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(
 		  std::move(paramTypes),
 		  returnType,
 		  flags),
-	  nRegisters(nRegisters) {}
+	  nRegisters(nRegisters),
+	  sourceLocDescs(&fnObject->associatedRuntime->globalHeapPoolAlloc),
+	  instructions(&fnObject->associatedRuntime->globalHeapPoolAlloc) {}
 
-SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFnOverloadingObject &other, bool &succeededOut) : FnOverloadingObject(other, succeededOut) {
+SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFnOverloadingObject &other, bool &succeededOut) : FnOverloadingObject(other, succeededOut), sourceLocDescs(&other.associatedRuntime->globalHeapPoolAlloc), instructions(&other.associatedRuntime->globalHeapPoolAlloc) {
 	if (succeededOut) {
 		if (!peff::copyAssign(sourceLocDescs, other.sourceLocDescs)) {
 			succeededOut = false;
@@ -305,10 +309,10 @@ SLAKE_API void slake::NativeFnOverloadingObject::dealloc() {
 	peff::destroyAndRelease<NativeFnOverloadingObject>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
-SLAKE_API FnObject::FnObject(Runtime *rt) : MemberObject(rt) {
+SLAKE_API FnObject::FnObject(Runtime *rt) : MemberObject(rt), overloadings(&rt->globalHeapPoolAlloc) {
 }
 
-SLAKE_API FnObject::FnObject(const FnObject &x, bool &succeededOut) : MemberObject(x, succeededOut) {
+SLAKE_API FnObject::FnObject(const FnObject &x, bool &succeededOut) : MemberObject(x, succeededOut), overloadings(&x.associatedRuntime->globalHeapPoolAlloc) {
 	if (succeededOut) {
 		for (auto i : x.overloadings) {
 			FnOverloadingObject *ol = i->duplicate();

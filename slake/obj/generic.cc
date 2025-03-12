@@ -2,7 +2,7 @@
 
 using namespace slake;
 
-SLAKE_API GenericParam::GenericParam() {}
+SLAKE_API GenericParam::GenericParam(): name(nullptr), interfaces(nullptr) { std::terminate(); }
 SLAKE_API GenericParam::GenericParam(peff::Alloc *selfAllocator) : name(selfAllocator), interfaces(selfAllocator) {
 }
 

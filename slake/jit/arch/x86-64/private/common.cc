@@ -42,6 +42,18 @@ static const RegisterId _s_xmmRegs[] = {
 	REG_XMM15,
 };
 
+SLAKE_API JITCompileContext::JITCompileContext(Runtime *runtime)
+	: nativeInstructions(&runtime->globalHeapPoolAlloc),
+	  virtualRegStates(&runtime->globalHeapPoolAlloc),
+	  localVarStates(&runtime->globalHeapPoolAlloc),
+	  regRecycleBoundaries(&runtime->globalHeapPoolAlloc),
+	  freeStackSpaces(&runtime->globalHeapPoolAlloc),
+	  labelOffsets(&runtime->globalHeapPoolAlloc) {
+	for(size_t i = 0 ; i < REG_MAX ; ++i) {
+		phyRegStates[i].savingInfo.moveFrom(peff::List<PhysicalRegSavingInfo>(&runtime->globalHeapPoolAlloc));
+	}
+}
+
 SLAKE_API InternalExceptionPointer JITCompileContext::pushPrologStackOpIns() {
 	SLAKE_RETURN_IF_EXCEPT(checkStackPointerOnProlog(sizeof(uint64_t) * 11));
 

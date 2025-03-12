@@ -99,7 +99,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 SLAKE_API std::string Runtime::getFullName(const MemberObject *v) const {
 	std::string s;
 
-	peff::DynArray<IdRefEntry> fullIdRef;
+	peff::DynArray<IdRefEntry> fullIdRef(&globalHeapPoolAlloc);
 	if (!getFullRef(peff::getDefaultAlloc(), v, fullIdRef))
 		throw std::bad_alloc();
 

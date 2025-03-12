@@ -112,7 +112,7 @@ std::string BC2CXX::mangleTypeName(const Type &type) {
 			} else {
 				HostObjectRef<MemberObject> id = (MemberObject *)type.getCustomTypeExData();
 
-				peff::DynArray<IdRefEntry> entries;
+				peff::DynArray<IdRefEntry> entries(peff::getDefaultAlloc());
 				if (!id->associatedRuntime->getFullRef(peff::getDefaultAlloc(), id.get(), entries))
 					throw std::bad_alloc();
 

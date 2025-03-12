@@ -14,7 +14,7 @@ namespace slake {
 		peff::DynArray<Type> paramTypes;
 		bool hasVarArg;
 
-		SLAKE_FORCEINLINE IdRefEntry() { std::terminate(); }
+		SLAKE_FORCEINLINE IdRefEntry() : name(nullptr), genericArgs(nullptr), paramTypes(nullptr) { std::terminate(); }
 		SLAKE_API IdRefEntry(peff::Alloc *selfAllocator);
 		SLAKE_API IdRefEntry(peff::String &&name,
 			GenericArgList &&genericArgs,

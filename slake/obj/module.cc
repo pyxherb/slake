@@ -3,12 +3,12 @@
 using namespace slake;
 
 SLAKE_API ModuleObject::ModuleObject(Runtime *rt, ScopeUniquePtr &&scope, AccessModifier access)
-	: MemberObject(rt), scope(scope.release()), fieldRecords(&rt->globalHeapPoolAlloc) {
+	: MemberObject(rt), scope(scope.release()), fieldRecords(&rt->globalHeapPoolAlloc), fieldRecordIndices(&rt->globalHeapPoolAlloc), imports(&rt->globalHeapPoolAlloc), unnamedImports(&rt->globalHeapPoolAlloc) {
 	this->scope->owner = this;
 	this->accessModifier = access;
 }
 
-SLAKE_API ModuleObject::ModuleObject(const ModuleObject &x, bool &succeededOut) : MemberObject(x, succeededOut), fieldRecords(&x.associatedRuntime->globalHeapPoolAlloc), fieldRecordIndices(&x.associatedRuntime->globalHeapPoolAlloc) {
+SLAKE_API ModuleObject::ModuleObject(const ModuleObject &x, bool &succeededOut) : MemberObject(x, succeededOut), fieldRecords(&x.associatedRuntime->globalHeapPoolAlloc), fieldRecordIndices(&x.associatedRuntime->globalHeapPoolAlloc), imports(&x.associatedRuntime->globalHeapPoolAlloc), unnamedImports(&x.associatedRuntime->globalHeapPoolAlloc) {
 	if (succeededOut) {
 		if (!peff::copyAssign(fieldRecords, x.fieldRecords)) {
 			succeededOut = false;

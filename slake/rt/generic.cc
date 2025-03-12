@@ -26,7 +26,7 @@ SLAKE_API InternalExceptionPointer Runtime::setGenericCache(const Object *object
 	auto &cacheTable = _genericCacheDir.at(object);
 
 	if (!cacheTable.contains(genericArgs)) {
-		GenericArgList copiedGenericArgs;
+		GenericArgList copiedGenericArgs(&globalHeapPoolAlloc);
 		if (!peff::copy(copiedGenericArgs, genericArgs)) {
 			return OutOfMemoryError::alloc();
 		}
@@ -40,7 +40,7 @@ SLAKE_API InternalExceptionPointer Runtime::setGenericCache(const Object *object
 		cacheTable.at(genericArgs) = std::move(copiedInstantiatedObject);
 	}
 	{
-		GenericArgList copiedGenericArgList;
+		GenericArgList copiedGenericArgList(&globalHeapPoolAlloc);
 		if (!peff::copy(copiedGenericArgList, genericArgs)) {
 			return OutOfMemoryError::alloc();
 		}

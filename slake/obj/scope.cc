@@ -59,7 +59,8 @@ SLAKE_API Scope *Scope::duplicate() {
 
 SLAKE_API MethodTable::MethodTable(peff::Alloc *selfAllocator)
 	: selfAllocator(selfAllocator),
-	  methods(selfAllocator) {
+	  methods(selfAllocator),
+	  nativeDestructors(selfAllocator) {
 }
 
 SLAKE_API FnObject *MethodTable::getMethod(const std::string_view &name) {

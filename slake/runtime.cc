@@ -38,7 +38,10 @@ SLAKE_API void CountablePoolAlloc::release(void *p, size_t size, size_t alignmen
 
 SLAKE_API Runtime::Runtime(peff::Alloc *upstream, RuntimeFlags flags)
 	: globalHeapPoolAlloc(upstream),
-	  _flags(flags | _RT_INITING) {
+	  _flags(flags | _RT_INITING),
+	  _genericCacheLookupTable(&globalHeapPoolAlloc),
+	  _genericCacheDir(&globalHeapPoolAlloc),
+	  createdObjects(&globalHeapPoolAlloc) {
 	_rootObject = RootObject::alloc(this);
 	_flags &= ~_RT_INITING;
 }

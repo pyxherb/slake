@@ -236,7 +236,7 @@ InternalExceptionPointer slake::compileRegularFn(RegularFnOverloadingObject *fn,
 	slake::CodePage *codePage;
 	size_t size;
 
-	JITCompileContext compileContext;
+	JITCompileContext compileContext(fn->associatedRuntime);
 	size_t nIns = fn->instructions.size();
 
 	opti::ProgramAnalyzedInfo analyzedInfo(fn->associatedRuntime);
@@ -274,7 +274,7 @@ InternalExceptionPointer slake::compileRegularFn(RegularFnOverloadingObject *fn,
 	}
 
 	{
-		peff::String labelName;
+		peff::String labelName(&fn->associatedRuntime->globalHeapPoolAlloc);
 		if (!labelName.build("_report_stack_overflow"))
 			return OutOfMemoryError::alloc();
 		SLAKE_RETURN_IF_EXCEPT(compileContext.pushLabel(std::move(labelName)));
@@ -288,7 +288,7 @@ InternalExceptionPointer slake::compileRegularFn(RegularFnOverloadingObject *fn,
 	}
 
 	{
-		peff::String labelName;
+		peff::String labelName(&fn->associatedRuntime->globalHeapPoolAlloc);
 		if (!labelName.build("_report_stack_overflow_on_prolog"))
 			return OutOfMemoryError::alloc();
 		SLAKE_RETURN_IF_EXCEPT(compileContext.pushLabel(std::move(labelName)));

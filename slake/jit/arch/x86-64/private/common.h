@@ -30,7 +30,7 @@ namespace slake {
 
 			struct PhysicalRegState {
 				uint32_t lastVregId;
-				peff::List<PhysicalRegSavingInfo> savingInfo;
+				peff::Uninitialized<peff::List<PhysicalRegSavingInfo>> savingInfo;
 			};
 
 			struct VirtualRegState {
@@ -70,6 +70,7 @@ namespace slake {
 				int32_t jitContextOff;
 				peff::HashMap<peff::String, size_t> labelOffsets;
 
+				SLAKE_API JITCompileContext(Runtime *runtime);
 				[[nodiscard]] SLAKE_API InternalExceptionPointer pushPrologStackOpIns();
 				[[nodiscard]] SLAKE_API InternalExceptionPointer pushEpilogStackOpIns();
 
@@ -120,7 +121,7 @@ namespace slake {
 					sizeOut = sizeof(uint8_t);
 
 					virtualRegStates.at(phyRegStates[reg].lastVregId).saveOffset = lhsRegStackSaveOff;
-					if (!phyRegStates[reg].savingInfo.pushBack({ phyRegStates[reg].lastVregId }))
+					if (!phyRegStates[reg].savingInfo->pushBack({ phyRegStates[reg].lastVregId }))
 						return OutOfMemoryError::alloc();
 
 					return {};
@@ -136,7 +137,7 @@ namespace slake {
 					sizeOut = sizeof(uint16_t);
 
 					virtualRegStates.at(phyRegStates[reg].lastVregId).saveOffset = lhsRegStackSaveOff;
-					if (!phyRegStates[reg].savingInfo.pushBack({ phyRegStates[reg].lastVregId }))
+					if (!phyRegStates[reg].savingInfo->pushBack({ phyRegStates[reg].lastVregId }))
 						return OutOfMemoryError::alloc();
 
 					return {};
@@ -152,7 +153,7 @@ namespace slake {
 					sizeOut = sizeof(uint32_t);
 
 					virtualRegStates.at(phyRegStates[reg].lastVregId).saveOffset = lhsRegStackSaveOff;
-					if (!phyRegStates[reg].savingInfo.pushBack({ phyRegStates[reg].lastVregId }))
+					if (!phyRegStates[reg].savingInfo->pushBack({ phyRegStates[reg].lastVregId }))
 						return OutOfMemoryError::alloc();
 
 					return {};
@@ -168,7 +169,7 @@ namespace slake {
 					sizeOut = sizeof(uint64_t);
 
 					virtualRegStates.at(phyRegStates[reg].lastVregId).saveOffset = lhsRegStackSaveOff;
-					if (!phyRegStates[reg].savingInfo.pushBack({ phyRegStates[reg].lastVregId }))
+					if (!phyRegStates[reg].savingInfo->pushBack({ phyRegStates[reg].lastVregId }))
 						return OutOfMemoryError::alloc();
 
 					return {};
@@ -213,8 +214,8 @@ namespace slake {
 					SLAKE_RETURN_IF_EXCEPT(pushIns(emitMovMemToReg8Ins(reg, MemoryLocation{ REG_RBP, off, REG_MAX, 0 })));
 					stackFree(off, sizeof(uint8_t));
 
-					virtualRegStates.at(phyRegStates[reg].savingInfo.back().vregId).saveOffset = INT32_MIN;
-					phyRegStates[reg].savingInfo.popBack();
+					virtualRegStates.at(phyRegStates[reg].savingInfo->back().vregId).saveOffset = INT32_MIN;
+					phyRegStates[reg].savingInfo->popBack();
 
 					return {};
 				}
@@ -224,8 +225,8 @@ namespace slake {
 					SLAKE_RETURN_IF_EXCEPT(pushIns(emitMovMemToReg16Ins(reg, MemoryLocation{ REG_RBP, off, REG_MAX, 0 })));
 					stackFree(off, sizeof(uint16_t));
 
-					virtualRegStates.at(phyRegStates[reg].savingInfo.back().vregId).saveOffset = INT32_MIN;
-					phyRegStates[reg].savingInfo.popBack();
+					virtualRegStates.at(phyRegStates[reg].savingInfo->back().vregId).saveOffset = INT32_MIN;
+					phyRegStates[reg].savingInfo->popBack();
 
 					return {};
 				}
@@ -235,8 +236,8 @@ namespace slake {
 					SLAKE_RETURN_IF_EXCEPT(pushIns(emitMovMemToReg32Ins(reg, MemoryLocation{ REG_RBP, off, REG_MAX, 0 })));
 					stackFree(off, sizeof(uint32_t));
 
-					virtualRegStates.at(phyRegStates[reg].savingInfo.back().vregId).saveOffset = INT32_MIN;
-					phyRegStates[reg].savingInfo.popBack();
+					virtualRegStates.at(phyRegStates[reg].savingInfo->back().vregId).saveOffset = INT32_MIN;
+					phyRegStates[reg].savingInfo->popBack();
 
 					return {};
 				}
@@ -246,8 +247,8 @@ namespace slake {
 					SLAKE_RETURN_IF_EXCEPT(pushIns(emitMovMemToReg64Ins(reg, MemoryLocation{ REG_RBP, off, REG_MAX, 0 })));
 					stackFree(off, sizeof(uint64_t));
 
-					virtualRegStates.at(phyRegStates[reg].savingInfo.back().vregId).saveOffset = INT32_MIN;
-					phyRegStates[reg].savingInfo.popBack();
+					virtualRegStates.at(phyRegStates[reg].savingInfo->back().vregId).saveOffset = INT32_MIN;
+					phyRegStates[reg].savingInfo->popBack();
 
 					return {};
 				}

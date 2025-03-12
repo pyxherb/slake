@@ -86,7 +86,7 @@ InternalExceptionPointer slake::opti::evalObjectType(
 				case ObjectKind::FnOverloading: {
 					FnOverloadingObject *fnOverloadingObject = (FnOverloadingObject *)object;
 
-					peff::DynArray<Type> paramTypes;
+					peff::DynArray<Type> paramTypes(&analyzeContext.runtime->globalHeapPoolAlloc);
 					if (!(peff::copy(paramTypes, fnOverloadingObject->paramTypes))) {
 						return OutOfMemoryError::alloc();
 					}

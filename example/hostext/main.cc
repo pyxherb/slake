@@ -179,7 +179,7 @@ int main(int argc, char **argv) {
 			throw std::bad_alloc();
 
 		auto fn = (slake::FnObject *)mod->getMember("main").asObject.instanceObject;
-		auto overloading = fn->getOverloading({});
+		auto overloading = fn->getOverloading(peff::DynArray<slake::Type>(peff::getDefaultAlloc()));
 
 		slake::opti::ProgramAnalyzedInfo analyzedInfo(rt.get());
 		if (auto e = slake::opti::analyzeProgramInfo(rt.get(), (slake::RegularFnOverloadingObject *)overloading, analyzedInfo, hostRefHolder);

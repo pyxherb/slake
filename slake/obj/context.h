@@ -24,7 +24,7 @@ namespace slake {
 			size_t stackBase);
 		// Default constructor is required by resize() methods from the
 		// containers.
-		SLAKE_FORCEINLINE MinorFrame() {
+		SLAKE_FORCEINLINE MinorFrame(): exceptHandlers(nullptr) {
 			abort();
 		}
 	};
@@ -61,7 +61,7 @@ namespace slake {
 		SLAKE_API MajorFrame(Runtime *rt, Context *context);
 		// Default constructor is required by resize() methods from the
 		// containers.
-		SLAKE_FORCEINLINE MajorFrame() {
+		SLAKE_FORCEINLINE MajorFrame(): minorFrames(nullptr), argStack(nullptr), nextArgStack(nullptr) {
 			abort();
 		}
 		SLAKE_API ~MajorFrame();

@@ -60,6 +60,7 @@ SLAKE_API Scope *Scope::duplicate() {
 SLAKE_API MethodTable::MethodTable(peff::Alloc *selfAllocator)
 	: selfAllocator(selfAllocator),
 	  methods(selfAllocator),
+	  destructors(selfAllocator),
 	  nativeDestructors(selfAllocator) {
 }
 
@@ -83,6 +84,9 @@ SLAKE_API MethodTable *MethodTable::duplicate() {
 		return nullptr;
 
 	if (!peff::copyAssign(newMethodTable->methods, methods)) {
+		return nullptr;
+	}
+	if (!peff::copyAssign(newMethodTable->destructors, destructors)) {
 		return nullptr;
 	}
 	if (!peff::copyAssign(newMethodTable->nativeDestructors, nativeDestructors)) {

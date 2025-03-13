@@ -22,10 +22,24 @@ SLAKE_API void Runtime::GCHeaplessWalkContext::pushInstanceObject(Object *object
 	if (!object)
 		return;
 	switch (object->gcInfo.heapless.gcStatus) {
-		case ObjectGCStatus::Unwalked:
+		case ObjectGCStatus::Unwalked: {
+			InstanceObject *instance = (InstanceObject *)object;
+
+			if (auto mt = instance->_class->cachedInstantiatedMethodTable; mt) {
+				if (mt->destructors.size()) {
+					if (!(object->_flags & VF_DESTRUCTED)) {
+						object->gcInfo.heapless.nextDestructible = destructibleList;
+						destructibleList = (InstanceObject *)object;
+						pushObject(object);
+						pushObject(instance->_class);
+					}
+				}
+			}
+
 			object->gcInfo.heapless.nextInstance = instanceList;
 			instanceList = object;
 			break;
+		}
 		case ObjectGCStatus::ReadyToWalk:
 			break;
 		case ObjectGCStatus::Walked:
@@ -49,6 +63,9 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, MethodTa
 		return;
 	for (auto i = methodTable->methods.begin(); i != methodTable->methods.end(); ++i) {
 		context.pushObject(i.value());
+	}
+	for (auto i : methodTable->destructors) {
+		context.pushObject(i);
 	}
 }
 
@@ -406,19 +423,26 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Context 
 }
 
 SLAKE_API void Runtime::_gcHeapless() {
+rescan:
 	GCHeaplessWalkContext context;
 
 	for (auto i : createdObjects) {
 		i->_flags |= VF_GCREADY;
 		i->gcInfo.heapless.gcStatus = ObjectGCStatus::Unwalked;
 		i->gcInfo.heapless.next = nullptr;
+		i->gcInfo.heapless.nextInstance = nullptr;
+		i->gcInfo.heapless.nextDestructible = nullptr;
+	}
+
+	for (auto i : createdObjects) {
 		if (i->hostRefCount) {
 			context.pushObject(i);
 		}
 		switch (i->getKind()) {
-			case ObjectKind::Instance:
+			case ObjectKind::Instance: {
 				context.pushInstanceObject(i);
 				break;
+			}
 		}
 	}
 
@@ -450,33 +474,34 @@ SLAKE_API void Runtime::_gcHeapless() {
 		// Walk contexts for each thread.
 		for (auto &i : activeContexts)
 			context.pushObject(i.second);
+	}
 
-		while (context.walkableList) {
-			Object *i = context.walkableList;
-			context.walkableList = nullptr;
+	while (context.walkableList) {
+		Object *i = context.walkableList;
+		context.walkableList = nullptr;
 
-			while (i) {
-				Object *next = i->gcInfo.heapless.next;
-				switch (i->gcInfo.heapless.gcStatus) {
-					case ObjectGCStatus::Unwalked:
-						assert(false);
-						break;
-					case ObjectGCStatus::ReadyToWalk:
-						_gcWalkHeapless(context, i);
-						break;
-					case ObjectGCStatus::Walked:
-						assert(false);
-						break;
-				}
-				i->gcInfo.heapless.next = nullptr;
-				i = next;
+		while (i) {
+			Object *next = i->gcInfo.heapless.next;
+			switch (i->gcInfo.heapless.gcStatus) {
+				case ObjectGCStatus::Unwalked:
+					assert(false);
+					break;
+				case ObjectGCStatus::ReadyToWalk:
+					_gcWalkHeapless(context, i);
+					break;
+				case ObjectGCStatus::Walked:
+					assert(false);
+					break;
 			}
+			i->gcInfo.heapless.next = nullptr;
+			i = next;
 		}
 	}
 
 	// Delete instance objects first before the class objects are destroyed.
 	for (Object *i = context.instanceList, *next; i; i = next) {
-		next = i->gcInfo.heapless.next;
+		next = i->gcInfo.heapless.nextInstance;
+
 		switch (i->gcInfo.heapless.gcStatus) {
 			case ObjectGCStatus::Unwalked:
 				if (i->_flags & VF_GCREADY) {
@@ -489,9 +514,14 @@ SLAKE_API void Runtime::_gcHeapless() {
 				assert(false);
 				break;
 			case ObjectGCStatus::Walked:
-				i->gcInfo.heapless.gcStatus = ObjectGCStatus::Unwalked;
+				i->gcInfo.heapless.nextInstance = nullptr;
 				break;
 		}
+	}
+
+	if ((destructibleList = context.destructibleList)) {
+		_destructDestructibleObjects();
+		goto rescan;
 	}
 
 	// Delete unreachable objects.

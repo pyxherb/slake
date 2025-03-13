@@ -23,7 +23,6 @@ namespace slake {
 	public:
 		peff::RcObjectPtr<peff::Alloc> upstream;
 		size_t szAllocated = 0;
-		peff::Map<void *, size_t> allocatedBlockSizes;
 
 		SLAKE_API CountablePoolAlloc(peff::Alloc *upstream);
 
@@ -77,6 +76,8 @@ namespace slake {
 	constexpr static NewClassInstanceFlags
 		_NEWCLSINST_PARENT = 0x80;
 
+	typedef void (*UncaughtExceptionHandler)(InternalExceptionPointer &&exception);
+
 	class Runtime final {
 	public:
 		struct GenericInstantiationContext {
@@ -127,6 +128,8 @@ namespace slake {
 		/// @brief Module locator for importing.
 		ModuleLocatorFn _moduleLocator;
 
+		UncaughtExceptionHandler _uncaughtExceptionHandler = nullptr;
+
 		struct LoaderContext {
 			std::istream &fs;
 			Object *ownerObject;
@@ -150,10 +153,13 @@ namespace slake {
 		struct GCHeaplessWalkContext {
 			Object *walkableList = nullptr;
 			Object *instanceList = nullptr;
+			InstanceObject *destructibleList = nullptr;
 
 			SLAKE_API void pushObject(Object *object);
 			SLAKE_API void pushInstanceObject(Object *object);
 		};
+
+		InstanceObject *destructibleList = nullptr;
 
 		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, Scope *scope);
 		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, MethodTable *methodTable);
@@ -163,6 +169,8 @@ namespace slake {
 		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, Object *i);
 		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, Context &i);
 		SLAKE_API void _gcHeapless();
+
+		SLAKE_API void _destructDestructibleObjects();
 
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(Type &type, GenericInstantiationContext &instantiationContext);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(Value &value, GenericInstantiationContext &instantiationContext);

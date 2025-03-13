@@ -26,34 +26,48 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 						overloadings.push_back(j);
 				}
 
-				if (overloadings.size()) {
-					// Link the method with method inherited from the parent.
-					HostObjectRef<FnObject> fn;
-					if (!methodTable->methods.contains(it.key())) {
-						methodTable->methods.insert(it.value()->name, nullptr);
-					}
-					auto &methodSlot = methodTable->methods.at(it.key());
+				if (it.key() == "delete") {
+					peff::DynArray<Type> destructorParamTypes(&globalHeapPoolAlloc);
+					GenericParamList destructorGenericParamList(&globalHeapPoolAlloc);
 
-					if (auto m = methodTable->getMethod(it.key()); m)
-						fn = m;
-					else {
-						fn = FnObject::alloc(this);
-						methodSlot = fn.get();
-					}
-
-					for (auto &j : overloadings) {
-						for (auto k : methodSlot->overloadings) {
-							if (isDuplicatedOverloading(
-									k,
-									j->paramTypes,
-									j->genericParams,
-									j->overloadingFlags & OL_VARG)) {
-								methodSlot->overloadings.remove(k);
-								break;
+					for(auto j : overloadings) {
+						if(isDuplicatedOverloading(j, destructorParamTypes, destructorGenericParamList, false)) {
+							if(!methodTable->destructors.pushFront(+j)) {
+								return OutOfMemoryError::alloc();
 							}
+							break;
 						}
-						if(!methodSlot->overloadings.insert(+j))
-							return OutOfMemoryError::alloc();
+					}
+				} else {
+					if (overloadings.size()) {
+						// Link the method with method inherited from the parent.
+						HostObjectRef<FnObject> fn;
+						if (!methodTable->methods.contains(it.key())) {
+							methodTable->methods.insert(it.value()->name, nullptr);
+						}
+						auto &methodSlot = methodTable->methods.at(it.key());
+
+						if (auto m = methodTable->getMethod(it.key()); m)
+							fn = m;
+						else {
+							fn = FnObject::alloc(this);
+							methodSlot = fn.get();
+						}
+
+						for (auto &j : overloadings) {
+							for (auto k : methodSlot->overloadings) {
+								if (isDuplicatedOverloading(
+										k,
+										j->paramTypes,
+										j->genericParams,
+										j->overloadingFlags & OL_VARG)) {
+									methodSlot->overloadings.remove(k);
+									break;
+								}
+							}
+							if (!methodSlot->overloadings.insert(+j))
+								return OutOfMemoryError::alloc();
+						}
 					}
 				}
 
@@ -63,7 +77,7 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 	}
 
 	for (auto i : cls->nativeDestructors) {
-		if(!methodTable->nativeDestructors.pushBack(+i))
+		if (!methodTable->nativeDestructors.pushBack(+i))
 			return OutOfMemoryError::alloc();
 	}
 
@@ -160,12 +174,12 @@ SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForClass(ClassObject
 			std::terminate();
 		}
 
-		if(!cls->cachedFieldInitValues.pushBack(readVarUnsafe(EntityRef::makeFieldRef(cls, i))))
+		if (!cls->cachedFieldInitValues.pushBack(readVarUnsafe(EntityRef::makeFieldRef(cls, i))))
 			return OutOfMemoryError::alloc();
 
-		if(!objectLayout->fieldNameMap.insert(fieldRecord.name, objectLayout->fieldRecords.size()))
+		if (!objectLayout->fieldNameMap.insert(fieldRecord.name, objectLayout->fieldRecords.size()))
 			return OutOfMemoryError::alloc();
-		if(!objectLayout->fieldRecords.pushBack(std::move(fieldRecord)))
+		if (!objectLayout->fieldRecords.pushBack(std::move(fieldRecord)))
 			return OutOfMemoryError::alloc();
 		break;
 	}

@@ -1831,8 +1831,8 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 					return {};
 
 				// Pause if the runtime is in GC
-				while (_flags & _RT_INGC)
-					yieldCurrentThread();
+				/*while (_flags & _RT_INGC)
+					yieldCurrentThread();*/
 
 				// Interrupt execution if the thread is explicitly specified to be killed.
 				if (managedThread->status == ThreadStatus::Dead) {

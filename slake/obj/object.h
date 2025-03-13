@@ -18,6 +18,7 @@ namespace slake {
 		VF_WALKED = 0x01,		   // The value has been walked by the garbage collector.
 		VF_ALIAS = 0x02,		   // The value is an alias thus the scope should not be deleted.
 		VF_UNOWNED_VTABLE = 0x04,  // The value does not own the vtable.
+		VF_DESTRUCTED = 0x08,	   // Destructor of the value has been executed.
 		VF_GCREADY = 0x80		   // The object is ready to be GC., for objects created during GC.
 		;
 
@@ -73,6 +74,7 @@ namespace slake {
 				ObjectGCStatus gcStatus;
 				Object *next;
 				Object *nextInstance;
+				InstanceObject *nextDestructible;
 			} heapless;
 		} gcInfo;
 

@@ -4,7 +4,7 @@ using namespace slake;
 
 SLAKE_API CountablePoolAlloc slake::g_countablePoolDefaultAlloc(nullptr);
 
-SLAKE_API CountablePoolAlloc::CountablePoolAlloc(peff::Alloc *upstream) : upstream(upstream), allocatedBlockSizes(upstream) {}
+SLAKE_API CountablePoolAlloc::CountablePoolAlloc(peff::Alloc *upstream) : upstream(upstream) {}
 
 SLAKE_API peff::Alloc *CountablePoolAlloc::getDefaultAlloc() const noexcept {
 	return &g_countablePoolDefaultAlloc;
@@ -20,18 +20,12 @@ SLAKE_API void *CountablePoolAlloc::alloc(size_t size, size_t alignment) noexcep
 
 	szAllocated += size;
 
-	allocatedBlockSizes.insert(std::move(p), std::move(size));
-
 	return p;
 }
 
 SLAKE_API void CountablePoolAlloc::release(void *p, size_t size, size_t alignment) noexcept {
 	assert(size <= szAllocated);
 	upstream->release(p, size, alignment);
-
-	assert(allocatedBlockSizes.at(p) == size);
-
-	allocatedBlockSizes.remove(p);
 
 	szAllocated -= size;
 }
@@ -55,9 +49,9 @@ SLAKE_API Runtime::~Runtime() {
 
 	_flags |= _RT_DEINITING;
 
-	_rootObject = nullptr;
-
 	gc();
+
+	_rootObject = nullptr;
 
 	// No need to delete the root object explicitly.
 

@@ -628,7 +628,7 @@ void BC2CXX::_dumpAstNode(std::ostream &os, std::shared_ptr<cxxast::ASTNode> ast
 						os << std::string(indentLevel + 1, '\t');
 						os << "case ";
 						_dumpAstNode(os, i.expr, dumpMode, 0);
-						os << ":\n";
+						os << ":;\n";
 						for (auto j : i.body) {
 							_dumpAstNode(os, j, dumpMode, indentLevel + 2);
 						}

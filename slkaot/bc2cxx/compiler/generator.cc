@@ -687,27 +687,12 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 							compileValue(compileContext, ins.operands[0]),
 							compileValue(compileContext, ins.operands[1])));
 
-				if (compileContext.allocRecycledReg(*this, programInfo, ins.output.getRegIndex(), outputRegInfo.type)) {
-					curStmtContainer->push_back(
-						std::make_shared<cxxast::ExprStmt>(
-							std::make_shared<cxxast::BinaryExpr>(
-								cxxast::BinaryOp::Assign,
-								std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName)),
-								expr)));
-				} else {
-					std::string &varName = compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName;
-
-					cxxast::VarDefPair varDefPair = {
-						varName,
-						expr
-					};
-
-					compileContext.addStackSize(getLocalVarSizeAndAlignmentInfoOfType(outputRegInfo.type));
-					curStmtContainer->push_back(
-						std::make_shared<cxxast::LocalVarDefStmt>(
-							compileType(compileContext, outputRegInfo.type),
-							std::vector<cxxast::VarDefPair>{ varDefPair }));
-				}
+				curStmtContainer->push_back(
+					std::make_shared<cxxast::ExprStmt>(
+						std::make_shared<cxxast::BinaryExpr>(
+							cxxast::BinaryOp::Assign,
+							compileValue(compileContext, ins.output),
+							expr)));
 				break;
 			}
 			case Opcode::MOD: {
@@ -768,27 +753,12 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 						std::terminate();
 				}
 
-				if (compileContext.allocRecycledReg(*this, programInfo, ins.output.getRegIndex(), outputRegInfo.type)) {
-					curStmtContainer->push_back(
-						std::make_shared<cxxast::ExprStmt>(
-							std::make_shared<cxxast::BinaryExpr>(
-								cxxast::BinaryOp::Assign,
-								std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName)),
-								expr)));
-				} else {
-					std::string &varName = compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName;
-
-					cxxast::VarDefPair varDefPair = {
-						varName,
-						expr
-					};
-
-					compileContext.addStackSize(getLocalVarSizeAndAlignmentInfoOfType(outputRegInfo.type));
-					curStmtContainer->push_back(
-						std::make_shared<cxxast::LocalVarDefStmt>(
-							compileType(compileContext, outputRegInfo.type),
-							std::vector<cxxast::VarDefPair>{ varDefPair }));
-				}
+				curStmtContainer->push_back(
+					std::make_shared<cxxast::ExprStmt>(
+						std::make_shared<cxxast::BinaryExpr>(
+							cxxast::BinaryOp::Assign,
+							compileValue(compileContext, ins.output),
+							expr)));
 				break;
 			}
 			case Opcode::LSH: {
@@ -911,27 +881,12 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 						std::terminate();
 				}
 
-				if (compileContext.allocRecycledReg(*this, programInfo, ins.output.getRegIndex(), outputRegInfo.type)) {
-					curStmtContainer->push_back(
-						std::make_shared<cxxast::ExprStmt>(
-							std::make_shared<cxxast::BinaryExpr>(
-								cxxast::BinaryOp::Assign,
-								std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName)),
-								expr)));
-				} else {
-					std::string &varName = compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName;
-
-					cxxast::VarDefPair varDefPair = {
-						varName,
-						expr
-					};
-
-					compileContext.addStackSize(getLocalVarSizeAndAlignmentInfoOfType(outputRegInfo.type));
-					curStmtContainer->push_back(
-						std::make_shared<cxxast::LocalVarDefStmt>(
-							compileType(compileContext, outputRegInfo.type),
-							std::vector<cxxast::VarDefPair>{ varDefPair }));
-				}
+				curStmtContainer->push_back(
+					std::make_shared<cxxast::ExprStmt>(
+						std::make_shared<cxxast::BinaryExpr>(
+							cxxast::BinaryOp::Assign,
+							compileValue(compileContext, ins.output),
+							expr)));
 				break;
 			}
 			case Opcode::RSH: {
@@ -1054,27 +1009,12 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 						std::terminate();
 				}
 
-				if (compileContext.allocRecycledReg(*this, programInfo, ins.output.getRegIndex(), outputRegInfo.type)) {
-					curStmtContainer->push_back(
-						std::make_shared<cxxast::ExprStmt>(
-							std::make_shared<cxxast::BinaryExpr>(
-								cxxast::BinaryOp::Assign,
-								std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName)),
-								expr)));
-				} else {
-					std::string &varName = compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName;
-
-					cxxast::VarDefPair varDefPair = {
-						varName,
-						expr
-					};
-
-					compileContext.addStackSize(getLocalVarSizeAndAlignmentInfoOfType(outputRegInfo.type));
-					curStmtContainer->push_back(
-						std::make_shared<cxxast::LocalVarDefStmt>(
-							compileType(compileContext, outputRegInfo.type),
-							std::vector<cxxast::VarDefPair>{ varDefPair }));
-				}
+				curStmtContainer->push_back(
+					std::make_shared<cxxast::ExprStmt>(
+						std::make_shared<cxxast::BinaryExpr>(
+							cxxast::BinaryOp::Assign,
+							compileValue(compileContext, ins.output),
+							expr)));
 				break;
 			}
 			case Opcode::CMP: {
@@ -1223,27 +1163,12 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 						std::terminate();
 				}
 
-				if (compileContext.allocRecycledReg(*this, programInfo, ins.output.getRegIndex(), outputRegInfo.type)) {
-					curStmtContainer->push_back(
-						std::make_shared<cxxast::ExprStmt>(
-							std::make_shared<cxxast::BinaryExpr>(
-								cxxast::BinaryOp::Assign,
-								std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName)),
-								expr)));
-				} else {
-					std::string &varName = compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName;
-
-					cxxast::VarDefPair varDefPair = {
-						varName,
-						expr
-					};
-
-					compileContext.addStackSize(getLocalVarSizeAndAlignmentInfoOfType(outputRegInfo.type));
-					curStmtContainer->push_back(
-						std::make_shared<cxxast::LocalVarDefStmt>(
-							compileType(compileContext, outputRegInfo.type),
-							std::vector<cxxast::VarDefPair>{ varDefPair }));
-				}
+				curStmtContainer->push_back(
+					std::make_shared<cxxast::ExprStmt>(
+						std::make_shared<cxxast::BinaryExpr>(
+							cxxast::BinaryOp::Assign,
+							compileValue(compileContext, ins.output),
+							expr)));
 				break;
 			}
 			case Opcode::NOT:
@@ -1272,27 +1197,12 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 							op,
 							compileValue(compileContext, ins.operands[0])));
 
-				if (compileContext.allocRecycledReg(*this, programInfo, ins.output.getRegIndex(), outputRegInfo.type)) {
-					curStmtContainer->push_back(
-						std::make_shared<cxxast::ExprStmt>(
-							std::make_shared<cxxast::BinaryExpr>(
-								cxxast::BinaryOp::Assign,
-								std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName)),
-								expr)));
-				} else {
-					std::string &varName = compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName;
-
-					cxxast::VarDefPair varDefPair = {
-						varName,
-						expr
-					};
-
-					compileContext.addStackSize(getLocalVarSizeAndAlignmentInfoOfType(outputRegInfo.type));
-					curStmtContainer->push_back(
-						std::make_shared<cxxast::LocalVarDefStmt>(
-							compileType(compileContext, outputRegInfo.type),
-							std::vector<cxxast::VarDefPair>{ varDefPair }));
-				}
+				curStmtContainer->push_back(
+					std::make_shared<cxxast::ExprStmt>(
+						std::make_shared<cxxast::BinaryExpr>(
+							cxxast::BinaryOp::Assign,
+							compileValue(compileContext, ins.output),
+							expr)));
 				break;
 			}
 			case Opcode::AT: {
@@ -1332,27 +1242,12 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 						arrayObjectPtrExpr,
 						indexRefExpr });
 
-				if (compileContext.allocRecycledReg(*this, programInfo, ins.output.getRegIndex(), outputRegInfo.type)) {
-					curStmtContainer->push_back(
-						std::make_shared<cxxast::ExprStmt>(
-							std::make_shared<cxxast::BinaryExpr>(
-								cxxast::BinaryOp::Assign,
-								std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName)),
-								expr)));
-				} else {
-					std::string &varName = compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName;
-
-					cxxast::VarDefPair varDefPair = {
-						varName,
-						expr
-					};
-
-					compileContext.addStackSize(getLocalVarSizeAndAlignmentInfoOfType(outputRegInfo.type));
-					curStmtContainer->push_back(
-						std::make_shared<cxxast::LocalVarDefStmt>(
-							compileType(compileContext, outputRegInfo.type),
-							std::vector<cxxast::VarDefPair>{ varDefPair }));
-				}
+				curStmtContainer->push_back(
+					std::make_shared<cxxast::ExprStmt>(
+						std::make_shared<cxxast::BinaryExpr>(
+							cxxast::BinaryOp::Assign,
+							compileValue(compileContext, ins.output),
+							expr)));
 				break;
 			}
 			case Opcode::PUSHARG:
@@ -1388,6 +1283,12 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 					compileContext.addStackSize(info.first * nArgs, info.second);
 				}
 
+				std::shared_ptr<cxxast::BlockStmt> blockStmt = std::make_shared<cxxast::BlockStmt>();
+
+				pushCurStmtContainer();
+
+				curStmtContainer = &blockStmt->body;
+
 				curStmtContainer->push_back(
 					std::make_shared<cxxast::LocalVarDefStmt>(
 						genAnyTypeName(),
@@ -1416,27 +1317,26 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 							// TODO: Pass the stack information
 						})));
 
-				if (ins.output.valueType != ValueType::Undefined) {
-					compileContext.addStackSize(getLocalVarSizeAndAlignmentInfoOfType(programInfo.analyzedRegInfo.at(ins.output.getRegIndex()).type));
-					curStmtContainer->push_back(
-						std::make_shared<cxxast::LocalVarDefStmt>(
-							compileType(compileContext, programInfo.analyzedRegInfo.at(ins.output.getRegIndex()).type),
-							std::vector<cxxast::VarDefPair>{
-								{ mangleArgListLocalVarName(i) } }));
+				popCurStmtContainer();
 
+				curStmtContainer->push_back(blockStmt);
+
+				if (ins.output.valueType != ValueType::Undefined) {
 					curStmtContainer->push_back(std::make_shared<cxxast::ExprStmt>(
 						std::make_shared<cxxast::BinaryExpr>(
 							cxxast::BinaryOp::Assign,
-							std::make_shared<cxxast::IdExpr>(mangleArgListLocalVarName(i)),
-							std::make_shared<cxxast::CallExpr>(
-								std::make_shared<cxxast::BinaryExpr>(
-									cxxast::BinaryOp::PtrAccess,
+							compileValue(compileContext, ins.output),
+							genGetValueDataExpr(
+								programInfo.analyzedRegInfo.at(ins.output.getRegIndex()).type,
+								std::make_shared<cxxast::CallExpr>(
 									std::make_shared<cxxast::BinaryExpr>(
-										cxxast::BinaryOp::MemberAccess,
-										std::make_shared<cxxast::IdExpr>("aotContext"),
-										std::make_shared<cxxast::IdExpr>("hostContext")),
-									std::make_shared<cxxast::IdExpr>("getResult")),
-								std::vector<std::shared_ptr<cxxast::Expr>>{}))));
+										cxxast::BinaryOp::PtrAccess,
+										std::make_shared<cxxast::BinaryExpr>(
+											cxxast::BinaryOp::MemberAccess,
+											std::make_shared<cxxast::IdExpr>("aotContext"),
+											std::make_shared<cxxast::IdExpr>("hostContext")),
+										std::make_shared<cxxast::IdExpr>("getResult")),
+									std::vector<std::shared_ptr<cxxast::Expr>>{})))));
 				}
 
 				break;
@@ -1473,6 +1373,12 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 					compileContext.addStackSize(info.first * nArgs, info.second);
 				}
 
+				std::shared_ptr<cxxast::BlockStmt> blockStmt = std::make_shared<cxxast::BlockStmt>();
+
+				pushCurStmtContainer();
+
+				curStmtContainer = &blockStmt->body;
+
 				curStmtContainer->push_back(
 					std::make_shared<cxxast::LocalVarDefStmt>(
 						genAnyTypeName(),
@@ -1501,27 +1407,26 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 							// TODO: Pass the stack information
 						})));
 
-				if (ins.output.valueType != ValueType::Undefined) {
-					compileContext.addStackSize(getLocalVarSizeAndAlignmentInfoOfType(programInfo.analyzedRegInfo.at(ins.output.getRegIndex()).type));
-					curStmtContainer->push_back(
-						std::make_shared<cxxast::LocalVarDefStmt>(
-							compileType(compileContext, programInfo.analyzedRegInfo.at(ins.output.getRegIndex()).type),
-							std::vector<cxxast::VarDefPair>{
-								{ mangleArgListLocalVarName(i) } }));
+				popCurStmtContainer();
 
+				curStmtContainer->push_back(blockStmt);
+
+				if (ins.output.valueType != ValueType::Undefined) {
 					curStmtContainer->push_back(std::make_shared<cxxast::ExprStmt>(
 						std::make_shared<cxxast::BinaryExpr>(
 							cxxast::BinaryOp::Assign,
-							std::make_shared<cxxast::IdExpr>(mangleArgListLocalVarName(i)),
-							std::make_shared<cxxast::CallExpr>(
-								std::make_shared<cxxast::BinaryExpr>(
-									cxxast::BinaryOp::PtrAccess,
+							compileValue(compileContext, ins.output),
+							genGetValueDataExpr(
+								programInfo.analyzedRegInfo.at(ins.output.getRegIndex()).type,
+								std::make_shared<cxxast::CallExpr>(
 									std::make_shared<cxxast::BinaryExpr>(
-										cxxast::BinaryOp::MemberAccess,
-										std::make_shared<cxxast::IdExpr>("aotContext"),
-										std::make_shared<cxxast::IdExpr>("hostContext")),
-									std::make_shared<cxxast::IdExpr>("getResult")),
-								std::vector<std::shared_ptr<cxxast::Expr>>{}))));
+										cxxast::BinaryOp::PtrAccess,
+										std::make_shared<cxxast::BinaryExpr>(
+											cxxast::BinaryOp::MemberAccess,
+											std::make_shared<cxxast::IdExpr>("aotContext"),
+											std::make_shared<cxxast::IdExpr>("hostContext")),
+										std::make_shared<cxxast::IdExpr>("getResult")),
+									std::vector<std::shared_ptr<cxxast::Expr>>{})))));
 				}
 
 				break;

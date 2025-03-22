@@ -129,7 +129,7 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 	if (importedDefinitions.count(value))
 		return;
 
-	peff::DynArray<slake::IdRefEntry> fullRef;
+	peff::DynArray<slake::IdRefEntry> fullRef(peff::getDefaultAlloc());
 	if (!associatedRuntime->getFullRef(peff::getDefaultAlloc(), value, fullRef))
 		throw std::bad_alloc();
 	auto s = completeModuleNamespaces(toAstIdRef(fullRef));
@@ -149,7 +149,7 @@ void Compiler::importDefinitions(std::shared_ptr<Scope> scope, std::shared_ptr<M
 	if (!parentClassObject)
 		assert(false);
 
-	peff::DynArray<slake::IdRefEntry> ref;
+	peff::DynArray<slake::IdRefEntry> ref(peff::getDefaultAlloc());
 	if (!associatedRuntime->getFullRef(peff::getDefaultAlloc(), parentClassObject, ref))
 		throw std::bad_alloc();
 	std::shared_ptr<CustomTypeNameNode> parentClassTypeName =

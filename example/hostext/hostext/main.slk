@@ -1,8 +1,6 @@
 module hostext;
 
-import {
-	hostext.extfns
-}
+import hostext.extfns;
 
 class TestParent<T> {
 	fn myTest(a: T, b: T) {
@@ -41,12 +39,12 @@ class Test {
 	pub let x: i32;
 	pub let lab: Test;
 
-	pub fn delete() {
+	pub operator delete() {
 		extfns.print("Destructing Test...\n");
 		return;
 	}
 
-	pub fn new(x: i32) {
+	pub operator new(x: i32) {
 		this.x = x;
 		return;
 	}
@@ -74,12 +72,12 @@ class Test {
 class Derived(Test) {
 	pub let y: i32;
 
-	pub fn delete() {
+	pub operator delete() {
 		extfns.print("Destructing Derived...\n");
 		return;
 	}
 
-	pub fn new(y: i32) {
+	pub operator new(y: i32) {
 		this.x = y * 2;
 		this.x = y * 4;
 		return;

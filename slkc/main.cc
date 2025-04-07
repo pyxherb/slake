@@ -1,202 +1,311 @@
-#include <slake/util/debug.h>
+#include "ast/parser.h"
+#include <initializer_list>
+#include <cstdio>
+#include <cstdlib>
 
-#include "compiler/compiler.h"
-#include "decompiler/decompiler.h"
-
-#if SLKC_WITH_LANGUAGE_SERVER
-	#include "server/server.h"
-#endif
-
-#include <filesystem>
-#include <fstream>
-
-using namespace slake::slkc;
-
-class ArgumentError : public std::runtime_error {
-public:
-	inline ArgumentError(std::string msg) : runtime_error(msg){};
-	virtual ~ArgumentError() = default;
+struct OptionMatchContext {
+	const int argc;
+	char **const argv;
+	int i;
+	void *userData;
 };
 
-static inline char *fetchArg(int argc, char **argv, int &i) {
-	if (i >= argc)
-		throw ArgumentError("Missing arguments");
-	return argv[i++];
+struct SingleArgOption;
+
+typedef bool (*ArglessOptionCallback)(const OptionMatchContext &matchContext, const char *option);
+typedef bool (*SingleArgOptionCallback)(const OptionMatchContext &matchContext, const char *option, const char *arg);
+typedef bool (*CustomOptionCallback)(OptionMatchContext &matchContext, const char *option);
+typedef bool (*FallbackOptionCallback)(OptionMatchContext &matchContext, const char *option);
+typedef void (*RequireOptionArgCallback)(const OptionMatchContext &matchContext, const SingleArgOption &option);
+
+struct ArglessOption {
+	const char *name;
+	ArglessOptionCallback callback;
+};
+
+struct SingleArgOption {
+	const char *name;
+	SingleArgOptionCallback callback;
+};
+
+struct CustomOption {
+	const char *name;
+	CustomOptionCallback callback;
+};
+
+using ArglessOptionMap = std::initializer_list<ArglessOption>;
+using SingleArgOptionMap = std::initializer_list<SingleArgOption>;
+using CustomOptionMap = std::initializer_list<CustomOption>;
+
+struct CompiledOptionMap {
+	peff::HashMap<std::string_view, const ArglessOption *> arglessOptions;
+	peff::HashMap<std::string_view, const SingleArgOption *> singleArgOptions;
+	peff::HashMap<std::string_view, const CustomOption *> customOptions;
+	FallbackOptionCallback fallbackOptionCallback;
+	RequireOptionArgCallback requireOptionArgCallback;
+
+	SLAKE_FORCEINLINE CompiledOptionMap(peff::Alloc *alloc, FallbackOptionCallback fallbackOptionCallback, RequireOptionArgCallback requireOptionArgCallback) noexcept : arglessOptions(alloc), singleArgOptions(alloc), customOptions(alloc), fallbackOptionCallback(fallbackOptionCallback), requireOptionArgCallback(requireOptionArgCallback) {}
+};
+
+[[nodiscard]] bool buildOptionMap(
+	CompiledOptionMap &optionMapOut,
+	const ArglessOptionMap &arglessOptions,
+	const SingleArgOptionMap &singleArgOptions,
+	const CustomOptionMap &customOptions) {
+	for (const auto &i : arglessOptions) {
+		if (!optionMapOut.arglessOptions.insert(std::string_view(i.name), &i)) {
+			return false;
+		}
+	}
+
+	for (const auto &i : singleArgOptions) {
+		if (!optionMapOut.singleArgOptions.insert(std::string_view(i.name), &i)) {
+			return false;
+		}
+	}
+
+	for (const auto &i : customOptions) {
+		if (!optionMapOut.customOptions.insert(std::string_view(i.name), &i)) {
+			return false;
+		}
+	}
+
+	return true;
 }
 
-enum class AppAction : uint8_t {
-	Compile = 0,
-	Dump,
-	LanguageServer
-};
-
-std::string srcPath = "", outPath = "";
-
-AppAction action = AppAction::Compile;
-std::deque<std::string> modulePaths;
-uint16_t lspServerPort = 8080;
-
-struct CmdLineAction {
-	const char *options;
-	void (*fn)(int argc, char **argv, int &i);
-};
-
-CmdLineAction cmdLineActions[] = {
-	{ "-I\0"
-	  "--module-path\0",
-		[](int argc, char **argv, int &i) {
-			modulePaths.push_back(fetchArg(argc, argv, i));
-		} },
-	{ "-d\0"
-	  "--dump\0",
-		[](int argc, char **argv, int &i) {
-			action = AppAction::Dump;
-		} },
-	{ "-l\0"
-	  "--no-source-location-info\0",
-		[](int argc, char **argv, int &i) {
-			slake::decompiler::decompilerFlags |= slake::decompiler::DECOMP_SRCLOC;
-		} },
-	{ "-s\0"
-	  "--language-server\0",
-		[](int argc, char **argv, int &i) {
-			action = AppAction::LanguageServer;
-		} },
-	{ "-p\0"
-	  "--server-port\0",
-		[](int argc, char **argv, int &i) {
-			uint32_t port = strtoul(fetchArg(argc, argv, i), nullptr, 10);
-
-			if (port > UINT16_MAX)
-				throw ArgumentError("Invalid port number");
-
-			lspServerPort = port;
-		} }
-};
-
-int main(int argc, char **argv) {
-	slake::util::setupMemoryLeakDetector();
-
-	try {
-		try {
-			for (int i = 1; i < argc;) {
-				std::string arg = fetchArg(argc, argv, i);
-
-				for (uint16_t j = 0; j < sizeof(cmdLineActions) / sizeof(cmdLineActions[0]); j++) {
-					for (auto k = cmdLineActions[j].options; *k; k += strlen(k) + 1)
-						if (!strcmp(k, arg.c_str())) {
-							cmdLineActions[j].fn(argc, argv, i);
-							goto succeed;
-						}
-				}
-
-				srcPath = arg;
-			succeed:;
+[[nodiscard]] bool matchArgs(const CompiledOptionMap &optionMap, int argc, char **argv, void *userData) {
+	OptionMatchContext matchContext = { argc, argv, 0, userData };
+	for (int i = 1; i < argc; ++i) {
+		if (auto it = optionMap.arglessOptions.find(std::string_view(argv[i])); it != optionMap.arglessOptions.end()) {
+			if (!it.value()->callback(matchContext, argv[i])) {
+				return false;
 			}
-		} catch (ArgumentError &e) {
-			fprintf(stderr, "Error: %s\n", e.what());
-			return EINVAL;
+
+			continue;
 		}
 
-		switch (action) {
-			case AppAction::Compile: {
-				if (!srcPath.length()) {
-					fputs("Error: Missing input file\n", stderr);
-					return EINVAL;
-				}
-
-				if (!outPath.length()) {
-					auto i = srcPath.find_last_of('.');
-					if (i == srcPath.npos) {
-						outPath = srcPath + ".slx";
-					} else {
-						outPath = srcPath.substr(0, i) + ".slx";
-					}
-				}
-
-				std::ifstream is;
-				std::ofstream os;
-
-				is.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
-				os.exceptions(std::ios::failbit | std::ios::badbit);
-
-				is.open(srcPath, std::ios::binary);
-				os.open(outPath, std::ios::binary);
-
-				std::unique_ptr<Compiler> compiler = std::make_unique<Compiler>();
-				compiler->modulePaths = modulePaths;
-
-				// Insert a new corresponding source document.
-				compiler->addDoc(srcPath);
-				compiler->curDocName = srcPath;
-				compiler->mainDocName = srcPath;
-
-				try {
-					compiler->compile(is, os);
-				} catch (FatalCompilationError e) {
-					std::cerr << "Error at " << std::to_string(e.message.sourceLocation) << ": " << e.message.msg << std::endl;
-					return -1;
-				}
-
-				bool foundErrors = false;
-				for (auto &i : compiler->sourceDocs.at(compiler->mainDocName)->messages) {
-					const char *msgType = "<Unknown Message Type>";
-					switch (i.type) {
-						case MessageType::Info:
-							msgType = "Info";
-							break;
-						case MessageType::Note:
-							msgType = "Note";
-							break;
-						case MessageType::Warn:
-							msgType = "Warn";
-							break;
-						case MessageType::Error:
-							foundErrors = true;
-							msgType = "error";
-							break;
-					}
-
-					std::cout << msgType << " at " << std::to_string(i.sourceLocation) << ": " << i.msg << std::endl;
-				}
-
-				is.close();
-				os.close();
-
-				if (foundErrors)
-					return -1;
-				break;
+		if (auto it = optionMap.singleArgOptions.find(std::string_view(argv[i])); it != optionMap.singleArgOptions.end()) {
+			const char *opt = argv[i];
+			if (++i == argc) {
+				optionMap.requireOptionArgCallback(matchContext, *it.value());
+				return false;
 			}
-			case AppAction::Dump: {
-				std::ifstream fs(srcPath, std::ios::binary);
 
-				slake::decompiler::decompile(fs, std::cout);
-
-				fs.close();
-				break;
+			if (!it.value()->callback(matchContext, opt, argv[i])) {
+				return false;
 			}
-			case AppAction::LanguageServer:
-#if SLKC_WITH_LANGUAGE_SERVER
-			{
-				printf("Language server started on local port %hu\n", lspServerPort);
 
-				slake::slkc::Server server;
-				server.modulePaths = modulePaths;
+			continue;
+		}
 
-				server.start(lspServerPort);
-
-				break;
+		if (auto it = optionMap.customOptions.find(std::string_view(argv[i])); it != optionMap.customOptions.end()) {
+			if (!it.value()->callback(matchContext, argv[i])) {
+				return false;
 			}
-#else
-				fputs("This version of SLKC is not compiled with language server support", stderr);
-				break;
+
+			continue;
+		}
+
+		if (!optionMap.fallbackOptionCallback(matchContext, argv[i])) {
+			break;
+		}
+	}
+
+	return true;
+}
+
+#define printError(fmt, ...) fprintf(stderr, "Error: " fmt, ##__VA_ARGS__)
+
+const ArglessOptionMap g_arglessOptions = {
+
+};
+
+const SingleArgOptionMap g_singleArgOptions = {
+
+};
+
+const CustomOptionMap g_customOptions = {
+
+};
+
+const char *g_modFileName = nullptr;
+
+void dumpSyntaxError(const slkc::Parser &parser, const slkc::SyntaxError &syntaxError) {
+	const slkc::Token *beginToken = parser.tokenList.at(syntaxError.tokenRange.beginIndex).get();
+	const slkc::Token *endToken = parser.tokenList.at(syntaxError.tokenRange.endIndex).get();
+
+	switch (syntaxError.errorKind) {
+		case slkc::SyntaxErrorKind::OutOfMemory:
+			printError("Syntax error at %zu, %zu: Out of memory\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::SyntaxErrorKind::UnexpectedToken:
+			printError("Syntax error at %zu, %zu: Unexpected token\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::SyntaxErrorKind::ExpectingSingleToken:
+			printError("Syntax error at %zu, %zu: Expecting %s\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1,
+				slkc::getTokenName(std::get<slkc::ExpectingSingleTokenErrorExData>(syntaxError.exData).expectingTokenId));
+			break;
+		case slkc::SyntaxErrorKind::ExpectingTokens: {
+			printError("Syntax error at %zu, %zu: Expecting ",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+
+			const slkc::ExpectingTokensErrorExData &exData = std::get<slkc::ExpectingTokensErrorExData>(syntaxError.exData);
+
+			auto it = exData.expectingTokenIds.begin();
+
+			fprintf(stderr, "%s", slkc::getTokenName(*it));
+
+			while (++it != exData.expectingTokenIds.end()) {
+				fprintf(stderr, " or %s", slkc::getTokenName(*it));
+			}
+
+			fprintf(stderr, "\n");
+			break;
+		}
+		case slkc::SyntaxErrorKind::ExpectingId:
+			printError("Syntax error at %zu, %zu: Expecting an identifier\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::SyntaxErrorKind::ExpectingExpr:
+			printError("Syntax error at %zu, %zu: Expecting an expression\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::SyntaxErrorKind::ExpectingStmt:
+			printError("Syntax error at %zu, %zu: Expecting a statement\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::SyntaxErrorKind::ExpectingDecl:
+			printError("Syntax error at %zu, %zu: Expecting a declaration\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::SyntaxErrorKind::NoMatchingTokensFound:
+			printError("Syntax error at %zu, %zu: Matching token not found\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		default:
+			printError("Syntax error at %zu, %zu: Unknown error (%d)\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1,
+				(int)syntaxError.errorKind);
+			break;
+	}
+}
+
+int main(int argc, char *argv[]) {
+#ifdef _MSC_VER
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
-			default:
-				assert(false);
-		}
-	} catch (std::bad_alloc) {
-		perror("Out of memory");
+
+	CompiledOptionMap optionMap(
+		peff::getDefaultAlloc(),
+		[](OptionMatchContext &matchContext, const char *option) -> bool {
+			if (g_modFileName) {
+				printError("Duplicated target file name");
+				return false;
+			}
+
+			g_modFileName = option;
+
+			return true;
+		},
+		[](const OptionMatchContext &matchContext, const SingleArgOption &option) {
+			printError("Option `%s' requires more arguments", option.name);
+		});
+
+	if (!buildOptionMap(optionMap, g_arglessOptions, g_singleArgOptions, g_customOptions)) {
+		printError("Out of memory");
 		return ENOMEM;
+	}
+
+	if (!matchArgs(optionMap, argc, argv, nullptr)) {
+		return EINVAL;
+	}
+
+	if (!g_modFileName) {
+		printError("Missing target file name");
+		return EINVAL;
+	}
+
+	FILE *fp = fopen(g_modFileName, "rb");
+
+	if (!fp) {
+		printError("Error opening the file");
+		return EIO;
+	}
+
+	peff::ScopeGuard closeFpGuard([fp]() noexcept {
+		fclose(fp);
+	});
+
+	if (fseek(fp, 0, SEEK_END)) {
+		printError("Error evaluating file size");
+		return EIO;
+	}
+
+	long fileSize;
+	if ((fileSize = ftell(fp)) < 1) {
+		printError("Error evaluating file size");
+		return EIO;
+	}
+
+	if (fseek(fp, 0, SEEK_SET)) {
+		printError("Error evaluating file size");
+		return EIO;
+	}
+
+	{
+		auto deleter = [](char *ptr) {
+			free(ptr);
+		};
+		std::unique_ptr<char[], decltype(deleter)> buf((char *)malloc((size_t)fileSize + 1), deleter);
+
+		if (!buf) {
+			printError("Error allocating memory for reading the file");
+			return ENOMEM;
+		}
+
+		(buf.get())[fileSize] = '\0';
+
+		if (fread(buf.get(), fileSize, 1, fp) < 1) {
+			printError("Error reading the file");
+			return EIO;
+		}
+
+		slkc::Lexer lexer(peff::getDefaultAlloc());
+
+		std::string_view sv(buf.get(), fileSize);
+
+		peff::SharedPtr<slkc::Document> document(peff::makeShared<slkc::Document>(peff::getDefaultAlloc()));
+
+		if (auto e = lexer.lex(sv, peff::getDefaultAlloc(), document); e) {
+			printError("Lexical error at %zu, %zu: %s\n", e->location.beginPosition.line + 1, e->location.beginPosition.column + 1, e->message);
+			return -1;
+		}
+
+		peff::NullAlloc nullAlloc;
+		slkc::Parser parser(document, std::move(lexer.tokenList), &nullAlloc, peff::getDefaultAlloc());
+
+		peff::SharedPtr<slkc::ModuleNode> rootModule(peff::makeShared<slkc::ModuleNode>(peff::getDefaultAlloc(), peff::getDefaultAlloc(), document));
+
+		if (auto e = parser.parseProgram(rootModule); e) {
+			dumpSyntaxError(parser, *e);
+		}
+
+		for (auto &i : parser.syntaxErrors) {
+			dumpSyntaxError(parser, i);
+		}
 	}
 
 	return 0;

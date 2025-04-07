@@ -1,0 +1,195 @@
+#ifndef _SLKC_AST_TYPENAME_H_
+#define _SLKC_AST_TYPENAME_H_
+
+#include "expr.h"
+
+namespace slkc {
+	class VoidTypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		SLKC_API VoidTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API VoidTypeNameNode(const VoidTypeNameNode &rhs, peff::Alloc *selfAllocator);
+		SLKC_API virtual ~VoidTypeNameNode();
+	};
+
+	class I8TypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		SLKC_API I8TypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API I8TypeNameNode(const I8TypeNameNode &rhs, peff::Alloc *selfAllocator);
+		SLKC_API virtual ~I8TypeNameNode();
+	};
+
+	class I16TypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		SLKC_API I16TypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API I16TypeNameNode(const I16TypeNameNode &rhs, peff::Alloc *selfAllocator);
+		SLKC_API virtual ~I16TypeNameNode();
+	};
+
+	class I32TypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		SLKC_API I32TypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API I32TypeNameNode(const I32TypeNameNode &rhs, peff::Alloc *selfAllocator);
+		SLKC_API virtual ~I32TypeNameNode();
+	};
+
+	class I64TypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		SLKC_API I64TypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API I64TypeNameNode(const I64TypeNameNode &rhs, peff::Alloc *selfAllocator);
+		SLKC_API virtual ~I64TypeNameNode();
+	};
+
+	class U8TypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		SLKC_API U8TypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API U8TypeNameNode(const U8TypeNameNode &rhs, peff::Alloc *selfAllocator);
+		SLKC_API virtual ~U8TypeNameNode();
+	};
+
+	class U16TypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		SLKC_API U16TypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API U16TypeNameNode(const U16TypeNameNode &rhs, peff::Alloc *selfAllocator);
+		SLKC_API virtual ~U16TypeNameNode();
+	};
+
+	class U32TypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		SLKC_API U32TypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API U32TypeNameNode(const U32TypeNameNode &rhs, peff::Alloc *selfAllocator);
+		SLKC_API virtual ~U32TypeNameNode();
+	};
+
+	class U64TypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		SLKC_API U64TypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API U64TypeNameNode(const U64TypeNameNode &rhs, peff::Alloc *selfAllocator);
+		SLKC_API virtual ~U64TypeNameNode();
+	};
+
+	class ISizeTypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		SLKC_API ISizeTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API ISizeTypeNameNode(const ISizeTypeNameNode &rhs, peff::Alloc *selfAllocator);
+		SLKC_API virtual ~ISizeTypeNameNode();
+	};
+
+	class USizeTypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		SLKC_API USizeTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API USizeTypeNameNode(const USizeTypeNameNode &rhs, peff::Alloc *selfAllocator);
+		SLKC_API virtual ~USizeTypeNameNode();
+	};
+
+	class F32TypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		SLKC_API F32TypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API F32TypeNameNode(const F32TypeNameNode &rhs, peff::Alloc *selfAllocator);
+		SLKC_API virtual ~F32TypeNameNode();
+	};
+
+	class F64TypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		SLKC_API F64TypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API F64TypeNameNode(const F64TypeNameNode &rhs, peff::Alloc *selfAllocator);
+		SLKC_API virtual ~F64TypeNameNode();
+	};
+
+	class StringTypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		SLKC_API StringTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API StringTypeNameNode(const StringTypeNameNode &rhs, peff::Alloc *selfAllocator);
+		SLKC_API virtual ~StringTypeNameNode();
+	};
+
+	class BoolTypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		SLKC_API BoolTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API BoolTypeNameNode(const BoolTypeNameNode &rhs, peff::Alloc *selfAllocator);
+		SLKC_API virtual ~BoolTypeNameNode();
+	};
+
+	class CustomTypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		IdRefPtr idRefPtr;
+		peff::WeakPtr<AstNode> contextNode;
+
+		SLKC_API CustomTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API CustomTypeNameNode(const CustomTypeNameNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API virtual ~CustomTypeNameNode();
+	};
+
+	class ArrayTypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		peff::SharedPtr<TypeNameNode> elementType;
+
+		SLKC_API ArrayTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, const peff::SharedPtr<TypeNameNode> &elementType);
+		SLKC_API ArrayTypeNameNode(const ArrayTypeNameNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API virtual ~ArrayTypeNameNode();
+	};
+
+	class RefTypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		peff::SharedPtr<TypeNameNode> referencedType;
+
+		SLKC_API RefTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, const peff::SharedPtr<TypeNameNode> &referencedType);
+		SLKC_API RefTypeNameNode(const RefTypeNameNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API virtual ~RefTypeNameNode();
+	};
+}
+
+#endif

@@ -9,7 +9,7 @@ add_library(slake STATIC)
 target_compile_definitions(slake PRIVATE SLAKE_IS_BUILDING=1)
 set_property(TARGET slake PROPERTY CXX_STANDARD 17)
 target_include_directories(slake PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/> $<INSTALL_INTERFACE:include/>)
-target_link_libraries(slake PUBLIC peff_containers_static)
+target_link_libraries(slake PRIVATE peff_base_static peff_containers_static)
 set_target_properties(slake PROPERTIES
     VERSION ${PROJECT_VERSION}
 )
@@ -20,7 +20,7 @@ target_compile_definitions(slaked PUBLIC SLAKE_BUILD_SHARED=1)
 set_property(TARGET slaked PROPERTY CXX_STANDARD 17)
 set_property(TARGET slaked PROPERTY PUBLIC_HEADER "")
 target_include_directories(slaked PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/> $<INSTALL_INTERFACE:include/>)
-target_link_libraries(slake PUBLIC peff_containers)
+target_link_libraries(slake PRIVATE peff_base peff_containers)
 set_target_properties(slaked PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}

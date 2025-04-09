@@ -10,7 +10,7 @@ InternalExceptionPointer slake::jit::x86_64::compileMovInstruction(
 	size_t offIns,
 	const Instruction &curIns) noexcept {
 	InternalExceptionPointer exception;
-	uint32_t outputRegIndex = curIns.output.getRegIndex();
+	uint32_t outputRegIndex = curIns.output;
 
 	Value src = curIns.operands[1];
 

@@ -16,6 +16,8 @@ SLKC_API MemberNode::MemberNode(const MemberNode &rhs, peff::Alloc *allocator, b
 		return;
 	}
 
+	accessModifier = rhs.accessModifier;
+
 	succeededOut = true;
 }
 

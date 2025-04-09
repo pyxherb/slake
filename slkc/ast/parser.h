@@ -25,7 +25,8 @@ namespace slkc {
 		ExpectingStmt,
 		ExpectingDecl,
 		InvalidMetaTypeName,
-		NoMatchingTokensFound
+		NoMatchingTokensFound,
+		ConflictingDefinitions
 	};
 
 	struct ExpectingSingleTokenErrorExData {
@@ -46,10 +47,17 @@ namespace slkc {
 		}
 	};
 
+	struct ConflictingDefinitionsErrorExData {
+		peff::String memberName;
+
+		SLAKE_FORCEINLINE ConflictingDefinitionsErrorExData(peff::String &&name) : memberName(std::move(name)) {
+		}
+	};
+
 	struct SyntaxError {
 		TokenRange tokenRange;
 		SyntaxErrorKind errorKind;
-		std::variant<std::monostate, ExpectingTokensErrorExData, NoMatchingTokensFoundErrorExData, ExpectingSingleTokenErrorExData> exData;
+		std::variant<std::monostate, ExpectingTokensErrorExData, NoMatchingTokensFoundErrorExData, ExpectingSingleTokenErrorExData, ConflictingDefinitionsErrorExData> exData;
 
 		SLAKE_FORCEINLINE SyntaxError(
 			const TokenRange &tokenRange,
@@ -79,6 +87,14 @@ namespace slkc {
 			NoMatchingTokensFoundErrorExData &&exData)
 			: tokenRange(tokenRange),
 			  errorKind(SyntaxErrorKind::NoMatchingTokensFound),
+			  exData(std::move(exData)) {
+		}
+
+		SLAKE_FORCEINLINE SyntaxError(
+			const TokenRange &tokenRange,
+			ConflictingDefinitionsErrorExData &&exData)
+			: tokenRange(tokenRange),
+			  errorKind(SyntaxErrorKind::ConflictingDefinitions),
 			  exData(std::move(exData)) {
 		}
 

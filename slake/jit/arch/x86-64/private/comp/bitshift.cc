@@ -11,7 +11,7 @@ template <typename T>
 	const Value &lhsExpectedValue,
 	const Value &rhsExpectedValue) noexcept {
 	InternalExceptionPointer exception;
-	uint32_t outputRegIndex = curIns.output.getRegIndex();
+	uint32_t outputRegIndex = curIns.output;
 
 	if (rhsExpectedValue.valueType != ValueType::Undefined) {
 		uint32_t lhsRegIndex = curIns.operands[0].getRegIndex();
@@ -521,7 +521,7 @@ template <typename T>
 	const Value &lhsExpectedValue,
 	const Value &rhsExpectedValue) noexcept {
 	InternalExceptionPointer exception;
-	uint32_t outputRegIndex = curIns.output.getRegIndex();
+	uint32_t outputRegIndex = curIns.output;
 
 	if (rhsExpectedValue.valueType != ValueType::Undefined) {
 		uint32_t lhsRegIndex = curIns.operands[0].getRegIndex();
@@ -1031,7 +1031,7 @@ template <typename T>
 	const Value &lhsExpectedValue,
 	const Value &rhsExpectedValue) noexcept {
 	InternalExceptionPointer exception;
-	uint32_t outputRegIndex = curIns.output.getRegIndex();
+	uint32_t outputRegIndex = curIns.output;
 
 	if (rhsExpectedValue.valueType != ValueType::Undefined) {
 		uint32_t lhsRegIndex = curIns.operands[0].getRegIndex();

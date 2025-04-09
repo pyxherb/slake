@@ -1,4 +1,4 @@
-#include "ast/parser.h"
+#include "comp/compiler.h"
 #include <initializer_list>
 #include <cstdio>
 #include <cstdlib>
@@ -194,6 +194,16 @@ void dumpSyntaxError(const slkc::Parser &parser, const slkc::SyntaxError &syntax
 				beginToken->sourceLocation.beginPosition.line + 1,
 				beginToken->sourceLocation.beginPosition.column + 1);
 			break;
+		case slkc::SyntaxErrorKind::ConflictingDefinitions: {
+			printError("Syntax error at %zu, %zu: Definition of `",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+
+			const slkc::ConflictingDefinitionsErrorExData &exData = std::get<slkc::ConflictingDefinitionsErrorExData>(syntaxError.exData);
+
+			fprintf(stderr, "%s' conflicts with other definitions\n", exData.memberName.data());
+			break;
+		}
 		default:
 			printError("Syntax error at %zu, %zu: Unknown error (%d)\n",
 				beginToken->sourceLocation.beginPosition.line + 1,

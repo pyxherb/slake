@@ -20,6 +20,8 @@ namespace slkc {
 		USize,
 		String,
 		Bool,
+		Object,
+		Any,
 		Custom,
 
 		Array,

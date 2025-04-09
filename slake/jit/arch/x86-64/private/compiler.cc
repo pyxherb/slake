@@ -24,8 +24,8 @@ InternalExceptionPointer compileInstruction(
 	size_t offIns,
 	const Instruction &curIns) {
 	uint32_t outputRegIndex = UINT32_MAX;
-	if (curIns.output.valueType != ValueType::Undefined) {
-		outputRegIndex = curIns.output.getRegIndex();
+	if (curIns.output != UINT32_MAX) {
+		outputRegIndex = curIns.output;
 		size_t offTimelineEnd = analyzedInfo.analyzedRegInfo.at(outputRegIndex).lifetime.offEndIns;
 
 		if (!compileContext.regRecycleBoundaries.contains(offTimelineEnd)) {
@@ -54,7 +54,7 @@ InternalExceptionPointer compileInstruction(
 		case Opcode::NOP:
 			break;
 		case Opcode::LOAD: {
-			uint32_t outputRegIndex = curIns.output.getRegIndex();
+			uint32_t outputRegIndex = curIns.output;
 
 			{
 				Value expectedValue = analyzedInfo.analyzedRegInfo.at(outputRegIndex).expectedValue;
@@ -111,7 +111,7 @@ InternalExceptionPointer compileInstruction(
 			break;
 		}
 		case Opcode::RLOAD: {
-			uint32_t outputRegIndex = curIns.output.getRegIndex(),
+			uint32_t outputRegIndex = curIns.output,
 					 baseObjectRegIndex = curIns.operands[0].getRegIndex();
 
 			{

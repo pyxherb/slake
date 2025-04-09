@@ -312,7 +312,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseFn(peff::SharedPtr<FnNode> &fnN
 	peff::String name(resourceAllocator.get());
 
 	switch ((fnToken = peekToken())->tokenId) {
-		case TokenId::FnKeyword:
+		case TokenId::FnKeyword: {
 			nextToken();
 
 			Token *generatorMarkerToken;
@@ -324,8 +324,10 @@ SLKC_API std::optional<SyntaxError> Parser::parseFn(peff::SharedPtr<FnNode> &fnN
 				return syntaxError;
 			}
 			break;
+		}
 		case TokenId::OperatorKeyword: {
 			nextToken();
+
 			std::string_view operatorName;
 			if ((syntaxError = parseOperatorName(operatorName))) {
 				return syntaxError;
@@ -343,6 +345,10 @@ SLKC_API std::optional<SyntaxError> Parser::parseFn(peff::SharedPtr<FnNode> &fnN
 	if (!(fnNodeOut = peff::makeShared<FnNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 		return genOutOfMemoryError();
 	}
+
+	peff::ScopeGuard setTokenRangeGuard([this, fnToken, fnNodeOut]() noexcept {
+		fnNodeOut->tokenRange = TokenRange{ fnToken->index, parseContext.idxPrevToken };
+	});
 
 	fnNodeOut->name = std::move(name);
 
@@ -419,7 +425,6 @@ SLKC_API std::optional<SyntaxError> Parser::parseFn(peff::SharedPtr<FnNode> &fnN
 			}
 
 			nextToken();
-
 			break;
 		}
 		default:
@@ -488,21 +493,47 @@ accessModifierParseEnd:
 			if ((syntaxError = parseFn(fn))) {
 				return syntaxError;
 			}
+
+			if (auto it = curMod->members.find(fn->name); it != curMod->members.end()) {
+				if (it.value()->astNodeType != AstNodeType::FnSlot) {
+					peff::String s(resourceAllocator.get());
+
+					if (!s.build(fn->name)) {
+						return genOutOfMemoryError();
+					}
+
+					ConflictingDefinitionsErrorExData exData(std::move(s));
+
+					return SyntaxError(fn->tokenRange, std::move(exData));
+				}
+				FnSlotNode *fnSlot = (FnSlotNode *)it.value();
+				if (!fnSlot->overloadings.pushBack(std::move(fn))) {
+					return genOutOfMemoryError();
+				}
+			} else {
+				peff::SharedPtr<FnSlotNode> fnSlot;
+
+				if (!(fnSlot = peff::makeShared<FnSlotNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+					return genOutOfMemoryError();
+				}
+
+				if (!fnSlot->name.build(fn->name)) {
+					return genOutOfMemoryError();
+				}
+
+				if (!(curMod->members.insert(fnSlot->name, std::move(fnSlot.castTo<MemberNode>())))) {
+					return genOutOfMemoryError();
+				}
+
+				if (!fnSlot->overloadings.pushBack(std::move(fn))) {
+					return genOutOfMemoryError();
+				}
+			}
 			break;
 		}
 		case TokenId::ClassKeyword: {
 			// Class.
 			nextToken();
-
-			Token *nameToken;
-
-			if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
-				return syntaxError;
-			}
-
-			nextToken();
-
-			Token *t;
 
 			peff::SharedPtr<ClassNode> classNode;
 
@@ -510,92 +541,122 @@ accessModifierParseEnd:
 				return genOutOfMemoryError();
 			}
 
-			// TODO: Remove these temporary variables and use members of StructNode instead.
-			peff::DynArray<size_t> idxGenericParamCommaTokensTmp(resourceAllocator.get());
-			size_t tmp1, tmp2;
+			Token *nameToken;
 
-			peff::SharedPtr<ModuleNode> prevMod;
-			prevMod = curMod;
-			peff::ScopeGuard restorePrevModGuard([this, prevMod]() noexcept {
-				curMod = prevMod;
-			});
-			curMod = classNode.castTo<ModuleNode>();
-
-			if ((syntaxError = parseGenericParams(classNode->genericParams, idxGenericParamCommaTokensTmp, tmp1, tmp2))) {
+			if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
 				return syntaxError;
 			}
 
-			if (Token *lParentheseToken = peekToken(); lParentheseToken->tokenId == TokenId::LParenthese) {
-				nextToken();
+			nextToken();
 
-				if ((syntaxError = parseTypeName(classNode->baseType))) {
-					return syntaxError;
-				}
-
-				Token *rParentheseToken;
-				if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese))) {
-					return syntaxError;
-				}
-				nextToken();
+			if (!classNode->name.build(nameToken->sourceText)) {
+				return genOutOfMemoryError();
 			}
 
-			if (Token *colonToken = peekToken(); colonToken->tokenId == TokenId::Colon) {
-				nextToken();
+			{
+				peff::ScopeGuard setTokenRangeGuard([this, token, classNode]() noexcept {
+					classNode->tokenRange = TokenRange{ token->index, parseContext.idxPrevToken };
+				});
 
-				while (true) {
-					peff::SharedPtr<TypeNameNode> tn;
+				peff::SharedPtr<ModuleNode> prevMod;
+				prevMod = curMod;
+				peff::ScopeGuard restorePrevModGuard([this, prevMod]() noexcept {
+					curMod = prevMod;
+				});
+				curMod = classNode.castTo<ModuleNode>();
 
-					if ((syntaxError = parseTypeName(tn))) {
+				if ((syntaxError = parseGenericParams(classNode->genericParams, classNode->idxGenericParamCommaTokens, classNode->idxLAngleBracketToken, classNode->idxRAngleBracketToken))) {
+					return syntaxError;
+				}
+
+				if (Token *lParentheseToken = peekToken(); lParentheseToken->tokenId == TokenId::LParenthese) {
+					nextToken();
+
+					if ((syntaxError = parseTypeName(classNode->baseType))) {
 						return syntaxError;
 					}
 
-					if (!classNode->implementedTypes.pushBack(std::move(tn))) {
-						return genOutOfMemoryError();
+					Token *rParentheseToken;
+					if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese))) {
+						return syntaxError;
 					}
-
-					if (peekToken()->tokenId != TokenId::OrOp) {
-						break;
-					}
-
 					nextToken();
 				}
 
-				break;
-			}
+				if (Token *colonToken = peekToken(); colonToken->tokenId == TokenId::Colon) {
+					nextToken();
 
-			Token *lBraceToken;
+					while (true) {
+						peff::SharedPtr<TypeNameNode> tn;
 
-			if ((syntaxError = expectToken((lBraceToken = peekToken()), TokenId::LBrace))) {
-				return syntaxError;
-			}
+						if ((syntaxError = parseTypeName(tn))) {
+							return syntaxError;
+						}
 
-			nextToken();
+						if (!classNode->implementedTypes.pushBack(std::move(tn))) {
+							return genOutOfMemoryError();
+						}
 
-			Token *currentToken;
-			while (true) {
-				if ((syntaxError = expectToken(currentToken = peekToken()))) {
-					return syntaxError;
-				}
-				if (currentToken->tokenId == TokenId::RBrace) {
+						if (peekToken()->tokenId != TokenId::OrOp) {
+							break;
+						}
+
+						Token *orOpToken = nextToken();
+					}
+
 					break;
 				}
 
-				if ((syntaxError = parseProgramStmt())) {
-					// Parse the rest to make sure that we have gained all of the information,
-					// instead of ignoring them.
-					if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-						return genOutOfMemoryError();
-					syntaxError.reset();
+				Token *lBraceToken;
+
+				if ((syntaxError = expectToken((lBraceToken = peekToken()), TokenId::LBrace))) {
+					return syntaxError;
+				}
+
+				nextToken();
+
+				Token *currentToken;
+				while (true) {
+					if ((syntaxError = expectToken(currentToken = peekToken()))) {
+						return syntaxError;
+					}
+					if (currentToken->tokenId == TokenId::RBrace) {
+						break;
+					}
+
+					if ((syntaxError = parseProgramStmt())) {
+						// Parse the rest to make sure that we have gained all of the information,
+						// instead of ignoring them.
+						if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
+							return genOutOfMemoryError();
+						syntaxError.reset();
+					}
+				}
+
+				Token *rBraceToken;
+
+				if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RBrace))) {
+					return syntaxError;
+				}
+
+				nextToken();
+			}
+
+			if (auto it = curMod->members.find(classNode->name); it != curMod->members.end()) {
+				peff::String s(resourceAllocator.get());
+
+				if (!s.build(classNode->name)) {
+					return genOutOfMemoryError();
+				}
+
+				ConflictingDefinitionsErrorExData exData(std::move(s));
+
+				return SyntaxError(classNode->tokenRange, std::move(exData));
+			} else {
+				if (!(curMod->members.insert(classNode->name, std::move(classNode.castTo<MemberNode>())))) {
+					return genOutOfMemoryError();
 				}
 			}
-
-			Token *rBraceToken;
-
-			if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RBrace))) {
-				return syntaxError;
-			}
-
-			nextToken();
 
 			break;
 		}
@@ -603,7 +664,17 @@ accessModifierParseEnd:
 			// Interface.
 			nextToken();
 
+			peff::SharedPtr<InterfaceNode> interfaceNode;
+
+			if (!(interfaceNode = peff::makeShared<InterfaceNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+				return genOutOfMemoryError();
+			}
+
 			Token *nameToken;
+
+			if (!interfaceNode->name.build(nameToken->sourceText)) {
+				return genOutOfMemoryError();
+			}
 
 			if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
 				return syntaxError;
@@ -613,84 +684,92 @@ accessModifierParseEnd:
 
 			Token *t;
 
-			peff::SharedPtr<InterfaceNode> interfaceNode;
+			{
+				peff::SharedPtr<ModuleNode> prevMod;
+				prevMod = curMod;
+				peff::ScopeGuard restorePrevModGuard([this, prevMod]() noexcept {
+					curMod = prevMod;
+				});
+				curMod = interfaceNode.castTo<ModuleNode>();
 
-			if (!(interfaceNode = peff::makeShared<InterfaceNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-				return genOutOfMemoryError();
-			}
-
-			// TODO: Remove these temporary variables and use members of StructNode instead.
-			peff::DynArray<size_t> idxGenericParamCommaTokensTmp(resourceAllocator.get());
-			size_t tmp1, tmp2;
-
-			peff::SharedPtr<ModuleNode> prevMod;
-			prevMod = curMod;
-			peff::ScopeGuard restorePrevModGuard([this, prevMod]() noexcept {
-				curMod = prevMod;
-			});
-			curMod = interfaceNode.castTo<ModuleNode>();
-
-			if ((syntaxError = parseGenericParams(interfaceNode->genericParams, idxGenericParamCommaTokensTmp, tmp1, tmp2))) {
-				return syntaxError;
-			}
-
-			if (Token *colonToken = peekToken(); colonToken->tokenId == TokenId::Colon) {
-				nextToken();
-
-				while (true) {
-					peff::SharedPtr<TypeNameNode> tn;
-
-					if ((syntaxError = parseTypeName(tn))) {
-						return syntaxError;
-					}
-
-					if (!interfaceNode->implementedTypes.pushBack(std::move(tn))) {
-						return genOutOfMemoryError();
-					}
-
-					if (peekToken()->tokenId != TokenId::OrOp) {
-						break;
-					}
-
-					nextToken();
-				}
-
-				break;
-			}
-
-			Token *lBraceToken;
-
-			if ((syntaxError = expectToken((lBraceToken = peekToken()), TokenId::LBrace))) {
-				return syntaxError;
-			}
-
-			nextToken();
-
-			Token *currentToken;
-			while (true) {
-				if ((syntaxError = expectToken(currentToken = peekToken()))) {
+				if ((syntaxError = parseGenericParams(interfaceNode->genericParams, interfaceNode->idxGenericParamCommaTokens, interfaceNode->idxLAngleBracketToken, interfaceNode->idxRAngleBracketToken))) {
 					return syntaxError;
 				}
-				if (currentToken->tokenId == TokenId::RBrace) {
+
+				if (Token *colonToken = peekToken(); colonToken->tokenId == TokenId::Colon) {
+					nextToken();
+
+					while (true) {
+						peff::SharedPtr<TypeNameNode> tn;
+
+						if ((syntaxError = parseTypeName(tn))) {
+							return syntaxError;
+						}
+
+						if (!interfaceNode->implementedTypes.pushBack(std::move(tn))) {
+							return genOutOfMemoryError();
+						}
+
+						if (peekToken()->tokenId != TokenId::OrOp) {
+							break;
+						}
+
+						Token *orOpToken = nextToken();
+					}
+
 					break;
 				}
 
-				if ((syntaxError = parseProgramStmt())) {
-					// Parse the rest to make sure that we have gained all of the information,
-					// instead of ignoring them.
-					if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-						return genOutOfMemoryError();
-					syntaxError.reset();
+				Token *lBraceToken;
+
+				if ((syntaxError = expectToken((lBraceToken = peekToken()), TokenId::LBrace))) {
+					return syntaxError;
+				}
+
+				nextToken();
+
+				Token *currentToken;
+				while (true) {
+					if ((syntaxError = expectToken(currentToken = peekToken()))) {
+						return syntaxError;
+					}
+					if (currentToken->tokenId == TokenId::RBrace) {
+						break;
+					}
+
+					if ((syntaxError = parseProgramStmt())) {
+						// Parse the rest to make sure that we have gained all of the information,
+						// instead of ignoring them.
+						if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
+							return genOutOfMemoryError();
+						syntaxError.reset();
+					}
+				}
+
+				Token *rBraceToken;
+
+				if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RBrace))) {
+					return syntaxError;
+				}
+
+				nextToken();
+			}
+
+			if (auto it = curMod->members.find(interfaceNode->name); it != curMod->members.end()) {
+				peff::String s(resourceAllocator.get());
+
+				if (!s.build(interfaceNode->name)) {
+					return genOutOfMemoryError();
+				}
+
+				ConflictingDefinitionsErrorExData exData(std::move(s));
+
+				return SyntaxError(interfaceNode->tokenRange, std::move(exData));
+			} else {
+				if (!(curMod->members.insert(interfaceNode->name, std::move(interfaceNode.castTo<MemberNode>())))) {
+					return genOutOfMemoryError();
 				}
 			}
-
-			Token *rBraceToken;
-
-			if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RBrace))) {
-				return syntaxError;
-			}
-
-			nextToken();
 
 			break;
 		}
@@ -729,6 +808,10 @@ accessModifierParseEnd:
 
 			if ((syntaxError = parseVarDefs(stmt->varDefEntries))) {
 				return syntaxError;
+			}
+
+			if (!curMod->varDefStmts.pushBack(std::move(stmt))) {
+				return genOutOfMemoryError();
 			}
 
 			Token *semicolonToken;

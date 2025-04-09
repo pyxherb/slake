@@ -28,6 +28,8 @@ namespace slake {
 		RegRef,	   // Register reference
 		TypeName,  // Type name
 
+		Label, // Label reference
+
 		Undefined = UINT8_MAX,
 	};
 
@@ -89,7 +91,7 @@ namespace slake {
 		SLAKE_FORCEINLINE Type() = default;
 		SLAKE_FORCEINLINE Type(const Type &x) = default;
 		SLAKE_FORCEINLINE Type(Type &&x) = default;
-		SLAKE_FORCEINLINE Type(TypeId type) noexcept : typeId(type) {}
+		SLAKE_FORCEINLINE constexpr Type(TypeId type) noexcept : typeId(type), exData({}) {}
 		SLAKE_FORCEINLINE Type(TypeId type, Object *destObject) noexcept : typeId(type) {
 			exData.object = destObject;
 		}

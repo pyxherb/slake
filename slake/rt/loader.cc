@@ -583,9 +583,9 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 					ins.opcode = ih.opcode;
 
 					if (ih.hasOutputOperand)
-						ins.output = _loadValue(newContext, holder);
+						ins.output = _loadValue(newContext, holder).getRegIndex();
 					else
-						ins.output = Value(ValueType::Undefined);
+						ins.output = UINT32_MAX;
 
 					ins.nOperands = ih.nOperands;
 					for (uint8_t k = 0; k < ih.nOperands; ++k) {

@@ -12,7 +12,6 @@ namespace slkc {
 		EnumItem,
 		AttributeDef,
 		Attribute,
-		Macro,
 		FnSlot,
 		Fn,
 		Stmt,

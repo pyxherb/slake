@@ -15,6 +15,7 @@ set(SLKC_WITH_LANGUAGE_SERVER TRUE CACHE BOOL "Build SLKC with language server s
 configure_file("config.h.in" ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
 add_subdirectory("ast")
+add_subdirectory("comp")
 #add_subdirectory("decompiler")
 
 #if(SLKC_WITH_LANGUAGE_SERVER)

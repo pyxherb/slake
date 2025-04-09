@@ -138,68 +138,98 @@ namespace slake {
 		SLAKE_API bool operator<(const EntityRef &rhs) const;
 	};
 
+	union ValueData {
+		int8_t asI8;
+		int16_t asI16;
+		int32_t asI32;
+		int64_t asI64;
+		uint8_t asU8;
+		uint16_t asU16;
+		uint32_t asU32;
+		uint64_t asU64;
+		float asF32;
+		double asF64;
+		bool asBool;
+		Type asType;
+		EntityRef asObjectRef;
+
+		ValueData() noexcept = default;
+		SLAKE_FORCEINLINE constexpr ValueData(const ValueData &other) noexcept = default;
+		SLAKE_FORCEINLINE constexpr ValueData(ValueData &&other) noexcept = default;
+
+		SLAKE_FORCEINLINE constexpr ValueData& operator=(const ValueData &other) noexcept = default;
+		SLAKE_FORCEINLINE constexpr ValueData& operator=(ValueData &&other) noexcept = default;
+
+		SLAKE_FORCEINLINE constexpr ValueData(int8_t data) noexcept : asI8(data) {
+		}
+
+		SLAKE_FORCEINLINE constexpr ValueData(int16_t data) noexcept : asI16(data) {
+		}
+
+		SLAKE_FORCEINLINE constexpr ValueData(int32_t data) noexcept : asI32(data) {
+		}
+
+		SLAKE_FORCEINLINE constexpr ValueData(int64_t data) noexcept : asI64(data) {
+		}
+
+		SLAKE_FORCEINLINE constexpr ValueData(uint8_t data) noexcept : asU8(data) {
+		}
+
+		SLAKE_FORCEINLINE constexpr ValueData(uint16_t data) noexcept : asU16(data) {
+		}
+
+		SLAKE_FORCEINLINE constexpr ValueData(uint32_t data) noexcept : asU32(data) {
+		}
+
+		SLAKE_FORCEINLINE constexpr ValueData(uint64_t data) noexcept : asU64(data) {
+		}
+
+		SLAKE_FORCEINLINE constexpr ValueData(float data) noexcept : asF32(data) {
+		}
+
+		SLAKE_FORCEINLINE constexpr ValueData(double data) noexcept : asF64(data) {
+		}
+
+		SLAKE_FORCEINLINE constexpr ValueData(bool data) noexcept : asBool(data) {
+		}
+	};
+
 	struct Value {
-		union {
-			int8_t asI8;
-			int16_t asI16;
-			int32_t asI32;
-			int64_t asI64;
-			uint8_t asU8;
-			uint16_t asU16;
-			uint32_t asU32;
-			uint64_t asU64;
-			float asF32;
-			double asF64;
-			bool asBool;
-			Type asType;
-			EntityRef asObjectRef;
-		} data;
+		ValueData data;
 
 		ValueType valueType;
 
-		Value() = default;
-		Value(const Value &other) = default;
-		Value(Value &&other) = default;
-		SLAKE_FORCEINLINE Value(int8_t data) noexcept : valueType(ValueType::I8) {
-			this->data.asI8 = data;
+		SLAKE_FORCEINLINE Value() = default;
+		SLAKE_FORCEINLINE constexpr Value(const Value &other) = default;
+		SLAKE_FORCEINLINE constexpr Value(Value &&other) = default;
+		SLAKE_FORCEINLINE constexpr Value(int8_t data) noexcept : valueType(ValueType::I8), data((int8_t)data) {
 		}
-		SLAKE_FORCEINLINE Value(int16_t data) noexcept : valueType(ValueType::I16) {
-			this->data.asI16 = data;
+		SLAKE_FORCEINLINE constexpr Value(int16_t data) noexcept : valueType(ValueType::I16), data((int16_t)data) {
 		}
-		SLAKE_FORCEINLINE Value(int32_t data) noexcept : valueType(ValueType::I32) {
-			this->data.asI32 = data;
+		SLAKE_FORCEINLINE constexpr Value(int32_t data) noexcept : valueType(ValueType::I32), data((int32_t)data) {
 		}
-		SLAKE_FORCEINLINE Value(int64_t data) noexcept : valueType(ValueType::I64) {
-			this->data.asI64 = data;
+		SLAKE_FORCEINLINE constexpr Value(int64_t data) noexcept : valueType(ValueType::I64), data((int64_t)data) {
 		}
-		SLAKE_FORCEINLINE Value(uint8_t data) noexcept : valueType(ValueType::U8) {
-			this->data.asU8 = data;
+		SLAKE_FORCEINLINE constexpr Value(uint8_t data) noexcept : valueType(ValueType::U8), data((uint8_t)data) {
 		}
-		SLAKE_FORCEINLINE Value(uint16_t data) noexcept : valueType(ValueType::U16) {
-			this->data.asU16 = data;
+		SLAKE_FORCEINLINE constexpr Value(uint16_t data) noexcept : valueType(ValueType::U16), data((uint16_t)data) {
 		}
-		SLAKE_FORCEINLINE Value(uint32_t data) noexcept : valueType(ValueType::U32) {
-			this->data.asU32 = data;
+		SLAKE_FORCEINLINE constexpr Value(uint32_t data) noexcept : valueType(ValueType::U32), data((uint32_t)data) {
 		}
-		SLAKE_FORCEINLINE Value(uint64_t data) noexcept : valueType(ValueType::U64) {
-			this->data.asU64 = data;
+		SLAKE_FORCEINLINE constexpr Value(uint64_t data) noexcept : valueType(ValueType::U64), data((uint64_t)data) {
 		}
-		SLAKE_FORCEINLINE Value(float data) noexcept : valueType(ValueType::F32) {
-			this->data.asF32 = data;
+		SLAKE_FORCEINLINE constexpr Value(float data) noexcept : valueType(ValueType::F32), data(data) {
 		}
-		SLAKE_FORCEINLINE Value(double data) noexcept : valueType(ValueType::F64) {
-			this->data.asF64 = data;
+		SLAKE_FORCEINLINE constexpr Value(double data) noexcept : valueType(ValueType::F64), data(data) {
 		}
-		SLAKE_FORCEINLINE Value(bool data) noexcept : valueType(ValueType::Bool) {
-			this->data.asBool = data;
+		SLAKE_FORCEINLINE constexpr Value(bool data) noexcept : valueType(ValueType::Bool), data(data) {
 		}
 		SLAKE_FORCEINLINE Value(const EntityRef &entityRef) noexcept : valueType(ValueType::EntityRef) {
 			this->data.asObjectRef = entityRef;
 		}
 		SLAKE_FORCEINLINE Value(ValueType vt) noexcept : valueType(vt) {
 		}
-		SLAKE_FORCEINLINE Value(ValueType vt, uint32_t index) noexcept : valueType(vt) {
-			this->data.asU32 = index;
+		SLAKE_FORCEINLINE constexpr Value(ValueType vt, uint32_t index) noexcept : valueType(vt), data(index) {
 		}
 		SLAKE_FORCEINLINE Value(const Type &type) noexcept : valueType(ValueType::TypeName) {
 			data.asType = type;
@@ -262,6 +292,11 @@ namespace slake {
 
 		SLAKE_FORCEINLINE uint32_t getRegIndex() const noexcept {
 			assert(valueType == ValueType::RegRef);
+			return data.asU32;
+		}
+
+		SLAKE_FORCEINLINE uint32_t getLabel() const noexcept {
+			assert(valueType == ValueType::Label);
 			return data.asU32;
 		}
 

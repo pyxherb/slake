@@ -258,8 +258,8 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 
 		uint32_t regIndex = UINT32_MAX;
 
-		if (curIns.output.valueType == ValueType::RegRef) {
-			regIndex = curIns.output.getRegIndex();
+		if (curIns.output != UINT32_MAX) {
+			regIndex = curIns.output;
 
 			if (analyzedInfoOut.analyzedRegInfo.contains(regIndex)) {
 				// Malformed program, return.
@@ -661,7 +661,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						analyzedInfoOut.analyzedRegInfo.at(regIndex).type));
 
 				analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::LocalVar;
-				analyzedInfoOut.analyzedRegInfo.at(regIndex).storageInfo.asLocalVar.definitionReg = curIns.output.getRegIndex();
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).storageInfo.asLocalVar.definitionReg = curIns.output;
 				analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value(entityRef);
 				break;
 			}

@@ -18,7 +18,7 @@ namespace slake {
 
 	struct Instruction final {
 		Opcode opcode = (Opcode)0xffff;
-		Value output = Value(ValueType::Undefined);
+		uint32_t output = UINT32_MAX;
 		Value operands[3];
 		size_t nOperands;
 

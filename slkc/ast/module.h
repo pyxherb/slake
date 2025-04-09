@@ -9,6 +9,7 @@ namespace slkc {
 	public:
 		peff::WeakPtr<AstNode> parent;
 		peff::String name;
+		slake::AccessModifier accessModifier = 0;
 
 		SLKC_API MemberNode(AstNodeType astNodeType, peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API MemberNode(const MemberNode &rhs, peff::Alloc *allocator, bool &succeededOut);

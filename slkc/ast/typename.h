@@ -154,13 +154,36 @@ namespace slkc {
 		SLKC_API virtual ~BoolTypeNameNode();
 	};
 
+	class ObjectTypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		SLKC_API ObjectTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API ObjectTypeNameNode(const ObjectTypeNameNode &rhs, peff::Alloc *selfAllocator);
+		SLKC_API virtual ~ObjectTypeNameNode();
+	};
+
+	class AnyTypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		SLKC_API AnyTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API AnyTypeNameNode(const AnyTypeNameNode &rhs, peff::Alloc *selfAllocator);
+		SLKC_API virtual ~AnyTypeNameNode();
+	};
+
+	class MemberNode;
+
 	class CustomTypeNameNode : public TypeNameNode {
 	protected:
 		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
 
 	public:
 		IdRefPtr idRefPtr;
-		peff::WeakPtr<AstNode> contextNode;
+		peff::WeakPtr<MemberNode> contextNode;
+		peff::WeakPtr<MemberNode> cachedResolveResult;
 
 		SLKC_API CustomTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API CustomTypeNameNode(const CustomTypeNameNode &rhs, peff::Alloc *allocator, bool &succeededOut);

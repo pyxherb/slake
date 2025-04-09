@@ -123,17 +123,17 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 	for (size_t i = 0; i < fo->instructions.size(); ++i) {
 		Instruction &ins = fo->instructions.at(i);
 
-		if (ins.output.valueType != ValueType::Undefined) {
-			opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex());
+		if (ins.output != UINT32_MAX) {
+			opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output);
 
-			compileContext.defineVirtualReg(ins.output.getRegIndex(), mangleRegLocalVarName(ins.output.getRegIndex()));
+			compileContext.defineVirtualReg(ins.output, mangleRegLocalVarName(ins.output));
 
-			compileContext.recyclableRegs[programInfo.analyzedRegInfo.at(ins.output.getRegIndex()).lifetime.offEndIns].insert(ins.output.getRegIndex());
+			compileContext.recyclableRegs[programInfo.analyzedRegInfo.at(ins.output).lifetime.offEndIns].insert(ins.output);
 
-			if (compileContext.allocRecycledReg(*this, programInfo, ins.output.getRegIndex(), outputRegInfo.type)) {
+			if (compileContext.allocRecycledReg(*this, programInfo, ins.output, outputRegInfo.type)) {
 			} else {
 				std::shared_ptr<cxxast::Var> regVar = std::make_shared<cxxast::Var>(
-					mangleRegLocalVarName(ins.output.getRegIndex()),
+					mangleRegLocalVarName(ins.output),
 					cxxast::StorageClass::Unspecified,
 					compileType(compileContext, outputRegInfo.type),
 					std::shared_ptr<cxxast::Expr>{});
@@ -149,7 +149,7 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 			case Opcode::NOP:
 				break;
 			case Opcode::LOAD: {
-				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex());
+				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output);
 
 				HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[0].getEntityRef().asObject.instanceObject;
 
@@ -258,13 +258,13 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 						std::make_shared<cxxast::BinaryExpr>(
 							cxxast::BinaryOp::PtrAccess,
 							std::make_shared<cxxast::IdExpr>(mangleParamName(0)),
-							std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName))),
+							std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output).vregVarName))),
 						rhs)));
 
 				break;
 			}
 			case Opcode::RLOAD: {
-				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex());
+				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output);
 				uint32_t idxBaseReg = ins.operands[0].getRegIndex();
 				HostObjectRef<IdRefObject> id = (IdRefObject *)ins.operands[1].getEntityRef().asObject.instanceObject;
 
@@ -402,13 +402,13 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 						std::make_shared<cxxast::BinaryExpr>(
 							cxxast::BinaryOp::PtrAccess,
 							std::make_shared<cxxast::IdExpr>(mangleParamName(0)),
-							std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName))),
+							std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output).vregVarName))),
 						rhs)));
 				break;
 			}
 			case Opcode::LVAR: {
 				std::shared_ptr<cxxast::Var> lvarVar = std::make_shared<cxxast::Var>(
-					mangleLocalVarName(ins.output.getRegIndex()),
+					mangleLocalVarName(ins.output),
 					cxxast::StorageClass::Unspecified,
 					compileType(compileContext, ins.operands[0].getTypeName()),
 					std::shared_ptr<cxxast::Expr>{});
@@ -417,7 +417,7 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 
 				GeneratorLocalVarInfo info;
 
-				compileContext.generatorLocalVarInfo[ins.output.getRegIndex()] = std::move(info);
+				compileContext.generatorLocalVarInfo[ins.output] = std::move(info);
 
 				curStmtContainer->push_back(std::make_shared<cxxast::ExprStmt>(
 					std::make_shared<cxxast::BinaryExpr>(
@@ -434,18 +434,18 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 						std::make_shared<cxxast::BinaryExpr>(
 							cxxast::BinaryOp::PtrAccess,
 							std::make_shared<cxxast::IdExpr>(mangleParamName(0)),
-							std::make_shared<cxxast::IdExpr>(mangleLocalVarName(ins.output.getRegIndex()))),
+							std::make_shared<cxxast::IdExpr>(mangleLocalVarName(ins.output))),
 						genDefaultValue(ins.operands[0].getTypeName()))));
 				break;
 			}
 			case Opcode::LVALUE: {
-				if (ins.output.valueType != ValueType::Undefined) {
-					opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex()),
+				if (ins.output != UINT32_MAX) {
+					opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output),
 										  &sourceRegInfo = programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex());
 					std::shared_ptr<cxxast::Expr> lhs = std::make_shared<cxxast::BinaryExpr>(
 						cxxast::BinaryOp::PtrAccess,
 						std::make_shared<cxxast::IdExpr>(mangleParamName(0)),
-						std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output.getRegIndex()).vregVarName)));
+						std::make_shared<cxxast::IdExpr>(std::string(compileContext.getVirtualRegInfo(ins.output).vregVarName)));
 
 					switch (sourceRegInfo.storageType) {
 						case opti::RegStorageType::None: {
@@ -678,7 +678,7 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 					default:
 						std::terminate();
 				}
-				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex());
+				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output);
 				std::shared_ptr<cxxast::Expr> expr =
 					std::make_shared<cxxast::CastExpr>(
 						compileType(compileContext, outputRegInfo.type),
@@ -696,7 +696,7 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 				break;
 			}
 			case Opcode::MOD: {
-				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex());
+				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output);
 				std::shared_ptr<cxxast::Expr> expr;
 
 				Type type;
@@ -762,7 +762,7 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 				break;
 			}
 			case Opcode::LSH: {
-				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex());
+				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output);
 				std::shared_ptr<cxxast::Expr> expr;
 
 				Type type;
@@ -890,7 +890,7 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 				break;
 			}
 			case Opcode::RSH: {
-				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex());
+				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output);
 				std::shared_ptr<cxxast::Expr> expr;
 
 				Type type;
@@ -1018,7 +1018,7 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 				break;
 			}
 			case Opcode::CMP: {
-				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex());
+				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output);
 				std::shared_ptr<cxxast::Expr> expr;
 
 				Type type;
@@ -1189,7 +1189,7 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 					default:
 						std::terminate();
 				}
-				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex());
+				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output);
 				std::shared_ptr<cxxast::Expr> expr =
 					std::make_shared<cxxast::CastExpr>(
 						compileType(compileContext, outputRegInfo.type),
@@ -1206,7 +1206,7 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 				break;
 			}
 			case Opcode::AT: {
-				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output.getRegIndex());
+				opti::RegAnalyzedInfo &outputRegInfo = programInfo.analyzedRegInfo.at(ins.output);
 
 				opti::RegAnalyzedInfo &regInfo = programInfo.analyzedRegInfo.at(ins.operands[0].getRegIndex());
 				Type &elementType = regInfo.type.getArrayExData();
@@ -1321,13 +1321,13 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 
 				curStmtContainer->push_back(blockStmt);
 
-				if (ins.output.valueType != ValueType::Undefined) {
+				if (ins.output != UINT32_MAX) {
 					curStmtContainer->push_back(std::make_shared<cxxast::ExprStmt>(
 						std::make_shared<cxxast::BinaryExpr>(
 							cxxast::BinaryOp::Assign,
 							compileValue(compileContext, ins.output),
 							genGetValueDataExpr(
-								programInfo.analyzedRegInfo.at(ins.output.getRegIndex()).type,
+								programInfo.analyzedRegInfo.at(ins.output).type,
 								std::make_shared<cxxast::CallExpr>(
 									std::make_shared<cxxast::BinaryExpr>(
 										cxxast::BinaryOp::PtrAccess,
@@ -1411,13 +1411,13 @@ void BC2CXX::recompileGeneratorFnOverloading(CompileContext &compileContext, std
 
 				curStmtContainer->push_back(blockStmt);
 
-				if (ins.output.valueType != ValueType::Undefined) {
+				if (ins.output != UINT32_MAX) {
 					curStmtContainer->push_back(std::make_shared<cxxast::ExprStmt>(
 						std::make_shared<cxxast::BinaryExpr>(
 							cxxast::BinaryOp::Assign,
 							compileValue(compileContext, ins.output),
 							genGetValueDataExpr(
-								programInfo.analyzedRegInfo.at(ins.output.getRegIndex()).type,
+								programInfo.analyzedRegInfo.at(ins.output).type,
 								std::make_shared<cxxast::CallExpr>(
 									std::make_shared<cxxast::BinaryExpr>(
 										cxxast::BinaryOp::PtrAccess,

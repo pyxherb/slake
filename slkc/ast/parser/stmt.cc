@@ -79,140 +79,194 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 	Token *prefixToken;
 
 	std::optional<SyntaxError> syntaxError;
-	peff::DynArray<peff::SharedPtr<AttributeNode>> attributes(resourceAllocator.get());
 
 	if ((syntaxError = expectToken((prefixToken = peekToken()))))
 		goto genBadStmt;
 
-	if ((syntaxError = parseAttributes(attributes)))
-		goto genBadStmt;
+	{
+		peff::ScopeGuard setTokenRangeGuard([this, prefixToken, &stmtOut]() noexcept {
+			stmtOut->tokenRange = TokenRange{ prefixToken->index, parseContext.idxPrevToken };
+		});
 
-	switch (prefixToken->tokenId) {
-		case TokenId::IfKeyword: {
-			nextToken();
-
-			peff::SharedPtr<IfStmtNode> ifStmt;
-
-			if (!(ifStmt = peff::makeShared<IfStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document, peff::SharedPtr<ExprNode>(), peff::SharedPtr<StmtNode>(), peff::SharedPtr<StmtNode>()))) {
-				return genOutOfMemoryError();
-			}
-
-			stmtOut = ifStmt.castTo<StmtNode>();
-
-			Token *lParentheseToken = peekToken();
-
-			if ((syntaxError = expectToken(lParentheseToken, TokenId::LParenthese))) {
-				goto genBadStmt;
-			}
-
-			nextToken();
-
-			{
-				static TokenId skippingTerminativeToken[] = {
-					TokenId::RParenthese,
-					TokenId::Semicolon,
-					TokenId::RBrace
-				};
-
-				if ((syntaxError = parseExpr(0, ifStmt->cond))) {
-					if ((syntaxError = lookaheadUntil(std::size(skippingTerminativeToken), skippingTerminativeToken))) {
-						goto genBadStmt;
-					}
-					goto genBadStmt;
-				}
-			}
-
-			Token *rParentheseToken = peekToken();
-
-			if ((syntaxError = expectToken(rParentheseToken, TokenId::RParenthese))) {
-				goto genBadStmt;
-			}
-
-			nextToken();
-
-			if ((syntaxError = parseStmt(ifStmt->trueBody))) {
-				goto genBadStmt;
-			}
-
-			Token *elseToken = peekToken();
-
-			if (elseToken->tokenId == TokenId::ElseKeyword) {
+		switch (prefixToken->tokenId) {
+			case TokenId::IfKeyword: {
 				nextToken();
 
-				if ((syntaxError = parseStmt(ifStmt->falseBody))) {
+				peff::SharedPtr<IfStmtNode> ifStmt;
+
+				if (!(ifStmt = peff::makeShared<IfStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document, peff::SharedPtr<ExprNode>(), peff::SharedPtr<StmtNode>(), peff::SharedPtr<StmtNode>()))) {
+					return genOutOfMemoryError();
+				}
+
+				stmtOut = ifStmt.castTo<StmtNode>();
+
+				Token *lParentheseToken = peekToken();
+
+				if ((syntaxError = expectToken(lParentheseToken, TokenId::LParenthese))) {
 					goto genBadStmt;
 				}
-			}
 
-			break;
-		}
-		case TokenId::ForKeyword: {
-			nextToken();
+				nextToken();
 
-			peff::SharedPtr<ForStmtNode> forStmt;
+				{
+					static TokenId skippingTerminativeToken[] = {
+						TokenId::RParenthese,
+						TokenId::Semicolon,
+						TokenId::RBrace
+					};
 
-			if (!(forStmt = peff::makeShared<ForStmtNode>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(),
-					  document))) {
-				return genOutOfMemoryError();
-			}
-
-			stmtOut = forStmt.castTo<StmtNode>();
-
-			Token *lParentheseToken = peekToken();
-
-			if ((syntaxError = expectToken(lParentheseToken, TokenId::LParenthese))) {
-				goto genBadStmt;
-			}
-
-			nextToken();
-
-			Token *varDefSeparatorToken;
-			Token *condSeparatorToken;
-			Token *rParentheseToken;
-			{
-				static TokenId skippingTerminativeToken[] = {
-					TokenId::RParenthese,
-					TokenId::Semicolon,
-					TokenId::RBrace
-				};
-
-				if ((varDefSeparatorToken = peekToken())->tokenId != TokenId::Semicolon) {
-					Token *letToken;
-					if ((syntaxError = expectToken((letToken = peekToken()), TokenId::LetKeyword))) {
-						goto genBadStmt;
-					}
-					nextToken();
-
-					if ((syntaxError = parseVarDefs(forStmt->varDefEntries))) {
-						goto genBadStmt;
-					}
-
-					if ((syntaxError = expectToken((varDefSeparatorToken = peekToken()), TokenId::Semicolon))) {
-						goto genBadStmt;
-					}
-				} else {
-					nextToken();
-				}
-
-				if ((condSeparatorToken = peekToken())->tokenId != TokenId::Semicolon) {
-					if ((syntaxError = parseExpr(0, forStmt->cond))) {
+					if ((syntaxError = parseExpr(0, ifStmt->cond))) {
 						if ((syntaxError = lookaheadUntil(std::size(skippingTerminativeToken), skippingTerminativeToken))) {
 							goto genBadStmt;
 						}
 						goto genBadStmt;
 					}
-
-					if ((syntaxError = expectToken((condSeparatorToken = peekToken()), TokenId::Semicolon))) {
-						goto genBadStmt;
-					}
-				} else {
-					nextToken();
 				}
 
-				if ((rParentheseToken = peekToken())->tokenId != TokenId::RParenthese) {
-					if ((syntaxError = parseExpr(-10, forStmt->step))) {
+				Token *rParentheseToken = peekToken();
+
+				if ((syntaxError = expectToken(rParentheseToken, TokenId::RParenthese))) {
+					goto genBadStmt;
+				}
+
+				nextToken();
+
+				if ((syntaxError = parseStmt(ifStmt->trueBody))) {
+					goto genBadStmt;
+				}
+
+				Token *elseToken = peekToken();
+
+				if (elseToken->tokenId == TokenId::ElseKeyword) {
+					nextToken();
+
+					if ((syntaxError = parseStmt(ifStmt->falseBody))) {
+						goto genBadStmt;
+					}
+				}
+
+				break;
+			}
+			case TokenId::ForKeyword: {
+				nextToken();
+
+				peff::SharedPtr<ForStmtNode> forStmt;
+
+				if (!(forStmt = peff::makeShared<ForStmtNode>(
+						  resourceAllocator.get(),
+						  resourceAllocator.get(),
+						  document))) {
+					return genOutOfMemoryError();
+				}
+
+				stmtOut = forStmt.castTo<StmtNode>();
+
+				Token *lParentheseToken = peekToken();
+
+				if ((syntaxError = expectToken(lParentheseToken, TokenId::LParenthese))) {
+					goto genBadStmt;
+				}
+
+				nextToken();
+
+				Token *varDefSeparatorToken;
+				Token *condSeparatorToken;
+				Token *rParentheseToken;
+				{
+					static TokenId skippingTerminativeToken[] = {
+						TokenId::RParenthese,
+						TokenId::Semicolon,
+						TokenId::RBrace
+					};
+
+					if ((varDefSeparatorToken = peekToken())->tokenId != TokenId::Semicolon) {
+						Token *letToken;
+						if ((syntaxError = expectToken((letToken = peekToken()), TokenId::LetKeyword))) {
+							goto genBadStmt;
+						}
+						nextToken();
+
+						if ((syntaxError = parseVarDefs(forStmt->varDefEntries))) {
+							goto genBadStmt;
+						}
+
+						if ((syntaxError = expectToken((varDefSeparatorToken = peekToken()), TokenId::Semicolon))) {
+							goto genBadStmt;
+						}
+					} else {
+						nextToken();
+					}
+
+					if ((condSeparatorToken = peekToken())->tokenId != TokenId::Semicolon) {
+						if ((syntaxError = parseExpr(0, forStmt->cond))) {
+							if ((syntaxError = lookaheadUntil(std::size(skippingTerminativeToken), skippingTerminativeToken))) {
+								goto genBadStmt;
+							}
+							goto genBadStmt;
+						}
+
+						if ((syntaxError = expectToken((condSeparatorToken = peekToken()), TokenId::Semicolon))) {
+							goto genBadStmt;
+						}
+					} else {
+						nextToken();
+					}
+
+					if ((rParentheseToken = peekToken())->tokenId != TokenId::RParenthese) {
+						if ((syntaxError = parseExpr(-10, forStmt->step))) {
+							if ((syntaxError = lookaheadUntil(std::size(skippingTerminativeToken), skippingTerminativeToken))) {
+								goto genBadStmt;
+							}
+							goto genBadStmt;
+						}
+
+						if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese))) {
+							goto genBadStmt;
+						}
+					} else {
+						nextToken();
+					}
+				}
+
+				nextToken();
+
+				if ((syntaxError = parseStmt(forStmt->body))) {
+					goto genBadStmt;
+				}
+
+				break;
+			}
+			case TokenId::WhileKeyword: {
+				nextToken();
+
+				peff::SharedPtr<WhileStmtNode> whileStmt;
+
+				if (!(whileStmt = peff::makeShared<WhileStmtNode>(
+						  resourceAllocator.get(),
+						  resourceAllocator.get(),
+						  document))) {
+					return genOutOfMemoryError();
+				}
+
+				stmtOut = whileStmt.castTo<StmtNode>();
+
+				Token *lParentheseToken = peekToken();
+
+				if ((syntaxError = expectToken(lParentheseToken, TokenId::LParenthese))) {
+					goto genBadStmt;
+				}
+
+				nextToken();
+
+				Token *rParentheseToken;
+				{
+					static TokenId skippingTerminativeToken[] = {
+						TokenId::RParenthese,
+						TokenId::Semicolon,
+						TokenId::RBrace
+					};
+
+					if ((syntaxError = parseExpr(0, whileStmt->cond))) {
 						if ((syntaxError = lookaheadUntil(std::size(skippingTerminativeToken), skippingTerminativeToken))) {
 							goto genBadStmt;
 						}
@@ -222,346 +276,294 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 					if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese))) {
 						goto genBadStmt;
 					}
-				} else {
+
 					nextToken();
 				}
+
+				if ((syntaxError = parseStmt(whileStmt->body))) {
+					goto genBadStmt;
+				}
+
+				break;
 			}
+			case TokenId::DoKeyword: {
+				nextToken();
 
-			nextToken();
+				peff::SharedPtr<WhileStmtNode> whileStmt;
 
-			if ((syntaxError = parseStmt(forStmt->body))) {
-				goto genBadStmt;
+				if (!(whileStmt = peff::makeShared<WhileStmtNode>(
+						  resourceAllocator.get(),
+						  resourceAllocator.get(),
+						  document))) {
+					return genOutOfMemoryError();
+				}
+
+				stmtOut = whileStmt.castTo<StmtNode>();
+
+				whileStmt->isDoWhile = true;
+
+				if ((syntaxError = parseStmt(whileStmt->body))) {
+					goto genBadStmt;
+				}
+
+				Token *whileToken = peekToken();
+
+				if ((syntaxError = expectToken(whileToken, TokenId::WhileKeyword))) {
+					goto genBadStmt;
+				}
+
+				nextToken();
+
+				Token *lParentheseToken = peekToken();
+
+				if ((syntaxError = expectToken(lParentheseToken, TokenId::LParenthese))) {
+					goto genBadStmt;
+				}
+
+				nextToken();
+
+				Token *rParentheseToken;
+				{
+					static TokenId skippingTerminativeToken[] = {
+						TokenId::RParenthese,
+						TokenId::Semicolon,
+						TokenId::RBrace
+					};
+
+					if ((syntaxError = parseExpr(0, whileStmt->cond))) {
+						if ((syntaxError = lookaheadUntil(std::size(skippingTerminativeToken), skippingTerminativeToken))) {
+							goto genBadStmt;
+						}
+						goto genBadStmt;
+					}
+
+					if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese))) {
+						goto genBadStmt;
+					}
+
+					nextToken();
+				}
+
+				break;
 			}
+			case TokenId::LetKeyword: {
+				nextToken();
 
-			break;
-		}
-		case TokenId::WhileKeyword: {
-			nextToken();
+				peff::SharedPtr<VarDefStmtNode> stmt;
 
-			peff::SharedPtr<WhileStmtNode> whileStmt;
+				if (!(stmt = peff::makeShared<VarDefStmtNode>(
+						  resourceAllocator.get(),
+						  resourceAllocator.get(),
+						  document,
+						  peff::DynArray<VarDefEntryPtr>(resourceAllocator.get())))) {
+					return genOutOfMemoryError();
+				}
 
-			if (!(whileStmt = peff::makeShared<WhileStmtNode>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(),
-					  document))) {
-				return genOutOfMemoryError();
+				stmtOut = stmt.castTo<StmtNode>();
+
+				if ((syntaxError = parseVarDefs(stmt->varDefEntries))) {
+					goto genBadStmt;
+				}
+
+				Token *semicolonToken;
+
+				if ((syntaxError = expectToken((semicolonToken = peekToken()), TokenId::Semicolon))) {
+					goto genBadStmt;
+				}
+
+				nextToken();
+
+				break;
 			}
+			case TokenId::BreakKeyword: {
+				nextToken();
 
-			stmtOut = whileStmt.castTo<StmtNode>();
+				peff::SharedPtr<BreakStmtNode> stmt;
 
-			Token *lParentheseToken = peekToken();
+				if (!(stmt = peff::makeShared<BreakStmtNode>(
+						  resourceAllocator.get(),
+						  resourceAllocator.get(),
+						  document))) {
+					return genOutOfMemoryError();
+				}
 
-			if ((syntaxError = expectToken(lParentheseToken, TokenId::LParenthese))) {
-				goto genBadStmt;
+				stmtOut = stmt.castTo<StmtNode>();
+
+				Token *semicolonToken;
+
+				if ((syntaxError = expectToken((semicolonToken = peekToken()), TokenId::Semicolon))) {
+					goto genBadStmt;
+				}
+
+				nextToken();
+
+				break;
 			}
+			case TokenId::ContinueKeyword: {
+				nextToken();
 
-			nextToken();
+				peff::SharedPtr<ContinueStmtNode> stmt;
 
-			Token *rParentheseToken;
-			{
+				if (!(stmt = peff::makeShared<ContinueStmtNode>(
+						  resourceAllocator.get(),
+						  resourceAllocator.get(),
+						  document))) {
+					return genOutOfMemoryError();
+				}
+
+				stmtOut = stmt.castTo<StmtNode>();
+
+				Token *semicolonToken;
+
+				if ((syntaxError = expectToken((semicolonToken = peekToken()), TokenId::Semicolon))) {
+					goto genBadStmt;
+				}
+
+				nextToken();
+
+				break;
+			}
+			case TokenId::ReturnKeyword: {
+				nextToken();
+
+				peff::SharedPtr<ReturnStmtNode> stmt;
+
+				if (!(stmt = peff::makeShared<ReturnStmtNode>(
+						  resourceAllocator.get(),
+						  resourceAllocator.get(),
+						  document,
+						  peff::SharedPtr<ExprNode>()))) {
+					return genOutOfMemoryError();
+				}
+
+				stmtOut = stmt.castTo<StmtNode>();
+
 				static TokenId skippingTerminativeToken[] = {
 					TokenId::RParenthese,
 					TokenId::Semicolon,
 					TokenId::RBrace
 				};
 
-				if ((syntaxError = parseExpr(0, whileStmt->cond))) {
+				if ((syntaxError = parseExpr(0, stmt->value))) {
 					if ((syntaxError = lookaheadUntil(std::size(skippingTerminativeToken), skippingTerminativeToken))) {
 						goto genBadStmt;
 					}
 					goto genBadStmt;
 				}
 
-				if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese))) {
+				if ((syntaxError = expectToken(peekToken(), TokenId::Semicolon))) {
 					goto genBadStmt;
 				}
 
 				nextToken();
+
+				break;
 			}
+			case TokenId::YieldKeyword: {
+				nextToken();
 
-			if ((syntaxError = parseStmt(whileStmt->body))) {
-				goto genBadStmt;
-			}
+				peff::SharedPtr<YieldStmtNode> stmt;
 
-			break;
-		}
-		case TokenId::DoKeyword: {
-			nextToken();
+				if (!(stmt = peff::makeShared<YieldStmtNode>(
+						  resourceAllocator.get(),
+						  resourceAllocator.get(),
+						  document,
+						  peff::SharedPtr<ExprNode>()))) {
+					return genOutOfMemoryError();
+				}
 
-			peff::SharedPtr<WhileStmtNode> whileStmt;
+				stmtOut = stmt.castTo<StmtNode>();
 
-			if (!(whileStmt = peff::makeShared<WhileStmtNode>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(),
-					  document))) {
-				return genOutOfMemoryError();
-			}
-
-			stmtOut = whileStmt.castTo<StmtNode>();
-
-			whileStmt->isDoWhile = true;
-
-			if ((syntaxError = parseStmt(whileStmt->body))) {
-				goto genBadStmt;
-			}
-
-			Token *whileToken = peekToken();
-
-			if ((syntaxError = expectToken(whileToken, TokenId::WhileKeyword))) {
-				goto genBadStmt;
-			}
-
-			nextToken();
-
-			Token *lParentheseToken = peekToken();
-
-			if ((syntaxError = expectToken(lParentheseToken, TokenId::LParenthese))) {
-				goto genBadStmt;
-			}
-
-			nextToken();
-
-			Token *rParentheseToken;
-			{
 				static TokenId skippingTerminativeToken[] = {
 					TokenId::RParenthese,
 					TokenId::Semicolon,
 					TokenId::RBrace
 				};
 
-				if ((syntaxError = parseExpr(0, whileStmt->cond))) {
+				if ((syntaxError = parseExpr(0, stmt->value))) {
 					if ((syntaxError = lookaheadUntil(std::size(skippingTerminativeToken), skippingTerminativeToken))) {
 						goto genBadStmt;
 					}
 					goto genBadStmt;
 				}
 
-				if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese))) {
+				if ((syntaxError = expectToken(peekToken(), TokenId::Semicolon))) {
 					goto genBadStmt;
 				}
 
 				nextToken();
+
+				break;
 			}
+			case TokenId::LBrace: {
+				nextToken();
 
-			break;
-		}
-		case TokenId::LetKeyword: {
-			nextToken();
+				peff::SharedPtr<CodeBlockStmtNode> stmt;
+				peff::SharedPtr<StmtNode> curStmt;
 
-			peff::SharedPtr<VarDefStmtNode> stmt;
-
-			if (!(stmt = peff::makeShared<VarDefStmtNode>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(),
-					  document,
-					  peff::DynArray<VarDefEntryPtr>(resourceAllocator.get())))) {
-				return genOutOfMemoryError();
-			}
-
-			stmtOut = stmt.castTo<StmtNode>();
-
-			if ((syntaxError = parseVarDefs(stmt->varDefEntries))) {
-				goto genBadStmt;
-			}
-
-			Token *semicolonToken;
-
-			if ((syntaxError = expectToken((semicolonToken = peekToken()), TokenId::Semicolon))) {
-				goto genBadStmt;
-			}
-
-			nextToken();
-
-			break;
-		}
-		case TokenId::BreakKeyword: {
-			nextToken();
-
-			peff::SharedPtr<BreakStmtNode> stmt;
-
-			if (!(stmt = peff::makeShared<BreakStmtNode>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(),
-					  document))) {
-				return genOutOfMemoryError();
-			}
-
-			stmtOut = stmt.castTo<StmtNode>();
-
-			Token *semicolonToken;
-
-			if ((syntaxError = expectToken((semicolonToken = peekToken()), TokenId::Semicolon))) {
-				goto genBadStmt;
-			}
-
-			nextToken();
-
-			break;
-		}
-		case TokenId::ContinueKeyword: {
-			nextToken();
-
-			peff::SharedPtr<ContinueStmtNode> stmt;
-
-			if (!(stmt = peff::makeShared<ContinueStmtNode>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(),
-					  document))) {
-				return genOutOfMemoryError();
-			}
-
-			stmtOut = stmt.castTo<StmtNode>();
-
-			Token *semicolonToken;
-
-			if ((syntaxError = expectToken((semicolonToken = peekToken()), TokenId::Semicolon))) {
-				goto genBadStmt;
-			}
-
-			nextToken();
-
-			break;
-		}
-		case TokenId::ReturnKeyword: {
-			nextToken();
-
-			peff::SharedPtr<ReturnStmtNode> stmt;
-
-			if (!(stmt = peff::makeShared<ReturnStmtNode>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(),
-					  document,
-					  peff::SharedPtr<ExprNode>()))) {
-				return genOutOfMemoryError();
-			}
-
-			stmtOut = stmt.castTo<StmtNode>();
-
-			static TokenId skippingTerminativeToken[] = {
-				TokenId::RParenthese,
-				TokenId::Semicolon,
-				TokenId::RBrace
-			};
-
-			if ((syntaxError = parseExpr(0, stmt->value))) {
-				if ((syntaxError = lookaheadUntil(std::size(skippingTerminativeToken), skippingTerminativeToken))) {
-					goto genBadStmt;
+				if (!(stmt = peff::makeShared<CodeBlockStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+					return genOutOfMemoryError();
 				}
-				goto genBadStmt;
-			}
 
-			if((syntaxError = expectToken(peekToken(), TokenId::Semicolon))) {
-				goto genBadStmt;
-			}
+				stmtOut = stmt.castTo<StmtNode>();
 
-			nextToken();
+				while (true) {
+					if ((syntaxError = expectToken(peekToken()))) {
+						return syntaxError;
+					}
 
-			break;
-		}
-		case TokenId::YieldKeyword: {
-			nextToken();
+					if (peekToken()->tokenId == TokenId::RBrace) {
+						break;
+					}
 
-			peff::SharedPtr<YieldStmtNode> stmt;
+					if ((syntaxError = parseStmt(curStmt))) {
+						if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
+							return genOutOfMemoryError();
+					}
 
-			if (!(stmt = peff::makeShared<YieldStmtNode>(
-					  resourceAllocator.get(),
-					  resourceAllocator.get(),
-					  document,
-					  peff::SharedPtr<ExprNode>()))) {
-				return genOutOfMemoryError();
-			}
-
-			stmtOut = stmt.castTo<StmtNode>();
-
-			static TokenId skippingTerminativeToken[] = {
-				TokenId::RParenthese,
-				TokenId::Semicolon,
-				TokenId::RBrace
-			};
-
-			if ((syntaxError = parseExpr(0, stmt->value))) {
-				if ((syntaxError = lookaheadUntil(std::size(skippingTerminativeToken), skippingTerminativeToken))) {
-					goto genBadStmt;
+					if (curStmt) {
+						if (!stmt->body.pushBack(std::move(curStmt))) {
+							return genOutOfMemoryError();
+						}
+					}
 				}
-				goto genBadStmt;
-			}
 
-			if ((syntaxError = expectToken(peekToken(), TokenId::Semicolon))) {
-				goto genBadStmt;
-			}
+				Token *rBraceToken;
 
-			nextToken();
-
-			break;
-		}
-		case TokenId::LBrace: {
-			nextToken();
-
-			peff::SharedPtr<CodeBlockStmtNode> stmt;
-			peff::SharedPtr<StmtNode> curStmt;
-
-			if (!(stmt = peff::makeShared<CodeBlockStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-				return genOutOfMemoryError();
-			}
-
-			stmtOut = stmt.castTo<StmtNode>();
-
-			while (true) {
-				if ((syntaxError = expectToken(peekToken()))) {
+				if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RBrace))) {
 					return syntaxError;
 				}
 
-				if (peekToken()->tokenId == TokenId::RBrace) {
-					break;
+				nextToken();
+
+				break;
+			}
+			default: {
+				peff::SharedPtr<ExprNode> curExpr;
+
+				peff::SharedPtr<ExprStmtNode> stmt;
+
+				if (!(stmt = peff::makeShared<ExprStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+					return genOutOfMemoryError();
 				}
 
-				if ((syntaxError = parseStmt(curStmt))) {
+				stmtOut = stmt.castTo<StmtNode>();
+
+				if ((syntaxError = parseExpr(-10, stmt->expr))) {
 					if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
 						return genOutOfMemoryError();
+					syntaxError.reset();
+					goto genBadStmt;
 				}
 
-				if (curStmt) {
-					if (!stmt->body.pushBack(std::move(curStmt))) {
-						return genOutOfMemoryError();
-					}
+				if ((syntaxError = expectToken(peekToken(), TokenId::Semicolon))) {
+					goto genBadStmt;
 				}
+
+				nextToken();
+
+				break;
 			}
-
-			Token *rBraceToken;
-
-			if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RBrace))) {
-				return syntaxError;
-			}
-
-			nextToken();
-
-			break;
-		}
-		default: {
-			peff::SharedPtr<ExprNode> curExpr;
-
-			peff::SharedPtr<ExprStmtNode> stmt;
-
-			if (!(stmt = peff::makeShared<ExprStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
-				return genOutOfMemoryError();
-			}
-
-			stmtOut = stmt.castTo<StmtNode>();
-
-			if ((syntaxError = parseExpr(-10, stmt->expr))) {
-				if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
-					return genOutOfMemoryError();
-				syntaxError.reset();
-				goto genBadStmt;
-			}
-
-			if((syntaxError = expectToken(peekToken(), TokenId::Semicolon))) {
-				goto genBadStmt;
-			}
-
-			nextToken();
-
-			break;
 		}
 	}
 

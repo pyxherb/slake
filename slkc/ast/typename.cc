@@ -272,6 +272,42 @@ SLKC_API BoolTypeNameNode::BoolTypeNameNode(const BoolTypeNameNode &rhs, peff::A
 SLKC_API BoolTypeNameNode::~BoolTypeNameNode() {
 }
 
+SLKC_API peff::SharedPtr<AstNode> ObjectTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
+	peff::SharedPtr<ObjectTypeNameNode> duplicatedNode(peff::makeShared<ObjectTypeNameNode>(newAllocator, *this, newAllocator));
+	if (!duplicatedNode) {
+		return {};
+	}
+
+	return duplicatedNode.castTo<AstNode>();
+}
+
+SLKC_API ObjectTypeNameNode::ObjectTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::Object, selfAllocator, document) {
+}
+
+SLKC_API ObjectTypeNameNode::ObjectTypeNameNode(const ObjectTypeNameNode &rhs, peff::Alloc *selfAllocator) : TypeNameNode(rhs, selfAllocator) {
+}
+
+SLKC_API ObjectTypeNameNode::~ObjectTypeNameNode() {
+}
+
+SLKC_API peff::SharedPtr<AstNode> AnyTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
+	peff::SharedPtr<AnyTypeNameNode> duplicatedNode(peff::makeShared<AnyTypeNameNode>(newAllocator, *this, newAllocator));
+	if (!duplicatedNode) {
+		return {};
+	}
+
+	return duplicatedNode.castTo<AstNode>();
+}
+
+SLKC_API AnyTypeNameNode::AnyTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::Any, selfAllocator, document) {
+}
+
+SLKC_API AnyTypeNameNode::AnyTypeNameNode(const AnyTypeNameNode &rhs, peff::Alloc *selfAllocator) : TypeNameNode(rhs, selfAllocator) {
+}
+
+SLKC_API AnyTypeNameNode::~AnyTypeNameNode() {
+}
+
 SLKC_API peff::SharedPtr<AstNode> CustomTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
 	peff::SharedPtr<CustomTypeNameNode> duplicatedNode(peff::makeShared<CustomTypeNameNode>(newAllocator, *this, newAllocator, succeeded));

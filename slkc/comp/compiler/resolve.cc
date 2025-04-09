@@ -110,7 +110,7 @@ std::optional<CompilationError> Compiler::resolveInstanceMember(
 			}
 
 			peff::SharedPtr<TypeNameNode> type;
-			SLKC_RETURN_IF_COMP_ERROR(removeRefOfTypeName(compileContext, m->type, type));
+			SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(compileContext, m->type, type));
 
 			CustomTypeNameResolveContext resolveContext(compileContext.allocator.get());
 

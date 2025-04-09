@@ -44,8 +44,7 @@ namespace slkc {
 	enum class UnaryOp {
 		LNot,
 		Not,
-		Neg,
-		Sizeof
+		Neg
 	};
 
 	class ExprNode : public AstNode {
@@ -106,8 +105,6 @@ namespace slkc {
 		GtEq,
 		Cmp,
 		Subscript,
-
-		MemberAccess,
 
 		Comma
 	};

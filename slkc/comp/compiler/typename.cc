@@ -189,7 +189,7 @@ malformed:
 	return {};
 }
 
-std::optional<CompilationError> Compiler::removeRefOfTypeName(
+std::optional<CompilationError> Compiler::removeRefOfType(
 	FnCompileContext &compileContext,
 	peff::SharedPtr<TypeNameNode> src,
 	peff::SharedPtr<TypeNameNode> &typeNameOut) {
@@ -204,7 +204,7 @@ std::optional<CompilationError> Compiler::removeRefOfTypeName(
 	return {};
 }
 
-std::optional<CompilationError> Compiler::isTypeNamesSame(
+std::optional<CompilationError> Compiler::isSameType(
 	FnCompileContext &compileContext,
 	const peff::SharedPtr<TypeNameNode> &lhs,
 	const peff::SharedPtr<TypeNameNode> &rhs,
@@ -235,14 +235,14 @@ std::optional<CompilationError> Compiler::isTypeNamesSame(
 				convertedLhs = lhs.castTo<ArrayTypeNameNode>(),
 				convertedRhs = rhs.castTo<ArrayTypeNameNode>();
 
-			return isTypeNamesSame(compileContext, convertedLhs->elementType, convertedRhs->elementType, whetherOut);
+			return isSameType(compileContext, convertedLhs->elementType, convertedRhs->elementType, whetherOut);
 		}
 		case TypeNameKind::Ref: {
 			peff::SharedPtr<RefTypeNameNode>
 				convertedLhs = lhs.castTo<RefTypeNameNode>(),
 				convertedRhs = rhs.castTo<RefTypeNameNode>();
 
-			return isTypeNamesSame(compileContext, convertedLhs->referencedType, convertedRhs->referencedType, whetherOut);
+			return isSameType(compileContext, convertedLhs->referencedType, convertedRhs->referencedType, whetherOut);
 		}
 		default:
 			whetherOut = true;
@@ -251,7 +251,7 @@ std::optional<CompilationError> Compiler::isTypeNamesSame(
 	return {};
 }
 
-std::optional<CompilationError> Compiler::isTypeNamesConvertible(
+std::optional<CompilationError> Compiler::isTypeConvertible(
 	FnCompileContext &compileContext,
 	const peff::SharedPtr<TypeNameNode> &src,
 	const peff::SharedPtr<TypeNameNode> &dest,
@@ -352,10 +352,10 @@ std::optional<CompilationError> Compiler::isTypeNamesConvertible(
 			break;
 		}
 		case TypeNameKind::Array:
-			SLKC_RETURN_IF_COMP_ERROR(isTypeNamesSame(compileContext, src, dest, whetherOut));
+			SLKC_RETURN_IF_COMP_ERROR(isSameType(compileContext, src, dest, whetherOut));
 			break;
 		case TypeNameKind::Ref:
-			SLKC_RETURN_IF_COMP_ERROR(isTypeNamesSame(compileContext, src, dest, whetherOut));
+			SLKC_RETURN_IF_COMP_ERROR(isSameType(compileContext, src, dest, whetherOut));
 			whetherOut = false;
 			break;
 	}

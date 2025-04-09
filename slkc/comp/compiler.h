@@ -9,12 +9,18 @@ namespace slkc {
 		ExpectingLValueExpr,
 		TargetIsNotCallable,
 		NoSuchFnOverloading,
+		IncompatibleOperand,
+		OperatorNotFound,
+	};
+
+	struct IncompatibleOperandErrorExData {
+		peff::SharedPtr<TypeNameNode> desiredType;
 	};
 
 	struct CompilationError {
 		TokenRange tokenRange;
 		CompilationErrorKind errorKind;
-		std::variant<std::monostate> exData;
+		std::variant<std::monostate, IncompatibleOperandErrorExData> exData;
 
 		SLAKE_FORCEINLINE CompilationError(
 			const TokenRange &tokenRange,
@@ -22,7 +28,18 @@ namespace slkc {
 			: tokenRange(tokenRange),
 			  errorKind(errorKind) {
 		}
+
+		SLAKE_FORCEINLINE CompilationError(
+			const TokenRange &tokenRange,
+			IncompatibleOperandErrorExData &&exData)
+			: tokenRange(tokenRange),
+			  exData(exData) {
+		}
 	};
+
+#define SLKC_RETURN_IF_COMP_ERROR(...) \
+	if (std::optional<slkc::CompilationError> _ = (__VA_ARGS__); _) return _
+
 	enum class CompilationWarningKind : int {
 		UnusedExprResult = 0,
 	};
@@ -90,8 +107,8 @@ namespace slkc {
 			return {};
 		}
 
-		PEFF_FORCEINLINE void defineReg(uint32_t index) {
-			++nTotalRegs;
+		PEFF_FORCEINLINE uint32_t allocReg() {
+			return nTotalRegs++;
 		}
 	};
 
@@ -134,7 +151,44 @@ namespace slkc {
 		PEFF_FORCEINLINE ImplementationDetectionContext(peff::Alloc *allocator) : walkedInterfaces(allocator) {}
 	};
 
+	struct CompileExprResult {
+		peff::SharedPtr<TypeNameNode> evaluatedType;
+	};
+
 	class Compiler {
+	private:
+		static std::optional<CompilationError> _compileOrCastOperand(
+			FnCompileContext &compileContext,
+			uint32_t regOut,
+			ExprEvalPurpose evalPurpose,
+			peff::SharedPtr<TypeNameNode> desiredType,
+			peff::SharedPtr<ExprNode> operand,
+			peff::SharedPtr<TypeNameNode> operandType);
+		static std::optional<CompilationError> _compileSimpleBinaryExpr(
+			FnCompileContext &compileContext,
+			peff::SharedPtr<BinaryExprNode> expr,
+			ExprEvalPurpose evalPurpose,
+			peff::SharedPtr<TypeNameNode> lhsType,
+			peff::SharedPtr<TypeNameNode> desiredLhsType,
+			ExprEvalPurpose lhsEvalPurpose,
+			peff::SharedPtr<TypeNameNode> rhsType,
+			peff::SharedPtr<TypeNameNode> desiredRhsType,
+			ExprEvalPurpose rhsEvalPurpose,
+			uint32_t resultRegOut,
+			CompileExprResult &resultOut,
+			slake::Opcode opcode);
+		static std::optional<CompilationError> _compileSimpleBinaryAssignOpExpr(
+			FnCompileContext &compileContext,
+			peff::SharedPtr<BinaryExprNode> expr,
+			ExprEvalPurpose evalPurpose,
+			peff::SharedPtr<TypeNameNode> lhsType,
+			peff::SharedPtr<TypeNameNode> rhsType,
+			peff::SharedPtr<TypeNameNode> desiredRhsType,
+			ExprEvalPurpose rhsEvalPurpose,
+			uint32_t resultRegOut,
+			CompileExprResult &resultOut,
+			slake::Opcode opcode);
+
 	public:
 		static peff::SharedPtr<MemberNode> resolveStaticMember(
 			FnCompileContext &compileContext,
@@ -187,16 +241,16 @@ namespace slkc {
 			const peff::SharedPtr<ClassNode> &derived,
 			bool &whetherOut);
 
-		static std::optional<CompilationError> removeRefOfTypeName(
+		static std::optional<CompilationError> removeRefOfType(
 			FnCompileContext &compileContext,
 			peff::SharedPtr<TypeNameNode> src,
 			peff::SharedPtr<TypeNameNode> &typeNameOut);
-		static std::optional<CompilationError> isTypeNamesSame(
+		static std::optional<CompilationError> isSameType(
 			FnCompileContext &compileContext,
 			const peff::SharedPtr<TypeNameNode> &lhs,
 			const peff::SharedPtr<TypeNameNode> &rhs,
 			bool &whetherOut);
-		static std::optional<CompilationError> isTypeNamesConvertible(
+		static std::optional<CompilationError> isTypeConvertible(
 			FnCompileContext &compileContext,
 			const peff::SharedPtr<TypeNameNode> &src,
 			const peff::SharedPtr<TypeNameNode> &dest,
@@ -206,19 +260,29 @@ namespace slkc {
 			peff::SharedPtr<UnaryExprNode> expr,
 			ExprEvalPurpose evalPurpose,
 			uint32_t resultRegOut,
-			peff::SharedPtr<TypeNameNode> &evaluatedTypeOut,
-			bool evalTypeOnly = false);
+			CompileExprResult &resultOut);
+		static std::optional<CompilationError> compileBinaryExpr(
+			FnCompileContext &compileContext,
+			peff::SharedPtr<BinaryExprNode> expr,
+			ExprEvalPurpose evalPurpose,
+			uint32_t resultRegOut,
+			CompileExprResult &resultOut);
 		static std::optional<CompilationError> compileExpr(
 			FnCompileContext &compileContext,
 			const peff::SharedPtr<ExprNode> &expr,
 			ExprEvalPurpose evalPurpose,
 			uint32_t resultRegOut,
-			peff::SharedPtr<TypeNameNode> &evaluatedTypeOut,
-			bool evalTypeOnly = false);
+			CompileExprResult &resultOut);
+		PEFF_FORCEINLINE static std::optional<CompilationError> evalExprType(
+			FnCompileContext &compileContext,
+			const peff::SharedPtr<ExprNode> &expr,
+			peff::SharedPtr<TypeNameNode> &typeOut) {
+			CompileExprResult result;
+			SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr, ExprEvalPurpose::None, UINT32_MAX, result));
+			typeOut = result.evaluatedType;
+			return {};
+		}
 	};
 }
-
-#define SLKC_RETURN_IF_COMP_ERROR(e) \
-	if (std::optional<slkc::CompilationError> _ = (e); _) return _
 
 #endif

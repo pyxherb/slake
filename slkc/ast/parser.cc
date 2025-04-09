@@ -672,12 +672,12 @@ accessModifierParseEnd:
 
 			Token *nameToken;
 
-			if (!interfaceNode->name.build(nameToken->sourceText)) {
-				return genOutOfMemoryError();
-			}
-
 			if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
 				return syntaxError;
+			}
+
+			if (!interfaceNode->name.build(nameToken->sourceText)) {
+				return genOutOfMemoryError();
 			}
 
 			nextToken();

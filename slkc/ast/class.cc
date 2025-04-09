@@ -17,11 +17,12 @@ SLKC_API ClassNode::ClassNode(
 	const peff::SharedPtr<Document> &document)
 	: ModuleNode(selfAllocator, document, AstNodeType::Class),
 	  genericParams(selfAllocator),
+	  genericParamIndices(selfAllocator),
 	  idxGenericParamCommaTokens(selfAllocator),
 	  implementedTypes(selfAllocator) {
 }
 
-SLKC_API ClassNode::ClassNode(const ClassNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ModuleNode(rhs, allocator, succeededOut), genericParams(allocator), idxGenericParamCommaTokens(allocator), implementedTypes(allocator) {
+SLKC_API ClassNode::ClassNode(const ClassNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ModuleNode(rhs, allocator, succeededOut), genericParams(allocator), genericParamIndices(allocator), idxGenericParamCommaTokens(allocator), implementedTypes(allocator) {
 	if (!succeededOut) {
 		return;
 	}
@@ -53,6 +54,13 @@ SLKC_API ClassNode::ClassNode(const ClassNode &rhs, peff::Alloc *allocator, bool
 			succeededOut = false;
 			return;
 		}
+
+		if (!genericParamIndices.insert(genericParams.at(i)->name, +i)) {
+			succeededOut = false;
+			return;
+		}
+
+		genericParams.at(i)->setParent(peff::WeakPtr<AstNode>(sharedFromThis()));
 	}
 
 	if (!idxGenericParamCommaTokens.resize(rhs.idxGenericParamCommaTokens.size())) {
@@ -86,11 +94,12 @@ SLKC_API InterfaceNode::InterfaceNode(
 	const peff::SharedPtr<Document> &document)
 	: ModuleNode(selfAllocator, document, AstNodeType::Interface),
 	  genericParams(selfAllocator),
+	  genericParamIndices(selfAllocator),
 	  idxGenericParamCommaTokens(selfAllocator),
 	  implementedTypes(selfAllocator) {
 }
 
-SLKC_API InterfaceNode::InterfaceNode(const InterfaceNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ModuleNode(rhs, allocator, succeededOut), genericParams(allocator), idxGenericParamCommaTokens(allocator), implementedTypes(allocator) {
+SLKC_API InterfaceNode::InterfaceNode(const InterfaceNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ModuleNode(rhs, allocator, succeededOut), genericParams(allocator), genericParamIndices(allocator), idxGenericParamCommaTokens(allocator), implementedTypes(allocator) {
 	if (!succeededOut) {
 		return;
 	}
@@ -117,6 +126,13 @@ SLKC_API InterfaceNode::InterfaceNode(const InterfaceNode &rhs, peff::Alloc *all
 			succeededOut = false;
 			return;
 		}
+
+		if (!genericParamIndices.insert(genericParams.at(i)->name, +i)) {
+			succeededOut = false;
+			return;
+		}
+
+		genericParams.at(i)->setParent(peff::WeakPtr<AstNode>(sharedFromThis()));
 	}
 
 	if (!idxGenericParamCommaTokens.resize(rhs.idxGenericParamCommaTokens.size())) {

@@ -36,6 +36,7 @@ namespace slkc {
 		size_t rParentheseIndex = SIZE_MAX;
 
 		peff::DynArray<peff::SharedPtr<GenericParamNode>> genericParams;
+		peff::HashMap<std::string_view, size_t> genericParamIndices;
 		peff::DynArray<size_t> idxGenericParamCommaTokens;
 		size_t lAngleBracketIndex = SIZE_MAX;
 		size_t rAngleBracketIndex = SIZE_MAX;

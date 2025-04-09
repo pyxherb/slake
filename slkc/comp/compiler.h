@@ -11,6 +11,7 @@ namespace slkc {
 		NoSuchFnOverloading,
 		IncompatibleOperand,
 		OperatorNotFound,
+		MismatchedGenericArgNumber,
 	};
 
 	struct IncompatibleOperandErrorExData {
@@ -75,8 +76,37 @@ namespace slkc {
 	struct BlockCompileContext {
 	};
 
-	struct FnCompileContext {
-		peff::RcObjectPtr<peff::Alloc> allocator;
+	struct TopLevelCompileContext;
+
+	std::optional<slkc::CompilationError> typeNameCmp(TopLevelCompileContext *compileContext, peff::SharedPtr<TypeNameNode> lhs, peff::SharedPtr<TypeNameNode> rhs, int &out) noexcept;
+	std::optional<slkc::CompilationError> typeNameListCmp(TopLevelCompileContext *compileContext, const peff::DynArray<peff::SharedPtr<TypeNameNode>> &lhs, const peff::DynArray<peff::SharedPtr<TypeNameNode>> &rhs, int &out) noexcept;
+
+	struct TypeNameListCmp {
+		TopLevelCompileContext *compileContext;
+		mutable std::optional<slkc::CompilationError> storedError;
+
+		PEFF_FORCEINLINE TypeNameListCmp(TopLevelCompileContext *compileContext) : compileContext(compileContext) {}
+
+		PEFF_FORCEINLINE bool operator()(const peff::DynArray<peff::SharedPtr<TypeNameNode>> &lhs, const peff::DynArray<peff::SharedPtr<TypeNameNode>> &rhs) const noexcept {
+			int result;
+			// Note that we just need one critical error to notify the compiler
+			// that we have encountered errors that will force the compilation
+			// to be interrupted.
+			if ((storedError = typeNameListCmp(compileContext, lhs, rhs, result))) {
+				return false;
+			}
+			return result < 0;
+		}
+	};
+
+	using GenericCacheTable =
+		peff::Map<
+			peff::DynArray<peff::SharedPtr<TypeNameNode>>,
+			peff::SharedPtr<MemberNode>,
+			TypeNameListCmp>;
+
+	struct TopLevelCompileContext : public peff::RcObject {
+		peff::RcObjectPtr<peff::Alloc> selfAllocator, allocator;
 		peff::SharedPtr<Document> document;
 		peff::DynArray<slake::Instruction> instructionsOut;
 		peff::HashMap<peff::String, uint32_t> labels;
@@ -84,7 +114,25 @@ namespace slkc {
 		peff::DynArray<CompilationWarning> warnings;
 		uint32_t nTotalRegs = 0;
 
-		PEFF_FORCEINLINE FnCompileContext(peff::Alloc *allocator) : allocator(allocator), instructionsOut(allocator), labels(allocator), errors(allocator), warnings(allocator) {}
+		peff::Map<
+			peff::SharedPtr<MemberNode>,
+			GenericCacheTable>
+			genericCacheDir;
+
+		PEFF_FORCEINLINE TopLevelCompileContext(
+			peff::Alloc *selfAllocator,
+			peff::Alloc *allocator)
+			: selfAllocator(selfAllocator),
+			  allocator(allocator),
+			  instructionsOut(allocator),
+			  labels(allocator),
+			  errors(allocator),
+			  warnings(allocator),
+			  genericCacheDir(allocator) {}
+
+		virtual ~TopLevelCompileContext();
+
+		virtual void onRefZero() noexcept override;
 
 		PEFF_FORCEINLINE std::optional<CompilationError> pushIns(slake::Instruction &&ins) {
 			if (!instructionsOut.pushBack(std::move(ins)))
@@ -109,6 +157,37 @@ namespace slkc {
 
 		PEFF_FORCEINLINE uint32_t allocReg() {
 			return nTotalRegs++;
+		}
+
+		GenericCacheTable *lookupGenericCacheTable(peff::SharedPtr<MemberNode> originalObject);
+
+		const GenericCacheTable *lookupGenericCacheTable(
+			peff::SharedPtr<MemberNode> originalObject) const {
+			return const_cast<TopLevelCompileContext *>(this)->lookupGenericCacheTable(originalObject);
+		}
+
+		peff::SharedPtr<MemberNode> lookupGenericCache(
+			peff::SharedPtr<MemberNode> originalObject,
+			const peff::DynArray<peff::SharedPtr<TypeNameNode>> &genericArgs) const;
+
+		std::optional<CompilationError> instantiateGenericObject(
+			peff::SharedPtr<MemberNode> originalObject,
+			const peff::DynArray<peff::SharedPtr<TypeNameNode>> &genericArgs,
+			peff::SharedPtr<MemberNode> &memberOut);
+	};
+
+	struct GenericInstantiationContext {
+		peff::RcObjectPtr<peff::Alloc> allocator;
+		const peff::DynArray<peff::SharedPtr<TypeNameNode>> *genericArgs;
+		peff::HashMap<std::string_view, peff::SharedPtr<TypeNameNode>> mappedGenericArgs;
+		peff::SharedPtr<MemberNode> mappedNode;
+
+		PEFF_FORCEINLINE GenericInstantiationContext(
+			peff::Alloc *allocator,
+			const peff::DynArray<peff::SharedPtr<TypeNameNode>> *genericArgs)
+			: allocator(allocator),
+			  genericArgs(genericArgs),
+			  mappedGenericArgs(allocator) {
 		}
 	};
 
@@ -158,14 +237,14 @@ namespace slkc {
 	class Compiler {
 	private:
 		static std::optional<CompilationError> _compileOrCastOperand(
-			FnCompileContext &compileContext,
+			TopLevelCompileContext *compileContext,
 			uint32_t regOut,
 			ExprEvalPurpose evalPurpose,
 			peff::SharedPtr<TypeNameNode> desiredType,
 			peff::SharedPtr<ExprNode> operand,
 			peff::SharedPtr<TypeNameNode> operandType);
 		static std::optional<CompilationError> _compileSimpleBinaryExpr(
-			FnCompileContext &compileContext,
+			TopLevelCompileContext *compileContext,
 			peff::SharedPtr<BinaryExprNode> expr,
 			ExprEvalPurpose evalPurpose,
 			peff::SharedPtr<TypeNameNode> lhsType,
@@ -178,7 +257,7 @@ namespace slkc {
 			CompileExprResult &resultOut,
 			slake::Opcode opcode);
 		static std::optional<CompilationError> _compileSimpleBinaryAssignOpExpr(
-			FnCompileContext &compileContext,
+			TopLevelCompileContext *compileContext,
 			peff::SharedPtr<BinaryExprNode> expr,
 			ExprEvalPurpose evalPurpose,
 			peff::SharedPtr<TypeNameNode> lhsType,
@@ -191,18 +270,18 @@ namespace slkc {
 
 	public:
 		static peff::SharedPtr<MemberNode> resolveStaticMember(
-			FnCompileContext &compileContext,
+			TopLevelCompileContext *compileContext,
 			const peff::SharedPtr<MemberNode> &memberNode,
 			const IdRefEntry &name);
 		static [[nodiscard]]
 		std::optional<CompilationError> resolveInstanceMember(
-			FnCompileContext &compileContext,
+			TopLevelCompileContext *compileContext,
 			peff::SharedPtr<MemberNode> memberNode,
 			const IdRefEntry &name,
 			peff::SharedPtr<MemberNode> &memberOut);
 		static [[nodiscard]]
 		std::optional<CompilationError> resolveIdRef(
-			FnCompileContext &compileContext,
+			TopLevelCompileContext *compileContext,
 			const peff::SharedPtr<MemberNode> &resolveRoot,
 			IdRef *idRef,
 			peff::SharedPtr<MemberNode> &memberOut,
@@ -212,69 +291,69 @@ namespace slkc {
 		/// @param resolveContext Previous resolve context.
 		/// @param typeName Type name to be resolved.
 		/// @param memberNodeOut Where the resolved member node will be stored.
-		/// @return Indicates if fatal error does not occur.
+		/// @return Critical error encountered that forced the resolution to interrupt.
 		static [[nodiscard]]
 		std::optional<CompilationError> resolveCustomTypeName(
-			FnCompileContext &compileContext,
+			TopLevelCompileContext *compileContext,
 			CustomTypeNameResolveContext &resolveContext,
 			const peff::SharedPtr<CustomTypeNameNode> &typeName,
 			peff::SharedPtr<MemberNode> &memberNodeOut);
 
 		static std::optional<CompilationError> collectInvolvedInterfaces(
-			FnCompileContext &compileContext,
+			TopLevelCompileContext *compileContext,
 			const peff::SharedPtr<InterfaceNode> &derived,
 			peff::Set<peff::SharedPtr<InterfaceNode>> &walkedInterfaces,
 			bool insertSelf);
 		static std::optional<CompilationError> isImplementedByInterface(
-			FnCompileContext &compileContext,
+			TopLevelCompileContext *compileContext,
 			const peff::SharedPtr<InterfaceNode> &base,
 			const peff::SharedPtr<InterfaceNode> &derived,
 			bool &whetherOut);
 		static std::optional<CompilationError> isImplementedByClass(
-			FnCompileContext &compileContext,
+			TopLevelCompileContext *compileContext,
 			const peff::SharedPtr<InterfaceNode> &base,
 			const peff::SharedPtr<ClassNode> &derived,
 			bool &whetherOut);
 		static std::optional<CompilationError> isBaseOf(
-			FnCompileContext &compileContext,
+			TopLevelCompileContext *compileContext,
 			const peff::SharedPtr<ClassNode> &base,
 			const peff::SharedPtr<ClassNode> &derived,
 			bool &whetherOut);
 
 		static std::optional<CompilationError> removeRefOfType(
-			FnCompileContext &compileContext,
+			TopLevelCompileContext *compileContext,
 			peff::SharedPtr<TypeNameNode> src,
 			peff::SharedPtr<TypeNameNode> &typeNameOut);
 		static std::optional<CompilationError> isSameType(
-			FnCompileContext &compileContext,
+			TopLevelCompileContext *compileContext,
 			const peff::SharedPtr<TypeNameNode> &lhs,
 			const peff::SharedPtr<TypeNameNode> &rhs,
 			bool &whetherOut);
 		static std::optional<CompilationError> isTypeConvertible(
-			FnCompileContext &compileContext,
+			TopLevelCompileContext *compileContext,
 			const peff::SharedPtr<TypeNameNode> &src,
 			const peff::SharedPtr<TypeNameNode> &dest,
 			bool &whetherOut);
 		static std::optional<CompilationError> compileUnaryExpr(
-			FnCompileContext &compileContext,
+			TopLevelCompileContext *compileContext,
 			peff::SharedPtr<UnaryExprNode> expr,
 			ExprEvalPurpose evalPurpose,
 			uint32_t resultRegOut,
 			CompileExprResult &resultOut);
 		static std::optional<CompilationError> compileBinaryExpr(
-			FnCompileContext &compileContext,
+			TopLevelCompileContext *compileContext,
 			peff::SharedPtr<BinaryExprNode> expr,
 			ExprEvalPurpose evalPurpose,
 			uint32_t resultRegOut,
 			CompileExprResult &resultOut);
 		static std::optional<CompilationError> compileExpr(
-			FnCompileContext &compileContext,
+			TopLevelCompileContext *compileContext,
 			const peff::SharedPtr<ExprNode> &expr,
 			ExprEvalPurpose evalPurpose,
 			uint32_t resultRegOut,
 			CompileExprResult &resultOut);
 		PEFF_FORCEINLINE static std::optional<CompilationError> evalExprType(
-			FnCompileContext &compileContext,
+			TopLevelCompileContext *compileContext,
 			const peff::SharedPtr<ExprNode> &expr,
 			peff::SharedPtr<TypeNameNode> &typeOut) {
 			CompileExprResult result;

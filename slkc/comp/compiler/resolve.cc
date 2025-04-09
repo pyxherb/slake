@@ -3,7 +3,7 @@
 using namespace slkc;
 
 peff::SharedPtr<MemberNode> Compiler::resolveStaticMember(
-	FnCompileContext &compileContext,
+	TopLevelCompileContext *compileContext,
 	const peff::SharedPtr<MemberNode> &memberNode,
 	const IdRefEntry &name) {
 	peff::SharedPtr<MemberNode> result;
@@ -68,7 +68,7 @@ peff::SharedPtr<MemberNode> Compiler::resolveStaticMember(
 }
 
 std::optional<CompilationError> Compiler::resolveInstanceMember(
-	FnCompileContext &compileContext,
+	TopLevelCompileContext *compileContext,
 	peff::SharedPtr<MemberNode> memberNode,
 	const IdRefEntry &name,
 	peff::SharedPtr<MemberNode> &memberOut) {
@@ -112,7 +112,7 @@ std::optional<CompilationError> Compiler::resolveInstanceMember(
 			peff::SharedPtr<TypeNameNode> type;
 			SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(compileContext, m->type, type));
 
-			CustomTypeNameResolveContext resolveContext(compileContext.allocator.get());
+			CustomTypeNameResolveContext resolveContext(compileContext->allocator.get());
 
 			peff::SharedPtr<MemberNode> tm;
 			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(compileContext, resolveContext, type.castTo<CustomTypeNameNode>(), tm));
@@ -153,7 +153,7 @@ std::optional<CompilationError> Compiler::resolveInstanceMember(
 }
 
 std::optional<CompilationError> Compiler::resolveIdRef(
-	FnCompileContext &compileContext,
+	TopLevelCompileContext *compileContext,
 	const peff::SharedPtr<MemberNode> &resolveRoot,
 	IdRef *idRef,
 	peff::SharedPtr<MemberNode> &memberOut,
@@ -180,7 +180,7 @@ std::optional<CompilationError> Compiler::resolveIdRef(
 }
 
 std::optional<CompilationError> Compiler::resolveCustomTypeName(
-	FnCompileContext &compileContext,
+	TopLevelCompileContext *compileContext,
 	CustomTypeNameResolveContext &resolveContext,
 	const peff::SharedPtr<CustomTypeNameNode> &typeName,
 	peff::SharedPtr<MemberNode> &memberNodeOut) {

@@ -3,7 +3,7 @@
 using namespace slkc;
 
 std::optional<CompilationError> Compiler::_compileSimpleBinaryExpr(
-	FnCompileContext &compileContext,
+	TopLevelCompileContext *compileContext,
 	peff::SharedPtr<BinaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
 	peff::SharedPtr<TypeNameNode> lhsType,
@@ -17,7 +17,7 @@ std::optional<CompilationError> Compiler::_compileSimpleBinaryExpr(
 	slake::Opcode opcode) {
 	switch (evalPurpose) {
 		case ExprEvalPurpose::Stmt:
-			SLKC_RETURN_IF_COMP_ERROR(compileContext.pushWarning(
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(
 				CompilationWarning(expr->tokenRange, CompilationWarningKind::UnusedExprResult)));
 			break;
 		case ExprEvalPurpose::LValue:
@@ -25,12 +25,12 @@ std::optional<CompilationError> Compiler::_compileSimpleBinaryExpr(
 		case ExprEvalPurpose::RValue: {
 			CompileExprResult result;
 
-			uint32_t lhsReg = compileContext.allocReg(),
-					 rhsReg = compileContext.allocReg();
+			uint32_t lhsReg = compileContext->allocReg(),
+					 rhsReg = compileContext->allocReg();
 
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, lhsReg, lhsEvalPurpose, desiredLhsType, expr->lhs, lhsType));
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType));
-			SLKC_RETURN_IF_COMP_ERROR(compileContext.pushIns(
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->pushIns(
 				emitIns(
 					opcode,
 					resultRegOut,
@@ -46,7 +46,7 @@ std::optional<CompilationError> Compiler::_compileSimpleBinaryExpr(
 }
 
 std::optional<CompilationError> Compiler::_compileSimpleBinaryAssignOpExpr(
-	FnCompileContext &compileContext,
+	TopLevelCompileContext *compileContext,
 	peff::SharedPtr<BinaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
 	peff::SharedPtr<TypeNameNode> lhsType,
@@ -58,7 +58,7 @@ std::optional<CompilationError> Compiler::_compileSimpleBinaryAssignOpExpr(
 	slake::Opcode opcode) {
 	switch (evalPurpose) {
 		case ExprEvalPurpose::Stmt:
-			SLKC_RETURN_IF_COMP_ERROR(compileContext.pushWarning(
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(
 				CompilationWarning(expr->tokenRange, CompilationWarningKind::UnusedExprResult)));
 			break;
 		case ExprEvalPurpose::LValue:
@@ -66,31 +66,31 @@ std::optional<CompilationError> Compiler::_compileSimpleBinaryAssignOpExpr(
 		case ExprEvalPurpose::RValue: {
 			CompileExprResult result;
 
-			uint32_t lhsReg = compileContext.allocReg(),
-					 lhsValueReg = compileContext.allocReg(),
-					 rhsReg = compileContext.allocReg();
+			uint32_t lhsReg = compileContext->allocReg(),
+					 lhsValueReg = compileContext->allocReg(),
+					 rhsReg = compileContext->allocReg();
 
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, lhsReg, ExprEvalPurpose::LValue, lhsType, expr->lhs, lhsType));
-			SLKC_RETURN_IF_COMP_ERROR(compileContext.pushIns(
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->pushIns(
 				emitIns(
 					slake::Opcode::LVALUE,
 					lhsValueReg,
 					{ slake::Value(slake::ValueType::RegRef, lhsReg) })));
 
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType));
-			SLKC_RETURN_IF_COMP_ERROR(compileContext.pushIns(
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->pushIns(
 				emitIns(
 					opcode,
 					resultRegOut,
 					{ slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::ValueType::RegRef, rhsReg) })));
 
-			SLKC_RETURN_IF_COMP_ERROR(compileContext.pushIns(
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->pushIns(
 				emitIns(
 					opcode,
 					resultRegOut,
 					{ slake::Value(slake::ValueType::RegRef, lhsValueReg), slake::Value(slake::ValueType::RegRef, rhsReg) })));
 
-			SLKC_RETURN_IF_COMP_ERROR(compileContext.pushIns(
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->pushIns(
 				emitIns(
 					slake::Opcode::STORE,
 					lhsReg,
@@ -106,7 +106,7 @@ std::optional<CompilationError> Compiler::_compileSimpleBinaryAssignOpExpr(
 }
 
 std::optional<CompilationError> Compiler::compileBinaryExpr(
-	FnCompileContext &compileContext,
+	TopLevelCompileContext *compileContext,
 	peff::SharedPtr<BinaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
 	uint32_t resultRegOut,
@@ -124,7 +124,7 @@ std::optional<CompilationError> Compiler::compileBinaryExpr(
 
 	if (expr->binaryOp == BinaryOp::Comma) {
 		CompileExprResult result;
-		uint32_t tmpRegIndex = compileContext.allocReg();
+		uint32_t tmpRegIndex = compileContext->allocReg();
 		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr->lhs, ExprEvalPurpose::Stmt, tmpRegIndex, result));
 		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr->rhs, evalPurpose, resultRegOut, resultOut));
 		return {};
@@ -135,23 +135,23 @@ std::optional<CompilationError> Compiler::compileBinaryExpr(
 	peff::SharedPtr<BoolTypeNameNode> boolType;
 
 	if (!(u32Type = peff::makeShared<U32TypeNameNode>(
-		compileContext.allocator.get(),
-		compileContext.allocator.get(),
-		compileContext.document))) {
+		compileContext->allocator.get(),
+		compileContext->allocator.get(),
+		compileContext->document))) {
 		return genOutOfMemoryCompError();
 	}
 
 	if (!(i32Type = peff::makeShared<I32TypeNameNode>(
-			  compileContext.allocator.get(),
-			  compileContext.allocator.get(),
-			  compileContext.document))) {
+			  compileContext->allocator.get(),
+			  compileContext->allocator.get(),
+			  compileContext->document))) {
 		return genOutOfMemoryCompError();
 	}
 
 	if (!(boolType = peff::makeShared<BoolTypeNameNode>(
-			  compileContext.allocator.get(),
-			  compileContext.allocator.get(),
-			  compileContext.document))) {
+			  compileContext->allocator.get(),
+			  compileContext->allocator.get(),
+			  compileContext->document))) {
 		return genOutOfMemoryCompError();
 	}
 
@@ -451,9 +451,9 @@ std::optional<CompilationError> Compiler::compileBinaryExpr(
 							lhsType,
 							decayedRhsType,
 							peff::makeShared<U32TypeNameNode>(
-								compileContext.allocator.get(),
-								compileContext.allocator.get(),
-								compileContext.document)
+								compileContext->allocator.get(),
+								compileContext->allocator.get(),
+								compileContext->document)
 								.castTo<TypeNameNode>(),
 							ExprEvalPurpose::RValue,
 							resultRegOut,
@@ -470,9 +470,9 @@ std::optional<CompilationError> Compiler::compileBinaryExpr(
 							lhsType,
 							decayedRhsType,
 							peff::makeShared<U32TypeNameNode>(
-								compileContext.allocator.get(),
-								compileContext.allocator.get(),
-								compileContext.document)
+								compileContext->allocator.get(),
+								compileContext->allocator.get(),
+								compileContext->document)
 								.castTo<TypeNameNode>(),
 							ExprEvalPurpose::RValue,
 							resultRegOut,
@@ -759,9 +759,9 @@ std::optional<CompilationError> Compiler::compileBinaryExpr(
 							lhsType,
 							decayedRhsType,
 							peff::makeShared<U32TypeNameNode>(
-								compileContext.allocator.get(),
-								compileContext.allocator.get(),
-								compileContext.document)
+								compileContext->allocator.get(),
+								compileContext->allocator.get(),
+								compileContext->document)
 								.castTo<TypeNameNode>(),
 							ExprEvalPurpose::RValue,
 							resultRegOut,
@@ -778,9 +778,9 @@ std::optional<CompilationError> Compiler::compileBinaryExpr(
 							lhsType,
 							decayedRhsType,
 							peff::makeShared<U32TypeNameNode>(
-								compileContext.allocator.get(),
-								compileContext.allocator.get(),
-								compileContext.document)
+								compileContext->allocator.get(),
+								compileContext->allocator.get(),
+								compileContext->document)
 								.castTo<TypeNameNode>(),
 							ExprEvalPurpose::RValue,
 							resultRegOut,
@@ -1102,9 +1102,9 @@ std::optional<CompilationError> Compiler::compileBinaryExpr(
 				case BinaryOp::Subscript: {
 					peff::SharedPtr<TypeNameNode> evaluatedType;
 					if (!(evaluatedType = peff::makeShared<RefTypeNameNode>(
-						compileContext.allocator.get(),
-						compileContext.allocator.get(),
-						compileContext.document,
+						compileContext->allocator.get(),
+						compileContext->allocator.get(),
+						compileContext->document,
 						decayedLhsType.castTo<ArrayTypeNameNode>()->elementType).castTo<TypeNameNode>())) {
 						return genOutOfMemoryCompError();
 					}

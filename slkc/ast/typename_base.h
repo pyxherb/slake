@@ -25,7 +25,9 @@ namespace slkc {
 		Custom,
 
 		Array,
-		Ref
+		Ref,
+
+		Bad
 	};
 
 	class TypeNameNode : public AstNode {

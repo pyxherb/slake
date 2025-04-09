@@ -4,7 +4,7 @@ using namespace slkc;
 
 template <typename LE, typename DT, typename TN>
 SLAKE_FORCEINLINE std::optional<CompilationError> _compileLiteralExpr(
-	FnCompileContext &compileContext,
+	TopLevelCompileContext *compileContext,
 	const peff::SharedPtr<ExprNode> &expr,
 	ExprEvalPurpose evalPurpose,
 	uint32_t resultRegOut,
@@ -13,13 +13,13 @@ SLAKE_FORCEINLINE std::optional<CompilationError> _compileLiteralExpr(
 
 	switch (evalPurpose) {
 		case ExprEvalPurpose::Stmt:
-			SLKC_RETURN_IF_COMP_ERROR(compileContext.pushWarning(
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(
 				CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
 			break;
 		case ExprEvalPurpose::RValue:
 			if (resultRegOut != UINT32_MAX) {
 				SLKC_RETURN_IF_COMP_ERROR(
-					compileContext.pushIns(
+					compileContext->pushIns(
 						emitIns(
 							slake::Opcode::MOV,
 							resultRegOut,
@@ -36,9 +36,9 @@ SLAKE_FORCEINLINE std::optional<CompilationError> _compileLiteralExpr(
 			std::terminate();
 	}
 	if (!(resultOut.evaluatedType = peff::makeShared<TN>(
-			  compileContext.allocator.get(),
-			  compileContext.allocator.get(),
-			  compileContext.document)
+			  compileContext->allocator.get(),
+			  compileContext->allocator.get(),
+			  compileContext->document)
 				.castTo<TypeNameNode>())) {
 		return genOutOfMemoryCompError();
 	}
@@ -46,7 +46,7 @@ SLAKE_FORCEINLINE std::optional<CompilationError> _compileLiteralExpr(
 }
 
 std::optional<CompilationError> Compiler::_compileOrCastOperand(
-	FnCompileContext &compileContext,
+	TopLevelCompileContext *compileContext,
 	uint32_t regOut,
 	ExprEvalPurpose evalPurpose,
 	peff::SharedPtr<TypeNameNode> desiredType,
@@ -67,9 +67,9 @@ std::optional<CompilationError> Compiler::_compileOrCastOperand(
 		peff::SharedPtr<CastExprNode> castExpr;
 
 		if (!(castExpr = peff::makeShared<CastExprNode>(
-				  compileContext.allocator.get(),
-				  compileContext.allocator.get(),
-				  compileContext.document,
+				  compileContext->allocator.get(),
+				  compileContext->allocator.get(),
+				  compileContext->document,
 				  desiredType,
 				  operand))) {
 			return genOutOfMemoryCompError();
@@ -86,7 +86,7 @@ std::optional<CompilationError> Compiler::_compileOrCastOperand(
 }
 
 std::optional<CompilationError> Compiler::compileExpr(
-	FnCompileContext &compileContext,
+	TopLevelCompileContext *compileContext,
 	const peff::SharedPtr<ExprNode> &expr,
 	ExprEvalPurpose evalPurpose,
 	uint32_t resultRegOut,
@@ -136,13 +136,13 @@ std::optional<CompilationError> Compiler::compileExpr(
 
 			switch (evalPurpose) {
 				case ExprEvalPurpose::Stmt:
-					SLKC_RETURN_IF_COMP_ERROR(compileContext.pushWarning(
+					SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(
 						CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
 					break;
 				case ExprEvalPurpose::RValue:
 					if (resultRegOut != UINT32_MAX) {
 						SLKC_RETURN_IF_COMP_ERROR(
-							compileContext.pushIns(
+							compileContext->pushIns(
 								emitIns(
 									slake::Opcode::MOV,
 									resultRegOut,
@@ -160,9 +160,9 @@ std::optional<CompilationError> Compiler::compileExpr(
 			}
 
 			if (!(resultOut.evaluatedType = peff::makeShared<ObjectTypeNameNode>(
-					  compileContext.allocator.get(),
-					  compileContext.allocator.get(),
-					  compileContext.document)
+					  compileContext->allocator.get(),
+					  compileContext->allocator.get(),
+					  compileContext->document)
 						.castTo<TypeNameNode>())) {
 				return genOutOfMemoryCompError();
 			}

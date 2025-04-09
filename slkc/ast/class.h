@@ -13,6 +13,7 @@ namespace slkc {
 		peff::SharedPtr<TypeNameNode> baseType;
 		peff::DynArray<peff::SharedPtr<TypeNameNode>> implementedTypes;
 		peff::DynArray<peff::SharedPtr<GenericParamNode>> genericParams;
+		peff::HashMap<std::string_view, size_t> genericParamIndices;
 		peff::DynArray<size_t> idxGenericParamCommaTokens;
 		size_t idxLAngleBracketToken = SIZE_MAX, idxRAngleBracketToken = SIZE_MAX;
 
@@ -28,6 +29,7 @@ namespace slkc {
 	public:
 		peff::DynArray<peff::SharedPtr<TypeNameNode>> implementedTypes;
 		peff::DynArray<peff::SharedPtr<GenericParamNode>> genericParams;
+		peff::HashMap<std::string_view, size_t> genericParamIndices;
 		peff::DynArray<size_t> idxGenericParamCommaTokens;
 		size_t idxLAngleBracketToken = SIZE_MAX, idxRAngleBracketToken = SIZE_MAX;
 

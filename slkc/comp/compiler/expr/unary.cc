@@ -3,7 +3,7 @@
 using namespace slkc;
 
 static std::optional<CompilationError> _compileSimpleRValueUnaryExpr(
-	FnCompileContext& compileContext,
+	TopLevelCompileContext *compileContext,
 	peff::SharedPtr<UnaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
 	uint32_t resultRegOut,
@@ -11,7 +11,7 @@ static std::optional<CompilationError> _compileSimpleRValueUnaryExpr(
 	slake::Opcode opcode) {
 	switch (evalPurpose) {
 		case ExprEvalPurpose::Stmt:
-			SLKC_RETURN_IF_COMP_ERROR(compileContext.pushWarning(
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(
 				CompilationWarning(expr->tokenRange, CompilationWarningKind::UnusedExprResult)));
 			break;
 		case ExprEvalPurpose::LValue:
@@ -19,10 +19,10 @@ static std::optional<CompilationError> _compileSimpleRValueUnaryExpr(
 		case ExprEvalPurpose::RValue: {
 			CompileExprResult result;
 
-			uint32_t tmpReg = compileContext.allocReg();
+			uint32_t tmpReg = compileContext->allocReg();
 
 			SLKC_RETURN_IF_COMP_ERROR(Compiler::compileExpr(compileContext, expr->operand, ExprEvalPurpose::RValue, tmpReg, result));
-			SLKC_RETURN_IF_COMP_ERROR(compileContext.pushIns(
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->pushIns(
 				emitIns(
 					slake::Opcode::NEG,
 					resultRegOut,
@@ -38,7 +38,7 @@ static std::optional<CompilationError> _compileSimpleRValueUnaryExpr(
 }
 
 std::optional<CompilationError> Compiler::compileUnaryExpr(
-	FnCompileContext &compileContext,
+	TopLevelCompileContext *compileContext,
 	peff::SharedPtr<UnaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
 	uint32_t resultRegOut,
@@ -103,6 +103,9 @@ std::optional<CompilationError> Compiler::compileUnaryExpr(
 					return CompilationError(expr->tokenRange, CompilationErrorKind::OperatorNotFound);
 			}
 			break;
+		}
+		case TypeNameKind::Custom: {
+
 		}
 		default:
 			return CompilationError(

@@ -17,10 +17,13 @@ namespace slake {
 	struct MajorFrame;
 
 	struct Instruction final {
-		Opcode opcode = (Opcode)0xffff;
+		Opcode opcode = (Opcode)0xff;
+		uint8_t nOperands = 0;
 		uint32_t output = UINT32_MAX;
-		Value operands[3];
-		size_t nOperands;
+		Value *operands = nullptr;
+		FnOverloadingObject *fnOverloading = nullptr;
+
+		SLAKE_API ~Instruction();
 
 		SLAKE_API bool operator==(const Instruction &rhs) const;
 		SLAKE_FORCEINLINE bool operator!=(const Instruction &rhs) const {

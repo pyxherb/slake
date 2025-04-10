@@ -56,6 +56,7 @@ InternalExceptionPointer compileInstruction(
 		case Opcode::LOAD: {
 			uint32_t outputRegIndex = curIns.output;
 
+			/*
 			{
 				Value expectedValue = analyzedInfo.analyzedRegInfo.at(outputRegIndex).expectedValue;
 
@@ -64,7 +65,7 @@ InternalExceptionPointer compileInstruction(
 					compileInstruction(compileContext, analyzedInfo, SIZE_MAX, ins);
 					return {};
 				}
-			}
+			}*/
 
 			CallingRegSavingInfo callingRegSavingInfo;
 
@@ -114,6 +115,7 @@ InternalExceptionPointer compileInstruction(
 			uint32_t outputRegIndex = curIns.output,
 					 baseObjectRegIndex = curIns.operands[0].getRegIndex();
 
+			/*
 			{
 				Value expectedValue = analyzedInfo.analyzedRegInfo.at(outputRegIndex).expectedValue;
 
@@ -122,7 +124,7 @@ InternalExceptionPointer compileInstruction(
 					compileInstruction(compileContext, analyzedInfo, SIZE_MAX, ins);
 					return {};
 				}
-			}
+			}*/
 
 			CallingRegSavingInfo callingRegSavingInfo;
 

@@ -3,6 +3,12 @@
 
 using namespace slake;
 
+SLAKE_API Instruction::~Instruction() {
+	if (nOperands) {
+		fnOverloading->associatedRuntime->globalHeapPoolAlloc.release(operands, sizeof(Value) * nOperands, sizeof(std::max_align_t));
+	}
+}
+
 SLAKE_API bool Instruction::operator==(const Instruction &rhs) const {
 	if (opcode != rhs.opcode)
 		return false;
@@ -120,11 +126,21 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFn
 			return;
 		}
 		for (size_t i = 0; i < instructions.size(); ++i) {
-			Instruction &curIns = instructions.at(i), otherCurIns = other.instructions.at(i);
+			Instruction &curIns = instructions.at(i);
+			const Instruction &otherCurIns = other.instructions.at(i);
 			curIns.opcode = otherCurIns.opcode;
 
 			curIns.output = otherCurIns.output;
 
+			if (!(curIns.operands = (Value *)other.associatedRuntime->globalHeapPoolAlloc.alloc(sizeof(Value) * otherCurIns.nOperands, sizeof(std::max_align_t)))) {
+				succeededOut = false;
+				return;
+			}
+			curIns.nOperands = otherCurIns.nOperands;
+			for (size_t j = 0; j < otherCurIns.nOperands; ++j) {
+				curIns.operands[j] = Value(ValueType::Undefined);
+			}
+			curIns.fnOverloading = this;
 			// Duplicate each of the operands.
 			for (size_t j = 0; j < otherCurIns.nOperands; ++j) {
 				auto &operand = otherCurIns.operands[j];
@@ -144,10 +160,6 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFn
 				} else
 					curIns.operands[j] = operand;
 			}
-			for (size_t j = otherCurIns.nOperands; j < 3; ++j) {
-				curIns.operands[j] = Value(ValueType::Undefined);
-			}
-			curIns.nOperands = otherCurIns.nOperands;
 		}
 
 		nRegisters = other.nRegisters;
@@ -155,6 +167,7 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFn
 }
 
 SLAKE_API RegularFnOverloadingObject::~RegularFnOverloadingObject() {
+	instructions.clear();
 }
 
 SLAKE_API const slxfmt::SourceLocDesc *RegularFnOverloadingObject::getSourceLocationDesc(uint32_t offIns) const {

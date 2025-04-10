@@ -578,7 +578,7 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 				for (uint32_t j = 0; j < i.lenBody; j++) {
 					auto &ins = overloading->instructions.at(j);
 
-					slxfmt::InsHeader ih = _read<slxfmt::InsHeader>(newContext.fs);
+					const slxfmt::InsHeader ih = _read<slxfmt::InsHeader>(newContext.fs);
 
 					ins.opcode = ih.opcode;
 
@@ -587,12 +587,20 @@ SLAKE_API void Runtime::_loadScope(LoaderContext &context,
 					else
 						ins.output = UINT32_MAX;
 
-					ins.nOperands = ih.nOperands;
-					for (uint8_t k = 0; k < ih.nOperands; ++k) {
-						ins.operands[k] = _loadValue(newContext, holder);
-					}
-					for (uint8_t k = ih.nOperands; k < 3; ++k) {
-						ins.operands[k] = Value(ValueType::Undefined);
+					if (ih.nOperands) {
+						if (!(ins.operands = (Value *)globalHeapPoolAlloc.alloc(sizeof(Value) * ih.nOperands, sizeof(std::max_align_t)))) {
+							throw std::bad_alloc();
+						}
+						for (uint8_t k = 0; k < ih.nOperands; ++k) {
+							ins.operands[k] = Value(ValueType::Undefined);
+						}
+						ins.fnOverloading = overloading.get();
+						ins.nOperands = ih.nOperands;
+						for (uint8_t k = 0; k < ih.nOperands; ++k) {
+							ins.operands[k] = _loadValue(newContext, holder);
+						}
+					} else {
+						ins.nOperands = ih.nOperands;
 					}
 				}
 			}

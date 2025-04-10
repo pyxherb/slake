@@ -47,7 +47,6 @@ namespace slake {
 			struct {
 				Context *context;
 				size_t stackOff;
-				Type type;
 			} asLocalVar;
 			struct {
 				MajorFrame *majorFrame;
@@ -98,12 +97,11 @@ namespace slake {
 			return ref;
 		}
 
-		static SLAKE_FORCEINLINE EntityRef makeLocalVarRef(Context *context, size_t offset, const Type &type) {
+		static SLAKE_FORCEINLINE EntityRef makeLocalVarRef(Context *context, size_t offset) {
 			EntityRef ref = {};
 
 			ref.asLocalVar.context = context;
 			ref.asLocalVar.stackOff = offset;
-			ref.asLocalVar.type = type;
 			ref.kind = ObjectRefKind::LocalVarRef;
 
 			return ref;

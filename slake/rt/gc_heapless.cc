@@ -355,8 +355,8 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 							RegularFnOverloadingObject *ol = (RegularFnOverloadingObject *)fnOverloading;
 
 							for (auto &i : ol->instructions) {
-								for (auto &j : i.operands) {
-									_gcWalkHeapless(context, j);
+								for (size_t j = 0; j < i.nOperands; ++j) {
+									_gcWalkHeapless(context, i.operands[j]);
 								}
 							}
 

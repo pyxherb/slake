@@ -274,9 +274,9 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 			analyzedInfoOut.analyzedRegInfo.at(regIndex).lifetime = { i, i };
 		}
 
-		for (auto &j : curIns.operands) {
-			if (j.valueType == ValueType::RegRef) {
-				uint32_t index = j.getRegIndex();
+		for (size_t j = 0; j < curIns.nOperands; ++j) {
+			if (curIns.operands[j].valueType == ValueType::RegRef) {
+				uint32_t index = curIns.operands[j].getRegIndex();
 
 				if (!analyzedInfoOut.analyzedRegInfo.contains(index)) {
 					// Malformed program, return.

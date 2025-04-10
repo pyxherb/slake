@@ -102,9 +102,7 @@ SLAKE_API bool EntityRef::operator==(const EntityRef &rhs) const {
 		case ObjectRefKind::LocalVarRef:
 			if (asLocalVar.context != rhs.asLocalVar.context)
 				return false;
-			if (asLocalVar.stackOff != rhs.asLocalVar.stackOff)
-				return false;
-			return asLocalVar.type == rhs.asLocalVar.type;
+			return asLocalVar.stackOff == rhs.asLocalVar.stackOff;
 		case ObjectRefKind::ArgRef:
 			if (asArg.majorFrame != rhs.asArg.majorFrame)
 				return false;
@@ -145,11 +143,7 @@ SLAKE_API bool EntityRef::operator<(const EntityRef &rhs) const {
 				return true;
 			if (asLocalVar.context > rhs.asLocalVar.context)
 				return false;
-			if (asLocalVar.stackOff < rhs.asLocalVar.stackOff)
-				return true;
-			if (asLocalVar.stackOff > rhs.asLocalVar.stackOff)
-				return false;
-			return asLocalVar.type < rhs.asLocalVar.type;
+			return asLocalVar.stackOff < rhs.asLocalVar.stackOff;
 		case ObjectRefKind::ArgRef:
 			if (asArg.majorFrame < rhs.asArg.majorFrame)
 				return true;

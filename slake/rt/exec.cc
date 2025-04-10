@@ -308,7 +308,12 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(MajorFrame *fram
 			std::terminate();
 	}
 
-	objectRefOut = EntityRef::makeLocalVarRef(frame->context, stackOffset, type);
+	Type *typeInfo = (Type*)frame->context->stackAlloc(sizeof(Type));
+	if (!typeInfo)
+		return StackOverflowError::alloc(this);
+	memcpy(typeInfo, &type, sizeof(Type));
+
+	objectRefOut = EntityRef::makeLocalVarRef(frame->context, frame->context->stackTop);
 	return {};
 }
 

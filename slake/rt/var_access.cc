@@ -46,7 +46,11 @@ SLAKE_API InternalExceptionPointer Runtime::typeofVar(const EntityRef &entityRef
 			break;
 		}
 		case ObjectRefKind::LocalVarRef: {
-			typeOut = entityRef.asLocalVar.type;
+			const char *const rawStackPtr = entityRef.asLocalVar.context->dataStack + SLAKE_STACK_MAX - entityRef.asLocalVar.stackOff;
+			memcpy(
+				&typeOut,
+				rawStackPtr,
+				sizeof(Type));
 			break;
 		}
 		case ObjectRefKind::InstanceFieldRef: {
@@ -134,9 +138,13 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 			break;
 		}
 		case ObjectRefKind::LocalVarRef: {
-			const char *const rawDataPtr = entityRef.asLocalVar.context->dataStack + SLAKE_STACK_MAX - entityRef.asLocalVar.stackOff;
+			const char *const rawStackPtr = entityRef.asLocalVar.context->dataStack + SLAKE_STACK_MAX - entityRef.asLocalVar.stackOff;
+			const char *const rawDataPtr = rawStackPtr + sizeof(Type);
 
-			switch (entityRef.asLocalVar.type.typeId) {
+			Type t;
+			memcpy(&t, rawStackPtr, sizeof(Type));
+
+			switch (t.typeId) {
 				case TypeId::I8:
 					return Value(*((int8_t *)rawDataPtr));
 				case TypeId::I16:
@@ -337,13 +345,17 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 				// TODO: Use a proper type of exception instead of this.
 				return raiseInvalidArrayIndexError((Runtime *)this, entityRef.asArray.index);
 
-			if (!isCompatible(entityRef.asLocalVar.type, value)) {
+			const char *const rawStackPtr = entityRef.asLocalVar.context->dataStack + SLAKE_STACK_MAX - entityRef.asLocalVar.stackOff;
+			const char *const rawDataPtr = rawStackPtr + sizeof(Type);
+
+			Type t;
+			memcpy(&t, rawStackPtr, sizeof(Type));
+
+			if (!isCompatible(t, value)) {
 				return raiseMismatchedVarTypeError((Runtime *)this);
 			}
 
-			char *const rawDataPtr = entityRef.asLocalVar.context->dataStack + SLAKE_STACK_MAX - entityRef.asLocalVar.stackOff;
-
-			switch (entityRef.asLocalVar.type.typeId) {
+			switch (t.typeId) {
 				case TypeId::I8:
 					*((int8_t *)rawDataPtr) = value.getI8();
 					break;

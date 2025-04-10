@@ -159,16 +159,18 @@ namespace slkc {
 			return nTotalRegs++;
 		}
 
-		GenericCacheTable *lookupGenericCacheTable(peff::SharedPtr<MemberNode> originalObject);
+		std::optional<CompilationError> lookupGenericCacheTable(peff::SharedPtr<MemberNode> originalObject, GenericCacheTable *&tableOut);
 
-		const GenericCacheTable *lookupGenericCacheTable(
-			peff::SharedPtr<MemberNode> originalObject) const {
-			return const_cast<TopLevelCompileContext *>(this)->lookupGenericCacheTable(originalObject);
+		std::optional<CompilationError> lookupGenericCacheTable(
+			peff::SharedPtr<MemberNode> originalObject,
+			const GenericCacheTable *&tableOut) const {
+			return const_cast<TopLevelCompileContext *>(this)->lookupGenericCacheTable(originalObject, const_cast<GenericCacheTable*&>(tableOut));
 		}
 
-		peff::SharedPtr<MemberNode> lookupGenericCache(
+		std::optional<CompilationError> lookupGenericCache(
 			peff::SharedPtr<MemberNode> originalObject,
-			const peff::DynArray<peff::SharedPtr<TypeNameNode>> &genericArgs) const;
+			const peff::DynArray<peff::SharedPtr<TypeNameNode>> &genericArgs,
+			peff::SharedPtr<MemberNode> &memberOut) const;
 
 		std::optional<CompilationError> instantiateGenericObject(
 			peff::SharedPtr<MemberNode> originalObject,
@@ -269,10 +271,11 @@ namespace slkc {
 			slake::Opcode opcode);
 
 	public:
-		static peff::SharedPtr<MemberNode> resolveStaticMember(
+		static std::optional<CompilationError> resolveStaticMember(
 			TopLevelCompileContext *compileContext,
 			const peff::SharedPtr<MemberNode> &memberNode,
-			const IdRefEntry &name);
+			const IdRefEntry &name,
+			peff::SharedPtr<MemberNode> &memberOut);
 		static [[nodiscard]]
 		std::optional<CompilationError> resolveInstanceMember(
 			TopLevelCompileContext *compileContext,

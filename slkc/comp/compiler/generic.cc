@@ -2,22 +2,33 @@
 
 using namespace slkc;
 
-GenericCacheTable *TopLevelCompileContext::lookupGenericCacheTable(
-	peff::SharedPtr<MemberNode> originalObject) {
+std::optional<CompilationError> TopLevelCompileContext::lookupGenericCacheTable(
+	peff::SharedPtr<MemberNode> originalObject,
+	GenericCacheTable *&tableOut) {
 	if (auto it = genericCacheDir.find(originalObject); it != genericCacheDir.end()) {
-		return &it.value();
+		tableOut = &it.value();
+		return {};
 	}
-	return nullptr;
+	tableOut = nullptr;
+	return {};
 }
 
-peff::SharedPtr<MemberNode> TopLevelCompileContext::lookupGenericCache(
+std::optional<CompilationError> TopLevelCompileContext::lookupGenericCache(
 	peff::SharedPtr<MemberNode> originalObject,
-	const peff::DynArray<peff::SharedPtr<TypeNameNode>> &genericArgs) const {
-	if (const GenericCacheTable *tab = lookupGenericCacheTable(originalObject); tab) {
+	const peff::DynArray<peff::SharedPtr<TypeNameNode>> &genericArgs,
+	peff::SharedPtr<MemberNode> &memberOut) const {
+	const GenericCacheTable *tab;
+
+	SLKC_RETURN_IF_COMP_ERROR(lookupGenericCacheTable(originalObject, tab));
+
+	if (tab) {
 		if (auto it = tab->find(genericArgs); it != tab->endConst()) {
-			return it.value();
+			memberOut = it.value();
+			return {};
 		}
 	}
+
+	memberOut = {};
 	return {};
 }
 
@@ -195,9 +206,11 @@ std::optional<CompilationError> TopLevelCompileContext::instantiateGenericObject
 	peff::SharedPtr<MemberNode> originalObject,
 	const peff::DynArray<peff::SharedPtr<TypeNameNode>> &genericArgs,
 	peff::SharedPtr<MemberNode> &memberOut) {
-	if (peff::SharedPtr<MemberNode> cacheItem = lookupGenericCache(originalObject, genericArgs);
-		cacheItem) {
-		memberOut = cacheItem;
+	peff::SharedPtr<MemberNode> duplicatedObject;
+
+	SLKC_RETURN_IF_COMP_ERROR(lookupGenericCache(originalObject, genericArgs, duplicatedObject));
+	if (duplicatedObject) {
+		memberOut = duplicatedObject;
 		return {};
 	}
 
@@ -213,7 +226,7 @@ std::optional<CompilationError> TopLevelCompileContext::instantiateGenericObject
 		}
 	}
 
-	peff::SharedPtr<MemberNode> duplicatedObject = originalObject->duplicate<MemberNode>(allocator.get());
+	duplicatedObject = originalObject->duplicate<MemberNode>(allocator.get());
 
 	if (!duplicatedObject) {
 		return genOutOfMemoryCompError();

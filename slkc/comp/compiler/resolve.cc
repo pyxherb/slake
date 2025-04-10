@@ -2,10 +2,11 @@
 
 using namespace slkc;
 
-peff::SharedPtr<MemberNode> Compiler::resolveStaticMember(
+std::optional<CompilationError> Compiler::resolveStaticMember(
 	TopLevelCompileContext *compileContext,
 	const peff::SharedPtr<MemberNode> &memberNode,
-	const IdRefEntry &name) {
+	const IdRefEntry &name,
+	peff::SharedPtr<MemberNode> &memberOut) {
 	peff::SharedPtr<MemberNode> result;
 
 	switch (memberNode->astNodeType) {
@@ -41,6 +42,10 @@ peff::SharedPtr<MemberNode> Compiler::resolveStaticMember(
 	}
 
 	if (result) {
+		if (name.genericArgs.size()) {
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->instantiateGenericObject(result, name.genericArgs, result));
+		}
+
 		switch (result->astNodeType) {
 			case AstNodeType::Var: {
 				peff::SharedPtr<VarNode> m = result.castTo<VarNode>();
@@ -59,10 +64,9 @@ peff::SharedPtr<MemberNode> Compiler::resolveStaticMember(
 			}
 			default:;
 		}
-		return result;
+		memberOut = result;
+		return {};
 	}
-
-	// TODO: Handle the generic arguments.
 
 	return {};
 }
@@ -147,6 +151,7 @@ std::optional<CompilationError> Compiler::resolveInstanceMember(
 			default:;
 		}
 		memberOut = result;
+		return {};
 	}
 
 	return {};
@@ -163,7 +168,7 @@ std::optional<CompilationError> Compiler::resolveIdRef(
 	for (size_t i = 0; i < idRef->entries.size(); ++i) {
 		const IdRefEntry &curEntry = idRef->entries.at(i);
 		if (!isStatic) {
-			resolveStaticMember(compileContext, curMember, curEntry);
+			SLKC_RETURN_IF_COMP_ERROR(resolveStaticMember(compileContext, curMember, curEntry, curMember));
 		} else {
 			SLKC_RETURN_IF_COMP_ERROR(resolveInstanceMember(compileContext, curMember, curEntry, curMember));
 		}

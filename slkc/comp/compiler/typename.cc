@@ -2,7 +2,7 @@
 
 using namespace slkc;
 
-std::optional<CompilationError> Compiler::collectInvolvedInterfaces(
+SLKC_API std::optional<CompilationError> Compiler::collectInvolvedInterfaces(
 	TopLevelCompileContext *compileContext,
 	const peff::SharedPtr<InterfaceNode> &derived,
 	peff::Set<peff::SharedPtr<InterfaceNode>> &walkedInterfaces,
@@ -40,7 +40,7 @@ malformed:
 	return {};
 }
 
-std::optional<CompilationError> Compiler::isImplementedByInterface(
+SLKC_API std::optional<CompilationError> Compiler::isImplementedByInterface(
 	TopLevelCompileContext *compileContext,
 	const peff::SharedPtr<InterfaceNode> &base,
 	const peff::SharedPtr<InterfaceNode> &derived,
@@ -53,7 +53,7 @@ std::optional<CompilationError> Compiler::isImplementedByInterface(
 	return {};
 }
 
-std::optional<CompilationError> Compiler::isImplementedByClass(
+SLKC_API std::optional<CompilationError> Compiler::isImplementedByClass(
 	TopLevelCompileContext *compileContext,
 	const peff::SharedPtr<InterfaceNode> &base,
 	const peff::SharedPtr<ClassNode> &derived,
@@ -130,7 +130,7 @@ malformed:
 	return {};
 }
 
-std::optional<CompilationError> Compiler::isBaseOf(
+SLKC_API std::optional<CompilationError> Compiler::isBaseOf(
 	TopLevelCompileContext *compileContext,
 	const peff::SharedPtr<ClassNode> &base,
 	const peff::SharedPtr<ClassNode> &derived,
@@ -189,7 +189,7 @@ malformed:
 	return {};
 }
 
-std::optional<CompilationError> Compiler::removeRefOfType(
+SLKC_API std::optional<CompilationError> Compiler::removeRefOfType(
 	TopLevelCompileContext *compileContext,
 	peff::SharedPtr<TypeNameNode> src,
 	peff::SharedPtr<TypeNameNode> &typeNameOut) {
@@ -204,7 +204,7 @@ std::optional<CompilationError> Compiler::removeRefOfType(
 	return {};
 }
 
-std::optional<CompilationError> Compiler::isSameType(
+SLKC_API std::optional<CompilationError> Compiler::isSameType(
 	TopLevelCompileContext *compileContext,
 	const peff::SharedPtr<TypeNameNode> &lhs,
 	const peff::SharedPtr<TypeNameNode> &rhs,
@@ -251,7 +251,7 @@ std::optional<CompilationError> Compiler::isSameType(
 	return {};
 }
 
-std::optional<CompilationError> Compiler::isTypeConvertible(
+SLKC_API std::optional<CompilationError> Compiler::isTypeConvertible(
 	TopLevelCompileContext *compileContext,
 	const peff::SharedPtr<TypeNameNode> &src,
 	const peff::SharedPtr<TypeNameNode> &dest,

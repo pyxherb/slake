@@ -2,13 +2,14 @@
 
 using namespace slkc;
 
-TopLevelCompileContext::~TopLevelCompileContext() {
+SLKC_API TopLevelCompileContext::~TopLevelCompileContext() {
 }
 
-void TopLevelCompileContext::onRefZero() noexcept {
+SLKC_API void TopLevelCompileContext::onRefZero() noexcept {
+	peff::destroyAndRelease<TopLevelCompileContext>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
-std::optional<slkc::CompilationError> slkc::typeNameCmp(TopLevelCompileContext *compileContext, peff::SharedPtr<TypeNameNode> lhs, peff::SharedPtr<TypeNameNode> rhs, int &out) noexcept {
+SLKC_API std::optional<slkc::CompilationError> slkc::typeNameCmp(TopLevelCompileContext *compileContext, peff::SharedPtr<TypeNameNode> lhs, peff::SharedPtr<TypeNameNode> rhs, int &out) noexcept {
 	if (((uint8_t)lhs->typeNameKind) < ((uint8_t)rhs->typeNameKind)) {
 		out = -1;
 		return {};
@@ -79,7 +80,7 @@ std::optional<slkc::CompilationError> slkc::typeNameCmp(TopLevelCompileContext *
 	std::terminate();
 }
 
-std::optional<slkc::CompilationError> slkc::typeNameListCmp(TopLevelCompileContext *compileContext, const peff::DynArray<peff::SharedPtr<TypeNameNode>> &lhs, const peff::DynArray<peff::SharedPtr<TypeNameNode>> &rhs, int &out) noexcept {
+SLKC_API std::optional<slkc::CompilationError> slkc::typeNameListCmp(TopLevelCompileContext *compileContext, const peff::DynArray<peff::SharedPtr<TypeNameNode>> &lhs, const peff::DynArray<peff::SharedPtr<TypeNameNode>> &rhs, int &out) noexcept {
 	if (lhs.size() < rhs.size()) {
 		out = -1;
 		return {};

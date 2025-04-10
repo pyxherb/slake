@@ -45,7 +45,7 @@ std::optional<CompilationError> Compiler::_compileSimpleBinaryExpr(
 	return {};
 }
 
-std::optional<CompilationError> Compiler::_compileSimpleBinaryAssignOpExpr(
+SLKC_API std::optional<CompilationError> Compiler::_compileSimpleBinaryAssignOpExpr(
 	TopLevelCompileContext *compileContext,
 	peff::SharedPtr<BinaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
@@ -105,7 +105,7 @@ std::optional<CompilationError> Compiler::_compileSimpleBinaryAssignOpExpr(
 	return {};
 }
 
-std::optional<CompilationError> Compiler::compileBinaryExpr(
+SLKC_API std::optional<CompilationError> Compiler::compileBinaryExpr(
 	TopLevelCompileContext *compileContext,
 	peff::SharedPtr<BinaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,

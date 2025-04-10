@@ -2,7 +2,7 @@
 
 using namespace slkc;
 
-std::optional<CompilationError> Compiler::resolveStaticMember(
+SLKC_API std::optional<CompilationError> Compiler::resolveStaticMember(
 	TopLevelCompileContext *compileContext,
 	const peff::SharedPtr<MemberNode> &memberNode,
 	const IdRefEntry &name,
@@ -71,7 +71,7 @@ std::optional<CompilationError> Compiler::resolveStaticMember(
 	return {};
 }
 
-std::optional<CompilationError> Compiler::resolveInstanceMember(
+SLKC_API std::optional<CompilationError> Compiler::resolveInstanceMember(
 	TopLevelCompileContext *compileContext,
 	peff::SharedPtr<MemberNode> memberNode,
 	const IdRefEntry &name,
@@ -157,7 +157,7 @@ std::optional<CompilationError> Compiler::resolveInstanceMember(
 	return {};
 }
 
-std::optional<CompilationError> Compiler::resolveIdRef(
+SLKC_API std::optional<CompilationError> Compiler::resolveIdRef(
 	TopLevelCompileContext *compileContext,
 	const peff::SharedPtr<MemberNode> &resolveRoot,
 	IdRef *idRef,
@@ -184,7 +184,7 @@ std::optional<CompilationError> Compiler::resolveIdRef(
 	return {};
 }
 
-std::optional<CompilationError> Compiler::resolveCustomTypeName(
+SLKC_API std::optional<CompilationError> Compiler::resolveCustomTypeName(
 	TopLevelCompileContext *compileContext,
 	CustomTypeNameResolveContext &resolveContext,
 	const peff::SharedPtr<CustomTypeNameNode> &typeName,

@@ -2,7 +2,7 @@
 
 using namespace slkc;
 
-std::optional<CompilationError> TopLevelCompileContext::lookupGenericCacheTable(
+SLKC_API std::optional<CompilationError> TopLevelCompileContext::lookupGenericCacheTable(
 	peff::SharedPtr<MemberNode> originalObject,
 	GenericCacheTable *&tableOut) {
 	if (auto it = genericCacheDir.find(originalObject); it != genericCacheDir.end()) {
@@ -13,7 +13,7 @@ std::optional<CompilationError> TopLevelCompileContext::lookupGenericCacheTable(
 	return {};
 }
 
-std::optional<CompilationError> TopLevelCompileContext::lookupGenericCache(
+SLKC_API std::optional<CompilationError> TopLevelCompileContext::lookupGenericCache(
 	peff::SharedPtr<MemberNode> originalObject,
 	const peff::DynArray<peff::SharedPtr<TypeNameNode>> &genericArgs,
 	peff::SharedPtr<MemberNode> &memberOut) const {
@@ -202,7 +202,7 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 	return {};
 }
 
-std::optional<CompilationError> TopLevelCompileContext::instantiateGenericObject(
+SLKC_API std::optional<CompilationError> TopLevelCompileContext::instantiateGenericObject(
 	peff::SharedPtr<MemberNode> originalObject,
 	const peff::DynArray<peff::SharedPtr<TypeNameNode>> &genericArgs,
 	peff::SharedPtr<MemberNode> &memberOut) {

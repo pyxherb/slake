@@ -37,7 +37,7 @@ static std::optional<CompilationError> _compileSimpleRValueUnaryExpr(
 	return {};
 }
 
-std::optional<CompilationError> Compiler::compileUnaryExpr(
+SLKC_API std::optional<CompilationError> Compiler::compileUnaryExpr(
 	TopLevelCompileContext *compileContext,
 	peff::SharedPtr<UnaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,

@@ -10,7 +10,7 @@
 		#define SLKC_API SLAKE_DLLIMPORT
 	#endif
 #else
-	#define SLKC_API
+	#define SLKC_API SLAKE_DLLEXPORT
 #endif
 
 namespace slkc {

@@ -45,7 +45,7 @@ SLAKE_FORCEINLINE std::optional<CompilationError> _compileLiteralExpr(
 	return {};
 }
 
-std::optional<CompilationError> Compiler::_compileOrCastOperand(
+SLKC_API std::optional<CompilationError> Compiler::_compileOrCastOperand(
 	TopLevelCompileContext *compileContext,
 	uint32_t regOut,
 	ExprEvalPurpose evalPurpose,
@@ -85,7 +85,7 @@ std::optional<CompilationError> Compiler::_compileOrCastOperand(
 	return CompilationError(operand->tokenRange, std::move(exData));
 }
 
-std::optional<CompilationError> Compiler::compileExpr(
+SLKC_API std::optional<CompilationError> Compiler::compileExpr(
 	TopLevelCompileContext *compileContext,
 	const peff::SharedPtr<ExprNode> &expr,
 	ExprEvalPurpose evalPurpose,
@@ -169,4 +169,6 @@ std::optional<CompilationError> Compiler::compileExpr(
 			break;
 		}
 	}
+
+	return {};
 }

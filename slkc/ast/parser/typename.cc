@@ -146,6 +146,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 					  document)))
 				return genOutOfMemoryError();
 
+			tn->contextNode = curParent;
+
 			tn->tokenRange = id->tokenRange;
 			tn->idRefPtr = std::move(id);
 

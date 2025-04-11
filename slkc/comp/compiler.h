@@ -109,12 +109,6 @@ namespace slkc {
 		}
 	};
 
-	struct CustomTypeNameResolveContext {
-		peff::Set<peff::SharedPtr<MemberNode>> resolvedMemberNodes;
-
-		SLAKE_FORCEINLINE CustomTypeNameResolveContext(peff::Alloc *allocator) : resolvedMemberNodes(allocator) {}
-	};
-
 	struct ImplementationDetectionContext {
 		peff::Set<peff::SharedPtr<InterfaceNode>> walkedInterfaces;
 
@@ -124,6 +118,13 @@ namespace slkc {
 	struct CompileExprResult {
 		peff::SharedPtr<TypeNameNode> evaluatedType;
 	};
+
+	struct ResolvedIdRefPart {
+		size_t nEntries;
+		peff::SharedPtr<MemberNode> member;
+	};
+
+	using ResolvedIdRefPartList = peff::DynArray<ResolvedIdRefPart>;
 
 	class Compiler {
 	private:
@@ -180,7 +181,30 @@ namespace slkc {
 				IdRefEntry *idRef,
 				size_t nEntries,
 				peff::SharedPtr<MemberNode> &memberOut,
+				ResolvedIdRefPartList *resolvedPartListOut,
 				bool isStatic = true);
+		/// @brief Resolve an identifier reference with a scope object and its parents.
+		/// @param document Document for resolution.
+		/// @param walkedNodes Reference to the container to store the walked nodes, should be empty on the top level.
+		/// @param resolveScope Scope object for resolution.
+		/// @param idRef Identifier entry array for resolution.
+		/// @param nEntries Number of identifier entries.
+		/// @param memberOut Where will be used for output member storage, `nullptr` if not found.
+		/// @param isStatic Controls if the initial resolution is static or instance.
+		/// @param isSealed Controls if not go into the parent of the current scope object.
+		/// @return The fatal error encountered during the resolution.
+		[[nodiscard]] static SLKC_API
+			std::optional<CompilationError>
+			resolveIdRefWithScopeNode(
+				peff::SharedPtr<Document> document,
+				peff::Set<peff::SharedPtr<MemberNode>> &walkedNodes,
+				const peff::SharedPtr<MemberNode> &resolveScope,
+				IdRefEntry *idRef,
+				size_t nEntries,
+				peff::SharedPtr<MemberNode> &memberOut,
+				ResolvedIdRefPartList *resolvedPartListOut,
+				bool isStatic = true,
+				bool isSealed = false);
 		/// @brief Resolve a custom type name.
 		/// @param compileContext The compile context.
 		/// @param resolveContext Previous resolve context.
@@ -191,7 +215,6 @@ namespace slkc {
 			std::optional<CompilationError>
 			resolveCustomTypeName(
 				peff::SharedPtr<Document> document,
-				CustomTypeNameResolveContext &resolveContext,
 				const peff::SharedPtr<CustomTypeNameNode> &typeName,
 				peff::SharedPtr<MemberNode> &memberNodeOut);
 

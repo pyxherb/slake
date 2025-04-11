@@ -346,6 +346,12 @@ SLKC_API std::optional<SyntaxError> Parser::parseFn(peff::SharedPtr<FnNode> &fnN
 		return genOutOfMemoryError();
 	}
 
+	peff::SharedPtr<MemberNode> prevParent = curParent;
+	peff::ScopeGuard restoreParentGuard([this, prevParent]() noexcept {
+		curParent = prevParent;
+	});
+	curParent = fnNodeOut.castTo<MemberNode>();
+
 	peff::ScopeGuard setTokenRangeGuard([this, fnToken, fnNodeOut]() noexcept {
 		fnNodeOut->tokenRange = TokenRange{ fnToken->index, parseContext.idxPrevToken };
 	});
@@ -484,6 +490,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseProgramStmt() {
 accessModifierParseEnd:
 	Token *token = peekToken();
 
+	peff::SharedPtr<ModuleNode> p = curParent.castTo<ModuleNode>();
+
 	switch (token->tokenId) {
 		case TokenId::FnKeyword:
 		case TokenId::OperatorKeyword: {
@@ -494,7 +502,7 @@ accessModifierParseEnd:
 				return syntaxError;
 			}
 
-			if (auto it = curMod->members.find(fn->name); it != curMod->members.end()) {
+			if (auto it = p->members.find(fn->name); it != p->members.end()) {
 				if (it.value()->astNodeType != AstNodeType::FnSlot) {
 					peff::String s(resourceAllocator.get());
 
@@ -521,7 +529,7 @@ accessModifierParseEnd:
 					return genOutOfMemoryError();
 				}
 
-				if (!(curMod->members.insert(fnSlot->name, std::move(fnSlot.castTo<MemberNode>())))) {
+				if (!(p->members.insert(fnSlot->name, std::move(fnSlot.castTo<MemberNode>())))) {
 					return genOutOfMemoryError();
 				}
 
@@ -558,12 +566,12 @@ accessModifierParseEnd:
 					classNode->tokenRange = TokenRange{ token->index, parseContext.idxPrevToken };
 				});
 
-				peff::SharedPtr<ModuleNode> prevMod;
-				prevMod = curMod;
-				peff::ScopeGuard restorePrevModGuard([this, prevMod]() noexcept {
-					curMod = prevMod;
+				peff::SharedPtr<MemberNode> prevParent;
+				prevParent = curParent;
+				peff::ScopeGuard restorePrevModGuard([this, prevParent]() noexcept {
+					curParent = prevParent;
 				});
-				curMod = classNode.castTo<ModuleNode>();
+				curParent = classNode.castTo<MemberNode>();
 
 				if ((syntaxError = parseGenericParams(classNode->genericParams, classNode->idxGenericParamCommaTokens, classNode->idxLAngleBracketToken, classNode->idxRAngleBracketToken))) {
 					return syntaxError;
@@ -642,7 +650,7 @@ accessModifierParseEnd:
 				nextToken();
 			}
 
-			if (auto it = curMod->members.find(classNode->name); it != curMod->members.end()) {
+			if (auto it = p->members.find(classNode->name); it != p->members.end()) {
 				peff::String s(resourceAllocator.get());
 
 				if (!s.build(classNode->name)) {
@@ -653,7 +661,7 @@ accessModifierParseEnd:
 
 				return SyntaxError(classNode->tokenRange, std::move(exData));
 			} else {
-				if (!(curMod->members.insert(classNode->name, std::move(classNode.castTo<MemberNode>())))) {
+				if (!(p->members.insert(classNode->name, std::move(classNode.castTo<MemberNode>())))) {
 					return genOutOfMemoryError();
 				}
 			}
@@ -685,12 +693,12 @@ accessModifierParseEnd:
 			Token *t;
 
 			{
-				peff::SharedPtr<ModuleNode> prevMod;
-				prevMod = curMod;
-				peff::ScopeGuard restorePrevModGuard([this, prevMod]() noexcept {
-					curMod = prevMod;
+				peff::SharedPtr<MemberNode> prevMember;
+				prevMember = curParent;
+				peff::ScopeGuard restorePrevModGuard([this, prevMember]() noexcept {
+					curParent = prevMember;
 				});
-				curMod = interfaceNode.castTo<ModuleNode>();
+				curParent = interfaceNode.castTo<MemberNode>();
 
 				if ((syntaxError = parseGenericParams(interfaceNode->genericParams, interfaceNode->idxGenericParamCommaTokens, interfaceNode->idxLAngleBracketToken, interfaceNode->idxRAngleBracketToken))) {
 					return syntaxError;
@@ -755,7 +763,7 @@ accessModifierParseEnd:
 				nextToken();
 			}
 
-			if (auto it = curMod->members.find(interfaceNode->name); it != curMod->members.end()) {
+			if (auto it = p->members.find(interfaceNode->name); it != p->members.end()) {
 				peff::String s(resourceAllocator.get());
 
 				if (!s.build(interfaceNode->name)) {
@@ -766,7 +774,7 @@ accessModifierParseEnd:
 
 				return SyntaxError(interfaceNode->tokenRange, std::move(exData));
 			} else {
-				if (!(curMod->members.insert(interfaceNode->name, std::move(interfaceNode.castTo<MemberNode>())))) {
+				if (!(p->members.insert(interfaceNode->name, std::move(interfaceNode.castTo<MemberNode>())))) {
 					return genOutOfMemoryError();
 				}
 			}
@@ -810,7 +818,7 @@ accessModifierParseEnd:
 				return syntaxError;
 			}
 
-			if (!curMod->varDefStmts.pushBack(std::move(stmt))) {
+			if (!p->varDefStmts.pushBack(std::move(stmt))) {
 				return genOutOfMemoryError();
 			}
 
@@ -839,7 +847,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseProgram(const peff::SharedPtr<M
 
 	Token *t;
 
-	curMod = initialMod;
+	curParent = initialMod.castTo<MemberNode>();
 
 	if ((t = peekToken())->tokenId == TokenId::ModuleKeyword) {
 		nextToken();

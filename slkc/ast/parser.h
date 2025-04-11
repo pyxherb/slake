@@ -114,7 +114,7 @@ namespace slkc {
 	class Parser {
 	public:
 		peff::SharedPtr<Document> document;
-		peff::SharedPtr<ModuleNode> curMod;
+		peff::SharedPtr<MemberNode> curParent;
 		peff::RcObjectPtr<peff::Alloc> selfAllocator, resourceAllocator;
 		TokenList tokenList;
 		struct ParseContext {

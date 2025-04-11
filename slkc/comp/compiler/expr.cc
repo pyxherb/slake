@@ -102,14 +102,41 @@ SLKC_API std::optional<CompilationError> Compiler::compileExpr(
 		case ExprKind::IdRef: {
 			peff::SharedPtr<IdRefExprNode> e = expr.castTo<IdRefExprNode>();
 
-			peff::SharedPtr<MemberNode> initialMember;
+			peff::SharedPtr<MemberNode> initialMember, finalMember;
 			IdRefEntry &initialEntry = e->idRefPtr->entries.at(0);
+			ExprEvalPurpose initialMemberEvalPurpose;
+
+			uint32_t initialMemberReg = compileContext->allocReg();
 
 			if (!initialEntry.genericArgs.size()) {
 				// Check if the entry refers to a local variable.
 				if (auto it = blockCompileContext->localVars.find(e->idRefPtr->entries.at(0).name);
 					it != blockCompileContext->localVars.end()) {
+
+					if (e->idRefPtr->entries.size() > 1) {
+						initialMemberEvalPurpose = ExprEvalPurpose::RValue;
+					} else {
+						initialMemberEvalPurpose = evalPurpose;
+					}
+
 					initialMember = it.value().castTo<MemberNode>();
+					switch (initialMemberEvalPurpose) {
+						case ExprEvalPurpose::None:
+							break;
+						case ExprEvalPurpose::Stmt:
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(
+								CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
+							break;
+						case ExprEvalPurpose::LValue: {
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::MOV, initialMemberReg, { slake::Value(slake::ValueType::RegRef, it.value()->idxReg) }));
+							break;
+						}
+						case ExprEvalPurpose::RValue:
+						case ExprEvalPurpose::Call: {
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::LVALUE, initialMemberReg, { slake::Value(slake::ValueType::RegRef, it.value()->idxReg) }));
+							break;
+						}
+					}
 					goto initialMemberResolved;
 				}
 
@@ -117,11 +144,78 @@ SLKC_API std::optional<CompilationError> Compiler::compileExpr(
 				if (auto it = compileContext->fnCompileContext.currentFn->paramIndices.find(e->idRefPtr->entries.at(0).name);
 					it != compileContext->fnCompileContext.currentFn->paramIndices.end()) {
 					initialMember = compileContext->fnCompileContext.currentFn->params.at(it.value()).castTo<MemberNode>();
+
+					if (e->idRefPtr->entries.size() > 1) {
+						initialMemberEvalPurpose = ExprEvalPurpose::RValue;
+					} else {
+						initialMemberEvalPurpose = evalPurpose;
+					}
+
+					switch (initialMemberEvalPurpose) {
+						case ExprEvalPurpose::None:
+							break;
+						case ExprEvalPurpose::Stmt:
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(
+								CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
+							break;
+						case ExprEvalPurpose::LValue: {
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::LARG, initialMemberReg, { slake::Value(slake::ValueType::RegRef, it.value()) }));
+							break;
+						}
+						case ExprEvalPurpose::RValue:
+						case ExprEvalPurpose::Call: {
+							uint32_t tmpReg = compileContext->allocReg();
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::LARG, tmpReg, { slake::Value(slake::ValueType::RegRef, it.value()) }));
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::LVALUE, initialMemberReg, { slake::Value(slake::ValueType::RegRef, tmpReg) }));
+							break;
+						}
+					}
 					goto initialMemberResolved;
 				}
 			}
 
 		initialMemberResolved:
+			if (initialMember) {
+				if (e->idRefPtr->entries.size() > 1) {
+					size_t curIdx = 1;
+
+					ResolvedIdRefPartList parts(compileContext->document->allocator.get());
+					{
+						peff::Set<peff::SharedPtr<MemberNode>> walkedMemberNodes(compileContext->document->allocator.get());
+						SLKC_RETURN_IF_COMP_ERROR(
+							resolveIdRefWithScopeNode(
+								compileContext->document,
+								walkedMemberNodes,
+								initialMember,
+								e->idRefPtr->entries.data() + 1,
+								e->idRefPtr->entries.size() - 1,
+								finalMember,
+								&parts));
+					}
+
+					// TODO: Use RLOAD to load the rest.
+				} else {
+					finalMember = initialMember;
+				}
+			} else {
+				size_t curIdx = 1;
+
+				ResolvedIdRefPartList parts(compileContext->document->allocator.get());
+				{
+					peff::Set<peff::SharedPtr<MemberNode>> walkedMemberNodes(compileContext->document->allocator.get());
+					SLKC_RETURN_IF_COMP_ERROR(
+						resolveIdRefWithScopeNode(
+							compileContext->document,
+							walkedMemberNodes,
+							initialMember,
+							e->idRefPtr->entries.data(),
+							e->idRefPtr->entries.size(),
+							finalMember,
+							&parts));
+				}
+
+				// TODO: Use LOAD to load the beginning, and then use RLOAD to load the rest.
+			}
 			break;
 		}
 		case ExprKind::I8:

@@ -3,7 +3,7 @@
 using namespace slkc;
 
 SLKC_API std::optional<CompilationError> Compiler::collectInvolvedInterfaces(
-	TopLevelCompileContext *compileContext,
+	peff::SharedPtr<Document> document,
 	const peff::SharedPtr<InterfaceNode> &derived,
 	peff::Set<peff::SharedPtr<InterfaceNode>> &walkedInterfaces,
 	bool insertSelf) {
@@ -20,8 +20,8 @@ SLKC_API std::optional<CompilationError> Compiler::collectInvolvedInterfaces(
 		peff::SharedPtr<TypeNameNode> t = derived->implementedTypes.at(i);
 
 		peff::SharedPtr<MemberNode> m;
-		CustomTypeNameResolveContext resolveContext(compileContext->allocator.get());
-		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(compileContext, resolveContext, t.castTo<CustomTypeNameNode>(), m));
+		CustomTypeNameResolveContext resolveContext(document->allocator.get());
+		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, resolveContext, t.castTo<CustomTypeNameNode>(), m));
 
 		if (!m) {
 			goto malformed;
@@ -31,7 +31,7 @@ SLKC_API std::optional<CompilationError> Compiler::collectInvolvedInterfaces(
 			goto malformed;
 		}
 
-		SLKC_RETURN_IF_COMP_ERROR(collectInvolvedInterfaces(compileContext, m.castTo<InterfaceNode>(), walkedInterfaces, true));
+		SLKC_RETURN_IF_COMP_ERROR(collectInvolvedInterfaces(document, m.castTo<InterfaceNode>(), walkedInterfaces, true));
 	}
 
 	return {};
@@ -41,24 +41,24 @@ malformed:
 }
 
 SLKC_API std::optional<CompilationError> Compiler::isImplementedByInterface(
-	TopLevelCompileContext *compileContext,
+	peff::SharedPtr<Document> document,
 	const peff::SharedPtr<InterfaceNode> &base,
 	const peff::SharedPtr<InterfaceNode> &derived,
 	bool &whetherOut) {
-	peff::Set<peff::SharedPtr<InterfaceNode>> interfaces(compileContext->allocator.get());
+	peff::Set<peff::SharedPtr<InterfaceNode>> interfaces(document->allocator.get());
 
-	SLKC_RETURN_IF_COMP_ERROR(collectInvolvedInterfaces(compileContext, derived, interfaces, true));
+	SLKC_RETURN_IF_COMP_ERROR(collectInvolvedInterfaces(document, derived, interfaces, true));
 
 	whetherOut = interfaces.contains(base);
 	return {};
 }
 
 SLKC_API std::optional<CompilationError> Compiler::isImplementedByClass(
-	TopLevelCompileContext *compileContext,
+	peff::SharedPtr<Document> document,
 	const peff::SharedPtr<InterfaceNode> &base,
 	const peff::SharedPtr<ClassNode> &derived,
 	bool &whetherOut) {
-	peff::Set<peff::SharedPtr<ClassNode>> walkedClasses(compileContext->allocator.get());
+	peff::Set<peff::SharedPtr<ClassNode>> walkedClasses(document->allocator.get());
 
 	if (!walkedClasses.insert(peff::SharedPtr<ClassNode>(derived))) {
 		return genOutOfMemoryCompError();
@@ -73,8 +73,8 @@ SLKC_API std::optional<CompilationError> Compiler::isImplementedByClass(
 		}
 
 		peff::SharedPtr<MemberNode> m;
-		CustomTypeNameResolveContext resolveContext(compileContext->allocator.get());
-		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(compileContext, resolveContext, currentType.castTo<CustomTypeNameNode>(), m));
+		CustomTypeNameResolveContext resolveContext(document->allocator.get());
+		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, resolveContext, currentType.castTo<CustomTypeNameNode>(), m));
 
 		if (m->astNodeType != AstNodeType::Class) {
 			goto malformed;
@@ -91,8 +91,8 @@ SLKC_API std::optional<CompilationError> Compiler::isImplementedByClass(
 			peff::SharedPtr<TypeNameNode> t = derived->implementedTypes.at(i);
 
 			peff::SharedPtr<MemberNode> m;
-			CustomTypeNameResolveContext resolveContext(compileContext->allocator.get());
-			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(compileContext, resolveContext, t.castTo<CustomTypeNameNode>(), m));
+			CustomTypeNameResolveContext resolveContext(document->allocator.get());
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, resolveContext, t.castTo<CustomTypeNameNode>(), m));
 
 			if (!m) {
 				goto malformed;
@@ -109,7 +109,7 @@ SLKC_API std::optional<CompilationError> Compiler::isImplementedByClass(
 				return {};
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR(isImplementedByInterface(compileContext, base, interfaceNode, whetherOut));
+			SLKC_RETURN_IF_COMP_ERROR(isImplementedByInterface(document, base, interfaceNode, whetherOut));
 
 			if (whetherOut) {
 				whetherOut = true;
@@ -131,11 +131,11 @@ malformed:
 }
 
 SLKC_API std::optional<CompilationError> Compiler::isBaseOf(
-	TopLevelCompileContext *compileContext,
+	peff::SharedPtr<Document> document,
 	const peff::SharedPtr<ClassNode> &base,
 	const peff::SharedPtr<ClassNode> &derived,
 	bool &whetherOut) {
-	peff::Set<peff::SharedPtr<ClassNode>> walkedClasses(compileContext->allocator.get());
+	peff::Set<peff::SharedPtr<ClassNode>> walkedClasses(document->allocator.get());
 
 	if (!walkedClasses.insert(peff::SharedPtr<ClassNode>(base))) {
 		return genOutOfMemoryCompError();
@@ -153,8 +153,8 @@ SLKC_API std::optional<CompilationError> Compiler::isBaseOf(
 		}
 
 		peff::SharedPtr<MemberNode> m;
-		CustomTypeNameResolveContext resolveContext(compileContext->allocator.get());
-		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(compileContext, resolveContext, currentType.castTo<CustomTypeNameNode>(), m));
+		CustomTypeNameResolveContext resolveContext(document->allocator.get());
+		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, resolveContext, currentType.castTo<CustomTypeNameNode>(), m));
 
 		if (!m) {
 			goto malformed;
@@ -190,7 +190,6 @@ malformed:
 }
 
 SLKC_API std::optional<CompilationError> Compiler::removeRefOfType(
-	TopLevelCompileContext *compileContext,
 	peff::SharedPtr<TypeNameNode> src,
 	peff::SharedPtr<TypeNameNode> &typeNameOut) {
 	switch (src->typeNameKind) {
@@ -205,10 +204,13 @@ SLKC_API std::optional<CompilationError> Compiler::removeRefOfType(
 }
 
 SLKC_API std::optional<CompilationError> Compiler::isSameType(
-	TopLevelCompileContext *compileContext,
 	const peff::SharedPtr<TypeNameNode> &lhs,
 	const peff::SharedPtr<TypeNameNode> &rhs,
 	bool &whetherOut) {
+	peff::SharedPtr<Document> document = lhs->document.lock();
+	if (document != rhs->document.lock())
+		std::terminate();
+
 	if (lhs->typeNameKind != rhs->typeNameKind) {
 		whetherOut = false;
 		return {};
@@ -220,12 +222,12 @@ SLKC_API std::optional<CompilationError> Compiler::isSameType(
 				convertedLhs = lhs.castTo<CustomTypeNameNode>(),
 				convertedRhs = rhs.castTo<CustomTypeNameNode>();
 
-			CustomTypeNameResolveContext resolveContext(compileContext->allocator.get());
+			CustomTypeNameResolveContext resolveContext(document->allocator.get());
 
 			peff::SharedPtr<MemberNode> lhsMember, rhsMember;
 
-			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(compileContext, resolveContext, convertedLhs, lhsMember));
-			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(compileContext, resolveContext, convertedRhs, rhsMember));
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, resolveContext, convertedLhs, lhsMember));
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, resolveContext, convertedRhs, rhsMember));
 
 			whetherOut = lhsMember == rhsMember;
 			break;
@@ -235,14 +237,14 @@ SLKC_API std::optional<CompilationError> Compiler::isSameType(
 				convertedLhs = lhs.castTo<ArrayTypeNameNode>(),
 				convertedRhs = rhs.castTo<ArrayTypeNameNode>();
 
-			return isSameType(compileContext, convertedLhs->elementType, convertedRhs->elementType, whetherOut);
+			return isSameType(convertedLhs->elementType, convertedRhs->elementType, whetherOut);
 		}
 		case TypeNameKind::Ref: {
 			peff::SharedPtr<RefTypeNameNode>
 				convertedLhs = lhs.castTo<RefTypeNameNode>(),
 				convertedRhs = rhs.castTo<RefTypeNameNode>();
 
-			return isSameType(compileContext, convertedLhs->referencedType, convertedRhs->referencedType, whetherOut);
+			return isSameType(convertedLhs->referencedType, convertedRhs->referencedType, whetherOut);
 		}
 		default:
 			whetherOut = true;
@@ -252,10 +254,13 @@ SLKC_API std::optional<CompilationError> Compiler::isSameType(
 }
 
 SLKC_API std::optional<CompilationError> Compiler::isTypeConvertible(
-	TopLevelCompileContext *compileContext,
 	const peff::SharedPtr<TypeNameNode> &src,
 	const peff::SharedPtr<TypeNameNode> &dest,
 	bool &whetherOut) {
+	peff::SharedPtr<Document> document = src->document.lock();
+	if (document != dest->document.lock())
+		std::terminate();
+
 	switch (dest->typeNameKind) {
 		case TypeNameKind::I8:
 		case TypeNameKind::I16:
@@ -352,13 +357,110 @@ SLKC_API std::optional<CompilationError> Compiler::isTypeConvertible(
 			break;
 		}
 		case TypeNameKind::Array:
-			SLKC_RETURN_IF_COMP_ERROR(isSameType(compileContext, src, dest, whetherOut));
+			SLKC_RETURN_IF_COMP_ERROR(isSameType(src, dest, whetherOut));
 			break;
 		case TypeNameKind::Ref:
-			SLKC_RETURN_IF_COMP_ERROR(isSameType(compileContext, src, dest, whetherOut));
+			SLKC_RETURN_IF_COMP_ERROR(isSameType(src, dest, whetherOut));
 			whetherOut = false;
 			break;
 	}
 
+	return {};
+}
+
+SLKC_API std::optional<slkc::CompilationError> slkc::typeNameCmp(peff::SharedPtr<TypeNameNode> lhs, peff::SharedPtr<TypeNameNode> rhs, int &out) noexcept {
+	peff::SharedPtr<Document> doc = lhs->document.lock();
+
+	if (doc != rhs->document.lock())
+		std::terminate();
+
+	if (((uint8_t)lhs->typeNameKind) < ((uint8_t)rhs->typeNameKind)) {
+		out = -1;
+		return {};
+	}
+	if (((uint8_t)lhs->typeNameKind) > ((uint8_t)rhs->typeNameKind)) {
+		out = 1;
+		return {};
+	}
+	switch (lhs->typeNameKind) {
+		case TypeNameKind::Custom: {
+			peff::SharedPtr<CustomTypeNameNode>
+				l = lhs.castTo<CustomTypeNameNode>(),
+				r = rhs.castTo<CustomTypeNameNode>();
+
+			peff::SharedPtr<MemberNode>
+				lm,
+				rm;
+
+			{
+				CustomTypeNameResolveContext resolveContext(doc->allocator.get());
+				SLKC_RETURN_IF_COMP_ERROR(Compiler::resolveCustomTypeName(doc, resolveContext, l, lm));
+			}
+			{
+				CustomTypeNameResolveContext resolveContext(doc->allocator.get());
+				SLKC_RETURN_IF_COMP_ERROR(Compiler::resolveCustomTypeName(doc, resolveContext, r, rm));
+			}
+
+			if (!lm) {
+				if (rm) {
+					// [Bad type] > [Regular custom type]
+					out = 1;
+					return {};
+				}
+				// [Bad type] == [Bad type]
+				out = 0;
+				return {};
+			}
+			if (!rm) {
+				out = -1;
+				return {};
+			}
+			if (lm < rm) {
+				out = -1;
+			} else if (lm > rm) {
+				out = 1;
+			} else {
+				out = 0;
+			}
+			return {};
+		}
+		case TypeNameKind::Array: {
+			return typeNameCmp(
+				lhs.castTo<ArrayTypeNameNode>()->elementType,
+				rhs.castTo<ArrayTypeNameNode>()->elementType,
+				out);
+		}
+		case TypeNameKind::Ref: {
+			return typeNameCmp(
+				lhs.castTo<RefTypeNameNode>()->referencedType,
+				rhs.castTo<RefTypeNameNode>()->referencedType,
+				out);
+		}
+		default:
+			out = 0;
+			return {};
+	}
+
+	std::terminate();
+}
+
+SLKC_API std::optional<slkc::CompilationError> slkc::typeNameListCmp(const peff::DynArray<peff::SharedPtr<TypeNameNode>> &lhs, const peff::DynArray<peff::SharedPtr<TypeNameNode>> &rhs, int &out) noexcept {
+	if (lhs.size() < rhs.size()) {
+		out = -1;
+		return {};
+	}
+	if (lhs.size() > rhs.size()) {
+		out = 1;
+		return {};
+	}
+	for (size_t i = 0; i < lhs.size(); ++i) {
+		SLKC_RETURN_IF_COMP_ERROR(typeNameCmp(lhs.at(i), rhs.at(i), out));
+
+		if (out != 0) {
+			return {};
+		}
+	}
+
+	out = 0;
 	return {};
 }

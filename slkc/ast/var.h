@@ -13,6 +13,7 @@ namespace slkc {
 	public:
 		peff::SharedPtr<TypeNameNode> type;
 		peff::SharedPtr<ExprNode> initialValue;
+		uint32_t idxReg = UINT32_MAX;
 
 		SLKC_API VarNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API VarNode(const VarNode &rhs, peff::Alloc *allocator, bool &succeededOut);

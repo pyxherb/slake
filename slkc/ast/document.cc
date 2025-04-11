@@ -1,9 +1,20 @@
-#include "document.h"
+#include "../comp/compiler.h"
 
 using namespace slkc;
 
-SLKC_API Document::Document() {
+SLKC_API Document::Document(peff::Alloc *allocator): allocator(allocator), genericCacheDir(allocator) {
 }
 
 SLKC_API Document::~Document() {
+}
+
+SLAKE_API bool TypeNameListCmp::operator()(const peff::DynArray<peff::SharedPtr<TypeNameNode>> &lhs, const peff::DynArray<peff::SharedPtr<TypeNameNode>> &rhs) const noexcept {
+	int result;
+	// Note that we just need one critical error to notify the compiler
+	// that we have encountered errors that will force the compilation
+	// to be interrupted.
+	if ((storedError = typeNameListCmp(lhs, rhs, result))) {
+		return false;
+	}
+	return result < 0;
 }

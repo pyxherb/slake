@@ -3,7 +3,7 @@
 using namespace slkc;
 
 SLKC_API std::optional<CompilationError> Compiler::resolveStaticMember(
-	TopLevelCompileContext *compileContext,
+	peff::SharedPtr<Document> document,
 	const peff::SharedPtr<MemberNode> &memberNode,
 	const IdRefEntry &name,
 	peff::SharedPtr<MemberNode> &memberOut) {
@@ -43,7 +43,7 @@ SLKC_API std::optional<CompilationError> Compiler::resolveStaticMember(
 
 	if (result) {
 		if (name.genericArgs.size()) {
-			SLKC_RETURN_IF_COMP_ERROR(compileContext->instantiateGenericObject(result, name.genericArgs, result));
+			SLKC_RETURN_IF_COMP_ERROR(document->instantiateGenericObject(result, name.genericArgs, result));
 		}
 
 		switch (result->astNodeType) {
@@ -72,7 +72,7 @@ SLKC_API std::optional<CompilationError> Compiler::resolveStaticMember(
 }
 
 SLKC_API std::optional<CompilationError> Compiler::resolveInstanceMember(
-	TopLevelCompileContext *compileContext,
+	peff::SharedPtr<Document> document,
 	peff::SharedPtr<MemberNode> memberNode,
 	const IdRefEntry &name,
 	peff::SharedPtr<MemberNode> &memberOut) {
@@ -114,18 +114,18 @@ SLKC_API std::optional<CompilationError> Compiler::resolveInstanceMember(
 			}
 
 			peff::SharedPtr<TypeNameNode> type;
-			SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(compileContext, m->type, type));
+			SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(m->type, type));
 
-			CustomTypeNameResolveContext resolveContext(compileContext->allocator.get());
+			CustomTypeNameResolveContext resolveContext(document->allocator.get());
 
 			peff::SharedPtr<MemberNode> tm;
-			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(compileContext, resolveContext, type.castTo<CustomTypeNameNode>(), tm));
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, resolveContext, type.castTo<CustomTypeNameNode>(), tm));
 
 			if (!tm) {
 				return {};
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR(resolveInstanceMember(compileContext, tm, name, result));
+			SLKC_RETURN_IF_COMP_ERROR(resolveInstanceMember(document, tm, name, result));
 
 			break;
 		}
@@ -158,19 +158,20 @@ SLKC_API std::optional<CompilationError> Compiler::resolveInstanceMember(
 }
 
 SLKC_API std::optional<CompilationError> Compiler::resolveIdRef(
-	TopLevelCompileContext *compileContext,
+	peff::SharedPtr<Document> document,
 	const peff::SharedPtr<MemberNode> &resolveRoot,
-	IdRef *idRef,
+	IdRefEntry *idRef,
+	size_t nEntries,
 	peff::SharedPtr<MemberNode> &memberOut,
 	bool isStatic) {
 	peff::SharedPtr<MemberNode> curMember = resolveRoot;
 
-	for (size_t i = 0; i < idRef->entries.size(); ++i) {
-		const IdRefEntry &curEntry = idRef->entries.at(i);
+	for (size_t i = 0; i < nEntries; ++i) {
+		const IdRefEntry &curEntry = idRef[i];
 		if (!isStatic) {
-			SLKC_RETURN_IF_COMP_ERROR(resolveStaticMember(compileContext, curMember, curEntry, curMember));
+			SLKC_RETURN_IF_COMP_ERROR(resolveStaticMember(document, curMember, curEntry, curMember));
 		} else {
-			SLKC_RETURN_IF_COMP_ERROR(resolveInstanceMember(compileContext, curMember, curEntry, curMember));
+			SLKC_RETURN_IF_COMP_ERROR(resolveInstanceMember(document, curMember, curEntry, curMember));
 		}
 
 		switch (curMember->astNodeType) {
@@ -185,7 +186,7 @@ SLKC_API std::optional<CompilationError> Compiler::resolveIdRef(
 }
 
 SLKC_API std::optional<CompilationError> Compiler::resolveCustomTypeName(
-	TopLevelCompileContext *compileContext,
+	peff::SharedPtr<Document> document,
 	CustomTypeNameResolveContext &resolveContext,
 	const peff::SharedPtr<CustomTypeNameNode> &typeName,
 	peff::SharedPtr<MemberNode> &memberNodeOut) {
@@ -200,7 +201,7 @@ SLKC_API std::optional<CompilationError> Compiler::resolveCustomTypeName(
 		return genOutOfMemoryCompError();
 	}
 
-	SLKC_RETURN_IF_COMP_ERROR(resolveIdRef(compileContext, typeName->contextNode.lock(), typeName->idRefPtr.get(), member));
+	SLKC_RETURN_IF_COMP_ERROR(resolveIdRef(document, typeName->contextNode.lock(), typeName->idRefPtr->entries.data(), typeName->idRefPtr->entries.size(), member));
 
 	if (!member) {
 		switch (member->astNodeType) {
@@ -211,7 +212,7 @@ SLKC_API std::optional<CompilationError> Compiler::resolveCustomTypeName(
 					peff::SharedPtr<MemberNode> bt;
 
 					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(
-						compileContext,
+						document,
 						resolveContext,
 						m->baseType.castTo<CustomTypeNameNode>(),
 						bt));
@@ -229,7 +230,7 @@ SLKC_API std::optional<CompilationError> Compiler::resolveCustomTypeName(
 					peff::SharedPtr<MemberNode> it;
 
 					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(
-						compileContext,
+						document,
 						resolveContext,
 						i.castTo<CustomTypeNameNode>(),
 						it));
@@ -252,7 +253,7 @@ SLKC_API std::optional<CompilationError> Compiler::resolveCustomTypeName(
 					peff::SharedPtr<MemberNode> it;
 
 					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(
-						compileContext,
+						document,
 						resolveContext,
 						i.castTo<CustomTypeNameNode>(),
 						it));

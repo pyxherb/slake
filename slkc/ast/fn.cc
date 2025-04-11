@@ -59,6 +59,7 @@ SLKC_API FnNode::FnNode(
 	const peff::SharedPtr<Document> &document)
 	: MemberNode(AstNodeType::Fn, selfAllocator, document),
 	  params(selfAllocator),
+	  paramIndices(selfAllocator),
 	  genericParams(selfAllocator),
 	  genericParamIndices(selfAllocator),
 	  idxParamCommaTokens(selfAllocator),
@@ -68,6 +69,7 @@ SLKC_API FnNode::FnNode(
 SLKC_API FnNode::FnNode(const FnNode &rhs, peff::Alloc *allocator, bool &succeededOut)
 	: MemberNode(rhs, allocator, succeededOut),
 	  params(allocator),
+	  paramIndices(allocator),
 	  genericParams(allocator),
 	  genericParamIndices(allocator),
 	  idxParamCommaTokens(allocator),
@@ -91,6 +93,11 @@ SLKC_API FnNode::FnNode(const FnNode &rhs, peff::Alloc *allocator, bool &succeed
 
 	for (size_t i = 0; i < params.size(); ++i) {
 		if (!(params.at(i) = rhs.params.at(i)->duplicate<VarNode>(allocator))) {
+			succeededOut = false;
+			return;
+		}
+
+		if (!paramIndices.insert(params.at(i)->name, +i)) {
 			succeededOut = false;
 			return;
 		}

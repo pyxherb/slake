@@ -3,6 +3,27 @@
 
 using namespace slake;
 
+SLAKE_API Instruction::Instruction()
+	: opcode((Opcode)0xff),
+	  nOperands(0),
+	  output(UINT32_MAX),
+	  operands(nullptr),
+	  fnOverloading(nullptr) {
+}
+
+SLAKE_API Instruction::Instruction(Instruction &&rhs)
+	: opcode(rhs.opcode),
+	  nOperands(rhs.nOperands),
+	  output(rhs.output),
+	  operands(rhs.operands),
+	  fnOverloading(rhs.fnOverloading) {
+	rhs.opcode = (Opcode)0xff;
+	rhs.nOperands = 0;
+	rhs.output = UINT32_MAX;
+	rhs.operands = nullptr;
+	rhs.fnOverloading = nullptr;
+}
+
 SLAKE_API Instruction::~Instruction() {
 	if (nOperands) {
 		fnOverloading->associatedRuntime->globalHeapPoolAlloc.release(operands, sizeof(Value) * nOperands, sizeof(std::max_align_t));
@@ -41,6 +62,11 @@ SLAKE_API bool Instruction::operator<(const Instruction &rhs) const {
 			return false;
 	}
 	return false;
+}
+
+SLAKE_API Instruction &Instruction::operator=(Instruction &&rhs) {
+	peff::constructAt<Instruction>(this, std::move(rhs));
+	return *this;
 }
 
 SLAKE_API FnOverloadingObject::FnOverloadingObject(

@@ -33,6 +33,8 @@ SLKC_API VarNode::VarNode(const VarNode &rhs, peff::Alloc *allocator, bool &succ
 		return;
 	}
 
+	idxReg = rhs.idxReg;
+
 	succeededOut = true;
 }
 

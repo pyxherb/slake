@@ -3,13 +3,15 @@
 using namespace slkc;
 
 static std::optional<CompilationError> _compileSimpleRValueUnaryExpr(
-	TopLevelCompileContext *compileContext,
+	CompileContext *compileContext,
 	peff::SharedPtr<UnaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
 	uint32_t resultRegOut,
-	CompileExprResult& resultOut,
+	CompileExprResult &resultOut,
 	slake::Opcode opcode) {
 	switch (evalPurpose) {
+		case ExprEvalPurpose::None:
+			break;
 		case ExprEvalPurpose::Stmt:
 			SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(
 				CompilationWarning(expr->tokenRange, CompilationWarningKind::UnusedExprResult)));
@@ -22,11 +24,10 @@ static std::optional<CompilationError> _compileSimpleRValueUnaryExpr(
 			uint32_t tmpReg = compileContext->allocReg();
 
 			SLKC_RETURN_IF_COMP_ERROR(Compiler::compileExpr(compileContext, expr->operand, ExprEvalPurpose::RValue, tmpReg, result));
-			SLKC_RETURN_IF_COMP_ERROR(compileContext->pushIns(
-				emitIns(
-					slake::Opcode::NEG,
-					resultRegOut,
-					{ slake::Value(slake::ValueType::RegRef, tmpReg) })));
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+				slake::Opcode::NEG,
+				resultRegOut,
+				{ slake::Value(slake::ValueType::RegRef, tmpReg) }));
 
 			break;
 		}
@@ -38,7 +39,7 @@ static std::optional<CompilationError> _compileSimpleRValueUnaryExpr(
 }
 
 SLKC_API std::optional<CompilationError> Compiler::compileUnaryExpr(
-	TopLevelCompileContext *compileContext,
+	CompileContext *compileContext,
 	peff::SharedPtr<UnaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
 	uint32_t resultRegOut,
@@ -48,7 +49,7 @@ SLKC_API std::optional<CompilationError> Compiler::compileUnaryExpr(
 	SLKC_RETURN_IF_COMP_ERROR(
 		evalExprType(compileContext, expr->operand, operandType));
 	SLKC_RETURN_IF_COMP_ERROR(
-		removeRefOfType(compileContext, operandType, decayedOperandType));
+		removeRefOfType(operandType, decayedOperandType));
 
 	switch (decayedOperandType->typeNameKind) {
 		case TypeNameKind::I8:
@@ -105,7 +106,6 @@ SLKC_API std::optional<CompilationError> Compiler::compileUnaryExpr(
 			break;
 		}
 		case TypeNameKind::Custom: {
-
 		}
 		default:
 			return CompilationError(

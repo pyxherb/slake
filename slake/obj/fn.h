@@ -17,12 +17,14 @@ namespace slake {
 	struct MajorFrame;
 
 	struct Instruction final {
-		Opcode opcode = (Opcode)0xff;
-		uint8_t nOperands = 0;
-		uint32_t output = UINT32_MAX;
-		Value *operands = nullptr;
-		FnOverloadingObject *fnOverloading = nullptr;
+		Opcode opcode;
+		uint8_t nOperands;
+		uint32_t output;
+		Value *operands;
+		FnOverloadingObject *fnOverloading;
 
+		SLAKE_API Instruction();
+		SLAKE_API Instruction(Instruction &&rhs);
 		SLAKE_API ~Instruction();
 
 		SLAKE_API bool operator==(const Instruction &rhs) const;
@@ -31,6 +33,8 @@ namespace slake {
 		}
 
 		SLAKE_API bool operator<(const Instruction &rhs) const;
+
+		SLAKE_API Instruction &operator=(Instruction &&rhs);
 	};
 
 	enum class FnOverloadingKind {

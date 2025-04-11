@@ -297,7 +297,7 @@ int main(int argc, char *argv[]) {
 
 		std::string_view sv(buf.get(), fileSize);
 
-		peff::SharedPtr<slkc::Document> document(peff::makeShared<slkc::Document>(peff::getDefaultAlloc()));
+		peff::SharedPtr<slkc::Document> document(peff::makeShared<slkc::Document>(peff::getDefaultAlloc(), peff::getDefaultAlloc()));
 
 		if (auto e = lexer.lex(sv, peff::getDefaultAlloc(), document); e) {
 			printError("Lexical error at %zu, %zu: %s\n", e->location.beginPosition.line + 1, e->location.beginPosition.column + 1, e->message);

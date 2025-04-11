@@ -4,7 +4,7 @@ using namespace slkc;
 
 template <typename LE, typename DT, typename TN>
 SLAKE_FORCEINLINE std::optional<CompilationError> _compileLiteralExpr(
-	TopLevelCompileContext *compileContext,
+	CompileContext *compileContext,
 	const peff::SharedPtr<ExprNode> &expr,
 	ExprEvalPurpose evalPurpose,
 	uint32_t resultRegOut,
@@ -19,11 +19,10 @@ SLAKE_FORCEINLINE std::optional<CompilationError> _compileLiteralExpr(
 		case ExprEvalPurpose::RValue:
 			if (resultRegOut != UINT32_MAX) {
 				SLKC_RETURN_IF_COMP_ERROR(
-					compileContext->pushIns(
-						emitIns(
-							slake::Opcode::MOV,
-							resultRegOut,
-							{ slake::Value((DT)e->data) })));
+					compileContext->emitIns(
+						slake::Opcode::MOV,
+						resultRegOut,
+						{ slake::Value((DT)e->data) }));
 			}
 			break;
 		case ExprEvalPurpose::LValue:
@@ -46,21 +45,21 @@ SLAKE_FORCEINLINE std::optional<CompilationError> _compileLiteralExpr(
 }
 
 SLKC_API std::optional<CompilationError> Compiler::_compileOrCastOperand(
-	TopLevelCompileContext *compileContext,
+	CompileContext *compileContext,
 	uint32_t regOut,
 	ExprEvalPurpose evalPurpose,
 	peff::SharedPtr<TypeNameNode> desiredType,
 	peff::SharedPtr<ExprNode> operand,
 	peff::SharedPtr<TypeNameNode> operandType) {
 	bool whether;
-	SLKC_RETURN_IF_COMP_ERROR(isSameType(compileContext, desiredType, operandType, whether));
+	SLKC_RETURN_IF_COMP_ERROR(isSameType(desiredType, operandType, whether));
 	if (whether) {
 		CompileExprResult result;
 		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, operand, evalPurpose, regOut, result));
 		return {};
 	}
 
-	SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(compileContext, operandType, desiredType, whether));
+	SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(operandType, desiredType, whether));
 	if (whether) {
 		CompileExprResult result;
 
@@ -86,11 +85,13 @@ SLKC_API std::optional<CompilationError> Compiler::_compileOrCastOperand(
 }
 
 SLKC_API std::optional<CompilationError> Compiler::compileExpr(
-	TopLevelCompileContext *compileContext,
+	CompileContext *compileContext,
 	const peff::SharedPtr<ExprNode> &expr,
 	ExprEvalPurpose evalPurpose,
 	uint32_t resultRegOut,
 	CompileExprResult &resultOut) {
+	peff::SharedPtr<BlockCompileContext> blockCompileContext = compileContext->fnCompileContext.blockCompileContexts.back();
+
 	switch (expr->exprKind) {
 		case ExprKind::Unary:
 			SLKC_RETURN_IF_COMP_ERROR(compileUnaryExpr(compileContext, expr.castTo<UnaryExprNode>(), evalPurpose, resultRegOut, resultOut));
@@ -98,6 +99,31 @@ SLKC_API std::optional<CompilationError> Compiler::compileExpr(
 		case ExprKind::Binary:
 			SLKC_RETURN_IF_COMP_ERROR(compileBinaryExpr(compileContext, expr.castTo<BinaryExprNode>(), evalPurpose, resultRegOut, resultOut));
 			break;
+		case ExprKind::IdRef: {
+			peff::SharedPtr<IdRefExprNode> e = expr.castTo<IdRefExprNode>();
+
+			peff::SharedPtr<MemberNode> initialMember;
+			IdRefEntry &initialEntry = e->idRefPtr->entries.at(0);
+
+			if (!initialEntry.genericArgs.size()) {
+				// Check if the entry refers to a local variable.
+				if (auto it = blockCompileContext->localVars.find(e->idRefPtr->entries.at(0).name);
+					it != blockCompileContext->localVars.end()) {
+					initialMember = it.value().castTo<MemberNode>();
+					goto initialMemberResolved;
+				}
+
+				// Check if the entry refers to a function parameter.
+				if (auto it = compileContext->fnCompileContext.currentFn->paramIndices.find(e->idRefPtr->entries.at(0).name);
+					it != compileContext->fnCompileContext.currentFn->paramIndices.end()) {
+					initialMember = compileContext->fnCompileContext.currentFn->params.at(it.value()).castTo<MemberNode>();
+					goto initialMemberResolved;
+				}
+			}
+
+		initialMemberResolved:
+			break;
+		}
 		case ExprKind::I8:
 			SLKC_RETURN_IF_COMP_ERROR(_compileLiteralExpr<I8LiteralExprNode, int8_t, I8TypeNameNode>(compileContext, expr, evalPurpose, resultRegOut, resultOut));
 			break;
@@ -142,11 +168,10 @@ SLKC_API std::optional<CompilationError> Compiler::compileExpr(
 				case ExprEvalPurpose::RValue:
 					if (resultRegOut != UINT32_MAX) {
 						SLKC_RETURN_IF_COMP_ERROR(
-							compileContext->pushIns(
-								emitIns(
-									slake::Opcode::MOV,
-									resultRegOut,
-									{ slake::Value(nullptr) })));
+							compileContext->emitIns(
+								slake::Opcode::MOV,
+								resultRegOut,
+								{ slake::Value(nullptr) }));
 					}
 					break;
 				case ExprEvalPurpose::LValue:

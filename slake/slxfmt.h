@@ -42,12 +42,12 @@ namespace slake {
 		/// @brief Instruction Header (IH)
 		///
 		struct InsHeader final {
-			Opcode opcode : 13;			// Operation code
+			Opcode opcode : 8;			// Operation code
 			bool hasOutputOperand : 1;	// Determines if the instruction has an output.
-			uint8_t nOperands : 2;		// Number of operands
+			uint16_t nOperands : 15;		// Number of operands
 
 			inline InsHeader() : opcode(Opcode::NOP), nOperands(0) {}
-			inline InsHeader(Opcode opcode, uint8_t nOperands) {
+			inline InsHeader(Opcode opcode, uint16_t nOperands) {
 				assert((uint8_t)opcode < (1 << 6));
 				assert(nOperands < 4);
 				this->opcode = opcode;

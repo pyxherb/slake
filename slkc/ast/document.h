@@ -84,6 +84,21 @@ namespace slkc {
 			peff::SharedPtr<MemberNode>,
 			TypeNameListCmp>;
 
+	struct GenericInstantiationContext {
+		peff::RcObjectPtr<peff::Alloc> allocator;
+		const peff::DynArray<peff::SharedPtr<TypeNameNode>> *genericArgs;
+		peff::HashMap<std::string_view, peff::SharedPtr<TypeNameNode>> mappedGenericArgs;
+		peff::SharedPtr<MemberNode> mappedNode;
+
+		SLAKE_FORCEINLINE GenericInstantiationContext(
+			peff::Alloc *allocator,
+			const peff::DynArray<peff::SharedPtr<TypeNameNode>> *genericArgs)
+			: allocator(allocator),
+			  genericArgs(genericArgs),
+			  mappedGenericArgs(allocator) {
+		}
+	};
+
 	class Document : public peff::SharedFromThis<Document> {
 	public:
 		peff::RcObjectPtr<peff::Alloc> allocator;

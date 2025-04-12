@@ -18,12 +18,12 @@ std::optional<CompilationError> Compiler::_compileSimpleBinaryExpr(
 	switch (evalPurpose) {
 		case ExprEvalPurpose::None:
 			break;
+		case ExprEvalPurpose::LValue:
+			return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
 		case ExprEvalPurpose::Stmt:
 			SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(
 				CompilationWarning(expr->tokenRange, CompilationWarningKind::UnusedExprResult)));
-			break;
-		case ExprEvalPurpose::LValue:
-			return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
+			[[fallthrough]];
 		case ExprEvalPurpose::RValue: {
 			CompileExprResult result;
 
@@ -33,9 +33,125 @@ std::optional<CompilationError> Compiler::_compileSimpleBinaryExpr(
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, lhsReg, lhsEvalPurpose, desiredLhsType, expr->lhs, lhsType));
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType));
 			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
-					opcode,
-					resultRegOut,
-					{ slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::ValueType::RegRef, rhsReg) }));
+				opcode,
+				resultRegOut,
+				{ slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::ValueType::RegRef, rhsReg) }));
+
+			break;
+		}
+		case ExprEvalPurpose::Call:
+			return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotCallable);
+	}
+
+	return {};
+}
+
+std::optional<CompilationError> Compiler::_compileSimpleLAndBinaryExpr(
+	CompileContext *compileContext,
+	peff::SharedPtr<BinaryExprNode> expr,
+	ExprEvalPurpose evalPurpose,
+	peff::SharedPtr<BoolTypeNameNode> boolType,
+	peff::SharedPtr<TypeNameNode> lhsType,
+	peff::SharedPtr<TypeNameNode> rhsType,
+	uint32_t resultRegOut,
+	CompileExprResult &resultOut,
+	slake::Opcode opcode) {
+	switch (evalPurpose) {
+		case ExprEvalPurpose::None:
+			break;
+		case ExprEvalPurpose::LValue:
+			return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
+		case ExprEvalPurpose::Stmt:
+		case ExprEvalPurpose::RValue: {
+			CompileExprResult result;
+
+			uint32_t lhsReg = compileContext->allocReg(),
+					 rhsReg = compileContext->allocReg(),
+					 tmpResultReg = compileContext->allocReg();
+
+			uint32_t cmpEndLabelId;
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->allocLabel(cmpEndLabelId));
+
+			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, lhsReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), expr->lhs, lhsType));
+
+			uint32_t phiSrcOff = compileContext->getCurInsOff();
+
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+				slake::Opcode::JF,
+				UINT32_MAX,
+				{ slake::Value(slake::ValueType::Label, rhsReg), slake::Value(slake::ValueType::RegRef, lhsReg) }));
+
+			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, rhsReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), expr->rhs, rhsType));
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+				slake::Opcode::LAND,
+				tmpResultReg,
+				{ slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::ValueType::RegRef, rhsReg) }));
+
+			compileContext->getLabel(cmpEndLabelId)->offset = compileContext->getCurInsOff();
+
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+				slake::Opcode::PHI,
+				tmpResultReg,
+				{ slake::Value((uint32_t)phiSrcOff), slake::Value(slake::ValueType::RegRef, lhsReg),
+					slake::Value((uint32_t)UINT32_MAX), slake::Value(slake::ValueType::RegRef, tmpResultReg) }));
+
+			break;
+		}
+		case ExprEvalPurpose::Call:
+			return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotCallable);
+	}
+
+	return {};
+}
+
+std::optional<CompilationError> Compiler::_compileSimpleLOrBinaryExpr(
+	CompileContext *compileContext,
+	peff::SharedPtr<BinaryExprNode> expr,
+	ExprEvalPurpose evalPurpose,
+	peff::SharedPtr<BoolTypeNameNode> boolType,
+	peff::SharedPtr<TypeNameNode> lhsType,
+	peff::SharedPtr<TypeNameNode> rhsType,
+	uint32_t resultRegOut,
+	CompileExprResult &resultOut,
+	slake::Opcode opcode) {
+	switch (evalPurpose) {
+		case ExprEvalPurpose::None:
+			break;
+		case ExprEvalPurpose::LValue:
+			return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
+		case ExprEvalPurpose::Stmt:
+		case ExprEvalPurpose::RValue: {
+			CompileExprResult result;
+
+			uint32_t lhsReg = compileContext->allocReg(),
+					 rhsReg = compileContext->allocReg(),
+					 tmpResultReg = compileContext->allocReg();
+
+			uint32_t cmpEndLabelId;
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->allocLabel(cmpEndLabelId));
+
+			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, lhsReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), expr->lhs, lhsType));
+
+			uint32_t phiSrcOff = compileContext->getCurInsOff();
+
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+				slake::Opcode::JF,
+				UINT32_MAX,
+				{ slake::Value(slake::ValueType::Label, rhsReg), slake::Value(slake::ValueType::RegRef, lhsReg) }));
+
+			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, rhsReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), expr->rhs, rhsType));
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+				slake::Opcode::LAND,
+				tmpResultReg,
+				{ slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::ValueType::RegRef, rhsReg) }));
+
+			compileContext->getLabel(cmpEndLabelId)->offset = compileContext->getCurInsOff();
+
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+				slake::Opcode::PHI,
+				tmpResultReg,
+				{ slake::Value((uint32_t)phiSrcOff), slake::Value(slake::ValueType::RegRef, lhsReg),
+					slake::Value((uint32_t)UINT32_MAX), slake::Value(slake::ValueType::RegRef, tmpResultReg) }));
 
 			break;
 		}
@@ -60,12 +176,34 @@ SLKC_API std::optional<CompilationError> Compiler::_compileSimpleBinaryAssignOpE
 	switch (evalPurpose) {
 		case ExprEvalPurpose::None:
 			break;
+		case ExprEvalPurpose::LValue: {
+			CompileExprResult result;
+
+			uint32_t lhsValueReg = compileContext->allocReg(),
+					 rhsReg = compileContext->allocReg(),
+					 resultValueReg = compileContext->allocReg();
+
+			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, resultRegOut, ExprEvalPurpose::LValue, lhsType, expr->lhs, lhsType));
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+				slake::Opcode::LVALUE,
+				lhsValueReg,
+				{ slake::Value(slake::ValueType::RegRef, resultRegOut) }));
+
+			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType));
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+				opcode,
+				resultValueReg,
+				{ slake::Value(slake::ValueType::RegRef, lhsValueReg), slake::Value(slake::ValueType::RegRef, rhsReg) }));
+
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+				slake::Opcode::STORE,
+				resultRegOut,
+				{ slake::Value(slake::ValueType::RegRef, resultValueReg) }));
+		}
 		case ExprEvalPurpose::Stmt:
 			SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(
 				CompilationWarning(expr->tokenRange, CompilationWarningKind::UnusedExprResult)));
-			break;
-		case ExprEvalPurpose::LValue:
-			return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
+			[[fallthrough]];
 		case ExprEvalPurpose::RValue: {
 			CompileExprResult result;
 
@@ -75,25 +213,20 @@ SLKC_API std::optional<CompilationError> Compiler::_compileSimpleBinaryAssignOpE
 
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, lhsReg, ExprEvalPurpose::LValue, lhsType, expr->lhs, lhsType));
 			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
-					slake::Opcode::LVALUE,
-					lhsValueReg,
-					{ slake::Value(slake::ValueType::RegRef, lhsReg) }));
+				slake::Opcode::LVALUE,
+				lhsValueReg,
+				{ slake::Value(slake::ValueType::RegRef, lhsReg) }));
 
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType));
 			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
-					opcode,
-					resultRegOut,
-					{ slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::ValueType::RegRef, rhsReg) }));
+				opcode,
+				resultRegOut,
+				{ slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::ValueType::RegRef, rhsReg) }));
 
 			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
-					opcode,
-					resultRegOut,
-					{ slake::Value(slake::ValueType::RegRef, lhsValueReg), slake::Value(slake::ValueType::RegRef, rhsReg) }));
-
-			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
-					slake::Opcode::STORE,
-					lhsReg,
-					{ slake::Value(slake::ValueType::RegRef, resultRegOut) }));
+				slake::Opcode::STORE,
+				lhsReg,
+				{ slake::Value(slake::ValueType::RegRef, resultRegOut) }));
 
 			break;
 		}
@@ -134,9 +267,9 @@ SLKC_API std::optional<CompilationError> Compiler::compileBinaryExpr(
 	peff::SharedPtr<BoolTypeNameNode> boolType;
 
 	if (!(u32Type = peff::makeShared<U32TypeNameNode>(
-		compileContext->allocator.get(),
-		compileContext->allocator.get(),
-		compileContext->document))) {
+			  compileContext->allocator.get(),
+			  compileContext->allocator.get(),
+			  compileContext->document))) {
 		return genOutOfMemoryCompError();
 	}
 
@@ -270,29 +403,31 @@ SLKC_API std::optional<CompilationError> Compiler::compileBinaryExpr(
 					break;
 				case BinaryOp::LAnd:
 					SLKC_RETURN_IF_COMP_ERROR(
-						_compileSimpleBinaryExpr(
+						_compileSimpleLAndBinaryExpr(
 							compileContext,
 							expr,
 							evalPurpose,
-							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
-							decayedRhsType, decayedLhsType, ExprEvalPurpose::RValue,
+							boolType,
+							decayedLhsType,
+							decayedRhsType,
 							resultRegOut,
 							resultOut,
 							slake::Opcode::LAND));
-					resultOut.evaluatedType = decayedLhsType;
+					resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 					break;
 				case BinaryOp::LOr:
 					SLKC_RETURN_IF_COMP_ERROR(
-						_compileSimpleBinaryExpr(
+						_compileSimpleLOrBinaryExpr(
 							compileContext,
 							expr,
 							evalPurpose,
-							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
-							decayedRhsType, decayedLhsType, ExprEvalPurpose::RValue,
+							boolType,
+							decayedLhsType,
+							decayedRhsType,
 							resultRegOut,
 							resultOut,
 							slake::Opcode::LOR));
-					resultOut.evaluatedType = decayedLhsType;
+					resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 					break;
 				case BinaryOp::Shl:
 					SLKC_RETURN_IF_COMP_ERROR(
@@ -647,29 +782,31 @@ SLKC_API std::optional<CompilationError> Compiler::compileBinaryExpr(
 					break;
 				case BinaryOp::LAnd:
 					SLKC_RETURN_IF_COMP_ERROR(
-						_compileSimpleBinaryExpr(
+						_compileSimpleLAndBinaryExpr(
 							compileContext,
 							expr,
 							evalPurpose,
-							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
-							decayedRhsType, decayedLhsType, ExprEvalPurpose::RValue,
+							boolType,
+							decayedLhsType,
+							decayedRhsType,
 							resultRegOut,
 							resultOut,
 							slake::Opcode::LAND));
-					resultOut.evaluatedType = decayedLhsType;
+					resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 					break;
 				case BinaryOp::LOr:
 					SLKC_RETURN_IF_COMP_ERROR(
-						_compileSimpleBinaryExpr(
+						_compileSimpleLOrBinaryExpr(
 							compileContext,
 							expr,
 							evalPurpose,
-							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
-							decayedRhsType, decayedLhsType, ExprEvalPurpose::RValue,
+							boolType,
+							decayedLhsType,
+							decayedRhsType,
 							resultRegOut,
 							resultOut,
 							slake::Opcode::LOR));
-					resultOut.evaluatedType = decayedLhsType;
+					resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 					break;
 				case BinaryOp::Assign:
 					SLKC_RETURN_IF_COMP_ERROR(
@@ -928,29 +1065,31 @@ SLKC_API std::optional<CompilationError> Compiler::compileBinaryExpr(
 					break;
 				case BinaryOp::LAnd:
 					SLKC_RETURN_IF_COMP_ERROR(
-						_compileSimpleBinaryExpr(
+						_compileSimpleLAndBinaryExpr(
 							compileContext,
 							expr,
 							evalPurpose,
-							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
-							decayedRhsType, decayedLhsType, ExprEvalPurpose::RValue,
+							boolType,
+							decayedLhsType,
+							decayedRhsType,
 							resultRegOut,
 							resultOut,
 							slake::Opcode::LAND));
-					resultOut.evaluatedType = decayedLhsType;
+					resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 					break;
 				case BinaryOp::LOr:
 					SLKC_RETURN_IF_COMP_ERROR(
-						_compileSimpleBinaryExpr(
+						_compileSimpleLOrBinaryExpr(
 							compileContext,
 							expr,
 							evalPurpose,
-							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
-							decayedRhsType, decayedLhsType, ExprEvalPurpose::RValue,
+							boolType,
+							decayedLhsType,
+							decayedRhsType,
 							resultRegOut,
 							resultOut,
 							slake::Opcode::LOR));
-					resultOut.evaluatedType = decayedLhsType;
+					resultOut.evaluatedType = boolType.castTo<TypeNameNode>();
 					break;
 				case BinaryOp::Assign:
 					SLKC_RETURN_IF_COMP_ERROR(
@@ -1101,10 +1240,11 @@ SLKC_API std::optional<CompilationError> Compiler::compileBinaryExpr(
 				case BinaryOp::Subscript: {
 					peff::SharedPtr<TypeNameNode> evaluatedType;
 					if (!(evaluatedType = peff::makeShared<RefTypeNameNode>(
-						compileContext->allocator.get(),
-						compileContext->allocator.get(),
-						compileContext->document,
-						decayedLhsType.castTo<ArrayTypeNameNode>()->elementType).castTo<TypeNameNode>())) {
+							  compileContext->allocator.get(),
+							  compileContext->allocator.get(),
+							  compileContext->document,
+							  decayedLhsType.castTo<ArrayTypeNameNode>()->elementType)
+								.castTo<TypeNameNode>())) {
 						return genOutOfMemoryCompError();
 					}
 					SLKC_RETURN_IF_COMP_ERROR(

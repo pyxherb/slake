@@ -24,7 +24,7 @@ namespace slake {
 			size_t stackBase);
 		// Default constructor is required by resize() methods from the
 		// containers.
-		SLAKE_FORCEINLINE MinorFrame(): exceptHandlers(nullptr) {
+		SLAKE_FORCEINLINE MinorFrame() : exceptHandlers(nullptr) {
 			abort();
 		}
 	};
@@ -41,6 +41,7 @@ namespace slake {
 
 		const FnOverloadingObject *curFn = nullptr;	 // Current function overloading.
 		uint32_t curIns = 0;						 // Offset of current instruction in function body.
+		uint32_t lastJumpSrc = UINT32_MAX;			// Offset of last executed jump instruction.
 
 		peff::DynArray<ArgRecord> argStack;	 // Argument stack.
 
@@ -61,7 +62,7 @@ namespace slake {
 		SLAKE_API MajorFrame(Runtime *rt, Context *context);
 		// Default constructor is required by resize() methods from the
 		// containers.
-		SLAKE_FORCEINLINE MajorFrame(): minorFrames(nullptr), argStack(nullptr), nextArgStack(nullptr) {
+		SLAKE_FORCEINLINE MajorFrame() : minorFrames(nullptr), argStack(nullptr), nextArgStack(nullptr) {
 			abort();
 		}
 		SLAKE_API ~MajorFrame();

@@ -12,10 +12,6 @@ SLKC_API void CompileContext::onRefZero() noexcept {
 SLAKE_API std::optional<CompilationError> CompileContext::emitIns(slake::Opcode opcode, uint32_t outputRegIndex, const std::initializer_list<slake::Value> &operands) {
 	slake::Instruction insOut;
 
-	if (operands.size() > 3) {
-		std::terminate();
-	}
-
 	insOut.opcode = opcode;
 	insOut.output = outputRegIndex;
 	if (!(insOut.operands = (slake::Value *)allocator->alloc(sizeof(slake::Value) * operands.size(), sizeof(std::max_align_t)))) {

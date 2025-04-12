@@ -30,18 +30,29 @@ namespace slkc {
 		}
 	};
 
+	struct Label {
+		peff::String name;
+		uint32_t offset = UINT32_MAX;
+
+		SLAKE_FORCEINLINE Label(peff::String &&name) : name(std::move(name)) {}
+	};
+
 	struct FnCompileContext {
 		peff::SharedPtr<FnNode> currentFn;
 		peff::DynArray<slake::Instruction> instructionsOut;
-		peff::HashMap<peff::String, uint32_t> labels;
+		peff::DynArray<peff::SharedPtr<Label>> labels;
+		peff::HashMap<std::string_view, size_t> labelNameIndices;
 		peff::List<peff::SharedPtr<BlockCompileContext>> blockCompileContexts;
+		uint32_t nTotalRegs = 0;
 
-		SLAKE_FORCEINLINE FnCompileContext(peff::Alloc *allocator) : instructionsOut(allocator), labels(allocator), blockCompileContexts(allocator) {}
+		SLAKE_FORCEINLINE FnCompileContext(peff::Alloc *allocator) : instructionsOut(allocator), labels(allocator), blockCompileContexts(allocator), labelNameIndices(allocator) {}
 
 		SLAKE_FORCEINLINE void reset() {
 			instructionsOut.clear();
 			labels.clear();
 			blockCompileContexts.clear();
+			labelNameIndices.clear();
+			labels.clear();
 		}
 	};
 
@@ -51,7 +62,6 @@ namespace slkc {
 		peff::DynArray<CompilationError> errors;
 		peff::DynArray<CompilationWarning> warnings;
 		FnCompileContext fnCompileContext;
-		uint32_t nTotalRegs = 0;
 
 		SLAKE_FORCEINLINE CompileContext(
 			peff::Alloc *selfAllocator,
@@ -87,26 +97,81 @@ namespace slkc {
 			return {};
 		}
 
+		SLAKE_FORCEINLINE std::optional<CompilationError> allocLabel(uint32_t &labelIdOut) {
+			peff::SharedPtr<Label> label = peff::makeShared<Label>(document->allocator.get(), peff::String(document->allocator.get()));
+
+			if (!label) {
+				return genOutOfMemoryCompError();
+			}
+
+			labelIdOut = fnCompileContext.labels.size();
+
+			if (!fnCompileContext.labels.pushBack(peff::SharedPtr<Label>(label))) {
+				return genOutOfMemoryCompError();
+			}
+
+			peff::ScopeGuard removeLabelGuard = [this]() noexcept {
+				fnCompileContext.labels.popBack();
+			};
+
+			removeLabelGuard.release();
+
+			return {};
+		}
+
+		SLAKE_FORCEINLINE std::optional<CompilationError> allocLabel(peff::String &&name, uint32_t &labelIdOut) {
+			peff::SharedPtr<Label> label = peff::makeShared<Label>(document->allocator.get(), std::move(name));
+
+			if (!label) {
+				return genOutOfMemoryCompError();
+			}
+
+			labelIdOut = fnCompileContext.labels.size();
+
+			if (!fnCompileContext.labels.pushBack(peff::SharedPtr<Label>(label))) {
+				return genOutOfMemoryCompError();
+			}
+
+			peff::ScopeGuard removeLabelGuard = [this]() noexcept {
+				fnCompileContext.labels.popBack();
+			};
+
+			if (!fnCompileContext.labelNameIndices.insert(label->name, labelIdOut)) {
+				return genOutOfMemoryCompError();
+			}
+
+			removeLabelGuard.release();
+
+			return {};
+		}
+
+		SLAKE_FORCEINLINE std::optional<CompilationError> allocLabel(const std::string_view &name, uint32_t &labelIdOut) {
+			peff::String builtName(document->allocator.get());
+
+			if (!builtName.build(name)) {
+				return genOutOfMemoryCompError();
+			}
+
+			return allocLabel(std::move(builtName), labelIdOut);
+		}
+
+		SLAKE_FORCEINLINE peff::SharedPtr<Label> getLabel(uint32_t labelId) const {
+			return fnCompileContext.labels.at(labelId);
+		}
+
+		SLAKE_FORCEINLINE peff::SharedPtr<Label> getLabelByName(const std::string_view &name) const {
+			return fnCompileContext.labels.at(fnCompileContext.labelNameIndices.at(name));
+		}
+
+		SLAKE_FORCEINLINE uint32_t getCurInsOff() const {
+			return (uint32_t)fnCompileContext.instructionsOut.size();
+		}
+
 		SLAKE_FORCEINLINE uint32_t allocReg() {
-			return nTotalRegs++;
+			return fnCompileContext.nTotalRegs++;
 		}
 
 		SLAKE_API std::optional<CompilationError> emitIns(slake::Opcode opcode, uint32_t outputRegIndex, const std::initializer_list<slake::Value> &operands);
-	};
-
-	struct GenericInstantiationContext {
-		peff::RcObjectPtr<peff::Alloc> allocator;
-		const peff::DynArray<peff::SharedPtr<TypeNameNode>> *genericArgs;
-		peff::HashMap<std::string_view, peff::SharedPtr<TypeNameNode>> mappedGenericArgs;
-		peff::SharedPtr<MemberNode> mappedNode;
-
-		SLAKE_FORCEINLINE GenericInstantiationContext(
-			peff::Alloc *allocator,
-			const peff::DynArray<peff::SharedPtr<TypeNameNode>> *genericArgs)
-			: allocator(allocator),
-			  genericArgs(genericArgs),
-			  mappedGenericArgs(allocator) {
-		}
 	};
 
 	struct ImplementationDetectionContext {
@@ -145,6 +210,26 @@ namespace slkc {
 			peff::SharedPtr<TypeNameNode> rhsType,
 			peff::SharedPtr<TypeNameNode> desiredRhsType,
 			ExprEvalPurpose rhsEvalPurpose,
+			uint32_t resultRegOut,
+			CompileExprResult &resultOut,
+			slake::Opcode opcode);
+		static SLKC_API std::optional<CompilationError> _compileSimpleLAndBinaryExpr(
+			CompileContext *compileContext,
+			peff::SharedPtr<BinaryExprNode> expr,
+			ExprEvalPurpose evalPurpose,
+			peff::SharedPtr<BoolTypeNameNode> boolType,
+			peff::SharedPtr<TypeNameNode> lhsType,
+			peff::SharedPtr<TypeNameNode> rhsType,
+			uint32_t resultRegOut,
+			CompileExprResult &resultOut,
+			slake::Opcode opcode);
+		static SLKC_API std::optional<CompilationError> _compileSimpleLOrBinaryExpr(
+			CompileContext *compileContext,
+			peff::SharedPtr<BinaryExprNode> expr,
+			ExprEvalPurpose evalPurpose,
+			peff::SharedPtr<BoolTypeNameNode> boolType,
+			peff::SharedPtr<TypeNameNode> lhsType,
+			peff::SharedPtr<TypeNameNode> rhsType,
 			uint32_t resultRegOut,
 			CompileExprResult &resultOut,
 			slake::Opcode opcode);

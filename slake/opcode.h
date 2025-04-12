@@ -16,7 +16,7 @@ namespace slake {
 
 		MOV,  // Move values between registers
 
-		LARG,	// Load an argument.
+		LARG,  // Load an argument.
 
 		LVAR,  // Create a new local variable
 
@@ -78,6 +78,8 @@ namespace slake {
 		TYPEOF,	 // Get type of an object
 
 		CONSTSW,  // Constant switch
+
+		PHI,  // Phi
 
 		OPCODE_MAX
 	};

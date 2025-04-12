@@ -31,25 +31,28 @@ namespace slake {
 		/// @brief Image Header (IMH)
 		///
 		struct ImgHeader final {
-			uint8_t magic[4];	// Magic number
-			uint8_t flags;		// Flags
-			uint8_t fmtVer;		// Format version
-			uint16_t nImports;	// Number of imported modules
+			uint8_t magic[4];		 // Magic number
+			uint8_t flags;			 // Flags
+			uint8_t fmtVer;			 // Format version
+			uint16_t nImports;		 // Number of imported modules
+			uint32_t nConstObjects;	 // Number of constant objects
 		};
 		constexpr static uint8_t IMH_MAGIC[] = { 'S', 'L', 'A', 'X' };
+
+		constexpr static uint8_t
+			IH_OUTPUT = 0x01;
 
 		///
 		/// @brief Instruction Header (IH)
 		///
 		struct InsHeader final {
-			Opcode opcode : 8;			// Operation code
-			bool hasOutputOperand : 1;	// Determines if the instruction has an output.
-			uint16_t nOperands : 15;		// Number of operands
+			uint32_t nOperands;	 // Number of operands
+			Opcode opcode;		 // Operation code
+			uint8_t flags;		 // Determines if the instruction has an output.
 
 			inline InsHeader() : opcode(Opcode::NOP), nOperands(0) {}
 			inline InsHeader(Opcode opcode, uint16_t nOperands) {
 				assert((uint8_t)opcode < (1 << 6));
-				assert(nOperands < 4);
 				this->opcode = opcode;
 				this->nOperands = nOperands;
 			}
@@ -71,13 +74,34 @@ namespace slake {
 			String,		 // String
 			Bool,		 // Boolean
 			Array,		 // Array
-			Map,		 // Map
 			Object,		 // Object
-			IdRef,		 // Identifier reference
-			TypeName,	 // Type name
 			GenericArg,	 // Generic argument
-			Reg,		 // Register
 			Ref,		 // Reference
+		};
+
+		enum class ValueType : uint8_t {
+			None = 0,  // None
+			Any,	   // Any
+			I8,		   // i8
+			I16,	   // i16
+			I32,	   // i32
+			I64,	   // i64
+			U8,		   // u8
+			U16,	   // u16
+			U32,	   // u32
+			U64,	   // u64
+			F32,	   // f32
+			F64,	   // f64
+			Bool,	   // Boolean
+			Object,	   // Object
+			TypeName,  // Type name
+			Reg,	   // Register
+		};
+
+		enum class ConstObjectType : uint8_t {
+			IdRef = 0,
+			String,
+			Array
 		};
 
 		/// @brief Class Type Descriptor (CTD)
@@ -110,13 +134,13 @@ namespace slake {
 
 		/// @brief Function Descriptor (FND)
 		struct FnDesc final {
-			uint16_t flags : 16;			// Flags
-			uint16_t lenName : 16;			// Length of name
-			uint8_t nGenericParams : 8;		// Number of generic parameters
-			uint8_t nParams : 8;			// Number of parameters, only used by compilers
-			uint32_t lenBody : 24;			// Length of body
-			uint32_t nSourceLocDescs : 32;	// Number of SLDs
-			uint32_t nRegisters : 32;		// Number of registers
+			uint16_t flags;			   // Flags
+			uint16_t lenName;		   // Length of name
+			uint32_t lenBody;		   // Length of body
+			uint32_t nSourceLocDescs;  // Number of SLDs
+			uint32_t nRegisters;	   // Number of registers
+			uint8_t nGenericParams;	   // Number of generic parameters
+			uint8_t nParams;		   // Number of parameters, only used by compilers
 		};
 		constexpr static uint16_t
 			FND_PUB = 0x0001,		 // Public
@@ -163,25 +187,28 @@ namespace slake {
 			RSD_HASARG = 0x02,
 			RSD_VARARG = 0x04;
 
+		constexpr static uint8_t
+			GPD_BASE = 0x01;
+
 		/// @brief Generic Parameter Descriptor (GPD)
 		struct GenericParamDesc final {
 			uint8_t lenName;
-			bool hasBaseType : 1;
-			uint8_t nInterfaces : 7;
+			uint8_t flags;
+			uint8_t nInterfaces;
 		};
 
 		// @brief Variable Debugging Descriptor (VDD)
 		struct VarDebugDesc final {
-			uint32_t line : 24;
-			uint8_t nLine : 8;
+			uint32_t line;
+			uint32_t nLine;
 		};
 
 		// @brief Source Location Descriptor (SLD)
 		struct SourceLocDesc final {
-			uint32_t offIns : 24;
-			uint32_t nIns : 16;
-			uint32_t line : 24;
-			uint32_t column : 24;
+			uint32_t offIns;
+			uint32_t nIns;
+			uint32_t line;
+			uint32_t column;
 		};
 	}
 }

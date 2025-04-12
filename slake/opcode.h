@@ -7,7 +7,7 @@
 #include "basedefs.h"
 
 namespace slake {
-	enum class Opcode : uint16_t {
+	enum class Opcode : uint8_t {
 		NOP = 0,  // No operation
 
 		LOAD,	// Load value of a variable.

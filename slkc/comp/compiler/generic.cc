@@ -64,6 +64,19 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 		return {};
 	}
 
+	if (context.mappedNode == astNode) {
+		if (!astNode->genericArgs.resize(context.genericArgs->size())) {
+			return genOutOfMemoryCompError();
+		}
+		for (size_t i = 0; i < context.genericArgs->size(); ++i) {
+			if (!(astNode->genericArgs.at(i) =
+						context.genericArgs->at(context.genericArgs->size())
+							->duplicate<TypeNameNode>(context.allocator.get()))) {
+				return genOutOfMemoryCompError();
+			}
+		}
+	}
+
 	switch (astNode->astNodeType) {
 		case AstNodeType::FnSlot: {
 			peff::SharedPtr<FnSlotNode> fnSlot = astNode.castTo<FnSlotNode>();
@@ -134,7 +147,7 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 				}
 
 				for (auto j : cls->members) {
-					SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(j.second, innerContext));
+					SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(j, innerContext));
 				}
 			} else {
 				SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(cls->baseType, context));
@@ -144,7 +157,7 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 				}
 
 				for (auto j : cls->members) {
-					SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(j.second, context));
+					SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(j, context));
 				}
 			}
 			break;
@@ -173,7 +186,7 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 				}
 
 				for (auto j : cls->members) {
-					SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(j.second, innerContext));
+					SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(j, innerContext));
 				}
 			} else {
 				for (auto &k : cls->implementedTypes) {
@@ -181,7 +194,7 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 				}
 
 				for (auto j : cls->members) {
-					SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(j.second, context));
+					SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(j, context));
 				}
 			}
 			break;

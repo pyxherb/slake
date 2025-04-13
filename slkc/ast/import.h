@@ -4,8 +4,6 @@
 #include "module.h"
 
 namespace slkc {
-	class NamespaceNode;
-
 	class ImportNode : public MemberNode {
 	protected:
 		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;

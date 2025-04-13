@@ -18,7 +18,6 @@ namespace slkc {
 		Switch,		// Switch
 		CodeBlock,	// Code block
 		Goto,		// Goto
-		Defer,		// Defer
 
 		Bad,  // Bad statement - unrecognized statement type
 	};

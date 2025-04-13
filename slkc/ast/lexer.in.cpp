@@ -280,9 +280,9 @@ SLKC_API std::optional<LexicalError> Lexer::lex(const std::string_view &src, pef
 				}
 				<StringCondition>[^]		{ if(!strLiteral.pushBack(+YYCURSOR[-1])) goto outOfMemory; continue; }
 
-				<EscapeCondition>"\'"	{ YYSETCONDITION(StringCondition); if(!strLiteral.pushBack('\'')) goto outOfMemory; continue; }
+				<EscapeCondition>"'"	{ YYSETCONDITION(StringCondition); if(!strLiteral.pushBack('\'')) goto outOfMemory; continue; }
 				<EscapeCondition>"\""	{ YYSETCONDITION(StringCondition); if(!strLiteral.pushBack('"')) goto outOfMemory; continue; }
-				<EscapeCondition>"\?"	{ YYSETCONDITION(StringCondition); if(!strLiteral.pushBack('?')) goto outOfMemory; continue; }
+				<EscapeCondition>"?"	{ YYSETCONDITION(StringCondition); if(!strLiteral.pushBack('?')) goto outOfMemory; continue; }
 				<EscapeCondition>"\\"	{ YYSETCONDITION(StringCondition); if(!strLiteral.pushBack('\\')) goto outOfMemory; continue; }
 				<EscapeCondition>"a"	{ YYSETCONDITION(StringCondition); if(!strLiteral.pushBack('\a')) goto outOfMemory; continue; }
 				<EscapeCondition>"b"	{ YYSETCONDITION(StringCondition); if(!strLiteral.pushBack('\b')) goto outOfMemory; continue; }

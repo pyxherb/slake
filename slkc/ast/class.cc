@@ -60,7 +60,7 @@ SLKC_API ClassNode::ClassNode(const ClassNode &rhs, peff::Alloc *allocator, bool
 			return;
 		}
 
-		genericParams.at(i)->setParent(peff::WeakPtr<AstNode>(sharedFromThis()));
+		genericParams.at(i)->setParent(sharedFromThis().castTo<MemberNode>());
 	}
 
 	if (!idxGenericParamCommaTokens.resize(rhs.idxGenericParamCommaTokens.size())) {
@@ -132,7 +132,7 @@ SLKC_API InterfaceNode::InterfaceNode(const InterfaceNode &rhs, peff::Alloc *all
 			return;
 		}
 
-		genericParams.at(i)->setParent(peff::WeakPtr<AstNode>(sharedFromThis()));
+		genericParams.at(i)->setParent(sharedFromThis().castTo<MemberNode>());
 	}
 
 	if (!idxGenericParamCommaTokens.resize(rhs.idxGenericParamCommaTokens.size())) {

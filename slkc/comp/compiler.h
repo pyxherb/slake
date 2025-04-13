@@ -185,6 +185,7 @@ namespace slkc {
 	};
 
 	struct ResolvedIdRefPart {
+		bool isStatic;
 		size_t nEntries;
 		peff::SharedPtr<MemberNode> member;
 	};
@@ -363,6 +364,35 @@ namespace slkc {
 			return {};
 		}
 	};
+
+	class Writer {
+	public:
+		SLKC_API virtual ~Writer();
+
+		virtual std::optional<CompilationError> write(const char *src, size_t size) = 0;
+	};
+
+	[[nodiscard]] SLKC_API std::optional<CompilationError> getFullIdRef(peff::Alloc *allocator, peff::SharedPtr<MemberNode> m, IdRefPtr &idRefOut);
+
+	[[nodiscard]] SLKC_API std::optional<CompilationError> compileTypeName(
+		slake::Runtime *runtime,
+		slake::HostRefHolder &hostRefHolder,
+		peff::SharedPtr<TypeNameNode> typeName,
+		slake::Type &typeOut);
+	[[nodiscard]] SLKC_API std::optional<CompilationError> compileIdRef(
+		slake::Runtime *runtime,
+		slake::HostRefHolder &hostRefHolder,
+		const IdRefEntry *entries,
+		size_t nEntries,
+		peff::DynArray<slake::IdRefEntry> &entriesOut,
+		peff::SharedPtr<TypeNameNode> *paramTypes,
+		size_t nParams,
+		bool hasVarArgs);
+
+	[[nodiscard]] SLKC_API std::optional<CompilationError> dumpModule(
+		peff::Alloc *allocator,
+		Writer *writer,
+		const peff::SharedPtr<ModuleNode> &mod);
 }
 
 #endif

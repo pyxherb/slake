@@ -17,6 +17,9 @@ namespace slkc {
 		IncompatibleOperand,
 		OperatorNotFound,
 		MismatchedGenericArgNumber,
+		DoesNotReferToATypeName,
+
+		ImportLimitExceeded,
 	};
 
 	class TypeNameNode;

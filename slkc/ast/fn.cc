@@ -35,7 +35,7 @@ SLKC_API FnSlotNode::FnSlotNode(const FnSlotNode &rhs, peff::Alloc *allocator, b
 			return;
 		}
 
-		overloadings.at(i)->setParent(peff::WeakPtr<AstNode>(sharedFromThis()));
+		overloadings.at(i)->setParent(sharedFromThis().castTo<MemberNode>());
 	}
 
 	succeededOut = true;
@@ -102,7 +102,7 @@ SLKC_API FnNode::FnNode(const FnNode &rhs, peff::Alloc *allocator, bool &succeed
 			return;
 		}
 
-		params.at(i)->setParent(peff::WeakPtr<AstNode>(sharedFromThis()));
+		params.at(i)->setParent(sharedFromThis().castTo<MemberNode>());
 	}
 
 	if (!genericParams.resize(rhs.genericParams.size())) {
@@ -121,7 +121,7 @@ SLKC_API FnNode::FnNode(const FnNode &rhs, peff::Alloc *allocator, bool &succeed
 			return;
 		}
 
-		genericParams.at(i)->setParent(peff::WeakPtr<AstNode>(sharedFromThis()));
+		genericParams.at(i)->setParent(sharedFromThis().castTo<MemberNode>());
 	}
 
 	if (!idxGenericParamCommaTokens.resize(rhs.idxGenericParamCommaTokens.size())) {

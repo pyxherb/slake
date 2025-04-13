@@ -35,7 +35,6 @@ namespace slake {
 			uint8_t flags;			 // Flags
 			uint8_t fmtVer;			 // Format version
 			uint16_t nImports;		 // Number of imported modules
-			uint32_t nConstObjects;	 // Number of constant objects
 		};
 		constexpr static uint8_t IMH_MAGIC[] = { 'S', 'L', 'A', 'X' };
 
@@ -49,13 +48,6 @@ namespace slake {
 			uint32_t nOperands;	 // Number of operands
 			Opcode opcode;		 // Operation code
 			uint8_t flags;		 // Determines if the instruction has an output.
-
-			inline InsHeader() : opcode(Opcode::NOP), nOperands(0) {}
-			inline InsHeader(Opcode opcode, uint16_t nOperands) {
-				assert((uint8_t)opcode < (1 << 6));
-				this->opcode = opcode;
-				this->nOperands = nOperands;
-			}
 		};
 
 		enum class TypeId : uint8_t {
@@ -139,8 +131,9 @@ namespace slake {
 			uint32_t lenBody;		   // Length of body
 			uint32_t nSourceLocDescs;  // Number of SLDs
 			uint32_t nRegisters;	   // Number of registers
+			uint32_t nConstObjects;	   // Number of constant objects
 			uint8_t nGenericParams;	   // Number of generic parameters
-			uint8_t nParams;		   // Number of parameters, only used by compilers
+			uint8_t nParams;		   // Number of parameters
 		};
 		constexpr static uint16_t
 			FND_PUB = 0x0001,		 // Public

@@ -502,8 +502,8 @@ accessModifierParseEnd:
 				return syntaxError;
 			}
 
-			if (auto it = p->members.find(fn->name); it != p->members.end()) {
-				if (it.value()->astNodeType != AstNodeType::FnSlot) {
+			if (auto it = p->memberIndices.find(fn->name); it != p->memberIndices.end()) {
+				if (p->members.at(it.value())->astNodeType != AstNodeType::FnSlot) {
 					peff::String s(resourceAllocator.get());
 
 					if (!s.build(fn->name)) {
@@ -514,7 +514,7 @@ accessModifierParseEnd:
 
 					return SyntaxError(fn->tokenRange, std::move(exData));
 				}
-				FnSlotNode *fnSlot = (FnSlotNode *)it.value();
+				FnSlotNode *fnSlot = (FnSlotNode *)p->members.at(it.value());
 				if (!fnSlot->overloadings.pushBack(std::move(fn))) {
 					return genOutOfMemoryError();
 				}
@@ -529,7 +529,7 @@ accessModifierParseEnd:
 					return genOutOfMemoryError();
 				}
 
-				if (!(p->members.insert(fnSlot->name, std::move(fnSlot.castTo<MemberNode>())))) {
+				if (!(p->addMember(fnSlot.castTo<MemberNode>()))) {
 					return genOutOfMemoryError();
 				}
 
@@ -553,6 +553,12 @@ accessModifierParseEnd:
 
 			if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
 				return syntaxError;
+			}
+
+			size_t idxMember;
+
+			if ((idxMember = p->pushMember(classNode.castTo<MemberNode>())) == SIZE_MAX) {
+				return genOutOfMemoryError();
 			}
 
 			nextToken();
@@ -650,7 +656,7 @@ accessModifierParseEnd:
 				nextToken();
 			}
 
-			if (auto it = p->members.find(classNode->name); it != p->members.end()) {
+			if (auto it = p->memberIndices.find(classNode->name); it != p->memberIndices.end()) {
 				peff::String s(resourceAllocator.get());
 
 				if (!s.build(classNode->name)) {
@@ -661,7 +667,7 @@ accessModifierParseEnd:
 
 				return SyntaxError(classNode->tokenRange, std::move(exData));
 			} else {
-				if (!(p->members.insert(classNode->name, std::move(classNode.castTo<MemberNode>())))) {
+				if (!(p->indexMember(idxMember))) {
 					return genOutOfMemoryError();
 				}
 			}
@@ -685,6 +691,11 @@ accessModifierParseEnd:
 			}
 
 			if (!interfaceNode->name.build(nameToken->sourceText)) {
+				return genOutOfMemoryError();
+			}
+
+			size_t idxMember;
+			if ((idxMember = p->pushMember(interfaceNode.castTo<MemberNode>())) == SIZE_MAX) {
 				return genOutOfMemoryError();
 			}
 
@@ -763,7 +774,7 @@ accessModifierParseEnd:
 				nextToken();
 			}
 
-			if (auto it = p->members.find(interfaceNode->name); it != p->members.end()) {
+			if (auto it = p->memberIndices.find(interfaceNode->name); it != p->memberIndices.end()) {
 				peff::String s(resourceAllocator.get());
 
 				if (!s.build(interfaceNode->name)) {
@@ -774,7 +785,7 @@ accessModifierParseEnd:
 
 				return SyntaxError(interfaceNode->tokenRange, std::move(exData));
 			} else {
-				if (!(p->members.insert(interfaceNode->name, std::move(interfaceNode.castTo<MemberNode>())))) {
+				if (!(p->indexMember(idxMember))) {
 					return genOutOfMemoryError();
 				}
 			}

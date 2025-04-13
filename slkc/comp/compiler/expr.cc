@@ -193,7 +193,17 @@ SLKC_API std::optional<CompilationError> Compiler::compileExpr(
 								&parts));
 					}
 
-					// TODO: Use RLOAD to load the rest.
+					for (size_t i = 0; i < parts.size(); ++i) {
+						ResolvedIdRefPart &part = parts.at(i);
+
+						curIdx += part.nEntries;
+
+						if (part.isStatic) {
+							// TODO: Implement it.
+						} else {
+							// TODO: Implement it.
+						}
+					}
 				} else {
 					finalMember = initialMember;
 				}

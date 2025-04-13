@@ -2,6 +2,39 @@
 
 using namespace slkc;
 
+SLKC_API std::optional<CompilationError> slkc::getFullIdRef(peff::Alloc *allocator, peff::SharedPtr<MemberNode> m, IdRefPtr &idRefOut) {
+	IdRefPtr p(peff::allocAndConstruct<IdRef>(allocator, ASTNODE_ALIGNMENT, allocator, m->document.lock()));
+
+	for (;;) {
+		IdRefEntry entry(allocator);
+
+		if (!entry.name.build(m->name)) {
+			return genOutOfMemoryCompError();
+		}
+
+		if (!entry.genericArgs.resize(m->genericArgs.size())) {
+			return genOutOfMemoryCompError();
+		}
+
+		for (size_t i = 0; i < entry.genericArgs.size(); ++i) {
+			if (!(entry.genericArgs.at(i) = m->genericArgs.at(i)->duplicate<TypeNameNode>(allocator))) {
+				return genOutOfMemoryCompError();
+			}
+		}
+
+		if (!p->entries.pushBack(std::move(entry))) {
+			return genOutOfMemoryCompError();
+		}
+
+		if (!m->parent.isValid())
+			break;
+	}
+
+	idRefOut = std::move(p);
+
+	return {};
+}
+
 SLKC_API std::optional<CompilationError> Compiler::resolveStaticMember(
 	peff::SharedPtr<Document> document,
 	const peff::SharedPtr<MemberNode> &memberNode,
@@ -13,8 +46,8 @@ SLKC_API std::optional<CompilationError> Compiler::resolveStaticMember(
 		case AstNodeType::Module: {
 			peff::SharedPtr<ModuleNode> mod = memberNode.castTo<ModuleNode>();
 
-			if (auto it = mod->members.find(name.name); it != mod->members.end()) {
-				result = it.value();
+			if (auto it = mod->memberIndices.find(name.name); it != mod->memberIndices.end()) {
+				result = mod->members.at(it.value());
 			}
 
 			break;
@@ -22,8 +55,8 @@ SLKC_API std::optional<CompilationError> Compiler::resolveStaticMember(
 		case AstNodeType::Class: {
 			peff::SharedPtr<ClassNode> cls = memberNode.castTo<ClassNode>();
 
-			if (auto it = cls->members.find(name.name); it != cls->members.end()) {
-				result = it.value();
+			if (auto it = cls->memberIndices.find(name.name); it != cls->memberIndices.end()) {
+				result = cls->members.at(it.value());
 			}
 
 			break;
@@ -31,8 +64,8 @@ SLKC_API std::optional<CompilationError> Compiler::resolveStaticMember(
 		case AstNodeType::Interface: {
 			peff::SharedPtr<InterfaceNode> cls = memberNode.castTo<InterfaceNode>();
 
-			if (auto it = cls->members.find(name.name); it != cls->members.end()) {
-				result = it.value();
+			if (auto it = cls->memberIndices.find(name.name); it != cls->memberIndices.end()) {
+				result = cls->members.at(it.value());
 			}
 
 			break;
@@ -82,8 +115,8 @@ SLKC_API std::optional<CompilationError> Compiler::resolveInstanceMember(
 		case AstNodeType::Module: {
 			peff::SharedPtr<ModuleNode> mod = memberNode.castTo<ModuleNode>();
 
-			if (auto it = mod->members.find(name.name); it != mod->members.end()) {
-				result = it.value();
+			if (auto it = mod->memberIndices.find(name.name); it != mod->memberIndices.end()) {
+				result = mod->members.at(it.value());
 			}
 
 			break;
@@ -91,8 +124,8 @@ SLKC_API std::optional<CompilationError> Compiler::resolveInstanceMember(
 		case AstNodeType::Class: {
 			peff::SharedPtr<ClassNode> cls = memberNode.castTo<ClassNode>();
 
-			if (auto it = cls->members.find(name.name); it != cls->members.end()) {
-				result = it.value();
+			if (auto it = cls->memberIndices.find(name.name); it != cls->memberIndices.end()) {
+				result = cls->members.at(it.value());
 			}
 
 			break;
@@ -100,8 +133,8 @@ SLKC_API std::optional<CompilationError> Compiler::resolveInstanceMember(
 		case AstNodeType::Interface: {
 			peff::SharedPtr<InterfaceNode> cls = memberNode.castTo<InterfaceNode>();
 
-			if (auto it = cls->members.find(name.name); it != cls->members.end()) {
-				result = it.value();
+			if (auto it = cls->memberIndices.find(name.name); it != cls->memberIndices.end()) {
+				result = cls->members.at(it.value());
 			}
 
 			break;
@@ -199,14 +232,14 @@ SLKC_API std::optional<CompilationError> Compiler::resolveIdRef(
 		if (resolvedPartListOut) {
 			if (!isStatic) {
 				if (!isPostStaticParts) {
-					ResolvedIdRefPart part = { i, curMember };
+					ResolvedIdRefPart part = { isStatic, i, curMember };
 
 					if (!resolvedPartListOut->pushBack(std::move(part)))
 						return genOutOfMemoryCompError();
 
 					isPostStaticParts = true;
 				} else {
-					ResolvedIdRefPart part = { 1, curMember };
+					ResolvedIdRefPart part = { isStatic, 1, curMember };
 
 					if (!resolvedPartListOut->pushBack(std::move(part)))
 						return genOutOfMemoryCompError();
@@ -316,7 +349,7 @@ SLKC_API std::optional<CompilationError> Compiler::resolveIdRefWithScopeNode(
 				}
 
 				if (m->parent.isValid() && (!isSealed)) {
-					peff::SharedPtr<AstNode> p = m->parent.lock();
+					peff::SharedPtr<MemberNode> p = m->parent.lock();
 
 					if (p->astNodeType == AstNodeType::Module) {
 						SLKC_RETURN_IF_COMP_ERROR(resolveIdRefWithScopeNode(document, walkedNodes, p.castTo<MemberNode>(), idRef, nEntries, memberOut, resolvedPartListOut, isStatic));
@@ -350,7 +383,7 @@ SLKC_API std::optional<CompilationError> Compiler::resolveIdRefWithScopeNode(
 				}
 
 				if (m->parent.isValid() && (!isSealed)) {
-					peff::SharedPtr<AstNode> p = m->parent.lock();
+					peff::SharedPtr<MemberNode> p = m->parent.lock();
 
 					if (p->astNodeType == AstNodeType::Module) {
 						SLKC_RETURN_IF_COMP_ERROR(resolveIdRefWithScopeNode(document, walkedNodes, p.castTo<MemberNode>(), idRef, nEntries, memberOut, resolvedPartListOut, isStatic));
@@ -366,7 +399,7 @@ SLKC_API std::optional<CompilationError> Compiler::resolveIdRefWithScopeNode(
 				peff::SharedPtr<ModuleNode> m = resolveScope.castTo<ModuleNode>();
 
 				if (m->parent.isValid()) {
-					peff::SharedPtr<AstNode> p = m->parent.lock();
+					peff::SharedPtr<MemberNode> p = m->parent.lock();
 
 					if (p->astNodeType == AstNodeType::Module) {
 						SLKC_RETURN_IF_COMP_ERROR(resolveIdRefWithScopeNode(document, walkedNodes, p.castTo<MemberNode>(), idRef, nEntries, memberOut, resolvedPartListOut, isStatic));
@@ -386,7 +419,7 @@ SLKC_API std::optional<CompilationError> Compiler::resolveIdRefWithScopeNode(
 
 				peff::SharedPtr<FnSlotNode> slot;
 				{
-					peff::SharedPtr<AstNode> p = m->parent.lock();
+					peff::SharedPtr<MemberNode> p = m->parent.lock();
 
 					if (p->astNodeType != AstNodeType::FnSlot)
 						std::terminate();

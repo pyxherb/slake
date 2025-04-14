@@ -335,3 +335,11 @@ SLKC_API std::optional<CompilationError> slkc::compileValueExpr(
 
 	return {};
 }
+
+SLKC_API std::optional<CompilationError> slkc::compileModule(
+	slake::Runtime* runtime,
+	slake::HostRefHolder& hostRefHolder,
+	peff::SharedPtr<ModuleNode> mod,
+	slake::ModuleObject* modOut) {
+	return {};
+}

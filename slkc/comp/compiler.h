@@ -382,6 +382,11 @@ namespace slkc {
 		slake::HostRefHolder &hostRefHolder,
 		peff::SharedPtr<ExprNode> expr,
 		slake::Value &valueOut);
+	[[nodiscard]] SLKC_API std::optional<CompilationError> compileModule(
+		slake::Runtime *runtime,
+		slake::HostRefHolder &hostRefHolder,
+		peff::SharedPtr<ModuleNode> mod,
+		slake::ModuleObject *modOut);
 
 	class Writer {
 	public:
@@ -393,7 +398,7 @@ namespace slkc {
 	[[nodiscard]] SLKC_API std::optional<CompilationError> dumpModule(
 		peff::Alloc *allocator,
 		Writer *writer,
-		const peff::SharedPtr<ModuleNode> &mod);
+		slake::ModuleObject *mod);
 }
 
 #endif

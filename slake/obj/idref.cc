@@ -3,33 +3,37 @@
 using namespace slake;
 
 SLAKE_API IdRefEntry::IdRefEntry(peff::Alloc *selfAllocator)
-	: name(selfAllocator), genericArgs(selfAllocator), paramTypes(selfAllocator) {
+	: name(selfAllocator), genericArgs(selfAllocator) {
 	// For resize() methods.
 }
 
 SLAKE_API IdRefEntry::IdRefEntry(peff::String &&name,
-	GenericArgList &&genericArgs,
-	bool hasParamTypes,
-	peff::DynArray<Type> &&paramTypes,
-	bool hasVarArg)
+	GenericArgList &&genericArgs)
 	: name(std::move(name)),
-	  genericArgs(std::move(genericArgs)),
-	  hasParamTypes(hasParamTypes),
-	  paramTypes(std::move(paramTypes)),
-	  hasVarArg(hasVarArg) {}
+	  genericArgs(std::move(genericArgs)) {}
 
 SLAKE_API slake::IdRefObject::IdRefObject(Runtime *rt)
 	: Object(rt),
-	  entries(&rt->globalHeapPoolAlloc) {
+	  entries(&rt->globalHeapPoolAlloc),
+	  paramTypes(&rt->globalHeapPoolAlloc),
+	  hasVarArgs(false) {
 }
 
 SLAKE_API IdRefObject::IdRefObject(const IdRefObject &x, bool &succeededOut)
 	: Object(x),
-	  entries(&x.associatedRuntime->globalHeapPoolAlloc) {
+	  entries(&x.associatedRuntime->globalHeapPoolAlloc),
+	  paramTypes(&x.associatedRuntime->globalHeapPoolAlloc) {
 	if (!(peff::copyAssign(entries, x.entries))) {
 		succeededOut = false;
 		return;
 	}
+
+	if (!(peff::copyAssign(paramTypes, x.paramTypes))) {
+		succeededOut = false;
+		return;
+	}
+
+	hasVarArgs = x.hasVarArgs;
 }
 
 SLAKE_API IdRefObject::~IdRefObject() {

@@ -108,7 +108,38 @@ void printTraceback(slake::Runtime *rt, slake::ContextObject *context) {
 			printf("(Stack top)\n");
 			continue;
 		}
-		printf("\t%s: 0x%08x", rt->getFullName(i->curFn->fnObject).c_str(), i->curIns);
+
+		peff::DynArray<slake::IdRefEntry> fullRef(peff::getDefaultAlloc());
+
+		if (!rt->getFullRef(peff::getDefaultAlloc(), i->curFn->fnObject, fullRef)) {
+			throw std::bad_alloc();
+		}
+
+		std::string name;
+
+		for (size_t i = 0; i < fullRef.size(); ++i) {
+			if (i) {
+				name += '.';
+			}
+
+			slake::IdRefEntry &id = fullRef.at(i);
+
+			name += id.name;
+
+			if (id.genericArgs.size()) {
+				name += '<';
+
+				for (size_t j = 0; j < id.genericArgs.size(); ++j) {
+					if (j)
+						name += ",";
+					name += std::to_string(id.genericArgs.at(j), rt);
+				}
+
+				name += '>';
+			}
+		}
+
+		printf("\t%s: 0x%08x", name.c_str(), i->curIns);
 		switch (i->curFn->overloadingKind) {
 			case slake::FnOverloadingKind::Regular: {
 				if (auto sld = ((slake::RegularFnOverloadingObject *)i->curFn)->getSourceLocationDesc(i->curIns); sld) {

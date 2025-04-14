@@ -2,7 +2,7 @@
 
 using namespace slkc;
 
-SLKC_API std::optional<CompilationError> Compiler::collectInvolvedInterfaces(
+SLKC_API std::optional<CompilationError> slkc::collectInvolvedInterfaces(
 	peff::SharedPtr<Document> document,
 	const peff::SharedPtr<InterfaceNode> &derived,
 	peff::Set<peff::SharedPtr<InterfaceNode>> &walkedInterfaces,
@@ -39,7 +39,7 @@ malformed:
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> Compiler::isImplementedByInterface(
+SLKC_API std::optional<CompilationError> slkc::isImplementedByInterface(
 	peff::SharedPtr<Document> document,
 	const peff::SharedPtr<InterfaceNode> &base,
 	const peff::SharedPtr<InterfaceNode> &derived,
@@ -52,7 +52,7 @@ SLKC_API std::optional<CompilationError> Compiler::isImplementedByInterface(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> Compiler::isImplementedByClass(
+SLKC_API std::optional<CompilationError> slkc::isImplementedByClass(
 	peff::SharedPtr<Document> document,
 	const peff::SharedPtr<InterfaceNode> &base,
 	const peff::SharedPtr<ClassNode> &derived,
@@ -127,7 +127,7 @@ malformed:
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> Compiler::isBaseOf(
+SLKC_API std::optional<CompilationError> slkc::isBaseOf(
 	peff::SharedPtr<Document> document,
 	const peff::SharedPtr<ClassNode> &base,
 	const peff::SharedPtr<ClassNode> &derived,
@@ -185,7 +185,7 @@ malformed:
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> Compiler::removeRefOfType(
+SLKC_API std::optional<CompilationError> slkc::removeRefOfType(
 	peff::SharedPtr<TypeNameNode> src,
 	peff::SharedPtr<TypeNameNode> &typeNameOut) {
 	switch (src->typeNameKind) {
@@ -199,7 +199,7 @@ SLKC_API std::optional<CompilationError> Compiler::removeRefOfType(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> Compiler::isSameType(
+SLKC_API std::optional<CompilationError> slkc::isSameType(
 	const peff::SharedPtr<TypeNameNode> &lhs,
 	const peff::SharedPtr<TypeNameNode> &rhs,
 	bool &whetherOut) {
@@ -247,7 +247,7 @@ SLKC_API std::optional<CompilationError> Compiler::isSameType(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> Compiler::isTypeConvertible(
+SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 	const peff::SharedPtr<TypeNameNode> &src,
 	const peff::SharedPtr<TypeNameNode> &dest,
 	bool &whetherOut) {
@@ -386,8 +386,8 @@ SLKC_API std::optional<slkc::CompilationError> slkc::typeNameCmp(peff::SharedPtr
 				lm,
 				rm;
 
-				SLKC_RETURN_IF_COMP_ERROR(Compiler::resolveCustomTypeName(doc, l, lm));
-				SLKC_RETURN_IF_COMP_ERROR(Compiler::resolveCustomTypeName(doc, r, rm));
+				SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(doc, l, lm));
+				SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(doc, r, rm));
 
 			if (!lm) {
 				if (rm) {

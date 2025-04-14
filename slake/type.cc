@@ -542,7 +542,37 @@ SLAKE_API std::string std::to_string(const slake::Type &type, const slake::Runti
 			if (type.isLoadingDeferred()) {
 				return std::to_string((IdRefObject *)type.getCustomTypeExData());
 			} else {
-				return rt->getFullName((MemberObject *)type.getCustomTypeExData());
+				peff::DynArray<slake::IdRefEntry> fullRef(peff::getDefaultAlloc());
+
+				if (!rt->getFullRef(peff::getDefaultAlloc(), (MemberObject *)type.getCustomTypeExData(), fullRef)) {
+					throw std::bad_alloc();
+				}
+
+				std::string name;
+
+				for (size_t i = 0; i < fullRef.size(); ++i) {
+					if (i) {
+						name += '.';
+					}
+
+					slake::IdRefEntry &id = fullRef.at(i);
+
+					name += id.name;
+
+					if (id.genericArgs.size()) {
+						name += '<';
+
+						for (size_t j = 0; j < id.genericArgs.size(); ++j) {
+							if (j)
+								name += ",";
+							name += std::to_string(id.genericArgs.at(j), rt);
+						}
+
+						name += '>';
+					}
+				}
+
+				return name;
 			}
 		}
 		case TypeId::GenericArg: {

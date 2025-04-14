@@ -242,9 +242,6 @@ namespace slake {
 		SLAKE_FORCEINLINE void setModuleLocator(ModuleLocatorFn locator) { _moduleLocator = locator; }
 		SLAKE_FORCEINLINE ModuleLocatorFn getModuleLocator() { return _moduleLocator; }
 
-		SLAKE_API std::string getFullName(const MemberObject *v) const;
-		SLAKE_API std::string getFullName(const IdRefObject *v) const;
-
 		[[nodiscard]] SLAKE_API bool getFullRef(peff::Alloc *allocator, const MemberObject *v, peff::DynArray<IdRefEntry> &idRefOut) const;
 
 		/// @brief Run a cycle of GC.

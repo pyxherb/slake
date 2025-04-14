@@ -245,8 +245,6 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Typ
 
 				HostObjectRef<IdRefObject> idRefObject = IdRefObject::alloc((Runtime *)this);
 
-				// TODO: If we use std::pmr version for getFullRef, remove these code and use following code:
-				// idRefObject->entries = idRefToResolvedType;
 				idRefObject->entries.resizeWith(idRefToResolvedType.size(), IdRefEntry(&globalHeapPoolAlloc));
 				for (size_t i = 0; i < idRefToResolvedType.size(); ++i) {
 					if (!peff::copyAssign(idRefObject->entries.at(i), idRefToResolvedType.at(i))) {

@@ -10,23 +10,16 @@ namespace slake {
 		peff::String name;
 		GenericArgList genericArgs;
 
-		bool hasParamTypes = false;
-		peff::DynArray<Type> paramTypes;
-		bool hasVarArg;
-
-		SLAKE_FORCEINLINE IdRefEntry() : name(nullptr), genericArgs(nullptr), paramTypes(nullptr) { std::terminate(); }
+		SLAKE_FORCEINLINE IdRefEntry() : name(nullptr), genericArgs(nullptr) { std::terminate(); }
 		SLAKE_API IdRefEntry(peff::Alloc *selfAllocator);
 		SLAKE_API IdRefEntry(peff::String &&name,
-			GenericArgList &&genericArgs,
-			bool hasParamTypes,
-			peff::DynArray<Type> &&paramTypes,
-			bool hasVarArg);
+			GenericArgList &&genericArgs);
 		SLAKE_FORCEINLINE IdRefEntry(IdRefEntry &&rhs)
-			: name(std::move(rhs.name)), genericArgs(std::move(rhs.genericArgs)), hasParamTypes(rhs.hasParamTypes), paramTypes(std::move(rhs.paramTypes)), hasVarArg(rhs.hasVarArg) {
+			: name(std::move(rhs.name)), genericArgs(std::move(rhs.genericArgs)) {
 		}
 
 		SLAKE_FORCEINLINE bool copy(IdRefEntry &dest) const {
-			peff::constructAt<IdRefEntry>(&dest, paramTypes.allocator());
+			peff::constructAt<IdRefEntry>(&dest, genericArgs.allocator());
 
 			if (!peff::copyAssign(dest.name, name)) {
 				return false;
@@ -34,20 +27,12 @@ namespace slake {
 			if (!peff::copyAssign(dest.genericArgs, genericArgs)) {
 				return false;
 			}
-			dest.hasParamTypes = hasParamTypes;
-			if (!peff::copyAssign(dest.paramTypes, paramTypes)) {
-				return false;
-			}
-			dest.hasVarArg = hasVarArg;
 
 			return true;
 		}
 		SLAKE_FORCEINLINE IdRefEntry &operator=(IdRefEntry &&rhs) noexcept {
 			name = std::move(rhs.name);
 			genericArgs = std::move(rhs.genericArgs);
-			hasParamTypes = rhs.hasParamTypes;
-			paramTypes = std::move(rhs.paramTypes);
-			hasVarArg = rhs.hasVarArg;
 
 			return *this;
 		}
@@ -56,6 +41,8 @@ namespace slake {
 	class IdRefObject final : public Object {
 	public:
 		peff::DynArray<IdRefEntry> entries;
+		peff::DynArray<Type> paramTypes;
+		bool hasVarArgs;
 
 		SLAKE_API IdRefObject(Runtime *rt);
 		SLAKE_API IdRefObject(const IdRefObject &x, bool &succeededOut);

@@ -44,7 +44,7 @@ SLAKE_FORCEINLINE std::optional<CompilationError> _compileLiteralExpr(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> Compiler::_compileOrCastOperand(
+SLKC_API std::optional<CompilationError> slkc::_compileOrCastOperand(
 	CompileContext *compileContext,
 	uint32_t regOut,
 	ExprEvalPurpose evalPurpose,
@@ -84,7 +84,7 @@ SLKC_API std::optional<CompilationError> Compiler::_compileOrCastOperand(
 	return CompilationError(operand->tokenRange, std::move(exData));
 }
 
-SLKC_API std::optional<CompilationError> Compiler::compileExpr(
+SLKC_API std::optional<CompilationError> slkc::compileExpr(
 	CompileContext *compileContext,
 	const peff::SharedPtr<ExprNode> &expr,
 	ExprEvalPurpose evalPurpose,

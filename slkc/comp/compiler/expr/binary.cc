@@ -2,7 +2,7 @@
 
 using namespace slkc;
 
-std::optional<CompilationError> Compiler::_compileSimpleBinaryExpr(
+std::optional<CompilationError> slkc::_compileSimpleBinaryExpr(
 	CompileContext *compileContext,
 	peff::SharedPtr<BinaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
@@ -46,7 +46,7 @@ std::optional<CompilationError> Compiler::_compileSimpleBinaryExpr(
 	return {};
 }
 
-std::optional<CompilationError> Compiler::_compileSimpleLAndBinaryExpr(
+std::optional<CompilationError> slkc::_compileSimpleLAndBinaryExpr(
 	CompileContext *compileContext,
 	peff::SharedPtr<BinaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
@@ -104,7 +104,7 @@ std::optional<CompilationError> Compiler::_compileSimpleLAndBinaryExpr(
 	return {};
 }
 
-std::optional<CompilationError> Compiler::_compileSimpleLOrBinaryExpr(
+std::optional<CompilationError> slkc::_compileSimpleLOrBinaryExpr(
 	CompileContext *compileContext,
 	peff::SharedPtr<BinaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
@@ -162,7 +162,7 @@ std::optional<CompilationError> Compiler::_compileSimpleLOrBinaryExpr(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> Compiler::_compileSimpleBinaryAssignOpExpr(
+SLKC_API std::optional<CompilationError> slkc::_compileSimpleBinaryAssignOpExpr(
 	CompileContext *compileContext,
 	peff::SharedPtr<BinaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
@@ -237,7 +237,7 @@ SLKC_API std::optional<CompilationError> Compiler::_compileSimpleBinaryAssignOpE
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> Compiler::compileBinaryExpr(
+SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 	CompileContext *compileContext,
 	peff::SharedPtr<BinaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,

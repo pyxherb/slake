@@ -23,7 +23,7 @@ static std::optional<CompilationError> _compileSimpleRValueUnaryExpr(
 
 			uint32_t tmpReg = compileContext->allocReg();
 
-			SLKC_RETURN_IF_COMP_ERROR(Compiler::compileExpr(compileContext, expr->operand, ExprEvalPurpose::RValue, tmpReg, result));
+			SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr->operand, ExprEvalPurpose::RValue, tmpReg, result));
 			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
 				slake::Opcode::NEG,
 				resultRegOut,
@@ -38,7 +38,7 @@ static std::optional<CompilationError> _compileSimpleRValueUnaryExpr(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> Compiler::compileUnaryExpr(
+SLKC_API std::optional<CompilationError> slkc::compileUnaryExpr(
 	CompileContext *compileContext,
 	peff::SharedPtr<UnaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,

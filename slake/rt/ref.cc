@@ -42,25 +42,25 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 					SLAKE_RETURN_IF_EXCEPT(instantiateGenericObject(scopeObject, scopeObject, genericInstantiationContext));
 					objectRefOut = EntityRef::makeObjectRef(scopeObject);
 				}
-
-				if (curName.hasParamTypes) {
-					switch (scopeObject->getKind()) {
-						case ObjectKind::Fn: {
-							FnObject *fnObject = ((FnObject *)scopeObject);
-
-							for (auto &j : curName.paramTypes) {
-								SLAKE_RETURN_IF_EXCEPT(j.loadDeferredType(this));
-							}
-
-							objectRefOut = EntityRef::makeObjectRef(scopeObject = fnObject->getOverloading(curName.paramTypes));
-							break;
-						}
-						default:
-							return ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this), ref);
-					}
-				}
 			} else {
 				if (i + 1 != ref->entries.size())
+					return ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this), ref);
+			}
+		}
+
+		if (ref->paramTypes.size() || ref->hasVarArgs) {
+			switch (scopeObject->getKind()) {
+				case ObjectKind::Fn: {
+					FnObject *fnObject = ((FnObject *)scopeObject);
+
+					for (auto &j : ref->paramTypes) {
+						SLAKE_RETURN_IF_EXCEPT(j.loadDeferredType(this));
+					}
+
+					objectRefOut = EntityRef::makeObjectRef(scopeObject = fnObject->getOverloading(ref->paramTypes));
+					break;
+				}
+				default:
 					return ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this), ref);
 			}
 		}
@@ -96,38 +96,6 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 	return ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this), ref);
 }
 
-SLAKE_API std::string Runtime::getFullName(const MemberObject *v) const {
-	std::string s;
-
-	peff::DynArray<IdRefEntry> fullIdRef(&globalHeapPoolAlloc);
-	if (!getFullRef(peff::getDefaultAlloc(), v, fullIdRef))
-		throw std::bad_alloc();
-
-	for (size_t i = 0; i < fullIdRef.size(); ++i) {
-		auto &scope = fullIdRef.at(i);
-
-		if (i)
-			s += ".";
-		s += scope.name;
-
-		if (auto nGenericParams = scope.genericArgs.size(); nGenericParams) {
-			s += "<";
-			for (size_t j = 0; j < nGenericParams; ++j) {
-				if (j)
-					s += ",";
-				s += std::to_string(scope.genericArgs.at(j), this);
-			}
-			s += ">";
-		}
-	}
-
-	return s;
-}
-
-SLAKE_API std::string Runtime::getFullName(const IdRefObject *v) const {
-	return std::to_string(v);
-}
-
 SLAKE_API bool Runtime::getFullRef(peff::Alloc *allocator, const MemberObject *v, peff::DynArray<IdRefEntry> &idRefOut) const {
 	do {
 		switch (v->getKind()) {
@@ -152,8 +120,7 @@ SLAKE_API bool Runtime::getFullRef(peff::Alloc *allocator, const MemberObject *v
 			}
 		}
 
-		peff::DynArray<Type> paramList(allocator);
-		if (!idRefOut.pushFront(IdRefEntry(std::move(copiedName), std::move(copiedGenericArgs), false, std::move(paramList), false))) {
+		if (!idRefOut.pushFront(IdRefEntry(std::move(copiedName), std::move(copiedGenericArgs)))) {
 			return false;
 		}
 	} while ((Object *)(v = (const MemberObject *)v->getParent()) != _rootObject);

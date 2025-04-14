@@ -11,6 +11,7 @@ namespace slkc {
 
 	enum class CompilationErrorKind : int {
 		OutOfMemory = 0,
+		OutOfRuntimeMemory,
 		ExpectingLValueExpr,
 		TargetIsNotCallable,
 		NoSuchFnOverloading,
@@ -57,6 +58,10 @@ namespace slkc {
 
 	SLAKE_FORCEINLINE CompilationError genOutOfMemoryCompError() {
 		return CompilationError(TokenRange{ 0, 0 }, CompilationErrorKind::OutOfMemory);
+	}
+
+	SLAKE_FORCEINLINE CompilationError genOutOfRuntimeMemoryCompError() {
+		return CompilationError(TokenRange{ 0, 0 }, CompilationErrorKind::OutOfRuntimeMemory);
 	}
 
 	struct CompilationWarning {

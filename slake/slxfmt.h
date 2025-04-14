@@ -168,17 +168,17 @@ namespace slake {
 			VAD_INIT = 0x80		// Initialized
 			;
 
+		struct IdRefHeader final {
+			uint8_t nEntries;
+			uint8_t hasVarArgs;
+			uint16_t nParams;
+		};
 		/// @brief Reference Scope Descriptor (RSD)
 		struct IdRefEntryDesc final {
-			uint8_t lenName;
-			uint8_t flags;
+			uint16_t lenName;
 			uint8_t nGenericArgs;
-			uint8_t nParams;
+			uint8_t reserved;
 		};
-		constexpr static uint8_t
-			RSD_NEXT = 0x01,
-			RSD_HASARG = 0x02,
-			RSD_VARARG = 0x04;
 
 		constexpr static uint8_t
 			GPD_BASE = 0x01;

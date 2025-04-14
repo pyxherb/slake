@@ -36,31 +36,6 @@ SLKC_API ExprStmtNode::ExprStmtNode(const ExprStmtNode &rhs, peff::Alloc *alloca
 SLKC_API ExprStmtNode::~ExprStmtNode() {
 }
 
-SLKC_API peff::SharedPtr<AstNode> DeferStmtNode::doDuplicate(peff::Alloc *newAllocator) const {
-	bool succeeded = false;
-	peff::SharedPtr<DeferStmtNode> duplicatedNode(peff::makeShared<DeferStmtNode>(newAllocator, *this, newAllocator, succeeded));
-	if ((!duplicatedNode) || (!succeeded)) {
-		return {};
-	}
-
-	return duplicatedNode.castTo<AstNode>();
-}
-
-SLKC_API DeferStmtNode::DeferStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : StmtNode(StmtKind::Defer, selfAllocator, document) {
-}
-
-SLKC_API DeferStmtNode::DeferStmtNode(const DeferStmtNode &rhs, peff::Alloc *allocator, bool &succeededOut) : StmtNode(rhs, allocator) {
-	if (!(expr = rhs.expr->duplicate<ExprNode>(allocator))) {
-		succeededOut = false;
-		return;
-	}
-
-	succeededOut = true;
-}
-
-SLKC_API DeferStmtNode::~DeferStmtNode() {
-}
-
 SLKC_API VarDefEntry::VarDefEntry(peff::Alloc *selfAllocator, peff::String &&name, const peff::SharedPtr<TypeNameNode> &type, const peff::SharedPtr<ExprNode> &initialValue) : selfAllocator(selfAllocator), name(std::move(name)), type(type), initialValue(initialValue) {
 }
 SLKC_API VarDefEntry::~VarDefEntry() {

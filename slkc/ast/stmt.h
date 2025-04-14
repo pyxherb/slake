@@ -43,18 +43,6 @@ namespace slkc {
 		SLKC_API virtual ~ExprStmtNode();
 	};
 
-	class DeferStmtNode : public StmtNode {
-	protected:
-		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
-
-	public:
-		peff::SharedPtr<ExprNode> expr;
-
-		SLKC_API DeferStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
-		SLKC_API DeferStmtNode(const DeferStmtNode &rhs, peff::Alloc *allocator, bool &succeededOut);
-		SLKC_API virtual ~DeferStmtNode();
-	};
-
 	class VarDefEntry {
 	public:
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;

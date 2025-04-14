@@ -35,7 +35,7 @@ SLKC_API std::optional<CompilationError> slkc::getFullIdRef(peff::Alloc *allocat
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> Compiler::resolveStaticMember(
+SLKC_API std::optional<CompilationError> slkc::resolveStaticMember(
 	peff::SharedPtr<Document> document,
 	const peff::SharedPtr<MemberNode> &memberNode,
 	const IdRefEntry &name,
@@ -104,7 +104,7 @@ SLKC_API std::optional<CompilationError> Compiler::resolveStaticMember(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> Compiler::resolveInstanceMember(
+SLKC_API std::optional<CompilationError> slkc::resolveInstanceMember(
 	peff::SharedPtr<Document> document,
 	peff::SharedPtr<MemberNode> memberNode,
 	const IdRefEntry &name,
@@ -188,7 +188,7 @@ SLKC_API std::optional<CompilationError> Compiler::resolveInstanceMember(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> Compiler::resolveIdRef(
+SLKC_API std::optional<CompilationError> slkc::resolveIdRef(
 	peff::SharedPtr<Document> document,
 	const peff::SharedPtr<MemberNode> &resolveRoot,
 	IdRefEntry *idRef,
@@ -252,7 +252,7 @@ SLKC_API std::optional<CompilationError> Compiler::resolveIdRef(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> Compiler::resolveIdRefWithScopeNode(
+SLKC_API std::optional<CompilationError> slkc::resolveIdRefWithScopeNode(
 	peff::SharedPtr<Document> document,
 	peff::Set<peff::SharedPtr<MemberNode>> &walkedNodes,
 	const peff::SharedPtr<MemberNode> &resolveScope,
@@ -445,7 +445,7 @@ SLKC_API std::optional<CompilationError> Compiler::resolveIdRefWithScopeNode(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> Compiler::resolveCustomTypeName(
+SLKC_API std::optional<CompilationError> slkc::resolveCustomTypeName(
 	peff::SharedPtr<Document> document,
 	const peff::SharedPtr<CustomTypeNameNode> &typeName,
 	peff::SharedPtr<MemberNode> &memberNodeOut) {

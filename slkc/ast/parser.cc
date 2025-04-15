@@ -796,10 +796,41 @@ accessModifierParseEnd:
 			// Import item.
 			nextToken();
 
-			IdRefPtr sourceIdRef;
+			peff::SharedPtr<ImportNode> importNode;
 
-			if ((syntaxError = parseIdRef(sourceIdRef)))
+			if (!(importNode = peff::makeShared<ImportNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+				return genOutOfMemoryError();
+			}
+
+			if ((syntaxError = parseIdRef(importNode->idRef)))
 				return syntaxError;
+
+			size_t idxMember;
+			if ((idxMember = p->pushMember(importNode.castTo<MemberNode>())) == SIZE_MAX) {
+				return genOutOfMemoryError();
+			}
+
+			if (Token *asToken = peekToken(); asToken->tokenId == TokenId::AsKeyword) {
+				nextToken();
+
+				Token *nameToken;
+
+				if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
+					return syntaxError;
+				}
+
+				if (!importNode->name.build(nameToken->sourceText)) {
+					return genOutOfMemoryError();
+				}
+
+				if (!p->indexMember(idxMember)) {
+					return genOutOfMemoryError();
+				}
+			} else {
+				if (!p->anonymousImports.pushBack(peff::SharedPtr<ImportNode>(importNode))) {
+					return genOutOfMemoryError();
+				}
+			}
 
 			Token *semicolonToken;
 

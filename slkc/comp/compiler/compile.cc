@@ -341,5 +341,41 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 	slake::HostRefHolder& hostRefHolder,
 	peff::SharedPtr<ModuleNode> mod,
 	slake::ModuleObject* modOut) {
+	for (auto i : mod->anonymousImports) {
+		slake::HostObjectRef<slake::IdRefObject> id;
+
+		SLKC_RETURN_IF_COMP_ERROR(compileIdRef(runtime, hostRefHolder, i->idRef->entries.data(), i->idRef->entries.size(), nullptr, 0, false, id));
+
+		if (!modOut->unnamedImports.pushBack(id.get())) {
+			return genOutOfRuntimeMemoryCompError();
+		}
+	}
+
+	for (auto& [k, v] : modOut->fieldRecordIndices) {
+		peff::SharedPtr<MemberNode> m = mod->members.at(v);
+
+		switch (m->astNodeType) {
+			case AstNodeType::Class: {
+			}
+			case AstNodeType::Interface: {
+			}
+			case AstNodeType::Import: {
+				peff::String s(&runtime->globalHeapPoolAlloc);
+
+				if (!s.build(k)) {
+					return genOutOfRuntimeMemoryCompError();
+				}
+
+				slake::HostObjectRef<slake::IdRefObject> id;
+				peff::SharedPtr<ImportNode> importNode = m.castTo<ImportNode>();
+
+				SLKC_RETURN_IF_COMP_ERROR(compileIdRef(runtime, hostRefHolder, importNode->idRef->entries.data(), importNode->idRef->entries.size(), nullptr, 0, false, id));
+
+				if (!modOut->imports.insert(std::move(s), id.get())) {
+					return genOutOfMemoryCompError();
+				}
+			}
+		}
+	}
 	return {};
 }

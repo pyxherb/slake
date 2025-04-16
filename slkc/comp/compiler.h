@@ -305,7 +305,8 @@ namespace slkc {
 		resolveCustomTypeName(
 			peff::SharedPtr<Document> document,
 			const peff::SharedPtr<CustomTypeNameNode> &typeName,
-			peff::SharedPtr<MemberNode> &memberNodeOut);
+			peff::SharedPtr<MemberNode> &memberNodeOut,
+			peff::Set<peff::SharedPtr<MemberNode>> *walkedNodes = nullptr);
 
 	SLKC_API std::optional<CompilationError> collectInvolvedInterfaces(
 		peff::SharedPtr<Document> document,

@@ -135,17 +135,14 @@ SLKC_API std::optional<CompilationError> slkc::isBaseOf(
 	bool &whetherOut) {
 	peff::Set<peff::SharedPtr<ClassNode>> walkedClasses(document->allocator.get());
 
-	if (!walkedClasses.insert(peff::SharedPtr<ClassNode>(base))) {
-		return genOutOfMemoryCompError();
-	}
 	if (!walkedClasses.insert(peff::SharedPtr<ClassNode>(derived))) {
 		return genOutOfMemoryCompError();
 	}
 
 	peff::SharedPtr<ClassNode> currentClass = derived;
-	peff::SharedPtr<TypeNameNode> currentType = derived->baseType;
+	peff::SharedPtr<TypeNameNode> currentType;
 
-	while (currentType) {
+	while ((currentType = currentClass->baseType)) {
 		if (currentType->typeNameKind != TypeNameKind::Custom) {
 			goto malformed;
 		}

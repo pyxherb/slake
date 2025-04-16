@@ -48,6 +48,7 @@ namespace slkc {
 			const TokenRange &tokenRange,
 			IncompatibleOperandErrorExData &&exData)
 			: tokenRange(tokenRange),
+			  errorKind(CompilationErrorKind::IncompatibleOperand),
 			  exData(exData) {
 		}
 	};

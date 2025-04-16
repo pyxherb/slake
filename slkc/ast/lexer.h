@@ -303,9 +303,16 @@ namespace slkc {
 	using OwnedTokenPtr = std::unique_ptr<Token, peff::DeallocableDeleter<Token>>;
 	using TokenList = peff::DynArray<OwnedTokenPtr>;
 
+	enum class LexicalErrorKind {
+		UnrecognizedToken = 0,
+		UnexpectedEndOfLine,
+		PrematuredEndOfFile,
+		OutOfMemory
+	};
+
 	struct LexicalError {
 		SourceLocation location;
-		const char *message;
+		LexicalErrorKind kind;
 	};
 
 	class Lexer {

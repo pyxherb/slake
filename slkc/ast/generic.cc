@@ -24,7 +24,7 @@ SLKC_API GenericParamNode::GenericParamNode(const GenericParamNode &rhs, peff::A
 		return;
 	}
 
-	if (!(baseType = rhs.baseType->duplicate<TypeNameNode>(allocator))) {
+	if (baseType && !(baseType = rhs.baseType->duplicate<TypeNameNode>(allocator))) {
 		succeededOut = false;
 		return;
 	}

@@ -37,7 +37,7 @@ SLKC_API AttributeDef::AttributeDef(const AttributeDef &rhs, peff::Alloc *alloca
 			return;
 		}
 
-		df->setParent(sharedFromThis().castTo<MemberNode>());
+		df->setParent(this);
 
 		fields.at(i) = df;
 

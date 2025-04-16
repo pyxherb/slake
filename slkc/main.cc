@@ -130,6 +130,29 @@ const CustomOptionMap g_customOptions = {
 
 const char *g_modFileName = nullptr;
 
+void dumpLexicalError(const slkc::LexicalError &lexicalError) {
+	switch (lexicalError.kind) {
+		case slkc::LexicalErrorKind::UnrecognizedToken:
+			printError("Syntax error at %zu, %zu: Unrecognized token\n",
+				lexicalError.location.beginPosition.line + 1,
+				lexicalError.location.beginPosition.column + 1);
+			break;
+		case slkc::LexicalErrorKind::UnexpectedEndOfLine:
+			printError("Syntax error at %zu, %zu: Unexpected end of line\n",
+				lexicalError.location.beginPosition.line + 1,
+				lexicalError.location.beginPosition.column + 1);
+			break;
+		case slkc::LexicalErrorKind::PrematuredEndOfFile:
+			printError("Syntax error at %zu, %zu: Prematured end of file\n",
+				lexicalError.location.beginPosition.line + 1,
+				lexicalError.location.beginPosition.column + 1);
+			break;
+		case slkc::LexicalErrorKind::OutOfMemory:
+			printError("Out of memory during lexical analysis\n");
+			break;
+	}
+}
+
 void dumpSyntaxError(const slkc::Parser &parser, const slkc::SyntaxError &syntaxError) {
 	const slkc::Token *beginToken = parser.tokenList.at(syntaxError.tokenRange.beginIndex).get();
 	const slkc::Token *endToken = parser.tokenList.at(syntaxError.tokenRange.endIndex).get();
@@ -300,16 +323,16 @@ int main(int argc, char *argv[]) {
 		peff::SharedPtr<slkc::Document> document(peff::makeShared<slkc::Document>(peff::getDefaultAlloc(), peff::getDefaultAlloc()));
 
 		if (auto e = lexer.lex(sv, peff::getDefaultAlloc(), document); e) {
-			printError("Lexical error at %zu, %zu: %s\n", e->location.beginPosition.line + 1, e->location.beginPosition.column + 1, e->message);
+			dumpLexicalError(*e);
 			return -1;
 		}
 
 		peff::NullAlloc nullAlloc;
 		slkc::Parser parser(document, std::move(lexer.tokenList), &nullAlloc, peff::getDefaultAlloc());
 
-		peff::SharedPtr<slkc::ModuleNode> rootModule(peff::makeShared<slkc::ModuleNode>(peff::getDefaultAlloc(), peff::getDefaultAlloc(), document));
+		peff::SharedPtr<slkc::ModuleNode> mod(peff::makeShared<slkc::ModuleNode>(peff::getDefaultAlloc(), peff::getDefaultAlloc(), document));
 
-		if (auto e = parser.parseProgram(rootModule); e) {
+		if (auto e = parser.parseProgram(mod); e) {
 			dumpSyntaxError(parser, *e);
 		}
 
@@ -321,7 +344,11 @@ int main(int argc, char *argv[]) {
 		slkc::CompileContext compileContext(&runtime, &peff::g_nullAlloc, peff::getDefaultAlloc());
 		slake::HostObjectRef<slake::ModuleObject> modObj = slake::ModuleObject::alloc(&runtime, slake::ScopeUniquePtr(slake::Scope::alloc(&runtime.globalHeapPoolAlloc, runtime.getRootObject())), slake::ACCESS_PUB | slake::ACCESS_STATIC);
 
-		if (auto e = slkc::compileModule(&compileContext, rootModule, modObj.get()); e) {
+		if (auto e = slkc::compileModule(&compileContext, mod, modObj.get()); e) {
+			std::terminate();
+		}
+
+		for (auto& i : compileContext.errors) {
 			std::terminate();
 		}
 	}

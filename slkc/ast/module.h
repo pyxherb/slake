@@ -7,7 +7,7 @@
 namespace slkc {
 	class MemberNode : public AstNode {
 	public:
-		peff::WeakPtr<MemberNode> parent;
+		MemberNode *parent = nullptr;  // We don't use WeakPtr because we want to set the parent during the copy constructor is executing.
 		peff::String name;
 		peff::DynArray<peff::SharedPtr<TypeNameNode>> genericArgs;
 		slake::AccessModifier accessModifier = 0;
@@ -16,8 +16,8 @@ namespace slkc {
 		SLKC_API MemberNode(const MemberNode &rhs, peff::Alloc *allocator, bool &succeededOut);
 		SLKC_API virtual ~MemberNode();
 
-		SLAKE_FORCEINLINE void setParent(peff::WeakPtr<MemberNode> &&parent) noexcept {
-			this->parent = std::move(parent);
+		SLAKE_FORCEINLINE void setParent(MemberNode *parent) noexcept {
+			this->parent = parent;
 		}
 	};
 

@@ -28,7 +28,7 @@ SLKC_API VarNode::VarNode(const VarNode &rhs, peff::Alloc *allocator, bool &succ
 		return;
 	}
 
-	if (!(initialValue = rhs.initialValue->duplicate<ExprNode>(allocator))) {
+	if (initialValue && !(initialValue = rhs.initialValue->duplicate<ExprNode>(allocator))) {
 		succeededOut = false;
 		return;
 	}

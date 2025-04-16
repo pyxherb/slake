@@ -35,7 +35,7 @@ SLKC_API FnSlotNode::FnSlotNode(const FnSlotNode &rhs, peff::Alloc *allocator, b
 			return;
 		}
 
-		overloadings.at(i)->setParent(sharedFromThis().castTo<MemberNode>());
+		overloadings.at(i)->setParent(this);
 	}
 
 	succeededOut = true;
@@ -76,12 +76,12 @@ SLKC_API FnNode::FnNode(const FnNode &rhs, peff::Alloc *allocator, bool &succeed
 	  idxGenericParamCommaTokens(allocator),
 	  lAngleBracketIndex(rhs.lAngleBracketIndex),
 	  rAngleBracketIndex(rhs.rAngleBracketIndex) {
-	if (!(body = rhs.body->duplicate<CodeBlockStmtNode>(allocator))) {
+	if (body && !(body = rhs.body->duplicate<CodeBlockStmtNode>(allocator))) {
 		succeededOut = false;
 		return;
 	}
 
-	if (!(returnType = rhs.returnType->duplicate<TypeNameNode>(allocator))) {
+	if (returnType && !(returnType = rhs.returnType->duplicate<TypeNameNode>(allocator))) {
 		succeededOut = false;
 		return;
 	}
@@ -102,7 +102,7 @@ SLKC_API FnNode::FnNode(const FnNode &rhs, peff::Alloc *allocator, bool &succeed
 			return;
 		}
 
-		params.at(i)->setParent(sharedFromThis().castTo<MemberNode>());
+		params.at(i)->setParent(this);
 	}
 
 	if (!genericParams.resize(rhs.genericParams.size())) {
@@ -121,7 +121,7 @@ SLKC_API FnNode::FnNode(const FnNode &rhs, peff::Alloc *allocator, bool &succeed
 			return;
 		}
 
-		genericParams.at(i)->setParent(sharedFromThis().castTo<MemberNode>());
+		genericParams.at(i)->setParent(this);
 	}
 
 	if (!idxGenericParamCommaTokens.resize(rhs.idxGenericParamCommaTokens.size())) {

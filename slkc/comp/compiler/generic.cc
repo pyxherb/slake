@@ -70,7 +70,7 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 		}
 		for (size_t i = 0; i < context.genericArgs->size(); ++i) {
 			if (!(astNode->genericArgs.at(i) =
-						context.genericArgs->at(context.genericArgs->size())
+						context.genericArgs->at(i)
 							->duplicate<TypeNameNode>(context.allocator.get()))) {
 				return genOutOfMemoryCompError();
 			}

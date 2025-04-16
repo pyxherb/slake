@@ -222,7 +222,7 @@ SLKC_API std::optional<LexicalError> Lexer::lex(const std::string_view &src, pef
 						SourceLocation {
 						{ (size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'), prevYYCURSORPos },
 						{ (size_t)std::count(strToEnd.begin(), strToEnd.end(), '\n'), YYCURSORPos }
-					}, "Invalid token"};
+					}, LexicalErrorKind::UnrecognizedToken};
 				}
 
 				<StringCondition>"\""		{
@@ -254,7 +254,7 @@ SLKC_API std::optional<LexicalError> Lexer::lex(const std::string_view &src, pef
 						SourceLocation {
 						{ (size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'), prevYYCURSORPos },
 						{ (size_t)std::count(strToEnd.begin(), strToEnd.end(), '\n'), YYCURSORPos }
-					}, "Unexpected end of line"};
+					}, LexicalErrorKind::UnexpectedEndOfLine};
 				}
 				<StringCondition>"\000"	{
 					size_t beginIndex = prevYYCURSOR - src.data(), endIndex = YYCURSOR - src.data();
@@ -276,7 +276,7 @@ SLKC_API std::optional<LexicalError> Lexer::lex(const std::string_view &src, pef
 						SourceLocation {
 						{ (size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'), prevYYCURSORPos },
 						{ (size_t)std::count(strToEnd.begin(), strToEnd.end(), '\n'), YYCURSORPos }
-					}, "Prematured end of file"};
+					}, LexicalErrorKind::PrematuredEndOfFile};
 				}
 				<StringCondition>[^]		{ if(!strLiteral.pushBack(+YYCURSOR[-1])) goto outOfMemory; continue; }
 
@@ -377,5 +377,5 @@ end : {
 	return {};
 
 outOfMemory:
-	return LexicalError{ SourceLocation{ { 0, 0 }, { 0, 0 } }, "Out of memory" };
+	return LexicalError{ SourceLocation{ { 0, 0 }, { 0, 0 } }, LexicalErrorKind::OutOfMemory };
 }

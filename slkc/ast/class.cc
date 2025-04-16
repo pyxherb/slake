@@ -27,7 +27,7 @@ SLKC_API ClassNode::ClassNode(const ClassNode &rhs, peff::Alloc *allocator, bool
 		return;
 	}
 
-	if (!(baseType = rhs.baseType->duplicate<TypeNameNode>(allocator))) {
+	if (baseType && !(baseType = rhs.baseType->duplicate<TypeNameNode>(allocator))) {
 		succeededOut = false;
 		return;
 	}
@@ -60,7 +60,7 @@ SLKC_API ClassNode::ClassNode(const ClassNode &rhs, peff::Alloc *allocator, bool
 			return;
 		}
 
-		genericParams.at(i)->setParent(sharedFromThis().castTo<MemberNode>());
+		genericParams.at(i)->setParent(this);
 	}
 
 	if (!idxGenericParamCommaTokens.resize(rhs.idxGenericParamCommaTokens.size())) {
@@ -132,7 +132,7 @@ SLKC_API InterfaceNode::InterfaceNode(const InterfaceNode &rhs, peff::Alloc *all
 			return;
 		}
 
-		genericParams.at(i)->setParent(sharedFromThis().castTo<MemberNode>());
+		genericParams.at(i)->setParent(this);
 	}
 
 	if (!idxGenericParamCommaTokens.resize(rhs.idxGenericParamCommaTokens.size())) {

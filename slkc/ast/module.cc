@@ -138,6 +138,8 @@ SLKC_API bool ModuleNode::indexMember(size_t indexInMemberArray) noexcept {
 		return false;
 	}
 
+	m->setParent(this);
+
 	return true;
 }
 

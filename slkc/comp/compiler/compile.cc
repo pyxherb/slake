@@ -347,7 +347,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 		}
 	}
 
-	for (auto &[k, v] : modOut->fieldRecordIndices) {
+	for (auto &[k, v] : mod->memberIndices) {
 		peff::SharedPtr<MemberNode> m = mod->members.at(v);
 
 		switch (m->astNodeType) {
@@ -369,16 +369,20 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 					if (clsNode->baseType->typeNameKind == TypeNameKind::Custom) {
 						if (!(compilationError = resolveCustomTypeName(clsNode->document.lock(), clsNode->baseType.castTo<CustomTypeNameNode>(), baseTypeNode))) {
-							if (baseTypeNode->astNodeType != AstNodeType::Class) {
+							if (baseTypeNode) {
+								if (baseTypeNode->astNodeType != AstNodeType::Class) {
+									SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(clsNode->baseType->tokenRange, CompilationErrorKind::ExpectingClassName)));
+								}
+
+								bool isCyclicInherited = false;
+								SLKC_RETURN_IF_COMP_ERROR(isBaseOf(clsNode->document.lock(), clsNode, clsNode, isCyclicInherited));
+
+								if (isCyclicInherited) {
+									SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(clsNode->tokenRange, CompilationErrorKind::CyclicInheritedClass)));
+									continue;
+								}
+							} else {
 								SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(clsNode->baseType->tokenRange, CompilationErrorKind::ExpectingClassName)));
-							}
-
-							bool isCyclicInherited = false;
-							SLKC_RETURN_IF_COMP_ERROR(isBaseOf(clsNode->document.lock(), clsNode, clsNode, isCyclicInherited));
-
-							if (isCyclicInherited) {
-								SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(clsNode->tokenRange, CompilationErrorKind::CyclicInheritedClass)));
-								continue;
 							}
 						} else {
 							SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(std::move(compilationError.value())));
@@ -394,7 +398,11 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 					if (i->typeNameKind == TypeNameKind::Custom) {
 						if (!(compilationError = resolveCustomTypeName(clsNode->document.lock(), i.castTo<CustomTypeNameNode>(), implementedTypeNode))) {
-							if (implementedTypeNode->astNodeType != AstNodeType::Interface) {
+							if (implementedTypeNode) {
+								if (implementedTypeNode->astNodeType != AstNodeType::Interface) {
+									SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
+								}
+							} else {
 								SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
 							}
 						} else {
@@ -419,7 +427,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 				slake::HostObjectRef<slake::InterfaceObject> cls;
 
-				if (!(cls = slake::InterfaceObject::alloc(compileContext->runtime, slake::ScopeUniquePtr(slake::Scope::alloc(&compileContext->runtime->globalHeapPoolAlloc, nullptr)), mod->accessModifier, { &compileContext->runtime->globalHeapPoolAlloc}))) {
+				if (!(cls = slake::InterfaceObject::alloc(compileContext->runtime, slake::ScopeUniquePtr(slake::Scope::alloc(&compileContext->runtime->globalHeapPoolAlloc, nullptr)), mod->accessModifier, { &compileContext->runtime->globalHeapPoolAlloc }))) {
 					return genOutOfRuntimeMemoryCompError();
 				}
 
@@ -432,15 +440,19 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 					if (i->typeNameKind == TypeNameKind::Custom) {
 						if (!(compilationError = resolveCustomTypeName(clsNode->document.lock(), i.castTo<CustomTypeNameNode>(), implementedTypeNode))) {
-							if (implementedTypeNode->astNodeType != AstNodeType::Interface) {
-								SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
-							}
-							bool isCyclicInherited = false;
-							SLKC_RETURN_IF_COMP_ERROR(isImplementedByInterface(clsNode->document.lock(), clsNode, clsNode, isCyclicInherited));
+							if (implementedTypeNode) {
+								if (implementedTypeNode->astNodeType != AstNodeType::Interface) {
+									SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
+								}
+								bool isCyclicInherited = false;
+								SLKC_RETURN_IF_COMP_ERROR(isImplementedByInterface(clsNode->document.lock(), clsNode, clsNode, isCyclicInherited));
 
-							if (isCyclicInherited) {
-								SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(clsNode->tokenRange, CompilationErrorKind::CyclicInheritedClass)));
-								continue;
+								if (isCyclicInherited) {
+									SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(clsNode->tokenRange, CompilationErrorKind::CyclicInheritedClass)));
+									continue;
+								}
+							} else {
+								SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
 							}
 						} else {
 							SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(std::move(compilationError.value())));

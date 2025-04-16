@@ -19,6 +19,9 @@ namespace slkc {
 		OperatorNotFound,
 		MismatchedGenericArgNumber,
 		DoesNotReferToATypeName,
+		ExpectingClassName,
+		ExpectingInterfaceName,
+		CyclicInheritedClass,
 
 		ImportLimitExceeded,
 	};

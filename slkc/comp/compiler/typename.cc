@@ -82,7 +82,8 @@ SLKC_API std::optional<CompilationError> slkc::isImplementedByClass(
 
 		// Make sure that the function will work properly when the class has cyclic inheritance.
 		if (walkedClasses.contains(currentClass)) {
-			goto malformed;
+			whetherOut = true;
+			return {};
 		}
 
 		for (size_t i = 0; i < currentClass->implementedTypes.size(); ++i) {
@@ -164,7 +165,8 @@ SLKC_API std::optional<CompilationError> slkc::isBaseOf(
 
 		// Make sure that the function will work properly when the class has cyclic inheritance.
 		if (walkedClasses.contains(currentClass)) {
-			goto malformed;
+			whetherOut = true;
+			return {};
 		}
 
 		if (currentClass == base) {

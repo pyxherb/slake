@@ -10,6 +10,10 @@ SLKC_API void CompileContext::onRefZero() noexcept {
 }
 
 SLAKE_API std::optional<CompilationError> CompileContext::emitIns(slake::Opcode opcode, uint32_t outputRegIndex, const std::initializer_list<slake::Value> &operands) {
+	if (flags & COMPCTXT_NOCOMPILE) {
+		return {};
+	}
+
 	slake::Instruction insOut;
 
 	insOut.opcode = opcode;

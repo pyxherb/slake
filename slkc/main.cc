@@ -316,6 +316,14 @@ int main(int argc, char *argv[]) {
 		for (auto &i : parser.syntaxErrors) {
 			dumpSyntaxError(parser, i);
 		}
+
+		slake::Runtime runtime(peff::getDefaultAlloc());
+		slkc::CompileContext compileContext(&runtime, &peff::g_nullAlloc, peff::getDefaultAlloc());
+		slake::HostObjectRef<slake::ModuleObject> modObj = slake::ModuleObject::alloc(&runtime, slake::ScopeUniquePtr(slake::Scope::alloc(&runtime.globalHeapPoolAlloc, runtime.getRootObject())), slake::ACCESS_PUB | slake::ACCESS_STATIC);
+
+		if (auto e = slkc::compileModule(&compileContext, rootModule, modObj.get()); e) {
+			std::terminate();
+		}
 	}
 
 	return 0;

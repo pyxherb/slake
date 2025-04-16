@@ -56,21 +56,33 @@ namespace slkc {
 		}
 	};
 
+	constexpr uint32_t
+		// Do not compile and thus we don't need extraneous memory allocation for byte code generation.
+		COMPCTXT_NOCOMPILE = 0x01
+		;
+
 	struct CompileContext : public peff::RcObject {
+		slake::Runtime *runtime;
+		slake::HostRefHolder hostRefHolder;
 		peff::RcObjectPtr<peff::Alloc> selfAllocator, allocator;
 		peff::SharedPtr<Document> document;
 		peff::DynArray<CompilationError> errors;
 		peff::DynArray<CompilationWarning> warnings;
 		FnCompileContext fnCompileContext;
+		uint32_t flags;
 
 		SLAKE_FORCEINLINE CompileContext(
+			slake::Runtime *runtime,
 			peff::Alloc *selfAllocator,
 			peff::Alloc *allocator)
-			: selfAllocator(selfAllocator),
+			: runtime(runtime),
+			  hostRefHolder(allocator),
+			  selfAllocator(selfAllocator),
 			  allocator(allocator),
 			  errors(allocator),
 			  warnings(allocator),
-			  fnCompileContext(allocator) {}
+			  fnCompileContext(allocator),
+			  flags(0) {}
 
 		SLKC_API virtual ~CompileContext();
 
@@ -172,12 +184,6 @@ namespace slkc {
 		}
 
 		SLAKE_API std::optional<CompilationError> emitIns(slake::Opcode opcode, uint32_t outputRegIndex, const std::initializer_list<slake::Value> &operands);
-	};
-
-	struct ImplementationDetectionContext {
-		peff::Set<peff::SharedPtr<InterfaceNode>> walkedInterfaces;
-
-		SLAKE_FORCEINLINE ImplementationDetectionContext(peff::Alloc *allocator) : walkedInterfaces(allocator) {}
 	};
 
 	struct CompileExprResult {
@@ -364,13 +370,11 @@ namespace slkc {
 	[[nodiscard]] SLKC_API std::optional<CompilationError> getFullIdRef(peff::Alloc *allocator, peff::SharedPtr<MemberNode> m, IdRefPtr &idRefOut);
 
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileTypeName(
-		slake::Runtime *runtime,
-		slake::HostRefHolder &hostRefHolder,
+		CompileContext *compileContext,
 		peff::SharedPtr<TypeNameNode> typeName,
 		slake::Type &typeOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileIdRef(
-		slake::Runtime *runtime,
-		slake::HostRefHolder &hostRefHolder,
+		CompileContext *compileContext,
 		const IdRefEntry *entries,
 		size_t nEntries,
 		peff::SharedPtr<TypeNameNode> *paramTypes,
@@ -378,13 +382,11 @@ namespace slkc {
 		bool hasVarArgs,
 		slake::HostObjectRef<slake::IdRefObject> &idRefOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileValueExpr(
-		slake::Runtime *runtime,
-		slake::HostRefHolder &hostRefHolder,
+		CompileContext *compileContext,
 		peff::SharedPtr<ExprNode> expr,
 		slake::Value &valueOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileModule(
-		slake::Runtime *runtime,
-		slake::HostRefHolder &hostRefHolder,
+		CompileContext *compileContext,
 		peff::SharedPtr<ModuleNode> mod,
 		slake::ModuleObject *modOut);
 

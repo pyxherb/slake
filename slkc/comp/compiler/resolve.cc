@@ -95,7 +95,8 @@ SLKC_API std::optional<CompilationError> slkc::resolveStaticMember(
 				// TODO: Check if the slot contains any static method.
 				break;
 			}
-			default:;
+			default:
+				break;
 		}
 		memberOut = result;
 		return {};
@@ -179,7 +180,8 @@ SLKC_API std::optional<CompilationError> slkc::resolveInstanceMember(
 				// TODO: Check if the slot contains any instance method.
 				break;
 			}
-			default:;
+			default:
+				break;
 		}
 		memberOut = result;
 		return {};
@@ -435,7 +437,8 @@ SLKC_API std::optional<CompilationError> slkc::resolveIdRefWithScopeNode(
 				}
 				break;
 			}
-			default:;
+			default:
+				break;
 		}
 	} else {
 		return {};

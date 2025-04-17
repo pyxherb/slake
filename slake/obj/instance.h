@@ -14,6 +14,8 @@ namespace slake {
 
 	class InstanceObject final : public Object {
 	public:
+		/// @brief Memory object where the object is created on.
+		InstanceObject *memoryObject;
 		ClassObject *_class = nullptr;
 		char *rawFieldData = nullptr;
 		size_t szRawFieldData = 0;

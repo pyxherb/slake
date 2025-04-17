@@ -599,6 +599,36 @@ SLKC_API NewExprNode::NewExprNode(const NewExprNode &rhs, peff::Alloc *allocator
 SLKC_API NewExprNode::~NewExprNode() {
 }
 
+SLKC_API peff::SharedPtr<AstNode> AllocaExprNode::doDuplicate(peff::Alloc *newAllocator) const {
+	bool succeeded = false;
+	peff::SharedPtr<AllocaExprNode> duplicatedNode(peff::makeShared<AllocaExprNode>(newAllocator, *this, newAllocator, succeeded));
+	if ((!duplicatedNode) || (!succeeded)) {
+		return {};
+	}
+
+	return duplicatedNode.castTo<AstNode>();
+}
+SLKC_API AllocaExprNode::AllocaExprNode(
+	peff::Alloc *selfAllocator,
+	const peff::SharedPtr<Document> &document)
+	: ExprNode(ExprKind::Alloca, selfAllocator, document),
+	  idxCommaTokens(selfAllocator) {
+}
+SLKC_API AllocaExprNode::AllocaExprNode(const AllocaExprNode &rhs, peff::Alloc *allocator, bool &succeededOut)
+	: ExprNode(rhs, allocator), idxCommaTokens(allocator) {
+	if (!(countExpr = rhs.countExpr->duplicate<ExprNode>(allocator))) {
+		succeededOut = false;
+		return;
+	}
+
+	if (!(targetType = rhs.targetType->duplicate<TypeNameNode>(allocator))) {
+		succeededOut = false;
+		return;
+	}
+}
+SLKC_API AllocaExprNode::~AllocaExprNode() {
+}
+
 SLKC_API peff::SharedPtr<AstNode> CastExprNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
 	peff::SharedPtr<CastExprNode> duplicatedNode(peff::makeShared<CastExprNode>(newAllocator, *this, newAllocator, succeeded));

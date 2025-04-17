@@ -3,7 +3,7 @@
 
 using namespace slkc;
 
-SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNameNode> &typeNameOut) {
+SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNameNode> &typeNameOut, bool withCircumfixes) {
 	std::optional<SyntaxError> syntaxError;
 	Token *t = peekToken();
 
@@ -159,41 +159,54 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 			return SyntaxError(TokenRange{ t->index }, SyntaxErrorKind::UnexpectedToken);
 	}
 
-	while (true) {
-		switch ((t = peekToken())->tokenId) {
-			case TokenId::LBracket: {
-				nextToken();
+	if (withCircumfixes) {
+		while (true) {
+			switch ((t = peekToken())->tokenId) {
+				case TokenId::LBracket: {
+					nextToken();
 
-				Token *rBracketToken;
-				if ((syntaxError = expectToken((rBracketToken = peekToken()), TokenId::RBracket)))
-					return SyntaxError(TokenRange{ rBracketToken->index }, ExpectingSingleTokenErrorExData{ TokenId::RBracket });
+					Token *rBracketToken;
+					if ((syntaxError = expectToken((rBracketToken = peekToken()), TokenId::RBracket)))
+						return SyntaxError(TokenRange{ rBracketToken->index }, ExpectingSingleTokenErrorExData{ TokenId::RBracket });
 
-				nextToken();
+					nextToken();
 
-				if (!(typeNameOut = peff::makeShared<ArrayTypeNameNode>(
-						  resourceAllocator.get(),
-						  resourceAllocator.get(),
-						  document,
-						  typeNameOut)
-							.castTo<TypeNameNode>()))
-					return genOutOfMemoryError();
-				break;
+					if (!(typeNameOut = peff::makeShared<ArrayTypeNameNode>(
+							  resourceAllocator.get(),
+							  resourceAllocator.get(),
+							  document,
+							  typeNameOut)
+								.castTo<TypeNameNode>()))
+						return genOutOfMemoryError();
+					break;
+				}
+				default:
+					goto end;
 			}
-			default:
-				goto end;
 		}
 	}
 
 end:
-	if ((t = peekToken())->tokenId == TokenId::AndOp) {
-		nextToken();
-		if (!(typeNameOut = peff::makeShared<RefTypeNameNode>(
-				  resourceAllocator.get(),
-				  resourceAllocator.get(),
-				  document,
-				  typeNameOut)
-					.castTo<TypeNameNode>()))
-			return genOutOfMemoryError();
+	if (withCircumfixes) {
+		if ((t = peekToken())->tokenId == TokenId::AndOp) {
+			nextToken();
+			if (!(typeNameOut = peff::makeShared<RefTypeNameNode>(
+					  resourceAllocator.get(),
+					  resourceAllocator.get(),
+					  document,
+					  typeNameOut)
+						.castTo<TypeNameNode>()))
+				return genOutOfMemoryError();
+		} else if ((t = peekToken())->tokenId == TokenId::LAndOp) {
+			nextToken();
+			if (!(typeNameOut = peff::makeShared<TempRefTypeNameNode>(
+					  resourceAllocator.get(),
+					  resourceAllocator.get(),
+					  document,
+					  typeNameOut)
+						.castTo<TypeNameNode>()))
+				return genOutOfMemoryError();
+		}
 	}
 
 	return {};

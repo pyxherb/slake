@@ -115,6 +115,7 @@ fn genericFn<U, T>(t: T, u: U) {
 }
 
 fn test(...) {
+	let sv: i32&& = alloca i32[123];
 	...;
 }
 

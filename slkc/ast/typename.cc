@@ -384,3 +384,28 @@ SLKC_API RefTypeNameNode::RefTypeNameNode(const RefTypeNameNode &rhs, peff::Allo
 
 SLKC_API RefTypeNameNode::~RefTypeNameNode() {
 }
+
+SLKC_API peff::SharedPtr<AstNode> TempRefTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
+	bool succeeded = false;
+	peff::SharedPtr<TempRefTypeNameNode> duplicatedNode(peff::makeShared<TempRefTypeNameNode>(newAllocator, *this, newAllocator, succeeded));
+	if ((!duplicatedNode) || (!succeeded)) {
+		return {};
+	}
+
+	return duplicatedNode.castTo<AstNode>();
+}
+
+SLKC_API TempRefTypeNameNode::TempRefTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, const peff::SharedPtr<TypeNameNode> &referencedType) : TypeNameNode(TypeNameKind::Ref, selfAllocator, document), referencedType(referencedType) {
+}
+
+SLKC_API TempRefTypeNameNode::TempRefTypeNameNode(const TempRefTypeNameNode &rhs, peff::Alloc *allocator, bool &succeededOut) : TypeNameNode(rhs, allocator) {
+	if (!(referencedType = rhs.referencedType->duplicate<TypeNameNode>(allocator))) {
+		succeededOut = false;
+		return;
+	}
+
+	succeededOut = true;
+}
+
+SLKC_API TempRefTypeNameNode::~TempRefTypeNameNode() {
+}

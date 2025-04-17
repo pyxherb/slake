@@ -35,6 +35,37 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 					goto genBadExpr;
 				break;
 			}
+			case TokenId::AllocaKeyword: {
+				nextToken();
+
+				peff::SharedPtr<AllocaExprNode> expr;
+
+				if (!(expr = peff::makeShared<AllocaExprNode>(
+						  resourceAllocator.get(), resourceAllocator.get(), document)))
+					return genOutOfMemoryError();
+
+				lhs = expr.castTo<ExprNode>();
+
+				if ((syntaxError = parseTypeName(expr->targetType, false)))
+					goto genBadExpr;
+
+				Token *lBracketToken;
+
+				if ((lBracketToken = peekToken())->tokenId == TokenId::LBracket) {
+					nextToken();
+
+					if ((syntaxError = parseExpr(0, expr->countExpr)))
+						goto genBadExpr;
+
+					Token *rBracketToken;
+
+					if ((syntaxError = expectToken((rBracketToken = peekToken()), TokenId::RBracket)))
+						goto genBadExpr;
+
+					nextToken();
+				}
+				break;
+			}
 			case TokenId::NewKeyword: {
 				nextToken();
 

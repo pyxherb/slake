@@ -26,6 +26,7 @@ namespace slkc {
 
 		Array,
 		Ref,
+		TempRef,
 
 		Bad
 	};

@@ -112,6 +112,7 @@ namespace slkc {
 		CmpOp,
 		DollarOp,
 
+		AllocaKeyword,
 		AsKeyword,
 		AsyncKeyword,
 		AwaitKeyword,

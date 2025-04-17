@@ -213,6 +213,18 @@ namespace slkc {
 		SLKC_API RefTypeNameNode(const RefTypeNameNode &rhs, peff::Alloc *allocator, bool &succeededOut);
 		SLKC_API virtual ~RefTypeNameNode();
 	};
+
+	class TempRefTypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		peff::SharedPtr<TypeNameNode> referencedType;
+
+		SLKC_API TempRefTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, const peff::SharedPtr<TypeNameNode> &referencedType);
+		SLKC_API TempRefTypeNameNode(const TempRefTypeNameNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API virtual ~TempRefTypeNameNode();
+	};
 }
 
 #endif

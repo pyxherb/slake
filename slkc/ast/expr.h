@@ -30,7 +30,9 @@ namespace slkc {
 
 		Call,  // Call
 
-		New, // New
+		New,  // New
+
+		Alloca,	 // Alloca
 
 		Cast,  // Cast
 
@@ -361,12 +363,26 @@ namespace slkc {
 		peff::SharedPtr<TypeNameNode> targetType;
 		peff::DynArray<peff::SharedPtr<ExprNode>> args;
 		peff::DynArray<size_t> idxCommaTokens;
-		bool isAsync = false;
 		size_t lParentheseTokenIndex = SIZE_MAX, rParentheseTokenIndex = SIZE_MAX, asyncKeywordTokenIndex = SIZE_MAX;
 
 		SLKC_API NewExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API NewExprNode(const NewExprNode &rhs, peff::Alloc *allocator, bool &succeededOut);
 		SLKC_API virtual ~NewExprNode();
+	};
+
+	class AllocaExprNode : public ExprNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		peff::SharedPtr<TypeNameNode> targetType;
+		peff::SharedPtr<ExprNode> countExpr;
+		peff::DynArray<size_t> idxCommaTokens;
+		size_t lParentheseTokenIndex = SIZE_MAX, rParentheseTokenIndex = SIZE_MAX, asyncKeywordTokenIndex = SIZE_MAX;
+
+		SLKC_API AllocaExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API AllocaExprNode(const AllocaExprNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API virtual ~AllocaExprNode();
 	};
 
 	class CastExprNode : public ExprNode {

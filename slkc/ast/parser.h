@@ -161,7 +161,7 @@ namespace slkc {
 		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseIdRef(IdRefPtr &idRefOut);
 		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseExpr(int precedence, peff::SharedPtr<ExprNode> &exprOut);
 		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseStmt(peff::SharedPtr<StmtNode> &stmtOut);
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseTypeName(peff::SharedPtr<TypeNameNode> &typeNameOut);
+		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseTypeName(peff::SharedPtr<TypeNameNode> &typeNameOut, bool withCircumfixes = true);
 
 		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseAttribute(peff::SharedPtr<AttributeNode> &attributeOut);
 		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseAttributes(peff::DynArray<peff::SharedPtr<AttributeNode>> &attributesOut);

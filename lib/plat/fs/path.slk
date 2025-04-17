@@ -1,6 +1,6 @@
-module std.os.fs;
+module plat.fs.path;
 
-class Path {
+pub class Path {
 	pub native operator new(string path);
 
 	pub native string getRootName();

@@ -1,4 +1,4 @@
-module std.core.except;
+module core.except;
 
 pub interface IException {
 	fn what(): string;

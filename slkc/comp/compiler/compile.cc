@@ -405,12 +405,14 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 							} else {
 								SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
 							}
-						} else {
-							SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(std::move(compilationError.value())));
-							compilationError.reset();
 						}
-					} else {
-						SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
+ else {
+	 SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(std::move(compilationError.value())));
+	 compilationError.reset();
+						}
+					}
+ else {
+	 SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
 					}
 				}
 
@@ -435,7 +437,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 					return genOutOfRuntimeMemoryCompError();
 				}
 
-				for (auto &i : clsNode->implementedTypes) {
+				for (auto& i : clsNode->implementedTypes) {
 					peff::SharedPtr<MemberNode> implementedTypeNode;
 
 					if (i->typeNameKind == TypeNameKind::Custom) {
@@ -451,14 +453,17 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 									SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(clsNode->tokenRange, CompilationErrorKind::CyclicInheritedClass)));
 									continue;
 								}
-							} else {
+							}
+							else {
 								SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
 							}
-						} else {
+						}
+						else {
 							SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(std::move(compilationError.value())));
 							compilationError.reset();
 						}
-					} else {
+					}
+					else {
 						SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
 					}
 				}
@@ -489,7 +494,31 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 				break;
 			}
 			case AstNodeType::FnSlot: {
-				// stub
+				peff::SharedPtr<FnSlotNode> slotNode = m.castTo<FnSlotNode>();
+
+				for (auto i : slotNode->overloadings) {
+					compileContext->fnCompileContext.reset();
+
+					peff::SharedPtr<BlockCompileContext> blockContext;
+					if (!(blockContext = peff::makeShared<BlockCompileContext>(compileContext->allocator.get(), compileContext->allocator.get())))
+						return genOutOfMemoryCompError();
+					if (!compileContext->fnCompileContext.blockCompileContexts.pushBack(std::move(blockContext)))
+						return genOutOfMemoryCompError();
+
+					compileContext->fnCompileContext.currentFn = i;
+
+					std::optional<CompilationError> e;
+					for (auto j : i->body->body) {
+						if ((e = compileStmt(compileContext, j))) {
+							if (e->errorKind == CompilationErrorKind::OutOfMemory)
+								return e;
+							if (!compileContext->errors.pushBack(std::move(*e))) {
+								return genOutOfMemoryCompError();
+							}
+							e.reset();
+						}
+					}
+				}
 				break;
 			}
 		}

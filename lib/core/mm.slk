@@ -1,0 +1,7 @@
+module core.mm;
+
+interface IMemory {
+	pub fn data(): u8[];
+}
+
+pub fn constructAt<T>(buffer: IMemory): T;

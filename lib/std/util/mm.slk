@@ -1,0 +1,45 @@
+module std.util.mm;
+
+import core.mm;
+
+interface IAllocator {
+	pub fn allocate(size: usize, alignment: usize): IMemory;
+	pub fn deallocate(memory: IMemory);
+}
+
+class StdAllocator: IAllocator {
+	pub fn allocate(size: usize, alignment: usize): IMemory;
+	pub fn deallocate(memory: IMemory);
+}
+
+class MonotonicBufferAllocatorMemory: IMemory {
+	let allocator: MonotonicBufferAllocator;
+	let offset: usize, length: usize;
+
+	pub fn data() virtual override: u8[] {
+		return allocator.buffer.slice(offset, length);
+	}
+}
+
+class MonotonicBufferAllocator: IAllocator {
+	let buffer: u8[];
+	let offset: usize, totalSize: usize;
+	
+	pub fn allocate(size: usize, alignment: usize): IMemory {
+		const size: usize = sizeof(MonotonicBufferAllocatorMemory) + usize;
+
+		if (totalSize - offset < size) {
+			return null;
+		}
+
+		let mem = constructAt<MonotonicBufferAllocatorMemory>(buffer.slice(offset, sizeof(MonotonicBufferAllocatorMemory)));
+
+		if (mem === null) {
+			return null;
+		}
+
+		totalSize += size;
+
+		return mem;
+	}
+}

@@ -1,3 +1,5 @@
+module core.attribs;
+
 attribute Deprecated {
 	reason?: string
 }

@@ -10,7 +10,7 @@ static std::optional<CompilationError> _compileSimpleRValueUnaryExpr(
 	CompileExprResult &resultOut,
 	slake::Opcode opcode) {
 	switch (evalPurpose) {
-		case ExprEvalPurpose::None:
+		case ExprEvalPurpose::EvalType:
 			break;
 		case ExprEvalPurpose::Stmt:
 			SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(

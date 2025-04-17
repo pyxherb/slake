@@ -21,7 +21,7 @@ namespace slake {
 		uint8_t nOperands;
 		uint32_t output;
 		Value *operands;
-		FnOverloadingObject *fnOverloading;
+		peff::RcObjectPtr<peff::Alloc> operandsAllocator;
 
 		SLAKE_API Instruction();
 		SLAKE_API Instruction(Instruction &&rhs);

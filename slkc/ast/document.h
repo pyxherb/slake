@@ -22,6 +22,8 @@ namespace slkc {
 		ExpectingClassName,
 		ExpectingInterfaceName,
 		CyclicInheritedClass,
+		ExpectingId,
+		IdNotFound,
 
 		ImportLimitExceeded,
 	};

@@ -236,6 +236,85 @@ void dumpSyntaxError(const slkc::Parser &parser, const slkc::SyntaxError &syntax
 	}
 }
 
+void dumpCompilationError(const slkc::Parser &parser, const slkc::CompilationError &error) {
+	const slkc::Token *beginToken = parser.tokenList.at(error.tokenRange.beginIndex).get();
+	const slkc::Token *endToken = parser.tokenList.at(error.tokenRange.endIndex).get();
+
+	switch (error.errorKind) {
+		case slkc::CompilationErrorKind::OutOfMemory:
+			printError("Error at %zu, %zu: Out of memory\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::OutOfRuntimeMemory:
+			printError("Error at %zu, %zu: Slake runtime memory allocation limit exceeded\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::ExpectingLValueExpr:
+			printError("Error at %zu, %zu: Expecting a lvalue expression\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::TargetIsNotCallable:
+			printError("Error at %zu, %zu: Expression is not callable\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::OperatorNotFound:
+			printError("Error at %zu, %zu: No matching operator found\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::MismatchedGenericArgNumber:
+			printError("Error at %zu, %zu: Mismatched generic argument number\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::DoesNotReferToATypeName:
+			printError("Error at %zu, %zu: Expecting a type name\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::ExpectingClassName:
+			printError("Error at %zu, %zu: Expecting a class name\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::ExpectingInterfaceName:
+			printError("Error at %zu, %zu: Expecting an interface name\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::CyclicInheritedClass:
+			printError("Error at %zu, %zu: Cyclic inheritance detected\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::ExpectingId:
+			printError("Error at %zu, %zu: Expecting an identifier\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::IdNotFound:
+			printError("Error at %zu, %zu: Identifier not found\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::ImportLimitExceeded:
+			printError("Error at %zu, %zu: Import item number exceeded\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		default:
+			printError("Error at %zu, %zu: Unknown error (%d)\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1,
+				(int)error.errorKind);
+			break;
+	}
+}
+
 int main(int argc, char *argv[]) {
 #ifdef _MSC_VER
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -327,29 +406,31 @@ int main(int argc, char *argv[]) {
 			return -1;
 		}
 
-		peff::NullAlloc nullAlloc;
-		slkc::Parser parser(document, std::move(lexer.tokenList), &nullAlloc, peff::getDefaultAlloc());
+		{
+			peff::NullAlloc nullAlloc;
+			slkc::Parser parser(document, std::move(lexer.tokenList), &nullAlloc, peff::getDefaultAlloc());
 
-		peff::SharedPtr<slkc::ModuleNode> mod(peff::makeShared<slkc::ModuleNode>(peff::getDefaultAlloc(), peff::getDefaultAlloc(), document));
+			peff::SharedPtr<slkc::ModuleNode> mod(peff::makeShared<slkc::ModuleNode>(peff::getDefaultAlloc(), peff::getDefaultAlloc(), document));
 
-		if (auto e = parser.parseProgram(mod); e) {
-			dumpSyntaxError(parser, *e);
-		}
+			if (auto e = parser.parseProgram(mod); e) {
+				dumpSyntaxError(parser, *e);
+			}
 
-		for (auto &i : parser.syntaxErrors) {
-			dumpSyntaxError(parser, i);
-		}
+			for (auto &i : parser.syntaxErrors) {
+				dumpSyntaxError(parser, i);
+			}
 
-		slake::Runtime runtime(peff::getDefaultAlloc());
-		slkc::CompileContext compileContext(&runtime, &peff::g_nullAlloc, peff::getDefaultAlloc());
-		slake::HostObjectRef<slake::ModuleObject> modObj = slake::ModuleObject::alloc(&runtime, slake::ScopeUniquePtr(slake::Scope::alloc(&runtime.globalHeapPoolAlloc, runtime.getRootObject())), slake::ACCESS_PUB | slake::ACCESS_STATIC);
+			slake::Runtime runtime(peff::getDefaultAlloc());
+			slkc::CompileContext compileContext(&runtime, document, &peff::g_nullAlloc, peff::getDefaultAlloc());
+			slake::HostObjectRef<slake::ModuleObject> modObj = slake::ModuleObject::alloc(&runtime, slake::ScopeUniquePtr(slake::Scope::alloc(&runtime.globalHeapPoolAlloc, runtime.getRootObject())), slake::ACCESS_PUB | slake::ACCESS_STATIC);
 
-		if (auto e = slkc::compileModule(&compileContext, mod, modObj.get()); e) {
-			std::terminate();
-		}
+			if (auto e = slkc::compileModule(&compileContext, mod, modObj.get()); e) {
+				dumpCompilationError(parser, *e);
+			}
 
-		for (auto& i : compileContext.errors) {
-			std::terminate();
+			for (auto &i : compileContext.errors) {
+				dumpCompilationError(parser, i);
+			}
 		}
 	}
 

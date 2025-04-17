@@ -12,6 +12,8 @@ SLAKE_FORCEINLINE std::optional<CompilationError> _compileLiteralExpr(
 	peff::SharedPtr<LE> e = expr.castTo<LE>();
 
 	switch (evalPurpose) {
+		case ExprEvalPurpose::EvalType:
+			break;
 		case ExprEvalPurpose::Stmt:
 			SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(
 				CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
@@ -120,7 +122,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 					initialMember = it.value().castTo<MemberNode>();
 					switch (initialMemberEvalPurpose) {
-						case ExprEvalPurpose::None:
+						case ExprEvalPurpose::EvalType:
 							break;
 						case ExprEvalPurpose::Stmt:
 							SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(
@@ -151,7 +153,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 					}
 
 					switch (initialMemberEvalPurpose) {
-						case ExprEvalPurpose::None:
+						case ExprEvalPurpose::EvalType:
 							break;
 						case ExprEvalPurpose::Stmt:
 							SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(
@@ -196,7 +198,27 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				}
 
 				SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::MOV, resultRegOut, { slake::Value(slake::ValueType::RegRef, idxReg) }));
+				return {};
 			};
+
+			auto determineNodeType = [](peff::SharedPtr<MemberNode> node) -> peff::SharedPtr<TypeNameNode> {
+				switch (node->astNodeType) {
+					case AstNodeType::Var:
+						return node.castTo<VarNode>()->type;
+					case AstNodeType::Fn:
+						break;
+					case AstNodeType::Module:
+					case AstNodeType::Class:
+					case AstNodeType::Struct:
+					case AstNodeType::Enum:
+					case AstNodeType::Interface:
+						return {};
+					default:
+						break;
+				}
+				std::terminate();
+			};
+
 			if (initialMember) {
 				if (e->idRefPtr->entries.size() > 1) {
 					size_t curIdx = 1;
@@ -213,13 +235,18 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 								e->idRefPtr->entries.size() - 1,
 								finalMember,
 								&parts));
+
+						if (!finalMember) {
+							return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::IdNotFound);
+						}
 					}
 
 					SLKC_RETURN_IF_COMP_ERROR(loadTheRest(resultRegOut, e->idRefPtr.get(), parts, 1));
 				} else {
 					finalMember = initialMember;
 				}
-			} else {
+			}
+			else {
 				size_t curIdx = 1;
 
 				ResolvedIdRefPartList parts(compileContext->document->allocator.get());
@@ -229,14 +256,37 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						resolveIdRefWithScopeNode(
 							compileContext->document,
 							walkedMemberNodes,
-							initialMember,
+							compileContext->fnCompileContext.currentFn->parent->parent->sharedFromThis().castTo<MemberNode>(),
 							e->idRefPtr->entries.data(),
 							e->idRefPtr->entries.size(),
 							finalMember,
 							&parts));
 				}
 
+				if (!finalMember) {
+					return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::IdNotFound);
+				}
+
 				SLKC_RETURN_IF_COMP_ERROR(loadTheRest(resultRegOut, e->idRefPtr.get(), parts, 0));
+			}
+
+			resultOut.evaluatedType = determineNodeType(finalMember);
+
+			switch (evalPurpose) {
+				case ExprEvalPurpose::EvalType:
+					if (!resultOut.evaluatedType) {
+						return CompilationError(finalMember->tokenRange, CompilationErrorKind::ExpectingId);
+					}
+					break;
+				case ExprEvalPurpose::Stmt:
+					SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(
+						CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
+					break;
+				case ExprEvalPurpose::LValue:
+				case ExprEvalPurpose::RValue:
+					break;
+				case ExprEvalPurpose::Call:
+					break;
 			}
 			break;
 		}

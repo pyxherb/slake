@@ -1,4 +1,4 @@
-module core.mutex;
+module plat.parallel.mutex;
 
 pub native class Mutex {
 	pub native fn new();

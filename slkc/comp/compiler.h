@@ -8,7 +8,7 @@ namespace slkc {
 	SLKC_API std::optional<slkc::CompilationError> typeNameListCmp(const peff::DynArray<peff::SharedPtr<TypeNameNode>> &lhs, const peff::DynArray<peff::SharedPtr<TypeNameNode>> &rhs, int &out) noexcept;
 
 	enum class ExprEvalPurpose {
-		None,	 // None
+		EvalType,	 // None
 		Stmt,	 // As a statement
 		LValue,	 // As a lvalue
 		RValue,	 // As a rvalue
@@ -73,9 +73,11 @@ namespace slkc {
 
 		SLAKE_FORCEINLINE CompileContext(
 			slake::Runtime *runtime,
+			peff::SharedPtr<Document> document,
 			peff::Alloc *selfAllocator,
 			peff::Alloc *allocator)
 			: runtime(runtime),
+			  document(document),
 			  hostRefHolder(allocator),
 			  selfAllocator(selfAllocator),
 			  allocator(allocator),
@@ -218,6 +220,17 @@ namespace slkc {
 		uint32_t resultRegOut,
 		CompileExprResult &resultOut,
 		slake::Opcode opcode);
+	std::optional<CompilationError> _compileSimpleAssignBinaryExpr(
+		CompileContext *compileContext,
+		peff::SharedPtr<BinaryExprNode> expr,
+		ExprEvalPurpose evalPurpose,
+		peff::SharedPtr<TypeNameNode> lhsType,
+		peff::SharedPtr<TypeNameNode> desiredLhsType,
+		peff::SharedPtr<TypeNameNode> rhsType,
+		peff::SharedPtr<TypeNameNode> desiredRhsType,
+		ExprEvalPurpose rhsEvalPurpose,
+		uint32_t resultRegOut,
+		CompileExprResult &resultOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> _compileSimpleLAndBinaryExpr(
 		CompileContext *compileContext,
 		peff::SharedPtr<BinaryExprNode> expr,
@@ -358,12 +371,15 @@ namespace slkc {
 		ExprEvalPurpose evalPurpose,
 		uint32_t resultRegOut,
 		CompileExprResult &resultOut);
+	SLKC_API std::optional<CompilationError> compileStmt(
+		CompileContext *compileContext,
+		const peff::SharedPtr<StmtNode> &stmt);
 	SLAKE_FORCEINLINE static std::optional<CompilationError> evalExprType(
 		CompileContext *compileContext,
 		const peff::SharedPtr<ExprNode> &expr,
 		peff::SharedPtr<TypeNameNode> &typeOut) {
 		CompileExprResult result;
-		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr, ExprEvalPurpose::None, UINT32_MAX, result));
+		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr, ExprEvalPurpose::EvalType, UINT32_MAX, result));
 		typeOut = result.evaluatedType;
 		return {};
 	}

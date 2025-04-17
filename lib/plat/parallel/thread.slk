@@ -1,4 +1,4 @@
-module std.plat.concurrent.thread;
+module plat.parallel.thread;
 
 use {
 	except = std::core::except

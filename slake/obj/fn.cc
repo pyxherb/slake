@@ -8,7 +8,7 @@ SLAKE_API Instruction::Instruction()
 	  nOperands(0),
 	  output(UINT32_MAX),
 	  operands(nullptr),
-	  fnOverloading(nullptr) {
+	  operandsAllocator(nullptr) {
 }
 
 SLAKE_API Instruction::Instruction(Instruction &&rhs)
@@ -16,17 +16,17 @@ SLAKE_API Instruction::Instruction(Instruction &&rhs)
 	  nOperands(rhs.nOperands),
 	  output(rhs.output),
 	  operands(rhs.operands),
-	  fnOverloading(rhs.fnOverloading) {
+	  operandsAllocator(rhs.operandsAllocator) {
 	rhs.opcode = (Opcode)0xff;
 	rhs.nOperands = 0;
 	rhs.output = UINT32_MAX;
 	rhs.operands = nullptr;
-	rhs.fnOverloading = nullptr;
+	rhs.operandsAllocator = nullptr;
 }
 
 SLAKE_API Instruction::~Instruction() {
 	if (nOperands) {
-		fnOverloading->associatedRuntime->globalHeapPoolAlloc.release(operands, sizeof(Value) * nOperands, sizeof(std::max_align_t));
+		operandsAllocator->release(operands, sizeof(Value) * nOperands, sizeof(std::max_align_t));
 	}
 }
 
@@ -166,7 +166,9 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFn
 			for (size_t j = 0; j < otherCurIns.nOperands; ++j) {
 				curIns.operands[j] = Value(ValueType::Undefined);
 			}
-			curIns.fnOverloading = this;
+
+			curIns.operandsAllocator = &associatedRuntime->globalHeapPoolAlloc;
+
 			// Duplicate each of the operands.
 			for (size_t j = 0; j < otherCurIns.nOperands; ++j) {
 				auto &operand = otherCurIns.operands[j];

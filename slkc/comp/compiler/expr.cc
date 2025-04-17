@@ -112,7 +112,6 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				// Check if the entry refers to a local variable.
 				if (auto it = blockCompileContext->localVars.find(e->idRefPtr->entries.at(0).name);
 					it != blockCompileContext->localVars.end()) {
-
 					if (e->idRefPtr->entries.size() > 1) {
 						initialMemberEvalPurpose = ExprEvalPurpose::RValue;
 					} else {
@@ -175,6 +174,29 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 			}
 
 		initialMemberResolved:
+			auto loadTheRest = [compileContext](uint32_t resultRegOut, IdRef *idRef, ResolvedIdRefPartList &parts, size_t curIdx) -> std::optional<CompilationError> {
+				uint32_t idxReg = compileContext->allocReg();
+
+				for (size_t i = 0; i < parts.size(); ++i) {
+					ResolvedIdRefPart &part = parts.at(i);
+
+					slake::HostObjectRef<slake::IdRefObject> idRefObject;
+
+					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, idRefObject));
+
+					if (part.isStatic) {
+						SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::LOAD, idxReg, { slake::Value(slake::ValueType::EntityRef, slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+					} else {
+						uint32_t idxNewReg = compileContext->allocReg();
+						SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegRef, idxReg), slake::Value(slake::ValueType::EntityRef, slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+						idxReg = idxNewReg;
+					}
+
+					curIdx += part.nEntries;
+				}
+
+				SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::MOV, resultRegOut, { slake::Value(slake::ValueType::RegRef, idxReg) }));
+			};
 			if (initialMember) {
 				if (e->idRefPtr->entries.size() > 1) {
 					size_t curIdx = 1;
@@ -193,17 +215,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 								&parts));
 					}
 
-					for (size_t i = 0; i < parts.size(); ++i) {
-						ResolvedIdRefPart &part = parts.at(i);
-
-						curIdx += part.nEntries;
-
-						if (part.isStatic) {
-							// TODO: Implement it.
-						} else {
-							// TODO: Implement it.
-						}
-					}
+					SLKC_RETURN_IF_COMP_ERROR(loadTheRest(resultRegOut, e->idRefPtr.get(), parts, 1));
 				} else {
 					finalMember = initialMember;
 				}
@@ -224,7 +236,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 							&parts));
 				}
 
-				// TODO: Use LOAD to load the beginning, and then use RLOAD to load the rest.
+				SLKC_RETURN_IF_COMP_ERROR(loadTheRest(resultRegOut, e->idRefPtr.get(), parts, 0));
 			}
 			break;
 		}

@@ -356,6 +356,10 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 			SLKC_RETURN_IF_COMP_ERROR(isSameType(src, dest, whetherOut));
 			whetherOut = false;
 			break;
+		case TypeNameKind::TempRef:
+			SLKC_RETURN_IF_COMP_ERROR(isSameType(src, dest, whetherOut));
+			whetherOut = false;
+			break;
 	}
 
 	return {};
@@ -385,8 +389,8 @@ SLKC_API std::optional<slkc::CompilationError> slkc::typeNameCmp(peff::SharedPtr
 				lm,
 				rm;
 
-				SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(doc, l, lm));
-				SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(doc, r, rm));
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(doc, l, lm));
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(doc, r, rm));
 
 			if (!lm) {
 				if (rm) {

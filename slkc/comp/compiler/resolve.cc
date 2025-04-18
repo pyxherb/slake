@@ -164,6 +164,8 @@ SLKC_API std::optional<CompilationError> slkc::resolveInstanceMember(
 
 			break;
 		}
+		default:
+			result = {};
 	}
 
 	if (result) {
@@ -209,6 +211,8 @@ SLKC_API std::optional<CompilationError> slkc::resolveIdRef(
 		switch (curMember->astNodeType) {
 			case AstNodeType::Var:
 				isStatic = false;
+				break;
+			default:
 				break;
 		}
 	};

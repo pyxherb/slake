@@ -13,10 +13,10 @@ SLKC_API std::optional<CompilationError> slkc::dumpModule(
 	peff::DynArray<slake::InterfaceObject *> collectedInterfaces(allocator);
 	peff::DynArray<slake::FnObject *> collectedFns(allocator);
 
-	for (auto &[k, v] : mod->scope->members) {
+	for (auto [k, v] : mod->scope->members) {
 		switch (v->getKind()) {
 			case slake::ObjectKind::Class: {
-				if (!collectedClasses.pushBack((slake::ClassObject*)v)) {
+				if (!collectedClasses.pushBack((slake::ClassObject *)v)) {
 					return genOutOfMemoryCompError();
 				}
 				break;
@@ -33,6 +33,8 @@ SLKC_API std::optional<CompilationError> slkc::dumpModule(
 				}
 				break;
 			}
+			default:
+				break;
 		}
 	}
 
@@ -41,4 +43,6 @@ SLKC_API std::optional<CompilationError> slkc::dumpModule(
 	memcpy(ih.magic, slake::slxfmt::IMH_MAGIC, sizeof(ih.magic));
 
 	ih.fmtVer = 0x02;
+
+	return {};
 }

@@ -89,7 +89,7 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 				if ((context.mappedNode != astNode) && (i->genericParams.size())) {
 					GenericInstantiationContext innerContext(context.allocator.get(), context.genericArgs);
 
-					for (auto &[k, v] : context.mappedGenericArgs) {
+					for (auto [k, v] : context.mappedGenericArgs) {
 						if (auto it = i->genericParamIndices.find(k);
 							it == i->genericParamIndices.end()) {
 							if (!innerContext.mappedGenericArgs.insert(std::string_view(k), peff::SharedPtr<TypeNameNode>(v))) {
@@ -131,7 +131,7 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 			if ((context.mappedNode != astNode) && (cls->genericParams.size())) {
 				GenericInstantiationContext innerContext(context.allocator.get(), context.genericArgs);
 
-				for (auto &[k, v] : context.mappedGenericArgs) {
+				for (auto [k, v] : context.mappedGenericArgs) {
 					if (auto it = cls->genericParamIndices.find(k);
 						it == cls->genericParamIndices.end()) {
 						if (!innerContext.mappedGenericArgs.insert(std::string_view(k), peff::SharedPtr<TypeNameNode>(v))) {
@@ -172,7 +172,7 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 			if ((context.mappedNode != astNode) && (cls->genericParams.size())) {
 				GenericInstantiationContext innerContext(context.allocator.get(), context.genericArgs);
 
-				for (auto &[k, v] : context.mappedGenericArgs) {
+				for (auto [k, v] : context.mappedGenericArgs) {
 					if (auto it = cls->genericParamIndices.find(k);
 						it == cls->genericParamIndices.end()) {
 						if (!innerContext.mappedGenericArgs.insert(std::string_view(k), peff::SharedPtr<TypeNameNode>(v))) {
@@ -291,7 +291,7 @@ SLKC_API std::optional<CompilationError> Document::instantiateGenericObject(
 							CompilationErrorKind::MismatchedGenericArgNumber);
 					}
 
-					for (auto &[k, v] : obj->genericParamIndices) {
+					for (auto [k, v] : obj->genericParamIndices) {
 						if (!instantiationContext.mappedGenericArgs.insert(
 								std::string_view(k),
 								peff::SharedPtr<TypeNameNode>(genericArgs.at(v)))) {
@@ -312,7 +312,7 @@ SLKC_API std::optional<CompilationError> Document::instantiateGenericObject(
 							CompilationErrorKind::MismatchedGenericArgNumber);
 					}
 
-					for (auto &[k, v] : obj->genericParamIndices) {
+					for (auto [k, v] : obj->genericParamIndices) {
 						if (!instantiationContext.mappedGenericArgs.insert(
 								std::string_view(k),
 								peff::SharedPtr<TypeNameNode>(genericArgs.at(v)))) {
@@ -332,7 +332,7 @@ SLKC_API std::optional<CompilationError> Document::instantiateGenericObject(
 							CompilationErrorKind::MismatchedGenericArgNumber);
 					}
 
-					for (auto &[k, v] : obj->genericParamIndices) {
+					for (auto [k, v] : obj->genericParamIndices) {
 						if (!instantiationContext.mappedGenericArgs.insert(
 								std::string_view(k),
 								peff::SharedPtr<TypeNameNode>(genericArgs.at(v)))) {

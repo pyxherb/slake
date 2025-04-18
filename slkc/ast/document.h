@@ -87,7 +87,7 @@ namespace slkc {
 		Document *document;
 		mutable std::optional<slkc::CompilationError> storedError;
 
-		SLAKE_FORCEINLINE TypeNameListCmp(Document *compileContext) : document(document) {}
+		SLAKE_FORCEINLINE TypeNameListCmp(Document *document) : document(document) {}
 
 		SLAKE_API bool operator()(const peff::DynArray<peff::SharedPtr<TypeNameNode>> &lhs, const peff::DynArray<peff::SharedPtr<TypeNameNode>> &rhs) const noexcept;
 	};

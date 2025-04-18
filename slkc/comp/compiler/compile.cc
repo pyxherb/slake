@@ -347,7 +347,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 		}
 	}
 
-	for (auto &[k, v] : mod->memberIndices) {
+	for (auto [k, v] : mod->memberIndices) {
 		peff::SharedPtr<MemberNode> m = mod->members.at(v);
 
 		switch (m->astNodeType) {
@@ -405,14 +405,12 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 							} else {
 								SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
 							}
+						} else {
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(std::move(compilationError.value())));
+							compilationError.reset();
 						}
- else {
-	 SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(std::move(compilationError.value())));
-	 compilationError.reset();
-						}
-					}
- else {
-	 SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
+					} else {
+						SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
 					}
 				}
 
@@ -437,7 +435,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 					return genOutOfRuntimeMemoryCompError();
 				}
 
-				for (auto& i : clsNode->implementedTypes) {
+				for (auto &i : clsNode->implementedTypes) {
 					peff::SharedPtr<MemberNode> implementedTypeNode;
 
 					if (i->typeNameKind == TypeNameKind::Custom) {
@@ -453,17 +451,14 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 									SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(clsNode->tokenRange, CompilationErrorKind::CyclicInheritedClass)));
 									continue;
 								}
-							}
-							else {
+							} else {
 								SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
 							}
-						}
-						else {
+						} else {
 							SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(std::move(compilationError.value())));
 							compilationError.reset();
 						}
-					}
-					else {
+					} else {
 						SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
 					}
 				}
@@ -521,6 +516,8 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 				}
 				break;
 			}
+			default:
+				break;
 		}
 	}
 	return {};

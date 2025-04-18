@@ -14,6 +14,12 @@ namespace slake {
 		Type type;
 	};
 
+	struct AllocaRecord {
+		size_t stackOffset;
+		size_t length;
+		Type type;
+	};
+
 	[[nodiscard]] MismatchedVarTypeError *raiseMismatchedVarTypeError(Runtime *rt);
 }
 

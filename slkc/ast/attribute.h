@@ -26,6 +26,8 @@ namespace slkc {
 		peff::DynArray<peff::SharedPtr<ExprNode>> fieldData;
 		peff::DynArray<size_t> idxCommaTokens;
 
+		peff::SharedPtr<TypeNameNode> appliedFor;
+
 		SLKC_API AttributeNode(peff::Alloc *allocator, const peff::SharedPtr<Document> &document);
 		SLKC_API AttributeNode(const AttributeNode &rhs, peff::Alloc *allocator, bool &succeededOut);
 		SLKC_API virtual ~AttributeNode();

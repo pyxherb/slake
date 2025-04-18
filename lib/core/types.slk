@@ -57,3 +57,17 @@ pub interface I32
 	pub native compareTo(rhs: i32): i32;
 	pub native compareTo(rhs: I32): i32;
 }
+
+native def isSame<T1, T2>(): bool;
+
+native def isPrimitive<T>(): bool;
+native def isValue<T>(): bool;
+native def isRef<T>(): bool;
+native def isClass<T>(): bool;
+native def isStruct<T>(): bool;
+native def isInterface<T>(): bool;
+native def isArray<T>(): bool;
+
+native def isConvertible<T1, T2>(): bool;
+
+native def isBaseOf<T1, T2>(): bool;

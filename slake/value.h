@@ -23,6 +23,7 @@ namespace slake {
 		ObjectRef,
 		InstanceFieldRef,
 		LocalVarRef,
+		Alloca,
 		ArgRef,
 		AotPtrRef,
 	};
@@ -48,6 +49,10 @@ namespace slake {
 				Context *context;
 				size_t stackOff;
 			} asLocalVar;
+			struct {
+				Context *context;
+				size_t stackOff;
+			} asAlloca;
 			struct {
 				MajorFrame *majorFrame;
 				uint32_t argIndex;

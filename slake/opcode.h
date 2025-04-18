@@ -18,7 +18,8 @@ namespace slake {
 
 		LARG,  // Load an argument.
 
-		LVAR,  // Create a new local variable
+		LVAR,	 // Create a new local variable
+		ALLOCA,	 // Allocate spaces from the stack
 
 		LVALUE,	 // Load value of a variable
 

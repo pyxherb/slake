@@ -7,7 +7,6 @@
 namespace slkc {
 	enum class AstNodeType : uint8_t {
 		Struct = 0,
-		Union,
 		Enum,
 		EnumItem,
 		AttributeDef,

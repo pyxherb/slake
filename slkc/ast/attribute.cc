@@ -92,6 +92,11 @@ SLKC_API AttributeNode::AttributeNode(const AttributeNode &rhs, peff::Alloc *all
 		fieldData.at(i) = dd;
 	}
 
+	if (!(appliedFor = appliedFor->duplicate<TypeNameNode>(allocator))) {
+		succeededOut = false;
+		return;
+	}
+
 	succeededOut = true;
 }
 

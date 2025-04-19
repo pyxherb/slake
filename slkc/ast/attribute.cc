@@ -2,9 +2,9 @@
 
 using namespace slkc;
 
-SLKC_API peff::SharedPtr<AstNode> AttributeDef::doDuplicate(peff::Alloc *newAllocator) const {
+SLKC_API peff::SharedPtr<AstNode> AttributeDefNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
-	peff::SharedPtr<AttributeDef> duplicatedNode(peff::makeShared<AttributeDef>(newAllocator, *this, newAllocator, succeeded));
+	peff::SharedPtr<AttributeDefNode> duplicatedNode(peff::makeShared<AttributeDefNode>(newAllocator, *this, newAllocator, succeeded));
 	if ((!duplicatedNode) || (!succeeded)) {
 		return {};
 	}
@@ -12,45 +12,21 @@ SLKC_API peff::SharedPtr<AstNode> AttributeDef::doDuplicate(peff::Alloc *newAllo
 	return duplicatedNode.castTo<AstNode>();
 }
 
-SLKC_API AttributeDef::AttributeDef(
+SLKC_API AttributeDefNode::AttributeDefNode(
 	peff::Alloc *selfAllocator,
 	const peff::SharedPtr<Document> &document)
-	: MemberNode(AstNodeType::Attribute, selfAllocator, document),
-	  fields(selfAllocator),
-	  fieldIndices(selfAllocator) {
+	: ModuleNode(selfAllocator, document, AstNodeType::Attribute) {
 }
 
-SLKC_API AttributeDef::AttributeDef(const AttributeDef &rhs, peff::Alloc *allocator, bool &succeededOut) : MemberNode(rhs, allocator, succeededOut), fields(allocator), fieldIndices(allocator) {
+SLKC_API AttributeDefNode::AttributeDefNode(const AttributeDefNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ModuleNode(rhs, allocator, succeededOut) {
 	if (!succeededOut) {
 		return;
-	}
-
-	if (!fields.resize(rhs.fields.size())) {
-		succeededOut = false;
-		return;
-	}
-
-	for (size_t i = 0; i < fields.size(); ++i) {
-		peff::SharedPtr<VarNode> df;
-		if (!(df = rhs.fields.at(i)->duplicate<VarNode>(allocator))) {
-			succeededOut = false;
-			return;
-		}
-
-		df->setParent(this);
-
-		fields.at(i) = df;
-
-		if (!(fieldIndices.insert(df->name, std::move(df)))) {
-			succeededOut = false;
-			return;
-		}
 	}
 
 	succeededOut = true;
 }
 
-SLKC_API AttributeDef::~AttributeDef() {
+SLKC_API AttributeDefNode::~AttributeDefNode() {
 }
 
 SLKC_API peff::SharedPtr<AstNode> AttributeNode::doDuplicate(peff::Alloc *newAllocator) const {

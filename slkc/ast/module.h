@@ -5,12 +5,15 @@
 #include "stmt.h"
 
 namespace slkc {
+	class AttributeNode;
+
 	class MemberNode : public AstNode {
 	public:
 		MemberNode *parent = nullptr;  // We don't use WeakPtr because we want to set the parent during the copy constructor is executing.
 		peff::String name;
 		peff::DynArray<peff::SharedPtr<TypeNameNode>> genericArgs;
 		slake::AccessModifier accessModifier = 0;
+		peff::DynArray<peff::SharedPtr<AttributeNode>> attributes;
 
 		SLKC_API MemberNode(AstNodeType astNodeType, peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API MemberNode(const MemberNode &rhs, peff::Alloc *allocator, bool &succeededOut);

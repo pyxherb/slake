@@ -113,6 +113,7 @@ namespace slkc {
 		DollarOp,
 
 		AllocaKeyword,
+		AttributeKeyword,
 		AsKeyword,
 		AsyncKeyword,
 		AwaitKeyword,

@@ -5,19 +5,19 @@ use {
 }
 
 pub interface I32
-	: traits.IAdd<i32, I32>, traits.IAdd<I32, I32>,
-	traits.ISub<i32, I32>, traits.ISub<I32, I32>,
-	traits.IMul<i32, I32>, traits.IMul<I32, I32>,
-	traits.IDiv<i32, I32>, traits.IDiv<I32, I32>,
-	traits.IMod<i32, I32>, traits.IMod<I32, I32>,
-	traits.IAnd<i32, I32>, traits.IAnd<I32, I32>,
-	traits.IOr<i32, I32>, traits.IOr<I32, I32>,
-	traits.IXor<i32, I32>, traits.IXor<I32, I32>,
-	traits.ILogicalAnd<i32, bool>, traits.ILogicalAnd<I32, bool>,
-	traits.ILogicalOr<i32, bool>, traits.ILogicalOr<I32, bool>,
-	traits.ILsh<u32, I32>, traits.ILsh<U32, I32>,
-	traits.IRsh<u32, I32>, traits.IRsh<U32, I32>,
-	traits.ICmp<i32>, traits.ICmp<I32> {
+	: IAdd<i32, I32>, IAdd<I32, I32>,
+	ISub<i32, I32>, ISub<I32, I32>,
+	IMul<i32, I32>, IMul<I32, I32>,
+	IDiv<i32, I32>, IDiv<I32, I32>,
+	IMod<i32, I32>, IMod<I32, I32>,
+	IAnd<i32, I32>, IAnd<I32, I32>,
+	IOr<i32, I32>, IOr<I32, I32>,
+	IXor<i32, I32>, IXor<I32, I32>,
+	ILogicalAnd<i32, bool>, ILogicalAnd<I32, bool>,
+	ILogicalOr<i32, bool>, ILogicalOr<I32, bool>,
+	ILsh<u32, I32>, ILsh<U32, I32>,
+	IRsh<u32, I32>, IRsh<U32, I32>,
+	ICmp<i32>, ICmp<I32> {
 	pub native operator +(rhs: i32): I32;
 	pub native operator +(rhs: I32): I32;
 

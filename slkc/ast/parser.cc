@@ -493,6 +493,99 @@ accessModifierParseEnd:
 	peff::SharedPtr<ModuleNode> p = curParent.castTo<ModuleNode>();
 
 	switch (token->tokenId) {
+		case TokenId::AttributeKeyword: {
+			// Attribute definition.
+			nextToken();
+
+			peff::SharedPtr<AttributeDefNode> attributeNode;
+
+			if (!(attributeNode = peff::makeShared<AttributeDefNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+				return genOutOfMemoryError();
+			}
+
+			Token *nameToken;
+
+			if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
+				return syntaxError;
+			}
+
+			size_t idxMember;
+
+			if ((idxMember = p->pushMember(attributeNode.castTo<MemberNode>())) == SIZE_MAX) {
+				return genOutOfMemoryError();
+			}
+
+			nextToken();
+
+			if (!attributeNode->name.build(nameToken->sourceText)) {
+				return genOutOfMemoryError();
+			}
+
+			{
+				peff::ScopeGuard setTokenRangeGuard([this, token, attributeNode]() noexcept {
+					attributeNode->tokenRange = TokenRange{ token->index, parseContext.idxPrevToken };
+				});
+
+				peff::SharedPtr<MemberNode> prevParent;
+				prevParent = curParent;
+				peff::ScopeGuard restorePrevModGuard([this, prevParent]() noexcept {
+					curParent = prevParent;
+				});
+				curParent = attributeNode.castTo<MemberNode>();
+
+				Token *lBraceToken;
+
+				if ((syntaxError = expectToken((lBraceToken = peekToken()), TokenId::LBrace))) {
+					return syntaxError;
+				}
+
+				nextToken();
+
+				Token *currentToken;
+				while (true) {
+					if ((syntaxError = expectToken(currentToken = peekToken()))) {
+						return syntaxError;
+					}
+					if (currentToken->tokenId == TokenId::RBrace) {
+						break;
+					}
+
+					if ((syntaxError = parseProgramStmt())) {
+						// Parse the rest to make sure that we have gained all of the information,
+						// instead of ignoring them.
+						if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
+							return genOutOfMemoryError();
+						syntaxError.reset();
+					}
+				}
+
+				Token *rBraceToken;
+
+				if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RBrace))) {
+					return syntaxError;
+				}
+
+				nextToken();
+			}
+
+			if (auto it = p->memberIndices.find(attributeNode->name); it != p->memberIndices.end()) {
+				peff::String s(resourceAllocator.get());
+
+				if (!s.build(attributeNode->name)) {
+					return genOutOfMemoryError();
+				}
+
+				ConflictingDefinitionsErrorExData exData(std::move(s));
+
+				return SyntaxError(attributeNode->tokenRange, std::move(exData));
+			} else {
+				if (!(p->indexMember(idxMember))) {
+					return genOutOfMemoryError();
+				}
+			}
+
+			break;
+		}
 		case TokenId::FnKeyword:
 		case TokenId::OperatorKeyword: {
 			// Function.

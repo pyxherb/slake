@@ -34,7 +34,7 @@ pub class Option<T> {
 	}
 
 	pub fn reset() {
-		this._data = default as T;
+		this._data = default<T>;
 		this._hasValue = false;
 	}
 }

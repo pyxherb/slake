@@ -2,6 +2,10 @@ module hostext;
 
 import hostext.extfns;
 
+attribute TestAttribute {
+	let test: i32;
+}
+
 class TestParent<T> {
 	fn myTest(a: T, b: T) {
 		extfns.print("Called myTest: ", a, " ", b, "\n");

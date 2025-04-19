@@ -80,7 +80,7 @@ pub interface IAssignXor<T, Result> {
 	operator ^=(rhs: T): Result;
 }
 
-pub interface IComparable<T> {
+pub interface ICmp<T> {
 	operator <=>(rhs: T): i32;
 }
 

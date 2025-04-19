@@ -60,7 +60,7 @@ SLKC_API void StringTokenExtension::dealloc() {
 	peff::destroyAndRelease<StringTokenExtension>(allocator.get(), this, sizeof(std::max_align_t));
 }
 
-SLKC_API Token::Token(peff::Alloc* allocator, const peff::SharedPtr<Document> &document) : allocator(allocator), document(document) {
+SLKC_API Token::Token(peff::Alloc *allocator, const peff::SharedPtr<Document> &document) : allocator(allocator), document(document) {
 }
 SLKC_API Token::~Token() {
 }
@@ -68,7 +68,7 @@ SLKC_API void Token::dealloc() {
 	peff::destroyAndRelease<Token>(allocator.get(), this, sizeof(std::max_align_t));
 }
 
-SLKC_API const char* slkc::getTokenName(TokenId tokenId) {
+SLKC_API const char *slkc::getTokenName(TokenId tokenId) {
 	switch (tokenId) {
 		case TokenId::End:
 			return "end of file";
@@ -174,6 +174,10 @@ SLKC_API const char* slkc::getTokenName(TokenId tokenId) {
 			return "$";
 		case TokenId::AsKeyword:
 			return "as";
+		case TokenId::AttributeKeyword:
+			return "attribute";
+		case TokenId::AllocaKeyword:
+			return "alloca";
 		case TokenId::AsyncKeyword:
 			return "async";
 		case TokenId::AwaitKeyword:

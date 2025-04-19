@@ -78,6 +78,7 @@ SLKC_API std::optional<LexicalError> Lexer::lex(const std::string_view &src, pef
 				<InitialCondition>"@"		{ token->tokenId = TokenId::At; break; }
 
 				<InitialCondition>"alloca"		{ token->tokenId = TokenId::AllocaKeyword; break; }
+				<InitialCondition>"attribute"	{ token->tokenId = TokenId::AttributeKeyword; break; }
 				<InitialCondition>"as"			{ token->tokenId = TokenId::AsKeyword; break; }
 				<InitialCondition>"async"		{ token->tokenId = TokenId::AsyncKeyword; break; }
 				<InitialCondition>"await"		{ token->tokenId = TokenId::AwaitKeyword; break; }

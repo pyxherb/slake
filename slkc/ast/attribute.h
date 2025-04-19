@@ -1,20 +1,17 @@
 #ifndef _SLKC_AST_ATTRIBUTE_H_
 #define _SLKC_AST_ATTRIBUTE_H_
 
-#include "var.h"
+#include "module.h"
 
 namespace slkc {
-	class AttributeDef : public MemberNode {
+	class AttributeDefNode : public ModuleNode {
 	protected:
 		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
 
 	public:
-		peff::DynArray<peff::SharedPtr<VarNode>> fields;
-		peff::HashMap<std::string_view, size_t> fieldIndices;
-
-		SLKC_API AttributeDef(peff::Alloc *allocator, const peff::SharedPtr<Document> &document);
-		SLKC_API AttributeDef(const AttributeDef &rhs, peff::Alloc *allocator, bool &succeededOut);
-		SLKC_API virtual ~AttributeDef();
+		SLKC_API AttributeDefNode(peff::Alloc *allocator, const peff::SharedPtr<Document> &document);
+		SLKC_API AttributeDefNode(const AttributeDefNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API virtual ~AttributeDefNode();
 	};
 
 	class AttributeNode : public AstNode {

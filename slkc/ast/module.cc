@@ -1,4 +1,5 @@
 #include "module.h"
+#include "attribute.h"
 #include "import.h"
 
 using namespace slkc;
@@ -9,10 +10,11 @@ SLKC_API MemberNode::MemberNode(
 	const peff::SharedPtr<Document> &document)
 	: AstNode(astNodeType, selfAllocator, document),
 	  name(selfAllocator),
-	  genericArgs(selfAllocator) {
+	  genericArgs(selfAllocator),
+	  attributes(selfAllocator) {
 }
 
-SLKC_API MemberNode::MemberNode(const MemberNode &rhs, peff::Alloc *allocator, bool &succeededOut) : AstNode(rhs, allocator), name(allocator), genericArgs(allocator) {
+SLKC_API MemberNode::MemberNode(const MemberNode &rhs, peff::Alloc *allocator, bool &succeededOut) : AstNode(rhs, allocator), name(allocator), genericArgs(allocator), attributes(allocator) {
 	if (!name.build(rhs.name)) {
 		succeededOut = false;
 		return;
@@ -27,6 +29,18 @@ SLKC_API MemberNode::MemberNode(const MemberNode &rhs, peff::Alloc *allocator, b
 
 	for (size_t i = 0; i < genericArgs.size(); ++i) {
 		if (!(genericArgs.at(i) = rhs.genericArgs.at(i)->duplicate<TypeNameNode>(allocator))) {
+			succeededOut = false;
+			return;
+		}
+	}
+
+	if (!attributes.resize(rhs.attributes.size())) {
+		succeededOut = false;
+		return;
+	}
+
+	for (size_t i = 0; i < attributes.size(); ++i) {
+		if (!(attributes.at(i) = rhs.attributes.at(i)->duplicate<AttributeNode>(allocator))) {
 			succeededOut = false;
 			return;
 		}

@@ -23,8 +23,36 @@ SLKC_API std::optional<SyntaxError> Parser::parseAttribute(peff::SharedPtr<Attri
 		if ((lParentheseToken = peekToken())->tokenId == TokenId::LParenthese) {
 			nextToken();
 
-			if ((syntaxError = parseArgs(attribute->fieldData, attribute->idxCommaTokens))) {
-				return syntaxError;
+			while (true) {
+				if (peekToken()->tokenId == TokenId::RParenthese) {
+					break;
+				}
+
+				peff::SharedPtr<ExprNode> arg;
+
+				Token *nameToken;
+				if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id)))
+					return syntaxError;
+				nextToken();
+
+				Token *assignToken;
+				if ((syntaxError = expectToken((assignToken = peekToken()), TokenId::AssignOp)))
+					return syntaxError;
+				nextToken();
+
+				if (auto e = parseExpr(0, arg); e)
+					return e;
+
+				/*if (!argsOut.pushBack(std::move(arg)))
+					return genOutOfMemoryError();*/
+
+				if (peekToken()->tokenId != TokenId::Comma) {
+					break;
+				}
+
+				Token *commaToken = nextToken();
+				/*if (!idxCommaTokensOut.pushBack(+commaToken->index))
+					return genOutOfMemoryError();*/
 			}
 
 			Token *rParentheseToken;
@@ -42,12 +70,10 @@ SLKC_API std::optional<SyntaxError> Parser::parseAttribute(peff::SharedPtr<Attri
 
 	nextToken();
 
-	if (Token *ifToken = peekToken(); ifToken->tokenId == TokenId::IfKeyword) {
+	if (Token *forToken = peekToken(); forToken->tokenId == TokenId::ForKeyword) {
 		nextToken();
 
-		peff::SharedPtr<ExprNode> condition;
-
-		if ((syntaxError = parseExpr(0, condition)))
+		if ((syntaxError = parseTypeName(attributeOut->appliedFor)))
 			return syntaxError;
 	}
 

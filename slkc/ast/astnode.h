@@ -25,6 +25,7 @@ namespace slkc {
 		Import,
 
 		Root,
+		This,
 
 		Bad
 	};

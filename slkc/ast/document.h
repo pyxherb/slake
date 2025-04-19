@@ -24,6 +24,8 @@ namespace slkc {
 		CyclicInheritedClass,
 		ExpectingId,
 		IdNotFound,
+		ParamAlreadyDefined,
+		InvalidThisUsage,
 
 		ImportLimitExceeded,
 	};
@@ -116,6 +118,7 @@ namespace slkc {
 	class Document : public peff::SharedFromThis<Document> {
 	public:
 		peff::RcObjectPtr<peff::Alloc> allocator;
+		peff::SharedPtr<ModuleNode> rootModule;
 		peff::Map<
 			peff::SharedPtr<MemberNode>,
 			GenericCacheTable>

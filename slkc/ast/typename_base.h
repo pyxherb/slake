@@ -24,6 +24,7 @@ namespace slkc {
 		Any,
 		Custom,
 
+		Fn,
 		Array,
 		Ref,
 		TempRef,

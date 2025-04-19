@@ -32,6 +32,8 @@ namespace slkc {
 	public:
 		peff::DynArray<peff::SharedPtr<VarNode>> params;
 		peff::HashMap<std::string_view, size_t> paramIndices;
+		bool isParamsIndexed = false;
+
 		peff::DynArray<size_t> idxParamCommaTokens;
 		size_t lParentheseIndex = SIZE_MAX;
 		size_t rParentheseIndex = SIZE_MAX;

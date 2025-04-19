@@ -28,6 +28,8 @@ SLKC_API std::optional<CompilationError> slkc::getFullIdRef(peff::Alloc *allocat
 
 		if (!m->parent)
 			break;
+
+		m = m->parent->sharedFromThis().castTo<MemberNode>();
 	}
 
 	idRefOut = std::move(p);
@@ -140,6 +142,13 @@ SLKC_API std::optional<CompilationError> slkc::resolveInstanceMember(
 			if (auto it = cls->memberIndices.find(name.name); it != cls->memberIndices.end()) {
 				result = cls->members.at(it.value());
 			}
+
+			break;
+		}
+		case AstNodeType::This: {
+			peff::SharedPtr<ThisNode> cls = memberNode.castTo<ThisNode>();
+
+			SLKC_RETURN_IF_COMP_ERROR(resolveInstanceMember(cls->document.lock(), cls->thisType, name, memberOut));
 
 			break;
 		}

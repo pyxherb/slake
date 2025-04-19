@@ -40,7 +40,7 @@ SLAKE_FORCEINLINE std::optional<CompilationError> _compileLiteralExpr(
 			  compileContext->allocator.get(),
 			  compileContext->allocator.get(),
 			  compileContext->document)
-				.template castTo<TypeNameNode>())) {
+				.castTo<TypeNameNode>())) {
 		return genOutOfMemoryCompError();
 	}
 	return {};
@@ -111,6 +111,36 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 			uint32_t initialMemberReg = compileContext->allocReg();
 
 			if (!initialEntry.genericArgs.size()) {
+				if (e->idRefPtr->entries.at(0).name == "this") {
+					if (!compileContext->fnCompileContext.thisNode)
+						return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::InvalidThisUsage);
+
+					initialMember = compileContext->fnCompileContext.thisNode.castTo<MemberNode>();
+
+					if (e->idRefPtr->entries.size() > 1) {
+						initialMemberEvalPurpose = ExprEvalPurpose::RValue;
+					} else {
+						initialMemberEvalPurpose = evalPurpose;
+					}
+
+					switch (initialMemberEvalPurpose) {
+						case ExprEvalPurpose::EvalType:
+							break;
+						case ExprEvalPurpose::Stmt:
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(
+								CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
+							break;
+						case ExprEvalPurpose::LValue:
+							return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
+						case ExprEvalPurpose::RValue:
+						case ExprEvalPurpose::Call: {
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::LTHIS, initialMemberReg, {}));
+							break;
+						}
+					}
+					goto initialMemberResolved;
+				}
+
 				// Check if the entry refers to a local variable.
 				if (auto it = blockCompileContext->localVars.find(e->idRefPtr->entries.at(0).name);
 					it != blockCompileContext->localVars.end()) {
@@ -201,22 +231,46 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				return {};
 			};
 
-			auto determineNodeType = [](peff::SharedPtr<MemberNode> node) -> peff::SharedPtr<TypeNameNode> {
+			auto determineNodeType = [](CompileContext *compileContext, peff::SharedPtr<MemberNode> node, peff::SharedPtr<TypeNameNode> &typeNameOut) -> std::optional<CompilationError> {
 				switch (node->astNodeType) {
+					case AstNodeType::This: {
+						auto m = node.castTo<ThisNode>()->thisType;
+
+						IdRefPtr fullIdRef;
+
+						SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileContext->allocator.get(), m, fullIdRef));
+
+						auto tn = peff::makeShared<CustomTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document);
+
+						if (!tn) {
+							return genOutOfMemoryCompError();
+						}
+						tn->contextNode = compileContext->document->rootModule.castTo<MemberNode>();
+
+						tn->idRefPtr = std::move(fullIdRef);
+
+						typeNameOut = tn.castTo<TypeNameNode>();
+						break;
+					}
 					case AstNodeType::Var:
-						return node.castTo<VarNode>()->type;
+						typeNameOut = node.castTo<VarNode>()->type;
+						break;
 					case AstNodeType::Fn:
+						// TODO: Determine the type.
+						typeNameOut = {};
 						break;
 					case AstNodeType::Module:
 					case AstNodeType::Class:
 					case AstNodeType::Struct:
 					case AstNodeType::Enum:
 					case AstNodeType::Interface:
-						return {};
-					default:
+						typeNameOut = {};
 						break;
+					default:
+						std::terminate();
 				}
-				std::terminate();
+
+				return {};
 			};
 
 			if (initialMember) {
@@ -234,7 +288,8 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 								e->idRefPtr->entries.data() + 1,
 								e->idRefPtr->entries.size() - 1,
 								finalMember,
-								&parts));
+								&parts,
+								false));
 
 						if (!finalMember) {
 							return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::IdNotFound);
@@ -245,9 +300,8 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				} else {
 					finalMember = initialMember;
 				}
-			}
-			else {
-				size_t curIdx = 1;
+			} else {
+				size_t curIdx = 0;
 
 				ResolvedIdRefPartList parts(compileContext->document->allocator.get());
 				{
@@ -270,12 +324,12 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				SLKC_RETURN_IF_COMP_ERROR(loadTheRest(resultRegOut, e->idRefPtr.get(), parts, 0));
 			}
 
-			resultOut.evaluatedType = determineNodeType(finalMember);
+			SLKC_RETURN_IF_COMP_ERROR(determineNodeType(compileContext, finalMember, resultOut.evaluatedType));
 
 			switch (evalPurpose) {
 				case ExprEvalPurpose::EvalType:
 					if (!resultOut.evaluatedType) {
-						return CompilationError(finalMember->tokenRange, CompilationErrorKind::ExpectingId);
+						return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::ExpectingId);
 					}
 					break;
 				case ExprEvalPurpose::Stmt:

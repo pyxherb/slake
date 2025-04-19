@@ -492,7 +492,22 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 				peff::SharedPtr<FnSlotNode> slotNode = m.castTo<FnSlotNode>();
 
 				for (auto i : slotNode->overloadings) {
+					SLKC_RETURN_IF_COMP_ERROR(indexFnParams(compileContext, i));
+
 					compileContext->fnCompileContext.reset();
+
+					switch (mod->astNodeType) {
+						case AstNodeType::Class:
+						case AstNodeType::Interface:
+							if (!(i->accessModifier & slake::ACCESS_STATIC)) {
+								if (!(compileContext->fnCompileContext.thisNode = peff::makeShared<ThisNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document)))
+									return genOutOfMemoryCompError();
+								compileContext->fnCompileContext.thisNode->thisType = i->parent->parent->sharedFromThis().castTo<MemberNode>();
+							}
+							break;
+						default:
+							break;
+					}
 
 					peff::SharedPtr<BlockCompileContext> blockContext;
 					if (!(blockContext = peff::makeShared<BlockCompileContext>(compileContext->allocator.get(), compileContext->allocator.get())))
@@ -520,5 +535,6 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 				break;
 		}
 	}
+
 	return {};
 }

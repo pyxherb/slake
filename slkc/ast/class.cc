@@ -150,3 +150,32 @@ SLKC_API InterfaceNode::InterfaceNode(const InterfaceNode &rhs, peff::Alloc *all
 
 SLKC_API InterfaceNode::~InterfaceNode() {
 }
+
+SLKC_API peff::SharedPtr<AstNode> ThisNode::doDuplicate(peff::Alloc *newAllocator) const {
+	bool succeeded = false;
+	peff::SharedPtr<ThisNode> duplicatedNode(peff::makeShared<ThisNode>(newAllocator, *this, newAllocator, succeeded));
+	if ((!duplicatedNode) || (!succeeded)) {
+		return {};
+	}
+
+	return duplicatedNode.castTo<AstNode>();
+}
+
+SLKC_API ThisNode::ThisNode(
+	peff::Alloc *selfAllocator,
+	const peff::SharedPtr<Document> &document)
+	: MemberNode(AstNodeType::This, selfAllocator, document) {
+}
+
+SLKC_API ThisNode::ThisNode(const ThisNode &rhs, peff::Alloc *allocator, bool &succeededOut) : MemberNode(rhs, allocator, succeededOut) {
+	if (!succeededOut) {
+		return;
+	}
+
+	thisType = rhs.thisType;
+
+	succeededOut = true;
+}
+
+SLKC_API ThisNode::~ThisNode() {
+}

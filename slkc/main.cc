@@ -301,6 +301,11 @@ void dumpCompilationError(const slkc::Parser &parser, const slkc::CompilationErr
 				beginToken->sourceLocation.beginPosition.line + 1,
 				beginToken->sourceLocation.beginPosition.column + 1);
 			break;
+		case slkc::CompilationErrorKind::InvalidThisUsage:
+			printError("Error at %zu, %zu: Cannot use this keyword in this context\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
 		case slkc::CompilationErrorKind::ImportLimitExceeded:
 			printError("Error at %zu, %zu: Import item number exceeded\n",
 				beginToken->sourceLocation.beginPosition.line + 1,
@@ -411,6 +416,7 @@ int main(int argc, char *argv[]) {
 			slkc::Parser parser(document, std::move(lexer.tokenList), &nullAlloc, peff::getDefaultAlloc());
 
 			peff::SharedPtr<slkc::ModuleNode> mod(peff::makeShared<slkc::ModuleNode>(peff::getDefaultAlloc(), peff::getDefaultAlloc(), document));
+			document->rootModule = mod;
 
 			if (auto e = parser.parseProgram(mod); e) {
 				dumpSyntaxError(parser, *e);

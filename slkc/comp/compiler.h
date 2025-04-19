@@ -39,6 +39,7 @@ namespace slkc {
 
 	struct FnCompileContext {
 		peff::SharedPtr<FnNode> currentFn;
+		peff::SharedPtr<ThisNode> thisNode;
 		peff::DynArray<slake::Instruction> instructionsOut;
 		peff::DynArray<peff::SharedPtr<Label>> labels;
 		peff::HashMap<std::string_view, size_t> labelNameIndices;
@@ -48,6 +49,8 @@ namespace slkc {
 		SLAKE_FORCEINLINE FnCompileContext(peff::Alloc *allocator) : instructionsOut(allocator), labels(allocator), blockCompileContexts(allocator), labelNameIndices(allocator) {}
 
 		SLAKE_FORCEINLINE void reset() {
+			currentFn = {};
+			thisNode = {};
 			instructionsOut.clear();
 			labels.clear();
 			blockCompileContexts.clear();
@@ -406,6 +409,13 @@ namespace slkc {
 		CompileContext *compileContext,
 		peff::SharedPtr<ModuleNode> mod,
 		slake::ModuleObject *modOut);
+
+	[[nodiscard]] SLKC_API std::optional<CompilationError> reindexFnParams(
+		CompileContext *compileContext,
+		peff::SharedPtr<FnNode> fn);
+	[[nodiscard]] SLKC_API std::optional<CompilationError> indexFnParams(
+		CompileContext *compileContext,
+		peff::SharedPtr<FnNode> fn);
 
 	class Writer {
 	public:

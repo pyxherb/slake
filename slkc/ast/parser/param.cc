@@ -49,12 +49,12 @@ SLKC_API std::optional<SyntaxError> Parser::parseParams(
 			}
 		}
 
+		if (!paramsOut.pushBack(std::move(paramNode)))
+			return genOutOfMemoryError();
+
 		if (peekToken()->tokenId != TokenId::Comma) {
 			break;
 		}
-
-		if (!paramsOut.pushBack(std::move(paramNode)))
-			return genOutOfMemoryError();
 
 		Token *commaToken = nextToken();
 

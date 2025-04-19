@@ -97,12 +97,17 @@ SLKC_API FnNode::FnNode(const FnNode &rhs, peff::Alloc *allocator, bool &succeed
 			return;
 		}
 
-		if (!paramIndices.insert(params.at(i)->name, +i)) {
-			succeededOut = false;
-			return;
-		}
-
 		params.at(i)->setParent(this);
+	}
+
+	if ((isParamsIndexed = rhs.isParamsIndexed)) {
+		for (auto i : rhs.paramIndices) {
+			auto &curParam = params.at(i.second);
+			if (!(paramIndices.insert(curParam->name, +i.second))) {
+				succeededOut = false;
+				return;
+			}
+		}
 	}
 
 	if (!genericParams.resize(rhs.genericParams.size())) {

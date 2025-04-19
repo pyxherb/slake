@@ -469,17 +469,21 @@ SLKC_API std::optional<SyntaxError> Parser::parseProgramStmt() {
 		return syntaxError;
 	}
 
+	slake::AccessModifier access = 0;
 	Token *currentToken;
 
 	for (;;) {
 		switch ((currentToken = peekToken())->tokenId) {
 			case TokenId::PubKeyword:
+				access |= slake::ACCESS_PUB;
 				nextToken();
 				break;
 			case TokenId::StaticKeyword:
+				access |= slake::ACCESS_STATIC;
 				nextToken();
 				break;
 			case TokenId::NativeKeyword:
+				access |= slake::ACCESS_NATIVE;
 				nextToken();
 				break;
 			default:
@@ -492,6 +496,10 @@ accessModifierParseEnd:
 
 	peff::SharedPtr<ModuleNode> p = curParent.castTo<ModuleNode>();
 
+	if (p->astNodeType == AstNodeType::Module) {
+		access |= slake::ACCESS_STATIC;
+	}
+
 	switch (token->tokenId) {
 		case TokenId::AttributeKeyword: {
 			// Attribute definition.
@@ -502,6 +510,8 @@ accessModifierParseEnd:
 			if (!(attributeNode = peff::makeShared<AttributeDefNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 				return genOutOfMemoryError();
 			}
+
+			attributeNode->accessModifier = access;
 
 			Token *nameToken;
 
@@ -595,6 +605,8 @@ accessModifierParseEnd:
 				return syntaxError;
 			}
 
+			fn->accessModifier = access;
+
 			if (auto it = p->memberIndices.find(fn->name); it != p->memberIndices.end()) {
 				if (p->members.at(it.value())->astNodeType != AstNodeType::FnSlot) {
 					peff::String s(resourceAllocator.get());
@@ -644,6 +656,8 @@ accessModifierParseEnd:
 			if (!(classNode = peff::makeShared<ClassNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 				return genOutOfMemoryError();
 			}
+
+			classNode->accessModifier = access;
 
 			Token *nameToken;
 
@@ -779,6 +793,8 @@ accessModifierParseEnd:
 			if (!(interfaceNode = peff::makeShared<InterfaceNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 				return genOutOfMemoryError();
 			}
+
+			interfaceNode->accessModifier = access;
 
 			Token *nameToken;
 

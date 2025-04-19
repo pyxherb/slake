@@ -27,6 +27,8 @@ SLAKE_API Instruction::Instruction(Instruction &&rhs)
 SLAKE_API Instruction::~Instruction() {
 	if (nOperands) {
 		operandsAllocator->release(operands, sizeof(Value) * nOperands, sizeof(std::max_align_t));
+	} else {
+		assert(!operands);
 	}
 }
 

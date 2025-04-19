@@ -1,40 +1,11 @@
 module core.option;
 
-use {
-	except = core.except
-}
+import core.except;
 
-pub class BadOptionAccessError: core.IException {
+pub class BadOptionAccessError: IException {
 	fn what() virtual override: string {
 		return "Bad option access";
 	}
-}
-
-fn _getNullOptionData<T>() = null
-with <i8>() {
-	return 0 as i8;
-} with <i16>() {
-	return 0 as i16;
-} with <i32>() {
-	return 0;
-} with <i64>() {
-	return 0l;
-} with <u8>() {
-	return 0 as u8;
-} with <u16>() {
-	return 0 as u16;
-} with <u32>() {
-	return 0u;
-} with <i64>() {
-	return 0ul;
-} with <bool>() {
-	return false;
-} with <f32>() {
-	return core.numerics.NAN32;
-} with <f64>() {
-	return core.numerics.NAN64;
-} with <object>() {
-	return null;
 }
 
 pub class Option<T> {
@@ -63,7 +34,7 @@ pub class Option<T> {
 	}
 
 	pub fn reset() {
-		this._data = _getNullOptionData<T>();
+		this._data = default as T;
 		this._hasValue = false;
 	}
 }

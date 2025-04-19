@@ -1,4 +1,4 @@
-module std.core.reflect;
+module core.reflect;
 
 class Class {
 	pub native let name: string;

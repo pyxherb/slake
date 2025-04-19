@@ -17,7 +17,7 @@ pub interface I32
 	traits.ILogicalOr<i32, bool>, traits.ILogicalOr<I32, bool>,
 	traits.ILsh<u32, I32>, traits.ILsh<U32, I32>,
 	traits.IRsh<u32, I32>, traits.IRsh<U32, I32>,
-	traits.IComparable<i32>, traits.IComparable<I32> {
+	traits.ICmp<i32>, traits.ICmp<I32> {
 	pub native operator +(rhs: i32): I32;
 	pub native operator +(rhs: I32): I32;
 
@@ -54,8 +54,8 @@ pub interface I32
 	pub native operator >>(rhs: u32): I32;
 	pub native operator >>(rhs: U32): I32;
 
-	pub native compareTo(rhs: i32): i32;
-	pub native compareTo(rhs: I32): i32;
+	pub native operator <=>(rhs: i32): i32;
+	pub native operator <=>(rhs: I32): i32;
 }
 
 native def isSame<T1, T2>(): bool;

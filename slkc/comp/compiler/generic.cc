@@ -39,16 +39,45 @@ static std::optional<CompilationError> _walkTypeNameForGenericInstantiation(
 		return {};
 	}
 
-	if (typeName->typeNameKind == TypeNameKind::Custom) {
-		peff::SharedPtr<CustomTypeNameNode> tn = typeName.castTo<CustomTypeNameNode>();
+	switch (typeName->typeNameKind) {
+		case TypeNameKind::Array: {
+			peff::SharedPtr<ArrayTypeNameNode> tn = typeName.castTo<ArrayTypeNameNode>();
 
-		if (tn->idRefPtr->entries.size() == 1) {
-			IdRefEntry &entry = tn->idRefPtr->entries.at(0);
+			SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->elementType, context));
+			break;
+		}
+		case TypeNameKind::Ref: {
+			peff::SharedPtr<RefTypeNameNode> tn = typeName.castTo<RefTypeNameNode>();
 
-			if (!entry.genericArgs.size()) {
-				if (auto it = context.mappedGenericArgs.find(entry.name);
-					it != context.mappedGenericArgs.end()) {
-					typeName = it.value();
+			SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->referencedType, context));
+			break;
+		}
+		case TypeNameKind::TempRef: {
+			peff::SharedPtr<TempRefTypeNameNode> tn = typeName.castTo<TempRefTypeNameNode>();
+
+			SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->referencedType, context));
+			break;
+		}
+		case TypeNameKind::Fn: {
+			peff::SharedPtr<FnTypeNameNode> tn = typeName.castTo<FnTypeNameNode>();
+
+			for (size_t i = 0; i < tn->paramTypes.size(); ++i) {
+				SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->paramTypes.at(i), context));
+			}
+			SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->returnType, context));
+			break;
+		}
+		case TypeNameKind::Custom: {
+			peff::SharedPtr<CustomTypeNameNode> tn = typeName.castTo<CustomTypeNameNode>();
+
+			if (tn->idRefPtr->entries.size() == 1) {
+				IdRefEntry &entry = tn->idRefPtr->entries.at(0);
+
+				if (!entry.genericArgs.size()) {
+					if (auto it = context.mappedGenericArgs.find(entry.name);
+						it != context.mappedGenericArgs.end()) {
+						typeName = it.value();
+					}
 				}
 			}
 		}

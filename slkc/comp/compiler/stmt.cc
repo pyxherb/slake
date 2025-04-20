@@ -11,7 +11,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 			CompileExprResult result;
 
-			SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, s->expr, ExprEvalPurpose::Stmt, UINT32_MAX, result));
+			SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, s->expr, ExprEvalPurpose::Stmt, {}, UINT32_MAX, result));
 			break;
 		}
 		case StmtKind::VarDef:

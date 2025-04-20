@@ -57,7 +57,7 @@ SLKC_API std::optional<CompilationError> slkc::_compileOrCastOperand(
 	SLKC_RETURN_IF_COMP_ERROR(isSameType(desiredType, operandType, whether));
 	if (whether) {
 		CompileExprResult result;
-		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, operand, evalPurpose, regOut, result));
+		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, operand, evalPurpose, desiredType, regOut, result));
 		return {};
 	}
 
@@ -76,7 +76,7 @@ SLKC_API std::optional<CompilationError> slkc::_compileOrCastOperand(
 			return genOutOfMemoryCompError();
 		}
 
-		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, castExpr.castTo<ExprNode>(), evalPurpose, regOut, result));
+		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, castExpr.castTo<ExprNode>(), evalPurpose, desiredType, regOut, result));
 		return {};
 	}
 
@@ -90,6 +90,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 	CompileContext *compileContext,
 	const peff::SharedPtr<ExprNode> &expr,
 	ExprEvalPurpose evalPurpose,
+	peff::SharedPtr<TypeNameNode> desiredType,
 	uint32_t resultRegOut,
 	CompileExprResult &resultOut) {
 	peff::SharedPtr<BlockCompileContext> blockCompileContext = compileContext->fnCompileContext.blockCompileContexts.back();
@@ -109,6 +110,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 			ExprEvalPurpose initialMemberEvalPurpose;
 
 			uint32_t initialMemberReg = compileContext->allocReg();
+			bool isStatic = false;
 
 			if (!initialEntry.genericArgs.size()) {
 				if (e->idRefPtr->entries.at(0).name == "this") {
@@ -259,6 +261,9 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						// TODO: Determine the type.
 						typeNameOut = {};
 						break;
+					case AstNodeType::FnSlot:
+						typeNameOut = {};
+						break;
 					case AstNodeType::Module:
 					case AstNodeType::Class:
 					case AstNodeType::Struct:
@@ -300,6 +305,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				} else {
 					finalMember = initialMember;
 				}
+				isStatic = false;
 			} else {
 				size_t curIdx = 0;
 
@@ -322,6 +328,35 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				}
 
 				SLKC_RETURN_IF_COMP_ERROR(loadTheRest(resultRegOut, e->idRefPtr.get(), parts, 0));
+
+				isStatic = (bool)parts.size();
+			}
+
+			if (finalMember->astNodeType == AstNodeType::FnSlot) {
+				peff::SharedPtr<FnSlotNode> m = finalMember.castTo<FnSlotNode>();
+
+				if (m->overloadings.size() == 1) {
+					finalMember = m->overloadings.back().castTo<MemberNode>();
+				} else {
+					if (desiredType->typeNameKind == TypeNameKind::Fn) {
+						peff::SharedPtr<FnTypeNameNode> tn = desiredType.castTo<FnTypeNameNode>();
+						peff::DynArray<size_t> matchedOverloadingIndices(compileContext->allocator.get());
+
+						// TODO: Check tn->isForAdl and do strictly equality check.
+						SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileContext, m, tn->paramTypes.data(), tn->paramTypes.size(), isStatic, matchedOverloadingIndices));
+
+						switch (matchedOverloadingIndices.size()) {
+							case 0:
+								return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::NoMatchingFnOverloading);
+							case 1:
+								break;
+							default:
+								return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::UnableToDetermineOverloading);
+						}
+
+						finalMember = m->overloadings.at(matchedOverloadingIndices.back()).castTo<MemberNode>();
+					}
+				}
 			}
 
 			SLKC_RETURN_IF_COMP_ERROR(determineNodeType(compileContext, finalMember, resultOut.evaluatedType));
@@ -411,6 +446,54 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						.castTo<TypeNameNode>())) {
 				return genOutOfMemoryCompError();
 			}
+			break;
+		}
+		case ExprKind::Call: {
+			peff::SharedPtr<CallExprNode> e = expr.castTo<CallExprNode>();
+
+			uint32_t targetReg = compileContext->allocReg();
+
+			peff::SharedPtr<TypeNameNode> fnType;
+			if (auto error = evalExprType(compileContext, e->target, fnType); error) {
+				switch (error->errorKind) {
+					case CompilationErrorKind::OutOfMemory:
+					case CompilationErrorKind::OutOfRuntimeMemory:
+						return error;
+					default:
+						break;
+				}
+
+				peff::DynArray<peff::SharedPtr<TypeNameNode>> argTypes(compileContext->allocator.get());
+
+				if (!argTypes.resize(e->args.size())) {
+					return genOutOfMemoryCompError();
+				}
+
+				for (size_t i = 0; i < e->args.size(); ++i) {
+					SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, e->args.at(i), argTypes.at(i)));
+				}
+
+				peff::SharedPtr<FnTypeNameNode> fnPrototype;
+
+				if (!(fnPrototype = peff::makeShared<FnTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+					return genOutOfMemoryCompError();
+				}
+
+				fnPrototype->paramTypes = std::move(argTypes);
+				fnPrototype->isForAdl = true;
+
+				CompileExprResult result;
+				SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->target, ExprEvalPurpose::Call, fnPrototype.castTo<TypeNameNode>(), targetReg, result));
+
+				fnType = result.evaluatedType;
+			} else {
+				CompileExprResult result;
+				SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->target, ExprEvalPurpose::Call, {}, targetReg, result));
+
+				fnType = result.evaluatedType;
+			}
+
+			resultOut.evaluatedType = fnType.castTo<FnTypeNameNode>()->returnType;
 			break;
 		}
 	}

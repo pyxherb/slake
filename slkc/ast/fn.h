@@ -8,7 +8,7 @@
 namespace slkc {
 	using FnFlags = uint32_t;
 
-	constexpr static FnFlags FN_PURE = 0x00000001;
+	constexpr static FnFlags FN_PURE = 0x00000001, FN_VARG = 0x00000002;
 
 	class FnNode;
 

@@ -365,6 +365,29 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 	return {};
 }
 
+SLKC_API std::optional<CompilationError> slkc::fnToTypeName(
+	CompileContext* compileContext,
+	peff::SharedPtr<FnNode> fn,
+	peff::SharedPtr<TypeNameNode>& evaluatedTypeOut) {
+	peff::SharedPtr<FnTypeNameNode> tn;
+
+	if (!(tn = peff::makeShared<FnTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+		return genOutOfMemoryCompError();
+	}
+
+	if (!tn->paramTypes.resize(fn->params.size())) {
+		return genOutOfMemoryCompError();
+	}
+
+	for (size_t i = 0; i < tn->paramTypes.size(); ++i) {
+		tn->paramTypes.at(i) = fn->params.at(i)->type;
+	}
+
+	tn->returnType = fn->returnType;
+
+	return {};
+}
+
 SLKC_API std::optional<slkc::CompilationError> slkc::typeNameCmp(peff::SharedPtr<TypeNameNode> lhs, peff::SharedPtr<TypeNameNode> rhs, int &out) noexcept {
 	peff::SharedPtr<Document> doc = lhs->document.lock();
 

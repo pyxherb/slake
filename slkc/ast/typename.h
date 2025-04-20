@@ -202,6 +202,21 @@ namespace slkc {
 		SLKC_API virtual ~ArrayTypeNameNode();
 	};
 
+	class FnTypeNameNode : public TypeNameNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		peff::SharedPtr<TypeNameNode> returnType;
+		peff::DynArray<peff::SharedPtr<TypeNameNode>> paramTypes;
+		bool hasVarArgs = false;
+		bool isForAdl = false;
+
+		SLKC_API FnTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API FnTypeNameNode(const FnTypeNameNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API virtual ~FnTypeNameNode();
+	};
+
 	class RefTypeNameNode : public TypeNameNode {
 	protected:
 		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;

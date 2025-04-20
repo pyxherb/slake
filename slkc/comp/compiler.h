@@ -372,6 +372,7 @@ namespace slkc {
 		CompileContext *compileContext,
 		const peff::SharedPtr<ExprNode> &expr,
 		ExprEvalPurpose evalPurpose,
+		peff::SharedPtr<TypeNameNode> desiredType,
 		uint32_t resultRegOut,
 		CompileExprResult &resultOut);
 	SLKC_API std::optional<CompilationError> compileStmt(
@@ -382,7 +383,7 @@ namespace slkc {
 		const peff::SharedPtr<ExprNode> &expr,
 		peff::SharedPtr<TypeNameNode> &typeOut) {
 		CompileExprResult result;
-		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr, ExprEvalPurpose::EvalType, UINT32_MAX, result));
+		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr, ExprEvalPurpose::EvalType, {}, UINT32_MAX, result));
 		typeOut = result.evaluatedType;
 		return {};
 	}
@@ -416,6 +417,18 @@ namespace slkc {
 	[[nodiscard]] SLKC_API std::optional<CompilationError> indexFnParams(
 		CompileContext *compileContext,
 		peff::SharedPtr<FnNode> fn);
+
+	[[nodiscard]] SLKC_API std::optional<CompilationError> determineFnOverloading(
+		CompileContext *compileContext,
+		peff::SharedPtr<FnSlotNode> fnSlot,
+		const peff::SharedPtr<TypeNameNode> *argTypes,
+		size_t nArgTypes,
+		bool isStatic,
+		peff::DynArray<size_t> &matchedOverloadings);
+	[[nodiscard]] SLKC_API std::optional<CompilationError> fnToTypeName(
+		CompileContext *compileContext,
+		peff::SharedPtr<FnNode> fn,
+		peff::SharedPtr<TypeNameNode> &evaluatedTypeOut);
 
 	class Writer {
 	public:

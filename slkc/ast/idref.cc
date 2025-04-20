@@ -4,7 +4,7 @@ using namespace slkc;
 
 SLKC_API IdRef::IdRef(
 	peff::Alloc *selfAllocator,
-	const peff::SharedPtr<Document> &document)
+	const peff::WeakPtr<Document> &document)
 	: selfAllocator(selfAllocator),
 	  entries(selfAllocator),
 	  document(document) {

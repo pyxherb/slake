@@ -95,8 +95,15 @@ SLKC_API std::optional<CompilationError> slkc::resolveStaticMember(
 			case AstNodeType::FnSlot: {
 				peff::SharedPtr<FnSlotNode> m = result.castTo<FnSlotNode>();
 
-				// TODO: Check if the slot contains any static method.
+				// Check if the slot contains any static method.
+				for (auto i : m->overloadings) {
+					if (i->accessModifier & slake::ACCESS_STATIC)
+						goto pass;
+				}
+
 				memberOut = {};
+				return {};
+			pass:
 				break;
 			}
 			default:
@@ -191,7 +198,15 @@ SLKC_API std::optional<CompilationError> slkc::resolveInstanceMember(
 			case AstNodeType::FnSlot: {
 				peff::SharedPtr<FnSlotNode> m = result.castTo<FnSlotNode>();
 
-				// TODO: Check if the slot contains any instance method.
+				// Check if the slot contains any instance method.
+				for (auto i : m->overloadings) {
+					if (!(i->accessModifier & slake::ACCESS_STATIC))
+						goto pass;
+				}
+
+				memberOut = {};
+				return {};
+			pass:
 				break;
 			}
 			default:

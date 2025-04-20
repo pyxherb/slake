@@ -360,6 +360,46 @@ SLKC_API ArrayTypeNameNode::ArrayTypeNameNode(const ArrayTypeNameNode &rhs, peff
 SLKC_API ArrayTypeNameNode::~ArrayTypeNameNode() {
 }
 
+SLKC_API peff::SharedPtr<AstNode> FnTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
+	bool succeeded = false;
+	peff::SharedPtr<FnTypeNameNode> duplicatedNode(peff::makeShared<FnTypeNameNode>(newAllocator, *this, newAllocator, succeeded));
+	if ((!duplicatedNode) || (!succeeded)) {
+		return {};
+	}
+
+	return duplicatedNode.castTo<AstNode>();
+}
+
+SLKC_API FnTypeNameNode::FnTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::Array, selfAllocator, document), paramTypes(selfAllocator) {
+}
+
+SLKC_API FnTypeNameNode::FnTypeNameNode(const FnTypeNameNode &rhs, peff::Alloc *allocator, bool &succeededOut) : TypeNameNode(rhs, allocator), paramTypes(allocator) {
+	if (!(returnType = rhs.returnType->duplicate<TypeNameNode>(allocator))) {
+		succeededOut = false;
+		return;
+	}
+
+	if (!paramTypes.resize(rhs.paramTypes.size())) {
+		succeededOut = false;
+		return;
+	}
+
+	for (size_t i = 0; i < paramTypes.size(); ++i) {
+		if (!(paramTypes.at(i) = rhs.paramTypes.at(i)->duplicate<TypeNameNode>(allocator))) {
+			succeededOut = false;
+			return;
+		}
+	}
+
+	hasVarArgs = rhs.hasVarArgs;
+	isForAdl = rhs.isForAdl;
+
+	succeededOut = true;
+}
+
+SLKC_API FnTypeNameNode::~FnTypeNameNode() {
+}
+
 SLKC_API peff::SharedPtr<AstNode> RefTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
 	peff::SharedPtr<RefTypeNameNode> duplicatedNode(peff::makeShared<RefTypeNameNode>(newAllocator, *this, newAllocator, succeeded));

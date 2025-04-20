@@ -20,10 +20,10 @@ namespace slkc {
 	public:
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
 		peff::DynArray<IdRefEntry> entries;
-		peff::SharedPtr<Document> document;
+		peff::WeakPtr<Document> document;
 		TokenRange tokenRange;
 
-		SLKC_API IdRef(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API IdRef(peff::Alloc *selfAllocator, const peff::WeakPtr<Document> &document);
 		SLKC_API virtual ~IdRef();
 
 		SLKC_API void dealloc() noexcept;

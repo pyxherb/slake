@@ -133,6 +133,61 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 			typeNameOut->tokenRange = TokenRange{ t->index };
 			nextToken();
 			break;
+		case TokenId::FnKeyword: {
+			peff::SharedPtr<FnTypeNameNode> tn;
+			if (!(tn = peff::makeShared<FnTypeNameNode>(
+					  resourceAllocator.get(),
+					  resourceAllocator.get(), document)))
+				return genOutOfMemoryError();
+			typeNameOut = tn.castTo<TypeNameNode>();
+			tn->tokenRange = TokenRange{ t->index };
+			nextToken();
+
+			Token *lParentheseToken;
+			if ((syntaxError = expectToken((lParentheseToken = peekToken()), TokenId::LParenthese)))
+				return SyntaxError(TokenRange{ lParentheseToken->index }, ExpectingSingleTokenErrorExData{ TokenId::LParenthese });
+
+			nextToken();
+
+			for (;;) {
+				if (peekToken()->tokenId == TokenId::RParenthese) {
+					break;
+				}
+
+				peff::SharedPtr<TypeNameNode> paramType;
+
+				if (auto e = parseTypeName(paramType); e)
+					return e;
+
+				if (!tn->paramTypes.pushBack(std::move(paramType)))
+					return genOutOfMemoryError();
+
+				if (peekToken()->tokenId != TokenId::Comma) {
+					break;
+				}
+
+				Token *commaToken = nextToken();
+				/*
+				if (!idxCommaTokensOut.pushBack(+commaToken->index))
+					return genOutOfMemoryError();*/
+			}
+
+			Token *rParentheseToken;
+			if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese)))
+				return SyntaxError(TokenRange{ rParentheseToken->index }, ExpectingSingleTokenErrorExData{ TokenId::RParenthese });
+
+			nextToken();
+
+			if (peekToken()->tokenId == TokenId::Colon) {
+				nextToken();
+
+				if (auto e = parseTypeName(tn->returnType); e)
+					return e;
+				break;
+			}
+
+			break;
+		}
 		case TokenId::Id: {
 			IdRefPtr id;
 			if ((syntaxError = parseIdRef(id)))

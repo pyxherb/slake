@@ -400,20 +400,25 @@ int main(int argc, char *argv[]) {
 			return EIO;
 		}
 
-		slkc::Lexer lexer(peff::getDefaultAlloc());
-
-		std::string_view sv(buf.get(), fileSize);
-
 		peff::SharedPtr<slkc::Document> document(peff::makeShared<slkc::Document>(peff::getDefaultAlloc(), peff::getDefaultAlloc()));
 
-		if (auto e = lexer.lex(sv, peff::getDefaultAlloc(), document); e) {
-			dumpLexicalError(*e);
-			return -1;
+		peff::Uninitialized<slkc::TokenList> tokenList;
+		{
+			slkc::Lexer lexer(peff::getDefaultAlloc());
+
+			std::string_view sv(buf.get(), fileSize);
+
+			if (auto e = lexer.lex(sv, peff::getDefaultAlloc(), document); e) {
+				dumpLexicalError(*e);
+				return -1;
+			}
+
+			tokenList.moveFrom(std::move(lexer.tokenList));
 		}
 
 		{
 			peff::NullAlloc nullAlloc;
-			slkc::Parser parser(document, std::move(lexer.tokenList), &nullAlloc, peff::getDefaultAlloc());
+			slkc::Parser parser(document, tokenList.release(), &nullAlloc, peff::getDefaultAlloc());
 
 			peff::SharedPtr<slkc::ModuleNode> mod(peff::makeShared<slkc::ModuleNode>(peff::getDefaultAlloc(), peff::getDefaultAlloc(), document));
 			document->rootModule = mod;

@@ -18,31 +18,19 @@ scripting.
 
 ⏸: Paused/Postponed
 
-* Bytecode Compiler ⏸
-  * Lexer ⏸
-  * Parser ⏸
+📝: Planned
+
+* Bytecode Compiler 📝
 
 * Core Language Compiler 🕓
   * Lexer ✅
   * Parser ✅
   * Compiler ✅
   * Language Server 🕓
-    * Linting ✅
+    * Linting 🕓
     * Snippets 🕓
     * Formatting 🕓
     * Renaming 🕓
-
-* Language Standard 🕓
-  * Control Flow Statements ✅
-  * Expressions ✅
-  * Exception ✅
-  * OOP Mechanism ✅
-    * Class ✅
-    * Interface ✅
-    * Operator ✅
-  * Coroutine 🕓
-  * Function Overloading ✅
-  * Operator Overloading🕓
 
 * Runtime 🕓
   * Exception Mechanism ✅
@@ -65,6 +53,8 @@ scripting.
     * RISC-V Backend 🕓
 
 * AOT Compiler 🕓
+    * Native C++ Backend (SLX2CXX) 🕓
+    * WASM Backend (SLX2WASM) 📝
 
 ## Building
 

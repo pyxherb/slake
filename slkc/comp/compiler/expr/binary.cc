@@ -392,8 +392,8 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 	if (expr->binaryOp == BinaryOp::Comma) {
 		CompileExprResult result;
 		uint32_t tmpRegIndex = compileContext->allocReg();
-		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr->lhs, ExprEvalPurpose::Stmt, tmpRegIndex, result));
-		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr->rhs, evalPurpose, resultRegOut, resultOut));
+		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr->lhs, ExprEvalPurpose::Stmt, {}, tmpRegIndex, result));
+		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr->rhs, evalPurpose, {}, resultRegOut, resultOut));
 		return {};
 	}
 

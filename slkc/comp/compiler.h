@@ -8,11 +8,11 @@ namespace slkc {
 	SLKC_API std::optional<slkc::CompilationError> typeNameListCmp(const peff::DynArray<peff::SharedPtr<TypeNameNode>> &lhs, const peff::DynArray<peff::SharedPtr<TypeNameNode>> &rhs, int &out) noexcept;
 
 	enum class ExprEvalPurpose {
-		EvalType,	 // None
-		Stmt,	 // As a statement
-		LValue,	 // As a lvalue
-		RValue,	 // As a rvalue
-		Call,	 // As target of a calling expression
+		EvalType,  // None
+		Stmt,	   // As a statement
+		LValue,	   // As a lvalue
+		RValue,	   // As a rvalue
+		Call,	   // As target of a calling expression
 	};
 
 	struct StmtCompileContext {
@@ -61,8 +61,7 @@ namespace slkc {
 
 	constexpr uint32_t
 		// Do not compile and thus we don't need extraneous memory allocation for byte code generation.
-		COMPCTXT_NOCOMPILE = 0x01
-		;
+		COMPCTXT_NOCOMPILE = 0x01;
 
 	struct CompileContext : public peff::RcObject {
 		slake::Runtime *runtime;
@@ -193,6 +192,12 @@ namespace slkc {
 
 	struct CompileExprResult {
 		peff::SharedPtr<TypeNameNode> evaluatedType;
+
+		// For parameter name query, etc, if exists.
+		peff::SharedPtr<FnSlotNode> callTargetFnSlot;
+		peff::DynArray<size_t> callTargetMatchedOverloadingIndices;
+
+		SLAKE_FORCEINLINE CompileExprResult(peff::Alloc *allocator) : callTargetMatchedOverloadingIndices(allocator) {}
 	};
 
 	struct ResolvedIdRefPart {
@@ -381,9 +386,10 @@ namespace slkc {
 	SLAKE_FORCEINLINE static std::optional<CompilationError> evalExprType(
 		CompileContext *compileContext,
 		const peff::SharedPtr<ExprNode> &expr,
-		peff::SharedPtr<TypeNameNode> &typeOut) {
-		CompileExprResult result;
-		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr, ExprEvalPurpose::EvalType, {}, UINT32_MAX, result));
+		peff::SharedPtr<TypeNameNode> &typeOut,
+		peff::SharedPtr<TypeNameNode> desiredType = {}) {
+		CompileExprResult result(compileContext->allocator.get());
+		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr, ExprEvalPurpose::EvalType, desiredType, UINT32_MAX, result));
 		typeOut = result.evaluatedType;
 		return {};
 	}
@@ -428,7 +434,7 @@ namespace slkc {
 	[[nodiscard]] SLKC_API std::optional<CompilationError> fnToTypeName(
 		CompileContext *compileContext,
 		peff::SharedPtr<FnNode> fn,
-		peff::SharedPtr<TypeNameNode> &evaluatedTypeOut);
+		peff::SharedPtr<FnTypeNameNode> &evaluatedTypeOut);
 
 	class Writer {
 	public:

@@ -20,7 +20,7 @@ static std::optional<CompilationError> _compileSimpleRValueUnaryExpr(
 		case ExprEvalPurpose::LValue:
 			return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
 		case ExprEvalPurpose::RValue: {
-			CompileExprResult result;
+			CompileExprResult result(compileContext->allocator.get());
 
 			uint32_t tmpReg = compileContext->allocReg();
 

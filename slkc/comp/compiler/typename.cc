@@ -368,7 +368,7 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 SLKC_API std::optional<CompilationError> slkc::fnToTypeName(
 	CompileContext* compileContext,
 	peff::SharedPtr<FnNode> fn,
-	peff::SharedPtr<TypeNameNode>& evaluatedTypeOut) {
+	peff::SharedPtr<FnTypeNameNode>& evaluatedTypeOut) {
 	peff::SharedPtr<FnTypeNameNode> tn;
 
 	if (!(tn = peff::makeShared<FnTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
@@ -384,6 +384,8 @@ SLKC_API std::optional<CompilationError> slkc::fnToTypeName(
 	}
 
 	tn->returnType = fn->returnType;
+
+	evaluatedTypeOut = tn;
 
 	return {};
 }

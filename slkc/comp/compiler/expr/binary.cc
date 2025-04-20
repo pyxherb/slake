@@ -27,7 +27,7 @@ std::optional<CompilationError> slkc::_compileSimpleBinaryExpr(
 				CompilationWarning(expr->tokenRange, CompilationWarningKind::UnusedExprResult)));
 			[[fallthrough]];
 		case ExprEvalPurpose::RValue: {
-			CompileExprResult result;
+			CompileExprResult result(compileContext->allocator.get());
 
 			uint32_t lhsReg = compileContext->allocReg(),
 					 rhsReg = compileContext->allocReg();
@@ -75,7 +75,7 @@ std::optional<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 		case ExprEvalPurpose::EvalType:
 			break;
 		case ExprEvalPurpose::LValue: {
-			CompileExprResult result;
+			CompileExprResult result(compileContext->allocator.get());
 
 			uint32_t rhsReg = compileContext->allocReg();
 
@@ -103,7 +103,7 @@ std::optional<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 				CompilationWarning(expr->tokenRange, CompilationWarningKind::UnusedExprResult)));
 			[[fallthrough]];
 		case ExprEvalPurpose::RValue: {
-			CompileExprResult result;
+			CompileExprResult result(compileContext->allocator.get());
 
 			uint32_t lhsReg = compileContext->allocReg(),
 					 rhsReg = compileContext->allocReg();
@@ -157,7 +157,7 @@ std::optional<CompilationError> slkc::_compileSimpleLAndBinaryExpr(
 			return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
 		case ExprEvalPurpose::Stmt:
 		case ExprEvalPurpose::RValue: {
-			CompileExprResult result;
+			CompileExprResult result(compileContext->allocator.get());
 
 			uint32_t lhsReg = compileContext->allocReg(),
 					 rhsReg = compileContext->allocReg(),
@@ -227,7 +227,7 @@ std::optional<CompilationError> slkc::_compileSimpleLOrBinaryExpr(
 			return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
 		case ExprEvalPurpose::Stmt:
 		case ExprEvalPurpose::RValue: {
-			CompileExprResult result;
+			CompileExprResult result(compileContext->allocator.get());
 
 			uint32_t lhsReg = compileContext->allocReg(),
 					 rhsReg = compileContext->allocReg(),
@@ -293,7 +293,7 @@ SLKC_API std::optional<CompilationError> slkc::_compileSimpleBinaryAssignOpExpr(
 		case ExprEvalPurpose::EvalType:
 			break;
 		case ExprEvalPurpose::LValue: {
-			CompileExprResult result;
+			CompileExprResult result(compileContext->allocator.get());
 
 			uint32_t lhsValueReg = compileContext->allocReg(),
 					 rhsReg = compileContext->allocReg(),
@@ -332,7 +332,7 @@ SLKC_API std::optional<CompilationError> slkc::_compileSimpleBinaryAssignOpExpr(
 				CompilationWarning(expr->tokenRange, CompilationWarningKind::UnusedExprResult)));
 			[[fallthrough]];
 		case ExprEvalPurpose::RValue: {
-			CompileExprResult result;
+			CompileExprResult result(compileContext->allocator.get());
 
 			uint32_t lhsReg = compileContext->allocReg(),
 					 lhsValueReg = compileContext->allocReg(),
@@ -390,7 +390,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 		removeRefOfType(rhsType, decayedRhsType));
 
 	if (expr->binaryOp == BinaryOp::Comma) {
-		CompileExprResult result;
+		CompileExprResult result(compileContext->allocator.get());
 		uint32_t tmpRegIndex = compileContext->allocReg();
 		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr->lhs, ExprEvalPurpose::Stmt, {}, tmpRegIndex, result));
 		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr->rhs, evalPurpose, {}, resultRegOut, resultOut));

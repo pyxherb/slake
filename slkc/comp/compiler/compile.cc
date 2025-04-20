@@ -196,6 +196,7 @@ SLKC_API std::optional<CompilationError> slkc::compileIdRef(
 	}
 
 	id->hasVarArgs = hasVarArgs;
+	idRefOut = id;
 
 	return {};
 }

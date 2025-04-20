@@ -10,10 +10,10 @@ SLKC_API std::optional<CompilationError> slkc::determineFnOverloading(
 	bool isStatic,
 	peff::DynArray<size_t> &matchedOverloadings) {
 	for (size_t i = 0; i < fnSlot->overloadings.size(); ++i) {
-		bool exactlyMatched = false;
+		bool exactlyMatched = true;
 		peff::SharedPtr<FnNode> currentOverloading = fnSlot->overloadings.at(i);
 
-		if (isStatic == ((currentOverloading->accessModifier & slake::ACCESS_STATIC) == slake::ACCESS_STATIC)) {
+		if (isStatic != ((currentOverloading->accessModifier & slake::ACCESS_STATIC) == slake::ACCESS_STATIC)) {
 			continue;
 		}
 
@@ -38,19 +38,19 @@ SLKC_API std::optional<CompilationError> slkc::determineFnOverloading(
 				}
 				exactlyMatched = false;
 			}
+		}
 
-			if (exactlyMatched) {
-				matchedOverloadings.clear();
+		if (exactlyMatched) {
+			matchedOverloadings.clear();
 
-				if (!matchedOverloadings.pushBack(+j)) {
-					return genOutOfMemoryCompError();
-				}
+			if (!matchedOverloadings.pushBack(+i)) {
+				return genOutOfMemoryCompError();
+			}
 
-				return {};
-			} else {
-				if (!matchedOverloadings.pushBack(+j)) {
-					return genOutOfMemoryCompError();
-				}
+			return {};
+		} else {
+			if (!matchedOverloadings.pushBack(+i)) {
+				return genOutOfMemoryCompError();
 			}
 		}
 	}

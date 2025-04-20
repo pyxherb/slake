@@ -9,7 +9,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 		case StmtKind::Expr: {
 			peff::SharedPtr<ExprStmtNode> s = stmt.castTo<ExprStmtNode>();
 
-			CompileExprResult result;
+			CompileExprResult result(compileContext->allocator.get());
 
 			SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, s->expr, ExprEvalPurpose::Stmt, {}, UINT32_MAX, result));
 			break;

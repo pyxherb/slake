@@ -306,6 +306,21 @@ void dumpCompilationError(const slkc::Parser &parser, const slkc::CompilationErr
 				beginToken->sourceLocation.beginPosition.line + 1,
 				beginToken->sourceLocation.beginPosition.column + 1);
 			break;
+		case slkc::CompilationErrorKind::NoMatchingFnOverloading:
+			printError("Error at %zu, %zu: No matching function overloading\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::UnableToDetermineOverloading:
+			printError("Error at %zu, %zu: Unable to determine the overloading\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::ArgsMismatched:
+			printError("Error at %zu, %zu: Mismatched argument types\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
 		case slkc::CompilationErrorKind::ImportLimitExceeded:
 			printError("Error at %zu, %zu: Import item number exceeded\n",
 				beginToken->sourceLocation.beginPosition.line + 1,

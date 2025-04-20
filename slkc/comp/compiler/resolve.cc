@@ -163,7 +163,8 @@ SLKC_API std::optional<CompilationError> slkc::resolveInstanceMember(
 			peff::SharedPtr<VarNode> m = memberNode.castTo<VarNode>();
 
 			if (m->type->typeNameKind != TypeNameKind::Custom) {
-				return {};
+				result = {};
+				break;
 			}
 
 			peff::SharedPtr<TypeNameNode> type;
@@ -173,7 +174,8 @@ SLKC_API std::optional<CompilationError> slkc::resolveInstanceMember(
 			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, type.castTo<CustomTypeNameNode>(), tm));
 
 			if (!tm) {
-				return {};
+				result = {};
+				break;
 			}
 
 			SLKC_RETURN_IF_COMP_ERROR(resolveInstanceMember(document, tm, name, result));
@@ -216,6 +218,7 @@ SLKC_API std::optional<CompilationError> slkc::resolveInstanceMember(
 		return {};
 	}
 
+	memberOut = {};
 	return {};
 }
 
@@ -278,6 +281,15 @@ SLKC_API std::optional<CompilationError> slkc::resolveIdRef(
 						return genOutOfMemoryCompError();
 				}
 			}
+		}
+	}
+
+	if (resolvedPartListOut) {
+		if (isStatic) {
+			ResolvedIdRefPart part = { isStatic, nEntries, curMember };
+
+			if (!resolvedPartListOut->pushBack(std::move(part)))
+				return genOutOfMemoryCompError();
 		}
 	}
 

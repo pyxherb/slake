@@ -308,7 +308,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(MajorFrame *fram
 			std::terminate();
 	}
 
-	Type *typeInfo = (Type*)frame->context->stackAlloc(sizeof(Type));
+	Type *typeInfo = (Type *)frame->context->stackAlloc(sizeof(Type));
 	if (!typeInfo)
 		return StackOverflowError::alloc(this);
 	memcpy(typeInfo, &type, sizeof(Type));
@@ -1487,11 +1487,11 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(this, ins, false, 1));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.operands[0], ValueType::U32));
 
+			curMajorFrame->lastJumpSrc = curMajorFrame->curIns;
 			curMajorFrame->curIns = ins.operands[0].getU32();
 			return {};
 		}
-		case Opcode::JT:
-		case Opcode::JF: {
+		case Opcode::JT: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(this, ins, false, 2));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.operands[0], ValueType::U32));
 			Value condition;
@@ -1499,14 +1499,27 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, condition, ValueType::Bool));
 
 			if (condition.getBool()) {
-				if (ins.opcode == Opcode::JT) {
-					curMajorFrame->curIns = ins.operands[0].getU32();
-					return {};
-				}
-			} else if (ins.opcode == Opcode::JF) {
+				curMajorFrame->lastJumpSrc = curMajorFrame->curIns;
 				curMajorFrame->curIns = ins.operands[0].getU32();
 				return {};
 			}
+			curMajorFrame->lastJumpSrc = UINT32_MAX;
+
+			break;
+		}
+		case Opcode::JF: {
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(this, ins, false, 2));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.operands[0], ValueType::U32));
+			Value condition;
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, curMajorFrame, ins.operands[1], condition));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, condition, ValueType::Bool));
+
+			if (!condition.getBool()) {
+				curMajorFrame->lastJumpSrc = curMajorFrame->curIns;
+				curMajorFrame->curIns = ins.operands[0].getU32();
+				return {};
+			}
+			curMajorFrame->lastJumpSrc = UINT32_MAX;
 
 			break;
 		}

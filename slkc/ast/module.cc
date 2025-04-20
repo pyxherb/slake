@@ -119,6 +119,8 @@ SLKC_API ModuleNode::ModuleNode(const ModuleNode &rhs, peff::Alloc *allocator, b
 		}
 	}
 
+	isVarDefStmtsNormalized = rhs.isVarDefStmtsNormalized;
+
 	succeededOut = true;
 }
 

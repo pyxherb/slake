@@ -338,6 +338,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						peff::Set<peff::SharedPtr<MemberNode>> walkedMemberNodes(compileContext->document->allocator.get());
 						SLKC_RETURN_IF_COMP_ERROR(
 							resolveIdRefWithScopeNode(
+								compileContext,
 								compileContext->document,
 								walkedMemberNodes,
 								initialMember,
@@ -372,6 +373,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 					peff::Set<peff::SharedPtr<MemberNode>> walkedMemberNodes(compileContext->document->allocator.get());
 					SLKC_RETURN_IF_COMP_ERROR(
 						resolveIdRefWithScopeNode(
+							compileContext,
 							compileContext->document,
 							walkedMemberNodes,
 							compileContext->fnCompileContext.currentFn->parent->parent->sharedFromThis().castTo<MemberNode>(),

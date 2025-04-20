@@ -29,6 +29,7 @@ namespace slkc {
 		NoMatchingFnOverloading,
 		UnableToDetermineOverloading,
 		ArgsMismatched,
+		MemberAlreadyDefined,
 
 		ImportLimitExceeded,
 	};

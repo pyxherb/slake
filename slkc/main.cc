@@ -431,6 +431,8 @@ int main(int argc, char *argv[]) {
 			tokenList.moveFrom(std::move(lexer.tokenList));
 		}
 
+		slake::Runtime runtime(peff::getDefaultAlloc());
+		slkc::CompileContext compileContext(&runtime, document, &peff::g_nullAlloc, peff::getDefaultAlloc());
 		{
 			peff::NullAlloc nullAlloc;
 			slkc::Parser parser(document, tokenList.release(), &nullAlloc, peff::getDefaultAlloc());
@@ -446,8 +448,6 @@ int main(int argc, char *argv[]) {
 				dumpSyntaxError(parser, i);
 			}
 
-			slake::Runtime runtime(peff::getDefaultAlloc());
-			slkc::CompileContext compileContext(&runtime, document, &peff::g_nullAlloc, peff::getDefaultAlloc());
 			slake::HostObjectRef<slake::ModuleObject> modObj = slake::ModuleObject::alloc(&runtime, slake::ScopeUniquePtr(slake::Scope::alloc(&runtime.globalHeapPoolAlloc, runtime.getRootObject())), slake::ACCESS_PUB | slake::ACCESS_STATIC);
 
 			if (auto e = slkc::compileModule(&compileContext, mod, modObj.get()); e) {

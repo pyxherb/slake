@@ -272,6 +272,7 @@ namespace slkc {
 		slake::Opcode opcode);
 
 	[[nodiscard]] SLKC_API std::optional<CompilationError> resolveStaticMember(
+		CompileContext *compileContext,
 		peff::SharedPtr<Document> document,
 		const peff::SharedPtr<MemberNode> &memberNode,
 		const IdRefEntry &name,
@@ -279,6 +280,7 @@ namespace slkc {
 	[[nodiscard]] SLKC_API
 		std::optional<CompilationError>
 		resolveInstanceMember(
+			CompileContext *compileContext,
 			peff::SharedPtr<Document> document,
 			peff::SharedPtr<MemberNode> memberNode,
 			const IdRefEntry &name,
@@ -286,6 +288,7 @@ namespace slkc {
 	[[nodiscard]] SLKC_API
 		std::optional<CompilationError>
 		resolveIdRef(
+			CompileContext *compileContext,
 			peff::SharedPtr<Document> document,
 			const peff::SharedPtr<MemberNode> &resolveRoot,
 			IdRefEntry *idRef,
@@ -306,6 +309,7 @@ namespace slkc {
 	[[nodiscard]] SLKC_API
 		std::optional<CompilationError>
 		resolveIdRefWithScopeNode(
+			CompileContext *compileContext,
 			peff::SharedPtr<Document> document,
 			peff::Set<peff::SharedPtr<MemberNode>> &walkedNodes,
 			const peff::SharedPtr<MemberNode> &resolveScope,
@@ -435,6 +439,16 @@ namespace slkc {
 		CompileContext *compileContext,
 		peff::SharedPtr<FnNode> fn,
 		peff::SharedPtr<FnTypeNameNode> &evaluatedTypeOut);
+
+	[[nodiscard]] SLKC_API std::optional<CompilationError> renormalizeModuleVarDefStmts(
+		CompileContext *compileContext,
+		peff::SharedPtr<ModuleNode> mod);
+	[[nodiscard]] SLKC_API std::optional<CompilationError> normalizeModuleVarDefStmts(
+		CompileContext *compileContext,
+		peff::SharedPtr<ModuleNode> mod);
+
+	[[nodiscard]] SLKC_API std::optional<CompilationError> visitBaseClass(peff::SharedPtr<TypeNameNode> cls, peff::SharedPtr<ClassNode> &classOut, peff::Set<peff::SharedPtr<MemberNode>> *walkedNodes);
+	[[nodiscard]] SLKC_API std::optional<CompilationError> visitBaseInterface(peff::SharedPtr<TypeNameNode> cls, peff::SharedPtr<InterfaceNode> &classOut, peff::Set<peff::SharedPtr<MemberNode>> *walkedNodes);
 
 	class Writer {
 	public:

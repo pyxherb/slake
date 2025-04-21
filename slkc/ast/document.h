@@ -32,6 +32,7 @@ namespace slkc {
 		MemberAlreadyDefined,
 		MissingBindingObject,
 		RedundantWithObject,
+		LocalVarAlreadyExists,
 
 		ImportLimitExceeded,
 	};

@@ -25,7 +25,7 @@ SLKC_API ExprStmtNode::ExprStmtNode(peff::Alloc *selfAllocator, const peff::Shar
 }
 
 SLKC_API ExprStmtNode::ExprStmtNode(const ExprStmtNode &rhs, peff::Alloc *allocator, bool &succeededOut) : StmtNode(rhs, allocator) {
-	if(!(expr = rhs.expr->duplicate<ExprNode>(allocator))) {
+	if (!(expr = rhs.expr->duplicate<ExprNode>(allocator))) {
 		succeededOut = false;
 		return;
 	}
@@ -55,9 +55,11 @@ SLKC_API VarDefEntryPtr slkc::duplicateVarDefEntry(VarDefEntry *varDefEntry, pef
 		return {};
 	}
 
-	peff::SharedPtr<ExprNode> initialValue = varDefEntry->initialValue->duplicate<ExprNode>(allocator);
-	if (!initialValue) {
-		return {};
+	peff::SharedPtr<ExprNode> initialValue;
+	if (varDefEntry->initialValue) {
+		if (!(initialValue = varDefEntry->initialValue->duplicate<ExprNode>(allocator))) {
+			return {};
+		}
 	}
 
 	return VarDefEntryPtr(peff::allocAndConstruct<VarDefEntry>(allocator, ASTNODE_ALIGNMENT, allocator, std::move(copiedName), type, initialValue));
@@ -340,17 +342,17 @@ SLKC_API peff::SharedPtr<AstNode> CodeBlockStmtNode::doDuplicate(peff::Alloc *ne
 	return duplicatedNode.castTo<AstNode>();
 }
 
-SLKC_API CodeBlockStmtNode::CodeBlockStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document): StmtNode(StmtKind::CodeBlock, selfAllocator, document), body(selfAllocator) {
+SLKC_API CodeBlockStmtNode::CodeBlockStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : StmtNode(StmtKind::CodeBlock, selfAllocator, document), body(selfAllocator) {
 }
 
 SLKC_API CodeBlockStmtNode::CodeBlockStmtNode(const CodeBlockStmtNode &rhs, peff::Alloc *allocator, bool &succeededOut) : StmtNode(rhs, allocator), body(allocator) {
-	if(!(body.resize(rhs.body.size()))) {
+	if (!(body.resize(rhs.body.size()))) {
 		succeededOut = false;
 		return;
 	}
 
-	for(size_t i = 0 ; i < body.size(); ++i) {
-		if(!(body.at(i) = rhs.body.at(i)->duplicate<StmtNode>(allocator))) {
+	for (size_t i = 0; i < body.size(); ++i) {
+		if (!(body.at(i) = rhs.body.at(i)->duplicate<StmtNode>(allocator))) {
 			succeededOut = false;
 			return;
 		}
@@ -372,11 +374,11 @@ SLKC_API peff::SharedPtr<AstNode> BadStmtNode::doDuplicate(peff::Alloc *newAlloc
 	return duplicatedNode.castTo<AstNode>();
 }
 
-SLKC_API BadStmtNode::BadStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, const peff::SharedPtr<StmtNode> &body): StmtNode(StmtKind::Bad, selfAllocator, document), body(body) {
+SLKC_API BadStmtNode::BadStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, const peff::SharedPtr<StmtNode> &body) : StmtNode(StmtKind::Bad, selfAllocator, document), body(body) {
 }
 
 SLKC_API BadStmtNode::BadStmtNode(const BadStmtNode &rhs, peff::Alloc *allocator, bool &succeededOut) : StmtNode(rhs, allocator) {
-	if(!(body = rhs.body->duplicate<StmtNode>(allocator))) {
+	if (!(body = rhs.body->duplicate<StmtNode>(allocator))) {
 		succeededOut = false;
 		return;
 	}

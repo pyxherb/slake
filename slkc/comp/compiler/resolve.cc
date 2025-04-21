@@ -618,7 +618,9 @@ SLKC_API std::optional<CompilationError> slkc::visitBaseClass(peff::SharedPtr<Ty
 		if (baseType && (baseType->astNodeType == AstNodeType::Class)) {
 			peff::SharedPtr<ClassNode> b = baseType.castTo<ClassNode>();
 
-			classOut = b;
+			if (walkedNodes && !walkedNodes->contains(baseType)) {
+				classOut = b;
+			}
 		}
 	}
 
@@ -634,7 +636,9 @@ SLKC_API std::optional<CompilationError> slkc::visitBaseInterface(peff::SharedPt
 		if (baseType && (baseType->astNodeType == AstNodeType::Interface)) {
 			peff::SharedPtr<InterfaceNode> b = baseType.castTo<InterfaceNode>();
 
-			classOut = b;
+			if (walkedNodes && !walkedNodes->contains(baseType)) {
+				classOut = b;
+			}
 		}
 	}
 

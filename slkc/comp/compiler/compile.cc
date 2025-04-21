@@ -66,11 +66,11 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 
 					slake::HostObjectRef<slake::IdRefObject> obj;
 
+					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, fullName->entries.data(), fullName->entries.size(), nullptr, 0, false, obj));
+
 					if (!(compileContext->hostRefHolder.addObject(obj.get()))) {
 						return genOutOfMemoryCompError();
 					}
-
-					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, fullName->entries.data(), fullName->entries.size(), nullptr, 0, false, obj));
 
 					typeOut = slake::Type(slake::TypeId::Instance, obj.get());
 					break;

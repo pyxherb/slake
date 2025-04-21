@@ -195,10 +195,10 @@ namespace slkc {
 
 		// For parameter name query, etc, if exists.
 		peff::SharedPtr<FnSlotNode> callTargetFnSlot;
-		peff::DynArray<size_t> callTargetMatchedOverloadingIndices;
+		peff::DynArray<peff::SharedPtr<FnNode>> callTargetMatchedOverloadings;
 		uint32_t idxThisRegOut = UINT32_MAX;
 
-		SLAKE_FORCEINLINE CompileExprResult(peff::Alloc *allocator) : callTargetMatchedOverloadingIndices(allocator) {}
+		SLAKE_FORCEINLINE CompileExprResult(peff::Alloc *allocator) : callTargetMatchedOverloadings(allocator) {}
 	};
 
 	struct ResolvedIdRefPart {
@@ -438,7 +438,8 @@ namespace slkc {
 		const peff::SharedPtr<TypeNameNode> *argTypes,
 		size_t nArgTypes,
 		bool isStatic,
-		peff::DynArray<size_t> &matchedOverloadings);
+		peff::DynArray<peff::SharedPtr<FnNode>> &matchedOverloadings,
+		peff::Set<peff::SharedPtr<MemberNode>> *walkedParents = nullptr);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> fnToTypeName(
 		CompileContext *compileContext,
 		peff::SharedPtr<FnNode> fn,

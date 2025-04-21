@@ -200,7 +200,7 @@ SLKC_API std::optional<CompilationError> slkc::removeRefOfType(
 
 SLKC_API std::optional<CompilationError> slkc::isLValueType(
 	peff::SharedPtr<TypeNameNode> src,
-	bool& whetherOut) {
+	bool &whetherOut) {
 	switch (src->typeNameKind) {
 		case TypeNameKind::Ref:
 			whetherOut = true;
@@ -245,14 +245,16 @@ SLKC_API std::optional<CompilationError> slkc::isSameType(
 				convertedLhs = lhs.castTo<ArrayTypeNameNode>(),
 				convertedRhs = rhs.castTo<ArrayTypeNameNode>();
 
-			return isSameType(convertedLhs->elementType, convertedRhs->elementType, whetherOut);
+			SLKC_RETURN_IF_COMP_ERROR(isSameType(convertedLhs->elementType, convertedRhs->elementType, whetherOut));
+			break;
 		}
 		case TypeNameKind::Ref: {
 			peff::SharedPtr<RefTypeNameNode>
 				convertedLhs = lhs.castTo<RefTypeNameNode>(),
 				convertedRhs = rhs.castTo<RefTypeNameNode>();
 
-			return isSameType(convertedLhs->referencedType, convertedRhs->referencedType, whetherOut);
+			SLKC_RETURN_IF_COMP_ERROR(isSameType(convertedLhs->referencedType, convertedRhs->referencedType, whetherOut));
+			break;
 		}
 		default:
 			whetherOut = true;
@@ -297,6 +299,9 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 				case TypeNameKind::USize:
 					whetherOut = true;
 					break;
+				case TypeNameKind::Ref:
+					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.castTo<RefTypeNameNode>()->referencedType, dest, whetherOut));
+					break;
 				default:
 					whetherOut = false;
 			}
@@ -306,6 +311,9 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 			switch (src->typeNameKind) {
 				case TypeNameKind::String:
 					whetherOut = true;
+					break;
+				case TypeNameKind::Ref:
+					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.castTo<RefTypeNameNode>()->referencedType, dest, whetherOut));
 					break;
 				default:
 					whetherOut = false;
@@ -331,6 +339,9 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 				case TypeNameKind::Bool:
 					whetherOut = true;
 					break;
+				case TypeNameKind::Ref:
+					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.castTo<RefTypeNameNode>()->referencedType, dest, whetherOut));
+					break;
 				default:
 					whetherOut = false;
 			}
@@ -341,6 +352,9 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 				case TypeNameKind::String:
 				case TypeNameKind::Custom:
 					whetherOut = true;
+					break;
+				case TypeNameKind::Ref:
+					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.castTo<RefTypeNameNode>()->referencedType, dest, whetherOut));
 					break;
 				default:
 					whetherOut = false;
@@ -359,6 +373,9 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 					whetherOut = true;
 					break;
 				}
+				case TypeNameKind::Ref:
+					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.castTo<RefTypeNameNode>()->referencedType, dest, whetherOut));
+					break;
 				default:
 					whetherOut = false;
 			}
@@ -368,8 +385,16 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 			SLKC_RETURN_IF_COMP_ERROR(isSameType(src, dest, whetherOut));
 			break;
 		case TypeNameKind::Ref:
-			SLKC_RETURN_IF_COMP_ERROR(isSameType(src, dest, whetherOut));
-			whetherOut = false;
+			switch (src->typeNameKind) {
+				case TypeNameKind::Ref: {
+					SLKC_RETURN_IF_COMP_ERROR(isSameType(src, dest, whetherOut));
+					break;
+				}
+				default:
+					// RValue to LValue is not allowed.
+					whetherOut = false;
+					break;
+			}
 			break;
 		case TypeNameKind::TempRef:
 			SLKC_RETURN_IF_COMP_ERROR(isSameType(src, dest, whetherOut));
@@ -381,9 +406,9 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 }
 
 SLKC_API std::optional<CompilationError> slkc::fnToTypeName(
-	CompileContext* compileContext,
+	CompileContext *compileContext,
 	peff::SharedPtr<FnNode> fn,
-	peff::SharedPtr<FnTypeNameNode>& evaluatedTypeOut) {
+	peff::SharedPtr<FnTypeNameNode> &evaluatedTypeOut) {
 	peff::SharedPtr<FnTypeNameNode> tn;
 
 	if (!(tn = peff::makeShared<FnTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
@@ -400,28 +425,30 @@ SLKC_API std::optional<CompilationError> slkc::fnToTypeName(
 
 	tn->returnType = fn->returnType;
 
-	if (fn->parent && fn->parent->parent) {
-		switch (fn->parent->parent->astNodeType) {
-			case AstNodeType::Class:
-			case AstNodeType::Interface: {
-				IdRefPtr fullIdRef;
+	if (!(fn->accessModifier & slake::ACCESS_STATIC)) {
+		if (fn->parent && fn->parent->parent) {
+			switch (fn->parent->parent->astNodeType) {
+				case AstNodeType::Class:
+				case AstNodeType::Interface: {
+					IdRefPtr fullIdRef;
 
-				SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileContext->allocator.get(), fn->parent->parent->sharedFromThis().castTo<MemberNode>(), fullIdRef));
+					SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileContext->allocator.get(), fn->parent->parent->sharedFromThis().castTo<MemberNode>(), fullIdRef));
 
-				auto thisType = peff::makeShared<CustomTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document);
+					auto thisType = peff::makeShared<CustomTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document);
 
-				if (!thisType) {
-					return genOutOfMemoryCompError();
+					if (!thisType) {
+						return genOutOfMemoryCompError();
+					}
+					thisType->contextNode = compileContext->document->rootModule.castTo<MemberNode>();
+
+					thisType->idRefPtr = std::move(fullIdRef);
+
+					tn->thisType = thisType.castTo<TypeNameNode>();
+					break;
 				}
-				thisType->contextNode = compileContext->document->rootModule.castTo<MemberNode>();
-
-				thisType->idRefPtr = std::move(fullIdRef);
-
-				tn->thisType = thisType.castTo<TypeNameNode>();
-				break;
+				default:
+					break;
 			}
-			default:
-				break;
 		}
 	}
 

@@ -400,6 +400,31 @@ SLKC_API std::optional<CompilationError> slkc::fnToTypeName(
 
 	tn->returnType = fn->returnType;
 
+	if (fn->parent && fn->parent->parent) {
+		switch (fn->parent->parent->astNodeType) {
+			case AstNodeType::Class:
+			case AstNodeType::Interface: {
+				IdRefPtr fullIdRef;
+
+				SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileContext->allocator.get(), fn->parent->parent->sharedFromThis().castTo<MemberNode>(), fullIdRef));
+
+				auto thisType = peff::makeShared<CustomTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document);
+
+				if (!thisType) {
+					return genOutOfMemoryCompError();
+				}
+				thisType->contextNode = compileContext->document->rootModule.castTo<MemberNode>();
+
+				thisType->idRefPtr = std::move(fullIdRef);
+
+				tn->thisType = thisType.castTo<TypeNameNode>();
+				break;
+			}
+			default:
+				break;
+		}
+	}
+
 	evaluatedTypeOut = tn;
 
 	return {};

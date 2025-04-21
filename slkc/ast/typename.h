@@ -208,6 +208,7 @@ namespace slkc {
 
 	public:
 		peff::SharedPtr<TypeNameNode> returnType;
+		peff::SharedPtr<TypeNameNode> thisType;
 		peff::DynArray<peff::SharedPtr<TypeNameNode>> paramTypes;
 		bool hasVarArgs = false;
 		bool isForAdl = false;

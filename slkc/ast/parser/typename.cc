@@ -178,12 +178,18 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 
 			nextToken();
 
-			if (peekToken()->tokenId == TokenId::Colon) {
+			if (peekToken()->tokenId == TokenId::WithKeyword) {
+				nextToken();
+
+				if (auto e = parseTypeName(tn->thisType); e)
+					return e;
+			}
+
+			if (peekToken()->tokenId == TokenId::ReturnTypeOp) {
 				nextToken();
 
 				if (auto e = parseTypeName(tn->returnType); e)
 					return e;
-				break;
 			}
 
 			break;

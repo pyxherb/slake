@@ -30,6 +30,8 @@ namespace slkc {
 		UnableToDetermineOverloading,
 		ArgsMismatched,
 		MemberAlreadyDefined,
+		MissingBindingObject,
+		RedundantWithObject,
 
 		ImportLimitExceeded,
 	};

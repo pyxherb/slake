@@ -38,6 +38,7 @@ SLKC_API std::optional<LexicalError> Lexer::lex(const std::string_view &src, pef
 				<InitialCondition>"//"		{ YYSETCONDITION(LineCommentCondition); token->tokenId = TokenId::LineComment; continue; }
 				<InitialCondition>"/*"		{ YYSETCONDITION(CommentCondition); token->tokenId = TokenId::BlockComment; continue; }
 
+				<InitialCondition>"->"		{ token->tokenId = TokenId::ReturnTypeOp; break; }
 				<InitialCondition>"::"		{ token->tokenId = TokenId::ScopeOp; break; }
 				<InitialCondition>"=>"		{ token->tokenId = TokenId::MatchOp; break; }
 				<InitialCondition>"&&"		{ token->tokenId = TokenId::LAndOp; break; }
@@ -119,6 +120,7 @@ SLKC_API std::optional<LexicalError> Lexer::lex(const std::string_view &src, pef
 				<InitialCondition>"try"			{ token->tokenId = TokenId::TryKeyword; break; }
 				<InitialCondition>"use"			{ token->tokenId = TokenId::UseKeyword; break; }
 				<InitialCondition>"virtual"		{ token->tokenId = TokenId::VirtualKeyword; break; }
+				<InitialCondition>"with"		{ token->tokenId = TokenId::WithKeyword; break; }
 				<InitialCondition>"while"		{ token->tokenId = TokenId::WhileKeyword; break; }
 				<InitialCondition>"yield"		{ token->tokenId = TokenId::YieldKeyword; break; }
 

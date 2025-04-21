@@ -32,7 +32,7 @@ class AnotherGeneric<X, U> {
 			return;
 		}
 
-		pub fn _getX(): i32 {
+		pub fn _getX() -> i32 {
 			extfns.print("[ChildGeneric]Fetched xyz: ", this.xyz, "\n");
 			return this.xyz;
 		}
@@ -53,7 +53,7 @@ class Test {
 		return;
 	}
 
-	pub fn getX(): i32 {
+	pub fn getX() -> i32 {
 		extfns.print("Fetched x: ", this.x, "\n");
 		return this.x;
 	}
@@ -68,7 +68,7 @@ class Test {
 		return;
 	}
 
-	pub operator +(rhs: i32) : i32 {
+	pub operator +(rhs: i32) -> i32 {
 		return this.x + rhs;
 	}
 }
@@ -87,7 +87,7 @@ class Derived(Test) {
 		return;
 	}
 
-	pub fn getY(): i32 {
+	pub fn getY() -> i32 {
 		extfns.print("Fetched y: ", this.y, "\n");
 		return this.y;
 	}
@@ -123,8 +123,10 @@ fn test(...) {
 	...;
 }
 
-pub fn *main(): i32 {
-	let a: fn (i32, u32, f32): bool;
+let a: fn (i32, u32, f32) with hostext.VirtualBase -> bool;
+
+pub fn *main() -> i32 {
+	a() with 123;
 
 	hostext.extfns.print("Entered main\n");
 

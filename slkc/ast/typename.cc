@@ -370,11 +370,16 @@ SLKC_API peff::SharedPtr<AstNode> FnTypeNameNode::doDuplicate(peff::Alloc *newAl
 	return duplicatedNode.castTo<AstNode>();
 }
 
-SLKC_API FnTypeNameNode::FnTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::Array, selfAllocator, document), paramTypes(selfAllocator) {
+SLKC_API FnTypeNameNode::FnTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::Fn, selfAllocator, document), paramTypes(selfAllocator) {
 }
 
 SLKC_API FnTypeNameNode::FnTypeNameNode(const FnTypeNameNode &rhs, peff::Alloc *allocator, bool &succeededOut) : TypeNameNode(rhs, allocator), paramTypes(allocator) {
 	if (!(returnType = rhs.returnType->duplicate<TypeNameNode>(allocator))) {
+		succeededOut = false;
+		return;
+	}
+
+	if (!(thisType = rhs.thisType->duplicate<TypeNameNode>(allocator))) {
 		succeededOut = false;
 		return;
 	}

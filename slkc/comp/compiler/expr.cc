@@ -423,7 +423,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 							compileContext,
 							compileContext->document,
 							walkedMemberNodes,
-							compileContext->fnCompileContext.currentFn->parent->parent->sharedFromThis().castTo<MemberNode>(),
+							compileContext->fnCompileContext.currentFn.castTo<MemberNode>(),
 							e->idRefPtr->entries.data(),
 							e->idRefPtr->entries.size(),
 							finalMember,
@@ -460,8 +460,16 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				case ExprEvalPurpose::LValue:
 				case ExprEvalPurpose::RValue:
 					break;
-				case ExprEvalPurpose::Call:
+				case ExprEvalPurpose::Call: {
+					peff::SharedPtr<TypeNameNode> decayedTargetType;
+
+					SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(resultOut.evaluatedType, decayedTargetType));
+
+					if (decayedTargetType->typeNameKind != TypeNameKind::Fn) {
+						return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::TargetIsNotCallable);
+					}
 					break;
+				}
 			}
 			break;
 		}
@@ -593,17 +601,21 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 			}
 
 			CompileExprResult result(compileContext->allocator.get());
-			peff::DynArray<size_t> matchedOverloadingIndices(compileContext->allocator.get());
-			auto matchedOverloading = result.callTargetFnSlot->overloadings.at(result.callTargetMatchedOverloadingIndices.back());
-			SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileContext,
-				result.callTargetFnSlot,
-				argTypes.data(),
-				argTypes.size(),
-				matchedOverloading->accessModifier & slake::ACCESS_STATIC,
-				matchedOverloadingIndices));
-			if (!matchedOverloadingIndices.size()) {
-				return CompilationError(e->tokenRange, CompilationErrorKind::ArgsMismatched);
+			if (result.callTargetFnSlot) {
+				peff::DynArray<size_t> matchedOverloadingIndices(compileContext->allocator.get());
+				auto matchedOverloading = result.callTargetFnSlot->overloadings.at(result.callTargetMatchedOverloadingIndices.back());
+				SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileContext,
+					result.callTargetFnSlot,
+					argTypes.data(),
+					argTypes.size(),
+					matchedOverloading->accessModifier & slake::ACCESS_STATIC,
+					matchedOverloadingIndices));
+				if (!matchedOverloadingIndices.size()) {
+					return CompilationError(e->tokenRange, CompilationErrorKind::ArgsMismatched);
+				}
 			}
+
+			auto tn = fnType.castTo<FnTypeNameNode>();
 
 			for (size_t i = 0; i < e->args.size(); ++i) {
 				uint32_t reg = compileContext->allocReg();
@@ -611,10 +623,30 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				bool b = false;
 				SLKC_RETURN_IF_COMP_ERROR(isLValueType(argTypes.at(i), b));
 
-				if (i < matchedOverloading->params.size()) {
-					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->target, b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, matchedOverloading->params.at(i)->type, reg, result));
+				if (i < tn->paramTypes.size()) {
+					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->target, b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, tn->paramTypes.at(i), reg, result));
 				} else {
 					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->target, b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, {}, reg, result));
+				}
+			}
+
+			uint32_t thisReg = UINT32_MAX;
+
+			if (fnType.castTo<FnTypeNameNode>()->thisType) {
+				if (result.idxThisRegOut == UINT32_MAX) {
+					if (!e->withObject) {
+						return CompilationError(expr->tokenRange, CompilationErrorKind::MissingBindingObject);
+					}
+
+					thisReg = compileContext->allocReg();
+
+					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->withObject, ExprEvalPurpose::RValue, fnType.castTo<FnTypeNameNode>()->thisType, thisReg, result));
+				} else {
+					thisReg = result.idxThisRegOut;
+				}
+			} else {
+				if (result.idxThisRegOut) {
+					return CompilationError(expr->tokenRange, CompilationErrorKind::RedundantWithObject);
 				}
 			}
 
@@ -622,7 +654,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				case ExprEvalPurpose::EvalType:
 					break;
 				case ExprEvalPurpose::Stmt:
-					if (result.idxThisRegOut != UINT32_MAX) {
+					if (thisReg != UINT32_MAX) {
 						SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::MCALL, UINT32_MAX, { slake::Value(slake::ValueType::RegRef, targetReg), slake::Value(slake::ValueType::RegRef, result.idxThisRegOut) }));
 					} else {
 						SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::CALL, UINT32_MAX, { slake::Value(slake::ValueType::RegRef, targetReg) }));
@@ -635,7 +667,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
 					}
 
-					if (result.idxThisRegOut != UINT32_MAX) {
+					if (thisReg != UINT32_MAX) {
 						SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegRef, targetReg), slake::Value(slake::ValueType::RegRef, result.idxThisRegOut) }));
 					} else {
 						SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::CALL, resultRegOut, { slake::Value(slake::ValueType::RegRef, targetReg) }));

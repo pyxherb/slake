@@ -74,7 +74,7 @@ namespace slkc {
 		VarArg,
 
 		ScopeOp,
-		WrapOp,
+		ReturnTypeOp,
 		MatchOp,
 		LAndOp,
 		LOrOp,
@@ -155,6 +155,7 @@ namespace slkc {
 		UseKeyword,
 		VirtualKeyword,
 		WhileKeyword,
+		WithKeyword,
 		YieldKeyword,
 
 		I8TypeName,

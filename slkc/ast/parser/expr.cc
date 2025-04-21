@@ -348,6 +348,13 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					expr->rParentheseTokenIndex = rParentheseToken->index;
 
+					if (peekToken()->tokenId == TokenId::WithKeyword) {
+						nextToken();
+
+						if (auto e = parseExpr(0, expr->withObject); e)
+							return e;
+					}
+
 					break;
 				}
 				case TokenId::LBracket: {

@@ -346,6 +346,7 @@ namespace slkc {
 	public:
 		peff::SharedPtr<ExprNode> target;
 		peff::DynArray<peff::SharedPtr<ExprNode>> args;
+		peff::SharedPtr<ExprNode> withObject;
 		peff::DynArray<size_t> idxCommaTokens;
 		bool isAsync = false;
 		size_t lParentheseTokenIndex = SIZE_MAX, rParentheseTokenIndex = SIZE_MAX, asyncKeywordTokenIndex = SIZE_MAX;

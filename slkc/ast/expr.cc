@@ -546,6 +546,11 @@ SLKC_API CallExprNode::CallExprNode(const CallExprNode &rhs, peff::Alloc *alloca
 		return;
 	}
 
+	if (!(withObject = rhs.withObject->duplicate<ExprNode>(allocator))) {
+		succeededOut = false;
+		return;
+	}
+
 	if (!args.resize(rhs.args.size())) {
 		succeededOut = false;
 		return;

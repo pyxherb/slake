@@ -166,7 +166,7 @@ SLKC_API const char *slkc::getTokenName(TokenId tokenId) {
 			return "||";
 		case TokenId::MatchOp:
 			return "=>";
-		case TokenId::WrapOp:
+		case TokenId::ReturnTypeOp:
 			return "->";
 		case TokenId::CmpOp:
 			return "<=>";
@@ -254,6 +254,8 @@ SLKC_API const char *slkc::getTokenName(TokenId tokenId) {
 			return "use";
 		case TokenId::WhileKeyword:
 			return "while";
+		case TokenId::WithKeyword:
+			return "with";
 		case TokenId::YieldKeyword:
 			return "yield";
 		case TokenId::I8TypeName:

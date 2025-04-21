@@ -65,6 +65,7 @@ namespace slkc {
 		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
 
 	public:
+		slake::AccessModifier accessModifier;
 		peff::DynArray<VarDefEntryPtr> varDefEntries;
 
 		SLKC_API VarDefStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, peff::DynArray<VarDefEntryPtr> &&varDefEntries);

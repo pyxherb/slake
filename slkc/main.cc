@@ -322,6 +322,21 @@ void dumpCompilationError(const slkc::Parser &parser, const slkc::CompilationErr
 				beginToken->sourceLocation.beginPosition.line + 1,
 				beginToken->sourceLocation.beginPosition.column + 1);
 			break;
+		case slkc::CompilationErrorKind::MemberAlreadyDefined:
+			printError("Error at %zu, %zu: Member is already defined\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::MissingBindingObject:
+			printError("Error at %zu, %zu: Missing binding target\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::RedundantWithObject:
+			printError("Error at %zu, %zu: Redundant binding target\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
 		case slkc::CompilationErrorKind::ImportLimitExceeded:
 			printError("Error at %zu, %zu: Import item number exceeded\n",
 				beginToken->sourceLocation.beginPosition.line + 1,

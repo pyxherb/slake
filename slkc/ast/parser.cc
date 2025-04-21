@@ -369,7 +369,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseFn(peff::SharedPtr<FnNode> &fnN
 	}
 
 	Token *colonToken;
-	if ((colonToken = peekToken())->tokenId == TokenId::Colon) {
+	if ((colonToken = peekToken())->tokenId == TokenId::ReturnTypeOp) {
 		nextToken();
 		if ((syntaxError = parseTypeName(fnNodeOut->returnType))) {
 			return syntaxError;
@@ -967,6 +967,12 @@ accessModifierParseEnd:
 					  peff::DynArray<VarDefEntryPtr>(resourceAllocator.get())))) {
 				return genOutOfMemoryError();
 			}
+
+			stmt->accessModifier = access;
+
+			peff::ScopeGuard setTokenRangeGuard([this, token, stmt]() noexcept {
+				stmt->tokenRange = TokenRange{ token->index, parseContext.idxPrevToken };
+			});
 
 			if ((syntaxError = parseVarDefs(stmt->varDefEntries))) {
 				return syntaxError;

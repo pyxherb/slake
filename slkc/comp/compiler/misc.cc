@@ -51,6 +51,7 @@ SLKC_API std::optional<CompilationError> slkc::renormalizeModuleVarDefStmts(
 				return genOutOfMemoryCompError();
 			varNode->initialValue = j->initialValue;
 			varNode->type = j->type;
+			varNode->accessModifier = i->accessModifier;
 
 			if (!mod->addMember(varNode.castTo<MemberNode>()))
 				return genOutOfMemoryCompError();

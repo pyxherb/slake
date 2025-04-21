@@ -49,8 +49,8 @@ scripting.
 
 * JIT Recompiler 🕓
     * x86-64 Backend 🕓
-    * ARM64 Backend 🕓
-    * RISC-V Backend 🕓
+    * ARM64 Backend 📝
+    * RISC-V Backend 📝
 
 * AOT Compiler 🕓
     * Native C++ Backend (SLX2CXX) 🕓

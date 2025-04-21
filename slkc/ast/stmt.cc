@@ -89,6 +89,8 @@ SLKC_API VarDefStmtNode::VarDefStmtNode(const VarDefStmtNode &rhs, peff::Alloc *
 		}
 	}
 
+	accessModifier = rhs.accessModifier;
+
 	succeededOut = true;
 }
 

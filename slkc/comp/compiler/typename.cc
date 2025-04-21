@@ -198,6 +198,21 @@ SLKC_API std::optional<CompilationError> slkc::removeRefOfType(
 	return {};
 }
 
+SLKC_API std::optional<CompilationError> slkc::isLValueType(
+	peff::SharedPtr<TypeNameNode> src,
+	bool& whetherOut) {
+	switch (src->typeNameKind) {
+		case TypeNameKind::Ref:
+			whetherOut = true;
+			break;
+		default:
+			whetherOut = false;
+			break;
+	}
+
+	return {};
+}
+
 SLKC_API std::optional<CompilationError> slkc::isSameType(
 	const peff::SharedPtr<TypeNameNode> &lhs,
 	const peff::SharedPtr<TypeNameNode> &rhs,

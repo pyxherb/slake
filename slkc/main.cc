@@ -2,6 +2,7 @@
 #include <initializer_list>
 #include <cstdio>
 #include <cstdlib>
+#include <algorithm>
 
 struct OptionMatchContext {
 	const int argc;
@@ -453,6 +454,8 @@ int main(int argc, char *argv[]) {
 			if (auto e = slkc::compileModule(&compileContext, mod, modObj.get()); e) {
 				dumpCompilationError(parser, *e);
 			}
+
+			std::sort(compileContext.errors.data(), compileContext.errors.data() + compileContext.errors.size());
 
 			for (auto &i : compileContext.errors) {
 				dumpCompilationError(parser, i);

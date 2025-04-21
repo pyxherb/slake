@@ -208,10 +208,56 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 			}
 
 		initialMemberResolved:
-			auto loadTheRest = [](CompileContext *compileContext, uint32_t resultRegOut, IdRef *idRef, ResolvedIdRefPartList &parts, size_t curIdx, peff::SharedPtr<FnTypeNameNode> extraFnArgs) -> std::optional<CompilationError> {
+			auto loadTheRest = [](CompileContext *compileContext, uint32_t resultRegOut, CompileExprResult &resultOut, IdRef *idRef, ResolvedIdRefPartList &parts, size_t curIdx, peff::SharedPtr<FnTypeNameNode> extraFnArgs) -> std::optional<CompilationError> {
 				uint32_t idxReg = compileContext->allocReg();
 
 				slake::HostObjectRef<slake::IdRefObject> idRefObject;
+
+				if (parts.back().member->astNodeType == AstNodeType::Fn) {
+					peff::SharedPtr<FnNode> fn = parts.back().member.castTo<FnNode>();
+
+					if (!(fn->fnFlags & FN_VIRTUAL)) {
+						if (extraFnArgs) {
+							// Is not calling a variable as a function.
+							for (size_t i = 0; i < parts.size() - 1; ++i) {
+								ResolvedIdRefPart &part = parts.at(i);
+
+								SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, idRefObject));
+
+								if (part.isStatic) {
+									SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::LOAD, idxReg, { slake::Value(slake::ValueType::EntityRef, slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+								} else {
+									uint32_t idxNewReg = compileContext->allocReg();
+									SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegRef, idxReg), slake::Value(slake::ValueType::EntityRef, slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+									idxReg = idxNewReg;
+								}
+
+								curIdx += part.nEntries;
+							}
+
+							{
+								ResolvedIdRefPart &part = parts.back();
+								SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, idRefObject));
+
+								resultOut.idxThisRegOut = idxReg;
+								uint32_t idxNewReg = compileContext->allocReg();
+								SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegRef, idxReg), slake::Value(slake::ValueType::EntityRef, slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+								idxReg = idxNewReg;
+							}
+
+							if (!idRefObject->paramTypes.resize(extraFnArgs->paramTypes.size()))
+								return genOutOfRuntimeMemoryCompError();
+
+							for (size_t i = 0; i < idRefObject->paramTypes.size(); ++i) {
+								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, extraFnArgs->paramTypes.at(i), idRefObject->paramTypes.at(i)));
+							}
+
+							if (extraFnArgs->hasVarArgs)
+								idRefObject->hasVarArgs = true;
+							goto loadEnd;
+						}
+					}
+				}
 
 				for (size_t i = 0; i < parts.size(); ++i) {
 					ResolvedIdRefPart &part = parts.at(i);
@@ -241,6 +287,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						idRefObject->hasVarArgs = true;
 				}
 
+			loadEnd:
 				SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::MOV, resultRegOut, { slake::Value(slake::ValueType::RegRef, idxReg) }));
 				return {};
 			};
@@ -358,9 +405,9 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 						peff::SharedPtr<FnTypeNameNode> fnType;
 						SLKC_RETURN_IF_COMP_ERROR(fnToTypeName(compileContext, finalMember.castTo<FnNode>(), fnType));
-						SLKC_RETURN_IF_COMP_ERROR(loadTheRest(compileContext, resultRegOut, e->idRefPtr.get(), parts, 1, fnType));
+						SLKC_RETURN_IF_COMP_ERROR(loadTheRest(compileContext, resultRegOut, resultOut, e->idRefPtr.get(), parts, 1, fnType));
 					} else {
-						SLKC_RETURN_IF_COMP_ERROR(loadTheRest(compileContext, resultRegOut, e->idRefPtr.get(), parts, 1, {}));
+						SLKC_RETURN_IF_COMP_ERROR(loadTheRest(compileContext, resultRegOut, resultOut, e->idRefPtr.get(), parts, 1, {}));
 					}
 				} else {
 					finalMember = initialMember;
@@ -392,9 +439,9 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 					peff::SharedPtr<FnTypeNameNode> fnType;
 					SLKC_RETURN_IF_COMP_ERROR(fnToTypeName(compileContext, finalMember.castTo<FnNode>(), fnType));
-					SLKC_RETURN_IF_COMP_ERROR(loadTheRest(compileContext, resultRegOut, e->idRefPtr.get(), parts, 0, fnType));
+					SLKC_RETURN_IF_COMP_ERROR(loadTheRest(compileContext, resultRegOut, resultOut, e->idRefPtr.get(), parts, 0, fnType));
 				} else {
-					SLKC_RETURN_IF_COMP_ERROR(loadTheRest(compileContext, resultRegOut, e->idRefPtr.get(), parts, 0, {}));
+					SLKC_RETURN_IF_COMP_ERROR(loadTheRest(compileContext, resultRegOut, resultOut, e->idRefPtr.get(), parts, 0, {}));
 				}
 			}
 
@@ -498,8 +545,6 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				return genOutOfMemoryCompError();
 			}
 
-			CompileExprResult result(compileContext->allocator.get());
-
 			peff::SharedPtr<TypeNameNode> fnType;
 			if (auto error = evalExprType(compileContext, e->target, fnType); error) {
 				switch (error->errorKind) {
@@ -523,11 +568,15 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				fnPrototype->paramTypes = std::move(argTypes);
 				fnPrototype->isForAdl = true;
 
+				CompileExprResult result(compileContext->allocator.get());
+
 				SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->target, ExprEvalPurpose::Call, fnPrototype.castTo<TypeNameNode>(), targetReg, result));
 
 				argTypes = std::move(fnPrototype->paramTypes);
 				fnType = result.evaluatedType;
 			} else {
+				CompileExprResult result(compileContext->allocator.get());
+
 				SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->target, ExprEvalPurpose::Call, {}, targetReg, result));
 
 				fnType = result.evaluatedType;
@@ -543,6 +592,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				}
 			}
 
+			CompileExprResult result(compileContext->allocator.get());
 			peff::DynArray<size_t> matchedOverloadingIndices(compileContext->allocator.get());
 			auto matchedOverloading = result.callTargetFnSlot->overloadings.at(result.callTargetMatchedOverloadingIndices.back());
 			SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileContext,
@@ -553,6 +603,70 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				matchedOverloadingIndices));
 			if (!matchedOverloadingIndices.size()) {
 				return CompilationError(e->tokenRange, CompilationErrorKind::ArgsMismatched);
+			}
+
+			for (size_t i = 0; i < e->args.size(); ++i) {
+				uint32_t reg = compileContext->allocReg();
+
+				bool b = false;
+				SLKC_RETURN_IF_COMP_ERROR(isLValueType(argTypes.at(i), b));
+
+				if (i < matchedOverloading->params.size()) {
+					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->target, b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, matchedOverloading->params.at(i)->type, reg, result));
+				} else {
+					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->target, b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, {}, reg, result));
+				}
+			}
+
+			switch (evalPurpose) {
+				case ExprEvalPurpose::EvalType:
+					break;
+				case ExprEvalPurpose::Stmt:
+					if (result.idxThisRegOut != UINT32_MAX) {
+						SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::MCALL, UINT32_MAX, { slake::Value(slake::ValueType::RegRef, targetReg), slake::Value(slake::ValueType::RegRef, result.idxThisRegOut) }));
+					} else {
+						SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::CALL, UINT32_MAX, { slake::Value(slake::ValueType::RegRef, targetReg) }));
+					}
+					break;
+				case ExprEvalPurpose::LValue: {
+					bool b = false;
+					SLKC_RETURN_IF_COMP_ERROR(isLValueType(fnType.castTo<FnTypeNameNode>()->returnType, b));
+					if (!b) {
+						return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
+					}
+
+					if (result.idxThisRegOut != UINT32_MAX) {
+						SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegRef, targetReg), slake::Value(slake::ValueType::RegRef, result.idxThisRegOut) }));
+					} else {
+						SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::CALL, resultRegOut, { slake::Value(slake::ValueType::RegRef, targetReg) }));
+					}
+					break;
+				}
+				case ExprEvalPurpose::RValue:
+				case ExprEvalPurpose::Call: {
+					bool b = false;
+					SLKC_RETURN_IF_COMP_ERROR(isLValueType(fnType.castTo<FnTypeNameNode>()->returnType, b));
+
+					if (b) {
+						uint32_t tmpRegIndex = compileContext->allocReg();
+
+						if (result.idxThisRegOut != UINT32_MAX) {
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::MCALL, tmpRegIndex, { slake::Value(slake::ValueType::RegRef, targetReg), slake::Value(slake::ValueType::RegRef, result.idxThisRegOut) }));
+						} else {
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::CALL, tmpRegIndex, { slake::Value(slake::ValueType::RegRef, targetReg) }));
+						}
+
+						SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::LVALUE, resultRegOut, { slake::Value(slake::ValueType::RegRef, tmpRegIndex) }));
+					} else {
+						if (result.idxThisRegOut != UINT32_MAX) {
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegRef, targetReg), slake::Value(slake::ValueType::RegRef, result.idxThisRegOut) }));
+						} else {
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::CALL, resultRegOut, { slake::Value(slake::ValueType::RegRef, targetReg) }));
+						}
+					}
+
+					break;
+				}
 			}
 
 			resultOut.evaluatedType = fnType.castTo<FnTypeNameNode>()->returnType;

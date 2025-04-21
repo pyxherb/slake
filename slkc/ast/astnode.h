@@ -37,8 +37,16 @@ namespace slkc {
 		inline TokenRange(size_t index) : beginIndex(index), endIndex(index) {}
 		inline TokenRange(size_t beginIndex, size_t endIndex) : beginIndex(beginIndex), endIndex(endIndex) {}
 
-		SLAKE_FORCEINLINE operator bool() {
+		SLAKE_FORCEINLINE operator bool() const {
 			return beginIndex != SIZE_MAX;
+		}
+
+		SLAKE_FORCEINLINE bool operator <(const TokenRange &rhs) const {
+			return beginIndex < rhs.beginIndex;
+		}
+
+		SLAKE_FORCEINLINE bool operator>(const TokenRange &rhs) const {
+			return beginIndex < rhs.beginIndex;
 		}
 	};
 

@@ -196,6 +196,7 @@ namespace slkc {
 		// For parameter name query, etc, if exists.
 		peff::SharedPtr<FnSlotNode> callTargetFnSlot;
 		peff::DynArray<size_t> callTargetMatchedOverloadingIndices;
+		uint32_t idxThisRegOut = UINT32_MAX;
 
 		SLAKE_FORCEINLINE CompileExprResult(peff::Alloc *allocator) : callTargetMatchedOverloadingIndices(allocator) {}
 	};
@@ -357,6 +358,9 @@ namespace slkc {
 	SLKC_API std::optional<CompilationError> removeRefOfType(
 		peff::SharedPtr<TypeNameNode> src,
 		peff::SharedPtr<TypeNameNode> &typeNameOut);
+	SLKC_API std::optional<CompilationError> isLValueType(
+		peff::SharedPtr<TypeNameNode> src,
+		bool &whetherOut);
 	SLKC_API std::optional<CompilationError> isSameType(
 		const peff::SharedPtr<TypeNameNode> &lhs,
 		const peff::SharedPtr<TypeNameNode> &rhs,

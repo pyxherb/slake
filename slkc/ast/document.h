@@ -59,6 +59,14 @@ namespace slkc {
 			  errorKind(CompilationErrorKind::IncompatibleOperand),
 			  exData(exData) {
 		}
+
+		SLAKE_FORCEINLINE bool operator<(const CompilationError &rhs) const noexcept {
+			return tokenRange < rhs.tokenRange;
+		}
+
+		SLAKE_FORCEINLINE bool operator>(const CompilationError &rhs) const noexcept {
+			return tokenRange > rhs.tokenRange;
+		}
 	};
 
 #define SLKC_RETURN_IF_COMP_ERROR(...) \

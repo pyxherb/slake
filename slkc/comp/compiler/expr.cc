@@ -801,15 +801,130 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 		case ExprKind::New: {
 			peff::SharedPtr<NewExprNode> e = expr.castTo<NewExprNode>();
 
-			// stub
+			uint32_t targetReg = compileContext->allocReg();
+
+			if (e->targetType->typeNameKind != TypeNameKind::Custom) {
+				return CompilationError(e->targetType->tokenRange, CompilationErrorKind::TypeIsNotConstructible);
+			}
+
+			peff::SharedPtr<MemberNode> m;
+
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(compileContext->document, e->targetType.castTo<CustomTypeNameNode>(), m));
+
+			if (m->astNodeType != AstNodeType::Class) {
+				return CompilationError(e->targetType->tokenRange, CompilationErrorKind::TypeIsNotConstructible);
+			}
+
+			peff::SharedPtr<ClassNode> c = m.castTo<ClassNode>();
+
+			slake::Type type;
+			{
+				IdRefPtr fullIdRef;
+				SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileContext->allocator.get(), c.castTo<MemberNode>(), fullIdRef));
+
+				auto tn = peff::makeShared<CustomTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document);
+
+				if (!tn) {
+					return genOutOfMemoryCompError();
+				}
+				tn->contextNode = compileContext->document->rootModule.castTo<MemberNode>();
+
+				tn->idRefPtr = std::move(fullIdRef);
+
+				tn->tokenRange = e->targetType->tokenRange;
+
+				SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, tn.castTo<TypeNameNode>(), type));
+			}
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::NEW, resultRegOut, { slake::Value(type) }));
+
+			if (auto it = c->memberIndices.find("new"); it != c->memberIndices.end()) {
+				if (c->members.at(it.value())->astNodeType != AstNodeType::FnSlot) {
+					return CompilationError(e->targetType->tokenRange, CompilationErrorKind::TypeIsNotConstructible);
+				}
+				peff::SharedPtr<FnSlotNode> constructor = c->members.at(it.value()).castTo<FnSlotNode>();
+
+				peff::DynArray<peff::SharedPtr<TypeNameNode>> argTypes(compileContext->allocator.get());
+
+				if (!argTypes.resize(e->args.size())) {
+					return genOutOfMemoryCompError();
+				}
+
+				peff::SharedPtr<FnNode> overloading;
+				if (constructor->overloadings.size() == 1) {
+					overloading = constructor->overloadings.back();
+
+					for (size_t i = 0; i < e->args.size(); ++i) {
+						if (i < overloading->params.size()) {
+							SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, e->args.at(i), argTypes.at(i), overloading->params.at(i)->type));
+						} else {
+							SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, e->args.at(i), argTypes.at(i), {}));
+						}
+					}
+
+					peff::DynArray<peff::SharedPtr<FnNode>> matchedOverloadingIndices(compileContext->allocator.get());
+					SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileContext,
+						constructor,
+						argTypes.data(),
+						argTypes.size(),
+						false,
+						matchedOverloadingIndices));
+					if (!matchedOverloadingIndices.size()) {
+						return CompilationError(e->tokenRange, CompilationErrorKind::ArgsMismatched);
+					}
+				} else {
+					for (size_t i = 0; i < e->args.size(); ++i) {
+						SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, e->args.at(i), argTypes.at(i), {}));
+					}
+
+					peff::DynArray<peff::SharedPtr<FnNode>> matchedOverloadingIndices(compileContext->allocator.get());
+					SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileContext,
+						constructor,
+						argTypes.data(),
+						argTypes.size(),
+						false,
+						matchedOverloadingIndices));
+					switch (matchedOverloadingIndices.size()) {
+						case 0:
+							return CompilationError(e->tokenRange, CompilationErrorKind::NoMatchingFnOverloading);
+						case 1:
+							break;
+						default:
+							return CompilationError(e->tokenRange, CompilationErrorKind::UnableToDetermineOverloading);
+					}
+
+					overloading = matchedOverloadingIndices.back();
+				}
+
+				slake::HostObjectRef<slake::IdRefObject> idRefObject;
+				{
+					IdRefPtr fullIdRef;
+					SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileContext->allocator.get(), constructor.castTo<MemberNode>(), fullIdRef));
+
+					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, fullIdRef->entries.data(), fullIdRef->entries.size(), nullptr, 0, false, idRefObject));
+
+					if (!idRefObject->paramTypes.resize(overloading->params.size()))
+						return genOutOfRuntimeMemoryCompError();
+
+					for (size_t i = 0; i < overloading->params.size(); ++i) {
+						SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, overloading->params.at(i)->type, idRefObject->paramTypes.at(i)));
+					}
+
+					if (overloading->fnFlags & FN_VARG)
+						idRefObject->hasVarArgs = true;
+				}
+
+				uint32_t ctorCallTarget = compileContext->allocReg();
+
+				SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::LOAD, ctorCallTarget, { slake::Value(slake::ValueType::EntityRef, slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+				SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::CTORCALL, UINT32_MAX, { slake::Value(slake::ValueType::RegRef, ctorCallTarget), slake::Value(slake::ValueType::RegRef, resultRegOut) }));
+			} else {
+			}
 
 			resultOut.evaluatedType = e->targetType;
 			break;
 		}
 		case ExprKind::Cast: {
 			peff::SharedPtr<CastExprNode> e = expr.castTo<CastExprNode>();
-
-			// stub
 
 			resultOut.evaluatedType = e->targetType;
 			break;

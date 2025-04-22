@@ -337,6 +337,26 @@ void dumpCompilationError(const slkc::Parser &parser, const slkc::CompilationErr
 				beginToken->sourceLocation.beginPosition.line + 1,
 				beginToken->sourceLocation.beginPosition.column + 1);
 			break;
+		case slkc::CompilationErrorKind::LocalVarAlreadyExists:
+			printError("Error at %zu, %zu: Local variable already exists\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::InvalidBreakUsage:
+			printError("Error at %zu, %zu: Cannot use break in this context\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::InvalidContinueUsage:
+			printError("Error at %zu, %zu: Cannot use continue in this context\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::TypeIsNotConstructible:
+			printError("Error at %zu, %zu: Type is not constructible\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
 		case slkc::CompilationErrorKind::ImportLimitExceeded:
 			printError("Error at %zu, %zu: Import item number exceeded\n",
 				beginToken->sourceLocation.beginPosition.line + 1,

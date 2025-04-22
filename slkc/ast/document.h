@@ -35,6 +35,7 @@ namespace slkc {
 		LocalVarAlreadyExists,
 		InvalidBreakUsage,
 		InvalidContinueUsage,
+		TypeIsNotConstructible,
 
 		ImportLimitExceeded,
 	};

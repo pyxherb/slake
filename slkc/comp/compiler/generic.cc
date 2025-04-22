@@ -80,6 +80,14 @@ static std::optional<CompilationError> _walkTypeNameForGenericInstantiation(
 					}
 				}
 			}
+
+			for (size_t i = 0; i < tn->idRefPtr->entries.size(); ++i) {
+				auto &genericArgs= tn->idRefPtr->entries.at(i).genericArgs;
+				for (size_t j = 0; j < genericArgs.size(); ++j) {
+					SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(genericArgs.at(j), context));
+				}
+			}
+			break;
 		}
 	}
 
@@ -249,7 +257,6 @@ SLKC_API std::optional<CompilationError> Document::instantiateGenericObject(
 	const peff::DynArray<peff::SharedPtr<TypeNameNode>> &genericArgs,
 	peff::SharedPtr<MemberNode> &memberOut) {
 	peff::SharedPtr<MemberNode> duplicatedObject;
-
 	SLKC_RETURN_IF_COMP_ERROR(lookupGenericCache(originalObject, genericArgs, duplicatedObject));
 	if (duplicatedObject) {
 		memberOut = duplicatedObject;
@@ -382,6 +389,8 @@ SLKC_API std::optional<CompilationError> Document::instantiateGenericObject(
 
 			removeCacheTableEntryGuard.release();
 		}
+
+		removeCacheDirEntryGuard.release();
 	}
 
 	memberOut = duplicatedObject;

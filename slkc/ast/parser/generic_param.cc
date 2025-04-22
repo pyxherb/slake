@@ -45,8 +45,6 @@ SLKC_API std::optional<SyntaxError> Parser::parseGenericParams(
 					return syntaxError;
 				}
 				nextToken();
-
-				break;
 			}
 
 			if (Token *colonToken = peekToken(); colonToken->tokenId == TokenId::Colon) {
@@ -69,8 +67,6 @@ SLKC_API std::optional<SyntaxError> Parser::parseGenericParams(
 
 					nextToken();
 				}
-
-				break;
 			}
 
 			if (!genericParamsOut.pushBack(std::move(genericParamNode)))

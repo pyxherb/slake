@@ -17,7 +17,6 @@ namespace slkc {
 		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
 
 	public:
-		peff::SharedPtr<FnSlotNode> linkedParentFnSlot;
 		peff::DynArray<peff::SharedPtr<FnNode>> overloadings;
 
 		SLKC_API FnSlotNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);

@@ -27,7 +27,7 @@ SLKC_API ClassNode::ClassNode(const ClassNode &rhs, peff::Alloc *allocator, bool
 		return;
 	}
 
-	if (baseType && !(baseType = rhs.baseType->duplicate<TypeNameNode>(allocator))) {
+	if (rhs.baseType && !(baseType = rhs.baseType->duplicate<TypeNameNode>(allocator))) {
 		succeededOut = false;
 		return;
 	}

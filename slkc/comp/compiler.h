@@ -334,64 +334,64 @@ namespace slkc {
 			peff::SharedPtr<MemberNode> &memberNodeOut,
 			peff::Set<peff::SharedPtr<MemberNode>> *walkedNodes = nullptr);
 
-	SLKC_API std::optional<CompilationError> collectInvolvedInterfaces(
+	[[nodiscard]] SLKC_API std::optional<CompilationError> collectInvolvedInterfaces(
 		peff::SharedPtr<Document> document,
 		const peff::SharedPtr<InterfaceNode> &derived,
 		peff::Set<peff::SharedPtr<InterfaceNode>> &walkedInterfaces,
 		bool insertSelf);
-	SLKC_API std::optional<CompilationError> isImplementedByInterface(
+	[[nodiscard]] SLKC_API std::optional<CompilationError> isImplementedByInterface(
 		peff::SharedPtr<Document> document,
 		const peff::SharedPtr<InterfaceNode> &base,
 		const peff::SharedPtr<InterfaceNode> &derived,
 		bool &whetherOut);
-	SLKC_API std::optional<CompilationError> isImplementedByClass(
+	[[nodiscard]] SLKC_API std::optional<CompilationError> isImplementedByClass(
 		peff::SharedPtr<Document> document,
 		const peff::SharedPtr<InterfaceNode> &base,
 		const peff::SharedPtr<ClassNode> &derived,
 		bool &whetherOut);
-	SLKC_API std::optional<CompilationError> isBaseOf(
+	[[nodiscard]] SLKC_API std::optional<CompilationError> isBaseOf(
 		peff::SharedPtr<Document> document,
 		const peff::SharedPtr<ClassNode> &base,
 		const peff::SharedPtr<ClassNode> &derived,
 		bool &whetherOut);
 
-	SLKC_API std::optional<CompilationError> removeRefOfType(
+	[[nodiscard]] SLKC_API std::optional<CompilationError> removeRefOfType(
 		peff::SharedPtr<TypeNameNode> src,
 		peff::SharedPtr<TypeNameNode> &typeNameOut);
-	SLKC_API std::optional<CompilationError> isLValueType(
+	[[nodiscard]] SLKC_API std::optional<CompilationError> isLValueType(
 		peff::SharedPtr<TypeNameNode> src,
 		bool &whetherOut);
-	SLKC_API std::optional<CompilationError> isSameType(
+	[[nodiscard]] SLKC_API std::optional<CompilationError> isSameType(
 		const peff::SharedPtr<TypeNameNode> &lhs,
 		const peff::SharedPtr<TypeNameNode> &rhs,
 		bool &whetherOut);
-	SLKC_API std::optional<CompilationError> isTypeConvertible(
+	[[nodiscard]] SLKC_API std::optional<CompilationError> isTypeConvertible(
 		const peff::SharedPtr<TypeNameNode> &src,
 		const peff::SharedPtr<TypeNameNode> &dest,
 		bool &whetherOut);
-	SLKC_API std::optional<CompilationError> compileUnaryExpr(
+	[[nodiscard]] SLKC_API std::optional<CompilationError> compileUnaryExpr(
 		CompileContext *compileContext,
 		peff::SharedPtr<UnaryExprNode> expr,
 		ExprEvalPurpose evalPurpose,
 		uint32_t resultRegOut,
 		CompileExprResult &resultOut);
-	SLKC_API std::optional<CompilationError> compileBinaryExpr(
+	[[nodiscard]] SLKC_API std::optional<CompilationError> compileBinaryExpr(
 		CompileContext *compileContext,
 		peff::SharedPtr<BinaryExprNode> expr,
 		ExprEvalPurpose evalPurpose,
 		uint32_t resultRegOut,
 		CompileExprResult &resultOut);
-	SLKC_API std::optional<CompilationError> compileExpr(
+	[[nodiscard]] SLKC_API std::optional<CompilationError> compileExpr(
 		CompileContext *compileContext,
 		const peff::SharedPtr<ExprNode> &expr,
 		ExprEvalPurpose evalPurpose,
 		peff::SharedPtr<TypeNameNode> desiredType,
 		uint32_t resultRegOut,
 		CompileExprResult &resultOut);
-	SLKC_API std::optional<CompilationError> compileStmt(
+	[[nodiscard]] SLKC_API std::optional<CompilationError> compileStmt(
 		CompileContext *compileContext,
 		const peff::SharedPtr<StmtNode> &stmt);
-	SLAKE_FORCEINLINE static std::optional<CompilationError> evalExprType(
+	[[nodiscard]] SLAKE_FORCEINLINE static std::optional<CompilationError> evalExprType(
 		CompileContext *compileContext,
 		const peff::SharedPtr<ExprNode> &expr,
 		peff::SharedPtr<TypeNameNode> &typeOut,

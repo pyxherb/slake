@@ -34,6 +34,12 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 		case TypeNameKind::U64:
 			typeOut = slake::Type(slake::TypeId::U64);
 			break;
+		case TypeNameKind::F32:
+			typeOut = slake::Type(slake::TypeId::F32);
+			break;
+		case TypeNameKind::F64:
+			typeOut = slake::Type(slake::TypeId::F64);
+			break;
 		case TypeNameKind::String:
 			typeOut = slake::Type(slake::TypeId::String);
 			break;

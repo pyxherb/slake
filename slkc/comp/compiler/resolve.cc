@@ -255,6 +255,10 @@ SLKC_API std::optional<CompilationError> slkc::resolveInstanceMember(
 	}
 
 	if (result) {
+		if (name.genericArgs.size()) {
+			SLKC_RETURN_IF_COMP_ERROR(document->instantiateGenericObject(result, name.genericArgs, result));
+		}
+
 		switch (result->astNodeType) {
 			case AstNodeType::Var: {
 				peff::SharedPtr<VarNode> m = result.castTo<VarNode>();
@@ -618,7 +622,7 @@ SLKC_API std::optional<CompilationError> slkc::visitBaseClass(peff::SharedPtr<Ty
 		if (baseType && (baseType->astNodeType == AstNodeType::Class)) {
 			peff::SharedPtr<ClassNode> b = baseType.castTo<ClassNode>();
 
-			if (walkedNodes && !walkedNodes->contains(baseType)) {
+			if ((!walkedNodes) || !walkedNodes->contains(baseType)) {
 				classOut = b;
 			}
 		}

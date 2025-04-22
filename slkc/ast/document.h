@@ -33,6 +33,8 @@ namespace slkc {
 		MissingBindingObject,
 		RedundantWithObject,
 		LocalVarAlreadyExists,
+		InvalidBreakUsage,
+		InvalidContinueUsage,
 
 		ImportLimitExceeded,
 	};

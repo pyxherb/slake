@@ -46,6 +46,9 @@ namespace slkc {
 		peff::List<peff::SharedPtr<BlockCompileContext>> blockCompileContexts;
 		uint32_t nTotalRegs = 0;
 
+		uint32_t breakStmtJumpDestLabel = UINT32_MAX, continueStmtJumpDestLabel = UINT32_MAX;
+		uint32_t breakStmtBlockLevel = 0, continueStmtBlockLevel = 0;
+
 		SLAKE_FORCEINLINE FnCompileContext(peff::Alloc *allocator) : instructionsOut(allocator), labels(allocator), blockCompileContexts(allocator), labelNameIndices(allocator) {}
 
 		SLAKE_FORCEINLINE void reset() {
@@ -187,7 +190,52 @@ namespace slkc {
 			return fnCompileContext.nTotalRegs++;
 		}
 
+		SLAKE_FORCEINLINE std::optional<CompilationError> pushBlockContext() {
+			peff::SharedPtr<BlockCompileContext> blockContext;
+			if (!(blockContext = peff::makeShared<BlockCompileContext>(allocator.get(), allocator.get()))) {
+				return genOutOfMemoryCompError();
+			}
+			if (!(fnCompileContext.blockCompileContexts.pushBack(std::move(blockContext)))) {
+				return genOutOfMemoryCompError();
+			}
+			return {};
+		}
+
+		SLAKE_FORCEINLINE void popBlockContext() {
+			fnCompileContext.blockCompileContexts.popBack();
+		}
+
 		SLAKE_API std::optional<CompilationError> emitIns(slake::Opcode opcode, uint32_t outputRegIndex, const std::initializer_list<slake::Value> &operands);
+	};
+
+	struct PrevBreakPointHolder {
+		CompileContext *compileContext;
+		uint32_t lastBreakStmtJumpDestLabel,
+			lastBreakStmtBlockLevel;
+
+		SLAKE_FORCEINLINE PrevBreakPointHolder(CompileContext *compileContext)
+			: compileContext(compileContext),
+			  lastBreakStmtJumpDestLabel(compileContext->fnCompileContext.continueStmtJumpDestLabel),
+			  lastBreakStmtBlockLevel(compileContext->fnCompileContext.continueStmtBlockLevel) {}
+		SLAKE_FORCEINLINE ~PrevBreakPointHolder() {
+			compileContext->fnCompileContext.continueStmtJumpDestLabel = lastBreakStmtJumpDestLabel;
+			compileContext->fnCompileContext.continueStmtBlockLevel = lastBreakStmtBlockLevel;
+		}
+	};
+
+	struct PrevContinuePointHolder {
+		CompileContext *compileContext;
+		uint32_t lastContinueStmtJumpDestLabel,
+			lastContinueStmtBlockLevel;
+
+		SLAKE_FORCEINLINE PrevContinuePointHolder(CompileContext *compileContext)
+			: compileContext(compileContext),
+			  lastContinueStmtJumpDestLabel(compileContext->fnCompileContext.continueStmtJumpDestLabel),
+			  lastContinueStmtBlockLevel(compileContext->fnCompileContext.continueStmtBlockLevel) {}
+		SLAKE_FORCEINLINE ~PrevContinuePointHolder() {
+			compileContext->fnCompileContext.continueStmtJumpDestLabel = lastContinueStmtJumpDestLabel;
+			compileContext->fnCompileContext.continueStmtBlockLevel = lastContinueStmtBlockLevel;
+		}
 	};
 
 	struct CompileExprResult {

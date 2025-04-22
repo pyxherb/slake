@@ -253,7 +253,7 @@ std::optional<CompilationError> slkc::_compileSimpleLOrBinaryExpr(
 			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
 				slake::Opcode::JF,
 				UINT32_MAX,
-				{ slake::Value(slake::ValueType::Label, rhsReg), slake::Value(slake::ValueType::RegRef, lhsReg) }));
+				{ slake::Value(slake::ValueType::Label, cmpEndLabelId), slake::Value(slake::ValueType::RegRef, lhsReg) }));
 
 			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, rhsReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), expr->rhs, rhsType));
 			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(

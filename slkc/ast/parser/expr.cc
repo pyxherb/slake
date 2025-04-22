@@ -12,309 +12,319 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 		goto genBadExpr;
 
 	{
-		switch (prefixToken->tokenId) {
-			case TokenId::ThisKeyword:
-			case TokenId::ScopeOp:
-			case TokenId::Id: {
-				IdRefPtr idRefPtr;
-				if ((syntaxError = parseIdRef(idRefPtr)))
-					goto genBadExpr;
-				if (!(lhs = peff::makeShared<IdRefExprNode>(resourceAllocator.get(), resourceAllocator.get(), document, std::move(idRefPtr)).castTo<ExprNode>()))
-					return genOutOfMemoryError();
-				break;
-			}
-			case TokenId::LParenthese: {
-				nextToken();
-
-				if ((syntaxError = parseExpr(0, lhs)))
-					goto genBadExpr;
-
-				Token *rParentheseToken;
-
-				if ((syntaxError = expectToken((rParentheseToken = nextToken()), TokenId::RParenthese)))
-					goto genBadExpr;
-				break;
-			}
-			case TokenId::AllocaKeyword: {
-				nextToken();
-
-				peff::SharedPtr<AllocaExprNode> expr;
-
-				if (!(expr = peff::makeShared<AllocaExprNode>(
-						  resourceAllocator.get(), resourceAllocator.get(), document)))
-					return genOutOfMemoryError();
-
-				lhs = expr.castTo<ExprNode>();
-
-				if ((syntaxError = parseTypeName(expr->targetType, false)))
-					goto genBadExpr;
-
-				Token *lBracketToken;
-
-				if ((lBracketToken = peekToken())->tokenId == TokenId::LBracket) {
-					nextToken();
-
-					if ((syntaxError = parseExpr(0, expr->countExpr)))
-						goto genBadExpr;
-
-					Token *rBracketToken;
-
-					if ((syntaxError = expectToken((rBracketToken = peekToken()), TokenId::RBracket)))
-						goto genBadExpr;
-
-					nextToken();
+		{
+			peff::ScopeGuard setTokenRangeGuard([this, prefixToken, &lhs]() noexcept {
+				if (lhs) {
+					lhs->tokenRange = TokenRange{ prefixToken->index, parseContext.idxPrevToken };
 				}
-				break;
-			}
-			case TokenId::NewKeyword: {
-				nextToken();
+			});
 
-				peff::SharedPtr<NewExprNode> expr;
+			switch (prefixToken->tokenId) {
+				case TokenId::ThisKeyword:
+				case TokenId::ScopeOp:
+				case TokenId::Id: {
+					IdRefPtr idRefPtr;
+					if ((syntaxError = parseIdRef(idRefPtr)))
+						goto genBadExpr;
+					if (!(lhs = peff::makeShared<IdRefExprNode>(resourceAllocator.get(), resourceAllocator.get(), document, std::move(idRefPtr)).castTo<ExprNode>()))
+						return genOutOfMemoryError();
+					break;
+				}
+				case TokenId::LParenthese: {
+					nextToken();
 
-				if (!(expr = peff::makeShared<NewExprNode>(
-						  resourceAllocator.get(), resourceAllocator.get(), document)))
-					return genOutOfMemoryError();
+					if ((syntaxError = parseExpr(0, lhs)))
+						goto genBadExpr;
 
-				lhs = expr.castTo<ExprNode>();
+					Token *rParentheseToken;
 
-				if ((syntaxError = parseTypeName(expr->targetType)))
-					goto genBadExpr;
+					if ((syntaxError = expectToken((rParentheseToken = nextToken()), TokenId::RParenthese)))
+						goto genBadExpr;
+					break;
+				}
+				case TokenId::AllocaKeyword: {
+					nextToken();
 
-				Token *lParentheseToken;
+					peff::SharedPtr<AllocaExprNode> expr;
 
-				if ((syntaxError = expectToken((lParentheseToken = peekToken()), TokenId::LParenthese)))
-					goto genBadExpr;
+					if (!(expr = peff::makeShared<AllocaExprNode>(
+							  resourceAllocator.get(), resourceAllocator.get(), document)))
+						return genOutOfMemoryError();
 
-				nextToken();
+					lhs = expr.castTo<ExprNode>();
 
-				if ((syntaxError = parseArgs(expr->args, expr->idxCommaTokens)))
-					goto genBadExpr;
+					if ((syntaxError = parseTypeName(expr->targetType, false)))
+						goto genBadExpr;
 
-				Token *rParentheseToken;
+					Token *lBracketToken;
 
-				if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese)))
-					goto genBadExpr;
+					if ((lBracketToken = peekToken())->tokenId == TokenId::LBracket) {
+						nextToken();
 
-				nextToken();
-				break;
-			}
-			case TokenId::IntLiteral: {
-				nextToken();
-				if (!(lhs = peff::makeShared<I32LiteralExprNode>(
-						  resourceAllocator.get(), resourceAllocator.get(), document,
-						  ((IntTokenExtension *)prefixToken->exData.get())->data)
-							.castTo<ExprNode>()))
-					return genOutOfMemoryError();
-				break;
-			}
-			case TokenId::LongLiteral: {
-				nextToken();
-				if (!(lhs = peff::makeShared<I64LiteralExprNode>(
-						  resourceAllocator.get(), resourceAllocator.get(), document,
-						  ((LongTokenExtension *)prefixToken->exData.get())->data)
-							.castTo<ExprNode>()))
-					return genOutOfMemoryError();
-				break;
-			}
-			case TokenId::UIntLiteral: {
-				nextToken();
-				if (!(lhs = peff::makeShared<U32LiteralExprNode>(
-						  resourceAllocator.get(), resourceAllocator.get(), document,
-						  ((UIntTokenExtension *)prefixToken->exData.get())->data)
-							.castTo<ExprNode>()))
-					return genOutOfMemoryError();
-				break;
-			}
-			case TokenId::ULongLiteral: {
-				nextToken();
-				if (!(lhs = peff::makeShared<U64LiteralExprNode>(
-						  resourceAllocator.get(), resourceAllocator.get(), document,
-						  ((ULongTokenExtension *)prefixToken->exData.get())->data)
-							.castTo<ExprNode>()))
-					return genOutOfMemoryError();
-				break;
-			}
-			case TokenId::StringLiteral: {
-				nextToken();
-				peff::String s(resourceAllocator.get());
+						if ((syntaxError = parseExpr(0, expr->countExpr)))
+							goto genBadExpr;
 
-				if (!peff::copyAssign(s, ((StringTokenExtension *)prefixToken->exData.get())->data))
-					return genOutOfMemoryError();
+						Token *rBracketToken;
 
-				if (!(lhs = peff::makeShared<StringLiteralExprNode>(
-						  resourceAllocator.get(), resourceAllocator.get(), document,
-						  std::move(s))
-							.castTo<ExprNode>()))
-					return genOutOfMemoryError();
-				break;
-			}
-			case TokenId::F32Literal: {
-				nextToken();
-				if (!(lhs = peff::makeShared<F32LiteralExprNode>(
-						  resourceAllocator.get(), resourceAllocator.get(), document,
-						  ((F32TokenExtension *)prefixToken->exData.get())->data)
-							.castTo<ExprNode>()))
-					return genOutOfMemoryError();
-				break;
-			}
-			case TokenId::F64Literal: {
-				nextToken();
-				if (!(lhs = peff::makeShared<F64LiteralExprNode>(
-						  resourceAllocator.get(), resourceAllocator.get(), document,
-						  ((F64TokenExtension *)prefixToken->exData.get())->data)
-							.castTo<ExprNode>()))
-					return genOutOfMemoryError();
-				break;
-			}
-			case TokenId::TrueKeyword: {
-				nextToken();
-				if (!(lhs = peff::makeShared<BoolLiteralExprNode>(
-						  resourceAllocator.get(), resourceAllocator.get(), document,
-						  true)
-							.castTo<ExprNode>()))
-					return genOutOfMemoryError();
-				break;
-			}
-			case TokenId::FalseKeyword: {
-				nextToken();
-				if (!(lhs = peff::makeShared<BoolLiteralExprNode>(
-						  resourceAllocator.get(), resourceAllocator.get(), document,
-						  false)
-							.castTo<ExprNode>()))
-					return genOutOfMemoryError();
-				break;
-			}
-			case TokenId::NullKeyword: {
-				nextToken();
-				if (!(lhs = peff::makeShared<NullLiteralExprNode>(
-						  resourceAllocator.get(), resourceAllocator.get(), document)
-							.castTo<ExprNode>()))
-					return genOutOfMemoryError();
-				break;
-			}
-			case TokenId::VarArg: {
-				nextToken();
-				if (!(lhs = peff::makeShared<VarArgExprNode>(
-						  resourceAllocator.get(), resourceAllocator.get(), document)
-							.castTo<ExprNode>()))
-					return genOutOfMemoryError();
-				break;
-			}
-			case TokenId::LBrace: {
-				nextToken();
+						if ((syntaxError = expectToken((rBracketToken = peekToken()), TokenId::RBracket)))
+							goto genBadExpr;
 
-				peff::SharedPtr<InitializerListExprNode> initializerExpr;
+						nextToken();
+					}
+					break;
+				}
+				case TokenId::NewKeyword: {
+					nextToken();
 
-				if (!(initializerExpr = peff::makeShared<InitializerListExprNode>(
-						  resourceAllocator.get(), resourceAllocator.get(), document)))
-					return genOutOfMemoryError();
+					peff::SharedPtr<NewExprNode> expr;
 
-				lhs = initializerExpr.castTo<ExprNode>();
+					if (!(expr = peff::makeShared<NewExprNode>(
+							  resourceAllocator.get(), resourceAllocator.get(), document)))
+						return genOutOfMemoryError();
 
-				peff::SharedPtr<ExprNode> curExpr;
+					lhs = expr.castTo<ExprNode>();
 
-				static TokenId matchingTokens[] = {
-					TokenId::RBrace,
-					TokenId::Semicolon
-				};
+					if ((syntaxError = parseTypeName(expr->targetType)))
+						goto genBadExpr;
 
-				Token *currentToken;
+					Token *lParentheseToken;
 
-				for (;;) {
-					if ((syntaxError = parseExpr(0, curExpr))) {
+					if ((syntaxError = expectToken((lParentheseToken = peekToken()), TokenId::LParenthese)))
+						goto genBadExpr;
+
+					nextToken();
+
+					if ((syntaxError = parseArgs(expr->args, expr->idxCommaTokens)))
+						goto genBadExpr;
+
+					Token *rParentheseToken;
+
+					if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese)))
+						goto genBadExpr;
+
+					nextToken();
+					break;
+				}
+				case TokenId::IntLiteral: {
+					nextToken();
+					if (!(lhs = peff::makeShared<I32LiteralExprNode>(
+							  resourceAllocator.get(), resourceAllocator.get(), document,
+							  ((IntTokenExtension *)prefixToken->exData.get())->data)
+								.castTo<ExprNode>()))
+						return genOutOfMemoryError();
+					break;
+				}
+				case TokenId::LongLiteral: {
+					nextToken();
+					if (!(lhs = peff::makeShared<I64LiteralExprNode>(
+							  resourceAllocator.get(), resourceAllocator.get(), document,
+							  ((LongTokenExtension *)prefixToken->exData.get())->data)
+								.castTo<ExprNode>()))
+						return genOutOfMemoryError();
+					break;
+				}
+				case TokenId::UIntLiteral: {
+					nextToken();
+					if (!(lhs = peff::makeShared<U32LiteralExprNode>(
+							  resourceAllocator.get(), resourceAllocator.get(), document,
+							  ((UIntTokenExtension *)prefixToken->exData.get())->data)
+								.castTo<ExprNode>()))
+						return genOutOfMemoryError();
+					break;
+				}
+				case TokenId::ULongLiteral: {
+					nextToken();
+					if (!(lhs = peff::makeShared<U64LiteralExprNode>(
+							  resourceAllocator.get(), resourceAllocator.get(), document,
+							  ((ULongTokenExtension *)prefixToken->exData.get())->data)
+								.castTo<ExprNode>()))
+						return genOutOfMemoryError();
+					break;
+				}
+				case TokenId::StringLiteral: {
+					nextToken();
+					peff::String s(resourceAllocator.get());
+
+					if (!peff::copyAssign(s, ((StringTokenExtension *)prefixToken->exData.get())->data))
+						return genOutOfMemoryError();
+
+					if (!(lhs = peff::makeShared<StringLiteralExprNode>(
+							  resourceAllocator.get(), resourceAllocator.get(), document,
+							  std::move(s))
+								.castTo<ExprNode>()))
+						return genOutOfMemoryError();
+					break;
+				}
+				case TokenId::F32Literal: {
+					nextToken();
+					if (!(lhs = peff::makeShared<F32LiteralExprNode>(
+							  resourceAllocator.get(), resourceAllocator.get(), document,
+							  ((F32TokenExtension *)prefixToken->exData.get())->data)
+								.castTo<ExprNode>()))
+						return genOutOfMemoryError();
+					break;
+				}
+				case TokenId::F64Literal: {
+					nextToken();
+					if (!(lhs = peff::makeShared<F64LiteralExprNode>(
+							  resourceAllocator.get(), resourceAllocator.get(), document,
+							  ((F64TokenExtension *)prefixToken->exData.get())->data)
+								.castTo<ExprNode>()))
+						return genOutOfMemoryError();
+					break;
+				}
+				case TokenId::TrueKeyword: {
+					nextToken();
+					if (!(lhs = peff::makeShared<BoolLiteralExprNode>(
+							  resourceAllocator.get(), resourceAllocator.get(), document,
+							  true)
+								.castTo<ExprNode>()))
+						return genOutOfMemoryError();
+					break;
+				}
+				case TokenId::FalseKeyword: {
+					nextToken();
+					if (!(lhs = peff::makeShared<BoolLiteralExprNode>(
+							  resourceAllocator.get(), resourceAllocator.get(), document,
+							  false)
+								.castTo<ExprNode>()))
+						return genOutOfMemoryError();
+					break;
+				}
+				case TokenId::NullKeyword: {
+					nextToken();
+					if (!(lhs = peff::makeShared<NullLiteralExprNode>(
+							  resourceAllocator.get(), resourceAllocator.get(), document)
+								.castTo<ExprNode>()))
+						return genOutOfMemoryError();
+					break;
+				}
+				case TokenId::VarArg: {
+					nextToken();
+					if (!(lhs = peff::makeShared<VarArgExprNode>(
+							  resourceAllocator.get(), resourceAllocator.get(), document)
+								.castTo<ExprNode>()))
+						return genOutOfMemoryError();
+					break;
+				}
+				case TokenId::LBrace: {
+					nextToken();
+
+					peff::SharedPtr<InitializerListExprNode> initializerExpr;
+
+					if (!(initializerExpr = peff::makeShared<InitializerListExprNode>(
+							  resourceAllocator.get(), resourceAllocator.get(), document)))
+						return genOutOfMemoryError();
+
+					lhs = initializerExpr.castTo<ExprNode>();
+
+					peff::SharedPtr<ExprNode> curExpr;
+
+					static TokenId matchingTokens[] = {
+						TokenId::RBrace,
+						TokenId::Semicolon
+					};
+
+					Token *currentToken;
+
+					for (;;) {
+						if ((syntaxError = parseExpr(0, curExpr))) {
+							if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
+								return genOutOfMemoryError();
+							syntaxError.reset();
+							goto genBadExpr;
+						}
+
+						if (!initializerExpr->elements.pushBack(std::move(curExpr))) {
+							return genOutOfMemoryError();
+						}
+
+						currentToken = peekToken();
+
+						if (currentToken->tokenId != TokenId::Comma)
+							break;
+
+						nextToken();
+					}
+
+					if ((syntaxError = expectToken(currentToken = peekToken(), TokenId::RBrace))) {
 						if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
 							return genOutOfMemoryError();
 						syntaxError.reset();
-						goto genBadExpr;
+						if ((syntaxError = lookaheadUntil(std::size(matchingTokens), matchingTokens)))
+							goto genBadExpr;
 					}
-
-					if (!initializerExpr->elements.pushBack(std::move(curExpr))) {
-						return genOutOfMemoryError();
-					}
-
-					currentToken = peekToken();
-
-					if (currentToken->tokenId != TokenId::Comma)
-						break;
 
 					nextToken();
-				}
 
-				if ((syntaxError = expectToken(currentToken = peekToken(), TokenId::RBrace))) {
-					if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
+					break;
+				}
+				case TokenId::SubOp: {
+					nextToken();
+
+					peff::SharedPtr<UnaryExprNode> expr;
+
+					if (!(expr = peff::makeShared<UnaryExprNode>(
+							  resourceAllocator.get(), resourceAllocator.get(), document, UnaryOp::Neg, peff::SharedPtr<ExprNode>())))
 						return genOutOfMemoryError();
-					syntaxError.reset();
-					if ((syntaxError = lookaheadUntil(std::size(matchingTokens), matchingTokens)))
+
+					lhs = expr.castTo<ExprNode>();
+
+					if ((syntaxError = parseExpr(131, expr->operand))) {
 						goto genBadExpr;
+					}
+					break;
 				}
+				case TokenId::NotOp: {
+					nextToken();
 
-				nextToken();
+					peff::SharedPtr<UnaryExprNode> expr;
 
-				break;
-			}
-			case TokenId::SubOp: {
-				nextToken();
+					if (!(expr = peff::makeShared<UnaryExprNode>(
+							  resourceAllocator.get(), resourceAllocator.get(), document, UnaryOp::Neg, peff::SharedPtr<ExprNode>())))
+						return genOutOfMemoryError();
 
-				peff::SharedPtr<UnaryExprNode> expr;
+					lhs = expr.castTo<ExprNode>();
 
-				if (!(expr = peff::makeShared<UnaryExprNode>(
-						  resourceAllocator.get(), resourceAllocator.get(), document, UnaryOp::Neg, peff::SharedPtr<ExprNode>())))
-					return genOutOfMemoryError();
-
-				lhs = expr.castTo<ExprNode>();
-
-				if ((syntaxError = parseExpr(131, expr->operand))) {
-					goto genBadExpr;
+					if ((syntaxError = parseExpr(131, expr->operand))) {
+						goto genBadExpr;
+					}
+					break;
 				}
-				break;
-			}
-			case TokenId::NotOp: {
-				nextToken();
+				case TokenId::LNotOp: {
+					nextToken();
 
-				peff::SharedPtr<UnaryExprNode> expr;
+					peff::SharedPtr<UnaryExprNode> expr;
 
-				if (!(expr = peff::makeShared<UnaryExprNode>(
-						  resourceAllocator.get(), resourceAllocator.get(), document, UnaryOp::Neg, peff::SharedPtr<ExprNode>())))
-					return genOutOfMemoryError();
+					if (!(expr = peff::makeShared<UnaryExprNode>(
+							  resourceAllocator.get(), resourceAllocator.get(), document, UnaryOp::Neg, peff::SharedPtr<ExprNode>())))
+						return genOutOfMemoryError();
 
-				lhs = expr.castTo<ExprNode>();
+					lhs = expr.castTo<ExprNode>();
 
-				if ((syntaxError = parseExpr(131, expr->operand))) {
-					goto genBadExpr;
+					if ((syntaxError = parseExpr(131, expr->operand))) {
+						goto genBadExpr;
+					}
+
+					break;
 				}
-				break;
+				default:
+					nextToken();
+					return SyntaxError(
+						TokenRange{ prefixToken->index },
+						SyntaxErrorKind::ExpectingExpr);
 			}
-			case TokenId::LNotOp: {
-				nextToken();
-
-				peff::SharedPtr<UnaryExprNode> expr;
-
-				if (!(expr = peff::makeShared<UnaryExprNode>(
-						  resourceAllocator.get(), resourceAllocator.get(), document, UnaryOp::Neg, peff::SharedPtr<ExprNode>())))
-					return genOutOfMemoryError();
-
-				lhs = expr.castTo<ExprNode>();
-
-				if ((syntaxError = parseExpr(131, expr->operand))) {
-					goto genBadExpr;
-				}
-
-				break;
-			}
-			default:
-				nextToken();
-				return SyntaxError(
-					TokenRange{ prefixToken->index },
-					SyntaxErrorKind::ExpectingExpr);
 		}
-
-		peff::ScopeGuard setTokenRangeGuard([this, prefixToken, &lhs]() noexcept {
-			lhs->tokenRange = TokenRange{ prefixToken->index, parseContext.idxPrevToken };
-		});
 
 		Token *infixToken;
 
 		for (;;) {
+			peff::ScopeGuard setTokenRangeGuard([this, prefixToken, &lhs]() noexcept {
+				if (lhs) {
+					lhs->tokenRange = TokenRange{ prefixToken->index, parseContext.idxPrevToken };
+				}
+			});
+
 			switch ((infixToken = peekToken())->tokenId) {
 				case TokenId::LParenthese: {
 					if (precedence > 140)
@@ -328,8 +338,6 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 						return genOutOfMemoryError();
 
 					expr->target = lhs;
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
 
 					lhs = expr.castTo<ExprNode>();
 
@@ -370,13 +378,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(0, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					Token *rBracketToken;
 
@@ -398,9 +401,6 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseIdRef(expr->idRefPtr)))
 						goto genBadExpr;
 
@@ -418,9 +418,6 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 						return genOutOfMemoryError();
 
 					lhs = expr.castTo<ExprNode>();
-
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
 
 					if ((syntaxError = parseTypeName(expr->targetType)))
 						goto genBadExpr;
@@ -443,13 +440,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(121, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -466,13 +458,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(121, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -489,13 +476,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(121, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -513,13 +495,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(111, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -536,13 +513,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(111, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -560,13 +532,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(101, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -583,13 +550,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(101, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -607,13 +569,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(91, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -631,13 +588,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(81, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -654,13 +606,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(81, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -677,13 +624,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(81, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -700,13 +642,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(81, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -724,13 +661,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(71, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -747,13 +679,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(71, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -770,13 +697,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(71, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -793,13 +715,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(71, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -817,13 +734,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(61, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -841,13 +753,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(51, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -865,13 +772,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(41, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -889,13 +791,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(31, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -913,13 +810,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(21, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -937,9 +829,6 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(10, expr->lhs)))
 						goto genBadExpr;
 
@@ -953,8 +842,6 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					if ((syntaxError = parseExpr(10, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -972,13 +859,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(0, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -995,13 +877,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(0, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -1018,13 +895,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(0, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -1041,13 +913,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(0, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -1064,13 +931,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(0, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -1087,13 +949,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(0, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -1110,13 +967,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(0, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -1133,13 +985,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(0, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -1156,13 +1003,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(0, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -1179,13 +1021,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(0, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}
@@ -1202,13 +1039,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					expr->tokenRange = lhs->tokenRange;
-					expr->tokenRange.endIndex = infixToken->index;
-
 					if ((syntaxError = parseExpr(-10, expr->rhs)))
 						goto genBadExpr;
-
-					expr->tokenRange.endIndex = expr->rhs->tokenRange.endIndex;
 
 					break;
 				}

@@ -36,6 +36,7 @@ namespace slkc {
 		InvalidBreakUsage,
 		InvalidContinueUsage,
 		TypeIsNotConstructible,
+		InvalidCast,
 
 		ImportLimitExceeded,
 	};
@@ -56,6 +57,7 @@ namespace slkc {
 			CompilationErrorKind errorKind)
 			: tokenRange(tokenRange),
 			  errorKind(errorKind) {
+			assert(tokenRange);
 		}
 
 		SLAKE_FORCEINLINE CompilationError(

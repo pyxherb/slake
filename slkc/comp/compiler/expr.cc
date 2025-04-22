@@ -926,6 +926,33 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 		case ExprKind::Cast: {
 			peff::SharedPtr<CastExprNode> e = expr.castTo<CastExprNode>();
 
+			peff::SharedPtr<TypeNameNode> tn;
+
+			SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, e->source, tn, e->targetType));
+
+			bool b;
+			SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(tn, e->targetType, b));
+
+			if (!b) {
+				return CompilationError(e->source->tokenRange, CompilationErrorKind::InvalidCast);
+			}
+
+			uint32_t idxReg = compileContext->allocReg();
+
+			SLKC_RETURN_IF_COMP_ERROR(isLValueType(tn, b));
+
+			CompileExprResult result(compileContext->allocator.get());
+			if (!b) {
+				SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->source, ExprEvalPurpose::RValue, {}, idxReg, result));
+			} else {
+				SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->source, ExprEvalPurpose::LValue, {}, idxReg, result));
+			}
+
+			slake::Type type;
+			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, e->targetType, type));
+
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::CAST, resultRegOut, { slake::Value(type), slake::Value(slake::ValueType::RegRef, idxReg) }));
+
 			resultOut.evaluatedType = e->targetType;
 			break;
 		}

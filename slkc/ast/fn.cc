@@ -2,48 +2,6 @@
 
 using namespace slkc;
 
-SLKC_API peff::SharedPtr<AstNode> FnSlotNode::doDuplicate(peff::Alloc *newAllocator) const {
-	bool succeeded = false;
-	peff::SharedPtr<FnSlotNode> duplicatedNode(peff::makeShared<FnSlotNode>(newAllocator, *this, newAllocator, succeeded));
-	if ((!duplicatedNode) || (!succeeded)) {
-		return {};
-	}
-
-	return duplicatedNode.castTo<AstNode>();
-}
-
-SLKC_API FnSlotNode::FnSlotNode(
-	peff::Alloc *selfAllocator,
-	const peff::SharedPtr<Document> &document)
-	: MemberNode(AstNodeType::FnSlot, selfAllocator, document),
-	  overloadings(selfAllocator) {
-}
-
-SLKC_API FnSlotNode::FnSlotNode(const FnSlotNode &rhs, peff::Alloc *allocator, bool &succeededOut) : MemberNode(rhs, allocator, succeededOut), overloadings(allocator) {
-	if (!succeededOut) {
-		return;
-	}
-
-	if (!overloadings.resize(rhs.overloadings.size())) {
-		succeededOut = false;
-		return;
-	}
-
-	for (size_t i = 0; i < overloadings.size(); ++i) {
-		if (!(overloadings.at(i) = rhs.overloadings.at(i)->duplicate<FnNode>(allocator))) {
-			succeededOut = false;
-			return;
-		}
-
-		overloadings.at(i)->setParent(this);
-	}
-
-	succeededOut = true;
-}
-
-SLKC_API FnSlotNode::~FnSlotNode() {
-}
-
 SLKC_API peff::SharedPtr<AstNode> FnNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
 	peff::SharedPtr<FnNode> duplicatedNode(peff::makeShared<FnNode>(newAllocator, *this, newAllocator, succeeded));
@@ -57,6 +15,48 @@ SLKC_API peff::SharedPtr<AstNode> FnNode::doDuplicate(peff::Alloc *newAllocator)
 SLKC_API FnNode::FnNode(
 	peff::Alloc *selfAllocator,
 	const peff::SharedPtr<Document> &document)
+	: MemberNode(AstNodeType::FnSlot, selfAllocator, document),
+	  overloadings(selfAllocator) {
+}
+
+SLKC_API FnNode::FnNode(const FnNode &rhs, peff::Alloc *allocator, bool &succeededOut) : MemberNode(rhs, allocator, succeededOut), overloadings(allocator) {
+	if (!succeededOut) {
+		return;
+	}
+
+	if (!overloadings.resize(rhs.overloadings.size())) {
+		succeededOut = false;
+		return;
+	}
+
+	for (size_t i = 0; i < overloadings.size(); ++i) {
+		if (!(overloadings.at(i) = rhs.overloadings.at(i)->duplicate<FnOverloadingNode>(allocator))) {
+			succeededOut = false;
+			return;
+		}
+
+		overloadings.at(i)->setParent(this);
+	}
+
+	succeededOut = true;
+}
+
+SLKC_API FnNode::~FnNode() {
+}
+
+SLKC_API peff::SharedPtr<AstNode> FnOverloadingNode::doDuplicate(peff::Alloc *newAllocator) const {
+	bool succeeded = false;
+	peff::SharedPtr<FnOverloadingNode> duplicatedNode(peff::makeShared<FnOverloadingNode>(newAllocator, *this, newAllocator, succeeded));
+	if ((!duplicatedNode) || (!succeeded)) {
+		return {};
+	}
+
+	return duplicatedNode.castTo<AstNode>();
+}
+
+SLKC_API FnOverloadingNode::FnOverloadingNode(
+	peff::Alloc *selfAllocator,
+	const peff::SharedPtr<Document> &document)
 	: MemberNode(AstNodeType::Fn, selfAllocator, document),
 	  params(selfAllocator),
 	  paramIndices(selfAllocator),
@@ -66,7 +66,7 @@ SLKC_API FnNode::FnNode(
 	  idxGenericParamCommaTokens(selfAllocator) {
 }
 
-SLKC_API FnNode::FnNode(const FnNode &rhs, peff::Alloc *allocator, bool &succeededOut)
+SLKC_API FnOverloadingNode::FnOverloadingNode(const FnOverloadingNode &rhs, peff::Alloc *allocator, bool &succeededOut)
 	: MemberNode(rhs, allocator, succeededOut),
 	  params(allocator),
 	  paramIndices(allocator),
@@ -138,5 +138,5 @@ SLKC_API FnNode::FnNode(const FnNode &rhs, peff::Alloc *allocator, bool &succeed
 	succeededOut = true;
 }
 
-SLKC_API FnNode::~FnNode() {
+SLKC_API FnOverloadingNode::~FnOverloadingNode() {
 }

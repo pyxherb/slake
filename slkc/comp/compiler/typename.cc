@@ -407,7 +407,7 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 
 SLKC_API std::optional<CompilationError> slkc::fnToTypeName(
 	CompileContext *compileContext,
-	peff::SharedPtr<FnNode> fn,
+	peff::SharedPtr<FnOverloadingNode> fn,
 	peff::SharedPtr<FnTypeNameNode> &evaluatedTypeOut) {
 	peff::SharedPtr<FnTypeNameNode> tn;
 

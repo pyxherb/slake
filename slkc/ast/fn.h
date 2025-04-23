@@ -10,21 +10,21 @@ namespace slkc {
 
 	constexpr static FnFlags FN_PURE = 0x00000001, FN_VARG = 0x00000002, FN_VIRTUAL = 0x00000004;
 
-	class FnNode;
+	class FnOverloadingNode;
 
-	class FnSlotNode : public MemberNode {
+	class FnNode : public MemberNode {
 	protected:
 		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
 
 	public:
-		peff::DynArray<peff::SharedPtr<FnNode>> overloadings;
+		peff::DynArray<peff::SharedPtr<FnOverloadingNode>> overloadings;
 
-		SLKC_API FnSlotNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
-		SLKC_API FnSlotNode(const FnSlotNode &rhs, peff::Alloc *allocator, bool &succeededOut);
-		SLKC_API virtual ~FnSlotNode();
+		SLKC_API FnNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API FnNode(const FnNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API virtual ~FnNode();
 	};
 
-	class FnNode : public MemberNode {
+	class FnOverloadingNode : public MemberNode {
 	protected:
 		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
 
@@ -48,9 +48,9 @@ namespace slkc {
 		peff::SharedPtr<CodeBlockStmtNode> body;
 		FnFlags fnFlags = 0;
 
-		SLKC_API FnNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
-		SLKC_API FnNode(const FnNode &rhs, peff::Alloc *allocator, bool &succeededOut);
-		SLKC_API virtual ~FnNode();
+		SLKC_API FnOverloadingNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API FnOverloadingNode(const FnOverloadingNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API virtual ~FnOverloadingNode();
 	};
 }
 

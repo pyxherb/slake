@@ -4,7 +4,7 @@ using namespace slkc;
 
 SLKC_API std::optional<CompilationError> slkc::reindexFnParams(
 	CompileContext *compileContext,
-	peff::SharedPtr<FnNode> fn) {
+	peff::SharedPtr<FnOverloadingNode> fn) {
 	for (size_t i = 0; i < fn->params.size(); ++i) {
 		peff::SharedPtr<VarNode> &curParam = fn->params.at(i);
 		if (fn->paramIndices.contains(curParam->name)) {
@@ -22,7 +22,7 @@ SLKC_API std::optional<CompilationError> slkc::reindexFnParams(
 
 SLKC_API std::optional<CompilationError> slkc::indexFnParams(
 	CompileContext *compileContext,
-	peff::SharedPtr<FnNode> fn) {
+	peff::SharedPtr<FnOverloadingNode> fn) {
 	if (fn->isParamsIndexed) {
 		return {};
 	}

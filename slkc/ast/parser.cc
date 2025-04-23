@@ -303,7 +303,7 @@ end:
 	return {};
 }
 
-SLKC_API std::optional<SyntaxError> Parser::parseFn(peff::SharedPtr<FnNode> &fnNodeOut) {
+SLKC_API std::optional<SyntaxError> Parser::parseFn(peff::SharedPtr<FnOverloadingNode> &fnNodeOut) {
 	std::optional<SyntaxError> syntaxError;
 
 	FnFlags initialFlags = 0;
@@ -342,7 +342,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseFn(peff::SharedPtr<FnNode> &fnN
 			return SyntaxError(TokenRange{ fnToken->index }, SyntaxErrorKind::UnexpectedToken);
 	}
 
-	if (!(fnNodeOut = peff::makeShared<FnNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+	if (!(fnNodeOut = peff::makeShared<FnOverloadingNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 		return genOutOfMemoryError();
 	}
 
@@ -599,7 +599,7 @@ accessModifierParseEnd:
 		case TokenId::FnKeyword:
 		case TokenId::OperatorKeyword: {
 			// Function.
-			peff::SharedPtr<FnNode> fn;
+			peff::SharedPtr<FnOverloadingNode> fn;
 
 			if ((syntaxError = parseFn(fn))) {
 				return syntaxError;
@@ -619,15 +619,15 @@ accessModifierParseEnd:
 
 					return SyntaxError(fn->tokenRange, std::move(exData));
 				}
-				FnSlotNode *fnSlot = (FnSlotNode *)p->members.at(it.value());
+				FnNode *fnSlot = (FnNode *)p->members.at(it.value());
 				fn->setParent(fnSlot);
 				if (!fnSlot->overloadings.pushBack(std::move(fn))) {
 					return genOutOfMemoryError();
 				}
 			} else {
-				peff::SharedPtr<FnSlotNode> fnSlot;
+				peff::SharedPtr<FnNode> fnSlot;
 
-				if (!(fnSlot = peff::makeShared<FnSlotNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+				if (!(fnSlot = peff::makeShared<FnNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 					return genOutOfMemoryError();
 				}
 

@@ -496,7 +496,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 				break;
 			}
 			case AstNodeType::FnSlot: {
-				peff::SharedPtr<FnSlotNode> slotNode = m.castTo<FnSlotNode>();
+				peff::SharedPtr<FnNode> slotNode = m.castTo<FnNode>();
 
 				for (auto i : slotNode->overloadings) {
 					SLKC_RETURN_IF_COMP_ERROR(indexFnParams(compileContext, i));

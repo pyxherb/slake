@@ -106,7 +106,7 @@ SLKC_API std::optional<CompilationError> slkc::resolveStaticMember(
 				break;
 			}
 			case AstNodeType::FnSlot: {
-				peff::SharedPtr<FnSlotNode> m = result.castTo<FnSlotNode>();
+				peff::SharedPtr<FnNode> m = result.castTo<FnNode>();
 
 				// Check if the slot contains any static method.
 				for (auto i : m->overloadings) {
@@ -270,7 +270,7 @@ SLKC_API std::optional<CompilationError> slkc::resolveInstanceMember(
 				break;
 			}
 			case AstNodeType::FnSlot: {
-				peff::SharedPtr<FnSlotNode> m = result.castTo<FnSlotNode>();
+				peff::SharedPtr<FnNode> m = result.castTo<FnNode>();
 
 				// Check if the slot contains any instance method.
 				for (auto i : m->overloadings) {
@@ -410,7 +410,7 @@ SLKC_API std::optional<CompilationError> slkc::resolveIdRefWithScopeNode(
 					break;
 				}
 				case AstNodeType::Fn: {
-					peff::SharedPtr<FnNode> m = resolveScope.castTo<FnNode>();
+					peff::SharedPtr<FnOverloadingNode> m = resolveScope.castTo<FnOverloadingNode>();
 
 					if (auto it = m->genericParamIndices.find(initialEntry.name); it != m->genericParamIndices.end()) {
 						memberOut = m->genericParams.at(it.value()).castTo<MemberNode>();
@@ -531,7 +531,7 @@ SLKC_API std::optional<CompilationError> slkc::resolveIdRefWithScopeNode(
 				break;
 			}
 			case AstNodeType::Fn: {
-				peff::SharedPtr<FnNode> m = resolveScope.castTo<FnNode>();
+				peff::SharedPtr<FnOverloadingNode> m = resolveScope.castTo<FnOverloadingNode>();
 
 				if (!walkedNodes.insert(m.castTo<MemberNode>())) {
 					return genOutOfMemoryCompError();
@@ -540,13 +540,13 @@ SLKC_API std::optional<CompilationError> slkc::resolveIdRefWithScopeNode(
 				if (!m->parent)
 					std::terminate();
 
-				peff::SharedPtr<FnSlotNode> slot;
+				peff::SharedPtr<FnNode> slot;
 				{
 					peff::SharedPtr<MemberNode> p = m->parent->sharedFromThis().castTo<MemberNode>();
 
 					if (p->astNodeType != AstNodeType::FnSlot)
 						std::terminate();
-					slot = p.castTo<FnSlotNode>();
+					slot = p.castTo<FnNode>();
 				}
 
 				if (slot->parent) {

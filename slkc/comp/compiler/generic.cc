@@ -116,7 +116,7 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 
 	switch (astNode->astNodeType) {
 		case AstNodeType::FnSlot: {
-			peff::SharedPtr<FnSlotNode> fnSlot = astNode.castTo<FnSlotNode>();
+			peff::SharedPtr<FnNode> fnSlot = astNode.castTo<FnNode>();
 
 			for (auto i : fnSlot->overloadings) {
 				for (auto j : i->genericParams) {
@@ -317,7 +317,7 @@ SLKC_API std::optional<CompilationError> Document::instantiateGenericObject(
 			// Map generic arguments.
 			switch (originalObject->astNodeType) {
 				case AstNodeType::Fn: {
-					peff::SharedPtr<FnNode> obj = duplicatedObject.castTo<FnNode>();
+					peff::SharedPtr<FnOverloadingNode> obj = duplicatedObject.castTo<FnOverloadingNode>();
 
 					if (genericArgs.size() != obj->genericParams.size()) {
 						return CompilationError(

@@ -214,7 +214,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				uint32_t idxReg = compileContext->allocReg();
 
 				if (parts.back().member->astNodeType == AstNodeType::Fn) {
-					peff::SharedPtr<FnNode> fn = parts.back().member.castTo<FnNode>();
+					peff::SharedPtr<FnOverloadingNode> fn = parts.back().member.castTo<FnOverloadingNode>();
 
 					if (parts.size() > 1) {
 						if (!(fn->fnFlags & FN_VIRTUAL)) {
@@ -322,19 +322,19 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				return {};
 			};
 			auto selectSingleMatchingOverloading = [](CompileContext *compileContext, const TokenRange &tokenRange, peff::SharedPtr<MemberNode> &finalMember, peff::SharedPtr<TypeNameNode> desiredType, bool isStatic, CompileExprResult &resultOut) -> std::optional<CompilationError> {
-				peff::SharedPtr<FnSlotNode> m = finalMember.castTo<FnSlotNode>();
+				peff::SharedPtr<FnNode> m = finalMember.castTo<FnNode>();
 
 				resultOut.callTargetFnSlot = m;
 
 				if (m->overloadings.size() == 1) {
 					finalMember = m->overloadings.back().castTo<MemberNode>();
-					if (!resultOut.callTargetMatchedOverloadings.pushBack(peff::SharedPtr<FnNode>(m->overloadings.back()))) {
+					if (!resultOut.callTargetMatchedOverloadings.pushBack(peff::SharedPtr<FnOverloadingNode>(m->overloadings.back()))) {
 						return genOutOfMemoryCompError();
 					}
 				} else {
 					if (desiredType && (desiredType->typeNameKind == TypeNameKind::Fn)) {
 						peff::SharedPtr<FnTypeNameNode> tn = desiredType.castTo<FnTypeNameNode>();
-						peff::DynArray<peff::SharedPtr<FnNode>> matchedOverloadingIndices(compileContext->allocator.get());
+						peff::DynArray<peff::SharedPtr<FnOverloadingNode>> matchedOverloadingIndices(compileContext->allocator.get());
 
 						// TODO: Check tn->isForAdl and do strictly equality check.
 						SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileContext, m, tn->paramTypes.data(), tn->paramTypes.size(), isStatic, matchedOverloadingIndices));
@@ -392,7 +392,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 					}
 					case AstNodeType::Fn: {
 						peff::SharedPtr<FnTypeNameNode> tn;
-						SLKC_RETURN_IF_COMP_ERROR(fnToTypeName(compileContext, node.castTo<FnNode>(), tn));
+						SLKC_RETURN_IF_COMP_ERROR(fnToTypeName(compileContext, node.castTo<FnOverloadingNode>(), tn));
 						typeNameOut = tn.castTo<TypeNameNode>();
 						break;
 					}
@@ -451,7 +451,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						SLKC_RETURN_IF_COMP_ERROR(selectSingleMatchingOverloading(compileContext, e->idRefPtr->tokenRange, finalMember, desiredType, false, resultOut));
 
 						peff::SharedPtr<FnTypeNameNode> fnType;
-						SLKC_RETURN_IF_COMP_ERROR(fnToTypeName(compileContext, finalMember.castTo<FnNode>(), fnType));
+						SLKC_RETURN_IF_COMP_ERROR(fnToTypeName(compileContext, finalMember.castTo<FnOverloadingNode>(), fnType));
 
 						parts.back().member = finalMember;
 
@@ -488,7 +488,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 					SLKC_RETURN_IF_COMP_ERROR(selectSingleMatchingOverloading(compileContext, e->idRefPtr->tokenRange, finalMember, desiredType, false, resultOut));
 
 					peff::SharedPtr<FnTypeNameNode> fnType;
-					SLKC_RETURN_IF_COMP_ERROR(fnToTypeName(compileContext, finalMember.castTo<FnNode>(), fnType));
+					SLKC_RETURN_IF_COMP_ERROR(fnToTypeName(compileContext, finalMember.castTo<FnOverloadingNode>(), fnType));
 
 					parts.back().member = finalMember;
 
@@ -686,7 +686,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 			}
 
 			if (result.callTargetFnSlot) {
-				peff::DynArray<peff::SharedPtr<FnNode>> matchedOverloadingIndices(compileContext->allocator.get());
+				peff::DynArray<peff::SharedPtr<FnOverloadingNode>> matchedOverloadingIndices(compileContext->allocator.get());
 				auto matchedOverloading = result.callTargetMatchedOverloadings.back();
 				SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileContext,
 					result.callTargetFnSlot,
@@ -841,7 +841,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				if (c->members.at(it.value())->astNodeType != AstNodeType::FnSlot) {
 					return CompilationError(e->targetType->tokenRange, CompilationErrorKind::TypeIsNotConstructible);
 				}
-				peff::SharedPtr<FnSlotNode> constructor = c->members.at(it.value()).castTo<FnSlotNode>();
+				peff::SharedPtr<FnNode> constructor = c->members.at(it.value()).castTo<FnNode>();
 
 				peff::DynArray<peff::SharedPtr<TypeNameNode>> argTypes(compileContext->allocator.get());
 
@@ -849,7 +849,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 					return genOutOfMemoryCompError();
 				}
 
-				peff::SharedPtr<FnNode> overloading;
+				peff::SharedPtr<FnOverloadingNode> overloading;
 				if (constructor->overloadings.size() == 1) {
 					overloading = constructor->overloadings.back();
 
@@ -861,7 +861,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						}
 					}
 
-					peff::DynArray<peff::SharedPtr<FnNode>> matchedOverloadingIndices(compileContext->allocator.get());
+					peff::DynArray<peff::SharedPtr<FnOverloadingNode>> matchedOverloadingIndices(compileContext->allocator.get());
 					SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileContext,
 						constructor,
 						argTypes.data(),
@@ -876,7 +876,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, e->args.at(i), argTypes.at(i), {}));
 					}
 
-					peff::DynArray<peff::SharedPtr<FnNode>> matchedOverloadingIndices(compileContext->allocator.get());
+					peff::DynArray<peff::SharedPtr<FnOverloadingNode>> matchedOverloadingIndices(compileContext->allocator.get());
 					SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileContext,
 						constructor,
 						argTypes.data(),

@@ -38,7 +38,7 @@ namespace slkc {
 	};
 
 	struct FnCompileContext {
-		peff::SharedPtr<FnNode> currentFn;
+		peff::SharedPtr<FnOverloadingNode> currentFn;
 		peff::SharedPtr<ThisNode> thisNode;
 		peff::DynArray<slake::Instruction> instructionsOut;
 		peff::DynArray<peff::SharedPtr<Label>> labels;
@@ -242,8 +242,8 @@ namespace slkc {
 		peff::SharedPtr<TypeNameNode> evaluatedType;
 
 		// For parameter name query, etc, if exists.
-		peff::SharedPtr<FnSlotNode> callTargetFnSlot;
-		peff::DynArray<peff::SharedPtr<FnNode>> callTargetMatchedOverloadings;
+		peff::SharedPtr<FnNode> callTargetFnSlot;
+		peff::DynArray<peff::SharedPtr<FnOverloadingNode>> callTargetMatchedOverloadings;
 		uint32_t idxThisRegOut = UINT32_MAX;
 
 		SLAKE_FORCEINLINE CompileExprResult(peff::Alloc *allocator) : callTargetMatchedOverloadings(allocator) {}
@@ -475,22 +475,22 @@ namespace slkc {
 
 	[[nodiscard]] SLKC_API std::optional<CompilationError> reindexFnParams(
 		CompileContext *compileContext,
-		peff::SharedPtr<FnNode> fn);
+		peff::SharedPtr<FnOverloadingNode> fn);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> indexFnParams(
 		CompileContext *compileContext,
-		peff::SharedPtr<FnNode> fn);
+		peff::SharedPtr<FnOverloadingNode> fn);
 
 	[[nodiscard]] SLKC_API std::optional<CompilationError> determineFnOverloading(
 		CompileContext *compileContext,
-		peff::SharedPtr<FnSlotNode> fnSlot,
+		peff::SharedPtr<FnNode> fnSlot,
 		const peff::SharedPtr<TypeNameNode> *argTypes,
 		size_t nArgTypes,
 		bool isStatic,
-		peff::DynArray<peff::SharedPtr<FnNode>> &matchedOverloadings,
+		peff::DynArray<peff::SharedPtr<FnOverloadingNode>> &matchedOverloadings,
 		peff::Set<peff::SharedPtr<MemberNode>> *walkedParents = nullptr);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> fnToTypeName(
 		CompileContext *compileContext,
-		peff::SharedPtr<FnNode> fn,
+		peff::SharedPtr<FnOverloadingNode> fn,
 		peff::SharedPtr<FnTypeNameNode> &evaluatedTypeOut);
 
 	[[nodiscard]] SLKC_API std::optional<CompilationError> renormalizeModuleVarDefStmts(

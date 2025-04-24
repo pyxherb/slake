@@ -112,7 +112,7 @@ SLKC_API std::optional<SyntaxError> Parser::splitRshOpToken() {
 			token->sourceLocation.endPosition.column -= 1;
 
 			OwnedTokenPtr extraClosingToken;
-			if (!(extraClosingToken = OwnedTokenPtr(peff::allocAndConstruct<Token>(token->allocator.get(), ASTNODE_ALIGNMENT, token->allocator.get(), document)))) {
+			if (!(extraClosingToken = OwnedTokenPtr(peff::allocAndConstruct<Token>(token->allocator.get(), ASTNODE_ALIGNMENT, token->allocator.get(), peff::WeakPtr<Document>(document))))) {
 				return genOutOfMemoryError();
 			}
 

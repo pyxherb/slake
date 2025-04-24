@@ -39,6 +39,9 @@ namespace slkc {
 		InvalidCast,
 
 		ImportLimitExceeded,
+		MalformedModuleName,
+		ErrorParsingImportedModule,
+		ModuleNotFound
 	};
 
 	class TypeNameNode;
@@ -47,10 +50,18 @@ namespace slkc {
 		peff::SharedPtr<TypeNameNode> desiredType;
 	};
 
+	struct ErrorParsingImportedModuleErrorExData {
+		std::optional<LexicalError> lexicalError;
+		peff::SharedPtr<ModuleNode> mod;
+
+		SLAKE_FORCEINLINE ErrorParsingImportedModuleErrorExData(LexicalError &&lexicalError) : lexicalError(std::move(lexicalError)) {}
+		SLAKE_FORCEINLINE ErrorParsingImportedModuleErrorExData(peff::SharedPtr<ModuleNode> mod) : mod(mod) {}
+	};
+
 	struct CompilationError {
 		TokenRange tokenRange;
 		CompilationErrorKind errorKind;
-		std::variant<std::monostate, IncompatibleOperandErrorExData> exData;
+		std::variant<std::monostate, IncompatibleOperandErrorExData, ErrorParsingImportedModuleErrorExData> exData;
 
 		SLAKE_FORCEINLINE CompilationError(
 			const TokenRange &tokenRange,
@@ -65,6 +76,14 @@ namespace slkc {
 			IncompatibleOperandErrorExData &&exData)
 			: tokenRange(tokenRange),
 			  errorKind(CompilationErrorKind::IncompatibleOperand),
+			  exData(exData) {
+		}
+
+		SLAKE_FORCEINLINE CompilationError(
+			const TokenRange &tokenRange,
+			ErrorParsingImportedModuleErrorExData &&exData)
+			: tokenRange(tokenRange),
+			  errorKind(CompilationErrorKind::ErrorParsingImportedModule),
 			  exData(exData) {
 		}
 

@@ -60,7 +60,7 @@ SLKC_API void StringTokenExtension::dealloc() {
 	peff::destroyAndRelease<StringTokenExtension>(allocator.get(), this, sizeof(std::max_align_t));
 }
 
-SLKC_API Token::Token(peff::Alloc *allocator, const peff::SharedPtr<Document> &document) : allocator(allocator), document(document) {
+SLKC_API Token::Token(peff::Alloc *allocator, const peff::WeakPtr<Document> &document) : allocator(allocator), document(document) {
 }
 SLKC_API Token::~Token() {
 }

@@ -1,6 +1,7 @@
 #include "module.h"
 #include "attribute.h"
 #include "import.h"
+#include "parser.h"
 
 using namespace slkc;
 
@@ -77,6 +78,8 @@ SLKC_API ModuleNode::ModuleNode(const ModuleNode &rhs, peff::Alloc *allocator, b
 	if (!succeededOut) {
 		return;
 	}
+
+	parser = rhs.parser;
 
 	if (!varDefStmts.resize(rhs.varDefStmts.size())) {
 		succeededOut = false;
@@ -165,5 +168,16 @@ SLKC_API bool ModuleNode::removeMember(const std::string_view &name) noexcept {
 		return false;
 	}
 	memberIndices.remove(name);
+	for (auto i : memberIndices) {
+		if (i.second > index) {
+			--i.second;
+		}
+	}
 	return true;
+}
+
+SLKC_API void ModuleNode::setParser(peff::SharedPtr<Parser> parser) {
+	parser->document = {};
+	parser->curParent = {};
+	this->parser = parser;
 }

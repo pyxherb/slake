@@ -292,12 +292,12 @@ namespace slkc {
 		TokenId tokenId;
 		peff::RcObjectPtr<peff::Alloc> allocator;
 		std::string_view sourceText;
-		peff::SharedPtr<Document> document;
+		peff::WeakPtr<Document> document;
 		SourceLocation sourceLocation;
 		std::unique_ptr<TokenExtension, peff::DeallocableDeleter<TokenExtension>> exData;
 		size_t index = SIZE_MAX;
 
-		SLKC_API Token(peff::Alloc *allocator, const peff::SharedPtr<Document> &document);
+		SLKC_API Token(peff::Alloc *allocator, const peff::WeakPtr<Document> &document);
 		SLKC_API virtual ~Token();
 
 		SLKC_API void dealloc();

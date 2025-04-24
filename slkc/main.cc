@@ -154,9 +154,9 @@ void dumpLexicalError(const slkc::LexicalError &lexicalError) {
 	}
 }
 
-void dumpSyntaxError(const slkc::Parser &parser, const slkc::SyntaxError &syntaxError) {
-	const slkc::Token *beginToken = parser.tokenList.at(syntaxError.tokenRange.beginIndex).get();
-	const slkc::Token *endToken = parser.tokenList.at(syntaxError.tokenRange.endIndex).get();
+void dumpSyntaxError(slkc::Parser *parser, const slkc::SyntaxError &syntaxError) {
+	const slkc::Token *beginToken = parser->tokenList.at(syntaxError.tokenRange.beginIndex).get();
+	const slkc::Token *endToken = parser->tokenList.at(syntaxError.tokenRange.endIndex).get();
 
 	switch (syntaxError.errorKind) {
 		case slkc::SyntaxErrorKind::OutOfMemory:
@@ -237,9 +237,9 @@ void dumpSyntaxError(const slkc::Parser &parser, const slkc::SyntaxError &syntax
 	}
 }
 
-void dumpCompilationError(const slkc::Parser &parser, const slkc::CompilationError &error) {
-	const slkc::Token *beginToken = parser.tokenList.at(error.tokenRange.beginIndex).get();
-	const slkc::Token *endToken = parser.tokenList.at(error.tokenRange.endIndex).get();
+void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::CompilationError &error) {
+	const slkc::Token *beginToken = parser->tokenList.at(error.tokenRange.beginIndex).get();
+	const slkc::Token *endToken = parser->tokenList.at(error.tokenRange.endIndex).get();
 
 	switch (error.errorKind) {
 		case slkc::CompilationErrorKind::OutOfMemory:
@@ -470,17 +470,20 @@ int main(int argc, char *argv[]) {
 		slake::Runtime runtime(peff::getDefaultAlloc());
 		slkc::CompileContext compileContext(&runtime, document, &peff::g_nullAlloc, peff::getDefaultAlloc());
 		{
-			peff::NullAlloc nullAlloc;
-			slkc::Parser parser(document, tokenList.release(), &nullAlloc, peff::getDefaultAlloc());
+			peff::SharedPtr<slkc::Parser> parser;
+			if (!(parser = peff::makeShared<slkc::Parser>(peff::getDefaultAlloc(), document, tokenList.release(), peff::getDefaultAlloc()))) {
+				printError("Error allocating memory for the parser");
+				return ENOMEM;
+			}
 
 			peff::SharedPtr<slkc::ModuleNode> mod(peff::makeShared<slkc::ModuleNode>(peff::getDefaultAlloc(), peff::getDefaultAlloc(), document));
 			document->rootModule = mod;
 
-			if (auto e = parser.parseProgram(mod); e) {
+			if (auto e = parser->parseProgram(mod); e) {
 				dumpSyntaxError(parser, *e);
 			}
 
-			for (auto &i : parser.syntaxErrors) {
+			for (auto &i : parser->syntaxErrors) {
 				dumpSyntaxError(parser, i);
 			}
 

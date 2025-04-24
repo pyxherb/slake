@@ -492,6 +492,13 @@ namespace slkc {
 		CompileContext *compileContext,
 		peff::SharedPtr<FnOverloadingNode> fn,
 		peff::SharedPtr<FnTypeNameNode> &evaluatedTypeOut);
+	[[nodiscard]] SLKC_API std::optional<CompilationError> cleanupUnusedModuleTree(
+		CompileContext *compileContext,
+		peff::SharedPtr<ModuleNode> leaf);
+	[[nodiscard]] SLKC_API std::optional<CompilationError> completeParentModules(
+		CompileContext *compileContext,
+		IdRef *modulePath,
+		peff::SharedPtr<ModuleNode> leaf);
 
 	[[nodiscard]] SLKC_API std::optional<CompilationError> renormalizeModuleVarDefStmts(
 		CompileContext *compileContext,
@@ -514,6 +521,27 @@ namespace slkc {
 		peff::Alloc *allocator,
 		Writer *writer,
 		slake::ModuleObject *mod);
+
+	class ExternalModuleProvider {
+	public:
+		const char *providerName;
+
+		SLKC_API ExternalModuleProvider(const char *providerName);
+		SLKC_API virtual ~ExternalModuleProvider();
+
+		virtual std::optional<CompilationError> loadModule(CompileContext *compileContext, IdRef *moduleName) = 0;
+	};
+
+	class FileSystemExternalModuleProvider : public ExternalModuleProvider{
+	public:
+		peff::DynArray<peff::String> importPaths;
+
+		SLKC_API FileSystemExternalModuleProvider(peff::Alloc *allocator);
+		SLKC_API virtual ~FileSystemExternalModuleProvider();
+
+		SLKC_API virtual std::optional<CompilationError> loadModule(CompileContext *compileContext, IdRef *moduleName) override;
+		SLKC_API bool registerImportPath(peff::String &&path);
+	};
 }
 
 #endif

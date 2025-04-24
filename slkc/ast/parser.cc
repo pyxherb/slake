@@ -2,7 +2,7 @@
 
 using namespace slkc;
 
-SLKC_API Parser::Parser(peff::SharedPtr<Document> document, TokenList &&tokenList, peff::Alloc *selfAllocator, peff::Alloc *resourceAllocator) : document(document), tokenList(std::move(tokenList)), selfAllocator(selfAllocator), resourceAllocator(resourceAllocator), syntaxErrors(resourceAllocator) {
+SLKC_API Parser::Parser(peff::SharedPtr<Document> document, TokenList &&tokenList, peff::Alloc *resourceAllocator) : document(document), tokenList(std::move(tokenList)), resourceAllocator(resourceAllocator), syntaxErrors(resourceAllocator) {
 }
 
 SLKC_API Parser::~Parser() {
@@ -1036,6 +1036,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseProgram(const peff::SharedPtr<M
 			syntaxError.reset();
 		}
 	}
+
+	initialMod->setParser(sharedFromThis());
 
 	return {};
 }

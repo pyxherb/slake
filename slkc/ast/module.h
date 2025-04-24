@@ -26,11 +26,14 @@ namespace slkc {
 
 	class ImportNode;
 
+	class Parser;
+
 	class ModuleNode : public MemberNode {
 	protected:
 		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
 
 	public:
+		peff::SharedPtr<Parser> parser;
 		peff::DynArray<peff::SharedPtr<MemberNode>> members;
 		peff::HashMap<std::string_view, size_t> memberIndices;
 		peff::DynArray<peff::SharedPtr<ImportNode>> anonymousImports;
@@ -52,6 +55,8 @@ namespace slkc {
 		/// @param name Name of the member to be removed.
 		/// @return Whether the member is removed successfully.
 		[[nodiscard]] SLKC_API bool removeMember(const std::string_view &name) noexcept;
+
+		SLKC_API void setParser(peff::SharedPtr<Parser> parser);
 	};
 }
 

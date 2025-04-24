@@ -111,11 +111,11 @@ namespace slkc {
 		}
 	};
 
-	class Parser {
+	class Parser : public peff::SharedFromThis<Parser> {
 	public:
 		peff::SharedPtr<Document> document;
 		peff::SharedPtr<MemberNode> curParent;
-		peff::RcObjectPtr<peff::Alloc> selfAllocator, resourceAllocator;
+		peff::RcObjectPtr<peff::Alloc> resourceAllocator;
 		TokenList tokenList;
 		struct ParseContext {
 			size_t idxPrevToken = 0, idxCurrentToken = 0;
@@ -123,7 +123,7 @@ namespace slkc {
 		ParseContext parseContext;
 		peff::DynArray<SyntaxError> syntaxErrors;
 
-		SLKC_API Parser(peff::SharedPtr<Document> document, TokenList &&tokenList, peff::Alloc *selfAllocator, peff::Alloc *resourceAllocator);
+		SLKC_API Parser(peff::SharedPtr<Document> document, TokenList &&tokenList, peff::Alloc *resourceAllocator);
 		SLKC_API ~Parser();
 
 		SLKC_API SyntaxError genOutOfMemoryError() {
@@ -146,7 +146,7 @@ namespace slkc {
 
 		[[nodiscard]] SLAKE_FORCEINLINE std::optional<SyntaxError> expectToken(Token *token) {
 			if (token->tokenId == TokenId::End) {
-				ExpectingTokensErrorExData exData(selfAllocator.get());
+				ExpectingTokensErrorExData exData(resourceAllocator.get());
 
 				return SyntaxError(TokenRange{ token->index }, std::move(exData));
 			}

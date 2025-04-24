@@ -26,7 +26,7 @@ SLKC_API std::optional<LexicalError> Lexer::lex(const std::string_view &src, pef
 	while (true) {
 		peff::String strLiteral(allocator);
 
-		if (!(token = OwnedTokenPtr(peff::allocAndConstruct<Token>(allocator, sizeof(std::max_align_t), allocator, document))))
+		if (!(token = OwnedTokenPtr(peff::allocAndConstruct<Token>(allocator, sizeof(std::max_align_t), allocator, peff::WeakPtr<Document>(document)))))
 			goto outOfMemory;
 
 		while (true) {

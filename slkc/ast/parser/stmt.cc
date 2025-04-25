@@ -94,7 +94,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 
 				peff::SharedPtr<IfStmtNode> ifStmt;
 
-				if (!(ifStmt = peff::makeShared<IfStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document, peff::SharedPtr<ExprNode>(), peff::SharedPtr<StmtNode>(), peff::SharedPtr<StmtNode>()))) {
+				if (!(ifStmt = peff::makeShared<IfStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
 					return genOutOfMemoryError();
 				}
 
@@ -141,6 +141,73 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 					nextToken();
 
 					if ((syntaxError = parseStmt(ifStmt->falseBody))) {
+						goto genBadStmt;
+					}
+				}
+
+				break;
+			}
+			case TokenId::WithKeyword: {
+				nextToken();
+
+				peff::SharedPtr<WithStmtNode> withStmt;
+
+				if (!(withStmt = peff::makeShared<WithStmtNode>(
+						  resourceAllocator.get(),
+						  resourceAllocator.get(),
+						  document))) {
+					return genOutOfMemoryError();
+				}
+
+				stmtOut = withStmt.castTo<StmtNode>();
+
+				WithConstraintEntryPtr entry;
+
+				while (true) {
+					if (!(entry = WithConstraintEntryPtr(peff::allocAndConstruct<WithConstraintEntry>(resourceAllocator.get(), alignof(WithConstraintEntry), resourceAllocator.get())))) {
+						return genOutOfMemoryError();
+					}
+
+					Token *nameToken;
+
+					if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
+						return syntaxError;
+					}
+
+
+					if (!entry->genericParamName.build(nameToken->sourceText))
+						return genOutOfMemoryError();
+
+					nextToken();
+
+					if ((syntaxError = parseGenericConstraint(entry->constraint))) {
+						return syntaxError;
+					}
+
+					if (!withStmt->constraints.pushBack(std::move(entry)))
+						return genOutOfMemoryError();
+
+					if (peekToken()->tokenId != TokenId::Comma) {
+						break;
+					}
+
+					Token *commaToken = nextToken();
+
+					/*
+					if (!idxCommaTokensOut.pushBack(+commaToken->index))
+						return genOutOfMemoryError();*/
+				}
+
+				if ((syntaxError = parseStmt(withStmt->trueBody))) {
+					goto genBadStmt;
+				}
+
+				Token *elseToken = peekToken();
+
+				if (elseToken->tokenId == TokenId::ElseKeyword) {
+					nextToken();
+
+					if ((syntaxError = parseStmt(withStmt->falseBody))) {
 						goto genBadStmt;
 					}
 				}

@@ -2,7 +2,6 @@
 #define _SLKC_AST_MODULE_H_
 
 #include "expr.h"
-#include "stmt.h"
 
 namespace slkc {
 	class AttributeNode;
@@ -25,6 +24,7 @@ namespace slkc {
 	};
 
 	class ImportNode;
+	class VarDefStmtNode;
 
 	class Parser;
 

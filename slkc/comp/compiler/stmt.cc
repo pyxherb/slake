@@ -362,6 +362,8 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 			compileContext->getLabel(endLabel)->offset = compileContext->getCurInsOff();
 			break;
 		}
+		case StmtKind::With:
+			break;
 		case StmtKind::Switch:
 			break;
 		case StmtKind::CodeBlock: {

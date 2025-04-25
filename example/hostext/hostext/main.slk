@@ -8,6 +8,9 @@ attribute TestAttribute {
 
 class TestParent<T> {
 	fn myTest(a: T, b: T) {
+		with T(i32) {
+			extfns.print("T = i32\n");
+		}
 		extfns.print("Called myTest: ", a, " ", b, "\n");
 		return;
 	}

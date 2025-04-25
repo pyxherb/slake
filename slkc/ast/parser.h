@@ -167,6 +167,7 @@ namespace slkc {
 		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseAttributes(peff::DynArray<peff::SharedPtr<AttributeNode>> &attributesOut);
 
 		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseArgs(peff::DynArray<peff::SharedPtr<ExprNode>> &argsOut, peff::DynArray<size_t> &idxCommaTokensOut);
+		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseGenericConstraint(GenericConstraintPtr &constraintOut);
 		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseGenericParams(peff::DynArray<peff::SharedPtr<GenericParamNode>> &genericParamsOut, peff::DynArray<size_t> &idxCommaTokensOut, size_t &lAngleBracketIndexOut, size_t &rAngleBracketIndexOut);
 		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseParams(peff::DynArray<peff::SharedPtr<VarNode>> &paramsOut, peff::DynArray<size_t> &idxCommaTokensOut, size_t &lAngleBracketIndexOut, size_t &rAngleBracketIndexOut);
 

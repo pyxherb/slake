@@ -2,6 +2,7 @@
 #define _SLKC_AST_STMT_H_
 
 #include "expr.h"
+#include "generic.h"
 
 namespace slkc {
 	enum class StmtKind : uint8_t {
@@ -15,6 +16,7 @@ namespace slkc {
 		Return,		// Return
 		Yield,		// Yield
 		If,			// If
+		With,		// With
 		Switch,		// Switch
 		CodeBlock,	// Code block
 		Goto,		// Goto
@@ -167,9 +169,37 @@ namespace slkc {
 		peff::SharedPtr<ExprNode> cond;
 		peff::SharedPtr<StmtNode> trueBody, falseBody;
 
-		SLKC_API IfStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, const peff::SharedPtr<ExprNode> &cond, const peff::SharedPtr<StmtNode> &trueBody, const peff::SharedPtr<StmtNode> &falseBody);
+		SLKC_API IfStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API IfStmtNode(const IfStmtNode &rhs, peff::Alloc *allocator, bool &succeededOut);
 		SLKC_API virtual ~IfStmtNode();
+	};
+
+	class WithConstraintEntry {
+	public:
+		peff::RcObjectPtr<peff::Alloc> selfAllocator;
+		peff::String genericParamName;
+		GenericConstraintPtr constraint;
+
+		SLKC_API WithConstraintEntry(peff::Alloc *selfAllocator);
+		SLKC_API virtual ~WithConstraintEntry();
+
+		SLKC_API void dealloc() noexcept;
+	};
+	using WithConstraintEntryPtr = std::unique_ptr<WithConstraintEntry, peff::DeallocableDeleter<WithConstraintEntry>>;
+
+	WithConstraintEntryPtr duplicateWithConstraintEntry(peff::Alloc *allocator, const WithConstraintEntry *constraint);
+
+	class WithStmtNode : public StmtNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		peff::DynArray<WithConstraintEntryPtr> constraints;
+		peff::SharedPtr<StmtNode> trueBody, falseBody;
+
+		SLKC_API WithStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API WithStmtNode(const WithStmtNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API virtual ~WithStmtNode();
 	};
 
 	class CodeBlockStmtNode : public StmtNode {

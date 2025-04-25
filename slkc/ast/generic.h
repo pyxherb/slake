@@ -6,13 +6,27 @@
 namespace slkc {
 	class NamespaceNode;
 
+	class GenericConstraint {
+	public:
+		peff::RcObjectPtr<peff::Alloc> selfAllocator;
+		peff::SharedPtr<TypeNameNode> baseType;
+		peff::DynArray<peff::SharedPtr<TypeNameNode>> implementedTypes;
+
+		SLKC_API GenericConstraint(peff::Alloc *selfAllocator);
+		SLKC_API virtual ~GenericConstraint();
+
+		SLKC_API void dealloc() noexcept;
+	};
+	using GenericConstraintPtr = std::unique_ptr<GenericConstraint, peff::DeallocableDeleter<GenericConstraint>>;
+
+	GenericConstraintPtr duplicateGenericConstraint(peff::Alloc *allocator, const GenericConstraint *constraint);
+
 	class GenericParamNode : public MemberNode {
 	protected:
 		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
 
 	public:
-		peff::SharedPtr<TypeNameNode> baseType;
-		peff::DynArray<peff::SharedPtr<TypeNameNode>> implementedTypes;
+		GenericConstraintPtr genericConstraint;
 
 		SLKC_API GenericParamNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API GenericParamNode(const GenericParamNode &rhs, peff::Alloc *allocator, bool &succeededOut);

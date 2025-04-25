@@ -2,6 +2,58 @@
 
 using namespace slkc;
 
+SLKC_API std::optional<SyntaxError> Parser::parseGenericConstraint(GenericConstraintPtr& constraintOut) {
+	GenericConstraintPtr constraint(peff::allocAndConstruct<GenericConstraint>(resourceAllocator.get(), alignof(GenericConstraint), resourceAllocator.get()));
+
+	if (!constraint) {
+		return genOutOfMemoryError();
+	}
+
+	std::optional<SyntaxError> syntaxError;
+
+	if (Token *lParentheseToken = peekToken(); lParentheseToken->tokenId == TokenId::LParenthese) {
+		nextToken();
+
+		if ((syntaxError = parseTypeName(constraint->baseType))) {
+			return syntaxError;
+		}
+
+		Token *rParentheseToken;
+		if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese))) {
+			return syntaxError;
+		}
+		nextToken();
+	}
+
+	if (Token *colonToken = peekToken(); colonToken->tokenId == TokenId::Colon) {
+		nextToken();
+
+		while (true) {
+			peff::SharedPtr<TypeNameNode> tn;
+
+			if ((syntaxError = parseTypeName(tn))) {
+				return syntaxError;
+			}
+
+			if (!constraint->implementedTypes.pushBack(std::move(tn))) {
+				return genOutOfMemoryError();
+			}
+
+			if (peekToken()->tokenId != TokenId::OrOp) {
+				break;
+			}
+
+			nextToken();
+		}
+	}
+
+	if (constraint->baseType || constraint->implementedTypes.size()) {
+		constraintOut = std::move(constraint);
+	}
+
+	return {};
+}
+
 SLKC_API std::optional<SyntaxError> Parser::parseGenericParams(
 	peff::DynArray<peff::SharedPtr<GenericParamNode>> &genericParamsOut,
 	peff::DynArray<size_t> &idxCommaTokensOut,
@@ -33,40 +85,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseGenericParams(
 
 			nextToken();
 
-			if (Token *lParentheseToken = peekToken(); lParentheseToken->tokenId == TokenId::LParenthese) {
-				nextToken();
-
-				if ((syntaxError = parseTypeName(genericParamNode->baseType))) {
-					return syntaxError;
-				}
-
-				Token *rParentheseToken;
-				if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese))) {
-					return syntaxError;
-				}
-				nextToken();
-			}
-
-			if (Token *colonToken = peekToken(); colonToken->tokenId == TokenId::Colon) {
-				nextToken();
-
-				while (true) {
-					peff::SharedPtr<TypeNameNode> tn;
-
-					if ((syntaxError = parseTypeName(tn))) {
-						return syntaxError;
-					}
-
-					if (!genericParamNode->implementedTypes.pushBack(std::move(tn))) {
-						return genOutOfMemoryError();
-					}
-
-					if (peekToken()->tokenId != TokenId::OrOp) {
-						break;
-					}
-
-					nextToken();
-				}
+			if ((syntaxError = parseGenericConstraint(genericParamNode->genericConstraint))) {
+				return syntaxError;
 			}
 
 			if (!genericParamsOut.pushBack(std::move(genericParamNode)))

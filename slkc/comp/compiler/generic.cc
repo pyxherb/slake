@@ -239,10 +239,12 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 		case AstNodeType::GenericParam: {
 			peff::SharedPtr<GenericParamNode> cls = astNode.castTo<GenericParamNode>();
 
-			SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(cls->baseType, context));
+			if (cls->genericConstraint) {
+				SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(cls->genericConstraint->baseType, context));
 
-			for (auto &k : cls->implementedTypes) {
-				SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(k, context));
+				for (auto &k : cls->genericConstraint->implementedTypes) {
+					SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(k, context));
+				}
 			}
 			break;
 		}

@@ -307,7 +307,7 @@ SLKC_API peff::SharedPtr<AstNode> IfStmtNode::doDuplicate(peff::Alloc *newAlloca
 	return duplicatedNode.castTo<AstNode>();
 }
 
-SLKC_API IfStmtNode::IfStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, const peff::SharedPtr<ExprNode> &cond, const peff::SharedPtr<StmtNode> &trueBody, const peff::SharedPtr<StmtNode> &falseBody) : StmtNode(StmtKind::If, selfAllocator, document), cond(cond), trueBody(trueBody), falseBody(falseBody) {
+SLKC_API IfStmtNode::IfStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : StmtNode(StmtKind::If, selfAllocator, document) {
 }
 
 SLKC_API IfStmtNode::IfStmtNode(const IfStmtNode &rhs, peff::Alloc *allocator, bool &succeededOut) : StmtNode(rhs, allocator) {
@@ -330,6 +330,72 @@ SLKC_API IfStmtNode::IfStmtNode(const IfStmtNode &rhs, peff::Alloc *allocator, b
 }
 
 SLKC_API IfStmtNode::~IfStmtNode() {
+}
+
+SLKC_API WithConstraintEntry::WithConstraintEntry(peff::Alloc *selfAllocator) : selfAllocator(selfAllocator), genericParamName(selfAllocator) {}
+SLKC_API WithConstraintEntry::~WithConstraintEntry() {}
+SLKC_API void WithConstraintEntry::dealloc() noexcept {
+	peff::destroyAndRelease<WithConstraintEntry>(selfAllocator.get(), this, alignof(WithConstraintEntry));
+}
+
+WithConstraintEntryPtr slkc::duplicateWithConstraintEntry(peff::Alloc *allocator, const WithConstraintEntry *constraint) {
+	WithConstraintEntryPtr ptr(peff::allocAndConstruct<WithConstraintEntry>(allocator, alignof(WithConstraintEntry), allocator));
+
+	if (!ptr) {
+		return nullptr;
+	}
+
+	if (!ptr->genericParamName.build(constraint->genericParamName)) {
+		return nullptr;
+	}
+
+	if (!(ptr->constraint = duplicateGenericConstraint(allocator, constraint->constraint.get()))) {
+		return nullptr;
+	}
+
+	return ptr;
+}
+
+SLKC_API peff::SharedPtr<AstNode> WithStmtNode::doDuplicate(peff::Alloc *newAllocator) const {
+	bool succeeded = false;
+	peff::SharedPtr<WithStmtNode> duplicatedNode(peff::makeShared<WithStmtNode>(newAllocator, *this, newAllocator, succeeded));
+	if ((!duplicatedNode) || (!succeeded)) {
+		return {};
+	}
+
+	return duplicatedNode.castTo<AstNode>();
+}
+
+SLKC_API WithStmtNode::WithStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : StmtNode(StmtKind::With, selfAllocator, document), constraints(selfAllocator) {
+}
+
+SLKC_API WithStmtNode::WithStmtNode(const WithStmtNode &rhs, peff::Alloc *allocator, bool &succeededOut) : StmtNode(rhs, allocator), constraints(allocator) {
+	if (!constraints.resize(rhs.constraints.size())) {
+		succeededOut = false;
+		return;
+	}
+
+	for (size_t i = 0; i < rhs.constraints.size(); ++i) {
+		if (!(constraints.at(i) = duplicateWithConstraintEntry(allocator, rhs.constraints.at(i).get()))) {
+			succeededOut = false;
+			return;
+		}
+	}
+
+	if (!(trueBody = rhs.trueBody->duplicate<StmtNode>(allocator))) {
+		succeededOut = false;
+		return;
+	}
+
+	if (!(falseBody = rhs.falseBody->duplicate<StmtNode>(allocator))) {
+		succeededOut = false;
+		return;
+	}
+
+	succeededOut = true;
+}
+
+SLKC_API WithStmtNode::~WithStmtNode() {
 }
 
 SLKC_API peff::SharedPtr<AstNode> CodeBlockStmtNode::doDuplicate(peff::Alloc *newAllocator) const {

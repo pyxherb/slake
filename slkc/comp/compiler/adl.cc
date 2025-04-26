@@ -33,7 +33,7 @@ SLKC_API std::optional<CompilationError> slkc::determineFnOverloading(
 			SLKC_RETURN_IF_COMP_ERROR(isSameType(currentParam->type, argTypes[j], whether));
 
 			if (!whether) {
-				SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(argTypes[j], currentParam->type, whether));
+				SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(argTypes[j], currentParam->type, true, whether));
 				if (!whether) {
 					goto mismatched;
 				}

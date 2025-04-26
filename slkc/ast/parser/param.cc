@@ -41,6 +41,12 @@ SLKC_API std::optional<SyntaxError> Parser::parseParams(
 
 		nextToken();
 
+		if (peekToken()->tokenId == TokenId::FinalKeyword) {
+			Token *finalToken = nextToken();
+
+			paramNode->isTypeSealed = true;
+		}
+
 		if (peekToken()->tokenId == TokenId::Colon) {
 			Token *colonToken = nextToken();
 

@@ -51,8 +51,9 @@ namespace slkc {
 		peff::String name;
 		peff::SharedPtr<TypeNameNode> type;
 		peff::SharedPtr<ExprNode> initialValue;
+		bool isTypeSealed = false;
 
-		SLKC_API VarDefEntry(peff::Alloc *selfAllocator, peff::String &&name, const peff::SharedPtr<TypeNameNode> &type, const peff::SharedPtr<ExprNode> &initialValue);
+		SLKC_API VarDefEntry(peff::Alloc *selfAllocator, peff::String &&name, const peff::SharedPtr<TypeNameNode> &type, const peff::SharedPtr<ExprNode> &initialValue, bool isTypeSealed = false);
 		SLKC_API virtual ~VarDefEntry();
 
 		SLKC_API void dealloc() noexcept;

@@ -61,7 +61,7 @@ SLKC_API std::optional<CompilationError> slkc::_compileOrCastOperand(
 		return {};
 	}
 
-	SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(operandType, desiredType, whether));
+	SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(operandType, desiredType, true, whether));
 	if (whether) {
 		CompileExprResult result(compileContext->allocator.get());
 
@@ -833,7 +833,10 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 				tn->tokenRange = e->targetType->tokenRange;
 
-				SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, tn.castTo<TypeNameNode>(), type));
+				auto e = compileTypeName(compileContext, tn.castTo<TypeNameNode>(), type);
+				if (e) {
+					std::terminate();
+				}
 			}
 			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::NEW, resultRegOut, { slake::Value(type) }));
 
@@ -931,7 +934,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 			SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, e->source, tn, e->targetType));
 
 			bool b;
-			SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(tn, e->targetType, b));
+			SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(tn, e->targetType, false, b));
 
 			if (!b) {
 				return CompilationError(e->source->tokenRange, CompilationErrorKind::InvalidCast);

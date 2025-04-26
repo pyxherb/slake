@@ -266,6 +266,7 @@ SLKC_API std::optional<CompilationError> slkc::isSameType(
 SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 	const peff::SharedPtr<TypeNameNode> &src,
 	const peff::SharedPtr<TypeNameNode> &dest,
+	bool isSealed,
 	bool &whetherOut) {
 	peff::SharedPtr<Document> document = src->document.lock();
 	if (document != dest->document.lock())
@@ -297,10 +298,13 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 				case TypeNameKind::F64:
 				case TypeNameKind::ISize:
 				case TypeNameKind::USize:
+					if (isSealed) {
+						return isSameType(src, dest, whetherOut);
+					}
 					whetherOut = true;
 					break;
 				case TypeNameKind::Ref:
-					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.castTo<RefTypeNameNode>()->referencedType, dest, whetherOut));
+					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.castTo<RefTypeNameNode>()->referencedType, dest, isSealed, whetherOut));
 					break;
 				default:
 					whetherOut = false;
@@ -313,7 +317,7 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 					whetherOut = true;
 					break;
 				case TypeNameKind::Ref:
-					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.castTo<RefTypeNameNode>()->referencedType, dest, whetherOut));
+					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.castTo<RefTypeNameNode>()->referencedType, dest, isSealed, whetherOut));
 					break;
 				default:
 					whetherOut = false;
@@ -337,10 +341,13 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 				case TypeNameKind::String:
 				case TypeNameKind::Object:
 				case TypeNameKind::Bool:
+					if (isSealed) {
+						return isSameType(src, dest, whetherOut);
+					}
 					whetherOut = true;
 					break;
 				case TypeNameKind::Ref:
-					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.castTo<RefTypeNameNode>()->referencedType, dest, whetherOut));
+					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.castTo<RefTypeNameNode>()->referencedType, dest, isSealed, whetherOut));
 					break;
 				default:
 					whetherOut = false;
@@ -351,10 +358,13 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 			switch (src->typeNameKind) {
 				case TypeNameKind::String:
 				case TypeNameKind::Custom:
+					if (isSealed) {
+						return isSameType(src, dest, whetherOut);
+					}
 					whetherOut = true;
 					break;
 				case TypeNameKind::Ref:
-					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.castTo<RefTypeNameNode>()->referencedType, dest, whetherOut));
+					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.castTo<RefTypeNameNode>()->referencedType, dest, isSealed, whetherOut));
 					break;
 				default:
 					whetherOut = false;
@@ -362,19 +372,65 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 			break;
 		}
 		case TypeNameKind::Any:
+			if (isSealed) {
+				return isSameType(src, dest, whetherOut);
+			}
 			whetherOut = true;
 			break;
 		case TypeNameKind::Custom: {
 			switch (src->typeNameKind) {
 				case TypeNameKind::Custom: {
+					if (isSealed) {
+						return isSameType(src, dest, whetherOut);
+					}
+
 					peff::SharedPtr<CustomTypeNameNode>
 						st = src.castTo<CustomTypeNameNode>(),
 						dt = dest.castTo<CustomTypeNameNode>();
-					whetherOut = true;
+
+					peff::SharedPtr<MemberNode> stm, dtm;
+
+					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, st, stm));
+					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, dt, dtm));
+
+					switch (stm->astNodeType) {
+						case AstNodeType::Class:
+							switch (dtm->astNodeType) {
+								case AstNodeType::Interface:
+									SLKC_RETURN_IF_COMP_ERROR(isImplementedByClass(document, dtm.castTo<InterfaceNode>(), stm.castTo<ClassNode>(), whetherOut));
+									break;
+								case AstNodeType::Class:
+									SLKC_RETURN_IF_COMP_ERROR(isBaseOf(document, stm.castTo<ClassNode>(), dtm.castTo<ClassNode>(), whetherOut));
+									if ((!isSealed) && (!whetherOut)) {
+										// Covariance is not allowed in sealed context.
+										SLKC_RETURN_IF_COMP_ERROR(isBaseOf(document, dtm.castTo<ClassNode>(), stm.castTo<ClassNode>(), whetherOut));
+									}
+									break;
+							}
+							break;
+						case AstNodeType::Interface:
+							switch (dtm->astNodeType) {
+								case AstNodeType::Interface:
+									SLKC_RETURN_IF_COMP_ERROR(isImplementedByInterface(document, stm.castTo<InterfaceNode>(), dtm.castTo<InterfaceNode>(), whetherOut));
+									if ((!isSealed) && (!whetherOut)) {
+										// Covariance is not allowed in sealed context.
+										SLKC_RETURN_IF_COMP_ERROR(isImplementedByInterface(document, dtm.castTo<InterfaceNode>(), stm.castTo<InterfaceNode>(), whetherOut));
+									}
+									break;
+								case AstNodeType::Class:
+									SLKC_RETURN_IF_COMP_ERROR(isImplementedByClass(document, stm.castTo<InterfaceNode>(), dtm.castTo<ClassNode>(), whetherOut));
+									break;
+							}
+							break;
+						default:
+							whetherOut = false;
+							break;
+					}
+
 					break;
 				}
 				case TypeNameKind::Ref:
-					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.castTo<RefTypeNameNode>()->referencedType, dest, whetherOut));
+					SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src.castTo<RefTypeNameNode>()->referencedType, dest, isSealed, whetherOut));
 					break;
 				default:
 					whetherOut = false;

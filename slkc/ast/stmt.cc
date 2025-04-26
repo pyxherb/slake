@@ -36,7 +36,7 @@ SLKC_API ExprStmtNode::ExprStmtNode(const ExprStmtNode &rhs, peff::Alloc *alloca
 SLKC_API ExprStmtNode::~ExprStmtNode() {
 }
 
-SLKC_API VarDefEntry::VarDefEntry(peff::Alloc *selfAllocator, peff::String &&name, const peff::SharedPtr<TypeNameNode> &type, const peff::SharedPtr<ExprNode> &initialValue) : selfAllocator(selfAllocator), name(std::move(name)), type(type), initialValue(initialValue) {
+SLKC_API VarDefEntry::VarDefEntry(peff::Alloc *selfAllocator, peff::String &&name, const peff::SharedPtr<TypeNameNode> &type, const peff::SharedPtr<ExprNode> &initialValue, bool isTypeSealed) : selfAllocator(selfAllocator), name(std::move(name)), type(type), initialValue(initialValue), isTypeSealed(isTypeSealed) {
 }
 SLKC_API VarDefEntry::~VarDefEntry() {
 }

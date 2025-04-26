@@ -283,6 +283,8 @@ SLKC_API std::optional<CompilationError> Document::instantiateGenericObject(
 		return genOutOfMemoryCompError();
 	}
 
+	duplicatedObject->setParent(originalObject->parent);
+
 	GenericInstantiationContext instantiationContext(allocator.get(), &genericArgs);
 	instantiationContext.mappedNode = duplicatedObject;
 

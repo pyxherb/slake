@@ -33,6 +33,7 @@ SLKC_API VarNode::VarNode(const VarNode &rhs, peff::Alloc *allocator, bool &succ
 		return;
 	}
 
+	isTypeSealed = rhs.isTypeSealed;
 	idxReg = rhs.idxReg;
 
 	succeededOut = true;

@@ -416,6 +416,7 @@ namespace slkc {
 	[[nodiscard]] SLKC_API std::optional<CompilationError> isTypeConvertible(
 		const peff::SharedPtr<TypeNameNode> &src,
 		const peff::SharedPtr<TypeNameNode> &dest,
+		bool isSealed,
 		bool &whetherOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileUnaryExpr(
 		CompileContext *compileContext,

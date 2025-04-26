@@ -9,6 +9,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseVarDefs(peff::DynArray<VarDefEn
 	peff::SharedPtr<ExprNode> initialValue;
 
 	for (;;) {
+		bool isSealed = false;
+
 		peff::DynArray<peff::SharedPtr<AttributeNode>> attributes(resourceAllocator.get());
 
 		if ((syntaxError = parseAttributes(attributes))) {
@@ -26,6 +28,12 @@ SLKC_API std::optional<SyntaxError> Parser::parseVarDefs(peff::DynArray<VarDefEn
 		peff::String copiedName(resourceAllocator.get());
 		if (!copiedName.build(currentToken->sourceText)) {
 			return genOutOfMemoryError();
+		}
+
+		if (peekToken()->tokenId == TokenId::FinalKeyword) {
+			Token *finalToken = nextToken();
+
+			isSealed = true;
 		}
 
 		if ((currentToken = peekToken())->tokenId == TokenId::Colon) {
@@ -55,7 +63,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseVarDefs(peff::DynArray<VarDefEn
 				resourceAllocator.get(),
 				std::move(copiedName),
 				type,
-				initialValue));
+				initialValue,
+				isSealed));
 
 		if (!entry) {
 			return genOutOfMemoryError();

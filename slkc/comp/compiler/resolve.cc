@@ -8,6 +8,10 @@ SLKC_API std::optional<CompilationError> slkc::getFullIdRef(peff::Alloc *allocat
 	for (;;) {
 		IdRefEntry entry(allocator);
 
+		if (!m->name.size()) {
+			break;
+		}
+
 		if (!entry.name.build(m->name)) {
 			return genOutOfMemoryCompError();
 		}
@@ -22,7 +26,7 @@ SLKC_API std::optional<CompilationError> slkc::getFullIdRef(peff::Alloc *allocat
 			}
 		}
 
-		if (!p->entries.pushBack(std::move(entry))) {
+		if (!p->entries.pushFront(std::move(entry))) {
 			return genOutOfMemoryCompError();
 		}
 

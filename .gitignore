@@ -29,6 +29,7 @@ CMakePresets.json
 CMakeSettings.json
 *.user
 *.bak
+.nvim.lua
 
 # Runtime artifacts
 *.log

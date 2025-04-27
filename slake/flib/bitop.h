@@ -19,7 +19,7 @@ namespace slake {
 
 				unsignedLhs |= 0xff << (8 - rhs);
 
-				return *(int8_t *)&unsignedRhs;
+				return *(int8_t *)&unsignedLhs;
 			} else {
 				return (int8_t)(lhs >> rhs);
 			}
@@ -39,7 +39,7 @@ namespace slake {
 
 				unsignedLhs |= 0xffff << (16 - rhs);
 
-				return *(int16_t *)&unsignedRhs;
+				return *(int16_t *)&unsignedLhs;
 			} else {
 				return (int16_t)(lhs >> rhs);
 			}
@@ -59,7 +59,7 @@ namespace slake {
 
 				unsignedLhs |= 0xffffffff << (32 - rhs);
 
-				return *(int32_t *)&unsignedRhs;
+				return *(int32_t *)&unsignedLhs;
 			} else {
 				return (int32_t)(lhs >> rhs);
 			}
@@ -79,7 +79,7 @@ namespace slake {
 
 				unsignedLhs |= 0xffffffffffffffffULL << (64 - rhs);
 
-				return *(int64_t *)&unsignedRhs;
+				return *(int64_t *)&unsignedLhs;
 			} else {
 				return (int64_t)(lhs >> rhs);
 			}

@@ -40,7 +40,7 @@ SLAKE_FORCEINLINE std::optional<CompilationError> _compileLiteralExpr(
 			  compileContext->allocator.get(),
 			  compileContext->allocator.get(),
 			  compileContext->document)
-				.castTo<TypeNameNode>())) {
+				.template castTo<TypeNameNode>())) {
 		return genOutOfMemoryCompError();
 	}
 	return {};

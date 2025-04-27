@@ -13,10 +13,10 @@ struct OptionMatchContext {
 
 struct SingleArgOption;
 
-typedef bool (*ArglessOptionCallback)(const OptionMatchContext &matchContext, const char *option);
-typedef bool (*SingleArgOptionCallback)(const OptionMatchContext &matchContext, const char *option, const char *arg);
-typedef bool (*CustomOptionCallback)(OptionMatchContext &matchContext, const char *option);
-typedef bool (*FallbackOptionCallback)(OptionMatchContext &matchContext, const char *option);
+typedef int (*ArglessOptionCallback)(const OptionMatchContext &matchContext, const char *option);
+typedef int (*SingleArgOptionCallback)(const OptionMatchContext &matchContext, const char *option, const char *arg);
+typedef int (*CustomOptionCallback)(OptionMatchContext &matchContext, const char *option);
+typedef int (*FallbackOptionCallback)(OptionMatchContext &matchContext, const char *option);
 typedef void (*RequireOptionArgCallback)(const OptionMatchContext &matchContext, const SingleArgOption &option);
 
 struct ArglessOption {
@@ -74,12 +74,12 @@ struct CompiledOptionMap {
 	return true;
 }
 
-[[nodiscard]] bool matchArgs(const CompiledOptionMap &optionMap, int argc, char **argv, void *userData) {
+[[nodiscard]] int matchArgs(const CompiledOptionMap &optionMap, int argc, char **argv, void *userData) {
 	OptionMatchContext matchContext = { argc, argv, 0, userData };
 	for (int i = 1; i < argc; ++i) {
 		if (auto it = optionMap.arglessOptions.find(std::string_view(argv[i])); it != optionMap.arglessOptions.end()) {
-			if (!it.value()->callback(matchContext, argv[i])) {
-				return false;
+			if (int result = it.value()->callback(matchContext, argv[i]); result) {
+				return result;
 			}
 
 			continue;
@@ -89,40 +89,60 @@ struct CompiledOptionMap {
 			const char *opt = argv[i];
 			if (++i == argc) {
 				optionMap.requireOptionArgCallback(matchContext, *it.value());
-				return false;
+				return EINVAL;
 			}
 
-			if (!it.value()->callback(matchContext, opt, argv[i])) {
-				return false;
+			if (int result = it.value()->callback(matchContext, opt, argv[i]); result) {
+				return result;
 			}
 
 			continue;
 		}
 
 		if (auto it = optionMap.customOptions.find(std::string_view(argv[i])); it != optionMap.customOptions.end()) {
-			if (!it.value()->callback(matchContext, argv[i])) {
-				return false;
+			if (int result = it.value()->callback(matchContext, argv[i]); result) {
+				return result;
 			}
 
 			continue;
 		}
 
-		if (!optionMap.fallbackOptionCallback(matchContext, argv[i])) {
-			break;
+		if (int result = optionMap.fallbackOptionCallback(matchContext, argv[i]); result) {
+			return result;
 		}
 	}
 
-	return true;
+	return 0;
 }
 
 #define printError(fmt, ...) fprintf(stderr, "Error: " fmt, ##__VA_ARGS__)
+
+struct MatchUserData {
+	peff::DynArray<peff::String> *includeDirs;
+};
 
 const ArglessOptionMap g_arglessOptions = {
 
 };
 
 const SingleArgOptionMap g_singleArgOptions = {
+	{ "-I", [](const OptionMatchContext &matchContext, const char *option, const char *arg) -> int {
+		 MatchUserData *userData = ((MatchUserData*)matchContext.userData);
 
+		 peff::String dir(peff::getDefaultAlloc());
+
+		 if (!dir.build(arg)) {
+			 printError("Out of memory");
+			 return ENOMEM;
+		 }
+
+		 if (!userData->includeDirs->pushBack(std::move(dir))) {
+			 printError("Out of memory");
+			 return ENOMEM;
+		 }
+
+		 return 0;
+	 } }
 };
 
 const CustomOptionMap g_customOptions = {
@@ -131,7 +151,11 @@ const CustomOptionMap g_customOptions = {
 
 const char *g_modFileName = nullptr;
 
-void dumpLexicalError(const slkc::LexicalError &lexicalError) {
+void dumpLexicalError(const slkc::LexicalError &lexicalError, int indentLevel = 0) {
+	for (int i = 0; i < indentLevel; ++i) {
+		putc('\t', stderr);
+	}
+
 	switch (lexicalError.kind) {
 		case slkc::LexicalErrorKind::UnrecognizedToken:
 			printError("Syntax error at %zu, %zu: Unrecognized token\n",
@@ -154,9 +178,14 @@ void dumpLexicalError(const slkc::LexicalError &lexicalError) {
 	}
 }
 
-void dumpSyntaxError(slkc::Parser *parser, const slkc::SyntaxError &syntaxError) {
+void dumpSyntaxError(slkc::Parser *parser, const slkc::SyntaxError &syntaxError, int indentLevel = 0) {
 	const slkc::Token *beginToken = parser->tokenList.at(syntaxError.tokenRange.beginIndex).get();
 	const slkc::Token *endToken = parser->tokenList.at(syntaxError.tokenRange.endIndex).get();
+
+	
+	for (int i = 0; i < indentLevel; ++i) {
+		putc('\t', stderr);
+	}
 
 	switch (syntaxError.errorKind) {
 		case slkc::SyntaxErrorKind::OutOfMemory:
@@ -237,9 +266,13 @@ void dumpSyntaxError(slkc::Parser *parser, const slkc::SyntaxError &syntaxError)
 	}
 }
 
-void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::CompilationError &error) {
+void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::CompilationError &error, int indentLevel = 0) {
 	const slkc::Token *beginToken = parser->tokenList.at(error.tokenRange.beginIndex).get();
 	const slkc::Token *endToken = parser->tokenList.at(error.tokenRange.endIndex).get();
+
+	for (int i = 0; i < indentLevel; ++i) {
+		putc('\t', stderr);
+	}
 
 	switch (error.errorKind) {
 		case slkc::CompilationErrorKind::OutOfMemory:
@@ -362,6 +395,26 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 				beginToken->sourceLocation.beginPosition.line + 1,
 				beginToken->sourceLocation.beginPosition.column + 1);
 			break;
+		case slkc::CompilationErrorKind::ErrorParsingImportedModule: {
+			const slkc::ErrorParsingImportedModuleErrorExData &exData = std::get<slkc::ErrorParsingImportedModuleErrorExData>(error.exData);
+
+			printError("Error at %zu, %zu: Error parsing imported module:\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			if (exData.lexicalError) {
+				dumpLexicalError(*exData.lexicalError, indentLevel + 1);
+			} else {
+				for (auto &i : exData.mod->parser->syntaxErrors) {
+					dumpSyntaxError(exData.mod->parser, i, indentLevel + 1);
+				}
+			}
+			break;
+		}
+		case slkc::CompilationErrorKind::ModuleNotFound:
+			printError("Error at %zu, %zu: Module not found\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
 		default:
 			printError("Error at %zu, %zu: Unknown error (%d)\n",
 				beginToken->sourceLocation.beginPosition.line + 1,
@@ -376,29 +429,37 @@ int main(int argc, char *argv[]) {
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
-	CompiledOptionMap optionMap(
-		peff::getDefaultAlloc(),
-		[](OptionMatchContext &matchContext, const char *option) -> bool {
-			if (g_modFileName) {
-				printError("Duplicated target file name");
-				return false;
+	peff::DynArray<peff::String> includeDirs(peff::getDefaultAlloc());
+	{
+		CompiledOptionMap optionMap(
+			peff::getDefaultAlloc(),
+			[](OptionMatchContext &matchContext, const char *option) -> int {
+				if (g_modFileName) {
+					printError("Duplicated target file name");
+					return EINVAL;
+				}
+
+				g_modFileName = option;
+
+				return 0;
+			},
+			[](const OptionMatchContext &matchContext, const SingleArgOption &option) {
+				printError("Option `%s' requires more arguments", option.name);
+			});
+
+		if (!buildOptionMap(optionMap, g_arglessOptions, g_singleArgOptions, g_customOptions)) {
+			printError("Out of memory");
+			return ENOMEM;
+		}
+
+		{
+			MatchUserData matchUserData = {};
+			matchUserData.includeDirs = &includeDirs;
+
+			if (int result = matchArgs(optionMap, argc, argv, &matchUserData); result) {
+				return result;
 			}
-
-			g_modFileName = option;
-
-			return true;
-		},
-		[](const OptionMatchContext &matchContext, const SingleArgOption &option) {
-			printError("Option `%s' requires more arguments", option.name);
-		});
-
-	if (!buildOptionMap(optionMap, g_arglessOptions, g_singleArgOptions, g_customOptions)) {
-		printError("Out of memory");
-		return ENOMEM;
-	}
-
-	if (!matchArgs(optionMap, argc, argv, nullptr)) {
-		return EINVAL;
+		}
 	}
 
 	if (!g_modFileName) {
@@ -453,6 +514,27 @@ int main(int argc, char *argv[]) {
 
 		peff::SharedPtr<slkc::Document> document(peff::makeShared<slkc::Document>(peff::getDefaultAlloc(), peff::getDefaultAlloc()));
 
+		peff::SharedPtr<slkc::FileSystemExternalModuleProvider> fsExternalModProvider;
+
+		if (!(fsExternalModProvider = peff::makeShared<slkc::FileSystemExternalModuleProvider>(peff::getDefaultAlloc(), peff::getDefaultAlloc()))) {
+			printError("Out of memory");
+			return ENOMEM;
+		}
+
+		for (auto &i : includeDirs) {
+			if (!fsExternalModProvider->importPaths.pushBack(std::move(i))) {
+				printError("Out of memory");
+				return ENOMEM;
+			}
+		}
+
+		includeDirs.clear();
+
+		if (!document->externalModuleProviders.pushBack(fsExternalModProvider.castTo<slkc::ExternalModuleProvider>())) {
+			printError("Out of memory");
+			return ENOMEM;
+		}
+
 		peff::Uninitialized<slkc::TokenList> tokenList;
 		{
 			slkc::Lexer lexer(peff::getDefaultAlloc());
@@ -476,15 +558,30 @@ int main(int argc, char *argv[]) {
 				return ENOMEM;
 			}
 
-			peff::SharedPtr<slkc::ModuleNode> mod(peff::makeShared<slkc::ModuleNode>(peff::getDefaultAlloc(), peff::getDefaultAlloc(), document));
-			document->rootModule = mod;
+			peff::SharedPtr<slkc::ModuleNode> rootMod;
+			if (!(rootMod = peff::makeShared<slkc::ModuleNode>(peff::getDefaultAlloc(), peff::getDefaultAlloc(), document))) {
+				printError("Error allocating memory for the root module");
+				return ENOMEM;
+			}
+			document->rootModule = rootMod;
 
-			if (auto e = parser->parseProgram(mod); e) {
+			slkc::IdRefPtr moduleName;
+
+			peff::SharedPtr<slkc::ModuleNode> mod(peff::makeShared<slkc::ModuleNode>(peff::getDefaultAlloc(), peff::getDefaultAlloc(), document));
+			if (!(mod = peff::makeShared<slkc::ModuleNode>(peff::getDefaultAlloc(), peff::getDefaultAlloc(), document))) {
+				printError("Error allocating memory for the target module");
+				return ENOMEM;
+			}
+			if (auto e = parser->parseProgram(mod, moduleName); e) {
 				dumpSyntaxError(parser, *e);
 			}
 
 			for (auto &i : parser->syntaxErrors) {
 				dumpSyntaxError(parser, i);
+			}
+
+			if (auto e = completeParentModules(&compileContext, moduleName.get(), mod); e) {
+				dumpCompilationError(parser, *e);
 			}
 
 			slake::HostObjectRef<slake::ModuleObject> modObj = slake::ModuleObject::alloc(&runtime, slake::ScopeUniquePtr(slake::Scope::alloc(&runtime.globalHeapPoolAlloc, runtime.getRootObject())), slake::ACCESS_PUB | slake::ACCESS_STATIC);
@@ -498,6 +595,10 @@ int main(int argc, char *argv[]) {
 			for (auto &i : compileContext.errors) {
 				dumpCompilationError(parser, i);
 			}
+
+			document->rootModule = {};
+			document->genericCacheDir.clear();
+			document->externalModuleProviders.clear();
 		}
 	}
 

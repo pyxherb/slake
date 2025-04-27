@@ -182,7 +182,7 @@ namespace slkc {
 		/// @brief Parse a whole program.
 		/// @return The syntax error that forced the parser to interrupt the parse progress.
 		/// @note Don't forget that there still may be syntax errors emitted even the parse progress is not interrupted.
-		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseProgram(const peff::SharedPtr<ModuleNode> &initialMod);
+		[[nodiscard]] SLKC_API std::optional<SyntaxError> parseProgram(const peff::SharedPtr<ModuleNode> &initialMod, IdRefPtr &moduleNameOut);
 	};
 }
 

@@ -3,7 +3,7 @@
 using namespace slkc;
 
 SLKC_API std::optional<CompilationError> slkc::getFullIdRef(peff::Alloc *allocator, peff::SharedPtr<MemberNode> m, IdRefPtr &idRefOut) {
-	IdRefPtr p(peff::allocAndConstruct<IdRef>(allocator, ASTNODE_ALIGNMENT, allocator, m->document.lock()));
+	IdRefPtr p(peff::allocAndConstruct<IdRef>(allocator, ASTNODE_ALIGNMENT, allocator));
 
 	for (;;) {
 		IdRefEntry entry(allocator);

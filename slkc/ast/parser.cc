@@ -6,6 +6,7 @@ SLKC_API Parser::Parser(peff::SharedPtr<Document> document, TokenList &&tokenLis
 }
 
 SLKC_API Parser::~Parser() {
+	assert(!document);
 }
 
 SLKC_API std::optional<SyntaxError> Parser::parseOperatorName(std::string_view &nameOut) {
@@ -161,7 +162,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseIdName(peff::String &nameOut) {
 
 SLKC_API std::optional<SyntaxError> Parser::parseIdRef(IdRefPtr &idRefOut) {
 	std::optional<SyntaxError> syntaxError;
-	IdRefPtr idRefPtr(peff::allocAndConstruct<IdRef>(resourceAllocator.get(), ASTNODE_ALIGNMENT, resourceAllocator.get(), document));
+	IdRefPtr idRefPtr(peff::allocAndConstruct<IdRef>(resourceAllocator.get(), ASTNODE_ALIGNMENT, resourceAllocator.get()));
 	if (!idRefPtr)
 		return genOutOfMemoryError();
 	Token *t = peekToken();
@@ -1002,13 +1003,14 @@ accessModifierParseEnd:
 	return {};
 }
 
-SLKC_API std::optional<SyntaxError> Parser::parseProgram(const peff::SharedPtr<ModuleNode> &initialMod) {
+SLKC_API std::optional<SyntaxError> Parser::parseProgram(const peff::SharedPtr<ModuleNode> &initialMod, IdRefPtr &moduleNameOut) {
 	std::optional<SyntaxError> syntaxError;
 
 	Token *t;
 
 	curParent = initialMod.castTo<MemberNode>();
 
+	moduleNameOut = {};
 	if ((t = peekToken())->tokenId == TokenId::ModuleKeyword) {
 		nextToken();
 
@@ -1025,6 +1027,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseProgram(const peff::SharedPtr<M
 			return syntaxError;
 		}
 		nextToken();
+
+		moduleNameOut = std::move(moduleName);
 	}
 
 	while ((t = peekToken())->tokenId != TokenId::End) {

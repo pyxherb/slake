@@ -133,6 +133,15 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 			typeNameOut->tokenRange = TokenRange{ t->index };
 			nextToken();
 			break;
+		case TokenId::StringTypeName:
+			if (!(typeNameOut = peff::makeShared<StringTypeNameNode>(
+					  resourceAllocator.get(),
+					  resourceAllocator.get(), document)
+						.castTo<TypeNameNode>()))
+				return genOutOfMemoryError();
+			typeNameOut->tokenRange = TokenRange{ t->index };
+			nextToken();
+			break;
 		case TokenId::FnKeyword: {
 			peff::SharedPtr<FnTypeNameNode> tn;
 			if (!(tn = peff::makeShared<FnTypeNameNode>(

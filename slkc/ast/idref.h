@@ -12,6 +12,8 @@ namespace slkc {
 		peff::DynArray<size_t> commaTokenIndices;
 
 		SLAKE_FORCEINLINE IdRefEntry(peff::Alloc *selfAllocator): name(selfAllocator), genericArgs(selfAllocator), commaTokenIndices(selfAllocator) {}
+		SLAKE_FORCEINLINE IdRefEntry(IdRefEntry&& rhs): name(std::move(rhs.name)), genericArgs(std::move(rhs.genericArgs)), accessOpTokenIndex(rhs.accessOpTokenIndex), nameTokenIndex(rhs.nameTokenIndex), leftAngleBracketTokenIndex(rhs.leftAngleBracketTokenIndex), rightAngleBracketTokenIndex(rhs.rightAngleBracketTokenIndex), commaTokenIndices(std::move(rhs.commaTokenIndices)) {
+		}
 	};
 
 	SLKC_API std::optional<IdRefEntry> duplicateIdRefEntry(peff::Alloc *selfAllocator, const IdRefEntry &rhs);
@@ -20,10 +22,9 @@ namespace slkc {
 	public:
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
 		peff::DynArray<IdRefEntry> entries;
-		peff::WeakPtr<Document> document;
 		TokenRange tokenRange;
 
-		SLKC_API IdRef(peff::Alloc *selfAllocator, const peff::WeakPtr<Document> &document);
+		SLKC_API IdRef(peff::Alloc *selfAllocator);
 		SLKC_API virtual ~IdRef();
 
 		SLKC_API void dealloc() noexcept;

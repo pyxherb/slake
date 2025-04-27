@@ -834,9 +834,9 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				tn->tokenRange = e->targetType->tokenRange;
 
 				auto e = compileTypeName(compileContext, tn.castTo<TypeNameNode>(), type);
-				if (e) {
+				/* if (e) {
 					std::terminate();
-				}
+				}*/
 			}
 			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::NEW, resultRegOut, { slake::Value(type) }));
 

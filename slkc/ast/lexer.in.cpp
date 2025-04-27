@@ -33,6 +33,7 @@ SLKC_API std::optional<LexicalError> Lexer::lex(const std::string_view &src, pef
 			/*!re2c
 				re2c:yyfill:enable = 0;
 				re2c:define:YYCTYPE = char;
+				re2c:eof = 0;
 
 				<InitialCondition>"///"		{ YYSETCONDITION(LineCommentCondition); token->tokenId = TokenId::DocumentationComment; continue; }
 				<InitialCondition>"//"		{ YYSETCONDITION(LineCommentCondition); token->tokenId = TokenId::LineComment; continue; }
@@ -136,6 +137,7 @@ SLKC_API std::optional<LexicalError> Lexer::lex(const std::string_view &src, pef
 				<InitialCondition>"f64"			{ token->tokenId = TokenId::F64TypeName; break; }
 				<InitialCondition>"bool"		{ token->tokenId = TokenId::BoolTypeName; break; }
 				<InitialCondition>"void"		{ token->tokenId = TokenId::VoidTypeName; break; }
+				<InitialCondition>"string"		{ token->tokenId = TokenId::StringTypeName; break; }
 
 				<InitialCondition>","		{ token->tokenId = TokenId::Comma; break; }
 				<InitialCondition>"?"		{ token->tokenId = TokenId::Question; break; }
@@ -202,7 +204,7 @@ SLKC_API std::optional<LexicalError> Lexer::lex(const std::string_view &src, pef
 				<InitialCondition>"\""		{ YYSETCONDITION(StringCondition); continue; }
 
 				<InitialCondition>"\n"		{ token->tokenId = TokenId::NewLine; break; }
-				<InitialCondition>"\000"	{ goto end; }
+				<InitialCondition>$			{ goto end; }
 
 				<InitialCondition>[ \r\t]+	{ token->tokenId = TokenId::Whitespace; break; }
 
@@ -260,7 +262,7 @@ SLKC_API std::optional<LexicalError> Lexer::lex(const std::string_view &src, pef
 						{ (size_t)std::count(strToEnd.begin(), strToEnd.end(), '\n'), YYCURSORPos }
 					}, LexicalErrorKind::UnexpectedEndOfLine};
 				}
-				<StringCondition>"\000"	{
+				<StringCondition>$	{
 					size_t beginIndex = prevYYCURSOR - src.data(), endIndex = YYCURSOR - src.data();
 					std::string_view strToBegin = src.substr(0, beginIndex), strToEnd = src.substr(0, endIndex);
 
@@ -331,11 +333,56 @@ SLKC_API std::optional<LexicalError> Lexer::lex(const std::string_view &src, pef
 					if(!strLiteral.pushBack(+c))
 						goto outOfMemory;
 				}
+				<EscapeCondition>$	{
+					size_t beginIndex = prevYYCURSOR - src.data(), endIndex = YYCURSOR - src.data();
+					std::string_view strToBegin = src.substr(0, beginIndex), strToEnd = src.substr(0, endIndex);
+
+					size_t prevYYCURSORIndex = prevYYCURSOR - src.data();
+					auto prevYYCURSORPos = src.find_last_of('\n', prevYYCURSORIndex);
+					if(prevYYCURSORPos == std::string::npos)
+						prevYYCURSORPos = 0;
+					prevYYCURSORPos = prevYYCURSORIndex - prevYYCURSORPos;
+
+					size_t YYCURSORIndex = YYCURSOR - src.data();
+					auto YYCURSORPos = src.find_last_of('\n', YYCURSORIndex);
+					if(YYCURSORPos == std::string::npos)
+						YYCURSORPos = 0;
+					YYCURSORPos = YYCURSORIndex - YYCURSORPos;
+
+					return LexicalError {
+						SourceLocation {
+						{ (size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'), prevYYCURSORPos },
+						{ (size_t)std::count(strToEnd.begin(), strToEnd.end(), '\n'), YYCURSORPos }
+					}, LexicalErrorKind::PrematuredEndOfFile};
+				}
 
 				<CommentCondition>"*"[/]	{ YYSETCONDITION(InitialCondition); break; }
 				<CommentCondition>[^]		{ continue; }
+				<CommentCondition>$	{
+					size_t beginIndex = prevYYCURSOR - src.data(), endIndex = YYCURSOR - src.data();
+					std::string_view strToBegin = src.substr(0, beginIndex), strToEnd = src.substr(0, endIndex);
+
+					size_t prevYYCURSORIndex = prevYYCURSOR - src.data();
+					auto prevYYCURSORPos = src.find_last_of('\n', prevYYCURSORIndex);
+					if(prevYYCURSORPos == std::string::npos)
+						prevYYCURSORPos = 0;
+					prevYYCURSORPos = prevYYCURSORIndex - prevYYCURSORPos;
+
+					size_t YYCURSORIndex = YYCURSOR - src.data();
+					auto YYCURSORPos = src.find_last_of('\n', YYCURSORIndex);
+					if(YYCURSORPos == std::string::npos)
+						YYCURSORPos = 0;
+					YYCURSORPos = YYCURSORIndex - YYCURSORPos;
+
+					return LexicalError {
+						SourceLocation {
+						{ (size_t)std::count(strToBegin.begin(), strToBegin.end(), '\n'), prevYYCURSORPos },
+						{ (size_t)std::count(strToEnd.begin(), strToEnd.end(), '\n'), YYCURSORPos }
+					}, LexicalErrorKind::PrematuredEndOfFile};
+				}
 
 				<LineCommentCondition>"\n"	{ YYSETCONDITION(InitialCondition); break; }
+				<LineCommentCondition>$		{ YYSETCONDITION(InitialCondition); break; }
 				<LineCommentCondition>[^]	{ continue; }
 			*/
 		}

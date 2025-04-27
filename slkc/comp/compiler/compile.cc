@@ -347,10 +347,40 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 	for (auto i : mod->anonymousImports) {
 		slake::HostObjectRef<slake::IdRefObject> id;
 
+		for (auto &j : compileContext->document->externalModuleProviders) {
+			SLKC_RETURN_IF_COMP_ERROR(j->loadModule(compileContext, i->idRef.get()));
+		}
+
 		SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, i->idRef->entries.data(), i->idRef->entries.size(), nullptr, 0, false, id));
 
 		if (!modOut->unnamedImports.pushBack(id.get())) {
 			return genOutOfRuntimeMemoryCompError();
+		}
+	}
+
+	for (auto [k, v] : mod->memberIndices) {
+		peff::SharedPtr<MemberNode> m = mod->members.at(v);
+
+		if (m->astNodeType == AstNodeType::Import) {
+			peff::SharedPtr<ImportNode> importNode = m.castTo<ImportNode>();
+
+			for (auto &j : compileContext->document->externalModuleProviders) {
+				SLKC_RETURN_IF_COMP_ERROR(j->loadModule(compileContext, importNode->idRef.get()));
+			}
+
+			peff::String s(&compileContext->runtime->globalHeapPoolAlloc);
+
+			if (!s.build(k)) {
+				return genOutOfRuntimeMemoryCompError();
+			}
+
+			slake::HostObjectRef<slake::IdRefObject> id;
+
+			SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, importNode->idRef->entries.data(), importNode->idRef->entries.size(), nullptr, 0, false, id));
+
+			if (!modOut->imports.insert(std::move(s), id.get())) {
+				return genOutOfMemoryCompError();
+			}
 		}
 	}
 
@@ -476,23 +506,6 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 					return genOutOfRuntimeMemoryCompError();
 				}
 
-				break;
-			}
-			case AstNodeType::Import: {
-				peff::String s(&compileContext->runtime->globalHeapPoolAlloc);
-
-				if (!s.build(k)) {
-					return genOutOfRuntimeMemoryCompError();
-				}
-
-				slake::HostObjectRef<slake::IdRefObject> id;
-				peff::SharedPtr<ImportNode> importNode = m.castTo<ImportNode>();
-
-				SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, importNode->idRef->entries.data(), importNode->idRef->entries.size(), nullptr, 0, false, id));
-
-				if (!modOut->imports.insert(std::move(s), id.get())) {
-					return genOutOfMemoryCompError();
-				}
 				break;
 			}
 			case AstNodeType::FnSlot: {

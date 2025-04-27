@@ -13,8 +13,4 @@
 	#define SLKC_API SLAKE_DLLEXPORT
 #endif
 
-namespace slkc {
-	class Document;
-}
-
 #endif

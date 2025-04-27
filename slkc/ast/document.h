@@ -154,12 +154,15 @@ namespace slkc {
 		}
 	};
 
+	class ExternalModuleProvider;
+
 	class Document : public peff::SharedFromThis<Document> {
 	public:
 		peff::RcObjectPtr<peff::Alloc> allocator;
 		peff::SharedPtr<ModuleNode> rootModule;
+		peff::DynArray<peff::SharedPtr<ExternalModuleProvider>> externalModuleProviders;
 		peff::Map<
-			peff::SharedPtr<MemberNode>,
+			MemberNode *,
 			GenericCacheTable>
 			genericCacheDir;
 

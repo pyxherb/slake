@@ -533,7 +533,7 @@ namespace slkc {
 		virtual std::optional<CompilationError> loadModule(CompileContext *compileContext, IdRef *moduleName) = 0;
 	};
 
-	class FileSystemExternalModuleProvider : public ExternalModuleProvider{
+	class FileSystemExternalModuleProvider : public ExternalModuleProvider {
 	public:
 		peff::DynArray<peff::String> importPaths;
 

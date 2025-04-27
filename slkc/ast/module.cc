@@ -2,6 +2,7 @@
 #include "attribute.h"
 #include "import.h"
 #include "parser.h"
+#include "document.h"
 
 using namespace slkc;
 

@@ -3,11 +3,9 @@
 using namespace slkc;
 
 SLKC_API IdRef::IdRef(
-	peff::Alloc *selfAllocator,
-	const peff::WeakPtr<Document> &document)
+	peff::Alloc *selfAllocator)
 	: selfAllocator(selfAllocator),
-	  entries(selfAllocator),
-	  document(document) {
+	  entries(selfAllocator) {
 }
 
 SLKC_API IdRef::~IdRef() {
@@ -41,12 +39,15 @@ SLKC_API std::optional<IdRefEntry> slkc::duplicateIdRefEntry(peff::Alloc *selfAl
 }
 
 SLKC_API IdRefPtr slkc::duplicateIdRef(peff::Alloc *selfAllocator, IdRef *rhs) {
+	if (!rhs) {
+		return {};
+	}
+
 	IdRefPtr newIdRefPtr = IdRefPtr(
 		peff::allocAndConstruct<IdRef>(
 			selfAllocator,
 			ASTNODE_ALIGNMENT,
-			selfAllocator,
-			rhs->document));
+			selfAllocator));
 
 	if (!newIdRefPtr->entries.resizeUninitialized(rhs->entries.size())) {
 		return {};
@@ -63,7 +64,6 @@ SLKC_API IdRefPtr slkc::duplicateIdRef(peff::Alloc *selfAllocator, IdRef *rhs) {
 	}
 
 	newIdRefPtr->tokenRange = rhs->tokenRange;
-	newIdRefPtr->document = rhs->document;
 
 	return newIdRefPtr;
 }

@@ -8,7 +8,7 @@ namespace slkc {
 
 	class MemberNode : public AstNode {
 	public:
-		MemberNode *parent = nullptr;  // We don't use WeakPtr because we want to set the parent during the copy constructor is executing.
+		MemberNode *parent = nullptr;  // DO NOT use WeakPtr because we want to set the parent during the copy constructor is executing.
 		peff::String name;
 		peff::DynArray<peff::SharedPtr<TypeNameNode>> genericArgs;
 		slake::AccessModifier accessModifier = 0;

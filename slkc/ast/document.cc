@@ -2,7 +2,7 @@
 
 using namespace slkc;
 
-SLKC_API Document::Document(peff::Alloc *allocator): allocator(allocator), genericCacheDir(allocator) {
+SLKC_API Document::Document(peff::Alloc *allocator): allocator(allocator), externalModuleProviders(allocator), genericCacheDir(allocator) {
 }
 
 SLKC_API Document::~Document() {

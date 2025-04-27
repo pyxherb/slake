@@ -43,35 +43,55 @@ SLKC_API std::optional<CompilationError> slkc::completeParentModules(
 	IdRef *modulePath,
 	peff::SharedPtr<ModuleNode> leaf) {
 	peff::DynArray<peff::SharedPtr<ModuleNode>> modules(compileContext->allocator.get());
+	size_t idxNewModulesBegin = 0;
 
-	if (!modules.resize(modulePath->entries.size() - 1)) {
+	if (!modules.resize(modulePath->entries.size())) {
 		return genOutOfMemoryCompError();
 	}
 
-	for (size_t i = 0; i < modules.size() - 1; ++i) {
-		if (!(modules.at(i) = peff::makeShared<ModuleNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
-			return genOutOfMemoryCompError();
-		}
+	peff::SharedPtr<ModuleNode> node = compileContext->document->rootModule;
 
-		if (!modules.at(i)->name.build(modulePath->entries.at(i).name)) {
-			return genOutOfMemoryCompError();
-		}
-	}
-
-	for (size_t i = 0; i < modulePath->entries.size() - 1; ++i) {
-		auto &currentEntry = modulePath->entries.at(i);
-
-		if (i) {
-			modules.at(i)->setParent(modules.at(i - 1).get());
+	for (size_t i = 0; i < modules.size(); ++i) {
+		if (auto it = node->memberIndices.find(modulePath->entries.at(i).name); it != node->memberIndices.end()) {
+			node = node->members.at(it.value()).castTo<ModuleNode>();
+			modules.at(i) = node;
+			idxNewModulesBegin = i + 1;
 		} else {
-			modules.at(i)->setParent(compileContext->document->rootModule);
+			if (i + 1 == modules.size()) {
+				node = leaf;
+			} else {
+				if (!(node = peff::makeShared<ModuleNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+					return genOutOfMemoryCompError();
+				}
+			}
+			modules.at(i) = node;
+			if (!node->name.build(modulePath->entries.at(i).name)) {
+				return genOutOfMemoryCompError();
+			}
 		}
 	}
 
 	if (!leaf->name.build(modulePath->entries.back().name)) {
 		return genOutOfMemoryCompError();
 	}
-	leaf->setParent(modules.back().get());
+
+	for (size_t i = idxNewModulesBegin; i < modules.size(); ++i) {
+		auto &currentEntry = modulePath->entries.at(i);
+
+		if (i) {
+			auto m1 = modules.at(i - 1), m2 = modules.at(i);
+			if (!modules.at(i - 1)->addMember(modules.at(i).castTo<MemberNode>())) {
+				return genOutOfMemoryCompError();
+			}
+			modules.at(i)->setParent(modules.at(i - 1).get());
+		} else {
+			if (!compileContext->document->rootModule->addMember(modules.at(i).castTo<MemberNode>())) {
+				return genOutOfMemoryCompError();
+			}
+			modules.at(i)->setParent(compileContext->document->rootModule);
+		}
+	}
+
 	return {};
 }
 
@@ -119,6 +139,25 @@ FileSystemExternalModuleProvider::~FileSystemExternalModuleProvider() {
 
 SLKC_API std::optional<CompilationError> FileSystemExternalModuleProvider::loadModule(CompileContext *compileContext, IdRef *moduleName) {
 	peff::String suffixPath(compileContext->allocator.get());
+
+	{
+		bool isLoaded = true;
+		peff::SharedPtr<ModuleNode> node = compileContext->document->rootModule;
+
+		for (size_t i = 0; i < moduleName->entries.size(); ++i) {
+			if (auto it = node->memberIndices.find(moduleName->entries.at(i).name); it != node->memberIndices.end()) {
+				node = node->members.at(it.value()).castTo<ModuleNode>();
+				continue;
+			}
+
+			isLoaded = false;
+			break;
+		}
+
+		if (isLoaded) {
+			return {};
+		}
+	}
 
 	for (size_t i = 0; i < moduleName->entries.size(); ++i) {
 		auto &currentEntry = moduleName->entries.at(i);
@@ -189,8 +228,6 @@ SLKC_API std::optional<CompilationError> FileSystemExternalModuleProvider::loadM
 					return genOutOfMemoryCompError();
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(completeParentModules(compileContext, moduleName, mod));
-
 				peff::Uninitialized<slkc::TokenList> tokenList;
 				{
 					slkc::Lexer lexer(compileContext->allocator.get());
@@ -211,14 +248,26 @@ SLKC_API std::optional<CompilationError> FileSystemExternalModuleProvider::loadM
 					return genOutOfMemoryCompError();
 				}
 
-				if (auto e = parser->parseProgram(mod); e) {
+				IdRefPtr moduleName;
+				if (auto e = parser->parseProgram(mod, moduleName); e) {
 					if (!parser->syntaxErrors.pushBack(std::move(*e))) {
 						return genOutOfMemoryCompError();
 					}
 				}
 
+				SLKC_RETURN_IF_COMP_ERROR(completeParentModules(compileContext, moduleName.get(), mod));
+
 				if (parser->syntaxErrors.size()) {
 					return CompilationError(moduleName->tokenRange, ErrorParsingImportedModuleErrorExData(mod));
+				}
+
+				for (auto i : mod->members) {
+					if (i->astNodeType == AstNodeType::Import) {
+						SLKC_RETURN_IF_COMP_ERROR(loadModule(compileContext, i.castTo<ImportNode>()->idRef.get()));
+					}
+				}
+				for (auto i : mod->anonymousImports) {
+					SLKC_RETURN_IF_COMP_ERROR(loadModule(compileContext, i->idRef.get()));
 				}
 
 				return {};

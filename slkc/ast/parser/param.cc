@@ -4,6 +4,7 @@ using namespace slkc;
 
 SLKC_API std::optional<SyntaxError> Parser::parseParams(
 	peff::DynArray<peff::SharedPtr<VarNode>> &paramsOut,
+	bool &varArgOut,
 	peff::DynArray<size_t> &idxCommaTokensOut,
 	size_t &lAngleBracketIndexOut,
 	size_t &rAngleBracketIndexOut) {
@@ -71,6 +72,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseParams(
 	Token *varArgToken;
 	if ((varArgToken = peekToken())->tokenId == TokenId::VarArg) {
 		nextToken();
+		varArgOut = true;
 	}
 
 	Token *rParentheseToken;

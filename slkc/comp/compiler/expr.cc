@@ -594,6 +594,58 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 		case ExprKind::Bool:
 			SLKC_RETURN_IF_COMP_ERROR(_compileLiteralExpr<BoolLiteralExprNode, bool, BoolTypeNameNode>(compileContext, expr, evalPurpose, resultRegOut, resultOut));
 			break;
+		case ExprKind::String: {
+			peff::SharedPtr<StringLiteralExprNode> e = expr.castTo<StringLiteralExprNode>();
+
+			switch (evalPurpose) {
+				case ExprEvalPurpose::EvalType:
+					break;
+				case ExprEvalPurpose::Stmt:
+					SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(
+						CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
+					break;
+				case ExprEvalPurpose::RValue: {
+					slake::HostObjectRef<slake::StringObject> sl;
+
+					{
+						peff::String s(&compileContext->runtime->globalHeapPoolAlloc);
+
+						if (!s.build(e->data)) {
+							return genOutOfRuntimeMemoryCompError();
+						}
+
+						if (!(sl = slake::StringObject::alloc(compileContext->runtime, std::move(s)))) {
+							return genOutOfRuntimeMemoryCompError();
+						}
+					}
+
+					if (resultRegOut != UINT32_MAX) {
+						SLKC_RETURN_IF_COMP_ERROR(
+							compileContext->emitIns(
+								slake::Opcode::MOV,
+								resultRegOut,
+								{ slake::Value(slake::EntityRef::makeObjectRef(sl.get())) }));
+					}
+					break;
+				}
+				case ExprEvalPurpose::LValue:
+					return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
+					break;
+				case ExprEvalPurpose::Call:
+					return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotCallable);
+					break;
+				default:
+					std::terminate();
+			}
+			if (!(resultOut.evaluatedType = peff::makeShared<StringTypeNameNode>(
+					  compileContext->allocator.get(),
+					  compileContext->allocator.get(),
+					  compileContext->document)
+						.castTo<TypeNameNode>())) {
+				return genOutOfMemoryCompError();
+			}
+			break;
+		}
 		case ExprKind::Null: {
 			peff::SharedPtr<NullLiteralExprNode> e = expr.castTo<NullLiteralExprNode>();
 
@@ -682,6 +734,8 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 					} else {
 						SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, e->args.at(i), argTypes.at(i), {}));
 					}
+
+					assert(argTypes.at(i));
 				}
 			}
 

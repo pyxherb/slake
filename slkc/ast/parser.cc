@@ -365,8 +365,12 @@ SLKC_API std::optional<SyntaxError> Parser::parseFn(peff::SharedPtr<FnOverloadin
 		return syntaxError;
 	}
 
-	if ((syntaxError = parseParams(fnNodeOut->params, fnNodeOut->idxParamCommaTokens, fnNodeOut->lParentheseIndex, fnNodeOut->rParentheseIndex))) {
+	bool hasVarArg = false;
+	if ((syntaxError = parseParams(fnNodeOut->params, hasVarArg, fnNodeOut->idxParamCommaTokens, fnNodeOut->lParentheseIndex, fnNodeOut->rParentheseIndex))) {
 		return syntaxError;
+	}
+	if (hasVarArg) {
+		fnNodeOut->fnFlags |= FN_VARG;
 	}
 
 	Token *colonToken;

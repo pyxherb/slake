@@ -8,6 +8,7 @@
 #include "obj/class.h"
 #include "obj/context.h"
 #include "obj/fn.h"
+#include "obj/coroutine.h"
 #include "obj/member.h"
 #include "obj/module.h"
 #include "obj/instance.h"

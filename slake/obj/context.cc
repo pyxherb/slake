@@ -13,7 +13,8 @@ SLAKE_API MajorFrame::MajorFrame(Runtime *rt, Context *context)
 	: context(context),
 	  argStack(&rt->globalHeapPoolAlloc),
 	  nextArgStack(&rt->globalHeapPoolAlloc),
-	  minorFrames(&rt->globalHeapPoolAlloc) {
+	  minorFrames(&rt->globalHeapPoolAlloc),
+	  lvarRecordOffsets(&rt->globalHeapPoolAlloc) {
 }
 
 SLAKE_API bool MajorFrame::leave() {
@@ -24,10 +25,11 @@ SLAKE_API bool MajorFrame::leave() {
 }
 
 SLAKE_API void Context::leaveMajor() {
-	MajorFrame *frameToBeDestroyed = majorFrameList;
+	MajorFrame *frameToBeDestroyed = (MajorFrame*)atStack(offMajorFrame);
 	stackTop = frameToBeDestroyed->stackBase;
-	majorFrameList = majorFrameList->next;
+	offMajorFrame = frameToBeDestroyed->offNext;
 	std::destroy_at<MajorFrame>(frameToBeDestroyed);
+	--majorFrameDepth;
 }
 
 SLAKE_API char *Context::stackAlloc(size_t size) {
@@ -40,13 +42,13 @@ SLAKE_API char *Context::stackAlloc(size_t size) {
 	return dataStack + SLAKE_STACK_MAX - stackTop;
 }
 
-SLAKE_API Context::Context(Runtime *runtime) : runtime(runtime), majorFrameList(nullptr), stackTopMajorFrame(nullptr) {
+SLAKE_API Context::Context(Runtime *runtime) : runtime(runtime), offMajorFrame(SIZE_MAX), offStackTopMajorFrame(SIZE_MAX) {
 	// TODO: Move the allocation out of the constructor.
 	dataStack = (char *)runtime->globalHeapPoolAlloc.alloc(SLAKE_STACK_MAX, sizeof(std::max_align_t));
 }
 
 SLAKE_API Context::~Context() {
-	while(majorFrameList)
+	while (offMajorFrame != SIZE_MAX)
 		leaveMajor();
 	if (dataStack) {
 		runtime->globalHeapPoolAlloc.release(dataStack, SLAKE_STACK_MAX, sizeof(std::max_align_t));
@@ -88,10 +90,6 @@ SLAKE_API void slake::ContextObject::dealloc() {
 SLAKE_API InternalExceptionPointer ContextObject::resume(HostRefHolder *hostRefHolder) {
 	_context.flags &= ~CTX_YIELDED;
 	return associatedRuntime->execContext(this);
-}
-
-SLAKE_API Value ContextObject::getResult() {
-	return _context.majorFrameList->regs[0];
 }
 
 SLAKE_API bool ContextObject::isDone() {

@@ -34,20 +34,24 @@ namespace slake {
 		Type type;
 	};
 
+	class CoroutineObject;
+
 	/// @brief A major frame represents a single calling frame.
 	struct MajorFrame final {
-		MajorFrame *next = nullptr;
+		size_t offNext = SIZE_MAX;
 		Context *context = nullptr;	 // Context
 
 		const FnOverloadingObject *curFn = nullptr;	 // Current function overloading.
-		uint32_t curIns = 0;						 // Offset of current instruction in function body.
-		uint32_t lastJumpSrc = UINT32_MAX;			// Offset of last executed jump instruction.
+		CoroutineObject *curCoroutine = nullptr;
+		uint32_t curIns = 0;				// Offset of current instruction in function body.
+		uint32_t lastJumpSrc = UINT32_MAX;	// Offset of last executed jump instruction.
 
-		peff::DynArray<ArgRecord> argStack;	 // Argument stack.
+		peff::DynArray<ArgRecord> argStack;		   // Argument stack.
+		peff::DynArray<size_t> lvarRecordOffsets;  // Local var record offsets.
 
 		peff::DynArray<Value> nextArgStack;	 // Argument stack for next call.
 
-		Value *regs;  // Local registers.
+		size_t offRegs;	 // Local registers.
 		size_t nRegs = 0;
 
 		Object *thisObject = nullptr;  // `this' object.
@@ -62,7 +66,7 @@ namespace slake {
 		SLAKE_API MajorFrame(Runtime *rt, Context *context);
 		// Default constructor is required by resize() methods from the
 		// containers.
-		SLAKE_FORCEINLINE MajorFrame() : minorFrames(nullptr), argStack(nullptr), nextArgStack(nullptr) {
+		SLAKE_FORCEINLINE MajorFrame() : minorFrames(nullptr), argStack(nullptr), nextArgStack(nullptr), lvarRecordOffsets(nullptr) {
 			abort();
 		}
 		SLAKE_API ~MajorFrame();
@@ -80,11 +84,18 @@ namespace slake {
 
 	struct Context {
 		Runtime *runtime;
-		MajorFrame *majorFrameList, *stackTopMajorFrame;  // Major frame list
-		ContextFlags flags = 0;							  // Flags
-		char *dataStack = nullptr;						  // Data stack
-		size_t stackTop = 0;							  // Stack top
+		size_t offMajorFrame = SIZE_MAX, offStackTopMajorFrame = SIZE_MAX;	// Major frame list
+		size_t majorFrameDepth;												// Major frame depth
+		ContextFlags flags = 0;												// Flags
+		char *dataStack = nullptr;											// Data stack
+		size_t stackTop = 0;												// Stack top
 
+		SLAKE_FORCEINLINE char *atStack(size_t offset) {
+			return dataStack + SLAKE_STACK_MAX - offset;
+		}
+		SLAKE_FORCEINLINE const char *atStack(size_t offset) const {
+			return dataStack + SLAKE_STACK_MAX - offset;
+		}
 		SLAKE_API char *stackAlloc(size_t size);
 		SLAKE_API void leaveMajor();
 
@@ -108,10 +119,7 @@ namespace slake {
 		SLAKE_FORCEINLINE Context &getContext() { return _context; }
 
 		SLAKE_API InternalExceptionPointer resume(HostRefHolder *hostRefHolder);
-		SLAKE_API Value getResult();
 		SLAKE_API bool isDone();
-
-		SLAKE_API void leaveMajorFrame();
 	};
 }
 

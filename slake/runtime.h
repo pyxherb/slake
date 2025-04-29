@@ -148,7 +148,7 @@ namespace slake {
 		/// @brief Execute a single instruction.
 		/// @param context Context for execution.
 		/// @param ins Instruction to be executed.
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _execIns(ContextObject *context, MajorFrame *curMajorFrame, const Instruction &ins) noexcept;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _execIns(ContextObject *context, MajorFrame *curMajorFrame, const Instruction &ins, bool &isContextChangedOut) noexcept;
 
 		struct GCHeaplessWalkContext {
 			Object *walkableList = nullptr;
@@ -167,6 +167,7 @@ namespace slake {
 		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, const Type &type);
 		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, const Value &i);
 		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, Object *i);
+		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, char *dataStack, MajorFrame *majorFrame);
 		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, Context &i);
 		SLAKE_API void _gcHeapless();
 
@@ -187,6 +188,16 @@ namespace slake {
 
 	public:
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _addLocalVar(MajorFrame *frame, Type type, EntityRef &objectRefOut) noexcept;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _fillArgs(
+			MajorFrame *newMajorFrame,
+			const FnOverloadingObject *fn,
+			const Value *args,
+			uint32_t nArgs,
+			HostRefHolder &holder);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _createNewCoroutineMajorFrame(
+			Context *context,
+			CoroutineObject *coroutine,
+			uint32_t returnValueOut) noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _createNewMajorFrame(
 			Context *context,
 			Object *thisObject,
@@ -274,7 +285,7 @@ namespace slake {
 			Object *thisObject,
 			const Value *args,
 			uint32_t nArgs,
-			HostObjectRef<ContextObject> &contextOut,
+			Value &valueOut,
 			void *nativeStackBaseCurrentPtr = nullptr,
 			size_t nativeStackSize = 0);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer execFnInAotFn(
@@ -292,6 +303,16 @@ namespace slake {
 			const Value *args,
 			uint32_t nArgs,
 			HostObjectRef<ContextObject> &contextOut);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer createCoroutineInstance(
+			const FnOverloadingObject *fn,
+			Object *thisObject,
+			const Value *args,
+			uint32_t nArgs,
+			HostObjectRef<CoroutineObject> &coroutineOut);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer resumeCoroutine(
+			ContextObject *context,
+			CoroutineObject *coroutine,
+			Value &resultOut);
 
 		[[nodiscard]] SLAKE_API InternalExceptionPointer tryAccessVar(const EntityRef &entityRef) const noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer typeofVar(const EntityRef &entityRef, Type &typeOut) const noexcept;

@@ -63,7 +63,11 @@ namespace slake {
 		CTORCALL,  // Constructor Call
 		RET,	   // Return
 
-		YIELD,	// Yield
+		COCALL,	  // Coroutine call
+		COMCALL,  // Coroutine method call
+		YIELD,	  // Yield
+		RESUME,	  // Resume
+		CODONE,	  // Is coroutine done?
 
 		LTHIS,	// Load this register
 

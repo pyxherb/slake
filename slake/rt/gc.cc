@@ -12,9 +12,9 @@ SLAKE_API void Runtime::_destructDestructibleObjects() {
 
 		i->_flags |= VF_DESTRUCTED;
 
-		HostObjectRef<ContextObject> contextOut;
+		Value resultOut;
 		for (auto j : i->_class->cachedInstantiatedMethodTable->destructors) {
-			if ((exception = execFn(j, nullptr, i, nullptr, 0, contextOut))) {
+			if ((exception = execFn(j, nullptr, i, nullptr, 0, resultOut))) {
 				if (!_uncaughtExceptionHandler) {
 					std::terminate();
 				}

@@ -12,6 +12,7 @@
 
 namespace slake {
 	struct Type;
+	class CoroutineObject;
 	class Object;
 	class Context;
 
@@ -23,8 +24,10 @@ namespace slake {
 		ObjectRef,
 		InstanceFieldRef,
 		LocalVarRef,
+		CoroutineLocalVarRef,
 		Alloca,
 		ArgRef,
+		CoroutineArgRef,
 		AotPtrRef,
 	};
 
@@ -50,6 +53,10 @@ namespace slake {
 				size_t stackOff;
 			} asLocalVar;
 			struct {
+				CoroutineObject *coroutine;
+				size_t stackOff;
+			} asCoroutineLocalVar;
+			struct {
 				Context *context;
 				size_t stackOff;
 			} asAlloca;
@@ -57,6 +64,10 @@ namespace slake {
 				MajorFrame *majorFrame;
 				uint32_t argIndex;
 			} asArg;
+			struct {
+				CoroutineObject *coroutine;
+				uint32_t argIndex;
+			} asCoroutineArg;
 			struct {
 				void *ptr;
 			} asAotPtr;
@@ -112,12 +123,32 @@ namespace slake {
 			return ref;
 		}
 
+		static SLAKE_FORCEINLINE EntityRef makeCoroutineLocalVarRef(CoroutineObject *coroutine, size_t offset) {
+			EntityRef ref = {};
+
+			ref.asCoroutineLocalVar.coroutine = coroutine;
+			ref.asCoroutineLocalVar.stackOff = offset;
+			ref.kind = ObjectRefKind::CoroutineLocalVarRef;
+
+			return ref;
+		}
+
 		static SLAKE_FORCEINLINE EntityRef makeArgRef(MajorFrame *majorFrame, uint32_t argIndex) {
 			EntityRef ref = {};
 
 			ref.asArg.majorFrame = majorFrame;
 			ref.asArg.argIndex = argIndex;
 			ref.kind = ObjectRefKind::ArgRef;
+
+			return ref;
+		}
+
+		static SLAKE_FORCEINLINE EntityRef makeCoroutineArgRef(CoroutineObject *coroutine, uint32_t argIndex) {
+			EntityRef ref = {};
+
+			ref.asCoroutineArg.coroutine = coroutine;
+			ref.asCoroutineArg.argIndex = argIndex;
+			ref.kind = ObjectRefKind::CoroutineArgRef;
 
 			return ref;
 		}

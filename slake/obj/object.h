@@ -49,6 +49,7 @@ namespace slake {
 		GenericArg,	 // Generic argument
 		RootObject,	 // Root value
 		Context,	 // Context
+		Coroutine,	 // Coroutine
 	};
 
 	enum class ObjectGCStatus : uint8_t {

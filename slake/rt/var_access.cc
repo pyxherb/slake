@@ -12,6 +12,9 @@ SLAKE_API InternalExceptionPointer Runtime::tryAccessVar(const EntityRef &entity
 		case ObjectRefKind::LocalVarRef: {
 			break;
 		}
+		case ObjectRefKind::CoroutineLocalVarRef: {
+			break;
+		}
 		case ObjectRefKind::InstanceFieldRef: {
 			const InstanceObject *v = (const InstanceObject *)entityRef.asArray.arrayObject;
 
@@ -28,6 +31,14 @@ SLAKE_API InternalExceptionPointer Runtime::tryAccessVar(const EntityRef &entity
 		}
 		case ObjectRefKind::ArgRef: {
 			ArgRecord &argRecord = entityRef.asArg.majorFrame->argStack.at(entityRef.asArg.argIndex);
+			break;
+		}
+		case ObjectRefKind::CoroutineArgRef: {
+			if (entityRef.asCoroutineArg.coroutine->curContext) {
+				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->argStack.at(entityRef.asArg.argIndex);
+			} else {
+				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->args.at(entityRef.asArg.argIndex);
+			}
 			break;
 		}
 		default:
@@ -53,6 +64,28 @@ SLAKE_API InternalExceptionPointer Runtime::typeofVar(const EntityRef &entityRef
 				sizeof(Type));
 			break;
 		}
+		case ObjectRefKind::CoroutineLocalVarRef: {
+			if (entityRef.asCoroutineArg.coroutine->curContext) {
+				const char *const rawStackPtr =
+					calcStackAddr(entityRef.asCoroutineArg.coroutine->curContext->dataStack,
+						SLAKE_STACK_MAX,
+						entityRef.asCoroutineArg.coroutine->curMajorFrame->stackBase + entityRef.asCoroutineLocalVar.stackOff);
+				memcpy(
+					&typeOut,
+					rawStackPtr,
+					sizeof(Type));
+			} else {
+				const char *const rawStackPtr =
+					calcStackAddr(entityRef.asCoroutineLocalVar.coroutine->stackData,
+						entityRef.asCoroutineLocalVar.coroutine->lenStackData,
+						entityRef.asCoroutineLocalVar.stackOff);
+				memcpy(
+					&typeOut,
+					rawStackPtr,
+					sizeof(Type));
+			}
+			break;
+		}
 		case ObjectRefKind::InstanceFieldRef: {
 			const InstanceObject *v = (const InstanceObject *)entityRef.asArray.arrayObject;
 
@@ -73,6 +106,18 @@ SLAKE_API InternalExceptionPointer Runtime::typeofVar(const EntityRef &entityRef
 			ArgRecord &argRecord = entityRef.asArg.majorFrame->argStack.at(entityRef.asArg.argIndex);
 
 			typeOut = argRecord.type;
+			break;
+		}
+		case ObjectRefKind::CoroutineArgRef: {
+			if (entityRef.asCoroutineArg.coroutine->curContext) {
+				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->argStack.at(entityRef.asArg.argIndex);
+
+				typeOut = argRecord.type;
+			} else {
+				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->args.at(entityRef.asArg.argIndex);
+
+				typeOut = argRecord.type;
+			}
 			break;
 		}
 		default:
@@ -138,7 +183,9 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 			break;
 		}
 		case ObjectRefKind::LocalVarRef: {
-			const char *const rawStackPtr = entityRef.asLocalVar.context->dataStack + SLAKE_STACK_MAX - entityRef.asLocalVar.stackOff;
+			const char *const rawStackPtr = calcStackAddr(entityRef.asLocalVar.context->dataStack,
+				SLAKE_STACK_MAX,
+				entityRef.asLocalVar.stackOff);
 			const char *const rawDataPtr = rawStackPtr + sizeof(Type);
 
 			Type t;
@@ -179,6 +226,101 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 				default:
 					// All fields should be checked during the instantiation.
 					std::terminate();
+			}
+
+			break;
+		}
+		case ObjectRefKind::CoroutineLocalVarRef: {
+			if (entityRef.asCoroutineLocalVar.coroutine->curContext) {
+				const char *const rawStackPtr = calcStackAddr(entityRef.asCoroutineLocalVar.coroutine->curContext->dataStack,
+					SLAKE_STACK_MAX,
+					entityRef.asCoroutineLocalVar.stackOff + entityRef.asCoroutineLocalVar.coroutine->curMajorFrame->stackBase);
+				const char *const rawDataPtr = rawStackPtr + sizeof(Type);
+
+				Type t;
+				memcpy(&t, rawStackPtr, sizeof(Type));
+
+				switch (t.typeId) {
+					case TypeId::I8:
+						return Value(*((int8_t *)rawDataPtr));
+					case TypeId::I16:
+						return Value(*((int16_t *)rawDataPtr));
+					case TypeId::I32:
+						return Value(*((int32_t *)rawDataPtr));
+					case TypeId::I64:
+						return Value(*((int64_t *)rawDataPtr));
+					case TypeId::U8:
+						return Value(*((uint8_t *)rawDataPtr));
+					case TypeId::U16:
+						return Value(*((uint16_t *)rawDataPtr));
+					case TypeId::U32:
+						return Value(*((uint32_t *)rawDataPtr));
+					case TypeId::U64:
+						return Value(*((uint64_t *)rawDataPtr));
+					case TypeId::F32:
+						return Value(*((float *)rawDataPtr));
+					case TypeId::F64:
+						return Value(*((double *)rawDataPtr));
+					case TypeId::Bool:
+						return Value(*((bool *)rawDataPtr));
+					case TypeId::String:
+					case TypeId::Instance:
+					case TypeId::Array:
+					case TypeId::FnDelegate:
+						return Value(EntityRef::makeObjectRef(*((Object **)rawDataPtr)));
+					case TypeId::Ref:
+						return Value(*((EntityRef *)rawDataPtr));
+					case TypeId::Any:
+						return Value(*((Value *)rawDataPtr));
+					default:
+						// All fields should be checked during the instantiation.
+						std::terminate();
+				}
+			} else {
+				const char *const rawStackPtr = calcStackAddr(entityRef.asCoroutineLocalVar.coroutine->stackData,
+					entityRef.asCoroutineLocalVar.coroutine->lenStackData,
+					entityRef.asCoroutineLocalVar.stackOff);
+				const char *const rawDataPtr = rawStackPtr + sizeof(Type);
+
+				Type t;
+				memcpy(&t, rawStackPtr, sizeof(Type));
+
+				switch (t.typeId) {
+					case TypeId::I8:
+						return Value(*((int8_t *)rawDataPtr));
+					case TypeId::I16:
+						return Value(*((int16_t *)rawDataPtr));
+					case TypeId::I32:
+						return Value(*((int32_t *)rawDataPtr));
+					case TypeId::I64:
+						return Value(*((int64_t *)rawDataPtr));
+					case TypeId::U8:
+						return Value(*((uint8_t *)rawDataPtr));
+					case TypeId::U16:
+						return Value(*((uint16_t *)rawDataPtr));
+					case TypeId::U32:
+						return Value(*((uint32_t *)rawDataPtr));
+					case TypeId::U64:
+						return Value(*((uint64_t *)rawDataPtr));
+					case TypeId::F32:
+						return Value(*((float *)rawDataPtr));
+					case TypeId::F64:
+						return Value(*((double *)rawDataPtr));
+					case TypeId::Bool:
+						return Value(*((bool *)rawDataPtr));
+					case TypeId::String:
+					case TypeId::Instance:
+					case TypeId::Array:
+					case TypeId::FnDelegate:
+						return Value(EntityRef::makeObjectRef(*((Object **)rawDataPtr)));
+					case TypeId::Ref:
+						return Value(*((EntityRef *)rawDataPtr));
+					case TypeId::Any:
+						return Value(*((Value *)rawDataPtr));
+					default:
+						// All fields should be checked during the instantiation.
+						std::terminate();
+				}
 			}
 
 			break;
@@ -273,6 +415,17 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 
 			return argRecord.value;
 		}
+		case ObjectRefKind::CoroutineArgRef: {
+			if (entityRef.asCoroutineArg.coroutine->curContext) {
+				const ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->args.at(entityRef.asArg.argIndex);
+
+				return argRecord.value;
+			} else {
+				const ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->argStack.at(entityRef.asArg.argIndex);
+
+				return argRecord.value;
+			}
+		}
 		default:;
 	}
 	std::terminate();
@@ -345,7 +498,9 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 				// TODO: Use a proper type of exception instead of this.
 				return raiseInvalidArrayIndexError((Runtime *)this, entityRef.asArray.index);
 
-			const char *const rawStackPtr = entityRef.asLocalVar.context->dataStack + SLAKE_STACK_MAX - entityRef.asLocalVar.stackOff;
+			const char *const rawStackPtr = calcStackAddr(entityRef.asLocalVar.context->dataStack,
+				SLAKE_STACK_MAX,
+				entityRef.asLocalVar.stackOff);
 			const char *const rawDataPtr = rawStackPtr + sizeof(Type);
 
 			Type t;
@@ -397,6 +552,123 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 				default:
 					// All fields should be checked during the instantiation.
 					std::terminate();
+			}
+
+			break;
+		}
+		case ObjectRefKind::CoroutineLocalVarRef: {
+			if (entityRef.asCoroutineLocalVar.coroutine->curContext) {
+				const char *const rawStackPtr = calcStackAddr(entityRef.asCoroutineLocalVar.coroutine->curContext->dataStack,
+					SLAKE_STACK_MAX,
+					entityRef.asLocalVar.stackOff);
+				const char *const rawDataPtr = rawStackPtr + sizeof(Type);
+
+				Type t;
+				memcpy(&t, rawStackPtr, sizeof(Type));
+
+				if (!isCompatible(t, value)) {
+					return raiseMismatchedVarTypeError((Runtime *)this);
+				}
+
+				switch (t.typeId) {
+					case TypeId::I8:
+						*((int8_t *)rawDataPtr) = value.getI8();
+						break;
+					case TypeId::I16:
+						*((int16_t *)rawDataPtr) = value.getI16();
+						break;
+					case TypeId::I32:
+						*((int32_t *)rawDataPtr) = value.getI32();
+						break;
+					case TypeId::I64:
+						*((int64_t *)rawDataPtr) = value.getI64();
+						break;
+					case TypeId::U8:
+						*((uint8_t *)rawDataPtr) = value.getU8();
+						break;
+					case TypeId::U16:
+						*((uint16_t *)rawDataPtr) = value.getU16();
+						break;
+					case TypeId::U32:
+						*((uint32_t *)rawDataPtr) = value.getU32();
+						break;
+					case TypeId::U64:
+						*((uint64_t *)rawDataPtr) = value.getU64();
+						break;
+					case TypeId::F32:
+						*((float *)rawDataPtr) = value.getF32();
+						break;
+					case TypeId::F64:
+						*((double *)rawDataPtr) = value.getF64();
+						break;
+					case TypeId::Bool:
+						*((bool *)rawDataPtr) = value.getBool();
+						break;
+					case TypeId::String:
+					case TypeId::Instance:
+					case TypeId::Array:
+						*((Object **)rawDataPtr) = value.getEntityRef().asObject.instanceObject;
+						break;
+					default:
+						// All fields should be checked during the instantiation.
+						std::terminate();
+				}
+			} else {
+				const char *const rawStackPtr = calcStackAddr(entityRef.asCoroutineLocalVar.coroutine->stackData,
+					entityRef.asCoroutineLocalVar.coroutine->lenStackData,
+					entityRef.asCoroutineLocalVar.stackOff);
+				const char *const rawDataPtr = rawStackPtr + sizeof(Type);
+
+				Type t;
+				memcpy(&t, rawStackPtr, sizeof(Type));
+
+				if (!isCompatible(t, value)) {
+					return raiseMismatchedVarTypeError((Runtime *)this);
+				}
+
+				switch (t.typeId) {
+					case TypeId::I8:
+						*((int8_t *)rawDataPtr) = value.getI8();
+						break;
+					case TypeId::I16:
+						*((int16_t *)rawDataPtr) = value.getI16();
+						break;
+					case TypeId::I32:
+						*((int32_t *)rawDataPtr) = value.getI32();
+						break;
+					case TypeId::I64:
+						*((int64_t *)rawDataPtr) = value.getI64();
+						break;
+					case TypeId::U8:
+						*((uint8_t *)rawDataPtr) = value.getU8();
+						break;
+					case TypeId::U16:
+						*((uint16_t *)rawDataPtr) = value.getU16();
+						break;
+					case TypeId::U32:
+						*((uint32_t *)rawDataPtr) = value.getU32();
+						break;
+					case TypeId::U64:
+						*((uint64_t *)rawDataPtr) = value.getU64();
+						break;
+					case TypeId::F32:
+						*((float *)rawDataPtr) = value.getF32();
+						break;
+					case TypeId::F64:
+						*((double *)rawDataPtr) = value.getF64();
+						break;
+					case TypeId::Bool:
+						*((bool *)rawDataPtr) = value.getBool();
+						break;
+					case TypeId::String:
+					case TypeId::Instance:
+					case TypeId::Array:
+						*((Object **)rawDataPtr) = value.getEntityRef().asObject.instanceObject;
+						break;
+					default:
+						// All fields should be checked during the instantiation.
+						std::terminate();
+				}
 			}
 
 			break;
@@ -517,6 +789,26 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 			}
 
 			argRecord.value = value;
+			break;
+		}
+		case ObjectRefKind::CoroutineArgRef: {
+			if (entityRef.asCoroutineArg.coroutine->curContext) {
+				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->argStack.at(entityRef.asArg.argIndex);
+
+				if (!isCompatible(argRecord.type, value)) {
+					return raiseMismatchedVarTypeError((Runtime *)this);
+				}
+
+				argRecord.value = value;
+			} else {
+				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->args.at(entityRef.asArg.argIndex);
+
+				if (!isCompatible(argRecord.type, value)) {
+					return raiseMismatchedVarTypeError((Runtime *)this);
+				}
+
+				argRecord.value = value;
+			}
 			break;
 		}
 		default:

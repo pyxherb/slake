@@ -3,7 +3,7 @@
 
 using namespace slake;
 
-SLAKE_API CoroutineObject::CoroutineObject(Runtime *rt) : Object(rt), curContext(nullptr), args(&rt->globalHeapPoolAlloc), overloading(nullptr), offIns(0), stackData(nullptr), lenStackData(0), nRegs(0), offRegs(SIZE_MAX) {
+SLAKE_API CoroutineObject::CoroutineObject(Runtime *rt) : Object(rt), curContext(nullptr), curMajorFrame(nullptr), args(&rt->globalHeapPoolAlloc), overloading(nullptr), offIns(0), stackData(nullptr), lenStackData(0), nRegs(0), offRegs(SIZE_MAX) {
 }
 
 SLAKE_API CoroutineObject::~CoroutineObject() {

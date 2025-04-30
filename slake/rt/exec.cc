@@ -411,7 +411,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(MajorFrame *fram
 	memcpy(typeInfo, &type, sizeof(Type));
 
 	if (frame->curCoroutine) {
-		objectRefOut = EntityRef::makeCoroutineLocalVarRef(frame->curCoroutine, frame->context->stackTop);
+		objectRefOut = EntityRef::makeCoroutineLocalVarRef(frame->curCoroutine, frame->context->stackTop - frame->stackBase);
 	} else {
 		objectRefOut = EntityRef::makeLocalVarRef(frame->context, frame->context->stackTop);
 	}
@@ -1718,13 +1718,14 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 
 			if (CoroutineObject *co = curMajorFrame->curCoroutine; co) {
 				co->finalResult = returnValue;
+				co->args = std::move(curMajorFrame->argStack);
 				co->setDone();
 				context->_context.leaveMajor();
 			} else {
 				context->_context.leaveMajor();
 			}
 
-			MajorFrame *prevFrame = ((MajorFrame *)context->_context.atStack(context->_context.offMajorFrame));
+			MajorFrame *prevFrame = (MajorFrame *)calcStackAddr(context->_context.dataStack, SLAKE_STACK_MAX, context->_context.offMajorFrame);
 
 			if (returnValueOutReg != UINT32_MAX) {
 				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, prevFrame, returnValueOutReg, returnValue));
@@ -1806,18 +1807,19 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(this, ins, false, 1));
 
 			curMajorFrame->curCoroutine->offIns = curMajorFrame->curIns + 1;
+			curMajorFrame->curCoroutine->args = std::move(curMajorFrame->argStack);
 
 			uint32_t returnValueOutReg = curMajorFrame->returnValueOutReg;
 			Value returnValue;
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[0], returnValue));
 
-			MajorFrame *prevFrame = ((MajorFrame *)context->_context.atStack(context->_context.offMajorFrame));
+			MajorFrame *prevFrame = (MajorFrame *)calcStackAddr(context->_context.dataStack, SLAKE_STACK_MAX, context->_context.offMajorFrame);
 			if (returnValueOutReg != UINT32_MAX) {
 				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, prevFrame, returnValueOutReg, returnValue));
 			}
 
 			memcpy(curMajorFrame->curCoroutine->stackData, dataStack + SLAKE_STACK_MAX - context->_context.stackTop, context->_context.stackTop - curMajorFrame->stackBase);
-			
+
 			isContextChangedOut = true;
 			break;
 		}
@@ -1916,14 +1918,14 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 
 			size_t i = context->_context.offMajorFrame;
 			while (i != SIZE_MAX) {
-				MajorFrame *majorFrame = ((MajorFrame *)context->_context.atStack(context->_context.offMajorFrame));
+				MajorFrame *majorFrame = (MajorFrame *)calcStackAddr(context->_context.dataStack, SLAKE_STACK_MAX, context->_context.offMajorFrame);
 				for (size_t j = majorFrame->minorFrames.size(); j; --j) {
 					auto &minorFrame = majorFrame->minorFrames.at(j - 1);
 
 					if (uint32_t off = _findAndDispatchExceptHandler(majorFrame->curExcept, minorFrame);
 						off != UINT32_MAX) {
 						for (MajorFrame *k = majorFrame, *next; k != majorFrame; k = next) {
-							next = ((MajorFrame *)context->_context.atStack(k->offNext));
+							next = (MajorFrame *)calcStackAddr(context->_context.dataStack, SLAKE_STACK_MAX, k->offNext);
 							context->_context.leaveMajor();
 						}
 						context->_context.offMajorFrame = i;
@@ -2027,7 +2029,7 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 	switch (managedThread->threadKind) {
 		case ThreadKind::AttachedExecutionThread: {
 			while(context->_context.majorFrameDepth >= initialMajorFrameDepth) {
-				curMajorFrame = (MajorFrame*)context->getContext().atStack(context->getContext().offMajorFrame);
+				curMajorFrame = (MajorFrame *)calcStackAddr(context->getContext().dataStack, SLAKE_STACK_MAX, context->getContext().offMajorFrame);
 				curFn = curMajorFrame->curFn;
 
 				if (!curFn) {
@@ -2088,7 +2090,7 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 		}
 		case ThreadKind::ExecutionThread: {
 			while (context->_context.majorFrameDepth >= initialMajorFrameDepth) {
-				curMajorFrame = (MajorFrame *)context->getContext().atStack(context->getContext().offMajorFrame);
+				curMajorFrame = (MajorFrame *)calcStackAddr(context->getContext().dataStack, SLAKE_STACK_MAX, context->getContext().offMajorFrame);
 				curFn = curMajorFrame->curFn;
 
 				if (!curFn) {
@@ -2271,7 +2273,7 @@ SLAKE_API InternalExceptionPointer Runtime::resumeCoroutine(
 	}
 
 	SLAKE_RETURN_IF_EXCEPT(_createNewMajorFrame(&context->_context, nullptr, nullptr, nullptr, 0, UINT32_MAX));
-	MajorFrame *topMajorFrame = (MajorFrame*)context->_context.atStack(context->_context.offMajorFrame);
+	MajorFrame *topMajorFrame = (MajorFrame *)calcStackAddr(context->_context.dataStack, SLAKE_STACK_MAX, context->_context.offMajorFrame);
 	SLAKE_RETURN_IF_EXCEPT(_createNewCoroutineMajorFrame(&context->_context, coroutine, 0));
 
 	InternalExceptionPointer exceptPtr = execContext(context);
@@ -2280,7 +2282,7 @@ SLAKE_API InternalExceptionPointer Runtime::resumeCoroutine(
 		return exceptPtr;
 	}
 
-	resultOut = ((const Value*)context->_context.atStack(topMajorFrame->offRegs))[0];
+	resultOut = ((const Value*)calcStackAddr(context->_context.dataStack, SLAKE_STACK_MAX, topMajorFrame->offRegs))[0];
 	context->_context.leaveMajor();
 
 	return {};

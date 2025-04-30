@@ -90,12 +90,6 @@ namespace slake {
 		char *dataStack = nullptr;											// Data stack
 		size_t stackTop = 0;												// Stack top
 
-		SLAKE_FORCEINLINE char *atStack(size_t offset) {
-			return dataStack + SLAKE_STACK_MAX - offset;
-		}
-		SLAKE_FORCEINLINE const char *atStack(size_t offset) const {
-			return dataStack + SLAKE_STACK_MAX - offset;
-		}
 		SLAKE_API char *stackAlloc(size_t size);
 		SLAKE_API void leaveMajor();
 
@@ -121,6 +115,10 @@ namespace slake {
 		SLAKE_API InternalExceptionPointer resume(HostRefHolder *hostRefHolder);
 		SLAKE_API bool isDone();
 	};
+
+	SLAKE_FORCEINLINE char *calcStackAddr(char *data, size_t szStack, size_t offset) {
+		return data + SLAKE_STACK_MAX - offset;
+	}
 }
 
 #endif

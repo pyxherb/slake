@@ -14,7 +14,8 @@ SLAKE_API MajorFrame::MajorFrame(Runtime *rt, Context *context)
 	  argStack(&rt->globalHeapPoolAlloc),
 	  nextArgStack(&rt->globalHeapPoolAlloc),
 	  minorFrames(&rt->globalHeapPoolAlloc),
-	  lvarRecordOffsets(&rt->globalHeapPoolAlloc) {
+	  lvarRecordOffsets(&rt->globalHeapPoolAlloc),
+	  offRegs(SIZE_MAX) {
 }
 
 SLAKE_API bool MajorFrame::leave() {
@@ -25,7 +26,7 @@ SLAKE_API bool MajorFrame::leave() {
 }
 
 SLAKE_API void Context::leaveMajor() {
-	MajorFrame *frameToBeDestroyed = (MajorFrame*)atStack(offMajorFrame);
+	MajorFrame *frameToBeDestroyed = (MajorFrame *)calcStackAddr(dataStack, SLAKE_STACK_MAX, offMajorFrame);
 	stackTop = frameToBeDestroyed->stackBase;
 	offMajorFrame = frameToBeDestroyed->offNext;
 	std::destroy_at<MajorFrame>(frameToBeDestroyed);

@@ -450,7 +450,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Context 
 	bool isWalkableObjectDetected = false;
 	size_t j = ctxt.offMajorFrame;
 	for (;;) {
-		MajorFrame *majorFrame = (MajorFrame *)ctxt.atStack(j);
+		MajorFrame *majorFrame = (MajorFrame *)calcStackAddr(ctxt.dataStack, SLAKE_STACK_MAX, j);
 		_gcWalkHeapless(context, majorFrame);
 		j = majorFrame->offNext;
 	}

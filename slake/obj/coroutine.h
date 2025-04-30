@@ -8,6 +8,7 @@ namespace slake {
 	class CoroutineObject : public Object {
 	public:
 		Context *curContext;
+		MajorFrame *curMajorFrame;
 		Object *thisObject;
 		const FnOverloadingObject *overloading;
 		peff::DynArray<ArgRecord> args;
@@ -29,12 +30,15 @@ namespace slake {
 		SLAKE_API char *allocStackData(size_t size);
 		SLAKE_API void releaseStackData();
 
-		SLAKE_FORCEINLINE void bindToContext(Context *curContext) noexcept {
+		SLAKE_FORCEINLINE void bindToContext(Context *curContext, MajorFrame *curMajorFrame) noexcept {
 			assert(!curContext);
+			assert(!curMajorFrame);
 			this->curContext = curContext;
+			this->curMajorFrame = curMajorFrame;
 		}
 		SLAKE_FORCEINLINE void unbindContext() noexcept {
 			this->curContext = nullptr;
+			this->curMajorFrame = nullptr;
 		}
 
 		SLAKE_FORCEINLINE bool isDone() const {

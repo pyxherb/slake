@@ -230,7 +230,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 	MajorFrame *pseudoMajorFrame;
 	{
 		SLAKE_RETURN_IF_EXCEPT(runtime->_createNewMajorFrame(&analyzedInfoOut.contextObject->_context, nullptr, nullptr, nullptr, 0, UINT32_MAX));
-		pseudoMajorFrame = (MajorFrame*)analyzedInfoOut.contextObject->_context.atStack(analyzedInfoOut.contextObject->_context.offMajorFrame);
+		pseudoMajorFrame = (MajorFrame*)calcStackAddr(analyzedInfoOut.contextObject->_context.dataStack, SLAKE_STACK_MAX, analyzedInfoOut.contextObject->_context.offMajorFrame);
 	}
 
 	ProgramAnalyzeContext analyzeContext = {

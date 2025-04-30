@@ -53,10 +53,6 @@ SLKC_API std::optional<CompilationError> slkc::resolveStaticMember(
 		case AstNodeType::Module: {
 			peff::SharedPtr<ModuleNode> mod = memberNode.castTo<ModuleNode>();
 
-			if (compileContext) {
-				SLKC_RETURN_IF_COMP_ERROR(normalizeModuleVarDefStmts(compileContext, mod));
-			}
-
 			if (auto it = mod->memberIndices.find(name.name); it != mod->memberIndices.end()) {
 				result = mod->members.at(it.value());
 			}
@@ -66,10 +62,6 @@ SLKC_API std::optional<CompilationError> slkc::resolveStaticMember(
 		case AstNodeType::Class: {
 			peff::SharedPtr<ClassNode> cls = memberNode.castTo<ClassNode>();
 
-			if (compileContext) {
-				SLKC_RETURN_IF_COMP_ERROR(normalizeModuleVarDefStmts(compileContext, cls.castTo<ModuleNode>()));
-			}
-
 			if (auto it = cls->memberIndices.find(name.name); it != cls->memberIndices.end()) {
 				result = cls->members.at(it.value());
 			}
@@ -78,10 +70,6 @@ SLKC_API std::optional<CompilationError> slkc::resolveStaticMember(
 		}
 		case AstNodeType::Interface: {
 			peff::SharedPtr<InterfaceNode> cls = memberNode.castTo<InterfaceNode>();
-
-			if (compileContext) {
-				SLKC_RETURN_IF_COMP_ERROR(normalizeModuleVarDefStmts(compileContext, cls.castTo<ModuleNode>()));
-			}
 
 			if (auto it = cls->memberIndices.find(name.name); it != cls->memberIndices.end()) {
 				result = cls->members.at(it.value());
@@ -146,10 +134,6 @@ SLKC_API std::optional<CompilationError> slkc::resolveInstanceMember(
 		case AstNodeType::Module: {
 			peff::SharedPtr<ModuleNode> mod = memberNode.castTo<ModuleNode>();
 
-			if (compileContext) {
-				SLKC_RETURN_IF_COMP_ERROR(normalizeModuleVarDefStmts(compileContext, mod));
-			}
-
 			if (auto it = mod->memberIndices.find(name.name); it != mod->memberIndices.end()) {
 				result = mod->members.at(it.value());
 			}
@@ -158,10 +142,6 @@ SLKC_API std::optional<CompilationError> slkc::resolveInstanceMember(
 		}
 		case AstNodeType::Class: {
 			peff::SharedPtr<ClassNode> m = memberNode.castTo<ClassNode>();
-
-			if (compileContext) {
-				SLKC_RETURN_IF_COMP_ERROR(normalizeModuleVarDefStmts(compileContext, m.castTo<ModuleNode>()));
-			}
 
 			if (auto it = m->memberIndices.find(name.name); it != m->memberIndices.end()) {
 				result = m->members.at(it.value());
@@ -198,10 +178,6 @@ SLKC_API std::optional<CompilationError> slkc::resolveInstanceMember(
 		}
 		case AstNodeType::Interface: {
 			peff::SharedPtr<InterfaceNode> m = memberNode.castTo<InterfaceNode>();
-
-			if (compileContext) {
-				SLKC_RETURN_IF_COMP_ERROR(normalizeModuleVarDefStmts(compileContext, m.castTo<ModuleNode>()));
-			}
 
 			if (auto it = m->memberIndices.find(name.name); it != m->memberIndices.end()) {
 				result = m->members.at(it.value());
@@ -394,33 +370,46 @@ SLKC_API std::optional<CompilationError> slkc::resolveIdRefWithScopeNode(
 		const IdRefEntry &initialEntry = idRef[0];
 
 		if (!initialEntry.genericArgs.size()) {
-			switch (resolveScope->astNodeType) {
+			peff::SharedPtr<MemberNode> curScope = resolveScope;
+
+		reresolveWithNewScope:
+			switch (curScope->astNodeType) {
 				case AstNodeType::Class: {
-					peff::SharedPtr<ClassNode> m = resolveScope.castTo<ClassNode>();
+					peff::SharedPtr<ClassNode> m = curScope.castTo<ClassNode>();
 
 					if (auto it = m->genericParamIndices.find(initialEntry.name); it != m->genericParamIndices.end()) {
 						memberOut = m->genericParams.at(it.value()).castTo<MemberNode>();
 						return {};
+					}
+					if (m->parent) {
+						curScope = m->parent->sharedFromThis().castTo<MemberNode>();
+						goto reresolveWithNewScope;
 					}
 					break;
 				}
 				case AstNodeType::Interface: {
-					peff::SharedPtr<InterfaceNode> m = resolveScope.castTo<InterfaceNode>();
+					peff::SharedPtr<InterfaceNode> m = curScope.castTo<InterfaceNode>();
 
 					if (auto it = m->genericParamIndices.find(initialEntry.name); it != m->genericParamIndices.end()) {
 						memberOut = m->genericParams.at(it.value()).castTo<MemberNode>();
 						return {};
+					}
+					if (m->parent) {
+						curScope = m->parent->sharedFromThis().castTo<MemberNode>();
+						goto reresolveWithNewScope;
 					}
 					break;
 				}
 				case AstNodeType::Fn: {
-					peff::SharedPtr<FnOverloadingNode> m = resolveScope.castTo<FnOverloadingNode>();
+					peff::SharedPtr<FnOverloadingNode> m = curScope.castTo<FnOverloadingNode>();
 
 					if (auto it = m->genericParamIndices.find(initialEntry.name); it != m->genericParamIndices.end()) {
 						memberOut = m->genericParams.at(it.value()).castTo<MemberNode>();
 						return {};
 					}
-					break;
+
+					curScope = m->parent->parent->sharedFromThis().castTo<MemberNode>();
+					goto reresolveWithNewScope;
 				}
 				default:;
 			}

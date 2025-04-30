@@ -384,6 +384,8 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 		}
 	}
 
+	SLKC_RETURN_IF_COMP_ERROR(indexModuleMembers(compileContext, compileContext->document->rootModule));
+
 	for (auto [k, v] : mod->memberIndices) {
 		peff::SharedPtr<MemberNode> m = mod->members.at(v);
 
@@ -511,8 +513,15 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 			case AstNodeType::FnSlot: {
 				peff::SharedPtr<FnNode> slotNode = m.castTo<FnNode>();
 
-				for (auto i : slotNode->overloadings) {
-					SLKC_RETURN_IF_COMP_ERROR(indexFnParams(compileContext, i));
+				for (auto &i : slotNode->overloadings) {
+					for (size_t j = &i - slotNode->overloadings.data() + 1; j < slotNode->overloadings.size(); ++j) {
+						bool whether;
+						SLKC_RETURN_IF_COMP_ERROR(isFnSignatureDuplicated(i, slotNode->overloadings.at(j), whether));
+						if (whether) {
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(i->tokenRange, CompilationErrorKind::FunctionOverloadingDuplicated)));
+							break;
+						}
+					}
 
 					compileContext->fnCompileContext.reset();
 

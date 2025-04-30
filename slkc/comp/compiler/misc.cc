@@ -16,6 +16,17 @@ SLKC_API std::optional<CompilationError> slkc::reindexFnParams(
 		}
 	}
 
+	for (size_t i = 0; i < fn->genericParams.size(); ++i) {
+		peff::SharedPtr<GenericParamNode> &curParam = fn->genericParams.at(i);
+		if (fn->genericParamIndices.contains(curParam->name)) {
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(curParam->tokenRange, CompilationErrorKind::GenericParamAlreadyDefined)));
+		}
+
+		if (!fn->genericParamIndices.insert(curParam->name, +i)) {
+			return genOutOfMemoryCompError();
+		}
+	}
+
 	fn->isParamsIndexed = true;
 	return {};
 }
@@ -29,6 +40,68 @@ SLKC_API std::optional<CompilationError> slkc::indexFnParams(
 
 	SLKC_RETURN_IF_COMP_ERROR(reindexFnParams(compileContext, fn));
 	fn->isParamsIndexed = true;
+
+	return {};
+}
+
+SLKC_API std::optional<CompilationError> slkc::reindexClassGenericParams(
+	CompileContext *compileContext,
+	peff::SharedPtr<ClassNode> cls) {
+	for (size_t i = 0; i < cls->genericParams.size(); ++i) {
+		peff::SharedPtr<GenericParamNode> &curParam = cls->genericParams.at(i);
+		if (cls->genericParamIndices.contains(curParam->name)) {
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(curParam->tokenRange, CompilationErrorKind::GenericParamAlreadyDefined)));
+		}
+
+		if (!cls->genericParamIndices.insert(curParam->name, +i)) {
+			return genOutOfMemoryCompError();
+		}
+	}
+
+	cls->isGenericParamsIndexed = true;
+	return {};
+}
+
+SLKC_API std::optional<CompilationError> slkc::indexClassGenericParams(
+	CompileContext *compileContext,
+	peff::SharedPtr<ClassNode> cls) {
+	if (cls->isGenericParamsIndexed) {
+		return {};
+	}
+
+	SLKC_RETURN_IF_COMP_ERROR(reindexClassGenericParams(compileContext, cls));
+	cls->isGenericParamsIndexed = true;
+
+	return {};
+}
+
+SLKC_API std::optional<CompilationError> slkc::reindexInterfaceGenericParams(
+	CompileContext *compileContext,
+	peff::SharedPtr<InterfaceNode> interfaceNode) {
+	for (size_t i = 0; i < interfaceNode->genericParams.size(); ++i) {
+		peff::SharedPtr<GenericParamNode> &curParam = interfaceNode->genericParams.at(i);
+		if (interfaceNode->genericParamIndices.contains(curParam->name)) {
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(curParam->tokenRange, CompilationErrorKind::GenericParamAlreadyDefined)));
+		}
+
+		if (!interfaceNode->genericParamIndices.insert(curParam->name, +i)) {
+			return genOutOfMemoryCompError();
+		}
+	}
+
+	interfaceNode->isGenericParamsIndexed = true;
+	return {};
+}
+
+SLKC_API std::optional<CompilationError> slkc::indexInterfaceGenericParams(
+	CompileContext *compileContext,
+	peff::SharedPtr<InterfaceNode> interfaceNode) {
+	if (interfaceNode->isGenericParamsIndexed) {
+		return {};
+	}
+
+	SLKC_RETURN_IF_COMP_ERROR(reindexInterfaceGenericParams(compileContext, interfaceNode));
+	interfaceNode->isGenericParamsIndexed = true;
 
 	return {};
 }
@@ -71,5 +144,83 @@ SLKC_API std::optional<CompilationError> slkc::normalizeModuleVarDefStmts(
 	SLKC_RETURN_IF_COMP_ERROR(renormalizeModuleVarDefStmts(compileContext, mod));
 
 	mod->isVarDefStmtsNormalized = true;
+	return {};
+}
+
+SLKC_API std::optional<CompilationError> slkc::isFnSignatureSame(
+	peff::SharedPtr<VarNode> *lParams,
+	peff::SharedPtr<VarNode> *rParams,
+	size_t nParams,
+	bool &whetherOut) {
+	for (size_t i = 0; i < nParams; ++i) {
+		const peff::SharedPtr<VarNode> &lCurParam = lParams[i], rCurParam = rParams[i];
+
+		SLKC_RETURN_IF_COMP_ERROR(isSameTypeInSignature(lCurParam->type, rCurParam->type, whetherOut));
+
+		if (!whetherOut) {
+			return {};
+		}
+	}
+
+	whetherOut = true;
+	return {};
+}
+
+SLKC_API std::optional<CompilationError> slkc::isFnSignatureDuplicated(peff::SharedPtr<FnOverloadingNode> lhs, peff::SharedPtr<FnOverloadingNode> rhs, bool &whetherOut) {
+	if (lhs->params.size() != rhs->params.size()) {
+		whetherOut = false;
+		return {};
+	}
+	if (lhs->genericParams.size() != rhs->genericParams.size()) {
+		whetherOut = false;
+		return {};
+	}
+	return isFnSignatureSame(lhs->params.data(), rhs->params.data(), lhs->params.size(), whetherOut);
+}
+
+SLKC_API std::optional<CompilationError> slkc::indexModuleMembers(
+	CompileContext *compileContext,
+	peff::SharedPtr<ModuleNode> moduleNode) {
+	for (auto i : moduleNode->members) {
+		switch (i->astNodeType) {
+			case AstNodeType::Module: {
+				peff::SharedPtr<ModuleNode> m = i.castTo<ModuleNode>();
+
+				SLKC_RETURN_IF_COMP_ERROR(normalizeModuleVarDefStmts(compileContext, m.castTo<ModuleNode>()));
+
+				SLKC_RETURN_IF_COMP_ERROR(indexModuleMembers(compileContext, m));
+				break;
+			}
+			case AstNodeType::Class: {
+				peff::SharedPtr<ClassNode> m = i.castTo<ClassNode>();
+
+				SLKC_RETURN_IF_COMP_ERROR(indexClassGenericParams(compileContext, m));
+
+				SLKC_RETURN_IF_COMP_ERROR(normalizeModuleVarDefStmts(compileContext, m.castTo<ModuleNode>()));
+
+				SLKC_RETURN_IF_COMP_ERROR(indexModuleMembers(compileContext, m.castTo<ModuleNode>()));
+				break;
+			}
+			case AstNodeType::Interface: {
+				peff::SharedPtr<InterfaceNode> m = i.castTo<InterfaceNode>();
+
+				SLKC_RETURN_IF_COMP_ERROR(indexInterfaceGenericParams(compileContext, m));
+
+				SLKC_RETURN_IF_COMP_ERROR(normalizeModuleVarDefStmts(compileContext, m.castTo<ModuleNode>()));
+
+				SLKC_RETURN_IF_COMP_ERROR(indexModuleMembers(compileContext, m.castTo<ModuleNode>()));
+				break;
+			}
+			case AstNodeType::FnSlot: {
+				peff::SharedPtr<FnNode> m = i.castTo<FnNode>();
+
+				for (auto j : m->overloadings) {
+					SLKC_RETURN_IF_COMP_ERROR(indexFnParams(compileContext, j));
+				}
+				break;
+			}
+		}
+	}
+
 	return {};
 }

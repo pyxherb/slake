@@ -25,6 +25,7 @@ namespace slkc {
 		ExpectingId,
 		IdNotFound,
 		ParamAlreadyDefined,
+		GenericParamAlreadyDefined,
 		InvalidThisUsage,
 		NoMatchingFnOverloading,
 		UnableToDetermineOverloading,
@@ -37,6 +38,7 @@ namespace slkc {
 		InvalidContinueUsage,
 		TypeIsNotConstructible,
 		InvalidCast,
+		FunctionOverloadingDuplicated,
 
 		ImportLimitExceeded,
 		MalformedModuleName,

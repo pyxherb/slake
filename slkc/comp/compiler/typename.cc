@@ -263,6 +263,73 @@ SLKC_API std::optional<CompilationError> slkc::isSameType(
 	return {};
 }
 
+SLKC_API std::optional<CompilationError> slkc::isSameTypeInSignature(
+	const peff::SharedPtr<TypeNameNode>& lhs,
+	const peff::SharedPtr<TypeNameNode>& rhs,
+	bool &whetherOut) {
+	peff::SharedPtr<Document> document = lhs->document.lock();
+	if (document != rhs->document.lock())
+		std::terminate();
+
+	if (lhs->typeNameKind != rhs->typeNameKind) {
+		whetherOut = false;
+		return {};
+	}
+
+	switch (lhs->typeNameKind) {
+		case TypeNameKind::Custom: {
+			peff::SharedPtr<CustomTypeNameNode>
+				convertedLhs = lhs.castTo<CustomTypeNameNode>(),
+				convertedRhs = rhs.castTo<CustomTypeNameNode>();
+
+			peff::SharedPtr<MemberNode> lhsMember, rhsMember;
+
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, convertedLhs, lhsMember));
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, convertedRhs, rhsMember));
+
+			if ((!lhsMember) || (!rhsMember)) {
+				if ((!lhsMember) != (!rhsMember)) {
+					whetherOut = false;
+					break;
+				} else {
+					whetherOut = true;
+					break;
+				}
+			}
+
+			if (lhsMember->astNodeType != rhsMember->astNodeType) {
+				whetherOut = false;
+				break;
+			}
+
+			switch (lhsMember->astNodeType) {
+				case AstNodeType::GenericParam: {
+					peff::SharedPtr<GenericParamNode> l, r;
+
+					l = lhsMember.castTo<GenericParamNode>();
+					r = rhsMember.castTo<GenericParamNode>();
+
+					if (((FnOverloadingNode *)l->parent)->genericParamIndices.at(l->name) == ((FnOverloadingNode *)r->parent)->genericParamIndices.at(r->name)) {
+						whetherOut = true;
+						break;
+					}
+
+					whetherOut = false;
+					break;
+				}
+				default:
+					whetherOut = lhsMember == rhsMember;
+					break;
+			}
+			break;
+		}
+		default:
+			SLKC_RETURN_IF_COMP_ERROR(isSameType(lhs, rhs, whetherOut));
+	}
+
+	return {};
+}
+
 SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 	const peff::SharedPtr<TypeNameNode> &src,
 	const peff::SharedPtr<TypeNameNode> &dest,

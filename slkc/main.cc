@@ -370,6 +370,16 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 				beginToken->sourceLocation.beginPosition.line + 1,
 				beginToken->sourceLocation.beginPosition.column + 1);
 			break;
+		case slkc::CompilationErrorKind::ParamAlreadyDefined:
+			printError("Error at %zu, %zu: Parameter is already defined\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::GenericParamAlreadyDefined:
+			printError("Error at %zu, %zu: Generic parameter is already defined\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
 		case slkc::CompilationErrorKind::LocalVarAlreadyExists:
 			printError("Error at %zu, %zu: Local variable already exists\n",
 				beginToken->sourceLocation.beginPosition.line + 1,
@@ -387,6 +397,16 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 			break;
 		case slkc::CompilationErrorKind::TypeIsNotConstructible:
 			printError("Error at %zu, %zu: Type is not constructible\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::InvalidCast:
+			printError("Error at %zu, %zu: Invalid type cast\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::FunctionOverloadingDuplicated:
+			printError("Error at %zu, %zu: Duplicated function overloading\n",
 				beginToken->sourceLocation.beginPosition.line + 1,
 				beginToken->sourceLocation.beginPosition.column + 1);
 			break;
@@ -581,6 +601,10 @@ int main(int argc, char *argv[]) {
 			}
 
 			if (auto e = completeParentModules(&compileContext, moduleName.get(), mod); e) {
+				dumpCompilationError(parser, *e);
+			}
+
+			if (auto e = indexModuleMembers(&compileContext, rootMod); e) {
 				dumpCompilationError(parser, *e);
 			}
 

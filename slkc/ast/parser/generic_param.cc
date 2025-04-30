@@ -74,26 +74,36 @@ SLKC_API std::optional<SyntaxError> Parser::parseGenericParams(
 				return genOutOfMemoryError();
 			}
 
+			genericParamNode->parent = curParent;
+
 			Token *nameToken;
 
 			if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {
 				return syntaxError;
-			}
+			};
 
 			if (!genericParamNode->name.build(nameToken->sourceText))
 				return genOutOfMemoryError();
 
 			nextToken();
 
-			if ((syntaxError = parseGenericConstraint(genericParamNode->genericConstraint))) {
-				return syntaxError;
-			}
+			{
+				peff::ScopeGuard setTokenRangeGuard([this, nameToken, &genericParamNode]() noexcept {
+					if (genericParamNode) {
+						genericParamNode->tokenRange = TokenRange{ nameToken->index, parseContext.idxPrevToken };
+					}
+				});
 
-			if (!genericParamsOut.pushBack(std::move(genericParamNode)))
-				return genOutOfMemoryError();
+				if ((syntaxError = parseGenericConstraint(genericParamNode->genericConstraint))) {
+					return syntaxError;
+				}
 
-			if (peekToken()->tokenId != TokenId::Comma) {
-				break;
+				if (!genericParamsOut.pushBack(std::move(genericParamNode)))
+					return genOutOfMemoryError();
+
+				if (peekToken()->tokenId != TokenId::Comma) {
+					break;
+				}
 			}
 
 			Token *commaToken = nextToken();

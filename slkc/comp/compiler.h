@@ -413,6 +413,10 @@ namespace slkc {
 		const peff::SharedPtr<TypeNameNode> &lhs,
 		const peff::SharedPtr<TypeNameNode> &rhs,
 		bool &whetherOut);
+	[[nodiscard]] SLKC_API std::optional<CompilationError> isSameTypeInSignature(
+		const peff::SharedPtr<TypeNameNode> &lhs,
+		const peff::SharedPtr<TypeNameNode> &rhs,
+		bool &whetherOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> isTypeConvertible(
 		const peff::SharedPtr<TypeNameNode> &src,
 		const peff::SharedPtr<TypeNameNode> &dest,
@@ -481,6 +485,24 @@ namespace slkc {
 		CompileContext *compileContext,
 		peff::SharedPtr<FnOverloadingNode> fn);
 
+	[[nodiscard]] SLKC_API std::optional<CompilationError> reindexClassGenericParams(
+		CompileContext *compileContext,
+		peff::SharedPtr<ClassNode> cls);
+	[[nodiscard]] SLKC_API std::optional<CompilationError> indexClassGenericParams(
+		CompileContext *compileContext,
+		peff::SharedPtr<ClassNode> cls);
+
+	[[nodiscard]] SLKC_API std::optional<CompilationError> reindexInterfaceGenericParams(
+		CompileContext *compileContext,
+		peff::SharedPtr<InterfaceNode> interfaceNode);
+	[[nodiscard]] SLKC_API std::optional<CompilationError> indexInterfaceGenericParams(
+		CompileContext *compileContext,
+		peff::SharedPtr<InterfaceNode> interfaceNode);
+
+	[[nodiscard]] SLKC_API std::optional<CompilationError> indexModuleMembers(
+		CompileContext *compileContext,
+		peff::SharedPtr<ModuleNode> moduleNode);
+
 	[[nodiscard]] SLKC_API std::optional<CompilationError> determineFnOverloading(
 		CompileContext *compileContext,
 		peff::SharedPtr<FnNode> fnSlot,
@@ -507,6 +529,9 @@ namespace slkc {
 	[[nodiscard]] SLKC_API std::optional<CompilationError> normalizeModuleVarDefStmts(
 		CompileContext *compileContext,
 		peff::SharedPtr<ModuleNode> mod);
+
+	[[nodiscard]] SLKC_API std::optional<CompilationError> isFnSignatureSame(peff::SharedPtr<VarNode> *lParams, peff::SharedPtr<VarNode> *rParams, size_t nParams, bool &whetherOut);
+	[[nodiscard]] SLKC_API std::optional<CompilationError> isFnSignatureDuplicated(peff::SharedPtr<FnOverloadingNode> lhs, peff::SharedPtr<FnOverloadingNode> rhs, bool &whetherOut);
 
 	[[nodiscard]] SLKC_API std::optional<CompilationError> visitBaseClass(peff::SharedPtr<TypeNameNode> cls, peff::SharedPtr<ClassNode> &classOut, peff::Set<peff::SharedPtr<MemberNode>> *walkedNodes);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> visitBaseInterface(peff::SharedPtr<TypeNameNode> cls, peff::SharedPtr<InterfaceNode> &classOut, peff::Set<peff::SharedPtr<MemberNode>> *walkedNodes);

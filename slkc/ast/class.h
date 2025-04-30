@@ -17,6 +17,8 @@ namespace slkc {
 		peff::DynArray<size_t> idxGenericParamCommaTokens;
 		size_t idxLAngleBracketToken = SIZE_MAX, idxRAngleBracketToken = SIZE_MAX;
 
+		bool isGenericParamsIndexed = false;
+
 		SLKC_API ClassNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API ClassNode(const ClassNode &rhs, peff::Alloc *allocator, bool &succeededOut);
 		SLKC_API virtual ~ClassNode();
@@ -32,6 +34,8 @@ namespace slkc {
 		peff::HashMap<std::string_view, size_t> genericParamIndices;
 		peff::DynArray<size_t> idxGenericParamCommaTokens;
 		size_t idxLAngleBracketToken = SIZE_MAX, idxRAngleBracketToken = SIZE_MAX;
+
+		bool isGenericParamsIndexed = false;
 
 		SLKC_API InterfaceNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API InterfaceNode(const InterfaceNode &rhs, peff::Alloc *allocator, bool &succeededOut);

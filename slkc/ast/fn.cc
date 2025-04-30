@@ -100,16 +100,6 @@ SLKC_API FnOverloadingNode::FnOverloadingNode(const FnOverloadingNode &rhs, peff
 		params.at(i)->setParent(this);
 	}
 
-	if ((isParamsIndexed = rhs.isParamsIndexed)) {
-		for (auto i : rhs.paramIndices) {
-			auto &curParam = params.at(i.second);
-			if (!(paramIndices.insert(curParam->name, +i.second))) {
-				succeededOut = false;
-				return;
-			}
-		}
-	}
-
 	if (!genericParams.resize(rhs.genericParams.size())) {
 		succeededOut = false;
 		return;
@@ -128,6 +118,24 @@ SLKC_API FnOverloadingNode::FnOverloadingNode(const FnOverloadingNode &rhs, peff
 
 		genericParams.at(i)->setParent(this);
 	}
+
+	for (auto i : rhs.paramIndices) {
+		auto &curParam = params.at(i.second);
+		if (!(paramIndices.insert(curParam->name, +i.second))) {
+			succeededOut = false;
+			return;
+		}
+	}
+
+	for (auto i : rhs.genericParamIndices) {
+		auto &curParam = genericParams.at(i.second);
+		if (!(paramIndices.insert(curParam->name, +i.second))) {
+			succeededOut = false;
+			return;
+		}
+	}
+
+	isParamsIndexed = rhs.isParamsIndexed;
 
 	if (!idxGenericParamCommaTokens.resize(rhs.idxGenericParamCommaTokens.size())) {
 		succeededOut = false;

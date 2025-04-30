@@ -55,12 +55,14 @@ SLKC_API ClassNode::ClassNode(const ClassNode &rhs, peff::Alloc *allocator, bool
 			return;
 		}
 
-		if (!genericParamIndices.insert(genericParams.at(i)->name, +i)) {
+		genericParams.at(i)->setParent(this);
+	}
+
+	for (const auto& [k, v] : rhs.genericParamIndices) {
+		if (!genericParamIndices.insert(genericParams.at(v)->name, +v)) {
 			succeededOut = false;
 			return;
 		}
-
-		genericParams.at(i)->setParent(this);
 	}
 
 	if (!idxGenericParamCommaTokens.resize(rhs.idxGenericParamCommaTokens.size())) {
@@ -72,6 +74,8 @@ SLKC_API ClassNode::ClassNode(const ClassNode &rhs, peff::Alloc *allocator, bool
 
 	idxLAngleBracketToken = rhs.idxLAngleBracketToken;
 	idxRAngleBracketToken = rhs.idxRAngleBracketToken;
+
+	isGenericParamsIndexed = rhs.isGenericParamsIndexed;
 
 	succeededOut = true;
 }
@@ -127,12 +131,14 @@ SLKC_API InterfaceNode::InterfaceNode(const InterfaceNode &rhs, peff::Alloc *all
 			return;
 		}
 
-		if (!genericParamIndices.insert(genericParams.at(i)->name, +i)) {
+		genericParams.at(i)->setParent(this);
+	}
+
+	for (const auto &[k, v] : rhs.genericParamIndices) {
+		if (!genericParamIndices.insert(genericParams.at(v)->name, +v)) {
 			succeededOut = false;
 			return;
 		}
-
-		genericParams.at(i)->setParent(this);
 	}
 
 	if (!idxGenericParamCommaTokens.resize(rhs.idxGenericParamCommaTokens.size())) {
@@ -144,6 +150,8 @@ SLKC_API InterfaceNode::InterfaceNode(const InterfaceNode &rhs, peff::Alloc *all
 
 	idxLAngleBracketToken = rhs.idxLAngleBracketToken;
 	idxRAngleBracketToken = rhs.idxRAngleBracketToken;
+
+	isGenericParamsIndexed = rhs.isGenericParamsIndexed;
 
 	succeededOut = true;
 }

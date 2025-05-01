@@ -264,8 +264,8 @@ SLKC_API std::optional<CompilationError> slkc::isSameType(
 }
 
 SLKC_API std::optional<CompilationError> slkc::isSameTypeInSignature(
-	const peff::SharedPtr<TypeNameNode>& lhs,
-	const peff::SharedPtr<TypeNameNode>& rhs,
+	const peff::SharedPtr<TypeNameNode> &lhs,
+	const peff::SharedPtr<TypeNameNode> &rhs,
 	bool &whetherOut) {
 	peff::SharedPtr<Document> document = lhs->document.lock();
 	if (document != rhs->document.lock())
@@ -447,10 +447,6 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 		case TypeNameKind::Custom: {
 			switch (src->typeNameKind) {
 				case TypeNameKind::Custom: {
-					if (isSealed) {
-						return isSameType(src, dest, whetherOut);
-					}
-
 					peff::SharedPtr<CustomTypeNameNode>
 						st = src.castTo<CustomTypeNameNode>(),
 						dt = dest.castTo<CustomTypeNameNode>();
@@ -467,28 +463,87 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 									SLKC_RETURN_IF_COMP_ERROR(isImplementedByClass(document, dtm.castTo<InterfaceNode>(), stm.castTo<ClassNode>(), whetherOut));
 									break;
 								case AstNodeType::Class:
-									SLKC_RETURN_IF_COMP_ERROR(isBaseOf(document, stm.castTo<ClassNode>(), dtm.castTo<ClassNode>(), whetherOut));
+									SLKC_RETURN_IF_COMP_ERROR(isBaseOf(document, dtm.castTo<ClassNode>(), stm.castTo<ClassNode>(), whetherOut));
 									if ((!isSealed) && (!whetherOut)) {
 										// Covariance is not allowed in sealed context.
-										SLKC_RETURN_IF_COMP_ERROR(isBaseOf(document, dtm.castTo<ClassNode>(), stm.castTo<ClassNode>(), whetherOut));
+										SLKC_RETURN_IF_COMP_ERROR(isBaseOf(document, stm.castTo<ClassNode>(), dtm.castTo<ClassNode>(), whetherOut));
 									}
 									break;
+								case AstNodeType::GenericParam: {
+									auto dgp = dtm.castTo<GenericParamNode>();
+
+									if (dgp->genericConstraint->baseType && dgp->genericConstraint->baseType->typeNameKind == TypeNameKind::Custom) {
+										SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src, dgp->genericConstraint->baseType, isSealed, whetherOut));
+
+										if (whetherOut) {
+											break;
+										}
+									}
+									break;
+								}
 							}
 							break;
 						case AstNodeType::Interface:
 							switch (dtm->astNodeType) {
 								case AstNodeType::Interface:
-									SLKC_RETURN_IF_COMP_ERROR(isImplementedByInterface(document, stm.castTo<InterfaceNode>(), dtm.castTo<InterfaceNode>(), whetherOut));
+									SLKC_RETURN_IF_COMP_ERROR(isImplementedByInterface(document, dtm.castTo<InterfaceNode>(), stm.castTo<InterfaceNode>(), whetherOut));
 									if ((!isSealed) && (!whetherOut)) {
 										// Covariance is not allowed in sealed context.
-										SLKC_RETURN_IF_COMP_ERROR(isImplementedByInterface(document, dtm.castTo<InterfaceNode>(), stm.castTo<InterfaceNode>(), whetherOut));
+										SLKC_RETURN_IF_COMP_ERROR(isImplementedByInterface(document, stm.castTo<InterfaceNode>(), dtm.castTo<InterfaceNode>(), whetherOut));
 									}
 									break;
 								case AstNodeType::Class:
 									SLKC_RETURN_IF_COMP_ERROR(isImplementedByClass(document, stm.castTo<InterfaceNode>(), dtm.castTo<ClassNode>(), whetherOut));
 									break;
+								case AstNodeType::GenericParam: {
+									auto dgp = dtm.castTo<GenericParamNode>();
+
+									if (dgp->genericConstraint->baseType && dgp->genericConstraint->baseType->typeNameKind == TypeNameKind::Custom) {
+										SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src, dgp->genericConstraint->baseType, isSealed, whetherOut));
+
+										if (whetherOut) {
+											break;
+										}
+									}
+
+									for (auto i : dgp->genericConstraint->implementedTypes) {
+										SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src, i, isSealed, whetherOut));
+
+										if (whetherOut) {
+											break;
+										}
+									}
+									break;
+								}
 							}
 							break;
+						case AstNodeType::GenericParam: {
+							auto sgp = stm.castTo<GenericParamNode>();
+
+							switch (dtm->astNodeType) {
+								case AstNodeType::Interface:
+									if (sgp->genericConstraint->baseType && sgp->genericConstraint->baseType->typeNameKind == TypeNameKind::Custom) {
+										SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(sgp->genericConstraint->baseType, dest, isSealed, whetherOut));
+									}
+									for (auto i : sgp->genericConstraint->implementedTypes) {
+										SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(i, dest, isSealed, whetherOut));
+
+										if (whetherOut) {
+											break;
+										}
+									}
+									break;
+								case AstNodeType::Class:
+									if (sgp->genericConstraint->baseType && sgp->genericConstraint->baseType->typeNameKind == TypeNameKind::Custom) {
+										SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(sgp->genericConstraint->baseType, dest, isSealed, whetherOut));
+									}
+									break;
+								case AstNodeType::GenericParam:
+									// Direct conversions between generic parameters are disabled.
+									break;
+							}
+							break;
+						}
 						default:
 							whetherOut = false;
 							break;

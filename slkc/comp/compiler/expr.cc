@@ -146,33 +146,35 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				}
 
 				// Check if the entry refers to a local variable.
-				if (auto it = blockCompileContext->localVars.find(e->idRefPtr->entries.at(0).name);
-					it != blockCompileContext->localVars.end()) {
-					if (e->idRefPtr->entries.size() > 1) {
-						initialMemberEvalPurpose = ExprEvalPurpose::RValue;
-					} else {
-						initialMemberEvalPurpose = evalPurpose;
-					}
+				for (auto i = compileContext->fnCompileContext.blockCompileContexts.beginReversed(); i != compileContext->fnCompileContext.blockCompileContexts.endReversed(); ++i) {
+					if (auto it = (*i)->localVars.find(e->idRefPtr->entries.at(0).name);
+						it != (*i)->localVars.end()) {
+						if (e->idRefPtr->entries.size() > 1) {
+							initialMemberEvalPurpose = ExprEvalPurpose::RValue;
+						} else {
+							initialMemberEvalPurpose = evalPurpose;
+						}
 
-					initialMember = it.value().castTo<MemberNode>();
-					switch (initialMemberEvalPurpose) {
-						case ExprEvalPurpose::EvalType:
-							break;
-						case ExprEvalPurpose::Stmt:
-							SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(
-								CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
-							break;
-						case ExprEvalPurpose::LValue: {
-							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::MOV, initialMemberReg, { slake::Value(slake::ValueType::RegRef, it.value()->idxReg) }));
-							break;
+						initialMember = it.value().castTo<MemberNode>();
+						switch (initialMemberEvalPurpose) {
+							case ExprEvalPurpose::EvalType:
+								break;
+							case ExprEvalPurpose::Stmt:
+								SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(
+									CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
+								break;
+							case ExprEvalPurpose::LValue: {
+								SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::MOV, initialMemberReg, { slake::Value(slake::ValueType::RegRef, it.value()->idxReg) }));
+								break;
+							}
+							case ExprEvalPurpose::RValue:
+							case ExprEvalPurpose::Call: {
+								SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::LVALUE, initialMemberReg, { slake::Value(slake::ValueType::RegRef, it.value()->idxReg) }));
+								break;
+							}
 						}
-						case ExprEvalPurpose::RValue:
-						case ExprEvalPurpose::Call: {
-							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::LVALUE, initialMemberReg, { slake::Value(slake::ValueType::RegRef, it.value()->idxReg) }));
-							break;
-						}
+						goto initialMemberResolved;
 					}
-					goto initialMemberResolved;
 				}
 
 				// Check if the entry refers to a function parameter.

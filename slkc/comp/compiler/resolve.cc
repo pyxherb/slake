@@ -200,6 +200,38 @@ SLKC_API std::optional<CompilationError> slkc::resolveInstanceMember(
 		interfaceResolutionSucceeded:
 			break;
 		}
+		case AstNodeType::GenericParam: {
+			peff::SharedPtr<GenericParamNode> m = memberNode.castTo<GenericParamNode>();
+
+			{
+				peff::SharedPtr<ClassNode> baseType;
+				SLKC_RETURN_IF_COMP_ERROR(visitBaseClass(m->genericConstraint->baseType, baseType, nullptr));
+				if (baseType) {
+					SLKC_RETURN_IF_COMP_ERROR(resolveInstanceMember(compileContext, document, baseType.castTo<MemberNode>(), name, result));
+
+					if (result) {
+						goto genericParamResolutionSucceeded;
+					}
+				}
+			}
+
+			for (auto &i : m->genericConstraint->implementedTypes) {
+				{
+					peff::SharedPtr<InterfaceNode> baseType;
+					SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(i, baseType, nullptr));
+					if (baseType) {
+						SLKC_RETURN_IF_COMP_ERROR(resolveInstanceMember(compileContext, document, baseType.castTo<MemberNode>(), name, result));
+
+						if (result) {
+							goto genericParamResolutionSucceeded;
+						}
+					}
+				}
+			}
+
+		genericParamResolutionSucceeded:
+			break;
+		}
 		case AstNodeType::This: {
 			peff::SharedPtr<ThisNode> cls = memberNode.castTo<ThisNode>();
 
@@ -458,12 +490,16 @@ SLKC_API std::optional<CompilationError> slkc::resolveIdRefWithScopeNode(
 				if (m->parent && (!isSealed)) {
 					peff::SharedPtr<MemberNode> p = m->parent->sharedFromThis().castTo<MemberNode>();
 
-					if (p->astNodeType == AstNodeType::Module) {
-						SLKC_RETURN_IF_COMP_ERROR(resolveIdRefWithScopeNode(compileContext, document, walkedNodes, p.castTo<MemberNode>(), idRef, nEntries, memberOut, resolvedPartListOut, isStatic));
+					switch (p->astNodeType) {
+						case AstNodeType::Class:
+						case AstNodeType::Interface:
+						case AstNodeType::Module:
+							SLKC_RETURN_IF_COMP_ERROR(resolveIdRefWithScopeNode(compileContext, document, walkedNodes, p.castTo<MemberNode>(), idRef, nEntries, memberOut, resolvedPartListOut, isStatic));
 
-						if (memberOut) {
-							return {};
-						}
+							if (memberOut) {
+								return {};
+							}
+							break;
 					}
 				}
 				break;
@@ -493,12 +529,16 @@ SLKC_API std::optional<CompilationError> slkc::resolveIdRefWithScopeNode(
 				if (m->parent && (!isSealed)) {
 					peff::SharedPtr<MemberNode> p = m->parent->sharedFromThis().castTo<MemberNode>();
 
-					if (p->astNodeType == AstNodeType::Module) {
-						SLKC_RETURN_IF_COMP_ERROR(resolveIdRefWithScopeNode(compileContext, document, walkedNodes, p, idRef, nEntries, memberOut, resolvedPartListOut, isStatic));
+					switch (p->astNodeType) {
+						case AstNodeType::Class:
+						case AstNodeType::Interface:
+						case AstNodeType::Module:
+							SLKC_RETURN_IF_COMP_ERROR(resolveIdRefWithScopeNode(compileContext, document, walkedNodes, p, idRef, nEntries, memberOut, resolvedPartListOut, isStatic));
 
-						if (memberOut) {
-							return {};
-						}
+							if (memberOut) {
+								return {};
+							}
+							break;
 					}
 				}
 				break;
@@ -513,12 +553,16 @@ SLKC_API std::optional<CompilationError> slkc::resolveIdRefWithScopeNode(
 				if (m->parent) {
 					peff::SharedPtr<MemberNode> p = m->parent->sharedFromThis().castTo<MemberNode>();
 
-					if (p->astNodeType == AstNodeType::Module) {
-						SLKC_RETURN_IF_COMP_ERROR(resolveIdRefWithScopeNode(compileContext, document, walkedNodes, p, idRef, nEntries, memberOut, resolvedPartListOut, isStatic));
+					switch (p->astNodeType) {
+						case AstNodeType::Class:
+						case AstNodeType::Interface:
+						case AstNodeType::Module:
+							SLKC_RETURN_IF_COMP_ERROR(resolveIdRefWithScopeNode(compileContext, document, walkedNodes, p, idRef, nEntries, memberOut, resolvedPartListOut, isStatic));
 
-						if (memberOut) {
-							return {};
-						}
+							if (memberOut) {
+								return {};
+							}
+							break;
 					}
 				}
 				break;

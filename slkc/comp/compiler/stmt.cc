@@ -257,6 +257,11 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 			uint32_t bodyLabel;
 			SLKC_RETURN_IF_COMP_ERROR(compileContext->allocLabel(bodyLabel));
 
+			compileContext->fnCompileContext.breakStmtBlockLevel = compileContext->fnCompileContext.blockCompileContexts.size();
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->allocLabel(compileContext->fnCompileContext.breakStmtJumpDestLabel));
+			compileContext->fnCompileContext.continueStmtBlockLevel = compileContext->fnCompileContext.blockCompileContexts.size();
+			SLKC_RETURN_IF_COMP_ERROR(compileContext->allocLabel(compileContext->fnCompileContext.continueStmtJumpDestLabel));
+
 			if (!s->isDoWhile) {
 				SLKC_RETURN_IF_COMP_ERROR(
 					compileContext->emitIns(

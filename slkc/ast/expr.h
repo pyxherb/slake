@@ -111,6 +111,8 @@ namespace slkc {
 		Comma
 	};
 
+	SLKC_API const char *getBinaryOperatorOverloadingName(BinaryOp op);
+
 	class BinaryExprNode : public ExprNode {
 	protected:
 		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;

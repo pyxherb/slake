@@ -373,7 +373,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 					peff::SharedPtr<BinaryExprNode> expr;
 
 					if (!(expr = peff::makeShared<BinaryExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document, BinaryOp::Add, lhs, peff::SharedPtr<ExprNode>())))
+							  resourceAllocator.get(), resourceAllocator.get(), document, BinaryOp::Subscript, lhs, peff::SharedPtr<ExprNode>())))
 						return genOutOfMemoryError();
 
 					lhs = expr.castTo<ExprNode>();

@@ -44,6 +44,75 @@ SLKC_API UnaryExprNode::UnaryExprNode(const UnaryExprNode &rhs, peff::Alloc *sel
 SLKC_API UnaryExprNode::~UnaryExprNode() {
 }
 
+SLKC_API const char *slkc::getBinaryOperatorOverloadingName(BinaryOp op) {
+	switch (op) {
+		case BinaryOp::Add:
+			return "+";
+		case BinaryOp::Sub:
+			return "-";
+		case BinaryOp::Mul:
+			return "*";
+		case BinaryOp::Div:
+			return "/";
+		case BinaryOp::Mod:
+			return "%";
+		case BinaryOp::And:
+			return "&";
+		case BinaryOp::Or:
+			return "|";
+		case BinaryOp::Xor:
+			return "^";
+		case BinaryOp::LAnd:
+			return "&&";
+		case BinaryOp::LOr:
+			return "||";
+		case BinaryOp::Shl:
+			return "<<";
+		case BinaryOp::Shr:
+			return ">>";
+		case BinaryOp::AddAssign:
+			return "+=";
+		case BinaryOp::SubAssign:
+			return "-=";
+		case BinaryOp::MulAssign:
+			return "*=";
+		case BinaryOp::DivAssign:
+			return "/=";
+		case BinaryOp::ModAssign:
+			return "%=";
+		case BinaryOp::AndAssign:
+			return "&=";
+		case BinaryOp::OrAssign:
+			return "|=";
+		case BinaryOp::XorAssign:
+			return "^=";
+		case BinaryOp::ShlAssign:
+			return "<<=";
+		case BinaryOp::ShrAssign:
+			return ">>=";
+		case BinaryOp::Eq:
+			return "==";
+		case BinaryOp::Neq:
+			return "!=";
+		case BinaryOp::Lt:
+			return "<";
+		case BinaryOp::Gt:
+			return ">";
+		case BinaryOp::LtEq:
+			return "<=";
+		case BinaryOp::GtEq:
+			return ">=";
+		case BinaryOp::Cmp:
+			return "<=>";
+		case BinaryOp::Subscript:
+			return "[]";
+		default:
+			break;
+	}
+
+	return nullptr;
+}
+
 SLKC_API peff::SharedPtr<AstNode> BinaryExprNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
 	peff::SharedPtr<BinaryExprNode> duplicatedNode(peff::makeShared<BinaryExprNode>(newAllocator, *this, newAllocator, succeeded));
@@ -646,6 +715,7 @@ SLKC_API peff::SharedPtr<AstNode> CastExprNode::doDuplicate(peff::Alloc *newAllo
 SLKC_API CastExprNode::CastExprNode(
 	peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, const peff::SharedPtr<TypeNameNode> &targetType, const peff::SharedPtr<ExprNode> &source)
 	: ExprNode(ExprKind::Cast, selfAllocator, document),
+	  targetType(targetType),
 	  source(source) {
 }
 SLKC_API CastExprNode::CastExprNode(const CastExprNode &rhs, peff::Alloc *allocator, bool &succeededOut)

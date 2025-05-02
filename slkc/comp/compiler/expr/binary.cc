@@ -1379,16 +1379,76 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 								.castTo<TypeNameNode>())) {
 						return genOutOfMemoryCompError();
 					}
-					SLKC_RETURN_IF_COMP_ERROR(
-						_compileSimpleBinaryExpr(
-							compileContext,
-							expr,
-							evalPurpose,
-							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
-							decayedRhsType, u32Type.castTo<TypeNameNode>(), ExprEvalPurpose::RValue,
-							resultRegOut,
-							resultOut,
-							slake::Opcode::NEQ));
+					std::optional<CompilationError> e;
+
+					switch (evalPurpose) {
+						case ExprEvalPurpose::EvalType:
+							break;
+						case ExprEvalPurpose::LValue: {
+							CompileExprResult result(compileContext->allocator.get());
+
+							uint32_t lhsReg = compileContext->allocReg(),
+									 rhsReg = compileContext->allocReg();
+
+							if ((e = _compileOrCastOperand(compileContext, lhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->lhs, lhsType))) {
+								if (auto re = _compileOrCastOperand(compileContext, rhsReg, ExprEvalPurpose::RValue, u32Type.castTo<TypeNameNode>(), expr->rhs, rhsType); re) {
+									if (!compileContext->errors.pushBack(std::move(*e))) {
+										return genOutOfMemoryCompError();
+									}
+									e.reset();
+									return re;
+								} else {
+									return e;
+								}
+							}
+							SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, rhsReg, ExprEvalPurpose::RValue, u32Type.castTo<TypeNameNode>(), expr->rhs, rhsType));
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+								slake::Opcode::AT,
+								resultRegOut,
+								{ slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::ValueType::RegRef, rhsReg) }));
+
+							break;
+						}
+						case ExprEvalPurpose::Stmt:
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(
+								CompilationWarning(expr->tokenRange, CompilationWarningKind::UnusedExprResult)));
+							[[fallthrough]];
+						case ExprEvalPurpose::RValue: {
+							CompileExprResult result(compileContext->allocator.get());
+
+							uint32_t lhsReg = compileContext->allocReg(),
+									 rhsReg = compileContext->allocReg();
+
+							if ((e = _compileOrCastOperand(compileContext, lhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->lhs, lhsType))) {
+								if (auto re = _compileOrCastOperand(compileContext, rhsReg, ExprEvalPurpose::RValue, u32Type.castTo<TypeNameNode>(), expr->rhs, rhsType); re) {
+									if (!compileContext->errors.pushBack(std::move(*e))) {
+										return genOutOfMemoryCompError();
+									}
+									e.reset();
+									return re;
+								} else {
+									return e;
+								}
+							}
+							SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, rhsReg, ExprEvalPurpose::RValue, u32Type.castTo<TypeNameNode>(), expr->rhs, rhsType));
+
+							uint32_t tmpReg = compileContext->allocReg();
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+								slake::Opcode::AT,
+								tmpReg,
+								{ slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::ValueType::RegRef, rhsReg) }));
+
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+								slake::Opcode::LVALUE,
+								resultRegOut,
+								{ slake::Value(slake::ValueType::RegRef, tmpReg) }));
+
+							break;
+						}
+						case ExprEvalPurpose::Call:
+							return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotCallable);
+					}
+
 					resultOut.evaluatedType = evaluatedType;
 					break;
 				}
@@ -1397,6 +1457,269 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 			}
 			break;
 		}
+		case TypeNameKind::Custom: {
+			switch (expr->binaryOp) {
+				case BinaryOp::Add:
+				case BinaryOp::Sub:
+				case BinaryOp::Mul:
+				case BinaryOp::Div:
+				case BinaryOp::Mod:
+				case BinaryOp::And:
+				case BinaryOp::Or:
+				case BinaryOp::Xor:
+				case BinaryOp::LAnd:
+				case BinaryOp::LOr:
+				case BinaryOp::Shl:
+				case BinaryOp::Shr:
+				case BinaryOp::Assign:
+				case BinaryOp::AddAssign:
+				case BinaryOp::SubAssign:
+				case BinaryOp::MulAssign:
+				case BinaryOp::DivAssign:
+				case BinaryOp::ModAssign:
+				case BinaryOp::AndAssign:
+				case BinaryOp::OrAssign:
+				case BinaryOp::XorAssign:
+				case BinaryOp::ShlAssign:
+				case BinaryOp::ShrAssign:
+				case BinaryOp::Eq:
+				case BinaryOp::Neq:
+				case BinaryOp::Lt:
+				case BinaryOp::Gt:
+				case BinaryOp::LtEq:
+				case BinaryOp::GtEq:
+				case BinaryOp::Cmp: {
+					peff::SharedPtr<MemberNode> clsNode, operatorSlot;
+
+					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(decayedLhsType->document.lock(), decayedLhsType.castTo<CustomTypeNameNode>(), clsNode));
+
+					IdRefEntry e(compileContext->allocator.get());
+
+					std::string_view operatorName = getBinaryOperatorOverloadingName(expr->binaryOp);
+
+					if (!e.name.build(operatorName)) {
+						return genOutOfMemoryCompError();
+					}
+
+					SLKC_RETURN_IF_COMP_ERROR(resolveInstanceMember(compileContext, compileContext->document, clsNode, e, operatorSlot));
+
+					if (!operatorSlot)
+						return CompilationError(
+							expr->tokenRange,
+							CompilationErrorKind::OperatorNotFound);
+
+					if (operatorSlot->astNodeType != AstNodeType::Fn)
+						std::terminate();
+
+					peff::DynArray<peff::SharedPtr<FnOverloadingNode>> matchedOverloadingIndices(compileContext->allocator.get());
+					peff::DynArray<peff::SharedPtr<TypeNameNode>> operatorParamTypes(compileContext->allocator.get());
+
+					if (!operatorParamTypes.pushBack(peff::SharedPtr<TypeNameNode>(rhsType))) {
+						return genOutOfMemoryCompError();
+					}
+
+					SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileContext, operatorSlot.castTo<FnNode>(), operatorParamTypes.data(), operatorParamTypes.size(), false, matchedOverloadingIndices));
+
+					switch (matchedOverloadingIndices.size()) {
+						case 0:
+							return CompilationError(
+								expr->tokenRange,
+								CompilationErrorKind::OperatorNotFound);
+						case 1:
+							break;
+						default:
+							return CompilationError(
+								expr->tokenRange,
+								CompilationErrorKind::AmbiguousOperatorCall);
+					}
+
+					auto matchedOverloading = matchedOverloadingIndices.back();
+
+					uint32_t lhsReg = compileContext->allocReg();
+					{
+						CompileExprResult argResult(compileContext->allocator.get());
+
+						SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr->lhs, ExprEvalPurpose::RValue, decayedLhsType, lhsReg, argResult));
+					}
+
+					uint32_t operatorReg = compileContext->allocReg();
+					if (matchedOverloading->fnFlags & FN_VIRTUAL) {
+						slake::HostObjectRef<slake::IdRefObject> idRefObject;
+
+						slake::IdRefEntry e(&compileContext->runtime->globalHeapPoolAlloc);
+
+						if (!e.name.build(operatorName)) {
+							return genOutOfRuntimeMemoryCompError();
+						}
+
+						if (!idRefObject->entries.pushBack(std::move(e))) {
+							return genOutOfRuntimeMemoryCompError();
+						}
+
+						if (!idRefObject->paramTypes.resize(matchedOverloading->params.size())) {
+							return genOutOfMemoryCompError();
+						}
+
+						for (size_t i = 0; i < idRefObject->paramTypes.size(); ++i) {
+							SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, matchedOverloading->params.at(i)->type, idRefObject->paramTypes.at(i)));
+						}
+
+						SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::RLOAD, operatorReg, { slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::ValueType::EntityRef, slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+					} else {
+						slake::HostObjectRef<slake::IdRefObject> idRefObject;
+
+						IdRefPtr fullName;
+						SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileContext->allocator.get(), operatorSlot, fullName));
+
+						if (!idRefObject->paramTypes.resize(matchedOverloading->params.size())) {
+							return genOutOfMemoryCompError();
+						}
+
+						for (size_t i = 0; i < idRefObject->paramTypes.size(); ++i) {
+							SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, matchedOverloading->params.at(i)->type, idRefObject->paramTypes.at(i)));
+						}
+
+						SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::LOAD, operatorReg, { slake::Value(slake::ValueType::EntityRef, slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+					}
+
+					uint32_t reg = compileContext->allocReg();
+					{
+						CompileExprResult argResult(compileContext->allocator.get());
+
+						bool b = false;
+						SLKC_RETURN_IF_COMP_ERROR(isLValueType(matchedOverloading->params.at(0)->type, b));
+
+						SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr->rhs, b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, matchedOverloading->params.at(0)->type, reg, argResult));
+					}
+
+					SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::PUSHARG, UINT32_MAX, { slake::Value(slake::ValueType::RegRef, reg) }));
+
+					switch (evalPurpose) {
+						case ExprEvalPurpose::EvalType:
+							break;
+						case ExprEvalPurpose::Stmt:
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::MCALL, UINT32_MAX, { slake::Value(slake::ValueType::RegRef, operatorReg), slake::Value(slake::ValueType::RegRef, lhsReg) }));
+							break;
+						case ExprEvalPurpose::LValue: {
+							bool b = false;
+							SLKC_RETURN_IF_COMP_ERROR(isLValueType(matchedOverloading->returnType, b));
+							if (!b) {
+								return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
+							}
+
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegRef, operatorReg), slake::Value(slake::ValueType::RegRef, lhsReg) }));
+							break;
+						}
+						case ExprEvalPurpose::RValue:
+						case ExprEvalPurpose::Call: {
+							bool b = false;
+							SLKC_RETURN_IF_COMP_ERROR(isLValueType(matchedOverloading->returnType, b));
+
+							if (b) {
+								uint32_t tmpRegIndex = compileContext->allocReg();
+
+								SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegRef, operatorReg), slake::Value(slake::ValueType::RegRef, lhsReg) }));
+
+								SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::LVALUE, resultRegOut, { slake::Value(slake::ValueType::RegRef, tmpRegIndex) }));
+							} else {
+								SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegRef, operatorReg), slake::Value(slake::ValueType::RegRef, lhsReg) }));
+							}
+
+							break;
+						}
+					}
+
+					break;
+				}
+				case BinaryOp::StrictEq:
+					switch (evalPurpose) {
+						case ExprEvalPurpose::EvalType:
+							break;
+						case ExprEvalPurpose::LValue:
+							return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
+						case ExprEvalPurpose::Stmt:
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(
+								CompilationWarning(expr->tokenRange, CompilationWarningKind::UnusedExprResult)));
+							[[fallthrough]];
+						case ExprEvalPurpose::RValue: {
+							CompileExprResult result(compileContext->allocator.get());
+
+							uint32_t lhsReg = compileContext->allocReg(),
+									 rhsReg = compileContext->allocReg();
+
+							std::optional<CompilationError> e;
+
+							if ((e = _compileOrCastOperand(compileContext, lhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->lhs, lhsType))) {
+								if (auto re = _compileOrCastOperand(compileContext, rhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->rhs, rhsType); re) {
+									if (!compileContext->errors.pushBack(std::move(*e))) {
+										return genOutOfMemoryCompError();
+									}
+									e.reset();
+									return re;
+								} else {
+									return e;
+								}
+							}
+							SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, rhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->rhs, rhsType));
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+								slake::Opcode::EQ,
+								resultRegOut,
+								{ slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::ValueType::RegRef, rhsReg) }));
+
+							break;
+						}
+						case ExprEvalPurpose::Call:
+							return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotCallable);
+					}
+					break;
+				case BinaryOp::StrictNeq:
+					switch (evalPurpose) {
+						case ExprEvalPurpose::EvalType:
+							break;
+						case ExprEvalPurpose::LValue:
+							return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
+						case ExprEvalPurpose::Stmt:
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(
+								CompilationWarning(expr->tokenRange, CompilationWarningKind::UnusedExprResult)));
+							[[fallthrough]];
+						case ExprEvalPurpose::RValue: {
+							CompileExprResult result(compileContext->allocator.get());
+
+							uint32_t lhsReg = compileContext->allocReg(),
+									 rhsReg = compileContext->allocReg();
+
+							std::optional<CompilationError> e;
+
+							if ((e = _compileOrCastOperand(compileContext, lhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->lhs, lhsType))) {
+								if (auto re = _compileOrCastOperand(compileContext, rhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->rhs, rhsType); re) {
+									if (!compileContext->errors.pushBack(std::move(*e))) {
+										return genOutOfMemoryCompError();
+									}
+									e.reset();
+									return re;
+								} else {
+									return e;
+								}
+							}
+							SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, rhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->rhs, rhsType));
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+								slake::Opcode::NEQ,
+								resultRegOut,
+								{ slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::ValueType::RegRef, rhsReg) }));
+
+							break;
+						}
+						case ExprEvalPurpose::Call:
+							return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotCallable);
+					}
+					break;
+				default:
+					return CompilationError(expr->tokenRange, CompilationErrorKind::OperatorNotFound);
+			}
+			break;
+		}
+		case TypeNameKind::Ref:
+			std::terminate();
 		default:
 			return CompilationError(
 				expr->tokenRange,

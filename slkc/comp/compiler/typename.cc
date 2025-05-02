@@ -365,9 +365,6 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 				case TypeNameKind::F64:
 				case TypeNameKind::ISize:
 				case TypeNameKind::USize:
-					if (isSealed) {
-						return isSameType(src, dest, whetherOut);
-					}
 					whetherOut = true;
 					break;
 				case TypeNameKind::Ref:
@@ -408,9 +405,6 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 				case TypeNameKind::String:
 				case TypeNameKind::Object:
 				case TypeNameKind::Bool:
-					if (isSealed) {
-						return isSameType(src, dest, whetherOut);
-					}
 					whetherOut = true;
 					break;
 				case TypeNameKind::Ref:
@@ -560,7 +554,15 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 			break;
 		}
 		case TypeNameKind::Array:
-			SLKC_RETURN_IF_COMP_ERROR(isSameType(src, dest, whetherOut));
+			switch (src->typeNameKind) {
+				case TypeNameKind::Ref: {
+					SLKC_RETURN_IF_COMP_ERROR(isSameType(src.castTo<RefTypeNameNode>()->referencedType, dest, whetherOut));
+					break;
+				}
+				default:
+					SLKC_RETURN_IF_COMP_ERROR(isSameType(src, dest, whetherOut));
+					break;
+			}
 			break;
 		case TypeNameKind::Ref:
 			switch (src->typeNameKind) {

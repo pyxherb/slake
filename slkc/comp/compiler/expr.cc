@@ -383,13 +383,18 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						break;
 					}
 					case AstNodeType::Var: {
-						peff::SharedPtr<RefTypeNameNode> t;
+						auto originalType = node.castTo<VarNode>()->type;
+						if (originalType->typeNameKind != TypeNameKind::Ref) {
+							peff::SharedPtr<RefTypeNameNode> t;
 
-						if (!(t = peff::makeShared<RefTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, peff::SharedPtr<TypeNameNode>()))) {
-							return genOutOfMemoryCompError();
+							if (!(t = peff::makeShared<RefTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, peff::SharedPtr<TypeNameNode>()))) {
+								return genOutOfMemoryCompError();
+							}
+							t->referencedType = node.castTo<VarNode>()->type;
+							typeNameOut = t.castTo<TypeNameNode>();
+						} else {
+							typeNameOut = originalType;
 						}
-						t->referencedType = node.castTo<VarNode>()->type;
-						typeNameOut = t.castTo<TypeNameNode>();
 						break;
 					}
 					case AstNodeType::Fn: {
@@ -998,7 +1003,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 			uint32_t idxReg = compileContext->allocReg();
 
-			SLKC_RETURN_IF_COMP_ERROR(isLValueType(tn, b));
+			SLKC_RETURN_IF_COMP_ERROR(isLValueType(e->targetType, b));
 
 			CompileExprResult result(compileContext->allocator.get());
 			if (!b) {

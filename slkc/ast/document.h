@@ -17,6 +17,7 @@ namespace slkc {
 		NoSuchFnOverloading,
 		IncompatibleOperand,
 		OperatorNotFound,
+		AmbiguousOperatorCall,
 		MismatchedGenericArgNumber,
 		DoesNotReferToATypeName,
 		ExpectingClassName,

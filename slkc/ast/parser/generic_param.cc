@@ -47,9 +47,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseGenericConstraint(GenericConstr
 		}
 	}
 
-	if (constraint->baseType || constraint->implementedTypes.size()) {
-		constraintOut = std::move(constraint);
-	}
+	constraintOut = std::move(constraint);
 
 	return {};
 }

@@ -75,10 +75,7 @@ namespace slake {
 		SLAKE_API FnOverloadingObject(
 			FnOverloadingKind overloadingKind,
 			FnObject *fnObject,
-			AccessModifier access,
-			peff::DynArray<Type> &&paramTypes,
-			const Type &returnType,
-			OverloadingFlags flags);
+			AccessModifier access);
 		SLAKE_API FnOverloadingObject(const FnOverloadingObject &other, bool &succeededOut);
 		SLAKE_API virtual ~FnOverloadingObject();
 
@@ -96,11 +93,7 @@ namespace slake {
 
 		SLAKE_API RegularFnOverloadingObject(
 			FnObject *fnObject,
-			AccessModifier access,
-			peff::DynArray<Type> &&paramTypes,
-			const Type &returnType,
-			uint32_t nRegisters,
-			OverloadingFlags flags);
+			AccessModifier access);
 		SLAKE_API RegularFnOverloadingObject(const RegularFnOverloadingObject &other, bool &succeededOut);
 		SLAKE_API virtual ~RegularFnOverloadingObject();
 
@@ -110,11 +103,7 @@ namespace slake {
 
 		SLAKE_API static HostObjectRef<RegularFnOverloadingObject> alloc(
 			FnObject *fnObject,
-			AccessModifier access,
-			peff::DynArray<Type> &&paramTypes,
-			const Type &returnType,
-			uint32_t nRegisters,
-			OverloadingFlags flags);
+			AccessModifier access);
 		SLAKE_API static HostObjectRef<RegularFnOverloadingObject> alloc(const RegularFnOverloadingObject *other);
 		SLAKE_API virtual void dealloc() override;
 	};
@@ -126,11 +115,7 @@ namespace slake {
 
 		SLAKE_API JITCompiledFnOverloadingObject(
 			FnObject *fnObject,
-			AccessModifier access,
-			peff::DynArray<Type> &&paramTypes,
-			const Type &returnType,
-			uint32_t nRegisters,
-			OverloadingFlags flags);
+			AccessModifier access);
 		SLAKE_API JITCompiledFnOverloadingObject(const RegularFnOverloadingObject &other, bool &succeededOut);
 		SLAKE_API virtual ~JITCompiledFnOverloadingObject();
 
@@ -138,10 +123,7 @@ namespace slake {
 
 		SLAKE_API static HostObjectRef<JITCompiledFnOverloadingObject> alloc(
 			FnObject *fnObject,
-			AccessModifier access,
-			peff::DynArray<Type> &&paramTypes,
-			const Type &returnType,
-			OverloadingFlags flags);
+			AccessModifier access);
 		SLAKE_API static HostObjectRef<JITCompiledFnOverloadingObject> alloc(const RegularFnOverloadingObject *other);
 		SLAKE_API virtual void dealloc() override;
 	};
@@ -154,11 +136,7 @@ namespace slake {
 	public:
 		SLAKE_API NativeFnOverloadingObject(
 			FnObject *fnObject,
-			AccessModifier access,
-			peff::DynArray<Type> &&paramTypes,
-			const Type &returnType,
-			OverloadingFlags flags,
-			NativeFnCallback callback);
+			AccessModifier access);
 		SLAKE_API NativeFnOverloadingObject(const NativeFnOverloadingObject &other, bool &succeededOut);
 		SLAKE_API virtual ~NativeFnOverloadingObject();
 
@@ -168,11 +146,7 @@ namespace slake {
 
 		SLAKE_API static HostObjectRef<NativeFnOverloadingObject> alloc(
 			FnObject *fnObject,
-			AccessModifier access,
-			peff::DynArray<Type> &&paramTypes,
-			const Type &returnType,
-			OverloadingFlags flags,
-			NativeFnCallback callback);
+			AccessModifier access);
 		SLAKE_API static HostObjectRef<NativeFnOverloadingObject> alloc(const NativeFnOverloadingObject *other);
 		SLAKE_API virtual void dealloc() override;
 	};

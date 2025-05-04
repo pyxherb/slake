@@ -614,6 +614,7 @@ int main(int argc, char *argv[]) {
 				dumpCompilationError(parser, *e);
 			}
 
+			// Sort errors in order.
 			std::sort(compileContext.errors.data(), compileContext.errors.data() + compileContext.errors.size());
 
 			for (auto &i : compileContext.errors) {

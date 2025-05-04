@@ -5,7 +5,7 @@ using namespace slkc;
 SLKC_API Writer::~Writer() {
 }
 
-SLKC_API std::optional<CompilationError> slkc::dumpModule(
+SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 	peff::Alloc *allocator,
 	Writer *writer,
 	slake::ModuleObject *mod) {
@@ -38,11 +38,21 @@ SLKC_API std::optional<CompilationError> slkc::dumpModule(
 		}
 	}
 
+	return {};
+}
+
+SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
+	peff::Alloc* allocator,
+	Writer* writer,
+	slake::ModuleObject *mod) {
 	slake::slxfmt::ImgHeader ih = {};
 
 	memcpy(ih.magic, slake::slxfmt::IMH_MAGIC, sizeof(ih.magic));
 
 	ih.fmtVer = 0x02;
+	ih.nImports = mod->imports.size() + mod->unnamedImports.size();
+
+	SLKC_RETURN_IF_COMP_ERROR(dumpModuleMembers(allocator, writer, mod));
 
 	return {};
 }

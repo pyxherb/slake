@@ -74,10 +74,7 @@ SLAKE_API Instruction &Instruction::operator=(Instruction &&rhs) {
 SLAKE_API FnOverloadingObject::FnOverloadingObject(
 	FnOverloadingKind overloadingKind,
 	FnObject *fnObject,
-	AccessModifier access,
-	peff::DynArray<Type> &&paramTypes,
-	const Type &returnType,
-	OverloadingFlags flags)
+	AccessModifier access)
 	: Object(fnObject->associatedRuntime),
 	  overloadingKind(overloadingKind),
 	  fnObject(fnObject),
@@ -85,9 +82,8 @@ SLAKE_API FnOverloadingObject::FnOverloadingObject(
 	  genericParams(&fnObject->associatedRuntime->globalHeapPoolAlloc),
 	  mappedGenericArgs(&fnObject->associatedRuntime->globalHeapPoolAlloc),
 	  specializationArgs(&fnObject->associatedRuntime->globalHeapPoolAlloc),
-	  paramTypes(std::move(paramTypes)),
-	  returnType(returnType),
-	  overloadingFlags(flags) {
+	  paramTypes(&fnObject->associatedRuntime->globalHeapPoolAlloc),
+	  returnType({ 0 }) {
 }
 
 SLAKE_API FnOverloadingObject::FnOverloadingObject(const FnOverloadingObject &other, bool &succeededOut)
@@ -126,18 +122,11 @@ SLAKE_API ObjectKind FnOverloadingObject::getKind() const { return ObjectKind::F
 
 SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(
 	FnObject *fnObject,
-	AccessModifier access,
-	peff::DynArray<Type> &&paramTypes,
-	const Type &returnType,
-	uint32_t nRegisters,
-	OverloadingFlags flags)
+	AccessModifier access)
 	: FnOverloadingObject(
 		  FnOverloadingKind::Regular,
 		  fnObject,
-		  access,
-		  std::move(paramTypes),
-		  returnType,
-		  flags),
+		  access),
 	  nRegisters(nRegisters),
 	  sourceLocDescs(&fnObject->associatedRuntime->globalHeapPoolAlloc),
 	  instructions(&fnObject->associatedRuntime->globalHeapPoolAlloc) {}
@@ -224,16 +213,12 @@ SLAKE_API FnOverloadingObject *slake::RegularFnOverloadingObject::duplicate() co
 
 SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingObject::alloc(
 	FnObject *fnObject,
-	AccessModifier access,
-	peff::DynArray<Type> &&paramTypes,
-	const Type &returnType,
-	uint32_t nRegisters,
-	OverloadingFlags flags) {
+	AccessModifier access) {
 	std::unique_ptr<RegularFnOverloadingObject, util::DeallocableDeleter<RegularFnOverloadingObject>> ptr(
 		peff::allocAndConstruct<RegularFnOverloadingObject>(
 			&fnObject->associatedRuntime->globalHeapPoolAlloc,
 			sizeof(std::max_align_t),
-			fnObject, access, std::move(paramTypes), returnType, nRegisters, flags));
+			fnObject, access));
 	if (!ptr)
 		return nullptr;
 
@@ -269,19 +254,11 @@ SLAKE_API void slake::RegularFnOverloadingObject::dealloc() {
 
 SLAKE_API NativeFnOverloadingObject::NativeFnOverloadingObject(
 	FnObject *fnObject,
-	AccessModifier access,
-	peff::DynArray<Type> &&paramTypes,
-	const Type &returnType,
-	OverloadingFlags flags,
-	NativeFnCallback callback)
+	AccessModifier access)
 	: FnOverloadingObject(
 		  FnOverloadingKind::Native,
 		  fnObject,
-		  access,
-		  std::move(paramTypes),
-		  returnType,
-		  flags),
-	  callback(callback) {}
+		  access) {}
 
 SLAKE_API NativeFnOverloadingObject::NativeFnOverloadingObject(const NativeFnOverloadingObject &other, bool &succeededOut) : FnOverloadingObject(other, succeededOut) {
 	if (succeededOut) {
@@ -298,16 +275,12 @@ SLAKE_API FnOverloadingObject *slake::NativeFnOverloadingObject::duplicate() con
 
 SLAKE_API HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObject::alloc(
 	FnObject *fnObject,
-	AccessModifier access,
-	peff::DynArray<Type> &&paramTypes,
-	const Type &returnType,
-	OverloadingFlags flags,
-	NativeFnCallback callback) {
+	AccessModifier access) {
 	std::unique_ptr<NativeFnOverloadingObject, util::DeallocableDeleter<NativeFnOverloadingObject>> ptr(
 		peff::allocAndConstruct<NativeFnOverloadingObject>(
 			&fnObject->associatedRuntime->globalHeapPoolAlloc,
 			sizeof(std::max_align_t),
-			fnObject, access, std::move(paramTypes), returnType, flags, callback));
+			fnObject, access));
 	if (!ptr)
 		return nullptr;
 

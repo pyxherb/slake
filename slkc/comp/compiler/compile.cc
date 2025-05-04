@@ -512,8 +512,15 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 			}
 			case AstNodeType::FnSlot: {
 				peff::SharedPtr<FnNode> slotNode = m.castTo<FnNode>();
+				slake::HostObjectRef<slake::FnObject> slotObject;
+
+				if (!(slotObject = slake::FnObject::alloc(compileContext->runtime))) {
+					return genOutOfRuntimeMemoryCompError();
+				}
 
 				for (auto &i : slotNode->overloadings) {
+					std::optional<CompilationError> e;
+
 					for (size_t j = &i - slotNode->overloadings.data() + 1; j < slotNode->overloadings.size(); ++j) {
 						bool whether;
 						SLKC_RETURN_IF_COMP_ERROR(isFnSignatureDuplicated(i, slotNode->overloadings.at(j), whether));
@@ -538,6 +545,12 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 							break;
 					}
 
+					slake::HostObjectRef<slake::RegularFnOverloadingObject> fnObject;
+
+					if (!(fnObject = slake::RegularFnOverloadingObject::alloc(slotObject.get(), i->accessModifier))) {
+						return genOutOfRuntimeMemoryCompError();
+					}
+
 					peff::SharedPtr<BlockCompileContext> blockContext;
 					if (!(blockContext = peff::makeShared<BlockCompileContext>(compileContext->allocator.get(), compileContext->allocator.get())))
 						return genOutOfMemoryCompError();
@@ -546,7 +559,55 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 					compileContext->fnCompileContext.currentFn = i;
 
-					std::optional<CompilationError> e;
+					if (!fnObject->paramTypes.resize(i->params.size())) {
+						return genOutOfRuntimeMemoryCompError();
+					}
+					for (size_t j = 0; j < i->params.size(); ++j) {
+						if ((e = compileTypeName(compileContext, i->params.at(j)->type, fnObject->paramTypes.at(j)))) {
+							if (e->errorKind == CompilationErrorKind::OutOfMemory)
+								return e;
+							if (!compileContext->errors.pushBack(std::move(*e))) {
+								return genOutOfMemoryCompError();
+							}
+							e.reset();
+						}
+					}
+
+					for (size_t j = 0; j < i->genericParams.size(); ++j) {
+						auto gpNode = i->genericParams.at(j);
+						slake::GenericParam gp(&compileContext->runtime->globalHeapPoolAlloc);
+
+						if (gpNode->genericConstraint->baseType) {
+							if ((e = compileTypeName(compileContext, gpNode->genericConstraint->baseType, gp.baseType))) {
+								if (e->errorKind == CompilationErrorKind::OutOfMemory)
+									return e;
+								if (!compileContext->errors.pushBack(std::move(*e))) {
+									return genOutOfMemoryCompError();
+								}
+								e.reset();
+							}
+						}
+
+						if (!gp.interfaces.resize(gpNode->genericConstraint->implementedTypes.size())) {
+							return genOutOfRuntimeMemoryCompError();
+						}
+
+						for (size_t k = 0; k < gpNode->genericConstraint->implementedTypes.size(); ++k) {
+							if ((e = compileTypeName(compileContext, gpNode->genericConstraint->implementedTypes.at(k), gp.interfaces.at(k)))) {
+								if (e->errorKind == CompilationErrorKind::OutOfMemory)
+									return e;
+								if (!compileContext->errors.pushBack(std::move(*e))) {
+									return genOutOfMemoryCompError();
+								}
+								e.reset();
+							}
+						}
+
+						if (!fnObject->genericParams.pushBack(std::move(gp))) {
+							return genOutOfRuntimeMemoryCompError();
+						}
+					}
+
 					for (auto j : i->body->body) {
 						if ((e = compileStmt(compileContext, j))) {
 							if (e->errorKind == CompilationErrorKind::OutOfMemory)
@@ -557,6 +618,16 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 							e.reset();
 						}
 					}
+
+					fnObject->instructions = std::move(compileContext->fnCompileContext.instructionsOut);
+
+					if (!slotObject->overloadings.insert(fnObject.get())) {
+						return genOutOfRuntimeMemoryCompError();
+					}
+				}
+
+				if (!modOut->scope->putMember(slotObject.get())) {
+					return genOutOfRuntimeMemoryCompError();
 				}
 				break;
 			}

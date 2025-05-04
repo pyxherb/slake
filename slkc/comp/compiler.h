@@ -49,7 +49,7 @@ namespace slkc {
 		uint32_t breakStmtJumpDestLabel = UINT32_MAX, continueStmtJumpDestLabel = UINT32_MAX;
 		uint32_t breakStmtBlockLevel = 0, continueStmtBlockLevel = 0;
 
-		SLAKE_FORCEINLINE FnCompileContext(peff::Alloc *allocator) : instructionsOut(allocator), labels(allocator), blockCompileContexts(allocator), labelNameIndices(allocator) {}
+		SLAKE_FORCEINLINE FnCompileContext(slake::Runtime *runtime, peff::Alloc *allocator) : instructionsOut(&runtime->globalHeapPoolAlloc), labels(allocator), blockCompileContexts(allocator), labelNameIndices(allocator) {}
 
 		SLAKE_FORCEINLINE void reset() {
 			currentFn = {};
@@ -88,7 +88,7 @@ namespace slkc {
 			  allocator(allocator),
 			  errors(allocator),
 			  warnings(allocator),
-			  fnCompileContext(allocator),
+			  fnCompileContext(runtime, allocator),
 			  flags(0) {}
 
 		SLKC_API virtual ~CompileContext();
@@ -97,7 +97,7 @@ namespace slkc {
 
 		SLAKE_FORCEINLINE std::optional<CompilationError> pushIns(slake::Instruction &&ins) {
 			if (!fnCompileContext.instructionsOut.pushBack(std::move(ins)))
-				return genOutOfMemoryCompError();
+				return genOutOfRuntimeMemoryCompError();
 
 			return {};
 		}
@@ -543,6 +543,10 @@ namespace slkc {
 		virtual std::optional<CompilationError> write(const char *src, size_t size) = 0;
 	};
 
+	[[nodiscard]] SLKC_API std::optional<CompilationError> dumpModuleMembers(
+		peff::Alloc *allocator,
+		Writer *writer,
+		slake::ModuleObject *mod);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> dumpModule(
 		peff::Alloc *allocator,
 		Writer *writer,

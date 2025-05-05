@@ -2,13 +2,12 @@
 
 using namespace slake;
 
-SLAKE_API ModuleObject::ModuleObject(Runtime *rt, ScopeUniquePtr &&scope, AccessModifier access)
-	: MemberObject(rt), scope(scope.release()), fieldRecords(&rt->globalHeapPoolAlloc), fieldRecordIndices(&rt->globalHeapPoolAlloc), imports(&rt->globalHeapPoolAlloc), unnamedImports(&rt->globalHeapPoolAlloc) {
-	this->scope->owner = this;
+SLAKE_API ModuleObject::ModuleObject(Runtime *rt, AccessModifier access)
+	: MemberObject(rt), members(&rt->globalHeapPoolAlloc), fieldRecords(&rt->globalHeapPoolAlloc), fieldRecordIndices(&rt->globalHeapPoolAlloc), imports(&rt->globalHeapPoolAlloc), unnamedImports(&rt->globalHeapPoolAlloc) {
 	this->accessModifier = access;
 }
 
-SLAKE_API ModuleObject::ModuleObject(const ModuleObject &x, bool &succeededOut) : MemberObject(x, succeededOut), fieldRecords(&x.associatedRuntime->globalHeapPoolAlloc), fieldRecordIndices(&x.associatedRuntime->globalHeapPoolAlloc), imports(&x.associatedRuntime->globalHeapPoolAlloc), unnamedImports(&x.associatedRuntime->globalHeapPoolAlloc) {
+SLAKE_API ModuleObject::ModuleObject(const ModuleObject &x, bool &succeededOut) : MemberObject(x, succeededOut), members(&x.associatedRuntime->globalHeapPoolAlloc), fieldRecords(&x.associatedRuntime->globalHeapPoolAlloc), fieldRecordIndices(&x.associatedRuntime->globalHeapPoolAlloc), imports(&x.associatedRuntime->globalHeapPoolAlloc), unnamedImports(&x.associatedRuntime->globalHeapPoolAlloc) {
 	if (succeededOut) {
 		if (!peff::copyAssign(fieldRecords, x.fieldRecords)) {
 			succeededOut = false;
@@ -40,18 +39,23 @@ SLAKE_API ModuleObject::ModuleObject(const ModuleObject &x, bool &succeededOut) 
 			return;
 		}
 		parent = x.parent;
-		if (!(scope = x.scope->duplicate())) {
-			succeededOut = false;
-			return;
+		for (auto i = x.members.begin(); i != x.members.end(); ++i) {
+			MemberObject *duplicatedMember = (MemberObject *)i.value()->duplicate();
+			if (!duplicatedMember) {
+				succeededOut = false;
+				return;
+			}
+			if (!members.insert(duplicatedMember->name, +duplicatedMember)) {
+				succeededOut = false;
+				return;
+			}
 		}
-		scope->owner = this;
 	}
 }
 
 SLAKE_API ModuleObject::~ModuleObject() {
 	if (this->localFieldStorage)
 		associatedRuntime->globalHeapPoolAlloc.release(this->localFieldStorage, szLocalFieldStorage, sizeof(std::max_align_t));
-	scope->dealloc();
 }
 
 SLAKE_API ObjectKind ModuleObject::getKind() const { return ObjectKind::Module; }
@@ -64,7 +68,22 @@ SLAKE_API EntityRef ModuleObject::getMember(const std::string_view &name) const 
 	if (auto it = fieldRecordIndices.find(name); it != fieldRecordIndices.endConst()) {
 		return EntityRef::makeFieldRef((ModuleObject *)this, it.value());
 	}
-	return EntityRef::makeObjectRef(scope->getMember(name));
+	if (auto it = members.find(name); it != members.end()) {
+		return EntityRef::makeObjectRef(it.value());
+	}
+	return EntityRef::makeObjectRef(nullptr);
+}
+
+SLAKE_API bool ModuleObject::addMember(MemberObject *member) {
+	return members.insert(member->name, +member);
+}
+
+SLAKE_API void ModuleObject::removeMember(const std::string_view &name) {
+	members.remove(name);
+}
+
+SLAKE_API bool ModuleObject::removeMemberAndTrim(const std::string_view& name) {
+	return members.removeAndResizeBuckets(name);
 }
 
 SLAKE_API Object *ModuleObject::getParent() const {
@@ -75,9 +94,9 @@ SLAKE_API void ModuleObject::setParent(Object *parent) {
 	this->parent = parent;
 }
 
-SLAKE_API HostObjectRef<ModuleObject> slake::ModuleObject::alloc(Runtime *rt, ScopeUniquePtr &&scope, AccessModifier access) {
+SLAKE_API HostObjectRef<ModuleObject> slake::ModuleObject::alloc(Runtime *rt, AccessModifier access) {
 	std::unique_ptr<ModuleObject, util::DeallocableDeleter<ModuleObject>> ptr(
-		peff::allocAndConstruct<ModuleObject>(&rt->globalHeapPoolAlloc, sizeof(std::max_align_t), rt, std::move(scope), access));
+		peff::allocAndConstruct<ModuleObject>(&rt->globalHeapPoolAlloc, sizeof(std::max_align_t), rt, access));
 
 	if (!ptr)
 		return nullptr;

@@ -48,6 +48,23 @@ namespace slake {
 		SLAKE_API void dealloc();
 	};
 
+	class MethodTable {
+	public:
+		peff::RcObjectPtr<peff::Alloc> selfAllocator;
+		peff::HashMap<std::string_view, FnObject *> methods;
+		peff::List<FnOverloadingObject *> destructors;
+		peff::List<ClassNativeDestructor> nativeDestructors;
+
+		SLAKE_API MethodTable(peff::Alloc *selfAllocator);
+
+		SLAKE_API FnObject *getMethod(const std::string_view &name);
+
+		SLAKE_API MethodTable *duplicate();
+
+		SLAKE_API static MethodTable *alloc(peff::Alloc *selfAllocator);
+		SLAKE_API void dealloc();
+	};
+
 	class ClassObject : public ModuleObject {
 	private:
 		mutable ClassFlags _flags = 0;
@@ -69,7 +86,7 @@ namespace slake {
 
 		peff::DynArray<Value> cachedFieldInitValues;
 
-		SLAKE_API ClassObject(Runtime *rt, ScopeUniquePtr &&scope, AccessModifier access, const Type &parentClass);
+		SLAKE_API ClassObject(Runtime *rt, AccessModifier access, const Type &parentClass);
 		SLAKE_API ClassObject(const ClassObject &x, bool &succeededOut);
 		SLAKE_API virtual ~ClassObject();
 
@@ -87,7 +104,7 @@ namespace slake {
 
 		SLAKE_API virtual Object *duplicate() const override;
 
-		SLAKE_API static HostObjectRef<ClassObject> alloc(Runtime *rt, ScopeUniquePtr &&scope, AccessModifier access, const Type &parentClass = {});
+		SLAKE_API static HostObjectRef<ClassObject> alloc(Runtime *rt, AccessModifier access, const Type &parentClass = {});
 		SLAKE_API static HostObjectRef<ClassObject> alloc(const ClassObject *other);
 		SLAKE_API virtual void dealloc() override;
 	};
@@ -105,7 +122,7 @@ namespace slake {
 
 		peff::DynArray<Type> parents;
 
-		SLAKE_API InterfaceObject(Runtime *rt, ScopeUniquePtr &&scope, AccessModifier access, peff::DynArray<Type> &&parents);
+		SLAKE_API InterfaceObject(Runtime *rt, AccessModifier access, peff::DynArray<Type> &&parents);
 		SLAKE_API InterfaceObject(const InterfaceObject &x, bool &succeededOut);
 		SLAKE_API virtual ~InterfaceObject();
 
@@ -115,7 +132,7 @@ namespace slake {
 
 		SLAKE_API virtual const GenericArgList *getGenericArgs() const override;
 
-		SLAKE_API static HostObjectRef<InterfaceObject> alloc(Runtime *rt, ScopeUniquePtr &&scope, AccessModifier access, peff::DynArray<Type> &&parents);
+		SLAKE_API static HostObjectRef<InterfaceObject> alloc(Runtime *rt, AccessModifier access, peff::DynArray<Type> &&parents);
 		SLAKE_API static HostObjectRef<InterfaceObject> alloc(const InterfaceObject *other);
 		SLAKE_API virtual void dealloc() override;
 

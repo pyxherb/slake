@@ -15,7 +15,7 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 			MethodTable::alloc(&globalHeapPoolAlloc));
 	}
 
-	for (auto it = cls->scope->members.begin(); it != cls->scope->members.end(); ++it) {
+	for (auto it = cls->members.begin(); it != cls->members.end(); ++it) {
 		switch (it.value()->getKind()) {
 			case ObjectKind::Fn: {
 				std::deque<FnOverloadingObject *> overloadings;

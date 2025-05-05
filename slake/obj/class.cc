@@ -30,12 +30,52 @@ SLAKE_API void ObjectLayout::dealloc() {
 	peff::destroyAndRelease<ObjectLayout>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
+SLAKE_API MethodTable::MethodTable(peff::Alloc *selfAllocator)
+	: selfAllocator(selfAllocator),
+	  methods(selfAllocator),
+	  destructors(selfAllocator),
+	  nativeDestructors(selfAllocator) {
+}
+
+SLAKE_API FnObject *MethodTable::getMethod(const std::string_view &name) {
+	if (auto it = methods.find(name); it != methods.end())
+		return it.value();
+	return nullptr;
+}
+
+SLAKE_API MethodTable *MethodTable::alloc(peff::Alloc *selfAllocator) {
+	return peff::allocAndConstruct<MethodTable>(selfAllocator, sizeof(std::max_align_t), selfAllocator);
+}
+
+SLAKE_API void MethodTable::dealloc() {
+	peff::destroyAndRelease<MethodTable>(selfAllocator.get(), this, sizeof(std::max_align_t));
+}
+
+SLAKE_API MethodTable *MethodTable::duplicate() {
+	std::unique_ptr<MethodTable, util::DeallocableDeleter<MethodTable>> newMethodTable(alloc(selfAllocator.get()));
+	if (!newMethodTable)
+		return nullptr;
+
+	if (!peff::copyAssign(newMethodTable->methods, methods)) {
+		return nullptr;
+	}
+	if (!peff::copyAssign(newMethodTable->destructors, destructors)) {
+		return nullptr;
+	}
+	if (!peff::copyAssign(newMethodTable->nativeDestructors, nativeDestructors)) {
+		return nullptr;
+	}
+
+	return newMethodTable.release();
+}
+
+
 SLAKE_API Object *ClassObject::duplicate() const {
 	return (Object *)alloc(this).get();
 }
 
-SLAKE_API slake::ClassObject::ClassObject(Runtime *rt, ScopeUniquePtr &&scope, AccessModifier access, const Type &parentClass)
-	: ModuleObject(rt, std::move(scope), access),
+SLAKE_API slake::ClassObject::ClassObject(Runtime *rt, AccessModifier access, const Type &parentClass)
+	: ModuleObject(rt, access),
 	  parentClass(parentClass),
 	  genericArgs(&rt->globalHeapPoolAlloc),
 	  mappedGenericArgs(&rt->globalHeapPoolAlloc),
@@ -145,12 +185,12 @@ SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(const ClassObject
 	return ptr.release();
 }
 
-SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(Runtime *rt, ScopeUniquePtr &&scope, AccessModifier access, const Type &parentClass) {
+SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(Runtime *rt, AccessModifier access, const Type &parentClass) {
 	std::unique_ptr<ClassObject, util::DeallocableDeleter<ClassObject>> ptr(
 		peff::allocAndConstruct<ClassObject>(
 			&rt->globalHeapPoolAlloc,
 			sizeof(std::max_align_t),
-			rt, std::move(scope), access, parentClass));
+			rt, access, parentClass));
 
 	if (!rt->createdObjects.insert(ptr.get()))
 		return nullptr;
@@ -162,8 +202,8 @@ SLAKE_API void slake::ClassObject::dealloc() {
 	peff::destroyAndRelease<ClassObject>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
-SLAKE_API InterfaceObject::InterfaceObject(Runtime *rt, ScopeUniquePtr &&scope, AccessModifier access, peff::DynArray<Type> &&parents)
-	: ModuleObject(rt, std::move(scope), access),
+SLAKE_API InterfaceObject::InterfaceObject(Runtime *rt, AccessModifier access, peff::DynArray<Type> &&parents)
+	: ModuleObject(rt, access),
 	  genericArgs(&rt->globalHeapPoolAlloc),
 	  mappedGenericArgs(&rt->globalHeapPoolAlloc),
 	  genericParams(&rt->globalHeapPoolAlloc),
@@ -233,12 +273,12 @@ SLAKE_API Object *InterfaceObject::duplicate() const {
 	return (Object *)alloc(this).get();
 }
 
-SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Runtime *rt, ScopeUniquePtr &&scope, AccessModifier access, peff::DynArray<Type> &&parents) {
+SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Runtime *rt, AccessModifier access, peff::DynArray<Type> &&parents) {
 	std::unique_ptr<InterfaceObject, util::DeallocableDeleter<InterfaceObject>> ptr(
 		peff::allocAndConstruct<InterfaceObject>(
 			&rt->globalHeapPoolAlloc,
 			sizeof(std::max_align_t),
-			rt, std::move(scope), access, std::move(parents)));
+			rt, access, std::move(parents)));
 	if (!ptr)
 		return nullptr;
 

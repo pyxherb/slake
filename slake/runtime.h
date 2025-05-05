@@ -17,6 +17,7 @@
 #include <slake/util/stream.hh>
 #include "plat.h"
 #include <peff/containers/map.h>
+#include <peff/base/deallocable.h>
 
 namespace slake {
 	class CountablePoolAlloc : public peff::Alloc {
@@ -99,8 +100,9 @@ namespace slake {
 		mutable CountablePoolAlloc globalHeapPoolAlloc;
 
 	private:
+		peff::RcObjectPtr<peff::Alloc> selfAllocator;
 		/// @brief Root value of the runtime.
-		RootObject *_rootObject;
+		ModuleObject *_rootObject;
 
 		struct GenericLookupEntry {
 			const Object *originalObject;
@@ -161,7 +163,6 @@ namespace slake {
 
 		InstanceObject *destructibleList = nullptr;
 
-		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, Scope *scope);
 		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, MethodTable *methodTable);
 		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, GenericParamList &genericParamList);
 		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, const Type &type);
@@ -222,7 +223,7 @@ namespace slake {
 		SLAKE_API Runtime &operator=(Runtime &) = delete;
 		SLAKE_API Runtime &operator=(Runtime &&) = delete;
 
-		SLAKE_API Runtime(peff::Alloc *upstream, RuntimeFlags flags = 0);
+		SLAKE_API Runtime(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags = 0);
 		SLAKE_API virtual ~Runtime();
 
 		SLAKE_API void invalidateGenericCache(Object *i);
@@ -248,7 +249,7 @@ namespace slake {
 		SLAKE_API HostObjectRef<ModuleObject> loadModule(std::istream &fs, LoadModuleFlags flags);
 		SLAKE_API HostObjectRef<ModuleObject> loadModule(const void *buf, size_t size, LoadModuleFlags flags);
 
-		SLAKE_FORCEINLINE RootObject *getRootObject() { return _rootObject; }
+		SLAKE_FORCEINLINE ModuleObject *getRootObject() { return _rootObject; }
 
 		SLAKE_FORCEINLINE void setModuleLocator(ModuleLocatorFn locator) { _moduleLocator = locator; }
 		SLAKE_FORCEINLINE ModuleLocatorFn getModuleLocator() { return _moduleLocator; }
@@ -320,6 +321,11 @@ namespace slake {
 		[[nodiscard]] SLAKE_API Value readVarUnsafe(const EntityRef &entityRef) const noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer writeVar(const EntityRef &entityRef, const Value &value) const noexcept;
 		SLAKE_API void writeVarUnsafe(const EntityRef &entityRef, const Value &value) const noexcept;
+
+		[[nodiscard]] SLAKE_API static bool constructAt(Runtime *dest, peff::Alloc *upstream, RuntimeFlags flags = 0);
+		[[nodiscard]] SLAKE_API static Runtime *alloc(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags = 0);
+
+		[[nodiscard]] SLAKE_API void dealloc() noexcept;
 	};
 }
 

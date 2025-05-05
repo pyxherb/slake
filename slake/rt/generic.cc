@@ -353,7 +353,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Obj
 
 				SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(value->parentClass, newInstantiationContext));
 
-				for (auto it = value->scope->members.begin(); it != value->scope->members.end(); ++it) {
+				for (auto it = value->members.begin(); it != value->members.end(); ++it) {
 					SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(it.value(), newInstantiationContext));
 				}
 
@@ -368,7 +368,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Obj
 
 				SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(value->parentClass, instantiationContext));
 
-				for (auto it = value->scope->members.begin(); it != value->scope->members.end(); ++it) {
+				for (auto it = value->members.begin(); it != value->members.end(); ++it) {
 					SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(it.value(), instantiationContext));
 				}
 
@@ -385,7 +385,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Obj
 			if (!peff::copyAssign(value->mappedGenericArgs, instantiationContext.mappedGenericArgs))
 				return OutOfMemoryError::alloc();
 
-			for (auto it = value->scope->members.begin(); it != value->scope->members.end(); ++it) {
+			for (auto it = value->members.begin(); it != value->members.end(); ++it) {
 				SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(it.value(), instantiationContext));
 			}
 
@@ -396,7 +396,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Obj
 		case ObjectKind::Module: {
 			ModuleObject *value = (ModuleObject *)v;
 
-			for (auto it = value->scope->members.begin(); it != value->scope->members.end(); ++it) {
+			for (auto it = value->members.begin(); it != value->members.end(); ++it) {
 				SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(it.value(), instantiationContext));
 			}
 
@@ -451,7 +451,6 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Obj
 			break;
 		}
 		case ObjectKind::String:
-		case ObjectKind::RootObject:
 		case ObjectKind::IdRef:
 			break;
 		default:

@@ -13,7 +13,6 @@
 #include "obj/module.h"
 #include "obj/instance.h"
 #include "obj/idref.h"
-#include "obj/root.h"
 #include "obj/var.h"
 
 #endif

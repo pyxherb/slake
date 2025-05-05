@@ -30,13 +30,13 @@ SLAKE_API void CountablePoolAlloc::release(void *p, size_t size, size_t alignmen
 	szAllocated -= size;
 }
 
-SLAKE_API Runtime::Runtime(peff::Alloc *upstream, RuntimeFlags flags)
-	: globalHeapPoolAlloc(upstream),
+SLAKE_API Runtime::Runtime(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags)
+	: selfAllocator(selfAllocator),
+	  globalHeapPoolAlloc(upstream),
 	  _flags(flags | _RT_INITING),
 	  _genericCacheLookupTable(&globalHeapPoolAlloc),
 	  _genericCacheDir(&globalHeapPoolAlloc),
 	  createdObjects(&globalHeapPoolAlloc) {
-	_rootObject = RootObject::alloc(this);
 	_flags &= ~_RT_INITING;
 }
 
@@ -57,4 +57,46 @@ SLAKE_API Runtime::~Runtime() {
 
 	assert(!createdObjects.size());
 	assert(!globalHeapPoolAlloc.szAllocated);
+	// Self allocator should be moved out in the dealloc() method, or the runtime has been destructed prematurely.
+	assert(!selfAllocator);
+}
+
+SLAKE_API bool Runtime::constructAt(Runtime *dest, peff::Alloc *upstream, RuntimeFlags flags) {
+	peff::constructAt<Runtime>(dest, nullptr, upstream, flags);
+	peff::ScopeGuard destroyGuard([dest]() noexcept {
+		std::destroy_at<Runtime>(dest);
+	});
+	if (!(dest->_rootObject = ModuleObject::alloc(dest, ACCESS_STATIC).get())) {
+		return false;
+	}
+	destroyGuard.release();
+	return true;
+}
+
+SLAKE_API Runtime *Runtime::alloc(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags) {
+	Runtime *runtime = nullptr;
+
+	if (!(runtime = (Runtime*)selfAllocator->alloc(sizeof(Runtime), alignof(Runtime)))) {
+		return nullptr;
+	}
+
+	peff::ScopeGuard releaseGuard([runtime, selfAllocator]() noexcept {
+		selfAllocator->release(runtime, sizeof(Runtime), alignof(Runtime));
+	});
+
+	if (!constructAt(runtime, upstream, flags)) {
+		return nullptr;
+	}
+	runtime->selfAllocator = selfAllocator;
+
+	releaseGuard.release();
+	return runtime;
+}
+
+SLAKE_API void Runtime::dealloc() noexcept {
+	peff::RcObjectPtr<peff::Alloc> selfAllocator = std::move(this->selfAllocator);
+	std::destroy_at<Runtime>(this);
+	if (selfAllocator) {
+		selfAllocator->release(this, sizeof(Runtime), alignof(Runtime));
+	}
 }

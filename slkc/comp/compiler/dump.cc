@@ -241,7 +241,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 	peff::DynArray<slake::InterfaceObject *> collectedInterfaces(allocator);
 	peff::DynArray<slake::FnObject *> collectedFns(allocator);
 
-	for (auto [k, v] : mod->scope->members) {
+	for (auto [k, v] : mod->members) {
 		switch (v->getKind()) {
 			case slake::ObjectKind::Class: {
 				if (!collectedClasses.pushBack((slake::ClassObject *)v)) {

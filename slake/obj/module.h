@@ -45,7 +45,7 @@ namespace slake {
 		std::atomic_size_t depCount = 0;
 
 		Object *parent = nullptr;
-		Scope *scope = nullptr;
+		peff::HashMap<std::string_view, MemberObject *> members;
 
 		char *localFieldStorage = nullptr;
 		size_t szLocalFieldStorage = 0;
@@ -55,7 +55,7 @@ namespace slake {
 		peff::HashMap<peff::String, IdRefObject *> imports;
 		peff::DynArray<IdRefObject *> unnamedImports;
 
-		SLAKE_API ModuleObject(Runtime *rt, ScopeUniquePtr &&scope, AccessModifier access);
+		SLAKE_API ModuleObject(Runtime *rt, AccessModifier access);
 		SLAKE_API ModuleObject(const ModuleObject &x, bool &succeededOut);
 		SLAKE_API virtual ~ModuleObject();
 
@@ -64,11 +64,14 @@ namespace slake {
 		SLAKE_API virtual Object *duplicate() const override;
 
 		SLAKE_API virtual EntityRef getMember(const std::string_view &name) const override;
+		[[nodiscard]] SLAKE_API virtual bool addMember(MemberObject *member);
+		SLAKE_API virtual void removeMember(const std::string_view &name);
+		[[nodiscard]] SLAKE_API virtual bool removeMemberAndTrim(const std::string_view &name);
 
 		SLAKE_API virtual Object *getParent() const override;
 		SLAKE_API virtual void setParent(Object *parent) override;
 
-		SLAKE_API static HostObjectRef<ModuleObject> alloc(Runtime *rt, ScopeUniquePtr &&scope, AccessModifier access);
+		SLAKE_API static HostObjectRef<ModuleObject> alloc(Runtime *rt, AccessModifier access);
 		SLAKE_API static HostObjectRef<ModuleObject> alloc(const ModuleObject *other);
 		SLAKE_API virtual void dealloc() override;
 	};

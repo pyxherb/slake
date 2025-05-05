@@ -82,13 +82,61 @@ namespace slake {
 		SLAKE_API virtual ObjectKind getKind() const;
 
 		SLAKE_API virtual FnOverloadingObject *duplicate() const = 0;
+
+		SLAKE_FORCEINLINE void setParamTypes(peff::DynArray<Type> &&paramTypes) noexcept {
+			this->paramTypes = std::move(paramTypes);
+		}
+
+		SLAKE_FORCEINLINE void setReturnType(Type returnType) noexcept {
+			this->returnType = returnType;
+		}
+
+		SLAKE_FORCEINLINE Type getReturnType() noexcept {
+			return returnType;
+		}
+
+		SLAKE_FORCEINLINE void setVarArgs() noexcept {
+			overloadingFlags |= OL_VARG;
+		}
+
+		SLAKE_FORCEINLINE void clearVarArgs() noexcept {
+			overloadingFlags &= ~OL_VARG;
+		}
+
+		SLAKE_FORCEINLINE bool isWithVarArgs() noexcept {
+			return overloadingFlags & OL_VARG;
+		}
+
+		SLAKE_FORCEINLINE void setCoroutine() noexcept {
+			overloadingFlags |= OL_GENERATOR;
+		}
+
+		SLAKE_FORCEINLINE void clearCoroutine() noexcept {
+			overloadingFlags &= ~OL_GENERATOR;
+		}
+
+		SLAKE_FORCEINLINE bool isCoroutine() noexcept {
+			return overloadingFlags & OL_GENERATOR;
+		}
+
+		SLAKE_FORCEINLINE void setVirtualFlag() noexcept {
+			overloadingFlags |= OL_VIRTUAL;
+		}
+
+		SLAKE_FORCEINLINE void clearVirtualFlag() noexcept {
+			overloadingFlags &= ~OL_VIRTUAL;
+		}
+
+		SLAKE_FORCEINLINE bool isVirtual() noexcept {
+			return overloadingFlags & OL_VIRTUAL;
+		}
 	};
 
 	class RegularFnOverloadingObject : public FnOverloadingObject {
 	public:
 		peff::DynArray<slxfmt::SourceLocDesc> sourceLocDescs;
 		peff::DynArray<Instruction> instructions;
-		Type thisObjectType = TypeId::None;
+		Type thisType = TypeId::None;
 		uint32_t nRegisters;
 
 		SLAKE_API RegularFnOverloadingObject(
@@ -106,6 +154,22 @@ namespace slake {
 			AccessModifier access);
 		SLAKE_API static HostObjectRef<RegularFnOverloadingObject> alloc(const RegularFnOverloadingObject *other);
 		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_FORCEINLINE void setThisType(Type thisType) noexcept {
+			this->thisType = thisType;
+		}
+
+		SLAKE_FORCEINLINE Type getThisType() noexcept {
+			return thisType;
+		}
+
+		SLAKE_FORCEINLINE void setRegisterNumber(uint32_t nRegisters) noexcept {
+			this->nRegisters = nRegisters;
+		}
+
+		SLAKE_FORCEINLINE uint32_t getRegisterNumber() noexcept {
+			return nRegisters;
+		}
 	};
 
 	class JITCompiledFnOverloadingObject : public FnOverloadingObject {
@@ -136,7 +200,8 @@ namespace slake {
 	public:
 		SLAKE_API NativeFnOverloadingObject(
 			FnObject *fnObject,
-			AccessModifier access);
+			AccessModifier access,
+			NativeFnCallback callback);
 		SLAKE_API NativeFnOverloadingObject(const NativeFnOverloadingObject &other, bool &succeededOut);
 		SLAKE_API virtual ~NativeFnOverloadingObject();
 
@@ -146,7 +211,8 @@ namespace slake {
 
 		SLAKE_API static HostObjectRef<NativeFnOverloadingObject> alloc(
 			FnObject *fnObject,
-			AccessModifier access);
+			AccessModifier access,
+			NativeFnCallback callback);
 		SLAKE_API static HostObjectRef<NativeFnOverloadingObject> alloc(const NativeFnOverloadingObject *other);
 		SLAKE_API virtual void dealloc() override;
 	};

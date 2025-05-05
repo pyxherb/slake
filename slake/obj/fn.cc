@@ -254,11 +254,13 @@ SLAKE_API void slake::RegularFnOverloadingObject::dealloc() {
 
 SLAKE_API NativeFnOverloadingObject::NativeFnOverloadingObject(
 	FnObject *fnObject,
-	AccessModifier access)
+	AccessModifier access,
+	NativeFnCallback callback)
 	: FnOverloadingObject(
 		  FnOverloadingKind::Native,
 		  fnObject,
-		  access) {}
+		  access),
+	  callback(callback) {}
 
 SLAKE_API NativeFnOverloadingObject::NativeFnOverloadingObject(const NativeFnOverloadingObject &other, bool &succeededOut) : FnOverloadingObject(other, succeededOut) {
 	if (succeededOut) {
@@ -275,12 +277,13 @@ SLAKE_API FnOverloadingObject *slake::NativeFnOverloadingObject::duplicate() con
 
 SLAKE_API HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObject::alloc(
 	FnObject *fnObject,
-	AccessModifier access) {
+	AccessModifier access,
+	NativeFnCallback callback) {
 	std::unique_ptr<NativeFnOverloadingObject, util::DeallocableDeleter<NativeFnOverloadingObject>> ptr(
 		peff::allocAndConstruct<NativeFnOverloadingObject>(
 			&fnObject->associatedRuntime->globalHeapPoolAlloc,
 			sizeof(std::max_align_t),
-			fnObject, access));
+			fnObject, access, callback));
 	if (!ptr)
 		return nullptr;
 

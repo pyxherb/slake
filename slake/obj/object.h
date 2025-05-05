@@ -47,7 +47,6 @@ namespace slake {
 
 		IdRef,		 // Reference
 		GenericArg,	 // Generic argument
-		RootObject,	 // Root value
 		Context,	 // Context
 		Coroutine,	 // Coroutine
 	};

@@ -445,7 +445,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 				slake::HostObjectRef<slake::ClassObject> cls;
 
-				if (!(cls = slake::ClassObject::alloc(compileContext->runtime, slake::ScopeUniquePtr(slake::Scope::alloc(&compileContext->runtime->globalHeapPoolAlloc, nullptr)), mod->accessModifier, {}))) {
+				if (!(cls = slake::ClassObject::alloc(compileContext->runtime, mod->accessModifier, {}))) {
 					return genOutOfRuntimeMemoryCompError();
 				}
 
@@ -507,7 +507,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 				SLKC_RETURN_IF_COMP_ERROR(compileModule(compileContext, clsNode.castTo<ModuleNode>(), cls.get()));
 
-				if (!modOut->scope->putMember(cls.get())) {
+				if (!modOut->addMember(cls.get())) {
 					return genOutOfRuntimeMemoryCompError();
 				}
 
@@ -518,7 +518,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 				slake::HostObjectRef<slake::InterfaceObject> cls;
 
-				if (!(cls = slake::InterfaceObject::alloc(compileContext->runtime, slake::ScopeUniquePtr(slake::Scope::alloc(&compileContext->runtime->globalHeapPoolAlloc, nullptr)), mod->accessModifier, { &compileContext->runtime->globalHeapPoolAlloc }))) {
+				if (!(cls = slake::InterfaceObject::alloc(compileContext->runtime, mod->accessModifier, { &compileContext->runtime->globalHeapPoolAlloc }))) {
 					return genOutOfRuntimeMemoryCompError();
 				}
 
@@ -558,7 +558,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 				SLKC_RETURN_IF_COMP_ERROR(compileModule(compileContext, clsNode.castTo<ModuleNode>(), cls.get()));
 
-				if (!modOut->scope->putMember(cls.get())) {
+				if (!modOut->addMember(cls.get())) {
 					return genOutOfRuntimeMemoryCompError();
 				}
 
@@ -651,7 +651,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 					}
 				}
 
-				if (!modOut->scope->putMember(slotObject.get())) {
+				if (!modOut->addMember(slotObject.get())) {
 					return genOutOfRuntimeMemoryCompError();
 				}
 				break;

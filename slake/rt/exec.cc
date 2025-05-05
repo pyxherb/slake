@@ -2272,6 +2272,12 @@ SLAKE_API InternalExceptionPointer Runtime::resumeCoroutine(
 		return {};
 	}
 
+	HostObjectRef<ContextObject> contextRef(context);
+
+	if (!contextRef) {
+		contextRef = ContextObject::alloc(this);
+	}
+
 	SLAKE_RETURN_IF_EXCEPT(_createNewMajorFrame(&context->_context, nullptr, nullptr, nullptr, 0, UINT32_MAX));
 	MajorFrame *topMajorFrame = (MajorFrame *)calcStackAddr(context->_context.dataStack, SLAKE_STACK_MAX, context->_context.offMajorFrame);
 	SLAKE_RETURN_IF_EXCEPT(_createNewCoroutineMajorFrame(&context->_context, coroutine, 0));

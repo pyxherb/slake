@@ -598,8 +598,14 @@ int main(int argc, char *argv[]) {
 			tokenList.moveFrom(std::move(lexer.tokenList));
 		}
 
-		slake::Runtime runtime(peff::getDefaultAlloc());
-		slkc::CompileContext compileContext(&runtime, document, &peff::g_nullAlloc, peff::getDefaultAlloc());
+		std::unique_ptr<slake::Runtime, peff::DeallocableDeleter<slake::Runtime>> runtime(
+			slake::Runtime::alloc(peff::getDefaultAlloc(), peff::getDefaultAlloc())
+		);
+		if (!runtime) {
+			printError("Error allocating memory for the runtime");
+			return ENOMEM;
+		}
+		slkc::CompileContext compileContext(runtime.get(), document, &peff::g_nullAlloc, peff::getDefaultAlloc());
 		{
 			peff::SharedPtr<slkc::Parser> parser;
 			if (!(parser = peff::makeShared<slkc::Parser>(peff::getDefaultAlloc(), document, tokenList.release(), peff::getDefaultAlloc()))) {
@@ -643,7 +649,7 @@ int main(int argc, char *argv[]) {
 				dumpCompilationError(parser, *e);
 			}
 
-			slake::HostObjectRef<slake::ModuleObject> modObj = slake::ModuleObject::alloc(&runtime, slake::ScopeUniquePtr(slake::Scope::alloc(&runtime.globalHeapPoolAlloc, runtime.getRootObject())), slake::ACCESS_PUB | slake::ACCESS_STATIC);
+			slake::HostObjectRef<slake::ModuleObject> modObj = slake::ModuleObject::alloc(runtime.get(), slake::ACCESS_PUB | slake::ACCESS_STATIC);
 
 			if (auto e = slkc::compileModule(&compileContext, mod, modObj.get()); e) {
 				encounteredErrors = true;

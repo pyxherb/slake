@@ -47,17 +47,6 @@ SLAKE_API void Runtime::GCHeaplessWalkContext::pushInstanceObject(Object *object
 	}
 }
 
-SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Scope *scope) {
-	if (!scope)
-		return;
-	for (auto i = scope->members.begin(); i != scope->members.end(); ++i) {
-		context.pushObject(i.value());
-	}
-
-	if (scope->owner)
-		context.pushObject(scope->owner);
-}
-
 SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, MethodTable *methodTable) {
 	if (!methodTable)
 		return;
@@ -238,8 +227,9 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 					break;
 				}
 				case ObjectKind::Module: {
-					_gcWalkHeapless(context, ((ModuleObject *)v)->scope);
-
+					for (auto i = ((ModuleObject *)v)->members.begin(); i != ((ModuleObject *)v)->members.end(); ++i) {
+						context.pushObject(i.value());
+					}
 					for (size_t i = 0; i < ((ModuleObject *)v)->fieldRecords.size(); ++i) {
 						_gcWalkHeapless(context, readVarUnsafe(EntityRef::makeFieldRef((ModuleObject *)v, i)));
 					}
@@ -255,7 +245,9 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 					break;
 				}
 				case ObjectKind::Class: {
-					_gcWalkHeapless(context, ((ClassObject *)v)->scope);
+					for (auto i = ((ClassObject *)v)->members.begin(); i != ((ClassObject *)v)->members.end(); ++i) {
+						context.pushObject(i.value());
+					}
 					context.pushObject(((ClassObject *)v)->parent);
 
 					ClassObject *value = (ClassObject *)v;
@@ -290,8 +282,9 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 				}
 				case ObjectKind::Interface: {
 					// TODO: Walk generic parameters.
-
-					_gcWalkHeapless(context, ((InterfaceObject *)v)->scope);
+					for (auto i = ((InterfaceObject *)v)->members.begin(); i != ((InterfaceObject *)v)->members.end(); ++i) {
+						context.pushObject(i.value());
+					}
 					context.pushObject(((InterfaceObject *)v)->parent);
 
 					InterfaceObject *value = (InterfaceObject *)v;
@@ -318,11 +311,6 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 
 					_gcWalkHeapless(context, value->genericParams);
 
-					break;
-				}
-				case ObjectKind::RootObject: {
-					RootObject *value = (RootObject *)v;
-					_gcWalkHeapless(context, value->scope);
 					break;
 				}
 				case ObjectKind::Fn: {
@@ -439,7 +427,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, char *da
 	for (auto &k : majorFrame->nextArgStack)
 		_gcWalkHeapless(context, k);
 	for (size_t i = 0; i < majorFrame->nRegs; ++i)
-		_gcWalkHeapless(context, *((Value*)(dataStack + SLAKE_STACK_MAX - (majorFrame->offRegs + sizeof(Value) * i))));
+		_gcWalkHeapless(context, *((Value *)(dataStack + SLAKE_STACK_MAX - (majorFrame->offRegs + sizeof(Value) * i))));
 	for (auto &k : majorFrame->minorFrames) {
 		for (auto &l : k.exceptHandlers)
 			_gcWalkHeapless(context, l.type);
@@ -449,7 +437,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, char *da
 SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Context &ctxt) {
 	bool isWalkableObjectDetected = false;
 	size_t j = ctxt.offMajorFrame;
-	for (;;) {
+	while (j != SIZE_MAX) {
 		MajorFrame *majorFrame = (MajorFrame *)calcStackAddr(ctxt.dataStack, SLAKE_STACK_MAX, j);
 		_gcWalkHeapless(context, majorFrame);
 		j = majorFrame->offNext;

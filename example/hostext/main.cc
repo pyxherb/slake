@@ -101,17 +101,18 @@ std::unique_ptr<std::istream> fsModuleLocator(slake::Runtime *rt, const peff::Dy
 
 void printTraceback(slake::Runtime *rt, slake::ContextObject *context) {
 	printf("Traceback:\n");
-	for (auto i = context->getContext().majorFrameList;
-		 i;
-		 i = i->next) {
-		if (!i->curFn) {
+	size_t j = context->_context.offMajorFrame;
+	while (j != SIZE_MAX) {
+		slake::MajorFrame *majorFrame = (slake::MajorFrame *)slake::calcStackAddr(context->_context.dataStack, SLAKE_STACK_MAX, j);
+
+		if (!majorFrame->curFn) {
 			printf("(Stack top)\n");
 			continue;
 		}
 
 		peff::DynArray<slake::IdRefEntry> fullRef(peff::getDefaultAlloc());
 
-		if (!rt->getFullRef(peff::getDefaultAlloc(), i->curFn->fnObject, fullRef)) {
+		if (!rt->getFullRef(peff::getDefaultAlloc(), majorFrame->curFn->fnObject, fullRef)) {
 			throw std::bad_alloc();
 		}
 
@@ -139,10 +140,10 @@ void printTraceback(slake::Runtime *rt, slake::ContextObject *context) {
 			}
 		}
 
-		printf("\t%s: 0x%08x", name.c_str(), i->curIns);
-		switch (i->curFn->overloadingKind) {
+		printf("\t%s: 0x%08x", name.c_str(), majorFrame->curIns);
+		switch (majorFrame->curFn->overloadingKind) {
 			case slake::FnOverloadingKind::Regular: {
-				if (auto sld = ((slake::RegularFnOverloadingObject *)i->curFn)->getSourceLocationDesc(i->curIns); sld) {
+				if (auto sld = ((slake::RegularFnOverloadingObject *)majorFrame->curFn)->getSourceLocationDesc(majorFrame->curIns); sld) {
 					printf(" at %d:%d", sld->line, sld->column);
 				}
 				break;
@@ -150,15 +151,19 @@ void printTraceback(slake::Runtime *rt, slake::ContextObject *context) {
 			default:;
 		}
 		putchar('\n');
+
+		j = majorFrame->offNext;
 	}
 }
 
 int main(int argc, char **argv) {
 	slake::util::setupMemoryLeakDetector();
 
-	std::unique_ptr<slake::Runtime> rt = std::make_unique<slake::Runtime>(
-		peff::getDefaultAlloc(),
-		slake::RT_DEBUG | slake::RT_GCDBG);
+	std::unique_ptr<slake::Runtime, peff::DeallocableDeleter<slake::Runtime>> rt = std::unique_ptr<slake::Runtime, peff::DeallocableDeleter<slake::Runtime>>(
+		slake::Runtime::alloc(
+			peff::getDefaultAlloc(),
+			peff::getDefaultAlloc(),
+			slake::RT_DEBUG | slake::RT_GCDBG));
 
 	slake::HostObjectRef<slake::ModuleObject> mod;
 	{
@@ -190,10 +195,10 @@ int main(int argc, char **argv) {
 		auto printFn = slake::NativeFnOverloadingObject::alloc(
 			fnObject.get(),
 			slake::ACCESS_PUB,
-			std::move(paramTypes),
-			slake::TypeId::None,
-			slake::OL_VARG,
 			print);
+		printFn->paramTypes = std::move(paramTypes);
+		printFn->returnType = slake::TypeId::None;
+		printFn->setVarArgs();
 		if (!fnObject->overloadings.insert(printFn.get()))
 			throw std::bad_alloc();
 		fnObject->name.resize(strlen("print"));
@@ -202,11 +207,11 @@ int main(int argc, char **argv) {
 		((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext").asObject.instanceObject)
 				->getMember("extfns")
 				.asObject.instanceObject)
-			->scope->removeMember("print");
+			->removeMember("print");
 		if (!((slake::ModuleObject *)((slake::ModuleObject *)rt->getRootObject()->getMember("hostext").asObject.instanceObject)
 					->getMember("extfns")
 					.asObject.instanceObject)
-				 ->scope->putMember(fnObject.get()))
+				->addMember(fnObject.get()))
 			throw std::bad_alloc();
 
 		auto fn = (slake::FnObject *)mod->getMember("main").asObject.instanceObject;
@@ -239,18 +244,23 @@ int main(int argc, char **argv) {
 			printf("Lifetime: %zu-%zu\n", it.value().lifetime.offBeginIns, it.value().lifetime.offEndIns);
 		}
 
-		slake::HostObjectRef<slake::ContextObject> context;
-		if (auto e = rt->execFn(overloading, nullptr, nullptr, nullptr, 0, context);
-			e) {
+		slake::HostObjectRef<slake::CoroutineObject> co;
+		if (auto e = rt->createCoroutineInstance(overloading, nullptr, nullptr, 0, co); e) {
 			printf("Internal exception: %s\n", e->what());
-			printTraceback(rt.get(), context.get());
 			e.reset();
 			goto end;
 		}
-		printf("%d\n", context->getResult().getI32());
 
-		while (!context->isDone()) {
-			if (auto e = context->resume(&hostRefHolder);
+		slake::HostObjectRef<slake::ContextObject> context;
+
+		if (!(context = slake::ContextObject::alloc(rt.get()))) {
+			puts("Out of memory");
+			goto end;
+		}
+
+		slake::Value result;
+		while (!co->isDone()) {
+			if (auto e = rt->resumeCoroutine(context.get(), co.get(), result);
 				e) {
 				printf("Internal exception: %s\n", e->what());
 				printTraceback(rt.get(), context.get());
@@ -258,7 +268,7 @@ int main(int argc, char **argv) {
 				goto end;
 			}
 
-			printf("%d\n", context->getResult().getI32());
+			printf("%d\n", result.getI32());
 		}
 
 		puts("");

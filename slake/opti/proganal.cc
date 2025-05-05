@@ -1016,13 +1016,13 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						i);
 				}
 
-				if (analyzeContext.fnObject->thisObjectType.typeId == TypeId::None) {
+				if (analyzeContext.fnObject->thisType.typeId == TypeId::None) {
 					return MalformedProgramError::alloc(
 						runtime,
 						fnObject,
 						i);
 				}
-				analyzedInfoOut.analyzedRegInfo.at(regIndex).type = analyzeContext.fnObject->thisObjectType;
+				analyzedInfoOut.analyzedRegInfo.at(regIndex).type = analyzeContext.fnObject->thisType;
 				break;
 			case Opcode::NEW:
 				if (regIndex == UINT32_MAX) {

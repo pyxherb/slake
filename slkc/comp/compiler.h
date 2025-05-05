@@ -473,6 +473,12 @@ namespace slkc {
 		CompileContext *compileContext,
 		peff::SharedPtr<ExprNode> expr,
 		slake::Value &valueOut);
+	[[nodiscard]] SLKC_API std::optional<CompilationError> compileGenericParams(
+		CompileContext *compileContext,
+		peff::SharedPtr<ModuleNode> mod,
+		peff::SharedPtr<GenericParamNode> *genericParams,
+		size_t nGenericParams,
+		slake::GenericParamList &genericParamListOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileModule(
 		CompileContext *compileContext,
 		peff::SharedPtr<ModuleNode> mod,
@@ -541,8 +547,72 @@ namespace slkc {
 		SLKC_API virtual ~Writer();
 
 		virtual std::optional<CompilationError> write(const char *src, size_t size) = 0;
+
+		SLAKE_FORCEINLINE std::optional<CompilationError> writeI8(int8_t data) noexcept {
+			return write((char *)&data, sizeof(int8_t));
+		}
+
+		SLAKE_FORCEINLINE std::optional<CompilationError> writeI16(int16_t data) noexcept {
+			return write((char *)&data, sizeof(int16_t));
+		}
+
+		SLAKE_FORCEINLINE std::optional<CompilationError> writeI32(int32_t data) noexcept {
+			return write((char *)&data, sizeof(int32_t));
+		}
+
+		SLAKE_FORCEINLINE std::optional<CompilationError> writeI64(int64_t data) noexcept {
+			return write((char *)&data, sizeof(int64_t));
+		}
+
+		SLAKE_FORCEINLINE std::optional<CompilationError> writeU8(uint8_t data) noexcept {
+			return write((char *)&data, sizeof(uint8_t));
+		}
+
+		SLAKE_FORCEINLINE std::optional<CompilationError> writeI16(uint16_t data) noexcept {
+			return write((char *)&data, sizeof(uint16_t));
+		}
+
+		SLAKE_FORCEINLINE std::optional<CompilationError> writeU32(uint32_t data) noexcept {
+			return write((char *)&data, sizeof(uint32_t));
+		}
+
+		SLAKE_FORCEINLINE std::optional<CompilationError> writeU64(uint64_t data) noexcept {
+			return write((char *)&data, sizeof(uint64_t));
+		}
+
+		SLAKE_FORCEINLINE std::optional<CompilationError> writeF32(float data) noexcept {
+			return write((char *)&data, sizeof(float));
+		}
+
+		SLAKE_FORCEINLINE std::optional<CompilationError> writeF64(double data) noexcept {
+			return write((char *)&data, sizeof(double));
+		}
+
+		SLAKE_FORCEINLINE std::optional<CompilationError> writeBool(bool data) noexcept {
+			return write((char *)&data, sizeof(bool));
+		}
 	};
 
+	[[nodiscard]] SLKC_API std::optional<CompilationError> dumpGenericParams(
+		peff::Alloc *allocator,
+		Writer *writer,
+		const slake::GenericParamList &genericParams);
+	[[nodiscard]] SLKC_API std::optional<CompilationError> dumpIdRefEntries(
+		peff::Alloc *allocator,
+		Writer *writer,
+		const peff::DynArray<slake::IdRefEntry> &entries);
+	[[nodiscard]] SLKC_API std::optional<CompilationError> dumpIdRef(
+		peff::Alloc *allocator,
+		Writer *writer,
+		slake::IdRefObject *ref);
+	[[nodiscard]] SLKC_API std::optional<CompilationError> dumpValue(
+		peff::Alloc *allocator,
+		Writer *writer,
+		const slake::Value &value);
+	[[nodiscard]] SLKC_API std::optional<CompilationError> dumpTypeName(
+		peff::Alloc *allocator,
+		Writer *writer,
+		const slake::Type &type);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> dumpModuleMembers(
 		peff::Alloc *allocator,
 		Writer *writer,

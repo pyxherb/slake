@@ -339,6 +339,56 @@ SLKC_API std::optional<CompilationError> slkc::compileValueExpr(
 	return {};
 }
 
+SLKC_API std::optional<CompilationError> slkc::compileGenericParams(
+	CompileContext* compileContext,
+	peff::SharedPtr<ModuleNode> mod,
+	peff::SharedPtr<GenericParamNode>* genericParams,
+	size_t nGenericParams,
+	slake::GenericParamList& genericParamListOut) {
+	std::optional<CompilationError> e;
+
+	for (size_t j = 0; j < nGenericParams; ++j) {
+		auto gpNode = genericParams[j];
+		slake::GenericParam gp(&compileContext->runtime->globalHeapPoolAlloc);
+
+		if (!gp.name.build(gpNode->name)) {
+			return genOutOfMemoryCompError();
+		}
+
+		if (gpNode->genericConstraint->baseType) {
+			if ((e = compileTypeName(compileContext, gpNode->genericConstraint->baseType, gp.baseType))) {
+				if (e->errorKind == CompilationErrorKind::OutOfMemory)
+					return e;
+				if (!compileContext->errors.pushBack(std::move(*e))) {
+					return genOutOfMemoryCompError();
+				}
+				e.reset();
+			}
+		}
+
+		if (!gp.interfaces.resize(gpNode->genericConstraint->implementedTypes.size())) {
+			return genOutOfRuntimeMemoryCompError();
+		}
+
+		for (size_t k = 0; k < gpNode->genericConstraint->implementedTypes.size(); ++k) {
+			if ((e = compileTypeName(compileContext, gpNode->genericConstraint->implementedTypes.at(k), gp.interfaces.at(k)))) {
+				if (e->errorKind == CompilationErrorKind::OutOfMemory)
+					return e;
+				if (!compileContext->errors.pushBack(std::move(*e))) {
+					return genOutOfMemoryCompError();
+				}
+				e.reset();
+			}
+		}
+
+		if (!genericParamListOut.pushBack(std::move(gp))) {
+			return genOutOfRuntimeMemoryCompError();
+		}
+	}
+
+	return {};
+}
+
 SLKC_API std::optional<CompilationError> slkc::compileModule(
 	CompileContext *compileContext,
 	peff::SharedPtr<ModuleNode> mod,
@@ -402,6 +452,8 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 				if (!cls->name.build(m->name)) {
 					return genOutOfRuntimeMemoryCompError();
 				}
+
+				SLKC_RETURN_IF_COMP_ERROR(compileGenericParams(compileContext, mod, clsNode->genericParams.data(), clsNode->genericParams.size(), cls->genericParams));
 
 				if (clsNode->baseType) {
 					peff::SharedPtr<MemberNode> baseTypeNode;
@@ -474,6 +526,8 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 					return genOutOfRuntimeMemoryCompError();
 				}
 
+				SLKC_RETURN_IF_COMP_ERROR(compileGenericParams(compileContext, mod, clsNode->genericParams.data(), clsNode->genericParams.size(), cls->genericParams));
+
 				for (auto &i : clsNode->implementedTypes) {
 					peff::SharedPtr<MemberNode> implementedTypeNode;
 
@@ -515,6 +569,10 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 				slake::HostObjectRef<slake::FnObject> slotObject;
 
 				if (!(slotObject = slake::FnObject::alloc(compileContext->runtime))) {
+					return genOutOfRuntimeMemoryCompError();
+				}
+
+				if (!slotObject->name.build(slotNode->name)) {
 					return genOutOfRuntimeMemoryCompError();
 				}
 
@@ -573,40 +631,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 						}
 					}
 
-					for (size_t j = 0; j < i->genericParams.size(); ++j) {
-						auto gpNode = i->genericParams.at(j);
-						slake::GenericParam gp(&compileContext->runtime->globalHeapPoolAlloc);
-
-						if (gpNode->genericConstraint->baseType) {
-							if ((e = compileTypeName(compileContext, gpNode->genericConstraint->baseType, gp.baseType))) {
-								if (e->errorKind == CompilationErrorKind::OutOfMemory)
-									return e;
-								if (!compileContext->errors.pushBack(std::move(*e))) {
-									return genOutOfMemoryCompError();
-								}
-								e.reset();
-							}
-						}
-
-						if (!gp.interfaces.resize(gpNode->genericConstraint->implementedTypes.size())) {
-							return genOutOfRuntimeMemoryCompError();
-						}
-
-						for (size_t k = 0; k < gpNode->genericConstraint->implementedTypes.size(); ++k) {
-							if ((e = compileTypeName(compileContext, gpNode->genericConstraint->implementedTypes.at(k), gp.interfaces.at(k)))) {
-								if (e->errorKind == CompilationErrorKind::OutOfMemory)
-									return e;
-								if (!compileContext->errors.pushBack(std::move(*e))) {
-									return genOutOfMemoryCompError();
-								}
-								e.reset();
-							}
-						}
-
-						if (!fnObject->genericParams.pushBack(std::move(gp))) {
-							return genOutOfRuntimeMemoryCompError();
-						}
-					}
+					SLKC_RETURN_IF_COMP_ERROR(compileGenericParams(compileContext, mod, i->genericParams.data(), i->genericParams.size(), fnObject->genericParams));
 
 					for (auto j : i->body->body) {
 						if ((e = compileStmt(compileContext, j))) {

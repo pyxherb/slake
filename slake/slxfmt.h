@@ -31,10 +31,10 @@ namespace slake {
 		/// @brief Image Header (IMH)
 		///
 		struct ImgHeader final {
-			uint8_t magic[4];		 // Magic number
-			uint8_t flags;			 // Flags
-			uint8_t fmtVer;			 // Format version
-			uint16_t nImports;		 // Number of imported modules
+			uint8_t magic[4];	// Magic number
+			uint8_t flags;		// Flags
+			uint8_t fmtVer;		// Format version
+			uint16_t nImports;	// Number of imported modules
 		};
 		constexpr static uint8_t IMH_MAGIC[] = { 'S', 'L', 'A', 'X' };
 
@@ -85,7 +85,9 @@ namespace slake {
 			F32,	   // f32
 			F64,	   // f64
 			Bool,	   // Boolean
-			Object,	   // Object
+			String,	   // String
+			IdRef,	   // Identifier reference
+			Array,	   // Array
 			TypeName,  // Type name
 			Reg,	   // Register
 		};

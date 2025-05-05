@@ -18,7 +18,7 @@ namespace slake {
 
 	struct Instruction final {
 		Opcode opcode;
-		uint8_t nOperands;
+		uint32_t nOperands;
 		uint32_t output;
 		Value *operands;
 		peff::RcObjectPtr<peff::Alloc> operandsAllocator;

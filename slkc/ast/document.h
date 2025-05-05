@@ -44,7 +44,9 @@ namespace slkc {
 		ImportLimitExceeded,
 		MalformedModuleName,
 		ErrorParsingImportedModule,
-		ModuleNotFound
+		ModuleNotFound,
+
+		ErrorWritingCompiledModule
 	};
 
 	class TypeNameNode;
@@ -80,6 +82,7 @@ namespace slkc {
 			: tokenRange(tokenRange),
 			  errorKind(CompilationErrorKind::IncompatibleOperand),
 			  exData(exData) {
+			assert(tokenRange);
 		}
 
 		SLAKE_FORCEINLINE CompilationError(
@@ -88,6 +91,7 @@ namespace slkc {
 			: tokenRange(tokenRange),
 			  errorKind(CompilationErrorKind::ErrorParsingImportedModule),
 			  exData(exData) {
+			assert(tokenRange);
 		}
 
 		SLAKE_FORCEINLINE bool operator<(const CompilationError &rhs) const noexcept {

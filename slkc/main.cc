@@ -125,9 +125,11 @@ const ArglessOptionMap g_arglessOptions = {
 
 };
 
+const char *g_modFileName = nullptr, *g_outputFileName = nullptr;
+
 const SingleArgOptionMap g_singleArgOptions = {
 	{ "-I", [](const OptionMatchContext &matchContext, const char *option, const char *arg) -> int {
-		 MatchUserData *userData = ((MatchUserData*)matchContext.userData);
+		 MatchUserData *userData = ((MatchUserData *)matchContext.userData);
 
 		 peff::String dir(peff::getDefaultAlloc());
 
@@ -142,14 +144,17 @@ const SingleArgOptionMap g_singleArgOptions = {
 		 }
 
 		 return 0;
+	 } },
+	{ "-o", [](const OptionMatchContext &matchContext, const char *option, const char *arg) -> int {
+		 g_outputFileName = arg;
+
+		 return 0;
 	 } }
 };
 
 const CustomOptionMap g_customOptions = {
 
 };
-
-const char *g_modFileName = nullptr;
 
 void dumpLexicalError(const slkc::LexicalError &lexicalError, int indentLevel = 0) {
 	for (int i = 0; i < indentLevel; ++i) {
@@ -182,7 +187,6 @@ void dumpSyntaxError(slkc::Parser *parser, const slkc::SyntaxError &syntaxError,
 	const slkc::Token *beginToken = parser->tokenList.at(syntaxError.tokenRange.beginIndex).get();
 	const slkc::Token *endToken = parser->tokenList.at(syntaxError.tokenRange.endIndex).get();
 
-	
 	for (int i = 0; i < indentLevel; ++i) {
 		putc('\t', stderr);
 	}
@@ -444,6 +448,26 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 	}
 }
 
+class FileWriter : public slkc::Writer {
+public:
+	FILE *fp = NULL;
+
+	FileWriter(FILE *fp) : fp(fp) {
+	}
+
+	SLKC_API virtual ~FileWriter() {
+		if (fp)
+			fclose(fp);
+	}
+
+	virtual std::optional<slkc::CompilationError> write(const char *src, size_t size) override {
+		if (fwrite(src, size, 1, fp) < 1) {
+			return slkc::CompilationError(slkc::TokenRange{ 0 }, slkc::CompilationErrorKind::ErrorWritingCompiledModule);
+		}
+		return {};
+	}
+};
+
 int main(int argc, char *argv[]) {
 #ifdef _MSC_VER
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -484,6 +508,11 @@ int main(int argc, char *argv[]) {
 
 	if (!g_modFileName) {
 		printError("Missing target file name");
+		return EINVAL;
+	}
+
+	if (!g_outputFileName) {
+		printError("Missing output file name");
 		return EINVAL;
 	}
 
@@ -592,25 +621,32 @@ int main(int argc, char *argv[]) {
 				printError("Error allocating memory for the target module");
 				return ENOMEM;
 			}
+
+			bool encounteredErrors = false;
 			if (auto e = parser->parseProgram(mod, moduleName); e) {
+				encounteredErrors = true;
 				dumpSyntaxError(parser, *e);
 			}
 
 			for (auto &i : parser->syntaxErrors) {
+				encounteredErrors = true;
 				dumpSyntaxError(parser, i);
 			}
 
 			if (auto e = completeParentModules(&compileContext, moduleName.get(), mod); e) {
+				encounteredErrors = true;
 				dumpCompilationError(parser, *e);
 			}
 
 			if (auto e = indexModuleMembers(&compileContext, rootMod); e) {
+				encounteredErrors = true;
 				dumpCompilationError(parser, *e);
 			}
 
 			slake::HostObjectRef<slake::ModuleObject> modObj = slake::ModuleObject::alloc(&runtime, slake::ScopeUniquePtr(slake::Scope::alloc(&runtime.globalHeapPoolAlloc, runtime.getRootObject())), slake::ACCESS_PUB | slake::ACCESS_STATIC);
 
 			if (auto e = slkc::compileModule(&compileContext, mod, modObj.get()); e) {
+				encounteredErrors = true;
 				dumpCompilationError(parser, *e);
 			}
 
@@ -618,7 +654,21 @@ int main(int argc, char *argv[]) {
 			std::sort(compileContext.errors.data(), compileContext.errors.data() + compileContext.errors.size());
 
 			for (auto &i : compileContext.errors) {
+				encounteredErrors = true;
 				dumpCompilationError(parser, i);
+			}
+
+			if (!encounteredErrors) {
+				FILE *fp;
+
+				if (!(fp = fopen(g_outputFileName, "wb"))) {
+					printError("Error opening the output file");
+				}
+				FileWriter w(fp);
+				if (auto e = slkc::dumpModule(peff::getDefaultAlloc(), &w, modObj.get())) {
+					encounteredErrors = true;
+					dumpCompilationError(parser, *e);
+				}
 			}
 
 			document->rootModule = {};

@@ -16,11 +16,11 @@ using namespace slake;
 	int_fast8_t nOperands) noexcept {
 	if (hasOutput) {
 		if (ins.output == UINT32_MAX) {
-			return InvalidOperandsError::alloc(runtime);
+			return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime));
 		}
 	}
 	if (ins.nOperands != nOperands) {
-		return InvalidOperandsError::alloc(runtime);
+		return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime));
 	}
 
 	return {};
@@ -31,7 +31,7 @@ using namespace slake;
 	const Value &operand,
 	ValueType valueType) noexcept {
 	if (operand.valueType != valueType) {
-		return InvalidOperandsError::alloc(runtime);
+		return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime));
 	}
 	return {};
 }
@@ -41,7 +41,7 @@ using namespace slake;
 	const EntityRef &operand,
 	ObjectRefKind kind) noexcept {
 	if (operand.kind != kind) {
-		return InvalidOperandsError::alloc(runtime);
+		return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime));
 	}
 	return {};
 }
@@ -51,7 +51,7 @@ using namespace slake;
 	Object *object,
 	ObjectKind typeId) noexcept {
 	if (object->getKind() != typeId) {
-		return InvalidOperandsError::alloc(runtime);
+		return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime));
 	}
 	return {};
 }
@@ -64,7 +64,7 @@ using namespace slake;
 	const Value &value) noexcept {
 	if (index >= curMajorFrame->nRegs) {
 		// The register does not present.
-		return InvalidOperandsError::alloc(runtime);
+		return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime));
 	}
 	*(Value *)(stackData + curMajorFrame->offRegs + sizeof(Value) * index) = value;
 	return {};
@@ -78,7 +78,7 @@ using namespace slake;
 	Value &valueOut) noexcept {
 	if (index >= curMajorFrame->nRegs) {
 		// The register does not present.
-		return InvalidOperandsError::alloc(runtime);
+		return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime));
 	}
 	valueOut = *(Value *)(stackData + curMajorFrame->offRegs + sizeof(Value) * index);
 	return {};
@@ -133,7 +133,7 @@ SLAKE_API InternalExceptionPointer Runtime::_fillArgs(
 	uint32_t nArgs,
 	HostRefHolder &holder) {
 	if (nArgs < fn->paramTypes.size()) {
-		return InvalidArgumentNumberError::alloc(this, nArgs);
+		return allocOutOfMemoryErrorIfAllocFailed(InvalidArgumentNumberError::alloc(this, nArgs));
 	}
 
 	if (!newMajorFrame->argStack.resize(fn->paramTypes.size()))
@@ -191,7 +191,7 @@ SLAKE_API InternalExceptionPointer Runtime::_createNewCoroutineMajorFrame(
 	if (coroutine->stackData) {
 		if (size_t diff = context->stackTop % sizeof(std::max_align_t); diff) {
 			if (!context->stackAlloc(sizeof(std::max_align_t) - diff))
-				return StackOverflowError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(this));
 		}
 		size_t stackOffset = context->stackTop;
 		char *initialData = context->stackAlloc(coroutine->lenStackData);
@@ -300,89 +300,89 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(MajorFrame *fram
 	switch (type.typeId) {
 		case TypeId::I8:
 			if (!frame->context->stackAlloc(sizeof(int8_t)))
-				return StackOverflowError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(this));
 			stackOffset = frame->context->stackTop;
 			break;
 		case TypeId::I16:
 			if (frame->context->stackTop & 1) {
 				if (!frame->context->stackAlloc((2 - (frame->context->stackTop & 1))))
-					return StackOverflowError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(this));
 			}
 			if (!frame->context->stackAlloc(sizeof(int16_t)))
-				return StackOverflowError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(this));
 			stackOffset = frame->context->stackTop;
 			break;
 		case TypeId::I32:
 			if (frame->context->stackTop & 3) {
 				if (!frame->context->stackAlloc((4 - (frame->context->stackTop & 3))))
-					return StackOverflowError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(this));
 			}
 			if (!frame->context->stackAlloc(sizeof(int32_t)))
-				return StackOverflowError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(this));
 			stackOffset = frame->context->stackTop;
 			break;
 		case TypeId::I64:
 			if (frame->context->stackTop & 7) {
 				if (!frame->context->stackAlloc((8 - (frame->context->stackTop & 7))))
-					return StackOverflowError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(this));
 			}
 			if (!frame->context->stackAlloc(sizeof(int64_t)))
-				return StackOverflowError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(this));
 			stackOffset = frame->context->stackTop;
 			break;
 		case TypeId::U8:
 			if (!frame->context->stackAlloc(sizeof(uint8_t)))
-				return StackOverflowError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(this));
 			stackOffset = frame->context->stackTop;
 			break;
 		case TypeId::U16:
 			if (frame->context->stackTop & 1) {
 				if (!frame->context->stackAlloc((2 - (frame->context->stackTop & 1))))
-					return StackOverflowError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(this));
 			}
 			if (!frame->context->stackAlloc(sizeof(uint16_t)))
-				return StackOverflowError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(this));
 			stackOffset = frame->context->stackTop;
 			break;
 		case TypeId::U32:
 			if (frame->context->stackTop & 3) {
 				if (!frame->context->stackAlloc((4 - (frame->context->stackTop & 3))))
-					return StackOverflowError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(this));
 			}
 			if (!frame->context->stackAlloc(sizeof(uint32_t)))
-				return StackOverflowError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(this));
 			stackOffset = frame->context->stackTop;
 			break;
 		case TypeId::U64:
 			if (frame->context->stackTop & 7) {
 				if (!frame->context->stackAlloc((8 - (frame->context->stackTop & 7))))
-					return StackOverflowError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(this));
 			}
 			if (!frame->context->stackAlloc(sizeof(uint64_t)))
-				return StackOverflowError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(this));
 			stackOffset = frame->context->stackTop;
 			break;
 		case TypeId::F32:
 			if (frame->context->stackTop & 3) {
 				if (!frame->context->stackAlloc((4 - (frame->context->stackTop & 3))))
-					return StackOverflowError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(this));
 			}
 			if (!frame->context->stackAlloc(sizeof(float)))
-				return StackOverflowError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(this));
 			stackOffset = frame->context->stackTop;
 			break;
 		case TypeId::F64:
 			if (frame->context->stackTop & 7) {
 				if (!frame->context->stackAlloc((8 - (frame->context->stackTop & 7))))
-					return StackOverflowError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(this));
 			}
 			if (!frame->context->stackAlloc(sizeof(double)))
-				return StackOverflowError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(this));
 			stackOffset = frame->context->stackTop;
 			break;
 		case TypeId::Bool:
 			if (!frame->context->stackAlloc(sizeof(bool)))
-				return StackOverflowError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(this));
 			stackOffset = frame->context->stackTop;
 			break;
 			break;
@@ -392,11 +392,11 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(MajorFrame *fram
 		case TypeId::Ref: {
 			if (frame->context->stackTop & (sizeof(void *) - 1)) {
 				if (!frame->context->stackAlloc(sizeof(void *) - (frame->context->stackTop & (sizeof(void *) - 1))))
-					return StackOverflowError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(this));
 			}
 			Object **ptr = (Object **)frame->context->stackAlloc(sizeof(void *));
 			if (!ptr)
-				return StackOverflowError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(this));
 			stackOffset = frame->context->stackTop;
 			*ptr = nullptr;
 			break;
@@ -407,7 +407,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(MajorFrame *fram
 
 	Type *typeInfo = (Type *)frame->context->stackAlloc(sizeof(Type));
 	if (!typeInfo)
-		return StackOverflowError::alloc(this);
+		return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(this));
 	memcpy(typeInfo, &type, sizeof(Type));
 
 	if (frame->curCoroutine) {
@@ -420,7 +420,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(MajorFrame *fram
 
 SLAKE_FORCEINLINE InternalExceptionPointer larg(MajorFrame *majorFrame, Runtime *rt, uint32_t off, EntityRef &objectRefOut) {
 	if (off >= majorFrame->argStack.size()) {
-		return InvalidOperandsError::alloc(rt);
+		return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(rt));
 	}
 
 	if (majorFrame->curCoroutine) {
@@ -481,7 +481,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkObjectRefOperandType(this, refPtr, ObjectRefKind::ObjectRef));
 
 			if (!lhsPtr) {
-				return NullRefError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(NullRefError::alloc(this));
 			}
 
 			EntityRef entityRef;
@@ -567,7 +567,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 		case Opcode::LEAVE: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(this, ins, false, 0));
 			if (curMajorFrame->minorFrames.size() < 2) {
-				return FrameBoundaryExceededError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(FrameBoundaryExceededError::alloc(this));
 			}
 			if (!curMajorFrame->leave())
 				return OutOfMemoryError::alloc();
@@ -581,7 +581,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[1], y));
 			if (x.valueType != y.valueType) {
-				return InvalidOperandsError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			switch (x.valueType) {
@@ -616,7 +616,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					valueOut = Value((double)(x.getF64() + y.getF64()));
 					break;
 				default:
-					return InvalidOperandsError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, curMajorFrame, ins.output, valueOut));
@@ -630,7 +630,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[1], y));
 			if (x.valueType != y.valueType) {
-				return InvalidOperandsError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			switch (x.valueType) {
@@ -665,7 +665,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					valueOut = Value((double)(x.getF64() - y.getF64()));
 					break;
 				default:
-					return InvalidOperandsError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, curMajorFrame, ins.output, valueOut));
@@ -679,7 +679,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[1], y));
 			if (x.valueType != y.valueType) {
-				return InvalidOperandsError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			switch (x.valueType) {
@@ -714,7 +714,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					valueOut = Value((double)(x.getF64() * y.getF64()));
 					break;
 				default:
-					return InvalidOperandsError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, curMajorFrame, ins.output, valueOut));
@@ -728,7 +728,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[1], y));
 			if (x.valueType != y.valueType) {
-				return InvalidOperandsError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			switch (x.valueType) {
@@ -763,7 +763,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					valueOut = Value((double)(x.getF64() / y.getF64()));
 					break;
 				default:
-					return InvalidOperandsError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, curMajorFrame, ins.output, valueOut));
@@ -777,7 +777,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[1], y));
 			if (x.valueType != y.valueType) {
-				return InvalidOperandsError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			switch (x.valueType) {
@@ -812,7 +812,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					valueOut = Value((double)flib::fmod(x.getF64(), y.getF64()));
 					break;
 				default:
-					return InvalidOperandsError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, curMajorFrame, ins.output, valueOut));
@@ -826,7 +826,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[1], y));
 			if (x.valueType != y.valueType) {
-				return InvalidOperandsError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			switch (x.valueType) {
@@ -855,7 +855,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					valueOut = Value((uint64_t)(x.getU64() & y.getU64()));
 					break;
 				default:
-					return InvalidOperandsError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, curMajorFrame, ins.output, valueOut));
@@ -869,7 +869,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[1], y));
 			if (x.valueType != y.valueType) {
-				return InvalidOperandsError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			switch (x.valueType) {
@@ -898,7 +898,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					valueOut = Value((uint64_t)(x.getU64() | y.getU64()));
 					break;
 				default:
-					return InvalidOperandsError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, curMajorFrame, ins.output, valueOut));
@@ -912,7 +912,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[1], y));
 			if (x.valueType != y.valueType) {
-				return InvalidOperandsError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			switch (x.valueType) {
@@ -941,7 +941,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					valueOut = Value((uint64_t)(x.getU64() ^ y.getU64()));
 					break;
 				default:
-					return InvalidOperandsError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, curMajorFrame, ins.output, valueOut));
@@ -955,7 +955,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[1], y));
 			if (x.valueType != y.valueType) {
-				return InvalidOperandsError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			switch (x.valueType) {
@@ -963,7 +963,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					valueOut = Value((int16_t)(x.getBool() && y.getBool()));
 					break;
 				default:
-					return InvalidOperandsError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, curMajorFrame, ins.output, valueOut));
@@ -977,7 +977,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[1], y));
 			if (x.valueType != y.valueType) {
-				return InvalidOperandsError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			switch (x.valueType) {
@@ -985,7 +985,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					valueOut = Value((int16_t)(x.getBool() || y.getBool()));
 					break;
 				default:
-					return InvalidOperandsError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, curMajorFrame, ins.output, valueOut));
@@ -999,7 +999,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[1], y));
 			if (x.valueType != y.valueType) {
-				return InvalidOperandsError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			switch (x.valueType) {
@@ -1037,7 +1037,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					valueOut = Value((bool)(x.getBool() == y.getBool()));
 					break;
 				default:
-					return InvalidOperandsError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, curMajorFrame, ins.output, valueOut));
@@ -1051,7 +1051,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[1], y));
 			if (x.valueType != y.valueType) {
-				return InvalidOperandsError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			switch (x.valueType) {
@@ -1089,7 +1089,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					valueOut = Value((bool)(x.getBool() != y.getBool()));
 					break;
 				default:
-					return InvalidOperandsError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, curMajorFrame, ins.output, valueOut));
@@ -1103,7 +1103,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[1], y));
 			if (x.valueType != y.valueType) {
-				return InvalidOperandsError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			switch (x.valueType) {
@@ -1138,7 +1138,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					valueOut = Value((bool)(x.getF64() < y.getF64()));
 					break;
 				default:
-					return InvalidOperandsError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, curMajorFrame, ins.output, valueOut));
@@ -1152,7 +1152,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[1], y));
 			if (x.valueType != y.valueType) {
-				return InvalidOperandsError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			switch (x.valueType) {
@@ -1187,7 +1187,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					valueOut = Value((bool)(x.getF64() > y.getF64()));
 					break;
 				default:
-					return InvalidOperandsError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, curMajorFrame, ins.output, valueOut));
@@ -1201,7 +1201,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[1], y));
 			if (x.valueType != y.valueType) {
-				return InvalidOperandsError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			switch (x.valueType) {
@@ -1236,7 +1236,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					valueOut = Value((bool)(x.getF64() <= y.getF64()));
 					break;
 				default:
-					return InvalidOperandsError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, curMajorFrame, ins.output, valueOut));
@@ -1250,7 +1250,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[1], y));
 			if (x.valueType != y.valueType) {
-				return InvalidOperandsError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			switch (x.valueType) {
@@ -1285,7 +1285,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					valueOut = Value((bool)(x.getF64() >= y.getF64()));
 					break;
 				default:
-					return InvalidOperandsError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 			uint64_t lhs = x.getU64(), rhs = y.getU64();
 			if (lhs > rhs) {
@@ -1306,7 +1306,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[0], x));
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[1], y));
 			if (x.valueType != y.valueType) {
-				return InvalidOperandsError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			switch (x.valueType) {
@@ -1341,7 +1341,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					valueOut = Value((int32_t)flib::compareF64(x.getF64(), y.getF64()));
 					break;
 				default:
-					return InvalidOperandsError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, curMajorFrame, ins.output, valueOut));
@@ -1387,7 +1387,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					valueOut = flib::shlUnsigned64(x.getU64(), rhs);
 					break;
 				default:
-					return InvalidOperandsError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, curMajorFrame, ins.output, valueOut));
@@ -1433,7 +1433,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					valueOut = flib::shrUnsigned64(x.getU64(), rhs);
 					break;
 				default:
-					return InvalidOperandsError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, curMajorFrame, ins.output, valueOut));
@@ -1470,7 +1470,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					valueOut = Value((uint64_t)(~x.getU64()));
 					break;
 				default:
-					return InvalidOperandsError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, curMajorFrame, ins.output, valueOut));
@@ -1516,7 +1516,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					valueOut = Value((bool)(!x.getU64()));
 					break;
 				default:
-					return InvalidOperandsError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, curMajorFrame, ins.output, valueOut));
@@ -1559,7 +1559,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					valueOut = Value((double)(-x.getF64()));
 					break;
 				default:
-					return InvalidOperandsError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, curMajorFrame, ins.output, valueOut));
@@ -1584,7 +1584,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			uint32_t indexIn = index.getU32();
 
 			if (indexIn > arrayObject->length) {
-				return InvalidArrayIndexError::alloc(this, indexIn);
+				return allocOutOfMemoryErrorIfAllocFailed(InvalidArrayIndexError::alloc(this, indexIn));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this,
@@ -1693,7 +1693,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			}
 
 			if (!fn) {
-				return NullRefError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(NullRefError::alloc(this));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _createNewMajorFrame(
@@ -1781,7 +1781,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			}
 
 			if (!fn) {
-				return NullRefError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(NullRefError::alloc(this));
 			}
 
 			HostObjectRef<CoroutineObject> co;
@@ -1882,12 +1882,12 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					HostObjectRef<InstanceObject> instance = newClassInstance(cls, 0);
 					if (!instance)
 						// TODO: Return more detail exceptions.
-						return InvalidOperandsError::alloc(this);
+						return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, curMajorFrame, ins.output, EntityRef::makeObjectRef(instance.get())));
 					break;
 				}
 				default:
-					return InvalidOperandsError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 			break;
 		}
@@ -1904,7 +1904,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			auto instance = newArrayInstance(this, type, size);
 			if (!instance)
 				// TODO: Return more detailed exceptions.
-				return InvalidOperandsError::alloc(this);
+				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, curMajorFrame, ins.output, instance.get()));
 
@@ -1940,7 +1940,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			}
 
 			curMajorFrame->curExcept = x;
-			return UncaughtExceptionError::alloc(this, x);
+			return allocOutOfMemoryErrorIfAllocFailed(UncaughtExceptionError::alloc(this, x));
 		}
 		case Opcode::PUSHXH: {
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandCount(this, ins, false, 2));
@@ -2006,14 +2006,14 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 				case TypeId::Instance:
 					break;
 				default:
-					return InvalidOperandsError::alloc(this);
+					return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(this));
 			}
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, curMajorFrame, ins.output, v));
 			break;
 		}
 		default:
-			return InvalidOpcodeError::alloc(this, ins.opcode);
+			return allocOutOfMemoryErrorIfAllocFailed(InvalidOpcodeError::alloc(this, ins.opcode));
 	}
 	++curMajorFrame->curIns;
 	return {};

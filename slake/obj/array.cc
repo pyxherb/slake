@@ -36,6 +36,6 @@ SLAKE_API void ArrayObject::dealloc() {
 	peff::destroyAndRelease<ArrayObject>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
-InvalidArrayIndexError *slake::raiseInvalidArrayIndexError(Runtime *rt, size_t index) {
-	return InvalidArrayIndexError::alloc(rt, index);
+InternalExceptionPointer slake::raiseInvalidArrayIndexError(Runtime *rt, size_t index) {
+	return allocOutOfMemoryErrorIfAllocFailed(InvalidArrayIndexError::alloc(rt, index));
 }

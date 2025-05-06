@@ -214,7 +214,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::instantiateModuleFields(Modul
 			case TypeId::GenericArg:
 				break;
 			default:
-				throw LoaderError("Invalid variable type");
+				std::terminate();
 		}
 	}
 
@@ -286,9 +286,10 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Typ
 					return OutOfMemoryError::alloc();
 				}
 
-				SLAKE_RETURN_IF_EXCEPT(GenericParameterNotFoundError::alloc(
-					const_cast<Runtime *>(this),
-					std::move(paramName)));
+				return allocOutOfMemoryErrorIfAllocFailed(
+					GenericParameterNotFoundError::alloc(
+						const_cast<Runtime *>(this),
+						std::move(paramName)));
 			}
 		}
 	}
@@ -467,8 +468,9 @@ InternalExceptionPointer Runtime::mapGenericParams(const Object *v, GenericInsta
 			ClassObject *value = (ClassObject *)v;
 
 			if (instantiationContext.genericArgs->size() != value->genericParams.size()) {
-				return MismatchedGenericArgumentNumberError::alloc(
-					const_cast<Runtime *>(this));
+				return allocOutOfMemoryErrorIfAllocFailed(
+					MismatchedGenericArgumentNumberError::alloc(
+						const_cast<Runtime *>(this)));
 			}
 
 			for (size_t i = 0; i < value->genericParams.size(); ++i) {
@@ -488,8 +490,9 @@ InternalExceptionPointer Runtime::mapGenericParams(const Object *v, GenericInsta
 			InterfaceObject *value = (InterfaceObject *)v;
 
 			if (instantiationContext.genericArgs->size() != value->genericParams.size()) {
-				return MismatchedGenericArgumentNumberError::alloc(
-					const_cast<Runtime *>(this));
+				return allocOutOfMemoryErrorIfAllocFailed(
+					MismatchedGenericArgumentNumberError::alloc(
+						const_cast<Runtime *>(this)));
 			}
 
 			for (size_t i = 0; i < value->genericParams.size(); ++i) {
@@ -508,8 +511,9 @@ InternalExceptionPointer Runtime::mapGenericParams(const Object *v, GenericInsta
 
 SLAKE_API InternalExceptionPointer Runtime::mapGenericParams(const FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const {
 	if (instantiationContext.genericArgs->size() != ol->genericParams.size()) {
-		return MismatchedGenericArgumentNumberError::alloc(
-			const_cast<Runtime *>(this));
+		return allocOutOfMemoryErrorIfAllocFailed(
+			MismatchedGenericArgumentNumberError::alloc(
+				const_cast<Runtime *>(this)));
 	}
 
 	for (size_t i = 0; i < ol->genericParams.size(); ++i) {

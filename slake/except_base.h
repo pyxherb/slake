@@ -13,7 +13,7 @@ namespace slake {
 	enum class ErrorKind {
 		OutOfMemoryError = 0,
 		RuntimeExecError,
-		SLXLoaderError,
+		LoaderError,
 		OptimizerError
 	};
 

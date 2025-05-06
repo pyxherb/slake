@@ -336,3 +336,10 @@ SLAKE_API ErrorEvaluatingObjectTypeError *ErrorEvaluatingObjectTypeError::alloc(
 	Object *object) {
 	return peff::allocAndConstruct<ErrorEvaluatingObjectTypeError>(&associatedRuntime->globalHeapPoolAlloc, sizeof(std::max_align_t), associatedRuntime, object);
 }
+
+SLAKE_API InternalExceptionPointer slake::allocOutOfMemoryErrorIfAllocFailed(InternalExceptionPointer e) {
+	if (!e) {
+		return OutOfMemoryError::alloc();
+	}
+	return e;
+}

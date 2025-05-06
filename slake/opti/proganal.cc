@@ -99,9 +99,10 @@ InternalExceptionPointer slake::opti::evalObjectType(
 					break;
 				}
 				default:
-					return ErrorEvaluatingObjectTypeError::alloc(
-						object->associatedRuntime,
-						object);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						ErrorEvaluatingObjectTypeError::alloc(
+							object->associatedRuntime,
+							object));
 			}
 			break;
 		}
@@ -158,20 +159,22 @@ InternalExceptionPointer slake::opti::evalValueType(
 			uint32_t regIndex = value.getRegIndex();
 
 			if (!analyzeContext.analyzedInfoOut.analyzedRegInfo.contains(regIndex)) {
-				return MalformedProgramError::alloc(
-					analyzeContext.runtime,
-					analyzeContext.fnObject,
-					analyzeContext.idxCurIns);
+				return allocOutOfMemoryErrorIfAllocFailed(
+					MalformedProgramError::alloc(
+						analyzeContext.runtime,
+						analyzeContext.fnObject,
+						analyzeContext.idxCurIns));
 			}
 
 			typeOut = analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type;
 			break;
 		}
 		default: {
-			return MalformedProgramError::alloc(
-				analyzeContext.runtime,
-				analyzeContext.fnObject,
-				analyzeContext.idxCurIns);
+			return allocOutOfMemoryErrorIfAllocFailed(
+				MalformedProgramError::alloc(
+					analyzeContext.runtime,
+					analyzeContext.fnObject,
+					analyzeContext.idxCurIns));
 		}
 	}
 	return {};
@@ -199,10 +202,11 @@ InternalExceptionPointer slake::opti::evalConstValue(
 			uint32_t idxReg = value.getRegIndex();
 
 			if (!analyzeContext.analyzedInfoOut.analyzedRegInfo.contains(idxReg)) {
-				return MalformedProgramError::alloc(
-					analyzeContext.runtime,
-					analyzeContext.fnObject,
-					analyzeContext.idxCurIns);
+				return allocOutOfMemoryErrorIfAllocFailed(
+					MalformedProgramError::alloc(
+						analyzeContext.runtime,
+						analyzeContext.fnObject,
+						analyzeContext.idxCurIns));
 			}
 
 			constValueOut = analyzeContext.analyzedInfoOut.analyzedRegInfo.at(idxReg).expectedValue;
@@ -230,7 +234,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 	MajorFrame *pseudoMajorFrame;
 	{
 		SLAKE_RETURN_IF_EXCEPT(runtime->_createNewMajorFrame(&analyzedInfoOut.contextObject->_context, nullptr, nullptr, nullptr, 0, UINT32_MAX));
-		pseudoMajorFrame = (MajorFrame*)calcStackAddr(analyzedInfoOut.contextObject->_context.dataStack, SLAKE_STACK_MAX, analyzedInfoOut.contextObject->_context.offMajorFrame);
+		pseudoMajorFrame = (MajorFrame *)calcStackAddr(analyzedInfoOut.contextObject->_context.dataStack, SLAKE_STACK_MAX, analyzedInfoOut.contextObject->_context.offMajorFrame);
 	}
 
 	ProgramAnalyzeContext analyzeContext = {
@@ -263,10 +267,11 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 
 			if (analyzedInfoOut.analyzedRegInfo.contains(regIndex)) {
 				// Malformed program, return.
-				return MalformedProgramError::alloc(
-					runtime,
-					fnObject,
-					i);
+				return allocOutOfMemoryErrorIfAllocFailed(
+					MalformedProgramError::alloc(
+						runtime,
+						fnObject,
+						i));
 			}
 
 			if (!analyzedInfoOut.analyzedRegInfo.insert(+regIndex, {}))
@@ -280,10 +285,11 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 
 				if (!analyzedInfoOut.analyzedRegInfo.contains(index)) {
 					// Malformed program, return.
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 
 				analyzedInfoOut.analyzedRegInfo.at(index).lifetime.offEndIns = i;
@@ -293,26 +299,29 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 		switch (curIns.opcode) {
 			case Opcode::NOP:
 				if (regIndex != UINT32_MAX) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 				break;
 			case Opcode::LOAD: {
 				if (regIndex != UINT32_MAX) {
 					if (curIns.nOperands != 1) {
-						return MalformedProgramError::alloc(
-							runtime,
-							fnObject,
-							i);
+						return allocOutOfMemoryErrorIfAllocFailed(
+							MalformedProgramError::alloc(
+								runtime,
+								fnObject,
+								i));
 					}
 
 					if (curIns.operands[0].valueType != ValueType::EntityRef) {
-						return MalformedProgramError::alloc(
-							runtime,
-							fnObject,
-							i);
+						return allocOutOfMemoryErrorIfAllocFailed(
+							MalformedProgramError::alloc(
+								runtime,
+								fnObject,
+								i));
 					}
 
 					IdRefObject *idRef;
@@ -321,10 +330,11 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 
 						if ((object.kind != ObjectRefKind::ObjectRef) ||
 							(object.asObject.instanceObject->getKind() != ObjectKind::IdRef)) {
-							return MalformedProgramError::alloc(
-								runtime,
-								fnObject,
-								i);
+							return allocOutOfMemoryErrorIfAllocFailed(
+								MalformedProgramError::alloc(
+									runtime,
+									fnObject,
+									i));
 						}
 						idRef = (IdRefObject *)object.asObject.instanceObject;
 					}
@@ -343,10 +353,11 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						if (e->kind != ErrorKind::OptimizerError) {
 							return e;
 						} else {
-							return MalformedProgramError::alloc(
-								runtime,
-								fnObject,
-								i);
+							return allocOutOfMemoryErrorIfAllocFailed(
+								MalformedProgramError::alloc(
+									runtime,
+									fnObject,
+									i));
 						}
 					}
 
@@ -373,24 +384,27 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 			case Opcode::RLOAD: {
 				if (regIndex != UINT32_MAX) {
 					if (curIns.nOperands != 2) {
-						return MalformedProgramError::alloc(
-							runtime,
-							fnObject,
-							i);
+						return allocOutOfMemoryErrorIfAllocFailed(
+							MalformedProgramError::alloc(
+								runtime,
+								fnObject,
+								i));
 					}
 
 					if (curIns.operands[0].valueType != ValueType::RegRef) {
-						return MalformedProgramError::alloc(
-							runtime,
-							fnObject,
-							i);
+						return allocOutOfMemoryErrorIfAllocFailed(
+							MalformedProgramError::alloc(
+								runtime,
+								fnObject,
+								i));
 					}
 
 					if (curIns.operands[1].valueType != ValueType::EntityRef) {
-						return MalformedProgramError::alloc(
-							runtime,
-							fnObject,
-							i);
+						return allocOutOfMemoryErrorIfAllocFailed(
+							MalformedProgramError::alloc(
+								runtime,
+								fnObject,
+								i));
 					}
 
 					IdRefObject *idRef;
@@ -399,10 +413,11 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 
 						if ((object.kind != ObjectRefKind::ObjectRef) ||
 							(object.asObject.instanceObject->getKind() != ObjectKind::IdRef)) {
-							return MalformedProgramError::alloc(
-								runtime,
-								fnObject,
-								i);
+							return allocOutOfMemoryErrorIfAllocFailed(
+								MalformedProgramError::alloc(
+									runtime,
+									fnObject,
+									i));
 						}
 						idRef = (IdRefObject *)object.asObject.instanceObject;
 					}
@@ -428,17 +443,19 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 									switch (object->getKind()) {
 										case ObjectKind::FnOverloading:
 											if (((FnOverloadingObject *)object)->access & ACCESS_STATIC) {
-												return MalformedProgramError::alloc(
-													runtime,
-													fnObject,
-													i);
+												return allocOutOfMemoryErrorIfAllocFailed(
+													MalformedProgramError::alloc(
+														runtime,
+														fnObject,
+														i));
 											}
 											break;
 										default: {
-											return MalformedProgramError::alloc(
-												runtime,
-												fnObject,
-												i);
+											return allocOutOfMemoryErrorIfAllocFailed(
+												MalformedProgramError::alloc(
+													runtime,
+													fnObject,
+													i));
 										}
 									}
 								}
@@ -449,10 +466,11 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 									analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::FieldVar;
 									break;
 								default: {
-									return MalformedProgramError::alloc(
-										runtime,
-										fnObject,
-										i);
+									return allocOutOfMemoryErrorIfAllocFailed(
+										MalformedProgramError::alloc(
+											runtime,
+											fnObject,
+											i));
 								}
 							}
 
@@ -461,10 +479,11 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 							break;
 						}
 						default: {
-							return MalformedProgramError::alloc(
-								runtime,
-								fnObject,
-								i);
+							return allocOutOfMemoryErrorIfAllocFailed(
+								MalformedProgramError::alloc(
+									runtime,
+									fnObject,
+									i));
 						}
 					}
 				}
@@ -473,20 +492,22 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 			}
 			case Opcode::STORE: {
 				if (regIndex != UINT32_MAX) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 
 				break;
 			}
 			case Opcode::MOV: {
 				if (regIndex == UINT32_MAX) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 
 				switch (curIns.operands[0].valueType) {
@@ -546,10 +567,11 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						analyzedInfoOut.analyzedRegInfo.at(regIndex) = analyzedInfoOut.analyzedRegInfo.at(curIns.operands[0].getRegIndex());
 						break;
 					default: {
-						return MalformedProgramError::alloc(
-							runtime,
-							fnObject,
-							i);
+						return allocOutOfMemoryErrorIfAllocFailed(
+							MalformedProgramError::alloc(
+								runtime,
+								fnObject,
+								i));
 					}
 				}
 
@@ -558,17 +580,19 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 			case Opcode::LARG: {
 				if (regIndex != UINT32_MAX) {
 					if (curIns.nOperands != 1) {
-						return MalformedProgramError::alloc(
-							runtime,
-							fnObject,
-							i);
+						return allocOutOfMemoryErrorIfAllocFailed(
+							MalformedProgramError::alloc(
+								runtime,
+								fnObject,
+								i));
 					}
 
 					if (curIns.operands[0].valueType != ValueType::U32) {
-						return MalformedProgramError::alloc(
-							runtime,
-							fnObject,
-							i);
+						return allocOutOfMemoryErrorIfAllocFailed(
+							MalformedProgramError::alloc(
+								runtime,
+								fnObject,
+								i));
 					}
 
 					uint32_t index = curIns.operands[0].getU32();
@@ -576,10 +600,11 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 
 					if (fnObject->overloadingFlags & OL_VARG) {
 						if (index > fnObject->paramTypes.size()) {
-							return MalformedProgramError::alloc(
-								runtime,
-								fnObject,
-								i);
+							return allocOutOfMemoryErrorIfAllocFailed(
+								MalformedProgramError::alloc(
+									runtime,
+									fnObject,
+									i));
 						} else if (index == fnObject->paramTypes.size()) {
 							HostObjectRef<TypeDefObject> typeDef = TypeDefObject::alloc(
 								runtime,
@@ -601,10 +626,11 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						}
 					} else {
 						if (index >= fnObject->paramTypes.size()) {
-							return MalformedProgramError::alloc(
-								runtime,
-								fnObject,
-								i);
+							return allocOutOfMemoryErrorIfAllocFailed(
+								MalformedProgramError::alloc(
+									runtime,
+									fnObject,
+									i));
 						} else {
 							SLAKE_RETURN_IF_EXCEPT(
 								wrapIntoRefType(
@@ -626,24 +652,27 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 			}
 			case Opcode::LVAR: {
 				if (regIndex == UINT32_MAX) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 
 				if (curIns.nOperands != 1) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 
 				if (curIns.operands[0].valueType != ValueType::TypeName) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 
 				Type typeName = curIns.operands[0].getTypeName();
@@ -668,27 +697,30 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 			case Opcode::LVALUE: {
 				if (regIndex != UINT32_MAX) {
 					if (curIns.nOperands != 1) {
-						return MalformedProgramError::alloc(
-							runtime,
-							fnObject,
-							i);
+						return allocOutOfMemoryErrorIfAllocFailed(
+							MalformedProgramError::alloc(
+								runtime,
+								fnObject,
+								i));
 					}
 
 					if (curIns.operands[0].valueType != ValueType::RegRef) {
-						return MalformedProgramError::alloc(
-							runtime,
-							fnObject,
-							i);
+						return allocOutOfMemoryErrorIfAllocFailed(
+							MalformedProgramError::alloc(
+								runtime,
+								fnObject,
+								i));
 					}
 
 					uint32_t index = curIns.operands[0].getRegIndex();
 					Type type = analyzedInfoOut.analyzedRegInfo.at(index).type;
 
 					if (type.typeId != TypeId::Ref) {
-						return MalformedProgramError::alloc(
-							runtime,
-							fnObject,
-							i);
+						return allocOutOfMemoryErrorIfAllocFailed(
+							MalformedProgramError::alloc(
+								runtime,
+								fnObject,
+								i));
 					}
 
 					Type unwrappedType = type.getRefExData();
@@ -729,27 +761,30 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 			case Opcode::AT: {
 				if (regIndex != UINT32_MAX) {
 					if (curIns.nOperands != 2) {
-						return MalformedProgramError::alloc(
-							runtime,
-							fnObject,
-							i);
+						return allocOutOfMemoryErrorIfAllocFailed(
+							MalformedProgramError::alloc(
+								runtime,
+								fnObject,
+								i));
 					}
 
 					if (curIns.operands[0].valueType != ValueType::RegRef) {
-						return MalformedProgramError::alloc(
-							runtime,
-							fnObject,
-							i);
+						return allocOutOfMemoryErrorIfAllocFailed(
+							MalformedProgramError::alloc(
+								runtime,
+								fnObject,
+								i));
 					}
 
 					uint32_t index = curIns.operands[0].getRegIndex();
 					Type type = analyzedInfoOut.analyzedRegInfo.at(index).type;
 
 					if (type.typeId != TypeId::Array) {
-						return MalformedProgramError::alloc(
-							runtime,
-							fnObject,
-							i);
+						return allocOutOfMemoryErrorIfAllocFailed(
+							MalformedProgramError::alloc(
+								runtime,
+								fnObject,
+								i));
 					}
 
 					Type unwrappedType = type.getArrayExData();
@@ -766,10 +801,11 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 			}
 			case Opcode::JMP:
 				if (regIndex != UINT32_MAX) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 
 				if (!analyzeContext.analyzedInfoOut.codeBlockBoundaries.insert(i + 1))
@@ -779,10 +815,11 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				break;
 			case Opcode::JT:
 				if (regIndex != UINT32_MAX) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 
 				if (!analyzeContext.analyzedInfoOut.codeBlockBoundaries.insert(i + 1))
@@ -792,10 +829,11 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				break;
 			case Opcode::JF:
 				if (regIndex != UINT32_MAX) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 
 				if (!analyzeContext.analyzedInfoOut.codeBlockBoundaries.insert(i + 1))
@@ -805,16 +843,18 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				break;
 			case Opcode::PUSHARG: {
 				if (regIndex != UINT32_MAX) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 				if (curIns.nOperands != 1) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 				switch (curIns.operands[0].valueType) {
 					case ValueType::I8:
@@ -834,10 +874,11 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						markRegAsForOutput(analyzeContext, curIns.operands[0].getRegIndex());
 						break;
 					default:
-						return MalformedProgramError::alloc(
-							runtime,
-							fnObject,
-							i);
+						return allocOutOfMemoryErrorIfAllocFailed(
+							MalformedProgramError::alloc(
+								runtime,
+								fnObject,
+								i));
 				}
 				if (!analyzeContext.argPushInsOffs.pushBack(i))
 					return OutOfMemoryError::alloc();
@@ -845,26 +886,29 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 			}
 			case Opcode::CALL: {
 				if (curIns.nOperands != 1) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 
 				Value callTarget = curIns.operands[0];
 				if (callTarget.valueType != ValueType::RegRef) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 
 				uint32_t callTargetRegIndex = callTarget.getRegIndex();
 				if (!analyzedInfoOut.analyzedRegInfo.contains(callTargetRegIndex)) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 
 				Type callTargetType = analyzedInfoOut.analyzedRegInfo.at(callTargetRegIndex).type;
@@ -877,10 +921,11 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						}
 						break;
 					default: {
-						return MalformedProgramError::alloc(
-							runtime,
-							fnObject,
-							i);
+						return allocOutOfMemoryErrorIfAllocFailed(
+							MalformedProgramError::alloc(
+								runtime,
+								fnObject,
+								i));
 					}
 				}
 
@@ -904,26 +949,29 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 			case Opcode::MCALL:
 			case Opcode::CTORCALL: {
 				if (curIns.nOperands != 2) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 
 				Value callTarget = curIns.operands[0];
 				if (callTarget.valueType != ValueType::RegRef) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 
 				uint32_t callTargetRegIndex = callTarget.getRegIndex();
 				if (!analyzedInfoOut.analyzedRegInfo.contains(callTargetRegIndex)) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 
 				Type callTargetType = analyzedInfoOut.analyzedRegInfo.at(callTargetRegIndex).type;
@@ -936,10 +984,11 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						}
 						break;
 					default: {
-						return MalformedProgramError::alloc(
-							runtime,
-							fnObject,
-							i);
+						return allocOutOfMemoryErrorIfAllocFailed(
+							MalformedProgramError::alloc(
+								runtime,
+								fnObject,
+								i));
 					}
 				}
 				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.insert(i, FnCallAnalyzedInfo(&analyzeContext.runtime->globalHeapPoolAlloc));
@@ -961,16 +1010,18 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 			}
 			case Opcode::RET:
 				if (regIndex != UINT32_MAX) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 				if (curIns.nOperands != 1) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 				switch (curIns.operands[0].valueType) {
 					case ValueType::I8:
@@ -990,99 +1041,111 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						markRegAsForOutput(analyzeContext, curIns.operands[0].getRegIndex());
 						break;
 					default:
-						return MalformedProgramError::alloc(
-							runtime,
-							fnObject,
-							i);
+						return allocOutOfMemoryErrorIfAllocFailed(
+							MalformedProgramError::alloc(
+								runtime,
+								fnObject,
+								i));
 				}
 				if (!analyzeContext.analyzedInfoOut.codeBlockBoundaries.insert(i + 1))
 					return OutOfMemoryError::alloc();
 				break;
 			case Opcode::YIELD:
 				if (regIndex != UINT32_MAX) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 				if (!analyzeContext.analyzedInfoOut.codeBlockBoundaries.insert(i + 1))
 					return OutOfMemoryError::alloc();
 				break;
 			case Opcode::LTHIS:
 				if (regIndex == UINT32_MAX) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 
 				if (analyzeContext.fnObject->thisType.typeId == TypeId::None) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 				analyzedInfoOut.analyzedRegInfo.at(regIndex).type = analyzeContext.fnObject->thisType;
 				break;
 			case Opcode::NEW:
 				if (regIndex == UINT32_MAX) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 
 				if (curIns.nOperands != 1) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 
 				if (curIns.operands[0].valueType != ValueType::TypeName) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 
 				analyzedInfoOut.analyzedRegInfo.at(regIndex).type = curIns.operands[0].getTypeName();
 				break;
 			case Opcode::ARRNEW: {
 				if (regIndex == UINT32_MAX) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 
 				if (curIns.nOperands != 2) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 
 				if (curIns.operands[0].valueType != ValueType::TypeName) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 
 				Type lengthType;
 				SLAKE_RETURN_IF_EXCEPT(evalValueType(analyzeContext, curIns.operands[1], lengthType));
 				if (!isValueTypeCompatibleTypeId(lengthType.typeId)) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 				if (lengthType != TypeId::U32) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 
 				SLAKE_RETURN_IF_EXCEPT(wrapIntoArrayType(
@@ -1095,10 +1158,11 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 			case Opcode::THROW:
 			case Opcode::PUSHXH:
 				if (regIndex != UINT32_MAX) {
-					return MalformedProgramError::alloc(
-						runtime,
-						fnObject,
-						i);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							runtime,
+							fnObject,
+							i));
 				}
 				break;
 			case Opcode::LEXCEPT:
@@ -1110,20 +1174,22 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 			}
 			default: {
 				// Malformed program, return.
-				return MalformedProgramError::alloc(
-					runtime,
-					fnObject,
-					i);
+				return allocOutOfMemoryErrorIfAllocFailed(
+					MalformedProgramError::alloc(
+						runtime,
+						fnObject,
+						i));
 			}
 		}
 	}
 
 	// A well-formed program should not have unused argument pushing instructions.
 	if (analyzeContext.argPushInsOffs.size()) {
-		return MalformedProgramError::alloc(
-			runtime,
-			fnObject,
-			nIns - 1);
+		return allocOutOfMemoryErrorIfAllocFailed(
+			MalformedProgramError::alloc(
+				runtime,
+				fnObject,
+				nIns - 1));
 	}
 
 	return {};

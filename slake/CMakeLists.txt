@@ -40,6 +40,7 @@ add_subdirectory("obj")
 add_subdirectory("rt")
 add_subdirectory("jit")
 add_subdirectory("opti")
+add_subdirectory("loader")
 add_subdirectory("aot")
 
 set(SLAKE_STACK_MAX 1048576 CACHE STRING "Maximum stack size for Slake runtime")

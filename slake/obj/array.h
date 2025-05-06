@@ -24,7 +24,7 @@ namespace slake {
 		SLAKE_API virtual void dealloc() override;
 	};
 
-	InvalidArrayIndexError *raiseInvalidArrayIndexError(Runtime *rt, size_t index);
+	InternalExceptionPointer raiseInvalidArrayIndexError(Runtime *rt, size_t index);
 }
 
 #endif

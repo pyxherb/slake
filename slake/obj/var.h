@@ -20,7 +20,7 @@ namespace slake {
 		Type type;
 	};
 
-	[[nodiscard]] MismatchedVarTypeError *raiseMismatchedVarTypeError(Runtime *rt);
+	[[nodiscard]] InternalExceptionPointer raiseMismatchedVarTypeError(Runtime *rt);
 }
 
 #endif

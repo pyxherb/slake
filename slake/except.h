@@ -71,10 +71,10 @@ namespace slake {
 		GenericInstantiationError,
 	};
 
-	enum class SLXLoaderErrorCode : uint8_t {
+	enum class LoaderErrorCode : uint8_t {
 		BadMagicNumber = 0,
-		IOError,
-		PrematuredEndOfStream,
+		ReadError,
+		PrematuredEndOfFile,
 		DuplicatedMember
 	};
 
@@ -355,12 +355,7 @@ namespace slake {
 			Object *object);
 	};
 
-	// stub, remove it after work around SLXLoaderError is finished.
-	class LoaderError : public std::runtime_error {
-	public:
-		inline LoaderError(std::string msg) : runtime_error(msg){};
-		virtual ~LoaderError() = default;
-	};
+	SLAKE_API InternalExceptionPointer allocOutOfMemoryErrorIfAllocFailed(InternalExceptionPointer e);
 }
 
 #endif

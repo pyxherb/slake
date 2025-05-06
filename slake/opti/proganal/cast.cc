@@ -9,24 +9,27 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 	Instruction &curIns = analyzeContext.fnObject->instructions.at(analyzeContext.idxCurIns);
 
 	if (regIndex == UINT32_MAX) {
-		return MalformedProgramError::alloc(
-			analyzeContext.runtime,
-			analyzeContext.fnObject,
-			analyzeContext.idxCurIns);
+		return allocOutOfMemoryErrorIfAllocFailed(
+			MalformedProgramError::alloc(
+				analyzeContext.runtime,
+				analyzeContext.fnObject,
+				analyzeContext.idxCurIns));
 	}
 
 	if (curIns.nOperands != 2) {
-		return MalformedProgramError::alloc(
-			analyzeContext.runtime,
-			analyzeContext.fnObject,
-			analyzeContext.idxCurIns);
+		return allocOutOfMemoryErrorIfAllocFailed(
+			MalformedProgramError::alloc(
+				analyzeContext.runtime,
+				analyzeContext.fnObject,
+				analyzeContext.idxCurIns));
 	}
 
 	if (curIns.operands[0].valueType != ValueType::TypeName) {
-		return MalformedProgramError::alloc(
-			analyzeContext.runtime,
-			analyzeContext.fnObject,
-			analyzeContext.idxCurIns);
+		return allocOutOfMemoryErrorIfAllocFailed(
+			MalformedProgramError::alloc(
+				analyzeContext.runtime,
+				analyzeContext.fnObject,
+				analyzeContext.idxCurIns));
 	}
 
 	Value constSrc(ValueType::Undefined);
@@ -93,10 +96,11 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 					}
 					break;
 				default: {
-					return MalformedProgramError::alloc(
-						analyzeContext.runtime,
-						analyzeContext.fnObject,
-						analyzeContext.idxCurIns);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							analyzeContext.runtime,
+							analyzeContext.fnObject,
+							analyzeContext.idxCurIns));
 				}
 			}
 			break;
@@ -158,10 +162,11 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 					}
 					break;
 				default: {
-					return MalformedProgramError::alloc(
-						analyzeContext.runtime,
-						analyzeContext.fnObject,
-						analyzeContext.idxCurIns);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							analyzeContext.runtime,
+							analyzeContext.fnObject,
+							analyzeContext.idxCurIns));
 				}
 			}
 			break;
@@ -225,10 +230,11 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 					break;
 					break;
 				default: {
-					return MalformedProgramError::alloc(
-						analyzeContext.runtime,
-						analyzeContext.fnObject,
-						analyzeContext.idxCurIns);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							analyzeContext.runtime,
+							analyzeContext.fnObject,
+							analyzeContext.idxCurIns));
 				}
 			}
 			break;
@@ -290,10 +296,11 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 					}
 					break;
 				default: {
-					return MalformedProgramError::alloc(
-						analyzeContext.runtime,
-						analyzeContext.fnObject,
-						analyzeContext.idxCurIns);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							analyzeContext.runtime,
+							analyzeContext.fnObject,
+							analyzeContext.idxCurIns));
 				}
 			}
 			break;
@@ -356,10 +363,11 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 					break;
 					break;
 				default: {
-					return MalformedProgramError::alloc(
-						analyzeContext.runtime,
-						analyzeContext.fnObject,
-						analyzeContext.idxCurIns);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							analyzeContext.runtime,
+							analyzeContext.fnObject,
+							analyzeContext.idxCurIns));
 				}
 			}
 			break;
@@ -421,10 +429,11 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 					}
 					break;
 				default: {
-					return MalformedProgramError::alloc(
-						analyzeContext.runtime,
-						analyzeContext.fnObject,
-						analyzeContext.idxCurIns);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							analyzeContext.runtime,
+							analyzeContext.fnObject,
+							analyzeContext.idxCurIns));
 				}
 			}
 			break;
@@ -486,10 +495,11 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 					}
 					break;
 				default: {
-					return MalformedProgramError::alloc(
-						analyzeContext.runtime,
-						analyzeContext.fnObject,
-						analyzeContext.idxCurIns);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							analyzeContext.runtime,
+							analyzeContext.fnObject,
+							analyzeContext.idxCurIns));
 				}
 			}
 			break;
@@ -551,10 +561,11 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 					}
 					break;
 				default: {
-					return MalformedProgramError::alloc(
-						analyzeContext.runtime,
-						analyzeContext.fnObject,
-						analyzeContext.idxCurIns);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							analyzeContext.runtime,
+							analyzeContext.fnObject,
+							analyzeContext.idxCurIns));
 				}
 			}
 			break;
@@ -616,10 +627,11 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 					}
 					break;
 				default: {
-					return MalformedProgramError::alloc(
-						analyzeContext.runtime,
-						analyzeContext.fnObject,
-						analyzeContext.idxCurIns);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							analyzeContext.runtime,
+							analyzeContext.fnObject,
+							analyzeContext.idxCurIns));
 				}
 			}
 			break;
@@ -681,10 +693,11 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 					}
 					break;
 				default: {
-					return MalformedProgramError::alloc(
-						analyzeContext.runtime,
-						analyzeContext.fnObject,
-						analyzeContext.idxCurIns);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							analyzeContext.runtime,
+							analyzeContext.fnObject,
+							analyzeContext.idxCurIns));
 				}
 			}
 			break;
@@ -746,10 +759,11 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 					}
 					break;
 				default: {
-					return MalformedProgramError::alloc(
-						analyzeContext.runtime,
-						analyzeContext.fnObject,
-						analyzeContext.idxCurIns);
+					return allocOutOfMemoryErrorIfAllocFailed(
+						MalformedProgramError::alloc(
+							analyzeContext.runtime,
+							analyzeContext.fnObject,
+							analyzeContext.idxCurIns));
 				} break;
 			}
 			break;
@@ -757,10 +771,11 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 			break;
 		}
 		default: {
-			return MalformedProgramError::alloc(
-				analyzeContext.runtime,
-				analyzeContext.fnObject,
-				analyzeContext.idxCurIns);
+			return allocOutOfMemoryErrorIfAllocFailed(
+				MalformedProgramError::alloc(
+					analyzeContext.runtime,
+					analyzeContext.fnObject,
+					analyzeContext.idxCurIns));
 		}
 	}
 

@@ -19,10 +19,10 @@ SLKC_API ClassNode::ClassNode(
 	  genericParams(selfAllocator),
 	  genericParamIndices(selfAllocator),
 	  idxGenericParamCommaTokens(selfAllocator),
-	  implementedTypes(selfAllocator) {
+	  implTypes(selfAllocator) {
 }
 
-SLKC_API ClassNode::ClassNode(const ClassNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ModuleNode(rhs, allocator, succeededOut), genericParams(allocator), genericParamIndices(allocator), idxGenericParamCommaTokens(allocator), implementedTypes(allocator) {
+SLKC_API ClassNode::ClassNode(const ClassNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ModuleNode(rhs, allocator, succeededOut), genericParams(allocator), genericParamIndices(allocator), idxGenericParamCommaTokens(allocator), implTypes(allocator) {
 	if (!succeededOut) {
 		return;
 	}
@@ -32,13 +32,13 @@ SLKC_API ClassNode::ClassNode(const ClassNode &rhs, peff::Alloc *allocator, bool
 		return;
 	}
 
-	if (!implementedTypes.resize(rhs.implementedTypes.size())) {
+	if (!implTypes.resize(rhs.implTypes.size())) {
 		succeededOut = false;
 		return;
 	}
 
-	for (size_t i = 0; i < implementedTypes.size(); ++i) {
-		if (!(implementedTypes.at(i) = rhs.implementedTypes.at(i)->duplicate<TypeNameNode>(allocator))) {
+	for (size_t i = 0; i < implTypes.size(); ++i) {
+		if (!(implTypes.at(i) = rhs.implTypes.at(i)->duplicate<TypeNameNode>(allocator))) {
 			succeededOut = false;
 			return;
 		}
@@ -100,21 +100,21 @@ SLKC_API InterfaceNode::InterfaceNode(
 	  genericParams(selfAllocator),
 	  genericParamIndices(selfAllocator),
 	  idxGenericParamCommaTokens(selfAllocator),
-	  implementedTypes(selfAllocator) {
+	  implTypes(selfAllocator) {
 }
 
-SLKC_API InterfaceNode::InterfaceNode(const InterfaceNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ModuleNode(rhs, allocator, succeededOut), genericParams(allocator), genericParamIndices(allocator), idxGenericParamCommaTokens(allocator), implementedTypes(allocator) {
+SLKC_API InterfaceNode::InterfaceNode(const InterfaceNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ModuleNode(rhs, allocator, succeededOut), genericParams(allocator), genericParamIndices(allocator), idxGenericParamCommaTokens(allocator), implTypes(allocator) {
 	if (!succeededOut) {
 		return;
 	}
 
-	if (!implementedTypes.resize(rhs.implementedTypes.size())) {
+	if (!implTypes.resize(rhs.implTypes.size())) {
 		succeededOut = false;
 		return;
 	}
 
-	for (size_t i = 0; i < implementedTypes.size(); ++i) {
-		if (!(implementedTypes.at(i) = rhs.implementedTypes.at(i)->duplicate<TypeNameNode>(allocator))) {
+	for (size_t i = 0; i < implTypes.size(); ++i) {
+		if (!(implTypes.at(i) = rhs.implTypes.at(i)->duplicate<TypeNameNode>(allocator))) {
 			succeededOut = false;
 			return;
 		}

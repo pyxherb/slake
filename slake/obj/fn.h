@@ -219,7 +219,6 @@ namespace slake {
 
 	class FnObject : public MemberObject {
 	public:
-		Object *parent = nullptr;
 		peff::Set<FnOverloadingObject *> overloadings;
 
 		SLAKE_API FnObject(Runtime *rt);
@@ -227,9 +226,6 @@ namespace slake {
 		SLAKE_API virtual ~FnObject();
 
 		SLAKE_API virtual ObjectKind getKind() const override;
-
-		SLAKE_API virtual Object *getParent() const override;
-		SLAKE_API virtual void setParent(Object *parent) override;
 
 		SLAKE_API FnOverloadingObject *getOverloading(const peff::DynArray<Type> &argTypes) const;
 

@@ -366,12 +366,12 @@ SLKC_API std::optional<CompilationError> slkc::compileGenericParams(
 			}
 		}
 
-		if (!gp.interfaces.resize(gpNode->genericConstraint->implementedTypes.size())) {
+		if (!gp.interfaces.resize(gpNode->genericConstraint->implTypes.size())) {
 			return genOutOfRuntimeMemoryCompError();
 		}
 
-		for (size_t k = 0; k < gpNode->genericConstraint->implementedTypes.size(); ++k) {
-			if ((e = compileTypeName(compileContext, gpNode->genericConstraint->implementedTypes.at(k), gp.interfaces.at(k)))) {
+		for (size_t k = 0; k < gpNode->genericConstraint->implTypes.size(); ++k) {
+			if ((e = compileTypeName(compileContext, gpNode->genericConstraint->implTypes.at(k), gp.interfaces.at(k)))) {
 				if (e->errorKind == CompilationErrorKind::OutOfMemory)
 					return e;
 				if (!compileContext->errors.pushBack(std::move(*e))) {
@@ -445,9 +445,11 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 				slake::HostObjectRef<slake::ClassObject> cls;
 
-				if (!(cls = slake::ClassObject::alloc(compileContext->runtime, mod->accessModifier, {}))) {
+				if (!(cls = slake::ClassObject::alloc(compileContext->runtime))) {
 					return genOutOfRuntimeMemoryCompError();
 				}
+
+				cls->setAccess(mod->accessModifier);
 
 				if (!cls->name.build(m->name)) {
 					return genOutOfRuntimeMemoryCompError();
@@ -484,7 +486,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 					}
 				}
 
-				for (auto &i : clsNode->implementedTypes) {
+				for (auto &i : clsNode->implTypes) {
 					peff::SharedPtr<MemberNode> implementedTypeNode;
 
 					if (i->typeNameKind == TypeNameKind::Custom) {
@@ -518,9 +520,11 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 				slake::HostObjectRef<slake::InterfaceObject> cls;
 
-				if (!(cls = slake::InterfaceObject::alloc(compileContext->runtime, mod->accessModifier, { &compileContext->runtime->globalHeapPoolAlloc }))) {
+				if (!(cls = slake::InterfaceObject::alloc(compileContext->runtime))) {
 					return genOutOfRuntimeMemoryCompError();
 				}
+
+				cls->setAccess(mod->accessModifier);
 
 				if (!cls->name.build(m->name)) {
 					return genOutOfRuntimeMemoryCompError();
@@ -528,7 +532,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 				SLKC_RETURN_IF_COMP_ERROR(compileGenericParams(compileContext, mod, clsNode->genericParams.data(), clsNode->genericParams.size(), cls->genericParams));
 
-				for (auto &i : clsNode->implementedTypes) {
+				for (auto &i : clsNode->implTypes) {
 					peff::SharedPtr<MemberNode> implementedTypeNode;
 
 					if (i->typeNameKind == TypeNameKind::Custom) {

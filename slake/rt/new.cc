@@ -192,13 +192,13 @@ SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForClass(ClassObject
 
 SLAKE_API InternalExceptionPointer Runtime::prepareClassForInstantiation(ClassObject *cls) {
 	ClassObject *p = nullptr;
-	if (cls->parentClass.typeId != TypeId::None) {
-		if (cls->parentClass.typeId != TypeId::Instance)
+	if (cls->baseType.typeId != TypeId::None) {
+		if (cls->baseType.typeId != TypeId::Instance)
 			return allocOutOfMemoryErrorIfAllocFailed(MalformedClassStructureError::alloc(this, cls));
 
-		SLAKE_RETURN_IF_EXCEPT(cls->parentClass.loadDeferredType(this));
+		SLAKE_RETURN_IF_EXCEPT(cls->baseType.loadDeferredType(this));
 
-		Object *parentClass = (ClassObject *)cls->parentClass.getCustomTypeExData();
+		Object *parentClass = (ClassObject *)cls->baseType.getCustomTypeExData();
 		if (parentClass->getKind() != ObjectKind::Class)
 			return allocOutOfMemoryErrorIfAllocFailed(MalformedClassStructureError::alloc(this, cls));
 

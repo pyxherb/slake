@@ -722,7 +722,7 @@ accessModifierParseEnd:
 							return syntaxError;
 						}
 
-						if (!classNode->implementedTypes.pushBack(std::move(tn))) {
+						if (!classNode->implTypes.pushBack(std::move(tn))) {
 							return genOutOfMemoryError();
 						}
 
@@ -842,7 +842,7 @@ accessModifierParseEnd:
 							return syntaxError;
 						}
 
-						if (!interfaceNode->implementedTypes.pushBack(std::move(tn))) {
+						if (!interfaceNode->implTypes.pushBack(std::move(tn))) {
 							return genOutOfMemoryError();
 						}
 

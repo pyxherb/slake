@@ -352,7 +352,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Obj
 					newInstantiationContext.mappedGenericArgs.insert(std::move(copiedName), TypeId::None);
 				}
 
-				SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(value->parentClass, newInstantiationContext));
+				SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(value->baseType, newInstantiationContext));
 
 				for (auto it = value->members.begin(); it != value->members.end(); ++it) {
 					SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(it.value(), newInstantiationContext));
@@ -367,7 +367,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Obj
 						return OutOfMemoryError::alloc();
 				}
 
-				SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(value->parentClass, instantiationContext));
+				SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(value->baseType, instantiationContext));
 
 				for (auto it = value->members.begin(); it != value->members.end(); ++it) {
 					SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(it.value(), instantiationContext));

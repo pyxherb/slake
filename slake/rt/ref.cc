@@ -70,15 +70,15 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 	fail:
 		switch (curObject->getKind()) {
 			case ObjectKind::Module:
-				if (!curObject->getParent())
+				if (!curObject->parent)
 					return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this), ref));
-				scopeObject = (MemberObject *)curObject->getParent();
+				scopeObject = (MemberObject *)curObject->parent;
 				break;
 			case ObjectKind::Class: {
 				ClassObject *cls = (ClassObject *)curObject;
-				if (cls->parentClass.typeId == TypeId::Instance) {
-					SLAKE_RETURN_IF_EXCEPT(cls->parentClass.loadDeferredType(this));
-					scopeObject = cls->parentClass.getCustomTypeExData();
+				if (cls->baseType.typeId == TypeId::Instance) {
+					SLAKE_RETURN_IF_EXCEPT(cls->baseType.loadDeferredType(this));
+					scopeObject = cls->baseType.getCustomTypeExData();
 				} else {
 					return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this), ref));
 				}
@@ -104,13 +104,11 @@ SLAKE_API bool Runtime::getFullRef(peff::Alloc *allocator, const MemberObject *v
 				break;
 		}
 
-		const char *name = v->getName();
-		size_t szName = strlen(name);
+		std::string_view name = v->name;
 		peff::String copiedName(allocator);
-		if (!copiedName.resize(szName)) {
+		if (!copiedName.build(name)) {
 			return false;
 		}
-		memcpy(copiedName.data(), name, szName);
 		GenericArgList copiedGenericArgs(allocator);
 		if (auto p = v->getGenericArgs(); p) {
 			copiedGenericArgs.resize(p->size());
@@ -123,6 +121,6 @@ SLAKE_API bool Runtime::getFullRef(peff::Alloc *allocator, const MemberObject *v
 		if (!idRefOut.pushFront(IdRefEntry(std::move(copiedName), std::move(copiedGenericArgs)))) {
 			return false;
 		}
-	} while ((Object *)(v = (const MemberObject *)v->getParent()) != _rootObject);
+	} while ((Object *)(v = (const MemberObject *)v->parent) != _rootObject);
 	return true;
 }

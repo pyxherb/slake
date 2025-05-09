@@ -35,7 +35,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseGenericConstraint(GenericConstr
 				return syntaxError;
 			}
 
-			if (!constraint->implementedTypes.pushBack(std::move(tn))) {
+			if (!constraint->implTypes.pushBack(std::move(tn))) {
 				return genOutOfMemoryError();
 			}
 

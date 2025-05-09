@@ -11,8 +11,12 @@
 
 namespace slake {
 	class MemberObject : public Object {
+	protected:
+		SLAKE_API virtual bool onSetParent(Object *parent);
+
 	public:
 		peff::String name;
+		Object *parent = nullptr;
 
 		AccessModifier accessModifier = 0;
 
@@ -20,11 +24,24 @@ namespace slake {
 		SLAKE_API MemberObject(const MemberObject &x, bool &succeededOut);
 		SLAKE_API virtual ~MemberObject();
 
-		SLAKE_API const char *getName() const;
-		SLAKE_API bool setName(const char *name);
-		SLAKE_API virtual Object *getParent() const;
-		SLAKE_API virtual void setParent(Object *parent);
+		[[nodiscard]] SLAKE_FORCEINLINE bool setParent(Object *parent) noexcept {
+			if(!onSetParent(parent))
+				return false;
+			this->parent = parent;
+			return true;
+		}
 		SLAKE_API virtual const GenericArgList *getGenericArgs() const;
+
+		SLAKE_FORCEINLINE bool setName(const std::string_view &name) noexcept {
+			if (!this->name.build(name)) {
+				return false;
+			}
+			return true;
+		}
+
+		SLAKE_FORCEINLINE void setAccess(AccessModifier accessModifier) noexcept {
+			this->accessModifier = accessModifier;
+		}
 	};
 }
 

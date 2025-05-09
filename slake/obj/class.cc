@@ -74,13 +74,13 @@ SLAKE_API Object *ClassObject::duplicate() const {
 	return (Object *)alloc(this).get();
 }
 
-SLAKE_API slake::ClassObject::ClassObject(Runtime *rt, AccessModifier access, const Type &parentClass)
-	: ModuleObject(rt, access),
-	  parentClass(parentClass),
+SLAKE_API slake::ClassObject::ClassObject(Runtime *rt)
+	: ModuleObject(rt),
+	  baseType(TypeId::None),
 	  genericArgs(&rt->globalHeapPoolAlloc),
 	  mappedGenericArgs(&rt->globalHeapPoolAlloc),
 	  genericParams(&rt->globalHeapPoolAlloc),
-	  implInterfaces(&rt->globalHeapPoolAlloc),
+	  implTypes(&rt->globalHeapPoolAlloc),
 	  cachedFieldInitValues(&rt->globalHeapPoolAlloc),
 	  nativeDestructors(&rt->globalHeapPoolAlloc) {
 }
@@ -96,7 +96,7 @@ SLAKE_API ClassObject::ClassObject(const ClassObject &x, bool &succeededOut)
 	  genericArgs(&x.associatedRuntime->globalHeapPoolAlloc),
 	  mappedGenericArgs(&x.associatedRuntime->globalHeapPoolAlloc),
 	  genericParams(&x.associatedRuntime->globalHeapPoolAlloc),
-	  implInterfaces(&x.associatedRuntime->globalHeapPoolAlloc),
+	  implTypes(&x.associatedRuntime->globalHeapPoolAlloc),
 	  cachedFieldInitValues(&x.associatedRuntime->globalHeapPoolAlloc),
 	  nativeDestructors(&x.associatedRuntime->globalHeapPoolAlloc) {
 	if (succeededOut) {
@@ -114,12 +114,12 @@ SLAKE_API ClassObject::ClassObject(const ClassObject &x, bool &succeededOut)
 			succeededOut = false;
 			return;
 		}
-		if (!peff::copyAssign(implInterfaces, x.implInterfaces)) {
+		if (!peff::copyAssign(implTypes, x.implTypes)) {
 			succeededOut = false;
 			return;
 		}
 
-		parentClass = x.parentClass;
+		baseType = x.baseType;
 
 		// DO NOT copy the cached instantiated method table.
 	}
@@ -133,7 +133,7 @@ SLAKE_API ClassObject::~ClassObject() {
 }
 
 SLAKE_API bool ClassObject::hasImplemented(const InterfaceObject *pInterface) const {
-	for (auto &i : implInterfaces) {
+	for (auto &i : implTypes) {
 		if (auto e = const_cast<Type &>(i).loadDeferredType(associatedRuntime);
 			e) {
 			e.reset();
@@ -152,14 +152,14 @@ SLAKE_API bool ClassObject::isBaseOf(const ClassObject *pClass) const {
 		if (i == this)
 			return true;
 
-		if (i->parentClass.typeId == TypeId::None)
+		if (i->baseType.typeId == TypeId::None)
 			break;
-		if (auto e = const_cast<Type &>(i->parentClass).loadDeferredType(i->associatedRuntime);
+		if (auto e = const_cast<Type &>(i->baseType).loadDeferredType(i->associatedRuntime);
 			e) {
 			e.reset();
 			return false;
 		}
-		auto parentClassObject = i->parentClass.getCustomTypeExData();
+		auto parentClassObject = i->baseType.getCustomTypeExData();
 		assert(parentClassObject->getKind() == ObjectKind::Class);
 		i = (ClassObject *)parentClassObject;
 	}
@@ -185,12 +185,12 @@ SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(const ClassObject
 	return ptr.release();
 }
 
-SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(Runtime *rt, AccessModifier access, const Type &parentClass) {
+SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(Runtime *rt) {
 	std::unique_ptr<ClassObject, util::DeallocableDeleter<ClassObject>> ptr(
 		peff::allocAndConstruct<ClassObject>(
 			&rt->globalHeapPoolAlloc,
 			sizeof(std::max_align_t),
-			rt, access, parentClass));
+			rt));
 
 	if (!rt->createdObjects.insert(ptr.get()))
 		return nullptr;
@@ -202,12 +202,12 @@ SLAKE_API void slake::ClassObject::dealloc() {
 	peff::destroyAndRelease<ClassObject>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
-SLAKE_API InterfaceObject::InterfaceObject(Runtime *rt, AccessModifier access, peff::DynArray<Type> &&parents)
-	: ModuleObject(rt, access),
+SLAKE_API InterfaceObject::InterfaceObject(Runtime *rt)
+	: ModuleObject(rt),
 	  genericArgs(&rt->globalHeapPoolAlloc),
 	  mappedGenericArgs(&rt->globalHeapPoolAlloc),
 	  genericParams(&rt->globalHeapPoolAlloc),
-	  parents(std::move(parents)) {
+	  implTypes(&rt->globalHeapPoolAlloc) {
 }
 
 SLAKE_API InterfaceObject::InterfaceObject(const InterfaceObject &x, bool &succeededOut)
@@ -215,7 +215,7 @@ SLAKE_API InterfaceObject::InterfaceObject(const InterfaceObject &x, bool &succe
 	  genericArgs(&x.associatedRuntime->globalHeapPoolAlloc),
 	  mappedGenericArgs(&x.associatedRuntime->globalHeapPoolAlloc),
 	  genericParams(&x.associatedRuntime->globalHeapPoolAlloc),
-	  parents(&x.associatedRuntime->globalHeapPoolAlloc) {
+	  implTypes(&x.associatedRuntime->globalHeapPoolAlloc) {
 	if (succeededOut) {
 		if (!peff::copyAssign(genericArgs, x.genericArgs)) {
 			succeededOut = false;
@@ -227,7 +227,7 @@ SLAKE_API InterfaceObject::InterfaceObject(const InterfaceObject &x, bool &succe
 			return;
 		}
 
-		if (!peff::copyAssign(parents, x.parents)) {
+		if (!peff::copyAssign(implTypes, x.implTypes)) {
 			succeededOut = false;
 			return;
 		}
@@ -238,7 +238,7 @@ SLAKE_API bool InterfaceObject::isDerivedFrom(const InterfaceObject *pInterface)
 	if (pInterface == this)
 		return true;
 
-	for (auto &i : parents) {
+	for (auto &i : implTypes) {
 		if (auto e = const_cast<Type &>(i).loadDeferredType(associatedRuntime);
 			e) {
 			e.reset();
@@ -273,12 +273,12 @@ SLAKE_API Object *InterfaceObject::duplicate() const {
 	return (Object *)alloc(this).get();
 }
 
-SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Runtime *rt, AccessModifier access, peff::DynArray<Type> &&parents) {
+SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Runtime *rt) {
 	std::unique_ptr<InterfaceObject, util::DeallocableDeleter<InterfaceObject>> ptr(
 		peff::allocAndConstruct<InterfaceObject>(
 			&rt->globalHeapPoolAlloc,
 			sizeof(std::max_align_t),
-			rt, access, std::move(parents)));
+			rt));
 	if (!ptr)
 		return nullptr;
 

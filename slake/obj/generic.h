@@ -12,7 +12,6 @@ namespace slake {
 		Type baseType = Type(TypeId::Any);
 		peff::DynArray<Type> interfaces;
 
-		SLAKE_API GenericParam();
 		SLAKE_API GenericParam(peff::Alloc *selfAllocator);
 		SLAKE_API GenericParam(GenericParam &&rhs);
 

@@ -649,7 +649,8 @@ int main(int argc, char *argv[]) {
 				dumpCompilationError(parser, *e);
 			}
 
-			slake::HostObjectRef<slake::ModuleObject> modObj = slake::ModuleObject::alloc(runtime.get(), slake::ACCESS_PUB | slake::ACCESS_STATIC);
+			slake::HostObjectRef<slake::ModuleObject> modObj = slake::ModuleObject::alloc(runtime.get());
+			modObj->setAccess(slake::ACCESS_PUB | slake::ACCESS_STATIC);
 
 			if (auto e = slkc::compileModule(&compileContext, mod, modObj.get()); e) {
 				encounteredErrors = true;

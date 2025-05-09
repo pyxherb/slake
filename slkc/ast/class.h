@@ -11,7 +11,7 @@ namespace slkc {
 
 	public:
 		peff::SharedPtr<TypeNameNode> baseType;
-		peff::DynArray<peff::SharedPtr<TypeNameNode>> implementedTypes;
+		peff::DynArray<peff::SharedPtr<TypeNameNode>> implTypes;
 		peff::DynArray<peff::SharedPtr<GenericParamNode>> genericParams;
 		peff::HashMap<std::string_view, size_t> genericParamIndices;
 		peff::DynArray<size_t> idxGenericParamCommaTokens;
@@ -29,7 +29,7 @@ namespace slkc {
 		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
 
 	public:
-		peff::DynArray<peff::SharedPtr<TypeNameNode>> implementedTypes;
+		peff::DynArray<peff::SharedPtr<TypeNameNode>> implTypes;
 		peff::DynArray<peff::SharedPtr<GenericParamNode>> genericParams;
 		peff::HashMap<std::string_view, size_t> genericParamIndices;
 		peff::DynArray<size_t> idxGenericParamCommaTokens;

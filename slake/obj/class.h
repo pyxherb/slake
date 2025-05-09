@@ -77,8 +77,8 @@ namespace slake {
 
 		GenericParamList genericParams;
 
-		Type parentClass;
-		peff::DynArray<Type> implInterfaces;				 // Implemented interfaces
+		Type baseType;
+		peff::DynArray<Type> implTypes;				 // Implemented interfaces
 		peff::Set<ClassNativeDestructor> nativeDestructors;	 // Native destructors
 
 		MethodTable *cachedInstantiatedMethodTable = nullptr;
@@ -86,7 +86,7 @@ namespace slake {
 
 		peff::DynArray<Value> cachedFieldInitValues;
 
-		SLAKE_API ClassObject(Runtime *rt, AccessModifier access, const Type &parentClass);
+		SLAKE_API ClassObject(Runtime *rt);
 		SLAKE_API ClassObject(const ClassObject &x, bool &succeededOut);
 		SLAKE_API virtual ~ClassObject();
 
@@ -104,7 +104,7 @@ namespace slake {
 
 		SLAKE_API virtual Object *duplicate() const override;
 
-		SLAKE_API static HostObjectRef<ClassObject> alloc(Runtime *rt, AccessModifier access, const Type &parentClass = {});
+		SLAKE_API static HostObjectRef<ClassObject> alloc(Runtime *rt);
 		SLAKE_API static HostObjectRef<ClassObject> alloc(const ClassObject *other);
 		SLAKE_API virtual void dealloc() override;
 	};
@@ -120,9 +120,9 @@ namespace slake {
 
 		GenericParamList genericParams;
 
-		peff::DynArray<Type> parents;
+		peff::DynArray<Type> implTypes;
 
-		SLAKE_API InterfaceObject(Runtime *rt, AccessModifier access, peff::DynArray<Type> &&parents);
+		SLAKE_API InterfaceObject(Runtime *rt);
 		SLAKE_API InterfaceObject(const InterfaceObject &x, bool &succeededOut);
 		SLAKE_API virtual ~InterfaceObject();
 
@@ -132,7 +132,7 @@ namespace slake {
 
 		SLAKE_API virtual const GenericArgList *getGenericArgs() const override;
 
-		SLAKE_API static HostObjectRef<InterfaceObject> alloc(Runtime *rt, AccessModifier access, peff::DynArray<Type> &&parents);
+		SLAKE_API static HostObjectRef<InterfaceObject> alloc(Runtime *rt);
 		SLAKE_API static HostObjectRef<InterfaceObject> alloc(const InterfaceObject *other);
 		SLAKE_API virtual void dealloc() override;
 

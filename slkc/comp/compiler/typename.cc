@@ -16,8 +16,8 @@ SLKC_API std::optional<CompilationError> slkc::collectInvolvedInterfaces(
 		}
 	}
 
-	for (size_t i = 0; i < derived->implementedTypes.size(); ++i) {
-		peff::SharedPtr<TypeNameNode> t = derived->implementedTypes.at(i);
+	for (size_t i = 0; i < derived->implTypes.size(); ++i) {
+		peff::SharedPtr<TypeNameNode> t = derived->implTypes.at(i);
 
 		peff::SharedPtr<MemberNode> m;
 		SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, t.castTo<CustomTypeNameNode>(), m));
@@ -86,8 +86,8 @@ SLKC_API std::optional<CompilationError> slkc::isImplementedByClass(
 			return {};
 		}
 
-		for (size_t i = 0; i < currentClass->implementedTypes.size(); ++i) {
-			peff::SharedPtr<TypeNameNode> t = derived->implementedTypes.at(i);
+		for (size_t i = 0; i < currentClass->implTypes.size(); ++i) {
+			peff::SharedPtr<TypeNameNode> t = derived->implTypes.at(i);
 
 			peff::SharedPtr<MemberNode> m;
 			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, t.castTo<CustomTypeNameNode>(), m));
@@ -500,7 +500,7 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 										}
 									}
 
-									for (auto i : dgp->genericConstraint->implementedTypes) {
+									for (auto i : dgp->genericConstraint->implTypes) {
 										SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(src, i, isSealed, whetherOut));
 
 										if (whetherOut) {
@@ -519,7 +519,7 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 									if (sgp->genericConstraint->baseType && sgp->genericConstraint->baseType->typeNameKind == TypeNameKind::Custom) {
 										SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(sgp->genericConstraint->baseType, dest, isSealed, whetherOut));
 									}
-									for (auto i : sgp->genericConstraint->implementedTypes) {
+									for (auto i : sgp->genericConstraint->implTypes) {
 										SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(i, dest, isSealed, whetherOut));
 
 										if (whetherOut) {

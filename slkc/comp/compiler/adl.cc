@@ -102,7 +102,7 @@ SLKC_API std::optional<CompilationError> slkc::determineFnOverloading(
 			}
 
 		classBaseClassMalformed:
-			for (auto &i : m->implementedTypes) {
+			for (auto &i : m->implTypes) {
 				{
 					peff::SharedPtr<InterfaceNode> baseType;
 					SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(i, baseType, nullptr));
@@ -126,7 +126,7 @@ SLKC_API std::optional<CompilationError> slkc::determineFnOverloading(
 		}
 		case AstNodeType::Interface: {
 			peff::SharedPtr<InterfaceNode> m = fnSlot->parent->sharedFromThis().castTo<InterfaceNode>();
-			for (auto &i : m->implementedTypes) {
+			for (auto &i : m->implTypes) {
 				{
 					peff::SharedPtr<InterfaceNode> baseType;
 					SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(i, baseType, nullptr));

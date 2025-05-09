@@ -10,7 +10,7 @@ namespace slkc {
 	public:
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
 		peff::SharedPtr<TypeNameNode> baseType;
-		peff::DynArray<peff::SharedPtr<TypeNameNode>> implementedTypes;
+		peff::DynArray<peff::SharedPtr<TypeNameNode>> implTypes;
 
 		SLKC_API GenericConstraint(peff::Alloc *selfAllocator);
 		SLKC_API virtual ~GenericConstraint();

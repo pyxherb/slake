@@ -179,7 +179,7 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 
 				SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(cls->baseType, innerContext));
 
-				for (auto &k : cls->implementedTypes) {
+				for (auto &k : cls->implTypes) {
 					SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(k, innerContext));
 				}
 
@@ -189,7 +189,7 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 			} else {
 				SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(cls->baseType, context));
 
-				for (auto &k : cls->implementedTypes) {
+				for (auto &k : cls->implTypes) {
 					SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(k, context));
 				}
 
@@ -218,7 +218,7 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 					}
 				}
 
-				for (auto &k : cls->implementedTypes) {
+				for (auto &k : cls->implTypes) {
 					SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(k, innerContext));
 				}
 
@@ -226,7 +226,7 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 					SLKC_RETURN_IF_COMP_ERROR(_walkNodeForGenericInstantiation(j, innerContext));
 				}
 			} else {
-				for (auto &k : cls->implementedTypes) {
+				for (auto &k : cls->implTypes) {
 					SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(k, context));
 				}
 
@@ -242,7 +242,7 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 			if (cls->genericConstraint) {
 				SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(cls->genericConstraint->baseType, context));
 
-				for (auto &k : cls->genericConstraint->implementedTypes) {
+				for (auto &k : cls->genericConstraint->implTypes) {
 					SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(k, context));
 				}
 			}

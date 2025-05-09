@@ -2,9 +2,8 @@
 
 using namespace slake;
 
-SLAKE_API ModuleObject::ModuleObject(Runtime *rt, AccessModifier access)
+SLAKE_API ModuleObject::ModuleObject(Runtime *rt)
 	: MemberObject(rt), members(&rt->globalHeapPoolAlloc), fieldRecords(&rt->globalHeapPoolAlloc), fieldRecordIndices(&rt->globalHeapPoolAlloc), imports(&rt->globalHeapPoolAlloc), unnamedImports(&rt->globalHeapPoolAlloc) {
-	this->accessModifier = access;
 }
 
 SLAKE_API ModuleObject::ModuleObject(const ModuleObject &x, bool &succeededOut) : MemberObject(x, succeededOut), members(&x.associatedRuntime->globalHeapPoolAlloc), fieldRecords(&x.associatedRuntime->globalHeapPoolAlloc), fieldRecordIndices(&x.associatedRuntime->globalHeapPoolAlloc), imports(&x.associatedRuntime->globalHeapPoolAlloc), unnamedImports(&x.associatedRuntime->globalHeapPoolAlloc) {
@@ -86,17 +85,9 @@ SLAKE_API bool ModuleObject::removeMemberAndTrim(const std::string_view& name) {
 	return members.removeAndResizeBuckets(name);
 }
 
-SLAKE_API Object *ModuleObject::getParent() const {
-	return parent;
-}
-
-SLAKE_API void ModuleObject::setParent(Object *parent) {
-	this->parent = parent;
-}
-
-SLAKE_API HostObjectRef<ModuleObject> slake::ModuleObject::alloc(Runtime *rt, AccessModifier access) {
+SLAKE_API HostObjectRef<ModuleObject> slake::ModuleObject::alloc(Runtime *rt) {
 	std::unique_ptr<ModuleObject, util::DeallocableDeleter<ModuleObject>> ptr(
-		peff::allocAndConstruct<ModuleObject>(&rt->globalHeapPoolAlloc, sizeof(std::max_align_t), rt, access));
+		peff::allocAndConstruct<ModuleObject>(&rt->globalHeapPoolAlloc, sizeof(std::max_align_t), rt));
 
 	if (!ptr)
 		return nullptr;

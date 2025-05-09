@@ -256,7 +256,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 						_gcWalkHeapless(context, readVarUnsafe(EntityRef::makeFieldRef(value, i)));
 					}
 
-					for (auto &i : value->implInterfaces) {
+					for (auto &i : value->implTypes) {
 						// i.loadDeferredType(this);
 						_gcWalkHeapless(context, i);
 					}
@@ -274,7 +274,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 					}
 
 					// value->parentClass.loadDeferredType(this);
-					_gcWalkHeapless(context, value->parentClass);
+					_gcWalkHeapless(context, value->baseType);
 
 					_gcWalkHeapless(context, value->genericParams);
 
@@ -293,7 +293,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 						_gcWalkHeapless(context, readVarUnsafe(EntityRef::makeFieldRef(value, i)));
 					}
 
-					for (auto &i : value->parents) {
+					for (auto &i : value->implTypes) {
 						// i.loadDeferredType(this);
 						context.pushObject(i.getCustomTypeExData());
 					}
@@ -316,7 +316,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 				case ObjectKind::Fn: {
 					auto fn = (FnObject *)v;
 
-					context.pushObject(fn->getParent());
+					context.pushObject(fn->parent);
 
 					for (auto i : fn->overloadings) {
 						context.pushObject(i);

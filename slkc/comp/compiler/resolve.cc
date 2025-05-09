@@ -158,7 +158,7 @@ SLKC_API std::optional<CompilationError> slkc::resolveInstanceMember(
 					}
 				}
 
-				for (auto &i : m->implementedTypes) {
+				for (auto &i : m->implTypes) {
 					{
 						peff::SharedPtr<InterfaceNode> baseType;
 						SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(i, baseType, nullptr));
@@ -182,7 +182,7 @@ SLKC_API std::optional<CompilationError> slkc::resolveInstanceMember(
 			if (auto it = m->memberIndices.find(name.name); it != m->memberIndices.end()) {
 				result = m->members.at(it.value());
 			} else {
-				for (auto &i : m->implementedTypes) {
+				for (auto &i : m->implTypes) {
 					{
 						peff::SharedPtr<InterfaceNode> baseType;
 						SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(i, baseType, nullptr));
@@ -215,7 +215,7 @@ SLKC_API std::optional<CompilationError> slkc::resolveInstanceMember(
 				}
 			}
 
-			for (auto &i : m->genericConstraint->implementedTypes) {
+			for (auto &i : m->genericConstraint->implTypes) {
 				{
 					peff::SharedPtr<InterfaceNode> baseType;
 					SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(i, baseType, nullptr));
@@ -472,7 +472,7 @@ SLKC_API std::optional<CompilationError> slkc::resolveIdRefWithScopeNode(
 				}
 				walkedNodes.clear();
 
-				for (auto &i : m->implementedTypes) {
+				for (auto &i : m->implTypes) {
 					{
 						peff::SharedPtr<InterfaceNode> baseType;
 						SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(i, baseType, &walkedNodes));
@@ -511,7 +511,7 @@ SLKC_API std::optional<CompilationError> slkc::resolveIdRefWithScopeNode(
 					return genOutOfMemoryCompError();
 				}
 
-				for (auto &i : m->implementedTypes) {
+				for (auto &i : m->implTypes) {
 					{
 						peff::SharedPtr<InterfaceNode> baseType;
 						SLKC_RETURN_IF_COMP_ERROR(visitBaseInterface(i, baseType, &walkedNodes));

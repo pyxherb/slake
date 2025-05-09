@@ -347,10 +347,6 @@ SLAKE_API FnObject::~FnObject() {
 
 SLAKE_API ObjectKind FnObject::getKind() const { return ObjectKind::Fn; }
 
-SLAKE_API Object *FnObject::getParent() const { return parent; }
-
-SLAKE_API void FnObject::setParent(Object *parent) { this->parent = parent; }
-
 SLAKE_API FnOverloadingObject *FnObject::getOverloading(const peff::DynArray<Type> &argTypes) const {
 	const FnObject *i = this;
 

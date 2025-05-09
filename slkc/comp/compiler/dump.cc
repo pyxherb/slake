@@ -276,23 +276,23 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 		if (i->accessModifier & slake::ACCESS_FINAL) {
 			ctd.flags |= slake::slxfmt::CTD_FINAL;
 		}
-		if (i->parentClass) {
+		if (i->baseType) {
 			ctd.flags |= slake::slxfmt::CTD_DERIVED;
 		}
 		ctd.nGenericParams = i->genericParams.size();
 		ctd.lenName = i->name.size();
-		ctd.nImpls = i->implInterfaces.size();
+		ctd.nImpls = i->implTypes.size();
 
 		SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)&ctd, sizeof(ctd)));
 
 		SLKC_RETURN_IF_COMP_ERROR(writer->write(i->name.data(), i->name.size()));
-		
+
 		SLKC_RETURN_IF_COMP_ERROR(dumpGenericParams(allocator, writer, i->genericParams));
-		
-		if (i->parentClass) {
-			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, i->parentClass));
+
+		if (i->baseType) {
+			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, i->baseType));
 		}
-		for (auto &j : i->implInterfaces) {
+		for (auto &j : i->implTypes) {
 			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, j));
 		}
 
@@ -308,7 +308,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 		}
 		itd.nGenericParams = i->genericParams.size();
 		itd.lenName = i->name.size();
-		itd.nParents = i->parents.size();
+		itd.nParents = i->implTypes.size();
 
 		SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)&itd, sizeof(itd)));
 
@@ -316,7 +316,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 
 		SLKC_RETURN_IF_COMP_ERROR(dumpGenericParams(allocator, writer, i->genericParams));
 
-		for (auto &j : i->parents) {
+		for (auto &j : i->implTypes) {
 			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, j));
 		}
 
@@ -366,7 +366,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 
 			SLKC_RETURN_IF_COMP_ERROR(dumpGenericParams(allocator, writer, j->genericParams));
 
-			for (auto k : ol->paramTypes) {
+			for (auto &k : ol->paramTypes) {
 				SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, k));
 			}
 

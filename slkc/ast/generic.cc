@@ -2,7 +2,7 @@
 
 using namespace slkc;
 
-SLKC_API GenericConstraint::GenericConstraint(peff::Alloc *selfAllocator) : selfAllocator(selfAllocator), implementedTypes(selfAllocator) {}
+SLKC_API GenericConstraint::GenericConstraint(peff::Alloc *selfAllocator) : selfAllocator(selfAllocator), implTypes(selfAllocator) {}
 SLKC_API GenericConstraint::~GenericConstraint() {}
 SLKC_API void GenericConstraint::dealloc() noexcept {
 	peff::destroyAndRelease<GenericConstraint>(selfAllocator.get(), this, alignof(GenericConstraint));
@@ -19,12 +19,12 @@ GenericConstraintPtr slkc::duplicateGenericConstraint(peff::Alloc *allocator, co
 		return nullptr;
 	}
 
-	if (!ptr->implementedTypes.resize(constraint->implementedTypes.size())) {
+	if (!ptr->implTypes.resize(constraint->implTypes.size())) {
 		return nullptr;
 	}
 
-	for (size_t i = 0; i < ptr->implementedTypes.size(); ++i) {
-		if (!(ptr->implementedTypes.at(i) = constraint->implementedTypes.at(i)->duplicate<TypeNameNode>(allocator))) {
+	for (size_t i = 0; i < ptr->implTypes.size(); ++i) {
+		if (!(ptr->implTypes.at(i) = constraint->implTypes.at(i)->duplicate<TypeNameNode>(allocator))) {
 			return nullptr;
 		}
 	}

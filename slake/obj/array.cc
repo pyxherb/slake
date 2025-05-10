@@ -37,5 +37,5 @@ SLAKE_API void ArrayObject::dealloc() {
 }
 
 InternalExceptionPointer slake::raiseInvalidArrayIndexError(Runtime *rt, size_t index) {
-	return allocOutOfMemoryErrorIfAllocFailed(InvalidArrayIndexError::alloc(rt, index));
+	return allocOutOfMemoryErrorIfAllocFailed(InvalidArrayIndexError::alloc(&rt->globalHeapPoolAlloc, index));
 }

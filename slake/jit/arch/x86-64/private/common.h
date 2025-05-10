@@ -58,6 +58,7 @@ namespace slake {
 
 			struct JITCompileContext {
 				Runtime *runtime;
+				peff::RcObjectPtr<peff::Alloc> resourceAllocator;
 				peff::List<DiscreteInstruction> nativeInstructions;
 				PhysicalRegState phyRegStates[REG_MAX];
 				size_t curStackSize;
@@ -70,7 +71,7 @@ namespace slake {
 				int32_t jitContextOff;
 				peff::HashMap<peff::String, size_t> labelOffsets;
 
-				SLAKE_API JITCompileContext(Runtime *runtime);
+				SLAKE_API JITCompileContext(Runtime *runtime, peff::Alloc *resourceAllocator);
 				[[nodiscard]] SLAKE_API InternalExceptionPointer pushPrologStackOpIns();
 				[[nodiscard]] SLAKE_API InternalExceptionPointer pushEpilogStackOpIns();
 

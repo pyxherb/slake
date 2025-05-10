@@ -24,7 +24,7 @@ namespace slake {
 	};
 
 	CodePage *genCodePage(size_t size);
-	[[nodiscard]] InternalExceptionPointer compileRegularFn(RegularFnOverloadingObject *fn, const JITCompilerOptions &options);
+	[[nodiscard]] InternalExceptionPointer compileRegularFn(RegularFnOverloadingObject *fn, peff::Alloc *resourceAllocator, const JITCompilerOptions &options);
 }
 
 #endif

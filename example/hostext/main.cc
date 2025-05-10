@@ -176,9 +176,6 @@ int main(int argc, char **argv) {
 			// slake::stdlib::load(rt.get());
 
 			mod = rt->loadModule(fs, slake::LMOD_NOCONFLICT);
-		} catch (slake::LoaderError e) {
-			printf("Error loading main module: %s, at file offset %zu\n", e.what(), (size_t)fs.tellg());
-			return -1;
 		} catch (std::ios::failure e) {
 			printf("Error loading main module: %s, at file offset %zu\n", e.what(), (size_t)fs.tellg());
 			return -1;
@@ -217,8 +214,8 @@ int main(int argc, char **argv) {
 		auto fn = (slake::FnObject *)mod->getMember("main").asObject.instanceObject;
 		auto overloading = fn->getOverloading(peff::DynArray<slake::Type>(peff::getDefaultAlloc()));
 
-		slake::opti::ProgramAnalyzedInfo analyzedInfo(rt.get());
-		if (auto e = slake::opti::analyzeProgramInfo(rt.get(), (slake::RegularFnOverloadingObject *)overloading, analyzedInfo, hostRefHolder);
+		slake::opti::ProgramAnalyzedInfo analyzedInfo(rt.get(), peff::getDefaultAlloc());
+		if (auto e = slake::opti::analyzeProgramInfo(rt.get(), peff::getDefaultAlloc(), (slake::RegularFnOverloadingObject *)overloading, analyzedInfo, hostRefHolder);
 			e) {
 			printf("Internal exception: %s\n", e->what());
 			switch (e->kind) {

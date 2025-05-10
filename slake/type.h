@@ -79,6 +79,7 @@ namespace slake {
 		TypeDefObject *typeDef;
 		struct {
 			StringObject *nameObject;
+			// For type comparison.
 			Object *ownerObject;
 		} genericArg;
 	};

@@ -6,6 +6,7 @@
 #include "util/memory.h"
 #include <memory>
 #include <cassert>
+#include <peff/base/alloc.h>
 
 namespace slake {
 	class Runtime;
@@ -19,10 +20,10 @@ namespace slake {
 
 	class InternalException {
 	public:
-		Runtime *associatedRuntime;
+		peff::RcObjectPtr<peff::Alloc> selfAllocator;
 		ErrorKind kind;
 
-		SLAKE_API InternalException(Runtime *associatedRuntime, ErrorKind kind);
+		SLAKE_API InternalException(peff::Alloc *selfAllocator, ErrorKind kind);
 		SLAKE_API virtual ~InternalException();
 
 		virtual const char *what() const = 0;

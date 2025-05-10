@@ -63,22 +63,25 @@ namespace slake {
 		};
 
 		struct ProgramAnalyzedInfo {
+			peff::RcObjectPtr<peff::Alloc> resourceAllocator;
 			HostObjectRef<ContextObject> contextObject;
 			peff::Map<uint32_t, RegAnalyzedInfo> analyzedRegInfo;
 			peff::Map<uint32_t, FnCallAnalyzedInfo> analyzedFnCallInfo;
 			peff::Map<FnOverloadingObject *, peff::DynArray<uint32_t>> fnCallMap;
 			peff::Set<uint32_t> codeBlockBoundaries;
 
-			SLAKE_FORCEINLINE ProgramAnalyzedInfo(Runtime *runtime)
+			SLAKE_FORCEINLINE ProgramAnalyzedInfo(Runtime *runtime, peff::Alloc *resourceAllocator)
 				: analyzedRegInfo(&runtime->globalHeapPoolAlloc),
 				  analyzedFnCallInfo(&runtime->globalHeapPoolAlloc),
 				  fnCallMap(&runtime->globalHeapPoolAlloc),
-				  codeBlockBoundaries(&runtime->globalHeapPoolAlloc) {
+				  codeBlockBoundaries(&runtime->globalHeapPoolAlloc),
+				  resourceAllocator(resourceAllocator) {
 			}
 		};
 
 		struct ProgramAnalyzeContext {
 			Runtime *runtime;
+			peff::RcObjectPtr<peff::Alloc> resourceAllocator;
 			RegularFnOverloadingObject *fnObject;
 			ProgramAnalyzedInfo &analyzedInfoOut;
 			HostRefHolder &hostRefHolder;
@@ -89,6 +92,7 @@ namespace slake {
 
 			SLAKE_FORCEINLINE ProgramAnalyzeContext(
 				Runtime *runtime,
+				peff::Alloc *resourceAllocator,
 				RegularFnOverloadingObject *fnObject,
 				ProgramAnalyzedInfo &analyzedInfoOut,
 				HostRefHolder &hostRefHolder)
@@ -131,6 +135,7 @@ namespace slake {
 			size_t regIndex);
 		InternalExceptionPointer analyzeProgramInfo(
 			Runtime *runtime,
+			peff::Alloc *resourceAllocator,
 			RegularFnOverloadingObject *fnObject,
 			ProgramAnalyzedInfo &analyzedInfoOut,
 			HostRefHolder &hostRefHolder);

@@ -11,7 +11,7 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 	if (regIndex == UINT32_MAX) {
 		return allocOutOfMemoryErrorIfAllocFailed(
 			MalformedProgramError::alloc(
-				analyzeContext.runtime,
+				&analyzeContext.runtime->globalHeapPoolAlloc,
 				analyzeContext.fnObject,
 				analyzeContext.idxCurIns));
 	}
@@ -19,7 +19,7 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 	if (curIns.nOperands != 2) {
 		return allocOutOfMemoryErrorIfAllocFailed(
 			MalformedProgramError::alloc(
-				analyzeContext.runtime,
+				&analyzeContext.runtime->globalHeapPoolAlloc,
 				analyzeContext.fnObject,
 				analyzeContext.idxCurIns));
 	}
@@ -27,7 +27,7 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 	if (curIns.operands[0].valueType != ValueType::TypeName) {
 		return allocOutOfMemoryErrorIfAllocFailed(
 			MalformedProgramError::alloc(
-				analyzeContext.runtime,
+				&analyzeContext.runtime->globalHeapPoolAlloc,
 				analyzeContext.fnObject,
 				analyzeContext.idxCurIns));
 	}
@@ -98,7 +98,7 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -164,7 +164,7 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -232,7 +232,7 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -298,7 +298,7 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -365,7 +365,7 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -431,7 +431,7 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -497,7 +497,7 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -563,7 +563,7 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -629,7 +629,7 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -695,7 +695,7 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -761,7 +761,7 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				} break;
@@ -773,7 +773,7 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 		default: {
 			return allocOutOfMemoryErrorIfAllocFailed(
 				MalformedProgramError::alloc(
-					analyzeContext.runtime,
+					&analyzeContext.runtime->globalHeapPoolAlloc,
 					analyzeContext.fnObject,
 					analyzeContext.idxCurIns));
 		}

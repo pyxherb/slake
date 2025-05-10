@@ -219,7 +219,7 @@ SLAKE_API InternalExceptionPointer Type::loadDeferredType(Runtime *rt) {
 	SLAKE_RETURN_IF_EXCEPT(rt->resolveIdRef(ref, entityRef));
 
 	if (entityRef.kind != ObjectRefKind::ObjectRef)
-		return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(rt, ref));
+		return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(&rt->globalHeapPoolAlloc, ref));
 
 	exData.object = entityRef.asObject.instanceObject;
 

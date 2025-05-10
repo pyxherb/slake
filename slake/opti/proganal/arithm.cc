@@ -21,7 +21,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (curIns.nOperands != 2) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -32,7 +32,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (lhsType != rhsType) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -114,7 +114,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -130,7 +130,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (curIns.nOperands != 2) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -141,7 +141,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (lhsType != rhsType) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -223,7 +223,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -239,7 +239,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (curIns.nOperands != 2) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -250,7 +250,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (lhsType != rhsType) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -332,7 +332,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -348,7 +348,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (curIns.nOperands != 2) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -359,7 +359,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (lhsType != rhsType) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -441,7 +441,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -457,7 +457,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (curIns.nOperands != 2) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -468,7 +468,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (lhsType != rhsType) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -550,7 +550,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -566,7 +566,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (curIns.nOperands != 2) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -577,7 +577,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (lhsType != rhsType) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -645,7 +645,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -661,7 +661,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (curIns.nOperands != 2) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -672,7 +672,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (lhsType != rhsType) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -740,7 +740,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -756,7 +756,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (curIns.nOperands != 2) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -767,7 +767,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (lhsType != rhsType) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -835,7 +835,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -851,7 +851,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (curIns.nOperands != 2) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -862,14 +862,14 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (lhsType != TypeId::Bool) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
 			if (lhsType != rhsType) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -888,7 +888,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -904,7 +904,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (curIns.nOperands != 2) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -915,14 +915,14 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (lhsType != TypeId::Bool) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
 			if (lhsType != rhsType) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -941,7 +941,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -957,7 +957,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (curIns.nOperands != 2) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -968,7 +968,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (lhsType != rhsType) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -1057,7 +1057,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -1073,7 +1073,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (curIns.nOperands != 2) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -1084,7 +1084,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (lhsType != rhsType) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -1173,7 +1173,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -1189,7 +1189,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (curIns.nOperands != 2) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -1200,7 +1200,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (lhsType != rhsType) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -1282,7 +1282,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -1298,7 +1298,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (curIns.nOperands != 2) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -1309,7 +1309,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (lhsType != rhsType) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -1391,7 +1391,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -1407,7 +1407,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (curIns.nOperands != 2) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -1418,7 +1418,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (lhsType != rhsType) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -1500,7 +1500,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -1516,7 +1516,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (curIns.nOperands != 2) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -1527,7 +1527,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (lhsType != rhsType) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -1609,7 +1609,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -1625,7 +1625,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (curIns.nOperands != 2) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -1636,7 +1636,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (lhsType != rhsType) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -1788,7 +1788,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -1804,7 +1804,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (curIns.nOperands != 2) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -1815,7 +1815,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (rhsType != TypeId::U32) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -1883,7 +1883,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -1899,7 +1899,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (curIns.nOperands != 2) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -1910,7 +1910,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (rhsType != TypeId::U32) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -1978,7 +1978,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -1994,7 +1994,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (curIns.nOperands != 1) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -2062,7 +2062,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -2077,7 +2077,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (curIns.nOperands != 1) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -2103,7 +2103,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}
@@ -2118,7 +2118,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 			if (curIns.nOperands != 1) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						analyzeContext.runtime,
+						&analyzeContext.runtime->globalHeapPoolAlloc,
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -2198,7 +2198,7 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				default: {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							analyzeContext.runtime,
+							&analyzeContext.runtime->globalHeapPoolAlloc,
 							analyzeContext.fnObject,
 							analyzeContext.idxCurIns));
 				}

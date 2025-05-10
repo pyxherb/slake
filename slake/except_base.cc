@@ -3,8 +3,8 @@
 using namespace slake;
 
 SLAKE_API InternalException::InternalException(
-	Runtime *associatedRuntime,
+	peff::Alloc *selfAllocator,
 	ErrorKind kind)
-	: associatedRuntime(associatedRuntime),
+	: selfAllocator(selfAllocator),
 	  kind(kind) {}
 SLAKE_API InternalException::~InternalException() {}

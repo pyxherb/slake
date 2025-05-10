@@ -288,7 +288,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Typ
 
 				return allocOutOfMemoryErrorIfAllocFailed(
 					GenericParameterNotFoundError::alloc(
-						const_cast<Runtime *>(this),
+						&const_cast<Runtime *>(this)->globalHeapPoolAlloc,
 						std::move(paramName)));
 			}
 		}
@@ -470,7 +470,7 @@ InternalExceptionPointer Runtime::mapGenericParams(const Object *v, GenericInsta
 			if (instantiationContext.genericArgs->size() != value->genericParams.size()) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MismatchedGenericArgumentNumberError::alloc(
-						const_cast<Runtime *>(this)));
+						&const_cast<Runtime *>(this)->globalHeapPoolAlloc));
 			}
 
 			for (size_t i = 0; i < value->genericParams.size(); ++i) {
@@ -492,7 +492,7 @@ InternalExceptionPointer Runtime::mapGenericParams(const Object *v, GenericInsta
 			if (instantiationContext.genericArgs->size() != value->genericParams.size()) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MismatchedGenericArgumentNumberError::alloc(
-						const_cast<Runtime *>(this)));
+						&const_cast<Runtime *>(this)->globalHeapPoolAlloc));
 			}
 
 			for (size_t i = 0; i < value->genericParams.size(); ++i) {
@@ -513,7 +513,7 @@ SLAKE_API InternalExceptionPointer Runtime::mapGenericParams(const FnOverloading
 	if (instantiationContext.genericArgs->size() != ol->genericParams.size()) {
 		return allocOutOfMemoryErrorIfAllocFailed(
 			MismatchedGenericArgumentNumberError::alloc(
-				const_cast<Runtime *>(this)));
+				&const_cast<Runtime *>(this)->globalHeapPoolAlloc));
 	}
 
 	for (size_t i = 0; i < ol->genericParams.size(); ++i) {

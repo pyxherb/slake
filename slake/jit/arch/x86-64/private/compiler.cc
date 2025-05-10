@@ -234,19 +234,19 @@ InternalExceptionPointer compileInstruction(
 	return {};
 }
 
-InternalExceptionPointer slake::compileRegularFn(RegularFnOverloadingObject *fn, const JITCompilerOptions &options) {
+InternalExceptionPointer slake::compileRegularFn(RegularFnOverloadingObject *fn, peff::Alloc *resourceAllocator, const JITCompilerOptions &options) {
 	slake::CodePage *codePage;
 	size_t size;
 
-	JITCompileContext compileContext(fn->associatedRuntime);
+	JITCompileContext compileContext(fn->associatedRuntime, resourceAllocator);
 	size_t nIns = fn->instructions.size();
 
-	opti::ProgramAnalyzedInfo analyzedInfo(fn->associatedRuntime);
+	opti::ProgramAnalyzedInfo analyzedInfo(fn->associatedRuntime, resourceAllocator);
 	HostRefHolder hostRefHolder(&fn->associatedRuntime->globalHeapPoolAlloc);
 
 	InternalExceptionPointer exceptionPtr;
 
-	SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptionPtr, opti::analyzeProgramInfo(fn->associatedRuntime, fn, analyzedInfo, hostRefHolder));
+	SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptionPtr, opti::analyzeProgramInfo(fn->associatedRuntime, resourceAllocator, fn, analyzedInfo, hostRefHolder));
 
 	SLAKE_RETURN_IF_EXCEPT(compileContext.pushIns(emitMovMemToReg64Ins(REG_R11, MemoryLocation{ REG_R9, offsetof(JITExecContext, stackLimit), REG_MAX, 0 })));
 

@@ -82,112 +82,112 @@ namespace slake {
 	public:
 		RuntimeExecErrorCode errorCode;
 
-		SLAKE_API RuntimeExecError(Runtime *associatedRuntime, RuntimeExecErrorCode errorCode);
+		SLAKE_API RuntimeExecError(peff::Alloc *selfAllocator, RuntimeExecErrorCode errorCode);
 		SLAKE_API virtual ~RuntimeExecError();
 	};
 
 	class MismatchedVarTypeError : public RuntimeExecError {
 	public:
-		SLAKE_API MismatchedVarTypeError(Runtime *associatedRuntime);
+		SLAKE_API MismatchedVarTypeError(peff::Alloc *selfAllocator);
 		SLAKE_API virtual ~MismatchedVarTypeError();
 
 		SLAKE_API virtual const char *what() const override;
 
 		SLAKE_API virtual void dealloc() override;
 
-		SLAKE_API static MismatchedVarTypeError *alloc(Runtime *associatedRuntime);
+		SLAKE_API static MismatchedVarTypeError *alloc(peff::Alloc *selfAllocator);
 	};
 
 	class FrameBoundaryExceededError : public RuntimeExecError {
 	public:
-		SLAKE_API FrameBoundaryExceededError(Runtime *associatedRuntime);
+		SLAKE_API FrameBoundaryExceededError(peff::Alloc *selfAllocator);
 		SLAKE_API virtual ~FrameBoundaryExceededError();
 
 		SLAKE_API virtual const char *what() const override;
 
 		SLAKE_API virtual void dealloc() override;
 
-		SLAKE_API static FrameBoundaryExceededError *alloc(Runtime *associatedRuntime);
+		SLAKE_API static FrameBoundaryExceededError *alloc(peff::Alloc *selfAllocator);
 	};
 
 	class InvalidOpcodeError : public RuntimeExecError {
 	public:
 		Opcode opcode;
 
-		SLAKE_API InvalidOpcodeError(Runtime *associatedRuntime, Opcode opcode);
+		SLAKE_API InvalidOpcodeError(peff::Alloc *selfAllocator, Opcode opcode);
 		SLAKE_API virtual ~InvalidOpcodeError();
 
 		SLAKE_API virtual const char *what() const override;
 
 		SLAKE_API virtual void dealloc() override;
 
-		SLAKE_API static InvalidOpcodeError *alloc(Runtime *associatedRuntime, Opcode index);
+		SLAKE_API static InvalidOpcodeError *alloc(peff::Alloc *selfAllocator, Opcode index);
 	};
 
 	class InvalidOperandsError : public RuntimeExecError {
 	public:
-		SLAKE_API InvalidOperandsError(Runtime *associatedRuntime);
+		SLAKE_API InvalidOperandsError(peff::Alloc *selfAllocator);
 		SLAKE_API virtual ~InvalidOperandsError();
 
 		SLAKE_API virtual const char *what() const override;
 
 		SLAKE_API virtual void dealloc() override;
 
-		SLAKE_API static InvalidOperandsError *alloc(Runtime *associatedRuntime);
+		SLAKE_API static InvalidOperandsError *alloc(peff::Alloc *selfAllocator);
 	};
 
 	class InvalidLocalVarIndexError : public RuntimeExecError {
 	public:
 		uint32_t index;
 
-		SLAKE_API InvalidLocalVarIndexError(Runtime *associatedRuntime, uint32_t index);
+		SLAKE_API InvalidLocalVarIndexError(peff::Alloc *selfAllocator, uint32_t index);
 		SLAKE_API virtual ~InvalidLocalVarIndexError();
 
 		SLAKE_API virtual const char *what() const override;
 
 		SLAKE_API virtual void dealloc() override;
 
-		SLAKE_API static InvalidLocalVarIndexError *alloc(Runtime *associatedRuntime, uint32_t index);
+		SLAKE_API static InvalidLocalVarIndexError *alloc(peff::Alloc *selfAllocator, uint32_t index);
 	};
 
 	class InvalidArrayIndexError : public RuntimeExecError {
 	public:
 		size_t index;
 
-		SLAKE_API InvalidArrayIndexError(Runtime *associatedRuntime, size_t index);
+		SLAKE_API InvalidArrayIndexError(peff::Alloc *selfAllocator, size_t index);
 		SLAKE_API virtual ~InvalidArrayIndexError();
 
 		SLAKE_API virtual const char *what() const override;
 
 		SLAKE_API virtual void dealloc() override;
 
-		SLAKE_API static InvalidArrayIndexError *alloc(Runtime *associatedRuntime, size_t index);
+		SLAKE_API static InvalidArrayIndexError *alloc(peff::Alloc *selfAllocator, size_t index);
 	};
 
 	class StackOverflowError : public RuntimeExecError {
 	public:
-		SLAKE_API StackOverflowError(Runtime *associatedRuntime);
+		SLAKE_API StackOverflowError(peff::Alloc *selfAllocator);
 		SLAKE_API virtual ~StackOverflowError();
 
 		SLAKE_API virtual const char *what() const override;
 
 		SLAKE_API virtual void dealloc() override;
 
-		SLAKE_API static StackOverflowError *alloc(Runtime *associatedRuntime);
+		SLAKE_API static StackOverflowError *alloc(peff::Alloc *selfAllocator);
 	};
 
 	class InvalidArgumentNumberError : public RuntimeExecError {
 	public:
 		uint32_t nArgs;
 
-		SLAKE_API InvalidArgumentNumberError(Runtime *associatedRuntime, uint32_t nArgs);
+		SLAKE_API InvalidArgumentNumberError(peff::Alloc *selfAllocator, uint32_t nArgs);
 		SLAKE_API virtual ~InvalidArgumentNumberError();
 
 		SLAKE_API virtual const char *what() const override;
 
 		SLAKE_API virtual void dealloc() override;
 
-		SLAKE_API static InvalidArgumentNumberError *alloc(Runtime *associatedRuntime, uint32_t nArgs);
+		SLAKE_API static InvalidArgumentNumberError *alloc(peff::Alloc *selfAllocator, uint32_t nArgs);
 	};
 
 	class ReferencedMemberNotFoundError : public RuntimeExecError {
@@ -195,7 +195,7 @@ namespace slake {
 		HostObjectRef<IdRefObject> idRef;
 
 		SLAKE_API ReferencedMemberNotFoundError(
-			Runtime *associatedRuntime,
+			peff::Alloc *selfAllocator,
 			IdRefObject *idRef);
 		SLAKE_API virtual ~ReferencedMemberNotFoundError();
 
@@ -204,20 +204,20 @@ namespace slake {
 		SLAKE_API virtual void dealloc() override;
 
 		SLAKE_API static ReferencedMemberNotFoundError *alloc(
-			Runtime *associatedRuntime,
+			peff::Alloc *selfAllocator,
 			IdRefObject *idRef);
 	};
 
 	class NullRefError : public RuntimeExecError {
 	public:
-		SLAKE_API NullRefError(Runtime *associatedRuntime);
+		SLAKE_API NullRefError(peff::Alloc *selfAllocator);
 		SLAKE_API virtual ~NullRefError();
 
 		SLAKE_API virtual const char *what() const override;
 
 		SLAKE_API virtual void dealloc() override;
 
-		SLAKE_API static NullRefError *alloc(Runtime *associatedRuntime);
+		SLAKE_API static NullRefError *alloc(peff::Alloc *selfAllocator);
 	};
 
 	class UncaughtExceptionError : public RuntimeExecError {
@@ -225,7 +225,7 @@ namespace slake {
 		Value exceptionValue;
 
 		SLAKE_API UncaughtExceptionError(
-			Runtime *associatedRuntime,
+			peff::Alloc *selfAllocator,
 			Value exceptionValue);
 		SLAKE_API virtual ~UncaughtExceptionError();
 
@@ -234,7 +234,7 @@ namespace slake {
 		SLAKE_API virtual void dealloc() override;
 
 		SLAKE_API static UncaughtExceptionError *alloc(
-			Runtime *associatedRuntime,
+			peff::Alloc *selfAllocator,
 			Value exceptionValue);
 	};
 
@@ -243,7 +243,7 @@ namespace slake {
 		ClassObject *classObject;
 
 		SLAKE_API MalformedClassStructureError(
-			Runtime *associatedRuntime,
+			peff::Alloc *selfAllocator,
 			ClassObject *classObject);
 		SLAKE_API virtual ~MalformedClassStructureError();
 
@@ -252,7 +252,7 @@ namespace slake {
 		SLAKE_API virtual void dealloc() override;
 
 		SLAKE_API static MalformedClassStructureError *alloc(
-			Runtime *associatedRuntime,
+			peff::Alloc *selfAllocator,
 			ClassObject *classObject);
 	};
 
@@ -266,21 +266,21 @@ namespace slake {
 		GenericInstantiationErrorCode instantiationErrorCode;
 
 		SLAKE_API GenericInstantiationError(
-			Runtime *associatedRuntime,
+			peff::Alloc *selfAllocator,
 			GenericInstantiationErrorCode instantiationErrorCode);
 		SLAKE_API virtual ~GenericInstantiationError();
 	};
 
 	class MismatchedGenericArgumentNumberError : public RuntimeExecError {
 	public:
-		SLAKE_API MismatchedGenericArgumentNumberError(Runtime *associatedRuntime);
+		SLAKE_API MismatchedGenericArgumentNumberError(peff::Alloc *selfAllocator);
 		SLAKE_API virtual ~MismatchedGenericArgumentNumberError();
 
 		SLAKE_API virtual const char *what() const override;
 
 		SLAKE_API virtual void dealloc() override;
 
-		SLAKE_API static MismatchedGenericArgumentNumberError *alloc(Runtime *associatedRuntime);
+		SLAKE_API static MismatchedGenericArgumentNumberError *alloc(peff::Alloc *selfAllocator);
 	};
 
 	class GenericParameterNotFoundError : public RuntimeExecError {
@@ -288,7 +288,7 @@ namespace slake {
 		peff::String name;
 
 		SLAKE_API GenericParameterNotFoundError(
-			Runtime *associatedRuntime,
+			peff::Alloc *selfAllocator,
 			peff::String &&name);
 		SLAKE_API virtual ~GenericParameterNotFoundError();
 
@@ -297,7 +297,7 @@ namespace slake {
 		SLAKE_API virtual void dealloc() override;
 
 		SLAKE_API static GenericParameterNotFoundError *alloc(
-			Runtime *associatedRuntime,
+			peff::Alloc *selfAllocator,
 			peff::String &&name);
 	};
 
@@ -310,7 +310,7 @@ namespace slake {
 	public:
 		OptimizerErrorCode optimizerErrorCode;
 
-		SLAKE_API OptimizerError(Runtime *associatedRuntime, OptimizerErrorCode optimizerErrorCode);
+		SLAKE_API OptimizerError(peff::Alloc *selfAllocator, OptimizerErrorCode optimizerErrorCode);
 		SLAKE_API virtual ~OptimizerError();
 	};
 
@@ -322,7 +322,7 @@ namespace slake {
 		size_t offIns;
 
 		SLAKE_API MalformedProgramError(
-			Runtime *associatedRuntime,
+			peff::Alloc *selfAllocator,
 			RegularFnOverloadingObject *fnOverloading,
 			size_t offIns);
 		SLAKE_API virtual ~MalformedProgramError();
@@ -332,7 +332,7 @@ namespace slake {
 		SLAKE_API virtual void dealloc() override;
 
 		SLAKE_API static MalformedProgramError *alloc(
-			Runtime *associatedRuntime,
+			peff::Alloc *selfAllocator,
 			RegularFnOverloadingObject *fnOverloading,
 			size_t offIns);
 	};
@@ -342,7 +342,7 @@ namespace slake {
 		HostObjectRef<Object> object;
 
 		SLAKE_API ErrorEvaluatingObjectTypeError(
-			Runtime *associatedRuntime,
+			peff::Alloc *selfAllocator,
 			Object *object);
 		SLAKE_API virtual ~ErrorEvaluatingObjectTypeError();
 
@@ -351,8 +351,28 @@ namespace slake {
 		SLAKE_API virtual void dealloc() override;
 
 		SLAKE_API static ErrorEvaluatingObjectTypeError *alloc(
-			Runtime *associatedRuntime,
+			peff::Alloc *selfAllocator,
 			Object *object);
+	};
+
+	class LoaderError : public InternalException {
+	public:
+		LoaderErrorCode errorCode;
+
+		SLAKE_API LoaderError(peff::Alloc *selfAllocator, LoaderErrorCode errorCode);
+		SLAKE_API virtual ~LoaderError();
+	};
+
+	class BadMagicError : public LoaderError {
+	public:
+		SLAKE_API BadMagicError(peff::Alloc *selfAllocator);
+		SLAKE_API virtual ~BadMagicError();
+
+		SLAKE_API virtual const char *what() const override;
+
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API static BadMagicError *alloc(peff::Alloc *selfAllocator);
 	};
 
 	SLAKE_API InternalExceptionPointer allocOutOfMemoryErrorIfAllocFailed(InternalExceptionPointer e);

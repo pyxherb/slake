@@ -4,5 +4,5 @@
 using namespace slake;
 
 InternalExceptionPointer slake::raiseMismatchedVarTypeError(Runtime *rt) {
-	return allocOutOfMemoryErrorIfAllocFailed(MismatchedVarTypeError::alloc(rt));
+	return allocOutOfMemoryErrorIfAllocFailed(MismatchedVarTypeError::alloc(&rt->globalHeapPoolAlloc));
 }

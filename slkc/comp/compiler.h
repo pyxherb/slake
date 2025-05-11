@@ -455,6 +455,11 @@ namespace slkc {
 		return {};
 	}
 
+	[[nodiscard]] SLKC_API std::optional<CompilationError> evalConstExpr(
+		CompileContext *compileContext,
+		peff::SharedPtr<ExprNode> expr,
+		peff::SharedPtr<ExprNode> &exprOut);
+
 	[[nodiscard]] SLKC_API std::optional<CompilationError> getFullIdRef(peff::Alloc *allocator, peff::SharedPtr<MemberNode> m, IdRefPtr &idRefOut);
 
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileTypeName(

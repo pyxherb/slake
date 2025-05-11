@@ -182,6 +182,18 @@ namespace slkc {
 	public:
 		int8_t data;
 
+		struct GetData {
+			SLAKE_FORCEINLINE int8_t operator()(const peff::SharedPtr<I8LiteralExprNode> &l) const {
+				return l->data;
+			}
+		};
+
+		struct SetData {
+			SLAKE_FORCEINLINE void operator()(peff::SharedPtr<I8LiteralExprNode> l, int8_t data) const {
+				l->data = data;
+			}
+		};
+
 		SLKC_API I8LiteralExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, int8_t data);
 		SLKC_API I8LiteralExprNode(const I8LiteralExprNode &rhs, peff::Alloc *allocator);
 		SLKC_API virtual ~I8LiteralExprNode();
@@ -193,6 +205,18 @@ namespace slkc {
 
 	public:
 		int16_t data;
+
+		struct GetData {
+			SLAKE_FORCEINLINE int16_t operator()(const peff::SharedPtr<I16LiteralExprNode> &l) const {
+				return l->data;
+			}
+		};
+
+		struct SetData {
+			SLAKE_FORCEINLINE void operator()(peff::SharedPtr<I16LiteralExprNode> l, int16_t data) const {
+				l->data = data;
+			}
+		};
 
 		SLKC_API I16LiteralExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, int16_t data);
 		SLKC_API I16LiteralExprNode(const I16LiteralExprNode &rhs, peff::Alloc *allocator);
@@ -206,6 +230,18 @@ namespace slkc {
 	public:
 		int32_t data;
 
+		struct GetData {
+			SLAKE_FORCEINLINE int32_t operator()(const peff::SharedPtr<I32LiteralExprNode> &l) const {
+				return l->data;
+			}
+		};
+
+		struct SetData {
+			SLAKE_FORCEINLINE void operator()(peff::SharedPtr<I32LiteralExprNode> l, int32_t data) const {
+				l->data = data;
+			}
+		};
+
 		SLKC_API I32LiteralExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, int32_t data);
 		SLKC_API I32LiteralExprNode(const I32LiteralExprNode &rhs, peff::Alloc *allocator);
 		SLKC_API virtual ~I32LiteralExprNode();
@@ -217,6 +253,18 @@ namespace slkc {
 
 	public:
 		int64_t data;
+
+		struct GetData {
+			SLAKE_FORCEINLINE int64_t operator()(const peff::SharedPtr<I64LiteralExprNode> &l) const {
+				return l->data;
+			}
+		};
+
+		struct SetData {
+			SLAKE_FORCEINLINE void operator()(peff::SharedPtr<I64LiteralExprNode> l, int64_t data) const {
+				l->data = data;
+			}
+		};
 
 		SLKC_API I64LiteralExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, int64_t data);
 		SLKC_API I64LiteralExprNode(const I64LiteralExprNode &rhs, peff::Alloc *allocator);
@@ -230,6 +278,18 @@ namespace slkc {
 	public:
 		uint8_t data;
 
+		struct GetData {
+			SLAKE_FORCEINLINE uint8_t operator()(const peff::SharedPtr<U8LiteralExprNode> &l) const {
+				return l->data;
+			}
+		};
+
+		struct SetData {
+			SLAKE_FORCEINLINE void operator()(peff::SharedPtr<U8LiteralExprNode> l, uint8_t data) const {
+				l->data = data;
+			}
+		};
+
 		SLKC_API U8LiteralExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, uint8_t data);
 		SLKC_API U8LiteralExprNode(const U8LiteralExprNode &rhs, peff::Alloc *allocator);
 		SLKC_API virtual ~U8LiteralExprNode();
@@ -241,6 +301,18 @@ namespace slkc {
 
 	public:
 		uint16_t data;
+
+		struct GetData {
+			SLAKE_FORCEINLINE uint16_t operator()(const peff::SharedPtr<U16LiteralExprNode> &l) const {
+				return l->data;
+			}
+		};
+
+		struct SetData {
+			SLAKE_FORCEINLINE void operator()(peff::SharedPtr<U16LiteralExprNode> l, uint16_t data) const {
+				l->data = data;
+			}
+		};
 
 		SLKC_API U16LiteralExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, uint16_t data);
 		SLKC_API U16LiteralExprNode(const U16LiteralExprNode &rhs, peff::Alloc *allocator);
@@ -254,6 +326,18 @@ namespace slkc {
 	public:
 		uint32_t data;
 
+		struct GetData {
+			SLAKE_FORCEINLINE uint32_t operator()(const peff::SharedPtr<U32LiteralExprNode> &l) const {
+				return l->data;
+			}
+		};
+
+		struct SetData {
+			SLAKE_FORCEINLINE void operator()(peff::SharedPtr<U32LiteralExprNode> l, uint32_t data) const {
+				l->data = data;
+			}
+		};
+
 		SLKC_API U32LiteralExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, uint32_t data);
 		SLKC_API U32LiteralExprNode(const U32LiteralExprNode &rhs, peff::Alloc *allocator);
 		SLKC_API virtual ~U32LiteralExprNode();
@@ -265,6 +349,18 @@ namespace slkc {
 
 	public:
 		uint64_t data;
+
+		struct GetData {
+			SLAKE_FORCEINLINE uint64_t operator()(const peff::SharedPtr<U64LiteralExprNode> &l) const {
+				return l->data;
+			}
+		};
+
+		struct SetData {
+			SLAKE_FORCEINLINE void operator()(peff::SharedPtr<U64LiteralExprNode> l, uint64_t data) const {
+				l->data = data;
+			}
+		};
 
 		SLKC_API U64LiteralExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, uint64_t data);
 		SLKC_API U64LiteralExprNode(const U64LiteralExprNode &rhs, peff::Alloc *allocator);
@@ -278,6 +374,18 @@ namespace slkc {
 	public:
 		float data;
 
+		struct GetData {
+			SLAKE_FORCEINLINE float operator()(const peff::SharedPtr<F32LiteralExprNode> &l) const {
+				return l->data;
+			}
+		};
+
+		struct SetData {
+			SLAKE_FORCEINLINE void operator()(peff::SharedPtr<F32LiteralExprNode> l, float data) const {
+				l->data = data;
+			}
+		};
+
 		SLKC_API F32LiteralExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, float data);
 		SLKC_API F32LiteralExprNode(const F32LiteralExprNode &rhs, peff::Alloc *allocator);
 		SLKC_API virtual ~F32LiteralExprNode();
@@ -290,6 +398,18 @@ namespace slkc {
 	public:
 		double data;
 
+		struct GetData {
+			SLAKE_FORCEINLINE double operator()(const peff::SharedPtr<F64LiteralExprNode> &l) const {
+				return l->data;
+			}
+		};
+
+		struct SetData {
+			SLAKE_FORCEINLINE void operator()(peff::SharedPtr<F64LiteralExprNode> l, double data) const {
+				l->data = data;
+			}
+		};
+
 		SLKC_API F64LiteralExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, double data);
 		SLKC_API F64LiteralExprNode(const F64LiteralExprNode &rhs, peff::Alloc *allocator);
 		SLKC_API virtual ~F64LiteralExprNode();
@@ -301,6 +421,18 @@ namespace slkc {
 
 	public:
 		bool data;
+
+		struct GetData {
+			SLAKE_FORCEINLINE bool operator()(const peff::SharedPtr<BoolLiteralExprNode> &l) const {
+				return l->data;
+			}
+		};
+
+		struct SetData {
+			SLAKE_FORCEINLINE void operator()(peff::SharedPtr<BoolLiteralExprNode> l, bool data) const {
+				l->data = data;
+			}
+		};
 
 		SLKC_API BoolLiteralExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, bool data);
 		SLKC_API BoolLiteralExprNode(const BoolLiteralExprNode &rhs, peff::Alloc *allocator);

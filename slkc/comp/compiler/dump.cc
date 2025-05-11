@@ -55,7 +55,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpIdRef(
 	return {};
 }
 
-[[nodiscard]] SLKC_API std::optional<CompilationError> dumpValue(
+[[nodiscard]] SLKC_API std::optional<CompilationError> slkc::dumpValue(
 	peff::Alloc* allocator,
 	Writer* writer,
 	const slake::Value& value) {

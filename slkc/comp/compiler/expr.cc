@@ -689,6 +689,80 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 			}
 			break;
 		}
+		case ExprKind::InitializerList: {
+			peff::SharedPtr<InitializerListExprNode> e = expr.castTo<InitializerListExprNode>();
+
+			switch (evalPurpose) {
+				case ExprEvalPurpose::Stmt:
+					SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(
+						CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
+					break;
+				case ExprEvalPurpose::RValue: {
+					if (!desiredType)
+						return CompilationError(expr->tokenRange, CompilationErrorKind::InvalidInitializerListUsage);
+					switch (desiredType->typeNameKind) {
+						case TypeNameKind::Array: {
+							peff::SharedPtr<ArrayTypeNameNode> tn = desiredType.castTo<ArrayTypeNameNode>();
+
+							if (resultRegOut != UINT32_MAX) {
+								slake::Type elementType;
+
+								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, tn->elementType, elementType));
+								SLKC_RETURN_IF_COMP_ERROR(
+									compileContext->emitIns(
+										slake::Opcode::ARRNEW,
+										resultRegOut,
+										{ slake::Value(elementType), slake::Value((uint32_t)e->elements.size()) }));
+
+								for (size_t i = 0; i < e->elements.size(); ++i) {
+									uint32_t curElementSlotRegIndex = compileContext->allocReg();
+									uint32_t curElementRegIndex = compileContext->allocReg();
+
+									SLKC_RETURN_IF_COMP_ERROR(
+										compileContext->emitIns(
+											slake::Opcode::AT,
+											curElementSlotRegIndex,
+											{ slake::Value(slake::ValueType::RegRef, resultRegOut), slake::Value((uint32_t)i) }));
+
+									CompileExprResult result(compileContext->allocator.get());
+
+									SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->elements.at(i), ExprEvalPurpose::RValue, tn->elementType.castTo<TypeNameNode>(), curElementRegIndex, result));
+
+									SLKC_RETURN_IF_COMP_ERROR(
+										compileContext->emitIns(
+											slake::Opcode::STORE,
+											UINT32_MAX,
+											{ slake::Value(slake::ValueType::RegRef, curElementSlotRegIndex), slake::Value(slake::ValueType::RegRef, curElementRegIndex) }));
+								}
+							} else {
+								// Just simply evaluate each element.
+								for (size_t i = 0; i < e->elements.size(); ++i) {
+									CompileExprResult result(compileContext->allocator.get());
+
+									SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->elements.at(i), ExprEvalPurpose::RValue, tn->elementType.castTo<TypeNameNode>(), UINT32_MAX, result));
+								}
+							}
+
+							if (!(resultOut.evaluatedType = desiredType)) {
+								return genOutOfMemoryCompError();
+							}
+							break;
+						}
+						default:
+							return CompilationError(expr->tokenRange, CompilationErrorKind::InvalidInitializerListUsage);
+					}
+					break;
+				}
+				case ExprEvalPurpose::LValue:
+					return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
+				case ExprEvalPurpose::Call:
+					return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotCallable);
+				default:
+					std::terminate();
+			}
+
+			break;
+		}
 		case ExprKind::Call: {
 			peff::SharedPtr<CallExprNode> e = expr.castTo<CallExprNode>();
 
@@ -1020,6 +1094,8 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 			resultOut.evaluatedType = e->targetType;
 			break;
 		}
+		default:
+			std::terminate();
 	}
 
 	return {};

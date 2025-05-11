@@ -27,6 +27,7 @@ namespace slkc {
 		IdNotFound,
 		ParamAlreadyDefined,
 		GenericParamAlreadyDefined,
+		InvalidInitializerListUsage,
 		InvalidThisUsage,
 		NoMatchingFnOverloading,
 		UnableToDetermineOverloading,

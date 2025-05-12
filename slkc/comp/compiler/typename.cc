@@ -263,6 +263,117 @@ SLKC_API std::optional<CompilationError> slkc::isSameType(
 	return {};
 }
 
+SLKC_API std::optional<CompilationError> slkc::getTypePromotionLevel(
+	const peff::SharedPtr<TypeNameNode> &typeName,
+	int &levelOut) {
+	switch (typeName->typeNameKind) {
+		case TypeNameKind::Bool:
+			levelOut = 1;
+			break;
+		case TypeNameKind::U8:
+			levelOut = 11;
+			break;
+		case TypeNameKind::U16:
+			levelOut = 12;
+			break;
+		case TypeNameKind::U32:
+			levelOut = 13;
+			break;
+		case TypeNameKind::U64:
+			levelOut = 14;
+			break;
+		case TypeNameKind::I8:
+			levelOut = 21;
+			break;
+		case TypeNameKind::I16:
+			levelOut = 22;
+			break;
+		case TypeNameKind::I32:
+			levelOut = 23;
+			break;
+		case TypeNameKind::I64:
+			levelOut = 24;
+			break;
+		case TypeNameKind::F32:
+			levelOut = 31;
+			break;
+		case TypeNameKind::F64:
+			levelOut = 32;
+			break;
+		case TypeNameKind::Any:
+			levelOut = INT_MAX;
+			break;
+		default:
+			levelOut = INT_MIN + 1;
+			break;
+	}
+
+	return {};
+}
+
+SLKC_API std::optional<CompilationError> slkc::determinePromotionalType(
+	peff::SharedPtr<TypeNameNode> lhs,
+	peff::SharedPtr<TypeNameNode> rhs,
+	peff::SharedPtr<TypeNameNode> &typeNameOut) {
+	int lhsWeight, rhsWeight;
+
+	SLKC_RETURN_IF_COMP_ERROR(getTypePromotionLevel(lhs, lhsWeight));
+	SLKC_RETURN_IF_COMP_ERROR(getTypePromotionLevel(rhs, rhsWeight));
+
+	if (lhsWeight < rhsWeight) {
+		typeNameOut = lhs;
+	} else if (lhsWeight > rhsWeight) {
+		typeNameOut = rhs;
+	} else {
+		switch (lhs->typeNameKind) {
+			case TypeNameKind::Array: {
+				switch (rhs->typeNameKind) {
+					case TypeNameKind::Array: {
+						peff::SharedPtr<ArrayTypeNameNode> lt = lhs.castTo<ArrayTypeNameNode>(), rt = rhs.castTo<ArrayTypeNameNode>();
+						peff::SharedPtr<TypeNameNode> finalType;
+
+						SLKC_RETURN_IF_COMP_ERROR(determinePromotionalType(lt->elementType, rt->elementType, finalType));
+
+						typeNameOut = finalType == rt->elementType ? rhs : lhs;
+						break;
+					}
+					default:
+						typeNameOut = lhs;
+						break;
+				}
+				break;
+			}
+			case TypeNameKind::Custom: {
+				switch (rhs->typeNameKind) {
+					case TypeNameKind::Custom: {
+						peff::SharedPtr<CustomTypeNameNode> lt = lhs.castTo<CustomTypeNameNode>(), rt = rhs.castTo<CustomTypeNameNode>();
+
+						bool b;
+
+						SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(rhs, lhs, true, b));
+						if (b) {
+							// In sealed context, derived types cannot be converted to base types,
+							// hence when rhs can be converted to lhs, rhs is the base type.
+							typeNameOut = rhs;
+						} else {
+							typeNameOut = lhs;
+						}
+						break;
+					}
+					default:
+						typeNameOut = lhs;
+						break;
+				}
+				break;
+			}
+			default:
+				typeNameOut = lhs;
+		}
+	}
+
+	return {};
+}
+
 SLKC_API std::optional<CompilationError> slkc::isSameTypeInSignature(
 	const peff::SharedPtr<TypeNameNode> &lhs,
 	const peff::SharedPtr<TypeNameNode> &rhs,

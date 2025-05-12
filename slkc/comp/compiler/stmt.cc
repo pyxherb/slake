@@ -35,20 +35,11 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 					newVar->type = i->type;
 
-					slake::Type type;
-					SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, i->type, type));
-
 					uint32_t localVarReg = compileContext->allocReg();
-
-					SLKC_RETURN_IF_COMP_ERROR(
-						compileContext->emitIns(
-							slake::Opcode::LVAR,
-							localVarReg,
-							{ slake::Value(type) }));
 
 					newVar->idxReg = localVarReg;
 
-					if (!blockCompileContext->localVars.insert(newVar->name, std::move(newVar))) {
+					if (!blockCompileContext->localVars.insert(newVar->name, peff::SharedPtr<VarNode>(newVar))) {
 						return genOutOfMemoryCompError();
 					}
 
@@ -57,13 +48,60 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 						CompileExprResult result(compileContext->allocator.get());
 
-						bool b = false;
-						SLKC_RETURN_IF_COMP_ERROR(isLValueType(i->type, b));
+						if (i->type) {
+							newVar->type = i->type;
 
-						if (b) {
-							SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, i->initialValue, ExprEvalPurpose::LValue, {}, initialValueReg, result));
+							bool b = false;
+							SLKC_RETURN_IF_COMP_ERROR(isLValueType(i->type, b));
+
+							{
+								slake::Type type;
+								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, newVar->type, type));
+
+								SLKC_RETURN_IF_COMP_ERROR(
+									compileContext->emitIns(
+										slake::Opcode::LVAR,
+										localVarReg,
+										{ slake::Value(type) }));
+							}
+
+							if (b) {
+								SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, i->initialValue, ExprEvalPurpose::LValue, i->type, initialValueReg, result));
+							} else {
+								SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, i->initialValue, ExprEvalPurpose::RValue, i->type, initialValueReg, result));
+							}
 						} else {
-							SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, i->initialValue, ExprEvalPurpose::RValue, {}, initialValueReg, result));
+							peff::SharedPtr<TypeNameNode> deducedType;
+
+							newVar->isTypeDeducedFromInitialValue = true;
+
+							SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, i->initialValue, deducedType));
+
+							if (!deducedType) {
+								return CompilationError(stmt->tokenRange, CompilationErrorKind::ErrorDeducingVarType);
+							}
+
+							newVar->type = deducedType;
+
+							{
+								slake::Type type;
+								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, newVar->type, type));
+
+								SLKC_RETURN_IF_COMP_ERROR(
+									compileContext->emitIns(
+										slake::Opcode::LVAR,
+										localVarReg,
+										{ slake::Value(type) }));
+							}
+
+							bool b = false;
+							SLKC_RETURN_IF_COMP_ERROR(isLValueType(deducedType, b));
+
+							if (b) {
+								SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, i->initialValue, ExprEvalPurpose::LValue, {}, initialValueReg, result));
+							} else {
+								SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, i->initialValue, ExprEvalPurpose::RValue, {}, initialValueReg, result));
+							}
 						}
 
 						SLKC_RETURN_IF_COMP_ERROR(
@@ -71,6 +109,23 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 								slake::Opcode::STORE,
 								UINT32_MAX,
 								{ slake::Value(slake::ValueType::RegRef, initialValueReg), slake::Value(slake::ValueType::RegRef, localVarReg) }));
+					} else {
+						if (!i->type) {
+							return CompilationError(stmt->tokenRange, CompilationErrorKind::RequiresInitialValue);
+						}
+
+						newVar->type = i->type;
+
+						{
+							slake::Type type;
+							SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, newVar->type, type));
+
+							SLKC_RETURN_IF_COMP_ERROR(
+								compileContext->emitIns(
+									slake::Opcode::LVAR,
+									localVarReg,
+									{ slake::Value(type) }));
+						}
 					}
 				}
 			}

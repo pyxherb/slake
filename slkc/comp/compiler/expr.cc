@@ -692,64 +692,87 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 		case ExprKind::InitializerList: {
 			peff::SharedPtr<InitializerListExprNode> e = expr.castTo<InitializerListExprNode>();
 
+			peff::SharedPtr<TypeNameNode> tn;
+			if (!desiredType) {
+				for (auto i : e->elements) {
+					peff::SharedPtr<TypeNameNode> t;
+					SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, i, t));
+
+					if (t) {
+						if (tn) {
+							SLKC_RETURN_IF_COMP_ERROR(determinePromotionalType(t, tn, tn));
+						} else {
+							tn = t;
+						}
+					}
+				}
+
+				if (!tn) {
+					return CompilationError(expr->tokenRange, CompilationErrorKind::ErrorDeducingInitializerListType);
+				}
+
+				if (!(resultOut.evaluatedType = peff::makeShared<ArrayTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, tn).castTo<TypeNameNode>())) {
+					return genOutOfMemoryCompError();
+				}
+			} else {
+				switch (desiredType->typeNameKind) {
+					case TypeNameKind::Array:
+						tn = desiredType.castTo<ArrayTypeNameNode>()->elementType;
+						break;
+					default:
+						return CompilationError(expr->tokenRange, CompilationErrorKind::InvalidInitializerListUsage);
+				}
+
+				if (!(resultOut.evaluatedType = desiredType)) {
+					return genOutOfMemoryCompError();
+				}
+			}
+
 			switch (evalPurpose) {
+				case ExprEvalPurpose::EvalType:
+					break;
 				case ExprEvalPurpose::Stmt:
 					SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(
 						CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
 					break;
 				case ExprEvalPurpose::RValue: {
-					if (!desiredType)
-						return CompilationError(expr->tokenRange, CompilationErrorKind::InvalidInitializerListUsage);
-					switch (desiredType->typeNameKind) {
-						case TypeNameKind::Array: {
-							peff::SharedPtr<ArrayTypeNameNode> tn = desiredType.castTo<ArrayTypeNameNode>();
+					if (resultRegOut != UINT32_MAX) {
+						slake::Type elementType;
 
-							if (resultRegOut != UINT32_MAX) {
-								slake::Type elementType;
+						SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, tn, elementType));
+						SLKC_RETURN_IF_COMP_ERROR(
+							compileContext->emitIns(
+								slake::Opcode::ARRNEW,
+								resultRegOut,
+								{ slake::Value(elementType), slake::Value((uint32_t)e->elements.size()) }));
 
-								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, tn->elementType, elementType));
-								SLKC_RETURN_IF_COMP_ERROR(
-									compileContext->emitIns(
-										slake::Opcode::ARRNEW,
-										resultRegOut,
-										{ slake::Value(elementType), slake::Value((uint32_t)e->elements.size()) }));
+						for (size_t i = 0; i < e->elements.size(); ++i) {
+							uint32_t curElementSlotRegIndex = compileContext->allocReg();
+							uint32_t curElementRegIndex = compileContext->allocReg();
 
-								for (size_t i = 0; i < e->elements.size(); ++i) {
-									uint32_t curElementSlotRegIndex = compileContext->allocReg();
-									uint32_t curElementRegIndex = compileContext->allocReg();
+							SLKC_RETURN_IF_COMP_ERROR(
+								compileContext->emitIns(
+									slake::Opcode::AT,
+									curElementSlotRegIndex,
+									{ slake::Value(slake::ValueType::RegRef, resultRegOut), slake::Value((uint32_t)i) }));
 
-									SLKC_RETURN_IF_COMP_ERROR(
-										compileContext->emitIns(
-											slake::Opcode::AT,
-											curElementSlotRegIndex,
-											{ slake::Value(slake::ValueType::RegRef, resultRegOut), slake::Value((uint32_t)i) }));
+							CompileExprResult result(compileContext->allocator.get());
 
-									CompileExprResult result(compileContext->allocator.get());
+							SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->elements.at(i), ExprEvalPurpose::RValue, tn.castTo<TypeNameNode>(), curElementRegIndex, result));
 
-									SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->elements.at(i), ExprEvalPurpose::RValue, tn->elementType.castTo<TypeNameNode>(), curElementRegIndex, result));
-
-									SLKC_RETURN_IF_COMP_ERROR(
-										compileContext->emitIns(
-											slake::Opcode::STORE,
-											UINT32_MAX,
-											{ slake::Value(slake::ValueType::RegRef, curElementSlotRegIndex), slake::Value(slake::ValueType::RegRef, curElementRegIndex) }));
-								}
-							} else {
-								// Just simply evaluate each element.
-								for (size_t i = 0; i < e->elements.size(); ++i) {
-									CompileExprResult result(compileContext->allocator.get());
-
-									SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->elements.at(i), ExprEvalPurpose::RValue, tn->elementType.castTo<TypeNameNode>(), UINT32_MAX, result));
-								}
-							}
-
-							if (!(resultOut.evaluatedType = desiredType)) {
-								return genOutOfMemoryCompError();
-							}
-							break;
+							SLKC_RETURN_IF_COMP_ERROR(
+								compileContext->emitIns(
+									slake::Opcode::STORE,
+									UINT32_MAX,
+									{ slake::Value(slake::ValueType::RegRef, curElementSlotRegIndex), slake::Value(slake::ValueType::RegRef, curElementRegIndex) }));
 						}
-						default:
-							return CompilationError(expr->tokenRange, CompilationErrorKind::InvalidInitializerListUsage);
+					} else {
+						// Just simply evaluate each element.
+						for (size_t i = 0; i < e->elements.size(); ++i) {
+							CompileExprResult result(compileContext->allocator.get());
+
+							SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->elements.at(i), ExprEvalPurpose::RValue, tn.castTo<TypeNameNode>(), UINT32_MAX, result));
+						}
 					}
 					break;
 				}

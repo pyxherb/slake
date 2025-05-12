@@ -28,6 +28,7 @@ namespace slkc {
 		ParamAlreadyDefined,
 		GenericParamAlreadyDefined,
 		InvalidInitializerListUsage,
+		ErrorDeducingInitializerListType,
 		InvalidThisUsage,
 		NoMatchingFnOverloading,
 		UnableToDetermineOverloading,
@@ -41,6 +42,8 @@ namespace slkc {
 		TypeIsNotConstructible,
 		InvalidCast,
 		FunctionOverloadingDuplicated,
+		RequiresInitialValue,
+		ErrorDeducingVarType,
 
 		ImportLimitExceeded,
 		MalformedModuleName,

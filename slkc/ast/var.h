@@ -11,6 +11,7 @@ namespace slkc {
 		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
 
 	public:
+		bool isTypeDeducedFromInitialValue = false;
 		peff::SharedPtr<TypeNameNode> type;
 		peff::SharedPtr<ExprNode> initialValue;
 		bool isTypeSealed = false;

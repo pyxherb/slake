@@ -413,6 +413,13 @@ namespace slkc {
 		const peff::SharedPtr<TypeNameNode> &lhs,
 		const peff::SharedPtr<TypeNameNode> &rhs,
 		bool &whetherOut);
+	[[nodiscard]] SLKC_API std::optional<CompilationError> getTypePromotionLevel(
+		const peff::SharedPtr<TypeNameNode> &typeName,
+		int &levelOut);
+	[[nodiscard]] SLKC_API std::optional<CompilationError> determinePromotionalType(
+		peff::SharedPtr<TypeNameNode> lhs,
+		peff::SharedPtr<TypeNameNode> rhs,
+		peff::SharedPtr<TypeNameNode> &typeNameOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> isSameTypeInSignature(
 		const peff::SharedPtr<TypeNameNode> &lhs,
 		const peff::SharedPtr<TypeNameNode> &rhs,

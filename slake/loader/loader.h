@@ -6,6 +6,7 @@
 namespace slake {
 	namespace loader {
 		SLAKE_API InternalExceptionPointer loadType(Runtime *runtime, Reader *reader, Object *member, Type &typeOut) noexcept;
+		SLAKE_API InternalExceptionPointer loadGenericParam(Runtime *runtime, Reader *reader, Object *member, GenericParam &genericParamOut) noexcept;
 		SLAKE_API InternalExceptionPointer loadValue(Runtime *runtime, Reader *reader, Object *member, Value &valueOut) noexcept;
 		SLAKE_API InternalExceptionPointer loadIdRefEntries(Runtime *runtime, Reader *reader, Object *member, peff::DynArray<IdRefEntry> &entriesOut) noexcept;
 		SLAKE_API InternalExceptionPointer loadIdRef(Runtime *runtime, Reader *reader, Object *member, HostObjectRef<IdRefObject> &idRefOut) noexcept;

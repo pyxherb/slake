@@ -5,29 +5,27 @@ using namespace slkc;
 SLKC_API Writer::~Writer() {
 }
 
-SLKC_API std::optional<CompilationError> slkc::dumpGenericParams(
-	peff::Alloc* allocator,
-	Writer* writer,
-	const slake::GenericParamList& genericParams) {
-	for (auto &j : genericParams) {
-		SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(j.name.size()));
-		SLKC_RETURN_IF_COMP_ERROR(writer->write(j.name.data(), j.name.size()));
+SLKC_API std::optional<CompilationError> slkc::dumpGenericParam(
+	peff::Alloc *allocator,
+	Writer *writer,
+	const slake::GenericParam &genericParam) {
+	SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(genericParam.name.size()));
+	SLKC_RETURN_IF_COMP_ERROR(writer->write(genericParam.name.data(), genericParam.name.size()));
 
-		SLKC_RETURN_IF_COMP_ERROR(writer->writeBool(j.baseType));
-		SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, j.baseType));
+	SLKC_RETURN_IF_COMP_ERROR(writer->writeBool(genericParam.baseType));
+	SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, genericParam.baseType));
 
-		SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(j.interfaces.size()));
-		for (auto &k : j.interfaces) {
-			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, k));
-		}
+	SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(genericParam.interfaces.size()));
+	for (auto &k : genericParam.interfaces) {
+		SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, k));
 	}
 
 	return {};
 }
 
 SLKC_API std::optional<CompilationError> slkc::dumpIdRefEntries(
-	peff::Alloc* allocator,
-	Writer* writer,
+	peff::Alloc *allocator,
+	Writer *writer,
 	const peff::DynArray<slake::IdRefEntry> &entries) {
 	SLKC_RETURN_IF_COMP_ERROR(writer->writeU32((uint32_t)entries.size()));
 	for (auto &i : entries) {
@@ -42,9 +40,9 @@ SLKC_API std::optional<CompilationError> slkc::dumpIdRefEntries(
 }
 
 SLKC_API std::optional<CompilationError> slkc::dumpIdRef(
-	peff::Alloc* allocator,
-	Writer* writer,
-	slake::IdRefObject* ref) {
+	peff::Alloc *allocator,
+	Writer *writer,
+	slake::IdRefObject *ref) {
 	SLKC_RETURN_IF_COMP_ERROR(dumpIdRefEntries(allocator, writer, ref->entries));
 
 	SLKC_RETURN_IF_COMP_ERROR(writer->writeI32((int32_t)ref->paramTypes.size()));
@@ -56,9 +54,9 @@ SLKC_API std::optional<CompilationError> slkc::dumpIdRef(
 }
 
 [[nodiscard]] SLKC_API std::optional<CompilationError> slkc::dumpValue(
-	peff::Alloc* allocator,
-	Writer* writer,
-	const slake::Value& value) {
+	peff::Alloc *allocator,
+	Writer *writer,
+	const slake::Value &value) {
 	switch (value.valueType) {
 		case slake::ValueType::I8:
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::I8));
@@ -119,7 +117,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpIdRef(
 				case slake::ObjectRefKind::ObjectRef: {
 					switch (er.asObject.instanceObject->getKind()) {
 						case slake::ObjectKind::String: {
-							slake::StringObject *s = (slake::StringObject*)er.asObject.instanceObject;
+							slake::StringObject *s = (slake::StringObject *)er.asObject.instanceObject;
 							SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::String));
 							SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(s->data.size()));
 							SLKC_RETURN_IF_COMP_ERROR(writer->write(s->data.data(), s->data.size()));
@@ -156,9 +154,9 @@ SLKC_API std::optional<CompilationError> slkc::dumpIdRef(
 }
 
 SLKC_API std::optional<CompilationError> slkc::dumpTypeName(
-	peff::Alloc* allocator,
-	Writer* writer,
-	const slake::Type& type) {
+	peff::Alloc *allocator,
+	Writer *writer,
+	const slake::Type &type) {
 	switch (type.typeId) {
 		case slake::TypeId::None:
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::TypeId::None));
@@ -211,13 +209,13 @@ SLKC_API std::optional<CompilationError> slkc::dumpTypeName(
 			slake::Object *dest = type.getCustomTypeExData();
 			switch (dest->getKind()) {
 				case slake::ObjectKind::IdRef: {
-					SLKC_RETURN_IF_COMP_ERROR(dumpIdRef(allocator, writer, (slake::IdRefObject*)dest));
+					SLKC_RETURN_IF_COMP_ERROR(dumpIdRef(allocator, writer, (slake::IdRefObject *)dest));
 					break;
 				}
 				case slake::ObjectKind::Class:
 				case slake::ObjectKind::Interface: {
 					peff::DynArray<slake::IdRefEntry> entries(allocator);
-					if (!dest->associatedRuntime->getFullRef(allocator, (slake::MemberObject*)dest, entries)) {
+					if (!dest->associatedRuntime->getFullRef(allocator, (slake::MemberObject *)dest, entries)) {
 						return genOutOfMemoryCompError();
 					}
 					SLKC_RETURN_IF_COMP_ERROR(dumpIdRefEntries(allocator, writer, entries));
@@ -301,7 +299,9 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 
 		SLKC_RETURN_IF_COMP_ERROR(writer->write(i->name.data(), i->name.size()));
 
-		SLKC_RETURN_IF_COMP_ERROR(dumpGenericParams(allocator, writer, i->genericParams));
+		for (auto &j : i->genericParams) {
+			SLKC_RETURN_IF_COMP_ERROR(dumpGenericParam(allocator, writer, j));
+		}
 
 		if (i->baseType) {
 			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, i->baseType));
@@ -328,7 +328,9 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 
 		SLKC_RETURN_IF_COMP_ERROR(writer->write(i->name.data(), i->name.size()));
 
-		SLKC_RETURN_IF_COMP_ERROR(dumpGenericParams(allocator, writer, i->genericParams));
+		for (auto &j : i->genericParams) {
+			SLKC_RETURN_IF_COMP_ERROR(dumpGenericParam(allocator, writer, j));
+		}
 
 		for (auto &j : i->implTypes) {
 			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, j));
@@ -337,7 +339,12 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 		SLKC_RETURN_IF_COMP_ERROR(dumpModuleMembers(allocator, writer, i));
 	}
 
+	SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(collectedFns.size()));
 	for (auto i : collectedFns) {
+		SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(i->name.size()));
+		SLKC_RETURN_IF_COMP_ERROR(writer->write(i->name.data(), i->name.size()));
+
+		SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(i->overloadings.size()));
 		for (auto j : i->overloadings) {
 			if (j->overloadingKind != slake::FnOverloadingKind::Regular) {
 				continue;
@@ -370,15 +377,14 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 			}
 			fnd.nParams = ol->paramTypes.size();
 			fnd.nGenericParams = ol->genericParams.size();
-			fnd.lenName = i->name.size();
 			fnd.nRegisters = ol->nRegisters;
 			fnd.lenBody = ol->instructions.size();
 
 			SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)&fnd, sizeof(fnd)));
 
-			SLKC_RETURN_IF_COMP_ERROR(writer->write(i->name.data(), i->name.size()));
-
-			SLKC_RETURN_IF_COMP_ERROR(dumpGenericParams(allocator, writer, j->genericParams));
+			for (auto &k : j->genericParams) {
+				SLKC_RETURN_IF_COMP_ERROR(dumpGenericParam(allocator, writer, k));
+			}
 
 			for (auto &k : ol->paramTypes) {
 				SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, k));
@@ -395,8 +401,8 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 }
 
 SLKC_API std::optional<CompilationError> slkc::dumpModule(
-	peff::Alloc* allocator,
-	Writer* writer,
+	peff::Alloc *allocator,
+	Writer *writer,
 	slake::ModuleObject *mod) {
 	slake::slxfmt::ImgHeader ih = {};
 

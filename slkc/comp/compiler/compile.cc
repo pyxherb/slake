@@ -603,9 +603,11 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 					slake::HostObjectRef<slake::RegularFnOverloadingObject> fnObject;
 
-					if (!(fnObject = slake::RegularFnOverloadingObject::alloc(slotObject.get(), i->accessModifier))) {
+					if (!(fnObject = slake::RegularFnOverloadingObject::alloc(slotObject.get()))) {
 						return genOutOfRuntimeMemoryCompError();
 					}
+
+					fnObject->setAccess(i->accessModifier);
 
 					peff::SharedPtr<BlockCompileContext> blockContext;
 					if (!(blockContext = peff::makeShared<BlockCompileContext>(compileContext->allocator.get(), compileContext->allocator.get())))

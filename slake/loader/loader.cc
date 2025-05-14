@@ -130,6 +130,36 @@ SLAKE_API InternalExceptionPointer loader::loadType(Runtime *runtime, Reader *re
 	return {};
 }
 
+SLAKE_API InternalExceptionPointer loader::loadGenericParam(Runtime* runtime, Reader* reader, Object* member, GenericParam& genericParamOut) noexcept {
+	uint32_t lenName;
+
+	SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(lenName)));
+	if (!genericParamOut.name.resize(lenName)) {
+		return OutOfMemoryError::alloc();
+	}
+	SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(genericParamOut.name.data(), lenName)));
+
+	bool b;
+	SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readBool(b)));
+
+	if (b) {
+		SLAKE_RETURN_IF_EXCEPT(loadType(runtime, reader, member, genericParamOut.baseType));
+	}
+
+	uint32_t nImplInterfaces;
+
+	SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(nImplInterfaces)));
+
+	if (!genericParamOut.interfaces.resize(nImplInterfaces)) {
+		return OutOfMemoryError::alloc();
+	}
+	for (size_t i = 0; i < nImplInterfaces; ++i) {
+		SLAKE_RETURN_IF_EXCEPT(loadType(runtime, reader, member, genericParamOut.interfaces.at(i)));
+	}
+
+	return {};
+}
+
 SLAKE_API InternalExceptionPointer loader::loadValue(Runtime *runtime, Reader *reader, Object *member, Value &valueOut) noexcept {
 	slxfmt::ValueType vt;
 
@@ -303,11 +333,185 @@ SLAKE_API InternalExceptionPointer loader::loadIdRef(Runtime *runtime, Reader *r
 }
 
 SLAKE_API InternalExceptionPointer loader::loadModuleMembers(Runtime *runtime, Reader *reader, ModuleObject *moduleObject) noexcept {
-	uint32_t nClasses;
+	{
+		uint32_t nClasses;
 
-	SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(nClasses)));
-	for (size_t i = 0; i < nClasses; ++i) {
+		SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(nClasses)));
+		for (size_t i = 0; i < nClasses; ++i) {
+			slake::slxfmt::ClassTypeDesc ctd;
 
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read((char *)&ctd, sizeof(ctd))));
+
+			HostObjectRef<ClassObject> clsObject;
+
+			if (!(clsObject = ClassObject::alloc(runtime))) {
+				return OutOfMemoryError::alloc();
+			}
+
+			AccessModifier access = 0;
+
+			if (ctd.flags & slxfmt::CTD_PUB) {
+				access |= ACCESS_PUB;
+			}
+			if (ctd.flags & slxfmt::CTD_FINAL) {
+				access |= ACCESS_FINAL;
+			}
+
+			if (!clsObject->name.resize(ctd.lenName)) {
+				return OutOfMemoryError::alloc();
+			}
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(clsObject->name.data(), ctd.lenName)));
+
+			for (size_t j = 0; j < ctd.nGenericParams; ++j) {
+				GenericParam gp(&runtime->globalHeapPoolAlloc);
+
+				SLAKE_RETURN_IF_EXCEPT(loadGenericParam(runtime, reader, moduleObject, gp));
+
+				if (!clsObject->genericParams.pushBack(std::move(gp))) {
+					return OutOfMemoryError::alloc();
+				}
+			}
+
+			if (ctd.flags & slxfmt::CTD_DERIVED) {
+				SLAKE_RETURN_IF_EXCEPT(loadType(runtime, reader, moduleObject, clsObject->baseType));
+			}
+
+			if (!clsObject->implTypes.resize(ctd.nImpls)) {
+				return OutOfMemoryError::alloc();
+			}
+			for (size_t j = 0; j < ctd.nImpls; ++j) {
+				SLAKE_RETURN_IF_EXCEPT(loadType(runtime, reader, moduleObject, clsObject->implTypes.at(j)));
+			}
+
+			SLAKE_RETURN_IF_EXCEPT(loadModuleMembers(runtime, reader, clsObject.get()));
+		}
+	}
+
+	{
+		uint32_t nInterfaces;
+
+		SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(nInterfaces)));
+		for (size_t i = 0; i < nInterfaces; ++i) {
+			slake::slxfmt::InterfaceTypeDesc itd;
+
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read((char *)&itd, sizeof(itd))));
+
+			HostObjectRef<InterfaceObject> interfaceObject;
+
+			if (!(interfaceObject = InterfaceObject::alloc(runtime))) {
+				return OutOfMemoryError::alloc();
+			}
+
+			AccessModifier access = 0;
+
+			if (itd.flags & slxfmt::ITD_PUB) {
+				access |= ACCESS_PUB;
+			}
+
+			if (!interfaceObject->name.resize(itd.lenName)) {
+				return OutOfMemoryError::alloc();
+			}
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(interfaceObject->name.data(), itd.lenName)));
+
+			for (size_t j = 0; j < itd.nGenericParams; ++j) {
+				GenericParam gp(&runtime->globalHeapPoolAlloc);
+
+				SLAKE_RETURN_IF_EXCEPT(loadGenericParam(runtime, reader, moduleObject, gp));
+
+				if (!interfaceObject->genericParams.pushBack(std::move(gp))) {
+					return OutOfMemoryError::alloc();
+				}
+			}
+
+			if (!interfaceObject->implTypes.resize(itd.nParents)) {
+				return OutOfMemoryError::alloc();
+			}
+			for (size_t j = 0; j < itd.nParents; ++j) {
+				SLAKE_RETURN_IF_EXCEPT(loadType(runtime, reader, moduleObject, interfaceObject->implTypes.at(j)));
+			}
+
+			SLAKE_RETURN_IF_EXCEPT(loadModuleMembers(runtime, reader, interfaceObject.get()));
+		}
+	}
+
+	{
+		uint32_t nFns;
+
+		SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(nFns)));
+		for (size_t i = 0; i < nFns; ++i) {
+			HostObjectRef<FnObject> fnObject;
+
+			if (!(fnObject = FnObject::alloc(runtime))) {
+				return OutOfMemoryError::alloc();
+			}
+
+			uint32_t lenName;
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(lenName)));
+			if (!fnObject->name.resize(lenName)) {
+				return OutOfMemoryError::alloc();
+			}
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(fnObject->name.data(), lenName)));
+
+			uint32_t nOverloadings;
+
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(nOverloadings)));
+			for (size_t j = 0; j < nOverloadings; ++j) {
+				HostObjectRef<RegularFnOverloadingObject> fnOverloadingObject;
+
+				if (!(fnOverloadingObject = RegularFnOverloadingObject::alloc(fnObject.get()))) {
+					return OutOfMemoryError::alloc();
+				}
+
+				slake::slxfmt::FnDesc fnd;
+
+				SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read((char*)&fnd, sizeof(fnd))));
+
+				if (fnd.flags & slxfmt::FND_PUB) {
+					fnOverloadingObject->access |= ACCESS_PUB;
+				}
+				if (fnd.flags & slxfmt::FND_FINAL) {
+					fnOverloadingObject->access |= ACCESS_FINAL;
+				}
+				if (fnd.flags & slxfmt::FND_STATIC) {
+					fnOverloadingObject->access |= ACCESS_STATIC;
+				}
+				if (fnd.flags & slxfmt::FND_NATIVE) {
+					fnOverloadingObject->access |= ACCESS_NATIVE;
+				}
+
+				if (fnd.flags & slxfmt::FND_VARG) {
+					fnOverloadingObject->setVarArgs();
+				}
+				if (fnd.flags & slxfmt::FND_GENERATOR) {
+					fnOverloadingObject->setCoroutine();
+				}
+				if (fnd.flags & slxfmt::FND_VIRTUAL) {
+					fnOverloadingObject->setVirtualFlag();
+				}
+
+				fnOverloadingObject->setRegisterNumber(fnd.nRegisters);
+
+				uint32_t lenName;
+				SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(lenName)));
+
+				for (size_t k = 0; k < fnd.nGenericParams; ++k) {
+					GenericParam gp(&runtime->globalHeapPoolAlloc);
+
+					SLAKE_RETURN_IF_EXCEPT(loadGenericParam(runtime, reader, fnOverloadingObject.get(), gp));
+
+					if (!fnOverloadingObject->genericParams.pushBack(std::move(gp))) {
+						return OutOfMemoryError::alloc();
+					}
+				}
+
+				if (!fnOverloadingObject->paramTypes.resize(fnd.nParams)) {
+					return OutOfMemoryError::alloc();
+				}
+				for (size_t k = 0; k < fnd.nParams; ++k) {
+					SLAKE_RETURN_IF_EXCEPT(loadType(runtime, reader, fnOverloadingObject.get(), fnOverloadingObject->paramTypes.at(k)));
+				}
+			}
+		}
 	}
 }
 

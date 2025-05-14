@@ -605,10 +605,10 @@ namespace slkc {
 		}
 	};
 
-	[[nodiscard]] SLKC_API std::optional<CompilationError> dumpGenericParams(
+	[[nodiscard]] SLKC_API std::optional<CompilationError> dumpGenericParam(
 		peff::Alloc *allocator,
 		Writer *writer,
-		const slake::GenericParamList &genericParams);
+		const slake::GenericParam &genericParams);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> dumpIdRefEntries(
 		peff::Alloc *allocator,
 		Writer *writer,

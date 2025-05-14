@@ -129,7 +129,6 @@ namespace slake {
 		/// @brief Function Descriptor (FND)
 		struct FnDesc final {
 			uint16_t flags;			   // Flags
-			uint16_t lenName;		   // Length of name
 			uint32_t lenBody;		   // Length of body
 			uint32_t nSourceLocDescs;  // Number of SLDs
 			uint32_t nRegisters;	   // Number of registers

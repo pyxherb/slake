@@ -74,14 +74,17 @@ namespace slake {
 
 		SLAKE_API FnOverloadingObject(
 			FnOverloadingKind overloadingKind,
-			FnObject *fnObject,
-			AccessModifier access);
+			FnObject *fnObject);
 		SLAKE_API FnOverloadingObject(const FnOverloadingObject &other, bool &succeededOut);
 		SLAKE_API virtual ~FnOverloadingObject();
 
 		SLAKE_API virtual ObjectKind getKind() const;
 
 		SLAKE_API virtual FnOverloadingObject *duplicate() const = 0;
+
+		SLAKE_FORCEINLINE void setAccess(AccessModifier accessModifier) {
+			this->access = accessModifier;
+		}
 
 		SLAKE_FORCEINLINE void setParamTypes(peff::DynArray<Type> &&paramTypes) noexcept {
 			this->paramTypes = std::move(paramTypes);
@@ -140,8 +143,7 @@ namespace slake {
 		uint32_t nRegisters;
 
 		SLAKE_API RegularFnOverloadingObject(
-			FnObject *fnObject,
-			AccessModifier access);
+			FnObject *fnObject);
 		SLAKE_API RegularFnOverloadingObject(const RegularFnOverloadingObject &other, bool &succeededOut);
 		SLAKE_API virtual ~RegularFnOverloadingObject();
 
@@ -150,8 +152,7 @@ namespace slake {
 		SLAKE_API virtual FnOverloadingObject *duplicate() const override;
 
 		SLAKE_API static HostObjectRef<RegularFnOverloadingObject> alloc(
-			FnObject *fnObject,
-			AccessModifier access);
+			FnObject *fnObject);
 		SLAKE_API static HostObjectRef<RegularFnOverloadingObject> alloc(const RegularFnOverloadingObject *other);
 		SLAKE_API virtual void dealloc() override;
 
@@ -200,7 +201,6 @@ namespace slake {
 	public:
 		SLAKE_API NativeFnOverloadingObject(
 			FnObject *fnObject,
-			AccessModifier access,
 			NativeFnCallback callback);
 		SLAKE_API NativeFnOverloadingObject(const NativeFnOverloadingObject &other, bool &succeededOut);
 		SLAKE_API virtual ~NativeFnOverloadingObject();
@@ -211,7 +211,6 @@ namespace slake {
 
 		SLAKE_API static HostObjectRef<NativeFnOverloadingObject> alloc(
 			FnObject *fnObject,
-			AccessModifier access,
 			NativeFnCallback callback);
 		SLAKE_API static HostObjectRef<NativeFnOverloadingObject> alloc(const NativeFnOverloadingObject *other);
 		SLAKE_API virtual void dealloc() override;

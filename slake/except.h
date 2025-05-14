@@ -375,6 +375,18 @@ namespace slake {
 		SLAKE_API static BadMagicError *alloc(peff::Alloc *selfAllocator);
 	};
 
+	class ReadError : public LoaderError {
+	public:
+		SLAKE_API ReadError(peff::Alloc *selfAllocator);
+		SLAKE_API virtual ~ReadError();
+
+		SLAKE_API virtual const char *what() const override;
+
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API static ReadError *alloc(peff::Alloc *selfAllocator);
+	};
+
 	SLAKE_API InternalExceptionPointer allocOutOfMemoryErrorIfAllocFailed(InternalExceptionPointer e);
 }
 

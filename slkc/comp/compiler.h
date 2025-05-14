@@ -580,7 +580,7 @@ namespace slkc {
 			return write((char *)&data, sizeof(uint8_t));
 		}
 
-		SLAKE_FORCEINLINE std::optional<CompilationError> writeI16(uint16_t data) noexcept {
+		SLAKE_FORCEINLINE std::optional<CompilationError> writeU16(uint16_t data) noexcept {
 			return write((char *)&data, sizeof(uint16_t));
 		}
 

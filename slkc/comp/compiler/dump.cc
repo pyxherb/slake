@@ -62,42 +62,55 @@ SLKC_API std::optional<CompilationError> slkc::dumpIdRef(
 	switch (value.valueType) {
 		case slake::ValueType::I8:
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::I8));
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeI8(value.getI8()));
 			break;
 		case slake::ValueType::I16:
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::I16));
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeI16(value.getI16()));
 			break;
 		case slake::ValueType::I32:
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::I32));
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeI32(value.getI32()));
 			break;
 		case slake::ValueType::I64:
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::I64));
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeI64(value.getI64()));
 			break;
 		case slake::ValueType::U8:
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::U8));
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8(value.getU8()));
 			break;
 		case slake::ValueType::U16:
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::U16));
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeU16(value.getU16()));
 			break;
 		case slake::ValueType::U32:
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::U32));
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(value.getU32()));
 			break;
 		case slake::ValueType::U64:
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::U64));
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeU64(value.getU64()));
 			break;
 		case slake::ValueType::F32:
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::F32));
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeF32(value.getI8()));
 			break;
 		case slake::ValueType::F64:
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::F64));
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeF64(value.getI8()));
 			break;
 		case slake::ValueType::Bool:
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::Bool));
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeBool(value.getI8()));
 			break;
 		case slake::ValueType::TypeName:
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::TypeName));
+			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, value.getTypeName()));
 			break;
 		case slake::ValueType::RegRef:
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::Reg));
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(value.getRegIndex()));
 			break;
 		case slake::ValueType::EntityRef: {
 			const slake::EntityRef &er = value.getEntityRef();
@@ -218,6 +231,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpTypeName(
 		case slake::TypeId::GenericArg: {
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::TypeId::GenericArg));
 			slake::StringObject *dest = type.exData.genericArg.nameObject;
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(dest->data.size()));
 			SLKC_RETURN_IF_COMP_ERROR(writer->write(dest->data.data(), dest->data.size()));
 			break;
 		}
@@ -389,9 +403,13 @@ SLKC_API std::optional<CompilationError> slkc::dumpModule(
 	memcpy(ih.magic, slake::slxfmt::IMH_MAGIC, sizeof(ih.magic));
 
 	ih.fmtVer = 0x02;
-	ih.nImports = mod->imports.size() + mod->unnamedImports.size();
+	ih.nImports = mod->unnamedImports.size();
 
 	SLKC_RETURN_IF_COMP_ERROR(writer->write((const char *)&ih, sizeof(ih)));
+
+	for (auto i : mod->unnamedImports) {
+		SLKC_RETURN_IF_COMP_ERROR(dumpIdRef(allocator, writer, i));
+	}
 
 	SLKC_RETURN_IF_COMP_ERROR(dumpModuleMembers(allocator, writer, mod));
 

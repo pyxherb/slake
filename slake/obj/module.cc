@@ -3,10 +3,10 @@
 using namespace slake;
 
 SLAKE_API ModuleObject::ModuleObject(Runtime *rt)
-	: MemberObject(rt), members(&rt->globalHeapPoolAlloc), fieldRecords(&rt->globalHeapPoolAlloc), fieldRecordIndices(&rt->globalHeapPoolAlloc), imports(&rt->globalHeapPoolAlloc), unnamedImports(&rt->globalHeapPoolAlloc) {
+	: MemberObject(rt), members(&rt->globalHeapPoolAlloc), fieldRecords(&rt->globalHeapPoolAlloc), fieldRecordIndices(&rt->globalHeapPoolAlloc), unnamedImports(&rt->globalHeapPoolAlloc) {
 }
 
-SLAKE_API ModuleObject::ModuleObject(const ModuleObject &x, bool &succeededOut) : MemberObject(x, succeededOut), members(&x.associatedRuntime->globalHeapPoolAlloc), fieldRecords(&x.associatedRuntime->globalHeapPoolAlloc), fieldRecordIndices(&x.associatedRuntime->globalHeapPoolAlloc), imports(&x.associatedRuntime->globalHeapPoolAlloc), unnamedImports(&x.associatedRuntime->globalHeapPoolAlloc) {
+SLAKE_API ModuleObject::ModuleObject(const ModuleObject &x, bool &succeededOut) : MemberObject(x, succeededOut), members(&x.associatedRuntime->globalHeapPoolAlloc), fieldRecords(&x.associatedRuntime->globalHeapPoolAlloc), fieldRecordIndices(&x.associatedRuntime->globalHeapPoolAlloc), unnamedImports(&x.associatedRuntime->globalHeapPoolAlloc) {
 	if (succeededOut) {
 		if (!peff::copyAssign(fieldRecords, x.fieldRecords)) {
 			succeededOut = false;
@@ -25,10 +25,6 @@ SLAKE_API ModuleObject::ModuleObject(const ModuleObject &x, bool &succeededOut) 
 		memcpy(this->localFieldStorage, x.localFieldStorage, x.szLocalFieldStorage);
 		szLocalFieldStorage = x.szLocalFieldStorage;
 
-		if (!peff::copyAssign(imports, x.imports)) {
-			succeededOut = false;
-			return;
-		}
 		if (!peff::copyAssign(unnamedImports, x.unnamedImports)) {
 			succeededOut = false;
 			return;

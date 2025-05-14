@@ -236,9 +236,6 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 
 					context.pushObject(((ModuleObject *)v)->parent);
 
-					for (auto i = ((ModuleObject *)v)->imports.begin(); i != ((ModuleObject *)v)->imports.end(); ++i)
-						context.pushObject(i.value());
-
 					for (auto i : ((ModuleObject *)v)->unnamedImports)
 						context.pushObject(i);
 

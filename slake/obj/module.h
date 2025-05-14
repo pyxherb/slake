@@ -51,7 +51,6 @@ namespace slake {
 		peff::DynArray<FieldRecord> fieldRecords;
 		peff::HashMap<std::string_view, size_t> fieldRecordIndices;
 
-		peff::HashMap<peff::String, IdRefObject *> imports;
 		peff::DynArray<IdRefObject *> unnamedImports;
 
 		SLAKE_API ModuleObject(Runtime *rt);

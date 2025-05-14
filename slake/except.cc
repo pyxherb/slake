@@ -366,3 +366,19 @@ SLAKE_API void BadMagicError::dealloc() {
 SLAKE_API BadMagicError *BadMagicError::alloc(peff::Alloc *selfAllocator) {
 	return peff::allocAndConstruct<BadMagicError>(selfAllocator, sizeof(std::max_align_t), selfAllocator);
 }
+
+SLAKE_API ReadError::ReadError(peff::Alloc *selfAllocator)
+	: LoaderError(selfAllocator, LoaderErrorCode::ReadError) {}
+SLAKE_API ReadError::~ReadError() {}
+
+SLAKE_API const char *ReadError::what() const {
+	return "Bad magic number";
+}
+
+SLAKE_API void ReadError::dealloc() {
+	peff::destroyAndRelease<ReadError>(selfAllocator.get(), this, sizeof(std::max_align_t));
+}
+
+SLAKE_API ReadError *ReadError::alloc(peff::Alloc *selfAllocator) {
+	return peff::allocAndConstruct<ReadError>(selfAllocator, sizeof(std::max_align_t), selfAllocator);
+}

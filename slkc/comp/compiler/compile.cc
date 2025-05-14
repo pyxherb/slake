@@ -418,17 +418,11 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 				SLKC_RETURN_IF_COMP_ERROR(j->loadModule(compileContext, importNode->idRef.get()));
 			}
 
-			peff::String s(&compileContext->runtime->globalHeapPoolAlloc);
-
-			if (!s.build(k)) {
-				return genOutOfRuntimeMemoryCompError();
-			}
-
 			slake::HostObjectRef<slake::IdRefObject> id;
 
 			SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, importNode->idRef->entries.data(), importNode->idRef->entries.size(), nullptr, 0, false, id));
 
-			if (!modOut->imports.insert(std::move(s), id.get())) {
+			if (!modOut->unnamedImports.pushBack(id.get())) {
 				return genOutOfMemoryCompError();
 			}
 		}

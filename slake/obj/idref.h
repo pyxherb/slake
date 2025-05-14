@@ -10,7 +10,6 @@ namespace slake {
 		peff::String name;
 		GenericArgList genericArgs;
 
-		SLAKE_FORCEINLINE IdRefEntry() : name(nullptr), genericArgs(nullptr) { std::terminate(); }
 		SLAKE_API IdRefEntry(peff::Alloc *selfAllocator);
 		SLAKE_API IdRefEntry(peff::String &&name,
 			GenericArgList &&genericArgs);

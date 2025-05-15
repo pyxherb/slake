@@ -102,7 +102,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 }
 
 SLAKE_API bool Runtime::getFullRef(peff::Alloc *allocator, const MemberObject *v, peff::DynArray<IdRefEntry> &idRefOut) const {
-	do {
+	while (v) {
 		switch (v->getKind()) {
 			case ObjectKind::Instance:
 				v = (const MemberObject *)((InstanceObject *)v)->_class;
@@ -126,6 +126,8 @@ SLAKE_API bool Runtime::getFullRef(peff::Alloc *allocator, const MemberObject *v
 		if (!idRefOut.pushFront(IdRefEntry(std::move(copiedName), std::move(copiedGenericArgs)))) {
 			return false;
 		}
-	} while ((Object *)(v = (const MemberObject *)v->parent) != _rootObject);
+
+		v = (MemberObject *)v->parent;
+	};
 	return true;
 }

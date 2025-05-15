@@ -1,4 +1,5 @@
 #include "comp/compiler.h"
+#include "decomp/decompiler.h"
 #include <initializer_list>
 #include <cstdio>
 #include <cstdlib>
@@ -468,6 +469,20 @@ public:
 	}
 };
 
+class ANSIDumpWriter : public slkc::DumpWriter {
+public:
+	ANSIDumpWriter() {
+	}
+
+	SLKC_API virtual ~ANSIDumpWriter() {
+	}
+
+	virtual bool write(const char *src, size_t size) override {
+		fwrite(src, size, 1, stdout);
+		return true;
+	}
+};
+
 int main(int argc, char *argv[]) {
 #ifdef _MSC_VER
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -676,6 +691,12 @@ int main(int argc, char *argv[]) {
 					encounteredErrors = true;
 					dumpCompilationError(parser, *e);
 				}
+			}
+
+			ANSIDumpWriter dumpWriter;
+
+			if (!slkc::decompileModule(peff::getDefaultAlloc(), &dumpWriter, modObj.get())) {
+				puts("Error dumping compiled module!");
 			}
 
 			document->rootModule = {};

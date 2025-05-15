@@ -59,6 +59,7 @@ namespace slkc {
 			blockCompileContexts.clear();
 			labelNameIndices.clear();
 			labels.clear();
+			nTotalRegs = 0;
 		}
 	};
 

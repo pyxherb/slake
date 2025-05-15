@@ -16,10 +16,11 @@ namespace slake {
 	struct Context;
 	struct MajorFrame;
 
-	struct Instruction final {
+	class Instruction final {
+	public:
 		Opcode opcode;
-		uint32_t nOperands;
 		uint32_t output;
+		uint32_t nOperands;
 		Value *operands;
 		peff::RcObjectPtr<peff::Alloc> operandsAllocator;
 
@@ -35,6 +36,17 @@ namespace slake {
 		SLAKE_API bool operator<(const Instruction &rhs) const;
 
 		SLAKE_API Instruction &operator=(Instruction &&rhs);
+
+		SLAKE_FORCEINLINE void setOpcode(Opcode opcode) {
+			this->opcode = opcode;
+		}
+
+		SLAKE_FORCEINLINE void setOutput(uint32_t output) {
+			this->output = output;
+		}
+
+		SLAKE_API void clearOperands();
+		[[nodiscard]] SLAKE_API bool reserveOperands(peff::Alloc *allocator, uint32_t nOperands);
 	};
 
 	enum class FnOverloadingKind {

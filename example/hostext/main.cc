@@ -1,4 +1,5 @@
 #include <slake/runtime.h>
+#include <slake/loader/loader.h>
 #include <slake/opti/proganal.h>
 // #include <slake/lib/std.h>
 
@@ -156,6 +157,26 @@ void printTraceback(slake::Runtime *rt, slake::ContextObject *context) {
 	}
 }
 
+class MyReader : public slake::loader::Reader {
+public:
+	FILE *fp;
+
+	MyReader(FILE *fp) : fp(fp) {}
+	virtual ~MyReader() {
+	}
+
+	virtual bool isEof() noexcept {
+		return feof(fp);
+	}
+
+	virtual slake::loader::ReadResult read(char* buffer, size_t size) noexcept {
+		if (fread(buffer, size, 1, fp) < 1) {
+			return slake::loader::ReadResult::ReadError;
+		}
+		return slake::loader::ReadResult::Succeeded;
+	}
+};
+
 int main(int argc, char **argv) {
 	slake::util::setupMemoryLeakDetector();
 
@@ -167,23 +188,41 @@ int main(int argc, char **argv) {
 
 	slake::HostObjectRef<slake::ModuleObject> mod;
 	{
-		std::ifstream fs;
-		try {
-			fs.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
-			fs.open("hostext/main.slx", std::ios_base::in | std::ios_base::binary);
+		FILE *fp;
 
-			rt->setModuleLocator(fsModuleLocator);
-			// slake::stdlib::load(rt.get());
-
-			mod = rt->loadModule(fs, slake::LMOD_NOCONFLICT);
-		} catch (std::ios::failure e) {
-			printf("Error loading main module: %s, at file offset %zu\n", e.what(), (size_t)fs.tellg());
+		if (!(fp = fopen("hostext/main.slx", "rb"))) {
+			puts("Error opening the main module");
 			return -1;
 		}
+
+		peff::ScopeGuard closeFpGuard([fp]() noexcept {
+			fclose(fp);
+		});
+
+		MyReader reader(fp);
+
+		slake::loader::loadModule(rt.get(), &reader, mod);
 	}
 
 	{
 		slake::HostRefHolder hostRefHolder(&rt->globalHeapPoolAlloc);
+
+		slake::HostObjectRef<slake::ModuleObject> modObjectHostext = mod;
+		slake::HostObjectRef<slake::ModuleObject> modObjectExtfns = slake::ModuleObject::alloc(rt.get());
+
+		if (!modObjectHostext->setName("hostext")) {
+			std::terminate();
+		}
+		if (!modObjectExtfns->setName("extfns")) {
+			std::terminate();
+		}
+
+		if (!modObjectHostext->addMember(modObjectExtfns.get())) {
+			std::terminate();
+		}
+		if (!rt->getRootObject()->addMember(modObjectHostext.get())) {
+			std::terminate();
+		}
 
 		slake::HostObjectRef<slake::FnObject> fnObject = slake::FnObject::alloc(rt.get());
 
@@ -191,8 +230,8 @@ int main(int argc, char **argv) {
 
 		auto printFn = slake::NativeFnOverloadingObject::alloc(
 			fnObject.get(),
-			slake::ACCESS_PUB,
 			print);
+		printFn->setAccess(slake::ACCESS_PUB);
 		printFn->paramTypes = std::move(paramTypes);
 		printFn->returnType = slake::TypeId::None;
 		printFn->setVarArgs();

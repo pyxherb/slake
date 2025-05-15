@@ -317,7 +317,7 @@ SLKC_API std::optional<CompilationError> slkc::resolveIdRef(
 	bool isStatic) {
 	peff::SharedPtr<MemberNode> curMember = resolveRoot;
 
-	bool isPostStaticParts = false;
+	bool isPostStaticParts = !isStatic;
 
 	auto updateStaticStatus = [&curMember, &isStatic]() {
 		switch (curMember->astNodeType) {
@@ -354,6 +354,8 @@ SLKC_API std::optional<CompilationError> slkc::resolveIdRef(
 			if (!isStatic) {
 				if (!isPostStaticParts) {
 					ResolvedIdRefPart part = { isStatic, i, curMember };
+
+					assert(part.nEntries);
 
 					if (!resolvedPartListOut->pushBack(std::move(part)))
 						return genOutOfMemoryCompError();

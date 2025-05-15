@@ -18,13 +18,9 @@ SLAKE_API std::optional<CompilationError> CompileContext::emitIns(slake::Opcode 
 
 	insOut.opcode = opcode;
 	insOut.output = outputRegIndex;
-	if (operands.size()) {
-		if (!(insOut.operands = (slake::Value *)allocator->alloc(sizeof(slake::Value) * operands.size(), sizeof(std::max_align_t)))) {
-			return genOutOfMemoryCompError();
-		}
+	if (!insOut.reserveOperands(allocator.get(), operands.size())) {
+		return genOutOfMemoryCompError();
 	}
-	insOut.nOperands = operands.size();
-	insOut.operandsAllocator = allocator;
 
 	auto it = operands.begin();
 	for (size_t i = 0; i < operands.size(); ++i) {

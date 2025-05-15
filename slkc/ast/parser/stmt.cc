@@ -520,18 +520,25 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 					TokenId::RBrace
 				};
 
-				if ((syntaxError = parseExpr(0, stmt->value))) {
-					if ((syntaxError = lookaheadUntil(std::size(skippingTerminativeToken), skippingTerminativeToken))) {
-						goto genBadStmt;
-					}
-					goto genBadStmt;
-				}
+				switch (peekToken()->tokenId) {
+					case TokenId::Semicolon:
+						nextToken();
+						break;
+					default:
+						if ((syntaxError = parseExpr(0, stmt->value))) {
+							if ((syntaxError = lookaheadUntil(std::size(skippingTerminativeToken), skippingTerminativeToken))) {
+								goto genBadStmt;
+							}
+							goto genBadStmt;
+						}
 
-				if ((syntaxError = expectToken(peekToken(), TokenId::Semicolon))) {
-					goto genBadStmt;
-				}
+						if ((syntaxError = expectToken(peekToken(), TokenId::Semicolon))) {
+							goto genBadStmt;
+						}
 
-				nextToken();
+						nextToken();
+						break;
+				}
 
 				break;
 			}
@@ -556,18 +563,25 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 					TokenId::RBrace
 				};
 
-				if ((syntaxError = parseExpr(0, stmt->value))) {
-					if ((syntaxError = lookaheadUntil(std::size(skippingTerminativeToken), skippingTerminativeToken))) {
-						goto genBadStmt;
-					}
-					goto genBadStmt;
-				}
+				switch (peekToken()->tokenId) {
+					case TokenId::Semicolon:
+						nextToken();
+						break;
+					default:
+						if ((syntaxError = parseExpr(0, stmt->value))) {
+							if ((syntaxError = lookaheadUntil(std::size(skippingTerminativeToken), skippingTerminativeToken))) {
+								goto genBadStmt;
+							}
+							goto genBadStmt;
+						}
 
-				if ((syntaxError = expectToken(peekToken(), TokenId::Semicolon))) {
-					goto genBadStmt;
-				}
+						if ((syntaxError = expectToken(peekToken(), TokenId::Semicolon))) {
+							goto genBadStmt;
+						}
 
-				nextToken();
+						nextToken();
+						break;
+				}
 
 				break;
 			}

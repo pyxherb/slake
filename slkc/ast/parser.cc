@@ -383,6 +383,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseFn(peff::SharedPtr<FnOverloadin
 
 	Token *virtualToken;
 	if ((virtualToken = peekToken())->tokenId == TokenId::VirtualKeyword) {
+		fnNodeOut->fnFlags |= FN_VIRTUAL;
 		nextToken();
 	}
 

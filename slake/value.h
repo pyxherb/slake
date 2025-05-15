@@ -162,7 +162,7 @@ namespace slake {
 			return ref;
 		}
 
-		SLAKE_FORCEINLINE operator bool() const {
+		explicit SLAKE_FORCEINLINE operator bool() const {
 			if (kind != ObjectRefKind::ObjectRef)
 				return true;
 			return asObject.instanceObject;

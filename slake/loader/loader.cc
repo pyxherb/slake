@@ -99,6 +99,7 @@ SLAKE_API InternalExceptionPointer loader::loadType(Runtime *runtime, Reader *re
 			if (!name.resize(nameLen)) {
 				return OutOfMemoryError::alloc();
 			}
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(name.data(), nameLen)));
 
 			HostObjectRef<StringObject> nameObject;
 
@@ -255,6 +256,10 @@ SLAKE_API InternalExceptionPointer loader::loadValue(Runtime *runtime, Reader *r
 				return OutOfMemoryError::alloc();
 			}
 
+			if (lenName) {
+				SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(s.data(), lenName)));
+			}
+
 			HostObjectRef<StringObject> strObj;
 
 			if (!(strObj = StringObject::alloc(runtime, std::move(s)))) {
@@ -272,10 +277,27 @@ SLAKE_API InternalExceptionPointer loader::loadValue(Runtime *runtime, Reader *r
 			valueOut = Value(EntityRef::makeObjectRef(idRefObj.get()));
 			break;
 		}
-		case slake::slxfmt::ValueType::Array:
-			std::terminate();
+		case slake::slxfmt::ValueType::Array: {
+			HostObjectRef<ArrayObject> a;
+
+			Type elementType;
+
+			SLAKE_RETURN_IF_EXCEPT(loadType(runtime, reader, member, elementType));
+
+			uint32_t nElements;
+
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(nElements)));
+
+			if (!(a = runtime->newArrayInstance(runtime, elementType, nElements))) {
+				return OutOfMemoryError::alloc();
+			}
+
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read((char*)a->data, a->elementSize * nElements)));
 			break;
+		}
 	}
+
+	return {};
 }
 
 SLAKE_API InternalExceptionPointer loader::loadIdRefEntries(Runtime *runtime, Reader *reader, Object *member, peff::DynArray<IdRefEntry> &entriesOut) noexcept {
@@ -318,16 +340,28 @@ SLAKE_API InternalExceptionPointer loader::loadIdRef(Runtime *runtime, Reader *r
 
 	SLAKE_RETURN_IF_EXCEPT(loadIdRefEntries(runtime, reader, member, idRefOut->entries));
 
+	if (idRefOut->entries.at(0).name == "test") {
+		puts("");
+	}
+
 	uint32_t nParamTypes;
 
 	SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(nParamTypes)));
 
-	if (!idRefOut->paramTypes.resize(nParamTypes)) {
-		return OutOfMemoryError::alloc();
+	if (nParamTypes != UINT32_MAX) {
+		peff::DynArray<Type> paramTypes(&runtime->globalHeapPoolAlloc);
+
+		if (!paramTypes.resize(nParamTypes)) {
+			return OutOfMemoryError::alloc();
+		}
+		for (size_t i = 0; i < nParamTypes; ++i) {
+			SLAKE_RETURN_IF_EXCEPT(loadType(runtime, reader, member, paramTypes.at(i)));
+		}
+
+		idRefOut->paramTypes = std::move(paramTypes);
 	}
-	for (size_t i = 0; i < nParamTypes; ++i) {
-		SLAKE_RETURN_IF_EXCEPT(loadType(runtime, reader, member, idRefOut->paramTypes.at(i)));
-	}
+
+	SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readBool(idRefOut->hasVarArgs)));
 
 	return {};
 }
@@ -341,6 +375,8 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(Runtime *runtime, R
 			slake::slxfmt::ClassTypeDesc ctd;
 
 			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read((char *)&ctd, sizeof(ctd))));
+
+			assert(!ctd.nImpls);
 
 			HostObjectRef<ClassObject> clsObject;
 
@@ -384,6 +420,10 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(Runtime *runtime, R
 			}
 
 			SLAKE_RETURN_IF_EXCEPT(loadModuleMembers(runtime, reader, clsObject.get()));
+
+			if (!moduleObject->addMember(clsObject.get())) {
+				return OutOfMemoryError::alloc();
+			}
 		}
 	}
 
@@ -431,6 +471,10 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(Runtime *runtime, R
 			}
 
 			SLAKE_RETURN_IF_EXCEPT(loadModuleMembers(runtime, reader, interfaceObject.get()));
+
+			if (!moduleObject->addMember(interfaceObject.get())) {
+				return OutOfMemoryError::alloc();
+			}
 		}
 	}
 
@@ -466,6 +510,8 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(Runtime *runtime, R
 
 				SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read((char*)&fnd, sizeof(fnd))));
 
+				assert(fnd.lenBody);
+
 				if (fnd.flags & slxfmt::FND_PUB) {
 					fnOverloadingObject->access |= ACCESS_PUB;
 				}
@@ -491,9 +537,6 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(Runtime *runtime, R
 
 				fnOverloadingObject->setRegisterNumber(fnd.nRegisters);
 
-				uint32_t lenName;
-				SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(lenName)));
-
 				for (size_t k = 0; k < fnd.nGenericParams; ++k) {
 					GenericParam gp(&runtime->globalHeapPoolAlloc);
 
@@ -510,13 +553,55 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(Runtime *runtime, R
 				for (size_t k = 0; k < fnd.nParams; ++k) {
 					SLAKE_RETURN_IF_EXCEPT(loadType(runtime, reader, fnOverloadingObject.get(), fnOverloadingObject->paramTypes.at(k)));
 				}
+
+				for (size_t k = 0; k < fnd.lenBody; ++k) {
+					Opcode opcode;
+
+					SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU8((uint8_t&)opcode)));
+
+					uint32_t output;
+
+					SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(output)));
+
+					uint32_t nOperands;
+
+					SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(nOperands)));
+
+					Instruction ins;
+
+					ins.opcode = opcode;
+					ins.output = output;
+					if (!ins.reserveOperands(&runtime->globalHeapPoolAlloc, nOperands)) {
+						return OutOfMemoryError::alloc();
+					}
+
+					for (size_t l = 0; l < nOperands; ++l) {
+						SLAKE_RETURN_IF_EXCEPT(loadValue(runtime, reader, fnOverloadingObject.get(), ins.operands[l]));
+					}
+
+					if (!fnOverloadingObject->instructions.pushBack(std::move(ins))) {
+						return OutOfMemoryError::alloc();
+					}
+				}
+
+				if (!fnObject->overloadings.insert(fnOverloadingObject.get())) {
+					return OutOfMemoryError::alloc();
+				}
+			}
+
+			if (!moduleObject->addMember(fnObject.get())) {
+				return OutOfMemoryError::alloc();
 			}
 		}
 	}
+
+	return {};
 }
 
 SLAKE_API InternalExceptionPointer loader::loadModule(Runtime *runtime, Reader *reader, HostObjectRef<ModuleObject> &moduleObjectOut) noexcept {
 	slxfmt::ImgHeader imh = { 0 };
+
+	SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read((char*)&imh, sizeof(imh))));
 
 	if (memcmp(imh.magic, slxfmt::IMH_MAGIC, sizeof(imh.magic))) {
 		return allocOutOfMemoryErrorIfAllocFailed(BadMagicError::alloc(&runtime->globalHeapPoolAlloc));
@@ -531,11 +616,11 @@ SLAKE_API InternalExceptionPointer loader::loadModule(Runtime *runtime, Reader *
 
 		SLAKE_RETURN_IF_EXCEPT(loadIdRef(runtime, reader, moduleObjectOut.get(), path));
 
-		if (path->paramTypes.size()) {
+		if (path->paramTypes) {
 			std::terminate();
 		}
 
-		for (size_t i = 0; i < path; ++i) {
+		for (size_t i = 0; i < path->entries.size(); ++i) {
 			if (path->entries.at(i).genericArgs.size()) {
 				std::terminate();
 			}

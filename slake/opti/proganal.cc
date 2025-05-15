@@ -355,6 +355,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						if (e->kind != ErrorKind::OptimizerError) {
 							return e;
 						} else {
+							e.reset();
 							return allocOutOfMemoryErrorIfAllocFailed(
 								MalformedProgramError::alloc(
 									&runtime->globalHeapPoolAlloc,

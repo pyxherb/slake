@@ -25,11 +25,27 @@ SLAKE_API Instruction::Instruction(Instruction &&rhs)
 }
 
 SLAKE_API Instruction::~Instruction() {
+	clearOperands();
+}
+
+SLAKE_API void Instruction::clearOperands() {
 	if (nOperands) {
 		operandsAllocator->release(operands, sizeof(Value) * nOperands, sizeof(std::max_align_t));
 	} else {
 		assert(!operands);
 	}
+}
+
+[[nodiscard]] SLAKE_API bool Instruction::reserveOperands(peff::Alloc *allocator, uint32_t nOperands) {
+	clearOperands();
+	if (nOperands) {
+		if (!(operands = (Value *)allocator->alloc(sizeof(Value) * nOperands, alignof(Value)))) {
+			return false;
+		}
+		operandsAllocator = allocator;
+	}
+	this->nOperands = nOperands;
+	return true;
 }
 
 SLAKE_API bool Instruction::operator==(const Instruction &rhs) const {
@@ -81,7 +97,7 @@ SLAKE_API FnOverloadingObject::FnOverloadingObject(
 	  mappedGenericArgs(&fnObject->associatedRuntime->globalHeapPoolAlloc),
 	  specializationArgs(&fnObject->associatedRuntime->globalHeapPoolAlloc),
 	  paramTypes(&fnObject->associatedRuntime->globalHeapPoolAlloc),
-	  returnType({ 0 }) {
+	  returnType({ TypeId::None }) {
 }
 
 SLAKE_API FnOverloadingObject::FnOverloadingObject(const FnOverloadingObject &other, bool &succeededOut)

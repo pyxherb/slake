@@ -4,6 +4,7 @@
 #include "object.h"
 #include "generic.h"
 #include <utility>
+#include <optional>
 
 namespace slake {
 	struct IdRefEntry final {
@@ -40,7 +41,7 @@ namespace slake {
 	class IdRefObject final : public Object {
 	public:
 		peff::DynArray<IdRefEntry> entries;
-		peff::DynArray<Type> paramTypes;
+		std::optional<peff::DynArray<Type>> paramTypes;
 		bool hasVarArgs;
 
 		SLAKE_API IdRefObject(Runtime *rt);

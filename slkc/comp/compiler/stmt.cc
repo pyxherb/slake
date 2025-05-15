@@ -361,15 +361,23 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 			uint32_t reg = compileContext->allocReg();
 
-			CompileExprResult result(compileContext->allocator.get());
+			if (s->value) {
+				CompileExprResult result(compileContext->allocator.get());
 
-			SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, s->value, ExprEvalPurpose::RValue, compileContext->fnCompileContext.currentFn->returnType, reg, result));
+				SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, s->value, ExprEvalPurpose::RValue, compileContext->fnCompileContext.currentFn->returnType, reg, result));
 
-			SLKC_RETURN_IF_COMP_ERROR(
-				compileContext->emitIns(
-					slake::Opcode::RET,
-					UINT32_MAX,
-					{ slake::Value(slake::ValueType::RegRef, reg) }));
+				SLKC_RETURN_IF_COMP_ERROR(
+					compileContext->emitIns(
+						slake::Opcode::RET,
+						UINT32_MAX,
+						{ slake::Value(slake::ValueType::RegRef, reg) }));
+			} else {
+				SLKC_RETURN_IF_COMP_ERROR(
+					compileContext->emitIns(
+						slake::Opcode::RET,
+						UINT32_MAX,
+						{}));
+			}
 			break;
 		}
 		case StmtKind::Yield: {
@@ -377,15 +385,23 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 			uint32_t reg = compileContext->allocReg();
 
-			CompileExprResult result(compileContext->allocator.get());
+			if (s->value) {
+				CompileExprResult result(compileContext->allocator.get());
 
-			SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, s->value, ExprEvalPurpose::RValue, compileContext->fnCompileContext.currentFn->returnType, reg, result));
+				SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, s->value, ExprEvalPurpose::RValue, compileContext->fnCompileContext.currentFn->returnType, reg, result));
 
-			SLKC_RETURN_IF_COMP_ERROR(
-				compileContext->emitIns(
-					slake::Opcode::YIELD,
-					UINT32_MAX,
-					{ slake::Value(slake::ValueType::RegRef, reg) }));
+				SLKC_RETURN_IF_COMP_ERROR(
+					compileContext->emitIns(
+						slake::Opcode::YIELD,
+						UINT32_MAX,
+						{ slake::Value(slake::ValueType::RegRef, reg) }));
+			} else {
+				SLKC_RETURN_IF_COMP_ERROR(
+					compileContext->emitIns(
+						slake::Opcode::YIELD,
+						UINT32_MAX,
+						{  }));
+			}
 			break;
 		}
 		case StmtKind::If: {

@@ -246,7 +246,6 @@ namespace slake {
 		/// @return Resolved value which is referred by the reference.
 		SLAKE_API InternalExceptionPointer resolveIdRef(IdRefObject *ref, EntityRef &objectRefOut, Object *scopeObject = nullptr);
 
-		SLAKE_API HostObjectRef<ModuleObject> loadModule(std::istream &fs, LoadModuleFlags flags);
 		SLAKE_API HostObjectRef<ModuleObject> loadModule(const void *buf, size_t size, LoadModuleFlags flags);
 
 		SLAKE_FORCEINLINE ModuleObject *getRootObject() { return _rootObject; }

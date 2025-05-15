@@ -714,6 +714,10 @@ SLKC_API std::optional<CompilationError> slkc::fnToTypeName(
 		tn->paramTypes.at(i) = fn->params.at(i)->type;
 	}
 
+	if (fn->fnFlags & FN_VARG) {
+		tn->hasVarArgs = true;
+	}
+
 	tn->returnType = fn->returnType;
 
 	if (!(fn->accessModifier & slake::ACCESS_STATIC)) {

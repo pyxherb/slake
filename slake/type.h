@@ -100,7 +100,6 @@ namespace slake {
 			exData.genericArg.nameObject = nameObject;
 			exData.genericArg.ownerObject = ownerObject;
 		}
-		SLAKE_API Type(IdRefObject *ref);
 
 		SLAKE_API static Type makeArrayTypeName(Runtime *runtime, const Type &elementType);
 		SLAKE_API static Type makeRefTypeName(Runtime *runtime, const Type &elementType);

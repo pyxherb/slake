@@ -1556,30 +1556,34 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 							return genOutOfRuntimeMemoryCompError();
 						}
 
-						if (!idRefObject->paramTypes.resize(matchedOverloading->params.size())) {
+						idRefObject->paramTypes = peff::DynArray<slake::Type>(&compileContext->runtime->globalHeapPoolAlloc);
+
+						if (!idRefObject->paramTypes->resize(matchedOverloading->params.size())) {
 							return genOutOfMemoryCompError();
 						}
 
-						for (size_t i = 0; i < idRefObject->paramTypes.size(); ++i) {
-							SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, matchedOverloading->params.at(i)->type, idRefObject->paramTypes.at(i)));
+						for (size_t i = 0; i < idRefObject->paramTypes->size(); ++i) {
+							SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, matchedOverloading->params.at(i)->type, idRefObject->paramTypes->at(i)));
 						}
 
-						SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::RLOAD, operatorReg, { slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::ValueType::EntityRef, slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+						SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::RLOAD, operatorReg, { slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
 					} else {
 						slake::HostObjectRef<slake::IdRefObject> idRefObject;
 
 						IdRefPtr fullName;
 						SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileContext->allocator.get(), operatorSlot, fullName));
 
-						if (!idRefObject->paramTypes.resize(matchedOverloading->params.size())) {
+						idRefObject->paramTypes = peff::DynArray<slake::Type>(&compileContext->runtime->globalHeapPoolAlloc);
+
+						if (!idRefObject->paramTypes->resize(matchedOverloading->params.size())) {
 							return genOutOfMemoryCompError();
 						}
 
-						for (size_t i = 0; i < idRefObject->paramTypes.size(); ++i) {
-							SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, matchedOverloading->params.at(i)->type, idRefObject->paramTypes.at(i)));
+						for (size_t i = 0; i < idRefObject->paramTypes->size(); ++i) {
+							SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, matchedOverloading->params.at(i)->type, idRefObject->paramTypes->at(i)));
 						}
 
-						SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::LOAD, operatorReg, { slake::Value(slake::ValueType::EntityRef, slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+						SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::LOAD, operatorReg, { slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
 					}
 
 					uint32_t reg = compileContext->allocReg();

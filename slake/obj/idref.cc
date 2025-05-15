@@ -15,22 +15,32 @@ SLAKE_API IdRefEntry::IdRefEntry(peff::String &&name,
 SLAKE_API slake::IdRefObject::IdRefObject(Runtime *rt)
 	: Object(rt),
 	  entries(&rt->globalHeapPoolAlloc),
-	  paramTypes(&rt->globalHeapPoolAlloc),
+	  paramTypes(),
 	  hasVarArgs(false) {
 }
 
 SLAKE_API IdRefObject::IdRefObject(const IdRefObject &x, bool &succeededOut)
 	: Object(x),
-	  entries(&x.associatedRuntime->globalHeapPoolAlloc),
-	  paramTypes(&x.associatedRuntime->globalHeapPoolAlloc) {
+	  entries(&x.associatedRuntime->globalHeapPoolAlloc) {
 	if (!(peff::copyAssign(entries, x.entries))) {
 		succeededOut = false;
 		return;
 	}
 
-	if (!(peff::copyAssign(paramTypes, x.paramTypes))) {
-		succeededOut = false;
-		return;
+	if (x.paramTypes.has_value()) {
+		peff::DynArray<Type> copiedParamTypes(&x.associatedRuntime->globalHeapPoolAlloc);
+
+		if (!copiedParamTypes.resize(x.paramTypes->size())) {
+			succeededOut = false;
+			return;
+		}
+
+		for (size_t i = 0; i < x.paramTypes->size(); ++i) {
+			if (!peff::copy(paramTypes->at(i), x.paramTypes->at(i))) {
+				succeededOut = false;
+				return;
+			}
+		}
 	}
 
 	hasVarArgs = x.hasVarArgs;

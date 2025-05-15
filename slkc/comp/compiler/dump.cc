@@ -45,9 +45,15 @@ SLKC_API std::optional<CompilationError> slkc::dumpIdRef(
 	slake::IdRefObject *ref) {
 	SLKC_RETURN_IF_COMP_ERROR(dumpIdRefEntries(allocator, writer, ref->entries));
 
-	SLKC_RETURN_IF_COMP_ERROR(writer->writeI32((int32_t)ref->paramTypes.size()));
-	for (auto &i : ref->paramTypes) {
-		SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, i));
+	if (ref->entries.at(0).name == "")
+		puts("");
+	if (!ref->paramTypes.has_value()) {
+		SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(UINT32_MAX));
+	} else {
+		SLKC_RETURN_IF_COMP_ERROR(writer->writeU32((uint32_t)ref->paramTypes->size()));
+		for (auto &i : *ref->paramTypes) {
+			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, i));
+		}
 	}
 	SLKC_RETURN_IF_COMP_ERROR(writer->writeBool(ref->hasVarArgs));
 	return {};
@@ -120,7 +126,9 @@ SLKC_API std::optional<CompilationError> slkc::dumpIdRef(
 							slake::StringObject *s = (slake::StringObject *)er.asObject.instanceObject;
 							SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::String));
 							SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(s->data.size()));
-							SLKC_RETURN_IF_COMP_ERROR(writer->write(s->data.data(), s->data.size()));
+							if (s->data.size()) {
+								SLKC_RETURN_IF_COMP_ERROR(writer->write(s->data.data(), s->data.size()));
+							}
 							break;
 						}
 						case slake::ObjectKind::IdRef: {
@@ -133,7 +141,9 @@ SLKC_API std::optional<CompilationError> slkc::dumpIdRef(
 							SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::Array));
 							SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, a->elementType));
 							SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(a->length));
-							SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)a->data, a->elementSize * a->length));
+							if (a->length) {
+								SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)a->data, a->elementSize * a->length));
+							}
 							break;
 						}
 						default:
@@ -347,6 +357,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 		SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(i->overloadings.size()));
 		for (auto j : i->overloadings) {
 			if (j->overloadingKind != slake::FnOverloadingKind::Regular) {
+				// stub
 				continue;
 			}
 
@@ -367,7 +378,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 				fnd.flags |= slake::slxfmt::FND_NATIVE;
 			}
 			if (ol->overloadingFlags & slake::OL_VARG) {
-				fnd.flags |= slake::slxfmt::FND_STATIC;
+				fnd.flags |= slake::slxfmt::FND_VARG;
 			}
 			if (ol->overloadingFlags & slake::OL_GENERATOR) {
 				fnd.flags |= slake::slxfmt::FND_GENERATOR;
@@ -379,6 +390,8 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 			fnd.nGenericParams = ol->genericParams.size();
 			fnd.nRegisters = ol->nRegisters;
 			fnd.lenBody = ol->instructions.size();
+
+			assert(fnd.lenBody);
 
 			SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)&fnd, sizeof(fnd)));
 
@@ -394,6 +407,9 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 				SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)k.opcode));
 				SLKC_RETURN_IF_COMP_ERROR(writer->writeU32((uint32_t)k.output));
 				SLKC_RETURN_IF_COMP_ERROR(writer->writeU32((uint32_t)k.nOperands));
+				for (size_t l = 0; l < k.nOperands; ++l) {
+					SLKC_RETURN_IF_COMP_ERROR(dumpValue(allocator, writer, k.operands[l]));
+				}
 			}
 		}
 	}

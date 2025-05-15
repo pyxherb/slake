@@ -15,7 +15,7 @@ namespace slake {
 		public:
 			SLAKE_API virtual ~Reader();
 
-			[[nodiscard]] virtual ReadResult isEof() noexcept = 0;
+			[[nodiscard]] virtual bool isEof() noexcept = 0;
 			[[nodiscard]] virtual ReadResult read(char *buffer, size_t size) noexcept = 0;
 
 			[[nodiscard]] SLAKE_FORCEINLINE ReadResult readI8(int8_t &data) noexcept {

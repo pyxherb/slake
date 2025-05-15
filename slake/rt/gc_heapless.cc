@@ -376,8 +376,10 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 						}
 					}
 
-					for (auto &j : value->paramTypes) {
-						_gcWalkHeapless(context, j);
+					if (value->paramTypes) {
+						for (auto &j : *value->paramTypes) {
+							_gcWalkHeapless(context, j);
+						}
 					}
 					break;
 				}

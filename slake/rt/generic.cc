@@ -452,8 +452,22 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Obj
 			break;
 		}
 		case ObjectKind::String:
-		case ObjectKind::IdRef:
 			break;
+		case ObjectKind::IdRef: {
+			IdRefObject *value = (IdRefObject *)v;
+
+			for (auto &i : value->entries) {
+				for (auto &j : i.genericArgs) {
+					SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(j, instantiationContext));
+				}
+			}
+
+			if (value->paramTypes) {
+				for (auto &i : *value->paramTypes) {
+					SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(i, instantiationContext));
+				}
+			}
+		}
 		default:
 			throw std::logic_error("Unhandled object type");
 	}

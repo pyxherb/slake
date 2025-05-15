@@ -157,10 +157,6 @@ SLAKE_API bool EntityRef::operator<(const EntityRef &rhs) const {
 	}
 }
 
-SLAKE_API Type::Type(IdRefObject *ref) : typeId(TypeId::Instance) {
-	exData.object = (Object *)ref;
-}
-
 SLAKE_API Type Type::makeArrayTypeName(Runtime *runtime, const Type &elementType) {
 	Type type;
 

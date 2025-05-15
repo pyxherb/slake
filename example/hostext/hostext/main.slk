@@ -116,20 +116,23 @@ class VirtualDerived(VirtualBase) {
 }
 
 fn genericFn<T, U>(t: T, u: U) {
+	return;
 }
 
 fn genericFn<U, T>(t: T, u: U) {
+	return;
 }
 
 fn test(...) {
 	//let sv: i32&& = alloca i32[123];
 	//...;
+	return;
 }
 
 let a: fn (i32, u32, f32) with hostext.VirtualBase -> bool;
 
 pub fn *main() -> i32 {
-	//a() with 123;
+	/*a() with 123;*/
 
 	hostext.extfns.print("Entered main\n");
 

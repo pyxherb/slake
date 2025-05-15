@@ -165,6 +165,8 @@ SLKC_API std::optional<CompilationError> slkc::compileIdRef(
 	bool hasVarArgs,
 	slake::HostObjectRef<slake::IdRefObject> &idRefOut) {
 	slake::HostObjectRef<slake::IdRefObject> id;
+	assert(nEntries);
+
 	if (!(id = slake::IdRefObject::alloc(compileContext->runtime))) {
 		return genOutOfRuntimeMemoryCompError();
 	}
@@ -193,12 +195,16 @@ SLKC_API std::optional<CompilationError> slkc::compileIdRef(
 		}
 	}
 
-	if (!id->paramTypes.resize(nParams)) {
-		return genOutOfMemoryCompError();
-	}
+	if (paramTypes) {
+		id->paramTypes = peff::DynArray<slake::Type>(&compileContext->runtime->globalHeapPoolAlloc);
 
-	for (size_t i = 0; i < nParams; ++i) {
-		SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, paramTypes[i], id->paramTypes.at(i)));
+		if (!id->paramTypes->resize(nParams)) {
+			return genOutOfMemoryCompError();
+		}
+
+		for (size_t i = 0; i < nParams; ++i) {
+			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, paramTypes[i], id->paramTypes->at(i)));
+		}
 	}
 
 	id->hasVarArgs = hasVarArgs;
@@ -340,11 +346,11 @@ SLKC_API std::optional<CompilationError> slkc::compileValueExpr(
 }
 
 SLKC_API std::optional<CompilationError> slkc::compileGenericParams(
-	CompileContext* compileContext,
+	CompileContext *compileContext,
 	peff::SharedPtr<ModuleNode> mod,
-	peff::SharedPtr<GenericParamNode>* genericParams,
+	peff::SharedPtr<GenericParamNode> *genericParams,
 	size_t nGenericParams,
-	slake::GenericParamList& genericParamListOut) {
+	slake::GenericParamList &genericParamListOut) {
 	std::optional<CompilationError> e;
 
 	for (size_t j = 0; j < nGenericParams; ++j) {
@@ -645,6 +651,16 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 					}
 
 					fnObject->instructions = std::move(compileContext->fnCompileContext.instructionsOut);
+
+					for (auto &j : fnObject->instructions) {
+						for (size_t k = 0; k < j.nOperands; ++k) {
+							if (j.operands[k].valueType == slake::ValueType::Label) {
+								j.operands[k] = slake::Value(compileContext->getLabel(j.operands[k].getLabel())->offset);
+							}
+						}
+					}
+
+					fnObject->nRegisters = compileContext->fnCompileContext.nTotalRegs;
 
 					if (!slotObject->overloadings.insert(fnObject.get())) {
 						return genOutOfRuntimeMemoryCompError();

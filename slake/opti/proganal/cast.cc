@@ -8,14 +8,6 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 	size_t regIndex) {
 	Instruction &curIns = analyzeContext.fnObject->instructions.at(analyzeContext.idxCurIns);
 
-	if (regIndex == UINT32_MAX) {
-		return allocOutOfMemoryErrorIfAllocFailed(
-			MalformedProgramError::alloc(
-				&analyzeContext.runtime->globalHeapPoolAlloc,
-				analyzeContext.fnObject,
-				analyzeContext.idxCurIns));
-	}
-
 	if (curIns.nOperands != 2) {
 		return allocOutOfMemoryErrorIfAllocFailed(
 			MalformedProgramError::alloc(
@@ -779,7 +771,9 @@ InternalExceptionPointer slake::opti::analyzeCastIns(
 		}
 	}
 
-	analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = destType;
+	if (regIndex != UINT32_MAX) {
+		analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = destType;
+	}
 
 	return {};
 }

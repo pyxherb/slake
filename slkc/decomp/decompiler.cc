@@ -8,6 +8,75 @@ using namespace slkc;
 SLKC_API DumpWriter::~DumpWriter() {
 }
 
+#define MNEMONIC_NAME_CASE(name) \
+	case slake::Opcode::##name:  \
+		return #name;
+
+SLKC_API const char *slkc::getMnemonicName(slake::Opcode opcode) {
+	switch (opcode) {
+		MNEMONIC_NAME_CASE(NOP)
+		MNEMONIC_NAME_CASE(LOAD)
+		MNEMONIC_NAME_CASE(RLOAD)
+		MNEMONIC_NAME_CASE(STORE)
+		MNEMONIC_NAME_CASE(MOV)
+		MNEMONIC_NAME_CASE(LARG)
+		MNEMONIC_NAME_CASE(LVAR)
+		MNEMONIC_NAME_CASE(ALLOCA)
+		MNEMONIC_NAME_CASE(LVALUE)
+		MNEMONIC_NAME_CASE(ENTER)
+		MNEMONIC_NAME_CASE(LEAVE)
+		MNEMONIC_NAME_CASE(ADD)
+		MNEMONIC_NAME_CASE(SUB)
+		MNEMONIC_NAME_CASE(MUL)
+		MNEMONIC_NAME_CASE(DIV)
+		MNEMONIC_NAME_CASE(MOD)
+		MNEMONIC_NAME_CASE(AND)
+		MNEMONIC_NAME_CASE(OR)
+		MNEMONIC_NAME_CASE(XOR)
+		MNEMONIC_NAME_CASE(LAND)
+		MNEMONIC_NAME_CASE(LOR)
+		MNEMONIC_NAME_CASE(EQ)
+		MNEMONIC_NAME_CASE(NEQ)
+		MNEMONIC_NAME_CASE(LT)
+		MNEMONIC_NAME_CASE(GT)
+		MNEMONIC_NAME_CASE(LTEQ)
+		MNEMONIC_NAME_CASE(GTEQ)
+		MNEMONIC_NAME_CASE(LSH)
+		MNEMONIC_NAME_CASE(RSH)
+		MNEMONIC_NAME_CASE(CMP)
+		MNEMONIC_NAME_CASE(NOT)
+		MNEMONIC_NAME_CASE(LNOT)
+		MNEMONIC_NAME_CASE(NEG)
+		MNEMONIC_NAME_CASE(AT)
+		MNEMONIC_NAME_CASE(JMP)
+		MNEMONIC_NAME_CASE(JT)
+		MNEMONIC_NAME_CASE(JF)
+		MNEMONIC_NAME_CASE(PUSHARG)
+		MNEMONIC_NAME_CASE(CALL)
+		MNEMONIC_NAME_CASE(MCALL)
+		MNEMONIC_NAME_CASE(CTORCALL)
+		MNEMONIC_NAME_CASE(RET)
+		MNEMONIC_NAME_CASE(COCALL)
+		MNEMONIC_NAME_CASE(COMCALL)
+		MNEMONIC_NAME_CASE(YIELD)
+		MNEMONIC_NAME_CASE(RESUME)
+		MNEMONIC_NAME_CASE(CODONE)
+		MNEMONIC_NAME_CASE(LTHIS)
+		MNEMONIC_NAME_CASE(NEW)
+		MNEMONIC_NAME_CASE(ARRNEW)
+		MNEMONIC_NAME_CASE(THROW)
+		MNEMONIC_NAME_CASE(PUSHXH)
+		MNEMONIC_NAME_CASE(LEXCEPT)
+		MNEMONIC_NAME_CASE(CAST)
+		MNEMONIC_NAME_CASE(TYPEOF)
+		MNEMONIC_NAME_CASE(CONSTSW)
+		MNEMONIC_NAME_CASE(PHI)
+		default:
+			return nullptr;
+	}
+	std::terminate();
+}
+
 SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer, const slake::Type &type) {
 	switch (type.typeId) {
 		case slake::TypeId::None:
@@ -176,7 +245,7 @@ SLKC_API bool slkc::decompileValue(peff::Alloc *allocator, DumpWriter *writer, c
 							SLKC_RETURN_IF_FALSE(writer->write("\""));
 							break;
 						}
-						case slake::ObjectKind::Ref: {
+						case slake::ObjectKind::IdRef: {
 							SLKC_RETURN_IF_FALSE(decompileIdRef(allocator, writer, (slake::IdRefObject *)obj));
 							break;
 						}
@@ -197,6 +266,8 @@ SLKC_API bool slkc::decompileValue(peff::Alloc *allocator, DumpWriter *writer, c
 
 							SLKC_RETURN_IF_FALSE(writer->write(" }"));
 						}
+						default:
+							std::terminate();
 					}
 					break;
 				}
@@ -325,21 +396,26 @@ SLKC_API bool slkc::decompileModuleMembers(peff::Alloc *allocator, DumpWriter *w
 									SLKC_RETURN_IF_FALSE(writer->write("\t"));
 								}
 
-								if (curIns.output != UINT32_MAX)
-								{
+								if (curIns.output != UINT32_MAX) {
 									char s[9];
 
-									sprintf(s, "%%%u =  ", (int)curIns.output);
+									sprintf(s, "%%%u = ", (int)curIns.output);
 
 									SLKC_RETURN_IF_FALSE(writer->write(s));
 								}
 
 								{
-									char s[6];
+									const char *mnemonic = getMnemonicName(curIns.opcode);
+									if (mnemonic) {
+										SLKC_RETURN_IF_FALSE(writer->write(mnemonic));
+										SLKC_RETURN_IF_FALSE(writer->write(" "));
+									} else {
+										char s[6];
 
-									sprintf(s, "0x%0.2x ", (int)curIns.opcode);
+										sprintf(s, "0x%0.2x ", (int)curIns.opcode);
 
-									SLKC_RETURN_IF_FALSE(writer->write(s));
+										SLKC_RETURN_IF_FALSE(writer->write(s));
+									}
 								}
 
 								for (size_t k = 0; k < curIns.nOperands; ++k) {

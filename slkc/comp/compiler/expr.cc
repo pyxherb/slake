@@ -264,7 +264,6 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						} else {
 							// Is calling an instance method that is not virtual.
 							slake::HostObjectRef<slake::IdRefObject> idRefObject;
-							IdRefPtr fullIdRef;
 
 							for (size_t i = curIdx; i < parts.size() - 1; ++i) {
 								ResolvedIdRefPart &part = parts.at(i);
@@ -281,6 +280,8 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 								curIdx += part.nEntries;
 							}
+
+							IdRefPtr fullIdRef;
 
 							resultOut.idxThisRegOut = idxReg;
 							SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileContext->allocator.get(), fn.castTo<MemberNode>(), fullIdRef));
@@ -306,8 +307,11 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						}
 					} else {
 						// Is calling a static method.
+						IdRefPtr fullIdRef;
+						SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileContext->allocator.get(), fn.castTo<MemberNode>(), fullIdRef));
+
 						slake::HostObjectRef<slake::IdRefObject> idRefObject;
-						SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, idRef->entries.data() + curIdx, parts.back().nEntries, nullptr, 0, false, idRefObject));
+						SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, fullIdRef->entries.data(), fullIdRef->entries.size(), nullptr, 0, false, idRefObject));
 
 						if (extraFnArgs) {
 							idRefObject->paramTypes = peff::DynArray<slake::Type>(&compileContext->runtime->globalHeapPoolAlloc);
@@ -324,6 +328,26 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						}
 
 						SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::LOAD, idxReg, { slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+					}
+				} else {
+					slake::HostObjectRef<slake::IdRefObject> idRefObject;
+
+					if (parts.size() > 1) {
+						for (size_t i = curIdx; i < parts.size(); ++i) {
+							ResolvedIdRefPart &part = parts.at(i);
+
+							SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, idRefObject));
+
+							if (part.isStatic) {
+								SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::LOAD, idxReg, { slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+							} else {
+								uint32_t idxNewReg = compileContext->allocReg();
+								SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegRef, idxReg), slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+								idxReg = idxNewReg;
+							}
+
+							curIdx += part.nEntries;
+						}
 					}
 				}
 
@@ -475,6 +499,12 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 					}
 				} else {
 					finalMember = initialMember;
+
+					SLKC_RETURN_IF_COMP_ERROR(
+						compileContext->emitIns(
+							slake::Opcode::MOV,
+							finalRegister,
+							{ slake::Value(slake::ValueType::RegRef, initialMemberReg) }));
 				}
 			} else {
 				size_t curIdx = 0;
@@ -541,7 +571,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				case ExprEvalPurpose::RValue: {
 					bool b = false;
 					SLKC_RETURN_IF_COMP_ERROR(isLValueType(resultOut.evaluatedType, b));
-					if (b) {
+					if ((b) && (initialMember != finalMember)) {
 						SLKC_RETURN_IF_COMP_ERROR(
 							compileContext->emitIns(
 								slake::Opcode::LVALUE,
@@ -567,7 +597,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 					bool b = false;
 					SLKC_RETURN_IF_COMP_ERROR(isLValueType(resultOut.evaluatedType, b));
-					if (b) {
+					if ((b) && (initialMember != finalMember)) {
 						SLKC_RETURN_IF_COMP_ERROR(
 							compileContext->emitIns(
 								slake::Opcode::LVALUE,
@@ -1108,32 +1138,53 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 		case ExprKind::Cast: {
 			peff::SharedPtr<CastExprNode> e = expr.castTo<CastExprNode>();
 
-			peff::SharedPtr<TypeNameNode> tn;
+			peff::SharedPtr<TypeNameNode> exprType;
 
-			SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, e->source, tn, e->targetType));
+			SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, e->source, exprType, e->targetType));
 
 			bool b;
-			SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(tn, e->targetType, false, b));
+			SLKC_RETURN_IF_COMP_ERROR(isTypeConvertible(exprType, e->targetType, false, b));
 
 			if (!b) {
 				return CompilationError(e->source->tokenRange, CompilationErrorKind::InvalidCast);
 			}
 
-			uint32_t idxReg = compileContext->allocReg();
+			bool leftValue;
 
-			SLKC_RETURN_IF_COMP_ERROR(isLValueType(e->targetType, b));
+			SLKC_RETURN_IF_COMP_ERROR(isLValueType(e->targetType, leftValue));
 
-			CompileExprResult result(compileContext->allocator.get());
-			if (!b) {
-				SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->source, ExprEvalPurpose::RValue, {}, idxReg, result));
+			peff::SharedPtr<TypeNameNode> decayedExprType;
+
+			bool exprLeftValue;
+
+			SLKC_RETURN_IF_COMP_ERROR(isLValueType(exprType, exprLeftValue));
+
+			SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(exprType, decayedExprType));
+
+			bool sameType;
+			SLKC_RETURN_IF_COMP_ERROR(isSameType(decayedExprType, e->targetType, sameType));
+			if (!sameType) {
+				uint32_t idxReg = compileContext->allocReg();
+
+				CompileExprResult result(compileContext->allocator.get());
+				if (!leftValue) {
+					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->source, ExprEvalPurpose::RValue, {}, idxReg, result));
+				} else {
+					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->source, ExprEvalPurpose::LValue, {}, idxReg, result));
+				}
+
+				slake::Type type;
+				SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, e->targetType, type));
+
+				SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::CAST, resultRegOut, { slake::Value(type), slake::Value(slake::ValueType::RegRef, idxReg) }));
 			} else {
-				SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->source, ExprEvalPurpose::LValue, {}, idxReg, result));
+				CompileExprResult result(compileContext->allocator.get());
+				if (!leftValue) {
+					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->source, ExprEvalPurpose::RValue, {}, resultRegOut, result));
+				} else {
+					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->source, ExprEvalPurpose::LValue, {}, resultRegOut, result));
+				}
 			}
-
-			slake::Type type;
-			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, e->targetType, type));
-
-			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::CAST, resultRegOut, { slake::Value(type), slake::Value(slake::ValueType::RegRef, idxReg) }));
 
 			resultOut.evaluatedType = e->targetType;
 			break;

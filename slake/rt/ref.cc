@@ -89,10 +89,6 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 				}
 				break;
 			}
-			case ObjectKind::Instance: {
-				scopeObject = ((InstanceObject *)curObject)->_class;
-				break;
-			}
 			default:
 				return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(&const_cast<Runtime *>(this)->globalHeapPoolAlloc, ref));
 		}

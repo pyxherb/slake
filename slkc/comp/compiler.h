@@ -166,6 +166,10 @@ namespace slkc {
 		}
 
 		SLAKE_FORCEINLINE std::optional<CompilationError> allocLabel(const std::string_view &name, uint32_t &labelIdOut) {
+			if (flags & COMPCTXT_NOCOMPILE) {
+				return {};
+			}
+
 			peff::String builtName(document->allocator.get());
 
 			if (!builtName.build(name)) {
@@ -188,6 +192,13 @@ namespace slkc {
 		}
 
 		SLAKE_FORCEINLINE uint32_t allocReg() {
+			if (flags & COMPCTXT_NOCOMPILE) {
+				return 0;
+			}
+
+			if (fnCompileContext.nTotalRegs == 89)
+				puts("");
+
 			return fnCompileContext.nTotalRegs++;
 		}
 
@@ -458,7 +469,9 @@ namespace slkc {
 		peff::SharedPtr<TypeNameNode> &typeOut,
 		peff::SharedPtr<TypeNameNode> desiredType = {}) {
 		CompileExprResult result(compileContext->allocator.get());
+		compileContext->flags |= COMPCTXT_NOCOMPILE;
 		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr, ExprEvalPurpose::EvalType, desiredType, UINT32_MAX, result));
+		compileContext->flags &= ~COMPCTXT_NOCOMPILE;
 		typeOut = result.evaluatedType;
 		return {};
 	}

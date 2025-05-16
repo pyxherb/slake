@@ -30,12 +30,20 @@ SLKC_API std::optional<CompilationError> slkc::getFullIdRef(peff::Alloc *allocat
 			return genOutOfMemoryCompError();
 		}
 
-		if (!m->parent)
-			break;
-
-		m = m->parent->sharedFromThis().castTo<MemberNode>();
+		switch (m->astNodeType) {
+			case AstNodeType::Fn:
+				if (!m->parent->parent)
+					goto end;
+				m = m->parent->parent->sharedFromThis().castTo<MemberNode>();
+				break;
+			default:
+				if (!m->parent)
+					goto end;
+				m = m->parent->sharedFromThis().castTo<MemberNode>();
+		}
 	}
 
+end:
 	idRefOut = std::move(p);
 
 	return {};

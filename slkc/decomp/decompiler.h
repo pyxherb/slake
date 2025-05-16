@@ -18,6 +18,8 @@ namespace slkc {
 		size_t indentLevel = 0;
 	};
 
+	SLKC_API const char *getMnemonicName(slake::Opcode opcode);
+
 	[[nodiscard]] SLKC_API bool decompileTypeName(peff::Alloc *allocator, DumpWriter *writer, const slake::Type &type);
 	[[nodiscard]] SLKC_API bool decompileValue(peff::Alloc *allocator, DumpWriter *writer, const slake::Value &value);
 	[[nodiscard]] SLKC_API bool decompileIdRefEntries(peff::Alloc *allocator, DumpWriter *writer, const peff::DynArray<slake::IdRefEntry> &idRefIn);

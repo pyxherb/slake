@@ -42,7 +42,7 @@ InternalExceptionPointer slake::opti::wrapIntoArrayType(
 		runtime,
 		type);
 	hostRefHolder.addObject(typeDef.get());
-	typeOut = Type(TypeId::Ref, typeDef.get());
+	typeOut = Type(TypeId::Array, typeDef.get());
 
 	return {};
 }
@@ -505,76 +505,70 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				break;
 			}
 			case Opcode::MOV: {
-				if (regIndex == UINT32_MAX) {
-					return allocOutOfMemoryErrorIfAllocFailed(
-						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
-							fnObject,
-							i));
-				}
-
-				switch (curIns.operands[0].valueType) {
-					case ValueType::I8:
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::I8;
-						break;
-					case ValueType::I16:
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::I16;
-						break;
-					case ValueType::I32:
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::I32;
-						break;
-					case ValueType::I64:
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::I64;
-						break;
-					case ValueType::U8:
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::U8;
-						break;
-					case ValueType::U16:
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::U16;
-						break;
-					case ValueType::U32:
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::U32;
-						break;
-					case ValueType::U64:
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::U64;
-						break;
-					case ValueType::F32:
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::F32;
-						break;
-					case ValueType::F64:
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::F64;
-						break;
-					case ValueType::Bool:
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::Bool;
-						break;
-					case ValueType::EntityRef: {
-						analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
-						SLAKE_RETURN_IF_EXCEPT(evalObjectType(
-							analyzeContext,
-							curIns.operands[0].getEntityRef(),
-							analyzedInfoOut.analyzedRegInfo.at(regIndex).type));
-						break;
-					}
-					case ValueType::RegRef:
-						analyzedInfoOut.analyzedRegInfo.at(regIndex) = analyzedInfoOut.analyzedRegInfo.at(curIns.operands[0].getRegIndex());
-						break;
-					default: {
-						return allocOutOfMemoryErrorIfAllocFailed(
-							MalformedProgramError::alloc(
-								&runtime->globalHeapPoolAlloc,
-								fnObject,
-								i));
+				if (regIndex != UINT32_MAX) {
+					switch (curIns.operands[0].valueType) {
+						case ValueType::I8:
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::I8;
+							break;
+						case ValueType::I16:
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::I16;
+							break;
+						case ValueType::I32:
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::I32;
+							break;
+						case ValueType::I64:
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::I64;
+							break;
+						case ValueType::U8:
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::U8;
+							break;
+						case ValueType::U16:
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::U16;
+							break;
+						case ValueType::U32:
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::U32;
+							break;
+						case ValueType::U64:
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::U64;
+							break;
+						case ValueType::F32:
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::F32;
+							break;
+						case ValueType::F64:
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::F64;
+							break;
+						case ValueType::Bool:
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).type = TypeId::Bool;
+							break;
+						case ValueType::EntityRef: {
+							analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = curIns.operands[0];
+							SLAKE_RETURN_IF_EXCEPT(evalObjectType(
+								analyzeContext,
+								curIns.operands[0].getEntityRef(),
+								analyzedInfoOut.analyzedRegInfo.at(regIndex).type));
+							break;
+						}
+						case ValueType::RegRef:
+							analyzedInfoOut.analyzedRegInfo.at(regIndex) = analyzedInfoOut.analyzedRegInfo.at(curIns.operands[0].getRegIndex());
+							break;
+						default: {
+							return allocOutOfMemoryErrorIfAllocFailed(
+								MalformedProgramError::alloc(
+									&runtime->globalHeapPoolAlloc,
+									fnObject,
+									i));
+						}
 					}
 				}
 

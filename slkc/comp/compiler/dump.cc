@@ -121,6 +121,10 @@ SLKC_API std::optional<CompilationError> slkc::dumpIdRef(
 
 			switch (er.kind) {
 				case slake::ObjectRefKind::ObjectRef: {
+					if (!er.asObject.instanceObject) {
+						SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::None));
+						break;
+					}
 					switch (er.asObject.instanceObject->getKind()) {
 						case slake::ObjectKind::String: {
 							slake::StringObject *s = (slake::StringObject *)er.asObject.instanceObject;
@@ -412,6 +416,37 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 				}
 			}
 		}
+	}
+
+	SLKC_RETURN_IF_COMP_ERROR(writer->writeU32(mod->fieldRecords.size()));
+	for (size_t i = 0; i < mod->fieldRecords.size(); ++i) {
+		auto &curRecord = mod->fieldRecords.at(i);
+
+		slake::slxfmt::VarDesc vad = {};
+
+		if (curRecord.accessModifier & slake::ACCESS_PUB) {
+			vad.flags |= slake::slxfmt::VAD_PUB;
+		}
+
+		if (curRecord.accessModifier & slake::ACCESS_FINAL) {
+			vad.flags |= slake::slxfmt::VAD_FINAL;
+		}
+
+		if (curRecord.accessModifier & slake::ACCESS_STATIC) {
+			vad.flags |= slake::slxfmt::VAD_STATIC;
+		}
+
+		if (curRecord.accessModifier & slake::ACCESS_NATIVE) {
+			vad.flags |= slake::slxfmt::VAD_NATIVE;
+		}
+
+		vad.lenName = curRecord.name.size();
+		SLKC_RETURN_IF_COMP_ERROR(writer->write((char*)&vad, sizeof(vad)));
+
+		SLKC_RETURN_IF_COMP_ERROR(writer->write(curRecord.name.data(), curRecord.name.size()));
+
+		SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, curRecord.type));
+		SLKC_RETURN_IF_COMP_ERROR(dumpValue(allocator, writer, mod->associatedRuntime->readVarUnsafe(slake::EntityRef::makeFieldRef(mod, i))));
 	}
 	return {};
 }

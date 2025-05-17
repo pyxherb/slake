@@ -33,7 +33,7 @@ SLKC_API std::optional<LexicalError> Lexer::lex(const std::string_view &src, pef
 			/*!re2c
 				re2c:yyfill:enable = 0;
 				re2c:define:YYCTYPE = char;
-				re2c:eof = 0;
+				re2c:eof = 1;
 
 				<InitialCondition>"///"		{ YYSETCONDITION(LineCommentCondition); token->tokenId = TokenId::DocumentationComment; continue; }
 				<InitialCondition>"//"		{ YYSETCONDITION(LineCommentCondition); token->tokenId = TokenId::LineComment; continue; }

@@ -414,6 +414,10 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 				return false;
 			Object *objectPtr = entityRef.asObject.instanceObject;
 
+			if (!objectPtr) {
+				return true;
+			}
+
 			if (auto e = const_cast<Type &>(type).loadDeferredType(objectPtr->associatedRuntime);
 				e) {
 				e.reset();

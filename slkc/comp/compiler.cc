@@ -10,7 +10,7 @@ SLKC_API void CompileContext::onRefZero() noexcept {
 }
 
 SLAKE_API std::optional<CompilationError> CompileContext::emitIns(slake::Opcode opcode, uint32_t outputRegIndex, const std::initializer_list<slake::Value> &operands) {
-	if (flags & COMPCTXT_NOCOMPILE) {
+	if (evalProtectionDepth) {
 		return {};
 	}
 
@@ -31,6 +31,29 @@ SLAKE_API std::optional<CompilationError> CompileContext::emitIns(slake::Opcode 
 		return genOutOfMemoryCompError();
 	}
 
+	return {};
+}
+
+SLKC_API std::optional<CompilationError> slkc::evalExprType(
+	CompileContext *compileContext,
+	const peff::SharedPtr<ExprNode> &expr,
+	peff::SharedPtr<TypeNameNode> &typeOut,
+	peff::SharedPtr<TypeNameNode> desiredType) {
+	CompileExprResult result(compileContext->allocator.get());
+#ifndef _NDEBUG
+	size_t prevDepth = compileContext->evalProtectionDepth;
+#endif
+	++compileContext->evalProtectionDepth;
+	{
+		peff::ScopeGuard restoreProtectionDepthGuard([compileContext]() noexcept {
+			--compileContext->evalProtectionDepth;
+		});
+		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr, ExprEvalPurpose::EvalType, desiredType, UINT32_MAX, result));
+	}
+#ifndef _NDEBUG
+	assert(prevDepth == compileContext->evalProtectionDepth);
+#endif
+	typeOut = result.evaluatedType;
 	return {};
 }
 
@@ -209,7 +232,7 @@ SLKC_API std::optional<CompilationError> FileSystemExternalModuleProvider::loadM
 						compileContext->allocator->release(ptr, (size_t)fileSize, 1);
 					}
 				};
-				std::unique_ptr<char, decltype(deleter)> fileContent((char *)malloc((size_t)fileSize), std::move(deleter));
+				std::unique_ptr<char, decltype(deleter)> fileContent((char *)malloc((size_t)fileSize + 1), std::move(deleter));
 				if (!fileContent) {
 					goto fail;
 				}

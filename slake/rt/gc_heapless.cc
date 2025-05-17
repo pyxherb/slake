@@ -146,7 +146,6 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, const Va
 					_gcWalkHeapless(context, readVarUnsafe(entityRef));
 					break;
 				case ObjectRefKind::ArgRef:
-					_gcWalkHeapless(context, entityRef.asArg.majorFrame->context);
 					break;
 				case ObjectRefKind::CoroutineArgRef:
 					_gcWalkHeapless(context, entityRef.asCoroutineArg.coroutine);
@@ -392,12 +391,22 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 				case ObjectKind::Coroutine: {
 					auto value = (CoroutineObject *)v;
 
-					for (size_t i = 0; i < value->args.size(); ++i) {
-						_gcWalkHeapless(context, value->args.at(i).type);
-						_gcWalkHeapless(context, value->args.at(i).value);
+					context.pushObject((FnOverloadingObject *)value->overloading);
+					context.pushObject(value->resumable.thisObject);
+					for (auto &k : value->resumable.argStack) {
+						_gcWalkHeapless(context, k.type);
+						_gcWalkHeapless(context, k.value);
 					}
-					for (size_t i = 0; i < value->nRegs; ++i) {
-						_gcWalkHeapless(context, *((Value *)(value->stackData + SLAKE_STACK_MAX - (value->offRegs + sizeof(Value) * i))));
+					for (auto &k : value->resumable.nextArgStack)
+						_gcWalkHeapless(context, k);
+					for (auto& k : value->resumable.minorFrames) {
+						for (auto& l : k.exceptHandlers) {
+							_gcWalkHeapless(context, l.type);
+						}
+					}
+					if (value->stackData) {
+						for (size_t i = 0; i < value->resumable.nRegs; ++i)
+							_gcWalkHeapless(context, *((Value *)(value->stackData + value->lenStackData - (value->offStackTop + sizeof(Value) * i))));
 					}
 					if (value->isDone()) {
 						_gcWalkHeapless(context, value->finalResult);
@@ -417,17 +426,17 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, char *da
 	context.pushObject((FnOverloadingObject *)majorFrame->curFn);
 	if (majorFrame->curCoroutine)
 		context.pushObject(majorFrame->curCoroutine);
-	context.pushObject(majorFrame->thisObject);
+	context.pushObject(majorFrame->resumable.thisObject);
 	_gcWalkHeapless(context, majorFrame->curExcept);
-	for (auto &k : majorFrame->argStack) {
+	for (auto &k : majorFrame->resumable.argStack) {
 		_gcWalkHeapless(context, k.type);
 		_gcWalkHeapless(context, k.value);
 	}
-	for (auto &k : majorFrame->nextArgStack)
+	for (auto &k : majorFrame->resumable.nextArgStack)
 		_gcWalkHeapless(context, k);
-	for (size_t i = 0; i < majorFrame->nRegs; ++i)
+	for (size_t i = 0; i < majorFrame->resumable.nRegs; ++i)
 		_gcWalkHeapless(context, *((Value *)(dataStack + SLAKE_STACK_MAX - (majorFrame->offRegs + sizeof(Value) * i))));
-	for (auto &k : majorFrame->minorFrames) {
+	for (auto &k : majorFrame->resumable.minorFrames) {
 		for (auto &l : k.exceptHandlers)
 			_gcWalkHeapless(context, l.type);
 	}
@@ -435,11 +444,9 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, char *da
 
 SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Context &ctxt) {
 	bool isWalkableObjectDetected = false;
-	size_t j = ctxt.offMajorFrame;
-	while (j != SIZE_MAX) {
-		MajorFrame *majorFrame = (MajorFrame *)calcStackAddr(ctxt.dataStack, SLAKE_STACK_MAX, j);
+	for(auto &i : ctxt.majorFrames) {
+		MajorFrame *majorFrame = i.get();
 		_gcWalkHeapless(context, majorFrame);
-		j = majorFrame->offNext;
 	}
 }
 

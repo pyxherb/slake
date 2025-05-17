@@ -73,7 +73,6 @@ namespace slake {
 
 		enum class ValueType : uint8_t {
 			None = 0,  // None
-			Any,	   // Any
 			I8,		   // i8
 			I16,	   // i16
 			I32,	   // i32
@@ -165,8 +164,7 @@ namespace slake {
 			VAD_PUB = 0x01,		// Public
 			VAD_FINAL = 0x02,	// Final
 			VAD_STATIC = 0x04,	// Static
-			VAD_NATIVE = 0x08,	// Native
-			VAD_INIT = 0x80		// Initialized
+			VAD_NATIVE = 0x08	// Native
 			;
 
 		struct IdRefHeader final {

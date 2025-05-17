@@ -3,7 +3,7 @@
 
 using namespace slake;
 
-SLAKE_API CoroutineObject::CoroutineObject(Runtime *rt) : Object(rt), curContext(nullptr), curMajorFrame(nullptr), args(&rt->globalHeapPoolAlloc), overloading(nullptr), offIns(0), stackData(nullptr), lenStackData(0), nRegs(0), offRegs(SIZE_MAX) {
+SLAKE_API CoroutineObject::CoroutineObject(Runtime *rt) : Object(rt), curContext(nullptr), curMajorFrame(nullptr), resumable(&rt->globalHeapPoolAlloc), overloading(nullptr), stackData(nullptr), lenStackData(0), offStackTop(0) {
 }
 
 SLAKE_API CoroutineObject::~CoroutineObject() {
@@ -30,15 +30,21 @@ SLAKE_API void slake::CoroutineObject::dealloc() {
 }
 
 SLAKE_API char* slake::CoroutineObject::allocStackData(size_t size) {
-	if (!(stackData = (char*)associatedRuntime->globalHeapPoolAlloc.alloc(lenStackData, 1))) {
-		return nullptr;
+	assert(!stackData);
+	if (size) {
+		if (!(stackData = (char *)associatedRuntime->globalHeapPoolAlloc.alloc(size, 1))) {
+			return nullptr;
+		}
+		lenStackData = size;
+		return stackData;
 	}
-	return stackData;
+	return nullptr;
 }
 
 SLAKE_API void slake::CoroutineObject::releaseStackData() {
 	if (stackData) {
-		assert(lenStackData);
 		associatedRuntime->globalHeapPoolAlloc.release(stackData, lenStackData, 1);
+		stackData = nullptr;
+		lenStackData = 0;
 	}
 }

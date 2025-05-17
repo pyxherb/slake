@@ -10,7 +10,7 @@
 slake::Value print(slake::Context *context, slake::MajorFrame *curMajorFrame) {
 	using namespace slake;
 
-	if (curMajorFrame->argStack.size() < 1)
+	if (curMajorFrame->resumable.argStack.size() < 1)
 		putchar('\n');
 	else {
 		Value varArgsValue;
@@ -102,18 +102,15 @@ std::unique_ptr<std::istream> fsModuleLocator(slake::Runtime *rt, const peff::Dy
 
 void printTraceback(slake::Runtime *rt, slake::ContextObject *context) {
 	printf("Traceback:\n");
-	size_t j = context->_context.offMajorFrame;
-	while (j != SIZE_MAX) {
-		slake::MajorFrame *majorFrame = (slake::MajorFrame *)slake::calcStackAddr(context->_context.dataStack, SLAKE_STACK_MAX, j);
-
-		if (!majorFrame->curFn) {
+	for (auto &i : context->_context.majorFrames) {
+		if (!i->curFn) {
 			printf("(Stack top)\n");
 			continue;
 		}
 
 		peff::DynArray<slake::IdRefEntry> fullRef(peff::getDefaultAlloc());
 
-		if (!rt->getFullRef(peff::getDefaultAlloc(), majorFrame->curFn->fnObject, fullRef)) {
+		if (!rt->getFullRef(peff::getDefaultAlloc(), i->curFn->fnObject, fullRef)) {
 			throw std::bad_alloc();
 		}
 
@@ -141,10 +138,10 @@ void printTraceback(slake::Runtime *rt, slake::ContextObject *context) {
 			}
 		}
 
-		printf("\t%s: 0x%08x", name.c_str(), majorFrame->curIns);
-		switch (majorFrame->curFn->overloadingKind) {
+		printf("\t%s: 0x%08x", name.c_str(), i->resumable.curIns);
+		switch (i->curFn->overloadingKind) {
 			case slake::FnOverloadingKind::Regular: {
-				if (auto sld = ((slake::RegularFnOverloadingObject *)majorFrame->curFn)->getSourceLocationDesc(majorFrame->curIns); sld) {
+				if (auto sld = ((slake::RegularFnOverloadingObject *)i->curFn)->getSourceLocationDesc(i->resumable.curIns); sld) {
 					printf(" at %d:%d", sld->line, sld->column);
 				}
 				break;
@@ -152,8 +149,6 @@ void printTraceback(slake::Runtime *rt, slake::ContextObject *context) {
 			default:;
 		}
 		putchar('\n');
-
-		j = majorFrame->offNext;
 	}
 }
 
@@ -169,7 +164,7 @@ public:
 		return feof(fp);
 	}
 
-	virtual slake::loader::ReadResult read(char* buffer, size_t size) noexcept {
+	virtual slake::loader::ReadResult read(char *buffer, size_t size) noexcept {
 		if (fread(buffer, size, 1, fp) < 1) {
 			return slake::loader::ReadResult::ReadError;
 		}
@@ -303,8 +298,6 @@ int main(int argc, char **argv) {
 				e.reset();
 				goto end;
 			}
-
-			printf("%d\n", result.getI32());
 		}
 
 		puts("");

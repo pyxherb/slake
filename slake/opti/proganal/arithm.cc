@@ -120,9 +120,11 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				}
 			}
 
-			analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
-			if (result.valueType != ValueType::Undefined) {
-				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+			if (regIndex != UINT32_MAX) {
+				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
+				if (result.valueType != ValueType::Undefined) {
+					analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+				}
 			}
 			break;
 		}
@@ -229,9 +231,11 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				}
 			}
 
-			analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
-			if (result.valueType != ValueType::Undefined) {
-				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+			if (regIndex != UINT32_MAX) {
+				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
+				if (result.valueType != ValueType::Undefined) {
+					analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+				}
 			}
 			break;
 		}
@@ -338,9 +342,11 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				}
 			}
 
-			analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
-			if (result.valueType != ValueType::Undefined) {
-				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+			if (regIndex != UINT32_MAX) {
+				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
+				if (result.valueType != ValueType::Undefined) {
+					analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+				}
 			}
 			break;
 		}
@@ -447,9 +453,11 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				}
 			}
 
-			analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
-			if (result.valueType != ValueType::Undefined) {
-				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+			if (regIndex != UINT32_MAX) {
+				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
+				if (result.valueType != ValueType::Undefined) {
+					analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+				}
 			}
 			break;
 		}
@@ -556,9 +564,11 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				}
 			}
 
-			analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
-			if (result.valueType != ValueType::Undefined) {
-				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+			if (regIndex != UINT32_MAX) {
+				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
+				if (result.valueType != ValueType::Undefined) {
+					analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+				}
 			}
 			break;
 		}
@@ -651,9 +661,11 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				}
 			}
 
-			analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
-			if (result.valueType != ValueType::Undefined) {
-				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+			if (regIndex != UINT32_MAX) {
+				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
+				if (result.valueType != ValueType::Undefined) {
+					analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+				}
 			}
 			break;
 		}
@@ -746,9 +758,11 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				}
 			}
 
-			analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
-			if (result.valueType != ValueType::Undefined) {
-				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+			if (regIndex != UINT32_MAX) {
+				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
+				if (result.valueType != ValueType::Undefined) {
+					analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+				}
 			}
 			break;
 		}
@@ -841,9 +855,11 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				}
 			}
 
-			analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
-			if (result.valueType != ValueType::Undefined) {
-				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+			if (regIndex != UINT32_MAX) {
+				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
+				if (result.valueType != ValueType::Undefined) {
+					analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+				}
 			}
 			break;
 		}
@@ -894,9 +910,11 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				}
 			}
 
-			analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
-			if (result.valueType != ValueType::Undefined) {
-				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+			if (regIndex != UINT32_MAX) {
+				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
+				if (result.valueType != ValueType::Undefined) {
+					analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+				}
 			}
 			break;
 		}
@@ -947,9 +965,11 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				}
 			}
 
-			analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
-			if (result.valueType != ValueType::Undefined) {
-				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+			if (regIndex != UINT32_MAX) {
+				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
+				if (result.valueType != ValueType::Undefined) {
+					analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+				}
 			}
 			break;
 		}
@@ -1063,9 +1083,11 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				}
 			}
 
-			analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
-			if (result.valueType != ValueType::Undefined) {
-				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+			if (regIndex != UINT32_MAX) {
+				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
+				if (result.valueType != ValueType::Undefined) {
+					analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+				}
 			}
 			break;
 		}
@@ -1179,9 +1201,11 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				}
 			}
 
-			analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
-			if (result.valueType != ValueType::Undefined) {
-				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+			if (regIndex != UINT32_MAX) {
+				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
+				if (result.valueType != ValueType::Undefined) {
+					analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+				}
 			}
 			break;
 		}
@@ -1288,9 +1312,11 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				}
 			}
 
-			analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
-			if (result.valueType != ValueType::Undefined) {
-				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+			if (regIndex != UINT32_MAX) {
+				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
+				if (result.valueType != ValueType::Undefined) {
+					analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+				}
 			}
 			break;
 		}
@@ -1397,9 +1423,11 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				}
 			}
 
-			analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
-			if (result.valueType != ValueType::Undefined) {
-				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+			if (regIndex != UINT32_MAX) {
+				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
+				if (result.valueType != ValueType::Undefined) {
+					analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+				}
 			}
 			break;
 		}
@@ -1506,9 +1534,11 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				}
 			}
 
-			analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
-			if (result.valueType != ValueType::Undefined) {
-				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+			if (regIndex != UINT32_MAX) {
+				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
+				if (result.valueType != ValueType::Undefined) {
+					analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+				}
 			}
 			break;
 		}
@@ -1615,9 +1645,11 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				}
 			}
 
-			analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
-			if (result.valueType != ValueType::Undefined) {
-				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+			if (regIndex != UINT32_MAX) {
+				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
+				if (result.valueType != ValueType::Undefined) {
+					analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+				}
 			}
 			break;
 		}
@@ -1794,9 +1826,11 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				}
 			}
 
-			analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
-			if (result.valueType != ValueType::Undefined) {
-				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+			if (regIndex != UINT32_MAX) {
+				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
+				if (result.valueType != ValueType::Undefined) {
+					analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+				}
 			}
 			break;
 		}
@@ -1889,9 +1923,11 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				}
 			}
 
-			analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
-			if (result.valueType != ValueType::Undefined) {
-				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+			if (regIndex != UINT32_MAX) {
+				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
+				if (result.valueType != ValueType::Undefined) {
+					analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+				}
 			}
 			break;
 		}
@@ -1984,9 +2020,11 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				}
 			}
 
-			analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
-			if (result.valueType != ValueType::Undefined) {
-				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+			if (regIndex != UINT32_MAX) {
+				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).type = resultType;
+				if (result.valueType != ValueType::Undefined) {
+					analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+				}
 			}
 			break;
 		}
@@ -2068,8 +2106,10 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				}
 			}
 
-			if (result.valueType != ValueType::Undefined) {
-				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+			if (regIndex != UINT32_MAX) {
+				if (result.valueType != ValueType::Undefined) {
+					analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+				}
 			}
 			break;
 		}
@@ -2109,8 +2149,10 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				}
 			}
 
-			if (result.valueType != ValueType::Undefined) {
-				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+			if (regIndex != UINT32_MAX) {
+				if (result.valueType != ValueType::Undefined) {
+					analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+				}
 			}
 			break;
 		}
@@ -2204,8 +2246,10 @@ InternalExceptionPointer slake::opti::analyzeArithmeticIns(
 				}
 			}
 
-			if (result.valueType != ValueType::Undefined) {
-				analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+			if (regIndex != UINT32_MAX) {
+				if (result.valueType != ValueType::Undefined) {
+					analyzeContext.analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = result;
+				}
 			}
 			break;
 		}

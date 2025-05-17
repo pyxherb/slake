@@ -5,6 +5,7 @@
 #include "var.h"
 #include <slake/except.h>
 #include <memory>
+#include <peff/base/deallocable.h>
 
 namespace slake {
 	struct ExceptionHandler final {
@@ -36,44 +37,47 @@ namespace slake {
 
 	class CoroutineObject;
 
+	struct ResumableContext {
+		uint32_t curIns = 0;
+		uint32_t lastJumpSrc = UINT32_MAX;
+		peff::DynArray<ArgRecord> argStack;
+		peff::DynArray<size_t> lvarRecordOffsets;
+		peff::DynArray<Value> nextArgStack;
+		size_t nRegs = 0;
+		Object *thisObject = nullptr;
+		peff::DynArray<MinorFrame> minorFrames;
+
+		SLAKE_API ResumableContext(peff::Alloc *allocator);
+		SLAKE_API ~ResumableContext();
+
+		SLAKE_API ResumableContext &operator=(ResumableContext &&rhs);
+	};
+
 	/// @brief A major frame represents a single calling frame.
 	struct MajorFrame final {
-		size_t offNext = SIZE_MAX;
-		Context *context = nullptr;	 // Context
+		Runtime *associatedRuntime;
 
 		const FnOverloadingObject *curFn = nullptr;	 // Current function overloading.
 		CoroutineObject *curCoroutine = nullptr;
-		uint32_t curIns = 0;				// Offset of current instruction in function body.
-		uint32_t lastJumpSrc = UINT32_MAX;	// Offset of last executed jump instruction.
 
-		peff::DynArray<ArgRecord> argStack;		   // Argument stack.
-		peff::DynArray<size_t> lvarRecordOffsets;  // Local var record offsets.
-
-		peff::DynArray<Value> nextArgStack;	 // Argument stack for next call.
-
-		size_t offRegs;	 // Local registers.
-		size_t nRegs = 0;
-
-		Object *thisObject = nullptr;  // `this' object.
+		ResumableContext resumable;
 
 		uint32_t returnValueOutReg = UINT32_MAX;
 
-		peff::DynArray<MinorFrame> minorFrames;	 // Minor frames.
 		size_t stackBase = 0;
+		size_t offRegs = UINT32_MAX;
 
 		Value curExcept = Value();	// Current exception.
 
-		SLAKE_API MajorFrame(Runtime *rt, Context *context);
-		// Default constructor is required by resize() methods from the
-		// containers.
-		SLAKE_FORCEINLINE MajorFrame() : minorFrames(nullptr), argStack(nullptr), nextArgStack(nullptr), lvarRecordOffsets(nullptr) {
-			abort();
-		}
+		SLAKE_API MajorFrame(Runtime *rt);
 		SLAKE_API ~MajorFrame();
 
-		/// @brief Leave current minor frame.
-		[[nodiscard]] SLAKE_API bool leave();
+		SLAKE_API void dealloc() noexcept;
+
+		SLAKE_API static MajorFrame *alloc(Runtime *rt, Context *context);
 	};
+
+	using MajorFramePtr = std::unique_ptr<MajorFrame, peff::DeallocableDeleter<MajorFrame>>;
 
 	using ContextFlags = uint8_t;
 	constexpr static ContextFlags
@@ -84,11 +88,10 @@ namespace slake {
 
 	struct Context {
 		Runtime *runtime;
-		size_t offMajorFrame = SIZE_MAX, offStackTopMajorFrame = SIZE_MAX;	// Major frame list
-		size_t majorFrameDepth;												// Major frame depth
-		ContextFlags flags = 0;												// Flags
-		char *dataStack = nullptr;											// Data stack
-		size_t stackTop = 0;												// Stack top
+		peff::DynArray<MajorFramePtr> majorFrames;	// Major frame list
+		ContextFlags flags = 0;						// Flags
+		char *dataStack = nullptr;					// Data stack
+		size_t stackTop = 0;						// Stack top
 
 		SLAKE_API char *stackAlloc(size_t size);
 		SLAKE_API void leaveMajor();
@@ -117,7 +120,7 @@ namespace slake {
 	};
 
 	SLAKE_FORCEINLINE char *calcStackAddr(char *data, size_t szStack, size_t offset) {
-		return data + SLAKE_STACK_MAX - offset;
+		return data + szStack - offset;
 	}
 }
 

@@ -30,9 +30,9 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 					peff::DynArray<Type> destructorParamTypes(&globalHeapPoolAlloc);
 					GenericParamList destructorGenericParamList(&globalHeapPoolAlloc);
 
-					for(auto j : overloadings) {
-						if(isDuplicatedOverloading(j, destructorParamTypes, destructorGenericParamList, false)) {
-							if(!methodTable->destructors.pushFront(+j)) {
+					for (auto j : overloadings) {
+						if (isDuplicatedOverloading(j, destructorParamTypes, destructorGenericParamList, false)) {
+							if (!methodTable->destructors.pushFront(+j)) {
 								return OutOfMemoryError::alloc();
 							}
 							break;
@@ -99,74 +99,26 @@ SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForClass(ClassObject
 	}
 
 	for (size_t i = 0; i < cls->fieldRecords.size(); ++i) {
-		ObjectFieldRecord fieldRecord(&globalHeapPoolAlloc);
 		FieldRecord &clsFieldRecord = cls->fieldRecords.at(i);
+
+		if (clsFieldRecord.accessModifier & ACCESS_STATIC) {
+			continue;
+		}
+
+		ObjectFieldRecord fieldRecord(&globalHeapPoolAlloc);
 
 		Type type = clsFieldRecord.type;
 
-		switch (type.typeId) {
-			case TypeId::I8:
-				fieldRecord.offset = objectLayout->totalSize;
-				objectLayout->totalSize += sizeof(int8_t);
-				break;
-			case TypeId::I16:
-				objectLayout->totalSize += (2 - (objectLayout->totalSize & 1));
-				fieldRecord.offset = objectLayout->totalSize;
-				objectLayout->totalSize += sizeof(int16_t);
-				break;
-			case TypeId::I32:
-				objectLayout->totalSize += (4 - (objectLayout->totalSize & 3));
-				fieldRecord.offset = objectLayout->totalSize;
-				objectLayout->totalSize += sizeof(int32_t);
-				break;
-			case TypeId::I64:
-				objectLayout->totalSize += (8 - (objectLayout->totalSize & 7));
-				fieldRecord.offset = objectLayout->totalSize;
-				objectLayout->totalSize += sizeof(int64_t);
-				break;
-			case TypeId::U8:
-				fieldRecord.offset = objectLayout->totalSize;
-				objectLayout->totalSize += sizeof(uint8_t);
-				break;
-			case TypeId::U16:
-				objectLayout->totalSize += (2 - (objectLayout->totalSize & 1));
-				fieldRecord.offset = objectLayout->totalSize;
-				objectLayout->totalSize += sizeof(uint16_t);
-				break;
-			case TypeId::U32:
-				objectLayout->totalSize += (4 - (objectLayout->totalSize & 3));
-				fieldRecord.offset = objectLayout->totalSize;
-				objectLayout->totalSize += sizeof(uint32_t);
-				break;
-			case TypeId::U64:
-				objectLayout->totalSize += (8 - (objectLayout->totalSize & 7));
-				fieldRecord.offset = objectLayout->totalSize;
-				objectLayout->totalSize += sizeof(uint64_t);
-				break;
-			case TypeId::F32:
-				objectLayout->totalSize += (4 - (objectLayout->totalSize & 3));
-				fieldRecord.offset = objectLayout->totalSize;
-				objectLayout->totalSize += sizeof(float);
-				break;
-			case TypeId::F64:
-				objectLayout->totalSize += (8 - (objectLayout->totalSize & 7));
-				fieldRecord.offset = objectLayout->totalSize;
-				objectLayout->totalSize += sizeof(double);
-				break;
-			case TypeId::Bool:
-				fieldRecord.offset = objectLayout->totalSize;
-				objectLayout->totalSize += sizeof(bool);
-				break;
-			case TypeId::String:
-			case TypeId::Instance:
-			case TypeId::Array:
-				objectLayout->totalSize += sizeof(void *) - (objectLayout->totalSize & (sizeof(void *) - 1));
-				fieldRecord.offset = objectLayout->totalSize;
-				objectLayout->totalSize += sizeof(void *);
-				break;
-			default:
-				throw std::runtime_error("The variable has an inconstructible type");
+		size_t size = sizeofType(type);
+		size_t align = alignofType(type);
+
+		if (align > 1) {
+			if (size_t diff = objectLayout->totalSize % align; diff) {
+				objectLayout->totalSize += align - diff;
+			}
 		}
+		fieldRecord.offset = objectLayout->totalSize;
+		objectLayout->totalSize += size;
 
 		fieldRecord.type = type;
 		if (!peff::copy(fieldRecord.name, clsFieldRecord.name)) {
@@ -181,7 +133,6 @@ SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForClass(ClassObject
 			return OutOfMemoryError::alloc();
 		if (!objectLayout->fieldRecords.pushBack(std::move(fieldRecord)))
 			return OutOfMemoryError::alloc();
-		break;
 	}
 
 	// cls->cachedFieldInitVars.shrink_to_fit();

@@ -440,6 +440,39 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 		peff::SharedPtr<MemberNode> m = mod->members.at(v);
 
 		switch (m->astNodeType) {
+			case AstNodeType::Var: {
+				peff::SharedPtr<VarNode> varNode = m.castTo<VarNode>();
+
+				slake::FieldRecord fr(&compileContext->runtime->globalHeapPoolAlloc);
+
+				if (!fr.name.build(k)) {
+					return genOutOfRuntimeMemoryCompError();
+				}
+
+				fr.accessModifier = m->accessModifier;
+				fr.offset = modOut->localFieldStorage.size();
+
+				slake::Type type;
+
+				SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, varNode->type, type));
+
+				fr.type = type;
+
+				if (!modOut->appendFieldRecord(std::move(fr))) {
+					return genOutOfRuntimeMemoryCompError();
+				}
+
+				slake::Value defaultValue;
+
+				if (varNode->initialValue) {
+					SLKC_RETURN_IF_COMP_ERROR(compileValueExpr(compileContext, varNode->initialValue, defaultValue));
+				} else {
+					defaultValue = modOut->associatedRuntime->defaultValueOf(type);
+				}
+				modOut->associatedRuntime->writeVar(slake::EntityRef::makeFieldRef(modOut, modOut->fieldRecords.size() - 1), defaultValue).unwrap();
+
+				break;
+			}
 			case AstNodeType::Class: {
 				peff::SharedPtr<ClassNode> clsNode = m.castTo<ClassNode>();
 
@@ -484,6 +517,8 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 					} else {
 						SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(clsNode->baseType->tokenRange, CompilationErrorKind::ExpectingClassName)));
 					}
+
+					SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, clsNode->baseType, cls->baseType));
 				}
 
 				for (auto &i : clsNode->implTypes) {
@@ -504,6 +539,14 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 						}
 					} else {
 						SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
+					}
+
+					slake::Type t;
+
+					SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, i, t));
+
+					if (!cls->implTypes.pushBack(std::move(t))) {
+						return genOutOfRuntimeMemoryCompError();
 					}
 				}
 
@@ -613,6 +656,13 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 						return genOutOfRuntimeMemoryCompError();
 					}
 
+					if (i->fnFlags & FN_VARG) {
+						fnObject->setVarArgs();
+					}
+					if (i->fnFlags & FN_VIRTUAL) {
+						fnObject->setVirtualFlag();
+					}
+
 					fnObject->setAccess(i->accessModifier);
 
 					peff::SharedPtr<BlockCompileContext> blockContext;
@@ -649,6 +699,8 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 							e.reset();
 						}
 					}
+
+					assert(!compileContext->evalProtectionDepth);
 
 					fnObject->instructions = std::move(compileContext->fnCompileContext.instructionsOut);
 

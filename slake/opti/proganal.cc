@@ -235,7 +235,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 	MajorFrame *pseudoMajorFrame;
 	{
 		SLAKE_RETURN_IF_EXCEPT(runtime->_createNewMajorFrame(&analyzedInfoOut.contextObject->_context, nullptr, nullptr, nullptr, 0, UINT32_MAX));
-		pseudoMajorFrame = (MajorFrame *)calcStackAddr(analyzedInfoOut.contextObject->_context.dataStack, SLAKE_STACK_MAX, analyzedInfoOut.contextObject->_context.offMajorFrame);
+		pseudoMajorFrame = MajorFrame::alloc(runtime, &analyzedInfoOut.contextObject->_context);
 	}
 
 	ProgramAnalyzeContext analyzeContext = {
@@ -246,16 +246,16 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 		hostRefHolder
 	};
 
-	pseudoMajorFrame->argStack.resizeWith(fnObject->paramTypes.size(), ArgRecord{});
+	pseudoMajorFrame->resumable.argStack.resizeWith(fnObject->paramTypes.size(), ArgRecord{});
 	for (size_t i = 0; i < fnObject->paramTypes.size(); ++i) {
-		pseudoMajorFrame->argStack.at(i) = { Value(), fnObject->paramTypes.at(i) };
+		pseudoMajorFrame->resumable.argStack.at(i) = { Value(), fnObject->paramTypes.at(i) };
 	}
 
 	if (fnObject->overloadingFlags & OL_VARG) {
 		auto varArgTypeDefObject = TypeDefObject::alloc(runtime, Type(TypeId::Any));
 		hostRefHolder.addObject(varArgTypeDefObject.get());
 
-		pseudoMajorFrame->argStack.pushBack({ Value(), Type(TypeId::Array, varArgTypeDefObject.get()) });
+		pseudoMajorFrame->resumable.argStack.pushBack({ Value(), Type(TypeId::Array, varArgTypeDefObject.get()) });
 	}
 
 	// Analyze lifetime of virtual registers.
@@ -677,7 +677,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				SLAKE_RETURN_IF_EXCEPT(typeName.loadDeferredType(runtime));
 
 				EntityRef entityRef;
-				SLAKE_RETURN_IF_EXCEPT(runtime->_addLocalVar(pseudoMajorFrame, typeName, entityRef));
+				SLAKE_RETURN_IF_EXCEPT(runtime->_addLocalVar(&analyzedInfoOut.contextObject->_context, pseudoMajorFrame, typeName, entityRef));
 
 				SLAKE_RETURN_IF_EXCEPT(
 					wrapIntoRefType(

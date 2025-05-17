@@ -236,6 +236,11 @@ SLKC_API bool slkc::decompileValue(peff::Alloc *allocator, DumpWriter *writer, c
 				case slake::ObjectRefKind::ObjectRef: {
 					slake::Object *obj = er.asObject.instanceObject;
 
+					if (!obj) {
+						SLKC_RETURN_IF_FALSE(writer->write("null"));
+						break;
+					}
+
 					switch (obj->getKind()) {
 						case slake::ObjectKind::String: {
 							SLKC_RETURN_IF_FALSE(writer->write("\""));
@@ -354,8 +359,12 @@ SLKC_API bool slkc::decompileIdRef(peff::Alloc *allocator, DumpWriter *writer, s
 
 SLKC_API bool slkc::decompileModuleMembers(peff::Alloc *allocator, DumpWriter *writer, slake::ModuleObject *moduleObject, size_t indentLevel) {
 	for (auto &i : moduleObject->fieldRecords) {
+		for (size_t j = 0; j < indentLevel; ++j) {
+			SLKC_RETURN_IF_FALSE(writer->write("\t"));
+		}
 		SLKC_RETURN_IF_FALSE(writer->write("let "));
 		SLKC_RETURN_IF_FALSE(writer->write(i.name));
+		SLKC_RETURN_IF_FALSE(writer->write(" "));
 		SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, i.type));
 		SLKC_RETURN_IF_FALSE(writer->write("\n"));
 	}

@@ -36,11 +36,13 @@ SLAKE_API IdRefObject::IdRefObject(const IdRefObject &x, bool &succeededOut)
 		}
 
 		for (size_t i = 0; i < x.paramTypes->size(); ++i) {
-			if (!peff::copy(paramTypes->at(i), x.paramTypes->at(i))) {
+			if (!peff::copy(copiedParamTypes.at(i), x.paramTypes->at(i))) {
 				succeededOut = false;
 				return;
 			}
 		}
+
+		paramTypes = std::move(copiedParamTypes);
 	}
 
 	hasVarArgs = x.hasVarArgs;

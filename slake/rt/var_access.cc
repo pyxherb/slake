@@ -30,14 +30,14 @@ SLAKE_API InternalExceptionPointer Runtime::tryAccessVar(const EntityRef &entity
 			break;
 		}
 		case ObjectRefKind::ArgRef: {
-			ArgRecord &argRecord = entityRef.asArg.majorFrame->argStack.at(entityRef.asArg.argIndex);
+			ArgRecord &argRecord = entityRef.asArg.majorFrame->resumable.argStack.at(entityRef.asArg.argIndex);
 			break;
 		}
 		case ObjectRefKind::CoroutineArgRef: {
 			if (entityRef.asCoroutineArg.coroutine->curContext) {
-				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->argStack.at(entityRef.asArg.argIndex);
+				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumable.argStack.at(entityRef.asArg.argIndex);
 			} else {
-				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->args.at(entityRef.asArg.argIndex);
+				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->resumable.argStack.at(entityRef.asArg.argIndex);
 			}
 			break;
 		}
@@ -103,18 +103,18 @@ SLAKE_API InternalExceptionPointer Runtime::typeofVar(const EntityRef &entityRef
 			break;
 		}
 		case ObjectRefKind::ArgRef: {
-			ArgRecord &argRecord = entityRef.asArg.majorFrame->argStack.at(entityRef.asArg.argIndex);
+			ArgRecord &argRecord = entityRef.asArg.majorFrame->resumable.argStack.at(entityRef.asArg.argIndex);
 
 			typeOut = argRecord.type;
 			break;
 		}
 		case ObjectRefKind::CoroutineArgRef: {
 			if (entityRef.asCoroutineArg.coroutine->curContext) {
-				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->argStack.at(entityRef.asArg.argIndex);
+				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumable.argStack.at(entityRef.asArg.argIndex);
 
 				typeOut = argRecord.type;
 			} else {
-				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->args.at(entityRef.asArg.argIndex);
+				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->resumable.argStack.at(entityRef.asArg.argIndex);
 
 				typeOut = argRecord.type;
 			}
@@ -141,7 +141,7 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 		case ObjectRefKind::FieldRef: {
 			FieldRecord &fieldRecord = entityRef.asField.moduleObject->fieldRecords.at(entityRef.asField.index);
 
-			const char *const rawDataPtr = entityRef.asField.moduleObject->localFieldStorage + fieldRecord.offset;
+			const char *const rawDataPtr = entityRef.asField.moduleObject->localFieldStorage.data() + fieldRecord.offset;
 
 			switch (fieldRecord.type.typeId) {
 				case TypeId::I8:
@@ -411,17 +411,17 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 			break;
 		}
 		case ObjectRefKind::ArgRef: {
-			const ArgRecord &argRecord = entityRef.asArg.majorFrame->argStack.at(entityRef.asArg.argIndex);
+			const ArgRecord &argRecord = entityRef.asArg.majorFrame->resumable.argStack.at(entityRef.asArg.argIndex);
 
 			return argRecord.value;
 		}
 		case ObjectRefKind::CoroutineArgRef: {
 			if (entityRef.asCoroutineArg.coroutine->curContext) {
-				const ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->args.at(entityRef.asArg.argIndex);
+				const ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->resumable.argStack.at(entityRef.asArg.argIndex);
 
 				return argRecord.value;
 			} else {
-				const ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->argStack.at(entityRef.asArg.argIndex);
+				const ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumable.argStack.at(entityRef.asArg.argIndex);
 
 				return argRecord.value;
 			}
@@ -445,7 +445,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 				return raiseMismatchedVarTypeError(entityRef.asField.moduleObject->associatedRuntime);
 			}
 
-			char *const rawDataPtr = entityRef.asField.moduleObject->localFieldStorage + fieldRecord.offset;
+			char *const rawDataPtr = entityRef.asField.moduleObject->localFieldStorage.data() + fieldRecord.offset;
 
 			switch (fieldRecord.type.typeId) {
 				case TypeId::I8:
@@ -554,13 +554,15 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 					std::terminate();
 			}
 
+			assert(readVarUnsafe(entityRef) == value);
+
 			break;
 		}
 		case ObjectRefKind::CoroutineLocalVarRef: {
 			if (entityRef.asCoroutineLocalVar.coroutine->curContext) {
 				const char *const rawStackPtr = calcStackAddr(entityRef.asCoroutineLocalVar.coroutine->curContext->dataStack,
 					SLAKE_STACK_MAX,
-					entityRef.asLocalVar.stackOff);
+					entityRef.asCoroutineLocalVar.stackOff + entityRef.asCoroutineLocalVar.coroutine->curMajorFrame->stackBase);
 				const char *const rawDataPtr = rawStackPtr + sizeof(Type);
 
 				Type t;
@@ -782,7 +784,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 			break;
 		}
 		case ObjectRefKind::ArgRef: {
-			ArgRecord &argRecord = entityRef.asArg.majorFrame->argStack.at(entityRef.asArg.argIndex);
+			ArgRecord &argRecord = entityRef.asArg.majorFrame->resumable.argStack.at(entityRef.asArg.argIndex);
 
 			if (!isCompatible(argRecord.type, value)) {
 				return raiseMismatchedVarTypeError((Runtime *)this);
@@ -793,7 +795,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 		}
 		case ObjectRefKind::CoroutineArgRef: {
 			if (entityRef.asCoroutineArg.coroutine->curContext) {
-				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->argStack.at(entityRef.asArg.argIndex);
+				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumable.argStack.at(entityRef.asArg.argIndex);
 
 				if (!isCompatible(argRecord.type, value)) {
 					return raiseMismatchedVarTypeError((Runtime *)this);
@@ -801,7 +803,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 
 				argRecord.value = value;
 			} else {
-				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->args.at(entityRef.asArg.argIndex);
+				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->resumable.argStack.at(entityRef.asArg.argIndex);
 
 				if (!isCompatible(argRecord.type, value)) {
 					return raiseMismatchedVarTypeError((Runtime *)this);

@@ -52,177 +52,38 @@ SLAKE_API InternalExceptionPointer Runtime::setGenericCache(const Object *object
 
 SLAKE_API InternalExceptionPointer slake::Runtime::instantiateModuleFields(ModuleObject *mod, GenericInstantiationContext &instantiationContext) {
 	size_t szRelocatedLocalFieldStorage = 0;
-	peff::DynArray<FieldRecord> relocatedFieldRecords(&globalHeapPoolAlloc);
 
-	for (size_t i = 0; i < mod->fieldRecords.size(); ++i) {
-		FieldRecord &curOldFieldRecord = mod->fieldRecords.at(i);
+	HostObjectRef<ModuleObject> tmpMod;
 
-		if (!mod->fieldRecordIndices.insert(curOldFieldRecord.name, +i))
-			return OutOfMemoryError::alloc();
-
-		FieldRecord curFieldRecord(&globalHeapPoolAlloc);
-		if (!peff::copy(curFieldRecord.name, curOldFieldRecord.name))
-			return OutOfMemoryError::alloc();
-		curFieldRecord.type = curOldFieldRecord.type;
-		curFieldRecord.accessModifier = curOldFieldRecord.accessModifier;
-		curFieldRecord.name = std::move(curOldFieldRecord.name);
-
-		SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(curFieldRecord.type, instantiationContext));
-
-		switch (curFieldRecord.type.typeId) {
-			case TypeId::I8:
-				curFieldRecord.offset = szRelocatedLocalFieldStorage;
-				szRelocatedLocalFieldStorage += sizeof(int8_t);
-				break;
-			case TypeId::I16:
-				if (szRelocatedLocalFieldStorage & 1) {
-					szRelocatedLocalFieldStorage += (2 - (szRelocatedLocalFieldStorage & 1));
-				}
-				curFieldRecord.offset = szRelocatedLocalFieldStorage;
-				szRelocatedLocalFieldStorage += sizeof(int16_t);
-				break;
-			case TypeId::I32:
-				if (szRelocatedLocalFieldStorage & 3) {
-					szRelocatedLocalFieldStorage += (4 - (szRelocatedLocalFieldStorage & 3));
-				}
-				curFieldRecord.offset = szRelocatedLocalFieldStorage;
-				szRelocatedLocalFieldStorage += sizeof(int32_t);
-				break;
-			case TypeId::I64:
-				if (szRelocatedLocalFieldStorage & 7) {
-					szRelocatedLocalFieldStorage += (8 - (szRelocatedLocalFieldStorage & 7));
-				}
-				curFieldRecord.offset = szRelocatedLocalFieldStorage;
-				szRelocatedLocalFieldStorage += sizeof(int64_t);
-				break;
-			case TypeId::U8:
-				curFieldRecord.offset = szRelocatedLocalFieldStorage;
-				szRelocatedLocalFieldStorage += sizeof(uint8_t);
-				break;
-			case TypeId::U16:
-				if (szRelocatedLocalFieldStorage & 1) {
-					szRelocatedLocalFieldStorage += (2 - (szRelocatedLocalFieldStorage & 1));
-				}
-				curFieldRecord.offset = szRelocatedLocalFieldStorage;
-				szRelocatedLocalFieldStorage += sizeof(uint16_t);
-				break;
-			case TypeId::U32:
-				if (szRelocatedLocalFieldStorage & 3) {
-					szRelocatedLocalFieldStorage += (4 - (szRelocatedLocalFieldStorage & 3));
-				}
-				curFieldRecord.offset = szRelocatedLocalFieldStorage;
-				szRelocatedLocalFieldStorage += sizeof(uint32_t);
-				break;
-			case TypeId::U64:
-				if (szRelocatedLocalFieldStorage & 7) {
-					szRelocatedLocalFieldStorage += (8 - (szRelocatedLocalFieldStorage & 7));
-				}
-				curFieldRecord.offset = szRelocatedLocalFieldStorage;
-				szRelocatedLocalFieldStorage += sizeof(uint64_t);
-				break;
-			case TypeId::Bool:
-				curFieldRecord.offset = szRelocatedLocalFieldStorage;
-				szRelocatedLocalFieldStorage += sizeof(bool);
-				break;
-			case TypeId::String:
-			case TypeId::Instance:
-				if (szRelocatedLocalFieldStorage & (sizeof(void *) - 1)) {
-					szRelocatedLocalFieldStorage += (sizeof(void *) - (szRelocatedLocalFieldStorage & (sizeof(void *) - 1)));
-				}
-				curFieldRecord.offset = szRelocatedLocalFieldStorage;
-				szRelocatedLocalFieldStorage += sizeof(void *);
-				break;
-			case TypeId::Any:
-				if (szRelocatedLocalFieldStorage % sizeof(Value)) {
-					szRelocatedLocalFieldStorage += (sizeof(Value) - (szRelocatedLocalFieldStorage % sizeof(Value)));
-				}
-				curFieldRecord.offset = szRelocatedLocalFieldStorage;
-				szRelocatedLocalFieldStorage += sizeof(Value);
-				break;
-			case TypeId::GenericArg:
-				curFieldRecord.offset = SIZE_MAX;
-				break;
-			default:
-				std::terminate();
-		}
-
-		if (!relocatedFieldRecords.pushBack(std::move(curFieldRecord)))
-			return OutOfMemoryError::alloc();
-	}
-	char *localFieldStorage = (char *)globalHeapPoolAlloc.alloc(szRelocatedLocalFieldStorage, sizeof(std::max_align_t));
-	if (!localFieldStorage)
+	if (!(tmpMod = ModuleObject::alloc(this))) {
 		return OutOfMemoryError::alloc();
-	peff::ScopeGuard releaseLocalFieldStorageGuard([this, localFieldStorage, szRelocatedLocalFieldStorage]() noexcept {
-		globalHeapPoolAlloc.release(localFieldStorage, szRelocatedLocalFieldStorage, sizeof(std::max_align_t));
-	});
+	}
+
+	const size_t nRecords = mod->fieldRecords.size();
+
+	tmpMod->fieldRecords = std::move(mod->fieldRecords);
+	tmpMod->localFieldStorage = std::move(mod->localFieldStorage);
 
 	mod->fieldRecordIndices.clear();
 
-	peff::DynArray<FieldRecord> oldFieldRecords = std::move(mod->fieldRecords);
-	mod->fieldRecords = std::move(relocatedFieldRecords);
+	for (size_t i = 0; i < nRecords; ++i) {
+		const FieldRecord &curOldFieldRecord = tmpMod->fieldRecords.at(i);
 
-	for (size_t i = 0; i < mod->fieldRecords.size(); ++i) {
-		FieldRecord &curFieldRecord = oldFieldRecords.at(i);
-		FieldRecord &curRelocatedFieldRecord = mod->fieldRecords.at(i);
-
-		if (!mod->fieldRecordIndices.insert(curRelocatedFieldRecord.name, +i))
-			throw std::bad_alloc();
-
-		char *rawDataPtr = mod->localFieldStorage + curFieldRecord.offset,
-			 *rawRelocatedDataPtr = localFieldStorage + curRelocatedFieldRecord.offset;
-		switch (curFieldRecord.type.typeId) {
-			case TypeId::I8:
-				*((int8_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int8_t *)rawDataPtr) : 0);
-				break;
-			case TypeId::I16:
-				*((int16_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int16_t *)rawDataPtr) : 0);
-				break;
-			case TypeId::I32:
-				*((int32_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int32_t *)rawDataPtr) : 0);
-				break;
-			case TypeId::I64:
-				*((int64_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int64_t *)rawDataPtr) : 0);
-				break;
-			case TypeId::U8:
-				*((uint8_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((uint8_t *)rawDataPtr) : 0);
-				break;
-			case TypeId::U16:
-				*((uint16_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((int16_t *)rawDataPtr) : 0);
-				break;
-			case TypeId::U32:
-				*((uint32_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((uint32_t *)rawDataPtr) : 0);
-				break;
-			case TypeId::U64:
-				*((uint64_t *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((uint64_t *)rawDataPtr) : 0);
-				break;
-			case TypeId::F32:
-				*((float *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((float *)rawDataPtr) : 0);
-				break;
-			case TypeId::F64:
-				*((double *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((double *)rawDataPtr) : 0);
-				break;
-			case TypeId::Bool:
-				*((bool *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((bool *)rawDataPtr) : 0);
-				break;
-			case TypeId::String:
-			case TypeId::Instance:
-				*((Object **)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((Object **)rawDataPtr) : 0);
-				break;
-			case TypeId::Any:
-				*((Value *)rawRelocatedDataPtr) = (curFieldRecord.offset != SIZE_MAX ? *((Value *)rawDataPtr) : 0);
-				break;
-			case TypeId::GenericArg:
-				break;
-			default:
-				std::terminate();
+		FieldRecord curFieldRecord(&globalHeapPoolAlloc);
+		curFieldRecord.type = curOldFieldRecord.type;
+		curFieldRecord.accessModifier = curOldFieldRecord.accessModifier;
+		if (!curFieldRecord.name.build(curOldFieldRecord.name)) {
+			return OutOfMemoryError::alloc();
 		}
-	}
 
-	if (mod->localFieldStorage)
-		globalHeapPoolAlloc.release(mod->localFieldStorage, mod->szLocalFieldStorage, sizeof(std::max_align_t));
-	mod->localFieldStorage = localFieldStorage;
-	mod->szLocalFieldStorage = szRelocatedLocalFieldStorage;
-	releaseLocalFieldStorageGuard.release();
+		SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(curFieldRecord.type, instantiationContext));
+
+		if (!mod->appendFieldRecord(std::move(curFieldRecord))) {
+			return OutOfMemoryError::alloc();
+		}
+
+		writeVar(EntityRef::makeFieldRef(mod, i), readVarUnsafe(EntityRef::makeFieldRef(tmpMod.get(), i)));
+	}
 
 	return {};
 }

@@ -156,6 +156,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						}
 
 						initialMember = it.value().castTo<MemberNode>();
+
 						switch (initialMemberEvalPurpose) {
 							case ExprEvalPurpose::EvalType:
 								break;
@@ -196,13 +197,13 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 								CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
 							break;
 						case ExprEvalPurpose::LValue: {
-							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::LARG, initialMemberReg, { slake::Value(slake::ValueType::RegRef, it.value()) }));
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::LARG, initialMemberReg, { slake::Value((uint32_t)it.value()) }));
 							break;
 						}
 						case ExprEvalPurpose::RValue:
 						case ExprEvalPurpose::Call: {
 							uint32_t tmpReg = compileContext->allocReg();
-							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::LARG, tmpReg, { slake::Value(slake::ValueType::RegRef, it.value()) }));
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::LARG, tmpReg, { slake::Value((uint32_t)it.value()) }));
 							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::LVALUE, initialMemberReg, { slake::Value(slake::ValueType::RegRef, tmpReg) }));
 							break;
 						}
@@ -716,7 +717,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 							compileContext->emitIns(
 								slake::Opcode::MOV,
 								resultRegOut,
-								{ slake::Value(nullptr) }));
+								{ slake::Value(slake::EntityRef::makeObjectRef(nullptr)) }));
 					}
 					break;
 				case ExprEvalPurpose::LValue:
@@ -913,14 +914,20 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 				uint32_t reg = compileContext->allocReg();
 
-				bool b = false;
-				SLKC_RETURN_IF_COMP_ERROR(isLValueType(argTypes.at(i), b));
-
 				if (i < tn->paramTypes.size()) {
+					bool b = false;
+					SLKC_RETURN_IF_COMP_ERROR(isLValueType(tn->paramTypes.at(i), b));
+
 					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->args.at(i), b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, tn->paramTypes.at(i), reg, argResult));
 				} else {
-					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->args.at(i), b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, {}, reg, argResult));
+					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->args.at(i), ExprEvalPurpose::RValue, {}, reg, argResult));
 				}
+
+				SLKC_RETURN_IF_COMP_ERROR(
+					compileContext->emitIns(
+						slake::Opcode::PUSHARG,
+						UINT32_MAX,
+						{ slake::Value(slake::ValueType::RegRef, reg) }));
 			}
 
 			uint32_t thisReg = UINT32_MAX;
@@ -1128,6 +1135,28 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				uint32_t ctorCallTarget = compileContext->allocReg();
 
 				SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::LOAD, ctorCallTarget, { slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+
+				for (size_t i = 0; i < e->args.size(); ++i) {
+					CompileExprResult argResult(compileContext->allocator.get());
+
+					uint32_t reg = compileContext->allocReg();
+
+					if (i < overloading->params.size()) {
+						bool b = false;
+						SLKC_RETURN_IF_COMP_ERROR(isLValueType(overloading->params.at(i)->type, b));
+
+						SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->args.at(i), b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, overloading->params.at(i)->type, reg, argResult));
+					} else {
+						SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, e->args.at(i), ExprEvalPurpose::RValue, {}, reg, argResult));
+					}
+
+					SLKC_RETURN_IF_COMP_ERROR(
+						compileContext->emitIns(
+							slake::Opcode::PUSHARG,
+							UINT32_MAX,
+							{ slake::Value(slake::ValueType::RegRef, reg) }));
+				}
+
 				SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::CTORCALL, UINT32_MAX, { slake::Value(slake::ValueType::RegRef, ctorCallTarget), slake::Value(slake::ValueType::RegRef, resultRegOut) }));
 			} else {
 			}

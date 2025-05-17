@@ -3,27 +3,41 @@
 using namespace slake;
 
 SLAKE_API ModuleObject::ModuleObject(Runtime *rt)
-	: MemberObject(rt), members(&rt->globalHeapPoolAlloc), fieldRecords(&rt->globalHeapPoolAlloc), fieldRecordIndices(&rt->globalHeapPoolAlloc), unnamedImports(&rt->globalHeapPoolAlloc) {
+	: MemberObject(rt), members(&rt->globalHeapPoolAlloc), localFieldStorage(&rt->globalHeapPoolAlloc), fieldRecords(&rt->globalHeapPoolAlloc), fieldRecordIndices(&rt->globalHeapPoolAlloc), unnamedImports(&rt->globalHeapPoolAlloc) {
 }
 
-SLAKE_API ModuleObject::ModuleObject(const ModuleObject &x, bool &succeededOut) : MemberObject(x, succeededOut), members(&x.associatedRuntime->globalHeapPoolAlloc), fieldRecords(&x.associatedRuntime->globalHeapPoolAlloc), fieldRecordIndices(&x.associatedRuntime->globalHeapPoolAlloc), unnamedImports(&x.associatedRuntime->globalHeapPoolAlloc) {
+SLAKE_API ModuleObject::ModuleObject(const ModuleObject &x, bool &succeededOut) : MemberObject(x, succeededOut), members(&x.associatedRuntime->globalHeapPoolAlloc), fieldRecords(&x.associatedRuntime->globalHeapPoolAlloc), localFieldStorage(&x.associatedRuntime->globalHeapPoolAlloc), fieldRecordIndices(&x.associatedRuntime->globalHeapPoolAlloc), unnamedImports(&x.associatedRuntime->globalHeapPoolAlloc) {
 	if (succeededOut) {
-		if (!peff::copyAssign(fieldRecords, x.fieldRecords)) {
+		if (!fieldRecords.resizeUninitialized(x.fieldRecords.size())) {
 			succeededOut = false;
 			return;
 		}
 		for (size_t i = 0; i < fieldRecords.size(); ++i) {
-			if (!fieldRecordIndices.insert(fieldRecords.at(i).name, +i)) {
+			peff::constructAt<FieldRecord>(&fieldRecords.at(i), &x.associatedRuntime->globalHeapPoolAlloc);
+		}
+		for (size_t i = 0; i < fieldRecords.size(); ++i) {
+			FieldRecord &fr = fieldRecords.at(i);
+
+			fr.accessModifier = x.fieldRecords.at(i).accessModifier;
+			fr.offset = x.fieldRecords.at(i).offset;
+			fr.type = x.fieldRecords.at(i).type;
+
+			if (!fr.name.build(x.fieldRecords.at(i).name)) {
+				succeededOut = false;
+				return;
+			}
+
+			if (!fieldRecordIndices.insert(fr.name, +i)) {
 				succeededOut = false;
 				return;
 			}
 		}
-		if (!(this->localFieldStorage = (char *)x.associatedRuntime->globalHeapPoolAlloc.alloc(x.szLocalFieldStorage, sizeof(std::max_align_t)))) {
+
+		if (!localFieldStorage.resize(x.localFieldStorage.size())) {
 			succeededOut = false;
 			return;
 		}
-		memcpy(this->localFieldStorage, x.localFieldStorage, x.szLocalFieldStorage);
-		szLocalFieldStorage = x.szLocalFieldStorage;
+		memcpy(localFieldStorage.data(), x.localFieldStorage.data(), localFieldStorage.size());
 
 		if (!peff::copyAssign(unnamedImports, x.unnamedImports)) {
 			succeededOut = false;
@@ -49,8 +63,6 @@ SLAKE_API ModuleObject::ModuleObject(const ModuleObject &x, bool &succeededOut) 
 }
 
 SLAKE_API ModuleObject::~ModuleObject() {
-	if (this->localFieldStorage)
-		associatedRuntime->globalHeapPoolAlloc.release(this->localFieldStorage, szLocalFieldStorage, sizeof(std::max_align_t));
 }
 
 SLAKE_API ObjectKind ModuleObject::getKind() const { return ObjectKind::Module; }
@@ -77,8 +89,54 @@ SLAKE_API void ModuleObject::removeMember(const std::string_view &name) {
 	members.remove(name);
 }
 
-SLAKE_API bool ModuleObject::removeMemberAndTrim(const std::string_view& name) {
+SLAKE_API bool ModuleObject::removeMemberAndTrim(const std::string_view &name) {
 	return members.removeAndResizeBuckets(name);
+}
+
+SLAKE_API bool ModuleObject::appendFieldRecord(FieldRecord &&fieldRecord) {
+	if (!fieldRecords.pushBack(std::move(fieldRecord))) {
+		return false;
+	}
+	FieldRecord &fr = fieldRecords.back();
+	if (!fieldRecordIndices.insert(fr.name, fieldRecordIndices.size())) {
+		fieldRecords.popBack();
+		return false;
+	}
+
+	if (char *p = appendTypedFieldSpace(fr.type); p) {
+		fr.offset = p - localFieldStorage.data();
+	} else {
+		fieldRecords.popBack();
+		return false;
+	}
+
+	associatedRuntime->writeVar(EntityRef::makeFieldRef(this, fieldRecords.size() - 1), associatedRuntime->defaultValueOf(fr.type));
+	return true;
+}
+
+SLAKE_API char *ModuleObject::appendFieldSpace(size_t size, size_t alignment) {
+	size_t originalSize = localFieldStorage.size();
+	size_t beginOff, sizeIncrement = 0;
+
+	if (alignment > 1) {
+		if (size_t diff = originalSize % alignment; diff) {
+			beginOff = originalSize + (alignment - diff);
+			sizeIncrement += size + (alignment - diff);
+		}
+	}
+
+	beginOff = originalSize;
+	sizeIncrement += size;
+
+	if (!localFieldStorage.resize(originalSize + sizeIncrement)) {
+		return nullptr;
+	}
+
+	return localFieldStorage.data() + beginOff;
+}
+
+SLAKE_API char *ModuleObject::appendTypedFieldSpace(const Type &type) {
+	return appendFieldSpace(associatedRuntime->sizeofType(type), associatedRuntime->alignofType(type));
 }
 
 SLAKE_API HostObjectRef<ModuleObject> slake::ModuleObject::alloc(Runtime *rt) {

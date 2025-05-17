@@ -188,7 +188,7 @@ namespace slake {
 		friend class ModuleObject;
 
 	public:
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _addLocalVar(MajorFrame *frame, Type type, EntityRef &objectRefOut) noexcept;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _addLocalVar(Context *context, MajorFrame *frame, Type type, EntityRef &objectRefOut) noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _fillArgs(
 			MajorFrame *newMajorFrame,
 			const FnOverloadingObject *fn,
@@ -312,7 +312,9 @@ namespace slake {
 		[[nodiscard]] SLAKE_API InternalExceptionPointer resumeCoroutine(
 			ContextObject *context,
 			CoroutineObject *coroutine,
-			Value &resultOut);
+			Value &resultOut,
+			void *nativeStackBaseCurrentPtr = nullptr,
+			size_t nativeStackSize = 0);
 
 		[[nodiscard]] SLAKE_API InternalExceptionPointer tryAccessVar(const EntityRef &entityRef) const noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer typeofVar(const EntityRef &entityRef, Type &typeOut) const noexcept;
@@ -320,6 +322,10 @@ namespace slake {
 		[[nodiscard]] SLAKE_API Value readVarUnsafe(const EntityRef &entityRef) const noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer writeVar(const EntityRef &entityRef, const Value &value) const noexcept;
 		SLAKE_API void writeVarUnsafe(const EntityRef &entityRef, const Value &value) const noexcept;
+
+		SLAKE_API size_t sizeofType(const Type &type);
+		SLAKE_API size_t alignofType(const Type &type);
+		SLAKE_API Value defaultValueOf(const Type &type);
 
 		[[nodiscard]] SLAKE_API static bool constructAt(Runtime *dest, peff::Alloc *upstream, RuntimeFlags flags = 0);
 		[[nodiscard]] SLAKE_API static Runtime *alloc(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags = 0);

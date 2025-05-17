@@ -6,6 +6,7 @@
 #include <map>
 
 namespace slake {
+	// TODO: Flatten the field records and move the metadata onto the local field storage area.
 	struct FieldRecord {
 		peff::String name;
 		AccessModifier accessModifier;
@@ -42,12 +43,10 @@ namespace slake {
 	class ModuleObject : public MemberObject {
 	public:
 		ModuleLoadStatus loadStatus = ModuleLoadStatus::ImplicitlyLoaded;
-		std::atomic_size_t depCount = 0;
 
 		peff::HashMap<std::string_view, MemberObject *> members;
 
-		char *localFieldStorage = nullptr;
-		size_t szLocalFieldStorage = 0;
+		peff::DynArray<char> localFieldStorage;
 		peff::DynArray<FieldRecord> fieldRecords;
 		peff::HashMap<std::string_view, size_t> fieldRecordIndices;
 
@@ -65,6 +64,10 @@ namespace slake {
 		[[nodiscard]] SLAKE_API virtual bool addMember(MemberObject *member);
 		SLAKE_API virtual void removeMember(const std::string_view &name);
 		[[nodiscard]] SLAKE_API virtual bool removeMemberAndTrim(const std::string_view &name);
+
+		SLAKE_API bool appendFieldRecord(FieldRecord &&fieldRecord);
+		SLAKE_API char *appendFieldSpace(size_t size, size_t alignment);
+		SLAKE_API char *appendTypedFieldSpace(const Type &type);
 
 		SLAKE_API static HostObjectRef<ModuleObject> alloc(Runtime *rt);
 		SLAKE_API static HostObjectRef<ModuleObject> alloc(const ModuleObject *other);

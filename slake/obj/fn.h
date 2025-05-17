@@ -72,7 +72,7 @@ namespace slake {
 
 		FnObject *fnObject;
 
-		AccessModifier access;
+		AccessModifier access = 0;
 
 		GenericParamList genericParams;
 		peff::HashMap<peff::String, Type> mappedGenericArgs;

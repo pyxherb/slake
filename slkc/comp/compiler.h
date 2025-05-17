@@ -63,10 +63,6 @@ namespace slkc {
 		}
 	};
 
-	constexpr uint32_t
-		// Do not compile and thus we don't need extraneous memory allocation for byte code generation.
-		COMPCTXT_NOCOMPILE = 0x01;
-
 	struct CompileContext : public peff::RcObject {
 		slake::Runtime *runtime;
 		slake::HostRefHolder hostRefHolder;
@@ -76,6 +72,7 @@ namespace slkc {
 		peff::DynArray<CompilationWarning> warnings;
 		FnCompileContext fnCompileContext;
 		uint32_t flags;
+		size_t evalProtectionDepth = 0;
 
 		SLAKE_FORCEINLINE CompileContext(
 			slake::Runtime *runtime,
@@ -95,13 +92,6 @@ namespace slkc {
 		SLKC_API virtual ~CompileContext();
 
 		SLKC_API virtual void onRefZero() noexcept override;
-
-		SLAKE_FORCEINLINE std::optional<CompilationError> pushIns(slake::Instruction &&ins) {
-			if (!fnCompileContext.instructionsOut.pushBack(std::move(ins)))
-				return genOutOfRuntimeMemoryCompError();
-
-			return {};
-		}
 
 		SLAKE_FORCEINLINE std::optional<CompilationError> pushError(CompilationError &&error) {
 			if (!errors.pushBack(std::move(error)))
@@ -166,7 +156,7 @@ namespace slkc {
 		}
 
 		SLAKE_FORCEINLINE std::optional<CompilationError> allocLabel(const std::string_view &name, uint32_t &labelIdOut) {
-			if (flags & COMPCTXT_NOCOMPILE) {
+			if (evalProtectionDepth) {
 				return {};
 			}
 
@@ -192,11 +182,11 @@ namespace slkc {
 		}
 
 		SLAKE_FORCEINLINE uint32_t allocReg() {
-			if (flags & COMPCTXT_NOCOMPILE) {
+			if (evalProtectionDepth) {
 				return 0;
 			}
 
-			if (fnCompileContext.nTotalRegs == 89)
+			if (fnCompileContext.nTotalRegs == 42)
 				puts("");
 
 			return fnCompileContext.nTotalRegs++;
@@ -463,18 +453,11 @@ namespace slkc {
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileStmt(
 		CompileContext *compileContext,
 		const peff::SharedPtr<StmtNode> &stmt);
-	[[nodiscard]] SLAKE_FORCEINLINE static std::optional<CompilationError> evalExprType(
+	[[nodiscard]] SLKC_API std::optional<CompilationError> evalExprType(
 		CompileContext *compileContext,
 		const peff::SharedPtr<ExprNode> &expr,
 		peff::SharedPtr<TypeNameNode> &typeOut,
-		peff::SharedPtr<TypeNameNode> desiredType = {}) {
-		CompileExprResult result(compileContext->allocator.get());
-		compileContext->flags |= COMPCTXT_NOCOMPILE;
-		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr, ExprEvalPurpose::EvalType, desiredType, UINT32_MAX, result));
-		compileContext->flags &= ~COMPCTXT_NOCOMPILE;
-		typeOut = result.evaluatedType;
-		return {};
-	}
+		peff::SharedPtr<TypeNameNode> desiredType = {});
 
 	[[nodiscard]] SLKC_API std::optional<CompilationError> evalConstExpr(
 		CompileContext *compileContext,

@@ -275,7 +275,7 @@ InternalExceptionPointer slake::jit::x86_64::compileStoreInstruction(
 		case opti::RegStorageType::FieldVar: {
 			const EntityRef &entityRef = regAnalyzedInfo.expectedValue.getEntityRef();
 			FieldRecord &fieldRecord = entityRef.asField.moduleObject->fieldRecords.at(entityRef.asField.index);
-			char *rawDataPtr = entityRef.asField.moduleObject->localFieldStorage + fieldRecord.offset;
+			char *rawDataPtr = entityRef.asField.moduleObject->localFieldStorage.data() + fieldRecord.offset;
 
 			switch (fieldRecord.type.typeId) {
 				case TypeId::I8:

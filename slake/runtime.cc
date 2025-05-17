@@ -30,6 +30,108 @@ SLAKE_API void CountablePoolAlloc::release(void *p, size_t size, size_t alignmen
 	szAllocated -= size;
 }
 
+SLAKE_API size_t Runtime::sizeofType(const Type& type) {
+	switch (type.typeId) {
+		case TypeId::I8:
+			return sizeof(int8_t);
+		case TypeId::I16:
+			return sizeof(int16_t);
+		case TypeId::I32:
+			return sizeof(int32_t);
+		case TypeId::I64:
+			return sizeof(int64_t);
+		case TypeId::U8:
+			return sizeof(uint8_t);
+		case TypeId::U16:
+			return sizeof(uint16_t);
+		case TypeId::U32:
+			return sizeof(uint32_t);
+		case TypeId::U64:
+			return sizeof(uint64_t);
+		case TypeId::F32:
+			return sizeof(float);
+		case TypeId::F64:
+			return sizeof(double);
+		case TypeId::Bool:
+			return sizeof(bool);
+		case TypeId::String:
+		case TypeId::Instance:
+		case TypeId::Array:
+			return sizeof(void *);
+		default:
+			break;
+	}
+	std::terminate();
+}
+
+SLAKE_API size_t Runtime::alignofType(const Type &type) {
+	switch (type.typeId) {
+		case TypeId::I8:
+			return sizeof(int8_t);
+		case TypeId::I16:
+			return sizeof(int16_t);
+		case TypeId::I32:
+			return sizeof(int32_t);
+		case TypeId::I64:
+			return sizeof(int64_t);
+		case TypeId::U8:
+			return sizeof(uint8_t);
+		case TypeId::U16:
+			return sizeof(uint16_t);
+		case TypeId::U32:
+			return sizeof(uint32_t);
+		case TypeId::U64:
+			return sizeof(uint64_t);
+		case TypeId::F32:
+			return sizeof(float);
+		case TypeId::F64:
+			return sizeof(double);
+		case TypeId::Bool:
+			return sizeof(bool);
+		case TypeId::String:
+		case TypeId::Instance:
+		case TypeId::Array:
+			return sizeof(void *);
+		default:
+			break;
+	}
+	std::terminate();
+}
+
+SLAKE_API Value Runtime::defaultValueOf(const Type &type) {
+	switch (type.typeId) {
+		case TypeId::I8:
+			return Value((int8_t)0);
+		case TypeId::I16:
+			return Value((int16_t)0);
+		case TypeId::I32:
+			return Value((int32_t)0);
+		case TypeId::I64:
+			return Value((int64_t)0);
+		case TypeId::U8:
+			return Value((uint8_t)0);
+		case TypeId::U16:
+			return Value((uint16_t)0);
+		case TypeId::U32:
+			return Value((uint32_t)0);
+		case TypeId::U64:
+			return Value((uint64_t)0);
+		case TypeId::F32:
+			return Value((float)0);
+		case TypeId::F64:
+			return Value((double)0);
+		case TypeId::Bool:
+			return Value(false);
+		case TypeId::String:
+		case TypeId::Instance:
+		case TypeId::Array:
+			return Value(slake::EntityRef::makeObjectRef(nullptr));
+		default:
+			break;
+	}
+	std::terminate();
+}
+
 SLAKE_API Runtime::Runtime(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags)
 	: selfAllocator(selfAllocator),
 	  globalHeapPoolAlloc(upstream),

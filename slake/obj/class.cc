@@ -13,10 +13,25 @@ SLAKE_API ObjectLayout *ObjectLayout::duplicate() const {
 	if (!ptr)
 		return nullptr;
 
-	if (!peff::copyAssign(ptr->fieldRecords, fieldRecords))
+	if (!ptr->fieldRecords.resizeUninitialized(fieldRecords.size())) {
 		return nullptr;
-	if (!peff::copyAssign(ptr->fieldNameMap, fieldNameMap))
-		return nullptr;
+	}
+	for (size_t i = 0; i < fieldRecords.size(); ++i) {
+		peff::constructAt<ObjectFieldRecord>(&ptr->fieldRecords.at(i), selfAllocator.get());
+	}
+	for (size_t i = 0; i < fieldRecords.size(); ++i) {
+		ObjectFieldRecord &fr = ptr->fieldRecords.at(i);
+
+		if (!fr.name.build(fieldRecords.at(i).name)) {
+			return nullptr;
+		}
+		fr.offset = fieldRecords.at(i).offset;
+		fr.type = fieldRecords.at(i).type;
+
+		if (!ptr->fieldNameMap.insert(fr.name, +i)) {
+			return nullptr;
+		}
+	}
 	ptr->totalSize = totalSize;
 
 	return ptr.release();

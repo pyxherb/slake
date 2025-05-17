@@ -38,7 +38,7 @@ SLAKE_API MajorFrame::MajorFrame(Runtime *rt)
 }
 
 SLAKE_API void MajorFrame::dealloc() noexcept {
-	associatedRuntime->globalHeapPoolAlloc.release(this, sizeof(MajorFrame), alignof(MajorFrame));
+	peff::destroyAndRelease<MajorFrame>(&associatedRuntime->globalHeapPoolAlloc, this, alignof(MajorFrame));
 }
 
 SLAKE_API void Context::leaveMajor() {
@@ -84,10 +84,10 @@ SLAKE_API HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt) 
 	if (!ptr)
 		return nullptr;
 
-	if (!rt->createdObjects.insert(ptr.get()))
+	if (!(ptr->_context.dataStack = (char *)rt->globalHeapPoolAlloc.alloc(SLAKE_STACK_MAX, sizeof(std::max_align_t))))
 		return nullptr;
 
-	if (!(ptr->_context.dataStack = (char *)rt->globalHeapPoolAlloc.alloc(SLAKE_STACK_MAX, sizeof(std::max_align_t))))
+	if (!rt->createdObjects.insert(ptr.get()))
 		return nullptr;
 
 	return ptr.release();

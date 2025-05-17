@@ -81,9 +81,6 @@ using namespace slake;
 		return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(&runtime->globalHeapPoolAlloc));
 	}
 	valueOut = *(Value *)calcStackAddr((char *)stackData, SLAKE_STACK_MAX, curMajorFrame->offRegs + sizeof(Value) * index);
-	if (valueOut.valueType == (ValueType)0xcc) {
-		puts("");
-	}
 	return {};
 }
 

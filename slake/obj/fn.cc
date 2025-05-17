@@ -31,6 +31,8 @@ SLAKE_API Instruction::~Instruction() {
 SLAKE_API void Instruction::clearOperands() {
 	if (nOperands) {
 		operandsAllocator->release(operands, sizeof(Value) * nOperands, sizeof(std::max_align_t));
+		operands = nullptr;
+		nOperands = 0;
 	} else {
 		assert(!operands);
 	}
@@ -161,16 +163,13 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFn
 
 			curIns.output = otherCurIns.output;
 
-			if (!(curIns.operands = (Value *)other.associatedRuntime->globalHeapPoolAlloc.alloc(sizeof(Value) * otherCurIns.nOperands, sizeof(std::max_align_t)))) {
+			if (!curIns.reserveOperands(&associatedRuntime->globalHeapPoolAlloc, otherCurIns.nOperands)) {
 				succeededOut = false;
 				return;
 			}
-			curIns.nOperands = otherCurIns.nOperands;
 			for (size_t j = 0; j < otherCurIns.nOperands; ++j) {
 				curIns.operands[j] = Value(ValueType::Undefined);
 			}
-
-			curIns.operandsAllocator = &associatedRuntime->globalHeapPoolAlloc;
 
 			// Duplicate each of the operands.
 			for (size_t j = 0; j < otherCurIns.nOperands; ++j) {

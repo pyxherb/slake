@@ -232,10 +232,10 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 	HostRefHolder &hostRefHolder) {
 	size_t nIns = fnObject->instructions.size();
 	analyzedInfoOut.contextObject = ContextObject::alloc(runtime);
-	MajorFrame *pseudoMajorFrame;
+	MajorFramePtr pseudoMajorFrame;
 	{
 		SLAKE_RETURN_IF_EXCEPT(runtime->_createNewMajorFrame(&analyzedInfoOut.contextObject->_context, nullptr, nullptr, nullptr, 0, UINT32_MAX));
-		pseudoMajorFrame = MajorFrame::alloc(runtime, &analyzedInfoOut.contextObject->_context);
+		pseudoMajorFrame = MajorFramePtr(MajorFrame::alloc(runtime, &analyzedInfoOut.contextObject->_context));
 	}
 
 	ProgramAnalyzeContext analyzeContext = {
@@ -643,7 +643,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					analyzedInfoOut.analyzedRegInfo.at(regIndex).storageType = RegStorageType::ArgRef;
 					analyzedInfoOut.analyzedRegInfo.at(regIndex).storageInfo.asArgRef = {};
 					analyzedInfoOut.analyzedRegInfo.at(regIndex).storageInfo.asArgRef.idxArg = index;
-					analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value(EntityRef::makeArgRef(pseudoMajorFrame, index));
+					analyzedInfoOut.analyzedRegInfo.at(regIndex).expectedValue = Value(EntityRef::makeArgRef(pseudoMajorFrame.get(), index));
 				}
 				break;
 			}
@@ -677,7 +677,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				SLAKE_RETURN_IF_EXCEPT(typeName.loadDeferredType(runtime));
 
 				EntityRef entityRef;
-				SLAKE_RETURN_IF_EXCEPT(runtime->_addLocalVar(&analyzedInfoOut.contextObject->_context, pseudoMajorFrame, typeName, entityRef));
+				SLAKE_RETURN_IF_EXCEPT(runtime->_addLocalVar(&analyzedInfoOut.contextObject->_context, pseudoMajorFrame.get(), typeName, entityRef));
 
 				SLAKE_RETURN_IF_EXCEPT(
 					wrapIntoRefType(

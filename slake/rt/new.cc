@@ -118,10 +118,9 @@ SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForClass(ClassObject
 			}
 		}
 		fieldRecord.offset = objectLayout->totalSize;
-		objectLayout->totalSize += size;
 
 		fieldRecord.type = type;
-		if (!peff::copy(fieldRecord.name, clsFieldRecord.name)) {
+		if (!fieldRecord.name.build(clsFieldRecord.name)) {
 			// stub
 			std::terminate();
 		}
@@ -133,6 +132,8 @@ SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForClass(ClassObject
 			return OutOfMemoryError::alloc();
 		if (!objectLayout->fieldRecords.pushBack(std::move(fieldRecord)))
 			return OutOfMemoryError::alloc();
+
+		objectLayout->totalSize += size;
 	}
 
 	// cls->cachedFieldInitVars.shrink_to_fit();

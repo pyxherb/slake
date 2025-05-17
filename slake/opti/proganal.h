@@ -71,10 +71,10 @@ namespace slake {
 			peff::Set<uint32_t> codeBlockBoundaries;
 
 			SLAKE_FORCEINLINE ProgramAnalyzedInfo(Runtime *runtime, peff::Alloc *resourceAllocator)
-				: analyzedRegInfo(&runtime->globalHeapPoolAlloc),
-				  analyzedFnCallInfo(&runtime->globalHeapPoolAlloc),
-				  fnCallMap(&runtime->globalHeapPoolAlloc),
-				  codeBlockBoundaries(&runtime->globalHeapPoolAlloc),
+				: analyzedRegInfo(resourceAllocator),
+				  analyzedFnCallInfo(resourceAllocator),
+				  fnCallMap(resourceAllocator),
+				  codeBlockBoundaries(resourceAllocator),
 				  resourceAllocator(resourceAllocator) {
 			}
 		};

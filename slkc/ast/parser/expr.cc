@@ -145,10 +145,9 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 					nextToken();
 					peff::String s(resourceAllocator.get());
 
-					if (!s.resize(((StringTokenExtension *)prefixToken->exData.get())->data.size())) {
+					if (!s.build(((StringTokenExtension *)prefixToken->exData.get())->data)) {
 						return genOutOfMemoryError();
 					}
-					memcpy(s.data(), ((StringTokenExtension *)prefixToken->exData.get())->data.data(), ((StringTokenExtension *)prefixToken->exData.get())->data.size());
 
 					if (!(lhs = peff::makeShared<StringLiteralExprNode>(
 							  resourceAllocator.get(), resourceAllocator.get(), document,

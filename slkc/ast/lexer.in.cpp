@@ -238,7 +238,6 @@ SLKC_API std::optional<LexicalError> Lexer::lex(const std::string_view &src, pef
 						peff::allocAndConstruct<StringTokenExtension>(allocator, sizeof(std::max_align_t), allocator, std::move(strLiteral)));
 					break;
 				}
-				<StringCondition>"\\\n"		{ continue; }
 				<StringCondition>"\\"		{ YYSETCONDITION(EscapeCondition); continue; }
 				<StringCondition>"\n"		{
 					size_t beginIndex = prevYYCURSOR - src.data(), endIndex = YYCURSOR - src.data();

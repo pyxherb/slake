@@ -49,6 +49,7 @@ namespace slkc {
 		MalformedModuleName,
 		ErrorParsingImportedModule,
 		ModuleNotFound,
+		RegLimitExceeded,
 
 		ErrorWritingCompiledModule
 	};

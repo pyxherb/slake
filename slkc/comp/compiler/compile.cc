@@ -635,15 +635,15 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 						}
 					}
 
-					compileContext->fnCompileContext.reset();
+					compileContext->reset();
 
 					switch (mod->astNodeType) {
 						case AstNodeType::Class:
 						case AstNodeType::Interface:
 							if (!(i->accessModifier & slake::ACCESS_STATIC)) {
-								if (!(compileContext->fnCompileContext.thisNode = peff::makeShared<ThisNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document)))
+								if (!(compileContext->thisNode = peff::makeShared<ThisNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document)))
 									return genOutOfMemoryCompError();
-								compileContext->fnCompileContext.thisNode->thisType = i->parent->parent->sharedFromThis().castTo<MemberNode>();
+								compileContext->thisNode->thisType = i->parent->parent->sharedFromThis().castTo<MemberNode>();
 							}
 							break;
 						default:
@@ -665,13 +665,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 					fnObject->setAccess(i->accessModifier);
 
-					peff::SharedPtr<BlockCompileContext> blockContext;
-					if (!(blockContext = peff::makeShared<BlockCompileContext>(compileContext->allocator.get(), compileContext->allocator.get())))
-						return genOutOfMemoryCompError();
-					if (!compileContext->fnCompileContext.blockCompileContexts.pushBack(std::move(blockContext)))
-						return genOutOfMemoryCompError();
-
-					compileContext->fnCompileContext.currentFn = i;
+					compileContext->curOverloading = i;
 
 					if (!fnObject->paramTypes.resize(i->params.size())) {
 						return genOutOfRuntimeMemoryCompError();
@@ -689,8 +683,10 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 					SLKC_RETURN_IF_COMP_ERROR(compileGenericParams(compileContext, mod, i->genericParams.data(), i->genericParams.size(), fnObject->genericParams));
 
+					NormalCompilationContext compilationContext(compileContext, nullptr);
+
 					for (auto j : i->body->body) {
-						if ((e = compileStmt(compileContext, j))) {
+						if ((e = compileStmt(compileContext, &compilationContext, j))) {
 							if (e->errorKind == CompilationErrorKind::OutOfMemory)
 								return e;
 							if (!compileContext->errors.pushBack(std::move(*e))) {
@@ -699,20 +695,23 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 							e.reset();
 						}
 					}
-
-					assert(!compileContext->evalProtectionDepth);
-
-					fnObject->instructions = std::move(compileContext->fnCompileContext.instructionsOut);
+					if (!fnObject->instructions.resize(compilationContext.generatedInstructions.size())) {
+						return genOutOfRuntimeMemoryCompError();
+					}
+					for (size_t i = 0; i < compilationContext.generatedInstructions.size(); ++i) {
+						fnObject->instructions.at(i) = std::move(compilationContext.generatedInstructions.at(i));
+					}
+					compilationContext.generatedInstructions.clear();
 
 					for (auto &j : fnObject->instructions) {
 						for (size_t k = 0; k < j.nOperands; ++k) {
 							if (j.operands[k].valueType == slake::ValueType::Label) {
-								j.operands[k] = slake::Value(compileContext->getLabel(j.operands[k].getLabel())->offset);
+								j.operands[k] = slake::Value(compilationContext.getLabelOffset(j.operands[k].getLabel()));
 							}
 						}
 					}
 
-					fnObject->nRegisters = compileContext->fnCompileContext.nTotalRegs;
+					fnObject->nRegisters = compilationContext.nTotalRegs;
 
 					if (!slotObject->overloadings.insert(fnObject.get())) {
 						return genOutOfRuntimeMemoryCompError();

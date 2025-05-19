@@ -2,18 +2,68 @@
 
 using namespace slkc;
 
-SLKC_API CompileContext::~CompileContext() {
+SLKC_API CompilationContext::CompilationContext(CompilationContext *parent) : parent(parent) {
+}
+SLKC_API CompilationContext::~CompilationContext() {
 }
 
-SLKC_API void CompileContext::onRefZero() noexcept {
-	peff::destroyAndRelease<CompileContext>(selfAllocator.get(), this, sizeof(std::max_align_t));
+SLKC_API peff::SharedPtr<VarNode> CompilationContext::lookupLocalVar(const std::string_view &name) {
+	for (CompilationContext *i = this; i; i = i->parent) {
+		peff::SharedPtr<VarNode> varNode = i->getLocalVar(name);
+
+		if (varNode) {
+			return varNode;
+		}
+	}
+	return {};
 }
 
-SLAKE_API std::optional<CompilationError> CompileContext::emitIns(slake::Opcode opcode, uint32_t outputRegIndex, const std::initializer_list<slake::Value> &operands) {
-	if (evalProtectionDepth) {
+SLKC_API NormalCompilationContext::BlockLayer::~BlockLayer() {
+}
+
+SLKC_API NormalCompilationContext::NormalCompilationContext(CompileContext *compileContext, CompilationContext *parent) : CompilationContext(parent), allocator(compileContext->allocator), savedBlockLayers(compileContext->allocator.get()), curBlockLayer(compileContext->allocator.get()), labels(compileContext->allocator.get()), labelNameIndices(compileContext->allocator.get()), generatedInstructions(compileContext->allocator.get()), document(compileContext->document), baseBlockLevel(parent ? parent->getBlockLevel() : 0), baseInsOff(parent ? parent->getCurInsOff() : 0) {
+}
+SLKC_API NormalCompilationContext::~NormalCompilationContext() {
+}
+
+SLKC_API std::optional<CompilationError> NormalCompilationContext::allocLabel(uint32_t &labelIdOut) {
+	peff::SharedPtr<Label> label = peff::makeShared<Label>(allocator.get(), peff::String(allocator.get()));
+
+	if (!label) {
+		return genOutOfMemoryCompError();
+	}
+
+	labelIdOut = labels.size();
+
+	if (!labels.pushBack(peff::SharedPtr<Label>(label))) {
+		return genOutOfMemoryCompError();
+	}
+
+	return {};
+}
+SLKC_API void NormalCompilationContext::setLabelOffset(uint32_t labelId, uint32_t offset) const {
+	labels.at(labelId)->offset = offset;
+}
+SLKC_API std::optional<CompilationError> NormalCompilationContext::setLabelName(uint32_t labelId, const std::string_view &name) {
+	if (!labels.at(labelId)->name.build(name)) {
+		return genOutOfMemoryCompError();
+	}
+	return {};
+}
+SLKC_API uint32_t NormalCompilationContext::getLabelOffset(uint32_t labelId) {
+	return labels.at(labelId)->offset;
+}
+
+SLKC_API std::optional<CompilationError> NormalCompilationContext::allocReg(uint32_t &regOut) {
+	if (nTotalRegs < UINT32_MAX) {
+		regOut = nTotalRegs++;
 		return {};
 	}
 
+	return CompilationError({ 0 }, CompilationErrorKind::RegLimitExceeded);
+}
+
+SLKC_API std::optional<CompilationError> NormalCompilationContext::emitIns(slake::Opcode opcode, uint32_t outputRegIndex, const std::initializer_list<slake::Value> &operands) {
 	slake::Instruction insOut;
 
 	insOut.opcode = opcode;
@@ -27,32 +77,121 @@ SLAKE_API std::optional<CompilationError> CompileContext::emitIns(slake::Opcode 
 		insOut.operands[i] = *it++;
 	}
 
-	if (!fnCompileContext.instructionsOut.pushBack(std::move(insOut))) {
-		return genOutOfMemoryCompError();
+	if (!generatedInstructions.pushBack(std::move(insOut))) {
+		return genOutOfRuntimeMemoryCompError();
 	}
 
 	return {};
 }
 
+SLKC_API std::optional<CompilationError> NormalCompilationContext::allocLocalVar(const TokenRange &tokenRange, const std::string_view &name, uint32_t reg, peff::SharedPtr<TypeNameNode> type, peff::SharedPtr<VarNode> &localVarOut) {
+	peff::SharedPtr<VarNode> newVar;
+
+	if (!(newVar = peff::makeShared<VarNode>(allocator.get(), allocator.get(), document))) {
+		return genOutOfMemoryCompError();
+	}
+
+	if (!newVar->name.build(name)) {
+		return genOutOfMemoryCompError();
+	}
+
+	newVar->type = type;
+
+	newVar->idxReg = reg;
+
+	if (!curBlockLayer.localVars.insert(newVar->name, peff::SharedPtr<VarNode>(newVar))) {
+		return genOutOfMemoryCompError();
+	}
+
+	localVarOut = newVar;
+
+	return {};
+}
+SLKC_API peff::SharedPtr<VarNode> NormalCompilationContext::getLocalVarInCurLevel(const std::string_view &name) {
+	if (auto it = curBlockLayer.localVars.find(name); it != curBlockLayer.localVars.end()) {
+		return it.value();
+	}
+
+	return {};
+}
+SLKC_API peff::SharedPtr<VarNode> NormalCompilationContext::getLocalVar(const std::string_view &name) {
+	if (auto v = getLocalVarInCurLevel(name); v)
+		return v;
+
+	for (auto i = savedBlockLayers.beginReversed(); i != savedBlockLayers.endReversed(); ++i) {
+		if (auto it = i->localVars.find(name); it != i->localVars.end()) {
+			return it.value();
+		}
+	}
+
+	return {};
+}
+
+SLKC_API void NormalCompilationContext::setBreakLabel(uint32_t labelId, uint32_t blockLevel) {
+	breakStmtJumpDestLabel = labelId;
+	breakStmtBlockLevel = blockLevel;
+}
+SLKC_API void NormalCompilationContext::setContinueLabel(uint32_t labelId, uint32_t blockLevel) {
+	continueStmtJumpDestLabel = labelId;
+	continueStmtBlockLevel = blockLevel;
+}
+
+SLKC_API uint32_t NormalCompilationContext::getBreakLabel() {
+	return breakStmtJumpDestLabel;
+}
+SLKC_API uint32_t NormalCompilationContext::getContinueLabel() {
+	return continueStmtJumpDestLabel;
+}
+
+SLKC_API uint32_t NormalCompilationContext::getBreakLabelBlockLevel() {
+	return breakStmtBlockLevel;
+}
+
+SLKC_API uint32_t NormalCompilationContext::getContinueLabelBlockLevel() {
+	return continueStmtBlockLevel;
+}
+
+SLKC_API uint32_t NormalCompilationContext::getCurInsOff() const {
+	return baseInsOff + generatedInstructions.size();
+}
+
+SLKC_API std::optional<CompilationError> NormalCompilationContext::enterBlock() {
+	if (!savedBlockLayers.pushBack(std::move(curBlockLayer))) {
+		return genOutOfMemoryCompError();
+	}
+
+	curBlockLayer = BlockLayer(allocator.get());
+
+	return {};
+}
+SLKC_API void NormalCompilationContext::leaveBlock() {
+	curBlockLayer = std::move(savedBlockLayers.back());
+	savedBlockLayers.popBack();
+}
+
+SLKC_API uint32_t NormalCompilationContext::getBlockLevel() {
+	return baseBlockLevel + savedBlockLayers.size();
+}
+
+SLKC_API CompileContext::~CompileContext() {
+}
+
+SLKC_API void CompileContext::onRefZero() noexcept {
+	peff::destroyAndRelease<CompileContext>(selfAllocator.get(), this, sizeof(std::max_align_t));
+}
+
 SLKC_API std::optional<CompilationError> slkc::evalExprType(
 	CompileContext *compileContext,
+	CompilationContext *compilationContext,
 	const peff::SharedPtr<ExprNode> &expr,
 	peff::SharedPtr<TypeNameNode> &typeOut,
 	peff::SharedPtr<TypeNameNode> desiredType) {
+	NormalCompilationContext tmpContext(compileContext, compilationContext);
+
 	CompileExprResult result(compileContext->allocator.get());
-#ifndef _NDEBUG
-	size_t prevDepth = compileContext->evalProtectionDepth;
-#endif
-	++compileContext->evalProtectionDepth;
-	{
-		peff::ScopeGuard restoreProtectionDepthGuard([compileContext]() noexcept {
-			--compileContext->evalProtectionDepth;
-		});
-		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr, ExprEvalPurpose::EvalType, desiredType, UINT32_MAX, result));
-	}
-#ifndef _NDEBUG
-	assert(prevDepth == compileContext->evalProtectionDepth);
-#endif
+
+	SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, &tmpContext, expr, ExprEvalPurpose::EvalType, desiredType, UINT32_MAX, result));
+
 	typeOut = result.evaluatedType;
 	return {};
 }

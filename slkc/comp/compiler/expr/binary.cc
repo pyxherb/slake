@@ -4,6 +4,7 @@ using namespace slkc;
 
 std::optional<CompilationError> slkc::_compileSimpleBinaryExpr(
 	CompileContext *compileContext,
+	CompilationContext *compilationContext,
 	peff::SharedPtr<BinaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
 	peff::SharedPtr<TypeNameNode> lhsType,
@@ -29,11 +30,14 @@ std::optional<CompilationError> slkc::_compileSimpleBinaryExpr(
 		case ExprEvalPurpose::RValue: {
 			CompileExprResult result(compileContext->allocator.get());
 
-			uint32_t lhsReg = compileContext->allocReg(),
-					 rhsReg = compileContext->allocReg();
+			uint32_t lhsReg,
+				rhsReg;
 
-			if ((e = _compileOrCastOperand(compileContext, lhsReg, lhsEvalPurpose, desiredLhsType, expr->lhs, lhsType))) {
-				if (auto re = _compileOrCastOperand(compileContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType); re) {
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsReg));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(rhsReg));
+
+			if ((e = _compileOrCastOperand(compileContext, compilationContext, lhsReg, lhsEvalPurpose, desiredLhsType, expr->lhs, lhsType))) {
+				if (auto re = _compileOrCastOperand(compileContext, compilationContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType); re) {
 					if (!compileContext->errors.pushBack(std::move(*e))) {
 						return genOutOfMemoryCompError();
 					}
@@ -43,8 +47,8 @@ std::optional<CompilationError> slkc::_compileSimpleBinaryExpr(
 					return e;
 				}
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType));
-			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, compilationContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				opcode,
 				resultRegOut,
 				{ slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::ValueType::RegRef, rhsReg) }));
@@ -60,6 +64,7 @@ std::optional<CompilationError> slkc::_compileSimpleBinaryExpr(
 
 std::optional<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 	CompileContext *compileContext,
+	CompilationContext *compilationContext,
 	peff::SharedPtr<BinaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
 	peff::SharedPtr<TypeNameNode> lhsType,
@@ -77,10 +82,12 @@ std::optional<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 		case ExprEvalPurpose::LValue: {
 			CompileExprResult result(compileContext->allocator.get());
 
-			uint32_t rhsReg = compileContext->allocReg();
+			uint32_t rhsReg;
 
-			if ((e = _compileOrCastOperand(compileContext, resultRegOut, ExprEvalPurpose::LValue, desiredLhsType, expr->lhs, lhsType))) {
-				if (auto re = _compileOrCastOperand(compileContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType); re) {
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(rhsReg));
+
+			if ((e = _compileOrCastOperand(compileContext, compilationContext, resultRegOut, ExprEvalPurpose::LValue, desiredLhsType, expr->lhs, lhsType))) {
+				if (auto re = _compileOrCastOperand(compileContext, compilationContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType); re) {
 					if (!compileContext->errors.pushBack(std::move(*e))) {
 						return genOutOfMemoryCompError();
 					}
@@ -90,8 +97,8 @@ std::optional<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 					return e;
 				}
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType));
-			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, compilationContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				slake::Opcode::STORE,
 				UINT32_MAX,
 				{ slake::Value(slake::ValueType::RegRef, resultRegOut), slake::Value(slake::ValueType::RegRef, rhsReg) }));
@@ -105,11 +112,14 @@ std::optional<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 		case ExprEvalPurpose::RValue: {
 			CompileExprResult result(compileContext->allocator.get());
 
-			uint32_t lhsReg = compileContext->allocReg(),
-					 rhsReg = compileContext->allocReg();
+			uint32_t lhsReg,
+				rhsReg;
 
-			if ((e = _compileOrCastOperand(compileContext, lhsReg, ExprEvalPurpose::LValue, desiredLhsType, expr->lhs, lhsType))) {
-				if (auto re = _compileOrCastOperand(compileContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType); re) {
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsReg));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(rhsReg));
+
+			if ((e = _compileOrCastOperand(compileContext, compilationContext, lhsReg, ExprEvalPurpose::LValue, desiredLhsType, expr->lhs, lhsType))) {
+				if (auto re = _compileOrCastOperand(compileContext, compilationContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType); re) {
 					if (!compileContext->errors.pushBack(std::move(*e))) {
 						return genOutOfMemoryCompError();
 					}
@@ -119,12 +129,12 @@ std::optional<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 					return e;
 				}
 			}
-			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType));
-			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, compilationContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				slake::Opcode::STORE,
 				UINT32_MAX,
 				{ slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::ValueType::RegRef, rhsReg) }));
-			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				slake::Opcode::MOV,
 				resultRegOut,
 				{ slake::Value(slake::ValueType::RegRef, rhsReg) }));
@@ -140,6 +150,7 @@ std::optional<CompilationError> slkc::_compileSimpleAssignBinaryExpr(
 
 std::optional<CompilationError> slkc::_compileSimpleLAndBinaryExpr(
 	CompileContext *compileContext,
+	CompilationContext *compilationContext,
 	peff::SharedPtr<BinaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
 	peff::SharedPtr<BoolTypeNameNode> boolType,
@@ -159,15 +170,19 @@ std::optional<CompilationError> slkc::_compileSimpleLAndBinaryExpr(
 		case ExprEvalPurpose::RValue: {
 			CompileExprResult result(compileContext->allocator.get());
 
-			uint32_t lhsReg = compileContext->allocReg(),
-					 rhsReg = compileContext->allocReg(),
-					 tmpResultReg = compileContext->allocReg();
+			uint32_t lhsReg,
+				rhsReg,
+				tmpResultReg;
+
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsReg));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(rhsReg));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(tmpResultReg));
 
 			uint32_t cmpEndLabelId;
-			SLKC_RETURN_IF_COMP_ERROR(compileContext->allocLabel(cmpEndLabelId));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(cmpEndLabelId));
 
-			if ((e = _compileOrCastOperand(compileContext, lhsReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), expr->lhs, lhsType))) {
-				if (auto re = _compileOrCastOperand(compileContext, rhsReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), expr->rhs, rhsType); re) {
+			if ((e = _compileOrCastOperand(compileContext, compilationContext, lhsReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), expr->lhs, lhsType))) {
+				if (auto re = _compileOrCastOperand(compileContext, compilationContext, rhsReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), expr->rhs, rhsType); re) {
 					if (!compileContext->errors.pushBack(std::move(*e))) {
 						return genOutOfMemoryCompError();
 					}
@@ -178,22 +193,22 @@ std::optional<CompilationError> slkc::_compileSimpleLAndBinaryExpr(
 				}
 			}
 
-			uint32_t phiSrcOff = compileContext->getCurInsOff();
+			uint32_t phiSrcOff = compilationContext->getCurInsOff();
 
-			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				slake::Opcode::JF,
 				UINT32_MAX,
 				{ slake::Value(slake::ValueType::Label, rhsReg), slake::Value(slake::ValueType::RegRef, lhsReg) }));
 
-			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, rhsReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), expr->rhs, rhsType));
-			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, compilationContext, rhsReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), expr->rhs, rhsType));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				slake::Opcode::LAND,
 				tmpResultReg,
 				{ slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::ValueType::RegRef, rhsReg) }));
 
-			compileContext->getLabel(cmpEndLabelId)->offset = compileContext->getCurInsOff();
+			compilationContext->setLabelOffset(cmpEndLabelId, compilationContext->getCurInsOff());
 
-			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				slake::Opcode::PHI,
 				tmpResultReg,
 				{ slake::Value((uint32_t)phiSrcOff), slake::Value(slake::ValueType::RegRef, lhsReg),
@@ -210,6 +225,7 @@ std::optional<CompilationError> slkc::_compileSimpleLAndBinaryExpr(
 
 std::optional<CompilationError> slkc::_compileSimpleLOrBinaryExpr(
 	CompileContext *compileContext,
+	CompilationContext *compilationContext,
 	peff::SharedPtr<BinaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
 	peff::SharedPtr<BoolTypeNameNode> boolType,
@@ -229,15 +245,19 @@ std::optional<CompilationError> slkc::_compileSimpleLOrBinaryExpr(
 		case ExprEvalPurpose::RValue: {
 			CompileExprResult result(compileContext->allocator.get());
 
-			uint32_t lhsReg = compileContext->allocReg(),
-					 rhsReg = compileContext->allocReg(),
-					 tmpResultReg = compileContext->allocReg();
+			uint32_t lhsReg,
+				rhsReg,
+				tmpResultReg;
+
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsReg));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(rhsReg));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(tmpResultReg));
 
 			uint32_t cmpEndLabelId;
-			SLKC_RETURN_IF_COMP_ERROR(compileContext->allocLabel(cmpEndLabelId));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(cmpEndLabelId));
 
-			if ((e = _compileOrCastOperand(compileContext, lhsReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), expr->lhs, lhsType))) {
-				if (auto re = _compileOrCastOperand(compileContext, rhsReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), expr->rhs, rhsType); re) {
+			if ((e = _compileOrCastOperand(compileContext, compilationContext, lhsReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), expr->lhs, lhsType))) {
+				if (auto re = _compileOrCastOperand(compileContext, compilationContext, rhsReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), expr->rhs, rhsType); re) {
 					if (!compileContext->errors.pushBack(std::move(*e))) {
 						return genOutOfMemoryCompError();
 					}
@@ -248,22 +268,22 @@ std::optional<CompilationError> slkc::_compileSimpleLOrBinaryExpr(
 				}
 			}
 
-			uint32_t phiSrcOff = compileContext->getCurInsOff();
+			uint32_t phiSrcOff = compilationContext->getCurInsOff();
 
-			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				slake::Opcode::JF,
 				UINT32_MAX,
 				{ slake::Value(slake::ValueType::Label, cmpEndLabelId), slake::Value(slake::ValueType::RegRef, lhsReg) }));
 
-			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, rhsReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), expr->rhs, rhsType));
-			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, compilationContext, rhsReg, ExprEvalPurpose::RValue, boolType.castTo<TypeNameNode>(), expr->rhs, rhsType));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				slake::Opcode::LAND,
 				tmpResultReg,
 				{ slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::ValueType::RegRef, rhsReg) }));
 
-			compileContext->getLabel(cmpEndLabelId)->offset = compileContext->getCurInsOff();
+			compilationContext->setLabelOffset(cmpEndLabelId, compilationContext->getCurInsOff());
 
-			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				slake::Opcode::PHI,
 				tmpResultReg,
 				{ slake::Value((uint32_t)phiSrcOff), slake::Value(slake::ValueType::RegRef, lhsReg),
@@ -280,6 +300,7 @@ std::optional<CompilationError> slkc::_compileSimpleLOrBinaryExpr(
 
 SLKC_API std::optional<CompilationError> slkc::_compileSimpleBinaryAssignOpExpr(
 	CompileContext *compileContext,
+	CompilationContext *compilationContext,
 	peff::SharedPtr<BinaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
 	peff::SharedPtr<TypeNameNode> lhsType,
@@ -295,12 +316,16 @@ SLKC_API std::optional<CompilationError> slkc::_compileSimpleBinaryAssignOpExpr(
 		case ExprEvalPurpose::LValue: {
 			CompileExprResult result(compileContext->allocator.get());
 
-			uint32_t lhsValueReg = compileContext->allocReg(),
-					 rhsReg = compileContext->allocReg(),
-					 resultValueReg = compileContext->allocReg();
+			uint32_t lhsValueReg,
+				rhsReg,
+				resultValueReg;
 
-			if (auto e = _compileOrCastOperand(compileContext, resultRegOut, ExprEvalPurpose::LValue, lhsType, expr->lhs, lhsType); e) {
-				if (auto re = _compileOrCastOperand(compileContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType); re) {
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsValueReg));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(rhsReg));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(resultValueReg));
+
+			if (auto e = _compileOrCastOperand(compileContext, compilationContext, resultRegOut, ExprEvalPurpose::LValue, lhsType, expr->lhs, lhsType); e) {
+				if (auto re = _compileOrCastOperand(compileContext, compilationContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType); re) {
 					if (!compileContext->errors.pushBack(std::move(*e))) {
 						return genOutOfMemoryCompError();
 					}
@@ -310,18 +335,18 @@ SLKC_API std::optional<CompilationError> slkc::_compileSimpleBinaryAssignOpExpr(
 					return e;
 				}
 			}
-			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				slake::Opcode::LVALUE,
 				lhsValueReg,
 				{ slake::Value(slake::ValueType::RegRef, resultRegOut) }));
 
-			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType));
-			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, compilationContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				opcode,
 				resultValueReg,
 				{ slake::Value(slake::ValueType::RegRef, lhsValueReg), slake::Value(slake::ValueType::RegRef, rhsReg) }));
 
-			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				slake::Opcode::STORE,
 				resultRegOut,
 				{ slake::Value(slake::ValueType::RegRef, resultValueReg) }));
@@ -334,23 +359,27 @@ SLKC_API std::optional<CompilationError> slkc::_compileSimpleBinaryAssignOpExpr(
 		case ExprEvalPurpose::RValue: {
 			CompileExprResult result(compileContext->allocator.get());
 
-			uint32_t lhsReg = compileContext->allocReg(),
-					 lhsValueReg = compileContext->allocReg(),
-					 rhsReg = compileContext->allocReg();
+			uint32_t lhsReg,
+				lhsValueReg,
+				rhsReg;
 
-			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, lhsReg, ExprEvalPurpose::LValue, lhsType, expr->lhs, lhsType));
-			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsReg));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsValueReg));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(rhsReg));
+
+			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, compilationContext, lhsReg, ExprEvalPurpose::LValue, lhsType, expr->lhs, lhsType));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				slake::Opcode::LVALUE,
 				lhsValueReg,
 				{ slake::Value(slake::ValueType::RegRef, lhsReg) }));
 
-			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType));
-			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, compilationContext, rhsReg, rhsEvalPurpose, desiredRhsType, expr->rhs, rhsType));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				opcode,
 				resultRegOut,
 				{ slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::ValueType::RegRef, rhsReg) }));
 
-			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				slake::Opcode::STORE,
 				lhsReg,
 				{ slake::Value(slake::ValueType::RegRef, resultRegOut) }));
@@ -366,14 +395,15 @@ SLKC_API std::optional<CompilationError> slkc::_compileSimpleBinaryAssignOpExpr(
 
 SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 	CompileContext *compileContext,
+	CompilationContext *compilationContext,
 	peff::SharedPtr<BinaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
 	uint32_t resultRegOut,
 	CompileExprResult &resultOut) {
 	peff::SharedPtr<TypeNameNode> lhsType, rhsType, decayedLhsType, decayedRhsType;
 
-	if (auto e = evalExprType(compileContext, expr->lhs, lhsType); e) {
-		if (auto re = evalExprType(compileContext, expr->rhs, rhsType); re) {
+	if (auto e = evalExprType(compileContext, compilationContext, expr->lhs, lhsType); e) {
+		if (auto re = evalExprType(compileContext, compilationContext, expr->rhs, rhsType); re) {
 			if (!compileContext->errors.pushBack(std::move(*e))) {
 				return genOutOfMemoryCompError();
 			}
@@ -383,7 +413,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 		return e;
 	}
 	SLKC_RETURN_IF_COMP_ERROR(
-		evalExprType(compileContext, expr->rhs, rhsType));
+		evalExprType(compileContext, compilationContext, expr->rhs, rhsType));
 	SLKC_RETURN_IF_COMP_ERROR(
 		removeRefOfType(lhsType, decayedLhsType));
 	SLKC_RETURN_IF_COMP_ERROR(
@@ -391,9 +421,12 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 
 	if (expr->binaryOp == BinaryOp::Comma) {
 		CompileExprResult result(compileContext->allocator.get());
-		uint32_t tmpRegIndex = compileContext->allocReg();
-		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr->lhs, ExprEvalPurpose::Stmt, {}, tmpRegIndex, result));
-		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr->rhs, evalPurpose, {}, resultRegOut, resultOut));
+		uint32_t tmpRegIndex;
+
+		SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(tmpRegIndex));
+
+		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, expr->lhs, ExprEvalPurpose::Stmt, {}, tmpRegIndex, result));
+		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, expr->rhs, evalPurpose, {}, resultRegOut, resultOut));
 		return {};
 	}
 
@@ -436,6 +469,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -449,6 +483,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -462,6 +497,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -475,6 +511,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -488,6 +525,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -501,6 +539,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -514,6 +553,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -527,6 +567,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -540,6 +581,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleLAndBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							boolType,
@@ -554,6 +596,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleLOrBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							boolType,
@@ -568,6 +611,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -583,6 +627,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -598,6 +643,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleAssignBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							lhsType, lhsType,
@@ -610,6 +656,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryAssignOpExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							lhsType,
@@ -623,6 +670,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryAssignOpExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							lhsType,
@@ -636,6 +684,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryAssignOpExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							lhsType,
@@ -649,6 +698,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryAssignOpExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							lhsType,
@@ -662,6 +712,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryAssignOpExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							lhsType,
@@ -675,6 +726,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryAssignOpExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							lhsType,
@@ -688,6 +740,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryAssignOpExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							lhsType,
@@ -701,6 +754,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryAssignOpExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							lhsType,
@@ -714,6 +768,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryAssignOpExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							lhsType,
@@ -733,6 +788,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryAssignOpExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							lhsType,
@@ -753,6 +809,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -767,6 +824,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -780,6 +838,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -793,6 +852,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -806,6 +866,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -819,6 +880,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -832,6 +894,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -853,6 +916,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -866,6 +930,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -879,6 +944,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -892,6 +958,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -905,6 +972,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -918,6 +986,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleLAndBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							boolType,
@@ -932,6 +1001,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleLOrBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							boolType,
@@ -946,6 +1016,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleAssignBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							lhsType, lhsType,
@@ -958,6 +1029,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryAssignOpExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							lhsType,
@@ -971,6 +1043,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryAssignOpExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							lhsType,
@@ -984,6 +1057,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryAssignOpExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							lhsType,
@@ -997,6 +1071,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryAssignOpExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							lhsType,
@@ -1010,6 +1085,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryAssignOpExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							lhsType,
@@ -1023,6 +1099,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryAssignOpExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							lhsType,
@@ -1042,6 +1119,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryAssignOpExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							lhsType,
@@ -1062,6 +1140,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -1076,6 +1155,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -1089,6 +1169,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -1102,6 +1183,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -1115,6 +1197,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -1128,6 +1211,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -1141,6 +1225,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -1161,6 +1246,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -1174,6 +1260,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -1187,6 +1274,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -1200,6 +1288,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleLAndBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							boolType,
@@ -1214,6 +1303,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleLOrBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							boolType,
@@ -1228,6 +1318,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleAssignBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							lhsType, lhsType,
@@ -1240,6 +1331,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryAssignOpExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							lhsType,
@@ -1253,6 +1345,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryAssignOpExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							lhsType,
@@ -1266,6 +1359,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryAssignOpExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							lhsType,
@@ -1280,6 +1374,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -1294,6 +1389,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -1314,6 +1410,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -1327,6 +1424,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -1347,6 +1445,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -1360,6 +1459,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					SLKC_RETURN_IF_COMP_ERROR(
 						_compileSimpleBinaryExpr(
 							compileContext,
+							compilationContext,
 							expr,
 							evalPurpose,
 							decayedLhsType, decayedLhsType, ExprEvalPurpose::RValue,
@@ -1387,11 +1487,14 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 						case ExprEvalPurpose::LValue: {
 							CompileExprResult result(compileContext->allocator.get());
 
-							uint32_t lhsReg = compileContext->allocReg(),
-									 rhsReg = compileContext->allocReg();
+							uint32_t lhsReg,
+								rhsReg;
 
-							if ((e = _compileOrCastOperand(compileContext, lhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->lhs, lhsType))) {
-								if (auto re = _compileOrCastOperand(compileContext, rhsReg, ExprEvalPurpose::RValue, u32Type.castTo<TypeNameNode>(), expr->rhs, rhsType); re) {
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsReg));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(rhsReg));
+
+							if ((e = _compileOrCastOperand(compileContext, compilationContext, lhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->lhs, lhsType))) {
+								if (auto re = _compileOrCastOperand(compileContext, compilationContext, rhsReg, ExprEvalPurpose::RValue, u32Type.castTo<TypeNameNode>(), expr->rhs, rhsType); re) {
 									if (!compileContext->errors.pushBack(std::move(*e))) {
 										return genOutOfMemoryCompError();
 									}
@@ -1401,8 +1504,8 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 									return e;
 								}
 							}
-							SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, rhsReg, ExprEvalPurpose::RValue, u32Type.castTo<TypeNameNode>(), expr->rhs, rhsType));
-							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+							SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, compilationContext, rhsReg, ExprEvalPurpose::RValue, u32Type.castTo<TypeNameNode>(), expr->rhs, rhsType));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 								slake::Opcode::AT,
 								resultRegOut,
 								{ slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::ValueType::RegRef, rhsReg) }));
@@ -1416,11 +1519,14 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 						case ExprEvalPurpose::RValue: {
 							CompileExprResult result(compileContext->allocator.get());
 
-							uint32_t lhsReg = compileContext->allocReg(),
-									 rhsReg = compileContext->allocReg();
+							uint32_t lhsReg,
+								rhsReg;
 
-							if ((e = _compileOrCastOperand(compileContext, lhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->lhs, lhsType))) {
-								if (auto re = _compileOrCastOperand(compileContext, rhsReg, ExprEvalPurpose::RValue, u32Type.castTo<TypeNameNode>(), expr->rhs, rhsType); re) {
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsReg));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(rhsReg));
+
+							if ((e = _compileOrCastOperand(compileContext, compilationContext, lhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->lhs, lhsType))) {
+								if (auto re = _compileOrCastOperand(compileContext, compilationContext, rhsReg, ExprEvalPurpose::RValue, u32Type.castTo<TypeNameNode>(), expr->rhs, rhsType); re) {
 									if (!compileContext->errors.pushBack(std::move(*e))) {
 										return genOutOfMemoryCompError();
 									}
@@ -1430,15 +1536,18 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 									return e;
 								}
 							}
-							SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, rhsReg, ExprEvalPurpose::RValue, u32Type.castTo<TypeNameNode>(), expr->rhs, rhsType));
+							SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, compilationContext, rhsReg, ExprEvalPurpose::RValue, u32Type.castTo<TypeNameNode>(), expr->rhs, rhsType));
 
-							uint32_t tmpReg = compileContext->allocReg();
-							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+							uint32_t tmpReg;
+
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(tmpReg));
+
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 								slake::Opcode::AT,
 								tmpReg,
 								{ slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::ValueType::RegRef, rhsReg) }));
 
-							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 								slake::Opcode::LVALUE,
 								resultRegOut,
 								{ slake::Value(slake::ValueType::RegRef, tmpReg) }));
@@ -1535,14 +1644,16 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 
 					auto matchedOverloading = matchedOverloadingIndices.back();
 
-					uint32_t lhsReg = compileContext->allocReg();
+					uint32_t lhsReg;
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsReg));
 					{
 						CompileExprResult argResult(compileContext->allocator.get());
 
-						SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr->lhs, ExprEvalPurpose::RValue, decayedLhsType, lhsReg, argResult));
+						SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, expr->lhs, ExprEvalPurpose::RValue, decayedLhsType, lhsReg, argResult));
 					}
 
-					uint32_t operatorReg = compileContext->allocReg();
+					uint32_t operatorReg;
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(operatorReg));
 					if (matchedOverloading->fnFlags & FN_VIRTUAL) {
 						slake::HostObjectRef<slake::IdRefObject> idRefObject;
 
@@ -1566,7 +1677,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 							SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, matchedOverloading->params.at(i)->type, idRefObject->paramTypes->at(i)));
 						}
 
-						SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::RLOAD, operatorReg, { slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, operatorReg, { slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
 					} else {
 						slake::HostObjectRef<slake::IdRefObject> idRefObject;
 
@@ -1583,26 +1694,27 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 							SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, matchedOverloading->params.at(i)->type, idRefObject->paramTypes->at(i)));
 						}
 
-						SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::LOAD, operatorReg, { slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, operatorReg, { slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
 					}
 
-					uint32_t reg = compileContext->allocReg();
+					uint32_t reg;
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(reg));
 					{
 						CompileExprResult argResult(compileContext->allocator.get());
 
 						bool b = false;
 						SLKC_RETURN_IF_COMP_ERROR(isLValueType(matchedOverloading->params.at(0)->type, b));
 
-						SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr->rhs, b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, matchedOverloading->params.at(0)->type, reg, argResult));
+						SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, expr->rhs, b ? ExprEvalPurpose::LValue : ExprEvalPurpose::RValue, matchedOverloading->params.at(0)->type, reg, argResult));
 					}
 
-					SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::PUSHARG, UINT32_MAX, { slake::Value(slake::ValueType::RegRef, reg) }));
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::PUSHARG, UINT32_MAX, { slake::Value(slake::ValueType::RegRef, reg) }));
 
 					switch (evalPurpose) {
 						case ExprEvalPurpose::EvalType:
 							break;
 						case ExprEvalPurpose::Stmt:
-							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::MCALL, UINT32_MAX, { slake::Value(slake::ValueType::RegRef, operatorReg), slake::Value(slake::ValueType::RegRef, lhsReg) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MCALL, UINT32_MAX, { slake::Value(slake::ValueType::RegRef, operatorReg), slake::Value(slake::ValueType::RegRef, lhsReg) }));
 							break;
 						case ExprEvalPurpose::LValue: {
 							bool b = false;
@@ -1611,7 +1723,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 								return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
 							}
 
-							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegRef, operatorReg), slake::Value(slake::ValueType::RegRef, lhsReg) }));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegRef, operatorReg), slake::Value(slake::ValueType::RegRef, lhsReg) }));
 							break;
 						}
 						case ExprEvalPurpose::RValue:
@@ -1620,13 +1732,14 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 							SLKC_RETURN_IF_COMP_ERROR(isLValueType(matchedOverloading->returnType, b));
 
 							if (b) {
-								uint32_t tmpRegIndex = compileContext->allocReg();
+								uint32_t tmpRegIndex;
+								SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(tmpRegIndex));
 
-								SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegRef, operatorReg), slake::Value(slake::ValueType::RegRef, lhsReg) }));
+								SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegRef, operatorReg), slake::Value(slake::ValueType::RegRef, lhsReg) }));
 
-								SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::LVALUE, resultRegOut, { slake::Value(slake::ValueType::RegRef, tmpRegIndex) }));
+								SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LVALUE, resultRegOut, { slake::Value(slake::ValueType::RegRef, tmpRegIndex) }));
 							} else {
-								SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegRef, operatorReg), slake::Value(slake::ValueType::RegRef, lhsReg) }));
+								SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MCALL, resultRegOut, { slake::Value(slake::ValueType::RegRef, operatorReg), slake::Value(slake::ValueType::RegRef, lhsReg) }));
 							}
 
 							break;
@@ -1648,13 +1761,16 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 						case ExprEvalPurpose::RValue: {
 							CompileExprResult result(compileContext->allocator.get());
 
-							uint32_t lhsReg = compileContext->allocReg(),
-									 rhsReg = compileContext->allocReg();
+							uint32_t lhsReg,
+									 rhsReg;
+
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsReg));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(rhsReg));
 
 							std::optional<CompilationError> e;
 
-							if ((e = _compileOrCastOperand(compileContext, lhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->lhs, lhsType))) {
-								if (auto re = _compileOrCastOperand(compileContext, rhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->rhs, rhsType); re) {
+							if ((e = _compileOrCastOperand(compileContext, compilationContext, lhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->lhs, lhsType))) {
+								if (auto re = _compileOrCastOperand(compileContext, compilationContext, rhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->rhs, rhsType); re) {
 									if (!compileContext->errors.pushBack(std::move(*e))) {
 										return genOutOfMemoryCompError();
 									}
@@ -1664,8 +1780,8 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 									return e;
 								}
 							}
-							SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, rhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->rhs, rhsType));
-							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+							SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, compilationContext, rhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->rhs, rhsType));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 								slake::Opcode::EQ,
 								resultRegOut,
 								{ slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::ValueType::RegRef, rhsReg) }));
@@ -1689,13 +1805,16 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 						case ExprEvalPurpose::RValue: {
 							CompileExprResult result(compileContext->allocator.get());
 
-							uint32_t lhsReg = compileContext->allocReg(),
-									 rhsReg = compileContext->allocReg();
+							uint32_t lhsReg,
+									 rhsReg;
+
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(lhsReg));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(rhsReg));
 
 							std::optional<CompilationError> e;
 
-							if ((e = _compileOrCastOperand(compileContext, lhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->lhs, lhsType))) {
-								if (auto re = _compileOrCastOperand(compileContext, rhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->rhs, rhsType); re) {
+							if ((e = _compileOrCastOperand(compileContext, compilationContext, lhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->lhs, lhsType))) {
+								if (auto re = _compileOrCastOperand(compileContext, compilationContext, rhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->rhs, rhsType); re) {
 									if (!compileContext->errors.pushBack(std::move(*e))) {
 										return genOutOfMemoryCompError();
 									}
@@ -1705,8 +1824,8 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 									return e;
 								}
 							}
-							SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, rhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->rhs, rhsType));
-							SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+							SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, compilationContext, rhsReg, ExprEvalPurpose::RValue, decayedLhsType, expr->rhs, rhsType));
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 								slake::Opcode::NEQ,
 								resultRegOut,
 								{ slake::Value(slake::ValueType::RegRef, lhsReg), slake::Value(slake::ValueType::RegRef, rhsReg) }));

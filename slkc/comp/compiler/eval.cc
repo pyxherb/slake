@@ -86,6 +86,7 @@ std::optional<CompilationError> _doSimpleIntLiteralCast(
 
 SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 	CompileContext* compileContext,
+	CompilationContext *compilationContext,
 	peff::SharedPtr<ExprNode> expr,
 	peff::SharedPtr<ExprNode> &exprOut) {
 	switch (expr->exprKind) {
@@ -122,7 +123,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 		case ExprKind::Cast: {
 			peff::SharedPtr<CastExprNode> e = expr.castTo<CastExprNode>();
 			peff::SharedPtr<ExprNode> src;
-			SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileContext, e->source, src));
+			SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileContext, compilationContext, e->source, src));
 
 			switch (e->targetType->typeNameKind) {
 				case TypeNameKind::I8: {
@@ -305,7 +306,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 			break;
 		}
 		case ExprKind::Wrapper: {
-			SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileContext, expr.castTo<WrapperExprNode>()->target, exprOut));
+			SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileContext, compilationContext, expr.castTo<WrapperExprNode>()->target, exprOut));
 			break;
 		}
 		case ExprKind::VarArg: {

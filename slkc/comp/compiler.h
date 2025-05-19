@@ -23,13 +23,6 @@ namespace slkc {
 		uint32_t idxReg;
 	};
 
-	struct BlockCompileContext {
-		peff::HashMap<std::string_view, peff::SharedPtr<VarNode>> localVars;
-
-		SLAKE_FORCEINLINE BlockCompileContext(peff::Alloc *allocator) : localVars(allocator) {
-		}
-	};
-
 	struct Label {
 		peff::String name;
 		uint32_t offset = UINT32_MAX;
@@ -37,30 +30,116 @@ namespace slkc {
 		SLAKE_FORCEINLINE Label(peff::String &&name) : name(std::move(name)) {}
 	};
 
-	struct FnCompileContext {
-		peff::SharedPtr<FnOverloadingNode> currentFn;
-		peff::SharedPtr<ThisNode> thisNode;
-		peff::DynArray<slake::Instruction> instructionsOut;
+	class CompilationContext {
+	public:
+		CompilationContext *parent = nullptr;
+
+		SLKC_API CompilationContext(CompilationContext *parent);
+		SLKC_API virtual ~CompilationContext();
+
+		virtual std::optional<CompilationError> allocLabel(uint32_t &labelIdOut) = 0;
+		virtual void setLabelOffset(uint32_t labelId, uint32_t offset) const = 0;
+		virtual std::optional<CompilationError> setLabelName(uint32_t labelId, const std::string_view &name) = 0;
+		virtual uint32_t getLabelOffset(uint32_t labelId) = 0;
+
+		virtual std::optional<CompilationError> allocReg(uint32_t &regOut) = 0;
+
+		virtual std::optional<CompilationError> emitIns(slake::Opcode opcode, uint32_t outputRegIndex, const std::initializer_list<slake::Value> &operands) = 0;
+
+		virtual std::optional<CompilationError> allocLocalVar(const TokenRange &tokenRange, const std::string_view &name, uint32_t reg, peff::SharedPtr<TypeNameNode> type, peff::SharedPtr<VarNode> &localVarOut) = 0;
+		virtual peff::SharedPtr<VarNode> getLocalVarInCurLevel(const std::string_view &name) = 0;
+		virtual peff::SharedPtr<VarNode> getLocalVar(const std::string_view &name) = 0;
+
+		virtual void setBreakLabel(uint32_t labelId, uint32_t blockLevel) = 0;
+		virtual void setContinueLabel(uint32_t labelId, uint32_t blockLevel) = 0;
+
+		virtual uint32_t getBreakLabel() = 0;
+		virtual uint32_t getContinueLabel() = 0;
+
+		virtual uint32_t getBreakLabelBlockLevel() = 0;
+		virtual uint32_t getContinueLabelBlockLevel() = 0;
+
+		virtual uint32_t getCurInsOff() const = 0;
+
+		virtual std::optional<CompilationError> enterBlock() = 0;
+		virtual void leaveBlock() = 0;
+
+		virtual uint32_t getBlockLevel() = 0;
+
+		SLKC_API peff::SharedPtr<VarNode> lookupLocalVar(const std::string_view &name);
+	};
+
+	struct CompileContext;
+
+	class NormalCompilationContext : public CompilationContext {
+	public:
+		struct BlockLayer {
+			peff::HashMap<std::string_view, peff::SharedPtr<VarNode>> localVars;
+
+			SLAKE_FORCEINLINE BlockLayer(peff::Alloc* allocator): localVars(allocator) {
+			}
+			SLAKE_FORCEINLINE BlockLayer(BlockLayer &&rhs) : localVars(std::move(rhs.localVars)) {
+			}
+			SLKC_API ~BlockLayer();
+
+			SLAKE_FORCEINLINE BlockLayer& operator=(BlockLayer&& rhs) {
+				localVars = std::move(rhs.localVars);
+				return *this;
+			}
+		};
+
+		peff::RcObjectPtr<peff::Alloc> allocator;
+
+		CompilationContext *const parent = nullptr;
+
+		peff::SharedPtr<Document> document;
+
+		const uint32_t baseBlockLevel;
+		peff::List<BlockLayer> savedBlockLayers;
+		BlockLayer curBlockLayer;
+
+		uint32_t nTotalRegs = 0;
+
 		peff::DynArray<peff::SharedPtr<Label>> labels;
 		peff::HashMap<std::string_view, size_t> labelNameIndices;
-		peff::List<peff::SharedPtr<BlockCompileContext>> blockCompileContexts;
-		uint32_t nTotalRegs = 0;
 
 		uint32_t breakStmtJumpDestLabel = UINT32_MAX, continueStmtJumpDestLabel = UINT32_MAX;
 		uint32_t breakStmtBlockLevel = 0, continueStmtBlockLevel = 0;
 
-		SLAKE_FORCEINLINE FnCompileContext(slake::Runtime *runtime, peff::Alloc *allocator) : instructionsOut(&runtime->globalHeapPoolAlloc), labels(allocator), blockCompileContexts(allocator), labelNameIndices(allocator) {}
+		const uint32_t baseInsOff;
+		peff::DynArray<slake::Instruction> generatedInstructions;
 
-		SLAKE_FORCEINLINE void reset() {
-			currentFn = {};
-			thisNode = {};
-			instructionsOut.clear();
-			labels.clear();
-			blockCompileContexts.clear();
-			labelNameIndices.clear();
-			labels.clear();
-			nTotalRegs = 0;
-		}
+		SLKC_API NormalCompilationContext(CompileContext *compileContext, CompilationContext *parent);
+		SLKC_API virtual ~NormalCompilationContext();
+
+		SLKC_API virtual std::optional<CompilationError> allocLabel(uint32_t &labelIdOut) override;
+		SLKC_API virtual void setLabelOffset(uint32_t labelId, uint32_t offset) const override;
+		SLKC_API virtual std::optional<CompilationError> setLabelName(uint32_t labelId, const std::string_view &name) override;
+		SLKC_API virtual uint32_t getLabelOffset(uint32_t labelId) override;
+
+		SLKC_API virtual std::optional<CompilationError> allocReg(uint32_t &regOut) override;
+
+		SLKC_API virtual std::optional<CompilationError> emitIns(slake::Opcode opcode, uint32_t outputRegIndex, const std::initializer_list<slake::Value> &operands) override;
+
+		SLKC_API virtual std::optional<CompilationError> allocLocalVar(const TokenRange &tokenRange, const std::string_view &name, uint32_t reg, peff::SharedPtr<TypeNameNode> type, peff::SharedPtr<VarNode> &localVarOut) override;
+		SLKC_API virtual peff::SharedPtr<VarNode> getLocalVarInCurLevel(const std::string_view &name) override;
+		SLKC_API virtual peff::SharedPtr<VarNode> getLocalVar(const std::string_view &name) override;
+
+		SLKC_API virtual void setBreakLabel(uint32_t labelId, uint32_t blockLevel) override;
+		SLKC_API virtual void setContinueLabel(uint32_t labelId, uint32_t blockLevel) override;
+
+		SLKC_API virtual uint32_t getBreakLabel() override;
+		SLKC_API virtual uint32_t getContinueLabel() override;
+
+		SLKC_API virtual uint32_t getBreakLabelBlockLevel() override;
+		SLKC_API virtual uint32_t getContinueLabelBlockLevel() override;
+
+		SLKC_API virtual uint32_t getCurInsOff() const override;
+
+		SLKC_API virtual std::optional<CompilationError> enterBlock() override;
+		SLKC_API virtual void leaveBlock() override;
+
+		SLKC_API virtual uint32_t getBlockLevel() override;
 	};
 
 	struct CompileContext : public peff::RcObject {
@@ -70,9 +149,9 @@ namespace slkc {
 		peff::SharedPtr<Document> document;
 		peff::DynArray<CompilationError> errors;
 		peff::DynArray<CompilationWarning> warnings;
-		FnCompileContext fnCompileContext;
+		peff::SharedPtr<FnOverloadingNode> curOverloading;
+		peff::SharedPtr<ThisNode> thisNode;
 		uint32_t flags;
-		size_t evalProtectionDepth = 0;
 
 		SLAKE_FORCEINLINE CompileContext(
 			slake::Runtime *runtime,
@@ -86,7 +165,6 @@ namespace slkc {
 			  allocator(allocator),
 			  errors(allocator),
 			  warnings(allocator),
-			  fnCompileContext(runtime, allocator),
 			  flags(0) {}
 
 		SLKC_API virtual ~CompileContext();
@@ -107,136 +185,37 @@ namespace slkc {
 			return {};
 		}
 
-		SLAKE_FORCEINLINE std::optional<CompilationError> allocLabel(uint32_t &labelIdOut) {
-			peff::SharedPtr<Label> label = peff::makeShared<Label>(document->allocator.get(), peff::String(document->allocator.get()));
-
-			if (!label) {
-				return genOutOfMemoryCompError();
-			}
-
-			labelIdOut = fnCompileContext.labels.size();
-
-			if (!fnCompileContext.labels.pushBack(peff::SharedPtr<Label>(label))) {
-				return genOutOfMemoryCompError();
-			}
-
-			peff::ScopeGuard removeLabelGuard = [this]() noexcept {
-				fnCompileContext.labels.popBack();
-			};
-
-			removeLabelGuard.release();
-
-			return {};
+		SLAKE_FORCEINLINE void reset() {
+			curOverloading = {};
+			thisNode = {};
 		}
-
-		SLAKE_FORCEINLINE std::optional<CompilationError> allocLabel(peff::String &&name, uint32_t &labelIdOut) {
-			peff::SharedPtr<Label> label = peff::makeShared<Label>(document->allocator.get(), std::move(name));
-
-			if (!label) {
-				return genOutOfMemoryCompError();
-			}
-
-			labelIdOut = fnCompileContext.labels.size();
-
-			if (!fnCompileContext.labels.pushBack(peff::SharedPtr<Label>(label))) {
-				return genOutOfMemoryCompError();
-			}
-
-			peff::ScopeGuard removeLabelGuard = [this]() noexcept {
-				fnCompileContext.labels.popBack();
-			};
-
-			if (!fnCompileContext.labelNameIndices.insert(label->name, labelIdOut)) {
-				return genOutOfMemoryCompError();
-			}
-
-			removeLabelGuard.release();
-
-			return {};
-		}
-
-		SLAKE_FORCEINLINE std::optional<CompilationError> allocLabel(const std::string_view &name, uint32_t &labelIdOut) {
-			if (evalProtectionDepth) {
-				return {};
-			}
-
-			peff::String builtName(document->allocator.get());
-
-			if (!builtName.build(name)) {
-				return genOutOfMemoryCompError();
-			}
-
-			return allocLabel(std::move(builtName), labelIdOut);
-		}
-
-		SLAKE_FORCEINLINE peff::SharedPtr<Label> getLabel(uint32_t labelId) const {
-			return fnCompileContext.labels.at(labelId);
-		}
-
-		SLAKE_FORCEINLINE peff::SharedPtr<Label> getLabelByName(const std::string_view &name) const {
-			return fnCompileContext.labels.at(fnCompileContext.labelNameIndices.at(name));
-		}
-
-		SLAKE_FORCEINLINE uint32_t getCurInsOff() const {
-			return (uint32_t)fnCompileContext.instructionsOut.size();
-		}
-
-		SLAKE_FORCEINLINE uint32_t allocReg() {
-			if (evalProtectionDepth) {
-				return 0;
-			}
-
-			if (fnCompileContext.nTotalRegs == 42)
-				puts("");
-
-			return fnCompileContext.nTotalRegs++;
-		}
-
-		SLAKE_FORCEINLINE std::optional<CompilationError> pushBlockContext() {
-			peff::SharedPtr<BlockCompileContext> blockContext;
-			if (!(blockContext = peff::makeShared<BlockCompileContext>(allocator.get(), allocator.get()))) {
-				return genOutOfMemoryCompError();
-			}
-			if (!(fnCompileContext.blockCompileContexts.pushBack(std::move(blockContext)))) {
-				return genOutOfMemoryCompError();
-			}
-			return {};
-		}
-
-		SLAKE_FORCEINLINE void popBlockContext() {
-			fnCompileContext.blockCompileContexts.popBack();
-		}
-
-		SLAKE_API std::optional<CompilationError> emitIns(slake::Opcode opcode, uint32_t outputRegIndex, const std::initializer_list<slake::Value> &operands);
 	};
 
 	struct PrevBreakPointHolder {
-		CompileContext *compileContext;
+		CompilationContext *compileContext;
 		uint32_t lastBreakStmtJumpDestLabel,
 			lastBreakStmtBlockLevel;
 
-		SLAKE_FORCEINLINE PrevBreakPointHolder(CompileContext *compileContext)
+		SLAKE_FORCEINLINE PrevBreakPointHolder(CompilationContext *compileContext)
 			: compileContext(compileContext),
-			  lastBreakStmtJumpDestLabel(compileContext->fnCompileContext.continueStmtJumpDestLabel),
-			  lastBreakStmtBlockLevel(compileContext->fnCompileContext.continueStmtBlockLevel) {}
+			  lastBreakStmtJumpDestLabel(compileContext->getBreakLabel()),
+			  lastBreakStmtBlockLevel(compileContext->getBreakLabelBlockLevel()) {}
 		SLAKE_FORCEINLINE ~PrevBreakPointHolder() {
-			compileContext->fnCompileContext.continueStmtJumpDestLabel = lastBreakStmtJumpDestLabel;
-			compileContext->fnCompileContext.continueStmtBlockLevel = lastBreakStmtBlockLevel;
+			compileContext->setBreakLabel(lastBreakStmtJumpDestLabel, lastBreakStmtBlockLevel);
 		}
 	};
 
 	struct PrevContinuePointHolder {
-		CompileContext *compileContext;
+		CompilationContext *compileContext;
 		uint32_t lastContinueStmtJumpDestLabel,
 			lastContinueStmtBlockLevel;
 
-		SLAKE_FORCEINLINE PrevContinuePointHolder(CompileContext *compileContext)
+		SLAKE_FORCEINLINE PrevContinuePointHolder(CompilationContext *compileContext)
 			: compileContext(compileContext),
-			  lastContinueStmtJumpDestLabel(compileContext->fnCompileContext.continueStmtJumpDestLabel),
-			  lastContinueStmtBlockLevel(compileContext->fnCompileContext.continueStmtBlockLevel) {}
+			  lastContinueStmtJumpDestLabel(compileContext->getContinueLabel()),
+			  lastContinueStmtBlockLevel(compileContext->getContinueLabelBlockLevel()) {}
 		SLAKE_FORCEINLINE ~PrevContinuePointHolder() {
-			compileContext->fnCompileContext.continueStmtJumpDestLabel = lastContinueStmtJumpDestLabel;
-			compileContext->fnCompileContext.continueStmtBlockLevel = lastContinueStmtBlockLevel;
+			compileContext->setContinueLabel(lastContinueStmtJumpDestLabel, lastContinueStmtBlockLevel);
 		}
 	};
 
@@ -261,6 +240,7 @@ namespace slkc {
 
 	[[nodiscard]] SLKC_API std::optional<CompilationError> _compileOrCastOperand(
 		CompileContext *compileContext,
+		CompilationContext *compilationContext,
 		uint32_t regOut,
 		ExprEvalPurpose evalPurpose,
 		peff::SharedPtr<TypeNameNode> desiredType,
@@ -268,6 +248,7 @@ namespace slkc {
 		peff::SharedPtr<TypeNameNode> operandType);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> _compileSimpleBinaryExpr(
 		CompileContext *compileContext,
+		CompilationContext *compilationContext,
 		peff::SharedPtr<BinaryExprNode> expr,
 		ExprEvalPurpose evalPurpose,
 		peff::SharedPtr<TypeNameNode> lhsType,
@@ -281,6 +262,7 @@ namespace slkc {
 		slake::Opcode opcode);
 	std::optional<CompilationError> _compileSimpleAssignBinaryExpr(
 		CompileContext *compileContext,
+		CompilationContext *compilationContext,
 		peff::SharedPtr<BinaryExprNode> expr,
 		ExprEvalPurpose evalPurpose,
 		peff::SharedPtr<TypeNameNode> lhsType,
@@ -292,6 +274,7 @@ namespace slkc {
 		CompileExprResult &resultOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> _compileSimpleLAndBinaryExpr(
 		CompileContext *compileContext,
+		CompilationContext *compilationContext,
 		peff::SharedPtr<BinaryExprNode> expr,
 		ExprEvalPurpose evalPurpose,
 		peff::SharedPtr<BoolTypeNameNode> boolType,
@@ -302,6 +285,7 @@ namespace slkc {
 		slake::Opcode opcode);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> _compileSimpleLOrBinaryExpr(
 		CompileContext *compileContext,
+		CompilationContext *compilationContext,
 		peff::SharedPtr<BinaryExprNode> expr,
 		ExprEvalPurpose evalPurpose,
 		peff::SharedPtr<BoolTypeNameNode> boolType,
@@ -312,6 +296,7 @@ namespace slkc {
 		slake::Opcode opcode);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> _compileSimpleBinaryAssignOpExpr(
 		CompileContext *compileContext,
+		CompilationContext *compilationContext,
 		peff::SharedPtr<BinaryExprNode> expr,
 		ExprEvalPurpose evalPurpose,
 		peff::SharedPtr<TypeNameNode> lhsType,
@@ -433,18 +418,21 @@ namespace slkc {
 		bool &whetherOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileUnaryExpr(
 		CompileContext *compileContext,
+		CompilationContext *compilationContext,
 		peff::SharedPtr<UnaryExprNode> expr,
 		ExprEvalPurpose evalPurpose,
 		uint32_t resultRegOut,
 		CompileExprResult &resultOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileBinaryExpr(
 		CompileContext *compileContext,
+		CompilationContext *compilationContext,
 		peff::SharedPtr<BinaryExprNode> expr,
 		ExprEvalPurpose evalPurpose,
 		uint32_t resultRegOut,
 		CompileExprResult &resultOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileExpr(
 		CompileContext *compileContext,
+		CompilationContext *compilationContext,
 		const peff::SharedPtr<ExprNode> &expr,
 		ExprEvalPurpose evalPurpose,
 		peff::SharedPtr<TypeNameNode> desiredType,
@@ -452,15 +440,18 @@ namespace slkc {
 		CompileExprResult &resultOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileStmt(
 		CompileContext *compileContext,
+		CompilationContext *compilationContext,
 		const peff::SharedPtr<StmtNode> &stmt);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> evalExprType(
 		CompileContext *compileContext,
+		CompilationContext *compilationContext,
 		const peff::SharedPtr<ExprNode> &expr,
 		peff::SharedPtr<TypeNameNode> &typeOut,
 		peff::SharedPtr<TypeNameNode> desiredType = {});
 
 	[[nodiscard]] SLKC_API std::optional<CompilationError> evalConstExpr(
 		CompileContext *compileContext,
+		CompilationContext *compilationContext,
 		peff::SharedPtr<ExprNode> expr,
 		peff::SharedPtr<ExprNode> &exprOut);
 

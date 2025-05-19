@@ -4,6 +4,7 @@ using namespace slkc;
 
 static std::optional<CompilationError> _compileSimpleRValueUnaryExpr(
 	CompileContext *compileContext,
+	CompilationContext *compilationContext,
 	peff::SharedPtr<UnaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
 	peff::SharedPtr<TypeNameNode> desiredType,
@@ -22,10 +23,12 @@ static std::optional<CompilationError> _compileSimpleRValueUnaryExpr(
 		case ExprEvalPurpose::RValue: {
 			CompileExprResult result(compileContext->allocator.get());
 
-			uint32_t tmpReg = compileContext->allocReg();
+			uint32_t tmpReg;
 
-			SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, expr->operand, ExprEvalPurpose::RValue, desiredType, tmpReg, result));
-			SLKC_RETURN_IF_COMP_ERROR(compileContext->emitIns(
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(tmpReg));
+
+			SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, expr->operand, ExprEvalPurpose::RValue, desiredType, tmpReg, result));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(
 				slake::Opcode::NEG,
 				resultRegOut,
 				{ slake::Value(slake::ValueType::RegRef, tmpReg) }));
@@ -41,6 +44,7 @@ static std::optional<CompilationError> _compileSimpleRValueUnaryExpr(
 
 SLKC_API std::optional<CompilationError> slkc::compileUnaryExpr(
 	CompileContext *compileContext,
+	CompilationContext *compilationContext,
 	peff::SharedPtr<UnaryExprNode> expr,
 	ExprEvalPurpose evalPurpose,
 	uint32_t resultRegOut,
@@ -48,7 +52,7 @@ SLKC_API std::optional<CompilationError> slkc::compileUnaryExpr(
 	peff::SharedPtr<TypeNameNode> operandType, decayedOperandType;
 
 	SLKC_RETURN_IF_COMP_ERROR(
-		evalExprType(compileContext, expr->operand, operandType));
+		evalExprType(compileContext, compilationContext, expr->operand, operandType));
 	SLKC_RETURN_IF_COMP_ERROR(
 		removeRefOfType(operandType, decayedOperandType));
 
@@ -63,15 +67,15 @@ SLKC_API std::optional<CompilationError> slkc::compileUnaryExpr(
 		case TypeNameKind::U64: {
 			switch (expr->unaryOp) {
 				case UnaryOp::LNot:
-					SLKC_RETURN_IF_COMP_ERROR(_compileSimpleRValueUnaryExpr(compileContext, expr, evalPurpose, decayedOperandType, resultRegOut, resultOut, slake::Opcode::LNOT));
+					SLKC_RETURN_IF_COMP_ERROR(_compileSimpleRValueUnaryExpr(compileContext, compilationContext, expr, evalPurpose, decayedOperandType, resultRegOut, resultOut, slake::Opcode::LNOT));
 					resultOut.evaluatedType = decayedOperandType;
 					break;
 				case UnaryOp::Not:
-					SLKC_RETURN_IF_COMP_ERROR(_compileSimpleRValueUnaryExpr(compileContext, expr, evalPurpose, decayedOperandType, resultRegOut, resultOut, slake::Opcode::NOT));
+					SLKC_RETURN_IF_COMP_ERROR(_compileSimpleRValueUnaryExpr(compileContext, compilationContext, expr, evalPurpose, decayedOperandType, resultRegOut, resultOut, slake::Opcode::NOT));
 					resultOut.evaluatedType = decayedOperandType;
 					break;
 				case UnaryOp::Neg:
-					SLKC_RETURN_IF_COMP_ERROR(_compileSimpleRValueUnaryExpr(compileContext, expr, evalPurpose, decayedOperandType, resultRegOut, resultOut, slake::Opcode::NEG));
+					SLKC_RETURN_IF_COMP_ERROR(_compileSimpleRValueUnaryExpr(compileContext, compilationContext, expr, evalPurpose, decayedOperandType, resultRegOut, resultOut, slake::Opcode::NEG));
 					resultOut.evaluatedType = decayedOperandType;
 					break;
 				default:
@@ -83,11 +87,11 @@ SLKC_API std::optional<CompilationError> slkc::compileUnaryExpr(
 		case TypeNameKind::F64: {
 			switch (expr->unaryOp) {
 				case UnaryOp::LNot:
-					SLKC_RETURN_IF_COMP_ERROR(_compileSimpleRValueUnaryExpr(compileContext, expr, evalPurpose, decayedOperandType, resultRegOut, resultOut, slake::Opcode::LNOT));
+					SLKC_RETURN_IF_COMP_ERROR(_compileSimpleRValueUnaryExpr(compileContext, compilationContext, expr, evalPurpose, decayedOperandType, resultRegOut, resultOut, slake::Opcode::LNOT));
 					resultOut.evaluatedType = decayedOperandType;
 					break;
 				case UnaryOp::Neg:
-					SLKC_RETURN_IF_COMP_ERROR(_compileSimpleRValueUnaryExpr(compileContext, expr, evalPurpose, decayedOperandType, resultRegOut, resultOut, slake::Opcode::NEG));
+					SLKC_RETURN_IF_COMP_ERROR(_compileSimpleRValueUnaryExpr(compileContext, compilationContext, expr, evalPurpose, decayedOperandType, resultRegOut, resultOut, slake::Opcode::NEG));
 					resultOut.evaluatedType = decayedOperandType;
 					break;
 				default:
@@ -98,7 +102,7 @@ SLKC_API std::optional<CompilationError> slkc::compileUnaryExpr(
 		case TypeNameKind::Bool: {
 			switch (expr->unaryOp) {
 				case UnaryOp::LNot:
-					SLKC_RETURN_IF_COMP_ERROR(_compileSimpleRValueUnaryExpr(compileContext, expr, evalPurpose, decayedOperandType, resultRegOut, resultOut, slake::Opcode::LNOT));
+					SLKC_RETURN_IF_COMP_ERROR(_compileSimpleRValueUnaryExpr(compileContext, compilationContext, expr, evalPurpose, decayedOperandType, resultRegOut, resultOut, slake::Opcode::LNOT));
 					resultOut.evaluatedType = decayedOperandType;
 					break;
 				default:

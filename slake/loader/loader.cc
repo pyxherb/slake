@@ -622,15 +622,20 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(Runtime *runtime, R
 			if (vad.flags & slxfmt::VAD_PUB) {
 				access |= ACCESS_PUB;
 			}
+
 			if (vad.flags & slxfmt::VAD_FINAL) {
 				access |= ACCESS_FINAL;
 			}
+
 			if (vad.flags & slxfmt::VAD_STATIC) {
 				access |= ACCESS_STATIC;
 			}
+
 			if (vad.flags & slxfmt::VAD_NATIVE) {
 				access |= ACCESS_NATIVE;
 			}
+
+			fr.accessModifier = access;
 
 			if (!fr.name.resize(vad.lenName)) {
 				return OutOfMemoryError::alloc();

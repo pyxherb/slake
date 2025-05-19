@@ -344,15 +344,15 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 				CompileExprResult result(compileContext->allocator.get());
 
-				peff::SharedPtr<TypeNameNode> tn, exprType;
+				peff::SharedPtr<TypeNameNode> tn, type;
 
 				if (!(tn = peff::makeShared<BoolTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document).castTo<TypeNameNode>())) {
 					return genOutOfMemoryCompError();
 				}
 
-				SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, s->cond, exprType, tn));
+				SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, s->cond, type, tn));
 
-				SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, compilationContext, conditionReg, ExprEvalPurpose::RValue, tn, s->cond, exprType));
+				SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, compilationContext, conditionReg, ExprEvalPurpose::RValue, tn, s->cond, type));
 
 				SLKC_RETURN_IF_COMP_ERROR(
 					compilationContext->emitIns(
@@ -414,15 +414,15 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 			CompileExprResult result(compileContext->allocator.get());
 
-			peff::SharedPtr<TypeNameNode> tn, exprType;
+			peff::SharedPtr<TypeNameNode> tn, type;
 
 			if (!(tn = peff::makeShared<BoolTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document).castTo<TypeNameNode>())) {
 				return genOutOfMemoryCompError();
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, s->cond, exprType, tn));
+			SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, s->cond, type, tn));
 
-			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, compilationContext, conditionReg, ExprEvalPurpose::RValue, tn, s->cond, exprType));
+			SLKC_RETURN_IF_COMP_ERROR(_compileOrCastOperand(compileContext, compilationContext, conditionReg, ExprEvalPurpose::RValue, tn, s->cond, type));
 
 			SLKC_RETURN_IF_COMP_ERROR(
 				compilationContext->emitIns(

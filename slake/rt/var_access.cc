@@ -186,12 +186,11 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 			const char *const rawStackPtr = calcStackAddr(entityRef.asLocalVar.context->dataStack,
 				SLAKE_STACK_MAX,
 				entityRef.asLocalVar.stackOff);
-			const char *const rawDataPtr = rawStackPtr + sizeof(Type);
+			const char *const rawDataPtr = rawStackPtr + sizeof(TypeId);
 
-			Type t;
-			memcpy(&t, rawStackPtr, sizeof(Type));
+			TypeId typeId = *(TypeId *)rawStackPtr;
 
-			switch (t.typeId) {
+			switch (typeId) {
 				case TypeId::I8:
 					return Value(*((int8_t *)rawDataPtr));
 				case TypeId::I16:
@@ -231,96 +230,57 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 			break;
 		}
 		case ObjectRefKind::CoroutineLocalVarRef: {
+			char *basePtr;
+
 			if (entityRef.asCoroutineLocalVar.coroutine->curContext) {
-				const char *const rawStackPtr = calcStackAddr(entityRef.asCoroutineLocalVar.coroutine->curContext->dataStack,
+				basePtr = calcStackAddr(entityRef.asCoroutineLocalVar.coroutine->curContext->dataStack,
 					SLAKE_STACK_MAX,
 					entityRef.asCoroutineLocalVar.stackOff + entityRef.asCoroutineLocalVar.coroutine->curMajorFrame->stackBase);
-				const char *const rawDataPtr = rawStackPtr + sizeof(Type);
-
-				Type t;
-				memcpy(&t, rawStackPtr, sizeof(Type));
-
-				switch (t.typeId) {
-					case TypeId::I8:
-						return Value(*((int8_t *)rawDataPtr));
-					case TypeId::I16:
-						return Value(*((int16_t *)rawDataPtr));
-					case TypeId::I32:
-						return Value(*((int32_t *)rawDataPtr));
-					case TypeId::I64:
-						return Value(*((int64_t *)rawDataPtr));
-					case TypeId::U8:
-						return Value(*((uint8_t *)rawDataPtr));
-					case TypeId::U16:
-						return Value(*((uint16_t *)rawDataPtr));
-					case TypeId::U32:
-						return Value(*((uint32_t *)rawDataPtr));
-					case TypeId::U64:
-						return Value(*((uint64_t *)rawDataPtr));
-					case TypeId::F32:
-						return Value(*((float *)rawDataPtr));
-					case TypeId::F64:
-						return Value(*((double *)rawDataPtr));
-					case TypeId::Bool:
-						return Value(*((bool *)rawDataPtr));
-					case TypeId::String:
-					case TypeId::Instance:
-					case TypeId::Array:
-					case TypeId::FnDelegate:
-						return Value(EntityRef::makeObjectRef(*((Object **)rawDataPtr)));
-					case TypeId::Ref:
-						return Value(*((EntityRef *)rawDataPtr));
-					case TypeId::Any:
-						return Value(*((Value *)rawDataPtr));
-					default:
-						// All fields should be checked during the instantiation.
-						std::terminate();
-				}
 			} else {
-				const char *const rawStackPtr = calcStackAddr(entityRef.asCoroutineLocalVar.coroutine->stackData,
+				basePtr = calcStackAddr(entityRef.asCoroutineLocalVar.coroutine->stackData,
 					entityRef.asCoroutineLocalVar.coroutine->lenStackData,
 					entityRef.asCoroutineLocalVar.stackOff);
-				const char *const rawDataPtr = rawStackPtr + sizeof(Type);
+			}
 
-				Type t;
-				memcpy(&t, rawStackPtr, sizeof(Type));
+			const char *const rawDataPtr = basePtr + sizeof(TypeId);
 
-				switch (t.typeId) {
-					case TypeId::I8:
-						return Value(*((int8_t *)rawDataPtr));
-					case TypeId::I16:
-						return Value(*((int16_t *)rawDataPtr));
-					case TypeId::I32:
-						return Value(*((int32_t *)rawDataPtr));
-					case TypeId::I64:
-						return Value(*((int64_t *)rawDataPtr));
-					case TypeId::U8:
-						return Value(*((uint8_t *)rawDataPtr));
-					case TypeId::U16:
-						return Value(*((uint16_t *)rawDataPtr));
-					case TypeId::U32:
-						return Value(*((uint32_t *)rawDataPtr));
-					case TypeId::U64:
-						return Value(*((uint64_t *)rawDataPtr));
-					case TypeId::F32:
-						return Value(*((float *)rawDataPtr));
-					case TypeId::F64:
-						return Value(*((double *)rawDataPtr));
-					case TypeId::Bool:
-						return Value(*((bool *)rawDataPtr));
-					case TypeId::String:
-					case TypeId::Instance:
-					case TypeId::Array:
-					case TypeId::FnDelegate:
-						return Value(EntityRef::makeObjectRef(*((Object **)rawDataPtr)));
-					case TypeId::Ref:
-						return Value(*((EntityRef *)rawDataPtr));
-					case TypeId::Any:
-						return Value(*((Value *)rawDataPtr));
-					default:
-						// All fields should be checked during the instantiation.
-						std::terminate();
-				}
+			TypeId typeId = *(TypeId *)basePtr;
+
+			switch (typeId) {
+				case TypeId::I8:
+					return Value(*((int8_t *)rawDataPtr));
+				case TypeId::I16:
+					return Value(*((int16_t *)rawDataPtr));
+				case TypeId::I32:
+					return Value(*((int32_t *)rawDataPtr));
+				case TypeId::I64:
+					return Value(*((int64_t *)rawDataPtr));
+				case TypeId::U8:
+					return Value(*((uint8_t *)rawDataPtr));
+				case TypeId::U16:
+					return Value(*((uint16_t *)rawDataPtr));
+				case TypeId::U32:
+					return Value(*((uint32_t *)rawDataPtr));
+				case TypeId::U64:
+					return Value(*((uint64_t *)rawDataPtr));
+				case TypeId::F32:
+					return Value(*((float *)rawDataPtr));
+				case TypeId::F64:
+					return Value(*((double *)rawDataPtr));
+				case TypeId::Bool:
+					return Value(*((bool *)rawDataPtr));
+				case TypeId::String:
+				case TypeId::Instance:
+				case TypeId::Array:
+				case TypeId::FnDelegate:
+					return Value(EntityRef::makeObjectRef(*((Object **)rawDataPtr)));
+				case TypeId::Ref:
+					return Value(*((EntityRef *)rawDataPtr));
+				case TypeId::Any:
+					return Value(*((Value *)rawDataPtr));
+				default:
+					// All fields should be checked during the instantiation.
+					std::terminate();
 			}
 
 			break;
@@ -501,52 +461,89 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 			const char *const rawStackPtr = calcStackAddr(entityRef.asLocalVar.context->dataStack,
 				SLAKE_STACK_MAX,
 				entityRef.asLocalVar.stackOff);
-			const char *const rawDataPtr = rawStackPtr + sizeof(Type);
+			const char *const rawDataPtr = rawStackPtr + sizeof(TypeId);
 
-			Type t;
-			memcpy(&t, rawStackPtr, sizeof(Type));
-
-			if (!isCompatible(t, value)) {
-				return raiseMismatchedVarTypeError((Runtime *)this);
-			}
+			Type t = *(TypeId *)*rawStackPtr;
 
 			switch (t.typeId) {
 				case TypeId::I8:
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
 					*((int8_t *)rawDataPtr) = value.getI8();
 					break;
 				case TypeId::I16:
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
 					*((int16_t *)rawDataPtr) = value.getI16();
 					break;
 				case TypeId::I32:
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
 					*((int32_t *)rawDataPtr) = value.getI32();
 					break;
 				case TypeId::I64:
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
 					*((int64_t *)rawDataPtr) = value.getI64();
 					break;
 				case TypeId::U8:
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
 					*((uint8_t *)rawDataPtr) = value.getU8();
 					break;
 				case TypeId::U16:
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
 					*((uint16_t *)rawDataPtr) = value.getU16();
 					break;
 				case TypeId::U32:
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
 					*((uint32_t *)rawDataPtr) = value.getU32();
 					break;
 				case TypeId::U64:
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
 					*((uint64_t *)rawDataPtr) = value.getU64();
 					break;
 				case TypeId::F32:
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
 					*((float *)rawDataPtr) = value.getF32();
 					break;
 				case TypeId::F64:
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
 					*((double *)rawDataPtr) = value.getF64();
 					break;
 				case TypeId::Bool:
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
 					*((bool *)rawDataPtr) = value.getBool();
 					break;
 				case TypeId::String:
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((Object **)rawDataPtr) = value.getEntityRef().asObject.instanceObject;
+					break;
 				case TypeId::Instance:
 				case TypeId::Array:
+					memcpy(&t.exData, rawStackPtr - sizeof(TypeExData), sizeof(TypeExData));
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
 					*((Object **)rawDataPtr) = value.getEntityRef().asObject.instanceObject;
 					break;
 				default:
@@ -559,120 +556,107 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 			break;
 		}
 		case ObjectRefKind::CoroutineLocalVarRef: {
+			char *basePtr;
+
 			if (entityRef.asCoroutineLocalVar.coroutine->curContext) {
-				const char *const rawStackPtr = calcStackAddr(entityRef.asCoroutineLocalVar.coroutine->curContext->dataStack,
+				basePtr = calcStackAddr(entityRef.asCoroutineLocalVar.coroutine->curContext->dataStack,
 					SLAKE_STACK_MAX,
 					entityRef.asCoroutineLocalVar.stackOff + entityRef.asCoroutineLocalVar.coroutine->curMajorFrame->stackBase);
-				const char *const rawDataPtr = rawStackPtr + sizeof(Type);
-
-				Type t;
-				memcpy(&t, rawStackPtr, sizeof(Type));
-
-				if (!isCompatible(t, value)) {
-					return raiseMismatchedVarTypeError((Runtime *)this);
-				}
-
-				switch (t.typeId) {
-					case TypeId::I8:
-						*((int8_t *)rawDataPtr) = value.getI8();
-						break;
-					case TypeId::I16:
-						*((int16_t *)rawDataPtr) = value.getI16();
-						break;
-					case TypeId::I32:
-						*((int32_t *)rawDataPtr) = value.getI32();
-						break;
-					case TypeId::I64:
-						*((int64_t *)rawDataPtr) = value.getI64();
-						break;
-					case TypeId::U8:
-						*((uint8_t *)rawDataPtr) = value.getU8();
-						break;
-					case TypeId::U16:
-						*((uint16_t *)rawDataPtr) = value.getU16();
-						break;
-					case TypeId::U32:
-						*((uint32_t *)rawDataPtr) = value.getU32();
-						break;
-					case TypeId::U64:
-						*((uint64_t *)rawDataPtr) = value.getU64();
-						break;
-					case TypeId::F32:
-						*((float *)rawDataPtr) = value.getF32();
-						break;
-					case TypeId::F64:
-						*((double *)rawDataPtr) = value.getF64();
-						break;
-					case TypeId::Bool:
-						*((bool *)rawDataPtr) = value.getBool();
-						break;
-					case TypeId::String:
-					case TypeId::Instance:
-					case TypeId::Array:
-						*((Object **)rawDataPtr) = value.getEntityRef().asObject.instanceObject;
-						break;
-					default:
-						// All fields should be checked during the instantiation.
-						std::terminate();
-				}
 			} else {
-				const char *const rawStackPtr = calcStackAddr(entityRef.asCoroutineLocalVar.coroutine->stackData,
+				basePtr = calcStackAddr(entityRef.asCoroutineLocalVar.coroutine->stackData,
 					entityRef.asCoroutineLocalVar.coroutine->lenStackData,
 					entityRef.asCoroutineLocalVar.stackOff);
-				const char *const rawDataPtr = rawStackPtr + sizeof(Type);
-
-				Type t;
-				memcpy(&t, rawStackPtr, sizeof(Type));
-
-				if (!isCompatible(t, value)) {
-					return raiseMismatchedVarTypeError((Runtime *)this);
-				}
-
-				switch (t.typeId) {
-					case TypeId::I8:
-						*((int8_t *)rawDataPtr) = value.getI8();
-						break;
-					case TypeId::I16:
-						*((int16_t *)rawDataPtr) = value.getI16();
-						break;
-					case TypeId::I32:
-						*((int32_t *)rawDataPtr) = value.getI32();
-						break;
-					case TypeId::I64:
-						*((int64_t *)rawDataPtr) = value.getI64();
-						break;
-					case TypeId::U8:
-						*((uint8_t *)rawDataPtr) = value.getU8();
-						break;
-					case TypeId::U16:
-						*((uint16_t *)rawDataPtr) = value.getU16();
-						break;
-					case TypeId::U32:
-						*((uint32_t *)rawDataPtr) = value.getU32();
-						break;
-					case TypeId::U64:
-						*((uint64_t *)rawDataPtr) = value.getU64();
-						break;
-					case TypeId::F32:
-						*((float *)rawDataPtr) = value.getF32();
-						break;
-					case TypeId::F64:
-						*((double *)rawDataPtr) = value.getF64();
-						break;
-					case TypeId::Bool:
-						*((bool *)rawDataPtr) = value.getBool();
-						break;
-					case TypeId::String:
-					case TypeId::Instance:
-					case TypeId::Array:
-						*((Object **)rawDataPtr) = value.getEntityRef().asObject.instanceObject;
-						break;
-					default:
-						// All fields should be checked during the instantiation.
-						std::terminate();
-				}
 			}
 
+			const char *const rawDataPtr = basePtr + sizeof(TypeId);
+
+			Type t = *(TypeId *)basePtr;
+
+			switch (t.typeId) {
+				case TypeId::I8:
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((int8_t *)rawDataPtr) = value.getI8();
+					break;
+				case TypeId::I16:
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((int16_t *)rawDataPtr) = value.getI16();
+					break;
+				case TypeId::I32:
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((int32_t *)rawDataPtr) = value.getI32();
+					break;
+				case TypeId::I64:
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((int64_t *)rawDataPtr) = value.getI64();
+					break;
+				case TypeId::U8:
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((uint8_t *)rawDataPtr) = value.getU8();
+					break;
+				case TypeId::U16:
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((uint16_t *)rawDataPtr) = value.getU16();
+					break;
+				case TypeId::U32:
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((uint32_t *)rawDataPtr) = value.getU32();
+					break;
+				case TypeId::U64:
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((uint64_t *)rawDataPtr) = value.getU64();
+					break;
+				case TypeId::F32:
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((float *)rawDataPtr) = value.getF32();
+					break;
+				case TypeId::F64:
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((double *)rawDataPtr) = value.getF64();
+					break;
+				case TypeId::Bool:
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((bool *)rawDataPtr) = value.getBool();
+					break;
+				case TypeId::String:
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((Object **)rawDataPtr) = value.getEntityRef().asObject.instanceObject;
+					break;
+				case TypeId::Instance:
+				case TypeId::Array:
+					memcpy(&t.exData, basePtr - sizeof(TypeExData), sizeof(TypeExData));
+					if (!isCompatible(t, value)) {
+						return raiseMismatchedVarTypeError((Runtime *)this);
+					}
+					*((Object **)rawDataPtr) = value.getEntityRef().asObject.instanceObject;
+					break;
+				default:
+					// All fields should be checked during the instantiation.
+					std::terminate();
+			}
 			break;
 		}
 		case ObjectRefKind::InstanceFieldRef: {

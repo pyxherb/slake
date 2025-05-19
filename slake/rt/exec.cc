@@ -298,17 +298,45 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_addLocalVar(Context *context
 
 	if (!context->stackAlloc(size))
 		return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(&globalHeapPoolAlloc));
-	stackOffset = context->stackTop;
 
-	Type *typeInfo = (Type *)context->stackAlloc(sizeof(Type));
+	TypeId *typeInfo = (TypeId *)context->stackAlloc(sizeof(TypeId));
 	if (!typeInfo)
 		return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(&globalHeapPoolAlloc));
-	memcpy(typeInfo, &type, sizeof(Type));
+	*typeInfo = type.typeId;
+
+	stackOffset = context->stackTop;
+
+	switch (type.typeId) {
+		case TypeId::I8:
+		case TypeId::I16:
+		case TypeId::I32:
+		case TypeId::I64:
+		case TypeId::U8:
+		case TypeId::U16:
+		case TypeId::U32:
+		case TypeId::U64:
+		case TypeId::F32:
+		case TypeId::F64:
+		case TypeId::Bool:
+		case TypeId::String:
+		case TypeId::Any:
+			break;
+		case TypeId::Instance:
+		case TypeId::GenericArg:
+		case TypeId::Array:
+		case TypeId::Ref: {
+			TypeExData *typeInfo = (TypeExData *)context->stackAlloc(sizeof(TypeExData));
+			if (!typeInfo)
+				return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(&globalHeapPoolAlloc));
+			memcpy(typeInfo, &type.exData, sizeof(TypeExData));
+			break;
+		}
+	}
 
 	if (frame->curCoroutine) {
-		objectRefOut = EntityRef::makeCoroutineLocalVarRef(frame->curCoroutine, context->stackTop - frame->stackBase);
+		objectRefOut = EntityRef::makeCoroutineLocalVarRef(frame->curCoroutine, stackOffset - frame->stackBase);
 	} else {
-		objectRefOut = EntityRef::makeLocalVarRef(context, context->stackTop);
+		objectRefOut = EntityRef::makeLocalVarRef(context, stackOffset);
 	}
 	return {};
 }

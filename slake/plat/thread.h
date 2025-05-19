@@ -151,13 +151,13 @@ namespace slake {
 		SLAKE_API AttachedExecutionThread(Runtime *associatedRuntime);
 		SLAKE_API ~AttachedExecutionThread();
 
-		virtual void dealloc() override;
+		SLAKE_API virtual void dealloc() override;
 
-		static AttachedExecutionThread *alloc(Runtime *associatedRuntime);
+		SLAKE_API static AttachedExecutionThread *alloc(Runtime *associatedRuntime);
 
-		virtual void start() override;
-		virtual void join() override;
-		virtual void kill() override;
+		SLAKE_API virtual void start() override;
+		SLAKE_API virtual void join() override;
+		SLAKE_API virtual void kill() override;
 	};
 
 	AttachedExecutionThread *createAttachedExecutionThreadForCurrentThread(Runtime *runtime, ContextObject *context, void *nativeStackBase, size_t nativeStackSize);
@@ -185,13 +185,13 @@ namespace slake {
 		SLAKE_API ExecutionThread(Runtime *associatedRuntime);
 		SLAKE_API ~ExecutionThread();
 
-		virtual void dealloc() override;
+		SLAKE_API virtual void dealloc() override;
 
-		static ExecutionThread *alloc(Runtime *associatedRuntime);
+		SLAKE_API static ExecutionThread *alloc(Runtime *associatedRuntime);
 
-		virtual void start() override;
-		virtual void join() override;
-		virtual void kill() override;
+		SLAKE_API virtual void start() override;
+		SLAKE_API virtual void join() override;
+		SLAKE_API virtual void kill() override;
 	};
 
 	ExecutionThread *createExecutionThread(Runtime *runtime, ContextObject *context, size_t nativeStackSize);

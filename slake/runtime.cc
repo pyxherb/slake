@@ -57,7 +57,10 @@ SLAKE_API size_t Runtime::sizeofType(const Type& type) {
 		case TypeId::String:
 		case TypeId::Instance:
 		case TypeId::Array:
-			return sizeof(void *);
+		case TypeId::Ref:
+			return sizeof(EntityRef);
+		case TypeId::Any:
+			return sizeof(Value);
 		default:
 			break;
 	}

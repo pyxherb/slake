@@ -6,12 +6,14 @@
 	#define SLAKE_DLLEXPORT __declspec(dllexport)
 	#define SLAKE_DLLIMPORT __declspec(dllimport)
 	#define SLAKE_FORCEINLINE __forceinline
+	#define SLAKE_NOINLINE __declspec(noinline)
 
 #elif defined(__GNUC__)
 
 	#define SLAKE_DLLEXPORT __attribute__((visibility("default")))
 	#define SLAKE_DLLIMPORT __attribute__((visibility("default")))
 	#define SLAKE_FORCEINLINE __attribute__((__always_inline__)) inline
+	#define SLAKE_NOINLINE 
 
 #endif
 

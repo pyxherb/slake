@@ -8,11 +8,11 @@ SLAKE_API ManagedThread::ManagedThread(Runtime *associatedRuntime, ThreadKind th
 SLAKE_API ManagedThread::~ManagedThread() {
 }
 
-void ExecutionThread::dealloc() {
+SLAKE_API void ExecutionThread::dealloc() {
 	peff::destroyAndRelease<ExecutionThread>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
-ExecutionThread *ExecutionThread::alloc(Runtime *associatedRuntime) {
+SLAKE_API ExecutionThread *ExecutionThread::alloc(Runtime *associatedRuntime) {
 	return peff::allocAndConstruct<ExecutionThread>(&associatedRuntime->globalHeapPoolAlloc, sizeof(std::max_align_t), associatedRuntime);
 }
 
@@ -47,10 +47,10 @@ SLAKE_API void AttachedExecutionThread::kill() {
 	}
 }
 
-void AttachedExecutionThread::dealloc() {
+SLAKE_API void AttachedExecutionThread::dealloc() {
 	peff::destroyAndRelease<AttachedExecutionThread>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
 }
 
-AttachedExecutionThread *AttachedExecutionThread::alloc(Runtime *associatedRuntime) {
+SLAKE_API AttachedExecutionThread *AttachedExecutionThread::alloc(Runtime *associatedRuntime) {
 	return peff::allocAndConstruct<AttachedExecutionThread>(&associatedRuntime->globalHeapPoolAlloc, sizeof(std::max_align_t), associatedRuntime);
 }

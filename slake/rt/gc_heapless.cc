@@ -480,19 +480,8 @@ rescan:
 		}
 	}
 
-	for (auto &i : managedThreads) {
-		switch (i.second->threadKind) {
-			case ThreadKind::AttachedExecutionThread: {
-				AttachedExecutionThread *t = (AttachedExecutionThread *)i.second.get();
-				context.pushObject(t->context);
-				break;
-			}
-			case ThreadKind::ExecutionThread: {
-				ExecutionThread *t = (ExecutionThread *)i.second.get();
-				context.pushObject(t->context);
-				break;
-			}
-		}
+	for (auto &i : managedThreadRunnables) {
+		context.pushObject(i.second->context.get());
 	}
 
 	if (!(_flags & _RT_DEINITING)) {

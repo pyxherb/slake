@@ -204,6 +204,8 @@ SLAKE_API InternalExceptionPointer Runtime::_createNewCoroutineMajorFrame(
 				coroutine->resumable.nRegs = (newMajorFrame->resumable.nRegs = ol->nRegisters);
 				newMajorFrame->offRegs = context->stackTop;
 				Value *regs = (Value *)context->stackAlloc(sizeof(Value) * ol->nRegisters);
+				if (!regs)
+					return allocOutOfMemoryErrorIfAllocFailed(StackOverflowError::alloc(&globalHeapPoolAlloc));
 				for (size_t i = 0; i < ol->nRegisters; ++i)
 					regs[i] = Value(ValueType::Undefined);
 				break;
@@ -1963,130 +1965,63 @@ SLAKE_API InternalExceptionPointer Runtime::execContext(ContextObject *context) 
 	const FnOverloadingObject *curFn;
 	MajorFrame *curMajorFrame;
 	InternalExceptionPointer exceptPtr;
-	ManagedThread *managedThread = managedThreads.at(currentThreadHandle()).get();
+	ExecutionRunnable *managedThread = managedThreadRunnables.at(currentThreadHandle());
 
-	switch (managedThread->threadKind) {
-		case ThreadKind::AttachedExecutionThread: {
-			while (context->_context.majorFrames.size() >= initialMajorFrameDepth) {
-				curMajorFrame = context->_context.majorFrames.back().get();
-				curFn = curMajorFrame->curFn;
+	while (context->_context.majorFrames.size() >= initialMajorFrameDepth) {
+		curMajorFrame = context->_context.majorFrames.back().get();
+		curFn = curMajorFrame->curFn;
 
-				if (!curFn) {
-					managedThreads.erase(currentThreadHandle());
-					break;
-				}
-
-				// Pause if the runtime is in GC
-				/*while (_flags & _RT_INGC)
-					yieldCurrentThread();*/
-
-				switch (curFn->overloadingKind) {
-					case FnOverloadingKind::Regular: {
-						RegularFnOverloadingObject *ol = (RegularFnOverloadingObject *)curFn;
-
-						bool isContextChanged = false;
-						while (!isContextChanged) {
-							if (curMajorFrame->resumable.curIns >=
-								ol->instructions.size()) {
-								// Raise out of fn body error.
-							}
-
-							// Interrupt execution if the thread is explicitly specified to be killed.
-							if (managedThread->status == ThreadStatus::Dead) {
-								return {};
-							}
-
-							if ((globalHeapPoolAlloc.szAllocated > _szComputedGcLimit)) {
-								gc();
-							}
-
-							const Instruction &ins = ol->instructions.at(curMajorFrame->resumable.curIns);
-
-							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _execIns(context, curMajorFrame, ins, isContextChanged));
-						}
-
-						break;
-					}
-					case FnOverloadingKind::Native: {
-						NativeFnOverloadingObject *ol = (NativeFnOverloadingObject *)curFn;
-
-						Value returnValue = ol->callback(
-							&context->getContext(),
-							curMajorFrame);
-						uint32_t returnValueOutReg = curMajorFrame->returnValueOutReg;
-						context->_context.leaveMajor();
-						if (returnValueOutReg != UINT32_MAX) {
-							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, context->_context.dataStack, curMajorFrame, returnValueOutReg, returnValue));
-						}
-
-						break;
-					}
-					default:
-						std::terminate();
-				}
-			}
+		if (!curFn) {
 			break;
 		}
-		case ThreadKind::ExecutionThread: {
-			while (context->_context.majorFrames.size() >= initialMajorFrameDepth) {
-				curMajorFrame = context->_context.majorFrames.back().get();
-				curFn = curMajorFrame->curFn;
 
-				if (!curFn) {
-					managedThreads.erase(currentThreadHandle());
-					break;
+		// Pause if the runtime is in GC
+		/*while (_flags & _RT_INGC)
+			yieldCurrentThread();*/
+
+		switch (curFn->overloadingKind) {
+			case FnOverloadingKind::Regular: {
+				RegularFnOverloadingObject *ol = (RegularFnOverloadingObject *)curFn;
+
+				bool isContextChanged = false;
+				while (!isContextChanged) {
+					if (curMajorFrame->resumable.curIns >=
+						ol->instructions.size()) {
+						// Raise out of fn body error.
+					}
+
+					// Interrupt execution if the thread is explicitly specified to be killed.
+					if (managedThread->status == ThreadStatus::Dead) {
+						return {};
+					}
+
+					if ((globalHeapPoolAlloc.szAllocated > _szComputedGcLimit)) {
+						gc();
+					}
+
+					const Instruction &ins = ol->instructions.at(curMajorFrame->resumable.curIns);
+
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _execIns(context, curMajorFrame, ins, isContextChanged));
 				}
 
-				// Pause if the runtime is in GC
-				while (_flags & _RT_INGC)
-					yieldCurrentThread();
-
-				switch (curFn->overloadingKind) {
-					case FnOverloadingKind::Regular: {
-						RegularFnOverloadingObject *ol = (RegularFnOverloadingObject *)curFn;
-
-						bool isContextChanged = false;
-						while (!isContextChanged) {
-							if (curMajorFrame->resumable.curIns >=
-								ol->instructions.size()) {
-								// Raise out of fn body error.
-							}
-
-							// Interrupt execution if the thread is explicitly specified to be killed.
-							if (managedThread->status == ThreadStatus::Dead) {
-								return {};
-							}
-
-							if ((globalHeapPoolAlloc.szAllocated > _szComputedGcLimit)) {
-								gc();
-							}
-
-							const Instruction &ins = ol->instructions.at(curMajorFrame->resumable.curIns);
-
-							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _execIns(context, curMajorFrame, ins, isContextChanged));
-						}
-
-						break;
-					}
-					case FnOverloadingKind::Native: {
-						NativeFnOverloadingObject *ol = (NativeFnOverloadingObject *)curFn;
-
-						Value returnValue = ol->callback(
-							&context->getContext(),
-							curMajorFrame);
-						uint32_t returnValueOutReg = curMajorFrame->returnValueOutReg;
-						context->_context.leaveMajor();
-						if (returnValueOutReg != UINT32_MAX) {
-							SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, context->_context.dataStack, curMajorFrame, returnValueOutReg, returnValue));
-						}
-
-						break;
-					}
-					default:
-						std::terminate();
-				}
+				break;
 			}
-			break;
+			case FnOverloadingKind::Native: {
+				NativeFnOverloadingObject *ol = (NativeFnOverloadingObject *)curFn;
+
+				Value returnValue = ol->callback(
+					&context->getContext(),
+					curMajorFrame);
+				uint32_t returnValueOutReg = curMajorFrame->returnValueOutReg;
+				context->_context.leaveMajor();
+				if (returnValueOutReg != UINT32_MAX) {
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, context->_context.dataStack, curMajorFrame, returnValueOutReg, returnValue));
+				}
+
+				break;
+			}
+			default:
+				std::terminate();
 		}
 	}
 
@@ -2112,17 +2047,25 @@ SLAKE_API InternalExceptionPointer Runtime::execFn(
 		SLAKE_RETURN_IF_EXCEPT(_createNewMajorFrame(&context->_context, thisObject, overloading, args, nArgs, 0));
 	}
 
-	AttachedExecutionThread *executionThread = createAttachedExecutionThreadForCurrentThread(this, context.get(), nativeStackBaseCurrentPtr, nativeStackSize);
-	if (!executionThread) {
-		// Note: we use out of memory error as the placeholder, it originally should be ThreadCreationFailedError.
+	ExecutionRunnable runnable;
+
+	runnable.context = context;
+
+	if (!managedThreadRunnables.insert(currentThreadHandle(), &runnable)) {
 		return OutOfMemoryError::alloc();
 	}
 
-	managedThreads.insert({ executionThread->nativeThreadHandle, std::unique_ptr<ManagedThread, util::DeallocableDeleter<ManagedThread>>(executionThread) });
+	NativeThreadHandle threadHandle = currentThreadHandle();
 
-	InternalExceptionPointer exceptPtr = execContext(context.get());
+	peff::ScopeGuard removeManagedThreadRunnablesGuard([this, threadHandle]() noexcept {
+		managedThreadRunnables.remove(threadHandle);
+	});
 
-	return std::move(exceptPtr);
+	runnable.run();
+
+	InternalExceptionPointer exceptPtr = std::move(runnable.exceptPtr);
+
+	return exceptPtr;
 }
 
 [[nodiscard]] SLAKE_API InternalExceptionPointer Runtime::execFnInAotFn(
@@ -2139,7 +2082,7 @@ SLAKE_API InternalExceptionPointer Runtime::execFn(
 
 	InternalExceptionPointer exceptPtr = execContext(context);
 
-	return std::move(exceptPtr);
+	return exceptPtr;
 }
 
 SLAKE_API InternalExceptionPointer Runtime::execFnWithSeparatedExecutionThread(
@@ -2162,18 +2105,27 @@ SLAKE_API InternalExceptionPointer Runtime::execFnWithSeparatedExecutionThread(
 		contextOut = context;
 	}
 
-	ExecutionThread *executionThread = createExecutionThread(this, context.get(), SLAKE_NATIVE_STACK_MAX);
-	if (!executionThread) {
-		// Note: we use out of memory error as the placeholder, it originally should be ThreadCreationFailedError.
+	ExecutionRunnable runnable;
+
+	runnable.context = context;
+
+	if (!managedThreadRunnables.insert(currentThreadHandle(), &runnable)) {
 		return OutOfMemoryError::alloc();
 	}
 
-	managedThreads.insert({ executionThread->nativeThreadHandle, std::unique_ptr<ManagedThread, util::DeallocableDeleter<ManagedThread>>(executionThread) });
-	executionThread->join();
+	NativeThreadHandle threadHandle = currentThreadHandle();
 
-	InternalExceptionPointer exceptPtr = std::move(executionThread->exceptionPtr);
+	peff::ScopeGuard removeManagedThreadRunnablesGuard([this, threadHandle]() noexcept {
+		managedThreadRunnables.remove(threadHandle);
+	});
 
-	return std::move(exceptPtr);
+	std::unique_ptr<Thread, peff::DeallocableDeleter<Thread>> t(Thread::alloc(&globalHeapPoolAlloc, &runnable, SLAKE_NATIVE_STACK_MAX));
+
+	t->join();
+
+	InternalExceptionPointer exceptPtr = std::move(runnable.exceptPtr);
+
+	return exceptPtr;
 }
 
 SLAKE_API InternalExceptionPointer Runtime::createCoroutineInstance(
@@ -2226,22 +2178,37 @@ SLAKE_API InternalExceptionPointer Runtime::resumeCoroutine(
 	MajorFrame *topMajorFrame = context->_context.majorFrames.back().get();
 	SLAKE_RETURN_IF_EXCEPT(_createNewCoroutineMajorFrame(&context->_context, coroutine, 0));
 
-	AttachedExecutionThread *executionThread = createAttachedExecutionThreadForCurrentThread(this, context, nativeStackBaseCurrentPtr, nativeStackSize);
-	if (!executionThread) {
-		// Note: we use out of memory error as the placeholder, it originally should be ThreadCreationFailedError.
-		return OutOfMemoryError::alloc();
+	{
+		peff::ScopeGuard leaveMajorFrameGuard([this, context]() noexcept {
+			context->_context.leaveMajor();
+		});
+
+		ExecutionRunnable runnable;
+
+		runnable.context = context;
+
+		{
+			if (!managedThreadRunnables.insert(currentThreadHandle(), &runnable)) {
+				return OutOfMemoryError::alloc();
+			}
+
+			NativeThreadHandle threadHandle = currentThreadHandle();
+
+			peff::ScopeGuard removeManagedThreadRunnablesGuard([this, threadHandle]() noexcept {
+				managedThreadRunnables.remove(threadHandle);
+			});
+
+			runnable.run();
+		}
+
+		InternalExceptionPointer exceptPtr = std::move(runnable.exceptPtr);
+
+		if (exceptPtr) {
+			return exceptPtr;
+		}
+
+		resultOut = ((const Value *)calcStackAddr(context->_context.dataStack, SLAKE_STACK_MAX, topMajorFrame->offRegs))[0];
 	}
-
-	managedThreads.insert({ executionThread->nativeThreadHandle, std::unique_ptr<ManagedThread, util::DeallocableDeleter<ManagedThread>>(executionThread) });
-
-	InternalExceptionPointer exceptPtr = execContext(context);
-
-	if (exceptPtr) {
-		return exceptPtr;
-	}
-
-	resultOut = ((const Value *)calcStackAddr(context->_context.dataStack, SLAKE_STACK_MAX, topMajorFrame->offRegs))[0];
-	context->_context.leaveMajor();
 
 	return {};
 }

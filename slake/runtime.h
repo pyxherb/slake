@@ -216,7 +216,7 @@ namespace slake {
 		std::map<std::thread::id, ContextObject *> activeContexts;
 
 		/// @brief Thread IDs of threads which are executing destructors.
-		std::map<NativeThreadHandle, std::unique_ptr<ManagedThread, util::DeallocableDeleter<ManagedThread>>> managedThreads;
+		peff::Map<NativeThreadHandle, ExecutionRunnable *> managedThreadRunnables;
 
 		SLAKE_API Runtime(Runtime &) = delete;
 		SLAKE_API Runtime(Runtime &&) = delete;

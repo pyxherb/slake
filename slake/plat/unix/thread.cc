@@ -2,77 +2,9 @@
 
 using namespace slake;
 
-SLAKE_API Mutex::Mutex() {}
-SLAKE_API Mutex::~Mutex() {
-	if (isValid) {
-		pthread_mutex_destroy(&nativeHandle);
-	}
-}
-
-bool Mutex::init() {
-	if (pthread_mutex_init(&nativeHandle, nullptr))
-		return false;
-	isValid = true;
-	return true;
-}
-
-SLAKE_API void Mutex::lock() {
-	assert(isValid);
-	pthread_mutex_lock(&nativeHandle);
-}
-
-SLAKE_API bool Mutex::tryLock() {
-	assert(isValid);
-	pthread_mutex_trylock(&nativeHandle);
-}
-
-SLAKE_API void Mutex::unlock() {
-	assert(isValid);
-	pthread_mutex_unlock(&nativeHandle);
-}
-
-SLAKE_API Cond::Cond() {}
-SLAKE_API Cond::~Cond() {
-	if (isValid) {
-		pthread_cond_destroy(&nativeHandle);
-	}
-}
-
-SLAKE_API bool Cond::init() {
-	if (!internalMutex.init())
-		return false;
-	if (pthread_cond_init(&nativeHandle, nullptr))
-		return false;
-	isValid = true;
-	return true;
-}
-
-SLAKE_API void Cond::wait() {
-	assert(isValid);
-	pthread_cond_wait(&nativeHandle, &internalMutex.nativeHandle);
-}
-
-SLAKE_API void Cond::notify() {
-	assert(isValid);
-	pthread_cond_signal(&nativeHandle);
-}
-
-SLAKE_API AttachedExecutionThread::AttachedExecutionThread(Runtime *associatedRuntime) : ManagedThread(associatedRuntime, ThreadKind::AttachedExecutionThread) {
-}
-
-SLAKE_API AttachedExecutionThread::~AttachedExecutionThread() {
-}
-
 AttachedExecutionThread *slake::createAttachedExecutionThreadForCurrentThread(Runtime *runtime, ContextObject *context, void *nativeStackBaseCurrentPtr, size_t nativeStackSize) {
 	std::unique_ptr<AttachedExecutionThread, util::DeallocableDeleter<AttachedExecutionThread>>
 		executionThread(AttachedExecutionThread::alloc(runtime));
-
-	if (!executionThread->_initialRunMutex.init())
-		return nullptr;
-	if (!executionThread->_initCond.init())
-		return nullptr;
-	if (!executionThread->_doneMutex.init())
-		return nullptr;
 
 	executionThread->nativeThreadHandle = currentThreadHandle();
 
@@ -157,13 +89,6 @@ void ExecutionThread::kill() {
 ExecutionThread *slake::createExecutionThread(Runtime *runtime, ContextObject *context, size_t nativeStackSize) {
 	std::unique_ptr<ExecutionThread, util::DeallocableDeleter<ExecutionThread>>
 		executionThread(ExecutionThread::alloc(runtime));
-
-	if (!executionThread->_initialRunMutex.init())
-		return nullptr;
-	if (!executionThread->_initCond.init())
-		return nullptr;
-	if (!executionThread->_doneMutex.init())
-		return nullptr;
 
 	executionThread->_initialRunMutex.lock();
 

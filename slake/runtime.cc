@@ -30,7 +30,7 @@ SLAKE_API void CountablePoolAlloc::release(void *p, size_t size, size_t alignmen
 	szAllocated -= size;
 }
 
-SLAKE_API size_t Runtime::sizeofType(const Type& type) {
+SLAKE_API size_t Runtime::sizeofType(const Type &type) {
 	switch (type.typeId) {
 		case TypeId::I8:
 			return sizeof(int8_t);
@@ -141,7 +141,8 @@ SLAKE_API Runtime::Runtime(peff::Alloc *selfAllocator, peff::Alloc *upstream, Ru
 	  _flags(flags | _RT_INITING),
 	  _genericCacheLookupTable(&globalHeapPoolAlloc),
 	  _genericCacheDir(&globalHeapPoolAlloc),
-	  createdObjects(&globalHeapPoolAlloc) {
+	  createdObjects(&globalHeapPoolAlloc),
+	  managedThreadRunnables(&globalHeapPoolAlloc) {
 	_flags &= ~_RT_INITING;
 }
 
@@ -150,7 +151,7 @@ SLAKE_API Runtime::~Runtime() {
 	_genericCacheLookupTable.clear();
 
 	activeContexts.clear();
-	managedThreads.clear();
+	managedThreadRunnables.clear();
 
 	_flags |= _RT_DEINITING;
 
@@ -182,7 +183,7 @@ SLAKE_API bool Runtime::constructAt(Runtime *dest, peff::Alloc *upstream, Runtim
 SLAKE_API Runtime *Runtime::alloc(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags) {
 	Runtime *runtime = nullptr;
 
-	if (!(runtime = (Runtime*)selfAllocator->alloc(sizeof(Runtime), alignof(Runtime)))) {
+	if (!(runtime = (Runtime *)selfAllocator->alloc(sizeof(Runtime), alignof(Runtime)))) {
 		return nullptr;
 	}
 

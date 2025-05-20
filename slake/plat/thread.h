@@ -20,27 +20,16 @@ namespace slake {
 	public:
 #if _WIN32
 		CRITICAL_SECTION nativeHandle;
-		bool isValid = false;
 #elif __unix__
 		pthread_mutex_t nativeHandle;
-		bool isValid = false;
 #endif
 
 		SLAKE_API Mutex();
 		SLAKE_API ~Mutex();
 
-		SLAKE_API bool init();
-
 		SLAKE_API void lock();
 		SLAKE_API bool tryLock();
 		SLAKE_API void unlock();
-
-		SLAKE_FORCEINLINE operator bool() {
-#if _WIN32
-#elif __unix__
-			return isValid;
-#endif
-		}
 	};
 
 	struct MutexGuard final {
@@ -76,27 +65,16 @@ namespace slake {
 #if _WIN32
 		CRITICAL_SECTION criticalSection;
 		CONDITION_VARIABLE nativeHandle;
-		bool isValid = false;
 #elif __unix__
 		Mutex internalMutex;
 		pthread_cond_t nativeHandle;
-		bool isValid = false;
 #endif
 
 		SLAKE_API Cond();
 		SLAKE_API ~Cond();
 
-		SLAKE_API bool init();
-
 		SLAKE_API void wait();
 		SLAKE_API void notify();
-
-		SLAKE_FORCEINLINE operator bool() {
-#if _WIN32
-#elif __unix__
-			return isValid;
-#endif
-		}
 	};
 
 	enum class ThreadKind : uint8_t {
@@ -118,54 +96,15 @@ namespace slake {
 		Dead
 	};
 
-	class ManagedThread {
+	class Runnable {
 	public:
-		Runtime *associatedRuntime;
-		ThreadKind threadKind;
-		NativeThreadHandle nativeThreadHandle;
-		ThreadStatus status = ThreadStatus::Ready;
-
-		SLAKE_API ManagedThread(Runtime *associatedRuntime, ThreadKind threadKind);
-		SLAKE_API ~ManagedThread();
-
-		virtual void dealloc() = 0;
-
-		virtual void start() = 0;
-		virtual void join() = 0;
-		virtual void kill() = 0;
+		virtual void run() = 0;
 	};
 
-	class AttachedExecutionThread : public ManagedThread {
+	class Thread final {
 	private:
 		Mutex _initialRunMutex;
-		Cond _initCond;
 		Mutex _doneMutex;
-
-		friend AttachedExecutionThread *createAttachedExecutionThreadForCurrentThread(Runtime *runtime, ContextObject *context, void *nativeStackBaseCurrentPtr, size_t nativeStackSize);
-
-	public:
-		ContextObject *context = nullptr;
-		void *nativeExecStackBase;
-		size_t nativeExecStackSize;
-
-		SLAKE_API AttachedExecutionThread(Runtime *associatedRuntime);
-		SLAKE_API ~AttachedExecutionThread();
-
-		SLAKE_API virtual void dealloc() override;
-
-		SLAKE_API static AttachedExecutionThread *alloc(Runtime *associatedRuntime);
-
-		SLAKE_API virtual void start() override;
-		SLAKE_API virtual void join() override;
-		SLAKE_API virtual void kill() override;
-	};
-
-	AttachedExecutionThread *createAttachedExecutionThreadForCurrentThread(Runtime *runtime, ContextObject *context, void *nativeStackBase, size_t nativeStackSize);
-
-	class ExecutionThread : public ManagedThread {
-	private:
-		Mutex _initialRunMutex;
-		Cond _initCond;
 
 #if _WIN32
 		static DWORD WINAPI _threadWrapperProc(LPVOID lpThreadParameter);
@@ -174,27 +113,36 @@ namespace slake {
 		static void *_threadWrapperProc(void *arg);
 #endif
 
-		friend ExecutionThread *createExecutionThread(Runtime *runtime, ContextObject *context, size_t nativeStackSize);
-
 	public:
-		ContextObject *context = nullptr;
-		void *nativeExecStackBase = nullptr;
-		size_t nativeExecStackSize = 0;
-		InternalExceptionPointer exceptionPtr;
+		peff::RcObjectPtr<peff::Alloc> selfAllocator;
+		NativeThreadHandle nativeThreadHandle;
+		Runnable *runnable;
 
-		SLAKE_API ExecutionThread(Runtime *associatedRuntime);
-		SLAKE_API ~ExecutionThread();
+		SLAKE_API Thread(peff::Alloc *selfAllocator, Runnable *runnable);
+		SLAKE_API ~Thread();
 
-		SLAKE_API virtual void dealloc() override;
+		SLAKE_API void start();
+		SLAKE_API void join();
 
-		SLAKE_API static ExecutionThread *alloc(Runtime *associatedRuntime);
+		SLAKE_API void dealloc();
 
-		SLAKE_API virtual void start() override;
-		SLAKE_API virtual void join() override;
-		SLAKE_API virtual void kill() override;
+		SLAKE_API static Thread *alloc(peff::Alloc *selfAllocator, Runnable *runnable, size_t stackSize);
 	};
 
-	ExecutionThread *createExecutionThread(Runtime *runtime, ContextObject *context, size_t nativeStackSize);
+	class ExecutionRunnable : public Runnable {
+	public:
+		Thread *thread = nullptr;
+		HostObjectRef<ContextObject> context;
+		void *nativeStackBase = nullptr;
+		size_t nativeStackSize = 0;
+		InternalExceptionPointer exceptPtr;
+		ThreadStatus status = ThreadStatus::Ready;
+
+		SLAKE_API ExecutionRunnable();
+
+		SLAKE_API virtual void run() override;
+	};
+
 	NativeThreadHandle currentThreadHandle();
 	void yieldCurrentThread();
 

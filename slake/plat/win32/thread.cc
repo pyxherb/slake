@@ -46,6 +46,8 @@ SLAKE_API Thread* Thread::alloc(peff::Alloc* selfAllocator, Runnable* runnable, 
 			 0)) == NULL) {
 		return nullptr;
 	}
+
+	return executionThread.release();
 }
 
 NativeThreadHandle slake::currentThreadHandle() {

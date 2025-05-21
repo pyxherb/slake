@@ -109,7 +109,6 @@ namespace slake {
 #if _WIN32
 		static DWORD WINAPI _threadWrapperProc(LPVOID lpThreadParameter);
 #elif __unix__
-		Mutex _doneMutex;
 		static void *_threadWrapperProc(void *arg);
 #endif
 

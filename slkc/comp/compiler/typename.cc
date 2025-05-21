@@ -1,4 +1,5 @@
 #include "../compiler.h"
+#include <climits>
 
 using namespace slkc;
 

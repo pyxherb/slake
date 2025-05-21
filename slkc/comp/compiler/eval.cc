@@ -2,7 +2,7 @@
 
 using namespace slkc;
 
-template<typename T, typename E, typename SetData = E::SetData>
+template<typename T, typename E, typename SetData = typename E::SetData>
 std::optional<CompilationError> _doSimpleIntLiteralCast(
 	CompileContext* compileContext,
 	peff::SharedPtr<ExprNode> src,
@@ -302,7 +302,7 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 				default:
 					exprOut = {};
 			}
-			
+
 			break;
 		}
 		case ExprKind::Wrapper: {

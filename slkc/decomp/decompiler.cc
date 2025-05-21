@@ -9,7 +9,7 @@ SLKC_API DumpWriter::~DumpWriter() {
 }
 
 #define MNEMONIC_NAME_CASE(name) \
-	case slake::Opcode::##name:  \
+	case slake::Opcode::name:  \
 		return #name;
 
 SLKC_API const char *slkc::getMnemonicName(slake::Opcode opcode) {

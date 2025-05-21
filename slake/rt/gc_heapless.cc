@@ -522,7 +522,7 @@ rescan:
 		}
 	}
 
-	for (auto &i : managedThreadRunnables) {
+	for (auto i : managedThreadRunnables) {
 		context.pushObject(i.second->context.get());
 	}
 

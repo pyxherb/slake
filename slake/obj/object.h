@@ -73,7 +73,6 @@ namespace slake {
 			struct {
 				ObjectGCStatus gcStatus;
 				Object *nextWalkable; // New reachable objects
-				Object *nextInstance;
 				InstanceObject *prevDestructible;
 				InstanceObject *nextDestructible;
 
@@ -81,9 +80,6 @@ namespace slake {
 
 				Object *nextUnwalked;
 				Object *prevUnwalked;
-
-				Object *nextNewObject;
-				Object *prevNewObject;
 			} heapless;
 		} gcInfo;
 

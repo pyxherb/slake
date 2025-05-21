@@ -2,51 +2,6 @@
 
 using namespace slake;
 
-SLAKE_API void Runtime::GCHeaplessWalkContext::pushObject(Object *object) {
-	if (!object)
-		return;
-	switch (object->gcInfo.heapless.gcStatus) {
-		case ObjectGCStatus::Unwalked:
-			object->gcInfo.heapless.gcStatus = ObjectGCStatus::ReadyToWalk;
-			object->gcInfo.heapless.next = walkableList;
-			walkableList = object;
-			break;
-		case ObjectGCStatus::ReadyToWalk:
-			break;
-		case ObjectGCStatus::Walked:
-			break;
-	}
-}
-
-SLAKE_API void Runtime::GCHeaplessWalkContext::pushInstanceObject(Object *object) {
-	if (!object)
-		return;
-	switch (object->gcInfo.heapless.gcStatus) {
-		case ObjectGCStatus::Unwalked: {
-			InstanceObject *instance = (InstanceObject *)object;
-
-			if (auto mt = instance->_class->cachedInstantiatedMethodTable; mt) {
-				if (mt->destructors.size()) {
-					if (!(object->_flags & VF_DESTRUCTED)) {
-						object->gcInfo.heapless.nextDestructible = destructibleList;
-						destructibleList = (InstanceObject *)object;
-						pushObject(object);
-						pushObject(instance->_class);
-					}
-				}
-			}
-
-			object->gcInfo.heapless.nextInstance = instanceList;
-			instanceList = object;
-			break;
-		}
-		case ObjectGCStatus::ReadyToWalk:
-			break;
-		case ObjectGCStatus::Walked:
-			break;
-	}
-}
-
 SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, MethodTable *methodTable) {
 	if (!methodTable)
 		return;
@@ -139,7 +94,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, const Va
 					context.pushObject(entityRef.asObjectField.instanceObject);
 					break;
 				case ObjectRefKind::LocalVarRef:
-					_gcWalkHeapless(context, entityRef.asCoroutineLocalVar.coroutine);
+					context.pushObject(entityRef.asCoroutineLocalVar.coroutine);
 					_gcWalkHeapless(context, readVarUnsafe(entityRef));
 					break;
 				case ObjectRefKind::CoroutineLocalVarRef:
@@ -148,7 +103,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, const Va
 				case ObjectRefKind::ArgRef:
 					break;
 				case ObjectRefKind::CoroutineArgRef:
-					_gcWalkHeapless(context, entityRef.asCoroutineArg.coroutine);
+					context.pushObject(entityRef.asCoroutineArg.coroutine);
 					break;
 			}
 			break;
@@ -168,6 +123,35 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, const Va
 SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *v) {
 	if (!v)
 		return;
+
+	if (v->gcInfo.heapless.nextUnwalked) {
+		if (v == context.unwalkedList) {
+			context.unwalkedList = v->gcInfo.heapless.nextUnwalked;
+		}
+		v->gcInfo.heapless.nextUnwalked->gcInfo.heapless.prevUnwalked = v->gcInfo.heapless.prevUnwalked;
+	}
+	if (v->gcInfo.heapless.prevUnwalked) {
+		if (v == context.unwalkedList) {
+			context.unwalkedList = v->gcInfo.heapless.prevUnwalked;
+		}
+		v->gcInfo.heapless.prevUnwalked->gcInfo.heapless.nextUnwalked = v->gcInfo.heapless.nextUnwalked;
+	}
+
+	if (v == destructibleList) {
+		destructibleList = v->gcInfo.heapless.nextDestructible;
+	}
+	if (v->gcInfo.heapless.nextDestructible) {
+		if (v == context.destructibleList) {
+			context.destructibleList = v->gcInfo.heapless.nextDestructible;
+		}
+		v->gcInfo.heapless.nextDestructible->gcInfo.heapless.prevDestructible = v->gcInfo.heapless.prevDestructible;
+	}
+	if (v->gcInfo.heapless.prevDestructible) {
+		if (v == context.destructibleList) {
+			context.destructibleList = v->gcInfo.heapless.prevDestructible;
+		}
+		v->gcInfo.heapless.prevDestructible->gcInfo.heapless.nextDestructible = v->gcInfo.heapless.nextDestructible;
+	}
 
 	switch (v->gcInfo.heapless.gcStatus) {
 		case ObjectGCStatus::Unwalked:
@@ -191,8 +175,8 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 					auto value = (InstanceObject *)v;
 
 					context.pushObject(value->_class);
-					if (value->_class->cachedInstantiatedMethodTable) {
-						_gcWalkHeapless(context, value->_class->cachedInstantiatedMethodTable);
+					if (auto mt = value->_class->cachedInstantiatedMethodTable) {
+						_gcWalkHeapless(context, mt);
 					}
 
 					if (value->_class->cachedObjectLayout) {
@@ -209,6 +193,7 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 							}
 						}
 					}
+
 					break;
 				}
 				case ObjectKind::Array: {
@@ -399,8 +384,8 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Object *
 					}
 					for (auto &k : value->resumable.nextArgStack)
 						_gcWalkHeapless(context, k);
-					for (auto& k : value->resumable.minorFrames) {
-						for (auto& l : k.exceptHandlers) {
+					for (auto &k : value->resumable.minorFrames) {
+						for (auto &l : k.exceptHandlers) {
 							_gcWalkHeapless(context, l.type);
 						}
 					}
@@ -444,9 +429,26 @@ SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, char *da
 
 SLAKE_API void Runtime::_gcWalkHeapless(GCHeaplessWalkContext &context, Context &ctxt) {
 	bool isWalkableObjectDetected = false;
-	for(auto &i : ctxt.majorFrames) {
+	for (auto &i : ctxt.majorFrames) {
 		MajorFrame *majorFrame = i.get();
 		_gcWalkHeapless(context, majorFrame);
+	}
+}
+
+SLAKE_API void Runtime::GCHeaplessWalkContext::pushObject(Object *object) {
+	if (!object)
+		return;
+	switch (object->gcInfo.heapless.gcStatus) {
+		case ObjectGCStatus::Unwalked:
+			object->gcInfo.heapless.gcStatus = ObjectGCStatus::ReadyToWalk;
+			object->gcInfo.heapless.nextWalkable = walkableList;
+
+			walkableList = object;
+			break;
+		case ObjectGCStatus::ReadyToWalk:
+			break;
+		case ObjectGCStatus::Walked:
+			break;
 	}
 }
 
@@ -454,24 +456,64 @@ SLAKE_API void Runtime::_gcHeapless() {
 rescan:
 	GCHeaplessWalkContext context;
 
-	for (auto i : createdObjects) {
-		i->_flags |= VF_GCREADY;
-		i->gcInfo.heapless.gcStatus = ObjectGCStatus::Unwalked;
-		i->gcInfo.heapless.next = nullptr;
-		i->gcInfo.heapless.nextInstance = nullptr;
-		i->gcInfo.heapless.nextDestructible = nullptr;
+	{
+		Object *lastObject = nullptr;
+		InstanceObject *lastDestructibleInstanceObject = nullptr;
+		for (auto i : createdObjects) {
+			i->gcInfo.heapless.gcStatus = ObjectGCStatus::Unwalked;
+			i->gcInfo.heapless.nextWalkable = nullptr;
+
+			// Check if the object is referenced by the host, if so, exclude them into a separated list.
+			if (i->hostRefCount) {
+				i->gcInfo.heapless.nextHostRef = context.hostRefList;
+				context.hostRefList = i;
+			}
+
+			switch (i->getKind()) {
+				case ObjectKind::Instance: {
+					InstanceObject *value = (InstanceObject *)i;
+
+					if (!(value->_flags & VF_DESTRUCTED)) {
+						i->gcInfo.heapless.nextDestructible = lastDestructibleInstanceObject;
+						i->gcInfo.heapless.prevDestructible = nullptr;
+
+						if (lastDestructibleInstanceObject) {
+							lastDestructibleInstanceObject->gcInfo.heapless.prevDestructible = lastDestructibleInstanceObject;
+						}
+
+						context.destructibleList = value;
+
+						lastDestructibleInstanceObject = value;
+					} else {
+						i->gcInfo.heapless.nextDestructible = nullptr;
+						i->gcInfo.heapless.prevDestructible = nullptr;
+					}
+					break;
+				}
+				default:
+					i->gcInfo.heapless.nextDestructible = nullptr;
+					i->gcInfo.heapless.prevDestructible = nullptr;
+					break;
+			}
+
+			{
+				i->gcInfo.heapless.nextUnwalked = lastObject;
+				i->gcInfo.heapless.prevUnwalked = nullptr;
+				if (lastObject) {
+					lastObject->gcInfo.heapless.prevUnwalked = i;
+				}
+
+				context.unwalkedList = i;
+			}
+
+			lastObject = i;
+		}
 	}
 
-	for (auto i : createdObjects) {
-		if (i->hostRefCount) {
-			context.pushObject(i);
-		}
-		switch (i->getKind()) {
-			case ObjectKind::Instance: {
-				context.pushInstanceObject(i);
-				break;
-			}
-		}
+	for (Object *i = context.hostRefList, *next; i; i = next) {
+		next = i->gcInfo.heapless.nextHostRef;
+		context.pushObject(i);
+		i->gcInfo.heapless.nextHostRef = nullptr;
 	}
 
 	for (auto i = _genericCacheDir.begin(); i != _genericCacheDir.end(); ++i) {
@@ -498,7 +540,7 @@ rescan:
 		context.walkableList = nullptr;
 
 		while (i) {
-			Object *next = i->gcInfo.heapless.next;
+			Object *next = i->gcInfo.heapless.nextWalkable;
 			switch (i->gcInfo.heapless.gcStatus) {
 				case ObjectGCStatus::Unwalked:
 					assert(false);
@@ -510,29 +552,7 @@ rescan:
 					assert(false);
 					break;
 			}
-			i->gcInfo.heapless.next = nullptr;
 			i = next;
-		}
-	}
-
-	// Delete instance objects first before the class objects are destroyed.
-	for (Object *i = context.instanceList, *next; i; i = next) {
-		next = i->gcInfo.heapless.nextInstance;
-
-		switch (i->gcInfo.heapless.gcStatus) {
-			case ObjectGCStatus::Unwalked:
-				if (i->_flags & VF_GCREADY) {
-					i->dealloc();
-					createdObjects.remove(i);
-					continue;
-				}
-				break;
-			case ObjectGCStatus::ReadyToWalk:
-				assert(false);
-				break;
-			case ObjectGCStatus::Walked:
-				i->gcInfo.heapless.nextInstance = nullptr;
-				break;
 		}
 	}
 
@@ -542,24 +562,10 @@ rescan:
 	}
 
 	// Delete unreachable objects.
-	for (auto it = createdObjects.begin(); it != createdObjects.end();) {
-		Object *i = *it;
-		switch (i->gcInfo.heapless.gcStatus) {
-			case ObjectGCStatus::Unwalked:
-				if ((*it)->_flags & VF_GCREADY) {
-					(*it)->dealloc();
-					createdObjects.remove((it++));
-					continue;
-				}
-				break;
-			case ObjectGCStatus::ReadyToWalk:
-				assert(false);
-				break;
-			case ObjectGCStatus::Walked:
-				i->gcInfo.heapless.gcStatus = ObjectGCStatus::Unwalked;
-				break;
-		}
+	for (Object *i = context.unwalkedList, *next; i; i = next) {
+		next = i->gcInfo.heapless.nextUnwalked;
 
-		++it;
+		i->dealloc();
+		createdObjects.remove(i);
 	}
 }

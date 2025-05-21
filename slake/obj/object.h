@@ -72,9 +72,18 @@ namespace slake {
 		union {
 			struct {
 				ObjectGCStatus gcStatus;
-				Object *next;
+				Object *nextWalkable; // New reachable objects
 				Object *nextInstance;
+				InstanceObject *prevDestructible;
 				InstanceObject *nextDestructible;
+
+				Object *nextHostRef;
+
+				Object *nextUnwalked;
+				Object *prevUnwalked;
+
+				Object *nextNewObject;
+				Object *prevNewObject;
 			} heapless;
 		} gcInfo;
 

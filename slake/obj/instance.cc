@@ -14,9 +14,6 @@ SLAKE_API InstanceObject::InstanceObject(const InstanceObject &x) : Object(x) {
 }
 
 SLAKE_API InstanceObject::~InstanceObject() {
-	for (auto i : _class->cachedInstantiatedMethodTable->nativeDestructors)
-		i(this);
-
 	if (rawFieldData)
 		delete[] rawFieldData;
 

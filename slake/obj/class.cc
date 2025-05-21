@@ -48,8 +48,7 @@ SLAKE_API void ObjectLayout::dealloc() {
 SLAKE_API MethodTable::MethodTable(peff::Alloc *selfAllocator)
 	: selfAllocator(selfAllocator),
 	  methods(selfAllocator),
-	  destructors(selfAllocator),
-	  nativeDestructors(selfAllocator) {
+	  destructors(selfAllocator) {
 }
 
 SLAKE_API FnObject *MethodTable::getMethod(const std::string_view &name) {
@@ -77,9 +76,6 @@ SLAKE_API MethodTable *MethodTable::duplicate() {
 	if (!peff::copyAssign(newMethodTable->destructors, destructors)) {
 		return nullptr;
 	}
-	if (!peff::copyAssign(newMethodTable->nativeDestructors, nativeDestructors)) {
-		return nullptr;
-	}
 
 	return newMethodTable.release();
 }
@@ -96,8 +92,7 @@ SLAKE_API slake::ClassObject::ClassObject(Runtime *rt)
 	  mappedGenericArgs(&rt->globalHeapPoolAlloc),
 	  genericParams(&rt->globalHeapPoolAlloc),
 	  implTypes(&rt->globalHeapPoolAlloc),
-	  cachedFieldInitValues(&rt->globalHeapPoolAlloc),
-	  nativeDestructors(&rt->globalHeapPoolAlloc) {
+	  cachedFieldInitValues(&rt->globalHeapPoolAlloc) {
 }
 
 SLAKE_API ObjectKind ClassObject::getKind() const { return ObjectKind::Class; }
@@ -112,8 +107,7 @@ SLAKE_API ClassObject::ClassObject(const ClassObject &x, bool &succeededOut)
 	  mappedGenericArgs(&x.associatedRuntime->globalHeapPoolAlloc),
 	  genericParams(&x.associatedRuntime->globalHeapPoolAlloc),
 	  implTypes(&x.associatedRuntime->globalHeapPoolAlloc),
-	  cachedFieldInitValues(&x.associatedRuntime->globalHeapPoolAlloc),
-	  nativeDestructors(&x.associatedRuntime->globalHeapPoolAlloc) {
+	  cachedFieldInitValues(&x.associatedRuntime->globalHeapPoolAlloc) {
 	if (succeededOut) {
 		_flags = x._flags;
 

@@ -169,14 +169,14 @@ pub fn *main() -> i32 {
 
 	1 <=> 1;
 
-	let sum: i64 = 0, i: i64 = 0;
+	/*let sum: i64 = 0, i: i64 = 0;
 
 	while(i < 10000000) {
 		sum = sum + i;
 		i = i + 1;
 	}
 
-	extfns.print("Sum: ", sum, "\n");
+	extfns.print("Sum: ", sum, "\n");*/
 
 	return 114514;
 }

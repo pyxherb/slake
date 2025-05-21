@@ -53,7 +53,6 @@ namespace slake {
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
 		peff::HashMap<std::string_view, FnObject *> methods;
 		peff::List<FnOverloadingObject *> destructors;
-		peff::List<ClassNativeDestructor> nativeDestructors;
 
 		SLAKE_API MethodTable(peff::Alloc *selfAllocator);
 
@@ -79,7 +78,6 @@ namespace slake {
 
 		Type baseType;
 		peff::DynArray<Type> implTypes;				 // Implemented interfaces
-		peff::Set<ClassNativeDestructor> nativeDestructors;	 // Native destructors
 
 		MethodTable *cachedInstantiatedMethodTable = nullptr;
 		ObjectLayout *cachedObjectLayout = nullptr;

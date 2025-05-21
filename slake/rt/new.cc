@@ -76,11 +76,6 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 		}
 	}
 
-	for (auto i : cls->nativeDestructors) {
-		if (!methodTable->nativeDestructors.pushBack(+i))
-			return OutOfMemoryError::alloc();
-	}
-
 	cls->cachedInstantiatedMethodTable = methodTable.release();
 
 	return {};

@@ -154,11 +154,12 @@ namespace slake {
 
 		struct GCHeaplessWalkContext {
 			Object *walkableList = nullptr;
-			Object *instanceList = nullptr;
+			InstanceObject *unwalkedInstanceList = nullptr;
 			InstanceObject *destructibleList = nullptr;
+			Object *unwalkedList = nullptr;
+			Object *hostRefList = nullptr;
 
 			SLAKE_API void pushObject(Object *object);
-			SLAKE_API void pushInstanceObject(Object *object);
 		};
 
 		InstanceObject *destructibleList = nullptr;

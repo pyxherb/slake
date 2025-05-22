@@ -57,6 +57,8 @@ namespace slake {
 		Walked
 	};
 
+	struct GCWalkContext;
+
 	class Object {
 	public:
 		// The object will never be freed if its host reference count is not 0.
@@ -72,6 +74,7 @@ namespace slake {
 		union {
 			struct {
 				ObjectGCStatus gcStatus;
+				GCWalkContext *gcWalkContext;
 				Object *nextWalkable; // New reachable objects
 				InstanceObject *prevDestructible;
 				InstanceObject *nextDestructible;

@@ -142,7 +142,9 @@ SLAKE_API Runtime::Runtime(peff::Alloc *selfAllocator, peff::Alloc *upstream, Ru
 	  _genericCacheLookupTable(&globalHeapPoolAlloc),
 	  _genericCacheDir(&globalHeapPoolAlloc),
 	  createdObjects(&globalHeapPoolAlloc),
-	  managedThreadRunnables(&globalHeapPoolAlloc) {
+	  managedThreadRunnables(&globalHeapPoolAlloc),
+	  parallelGcThreads(&globalHeapPoolAlloc),
+	  parallelGcThreadRunnables(&globalHeapPoolAlloc) {
 	_flags &= ~_RT_INITING;
 }
 
@@ -156,6 +158,8 @@ SLAKE_API Runtime::~Runtime() {
 	_flags |= _RT_DEINITING;
 
 	gc();
+
+	_releaseParallelGcResources();
 
 	_rootObject = nullptr;
 
@@ -173,6 +177,9 @@ SLAKE_API bool Runtime::constructAt(Runtime *dest, peff::Alloc *upstream, Runtim
 		std::destroy_at<Runtime>(dest);
 	});
 	if (!(dest->_rootObject = ModuleObject::alloc(dest).get())) {
+		return false;
+	}
+	if (!(dest->_allocParallelGcResources())) {
 		return false;
 	}
 	dest->_rootObject->setAccess(ACCESS_STATIC);

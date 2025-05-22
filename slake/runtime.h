@@ -79,6 +79,32 @@ namespace slake {
 
 	typedef void (*UncaughtExceptionHandler)(InternalExceptionPointer &&exception);
 
+	struct GCWalkContext {
+	private:
+		Object *walkableList = nullptr;
+		std::mutex accessMutex;
+		InstanceObject *unwalkedInstanceList = nullptr;
+		InstanceObject *destructibleList = nullptr;
+		Object *unwalkedList = nullptr;
+
+	public:
+		static SLAKE_API void pushObject(Object *object);
+		static SLAKE_API void removeFromUnwalkedList(Object *v);
+		static SLAKE_API void removeFromDestructibleList(Object *v);
+
+		SLAKE_API bool isWalkableListEmpty();
+		SLAKE_API Object *getWalkableList();
+		SLAKE_API void pushWalkable(Object *walkableObject);
+
+		SLAKE_API Object *getUnwalkedList();
+		SLAKE_API void pushUnwalked(Object *walkableObject);
+
+		SLAKE_API InstanceObject *getDestructibleList();
+		SLAKE_API void pushDestructible(InstanceObject *v);
+
+		SLAKE_API void reset();
+	};
+
 	class Runtime final {
 	public:
 		struct GenericInstantiationContext {
@@ -152,28 +178,45 @@ namespace slake {
 		/// @param ins Instruction to be executed.
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _execIns(ContextObject *context, MajorFrame *curMajorFrame, const Instruction &ins, bool &isContextChangedOut) noexcept;
 
-		struct GCHeaplessWalkContext {
-			Object *walkableList = nullptr;
-			InstanceObject *unwalkedInstanceList = nullptr;
-			InstanceObject *destructibleList = nullptr;
-			Object *unwalkedList = nullptr;
-			Object *hostRefList = nullptr;
+		SLAKE_API void _gcWalk(MethodTable *methodTable);
+		SLAKE_API void _gcWalk(GenericParamList &genericParamList);
+		SLAKE_API void _gcWalk(const Type &type);
+		SLAKE_API void _gcWalk(const Value &i);
+		SLAKE_API void _gcWalk(Object *i);
+		SLAKE_API void _gcWalk(char *dataStack, MajorFrame *majorFrame);
+		SLAKE_API void _gcWalk(Context &i);
+		SLAKE_API void _gc();
 
-			SLAKE_API void pushObject(Object *object);
+		size_t nMaxGcThreads = 8;
+		peff::DynArray<std::unique_ptr<Thread, util::DeallocableDeleter<Thread>>> parallelGcThreads;
+
+		enum class ParallelGcThreadState : uint8_t {
+			Alive = 0,
+			NotifyTermination,
+			Terminated
 		};
 
-		InstanceObject *destructibleList = nullptr;
+		class ParallelGcThreadRunnable : public Runnable {
+		public:
+			Runtime *runtime;
+			GCWalkContext context;
+			bool isActive = false, isDone = false;
+			ParallelGcThreadState threadState = ParallelGcThreadState::Alive;
 
-		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, MethodTable *methodTable);
-		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, GenericParamList &genericParamList);
-		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, const Type &type);
-		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, const Value &i);
-		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, Object *i);
-		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, char *dataStack, MajorFrame *majorFrame);
-		SLAKE_API void _gcWalkHeapless(GCHeaplessWalkContext &context, Context &i);
-		SLAKE_API void _gcHeapless();
+			SLAKE_API ParallelGcThreadRunnable(Runtime *runtime);
+			SLAKE_API virtual void run() override;
 
-		SLAKE_API void _destructDestructibleObjects();
+			SLAKE_API void dealloc();
+		};
+
+		peff::DynArray<std::unique_ptr<ParallelGcThreadRunnable, peff::DeallocableDeleter<ParallelGcThreadRunnable>>> parallelGcThreadRunnables;
+
+		SLAKE_API bool _allocParallelGcResources();
+		SLAKE_API void _releaseParallelGcResources();
+
+		SLAKE_API void _gcParallelHeapless();
+
+		SLAKE_API void _destructDestructibleObjects(InstanceObject *destructibleList);
 
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(Type &type, GenericInstantiationContext &instantiationContext);
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(Value &value, GenericInstantiationContext &instantiationContext);

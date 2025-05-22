@@ -2,11 +2,13 @@
 
 using namespace slake;
 
-SLAKE_API void Runtime::_destructDestructibleObjects() {
+SLAKE_API void Runtime::_destructDestructibleObjects(InstanceObject *destructibleList) {
 	InternalExceptionPointer exception;
 
 	for (InstanceObject *i = destructibleList, *next; i; i = next) {
 		next = i->gcInfo.heapless.nextDestructible;
+
+		i->gcInfo.heapless.nextDestructible = nullptr;
 
 		destructibleList = next;
 
@@ -29,7 +31,7 @@ SLAKE_API void Runtime::gc() {
 
 	// TODO: This is a stupid way to make sure that all the destructible objects are destructed.
 	// Can we create a separate GC thread in advance and let it to execute them?
-	_gcHeapless();
+	_gcParallelHeapless();
 
 	_szMemUsedAfterLastGc = globalHeapPoolAlloc.szAllocated;
 	_szComputedGcLimit = _szMemUsedAfterLastGc + (_szMemUsedAfterLastGc >> 1);

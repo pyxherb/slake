@@ -11,9 +11,15 @@ SLAKE_API Cond::~Cond() {
 }
 
 SLAKE_API void Cond::wait() {
+	EnterCriticalSection(&criticalSection);
 	SleepConditionVariableCS(&nativeHandle, &criticalSection, INFINITE);
+	LeaveCriticalSection(&criticalSection);
 }
 
 SLAKE_API void Cond::notify() {
 	WakeConditionVariable(&nativeHandle);
+}
+
+SLAKE_API void Cond::notifyAll() {
+	WakeAllConditionVariable(&nativeHandle);
 }

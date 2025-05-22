@@ -75,6 +75,7 @@ namespace slake {
 
 		SLAKE_API void wait();
 		SLAKE_API void notify();
+		SLAKE_API void notifyAll();
 	};
 
 	enum class ThreadKind : uint8_t {

@@ -13,7 +13,7 @@ DWORD WINAPI Thread::_threadWrapperProc(LPVOID lpThreadParameter) {
 	return 0;
 }
 
-SLAKE_API Thread::Thread(peff::Alloc* selfAllocator, Runnable* runnable): selfAllocator(selfAllocator), nativeThreadHandle(nativeThreadHandle), runnable(runnable) {
+SLAKE_API Thread::Thread(peff::Alloc *selfAllocator, Runnable *runnable) : selfAllocator(selfAllocator), nativeThreadHandle(nativeThreadHandle), runnable(runnable) {
 }
 
 SLAKE_API Thread::~Thread() {}
@@ -31,9 +31,13 @@ SLAKE_API void Thread::dealloc() {
 	peff::destroyAndRelease<Thread>(selfAllocator.get(), this, alignof(Thread));
 }
 
-SLAKE_API Thread* Thread::alloc(peff::Alloc* selfAllocator, Runnable* runnable, size_t stackSize) {
+SLAKE_API Thread *Thread::alloc(peff::Alloc *selfAllocator, Runnable *runnable, size_t stackSize) {
 	std::unique_ptr<Thread, util::DeallocableDeleter<Thread>>
 		executionThread(peff::allocAndConstruct<Thread>(selfAllocator, alignof(Thread), selfAllocator, runnable));
+
+	if (!executionThread) {
+		return nullptr;
+	}
 
 	executionThread->_initialRunMutex.lock();
 

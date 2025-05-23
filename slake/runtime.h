@@ -82,7 +82,7 @@ namespace slake {
 	struct GCWalkContext {
 	private:
 		Object *walkableList = nullptr;
-		std::mutex accessMutex;
+		Mutex accessMutex;
 		InstanceObject *unwalkedInstanceList = nullptr;
 		InstanceObject *destructibleList = nullptr;
 		Object *unwalkedList = nullptr;
@@ -201,6 +201,7 @@ namespace slake {
 			Runtime *runtime;
 			GCWalkContext context;
 			bool isActive = false, isDone = false;
+			Cond activeCond, doneCond;
 			ParallelGcThreadState threadState = ParallelGcThreadState::Alive;
 
 			SLAKE_API ParallelGcThreadRunnable(Runtime *runtime);

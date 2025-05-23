@@ -128,7 +128,7 @@ SLAKE_API void Runtime::_gcWalk(const Value &i) {
 SLAKE_API void GCWalkContext::removeFromUnwalkedList(Object *v) {
 	GCWalkContext &context = *v->gcInfo.heapless.gcWalkContext;
 
-	std::lock_guard accessMutexGuard(context.accessMutex);
+	MutexGuard accessMutexGuard(context.accessMutex);
 
 	if (v == context.unwalkedList) {
 		context.unwalkedList = v->gcInfo.heapless.nextUnwalked;
@@ -150,7 +150,7 @@ SLAKE_API void GCWalkContext::removeFromUnwalkedList(Object *v) {
 SLAKE_API void GCWalkContext::removeFromDestructibleList(Object *v) {
 	GCWalkContext &context = *v->gcInfo.heapless.gcWalkContext;
 
-	std::lock_guard accessMutexGuard(context.accessMutex);
+	MutexGuard accessMutexGuard(context.accessMutex);
 
 	if (v == context.destructibleList) {
 		context.destructibleList = v->gcInfo.heapless.nextDestructible;
@@ -481,7 +481,7 @@ SLAKE_API bool GCWalkContext::isWalkableListEmpty() {
 }
 
 SLAKE_API Object *GCWalkContext::getWalkableList() {
-	std::lock_guard accessMutexGuard(accessMutex);
+	MutexGuard accessMutexGuard(accessMutex);
 
 	Object *p = walkableList;
 	walkableList = nullptr;
@@ -490,14 +490,14 @@ SLAKE_API Object *GCWalkContext::getWalkableList() {
 }
 
 SLAKE_API void GCWalkContext::pushWalkable(Object *walkableObject) {
-	std::lock_guard accessMutexGuard(accessMutex);
+	MutexGuard accessMutexGuard(accessMutex);
 
 	walkableObject->gcInfo.heapless.nextWalkable = walkableList;
 	walkableList = walkableObject;
 }
 
 SLAKE_API Object *GCWalkContext::getUnwalkedList() {
-	std::lock_guard accessMutexGuard(accessMutex);
+	MutexGuard accessMutexGuard(accessMutex);
 
 	Object *p = unwalkedList;
 	unwalkedList = nullptr;
@@ -506,7 +506,7 @@ SLAKE_API Object *GCWalkContext::getUnwalkedList() {
 }
 
 SLAKE_API void GCWalkContext::pushUnwalked(Object *walkableObject) {
-	std::lock_guard accessMutexGuard(accessMutex);
+	MutexGuard accessMutexGuard(accessMutex);
 
 	if (unwalkedList)
 		unwalkedList->gcInfo.heapless.prevUnwalked = walkableObject;
@@ -517,7 +517,7 @@ SLAKE_API void GCWalkContext::pushUnwalked(Object *walkableObject) {
 }
 
 SLAKE_API InstanceObject *GCWalkContext::getDestructibleList() {
-	std::lock_guard accessMutexGuard(accessMutex);
+	MutexGuard accessMutexGuard(accessMutex);
 
 	auto p = destructibleList;
 	destructibleList = nullptr;
@@ -526,7 +526,7 @@ SLAKE_API InstanceObject *GCWalkContext::getDestructibleList() {
 }
 
 SLAKE_API void GCWalkContext::pushDestructible(InstanceObject *v) {
-	std::lock_guard accessMutexGuard(accessMutex);
+	MutexGuard accessMutexGuard(accessMutex);
 
 	if (destructibleList)
 		destructibleList->gcInfo.heapless.prevDestructible = v;
@@ -649,8 +649,11 @@ rescan:
 
 SLAKE_API void Runtime::ParallelGcThreadRunnable::run() {
 	for (;;) {
-		while (!isActive)
+		while (!isActive) {
+			activeCond.wait();
+
 			yieldCurrentThread();
+		}
 
 		isActive = false;
 
@@ -682,6 +685,7 @@ SLAKE_API void Runtime::ParallelGcThreadRunnable::run() {
 
 		isDone = true;
 		while (isDone) {
+			doneCond.notifyAll();
 			yieldCurrentThread();
 		}
 	}
@@ -789,6 +793,8 @@ rescanLeftovers:
 		ParallelGcThreadRunnable *curRunnable = (ParallelGcThreadRunnable *)i->runnable;
 
 		curRunnable->isActive = true;
+
+		curRunnable->activeCond.notifyAll();
 	}
 
 	for (auto &i : parallelGcThreads) {
@@ -796,6 +802,7 @@ rescanLeftovers:
 
 		while (!curRunnable->isDone) {
 			yieldCurrentThread();
+			curRunnable->doneCond.wait();
 		}
 		curRunnable->isDone = false;
 	}
@@ -876,6 +883,8 @@ SLAKE_API void Runtime::_releaseParallelGcResources() {
 		i->threadState = ParallelGcThreadState::NotifyTermination;
 
 		i->isActive = true;
+
+		i->activeCond.notifyAll();
 
 		while (i->threadState == ParallelGcThreadState::NotifyTermination)
 			yieldCurrentThread();

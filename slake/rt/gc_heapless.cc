@@ -811,28 +811,33 @@ rescan:
 				GCWalkContext::pushObject(&context, i);
 				i->gcInfo.heapless.nextHostRef = nullptr;
 			}
-
-			for (auto i = _genericCacheDir.begin(); i != _genericCacheDir.end(); ++i) {
-				for (auto j = i.value().begin(); j != i.value().end(); ++j) {
-					GCWalkContext::pushObject(&context, j.value());
-				}
-			}
-
-			for (auto i : managedThreadRunnables) {
-				GCWalkContext::pushObject(&context, i.second->context.get());
-			}
-
-			if (!(_flags & _RT_DEINITING)) {
-				// Walk the root node.
-				GCWalkContext::pushObject(&context, _rootObject);
-
-				// Walk contexts for each thread.
-				for (auto &i : activeContexts)
-					GCWalkContext::pushObject(&context, i.second);
-			}
 		}
 
 		endObjectOut = cur;
+	}
+
+	for (auto &t : parallelGcThreads) {
+		ParallelGcThreadRunnable *curRunnable = (ParallelGcThreadRunnable *)t->runnable;
+		GCWalkContext &context = curRunnable->context;
+
+		for (auto i = _genericCacheDir.begin(); i != _genericCacheDir.end(); ++i) {
+			for (auto j = i.value().begin(); j != i.value().end(); ++j) {
+				GCWalkContext::pushObject(&context, j.value());
+			}
+		}
+
+		for (auto i : managedThreadRunnables) {
+			GCWalkContext::pushObject(&context, i.second->context.get());
+		}
+
+		if (!(_flags & _RT_DEINITING)) {
+			// Walk the root node.
+			GCWalkContext::pushObject(&context, _rootObject);
+
+			// Walk contexts for each thread.
+			for (auto &i : activeContexts)
+				GCWalkContext::pushObject(&context, i.second);
+		}
 	}
 
 rescanLeftovers:

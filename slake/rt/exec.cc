@@ -1625,7 +1625,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					break;
 				}
 				default:
-					assert(false);
+					std::terminate();
 			}
 
 			if (!fn) {
@@ -1711,7 +1711,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 					break;
 				}
 				default:
-					assert(false);
+					std::terminate();
 			}
 
 			if (!fn) {

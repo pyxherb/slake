@@ -132,10 +132,13 @@ SLAKE_API void GCWalkContext::removeFromUnwalkedList(Object *v) {
 
 	if (v == context.unwalkedList) {
 		context.unwalkedList = v->gcInfo.heapless.nextUnwalked;
+		assert(!v->gcInfo.heapless.prevUnwalked);
 	}
+
 	if (v->gcInfo.heapless.nextUnwalked) {
 		v->gcInfo.heapless.nextUnwalked->gcInfo.heapless.prevUnwalked = v->gcInfo.heapless.prevUnwalked;
 	}
+
 	if (v->gcInfo.heapless.prevUnwalked) {
 		v->gcInfo.heapless.prevUnwalked->gcInfo.heapless.nextUnwalked = v->gcInfo.heapless.nextUnwalked;
 	}
@@ -149,16 +152,15 @@ SLAKE_API void GCWalkContext::removeFromDestructibleList(Object *v) {
 
 	std::lock_guard accessMutexGuard(context.accessMutex);
 
+	if (v == context.destructibleList) {
+		context.destructibleList = v->gcInfo.heapless.nextDestructible;
+	}
+
 	if (v->gcInfo.heapless.nextDestructible) {
-		if (v == context.destructibleList) {
-			context.destructibleList = v->gcInfo.heapless.nextDestructible;
-		}
 		v->gcInfo.heapless.nextDestructible->gcInfo.heapless.prevDestructible = v->gcInfo.heapless.prevDestructible;
 	}
+
 	if (v->gcInfo.heapless.prevDestructible) {
-		if (v == context.destructibleList) {
-			context.destructibleList = v->gcInfo.heapless.prevDestructible;
-		}
 		v->gcInfo.heapless.prevDestructible->gcInfo.heapless.nextDestructible = v->gcInfo.heapless.nextDestructible;
 	}
 }
@@ -616,13 +618,13 @@ rescan:
 			Object *next = i->gcInfo.heapless.nextWalkable;
 			switch (i->gcInfo.heapless.gcStatus) {
 				case ObjectGCStatus::Unwalked:
-					assert(false);
+					std::terminate();
 					break;
 				case ObjectGCStatus::ReadyToWalk:
 					_gcWalk(i);
 					break;
 				case ObjectGCStatus::Walked:
-					assert(false);
+					std::terminate();
 					break;
 			}
 			i = next;
@@ -663,13 +665,13 @@ SLAKE_API void Runtime::ParallelGcThreadRunnable::run() {
 				Object *next = i->gcInfo.heapless.nextWalkable;
 				switch (i->gcInfo.heapless.gcStatus) {
 					case ObjectGCStatus::Unwalked:
-						assert(false);
+						std::terminate();
 						break;
 					case ObjectGCStatus::ReadyToWalk:
 						runtime->_gcWalk(i);
 						break;
 					case ObjectGCStatus::Walked:
-						assert(false);
+						std::terminate();
 						break;
 				}
 				i = next;
@@ -756,7 +758,7 @@ rescan:
 			}
 		}
 	}
-	
+
 	for (Object *i = hostRefList, *next; i; i = next) {
 		next = i->gcInfo.heapless.nextHostRef;
 		GCWalkContext::pushObject(i);
@@ -830,7 +832,7 @@ rescanLeftovers:
 			createdObjects.remove(j);
 		}
 	}
-	
+
 	if (isRescanNeeded) {
 		goto rescan;
 	}

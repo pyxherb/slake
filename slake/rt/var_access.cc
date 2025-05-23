@@ -42,7 +42,7 @@ SLAKE_API InternalExceptionPointer Runtime::tryAccessVar(const EntityRef &entity
 			break;
 		}
 		default:
-			assert(false);
+			std::terminate();
 	}
 
 	return {};
@@ -121,7 +121,7 @@ SLAKE_API InternalExceptionPointer Runtime::typeofVar(const EntityRef &entityRef
 			break;
 		}
 		default:
-			assert(false);
+			std::terminate();
 	}
 
 	return {};
@@ -798,7 +798,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 			break;
 		}
 		default:
-			assert(false);
+			std::terminate();
 	}
 
 	return {};

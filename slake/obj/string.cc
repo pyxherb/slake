@@ -50,7 +50,7 @@ SLAKE_API HostObjectRef<StringObject> slake::StringObject::alloc(const StringObj
 	if (!succeeded)
 		return nullptr;
 
-	if (!other->associatedRuntime->createdObjects.insert(ptr.get()))
+	if (!other->associatedRuntime->addObject(ptr.get()))
 		return nullptr;
 
 	return ptr.release();
@@ -63,7 +63,7 @@ SLAKE_API HostObjectRef<StringObject> slake::StringObject::alloc(Runtime *rt, pe
 			sizeof(std::max_align_t),
 			rt, std::move(s)));
 
-	if (!rt->createdObjects.insert(ptr.get()))
+	if (!rt->addObject(ptr.get()))
 		return nullptr;
 
 	return ptr.release();

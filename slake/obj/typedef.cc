@@ -33,7 +33,7 @@ SLAKE_API HostObjectRef<TypeDefObject> slake::TypeDefObject::alloc(Runtime *rt, 
 	if (!ptr)
 		return nullptr;
 
-	if (!rt->createdObjects.insert(ptr.get()))
+	if (!rt->addObject(ptr.get()))
 		return nullptr;
 
 	return ptr.release();
@@ -53,7 +53,7 @@ SLAKE_API HostObjectRef<TypeDefObject> slake::TypeDefObject::alloc(const TypeDef
 	if (!succeeded)
 		return nullptr;
 
-	if (!other->associatedRuntime->createdObjects.insert(ptr.get()))
+	if (!other->associatedRuntime->addObject(ptr.get()))
 		return nullptr;
 
 	return ptr.release();
@@ -94,7 +94,7 @@ SLAKE_API HostObjectRef<FnTypeDefObject> slake::FnTypeDefObject::alloc(Runtime *
 	if (!ptr)
 		return nullptr;
 
-	if (!rt->createdObjects.insert(ptr.get()))
+	if (!rt->addObject(ptr.get()))
 		return nullptr;
 
 	return ptr.release();
@@ -114,7 +114,7 @@ SLAKE_API HostObjectRef<FnTypeDefObject> slake::FnTypeDefObject::alloc(const FnT
 	if (!succeeded)
 		return nullptr;
 
-	if (!other->associatedRuntime->createdObjects.insert(ptr.get()))
+	if (!other->associatedRuntime->addObject(ptr.get()))
 		return nullptr;
 
 	return ptr.release();

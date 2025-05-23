@@ -232,7 +232,7 @@ SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingO
 	if (!ptr)
 		return nullptr;
 
-	if (!fnObject->associatedRuntime->createdObjects.insert(ptr.get()))
+	if (!fnObject->associatedRuntime->addObject(ptr.get()))
 		return nullptr;
 
 	return ptr.release();
@@ -252,7 +252,7 @@ SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingO
 	if (!succeeded)
 		return nullptr;
 
-	if (!other->associatedRuntime->createdObjects.insert(ptr.get()))
+	if (!other->associatedRuntime->addObject(ptr.get()))
 		return nullptr;
 
 	return ptr.release();
@@ -294,7 +294,7 @@ SLAKE_API HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObj
 	if (!ptr)
 		return nullptr;
 
-	if (!fnObject->associatedRuntime->createdObjects.insert(ptr.get()))
+	if (!fnObject->associatedRuntime->addObject(ptr.get()))
 		return nullptr;
 
 	return ptr.release();
@@ -314,7 +314,7 @@ SLAKE_API HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObj
 	if (!succeeded)
 		return nullptr;
 
-	if (!other->associatedRuntime->createdObjects.insert(ptr.get()))
+	if (!other->associatedRuntime->addObject(ptr.get()))
 		return nullptr;
 
 	return ptr.release();
@@ -397,7 +397,7 @@ SLAKE_API HostObjectRef<FnObject> slake::FnObject::alloc(Runtime *rt) {
 			sizeof(std::max_align_t),
 			rt));
 
-	if (!rt->createdObjects.insert(ptr.get()))
+	if (!rt->addObject(ptr.get()))
 		return nullptr;
 
 	return ptr.release();
@@ -417,7 +417,7 @@ SLAKE_API HostObjectRef<FnObject> slake::FnObject::alloc(const FnObject *other) 
 	if (!succeeded)
 		return nullptr;
 
-	if (!other->associatedRuntime->createdObjects.insert(ptr.get()))
+	if (!other->associatedRuntime->addObject(ptr.get()))
 		return nullptr;
 
 	return ptr.release();

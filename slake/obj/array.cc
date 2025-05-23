@@ -26,7 +26,7 @@ SLAKE_API ArrayObject *ArrayObject::alloc(Runtime *rt, const Type &elementType, 
 	if (!ptr)
 		return nullptr;
 
-	if (!rt->createdObjects.insert(ptr.get()))
+	if (!rt->addObject(ptr.get()))
 		return nullptr;
 
 	return ptr.release();

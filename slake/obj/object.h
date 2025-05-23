@@ -7,6 +7,7 @@
 #include <string>
 #include <memory_resource>
 #include <peff/containers/set.h>
+#include <slake/plat/thread.h>
 
 namespace slake {
 	class Runtime;
@@ -59,6 +60,12 @@ namespace slake {
 
 	struct GCWalkContext;
 
+	enum class ObjectGeneration {
+		Young = 0,
+		Survival,
+		Persistent
+	};
+
 	class Object {
 	public:
 		// The object will never be freed if its host reference count is not 0.
@@ -71,10 +78,16 @@ namespace slake {
 		SLAKE_API virtual ~Object();
 
 		ObjectFlags _flags = 0;
+
+		ObjectGeneration objectGeneration = ObjectGeneration::Young;
+		Object *nextSameGenObject = nullptr;
+		Object *prevSameGenObject = nullptr;
+		Mutex gcMutex;
+		GCWalkContext *gcWalkContext = nullptr;
+
 		union {
 			struct {
 				ObjectGCStatus gcStatus;
-				GCWalkContext *gcWalkContext;
 				Object *nextWalkable; // New reachable objects
 				InstanceObject *prevDestructible;
 				InstanceObject *nextDestructible;

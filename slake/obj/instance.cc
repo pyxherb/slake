@@ -47,7 +47,7 @@ SLAKE_API HostObjectRef<InstanceObject> slake::InstanceObject::alloc(Runtime *rt
 			sizeof(std::max_align_t),
 			rt));
 
-	if (!rt->createdObjects.insert(ptr.get()))
+	if (!rt->addObject(ptr.get()))
 		return nullptr;
 
 	return ptr.release();
@@ -60,7 +60,7 @@ SLAKE_API HostObjectRef<InstanceObject> slake::InstanceObject::alloc(const Insta
 			sizeof(std::max_align_t),
 			*other));
 
-	if (!other->associatedRuntime->createdObjects.insert(ptr.get()))
+	if (!other->associatedRuntime->addObject(ptr.get()))
 		return nullptr;
 
 	return ptr.release();

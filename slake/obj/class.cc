@@ -188,7 +188,7 @@ SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(const ClassObject
 	if (!succeeded)
 		return nullptr;
 
-	if (!other->associatedRuntime->createdObjects.insert(ptr.get()))
+	if (!other->associatedRuntime->addObject(ptr.get()))
 		return nullptr;
 
 	return ptr.release();
@@ -201,7 +201,7 @@ SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(Runtime *rt) {
 			sizeof(std::max_align_t),
 			rt));
 
-	if (!rt->createdObjects.insert(ptr.get()))
+	if (!rt->addObject(ptr.get()))
 		return nullptr;
 
 	return ptr.release();
@@ -291,7 +291,7 @@ SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Runtime *
 	if (!ptr)
 		return nullptr;
 
-	if (!rt->createdObjects.insert(ptr.get()))
+	if (!rt->addObject(ptr.get()))
 		return nullptr;
 
 	return ptr.release();
@@ -311,7 +311,7 @@ SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(const Int
 	if (!succeeded)
 		return nullptr;
 
-	if (!other->associatedRuntime->createdObjects.insert(ptr.get()))
+	if (!other->associatedRuntime->addObject(ptr.get()))
 		return nullptr;
 
 	return ptr.release();

@@ -88,7 +88,7 @@ namespace slake {
 		Object *unwalkedList = nullptr;
 
 	public:
-		static SLAKE_API void pushObject(Object *object);
+		static SLAKE_API void pushObject(GCWalkContext *context, Object *object);
 		static SLAKE_API void removeFromUnwalkedList(Object *v);
 		static SLAKE_API void removeFromDestructibleList(Object *v);
 
@@ -178,14 +178,17 @@ namespace slake {
 		/// @param ins Instruction to be executed.
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _execIns(ContextObject *context, MajorFrame *curMajorFrame, const Instruction &ins, bool &isContextChangedOut) noexcept;
 
-		SLAKE_API void _gcWalk(MethodTable *methodTable);
-		SLAKE_API void _gcWalk(GenericParamList &genericParamList);
-		SLAKE_API void _gcWalk(const Type &type);
-		SLAKE_API void _gcWalk(const Value &i);
-		SLAKE_API void _gcWalk(Object *i);
-		SLAKE_API void _gcWalk(char *dataStack, MajorFrame *majorFrame);
-		SLAKE_API void _gcWalk(Context &i);
-		SLAKE_API void _gc();
+		Object *youngObjectList = nullptr, *survivalObjectList = nullptr, *persistentObjectList = nullptr;
+		size_t nYoungObjects = 0, nSurvivalObjects = 0, nPersistentObjects = 0;
+
+		SLAKE_API void _gcWalk(GCWalkContext *context, MethodTable *methodTable);
+		SLAKE_API void _gcWalk(GCWalkContext *context, GenericParamList &genericParamList);
+		SLAKE_API void _gcWalk(GCWalkContext *context, const Type &type);
+		SLAKE_API void _gcWalk(GCWalkContext *context, const Value &i);
+		SLAKE_API void _gcWalk(GCWalkContext *context, Object *i);
+		SLAKE_API void _gcWalk(GCWalkContext *context, char *dataStack, MajorFrame *majorFrame);
+		SLAKE_API void _gcWalk(GCWalkContext *context, Context &i);
+		SLAKE_API void _gcSerial(Object *&objectList, Object *&endObjectOut, size_t &nObjects, ObjectGeneration newGeneration);
 
 		size_t nMaxGcThreads = 8;
 		peff::DynArray<std::unique_ptr<Thread, util::DeallocableDeleter<Thread>>> parallelGcThreads;
@@ -215,7 +218,7 @@ namespace slake {
 		SLAKE_API bool _allocParallelGcResources();
 		SLAKE_API void _releaseParallelGcResources();
 
-		SLAKE_API void _gcParallelHeapless();
+		SLAKE_API void _gcParallelHeapless(Object *&objectList, Object *&endObjectOut, size_t &nObjects, ObjectGeneration newGeneration);
 
 		SLAKE_API void _destructDestructibleObjects(InstanceObject *destructibleList);
 
@@ -255,8 +258,6 @@ namespace slake {
 		/// @brief Runtime flags.
 		RuntimeFlags _flags = 0;
 
-		peff::Set<Object *> createdObjects;
-
 		/// @brief Active contexts of threads.
 		std::map<std::thread::id, ContextObject *> activeContexts;
 
@@ -290,6 +291,8 @@ namespace slake {
 		/// @param scopeObject Scope value for resolving.
 		/// @return Resolved value which is referred by the reference.
 		SLAKE_API InternalExceptionPointer resolveIdRef(IdRefObject *ref, EntityRef &objectRefOut, Object *scopeObject = nullptr);
+
+		[[nodiscard]] SLAKE_API bool addObject(Object *object);
 
 		SLAKE_API HostObjectRef<ModuleObject> loadModule(const void *buf, size_t size, LoadModuleFlags flags);
 

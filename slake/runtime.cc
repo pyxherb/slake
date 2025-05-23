@@ -141,7 +141,6 @@ SLAKE_API Runtime::Runtime(peff::Alloc *selfAllocator, peff::Alloc *upstream, Ru
 	  _flags(flags | _RT_INITING),
 	  _genericCacheLookupTable(&globalHeapPoolAlloc),
 	  _genericCacheDir(&globalHeapPoolAlloc),
-	  createdObjects(&globalHeapPoolAlloc),
 	  managedThreadRunnables(&globalHeapPoolAlloc),
 	  parallelGcThreads(&globalHeapPoolAlloc),
 	  parallelGcThreadRunnables(&globalHeapPoolAlloc) {
@@ -165,10 +164,26 @@ SLAKE_API Runtime::~Runtime() {
 
 	// No need to delete the root object explicitly.
 
-	assert(!createdObjects.size());
+	assert(!youngObjectList);
+	assert(!survivalObjectList);
+	assert(!persistentObjectList);
 	assert(!globalHeapPoolAlloc.szAllocated);
 	// Self allocator should be moved out in the dealloc() method, or the runtime has been destructed prematurely.
 	assert(!selfAllocator);
+}
+
+SLAKE_API bool Runtime::addObject(Object* object) {
+	if (youngObjectList) {
+		assert(!youngObjectList->prevSameGenObject);
+		youngObjectList->prevSameGenObject = object;
+	}
+
+	object->nextSameGenObject = youngObjectList;
+	youngObjectList = object;
+
+	++nYoungObjects;
+
+	return true;
 }
 
 SLAKE_API bool Runtime::constructAt(Runtime *dest, peff::Alloc *upstream, RuntimeFlags flags) {

@@ -122,6 +122,20 @@ namespace slake {
 	SLAKE_FORCEINLINE char *calcStackAddr(char *data, size_t szStack, size_t offset) {
 		return data + szStack - offset;
 	}
+
+	class ExecutionRunnable : public Runnable {
+	public:
+		Thread *thread = nullptr;
+		HostObjectRef<ContextObject> context;
+		void *nativeStackBase = nullptr;
+		size_t nativeStackSize = 0;
+		InternalExceptionPointer exceptPtr;
+		ThreadStatus status = ThreadStatus::Ready;
+
+		SLAKE_API ExecutionRunnable();
+
+		SLAKE_API virtual void run() override;
+	};
 }
 
 #endif

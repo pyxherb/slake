@@ -87,7 +87,7 @@ SLAKE_API HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt) 
 	if (!(ptr->_context.dataStack = (char *)rt->globalHeapPoolAlloc.alloc(SLAKE_STACK_MAX, sizeof(std::max_align_t))))
 		return nullptr;
 
-	if (!rt->createdObjects.insert(ptr.get()))
+	if (!rt->addObject(ptr.get()))
 		return nullptr;
 
 	return ptr.release();

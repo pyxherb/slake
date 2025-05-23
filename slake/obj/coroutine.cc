@@ -19,7 +19,7 @@ SLAKE_API HostObjectRef<CoroutineObject> slake::CoroutineObject::alloc(Runtime *
 			sizeof(std::max_align_t),
 			rt));
 
-	if (!rt->createdObjects.insert(ptr.get()))
+	if (!rt->addObject(ptr.get()))
 		return nullptr;
 
 	return ptr.release();

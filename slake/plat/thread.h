@@ -1,8 +1,6 @@
 #ifndef _SLAKE_PLAT_THREAD_H_
 #define _SLAKE_PLAT_THREAD_H_
 
-#include <slake/object.h>
-
 #if _WIN32
 	#define WIN32_LEAN_AND_MEAN
 	#include <Windows.h>
@@ -127,20 +125,6 @@ namespace slake {
 		SLAKE_API void dealloc();
 
 		SLAKE_API static Thread *alloc(peff::Alloc *selfAllocator, Runnable *runnable, size_t stackSize);
-	};
-
-	class ExecutionRunnable : public Runnable {
-	public:
-		Thread *thread = nullptr;
-		HostObjectRef<ContextObject> context;
-		void *nativeStackBase = nullptr;
-		size_t nativeStackSize = 0;
-		InternalExceptionPointer exceptPtr;
-		ThreadStatus status = ThreadStatus::Ready;
-
-		SLAKE_API ExecutionRunnable();
-
-		SLAKE_API virtual void run() override;
 	};
 
 	NativeThreadHandle currentThreadHandle();

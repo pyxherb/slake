@@ -31,7 +31,26 @@ SLAKE_API void Runtime::gc() {
 
 	// TODO: This is a stupid way to make sure that all the destructible objects are destructed.
 	// Can we create a separate GC thread in advance and let it to execute them?
-	_gcParallelHeapless();
+	Object *youngObjectsEnd;
+	_gcParallelHeapless(youngObjectList, youngObjectsEnd, nYoungObjects, ObjectGeneration::Survival);
+
+	Object *survivalObjectsEnd;
+	_gcParallelHeapless(survivalObjectList, survivalObjectsEnd, nSurvivalObjects, ObjectGeneration::Persistent);
+
+	Object *persistentObjectsEnd;
+	_gcParallelHeapless(persistentObjectList, persistentObjectsEnd, nPersistentObjects, ObjectGeneration::Persistent);
+
+	if (survivalObjectsEnd) {
+		survivalObjectsEnd->nextSameGenObject = persistentObjectList;
+	}
+	persistentObjectList = survivalObjectList;
+	nPersistentObjects += nSurvivalObjects;
+
+	survivalObjectList = youngObjectList;
+	nSurvivalObjects = nYoungObjects;
+
+	youngObjectList = nullptr;
+	nYoungObjects = 0;
 
 	_szMemUsedAfterLastGc = globalHeapPoolAlloc.szAllocated;
 	_szComputedGcLimit = _szMemUsedAfterLastGc + (_szMemUsedAfterLastGc >> 1);

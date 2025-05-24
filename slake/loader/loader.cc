@@ -11,7 +11,7 @@ SLAKE_FORCEINLINE static InternalExceptionPointer _normalizeReadResult(Runtime *
 			break;
 		case ReadResult::Eof:
 		case ReadResult::ReadError:
-			return allocOutOfMemoryErrorIfAllocFailed(ReadError::alloc(&runtime->globalHeapPoolAlloc));
+			return allocOutOfMemoryErrorIfAllocFailed(ReadError::alloc(runtime->getFixedAlloc()));
 		default:
 			std::terminate();
 	}
@@ -90,7 +90,7 @@ SLAKE_API InternalExceptionPointer loader::loadType(Runtime *runtime, Reader *re
 			break;
 		}
 		case slake::slxfmt::TypeId::GenericArg: {
-			peff::String name(&runtime->globalHeapPoolAlloc);
+			peff::String name(runtime->getCurGenAlloc());
 
 			uint32_t nameLen;
 
@@ -252,7 +252,7 @@ SLAKE_API InternalExceptionPointer loader::loadValue(Runtime *runtime, Reader *r
 			break;
 		}
 		case slake::slxfmt::ValueType::String: {
-			peff::String s(&runtime->globalHeapPoolAlloc);
+			peff::String s(runtime->getCurGenAlloc());
 
 			uint32_t lenName;
 			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(lenName)));
@@ -309,7 +309,7 @@ SLAKE_API InternalExceptionPointer loader::loadIdRefEntries(Runtime *runtime, Re
 
 	SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(nEntries)));
 	for (size_t i = 0; i < nEntries; ++i) {
-		IdRefEntry curEntry(&runtime->globalHeapPoolAlloc);
+		IdRefEntry curEntry(runtime->getCurGenAlloc());
 
 		uint32_t lenName;
 		SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(lenName)));
@@ -353,7 +353,7 @@ SLAKE_API InternalExceptionPointer loader::loadIdRef(Runtime *runtime, Reader *r
 	}
 
 	if (nParamTypes != UINT32_MAX) {
-		peff::DynArray<Type> paramTypes(&runtime->globalHeapPoolAlloc);
+		peff::DynArray<Type> paramTypes(idRefOut->selfAllocator.get());
 
 		if (!paramTypes.resize(nParamTypes)) {
 			return OutOfMemoryError::alloc();
@@ -403,7 +403,7 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(Runtime *runtime, R
 			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(clsObject->name.data(), ctd.lenName)));
 
 			for (size_t j = 0; j < ctd.nGenericParams; ++j) {
-				GenericParam gp(&runtime->globalHeapPoolAlloc);
+				GenericParam gp(clsObject->selfAllocator.get());
 
 				SLAKE_RETURN_IF_EXCEPT(loadGenericParam(runtime, reader, moduleObject, gp));
 
@@ -460,7 +460,7 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(Runtime *runtime, R
 			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(interfaceObject->name.data(), itd.lenName)));
 
 			for (size_t j = 0; j < itd.nGenericParams; ++j) {
-				GenericParam gp(&runtime->globalHeapPoolAlloc);
+				GenericParam gp(interfaceObject->selfAllocator.get());
 
 				SLAKE_RETURN_IF_EXCEPT(loadGenericParam(runtime, reader, moduleObject, gp));
 
@@ -546,7 +546,7 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(Runtime *runtime, R
 				fnOverloadingObject->setRegisterNumber(fnd.nRegisters);
 
 				for (size_t k = 0; k < fnd.nGenericParams; ++k) {
-					GenericParam gp(&runtime->globalHeapPoolAlloc);
+					GenericParam gp(fnOverloadingObject->selfAllocator.get());
 
 					SLAKE_RETURN_IF_EXCEPT(loadGenericParam(runtime, reader, fnOverloadingObject.get(), gp));
 
@@ -579,7 +579,7 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(Runtime *runtime, R
 
 					ins.opcode = opcode;
 					ins.output = output;
-					if (!ins.reserveOperands(&runtime->globalHeapPoolAlloc, nOperands)) {
+					if (!ins.reserveOperands(fnOverloadingObject->selfAllocator.get(), nOperands)) {
 						return OutOfMemoryError::alloc();
 					}
 
@@ -615,7 +615,7 @@ SLAKE_API InternalExceptionPointer loader::loadModuleMembers(Runtime *runtime, R
 
 			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read((char *)&vad, sizeof(vad))));
 
-			FieldRecord fr(&runtime->globalHeapPoolAlloc);
+			FieldRecord fr(moduleObject->selfAllocator.get());
 
 			AccessModifier access = 0;
 
@@ -663,7 +663,7 @@ SLAKE_API InternalExceptionPointer loader::loadModule(Runtime *runtime, Reader *
 	SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read((char *)&imh, sizeof(imh))));
 
 	if (memcmp(imh.magic, slxfmt::IMH_MAGIC, sizeof(imh.magic))) {
-		return allocOutOfMemoryErrorIfAllocFailed(BadMagicError::alloc(&runtime->globalHeapPoolAlloc));
+		return allocOutOfMemoryErrorIfAllocFailed(BadMagicError::alloc(runtime->getFixedAlloc()));
 	}
 
 	if (!(moduleObjectOut = ModuleObject::alloc(runtime))) {

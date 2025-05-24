@@ -84,8 +84,8 @@ namespace slake {
 
 		peff::DynArray<Value> cachedFieldInitValues;
 
-		SLAKE_API ClassObject(Runtime *rt);
-		SLAKE_API ClassObject(const ClassObject &x, bool &succeededOut);
+		SLAKE_API ClassObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API ClassObject(const ClassObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~ClassObject();
 
 		SLAKE_API virtual ObjectKind getKind() const override;
@@ -120,8 +120,8 @@ namespace slake {
 
 		peff::DynArray<Type> implTypes;
 
-		SLAKE_API InterfaceObject(Runtime *rt);
-		SLAKE_API InterfaceObject(const InterfaceObject &x, bool &succeededOut);
+		SLAKE_API InterfaceObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API InterfaceObject(const InterfaceObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~InterfaceObject();
 
 		SLAKE_API virtual ObjectKind getKind() const override;

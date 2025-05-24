@@ -52,8 +52,8 @@ namespace slake {
 
 		peff::DynArray<IdRefObject *> unnamedImports;
 
-		SLAKE_API ModuleObject(Runtime *rt);
-		SLAKE_API ModuleObject(const ModuleObject &x, bool &succeededOut);
+		SLAKE_API ModuleObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API ModuleObject(const ModuleObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~ModuleObject();
 
 		SLAKE_API virtual ObjectKind getKind() const override;

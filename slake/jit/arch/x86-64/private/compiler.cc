@@ -29,7 +29,7 @@ InternalExceptionPointer compileInstruction(
 		size_t offTimelineEnd = analyzedInfo.analyzedRegInfo.at(outputRegIndex).lifetime.offEndIns;
 
 		if (!compileContext.regRecycleBoundaries.contains(offTimelineEnd)) {
-			compileContext.regRecycleBoundaries.insert(+offTimelineEnd, peff::List<uint32_t>(&compileContext.runtime->globalHeapPoolAlloc));
+			compileContext.regRecycleBoundaries.insert(+offTimelineEnd, peff::List<uint32_t>(compileContext.resourceAllocator.get()));
 		}
 
 		if (!compileContext.regRecycleBoundaries.at(offTimelineEnd).pushBack(+outputRegIndex))
@@ -242,7 +242,7 @@ InternalExceptionPointer slake::compileRegularFn(RegularFnOverloadingObject *fn,
 	size_t nIns = fn->instructions.size();
 
 	opti::ProgramAnalyzedInfo analyzedInfo(fn->associatedRuntime, resourceAllocator);
-	HostRefHolder hostRefHolder(&fn->associatedRuntime->globalHeapPoolAlloc);
+	HostRefHolder hostRefHolder(resourceAllocator);
 
 	InternalExceptionPointer exceptionPtr;
 
@@ -276,7 +276,7 @@ InternalExceptionPointer slake::compileRegularFn(RegularFnOverloadingObject *fn,
 	}
 
 	{
-		peff::String labelName(&fn->associatedRuntime->globalHeapPoolAlloc);
+		peff::String labelName(resourceAllocator);
 		if (!labelName.build("_report_stack_overflow"))
 			return OutOfMemoryError::alloc();
 		SLAKE_RETURN_IF_EXCEPT(compileContext.pushLabel(std::move(labelName)));
@@ -290,7 +290,7 @@ InternalExceptionPointer slake::compileRegularFn(RegularFnOverloadingObject *fn,
 	}
 
 	{
-		peff::String labelName(&fn->associatedRuntime->globalHeapPoolAlloc);
+		peff::String labelName(resourceAllocator);
 		if (!labelName.build("_report_stack_overflow_on_prolog"))
 			return OutOfMemoryError::alloc();
 		SLAKE_RETURN_IF_EXCEPT(compileContext.pushLabel(std::move(labelName)));

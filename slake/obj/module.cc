@@ -2,18 +2,18 @@
 
 using namespace slake;
 
-SLAKE_API ModuleObject::ModuleObject(Runtime *rt)
-	: MemberObject(rt), members(&rt->globalHeapPoolAlloc), localFieldStorage(&rt->globalHeapPoolAlloc), fieldRecords(&rt->globalHeapPoolAlloc), fieldRecordIndices(&rt->globalHeapPoolAlloc), unnamedImports(&rt->globalHeapPoolAlloc) {
+SLAKE_API ModuleObject::ModuleObject(Runtime *rt, peff::Alloc *selfAllocator)
+	: MemberObject(rt, selfAllocator), members(selfAllocator), localFieldStorage(selfAllocator), fieldRecords(selfAllocator), fieldRecordIndices(selfAllocator), unnamedImports(selfAllocator) {
 }
 
-SLAKE_API ModuleObject::ModuleObject(const ModuleObject &x, bool &succeededOut) : MemberObject(x, succeededOut), members(&x.associatedRuntime->globalHeapPoolAlloc), fieldRecords(&x.associatedRuntime->globalHeapPoolAlloc), localFieldStorage(&x.associatedRuntime->globalHeapPoolAlloc), fieldRecordIndices(&x.associatedRuntime->globalHeapPoolAlloc), unnamedImports(&x.associatedRuntime->globalHeapPoolAlloc) {
+SLAKE_API ModuleObject::ModuleObject(const ModuleObject &x, peff::Alloc *allocator, bool &succeededOut) : MemberObject(x, allocator, succeededOut), members(allocator), fieldRecords(allocator), localFieldStorage(allocator), fieldRecordIndices(allocator), unnamedImports(allocator) {
 	if (succeededOut) {
 		if (!fieldRecords.resizeUninitialized(x.fieldRecords.size())) {
 			succeededOut = false;
 			return;
 		}
 		for (size_t i = 0; i < fieldRecords.size(); ++i) {
-			peff::constructAt<FieldRecord>(&fieldRecords.at(i), &x.associatedRuntime->globalHeapPoolAlloc);
+			peff::constructAt<FieldRecord>(&fieldRecords.at(i), allocator);
 		}
 		for (size_t i = 0; i < fieldRecords.size(); ++i) {
 			FieldRecord &fr = fieldRecords.at(i);
@@ -140,8 +140,10 @@ SLAKE_API char *ModuleObject::appendTypedFieldSpace(const Type &type) {
 }
 
 SLAKE_API HostObjectRef<ModuleObject> slake::ModuleObject::alloc(Runtime *rt) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
+
 	std::unique_ptr<ModuleObject, util::DeallocableDeleter<ModuleObject>> ptr(
-		peff::allocAndConstruct<ModuleObject>(&rt->globalHeapPoolAlloc, sizeof(std::max_align_t), rt));
+		peff::allocAndConstruct<ModuleObject>(curGenerationAllocator.get(), sizeof(std::max_align_t), rt, curGenerationAllocator.get()));
 
 	if (!ptr)
 		return nullptr;
@@ -157,5 +159,5 @@ SLAKE_API HostObjectRef<ModuleObject> slake::ModuleObject::alloc(const ModuleObj
 }
 
 SLAKE_API void slake::ModuleObject::dealloc() {
-	peff::destroyAndRelease<ModuleObject>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
+	peff::destroyAndRelease<ModuleObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }

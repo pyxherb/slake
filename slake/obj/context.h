@@ -22,6 +22,7 @@ namespace slake {
 
 		SLAKE_API MinorFrame(
 			Runtime *rt,
+			peff::Alloc *allocator,
 			size_t stackBase);
 		// Default constructor is required by resize() methods from the
 		// containers.
@@ -55,6 +56,7 @@ namespace slake {
 
 	/// @brief A major frame represents a single calling frame.
 	struct MajorFrame final {
+		peff::RcObjectPtr<peff::Alloc> selfAllocator;
 		Runtime *associatedRuntime;
 
 		const FnOverloadingObject *curFn = nullptr;	 // Current function overloading.
@@ -69,7 +71,7 @@ namespace slake {
 
 		Value curExcept = Value();	// Current exception.
 
-		SLAKE_API MajorFrame(Runtime *rt);
+		SLAKE_API MajorFrame(Runtime *rt, peff::Alloc *allocator);
 		SLAKE_API ~MajorFrame();
 
 		SLAKE_API void dealloc() noexcept;
@@ -88,6 +90,7 @@ namespace slake {
 
 	struct Context {
 		Runtime *runtime;
+		peff::RcObjectPtr<peff::Alloc> selfAllocator;
 		peff::DynArray<MajorFramePtr> majorFrames;	// Major frame list
 		ContextFlags flags = 0;						// Flags
 		char *dataStack = nullptr;					// Data stack
@@ -96,7 +99,7 @@ namespace slake {
 		SLAKE_API char *stackAlloc(size_t size);
 		SLAKE_API void leaveMajor();
 
-		SLAKE_API Context(Runtime *runtime);
+		SLAKE_API Context(Runtime *runtime, peff::Alloc *allocator);
 
 		SLAKE_API ~Context();
 	};
@@ -105,7 +108,7 @@ namespace slake {
 	public:
 		Context _context;
 
-		SLAKE_API ContextObject(Runtime *rt);
+		SLAKE_API ContextObject(Runtime *rt, peff::Alloc *selfAllocator);
 		SLAKE_API virtual ~ContextObject();
 
 		SLAKE_API virtual ObjectKind getKind() const override;

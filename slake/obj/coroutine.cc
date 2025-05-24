@@ -3,7 +3,7 @@
 
 using namespace slake;
 
-SLAKE_API CoroutineObject::CoroutineObject(Runtime *rt) : Object(rt), curContext(nullptr), curMajorFrame(nullptr), resumable(&rt->globalHeapPoolAlloc), overloading(nullptr), stackData(nullptr), lenStackData(0), offStackTop(0) {
+SLAKE_API CoroutineObject::CoroutineObject(Runtime *rt, peff::Alloc *selfAllocator) : Object(rt, selfAllocator), curContext(nullptr), curMajorFrame(nullptr), resumable(selfAllocator), overloading(nullptr), stackData(nullptr), lenStackData(0), offStackTop(0) {
 }
 
 SLAKE_API CoroutineObject::~CoroutineObject() {
@@ -13,11 +13,13 @@ SLAKE_API CoroutineObject::~CoroutineObject() {
 SLAKE_API ObjectKind CoroutineObject::getKind() const { return ObjectKind::Coroutine; }
 
 SLAKE_API HostObjectRef<CoroutineObject> slake::CoroutineObject::alloc(Runtime *rt) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
+
 	std::unique_ptr<CoroutineObject, util::DeallocableDeleter<CoroutineObject>> ptr(
 		peff::allocAndConstruct<CoroutineObject>(
-			&rt->globalHeapPoolAlloc,
+			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
-			rt));
+			rt, curGenerationAllocator.get()));
 
 	if (!rt->addObject(ptr.get()))
 		return nullptr;
@@ -26,13 +28,13 @@ SLAKE_API HostObjectRef<CoroutineObject> slake::CoroutineObject::alloc(Runtime *
 }
 
 SLAKE_API void slake::CoroutineObject::dealloc() {
-	peff::destroyAndRelease<CoroutineObject>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
+	peff::destroyAndRelease<CoroutineObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
 SLAKE_API char* slake::CoroutineObject::allocStackData(size_t size) {
 	assert(!stackData);
 	if (size) {
-		if (!(stackData = (char *)associatedRuntime->globalHeapPoolAlloc.alloc(size, 1))) {
+		if (!(stackData = (char *)selfAllocator->alloc(size, 1))) {
 			return nullptr;
 		}
 		lenStackData = size;
@@ -43,7 +45,7 @@ SLAKE_API char* slake::CoroutineObject::allocStackData(size_t size) {
 
 SLAKE_API void slake::CoroutineObject::releaseStackData() {
 	if (stackData) {
-		associatedRuntime->globalHeapPoolAlloc.release(stackData, lenStackData, 1);
+		selfAllocator->release(stackData, lenStackData, 1);
 		stackData = nullptr;
 		lenStackData = 0;
 	}

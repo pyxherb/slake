@@ -7,15 +7,15 @@ SLAKE_API bool MemberObject::onSetParent(Object* parent) {
 	return true;
 }
 
-SLAKE_API MemberObject::MemberObject(Runtime *rt)
-	: Object(rt), name(&rt->globalHeapPoolAlloc) {
+SLAKE_API MemberObject::MemberObject(Runtime *rt, peff::Alloc *selfAllocator)
+	: Object(rt, selfAllocator), name(selfAllocator) {
 }
 
-SLAKE_API MemberObject::MemberObject(const MemberObject &x, bool &succeededOut)
-	: Object(x),
-	  name(&x.associatedRuntime->globalHeapPoolAlloc) {
+SLAKE_API MemberObject::MemberObject(const MemberObject &x, peff::Alloc *allocator, bool &succeededOut)
+	: Object(x, allocator),
+	  name(allocator) {
 	accessModifier = x.accessModifier;
-	if (!peff::copyAssign(name, x.name)) {
+	if (!name.build(x.name)) {
 		succeededOut = false;
 		return;
 	}

@@ -97,10 +97,11 @@ namespace slake {
 				ProgramAnalyzedInfo &analyzedInfoOut,
 				HostRefHolder &hostRefHolder)
 				: runtime(runtime),
+				  resourceAllocator(resourceAllocator),
 				  fnObject(fnObject),
 				  analyzedInfoOut(analyzedInfoOut),
 				  hostRefHolder(hostRefHolder),
-				  argPushInsOffs(&runtime->globalHeapPoolAlloc) {
+				  argPushInsOffs(resourceAllocator) {
 			}
 		};
 

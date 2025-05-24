@@ -85,14 +85,14 @@ SLAKE_API Object *ClassObject::duplicate() const {
 	return (Object *)alloc(this).get();
 }
 
-SLAKE_API slake::ClassObject::ClassObject(Runtime *rt)
-	: ModuleObject(rt),
+SLAKE_API slake::ClassObject::ClassObject(Runtime *rt, peff::Alloc *selfAllocator)
+	: ModuleObject(rt, selfAllocator),
 	  baseType(TypeId::None),
-	  genericArgs(&rt->globalHeapPoolAlloc),
-	  mappedGenericArgs(&rt->globalHeapPoolAlloc),
-	  genericParams(&rt->globalHeapPoolAlloc),
-	  implTypes(&rt->globalHeapPoolAlloc),
-	  cachedFieldInitValues(&rt->globalHeapPoolAlloc) {
+	  genericArgs(selfAllocator),
+	  mappedGenericArgs(selfAllocator),
+	  genericParams(selfAllocator),
+	  implTypes(selfAllocator),
+	  cachedFieldInitValues(selfAllocator) {
 }
 
 SLAKE_API ObjectKind ClassObject::getKind() const { return ObjectKind::Class; }
@@ -101,13 +101,13 @@ SLAKE_API const GenericArgList *ClassObject::getGenericArgs() const {
 	return &genericArgs;
 }
 
-SLAKE_API ClassObject::ClassObject(const ClassObject &x, bool &succeededOut)
-	: ModuleObject(x, succeededOut),
-	  genericArgs(&x.associatedRuntime->globalHeapPoolAlloc),
-	  mappedGenericArgs(&x.associatedRuntime->globalHeapPoolAlloc),
-	  genericParams(&x.associatedRuntime->globalHeapPoolAlloc),
-	  implTypes(&x.associatedRuntime->globalHeapPoolAlloc),
-	  cachedFieldInitValues(&x.associatedRuntime->globalHeapPoolAlloc) {
+SLAKE_API ClassObject::ClassObject(const ClassObject &x, peff::Alloc *allocator, bool &succeededOut)
+	: ModuleObject(x, allocator, succeededOut),
+	  genericArgs(allocator),
+	  mappedGenericArgs(allocator),
+	  genericParams(allocator),
+	  implTypes(allocator),
+	  cachedFieldInitValues(allocator) {
 	if (succeededOut) {
 		_flags = x._flags;
 
@@ -179,11 +179,13 @@ SLAKE_API bool ClassObject::isBaseOf(const ClassObject *pClass) const {
 SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(const ClassObject *other) {
 	bool succeeded = true;
 
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
+
 	std::unique_ptr<ClassObject, util::DeallocableDeleter<ClassObject>> ptr(
 		peff::allocAndConstruct<ClassObject>(
-			&other->associatedRuntime->globalHeapPoolAlloc,
+			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
-			*other, succeeded));
+			*other, curGenerationAllocator.get(), succeeded));
 
 	if (!succeeded)
 		return nullptr;
@@ -195,11 +197,13 @@ SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(const ClassObject
 }
 
 SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(Runtime *rt) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
+
 	std::unique_ptr<ClassObject, util::DeallocableDeleter<ClassObject>> ptr(
 		peff::allocAndConstruct<ClassObject>(
-			&rt->globalHeapPoolAlloc,
+			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
-			rt));
+			rt, curGenerationAllocator.get()));
 
 	if (!rt->addObject(ptr.get()))
 		return nullptr;
@@ -208,23 +212,23 @@ SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(Runtime *rt) {
 }
 
 SLAKE_API void slake::ClassObject::dealloc() {
-	peff::destroyAndRelease<ClassObject>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
+	peff::destroyAndRelease<ClassObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
-SLAKE_API InterfaceObject::InterfaceObject(Runtime *rt)
-	: ModuleObject(rt),
-	  genericArgs(&rt->globalHeapPoolAlloc),
-	  mappedGenericArgs(&rt->globalHeapPoolAlloc),
-	  genericParams(&rt->globalHeapPoolAlloc),
-	  implTypes(&rt->globalHeapPoolAlloc) {
+SLAKE_API InterfaceObject::InterfaceObject(Runtime *rt, peff::Alloc *selfAllocator)
+	: ModuleObject(rt, selfAllocator),
+	  genericArgs(selfAllocator),
+	  mappedGenericArgs(selfAllocator),
+	  genericParams(selfAllocator),
+	  implTypes(selfAllocator) {
 }
 
-SLAKE_API InterfaceObject::InterfaceObject(const InterfaceObject &x, bool &succeededOut)
-	: ModuleObject(x, succeededOut),
-	  genericArgs(&x.associatedRuntime->globalHeapPoolAlloc),
-	  mappedGenericArgs(&x.associatedRuntime->globalHeapPoolAlloc),
-	  genericParams(&x.associatedRuntime->globalHeapPoolAlloc),
-	  implTypes(&x.associatedRuntime->globalHeapPoolAlloc) {
+SLAKE_API InterfaceObject::InterfaceObject(const InterfaceObject &x, peff::Alloc *allocator, bool &succeededOut)
+	: ModuleObject(x, allocator, succeededOut),
+	  genericArgs(allocator),
+	  mappedGenericArgs(allocator),
+	  genericParams(allocator),
+	  implTypes(allocator) {
 	if (succeededOut) {
 		if (!peff::copyAssign(genericArgs, x.genericArgs)) {
 			succeededOut = false;
@@ -283,11 +287,14 @@ SLAKE_API Object *InterfaceObject::duplicate() const {
 }
 
 SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Runtime *rt) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
+
 	std::unique_ptr<InterfaceObject, util::DeallocableDeleter<InterfaceObject>> ptr(
 		peff::allocAndConstruct<InterfaceObject>(
-			&rt->globalHeapPoolAlloc,
+			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
-			rt));
+			rt,
+			curGenerationAllocator.get()));
 	if (!ptr)
 		return nullptr;
 
@@ -300,11 +307,13 @@ SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Runtime *
 SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(const InterfaceObject *other) {
 	bool succeeded = true;
 
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
+
 	std::unique_ptr<InterfaceObject, util::DeallocableDeleter<InterfaceObject>> ptr(
 		peff::allocAndConstruct<InterfaceObject>(
-			&other->associatedRuntime->globalHeapPoolAlloc,
+			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
-			*other, succeeded));
+			*other, curGenerationAllocator.get(), succeeded));
 	if (!ptr)
 		return nullptr;
 
@@ -318,5 +327,5 @@ SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(const Int
 }
 
 SLAKE_API void slake::InterfaceObject::dealloc() {
-	peff::destroyAndRelease<InterfaceObject>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
+	peff::destroyAndRelease<InterfaceObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }

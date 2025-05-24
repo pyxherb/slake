@@ -62,19 +62,19 @@ namespace slake {
 
 	enum class ObjectGeneration {
 		Young = 0,
-		Survival,
 		Persistent
 	};
 
 	class Object {
 	public:
+		peff::RcObjectPtr<peff::Alloc> selfAllocator;
 		// The object will never be freed if its host reference count is not 0.
 		mutable std::atomic_uint32_t hostRefCount = 0;
 
 		/// @brief The basic constructor.
 		/// @param rt Runtime that the value belongs to.
-		SLAKE_API Object(Runtime *rt);
-		SLAKE_API Object(const Object &x);
+		SLAKE_API Object(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API Object(const Object &x, peff::Alloc *allocator);
 		SLAKE_API virtual ~Object();
 
 		ObjectFlags _flags = 0;

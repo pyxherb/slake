@@ -4,11 +4,11 @@
 
 using namespace slake;
 
-SLAKE_API InstanceObject::InstanceObject(Runtime *rt)
-	: Object(rt) {
+SLAKE_API InstanceObject::InstanceObject(Runtime *rt, peff::Alloc *selfAllocator)
+	: Object(rt, selfAllocator) {
 }
 
-SLAKE_API InstanceObject::InstanceObject(const InstanceObject &x) : Object(x) {
+SLAKE_API InstanceObject::InstanceObject(const InstanceObject &x, peff::Alloc *allocator) : Object(x, allocator) {
 	_class = x._class;
 	// TODO: Copy the rawFieldData.
 }
@@ -41,11 +41,13 @@ SLAKE_API EntityRef InstanceObject::getMember(const std::string_view &name) cons
 }
 
 SLAKE_API HostObjectRef<InstanceObject> slake::InstanceObject::alloc(Runtime *rt) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
+
 	std::unique_ptr<InstanceObject, util::DeallocableDeleter<InstanceObject>> ptr(
 		peff::allocAndConstruct<InstanceObject>(
-			&rt->globalHeapPoolAlloc,
+			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
-			rt));
+			rt, curGenerationAllocator.get()));
 
 	if (!rt->addObject(ptr.get()))
 		return nullptr;
@@ -54,11 +56,13 @@ SLAKE_API HostObjectRef<InstanceObject> slake::InstanceObject::alloc(Runtime *rt
 }
 
 SLAKE_API HostObjectRef<InstanceObject> slake::InstanceObject::alloc(const InstanceObject *other) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
+
 	std::unique_ptr<InstanceObject, util::DeallocableDeleter<InstanceObject>> ptr(
 		peff::allocAndConstruct<InstanceObject>(
-			&other->associatedRuntime->globalHeapPoolAlloc,
+			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
-			*other));
+			*other, curGenerationAllocator.get()));
 
 	if (!other->associatedRuntime->addObject(ptr.get()))
 		return nullptr;
@@ -67,5 +71,5 @@ SLAKE_API HostObjectRef<InstanceObject> slake::InstanceObject::alloc(const Insta
 }
 
 SLAKE_API void slake::InstanceObject::dealloc() {
-	peff::destroyAndRelease<InstanceObject>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
+	peff::destroyAndRelease<InstanceObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }

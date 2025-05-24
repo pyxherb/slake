@@ -20,8 +20,8 @@ namespace slake {
 
 		AccessModifier accessModifier = 0;
 
-		SLAKE_API MemberObject(Runtime *rt);
-		SLAKE_API MemberObject(const MemberObject &x, bool &succeededOut);
+		SLAKE_API MemberObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API MemberObject(const MemberObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~MemberObject();
 
 		[[nodiscard]] SLAKE_FORCEINLINE bool setParent(Object *parent) noexcept {

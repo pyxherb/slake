@@ -6,7 +6,7 @@ SLAKE_API bool slake::StringObject::_setData(const char *str, size_t size) {
 	if (!size)
 		data.clear();
 	else {
-		peff::String s(&associatedRuntime->globalHeapPoolAlloc);
+		peff::String s(selfAllocator.get());
 
 		if (!s.resize(size))
 			return false;
@@ -18,11 +18,11 @@ SLAKE_API bool slake::StringObject::_setData(const char *str, size_t size) {
 	return true;
 }
 
-SLAKE_API slake::StringObject::StringObject(Runtime *rt, peff::String &&s) : Object(rt), data(&rt->globalHeapPoolAlloc) {
+SLAKE_API slake::StringObject::StringObject(Runtime *rt, peff::Alloc *selfAllocator, peff::String &&s) : Object(rt, selfAllocator), data(selfAllocator) {
 	data = std::move(s);
 }
 
-SLAKE_API StringObject::StringObject(const StringObject &x, bool &succeededOut) : Object(x), data(&x.associatedRuntime->globalHeapPoolAlloc) {
+SLAKE_API StringObject::StringObject(const StringObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator), data(allocator) {
 	if (!_setData(x.data.data(), x.data.size())) {
 		succeededOut = false;
 		return;
@@ -39,13 +39,15 @@ SLAKE_API Object *StringObject::duplicate() const {
 }
 
 SLAKE_API HostObjectRef<StringObject> slake::StringObject::alloc(const StringObject *other) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
+
 	bool succeeded = true;
 
 	std::unique_ptr<StringObject, util::DeallocableDeleter<StringObject>> ptr(
 		peff::allocAndConstruct<StringObject>(
-			&other->associatedRuntime->globalHeapPoolAlloc,
+			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
-			*other, succeeded));
+			*other, curGenerationAllocator.get(), succeeded));
 
 	if (!succeeded)
 		return nullptr;
@@ -57,11 +59,13 @@ SLAKE_API HostObjectRef<StringObject> slake::StringObject::alloc(const StringObj
 }
 
 SLAKE_API HostObjectRef<StringObject> slake::StringObject::alloc(Runtime *rt, peff::String &&s) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
+
 	std::unique_ptr<StringObject, util::DeallocableDeleter<StringObject>> ptr(
 		peff::allocAndConstruct<StringObject>(
-			&rt->globalHeapPoolAlloc,
+			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
-			rt, std::move(s)));
+			rt, curGenerationAllocator.get(), std::move(s)));
 
 	if (!rt->addObject(ptr.get()))
 		return nullptr;
@@ -70,5 +74,5 @@ SLAKE_API HostObjectRef<StringObject> slake::StringObject::alloc(Runtime *rt, pe
 }
 
 SLAKE_API void slake::StringObject::dealloc() {
-	peff::destroyAndRelease<StringObject>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
+	peff::destroyAndRelease<StringObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }

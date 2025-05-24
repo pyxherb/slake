@@ -86,7 +86,7 @@ InternalExceptionPointer slake::opti::evalObjectType(
 				case ObjectKind::FnOverloading: {
 					FnOverloadingObject *fnOverloadingObject = (FnOverloadingObject *)object;
 
-					peff::DynArray<Type> paramTypes(&analyzeContext.runtime->globalHeapPoolAlloc);
+					peff::DynArray<Type> paramTypes(analyzeContext.runtime->getFixedAlloc());
 					if (!(peff::copy(paramTypes, fnOverloadingObject->paramTypes))) {
 						return OutOfMemoryError::alloc();
 					}
@@ -101,7 +101,7 @@ InternalExceptionPointer slake::opti::evalObjectType(
 				default:
 					return allocOutOfMemoryErrorIfAllocFailed(
 						ErrorEvaluatingObjectTypeError::alloc(
-							&object->associatedRuntime->globalHeapPoolAlloc,
+							object->associatedRuntime->getFixedAlloc(),
 							object));
 			}
 			break;
@@ -161,7 +161,7 @@ InternalExceptionPointer slake::opti::evalValueType(
 			if (!analyzeContext.analyzedInfoOut.analyzedRegInfo.contains(regIndex)) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						&analyzeContext.runtime->globalHeapPoolAlloc,
+						analyzeContext.runtime->getFixedAlloc(),
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -172,7 +172,7 @@ InternalExceptionPointer slake::opti::evalValueType(
 		default: {
 			return allocOutOfMemoryErrorIfAllocFailed(
 				MalformedProgramError::alloc(
-					&analyzeContext.runtime->globalHeapPoolAlloc,
+					analyzeContext.runtime->getFixedAlloc(),
 					analyzeContext.fnObject,
 					analyzeContext.idxCurIns));
 		}
@@ -204,7 +204,7 @@ InternalExceptionPointer slake::opti::evalConstValue(
 			if (!analyzeContext.analyzedInfoOut.analyzedRegInfo.contains(idxReg)) {
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						&analyzeContext.runtime->globalHeapPoolAlloc,
+						analyzeContext.runtime->getFixedAlloc(),
 						analyzeContext.fnObject,
 						analyzeContext.idxCurIns));
 			}
@@ -271,7 +271,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				// Malformed program, return.
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						&runtime->globalHeapPoolAlloc,
+						runtime->getFixedAlloc(),
 						fnObject,
 						i));
 			}
@@ -289,7 +289,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					// Malformed program, return.
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -303,7 +303,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (regIndex != UINT32_MAX) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -313,7 +313,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					if (curIns.nOperands != 1) {
 						return allocOutOfMemoryErrorIfAllocFailed(
 							MalformedProgramError::alloc(
-								&runtime->globalHeapPoolAlloc,
+								runtime->getFixedAlloc(),
 								fnObject,
 								i));
 					}
@@ -321,7 +321,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					if (curIns.operands[0].valueType != ValueType::EntityRef) {
 						return allocOutOfMemoryErrorIfAllocFailed(
 							MalformedProgramError::alloc(
-								&runtime->globalHeapPoolAlloc,
+								runtime->getFixedAlloc(),
 								fnObject,
 								i));
 					}
@@ -334,7 +334,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 							(object.asObject.instanceObject->getKind() != ObjectKind::IdRef)) {
 							return allocOutOfMemoryErrorIfAllocFailed(
 								MalformedProgramError::alloc(
-									&runtime->globalHeapPoolAlloc,
+									runtime->getFixedAlloc(),
 									fnObject,
 									i));
 						}
@@ -358,7 +358,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 							e.reset();
 							return allocOutOfMemoryErrorIfAllocFailed(
 								MalformedProgramError::alloc(
-									&runtime->globalHeapPoolAlloc,
+									runtime->getFixedAlloc(),
 									fnObject,
 									i));
 						}
@@ -389,7 +389,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					if (curIns.nOperands != 2) {
 						return allocOutOfMemoryErrorIfAllocFailed(
 							MalformedProgramError::alloc(
-								&runtime->globalHeapPoolAlloc,
+								runtime->getFixedAlloc(),
 								fnObject,
 								i));
 					}
@@ -397,7 +397,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					if (curIns.operands[0].valueType != ValueType::RegRef) {
 						return allocOutOfMemoryErrorIfAllocFailed(
 							MalformedProgramError::alloc(
-								&runtime->globalHeapPoolAlloc,
+								runtime->getFixedAlloc(),
 								fnObject,
 								i));
 					}
@@ -405,7 +405,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					if (curIns.operands[1].valueType != ValueType::EntityRef) {
 						return allocOutOfMemoryErrorIfAllocFailed(
 							MalformedProgramError::alloc(
-								&runtime->globalHeapPoolAlloc,
+								runtime->getFixedAlloc(),
 								fnObject,
 								i));
 					}
@@ -418,7 +418,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 							(object.asObject.instanceObject->getKind() != ObjectKind::IdRef)) {
 							return allocOutOfMemoryErrorIfAllocFailed(
 								MalformedProgramError::alloc(
-									&runtime->globalHeapPoolAlloc,
+									runtime->getFixedAlloc(),
 									fnObject,
 									i));
 						}
@@ -448,7 +448,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 											if (((FnOverloadingObject *)object)->access & ACCESS_STATIC) {
 												return allocOutOfMemoryErrorIfAllocFailed(
 													MalformedProgramError::alloc(
-														&runtime->globalHeapPoolAlloc,
+														runtime->getFixedAlloc(),
 														fnObject,
 														i));
 											}
@@ -456,7 +456,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 										default: {
 											return allocOutOfMemoryErrorIfAllocFailed(
 												MalformedProgramError::alloc(
-													&runtime->globalHeapPoolAlloc,
+													runtime->getFixedAlloc(),
 													fnObject,
 													i));
 										}
@@ -471,7 +471,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 								default: {
 									return allocOutOfMemoryErrorIfAllocFailed(
 										MalformedProgramError::alloc(
-											&runtime->globalHeapPoolAlloc,
+											runtime->getFixedAlloc(),
 											fnObject,
 											i));
 								}
@@ -484,7 +484,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						default: {
 							return allocOutOfMemoryErrorIfAllocFailed(
 								MalformedProgramError::alloc(
-									&runtime->globalHeapPoolAlloc,
+									runtime->getFixedAlloc(),
 									fnObject,
 									i));
 						}
@@ -497,7 +497,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (regIndex != UINT32_MAX) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -565,7 +565,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						default: {
 							return allocOutOfMemoryErrorIfAllocFailed(
 								MalformedProgramError::alloc(
-									&runtime->globalHeapPoolAlloc,
+									runtime->getFixedAlloc(),
 									fnObject,
 									i));
 						}
@@ -579,7 +579,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					if (curIns.nOperands != 1) {
 						return allocOutOfMemoryErrorIfAllocFailed(
 							MalformedProgramError::alloc(
-								&runtime->globalHeapPoolAlloc,
+								runtime->getFixedAlloc(),
 								fnObject,
 								i));
 					}
@@ -587,7 +587,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					if (curIns.operands[0].valueType != ValueType::U32) {
 						return allocOutOfMemoryErrorIfAllocFailed(
 							MalformedProgramError::alloc(
-								&runtime->globalHeapPoolAlloc,
+								runtime->getFixedAlloc(),
 								fnObject,
 								i));
 					}
@@ -599,7 +599,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						if (index > fnObject->paramTypes.size()) {
 							return allocOutOfMemoryErrorIfAllocFailed(
 								MalformedProgramError::alloc(
-									&runtime->globalHeapPoolAlloc,
+									runtime->getFixedAlloc(),
 									fnObject,
 									i));
 						} else if (index == fnObject->paramTypes.size()) {
@@ -625,7 +625,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						if (index >= fnObject->paramTypes.size()) {
 							return allocOutOfMemoryErrorIfAllocFailed(
 								MalformedProgramError::alloc(
-									&runtime->globalHeapPoolAlloc,
+									runtime->getFixedAlloc(),
 									fnObject,
 									i));
 						} else {
@@ -651,7 +651,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (regIndex == UINT32_MAX) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -659,7 +659,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (curIns.nOperands != 1) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -667,7 +667,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (curIns.operands[0].valueType != ValueType::TypeName) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -696,7 +696,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					if (curIns.nOperands != 1) {
 						return allocOutOfMemoryErrorIfAllocFailed(
 							MalformedProgramError::alloc(
-								&runtime->globalHeapPoolAlloc,
+								runtime->getFixedAlloc(),
 								fnObject,
 								i));
 					}
@@ -704,7 +704,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					if (curIns.operands[0].valueType != ValueType::RegRef) {
 						return allocOutOfMemoryErrorIfAllocFailed(
 							MalformedProgramError::alloc(
-								&runtime->globalHeapPoolAlloc,
+								runtime->getFixedAlloc(),
 								fnObject,
 								i));
 					}
@@ -715,7 +715,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					if (type.typeId != TypeId::Ref) {
 						return allocOutOfMemoryErrorIfAllocFailed(
 							MalformedProgramError::alloc(
-								&runtime->globalHeapPoolAlloc,
+								runtime->getFixedAlloc(),
 								fnObject,
 								i));
 					}
@@ -760,7 +760,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					if (curIns.nOperands != 2) {
 						return allocOutOfMemoryErrorIfAllocFailed(
 							MalformedProgramError::alloc(
-								&runtime->globalHeapPoolAlloc,
+								runtime->getFixedAlloc(),
 								fnObject,
 								i));
 					}
@@ -768,7 +768,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					if (curIns.operands[0].valueType != ValueType::RegRef) {
 						return allocOutOfMemoryErrorIfAllocFailed(
 							MalformedProgramError::alloc(
-								&runtime->globalHeapPoolAlloc,
+								runtime->getFixedAlloc(),
 								fnObject,
 								i));
 					}
@@ -779,7 +779,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					if (type.typeId != TypeId::Array) {
 						return allocOutOfMemoryErrorIfAllocFailed(
 							MalformedProgramError::alloc(
-								&runtime->globalHeapPoolAlloc,
+								runtime->getFixedAlloc(),
 								fnObject,
 								i));
 					}
@@ -800,7 +800,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (regIndex != UINT32_MAX) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -814,7 +814,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (regIndex != UINT32_MAX) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -828,7 +828,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (regIndex != UINT32_MAX) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -842,14 +842,14 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (regIndex != UINT32_MAX) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
 				if (curIns.nOperands != 1) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -873,7 +873,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					default:
 						return allocOutOfMemoryErrorIfAllocFailed(
 							MalformedProgramError::alloc(
-								&runtime->globalHeapPoolAlloc,
+								runtime->getFixedAlloc(),
 								fnObject,
 								i));
 				}
@@ -885,7 +885,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (curIns.nOperands != 1) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -894,7 +894,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (callTarget.valueType != ValueType::RegRef) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -903,7 +903,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (!analyzedInfoOut.analyzedRegInfo.contains(callTargetRegIndex)) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -920,22 +920,22 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					default: {
 						return allocOutOfMemoryErrorIfAllocFailed(
 							MalformedProgramError::alloc(
-								&runtime->globalHeapPoolAlloc,
+								runtime->getFixedAlloc(),
 								fnObject,
 								i));
 					}
 				}
 
-				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.insert(i, FnCallAnalyzedInfo(&analyzeContext.runtime->globalHeapPoolAlloc));
+				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.insert(i, FnCallAnalyzedInfo(analyzeContext.resourceAllocator.get()));
 				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.at(i).argPushInsOffs = std::move(analyzeContext.argPushInsOffs);
-				analyzeContext.argPushInsOffs = peff::DynArray<uint32_t>(&analyzeContext.runtime->globalHeapPoolAlloc);
+				analyzeContext.argPushInsOffs = peff::DynArray<uint32_t>(analyzeContext.resourceAllocator.get());
 
 				Value expectedFnValue = analyzedInfoOut.analyzedRegInfo.at(callTargetRegIndex).expectedValue;
 
 				if (expectedFnValue.valueType != ValueType::Undefined) {
 					FnOverloadingObject *expectedFnObject = (FnOverloadingObject *)expectedFnValue.getEntityRef().asObject.instanceObject;
 					if (!analyzeContext.analyzedInfoOut.fnCallMap.contains(expectedFnObject)) {
-						analyzeContext.analyzedInfoOut.fnCallMap.insert(+expectedFnObject, peff::DynArray<uint32_t>(&analyzeContext.runtime->globalHeapPoolAlloc));
+						analyzeContext.analyzedInfoOut.fnCallMap.insert(+expectedFnObject, peff::DynArray<uint32_t>(analyzeContext.runtime->getFixedAlloc()));
 					}
 					if (!analyzeContext.analyzedInfoOut.fnCallMap.at(expectedFnObject).pushBack(i))
 						return OutOfMemoryError::alloc();
@@ -948,7 +948,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (curIns.nOperands != 2) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -957,7 +957,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (callTarget.valueType != ValueType::RegRef) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -966,7 +966,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (!analyzedInfoOut.analyzedRegInfo.contains(callTargetRegIndex)) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -983,21 +983,21 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					default: {
 						return allocOutOfMemoryErrorIfAllocFailed(
 							MalformedProgramError::alloc(
-								&runtime->globalHeapPoolAlloc,
+								runtime->getFixedAlloc(),
 								fnObject,
 								i));
 					}
 				}
-				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.insert(i, FnCallAnalyzedInfo(&analyzeContext.runtime->globalHeapPoolAlloc));
+				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.insert(i, FnCallAnalyzedInfo(analyzeContext.resourceAllocator.get()));
 				analyzeContext.analyzedInfoOut.analyzedFnCallInfo.at(i).argPushInsOffs = std::move(analyzeContext.argPushInsOffs);
-				analyzeContext.argPushInsOffs = peff::DynArray<uint32_t>(&analyzeContext.runtime->globalHeapPoolAlloc);
+				analyzeContext.argPushInsOffs = peff::DynArray<uint32_t>(analyzeContext.resourceAllocator.get());
 
 				Value expectedFnValue = analyzedInfoOut.analyzedRegInfo.at(callTargetRegIndex).expectedValue;
 
 				if (expectedFnValue.valueType != ValueType::Undefined) {
 					FnOverloadingObject *expectedFnObject = (FnOverloadingObject *)expectedFnValue.getEntityRef().asObject.instanceObject;
 					if (!analyzeContext.analyzedInfoOut.fnCallMap.contains(expectedFnObject)) {
-						analyzeContext.analyzedInfoOut.fnCallMap.insert(+expectedFnObject, peff::DynArray<uint32_t>(&analyzeContext.runtime->globalHeapPoolAlloc));
+						analyzeContext.analyzedInfoOut.fnCallMap.insert(+expectedFnObject, peff::DynArray<uint32_t>(analyzeContext.resourceAllocator.get()));
 					}
 					if (!analyzeContext.analyzedInfoOut.fnCallMap.at(expectedFnObject).pushBack(i))
 						return OutOfMemoryError::alloc();
@@ -1009,14 +1009,14 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (regIndex != UINT32_MAX) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
 				if (curIns.nOperands != 1) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -1040,7 +1040,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 					default:
 						return allocOutOfMemoryErrorIfAllocFailed(
 							MalformedProgramError::alloc(
-								&runtime->globalHeapPoolAlloc,
+								runtime->getFixedAlloc(),
 								fnObject,
 								i));
 				}
@@ -1051,7 +1051,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (regIndex != UINT32_MAX) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -1062,7 +1062,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (regIndex == UINT32_MAX) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -1070,7 +1070,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (analyzeContext.fnObject->thisType.typeId == TypeId::None) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -1080,7 +1080,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (regIndex == UINT32_MAX) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -1088,7 +1088,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (curIns.nOperands != 1) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -1096,7 +1096,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (curIns.operands[0].valueType != ValueType::TypeName) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -1107,7 +1107,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (regIndex == UINT32_MAX) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -1115,7 +1115,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (curIns.nOperands != 2) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -1123,7 +1123,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (curIns.operands[0].valueType != ValueType::TypeName) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -1133,14 +1133,14 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (!isValueTypeCompatibleTypeId(lengthType.typeId)) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
 				if (lengthType != TypeId::U32) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -1157,7 +1157,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				if (regIndex != UINT32_MAX) {
 					return allocOutOfMemoryErrorIfAllocFailed(
 						MalformedProgramError::alloc(
-							&runtime->globalHeapPoolAlloc,
+							runtime->getFixedAlloc(),
 							fnObject,
 							i));
 				}
@@ -1173,7 +1173,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 				// Malformed program, return.
 				return allocOutOfMemoryErrorIfAllocFailed(
 					MalformedProgramError::alloc(
-						&runtime->globalHeapPoolAlloc,
+						runtime->getFixedAlloc(),
 						fnObject,
 						i));
 			}
@@ -1184,7 +1184,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 	if (analyzeContext.argPushInsOffs.size()) {
 		return allocOutOfMemoryErrorIfAllocFailed(
 			MalformedProgramError::alloc(
-				&runtime->globalHeapPoolAlloc,
+				runtime->getFixedAlloc(),
 				fnObject,
 				nIns - 1));
 	}

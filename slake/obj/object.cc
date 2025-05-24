@@ -2,11 +2,12 @@
 
 using namespace slake;
 
-SLAKE_API Object::Object(Runtime *rt) : associatedRuntime(rt) {
+SLAKE_API Object::Object(Runtime *rt, peff::Alloc *selfAllocator) : associatedRuntime(rt), selfAllocator(selfAllocator) {
 }
 
-SLAKE_API Object::Object(const Object &x) {
+SLAKE_API Object::Object(const Object &x, peff::Alloc *allocator) {
 	associatedRuntime = x.associatedRuntime;
+	selfAllocator = allocator;
 	_flags = x._flags & ~VF_WALKED;
 }
 

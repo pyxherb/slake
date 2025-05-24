@@ -123,7 +123,8 @@ namespace slake {
 			}
 		};
 
-		mutable CountablePoolAlloc globalHeapPoolAlloc;
+		mutable CountablePoolAlloc fixedAlloc;
+		peff::Set<peff::RcObjectPtr<peff::Alloc>> generationAlloc;
 
 	private:
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
@@ -178,8 +179,8 @@ namespace slake {
 		/// @param ins Instruction to be executed.
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _execIns(ContextObject *context, MajorFrame *curMajorFrame, const Instruction &ins, bool &isContextChangedOut) noexcept;
 
-		Object *youngObjectList = nullptr, *survivalObjectList = nullptr, *persistentObjectList = nullptr;
-		size_t nYoungObjects = 0, nSurvivalObjects = 0, nPersistentObjects = 0;
+		Object *youngObjectList = nullptr, *persistentObjectList = nullptr;
+		size_t nYoungObjects = 0, nPersistentObjects = 0;
 
 		SLAKE_API void _gcWalk(GCWalkContext *context, MethodTable *methodTable);
 		SLAKE_API void _gcWalk(GCWalkContext *context, GenericParamList &genericParamList);
@@ -293,6 +294,10 @@ namespace slake {
 		SLAKE_API InternalExceptionPointer resolveIdRef(IdRefObject *ref, EntityRef &objectRefOut, Object *scopeObject = nullptr);
 
 		[[nodiscard]] SLAKE_API bool addObject(Object *object);
+		SLAKE_FORCEINLINE peff::Alloc* getFixedAlloc() {
+			return &fixedAlloc;
+		}
+		SLAKE_API peff::Alloc *getCurGenAlloc();
 
 		SLAKE_API HostObjectRef<ModuleObject> loadModule(const void *buf, size_t size, LoadModuleFlags flags);
 

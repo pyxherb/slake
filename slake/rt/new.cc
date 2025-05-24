@@ -12,7 +12,7 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 			parentClass->cachedInstantiatedMethodTable->duplicate());
 	} else {
 		methodTable = std::unique_ptr<MethodTable, util::DeallocableDeleter<MethodTable>>(
-			MethodTable::alloc(&globalHeapPoolAlloc));
+			MethodTable::alloc(cls->selfAllocator.get()));
 	}
 
 	for (auto it = cls->members.begin(); it != cls->members.end(); ++it) {
@@ -27,8 +27,8 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 				}
 
 				if (it.key() == "delete") {
-					peff::DynArray<Type> destructorParamTypes(&globalHeapPoolAlloc);
-					GenericParamList destructorGenericParamList(&globalHeapPoolAlloc);
+					peff::DynArray<Type> destructorParamTypes(getFixedAlloc());
+					GenericParamList destructorGenericParamList(getFixedAlloc());
 
 					for (auto j : overloadings) {
 						if (isDuplicatedOverloading(j, destructorParamTypes, destructorGenericParamList, false)) {
@@ -89,8 +89,8 @@ SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForClass(ClassObject
 		objectLayout = decltype(objectLayout)(parentClass->cachedObjectLayout->duplicate());
 		peff::copyAssign(cls->cachedFieldInitValues, parentClass->cachedFieldInitValues);
 	} else {
-		objectLayout = decltype(objectLayout)(ObjectLayout::alloc(&globalHeapPoolAlloc));
-		cls->cachedFieldInitValues = peff::DynArray<Value>(&globalHeapPoolAlloc);
+		objectLayout = decltype(objectLayout)(ObjectLayout::alloc(cls->selfAllocator.get()));
+		cls->cachedFieldInitValues = peff::DynArray<Value>(cls->selfAllocator.get());
 	}
 
 	for (size_t i = 0; i < cls->fieldRecords.size(); ++i) {
@@ -100,7 +100,7 @@ SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForClass(ClassObject
 			continue;
 		}
 
-		ObjectFieldRecord fieldRecord(&globalHeapPoolAlloc);
+		ObjectFieldRecord fieldRecord(cls->selfAllocator.get());
 
 		Type type = clsFieldRecord.type;
 
@@ -142,13 +142,13 @@ SLAKE_API InternalExceptionPointer Runtime::prepareClassForInstantiation(ClassOb
 
 	if (cls->baseType.typeId != TypeId::None) {
 		if (cls->baseType.typeId != TypeId::Instance)
-			return allocOutOfMemoryErrorIfAllocFailed(MalformedClassStructureError::alloc(&globalHeapPoolAlloc, cls));
+			return allocOutOfMemoryErrorIfAllocFailed(MalformedClassStructureError::alloc(getFixedAlloc(), cls));
 
 		SLAKE_RETURN_IF_EXCEPT(cls->baseType.loadDeferredType(this));
 
 		Object *parentClass = (ClassObject *)cls->baseType.getCustomTypeExData();
 		if (parentClass->getKind() != ObjectKind::Class)
-			return allocOutOfMemoryErrorIfAllocFailed(MalformedClassStructureError::alloc(&globalHeapPoolAlloc, cls));
+			return allocOutOfMemoryErrorIfAllocFailed(MalformedClassStructureError::alloc(getFixedAlloc(), cls));
 
 		SLAKE_RETURN_IF_EXCEPT(prepareClassForInstantiation((ClassObject *)parentClass));
 		p = (ClassObject *)parentClass;
@@ -198,80 +198,82 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 }
 
 SLAKE_API HostObjectRef<ArrayObject> Runtime::newArrayInstance(Runtime *rt, const Type &type, size_t length) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = getCurGenAlloc();
+
 	switch (type.typeId) {
 		case TypeId::I8: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int8_t));
-			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(int8_t) * length, sizeof(int8_t))))
+			if (!(obj->data = curGenerationAllocator->alloc(sizeof(int8_t) * length, sizeof(int8_t))))
 				return nullptr;
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::I16: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int16_t));
-			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(int16_t) * length, sizeof(int16_t))))
+			if (!(obj->data = curGenerationAllocator->alloc(sizeof(int16_t) * length, sizeof(int16_t))))
 				return nullptr;
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::I32: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int32_t));
-			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(int32_t) * length, sizeof(int32_t))))
+			if (!(obj->data = curGenerationAllocator->alloc(sizeof(int32_t) * length, sizeof(int32_t))))
 				return nullptr;
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::I64: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int64_t));
-			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(int64_t) * length, sizeof(int64_t))))
+			if (!(obj->data = curGenerationAllocator->alloc(sizeof(int64_t) * length, sizeof(int64_t))))
 				return nullptr;
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::U8: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint8_t));
-			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(uint8_t) * length, sizeof(uint8_t))))
+			if (!(obj->data = curGenerationAllocator->alloc(sizeof(uint8_t) * length, sizeof(uint8_t))))
 				return nullptr;
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::U16: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint16_t));
-			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(uint16_t) * length, sizeof(uint16_t))))
+			if (!(obj->data = curGenerationAllocator->alloc(sizeof(uint16_t) * length, sizeof(uint16_t))))
 				return nullptr;
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::U32: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint32_t));
-			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(uint32_t) * length, sizeof(uint32_t))))
+			if (!(obj->data = curGenerationAllocator->alloc(sizeof(uint32_t) * length, sizeof(uint32_t))))
 				return nullptr;
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::U64: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint64_t));
-			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(uint64_t) * length, sizeof(uint64_t))))
+			if (!(obj->data = curGenerationAllocator->alloc(sizeof(uint64_t) * length, sizeof(uint64_t))))
 				return nullptr;
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::F32: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(float));
-			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(float) * length, sizeof(float))))
+			if (!(obj->data = curGenerationAllocator->alloc(sizeof(float) * length, sizeof(float))))
 				return nullptr;
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::F64: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(double));
-			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(double) * length, sizeof(double))))
+			if (!(obj->data = curGenerationAllocator->alloc(sizeof(double) * length, sizeof(double))))
 				return nullptr;
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::Bool: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(bool));
-			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(bool) * length, sizeof(bool))))
+			if (!(obj->data = curGenerationAllocator->alloc(sizeof(bool) * length, sizeof(bool))))
 				return nullptr;
 			obj->length = length;
 			return obj.get();
@@ -280,14 +282,14 @@ SLAKE_API HostObjectRef<ArrayObject> Runtime::newArrayInstance(Runtime *rt, cons
 		case TypeId::Instance:
 		case TypeId::Array: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(EntityRef));
-			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(EntityRef) * length, sizeof(EntityRef))))
+			if (!(obj->data = curGenerationAllocator->alloc(sizeof(EntityRef) * length, sizeof(EntityRef))))
 				return nullptr;
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::Any: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(Value));
-			if (!(obj->data = globalHeapPoolAlloc.alloc(sizeof(Value) * length, sizeof(std::max_align_t))))
+			if (!(obj->data = curGenerationAllocator->alloc(sizeof(Value) * length, sizeof(std::max_align_t))))
 				return nullptr;
 			obj->length = length;
 			return obj.get();

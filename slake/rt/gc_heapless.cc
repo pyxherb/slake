@@ -735,7 +735,7 @@ SLAKE_API void Runtime::ParallelGcThreadRunnable::run() {
 }
 
 SLAKE_API void Runtime::ParallelGcThreadRunnable::dealloc() {
-	peff::destroyAndRelease<ParallelGcThreadRunnable>(&runtime->globalHeapPoolAlloc, this, alignof(ParallelGcThreadRunnable));
+	peff::destroyAndRelease<ParallelGcThreadRunnable>(runtime->getFixedAlloc(), this, alignof(ParallelGcThreadRunnable));
 }
 
 SLAKE_API void Runtime::_gcParallelHeapless(Object *&objectList, Object *&endObjectOut, size_t &nObjects, ObjectGeneration newGeneration) {
@@ -930,7 +930,7 @@ SLAKE_API bool Runtime::_allocParallelGcResources() {
 	for (size_t i = 0; i < nMaxGcThreads; ++i) {
 		auto &p = parallelGcThreadRunnables.at(i);
 
-		if (!(p = std::unique_ptr<ParallelGcThreadRunnable, peff::DeallocableDeleter<ParallelGcThreadRunnable>>(peff::allocAndConstruct<ParallelGcThreadRunnable>(&globalHeapPoolAlloc, alignof(ParallelGcThreadRunnable), this)))) {
+		if (!(p = std::unique_ptr<ParallelGcThreadRunnable, peff::DeallocableDeleter<ParallelGcThreadRunnable>>(peff::allocAndConstruct<ParallelGcThreadRunnable>(getFixedAlloc(), alignof(ParallelGcThreadRunnable), this)))) {
 			return false;
 		}
 	}
@@ -940,7 +940,7 @@ SLAKE_API bool Runtime::_allocParallelGcResources() {
 	}
 
 	for (size_t i = 0; i < nMaxGcThreads; ++i) {
-		if (!(parallelGcThreads.at(i) = std::unique_ptr<Thread, util::DeallocableDeleter<Thread>>(Thread::alloc(&globalHeapPoolAlloc, parallelGcThreadRunnables.at(i).get(), 4096)))) {
+		if (!(parallelGcThreads.at(i) = std::unique_ptr<Thread, util::DeallocableDeleter<Thread>>(Thread::alloc(getFixedAlloc(), parallelGcThreadRunnables.at(i).get(), 4096)))) {
 			return false;
 		}
 	}

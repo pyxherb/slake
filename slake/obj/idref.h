@@ -44,8 +44,8 @@ namespace slake {
 		std::optional<peff::DynArray<Type>> paramTypes;
 		bool hasVarArgs;
 
-		SLAKE_API IdRefObject(Runtime *rt);
-		SLAKE_API IdRefObject(const IdRefObject &x, bool &succeededOut);
+		SLAKE_API IdRefObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API IdRefObject(const IdRefObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~IdRefObject();
 
 		SLAKE_API virtual ObjectKind getKind() const override;

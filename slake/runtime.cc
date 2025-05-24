@@ -30,6 +30,10 @@ SLAKE_API void CountablePoolAlloc::release(void *p, size_t size, size_t alignmen
 	szAllocated -= size;
 }
 
+SLAKE_API peff::Alloc* Runtime::getCurGenAlloc() {
+	return &fixedAlloc;
+}
+
 SLAKE_API size_t Runtime::sizeofType(const Type &type) {
 	switch (type.typeId) {
 		case TypeId::I8:
@@ -137,13 +141,14 @@ SLAKE_API Value Runtime::defaultValueOf(const Type &type) {
 
 SLAKE_API Runtime::Runtime(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags)
 	: selfAllocator(selfAllocator),
-	  globalHeapPoolAlloc(upstream),
+	  fixedAlloc(upstream),
 	  _flags(flags | _RT_INITING),
-	  _genericCacheLookupTable(&globalHeapPoolAlloc),
-	  _genericCacheDir(&globalHeapPoolAlloc),
-	  managedThreadRunnables(&globalHeapPoolAlloc),
-	  parallelGcThreads(&globalHeapPoolAlloc),
-	  parallelGcThreadRunnables(&globalHeapPoolAlloc) {
+	  _genericCacheLookupTable(&fixedAlloc),
+	  _genericCacheDir(&fixedAlloc),
+	  managedThreadRunnables(&fixedAlloc),
+	  parallelGcThreads(&fixedAlloc),
+	  parallelGcThreadRunnables(&fixedAlloc),
+	  generationAlloc(&fixedAlloc) {
 	_flags &= ~_RT_INITING;
 }
 
@@ -165,14 +170,12 @@ SLAKE_API Runtime::~Runtime() {
 	// No need to delete the root object explicitly.
 
 	assert(!youngObjectList);
-	assert(!survivalObjectList);
 	assert(!persistentObjectList);
-	assert(!globalHeapPoolAlloc.szAllocated);
 	// Self allocator should be moved out in the dealloc() method, or the runtime has been destructed prematurely.
 	assert(!selfAllocator);
 }
 
-SLAKE_API bool Runtime::addObject(Object* object) {
+SLAKE_API bool Runtime::addObject(Object *object) {
 	if (youngObjectList) {
 		assert(!youngObjectList->prevSameGenObject);
 		youngObjectList->prevSameGenObject = object;

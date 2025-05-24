@@ -21,8 +21,8 @@ namespace slake {
 
 		InstanceFlags instanceFlags = 0;
 
-		SLAKE_API InstanceObject(Runtime *rt);
-		SLAKE_API InstanceObject(const InstanceObject &x);
+		SLAKE_API InstanceObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API InstanceObject(const InstanceObject &x, peff::Alloc *allocator);
 		SLAKE_API virtual ~InstanceObject();
 
 		SLAKE_API virtual ObjectKind getKind() const override;

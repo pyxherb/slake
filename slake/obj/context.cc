@@ -27,18 +27,20 @@ SLAKE_API ResumableContext &ResumableContext::operator=(ResumableContext &&rhs) 
 
 SLAKE_API MinorFrame::MinorFrame(
 	Runtime *rt,
+	peff::Alloc *allocator,
 	size_t stackBase)
-	: exceptHandlers(&rt->globalHeapPoolAlloc),
+	: exceptHandlers(allocator),
 	  stackBase(stackBase) {
 }
 
-SLAKE_API MajorFrame::MajorFrame(Runtime *rt)
+SLAKE_API MajorFrame::MajorFrame(Runtime *rt, peff::Alloc *allocator)
 	: associatedRuntime(rt),
-	  resumable(&rt->globalHeapPoolAlloc) {
+	  resumable(allocator),
+	  selfAllocator(allocator) {
 }
 
 SLAKE_API void MajorFrame::dealloc() noexcept {
-	peff::destroyAndRelease<MajorFrame>(&associatedRuntime->globalHeapPoolAlloc, this, alignof(MajorFrame));
+	peff::destroyAndRelease<MajorFrame>(selfAllocator.get(), this, alignof(MajorFrame));
 }
 
 SLAKE_API void Context::leaveMajor() {
@@ -56,18 +58,19 @@ SLAKE_API char *Context::stackAlloc(size_t size) {
 	return dataStack + SLAKE_STACK_MAX - stackTop;
 }
 
-SLAKE_API Context::Context(Runtime *runtime) : runtime(runtime), majorFrames(&runtime->globalHeapPoolAlloc) {
+SLAKE_API Context::Context(Runtime *runtime, peff::Alloc *selfAllocator) : runtime(runtime), selfAllocator(selfAllocator), majorFrames(selfAllocator) {
 }
 
 SLAKE_API Context::~Context() {
 	if (dataStack) {
-		runtime->globalHeapPoolAlloc.release(dataStack, SLAKE_STACK_MAX, sizeof(std::max_align_t));
+		selfAllocator->release(dataStack, SLAKE_STACK_MAX, sizeof(std::max_align_t));
 	}
 }
 
 SLAKE_API ContextObject::ContextObject(
-	Runtime *rt)
-	: Object(rt), _context(rt) {
+	Runtime *rt,
+	peff::Alloc *selfAllocator)
+	: Object(rt, selfAllocator), _context(rt, selfAllocator) {
 }
 
 SLAKE_API ContextObject::~ContextObject() {
@@ -76,15 +79,17 @@ SLAKE_API ContextObject::~ContextObject() {
 SLAKE_API ObjectKind ContextObject::getKind() const { return ObjectKind::Context; }
 
 SLAKE_API HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
+
 	std::unique_ptr<ContextObject, util::DeallocableDeleter<ContextObject>> ptr(
 		peff::allocAndConstruct<ContextObject>(
-			&rt->globalHeapPoolAlloc,
+			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
-			rt));
+			rt, curGenerationAllocator.get()));
 	if (!ptr)
 		return nullptr;
 
-	if (!(ptr->_context.dataStack = (char *)rt->globalHeapPoolAlloc.alloc(SLAKE_STACK_MAX, sizeof(std::max_align_t))))
+	if (!(ptr->_context.dataStack = (char *)curGenerationAllocator->alloc(SLAKE_STACK_MAX, sizeof(std::max_align_t))))
 		return nullptr;
 
 	if (!rt->addObject(ptr.get()))
@@ -97,11 +102,13 @@ SLAKE_API MajorFrame::~MajorFrame() {
 }
 
 SLAKE_API void slake::ContextObject::dealloc() {
-	peff::destroyAndRelease<ContextObject>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
+	peff::destroyAndRelease<ContextObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
 SLAKE_API MajorFrame *MajorFrame::alloc(Runtime *rt, Context *context) {
-	return peff::allocAndConstruct<MajorFrame>(&rt->globalHeapPoolAlloc, alignof(MajorFrame), rt);
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
+
+	return peff::allocAndConstruct<MajorFrame>(curGenerationAllocator.get(), alignof(MajorFrame), rt, curGenerationAllocator.get());
 }
 
 SLAKE_API InternalExceptionPointer ContextObject::resume(HostRefHolder *hostRefHolder) {

@@ -14,7 +14,7 @@ namespace slake {
 		size_t elementSize;
 		void *data = nullptr;
 
-		SLAKE_API ArrayObject(Runtime *rt, const Type &elementType, size_t elementSize);
+		SLAKE_API ArrayObject(Runtime *rt, peff::Alloc *selfAllocator, const Type &elementType, size_t elementSize);
 		SLAKE_API virtual ~ArrayObject();
 
 		SLAKE_API virtual ObjectKind getKind() const override;

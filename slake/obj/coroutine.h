@@ -18,7 +18,7 @@ namespace slake {
 
 		Value finalResult;
 
-		SLAKE_API CoroutineObject(Runtime *rt);
+		SLAKE_API CoroutineObject(Runtime *rt, peff::Alloc *selfAllocator);
 		SLAKE_API virtual ~CoroutineObject();
 
 		SLAKE_API virtual ObjectKind getKind() const override;

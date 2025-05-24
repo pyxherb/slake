@@ -11,8 +11,8 @@ namespace slake {
 	public:
 		Type type;
 
-		SLAKE_API TypeDefObject(Runtime *rt, const Type &type);
-		SLAKE_API TypeDefObject(const TypeDefObject &x, bool &succeededOut);
+		SLAKE_API TypeDefObject(Runtime *rt, peff::Alloc *selfAllocator, const Type &type);
+		SLAKE_API TypeDefObject(const TypeDefObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~TypeDefObject();
 
 		SLAKE_API virtual ObjectKind getKind() const override;
@@ -30,8 +30,8 @@ namespace slake {
 		peff::DynArray<Type> paramTypes;
 		bool hasVarArg = false;
 
-		SLAKE_API FnTypeDefObject(Runtime *rt, const Type &returnType, peff::DynArray<Type> &&paramTypes);
-		SLAKE_API FnTypeDefObject(const FnTypeDefObject &x, bool &succeededOut);
+		SLAKE_API FnTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator, const Type &returnType, peff::DynArray<Type> &&paramTypes);
+		SLAKE_API FnTypeDefObject(const FnTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~FnTypeDefObject();
 
 		SLAKE_API virtual ObjectKind getKind() const override;

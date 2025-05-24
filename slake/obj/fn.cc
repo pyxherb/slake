@@ -91,23 +91,24 @@ SLAKE_API Instruction &Instruction::operator=(Instruction &&rhs) {
 
 SLAKE_API FnOverloadingObject::FnOverloadingObject(
 	FnOverloadingKind overloadingKind,
-	FnObject *fnObject)
-	: Object(fnObject->associatedRuntime),
+	FnObject *fnObject,
+	peff::Alloc *selfAllocator)
+	: Object(fnObject->associatedRuntime, selfAllocator),
 	  overloadingKind(overloadingKind),
 	  fnObject(fnObject),
-	  genericParams(&fnObject->associatedRuntime->globalHeapPoolAlloc),
-	  mappedGenericArgs(&fnObject->associatedRuntime->globalHeapPoolAlloc),
-	  specializationArgs(&fnObject->associatedRuntime->globalHeapPoolAlloc),
-	  paramTypes(&fnObject->associatedRuntime->globalHeapPoolAlloc),
+	  genericParams(selfAllocator),
+	  mappedGenericArgs(selfAllocator),
+	  specializationArgs(selfAllocator),
+	  paramTypes(selfAllocator),
 	  returnType({ TypeId::None }) {
 }
 
-SLAKE_API FnOverloadingObject::FnOverloadingObject(const FnOverloadingObject &other, bool &succeededOut)
-	: Object(other),
-	  genericParams(&other.associatedRuntime->globalHeapPoolAlloc),
-	  mappedGenericArgs(&other.associatedRuntime->globalHeapPoolAlloc),
-	  paramTypes(&other.associatedRuntime->globalHeapPoolAlloc),
-	  specializationArgs(&other.associatedRuntime->globalHeapPoolAlloc) {
+SLAKE_API FnOverloadingObject::FnOverloadingObject(const FnOverloadingObject &other, peff::Alloc *allocator, bool &succeededOut)
+	: Object(other, allocator),
+	  genericParams(allocator),
+	  mappedGenericArgs(allocator),
+	  paramTypes(allocator),
+	  specializationArgs(allocator) {
 	fnObject = other.fnObject;
 
 	access = other.access;
@@ -137,15 +138,17 @@ SLAKE_API FnOverloadingObject::~FnOverloadingObject() {
 SLAKE_API ObjectKind FnOverloadingObject::getKind() const { return ObjectKind::FnOverloading; }
 
 SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(
-	FnObject *fnObject)
+	FnObject *fnObject,
+	peff::Alloc *selfAllocator)
 	: FnOverloadingObject(
 		  FnOverloadingKind::Regular,
-		  fnObject),
+		  fnObject,
+		  selfAllocator),
 	  nRegisters(nRegisters),
-	  sourceLocDescs(&fnObject->associatedRuntime->globalHeapPoolAlloc),
-	  instructions(&fnObject->associatedRuntime->globalHeapPoolAlloc) {}
+	  sourceLocDescs(selfAllocator),
+	  instructions(selfAllocator) {}
 
-SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFnOverloadingObject &other, bool &succeededOut) : FnOverloadingObject(other, succeededOut), sourceLocDescs(&other.associatedRuntime->globalHeapPoolAlloc), instructions(&other.associatedRuntime->globalHeapPoolAlloc) {
+SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFnOverloadingObject &other, peff::Alloc *allocator, bool &succeededOut) : FnOverloadingObject(other, allocator, succeededOut), sourceLocDescs(allocator), instructions(allocator) {
 	if (succeededOut) {
 		if (!peff::copyAssign(sourceLocDescs, other.sourceLocDescs)) {
 			succeededOut = false;
@@ -163,7 +166,7 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFn
 
 			curIns.output = otherCurIns.output;
 
-			if (!curIns.reserveOperands(&associatedRuntime->globalHeapPoolAlloc, otherCurIns.nOperands)) {
+			if (!curIns.reserveOperands(allocator, otherCurIns.nOperands)) {
 				succeededOut = false;
 				return;
 			}
@@ -224,11 +227,14 @@ SLAKE_API FnOverloadingObject *slake::RegularFnOverloadingObject::duplicate() co
 
 SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingObject::alloc(
 	FnObject *fnObject) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = fnObject->associatedRuntime->getCurGenAlloc();
+
 	std::unique_ptr<RegularFnOverloadingObject, util::DeallocableDeleter<RegularFnOverloadingObject>> ptr(
 		peff::allocAndConstruct<RegularFnOverloadingObject>(
-			&fnObject->associatedRuntime->globalHeapPoolAlloc,
+			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
-			fnObject));
+			fnObject,
+			curGenerationAllocator.get()));
 	if (!ptr)
 		return nullptr;
 
@@ -239,13 +245,15 @@ SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingO
 }
 
 SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingObject::alloc(const RegularFnOverloadingObject *other) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->fnObject->associatedRuntime->getCurGenAlloc();
+
 	bool succeeded = true;
 
 	std::unique_ptr<RegularFnOverloadingObject, util::DeallocableDeleter<RegularFnOverloadingObject>> ptr(
 		peff::allocAndConstruct<RegularFnOverloadingObject>(
-			&other->associatedRuntime->globalHeapPoolAlloc,
+			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
-			*other, succeeded));
+			*other, curGenerationAllocator.get(), succeeded));
 	if (!ptr)
 		return nullptr;
 
@@ -259,18 +267,20 @@ SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingO
 }
 
 SLAKE_API void slake::RegularFnOverloadingObject::dealloc() {
-	peff::destroyAndRelease<RegularFnOverloadingObject>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
+	peff::destroyAndRelease<RegularFnOverloadingObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
 SLAKE_API NativeFnOverloadingObject::NativeFnOverloadingObject(
 	FnObject *fnObject,
+	peff::Alloc *selfAllocator,
 	NativeFnCallback callback)
 	: FnOverloadingObject(
 		  FnOverloadingKind::Native,
-		  fnObject),
+		  fnObject,
+		  selfAllocator),
 	  callback(callback) {}
 
-SLAKE_API NativeFnOverloadingObject::NativeFnOverloadingObject(const NativeFnOverloadingObject &other, bool &succeededOut) : FnOverloadingObject(other, succeededOut) {
+SLAKE_API NativeFnOverloadingObject::NativeFnOverloadingObject(const NativeFnOverloadingObject &other, peff::Alloc *allocator, bool &succeededOut) : FnOverloadingObject(other, allocator, succeededOut) {
 	if (succeededOut) {
 		callback = other.callback;
 	}
@@ -286,11 +296,13 @@ SLAKE_API FnOverloadingObject *slake::NativeFnOverloadingObject::duplicate() con
 SLAKE_API HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObject::alloc(
 	FnObject *fnObject,
 	NativeFnCallback callback) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = fnObject->associatedRuntime->getCurGenAlloc();
+
 	std::unique_ptr<NativeFnOverloadingObject, util::DeallocableDeleter<NativeFnOverloadingObject>> ptr(
 		peff::allocAndConstruct<NativeFnOverloadingObject>(
-			&fnObject->associatedRuntime->globalHeapPoolAlloc,
+			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
-			fnObject, callback));
+			fnObject, curGenerationAllocator.get(), callback));
 	if (!ptr)
 		return nullptr;
 
@@ -301,13 +313,15 @@ SLAKE_API HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObj
 }
 
 SLAKE_API HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObject::alloc(const NativeFnOverloadingObject *other) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
+
 	bool succeeded = true;
 
 	std::unique_ptr<NativeFnOverloadingObject, util::DeallocableDeleter<NativeFnOverloadingObject>> ptr(
 		peff::allocAndConstruct<NativeFnOverloadingObject>(
-			&other->associatedRuntime->globalHeapPoolAlloc,
+			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
-			*other, succeeded));
+			*other, curGenerationAllocator.get(), succeeded));
 	if (!ptr)
 		return nullptr;
 
@@ -321,13 +335,13 @@ SLAKE_API HostObjectRef<NativeFnOverloadingObject> slake::NativeFnOverloadingObj
 }
 
 SLAKE_API void slake::NativeFnOverloadingObject::dealloc() {
-	peff::destroyAndRelease<NativeFnOverloadingObject>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
+	peff::destroyAndRelease<NativeFnOverloadingObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
-SLAKE_API FnObject::FnObject(Runtime *rt) : MemberObject(rt), overloadings(&rt->globalHeapPoolAlloc) {
+SLAKE_API FnObject::FnObject(Runtime *rt, peff::Alloc *selfAllocator) : MemberObject(rt, selfAllocator), overloadings(selfAllocator) {
 }
 
-SLAKE_API FnObject::FnObject(const FnObject &x, bool &succeededOut) : MemberObject(x, succeededOut), overloadings(&x.associatedRuntime->globalHeapPoolAlloc) {
+SLAKE_API FnObject::FnObject(const FnObject &x, peff::Alloc *allocator, bool &succeededOut) : MemberObject(x, allocator, succeededOut), overloadings(allocator) {
 	if (succeededOut) {
 		for (auto i : x.overloadings) {
 			FnOverloadingObject *ol = i->duplicate();
@@ -391,11 +405,13 @@ SLAKE_API Object *FnObject::duplicate() const {
 }
 
 SLAKE_API HostObjectRef<FnObject> slake::FnObject::alloc(Runtime *rt) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
+
 	std::unique_ptr<FnObject, util::DeallocableDeleter<FnObject>> ptr(
 		peff::allocAndConstruct<FnObject>(
-			&rt->globalHeapPoolAlloc,
+			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
-			rt));
+			rt, curGenerationAllocator.get()));
 
 	if (!rt->addObject(ptr.get()))
 		return nullptr;
@@ -404,13 +420,15 @@ SLAKE_API HostObjectRef<FnObject> slake::FnObject::alloc(Runtime *rt) {
 }
 
 SLAKE_API HostObjectRef<FnObject> slake::FnObject::alloc(const FnObject *other) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
+
 	bool succeeded = true;
 
 	std::unique_ptr<FnObject, util::DeallocableDeleter<FnObject>> ptr(
 		peff::allocAndConstruct<FnObject>(
-			&other->associatedRuntime->globalHeapPoolAlloc,
+			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
-			*other, succeeded));
+			*other, curGenerationAllocator.get(), succeeded));
 	if (!ptr)
 		return nullptr;
 
@@ -424,7 +442,7 @@ SLAKE_API HostObjectRef<FnObject> slake::FnObject::alloc(const FnObject *other) 
 }
 
 SLAKE_API void slake::FnObject::dealloc() {
-	peff::destroyAndRelease<FnObject>(&associatedRuntime->globalHeapPoolAlloc, this, sizeof(std::max_align_t));
+	peff::destroyAndRelease<FnObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
 SLAKE_API FnOverloadingObject *slake::findOverloading(

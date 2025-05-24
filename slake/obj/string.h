@@ -10,8 +10,8 @@ namespace slake {
 		[[nodiscard]] SLAKE_API bool _setData(const char *str, size_t size);
 
 	public:
-		SLAKE_API StringObject(Runtime *rt, peff::String &&s);
-		SLAKE_API StringObject(const StringObject &x, bool &succeededOut);
+		SLAKE_API StringObject(Runtime *rt, peff::Alloc *selfAllocator, peff::String &&s);
+		SLAKE_API StringObject(const StringObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~StringObject();
 
 		peff::String data;

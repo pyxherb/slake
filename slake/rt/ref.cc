@@ -36,7 +36,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 						SLAKE_RETURN_IF_EXCEPT(j.loadDeferredType(this));
 					}
 
-					GenericInstantiationContext genericInstantiationContext(&globalHeapPoolAlloc);
+					GenericInstantiationContext genericInstantiationContext(getFixedAlloc());
 
 					genericInstantiationContext.genericArgs = &curName.genericArgs;
 					SLAKE_RETURN_IF_EXCEPT(instantiateGenericObject(scopeObject, scopeObject, genericInstantiationContext));
@@ -44,7 +44,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 				}
 			} else {
 				if (i + 1 != ref->entries.size())
-					return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(&const_cast<Runtime *>(this)->globalHeapPoolAlloc, ref));
+					return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
 			}
 		}
 
@@ -66,7 +66,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 					break;
 				}
 				default:
-					return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(&const_cast<Runtime *>(this)->globalHeapPoolAlloc, ref));
+					return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
 			}
 		}
 
@@ -76,7 +76,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 		switch (curObject->getKind()) {
 			case ObjectKind::Module:
 				if (!curObject->parent)
-					return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(&const_cast<Runtime *>(this)->globalHeapPoolAlloc, ref));
+					return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
 				scopeObject = (MemberObject *)curObject->parent;
 				break;
 			case ObjectKind::Class: {
@@ -85,16 +85,16 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 					SLAKE_RETURN_IF_EXCEPT(cls->baseType.loadDeferredType(this));
 					scopeObject = cls->baseType.getCustomTypeExData();
 				} else {
-					return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(&const_cast<Runtime *>(this)->globalHeapPoolAlloc, ref));
+					return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
 				}
 				break;
 			}
 			default:
-				return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(&const_cast<Runtime *>(this)->globalHeapPoolAlloc, ref));
+				return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
 		}
 	}
 
-	return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(&const_cast<Runtime *>(this)->globalHeapPoolAlloc, ref));
+	return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
 }
 
 SLAKE_API bool Runtime::getFullRef(peff::Alloc *allocator, const MemberObject *v, peff::DynArray<IdRefEntry> &idRefOut) const {

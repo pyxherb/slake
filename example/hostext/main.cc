@@ -200,7 +200,7 @@ int main(int argc, char **argv) {
 	}
 
 	{
-		slake::HostRefHolder hostRefHolder(&rt->globalHeapPoolAlloc);
+		slake::HostRefHolder hostRefHolder(rt->getFixedAlloc());
 
 		slake::HostObjectRef<slake::ModuleObject> modObjectHostext = mod;
 		slake::HostObjectRef<slake::ModuleObject> modObjectExtfns = slake::ModuleObject::alloc(rt.get());
@@ -221,7 +221,7 @@ int main(int argc, char **argv) {
 
 		slake::HostObjectRef<slake::FnObject> fnObject = slake::FnObject::alloc(rt.get());
 
-		peff::DynArray<slake::Type> paramTypes(&rt->globalHeapPoolAlloc);
+		peff::DynArray<slake::Type> paramTypes(rt->getCurGenAlloc());
 
 		auto printFn = slake::NativeFnOverloadingObject::alloc(
 			fnObject.get(),

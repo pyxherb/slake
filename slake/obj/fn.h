@@ -86,8 +86,9 @@ namespace slake {
 
 		SLAKE_API FnOverloadingObject(
 			FnOverloadingKind overloadingKind,
-			FnObject *fnObject);
-		SLAKE_API FnOverloadingObject(const FnOverloadingObject &other, bool &succeededOut);
+			FnObject *fnObject,
+			peff::Alloc *selfAllocator);
+		SLAKE_API FnOverloadingObject(const FnOverloadingObject &other, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~FnOverloadingObject();
 
 		SLAKE_API virtual ObjectKind getKind() const;
@@ -155,8 +156,9 @@ namespace slake {
 		uint32_t nRegisters;
 
 		SLAKE_API RegularFnOverloadingObject(
-			FnObject *fnObject);
-		SLAKE_API RegularFnOverloadingObject(const RegularFnOverloadingObject &other, bool &succeededOut);
+			FnObject *fnObject,
+			peff::Alloc *selfAllocator);
+		SLAKE_API RegularFnOverloadingObject(const RegularFnOverloadingObject &other, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~RegularFnOverloadingObject();
 
 		SLAKE_API const slxfmt::SourceLocDesc *getSourceLocationDesc(uint32_t offIns) const;
@@ -192,8 +194,9 @@ namespace slake {
 
 		SLAKE_API JITCompiledFnOverloadingObject(
 			FnObject *fnObject,
+			peff::Alloc *selfAllocator,
 			AccessModifier access);
-		SLAKE_API JITCompiledFnOverloadingObject(const RegularFnOverloadingObject &other, bool &succeededOut);
+		SLAKE_API JITCompiledFnOverloadingObject(const RegularFnOverloadingObject &other, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~JITCompiledFnOverloadingObject();
 
 		SLAKE_API virtual FnOverloadingObject *duplicate() const override;
@@ -213,8 +216,9 @@ namespace slake {
 	public:
 		SLAKE_API NativeFnOverloadingObject(
 			FnObject *fnObject,
+			peff::Alloc *selfAllocator,
 			NativeFnCallback callback);
-		SLAKE_API NativeFnOverloadingObject(const NativeFnOverloadingObject &other, bool &succeededOut);
+		SLAKE_API NativeFnOverloadingObject(const NativeFnOverloadingObject &other, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~NativeFnOverloadingObject();
 
 		NativeFnCallback callback;
@@ -232,8 +236,8 @@ namespace slake {
 	public:
 		peff::Set<FnOverloadingObject *> overloadings;
 
-		SLAKE_API FnObject(Runtime *rt);
-		SLAKE_API FnObject(const FnObject &x, bool &succeededOut);
+		SLAKE_API FnObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API FnObject(const FnObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~FnObject();
 
 		SLAKE_API virtual ObjectKind getKind() const override;

@@ -19,19 +19,9 @@ namespace slake {
 		size_t offset;
 		Type type;
 
-		PEFF_FORCEINLINE ObjectFieldRecord() : name(nullptr) { std::terminate(); }
 		PEFF_FORCEINLINE ObjectFieldRecord(peff::Alloc *selfAllocator) : name(selfAllocator) {}
 
-		PEFF_FORCEINLINE bool copy(ObjectFieldRecord &dest) const {
-			if (!peff::copy(dest.name, name)) {
-				return false;
-			}
-
-			dest.offset = offset;
-			dest.type = type;
-
-			return true;
-		}
+		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
 	struct ObjectLayout {
@@ -42,10 +32,12 @@ namespace slake {
 
 		SLAKE_API ObjectLayout(peff::Alloc *selfAllocator);
 
-		SLAKE_API ObjectLayout *duplicate() const;
+		SLAKE_API ObjectLayout *duplicate(peff::Alloc *allocator) const;
 
 		SLAKE_API static ObjectLayout *alloc(peff::Alloc *selfAllocator);
 		SLAKE_API void dealloc();
+
+		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
 	class MethodTable {
@@ -58,10 +50,12 @@ namespace slake {
 
 		SLAKE_API FnObject *getMethod(const std::string_view &name);
 
-		SLAKE_API MethodTable *duplicate();
+		SLAKE_API MethodTable *duplicate(peff::Alloc *allocator);
 
 		SLAKE_API static MethodTable *alloc(peff::Alloc *selfAllocator);
 		SLAKE_API void dealloc();
+
+		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
 	class ClassObject : public ModuleObject {
@@ -105,6 +99,8 @@ namespace slake {
 		SLAKE_API static HostObjectRef<ClassObject> alloc(Runtime *rt);
 		SLAKE_API static HostObjectRef<ClassObject> alloc(const ClassObject *other);
 		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
 	class InterfaceObject : public ModuleObject {
@@ -138,6 +134,8 @@ namespace slake {
 		/// @param pInterface Interface to check.
 		/// @return true if the interface is derived from specified interface, false otherwise.
 		SLAKE_API bool isDerivedFrom(const InterfaceObject *pInterface) const;
+
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 }
 

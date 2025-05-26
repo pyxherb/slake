@@ -215,8 +215,19 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Obj
 				if (value == instantiationContext.mappedObject) {
 					if (!peff::copyAssign(value->genericArgs, *instantiationContext.genericArgs))
 						return OutOfMemoryError::alloc();
-					if (!peff::copyAssign(value->mappedGenericArgs, instantiationContext.mappedGenericArgs))
-						return OutOfMemoryError::alloc();
+					for (auto i : instantiationContext.mappedGenericArgs) {
+						peff::String name(value->selfAllocator.get());
+						Type type;
+
+						if (!name.build(i.first)) {
+							return OutOfMemoryError::alloc();
+						}
+
+						type = i.second;
+
+						if (!value->mappedGenericArgs.insert(std::move(name), std::move(type)))
+							return OutOfMemoryError::alloc();
+					}
 				}
 
 				SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(value->baseType, instantiationContext));

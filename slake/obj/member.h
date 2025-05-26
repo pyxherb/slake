@@ -42,6 +42,8 @@ namespace slake {
 		SLAKE_FORCEINLINE void setAccess(AccessModifier accessModifier) noexcept {
 			this->accessModifier = accessModifier;
 		}
+
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 }
 

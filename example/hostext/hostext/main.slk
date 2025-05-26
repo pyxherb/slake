@@ -144,7 +144,7 @@ pub fn *main() -> i32 {
 
 	testDerived.myTest(123, 456);
 
-	let test: Derived = new Derived(50);
+	let test: Derived = new Derived(1);
 	/*test.lab = test;*/
 
 	test.testFunc(123, 456);

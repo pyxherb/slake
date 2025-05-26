@@ -131,3 +131,9 @@ SLAKE_API HostObjectRef<FnTypeDefObject> slake::FnTypeDefObject::alloc(const FnT
 SLAKE_API void slake::FnTypeDefObject::dealloc() {
 	peff::destroyAndRelease<FnTypeDefObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
+
+SLAKE_API void FnTypeDefObject::replaceAllocator(peff::Alloc *allocator) noexcept {
+	this->Object::replaceAllocator(allocator);
+
+	paramTypes.replaceAllocator(allocator);
+}

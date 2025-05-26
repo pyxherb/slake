@@ -24,11 +24,8 @@ namespace slake {
 			Runtime *rt,
 			peff::Alloc *allocator,
 			size_t stackBase);
-		// Default constructor is required by resize() methods from the
-		// containers.
-		SLAKE_FORCEINLINE MinorFrame() : exceptHandlers(nullptr) {
-			abort();
-		}
+
+		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
 	struct ArgRecord {
@@ -38,7 +35,8 @@ namespace slake {
 
 	class CoroutineObject;
 
-	struct ResumableContext {
+	class ResumableObject : public Object {
+	public:
 		uint32_t curIns = 0;
 		uint32_t lastJumpSrc = UINT32_MAX;
 		peff::DynArray<ArgRecord> argStack;
@@ -48,10 +46,15 @@ namespace slake {
 		Object *thisObject = nullptr;
 		peff::DynArray<MinorFrame> minorFrames;
 
-		SLAKE_API ResumableContext(peff::Alloc *allocator);
-		SLAKE_API ~ResumableContext();
+		SLAKE_API ResumableObject(Runtime *rt, peff::Alloc *allocator);
+		SLAKE_API ~ResumableObject();
 
-		SLAKE_API ResumableContext &operator=(ResumableContext &&rhs);
+		SLAKE_API virtual ObjectKind getKind() const override;
+
+		SLAKE_API static ResumableObject *alloc(Runtime *rt);
+		SLAKE_API virtual void dealloc() noexcept override;
+
+		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
 	/// @brief A major frame represents a single calling frame.
@@ -62,7 +65,7 @@ namespace slake {
 		const FnOverloadingObject *curFn = nullptr;	 // Current function overloading.
 		CoroutineObject *curCoroutine = nullptr;
 
-		ResumableContext resumable;
+		ResumableObject *resumable = nullptr;
 
 		uint32_t returnValueOutReg = UINT32_MAX;
 
@@ -77,6 +80,8 @@ namespace slake {
 		SLAKE_API void dealloc() noexcept;
 
 		SLAKE_API static MajorFrame *alloc(Runtime *rt, Context *context);
+
+		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
 	using MajorFramePtr = std::unique_ptr<MajorFrame, peff::DeallocableDeleter<MajorFrame>>;
@@ -102,6 +107,8 @@ namespace slake {
 		SLAKE_API Context(Runtime *runtime, peff::Alloc *allocator);
 
 		SLAKE_API ~Context();
+
+		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
 	class ContextObject final : public Object {
@@ -120,6 +127,8 @@ namespace slake {
 
 		SLAKE_API InternalExceptionPointer resume(HostRefHolder *hostRefHolder);
 		SLAKE_API bool isDone();
+
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
 	SLAKE_FORCEINLINE char *calcStackAddr(char *data, size_t szStack, size_t offset) {

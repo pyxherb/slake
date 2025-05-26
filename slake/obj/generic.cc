@@ -8,6 +8,11 @@ SLAKE_API GenericParam::GenericParam(peff::Alloc *selfAllocator) : name(selfAllo
 SLAKE_API GenericParam::GenericParam(GenericParam &&rhs) : name(std::move(rhs.name)), baseType(std::move(rhs.baseType)), interfaces(std::move(rhs.interfaces)) {
 }
 
+SLAKE_API void GenericParam::replaceAllocator(peff::Alloc *allocator) noexcept {
+	name.replaceAllocator(allocator);
+	interfaces.replaceAllocator(allocator);
+}
+
 SLAKE_API bool GenericArgListComparator::operator()(const GenericArgList &lhs, const GenericArgList &rhs) const noexcept {
 	if (lhs.size() < rhs.size())
 		return true;

@@ -36,6 +36,8 @@ namespace slake {
 
 			return *this;
 		}
+
+		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
 	class IdRefObject final : public Object {
@@ -55,6 +57,8 @@ namespace slake {
 		SLAKE_API static HostObjectRef<IdRefObject> alloc(Runtime *rt);
 		SLAKE_API static HostObjectRef<IdRefObject> alloc(const IdRefObject *other);
 		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 }
 

@@ -3,7 +3,7 @@
 
 using namespace slake;
 
-SLAKE_API CoroutineObject::CoroutineObject(Runtime *rt, peff::Alloc *selfAllocator) : Object(rt, selfAllocator), curContext(nullptr), curMajorFrame(nullptr), resumable(selfAllocator), overloading(nullptr), stackData(nullptr), lenStackData(0), offStackTop(0) {
+SLAKE_API CoroutineObject::CoroutineObject(Runtime *rt, peff::Alloc *selfAllocator) : Object(rt, selfAllocator), curContext(nullptr), curMajorFrame(nullptr), overloading(nullptr), stackData(nullptr), lenStackData(0), offStackTop(0) {
 }
 
 SLAKE_API CoroutineObject::~CoroutineObject() {
@@ -31,7 +31,7 @@ SLAKE_API void slake::CoroutineObject::dealloc() {
 	peff::destroyAndRelease<CoroutineObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
-SLAKE_API char* slake::CoroutineObject::allocStackData(size_t size) {
+SLAKE_API char *slake::CoroutineObject::allocStackData(size_t size) {
 	assert(!stackData);
 	if (size) {
 		if (!(stackData = (char *)selfAllocator->alloc(size, 1))) {
@@ -49,4 +49,8 @@ SLAKE_API void slake::CoroutineObject::releaseStackData() {
 		stackData = nullptr;
 		lenStackData = 0;
 	}
+}
+
+SLAKE_API void CoroutineObject::replaceAllocator(peff::Alloc *allocator) noexcept {
+	this->Object::replaceAllocator(allocator);
 }

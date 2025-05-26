@@ -2,14 +2,32 @@
 
 using namespace slake;
 
+SLAKE_API void ObjectFieldRecord::replaceAllocator(peff::Alloc* allocator) noexcept {
+	name.replaceAllocator(allocator);
+}
+
+SLAKE_API void ObjectLayout::replaceAllocator(peff::Alloc* allocator) noexcept {
+	peff::verifyReplaceable(selfAllocator.get(), allocator);
+
+	selfAllocator = allocator;
+
+	fieldRecords.replaceAllocator(allocator);
+
+	for (auto& i : fieldRecords) {
+		i.replaceAllocator(allocator);
+	}
+
+	fieldNameMap.replaceAllocator(allocator);
+}
+
 SLAKE_API ObjectLayout::ObjectLayout(peff::Alloc *selfAllocator)
 	: selfAllocator(selfAllocator),
 	  fieldRecords(selfAllocator),
 	  fieldNameMap(selfAllocator) {
 }
 
-SLAKE_API ObjectLayout *ObjectLayout::duplicate() const {
-	std::unique_ptr<ObjectLayout, util::DeallocableDeleter<ObjectLayout>> ptr(alloc(selfAllocator.get()));
+SLAKE_API ObjectLayout *ObjectLayout::duplicate(peff::Alloc *allocator) const {
+	std::unique_ptr<ObjectLayout, util::DeallocableDeleter<ObjectLayout>> ptr(alloc(allocator));
 	if (!ptr)
 		return nullptr;
 
@@ -65,8 +83,18 @@ SLAKE_API void MethodTable::dealloc() {
 	peff::destroyAndRelease<MethodTable>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
-SLAKE_API MethodTable *MethodTable::duplicate() {
-	std::unique_ptr<MethodTable, util::DeallocableDeleter<MethodTable>> newMethodTable(alloc(selfAllocator.get()));
+SLAKE_API void MethodTable::replaceAllocator(peff::Alloc* allocator) noexcept {
+	peff::verifyReplaceable(selfAllocator.get(), allocator);
+
+	selfAllocator = allocator;
+
+	methods.replaceAllocator(allocator);
+
+	destructors.replaceAllocator(allocator);
+}
+
+SLAKE_API MethodTable *MethodTable::duplicate(peff::Alloc *allocator) {
+	std::unique_ptr<MethodTable, util::DeallocableDeleter<MethodTable>> newMethodTable(alloc(allocator));
 	if (!newMethodTable)
 		return nullptr;
 
@@ -215,6 +243,34 @@ SLAKE_API void slake::ClassObject::dealloc() {
 	peff::destroyAndRelease<ClassObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
+SLAKE_API void ClassObject::replaceAllocator(peff::Alloc *allocator) noexcept {
+	this->ModuleObject::replaceAllocator(allocator);
+
+	genericArgs.replaceAllocator(allocator);
+
+	mappedGenericArgs.replaceAllocator(allocator);
+
+	for (auto &i : mappedGenericArgs) {
+		i.first.replaceAllocator(allocator);
+	}
+
+	genericParams.replaceAllocator(allocator);
+
+	for (auto& i : genericParams) {
+		i.replaceAllocator(allocator);
+	}
+
+	implTypes.replaceAllocator(allocator);
+
+	if (cachedInstantiatedMethodTable)
+		cachedInstantiatedMethodTable->replaceAllocator(allocator);
+
+	if (cachedObjectLayout)
+		cachedObjectLayout->replaceAllocator(allocator);
+
+	cachedFieldInitValues.replaceAllocator(allocator);
+}
+
 SLAKE_API InterfaceObject::InterfaceObject(Runtime *rt, peff::Alloc *selfAllocator)
 	: ModuleObject(rt, selfAllocator),
 	  genericArgs(selfAllocator),
@@ -328,4 +384,24 @@ SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(const Int
 
 SLAKE_API void slake::InterfaceObject::dealloc() {
 	peff::destroyAndRelease<InterfaceObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
+}
+
+SLAKE_API void InterfaceObject::replaceAllocator(peff::Alloc *allocator) noexcept {
+	this->ModuleObject::replaceAllocator(allocator);
+
+	genericArgs.replaceAllocator(allocator);
+
+	mappedGenericArgs.replaceAllocator(allocator);
+
+	for (auto &i : mappedGenericArgs) {
+		i.first.replaceAllocator(allocator);
+	}
+
+	genericParams.replaceAllocator(allocator);
+
+	for (auto& i : genericParams) {
+		i.replaceAllocator(allocator);
+	}
+
+	implTypes.replaceAllocator(allocator);
 }

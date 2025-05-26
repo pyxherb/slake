@@ -30,14 +30,14 @@ SLAKE_API InternalExceptionPointer Runtime::tryAccessVar(const EntityRef &entity
 			break;
 		}
 		case ObjectRefKind::ArgRef: {
-			ArgRecord &argRecord = entityRef.asArg.majorFrame->resumable.argStack.at(entityRef.asArg.argIndex);
+			ArgRecord &argRecord = entityRef.asArg.majorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
 			break;
 		}
 		case ObjectRefKind::CoroutineArgRef: {
 			if (entityRef.asCoroutineArg.coroutine->curContext) {
-				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumable.argStack.at(entityRef.asArg.argIndex);
+				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
 			} else {
-				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->resumable.argStack.at(entityRef.asArg.argIndex);
+				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->resumable->argStack.at(entityRef.asArg.argIndex);
 			}
 			break;
 		}
@@ -103,18 +103,18 @@ SLAKE_API InternalExceptionPointer Runtime::typeofVar(const EntityRef &entityRef
 			break;
 		}
 		case ObjectRefKind::ArgRef: {
-			ArgRecord &argRecord = entityRef.asArg.majorFrame->resumable.argStack.at(entityRef.asArg.argIndex);
+			ArgRecord &argRecord = entityRef.asArg.majorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
 
 			typeOut = argRecord.type;
 			break;
 		}
 		case ObjectRefKind::CoroutineArgRef: {
 			if (entityRef.asCoroutineArg.coroutine->curContext) {
-				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumable.argStack.at(entityRef.asArg.argIndex);
+				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
 
 				typeOut = argRecord.type;
 			} else {
-				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->resumable.argStack.at(entityRef.asArg.argIndex);
+				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->resumable->argStack.at(entityRef.asArg.argIndex);
 
 				typeOut = argRecord.type;
 			}
@@ -371,17 +371,17 @@ SLAKE_API Value Runtime::readVarUnsafe(const EntityRef &entityRef) const noexcep
 			break;
 		}
 		case ObjectRefKind::ArgRef: {
-			const ArgRecord &argRecord = entityRef.asArg.majorFrame->resumable.argStack.at(entityRef.asArg.argIndex);
+			const ArgRecord &argRecord = entityRef.asArg.majorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
 
 			return argRecord.value;
 		}
 		case ObjectRefKind::CoroutineArgRef: {
 			if (entityRef.asCoroutineArg.coroutine->curContext) {
-				const ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->resumable.argStack.at(entityRef.asArg.argIndex);
+				const ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->resumable->argStack.at(entityRef.asArg.argIndex);
 
 				return argRecord.value;
 			} else {
-				const ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumable.argStack.at(entityRef.asArg.argIndex);
+				const ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
 
 				return argRecord.value;
 			}
@@ -768,7 +768,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 			break;
 		}
 		case ObjectRefKind::ArgRef: {
-			ArgRecord &argRecord = entityRef.asArg.majorFrame->resumable.argStack.at(entityRef.asArg.argIndex);
+			ArgRecord &argRecord = entityRef.asArg.majorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
 
 			if (!isCompatible(argRecord.type, value)) {
 				return raiseMismatchedVarTypeError((Runtime *)this);
@@ -779,7 +779,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 		}
 		case ObjectRefKind::CoroutineArgRef: {
 			if (entityRef.asCoroutineArg.coroutine->curContext) {
-				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumable.argStack.at(entityRef.asArg.argIndex);
+				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->curMajorFrame->resumable->argStack.at(entityRef.asArg.argIndex);
 
 				if (!isCompatible(argRecord.type, value)) {
 					return raiseMismatchedVarTypeError((Runtime *)this);
@@ -787,7 +787,7 @@ SLAKE_API InternalExceptionPointer Runtime::writeVar(const EntityRef &entityRef,
 
 				argRecord.value = value;
 			} else {
-				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->resumable.argStack.at(entityRef.asArg.argIndex);
+				ArgRecord &argRecord = entityRef.asCoroutineArg.coroutine->resumable->argStack.at(entityRef.asArg.argIndex);
 
 				if (!isCompatible(argRecord.type, value)) {
 					return raiseMismatchedVarTypeError((Runtime *)this);

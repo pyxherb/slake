@@ -41,6 +41,8 @@ namespace slake {
 		SLAKE_API static HostObjectRef<FnTypeDefObject> alloc(Runtime *rt, const Type &type, peff::DynArray<Type> &&paramTypes);
 		SLAKE_API static HostObjectRef<FnTypeDefObject> alloc(const FnTypeDefObject *other);
 		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 }
 

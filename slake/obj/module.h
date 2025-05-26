@@ -30,6 +30,8 @@ namespace slake {
 			dest.type = type;
 			return true;
 		}
+
+		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
 	class ModuleObject;
@@ -72,6 +74,8 @@ namespace slake {
 		SLAKE_API static HostObjectRef<ModuleObject> alloc(Runtime *rt);
 		SLAKE_API static HostObjectRef<ModuleObject> alloc(const ModuleObject *other);
 		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 }
 

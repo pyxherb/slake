@@ -36,6 +36,7 @@ SLAKE_API void Instruction::clearOperands() {
 	} else {
 		assert(!operands);
 	}
+	operandsAllocator = nullptr;
 }
 
 [[nodiscard]] SLAKE_API bool Instruction::reserveOperands(peff::Alloc *allocator, uint32_t nOperands) {
@@ -48,6 +49,12 @@ SLAKE_API void Instruction::clearOperands() {
 	}
 	this->nOperands = nOperands;
 	return true;
+}
+
+SLAKE_API void Instruction::replaceAllocator(peff::Alloc *allocator) noexcept {
+	peff::verifyReplaceable(operandsAllocator.get(), allocator);
+
+	operandsAllocator = allocator;
 }
 
 SLAKE_API bool Instruction::operator==(const Instruction &rhs) const {
@@ -137,6 +144,26 @@ SLAKE_API FnOverloadingObject::~FnOverloadingObject() {
 
 SLAKE_API ObjectKind FnOverloadingObject::getKind() const { return ObjectKind::FnOverloading; }
 
+SLAKE_API void FnOverloadingObject::replaceAllocator(peff::Alloc *allocator) noexcept {
+	this->Object::replaceAllocator(allocator);
+
+	genericParams.replaceAllocator(allocator);
+
+	for (auto& i : genericParams) {
+		i.replaceAllocator(allocator);
+	}
+
+	mappedGenericArgs.replaceAllocator(allocator);
+
+	for (auto& i : mappedGenericArgs) {
+		i.first.replaceAllocator(allocator);
+	}
+
+	specializationArgs.replaceAllocator(allocator);
+
+	paramTypes.replaceAllocator(allocator);
+}
+
 SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(
 	FnObject *fnObject,
 	peff::Alloc *selfAllocator)
@@ -144,7 +171,7 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(
 		  FnOverloadingKind::Regular,
 		  fnObject,
 		  selfAllocator),
-	  nRegisters(nRegisters),
+	  nRegisters(0),
 	  sourceLocDescs(selfAllocator),
 	  instructions(selfAllocator) {}
 
@@ -268,6 +295,18 @@ SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingO
 
 SLAKE_API void slake::RegularFnOverloadingObject::dealloc() {
 	peff::destroyAndRelease<RegularFnOverloadingObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
+}
+
+SLAKE_API void RegularFnOverloadingObject::replaceAllocator(peff::Alloc *allocator) noexcept {
+	this->FnOverloadingObject::replaceAllocator(allocator);
+
+	sourceLocDescs.replaceAllocator(allocator);
+
+	instructions.replaceAllocator(allocator);
+
+	for (auto& i : instructions) {
+		i.replaceAllocator(allocator);
+	}
 }
 
 SLAKE_API NativeFnOverloadingObject::NativeFnOverloadingObject(
@@ -443,6 +482,12 @@ SLAKE_API HostObjectRef<FnObject> slake::FnObject::alloc(const FnObject *other) 
 
 SLAKE_API void slake::FnObject::dealloc() {
 	peff::destroyAndRelease<FnObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
+}
+
+SLAKE_API void FnObject::replaceAllocator(peff::Alloc* allocator) noexcept {
+	this->MemberObject::replaceAllocator(allocator);
+
+	overloadings.replaceAllocator(allocator);
 }
 
 SLAKE_API FnOverloadingObject *slake::findOverloading(

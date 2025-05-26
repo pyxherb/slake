@@ -3,8 +3,6 @@
 using namespace slake;
 using namespace slake::loader;
 
-#define RETURN_IO_ERROR_IF_READ_FAILED(e) if (!e)
-
 SLAKE_FORCEINLINE static InternalExceptionPointer _normalizeReadResult(Runtime *runtime, ReadResult readResult) {
 	switch (readResult) {
 		case ReadResult::Succeeded:
@@ -90,22 +88,20 @@ SLAKE_API InternalExceptionPointer loader::loadType(Runtime *runtime, Reader *re
 			break;
 		}
 		case slake::slxfmt::TypeId::GenericArg: {
-			peff::String name(runtime->getCurGenAlloc());
+			HostObjectRef<StringObject> nameObject;
+
+			if (!(nameObject = StringObject::alloc(runtime))) {
+				return OutOfMemoryError::alloc();
+			}
 
 			uint32_t nameLen;
 
 			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(nameLen)));
 
-			if (!name.resize(nameLen)) {
+			if (!nameObject->data.resize(nameLen)) {
 				return OutOfMemoryError::alloc();
 			}
-			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(name.data(), nameLen)));
-
-			HostObjectRef<StringObject> nameObject;
-
-			if (!(nameObject = StringObject::alloc(runtime, std::move(name)))) {
-				return OutOfMemoryError::alloc();
-			}
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(nameObject->data.data(), nameLen)));
 
 			typeOut = Type(nameObject.get(), member);
 			break;
@@ -252,22 +248,20 @@ SLAKE_API InternalExceptionPointer loader::loadValue(Runtime *runtime, Reader *r
 			break;
 		}
 		case slake::slxfmt::ValueType::String: {
-			peff::String s(runtime->getCurGenAlloc());
+			HostObjectRef<StringObject> strObj;
+
+			if (!(strObj = StringObject::alloc(runtime))) {
+				return OutOfMemoryError::alloc();
+			}
 
 			uint32_t lenName;
 			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(lenName)));
-			if (!s.resize(lenName)) {
+			if (!strObj->data.resize(lenName)) {
 				return OutOfMemoryError::alloc();
 			}
 
 			if (lenName) {
-				SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(s.data(), lenName)));
-			}
-
-			HostObjectRef<StringObject> strObj;
-
-			if (!(strObj = StringObject::alloc(runtime, std::move(s)))) {
-				return OutOfMemoryError::alloc();
+				SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->read(strObj->data.data(), lenName)));
 			}
 
 			valueOut = Value(EntityRef::makeObjectRef(strObj.get()));

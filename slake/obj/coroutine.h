@@ -14,7 +14,7 @@ namespace slake {
 		size_t lenStackData;
 		size_t offStackTop;
 		const FnOverloadingObject *overloading;
-		ResumableContext resumable;
+		ResumableObject *resumable = nullptr;
 
 		Value finalResult;
 
@@ -43,11 +43,17 @@ namespace slake {
 		}
 
 		SLAKE_FORCEINLINE bool isDone() const {
-			return resumable.curIns == UINT32_MAX;
+			if (resumable) {
+				return resumable->curIns == UINT32_MAX;
+			}
+			return false;
 		}
 		SLAKE_FORCEINLINE void setDone() {
-			resumable.curIns = UINT32_MAX;
+			assert(resumable);
+			resumable->curIns = UINT32_MAX;
 		}
+
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 }
 

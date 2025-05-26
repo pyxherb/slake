@@ -22,13 +22,17 @@
 namespace slake {
 	class CountablePoolAlloc : public peff::Alloc {
 	public:
-		peff::RcObjectPtr<peff::Alloc> upstream;
-		size_t szAllocated = 0;
+		Runtime *runtime;
 
-		SLAKE_API CountablePoolAlloc(peff::Alloc *upstream);
+		peff::RcObjectPtr<peff::Alloc> upstream;
+		std::atomic_size_t szAllocated = 0;
+
+		SLAKE_API CountablePoolAlloc(Runtime *runtime, peff::Alloc *upstream);
 
 		SLAKE_API virtual void *alloc(size_t size, size_t alignment) noexcept override;
 		SLAKE_API virtual void release(void *p, size_t size, size_t alignment) noexcept override;
+
+		SLAKE_API virtual bool isReplaceable(const peff::Alloc *rhs) const noexcept override;
 
 		SLAKE_API virtual peff::Alloc *getDefaultAlloc() const noexcept override;
 		SLAKE_API virtual void onRefZero() noexcept override;
@@ -124,7 +128,9 @@ namespace slake {
 		};
 
 		mutable CountablePoolAlloc fixedAlloc;
-		peff::Set<peff::RcObjectPtr<peff::Alloc>> generationAlloc;
+		mutable CountablePoolAlloc objectAlloc;
+		mutable CountablePoolAlloc youngAlloc;
+		mutable CountablePoolAlloc persistentAlloc;
 
 	private:
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;

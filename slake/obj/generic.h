@@ -28,6 +28,8 @@ namespace slake {
 
 			return true;
 		}
+
+		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
 	using GenericArgList = peff::DynArray<Type>;

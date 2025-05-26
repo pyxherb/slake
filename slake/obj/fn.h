@@ -47,6 +47,8 @@ namespace slake {
 
 		SLAKE_API void clearOperands();
 		[[nodiscard]] SLAKE_API bool reserveOperands(peff::Alloc *allocator, uint32_t nOperands);
+
+		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
 	enum class FnOverloadingKind {
@@ -146,6 +148,8 @@ namespace slake {
 		SLAKE_FORCEINLINE bool isVirtual() noexcept {
 			return overloadingFlags & OL_VIRTUAL;
 		}
+
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
 	class RegularFnOverloadingObject : public FnOverloadingObject {
@@ -185,6 +189,8 @@ namespace slake {
 		SLAKE_FORCEINLINE uint32_t getRegisterNumber() noexcept {
 			return nRegisters;
 		}
+
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
 	class JITCompiledFnOverloadingObject : public FnOverloadingObject {
@@ -206,6 +212,8 @@ namespace slake {
 			AccessModifier access);
 		SLAKE_API static HostObjectRef<JITCompiledFnOverloadingObject> alloc(const RegularFnOverloadingObject *other);
 		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
 	class NativeFnOverloadingObject;
@@ -214,14 +222,14 @@ namespace slake {
 
 	class NativeFnOverloadingObject : public FnOverloadingObject {
 	public:
+		NativeFnCallback callback;
+
 		SLAKE_API NativeFnOverloadingObject(
 			FnObject *fnObject,
 			peff::Alloc *selfAllocator,
 			NativeFnCallback callback);
 		SLAKE_API NativeFnOverloadingObject(const NativeFnOverloadingObject &other, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~NativeFnOverloadingObject();
-
-		NativeFnCallback callback;
 
 		SLAKE_API virtual FnOverloadingObject *duplicate() const override;
 
@@ -249,6 +257,8 @@ namespace slake {
 		SLAKE_API static HostObjectRef<FnObject> alloc(Runtime *rt);
 		SLAKE_API static HostObjectRef<FnObject> alloc(const FnObject *other);
 		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept;
 	};
 
 	SLAKE_API FnOverloadingObject *findOverloading(

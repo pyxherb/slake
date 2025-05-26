@@ -49,6 +49,7 @@ namespace slake {
 		IdRef,		 // Reference
 		GenericArg,	 // Generic argument
 		Context,	 // Context
+		Resumable,	 // Resumable
 		Coroutine,	 // Coroutine
 	};
 
@@ -88,7 +89,7 @@ namespace slake {
 		union {
 			struct {
 				ObjectGCStatus gcStatus;
-				Object *nextWalkable; // New reachable objects
+				Object *nextWalkable;  // New reachable objects
 				InstanceObject *prevDestructible;
 				InstanceObject *nextDestructible;
 
@@ -110,6 +111,8 @@ namespace slake {
 		SLAKE_API virtual Object *duplicate() const;
 
 		virtual void dealloc() = 0;
+
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept;
 
 		SLAKE_FORCEINLINE Runtime *getRuntime() const noexcept { return associatedRuntime; }
 

@@ -2,9 +2,9 @@
 
 using namespace slake;
 
-SLAKE_API CountablePoolAlloc slake::g_countablePoolDefaultAlloc(nullptr);
+SLAKE_API CountablePoolAlloc slake::g_countablePoolDefaultAlloc(nullptr, nullptr);
 
-SLAKE_API CountablePoolAlloc::CountablePoolAlloc(peff::Alloc *upstream) : upstream(upstream) {}
+SLAKE_API CountablePoolAlloc::CountablePoolAlloc(Runtime *runtime, peff::Alloc *upstream) : runtime(runtime), upstream(upstream) {}
 
 SLAKE_API peff::Alloc *CountablePoolAlloc::getDefaultAlloc() const noexcept {
 	return &g_countablePoolDefaultAlloc;
@@ -18,6 +18,12 @@ SLAKE_API void *CountablePoolAlloc::alloc(size_t size, size_t alignment) noexcep
 	if (!p)
 		return nullptr;
 
+	if (this == &runtime->youngAlloc) {
+		if (size == 0x10) {
+			puts("");
+		}
+	}
+
 	szAllocated += size;
 
 	return p;
@@ -25,13 +31,29 @@ SLAKE_API void *CountablePoolAlloc::alloc(size_t size, size_t alignment) noexcep
 
 SLAKE_API void CountablePoolAlloc::release(void *p, size_t size, size_t alignment) noexcept {
 	assert(size <= szAllocated);
+
 	upstream->release(p, size, alignment);
 
 	szAllocated -= size;
 }
 
+SLAKE_API bool CountablePoolAlloc::isReplaceable(const peff::Alloc* rhs) const noexcept {
+	if (getDefaultAlloc() != rhs->getDefaultAlloc())
+		return false;
+
+	CountablePoolAlloc *r = (CountablePoolAlloc *)rhs;
+
+	if (runtime != r->runtime)
+		return false;
+
+	if (upstream != r->upstream)
+		return false;
+
+	return true;
+}
+
 SLAKE_API peff::Alloc* Runtime::getCurGenAlloc() {
-	return &fixedAlloc;
+	return &youngAlloc;
 }
 
 SLAKE_API size_t Runtime::sizeofType(const Type &type) {
@@ -141,14 +163,16 @@ SLAKE_API Value Runtime::defaultValueOf(const Type &type) {
 
 SLAKE_API Runtime::Runtime(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags)
 	: selfAllocator(selfAllocator),
-	  fixedAlloc(upstream),
+	  fixedAlloc(this, upstream),
 	  _flags(flags | _RT_INITING),
 	  _genericCacheLookupTable(&fixedAlloc),
 	  _genericCacheDir(&fixedAlloc),
 	  managedThreadRunnables(&fixedAlloc),
 	  parallelGcThreads(&fixedAlloc),
 	  parallelGcThreadRunnables(&fixedAlloc),
-	  generationAlloc(&fixedAlloc) {
+	  objectAlloc(this, &fixedAlloc),
+	  youngAlloc(this, &objectAlloc),
+	  persistentAlloc(this, &objectAlloc) {
 	_flags &= ~_RT_INITING;
 }
 
@@ -191,17 +215,23 @@ SLAKE_API bool Runtime::addObject(Object *object) {
 
 SLAKE_API bool Runtime::constructAt(Runtime *dest, peff::Alloc *upstream, RuntimeFlags flags) {
 	peff::constructAt<Runtime>(dest, nullptr, upstream, flags);
+
 	peff::ScopeGuard destroyGuard([dest]() noexcept {
 		std::destroy_at<Runtime>(dest);
 	});
+
 	if (!(dest->_rootObject = ModuleObject::alloc(dest).get())) {
 		return false;
 	}
+
 	if (!(dest->_allocParallelGcResources())) {
 		return false;
 	}
+
 	dest->_rootObject->setAccess(ACCESS_STATIC);
+
 	destroyGuard.release();
+
 	return true;
 }
 

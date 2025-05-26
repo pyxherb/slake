@@ -19,6 +19,12 @@ SLAKE_API Object *Object::duplicate() const {
 	throw std::logic_error("duplicate() method is not supported");
 }
 
+SLAKE_API void Object::replaceAllocator(peff::Alloc* allocator) noexcept {
+	peff::verifyReplaceable(selfAllocator.get(), allocator);
+
+	selfAllocator = allocator;
+}
+
 SLAKE_API EntityRef Object::getMember(const std::string_view &name) const {
 	return EntityRef::makeObjectRef(nullptr);
 }

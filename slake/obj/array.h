@@ -12,6 +12,7 @@ namespace slake {
 		size_t length = 0;
 		Type elementType;
 		size_t elementSize;
+		size_t elementAlignment;
 		void *data = nullptr;
 
 		SLAKE_API ArrayObject(Runtime *rt, peff::Alloc *selfAllocator, const Type &elementType, size_t elementSize);

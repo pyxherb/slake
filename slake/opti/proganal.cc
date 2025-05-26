@@ -246,16 +246,19 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 		hostRefHolder
 	};
 
-	pseudoMajorFrame->resumable.argStack.resizeWith(fnObject->paramTypes.size(), ArgRecord{});
+	if (!(pseudoMajorFrame->resumable = ResumableObject::alloc(runtime)))
+		return OutOfMemoryError::alloc();
+
+	pseudoMajorFrame->resumable->argStack.resizeWith(fnObject->paramTypes.size(), ArgRecord{});
 	for (size_t i = 0; i < fnObject->paramTypes.size(); ++i) {
-		pseudoMajorFrame->resumable.argStack.at(i) = { Value(), fnObject->paramTypes.at(i) };
+		pseudoMajorFrame->resumable->argStack.at(i) = { Value(), fnObject->paramTypes.at(i) };
 	}
 
 	if (fnObject->overloadingFlags & OL_VARG) {
 		auto varArgTypeDefObject = TypeDefObject::alloc(runtime, Type(TypeId::Any));
 		hostRefHolder.addObject(varArgTypeDefObject.get());
 
-		pseudoMajorFrame->resumable.argStack.pushBack({ Value(), Type(TypeId::Array, varArgTypeDefObject.get()) });
+		pseudoMajorFrame->resumable->argStack.pushBack({ Value(), Type(TypeId::Array, varArgTypeDefObject.get()) });
 	}
 
 	// Analyze lifetime of virtual registers.

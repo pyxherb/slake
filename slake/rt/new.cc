@@ -9,7 +9,7 @@ SLAKE_API InternalExceptionPointer Runtime::initMethodTableForClass(ClassObject 
 
 	if (parentClass && parentClass->cachedInstantiatedMethodTable) {
 		methodTable = std::unique_ptr<MethodTable, util::DeallocableDeleter<MethodTable>>(
-			parentClass->cachedInstantiatedMethodTable->duplicate());
+			parentClass->cachedInstantiatedMethodTable->duplicate(getCurGenAlloc()));
 	} else {
 		methodTable = std::unique_ptr<MethodTable, util::DeallocableDeleter<MethodTable>>(
 			MethodTable::alloc(cls->selfAllocator.get()));
@@ -86,7 +86,7 @@ SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForClass(ClassObject
 	std::unique_ptr<ObjectLayout, util::DeallocableDeleter<ObjectLayout>> objectLayout;
 
 	if (parentClass && parentClass->cachedObjectLayout) {
-		objectLayout = decltype(objectLayout)(parentClass->cachedObjectLayout->duplicate());
+		objectLayout = decltype(objectLayout)(parentClass->cachedObjectLayout->duplicate(getCurGenAlloc()));
 		peff::copyAssign(cls->cachedFieldInitValues, parentClass->cachedFieldInitValues);
 	} else {
 		objectLayout = decltype(objectLayout)(ObjectLayout::alloc(cls->selfAllocator.get()));
@@ -198,83 +198,92 @@ SLAKE_API HostObjectRef<InstanceObject> slake::Runtime::newClassInstance(ClassOb
 }
 
 SLAKE_API HostObjectRef<ArrayObject> Runtime::newArrayInstance(Runtime *rt, const Type &type, size_t length) {
-	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = getCurGenAlloc();
-
 	switch (type.typeId) {
 		case TypeId::I8: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int8_t));
-			if (!(obj->data = curGenerationAllocator->alloc(sizeof(int8_t) * length, sizeof(int8_t))))
+			if (!(obj->data = obj->selfAllocator->alloc(sizeof(int8_t) * length, sizeof(int8_t))))
 				return nullptr;
+			obj->elementAlignment = alignof(int8_t);
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::I16: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int16_t));
-			if (!(obj->data = curGenerationAllocator->alloc(sizeof(int16_t) * length, sizeof(int16_t))))
+			if (!(obj->data = obj->selfAllocator->alloc(sizeof(int16_t) * length, sizeof(int16_t))))
 				return nullptr;
+			obj->elementAlignment = alignof(int16_t);
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::I32: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int32_t));
-			if (!(obj->data = curGenerationAllocator->alloc(sizeof(int32_t) * length, sizeof(int32_t))))
+			if (!(obj->data = obj->selfAllocator->alloc(sizeof(int32_t) * length, sizeof(int32_t))))
 				return nullptr;
+			obj->elementAlignment = alignof(int32_t);
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::I64: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(int64_t));
-			if (!(obj->data = curGenerationAllocator->alloc(sizeof(int64_t) * length, sizeof(int64_t))))
+			if (!(obj->data = obj->selfAllocator->alloc(sizeof(int64_t) * length, sizeof(int64_t))))
 				return nullptr;
+			obj->elementAlignment = alignof(int64_t);
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::U8: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint8_t));
-			if (!(obj->data = curGenerationAllocator->alloc(sizeof(uint8_t) * length, sizeof(uint8_t))))
+			if (!(obj->data = obj->selfAllocator->alloc(sizeof(uint8_t) * length, sizeof(uint8_t))))
 				return nullptr;
+			obj->elementAlignment = alignof(uint8_t);
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::U16: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint16_t));
-			if (!(obj->data = curGenerationAllocator->alloc(sizeof(uint16_t) * length, sizeof(uint16_t))))
+			if (!(obj->data = obj->selfAllocator->alloc(sizeof(uint16_t) * length, sizeof(uint16_t))))
 				return nullptr;
+			obj->elementAlignment = alignof(uint16_t);
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::U32: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint32_t));
-			if (!(obj->data = curGenerationAllocator->alloc(sizeof(uint32_t) * length, sizeof(uint32_t))))
+			if (!(obj->data = obj->selfAllocator->alloc(sizeof(uint32_t) * length, sizeof(uint32_t))))
 				return nullptr;
+			obj->elementAlignment = alignof(uint32_t);
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::U64: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(uint64_t));
-			if (!(obj->data = curGenerationAllocator->alloc(sizeof(uint64_t) * length, sizeof(uint64_t))))
+			if (!(obj->data = obj->selfAllocator->alloc(sizeof(uint64_t) * length, sizeof(uint64_t))))
 				return nullptr;
+			obj->elementAlignment = alignof(uint64_t);
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::F32: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(float));
-			if (!(obj->data = curGenerationAllocator->alloc(sizeof(float) * length, sizeof(float))))
+			if (!(obj->data = obj->selfAllocator->alloc(sizeof(float) * length, sizeof(float))))
 				return nullptr;
+			obj->elementAlignment = alignof(float);
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::F64: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(double));
-			if (!(obj->data = curGenerationAllocator->alloc(sizeof(double) * length, sizeof(double))))
+			if (!(obj->data = obj->selfAllocator->alloc(sizeof(double) * length, sizeof(double))))
 				return nullptr;
+			obj->elementAlignment = alignof(double);
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::Bool: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(bool));
-			if (!(obj->data = curGenerationAllocator->alloc(sizeof(bool) * length, sizeof(bool))))
+			if (!(obj->data = obj->selfAllocator->alloc(sizeof(bool) * length, sizeof(bool))))
 				return nullptr;
+			obj->elementAlignment = alignof(bool);
 			obj->length = length;
 			return obj.get();
 		}
@@ -282,15 +291,17 @@ SLAKE_API HostObjectRef<ArrayObject> Runtime::newArrayInstance(Runtime *rt, cons
 		case TypeId::Instance:
 		case TypeId::Array: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(EntityRef));
-			if (!(obj->data = curGenerationAllocator->alloc(sizeof(EntityRef) * length, sizeof(EntityRef))))
+			if (!(obj->data = obj->selfAllocator->alloc(sizeof(EntityRef) * length, sizeof(EntityRef))))
 				return nullptr;
+			obj->elementAlignment = alignof(EntityRef);
 			obj->length = length;
 			return obj.get();
 		}
 		case TypeId::Any: {
 			HostObjectRef<ArrayObject> obj = ArrayObject::alloc(this, type, sizeof(Value));
-			if (!(obj->data = curGenerationAllocator->alloc(sizeof(Value) * length, sizeof(std::max_align_t))))
+			if (!(obj->data = obj->selfAllocator->alloc(sizeof(Value) * length, sizeof(std::max_align_t))))
 				return nullptr;
+			obj->elementAlignment = alignof(Value);
 			obj->length = length;
 			return obj.get();
 		}

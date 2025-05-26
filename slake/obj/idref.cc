@@ -12,6 +12,12 @@ SLAKE_API IdRefEntry::IdRefEntry(peff::String &&name,
 	: name(std::move(name)),
 	  genericArgs(std::move(genericArgs)) {}
 
+SLAKE_API void IdRefEntry::replaceAllocator(peff::Alloc *allocator) noexcept {
+	name.replaceAllocator(allocator);
+
+	genericArgs.replaceAllocator(allocator);
+}
+
 SLAKE_API slake::IdRefObject::IdRefObject(Runtime *rt, peff::Alloc *selfAllocator)
 	: Object(rt, selfAllocator),
 	  entries(selfAllocator),
@@ -99,6 +105,19 @@ SLAKE_API HostObjectRef<IdRefObject> slake::IdRefObject::alloc(const IdRefObject
 
 SLAKE_API void slake::IdRefObject::dealloc() {
 	peff::destroyAndRelease<IdRefObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
+}
+
+SLAKE_API void IdRefObject::replaceAllocator(peff::Alloc *allocator) noexcept {
+	this->Object::replaceAllocator(allocator);
+
+	entries.replaceAllocator(allocator);
+
+	for (auto& i : entries) {
+		i.replaceAllocator(allocator);
+	}
+
+	if (paramTypes.has_value())
+		paramTypes->replaceAllocator(allocator);
 }
 
 SLAKE_API std::string std::to_string(const slake::IdRefObject *ref) {

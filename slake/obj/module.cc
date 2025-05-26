@@ -2,6 +2,10 @@
 
 using namespace slake;
 
+SLAKE_API void FieldRecord::replaceAllocator(peff::Alloc* allocator) noexcept {
+	name.replaceAllocator(allocator);
+}
+
 SLAKE_API ModuleObject::ModuleObject(Runtime *rt, peff::Alloc *selfAllocator)
 	: MemberObject(rt, selfAllocator), members(selfAllocator), localFieldStorage(selfAllocator), fieldRecords(selfAllocator), fieldRecordIndices(selfAllocator), unnamedImports(selfAllocator) {
 }
@@ -160,4 +164,20 @@ SLAKE_API HostObjectRef<ModuleObject> slake::ModuleObject::alloc(const ModuleObj
 
 SLAKE_API void slake::ModuleObject::dealloc() {
 	peff::destroyAndRelease<ModuleObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
+}
+
+SLAKE_API void ModuleObject::replaceAllocator(peff::Alloc *allocator) noexcept {
+	this->MemberObject::replaceAllocator(allocator);
+
+	members.replaceAllocator(allocator);
+
+	localFieldStorage.replaceAllocator(allocator);
+
+	for (auto& i : fieldRecords) {
+		i.replaceAllocator(allocator);
+	}
+
+	fieldRecordIndices.replaceAllocator(allocator);
+
+	unnamedImports.replaceAllocator(allocator);
 }

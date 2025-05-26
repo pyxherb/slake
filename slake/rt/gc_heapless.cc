@@ -395,25 +395,37 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 					auto value = (CoroutineObject *)v;
 
 					GCWalkContext::pushObject(context, (FnOverloadingObject *)value->overloading);
-					GCWalkContext::pushObject(context, value->resumable.thisObject);
-					for (auto &k : value->resumable.argStack) {
+
+					if (value->resumable) {
+						GCWalkContext::pushObject(context, value->resumable);
+						
+						if (value->stackData) {
+							for (size_t i = 0; i < value->resumable->nRegs; ++i)
+								_gcWalk(context, *((Value *)(value->stackData + value->lenStackData - (value->offStackTop + sizeof(Value) * i))));
+						}
+					}
+
+					if (value->isDone()) {
+						_gcWalk(context, value->finalResult);
+					}
+					break;
+				}
+				case ObjectKind::Resumable: {
+					auto value = (ResumableObject *)v;
+
+					GCWalkContext::pushObject(context, value->thisObject);
+					for (auto &k : value->argStack) {
 						_gcWalk(context, k.type);
 						_gcWalk(context, k.value);
 					}
-					for (auto &k : value->resumable.nextArgStack)
+					for (auto &k : value->nextArgStack)
 						_gcWalk(context, k);
-					for (auto &k : value->resumable.minorFrames) {
+					for (auto &k : value->minorFrames) {
 						for (auto &l : k.exceptHandlers) {
 							_gcWalk(context, l.type);
 						}
 					}
-					if (value->stackData) {
-						for (size_t i = 0; i < value->resumable.nRegs; ++i)
-							_gcWalk(context, *((Value *)(value->stackData + value->lenStackData - (value->offStackTop + sizeof(Value) * i))));
-					}
-					if (value->isDone()) {
-						_gcWalk(context, value->finalResult);
-					}
+
 					break;
 				}
 				default:
@@ -436,27 +448,21 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, char *dataStack, MajorFr
 	GCWalkContext::pushObject(context, (FnOverloadingObject *)majorFrame->curFn);
 	if (majorFrame->curCoroutine)
 		GCWalkContext::pushObject(context, majorFrame->curCoroutine);
-	GCWalkContext::pushObject(context, majorFrame->resumable.thisObject);
-	_gcWalk(context, majorFrame->curExcept);
-	for (auto &k : majorFrame->resumable.argStack) {
-		_gcWalk(context, k.type);
-		_gcWalk(context, k.value);
-	}
-	for (auto &k : majorFrame->resumable.nextArgStack)
-		_gcWalk(context, k);
-	for (size_t i = 0; i < majorFrame->resumable.nRegs; ++i)
-		_gcWalk(context, *((Value *)(dataStack + SLAKE_STACK_MAX - (majorFrame->offRegs + sizeof(Value) * i))));
-	for (auto &k : majorFrame->resumable.minorFrames) {
-		for (auto &l : k.exceptHandlers)
-			_gcWalk(context, l.type);
+
+	GCWalkContext::pushObject(context, majorFrame->resumable);
+
+	if (majorFrame->resumable) {
+		for (size_t i = 0; i < majorFrame->resumable->nRegs; ++i)
+			_gcWalk(context, *((Value *)(dataStack + SLAKE_STACK_MAX - (majorFrame->offRegs + sizeof(Value) * i))));
 	}
 }
 
 SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Context &ctxt) {
 	bool isWalkableObjectDetected = false;
+
 	for (auto &i : ctxt.majorFrames) {
 		MajorFrame *majorFrame = i.get();
-		_gcWalk(context, majorFrame);
+		_gcWalk(context, ctxt.dataStack, majorFrame);
 	}
 }
 

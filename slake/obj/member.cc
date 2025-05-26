@@ -27,3 +27,9 @@ SLAKE_API MemberObject::~MemberObject() {
 SLAKE_API const GenericArgList *MemberObject::getGenericArgs() const {
 	return nullptr;
 }
+
+SLAKE_API void MemberObject::replaceAllocator(peff::Alloc* allocator) noexcept {
+	this->Object::replaceAllocator(allocator);
+
+	name.replaceAllocator(allocator);
+}

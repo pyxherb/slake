@@ -75,7 +75,7 @@ namespace slake {
 		SLAKE_API static HostObjectRef<ModuleObject> alloc(const ModuleObject *other);
 		SLAKE_API virtual void dealloc() override;
 
-		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept;
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
 }
 

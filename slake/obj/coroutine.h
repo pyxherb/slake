@@ -53,7 +53,7 @@ namespace slake {
 			resumable->curIns = UINT32_MAX;
 		}
 
-		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept;
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
 }
 

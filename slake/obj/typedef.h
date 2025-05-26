@@ -42,7 +42,7 @@ namespace slake {
 		SLAKE_API static HostObjectRef<FnTypeDefObject> alloc(const FnTypeDefObject *other);
 		SLAKE_API virtual void dealloc() override;
 
-		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept;
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
 }
 

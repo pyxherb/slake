@@ -389,7 +389,7 @@ namespace slake {
 		[[nodiscard]] SLAKE_API static bool constructAt(Runtime *dest, peff::Alloc *upstream, RuntimeFlags flags = 0);
 		[[nodiscard]] SLAKE_API static Runtime *alloc(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags = 0);
 
-		[[nodiscard]] SLAKE_API void dealloc() noexcept;
+		SLAKE_API void dealloc() noexcept;
 	};
 }
 

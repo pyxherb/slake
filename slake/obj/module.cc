@@ -173,6 +173,8 @@ SLAKE_API void ModuleObject::replaceAllocator(peff::Alloc *allocator) noexcept {
 
 	localFieldStorage.replaceAllocator(allocator);
 
+	fieldRecords.replaceAllocator(allocator);
+
 	for (auto& i : fieldRecords) {
 		i.replaceAllocator(allocator);
 	}

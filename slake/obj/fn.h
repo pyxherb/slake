@@ -93,9 +93,7 @@ namespace slake {
 		SLAKE_API FnOverloadingObject(const FnOverloadingObject &other, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~FnOverloadingObject();
 
-		SLAKE_API virtual ObjectKind getKind() const;
-
-		SLAKE_API virtual FnOverloadingObject *duplicate() const = 0;
+		SLAKE_API virtual ObjectKind getKind() const override;
 
 		SLAKE_FORCEINLINE void setAccess(AccessModifier accessModifier) {
 			this->access = accessModifier;
@@ -149,7 +147,7 @@ namespace slake {
 			return overloadingFlags & OL_VIRTUAL;
 		}
 
-		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept;
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
 
 	class RegularFnOverloadingObject : public FnOverloadingObject {
@@ -167,7 +165,7 @@ namespace slake {
 
 		SLAKE_API const slxfmt::SourceLocDesc *getSourceLocationDesc(uint32_t offIns) const;
 
-		SLAKE_API virtual FnOverloadingObject *duplicate() const override;
+		SLAKE_API virtual Object *duplicate() const override;
 
 		SLAKE_API static HostObjectRef<RegularFnOverloadingObject> alloc(
 			FnObject *fnObject);
@@ -190,7 +188,7 @@ namespace slake {
 			return nRegisters;
 		}
 
-		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept;
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
 
 	class JITCompiledFnOverloadingObject : public FnOverloadingObject {
@@ -205,7 +203,7 @@ namespace slake {
 		SLAKE_API JITCompiledFnOverloadingObject(const RegularFnOverloadingObject &other, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~JITCompiledFnOverloadingObject();
 
-		SLAKE_API virtual FnOverloadingObject *duplicate() const override;
+		SLAKE_API virtual Object *duplicate() const override;
 
 		SLAKE_API static HostObjectRef<JITCompiledFnOverloadingObject> alloc(
 			FnObject *fnObject,
@@ -213,7 +211,7 @@ namespace slake {
 		SLAKE_API static HostObjectRef<JITCompiledFnOverloadingObject> alloc(const RegularFnOverloadingObject *other);
 		SLAKE_API virtual void dealloc() override;
 
-		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept;
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
 
 	class NativeFnOverloadingObject;
@@ -258,7 +256,7 @@ namespace slake {
 		SLAKE_API static HostObjectRef<FnObject> alloc(const FnObject *other);
 		SLAKE_API virtual void dealloc() override;
 
-		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept;
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
 
 	SLAKE_API FnOverloadingObject *findOverloading(

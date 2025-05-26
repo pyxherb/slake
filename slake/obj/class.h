@@ -100,7 +100,7 @@ namespace slake {
 		SLAKE_API static HostObjectRef<ClassObject> alloc(const ClassObject *other);
 		SLAKE_API virtual void dealloc() override;
 
-		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept;
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
 
 	class InterfaceObject : public ModuleObject {
@@ -135,7 +135,7 @@ namespace slake {
 		/// @return true if the interface is derived from specified interface, false otherwise.
 		SLAKE_API bool isDerivedFrom(const InterfaceObject *pInterface) const;
 
-		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept;
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
 }
 

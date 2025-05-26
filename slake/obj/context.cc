@@ -21,7 +21,7 @@ SLAKE_API ResumableObject *ResumableObject::alloc(Runtime *rt) {
 	std::unique_ptr<ResumableObject, util::DeallocableDeleter<ResumableObject>> ptr(
 		peff::allocAndConstruct<ResumableObject>(
 			curGenerationAllocator.get(),
-			sizeof(std::max_align_t),
+			alignof(ResumableObject),
 			rt, curGenerationAllocator.get()));
 
 	if (!rt->addObject(ptr.get()))

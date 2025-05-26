@@ -26,7 +26,7 @@ namespace slake {
 
 		StringObject &operator=(StringObject &&) = delete;
 
-		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept;
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
 }
 

@@ -30,7 +30,7 @@ SLAKE_API Instruction::~Instruction() {
 
 SLAKE_API void Instruction::clearOperands() {
 	if (nOperands) {
-		operandsAllocator->release(operands, sizeof(Value) * nOperands, sizeof(std::max_align_t));
+		operandsAllocator->release(operands, sizeof(Value) * nOperands, alignof(Value));
 		operands = nullptr;
 		nOperands = 0;
 	} else {
@@ -155,7 +155,7 @@ SLAKE_API void FnOverloadingObject::replaceAllocator(peff::Alloc *allocator) noe
 
 	mappedGenericArgs.replaceAllocator(allocator);
 
-	for (auto& i : mappedGenericArgs) {
+	for (auto i : mappedGenericArgs) {
 		i.first.replaceAllocator(allocator);
 	}
 
@@ -248,8 +248,8 @@ SLAKE_API const slxfmt::SourceLocDesc *RegularFnOverloadingObject::getSourceLoca
 	return curDesc;
 }
 
-SLAKE_API FnOverloadingObject *slake::RegularFnOverloadingObject::duplicate() const {
-	return (FnOverloadingObject *)alloc(this).get();
+SLAKE_API Object *slake::RegularFnOverloadingObject::duplicate() const {
+	return alloc(this).get();
 }
 
 SLAKE_API HostObjectRef<RegularFnOverloadingObject> slake::RegularFnOverloadingObject::alloc(
@@ -383,7 +383,7 @@ SLAKE_API FnObject::FnObject(Runtime *rt, peff::Alloc *selfAllocator) : MemberOb
 SLAKE_API FnObject::FnObject(const FnObject &x, peff::Alloc *allocator, bool &succeededOut) : MemberObject(x, allocator, succeededOut), overloadings(allocator) {
 	if (succeededOut) {
 		for (auto i : x.overloadings) {
-			FnOverloadingObject *ol = i->duplicate();
+			FnOverloadingObject *ol = (FnOverloadingObject *)i->duplicate();
 
 			if (!ol) {
 				succeededOut = false;

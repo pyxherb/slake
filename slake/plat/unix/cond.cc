@@ -15,3 +15,7 @@ SLAKE_API void Cond::wait() {
 SLAKE_API void Cond::notify() {
 	pthread_cond_signal(&nativeHandle);
 }
+
+SLAKE_API void Cond::notifyAll() {
+	pthread_cond_broadcast(&nativeHandle);
+}

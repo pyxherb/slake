@@ -250,7 +250,7 @@ SLAKE_API void ClassObject::replaceAllocator(peff::Alloc *allocator) noexcept {
 
 	mappedGenericArgs.replaceAllocator(allocator);
 
-	for (auto &i : mappedGenericArgs) {
+	for (auto i : mappedGenericArgs) {
 		i.first.replaceAllocator(allocator);
 	}
 
@@ -393,7 +393,7 @@ SLAKE_API void InterfaceObject::replaceAllocator(peff::Alloc *allocator) noexcep
 
 	mappedGenericArgs.replaceAllocator(allocator);
 
-	for (auto &i : mappedGenericArgs) {
+	for (auto i : mappedGenericArgs) {
 		i.first.replaceAllocator(allocator);
 	}
 

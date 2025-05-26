@@ -54,7 +54,7 @@ namespace slake {
 		SLAKE_API static ResumableObject *alloc(Runtime *rt);
 		SLAKE_API virtual void dealloc() noexcept override;
 
-		SLAKE_API void replaceAllocator(peff::Alloc *allocator) noexcept;
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
 
 	/// @brief A major frame represents a single calling frame.
@@ -128,7 +128,7 @@ namespace slake {
 		SLAKE_API InternalExceptionPointer resume(HostRefHolder *hostRefHolder);
 		SLAKE_API bool isDone();
 
-		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept;
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
 
 	SLAKE_FORCEINLINE char *calcStackAddr(char *data, size_t szStack, size_t offset) {

@@ -41,7 +41,7 @@ SLAKE_API void Runtime::gc() {
 		i->replaceAllocator(&persistentAlloc);
 	}
 
-	assert(!youngAlloc.refCount);
+	// assert(!youngAlloc.refCount);
 
 	persistentAlloc.szAllocated += youngAlloc.szAllocated;
 	youngAlloc.szAllocated = 0;

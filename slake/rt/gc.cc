@@ -29,19 +29,44 @@ SLAKE_API void Runtime::_destructDestructibleObjects(InstanceObject *destructibl
 SLAKE_API void Runtime::gc() {
 	_flags |= _RT_INGC;
 
+	puts("Young GC Boundary:");
+
 	// TODO: This is a stupid way to make sure that all the destructible objects are destructed.
 	// Can we create a separate GC thread in advance and let it to execute them?
 	Object *youngObjectsEnd;
 	_gcSerial(youngObjectList, youngObjectsEnd, nYoungObjects, ObjectGeneration::Persistent);
 
+	puts("Persistent GC Boundary:");
+
 	Object *persistentObjectsEnd;
 	_gcSerial(persistentObjectList, persistentObjectsEnd, nPersistentObjects, ObjectGeneration::Persistent);
 
 	for (Object *i = youngObjectList; i; i = i->nextSameGenObject) {
+		i->gcInfo.heapless.gcStatus = ObjectGCStatus::Unwalked;
 		i->replaceAllocator(&persistentAlloc);
 	}
 
-	// assert(!youngAlloc.refCount);
+	for (Object *i = persistentObjectList; i; i = i->nextSameGenObject) {
+		// Replace the major frames in the context objects.
+		i->replaceAllocator(&persistentAlloc);
+	}
+
+#ifndef _NDEBUG
+	if (youngAlloc.refCount) {
+		puts("Detected unreplaced allocator references!");
+
+		for (auto i : youngAlloc.recordedRefPoints) {
+			printf("Reference point #%zu:\n", i.first);
+
+			for (auto j : i.second) {
+				printf("\t%p+%zx\n", j.base, j.offset);
+			}
+		}
+
+		puts("Dump completed");
+		std::terminate();
+	}
+#endif
 
 	persistentAlloc.szAllocated += youngAlloc.szAllocated;
 	youngAlloc.szAllocated = 0;

@@ -19,6 +19,10 @@
 #include <peff/containers/map.h>
 #include <peff/base/deallocable.h>
 
+#ifndef _NDEBUG
+	#include <peff/advutils/traceback.h>
+#endif
+
 namespace slake {
 	class CountablePoolAlloc : public peff::Alloc {
 	public:
@@ -38,6 +42,37 @@ namespace slake {
 		SLAKE_API virtual void onRefZero() noexcept override;
 	};
 	SLAKE_API extern CountablePoolAlloc g_countablePoolDefaultAlloc;
+
+	class GenerationalPoolAlloc : public peff::Alloc {
+	protected:
+#ifndef _NDEBUG
+
+		SLAKE_API virtual void onIncRef(size_t counter) override;
+		SLAKE_API virtual void onDecRef(size_t counter) override;
+
+#endif
+
+	public:
+		Runtime *runtime;
+
+#ifndef _NDEBUG
+		peff::Map<size_t, peff::List<peff::TracebackInfo>> recordedRefPoints;
+#endif
+
+		peff::RcObjectPtr<peff::Alloc> upstream;
+		std::atomic_size_t szAllocated = 0;
+
+		SLAKE_API GenerationalPoolAlloc(Runtime *runtime, peff::Alloc *upstream);
+
+		SLAKE_API virtual void *alloc(size_t size, size_t alignment) noexcept override;
+		SLAKE_API virtual void release(void *p, size_t size, size_t alignment) noexcept override;
+
+		SLAKE_API virtual bool isReplaceable(const peff::Alloc *rhs) const noexcept override;
+
+		SLAKE_API virtual peff::Alloc *getDefaultAlloc() const noexcept override;
+		SLAKE_API virtual void onRefZero() noexcept override;
+	};
+	SLAKE_API extern GenerationalPoolAlloc g_generationalPoolDefaultAlloc;
 
 	using RuntimeFlags = uint32_t;
 	constexpr static RuntimeFlags
@@ -128,9 +163,8 @@ namespace slake {
 		};
 
 		mutable CountablePoolAlloc fixedAlloc;
-		mutable CountablePoolAlloc objectAlloc;
-		mutable CountablePoolAlloc youngAlloc;
-		mutable CountablePoolAlloc persistentAlloc;
+		mutable GenerationalPoolAlloc youngAlloc;
+		mutable GenerationalPoolAlloc persistentAlloc;
 
 	private:
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
@@ -300,7 +334,7 @@ namespace slake {
 		SLAKE_API InternalExceptionPointer resolveIdRef(IdRefObject *ref, EntityRef &objectRefOut, Object *scopeObject = nullptr);
 
 		[[nodiscard]] SLAKE_API bool addObject(Object *object);
-		SLAKE_FORCEINLINE peff::Alloc* getFixedAlloc() {
+		SLAKE_FORCEINLINE peff::Alloc *getFixedAlloc() {
 			return &fixedAlloc;
 		}
 		SLAKE_API peff::Alloc *getCurGenAlloc();

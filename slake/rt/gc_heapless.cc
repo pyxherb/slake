@@ -108,7 +108,6 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, const Value &i) {
 					break;
 				case ObjectRefKind::CoroutineArgRef:
 					GCWalkContext::pushObject(context, entityRef.asCoroutineArg.coroutine);
-					GCWalkContext::pushObject(context, entityRef.asCoroutineArg.coroutine);
 					break;
 			}
 			break;
@@ -198,8 +197,6 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 
 					if (value->_class->cachedObjectLayout) {
 						for (auto &i : value->_class->cachedObjectLayout->fieldRecords) {
-							_gcWalk(context, i.type);
-
 							switch (i.type.typeId) {
 								case TypeId::String:
 								case TypeId::Instance:
@@ -251,6 +248,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 					ClassObject *value = (ClassObject *)v;
 
 					for (size_t i = 0; i < value->fieldRecords.size(); ++i) {
+						_gcWalk(context, value->fieldRecords.at(i).type);
 						_gcWalk(context, readVarUnsafe(EntityRef::makeFieldRef(value, i)));
 					}
 
@@ -398,7 +396,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 
 					if (value->resumable) {
 						GCWalkContext::pushObject(context, value->resumable);
-						
+
 						if (value->stackData) {
 							for (size_t i = 0; i < value->resumable->nRegs; ++i)
 								_gcWalk(context, *((Value *)(value->stackData + value->lenStackData - (value->offStackTop + sizeof(Value) * i))));
@@ -452,7 +450,8 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, char *dataStack, MajorFr
 	GCWalkContext::pushObject(context, majorFrame->resumable);
 
 	if (majorFrame->resumable) {
-		for (size_t i = 0; i < majorFrame->resumable->nRegs; ++i)
+		size_t nRegs = majorFrame->resumable->nRegs;
+		for (size_t i = 0; i < nRegs; ++i)
 			_gcWalk(context, *((Value *)(dataStack + SLAKE_STACK_MAX - (majorFrame->offRegs + sizeof(Value) * i))));
 	}
 }
@@ -460,8 +459,8 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, char *dataStack, MajorFr
 SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Context &ctxt) {
 	bool isWalkableObjectDetected = false;
 
-	for (auto &i : ctxt.majorFrames) {
-		MajorFrame *majorFrame = i.get();
+	for (size_t i = 0; i < ctxt.majorFrames.size(); ++i) {
+		MajorFrame *majorFrame = ctxt.majorFrames.at(i).get();
 		_gcWalk(context, ctxt.dataStack, majorFrame);
 	}
 }
@@ -488,6 +487,8 @@ SLAKE_API void GCWalkContext::pushObject(GCWalkContext *context, Object *object)
 			break;
 		case ObjectGCStatus::Walked:
 			break;
+		default:
+			std::terminate();
 	}
 }
 
@@ -639,6 +640,7 @@ rescan:
 
 		while (i) {
 			Object *next = i->gcInfo.heapless.nextWalkable;
+
 			switch (i->gcInfo.heapless.gcStatus) {
 				case ObjectGCStatus::Unwalked:
 					std::terminate();
@@ -650,6 +652,7 @@ rescan:
 					std::terminate();
 					break;
 			}
+
 			i = next;
 		}
 
@@ -663,6 +666,10 @@ rescan:
 		isRescanNeeded = true;
 	}
 
+	if (isRescanNeeded) {
+		goto rescan;
+	}
+
 	size_t nDeletedObjects = 0;
 	// Delete unreachable objects.
 	for (Object *i = context.getUnwalkedList(), *next; i; i = next) {
@@ -671,6 +678,15 @@ rescan:
 		if (i == objectList) {
 			objectList = i->nextSameGenObject;
 			assert(!i->prevSameGenObject);
+		}
+
+		if (endObjectOut == i) {
+			if (i->prevSameGenObject) {
+				endObjectOut = i->prevSameGenObject;
+			} else {
+				endObjectOut = nullptr;
+			}
+			assert(!i->nextSameGenObject);
 		}
 
 		if (i->prevSameGenObject) {
@@ -688,8 +704,8 @@ rescan:
 
 	nObjects -= nDeletedObjects;
 
-	if (isRescanNeeded) {
-		goto rescan;
+	for (Object *i = objectList; i; i = i->nextSameGenObject) {
+		i->gcInfo.heapless.gcStatus = ObjectGCStatus::Unwalked;
 	}
 }
 
@@ -922,6 +938,10 @@ rescanLeftovers:
 
 	if (!nObjects) {
 		assert(!objectList);
+	}
+
+	for (Object* i = objectList; i; i = i->nextSameGenObject) {
+		i->gcInfo.heapless.gcStatus = ObjectGCStatus::Unwalked;
 	}
 }
 

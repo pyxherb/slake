@@ -18,12 +18,6 @@ SLAKE_API void *CountablePoolAlloc::alloc(size_t size, size_t alignment) noexcep
 	if (!p)
 		return nullptr;
 
-	if (this == &runtime->youngAlloc) {
-		if (size == 0x10) {
-			puts("");
-		}
-	}
-
 	szAllocated += size;
 
 	return p;
@@ -37,7 +31,7 @@ SLAKE_API void CountablePoolAlloc::release(void *p, size_t size, size_t alignmen
 	szAllocated -= size;
 }
 
-SLAKE_API bool CountablePoolAlloc::isReplaceable(const peff::Alloc* rhs) const noexcept {
+SLAKE_API bool CountablePoolAlloc::isReplaceable(const peff::Alloc *rhs) const noexcept {
 	if (getDefaultAlloc() != rhs->getDefaultAlloc())
 		return false;
 
@@ -52,7 +46,84 @@ SLAKE_API bool CountablePoolAlloc::isReplaceable(const peff::Alloc* rhs) const n
 	return true;
 }
 
-SLAKE_API peff::Alloc* Runtime::getCurGenAlloc() {
+SLAKE_API GenerationalPoolAlloc slake::g_generationalPoolDefaultAlloc(nullptr, nullptr);
+
+#ifndef _NDEBUG
+
+SLAKE_API void GenerationalPoolAlloc::onIncRef(size_t counter) {
+	peff::List<peff::TracebackInfo> ti(upstream.get());
+
+	#if !SLAKE_WITH_ASAN_ENABLED
+	if (!peff::getTracebackInfo(9, ti)) {
+		puts("Error: error getting traceback info during increasing an reference!");
+		return;
+	}
+	#endif
+
+	if (!recordedRefPoints.insert(+counter, std::move(ti))) {
+		puts("Error: error adding reference point!");
+	}
+}
+
+SLAKE_API void GenerationalPoolAlloc::onDecRef(size_t counter) {
+	if (auto it = recordedRefPoints.find(counter); it != recordedRefPoints.end()) {
+		recordedRefPoints.remove(counter);
+	} else {
+		std::terminate();
+	}
+}
+
+#endif
+
+SLAKE_API GenerationalPoolAlloc::GenerationalPoolAlloc(Runtime *runtime, peff::Alloc *upstream) : runtime(runtime), upstream(upstream)
+#ifndef _NDEBUG
+																								  ,
+																								  recordedRefPoints(upstream)
+#endif
+{
+}
+
+SLAKE_API peff::Alloc *GenerationalPoolAlloc::getDefaultAlloc() const noexcept {
+	return &g_countablePoolDefaultAlloc;
+}
+
+SLAKE_API void GenerationalPoolAlloc::onRefZero() noexcept {
+}
+
+SLAKE_API void *GenerationalPoolAlloc::alloc(size_t size, size_t alignment) noexcept {
+	void *p = upstream->alloc(size, alignment);
+	if (!p)
+		return nullptr;
+
+	szAllocated += size;
+
+	return p;
+}
+
+SLAKE_API void GenerationalPoolAlloc::release(void *p, size_t size, size_t alignment) noexcept {
+	assert(size <= szAllocated);
+
+	upstream->release(p, size, alignment);
+
+	szAllocated -= size;
+}
+
+SLAKE_API bool GenerationalPoolAlloc::isReplaceable(const peff::Alloc *rhs) const noexcept {
+	if (getDefaultAlloc() != rhs->getDefaultAlloc())
+		return false;
+
+	GenerationalPoolAlloc *r = (GenerationalPoolAlloc *)rhs;
+
+	if (runtime != r->runtime)
+		return false;
+
+	if (upstream != r->upstream)
+		return false;
+
+	return true;
+}
+
+SLAKE_API peff::Alloc *Runtime::getCurGenAlloc() {
 	return &youngAlloc;
 }
 
@@ -170,9 +241,8 @@ SLAKE_API Runtime::Runtime(peff::Alloc *selfAllocator, peff::Alloc *upstream, Ru
 	  managedThreadRunnables(&fixedAlloc),
 	  parallelGcThreads(&fixedAlloc),
 	  parallelGcThreadRunnables(&fixedAlloc),
-	  objectAlloc(this, &fixedAlloc),
-	  youngAlloc(this, &objectAlloc),
-	  persistentAlloc(this, &objectAlloc) {
+	  youngAlloc(this, &fixedAlloc),
+	  persistentAlloc(this, &fixedAlloc) {
 	_flags &= ~_RT_INITING;
 }
 

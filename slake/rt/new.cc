@@ -87,7 +87,12 @@ SLAKE_API InternalExceptionPointer Runtime::initObjectLayoutForClass(ClassObject
 
 	if (parentClass && parentClass->cachedObjectLayout) {
 		objectLayout = decltype(objectLayout)(parentClass->cachedObjectLayout->duplicate(getCurGenAlloc()));
-		peff::copyAssign(cls->cachedFieldInitValues, parentClass->cachedFieldInitValues);
+
+		if (!cls->cachedFieldInitValues.resize(parentClass->cachedFieldInitValues.size())) {
+			return OutOfMemoryError::alloc();
+		}
+
+		memcpy(cls->cachedFieldInitValues.data(), parentClass->cachedFieldInitValues.data(), sizeof(Value) * parentClass->cachedFieldInitValues.size());
 	} else {
 		objectLayout = decltype(objectLayout)(ObjectLayout::alloc(cls->selfAllocator.get()));
 		cls->cachedFieldInitValues = peff::DynArray<Value>(cls->selfAllocator.get());

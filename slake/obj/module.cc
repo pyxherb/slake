@@ -182,4 +182,8 @@ SLAKE_API void ModuleObject::replaceAllocator(peff::Alloc *allocator) noexcept {
 	fieldRecordIndices.replaceAllocator(allocator);
 
 	unnamedImports.replaceAllocator(allocator);
+
+	for (auto i : unnamedImports) {
+		i->replaceAllocator(allocator);
+	}
 }

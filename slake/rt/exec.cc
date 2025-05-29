@@ -2189,8 +2189,8 @@ SLAKE_API InternalExceptionPointer Runtime::resumeCoroutine(
 	SLAKE_RETURN_IF_EXCEPT(_createNewCoroutineMajorFrame(&context->_context, coroutine, 0));
 
 	{
-		peff::ScopeGuard leaveMajorFrameGuard([this, context]() noexcept {
-			context->_context.leaveMajor();
+		peff::ScopeGuard leaveMajorFrameGuard([this, &contextRef]() noexcept {
+			contextRef->_context.leaveMajor();
 		});
 
 		ExecutionRunnable runnable;

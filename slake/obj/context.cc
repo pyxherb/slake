@@ -138,6 +138,8 @@ SLAKE_API HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt) 
 	if (!rt->addObject(ptr.get()))
 		return nullptr;
 
+	Runtime::addSameKindObjectToList(&rt->contextObjectList, ptr.get());
+
 	return ptr.release();
 }
 
@@ -145,6 +147,7 @@ SLAKE_API MajorFrame::~MajorFrame() {
 }
 
 SLAKE_API void slake::ContextObject::dealloc() {
+	Runtime::removeSameKindObjectToList(&associatedRuntime->contextObjectList, this);
 	peff::destroyAndRelease<ContextObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 

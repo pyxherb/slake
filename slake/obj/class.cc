@@ -224,6 +224,8 @@ SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(const ClassObject
 	if (!other->associatedRuntime->addObject(ptr.get()))
 		return nullptr;
 
+	Runtime::addSameKindObjectToList(&other->associatedRuntime->classObjectList, ptr.get());
+
 	return ptr.release();
 }
 
@@ -239,10 +241,13 @@ SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(Runtime *rt) {
 	if (!rt->addObject(ptr.get()))
 		return nullptr;
 
+	Runtime::addSameKindObjectToList(&rt->classObjectList, ptr.get());
+
 	return ptr.release();
 }
 
 SLAKE_API void slake::ClassObject::dealloc() {
+	Runtime::removeSameKindObjectToList(&associatedRuntime->classObjectList, this);
 	peff::destroyAndRelease<ClassObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 

@@ -51,16 +51,7 @@ SLAKE_API GenerationalPoolAlloc slake::g_generationalPoolDefaultAlloc(nullptr, n
 #ifndef _NDEBUG
 
 SLAKE_API void GenerationalPoolAlloc::onIncRef(size_t counter) {
-	peff::List<peff::TracebackInfo> ti(upstream.get());
-
-	#if !SLAKE_WITH_ASAN_ENABLED
-	if (!peff::getTracebackInfo(9, ti)) {
-		puts("Error: error getting traceback info during increasing an reference!");
-		return;
-	}
-	#endif
-
-	if (!recordedRefPoints.insert(+counter, std::move(ti))) {
+	if (!recordedRefPoints.insert(+counter, nullptr)) {
 		puts("Error: error adding reference point!");
 	}
 }
@@ -267,6 +258,37 @@ SLAKE_API Runtime::~Runtime() {
 	assert(!persistentObjectList);
 	// Self allocator should be moved out in the dealloc() method, or the runtime has been destructed prematurely.
 	assert(!selfAllocator);
+}
+
+SLAKE_API void Runtime::addSameKindObjectToList(Object** list, Object* object) {
+	if (*list) {
+		assert(!(*list)->prevSameKindObject);
+		(*list)->prevSameKindObject = object;
+	}
+
+	object->nextSameKindObject = (*list);
+
+	object->sameKindObjectList = list;
+
+	*list = object;
+}
+
+SLAKE_API void Runtime::removeSameKindObjectToList(Object** list, Object* object) {
+	if (object->nextSameKindObject) {
+		object->nextSameKindObject->prevSameKindObject = object->prevSameKindObject;
+	}
+
+	object->nextSameKindObject = nullptr;
+
+	if (object->prevSameKindObject) {
+		object->prevSameKindObject->nextSameKindObject = object->nextSameKindObject;
+	} else {
+		assert(object == *list);
+
+		*list = object->nextSameKindObject;
+	}
+
+	object->prevSameKindObject = nullptr;
 }
 
 SLAKE_API bool Runtime::addObject(Object *object) {

@@ -86,19 +86,16 @@ namespace slake {
 		Mutex gcMutex;
 		GCWalkContext *gcWalkContext = nullptr;
 
-		union {
-			struct {
-				ObjectGCStatus gcStatus;
-				Object *nextWalkable;  // New reachable objects
-				InstanceObject *prevDestructible;
-				InstanceObject *nextDestructible;
+		ObjectGCStatus gcStatus;
+		Object *nextWalkable;  // New reachable objects
+		Object **sameKindObjectList = NULL;
+		Object *prevSameKindObject = NULL;
+		Object *nextSameKindObject = NULL;
 
-				Object *nextHostRef;
+		Object *nextHostRef;
 
-				Object *nextUnwalked;
-				Object *prevUnwalked;
-			} heapless;
-		} gcInfo;
+		Object *nextUnwalked;
+		Object *prevUnwalked;
 
 		Runtime *associatedRuntime;
 

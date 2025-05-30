@@ -19,10 +19,6 @@
 #include <peff/containers/map.h>
 #include <peff/base/deallocable.h>
 
-#ifndef _NDEBUG
-	#include <peff/advutils/traceback.h>
-#endif
-
 namespace slake {
 	class CountablePoolAlloc : public peff::Alloc {
 	public:
@@ -56,7 +52,7 @@ namespace slake {
 		Runtime *runtime;
 
 #ifndef _NDEBUG
-		peff::Map<size_t, peff::List<peff::TracebackInfo>> recordedRefPoints;
+		peff::Map<size_t, void *> recordedRefPoints;
 #endif
 
 		peff::RcObjectPtr<peff::Alloc> upstream;
@@ -219,9 +215,15 @@ namespace slake {
 		/// @param ins Instruction to be executed.
 		[[nodiscard]] SLAKE_API InternalExceptionPointer _execIns(ContextObject *context, MajorFrame *curMajorFrame, const Instruction &ins, bool &isContextChangedOut) noexcept;
 
+	public:
 		Object *youngObjectList = nullptr, *persistentObjectList = nullptr;
 		size_t nYoungObjects = 0, nPersistentObjects = 0;
 
+		Object *instanceObjectList = nullptr;
+		Object *contextObjectList = nullptr;
+		Object *classObjectList = nullptr;
+
+	private:
 		SLAKE_API void _gcWalk(GCWalkContext *context, MethodTable *methodTable);
 		SLAKE_API void _gcWalk(GCWalkContext *context, GenericParamList &genericParamList);
 		SLAKE_API void _gcWalk(GCWalkContext *context, const Type &type);
@@ -333,6 +335,8 @@ namespace slake {
 		/// @return Resolved value which is referred by the reference.
 		SLAKE_API InternalExceptionPointer resolveIdRef(IdRefObject *ref, EntityRef &objectRefOut, Object *scopeObject = nullptr);
 
+		SLAKE_API static void addSameKindObjectToList(Object **list, Object *object);
+		SLAKE_API static void removeSameKindObjectToList(Object **list, Object *object);
 		[[nodiscard]] SLAKE_API bool addObject(Object *object);
 		SLAKE_FORCEINLINE peff::Alloc *getFixedAlloc() {
 			return &fixedAlloc;

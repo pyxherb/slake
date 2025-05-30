@@ -6,9 +6,7 @@ SLAKE_API void Runtime::_destructDestructibleObjects(InstanceObject *destructibl
 	InternalExceptionPointer exception;
 
 	for (InstanceObject *i = destructibleList, *next; i; i = next) {
-		next = i->gcInfo.heapless.nextDestructible;
-
-		i->gcInfo.heapless.nextDestructible = nullptr;
+		next = (InstanceObject *)i->nextSameKindObject;
 
 		destructibleList = next;
 
@@ -31,22 +29,31 @@ SLAKE_API void Runtime::gc() {
 
 	puts("Young GC Boundary:");
 
+	for (Object *i = contextObjectList; i; i = i->nextSameKindObject) {
+		// Replace the major frames in the context objects.
+		i->gcStatus = ObjectGCStatus::Unwalked;
+	}
+
 	// TODO: This is a stupid way to make sure that all the destructible objects are destructed.
 	// Can we create a separate GC thread in advance and let it to execute them?
 	Object *youngObjectsEnd;
 	_gcSerial(youngObjectList, youngObjectsEnd, nYoungObjects, ObjectGeneration::Persistent);
+
+	for (Object *i = youngObjectList; i; i = i->nextSameGenObject) {
+		i->replaceAllocator(&persistentAlloc);
+	}
 
 	puts("Persistent GC Boundary:");
 
 	Object *persistentObjectsEnd;
 	_gcSerial(persistentObjectList, persistentObjectsEnd, nPersistentObjects, ObjectGeneration::Persistent);
 
-	for (Object *i = youngObjectList; i; i = i->nextSameGenObject) {
-		i->gcInfo.heapless.gcStatus = ObjectGCStatus::Unwalked;
+	for (Object *i = contextObjectList; i; i = i->nextSameKindObject) {
+		// Replace the major frames in the context objects.
 		i->replaceAllocator(&persistentAlloc);
 	}
 
-	for (Object *i = persistentObjectList; i; i = i->nextSameGenObject) {
+	for (Object *i = classObjectList; i; i = i->nextSameKindObject) {
 		// Replace the major frames in the context objects.
 		i->replaceAllocator(&persistentAlloc);
 	}
@@ -57,10 +64,6 @@ SLAKE_API void Runtime::gc() {
 
 		for (auto i : youngAlloc.recordedRefPoints) {
 			printf("Reference point #%zu:\n", i.first);
-
-			for (auto j : i.second) {
-				printf("\t%p+%zx\n", j.base, j.offset);
-			}
 		}
 
 		puts("Dump completed");

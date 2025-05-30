@@ -130,20 +130,20 @@ SLAKE_API void GCWalkContext::removeFromUnwalkedList(Object *v) {
 	MutexGuard accessMutexGuard(context.accessMutex);
 
 	if (v == context.unwalkedList) {
-		context.unwalkedList = v->gcInfo.heapless.nextUnwalked;
-		assert(!v->gcInfo.heapless.prevUnwalked);
+		context.unwalkedList = v->nextUnwalked;
+		assert(!v->prevUnwalked);
 	}
 
-	if (v->gcInfo.heapless.nextUnwalked) {
-		v->gcInfo.heapless.nextUnwalked->gcInfo.heapless.prevUnwalked = v->gcInfo.heapless.prevUnwalked;
+	if (v->nextUnwalked) {
+		v->nextUnwalked->prevUnwalked = v->prevUnwalked;
 	}
 
-	if (v->gcInfo.heapless.prevUnwalked) {
-		v->gcInfo.heapless.prevUnwalked->gcInfo.heapless.nextUnwalked = v->gcInfo.heapless.nextUnwalked;
+	if (v->prevUnwalked) {
+		v->prevUnwalked->nextUnwalked = v->nextUnwalked;
 	}
 
-	v->gcInfo.heapless.nextUnwalked = nullptr;
-	v->gcInfo.heapless.prevUnwalked = nullptr;
+	v->nextUnwalked = nullptr;
+	v->prevUnwalked = nullptr;
 }
 
 SLAKE_API void GCWalkContext::removeFromDestructibleList(Object *v) {
@@ -151,16 +151,9 @@ SLAKE_API void GCWalkContext::removeFromDestructibleList(Object *v) {
 
 	MutexGuard accessMutexGuard(context.accessMutex);
 
-	if (v == context.destructibleList) {
-		context.destructibleList = v->gcInfo.heapless.nextDestructible;
-	}
-
-	if (v->gcInfo.heapless.nextDestructible) {
-		v->gcInfo.heapless.nextDestructible->gcInfo.heapless.prevDestructible = v->gcInfo.heapless.prevDestructible;
-	}
-
-	if (v->gcInfo.heapless.prevDestructible) {
-		v->gcInfo.heapless.prevDestructible->gcInfo.heapless.nextDestructible = v->gcInfo.heapless.nextDestructible;
+	if (v->sameKindObjectList) {
+		Runtime::removeSameKindObjectToList((Object **)&context.destructibleList, v);
+		v->sameKindObjectList = nullptr;
 	}
 }
 
@@ -168,11 +161,11 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 	if (!v)
 		return;
 
-	switch (v->gcInfo.heapless.gcStatus) {
+	switch (v->gcStatus) {
 		case ObjectGCStatus::Unwalked:
 			throw std::logic_error("Cannot walk on an unwalked object");
 		case ObjectGCStatus::ReadyToWalk:
-			v->gcInfo.heapless.gcStatus = ObjectGCStatus::Walked;
+			v->gcStatus = ObjectGCStatus::Walked;
 
 			switch (auto typeId = v->getKind(); typeId) {
 				case ObjectKind::String:
@@ -208,6 +201,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 						}
 					}
 
+					GCWalkContext::removeFromDestructibleList(value);
 					break;
 				}
 				case ObjectKind::Array: {
@@ -431,7 +425,6 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 			}
 
 			GCWalkContext::removeFromUnwalkedList(v);
-			GCWalkContext::removeFromDestructibleList(v);
 
 			v->gcWalkContext = nullptr;
 			v->gcMutex.unlock();
@@ -469,9 +462,9 @@ SLAKE_API void GCWalkContext::pushObject(GCWalkContext *context, Object *object)
 	if (!object)
 		return;
 
-	switch (object->gcInfo.heapless.gcStatus) {
+	switch (object->gcStatus) {
 		case ObjectGCStatus::Unwalked:
-			object->gcInfo.heapless.gcStatus = ObjectGCStatus::ReadyToWalk;
+			object->gcStatus = ObjectGCStatus::ReadyToWalk;
 
 			object->gcMutex.lock();
 
@@ -508,7 +501,7 @@ SLAKE_API Object *GCWalkContext::getWalkableList() {
 SLAKE_API void GCWalkContext::pushWalkable(Object *walkableObject) {
 	MutexGuard accessMutexGuard(accessMutex);
 
-	walkableObject->gcInfo.heapless.nextWalkable = walkableList;
+	walkableObject->nextWalkable = walkableList;
 	walkableList = walkableObject;
 }
 
@@ -525,9 +518,9 @@ SLAKE_API void GCWalkContext::pushUnwalked(Object *walkableObject) {
 	MutexGuard accessMutexGuard(accessMutex);
 
 	if (unwalkedList)
-		unwalkedList->gcInfo.heapless.prevUnwalked = walkableObject;
+		unwalkedList->prevUnwalked = walkableObject;
 
-	walkableObject->gcInfo.heapless.nextUnwalked = unwalkedList;
+	walkableObject->nextUnwalked = unwalkedList;
 
 	unwalkedList = walkableObject;
 }
@@ -544,12 +537,7 @@ SLAKE_API InstanceObject *GCWalkContext::getDestructibleList() {
 SLAKE_API void GCWalkContext::pushDestructible(InstanceObject *v) {
 	MutexGuard accessMutexGuard(accessMutex);
 
-	if (destructibleList)
-		destructibleList->gcInfo.heapless.prevDestructible = v;
-
-	v->gcInfo.heapless.nextDestructible = destructibleList;
-
-	destructibleList = v;
+	Runtime::addSameKindObjectToList((Object **)&destructibleList, v);
 }
 
 SLAKE_API void GCWalkContext::reset() {
@@ -569,23 +557,21 @@ rescan:
 		Object *prev = nullptr;
 
 		for (Object *i = objectList; i; i = i->nextSameGenObject) {
-			i->gcInfo.heapless.gcStatus = ObjectGCStatus::Unwalked;
+			i->gcStatus = ObjectGCStatus::Unwalked;
 			i->gcWalkContext = &context;
 
-			i->gcInfo.heapless.nextWalkable = nullptr;
-			i->gcInfo.heapless.prevDestructible = nullptr;
-			i->gcInfo.heapless.nextDestructible = nullptr;
+			i->nextWalkable = nullptr;
 
-			i->gcInfo.heapless.nextHostRef = nullptr;
+			i->nextHostRef = nullptr;
 
-			i->gcInfo.heapless.nextUnwalked = nullptr;
-			i->gcInfo.heapless.prevUnwalked = nullptr;
+			i->nextUnwalked = nullptr;
+			i->prevUnwalked = nullptr;
 
 			i->objectGeneration = newGeneration;
 
 			// Check if the object is referenced by the host, if so, exclude them into a separated list.
 			if (i->hostRefCount) {
-				i->gcInfo.heapless.nextHostRef = hostRefList;
+				i->nextHostRef = hostRefList;
 				hostRefList = i;
 			}
 
@@ -611,9 +597,9 @@ rescan:
 	}
 
 	for (Object *i = hostRefList, *next; i; i = next) {
-		next = i->gcInfo.heapless.nextHostRef;
+		next = i->nextHostRef;
 		GCWalkContext::pushObject(&context, i);
-		i->gcInfo.heapless.nextHostRef = nullptr;
+		i->nextHostRef = nullptr;
 	}
 
 	for (auto i = _genericCacheDir.begin(); i != _genericCacheDir.end(); ++i) {
@@ -639,9 +625,9 @@ rescan:
 		i = p;
 
 		while (i) {
-			Object *next = i->gcInfo.heapless.nextWalkable;
+			Object *next = i->nextWalkable;
 
-			switch (i->gcInfo.heapless.gcStatus) {
+			switch (i->gcStatus) {
 				case ObjectGCStatus::Unwalked:
 					std::terminate();
 					break;
@@ -673,7 +659,7 @@ rescan:
 	size_t nDeletedObjects = 0;
 	// Delete unreachable objects.
 	for (Object *i = context.getUnwalkedList(), *next; i; i = next) {
-		next = i->gcInfo.heapless.nextUnwalked;
+		next = i->nextUnwalked;
 
 		if (i == objectList) {
 			objectList = i->nextSameGenObject;
@@ -705,7 +691,7 @@ rescan:
 	nObjects -= nDeletedObjects;
 
 	for (Object *i = objectList; i; i = i->nextSameGenObject) {
-		i->gcInfo.heapless.gcStatus = ObjectGCStatus::Unwalked;
+		i->gcStatus = ObjectGCStatus::Unwalked;
 	}
 }
 
@@ -727,8 +713,8 @@ SLAKE_API void Runtime::ParallelGcThreadRunnable::run() {
 			i = p;
 
 			while (i) {
-				Object *next = i->gcInfo.heapless.nextWalkable;
-				switch (i->gcInfo.heapless.gcStatus) {
+				Object *next = i->nextWalkable;
+				switch (i->gcStatus) {
 					case ObjectGCStatus::Unwalked:
 						std::terminate();
 						break;
@@ -791,23 +777,21 @@ rescan:
 					cur = curObjIt;
 					curObjIt = curObjIt->nextSameGenObject;
 
-					cur->gcInfo.heapless.gcStatus = ObjectGCStatus::Unwalked;
+					cur->gcStatus = ObjectGCStatus::Unwalked;
 					cur->gcWalkContext = &context;
 
-					cur->gcInfo.heapless.nextWalkable = nullptr;
-					cur->gcInfo.heapless.prevDestructible = nullptr;
-					cur->gcInfo.heapless.nextDestructible = nullptr;
+					cur->nextWalkable = nullptr;
 
-					cur->gcInfo.heapless.nextHostRef = nullptr;
+					cur->nextHostRef = nullptr;
 
-					cur->gcInfo.heapless.nextUnwalked = nullptr;
-					cur->gcInfo.heapless.prevUnwalked = nullptr;
+					cur->nextUnwalked = nullptr;
+					cur->prevUnwalked = nullptr;
 
 					cur->objectGeneration = newGeneration;
 
 					// Check if the object is referenced by the host, if so, exclude them into a separated list.
 					if (cur->hostRefCount) {
-						cur->gcInfo.heapless.nextHostRef = hostRefList;
+						cur->nextHostRef = hostRefList;
 						hostRefList = cur;
 					}
 
@@ -829,9 +813,9 @@ rescan:
 			}
 
 			for (Object *i = hostRefList, *next; i; i = next) {
-				next = i->gcInfo.heapless.nextHostRef;
+				next = i->nextHostRef;
 				GCWalkContext::pushObject(&context, i);
-				i->gcInfo.heapless.nextHostRef = nullptr;
+				i->nextHostRef = nullptr;
 			}
 		}
 
@@ -909,7 +893,7 @@ rescanLeftovers:
 
 		// Delete unreachable objects.
 		for (Object *j = context.getUnwalkedList(), *next; j; j = next) {
-			next = j->gcInfo.heapless.nextUnwalked;
+			next = j->nextUnwalked;
 
 			if (j == objectList) {
 				assert(!j->prevSameGenObject);
@@ -940,8 +924,8 @@ rescanLeftovers:
 		assert(!objectList);
 	}
 
-	for (Object* i = objectList; i; i = i->nextSameGenObject) {
-		i->gcInfo.heapless.gcStatus = ObjectGCStatus::Unwalked;
+	for (Object *i = objectList; i; i = i->nextSameGenObject) {
+		i->gcStatus = ObjectGCStatus::Unwalked;
 	}
 }
 

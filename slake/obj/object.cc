@@ -24,6 +24,17 @@ SLAKE_API DuplicationTask DuplicationTask::makeModuleMember(ModuleObject *mod, M
 	return task;
 }
 
+SLAKE_API DuplicationTask DuplicationTask::makeType(Type *type, const Type &src) {
+	DuplicationTask task;
+
+	task.taskType = DuplicationTaskType::Type;
+
+	task.asType.type = type;
+	task.asType.src = src;
+
+	return task;
+}
+
 SLAKE_API Duplicator::Duplicator(Runtime *runtime, peff::Alloc *allocator) : runtime(runtime), tasks(allocator) {
 }
 
@@ -53,8 +64,19 @@ SLAKE_API bool Duplicator::exec() {
 				}
 				break;
 			}
+			case DuplicationTaskType::Type: {
+				bool succeeded;
+				(*i.asType.type) = i.asType.src.duplicate(succeeded);
+
+				if (!succeeded) {
+					return false;
+				}
+				break;
+			}
 		}
 	}
+
+	return true;
 }
 
 SLAKE_API Object::Object(Runtime *rt, peff::Alloc *selfAllocator) : associatedRuntime(rt), selfAllocator(selfAllocator) {

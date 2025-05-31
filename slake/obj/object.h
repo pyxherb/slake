@@ -69,6 +69,7 @@ namespace slake {
 	enum class DuplicationTaskType {
 		Normal = 0,
 		ModuleMember,
+		Type,
 	};
 
 	struct NormalDuplicationTask {
@@ -83,16 +84,23 @@ namespace slake {
 		MemberObject *src;
 	};
 
+	struct TypeDuplicationTask {
+		Type *type;
+		Type src;
+	};
+
 	struct DuplicationTask {
 		union {
 			NormalDuplicationTask asNormal;
 			ModuleMemberDuplicationTask asModuleMember;
+			TypeDuplicationTask asType;
 		};
 
 		DuplicationTaskType taskType;
 
 		SLAKE_API static DuplicationTask makeNormal(Object **dest, Object *src);
 		SLAKE_API static DuplicationTask makeModuleMember(ModuleObject *mod, MemberObject *src);
+		SLAKE_API static DuplicationTask makeType(Type *type, const Type &src);
 	};
 
 	class Duplicator {

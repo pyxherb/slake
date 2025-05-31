@@ -8,11 +8,13 @@ SLAKE_API TypeDefObject::TypeDefObject(Runtime *rt, peff::Alloc *selfAllocator, 
 	: Object(rt, selfAllocator), type(type) {
 }
 
-SLAKE_API TypeDefObject::TypeDefObject(const TypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator) {
-	type = x.type.duplicate(succeededOut);
-	if (!succeededOut) {
+SLAKE_API TypeDefObject::TypeDefObject(Duplicator *duplicator, const TypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator) {
+	type = TypeId::None;
+	if (!duplicator->insertTask(DuplicationTask::makeType(&type, x.type))) {
+		succeededOut = false;
 		return;
 	}
+	succeededOut = true;
 }
 
 SLAKE_API TypeDefObject::~TypeDefObject() {
@@ -21,7 +23,7 @@ SLAKE_API TypeDefObject::~TypeDefObject() {
 SLAKE_API ObjectKind TypeDefObject::getKind() const { return ObjectKind::TypeDef; }
 
 SLAKE_API Object *TypeDefObject::duplicate(Duplicator *duplicator) const {
-	return (Object *)alloc(this).get();
+	return (Object *)alloc(duplicator, this).get();
 }
 
 SLAKE_API HostObjectRef<TypeDefObject> slake::TypeDefObject::alloc(Runtime *rt, const Type &type) {
@@ -41,7 +43,7 @@ SLAKE_API HostObjectRef<TypeDefObject> slake::TypeDefObject::alloc(Runtime *rt, 
 	return ptr.release();
 }
 
-SLAKE_API HostObjectRef<TypeDefObject> slake::TypeDefObject::alloc(const TypeDefObject *other) {
+SLAKE_API HostObjectRef<TypeDefObject> slake::TypeDefObject::alloc(Duplicator *duplicator, const TypeDefObject *other) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
 
 	bool succeeded = true;
@@ -50,7 +52,7 @@ SLAKE_API HostObjectRef<TypeDefObject> slake::TypeDefObject::alloc(const TypeDef
 		peff::allocAndConstruct<TypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
-			*other, curGenerationAllocator.get(), succeeded));
+			duplicator, *other, curGenerationAllocator.get(), succeeded));
 	if (!ptr)
 		return nullptr;
 
@@ -71,13 +73,32 @@ SLAKE_API FnTypeDefObject::FnTypeDefObject(Runtime *rt, peff::Alloc *selfAllocat
 	: Object(rt, selfAllocator), returnType(returnType), paramTypes(std::move(paramTypes)) {
 }
 
-SLAKE_API FnTypeDefObject::FnTypeDefObject(const FnTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator), paramTypes(allocator) {
-	returnType = x.returnType.duplicate(succeededOut);
-	if (!succeededOut) {
+SLAKE_API FnTypeDefObject::FnTypeDefObject(Duplicator *duplicator, const FnTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator), paramTypes(allocator) {
+	returnType = TypeId::None;
+	if (!duplicator->insertTask(DuplicationTask::makeType(&returnType, x.returnType))) {
+		succeededOut = false;
 		return;
 	}
 
-	// TODO: Copy the parameter types.
+	if (!paramTypes.resize(x.paramTypes.size())) {
+		succeededOut = false;
+		return;
+	}
+
+	for (size_t i = 0; i < x.paramTypes.size(); ++i) {
+		paramTypes.at(i) = TypeId::None;
+	}
+
+	for (size_t i = 0; i < x.paramTypes.size(); ++i) {
+		if (!duplicator->insertTask(DuplicationTask::makeType(&paramTypes.at(i), x.paramTypes.at(i)))) {
+			succeededOut = false;
+			return;
+		}
+	}
+
+	hasVarArg = x.hasVarArg;
+
+	succeededOut = true;
 }
 
 SLAKE_API FnTypeDefObject::~FnTypeDefObject() {
@@ -86,7 +107,7 @@ SLAKE_API FnTypeDefObject::~FnTypeDefObject() {
 SLAKE_API ObjectKind FnTypeDefObject::getKind() const { return ObjectKind::FnTypeDef; }
 
 SLAKE_API Object *FnTypeDefObject::duplicate(Duplicator *duplicator) const {
-	return (Object *)alloc(this).get();
+	return (Object *)alloc(duplicator, this).get();
 }
 
 SLAKE_API HostObjectRef<FnTypeDefObject> slake::FnTypeDefObject::alloc(Runtime *rt, const Type &returnType, peff::DynArray<Type> &&paramTypes) {
@@ -106,7 +127,7 @@ SLAKE_API HostObjectRef<FnTypeDefObject> slake::FnTypeDefObject::alloc(Runtime *
 	return ptr.release();
 }
 
-SLAKE_API HostObjectRef<FnTypeDefObject> slake::FnTypeDefObject::alloc(const FnTypeDefObject *other) {
+SLAKE_API HostObjectRef<FnTypeDefObject> slake::FnTypeDefObject::alloc(Duplicator *duplicator, const FnTypeDefObject *other) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
 
 	bool succeeded = true;
@@ -115,7 +136,7 @@ SLAKE_API HostObjectRef<FnTypeDefObject> slake::FnTypeDefObject::alloc(const FnT
 		peff::allocAndConstruct<FnTypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
-			*other, curGenerationAllocator.get(), succeeded));
+			duplicator, *other, curGenerationAllocator.get(), succeeded));
 	if (!ptr)
 		return nullptr;
 

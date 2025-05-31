@@ -84,13 +84,11 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 				case AstNodeType::GenericParam: {
 					slake::HostObjectRef<slake::StringObject> obj;
 
-					peff::String s(&compileContext->runtime->globalHeapPoolAlloc);
-
-					if (!s.build(m->name)) {
+					if (!(obj = slake::StringObject::alloc(compileContext->runtime))) {
 						return genOutOfRuntimeMemoryCompError();
 					}
 
-					if (!(obj = slake::StringObject::alloc(compileContext->runtime, std::move(s)))) {
+					if (!obj->data.build(m->name)) {
 						return genOutOfRuntimeMemoryCompError();
 					}
 
@@ -111,15 +109,13 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 			peff::SharedPtr<ArrayTypeNameNode> t = typeName.castTo<ArrayTypeNameNode>();
 			peff::SharedPtr<Document> doc = t->document.lock();
 
-			slake::Type st;
-
-			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, t->elementType, st));
-
 			slake::HostObjectRef<slake::TypeDefObject> obj;
 
-			if (!(obj = slake::TypeDefObject::alloc(compileContext->runtime, st))) {
+			if (!(obj = slake::TypeDefObject::alloc(compileContext->runtime))) {
 				return genOutOfRuntimeMemoryCompError();
 			}
+
+			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, t->elementType, obj->type));
 
 			if (!(compileContext->hostRefHolder.addObject(obj.get()))) {
 				return genOutOfMemoryCompError();
@@ -132,15 +128,13 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 			peff::SharedPtr<RefTypeNameNode> t = typeName.castTo<RefTypeNameNode>();
 			peff::SharedPtr<Document> doc = t->document.lock();
 
-			slake::Type st;
-
-			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, t->referencedType, st));
-
 			slake::HostObjectRef<slake::TypeDefObject> obj;
 
-			if (!(obj = slake::TypeDefObject::alloc(compileContext->runtime, st))) {
+			if (!(obj = slake::TypeDefObject::alloc(compileContext->runtime))) {
 				return genOutOfRuntimeMemoryCompError();
 			}
+
+			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, t->referencedType, obj->type));
 
 			if (!(compileContext->hostRefHolder.addObject(obj.get()))) {
 				return genOutOfMemoryCompError();
@@ -175,7 +169,7 @@ SLKC_API std::optional<CompilationError> slkc::compileIdRef(
 	}
 
 	for (size_t i = 0; i < id->entries.size(); ++i) {
-		peff::constructAt<slake::IdRefEntry>(&id->entries.at(i), slake::IdRefEntry(&compileContext->runtime->globalHeapPoolAlloc));
+		peff::constructAt<slake::IdRefEntry>(&id->entries.at(i), slake::IdRefEntry(compileContext->runtime->getCurGenAlloc()));
 	}
 
 	for (size_t i = 0; i < nEntries; ++i) {
@@ -196,7 +190,7 @@ SLKC_API std::optional<CompilationError> slkc::compileIdRef(
 	}
 
 	if (paramTypes) {
-		id->paramTypes = peff::DynArray<slake::Type>(&compileContext->runtime->globalHeapPoolAlloc);
+		id->paramTypes = peff::DynArray<slake::Type>(compileContext->runtime->getCurGenAlloc());
 
 		if (!id->paramTypes->resize(nParams)) {
 			return genOutOfMemoryCompError();
@@ -303,16 +297,15 @@ SLKC_API std::optional<CompilationError> slkc::compileValueExpr(
 		}
 		case ExprKind::String: {
 			peff::SharedPtr<StringLiteralExprNode> e = expr.castTo<StringLiteralExprNode>();
-			peff::String data(&compileContext->runtime->globalHeapPoolAlloc);
-
-			if (!data.build(e->data)) {
-				return genOutOfRuntimeMemoryCompError();
-			}
 
 			slake::HostObjectRef<slake::StringObject> s;
 
-			if (!(s = slake::StringObject::alloc(compileContext->runtime, std::move(data)))) {
+			if (!(s = slake::StringObject::alloc(compileContext->runtime))) {
 				return genOutOfMemoryCompError();
+			}
+
+			if (!s->data.build(e->data)) {
+				return genOutOfRuntimeMemoryCompError();
 			}
 
 			if (!compileContext->hostRefHolder.addObject(s.get())) {
@@ -355,7 +348,7 @@ SLKC_API std::optional<CompilationError> slkc::compileGenericParams(
 
 	for (size_t j = 0; j < nGenericParams; ++j) {
 		auto gpNode = genericParams[j];
-		slake::GenericParam gp(&compileContext->runtime->globalHeapPoolAlloc);
+		slake::GenericParam gp(compileContext->runtime->getCurGenAlloc());
 
 		if (!gp.name.build(gpNode->name)) {
 			return genOutOfMemoryCompError();
@@ -443,7 +436,7 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 			case AstNodeType::Var: {
 				peff::SharedPtr<VarNode> varNode = m.castTo<VarNode>();
 
-				slake::FieldRecord fr(&compileContext->runtime->globalHeapPoolAlloc);
+				slake::FieldRecord fr(compileContext->runtime->getCurGenAlloc());
 
 				if (!fr.name.build(k)) {
 					return genOutOfRuntimeMemoryCompError();

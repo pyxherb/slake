@@ -24,9 +24,10 @@ InternalExceptionPointer slake::opti::wrapIntoRefType(
 	Type type,
 	HostRefHolder &hostRefHolder,
 	Type &typeOut) {
-	HostObjectRef<TypeDefObject> typeDef = TypeDefObject::alloc(
-		runtime,
-		type);
+	HostObjectRef<TypeDefObject> typeDef = TypeDefObject::alloc(runtime);
+
+	typeDef->type = type;
+
 	hostRefHolder.addObject(typeDef.get());
 	typeOut = Type(TypeId::Ref, typeDef.get());
 
@@ -39,8 +40,10 @@ InternalExceptionPointer slake::opti::wrapIntoArrayType(
 	HostRefHolder &hostRefHolder,
 	Type &typeOut) {
 	HostObjectRef<TypeDefObject> typeDef = TypeDefObject::alloc(
-		runtime,
-		type);
+		runtime);
+
+	typeDef->type = type;
+
 	hostRefHolder.addObject(typeDef.get());
 	typeOut = Type(TypeId::Array, typeDef.get());
 
@@ -86,14 +89,23 @@ InternalExceptionPointer slake::opti::evalObjectType(
 				case ObjectKind::FnOverloading: {
 					FnOverloadingObject *fnOverloadingObject = (FnOverloadingObject *)object;
 
-					peff::DynArray<Type> paramTypes(analyzeContext.runtime->getFixedAlloc());
-					if (!(peff::copy(paramTypes, fnOverloadingObject->paramTypes))) {
+					auto typeDef = FnTypeDefObject::alloc(
+						analyzeContext.runtime);
+
+					typeDef->returnType = fnOverloadingObject->returnType;
+
+					if (!typeDef->paramTypes.resize(fnOverloadingObject->paramTypes.size())) {
 						return OutOfMemoryError::alloc();
 					}
-					auto typeDef = FnTypeDefObject::alloc(
-						analyzeContext.runtime,
-						fnOverloadingObject->returnType,
-						std::move(paramTypes));
+
+					for (size_t i = 0; i < fnOverloadingObject->paramTypes.size(); ++i) {
+						typeDef->paramTypes.at(i) = TypeId::None;
+					}
+
+					for (size_t i = 0; i < fnOverloadingObject->paramTypes.size(); ++i) {
+						typeDef->paramTypes.at(i) = fnOverloadingObject->paramTypes.at(i);
+					}
+
 					analyzeContext.hostRefHolder.addObject(typeDef.get());
 					typeOut = Type(TypeId::FnDelegate, typeDef.get());
 					break;
@@ -255,7 +267,10 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 	}
 
 	if (fnObject->overloadingFlags & OL_VARG) {
-		auto varArgTypeDefObject = TypeDefObject::alloc(runtime, Type(TypeId::Any));
+		auto varArgTypeDefObject = TypeDefObject::alloc(runtime);
+
+		varArgTypeDefObject->type = Type(TypeId::Any);
+
 		hostRefHolder.addObject(varArgTypeDefObject.get());
 
 		pseudoMajorFrame->resumable->argStack.pushBack({ Value(), Type(TypeId::Array, varArgTypeDefObject.get()) });
@@ -607,13 +622,15 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 									i));
 						} else if (index == fnObject->paramTypes.size()) {
 							HostObjectRef<TypeDefObject> typeDef = TypeDefObject::alloc(
-								runtime,
-								type);
+								runtime);
+
+							typeDef->type = TypeId::Any;
+
 							hostRefHolder.addObject(typeDef.get());
 							SLAKE_RETURN_IF_EXCEPT(
 								wrapIntoRefType(
 									runtime,
-									Type(TypeId::Ref, typeDef.get()),
+									Type(TypeId::Array, typeDef.get()),
 									hostRefHolder,
 									type));
 						} else {

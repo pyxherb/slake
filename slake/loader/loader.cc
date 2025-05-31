@@ -66,15 +66,13 @@ SLAKE_API InternalExceptionPointer loader::loadType(Runtime *runtime, Reader *re
 			typeOut = TypeId::Bool;
 			break;
 		case slake::slxfmt::TypeId::Array: {
-			Type elementType;
-
-			SLAKE_RETURN_IF_EXCEPT(loadType(runtime, reader, member, elementType));
-
 			HostObjectRef<TypeDefObject> typeDef;
 
-			if (!(typeDef = TypeDefObject::alloc(runtime, elementType))) {
+			if (!(typeDef = TypeDefObject::alloc(runtime))) {
 				return OutOfMemoryError::alloc();
 			}
+
+			SLAKE_RETURN_IF_EXCEPT(loadType(runtime, reader, member, typeDef->type));
 
 			typeOut = Type(TypeId::Array, typeDef.get());
 			break;
@@ -107,15 +105,13 @@ SLAKE_API InternalExceptionPointer loader::loadType(Runtime *runtime, Reader *re
 			break;
 		}
 		case slake::slxfmt::TypeId::Ref: {
-			Type elementType;
-
-			SLAKE_RETURN_IF_EXCEPT(loadType(runtime, reader, member, elementType));
-
 			HostObjectRef<TypeDefObject> typeDef;
 
-			if (!(typeDef = TypeDefObject::alloc(runtime, elementType))) {
+			if (!(typeDef = TypeDefObject::alloc(runtime))) {
 				return OutOfMemoryError::alloc();
 			}
+
+			SLAKE_RETURN_IF_EXCEPT(loadType(runtime, reader, member, typeDef->type));
 
 			typeOut = Type(TypeId::Ref, typeDef.get());
 			break;

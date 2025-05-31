@@ -157,24 +157,6 @@ SLAKE_API bool EntityRef::operator<(const EntityRef &rhs) const {
 	}
 }
 
-SLAKE_API Type Type::makeArrayTypeName(Runtime *runtime, const Type &elementType) {
-	Type type;
-
-	type.typeId = TypeId::Array;
-	type.exData.typeDef = TypeDefObject::alloc(runtime, elementType).get();
-
-	return type;
-}
-
-SLAKE_API Type Type::makeRefTypeName(Runtime *runtime, const Type &elementType) {
-	Type type;
-
-	type.typeId = TypeId::Ref;
-	type.exData.typeDef = TypeDefObject::alloc(runtime, elementType).get();
-
-	return type;
-}
-
 SLAKE_API Type Type::duplicate(bool &succeededOut) const {
 	Type newType(*this);
 

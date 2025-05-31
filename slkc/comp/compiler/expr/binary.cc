@@ -1657,7 +1657,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 					if (matchedOverloading->fnFlags & FN_VIRTUAL) {
 						slake::HostObjectRef<slake::IdRefObject> idRefObject;
 
-						slake::IdRefEntry e(&compileContext->runtime->globalHeapPoolAlloc);
+						slake::IdRefEntry e(compileContext->runtime->getCurGenAlloc());
 
 						if (!e.name.build(operatorName)) {
 							return genOutOfRuntimeMemoryCompError();
@@ -1667,7 +1667,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 							return genOutOfRuntimeMemoryCompError();
 						}
 
-						idRefObject->paramTypes = peff::DynArray<slake::Type>(&compileContext->runtime->globalHeapPoolAlloc);
+						idRefObject->paramTypes = peff::DynArray<slake::Type>(compileContext->runtime->getCurGenAlloc());
 
 						if (!idRefObject->paramTypes->resize(matchedOverloading->params.size())) {
 							return genOutOfMemoryCompError();
@@ -1684,7 +1684,7 @@ SLKC_API std::optional<CompilationError> slkc::compileBinaryExpr(
 						IdRefPtr fullName;
 						SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileContext->allocator.get(), operatorSlot, fullName));
 
-						idRefObject->paramTypes = peff::DynArray<slake::Type>(&compileContext->runtime->globalHeapPoolAlloc);
+						idRefObject->paramTypes = peff::DynArray<slake::Type>(compileContext->runtime->getCurGenAlloc());
 
 						if (!idRefObject->paramTypes->resize(matchedOverloading->params.size())) {
 							return genOutOfMemoryCompError();

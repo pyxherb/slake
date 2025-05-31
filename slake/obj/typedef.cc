@@ -4,16 +4,18 @@
 
 using namespace slake;
 
-SLAKE_API TypeDefObject::TypeDefObject(Runtime *rt, peff::Alloc *selfAllocator, const Type &type)
-	: Object(rt, selfAllocator), type(type) {
+SLAKE_API TypeDefObject::TypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
+	: Object(rt, selfAllocator) {
 }
 
 SLAKE_API TypeDefObject::TypeDefObject(Duplicator *duplicator, const TypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator) {
 	type = TypeId::None;
+
 	if (!duplicator->insertTask(DuplicationTask::makeType(&type, x.type))) {
 		succeededOut = false;
 		return;
 	}
+
 	succeededOut = true;
 }
 
@@ -26,14 +28,14 @@ SLAKE_API Object *TypeDefObject::duplicate(Duplicator *duplicator) const {
 	return (Object *)alloc(duplicator, this).get();
 }
 
-SLAKE_API HostObjectRef<TypeDefObject> slake::TypeDefObject::alloc(Runtime *rt, const Type &type) {
+SLAKE_API HostObjectRef<TypeDefObject> slake::TypeDefObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
 	std::unique_ptr<TypeDefObject, util::DeallocableDeleter<TypeDefObject>> ptr(
 		peff::allocAndConstruct<TypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
-			rt, curGenerationAllocator.get(), type));
+			rt, curGenerationAllocator.get()));
 	if (!ptr)
 		return nullptr;
 
@@ -69,8 +71,8 @@ SLAKE_API void slake::TypeDefObject::dealloc() {
 	peff::destroyAndRelease<TypeDefObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
-SLAKE_API FnTypeDefObject::FnTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator, const Type &returnType, peff::DynArray<Type> &&paramTypes)
-	: Object(rt, selfAllocator), returnType(returnType), paramTypes(std::move(paramTypes)) {
+SLAKE_API FnTypeDefObject::FnTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
+	: Object(rt, selfAllocator), paramTypes(selfAllocator) {
 }
 
 SLAKE_API FnTypeDefObject::FnTypeDefObject(Duplicator *duplicator, const FnTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator), paramTypes(allocator) {
@@ -110,14 +112,14 @@ SLAKE_API Object *FnTypeDefObject::duplicate(Duplicator *duplicator) const {
 	return (Object *)alloc(duplicator, this).get();
 }
 
-SLAKE_API HostObjectRef<FnTypeDefObject> slake::FnTypeDefObject::alloc(Runtime *rt, const Type &returnType, peff::DynArray<Type> &&paramTypes) {
+SLAKE_API HostObjectRef<FnTypeDefObject> slake::FnTypeDefObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
 
 	std::unique_ptr<FnTypeDefObject, util::DeallocableDeleter<FnTypeDefObject>> ptr(
 		peff::allocAndConstruct<FnTypeDefObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
-			rt, curGenerationAllocator.get(), returnType, std::move(paramTypes)));
+			rt, curGenerationAllocator.get()));
 	if (!ptr)
 		return nullptr;
 

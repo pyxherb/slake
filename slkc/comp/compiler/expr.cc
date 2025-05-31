@@ -257,7 +257,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 								SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, idRefObject));
 
 								if (extraFnArgs) {
-									idRefObject->paramTypes = peff::DynArray<slake::Type>(&compileContext->runtime->globalHeapPoolAlloc);
+									idRefObject->paramTypes = peff::DynArray<slake::Type>(compileContext->runtime->getCurGenAlloc());
 
 									if (!idRefObject->paramTypes->resize(extraFnArgs->paramTypes.size()))
 										return genOutOfRuntimeMemoryCompError();
@@ -313,7 +313,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 							SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, fullIdRef->entries.data(), fullIdRef->entries.size(), nullptr, 0, false, idRefObject));
 
 							if (extraFnArgs) {
-								idRefObject->paramTypes = peff::DynArray<slake::Type>(&compileContext->runtime->globalHeapPoolAlloc);
+								idRefObject->paramTypes = peff::DynArray<slake::Type>(compileContext->runtime->getCurGenAlloc());
 
 								if (!idRefObject->paramTypes->resize(extraFnArgs->paramTypes.size()))
 									return genOutOfRuntimeMemoryCompError();
@@ -337,7 +337,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 						SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, fullIdRef->entries.data(), fullIdRef->entries.size(), nullptr, 0, false, idRefObject));
 
 						if (extraFnArgs) {
-							idRefObject->paramTypes = peff::DynArray<slake::Type>(&compileContext->runtime->globalHeapPoolAlloc);
+							idRefObject->paramTypes = peff::DynArray<slake::Type>(compileContext->runtime->getCurGenAlloc());
 
 							if (!idRefObject->paramTypes->resize(extraFnArgs->paramTypes.size()))
 								return genOutOfRuntimeMemoryCompError();
@@ -690,13 +690,11 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 					slake::HostObjectRef<slake::StringObject> sl;
 
 					{
-						peff::String s(&compileContext->runtime->globalHeapPoolAlloc);
-
-						if (!s.build(e->data)) {
+						if (!(sl = slake::StringObject::alloc(compileContext->runtime))) {
 							return genOutOfRuntimeMemoryCompError();
 						}
 
-						if (!(sl = slake::StringObject::alloc(compileContext->runtime, std::move(s)))) {
+						if (!sl->data.build(e->data)) {
 							return genOutOfRuntimeMemoryCompError();
 						}
 					}
@@ -1157,7 +1155,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, fullIdRef->entries.data(), fullIdRef->entries.size(), nullptr, 0, false, idRefObject));
 
-					idRefObject->paramTypes = peff::DynArray<slake::Type>(&compileContext->runtime->globalHeapPoolAlloc);
+					idRefObject->paramTypes = peff::DynArray<slake::Type>(compileContext->runtime->getCurGenAlloc());
 
 					if (!idRefObject->paramTypes->resize(overloading->params.size()))
 						return genOutOfRuntimeMemoryCompError();

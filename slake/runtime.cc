@@ -278,8 +278,6 @@ SLAKE_API void Runtime::removeSameKindObjectToList(Object** list, Object* object
 		object->nextSameKindObject->prevSameKindObject = object->prevSameKindObject;
 	}
 
-	object->nextSameKindObject = nullptr;
-
 	if (object->prevSameKindObject) {
 		object->prevSameKindObject->nextSameKindObject = object->nextSameKindObject;
 	} else {
@@ -287,6 +285,8 @@ SLAKE_API void Runtime::removeSameKindObjectToList(Object** list, Object* object
 
 		*list = object->nextSameKindObject;
 	}
+
+	object->nextSameKindObject = nullptr;
 
 	object->prevSameKindObject = nullptr;
 }

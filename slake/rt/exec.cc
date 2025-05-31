@@ -144,7 +144,10 @@ SLAKE_API InternalExceptionPointer Runtime::_fillArgs(
 	}
 
 	if (fn->overloadingFlags & OL_VARG) {
-		auto varArgTypeDefObject = TypeDefObject::alloc(this, Type(TypeId::Any));
+		auto varArgTypeDefObject = TypeDefObject::alloc(this);
+
+		varArgTypeDefObject->type = Type(TypeId::Any);
+
 		if (!holder.addObject(varArgTypeDefObject.get()))
 			return OutOfMemoryError::alloc();
 

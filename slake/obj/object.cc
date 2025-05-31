@@ -2,6 +2,61 @@
 
 using namespace slake;
 
+SLAKE_API DuplicationTask DuplicationTask::makeNormal(Object **dest, Object *src) {
+	DuplicationTask task;
+
+	task.taskType = DuplicationTaskType::Normal;
+
+	task.asNormal.src = src;
+	task.asNormal.dest = dest;
+
+	return task;
+}
+
+SLAKE_API DuplicationTask DuplicationTask::makeModuleMember(ModuleObject *mod, MemberObject *src) {
+	DuplicationTask task;
+
+	task.taskType = DuplicationTaskType::ModuleMember;
+
+	task.asModuleMember.mod = mod;
+	task.asModuleMember.src = src;
+
+	return task;
+}
+
+SLAKE_API Duplicator::Duplicator(Runtime *runtime, peff::Alloc *allocator) : runtime(runtime), tasks(allocator) {
+}
+
+SLAKE_API bool Duplicator::insertTask(DuplicationTask &&task) {
+	return tasks.pushBack(std::move(task));
+}
+
+SLAKE_API bool Duplicator::exec() {
+	peff::List<DuplicationTask> tasks = std::move(this->tasks);
+
+	this->tasks = peff::List<DuplicationTask>(tasks.allocator());
+
+	for (auto &i : tasks) {
+		switch (i.taskType) {
+			case DuplicationTaskType::Normal:
+				if (!(*i.asNormal.dest = i.asNormal.src->duplicate(this))) {
+					return false;
+				}
+				break;
+			case DuplicationTaskType::ModuleMember: {
+				MemberObject *object = (MemberObject *)i.asModuleMember.src->duplicate(this);
+				if (!object) {
+					return false;
+				}
+				if (!(i.asModuleMember.mod->members.insert(object->name, +object))) {
+					return false;
+				}
+				break;
+			}
+		}
+	}
+}
+
 SLAKE_API Object::Object(Runtime *rt, peff::Alloc *selfAllocator) : associatedRuntime(rt), selfAllocator(selfAllocator) {
 }
 
@@ -15,11 +70,11 @@ SLAKE_API Object::~Object() {
 	associatedRuntime->invalidateGenericCache(this);
 }
 
-SLAKE_API Object *Object::duplicate() const {
+SLAKE_API Object *Object::duplicate(Duplicator *duplicator) const {
 	throw std::logic_error("duplicate() method is not supported");
 }
 
-SLAKE_API void Object::replaceAllocator(peff::Alloc* allocator) noexcept {
+SLAKE_API void Object::replaceAllocator(peff::Alloc *allocator) noexcept {
 	peff::verifyReplaceable(selfAllocator.get(), allocator);
 
 	selfAllocator = allocator;

@@ -112,8 +112,8 @@ SLAKE_API MethodTable *MethodTable::duplicate(peff::Alloc *allocator) {
 }
 
 
-SLAKE_API Object *ClassObject::duplicate() const {
-	return (Object *)alloc(this).get();
+SLAKE_API Object *ClassObject::duplicate(Duplicator *duplicator) const {
+	return (Object *)alloc(duplicator, this).get();
 }
 
 SLAKE_API slake::ClassObject::ClassObject(Runtime *rt, peff::Alloc *selfAllocator)
@@ -132,8 +132,8 @@ SLAKE_API const GenericArgList *ClassObject::getGenericArgs() const {
 	return &genericArgs;
 }
 
-SLAKE_API ClassObject::ClassObject(const ClassObject &x, peff::Alloc *allocator, bool &succeededOut)
-	: ModuleObject(x, allocator, succeededOut),
+SLAKE_API ClassObject::ClassObject(Duplicator *duplicator, const ClassObject &x, peff::Alloc *allocator, bool &succeededOut)
+	: ModuleObject(duplicator, x, allocator, succeededOut),
 	  genericArgs(allocator),
 	  mappedGenericArgs(allocator),
 	  genericParams(allocator),
@@ -207,7 +207,7 @@ SLAKE_API bool ClassObject::isBaseOf(const ClassObject *pClass) const {
 	return false;
 }
 
-SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(const ClassObject *other) {
+SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(Duplicator *duplicator, const ClassObject *other) {
 	bool succeeded = true;
 
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
@@ -216,7 +216,7 @@ SLAKE_API HostObjectRef<ClassObject> slake::ClassObject::alloc(const ClassObject
 		peff::allocAndConstruct<ClassObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
-			*other, curGenerationAllocator.get(), succeeded));
+			duplicator, *other, curGenerationAllocator.get(), succeeded));
 
 	if (!succeeded)
 		return nullptr;
@@ -287,8 +287,8 @@ SLAKE_API InterfaceObject::InterfaceObject(Runtime *rt, peff::Alloc *selfAllocat
 	  implTypes(selfAllocator) {
 }
 
-SLAKE_API InterfaceObject::InterfaceObject(const InterfaceObject &x, peff::Alloc *allocator, bool &succeededOut)
-	: ModuleObject(x, allocator, succeededOut),
+SLAKE_API InterfaceObject::InterfaceObject(Duplicator *duplicator, const InterfaceObject &x, peff::Alloc *allocator, bool &succeededOut)
+	: ModuleObject(duplicator, x, allocator, succeededOut),
 	  genericArgs(allocator),
 	  mappedGenericArgs(allocator),
 	  genericParams(allocator),
@@ -346,8 +346,8 @@ SLAKE_API const GenericArgList *InterfaceObject::getGenericArgs() const {
 SLAKE_API InterfaceObject::~InterfaceObject() {
 }
 
-SLAKE_API Object *InterfaceObject::duplicate() const {
-	return (Object *)alloc(this).get();
+SLAKE_API Object *InterfaceObject::duplicate(Duplicator *duplicator) const {
+	return (Object *)alloc(duplicator, this).get();
 }
 
 SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Runtime *rt) {
@@ -368,7 +368,7 @@ SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Runtime *
 	return ptr.release();
 }
 
-SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(const InterfaceObject *other) {
+SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(Duplicator *duplicator, const InterfaceObject *other) {
 	bool succeeded = true;
 
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
@@ -377,7 +377,7 @@ SLAKE_API HostObjectRef<InterfaceObject> slake::InterfaceObject::alloc(const Int
 		peff::allocAndConstruct<InterfaceObject>(
 			curGenerationAllocator.get(),
 			sizeof(std::max_align_t),
-			*other, curGenerationAllocator.get(), succeeded));
+			duplicator, *other, curGenerationAllocator.get(), succeeded));
 	if (!ptr)
 		return nullptr;
 

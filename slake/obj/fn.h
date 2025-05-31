@@ -165,7 +165,7 @@ namespace slake {
 
 		SLAKE_API const slxfmt::SourceLocDesc *getSourceLocationDesc(uint32_t offIns) const;
 
-		SLAKE_API virtual Object *duplicate() const override;
+		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
 		SLAKE_API static HostObjectRef<RegularFnOverloadingObject> alloc(
 			FnObject *fnObject);
@@ -203,7 +203,7 @@ namespace slake {
 		SLAKE_API JITCompiledFnOverloadingObject(const RegularFnOverloadingObject &other, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~JITCompiledFnOverloadingObject();
 
-		SLAKE_API virtual Object *duplicate() const override;
+		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
 		SLAKE_API static HostObjectRef<JITCompiledFnOverloadingObject> alloc(
 			FnObject *fnObject,
@@ -229,7 +229,7 @@ namespace slake {
 		SLAKE_API NativeFnOverloadingObject(const NativeFnOverloadingObject &other, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~NativeFnOverloadingObject();
 
-		SLAKE_API virtual FnOverloadingObject *duplicate() const override;
+		SLAKE_API virtual FnOverloadingObject *duplicate(Duplicator *duplicator) const override;
 
 		SLAKE_API static HostObjectRef<NativeFnOverloadingObject> alloc(
 			FnObject *fnObject,
@@ -250,7 +250,7 @@ namespace slake {
 
 		SLAKE_API FnOverloadingObject *getOverloading(const peff::DynArray<Type> &argTypes) const;
 
-		SLAKE_API virtual Object *duplicate() const override;
+		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
 		SLAKE_API static HostObjectRef<FnObject> alloc(Runtime *rt);
 		SLAKE_API static HostObjectRef<FnObject> alloc(const FnObject *other);

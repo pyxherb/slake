@@ -66,6 +66,47 @@ namespace slake {
 		Persistent
 	};
 
+	enum class DuplicationTaskType {
+		Normal = 0,
+		ModuleMember,
+	};
+
+	struct NormalDuplicationTask {
+		Object **dest;
+		Object *src;
+	};
+
+	class ModuleObject;
+
+	struct ModuleMemberDuplicationTask {
+		ModuleObject *mod;
+		MemberObject *src;
+	};
+
+	struct DuplicationTask {
+		union {
+			NormalDuplicationTask asNormal;
+			ModuleMemberDuplicationTask asModuleMember;
+		};
+
+		DuplicationTaskType taskType;
+
+		SLAKE_API static DuplicationTask makeNormal(Object **dest, Object *src);
+		SLAKE_API static DuplicationTask makeModuleMember(ModuleObject *mod, MemberObject *src);
+	};
+
+	class Duplicator {
+	public:
+		Runtime *runtime;
+		peff::List<DuplicationTask> tasks;
+
+		SLAKE_API Duplicator(Runtime *runtime, peff::Alloc *allocator);
+
+		[[nodiscard]] SLAKE_API bool insertTask(DuplicationTask &&task);
+
+		[[nodiscard]] SLAKE_API bool exec();
+	};
+
 	class Object {
 	public:
 		peff::RcObjectPtr<peff::Alloc> selfAllocator;
@@ -105,7 +146,7 @@ namespace slake {
 
 		/// @brief Dulplicate the value if supported.
 		/// @return Duplicate of the value.
-		SLAKE_API virtual Object *duplicate() const;
+		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const;
 
 		virtual void dealloc() = 0;
 

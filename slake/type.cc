@@ -181,7 +181,7 @@ SLAKE_API Type Type::duplicate(bool &succeededOut) const {
 	switch (typeId) {
 		case TypeId::Array:
 		case TypeId::Ref:
-			if (!(newType.exData.typeDef = (TypeDefObject *)newType.exData.typeDef->duplicate())) {
+			if (!(newType.exData.typeDef = (TypeDefObject *)newType.exData.typeDef->duplicate(nullptr))) {
 				succeededOut = false;
 				return {};
 			}

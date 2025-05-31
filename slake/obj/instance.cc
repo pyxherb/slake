@@ -23,7 +23,7 @@ SLAKE_API InstanceObject::~InstanceObject() {
 
 SLAKE_API ObjectKind InstanceObject::getKind() const { return ObjectKind::Instance; }
 
-SLAKE_API Object *InstanceObject::duplicate() const {
+SLAKE_API Object *InstanceObject::duplicate(Duplicator *duplicator) const {
 	return (Object *)alloc(this).get();
 }
 

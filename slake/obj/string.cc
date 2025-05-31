@@ -33,7 +33,7 @@ SLAKE_API StringObject::~StringObject() {
 
 SLAKE_API ObjectKind StringObject::getKind() const { return ObjectKind::String; }
 
-SLAKE_API Object *StringObject::duplicate() const {
+SLAKE_API Object *StringObject::duplicate(Duplicator *duplicator) const {
 	return (Object *)alloc(this).get();
 }
 

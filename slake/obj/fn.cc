@@ -210,7 +210,7 @@ SLAKE_API RegularFnOverloadingObject::RegularFnOverloadingObject(const RegularFn
 					switch (entityRef.kind) {
 						case ObjectRefKind::ObjectRef:
 							if (entityRef.asObject.instanceObject)
-								curIns.operands[j] = EntityRef::makeObjectRef(entityRef.asObject.instanceObject->duplicate());
+								curIns.operands[j] = EntityRef::makeObjectRef(entityRef.asObject.instanceObject->duplicate(nullptr));
 							else
 								curIns.operands[j] = operand;
 							break;
@@ -248,7 +248,7 @@ SLAKE_API const slxfmt::SourceLocDesc *RegularFnOverloadingObject::getSourceLoca
 	return curDesc;
 }
 
-SLAKE_API Object *slake::RegularFnOverloadingObject::duplicate() const {
+SLAKE_API Object *slake::RegularFnOverloadingObject::duplicate(Duplicator *duplicator) const {
 	return alloc(this).get();
 }
 
@@ -328,7 +328,7 @@ SLAKE_API NativeFnOverloadingObject::NativeFnOverloadingObject(const NativeFnOve
 SLAKE_API NativeFnOverloadingObject::~NativeFnOverloadingObject() {
 }
 
-SLAKE_API FnOverloadingObject *slake::NativeFnOverloadingObject::duplicate() const {
+SLAKE_API FnOverloadingObject *slake::NativeFnOverloadingObject::duplicate(Duplicator *duplicator) const {
 	return (FnOverloadingObject *)alloc(this).get();
 }
 
@@ -383,7 +383,7 @@ SLAKE_API FnObject::FnObject(Runtime *rt, peff::Alloc *selfAllocator) : MemberOb
 SLAKE_API FnObject::FnObject(const FnObject &x, peff::Alloc *allocator, bool &succeededOut) : MemberObject(x, allocator, succeededOut), overloadings(allocator) {
 	if (succeededOut) {
 		for (auto i : x.overloadings) {
-			FnOverloadingObject *ol = (FnOverloadingObject *)i->duplicate();
+			FnOverloadingObject *ol = (FnOverloadingObject *)i->duplicate(nullptr);
 
 			if (!ol) {
 				succeededOut = false;
@@ -439,7 +439,7 @@ SLAKE_API FnOverloadingObject *FnObject::getOverloading(const peff::DynArray<Typ
 	return nullptr;
 }
 
-SLAKE_API Object *FnObject::duplicate() const {
+SLAKE_API Object *FnObject::duplicate(Duplicator *duplicator) const {
 	return (Object *)alloc(this).get();
 }
 

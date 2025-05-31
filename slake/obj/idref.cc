@@ -59,7 +59,7 @@ SLAKE_API IdRefObject::~IdRefObject() {
 
 SLAKE_API ObjectKind IdRefObject::getKind() const { return ObjectKind::IdRef; }
 
-SLAKE_API Object *IdRefObject::duplicate() const {
+SLAKE_API Object *IdRefObject::duplicate(Duplicator *duplicator) const {
 	return (Object *)alloc(this).get();
 }
 

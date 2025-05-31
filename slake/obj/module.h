@@ -55,12 +55,12 @@ namespace slake {
 		peff::DynArray<IdRefObject *> unnamedImports;
 
 		SLAKE_API ModuleObject(Runtime *rt, peff::Alloc *selfAllocator);
-		SLAKE_API ModuleObject(const ModuleObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API ModuleObject(Duplicator *duplicator, const ModuleObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~ModuleObject();
 
 		SLAKE_API virtual ObjectKind getKind() const override;
 
-		SLAKE_API virtual Object *duplicate() const override;
+		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
 		SLAKE_API virtual EntityRef getMember(const std::string_view &name) const override;
 		[[nodiscard]] SLAKE_API virtual bool addMember(MemberObject *member);
@@ -72,7 +72,7 @@ namespace slake {
 		SLAKE_API char *appendTypedFieldSpace(const Type &type);
 
 		SLAKE_API static HostObjectRef<ModuleObject> alloc(Runtime *rt);
-		SLAKE_API static HostObjectRef<ModuleObject> alloc(const ModuleObject *other);
+		SLAKE_API static HostObjectRef<ModuleObject> alloc(Duplicator *duplicator, const ModuleObject *other);
 		SLAKE_API virtual void dealloc() override;
 
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;

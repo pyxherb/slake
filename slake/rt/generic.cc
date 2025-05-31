@@ -419,8 +419,17 @@ SLAKE_API InternalExceptionPointer Runtime::instantiateGenericObject(const Objec
 		// Cache missed, go to the fallback.
 	}
 
+	Duplicator duplicator(this, getCurGenAlloc());
+
 	// Cache missed, instantiate the value.
-	auto value = v->duplicate();  // Make a duplicate of the original value.
+	auto value = v->duplicate(&duplicator);  // Make a duplicate of the original value.
+
+	while (duplicator.tasks.size()) {
+		if (!duplicator.exec()) {
+			gc();
+			return OutOfMemoryError::alloc();
+		}
+	}
 	SLAKE_RETURN_IF_EXCEPT(mapGenericParams(value, instantiationContext));
 	// Instantiate the value.
 	SLAKE_RETURN_IF_EXCEPT(_instantiateGenericObject(value, instantiationContext));

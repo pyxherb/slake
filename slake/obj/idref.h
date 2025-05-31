@@ -52,7 +52,7 @@ namespace slake {
 
 		SLAKE_API virtual ObjectKind getKind() const override;
 
-		SLAKE_API virtual Object *duplicate() const override;
+		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
 		SLAKE_API static HostObjectRef<IdRefObject> alloc(Runtime *rt);
 		SLAKE_API static HostObjectRef<IdRefObject> alloc(const IdRefObject *other);

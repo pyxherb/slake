@@ -17,7 +17,7 @@ namespace slake {
 
 		SLAKE_API virtual ObjectKind getKind() const override;
 
-		SLAKE_API virtual Object *duplicate() const override;
+		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
 		SLAKE_API static HostObjectRef<TypeDefObject> alloc(Runtime *rt, const Type &type);
 		SLAKE_API static HostObjectRef<TypeDefObject> alloc(const TypeDefObject *other);
@@ -36,7 +36,7 @@ namespace slake {
 
 		SLAKE_API virtual ObjectKind getKind() const override;
 
-		SLAKE_API virtual Object *duplicate() const override;
+		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
 		SLAKE_API static HostObjectRef<FnTypeDefObject> alloc(Runtime *rt, const Type &type, peff::DynArray<Type> &&paramTypes);
 		SLAKE_API static HostObjectRef<FnTypeDefObject> alloc(const FnTypeDefObject *other);

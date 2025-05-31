@@ -84,6 +84,8 @@ namespace slake {
 		} genericArg;
 	};
 
+	struct Duplicator;
+
 	struct Type final {
 		TypeExData exData;
 

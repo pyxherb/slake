@@ -79,7 +79,7 @@ namespace slake {
 		peff::DynArray<Value> cachedFieldInitValues;
 
 		SLAKE_API ClassObject(Runtime *rt, peff::Alloc *selfAllocator);
-		SLAKE_API ClassObject(const ClassObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API ClassObject(Duplicator *duplicator, const ClassObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~ClassObject();
 
 		SLAKE_API virtual ObjectKind getKind() const override;
@@ -94,10 +94,10 @@ namespace slake {
 		SLAKE_API bool hasImplemented(const InterfaceObject *pInterface) const;
 		SLAKE_API bool isBaseOf(const ClassObject *pClass) const;
 
-		SLAKE_API virtual Object *duplicate() const override;
+		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
 		SLAKE_API static HostObjectRef<ClassObject> alloc(Runtime *rt);
-		SLAKE_API static HostObjectRef<ClassObject> alloc(const ClassObject *other);
+		SLAKE_API static HostObjectRef<ClassObject> alloc(Duplicator *duplicator, const ClassObject *other);
 		SLAKE_API virtual void dealloc() override;
 
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
@@ -117,17 +117,17 @@ namespace slake {
 		peff::DynArray<Type> implTypes;
 
 		SLAKE_API InterfaceObject(Runtime *rt, peff::Alloc *selfAllocator);
-		SLAKE_API InterfaceObject(const InterfaceObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API InterfaceObject(Duplicator *duplicator, const InterfaceObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~InterfaceObject();
 
 		SLAKE_API virtual ObjectKind getKind() const override;
 
-		SLAKE_API virtual Object *duplicate() const override;
+		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
 		SLAKE_API virtual const GenericArgList *getGenericArgs() const override;
 
 		SLAKE_API static HostObjectRef<InterfaceObject> alloc(Runtime *rt);
-		SLAKE_API static HostObjectRef<InterfaceObject> alloc(const InterfaceObject *other);
+		SLAKE_API static HostObjectRef<InterfaceObject> alloc(Duplicator *duplicator, const InterfaceObject *other);
 		SLAKE_API virtual void dealloc() override;
 
 		/// @brief Check if the interface is derived from specified interface

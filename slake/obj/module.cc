@@ -10,7 +10,7 @@ SLAKE_API ModuleObject::ModuleObject(Runtime *rt, peff::Alloc *selfAllocator)
 	: MemberObject(rt, selfAllocator), members(selfAllocator), localFieldStorage(selfAllocator), fieldRecords(selfAllocator), fieldRecordIndices(selfAllocator), unnamedImports(selfAllocator) {
 }
 
-SLAKE_API ModuleObject::ModuleObject(const ModuleObject &x, peff::Alloc *allocator, bool &succeededOut) : MemberObject(x, allocator, succeededOut), members(allocator), fieldRecords(allocator), localFieldStorage(allocator), fieldRecordIndices(allocator), unnamedImports(allocator) {
+SLAKE_API ModuleObject::ModuleObject(Duplicator *duplicator, const ModuleObject &x, peff::Alloc *allocator, bool &succeededOut) : MemberObject(x, allocator, succeededOut), members(allocator), fieldRecords(allocator), localFieldStorage(allocator), fieldRecordIndices(allocator), unnamedImports(allocator) {
 	if (succeededOut) {
 		if (!fieldRecords.resizeUninitialized(x.fieldRecords.size())) {
 			succeededOut = false;
@@ -53,12 +53,7 @@ SLAKE_API ModuleObject::ModuleObject(const ModuleObject &x, peff::Alloc *allocat
 		}
 		parent = x.parent;
 		for (auto i = x.members.begin(); i != x.members.end(); ++i) {
-			MemberObject *duplicatedMember = (MemberObject *)i.value()->duplicate();
-			if (!duplicatedMember) {
-				succeededOut = false;
-				return;
-			}
-			if (!members.insert(duplicatedMember->name, +duplicatedMember)) {
+			if (!duplicator->insertTask(DuplicationTask::makeModuleMember(this, i.value()))) {
 				succeededOut = false;
 				return;
 			}
@@ -71,8 +66,8 @@ SLAKE_API ModuleObject::~ModuleObject() {
 
 SLAKE_API ObjectKind ModuleObject::getKind() const { return ObjectKind::Module; }
 
-SLAKE_API Object *ModuleObject::duplicate() const {
-	return (Object *)alloc(this).get();
+SLAKE_API Object *ModuleObject::duplicate(Duplicator *duplicator) const {
+	return (Object *)alloc(duplicator, this).get();
 }
 
 SLAKE_API EntityRef ModuleObject::getMember(const std::string_view &name) const {
@@ -158,8 +153,8 @@ SLAKE_API HostObjectRef<ModuleObject> slake::ModuleObject::alloc(Runtime *rt) {
 	return ptr.release();
 }
 
-SLAKE_API HostObjectRef<ModuleObject> slake::ModuleObject::alloc(const ModuleObject *other) {
-	return (ModuleObject *)other->duplicate();
+SLAKE_API HostObjectRef<ModuleObject> slake::ModuleObject::alloc(Duplicator *duplicator, const ModuleObject *other) {
+	return (ModuleObject *)other->duplicate(duplicator);
 }
 
 SLAKE_API void slake::ModuleObject::dealloc() {

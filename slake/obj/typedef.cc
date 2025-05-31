@@ -20,7 +20,7 @@ SLAKE_API TypeDefObject::~TypeDefObject() {
 
 SLAKE_API ObjectKind TypeDefObject::getKind() const { return ObjectKind::TypeDef; }
 
-SLAKE_API Object *TypeDefObject::duplicate() const {
+SLAKE_API Object *TypeDefObject::duplicate(Duplicator *duplicator) const {
 	return (Object *)alloc(this).get();
 }
 
@@ -85,7 +85,7 @@ SLAKE_API FnTypeDefObject::~FnTypeDefObject() {
 
 SLAKE_API ObjectKind FnTypeDefObject::getKind() const { return ObjectKind::FnTypeDef; }
 
-SLAKE_API Object *FnTypeDefObject::duplicate() const {
+SLAKE_API Object *FnTypeDefObject::duplicate(Duplicator *duplicator) const {
 	return (Object *)alloc(this).get();
 }
 

@@ -18,8 +18,10 @@ namespace slkc {
 		If,			// If
 		With,		// With
 		Switch,		// Switch
+		CaseLabel,	// Case label
 		CodeBlock,	// Code block
 		Goto,		// Goto
+		Label,		// Label
 
 		Bad,  // Bad statement - unrecognized statement type
 	};
@@ -201,6 +203,44 @@ namespace slkc {
 		SLKC_API WithStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API WithStmtNode(const WithStmtNode &rhs, peff::Alloc *allocator, bool &succeededOut);
 		SLKC_API virtual ~WithStmtNode();
+	};
+
+	class CaseLabelStmtNode : public StmtNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		peff::SharedPtr<ExprNode> condition;
+
+		SLKC_API CaseLabelStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API CaseLabelStmtNode(const CaseLabelStmtNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API virtual ~CaseLabelStmtNode();
+	};
+
+	class SwitchStmtNode : public StmtNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		peff::SharedPtr<ExprNode> condition;
+		peff::DynArray<size_t> caseOffsets;
+		peff::DynArray<peff::SharedPtr<StmtNode>> body;
+
+		SLKC_API SwitchStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API SwitchStmtNode(const SwitchStmtNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API virtual ~SwitchStmtNode();
+	};
+
+	class LabelStmtNode : public StmtNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		peff::String name;
+
+		SLKC_API LabelStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API LabelStmtNode(const LabelStmtNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API virtual ~LabelStmtNode();
 	};
 
 	class CodeBlockStmtNode : public StmtNode {

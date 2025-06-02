@@ -398,6 +398,100 @@ SLKC_API WithStmtNode::WithStmtNode(const WithStmtNode &rhs, peff::Alloc *alloca
 SLKC_API WithStmtNode::~WithStmtNode() {
 }
 
+SLKC_API peff::SharedPtr<AstNode> CaseLabelStmtNode::doDuplicate(peff::Alloc *newAllocator) const {
+	bool succeeded = false;
+	peff::SharedPtr<CaseLabelStmtNode> duplicatedNode(peff::makeShared<CaseLabelStmtNode>(newAllocator, *this, newAllocator, succeeded));
+	if ((!duplicatedNode) || (!succeeded)) {
+		return {};
+	}
+
+	return duplicatedNode.castTo<AstNode>();
+}
+
+SLKC_API CaseLabelStmtNode::CaseLabelStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : StmtNode(StmtKind::CaseLabel, selfAllocator, document) {
+}
+
+SLKC_API CaseLabelStmtNode::CaseLabelStmtNode(const CaseLabelStmtNode &rhs, peff::Alloc *allocator, bool &succeededOut) : StmtNode(rhs, allocator) {
+	if (!(condition = rhs.condition->duplicate<ExprNode>(allocator))) {
+		succeededOut = false;
+		return;
+	}
+
+	succeededOut = true;
+}
+
+SLKC_API CaseLabelStmtNode::~CaseLabelStmtNode() {
+}
+
+SLKC_API peff::SharedPtr<AstNode> SwitchStmtNode::doDuplicate(peff::Alloc *newAllocator) const {
+	bool succeeded = false;
+	peff::SharedPtr<SwitchStmtNode> duplicatedNode(peff::makeShared<SwitchStmtNode>(newAllocator, *this, newAllocator, succeeded));
+	if ((!duplicatedNode) || (!succeeded)) {
+		return {};
+	}
+
+	return duplicatedNode.castTo<AstNode>();
+}
+
+SLKC_API SwitchStmtNode::SwitchStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : StmtNode(StmtKind::Switch, selfAllocator, document), caseOffsets(selfAllocator), body(selfAllocator) {
+}
+
+SLKC_API SwitchStmtNode::SwitchStmtNode(const SwitchStmtNode &rhs, peff::Alloc *allocator, bool &succeededOut) : StmtNode(rhs, allocator), caseOffsets(allocator), body(allocator) {
+	if (!(condition = rhs.condition->duplicate<ExprNode>(allocator))) {
+		succeededOut = false;
+		return;
+	}
+
+	if (!(body.resize(rhs.body.size()))) {
+		succeededOut = false;
+		return;
+	}
+
+	if (!caseOffsets.resize(rhs.caseOffsets.size())) {
+		succeededOut = false;
+		return;
+	}
+
+	memcpy(caseOffsets.data(), rhs.caseOffsets.data(), sizeof(size_t) * caseOffsets.size());
+
+	for (size_t i = 0; i < body.size(); ++i) {
+		if (!(body.at(i) = rhs.body.at(i)->duplicate<StmtNode>(allocator))) {
+			succeededOut = false;
+			return;
+		}
+	}
+
+	succeededOut = true;
+}
+
+SLKC_API SwitchStmtNode::~SwitchStmtNode() {
+}
+
+SLKC_API peff::SharedPtr<AstNode> LabelStmtNode::doDuplicate(peff::Alloc *newAllocator) const {
+	bool succeeded = false;
+	peff::SharedPtr<LabelStmtNode> duplicatedNode(peff::makeShared<LabelStmtNode>(newAllocator, *this, newAllocator, succeeded));
+	if ((!duplicatedNode) || (!succeeded)) {
+		return {};
+	}
+
+	return duplicatedNode.castTo<AstNode>();
+}
+
+SLKC_API LabelStmtNode::LabelStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : StmtNode(StmtKind::Label, selfAllocator, document), name(selfAllocator) {
+}
+
+SLKC_API LabelStmtNode::LabelStmtNode(const LabelStmtNode &rhs, peff::Alloc *allocator, bool &succeededOut) : StmtNode(rhs, allocator), name(allocator) {
+	if (!name.build(rhs.name)) {
+		succeededOut = false;
+		return;
+	}
+
+	succeededOut = true;
+}
+
+SLKC_API LabelStmtNode::~LabelStmtNode() {
+}
+
 SLKC_API peff::SharedPtr<AstNode> CodeBlockStmtNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
 	peff::SharedPtr<CodeBlockStmtNode> duplicatedNode(peff::makeShared<CodeBlockStmtNode>(newAllocator, *this, newAllocator, succeeded));

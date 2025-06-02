@@ -169,6 +169,17 @@ pub fn *main() -> i32 {
 
 	1 <=> 1;
 
+	switch (123) {
+		case 456:
+			1;
+		case 789:
+			2;
+		case 0xabc:
+			3;
+		default:
+			4;
+	}
+
 	/*let sum: i64 = 0, i: i64 = 0;
 
 	while(i < 10000000) {

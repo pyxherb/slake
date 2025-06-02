@@ -585,6 +585,149 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 
 				break;
 			}
+			case TokenId::Colon: {
+				nextToken();
+
+				peff::SharedPtr<LabelStmtNode> stmt;
+
+				if (!(stmt = peff::makeShared<LabelStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+					return genOutOfMemoryError();
+				}
+
+				stmtOut = stmt.castTo<StmtNode>();
+
+				if ((syntaxError = expectToken(peekToken(), TokenId::Id))) {
+					return syntaxError;
+				}
+
+				Token *nameToken = nextToken();
+
+				if (!stmt->name.build(nameToken->sourceText)) {
+					return genOutOfMemoryError();
+				}
+
+				break;
+			}
+			case TokenId::CaseKeyword: {
+				nextToken();
+
+				peff::SharedPtr<CaseLabelStmtNode> stmt;
+
+				if (!(stmt = peff::makeShared<CaseLabelStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+					return genOutOfMemoryError();
+				}
+
+				stmtOut = stmt.castTo<StmtNode>();
+
+				if ((syntaxError = parseExpr(0, stmt->condition))) {
+					return syntaxError;
+				}
+
+				if ((syntaxError = expectToken(peekToken(), TokenId::Colon))) {
+					return syntaxError;
+				}
+
+				nextToken();
+
+				break;
+			}
+			case TokenId::DefaultKeyword: {
+				nextToken();
+
+				peff::SharedPtr<CaseLabelStmtNode> stmt;
+
+				if (!(stmt = peff::makeShared<CaseLabelStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+					return genOutOfMemoryError();
+				}
+
+				stmtOut = stmt.castTo<StmtNode>();
+
+				if ((syntaxError = expectToken(peekToken(), TokenId::Colon))) {
+					return syntaxError;
+				}
+
+				nextToken();
+
+				break;
+			}
+			case TokenId::SwitchKeyword: {
+				nextToken();
+
+				peff::SharedPtr<SwitchStmtNode> stmt;
+
+				if (!(stmt = peff::makeShared<SwitchStmtNode>(resourceAllocator.get(), resourceAllocator.get(), document))) {
+					return genOutOfMemoryError();
+				}
+
+				stmtOut = stmt.castTo<StmtNode>();
+
+				Token *lParentheseToken = peekToken();
+
+				if ((syntaxError = expectToken(lParentheseToken, TokenId::LParenthese))) {
+					goto genBadStmt;
+				}
+
+				nextToken();
+
+				if ((syntaxError = parseExpr(0, stmt->condition))) {
+					return syntaxError;
+				}
+
+				Token *rParentheseToken = peekToken();
+
+				if ((syntaxError = expectToken(rParentheseToken, TokenId::RParenthese))) {
+					goto genBadStmt;
+				}
+
+				nextToken();
+
+				Token *lBraceToken = peekToken();
+
+				if ((syntaxError = expectToken(lBraceToken, TokenId::LBrace))) {
+					goto genBadStmt;
+				}
+
+				nextToken();
+
+				peff::SharedPtr<StmtNode> curStmt;
+
+				while (true) {
+					if ((syntaxError = expectToken(peekToken()))) {
+						return syntaxError;
+					}
+
+					if (peekToken()->tokenId == TokenId::RBrace) {
+						break;
+					}
+
+					if ((syntaxError = parseStmt(curStmt))) {
+						if (!syntaxErrors.pushBack(std::move(syntaxError.value())))
+							return genOutOfMemoryError();
+					}
+
+					if (curStmt) {
+						// We detect and push case labels in advance to deal with them easier.
+						if (curStmt->stmtKind == StmtKind::CaseLabel) {
+							if (!stmt->caseOffsets.pushBack(stmt->body.size()))
+								return genOutOfMemoryError();
+						}
+
+						if (!stmt->body.pushBack(std::move(curStmt))) {
+							return genOutOfMemoryError();
+						}
+					}
+				}
+
+				Token *rBraceToken;
+
+				if ((syntaxError = expectToken((rBraceToken = peekToken()), TokenId::RBrace))) {
+					return syntaxError;
+				}
+
+				nextToken();
+
+				break;
+			}
 			case TokenId::LBrace: {
 				nextToken();
 

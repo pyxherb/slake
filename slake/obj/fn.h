@@ -93,8 +93,6 @@ namespace slake {
 		SLAKE_API FnOverloadingObject(const FnOverloadingObject &other, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~FnOverloadingObject();
 
-		SLAKE_API virtual ObjectKind getKind() const override;
-
 		SLAKE_FORCEINLINE void setAccess(AccessModifier accessModifier) {
 			this->access = accessModifier;
 		}
@@ -245,8 +243,6 @@ namespace slake {
 		SLAKE_API FnObject(Runtime *rt, peff::Alloc *selfAllocator);
 		SLAKE_API FnObject(const FnObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~FnObject();
-
-		SLAKE_API virtual ObjectKind getKind() const override;
 
 		SLAKE_API FnOverloadingObject *getOverloading(const peff::DynArray<Type> &argTypes) const;
 

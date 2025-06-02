@@ -50,8 +50,6 @@ namespace slake {
 		SLAKE_API IdRefObject(const IdRefObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~IdRefObject();
 
-		SLAKE_API virtual ObjectKind getKind() const override;
-
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
 		SLAKE_API static HostObjectRef<IdRefObject> alloc(Runtime *rt);

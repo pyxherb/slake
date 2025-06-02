@@ -5,7 +5,7 @@
 using namespace slake;
 
 SLAKE_API TypeDefObject::TypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
-	: Object(rt, selfAllocator) {
+	: Object(rt, selfAllocator, ObjectKind::TypeDef) {
 }
 
 SLAKE_API TypeDefObject::TypeDefObject(Duplicator *duplicator, const TypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator) {
@@ -21,8 +21,6 @@ SLAKE_API TypeDefObject::TypeDefObject(Duplicator *duplicator, const TypeDefObje
 
 SLAKE_API TypeDefObject::~TypeDefObject() {
 }
-
-SLAKE_API ObjectKind TypeDefObject::getKind() const { return ObjectKind::TypeDef; }
 
 SLAKE_API Object *TypeDefObject::duplicate(Duplicator *duplicator) const {
 	return (Object *)alloc(duplicator, this).get();
@@ -72,7 +70,7 @@ SLAKE_API void slake::TypeDefObject::dealloc() {
 }
 
 SLAKE_API FnTypeDefObject::FnTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
-	: Object(rt, selfAllocator), paramTypes(selfAllocator) {
+	: Object(rt, selfAllocator, ObjectKind::FnTypeDef), paramTypes(selfAllocator) {
 }
 
 SLAKE_API FnTypeDefObject::FnTypeDefObject(Duplicator *duplicator, const FnTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator), paramTypes(allocator) {
@@ -105,8 +103,6 @@ SLAKE_API FnTypeDefObject::FnTypeDefObject(Duplicator *duplicator, const FnTypeD
 
 SLAKE_API FnTypeDefObject::~FnTypeDefObject() {
 }
-
-SLAKE_API ObjectKind FnTypeDefObject::getKind() const { return ObjectKind::FnTypeDef; }
 
 SLAKE_API Object *FnTypeDefObject::duplicate(Duplicator *duplicator) const {
 	return (Object *)alloc(duplicator, this).get();

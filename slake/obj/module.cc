@@ -6,8 +6,8 @@ SLAKE_API void FieldRecord::replaceAllocator(peff::Alloc* allocator) noexcept {
 	name.replaceAllocator(allocator);
 }
 
-SLAKE_API ModuleObject::ModuleObject(Runtime *rt, peff::Alloc *selfAllocator)
-	: MemberObject(rt, selfAllocator), members(selfAllocator), localFieldStorage(selfAllocator), fieldRecords(selfAllocator), fieldRecordIndices(selfAllocator), unnamedImports(selfAllocator) {
+SLAKE_API ModuleObject::ModuleObject(Runtime *rt, peff::Alloc *selfAllocator, ObjectKind objectKind)
+	: MemberObject(rt, selfAllocator, objectKind), members(selfAllocator), localFieldStorage(selfAllocator), fieldRecords(selfAllocator), fieldRecordIndices(selfAllocator), unnamedImports(selfAllocator) {
 }
 
 SLAKE_API ModuleObject::ModuleObject(Duplicator *duplicator, const ModuleObject &x, peff::Alloc *allocator, bool &succeededOut) : MemberObject(x, allocator, succeededOut), members(allocator), fieldRecords(allocator), localFieldStorage(allocator), fieldRecordIndices(allocator), unnamedImports(allocator) {
@@ -63,8 +63,6 @@ SLAKE_API ModuleObject::ModuleObject(Duplicator *duplicator, const ModuleObject 
 
 SLAKE_API ModuleObject::~ModuleObject() {
 }
-
-SLAKE_API ObjectKind ModuleObject::getKind() const { return ObjectKind::Module; }
 
 SLAKE_API Object *ModuleObject::duplicate(Duplicator *duplicator) const {
 	return (Object *)alloc(duplicator, this).get();

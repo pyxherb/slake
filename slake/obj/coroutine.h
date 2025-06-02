@@ -21,8 +21,6 @@ namespace slake {
 		SLAKE_API CoroutineObject(Runtime *rt, peff::Alloc *selfAllocator);
 		SLAKE_API virtual ~CoroutineObject();
 
-		SLAKE_API virtual ObjectKind getKind() const override;
-
 		SLAKE_API static HostObjectRef<CoroutineObject> alloc(Runtime *rt);
 		SLAKE_API virtual void dealloc() override;
 

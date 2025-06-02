@@ -54,7 +54,7 @@ SLAKE_API GenericParam *slake::getGenericParam(Object *object, const std::string
 	while (true) {
 		size_t idxGenericParam;
 
-		switch (object->getKind()) {
+		switch (object->objectKind) {
 			case ObjectKind::Class: {
 				ClassObject *classObject = (ClassObject *)object;
 				idxGenericParam = getGenericParamIndex(classObject->genericParams, name);

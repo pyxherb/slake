@@ -50,7 +50,7 @@ using namespace slake;
 	Runtime *runtime,
 	Object *object,
 	ObjectKind typeId) noexcept {
-	if (object->getKind() != typeId) {
+	if (object->objectKind != typeId) {
 		return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(runtime->getFixedAlloc()));
 	}
 	return {};

@@ -179,7 +179,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Obj
 	// How do we instantiate generic classes:
 	// Duplicate the value, scan for references to generic parameters and
 	// replace them with generic arguments.
-	switch (v->getKind()) {
+	switch (v->objectKind) {
 		case ObjectKind::Class: {
 			ClassObject *const value = (ClassObject *)v;
 
@@ -340,7 +340,7 @@ SLAKE_API InternalExceptionPointer slake::Runtime::_instantiateGenericObject(Obj
 InternalExceptionPointer Runtime::mapGenericParams(const Object *v, GenericInstantiationContext &instantiationContext) const {
 	instantiationContext.mappedObject = v;
 
-	switch (v->getKind()) {
+	switch (v->objectKind) {
 		case ObjectKind::Class: {
 			ClassObject *value = (ClassObject *)v;
 

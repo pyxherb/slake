@@ -3,14 +3,12 @@
 
 using namespace slake;
 
-SLAKE_API CoroutineObject::CoroutineObject(Runtime *rt, peff::Alloc *selfAllocator) : Object(rt, selfAllocator), curContext(nullptr), curMajorFrame(nullptr), overloading(nullptr), stackData(nullptr), lenStackData(0), offStackTop(0) {
+SLAKE_API CoroutineObject::CoroutineObject(Runtime *rt, peff::Alloc *selfAllocator) : Object(rt, selfAllocator, ObjectKind::Context), curContext(nullptr), curMajorFrame(nullptr), overloading(nullptr), stackData(nullptr), lenStackData(0), offStackTop(0) {
 }
 
 SLAKE_API CoroutineObject::~CoroutineObject() {
 	releaseStackData();
 }
-
-SLAKE_API ObjectKind CoroutineObject::getKind() const { return ObjectKind::Coroutine; }
 
 SLAKE_API HostObjectRef<CoroutineObject> slake::CoroutineObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();

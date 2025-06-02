@@ -182,7 +182,7 @@ SLAKE_API Type &Type::getRefExData() const { return exData.typeDef->type; }
 SLAKE_API bool Type::isLoadingDeferred() const noexcept {
 	switch (typeId) {
 		case TypeId::Instance:
-			return getCustomTypeExData()->getKind() == ObjectKind::IdRef;
+			return getCustomTypeExData()->objectKind == ObjectKind::IdRef;
 		default:
 			return false;
 	}
@@ -215,8 +215,8 @@ SLAKE_API bool Type::operator<(const Type &rhs) const {
 				auto lhsType = getCustomTypeExData(), rhsType = rhs.getCustomTypeExData();
 
 				// TODO: Use comparison instead of the simple assert.
-				assert(lhsType->getKind() == rhsType->getKind());
-				switch (lhsType->getKind()) {
+				assert(lhsType->objectKind == rhsType->objectKind);
+				switch (lhsType->objectKind) {
 					case ObjectKind::IdRef: {
 						IdRefObject *lhsRef = (IdRefObject *)lhsType,
 									*rhsRef = (IdRefObject *)rhsType;
@@ -278,8 +278,8 @@ SLAKE_API bool Type::operator==(const Type &rhs) const {
 		case TypeId::Instance: {
 			auto lhsType = getCustomTypeExData(), rhsType = rhs.getCustomTypeExData();
 
-			assert(lhsType->getKind() == rhsType->getKind());
-			switch (lhsType->getKind()) {
+			assert(lhsType->objectKind == rhsType->objectKind);
+			switch (lhsType->objectKind) {
 				case ObjectKind::IdRef: {
 					IdRefObject *lhsRef = (IdRefObject *)lhsType,
 								*rhsRef = (IdRefObject *)rhsType;
@@ -313,7 +313,7 @@ SLAKE_API bool Type::operator==(const Type &rhs) const {
 			auto lhsOwnerObject = exData.genericArg.ownerObject,
 				 rhsOwnerObject = rhs.exData.genericArg.ownerObject;
 
-			auto lhsObjectKind = lhsOwnerObject->getKind();
+			auto lhsObjectKind = lhsOwnerObject->objectKind;
 
 			auto lhsName = exData.genericArg.nameObject,
 				 rhsName = rhs.exData.genericArg.nameObject;
@@ -327,14 +327,14 @@ SLAKE_API bool Type::operator==(const Type &rhs) const {
 				(!rhsGenericParam))
 				return false;
 
-			switch (lhsOwnerOut->getKind()) {
+			switch (lhsOwnerOut->objectKind) {
 				case ObjectKind::Class:
 				case ObjectKind::Interface:
 					return lhsGenericParam == rhsGenericParam;
 				case ObjectKind::FnOverloading: {
 					auto l = (FnOverloadingObject *)lhsOwnerOut;
 
-					switch (rhsOwnerOut->getKind()) {
+					switch (rhsOwnerOut->objectKind) {
 						case ObjectKind::Class:
 						case ObjectKind::Interface:
 							return false;
@@ -383,7 +383,7 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 			const EntityRef &entityRef = value.getEntityRef();
 			if (entityRef.kind != ObjectRefKind::ObjectRef)
 				return false;
-			if (entityRef.asObject.instanceObject->getKind() != ObjectKind::String)
+			if (entityRef.asObject.instanceObject->objectKind != ObjectKind::String)
 				return false;
 			break;
 		}
@@ -405,7 +405,7 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 				e.reset();
 				return false;
 			}
-			switch (type.getCustomTypeExData()->getKind()) {
+			switch (type.getCustomTypeExData()->objectKind) {
 				case ObjectKind::Class: {
 					ClassObject *thisClass = (ClassObject *)type.getCustomTypeExData();
 
@@ -438,7 +438,7 @@ SLAKE_API bool slake::isCompatible(const Type &type, const Value &value) {
 			if (entityRef.kind != ObjectRefKind::ObjectRef)
 				return false;
 			Object *objectPtr = entityRef.asObject.instanceObject;
-			if (objectPtr->getKind() != ObjectKind::Array)
+			if (objectPtr->objectKind != ObjectKind::Array)
 				return false;
 
 			auto arrayObjectPtr = ((ArrayObject *)objectPtr);

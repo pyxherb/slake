@@ -82,8 +82,6 @@ namespace slake {
 		SLAKE_API ClassObject(Duplicator *duplicator, const ClassObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~ClassObject();
 
-		SLAKE_API virtual ObjectKind getKind() const override;
-
 		SLAKE_API virtual const GenericArgList *getGenericArgs() const override;
 
 		/// @brief Check if the class has implemented the interface.
@@ -119,8 +117,6 @@ namespace slake {
 		SLAKE_API InterfaceObject(Runtime *rt, peff::Alloc *selfAllocator);
 		SLAKE_API InterfaceObject(Duplicator *duplicator, const InterfaceObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~InterfaceObject();
-
-		SLAKE_API virtual ObjectKind getKind() const override;
 
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 

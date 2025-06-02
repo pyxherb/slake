@@ -73,7 +73,7 @@ InternalExceptionPointer slake::opti::evalObjectType(
 		}
 		case ObjectRefKind::ObjectRef: {
 			Object *object = entityRef.asObject.instanceObject;
-			switch (object->getKind()) {
+			switch (object->objectKind) {
 				case ObjectKind::String: {
 					typeOut = Type(TypeId::String);
 					break;
@@ -349,7 +349,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						EntityRef object = curIns.operands[0].getEntityRef();
 
 						if ((object.kind != ObjectRefKind::ObjectRef) ||
-							(object.asObject.instanceObject->getKind() != ObjectKind::IdRef)) {
+							(object.asObject.instanceObject->objectKind != ObjectKind::IdRef)) {
 							return allocOutOfMemoryErrorIfAllocFailed(
 								MalformedProgramError::alloc(
 									runtime->getFixedAlloc(),
@@ -433,7 +433,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 						const EntityRef &object = curIns.operands[1].getEntityRef();
 
 						if ((object.kind != ObjectRefKind::ObjectRef) ||
-							(object.asObject.instanceObject->getKind() != ObjectKind::IdRef)) {
+							(object.asObject.instanceObject->objectKind != ObjectKind::IdRef)) {
 							return allocOutOfMemoryErrorIfAllocFailed(
 								MalformedProgramError::alloc(
 									runtime->getFixedAlloc(),
@@ -461,7 +461,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 							switch (entityRef.kind) {
 								case ObjectRefKind::ObjectRef: {
 									Object *object = entityRef.asObject.instanceObject;
-									switch (object->getKind()) {
+									switch (object->objectKind) {
 										case ObjectKind::FnOverloading:
 											if (((FnOverloadingObject *)object)->access & ACCESS_STATIC) {
 												return allocOutOfMemoryErrorIfAllocFailed(

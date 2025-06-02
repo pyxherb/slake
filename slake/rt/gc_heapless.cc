@@ -167,7 +167,7 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 		case ObjectGCStatus::ReadyToWalk:
 			v->gcStatus = ObjectGCStatus::Walked;
 
-			switch (auto typeId = v->getKind(); typeId) {
+			switch (auto typeId = v->objectKind; typeId) {
 				case ObjectKind::String:
 					break;
 				case ObjectKind::TypeDef:
@@ -575,7 +575,7 @@ rescan:
 				hostRefList = i;
 			}
 
-			switch (i->getKind()) {
+			switch (i->objectKind) {
 				case ObjectKind::Instance: {
 					InstanceObject *value = (InstanceObject *)i;
 
@@ -795,7 +795,7 @@ rescan:
 						hostRefList = cur;
 					}
 
-					switch (cur->getKind()) {
+					switch (cur->objectKind) {
 						case ObjectKind::Instance: {
 							InstanceObject *value = (InstanceObject *)cur;
 

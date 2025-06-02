@@ -36,6 +36,8 @@ namespace slkc {
 
 		Cast,  // Cast
 
+		Match, // Match expression
+
 		Wrapper,  // Expression wrapper
 
 		VarArg,	 // Varidic arguments
@@ -532,6 +534,20 @@ namespace slkc {
 		SLKC_API CastExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, const peff::SharedPtr<TypeNameNode> &targetType, const peff::SharedPtr<ExprNode> &source);
 		SLKC_API CastExprNode(const CastExprNode &rhs, peff::Alloc *allocator, bool &succeededOut);
 		SLKC_API virtual ~CastExprNode();
+	};
+
+	class MatchExprNode : public ExprNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		peff::SharedPtr<ExprNode> target;
+		peff::SharedPtr<TypeNameNode> returnType;
+		peff::DynArray<std::pair<peff::SharedPtr<ExprNode>, peff::SharedPtr<ExprNode>>> cases;
+
+		SLKC_API MatchExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
+		SLKC_API MatchExprNode(const MatchExprNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API virtual ~MatchExprNode();
 	};
 
 	class WrapperExprNode : public ExprNode {

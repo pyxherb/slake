@@ -7,8 +7,8 @@ SLAKE_API bool MemberObject::onSetParent(Object* parent) {
 	return true;
 }
 
-SLAKE_API MemberObject::MemberObject(Runtime *rt, peff::Alloc *selfAllocator)
-	: Object(rt, selfAllocator), name(selfAllocator) {
+SLAKE_API MemberObject::MemberObject(Runtime *rt, peff::Alloc *selfAllocator, ObjectKind objectKind)
+	: Object(rt, selfAllocator, objectKind), name(selfAllocator) {
 }
 
 SLAKE_API MemberObject::MemberObject(const MemberObject &x, peff::Alloc *allocator, bool &succeededOut)

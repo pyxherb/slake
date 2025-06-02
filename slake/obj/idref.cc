@@ -19,7 +19,7 @@ SLAKE_API void IdRefEntry::replaceAllocator(peff::Alloc *allocator) noexcept {
 }
 
 SLAKE_API slake::IdRefObject::IdRefObject(Runtime *rt, peff::Alloc *selfAllocator)
-	: Object(rt, selfAllocator),
+	: Object(rt, selfAllocator, ObjectKind::IdRef),
 	  entries(selfAllocator),
 	  paramTypes(),
 	  hasVarArgs(false) {
@@ -56,8 +56,6 @@ SLAKE_API IdRefObject::IdRefObject(const IdRefObject &x, peff::Alloc *allocator,
 
 SLAKE_API IdRefObject::~IdRefObject() {
 }
-
-SLAKE_API ObjectKind IdRefObject::getKind() const { return ObjectKind::IdRef; }
 
 SLAKE_API Object *IdRefObject::duplicate(Duplicator *duplicator) const {
 	return (Object *)alloc(this).get();

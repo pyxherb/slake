@@ -16,8 +16,6 @@ namespace slake {
 
 		peff::String data;
 
-		SLAKE_API virtual ObjectKind getKind() const override;
-
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
 		SLAKE_API static HostObjectRef<StringObject> alloc(Runtime *rt);

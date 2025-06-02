@@ -20,7 +20,7 @@ namespace slake {
 
 		AccessModifier accessModifier = 0;
 
-		SLAKE_API MemberObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API MemberObject(Runtime *rt, peff::Alloc *selfAllocator, ObjectKind objectKind);
 		SLAKE_API MemberObject(const MemberObject &x, peff::Alloc *allocator, bool &succeededOut);
 		SLAKE_API virtual ~MemberObject();
 

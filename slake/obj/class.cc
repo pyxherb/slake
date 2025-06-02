@@ -117,7 +117,7 @@ SLAKE_API Object *ClassObject::duplicate(Duplicator *duplicator) const {
 }
 
 SLAKE_API slake::ClassObject::ClassObject(Runtime *rt, peff::Alloc *selfAllocator)
-	: ModuleObject(rt, selfAllocator),
+	: ModuleObject(rt, selfAllocator, ObjectKind::Class),
 	  baseType(TypeId::None),
 	  genericArgs(selfAllocator),
 	  mappedGenericArgs(selfAllocator),
@@ -125,8 +125,6 @@ SLAKE_API slake::ClassObject::ClassObject(Runtime *rt, peff::Alloc *selfAllocato
 	  implTypes(selfAllocator),
 	  cachedFieldInitValues(selfAllocator) {
 }
-
-SLAKE_API ObjectKind ClassObject::getKind() const { return ObjectKind::Class; }
 
 SLAKE_API const GenericArgList *ClassObject::getGenericArgs() const {
 	return &genericArgs;
@@ -200,7 +198,7 @@ SLAKE_API bool ClassObject::isBaseOf(const ClassObject *pClass) const {
 			return false;
 		}
 		auto parentClassObject = i->baseType.getCustomTypeExData();
-		assert(parentClassObject->getKind() == ObjectKind::Class);
+		assert(parentClassObject->objectKind == ObjectKind::Class);
 		i = (ClassObject *)parentClassObject;
 	}
 
@@ -280,7 +278,7 @@ SLAKE_API void ClassObject::replaceAllocator(peff::Alloc *allocator) noexcept {
 }
 
 SLAKE_API InterfaceObject::InterfaceObject(Runtime *rt, peff::Alloc *selfAllocator)
-	: ModuleObject(rt, selfAllocator),
+	: ModuleObject(rt, selfAllocator, ObjectKind::Interface),
 	  genericArgs(selfAllocator),
 	  mappedGenericArgs(selfAllocator),
 	  genericParams(selfAllocator),
@@ -324,7 +322,7 @@ SLAKE_API bool InterfaceObject::isDerivedFrom(const InterfaceObject *pInterface)
 
 		InterfaceObject *interfaceObj = (InterfaceObject *)i.getCustomTypeExData();
 
-		if (interfaceObj->getKind() != ObjectKind::Interface) {
+		if (interfaceObj->objectKind != ObjectKind::Interface) {
 			// The parent is not an interface - this situation should not be here,
 			// but we have disabled exceptions, so return anyway.
 			return false;
@@ -336,8 +334,6 @@ SLAKE_API bool InterfaceObject::isDerivedFrom(const InterfaceObject *pInterface)
 
 	return false;
 }
-
-SLAKE_API ObjectKind InterfaceObject::getKind() const { return ObjectKind::Interface; }
 
 SLAKE_API const GenericArgList *InterfaceObject::getGenericArgs() const {
 	return &genericArgs;

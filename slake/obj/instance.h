@@ -25,8 +25,6 @@ namespace slake {
 		SLAKE_API InstanceObject(const InstanceObject &x, peff::Alloc *allocator);
 		SLAKE_API virtual ~InstanceObject();
 
-		SLAKE_API virtual ObjectKind getKind() const override;
-
 		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
 
 		SLAKE_API virtual EntityRef getMember(

@@ -18,7 +18,7 @@ SLAKE_API bool slake::StringObject::_setData(const char *str, size_t size) {
 	return true;
 }
 
-SLAKE_API slake::StringObject::StringObject(Runtime *rt, peff::Alloc *selfAllocator) : Object(rt, selfAllocator), data(selfAllocator) {
+SLAKE_API slake::StringObject::StringObject(Runtime *rt, peff::Alloc *selfAllocator) : Object(rt, selfAllocator, ObjectKind::String), data(selfAllocator) {
 }
 
 SLAKE_API StringObject::StringObject(const StringObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator), data(allocator) {
@@ -30,8 +30,6 @@ SLAKE_API StringObject::StringObject(const StringObject &x, peff::Alloc *allocat
 
 SLAKE_API StringObject::~StringObject() {
 }
-
-SLAKE_API ObjectKind StringObject::getKind() const { return ObjectKind::String; }
 
 SLAKE_API Object *StringObject::duplicate(Duplicator *duplicator) const {
 	return (Object *)alloc(this).get();

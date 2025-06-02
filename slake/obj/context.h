@@ -49,8 +49,6 @@ namespace slake {
 		SLAKE_API ResumableObject(Runtime *rt, peff::Alloc *allocator);
 		SLAKE_API ~ResumableObject();
 
-		SLAKE_API virtual ObjectKind getKind() const override;
-
 		SLAKE_API static ResumableObject *alloc(Runtime *rt);
 		SLAKE_API virtual void dealloc() noexcept override;
 
@@ -117,8 +115,6 @@ namespace slake {
 
 		SLAKE_API ContextObject(Runtime *rt, peff::Alloc *selfAllocator);
 		SLAKE_API virtual ~ContextObject();
-
-		SLAKE_API virtual ObjectKind getKind() const override;
 
 		SLAKE_API static HostObjectRef<ContextObject> alloc(Runtime *rt);
 		SLAKE_API virtual void dealloc() override;

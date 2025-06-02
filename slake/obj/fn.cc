@@ -100,7 +100,7 @@ SLAKE_API FnOverloadingObject::FnOverloadingObject(
 	FnOverloadingKind overloadingKind,
 	FnObject *fnObject,
 	peff::Alloc *selfAllocator)
-	: Object(fnObject->associatedRuntime, selfAllocator),
+	: Object(fnObject->associatedRuntime, selfAllocator, ObjectKind::FnOverloading),
 	  overloadingKind(overloadingKind),
 	  fnObject(fnObject),
 	  genericParams(selfAllocator),
@@ -141,8 +141,6 @@ SLAKE_API FnOverloadingObject::FnOverloadingObject(const FnOverloadingObject &ot
 
 SLAKE_API FnOverloadingObject::~FnOverloadingObject() {
 }
-
-SLAKE_API ObjectKind FnOverloadingObject::getKind() const { return ObjectKind::FnOverloading; }
 
 SLAKE_API void FnOverloadingObject::replaceAllocator(peff::Alloc *allocator) noexcept {
 	this->Object::replaceAllocator(allocator);
@@ -377,7 +375,7 @@ SLAKE_API void slake::NativeFnOverloadingObject::dealloc() {
 	peff::destroyAndRelease<NativeFnOverloadingObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
 }
 
-SLAKE_API FnObject::FnObject(Runtime *rt, peff::Alloc *selfAllocator) : MemberObject(rt, selfAllocator), overloadings(selfAllocator) {
+SLAKE_API FnObject::FnObject(Runtime *rt, peff::Alloc *selfAllocator) : MemberObject(rt, selfAllocator, ObjectKind::Fn), overloadings(selfAllocator) {
 }
 
 SLAKE_API FnObject::FnObject(const FnObject &x, peff::Alloc *allocator, bool &succeededOut) : MemberObject(x, allocator, succeededOut), overloadings(allocator) {
@@ -404,8 +402,6 @@ SLAKE_API FnObject::FnObject(const FnObject &x, peff::Alloc *allocator, bool &su
 
 SLAKE_API FnObject::~FnObject() {
 }
-
-SLAKE_API ObjectKind FnObject::getKind() const { return ObjectKind::Fn; }
 
 SLAKE_API FnOverloadingObject *FnObject::getOverloading(const peff::DynArray<Type> &argTypes) const {
 	const FnObject *i = this;

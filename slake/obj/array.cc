@@ -4,7 +4,7 @@
 using namespace slake;
 
 SLAKE_API ArrayObject::ArrayObject(Runtime *rt, peff::Alloc *selfAllocator, const Type &elementType, size_t elementSize)
-	: Object(rt, selfAllocator),
+	: Object(rt, selfAllocator, ObjectKind::Array),
 	  elementType(elementType),
 	  elementSize(elementSize) {
 }
@@ -14,8 +14,6 @@ SLAKE_API ArrayObject::~ArrayObject() {
 		selfAllocator->release(data, elementSize * length, elementAlignment);
 	}
 }
-
-SLAKE_API ObjectKind ArrayObject::getKind() const { return ObjectKind::Array; }
 
 SLAKE_API ArrayObject *ArrayObject::alloc(Runtime *rt, const Type &elementType, size_t elementSize) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();

@@ -136,6 +136,7 @@ namespace slkc {
 		ImportKeyword,
 		LetKeyword,
 		ModuleKeyword,
+		MatchKeyword,
 		NativeKeyword,
 		NewKeyword,
 		NullKeyword,

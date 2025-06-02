@@ -123,7 +123,7 @@ namespace slake {
 
 		/// @brief The basic constructor.
 		/// @param rt Runtime that the value belongs to.
-		SLAKE_API Object(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API Object(Runtime *rt, peff::Alloc *selfAllocator, ObjectKind objectKind);
 		SLAKE_API Object(const Object &x, peff::Alloc *allocator);
 		SLAKE_API virtual ~Object();
 
@@ -148,9 +148,7 @@ namespace slake {
 
 		Runtime *associatedRuntime;
 
-		/// @brief Get type of the value.
-		/// @return Type of the value.
-		SLAKE_API virtual ObjectKind getKind() const = 0;
+		ObjectKind objectKind;
 
 		/// @brief Dulplicate the value if supported.
 		/// @return Duplicate of the value.

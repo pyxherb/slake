@@ -737,6 +737,54 @@ SLKC_API CastExprNode::CastExprNode(const CastExprNode &rhs, peff::Alloc *alloca
 SLKC_API CastExprNode::~CastExprNode() {
 }
 
+SLKC_API peff::SharedPtr<AstNode> MatchExprNode::doDuplicate(peff::Alloc *newAllocator) const {
+	bool succeeded = false;
+	peff::SharedPtr<MatchExprNode> duplicatedNode(peff::makeShared<MatchExprNode>(newAllocator, *this, newAllocator, succeeded));
+	if ((!duplicatedNode) || (!succeeded)) {
+		return {};
+	}
+
+	return duplicatedNode.castTo<AstNode>();
+}
+SLKC_API MatchExprNode::MatchExprNode(
+	peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document)
+	: ExprNode(ExprKind::Match, selfAllocator, document),
+	  cases(selfAllocator) {
+}
+SLKC_API MatchExprNode::MatchExprNode(const MatchExprNode &rhs, peff::Alloc *allocator, bool &succeededOut)
+	: ExprNode(rhs, allocator), cases(allocator) {
+	if (!(returnType = rhs.returnType->duplicate<TypeNameNode>(allocator))) {
+		succeededOut = false;
+		return;
+	}
+
+	if (!(target = rhs.target->duplicate<ExprNode>(allocator))) {
+		succeededOut = false;
+		return;
+	}
+
+	if (!cases.resize(rhs.cases.size())) {
+		succeededOut = false;
+		return;
+	}
+
+	for (size_t i = 0; i < cases.size(); ++i) {
+		if (!(cases.at(i).first = rhs.cases.at(i).first->duplicate<ExprNode>(allocator))) {
+			succeededOut = false;
+			return;
+		}
+
+		if (!(cases.at(i).second = rhs.cases.at(i).second->duplicate<ExprNode>(allocator))) {
+			succeededOut = false;
+			return;
+		}
+	}
+
+	succeededOut = true;
+}
+SLKC_API MatchExprNode::~MatchExprNode() {
+}
+
 SLKC_API peff::SharedPtr<AstNode> WrapperExprNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
 	peff::SharedPtr<WrapperExprNode> duplicatedNode(peff::makeShared<WrapperExprNode>(newAllocator, *this, newAllocator, succeeded));

@@ -5,7 +5,7 @@
 using namespace slake;
 
 SLAKE_API InstanceObject::InstanceObject(Runtime *rt, peff::Alloc *selfAllocator)
-	: Object(rt, selfAllocator) {
+	: Object(rt, selfAllocator, ObjectKind::Instance) {
 }
 
 SLAKE_API InstanceObject::InstanceObject(const InstanceObject &x, peff::Alloc *allocator) : Object(x, allocator) {
@@ -20,8 +20,6 @@ SLAKE_API InstanceObject::~InstanceObject() {
 	// DO NOT DELETE THE OBJECT LAYOUT AND THE METHOD TABLE!!!
 	// They are borrowed from the class.
 }
-
-SLAKE_API ObjectKind InstanceObject::getKind() const { return ObjectKind::Instance; }
 
 SLAKE_API Object *InstanceObject::duplicate(Duplicator *duplicator) const {
 	return (Object *)alloc(this).get();

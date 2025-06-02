@@ -6,14 +6,10 @@ SLAKE_API void MinorFrame::replaceAllocator(peff::Alloc *allocator) noexcept {
 	exceptHandlers.replaceAllocator(allocator);
 }
 
-SLAKE_API ResumableObject::ResumableObject(Runtime *rt, peff::Alloc *allocator) : Object(rt, allocator), argStack(allocator), lvarRecordOffsets(allocator), nextArgStack(allocator), minorFrames(allocator) {
+SLAKE_API ResumableObject::ResumableObject(Runtime *rt, peff::Alloc *allocator) : Object(rt, allocator, ObjectKind::Resumable), argStack(allocator), lvarRecordOffsets(allocator), nextArgStack(allocator), minorFrames(allocator) {
 }
 
 SLAKE_API ResumableObject::~ResumableObject() {}
-
-SLAKE_API ObjectKind ResumableObject::getKind() const {
-	return ObjectKind::Resumable;
-}
 
 SLAKE_API ResumableObject *ResumableObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
@@ -113,13 +109,11 @@ SLAKE_API void Context::replaceAllocator(peff::Alloc *allocator) noexcept {
 SLAKE_API ContextObject::ContextObject(
 	Runtime *rt,
 	peff::Alloc *selfAllocator)
-	: Object(rt, selfAllocator), _context(rt, selfAllocator) {
+	: Object(rt, selfAllocator, ObjectKind::Context), _context(rt, selfAllocator) {
 }
 
 SLAKE_API ContextObject::~ContextObject() {
 }
-
-SLAKE_API ObjectKind ContextObject::getKind() const { return ObjectKind::Context; }
 
 SLAKE_API HostObjectRef<ContextObject> slake::ContextObject::alloc(Runtime *rt) {
 	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();

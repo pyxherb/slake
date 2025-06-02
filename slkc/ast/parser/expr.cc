@@ -360,7 +360,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 					if (peekToken()->tokenId == TokenId::WithKeyword) {
 						nextToken();
 
-						if (auto e = parseExpr(0, expr->withObject); e)
+						if (auto e = parseExpr(121, expr->withObject); e)
 							return e;
 					}
 

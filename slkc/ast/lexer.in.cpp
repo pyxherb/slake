@@ -103,6 +103,7 @@ SLKC_API std::optional<LexicalError> Lexer::lex(const std::string_view &src, pef
 				<InitialCondition>"import"		{ token->tokenId = TokenId::ImportKeyword; break; }
 				<InitialCondition>"let"			{ token->tokenId = TokenId::LetKeyword; break; }
 				<InitialCondition>"module"		{ token->tokenId = TokenId::ModuleKeyword; break; }
+				<InitialCondition>"match"		{ token->tokenId = TokenId::MatchKeyword; break; }
 				<InitialCondition>"native"		{ token->tokenId = TokenId::NativeKeyword; break; }
 				<InitialCondition>"new"			{ token->tokenId = TokenId::NewKeyword; break; }
 				<InitialCondition>"null"		{ token->tokenId = TokenId::NullKeyword; break; }

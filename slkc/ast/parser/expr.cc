@@ -309,6 +309,66 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					break;
 				}
+				case TokenId::MatchKeyword: {
+					nextToken();
+
+					peff::SharedPtr<MatchExprNode> expr;
+
+					if (!(expr = peff::makeShared<MatchExprNode>(
+							  resourceAllocator.get(), resourceAllocator.get(), document)))
+						return genOutOfMemoryError();
+
+					lhs = expr.castTo<ExprNode>();
+
+					Token *colonToken;
+					if ((colonToken = peekToken())->tokenId == TokenId::ReturnTypeOp) {
+						nextToken();
+						if ((syntaxError = parseTypeName(expr->returnType))) {
+							return syntaxError;
+						}
+					}
+
+					Token *lBraceToken = peekToken();
+
+					if ((syntaxError = expectToken(lBraceToken, TokenId::LBrace))) {
+						goto genBadExpr;
+					}
+
+					while (true) {
+						peff::SharedPtr<ExprNode> conditionExpr, resultExpr;
+
+						if ((syntaxError = parseExpr(0, conditionExpr))) {
+							goto genBadExpr;
+						}
+
+						Token *colonToken = peekToken();
+
+						if ((syntaxError = expectToken(colonToken, TokenId::Colon))) {
+							goto genBadExpr;
+						}
+
+						if ((syntaxError = parseExpr(0, resultExpr))) {
+							goto genBadExpr;
+						}
+
+						if (!expr->cases.pushBack({ conditionExpr, resultExpr })) {
+							return genOutOfMemoryError();
+						}
+
+						if (peekToken()->tokenId != TokenId::Comma)
+							break;
+
+						Token *commaToken = nextToken();
+					}
+
+					Token *rBraceToken = peekToken();
+
+					if ((syntaxError = expectToken(rBraceToken, TokenId::RBrace))) {
+						goto genBadExpr;
+					}
+
+					break;
+				}
 				default:
 					nextToken();
 					return SyntaxError(

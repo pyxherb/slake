@@ -318,6 +318,16 @@ SLKC_API std::optional<CompilationError> slkc::determinePromotionalType(
 	peff::SharedPtr<TypeNameNode> &typeNameOut) {
 	int lhsWeight, rhsWeight;
 
+	if (!lhs) {
+		typeNameOut = rhs;
+		return {};
+	}
+
+	if (!rhs) {
+		typeNameOut = lhs;
+		return {};
+	}
+
 	SLKC_RETURN_IF_COMP_ERROR(getTypePromotionLevel(lhs, lhsWeight));
 	SLKC_RETURN_IF_COMP_ERROR(getTypePromotionLevel(rhs, rhsWeight));
 

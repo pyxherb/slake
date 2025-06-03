@@ -104,6 +104,10 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 			exprOut = {};
 			break;
 		}
+		case ExprKind::IdRef: {
+			exprOut = {};
+			break;
+		}
 		case ExprKind::I8:
 		case ExprKind::I16:
 		case ExprKind::I32:

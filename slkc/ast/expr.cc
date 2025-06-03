@@ -24,12 +24,8 @@ SLKC_API peff::SharedPtr<AstNode> UnaryExprNode::doDuplicate(peff::Alloc *newAll
 
 SLKC_API UnaryExprNode::UnaryExprNode(
 	peff::Alloc *selfAllocator,
-	const peff::SharedPtr<Document> &document,
-	UnaryOp unaryOp,
-	const peff::SharedPtr<ExprNode> &operand)
-	: ExprNode(ExprKind::Unary, selfAllocator, document),
-	  unaryOp(unaryOp),
-	  operand(operand) {
+	const peff::SharedPtr<Document> &document)
+	: ExprNode(ExprKind::Unary, selfAllocator, document) {
 }
 
 SLKC_API UnaryExprNode::UnaryExprNode(const UnaryExprNode &rhs, peff::Alloc *selfAllocator, bool &succeededOut) : ExprNode(rhs, selfAllocator), unaryOp(rhs.unaryOp) {
@@ -125,14 +121,8 @@ SLKC_API peff::SharedPtr<AstNode> BinaryExprNode::doDuplicate(peff::Alloc *newAl
 
 SLKC_API BinaryExprNode::BinaryExprNode(
 	peff::Alloc *selfAllocator,
-	const peff::SharedPtr<Document> &document,
-	BinaryOp binaryOp,
-	const peff::SharedPtr<ExprNode> &lhs,
-	const peff::SharedPtr<ExprNode> &rhs)
-	: ExprNode(ExprKind::Binary, selfAllocator, document),
-	  binaryOp(binaryOp),
-	  lhs(lhs),
-	  rhs(rhs) {
+	const peff::SharedPtr<Document> &document)
+	: ExprNode(ExprKind::Binary, selfAllocator, document) {
 }
 
 SLKC_API BinaryExprNode::BinaryExprNode(const BinaryExprNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ExprNode(rhs, allocator), binaryOp(rhs.binaryOp) {
@@ -163,10 +153,7 @@ SLKC_API peff::SharedPtr<AstNode> TernaryExprNode::doDuplicate(peff::Alloc *newA
 
 SLKC_API TernaryExprNode::TernaryExprNode(
 	peff::Alloc *selfAllocator,
-	const peff::SharedPtr<Document> &document,
-	const peff::SharedPtr<ExprNode> &cond,
-	const peff::SharedPtr<ExprNode> &lhs,
-	const peff::SharedPtr<ExprNode> &rhs)
+	const peff::SharedPtr<Document> &document)
 	: ExprNode(ExprKind::Ternary, selfAllocator, document),
 	  cond(cond),
 	  lhs(lhs),
@@ -758,7 +745,7 @@ SLKC_API MatchExprNode::MatchExprNode(const MatchExprNode &rhs, peff::Alloc *all
 		return;
 	}
 
-	if (!(target = rhs.target->duplicate<ExprNode>(allocator))) {
+	if (!(condition = rhs.condition->duplicate<ExprNode>(allocator))) {
 		succeededOut = false;
 		return;
 	}

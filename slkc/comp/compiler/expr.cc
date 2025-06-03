@@ -1260,6 +1260,105 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 			resultOut.evaluatedType = e->targetType;
 			break;
 		}
+		case ExprKind::Match: {
+			peff::SharedPtr<MatchExprNode> e = expr.castTo<MatchExprNode>();
+
+			peff::SharedPtr<TypeNameNode> returnType = e->returnType;
+
+			if (!returnType) {
+				peff::SharedPtr<TypeNameNode> mostPromotionalType, t;
+
+				for (auto &i : e->cases) {
+					SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, i.second, t));
+
+					if (t) {
+						if (mostPromotionalType) {
+							SLKC_RETURN_IF_COMP_ERROR(determinePromotionalType(t, mostPromotionalType, mostPromotionalType));
+						} else {
+							mostPromotionalType = t;
+						}
+					}
+				}
+
+				if (!mostPromotionalType)
+					return CompilationError(expr->tokenRange, CompilationErrorKind::ErrorDeducingMatchResultType);
+			}
+
+			peff::SharedPtr<TypeNameNode> matchType;
+
+			SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, e->condition, matchType));
+
+			if (!matchType)
+				return CompilationError(expr->tokenRange, CompilationErrorKind::ErrorDeducingMatchConditionType);
+
+			if (e->isConst) {
+				peff::Set<peff::SharedPtr<ExprNode>> caseConditions(compileContext->allocator.get());
+
+				for (auto &i : e->cases) {
+					peff::SharedPtr<ExprNode> resultExpr;
+
+					SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileContext, compilationContext, i.first, resultExpr));
+
+					if (!resultExpr) {
+						return CompilationError(i.first->tokenRange, CompilationErrorKind::ErrorEvaluatingConstMatchCaseCondition);
+					}
+
+					peff::SharedPtr<TypeNameNode> resultExprType;
+
+					SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, resultExpr, resultExprType));
+
+					if (!resultExprType) {
+						return CompilationError(i.first->tokenRange, CompilationErrorKind::MismatchedMatchCaseConditionType);
+					}
+
+					for (auto &j : caseConditions) {
+						bool b;
+
+						peff::SharedPtr<BinaryExprNode> ce;
+
+						if (!(ce = peff::makeShared<BinaryExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document)))
+							return genOutOfMemoryCompError();
+
+						ce->binaryOp = BinaryOp::Eq;
+
+						ce->lhs = j;
+
+						ce->rhs = resultExpr;
+
+						peff::SharedPtr<ExprNode> cmpResult;
+
+						SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileContext, compilationContext, ce.castTo<ExprNode>(), cmpResult));
+
+						assert(cmpResult);
+
+						assert(cmpResult->exprKind == ExprKind::Bool);
+
+						if (cmpResult.castTo<BoolLiteralExprNode>()->data) {
+							return CompilationError(i.first->tokenRange, CompilationErrorKind::DuplicatedMatchCaseBranch);
+						}
+					}
+
+					if (!caseConditions.insert(peff::SharedPtr<ExprNode>(resultExpr)))
+						return genOutOfMemoryCompError();
+				}
+
+				// TODO: Implement the case matching and jumping.
+			} else {
+				for (auto &i : e->cases) {
+					peff::SharedPtr<TypeNameNode> resultExprType;
+
+					SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, i.first, resultExprType));
+
+					if (!resultExprType) {
+						return CompilationError(i.first->tokenRange, CompilationErrorKind::MismatchedMatchCaseConditionType);
+					}
+				}
+				// TODO: Implement the case matching and jumping function.
+			}
+
+			resultOut.evaluatedType = returnType;
+			break;
+		}
 		default:
 			std::terminate();
 	}

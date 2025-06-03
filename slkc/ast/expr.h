@@ -68,7 +68,7 @@ namespace slkc {
 		UnaryOp unaryOp;
 		peff::SharedPtr<ExprNode> operand;
 
-		SLKC_API UnaryExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, UnaryOp unaryOp, const peff::SharedPtr<ExprNode> &operand);
+		SLKC_API UnaryExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API UnaryExprNode(const UnaryExprNode &rhs, peff::Alloc *selfAllocator, bool &succeededOut);
 		SLKC_API virtual ~UnaryExprNode();
 	};
@@ -123,7 +123,7 @@ namespace slkc {
 		BinaryOp binaryOp;
 		peff::SharedPtr<ExprNode> lhs, rhs;
 
-		SLKC_API BinaryExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, BinaryOp binaryOp, const peff::SharedPtr<ExprNode> &lhs, const peff::SharedPtr<ExprNode> &rhs);
+		SLKC_API BinaryExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API BinaryExprNode(const BinaryExprNode &rhs, peff::Alloc *allocator, bool &succeededOut);
 		SLKC_API virtual ~BinaryExprNode();
 	};
@@ -135,7 +135,7 @@ namespace slkc {
 	public:
 		peff::SharedPtr<ExprNode> cond, lhs, rhs;
 
-		SLKC_API TernaryExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, const peff::SharedPtr<ExprNode> &cond, const peff::SharedPtr<ExprNode> &lhs, const peff::SharedPtr<ExprNode> &rhs);
+		SLKC_API TernaryExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API TernaryExprNode(const TernaryExprNode &rhs, peff::Alloc *allocator, bool &succeededOut);
 		SLKC_API virtual ~TernaryExprNode();
 	};
@@ -541,7 +541,7 @@ namespace slkc {
 		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
 
 	public:
-		peff::SharedPtr<ExprNode> target;
+		peff::SharedPtr<ExprNode> condition;
 		bool isConst = false;
 		peff::SharedPtr<TypeNameNode> returnType;
 		peff::DynArray<std::pair<peff::SharedPtr<ExprNode>, peff::SharedPtr<ExprNode>>> cases;

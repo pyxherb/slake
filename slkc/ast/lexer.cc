@@ -192,6 +192,8 @@ SLKC_API const char *slkc::getTokenName(TokenId tokenId) {
 			return "catch";
 		case TokenId::ClassKeyword:
 			return "class";
+		case TokenId::ConstKeyword:
+			return "const";
 		case TokenId::ContinueKeyword:
 			return "continue";
 		case TokenId::DeleteKeyword:
@@ -216,6 +218,8 @@ SLKC_API const char *slkc::getTokenName(TokenId tokenId) {
 			return "import";
 		case TokenId::LetKeyword:
 			return "let";
+		case TokenId::MatchKeyword:
+			return "match";
 		case TokenId::ModuleKeyword:
 			return "module";
 		case TokenId::NativeKeyword:

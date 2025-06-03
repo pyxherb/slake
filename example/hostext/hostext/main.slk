@@ -180,6 +180,11 @@ pub fn *main() -> i32 {
 			4;
 	}
 
+	match const (123) -> i32 {
+		456: 789,
+		abc: def
+	};
+
 	/*let sum: i64 = 0, i: i64 = 0;
 
 	while(i < 10000000) {

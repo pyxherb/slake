@@ -320,8 +320,30 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 
 					lhs = expr.castTo<ExprNode>();
 
-					Token *colonToken;
-					if ((colonToken = peekToken())->tokenId == TokenId::ReturnTypeOp) {
+					if (peekToken()->tokenId == TokenId::ConstKeyword) {
+						expr->isConst = true;
+						nextToken();
+					}
+
+					Token *lParentheseToken;
+
+					if ((syntaxError = expectToken((lParentheseToken = peekToken()), TokenId::LParenthese)))
+						goto genBadExpr;
+
+					nextToken();
+
+					if ((syntaxError = parseExpr(0, expr->target)))
+						goto genBadExpr;
+
+					Token *rParentheseToken;
+
+					if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese)))
+						goto genBadExpr;
+
+					nextToken();
+
+					Token *returnTypeToken;
+					if ((returnTypeToken = peekToken())->tokenId == TokenId::ReturnTypeOp) {
 						nextToken();
 						if ((syntaxError = parseTypeName(expr->returnType))) {
 							return syntaxError;
@@ -333,6 +355,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 					if ((syntaxError = expectToken(lBraceToken, TokenId::LBrace))) {
 						goto genBadExpr;
 					}
+
+					nextToken();
 
 					while (true) {
 						peff::SharedPtr<ExprNode> conditionExpr, resultExpr;
@@ -346,6 +370,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 						if ((syntaxError = expectToken(colonToken, TokenId::Colon))) {
 							goto genBadExpr;
 						}
+
+						nextToken();
 
 						if ((syntaxError = parseExpr(0, resultExpr))) {
 							goto genBadExpr;
@@ -366,6 +392,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 					if ((syntaxError = expectToken(rBraceToken, TokenId::RBrace))) {
 						goto genBadExpr;
 					}
+
+					nextToken();
 
 					break;
 				}

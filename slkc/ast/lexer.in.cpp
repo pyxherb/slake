@@ -90,6 +90,7 @@ SLKC_API std::optional<LexicalError> Lexer::lex(const std::string_view &src, pef
 				<InitialCondition>"catch"		{ token->tokenId = TokenId::CatchKeyword; break; }
 				<InitialCondition>"class"		{ token->tokenId = TokenId::ClassKeyword; break; }
 				<InitialCondition>"continue"	{ token->tokenId = TokenId::ContinueKeyword; break; }
+				<InitialCondition>"const"		{ token->tokenId = TokenId::ConstKeyword; break; }
 				<InitialCondition>"delete"		{ token->tokenId = TokenId::DeleteKeyword; break; }
 				<InitialCondition>"default"		{ token->tokenId = TokenId::DefaultKeyword; break; }
 				<InitialCondition>"do"			{ token->tokenId = TokenId::DoKeyword; break; }

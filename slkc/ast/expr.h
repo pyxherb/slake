@@ -542,6 +542,7 @@ namespace slkc {
 
 	public:
 		peff::SharedPtr<ExprNode> target;
+		bool isConst = false;
 		peff::SharedPtr<TypeNameNode> returnType;
 		peff::DynArray<std::pair<peff::SharedPtr<ExprNode>, peff::SharedPtr<ExprNode>>> cases;
 

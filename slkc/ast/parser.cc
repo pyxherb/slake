@@ -373,8 +373,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseFn(peff::SharedPtr<FnOverloadin
 		fnNodeOut->fnFlags |= FN_VARG;
 	}
 
-	Token *colonToken;
-	if ((colonToken = peekToken())->tokenId == TokenId::ReturnTypeOp) {
+	Token *returnTypeToken;
+	if ((returnTypeToken = peekToken())->tokenId == TokenId::ReturnTypeOp) {
 		nextToken();
 		if ((syntaxError = parseTypeName(fnNodeOut->returnType))) {
 			return syntaxError;

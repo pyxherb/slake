@@ -122,6 +122,7 @@ namespace slkc {
 		CaseKeyword,
 		CatchKeyword,
 		ClassKeyword,
+		ConstKeyword,
 		ContinueKeyword,
 		DeleteKeyword,
 		DefaultKeyword,

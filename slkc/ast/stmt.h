@@ -225,6 +225,7 @@ namespace slkc {
 		peff::SharedPtr<ExprNode> condition;
 		peff::DynArray<size_t> caseOffsets;
 		peff::DynArray<peff::SharedPtr<StmtNode>> body;
+		bool isConst = false;
 
 		SLKC_API SwitchStmtNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API SwitchStmtNode(const SwitchStmtNode &rhs, peff::Alloc *allocator, bool &succeededOut);

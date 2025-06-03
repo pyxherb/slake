@@ -661,6 +661,11 @@ SLKC_API std::optional<SyntaxError> Parser::parseStmt(peff::SharedPtr<StmtNode> 
 
 				stmtOut = stmt.castTo<StmtNode>();
 
+				if (peekToken()->tokenId == TokenId::ConstKeyword) {
+					stmt->isConst = true;
+					nextToken();
+				}
+
 				Token *lParentheseToken = peekToken();
 
 				if ((syntaxError = expectToken(lParentheseToken, TokenId::LParenthese))) {

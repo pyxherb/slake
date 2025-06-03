@@ -182,7 +182,7 @@ pub fn *main() -> i32 {
 
 	match const (123) -> i32 {
 		456: 789,
-		0xabc: 0xdef
+		abc: 0xdef
 	};
 
 	/*let sum: i64 = 0, i: i64 = 0;

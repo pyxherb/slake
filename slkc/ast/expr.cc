@@ -700,10 +700,8 @@ SLKC_API peff::SharedPtr<AstNode> CastExprNode::doDuplicate(peff::Alloc *newAllo
 	return duplicatedNode.castTo<AstNode>();
 }
 SLKC_API CastExprNode::CastExprNode(
-	peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, const peff::SharedPtr<TypeNameNode> &targetType, const peff::SharedPtr<ExprNode> &source)
-	: ExprNode(ExprKind::Cast, selfAllocator, document),
-	  targetType(targetType),
-	  source(source) {
+	peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document)
+	: ExprNode(ExprKind::Cast, selfAllocator, document) {
 }
 SLKC_API CastExprNode::CastExprNode(const CastExprNode &rhs, peff::Alloc *allocator, bool &succeededOut)
 	: ExprNode(rhs, allocator) {

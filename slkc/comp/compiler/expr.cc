@@ -72,11 +72,12 @@ SLKC_API std::optional<CompilationError> slkc::_compileOrCastOperand(
 		if (!(castExpr = peff::makeShared<CastExprNode>(
 				  compileContext->allocator.get(),
 				  compileContext->allocator.get(),
-				  compileContext->document,
-				  desiredType,
-				  operand))) {
+				  compileContext->document))) {
 			return genOutOfMemoryCompError();
 		}
+
+		castExpr->targetType = desiredType;
+		castExpr->source = operand;
 
 		SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, castExpr.castTo<ExprNode>(), evalPurpose, desiredType, regOut, result));
 		return {};

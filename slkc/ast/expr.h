@@ -531,7 +531,7 @@ namespace slkc {
 		peff::SharedPtr<ExprNode> source;
 		size_t asKeywordTokenIndex = SIZE_MAX;
 
-		SLKC_API CastExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, const peff::SharedPtr<TypeNameNode> &targetType, const peff::SharedPtr<ExprNode> &source);
+		SLKC_API CastExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API CastExprNode(const CastExprNode &rhs, peff::Alloc *allocator, bool &succeededOut);
 		SLKC_API virtual ~CastExprNode();
 	};

@@ -385,6 +385,36 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 				beginToken->sourceLocation.beginPosition.line + 1,
 				beginToken->sourceLocation.beginPosition.column + 1);
 			break;
+		case slkc::CompilationErrorKind::InvalidInitializerListUsage:
+			printError("Error at %zu, %zu: Cannot use initializer list in this context\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::ErrorDeducingInitializerListType:
+			printError("Error at %zu, %zu: Error deducing type of the initializer list\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::ErrorDeducingMatchConditionType:
+			printError("Error at %zu, %zu: Error deducing type of the match condition\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::ErrorDeducingMatchResultType:
+			printError("Error at %zu, %zu: Error deducing return type of the match expression\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::ErrorEvaluatingConstMatchCaseCondition:
+			printError("Error at %zu, %zu: The match condition is required to be a comptime evaluatable expression\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::DuplicatedMatchCaseBranch:
+			printError("Error at %zu, %zu: Duplicated match case\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
 		case slkc::CompilationErrorKind::LocalVarAlreadyExists:
 			printError("Error at %zu, %zu: Local variable already exists\n",
 				beginToken->sourceLocation.beginPosition.line + 1,

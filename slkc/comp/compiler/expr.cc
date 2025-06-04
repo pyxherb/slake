@@ -89,6 +89,266 @@ SLKC_API std::optional<CompilationError> slkc::_compileOrCastOperand(
 	return CompilationError(operand->tokenRange, std::move(exData));
 }
 
+static std::optional<CompilationError> _loadTheRestOfIdRef(CompileContext *compileContext, CompilationContext *compilationContext, uint32_t resultRegOut, CompileExprResult &resultOut, IdRef *idRef, ResolvedIdRefPartList &parts, uint32_t initialMemberReg, size_t curIdx, peff::SharedPtr<FnTypeNameNode> extraFnArgs) {
+	uint32_t idxReg;
+
+	if (initialMemberReg == UINT32_MAX) {
+		SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxReg));
+	} else {
+		idxReg = initialMemberReg;
+	}
+
+	if (parts.back().member->astNodeType == AstNodeType::Fn) {
+		peff::SharedPtr<FnOverloadingNode> fn = parts.back().member.castTo<FnOverloadingNode>();
+
+		if (parts.size() > 1) {
+			if (fn->fnFlags & FN_VIRTUAL) {
+				slake::HostObjectRef<slake::IdRefObject> idRefObject;
+				// Is calling a virtual instance method.
+				for (size_t i = curIdx; i < parts.size() - 1; ++i) {
+					ResolvedIdRefPart &part = parts.at(i);
+
+					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, idRefObject));
+
+					if (part.isStatic) {
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, idxReg, { slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+					} else {
+						uint32_t idxNewReg;
+
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxNewReg));
+
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegRef, idxReg), slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+						idxReg = idxNewReg;
+					}
+
+					curIdx += part.nEntries;
+				}
+
+				{
+					ResolvedIdRefPart &part = parts.back();
+					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, idRefObject));
+
+					if (extraFnArgs) {
+						idRefObject->paramTypes = peff::DynArray<slake::Type>(compileContext->runtime->getCurGenAlloc());
+
+						if (!idRefObject->paramTypes->resize(extraFnArgs->paramTypes.size()))
+							return genOutOfRuntimeMemoryCompError();
+
+						for (size_t i = 0; i < idRefObject->paramTypes->size(); ++i) {
+							SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, extraFnArgs->paramTypes.at(i), idRefObject->paramTypes->at(i)));
+						}
+
+						if (extraFnArgs->hasVarArgs)
+							idRefObject->hasVarArgs = true;
+					}
+
+					resultOut.idxThisRegOut = idxReg;
+					uint32_t idxNewReg;
+
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxNewReg));
+
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegRef, idxReg), slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+					idxReg = idxNewReg;
+				}
+			} else {
+				// Is calling an instance method that is not virtual.
+				slake::HostObjectRef<slake::IdRefObject> idRefObject;
+
+				for (size_t i = curIdx; i < parts.size() - 1; ++i) {
+					ResolvedIdRefPart &part = parts.at(i);
+
+					SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, idRefObject));
+
+					if (part.isStatic) {
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, idxReg, { slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+					} else {
+						uint32_t idxNewReg;
+
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxNewReg));
+
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegRef, idxReg), slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+						idxReg = idxNewReg;
+					}
+
+					curIdx += part.nEntries;
+				}
+
+				IdRefPtr fullIdRef;
+
+				resultOut.idxThisRegOut = idxReg;
+				SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileContext->allocator.get(), fn.castTo<MemberNode>(), fullIdRef));
+
+				idxReg;
+
+				SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxReg));
+
+				SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, fullIdRef->entries.data(), fullIdRef->entries.size(), nullptr, 0, false, idRefObject));
+
+				if (extraFnArgs) {
+					idRefObject->paramTypes = peff::DynArray<slake::Type>(compileContext->runtime->getCurGenAlloc());
+
+					if (!idRefObject->paramTypes->resize(extraFnArgs->paramTypes.size()))
+						return genOutOfRuntimeMemoryCompError();
+
+					for (size_t i = 0; i < idRefObject->paramTypes->size(); ++i) {
+						SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, extraFnArgs->paramTypes.at(i), idRefObject->paramTypes->at(i)));
+					}
+
+					if (extraFnArgs->hasVarArgs)
+						idRefObject->hasVarArgs = true;
+				}
+
+				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, idxReg, { slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+			}
+		} else {
+			// Is calling a static method.
+			IdRefPtr fullIdRef;
+			SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileContext->allocator.get(), fn.castTo<MemberNode>(), fullIdRef));
+
+			slake::HostObjectRef<slake::IdRefObject> idRefObject;
+			SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, fullIdRef->entries.data(), fullIdRef->entries.size(), nullptr, 0, false, idRefObject));
+
+			if (extraFnArgs) {
+				idRefObject->paramTypes = peff::DynArray<slake::Type>(compileContext->runtime->getCurGenAlloc());
+
+				if (!idRefObject->paramTypes->resize(extraFnArgs->paramTypes.size()))
+					return genOutOfRuntimeMemoryCompError();
+
+				for (size_t i = 0; i < idRefObject->paramTypes->size(); ++i) {
+					SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, extraFnArgs->paramTypes.at(i), idRefObject->paramTypes->at(i)));
+				}
+
+				if (extraFnArgs->hasVarArgs)
+					idRefObject->hasVarArgs = true;
+			}
+
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, idxReg, { slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+		}
+	} else {
+		slake::HostObjectRef<slake::IdRefObject> idRefObject;
+
+		if (parts.size() > 1) {
+			for (size_t i = curIdx; i < parts.size(); ++i) {
+				ResolvedIdRefPart &part = parts.at(i);
+
+				SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, idRefObject));
+
+				if (part.isStatic) {
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, idxReg, { slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+				} else {
+					uint32_t idxNewReg;
+
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxNewReg));
+
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegRef, idxReg), slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
+					idxReg = idxNewReg;
+				}
+
+				curIdx += part.nEntries;
+			}
+		}
+	}
+
+	SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MOV, resultRegOut, { slake::Value(slake::ValueType::RegRef, idxReg) }));
+	return {};
+};
+auto selectSingleMatchingOverloading = [](CompileContext *compileContext, const TokenRange &tokenRange, peff::SharedPtr<MemberNode> &finalMember, peff::SharedPtr<TypeNameNode> desiredType, bool isStatic, CompileExprResult &resultOut) -> std::optional<CompilationError> {
+	peff::SharedPtr<FnNode> m = finalMember.castTo<FnNode>();
+
+	resultOut.callTargetFnSlot = m;
+
+	if (m->overloadings.size() == 1) {
+		finalMember = m->overloadings.back().castTo<MemberNode>();
+		if (!resultOut.callTargetMatchedOverloadings.pushBack(peff::SharedPtr<FnOverloadingNode>(m->overloadings.back()))) {
+			return genOutOfMemoryCompError();
+		}
+	} else {
+		if (desiredType && (desiredType->typeNameKind == TypeNameKind::Fn)) {
+			peff::SharedPtr<FnTypeNameNode> tn = desiredType.castTo<FnTypeNameNode>();
+			peff::DynArray<peff::SharedPtr<FnOverloadingNode>> matchedOverloadingIndices(compileContext->allocator.get());
+
+			// TODO: Check tn->isForAdl and do strictly equality check.
+			SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileContext, m, tn->paramTypes.data(), tn->paramTypes.size(), isStatic, matchedOverloadingIndices));
+
+			switch (matchedOverloadingIndices.size()) {
+				case 0:
+					return CompilationError(tokenRange, CompilationErrorKind::NoMatchingFnOverloading);
+				case 1:
+					break;
+				default:
+					return CompilationError(tokenRange, CompilationErrorKind::UnableToDetermineOverloading);
+			}
+
+			finalMember = m->overloadings.at(matchedOverloadingIndices.back()).castTo<MemberNode>();
+
+			resultOut.callTargetMatchedOverloadings = std::move(matchedOverloadingIndices);
+		} else {
+			return CompilationError(tokenRange, CompilationErrorKind::UnableToDetermineOverloading);
+		}
+	}
+
+	return {};
+};
+
+static std::optional<CompilationError> _determineNodeType(CompileContext *compileContext, peff::SharedPtr<MemberNode> node, peff::SharedPtr<TypeNameNode> &typeNameOut) {
+	switch (node->astNodeType) {
+		case AstNodeType::This: {
+			auto m = node.castTo<ThisNode>()->thisType;
+
+			IdRefPtr fullIdRef;
+
+			SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileContext->allocator.get(), m, fullIdRef));
+
+			auto tn = peff::makeShared<CustomTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document);
+
+			if (!tn) {
+				return genOutOfMemoryCompError();
+			}
+			tn->contextNode = compileContext->document->rootModule.castTo<MemberNode>();
+
+			tn->idRefPtr = std::move(fullIdRef);
+
+			typeNameOut = tn.castTo<TypeNameNode>();
+			break;
+		}
+		case AstNodeType::Var: {
+			auto originalType = node.castTo<VarNode>()->type;
+			if (originalType->typeNameKind != TypeNameKind::Ref) {
+				peff::SharedPtr<RefTypeNameNode> t;
+
+				if (!(t = peff::makeShared<RefTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, peff::SharedPtr<TypeNameNode>()))) {
+					return genOutOfMemoryCompError();
+				}
+				t->referencedType = node.castTo<VarNode>()->type;
+				typeNameOut = t.castTo<TypeNameNode>();
+			} else {
+				typeNameOut = originalType;
+			}
+			break;
+		}
+		case AstNodeType::Fn: {
+			peff::SharedPtr<FnTypeNameNode> tn;
+			SLKC_RETURN_IF_COMP_ERROR(fnToTypeName(compileContext, node.castTo<FnOverloadingNode>(), tn));
+			typeNameOut = tn.castTo<TypeNameNode>();
+			break;
+		}
+		case AstNodeType::FnSlot:
+			typeNameOut = {};
+			break;
+		case AstNodeType::Module:
+		case AstNodeType::Class:
+		case AstNodeType::Struct:
+		case AstNodeType::Enum:
+		case AstNodeType::Interface:
+			typeNameOut = {};
+			break;
+		default:
+			std::terminate();
+	}
+
+	return {};
+};
+
 SLKC_API std::optional<CompilationError> slkc::compileExpr(
 	CompileContext *compileContext,
 	CompilationContext *compilationContext,
@@ -104,6 +364,192 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 		case ExprKind::Binary:
 			SLKC_RETURN_IF_COMP_ERROR(compileBinaryExpr(compileContext, compilationContext, expr.castTo<BinaryExprNode>(), evalPurpose, resultRegOut, resultOut));
 			break;
+		case ExprKind::HeadedIdRef: {
+			peff::SharedPtr<HeadedIdRefExprNode> e = expr.castTo<HeadedIdRefExprNode>();
+
+			CompileExprResult result(compileContext->allocator.get());
+
+			uint32_t headRegister;
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(headRegister));
+
+			SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, e->head, ExprEvalPurpose::RValue, {}, headRegister, result));
+
+			peff::SharedPtr<MemberNode> initialMember;
+
+			peff::SharedPtr<TypeNameNode> tn = result.evaluatedType;
+
+		determineInitialMember:
+			switch (tn->typeNameKind) {
+				case TypeNameKind::Void:
+				case TypeNameKind::I8:
+				case TypeNameKind::I16:
+				case TypeNameKind::I32:
+				case TypeNameKind::I64:
+				case TypeNameKind::U8:
+				case TypeNameKind::U16:
+				case TypeNameKind::U32:
+				case TypeNameKind::U64:
+				case TypeNameKind::F32:
+				case TypeNameKind::F64:
+				case TypeNameKind::ISize:
+				case TypeNameKind::USize:
+				case TypeNameKind::String:
+				case TypeNameKind::Bool:
+				case TypeNameKind::Any:
+				case TypeNameKind::Object:
+					return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::IdNotFound);
+				case TypeNameKind::Custom:
+					SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(tn->document.lock(), tn.castTo<CustomTypeNameNode>(), initialMember));
+					break;
+				case TypeNameKind::Fn:
+				case TypeNameKind::Array:
+					return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::IdNotFound);
+				case TypeNameKind::Ref:
+					tn = tn.castTo<RefTypeNameNode>()->referencedType;
+
+					goto determineInitialMember;
+				case TypeNameKind::TempRef:
+					tn = tn.castTo<TempRefTypeNameNode>()->referencedType;
+
+					goto determineInitialMember;
+				case TypeNameKind::Bad:
+					break;
+				default:
+					std::terminate();
+			}
+
+			if (!initialMember) {
+				return CompilationError(e->head->tokenRange, CompilationErrorKind::IdNotFound);
+			}
+
+			peff::SharedPtr<MemberNode> finalMember;
+
+			uint32_t finalRegister;
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(finalRegister));
+
+			ResolvedIdRefPartList parts(compileContext->document->allocator.get());
+			{
+				ResolvedIdRefPart initialPart;
+
+				initialPart.isStatic = false;
+				initialPart.nEntries = 1;
+				initialPart.member = initialMember;
+
+				if (!parts.pushBack(std::move(initialPart))) {
+					return genOutOfMemoryCompError();
+				}
+
+				peff::Set<peff::SharedPtr<MemberNode>> walkedMemberNodes(compileContext->document->allocator.get());
+				SLKC_RETURN_IF_COMP_ERROR(
+					resolveIdRefWithScopeNode(
+						compileContext,
+						compileContext->document,
+						walkedMemberNodes,
+						initialMember,
+						e->idRefPtr->entries.data(),
+						e->idRefPtr->entries.size(),
+						finalMember,
+						&parts,
+						false));
+
+				if (!finalMember) {
+					return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::IdNotFound);
+				}
+			}
+
+			if (!finalMember) {
+				return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::IdNotFound);
+			}
+
+			if (finalMember->astNodeType == AstNodeType::FnSlot) {
+				SLKC_RETURN_IF_COMP_ERROR(selectSingleMatchingOverloading(compileContext, e->idRefPtr->tokenRange, finalMember, desiredType, false, resultOut));
+
+				peff::SharedPtr<FnTypeNameNode> fnType;
+				SLKC_RETURN_IF_COMP_ERROR(fnToTypeName(compileContext, finalMember.castTo<FnOverloadingNode>(), fnType));
+
+				parts.back().member = finalMember;
+
+				SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileContext, compilationContext, finalRegister, resultOut, e->idRefPtr.get(), parts, headRegister, 0, fnType));
+			} else {
+				SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileContext, compilationContext, finalRegister, resultOut, e->idRefPtr.get(), parts, headRegister, 0, {}));
+			}
+
+			SLKC_RETURN_IF_COMP_ERROR(_determineNodeType(compileContext, finalMember, resultOut.evaluatedType));
+
+			switch (evalPurpose) {
+				case ExprEvalPurpose::EvalType:
+					if (!resultOut.evaluatedType) {
+						return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::ExpectingId);
+					}
+					break;
+				case ExprEvalPurpose::Stmt:
+					SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(
+						CompilationWarning(e->tokenRange, CompilationWarningKind::UnusedExprResult)));
+					break;
+				case ExprEvalPurpose::LValue: {
+					bool b = false;
+					SLKC_RETURN_IF_COMP_ERROR(isLValueType(resultOut.evaluatedType, b));
+					if (!b) {
+						return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
+					}
+
+					SLKC_RETURN_IF_COMP_ERROR(
+						compilationContext->emitIns(
+							slake::Opcode::MOV,
+							resultRegOut,
+							{ slake::Value(slake::ValueType::RegRef, finalRegister) }));
+					break;
+				}
+				case ExprEvalPurpose::RValue: {
+					bool b = false;
+					SLKC_RETURN_IF_COMP_ERROR(isLValueType(resultOut.evaluatedType, b));
+					if ((b) && (initialMember != finalMember)) {
+						SLKC_RETURN_IF_COMP_ERROR(
+							compilationContext->emitIns(
+								slake::Opcode::LVALUE,
+								resultRegOut,
+								{ slake::Value(slake::ValueType::RegRef, finalRegister) }));
+					} else {
+						SLKC_RETURN_IF_COMP_ERROR(
+							compilationContext->emitIns(
+								slake::Opcode::MOV,
+								resultRegOut,
+								{ slake::Value(slake::ValueType::RegRef, finalRegister) }));
+					}
+					break;
+				}
+				case ExprEvalPurpose::Call: {
+					peff::SharedPtr<TypeNameNode> decayedTargetType;
+
+					SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(resultOut.evaluatedType, decayedTargetType));
+
+					if (decayedTargetType->typeNameKind != TypeNameKind::Fn) {
+						return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::TargetIsNotCallable);
+					}
+
+					bool b = false;
+					SLKC_RETURN_IF_COMP_ERROR(isLValueType(resultOut.evaluatedType, b));
+					if ((b) && (initialMember != finalMember)) {
+						SLKC_RETURN_IF_COMP_ERROR(
+							compilationContext->emitIns(
+								slake::Opcode::LVALUE,
+								resultRegOut,
+								{ slake::Value(slake::ValueType::RegRef, finalRegister) }));
+					} else {
+						SLKC_RETURN_IF_COMP_ERROR(
+							compilationContext->emitIns(
+								slake::Opcode::MOV,
+								resultRegOut,
+								{ slake::Value(slake::ValueType::RegRef, finalRegister) }));
+					}
+					break;
+				}
+				default:
+					std::terminate();
+			}
+
+			break;
+		}
 		case ExprKind::IdRef: {
 			peff::SharedPtr<IdRefExprNode> e = expr.castTo<IdRefExprNode>();
 
@@ -218,265 +664,6 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 			}
 
 		initialMemberResolved:
-			auto loadTheRest = [](CompileContext *compileContext, CompilationContext *compilationContext, uint32_t resultRegOut, CompileExprResult &resultOut, IdRef *idRef, ResolvedIdRefPartList &parts, uint32_t initialMemberReg, size_t curIdx, peff::SharedPtr<FnTypeNameNode> extraFnArgs) -> std::optional<CompilationError> {
-				uint32_t idxReg;
-
-				if (initialMemberReg == UINT32_MAX) {
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxReg));
-				} else {
-					idxReg = initialMemberReg;
-				}
-
-				if (parts.back().member->astNodeType == AstNodeType::Fn) {
-					peff::SharedPtr<FnOverloadingNode> fn = parts.back().member.castTo<FnOverloadingNode>();
-
-					if (parts.size() > 1) {
-						if (fn->fnFlags & FN_VIRTUAL) {
-							slake::HostObjectRef<slake::IdRefObject> idRefObject;
-							// Is calling a virtual instance method.
-							for (size_t i = curIdx; i < parts.size() - 1; ++i) {
-								ResolvedIdRefPart &part = parts.at(i);
-
-								SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, idRefObject));
-
-								if (part.isStatic) {
-									SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, idxReg, { slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
-								} else {
-									uint32_t idxNewReg;
-
-									SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxNewReg));
-
-									SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegRef, idxReg), slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
-									idxReg = idxNewReg;
-								}
-
-								curIdx += part.nEntries;
-							}
-
-							{
-								ResolvedIdRefPart &part = parts.back();
-								SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, idRefObject));
-
-								if (extraFnArgs) {
-									idRefObject->paramTypes = peff::DynArray<slake::Type>(compileContext->runtime->getCurGenAlloc());
-
-									if (!idRefObject->paramTypes->resize(extraFnArgs->paramTypes.size()))
-										return genOutOfRuntimeMemoryCompError();
-
-									for (size_t i = 0; i < idRefObject->paramTypes->size(); ++i) {
-										SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, extraFnArgs->paramTypes.at(i), idRefObject->paramTypes->at(i)));
-									}
-
-									if (extraFnArgs->hasVarArgs)
-										idRefObject->hasVarArgs = true;
-								}
-
-								resultOut.idxThisRegOut = idxReg;
-								uint32_t idxNewReg;
-
-								SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxNewReg));
-
-								SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegRef, idxReg), slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
-								idxReg = idxNewReg;
-							}
-						} else {
-							// Is calling an instance method that is not virtual.
-							slake::HostObjectRef<slake::IdRefObject> idRefObject;
-
-							for (size_t i = curIdx; i < parts.size() - 1; ++i) {
-								ResolvedIdRefPart &part = parts.at(i);
-
-								SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, idRefObject));
-
-								if (part.isStatic) {
-									SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, idxReg, { slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
-								} else {
-									uint32_t idxNewReg;
-
-									SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxNewReg));
-
-									SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegRef, idxReg), slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
-									idxReg = idxNewReg;
-								}
-
-								curIdx += part.nEntries;
-							}
-
-							IdRefPtr fullIdRef;
-
-							resultOut.idxThisRegOut = idxReg;
-							SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileContext->allocator.get(), fn.castTo<MemberNode>(), fullIdRef));
-
-							idxReg;
-
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxReg));
-
-							SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, fullIdRef->entries.data(), fullIdRef->entries.size(), nullptr, 0, false, idRefObject));
-
-							if (extraFnArgs) {
-								idRefObject->paramTypes = peff::DynArray<slake::Type>(compileContext->runtime->getCurGenAlloc());
-
-								if (!idRefObject->paramTypes->resize(extraFnArgs->paramTypes.size()))
-									return genOutOfRuntimeMemoryCompError();
-
-								for (size_t i = 0; i < idRefObject->paramTypes->size(); ++i) {
-									SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, extraFnArgs->paramTypes.at(i), idRefObject->paramTypes->at(i)));
-								}
-
-								if (extraFnArgs->hasVarArgs)
-									idRefObject->hasVarArgs = true;
-							}
-
-							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, idxReg, { slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
-						}
-					} else {
-						// Is calling a static method.
-						IdRefPtr fullIdRef;
-						SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileContext->allocator.get(), fn.castTo<MemberNode>(), fullIdRef));
-
-						slake::HostObjectRef<slake::IdRefObject> idRefObject;
-						SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, fullIdRef->entries.data(), fullIdRef->entries.size(), nullptr, 0, false, idRefObject));
-
-						if (extraFnArgs) {
-							idRefObject->paramTypes = peff::DynArray<slake::Type>(compileContext->runtime->getCurGenAlloc());
-
-							if (!idRefObject->paramTypes->resize(extraFnArgs->paramTypes.size()))
-								return genOutOfRuntimeMemoryCompError();
-
-							for (size_t i = 0; i < idRefObject->paramTypes->size(); ++i) {
-								SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, extraFnArgs->paramTypes.at(i), idRefObject->paramTypes->at(i)));
-							}
-
-							if (extraFnArgs->hasVarArgs)
-								idRefObject->hasVarArgs = true;
-						}
-
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, idxReg, { slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
-					}
-				} else {
-					slake::HostObjectRef<slake::IdRefObject> idRefObject;
-
-					if (parts.size() > 1) {
-						for (size_t i = curIdx; i < parts.size(); ++i) {
-							ResolvedIdRefPart &part = parts.at(i);
-
-							SLKC_RETURN_IF_COMP_ERROR(compileIdRef(compileContext, idRef->entries.data() + curIdx, part.nEntries, nullptr, 0, false, idRefObject));
-
-							if (part.isStatic) {
-								SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LOAD, idxReg, { slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
-							} else {
-								uint32_t idxNewReg;
-
-								SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(idxNewReg));
-
-								SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::RLOAD, idxNewReg, { slake::Value(slake::ValueType::RegRef, idxReg), slake::Value(slake::EntityRef::makeObjectRef(idRefObject.get())) }));
-								idxReg = idxNewReg;
-							}
-
-							curIdx += part.nEntries;
-						}
-					}
-				}
-
-				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::MOV, resultRegOut, { slake::Value(slake::ValueType::RegRef, idxReg) }));
-				return {};
-			};
-			auto selectSingleMatchingOverloading = [](CompileContext *compileContext, const TokenRange &tokenRange, peff::SharedPtr<MemberNode> &finalMember, peff::SharedPtr<TypeNameNode> desiredType, bool isStatic, CompileExprResult &resultOut) -> std::optional<CompilationError> {
-				peff::SharedPtr<FnNode> m = finalMember.castTo<FnNode>();
-
-				resultOut.callTargetFnSlot = m;
-
-				if (m->overloadings.size() == 1) {
-					finalMember = m->overloadings.back().castTo<MemberNode>();
-					if (!resultOut.callTargetMatchedOverloadings.pushBack(peff::SharedPtr<FnOverloadingNode>(m->overloadings.back()))) {
-						return genOutOfMemoryCompError();
-					}
-				} else {
-					if (desiredType && (desiredType->typeNameKind == TypeNameKind::Fn)) {
-						peff::SharedPtr<FnTypeNameNode> tn = desiredType.castTo<FnTypeNameNode>();
-						peff::DynArray<peff::SharedPtr<FnOverloadingNode>> matchedOverloadingIndices(compileContext->allocator.get());
-
-						// TODO: Check tn->isForAdl and do strictly equality check.
-						SLKC_RETURN_IF_COMP_ERROR(determineFnOverloading(compileContext, m, tn->paramTypes.data(), tn->paramTypes.size(), isStatic, matchedOverloadingIndices));
-
-						switch (matchedOverloadingIndices.size()) {
-							case 0:
-								return CompilationError(tokenRange, CompilationErrorKind::NoMatchingFnOverloading);
-							case 1:
-								break;
-							default:
-								return CompilationError(tokenRange, CompilationErrorKind::UnableToDetermineOverloading);
-						}
-
-						finalMember = m->overloadings.at(matchedOverloadingIndices.back()).castTo<MemberNode>();
-
-						resultOut.callTargetMatchedOverloadings = std::move(matchedOverloadingIndices);
-					} else {
-						return CompilationError(tokenRange, CompilationErrorKind::UnableToDetermineOverloading);
-					}
-				}
-
-				return {};
-			};
-
-			auto determineNodeType = [](CompileContext *compileContext, peff::SharedPtr<MemberNode> node, peff::SharedPtr<TypeNameNode> &typeNameOut) -> std::optional<CompilationError> {
-				switch (node->astNodeType) {
-					case AstNodeType::This: {
-						auto m = node.castTo<ThisNode>()->thisType;
-
-						IdRefPtr fullIdRef;
-
-						SLKC_RETURN_IF_COMP_ERROR(getFullIdRef(compileContext->allocator.get(), m, fullIdRef));
-
-						auto tn = peff::makeShared<CustomTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document);
-
-						if (!tn) {
-							return genOutOfMemoryCompError();
-						}
-						tn->contextNode = compileContext->document->rootModule.castTo<MemberNode>();
-
-						tn->idRefPtr = std::move(fullIdRef);
-
-						typeNameOut = tn.castTo<TypeNameNode>();
-						break;
-					}
-					case AstNodeType::Var: {
-						auto originalType = node.castTo<VarNode>()->type;
-						if (originalType->typeNameKind != TypeNameKind::Ref) {
-							peff::SharedPtr<RefTypeNameNode> t;
-
-							if (!(t = peff::makeShared<RefTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, peff::SharedPtr<TypeNameNode>()))) {
-								return genOutOfMemoryCompError();
-							}
-							t->referencedType = node.castTo<VarNode>()->type;
-							typeNameOut = t.castTo<TypeNameNode>();
-						} else {
-							typeNameOut = originalType;
-						}
-						break;
-					}
-					case AstNodeType::Fn: {
-						peff::SharedPtr<FnTypeNameNode> tn;
-						SLKC_RETURN_IF_COMP_ERROR(fnToTypeName(compileContext, node.castTo<FnOverloadingNode>(), tn));
-						typeNameOut = tn.castTo<TypeNameNode>();
-						break;
-					}
-					case AstNodeType::FnSlot:
-						typeNameOut = {};
-						break;
-					case AstNodeType::Module:
-					case AstNodeType::Class:
-					case AstNodeType::Struct:
-					case AstNodeType::Enum:
-					case AstNodeType::Interface:
-						typeNameOut = {};
-						break;
-					default:
-						std::terminate();
-				}
-
-				return {};
-			};
 
 			if (initialMember) {
 				if (e->idRefPtr->entries.size() > 1) {
@@ -520,9 +707,9 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 						parts.back().member = finalMember;
 
-						SLKC_RETURN_IF_COMP_ERROR(loadTheRest(compileContext, compilationContext, finalRegister, resultOut, e->idRefPtr.get(), parts, initialMemberReg, 1, fnType));
+						SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileContext, compilationContext, finalRegister, resultOut, e->idRefPtr.get(), parts, initialMemberReg, 1, fnType));
 					} else {
-						SLKC_RETURN_IF_COMP_ERROR(loadTheRest(compileContext, compilationContext, finalRegister, resultOut, e->idRefPtr.get(), parts, initialMemberReg, 1, {}));
+						SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileContext, compilationContext, finalRegister, resultOut, e->idRefPtr.get(), parts, initialMemberReg, 1, {}));
 					}
 				} else {
 					finalMember = initialMember;
@@ -563,13 +750,13 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 					parts.back().member = finalMember;
 
-					SLKC_RETURN_IF_COMP_ERROR(loadTheRest(compileContext, compilationContext, finalRegister, resultOut, e->idRefPtr.get(), parts, UINT32_MAX, 0, fnType));
+					SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileContext, compilationContext, finalRegister, resultOut, e->idRefPtr.get(), parts, UINT32_MAX, 0, fnType));
 				} else {
-					SLKC_RETURN_IF_COMP_ERROR(loadTheRest(compileContext, compilationContext, finalRegister, resultOut, e->idRefPtr.get(), parts, UINT32_MAX, 0, {}));
+					SLKC_RETURN_IF_COMP_ERROR(_loadTheRestOfIdRef(compileContext, compilationContext, finalRegister, resultOut, e->idRefPtr.get(), parts, UINT32_MAX, 0, {}));
 				}
 			}
 
-			SLKC_RETURN_IF_COMP_ERROR(determineNodeType(compileContext, finalMember, resultOut.evaluatedType));
+			SLKC_RETURN_IF_COMP_ERROR(_determineNodeType(compileContext, finalMember, resultOut.evaluatedType));
 
 			switch (evalPurpose) {
 				case ExprEvalPurpose::EvalType:
@@ -642,6 +829,7 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 				default:
 					std::terminate();
 			}
+
 			break;
 		}
 		case ExprKind::I8:
@@ -1360,6 +1548,8 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 			resultOut.evaluatedType = returnType;
 			break;
 		}
+		case ExprKind::Wrapper:
+			return compileExpr(compileContext, compilationContext, expr.castTo<WrapperExprNode>()->target, evalPurpose, desiredType, resultRegOut, resultOut);
 		default:
 			std::terminate();
 	}

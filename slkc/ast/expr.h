@@ -12,6 +12,8 @@ namespace slkc {
 		Ternary,  // Ternary operation
 		IdRef,	  // Identifier reference
 
+		HeadedIdRef,  // Headed identifier reference
+
 		I8,		 // i8 literal
 		I16,	 // i16 literal
 		I32,	 // i32 literal
@@ -36,7 +38,7 @@ namespace slkc {
 
 		Cast,  // Cast
 
-		Match, // Match expression
+		Match,	// Match expression
 
 		Wrapper,  // Expression wrapper
 

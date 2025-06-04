@@ -497,6 +497,8 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 							  resourceAllocator.get(), resourceAllocator.get(), document, lhs, IdRefPtr{})))
 						return genOutOfMemoryError();
 
+					expr->head = lhs;
+
 					lhs = expr.castTo<ExprNode>();
 
 					if ((syntaxError = parseIdRef(expr->idRefPtr)))

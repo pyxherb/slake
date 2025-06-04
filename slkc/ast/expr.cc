@@ -251,7 +251,7 @@ SLKC_API HeadedIdRefExprNode::HeadedIdRefExprNode(
 	const peff::SharedPtr<Document> &document,
 	const peff::SharedPtr<ExprNode> &head,
 	IdRefPtr &&idRefPtr)
-	: ExprNode(ExprKind::IdRef, selfAllocator, document),
+	: ExprNode(ExprKind::HeadedIdRef, selfAllocator, document),
 	  idRefPtr(std::move(idRefPtr)) {
 }
 SLKC_API HeadedIdRefExprNode::HeadedIdRefExprNode(const HeadedIdRefExprNode &rhs, peff::Alloc *allocator, bool &succeededOut) : ExprNode(rhs, allocator) {

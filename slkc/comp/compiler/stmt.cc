@@ -202,6 +202,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(breakLabel));
 			compilationContext->setBreakLabel(breakLabel, compilationContext->getBlockLevel());
 			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(continueLabel));
+			compilationContext->setContinueLabel(continueLabel, compilationContext->getBlockLevel());
 
 			for (auto &i : s->varDefEntries) {
 				if (compilationContext->getLocalVarInCurLevel(i->name)) {
@@ -536,13 +537,122 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 		}
 		case StmtKind::With:
 			break;
-		case StmtKind::Switch:
-			break;
-		case StmtKind::CodeBlock: {
-			peff::SharedPtr<CodeBlockStmtNode> s = stmt.castTo<CodeBlockStmtNode>();
+		case StmtKind::Switch: {
+			peff::SharedPtr<SwitchStmtNode> s = stmt.castTo<SwitchStmtNode>();
 
 			PrevBreakPointHolder breakPointHolder(compilationContext);
-			PrevContinuePointHolder continuePointHolder(compilationContext);
+
+			peff::SharedPtr<TypeNameNode> matchType;
+
+			SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, s->condition, matchType));
+
+			if (!matchType)
+				return CompilationError(s->condition->tokenRange, CompilationErrorKind::ErrorDeducingSwitchConditionType);
+
+			uint32_t conditionReg;
+
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(conditionReg));
+
+			CompileExprResult result(compileContext->allocator.get());
+
+			SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, s->condition, ExprEvalPurpose::RValue, {}, conditionReg, result));
+
+			if (!result.evaluatedType)
+				return CompilationError(s->condition->tokenRange, CompilationErrorKind::ErrorDeducingSwitchConditionType);
+
+			uint32_t breakLabel;
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(breakLabel));
+			compilationContext->setBreakLabel(breakLabel, compilationContext->getBlockLevel());
+
+			if (s->isConst) {
+				peff::Set<peff::SharedPtr<ExprNode>> caseConditions(compileContext->allocator.get());
+
+				for (auto &i : s->caseOffsets) {
+					peff::SharedPtr<CaseLabelStmtNode> caseStmt = s->body.at(i).castTo<CaseLabelStmtNode>();
+
+					peff::SharedPtr<ExprNode> resultExpr;
+
+					SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileContext, compilationContext, caseStmt->condition, resultExpr));
+
+					if (!resultExpr) {
+						return CompilationError(caseStmt->condition->tokenRange, CompilationErrorKind::ErrorEvaluatingConstSwitchCaseCondition);
+					}
+
+					peff::SharedPtr<TypeNameNode> resultExprType;
+
+					SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, resultExpr, resultExprType));
+
+					if (!resultExprType) {
+						return CompilationError(caseStmt->condition->tokenRange, CompilationErrorKind::MismatchedSwitchCaseConditionType);
+					}
+
+					bool b;
+
+					SLKC_RETURN_IF_COMP_ERROR(isSameType(result.evaluatedType, resultExprType, b));
+
+					if (!b)
+						return CompilationError(caseStmt->condition->tokenRange, CompilationErrorKind::MismatchedSwitchCaseConditionType);
+
+					for (auto &j : caseConditions) {
+						bool b;
+
+						peff::SharedPtr<BinaryExprNode> ce;
+
+						if (!(ce = peff::makeShared<BinaryExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document)))
+							return genOutOfMemoryCompError();
+
+						ce->binaryOp = BinaryOp::Eq;
+
+						ce->lhs = j;
+
+						ce->rhs = resultExpr;
+
+						peff::SharedPtr<ExprNode> cmpResult;
+
+						SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileContext, compilationContext, ce.castTo<ExprNode>(), cmpResult));
+
+						assert(cmpResult);
+
+						assert(cmpResult->exprKind == ExprKind::Bool);
+
+						if (cmpResult.castTo<BoolLiteralExprNode>()->data) {
+							return CompilationError(caseStmt->condition->tokenRange, CompilationErrorKind::DuplicatedSwitchCaseBranch);
+						}
+					}
+
+					if (!caseConditions.insert(peff::SharedPtr<ExprNode>(resultExpr)))
+						return genOutOfMemoryCompError();
+				}
+
+				// TODO: Implement the case matching and jumping.
+			} else {
+				for (auto &i : s->caseOffsets) {
+					peff::SharedPtr<CaseLabelStmtNode> caseStmt = s->body.at(i).castTo<CaseLabelStmtNode>();
+
+					peff::SharedPtr<TypeNameNode> resultExprType;
+
+					SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, caseStmt->condition, resultExprType));
+
+					if (!resultExprType) {
+						return CompilationError(caseStmt->condition->tokenRange, CompilationErrorKind::MismatchedSwitchCaseConditionType);
+					}
+
+					bool b;
+
+					SLKC_RETURN_IF_COMP_ERROR(isSameType(result.evaluatedType, resultExprType, b));
+
+					if (!b)
+						return CompilationError(caseStmt->condition->tokenRange, CompilationErrorKind::MismatchedSwitchCaseConditionType);
+				}
+				// TODO: Implement the case matching and jumping function.
+			}
+
+			compilationContext->setLabelOffset(breakLabel, compilationContext->getCurInsOff());
+
+			break;
+		}
+		case StmtKind::CodeBlock: {
+			peff::SharedPtr<CodeBlockStmtNode> s = stmt.castTo<CodeBlockStmtNode>();
 
 			SLKC_RETURN_IF_COMP_ERROR(
 				compilationContext->emitIns(

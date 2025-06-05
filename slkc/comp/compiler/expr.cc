@@ -1473,11 +1473,15 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 					return CompilationError(expr->tokenRange, CompilationErrorKind::ErrorDeducingMatchResultType);
 			}
 
-			peff::SharedPtr<TypeNameNode> matchType;
+			uint32_t conditionReg;
 
-			SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, e->condition, matchType));
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(conditionReg));
 
-			if (!matchType)
+			CompileExprResult result(compileContext->allocator.get());
+
+			SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, e->condition, ExprEvalPurpose::RValue, {}, conditionReg,  result));
+
+			if (!result.evaluatedType)
 				return CompilationError(expr->tokenRange, CompilationErrorKind::ErrorDeducingMatchConditionType);
 
 			if (e->isConst) {
@@ -1499,6 +1503,13 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 					if (!resultExprType) {
 						return CompilationError(i.first->tokenRange, CompilationErrorKind::MismatchedMatchCaseConditionType);
 					}
+
+					bool b;
+
+					SLKC_RETURN_IF_COMP_ERROR(isSameType(result.evaluatedType, resultExprType, b));
+
+					if (!b)
+						return CompilationError(i.first->tokenRange, CompilationErrorKind::MismatchedMatchCaseConditionType);
 
 					for (auto &j : caseConditions) {
 						bool b;
@@ -1538,7 +1549,14 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 					SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, i.first, resultExprType));
 
-					if (!resultExprType) {
+					if (!resultExprType)
+						return CompilationError(i.first->tokenRange, CompilationErrorKind::MismatchedMatchCaseConditionType);
+
+					bool b;
+
+					SLKC_RETURN_IF_COMP_ERROR(isSameType(result.evaluatedType, resultExprType, b));
+
+					if (!b) {
 						return CompilationError(i.first->tokenRange, CompilationErrorKind::MismatchedMatchCaseConditionType);
 					}
 				}

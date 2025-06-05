@@ -395,6 +395,26 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 				beginToken->sourceLocation.beginPosition.line + 1,
 				beginToken->sourceLocation.beginPosition.column + 1);
 			break;
+		case slkc::CompilationErrorKind::ErrorDeducingSwitchConditionType:
+			printError("Error at %zu, %zu: Error deducing type of the switch condition\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::ErrorEvaluatingConstSwitchCaseCondition:
+			printError("Error at %zu, %zu: The switch condition is required to be a comptime evaluatable expression\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::MismatchedSwitchCaseConditionType:
+			printError("Error at %zu, %zu: Mismatched switch condition type\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::DuplicatedSwitchCaseBranch:
+			printError("Error at %zu, %zu: Duplicated switch case\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
 		case slkc::CompilationErrorKind::ErrorDeducingMatchConditionType:
 			printError("Error at %zu, %zu: Error deducing type of the match condition\n",
 				beginToken->sourceLocation.beginPosition.line + 1,
@@ -407,6 +427,11 @@ void dumpCompilationError(peff::SharedPtr<slkc::Parser> parser, const slkc::Comp
 			break;
 		case slkc::CompilationErrorKind::ErrorEvaluatingConstMatchCaseCondition:
 			printError("Error at %zu, %zu: The match condition is required to be a comptime evaluatable expression\n",
+				beginToken->sourceLocation.beginPosition.line + 1,
+				beginToken->sourceLocation.beginPosition.column + 1);
+			break;
+		case slkc::CompilationErrorKind::MismatchedMatchCaseConditionType:
+			printError("Error at %zu, %zu: Mismatched case condition type\n",
 				beginToken->sourceLocation.beginPosition.line + 1,
 				beginToken->sourceLocation.beginPosition.column + 1);
 			break;

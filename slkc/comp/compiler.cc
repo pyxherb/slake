@@ -84,6 +84,25 @@ SLKC_API std::optional<CompilationError> NormalCompilationContext::emitIns(slake
 	return {};
 }
 
+SLKC_API std::optional<CompilationError> NormalCompilationContext::emitIns(slake::Opcode opcode, uint32_t outputRegIndex, slake::Value *operands, size_t nOperands)
+{
+	slake::Instruction insOut;
+
+	insOut.opcode = opcode;
+	insOut.output = outputRegIndex;
+	if (!insOut.reserveOperands(allocator.get(), nOperands)) {
+		return genOutOfMemoryCompError();
+	}
+
+	memcpy(insOut.operands, operands, sizeof(slake::Value) * nOperands);
+
+	if (!generatedInstructions.pushBack(std::move(insOut))) {
+		return genOutOfRuntimeMemoryCompError();
+	}
+
+	return {};
+}
+
 SLKC_API std::optional<CompilationError> NormalCompilationContext::allocLocalVar(const TokenRange &tokenRange, const std::string_view &name, uint32_t reg, peff::SharedPtr<TypeNameNode> type, peff::SharedPtr<VarNode> &localVarOut) {
 	peff::SharedPtr<VarNode> newVar;
 

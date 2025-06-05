@@ -37,17 +37,18 @@ namespace slkc {
 		SLKC_API CompilationContext(CompilationContext *parent);
 		SLKC_API virtual ~CompilationContext();
 
-		virtual std::optional<CompilationError> allocLabel(uint32_t &labelIdOut) = 0;
+		[[nodiscard]] virtual std::optional<CompilationError> allocLabel(uint32_t &labelIdOut) = 0;
 		virtual void setLabelOffset(uint32_t labelId, uint32_t offset) const = 0;
-		virtual std::optional<CompilationError> setLabelName(uint32_t labelId, const std::string_view &name) = 0;
+		[[nodiscard]] virtual std::optional<CompilationError> setLabelName(uint32_t labelId, const std::string_view &name) = 0;
 		virtual uint32_t getLabelOffset(uint32_t labelId) = 0;
 
-		virtual std::optional<CompilationError> allocReg(uint32_t &regOut) = 0;
+		[[nodiscard]] virtual std::optional<CompilationError> allocReg(uint32_t &regOut) = 0;
 
-		virtual std::optional<CompilationError> emitIns(slake::Opcode opcode, uint32_t outputRegIndex, const std::initializer_list<slake::Value> &operands) = 0;
+		[[nodiscard]] virtual std::optional<CompilationError> emitIns(slake::Opcode opcode, uint32_t outputRegIndex, const std::initializer_list<slake::Value> &operands) = 0;
+		[[nodiscard]] virtual std::optional<CompilationError> emitIns(slake::Opcode opcode, uint32_t outputRegIndex, slake::Value *operands, size_t nOperands) = 0;
 
-		virtual std::optional<CompilationError> allocLocalVar(const TokenRange &tokenRange, const std::string_view &name, uint32_t reg, peff::SharedPtr<TypeNameNode> type, peff::SharedPtr<VarNode> &localVarOut) = 0;
-		virtual peff::SharedPtr<VarNode> getLocalVarInCurLevel(const std::string_view &name) = 0;
+		[[nodiscard]] virtual std::optional<CompilationError> allocLocalVar(const TokenRange &tokenRange, const std::string_view &name, uint32_t reg, peff::SharedPtr<TypeNameNode> type, peff::SharedPtr<VarNode> &localVarOut) = 0;
+		[[nodiscard]] virtual peff::SharedPtr<VarNode> getLocalVarInCurLevel(const std::string_view &name) = 0;
 		virtual peff::SharedPtr<VarNode> getLocalVar(const std::string_view &name) = 0;
 
 		virtual void setBreakLabel(uint32_t labelId, uint32_t blockLevel) = 0;
@@ -61,7 +62,7 @@ namespace slkc {
 
 		virtual uint32_t getCurInsOff() const = 0;
 
-		virtual std::optional<CompilationError> enterBlock() = 0;
+		[[nodiscard]] virtual std::optional<CompilationError> enterBlock() = 0;
 		virtual void leaveBlock() = 0;
 
 		virtual uint32_t getBlockLevel() = 0;
@@ -120,6 +121,7 @@ namespace slkc {
 		SLKC_API virtual std::optional<CompilationError> allocReg(uint32_t &regOut) override;
 
 		SLKC_API virtual std::optional<CompilationError> emitIns(slake::Opcode opcode, uint32_t outputRegIndex, const std::initializer_list<slake::Value> &operands) override;
+		SLKC_API virtual std::optional<CompilationError> emitIns(slake::Opcode opcode, uint32_t outputRegIndex, slake::Value *operands, size_t nOperands) override;
 
 		SLKC_API virtual std::optional<CompilationError> allocLocalVar(const TokenRange &tokenRange, const std::string_view &name, uint32_t reg, peff::SharedPtr<TypeNameNode> type, peff::SharedPtr<VarNode> &localVarOut) override;
 		SLKC_API virtual peff::SharedPtr<VarNode> getLocalVarInCurLevel(const std::string_view &name) override;

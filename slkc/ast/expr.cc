@@ -818,6 +818,30 @@ SLKC_API VarArgExprNode::VarArgExprNode(const VarArgExprNode &rhs, peff::Alloc *
 SLKC_API VarArgExprNode::~VarArgExprNode() {
 }
 
+SLKC_API peff::SharedPtr<AstNode> RegRefExprNode::doDuplicate(peff::Alloc *newAllocator) const {
+	bool succeeded = false;
+	peff::SharedPtr<RegRefExprNode> duplicatedNode(peff::makeShared<RegRefExprNode>(newAllocator, *this, newAllocator, succeeded));
+	if ((!duplicatedNode) || (!succeeded)) {
+		return {};
+	}
+
+	return duplicatedNode.castTo<AstNode>();
+}
+SLKC_API RegRefExprNode::RegRefExprNode(
+	peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, uint32_t reg, peff::SharedPtr<TypeNameNode> type)
+	: ExprNode(ExprKind::RegRef, selfAllocator, document), reg(reg), type(type) {
+}
+SLKC_API RegRefExprNode::RegRefExprNode(const RegRefExprNode &rhs, peff::Alloc *allocator, bool &succeededOut)
+	: ExprNode(rhs, allocator) {
+	reg = rhs.reg;
+
+	type = rhs.type;
+
+	succeededOut = true;
+}
+SLKC_API RegRefExprNode::~RegRefExprNode() {
+}
+
 SLKC_API peff::SharedPtr<AstNode> BadExprNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
 	peff::SharedPtr<BadExprNode> duplicatedNode(peff::makeShared<BadExprNode>(newAllocator, *this, newAllocator, succeeded));

@@ -48,6 +48,7 @@ namespace slkc {
 		LocalVarAlreadyExists,
 		InvalidBreakUsage,
 		InvalidContinueUsage,
+		InvalidCaseLabelUsage,
 		TypeIsNotConstructible,
 		InvalidCast,
 		FunctionOverloadingDuplicated,

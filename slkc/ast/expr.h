@@ -44,6 +44,8 @@ namespace slkc {
 
 		VarArg,	 // Varidic arguments
 
+		RegRef,	 // Register reference
+
 		Bad,  // Bad expression
 	};
 
@@ -575,6 +577,19 @@ namespace slkc {
 		SLKC_API VarArgExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API VarArgExprNode(const VarArgExprNode &rhs, peff::Alloc *allocator, bool &succeededOut);
 		SLKC_API virtual ~VarArgExprNode();
+	};
+
+	class RegRefExprNode : public ExprNode {
+	protected:
+		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
+
+	public:
+		uint32_t reg;
+		peff::SharedPtr<TypeNameNode> type;
+
+		SLKC_API RegRefExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, uint32_t reg, peff::SharedPtr<TypeNameNode> type);
+		SLKC_API RegRefExprNode(const RegRefExprNode &rhs, peff::Alloc *allocator, bool &succeededOut);
+		SLKC_API virtual ~RegRefExprNode();
 	};
 
 	class BadExprNode : public ExprNode {

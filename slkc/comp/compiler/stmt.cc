@@ -576,21 +576,17 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 			if (s->isConst) {
 				peff::Set<peff::SharedPtr<ExprNode>> prevCaseConditions(compileContext->allocator.get());
 
-				uint32_t endLabel;
-				SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(endLabel));
-
 				for (size_t i = 0; i < s->caseOffsets.size(); ++i) {
 					auto &curCase = s->body.at(s->caseOffsets.at(i)).castTo<CaseLabelStmtNode>();
+
+					uint32_t evalValueLabel;
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(evalValueLabel));
 
 					if (!curCase->condition) {
 						if (isDefaultSet)
 							return CompilationError(curCase->condition->tokenRange, CompilationErrorKind::DuplicatedSwitchCaseBranch);
 
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(defaultLabel));
-
-						compilationContext->setLabelOffset(defaultLabel, UINT32_MAX);
-
-						matchValueEvalLabels.insert(s->caseOffsets.at(i), +defaultLabel);
+						defaultLabel = evalValueLabel;
 
 						isDefaultSet = true;
 					} else {
@@ -677,34 +673,27 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 						if (!prevCaseConditions.insert(peff::SharedPtr<ExprNode>(resultExpr)))
 							return genOutOfMemoryCompError();
 
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JT, UINT32_MAX, { slake::Value(slake::ValueType::RegRef, cmpResultReg), slake::Value(slake::ValueType::Label, endLabel) }));
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JT, UINT32_MAX, { slake::Value(slake::ValueType::Label, evalValueLabel), slake::Value(slake::ValueType::RegRef, cmpResultReg) }));
 					}
-					uint32_t evalValueLabel;
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(evalValueLabel));
 
 					matchValueEvalLabels.insert(s->caseOffsets.at(i), +evalValueLabel);
 				}
-
 
 				if (isDefaultSet) {
 					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JMP, UINT32_MAX, { slake::Value(slake::ValueType::Label, defaultLabel) }));
 				}
 			} else {
-				uint32_t endLabel;
-				SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(endLabel));
-
 				for (size_t i = 0; i < s->caseOffsets.size(); ++i) {
 					auto &curCase = s->body.at(s->caseOffsets.at(i)).castTo<CaseLabelStmtNode>();
+
+					uint32_t evalValueLabel;
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(evalValueLabel));
 
 					if (!curCase->condition) {
 						if (isDefaultSet)
 							return CompilationError(curCase->condition->tokenRange, CompilationErrorKind::DuplicatedSwitchCaseBranch);
 
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(defaultLabel));
-
-						compilationContext->setLabelOffset(defaultLabel, UINT32_MAX);
-
-						matchValueEvalLabels.insert(s->caseOffsets.at(i), +defaultLabel);
+						defaultLabel = evalValueLabel;
 
 						isDefaultSet = true;
 					} else {
@@ -753,10 +742,8 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 							SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, cmpExpr.castTo<ExprNode>(), ExprEvalPurpose::RValue, boolTypeName.castTo<TypeNameNode>(), cmpResultReg, cmpExprResult));
 						}
 
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JT, UINT32_MAX, { slake::Value(slake::ValueType::RegRef, cmpResultReg), slake::Value(slake::ValueType::Label, endLabel) }));
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JT, UINT32_MAX, { slake::Value(slake::ValueType::Label, evalValueLabel), slake::Value(slake::ValueType::RegRef, cmpResultReg) }));
 					}
-					uint32_t evalValueLabel;
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(evalValueLabel));
 
 					matchValueEvalLabels.insert(s->caseOffsets.at(i), +evalValueLabel);
 				}
@@ -771,6 +758,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 
 				if (curStmt->stmtKind == StmtKind::CaseLabel) {
 					compilationContext->setLabelOffset(matchValueEvalLabels.at(i), compilationContext->getCurInsOff());
+					continue;
 				}
 
 				SLKC_RETURN_IF_COMP_ERROR(compileStmt(compileContext, compilationContext, curStmt));

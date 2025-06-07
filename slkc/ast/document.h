@@ -38,6 +38,7 @@ namespace slkc {
 		ErrorEvaluatingConstMatchCaseCondition,
 		MismatchedMatchCaseConditionType,
 		DuplicatedMatchCaseBranch,
+		MissingDefaultMatchCaseBranch,
 		InvalidThisUsage,
 		NoMatchingFnOverloading,
 		UnableToDetermineOverloading,

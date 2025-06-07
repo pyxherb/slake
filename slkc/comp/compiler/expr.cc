@@ -1503,8 +1503,14 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 			peff::SharedPtr<TypeNameNode> conditionType = result.evaluatedType;
 
+			uint32_t endLabel;
+			SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(endLabel));
+
+			uint32_t defaultLabel;
+
+			bool isDefaultSet = false;
+
 			if (e->isConst) {
-				peff::Set<peff::SharedPtr<ExprNode>> prevCaseConditions(compileContext->allocator.get());
 				// Key = jump source, value = value register
 				peff::DynArray<uint32_t> matchValueEvalLabels(compileContext->allocator.get());
 				peff::DynArray<std::pair<uint32_t, uint32_t>> phiRegisterValueMap(compileContext->allocator.get());
@@ -1517,104 +1523,90 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 					return genOutOfMemoryCompError();
 				}
 
-				uint32_t endLabel;
-				SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(endLabel));
+				size_t idxDefaultBranchCase;
 
 				for (size_t i = 0; i < e->cases.size(); ++i) {
 					auto &curCase = e->cases.at(i);
 
-					peff::SharedPtr<ExprNode> resultExpr;
-
-					SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileContext, compilationContext, curCase.first, resultExpr));
-
-					if (!resultExpr) {
-						return CompilationError(curCase.first->tokenRange, CompilationErrorKind::ErrorEvaluatingConstMatchCaseCondition);
-					}
-
-					peff::SharedPtr<TypeNameNode> resultExprType;
-
-					SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, resultExpr, resultExprType));
-
-					if (!resultExprType) {
-						return CompilationError(curCase.first->tokenRange, CompilationErrorKind::MismatchedMatchCaseConditionType);
-					}
-
-					bool b;
-
-					SLKC_RETURN_IF_COMP_ERROR(isSameType(conditionType, resultExprType, b));
-
-					if (!b)
-						return CompilationError(curCase.first->tokenRange, CompilationErrorKind::MismatchedMatchCaseConditionType);
-
-					for (auto &j : prevCaseConditions) {
-						bool b;
-
-						peff::SharedPtr<BinaryExprNode> ce;
-
-						if (!(ce = peff::makeShared<BinaryExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document)))
-							return genOutOfMemoryCompError();
-
-						ce->binaryOp = BinaryOp::Eq;
-
-						ce->lhs = j;
-
-						ce->rhs = resultExpr;
-
-						peff::SharedPtr<ExprNode> cmpResult;
-
-						SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileContext, compilationContext, ce.castTo<ExprNode>(), cmpResult));
-
-						assert(cmpResult);
-
-						assert(cmpResult->exprKind == ExprKind::Bool);
-
-						if (cmpResult.castTo<BoolLiteralExprNode>()->data) {
-							return CompilationError(curCase.first->tokenRange, CompilationErrorKind::DuplicatedMatchCaseBranch);
-						}
-					}
-
-					peff::SharedPtr<BinaryExprNode> cmpExpr;
-
-					if (!(cmpExpr = peff::makeShared<BinaryExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
-						return genOutOfMemoryCompError();
-					}
-					
-					cmpExpr->binaryOp = BinaryOp::Eq;
-
-					cmpExpr->tokenRange = curCase.first->tokenRange;
-
-					if (!(cmpExpr->lhs = peff::makeShared<RegRefExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, conditionReg, conditionType).castTo<ExprNode>())) {
-						return genOutOfMemoryCompError();
-					}
-
-					cmpExpr->rhs = curCase.first;
-
-					peff::SharedPtr<BoolTypeNameNode> boolTypeName;
-
-					if (!(boolTypeName = peff::makeShared<BoolTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document)))
-						return genOutOfMemoryCompError();
-
-					uint32_t cmpResultReg;
-					{
-						CompileExprResult cmpExprResult(compileContext->allocator.get());
-
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(cmpResultReg));
-
-						SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, cmpExpr.castTo<ExprNode>(), ExprEvalPurpose::RValue, boolTypeName.castTo<TypeNameNode>(), cmpResultReg, cmpExprResult));
-					}
-
-					if (!prevCaseConditions.insert(peff::SharedPtr<ExprNode>(resultExpr)))
-						return genOutOfMemoryCompError();
-
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JT, UINT32_MAX, { slake::Value(slake::ValueType::RegRef, cmpResultReg), slake::Value(slake::ValueType::Label, endLabel) }));
-
 					uint32_t evalValueLabel;
 					SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(evalValueLabel));
+
+					if (curCase.first) {
+						peff::SharedPtr<ExprNode> resultExpr;
+
+						SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileContext, compilationContext, curCase.first, resultExpr));
+
+						if (!resultExpr) {
+							return CompilationError(curCase.first->tokenRange, CompilationErrorKind::ErrorEvaluatingConstMatchCaseCondition);
+						}
+
+						peff::SharedPtr<TypeNameNode> resultExprType;
+
+						SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, resultExpr, resultExprType));
+
+						if (!resultExprType) {
+							return CompilationError(curCase.first->tokenRange, CompilationErrorKind::MismatchedMatchCaseConditionType);
+						}
+
+						bool b;
+
+						SLKC_RETURN_IF_COMP_ERROR(isSameType(conditionType, resultExprType, b));
+
+						if (!b)
+							return CompilationError(curCase.first->tokenRange, CompilationErrorKind::MismatchedMatchCaseConditionType);
+
+						peff::SharedPtr<BinaryExprNode> cmpExpr;
+
+						if (!(cmpExpr = peff::makeShared<BinaryExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
+							return genOutOfMemoryCompError();
+						}
+
+						cmpExpr->binaryOp = BinaryOp::Eq;
+
+						cmpExpr->tokenRange = curCase.first->tokenRange;
+
+						if (!(cmpExpr->lhs = peff::makeShared<RegRefExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, conditionReg, conditionType).castTo<ExprNode>())) {
+							return genOutOfMemoryCompError();
+						}
+
+						cmpExpr->rhs = curCase.first;
+
+						peff::SharedPtr<BoolTypeNameNode> boolTypeName;
+
+						if (!(boolTypeName = peff::makeShared<BoolTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document)))
+							return genOutOfMemoryCompError();
+
+						uint32_t cmpResultReg;
+						{
+							CompileExprResult cmpExprResult(compileContext->allocator.get());
+
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(cmpResultReg));
+
+							SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, cmpExpr.castTo<ExprNode>(), ExprEvalPurpose::RValue, boolTypeName.castTo<TypeNameNode>(), cmpResultReg, cmpExprResult));
+						}
+
+						SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JT, UINT32_MAX, { slake::Value(slake::ValueType::Label, evalValueLabel), slake::Value(slake::ValueType::RegRef, cmpResultReg) }));
+					} else {
+						if (isDefaultSet)
+							return CompilationError(curCase.first->tokenRange, CompilationErrorKind::DuplicatedMatchCaseBranch);
+
+						defaultLabel = evalValueLabel;
+
+						idxDefaultBranchCase = i;
+
+						isDefaultSet = true;
+					}
 
 					matchValueEvalLabels.at(i) = evalValueLabel;
 				}
 
+				if (!isDefaultSet)
+					return CompilationError(e->tokenRange, CompilationErrorKind::MissingDefaultMatchCaseBranch);
+
 				for (size_t i = 0; i < e->cases.size(); ++i) {
+					if (defaultLabel == matchValueEvalLabels.at(i))
+						continue;
+
 					auto &curCase = e->cases.at(i);
 
 					compilationContext->setLabelOffset(matchValueEvalLabels.at(i), compilationContext->getCurInsOff());
@@ -1627,9 +1619,27 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, curCase.second, evalPurpose, returnType, exprValueRegister, result));
 
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JMP, UINT32_MAX, { slake::Value(slake::ValueType::RegRef, exprValueRegister), slake::Value(slake::ValueType::Label, endLabel) }));
-
 					phiRegisterValueMap.at(i) = { compilationContext->getCurInsOff(), exprValueRegister };
+
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JMP, UINT32_MAX, { slake::Value(slake::ValueType::Label, endLabel) }));
+				}
+
+				{
+					auto &defaultCase = e->cases.at(idxDefaultBranchCase);
+
+					compilationContext->setLabelOffset(matchValueEvalLabels.at(idxDefaultBranchCase), compilationContext->getCurInsOff());
+
+					uint32_t exprValueRegister;
+
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(exprValueRegister));
+
+					CompileExprResult resultExprResult(compileContext->allocator.get());
+
+					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, defaultCase.second, evalPurpose, returnType, exprValueRegister, result));
+
+					phiRegisterValueMap.at(idxDefaultBranchCase) = { UINT32_MAX, exprValueRegister };
+
+					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JMP, UINT32_MAX, { slake::Value(slake::ValueType::Label, endLabel) }));
 				}
 
 				compilationContext->setLabelOffset(endLabel, compilationContext->getCurInsOff());
@@ -1642,113 +1652,11 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 				for (size_t i = 0, j = 0; i < phiRegisterValueMap.size(); ++i, j += 2) {
 					operands.at(j) = phiRegisterValueMap.at(i).first;
-					operands.at(j + 1) = phiRegisterValueMap.at(i).second;
+					operands.at(j + 1) = slake::Value(slake::ValueType::RegRef, phiRegisterValueMap.at(i).second);
 				}
 
 				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::PHI, resultRegOut, operands.data(), operands.size()));
 			} else {
-				peff::DynArray<uint32_t> matchValueEvalLabels(compileContext->allocator.get());
-				peff::DynArray<std::pair<uint32_t, uint32_t>> phiRegisterValueMap(compileContext->allocator.get());
-
-				if (!matchValueEvalLabels.resize(e->cases.size())) {
-					return genOutOfMemoryCompError();
-				}
-
-				if (!phiRegisterValueMap.resize(e->cases.size())) {
-					return genOutOfMemoryCompError();
-				}
-
-				uint32_t endLabel;
-				SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(endLabel));
-
-				for (size_t i = 0; i < e->cases.size(); ++i) {
-					auto &curCase = e->cases.at(i);
-
-					peff::SharedPtr<TypeNameNode> resultExprType;
-
-					SLKC_RETURN_IF_COMP_ERROR(evalExprType(compileContext, compilationContext, curCase.first, resultExprType));
-
-					if (!resultExprType) {
-						return CompilationError(curCase.first->tokenRange, CompilationErrorKind::MismatchedMatchCaseConditionType);
-					}
-
-					bool b;
-
-					SLKC_RETURN_IF_COMP_ERROR(isSameType(conditionType, resultExprType, b));
-
-					if (!b)
-						return CompilationError(curCase.first->tokenRange, CompilationErrorKind::MismatchedMatchCaseConditionType);
-
-					peff::SharedPtr<BinaryExprNode> cmpExpr;
-
-					if (!(cmpExpr = peff::makeShared<BinaryExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document))) {
-						return genOutOfMemoryCompError();
-					}
-
-					cmpExpr->binaryOp = BinaryOp::Eq;
-
-					cmpExpr->tokenRange = curCase.first->tokenRange;
-
-					if (!(cmpExpr->lhs = peff::makeShared<RegRefExprNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document, conditionReg, conditionType).castTo<ExprNode>())) {
-						return genOutOfMemoryCompError();
-					}
-
-					cmpExpr->rhs = curCase.first;
-
-					peff::SharedPtr<BoolTypeNameNode> boolTypeName;
-
-					if (!(boolTypeName = peff::makeShared<BoolTypeNameNode>(compileContext->allocator.get(), compileContext->allocator.get(), compileContext->document)))
-						return genOutOfMemoryCompError();
-
-					uint32_t cmpResultReg;
-					{
-						CompileExprResult cmpExprResult(compileContext->allocator.get());
-
-						SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(cmpResultReg));
-
-						SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, cmpExpr.castTo<ExprNode>(), ExprEvalPurpose::RValue, boolTypeName.castTo<TypeNameNode>(), cmpResultReg, cmpExprResult));
-					}
-
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JT, UINT32_MAX, { slake::Value(slake::ValueType::RegRef, cmpResultReg), slake::Value(slake::ValueType::Label, endLabel) }));
-
-					uint32_t evalValueLabel;
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(evalValueLabel));
-
-					matchValueEvalLabels.at(i) = evalValueLabel;
-				}
-
-				for (size_t i = 0; i < e->cases.size(); ++i) {
-					auto &curCase = e->cases.at(i);
-
-					compilationContext->setLabelOffset(matchValueEvalLabels.at(i), compilationContext->getCurInsOff());
-
-					uint32_t exprValueRegister;
-
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(exprValueRegister));
-
-					CompileExprResult resultExprResult(compileContext->allocator.get());
-
-					SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, curCase.second, evalPurpose, returnType, exprValueRegister, result));
-
-					SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::JMP, UINT32_MAX, { slake::Value(slake::ValueType::RegRef, exprValueRegister), slake::Value(slake::ValueType::Label, endLabel) }));
-
-					phiRegisterValueMap.at(i) = { compilationContext->getCurInsOff(), exprValueRegister };
-				}
-
-				compilationContext->setLabelOffset(endLabel, compilationContext->getCurInsOff());
-
-				peff::DynArray<slake::Value> operands(compileContext->allocator.get());
-
-				if (!operands.resize(phiRegisterValueMap.size() * 2)) {
-					return genOutOfMemoryCompError();
-				}
-
-				for (size_t i = 0, j = 0; i < phiRegisterValueMap.size(); ++i, j += 2) {
-					operands.at(j) = phiRegisterValueMap.at(i).first;
-					operands.at(j + 1) = phiRegisterValueMap.at(i).second;
-				}
-
-				SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::PHI, resultRegOut, operands.data(), operands.size()));
 			}
 
 			resultOut.evaluatedType = returnType;

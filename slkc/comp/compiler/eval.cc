@@ -347,7 +347,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<I8LiteralExprNode> result;
 
@@ -367,7 +368,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<I8LiteralExprNode> result;
 
@@ -385,7 +387,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -405,7 +408,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -425,7 +429,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -446,7 +451,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -481,7 +487,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							SLKC_RETURN_IF_COMP_ERROR(_doSimpleComparisonBinaryOp<I8LiteralExprNode>(compileContext, e->binaryOp, ll, rl.castTo<I8LiteralExprNode>(), exprOut));
 							break;
@@ -507,7 +514,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<I16LiteralExprNode> result;
 
@@ -527,7 +535,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<I16LiteralExprNode> result;
 
@@ -545,7 +554,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -565,7 +575,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -585,7 +596,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -606,7 +618,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -641,7 +654,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							SLKC_RETURN_IF_COMP_ERROR(_doSimpleComparisonBinaryOp<I16LiteralExprNode>(compileContext, e->binaryOp, ll, rl.castTo<I16LiteralExprNode>(), exprOut));
 							break;
@@ -667,7 +681,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<I32LiteralExprNode> result;
 
@@ -687,7 +702,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<I32LiteralExprNode> result;
 
@@ -705,7 +721,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -725,7 +742,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -745,7 +763,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -766,7 +785,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -801,7 +821,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							SLKC_RETURN_IF_COMP_ERROR(_doSimpleComparisonBinaryOp<I32LiteralExprNode>(compileContext, e->binaryOp, ll, rl.castTo<I32LiteralExprNode>(), exprOut));
 							break;
@@ -827,7 +848,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<I64LiteralExprNode> result;
 
@@ -847,7 +869,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<I64LiteralExprNode> result;
 
@@ -865,7 +888,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -885,7 +909,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -905,7 +930,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -926,7 +952,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -961,7 +988,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							SLKC_RETURN_IF_COMP_ERROR(_doSimpleComparisonBinaryOp<I64LiteralExprNode>(compileContext, e->binaryOp, ll, rl.castTo<I64LiteralExprNode>(), exprOut));
 							break;
@@ -987,7 +1015,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<U8LiteralExprNode> result;
 
@@ -1007,7 +1036,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<U8LiteralExprNode> result;
 
@@ -1025,7 +1055,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -1045,7 +1076,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -1065,7 +1097,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -1086,7 +1119,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -1121,7 +1155,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							SLKC_RETURN_IF_COMP_ERROR(_doSimpleComparisonBinaryOp<U8LiteralExprNode>(compileContext, e->binaryOp, ll, rl.castTo<U8LiteralExprNode>(), exprOut));
 							break;
@@ -1147,7 +1182,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<U16LiteralExprNode> result;
 
@@ -1167,7 +1203,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<U16LiteralExprNode> result;
 
@@ -1185,7 +1222,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -1205,7 +1243,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -1225,7 +1264,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -1246,7 +1286,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -1281,7 +1322,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							SLKC_RETURN_IF_COMP_ERROR(_doSimpleComparisonBinaryOp<U16LiteralExprNode>(compileContext, e->binaryOp, ll, rl.castTo<U16LiteralExprNode>(), exprOut));
 							break;
@@ -1307,7 +1349,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<U16LiteralExprNode> result;
 
@@ -1327,7 +1370,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<U16LiteralExprNode> result;
 
@@ -1345,7 +1389,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -1365,7 +1410,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -1385,7 +1431,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -1406,7 +1453,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -1441,7 +1489,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							SLKC_RETURN_IF_COMP_ERROR(_doSimpleComparisonBinaryOp<U16LiteralExprNode>(compileContext, e->binaryOp, ll, rl.castTo<U16LiteralExprNode>(), exprOut));
 							break;
@@ -1467,7 +1516,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<U64LiteralExprNode> result;
 
@@ -1487,7 +1537,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<U64LiteralExprNode> result;
 
@@ -1505,7 +1556,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -1525,7 +1577,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -1545,7 +1598,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -1566,7 +1620,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -1601,7 +1656,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							SLKC_RETURN_IF_COMP_ERROR(_doSimpleComparisonBinaryOp<U64LiteralExprNode>(compileContext, e->binaryOp, ll, rl.castTo<U64LiteralExprNode>(), exprOut));
 							break;
@@ -1626,7 +1682,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<F32LiteralExprNode> result;
 
@@ -1644,7 +1701,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<F32LiteralExprNode> result;
 
@@ -1665,7 +1723,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -1685,7 +1744,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -1713,7 +1773,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							SLKC_RETURN_IF_COMP_ERROR(_doSimpleComparisonBinaryOp<F32LiteralExprNode>(compileContext, e->binaryOp, ll, rl.castTo<F32LiteralExprNode>(), exprOut));
 							break;
@@ -1738,7 +1799,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<F64LiteralExprNode> result;
 
@@ -1756,7 +1818,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<F64LiteralExprNode> result;
 
@@ -1777,7 +1840,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -1797,7 +1861,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -1825,7 +1890,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							SLKC_RETURN_IF_COMP_ERROR(_doSimpleComparisonBinaryOp<F64LiteralExprNode>(compileContext, e->binaryOp, ll, rl.castTo<F64LiteralExprNode>(), exprOut));
 							break;
@@ -1847,7 +1913,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -1865,7 +1932,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -1885,7 +1953,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							peff::SharedPtr<BoolLiteralExprNode> result;
 
@@ -1913,7 +1982,8 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 								}
 
 								SLKC_RETURN_IF_COMP_ERROR(_castConstExpr(compileContext, compilationContext, rhs, tn.castTo<TypeNameNode>(), rl));
-							}
+							} else
+								rl = rhs;
 
 							SLKC_RETURN_IF_COMP_ERROR(_doSimpleComparisonBinaryOp<BoolLiteralExprNode>(compileContext, e->binaryOp, ll, rl.castTo<BoolLiteralExprNode>(), exprOut));
 							break;

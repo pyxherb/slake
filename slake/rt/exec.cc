@@ -1963,6 +1963,36 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, dataStack, curMajorFrame, ins.output, v));
 			break;
 		}
+		case Opcode::PHI: {
+			if (ins.output == UINT32_MAX) {
+				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			}
+
+			if ((ins.nOperands < 2) || ((ins.nOperands & 1))) {
+				return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+			}
+
+			Value v;
+
+			for (size_t i = 0; i < ins.nOperands; i += 2) {
+				SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _checkOperandType(this, ins.operands[i], ValueType::U32));
+
+				uint32_t off = ins.operands[i].getU32();
+
+				if (off == curMajorFrame->resumable->lastJumpSrc) {
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _unwrapRegOperand(this, dataStack, curMajorFrame, ins.operands[i + 1], v));
+
+					SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this, context->_context.dataStack, curMajorFrame, ins.output, v));
+
+					goto succeeded;
+				}
+			}
+
+			return allocOutOfMemoryErrorIfAllocFailed(InvalidOperandsError::alloc(getFixedAlloc()));
+
+		succeeded:
+			break;
+		}
 		default:
 			return allocOutOfMemoryErrorIfAllocFailed(InvalidOpcodeError::alloc(getFixedAlloc(), ins.opcode));
 	}
@@ -2192,16 +2222,14 @@ SLAKE_API InternalExceptionPointer Runtime::resumeCoroutine(
 	SLAKE_RETURN_IF_EXCEPT(_createNewCoroutineMajorFrame(&context->_context, coroutine, 0));
 
 	{
-		peff::ScopeGuard leaveMajorFrameGuard([this, &contextRef]() noexcept {
-			contextRef->_context.leaveMajor();
-		});
-
 		ExecutionRunnable runnable;
 
 		runnable.context = context;
 
 		{
 			if (!managedThreadRunnables.insert(currentThreadHandle(), &runnable)) {
+				contextRef->_context.leaveMajor();
+
 				return OutOfMemoryError::alloc();
 			}
 
@@ -2221,6 +2249,8 @@ SLAKE_API InternalExceptionPointer Runtime::resumeCoroutine(
 		}
 
 		resultOut = ((const Value *)calcStackAddr(context->_context.dataStack, SLAKE_STACK_MAX, topMajorFrame->offRegs))[0];
+
+		contextRef->_context.leaveMajor();
 	}
 
 	return {};

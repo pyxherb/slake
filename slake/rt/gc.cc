@@ -27,8 +27,6 @@ SLAKE_API void Runtime::_destructDestructibleObjects(InstanceObject *destructibl
 SLAKE_API void Runtime::gc() {
 	_flags |= _RT_INGC;
 
-	puts("Young GC Boundary:");
-
 	for (Object *i = contextObjectList; i; i = i->nextSameKindObject) {
 		// Replace the major frames in the context objects.
 		i->gcStatus = ObjectGCStatus::Unwalked;
@@ -42,8 +40,6 @@ SLAKE_API void Runtime::gc() {
 	for (Object *i = youngObjectList; i; i = i->nextSameGenObject) {
 		i->replaceAllocator(&persistentAlloc);
 	}
-
-	puts("Persistent GC Boundary:");
 
 	Object *persistentObjectsEnd;
 	_gcSerial(persistentObjectList, persistentObjectsEnd, nPersistentObjects, ObjectGeneration::Persistent);

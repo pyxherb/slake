@@ -367,8 +367,12 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 					while (true) {
 						peff::SharedPtr<ExprNode> conditionExpr, resultExpr;
 
-						if ((syntaxError = parseExpr(0, conditionExpr))) {
-							goto genBadExpr;
+						if (peekToken()->tokenId == TokenId::DefaultKeyword) {
+							nextToken();
+						} else {
+							if ((syntaxError = parseExpr(0, conditionExpr))) {
+								goto genBadExpr;
+							}
 						}
 
 						Token *colonToken = peekToken();

@@ -169,6 +169,13 @@ pub fn *main() -> i32 {
 
 	1 <=> 1;
 
+	extfns.print("Match result:", match const (123) -> i32 {
+		123: 0xffff,
+		456: 0x0000,
+		789: 0xf0f0,
+		default: 0x0f0f
+	});
+
 	switch (123) {
 		case 456:
 			extfns.print("Matched 456\n");

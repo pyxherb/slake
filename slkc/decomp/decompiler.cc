@@ -245,7 +245,71 @@ SLKC_API bool slkc::decompileValue(peff::Alloc *allocator, DumpWriter *writer, c
 						case slake::ObjectKind::String: {
 							SLKC_RETURN_IF_FALSE(writer->write("\""));
 
-							SLKC_RETURN_IF_FALSE(writer->write(((slake::StringObject *)obj)->data));
+							slake::StringObject *s = (slake::StringObject *)obj;
+
+							const char *data = s->data.data();
+							size_t len = s->data.size();
+							char c;
+
+							size_t idxCharSinceLastEsc = 0;
+
+							for (size_t i = 0; i < len; ++i) {
+								switch ((c = data[i])) {
+									case '\n':
+									case '\t':
+									case '\v':
+									case '\f':
+									case '\a':
+									case '\b':
+									case '\r':
+									case '"':
+									case '\\':
+										SLKC_RETURN_IF_FALSE(writer->write(std::string_view(data + idxCharSinceLastEsc, i - idxCharSinceLastEsc)));
+
+										switch (c) {
+											case '\0':
+												SLKC_RETURN_IF_FALSE(writer->write("\\0"));
+												break;
+											case '\n':
+												SLKC_RETURN_IF_FALSE(writer->write("\\n"));
+												break;
+											case '\t':
+												SLKC_RETURN_IF_FALSE(writer->write("\\t"));
+												break;
+											case '\v':
+												SLKC_RETURN_IF_FALSE(writer->write("\\v"));
+												break;
+											case '\f':
+												SLKC_RETURN_IF_FALSE(writer->write("\\f"));
+												break;
+											case '\a':
+												SLKC_RETURN_IF_FALSE(writer->write("\\a"));
+												break;
+											case '\b':
+												SLKC_RETURN_IF_FALSE(writer->write("\\b"));
+												break;
+											case '\r':
+												SLKC_RETURN_IF_FALSE(writer->write("\\r"));
+												break;
+											case '"':
+												SLKC_RETURN_IF_FALSE(writer->write("\\\""));
+												break;
+											case '\\':
+												SLKC_RETURN_IF_FALSE(writer->write("\\\\"));
+												break;
+										}
+
+										idxCharSinceLastEsc = i + 1;
+										break;
+
+									default:
+
+										break;
+								}
+							}
+
+							if (idxCharSinceLastEsc < len)
+								SLKC_RETURN_IF_FALSE(writer->write(std::string_view(data + idxCharSinceLastEsc, len - idxCharSinceLastEsc)));
 
 							SLKC_RETURN_IF_FALSE(writer->write("\""));
 							break;
@@ -455,6 +519,10 @@ SLKC_API bool slkc::decompileModuleMembers(peff::Alloc *allocator, DumpWriter *w
 			case slake::ObjectKind::Class: {
 				slake::ClassObject *obj = (slake::ClassObject *)v;
 
+				for (size_t j = 0; j < indentLevel; ++j) {
+					SLKC_RETURN_IF_FALSE(writer->write("\t"));
+				}
+
 				SLKC_RETURN_IF_FALSE(writer->write("class "));
 
 				SLKC_RETURN_IF_FALSE(writer->write(obj->name));
@@ -487,6 +555,10 @@ SLKC_API bool slkc::decompileModuleMembers(peff::Alloc *allocator, DumpWriter *w
 			}
 			case slake::ObjectKind::Interface: {
 				slake::InterfaceObject *obj = (slake::InterfaceObject *)v;
+
+				for (size_t j = 0; j < indentLevel; ++j) {
+					SLKC_RETURN_IF_FALSE(writer->write("\t"));
+				}
 
 				SLKC_RETURN_IF_FALSE(writer->write("interface "));
 
@@ -533,8 +605,9 @@ SLKC_API bool slkc::decompileModule(peff::Alloc *allocator, DumpWriter *writer, 
 		if (!runtime->getFullRef(allocator, moduleObject, moduleFullName))
 			return false;
 
-		SLKC_RETURN_IF_FALSE(writer->write(".module "));
+		SLKC_RETURN_IF_FALSE(writer->write("module "));
 		SLKC_RETURN_IF_FALSE(decompileIdRefEntries(allocator, writer, moduleFullName));
+		SLKC_RETURN_IF_FALSE(writer->write(";\n"));
 	}
 
 	SLKC_RETURN_IF_FALSE(decompileModuleMembers(allocator, writer, moduleObject));

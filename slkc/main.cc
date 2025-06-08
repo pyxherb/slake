@@ -674,8 +674,7 @@ int main(int argc, char *argv[]) {
 		}
 
 		std::unique_ptr<slake::Runtime, peff::DeallocableDeleter<slake::Runtime>> runtime(
-			slake::Runtime::alloc(peff::getDefaultAlloc(), peff::getDefaultAlloc())
-		);
+			slake::Runtime::alloc(peff::getDefaultAlloc(), peff::getDefaultAlloc()));
 		if (!runtime) {
 			printError("Error allocating memory for the runtime");
 			return ENOMEM;
@@ -752,6 +751,46 @@ int main(int argc, char *argv[]) {
 					dumpCompilationError(parser, *e);
 				}
 			}
+
+			slake::HostObjectRef<slake::ModuleObject> lastModule = runtime->getRootObject();
+
+			for (size_t i = 0; i < moduleName->entries.size() - 1; ++i) {
+				slkc::IdRefEntry &e = moduleName->entries.at(i);
+
+				if (auto curMod = lastModule->getMember(e.name); curMod) {
+					lastModule = (slake::ModuleObject *)curMod.asObject.instanceObject;
+
+					continue;
+				}
+
+				slake::HostObjectRef<slake::ModuleObject> curModule;
+
+				if (!(curModule = slake::ModuleObject::alloc(runtime.get()))) {
+					puts("Error dumping compiled module!");
+				}
+
+				if (!curModule->setName(e.name)) {
+					puts("Error dumping compiled module!");
+				}
+
+				if (lastModule) {
+					if (!lastModule->addMember(curModule.get())) {
+						puts("Error dumping compiled module!");
+					}
+					curModule->setParent(lastModule.get());
+				}
+
+				lastModule = curModule;
+			}
+
+			if (!modObj->setName(moduleName->entries.back().name)) {
+				puts("Error dumping compiled module!");
+			}
+
+			if (!lastModule->addMember(modObj.get())) {
+				puts("Error dumping compiled module!");
+			}
+			modObj->setParent(lastModule.get());
 
 			ANSIDumpWriter dumpWriter;
 

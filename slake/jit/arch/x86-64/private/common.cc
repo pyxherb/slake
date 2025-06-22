@@ -329,7 +329,7 @@ void slake::jit::x86_64::loadInsWrapper(
 }
 void slake::jit::x86_64::rloadInsWrapper(
 	JITExecContext *context,
-	Object *baseObject,
+	MemberObject *baseObject,
 	IdRefObject *idRefObject) {
 	EntityRef entityRef;
 	InternalExceptionPointer e = context->runtime->resolveIdRef(idRefObject, entityRef, baseObject);

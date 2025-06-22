@@ -389,7 +389,7 @@ namespace slake {
 				IdRefObject *idRefObject);
 			void rloadInsWrapper(
 				JITExecContext *context,
-				Object *baseObject,
+				MemberObject *baseObject,
 				IdRefObject *idRefObject);
 			void memcpyWrapper(
 				void *dest,

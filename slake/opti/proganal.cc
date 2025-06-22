@@ -456,7 +456,7 @@ InternalExceptionPointer slake::opti::analyzeProgramInfo(
 								runtime->resolveIdRef(
 									idRef,
 									entityRef,
-									type.getCustomTypeExData()));
+									(MemberObject *)type.getCustomTypeExData()));
 
 							switch (entityRef.kind) {
 								case ObjectRefKind::ObjectRef: {

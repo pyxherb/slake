@@ -5,7 +5,7 @@ using namespace slake;
 SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 	IdRefObject *ref,
 	EntityRef &objectRefOut,
-	Object *scopeObject) {
+	MemberObject *scopeObject) {
 	if (!ref)
 		return nullptr;
 
@@ -29,17 +29,19 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 			}
 
 			if (objectRefOut.kind == ObjectRefKind::ObjectRef) {
-				scopeObject = objectRefOut.asObject.instanceObject;
+				// TODO: Check if the instance object is a member object.
+				scopeObject = (MemberObject *)objectRefOut.asObject.instanceObject;
 
 				if (curName.genericArgs.size()) {
 					for (auto &j : curName.genericArgs) {
 						SLAKE_RETURN_IF_EXCEPT(j.loadDeferredType(this));
 					}
 
-					GenericInstantiationContext genericInstantiationContext(getFixedAlloc());
+					peff::NullAlloc nullAlloc;
+					GenericInstantiationContext genericInstantiationContext(&nullAlloc, getFixedAlloc());
 
 					genericInstantiationContext.genericArgs = &curName.genericArgs;
-					SLAKE_RETURN_IF_EXCEPT(instantiateGenericObject(scopeObject, scopeObject, genericInstantiationContext));
+					SLAKE_RETURN_IF_EXCEPT(instantiateGenericObject(scopeObject, scopeObject, &genericInstantiationContext));
 					objectRefOut = EntityRef::makeObjectRef(scopeObject);
 				}
 			} else {
@@ -61,7 +63,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 						SLAKE_RETURN_IF_EXCEPT(j.loadDeferredType(this));
 					}
 
-					objectRefOut = EntityRef::makeObjectRef(scopeObject = fnObject->getOverloading(*ref->paramTypes));
+					objectRefOut = EntityRef::makeObjectRef(fnObject->getOverloading(*ref->paramTypes));
 
 					break;
 				}
@@ -83,7 +85,7 @@ SLAKE_API InternalExceptionPointer Runtime::resolveIdRef(
 				ClassObject *cls = (ClassObject *)curObject;
 				if (cls->baseType.typeId == TypeId::Instance) {
 					SLAKE_RETURN_IF_EXCEPT(cls->baseType.loadDeferredType(this));
-					scopeObject = cls->baseType.getCustomTypeExData();
+					scopeObject = (MemberObject *)cls->baseType.getCustomTypeExData();
 				} else {
 					return allocOutOfMemoryErrorIfAllocFailed(ReferencedMemberNotFoundError::alloc(const_cast<Runtime *>(this)->getFixedAlloc(), ref));
 				}

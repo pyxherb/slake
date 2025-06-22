@@ -420,7 +420,7 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 
 			EntityRef entityRef;
 
-			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, resolveIdRef((IdRefObject *)refPtr.asObject.instanceObject, entityRef, lhsPtr.asObject.instanceObject));
+			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, resolveIdRef((IdRefObject *)refPtr.asObject.instanceObject, entityRef, (MemberObject *)lhsPtr.asObject.instanceObject));
 
 			SLAKE_RETURN_IF_EXCEPT_WITH_LVAR(exceptPtr, _setRegisterValue(this,
 															dataStack,

@@ -22,6 +22,7 @@ SLAKE_API MemberObject::MemberObject(const MemberObject &x, peff::Alloc *allocat
 }
 
 SLAKE_API MemberObject::~MemberObject() {
+	associatedRuntime->invalidateGenericCache(this);
 }
 
 SLAKE_API const GenericArgList *MemberObject::getGenericArgs() const {

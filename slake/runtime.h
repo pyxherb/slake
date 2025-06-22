@@ -142,21 +142,9 @@ namespace slake {
 
 	class Runtime final {
 	public:
-		struct GenericInstantiationContext {
-			const Object *mappedObject;
-			const GenericArgList *genericArgs;
-			peff::HashMap<peff::String, Type> mappedGenericArgs;
+		class GenericInstantiationContext;
 
-			SLAKE_FORCEINLINE GenericInstantiationContext(peff::Alloc *selfAllocator) : mappedGenericArgs(selfAllocator) {}
-			SLAKE_FORCEINLINE GenericInstantiationContext(
-				const Object *mappedObject,
-				const GenericArgList *genericArgs,
-				peff::HashMap<peff::String, Type> &&mappedGenericArgs)
-				: mappedObject(mappedObject),
-				  genericArgs(genericArgs),
-				  mappedGenericArgs(std::move(mappedGenericArgs)) {
-			}
-		};
+		struct GenericInstantiationDispatcher;
 
 		mutable CountablePoolAlloc fixedAlloc;
 		mutable GenerationalPoolAlloc youngAlloc;
@@ -168,19 +156,19 @@ namespace slake {
 		ModuleObject *_rootObject;
 
 		struct GenericLookupEntry {
-			const Object *originalObject;
+			const MemberObject *originalObject;
 			GenericArgList genericArgs;
 		};
-		mutable peff::Map<const Object *, GenericLookupEntry> _genericCacheLookupTable;
+		mutable peff::Map<const MemberObject *, GenericLookupEntry> _genericCacheLookupTable;
 
 		using GenericCacheTable =
 			peff::Map<
 				GenericArgList,	 // Generic arguments.
-				Object *,		 // Cached instantiated value.
+				MemberObject *,	 // Cached instantiated value.
 				GenericArgListComparator>;
 
 		using GenericCacheDirectory = peff::Map<
-			const Object *,	 // Original uninstantiated generic value.
+			const MemberObject *,  // Original uninstantiated generic value.
 			GenericCacheTable>;
 
 		/// @brief Cached instances of generic values.
@@ -265,10 +253,15 @@ namespace slake {
 
 		SLAKE_API void _destructDestructibleObjects(InstanceObject *destructibleList);
 
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(Type &type, GenericInstantiationContext &instantiationContext);
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(Value &value, GenericInstantiationContext &instantiationContext);
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(Object *v, GenericInstantiationContext &instantiationContext);
-		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateModuleFields(GenericInstantiationDispatcher &dispatcher, ModuleObject *mod, GenericInstantiationContext *instantiationContext);
+
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _mapGenericParams(const Object *v, GenericInstantiationContext *instantiationContext) const;
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _mapGenericParams(const FnOverloadingObject *ol, GenericInstantiationContext *instantiationContext) const;
+
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, Type &type, GenericInstantiationContext *instantiationContext);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, Value &value, GenericInstantiationContext *instantiationContext);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, Object *v, GenericInstantiationContext *instantiationContext);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer _instantiateGenericObject(GenericInstantiationDispatcher &dispatcher, FnOverloadingObject *ol, GenericInstantiationContext *instantiationContext);
 
 		SLAKE_API uint32_t _findAndDispatchExceptHandler(const Value &curExcept, const MinorFrame &minorFrame) const;
 
@@ -315,25 +308,45 @@ namespace slake {
 		SLAKE_API Runtime(peff::Alloc *selfAllocator, peff::Alloc *upstream, RuntimeFlags flags = 0);
 		SLAKE_API virtual ~Runtime();
 
-		SLAKE_API void invalidateGenericCache(Object *i);
+		class GenericInstantiationContext final : public peff::RcObject {
+		public:
+			peff::RcObjectPtr<peff::Alloc> selfAllocator;
+			const Object *mappedObject;
+			const GenericArgList *genericArgs;
+			peff::HashMap<peff::String, Type> mappedGenericArgs;
 
-		[[nodiscard]] SLAKE_API InternalExceptionPointer instantiateModuleFields(ModuleObject *mod, GenericInstantiationContext &instantiationContext);
+			SLAKE_FORCEINLINE GenericInstantiationContext(peff::Alloc *selfAllocator, peff::Alloc *resourceAllocator) : selfAllocator(selfAllocator), mappedGenericArgs(resourceAllocator) {}
+			SLAKE_FORCEINLINE GenericInstantiationContext(
+				peff::Alloc *selfAllocator,
+				const Object *mappedObject,
+				const GenericArgList *genericArgs,
+				peff::HashMap<peff::String, Type> &&mappedGenericArgs)
+				: selfAllocator(selfAllocator),
+				  mappedObject(mappedObject),
+				  genericArgs(genericArgs),
+				  mappedGenericArgs(std::move(mappedGenericArgs)) {
+			}
 
-		[[nodiscard]] SLAKE_API InternalExceptionPointer mapGenericParams(const Object *v, GenericInstantiationContext &instantiationContext) const;
-		[[nodiscard]] SLAKE_API InternalExceptionPointer mapGenericParams(const FnOverloadingObject *ol, GenericInstantiationContext &instantiationContext) const;
+			SLAKE_FORCEINLINE void onRefZero() noexcept override {
+				peff::destroyAndRelease<GenericInstantiationContext>(selfAllocator.get(), this, alignof(GenericInstantiationContext));
+			}
+		};
+
+		SLAKE_API void invalidateGenericCache(MemberObject *i);
+
 		/// @brief Instantiate an generic value (e.g. generic class, etc).
 		/// @param v Object to be instantiated.
 		/// @param genericArgs Generic arguments for instantiation.
 		/// @return Instantiated value.
-		[[nodiscard]] SLAKE_API InternalExceptionPointer instantiateGenericObject(const Object *v, Object *&objectOut, GenericInstantiationContext &instantiationContext);
+		[[nodiscard]] SLAKE_API InternalExceptionPointer instantiateGenericObject(const MemberObject *object, MemberObject *&objectOut, GenericInstantiationContext *instantiationContext);
 
-		SLAKE_API InternalExceptionPointer setGenericCache(const Object *object, const GenericArgList &genericArgs, Object *instantiatedObject);
+		SLAKE_API InternalExceptionPointer setGenericCache(const MemberObject *object, const GenericArgList &genericArgs, MemberObject *instantiatedObject);
 
 		/// @brief Resolve a reference and get the referenced value.
 		/// @param ref Reference to be resolved.
 		/// @param scopeObject Scope value for resolving.
 		/// @return Resolved value which is referred by the reference.
-		SLAKE_API InternalExceptionPointer resolveIdRef(IdRefObject *ref, EntityRef &objectRefOut, Object *scopeObject = nullptr);
+		SLAKE_API InternalExceptionPointer resolveIdRef(IdRefObject *ref, EntityRef &objectRefOut, MemberObject *scopeObject = nullptr);
 
 		SLAKE_API static void addSameKindObjectToList(Object **list, Object *object);
 		SLAKE_API static void removeSameKindObjectToList(Object **list, Object *object);

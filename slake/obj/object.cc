@@ -90,7 +90,6 @@ SLAKE_API Object::Object(const Object &x, peff::Alloc *allocator) {
 }
 
 SLAKE_API Object::~Object() {
-	associatedRuntime->invalidateGenericCache(this);
 }
 
 SLAKE_API Object *Object::duplicate(Duplicator *duplicator) const {

@@ -77,6 +77,25 @@ SLKC_API const char *slkc::getMnemonicName(slake::Opcode opcode) {
 	std::terminate();
 }
 
+SLKC_API bool slkc::decompileGenericParam(peff::Alloc *allocator, DumpWriter *writer, const slake::GenericParam &genericParam) {
+	SLKC_RETURN_IF_FALSE(writer->write(genericParam.name));
+	if (genericParam.baseType) {
+		SLKC_RETURN_IF_FALSE(writer->write("("));
+		SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, genericParam.baseType));
+		SLKC_RETURN_IF_FALSE(writer->write(")"));
+	}
+	if (genericParam.interfaces.size()) {
+		SLKC_RETURN_IF_FALSE(writer->write(": "));
+		for (size_t i = 0;i < genericParam.interfaces.size(); ++i) {
+			if (i)
+				SLKC_RETURN_IF_FALSE(writer->write(" + "));
+			SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, genericParam.baseType));
+		}
+	}
+
+	return true;
+}
+
 SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer, const slake::Type &type) {
 	switch (type.typeId) {
 		case slake::TypeId::None:
@@ -450,6 +469,21 @@ SLKC_API bool slkc::decompileModuleMembers(peff::Alloc *allocator, DumpWriter *w
 
 					SLKC_RETURN_IF_FALSE(writer->write(obj->name));
 
+					if (i->genericParams.size()) {
+						SLKC_RETURN_IF_FALSE(writer->write("<"));
+
+						for (size_t j = 0; j < i->genericParams.size(); ++j) {
+							if (j) {
+								SLKC_RETURN_IF_FALSE(writer->write(", "));
+							}
+							SLKC_RETURN_IF_FALSE(decompileGenericParam(allocator, writer, i->genericParams.at(j)));
+						}
+
+						SLKC_RETURN_IF_FALSE(writer->write(">"));
+					}
+
+					SLKC_RETURN_IF_FALSE(writer->write(" "));
+
 					for (size_t j = 0; j < i->paramTypes.size(); ++j) {
 						if (j) {
 							SLKC_RETURN_IF_FALSE(writer->write(", "));
@@ -527,6 +561,19 @@ SLKC_API bool slkc::decompileModuleMembers(peff::Alloc *allocator, DumpWriter *w
 
 				SLKC_RETURN_IF_FALSE(writer->write(obj->name));
 
+				if (obj->genericParams.size()) {
+					SLKC_RETURN_IF_FALSE(writer->write("<"));
+
+					for (size_t j = 0; j < obj->genericParams.size(); ++j) {
+						if (j) {
+							SLKC_RETURN_IF_FALSE(writer->write(", "));
+						}
+						SLKC_RETURN_IF_FALSE(decompileGenericParam(allocator, writer, obj->genericParams.at(j)));
+					}
+
+					SLKC_RETURN_IF_FALSE(writer->write(">"));
+				}
+
 				SLKC_RETURN_IF_FALSE(writer->write(" "));
 
 				SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->baseType));
@@ -563,6 +610,19 @@ SLKC_API bool slkc::decompileModuleMembers(peff::Alloc *allocator, DumpWriter *w
 				SLKC_RETURN_IF_FALSE(writer->write("interface "));
 
 				SLKC_RETURN_IF_FALSE(writer->write(obj->name));
+
+				if (obj->genericParams.size()) {
+					SLKC_RETURN_IF_FALSE(writer->write("<"));
+
+					for (size_t j = 0; j < obj->genericParams.size(); ++j) {
+						if (j) {
+							SLKC_RETURN_IF_FALSE(writer->write(", "));
+						}
+						SLKC_RETURN_IF_FALSE(decompileGenericParam(allocator, writer, obj->genericParams.at(j)));
+					}
+
+					SLKC_RETURN_IF_FALSE(writer->write(">"));
+				}
 
 				SLKC_RETURN_IF_FALSE(writer->write(" "));
 

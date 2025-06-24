@@ -395,8 +395,6 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 			fnd.nRegisters = ol->nRegisters;
 			fnd.lenBody = ol->instructions.size();
 
-			assert(fnd.lenBody);
-
 			SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)&fnd, sizeof(fnd)));
 
 			for (auto &k : j->genericParams) {

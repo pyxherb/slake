@@ -22,6 +22,7 @@ namespace slkc {
 		DoesNotReferToATypeName,
 		ExpectingClassName,
 		ExpectingInterfaceName,
+		AbstractMethodNotImplemented,
 		CyclicInheritedClass,
 		ExpectingId,
 		IdNotFound,
@@ -79,10 +80,14 @@ namespace slkc {
 		SLAKE_FORCEINLINE ErrorParsingImportedModuleErrorExData(peff::SharedPtr<ModuleNode> mod) : mod(mod) {}
 	};
 
+	struct AbstractMethodNotImplementedErrorExData {
+		peff::SharedPtr<FnOverloadingNode> overloading;
+	};
+
 	struct CompilationError {
 		TokenRange tokenRange;
 		CompilationErrorKind errorKind;
-		std::variant<std::monostate, IncompatibleOperandErrorExData, ErrorParsingImportedModuleErrorExData> exData;
+		std::variant<std::monostate, IncompatibleOperandErrorExData, ErrorParsingImportedModuleErrorExData, AbstractMethodNotImplementedErrorExData> exData;
 
 		SLAKE_FORCEINLINE CompilationError(
 			const TokenRange &tokenRange,
@@ -106,6 +111,15 @@ namespace slkc {
 			ErrorParsingImportedModuleErrorExData &&exData)
 			: tokenRange(tokenRange),
 			  errorKind(CompilationErrorKind::ErrorParsingImportedModule),
+			  exData(exData) {
+			assert(tokenRange);
+		}
+
+		SLAKE_FORCEINLINE CompilationError(
+			const TokenRange &tokenRange,
+			AbstractMethodNotImplementedErrorExData &&exData)
+			: tokenRange(tokenRange),
+			  errorKind(CompilationErrorKind::AbstractMethodNotImplemented),
 			  exData(exData) {
 			assert(tokenRange);
 		}

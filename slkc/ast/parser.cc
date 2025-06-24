@@ -347,6 +347,14 @@ SLKC_API std::optional<SyntaxError> Parser::parseFn(peff::SharedPtr<FnOverloadin
 		return genOutOfMemoryError();
 	}
 
+	switch (curParent->astNodeType) {
+		case AstNodeType::Interface:
+			fnNodeOut->fnFlags |= FN_VIRTUAL;
+			break;
+		default:
+			break;
+	}
+
 	peff::SharedPtr<MemberNode> prevParent = curParent;
 	peff::ScopeGuard restoreParentGuard([this, prevParent]() noexcept {
 		curParent = prevParent;
@@ -727,14 +735,12 @@ accessModifierParseEnd:
 							return genOutOfMemoryError();
 						}
 
-						if (peekToken()->tokenId != TokenId::OrOp) {
+						if (peekToken()->tokenId != TokenId::AddOp) {
 							break;
 						}
 
 						Token *orOpToken = nextToken();
 					}
-
-					break;
 				}
 
 				Token *lBraceToken;
@@ -847,14 +853,12 @@ accessModifierParseEnd:
 							return genOutOfMemoryError();
 						}
 
-						if (peekToken()->tokenId != TokenId::OrOp) {
+						if (peekToken()->tokenId != TokenId::AddOp) {
 							break;
 						}
 
 						Token *orOpToken = nextToken();
 					}
-
-					break;
 				}
 
 				Token *lBraceToken;

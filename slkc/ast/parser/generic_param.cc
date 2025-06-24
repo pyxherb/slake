@@ -39,7 +39,7 @@ SLKC_API std::optional<SyntaxError> Parser::parseGenericConstraint(GenericConstr
 				return genOutOfMemoryError();
 			}
 
-			if (peekToken()->tokenId != TokenId::OrOp) {
+			if (peekToken()->tokenId != TokenId::AddOp) {
 				break;
 			}
 

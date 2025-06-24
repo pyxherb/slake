@@ -6,6 +6,31 @@ attribute TestAttribute {
 	let test: i32;
 }
 
+interface IA {
+	fn testIA();
+}
+
+interface IB {
+	fn testIB();
+}
+
+class ImplTest: IA + IB {
+	fn testIA() {
+		extfns.print("Called testIA");
+	}
+	
+	fn testIB() {
+		extfns.print("Called testIB");
+	}
+}
+
+class InterfaceTest<T: IA + IB> {
+	fn test(instance: T) {
+		instance.testIA();
+		instance.testIB();
+	}
+}
+
 class TestParent<T> {
 	fn myTest(a: T, b: T) {
 		with T(i32) {
@@ -186,6 +211,10 @@ pub fn *main() -> i32 {
 		default:
 			extfns.print("Default\n");
 	}
+
+	let implTest: ImplTest = new ImplTest();
+
+	let interfaceTest: InterfaceTest<ImplTest> = new InterfaceTest<ImplTest>();
 
 	/*
 	match const (123) -> i32 {

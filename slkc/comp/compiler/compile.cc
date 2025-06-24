@@ -514,6 +514,8 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 					SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, clsNode->baseType, cls->baseType));
 				}
 
+				peff::Set<peff::SharedPtr<InterfaceNode>> involvedInterfaces(compileContext->allocator.get());
+
 				for (auto &i : clsNode->implTypes) {
 					peff::SharedPtr<MemberNode> implementedTypeNode;
 
@@ -522,6 +524,8 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 							if (implementedTypeNode) {
 								if (implementedTypeNode->astNodeType != AstNodeType::Interface) {
 									SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
+								} else {
+									SLKC_RETURN_IF_COMP_ERROR(collectInvolvedInterfaces(compileContext->document, implementedTypeNode.castTo<InterfaceNode>(), involvedInterfaces, true));
 								}
 							} else {
 								SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(i->tokenRange, CompilationErrorKind::ExpectingInterfaceName)));
@@ -540,6 +544,50 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 					if (!cls->implTypes.pushBack(std::move(t))) {
 						return genOutOfRuntimeMemoryCompError();
+					}
+				}
+
+				for (auto &i : involvedInterfaces) {
+					for (auto &j : i->members) {
+						if (j->astNodeType == AstNodeType::FnSlot) {
+							peff::SharedPtr<FnNode> method = j.castTo<FnNode>();
+
+							if (auto it = clsNode->memberIndices.find(j->name); it != clsNode->memberIndices.end()) {
+								peff::SharedPtr<MemberNode> correspondingMember = clsNode->members.at(it.value());
+
+								if (correspondingMember->astNodeType != AstNodeType::FnSlot) {
+									for (auto &k : method->overloadings) {
+										SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(clsNode->tokenRange, AbstractMethodNotImplementedErrorExData{ k })));
+									}
+								} else {
+									peff::SharedPtr<FnNode> correspondingMethod = correspondingMember.castTo<FnNode>();
+
+									for (auto &k : method->overloadings) {
+										bool b = false;
+
+										for (auto &l : correspondingMethod->overloadings) {
+											if (k->params.size() != l->params.size()) {
+												continue;
+											}
+
+											SLKC_RETURN_IF_COMP_ERROR(isFnSignatureSame(k->params.data(), l->params.data(), k->params.size(), b));
+
+											if (b) {
+												goto matched;
+											}
+										}
+
+										SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(clsNode->tokenRange, AbstractMethodNotImplementedErrorExData{ k })));
+
+									matched:;
+									}
+								}
+							} else {
+								for (auto &k : method->overloadings) {
+									SLKC_RETURN_IF_COMP_ERROR(compileContext->pushError(CompilationError(clsNode->tokenRange, AbstractMethodNotImplementedErrorExData{ k })));
+								}
+							}
+						}
 					}
 				}
 
@@ -676,35 +724,37 @@ SLKC_API std::optional<CompilationError> slkc::compileModule(
 
 					SLKC_RETURN_IF_COMP_ERROR(compileGenericParams(compileContext, mod, i->genericParams.data(), i->genericParams.size(), fnObject->genericParams));
 
-					NormalCompilationContext compilationContext(compileContext, nullptr);
+					if (i->body) {
+						NormalCompilationContext compilationContext(compileContext, nullptr);
 
-					for (auto j : i->body->body) {
-						if ((e = compileStmt(compileContext, &compilationContext, j))) {
-							if (e->errorKind == CompilationErrorKind::OutOfMemory)
-								return e;
-							if (!compileContext->errors.pushBack(std::move(*e))) {
-								return genOutOfMemoryCompError();
-							}
-							e.reset();
-						}
-					}
-					if (!fnObject->instructions.resize(compilationContext.generatedInstructions.size())) {
-						return genOutOfRuntimeMemoryCompError();
-					}
-					for (size_t i = 0; i < compilationContext.generatedInstructions.size(); ++i) {
-						fnObject->instructions.at(i) = std::move(compilationContext.generatedInstructions.at(i));
-					}
-					compilationContext.generatedInstructions.clear();
-
-					for (auto &j : fnObject->instructions) {
-						for (size_t k = 0; k < j.nOperands; ++k) {
-							if (j.operands[k].valueType == slake::ValueType::Label) {
-								j.operands[k] = slake::Value(compilationContext.getLabelOffset(j.operands[k].getLabel()));
+						for (auto j : i->body->body) {
+							if ((e = compileStmt(compileContext, &compilationContext, j))) {
+								if (e->errorKind == CompilationErrorKind::OutOfMemory)
+									return e;
+								if (!compileContext->errors.pushBack(std::move(*e))) {
+									return genOutOfMemoryCompError();
+								}
+								e.reset();
 							}
 						}
-					}
+						if (!fnObject->instructions.resize(compilationContext.generatedInstructions.size())) {
+							return genOutOfRuntimeMemoryCompError();
+						}
+						for (size_t i = 0; i < compilationContext.generatedInstructions.size(); ++i) {
+							fnObject->instructions.at(i) = std::move(compilationContext.generatedInstructions.at(i));
+						}
+						compilationContext.generatedInstructions.clear();
 
-					fnObject->nRegisters = compilationContext.nTotalRegs;
+						for (auto &j : fnObject->instructions) {
+							for (size_t k = 0; k < j.nOperands; ++k) {
+								if (j.operands[k].valueType == slake::ValueType::Label) {
+									j.operands[k] = slake::Value(compilationContext.getLabelOffset(j.operands[k].getLabel()));
+								}
+							}
+						}
+
+						fnObject->nRegisters = compilationContext.nTotalRegs;
+					}
 
 					if (!slotObject->overloadings.insert(fnObject.get())) {
 						return genOutOfRuntimeMemoryCompError();

@@ -423,6 +423,10 @@ SLKC_API bool slkc::decompileIdRef(peff::Alloc *allocator, DumpWriter *writer, s
 				SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, paramTypes.at(i)));
 			}
 
+			if (idRefIn->hasVarArgs) {
+				SLKC_RETURN_IF_FALSE(writer->write(", ..."));
+			}
+
 			SLKC_RETURN_IF_FALSE(writer->write(")"));
 		} else {
 			if (idRefIn->hasVarArgs) {

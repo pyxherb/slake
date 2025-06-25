@@ -156,6 +156,18 @@ fn test(...) {
 
 // let a: fn (i32, u32, f32) with hostext.VirtualBase -> bool;
 
+class OperatorTest {
+	operator +(lhs: i32, ...) -> i32 {
+		return lhs + 114514;
+	}
+}
+
+fn t() {
+	let test: OperatorTest;
+
+	123456 + test;
+}
+
 pub fn *main() -> i32 {
 	/*a() with 123;*/
 

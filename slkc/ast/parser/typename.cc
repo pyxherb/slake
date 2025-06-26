@@ -8,6 +8,18 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 	Token *t = peekToken();
 
 	switch (t->tokenId) {
+		case TokenId::VarArg:
+			if (!(typeNameOut = peff::makeShared<UnpackingTypeNameNode>(
+					  resourceAllocator.get(),
+					  resourceAllocator.get(), document)
+						.castTo<TypeNameNode>()))
+				return genOutOfMemoryError();
+			typeNameOut->tokenRange = TokenRange{ t->index };
+			nextToken();
+
+			if ((syntaxError = parseTypeName(typeNameOut.castTo<UnpackingTypeNameNode>()->innerTypeName, true)))
+				return syntaxError;
+			break;
 		case TokenId::VoidTypeName:
 			if (!(typeNameOut = peff::makeShared<VoidTypeNameNode>(
 					  resourceAllocator.get(),
@@ -142,6 +154,59 @@ SLKC_API std::optional<SyntaxError> Parser::parseTypeName(peff::SharedPtr<TypeNa
 			typeNameOut->tokenRange = TokenRange{ t->index };
 			nextToken();
 			break;
+		case TokenId::LParenthese: {
+			peff::SharedPtr<ParamTypeListTypeNameNode> tn;
+
+			if (!(tn = peff::makeShared<ParamTypeListTypeNameNode>(
+					  resourceAllocator.get(),
+					  resourceAllocator.get(), document)))
+				return genOutOfMemoryError();
+
+			typeNameOut = tn.castTo<TypeNameNode>();
+
+			typeNameOut->tokenRange = TokenRange{ t->index };
+
+			Token *lParentheseToken;
+			if ((syntaxError = expectToken((lParentheseToken = peekToken()), TokenId::LParenthese)))
+				return SyntaxError(TokenRange{ lParentheseToken->index }, ExpectingSingleTokenErrorExData{ TokenId::LParenthese });
+
+			nextToken();
+
+			for (;;) {
+				if (peekToken()->tokenId == TokenId::RParenthese) {
+					break;
+				}
+
+				if (peekToken()->tokenId == TokenId::VarArg) {
+					tn->hasVarArgs = true;
+					break;
+				}
+
+				peff::SharedPtr<TypeNameNode> paramType;
+
+				if (auto e = parseTypeName(paramType); e)
+					return e;
+
+				if (!tn->paramTypes.pushBack(std::move(paramType)))
+					return genOutOfMemoryError();
+
+				if (peekToken()->tokenId != TokenId::Comma) {
+					break;
+				}
+
+				Token *commaToken = nextToken();
+				/*
+				if (!idxCommaTokensOut.pushBack(+commaToken->index))
+					return genOutOfMemoryError();*/
+			}
+
+			Token *rParentheseToken;
+			if ((syntaxError = expectToken((rParentheseToken = peekToken()), TokenId::RParenthese)))
+				return SyntaxError(TokenRange{ rParentheseToken->index }, ExpectingSingleTokenErrorExData{ TokenId::RParenthese });
+
+			nextToken();
+			break;
+		}
 		case TokenId::FnKeyword: {
 			peff::SharedPtr<FnTypeNameNode> tn;
 			if (!(tn = peff::makeShared<FnTypeNameNode>(

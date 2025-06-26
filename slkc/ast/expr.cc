@@ -796,28 +796,6 @@ SLKC_API WrapperExprNode::WrapperExprNode(const WrapperExprNode &rhs, peff::Allo
 SLKC_API WrapperExprNode::~WrapperExprNode() {
 }
 
-SLKC_API peff::SharedPtr<AstNode> VarArgExprNode::doDuplicate(peff::Alloc *newAllocator) const {
-	bool succeeded = false;
-	peff::SharedPtr<VarArgExprNode> duplicatedNode(peff::makeShared<VarArgExprNode>(newAllocator, *this, newAllocator, succeeded));
-	if ((!duplicatedNode) || (!succeeded)) {
-		return {};
-	}
-
-	return duplicatedNode.castTo<AstNode>();
-}
-SLKC_API VarArgExprNode::VarArgExprNode(
-	peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document)
-	: ExprNode(ExprKind::VarArg, selfAllocator, document) {
-}
-SLKC_API VarArgExprNode::VarArgExprNode(const VarArgExprNode &rhs, peff::Alloc *allocator, bool &succeededOut)
-	: ExprNode(rhs, allocator) {
-	typeNameTokenIndex = rhs.typeNameTokenIndex;
-
-	succeededOut = true;
-}
-SLKC_API VarArgExprNode::~VarArgExprNode() {
-}
-
 SLKC_API peff::SharedPtr<AstNode> RegRefExprNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
 	peff::SharedPtr<RegRefExprNode> duplicatedNode(peff::makeShared<RegRefExprNode>(newAllocator, *this, newAllocator, succeeded));

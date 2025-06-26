@@ -58,6 +58,8 @@ SLKC_API GenericParamNode::GenericParamNode(const GenericParamNode &rhs, peff::A
 		return;
 	}
 
+	isParamTypeList = rhs.isParamTypeList;
+
 	succeededOut = true;
 }
 

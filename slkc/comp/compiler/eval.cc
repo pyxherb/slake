@@ -2214,10 +2214,6 @@ SLKC_API std::optional<CompilationError> slkc::evalConstExpr(
 			SLKC_RETURN_IF_COMP_ERROR(evalConstExpr(compileContext, compilationContext, expr.castTo<WrapperExprNode>()->target, exprOut));
 			break;
 		}
-		case ExprKind::VarArg: {
-			exprOut = {};
-			break;
-		}
 		case ExprKind::Bad: {
 			exprOut = {};
 			break;

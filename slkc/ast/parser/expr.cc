@@ -202,10 +202,20 @@ SLKC_API std::optional<SyntaxError> Parser::parseExpr(int precedence, peff::Shar
 				}
 				case TokenId::VarArg: {
 					nextToken();
-					if (!(lhs = peff::makeShared<VarArgExprNode>(
-							  resourceAllocator.get(), resourceAllocator.get(), document)
-								.castTo<ExprNode>()))
+
+					peff::SharedPtr<UnaryExprNode> expr;
+
+					if (!(expr = peff::makeShared<UnaryExprNode>(
+							  resourceAllocator.get(), resourceAllocator.get(), document)))
 						return genOutOfMemoryError();
+
+					expr->unaryOp = UnaryOp::Unpacking;
+
+					lhs = expr.castTo<ExprNode>();
+
+					if ((syntaxError = parseExpr(131, expr->operand))) {
+						goto genBadExpr;
+					}
 					break;
 				}
 				case TokenId::LBrace: {

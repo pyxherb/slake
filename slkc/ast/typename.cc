@@ -335,6 +335,31 @@ SLKC_API CustomTypeNameNode::CustomTypeNameNode(const CustomTypeNameNode &rhs, p
 SLKC_API CustomTypeNameNode::~CustomTypeNameNode() {
 }
 
+SLKC_API peff::SharedPtr<AstNode> UnpackingTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
+	bool succeeded = false;
+	peff::SharedPtr<UnpackingTypeNameNode> duplicatedNode(peff::makeShared<UnpackingTypeNameNode>(newAllocator, *this, newAllocator, succeeded));
+	if ((!duplicatedNode) || (!succeeded)) {
+		return {};
+	}
+
+	return duplicatedNode.castTo<AstNode>();
+}
+
+SLKC_API UnpackingTypeNameNode::UnpackingTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::Unpacking, selfAllocator, document) {
+}
+
+SLKC_API UnpackingTypeNameNode::UnpackingTypeNameNode(const UnpackingTypeNameNode &rhs, peff::Alloc *allocator, bool &succeededOut) : TypeNameNode(rhs, allocator) {
+	if (!(innerTypeName = rhs.innerTypeName->duplicate<TypeNameNode>(allocator))) {
+		succeededOut = false;
+		return;
+	}
+
+	succeededOut = true;
+}
+
+SLKC_API UnpackingTypeNameNode::~UnpackingTypeNameNode() {
+}
+
 SLKC_API peff::SharedPtr<AstNode> ArrayTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
 	peff::SharedPtr<ArrayTypeNameNode> duplicatedNode(peff::makeShared<ArrayTypeNameNode>(newAllocator, *this, newAllocator, succeeded));
@@ -453,4 +478,38 @@ SLKC_API TempRefTypeNameNode::TempRefTypeNameNode(const TempRefTypeNameNode &rhs
 }
 
 SLKC_API TempRefTypeNameNode::~TempRefTypeNameNode() {
+}
+
+SLKC_API peff::SharedPtr<AstNode> ParamTypeListTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
+	bool succeeded = false;
+	peff::SharedPtr<ParamTypeListTypeNameNode> duplicatedNode(peff::makeShared<ParamTypeListTypeNameNode>(newAllocator, *this, newAllocator, succeeded));
+	if ((!duplicatedNode) || (!succeeded)) {
+		return {};
+	}
+
+	return duplicatedNode.castTo<AstNode>();
+}
+
+SLKC_API ParamTypeListTypeNameNode::ParamTypeListTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::ParamTypeList, selfAllocator, document), paramTypes(selfAllocator) {
+}
+
+SLKC_API ParamTypeListTypeNameNode::ParamTypeListTypeNameNode(const ParamTypeListTypeNameNode &rhs, peff::Alloc *allocator, bool &succeededOut) : TypeNameNode(rhs, allocator), paramTypes(allocator) {
+	if (!paramTypes.resize(rhs.paramTypes.size())) {
+		succeededOut = false;
+		return;
+	}
+
+	for (size_t i = 0; i < paramTypes.size(); ++i) {
+		if (!(paramTypes.at(i) = rhs.paramTypes.at(i)->duplicate<TypeNameNode>(allocator))) {
+			succeededOut = false;
+			return;
+		}
+	}
+
+	hasVarArgs = rhs.hasVarArgs;
+
+	succeededOut = true;
+}
+
+SLKC_API ParamTypeListTypeNameNode::~ParamTypeListTypeNameNode() {
 }

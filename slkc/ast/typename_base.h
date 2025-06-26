@@ -23,11 +23,13 @@ namespace slkc {
 		Object,
 		Any,
 		Custom,
+		Unpacking,
 
 		Fn,
 		Array,
 		Ref,
 		TempRef,
+		ParamTypeList,
 
 		Bad
 	};

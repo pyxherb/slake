@@ -74,6 +74,12 @@ SLKC_API std::optional<SyntaxError> Parser::parseGenericParams(
 
 			genericParamNode->parent = curParent;
 
+			if (Token *lParentheseToken = peekToken(); lParentheseToken->tokenId == TokenId::VarArg) {
+				nextToken();
+
+				genericParamNode->isParamTypeList = true;
+			}
+
 			Token *nameToken;
 
 			if ((syntaxError = expectToken((nameToken = peekToken()), TokenId::Id))) {

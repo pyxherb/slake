@@ -1590,6 +1590,8 @@ SLAKE_FORCEINLINE InternalExceptionPointer Runtime::_execIns(ContextObject *cont
 				return OutOfMemoryError::alloc();
 			break;
 		}
+		case Opcode::PUSHAP:
+			std::terminate();
 		case Opcode::CTORCALL:
 		case Opcode::MCALL:
 		case Opcode::CALL: {

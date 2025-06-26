@@ -56,6 +56,8 @@ namespace slkc {
 		FunctionOverloadingDuplicated,
 		RequiresInitialValue,
 		ErrorDeducingVarType,
+		TypeIsNotUnpackable,
+		InvalidVarArgHintDuringInstantiation,
 
 		ImportLimitExceeded,
 		MalformedModuleName,

@@ -42,8 +42,6 @@ namespace slkc {
 
 		Wrapper,  // Expression wrapper
 
-		VarArg,	 // Varidic arguments
-
 		RegRef,	 // Register reference
 
 		Bad,  // Bad expression
@@ -52,7 +50,8 @@ namespace slkc {
 	enum class UnaryOp {
 		LNot,
 		Not,
-		Neg
+		Neg,
+		Unpacking
 	};
 
 	class ExprNode : public AstNode {
@@ -565,18 +564,6 @@ namespace slkc {
 		SLKC_API WrapperExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document, const peff::SharedPtr<ExprNode> &target);
 		SLKC_API WrapperExprNode(const WrapperExprNode &rhs, peff::Alloc *allocator, bool &succeededOut);
 		SLKC_API virtual ~WrapperExprNode();
-	};
-
-	class VarArgExprNode : public ExprNode {
-	protected:
-		SLKC_API virtual peff::SharedPtr<AstNode> doDuplicate(peff::Alloc *newAllocator) const override;
-
-	public:
-		size_t typeNameTokenIndex = SIZE_MAX;
-
-		SLKC_API VarArgExprNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
-		SLKC_API VarArgExprNode(const VarArgExprNode &rhs, peff::Alloc *allocator, bool &succeededOut);
-		SLKC_API virtual ~VarArgExprNode();
 	};
 
 	class RegRefExprNode : public ExprNode {

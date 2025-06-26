@@ -28,6 +28,8 @@ namespace slkc {
 	public:
 		GenericConstraintPtr genericConstraint;
 
+		bool isParamTypeList = false;
+
 		SLKC_API GenericParamNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
 		SLKC_API GenericParamNode(const GenericParamNode &rhs, peff::Alloc *allocator, bool &succeededOut);
 		SLKC_API virtual ~GenericParamNode();

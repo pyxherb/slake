@@ -57,6 +57,7 @@ namespace slake {
 		JF,	  // Jump if false
 
 		PUSHARG,  // Push an value into the argument stack
+		PUSHAP,	  // Push an argument pack.
 
 		CALL,	   // Call
 		MCALL,	   // Method Call

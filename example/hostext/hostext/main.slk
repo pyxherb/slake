@@ -168,6 +168,13 @@ fn t() {
 	123456 + test;
 }
 
+class CallableTest<...T> {
+	fn call(test: ...T) {
+		extfns.print("Called CallableTest, values: ", ...test, "\n");
+		return;
+	}
+}
+
 pub fn *main() -> i32 {
 	/*a() with 123;*/
 
@@ -227,6 +234,10 @@ pub fn *main() -> i32 {
 	let implTest: ImplTest = new ImplTest();
 
 	let interfaceTest: InterfaceTest<ImplTest> = new InterfaceTest<ImplTest>();
+	
+	let callableTest: CallableTest<(i32, u32, f32)>;
+
+	callableTest.call(114, 514, 1919810.0f);
 
 	/*
 	match const (123) -> i32 {

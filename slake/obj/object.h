@@ -30,6 +30,7 @@ namespace slake {
 		String,		// String
 		TypeDef,	// Type definition
 		FnTypeDef,	// Function type definition
+		ParamTypeListTypeDef, // Parameter type list type definition
 
 		Fn,				// Function
 		FnOverloading,	// Function overloading

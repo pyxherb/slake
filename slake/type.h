@@ -55,7 +55,8 @@ namespace slake {
 		Array,	// Array
 		Ref,	// Reference
 
-		FnDelegate,	 // Function delegation
+		FnDelegate,		// Function delegation
+		ParamTypeList,	// Parameter type list
 
 		Any	 // Any
 	};

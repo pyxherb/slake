@@ -156,3 +156,85 @@ SLAKE_API void FnTypeDefObject::replaceAllocator(peff::Alloc *allocator) noexcep
 
 	paramTypes.replaceAllocator(allocator);
 }
+
+SLAKE_API ParamTypeListTypeDefObject::ParamTypeListTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator)
+	: Object(rt, selfAllocator, ObjectKind::ParamTypeListTypeDef), paramTypes(selfAllocator) {
+}
+
+SLAKE_API ParamTypeListTypeDefObject::ParamTypeListTypeDefObject(Duplicator *duplicator, const ParamTypeListTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut) : Object(x, allocator), paramTypes(allocator) {
+	if (!paramTypes.resize(x.paramTypes.size())) {
+		succeededOut = false;
+		return;
+	}
+
+	for (size_t i = 0; i < x.paramTypes.size(); ++i) {
+		paramTypes.at(i) = TypeId::None;
+	}
+
+	for (size_t i = 0; i < x.paramTypes.size(); ++i) {
+		if (!duplicator->insertTask(DuplicationTask::makeType(&paramTypes.at(i), x.paramTypes.at(i)))) {
+			succeededOut = false;
+			return;
+		}
+	}
+
+	hasVarArg = x.hasVarArg;
+
+	succeededOut = true;
+}
+
+SLAKE_API ParamTypeListTypeDefObject::~ParamTypeListTypeDefObject() {
+}
+
+SLAKE_API Object *ParamTypeListTypeDefObject::duplicate(Duplicator *duplicator) const {
+	return (Object *)alloc(duplicator, this).get();
+}
+
+SLAKE_API HostObjectRef<ParamTypeListTypeDefObject> slake::ParamTypeListTypeDefObject::alloc(Runtime *rt) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = rt->getCurGenAlloc();
+
+	std::unique_ptr<ParamTypeListTypeDefObject, util::DeallocableDeleter<ParamTypeListTypeDefObject>> ptr(
+		peff::allocAndConstruct<ParamTypeListTypeDefObject>(
+			curGenerationAllocator.get(),
+			sizeof(std::max_align_t),
+			rt, curGenerationAllocator.get()));
+	if (!ptr)
+		return nullptr;
+
+	if (!rt->addObject(ptr.get()))
+		return nullptr;
+
+	return ptr.release();
+}
+
+SLAKE_API HostObjectRef<ParamTypeListTypeDefObject> slake::ParamTypeListTypeDefObject::alloc(Duplicator *duplicator, const ParamTypeListTypeDefObject *other) {
+	peff::RcObjectPtr<peff::Alloc> curGenerationAllocator = other->associatedRuntime->getCurGenAlloc();
+
+	bool succeeded = true;
+
+	std::unique_ptr<ParamTypeListTypeDefObject, util::DeallocableDeleter<ParamTypeListTypeDefObject>> ptr(
+		peff::allocAndConstruct<ParamTypeListTypeDefObject>(
+			curGenerationAllocator.get(),
+			sizeof(std::max_align_t),
+			duplicator, *other, curGenerationAllocator.get(), succeeded));
+	if (!ptr)
+		return nullptr;
+
+	if (!succeeded)
+		return nullptr;
+
+	if (!other->associatedRuntime->addObject(ptr.get()))
+		return nullptr;
+
+	return ptr.release();
+}
+
+SLAKE_API void slake::ParamTypeListTypeDefObject::dealloc() {
+	peff::destroyAndRelease<ParamTypeListTypeDefObject>(selfAllocator.get(), this, sizeof(std::max_align_t));
+}
+
+SLAKE_API void ParamTypeListTypeDefObject::replaceAllocator(peff::Alloc *allocator) noexcept {
+	this->Object::replaceAllocator(allocator);
+
+	paramTypes.replaceAllocator(allocator);
+}

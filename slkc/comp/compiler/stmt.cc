@@ -577,7 +577,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 				peff::Set<peff::SharedPtr<ExprNode>> prevCaseConditions(compileContext->allocator.get());
 
 				for (size_t i = 0; i < s->caseOffsets.size(); ++i) {
-					auto &curCase = s->body.at(s->caseOffsets.at(i)).castTo<CaseLabelStmtNode>();
+					auto curCase = s->body.at(s->caseOffsets.at(i)).castTo<CaseLabelStmtNode>();
 
 					uint32_t evalValueLabel;
 					SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(evalValueLabel));
@@ -684,7 +684,7 @@ SLKC_API std::optional<CompilationError> slkc::compileStmt(
 				}
 			} else {
 				for (size_t i = 0; i < s->caseOffsets.size(); ++i) {
-					auto &curCase = s->body.at(s->caseOffsets.at(i)).castTo<CaseLabelStmtNode>();
+					auto curCase = s->body.at(s->caseOffsets.at(i)).castTo<CaseLabelStmtNode>();
 
 					uint32_t evalValueLabel;
 					SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocLabel(evalValueLabel));

@@ -40,6 +40,24 @@ namespace slake {
 
 		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
 	};
+
+	class ParamTypeListTypeDefObject final : public Object {
+	public:
+		peff::DynArray<Type> paramTypes;
+		bool hasVarArg = false;
+
+		SLAKE_API ParamTypeListTypeDefObject(Runtime *rt, peff::Alloc *selfAllocator);
+		SLAKE_API ParamTypeListTypeDefObject(Duplicator *duplicator, const ParamTypeListTypeDefObject &x, peff::Alloc *allocator, bool &succeededOut);
+		SLAKE_API virtual ~ParamTypeListTypeDefObject();
+
+		SLAKE_API virtual Object *duplicate(Duplicator *duplicator) const override;
+
+		SLAKE_API static HostObjectRef<ParamTypeListTypeDefObject> alloc(Runtime *rt);
+		SLAKE_API static HostObjectRef<ParamTypeListTypeDefObject> alloc(Duplicator *duplicator, const ParamTypeListTypeDefObject *other);
+		SLAKE_API virtual void dealloc() override;
+
+		SLAKE_API virtual void replaceAllocator(peff::Alloc *allocator) noexcept override;
+	};
 }
 
 #endif

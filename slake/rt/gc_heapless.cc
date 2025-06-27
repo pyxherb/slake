@@ -180,6 +180,13 @@ SLAKE_API void Runtime::_gcWalk(GCWalkContext *context, Object *v) {
 						_gcWalk(context, i);
 					break;
 				}
+				case ObjectKind::ParamTypeListTypeDef: {
+					auto typeDef = ((ParamTypeListTypeDefObject *)v);
+					for (auto &i : typeDef->paramTypes)
+						_gcWalk(context, i);
+					break;
+				}
+
 				case ObjectKind::Instance: {
 					auto value = (InstanceObject *)v;
 

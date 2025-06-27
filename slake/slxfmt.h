@@ -51,24 +51,25 @@ namespace slake {
 		};
 
 		enum class TypeId : uint8_t {
-			None = 0,	 // None
-			Any,		 // Any
-			I8,			 // i8
-			I16,		 // i16
-			I32,		 // i32
-			I64,		 // i64
-			U8,			 // u8
-			U16,		 // u16
-			U32,		 // u32
-			U64,		 // u64
-			F32,		 // f32
-			F64,		 // f64
-			String,		 // String
-			Bool,		 // Boolean
-			Array,		 // Array
-			Object,		 // Object
-			GenericArg,	 // Generic argument
-			Ref,		 // Reference
+			None = 0,		// None
+			Any,			// Any
+			I8,				// i8
+			I16,			// i16
+			I32,			// i32
+			I64,			// i64
+			U8,				// u8
+			U16,			// u16
+			U32,			// u32
+			U64,			// u64
+			F32,			// f32
+			F64,			// f64
+			String,			// String
+			Bool,			// Boolean
+			Array,			// Array
+			Object,			// Object
+			GenericArg,		// Generic argument
+			Ref,			// Reference
+			ParamTypeList,	// Parameter type list
 		};
 
 		enum class ValueType : uint8_t {

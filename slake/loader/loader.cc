@@ -116,6 +116,30 @@ SLAKE_API InternalExceptionPointer loader::loadType(Runtime *runtime, Reader *re
 			typeOut = Type(TypeId::Ref, typeDef.get());
 			break;
 		}
+		case slake::slxfmt::TypeId::ParamTypeList: {
+			HostObjectRef<ParamTypeListTypeDefObject> typeDef;
+
+			if (!(typeDef = ParamTypeListTypeDefObject::alloc(runtime))) {
+				return OutOfMemoryError::alloc();
+			}
+
+			uint32_t nParams;
+
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readU32(nParams)));
+
+			if (!typeDef->paramTypes.resize(nParams)) {
+				return OutOfMemoryError::alloc();
+			}
+
+			for (uint32_t i = 0; i < nParams; ++i) {
+				SLAKE_RETURN_IF_EXCEPT(loadType(runtime, reader, member, typeDef->paramTypes.at(i)));
+			}
+
+			SLAKE_RETURN_IF_EXCEPT(_normalizeReadResult(runtime, reader->readBool(typeDef->hasVarArg)));
+
+			typeOut = Type(TypeId::ParamTypeList, typeDef.get());
+			break;
+		}
 		default:
 			std::terminate();
 	}

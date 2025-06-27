@@ -89,6 +89,20 @@ static std::optional<CompilationError> _walkTypeNameForGenericInstantiation(
 			}
 			break;
 		}
+		case TypeNameKind::Unpacking: {
+			peff::SharedPtr<UnpackingTypeNameNode> tn = typeName.castTo<UnpackingTypeNameNode>();
+
+			SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->innerTypeName, context));
+			break;
+		}
+		case TypeNameKind::ParamTypeList: {
+			peff::SharedPtr<ParamTypeListTypeNameNode> tn = typeName.castTo<ParamTypeListTypeNameNode>();
+
+			for (size_t i = 0; i < tn->paramTypes.size(); ++i) {
+				SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(tn->paramTypes.at(i), context));
+			}
+			break;
+		}
 	}
 
 	return {};
@@ -135,63 +149,6 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 						}
 					}
 
-				rescanParams:
-					for (size_t j = 0; j < i->params.size(); ++j) {
-						peff::SharedPtr<TypeNameNode> curParamType = i->params.at(j)->type;
-
-						if (curParamType) {
-							if (curParamType->typeNameKind == TypeNameKind::Unpacking) {
-								peff::SharedPtr<UnpackingTypeNameNode> unpackingType = curParamType.castTo<UnpackingTypeNameNode>();
-
-								SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(unpackingType->innerTypeName, context));
-
-								if (unpackingType->innerTypeName->typeNameKind == TypeNameKind::ParamTypeList) {
-									peff::SharedPtr<ParamTypeListTypeNameNode> innerTypeName = unpackingType->innerTypeName.castTo<ParamTypeListTypeNameNode>();
-
-									if (!i->params.reserveSlots(j, innerTypeName->paramTypes.size())) {
-										return genOutOfMemoryCompError();
-									}
-
-									for (size_t k = 0; k < innerTypeName->paramTypes.size(); ++k) {
-										bool succeeded;
-
-										peff::SharedPtr<VarNode> p = peff::makeShared<VarNode>(context.allocator.get(), *i->params.at(j).get(), context.allocator.get(), succeeded);
-
-										if ((!p) || (!succeeded)) {
-											return genOutOfMemoryCompError();
-										}
-
-										constexpr static size_t lenName = sizeof("arg_") + (sizeof(size_t) << 1) + 1;
-										char nameBuf[lenName] = { 0 };
-
-										sprintf(nameBuf, "arg_%.02zx", j + k);
-
-										if (!p->name.build(nameBuf)) {
-											return genOutOfMemoryCompError();
-										}
-
-										p->type = innerTypeName->paramTypes.at(k);
-
-										i->params.at(j + k) = p;
-									}
-
-									// Note that we use nullptr for we assuming that errors that require a compile context will never happen.
-									SLKC_RETURN_IF_COMP_ERROR(reindexFnParams(nullptr, i));
-
-									if (innerTypeName->hasVarArgs) {
-										if (j + 1 != i->params.size()) {
-											return CompilationError(innerTypeName->tokenRange, CompilationErrorKind::InvalidVarArgHintDuringInstantiation);
-										}
-
-										i->fnFlags |= FN_VARG;
-									}
-								}
-
-								goto rescanParams;
-							}
-						}
-					}
-
 					for (auto &j : i->params) {
 						SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(j->type, innerContext));
 					}
@@ -205,6 +162,66 @@ static std::optional<CompilationError> _walkNodeForGenericInstantiation(
 					}
 
 					SLKC_RETURN_IF_COMP_ERROR(_walkTypeNameForGenericInstantiation(i->returnType, context));
+				}
+
+			rescanParams:
+				for (size_t j = 0; j < i->params.size(); ++j) {
+					auto curParam = i->params.at(j);
+					peff::SharedPtr<TypeNameNode> curParamType = i->params.at(j)->type;
+
+					if (curParamType) {
+						if (curParamType->typeNameKind == TypeNameKind::Unpacking) {
+							peff::SharedPtr<UnpackingTypeNameNode> unpackingType = curParamType.castTo<UnpackingTypeNameNode>();
+
+							if (unpackingType->innerTypeName->typeNameKind == TypeNameKind::ParamTypeList) {
+								peff::SharedPtr<ParamTypeListTypeNameNode> innerTypeName = unpackingType->innerTypeName.castTo<ParamTypeListTypeNameNode>();
+
+								if (!i->params.eraseRange(j, j + 1)) {
+									return genOutOfMemoryCompError();
+								}
+
+								if (!i->params.reserveSlots(j, innerTypeName->paramTypes.size())) {
+									return genOutOfMemoryCompError();
+								}
+
+								for (size_t k = 0; k < innerTypeName->paramTypes.size(); ++k) {
+									bool succeeded;
+
+									peff::SharedPtr<VarNode> p = peff::makeShared<VarNode>(context.allocator.get(), *curParam.get(), context.allocator.get(), succeeded);
+
+									if ((!p) || (!succeeded)) {
+										return genOutOfMemoryCompError();
+									}
+
+									constexpr static size_t lenName = sizeof("arg_") + (sizeof(size_t) << 1) + 1;
+									char nameBuf[lenName] = { 0 };
+
+									sprintf(nameBuf, "arg_%.02zx", j + k);
+
+									if (!p->name.build(nameBuf)) {
+										return genOutOfMemoryCompError();
+									}
+
+									p->type = innerTypeName->paramTypes.at(k);
+
+									i->params.at(j + k) = p;
+								}
+
+								// Note that we use nullptr for we assuming that errors that require a compile context will never happen.
+								SLKC_RETURN_IF_COMP_ERROR(reindexFnParams(nullptr, i));
+
+								if (innerTypeName->hasVarArgs) {
+									if (j + 1 != i->params.size()) {
+										return CompilationError(innerTypeName->tokenRange, CompilationErrorKind::InvalidVarArgHintDuringInstantiation);
+									}
+
+									i->fnFlags |= FN_VARG;
+								}
+							}
+
+							goto rescanParams;
+						}
+					}
 				}
 			}
 			break;

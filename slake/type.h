@@ -28,7 +28,7 @@ namespace slake {
 		RegRef,	   // Register reference
 		TypeName,  // Type name
 
-		Label, // Label reference
+		Label,	// Label reference
 
 		Undefined = UINT8_MAX,
 	};
@@ -57,6 +57,7 @@ namespace slake {
 
 		FnDelegate,		// Function delegation
 		ParamTypeList,	// Parameter type list
+		Unpacking,		// Unpacking
 
 		Any	 // Any
 	};
@@ -109,6 +110,7 @@ namespace slake {
 		SLAKE_FORCEINLINE Object *getCustomTypeExData() const { return exData.object; }
 		SLAKE_API Type &getArrayExData() const;
 		SLAKE_API Type &getRefExData() const;
+		SLAKE_API Type &getUnpackingExData() const;
 
 		SLAKE_API bool isLoadingDeferred() const noexcept;
 		[[nodiscard]] SLAKE_API InternalExceptionPointer loadDeferredType(Runtime *rt);

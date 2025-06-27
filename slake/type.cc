@@ -178,6 +178,7 @@ SLAKE_API Type Type::duplicate(bool &succeededOut) const {
 
 SLAKE_API Type &Type::getArrayExData() const { return exData.typeDef->type; }
 SLAKE_API Type &Type::getRefExData() const { return exData.typeDef->type; }
+SLAKE_API Type &Type::getUnpackingExData() const { return exData.typeDef->type; }
 
 SLAKE_API bool Type::isLoadingDeferred() const noexcept {
 	switch (typeId) {

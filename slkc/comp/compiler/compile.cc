@@ -143,6 +143,51 @@ SLKC_API std::optional<CompilationError> slkc::compileTypeName(
 			typeOut = slake::Type(slake::TypeId::Ref, obj.get());
 			break;
 		}
+		case TypeNameKind::ParamTypeList: {
+			peff::SharedPtr<ParamTypeListTypeNameNode> t = typeName.castTo<ParamTypeListTypeNameNode>();
+			peff::SharedPtr<Document> doc = t->document.lock();
+
+			slake::HostObjectRef<slake::ParamTypeListTypeDefObject> obj;
+
+			if (!(obj = slake::ParamTypeListTypeDefObject::alloc(compileContext->runtime))) {
+				return genOutOfRuntimeMemoryCompError();
+			}
+
+			if (!obj->paramTypes.resize(t->paramTypes.size())) {
+				return genOutOfRuntimeMemoryCompError();
+			}
+			for (size_t i = 0; i < obj->paramTypes.size(); ++i) {
+				SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, t->paramTypes.at(i), obj->paramTypes.at(i)));
+			}
+
+			obj->hasVarArg = t->hasVarArgs;
+
+			if (!(compileContext->hostRefHolder.addObject(obj.get()))) {
+				return genOutOfMemoryCompError();
+			}
+
+			typeOut = slake::Type(slake::TypeId::ParamTypeList, obj.get());
+			break;
+		}
+		case TypeNameKind::Unpacking: {
+			peff::SharedPtr<UnpackingTypeNameNode> t = typeName.castTo<UnpackingTypeNameNode>();
+			peff::SharedPtr<Document> doc = t->document.lock();
+
+			slake::HostObjectRef<slake::TypeDefObject> obj;
+
+			if (!(obj = slake::TypeDefObject::alloc(compileContext->runtime))) {
+				return genOutOfRuntimeMemoryCompError();
+			}
+
+			SLKC_RETURN_IF_COMP_ERROR(compileTypeName(compileContext, t->innerTypeName, obj->type));
+
+			if (!(compileContext->hostRefHolder.addObject(obj.get()))) {
+				return genOutOfMemoryCompError();
+			}
+
+			typeOut = slake::Type(slake::TypeId::Unpacking, obj.get());
+			break;
+		}
 		default:
 			std::terminate();
 	}

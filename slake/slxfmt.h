@@ -70,6 +70,7 @@ namespace slake {
 			GenericArg,		// Generic argument
 			Ref,			// Reference
 			ParamTypeList,	// Parameter type list
+			Unpacking,		// Unpacking
 		};
 
 		enum class ValueType : uint8_t {

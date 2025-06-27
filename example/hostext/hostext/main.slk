@@ -237,7 +237,7 @@ pub fn *main() -> i32 {
 	
 	let callableTest: CallableTest<(i32, u32, f32)>;
 
-	callableTest.call(114, 514, 1919810.0f);
+	callableTest.call(114, 514 as u32, 1919810.0f);
 
 	/*
 	match const (123) -> i32 {

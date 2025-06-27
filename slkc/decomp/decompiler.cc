@@ -9,7 +9,7 @@ SLKC_API DumpWriter::~DumpWriter() {
 }
 
 #define MNEMONIC_NAME_CASE(name) \
-	case slake::Opcode::name:  \
+	case slake::Opcode::name:    \
 		return #name;
 
 SLKC_API const char *slkc::getMnemonicName(slake::Opcode opcode) {
@@ -86,7 +86,7 @@ SLKC_API bool slkc::decompileGenericParam(peff::Alloc *allocator, DumpWriter *wr
 	}
 	if (genericParam.interfaces.size()) {
 		SLKC_RETURN_IF_FALSE(writer->write(": "));
-		for (size_t i = 0;i < genericParam.interfaces.size(); ++i) {
+		for (size_t i = 0; i < genericParam.interfaces.size(); ++i) {
 			if (i)
 				SLKC_RETURN_IF_FALSE(writer->write(" + "));
 			SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, genericParam.baseType));
@@ -188,6 +188,27 @@ SLKC_API bool slkc::decompileTypeName(peff::Alloc *allocator, DumpWriter *writer
 		case slake::TypeId::Any:
 			SLKC_RETURN_IF_FALSE(writer->write("any"));
 			break;
+		case slake::TypeId::ParamTypeList: {
+			auto obj = (slake::ParamTypeListTypeDefObject *)type.exData.typeDef;
+
+			SLKC_RETURN_IF_FALSE(writer->write("("));
+
+			for (size_t i = 0; i < obj->paramTypes.size(); ++i) {
+				if (i) {
+					SLKC_RETURN_IF_FALSE(writer->write(", "));
+				}
+
+				SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, obj->paramTypes.at(i)));
+			}
+
+			SLKC_RETURN_IF_FALSE(writer->write(")"));
+			break;
+		}
+		case slake::TypeId::Unpacking: {
+			SLKC_RETURN_IF_FALSE(writer->write("@..."));
+			SLKC_RETURN_IF_FALSE(decompileTypeName(allocator, writer, type.getUnpackingExData()));
+			break;
+		}
 		default:
 			std::terminate();
 	}

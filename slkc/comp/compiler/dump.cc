@@ -252,6 +252,26 @@ SLKC_API std::optional<CompilationError> slkc::dumpTypeName(
 			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, type.getRefExData()));
 			break;
 		}
+		case slake::TypeId::ParamTypeList: {
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::TypeId::ParamTypeList));
+
+			slake::ParamTypeListTypeDefObject *typeDef = (slake::ParamTypeListTypeDefObject *)type.exData.typeDef;
+
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeU32((uint32_t)typeDef->paramTypes.size()));
+
+			for (size_t i = 0; i < typeDef->paramTypes.size(); ++i) {
+				SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, typeDef->paramTypes.at(i).getRefExData()));
+			}
+
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeBool(typeDef->hasVarArg));
+
+			break;
+		}
+		case slake::TypeId::Unpacking: {
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::TypeId::Unpacking));
+			SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, type.getRefExData()));
+			break;
+		}
 		default:
 			std::terminate();
 	}
@@ -439,7 +459,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpModuleMembers(
 		}
 
 		vad.lenName = curRecord.name.size();
-		SLKC_RETURN_IF_COMP_ERROR(writer->write((char*)&vad, sizeof(vad)));
+		SLKC_RETURN_IF_COMP_ERROR(writer->write((char *)&vad, sizeof(vad)));
 
 		SLKC_RETURN_IF_COMP_ERROR(writer->write(curRecord.name.data(), curRecord.name.size()));
 

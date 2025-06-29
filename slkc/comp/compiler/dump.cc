@@ -98,11 +98,11 @@ SLKC_API std::optional<CompilationError> slkc::dumpIdRef(
 			break;
 		case slake::ValueType::F32:
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::F32));
-			SLKC_RETURN_IF_COMP_ERROR(writer->writeF32(value.getI8()));
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeF32(value.getF32()));
 			break;
 		case slake::ValueType::F64:
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::F64));
-			SLKC_RETURN_IF_COMP_ERROR(writer->writeF64(value.getI8()));
+			SLKC_RETURN_IF_COMP_ERROR(writer->writeF64(value.getF64()));
 			break;
 		case slake::ValueType::Bool:
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU8((uint8_t)slake::slxfmt::ValueType::Bool));
@@ -260,7 +260,7 @@ SLKC_API std::optional<CompilationError> slkc::dumpTypeName(
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeU32((uint32_t)typeDef->paramTypes.size()));
 
 			for (size_t i = 0; i < typeDef->paramTypes.size(); ++i) {
-				SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, typeDef->paramTypes.at(i).getRefExData()));
+				SLKC_RETURN_IF_COMP_ERROR(dumpTypeName(allocator, writer, typeDef->paramTypes.at(i)));
 			}
 
 			SLKC_RETURN_IF_COMP_ERROR(writer->writeBool(typeDef->hasVarArg));

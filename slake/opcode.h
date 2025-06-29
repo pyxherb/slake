@@ -16,7 +16,8 @@ namespace slake {
 
 		MOV,  // Move values between registers
 
-		LARG,  // Load an argument.
+		LARG,	 // Load an argument.
+		LAPARG,	 // Load an argument pack.
 
 		LVAR,	 // Create a new local variable
 		ALLOCA,	 // Allocate spaces from the stack
@@ -80,6 +81,8 @@ namespace slake {
 		LEXCEPT,  // Load current exception
 
 		CAST,  // Cast
+
+		APTOTUPLE,	// Cast an argument pack to a tuple
 
 		TYPEOF,	 // Get type of an object
 

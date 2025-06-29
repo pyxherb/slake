@@ -37,6 +37,8 @@ static std::optional<CompilationError> _compileSimpleRValueUnaryExpr(
 		}
 		case ExprEvalPurpose::Call:
 			return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotCallable);
+		case ExprEvalPurpose::Unpacking:
+			return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotUnpackable);
 	}
 
 	return {};
@@ -104,6 +106,63 @@ SLKC_API std::optional<CompilationError> slkc::compileUnaryExpr(
 				case UnaryOp::LNot:
 					SLKC_RETURN_IF_COMP_ERROR(_compileSimpleRValueUnaryExpr(compileContext, compilationContext, expr, evalPurpose, decayedOperandType, resultRegOut, resultOut, slake::Opcode::LNOT));
 					resultOut.evaluatedType = decayedOperandType;
+					break;
+				default:
+					return CompilationError(expr->tokenRange, CompilationErrorKind::OperatorNotFound);
+			}
+			break;
+		}
+		case TypeNameKind::Unpacking: {
+			switch (expr->unaryOp) {
+				case UnaryOp::Unpacking:
+					switch (evalPurpose) {
+						case ExprEvalPurpose::EvalType: {
+							bool b;
+
+							SLKC_RETURN_IF_COMP_ERROR(isTypeUnpackable(decayedOperandType, b));
+
+							if (!b) {
+								return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotUnpackable);
+							}
+
+							// TODO: I don't know what should I say, just keep it in mind.
+							resultOut.evaluatedType = decayedOperandType;
+							break;
+						}
+						case ExprEvalPurpose::Stmt:
+							SLKC_RETURN_IF_COMP_ERROR(compileContext->pushWarning(
+								CompilationWarning(expr->tokenRange, CompilationWarningKind::UnusedExprResult)));
+							break;
+						case ExprEvalPurpose::LValue:
+							return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
+						case ExprEvalPurpose::RValue: {
+							CompileExprResult result(compileContext->allocator.get());
+
+							SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, expr->operand, ExprEvalPurpose::Unpacking, {}, resultRegOut, result));
+
+							resultOut.evaluatedType = result.evaluatedType;
+
+							break;
+						}
+						case ExprEvalPurpose::Unpacking: {
+							CompileExprResult result(compileContext->allocator.get());
+
+							uint32_t tmpReg;
+
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->allocReg(tmpReg));
+
+							SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, expr->operand, ExprEvalPurpose::Unpacking, {}, tmpReg, result));
+
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::APTOTUPLE, resultRegOut, { slake::Value(tmpReg) }));
+
+							// TODO: Convert the evaluated type to corresponding tuple type.
+							resultOut.evaluatedType = result.evaluatedType;
+
+							break;
+						}
+						case ExprEvalPurpose::Call:
+							return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotCallable);
+					}
 					break;
 				default:
 					return CompilationError(expr->tokenRange, CompilationErrorKind::OperatorNotFound);

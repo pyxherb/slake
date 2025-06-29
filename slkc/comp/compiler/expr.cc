@@ -34,6 +34,8 @@ SLAKE_FORCEINLINE std::optional<CompilationError> _compileLiteralExpr(
 		case ExprEvalPurpose::Call:
 			return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotCallable);
 			break;
+		case ExprEvalPurpose::Unpacking:
+			return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotUnpackable);
 		default:
 			std::terminate();
 	}
@@ -544,6 +546,9 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 					}
 					break;
 				}
+				case ExprEvalPurpose::Unpacking:
+					return CompilationError(e->idRefPtr->tokenRange, CompilationErrorKind::TargetIsNotCallable);
+					break;
 				default:
 					std::terminate();
 			}
@@ -591,6 +596,8 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LTHIS, initialMemberReg, {}));
 							break;
 						}
+						case ExprEvalPurpose::Unpacking:
+							return CompilationError(e->tokenRange, CompilationErrorKind::TargetIsNotUnpackable);
 					}
 					goto initialMemberResolved;
 				}
@@ -622,6 +629,8 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LVALUE, initialMemberReg, { slake::Value(slake::ValueType::RegRef, it->idxReg) }));
 							break;
 						}
+						case ExprEvalPurpose::Unpacking:
+							return CompilationError(e->tokenRange, CompilationErrorKind::TargetIsNotUnpackable);
 					}
 					goto initialMemberResolved;
 				}
@@ -656,8 +665,13 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LARG, tmpReg, { slake::Value((uint32_t)it.value()) }));
 							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LVALUE, initialMemberReg, { slake::Value(slake::ValueType::RegRef, tmpReg) }));
+
 							break;
 						}
+						case ExprEvalPurpose::Unpacking:
+							SLKC_RETURN_IF_COMP_ERROR(compilationContext->emitIns(slake::Opcode::LAPARG, initialMemberReg, { slake::Value((uint32_t)it.value()) }));
+
+							break;
 					}
 					goto initialMemberResolved;
 				}
@@ -824,6 +838,26 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 								resultRegOut,
 								{ slake::Value(slake::ValueType::RegRef, finalRegister) }));
 					}
+					break;
+				}
+				case ExprEvalPurpose::Unpacking: {
+					peff::SharedPtr<TypeNameNode> decayedTargetType;
+
+					SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(resultOut.evaluatedType, decayedTargetType));
+
+					bool b;
+
+					SLKC_RETURN_IF_COMP_ERROR(isTypeUnpackable(decayedTargetType, b));
+
+					if (!b) {
+						return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotUnpackable);
+					}
+
+					SLKC_RETURN_IF_COMP_ERROR(
+						compilationContext->emitIns(
+							slake::Opcode::MOV,
+							resultRegOut,
+							{ slake::Value(slake::ValueType::RegRef, finalRegister) }));
 					break;
 				}
 				default:

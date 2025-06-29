@@ -10,6 +10,8 @@ SLKC_API Parser::~Parser() {
 }
 
 SLKC_API std::optional<SyntaxError> Parser::parseOperatorName(std::string_view &nameOut) {
+	std::optional<SyntaxError> syntaxError;
+
 	Token *t = peekToken();
 
 	switch (t->tokenId) {
@@ -128,6 +130,24 @@ SLKC_API std::optional<SyntaxError> Parser::parseOperatorName(std::string_view &
 		case TokenId::CmpOp:
 			nameOut = "<=>";
 			nextToken();
+			break;
+		case TokenId::LParenthese:
+			nextToken();
+
+			if ((syntaxError = expectToken(peekToken(), TokenId::RParenthese))) {
+				return syntaxError;
+			}
+
+			nameOut = "()";
+			break;
+		case TokenId::LBracket:
+			nextToken();
+
+			if ((syntaxError = expectToken(peekToken(), TokenId::RBracket))) {
+				return syntaxError;
+			}
+
+			nameOut = "[]";
 			break;
 		case TokenId::NewKeyword:
 			nameOut = "new";

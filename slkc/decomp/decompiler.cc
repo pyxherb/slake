@@ -266,6 +266,18 @@ SLKC_API bool slkc::decompileValue(peff::Alloc *allocator, DumpWriter *writer, c
 			SLKC_RETURN_IF_FALSE(writer->write(s));
 			break;
 		}
+		case slake::ValueType::F32: {
+			char s[16];
+			sprintf(s, "%f", value.getF32());
+			SLKC_RETURN_IF_FALSE(writer->write(s));
+			break;
+		}
+		case slake::ValueType::F64: {
+			char s[32];
+			sprintf(s, "%f", value.getF64());
+			SLKC_RETURN_IF_FALSE(writer->write(s));
+			break;
+		}
 		case slake::ValueType::Bool:
 			SLKC_RETURN_IF_FALSE(writer->write(value.getBool() ? "true" : "false"));
 			break;

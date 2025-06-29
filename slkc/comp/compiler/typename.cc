@@ -707,6 +707,50 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 	return {};
 }
 
+SLKC_API std::optional<CompilationError> slkc::isTypeUnpackable(
+	const peff::SharedPtr<TypeNameNode> &type,
+	bool &whetherOut) {
+	peff::SharedPtr<Document> document = type->document.lock();
+
+	switch (type->typeNameKind) {
+		case TypeNameKind::Custom: {
+			peff::SharedPtr<MemberNode> m;
+
+			SLKC_RETURN_IF_COMP_ERROR(resolveCustomTypeName(document, type.castTo<CustomTypeNameNode>(), m));
+
+			switch (m->astNodeType) {
+				case AstNodeType::GenericParam: {
+					auto p = m.castTo<GenericParamNode>();
+
+					if (p->isParamTypeList) {
+						whetherOut = true;
+					} else {
+						whetherOut = false;
+					}
+					break;
+				}
+				default:
+					whetherOut = false;
+			}
+			break;
+		}
+		case TypeNameKind::ParamTypeList:
+			whetherOut = true;
+			break;
+		case TypeNameKind::Unpacking: {
+			bool b;
+
+			SLKC_RETURN_IF_COMP_ERROR(isTypeUnpackable(type.castTo<UnpackingTypeNameNode>()->innerTypeName, whetherOut));
+
+			break;
+		}
+		default:
+			whetherOut = false;
+	}
+
+	return {};
+}
+
 SLKC_API std::optional<CompilationError> slkc::fnToTypeName(
 	CompileContext *compileContext,
 	peff::SharedPtr<FnOverloadingNode> fn,

@@ -8,11 +8,12 @@ namespace slkc {
 	SLKC_API std::optional<slkc::CompilationError> typeNameListCmp(const peff::DynArray<peff::SharedPtr<TypeNameNode>> &lhs, const peff::DynArray<peff::SharedPtr<TypeNameNode>> &rhs, int &out) noexcept;
 
 	enum class ExprEvalPurpose {
-		EvalType,  // None
-		Stmt,	   // As a statement
-		LValue,	   // As a lvalue
-		RValue,	   // As a rvalue
-		Call,	   // As target of a calling expression
+		EvalType,	// None
+		Stmt,		// As a statement
+		LValue,		// As a lvalue
+		RValue,		// As a rvalue
+		Call,		// As target of a calling expression
+		Unpacking,	// For unpacking
 	};
 
 	struct StmtCompileContext {
@@ -77,13 +78,13 @@ namespace slkc {
 		struct BlockLayer {
 			peff::HashMap<std::string_view, peff::SharedPtr<VarNode>> localVars;
 
-			SLAKE_FORCEINLINE BlockLayer(peff::Alloc* allocator): localVars(allocator) {
+			SLAKE_FORCEINLINE BlockLayer(peff::Alloc *allocator) : localVars(allocator) {
 			}
 			SLAKE_FORCEINLINE BlockLayer(BlockLayer &&rhs) : localVars(std::move(rhs.localVars)) {
 			}
 			SLKC_API ~BlockLayer();
 
-			SLAKE_FORCEINLINE BlockLayer& operator=(BlockLayer&& rhs) {
+			SLAKE_FORCEINLINE BlockLayer &operator=(BlockLayer &&rhs) {
 				localVars = std::move(rhs.localVars);
 				return *this;
 			}
@@ -417,6 +418,9 @@ namespace slkc {
 		const peff::SharedPtr<TypeNameNode> &src,
 		const peff::SharedPtr<TypeNameNode> &dest,
 		bool isSealed,
+		bool &whetherOut);
+	[[nodiscard]] SLKC_API std::optional<CompilationError> isTypeUnpackable(
+		const peff::SharedPtr<TypeNameNode> &type,
 		bool &whetherOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileUnaryExpr(
 		CompileContext *compileContext,

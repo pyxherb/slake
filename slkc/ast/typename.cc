@@ -513,3 +513,37 @@ SLKC_API ParamTypeListTypeNameNode::ParamTypeListTypeNameNode(const ParamTypeLis
 
 SLKC_API ParamTypeListTypeNameNode::~ParamTypeListTypeNameNode() {
 }
+
+SLKC_API peff::SharedPtr<AstNode> UnpackedParamsTypeNameNode::doDuplicate(peff::Alloc *newAllocator) const {
+	bool succeeded = false;
+	peff::SharedPtr<UnpackedParamsTypeNameNode> duplicatedNode(peff::makeShared<UnpackedParamsTypeNameNode>(newAllocator, *this, newAllocator, succeeded));
+	if ((!duplicatedNode) || (!succeeded)) {
+		return {};
+	}
+
+	return duplicatedNode.castTo<AstNode>();
+}
+
+SLKC_API UnpackedParamsTypeNameNode::UnpackedParamsTypeNameNode(peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : TypeNameNode(TypeNameKind::UnpackedParams, selfAllocator, document), paramTypes(selfAllocator) {
+}
+
+SLKC_API UnpackedParamsTypeNameNode::UnpackedParamsTypeNameNode(const UnpackedParamsTypeNameNode &rhs, peff::Alloc *allocator, bool &succeededOut) : TypeNameNode(rhs, allocator), paramTypes(allocator) {
+	if (!paramTypes.resize(rhs.paramTypes.size())) {
+		succeededOut = false;
+		return;
+	}
+
+	for (size_t i = 0; i < paramTypes.size(); ++i) {
+		if (!(paramTypes.at(i) = rhs.paramTypes.at(i)->duplicate<TypeNameNode>(allocator))) {
+			succeededOut = false;
+			return;
+		}
+	}
+
+	hasVarArgs = rhs.hasVarArgs;
+
+	succeededOut = true;
+}
+
+SLKC_API UnpackedParamsTypeNameNode::~UnpackedParamsTypeNameNode() {
+}

@@ -419,9 +419,9 @@ namespace slkc {
 		const peff::SharedPtr<TypeNameNode> &dest,
 		bool isSealed,
 		bool &whetherOut);
-	[[nodiscard]] SLKC_API std::optional<CompilationError> isTypeUnpackable(
+	[[nodiscard]] SLKC_API std::optional<CompilationError> getUnpackedTypeOf(
 		const peff::SharedPtr<TypeNameNode> &type,
-		bool &whetherOut);
+		peff::SharedPtr<TypeNameNode> &typeNameOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> compileUnaryExpr(
 		CompileContext *compileContext,
 		CompilationContext *compilationContext,

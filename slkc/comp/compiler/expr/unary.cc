@@ -117,11 +117,11 @@ SLKC_API std::optional<CompilationError> slkc::compileUnaryExpr(
 				case UnaryOp::Unpacking:
 					switch (evalPurpose) {
 						case ExprEvalPurpose::EvalType: {
-							bool b;
+							peff::SharedPtr<TypeNameNode> unpackedType;
 
-							SLKC_RETURN_IF_COMP_ERROR(isTypeUnpackable(decayedOperandType, b));
+							SLKC_RETURN_IF_COMP_ERROR(getUnpackedTypeOf(decayedOperandType, unpackedType));
 
-							if (!b) {
+							if (!unpackedType) {
 								return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotUnpackable);
 							}
 

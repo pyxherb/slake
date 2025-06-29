@@ -845,11 +845,11 @@ SLKC_API std::optional<CompilationError> slkc::compileExpr(
 
 					SLKC_RETURN_IF_COMP_ERROR(removeRefOfType(resultOut.evaluatedType, decayedTargetType));
 
-					bool b;
+					peff::SharedPtr<TypeNameNode> unpackedType;
 
-					SLKC_RETURN_IF_COMP_ERROR(isTypeUnpackable(decayedTargetType, b));
+					SLKC_RETURN_IF_COMP_ERROR(getUnpackedTypeOf(decayedTargetType, unpackedType));
 
-					if (!b) {
+					if (!unpackedType) {
 						return CompilationError(expr->tokenRange, CompilationErrorKind::TargetIsNotUnpackable);
 					}
 

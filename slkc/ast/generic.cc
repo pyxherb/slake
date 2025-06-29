@@ -32,6 +32,34 @@ GenericConstraintPtr slkc::duplicateGenericConstraint(peff::Alloc *allocator, co
 	return ptr;
 }
 
+SLKC_API ParamTypeListGenericConstraint::ParamTypeListGenericConstraint(peff::Alloc *selfAllocator) : selfAllocator(selfAllocator), argTypes(selfAllocator) {}
+SLKC_API ParamTypeListGenericConstraint::~ParamTypeListGenericConstraint() {}
+SLKC_API void ParamTypeListGenericConstraint::dealloc() noexcept {
+	peff::destroyAndRelease<ParamTypeListGenericConstraint>(selfAllocator.get(), this, alignof(ParamTypeListGenericConstraint));
+}
+
+ParamTypeListGenericConstraintPtr slkc::duplicateParamTypeListGenericConstraint(peff::Alloc *allocator, const ParamTypeListGenericConstraint *constraint) {
+	ParamTypeListGenericConstraintPtr ptr(peff::allocAndConstruct<ParamTypeListGenericConstraint>(allocator, alignof(ParamTypeListGenericConstraint), allocator));
+
+	if (!ptr) {
+		return nullptr;
+	}
+
+	if (!ptr->argTypes.resize(constraint->argTypes.size())) {
+		return nullptr;
+	}
+
+	for (size_t i = 0; i < ptr->argTypes.size(); ++i) {
+		if (!(ptr->argTypes.at(i) = constraint->argTypes.at(i)->duplicate<TypeNameNode>(allocator))) {
+			return nullptr;
+		}
+	}
+
+	ptr->hasVarArg = constraint->hasVarArg;
+
+	return ptr;
+}
+
 SLKC_API peff::SharedPtr<AstNode> GenericParamNode::doDuplicate(peff::Alloc *newAllocator) const {
 	bool succeeded = false;
 	peff::SharedPtr<GenericParamNode> duplicatedNode(peff::makeShared<GenericParamNode>(newAllocator, *this, newAllocator, succeeded));
@@ -54,6 +82,11 @@ SLKC_API GenericParamNode::GenericParamNode(const GenericParamNode &rhs, peff::A
 	}
 
 	if (genericConstraint && !(genericConstraint = duplicateGenericConstraint(allocator, rhs.genericConstraint.get()))) {
+		succeededOut = true;
+		return;
+	}
+
+	if (paramTypeListGenericConstraint && !(paramTypeListGenericConstraint = duplicateParamTypeListGenericConstraint(allocator, rhs.paramTypeListGenericConstraint.get()))) {
 		succeededOut = true;
 		return;
 	}

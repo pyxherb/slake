@@ -707,9 +707,9 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 	return {};
 }
 
-SLKC_API std::optional<CompilationError> slkc::isTypeUnpackable(
+SLKC_API std::optional<CompilationError> slkc::getUnpackedTypeOf(
 	const peff::SharedPtr<TypeNameNode> &type,
-	bool &whetherOut) {
+	peff::SharedPtr<TypeNameNode> &typeNameOut) {
 	peff::SharedPtr<Document> document = type->document.lock();
 
 	switch (type->typeNameKind) {
@@ -723,29 +723,66 @@ SLKC_API std::optional<CompilationError> slkc::isTypeUnpackable(
 					auto p = m.castTo<GenericParamNode>();
 
 					if (p->isParamTypeList) {
-						whetherOut = true;
+						peff::SharedPtr<UnpackedParamsTypeNameNode> unpackedType;
+
+						if (!(unpackedType = peff::makeShared<UnpackedParamsTypeNameNode>(document->allocator.get(), document->allocator.get(), document))) {
+							return genOutOfMemoryCompError();
+						}
+
+						if (p->paramTypeListGenericConstraint) {
+							if (!unpackedType->paramTypes.resize(p->paramTypeListGenericConstraint->argTypes.size())) {
+								return genOutOfMemoryCompError();
+							}
+
+							for (size_t i = 0; i < unpackedType->paramTypes.size(); ++i) {
+								unpackedType->paramTypes.at(i) = p->paramTypeListGenericConstraint->argTypes.at(i);
+							}
+						}
+
+						if (p->paramTypeListGenericConstraint) {
+							unpackedType->hasVarArgs = p->paramTypeListGenericConstraint->hasVarArg;
+						}
+
+						typeNameOut = unpackedType.castTo<TypeNameNode>();
 					} else {
-						whetherOut = false;
+						typeNameOut = {};
 					}
 					break;
 				}
 				default:
-					whetherOut = false;
+					typeNameOut = {};
 			}
 			break;
 		}
-		case TypeNameKind::ParamTypeList:
-			whetherOut = true;
-			break;
-		case TypeNameKind::Unpacking: {
-			bool b;
+		case TypeNameKind::ParamTypeList: {
+			auto t = type.castTo<ParamTypeListTypeNameNode>();
 
-			SLKC_RETURN_IF_COMP_ERROR(isTypeUnpackable(type.castTo<UnpackingTypeNameNode>()->innerTypeName, whetherOut));
+			peff::SharedPtr<UnpackedParamsTypeNameNode> unpackedType;
+
+			if (!(unpackedType = peff::makeShared<UnpackedParamsTypeNameNode>(document->allocator.get(), document->allocator.get(), document))) {
+				return genOutOfMemoryCompError();
+			}
+
+			if (!unpackedType->paramTypes.resize(t->paramTypes.size())) {
+				return genOutOfMemoryCompError();
+			}
+
+			for (size_t i = 0; i < unpackedType->paramTypes.size(); ++i) {
+				unpackedType->paramTypes.at(i) = t->paramTypes.at(i);
+			}
+
+			unpackedType->hasVarArgs = t->hasVarArgs;
+
+			typeNameOut = unpackedType.castTo<TypeNameNode>();
+			break;
+		}
+		case TypeNameKind::Unpacking: {
+			SLKC_RETURN_IF_COMP_ERROR(getUnpackedTypeOf(type.castTo<UnpackingTypeNameNode>()->innerTypeName, typeNameOut));
 
 			break;
 		}
 		default:
-			whetherOut = false;
+			typeNameOut = {};
 	}
 
 	return {};

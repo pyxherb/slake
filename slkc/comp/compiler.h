@@ -13,7 +13,7 @@ namespace slkc {
 		LValue,		// As a lvalue
 		RValue,		// As a rvalue
 		Call,		// As target of a calling expression
-		Unpacking,	// For unpacking
+		Unpacking,	// For unpacking, note that it is used for notifying the expression compiler to prepare the expression to be unpacked, not actually to unpack it.
 	};
 
 	struct StmtCompileContext {
@@ -419,6 +419,9 @@ namespace slkc {
 		const peff::SharedPtr<TypeNameNode> &dest,
 		bool isSealed,
 		bool &whetherOut);
+	[[nodiscard]] SLKC_API std::optional<CompilationError> simplifyType(
+		const peff::SharedPtr<TypeNameNode> &type,
+		peff::SharedPtr<TypeNameNode> &typeNameOut);
 	[[nodiscard]] SLKC_API std::optional<CompilationError> getUnpackedTypeOf(
 		const peff::SharedPtr<TypeNameNode> &type,
 		peff::SharedPtr<TypeNameNode> &typeNameOut);

@@ -169,7 +169,7 @@ fn t() {
 }
 
 class CallableTest<...T> {
-	operator ()(test: ...T) {
+	fn call(test: ...T) {
 		extfns.print("Called CallableTest, values: ", ...test, "\n");
 		return;
 	}
@@ -237,7 +237,7 @@ pub fn *main() -> i32 {
 	
 	let callableTest: CallableTest<(i32, u32, f32)>;
 
-	callableTest(114, 514 as u32, 1919810.0f);
+	callableTest.call(114, 514 as u32, 1919810.0f);
 
 	/*
 	match const (123) -> i32 {

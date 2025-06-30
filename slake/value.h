@@ -27,6 +27,7 @@ namespace slake {
 		CoroutineLocalVarRef,
 		Alloca,
 		ArgRef,
+		ArgPackRef,
 		CoroutineArgRef,
 		AotPtrRef,
 	};
@@ -64,6 +65,11 @@ namespace slake {
 				MajorFrame *majorFrame;
 				uint32_t argIndex;
 			} asArg;
+			struct {
+				MajorFrame *majorFrame;
+				uint32_t begin;
+				uint32_t end;
+			} asArgPack;
 			struct {
 				CoroutineObject *coroutine;
 				uint32_t argIndex;
@@ -139,6 +145,17 @@ namespace slake {
 			ref.asArg.majorFrame = majorFrame;
 			ref.asArg.argIndex = argIndex;
 			ref.kind = ObjectRefKind::ArgRef;
+
+			return ref;
+		}
+
+		static SLAKE_FORCEINLINE EntityRef makeArgPackRef(MajorFrame *majorFrame, uint32_t begin, uint32_t end) {
+			EntityRef ref = {};
+
+			ref.asArgPack.majorFrame = majorFrame;
+			ref.asArgPack.begin = begin;
+			ref.asArgPack.end = end;
+			ref.kind = ObjectRefKind::ArgPackRef;
 
 			return ref;
 		}

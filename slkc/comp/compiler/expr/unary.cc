@@ -136,6 +136,7 @@ SLKC_API std::optional<CompilationError> slkc::compileUnaryExpr(
 						case ExprEvalPurpose::LValue:
 							return CompilationError(expr->tokenRange, CompilationErrorKind::ExpectingLValueExpr);
 						case ExprEvalPurpose::RValue: {
+							// The function argument compilation goes this way (?).
 							CompileExprResult result(compileContext->allocator.get());
 
 							SLKC_RETURN_IF_COMP_ERROR(compileExpr(compileContext, compilationContext, expr->operand, ExprEvalPurpose::Unpacking, {}, resultRegOut, result));

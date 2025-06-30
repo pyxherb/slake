@@ -707,6 +707,20 @@ SLKC_API std::optional<CompilationError> slkc::isTypeConvertible(
 	return {};
 }
 
+SLKC_API std::optional<CompilationError> slkc::simplifyType(
+	const peff::SharedPtr<TypeNameNode> &type,
+	peff::SharedPtr<TypeNameNode> &typeNameOut) {
+	switch (type->typeNameKind) {
+		case TypeNameKind::Unpacking:
+			SLKC_RETURN_IF_COMP_ERROR(getUnpackedTypeOf(type.castTo<UnpackingTypeNameNode>()->innerTypeName, typeNameOut));
+			break;
+		default:
+			typeNameOut = type;
+	}
+
+	return {};
+}
+
 SLKC_API std::optional<CompilationError> slkc::getUnpackedTypeOf(
 	const peff::SharedPtr<TypeNameNode> &type,
 	peff::SharedPtr<TypeNameNode> &typeNameOut) {

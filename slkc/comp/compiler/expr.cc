@@ -348,6 +348,8 @@ static std::optional<CompilationError> _determineNodeType(CompileContext *compil
 			std::terminate();
 	}
 
+	SLKC_RETURN_IF_COMP_ERROR(simplifyType(typeNameOut, typeNameOut));
+
 	return {};
 };
 

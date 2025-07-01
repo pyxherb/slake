@@ -70,12 +70,7 @@ namespace slkc {
 		AstNodeDestructor destructor = nullptr;
 
 		SLKC_API AstNode(AstNodeType astNodeType, peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document);
-		SLAKE_FORCEINLINE AstNode(const AstNode &other, peff::Alloc *newAllocator) {
-			document = other.document;
-			selfAllocator = newAllocator;
-			astNodeType = other.astNodeType;
-			tokenRange = other.tokenRange;
-		}
+		SLKC_API AstNode(const AstNode &other, peff::Alloc *newAllocator);
 		SLKC_API virtual ~AstNode();
 
 		template <typename T>

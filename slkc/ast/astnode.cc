@@ -5,6 +5,15 @@ using namespace slkc;
 
 SLKC_API AstNode::AstNode(AstNodeType astNodeType, peff::Alloc *selfAllocator, const peff::SharedPtr<Document> &document) : astNodeType(astNodeType), selfAllocator(selfAllocator), document(document) {
 	assert(document);
+	document->clearDeferredDestructibleAstNodes();
+}
+
+SLAKE_API AstNode::AstNode(const AstNode &other, peff::Alloc *newAllocator) {
+	other.document->clearDeferredDestructibleAstNodes();
+	document = other.document;
+	selfAllocator = newAllocator;
+	astNodeType = other.astNodeType;
+	tokenRange = other.tokenRange;
 }
 
 SLKC_API AstNode::~AstNode() {
